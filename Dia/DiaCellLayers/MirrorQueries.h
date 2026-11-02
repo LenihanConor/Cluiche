@@ -1,8 +1,9 @@
 #pragma once
 #ifdef DIA_DEBUG
 
-// MirrorQueries: the pull side of the editor mirror (Feature 5). Plain logic class, separate from DebugServer registration:
-// RegisterMirrorQueries(QueryRegistry&, MirrorQueries&) wires it (host wiring calls it). Read-only: never mutates the viewer,
+// MirrorQueries: the pull side of the editor mirror (Feature 5). Plain logic class, separate from registration:
+// RegisterMirrorQueries(IMirrorQueryRegistrar&, MirrorQueries&) wires it (host wiring calls it). The registrar is a seam so this
+// library stays free of the host: the host supplies one that forwards to the sim-hosted query service (SimQueryHostModule). Read-only: never mutates the viewer,
 // registry or selection.
 //
 // Queries answered here:
@@ -11,7 +12,7 @@
 //                       Same data source as the DiaAPI command of that name (CellLayerViewerDomain::ListLayers); this adds
 //                       layersVersion, grid ids, schemaKey and hotkey. hotkey is "" when unbound or there is no schema.
 //   cells.select.get  { offset?, count? } -> { version, hash (16 hex), total, offset, indices:[..] } of the active grid's
-//                       selection, ascending, at most kMaxSelectionChunk per call (a larger count is clamped; Warning on CEL).
+//                       selection, ascending, at most kMaxSelectionChunk (1,000) per call (a larger count is clamped; Warning on CEL).
 //                       Bad args (non-numeric, negative, offset > total) -> { "error": "<message>" }. No active grid: empty.
 //  cells.layer.values { layer, offset?, count? } -> { layer, version, gridId, width, height, offset, count, total,
 //                       encoding:"f32le-base64", data } : little-endian float32 per cell [offset, offset+count), base64. Values
@@ -29,17 +30,17 @@
 //                       identity/version/count, layer set, each layer's version, pin state, shown set) and reused until the host calls
 //                       NotifyFrame() or one of those changes. StatsComputeCount() counts aggregation passes (test-visible).
 //
-// Threading: handlers run inline on the DebugServer's thread; the viewer lives on SimPU, so every read is taken under the
-// viewer's state mutex (CellLayerViewerDomain::StateMutex). Borrowed references must outlive the object.
+// Threading: handlers run on SimPU (sim-hosted queries), the same PU as the viewer, so they take no locks. Register and
+// Unregister must also be called on SimPU. Borrowed references must outlive the object.
 
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerReader.h>
 
+#include <functional>
 #include <stdint.h>
 #include <vector>
 
-namespace Dia::DebugServer { class QueryRegistry; }
 namespace Dia::Observation::Metric { class Counter; }
 
 namespace Dia::CellLayers
@@ -57,9 +58,9 @@ namespace Dia::CellLayers
 	class MirrorQueries
 	{
 	public:
-		static const uint32_t kMaxSelectionChunk = 8192;
+		static const uint32_t kMaxSelectionChunk = 1000;	// indices per cells.select.get call (reply stays under the 16 KB sim-hosted cap)
 		static const uint32_t kStatsCacheCapacity = 8;	// stats cache entries per frame (round-robin eviction)
-		static const uint32_t kMaxValuesChunk = 196608;		// cells per cells.layer.values call: 786,432 bytes -> 1 MiB of base64
+		static const uint32_t kMaxValuesChunk = 1000;		// cells per cells.layer.values call: 4,000 bytes -> about 5.3 KB of base64
 
 		// schema may be null (no hotkeys). Registry, viewer and schema are borrowed.
 		MirrorQueries(const CellLayerRegistry& registry, const CellLayerViewerDomain& viewer, const Dia::ValueSchema::ValueSchemaService* schema);
@@ -89,9 +90,9 @@ namespace Dia::CellLayers
 		const CellLayerViewerDomain&	mViewer;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
 		uint32_t					mMaxValuesChunk = kMaxValuesChunk;
-		mutable LayerReader			mReader;	// used only under the viewer's state mutex
+		mutable LayerReader			mReader;	// SimPU only
 
-		// Stats cache (under the viewer's state mutex).
+		// Stats cache (SimPU only).
 		uint32_t					mFrame = 0;
 		struct StatsCacheEntry
 		{
@@ -108,9 +109,20 @@ namespace Dia::CellLayers
 		Dia::Observation::Metric::Counter*	mMetricBytes = nullptr;
 	};
 
+	// Seam to whatever hosts the queries on SimPU (the host app supplies one forwarding to SimQueryHostModule).
+	using MirrorQueryHandler = std::function<Json::Value(const Json::Value& args)>;
+	class IMirrorQueryRegistrar
+	{
+	public:
+		virtual ~IMirrorQueryRegistrar() = default;
+		virtual bool Register(const char* name, MirrorQueryHandler handler) = 0;	// false if rejected (duplicate / full)
+		virtual void Unregister(const char* name) = 0;
+	};
+
 	// Registers cells.layer.list, cells.layer.values, cells.select.get and cells.select.stats; `queries` must outlive the registration.
-	void RegisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry, const MirrorQueries& queries);
-	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry);
+	// Returns false (and unregisters any it had registered) if the registrar rejects one.
+	bool RegisterMirrorQueries(IMirrorQueryRegistrar& registrar, const MirrorQueries& queries);
+	void UnregisterMirrorQueries(IMirrorQueryRegistrar& registrar);
 }
 
 #endif // DIA_DEBUG

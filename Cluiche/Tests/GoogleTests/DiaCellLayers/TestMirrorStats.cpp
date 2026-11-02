@@ -4,7 +4,7 @@
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
-#include <DiaDebugServer/QueryRegistry.h>
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaAPI/DiaAPI.h>
 
 #include <memory>
@@ -411,13 +411,13 @@ TEST_F(MirrorStatsTest, RegisteredAndUnregistered)
 {
 	StatsRig rig;
 	rig.SelectBox();
-	Dia::DebugServer::QueryRegistry qr;
-	RegisterMirrorQueries(qr, *rig.queries);
-	ASSERT_TRUE(qr.Has(StringCRC("cells.select.stats")));
-	const Json::Value r = qr.Execute(StringCRC("cells.select.stats"), Args("layers", "all"));
+	FakeMirrorRegistrar qr;
+	ASSERT_TRUE(RegisterMirrorQueries(qr, *rig.queries));
+	ASSERT_TRUE(qr.Has("cells.select.stats"));
+	const Json::Value r = qr.Execute("cells.select.stats", Args("layers", "all"));
 	EXPECT_EQ(LayerNames(r), "temp,terrain,rain,wind,");
 	UnregisterMirrorQueries(qr);
-	EXPECT_FALSE(qr.Has(StringCRC("cells.select.stats")));
+	EXPECT_FALSE(qr.Has("cells.select.stats"));
 }
 
 TEST_F(MirrorStatsTest, TwentyLayerResponseSize)

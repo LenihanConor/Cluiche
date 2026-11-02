@@ -44,6 +44,22 @@ export function decodeLayerValues(data: string, count?: number): Float32Array {
   return out;
 }
 
+/**
+ * Per-call limits of the sim-hosted queries (replies must fit the 16 KB sim-hosted cap). A larger `count` is clamped by the
+ * server, so page with these. Must match MirrorQueries::kMaxValuesChunk / kMaxSelectionChunk in DiaCellLayers.
+ */
+export const kCellsValuesChunk = 1000;
+export const kCellsSelectionChunk = 1000;
+
+/** Splits [0, total) into consecutive { offset, count } pages of at most `chunk` (default kCellsValuesChunk). */
+export function chunkRanges(total: number, chunk: number = kCellsValuesChunk): { offset: number; count: number }[] {
+  if (!Number.isInteger(total) || total < 0) throw new Error('chunkRanges: total must be a non-negative integer');
+  if (!Number.isInteger(chunk) || chunk < 1) throw new Error('chunkRanges: chunk must be a positive integer');
+  const out: { offset: number; count: number }[] = [];
+  for (let offset = 0; offset < total; offset += chunk) out.push({ offset, count: Math.min(chunk, total - offset) });
+  return out;
+}
+
 /** Concatenates decoded chunks (in order) into one array. */
 export function concatChunks(chunks: readonly Float32Array[]): Float32Array {
   let total = 0;

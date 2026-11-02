@@ -8,7 +8,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCellLayers/Testing/ViewStateTestSupport.h>
-#include <DiaDebugServer/QueryRegistry.h>
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <algorithm>
@@ -75,7 +75,7 @@ namespace
 		std::unique_ptr<CellLayerViewerDomain> domain;
 		std::unique_ptr<MirrorQueries> queries;
 		std::unique_ptr<ViewStatePublisher> publisher;
-		Dia::DebugServer::QueryRegistry qr;
+		FakeMirrorRegistrar qr;
 
 		MirrorRig(uint16_t w, uint16_t h, uint32_t layerCount) : grid(w, h), providers(layerCount)
 		{
@@ -96,7 +96,7 @@ namespace
 			domain.reset(new CellLayerViewerDomain(registry, uploader, service));
 			queries.reset(new MirrorQueries(registry, *domain, service));
 			publisher.reset(new ViewStatePublisher(registry, *domain, topic, clock));
-			RegisterMirrorQueries(qr, *queries);
+			EXPECT_TRUE(RegisterMirrorQueries(qr, *queries));
 			domain->Update(draw);
 		}
 
@@ -118,7 +118,7 @@ namespace
 		}
 		void Frame() { domain->Update(draw); publisher->Update(); queries->NotifyFrame(); }
 
-		Json::Value Run(const char* name, const Json::Value& args) { return qr.Execute(StringCRC(name), args); }
+		Json::Value Run(const char* name, const Json::Value& args) { return qr.Execute(name, args); }
 
 		// Everything the mirror must never change, flattened to a string.
 		std::string Snapshot() const
@@ -325,10 +325,20 @@ namespace
 TEST(MirrorPerf, LayerValuesFullLargeLayer)
 {
 	MirrorRig rig(104, 64, 20);
-	Json::Value r;
-	const double ms = MedianMs(7, [&] { r = rig.queries->LayerValues(Args("layer", "layer3")); });
-	ASSERT_EQ(6656u, r["count"].asUInt());
-	printf("[ perf ] cells.layer.values full 6656-cell layer: median %.3f ms\n", ms);
+	uint32_t got = 0;
+	const double ms = MedianMs(7, [&]
+	{
+		got = 0;
+		Json::Value a(Json::objectValue);
+		a["layer"] = "layer3";
+		for (uint32_t off = 0; off < 6656u; off += MirrorQueries::kMaxValuesChunk)
+		{
+			a["offset"] = off;
+			got += rig.queries->LayerValues(a)["count"].asUInt();
+		}
+	});
+	ASSERT_EQ(6656u, got);	// 7 calls of at most 1,000 cells
+	printf("[ perf ] cells.layer.values full 6656-cell layer (7 pages): median %.3f ms\n", ms);
 #ifdef NDEBUG
 	EXPECT_LE(ms, kBudgetMs);
 #else
@@ -343,7 +353,7 @@ TEST(MirrorPerf, SelectGetFullGridFirstPageAndPagingLoop)
 	Json::Value r;
 	const double firstMs = MedianMs(7, [&] { r = rig.queries->SelectionGet(Json::Value(Json::objectValue)); });
 	ASSERT_EQ(6656u, r["total"].asUInt());
-	ASSERT_EQ(6656u, r["indices"].size());	// 6,656 < 8,192: one page holds everything
+	ASSERT_EQ(MirrorQueries::kMaxSelectionChunk, r["indices"].size());	// one page is capped at 1,000
 
 	uint32_t got = 0;
 	const double loopMs = MedianMs(7, [&]

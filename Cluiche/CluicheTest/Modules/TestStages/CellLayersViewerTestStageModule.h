@@ -18,6 +18,7 @@
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/Camera2DModule.h"
 #include "Modules/InputStreamModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
@@ -25,7 +26,6 @@
 #include <DiaCellLayers/ViewStatePublisher.h>
 #include <DiaCellLayers/MirrorQueries.h>
 #include <DiaCellLayers/DebugServerTopicSink.h>
-#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCellLayers/CellPicker.h>
 #include "Modules/TestStages/CellLayersPointerQueue.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
@@ -174,7 +174,18 @@ private:
     Dia::Core::UniquePtr<Dia::CellLayers::DebugServerTopicSink> mMirrorSink;
     Dia::Core::UniquePtr<Dia::CellLayers::ViewStatePublisher> mMirrorPublisher;
     Dia::Core::UniquePtr<Dia::CellLayers::MirrorQueries> mMirrorQueries;
-    Dia::DebugServer::QueryRegistry* mMirrorQueryRegistry = nullptr; // owned by the DebugServer (Main)
+    // Forwards the mirror queries to the sim-hosted query service (runs handlers on this PU, SimPU). Dia::CellLayers cannot see Cluiche.
+    class MirrorRegistrar : public Dia::CellLayers::IMirrorQueryRegistrar
+    {
+    public:
+        explicit MirrorRegistrar(Cluiche::AppFlow::SimQueryHostModule& host) : mHost(host) {}
+        bool Register(const char* name, Dia::CellLayers::MirrorQueryHandler handler) override { return mHost.RegisterQuery(name, std::move(handler)); }
+        void Unregister(const char* name) override { mHost.UnregisterQuery(name); }
+    private:
+        Cluiche::AppFlow::SimQueryHostModule& mHost;
+    };
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHostRef{this};
+    Dia::Core::UniquePtr<MirrorRegistrar> mMirrorRegistrar;  // non-null while the queries are registered
     bool  mLayerRegistered = false;
     bool  mLayersRegistered = false;
     const Dia::Graphics::CellGridDesc* mFittedGrid = nullptr;

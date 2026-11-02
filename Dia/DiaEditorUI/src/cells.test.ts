@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import hashJson from '../../DiaCellLayers/Testing/Conformance/selection_hash.json';
 import valuesJson from '../../DiaCellLayers/Testing/Conformance/layer_values.json';
 import {
-  selectionHash, decodeLayerValues, concatChunks,
+  selectionHash, decodeLayerValues, concatChunks, chunkRanges, kCellsValuesChunk, kCellsSelectionChunk,
   isCellsViewState, isCellsLayerValues, isCellsSelectionPage, isCellsLayerList, isCellsError,
 } from './cells';
 
@@ -63,6 +63,25 @@ describe('decodeLayerValues', () => {
   it('concatChunks joins chunks in order', () => {
     const out = concatChunks([new Float32Array([1, 2]), new Float32Array([]), new Float32Array([3])]);
     expect(Array.from(out)).toEqual([1, 2, 3]);
+  });
+  it('chunk limits are 1,000 (sim-hosted 16 KB reply cap)', () => {
+    expect(kCellsValuesChunk).toBe(1000);
+    expect(kCellsSelectionChunk).toBe(1000);
+  });
+  it('chunkRanges pages a Large grid (6,656 cells) into 7 calls', () => {
+    const pages = chunkRanges(6656);
+    expect(pages.length).toBe(7);
+    expect(pages[0]).toEqual({ offset: 0, count: 1000 });
+    expect(pages[6]).toEqual({ offset: 6000, count: 656 });
+    expect(pages.reduce((n, p) => n + p.count, 0)).toBe(6656);
+  });
+  it('chunkRanges edge cases', () => {
+    expect(chunkRanges(0)).toEqual([]);
+    expect(chunkRanges(1000)).toEqual([{ offset: 0, count: 1000 }]);
+    expect(chunkRanges(1001).length).toBe(2);
+    expect(chunkRanges(5, 2)).toEqual([{ offset: 0, count: 2 }, { offset: 2, count: 2 }, { offset: 4, count: 1 }]);
+    expect(() => chunkRanges(-1)).toThrow();
+    expect(() => chunkRanges(10, 0)).toThrow();
   });
 });
 

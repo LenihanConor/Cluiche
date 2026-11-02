@@ -14,6 +14,7 @@ _STAGE = "CellLayersViewerTestStage"
 _CHECKPOINT = "test.cell_layers_viewer.passed"
 _TOPIC = "cells.view.state"
 _W, _H = 66, 42  # grid A (active at start)
+_CHUNK = 1000  # per-call limit of cells.layer.values / cells.select.get (16 KB sim-hosted reply cap)
 _M64 = (1 << 64) - 1
 
 
@@ -151,21 +152,25 @@ def test_celllayers_mirror(dia_client):
         assert all(l["schemaKey"] and l["kind"] in ("float", "category") for g in lst["grids"] for l in g["layers"]), lst
         assert {o["id"] for o in lst["overlays"]} == {"grid_edges"}, lst["overlays"]
 
-        # Whole layer in ONE call (no offset/count): 2772 floats, well under the 196,608-cell / 1 MB response limit.
+        # The call limit is 1,000 cells (sim-hosted replies are capped at 16 KB): no offset/count returns the first page,
+        # and a larger count is clamped and echoed.
         total = _W * _H
         one = c.send_command("cells.layer.values", {"layer": "rainfall"})
         assert "error" not in one, one
         assert one["encoding"] == "f32le-base64" and one["gridId"] == "test.hex", one
         assert one["width"] == _W and one["height"] == _H and one["offset"] == 0, one
         raw_one, vals_one = _decode(one["data"])
-        assert len(vals_one) == one["width"] * one["height"] == total, (len(vals_one), total)
-        assert one["total"] == total and one["count"] == total, one
+        assert len(vals_one) == one["count"] == _CHUNK < total, (len(vals_one), total)
+        assert one["total"] == total, one
+        big = c.send_command("cells.layer.values", {"layer": "rainfall", "offset": 0, "count": total})
+        assert big["count"] == _CHUNK and _decode(big["data"])[0] == raw_one, big["count"]
 
-        # Chunked fetches (1000-cell chunks) concatenate to the same array.
+        # Page the whole layer at 1,000 cells per call (3 calls for 2772 cells).
         raw_full = b""
         vals = []
         version = None
-        for off, cnt in ((0, 1000), (1000, 1000), (2000, total - 2000)):
+        for off in range(0, total, _CHUNK):
+            cnt = min(_CHUNK, total - off)
             ch = c.send_command("cells.layer.values", {"layer": "rainfall", "offset": off, "count": cnt})
             assert ch["encoding"] == "f32le-base64" and ch["total"] == total and ch["gridId"] == "test.hex", ch
             assert ch["offset"] == off and ch["count"] == cnt, ch
@@ -177,7 +182,7 @@ def test_celllayers_mirror(dia_client):
             raw_full += raw
             vals += part
         assert len(vals) == total, len(vals)
-        assert raw_full == raw_one and vals == vals_one, "chunked fetches must equal the single full-array call"
+        assert raw_full[:len(raw_one)] == raw_one and vals[:_CHUNK] == vals_one, "first page must equal the default call"
         for idx in (0, 1, 67, 1000, 1999, 2000, total - 1):
             q, r = idx % _W, idx // _W
             assert abs(vals[idx] - _rainfall(q, r)) < 0.5, (idx, vals[idx], _rainfall(q, r))
@@ -201,22 +206,23 @@ def test_celllayers_mirror(dia_client):
         after = c.send_command("cells.select.get")
         assert after["hash"] == before["selection"]["hash"] and after["version"] == before["selection"]["version"]
 
-        # 6. Large selection: the whole 66x42 grid (2772 cells, > 1000) arrives in one cells.select.get call.
-        # The grid is below the 8,192-index per-call limit, so no chunking is needed.
+        # 6. Large selection: the whole 66x42 grid (2772 cells) is paged through cells.select.get at 1,000 indices per call.
         c.send_command("cells.select.clear")
         c.send_command("cells.select.box", {"q0": 0, "r0": 0, "q1": _W - 1, "r1": _H - 1})
         big, _ = _wait_state(c, lambda p: p["selection"]["count"] == total, "whole-grid selection")
         allsel = c.send_command("cells.select.get")
         assert "error" not in allsel, allsel
         assert allsel["total"] == total and allsel["offset"] == 0, (allsel["total"], allsel["offset"])
-        assert allsel["indices"] == list(range(total)), len(allsel["indices"])
-        assert len(allsel["indices"]) <= 8192
+        assert allsel["indices"] == list(range(_CHUNK)), len(allsel["indices"])  # the first page is capped at 1,000
         assert allsel["hash"] == big["selection"]["hash"] == sel_hash(range(total)), allsel["hash"]
-        # A chunked read of the same selection concatenates to the full list.
-        c1 = c.send_command("cells.select.get", {"offset": 0, "count": 1000})
-        c2 = c.send_command("cells.select.get", {"offset": 1000, "count": 5000})
-        assert c1["indices"] + c2["indices"] == list(range(total)), (len(c1["indices"]), len(c2["indices"]))
-        assert len(c2["indices"]) == total - 1000
+        # Paging the same selection at 1,000 per call concatenates to the full list; an over-limit count is clamped.
+        paged = []
+        for off in range(0, total, _CHUNK):
+            pg = c.send_command("cells.select.get", {"offset": off, "count": 5000})
+            assert pg["offset"] == off and pg["total"] == total, pg
+            assert len(pg["indices"]) <= _CHUNK, len(pg["indices"])
+            paged += pg["indices"]
+        assert paged == list(range(total)), len(paged)
 
         c.send_command("cells.select.clear")
         c.send_command("cells.layer.base_by_id", {"id": "temperature"})

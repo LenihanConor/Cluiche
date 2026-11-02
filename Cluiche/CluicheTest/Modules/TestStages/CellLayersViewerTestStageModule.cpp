@@ -467,20 +467,31 @@ bool CellLayersViewerTestStageModule::BuildMirror(const Dia::ValueSchema::ValueS
     mMirrorPublisher = Dia::Core::MakeUnique<Dia::CellLayers::ViewStatePublisher>(*mRegistry, *mDomain, *mMirrorSink, mMirrorClock);
     mMirrorQueries = Dia::Core::MakeUnique<Dia::CellLayers::MirrorQueries>(*mRegistry, *mDomain, schema);
 
-    // Registered once here (OnStart, SimPU), before the stage reports ready, as ValueSchemaModule and EntityInspectorModule do;
-    // QueryRegistry has no lock, so this is not marshalled to Main (see report).
-    mMirrorQueryRegistry = &server->GetQueryRegistry();
-    Dia::CellLayers::RegisterMirrorQueries(*mMirrorQueryRegistry, *mMirrorQueries);
-    DIA_LOG_INFO("CEL", "CellLayersViewerTestStage: editor mirror served (topic cells.view.state + 4 queries)");
+    // Sim-hosted queries (OnStart, SimPU): handlers run on this PU beside the viewer, so they need no lock. The Main-side
+    // QueryRegistry never sees these names.
+    Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get();
+    if (host == nullptr)
+    {
+        DIA_LOG_WARNING("CEL", "CellLayersViewerTestStage: SimQueryHostModule unavailable - mirror queries not served");
+        return false;
+    }
+    mMirrorRegistrar = Dia::Core::MakeUnique<MirrorRegistrar>(*host);
+    if (!Dia::CellLayers::RegisterMirrorQueries(*mMirrorRegistrar, *mMirrorQueries))
+    {
+        DIA_LOG_ERROR("CEL", "CellLayersViewerTestStage: sim-hosted mirror query registration failed");
+        mMirrorRegistrar.Reset();
+        return false;
+    }
+    DIA_LOG_INFO("CEL", "CellLayersViewerTestStage: editor mirror served (topic cells.view.state + 4 sim-hosted queries)");
     return true;
 }
 
 void CellLayersViewerTestStageModule::TeardownMirror()
 {
-    if (mMirrorQueryRegistry != nullptr)
+    if (mMirrorRegistrar)
     {
-        Dia::CellLayers::UnregisterMirrorQueries(*mMirrorQueryRegistry);
-        mMirrorQueryRegistry = nullptr;
+        Dia::CellLayers::UnregisterMirrorQueries(*mMirrorRegistrar);
+        mMirrorRegistrar.Reset();
     }
     mMirrorQueries.Reset();
     mMirrorPublisher.Reset();

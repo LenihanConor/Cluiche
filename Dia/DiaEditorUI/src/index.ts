@@ -53,7 +53,7 @@ export { CellGridCanvas } from './CellGridCanvas';
 export type { CellGridCanvasProps } from './CellGridCanvas';
 
 export {
-  selectionHash, decodeLayerValues, concatChunks,
+  selectionHash, decodeLayerValues, concatChunks, chunkRanges, kCellsValuesChunk, kCellsSelectionChunk,
   isCellsViewState, isCellsLayerList, isCellsLayerValues, isCellsSelectionPage, isCellsSelectionStats, isCellsError,
 } from './cells';
 export type {

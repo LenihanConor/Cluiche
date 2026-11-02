@@ -7,7 +7,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCore/Strings/Base64.h>
-#include <DiaDebugServer/QueryRegistry.h>
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include "../DiaValueSchema/ValueSchemaTestSupport.h"
 
 #include <cstdlib>
@@ -272,13 +272,13 @@ TEST_F(LayerValuesTest, QueryIsReadOnly)
 
 TEST_F(LayerValuesTest, RegisteredHandlerAnswersAndUnregisters)
 {
-	Dia::DebugServer::QueryRegistry qr;
-	RegisterMirrorQueries(qr, rig.queries);
-	ASSERT_TRUE(qr.Has(StringCRC("cells.layer.values")));
-	const Json::Value r = qr.Execute(StringCRC("cells.layer.values"), Args("vals", 0, 2));
+	FakeMirrorRegistrar qr;
+	ASSERT_TRUE(RegisterMirrorQueries(qr, rig.queries));
+	ASSERT_TRUE(qr.Has("cells.layer.values"));
+	const Json::Value r = qr.Execute("cells.layer.values", Args("vals", 0, 2));
 	EXPECT_EQ(r["count"].asUInt(), 2u);
 	UnregisterMirrorQueries(qr);
-	EXPECT_FALSE(qr.Has(StringCRC("cells.layer.values")));
+	EXPECT_FALSE(qr.Has("cells.layer.values"));
 }
 
 TEST_F(LayerValuesTest, CategoryLayerIdsTravelAsExactFloats)
@@ -373,16 +373,37 @@ TEST_F(LayerValuesChunkTest, VersionIsStableAcrossChunksUntilLayerChanges)
 
 TEST(LayerValuesLimits, DefaultChunkFitsOneMebibyteOfBase64)
 {
-	EXPECT_EQ(MirrorQueries::kMaxValuesChunk, 196608u);
+	EXPECT_EQ(MirrorQueries::kMaxValuesChunk, 1000u);
 	const uint32_t cells = MirrorQueries::kMaxValuesChunk;
-	ValuesRig big(512, 384, std::vector<float>(cells, 1.25f));
+	ValuesRig big(100, 20, std::vector<float>(2000, 1.25f));
 	const Json::Value r = big.queries.LayerValues(Args("vals"));
 	ASSERT_FALSE(IsError(r));
 	EXPECT_EQ(r["count"].asUInt(), cells);
-	// 786,432 raw bytes -> 1,048,576 base64 characters (1 MiB exactly) plus a few hundred bytes of envelope.
-	EXPECT_LE(r["data"].asString().size(), 1048576u);
-	EXPECT_LT(r.toStyledString().size(), 1048576u + 512u);
+	// 4,000 raw bytes -> 5,336 base64 characters; the whole reply must sit well under the 16 KB sim-hosted reply cap.
+	EXPECT_LE(r["data"].asString().size(), 5336u);
+	EXPECT_LT(r.toStyledString().size(), 6144u);
 	EXPECT_EQ(DecodeFloats(r).size(), cells);
+}
+
+TEST(LayerValuesLimits, CountAboveDefaultLimitIsClampedToOneThousandAndEchoed)
+{
+	ValuesRig big(100, 20, std::vector<float>(2000, 1.25f));
+	LogCapture log("CEL");
+	const Json::Value r = big.queries.LayerValues(Args("vals", 0, 5000));
+	ASSERT_FALSE(IsError(r));
+	EXPECT_EQ(r["count"].asUInt(), 1000u);
+	EXPECT_EQ(r["total"].asUInt(), 2000u);
+	EXPECT_EQ(log.Warnings("clamped"), 1u);
+}
+
+TEST(LayerValuesLimits, HandlerNeedsNoViewerMutex)
+{
+	// The viewer mutex is non-recursive: if the handler took it while the same thread holds it, this would deadlock.
+	ValuesRig rig(4, 1, { 1, 2, 3, 4 });
+	Dia::Core::ScopedLock<Dia::Core::Mutex> held(rig.domain.StateMutex());
+	const Json::Value r = rig.queries.LayerValues(Args("vals"));
+	ASSERT_FALSE(IsError(r));
+	EXPECT_EQ(r["count"].asUInt(), 4u);
 }
 
 TEST(LayerValuesLimits, ChunkSetterClampsToValidRange)

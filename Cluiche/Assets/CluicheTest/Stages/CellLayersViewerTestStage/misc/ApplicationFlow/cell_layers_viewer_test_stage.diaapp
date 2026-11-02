@@ -40,7 +40,8 @@
                         "VisualDebuggerModule",
                         "Camera2DModule",
                         "InputStreamModule",
-                        "CellLayersModule"
+                        "CellLayersModule",
+                        "SimQueryHostModule"
                     ],
                     "channels": [
                         {

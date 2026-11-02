@@ -5,7 +5,7 @@
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
-#include <DiaDebugServer/QueryRegistry.h>
+#include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 
 #include <algorithm>
 #include <string>
@@ -57,7 +57,7 @@ namespace
 	// One grid big enough to need two chunks. Layer is a stub; only the selection matters.
 	struct MirrorChunkTest : ::testing::Test
 	{
-		static const uint32_t kCells = MirrorQueries::kMaxSelectionChunk + 1;	// 8,193
+		static const uint32_t kCells = MirrorQueries::kMaxSelectionChunk + 1;	// 1,001
 		TestGrid grid{ static_cast<uint16_t>(kCells), 1 };
 		Dia::Graphics::CellFieldRegistry cellField;
 		StubProvider prov;
@@ -223,14 +223,34 @@ TEST_F(MirrorQueriesTest, GridIdHelperPrefersDescIdElseFallback)
 
 TEST_F(MirrorQueriesTest, RegisteredHandlersAnswer)
 {
-	Dia::DebugServer::QueryRegistry qr;
-	RegisterMirrorQueries(qr, queries);
-	ASSERT_TRUE(qr.Has(StringCRC("cells.layer.list")));
-	ASSERT_TRUE(qr.Has(StringCRC("cells.select.get")));
-	EXPECT_TRUE(qr.Execute(StringCRC("cells.layer.list"), Json::Value(Json::nullValue)).isMember("layersVersion"));
-	EXPECT_TRUE(qr.Execute(StringCRC("cells.select.get"), Json::Value(Json::objectValue)).isMember("indices"));
+	FakeMirrorRegistrar qr;
+	ASSERT_TRUE(RegisterMirrorQueries(qr, queries));
+	ASSERT_TRUE(qr.Has("cells.layer.list"));
+	ASSERT_TRUE(qr.Has("cells.select.get"));
+	EXPECT_TRUE(qr.Execute("cells.layer.list", Json::Value(Json::nullValue)).isMember("layersVersion"));
+	EXPECT_TRUE(qr.Execute("cells.select.get", Json::Value(Json::objectValue)).isMember("indices"));
 	UnregisterMirrorQueries(qr);
-	EXPECT_FALSE(qr.Has(StringCRC("cells.layer.list")));
+	EXPECT_FALSE(qr.Has("cells.layer.list"));
+}
+
+TEST_F(MirrorQueriesTest, RegistrarReceivesExactlyTheFourQueryNames)
+{
+	FakeMirrorRegistrar qr;
+	ASSERT_TRUE(RegisterMirrorQueries(qr, queries));
+	std::vector<std::string> names = qr.Names();
+	std::sort(names.begin(), names.end());
+	EXPECT_EQ(names, (std::vector<std::string>{ "cells.layer.list", "cells.layer.values", "cells.select.get", "cells.select.stats" }));
+	EXPECT_EQ(qr.RegisterCount(), 4u);
+	UnregisterMirrorQueries(qr);
+	EXPECT_EQ(qr.Count(), 0u);
+}
+
+TEST_F(MirrorQueriesTest, RegisterFailureIsReportedAndRolledBack)
+{
+	FakeMirrorRegistrar qr;
+	ASSERT_TRUE(qr.Register("cells.select.get", [](const Json::Value&) { return Json::Value(Json::objectValue); }));	// name already taken
+	EXPECT_FALSE(RegisterMirrorQueries(qr, queries));
+	EXPECT_EQ(qr.Count(), 1u);	// only the pre-existing entry remains: the others were rolled back
 }
 
 // ---- cells.select.get ----
@@ -314,6 +334,11 @@ TEST_F(MirrorQueriesTest, SelectGetBadArgsAreErrorsAndChangeNothing)
 }
 
 // ---- chunking ----
+
+TEST_F(MirrorChunkTest, DefaultChunkIsOneThousand)
+{
+	EXPECT_EQ(MirrorQueries::kMaxSelectionChunk, 1000u);
+}
 
 TEST_F(MirrorChunkTest, ExactlyOneFullChunk)
 {

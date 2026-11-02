@@ -3,7 +3,6 @@
 #include <DiaCellLayers/HotkeyTable.h>
 #include <DiaCellLayers/InspectorModel.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
-#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCore/Strings/Base64.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -145,7 +144,6 @@ namespace Dia::CellLayers
 			count = mMaxValuesChunk;
 		}
 
-		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
 		const StringCRC layerId(layerName.c_str());
 		const CellLayerDesc* desc = mRegistry.Find(layerId);
 		if (desc == nullptr) { return ErrorObject("unknown layer"); }
@@ -196,9 +194,8 @@ namespace Dia::CellLayers
 		// The query shares its name with the DiaAPI command (the DebugServer answers queries first, so it shadows the command):
 		// start from the command's data (activeBase, activeGridIndex, label, unit, selected, enabled) and add the mirror fields.
 		Json::Value out(Json::objectValue);
-		mViewer.ListLayers(out);	// takes the state mutex itself (not recursive), so it runs before our lock
+		mViewer.ListLayers(out);
 
-		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
 		HotkeyTable hotkeys(mRegistry, mSchema);
 		out["layersVersion"] = mRegistry.LayersVersion();
 		Json::Value& grids = out["grids"];
@@ -237,8 +234,7 @@ namespace Dia::CellLayers
 			count = kMaxSelectionChunk;
 		}
 
-		const Dia::Graphics::CellGridDesc* grid = mViewer.ActiveGrid();	// locks internally: read before taking the state lock
-		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
+		const Dia::Graphics::CellGridDesc* grid = mViewer.ActiveGrid();
 		const ICellSelectionView* sel = mRegistry.SelectionView(grid);
 
 		SelectionFingerprint fp;
@@ -264,7 +260,6 @@ namespace Dia::CellLayers
 
 	void MirrorQueries::NotifyFrame()
 	{
-		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
 		++mFrame;
 	}
 
@@ -296,8 +291,7 @@ namespace Dia::CellLayers
 			else { return ErrorObject("param 'layers' must be an array of layer ids or \"all\""); }
 		}
 
-		const Dia::Graphics::CellGridDesc* active = mViewer.ActiveGrid();	// locks internally: read before taking the state lock
-		Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mViewer.StateMutex());
+		const Dia::Graphics::CellGridDesc* active = mViewer.ActiveGrid();
 		const InspectorState& inspector = mViewer.Inspector();
 		if (active == nullptr) { return ErrorObject("no active grid"); }
 		if (inspector.ActiveGrid() != active) { return ErrorObject("inspector not yet synced to the active grid"); }
@@ -364,22 +358,35 @@ namespace Dia::CellLayers
 		return out;
 	}
 
-	void RegisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry, const MirrorQueries& queries)
+	namespace
+	{
+		const char* const kQueryNames[4] = { "cells.layer.list", "cells.layer.values", "cells.select.get", "cells.select.stats" };
+	}
+
+	bool RegisterMirrorQueries(IMirrorQueryRegistrar& registrar, const MirrorQueries& queries)
 	{
 		const MirrorQueries* q = &queries;
 		using K = MirrorQueries::Kind;
-		registry.Register(StringCRC("cells.layer.list"), [q](const Json::Value&) { Json::Value r = q->LayerList(); q->RecordServed(K::List, r); return r; });
-		registry.Register(StringCRC("cells.layer.values"), [q](const Json::Value& args) { Json::Value r = q->LayerValues(args); q->RecordServed(K::Values, r); return r; });
-		registry.Register(StringCRC("cells.select.get"), [q](const Json::Value& args) { Json::Value r = q->SelectionGet(args); q->RecordServed(K::SelectGet, r); return r; });
-		registry.Register(StringCRC("cells.select.stats"), [q](const Json::Value& args) { Json::Value r = q->SelectionStats(args); q->RecordServed(K::Stats, r); return r; });
+		MirrorQueryHandler handlers[4] =
+		{
+			[q](const Json::Value&) { Json::Value r = q->LayerList(); q->RecordServed(K::List, r); return r; },
+			[q](const Json::Value& args) { Json::Value r = q->LayerValues(args); q->RecordServed(K::Values, r); return r; },
+			[q](const Json::Value& args) { Json::Value r = q->SelectionGet(args); q->RecordServed(K::SelectGet, r); return r; },
+			[q](const Json::Value& args) { Json::Value r = q->SelectionStats(args); q->RecordServed(K::Stats, r); return r; },
+		};
+		for (int i = 0; i < 4; ++i)
+		{
+			if (registrar.Register(kQueryNames[i], handlers[i])) { continue; }
+			DIA_LOG_ERROR("CEL", "mirror queries: registering %s was rejected, rolling back", kQueryNames[i]);
+			for (int k = 0; k < i; ++k) { registrar.Unregister(kQueryNames[k]); }	// only the ones this call registered
+			return false;
+		}
+		return true;
 	}
 
-	void UnregisterMirrorQueries(Dia::DebugServer::QueryRegistry& registry)
+	void UnregisterMirrorQueries(IMirrorQueryRegistrar& registrar)
 	{
-		registry.Unregister(StringCRC("cells.layer.list"));
-		registry.Unregister(StringCRC("cells.layer.values"));
-		registry.Unregister(StringCRC("cells.select.get"));
-		registry.Unregister(StringCRC("cells.select.stats"));
+		for (const char* name : kQueryNames) { registrar.Unregister(name); }
 	}
 }
 #endif // DIA_DEBUG
