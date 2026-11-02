@@ -265,6 +265,9 @@ namespace Dia::CellLayers
 			mActiveBase = StringCRC::kZero;
 			mLoggedBase = StringCRC::kZero;
 		}
+		// No grid has layers: drop the grid pointer too. The game may free the grid after unregistering its layers, and
+		// everything that reads ActiveGrid() (state JSON, topic, inspector) must see "no grid", not a dangling one.
+		mActiveGrid = nullptr;
 	}
 
 	void CellLayerViewerDomain::RefreshLegend(const CellLayerDesc* base)

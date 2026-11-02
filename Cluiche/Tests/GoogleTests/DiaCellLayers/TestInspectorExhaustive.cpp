@@ -87,8 +87,7 @@ namespace
 			CountingLayerProvider& p = *providers.back();
 			p.values = values;
 			CellLayerDesc d = MakeCountingLayer(id, &grid, p, kind);
-			d.group.Clear();
-			d.group.Append(group);
+			Dia::ValueSchema::SetText(d.group, group);	// truncating: a plain Append asserts when the name overflows String32
 			if (schemaKey != nullptr) { d.schemaKey = StringCRC(schemaKey); }
 			EXPECT_EQ(CellRegisterResult::Ok, registry.Register(d)) << id;
 			return p;
@@ -536,10 +535,9 @@ namespace
 	};
 }
 
-// BUG (reported, not fixed): CellDetailRegistry stores the provider name in a String32 (truncated to 31 chars) but Register (duplicate
-// check, CellDetailRegistry.cpp:100) and Unregister (CellDetailRegistry.cpp:134) strcmp the FULL name against it, so a name over
-// 31 chars can neither be unregistered nor detected as a duplicate.
-TEST_F(InspectorDetailExhaustive, DISABLED_ProviderNameLongerThanTheStoredCapacityCanStillBeUnregistered)
+// Provider names are stored truncated to a String32 (31 chars). Register and Unregister compare in that same truncated domain, so a
+// longer name can be unregistered and a repeat registration is a duplicate (names sharing their first 31 chars count as the same).
+TEST_F(InspectorDetailExhaustive, ProviderNameLongerThanTheStoredCapacityCanStillBeUnregistered)
 {
 	// Name storage is a String32 (31 chars). A 40-char name must round-trip through Register / Unregister.
 	const std::string name = LongText(40);
@@ -549,7 +547,7 @@ TEST_F(InspectorDetailExhaustive, DISABLED_ProviderNameLongerThanTheStoredCapaci
 	EXPECT_EQ(0u, reg.ProviderCount());
 }
 
-TEST_F(InspectorDetailExhaustive, DISABLED_SameLongProviderNameTwiceIsADuplicate)
+TEST_F(InspectorDetailExhaustive, SameLongProviderNameTwiceIsADuplicate)
 {
 	const std::string name = LongText(40);
 	StubDetailProvider p;

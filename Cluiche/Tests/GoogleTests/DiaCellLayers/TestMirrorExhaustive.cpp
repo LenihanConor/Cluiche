@@ -462,7 +462,8 @@ TEST(MirrorExhaustivePublisher, UnregisteringEveryLayerRepublishesTheEmptyBaseWi
 	ASSERT_EQ(rig.topic.Count(), 2u);
 	const Json::Value& p = rig.topic.Last();
 	EXPECT_EQ(p["base"].asString(), "") << "empty state: no base";
-	EXPECT_TRUE(p["grid"].isObject()) << "pins current behaviour: the viewer keeps its last active grid in the empty state";
+	EXPECT_TRUE(p["grid"].isNull()) << "empty state: no grid either (a stale grid pointer would dangle if the game frees the grid)";
+	EXPECT_EQ(rig.domain.ActiveGrid(), nullptr);
 	EXPECT_NE(p["layersVersion"].asUInt(), layersVersion);
 	EXPECT_EQ(p["selection"]["count"].asUInt(), 0u);
 	EXPECT_EQ(p["selection"]["hash"].asString(), "0000000000000000");

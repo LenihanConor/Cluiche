@@ -95,9 +95,11 @@ namespace Dia::CellLayers
 				providerName, static_cast<unsigned long long>(caller), static_cast<unsigned long long>(mOwnerPuId));
 			return CellDetailRegisterResult::WrongProcessingUnit;
 		}
+		Dia::Core::Containers::String32 key;	// names are stored truncated to String32; compare in the same domain
+		Dia::ValueSchema::SetText(key, providerName);
 		for (uint32_t i = 0; i < mCount; ++i)
 		{
-			if (mProviders[i].grid == grid && strcmp(mProviders[i].name.AsCStr(), providerName) == 0)
+			if (mProviders[i].grid == grid && strcmp(mProviders[i].name.AsCStr(), key.AsCStr()) == 0)
 			{
 				DIA_LOG_ERROR("CEL", "Register detail provider '%s' rejected: duplicate name on this grid", providerName);
 				return CellDetailRegisterResult::Duplicate;
@@ -129,9 +131,11 @@ namespace Dia::CellLayers
 	{
 		if (!IsOwnerPu("Unregister")) { return false; }
 		if (providerName == nullptr) { return false; }
+		Dia::Core::Containers::String32 key;	// same truncation as Register, so a long name can be unregistered
+		Dia::ValueSchema::SetText(key, providerName);
 		for (uint32_t i = 0; i < mCount; ++i)
 		{
-			if (mProviders[i].grid == grid && strcmp(mProviders[i].name.AsCStr(), providerName) == 0)
+			if (mProviders[i].grid == grid && strcmp(mProviders[i].name.AsCStr(), key.AsCStr()) == 0)
 			{
 				for (uint32_t j = i + 1; j < mCount; ++j) { mProviders[j - 1] = mProviders[j]; }
 				mProviders[--mCount] = Provider();
