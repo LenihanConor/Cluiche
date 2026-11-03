@@ -9,6 +9,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <string>
 
 using namespace Dia::ApplicationFlow;
 using namespace Dia::Core;
@@ -90,6 +91,28 @@ TEST(ManifestLoaderV2, LoadWithModuleDeclarations)
     EXPECT_EQ(mod.stages[0], StringCRC("Boot"));
     EXPECT_FLOAT_EQ(mod.startTimeoutMs, 5000.0f);
     EXPECT_FLOAT_EQ(mod.stopTimeoutMs, 2000.0f);
+}
+
+// Regression: the CluicheTest debug-panel module declares 9 channels; capacity 8 asserted at launch.
+TEST(ManifestLoaderV2, ModuleWithNineChannelsParsed)
+{
+    std::string chans;
+    for (int i = 0; i < 9; ++i)
+    {
+        if (i > 0) { chans += ","; }
+        chans += "{ \"id\": \"Ch" + std::to_string(i) + "\", \"role\": \"reads\" }";
+    }
+    const std::string json = std::string(R"({
+  "version": 3, "initial_stage": "Boot",
+  "stages": [ { "name": "Boot", "transitions": [], "auto_advance": false } ],
+  "processing_units": [{ "instance_id": "MainPU", "frequency_hz": 60.0, "dedicated_thread": false,
+    "modules": [{ "instance_id": "M", "type_id": "T", "stages": ["Boot"], "channels": [)") + chans + "] }] }]}";
+
+    ApplicationManifestV3 manifest;
+    EXPECT_EQ(ApplicationManifestLoaderV2::LoadFromString(json.c_str(), manifest), LoadResult::kSuccess);
+    ASSERT_EQ(manifest.processingUnits.Size(), 1u);
+    ASSERT_EQ(manifest.processingUnits[0].modules.Size(), 1u);
+    EXPECT_EQ(manifest.processingUnits[0].modules[0].channels.Size(), 9u);
 }
 
 TEST(ManifestLoaderV2, LoadWithStreams)
