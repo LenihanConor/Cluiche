@@ -82,12 +82,14 @@
     <ClInclude Include="Testing\FixtureEventSchemas.h" />
     <ClInclude Include="CellRing.h" />
     <ClInclude Include="AggregateStore.h" />
+    <ClInclude Include="EventLog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
     <ClCompile Include="HistoryConfig.cpp" />
     <ClCompile Include="CellRing.cpp" />
     <ClCompile Include="AggregateStore.cpp" />
+    <ClCompile Include="EventLog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />
