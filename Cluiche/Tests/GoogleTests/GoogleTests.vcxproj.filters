@@ -2439,6 +2439,9 @@
     <ClCompile Include="DiaCellHistory\TestHistoryTestSupport.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestAggregateStore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
     <ClCompile Include="DiaCellHistory\TestCellRing.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
