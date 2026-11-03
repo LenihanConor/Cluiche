@@ -4,8 +4,6 @@
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
 #include <DiaEntity/DebugDataTypes.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -13,7 +11,6 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
-#include "Modules/DebugServerHostModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -34,26 +31,7 @@ Dia::ApplicationFlow::StartResult EntityInspectorModule::DoStart()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::DoStart");
 
-    // Resolve the DebugServer pointer via the cross-PU service stream.
-    // Used only for one-time query/command handler registration (single-threaded,
-    // safe — DoStart runs sequentially within this PU and MainPU has already started).
-    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
-    if (app)
-    {
-        auto* store = app->FindStream(
-            Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
-        auto* typed = dynamic_cast<
-            Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
-        if (typed)
-            mDebugServer = typed->Get();
-        else
-            DIA_LOG_WARNING("Application", "EntityInspectorModule: DebugServerService stream not found or wrong type");
-    }
-
-    if (mDebugServer)
-        RegisterHandlers();
-    else
-        DIA_LOG_WARNING("Application", "EntityInspectorModule: no DebugServer — handlers not registered");
+    RegisterHandlers();
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -121,30 +99,40 @@ void EntityInspectorModule::PushInspect(uint32_t /*selectedId*/)
 
 void EntityInspectorModule::RegisterHandlers()
 {
-    if (!mDebugServer) return;
+    // Sim-hosted (Sim-Registered Queries): QueryRegistry belongs to Main and refuses registration from SimPU.
+    SimQueryHostModule* host = mSimQueryHostRef.Get();
+    if (!host)
+    {
+        DIA_LOG_WARNING("Application", "EntityInspectorModule: no SimQueryHostModule - entity.inspect_request not registered");
+    }
+    else
+    {
+        Dia::DebugServer::SimHelpInfo help;
+        help.description = "Full inspect payload (components and fields) for one live entity, by index";
+        help.category    = "entity";
+        help.owner       = "EntityInspectorModule";
+        mQueryRegistered = host->RegisterQuery(
+            "entity.inspect_request", help,
+            [this](const Json::Value& args) -> Json::Value
+            {
+                // Sim-hosted replies must be JSON objects: "nothing to report" is {} (a null reply is a handler failure).
+                DIA_TRACE_ZONE("entity.inspect_request", Dia::Observation::Trace::Category::kNone);
+                auto* entityMod = mEntityRef.Get();
+                if (!entityMod) return Json::Value(Json::objectValue);
 
-    auto& queryReg = mDebugServer->GetQueryRegistry();
+                if (!args.isMember("index"))
+                    return Json::Value(Json::objectValue);
 
-    queryReg.Register(
-        Dia::Entity::DebugDataType::kEntityInspectRequest,
-        [this](const Json::Value& args) -> Json::Value
-        {
-            DIA_TRACE_ZONE("entity.inspect_request", Dia::Observation::Trace::Category::kNone);
-            auto* entityMod = mEntityRef.Get();
-            if (!entityMod) return Json::Value{};
+                const uint32_t idx = static_cast<uint32_t>(args["index"].asInt());
+                Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
+                if (!entity.IsValid()) return Json::Value(Json::objectValue);
 
-            if (!args.isMember("index"))
-                return Json::Value{};
-
-            const uint32_t idx = static_cast<uint32_t>(args["index"].asInt());
-            Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
-            if (!entity.IsValid()) return Json::Value{};
-
-            return Dia::EntityInspector::SerializeEntityInspect(
-                entityMod->GetInspectable(), entity);
-        });
-
-    (void)mDebugServer->GetCommandDispatcher();
+                return Dia::EntityInspector::SerializeEntityInspect(
+                    entityMod->GetInspectable(), entity);
+            });
+        if (!mQueryRegistered)
+            DIA_LOG_ERROR("Application", "EntityInspectorModule: entity.inspect_request registration rejected by SimQueryHost");
+    }
 
     {
         Dia::API::CommandInfoJson writeField;
@@ -229,13 +217,16 @@ void EntityInspectorModule::RegisterHandlers()
 void EntityInspectorModule::UnregisterHandlers()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::UnregisterHandlers");
-    if (!mDebugServer) return;
     // Stage-scoped: remove the JSON commands registered in RegisterHandlers so the
     // next stage entry can register them again (duplicates are rejected).
     Dia::API::UnregisterCommandJson(Dia::Entity::DebugDataType::kEntityWriteField);
     Dia::API::UnregisterCommandJson(Dia::Entity::DebugDataType::kEntityFindByName);
-    mDebugServer->GetQueryRegistry().Unregister(Dia::Entity::DebugDataType::kEntityInspectRequest);
-    mDebugServer = nullptr;
+    if (mQueryRegistered)
+    {
+        if (SimQueryHostModule* host = mSimQueryHostRef.Get())
+            host->UnregisterQuery("entity.inspect_request");
+        mQueryRegistered = false;
+    }
 }
 
 } } // namespace Cluiche::AppFlow

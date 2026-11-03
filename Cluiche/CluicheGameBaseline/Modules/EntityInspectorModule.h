@@ -9,9 +9,9 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/EntityModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include "Types/DebugServerPushEvent.h"
 
-namespace Dia { namespace DebugServer { class DebugServer; } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -37,11 +37,13 @@ private:
     void PushInspect(uint32_t selectedId);
 
     Dia::ApplicationFlow::ModuleRef<EntityModule> mEntityRef{this};
+    // entity.inspect_request is sim-hosted: the handler runs on this PU (SimPU), next to the entity domain.
+    Dia::ApplicationFlow::ModuleRef<SimQueryHostModule> mSimQueryHostRef{this};
 
     Dia::ApplicationFlow::EventStreamWriter<DebugServerPushEvent> mInspectWriter{
         this, Dia::Core::StringCRC("DebugServerPush")};
 
-    Dia::DebugServer::DebugServer* mDebugServer = nullptr;
+    bool mQueryRegistered = false;
 
     int      mSlowPollCounter = 0;
     uint64_t mFrameCounter    = 0;

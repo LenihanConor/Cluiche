@@ -14,9 +14,6 @@
 //
 //   EventDrivenSourceBase — derived class calls Push(payload) when an event
 //     occurs; base handles optional rate limiting.
-//
-//   OnDemandSourceBase — registers a query handler on Activate; derived class
-//     implements HandleQuery(args) for pull-based responses.
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaDebugServer/IInspectorDataSource.h"
 #include "DiaDebugServer/DebugServer.h"
@@ -171,35 +168,6 @@ private:
     DebugServer* mServer            = nullptr;
     int          mWindowEventsCount = 0;
     float        mWindowAccSec      = 0.0f;
-};
-
-//-----------------------------------------------------------------------------
-// OnDemandSourceBase
-//-----------------------------------------------------------------------------
-class OnDemandSourceBase : public IInspectorDataSource
-{
-public:
-    SourcePolicy GetPolicy() const override
-    {
-        return { SourceStrategy::kOnDemand, 0.0f, 0, 0.0f };
-    }
-
-    void Activate(DebugServer* server) override
-    {
-        mServer = server;
-        mServer->GetQueryRegistry().Register(GetTopic(),
-            [this](const Json::Value& args) { return HandleQuery(args); });
-    }
-
-    void Tick(float /*dt*/, int /*cc*/, int /*sc*/) override {}
-
-    void Deactivate() override { mServer = nullptr; }
-
-protected:
-    virtual Json::Value HandleQuery(const Json::Value& args) = 0;
-
-private:
-    DebugServer* mServer = nullptr;
 };
 
 }} // namespace Dia::DebugServer

@@ -14,6 +14,7 @@
         "scenarios/cluichetest/animation2d/test_anim2d_playback.py",
         "scenarios/cluichetest/assetruntime/test_asset_lifecycle.py",
         "scenarios/cluichetest/entity_test_stage/smoke.py",
+        "scenarios/cluichetest/entity_test_stage/test_entity_inspect_sim_hosted.py",
         "scenarios/cluichetest/scene2d_stage/smoke.py",
         "scenarios/cluichetest/geometry2d_stage/smoke.py",
         "scenarios/cluichetest/scalarfield_stage/smoke.py",
