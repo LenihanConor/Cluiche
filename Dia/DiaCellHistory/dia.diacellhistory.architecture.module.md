@@ -13,6 +13,7 @@ dependencies:
     - dia.core
     - dia.valueschema
     - dia.celllayers
+    - dia.debugserver
   forbidden: []
 public_api:
   headers:
@@ -21,6 +22,7 @@ public_api:
     - DiaCellHistory/Testing/FakeClock.h
     - DiaCellHistory/Testing/BudgetSizing.h
     - DiaCellHistory/Testing/FixtureEventSchemas.h
+    - DiaCellHistory/CellHistoryCommands.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []

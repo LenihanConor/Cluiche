@@ -110,10 +110,57 @@ namespace Dia::CellHistory
 		uint32_t EventTypeWarningCount() const { return mWarnedTypeCount; }				// distinct types warned
 		uint32_t EventValidationWarningsSuppressed() const { return mValidationSuppressed; }	// events that failed validation but could not warn (set full)
 
-		// Minimal tracking hook (Task 9 adds the validated Track/Untrack commands). Requires the layout to exist
-		// (after the first Sample that resolved the grid) and the layer to be aggregated. Float layers need a schema
-		// min/max. Config / schema `history.track` layers are tracked automatically.
+		// Minimal tracking hook used for config / schema `history.track` layers (those are tracked automatically as
+		// layers are resolved). Requires the layout to exist and the layer to be aggregated. Float layers need a schema
+		// min/max. Track() below is the validated run-time entry point.
 		bool TrackLayer(Dia::Core::StringCRC layer);
+
+		// Run-time tracking (call between samples, on the registry's PU). Validates EVERY layer first and applies
+		// all-or-nothing: a layer that does not exist, is on another grid, is not a recorded (aggregated) layer, or is a
+		// float layer without a schema min<max range logs an Error naming it and changes nothing. Already tracked
+		// layers are an idempotent success. An empty list is rejected. On success mWindowLength is the new per-cell
+		// window; the new layers have data from the next Sample on (earlier samples read false from CellValues).
+		// Untrack() frees the rings; a layer that is unknown or not tracked rejects the whole call.
+		// If the ring cannot take a layer (window of 0), the layers added by this call are rolled back.
+		struct TrackResult
+		{
+			static constexpr uint32_t kErrorChars = 192;
+			bool		mOk = false;
+			uint32_t	mWindowLength = 0;
+			uint32_t	mChanged = 0;				// layers newly tracked / untracked by this call
+			char		mError[kErrorChars] = {};	// first problem when !mOk
+		};
+		bool Track(const Dia::Core::StringCRC* layers, uint32_t n, TrackResult& out);
+		bool Untrack(const Dia::Core::StringCRC* layers, uint32_t n, TrackResult& out);
+		bool IsTracked(Dia::Core::StringCRC layer) const { return mRing != nullptr && mRing->IsTracked(layer); }
+
+		// Snapshot for cells.history.status. Fixed size; gap lists are capped at the stores' own caps (64).
+		struct StatusGap { uint32_t mFirst = 0; uint32_t mLast = 0; };
+		struct HistoryStatus
+		{
+			static constexpr uint32_t kMaxGaps = 64;
+			static constexpr uint32_t kMaxTracked = 64;
+			uint32_t	mSampleCount = 0;
+			uint64_t	mRunId = 0;
+			uint32_t	mRecordedLayers = 0;
+			uint32_t	mSkippedLayers = 0;
+			uint64_t	mVersionGatedSkips = 0;
+			uint32_t	mWindowLength = 0;			// per-cell window (0 while nothing is tracked)
+			uint32_t	mAggregateWindow = 0;
+			// Retained ranges ([first, latest]; retained == 0 means empty).
+			uint32_t	mCellFirst = 0, mCellLatest = 0, mCellRetained = 0;
+			uint32_t	mAggregateFirst = 0, mAggregateLatest = 0, mAggregateRetained = 0;
+			uint32_t	mEventFirst = 0, mEventLatest = 0, mEventCount = 0;
+			uint64_t	mCellBytes = 0, mAggregateBytes = 0, mEventBytes = 0;
+			uint64_t	mCellBudget = 0, mAggregateBudget = 0, mEventBudget = 0;
+			uint32_t	mTrackedCount = 0;
+			Dia::Core::StringCRC	mTracked[kMaxTracked];
+			uint32_t	mCellGapCount = 0, mAggregateGapCount = 0, mEventGapCount = 0;
+			StatusGap	mCellGaps[kMaxGaps];
+			StatusGap	mAggregateGaps[kMaxGaps];
+			StatusGap	mEventGaps[kMaxGaps];
+		};
+		void BuildStatus(HistoryStatus& out) const;
 
 		// Drops every sample with index > sample from all tiers and the headers; the next Sample gets index sample+1.
 		void TruncateAfter(uint32_t sample);

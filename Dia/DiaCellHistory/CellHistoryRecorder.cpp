@@ -321,6 +321,169 @@ namespace Dia::CellHistory
 		return i >= 0 && TrackRecorded(mRecorded[i]);
 	}
 
+	namespace
+	{
+		void SetError(CellHistoryRecorder::TrackResult& out, const char* layer, const char* reason)
+		{
+			if (out.mError[0] != '\0') { return; }	// keep the first problem
+			snprintf(out.mError, sizeof(out.mError), "layer '%s' %s", layer, reason);
+		}
+	}
+
+	bool CellHistoryRecorder::Track(const StringCRC* layers, uint32_t n, TrackResult& out)
+	{
+		out = TrackResult();
+		if (n == 0 || layers == nullptr)
+		{
+			snprintf(out.mError, sizeof(out.mError), "no layers given");
+			DIA_LOG_ERROR("HIS", "cell history: track request rejected: no layers given");
+			return false;
+		}
+		if (mRing == nullptr && ResolveGrid()) { ResolveLayers(); }
+		if (mRing == nullptr)
+		{
+			snprintf(out.mError, sizeof(out.mError), "no recorded grid yet");
+			DIA_LOG_ERROR("HIS", "cell history: track request rejected: no recorded grid");
+			return false;
+		}
+
+		// Validate every layer before changing anything.
+		bool valid = true;
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			const char* reason = nullptr;
+			const CellLayerDesc* desc = mRegistry.Find(layers[i]);
+			if (desc == nullptr) { reason = "does not exist"; }
+			else if (desc->grid != mGrid) { reason = "is on another grid"; }
+			else
+			{
+				const int idx = FindRecorded(layers[i]);
+				if (idx < 0 || !mRecorded[idx].mAggregated) { reason = "is not a recorded layer (history.aggregate is false or it is beyond the aggregate cap)"; }
+				else if (!mRecorded[idx].mCategory && !mRecorded[idx].mHasRange) { reason = "is a float layer whose schema has no min/max range"; }
+			}
+			if (reason != nullptr)
+			{
+				valid = false;
+				SetError(out, layers[i].AsChar(), reason);
+				DIA_LOG_ERROR("HIS", "cell history: cannot track layer '%s': it %s", layers[i].AsChar(), reason);
+			}
+		}
+		if (!valid) { return false; }
+
+		// Apply; roll back this call's additions if the ring refuses one.
+		StringCRC added[kMaxRecordedLayers];
+		uint32_t addedCount = 0;
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			Recorded& r = mRecorded[FindRecorded(layers[i])];
+			if (r.mTracked) { continue; }	// idempotent (also covers duplicates in the list)
+			if (!TrackRecorded(r))
+			{
+				SetError(out, layers[i].AsChar(), "could not be tracked (no room in the cell budget)");
+				for (uint32_t k = 0; k < addedCount; ++k)
+				{
+					const int idx = FindRecorded(added[k]);
+					mRing->Untrack(added[k]);
+					mRecorded[idx].mTracked = false;
+				}
+				DIA_LOG_ERROR("HIS", "cell history: track request rolled back: %s", out.mError);
+				return false;
+			}
+			added[addedCount++] = layers[i];
+		}
+		out.mOk = true;
+		out.mChanged = addedCount;
+		out.mWindowLength = mRing->WindowLength();
+		DIA_LOG_INFO("HIS", "cell history: tracking %u new layer(s); per-cell window is now %u samples", addedCount, out.mWindowLength);
+		return true;
+	}
+
+	bool CellHistoryRecorder::Untrack(const StringCRC* layers, uint32_t n, TrackResult& out)
+	{
+		out = TrackResult();
+		if (n == 0 || layers == nullptr)
+		{
+			snprintf(out.mError, sizeof(out.mError), "no layers given");
+			DIA_LOG_ERROR("HIS", "cell history: untrack request rejected: no layers given");
+			return false;
+		}
+		bool valid = true;
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			const int idx = FindRecorded(layers[i]);
+			const char* reason = nullptr;
+			if (idx < 0) { reason = "is unknown"; }
+			else if (!mRecorded[idx].mTracked) { reason = "is not tracked"; }
+			if (reason != nullptr)
+			{
+				valid = false;
+				SetError(out, layers[i].AsChar(), reason);
+				DIA_LOG_ERROR("HIS", "cell history: cannot untrack layer '%s': it %s", layers[i].AsChar(), reason);
+			}
+		}
+		if (!valid) { return false; }
+
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			Recorded& r = mRecorded[FindRecorded(layers[i])];
+			if (!r.mTracked) { continue; }	// duplicate in the list
+			mRing->Untrack(r.mId);
+			r.mTracked = false;
+			++out.mChanged;
+			if (!NeedsCache(r))
+			{
+				delete[] r.mCache;
+				r.mCache = nullptr;
+				r.mCacheValid = false;
+			}
+		}
+		out.mOk = true;
+		out.mWindowLength = mRing->WindowLength();
+		DIA_LOG_INFO("HIS", "cell history: untracked %u layer(s); per-cell window is now %u samples", out.mChanged, out.mWindowLength);
+		return true;
+	}
+
+	void CellHistoryRecorder::BuildStatus(HistoryStatus& out) const
+	{
+
+		out = HistoryStatus();
+		out.mSampleCount = mSampleCount;
+		out.mRunId = mRunId;
+		out.mRecordedLayers = mAggregatedCount;
+		out.mSkippedLayers = mSkippedLayers;
+		out.mVersionGatedSkips = mVersionGatedSkips;
+		out.mAggregateWindow = mAggregates.WindowLength();
+		out.mAggregateFirst = mAggregates.FirstRetained();
+		out.mAggregateLatest = mAggregates.LatestSample();
+		out.mAggregateRetained = mAggregates.RetainedCount();
+		out.mAggregateBytes = mAggregates.BytesUsed();
+		out.mAggregateBudget = mAggregates.Budget();
+		out.mEventFirst = mEvents.FirstRetainedSample();
+		out.mEventLatest = mEvents.LatestSample();
+		out.mEventCount = mEvents.EventCount();
+		out.mEventBytes = mEvents.BytesUsed();
+		out.mEventBudget = mEvents.Budget();
+		out.mCellBudget = mBudgets.mCellBytes;
+		if (mRing != nullptr)
+		{
+			out.mWindowLength = mRing->WindowLength();
+			out.mCellFirst = mRing->FirstRetained();
+			out.mCellLatest = mRing->LatestSample();
+			out.mCellRetained = mRing->RetainedCount();
+			out.mCellBytes = mRing->BytesUsed();
+			out.mCellGapCount = std::min<uint32_t>(mRing->GapCount(), HistoryStatus::kMaxGaps);
+			for (uint32_t i = 0; i < out.mCellGapCount; ++i) { const CellRingGap g = mRing->Gap(i); out.mCellGaps[i].mFirst = g.mFirstDropped; out.mCellGaps[i].mLast = g.mLastDropped; }
+		}
+		out.mAggregateGapCount = std::min<uint32_t>(mAggregates.GapCount(), HistoryStatus::kMaxGaps);
+		for (uint32_t i = 0; i < out.mAggregateGapCount; ++i) { const AggregateGap g = mAggregates.Gap(i); out.mAggregateGaps[i].mFirst = g.mFirstDropped; out.mAggregateGaps[i].mLast = g.mLastDropped; }
+		out.mEventGapCount = std::min<uint32_t>(mEvents.GapCount(), HistoryStatus::kMaxGaps);
+		for (uint32_t i = 0; i < out.mEventGapCount; ++i) { const EventGap g = mEvents.Gap(i); out.mEventGaps[i].mFirst = g.mFirstDropped; out.mEventGaps[i].mLast = g.mLastDropped; }
+		for (uint32_t i = 0; i < mRecordedCount && out.mTrackedCount < HistoryStatus::kMaxTracked; ++i)
+		{
+			if (mRecorded[i].mTracked) { out.mTracked[out.mTrackedCount++] = mRecorded[i].mId; }
+		}
+	}
+
 	// ---- sampling -------------------------------------------------------------------------------------------
 
 	bool CellHistoryRecorder::NeedsCache(const Recorded& r) const

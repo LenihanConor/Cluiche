@@ -84,6 +84,7 @@
     <ClInclude Include="AggregateStore.h" />
     <ClInclude Include="EventLog.h" />
     <ClInclude Include="CellHistoryRecorder.h" />
+    <ClInclude Include="CellHistoryCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -92,6 +93,7 @@
     <ClCompile Include="AggregateStore.cpp" />
     <ClCompile Include="EventLog.cpp" />
     <ClCompile Include="CellHistoryRecorder.cpp" />
+    <ClCompile Include="CellHistoryCommands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />
@@ -107,6 +109,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaCellLayers\DiaCellLayers.vcxproj">
       <Project>{F0B823EA-731E-5CE5-AC88-4DF3B45C6977}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
