@@ -20,6 +20,18 @@ namespace
         return r;
     }
 
+    const Dia::DebugServer::SimHelpStored* TestHelp()
+    {
+        static Dia::DebugServer::SimHelpStored sHelp = []
+        {
+            Dia::DebugServer::SimHelpStored h;
+            std::memset(&h, 0, sizeof(h));
+            Dia::DebugServer::CopyHelp(Dia::DebugServer::SimHelpInfo{ "test help" }, h);
+            return h;
+        }();
+        return &sHelp;
+    }
+
     SimRegistration ParseJson(const char* json)
     {
         auto reply = MakeReply();
@@ -31,7 +43,7 @@ namespace
 TEST(SimRegistrationMessage, RegisterQueryRoundTrips)
 {
     auto reply = MakeReply();
-    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.echo", SimKind::Query, 7, *reply));
+    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.echo", SimKind::Query, 7, TestHelp(), *reply));
     EXPECT_EQ(reply->requestId, kSimRegistrationRequestId);
 
     const SimRegistration parsed = ParseSimRegistrationReply(*reply);
@@ -44,7 +56,7 @@ TEST(SimRegistrationMessage, RegisterQueryRoundTrips)
 TEST(SimRegistrationMessage, RegisterCommandRoundTrips)
 {
     auto reply = MakeReply();
-    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.reset", SimKind::Command, 1, *reply));
+    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.reset", SimKind::Command, 1, TestHelp(), *reply));
 
     const SimRegistration parsed = ParseSimRegistrationReply(*reply);
     EXPECT_EQ(parsed.op, SimRegistrationOp::Register);
@@ -56,7 +68,7 @@ TEST(SimRegistrationMessage, RegisterCommandRoundTrips)
 TEST(SimRegistrationMessage, UnregisterRoundTrips)
 {
     auto reply = MakeReply();
-    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Unregister, "sim.echo", SimKind::Query, 8, *reply));
+    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Unregister, "sim.echo", SimKind::Query, 8, TestHelp(), *reply));
 
     const SimRegistration parsed = ParseSimRegistrationReply(*reply);
     EXPECT_EQ(parsed.op, SimRegistrationOp::Unregister);
@@ -72,7 +84,7 @@ TEST(SimRegistrationMessage, SeqSurvivesRoundTripIncludingWrapValues)
         for (SimRegistrationOp op : { SimRegistrationOp::Register, SimRegistrationOp::Unregister })
         {
             auto reply = MakeReply();
-            ASSERT_TRUE(BuildSimRegistrationReply(op, "sim.echo", SimKind::Query, seq, *reply)) << seq;
+            ASSERT_TRUE(BuildSimRegistrationReply(op, "sim.echo", SimKind::Query, seq, TestHelp(), *reply)) << seq;
             const SimRegistration parsed = ParseSimRegistrationReply(*reply);
             EXPECT_EQ(parsed.op, op) << seq;
             EXPECT_EQ(parsed.seq, seq) << reply->json;
@@ -83,7 +95,7 @@ TEST(SimRegistrationMessage, SeqSurvivesRoundTripIncludingWrapValues)
 TEST(SimRegistrationMessage, WireFormatMatchesSpec)
 {
     auto reply = MakeReply();
-    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.echo", SimKind::Query, 7, *reply));
+    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "sim.echo", SimKind::Query, 7, TestHelp(), *reply));
     const SimRegistration parsed = ParseJson(reply->json);
     EXPECT_NE(std::string(reply->json).find("\"seq\":7"), std::string::npos) << reply->json;
     EXPECT_EQ(parsed.op, SimRegistrationOp::Register);
@@ -113,13 +125,13 @@ TEST(SimRegistrationMessage, BadSeqIsMalformed)
 
 TEST(SimRegistrationMessage, ReplayWithoutSeqParsesAsReplay)
 {
-    const SimRegistration q = ParseJson("{\"register\":{\"name\":\"sim.echo\",\"kind\":\"query\"},\"replay\":true}");
+    const SimRegistration q = ParseJson("{\"register\":{\"name\":\"sim.echo\",\"kind\":\"query\",\"info\":{\"description\":\"d\"}},\"replay\":true}");
     EXPECT_EQ(q.op, SimRegistrationOp::Replay);
     EXPECT_STREQ(q.name, "sim.echo");
     EXPECT_EQ(q.kind, SimKind::Query);
     EXPECT_EQ(q.seq, 0u);
 
-    const SimRegistration c = ParseJson("{\"register\":{\"name\":\"sim.reset\",\"kind\":\"command\"},\"replay\":true}");
+    const SimRegistration c = ParseJson("{\"register\":{\"name\":\"sim.reset\",\"kind\":\"command\",\"info\":{\"description\":\"d\"}},\"replay\":true}");
     EXPECT_EQ(c.op, SimRegistrationOp::Replay);
     EXPECT_EQ(c.kind, SimKind::Command);
 }
@@ -129,7 +141,7 @@ TEST(SimRegistrationMessage, ReplayRoundTrips)
     for (SimKind kind : { SimKind::Query, SimKind::Command })
     {
         auto reply = MakeReply();
-        ASSERT_TRUE(BuildSimReplayReply("sim.echo", kind, *reply));
+        ASSERT_TRUE(BuildSimReplayReply("sim.echo", kind, TestHelp(), *reply));
         EXPECT_EQ(reply->requestId, kSimRegistrationRequestId);
         const SimRegistration parsed = ParseSimRegistrationReply(*reply);
         EXPECT_EQ(parsed.op, SimRegistrationOp::Replay);
@@ -142,12 +154,12 @@ TEST(SimRegistrationMessage, ReplayRoundTrips)
 TEST(SimRegistrationMessage, ReplayBuildRejectsBadNames)
 {
     auto reply = MakeReply();
-    EXPECT_FALSE(BuildSimReplayReply(nullptr, SimKind::Query, *reply));
-    EXPECT_FALSE(BuildSimReplayReply("", SimKind::Query, *reply));
+    EXPECT_FALSE(BuildSimReplayReply(nullptr, SimKind::Query, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimReplayReply("", SimKind::Query, TestHelp(), *reply));
     char longName[kSimRegistrationMaxName + 8];
     std::memset(longName, 'a', sizeof(longName));
     longName[sizeof(longName) - 1] = '\0';
-    EXPECT_FALSE(BuildSimReplayReply(longName, SimKind::Query, *reply));
+    EXPECT_FALSE(BuildSimReplayReply(longName, SimKind::Query, TestHelp(), *reply));
 }
 
 TEST(SimRegistrationMessage, MalformedReplayVariants)
@@ -303,25 +315,25 @@ TEST(SimRegistrationMessage, UnterminatedPayloadIsMalformed)
 TEST(SimRegistrationMessage, BuildRejectsBadNamesAndOps)
 {
     auto reply = MakeReply();
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, nullptr, SimKind::Query, 1, *reply));
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, "", SimKind::Query, 1, *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, nullptr, SimKind::Query, 1, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, "", SimKind::Query, 1, TestHelp(), *reply));
 
     char longName[kSimRegistrationMaxName + 8];
     std::memset(longName, 'a', sizeof(longName));
     longName[sizeof(longName) - 1] = '\0';
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, longName, SimKind::Query, 1, *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Register, longName, SimKind::Query, 1, TestHelp(), *reply));
 
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::NotRegistration, "x", SimKind::Query, 1, *reply));
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Malformed, "x", SimKind::Query, 1, *reply));
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Digest, "x", SimKind::Query, 1, *reply));
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::ResyncBegin, "x", SimKind::Query, 1, *reply));
-    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Replay, "x", SimKind::Query, 1, *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::NotRegistration, "x", SimKind::Query, 1, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Malformed, "x", SimKind::Query, 1, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Digest, "x", SimKind::Query, 1, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::ResyncBegin, "x", SimKind::Query, 1, TestHelp(), *reply));
+    EXPECT_FALSE(BuildSimRegistrationReply(SimRegistrationOp::Replay, "x", SimKind::Query, 1, TestHelp(), *reply));
 }
 
 TEST(SimRegistrationMessage, NameWithQuoteSurvivesRoundTrip)
 {
     auto reply = MakeReply();
-    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "a\"b", SimKind::Query, 2, *reply));
+    ASSERT_TRUE(BuildSimRegistrationReply(SimRegistrationOp::Register, "a\"b", SimKind::Query, 2, TestHelp(), *reply));
     const SimRegistration parsed = ParseSimRegistrationReply(*reply);
     EXPECT_EQ(parsed.op, SimRegistrationOp::Register);
     EXPECT_STREQ(parsed.name, "a\"b");

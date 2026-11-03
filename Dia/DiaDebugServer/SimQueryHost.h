@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 namespace Dia
 {
@@ -77,7 +78,9 @@ namespace Dia
 			bool Register(Dia::Core::StringCRC name, SimKind kind, const SimHelpInfo& help, QueryHandler handler);
 			void Handle(const SimRequestEvent& request, SimReplyEvent& reply) const;
 
-			Dia::Core::Containers::DynamicArrayC<Entry, kMaxHandlers> mHandlers;
+			// std::vector, not DynamicArrayC: Entry holds a shared_ptr and a std::function, and DynamicArrayC::RemoveAt destroys the last slot
+			// without reconstructing it, so the next Add would assign over a destroyed (dangling) shared_ptr.
+			std::vector<Entry> mHandlers;
 			ISimRequestSource* mSource;
 			ISimReplySink* mSink;
 			bool mWarnedFull;

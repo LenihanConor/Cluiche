@@ -57,7 +57,7 @@ namespace Dia
 				DIA_LOG_ERROR("DebugServer", "SimQueryHost: handler already registered for '%s'", name.AsChar());
 				return false;
 			}
-			if (mHandlers.IsFull())
+			if (mHandlers.size() >= kMaxHandlers)
 			{
 				DIA_LOG_ERROR("DebugServer", "SimQueryHost: max handler capacity reached, cannot register '%s'", name.AsChar());
 				return false;
@@ -76,17 +76,17 @@ namespace Dia
 			entry.kind = kind;
 			entry.handler = handler;
 			entry.help = stored;
-			mHandlers.Add(entry);
+			mHandlers.push_back(entry);
 			return true;
 		}
 
 		bool SimQueryHost::UnregisterQuery(Dia::Core::StringCRC name)
 		{
-			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+			for (unsigned int i = 0; i < mHandlers.size(); ++i)
 			{
 				if (mHandlers[i].name == name)
 				{
-					mHandlers.RemoveAt(i);
+					mHandlers.erase(mHandlers.begin() + i);
 					return true;
 				}
 			}
@@ -95,7 +95,7 @@ namespace Dia
 
 		bool SimQueryHost::Has(Dia::Core::StringCRC name) const
 		{
-			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+			for (unsigned int i = 0; i < mHandlers.size(); ++i)
 			{
 				if (mHandlers[i].name == name)
 					return true;
@@ -105,7 +105,7 @@ namespace Dia
 
 		const SimHelpStored* SimQueryHost::GetHelp(Dia::Core::StringCRC name) const
 		{
-			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+			for (unsigned int i = 0; i < mHandlers.size(); ++i)
 			{
 				if (mHandlers[i].name == name)
 					return mHandlers[i].help.get();
@@ -118,7 +118,7 @@ namespace Dia
 			reply.requestId = request.requestId;
 
 			const Entry* found = nullptr;
-			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+			for (unsigned int i = 0; i < mHandlers.size(); ++i)
 			{
 				if (mHandlers[i].name.Value() == request.nameCrc && static_cast<uint32_t>(mHandlers[i].kind) == request.kind)
 				{

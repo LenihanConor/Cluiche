@@ -21,6 +21,21 @@
 
 namespace
 {
+    const Dia::DebugServer::SimHelpStored* TestHelp()
+    {
+        static Dia::DebugServer::SimHelpStored sHelp = []
+        {
+            Dia::DebugServer::SimHelpStored h;
+            std::memset(&h, 0, sizeof(h));
+            Dia::DebugServer::CopyHelp(Dia::DebugServer::SimHelpInfo{ "test help" }, h);
+            return h;
+        }();
+        return &sHelp;
+    }
+}
+
+namespace
+{
     using Cluiche::AppFlow::DebugServerHostModule;
     using Cluiche::AppFlow::SimQueryHostModule;
     using Dia::CellLayers::Testing::LogCapture;
@@ -140,12 +155,12 @@ TEST(SimHostedModules, SeqGapPostsResyncRequestAndStillAppliesAnnouncement)
     ReplyBox box;
     LogCapture log("DebugServer");
     ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(
-        Cluiche::AppFlow::SimRegistrationOp::Register, "gap.a", SimKind::Query, 1, *box));
+        Cluiche::AppFlow::SimRegistrationOp::Register, "gap.a", SimKind::Query, 1, TestHelp(), *box));
     m->HandleSimReply(*box, 1000);
     EXPECT_TRUE(m->posted.empty());
 
     ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(
-        Cluiche::AppFlow::SimRegistrationOp::Register, "gap.b", SimKind::Query, 5, *box));   // 2..4 lost
+        Cluiche::AppFlow::SimRegistrationOp::Register, "gap.b", SimKind::Query, 5, TestHelp(), *box));   // 2..4 lost
     m->HandleSimReply(*box, 1001);
     ASSERT_EQ(1u, m->posted.size());
     EXPECT_EQ(0u, std::get<0>(m->posted[0]));
@@ -176,7 +191,7 @@ TEST(SimHostedModules, MatchingDigestPostsNothingMismatchPostsResync)
     std::unique_ptr<TestableHostModule> m(new TestableHostModule());
     ReplyBox box;
     ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(
-        Cluiche::AppFlow::SimRegistrationOp::Register, "dig.a", SimKind::Query, 1, *box));
+        Cluiche::AppFlow::SimRegistrationOp::Register, "dig.a", SimKind::Query, 1, TestHelp(), *box));
     m->HandleSimReply(*box, 1000);
     uint32_t count = 0, hash = 0;
     m->GetServer()->GetSimHostedDigest(count, hash);
@@ -201,13 +216,13 @@ TEST(SimHostedModules, ResyncReplayCompletionSwapsTableAndLogsInfo)
     LogCapture log("DebugServer");
     ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(9, 2, *box));
     m->HandleSimReply(*box, 2000);
-    ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("fresh.a", SimKind::Query, *box));
+    ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("fresh.a", SimKind::Query, TestHelp(), *box));
     m->HandleSimReply(*box, 2001);
     // not complete yet: stale table untouched
     uint32_t count = 0, hash = 0;
     m->GetServer()->GetSimHostedDigest(count, hash);
     EXPECT_EQ(1u, count);
-    ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("fresh.b", SimKind::Command, *box));
+    ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("fresh.b", SimKind::Command, TestHelp(), *box));
     m->HandleSimReply(*box, 2002);
 
     m->GetServer()->GetSimHostedDigest(count, hash);

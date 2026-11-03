@@ -43,6 +43,7 @@ namespace
     {
         SimRegistration parsed;
         std::string     json;
+        std::shared_ptr<Dia::DebugServer::SimHelpStored> info;   // decoded help, when the message carried it
     };
 
     class TestSim : public SimQueryHostModule
@@ -99,7 +100,11 @@ namespace
         SendResult SendReply(const Dia::DebugServer::SimReplyEvent& reply) override
         {
             Sent s;
-            s.parsed = Cluiche::AppFlow::ParseSimRegistrationReply(reply);
+            std::shared_ptr<Dia::DebugServer::SimHelpStored> info(new Dia::DebugServer::SimHelpStored);
+            std::memset(info.get(), 0, sizeof(Dia::DebugServer::SimHelpStored));
+            s.parsed = Cluiche::AppFlow::ParseSimRegistrationReply(reply, info.get());
+            if (s.parsed.hasInfo)
+                s.info = info;
             s.json   = reply.json;
             SendResult r = defaultResult;
             if (!dropPlan.empty())
@@ -476,6 +481,224 @@ TEST(SimQueryHostResync, DroppedAnnouncementIsRepairedByDigestThenResync)
         deliver(m.Frame());
     }
     EXPECT_EQ(before, resyncRequests);
+}
+
+// ---- Sim-Hosted Command Help, Task 2: help info on register / replay ----
+
+namespace
+{
+    const Dia::API::ValueParam kHelpParams[] = {
+        { "cell", "int", true, "Cell index", "m", true, -5.5f, 12.25f, nullptr },
+        { "mode", "enum", false, "Which mode", nullptr, false, 0.f, 0.f, "weather|ecology" },
+    };
+
+    Dia::DebugServer::SimHelpInfo RichHelp()
+    {
+        return Dia::DebugServer::SimHelpInfo{ "Rich help text", "cells", "DiaCellLayers", kHelpParams, 2, false };
+    }
+
+    void ExpectSameInfo(const Dia::DebugServer::SimHelpStored& a, const Dia::DebugServer::SimHelpStored& b)
+    {
+        EXPECT_STREQ(a.description, b.description);
+        EXPECT_STREQ(a.category, b.category);
+        EXPECT_STREQ(a.owner, b.owner);
+        EXPECT_EQ(a.noArgs, b.noArgs);
+        ASSERT_EQ(a.paramCount, b.paramCount);
+        for (uint32_t i = 0; i < a.paramCount; ++i)
+        {
+            EXPECT_STREQ(a.params[i].name, b.params[i].name);
+            EXPECT_STREQ(a.params[i].type, b.params[i].type);
+            EXPECT_STREQ(a.params[i].description, b.params[i].description);
+            EXPECT_STREQ(a.params[i].unit, b.params[i].unit);
+            EXPECT_STREQ(a.params[i].enumValues, b.params[i].enumValues);
+            EXPECT_EQ(a.params[i].required, b.params[i].required);
+            EXPECT_EQ(a.params[i].hasRange, b.params[i].hasRange);
+            if (a.params[i].hasRange)
+            {
+                EXPECT_FLOAT_EQ(a.params[i].min, b.params[i].min);
+                EXPECT_FLOAT_EQ(a.params[i].max, b.params[i].max);
+            }
+        }
+    }
+}
+
+TEST(SimQueryHostHelp, RegisterMessageCarriesTheHostStoredInfo)
+{
+    TestSim m;
+    ASSERT_TRUE(m.RegisterCommand("h.cmd", RichHelp(), &Ok));
+    const std::vector<Sent> sent = m.TakeSent();
+    ASSERT_EQ(1u, sent.size());
+    ASSERT_EQ(SimRegistrationOp::Register, sent[0].parsed.op);
+    ASSERT_TRUE(sent[0].parsed.hasInfo);
+    ASSERT_TRUE(sent[0].info != nullptr);
+    const Dia::DebugServer::SimHelpStored* stored = m.GetHost().GetHelp(StringCRC("h.cmd"));
+    ASSERT_TRUE(stored != nullptr);
+    ExpectSameInfo(*stored, *sent[0].info);
+    EXPECT_STREQ("Rich help text", sent[0].info->description);
+}
+
+TEST(SimQueryHostHelp, ReplayCarriesEachNamesInfoAndCountEqualsReplaysSent)
+{
+    TestSim m;
+    ASSERT_TRUE(m.RegisterQuery("h.a", Dia::DebugServer::SimHelpInfo{ "help for a" }, &Ok));
+    ASSERT_TRUE(m.RegisterCommand("h.b", RichHelp(), &Ok));
+    ASSERT_TRUE(m.RegisterQuery("h.c", Dia::DebugServer::SimHelpInfo{ "help for c", "cat" }, &Ok));
+    m.TakeSent();
+    m.Frame();
+
+    m.PushResyncRequest();
+    const std::vector<Sent> f = m.Frame();
+    ASSERT_EQ(4u, f.size());
+    ASSERT_EQ(SimRegistrationOp::ResyncBegin, f[0].parsed.op);
+    EXPECT_EQ(3u, f[0].parsed.count);
+    const char* names[] = { "h.a", "h.b", "h.c" };
+    for (size_t i = 1; i < f.size(); ++i)
+    {
+        ASSERT_EQ(SimRegistrationOp::Replay, f[i].parsed.op);
+        EXPECT_STREQ(names[i - 1], f[i].parsed.name);
+        ASSERT_TRUE(f[i].info != nullptr) << i;
+        const Dia::DebugServer::SimHelpStored* stored = m.GetHost().GetHelp(StringCRC(names[i - 1]));
+        ASSERT_TRUE(stored != nullptr);
+        ExpectSameInfo(*stored, *f[i].info);
+    }
+    EXPECT_STREQ("help for a", f[1].info->description);
+    EXPECT_STREQ("help for c", f[3].info->description);
+}
+
+TEST(SimQueryHostHelp, RegisterWhoseInfoCannotFitIsRejectedAndRolledBack)
+{
+    TestSim m;
+    LogCapture log("DebugServer");
+    // Control characters escape to six bytes each, so a maximal info does not fit the 16 KB event.
+    const std::string desc(Dia::DebugServer::kSimHelpMaxDescription, '\x01');
+    const std::string pd(Dia::DebugServer::kSimHelpMaxParamDescription, '\x01');
+    const std::string pe(Dia::DebugServer::kSimHelpMaxParamEnum, '\x01');
+    std::vector<Dia::API::ValueParam> params(Dia::DebugServer::kSimHelpMaxParams);
+    for (auto& p : params)
+        p = { "n", "string", false, pd.c_str(), nullptr, false, 0.f, 0.f, pe.c_str() };
+    const Dia::DebugServer::SimHelpInfo big{ desc.c_str(), nullptr, nullptr, params.data(), Dia::DebugServer::kSimHelpMaxParams, false };
+
+    EXPECT_FALSE(m.RegisterQuery("too.big", big, &Ok));
+    EXPECT_FALSE(m.RegisterCommand("too.big.cmd", big, &Ok));
+    EXPECT_GE(log.Errors("too.big"), 1u);
+    EXPECT_TRUE(m.TakeSent().empty());
+    EXPECT_FALSE(m.GetHost().Has(StringCRC("too.big")));
+    EXPECT_FALSE(m.GetHost().Has(StringCRC("too.big.cmd")));
+    EXPECT_TRUE(m.GetHost().GetHelp(StringCRC("too.big")) == nullptr);
+
+    // Rolled back fully: the same name registers again, and no sequence number was consumed.
+    ASSERT_TRUE(m.RegisterQuery("too.big", Dia::DebugServer::SimHelpInfo{ "small now" }, &Ok));
+    const std::vector<Sent> sent = m.TakeSent();
+    ASSERT_EQ(1u, sent.size());
+    EXPECT_EQ(1u, sent[0].parsed.seq);
+
+    // The announced set is only the one good name.
+    m.PushResyncRequest();
+    const std::vector<Sent> f = m.Frame();
+    ASSERT_EQ(2u, f.size());
+    EXPECT_EQ(1u, f[0].parsed.count);
+}
+
+TEST(SimQueryHostHelp, ReplaySkipsNamesWithoutHelpAndCountMatchesReplaysSent)
+{
+    TestSim m;
+    ASSERT_TRUE(m.RegisterQuery("m.a", Dia::DebugServer::SimHelpInfo{ "a" }, &Ok));
+    ASSERT_TRUE(m.RegisterQuery("m.b", Dia::DebugServer::SimHelpInfo{ "b" }, &Ok));
+    ASSERT_TRUE(m.RegisterQuery("m.c", Dia::DebugServer::SimHelpInfo{ "c" }, &Ok));
+    m.TakeSent();
+    m.Frame();
+    LogCapture log("DebugServer");
+
+    // Should never happen in production: the host loses the entry behind the module's back.
+    m.GetHost().UnregisterQuery(StringCRC("m.b"));
+
+    m.PushResyncRequest();
+    const std::vector<Sent> f = m.Frame();
+    ASSERT_GE(f.size(), 1u);
+    ASSERT_EQ(SimRegistrationOp::ResyncBegin, f[0].parsed.op);
+    size_t replays = 0;
+    for (size_t i = 1; i < f.size(); ++i)
+    {
+        ASSERT_EQ(SimRegistrationOp::Replay, f[i].parsed.op);
+        EXPECT_STRNE("m.b", f[i].parsed.name);
+        ++replays;
+    }
+    EXPECT_EQ(2u, replays);
+    EXPECT_EQ(static_cast<uint32_t>(replays), f[0].parsed.count);
+    EXPECT_GE(log.Errors("m.b"), 1u);
+}
+
+TEST(SimQueryHostHelp, ReplayAfterDroppedRegisterCarriesIdenticalInfo)
+{
+    TestSim m;
+    m.dropPlan.push_back(SendResult::kDroppedOldest);   // the register is lost on the wire
+    ASSERT_TRUE(m.RegisterCommand("lost.cmd", RichHelp(), &Ok));
+    EXPECT_TRUE(m.TakeSent().empty());
+
+    m.PushResyncRequest();
+    const std::vector<Sent> f = m.Frame();
+    ASSERT_EQ(2u, f.size());
+    ASSERT_EQ(SimRegistrationOp::Replay, f[1].parsed.op);
+    ASSERT_TRUE(f[1].info != nullptr);
+    ExpectSameInfo(*m.GetHost().GetHelp(StringCRC("lost.cmd")), *f[1].info);
+}
+
+// Regression: the host table once used DynamicArrayC, whose RemoveAt destroys the last slot; the next Add then assigned over
+// a destroyed shared_ptr and freed help that was still referenced. Churn must keep every stored help valid.
+TEST(SimQueryHostHelp, UnregisterRegisterChurnKeepsEveryStoredHelpValid)
+{
+    TestSim m;
+    for (int round = 0; round < 4; ++round)
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            const std::string n = "churn." + std::to_string(i);
+            if (round > 0)
+                m.UnregisterQuery(n.c_str());
+            ASSERT_TRUE(m.RegisterQuery(n.c_str(), Dia::DebugServer::SimHelpInfo{ "churn help" }, &Ok));
+        }
+    }
+    for (int i = 0; i < 10; ++i)
+    {
+        const Dia::DebugServer::SimHelpStored* help = m.GetHost().GetHelp(StringCRC(("churn." + std::to_string(i)).c_str()));
+        ASSERT_TRUE(help != nullptr) << i;
+        EXPECT_STREQ("churn help", help->description) << i;
+        EXPECT_EQ(0u, help->paramCount) << i;
+    }
+}
+
+TEST(SimQueryHostHelp, TwentyFourRealisticNamesAllAnnounceAndReplayWithInfo)
+{
+    TestSim m;
+    const Dia::API::ValueParam params[] = {
+        { "cell", "int", true, "The cell index to operate on in the current layer", "m", true, 0.f, 1024.f, nullptr },
+        { "mode", "enum", false, "Which mode to use when applying the change", nullptr, false, 0.f, 0.f, "weather|ecology|terrain" },
+        { "label", "string", false, "Optional label recorded with the change", nullptr, false, 0.f, 0.f, nullptr },
+    };
+    const std::string desc(100, 'x');
+    for (int i = 0; i < 24; ++i)
+    {
+        const std::string n = "cell.layers.operation." + std::to_string(i);
+        ASSERT_TRUE(m.RegisterCommand(n.c_str(), Dia::DebugServer::SimHelpInfo{ desc.c_str(), "cells", "DiaCellLayers", params, 3, false }, &Ok)) << i;
+    }
+    const std::vector<Sent> reg = m.TakeSent();
+    ASSERT_EQ(24u, reg.size());
+    for (const Sent& s : reg)
+        EXPECT_TRUE(s.info != nullptr);
+
+    m.Frame();
+    m.PushResyncRequest();
+    std::vector<Sent> all = m.Frame();
+    const std::vector<Sent> more = m.Frame();
+    all.insert(all.end(), more.begin(), more.end());
+    ASSERT_EQ(25u, all.size());
+    EXPECT_EQ(24u, all[0].parsed.count);
+    for (size_t i = 1; i < all.size(); ++i)
+    {
+        ASSERT_EQ(SimRegistrationOp::Replay, all[i].parsed.op);
+        ASSERT_TRUE(all[i].info != nullptr);
+        EXPECT_EQ(3u, all[i].info->paramCount);
+    }
 }
 
 #endif // DIA_DEBUG

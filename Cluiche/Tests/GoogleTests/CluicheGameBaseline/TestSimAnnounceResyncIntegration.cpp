@@ -43,6 +43,21 @@ namespace Dia
 
 namespace
 {
+    const Dia::DebugServer::SimHelpStored* TestHelp()
+    {
+        static Dia::DebugServer::SimHelpStored sHelp = []
+        {
+            Dia::DebugServer::SimHelpStored h;
+            std::memset(&h, 0, sizeof(h));
+            Dia::DebugServer::CopyHelp(Dia::DebugServer::SimHelpInfo{ "test help" }, h);
+            return h;
+        }();
+        return &sHelp;
+    }
+}
+
+namespace
+{
 	using Cluiche::AppFlow::DebugServerHostModule;
 	using Cluiche::AppFlow::SimAnnounceTracker;
 	using Cluiche::AppFlow::SimQueryHostModule;
@@ -488,7 +503,7 @@ TEST(SimAnnounceResyncIntegration, SecondSimHostAnnouncementsAreIgnoredAndTheFir
 	const unsigned int rogue = StringCRC("SecondSimHost").Value();
 	std::unique_ptr<SimReplyEvent> msg(new SimReplyEvent);
 	std::memset(msg.get(), 0, sizeof(SimReplyEvent));
-	ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(SimRegistrationOp::Register, "rogue.name", SimKind::Query, 99, *msg));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(SimRegistrationOp::Register, "rogue.name", SimKind::Query, 99, TestHelp(), *msg));
 	r.main.HandleSimReply(*msg, gNowMs, rogue);
 	std::memset(msg.get(), 0, sizeof(SimReplyEvent));
 	ASSERT_TRUE(Cluiche::AppFlow::BuildSimDigestReply(7, 1, 0x1234u, *msg));
@@ -677,7 +692,7 @@ TEST(SimAnnounceResyncIntegration, ForeignResyncBeginAndReplayAreIgnored)
 	ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(5, 1, *m));
 	Inject(r, *m, rogue);
 	std::memset(m.get(), 0, sizeof(SimReplyEvent));
-	ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("rogue.replay", SimKind::Query, *m));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("rogue.replay", SimKind::Query, TestHelp(), *m));
 	Inject(r, *m, rogue);
 	EXPECT_EQ(r.main.IgnoredForeignAnnounceCount(), 3u);
 	EXPECT_FALSE(r.Tracker().Staging());

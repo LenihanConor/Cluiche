@@ -63,6 +63,21 @@ using Dia::Pathfinding::HexTopology;
 
 namespace
 {
+    const Dia::DebugServer::SimHelpStored* TestHelp()
+    {
+        static Dia::DebugServer::SimHelpStored sHelp = []
+        {
+            Dia::DebugServer::SimHelpStored h;
+            std::memset(&h, 0, sizeof(h));
+            Dia::DebugServer::CopyHelp(Dia::DebugServer::SimHelpInfo{ "test help" }, h);
+            return h;
+        }();
+        return &sHelp;
+    }
+}
+
+namespace
+{
 	const char* const kMirrorNames[] = { "cells.layer.list", "cells.layer.values", "cells.select.get", "cells.select.stats" };
 	const char* const kViewerNames[] = {
 		"cells.layer.base_by_id", "cells.overlay.toggle_by_id",
@@ -141,7 +156,7 @@ namespace
 		{
 			SimReplyEvent msg;
 			std::memset(&msg, 0, sizeof(msg));
-			ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(op, name, kind, ++mAnnounceSeq, msg)) << name;
+			ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(op, name, kind, ++mAnnounceSeq, TestHelp(), msg)) << name;
 			const Cluiche::AppFlow::SimRegistration reg = Cluiche::AppFlow::ParseSimRegistrationReply(msg);
 			if (reg.op == Cluiche::AppFlow::SimRegistrationOp::Register)
 				EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC(reg.name), reg.kind)) << name;

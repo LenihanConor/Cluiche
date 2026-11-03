@@ -83,7 +83,8 @@ private:
 
     bool RegisterInternal(const char* name, Dia::DebugServer::SimKind kind, const Dia::DebugServer::SimHelpInfo& help,
                           Dia::DebugServer::SimQueryHost::QueryHandler handler);
-    void Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind);
+    // False only if the message could not be built (Register whose help does not fit the event); nothing is sent then.
+    bool Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind);
 
     // Sends an announce-path message (register/unregister/digest/resync_begin/replay): records overflow,
     // marks the frame as having announced.  Does not retry; digest + resync repair any loss.

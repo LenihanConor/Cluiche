@@ -83,8 +83,16 @@ void SimQueryHostModule::DrainReplay()
 
     if (!mReplayBeginSent && budget > 0)
     {
+        // The count promises exactly the replay messages that will follow, so it only counts names the host still
+        // has help for (every announced name does; a name without help is skipped below with an Error).
+        uint32_t replayable = 0;
+        for (unsigned int i = 0; i < mAnnounced.Size(); ++i)
+        {
+            if (mHost.GetHelp(Dia::Core::StringCRC(mAnnounced[i].name)) != nullptr)
+                ++replayable;
+        }
         std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
-        if (BuildSimResyncBeginReply(mAnnounceSeq, static_cast<uint32_t>(mAnnounced.Size()), *msg))
+        if (BuildSimResyncBeginReply(mAnnounceSeq, replayable, *msg))
             PostAnnounce(*msg);
         mReplayBeginSent = true;
         --budget;
@@ -92,9 +100,18 @@ void SimQueryHostModule::DrainReplay()
     while (budget > 0 && mReplayIndex < mAnnounced.Size())
     {
         const AnnouncedName& e = mAnnounced[mReplayIndex++];
+        // Re-fetch the help from the host at send time; mAnnounced deliberately holds no copy (~7 KB per name).
+        const Dia::DebugServer::SimHelpStored* help = mHost.GetHelp(Dia::Core::StringCRC(e.name));
+        if (help == nullptr)
+        {
+            DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: announced name '%s' has no help in the host, skipped in resync replay", e.name);
+            continue;
+        }
         std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
-        if (BuildSimReplayReply(e.name, e.kind, *msg))
+        if (BuildSimReplayReply(e.name, e.kind, help, *msg))
             PostAnnounce(*msg);
+        else
+            DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: could not build replay message for '%s'", e.name);
         --budget;
     }
     if (mReplayBeginSent && mReplayIndex >= mAnnounced.Size())
@@ -203,7 +220,14 @@ bool SimQueryHostModule::RegisterInternal(const char* name, Dia::DebugServer::Si
     entry.kind = kind;
     mAnnounced.Add(entry);
 
-    Announce(true, name, kind);
+    if (!Announce(true, name, kind))
+    {
+        // The register message could not be built (the help does not fit the event): never announce a truncated one.
+        mAnnounced.RemoveAt(mAnnounced.Size() - 1);
+        mHost.UnregisterQuery(crc);
+        DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: registration of '%s' rejected, its help does not fit one announce event", name);
+        return false;
+    }
     DIA_LOG_INFO("DebugServer", "SimQueryHostModule: registered sim-hosted %s '%s'",
                  kind == Dia::DebugServer::SimKind::Command ? "command" : "query", name);
     return true;
@@ -225,22 +249,27 @@ void SimQueryHostModule::UnregisterQuery(const char* name)
     mHost.UnregisterQuery(Dia::Core::StringCRC(name));
 }
 
-void SimQueryHostModule::Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind)
+bool SimQueryHostModule::Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind)
 {
     // Heap: the reply event is ~16 KB.
     std::unique_ptr<Dia::DebugServer::SimReplyEvent> msg(new Dia::DebugServer::SimReplyEvent);
     std::memset(msg.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
+    // The help is read from the host (no copy is held here); Unregister carries none.
+    const Dia::DebugServer::SimHelpStored* help = registerOp ? mHost.GetHelp(Dia::Core::StringCRC(name)) : nullptr;
     if (!BuildSimRegistrationReply(registerOp ? SimRegistrationOp::Register : SimRegistrationOp::Unregister,
-                                   name, kind, ++mAnnounceSeq, *msg))
+                                   name, kind, mAnnounceSeq + 1, help, *msg))
     {
+        // The sequence number is only consumed by a message that is actually built.
         DIA_LOG_ERROR("DebugServer", "SimQueryHostModule: could not build registration message for '%s'", name);
-        return;
+        return false;
     }
+    ++mAnnounceSeq;
     // A register/unregister changes the set: restart any queued replay so it carries the new seq.
     if (mReplayPending)
         RequestResync();
     if (!Dia::ApplicationFlow::IsSuccess(PostAnnounce(*msg)))
         DIA_LOG_WARNING("DebugServer", "SimQueryHostModule: registration message for '%s' was rejected by the stream", name);
+    return true;
 }
 
 } } // namespace Cluiche::AppFlow
