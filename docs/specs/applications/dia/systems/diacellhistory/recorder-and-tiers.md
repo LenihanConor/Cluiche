@@ -211,4 +211,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created.
+`Done` (2026-11-03). Plan: [recorder-and-tiers.plan.md](recorder-and-tiers.plan.md). Closed with Task 12 dropped by the user, so AC 15 (3 ms sample at Large), the 2,080-sample aggregate budget run, the DiaCellLayers integration run and the Release build were never verified.
