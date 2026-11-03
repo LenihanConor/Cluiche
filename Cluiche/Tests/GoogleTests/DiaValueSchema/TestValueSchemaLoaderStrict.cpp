@@ -516,6 +516,27 @@ TEST(DiaValueSchemaLoaderStrict, UnknownHistoryKeyKeptAndWarned)
 	EXPECT_NE(std::string(r.mWarnings[0].AsCStr()).find("colour_by"), std::string::npos);
 }
 
+TEST(DiaValueSchemaLoaderStrict, HistoryAggregateKeyKnownNoWarning)
+{
+	Json::Value e = GoodEntry();
+	e["history"] = Json::Value(Json::objectValue); e["history"]["aggregate"] = false;
+	LoadResult r = LoadEntry(e);
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	ASSERT_TRUE(r.mEntries[0].mHistory.isMember("aggregate"));
+	EXPECT_FALSE(r.mEntries[0].mHistory["aggregate"].asBool());
+	EXPECT_EQ(r.mWarnings.Size(), 0u);
+}
+
+TEST(DiaValueSchemaLoaderStrict, HistoryAggregateDoesNotWhitelistOtherKeys)
+{
+	Json::Value e = GoodEntry();
+	e["history"] = Json::Value(Json::objectValue); e["history"]["aggregate"] = true; e["history"]["aggregat"] = true;
+	LoadResult r = LoadEntry(e);
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	ASSERT_EQ(r.mWarnings.Size(), 1u);
+	EXPECT_NE(std::string(r.mWarnings[0].AsCStr()).find("aggregat'"), std::string::npos);
+}
+
 TEST(DiaValueSchemaLoaderStrict, UnknownKeyWarnedOncePerFileNotPerEntry)
 {
 	Json::Value a = GoodEntry("a"); a["ui"] = Json::Value(Json::objectValue); a["ui"]["sparkle"] = 1;

@@ -18,7 +18,7 @@ ENTRY_KEYS = ("key", "kind", "label", "description", "hint", "unit", "type", "mi
               "payload", "vocabulary", "keyRef", "valueType")
 UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey",
            "delta_ramp")
-HISTORY_KEYS = ("track", "group")
+HISTORY_KEYS = ("track", "group", "aggregate")
 FILE_KEYS = ("format", "version", "for", "entries")
 KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_field")
 TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map")

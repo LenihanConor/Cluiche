@@ -10,7 +10,7 @@
       "description": "Has an unknown ui key that is kept with a warning.",
       "type": "float",
       "ui": { "group": "G", "sparkle": 7 },
-      "history": { "track": true }
+      "history": { "track": true, "aggregate": false }
     }
   ]
 }

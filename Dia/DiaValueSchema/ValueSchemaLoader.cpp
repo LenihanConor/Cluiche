@@ -94,7 +94,7 @@ namespace Dia::ValueSchema
 			"keyRef", "valueType", nullptr };
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
 			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
-		const char* const kHistoryKeys[] = { "track", "group", nullptr };
+		const char* const kHistoryKeys[] = { "track", "group", "aggregate", nullptr };
 		const char* const kFileKeys[] = { "format", "version", "for", "entries", nullptr };
 
 		bool ParseKind(const std::string& s, ValueKind& out)

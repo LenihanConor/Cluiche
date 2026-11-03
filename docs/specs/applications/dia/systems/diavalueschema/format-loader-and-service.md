@@ -58,7 +58,8 @@ No STL in public APIs (PD-004); `ValueInfo` lists use DiaCore containers.
 | `type: "map"` | `keyRef: "<format>/<record path>"`, `valueType: float \| int \| bool \| string \| enum`, plus the usual `min`, `max`, `unit` for the values | An object whose keys must be ids from another format's records and whose values have one type and range (for example a species' biome `affinity`). Added 2026-10-20 for T-2 Feature 2 |
 
 - **Enum colours.** A value without a `colour` is assigned from the `categorical.12` ramp by value order, so a category layer always has a palette. (The ramp library itself is Feature 5; until then the loader uses a built-in 12-colour list.)
-- **`ui` and `history` blocks are open.** The loader keeps any keys they contain (stored as JSON values), so other specs can add keys (`hotkey`, `group`, `delta_ramp`, `track`, `history.group`) without a loader change. Unknown keys are logged once as a Warning on channel `VSC`, naming the file and key.
+- **`ui` and `history` blocks are open.** The loader keeps any keys they contain (stored as JSON values), so other specs can add keys (`hotkey`, `group`, `delta_ramp`, `track`, `history.group`, `history.aggregate`) without a loader change. Unknown keys are logged once as a Warning on channel `VSC`, naming the file and key.
+- **`history` block keys:** `track` (bool, default false; layer always tracked by DiaCellHistory), `group` (string; aggregation group name), `aggregate` (bool, default true; `false` excludes the layer from DiaCellHistory aggregation).
 - **Core keys are strict.** A missing required key (`key`, `kind`, `label`, `description`, `type`), a wrong type, an unknown `kind` or `type`, or a bad `format`/`version` fails that file.
 
 ### `ValueInfo`
