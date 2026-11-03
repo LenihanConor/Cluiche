@@ -204,8 +204,8 @@ namespace
 	{
 	public:
 		explicit ModuleRegistrar(SimQueryHostModule& m) : mModule(m) {}
-		bool Register(const char* name, MirrorQueryHandler h) override { return mModule.RegisterQuery(name, Dia::DebugServer::SimHelpInfo{"test help"}, std::move(h)); }
-		bool RegisterCommand(const char* name, MirrorQueryHandler h) override { return mModule.RegisterCommand(name, Dia::DebugServer::SimHelpInfo{"test help"}, std::move(h)); }
+		bool Register(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler h) override { return mModule.RegisterQuery(name, help, std::move(h)); }
+		bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler h) override { return mModule.RegisterCommand(name, help, std::move(h)); }
 		void Unregister(const char* name) override { mModule.UnregisterQuery(name); }
 	private:
 		SimQueryHostModule& mModule;

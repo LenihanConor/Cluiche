@@ -22,6 +22,16 @@ public:
 
     explicit SimEchoTestModule(const Dia::Core::StringCRC& instanceId);
 
+    // Help for the sim.echo query (public so a test can check it without running the module).
+    static Dia::DebugServer::SimHelpInfo HelpInfo()
+    {
+        Dia::DebugServer::SimHelpInfo help;
+        help.description = "Test fixture: echoes its arguments back with the thread it ran on ({echo, thread:\"sim\"}).";
+        help.category    = "test";
+        help.owner       = "CluicheTest";
+        return help;
+    }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;

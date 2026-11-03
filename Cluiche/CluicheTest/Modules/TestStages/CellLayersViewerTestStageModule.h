@@ -188,26 +188,16 @@ private:
     {
     public:
         explicit MirrorRegistrar(Cluiche::AppFlow::SimQueryHostModule& host) : mHost(host) {}
-        // TODO(CommandHelp task 5): placeholder help; the real descriptions replace it when IMirrorQueryRegistrar carries help.
-        bool Register(const char* name, Dia::CellLayers::MirrorQueryHandler handler) override
+        bool Register(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::CellLayers::MirrorQueryHandler handler) override
         {
-            char text[160]; Dia::DebugServer::SimHelpInfo help = Placeholder(name, text, sizeof(text));
             return mHost.RegisterQuery(name, help, std::move(handler));
         }
-        bool RegisterCommand(const char* name, Dia::CellLayers::MirrorQueryHandler handler) override
+        bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::CellLayers::MirrorQueryHandler handler) override
         {
-            char text[160]; Dia::DebugServer::SimHelpInfo help = Placeholder(name, text, sizeof(text));
             return mHost.RegisterCommand(name, help, std::move(handler));
         }
         void Unregister(const char* name) override { mHost.UnregisterQuery(name); }
     private:
-        static Dia::DebugServer::SimHelpInfo Placeholder(const char* name, char* buffer, size_t size)
-        {
-            std::snprintf(buffer, size, "TODO describe: %s", name != nullptr ? name : "");
-            Dia::DebugServer::SimHelpInfo help;
-            help.description = buffer;
-            return help;
-        }
         Cluiche::AppFlow::SimQueryHostModule& mHost;
     };
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHostRef{this};

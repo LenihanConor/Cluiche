@@ -251,7 +251,7 @@ TEST_F(MirrorQueriesTest, RegistrarReceivesExactlyTheFourQueryNames)
 TEST_F(MirrorQueriesTest, RegisterFailureIsReportedAndRolledBack)
 {
 	FakeMirrorRegistrar qr;
-	ASSERT_TRUE(qr.Register("cells.select.get", [](const Json::Value&) { return Json::Value(Json::objectValue); }));	// name already taken
+	ASSERT_TRUE(qr.Register("cells.select.get", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::objectValue); }));	// name already taken
 	EXPECT_FALSE(RegisterMirrorQueries(qr, queries));
 	EXPECT_EQ(qr.Count(), 1u);	// only the pre-existing entry remains: the others were rolled back
 }

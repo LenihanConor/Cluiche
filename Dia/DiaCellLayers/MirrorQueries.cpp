@@ -361,6 +361,24 @@ namespace Dia::CellLayers
 	namespace
 	{
 		const char* const kQueryNames[4] = { "cells.layer.list", "cells.layer.values", "cells.select.get", "cells.select.stats" };
+
+		using Dia::API::ValueParam;
+		const ValueParam kValuesParams[] = {
+			{ "layer", "string", true, "Id of the layer to read" },
+			{ "offset", "int", false, "First cell index (default 0)", nullptr, true, 0.0f, 4.0e9f },
+			{ "count", "int", false, "Number of cells (default min(total-offset, chunk); clamped to the chunk size)", nullptr, true, 0.0f, 4.0e9f } };
+		const ValueParam kGetParams[] = {
+			{ "offset", "int", false, "First selection index (default 0)", nullptr, true, 0.0f, 4.0e9f },
+			{ "count", "int", false, "Number of indices (default and maximum 1000)", nullptr, true, 0.0f, 1000.0f } };
+		const ValueParam kStatsParams[] = {
+			{ "layers", "string", false, "JSON array of layer ids, or \"all\"; omitted = the inspector's shown layers" } };
+
+		Dia::DebugServer::SimHelpInfo QueryHelp(const char* description)
+		{
+			Dia::DebugServer::SimHelpInfo h;
+			h.description = description; h.category = "cells"; h.owner = "DiaCellLayers";
+			return h;
+		}
 	}
 
 	bool RegisterMirrorQueries(IMirrorQueryRegistrar& registrar, const MirrorQueries& queries)
@@ -374,9 +392,18 @@ namespace Dia::CellLayers
 			[q](const Json::Value& args) { Json::Value r = q->SelectionGet(args); q->RecordServed(K::SelectGet, r); return r; },
 			[q](const Json::Value& args) { Json::Value r = q->SelectionStats(args); q->RecordServed(K::Stats, r); return r; },
 		};
+		Dia::DebugServer::SimHelpInfo help[4] = {
+			QueryHelp("List the grids, layers and overlays with their ids, groups, kinds and hotkeys, plus layersVersion."),
+			QueryHelp("Read a layer's values for the active grid as little-endian float32, base64 encoded, in chunks."),
+			QueryHelp("Read the active grid's selection as ascending cell indices in chunks, with version and hash."),
+			QueryHelp("Aggregate per-layer stats over the active grid's selection; cached once per frame.") };
+		help[0].noArgs = true;
+		help[1].params = kValuesParams; help[1].paramCount = 3;
+		help[2].params = kGetParams;    help[2].paramCount = 2;
+		help[3].params = kStatsParams;  help[3].paramCount = 1;
 		for (int i = 0; i < 4; ++i)
 		{
-			if (registrar.Register(kQueryNames[i], handlers[i])) { continue; }
+			if (registrar.Register(kQueryNames[i], help[i], handlers[i])) { continue; }
 			DIA_LOG_ERROR("CEL", "mirror queries: registering %s was rejected, rolling back", kQueryNames[i]);
 			for (int k = 0; k < i; ++k) { registrar.Unregister(kQueryNames[k]); }	// only the ones this call registered
 			return false;

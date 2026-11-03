@@ -22,9 +22,7 @@ Dia::ApplicationFlow::StartResult SimEchoTestModule::DoStart()
 
     if (!mRegistered)
     {
-        Dia::DebugServer::SimHelpInfo help;
-        help.description = "TODO describe: sim.echo";   // TODO(CommandHelp task 5)
-        mRegistered = host->RegisterQuery("sim.echo", help, [](const Json::Value& args)
+        mRegistered = host->RegisterQuery("sim.echo", HelpInfo(), [](const Json::Value& args)
         {
             Json::Value result(Json::objectValue);
             result["echo"]   = args;

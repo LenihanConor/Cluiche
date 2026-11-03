@@ -127,8 +127,8 @@ namespace
 	public:
 		HostRegistrar(SimQueryHost& host, DebugServer& server) : mHost(host), mServer(server) {}
 
-		bool Register(const char* name, MirrorQueryHandler h) override { return Add(name, SimKind::Query, std::move(h)); }
-		bool RegisterCommand(const char* name, MirrorQueryHandler h) override { return Add(name, SimKind::Command, std::move(h)); }
+		bool Register(const char* name, const Dia::DebugServer::SimHelpInfo&, MirrorQueryHandler h) override { return Add(name, SimKind::Query, std::move(h)); }
+		bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo&, MirrorQueryHandler h) override { return Add(name, SimKind::Command, std::move(h)); }
 		void Unregister(const char* name) override
 		{
 			if (!mHost.Has(StringCRC(name))) return;
@@ -536,7 +536,7 @@ TEST(CellLayersIntegrationWire, DuplicateNameIsRejectedRolledBackAndUnroutedAtTh
 {
 	WireRig rig(/*registerAll*/ false);
 	// A foreign handler already owns one viewer command name.
-	ASSERT_TRUE(rig.registrar->RegisterCommand("cells.select.clear", [](const Json::Value&) { Json::Value v(Json::objectValue); v["foreign"] = true; return v; }));
+	ASSERT_TRUE(rig.registrar->RegisterCommand("cells.select.clear", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { Json::Value v(Json::objectValue); v["foreign"] = true; return v; }));
 	EXPECT_FALSE(rig.domain->RegisterCommands(*rig.registrar));
 	for (const char* n : kViewerNames)
 	{

@@ -1095,6 +1095,7 @@
     <ClCompile Include="DebugServer\TestSimHostedCommandList.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteSimHosted.cpp" />
     <ClCompile Include="DiaValueSchema\TestCodeSideSimHosted.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCommandHelp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

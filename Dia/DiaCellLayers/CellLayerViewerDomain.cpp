@@ -729,6 +729,52 @@ namespace Dia::CellLayers
 			b = v[1u].asInt();
 			return true;
 		}
+
+		// Help for the sim-hosted viewer commands; the params mirror the "Params / results" comment above RegisterCommands.
+		// Registration copies the text, so static storage here is only for the call.
+		using Dia::API::ValueParam;
+		const ValueParam kParamsId[] = { { "id", "string", true, "Id of the layer or overlay" } };
+		const ValueParam kParamsQR[] = {
+			{ "q", "int", true, "Cell column (hex axial q)" },
+			{ "r", "int", true, "Cell row (hex axial r)" } };
+		const ValueParam kParamsBox[] = {
+			{ "q0", "int", true, "First corner column (q)" }, { "r0", "int", true, "First corner row (r)" },
+			{ "q1", "int", true, "Opposite corner column (q)" }, { "r1", "int", true, "Opposite corner row (r)" } };
+		const ValueParam kParamsPoly[] = {
+			{ "points", "string", true, "JSON array of [x,y] vertices in WORLD coordinates, at least 3" } };
+		const ValueParam kParamsCategory[] = {
+			{ "layer", "string", true, "Id of a category layer on the active grid" },
+			{ "value", "string", true, "Category value (string or number) to select" } };
+		const ValueParam kParamsCells[] = {
+			{ "cells", "string", true, "JSON array of [q,r] cells (capped at 2048; returns requested, accepted, overCap)" } };
+		const ValueParam kParamsExpr[] = { { "expr", "string", true, "Selection query expression" } };
+		const ValueParam kParamsTool[] = { { "tool", "enum", true, "Active pointer tool", nullptr, false, 0.0f, 0.0f, "select|pan" } };
+		const ValueParam kParamsGroup[] = { { "layer", "string", true, "Id of a layer; its group becomes the active group" } };
+		const ValueParam kParamsPin[] = { { "freeze", "bool", false, "Freeze the pinned layers' values (default false)" } };
+		const ValueParam kParamsInspect[] = {
+			{ "group", "string", false, "Inspect the layers of this group" },
+			{ "layers", "string", false, "JSON array of layer ids to inspect" },
+			{ "layerId", "string", false, "Inspect a single layer" },
+			{ "all", "bool", false, "Inspect every layer of the active grid" } };
+		const ValueParam kParamsExpand[] = {
+			{ "group", "string", true, "Group name" },
+			{ "expanded", "bool", true, "Whether the group is expanded in the inspector" } };
+
+		template <size_t N>
+		Dia::DebugServer::SimHelpInfo ViewerHelp(const char* description, const ValueParam (&params)[N])
+		{
+			Dia::DebugServer::SimHelpInfo h;
+			h.description = description; h.category = "cells"; h.owner = "DiaCellLayers";
+			h.params = params; h.paramCount = static_cast<unsigned int>(N);
+			return h;
+		}
+
+		Dia::DebugServer::SimHelpInfo ViewerHelpNoArgs(const char* description)
+		{
+			Dia::DebugServer::SimHelpInfo h;
+			h.description = description; h.category = "cells"; h.owner = "DiaCellLayers"; h.noArgs = true;
+			return h;
+		}
 	}
 
 	// Every viewer command is registered through the registrar (sim-hosted: handlers run on SimPU beside the viewer), never with
@@ -747,10 +793,10 @@ namespace Dia::CellLayers
 	{
 		if (mCommandsRegistered) { return true; }
 
-		struct Def { const char* name; MirrorQueryHandler handler; };
+		struct Def { const char* name; Dia::DebugServer::SimHelpInfo help; MirrorQueryHandler handler; };
 		std::vector<Def> defs;
 
-		defs.push_back({ "cells.layer.base_by_id", [this](const Json::Value& params) -> Json::Value
+		defs.push_back({ "cells.layer.base_by_id", ViewerHelp("Make a layer the base layer of its grid; switches the active grid. Returns {id, grid_index}.", kParamsId), [this](const Json::Value& params) -> Json::Value
 		{
 			Json::Value out(Json::objectValue);
 			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty()) { return SelectError("missing or non-string param 'id'"); }
@@ -760,7 +806,7 @@ namespace Dia::CellLayers
 			out["grid_index"] = GridIndexOf(ActiveGrid());
 			return out;
 		} });
-		defs.push_back({ "cells.overlay.toggle_by_id", [this](const Json::Value& params) -> Json::Value
+		defs.push_back({ "cells.overlay.toggle_by_id", ViewerHelp("Toggle an overlay on or off. Returns {id, enabled}.", kParamsId), [this](const Json::Value& params) -> Json::Value
 		{
 			Json::Value out(Json::objectValue);
 			if (!params.isObject() || !params["id"].isString() || params["id"].asString().empty()) { return SelectError("missing or non-string param 'id'"); }
@@ -772,28 +818,39 @@ namespace Dia::CellLayers
 		} });
 
 		const SelectOp ops[] = { SelectOp::Cell, SelectOp::Toggle, SelectOp::Box, SelectOp::Poly, SelectOp::Category, SelectOp::Cells, SelectOp::Clear };
+		const Dia::DebugServer::SimHelpInfo selectHelp[7] = {
+			ViewerHelp("Select a single cell, replacing the selection. Returns {ok, count}.", kParamsQR),
+			ViewerHelp("Toggle one cell in the selection. Returns {ok, count}.", kParamsQR),
+			ViewerHelp("Select every cell in a box between two corner cells. Returns {ok, count}.", kParamsBox),
+			ViewerHelp("Select every cell inside a polygon given in world coordinates. Returns {ok, count}.", kParamsPoly),
+			ViewerHelp("Select every cell of a category layer with the given value. Returns {ok, count}.", kParamsCategory),
+			ViewerHelp("Select an explicit list of cells. Returns {ok, count, requested, accepted, overCap}.", kParamsCells),
+			ViewerHelpNoArgs("Clear the selection. Returns {ok, count}.") };
 		for (uint32_t i = 0; i < 7; ++i)
 		{
 			const SelectOp op = ops[i];
 			const char* const name = kSelectCommands[i];
-			defs.push_back({ name, [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); } });
+			defs.push_back({ name, selectHelp[i], [this, op, name](const Json::Value& params) -> Json::Value { return ExecuteSelect(op, name, params); } });
 		}
+		const Dia::DebugServer::SimHelpInfo queryHelp[2] = {
+			ViewerHelp("Select the cells matching a query expression. Returns {ok, count} or {error:{message, column, length, suggestion?}}.", kParamsExpr),
+			ViewerHelp("Validate a query expression and count its matches without changing the selection. Returns {ok, count} or {error:{message, column, length, suggestion?}}.", kParamsExpr) };
 		for (uint32_t i = 0; i < 2; ++i)
 		{
 			const bool apply = (i == 0);
 			const char* const name = kQueryCommands[i];
-			defs.push_back({ name, [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQueryRecorded(apply, name, params); } });
+			defs.push_back({ name, queryHelp[i], [this, apply, name](const Json::Value& params) -> Json::Value { return ExecuteQueryRecorded(apply, name, params); } });
 		}
-		defs.push_back({ kSelectPanelCommands[0], [this](const Json::Value& params) -> Json::Value { return ExecuteSetTool(params); } });
-		defs.push_back({ kSelectPanelCommands[1], [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); } });
-		defs.push_back({ kSelectPanelCommands[2], [this](const Json::Value& params) -> Json::Value { return ExecutePin(params); } });
-		defs.push_back({ kSelectPanelCommands[3], [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); } });
-		defs.push_back({ kSelectPanelCommands[4], [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); } });
-		defs.push_back({ kSelectPanelCommands[5], [this](const Json::Value& params) -> Json::Value { return ExecuteExpand(params); } });
+		defs.push_back({ kSelectPanelCommands[0], ViewerHelp("Set the pointer tool. Returns {ok, tool}.", kParamsTool), [this](const Json::Value& params) -> Json::Value { return ExecuteSetTool(params); } });
+		defs.push_back({ kSelectPanelCommands[1], ViewerHelp("Set the active layer group from a layer id. Returns {ok, group}.", kParamsGroup), [this](const Json::Value& params) -> Json::Value { return ExecuteSetGroup(params); } });
+		defs.push_back({ kSelectPanelCommands[2], ViewerHelp("Pin the inspector to the current selection, optionally freezing its values. Returns {ok, count, frozen, layers?}.", kParamsPin), [this](const Json::Value& params) -> Json::Value { return ExecutePin(params); } });
+		defs.push_back({ kSelectPanelCommands[3], ViewerHelpNoArgs("Unpin the inspector so it follows the live selection. Returns {ok}."), [this](const Json::Value& params) -> Json::Value { return ExecuteUnpin(params); } });
+		defs.push_back({ kSelectPanelCommands[4], ViewerHelp("Compute selection stats for the shown layers (default), a group, a list of layers, one layer or all layers. Returns the stats JSON.", kParamsInspect), [this](const Json::Value& params) -> Json::Value { return ExecuteInspect(params); } });
+		defs.push_back({ kSelectPanelCommands[5], ViewerHelp("Expand or collapse a layer group in the inspector. Returns {ok, group, expanded}.", kParamsExpand), [this](const Json::Value& params) -> Json::Value { return ExecuteExpand(params); } });
 
 		for (size_t i = 0; i < defs.size(); ++i)
 		{
-			if (registrar.RegisterCommand(defs[i].name, defs[i].handler)) { continue; }
+			if (registrar.RegisterCommand(defs[i].name, defs[i].help, defs[i].handler)) { continue; }
 			DIA_LOG_ERROR("CEL", "viewer commands: registering %s was rejected, rolling back", defs[i].name);
 			for (size_t k = 0; k < i; ++k) { registrar.Unregister(defs[k].name); }	// only the ones this call registered
 			return false;

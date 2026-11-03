@@ -108,7 +108,7 @@ TEST_F(ViewerSimHostedCommandsTest, RegisterIsIdempotentAndRollsBackOnRejection)
 	rig.domain.UnregisterCommands(reg);
 
 	FakeMirrorRegistrar blocked;
-	ASSERT_TRUE(blocked.RegisterCommand("cells.select.clear", [](const Json::Value&) { return Json::Value(Json::objectValue); }));
+	ASSERT_TRUE(blocked.RegisterCommand("cells.select.clear", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::objectValue); }));
 	EXPECT_FALSE(rig.domain.RegisterCommands(blocked));
 	EXPECT_EQ(blocked.Count(), 1u);	// the pre-existing one only: everything this call registered was rolled back
 }

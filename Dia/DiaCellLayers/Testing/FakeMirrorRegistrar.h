@@ -6,7 +6,9 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCellLayers/MirrorQueries.h>
+#include <DiaDebugServer/SimHelpInfo.h>
 
+#include <cstring>
 #include <functional>
 #include <string>
 #include <vector>
@@ -16,8 +18,8 @@ namespace Dia::CellLayers::Testing
 	class FakeMirrorRegistrar : public IMirrorQueryRegistrar
 	{
 	public:
-		bool Register(const char* name, MirrorQueryHandler handler) override { return Add(name, std::move(handler), false); }
-		bool RegisterCommand(const char* name, MirrorQueryHandler handler) override { return Add(name, std::move(handler), true); }
+		bool Register(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler handler) override { return Add(name, help, std::move(handler), false); }
+		bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler handler) override { return Add(name, help, std::move(handler), true); }
 
 		void Unregister(const char* name) override
 		{
@@ -39,6 +41,13 @@ namespace Dia::CellLayers::Testing
 			return false;
 		}
 
+		// Stored help for a registered name (what the host would keep); null when not registered.
+		const Dia::DebugServer::SimHelpStored* Help(const char* name) const
+		{
+			for (const Entry& e : mEntries) { if (e.name == name) { return &e.help; } }
+			return nullptr;
+		}
+
 		Json::Value Execute(const char* name, const Json::Value& args) const
 		{
 			for (const Entry& e : mEntries) { if (e.name == name) { return e.handler(args); } }
@@ -55,15 +64,18 @@ namespace Dia::CellLayers::Testing
 		}
 
 	private:
-		bool Add(const char* name, MirrorQueryHandler handler, bool isCommand)
+		bool Add(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler handler, bool isCommand)
 		{
 			if (Has(name)) { return false; }	// like SimQueryHost: the first handler stays
-			mEntries.push_back({ name, std::move(handler), isCommand });
+			Dia::DebugServer::SimHelpStored stored;
+			std::memset(&stored, 0, sizeof(stored));
+			if (Dia::DebugServer::CopyHelp(help, stored) != Dia::DebugServer::SimHelpResult::Ok) { return false; }	// like the host: invalid help rejects
+			mEntries.push_back({ name, std::move(handler), isCommand, stored });
 			mRegisterCount++;
 			return true;
 		}
 
-		struct Entry { std::string name; MirrorQueryHandler handler; bool isCommand; };
+		struct Entry { std::string name; MirrorQueryHandler handler; bool isCommand; Dia::DebugServer::SimHelpStored help; };
 		std::vector<Entry> mEntries;
 		size_t mRegisterCount = 0;
 	};

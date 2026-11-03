@@ -138,8 +138,24 @@ inline void UnregisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegi
 inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegistrar& registrar, PointerFrameQueue& queue,
 	Dia::CellLayers::MirrorQueryHandler cellPixel)
 {
+	static const Dia::API::ValueParam kFramesParams[] = {
+		{ "frames", "string", true, "JSON array (1..256) of pointer frames {x, y, left?, middle?, right?, shift?, ctrl?, alt?, esc?}; one is applied per Sim frame" } };
+	static const Dia::API::ValueParam kPixelParams[] = {
+		{ "q", "int", true, "Cell column (hex axial q)" },
+		{ "r", "int", true, "Cell row (hex axial r)" } };
+	Dia::DebugServer::SimHelpInfo framesHelp;
+	framesHelp.description = "Test only: queue pointer frames for the viewer's selection input. Returns {ok, queued, pending}.";
+	framesHelp.category = "test"; framesHelp.owner = "CluicheTest";
+	framesHelp.params = kFramesParams; framesHelp.paramCount = 1;
+	Dia::DebugServer::SimHelpInfo pendingHelp;
+	pendingHelp.description = "Test only: number of injected pointer frames not yet consumed. Returns {pending}.";
+	pendingHelp.category = "test"; pendingHelp.owner = "CluicheTest"; pendingHelp.noArgs = true;
+	Dia::DebugServer::SimHelpInfo pixelHelp;
+	pixelHelp.description = "Test only: screen pixel of a cell's centre under the current camera. Returns {x, y}.";
+	pixelHelp.category = "test"; pixelHelp.owner = "CluicheTest";
+	pixelHelp.params = kPixelParams; pixelHelp.paramCount = 2;
 	const bool ok =
-		registrar.RegisterCommand("cluichetest.celllayers.pointer_frames", [&queue](const Json::Value& params) -> Json::Value
+		registrar.RegisterCommand("cluichetest.celllayers.pointer_frames", framesHelp, [&queue](const Json::Value& params) -> Json::Value
 		{
 			Json::Value out(Json::objectValue);
 			std::vector<Dia::CellLayers::SelectionInput::PointerFrame> parsed;
@@ -159,13 +175,13 @@ inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegist
 			out["pending"] = static_cast<Json::UInt>(queue.Pending());
 			return out;
 		}) &&
-		registrar.Register("cluichetest.celllayers.pointer_pending", [&queue](const Json::Value&) -> Json::Value
+		registrar.Register("cluichetest.celllayers.pointer_pending", pendingHelp, [&queue](const Json::Value&) -> Json::Value
 		{
 			Json::Value out(Json::objectValue);
 			out["pending"] = static_cast<Json::UInt>(queue.Pending());
 			return out;
 		}) &&
-		registrar.Register("cluichetest.celllayers.cell_pixel", std::move(cellPixel));
+		registrar.Register("cluichetest.celllayers.cell_pixel", pixelHelp, std::move(cellPixel));
 	if (!ok)
 		UnregisterPointerInjectionCommands(registrar);
 	return ok;

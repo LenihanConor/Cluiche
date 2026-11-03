@@ -36,6 +36,7 @@
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerReader.h>
+#include <DiaDebugServer/SimHelpInfo.h>
 
 #include <functional>
 #include <stdint.h>
@@ -126,13 +127,14 @@ namespace Dia::CellLayers
 	// Seam to whatever hosts handlers on SimPU (the host app supplies one forwarding to SimQueryHostModule). Read-only handlers
 	// (the mirror queries) use Register; handlers that change state (the viewer commands, CellLayerViewerDomain::RegisterCommands)
 	// use RegisterCommand. A name registers once: a duplicate is rejected and the first handler stays (SimQueryHost::Register).
+	// Every name carries help (description, category, owner, params); the library supplies it, the host adapter forwards it.
 	using MirrorQueryHandler = std::function<Json::Value(const Json::Value& args)>;
 	class IMirrorQueryRegistrar
 	{
 	public:
 		virtual ~IMirrorQueryRegistrar() = default;
-		virtual bool Register(const char* name, MirrorQueryHandler handler) = 0;	// query; false if rejected (duplicate / full)
-		virtual bool RegisterCommand(const char* name, MirrorQueryHandler handler) = 0;	// command; false if rejected
+		virtual bool Register(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler handler) = 0;	// query; false if rejected (duplicate / full)
+		virtual bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, MirrorQueryHandler handler) = 0;	// command; false if rejected
 		virtual void Unregister(const char* name) = 0;
 	};
 
