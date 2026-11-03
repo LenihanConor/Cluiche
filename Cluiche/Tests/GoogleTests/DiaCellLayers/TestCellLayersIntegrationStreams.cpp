@@ -203,8 +203,8 @@ namespace
 	{
 	public:
 		explicit ModuleRegistrar(SimQueryHostModule& m) : mModule(m) {}
-		bool Register(const char* name, MirrorQueryHandler h) override { return mModule.RegisterQuery(name, std::move(h)); }
-		bool RegisterCommand(const char* name, MirrorQueryHandler h) override { return mModule.RegisterCommand(name, std::move(h)); }
+		bool Register(const char* name, MirrorQueryHandler h) override { return mModule.RegisterQuery(name, Dia::DebugServer::SimHelpInfo{"test help"}, std::move(h)); }
+		bool RegisterCommand(const char* name, MirrorQueryHandler h) override { return mModule.RegisterCommand(name, Dia::DebugServer::SimHelpInfo{"test help"}, std::move(h)); }
 		void Unregister(const char* name) override { mModule.UnregisterQuery(name); }
 	private:
 		SimQueryHostModule& mModule;
@@ -501,7 +501,7 @@ TEST(CellLayersIntegrationStreams, AnnouncementChurnPastStreamCapacityNeverLeave
 		{
 			const std::string n = "churn.n" + std::to_string(i);
 			if (round > 0) gHost->UnregisterQuery(n.c_str());
-			gHost->RegisterQuery(n.c_str(), noop);
+			gHost->RegisterQuery(n.c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, noop);
 		}
 	}
 	gShim->drainPaused = false;

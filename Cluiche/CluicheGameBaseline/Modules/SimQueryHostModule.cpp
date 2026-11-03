@@ -170,17 +170,18 @@ bool SimQueryHostModule::PostReply(const Dia::DebugServer::SimReplyEvent& reply)
     return Dia::ApplicationFlow::IsSuccess(SendReply(reply));
 }
 
-bool SimQueryHostModule::RegisterQuery(const char* name, Dia::DebugServer::SimQueryHost::QueryHandler handler)
+bool SimQueryHostModule::RegisterQuery(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::DebugServer::SimQueryHost::QueryHandler handler)
 {
-    return RegisterInternal(name, Dia::DebugServer::SimKind::Query, handler);
+    return RegisterInternal(name, Dia::DebugServer::SimKind::Query, help, handler);
 }
 
-bool SimQueryHostModule::RegisterCommand(const char* name, Dia::DebugServer::SimQueryHost::QueryHandler handler)
+bool SimQueryHostModule::RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::DebugServer::SimQueryHost::QueryHandler handler)
 {
-    return RegisterInternal(name, Dia::DebugServer::SimKind::Command, handler);
+    return RegisterInternal(name, Dia::DebugServer::SimKind::Command, help, handler);
 }
 
 bool SimQueryHostModule::RegisterInternal(const char* name, Dia::DebugServer::SimKind kind,
+                                          const Dia::DebugServer::SimHelpInfo& help,
                                           Dia::DebugServer::SimQueryHost::QueryHandler handler)
 {
     if (name == nullptr || name[0] == '\0' || std::strlen(name) >= kNameBytes || mAnnounced.IsFull())
@@ -192,8 +193,8 @@ bool SimQueryHostModule::RegisterInternal(const char* name, Dia::DebugServer::Si
 
     const Dia::Core::StringCRC crc(name);
     const bool ok = (kind == Dia::DebugServer::SimKind::Command)
-        ? mHost.RegisterCommand(crc, handler)
-        : mHost.RegisterQuery(crc, handler);
+        ? mHost.RegisterCommand(crc, help, handler)
+        : mHost.RegisterQuery(crc, help, handler);
     if (!ok)
         return false;
 

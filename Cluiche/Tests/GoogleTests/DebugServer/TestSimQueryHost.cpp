@@ -103,7 +103,7 @@ namespace
 TEST(SimQueryHost, QueryRoundTripReturnsOkWithSameRequestId)
 {
 	Fixture f;
-	ASSERT_TRUE(f.host.RegisterQuery("q", OkHandler));
+	ASSERT_TRUE(f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 	f.source.Push(42, "q", SimKind::Query, "{}");
 	f.host.Update();
 	ASSERT_EQ(f.sink.replies.size(), 1u);
@@ -115,7 +115,7 @@ TEST(SimQueryHost, QueryRoundTripReturnsOkWithSameRequestId)
 TEST(SimQueryHost, ArgsAreParsedAndPassedToHandler)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", [](const Json::Value& a) {
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value& a) {
 		Json::Value v;
 		v["echo"] = a["n"].asInt() + 1;
 		return v;
@@ -130,7 +130,7 @@ TEST(SimQueryHost, HandlerRunsOnThreadCallingUpdate)
 {
 	Fixture f;
 	std::thread::id seen;
-	f.host.RegisterQuery("q", [&seen](const Json::Value&) {
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, [&seen](const Json::Value&) {
 		seen = std::this_thread::get_id();
 		return Json::Value(Json::objectValue);
 	});
@@ -148,8 +148,8 @@ TEST(SimQueryHost, HandlerRunsOnThreadCallingUpdate)
 TEST(SimQueryHost, ThrowingHandlerYieldsHandlerFailedAndNextRequestServed)
 {
 	Fixture f;
-	f.host.RegisterQuery("bad", [](const Json::Value&) -> Json::Value { throw 1; });
-	f.host.RegisterQuery("good", OkHandler);
+	f.host.RegisterQuery("bad", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) -> Json::Value { throw 1; });
+	f.host.RegisterQuery("good", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	f.source.Push(1, "bad", SimKind::Query, "{}");
 	f.source.Push(2, "good", SimKind::Query, "{}");
 	f.host.Update();
@@ -164,8 +164,8 @@ TEST(SimQueryHost, ThrowingHandlerYieldsHandlerFailedAndNextRequestServed)
 TEST(SimQueryHost, NonObjectResultYieldsHandlerFailed)
 {
 	Fixture f;
-	f.host.RegisterQuery("arr", [](const Json::Value&) { return Json::Value(Json::arrayValue); });
-	f.host.RegisterQuery("num", [](const Json::Value&) { return Json::Value(5); });
+	f.host.RegisterQuery("arr", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::arrayValue); });
+	f.host.RegisterQuery("num", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(5); });
 	f.source.Push(1, "arr", SimKind::Query, "{}");
 	f.source.Push(2, "num", SimKind::Query, "{}");
 	f.host.Update();
@@ -177,7 +177,7 @@ TEST(SimQueryHost, NonObjectResultYieldsHandlerFailed)
 TEST(SimQueryHost, OversizeResultYieldsTooLargeWithErrorJson)
 {
 	Fixture f;
-	f.host.RegisterQuery("big", [](const Json::Value&) { return SizedReply(kSimPayloadBytes); });
+	f.host.RegisterQuery("big", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return SizedReply(kSimPayloadBytes); });
 	f.source.Push(1, "big", SimKind::Query, "{}");
 	f.host.Update();
 	ASSERT_EQ(f.sink.replies.size(), 1u);
@@ -191,8 +191,8 @@ TEST(SimQueryHost, OversizeResultYieldsTooLargeWithErrorJson)
 TEST(SimQueryHost, ResultOneUnderCapIsOkAndCapItselfFails)
 {
 	Fixture f;
-	f.host.RegisterQuery("under", [](const Json::Value&) { return SizedReply(kSimPayloadBytes - 1); });
-	f.host.RegisterQuery("at", [](const Json::Value&) { return SizedReply(kSimPayloadBytes); });
+	f.host.RegisterQuery("under", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return SizedReply(kSimPayloadBytes - 1); });
+	f.host.RegisterQuery("at", Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return SizedReply(kSimPayloadBytes); });
 	f.source.Push(1, "under", SimKind::Query, "{}");
 	f.source.Push(2, "at", SimKind::Query, "{}");
 	f.host.Update();
@@ -217,8 +217,8 @@ TEST(SimQueryHost, UnknownNameYieldsUnknownName)
 TEST(SimQueryHost, KindMismatchYieldsUnknownName)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", OkHandler);
-	f.host.RegisterCommand("c", OkHandler);
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
+	f.host.RegisterCommand("c", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	f.source.Push(1, "q", SimKind::Command, "{}");
 	f.source.Push(2, "c", SimKind::Query, "{}");
 	f.host.Update();
@@ -231,7 +231,7 @@ TEST(SimQueryHost, UnterminatedOrGarbageRequestJsonYieldsHandlerFailed)
 {
 	Fixture f;
 	bool called = false;
-	f.host.RegisterQuery("q", [&called](const Json::Value&) {
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, [&called](const Json::Value&) {
 		called = true;
 		return Json::Value(Json::objectValue);
 	});
@@ -248,24 +248,24 @@ TEST(SimQueryHost, UnterminatedOrGarbageRequestJsonYieldsHandlerFailed)
 TEST(SimQueryHost, DuplicateRegistrationReturnsFalse)
 {
 	Fixture f;
-	EXPECT_TRUE(f.host.RegisterQuery("q", OkHandler));
-	EXPECT_FALSE(f.host.RegisterQuery("q", OkHandler));
-	EXPECT_FALSE(f.host.RegisterCommand("q", OkHandler));
+	EXPECT_TRUE(f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
+	EXPECT_FALSE(f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
+	EXPECT_FALSE(f.host.RegisterCommand("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 }
 
 TEST(SimQueryHost, CapacityIs64ThenRegistrationFails)
 {
 	Fixture f;
 	for (int i = 0; i < 64; ++i)
-		EXPECT_TRUE(f.host.RegisterQuery(StringCRC(("q" + std::to_string(i)).c_str()), OkHandler));
-	EXPECT_FALSE(f.host.RegisterQuery("overflow", OkHandler));
+		EXPECT_TRUE(f.host.RegisterQuery(StringCRC(("q" + std::to_string(i)).c_str()), Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
+	EXPECT_FALSE(f.host.RegisterQuery("overflow", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 	EXPECT_FALSE(f.host.Has("overflow"));
 }
 
 TEST(SimQueryHost, UnregisterThenUnknown)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", OkHandler);
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	EXPECT_TRUE(f.host.Has("q"));
 	EXPECT_TRUE(f.host.UnregisterQuery("q"));
 	EXPECT_FALSE(f.host.Has("q"));
@@ -279,14 +279,14 @@ TEST(SimQueryHost, UnregisterThenUnknown)
 TEST(SimQueryHost, NullHandlerRejected)
 {
 	Fixture f;
-	EXPECT_FALSE(f.host.RegisterQuery("q", SimQueryHost::QueryHandler()));
+	EXPECT_FALSE(f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, SimQueryHost::QueryHandler()));
 	EXPECT_FALSE(f.host.Has("q"));
 }
 
 TEST(SimQueryHost, EmptyQueueUpdateIsNoOp)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", OkHandler);
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	f.host.Update();
 	EXPECT_TRUE(f.sink.replies.empty());
 }
@@ -294,7 +294,7 @@ TEST(SimQueryHost, EmptyQueueUpdateIsNoOp)
 TEST(SimQueryHost, FullSinkDropsReplyAndLaterRepliesStillPost)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", OkHandler);
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	f.sink.full = true;
 	f.source.Push(1, "q", SimKind::Query, "{}");
 	f.source.Push(2, "q", SimKind::Query, "{}");
@@ -310,7 +310,7 @@ TEST(SimQueryHost, FullSinkDropsReplyAndLaterRepliesStillPost)
 TEST(SimQueryHost, ManyRequestsDrainedInOneUpdateInOrder)
 {
 	Fixture f;
-	f.host.RegisterQuery("q", OkHandler);
+	f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	for (uint32_t i = 1; i <= 200; ++i)
 		f.source.Push(i, "q", SimKind::Query, "{}");
 	f.host.Update();
@@ -322,7 +322,7 @@ TEST(SimQueryHost, ManyRequestsDrainedInOneUpdateInOrder)
 TEST(SimQueryHost, CommandKindWorksTheSame)
 {
 	Fixture f;
-	f.host.RegisterCommand("c", OkHandler);
+	f.host.RegisterCommand("c", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler);
 	f.source.Push(7, "c", SimKind::Command, "{}");
 	f.host.Update();
 	ASSERT_EQ(f.sink.replies.size(), 1u);
@@ -355,8 +355,8 @@ TEST(SimQueryHost, ResyncRequestNeverLooksUpNamedHandler)
 	int handlerCalls = 0;
 	int resyncCalls = 0;
 	// A query and a command whose name CRC matches the resync request's nameCrc.
-	ASSERT_TRUE(f.host.RegisterQuery("same", [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
-	ASSERT_TRUE(f.host.RegisterCommand("same2", [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
+	ASSERT_TRUE(f.host.RegisterQuery("same", Dia::DebugServer::SimHelpInfo{"test help"}, [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
+	ASSERT_TRUE(f.host.RegisterCommand("same2", Dia::DebugServer::SimHelpInfo{"test help"}, [&handlerCalls](const Json::Value&) { ++handlerCalls; return Json::Value(Json::objectValue); }));
 	f.host.SetResyncHandler([&resyncCalls]() { ++resyncCalls; });
 	f.source.Push(0, "same", SimKind::Resync, "{}");
 	f.source.Push(0, "same2", SimKind::Resync, "{}");
@@ -369,7 +369,7 @@ TEST(SimQueryHost, ResyncRequestNeverLooksUpNamedHandler)
 TEST(SimQueryHost, ResyncRequestDoesNotDisturbOrdinaryRequestsAroundIt)
 {
 	Fixture f;
-	ASSERT_TRUE(f.host.RegisterQuery("q", OkHandler));
+	ASSERT_TRUE(f.host.RegisterQuery("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 	f.host.SetResyncHandler([]() {});
 	f.source.Push(1, "q", SimKind::Query, "{}");
 	f.source.Push(0, "", SimKind::Resync, "{}");

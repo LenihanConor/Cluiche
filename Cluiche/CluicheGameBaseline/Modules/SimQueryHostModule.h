@@ -51,8 +51,9 @@ public:
 
     // Registers the handler on the host and announces the name to the Main-side DebugServer.
     // Returns false if the host rejected it (duplicate / full) or the name is not announceable.
-    bool RegisterQuery(const char* name, Dia::DebugServer::SimQueryHost::QueryHandler handler);
-    bool RegisterCommand(const char* name, Dia::DebugServer::SimQueryHost::QueryHandler handler);
+    // A non-empty description is mandatory (see SimHelpInfo); the info is copied and stored on the host.
+    bool RegisterQuery(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::DebugServer::SimQueryHost::QueryHandler handler);
+    bool RegisterCommand(const char* name, const Dia::DebugServer::SimHelpInfo& help, Dia::DebugServer::SimQueryHost::QueryHandler handler);
 
     // Removes the handler and tells the Main side to forget the name.
     void UnregisterQuery(const char* name);
@@ -80,7 +81,7 @@ private:
     // ISimReplySink
     bool PostReply(const Dia::DebugServer::SimReplyEvent& reply) override;
 
-    bool RegisterInternal(const char* name, Dia::DebugServer::SimKind kind,
+    bool RegisterInternal(const char* name, Dia::DebugServer::SimKind kind, const Dia::DebugServer::SimHelpInfo& help,
                           Dia::DebugServer::SimQueryHost::QueryHandler handler);
     void Announce(bool registerOp, const char* name, Dia::DebugServer::SimKind kind);
 

@@ -133,7 +133,7 @@ namespace
 				++calls[n];
 				return h(a);
 			};
-			const bool ok = (kind == SimKind::Command) ? mHost.RegisterCommand(StringCRC(name), wrapped) : mHost.RegisterQuery(StringCRC(name), wrapped);
+			const bool ok = (kind == SimKind::Command) ? mHost.RegisterCommand(StringCRC(name), Dia::DebugServer::SimHelpInfo{"test help"}, wrapped) : mHost.RegisterQuery(StringCRC(name), Dia::DebugServer::SimHelpInfo{"test help"}, wrapped);
 			if (ok) Announce(Cluiche::AppFlow::SimRegistrationOp::Register, name, kind);
 			return ok;
 		}

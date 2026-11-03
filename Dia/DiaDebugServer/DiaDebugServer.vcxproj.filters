@@ -16,6 +16,7 @@
     <ClInclude Include="ISimRequestSink.h" />
     <ClInclude Include="SimPendingTable.h" />
     <ClInclude Include="SimQueryHost.h" />
+    <ClInclude Include="SimHelpInfo.h" />
       <Filter>DiaDebugServer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -27,5 +28,6 @@
     <ClCompile Include="QueryRegistry.cpp" />
     <ClCompile Include="SimPendingTable.cpp" />
     <ClCompile Include="SimQueryHost.cpp" />
+    <ClCompile Include="SimHelpInfo.cpp" />
   </ItemGroup>
 </Project>

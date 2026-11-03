@@ -134,9 +134,9 @@ TEST_F(ViewerSimHostedCommandsTest, LayerListHasExactlyOneHandlerTheMirrorQuery)
 TEST_F(ViewerSimHostedCommandsTest, SimQueryHostKeepsTheFirstHandlerOnDuplicateName)
 {
 	Dia::DebugServer::SimQueryHost host;
-	EXPECT_TRUE(host.RegisterQuery(StringCRC("cells.layer.list"), [](const Json::Value&) { return Json::Value(Json::objectValue); }));
-	EXPECT_FALSE(host.RegisterCommand(StringCRC("cells.layer.list"), [](const Json::Value&) { return Json::Value(Json::objectValue); }));
-	EXPECT_FALSE(host.RegisterQuery(StringCRC("cells.layer.list"), [](const Json::Value&) { return Json::Value(Json::objectValue); }));
+	EXPECT_TRUE(host.RegisterQuery(StringCRC("cells.layer.list"), Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::objectValue); }));
+	EXPECT_FALSE(host.RegisterCommand(StringCRC("cells.layer.list"), Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::objectValue); }));
+	EXPECT_FALSE(host.RegisterQuery(StringCRC("cells.layer.list"), Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) { return Json::Value(Json::objectValue); }));
 	EXPECT_TRUE(host.Has(StringCRC("cells.layer.list")));
 	EXPECT_TRUE(host.UnregisterQuery(StringCRC("cells.layer.list")));
 	EXPECT_FALSE(host.Has(StringCRC("cells.layer.list")));

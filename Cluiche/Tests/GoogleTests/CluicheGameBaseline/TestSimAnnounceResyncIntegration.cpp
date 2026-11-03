@@ -168,7 +168,7 @@ namespace
 
 		void Add(const char* name, bool command = false)
 		{
-			ASSERT_TRUE(command ? sim.RegisterCommand(name, &Ok) : sim.RegisterQuery(name, &Ok)) << name;
+			ASSERT_TRUE(command ? sim.RegisterCommand(name, Dia::DebugServer::SimHelpInfo{"test help"}, &Ok) : sim.RegisterQuery(name, Dia::DebugServer::SimHelpInfo{"test help"}, &Ok)) << name;
 		}
 
 		void Send(int conn, const char* name)

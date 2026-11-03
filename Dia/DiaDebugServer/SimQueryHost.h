@@ -4,9 +4,11 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaDebugServer/SimHostedTypes.h>
 
 #include <functional>
+#include <memory>
 
 namespace Dia
 {
@@ -44,10 +46,15 @@ namespace Dia
 			void SetRequestSource(ISimRequestSource* source);
 			void SetReplySink(ISimReplySink* sink);
 
-			bool RegisterQuery(Dia::Core::StringCRC name, QueryHandler handler);
-			bool RegisterCommand(Dia::Core::StringCRC name, QueryHandler handler);
+			// Help is mandatory: a null/empty description, over-limit info or a null handler returns false,
+			// registers nothing and logs an Error naming the name. The info is copied.
+			bool RegisterQuery(Dia::Core::StringCRC name, const SimHelpInfo& help, QueryHandler handler);
+			bool RegisterCommand(Dia::Core::StringCRC name, const SimHelpInfo& help, QueryHandler handler);
 			bool UnregisterQuery(Dia::Core::StringCRC name);
 			bool Has(Dia::Core::StringCRC name) const;
+
+			// Stored help for a registered name, or nullptr. The pointer is valid until that name is unregistered.
+			const SimHelpStored* GetHelp(Dia::Core::StringCRC name) const;
 
 			// Invoked from Update() for a SimKind::Resync control request (no reply is produced, the
 			// handler is never looked up by name). Without a handler such requests are dropped.
@@ -62,11 +69,12 @@ namespace Dia
 				Dia::Core::StringCRC name;
 				SimKind kind;
 				QueryHandler handler;
+				std::shared_ptr<SimHelpStored> help;   // heap: SimHelpStored is several KB, 64 entries inline would bloat the host
 			};
 
 			static const unsigned int kMaxHandlers = 64;
 
-			bool Register(Dia::Core::StringCRC name, SimKind kind, QueryHandler handler);
+			bool Register(Dia::Core::StringCRC name, SimKind kind, const SimHelpInfo& help, QueryHandler handler);
 			void Handle(const SimRequestEvent& request, SimReplyEvent& reply) const;
 
 			Dia::Core::Containers::DynamicArrayC<Entry, kMaxHandlers> mHandlers;

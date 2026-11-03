@@ -271,7 +271,7 @@ TEST_F(SimHostedExhaustiveTest, HandlerNeverRunsOnMainThreadDuringHandleCommand)
 
 	int calls = 0;
 	std::thread::id handlerThread;
-	ASSERT_TRUE(host.RegisterQuery(StringCRC("lb.q"), [&](const Json::Value&) {
+	ASSERT_TRUE(host.RegisterQuery(StringCRC("lb.q"), Dia::DebugServer::SimHelpInfo{"test help"}, [&](const Json::Value&) {
 		++calls;
 		handlerThread = std::this_thread::get_id();
 		Json::Value v;
@@ -318,12 +318,12 @@ TEST_F(SimHostedExhaustiveTest, LoopbackFullRoundTripWithArgsKindMismatchAndHand
 	SimQueryHost host;
 	host.SetRequestSource(&lb);
 	host.SetReplySink(&lb);
-	ASSERT_TRUE(host.RegisterQuery(StringCRC("lb.echo"), [](const Json::Value& a) {
+	ASSERT_TRUE(host.RegisterQuery(StringCRC("lb.echo"), Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value& a) {
 		Json::Value v;
 		v["got"] = a["x"];
 		return v;
 	}));
-	ASSERT_TRUE(host.RegisterCommand(StringCRC("lb.throw"), [](const Json::Value&) -> Json::Value { throw 1; }));
+	ASSERT_TRUE(host.RegisterCommand(StringCRC("lb.throw"), Dia::DebugServer::SimHelpInfo{"test help"}, [](const Json::Value&) -> Json::Value { throw 1; }));
 	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("lb.echo"), SimKind::Query));
 	// Server believes lb.throw is a Query; host has it as Command -> unknown name.
 	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("lb.throw"), SimKind::Query));

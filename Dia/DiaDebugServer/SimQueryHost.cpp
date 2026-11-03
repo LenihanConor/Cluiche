@@ -35,17 +35,17 @@ namespace Dia
 
 		void SimQueryHost::SetResyncHandler(std::function<void()> handler) { mResyncHandler = handler; }
 
-		bool SimQueryHost::RegisterQuery(Dia::Core::StringCRC name, QueryHandler handler)
+		bool SimQueryHost::RegisterQuery(Dia::Core::StringCRC name, const SimHelpInfo& help, QueryHandler handler)
 		{
-			return Register(name, SimKind::Query, handler);
+			return Register(name, SimKind::Query, help, handler);
 		}
 
-		bool SimQueryHost::RegisterCommand(Dia::Core::StringCRC name, QueryHandler handler)
+		bool SimQueryHost::RegisterCommand(Dia::Core::StringCRC name, const SimHelpInfo& help, QueryHandler handler)
 		{
-			return Register(name, SimKind::Command, handler);
+			return Register(name, SimKind::Command, help, handler);
 		}
 
-		bool SimQueryHost::Register(Dia::Core::StringCRC name, SimKind kind, QueryHandler handler)
+		bool SimQueryHost::Register(Dia::Core::StringCRC name, SimKind kind, const SimHelpInfo& help, QueryHandler handler)
 		{
 			if (!handler)
 			{
@@ -63,10 +63,19 @@ namespace Dia
 				return false;
 			}
 
+			std::shared_ptr<SimHelpStored> stored(new SimHelpStored);
+			const SimHelpResult helpResult = CopyHelp(help, *stored);
+			if (helpResult != SimHelpResult::Ok)
+			{
+				DIA_LOG_ERROR("DebugServer", "SimQueryHost: invalid help for '%s' (%s), not registered", name.AsChar(), SimHelpResultText(helpResult));
+				return false;
+			}
+
 			Entry entry;
 			entry.name = name;
 			entry.kind = kind;
 			entry.handler = handler;
+			entry.help = stored;
 			mHandlers.Add(entry);
 			return true;
 		}
@@ -92,6 +101,16 @@ namespace Dia
 					return true;
 			}
 			return false;
+		}
+
+		const SimHelpStored* SimQueryHost::GetHelp(Dia::Core::StringCRC name) const
+		{
+			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
+			{
+				if (mHandlers[i].name == name)
+					return mHandlers[i].help.get();
+			}
+			return nullptr;
 		}
 
 		void SimQueryHost::Handle(const SimRequestEvent& request, SimReplyEvent& reply) const

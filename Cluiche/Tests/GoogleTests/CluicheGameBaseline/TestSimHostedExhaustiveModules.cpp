@@ -80,20 +80,20 @@ TEST(SimHostedModules, PostRequestOnUnconnectedStreamReturnsFalse)
 TEST(SimHostedModules, RegisterRejectsNullEmptyAndTooLongNames)
 {
     auto m = MakeSimModule();
-    EXPECT_FALSE(m->RegisterQuery(nullptr, &Ok));
-    EXPECT_FALSE(m->RegisterQuery("", &Ok));
-    EXPECT_FALSE(m->RegisterQuery(std::string(96, 'a').c_str(), &Ok));
-    EXPECT_FALSE(m->RegisterCommand(std::string(200, 'a').c_str(), &Ok));
-    EXPECT_TRUE(m->RegisterQuery(std::string(95, 'a').c_str(), &Ok));
+    EXPECT_FALSE(m->RegisterQuery(nullptr, Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_FALSE(m->RegisterQuery("", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_FALSE(m->RegisterQuery(std::string(96, 'a').c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_FALSE(m->RegisterCommand(std::string(200, 'a').c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_TRUE(m->RegisterQuery(std::string(95, 'a').c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
 }
 
 TEST(SimHostedModules, RegisterNullHandlerAndDuplicateReturnFalse)
 {
     auto m = MakeSimModule();
-    EXPECT_FALSE(m->RegisterQuery("m.null", nullptr));
-    EXPECT_TRUE(m->RegisterQuery("m.dup", &Ok));
-    EXPECT_FALSE(m->RegisterQuery("m.dup", &Ok));
-    EXPECT_FALSE(m->RegisterCommand("m.dup", &Ok));
+    EXPECT_FALSE(m->RegisterQuery("m.null", Dia::DebugServer::SimHelpInfo{"test help"}, nullptr));
+    EXPECT_TRUE(m->RegisterQuery("m.dup", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_FALSE(m->RegisterQuery("m.dup", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    EXPECT_FALSE(m->RegisterCommand("m.dup", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     EXPECT_TRUE(m->GetHost().Has(StringCRC("m.dup")));
     EXPECT_FALSE(m->GetHost().Has(StringCRC("m.null")));
 }
@@ -103,11 +103,11 @@ TEST(SimHostedModules, UnregisterUnknownAndNullAreHarmlessAndNameCanBeReRegister
     auto m = MakeSimModule();
     m->UnregisterQuery(nullptr);
     m->UnregisterQuery("never");
-    ASSERT_TRUE(m->RegisterQuery("m.q", &Ok));
+    ASSERT_TRUE(m->RegisterQuery("m.q", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     m->UnregisterQuery("m.q");
     EXPECT_FALSE(m->GetHost().Has(StringCRC("m.q")));
     m->UnregisterQuery("m.q");
-    EXPECT_TRUE(m->RegisterQuery("m.q", &Ok));
+    EXPECT_TRUE(m->RegisterQuery("m.q", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
 }
 
 TEST(SimHostedModules, AnnounceTableHoldsExactly32Names)
@@ -116,20 +116,20 @@ TEST(SimHostedModules, AnnounceTableHoldsExactly32Names)
     for (int i = 0; i < 32; ++i)
     {
         const std::string n = "m.cap" + std::to_string(i);
-        ASSERT_TRUE(m->RegisterQuery(n.c_str(), &Ok)) << n;
+        ASSERT_TRUE(m->RegisterQuery(n.c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok)) << n;
     }
     LogCapture log("DebugServer");
-    EXPECT_FALSE(m->RegisterQuery("m.cap.extra", &Ok));
+    EXPECT_FALSE(m->RegisterQuery("m.cap.extra", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     EXPECT_EQ(1u, log.Errors("cannot register"));
     m->UnregisterQuery("m.cap0");
-    EXPECT_TRUE(m->RegisterQuery("m.cap.extra", &Ok));
+    EXPECT_TRUE(m->RegisterQuery("m.cap.extra", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
 }
 
 TEST(SimHostedModules, RegisterWithUnconnectedReplyStreamStillSucceedsAndWarns)
 {
     auto m = MakeSimModule();
     LogCapture log("DebugServer");
-    EXPECT_TRUE(m->RegisterQuery("m.unconnected", &Ok));
+    EXPECT_TRUE(m->RegisterQuery("m.unconnected", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     EXPECT_EQ(1u, log.Warnings("rejected by the stream"));
     EXPECT_TRUE(m->GetHost().Has(StringCRC("m.unconnected")));
 }

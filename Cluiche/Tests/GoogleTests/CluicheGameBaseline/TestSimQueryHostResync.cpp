@@ -118,7 +118,7 @@ namespace
         for (int i = 0; i < count; ++i)
         {
             const std::string n = std::string(prefix) + std::to_string(i);
-            ASSERT_TRUE(i % 2 == 0 ? m.RegisterQuery(n.c_str(), &Ok) : m.RegisterCommand(n.c_str(), &Ok));
+            ASSERT_TRUE(i % 2 == 0 ? m.RegisterQuery(n.c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok) : m.RegisterCommand(n.c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
         }
     }
 
@@ -151,8 +151,8 @@ namespace
 TEST(SimQueryHostResync, SeqStartsAtOneAndIncrementsPerAnnounce)
 {
     TestSim m;
-    ASSERT_TRUE(m.RegisterQuery("s.a", &Ok));
-    ASSERT_TRUE(m.RegisterCommand("s.b", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("s.a", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterCommand("s.b", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     m.UnregisterQuery("s.a");
     const std::vector<Sent> sent = m.TakeSent();
     ASSERT_EQ(3u, sent.size());
@@ -166,8 +166,8 @@ TEST(SimQueryHostResync, SeqStartsAtOneAndIncrementsPerAnnounce)
 TEST(SimQueryHostResync, DigestArrivesAfterIntervalWithSeqCountAndHash)
 {
     TestSim m;
-    ASSERT_TRUE(m.RegisterQuery("d.a", &Ok));
-    ASSERT_TRUE(m.RegisterCommand("d.b", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("d.a", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterCommand("d.b", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     m.TakeSent();
 
     Sent digest;
@@ -199,7 +199,7 @@ TEST(SimQueryHostResync, DigestIsSkippedOnFrameThatAnnouncedAndSentNextQuietFram
         for (const Sent& s : m.Frame())
             ASSERT_NE(SimRegistrationOp::Digest, s.parsed.op) << "frame " << i;
     }
-    ASSERT_TRUE(m.RegisterQuery("q.late", &Ok));   // announces just before the digest frame
+    ASSERT_TRUE(m.RegisterQuery("q.late", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));   // announces just before the digest frame
     std::vector<Sent> frame = m.Frame();
     ASSERT_EQ(1u, frame.size());
     EXPECT_EQ(SimRegistrationOp::Register, frame[0].parsed.op);
@@ -263,15 +263,15 @@ TEST(SimQueryHostResync, ResyncEmitsBeginThenReplaysInOrderCappedPerFrame)
     EXPECT_TRUE(m.Frame().empty());   // replay finished; nothing more until the digest
 
     // Replays do not bump the seq counter.
-    ASSERT_TRUE(m.RegisterQuery("r.after", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("r.after", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     EXPECT_EQ(21u, m.TakeSent().at(0).parsed.seq);
 }
 
 TEST(SimQueryHostResync, ReplayKindsMatchRegistrationKinds)
 {
     TestSim m;
-    ASSERT_TRUE(m.RegisterQuery("k.q", &Ok));
-    ASSERT_TRUE(m.RegisterCommand("k.c", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("k.q", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterCommand("k.c", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     m.TakeSent();
     m.PushResyncRequest();
     const std::vector<Sent> f = m.Frame();
@@ -303,7 +303,7 @@ TEST(SimQueryHostResync, MutationDuringReplayRestartsWithFreshBeginAndNewSeq)
     const std::vector<Sent> f1 = m.Frame();
     ASSERT_EQ(16u, f1.size());
 
-    ASSERT_TRUE(m.RegisterQuery("r.extra", &Ok));   // seq 21, replay still queued
+    ASSERT_TRUE(m.RegisterQuery("r.extra", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));   // seq 21, replay still queued
     std::vector<Sent> f2 = m.Frame();
     ASSERT_EQ(17u, f2.size());   // the register + fresh begin + 15 replays
     ASSERT_EQ(SimRegistrationOp::Register, f2[0].parsed.op);
@@ -348,14 +348,14 @@ TEST(SimQueryHostResync, OverflowCountsEveryNonDeliveredAnnounceAndWarnsOncePerI
     m.defaultResult = SendResult::kDroppedOldest;
     LogCapture log("DebugServer");
 
-    ASSERT_TRUE(m.RegisterQuery("o.a", &Ok));
-    ASSERT_TRUE(m.RegisterQuery("o.b", &Ok));
-    ASSERT_TRUE(m.RegisterQuery("o.c", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("o.a", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterQuery("o.b", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterQuery("o.c", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     EXPECT_EQ(3u, m.AnnounceOverflowCount());
     EXPECT_EQ(1u, log.Warnings("announce overflow"));
 
     for (int i = 0; i < 5; ++i) m.Frame();
-    ASSERT_TRUE(m.RegisterQuery("o.d", &Ok));   // still inside the log interval
+    ASSERT_TRUE(m.RegisterQuery("o.d", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));   // still inside the log interval
     EXPECT_EQ(4u, m.AnnounceOverflowCount());
     EXPECT_EQ(1u, log.Warnings("announce overflow"));
 
@@ -446,11 +446,11 @@ TEST(SimQueryHostResync, DroppedAnnouncementIsRepairedByDigestThenResync)
     };
 
     // Three names, the last announcement is lost on the wire (no later seq reveals the gap).
-    ASSERT_TRUE(m.RegisterQuery("e.a", &Ok));
-    ASSERT_TRUE(m.RegisterCommand("e.b", &Ok));
+    ASSERT_TRUE(m.RegisterQuery("e.a", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
+    ASSERT_TRUE(m.RegisterCommand("e.b", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
     deliver(m.TakeSent());
     m.dropPlan.push_back(SendResult::kDroppedOldest);
-    ASSERT_TRUE(m.RegisterQuery("e.c", &Ok));       // dropped
+    ASSERT_TRUE(m.RegisterQuery("e.c", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));       // dropped
     deliver(m.TakeSent());
     ASSERT_EQ(2u, table.size());
     EXPECT_EQ(1u, m.AnnounceOverflowCount());

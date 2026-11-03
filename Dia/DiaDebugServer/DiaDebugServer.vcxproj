@@ -33,6 +33,7 @@
     <ClInclude Include="ISimRequestSink.h" />
     <ClInclude Include="SimPendingTable.h" />
     <ClInclude Include="SimQueryHost.h" />
+    <ClInclude Include="SimHelpInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
@@ -43,6 +44,7 @@
     <ClCompile Include="ObservationBridge.cpp" />
     <ClCompile Include="SimPendingTable.cpp" />
     <ClCompile Include="SimQueryHost.cpp" />
+    <ClCompile Include="SimHelpInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
