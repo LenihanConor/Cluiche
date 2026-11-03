@@ -92,6 +92,30 @@ namespace Dia::MessageBus::Testing {
         }
     } // namespace
 
+    // Only the active tab is emitted (snapshot budget), so tests select it first.
+    static void SelectTab(MessageBusDebugDomain& domain, const char* tab) {
+        Json::Value args(Json::objectValue);
+        args["tab"] = tab;
+        domain.OnCommand(Dia::Core::StringCRC("selectTab"), args);
+    }
+
+    TEST(MessageBusDebugDomain, OnlyActiveTabIsEmitted) {
+        TestableMessageBusModule module;
+        module.Start();
+        module.Update(0.0f);
+
+        MessageBusDebugDomain domain(module);
+        const char* tabs[] = { "schema", "live", "history" };
+        for (const char* active : tabs) {
+            SelectTab(domain, active);
+            Json::Value state;
+            domain.GetJSONState(state);
+            for (const char* t : tabs)
+                EXPECT_EQ(state.isMember(t), std::string(t) == active) << "active=" << active << " tab=" << t;
+        }
+        module.Stop();
+    }
+
     // =========================================================================
     // AC-2: Schema tab — alphabetical order; typeId/producerIds/routerId/
     // subscriberIds per row, including a type observed through both routers.
@@ -124,6 +148,7 @@ namespace Dia::MessageBus::Testing {
         module.Update(0.0f); // dispatch — records observed-router flags
 
         MessageBusDebugDomain domain(module);
+        SelectTab(domain, "schema");
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -236,6 +261,7 @@ namespace Dia::MessageBus::Testing {
         module.Update(0.0f); // tick 2: 1 posted, 0 dropped
 
         MessageBusDebugDomain domain(module);
+        SelectTab(domain, "history");
         Json::Value state;
         domain.GetJSONState(state);
 
@@ -270,6 +296,7 @@ namespace Dia::MessageBus::Testing {
         // 5 ticks pushed (tickIndex 0..4).
 
         MessageBusDebugDomain domain(module);
+        SelectTab(domain, "history");
         Json::Value windowArgs(Json::objectValue);
         windowArgs["ticks"] = 2;
         domain.OnCommand(Dia::Core::StringCRC("setHistoryWindow"), windowArgs);

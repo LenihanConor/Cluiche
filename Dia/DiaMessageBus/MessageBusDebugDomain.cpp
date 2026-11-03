@@ -64,9 +64,15 @@ void MessageBusDebugDomain::GetJSONState(Json::Value& out)
     out["activeTab"]          = TabName(mActiveTab);
     out["historyWindowTicks"] = mHistoryWindowTicks;
 
-    WriteSchemaTab(out);
-    WriteLiveTab(out);
-    WriteHistoryTab(out);
+    // Only the active tab is emitted: the History tab alone can reach ~200 KB
+    // at a 3600-tick window, which would blow the domain-state snapshot budget.
+    // Switching tabs takes effect in the next snapshot.
+    switch (mActiveTab)
+    {
+    case Tab::Schema:  WriteSchemaTab(out);  break;
+    case Tab::Live:    WriteLiveTab(out);    break;
+    case Tab::History: WriteHistoryTab(out); break;
+    }
 }
 
 void MessageBusDebugDomain::WriteSchemaTab(Json::Value& out) const

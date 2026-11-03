@@ -10,7 +10,6 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
-#include <atomic>
 
 namespace Dia::UtilityAI { class UtilitySet; }
 
@@ -36,7 +35,8 @@ public:
 
 private:
     const UtilitySet& mUtilitySet;
-    std::atomic<bool> mScoresEnabled{true};
+    // Plain bool: GetJSONState and OnCommand both run on SimPU only.
+    bool mScoresEnabled = true;
 };
 
 } // namespace Dia::UtilityAI

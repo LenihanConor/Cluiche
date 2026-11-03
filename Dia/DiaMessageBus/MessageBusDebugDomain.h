@@ -20,9 +20,12 @@ namespace Dia::MessageBus {
     ////////////////////////////////////////////////////////////////////////////////
     // MessageBusDebugDomain
     //
-    // Reads MessageBusModule's owned Bus and LedgerHistory in-process, on the
-    // sim thread (this is the in-game Visual Debugger tier — no
-    // DiaDebugServer, no cross-PU connection; see SD-MBX2-011). Contributes
+    // Reads MessageBusModule's owned Bus and LedgerHistory on the sim thread
+    // only: GetJSONState() and OnCommand() are both called by SimPU's
+    // VisualDebuggerModule, which publishes the result to Main as a
+    // DomainStateSnapshot over a FrameStream (see domain-state-snapshots.md).
+    // Nothing here is read across a PU boundary. Only the active tab is
+    // emitted in GetJSONState() to keep the snapshot within budget. Contributes
     // no world-space drawers (HasWorldDrawers() == false); all state is
     // panel-only, delivered through GetJSONState().
     //
