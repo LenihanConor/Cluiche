@@ -9,9 +9,11 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaDebugServer/ISimHostedCatalogue.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
 namespace Dia
@@ -46,6 +48,12 @@ namespace Dia
 				PaletteIndex(const PaletteIndex&) = delete;
 				PaletteIndex& operator=(const PaletteIndex&) = delete;
 
+				// Optional read-only sim-hosted catalogue (not owned; must outlive the index or be reset to null). When set,
+				// Build() appends its names as commands, with description/category and typed params copied into the index
+				// (the snapshot stays valid after the catalogue changes). A name that is also a DiaAPI command is listed
+				// once, from the DiaAPI entry, with a Warning. Main thread only: the catalogue is Main-owned.
+				void SetSimHostedCatalogue(const Dia::DebugServer::ISimHostedCatalogue* catalogue);
+
 				// Snapshots all registered commands and all domains; replaces previous contents.
 				void Build(const DiaDebugDomainRegistry& domains);
 
@@ -67,10 +75,15 @@ namespace Dia
 
 			private:
 				void AddCommands();
+				void AddSimHostedCommands(const Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256>& apiInfos);
 				void AddDomain(const char* name, const char* description, const char* category, const char* domainId);
+
+				struct SimBlock;	// copy of one sim-hosted help plus ValueParam views over its strings
 
 				PaletteItem* mItems;
 				int mCount;
+				const Dia::DebugServer::ISimHostedCatalogue* mSim;
+				SimBlock* mSimBlocks;	// lazily allocated, kMaxSimBlocks entries
 			};
 
 			struct PaletteAction

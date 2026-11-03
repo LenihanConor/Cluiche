@@ -7,6 +7,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
+#include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/QueryRegistry.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/EventStreamReader.h>
@@ -94,6 +95,7 @@ private:
 
     // "debug.domain_state" (Console::QueryDomainState) on the DebugServer QueryRegistry. Registered from DoUpdate once
     // the DebugServer stream is committed, removed in DoStop. Runs on the Main PU, like every other query.
+    Dia::DebugServer::DebugServer* FindDebugServer();
     Dia::DebugServer::QueryRegistry* FindQueryRegistry();
     void RegisterDomainStateQuery();
     void UnregisterDomainStateQuery();

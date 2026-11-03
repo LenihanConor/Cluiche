@@ -9,6 +9,7 @@
 
 #include <DiaVisualDebugger/Console/FuzzyMatcher.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <algorithm>
 #include <cstring>
@@ -53,9 +54,22 @@ namespace Dia
 				};
 			}
 
-			PaletteIndex::PaletteIndex() : mItems(new PaletteItem[kCapacity]), mCount(0) {}
+			struct PaletteIndex::SimBlock
+			{
+				Dia::DebugServer::SimHelpStored help;
+				Dia::API::ValueParam params[Dia::DebugServer::kSimHelpMaxParams];
+			};
 
-			PaletteIndex::~PaletteIndex() { delete[] mItems; }
+			namespace { const unsigned kMaxSimBlocks = 32; }	// the sim host's name cap
+
+			PaletteIndex::PaletteIndex() : mItems(new PaletteItem[kCapacity]), mCount(0), mSim(nullptr), mSimBlocks(nullptr) {}
+
+			PaletteIndex::~PaletteIndex() { delete[] mItems; delete[] mSimBlocks; }
+
+			void PaletteIndex::SetSimHostedCatalogue(const Dia::DebugServer::ISimHostedCatalogue* catalogue)
+			{
+				mSim = catalogue;
+			}
 
 			void PaletteIndex::AddCommands()
 			{
@@ -72,6 +86,45 @@ namespace Dia
 					CopyStr(it.example, sizeof(it.example), infos[i].example);
 					it.params = infos[i].params;
 					it.paramCount = infos[i].params != nullptr ? infos[i].paramCount : 0;
+				}
+				AddSimHostedCommands(infos);
+			}
+
+			void PaletteIndex::AddSimHostedCommands(const Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256>& apiInfos)
+			{
+				if (mSim == nullptr)
+					return;
+				unsigned block = 0;
+				for (uint32_t s = 0; s < mSim->SimHostedCount() && mCount < kMaxCommands && block < kMaxSimBlocks; ++s)
+				{
+					Dia::DebugServer::SimHostedEntryView view;
+					if (!mSim->GetSimHostedEntry(s, view) || view.help == nullptr)
+						continue;
+					const char* name = view.name.AsChar();
+
+					bool duplicate = false;
+					for (unsigned i = 0; i < apiInfos.Size() && !duplicate; ++i)
+						duplicate = (apiInfos[i].name == view.name);
+					if (duplicate)
+					{
+						DIA_LOG_WARNING("Debug", "Palette: '%s' is both a DiaAPI command and sim-hosted; listing the Main-hosted entry only", name);
+						continue;
+					}
+
+					if (mSimBlocks == nullptr)
+						mSimBlocks = new SimBlock[kMaxSimBlocks];
+					SimBlock& b = mSimBlocks[block++];
+					b.help = *view.help;	// own the strings: the catalogue may change before this snapshot is dropped
+					const uint32_t paramCount = Dia::DebugServer::SimHelpToParams(b.help, b.params);
+
+					PaletteItem& it = mItems[mCount++];
+					std::memset(&it, 0, sizeof(it));
+					it.type = PaletteItemType::Command;
+					CopyStr(it.name, sizeof(it.name), name);
+					CopyStr(it.description, sizeof(it.description), b.help.description);
+					CopyStr(it.category, sizeof(it.category), b.help.category);
+					it.params = paramCount > 0 ? b.params : nullptr;
+					it.paramCount = paramCount;
 				}
 			}
 

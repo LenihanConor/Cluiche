@@ -74,7 +74,7 @@
 
 namespace Dia::Observation::Metric { class Counter; class Gauge; }
 namespace Dia::Entity { struct ComponentTypeDesc; }
-namespace Dia::DebugServer { class QueryRegistry; }
+namespace Dia::DebugServer { class QueryRegistry; class ISimHostedCatalogue; }
 namespace Dia::ApplicationFlow { class IApplicationInspectable; }
 
 namespace Dia::ValueSchema
@@ -108,6 +108,12 @@ namespace Dia::ValueSchema
 		void					SetCodeSideSource(ICodeSideSource* source)	{ mCodeSideSource = source; }
 		const CodeSideReport&	GetCodeSideReport() const					{ return mCodeSideReport; }
 		// Metrics + commands registered since the last collection (0 when code_side is off or never collected).
+		// Sim-hosted command help (Sim-Hosted Command Help, Task 4). Injects a read-only catalogue into the live source;
+		// not owned. Default (never called): the module resolves the DebugServer from the "DebugServerService" stream once
+		// that stream is committed (first DoUpdate) -- but only when this module runs on the Main PU, because the
+		// catalogue is Main-owned. Names registered afterwards count as late registrations (CheckLateRegistrations).
+		void					SetSimHostedCatalogue(const Dia::DebugServer::ISimHostedCatalogue* catalogue)
+		{ mLiveSource.SetSimHostedCatalogue(catalogue); mSimCatalogueResolved = true; }
 		unsigned int			LateRegistrationCount();
 		// Logs one Warning when LateRegistrationCount() > 0 and differs from the last warned count.
 		void					CheckLateRegistrations();
@@ -141,6 +147,8 @@ namespace Dia::ValueSchema
 	private:
 		void RegisterQuery();
 		void UnregisterQuery();
+		void ResolveSimCatalogue();
+		bool mSimCatalogueResolved = false;
 		void TickDescribeMode(float deltaTime);
 
 		// Describe mode (Feature 6 task 4): created lazily on the first DoUpdate when DescribeSession is active.

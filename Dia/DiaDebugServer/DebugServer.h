@@ -22,6 +22,7 @@
 #include "DiaDebugServer/DebugServerLogSink.h"
 #include "DiaDebugServer/IDebugStateProvider.h"
 #include "DiaDebugServer/ObservationBridge.h"
+#include "DiaDebugServer/ISimHostedCatalogue.h"
 #include "DiaDebugServer/ISimRequestSink.h"
 #include "DiaDebugServer/SimHelpInfo.h"
 #include "DiaDebugServer/SimHostedTypes.h"
@@ -109,7 +110,16 @@ namespace Dia
 		//
 		// Thread safety: not thread-safe; all methods must be called from the
 		// host's tick thread (typically the main thread / main PU).
-		class DebugServer
+		// The merged command list served by the "list_commands" query: DiaAPI commands plus the sim-hosted catalogue
+		// ('sim' may be null).  Result:
+		//   "api_commands":     every name once (DiaAPI first, then sim-hosted)
+		//   "command_details":  one object per name: name, source ("api"|"sim"), kind (sim only: "query"|"command"),
+		//                       description, category, owner, noArgs, params[] (name,type,required,description,unit,
+		//                       hasRange,min,max,enum)
+		// A name present in both is reported once, from the DiaAPI (Main-hosted) entry, with a Warning.
+		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim);
+
+		class DebugServer : public ISimHostedCatalogue
 		{
 		public:
 			DebugServer();
@@ -235,11 +245,12 @@ namespace Dia
 			void GetSimHostedDigest(uint32_t& count, uint32_t& hash) const;
 
 			// Read-only catalogue access (Main thread only).  Entries are in registration order.
-			uint32_t SimHostedCount() const { return mSimNames.Size(); }
+			// (ISimHostedCatalogue: pass a pointer to this to the consumers of command help.)
+			uint32_t SimHostedCount() const override { return mSimNames.Size(); }
 			// False if index >= SimHostedCount().  'out.help' stays valid until the next catalogue mutation.
-			bool GetSimHostedEntry(uint32_t index, SimHostedEntryView& out) const;
+			bool GetSimHostedEntry(uint32_t index, SimHostedEntryView& out) const override;
 			// Null if 'name' is not sim-hosted.
-			const SimHelpStored* FindSimHostedHelp(Dia::Core::StringCRC name) const;
+			const SimHelpStored* FindSimHostedHelp(Dia::Core::StringCRC name) const override;
 
 			// Sends the deferred COMMAND_RESPONSE for reply.requestId.  Late/unknown ids are dropped.
 			void CompleteSimReply(const SimReplyEvent& reply);

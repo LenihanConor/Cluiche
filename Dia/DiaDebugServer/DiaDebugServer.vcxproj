@@ -35,6 +35,7 @@
     <ClInclude Include="SimQueryHost.h" />
     <ClInclude Include="SimHelpInfo.h" />
     <ClInclude Include="Testing\SimHelpTesting.h" />
+    <ClInclude Include="ISimHostedCatalogue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />

@@ -97,6 +97,9 @@ void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
     if (mPanelVisible && mWallMs >= mNextInterestMs)
         SignalInterest();
     PollDomainSnapshot();
+    // Sim-hosted command help for the palette: a read-only view of the Main-owned catalogue (this module is Main PU
+    // only, like the DebugServer host). Resolved per frame because the server can be replaced across stage changes.
+    mPanel.SetSimHostedCatalogue(FindDebugServer());
     mPanel.ProcessWithRoot(*this, mHaveDomainRoot ? &mDomainRoot : nullptr);
     PushDomainStatesToPanel();
     PushConsoleResults();
@@ -247,7 +250,7 @@ void DebugPanelPageModule::RefreshSchemaService()
     mKeyResolver.SetService(service);
 }
 
-Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
+Dia::DebugServer::DebugServer* DebugPanelPageModule::FindDebugServer()
 {
     auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
     if (app == nullptr)
@@ -257,7 +260,12 @@ Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
     if (store == nullptr || !store->IsCommitted())
         return nullptr;
     auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
-    Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+    return typed ? typed->Get() : nullptr;
+}
+
+Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
+{
+    Dia::DebugServer::DebugServer* server = FindDebugServer();
     return server ? &server->GetQueryRegistry() : nullptr;
 }
 

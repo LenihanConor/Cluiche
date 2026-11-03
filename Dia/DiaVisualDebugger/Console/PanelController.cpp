@@ -106,6 +106,13 @@ namespace Dia
 				mQueryExecutor = executor;
 			}
 
+			void PanelController::SetSimHostedCatalogue(const Dia::DebugServer::ISimHostedCatalogue* catalogue)
+			{
+				mSimHosted = catalogue;
+				if (mPalette != nullptr)
+					mPalette->SetSimHostedCatalogue(catalogue);
+			}
+
 			void PanelController::AddToHistory(const char* line)
 			{
 				mHistory.Add(line);
@@ -164,6 +171,7 @@ namespace Dia
 					mPaletteOpenPending = false;
 					if (mPalette == nullptr)
 						mPalette = new PaletteIndex();
+					mPalette->SetSimHostedCatalogue(mSimHosted);
 
 					if (domains != nullptr)
 						mPalette->Build(*domains);

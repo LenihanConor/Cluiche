@@ -70,6 +70,9 @@ namespace Dia
 				// Not owned; null (the default) means schema requests are ignored. Cleared by nothing: the host sets it once.
 				void SetQueryExecutor(IPanelQueryExecutor* executor);
 
+				// Optional read-only sim-hosted catalogue handed to the palette index (not owned). Main thread only.
+				void SetSimHostedCatalogue(const Dia::DebugServer::ISimHostedCatalogue* catalogue);
+
 				// Records an accepted console line in the history.
 				void AddToHistory(const char* line);
 
@@ -110,6 +113,7 @@ namespace Dia
 
 				ConsoleHistory mHistory;
 				PaletteIndex* mPalette;
+				const Dia::DebugServer::ISimHostedCatalogue* mSimHosted = nullptr;
 			};
 		}
 	}

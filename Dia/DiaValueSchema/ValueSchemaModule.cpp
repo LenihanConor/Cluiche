@@ -3,8 +3,10 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaDebugServer/ISimHostedCatalogue.h>
 #include <DiaDebugServer/QueryRegistry.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -129,7 +131,7 @@ namespace Dia::ValueSchema
 	{
 		const char* const kDebugServerStreamId = "DebugServerService";	// DebugServerHostModule::kServiceStreamId (application layer)
 
-		Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationInspectable* app)
+		Dia::DebugServer::DebugServer* ResolveDebugServer(Dia::ApplicationFlow::IApplicationInspectable* app)
 		{
 			if (app == nullptr) { return nullptr; }
 			auto* store = app->FindStream(Dia::Core::StringCRC(kDebugServerStreamId));
@@ -139,9 +141,30 @@ namespace Dia::ValueSchema
 			// No RTTI (/GR-): dynamic_cast on these polymorphic types is undefined (crashed at start). The stream id fixes the payload
 			// type, exactly as ServiceStreamReader/Writer do with their static_cast.
 			auto* typed = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
-			Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+			return typed ? typed->Get() : nullptr;
+		}
+
+		Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationInspectable* app)
+		{
+			Dia::DebugServer::DebugServer* server = ResolveDebugServer(app);
 			return server ? &server->GetQueryRegistry() : nullptr;
 		}
+	}
+
+	void ValueSchemaModule::ResolveSimCatalogue()
+	{
+		if (mSimCatalogueResolved) { return; }
+		Dia::DebugServer::DebugServer* server = ResolveDebugServer(mAppInspect);
+		if (server == nullptr) { return; }	// stream not committed yet (or no DebugServer): retry next update
+		mSimCatalogueResolved = true;
+		// The catalogue is Main-owned (not thread-safe): never read it from another processing unit.
+		const Dia::ApplicationFlow::ProcessingUnit* pu = GetProcessingUnit();
+		if (pu != nullptr && pu->GetAffinity() != Dia::ApplicationFlow::PUAffinity::kMain)
+		{
+			DIA_LOG_WARNING("VSC", "ValueSchemaModule is not on the Main PU; sim-hosted commands are not collected");
+			return;
+		}
+		mLiveSource.SetSimHostedCatalogue(server);
 	}
 
 	void ValueSchemaModule::UnregisterQuery()
@@ -426,6 +449,7 @@ namespace Dia::ValueSchema
 
 	void ValueSchemaModule::DoUpdate(float deltaTime)
 	{
+		ResolveSimCatalogue();
 		// valueschema.get could not be registered in DoStart when the DebugServer stream was not yet committed: retry until it is.
 		if (mService && !mQueryHandler && mQueryRegistryOverride == nullptr && ResolveQueryRegistry(mAppInspect) != nullptr) { RegisterQuery(); }
 		if (DescribeSession::IsActive() && !DescribeSession::IsComplete()) { TickDescribeMode(deltaTime); }

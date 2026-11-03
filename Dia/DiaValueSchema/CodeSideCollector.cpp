@@ -1,9 +1,11 @@
 #include <DiaValueSchema/CodeSideCollector.h>
 #include <DiaValueSchema/ValueSchemaRegistry.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaDebugServer/ISimHostedCatalogue.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
+#include <set>
 #include <string>
 
 namespace Dia::ValueSchema
@@ -291,6 +293,7 @@ namespace Dia::ValueSchema
 	void LiveCodeSideSource::ForEachCommand(CommandVisitor visitor, void* user)
 	{
 		// std::function members make these arrays large; keep them off the stack.
+		std::set<std::string> apiNames;
 		auto* plain = new Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256>();
 		Dia::API::ListCommandInfos(*plain);
 		for (unsigned int i = 0; i < plain->Size(); ++i)
@@ -305,6 +308,7 @@ namespace Dia::ValueSchema
 			c.mParams = ci.params;
 			c.mParamCount = ci.paramCount;
 			c.mNoArgs = ci.noArgs;
+			apiNames.insert(c.mName);
 			visitor(c, user);
 		}
 		delete plain;
@@ -322,9 +326,38 @@ namespace Dia::ValueSchema
 			c.mParams = ci.params;
 			c.mParamCount = ci.paramCount;
 			c.mNoArgs = ci.noArgs;
+			apiNames.insert(c.mName);
 			visitor(c, user);
 		}
 		delete json;
+
+		// Sim-hosted names (injected catalogue). Params are ValueParam views over a local copy of the help, so the
+		// visitor sees stable pointers for the duration of the call.
+		if (mSimHosted == nullptr) { return; }
+		auto* help = new Dia::DebugServer::SimHelpStored();
+		Dia::API::ValueParam params[Dia::DebugServer::kSimHelpMaxParams];
+		for (uint32_t i = 0; i < mSimHosted->SimHostedCount(); ++i)
+		{
+			Dia::DebugServer::SimHostedEntryView view;
+			if (!mSimHosted->GetSimHostedEntry(i, view) || view.help == nullptr) { continue; }
+			const char* name = view.name.AsChar();
+			if (apiNames.count(name) != 0)
+			{
+				DIA_LOG_WARNING("VSC", "Command '%s' is both a DiaAPI command and sim-hosted; collecting the Main-hosted entry only", name);
+				continue;
+			}
+			*help = *view.help;
+			CodeSideCommand c;
+			c.mName = name;
+			c.mDescription = help->description;
+			c.mCategory = help->category;
+			c.mOwner = help->owner;
+			c.mParamCount = Dia::DebugServer::SimHelpToParams(*help, params);
+			c.mParams = c.mParamCount > 0 ? params : nullptr;
+			c.mNoArgs = help->noArgs;
+			visitor(c, user);
+		}
+		delete help;
 	}
 
 	unsigned int LiveCodeSideSource::MetricGeneration()
@@ -334,7 +367,7 @@ namespace Dia::ValueSchema
 
 	unsigned int LiveCodeSideSource::CommandGeneration()
 	{
-		return Dia::API::Generation();
+		return Dia::API::Generation() + (mSimHosted != nullptr ? mSimHosted->SimHostedCount() : 0u);
 	}
 
 	CodeSideReport CodeSideCollector::Collect(ICodeSideSource& source, ValueSchemaRegistry& registry)

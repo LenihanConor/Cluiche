@@ -14,6 +14,7 @@
 
 #include <cstring>
 #include <memory>
+#include <set>
 #include <string>
 
 #ifdef _WIN32
@@ -28,6 +29,108 @@ namespace Dia
 {
 	namespace DebugServer
 	{
+		namespace
+		{
+			void AppendParams(Json::Value& details, const Dia::API::ValueParam* params, unsigned int count)
+			{
+				Json::Value list(Json::arrayValue);
+				for (unsigned int i = 0; params != nullptr && i < count; ++i)
+				{
+					const Dia::API::ValueParam& p = params[i];
+					Json::Value v(Json::objectValue);
+					v["name"] = p.name != nullptr ? p.name : "";
+					v["type"] = p.type != nullptr ? p.type : "";
+					v["required"] = p.required;
+					v["description"] = p.description != nullptr ? p.description : "";
+					v["unit"] = p.unit != nullptr ? p.unit : "";
+					v["hasRange"] = p.hasRange;
+					if (p.hasRange)
+					{
+						v["min"] = p.min;
+						v["max"] = p.max;
+					}
+					v["enum"] = p.enumValues != nullptr ? p.enumValues : "";
+					list.append(v);
+				}
+				details["params"] = list;
+			}
+
+			Json::Value ApiDetail(const char* name, const char* description, const char* category, const char* owner,
+				bool noArgs, const Dia::API::ValueParam* params, unsigned int paramCount)
+			{
+				Json::Value d(Json::objectValue);
+				d["name"] = name;
+				d["source"] = "api";
+				d["description"] = description != nullptr ? description : "";
+				d["category"] = category != nullptr ? category : "";
+				d["owner"] = owner != nullptr ? owner : "";
+				d["noArgs"] = noArgs;
+				AppendParams(d, params, paramCount);
+				return d;
+			}
+		}
+
+		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim)
+		{
+			Json::Value result(Json::objectValue);
+			Json::Value names(Json::arrayValue);
+			Json::Value details(Json::arrayValue);
+			std::set<std::string> seen;
+
+			// std::function members make these arrays large; keep them off the stack.
+			auto plain = std::make_unique<Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256>>();
+			Dia::API::ListCommandInfos(*plain);
+			for (unsigned int i = 0; i < plain->Size(); ++i)
+			{
+				const Dia::API::CommandInfo& ci = (*plain)[i];
+				if (!seen.insert(ci.name.AsChar()).second)
+					continue;
+				names.append(ci.name.AsChar());
+				details.append(ApiDetail(ci.name.AsChar(), ci.description, ci.category.AsChar(), ci.owner, ci.noArgs, ci.params, ci.paramCount));
+			}
+			auto json = std::make_unique<Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfoJson, 256>>();
+			Dia::API::ListJsonCommandInfos(*json);
+			for (unsigned int i = 0; i < json->Size(); ++i)
+			{
+				const Dia::API::CommandInfoJson& ci = (*json)[i];
+				if (!seen.insert(ci.name.AsChar()).second)
+					continue;
+				names.append(ci.name.AsChar());
+				details.append(ApiDetail(ci.name.AsChar(), ci.description, ci.category.AsChar(), ci.owner, ci.noArgs, ci.params, ci.paramCount));
+			}
+
+			for (uint32_t i = 0; sim != nullptr && i < sim->SimHostedCount(); ++i)
+			{
+				SimHostedEntryView view;
+				if (!sim->GetSimHostedEntry(i, view) || view.help == nullptr)
+					continue;
+				const char* name = view.name.AsChar();
+				if (!seen.insert(name).second)
+				{
+					DIA_LOG_WARNING("DebugServer", "Command list: '%s' is both a DiaAPI command and sim-hosted; reporting the Main-hosted entry only", name);
+					continue;
+				}
+				names.append(name);
+
+				Dia::API::ValueParam params[kSimHelpMaxParams];
+				const uint32_t count = SimHelpToParams(*view.help, params);
+				Json::Value d(Json::objectValue);
+				d["name"] = name;
+				d["source"] = "sim";
+				d["kind"] = view.kind == SimKind::Query ? "query" : "command";
+				d["description"] = view.help->description;
+				d["category"] = view.help->category;
+				d["owner"] = view.help->owner;
+				d["noArgs"] = view.help->noArgs;
+				AppendParams(d, params, count);
+				details.append(d);
+			}
+
+			result["api_commands"] = names;
+			result["command_details"] = details;
+			return result;
+		}
+
 		DebugServer::DebugServer()
 			: mServer(nullptr)
 			, mStateProvider(nullptr)
@@ -1280,12 +1383,9 @@ namespace Dia
 					queryCmds.append("get_server_stats");
 					result["query_commands"] = queryCmds;
 
-					Json::Value apiCmds(Json::arrayValue);
-					Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256> commands;
-					Dia::API::ListCommandInfos(commands);
-					for (unsigned int i = 0; i < commands.Size(); ++i)
-						apiCmds.append(commands[i].name.AsChar());
-					result["api_commands"] = apiCmds;
+					const Json::Value merged = BuildMergedCommandList(this);
+					result["api_commands"] = merged["api_commands"];
+					result["command_details"] = merged["command_details"];
 
 					return result;
 				}
