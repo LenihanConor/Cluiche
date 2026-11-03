@@ -1100,6 +1100,7 @@
     <ClCompile Include="CluicheTest\CellLayersHoverOverrideTests.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryConfig.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryTestSupport.cpp" />
+    <ClCompile Include="DiaCellHistory\TestCellRing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

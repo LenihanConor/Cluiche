@@ -23,10 +23,12 @@
     <ClInclude Include="Testing\FixtureEventSchemas.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="CellRing.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
     <ClCompile Include="HistoryConfig.cpp" />
+    <ClCompile Include="CellRing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
