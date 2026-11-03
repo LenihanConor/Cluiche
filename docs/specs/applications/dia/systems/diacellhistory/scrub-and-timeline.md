@@ -179,4 +179,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `IViewValueSource` hook in DiaCellLayers.
+`Approved` (2026-10-20). Plan: [scrub-and-timeline.plan.md](scrub-and-timeline.plan.md) (In Progress). Build needs AD-001 sign-off for the `IViewValueSource` hook in DiaCellLayers.
