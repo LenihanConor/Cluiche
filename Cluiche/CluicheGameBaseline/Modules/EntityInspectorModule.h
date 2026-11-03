@@ -44,6 +44,8 @@ private:
         this, Dia::Core::StringCRC("DebugServerPush")};
 
     bool mQueryRegistered = false;
+    bool mWriteRegistered = false;
+    bool mFindRegistered  = false;
 
     int      mSlowPollCounter = 0;
     uint64_t mFrameCounter    = 0;

@@ -34,3 +34,27 @@ def test_entity_inspect_request_missing_index_returns_empty(dia_client):
     res = c.send_command("entity.inspect_request", {})
     assert not res, res
     c.navigate_to("Boot")
+
+
+def _call(c, name, params, timeout_s=10.0):
+    deadline = time.time() + timeout_s
+    last = None
+    while time.time() < deadline:
+        try:
+            return c.send_command(name, params)
+        except AutomationError as e:
+            last = e
+            time.sleep(0.2)
+    raise AssertionError(f"{name} never became available: {last}")
+
+
+def test_entity_find_by_name_and_write_field_are_sim_hosted(dia_client):
+    c = dia_client
+    c.navigate_to("EntityTestStage")
+    res = _call(c, "entity.find_by_name", {"name": "no-such-entity"})
+    assert res.get("index") == -1, res
+    res = c.send_command("entity.write_field", {"index": 999999, "componentCrc": 1, "field": "x", "value": 1})
+    assert res.get("error") == "entity not alive", res
+    res = c.send_command("entity.write_field", {})
+    assert "missing" in res.get("error", ""), res
+    c.navigate_to("Boot")

@@ -70,35 +70,37 @@ void Geometry2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
         });
 
     // REPL commands — allow the orchestrator to query metrics
+    // Sim-hosted (Sim-Registered Queries): the counters are written on SimPU, so the handlers run there too.
+    if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get())
     {
-        Dia::API::CommandInfoJson cmd;
-        cmd.name        = Dia::Core::StringCRC("dia.geometry2d.shape_count");
-        cmd.description = "Return the number of geometry shapes in the gallery";
-        cmd.category    = Dia::Core::StringCRC("dia.geometry2d");
-        cmd.owner       = "CluicheTest";
-        cmd.callback    = [this](const Json::Value&) -> Json::Value {
-            Json::Value data;
-            data["value"] = mShapeCount;
-            return data;
-        };
-        Dia::API::RegisterCommandJson(cmd);
-    }
-    {
-        Dia::API::CommandInfoJson cmd;
-        cmd.name        = Dia::Core::StringCRC("dia.geometry2d.intersection_pairs");
-        cmd.description = "Return the number of intersection pairs evaluated";
-        cmd.category    = Dia::Core::StringCRC("dia.geometry2d");
-        cmd.owner       = "CluicheTest";
-        cmd.callback    = [this](const Json::Value&) -> Json::Value {
-            Json::Value data;
+        Dia::DebugServer::SimHelpInfo help;
+        help.category = "dia.geometry2d";
+        help.owner    = "CluicheTest";
+        help.noArgs   = true;
+
+        help.description = "Return the number of geometry shapes in the gallery";
+        mShapeCountQuery = host->RegisterQuery("dia.geometry2d.shape_count", help,
+            [this](const Json::Value&) -> Json::Value {
+                Json::Value data;
+                data["value"] = mShapeCount;
+                return data;
+            });
+
+        help.description = "Return the number of intersection pairs evaluated";
+        mIntersectionPairsQuery = host->RegisterQuery("dia.geometry2d.intersection_pairs", help,
+            [this](const Json::Value&) -> Json::Value {
+                Json::Value data;
 #ifdef DIA_DEBUG
-            data["value"] = mIntersectionPairCount;
+                data["value"] = mIntersectionPairCount;
 #else
-            data["value"] = 0;
+                data["value"] = 0;
 #endif
-            return data;
-        };
-        Dia::API::RegisterCommandJson(cmd);
+                return data;
+            });
+    }
+    else
+    {
+        DIA_LOG_WARNING("CluicheTest", "Geometry2DTestStage: no SimQueryHostModule - REPL count queries not registered");
     }
 }
 
@@ -225,8 +227,13 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void Geometry2DTestStageModule::OnStop()
 {
-    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("dia.geometry2d.shape_count"));
-    Dia::API::UnregisterCommandJson(Dia::Core::StringCRC("dia.geometry2d.intersection_pairs"));
+    if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get())
+    {
+        if (mShapeCountQuery)        host->UnregisterQuery("dia.geometry2d.shape_count");
+        if (mIntersectionPairsQuery) host->UnregisterQuery("dia.geometry2d.intersection_pairs");
+    }
+    mShapeCountQuery = false;
+    mIntersectionPairsQuery = false;
 
     mShapeCount = 0;
     mMetricShapeCount = nullptr;

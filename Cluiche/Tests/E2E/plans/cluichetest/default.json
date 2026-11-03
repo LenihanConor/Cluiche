@@ -17,6 +17,7 @@
         "scenarios/cluichetest/entity_test_stage/test_entity_inspect_sim_hosted.py",
         "scenarios/cluichetest/scene2d_stage/smoke.py",
         "scenarios/cluichetest/geometry2d_stage/smoke.py",
+        "scenarios/cluichetest/geometry2d_stage/test_geometry2d_counts_sim_hosted.py",
         "scenarios/cluichetest/scalarfield_stage/smoke.py",
         "scenarios/cluichetest/entityspatial_stage/smoke.py",
         "scenarios/cluichetest/arena/test_arena_e2e.py",
