@@ -315,6 +315,131 @@ TEST(DomainStateHealthTest, AgeGaugeFollowsSnapshots)
 }
 
 
+// ---- Task 7: edge cases -----------------------------------------------------
+
+// The window is inclusive: an Update exactly at the end still publishes, one ms later it does not.
+TEST_F(PublisherTest, WindowBoundary_PublishesAtExactEnd_StopsOneMsLater)
+{
+	ThreadDomain a("pub.a", "A");
+	registry.Register(a);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(500);
+	gNowMs += 500;
+	pub.Update(1);
+	EXPECT_EQ(sink.writes, 1u);
+	gNowMs += 1;
+	pub.Update(2);
+	EXPECT_EQ(sink.writes, 1u);
+	EXPECT_FALSE(pub.IsArmed());
+}
+
+TEST_F(PublisherTest, ArmZeroPublishesOnlyWhileTimeHasNotAdvanced)
+{
+	ThreadDomain a("pub.a", "A");
+	registry.Register(a);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(0);
+	pub.Update(1);
+	EXPECT_EQ(sink.writes, 1u);
+	gNowMs += 1;
+	pub.Update(2);
+	EXPECT_EQ(sink.writes, 1u);
+}
+
+// A shorter re-arm never shortens an open window.
+TEST_F(PublisherTest, ShorterReArmDoesNotShrinkWindow)
+{
+	ThreadDomain a("pub.a", "A");
+	registry.Register(a);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(1000);
+	pub.Arm(10);
+	gNowMs += 900;
+	pub.Update(1);
+	EXPECT_EQ(sink.writes, 1u);
+}
+
+TEST_F(PublisherTest, EmptyRegistryWhileArmed_PublishesEmptyObject)
+{
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(1000);
+	pub.Update(5);
+	EXPECT_EQ(sink.writes, 1u);
+	EXPECT_EQ(sink.lastCount, 0u);
+	EXPECT_EQ(sink.lastJson, "{}");
+	EXPECT_EQ(sink.lastFlags, 0u);
+	EXPECT_EQ(pub.TruncatedCount(), 0u);
+}
+
+TEST_F(PublisherTest, ExtremeSimFramesAreCarriedThrough)
+{
+	ThreadDomain a("pub.a", "A");
+	registry.Register(a);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(1000);
+	pub.Update(0);
+	EXPECT_EQ(sink.lastFrame, 0u);
+	pub.Update(UINT64_MAX);
+	EXPECT_EQ(sink.lastFrame, UINT64_MAX);
+}
+
+// Rate limit is a closed interval: exactly kTruncatedWarnIntervalMs later warns again, 1 ms earlier does not.
+TEST_F(PublisherTest, WarningIntervalBoundary)
+{
+	ThreadDomain big("pub.big", "Big", 4000);
+	registry.Register(big);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow, 200);
+	pub.Arm(600000);
+	pub.Update(1);
+	EXPECT_EQ(pub.WarningCount(), 1u);
+	gNowMs += DomainStateSnapshotPublisher::kTruncatedWarnIntervalMs - 1;
+	pub.Update(2);
+	EXPECT_EQ(pub.WarningCount(), 1u);
+	gNowMs += 1;
+	pub.Update(3);
+	EXPECT_EQ(pub.WarningCount(), 2u);
+}
+
+// The scratch snapshot is reused: a smaller snapshot after a larger one carries no stale tail.
+TEST_F(PublisherTest, SmallerSnapshotAfterLarger_NoStaleBytes)
+{
+	ThreadDomain big("pub.big", "Big", 3000), small("pub.small", "Small");
+	registry.Register(big);
+	registry.Register(small);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(60000);
+	pub.Update(1);
+	const size_t large = sink.lastJson.size();
+	registry.Unregister(big);
+	pub.Update(2);
+	EXPECT_LT(sink.lastJson.size(), large);
+	Json::Value v;
+	Json::Reader r;
+	EXPECT_TRUE(r.parse(sink.lastJson, v)) << sink.lastJson;
+	EXPECT_EQ(sink.lastCount, 1u);
+}
+
+TEST(DomainStateHealthTest, StaleBoundaryAndPendingTakesPrecedence)
+{
+	DomainStateHealth h;
+	h.OnSnapshot(DomainStateHealth::kStaleMs);
+	EXPECT_EQ(h.Report().status, HealthStatus::kOK);
+	h.OnSnapshot(DomainStateHealth::kStaleMs + 1);
+	EXPECT_EQ(h.Report().reason, StringCRC("domain_snapshot_stale"));
+	for (uint32_t i = 0; i < DomainStateHealth::kPendingLimit; ++i) { h.OnPending(); }
+	EXPECT_EQ(h.Report().reason, StringCRC("domain_snapshot_never_published"));
+}
+
+TEST(DomainStateHealthTest, PendingBelowLimitResetsOnSnapshot)
+{
+	DomainStateHealth h;
+	for (uint32_t i = 0; i < DomainStateHealth::kPendingLimit - 1; ++i) { h.OnPending(); }
+	h.OnSnapshot(0);
+	h.OnPending();	// counter restarted: one pending is far below the limit
+	EXPECT_EQ(h.Report().status, HealthStatus::kOK);
+}
+
+
 // AC 12 / 7: Sim thread churns domains and their state while Main reads snapshots through a real
 // FrameStream. Every snapshot Main sees must parse and be internally consistent. Run under
 // `dia check sanitizer` (ASan) for memory errors; the only shared object is the FrameStreamStore.

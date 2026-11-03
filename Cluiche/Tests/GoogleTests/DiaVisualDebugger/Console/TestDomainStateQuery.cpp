@@ -209,6 +209,89 @@ namespace
 	};
 }
 
+// ---- Task 7: edge cases -----------------------------------------------------
+
+TEST_F(Fixture, EmptyStringId_IsUnknown)
+{
+	Json::Value args(Json::objectValue);
+	args["id"] = "";
+	const Json::Value r = QueryDomainState(&root, args);
+	EXPECT_TRUE(r.isMember("error"));
+}
+
+TEST_F(Fixture, NullAndArrayIds_AreRejectedAsNonString)
+{
+	Json::Value args(Json::objectValue);
+	args["id"] = Json::Value(Json::nullValue);
+	EXPECT_TRUE(QueryDomainState(&root, args).isMember("error"));
+	args["id"] = Json::Value(Json::arrayValue);
+	EXPECT_TRUE(QueryDomainState(&root, args).isMember("error"));
+	args["id"] = 5;
+	EXPECT_TRUE(QueryDomainState(&root, args).isMember("error"));
+}
+
+TEST_F(Fixture, ArrayArgsAreTreatedAsNoId)
+{
+	const Json::Value r = QueryDomainState(&root, Json::Value(Json::arrayValue));
+	EXPECT_EQ(r, root);
+}
+
+// The id is matched against `_id`, not the display-name key or the display name.
+TEST_F(Fixture, DisplayNameIsNotAnId)
+{
+	Json::Value args(Json::objectValue);
+	args["id"] = "Alpha Panel";
+	EXPECT_TRUE(QueryDomainState(&root, args).isMember("error"));
+}
+
+TEST_F(Fixture, EntriesWithMissingOrNonStringIdAreSkipped)
+{
+	root["Broken"] = Json::Value(Json::objectValue);
+	root["Numeric"]["_id"] = 7;
+	root["NotObject"] = 3;
+	Json::Value args(Json::objectValue);
+	args["id"] = "beta_id";
+	const Json::Value r = QueryDomainState(&root, args);
+	EXPECT_FALSE(r.isMember("error"));
+	EXPECT_EQ(r["value"].asInt(), 2);
+}
+
+TEST_F(Fixture, ErrorMessageNamesTheUnknownId)
+{
+	Json::Value args(Json::objectValue);
+	args["id"] = "nope";
+	EXPECT_NE(QueryDomainState(&root, args)["error"].asString().find("nope"), std::string::npos);
+}
+
+// Pin: jsoncpp's range parse stops after the first complete root value, so bytes after it are ignored
+// (the packer never produces any). A truncated value is rejected and leaves the root untouched.
+TEST_F(Fixture, ParseTruncatedJsonFails_TrailingBytesAfterRootAreIgnored)
+{
+	std::unique_ptr<DomainStateSnapshot> bad(new DomainStateSnapshot());
+	Json::Value out(Json::objectValue);
+	out["keep"] = 1;
+	const char* cut = "{\"A\":{\"x\":";
+	bad->jsonBytes = static_cast<uint32_t>(strlen(cut));
+	memcpy(bad->json, cut, bad->jsonBytes);
+	EXPECT_FALSE(ParseDomainStateSnapshot(*bad, out));
+	EXPECT_EQ(out["keep"].asInt(), 1);
+
+	const char* trailing = "{\"A\":{}} trailing";
+	bad->jsonBytes = static_cast<uint32_t>(strlen(trailing));
+	memcpy(bad->json, trailing, bad->jsonBytes);
+	EXPECT_TRUE(ParseDomainStateSnapshot(*bad, out));
+	EXPECT_TRUE(out.isMember("A"));
+}
+
+TEST_F(Fixture, ParseOfZeroLengthSnapshotFails)
+{
+	DomainStateSnapshot& s = *snapshot;
+	s.jsonBytes = 0;
+	Json::Value out(Json::objectValue);
+	EXPECT_FALSE(ParseDomainStateSnapshot(s, out));
+}
+
+
 TEST(ApplySchemaVersionTest, StampsOnlyDomainsWithControlsAndNoVersionYet)
 {
 	Json::Value root(Json::objectValue);

@@ -3,6 +3,7 @@
 // Description: See PanelJson.h.
 ////////////////////////////////////////////////////////////////////////////////
 #include <DiaVisualDebugger/Console/PanelJson.h>
+#include <cmath>
 
 #ifdef DIA_DEBUG
 
@@ -53,12 +54,32 @@ namespace Dia
 				}
 			}
 
+			namespace
+			{
+				// JSON has no NaN/Infinity: the writer would emit a token the reader rejects, which
+				// would make a whole domain-state snapshot unreadable. Replace them with null.
+				void ReplaceNonFinite(Json::Value& v)
+				{
+					if (v.isDouble())
+					{
+						if (!std::isfinite(v.asDouble())) v = Json::Value(Json::nullValue);
+					}
+					else if (v.isArray() || v.isObject())
+					{
+						for (Json::Value& child : v) ReplaceNonFinite(child);
+					}
+				}
+			}
+
 			bool BuildDomainState(IDebugDomain& domain, Json::Value& state, const ISchemaKeyResolver* resolver)
 			{
 				const char* displayName = domain.GetDisplayName();
 
 				state = Json::Value(Json::objectValue);
 				domain.GetJSONState(state);
+				// A domain may replace `out` with a non-object; the envelope below needs an object.
+				if (!state.isObject()) state = Json::Value(Json::objectValue);
+				ReplaceNonFinite(state);
 				if (resolver != nullptr && resolver->IsAvailable()
 					&& state.isMember("controls") && state["controls"].isArray() && !state.isMember("schemaVersion"))
 					state["schemaVersion"] = resolver->Version();

@@ -14,7 +14,10 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <functional>
+#include <limits>
 #include <memory>
+#include <vector>
 #include <string>
 
 using namespace Dia::VisualDebugger;
@@ -214,6 +217,154 @@ TEST_F(DomainStateSnapshotTest, RepeatedPack_ResetsPreviousContents)
 	EXPECT_EQ(snap->flags, 0u);
 	EXPECT_EQ(snap->domainCount, 0u);
 	EXPECT_EQ(std::string(snap->json, snap->jsonBytes), "{}");
+}
+
+
+// ---- Task 7: edge cases -----------------------------------------------------
+
+namespace
+{
+	// Domain whose state and display name are scripted by the test.
+	class ScriptedDomain : public IDebugDomain
+	{
+	public:
+		ScriptedDomain(const char* id, const char* display, std::function<void(Json::Value&)> fill)
+			: mId(id), mDisplay(display), mFill(std::move(fill)) {}
+		StringCRC GetDomainId() const override { return mId; }
+		const char* GetDisplayName() const override { return mDisplay; }
+		const char* GetDescription() const override { return "scripted"; }
+		StringCRC GetGroup() const override { return StringCRC("Spatial"); }
+		Dia::Core::RGBA GetAccentColour() const override { return Dia::Core::RGBA(1, 2, 3, 255); }
+		bool HasWorldDrawers() const override { return false; }
+		void OnCommand(StringCRC, const Json::Value&) override {}
+		void GetJSONState(Json::Value& out) override { mFill(out); }
+	private:
+		StringCRC mId;
+		const char* mDisplay;
+		std::function<void(Json::Value&)> mFill;
+	};
+}
+
+// A domain that emits NaN/Infinity must not make the whole snapshot unparseable.
+TEST_F(DomainStateSnapshotTest, NonFiniteNumbers_SnapshotStillParsesAndOtherDomainsSurvive)
+{
+	ScriptedDomain bad("bad", "Bad", [](Json::Value& o)
+	{
+		o["nan"] = std::numeric_limits<double>::quiet_NaN();
+		o["inf"] = std::numeric_limits<double>::infinity();
+		o["ninf"] = -std::numeric_limits<double>::infinity();
+	});
+	FakeDomain good("good", "Good", 10);
+	registry.Register(bad);
+	registry.Register(good);
+	PackDomainStates(registry, nullptr, 1, *snap);
+
+	Json::Value parsed;
+	Json::Reader reader;
+	ASSERT_TRUE(reader.parse(snap->json, snap->json + snap->jsonBytes, parsed))
+		<< std::string(snap->json, snap->jsonBytes);
+	EXPECT_TRUE(parsed.isMember("Good"));
+	ASSERT_TRUE(parsed.isMember("Bad"));
+	EXPECT_TRUE(parsed["Bad"]["nan"].isNull());
+	EXPECT_TRUE(parsed["Bad"]["inf"].isNull());
+}
+
+// Display names that need JSON escaping round-trip, and are queryable by their exact text.
+TEST_F(DomainStateSnapshotTest, DisplayNameNeedingEscapes_RoundTrips)
+{
+	const char* names[] = { "Say \"hi\"", "back\slash", "tab\there", "caf\xc3\xa9", "new\nline" };
+	std::vector<std::unique_ptr<FakeDomain>> domains;
+	for (int i = 0; i < 5; ++i)
+	{
+		domains.push_back(std::make_unique<FakeDomain>(("esc" + std::to_string(i)).c_str(), names[i], 5));
+		registry.Register(*domains.back());
+	}
+	PackDomainStates(registry, nullptr, 1, *snap);
+	const Json::Value parsed = ParseSnapshot(*snap);
+	for (const char* n : names)
+	{
+		ASSERT_TRUE(parsed.isMember(n)) << n;
+		EXPECT_EQ(parsed[n]["_displayName"].asString(), n);
+	}
+}
+
+// Two domains with the same display name: both are packed (and counted); the parser keeps one.
+TEST_F(DomainStateSnapshotTest, DuplicateDisplayNames_BothPackedCountedTwice)
+{
+	FakeDomain a("dup_a", "Same", 5), b("dup_b", "Same", 5);
+	registry.Register(a);
+	registry.Register(b);
+	const PackResult r = PackDomainStates(registry, nullptr, 1, *snap);
+	EXPECT_EQ(r.includedCount, 2u);
+	EXPECT_EQ(snap->domainCount, 2u);
+	Json::Value parsed;
+	Json::Reader reader;
+	EXPECT_TRUE(reader.parse(snap->json, snap->json + snap->jsonBytes, parsed));
+}
+
+TEST_F(DomainStateSnapshotTest, NullDisplayName_SkippedNotCountedNotDropped)
+{
+	ScriptedDomain nameless("nameless", nullptr, [](Json::Value& o) { o["x"] = 1; });
+	FakeDomain ok("ok", "Ok", 5);
+	registry.Register(nameless);
+	registry.Register(ok);
+	const PackResult r = PackDomainStates(registry, nullptr, 1, *snap);
+	EXPECT_EQ(r.includedCount, 1u);
+	EXPECT_EQ(r.droppedCount, 0u);
+	EXPECT_FALSE(r.truncated);
+	EXPECT_EQ(snap->flags, 0u);
+}
+
+TEST_F(DomainStateSnapshotTest, TinyBudgets_NeverWritePastBudget)
+{
+	FakeDomain a("a", "A", 5);
+	registry.Register(a);
+	for (uint32_t budget : { 0u, 1u, 2u, 3u })
+	{
+		snap->json[0] = 'Z';
+		const PackResult r = PackDomainStates(registry, nullptr, 1, *snap, budget);
+		EXPECT_LE(snap->jsonBytes, budget) << budget;
+		EXPECT_EQ(r.includedCount, 0u) << budget;
+		EXPECT_TRUE(r.truncated) << budget;
+		if (budget >= 2) { EXPECT_EQ(std::string(snap->json, snap->jsonBytes), "{}"); }
+	}
+}
+
+TEST_F(DomainStateSnapshotTest, BudgetAboveBufferIsClamped)
+{
+	FakeDomain huge("huge", "Huge", kMaxSnapshotBytes + 100);
+	registry.Register(huge);
+	const PackResult r = PackDomainStates(registry, nullptr, 1, *snap, kMaxSnapshotBytes * 4);
+	EXPECT_TRUE(r.truncated);
+	EXPECT_LE(snap->jsonBytes, kMaxSnapshotBytes);
+}
+
+// Payload that fills the buffer exactly: no terminating NUL is written, bytes stay in bounds.
+TEST_F(DomainStateSnapshotTest, FillsBufferExactly_NoOverrunAndParses)
+{
+	FakeDomain probe("p", "P", 1000);
+	registry.Register(probe);
+	PackDomainStates(registry, nullptr, 1, *snap);
+	const uint32_t base = snap->jsonBytes;   // size at 1000 filler bytes; filler adds 1:1
+	DiaDebugDomainRegistry r2;
+	FakeDomain exact("p", "P", 1000 + (kMaxSnapshotBytes - base));
+	r2.Register(exact);
+	const PackResult r = PackDomainStates(r2, nullptr, 1, *snap);
+	EXPECT_FALSE(r.truncated);
+	EXPECT_EQ(snap->jsonBytes, kMaxSnapshotBytes);
+	ParseSnapshot(*snap);
+}
+
+// Non-object state (a domain that replaces `out` with an array) must not take down the Sim thread.
+TEST_F(DomainStateSnapshotTest, DomainReplacingStateWithNonObject_DoesNotCrash)
+{
+	ScriptedDomain odd("odd", "Odd", [](Json::Value& o) { o = Json::Value(Json::arrayValue); o.append(1); });
+	FakeDomain ok("ok", "Ok", 5);
+	registry.Register(odd);
+	registry.Register(ok);
+	EXPECT_NO_THROW(PackDomainStates(registry, nullptr, 1, *snap));
+	const Json::Value parsed = ParseSnapshot(*snap);
+	EXPECT_TRUE(parsed.isMember("Ok"));
 }
 
 #endif // DIA_DEBUG
