@@ -24,20 +24,17 @@ class CommandRegistryTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Start fresh for each test
-		if (IsInitialized())
-		{
-			Shutdown();
-		}
+		// Start fresh for each test. Some tests register before Initialize(), so
+		// initialise first to guarantee Shutdown() clears any leaked commands.
+		Initialize();
+		Shutdown();
 	}
 
 	void TearDown() override
 	{
-		// Clean up after each test
-		if (IsInitialized())
-		{
-			Shutdown();
-		}
+		// Clean up after each test (also clears commands registered before Initialize)
+		Initialize();
+		Shutdown();
 	}
 
 	// Helper: Create a simple test command callback
