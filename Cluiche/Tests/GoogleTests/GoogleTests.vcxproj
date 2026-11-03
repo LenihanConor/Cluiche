@@ -1097,6 +1097,7 @@
     <ClCompile Include="DiaValueSchema\TestCodeSideSimHosted.cpp" />
     <ClCompile Include="DiaCellLayers\TestCommandHelp.cpp" />
     <ClCompile Include="DebugServer\TestQueryRegistryOwnerThread.cpp" />
+    <ClCompile Include="CluicheTest\CellLayersHoverOverrideTests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

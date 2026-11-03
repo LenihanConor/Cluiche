@@ -2427,5 +2427,8 @@
     <ClCompile Include="DebugServer\TestQueryRegistryOwnerThread.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersHoverOverrideTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
