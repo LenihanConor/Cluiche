@@ -20,7 +20,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaAPI` `DiaCaptureTest` `DiaDebugProtocol` `DiaDebugServer` `DiaImGui` `DiaMailbox` `DiaMessageBus` `DiaObservation` `DiaPicking` `DiaPython` `DiaSaveGame` `DiaSerializer` `DiaStateMachine` `DiaStreams` `DiaWebSocket`
 
 ### 1.2-Application
-`DiaApplicationFlow` `DiaAutomation` `DiaCellLayers` `DiaEditor` `DiaGame` `DiaSimTime` `DiaValueSchema`
+`DiaApplicationFlow` `DiaAutomation` `DiaCellHistory` `DiaCellLayers` `DiaEditor` `DiaGame` `DiaSimTime` `DiaValueSchema`
 
 ### 1.2-Platform
 `DiaGeometry2DPicking` `DiaInput` `DiaSDL` `DiaWindow`
@@ -94,5 +94,6 @@ Not a top-level `Dia/<Name>/<Name>.vcxproj` library module (executables, editors
 | CluicheGameBaseline | _Executables |
 | CluicheTest | _Executables |
 | CoW | _Executables |
+| CoWEditor | _Executables |
 | DiaUICEF_TestSubprocess | 3.0-Visual |
 | GoogleTests | _Executables |
