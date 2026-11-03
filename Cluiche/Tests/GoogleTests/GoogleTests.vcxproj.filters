@@ -2424,5 +2424,8 @@
     <ClCompile Include="DiaCellLayers\TestCommandHelp.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestQueryRegistryOwnerThread.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

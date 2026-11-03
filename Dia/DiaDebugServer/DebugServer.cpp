@@ -540,6 +540,7 @@ namespace Dia
 			Dia::Observation::Log::Logger::Instance().RegisterSink(&mLogSink);
 
 			mStartTimestamp = Dia::DebugProtocol::GetTimestampNow();
+			mQueryRegistry.SetOwnerThread(QueryRegistry::CurrentThreadId());
 			mStarted = true;
 		}
 
@@ -631,6 +632,7 @@ namespace Dia
 				delete mServer;
 				mServer = nullptr;
 			}
+			mQueryRegistry.ClearOwnerThread();
 			mStarted = false;
 		}
 
