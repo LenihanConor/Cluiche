@@ -6,7 +6,7 @@ path: Dia/DiaCellHistory
 parent_module_id: dia.root
 layer: foundation/application
 status: active
-maturity: stub
+maturity: dev
 version: "0.1"
 dependencies:
   required:
@@ -37,4 +37,13 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 
 | Type | Purpose |
 |---|---|
-| `DiaCellHistory` | Placeholder from the scaffold; replaced by `CellHistoryRecorder` and the tier stores in Tasks 4 to 10. |
+| `CellHistoryRecorder` | `Sample`, `Emit`, `TrackLayer`/`Untrack`, read API (`Header`, `Aggregate`, `CategoryCounts`, `CellValues`, `Events`), status. Published via a `ServiceStream`. |
+| `CellHistoryModule` | SimPU module: creates the recorder, applies the `.diastage` `history` block, registers commands. |
+| `CellHistoryCommands` | `cells.history.track`, `untrack`, `status` (DIA_DEBUG). |
+| `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
+| `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |
+| `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |
+| `EventLog` | Tier 3: typed events assigned to the next sample, budgeted. |
+| `CellHistoryObservation` / `CellHistoryHealth` | Metrics, trace/profile scopes, Degraded above 90% of any budget. |
+
+All tier stores provide `TruncateAfter(sample)` for Feature 3 (snapshot restore). `Testing/` ships stubs (`StubGrid`, `FakeClock`, `BudgetSizing`, `FixtureEventSchemas`).
