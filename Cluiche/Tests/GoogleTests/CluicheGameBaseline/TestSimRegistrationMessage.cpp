@@ -5,6 +5,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace Cluiche::AppFlow;
 using Dia::DebugServer::SimKind;
@@ -375,4 +376,98 @@ TEST(SimNameSetHash, WrappingSumIsLossless)
     const SimRegistration parsed = ParseSimRegistrationReply(*reply);
     EXPECT_EQ(parsed.hash, sum);
     EXPECT_EQ(parsed.seq, 0xFFFFFFFFu);
+}
+
+// ---- Task 7 edge tests ----
+
+#include <map>
+#include <random>
+#include <set>
+
+// Sanity: over a few thousand random 32-name sets, distinct sets give distinct (sum) hashes.
+TEST(SimNameSetHash, DistinctRandomThirtyTwoNameSetsGiveDistinctHashes)
+{
+    std::mt19937 rng(12345u);
+    std::vector<std::string> pool;
+    for (int i = 0; i < 300; ++i)
+        pool.push_back("debug.module" + std::to_string(i) + (i % 3 ? ".query" : ".cmd"));
+
+    std::map<uint32_t, std::set<std::string>> byHash;
+    std::set<std::set<std::string>> seen;
+    for (int n = 0; n < 4000; ++n)
+    {
+        std::set<std::string> s;
+        uint32_t h = 0;
+        while (s.size() < 32)
+        {
+            const std::string& name = pool[rng() % pool.size()];
+            const SimKind kind = (rng() & 1u) ? SimKind::Command : SimKind::Query;
+            const std::string key = name + (kind == SimKind::Command ? "|c" : "|q");
+            if (s.insert(key).second)
+                h += SimNameSetEntryHash(name.c_str(), kind);
+        }
+        if (!seen.insert(s).second)
+            continue;
+        auto it = byHash.find(h);
+        if (it != byHash.end())
+            ADD_FAILURE() << "hash collision between two distinct sets: 0x" << std::hex << h;
+        byHash[h] = s;
+    }
+    EXPECT_GT(seen.size(), 3900u);
+}
+
+// Fuzz: ParseSimRegistrationReply never crashes on junk and never reports a register with an invalid name.
+TEST(SimRegistrationMessage, FuzzedPayloadsNeverCrashAndNeverYieldInvalidRegistrations)
+{
+    std::mt19937 rng(777u);
+    auto reply = MakeReply();
+    for (int n = 0; n < 3000; ++n)
+    {
+        std::memset(reply.get(), 0, sizeof(SimReplyEvent));
+        const uint32_t len = rng() % 600;
+        for (uint32_t i = 0; i < len; ++i)
+            reply->json[i] = static_cast<char>(rng());   // includes embedded NULs and high bytes
+        const SimRegistration r = ParseSimRegistrationReply(*reply);
+        if (r.op == SimRegistrationOp::Register || r.op == SimRegistrationOp::Unregister || r.op == SimRegistrationOp::Replay)
+        {
+            EXPECT_NE(r.name[0], '\0');
+            EXPECT_LT(std::strlen(r.name), static_cast<size_t>(kSimRegistrationMaxName));
+        }
+    }
+
+    const char* const cases[] = {
+        "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"seq\":99999999999999999999}",
+        "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"seq\":-1}",
+        "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"seq\":1.5e300}",
+        "{\"digest\":{\"seq\":4294967296,\"count\":1,\"hash\":\"0x1\"}}",
+        "{\"digest\":{\"seq\":1,\"count\":1,\"hash\":\"0xZZZZZZZZZZZZZZZZZZ\"}}",
+        "{\"resync_begin\":{\"seq\":1,\"count\":18446744073709551615}}",
+        "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"seq\":1",
+        "{\"register\":{\"name\":",
+        "{\"register\":",
+        "{",
+        "[]", "null", "\"register\"", "123", "{\"register\":null,\"seq\":1}", "{\"register\":[],\"seq\":1}",
+        "{\"register\":{\"name\":123,\"kind\":\"query\"},\"seq\":1}",
+        "{\"register\":{\"name\":\"a\u0000b\",\"kind\":\"query\"},\"seq\":1}",
+        "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"unregister\":{\"name\":\"a\"},\"digest\":{},\"seq\":1}",
+    };
+    for (const char* c : cases)
+    {
+        std::memset(reply.get(), 0, sizeof(SimReplyEvent));
+        std::strcpy(reply->json, c);
+        (void)ParseSimRegistrationReply(*reply);   // must not crash
+    }
+
+    // 16 KB with no terminator, valid-looking prefix, and a deeply nested one.
+    std::memset(reply->json, 'x', Dia::DebugServer::kSimPayloadBytes);
+    std::memcpy(reply->json, "{\"register\":{\"name\":\"a\"", 22);
+    EXPECT_EQ(ParseSimRegistrationReply(*reply).op, SimRegistrationOp::Malformed);
+    std::memset(reply->json, '[', Dia::DebugServer::kSimPayloadBytes - 1);
+    reply->json[Dia::DebugServer::kSimPayloadBytes - 1] = '\0';
+    EXPECT_EQ(ParseSimRegistrationReply(*reply).op, SimRegistrationOp::Malformed);
+
+    // An oversized seq must not be silently truncated into a valid one.
+    std::memset(reply.get(), 0, sizeof(SimReplyEvent));
+    std::strcpy(reply->json, "{\"register\":{\"name\":\"a\",\"kind\":\"query\"},\"seq\":4294967297}");
+    EXPECT_EQ(ParseSimRegistrationReply(*reply).op, SimRegistrationOp::Malformed);
 }

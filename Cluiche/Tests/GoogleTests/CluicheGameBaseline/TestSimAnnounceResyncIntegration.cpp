@@ -135,6 +135,8 @@ namespace
 		int resyncPosts = 0;       // control (Resync) requests Main posted
 		int clientPosts = 0;       // client requests routed to Sim
 		int digestsDelivered = 0;
+		bool failResyncPost = false;   // Main's PostRequest for a Resync request fails (full stream)
+		int resyncPostAttempts = 0;
 		int dropped = 0;
 
 		void Step(int n = 1)
@@ -228,7 +230,12 @@ namespace
 	bool MainSide::PostRequest(const SimRequestEvent& r)
 	{
 		if (r.kind == static_cast<uint32_t>(SimKind::Resync))
+		{
+			++rig.resyncPostAttempts;
+			if (rig.failResyncPost)
+				return false;
 			++rig.resyncPosts;
+		}
 		rig.toSim.push_back(std::unique_ptr<SimRequestEvent>(new SimRequestEvent(r)));
 		return true;
 	}
@@ -499,6 +506,200 @@ TEST(SimAnnounceResyncIntegration, SecondSimHostAnnouncementsAreIgnoredAndTheFir
 	EXPECT_EQ(r.MainCount(), 4u);
 	EXPECT_TRUE(r.Answers("it.more"));
 	EXPECT_EQ(r.Tracker().AnnounceGaps(), gaps);
+}
+
+// ---- Task 7 edge tests ----
+
+namespace
+{
+	void Inject(Rig& r, const SimReplyEvent& m, unsigned int sender = 0)
+	{
+		r.main.HandleSimReply(m, gNowMs, sender != 0 ? sender : r.sim.GetInstanceId().Value());
+	}
+
+	bool DropTail(const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "it.tail") == 0; }
+}
+
+// Edge: a full 32-name set (the per-module cap) replays across three Updates and installs.
+TEST(SimAnnounceResyncIntegration, ReplayOfThirtyTwoNamesCompletes)
+{
+	Rig r;
+	SyncedStart(r, 31);
+	r.drop = &DropTail;
+	r.Add("it.tail");
+	r.drop = nullptr;
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 60));
+	EXPECT_EQ(r.MainCount(), 32u);
+	for (int i = 0; i < 31; ++i) EXPECT_TRUE(r.Answers(("it.n" + std::to_string(i)).c_str())) << i;
+	EXPECT_TRUE(r.Answers("it.tail"));
+}
+
+// Edge: Sim holds 0 names while Main holds stale ones; resync_begin count 0 installs an empty table.
+TEST(SimAnnounceResyncIntegration, ResyncWhileSimHoldsZeroNamesEmptiesMain)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Unregister; };
+	r.sim.UnregisterQuery("it.n0");
+	r.sim.UnregisterQuery("it.n1");
+	r.drop = nullptr;
+	ASSERT_EQ(r.MainCount(), 2u);
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 60));
+	EXPECT_EQ(r.MainCount(), 0u);
+	EXPECT_TRUE(r.Tracker().InSync());
+	EXPECT_FALSE(r.Routes("it.n0"));
+}
+
+// Edge: unregistering a name the Sim never had announces nothing and consumes no seq.
+TEST(SimAnnounceResyncIntegration, UnregisterOfUnknownNameOnSimIsSilent)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	const uint32_t seq = r.Tracker().LastSeq();
+	r.sim.UnregisterQuery("never.registered");
+	r.Step(3);
+	EXPECT_EQ(r.Tracker().LastSeq(), seq);
+	EXPECT_EQ(r.Tracker().AnnounceGaps(), 0u);
+	EXPECT_EQ(r.MainCount(), 2u);
+	r.Add("it.next");
+	r.Step(2);
+	EXPECT_EQ(r.Tracker().AnnounceGaps(), 0u) << "the next register is still consecutive";
+	EXPECT_EQ(r.MainCount(), 3u);
+}
+
+// Edge: a (garbage) digest arriving while a replay is being staged does not disturb the staging.
+TEST(SimAnnounceResyncIntegration, DigestArrivingMidReplayDoesNotDisturbStaging)
+{
+	Rig r;
+	SyncedStart(r, 20);
+	r.drop = &DropTail;
+	r.Add("it.tail");
+	r.drop = nullptr;
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().Staging(); }, 60)) << "21 names need two Updates, so staging is visible between frames";
+	std::unique_ptr<SimReplyEvent> d(new SimReplyEvent);
+	std::memset(d.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimDigestReply(1, 99, 0xdeadbeefu, *d));
+	Inject(r, *d);
+	EXPECT_TRUE(r.Tracker().Staging());
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 20));
+	EXPECT_EQ(r.MainCount(), 21u);
+	EXPECT_TRUE(r.Tracker().InSync());
+	EXPECT_TRUE(r.Answers("it.tail"));
+}
+
+// Edge: a duplicate resync_begin restarts staging (half-filled set abandoned); the next digest mismatch requests a fresh resync whose begin restarts staging again and completes.
+TEST(SimAnnounceResyncIntegration, DuplicateResyncBeginRecoversViaTheNextDigestDrivenResync)
+{
+	Rig r;
+	SyncedStart(r, 20);
+	r.drop = &DropTail;
+	r.Add("it.tail");
+	r.drop = nullptr;
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().Staging(); }, 60));
+	std::unique_ptr<SimReplyEvent> b(new SimReplyEvent);
+	std::memset(b.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(r.Tracker().LastSeq(), 21, *b));
+	Inject(r, *b);
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 150));
+	EXPECT_EQ(r.MainCount(), 21u);
+	EXPECT_TRUE(r.Answers("it.tail"));
+}
+
+// Edge: Main's PostRequest fails permanently. No crash, no spin: retries ride the digest cadence (about 1 per 30 frames).
+TEST(SimAnnounceResyncIntegration, PermanentlyFailingResyncPostRetriesAtDigestCadenceAndRecoversWhenItWorks)
+{
+	Rig r;
+	SyncedStart(r, 3);
+	r.failResyncPost = true;
+	r.drop = &DropTail;
+	r.Add("it.tail");
+	r.drop = nullptr;
+	r.Step(200);
+	EXPECT_EQ(r.resyncPosts, 0);
+	EXPECT_GE(r.resyncPostAttempts, 2) << "it keeps retrying";
+	EXPECT_LE(r.resyncPostAttempts, 12) << "but not every frame";
+	EXPECT_EQ(r.MainCount(), 3u);
+	EXPECT_EQ(r.Tracker().ResyncsCompleted(), 0u);
+
+	r.failResyncPost = false;
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 60));
+	EXPECT_EQ(r.MainCount(), 4u);
+}
+
+// Edge: two gaps in the same frame post one request.
+TEST(SimAnnounceResyncIntegration, TwoGapsInOneFramePostOneRequest)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strncmp(m.name, "it.lost", 7) == 0; };
+	r.Add("it.lost1");
+	r.Add("it.lost2");
+	r.drop = nullptr;
+	r.Add("it.a");
+	r.Add("it.b");
+	r.Add("it.c");
+	r.Step(1);
+	EXPECT_EQ(r.resyncPosts, 1);
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 20));
+	EXPECT_EQ(r.resyncPosts, 1);
+	EXPECT_EQ(r.MainCount(), 7u);
+}
+
+// AC 1 end to end: a register without seq (not replay) reaches Main as Malformed and changes nothing.
+TEST(SimAnnounceResyncIntegration, RegisterWithoutSeqIsIgnoredByMain)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	const uint32_t seq = r.Tracker().LastSeq();
+	std::unique_ptr<SimReplyEvent> m(new SimReplyEvent);
+	std::memset(m.get(), 0, sizeof(SimReplyEvent));
+	m->requestId = 0;
+	std::strcpy(m->json, "{\"register\":{\"name\":\"noseq.name\",\"kind\":\"query\"}}");
+	Inject(r, *m);
+	EXPECT_EQ(r.MainCount(), 2u);
+	EXPECT_FALSE(r.Routes("noseq.name"));
+	EXPECT_EQ(r.Tracker().LastSeq(), seq);
+	EXPECT_EQ(r.Tracker().AnnounceGaps(), 0u);
+	EXPECT_TRUE(r.Tracker().InSync());
+}
+
+// Guard path: foreign resync_begin(0) / replay cannot open staging or wipe the table.
+TEST(SimAnnounceResyncIntegration, ForeignResyncBeginAndReplayAreIgnored)
+{
+	Rig r;
+	SyncedStart(r, 3);
+	const unsigned int rogue = StringCRC("RogueHost").Value();
+	std::unique_ptr<SimReplyEvent> m(new SimReplyEvent);
+	std::memset(m.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(5, 0, *m));
+	Inject(r, *m, rogue);
+	std::memset(m.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(5, 1, *m));
+	Inject(r, *m, rogue);
+	std::memset(m.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimReplayReply("rogue.replay", SimKind::Query, *m));
+	Inject(r, *m, rogue);
+	EXPECT_EQ(r.main.IgnoredForeignAnnounceCount(), 3u);
+	EXPECT_FALSE(r.Tracker().Staging());
+	EXPECT_EQ(r.Tracker().ResyncsCompleted(), 0u);
+	EXPECT_EQ(r.MainCount(), 3u);
+	EXPECT_FALSE(r.Routes("rogue.replay"));
+}
+
+// AC 14: protocol control words are not client-visible commands; a client asking for them gets "unknown" and nothing reaches Sim.
+TEST(SimAnnounceResyncIntegration, ControlWordsAreNotClientCommands)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	const int posts = r.clientPosts;
+	const size_t sentBefore = r.sent.size();
+	for (const char* w : { "resync", "digest", "resync_begin", "replay", "sim.resync" })
+		r.Send(950, w);
+	EXPECT_EQ(r.clientPosts, posts);
+	EXPECT_EQ(r.resyncPosts, 0);
+	ASSERT_EQ(r.sent.size(), sentBefore + 5);
+	for (size_t i = sentBefore; i < r.sent.size(); ++i)
+		EXPECT_FALSE(r.sent[i].msg.command_response().success());
 }
 
 #endif // DIA_DEBUG

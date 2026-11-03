@@ -217,7 +217,10 @@ inline SimRegistration ParseSimRegistrationReply(const Dia::DebugServer::SimRepl
     const size_t len  = strnlen(begin, Dia::DebugServer::kSimPayloadBytes);
     Json::Value root;
     Json::Reader reader;
-    if (len == 0 || !reader.parse(begin, begin + len, root) || !root.isObject())
+    bool parsed = false;
+    try { parsed = len != 0 && reader.parse(begin, begin + len, root); }
+    catch (...) { parsed = false; }   // jsoncpp throws on pathological nesting (stackLimit): junk is Malformed, never an exception
+    if (!parsed || !root.isObject())
         return result;
 
     const bool isRegister   = root.isMember("register");
