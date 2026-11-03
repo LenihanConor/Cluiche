@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md
-**Status:** In Progress
+**Status:** In Progress (task 4b pending)
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
