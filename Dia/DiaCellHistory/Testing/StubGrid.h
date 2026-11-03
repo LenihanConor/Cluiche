@@ -24,11 +24,17 @@ namespace Dia::CellHistory::Testing
 			mGrid.width = width;
 			mGrid.height = height;
 			mGrid.cellSize = 1.0f;
+			mCentres.assign(size_t(width) * height * 2, 0.0f);
+			mNeighbours.assign(size_t(width) * height * 6, -1);
+			mGrid.centresXY = mCentres.data();
+			mGrid.neighbours = mNeighbours.data();
 		}
 		StubGrid(const StubGrid&) = delete;
 		StubGrid& operator=(const StubGrid&) = delete;
 
 		const Dia::Graphics::CellGridDesc&	Grid() const { return mGrid; }
+		// Changes the topology id (e.g. "hex.flat.oddq" so a CellField accepts the grid). Call before registering layers.
+		void		SetTopology(const char* topology) { mGrid.topology = Dia::Core::StringCRC(topology); }
 		uint32_t	CellCount() const { return uint32_t(mGrid.width) * mGrid.height; }
 		uint32_t	LayerCount() const { return uint32_t(mLayers.size()); }
 
@@ -134,6 +140,8 @@ namespace Dia::CellHistory::Testing
 		}
 
 		Dia::Graphics::CellGridDesc			mGrid;
+		std::vector<float>					mCentres;		// zeros: enough for a CellField to accept the grid
+		std::vector<int32_t>				mNeighbours;	// all -1
 		std::vector<std::unique_ptr<Layer>>	mLayers;
 	};
 }

@@ -38,6 +38,7 @@
     <ClInclude Include="HistoryViewState.h" />
     <ClInclude Include="HistoryValueSource.h" />
     <ClInclude Include="HistoryViewCommands.h" />
+    <ClInclude Include="HistoryViewStatus.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -54,6 +55,7 @@
     <ClCompile Include="HistoryViewState.cpp" />
     <ClCompile Include="HistoryValueSource.cpp" />
     <ClCompile Include="HistoryViewCommands.cpp" />
+    <ClCompile Include="HistoryViewStatus.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
