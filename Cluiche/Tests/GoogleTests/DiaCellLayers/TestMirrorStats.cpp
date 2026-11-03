@@ -7,6 +7,7 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/ViewerCommands.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 #include <DiaAPI/DiaAPI.h>
 
 #include <memory>
@@ -667,6 +668,29 @@ TEST_F(MirrorStatsTest, ReadDelegateReenteringWithStatsAllKeepsTheOuterLayerInta
 	// the cached outer answer must not have been replaced by the nested one
 	const Json::Value again = rig.queries->SelectionStats(Json::Value(Json::objectValue));
 	EXPECT_EQ(again, outer);
+}
+
+TEST_F(MirrorStatsTest, ViewSourceEpochChangeInvalidatesCachedStatsSameFrame)
+{
+	StatsRig rig;
+	rig.SelectBox();
+	StubViewValueSource src;
+	src.live = false;
+	src.epoch = 5;
+	ASSERT_TRUE(rig.registry.SetViewValueSource(&src));
+	const Json::Value args(Json::objectValue);
+	const Json::Value first = rig.queries->SelectionStats(args);
+	ASSERT_FALSE(IsError(first)) << first.toStyledString();
+	const uint32_t after1 = rig.queries->StatsComputeCount();
+	rig.queries->SelectionStats(args);
+	EXPECT_EQ(after1, rig.queries->StatsComputeCount()) << "same epoch, same frame must hit the cache";
+	src.epoch = 6;	// view change with no frame advance
+	rig.queries->SelectionStats(args);
+	EXPECT_EQ(after1 + 1, rig.queries->StatsComputeCount()) << "epoch change must recompute";
+	src.live = true;	// back to live: key changes again
+	rig.queries->SelectionStats(args);
+	EXPECT_EQ(after1 + 2, rig.queries->StatsComputeCount()) << "live transition must recompute";
+	rig.registry.ClearViewValueSource();
 }
 
 #endif // DIA_DEBUG

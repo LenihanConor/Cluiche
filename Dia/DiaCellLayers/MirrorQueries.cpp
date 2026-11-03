@@ -304,6 +304,7 @@ namespace Dia::CellLayers
 		key.Push(sel != nullptr ? sel->Count() : 0);
 		key.Push(static_cast<uint64_t>(request.mode));
 		key.Push(mRegistry.LayersVersion());
+			key.Push(InspectorState::SourceKey(mRegistry));	// view change (epoch / live) invalidates immediately
 		key.Push((inspector.IsPinned() ? 1u : 0u) | (inspector.IsFrozen() ? 2u : 0u) | (inspector.IsUpdating() ? 4u : 0u));
 		key.Push(inspector.PinnedCount());
 		key.Push(inspector.ShownLayerCount());

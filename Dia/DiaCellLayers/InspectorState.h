@@ -100,6 +100,9 @@ namespace Dia::CellLayers
 		// frozen array and entries the pass is reading are never freed or rebuilt under it.
 		bool		IsBusy() const { return mBusy; }
 
+		// 0 = live / no source installed; else ViewEpoch()+1. Cache keys over viewed values must include it.
+		static uint64_t	SourceKey(const CellLayerRegistry& registry);	// 0 = live / no source; else ViewEpoch()+1
+
 		uint32_t	PassCount() const { return mPassCount; }
 		uint32_t	LastPassLayerCount() const { return mLastPassLayerCount; }
 		double		LastPassMs() const { return mLastPassMs; }
@@ -127,7 +130,6 @@ namespace Dia::CellLayers
 		void	RebuildShown(const CellLayerRegistry& registry);
 		void	ClearComputed();
 		bool	AnyDirty(const CellLayerRegistry& registry) const;
-		static uint64_t	SourceKey(const CellLayerRegistry& registry);	// 0 = live / no source; else ViewEpoch()+1
 		bool	NeedsCompute(const CellLayerRegistry& registry, const Entry& e) const;
 		bool	NeedsComputeA(const CellLayerRegistry& registry, const Entry& e) const;
 		void	CheckPinIdentity();
