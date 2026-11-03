@@ -36,6 +36,7 @@
       <Filter>Dia</Filter>
     </ClInclude>
     <ClInclude Include="HistoryViewState.h" />
+    <ClInclude Include="HistoryValueSource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -50,6 +51,7 @@
       <Filter>Dia</Filter>
     </ClCompile>
     <ClCompile Include="HistoryViewState.cpp" />
+    <ClCompile Include="HistoryValueSource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
