@@ -480,7 +480,8 @@ body {
 .flt[data-lvl=WARN].active { border-color: #c8882a; color: #c8882a; }
 .flt[data-lvl=ERROR].active { border-color: #c03030; color: #c03030; }
 .log-view.closed .log-body, .log-view.closed .log-filters { display: none; }
-.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; }
+.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; user-select: text; cursor: text; }
+.log-body * { user-select: text; }
 .log-line { display: flex; gap: 7px; padding: 1px 10px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
 .log-line:nth-child(odd) { background: #121212; }
 .log-ts { color: #3a3a3a; flex-shrink: 0; }
@@ -2136,9 +2137,20 @@ function consoleSetInput(data) {
 }
 window.consoleSetInput = consoleSetInput;
 
+var conLogDirty = false;
+document.addEventListener('selectionchange', function () {
+  var sel = window.getSelection();
+  if (conLogDirty && (!sel || sel.isCollapsed)) conRenderLog();
+});
+
 function conRenderLog() {
   var body = conEl('log-body');
   if (!body) return;
+  // Don't rebuild the DOM while the user has text selected in the log (would wipe the selection).
+  var sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed && body.contains(sel.anchorNode)) { conLogDirty = true; return; }
+  conLogDirty = false;
+  var stick = body.scrollHeight - body.scrollTop - body.clientHeight < 24;
   var html = '', shown = 0;
   for (var i = 0; i < conLogLines.length; ++i) {
     var l = conLogLines[i];
@@ -2149,7 +2161,7 @@ function conRenderLog() {
             conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
   }
   body.innerHTML = html || '<div class="log-empty">No log lines at this level</div>';
-  body.scrollTop = body.scrollHeight;
+  if (stick) body.scrollTop = body.scrollHeight;
   var cnt = conEl('log-count');
   if (cnt) cnt.textContent = shown + ' / ' + conLogLines.length;
 }
