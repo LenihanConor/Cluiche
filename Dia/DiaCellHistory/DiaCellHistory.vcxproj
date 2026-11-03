@@ -91,6 +91,7 @@
     <ClInclude Include="HistoryValueSource.h" />
     <ClInclude Include="HistoryViewCommands.h" />
     <ClInclude Include="HistoryViewStatus.h" />
+    <ClInclude Include="TimelineModel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -106,6 +107,7 @@
     <ClCompile Include="HistoryValueSource.cpp" />
     <ClCompile Include="HistoryViewCommands.cpp" />
     <ClCompile Include="HistoryViewStatus.cpp" />
+    <ClCompile Include="TimelineModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

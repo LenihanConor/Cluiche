@@ -2481,5 +2481,8 @@
     <ClCompile Include="DiaCellHistory\TestHistoryViewIntegration.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestTimelineModel.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

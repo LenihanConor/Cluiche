@@ -1113,6 +1113,7 @@
     <ClCompile Include="DiaCellHistory\TestHistoryValueSource.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryViewCommands.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryViewIntegration.cpp" />
+    <ClCompile Include="DiaCellHistory\TestTimelineModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
