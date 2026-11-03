@@ -293,11 +293,17 @@ namespace Dia::CellLayers
 		mShownCount = n;
 	}
 
+	uint64_t InspectorState::SourceKey(const CellLayerRegistry& registry)
+	{
+		const IViewValueSource* source = registry.ViewValueSource();
+		return (source != nullptr && !source->IsLive()) ? source->ViewEpoch() + 1 : 0;
+	}
+
 	bool InspectorState::NeedsCompute(const CellLayerRegistry& registry, const Entry& e) const
 	{
 		if (!e.computed) { return true; }
 		const CellLayerDesc* d = registry.Find(e.id);
-		return d != nullptr && !d->version.empty() && d->version() != e.seenVersion;
+		return (d != nullptr && !d->version.empty() && d->version() != e.seenVersion) || SourceKey(registry) != e.seenSource;
 	}
 
 	bool InspectorState::NeedsComputeA(const CellLayerRegistry& registry, const Entry& e) const
@@ -305,7 +311,7 @@ namespace Dia::CellLayers
 		if (mPinned == nullptr || mFrozen != nullptr) { return false; }	// frozen A is never recomputed
 		if (!e.aComputed) { return true; }
 		const CellLayerDesc* d = registry.Find(e.id);
-		return d != nullptr && !d->version.empty() && d->version() != e.aSeenVersion;
+		return (d != nullptr && !d->version.empty() && d->version() != e.aSeenVersion) || SourceKey(registry) != e.aSeenSource;
 	}
 
 	bool InspectorState::AnyDirty(const CellLayerRegistry& registry) const
@@ -365,6 +371,7 @@ namespace Dia::CellLayers
 			{
 				e.computed = true;
 				e.seenVersion = version;
+				e.seenSource = SourceKey(registry);
 				WarnUnresolvedSchemaKey(schema, d);
 				SelectionStats::Compute(registry, reader, schema, *selection, e.id, e.stats);
 				if (e.id == mBase)
@@ -377,6 +384,7 @@ namespace Dia::CellLayers
 			{
 				e.aComputed = true;
 				e.aSeenVersion = version;
+				e.aSeenSource = SourceKey(registry);
 				SelectionStats::Compute(registry, reader, schema, *mPinned, e.id, e.aStats);
 			}
 			++computed;

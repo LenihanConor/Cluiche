@@ -8,6 +8,7 @@
 #include <DiaCellLayers/LayerReader.h>
 #include <DiaCellLayers/Testing/LayerReaderTestSupport.h>
 #include <DiaCellLayers/Testing/SelectionTestSupport.h>
+#include <DiaCellLayers/Testing/ViewValueSourceTestSupport.h>
 
 using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
@@ -761,4 +762,54 @@ TEST_F(SelectionInspectorStateTest, LiveAOnlyCoversTheShownSet)
 	ASSERT_NE(nullptr, state.StatsForA(StringCRC("a")));
 	EXPECT_TRUE(state.StatsForA(StringCRC("a"))->hasData);
 	EXPECT_EQ(nullptr, state.StatsForA(StringCRC("c")));	// c is not shown, so live A has nothing for it
+}
+
+// Hook audit 2026-11-03 (DiaCellHistory F2 Task 2.1): InspectorState's dirty check keys on layer version() only, so a
+// scrub (source not live, or ViewEpoch change) with an unchanged layer version leaves the shown stats stale. EXPECTED RED
+// until DiaCellLayers is amended (AD-001 sign-off): NeedsCompute/NeedsComputeA must also compare the source view key.
+TEST_F(SelectionInspectorStateTest, ScrubbedSourceEpochChangeRecomputesStats)
+{
+	Settle();
+	EXPECT_DOUBLE_EQ(2.5, state.StatsFor(StringCRC("a"))->mean);	// live: cells 1, 2 -> 2, 3
+
+	StubViewValueSource src;
+	src.live = false;
+	src.epoch = 1;
+	src.values = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
+	ASSERT_TRUE(registry.SetViewValueSource(&src));
+	Pump();
+	EXPECT_DOUBLE_EQ(25.0, state.StatsFor(StringCRC("a"))->mean);	// scrubbed: cells 1, 2 -> 20, 30
+
+	src.values = { 1, 100, 200, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+	src.epoch = 2;
+	Pump();
+	EXPECT_DOUBLE_EQ(150.0, state.StatsFor(StringCRC("a"))->mean);	// new epoch: cells 1, 2 -> 100, 200
+	registry.ClearViewValueSource();
+}
+
+TEST_F(SelectionInspectorStateTest, ScrubbedSourceEpochRecomputesLiveAButFrozenAStaysFrozen)
+{
+	Settle();
+	ASSERT_TRUE(state.Pin(registry, &grid, &sel));
+	Settle();
+	ASSERT_NE(nullptr, state.StatsForA(StringCRC("a")));
+	EXPECT_DOUBLE_EQ(2.5, state.StatsForA(StringCRC("a"))->mean);
+
+	StubViewValueSource src;
+	src.live = false;
+	src.epoch = 1;
+	src.values = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
+	ASSERT_TRUE(registry.SetViewValueSource(&src));
+	Pump();
+	EXPECT_DOUBLE_EQ(25.0, state.StatsForA(StringCRC("a"))->mean);	// live (non-frozen) A follows the scrub
+
+	registry.ClearViewValueSource();
+	Pump();
+	ASSERT_TRUE(state.PinFreeze(registry, Reader(), nullptr, &grid, &sel));
+	const double frozenMean = state.StatsForA(StringCRC("a"))->mean;
+	ASSERT_TRUE(registry.SetViewValueSource(&src));
+	src.epoch = 2;
+	Pump();
+	EXPECT_DOUBLE_EQ(frozenMean, state.StatsForA(StringCRC("a"))->mean);	// frozen A never recomputes
+	registry.ClearViewValueSource();
 }

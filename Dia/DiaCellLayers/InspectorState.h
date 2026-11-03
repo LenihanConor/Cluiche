@@ -110,9 +110,11 @@ namespace Dia::CellLayers
 			Dia::Core::StringCRC	id;
 			bool					computed = false;
 			uint64_t				seenVersion = 0;
+			uint64_t				seenSource = 0;		// SourceKey() at compute time
 			LayerStats				stats;
 			bool					aComputed = false;	// live A
 			uint64_t				aSeenVersion = 0;
+			uint64_t				aSeenSource = 0;
 			LayerStats				aStats;
 		};
 		struct FrozenEntry
@@ -125,6 +127,7 @@ namespace Dia::CellLayers
 		void	RebuildShown(const CellLayerRegistry& registry);
 		void	ClearComputed();
 		bool	AnyDirty(const CellLayerRegistry& registry) const;
+		static uint64_t	SourceKey(const CellLayerRegistry& registry);	// 0 = live / no source; else ViewEpoch()+1
 		bool	NeedsCompute(const CellLayerRegistry& registry, const Entry& e) const;
 		bool	NeedsComputeA(const CellLayerRegistry& registry, const Entry& e) const;
 		void	CheckPinIdentity();
