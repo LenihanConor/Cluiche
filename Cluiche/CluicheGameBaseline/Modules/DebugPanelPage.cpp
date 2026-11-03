@@ -16,6 +16,8 @@ DebugPanelPage::DebugPanelPage(ICallbacks* callbacks)
 
 void DebugPanelPage::InitializePage()
 {
+    // The module re-runs InitializePage on every Stop/Start cycle; without this the 32-slot list overflows on the 5th start.
+    GetBoundMenthods().RemoveAll();
     Initialize(Dia::Core::FilePath("ui_common", "debug-panel.html"));
 
     BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("onCommand",
