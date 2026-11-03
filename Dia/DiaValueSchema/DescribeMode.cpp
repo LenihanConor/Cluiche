@@ -73,8 +73,31 @@ namespace Dia::ValueSchema
 		return true;
 	}
 
+	namespace
+	{
+		// Fixed view for the overload that takes a service directly.
+		class StaticSnapshot : public IDescribeSnapshotProvider
+		{
+		public:
+			explicit StaticSnapshot(const DescribeView& view) : mView(view) {}
+			bool Acquire(DescribeView& out) override { out = mView; return true; }
+		private:
+			DescribeView mView;
+		};
+	}
+
 	DescribeStatus DescribeModeRunner::Tick(IDescribeBarrier& barrier, const ValueSchemaService& service,
 		const CodeSideReport* codeSide, const ComponentFieldReport* components)
+	{
+		DescribeView view;
+		view.mService = &service;
+		view.mCodeSide = codeSide;
+		view.mComponents = components;
+		StaticSnapshot provider(view);
+		return Tick(barrier, provider);
+	}
+
+	DescribeStatus DescribeModeRunner::Tick(IDescribeBarrier& barrier, IDescribeSnapshotProvider& provider)
 	{
 		if (!mRequest.mActive || IsFinished()) { return mStatus; }
 
@@ -86,11 +109,19 @@ namespace Dia::ValueSchema
 			return mStatus;
 		}
 
+		DescribeView view;
+		if (!provider.Acquire(view)) { return mStatus; }
+		if (view.mService == nullptr)
+		{
+			Fail("no schema snapshot to export", kExitAborted);
+			return mStatus;
+		}
+
 		ExportHeader header;
 		header.mApp = mRequest.mApp.AsCStr();
 		header.mConfig = mRequest.mConfig.AsCStr();
 		const ValueSchemaExporter exporter;
-		const Json::Value doc = exporter.Build(service, codeSide, components, header);
+		const Json::Value doc = exporter.Build(*view.mService, view.mCodeSide, view.mComponents, header);
 		if (!ValueSchemaExporter::WriteFile(mRequest.mPath.AsCStr(), doc))
 		{
 			Fail("could not write the schema export", kExitWriteFailed);

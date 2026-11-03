@@ -50,7 +50,9 @@
 // Describe mode (Feature 6 task 4): when the app's Main began a DescribeSession (`--describe-schema <path> [--stage <name>]`),
 // DoUpdate polls an ApplicationDescribeBarrier (all modules past Init, optional stage entered), lets DescribeModeRunner write
 // the export from this module's service + code-side/component reports, records the exit code in DescribeSession and calls
-// RequestShutdown(). Gives up with exit code kExitTimedOut after 120 s of waiting. See DescribeMode.h for the design note.
+// RequestShutdown(). Sim-hosted command names reach Main after DoStart, so once the barrier is ready the module waits for the
+// code-side command generation to hold still for 1 s and, if it moved since DoStart, exports a freshly built snapshot (the
+// published service and stream are untouched). Gives up with exit code kExitTimedOut after 120 s of waiting. See DescribeMode.h for the design note.
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
@@ -81,7 +83,7 @@ namespace Dia::ValueSchema
 {
 	class IValueSchemaContributor;
 
-	class ValueSchemaModule : public Dia::ApplicationFlow::Module
+	class ValueSchemaModule : public Dia::ApplicationFlow::Module, private IDescribeSnapshotProvider
 	{
 	public:
 		static const Dia::Core::StringCRC kTypeId;
@@ -145,6 +147,29 @@ namespace Dia::ValueSchema
 		Dia::ApplicationFlow::StopResult	DoStop() override;
 
 	private:
+		// Everything the load pipeline produces; DoStart installs one into the members, describe mode keeps a second one.
+		struct Snapshot
+		{
+			Dia::Core::UniquePtr<ValueSchemaRegistry>	mRegistry;
+			Dia::Core::UniquePtr<RampRegistry>			mRamps;
+			Dia::Core::UniquePtr<ValueSchemaService>	mService;
+			SchemaLoadStats								mStats;
+			RampLoadStats								mRampStats;
+			CodeSideReport								mCodeSideReport;
+			bool										mCodeSideCollected = false;
+			ComponentFieldReport						mComponentReport;
+			ComponentAttributeAuditReport				mAuditReport;
+		};
+		void BuildSnapshot(Snapshot& snap);
+		// IDescribeSnapshotProvider: waits for the sim-hosted command set to stop changing, then rebuilds the snapshot once if
+		// names arrived after DoStart (Sim-Hosted Command Help task 4b). The published service is never touched.
+		bool Acquire(DescribeView& out) override;
+		Snapshot									mDescribeSnapshot;
+		bool										mDescribeRebuilt = false;
+		bool										mDescribeGenSeen = false;
+		unsigned int								mDescribeLastGen = 0;
+		double										mDescribeGenChangedAtSec = 0.0;
+
 		void RegisterQuery();
 		void UnregisterQuery();
 		void ResolveSimCatalogue();

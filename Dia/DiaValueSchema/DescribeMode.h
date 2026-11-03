@@ -46,6 +46,24 @@ namespace Dia::ValueSchema
 		virtual BarrierState Poll() = 0;
 	};
 
+	// What to export, resolved only once the barrier is ready (Sim-Hosted Command Help task 4b). Sim-hosted command names reach
+	// Main after the module's DoStart, so the export cannot use the DoStart snapshot: the provider rebuilds it when the
+	// catalogue has settled. Pointers must stay valid until the next Acquire call. Either report may be null.
+	struct DescribeView
+	{
+		const ValueSchemaService*		mService = nullptr;
+		const CodeSideReport*			mCodeSide = nullptr;
+		const ComponentFieldReport*		mComponents = nullptr;
+	};
+
+	class IDescribeSnapshotProvider
+	{
+	public:
+		virtual ~IDescribeSnapshotProvider() = default;
+		// False = not ready yet (the runner stays kWaiting and asks again next tick). True fills 'out'.
+		virtual bool Acquire(DescribeView& out) = 0;
+	};
+
 	enum class DescribeStatus { kWaiting, kDone, kFailed };
 
 	class DescribeModeRunner
@@ -63,6 +81,9 @@ namespace Dia::ValueSchema
 		// terminal status further calls return it unchanged without polling or writing. An inactive request never writes.
 		DescribeStatus Tick(IDescribeBarrier& barrier, const ValueSchemaService& service, const CodeSideReport* codeSide,
 			const ComponentFieldReport* components);
+
+		// Same, but the data to export is requested from 'provider' after the barrier is ready (and only then).
+		DescribeStatus Tick(IDescribeBarrier& barrier, IDescribeSnapshotProvider& provider);
 
 		// Terminal failure from outside the barrier (timeout). No effect once finished.
 		void Fail(const char* message, int exitCode = kExitTimedOut);

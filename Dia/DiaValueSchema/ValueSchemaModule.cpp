@@ -20,6 +20,7 @@
 #include <json/json.h>
 
 #include <chrono>
+#include <utility>
 
 namespace Dia::ValueSchema
 {
@@ -193,6 +194,86 @@ namespace Dia::ValueSchema
 		mQueryRegisteredOn = registry;
 	}
 
+	// The load pipeline of DoStart: sidecars, ramps, contributors, code-side and component collection, Publish. Touches only
+	// 'snap' (plus the persistent audit dedupe state), so describe mode can build a second snapshot without disturbing the
+	// published service.
+	void ValueSchemaModule::BuildSnapshot(Snapshot& snap)
+	{
+		snap.mRegistry = Dia::Core::MakeUnique<ValueSchemaRegistry>();
+		snap.mRamps = Dia::Core::MakeUnique<RampRegistry>();
+		SchemaDirectoryLoader loader;
+		RampSetLoader rampLoader;
+		unsigned int unresolved = 0;
+		for (unsigned int i = 0; i < mRootAliases.Size(); ++i)
+		{
+			const Dia::Core::Path::Alias alias(mRootAliases[i].AsCStr());
+			if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
+			{
+				DIA_LOG_WARNING("VSC", "Schema root alias '%s' is not registered; skipped", mRootAliases[i].AsCStr());
+				++unresolved;
+				continue;
+			}
+			const char* dir = Dia::Core::PathStore::ResolvePathToCString(alias);
+			loader.AddRoot(dir);
+			rampLoader.AddGameRoot(dir);
+		}
+
+		for (unsigned int i = 0; i < mRampRootAliases.Size(); ++i)
+		{
+			const Dia::Core::Path::Alias alias(mRampRootAliases[i].AsCStr());
+			if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
+			{
+				DIA_LOG_WARNING("VSC", "Ramp root alias '%s' is not registered; skipped", mRampRootAliases[i].AsCStr());
+				continue;
+			}
+			rampLoader.AddDiaRoot(Dia::Core::PathStore::ResolvePathToCString(alias));
+		}
+
+		snap.mStats = loader.LoadInto(*snap.mRegistry);
+		snap.mStats.mRootsMissing += unresolved;
+		snap.mRampStats = rampLoader.Load(*snap.mRamps);
+
+		// Code-side entries (Feature 4 / 7) go in before the snapshot is published.
+		for (unsigned int i = 0; i < mContributors.Size(); ++i)
+		{
+			mContributors[i]->ContributeEntries(*snap.mRegistry);
+		}
+
+		snap.mCodeSideReport = CodeSideReport();
+		snap.mCodeSideCollected = false;
+		snap.mComponentReport = ComponentFieldReport();
+		snap.mAuditReport = ComponentAttributeAuditReport();
+		if (mCodeSideEnabled)
+		{
+			DIA_PROFILE_SCOPE("ValueSchema.CollectCodeSide", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+			ICodeSideSource& source = mCodeSideSource ? *mCodeSideSource : static_cast<ICodeSideSource&>(mLiveSource);
+			CodeSideCollector collector;
+			snap.mCodeSideReport = collector.Collect(source, *snap.mRegistry);
+			snap.mCodeSideCollected = true;
+		}
+
+		if (mCodeSideEnabled)
+		{
+			DIA_PROFILE_SCOPE("ValueSchema.CollectComponentFields", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+			const Dia::Reflect::FieldAttributeRegistry& attrs = mAttrRegistry ? *mAttrRegistry : Dia::Reflect::FieldAttributeRegistry::Instance();
+			ComponentFieldCollector componentCollector;
+			if (mComponentOverride)
+			{
+				snap.mComponentReport = componentCollector.Collect(mComponentDescs, mComponentDescCount, *snap.mRegistry);
+				snap.mAuditReport = mAudit.Run(attrs, mComponentDescs, mComponentDescCount);
+			}
+			else
+			{
+				snap.mComponentReport = componentCollector.Collect(*snap.mRegistry);
+				snap.mAuditReport = mAudit.Run(attrs);
+			}
+		}
+
+		snap.mRegistry->Publish();
+		snap.mRamps->Publish();
+		snap.mService = Dia::Core::MakeUnique<ValueSchemaService>(*snap.mRegistry, snap.mRamps.Get());
+	}
+
 	// --- Lifecycle ------------------------------------------------------------
 	Dia::ApplicationFlow::StartResult ValueSchemaModule::DoStart()
 	{
@@ -206,81 +287,18 @@ namespace Dia::ValueSchema
 
 			// Fresh registry each start: a published registry is immutable.
 			mService.Reset();
-			mRegistry = Dia::Core::MakeUnique<ValueSchemaRegistry>();
-			mRamps = Dia::Core::MakeUnique<RampRegistry>();
-
-			SchemaDirectoryLoader loader;
-			RampSetLoader rampLoader;
-			unsigned int unresolved = 0;
-			for (unsigned int i = 0; i < mRootAliases.Size(); ++i)
-			{
-				const Dia::Core::Path::Alias alias(mRootAliases[i].AsCStr());
-				if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
-				{
-					DIA_LOG_WARNING("VSC", "Schema root alias '%s' is not registered; skipped", mRootAliases[i].AsCStr());
-					++unresolved;
-					continue;
-				}
-				const char* dir = Dia::Core::PathStore::ResolvePathToCString(alias);
-				loader.AddRoot(dir);
-				rampLoader.AddGameRoot(dir);
-			}
-
-			for (unsigned int i = 0; i < mRampRootAliases.Size(); ++i)
-			{
-				const Dia::Core::Path::Alias alias(mRampRootAliases[i].AsCStr());
-				if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
-				{
-					DIA_LOG_WARNING("VSC", "Ramp root alias '%s' is not registered; skipped", mRampRootAliases[i].AsCStr());
-					continue;
-				}
-				rampLoader.AddDiaRoot(Dia::Core::PathStore::ResolvePathToCString(alias));
-			}
-
-			mStats = loader.LoadInto(*mRegistry);
-			mStats.mRootsMissing += unresolved;
-			mRampStats = rampLoader.Load(*mRamps);
-
-			// Code-side entries (Feature 4 / 7) go in before the snapshot is published.
-			for (unsigned int i = 0; i < mContributors.Size(); ++i)
-			{
-				mContributors[i]->ContributeEntries(*mRegistry);
-			}
-
-			mCodeSideReport = CodeSideReport();
-			mCodeSideCollected = false;
+			Snapshot snap;
+			BuildSnapshot(snap);
+			mRegistry = std::move(snap.mRegistry);
+			mRamps = std::move(snap.mRamps);
+			mService = std::move(snap.mService);
+			mStats = snap.mStats;
+			mRampStats = snap.mRampStats;
+			mCodeSideReport = snap.mCodeSideReport;
+			mCodeSideCollected = snap.mCodeSideCollected;
+			mComponentReport = snap.mComponentReport;
+			mAuditReport = snap.mAuditReport;
 			mLastWarnedLate = 0;
-			mComponentReport = ComponentFieldReport();
-			mAuditReport = ComponentAttributeAuditReport();
-			if (mCodeSideEnabled)
-			{
-				DIA_PROFILE_SCOPE("ValueSchema.CollectCodeSide", Dia::Observation::Profile::Category::kDiaAssetRuntime);
-				ICodeSideSource& source = mCodeSideSource ? *mCodeSideSource : static_cast<ICodeSideSource&>(mLiveSource);
-				CodeSideCollector collector;
-				mCodeSideReport = collector.Collect(source, *mRegistry);
-				mCodeSideCollected = true;
-			}
-
-			if (mCodeSideEnabled)
-			{
-				DIA_PROFILE_SCOPE("ValueSchema.CollectComponentFields", Dia::Observation::Profile::Category::kDiaAssetRuntime);
-				const Dia::Reflect::FieldAttributeRegistry& attrs = mAttrRegistry ? *mAttrRegistry : Dia::Reflect::FieldAttributeRegistry::Instance();
-				ComponentFieldCollector componentCollector;
-				if (mComponentOverride)
-				{
-					mComponentReport = componentCollector.Collect(mComponentDescs, mComponentDescCount, *mRegistry);
-					mAuditReport = mAudit.Run(attrs, mComponentDescs, mComponentDescCount);
-				}
-				else
-				{
-					mComponentReport = componentCollector.Collect(*mRegistry);
-					mAuditReport = mAudit.Run(attrs);
-				}
-			}
-
-			mRegistry->Publish();
-			mRamps->Publish();
-			mService = Dia::Core::MakeUnique<ValueSchemaService>(*mRegistry, mRamps.Get());
 		}
 
 		DIA_LOG_INFO("VSC", "Value schema loaded: %u files (%u failed), %u entries from files, %u total, %u roots missing",
@@ -372,6 +390,7 @@ namespace Dia::ValueSchema
 					{
 						if (!StageExists()) { DIA_LOG_ERROR("VSC", "Describe mode: unknown stage '%s'", mStage.AsChar()); return BarrierState::kAborted; }
 						mRequested = true;
+						DIA_LOG_INFO("VSC", "Describe mode: requesting stage '%s' (current '%s')", mStage.AsChar(), mInspect->GetCurrentStage().AsChar());
 						if (mInspect->GetCurrentStage() != mStage) { mControl->TransitionTo(mStage); }
 					}
 					if (mInspect->GetCurrentStage() != mStage) { mStable = 0; return BarrierState::kWaiting; }
@@ -419,6 +438,55 @@ namespace Dia::ValueSchema
 
 	static std::chrono::steady_clock::time_point sDescribeStart;
 
+	namespace
+	{
+		// The sim catalogue is fed by announcements that cross a stream after the sim modules start; one second is the
+		// announcement digest cadence, so a generation that holds still that long has everything that is coming.
+		constexpr double kCatalogueSettleSec = 1.0;
+	}
+
+	bool ValueSchemaModule::Acquire(DescribeView& out)
+	{
+		if (!mDescribeRebuilt)
+		{
+			// Only the live source can gain sim-hosted names; an injected source is the caller's fixed data.
+			const bool canGrow = mCodeSideEnabled && mCodeSideCollected && mCodeSideSource == nullptr;
+			if (canGrow)
+			{
+				const double nowSec = std::chrono::duration<double>(std::chrono::steady_clock::now() - sDescribeStart).count();
+				const unsigned int gen = mLiveSource.CommandGeneration();
+				if (!mDescribeGenSeen || gen != mDescribeLastGen)
+				{
+					mDescribeGenSeen = true;
+					mDescribeLastGen = gen;
+					mDescribeGenChangedAtSec = nowSec;
+				}
+				if (nowSec - mDescribeGenChangedAtSec < kCatalogueSettleSec) { return false; }
+				if (LateRegistrationCount() > 0)
+				{
+					BuildSnapshot(mDescribeSnapshot);
+					DIA_LOG_INFO("VSC", "Describe mode: rebuilt the schema snapshot after the sim-hosted catalogue settled (%u commands)",
+						mDescribeSnapshot.mCodeSideReport.mCommandsCollected);
+				}
+			}
+			mDescribeRebuilt = true;
+		}
+
+		if (mDescribeSnapshot.mService != nullptr)
+		{
+			out.mService = mDescribeSnapshot.mService.Get();
+			out.mCodeSide = mDescribeSnapshot.mCodeSideCollected ? &mDescribeSnapshot.mCodeSideReport : nullptr;
+			out.mComponents = mCodeSideEnabled ? &mDescribeSnapshot.mComponentReport : nullptr;
+		}
+		else
+		{
+			out.mService = mService.Get();
+			out.mCodeSide = mCodeSideCollected ? &mCodeSideReport : nullptr;
+			out.mComponents = mCodeSideEnabled ? &mComponentReport : nullptr;
+		}
+		return true;
+	}
+
 	void ValueSchemaModule::TickDescribeMode(float /*deltaTime*/)
 	{
 		if (mDescribeRunner == nullptr)
@@ -434,8 +502,7 @@ namespace Dia::ValueSchema
 		// Describe mode is process-global (DescribeSession), so one static time point is enough (set when the runner is created).
 		const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 		mDescribeWaitedSec = std::chrono::duration<float>(now - sDescribeStart).count();
-		mDescribeRunner->Tick(*mDescribeBarrier, *mService, mCodeSideCollected ? &mCodeSideReport : nullptr,
-			mCodeSideEnabled ? &mComponentReport : nullptr);
+		mDescribeRunner->Tick(*mDescribeBarrier, *this);
 		if (!mDescribeRunner->IsFinished() && mDescribeWaitedSec >= kDescribeTimeoutSec)
 		{
 			mDescribeRunner->Fail("timed out waiting for every processing unit to finish Init");

@@ -179,6 +179,76 @@ TEST_F(DescribeFixture, InactiveRequestNeverWrites)
 	EXPECT_FALSE(FileExists());
 }
 
+// --- Snapshot provider (Sim-Hosted Command Help task 4b) ----------------------
+
+namespace
+{
+	struct FakeProvider : IDescribeSnapshotProvider
+	{
+		const ValueSchemaService* mService = nullptr;
+		unsigned int mNotReadyCalls = 0;	// Acquire returns false this many times first
+		unsigned int mCalls = 0;
+		bool Acquire(DescribeView& out) override
+		{
+			++mCalls;
+			if (mNotReadyCalls > 0) { --mNotReadyCalls; return false; }
+			out.mService = mService;
+			return true;
+		}
+	};
+}
+
+TEST_F(DescribeFixture, ProviderIsNotAskedWhileTheBarrierIsWaiting)
+{
+	DescribeModeRunner runner(MakeRequest(mPath.c_str()));
+	FakeBarrier barrier;
+	FakeProvider provider;
+	provider.mService = &mRamps.Svc();
+	EXPECT_EQ(DescribeStatus::kWaiting, runner.Tick(barrier, provider));
+	EXPECT_EQ(0u, provider.mCalls);
+	EXPECT_FALSE(FileExists());
+}
+
+TEST_F(DescribeFixture, ProviderNotReadyKeepsWaitingThenWritesTheProvidedSnapshot)
+{
+	DescribeModeRunner runner(MakeRequest(mPath.c_str()));
+	FakeBarrier barrier;
+	barrier.mState = BarrierState::kReady;
+	FakeProvider provider;
+	provider.mService = &mRamps.Svc();
+	provider.mNotReadyCalls = 2;
+	EXPECT_EQ(DescribeStatus::kWaiting, runner.Tick(barrier, provider));
+	EXPECT_EQ(DescribeStatus::kWaiting, runner.Tick(barrier, provider));
+	EXPECT_FALSE(FileExists());
+	EXPECT_EQ(DescribeStatus::kDone, runner.Tick(barrier, provider));
+	EXPECT_TRUE(FileExists());
+	EXPECT_EQ(3u, provider.mCalls);
+	EXPECT_EQ(DescribeModeRunner::kExitOk, runner.GetExitCode());
+}
+
+TEST_F(DescribeFixture, ProviderWithoutAServiceFailsWithoutWriting)
+{
+	DescribeModeRunner runner(MakeRequest(mPath.c_str()));
+	FakeBarrier barrier;
+	barrier.mState = BarrierState::kReady;
+	FakeProvider provider;	// mService stays null
+	EXPECT_EQ(DescribeStatus::kFailed, runner.Tick(barrier, provider));
+	EXPECT_NE(0, runner.GetExitCode());
+	EXPECT_FALSE(FileExists());
+}
+
+TEST_F(DescribeFixture, ProviderIsNotAskedAfterTheRunnerFinished)
+{
+	DescribeModeRunner runner(MakeRequest(mPath.c_str()));
+	FakeBarrier barrier;
+	barrier.mState = BarrierState::kReady;
+	FakeProvider provider;
+	provider.mService = &mRamps.Svc();
+	ASSERT_EQ(DescribeStatus::kDone, runner.Tick(barrier, provider));
+	EXPECT_EQ(DescribeStatus::kDone, runner.Tick(barrier, provider));
+	EXPECT_EQ(1u, provider.mCalls);
+}
+
 // --- Argument parsing -------------------------------------------------------
 
 TEST(DescribeModeArgs, AbsentFlagLeavesRequestInactive)
