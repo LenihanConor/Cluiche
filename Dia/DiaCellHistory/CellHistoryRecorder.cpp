@@ -4,6 +4,8 @@
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
+#include <json/json.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -61,6 +63,83 @@ namespace Dia::CellHistory
 		delete[] mMasks;
 		delete[] mScratch;
 		delete[] mHeaders;
+	}
+
+	// ---- event validation -----------------------------------------------------------------------------------
+
+	void CellHistoryRecorder::WarnEventOnce(const HistoryEvent& e, const char* reason)
+	{
+		const uint32_t crc = e.type.Value();
+		for (uint32_t i = 0; i < mWarnedTypeCount; ++i) { if (mWarnedTypes[i] == crc) { return; } }
+		if (mWarnedTypeCount >= kMaxWarnedTypes) { ++mValidationSuppressed; return; }
+		mWarnedTypes[mWarnedTypeCount++] = crc;
+		DIA_LOG_WARNING("HIS", "cell history: event '%s' %s; further problems with this type are not reported", e.type.AsChar(), reason);
+	}
+
+#ifdef DIA_DEBUG
+	namespace
+	{
+		bool MatchesType(const Json::Value& v, Dia::ValueSchema::ValueType t)
+		{
+			using Dia::ValueSchema::ValueType;
+			switch (t)
+			{
+			case ValueType::Float:
+			case ValueType::Int:		return v.isNumeric();
+			case ValueType::Bool:		return v.isBool();
+			case ValueType::Enum:
+			case ValueType::String:
+			case ValueType::Ref:		return v.isString();
+			case ValueType::RefList:	return v.isArray();
+			case ValueType::Map:		return v.isObject();
+			}
+			return false;
+		}
+	}
+
+	void CellHistoryRecorder::ValidateEvent(const HistoryEvent& e)
+	{
+		if (mSchema == nullptr) { return; }
+		const Dia::ValueSchema::ValueInfo* info = mSchema->FindEvent(e.type);
+		if (info == nullptr) { WarnEventOnce(e, "is not declared in the value schema"); return; }
+		if (e.payloadJson == nullptr || e.payloadJson[0] == '\0') { return; }
+		const size_t len = strnlen(e.payloadJson, EventLog::kMaxPayloadBytes + 1);
+		if (len > EventLog::kMaxPayloadBytes) { return; }	// the EventLog rejects it with an Error
+
+		Json::Value root;
+		Json::Reader reader;
+		if (!reader.parse(e.payloadJson, e.payloadJson + len, root, false) || !root.isObject())
+		{
+			WarnEventOnce(e, "has a payload that is not a JSON object");
+			return;
+		}
+		const Json::Value::Members names = root.getMemberNames();
+		for (size_t n = 0; n < names.size(); ++n)
+		{
+			const Dia::ValueSchema::PayloadField* field = nullptr;
+			for (uint32_t f = 0; f < info->mPayload.Size(); ++f)
+			{
+				if (names[n] == info->mPayload[f].mName.AsCStr()) { field = &info->mPayload[f]; break; }
+			}
+			if (field == nullptr) { WarnEventOnce(e, "has a payload field that its schema does not declare"); return; }
+			const Json::Value& v = root[names[n]];
+			if (!MatchesType(v, field->mType)) { WarnEventOnce(e, "has a payload field of the wrong type"); return; }
+			if (field->mType == Dia::ValueSchema::ValueType::Enum && info->mVocabulary.Size() > 0)
+			{
+				bool found = false;
+				for (uint32_t k = 0; k < info->mVocabulary.Size() && !found; ++k) { found = (v.asString() == info->mVocabulary[k].mId.AsCStr()); }
+				if (!found) { WarnEventOnce(e, "has a payload value outside its vocabulary"); return; }
+			}
+		}
+	}
+#else
+	void CellHistoryRecorder::ValidateEvent(const HistoryEvent&) {}
+#endif
+
+	EmitResult CellHistoryRecorder::Emit(const HistoryEvent& e)
+	{
+		ValidateEvent(e);
+		return mEvents.Emit(e);
 	}
 
 	// ---- layout ---------------------------------------------------------------------------------------------

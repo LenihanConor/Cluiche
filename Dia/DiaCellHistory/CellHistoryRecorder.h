@@ -96,7 +96,19 @@ namespace Dia::CellHistory
 		uint64_t RunId() const { return mRunId; }
 
 		// Events are assigned to the next sample (== SampleCount() at emit time).
-		EmitResult Emit(const HistoryEvent& e) { return mEvents.Emit(e); }
+		// Debug builds (DIA_DEBUG) validate the type and payload against the schema service's `kind: event` entry:
+		// ONE Warning per event type in total (a type that warned for one reason never warns for another), and the event
+		// is still recorded. Checks: type known; payload parses as a JSON object; no undeclared field; declared fields
+		// have the schema type (float/int numeric, bool, string/enum/ref string, ref_list array, map object); an `enum`
+		// field's value is in the event's vocabulary (when the vocabulary is non-empty). Missing fields are fine
+		// (payloads are partial); a null/empty payload is fine; a payload on a type with no payload fields is a
+		// mismatch. A null schema service disables validation. A payload over 1 KB is rejected by the EventLog in all
+		// builds. Distinct warned types are capped at kMaxWarnedTypes; beyond that events are still recorded and
+		// counted in EventValidationWarningsSuppressed(). Both counters read 0 in release builds.
+		EmitResult Emit(const HistoryEvent& e);
+		static constexpr uint32_t kMaxWarnedTypes = 64;
+		uint32_t EventTypeWarningCount() const { return mWarnedTypeCount; }				// distinct types warned
+		uint32_t EventValidationWarningsSuppressed() const { return mValidationSuppressed; }	// events that failed validation but could not warn (set full)
 
 		// Minimal tracking hook (Task 9 adds the validated Track/Untrack commands). Requires the layout to exist
 		// (after the first Sample that resolved the grid) and the layer to be aggregated. Float layers need a schema
@@ -164,6 +176,12 @@ namespace Dia::CellHistory
 		void RebuildMasks();
 		void PushHeader(uint32_t sample, const SampleInfo& info);
 		void ResetGate();
+		void ValidateEvent(const HistoryEvent& e);
+		void WarnEventOnce(const HistoryEvent& e, const char* reason);
+
+		uint32_t		mWarnedTypes[kMaxWarnedTypes];
+		uint32_t		mWarnedTypeCount = 0;
+		uint32_t		mValidationSuppressed = 0;
 
 		Dia::CellLayers::CellLayerRegistry&			mRegistry;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
