@@ -9,7 +9,10 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h>
+#include <DiaVisualDebugger/Console/DomainStateQuery.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#include <DiaStreams/FrameStreamStore.h>
+#include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
@@ -17,6 +20,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <thread>
@@ -308,6 +312,114 @@ TEST(DomainStateHealthTest, AgeGaugeFollowsSnapshots)
 	h.OnSnapshot(1234);
 	EXPECT_EQ(Dia::Observation::Metric::MetricRegistry::Instance()
 		.RegisterGauge(StringCRC("dia.debugvisualiser.domain_snapshot.age_ms"))->Value(), 1234.0);
+}
+
+
+// AC 12 / 7: Sim thread churns domains and their state while Main reads snapshots through a real
+// FrameStream. Every snapshot Main sees must parse and be internally consistent. Run under
+// `dia check sanitizer` (ASan) for memory errors; the only shared object is the FrameStreamStore.
+namespace
+{
+	class SinkToStream : public IDomainStateSink
+	{
+	public:
+		explicit SinkToStream(Dia::ApplicationFlow::FrameStreamStore<DomainStateSnapshot>& store) : mStore(store) {}
+		void Write(const DomainStateSnapshot& s) override
+		{
+			mStore.Write(s, Dia::Core::TimeAbsolute::CreateFromMilliseconds(static_cast<int>(s.simFrame)));
+		}
+	private:
+		Dia::ApplicationFlow::FrameStreamStore<DomainStateSnapshot>& mStore;
+	};
+
+	// Its state echoes a counter that changes every frame, so a torn/mixed read would show as a
+	// mismatch between "a" and "b" inside one domain.
+	class ChurnDomain : public IDebugDomain
+	{
+	public:
+		ChurnDomain(const char* id, const char* display) : mId(id), mDisplay(display) {}
+		StringCRC GetDomainId() const override { return mId; }
+		const char* GetDisplayName() const override { return mDisplay.c_str(); }
+		const char* GetDescription() const override { return "churn"; }
+		StringCRC GetGroup() const override { return StringCRC("Spatial"); }
+		Dia::Core::RGBA GetAccentColour() const override { return Dia::Core::RGBA(1, 2, 3, 255); }
+		bool HasWorldDrawers() const override { return false; }
+		void OnCommand(StringCRC, const Json::Value&) override {}
+		void GetJSONState(Json::Value& out) override
+		{
+			++mCounter;
+			out["a"] = static_cast<Json::UInt64>(mCounter);
+			out["b"] = static_cast<Json::UInt64>(mCounter);
+			out["blob"] = std::string(512 + (mCounter % 7) * 100, 'y');
+		}
+		uint64_t mCounter = 0;
+	private:
+		StringCRC mId;
+		std::string mDisplay;
+	};
+}
+
+TEST(DomainStateStress, SimChurnsWhileMainReadsSnapshots)
+{
+	auto store = std::make_unique<Dia::ApplicationFlow::FrameStreamStore<DomainStateSnapshot>>(StringCRC("stress_domain_state"));
+	DiaDebugDomainRegistry registry;
+	SinkToStream sink(*store);
+	gNowMs = 1000;
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+
+	constexpr uint32_t kDomains = 6;
+	constexpr uint64_t kFrames = 3000;
+	std::vector<std::unique_ptr<ChurnDomain>> domains;
+	std::vector<std::string> names;
+	for (uint32_t i = 0; i < kDomains; ++i)
+	{
+		names.push_back("stress.domain." + std::to_string(i));
+		domains.push_back(std::make_unique<ChurnDomain>(names.back().c_str(), names.back().c_str()));
+	}
+
+	std::atomic<bool> done{ false };
+	std::thread sim([&]
+	{
+		pub.Arm(1000000);
+		for (uint64_t frame = 1; frame <= kFrames; ++frame)
+		{
+			// Registry is Sim-owned: churn it between Updates.
+			ChurnDomain& d = *domains[frame % kDomains];
+			if ((frame / kDomains) % 2 == 0) { registry.Register(d); } else { registry.Unregister(d); }
+			pub.Update(frame);
+		}
+		done.store(true, std::memory_order_release);
+	});
+
+	uint64_t reads = 0, lastFrame = 0, unreadable = 0;
+	auto readOnce = [&]
+	{
+		const DomainStateSnapshot* snap = store->FetchLatest();
+		if (snap == nullptr) { return; }
+		DomainStateSnapshot copy = *snap;	// private copy so a concurrent overwrite is not parsed in place
+		Json::Value root;
+		if (!ParseDomainStateSnapshot(copy, root)) { ++unreadable; return; }
+		++reads;
+		EXPECT_GE(copy.simFrame, lastFrame) << "simFrame must never go backwards";
+		lastFrame = copy.simFrame;
+		for (const std::string& n : root.getMemberNames())
+		{
+			if (n == "simFrame") { continue; }
+			const Json::Value& dom = root[n];
+			if (!dom.isObject() || !dom.isMember("a")) { continue; }
+			EXPECT_EQ(dom["a"].asUInt64(), dom["b"].asUInt64()) << "torn domain state in " << n;
+		}
+	};
+	while (!done.load(std::memory_order_acquire)) { readOnce(); }
+	sim.join();
+	readOnce();
+
+	EXPECT_GT(reads, 0u);
+	EXPECT_EQ(lastFrame, kFrames);
+	EXPECT_EQ(pub.PublishCount(), kFrames);
+	// A copy taken while the writer laps the whole ring would be unreadable; with 8 slots this is
+	// expected to be at most a rare event, never the norm.
+	EXPECT_LT(unreadable, reads / 10 + 1);
 }
 
 #endif // DIA_DEBUG
