@@ -565,6 +565,11 @@
       "type_id": "CellLayersModule"
     },
     {
+      "allowed_pus": "sim",
+      "description": "Owns the CellHistoryRecorder and publishes it on the CellHistoryRecorderService ServiceStream.",
+      "type_id": "CellHistoryModule"
+    },
+    {
       "allowed_pus": "any",
       "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
       "type_id": "ValueSchemaModule"

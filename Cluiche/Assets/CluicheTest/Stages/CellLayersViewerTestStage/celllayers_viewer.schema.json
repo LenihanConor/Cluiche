@@ -49,6 +49,17 @@
       "min": 0,
       "max": 3000,
       "ui": { "hotkey": "e", "ramp": "sequential.terrain" }
+    },
+    {
+      "key": "cluichetest.celllayers.marker",
+      "kind": "event",
+      "type": "string",
+      "label": "Marker",
+      "description": "Test-only marker event emitted by the cluichetest.celllayers.history_emit command.",
+      "payload": [
+        { "name": "note", "type": "string", "description": "Free text note" },
+        { "name": "value", "type": "float", "description": "Arbitrary number" }
+      ]
     }
   ]
 }

@@ -3,7 +3,8 @@
     "streams": [
         { "id": "CellViewerState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
         { "id": "CellViewerDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
-        { "id": "CellViewerStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" }
+        { "id": "CellViewerStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" },
+        { "id": "CellHistoryRecorderService", "kind": "ServiceStream", "payload_type": "CellHistoryRecorder", "from": "SimPU" }
     ],
     "processing_units": [
         {
@@ -50,6 +51,24 @@
                     ]
                 },
                 {
+                    "instance_id": "CellHistoryModule",
+                    "type_id": "CellHistoryModule",
+                    "stages": [
+                        "CellLayersViewerTestStage"
+                    ],
+                    "dependencies": [
+                        "SimQueryHostModule"
+                    ],
+                    "config": {
+                        "history": { "bands": ["Frame"], "track": ["temperature"], "cellBudgetMB": 4, "aggregateBudgetMB": 4, "eventBudgetMB": 1 }
+                    },
+                    "channels": [
+                        { "id": "CellHistoryRecorderService", "role": "provides" },
+                        { "id": "CellLayerRegistryService", "role": "consumes" },
+                        { "id": "ValueSchemaService", "role": "consumes" }
+                    ]
+                },
+                {
                     "instance_id": "CellLayersStateRelayModule",
                     "type_id": "CellLayersStateRelayModule",
                     "stages": [
@@ -74,9 +93,11 @@
                         "InputStreamModule",
                         "CellLayersModule",
                         "SimQueryHostModule",
-                        "CellLayersStateRelayModule"
+                        "CellLayersStateRelayModule",
+                        "CellHistoryModule"
                     ],
                     "channels": [
+                        { "id": "CellHistoryRecorderService", "role": "consumes" },
                         {
                             "id": "AutomationService",
                             "role": "consumes"

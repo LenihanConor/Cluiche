@@ -577,6 +577,54 @@ def test_celllayers_smoke(dia_client):
         clear_sel()
         assert sel("cells.select.tool", {"tool": "select"})["tool"] == "select"
         assert _vc(c, _P + "pointer_pending") == {"pending": 0}
+
+        # 9. Cell history (DiaCellHistory): the stage samples every 30 Sim frames (~1 s); config tracks "temperature" with
+        #    4 MB / 4 MB / 1 MB budgets. Layers are recorded for grid A only.
+        def hstatus():
+            return _vc(c, "cells.history.status")
+
+        assert _wait(lambda: hstatus()["sampleCount"] >= 2, 10.0), hstatus()
+        h0 = hstatus()
+        assert h0["recordedLayers"] == 3 and h0["skippedLayers"] == 0, h0   # temperature, rainfall, biome (grid A)
+        assert h0["tracked"] == ["temperature"] and h0["windowLength"] > 0, h0
+        assert h0["retained"]["aggregates"]["count"] >= 2 and h0["retained"]["cells"]["count"] >= 2, h0
+        assert h0["retained"]["aggregates"]["latest"] == h0["sampleCount"] - 1, h0
+        assert h0["budgets"] == {"cells": 4 << 20, "aggregates": 4 << 20, "events": 1 << 20}, h0["budgets"]
+        assert 0 < h0["memory"]["cells"] <= h0["budgets"]["cells"], h0["memory"]
+        assert 0 < h0["memory"]["aggregates"] <= h0["budgets"]["aggregates"], h0["memory"]
+        assert h0["memory"]["events"] <= h0["budgets"]["events"], h0["memory"]
+        assert isinstance(h0["runId"], str) and len(h0["runId"]) == 16, h0
+        # Samples keep arriving over time; the static layers are version-gated after the first read.
+        assert _wait(lambda: hstatus()["sampleCount"] >= h0["sampleCount"] + 2, 10.0), (h0, hstatus())
+        assert hstatus()["versionGatedSkips"] > 0, hstatus()
+
+        # 9a. track / untrack: rainfall (schema range 0..400) appears in status; the window length is returned.
+        res = _vc(c, "cells.history.track", {"layers": ["rainfall"]})
+        assert res["ok"] is True and res["windowLength"] > 0, res
+        assert sorted(hstatus()["tracked"]) == ["rainfall", "temperature"], hstatus()
+        res = _vc(c, "cells.history.track", {"layers": ["rainfall"]})   # idempotent
+        assert res["ok"] is True, res
+        res = _vc(c, "cells.history.untrack", {"layers": ["rainfall"]})
+        assert res["ok"] is True, res
+        assert hstatus()["tracked"] == ["temperature"], hstatus()
+        # Errors: unknown layer, other grid, malformed params, untracking a layer that is not tracked. Nothing changes.
+        ok, msg = _cmd(c, "cells.history.track", {"layers": ["nope"]})
+        assert not ok and "nope" in msg, (ok, msg)
+        ok, msg = _cmd(c, "cells.history.track", {"layers": ["rainfall", "elevation"]})   # all-or-nothing
+        assert not ok and "elevation" in msg, (ok, msg)
+        ok, msg = _cmd(c, "cells.history.track", {})
+        assert not ok and "layers" in msg, (ok, msg)
+        ok, msg = _cmd(c, "cells.history.untrack", {"layers": ["rainfall"]})
+        assert not ok and "rainfall" in msg, (ok, msg)
+        assert hstatus()["tracked"] == ["temperature"], hstatus()
+
+        # 9b. An emitted event is recorded: the schema-declared marker is committed with the next sample.
+        ev0 = hstatus()["retained"]["events"]["count"]
+        em = _vc(c, _P + "history_emit", {"note": "e2e", "value": 1.5})
+        assert em["ok"] is True and em["result"] == 0, em
+        assert _wait(lambda: hstatus()["retained"]["events"]["count"] >= ev0 + 1, 10.0), (ev0, hstatus())
+        ev = hstatus()["retained"]["events"]
+        assert ev["first"] <= em["sample"] <= ev["latest"], (em, ev)
     finally:
         c.abort_stage()
         c.navigate_to("Boot")

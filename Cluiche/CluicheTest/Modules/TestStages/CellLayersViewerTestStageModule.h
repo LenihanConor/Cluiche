@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCellLayers/CellLayersModule.h>
+#include <DiaCellHistory/CellHistoryModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>
@@ -96,6 +97,9 @@ private:
     Dia::ApplicationFlow::ServiceStreamReader<Dia::ValueSchema::ValueSchemaService> mSchemaStream{this, "ValueSchemaService"};
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::CellLayers::CellLayerRegistry> mLayerRegistryStream{this, Dia::CellLayers::CellLayersModule::kServiceStreamId};
+
+    // Consumes the recorder CellHistoryModule publishes (SimPU). The stage drives Sample on a timer and the history test command.
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::CellHistory::CellHistoryRecorder> mHistoryStream{this, Dia::CellHistory::CellHistoryModule::kServiceStreamId};
 
     GridStorage mBig;
     GridStorage mSmall;
@@ -204,6 +208,17 @@ private:
     };
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHostRef{this};
     Dia::Core::UniquePtr<MirrorRegistrar> mMirrorRegistrar;  // non-null while the viewer commands / queries are registered
+
+    // History (cells.history.* commands live in CellHistoryModule): its registrar must outlive CellHistoryModule::DoStop, which can
+    // run after this stage's OnStop, so it is a separate adapter that is only destroyed with the stage.
+    static constexpr unsigned int kHistorySampleEveryFrames = 30;
+    Dia::ApplicationFlow::ModuleRef<Dia::CellHistory::CellHistoryModule> mHistoryModuleRef{this};
+    Dia::Core::UniquePtr<MirrorRegistrar> mHistoryRegistrar;
+    bool         mHistoryCommandRegistered = false;
+    unsigned int mHistoryFrame = 0;
+    void SampleHistory();
+    bool RegisterHistoryCommand();
+    void UnregisterHistoryCommand();
     bool  mLayerRegistered = false;
     bool  mLayersRegistered = false;
     const Dia::Graphics::CellGridDesc* mFittedGrid = nullptr;

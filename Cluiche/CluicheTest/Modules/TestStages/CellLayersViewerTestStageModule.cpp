@@ -5,6 +5,7 @@
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
+#include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaPathfinding/HexTopology.h>
 
@@ -95,6 +96,7 @@ void CellLayersViewerTestStageModule::OnConnectStreams(Dia::ApplicationFlow::App
     mCellFieldStream.Connect(app);
     mSchemaStream.Connect(app);
     mLayerRegistryStream.Connect(app);
+    mHistoryStream.Connect(app);
 }
 
 void CellLayersViewerTestStageModule::BuildGrid(GridStorage& g, int w, int h, float size)
@@ -191,6 +193,9 @@ void CellLayersViewerTestStageModule::OnStart(Dia::Automation::AutomationService
 {
     mReady = false;
     mReadyFrames = 0;
+#ifdef DIA_DEBUG
+    mHistoryFrame = 0;
+#endif
     mAnimateCounter = 0;
     mAnimate = false;
     mTempVersion = 1;
@@ -239,6 +244,7 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
 #ifdef DIA_DEBUG
     FitCameraToActiveGrid();
     SubmitPointerInput();
+    SampleHistory();
 #endif
 
     if (++mReadyFrames >= kHoldFrames)
@@ -366,6 +372,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
     Dia::API::RegisterCommandJson(animateJson);
     mCommandRegistered = true;
     RegisterInjectionCommands();   // after BuildViewerCommands: needs the registrar
+    RegisterHistoryCommand();
 
     // The registry is read on Main by the debug panel and debug.domain_state, so it gets the snapshot adapter, never the live viewer.
     // The adapter forwards OnCommand (dispatched on SimPU) to the viewer.
@@ -425,6 +432,7 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     }
 
     UnregisterInjectionCommands();
+    UnregisterHistoryCommand();
     mPointerQueue.Clear();
 
     TeardownMirror();   // queries must not outlive the viewer or the registry
@@ -652,6 +660,84 @@ void CellLayersViewerTestStageModule::UnregisterInjectionCommands()
         UnregisterPointerInjectionCommands(*mMirrorRegistrar);
     mInjectCommandsRegistered = false;
     mHoverOverride = HoverOverride();
+}
+
+bool CellLayersViewerTestStageModule::RegisterHistoryCommand()
+{
+    // Hands CellHistoryModule a registrar over the sim-hosted query service so it can register cells.history.* (it does so on its
+    // next update, once the recorder exists), and adds one stage-local command that emits a marker event through the recorder.
+    Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get();
+    Dia::CellHistory::CellHistoryModule* history = mHistoryModuleRef.Get();
+    if (host == nullptr || history == nullptr)
+    {
+        DIA_LOG_WARNING("HIS", "CellLayersViewerTestStage: SimQueryHostModule or CellHistoryModule unavailable - history commands not served");
+        return false;
+    }
+    if (!mHistoryRegistrar)
+        mHistoryRegistrar = Dia::Core::MakeUnique<MirrorRegistrar>(*host);
+    history->SetRegistrar(mHistoryRegistrar.Get());
+
+    static const Dia::API::ValueParam kEmitParams[] = {
+        { "note", "string", false, "Short note stored in the event payload (default empty)" },
+        { "value", "float", false, "Number stored in the event payload (default 0)" } };
+    Dia::DebugServer::SimHelpInfo help;
+    help.description = "Test only: emit a cluichetest.celllayers.marker event into the cell history recorder. Returns {ok, sample, result}.";
+    help.category = "test"; help.owner = "CluicheTest";
+    help.params = kEmitParams; help.paramCount = 2;
+    mHistoryCommandRegistered = mHistoryRegistrar->RegisterCommand("cluichetest.celllayers.history_emit", help,
+        [this](const Json::Value& params) -> Json::Value
+        {
+            Json::Value out(Json::objectValue);
+            Dia::CellHistory::CellHistoryRecorder* recorder = Dia::CellHistory::FindCellHistoryRecorder(mHistoryStream);
+            if (recorder == nullptr)
+            {
+                out["error"] = "history recorder unavailable";
+                return out;
+            }
+            Json::Value payload(Json::objectValue);
+            if (params.isObject() && params["note"].isString())
+                payload["note"] = params["note"].asString();
+            if (params.isObject() && params["value"].isNumeric())
+                payload["value"] = params["value"].asDouble();
+            const std::string payloadText = Json::FastWriter().write(payload);
+            Dia::CellHistory::HistoryEvent e;
+            e.type = Dia::Core::StringCRC("cluichetest.celllayers.marker");
+            e.payloadJson = payloadText.c_str();
+            e.text = "marker";
+            const Dia::CellHistory::EmitResult r = recorder->Emit(e);
+            out["ok"] = (r == Dia::CellHistory::EmitResult::Ok);
+            out["result"] = static_cast<int>(r);
+            out["sample"] = recorder->SampleCount();   // the event is assigned to this (next) sample
+            return out;
+        });
+    if (!mHistoryCommandRegistered)
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: history_emit command registration failed");
+    return mHistoryCommandRegistered;
+}
+
+void CellLayersViewerTestStageModule::UnregisterHistoryCommand()
+{
+    if (mHistoryCommandRegistered && mHistoryRegistrar)
+        mHistoryRegistrar->Unregister("cluichetest.celllayers.history_emit");   // handler captures this
+    mHistoryCommandRegistered = false;
+}
+
+void CellLayersViewerTestStageModule::SampleHistory()
+{
+    // Samples the live layers every kHistorySampleEveryFrames Sim frames (SimPU, the recorder's PU). The first sample happens as
+    // soon as the recorder is published.
+    Dia::CellHistory::CellHistoryRecorder* recorder = Dia::CellHistory::FindCellHistoryRecorder(mHistoryStream);
+    if (recorder == nullptr || !mLayersRegistered)
+        return;
+    if (mHistoryFrame++ % kHistorySampleEveryFrames != 0)
+        return;
+    char label[32];
+    snprintf(label, sizeof(label), "F%u", mHistoryFrame - 1u);
+    Dia::CellHistory::SampleInfo info;
+    info.tick = mHistoryFrame - 1u;
+    info.label = label;
+    info.band = 0;
+    recorder->Sample(info);
 }
 
 void CellLayersViewerTestStageModule::FitCameraToActiveGrid()
