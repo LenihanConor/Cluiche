@@ -72,6 +72,7 @@ namespace Dia::CellHistory
 		UnregisterCommands();
 		mServiceWriter.Deregister();
 		mRecorder.Reset();
+		mObservation.Reset();
 		mStartSeed = mRunIdSeedSet
 			? mRunIdSeed
 			: static_cast<uint64_t>(std::chrono::system_clock::now().time_since_epoch().count());
@@ -91,6 +92,7 @@ namespace Dia::CellHistory
 		if (schema == nullptr) { DIA_LOG_WARNING("HIS", "CellHistoryModule: no ValueSchemaService; history runs without schema data"); }
 
 		mRecorder = Dia::Core::MakeUnique<CellHistoryRecorder>(*registry, schema, mConfig, mStartSeed);
+		mObservation = Dia::Core::MakeUnique<CellHistoryObservation>(*mRecorder);
 		if (mServiceWriter.IsConnected()) { mServiceWriter.Register(*mRecorder); }
 		DIA_LOG_INFO("HIS", "CellHistoryRecorder published on stream '%s'", kServiceStreamId);
 	}
@@ -118,12 +120,15 @@ namespace Dia::CellHistory
 	{
 		TryCreateRecorder();
 		TryRegisterCommands();
+		if (mObservation != nullptr) { mObservation->OnRecorderUpdate(); }
 	}
 
 	Dia::ApplicationFlow::StopResult CellHistoryModule::DoStop()
 	{
 		// The recorder stays alive until the next DoStart or destruction (see header).
+		// The observation is torn down (unregisters health reporter).
 		UnregisterCommands();
+		mObservation.Reset();
 		mServiceWriter.Deregister();
 		return Dia::ApplicationFlow::StopResult::kDone;
 	}

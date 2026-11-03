@@ -1,6 +1,8 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
@@ -138,6 +140,7 @@ namespace Dia::CellHistory
 
 	EmitResult CellHistoryRecorder::Emit(const HistoryEvent& e)
 	{
+		DIA_PROFILE_SCOPE("cellhistory.emit", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		ValidateEvent(e);
 		return mEvents.Emit(e);
 	}
@@ -571,6 +574,8 @@ namespace Dia::CellHistory
 
 	SampleResult CellHistoryRecorder::Sample(const SampleInfo& info)
 	{
+		DIA_TRACE_ZONE("cellhistory.sample", ::Dia::Observation::Trace::Category::kDiaGraphics);
+
 		SampleResult result;
 		const uint32_t idx = mSampleCount;
 		result.mSample = idx;
@@ -625,6 +630,7 @@ namespace Dia::CellHistory
 		}
 
 		// 2. Rows and per-cell slots.
+		DIA_PROFILE_SCOPE("cellhistory.aggregate_pass", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		for (uint32_t i = 0; i < mRecordedCount; ++i)
 		{
 			Recorded& r = mRecorded[i];
@@ -662,6 +668,7 @@ namespace Dia::CellHistory
 
 			if (ringOk && r.mTracked)
 			{
+				DIA_PROFILE_SCOPE("cellhistory.percell_append", ::Dia::Observation::Profile::Category::kDiaGraphics);
 				const float* values = ValuesFor(r, *desc, versions[i]);
 				mRing->Append(r.mId, values, mCellCount);
 			}

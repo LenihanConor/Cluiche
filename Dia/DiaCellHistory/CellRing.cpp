@@ -279,6 +279,7 @@ namespace Dia::CellHistory
 	uint32_t CellRing::FirstRetained() const { return mCount ? mIds[SlotOf(0)] : 0; }
 	uint32_t CellRing::LatestSample() const { return mCount ? mIds[SlotOf(mCount - 1)] : 0; }
 	uint64_t CellRing::BytesUsed() const { return uint64_t(mWindow) * mBytesPerSample; }
+	double CellRing::UsedFraction() const { return mBudget == 0 ? 0.0 : double(uint64_t(mCount) * mBytesPerSample) / double(mBudget); }
 
 	CellRingGap CellRing::Gap(uint32_t i) const { return i < mGapCount ? mGaps[i] : CellRingGap{}; }
 }

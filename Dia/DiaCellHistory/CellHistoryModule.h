@@ -36,6 +36,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
+#include <DiaCellHistory/CellHistoryObservation.h>
 #include <DiaCellHistory/HistoryConfig.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -107,6 +108,7 @@ namespace Dia::CellHistory
 		Dia::ApplicationFlow::ServiceStreamWriter<CellHistoryRecorder> mServiceWriter{ this, Dia::Core::StringCRC(kServiceStreamId) };
 
 		Dia::Core::UniquePtr<CellHistoryRecorder>	mRecorder;
+		Dia::Core::UniquePtr<CellHistoryObservation>	mObservation;
 #ifdef DIA_DEBUG
 		Dia::Core::UniquePtr<CellHistoryCommands>	mCommands;
 		Dia::CellLayers::IMirrorQueryRegistrar*		mRegisteredWith = nullptr;

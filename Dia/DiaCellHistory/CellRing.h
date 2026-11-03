@@ -66,6 +66,7 @@ namespace Dia::CellHistory
 		uint32_t WindowLength() const { return mWindow; }
 		uint64_t BytesPerSample() const { return mBytesPerSample; }
 		uint64_t BytesUsed() const;			// allocated cell storage (window * bytesPerSample)
+		double UsedFraction() const;		// retained count * bytesPerSample / budget
 		uint32_t CellCount() const { return mCellCount; }
 
 		uint32_t GapCount() const { return mGapCount; }

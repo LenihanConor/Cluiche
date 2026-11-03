@@ -7,6 +7,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{42432990-3b7b-433d-80d7-8c14f5f50009}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Dia">
+      <UniqueIdentifier>{bf6304fd-201c-4f7a-bc8e-d0be8b9acbef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiaCellHistory.h" />
@@ -29,6 +32,9 @@
     <ClInclude Include="CellHistoryRecorder.h" />
     <ClInclude Include="CellHistoryCommands.h" />
     <ClInclude Include="CellHistoryModule.h" />
+    <ClInclude Include="Dia\DiaCellHistory\CellHistoryObservation.h">
+      <Filter>Dia</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -39,6 +45,9 @@
     <ClCompile Include="CellHistoryRecorder.cpp" />
     <ClCompile Include="CellHistoryCommands.cpp" />
     <ClCompile Include="CellHistoryModule.cpp" />
+    <ClCompile Include="Dia\DiaCellHistory\CellHistoryObservation.cpp">
+      <Filter>Dia</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
