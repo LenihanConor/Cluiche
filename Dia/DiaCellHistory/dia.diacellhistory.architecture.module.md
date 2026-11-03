@@ -17,6 +17,10 @@ dependencies:
 public_api:
   headers:
     - DiaCellHistory/DiaCellHistory.h
+    - DiaCellHistory/Testing/StubGrid.h
+    - DiaCellHistory/Testing/FakeClock.h
+    - DiaCellHistory/Testing/BudgetSizing.h
+    - DiaCellHistory/Testing/FixtureEventSchemas.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []

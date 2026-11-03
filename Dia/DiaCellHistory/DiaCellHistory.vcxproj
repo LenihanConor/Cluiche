@@ -76,6 +76,10 @@
   <ItemGroup>
     <ClInclude Include="DiaCellHistory.h" />
     <ClInclude Include="HistoryConfig.h" />
+    <ClInclude Include="Testing\StubGrid.h" />
+    <ClInclude Include="Testing\FakeClock.h" />
+    <ClInclude Include="Testing\BudgetSizing.h" />
+    <ClInclude Include="Testing\FixtureEventSchemas.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
