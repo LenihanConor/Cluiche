@@ -2448,5 +2448,8 @@
     <ClCompile Include="DiaCellHistory\TestCellRing.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestCellHistoryRecorder.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

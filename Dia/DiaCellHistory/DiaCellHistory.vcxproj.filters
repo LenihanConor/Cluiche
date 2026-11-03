@@ -26,6 +26,7 @@
     <ClInclude Include="CellRing.h" />
     <ClInclude Include="AggregateStore.h" />
     <ClInclude Include="EventLog.h" />
+    <ClInclude Include="CellHistoryRecorder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -33,6 +34,7 @@
     <ClCompile Include="CellRing.cpp" />
     <ClCompile Include="AggregateStore.cpp" />
     <ClCompile Include="EventLog.cpp" />
+    <ClCompile Include="CellHistoryRecorder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
