@@ -48,6 +48,16 @@ responsibilities:
   - Announcement resync observability: counters dia.debugserver.sim.{announce_gaps,digest_mismatches,resyncs_requested,
     resyncs_completed,resync_timeouts,announce_overflow} (registered with MetricInfo by DebugServerHostModule / SimQueryHostModule),
     Warning logs on gap, digest mismatch, resync timeout and announce overflow, Info log on resync completion with the name count
+  - Sim-hosted command help: every sim-hosted name is registered with a SimHelpInfo (description, category, owner, noArgs, up to
+    kSimHelpMaxParams=16 ValueParam-shaped params); it is copied into fixed-size SimHelpStored (description 256, category/owner 64,
+    param name 64 / type 16 / description 192 / unit 16 / enum 128 chars) and rides on the register and resync-replay messages, so
+    SimQueryHostModule::RegisterQuery/RegisterCommand take a help argument and a missing description is rejected. Main keeps the
+    catalogue (name, kind, help) in DebugServer, exposed read-only, Main thread only, by ISimHostedCatalogue (SimHostedCount,
+    GetSimHostedEntry, FindSimHostedHelp) and injected into consumers (no static accessor). The catalogue is replaced atomically by
+    ReplaceSimHosted. The `list_commands` query returns query_commands, api_commands (merged DiaAPI + sim-hosted names, each once;
+    a DiaAPI/sim name clash reports the Main-hosted entry and logs a Warning) and command_details (name, source "api"|"sim", kind,
+    description, category, owner, noArgs, params). The visual debugger palette index and the DiaValueSchema code-side collector read
+    the same catalogue by injection
   - Test seams: DebugServer::SetNowMsFunction (clock) and SetSendHook (outgoing messages, no socket)
 
 non_responsibilities:
@@ -69,6 +79,8 @@ public_api:
     - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook, ReplaceSimHosted, GetSimHostedDigest
     - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind (Query/Command/Resync), SimHostedName, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
     - Dia/DiaDebugServer/ISimRequestSink.h
+    - Dia/DiaDebugServer/ISimHostedCatalogue.h  # read-only sim-hosted catalogue + SimHelpToParams
+    - Dia/DiaDebugServer/SimHelpInfo.h        # SimHelpInfo (registration input), SimHelpStored (fixed-size copy), kSimHelpMax* limits
     - Dia/DiaDebugServer/SimPendingTable.h
     - Dia/DiaDebugServer/SimQueryHost.h       # SimQueryHost (SetResyncHandler), ISimRequestSource, ISimReplySink
   namespaces:

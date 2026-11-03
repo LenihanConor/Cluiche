@@ -26,6 +26,7 @@
         "scenarios/cluichetest/cellfield_render/test_cellfield_render.py",
         "scenarios/cluichetest/celllayers/test_celllayers_smoke.py",
         "scenarios/cluichetest/celllayers/test_celllayers_mirror.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_help.py",
         "scenarios/cluichetest/sim_hosted/test_sim_hosted_query.py"
     ],
     "generic_run_skip": {

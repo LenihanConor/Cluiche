@@ -110,7 +110,7 @@ deregisters the stream; the registry and service live until the next start or mo
 Code-side pass (Feature 4): after sidecars, ramps and contributors and before `Publish`, DoStart runs
 `CodeSideCollector::Collect` (profile scope `ValueSchema.CollectCodeSide`, `kDiaAssetRuntime`) on an
 `ICodeSideSource` (default module-owned `LiveCodeSideSource`; `SetCodeSideSource` injects one for tests) and
-keeps the result in `GetCodeSideReport()`. Info log: `code-side: <M> metrics (<d> described, <u> undescribed),
+keeps the result in `GetCodeSideReport()`. `CodeSideCollector::SetSimHostedCatalogue` (injected by `ValueSchemaModule` with DiaDebugServer's `ISimHostedCatalogue`) adds the sim-hosted commands and queries, with their registered help, to the collected command set alongside the DiaAPI ones. Info log: `code-side: <M> metrics (<d> described, <u> undescribed),
 <C> commands, <A> args (<ad> described)`. Config `"code_side": false` (default true) skips the pass.
 Late registrations (AC 6): metrics/commands registered after publish are not in the immutable service.
 `LateRegistrationCount()` = source generation deltas since collection; `CheckLateRegistrations()` logs one

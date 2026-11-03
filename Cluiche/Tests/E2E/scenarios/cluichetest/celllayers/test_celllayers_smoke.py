@@ -222,7 +222,7 @@ def test_celllayers_smoke(dia_client):
         assert isinstance(st["drawers"], list) and isinstance(st["stats"], dict), st
         assert "error" in c.send_command("debug.domain_state", {"id": "nope"})
         assert "error" in c.send_command("debug.domain_state", {"id": 5})
-        assert "celllayers" in {d.get("_id") for d in c.send_command("debug.domain_state").values()}
+        assert "celllayers" in {d.get("_id") for d in c.send_command("debug.domain_state").values() if isinstance(d, dict)}
 
         # Settle: animate is off so the initial temperature upload is done and counters are quiescent.
         time.sleep(0.5)
