@@ -181,6 +181,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | `CellLayerViewerDomain` keeps a dangling `mActiveGrid` after the last layer unregisters (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
 | Dia | `SLOW_DebugServer*` loopback tests share hard-coded port 9461 (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
 | Dia | DiaCellLayers resume point (2026-10-30, end of session) | 2026-11-02 | Moved by `dia docs backlog move` |
+| sim-registered-queries | [spec](specs/) | 2026-11-03 | Marked done by `dia docs spec-done` |
+| Dia | Cross-PU reads still use mutexes or raw cross-thread reads (debt, 2026-10-30) | 2026-11-03 | Done 2026-11-03: EntityInspectorModule sim-hosted, QueryRegistry owner-thread guard, dead registrants deleted |
 
 ---
 

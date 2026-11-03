@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/applications/dia/systems/diadebugserver/sim-registered-queries.md
-**Status:** In Progress
+**Status:** Done
 
 ## Task 1 audit: every `QueryRegistry` registrant and its PU
 
@@ -18,8 +18,8 @@ Open Question 1 (mixed Main+Sim state): `EntityInspectorModule` query reads only
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Audit all callers and owning PUs; write the plan | Table above | Done | sonnet | Scope shrinks: one real migration (EntityInspectorModule), two dead/absent registrants |
-| 2 | `QueryRegistry::SetOwnerThread` + Register/Unregister owner check; DebugServer sets on Start, clears on Stop; metric `dia.debugserver.query.wrong_thread_register` | RED-GREEN: AC 3, 4, 5, 9 (std::thread test) | Not Started | sonnet | Dia thread-id type, not `std::thread::id` (AD-002) |
-| 3 | Migrate `EntityInspectorModule` query to `SimQueryHostModule` (add dependency + manifest entry, description required); golden-compare reply shape | AC 2, 6 | Not Started | sonnet | Stage-scoped: Unregister on stop via `UnregisterQuery` |
-| 4 | Resolve dead code: `RegisterAssetRuntimeQueryHandlers` and `OnDemandSourceBase` (delete or leave) | AC 1, 7 | Not Started | haiku | User decision needed |
-| 5 | Exhaustive test pass (gap audit, edge tests, mutation check, sanitizer) | Whole feature | Not Started | sonnet | |
-| 6 | Docs: module docs, registry, amend spec in place, close backlog row | AC 10 | Not Started | haiku | Use `dia docs` commands |
+| 2 | `QueryRegistry::SetOwnerThread` + Register/Unregister owner check; DebugServer sets on Start, clears on Stop; metric `dia.debugserver.query.wrong_thread_register` | RED-GREEN: AC 3, 4, 5, 9 (std::thread test) | Done | sonnet | Dia thread-id type, not `std::thread::id` (AD-002); 8 tests RED (compile) then GREEN; mutation check fails 2+ tests. Id type is uint32_t via QueryRegistry::ThreadId (no Dia::Core::ThreadId exists). Register/Unregister now return bool |
+| 3 | Migrate `EntityInspectorModule` query to `SimQueryHostModule` (add dependency + manifest entry, description required); golden-compare reply shape | AC 2, 6 | Done | sonnet | Stage-scoped: Unregister on stop via `UnregisterQuery`; entity.inspect_request now sim-hosted; null replies became {} (sim-hosted replies must be objects). Manifest: dropped DebugServerService channel, added SimQueryHostModule dependency. New E2E test_entity_inspect_sim_hosted.py (2 tests, in default plan) passes |
+| 4 | Resolve dead code: `RegisterAssetRuntimeQueryHandlers` and `OnDemandSourceBase` (delete or leave) | AC 1, 7 | Done | haiku | User decision needed; Deleted RegisterAssetRuntimeQueryHandlers and OnDemandSourceBase (no callers/subclasses) |
+| 5 | Exhaustive test pass (gap audit, edge tests, mutation check, sanitizer) | Whole feature | Done | sonnet | Full googletest 6.4k tests pass except CommandRegistryTest.ListCommandsEmpty (global registry order dependence in a shard; passes alone, unrelated); ASan 222 scoped pass; deps OK; mutation check done |
+| 6 | Docs: module docs, registry, amend spec in place, close backlog row | AC 10 | Done | haiku | Use `dia docs` commands; module doc, spec amended, registry regenerated, backlog row closed |

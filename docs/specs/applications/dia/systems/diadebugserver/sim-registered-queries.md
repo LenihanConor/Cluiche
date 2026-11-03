@@ -39,8 +39,13 @@ Candidates found by grep (to be confirmed in Task 1; each registrant's owning PU
 ```cpp
 // QueryRegistry gains an owner-thread check, installed by the DebugServer.
 // Existing veto hook is reused; the new rule is added to SimNameVeto's sibling:
-void QueryRegistry::SetOwnerThread(Dia::Core::ThreadId id);   // set on DebugServer::Start
-// Register/Unregister from a different thread: Error log, returns false, nothing changes.
+// Built (amended in place): no Dia thread-id type exists, so the id is QueryRegistry::ThreadId (uint32_t,
+// the OS thread id); AD-002 is met because no std type appears in the API.
+void QueryRegistry::SetOwnerThread(ThreadId id);   // DebugServer::Start sets it, Stop calls ClearOwnerThread()
+static ThreadId QueryRegistry::CurrentThreadId();
+bool QueryRegistry::Register(...);    // now returns bool
+bool QueryRegistry::Unregister(...);  // now returns bool (true = removed)
+// Register/Unregister from a different thread: Error log, metric, returns false, nothing changes.
 ```
 
 Migrated registrants change `registry.Register(name, handler)` to `simQueryHost.RegisterQuery(name, handler)` (plus, once Command Help lands, a description). The handler body is untouched; only the PU it runs on changes, which is the point.
@@ -53,7 +58,7 @@ Migrated registrants change `registry.Register(name, handler)` to `simQueryHost.
 4. The same rule applies to `Unregister`.
 5. The owner thread is set when the DebugServer starts and cleared on stop; a registry used standalone in a unit test with no owner set accepts any thread (existing tests keep passing).
 6. A handler registered through `SimQueryHost` is executed on the SimPU thread (test records the thread id) and is never executed on Main.
-7. Economy `OnDemandSourceBase` sources answer on SimPU (or are documented as Main-only if the Economy system is wired on Main in some build).
+7. (Amended) The Task 1 audit found no Economy on-demand sources: the Economy sources derive `ChangeDetectedSourceBase`, and `OnDemandSourceBase` had no subclass, so it was deleted together with the uncalled `RegisterAssetRuntimeQueryHandlers`. `EntityInspectorModule` is the only migrated registrant.
 8. No cross-PU `std::mutex`, `Core::Mutex` or atomic is added; names registered at module start are announced via the existing announce path (Resync keeps them consistent).
 9. Metrics: count of queries rejected for thread ownership (`dia.debugserver.query.wrong_thread_register`); an Error log with the name and calling module.
 10. The backlog row item "QueryRegistry handlers registered by SimPU modules" is closed with this feature.
@@ -87,4 +92,6 @@ Migrated registrants change `registry.Register(name, handler)` to `simQueryHost.
 
 ## Status
 
-`Approved` (2026-11-02)
+`Done`
+
+**Outcome (2026-11-03):** Plan: @docs/specs/applications/dia/systems/diadebugserver/sim-registered-queries.plan.md. Scope shrank after the Task 1 audit: one migrated registrant (`EntityInspectorModule`), two dead registrants deleted (`RegisterAssetRuntimeQueryHandlers`, `OnDemandSourceBase`), ValueSchema stays Main-only.

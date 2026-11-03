@@ -1,0 +1,37 @@
+**Spec:** @docs/specs/applications/dia/systems/diacellhistory/recorder-and-tiers.md
+**Status:** Pending
+
+Feature 1 of DiaCellHistory (built first). **Prerequisite:** DiaCellLayers Feature 1 Done (it is). TDD throughout (RED proven with quoted output). Commit after each task. Models are sonnet or haiku only; any opus use needs the user's confirmation first.
+
+**Done means:** a stage-driven recorder smoke is added to the `CellLayersViewer` E2E scenario (Task 13); `dia check deps` clean; STL grep clean; module doc written; Observation Opportunity Scan; `dia docs spec-done` on the spec.
+
+**Sign-off given 2026-10-29 (user):** AD-001 edit to DiaValueSchema adding `aggregate` to `kHistoryKeys` in `ValueSchemaLoader.cpp` (additive; needs a loader test, a conformance fixture and a line in the schema reference). Done as part of Task 2. Still to confirm at Task 1: the new module `Dia/DiaCellHistory/` (covered by the approved system spec).
+
+**Facts checked against the code (2026-10-29):**
+- `history.track` and `history.group` already load from the `history` block; `ValueInfo::mHistory` holds it as JSON. `history.group` is in `history`, not `ui` (the system spec text is wrong on this).
+- `CellLayerDesc` has `grid`, `read` (`FastDelegate2<float*, uint32_t>`), `version` (`FastDelegate0<uint64_t>`); the registry exposes `LayerCountForGrid` and `LayerOfGrid` for enumerating a grid's layers in registration order.
+- `ValueSchemaService::FindEvent(StringCRC)` exists (Task 8).
+- `CircularBufferC` is compile-time sized; Task 4 builds a private runtime-sized store instead of changing DiaCore.
+- Add `TruncateAfter(sample)` to every tier store (Tasks 4 to 6) now; Feature 3's restore needs it and adding it later reopens this feature.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Scaffold `Dia/DiaCellHistory/` with `dia scaffold module Dia DiaCellHistory`; namespace `Dia::CellHistory`; deps DiaCore, DiaValueSchema, DiaCellLayers; add to GoogleTests project; `dia check sln-sync`; module doc stub; register the `HIS` log channel | Builds; `dia check deps` | Pending | haiku | Mechanical |
+| 2 | `HistoryConfig` parse (bands, track, grid, `cellBudgetMB` / `aggregateBudgetMB` / `eventBudgetMB` defaults 64/64/16, `maxAggregateLayers` default 64; every key optional) and schema helpers for `history.track` / `group` / `aggregate`. **Includes the DiaValueSchema edit:** `aggregate` added to `kHistoryKeys`, loader test, conformance fixture, reference line | RED-GREEN: defaults, partial config, bad values; loader accepts `aggregate` and still rejects unknown keys | Pending | sonnet | Sign-off given. The loader edit is its own commit |
+| 3 | Test utilities in `DiaCellHistory/Testing/`: stub grid with settable layers and versions (counting `read`), fake clock for labels, budget-sizing helper, fixture event schemas | Used by every later task | Pending | sonnet | Ships with the library (feedback rule), not in GoogleTests |
+| 4 | `CellRing`: runtime-sized shared-window ring of quantised samples (uint16 float layers over schema min/max with clamp, uint8 category); `bytesPerSample`, window length, oldest-sample drop from all rings together, `firstRetained`, gap record, late track / untrack recompute, `TruncateAfter` (AC 6, 7, 8) | RED-GREEN: round trip within range/65,535, clamp, eviction order, shrink on track, late tracking, truncate | Pending | sonnet | Pure data structure, no DiaCellLayers dependency |
+| 5 | `AggregateStore`: groups (`world` plus one per enum value of each `history.group` category layer, id `<layer>=<enum>`), float min/mean/max excluding NaN, category counts (uint16), group sizes per sample, per-sample membership, oldest-row eviction with gap, `TruncateAfter` (AC 2, 3, 12 part) | RED-GREEN: known fixtures, NaN, empty group, changing grouping, eviction, truncate | Pending | sonnet | 12 bytes per float per group per sample |
+| 6 | `EventLog` and `HistoryEvent`: next-sample assignment, emit order, 1 KB payload cap (Error), 64-char text cap, budget eviction with gap, `TruncateAfter` including unattached events (AC 10, 12 part) | RED-GREEN: assignment across a `Sample`, ordering, caps, eviction, truncate | Pending | sonnet | Independent of Tasks 4 and 5: can run in parallel with them (different files) |
+| 7 | `CellHistoryRecorder::Sample` and the read API: recorded-layer set (float and category on the grid, minus `aggregate: false`, first 64 with one Warning beyond), live reads through the layer's own `read` (never a view source), version gate reusing the previous aggregate row, sample header (tick, label, band), no-layers Warning, `runId` created at start (AC 1, 4, 5, 13, 14) | RED-GREEN: counting stub (version gate), cap warning, live-not-scrubbed with a fake source installed | Pending | sonnet | Depends on Tasks 3 to 6 |
+| 8 | Event payload validation via `ValueSchemaService::FindEvent` (debug builds): unknown type or field mismatch, one Warning per type (AC 11) | RED-GREEN: match, mismatch, unknown type, once per type | Pending | sonnet | Reached through the schema service, no singleton |
+| 9 | `Track` / `Untrack` with validation (nonexistent layer, other grid, float with no schema range: Error, nothing changed) and the commands `cells.history.track`, `untrack`, `status` as DiaAPI commands with `ValueParam`s (AC 8, 9, 16) | RED-GREEN: each error leaves state unchanged; status content | Pending | sonnet | |
+| 10 | `CellHistoryModule`: creates the recorder, applies the `.diastage` `history` block, registers the commands, publishes the recorder on a `ServiceStream` | Module wiring test | Pending | sonnet | Runs on SimPU. No `GetStatic` (no-singletons rule). Check manifest orphan-provider rule: the stream needs a consumer (the CluicheTest stage in Task 13) |
+| 11 | Observation: metrics (memory per tier, window length, samples recorded, events recorded, sample ms, version-gated skips), `DIA_TRACE_ZONE` per sample, `DIA_PROFILE_SCOPE` on the aggregate pass, quantise pass and `Emit`, `IHealthReporter` Degraded above 90% of any budget (AC 12) | RED-GREEN: metric values, health at 89% and 91% | Pending | haiku | Review the tests for vacuity (it happened in the inspector task) |
+| 12 | Integration and perf: fixture layers registered in DiaCellLayers, 100 samples, aggregates equal direct computation; 3 ms sample at Large with 6 tracked and 20 aggregated layers (Release); 2,080 samples of 20 layers within the aggregate budget (AC 15) | Integration and perf GoogleTests | Pending | sonnet | Release run hits the known Release GoogleTests link failure (backlog Loose End); use the documented workaround or fix first |
+| 13 | CluicheTest wiring and E2E: the `CellLayersViewer` stage consumes the recorder stream and samples on a timer; extend `test_celllayers_smoke.py` to assert `cells.history.status`, track / untrack and an emitted event | `dia test e2e --scenario="*celllayers*"` | Pending | sonnet | Adds the stream consumer so the provider is not an orphan |
+| 14 | Finalize: `dia check deps`, STL grep, module doc, Observation Opportunity Scan, full GoogleTests, `dia docs spec-done`, update the system plan and the backlog | `dia check deps`, `dia run googletest`, E2E | Pending | haiku | |
+
+## Open items carried from the spec
+
+1. Aggregate overflow: dropping the oldest rows loses the start of a very long run; decimation is deferred until a real run reaches the budget.
+2. Unchanged samples cost a full slot each; a "same as previous" marker is deferred.
