@@ -105,3 +105,110 @@ TEST(CellLayersHoverOverrideTest, DrawForwardsDrawCallsAndDroppedCount)
 	EXPECT_EQ(inner.cellFieldRequests, 1u);
 	EXPECT_EQ(draw.DroppedCount(), 0u);
 }
+
+// ---- pointer_frames carries the hover override (no extra sim-hosted name) ----
+#include <Modules/TestStages/CellLayersPointerQueue.h>
+
+TEST(CellLayersPointerInjectionTest, FramesOnlyBehavesAsBefore)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	const Json::Value out = ApplyPointerInjection(Params(R"({"frames":[{"x":1,"y":2},{"x":3,"y":4}]})"), q, h);
+	EXPECT_FALSE(out.isMember("error")) << out.toStyledString();
+	EXPECT_EQ(out["queued"].asUInt(), 2u);
+	EXPECT_EQ(q.Pending(), 2u);
+	EXPECT_FALSE(h.active);
+	EXPECT_FALSE(out.isMember("hover"));
+}
+
+TEST(CellLayersPointerInjectionTest, FramesAreStillRequiredWithoutHover)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	EXPECT_EQ(ApplyPointerInjection(Params(R"({})"), q, h)["error"].asString(), "missing or non-array param 'frames'");
+	EXPECT_EQ(ApplyPointerInjection(Params(R"({"frames":[]})"), q, h)["error"].asString(), "param 'frames' is empty");
+	EXPECT_EQ(q.Pending(), 0u);
+}
+
+TEST(CellLayersPointerInjectionTest, HoverAloneSetsOverrideAndQueuesNothing)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"x":10,"y":20}})"), q, h);
+	EXPECT_FALSE(out.isMember("error")) << out.toStyledString();
+	EXPECT_TRUE(h.active);
+	EXPECT_FLOAT_EQ(h.pixel.X(), 10.0f);
+	EXPECT_FLOAT_EQ(h.pixel.Y(), 20.0f);
+	EXPECT_EQ(out["queued"].asUInt(), 0u);
+	EXPECT_TRUE(out["hover"].asBool());
+	EXPECT_EQ(q.Pending(), 0u);
+}
+
+TEST(CellLayersPointerInjectionTest, HoverClearDeactivates)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	h.active = true;
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"clear":true}})"), q, h);
+	EXPECT_FALSE(out.isMember("error"));
+	EXPECT_FALSE(h.active);
+	EXPECT_FALSE(out["hover"].asBool());
+}
+
+TEST(CellLayersPointerInjectionTest, HoverAndFramesApplyTogether)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"x":1,"y":2},"frames":[{"x":5,"y":6}]})"), q, h);
+	EXPECT_FALSE(out.isMember("error"));
+	EXPECT_TRUE(h.active);
+	EXPECT_EQ(q.Pending(), 1u);
+	EXPECT_EQ(out["queued"].asUInt(), 1u);
+}
+
+TEST(CellLayersPointerInjectionTest, BadHoverRejectsEverythingAndChangesNothing)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	h.active = true;
+	h.pixel = Dia::Maths::Vector2D(3.0f, 4.0f);
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"x":1},"frames":[{"x":5,"y":6}]})"), q, h);
+	EXPECT_NE(out["error"].asString().find("hover: missing or non-numeric 'y'"), std::string::npos) << out.toStyledString();
+	EXPECT_EQ(q.Pending(), 0u);
+	EXPECT_TRUE(h.active);
+	EXPECT_FLOAT_EQ(h.pixel.X(), 3.0f);
+}
+
+TEST(CellLayersPointerInjectionTest, BadFramesDoNotApplyHover)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"x":1,"y":2},"frames":[{"x":5}]})"), q, h);
+	EXPECT_NE(out["error"].asString().find("frame 0"), std::string::npos) << out.toStyledString();
+	EXPECT_FALSE(h.active);
+	EXPECT_EQ(q.Pending(), 0u);
+}
+
+TEST(CellLayersPointerInjectionTest, FullQueueRejectsAndDoesNotApplyHover)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	for (int i = 0; i < 2; ++i)   // 2 x 256 fills half; fill the rest below
+	{
+		std::string f = R"({"frames":[)";
+		for (int k = 0; k < 256; ++k) f += std::string(k ? "," : "") + R"({"x":0,"y":0})";
+		ASSERT_FALSE(ApplyPointerInjection(Params((f + "]}").c_str()), q, h).isMember("error"));
+	}
+	ASSERT_EQ(q.Pending(), 512u);
+	const Json::Value out = ApplyPointerInjection(Params(R"({"hover":{"x":1,"y":2},"frames":[{"x":0,"y":0}]})"), q, h);
+	EXPECT_EQ(out["error"].asString(), "queue full");
+	EXPECT_FALSE(h.active);
+}
+
+TEST(CellLayersPointerInjectionTest, HoverNotAnObjectIsRejected)
+{
+	PointerFrameQueue q;
+	HoverOverride h;
+	EXPECT_NE(ApplyPointerInjection(Params(R"({"hover":5})"), q, h)["error"].asString().find("hover: params must be an object"), std::string::npos);
+	EXPECT_FALSE(h.active);
+}

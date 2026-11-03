@@ -31,6 +31,7 @@
 #include <DiaCellLayers/DebugServerTopicSink.h>
 #include <DiaCellLayers/CellPicker.h>
 #include "Modules/TestStages/CellLayersPointerQueue.h"
+#include "Modules/TestStages/CellLayersHoverOverride.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #endif
@@ -146,6 +147,7 @@ private:
     bool  mInjectLogged = false;
     bool  mInjectCommandsRegistered = false;
     PointerFrameQueue mPointerQueue;  // test-only injected frames (E2E), one popped per Sim frame
+    HoverOverride mHoverOverride;     // test-only hover cursor (E2E); the viewer sees it through HoverOverrideDraw
     bool RegisterInjectionCommands();
     void UnregisterInjectionCommands();
 

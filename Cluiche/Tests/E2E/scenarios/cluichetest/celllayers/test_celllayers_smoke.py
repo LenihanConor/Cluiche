@@ -1,7 +1,8 @@
 """CellLayersViewerTestStage thin smoke: layer registry listing, JSON base/overlay commands, upload version gate.
 
 The viewer panel's GetJSONState (activeBase, legend, category swatches, gridSelector, empty, layer descriptions,
-hotkeys) is asserted through the debug.domain_state query. Hover needs an E2E mouse-move command and is not covered.
+hotkeys) is asserted through the debug.domain_state query. Hover is covered in test_celllayers_inspector through the stage-local
+cluichetest.celllayers.hover override (the real cursor comes from the input stream, which an E2E cannot move).
 """
 import math
 import time
@@ -846,6 +847,61 @@ def test_celllayers_inspector(dia_client):
         _vc(c, "cells.select.clear")
         res = _inspect(c, all=True)
         assert res["selected"] == 0 and res["layers"] == [] and "pinned" not in res, res
+
+        # 10. Hover. The viewer's cursor normally comes from the real mouse; the `hover` field of the stage-local
+        #     pointer_frames command overrides it with a screen pixel (test-only), so the panel's `hover` block can be
+        #     asserted end to end.
+        def set_hover(**h):
+            d = _vc(c, _P + "pointer_frames", {"hover": h})
+            assert d["ok"] is True and d["queued"] == 0, d
+            return d["hover"]
+
+        def hover_state(pred, what):
+            """Latest panel hover block once `pred` accepts it (the cursor is applied on the next Sim frame)."""
+            seen = []
+            def ok():
+                seen[:] = [_panel(c)["hover"]]
+                return pred(seen[0])
+            assert _wait(ok, 5.0), (what, seen)
+            return seen[0]
+
+        cell = (12, 10)
+        px, py = _cell_pixel(c, *cell)
+        assert set_hover(x=px, y=py) is True
+        h = hover_state(lambda s: s["valid"] and (s["q"], s["r"]) == cell, "float layer on cell")
+        assert h["layer"] == "temperature" and h["label"] == "Temperature" and h["unit"] == "C", h
+        assert _approx(h["value"], _temperature(*cell)), (h, _temperature(*cell))
+        assert h["description"], h  # described through the schema
+        value_text, unit_text = h["text"].split(" ")
+        assert unit_text == "C" and abs(float(value_text) - _temperature(*cell)) < 1e-3 + 1e-4 * abs(_temperature(*cell)), h["text"]
+
+        # A different cell moves the readout.
+        other = (30, 20)
+        ox, oy = _cell_pixel(c, *other)
+        assert set_hover(x=ox, y=oy) is True
+        h = hover_state(lambda s: s["valid"] and (s["q"], s["r"]) == other, "second cell")
+        assert _approx(h["value"], _temperature(*other)), (h, _temperature(*other))
+
+        # Category layer: the readout is the enum label, not the number.
+        assert set_hover(x=px, y=py) is True
+        _vc(c, "cells.layer.base_by_id", {"id": "biome"})
+        h = hover_state(lambda s: s["valid"] and s["layer"] == "biome" and (s["q"], s["r"]) == cell, "category layer on cell")
+        assert h["value"] == _biome(*cell) and h["text"] == _BIOME_LABELS[_biome(*cell)], (h, _biome(*cell))
+        _vc(c, "cells.layer.base_by_id", {"id": "temperature"})
+
+        # Off the grid there is no hover.
+        gx, gy = _cell_pixel(c, -5, 10)
+        assert set_hover(x=gx, y=gy) is True
+        hover_state(lambda s: s["valid"] is False and "q" not in s, "off-grid pixel")
+
+        # Errors leave the override as it was (still off-grid, so still no hover); clear hands back to the real mouse.
+        for h, text in (({}, "hover: missing or non-numeric 'x'"), ({"x": px}, "hover: missing or non-numeric 'y'"),
+                        ({"clear": 1}, "hover: non-bool param 'clear'"), ({"clear": True, "x": px, "y": py}, "conflicts")):
+            ok, msg = _cmd(c, _P + "pointer_frames", {"hover": h})
+            assert not ok and text in msg, (h, ok, msg)
+        assert _panel(c)["hover"]["valid"] is False
+        assert set_hover(clear=True) is False
+        hover_state(lambda s: not (s["valid"] and (s["q"], s["r"]) == cell), "cleared override stops reporting the injected cell")
     finally:
         c.abort_stage()
         c.navigate_to("Boot")

@@ -607,7 +607,7 @@ bool CellLayersViewerTestStageModule::RegisterInjectionCommands()
     // cell_pixel reads only the viewer and the camera ModuleRef, the same state SubmitPointerInput reads on SimPU.
     if (!mMirrorRegistrar)
         return false;
-    mInjectCommandsRegistered = RegisterPointerInjectionCommands(*mMirrorRegistrar, mPointerQueue,
+    mInjectCommandsRegistered = RegisterPointerInjectionCommands(*mMirrorRegistrar, mPointerQueue, mHoverOverride,
         [this](const Json::Value& params) -> Json::Value
         {
             Json::Value out(Json::objectValue);
@@ -651,6 +651,7 @@ void CellLayersViewerTestStageModule::UnregisterInjectionCommands()
     if (mMirrorRegistrar)
         UnregisterPointerInjectionCommands(*mMirrorRegistrar);
     mInjectCommandsRegistered = false;
+    mHoverOverride = HoverOverride();
 }
 
 void CellLayersViewerTestStageModule::FitCameraToActiveGrid()
@@ -689,7 +690,8 @@ void CellLayersViewerTestStageModule::ViewerDebugLayer::Draw(Dia::Core::IDebugDr
     // Drives the viewer on SimPU: base resolve, version-gated upload, CellField draw request, overlays, hover.
     if (mModule->mDomain)
     {
-        mModule->mDomain->Update(draw);
+        HoverOverrideDraw hoverDraw(draw, mModule->mHoverOverride);   // test-only: lets an E2E place the hover cursor
+        mModule->mDomain->Update(hoverDraw);
         // After viewer.Update, outside any viewer lock.
         if (mModule->mMirrorPublisher)
             mModule->mMirrorPublisher->Update();

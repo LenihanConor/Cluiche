@@ -38,6 +38,7 @@ namespace
 		MirrorQueries queries{ registry, domain, nullptr };
 		FakeMirrorRegistrar reg;
 		CluicheTest::PointerFrameQueue pointerQueue;
+		CluicheTest::HoverOverride hoverOverride;
 
 		CommandHelpRig()
 		{
@@ -50,7 +51,7 @@ namespace
 		bool RegisterAll()
 		{
 			return RegisterMirrorQueries(reg, queries) && domain.RegisterCommands(reg) &&
-				CluicheTest::RegisterPointerInjectionCommands(reg, pointerQueue, [](const Json::Value&) { return Json::Value(Json::objectValue); });
+				CluicheTest::RegisterPointerInjectionCommands(reg, pointerQueue, hoverOverride, [](const Json::Value&) { return Json::Value(Json::objectValue); });
 		}
 	};
 
@@ -118,7 +119,7 @@ TEST(CellLayersCommandHelp, ParamsMatchTheDomainCommentBlock)
 		{ "cells.select.unpin", 0, true },
 		{ "cells.inspect", 4, false },
 		{ "cells.inspector.expand", 2, false },
-		{ "cluichetest.celllayers.pointer_frames", 1, false },
+		{ "cluichetest.celllayers.pointer_frames", 2, false },	// frames, hover
 		{ "cluichetest.celllayers.pointer_pending", 0, true },
 		{ "cluichetest.celllayers.cell_pixel", 2, false },
 	};

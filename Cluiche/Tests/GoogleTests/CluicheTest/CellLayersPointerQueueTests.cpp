@@ -146,8 +146,9 @@ namespace
 TEST_F(PointerInjectionCommandsTest, RegistersThreeCommandsThroughTheRegistrarNotTheDiaApi)
 {
 	PointerFrameQueue q;
+	HoverOverride hover;
 	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
-	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, hover, PixelStub()));
 	EXPECT_EQ(reg.Count(), 3u);
 	for (const char* n : kInjectionNames)
 	{
@@ -163,8 +164,9 @@ TEST_F(PointerInjectionCommandsTest, RegistersThreeCommandsThroughTheRegistrarNo
 TEST_F(PointerInjectionCommandsTest, HandlersEnqueueAndReportPending)
 {
 	PointerFrameQueue q;
+	HoverOverride hover;
 	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
-	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, hover, PixelStub()));
 	Json::Value r = reg.Execute("cluichetest.celllayers.pointer_frames", Params(R"({"frames":[{"x":1,"y":2},{"x":3,"y":4}]})"));
 	EXPECT_TRUE(r["ok"].asBool());
 	EXPECT_EQ(r["queued"].asUInt(), 2u);
@@ -179,9 +181,10 @@ TEST_F(PointerInjectionCommandsTest, HandlersEnqueueAndReportPending)
 TEST_F(PointerInjectionCommandsTest, QueueFullIsReportedAsError)
 {
 	PointerFrameQueue q;
+	HoverOverride hover;
 	ASSERT_TRUE(q.TryEnqueue(Frames(kPointerQueueCapacity)));
 	Dia::CellLayers::Testing::FakeMirrorRegistrar reg;
-	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, PixelStub()));
+	ASSERT_TRUE(RegisterPointerInjectionCommands(reg, q, hover, PixelStub()));
 	EXPECT_EQ(reg.Execute("cluichetest.celllayers.pointer_frames", Params(R"({"frames":[{"x":1,"y":2}]})"))["error"].asString(), "queue full");
 	UnregisterPointerInjectionCommands(reg);
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <DiaCellLayers/SelectionInput.h>
 #include <DiaCore/Json/external/json/json.h>
+#include "Modules/TestStages/CellLayersHoverOverride.h"
 #ifdef DIA_DEBUG
 #include <DiaCellLayers/MirrorQueries.h>
 #endif
@@ -124,6 +125,41 @@ private:
 	size_t mHead = 0;
 };
 
+// Handler body of cluichetest.celllayers.pointer_frames: params {frames?: [...], hover?: {x, y} | {clear: true}}.
+// `frames` is required unless `hover` is present. All-or-nothing: a bad hover, bad frames or a full queue changes nothing.
+// Hover rides on this command rather than getting its own, so the stage registers no extra sim-hosted name.
+inline Json::Value ApplyPointerInjection(const Json::Value& params, PointerFrameQueue& queue, HoverOverride& hover)
+{
+	Json::Value out(Json::objectValue);
+	const bool hasHover = params.isObject() && params.isMember("hover");
+	HoverOverride nextHover = hover;
+	std::string err;
+	if (hasHover && !ParseHoverParams(params["hover"], nextHover, err))
+	{
+		out["error"] = "hover: " + err;
+		return out;
+	}
+	std::vector<Dia::CellLayers::SelectionInput::PointerFrame> parsed;
+	if ((!hasHover || params.isMember("frames")) && !ParsePointerFrames(params, parsed, err))
+	{
+		out["error"] = err;
+		return out;
+	}
+	if (!parsed.empty() && !queue.TryEnqueue(parsed))
+	{
+		out["error"] = "queue full";
+		return out;
+	}
+	if (hasHover)
+		hover = nextHover;
+	out["ok"] = true;
+	out["queued"] = static_cast<Json::UInt>(parsed.size());
+	out["pending"] = static_cast<Json::UInt>(queue.Pending());
+	if (hasHover)
+		out["hover"] = hover.active;
+	return out;
+}
+
 #ifdef DIA_DEBUG
 // Registers cluichetest.celllayers.pointer_frames (command), .pointer_pending and .cell_pixel (reads) on the sim-hosted registrar.
 // Runs on SimPU. `queue` and whatever `cellPixel` captures must outlive the registration. Returns false (and unregisters any it had
@@ -135,18 +171,19 @@ inline void UnregisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegi
 	registrar.Unregister("cluichetest.celllayers.cell_pixel");
 }
 
-inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegistrar& registrar, PointerFrameQueue& queue,
+inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegistrar& registrar, PointerFrameQueue& queue, HoverOverride& hover,
 	Dia::CellLayers::MirrorQueryHandler cellPixel)
 {
 	static const Dia::API::ValueParam kFramesParams[] = {
-		{ "frames", "string", true, "JSON array (1..256) of pointer frames {x, y, left?, middle?, right?, shift?, ctrl?, alt?, esc?}; one is applied per Sim frame" } };
+		{ "frames", "string", false, "JSON array (1..256) of pointer frames {x, y, left?, middle?, right?, shift?, ctrl?, alt?, esc?}; one is applied per Sim frame. Required unless hover is given" },
+		{ "hover", "string", false, "JSON object {x, y} (screen pixel, top-left origin) to hold the viewer's hover cursor there, or {clear: true} to use the real mouse again" } };
 	static const Dia::API::ValueParam kPixelParams[] = {
 		{ "q", "int", true, "Cell column (hex axial q)" },
 		{ "r", "int", true, "Cell row (hex axial r)" } };
 	Dia::DebugServer::SimHelpInfo framesHelp;
-	framesHelp.description = "Test only: queue pointer frames for the viewer's selection input. Returns {ok, queued, pending}.";
+	framesHelp.description = "Test only: queue pointer frames for the viewer's selection input and/or override its hover cursor. Returns {ok, queued, pending, hover?}.";
 	framesHelp.category = "test"; framesHelp.owner = "CluicheTest";
-	framesHelp.params = kFramesParams; framesHelp.paramCount = 1;
+	framesHelp.params = kFramesParams; framesHelp.paramCount = 2;
 	Dia::DebugServer::SimHelpInfo pendingHelp;
 	pendingHelp.description = "Test only: number of injected pointer frames not yet consumed. Returns {pending}.";
 	pendingHelp.category = "test"; pendingHelp.owner = "CluicheTest"; pendingHelp.noArgs = true;
@@ -155,25 +192,9 @@ inline bool RegisterPointerInjectionCommands(Dia::CellLayers::IMirrorQueryRegist
 	pixelHelp.category = "test"; pixelHelp.owner = "CluicheTest";
 	pixelHelp.params = kPixelParams; pixelHelp.paramCount = 2;
 	const bool ok =
-		registrar.RegisterCommand("cluichetest.celllayers.pointer_frames", framesHelp, [&queue](const Json::Value& params) -> Json::Value
+		registrar.RegisterCommand("cluichetest.celllayers.pointer_frames", framesHelp, [&queue, &hover](const Json::Value& params) -> Json::Value
 		{
-			Json::Value out(Json::objectValue);
-			std::vector<Dia::CellLayers::SelectionInput::PointerFrame> parsed;
-			std::string err;
-			if (!ParsePointerFrames(params, parsed, err))
-			{
-				out["error"] = err;
-				return out;
-			}
-			if (!queue.TryEnqueue(parsed))
-			{
-				out["error"] = "queue full";
-				return out;
-			}
-			out["ok"] = true;
-			out["queued"] = static_cast<Json::UInt>(parsed.size());
-			out["pending"] = static_cast<Json::UInt>(queue.Pending());
-			return out;
+			return ApplyPointerInjection(params, queue, hover);
 		}) &&
 		registrar.Register("cluichetest.celllayers.pointer_pending", pendingHelp, [&queue](const Json::Value&) -> Json::Value
 		{

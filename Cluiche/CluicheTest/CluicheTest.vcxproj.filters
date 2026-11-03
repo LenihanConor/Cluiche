@@ -402,5 +402,8 @@
     <ClInclude Include="Modules\TestStages\CellLayersStateRelayModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h">
+      <Filter>Modules\TestStages</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

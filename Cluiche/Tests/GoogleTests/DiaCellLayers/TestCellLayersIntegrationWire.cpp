@@ -239,6 +239,7 @@ namespace
 		std::vector<WireSent> sent;
 		std::unique_ptr<HostRegistrar> registrar;
 		CluicheTest::PointerFrameQueue pointerQueue;
+		CluicheTest::HoverOverride hoverOverride;
 
 		explicit WireRig(bool registerAll = true)
 		{
@@ -284,7 +285,7 @@ namespace
 		{
 			ASSERT_TRUE(RegisterMirrorQueries(*registrar, *queries));
 			ASSERT_TRUE(domain->RegisterCommands(*registrar));
-			ASSERT_TRUE(CluicheTest::RegisterPointerInjectionCommands(*registrar, pointerQueue,
+			ASSERT_TRUE(CluicheTest::RegisterPointerInjectionCommands(*registrar, pointerQueue, hoverOverride,
 				[this](const Json::Value& p) { return CellPixel(p); }));
 		}
 		void UnregisterAll()

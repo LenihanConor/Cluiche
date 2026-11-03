@@ -2,9 +2,6 @@
 #include <DiaCore/DebugDraw/IDebugDraw.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Vector/Vector2D.h>
-#ifdef DIA_DEBUG
-#include <DiaCellLayers/MirrorQueries.h>
-#endif
 
 #include <string>
 
@@ -13,7 +10,7 @@ namespace CluicheTest {
 // Test-only hover injection for CellLayersViewerTestStageModule (application code, no Dia change).
 // The viewer's hover reads IDebugDraw::GetMousePixel(), which the game fills from the real input stream, so an E2E cannot move
 // it. The stage hands the viewer a HoverOverrideDraw instead of the real draw: it forwards everything and reports the injected
-// pixel while the override is active. The state is written by sim-hosted commands and read by the stage's Sim update (same PU, no lock).
+// pixel while the override is active. The state is written by the sim-hosted pointer_frames command and read by the stage's Sim update (same PU, no lock).
 
 struct HoverOverride
 {
@@ -86,38 +83,5 @@ private:
 	Dia::Core::IDebugDraw& mInner;
 	const HoverOverride& mHover;
 };
-
-#ifdef DIA_DEBUG
-// Registers cluichetest.celllayers.hover (command) on the sim-hosted registrar. Runs on SimPU; `hover` must outlive the registration.
-inline void UnregisterHoverCommand(Dia::CellLayers::IMirrorQueryRegistrar& registrar)
-{
-	registrar.Unregister("cluichetest.celllayers.hover");
-}
-
-inline bool RegisterHoverCommand(Dia::CellLayers::IMirrorQueryRegistrar& registrar, HoverOverride& hover)
-{
-	static const Dia::API::ValueParam kParams[] = {
-		{ "x", "float", false, "Screen pixel X (top-left origin) to hover; required unless clear is true" },
-		{ "y", "float", false, "Screen pixel Y (top-left origin) to hover; required unless clear is true" },
-		{ "clear", "bool", false, "true: stop overriding and use the real mouse again" } };
-	Dia::DebugServer::SimHelpInfo help;
-	help.description = "Test only: override the viewer's hover cursor with a screen pixel, or clear the override. Returns {ok, active}.";
-	help.category = "test"; help.owner = "CluicheTest";
-	help.params = kParams; help.paramCount = 3;
-	return registrar.RegisterCommand("cluichetest.celllayers.hover", help, [&hover](const Json::Value& params) -> Json::Value
-	{
-		Json::Value out(Json::objectValue);
-		std::string err;
-		if (!ParseHoverParams(params, hover, err))
-		{
-			out["error"] = err;
-			return out;
-		}
-		out["ok"] = true;
-		out["active"] = hover.active;
-		return out;
-	});
-}
-#endif // DIA_DEBUG
 
 } // namespace CluicheTest

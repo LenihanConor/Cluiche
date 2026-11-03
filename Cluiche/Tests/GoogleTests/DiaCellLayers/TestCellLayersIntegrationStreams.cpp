@@ -224,6 +224,7 @@ namespace
 		std::unique_ptr<CellLayerViewerDomain> domain;
 		std::unique_ptr<MirrorQueries> queries;
 		CluicheTest::PointerFrameQueue pointerQueue;
+		CluicheTest::HoverOverride hoverOverride;
 		std::unique_ptr<ModuleRegistrar> registrar;
 		bool registered = false;
 
@@ -248,7 +249,7 @@ namespace
 		bool RegisterAll()
 		{
 			registered = RegisterMirrorQueries(*registrar, *queries) && domain->RegisterCommands(*registrar) &&
-				CluicheTest::RegisterPointerInjectionCommands(*registrar, pointerQueue, [](const Json::Value&) { return Json::Value(Json::objectValue); });
+				CluicheTest::RegisterPointerInjectionCommands(*registrar, pointerQueue, hoverOverride, [](const Json::Value&) { return Json::Value(Json::objectValue); });
 			return registered;
 		}
 		void UnregisterAll()
