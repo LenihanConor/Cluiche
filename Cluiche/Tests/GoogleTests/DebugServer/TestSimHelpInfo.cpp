@@ -2,8 +2,11 @@
 
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaDebugServer/SimQueryHost.h>
+#include <DiaCellLayers/Testing/LogCapture.h>
 
+#include <cmath>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -364,6 +367,149 @@ TEST(SimHelpInfo, CopyHelpLeavesOutputUntouchedOnRejection)
 
 TEST(SimHelpInfo, EveryResultHasText)
 {
-	for (uint32_t i = 0; i <= static_cast<uint32_t>(SimHelpResult::ParamEnumTooLong); ++i)
+	for (uint32_t i = 0; i <= static_cast<uint32_t>(SimHelpResult::ParamRangeInvalid); ++i)
 		EXPECT_STRNE(SimHelpResultText(static_cast<SimHelpResult>(i)), "unknown") << i;
+}
+
+// ---- Exhaustive pass (Task 7): range validity, duplicates, null vs empty ----
+
+namespace
+{
+	SimHelpResult CopyWithRange(bool hasRange, float mn, float mx)
+	{
+		Dia::API::ValueParam p = Param("r");
+		p.hasRange = hasRange;
+		p.min = mn;
+		p.max = mx;
+		SimHelpInfo h = Info("d");
+		h.params = &p;
+		h.paramCount = 1;
+		SimHelpStored out;
+		return CopyHelp(h, out);
+	}
+}
+
+TEST(SimHelpInfo, ParamRangeWithMinAboveMaxIsRejected)
+{
+	EXPECT_EQ(CopyWithRange(true, 5.0f, 1.0f), SimHelpResult::ParamRangeInvalid);
+	EXPECT_EQ(CopyWithRange(true, 0.0f, -0.001f), SimHelpResult::ParamRangeInvalid);
+
+	SimQueryHost host;
+	Dia::API::ValueParam p = Param("r");
+	p.hasRange = true; p.min = 2.0f; p.max = 1.0f;
+	SimHelpInfo h = Info("d");
+	h.params = &p; h.paramCount = 1;
+	EXPECT_FALSE(host.RegisterQuery(StringCRC("range.bad"), h, Ok));
+	EXPECT_FALSE(host.Has(StringCRC("range.bad")));
+}
+
+TEST(SimHelpInfo, ParamRangeWithNaNOrInfinityIsRejected)
+{
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	const float inf = std::numeric_limits<float>::infinity();
+	EXPECT_EQ(CopyWithRange(true, nan, 1.0f), SimHelpResult::ParamRangeInvalid);
+	EXPECT_EQ(CopyWithRange(true, 0.0f, nan), SimHelpResult::ParamRangeInvalid);
+	EXPECT_EQ(CopyWithRange(true, 0.0f, inf), SimHelpResult::ParamRangeInvalid);
+	EXPECT_EQ(CopyWithRange(true, -inf, 0.0f), SimHelpResult::ParamRangeInvalid);
+	EXPECT_EQ(CopyWithRange(true, -inf, inf), SimHelpResult::ParamRangeInvalid);
+}
+
+TEST(SimHelpInfo, ParamRangeBoundariesAreAcceptedAndUnusedRangeIsNotValidated)
+{
+	EXPECT_EQ(CopyWithRange(true, 1.0f, 1.0f), SimHelpResult::Ok);             // min == max
+	EXPECT_EQ(CopyWithRange(true, -5.0f, 5.0f), SimHelpResult::Ok);
+	EXPECT_EQ(CopyWithRange(true, -std::numeric_limits<float>::max(), std::numeric_limits<float>::max()), SimHelpResult::Ok);
+	// min/max are only meaningful when hasRange is set: garbage there is ignored.
+	EXPECT_EQ(CopyWithRange(false, 9.0f, -9.0f), SimHelpResult::Ok);
+	EXPECT_EQ(CopyWithRange(false, std::numeric_limits<float>::quiet_NaN(), 0.0f), SimHelpResult::Ok);
+}
+
+// Decision (reported): duplicate param names are NOT rejected. DiaAPI commands do not reject them either, and a name clash is a
+// documentation slip, not a safety problem. Both entries are kept, in order.
+TEST(SimHelpInfo, DuplicateParamNamesAreAcceptedAndKeptInOrder)
+{
+	Dia::API::ValueParam params[2] = { Param("same"), Param("same") };
+	params[0].description = "first";
+	params[1].description = "second";
+	SimHelpInfo h = Info("d");
+	h.params = params; h.paramCount = 2;
+	SimQueryHost host;
+	ASSERT_TRUE(host.RegisterQuery(StringCRC("dup.params"), h, Ok));
+	const SimHelpStored* stored = host.GetHelp(StringCRC("dup.params"));
+	ASSERT_NE(stored, nullptr);
+	ASSERT_EQ(stored->paramCount, 2u);
+	EXPECT_STREQ(stored->params[0].description, "first");
+	EXPECT_STREQ(stored->params[1].description, "second");
+}
+
+TEST(SimHelpInfo, NullAndEmptyOptionalStringsStoreIdentically)
+{
+	Dia::API::ValueParam pNull = Param("p");
+	Dia::API::ValueParam pEmpty = Param("p");
+	pEmpty.description = ""; pEmpty.unit = ""; pEmpty.enumValues = "";
+	SimHelpInfo a = Info("d"), b = Info("d");
+	a.params = &pNull;  a.paramCount = 1;
+	b.params = &pEmpty; b.paramCount = 1;
+	b.category = ""; b.owner = "";
+	SimHelpStored sa, sb;
+	ASSERT_EQ(CopyHelp(a, sa), SimHelpResult::Ok);
+	ASSERT_EQ(CopyHelp(b, sb), SimHelpResult::Ok);
+	EXPECT_EQ(std::memcmp(&sa, &sb, sizeof(sa)), 0);
+}
+
+TEST(SimHelpInfo, ParamTypeMayBeNullOrEmpty)
+{
+	Dia::API::ValueParam p;
+	p.name = "untyped";
+	SimHelpInfo h = Info("d");
+	h.params = &p; h.paramCount = 1;
+	SimHelpStored out;
+	EXPECT_EQ(CopyHelp(h, out), SimHelpResult::Ok);
+	EXPECT_STREQ(out.params[0].type, "");
+}
+
+// AC 1 / AC 8: every rejection logs an Error that names the registered name; a valid registration logs none.
+TEST(SimHelpInfo, EveryRejectionLogsAnErrorNamingTheName)
+{
+	using Dia::CellLayers::Testing::LogCapture;
+	const std::string longDesc = Len(257), longName = Len(65), longType = Len(17), longParamDesc = Len(193), longUnit = Len(17), longEnum = Len(129);
+	std::vector<Dia::API::ValueParam> params(17, Param("p"));
+	Dia::API::ValueParam bad = Param("p");
+
+	struct Case { const char* name; SimHelpInfo info; };
+	std::vector<Case> cases;
+	cases.push_back({ "err.nulldesc", SimHelpInfo{} });
+	cases.push_back({ "err.emptydesc", Info("") });
+	cases.push_back({ "err.longdesc", Info(longDesc.c_str()) });
+	{ SimHelpInfo h = Info("d"); h.category = longName.c_str(); cases.push_back({ "err.longcat", h }); }
+	{ SimHelpInfo h = Info("d"); h.owner = longName.c_str(); cases.push_back({ "err.longowner", h }); }
+	{ SimHelpInfo h = Info("d"); h.params = params.data(); h.paramCount = 17; cases.push_back({ "err.manyparams", h }); }
+	{ SimHelpInfo h = Info("d"); h.paramCount = 1; cases.push_back({ "err.nullparams", h }); }
+	{ bad = Param("p"); bad.type = longType.c_str(); SimHelpInfo h = Info("d"); h.params = &bad; h.paramCount = 1; cases.push_back({ "err.longtype", h }); }
+
+	LogCapture log("DebugServer");
+	SimQueryHost host;
+	for (const Case& c : cases)
+	{
+		EXPECT_FALSE(host.RegisterCommand(StringCRC(c.name), c.info, Ok)) << c.name;
+		EXPECT_GE(log.Errors(c.name), 1u) << c.name;
+	}
+	EXPECT_EQ(0u, log.Errors("err.fine"));
+	EXPECT_TRUE(host.RegisterCommand(StringCRC("err.fine"), Info("fine"), Ok));
+	EXPECT_EQ(0u, log.Errors("err.fine"));
+
+	// Param string limits (each logs too).
+	const char* pn[] = { "err.pname", "err.pdesc", "err.punit", "err.penum", "err.prange" };
+	Dia::API::ValueParam pp[5] = { Param(longName.c_str()), Param("p"), Param("p"), Param("p"), Param("p") };
+	pp[1].description = longParamDesc.c_str();
+	pp[2].unit = longUnit.c_str();
+	pp[3].enumValues = longEnum.c_str();
+	pp[4].hasRange = true; pp[4].min = 2.0f; pp[4].max = 1.0f;
+	for (int i = 0; i < 5; ++i)
+	{
+		SimHelpInfo h = Info("d");
+		h.params = &pp[i]; h.paramCount = 1;
+		EXPECT_FALSE(host.RegisterQuery(StringCRC(pn[i]), h, Ok)) << pn[i];
+		EXPECT_GE(log.Errors(pn[i]), 1u) << pn[i];
+	}
 }

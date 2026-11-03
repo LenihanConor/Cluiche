@@ -7,6 +7,7 @@
 #include <DiaCellLayers/Testing/LogCapture.h>
 
 #include <memory>
+#include <vector>
 #include <string>
 
 // Sim-Hosted Command Help, Task 4 (AC 7): the code-side collector includes sim-hosted names read from an injected
@@ -149,6 +150,10 @@ TEST_F(CodeSideSimHostedTest, NameInBothIsCollectedOnceFromTheDiaApiEntryWithAWa
 
 	LogCapture log("VSC");
 	LiveCodeSideSource live;
+	ValueSchemaRegistry baseReg;
+	// Baseline: other tests in the same process can leave global metrics behind that collide on their own, so the
+	// duplicate count is compared against a collection without the sim catalogue.
+	const unsigned baseDuplicates = CodeSideCollector().Collect(live, baseReg).mDuplicateCount;
 	live.SetSimHostedCatalogue(mServer.get());
 	ValueSchemaRegistry reg;
 	const CodeSideReport rep = CodeSideCollector().Collect(live, reg);
@@ -156,7 +161,7 @@ TEST_F(CodeSideSimHostedTest, NameInBothIsCollectedOnceFromTheDiaApiEntryWithAWa
 	const ValueInfo* cmd = FindCmd(reg, "csim.dup");
 	ASSERT_NE(nullptr, cmd);
 	EXPECT_STREQ("from the api", cmd->mDescription.AsCStr());
-	EXPECT_EQ(0u, rep.mDuplicateCount);	// never reached the registry: skipped before it
+	EXPECT_EQ(baseDuplicates, rep.mDuplicateCount);	// never reached the registry: skipped before it
 	EXPECT_EQ(1u, log.Warnings("csim.dup"));
 }
 
@@ -208,4 +213,168 @@ TEST_F(CodeSideSimHostedTest, SimNamesStayOutOfTheDiaApiRegistry)
 	ValueSchemaRegistry reg;
 	CodeSideCollector().Collect(live, reg);
 	EXPECT_EQ(nullptr, Dia::API::GetCommand(StringCRC("csim.bare")));
+}
+
+// ---- Exhaustive pass (Task 7) ----
+
+namespace
+{
+	// Rejections the collector reports without any sim catalogue (other tests can leave odd global metrics behind).
+	unsigned BaselineRejected()
+	{
+		LiveCodeSideSource live;
+		ValueSchemaRegistry reg;
+		return CodeSideCollector().Collect(live, reg).mRejectedCount;
+	}
+
+	SimHelpStored SixteenParamHelp(const std::string& description)
+	{
+		static std::vector<std::string> names;
+		if (names.empty()) { for (int i = 0; i < 16; ++i) names.push_back("p" + std::to_string(i)); }
+		std::vector<Dia::API::ValueParam> params(16);
+		for (int i = 0; i < 16; ++i)
+			params[i] = { names[i].c_str(), i % 4 == 3 ? "enum" : "float", i % 2 == 0, "a parameter with a reasonably long description text", "m", true, -1.0f, 1.0f, i % 4 == 3 ? "a|b|c" : nullptr };
+		SimHelpInfo info;
+		info.description = description.c_str();
+		info.category = "cells";
+		info.owner = "DiaCellLayers";
+		info.params = params.data();
+		info.paramCount = 16;
+		SimHelpStored out;
+		EXPECT_EQ(CopyHelp(info, out), Dia::DebugServer::SimHelpResult::Ok);
+		return out;
+	}
+}
+
+TEST_F(CodeSideSimHostedTest, ThirtyTwoSimNamesWithSixteenParamsEachAreAllCollectedWithEveryArg)
+{
+	for (int i = 0; i < 32; ++i)
+		ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC(("csim.big" + std::to_string(i)).c_str()), SimKind::Command, SixteenParamHelp("help " + std::to_string(i)))) << i;
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	ValueSchemaRegistry reg;
+	const CodeSideReport rep = CodeSideCollector().Collect(live, reg);
+	EXPECT_EQ(BaselineRejected(), rep.mRejectedCount);
+	for (int i = 0; i < 32; ++i)
+	{
+		const std::string n = "csim.big" + std::to_string(i);
+		const ValueInfo* cmd = FindCmd(reg, n.c_str());
+		ASSERT_NE(nullptr, cmd) << n;
+		EXPECT_EQ(16u, cmd->mRelated.Size()) << n;
+		EXPECT_NE(nullptr, FindCmd(reg, (n + ".p0").c_str())) << n;
+		EXPECT_NE(nullptr, FindCmd(reg, (n + ".p15").c_str())) << n;
+		EXPECT_FALSE(Listed(rep.mUndescribedParams, (n + ".p15").c_str())) << n;
+	}
+}
+
+// A help with every field at its sim limit (enum list as 8 values of 15 chars, the longest list the collector's 63-byte
+// value cap allows) is collected completely.
+TEST_F(CodeSideSimHostedTest, MaximalValidHelpIsCollectedCompletely)
+{
+	using namespace Dia::DebugServer;
+	const std::string desc(kSimHelpMaxDescription, 'd'), cat(kSimHelpMaxCategory, 'c'), owner(kSimHelpMaxOwner, 'o');
+	const std::string pn(kSimHelpMaxParamName, 'n'), pd(kSimHelpMaxParamDescription, 'p');
+	std::string pe;
+	for (int i = 0; i < 8; ++i) { if (i) { pe += '|'; } pe += std::string(15, static_cast<char>('a' + i)); }
+	ASSERT_LE(pe.size(), static_cast<size_t>(kSimHelpMaxParamEnum));
+	std::vector<Dia::API::ValueParam> params(1);
+	params[0] = { pn.c_str(), "enum", true, pd.c_str(), "u", true, -1.0f, 1.0f, pe.c_str() };
+	SimHelpStored stored;
+	ASSERT_EQ(CopyHelp(SimHelpInfo{ desc.c_str(), cat.c_str(), owner.c_str(), params.data(), 1, false }, stored), SimHelpResult::Ok);
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("csim.max"), SimKind::Command, stored));
+
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	ValueSchemaRegistry reg;
+	const CodeSideReport rep = CodeSideCollector().Collect(live, reg);
+	EXPECT_EQ(BaselineRejected(), rep.mRejectedCount);
+	const ValueInfo* cmd = FindCmd(reg, "csim.max");
+	ASSERT_NE(nullptr, cmd);
+	EXPECT_EQ(desc, std::string(cmd->mDescription.AsCStr()));
+	ASSERT_EQ(1u, cmd->mRelated.Size());
+	const ValueInfo* arg = FindCmd(reg, (std::string("csim.max.") + pn).c_str());
+	ASSERT_NE(nullptr, arg);
+	EXPECT_EQ(8u, arg->mEnumValues.Size());
+}
+
+// Sim limits are looser than the collector's: one enum value over 63 bytes passes the sim host but the collector rejects that
+// arg loudly (counted + Error), exactly as it does for a DiaAPI command. The command itself is still collected.
+TEST_F(CodeSideSimHostedTest, EnumValueOverTheCollectorCapIsRejectedLoudlyLikeADiaApiOne)
+{
+	const std::string longValue(70, 'v');
+	Dia::API::ValueParam p = { "mode", "enum", true, "how", nullptr, false, 0.f, 0.f, longValue.c_str() };
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("csim.longenum"), SimKind::Command, Help("d", &p, 1)));
+	LogCapture log("VSC");
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	ValueSchemaRegistry reg;
+	const CodeSideReport rep = CodeSideCollector().Collect(live, reg);
+	EXPECT_EQ(BaselineRejected() + 1u, rep.mRejectedCount);
+	EXPECT_GE(log.Errors("csim.longenum.mode"), 1u);
+	EXPECT_NE(nullptr, FindCmd(reg, "csim.longenum"));
+	EXPECT_EQ(nullptr, FindCmd(reg, "csim.longenum.mode"));
+}
+
+TEST_F(CodeSideSimHostedTest, CollectedRegistryOutlivesTheCatalogueEntries)
+{
+	for (int i = 0; i < 4; ++i)
+		ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC(("csim.snap" + std::to_string(i)).c_str()), SimKind::Command, SixteenParamHelp("snapshot " + std::to_string(i)))) << i;
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	ValueSchemaRegistry reg;
+	CodeSideCollector().Collect(live, reg);
+	Dia::DebugServer::SimHostedName none;
+	ASSERT_TRUE(mServer->ReplaceSimHosted(&none, 0));	// clears the catalogue under the collected registry
+	for (int i = 0; i < 4; ++i)
+	{
+		const std::string n = "csim.snap" + std::to_string(i);
+		const ValueInfo* cmd = FindCmd(reg, n.c_str());
+		ASSERT_NE(nullptr, cmd) << n;
+		EXPECT_EQ("snapshot " + std::to_string(i), std::string(cmd->mDescription.AsCStr()));
+		const ValueInfo* arg = FindCmd(reg, (n + ".p3").c_str());
+		ASSERT_NE(nullptr, arg) << n;
+		EXPECT_EQ(ValueType::Enum, arg->mType);
+	}
+}
+
+TEST_F(CodeSideSimHostedTest, NameAlsoRegisteredAsAJsonCommandIsCollectedOnceWithAWarning)
+{
+	Dia::API::CommandInfoJson info;
+	info.name = StringCRC("csim.dup");
+	info.description = "from the json api";
+	info.category = StringCRC("apicat");
+	info.owner = "TestCodeSideSimHosted";
+	info.noArgs = true;
+	info.callback = [](const Json::Value&) { return Json::Value(Json::objectValue); };
+	ASSERT_TRUE(Dia::API::RegisterCommandJson(info));
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("csim.dup"), SimKind::Command, Help("from the sim", nullptr, 0, true)));
+
+	LogCapture log("VSC");
+	LiveCodeSideSource liveBase;	// no catalogue: duplicates other tests leave behind in the global metric registry
+	ValueSchemaRegistry baseReg;
+	const unsigned baseDuplicates = CodeSideCollector().Collect(liveBase, baseReg).mDuplicateCount;
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	ValueSchemaRegistry reg;
+	const CodeSideReport rep = CodeSideCollector().Collect(live, reg);
+	Dia::API::UnregisterCommandJson(StringCRC("csim.dup"));
+	const ValueInfo* cmd = FindCmd(reg, "csim.dup");
+	ASSERT_NE(nullptr, cmd);
+	EXPECT_STREQ("from the json api", cmd->mDescription.AsCStr());
+	EXPECT_EQ(baseDuplicates, rep.mDuplicateCount);
+	EXPECT_EQ(1u, log.Warnings("csim.dup"));
+}
+
+TEST_F(CodeSideSimHostedTest, CommandGenerationFallsWhenSimNamesAreRemovedAndTracksReplace)
+{
+	LiveCodeSideSource live;
+	live.SetSimHostedCatalogue(mServer.get());
+	const unsigned base = live.CommandGeneration();
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("csim.g1"), SimKind::Command, Help("g1", nullptr, 0, true)));
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("csim.g2"), SimKind::Command, Help("g2", nullptr, 0, true)));
+	EXPECT_EQ(base + 2u, live.CommandGeneration());
+	mServer->UnregisterSimHosted(StringCRC("csim.g1"));
+	EXPECT_EQ(base + 1u, live.CommandGeneration());
+	LiveCodeSideSource without;
+	EXPECT_EQ(without.CommandGeneration(), base);
 }

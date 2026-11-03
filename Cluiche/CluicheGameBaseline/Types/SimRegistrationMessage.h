@@ -19,7 +19,8 @@
 //   {"description":"..","category":"..","owner":"..","noArgs":false,
 //    "params":[{"name":"..","type":"..","required":false,"description":"..","unit":"..","min":0,"max":1,"enum":"a|b"}]}
 // description is mandatory and non-empty.  category/owner/noArgs/params and a param's description/unit/min+max/enum
-// are omitted when empty or default; min and max appear together, only for a param with a range.  Limits are the
+// are omitted when empty or default; min and max appear together, only for a param with a range (both finite, min <= max, else
+// the message is rejected / Malformed).  Limits are the
 // kSimHelpMax* constants (SimHelpInfo.h).  Anything over a limit, or a message that would not fit the 16 KB event,
 // is rejected, never truncated.  Help is NOT part of the name-set hash (SimNameSetEntryHash stays name+kind only).
 //
@@ -43,6 +44,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <string>
 
 namespace Cluiche { namespace AppFlow {
@@ -149,8 +151,6 @@ namespace Detail
         return true;
     }
 
-    inline bool Finite(float f) { return f == f && f - f == 0.0f; }
-
     // Encodes 'info'.  False if the description is empty, paramCount is over the limit, a param has no name or a range is not finite.
     inline bool EncodeInfo(const Dia::DebugServer::SimHelpStored& info, Json::Value& out)
     {
@@ -177,7 +177,7 @@ namespace Detail
                 if (p.unit[0] != '\0')        jp["unit"]        = p.unit;
                 if (p.hasRange)
                 {
-                    if (!Finite(p.min) || !Finite(p.max))
+                    if (!Dia::DebugServer::SimHelpRangeValid(p.min, p.max))
                         return false;
                     jp["min"] = static_cast<double>(p.min);
                     jp["max"] = static_cast<double>(p.max);
@@ -252,12 +252,25 @@ namespace Detail
                 const bool hasMin = p.isMember("min"), hasMax = p.isMember("max");
                 if (hasMin != hasMax || (hasMin && (!p["min"].isNumeric() || !p["max"].isNumeric())))
                     return false;
+                float rangeMin = 0.0f, rangeMax = 0.0f;
+                if (hasMin)
+                {
+                    // A double outside float range (or NaN) must not be cast: reject it, as well as min > max.
+                    const double mn = p["min"].asDouble(), mx = p["max"].asDouble();
+                    const double lim = static_cast<double>((std::numeric_limits<float>::max)());
+                    if (!(mn >= -lim && mn <= lim && mx >= -lim && mx <= lim))
+                        return false;
+                    rangeMin = static_cast<float>(mn);
+                    rangeMax = static_cast<float>(mx);
+                    if (!SimHelpRangeValid(rangeMin, rangeMax))
+                        return false;
+                }
                 if (d)
                 {
                     d->required = p["required"].asBool();
                     d->hasRange = hasMin;
-                    d->min      = hasMin ? static_cast<float>(p["min"].asDouble()) : 0.0f;
-                    d->max      = hasMin ? static_cast<float>(p["max"].asDouble()) : 0.0f;
+                    d->min      = rangeMin;
+                    d->max      = rangeMax;
                 }
             }
         }

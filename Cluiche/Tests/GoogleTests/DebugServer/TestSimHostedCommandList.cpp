@@ -9,6 +9,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <memory>
+#include <vector>
 #include <string>
 
 // Sim-Hosted Command Help, Task 4 (AC 5, 9): the DebugServer command list merges DiaAPI commands and the sim-hosted catalogue.
@@ -225,4 +226,132 @@ TEST_F(SimHostedCommandListTest, ListCommandsQueryServesTheMergedList)
 	EXPECT_EQ(1u, CountName(r, "cmdlist.sim_cmd"));
 	EXPECT_NE(nullptr, FindDetail(r, "cmdlist.sim_cmd"));
 	EXPECT_TRUE(r.isMember("query_commands"));
+}
+
+// ---- Exhaustive pass (Task 7) ----
+
+namespace
+{
+	SimHelpStored SixteenParamHelp(const std::string& description, const std::vector<std::string>& names)
+	{
+		std::vector<Dia::API::ValueParam> params(16);
+		for (int i = 0; i < 16; ++i)
+			params[i] = { names[i].c_str(), "float", i % 2 == 0, "a parameter with a reasonably long description text", "m", true, -1.0f, 1.0f, nullptr };
+		SimHelpInfo info;
+		info.description = description.c_str();
+		info.category = "cells";
+		info.owner = "DiaCellLayers";
+		info.params = params.data();
+		info.paramCount = 16;
+		SimHelpStored out;
+		EXPECT_EQ(CopyHelp(info, out), Dia::DebugServer::SimHelpResult::Ok);
+		return out;
+	}
+}
+
+TEST_F(SimHostedCommandListTest, ThirtyTwoSimNamesWithSixteenParamsEachAreAllListed)
+{
+	auto s = NewServer();
+	std::vector<std::string> pnames;
+	for (int i = 0; i < 16; ++i) pnames.push_back("p" + std::to_string(i));
+	for (int i = 0; i < 32; ++i)
+		ASSERT_TRUE(s->RegisterSimHosted(StringCRC(("cmdlist.big" + std::to_string(i)).c_str()), i % 2 ? SimKind::Command : SimKind::Query,
+		                                 SixteenParamHelp("help " + std::to_string(i), pnames))) << i;
+	const Json::Value list = BuildMergedCommandList(s.get());
+	for (int i = 0; i < 32; ++i)
+	{
+		const std::string n = "cmdlist.big" + std::to_string(i);
+		ASSERT_EQ(1u, CountName(list, n.c_str())) << n;
+		const Json::Value* d = FindDetail(list, n.c_str());
+		ASSERT_NE(nullptr, d) << n;
+		EXPECT_EQ("help " + std::to_string(i), (*d)["description"].asString());
+		ASSERT_EQ(16u, (*d)["params"].size()) << n;
+		EXPECT_EQ("p15", (*d)["params"][15]["name"].asString());
+		EXPECT_TRUE((*d)["params"][15]["hasRange"].asBool());
+	}
+}
+
+TEST_F(SimHostedCommandListTest, TrickyTextSurvivesTheJsonDocumentRoundTrip)
+{
+	const std::string tricky = "say \"hi\" \\ back\\slash\nnew\tline caf\xC3\xA9 \xF0\x9F\x98\x80 <b>&</b> \x01";
+	auto s = NewServer();
+	SimHelpInfo info;
+	info.description = tricky.c_str();
+	info.category = "q\"c";
+	info.owner = "o\\o";
+	SimHelpStored stored;
+	ASSERT_EQ(CopyHelp(info, stored), Dia::DebugServer::SimHelpResult::Ok);
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.tricky"), SimKind::Command, stored));
+
+	const Json::Value list = BuildMergedCommandList(s.get());
+	Json::StreamWriterBuilder wb;
+	const std::string text = Json::writeString(wb, list);
+	Json::Value parsed;
+	Json::CharReaderBuilder rb;
+	std::string errs;
+	std::unique_ptr<Json::CharReader> reader(rb.newCharReader());
+	ASSERT_TRUE(reader->parse(text.data(), text.data() + text.size(), &parsed, &errs)) << errs;
+	const Json::Value* d = FindDetail(parsed, "cmdlist.tricky");
+	ASSERT_NE(nullptr, d);
+	EXPECT_EQ(tricky, (*d)["description"].asString());
+	EXPECT_EQ("q\"c", (*d)["category"].asString());
+	EXPECT_EQ("o\\o", (*d)["owner"].asString());
+}
+
+TEST_F(SimHostedCommandListTest, ListedJsonStaysValidWhenTheCatalogueMutatesAfterwards)
+{
+	auto s = NewServer();
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.snap"), SimKind::Command, RichHelp("held")));
+	const Json::Value list = BuildMergedCommandList(s.get());
+	s->UnregisterSimHosted(StringCRC("cmdlist.snap"));
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.other"), SimKind::Command, RichHelp("replacement")));
+	const Json::Value* d = FindDetail(list, "cmdlist.snap");
+	ASSERT_NE(nullptr, d);
+	EXPECT_EQ("held", (*d)["description"].asString());
+	EXPECT_EQ(2u, (*d)["params"].size());
+	EXPECT_EQ(nullptr, FindDetail(list, "cmdlist.other"));
+}
+
+TEST_F(SimHostedCommandListTest, NameAlsoRegisteredAsAJsonCommandIsReportedOnceWithAWarning)
+{
+	Dia::API::CommandInfoJson info;
+	info.name = StringCRC("cmdlist.dup");
+	info.description = "from the json api";
+	info.category = StringCRC("apicat");
+	info.owner = "TestSimHostedCommandList";
+	info.callback = [](const Json::Value&) { return Json::Value(Json::objectValue); };
+	ASSERT_TRUE(Dia::API::RegisterCommandJson(info));
+	auto s = NewServer();
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.dup"), SimKind::Command, RichHelp("from the sim")));
+
+	LogCapture log("DebugServer");
+	const Json::Value list = BuildMergedCommandList(s.get());
+	Dia::API::UnregisterCommandJson(StringCRC("cmdlist.dup"));
+	EXPECT_EQ(1u, CountName(list, "cmdlist.dup"));
+	EXPECT_EQ(1u, CountDetail(list, "cmdlist.dup"));
+	const Json::Value* d = FindDetail(list, "cmdlist.dup");
+	ASSERT_NE(nullptr, d);
+	EXPECT_EQ("api", (*d)["source"].asString());
+	EXPECT_EQ("from the json api", (*d)["description"].asString());
+	EXPECT_EQ(1u, log.Warnings("cmdlist.dup"));
+}
+
+TEST_F(SimHostedCommandListTest, EmptyOptionalFieldsListAsEmptyStringsForNullAndEmptyAlike)
+{
+	SimHelpInfo a; a.description = "d";
+	SimHelpInfo b; b.description = "d"; b.category = ""; b.owner = "";
+	SimHelpStored sa, sb;
+	ASSERT_EQ(CopyHelp(a, sa), Dia::DebugServer::SimHelpResult::Ok);
+	ASSERT_EQ(CopyHelp(b, sb), Dia::DebugServer::SimHelpResult::Ok);
+	auto s = NewServer();
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.null"), SimKind::Query, sa));
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("cmdlist.empty"), SimKind::Query, sb));
+	const Json::Value list = BuildMergedCommandList(s.get());
+	const Json::Value* n = FindDetail(list, "cmdlist.null");
+	const Json::Value* e = FindDetail(list, "cmdlist.empty");
+	ASSERT_TRUE(n != nullptr && e != nullptr);
+	EXPECT_EQ((*n)["category"], (*e)["category"]);
+	EXPECT_EQ("", (*n)["category"].asString());
+	EXPECT_EQ((*n)["owner"], (*e)["owner"]);
+	EXPECT_EQ((*n)["params"].size(), (*e)["params"].size());
 }

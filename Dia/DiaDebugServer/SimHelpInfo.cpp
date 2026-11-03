@@ -46,6 +46,7 @@ namespace Dia
 			case SimHelpResult::ParamDescriptionTooLong: return "param description over 192 bytes";
 			case SimHelpResult::ParamUnitTooLong:        return "param unit over 16 bytes";
 			case SimHelpResult::ParamEnumTooLong:        return "param enum list over 128 bytes";
+			case SimHelpResult::ParamRangeInvalid:       return "param range is not finite or min is above max";
 			}
 			return "unknown";
 		}
@@ -80,6 +81,8 @@ namespace Dia
 					return SimHelpResult::ParamUnitTooLong;
 				if (BoundedLength(p.enumValues, kSimHelpMaxParamEnum) == kBad)
 					return SimHelpResult::ParamEnumTooLong;
+				if (p.hasRange && !SimHelpRangeValid(p.min, p.max))
+					return SimHelpResult::ParamRangeInvalid;
 			}
 
 			// Everything validated: copy (out is only written on success).

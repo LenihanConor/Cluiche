@@ -815,4 +815,90 @@ TEST(SimAnnounceResyncIntegration, ReRegisteredNameReplacesItsHelpOnMain)
 	EXPECT_EQ(r.MainCount(), 1u);
 }
 
+
+// ---- Exhaustive pass (Task 7) ----
+
+// Help is not part of the set hash, but a help change still has to reach Main: the register carries a seq, so a lost
+// unregister/register pair opens a gap and the digest-driven resync replays the NEW help.
+TEST(SimAnnounceResyncIntegration, HelpChangedWhileTheAnnouncementsWereLostIsRepairedByResync)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	ASSERT_EQ(HelpOf(r, "it.n0"), "test help");
+	r.drop = [](const SimRegistration& m) { return std::strcmp(m.name, "it.n0") == 0 && (m.op == SimRegistrationOp::Unregister || m.op == SimRegistrationOp::Register); };
+	r.sim.UnregisterQuery("it.n0");
+	AddWithHelp(r, "it.n0", "help after the change");   // same name, same kind: the set hash is unchanged
+	r.drop = nullptr;
+	EXPECT_EQ(HelpOf(r, "it.n0"), "test help") << "Main has not heard of the change yet";
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 80));
+	EXPECT_EQ(HelpOf(r, "it.n0"), "help after the change");
+	EXPECT_EQ(r.MainCount(), 2u);
+}
+
+namespace
+{
+	void AddRich(Rig& r, const char* name, bool command, const std::vector<Dia::API::ValueParam>& params, const std::string& desc)
+	{
+		Dia::DebugServer::SimHelpInfo info{ desc.c_str(), "it.cat", "it.owner", params.data(), static_cast<unsigned int>(params.size()), false };
+		ASSERT_TRUE(command ? r.sim.RegisterCommand(name, info, &Ok) : r.sim.RegisterQuery(name, info, &Ok)) << name;
+	}
+}
+
+// Cap check through the whole pipeline: 32 names x 16 params each reach Main, a lost register is repaired by the replay of
+// all 32 with their params intact, and a 33rd name is refused on the Sim side before Main hears of it.
+TEST(SimAnnounceResyncIntegration, ThirtyTwoNamesWithSixteenParamsEachSurviveRegisterAndResync)
+{
+	Rig r;
+	const std::string pdesc(150, 'p');
+	std::vector<Dia::API::ValueParam> params(16);
+	std::vector<std::string> pnames;
+	for (int i = 0; i < 16; ++i) pnames.push_back("param" + std::to_string(i));
+	for (int i = 0; i < 16; ++i)
+		params[i] = { pnames[i].c_str(), "enum", i % 2 == 0, pdesc.c_str(), "u", true, -1.0f, static_cast<float>(i), "alpha|beta|gamma" };
+
+	const std::string desc(200, 'd');
+	for (int i = 0; i < 31; ++i)
+		AddRich(r, ("big.n" + std::to_string(i)).c_str(), i % 2 == 1, params, desc);
+	r.Step(3);
+	ASSERT_EQ(r.MainCount(), 31u);
+
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "big.n31") == 0; };
+	AddRich(r, "big.n31", false, params, desc);
+	r.drop = nullptr;
+	EXPECT_FALSE(r.sim.RegisterQuery("big.n32", Dia::DebugServer::SimHelpInfo{ "one too many" }, &Ok));
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 200));
+
+	ASSERT_EQ(r.MainCount(), 32u);
+	for (int i = 0; i < 32; ++i)
+	{
+		const std::string n = "big.n" + std::to_string(i);
+		const Dia::DebugServer::SimHelpStored* h = r.main.GetServer()->FindSimHostedHelp(StringCRC(n.c_str()));
+		ASSERT_NE(h, nullptr) << n;
+		EXPECT_EQ(h->paramCount, 16u) << n;
+		EXPECT_STREQ(h->params[15].name, "param15") << n;
+		EXPECT_STREQ(h->params[15].enumValues, "alpha|beta|gamma") << n;
+		EXPECT_FLOAT_EQ(h->params[15].max, 15.0f) << n;
+		EXPECT_EQ(std::strlen(h->description), 200u) << n;
+	}
+	EXPECT_EQ(HelpOf(r, "big.n32"), "<none>");
+}
+
+// A name registered with no stage-side help change but a resync mid-flight must not lose or mix the help of other names.
+TEST(SimAnnounceResyncIntegration, ResyncReplayKeepsEachNamesOwnHelpWhenHelpsDiffer)
+{
+	Rig r;
+	for (int i = 0; i < 6; ++i)
+		AddWithHelp(r, ("mixh.n" + std::to_string(i)).c_str(), ("help number " + std::to_string(i)).c_str(), i % 2 == 1);
+	r.Step(3);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "mixh.late") == 0; };
+	AddWithHelp(r, "mixh.late", "the late one");
+	r.drop = nullptr;
+	AddWithHelp(r, "mixh.after", "after the gap");
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 80));
+	for (int i = 0; i < 6; ++i)
+		EXPECT_EQ(HelpOf(r, ("mixh.n" + std::to_string(i)).c_str()), "help number " + std::to_string(i));
+	EXPECT_EQ(HelpOf(r, "mixh.late"), "the late one");
+	EXPECT_EQ(HelpOf(r, "mixh.after"), "after the gap");
+}
+
 #endif // DIA_DEBUG

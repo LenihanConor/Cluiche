@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <memory>
+#include <vector>
 #include <string>
 
 using namespace Dia::VisualDebugger::Console;
@@ -233,6 +234,118 @@ TEST_F(PaletteSimHostedTest, PanelControllerPassesTheCatalogueToItsPalette)
 	panel.RequestPaletteOpen();
 	panel.ProcessWithRoot(pusher, nullptr);
 	EXPECT_NE(std::string::npos, pusher.mJson.find("psim.cells")) << pusher.mJson;
+}
+
+
+// ---- Exhaustive pass (Task 7) ----
+
+namespace
+{
+	SimHelpStored SixteenParamHelp(const std::string& description)
+	{
+		static std::vector<std::string> names;
+		if (names.empty()) { for (int i = 0; i < 16; ++i) names.push_back("p" + std::to_string(i)); }
+		std::vector<Dia::API::ValueParam> params(16);
+		for (int i = 0; i < 16; ++i)
+			params[i] = { names[i].c_str(), i % 4 == 3 ? "enum" : "float", i % 2 == 0, "a parameter with a reasonably long description text", "m", true, -1.0f, 1.0f, i % 4 == 3 ? "a|b|c" : nullptr };
+		SimHelpInfo info;
+		info.description = description.c_str();
+		info.category = "cells";
+		info.owner = "DiaCellLayers";
+		info.params = params.data();
+		info.paramCount = 16;
+		SimHelpStored out;
+		EXPECT_EQ(CopyHelp(info, out), Dia::DebugServer::SimHelpResult::Ok);
+		return out;
+	}
+}
+
+TEST_F(PaletteSimHostedTest, ThirtyTwoSimNamesWithSixteenParamsEachKeepTheirOwnParams)
+{
+	for (int i = 0; i < 32; ++i)
+		ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC(("psim.big" + std::to_string(i)).c_str()), SimKind::Command, SixteenParamHelp("help " + std::to_string(i)))) << i;
+	PaletteIndex idx;
+	idx.SetSimHostedCatalogue(mServer.get());
+	idx.Build(Json::Value(Json::objectValue));
+	for (int i = 0; i < 32; ++i)
+	{
+		const std::string n = "psim.big" + std::to_string(i);
+		const int at = FindByName(idx, n.c_str());
+		ASSERT_GE(at, 0) << n;
+		const PaletteItem& it = idx.GetItem(at);
+		EXPECT_STREQ(("help " + std::to_string(i)).c_str(), it.description) << n;
+		ASSERT_EQ(16u, it.paramCount) << n;
+		EXPECT_STREQ("p15", it.params[15].name) << n;
+		EXPECT_STREQ("enum", it.params[15].type) << n;
+		EXPECT_STREQ("a|b|c", it.params[15].enumValues) << n;
+		EXPECT_STREQ("p0", it.params[0].name) << n;
+	}
+}
+
+TEST_F(PaletteSimHostedTest, SnapshotStaysValidWhileTheCatalogueIsMutatedAndFreed)
+{
+	for (int i = 0; i < 8; ++i)
+		ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC(("psim.snap" + std::to_string(i)).c_str()), SimKind::Command, SixteenParamHelp("snapshot " + std::to_string(i)))) << i;
+	PaletteIndex idx;
+	idx.SetSimHostedCatalogue(mServer.get());
+	idx.Build(Json::Value(Json::objectValue));
+	// Shuffle the catalogue under the held snapshot: unregister half, replace the rest wholesale.
+	for (int i = 0; i < 8; i += 2) mServer->UnregisterSimHosted(StringCRC(("psim.snap" + std::to_string(i)).c_str()));
+	Dia::DebugServer::SimHelpStored other = Help("totally different", false);
+	Dia::DebugServer::SimHostedName repl;
+	std::memset(&repl, 0, sizeof(repl));
+	std::strcpy(repl.name, "psim.replaced");
+	repl.kind = SimKind::Query;
+	repl.help = &other;
+	ASSERT_TRUE(mServer->ReplaceSimHosted(&repl, 1));
+	for (int i = 0; i < 8; ++i)
+	{
+		const std::string n = "psim.snap" + std::to_string(i);
+		const int at = FindByName(idx, n.c_str());
+		ASSERT_GE(at, 0) << n;
+		EXPECT_STREQ(("snapshot " + std::to_string(i)).c_str(), idx.GetItem(at).description);
+		ASSERT_EQ(16u, idx.GetItem(at).paramCount);
+		EXPECT_STREQ("p7", idx.GetItem(at).params[7].name);
+	}
+	EXPECT_EQ(-1, FindByName(idx, "psim.replaced"));
+}
+
+TEST_F(PaletteSimHostedTest, NameAlsoRegisteredAsAJsonCommandIsListedOnceAsTheSimEntry)
+{
+	// The palette has never listed JSON-callback commands, so there is nothing to collide with: exactly one entry.
+	Dia::API::CommandInfoJson info;
+	info.name = StringCRC("psim.dup");
+	info.description = "from the json api";
+	info.category = StringCRC("apicat");
+	info.owner = "TestPaletteSimHosted";
+	info.callback = [](const Json::Value&) { return Json::Value(Json::objectValue); };
+	ASSERT_TRUE(Dia::API::RegisterCommandJson(info));
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("psim.dup"), SimKind::Command, Help("from the sim", true)));
+	PaletteIndex idx;
+	idx.SetSimHostedCatalogue(mServer.get());
+	idx.Build(Json::Value(Json::objectValue));
+	Dia::API::UnregisterCommandJson(StringCRC("psim.dup"));
+	EXPECT_EQ(1, CountByName(idx, "psim.dup"));
+}
+
+TEST_F(PaletteSimHostedTest, NullAndEmptyCategoryProduceTheSameItem)
+{
+	SimHelpInfo a; a.description = "d";
+	SimHelpInfo b; b.description = "d"; b.category = ""; b.owner = "";
+	SimHelpStored sa, sb;
+	ASSERT_EQ(CopyHelp(a, sa), Dia::DebugServer::SimHelpResult::Ok);
+	ASSERT_EQ(CopyHelp(b, sb), Dia::DebugServer::SimHelpResult::Ok);
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("psim.null"), SimKind::Query, sa));
+	ASSERT_TRUE(mServer->RegisterSimHosted(StringCRC("psim.empty"), SimKind::Query, sb));
+	PaletteIndex idx;
+	idx.SetSimHostedCatalogue(mServer.get());
+	idx.Build(Json::Value(Json::objectValue));
+	const PaletteItem& n = idx.GetItem(FindByName(idx, "psim.null"));
+	const PaletteItem& e = idx.GetItem(FindByName(idx, "psim.empty"));
+	EXPECT_STREQ(n.category, e.category);
+	EXPECT_STREQ("", n.category);
+	EXPECT_EQ(n.paramCount, e.paramCount);
+	EXPECT_EQ(nullptr, n.params);
 }
 
 #endif // DIA_DEBUG

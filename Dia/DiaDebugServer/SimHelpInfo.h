@@ -3,6 +3,7 @@
 
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 
+#include <cmath>
 #include <cstdint>
 #include <type_traits>
 
@@ -75,8 +76,15 @@ namespace Dia
 			ParamTypeTooLong,
 			ParamDescriptionTooLong,
 			ParamUnitTooLong,
-			ParamEnumTooLong
+			ParamEnumTooLong,
+			ParamRangeInvalid
 		};
+
+		// A param range is valid when both bounds are finite and min <= max.
+		inline bool SimHelpRangeValid(float min, float max)
+		{
+			return std::isfinite(min) && std::isfinite(max) && min <= max;
+		}
 
 		// Short human-readable reason for logs.
 		const char* SimHelpResultText(SimHelpResult result);

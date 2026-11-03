@@ -288,3 +288,102 @@ TEST(SimHostedCatalogue, ReplaceFillsAllThirtyTwoSlotsWithTheirOwnHelp)
 	for (int i = 0; i < 32; ++i)
 		EXPECT_EQ("help " + std::to_string(i), Desc(*s, ("full.n" + std::to_string(i)).c_str())) << i;
 }
+
+// ---- Exhaustive pass (Task 7) ----
+
+namespace
+{
+	// A help with every field at its limit and 16 params, the discriminator 'tag' in the description (so entries differ).
+	SimHelpStored MaximalHelp(char tag)
+	{
+		using namespace Dia::DebugServer;
+		const std::string desc(kSimHelpMaxDescription, tag), cat(kSimHelpMaxCategory, 'c'), owner(kSimHelpMaxOwner, 'o');
+		const std::string pn(kSimHelpMaxParamName, 'n'), pt(kSimHelpMaxParamType, 't'), pd(kSimHelpMaxParamDescription, tag);
+		const std::string pu(kSimHelpMaxParamUnit, 'u'), pe(kSimHelpMaxParamEnum, 'e');
+		std::vector<Dia::API::ValueParam> params(kSimHelpMaxParams);
+		for (auto& p : params)
+			p = { pn.c_str(), pt.c_str(), true, pd.c_str(), pu.c_str(), true, -1.0f, 1.0f, pe.c_str() };
+		SimHelpStored out;
+		std::memset(&out, 0, sizeof(out));
+		EXPECT_EQ(CopyHelp(SimHelpInfo{ desc.c_str(), cat.c_str(), owner.c_str(), params.data(), kSimHelpMaxParams, false }, out), SimHelpResult::Ok);
+		return out;
+	}
+}
+
+TEST(SimHostedCatalogue, ReplaceWithThirtyTwoMaximalHelpsSucceedsAndAThirtyThirdRejectsTheWholeSwap)
+{
+	auto s = NewServer();
+	std::vector<std::unique_ptr<SimHelpStored>> helps;
+	std::vector<SimHostedName> names;
+	for (int i = 0; i < 33; ++i)
+	{
+		helps.emplace_back(new SimHelpStored(MaximalHelp(static_cast<char>('A' + i % 26))));
+		names.push_back(Entry(("max.n" + std::to_string(i)).c_str(), i % 2 ? SimKind::Command : SimKind::Query, helps.back().get()));
+	}
+
+	ASSERT_TRUE(s->ReplaceSimHosted(names.data(), 32));
+	ASSERT_EQ(32u, s->SimHostedCount());
+	for (int i = 0; i < 32; ++i)
+	{
+		const SimHelpStored* h = s->FindSimHostedHelp(StringCRC(("max.n" + std::to_string(i)).c_str()));
+		ASSERT_NE(nullptr, h) << i;
+		EXPECT_EQ(0, std::memcmp(h, helps[i].get(), sizeof(SimHelpStored))) << i;
+		EXPECT_NE(h, helps[i].get()) << "the catalogue must hold a copy";
+	}
+
+	// 33 distinct names: the whole swap is refused, the previous 32 stay exactly as they were.
+	LogCapture log("DebugServer");
+	EXPECT_FALSE(s->ReplaceSimHosted(names.data(), 33));
+	EXPECT_GE(log.Errors("ReplaceSimHosted"), 1u);
+	ASSERT_EQ(32u, s->SimHostedCount());
+	for (int i = 0; i < 32; ++i)
+	{
+		const SimHelpStored* h = s->FindSimHostedHelp(StringCRC(("max.n" + std::to_string(i)).c_str()));
+		ASSERT_NE(nullptr, h) << i;
+		EXPECT_EQ(0, std::memcmp(h, helps[i].get(), sizeof(SimHelpStored))) << i;
+	}
+	EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC("max.n32")));
+}
+
+TEST(SimHostedCatalogue, RegisterUnregisterChurnAtCapacityKeepsHelpParallelToTheTable)
+{
+	auto s = NewServer();
+	for (int i = 0; i < 32; ++i)
+	{
+		const std::string n = "churn.n" + std::to_string(i);
+		ASSERT_TRUE(s->RegisterSimHosted(StringCRC(n.c_str()), SimKind::Query, MakeSimHelp(n.c_str()))) << n;
+	}
+	for (int round = 0; round < 3; ++round)
+	{
+		for (int i = round; i < 32; i += 3)
+		{
+			const std::string n = "churn.n" + std::to_string(i);
+			s->UnregisterSimHosted(StringCRC(n.c_str()));
+			EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC(n.c_str()))) << n;
+			ASSERT_TRUE(s->RegisterSimHosted(StringCRC(n.c_str()), SimKind::Command, MakeSimHelp((n + ".v" + std::to_string(round)).c_str()))) << n;
+		}
+	}
+	ASSERT_EQ(32u, s->SimHostedCount());
+	for (uint32_t i = 0; i < 32; ++i)
+	{
+		SimHostedEntryView v;
+		ASSERT_TRUE(s->GetSimHostedEntry(i, v));
+		ASSERT_NE(nullptr, v.help);
+		// Every entry's help description starts with its own name: the table and the catalogue never drift apart.
+		EXPECT_EQ(0, std::strncmp(v.help->description, v.name.AsChar(), std::strlen(v.name.AsChar()))) << v.name.AsChar() << " -> " << v.help->description;
+	}
+}
+
+TEST(SimHostedCatalogue, ReplaceWithMixedNullHelpRejectsWholeSwapAndKeepsOldHelp)
+{
+	auto s = NewServer();
+	ASSERT_TRUE(s->RegisterSimHosted(StringCRC("keep.me"), SimKind::Query, MakeSimHelp("kept")));
+	SimHelpStored good = MakeSimHelp("new");
+	SimHostedName names[3] = { Entry("a.one", SimKind::Query, &good), Entry("a.two", SimKind::Query, &good), Entry("a.three", SimKind::Query, nullptr) };
+	LogCapture log("DebugServer");
+	EXPECT_FALSE(s->ReplaceSimHosted(names, 3));
+	EXPECT_GE(log.Errors("a.three"), 1u);
+	EXPECT_EQ(1u, s->SimHostedCount());
+	EXPECT_EQ("kept", Desc(*s, "keep.me"));
+	EXPECT_EQ("<none>", Desc(*s, "a.one"));
+}

@@ -14,6 +14,7 @@
 #include <deque>
 #include <memory>
 #include <set>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -705,6 +706,173 @@ TEST(SimQueryHostHelp, TwentyFourRealisticNamesAllAnnounceAndReplayWithInfo)
         ASSERT_EQ(SimRegistrationOp::Replay, all[i].parsed.op);
         ASSERT_TRUE(all[i].info != nullptr);
         EXPECT_EQ(3u, all[i].info->paramCount);
+    }
+}
+
+
+// ---- Exhaustive pass (Task 7) ----
+
+TEST(SimQueryHostHelp, UnregisterThenReRegisterWithDifferentHelpReplacesItEverywhere)
+{
+    TestSim m;
+    ASSERT_TRUE(m.RegisterCommand("re.cmd", Dia::DebugServer::SimHelpInfo{ "version one", "old.cat" }, &Ok));
+    ASSERT_TRUE(m.RegisterQuery("re.other", Dia::DebugServer::SimHelpInfo{ "untouched" }, &Ok));
+    m.UnregisterQuery("re.cmd");
+    EXPECT_TRUE(m.GetHost().GetHelp(StringCRC("re.cmd")) == nullptr);
+    ASSERT_TRUE(m.RegisterCommand("re.cmd", RichHelp(), &Ok));
+    EXPECT_STREQ("Rich help text", m.GetHost().GetHelp(StringCRC("re.cmd"))->description);
+
+    const std::vector<Sent> sent = m.TakeSent();
+    ASSERT_EQ(4u, sent.size());
+    EXPECT_EQ(SimRegistrationOp::Unregister, sent[2].parsed.op);
+    ASSERT_EQ(SimRegistrationOp::Register, sent[3].parsed.op);
+    ASSERT_TRUE(sent[3].info != nullptr);
+    EXPECT_STREQ("Rich help text", sent[3].info->description);
+    EXPECT_STREQ("cells", sent[3].info->category);
+    EXPECT_EQ(4u, sent[3].parsed.seq);
+
+    // The replay carries the new help, not the old one, and the untouched name keeps its own.
+    m.Frame();
+    m.PushResyncRequest();
+    const std::vector<Sent> f = m.Frame();
+    ASSERT_EQ(3u, f.size());
+    EXPECT_EQ(2u, f[0].parsed.count);
+    for (size_t i = 1; i < f.size(); ++i)
+    {
+        ASSERT_TRUE(f[i].info != nullptr);
+        if (std::strcmp(f[i].parsed.name, "re.cmd") == 0)
+            EXPECT_STREQ("Rich help text", f[i].info->description);
+        else
+            EXPECT_STREQ("untouched", f[i].info->description);
+    }
+}
+
+TEST(SimQueryHostHelp, RangeNeverAcceptedByTheHostIsNeverAnnounced)
+{
+    TestSim m;
+    LogCapture log("DebugServer");
+    Dia::API::ValueParam bad[] = { { "x", "float", false, "d", nullptr, true, 3.0f, 1.0f } };
+    EXPECT_FALSE(m.RegisterQuery("range.inverted", Dia::DebugServer::SimHelpInfo{ "d", nullptr, nullptr, bad, 1, false }, &Ok));
+    bad[0].min = std::numeric_limits<float>::quiet_NaN();
+    bad[0].max = 1.0f;
+    EXPECT_FALSE(m.RegisterCommand("range.nan", Dia::DebugServer::SimHelpInfo{ "d", nullptr, nullptr, bad, 1, false }, &Ok));
+    EXPECT_GE(log.Errors("range.inverted"), 1u);
+    EXPECT_TRUE(m.TakeSent().empty());
+    EXPECT_FALSE(m.GetHost().Has(StringCRC("range.inverted")));
+    EXPECT_FALSE(m.GetHost().Has(StringCRC("range.nan")));
+}
+
+namespace
+{
+    // 16 params whose description holds 'n' control characters (6 bytes each once escaped), plus a maximal control-char description.
+    struct BoundaryHelp
+    {
+        explicit BoundaryHelp(uint32_t n)
+            : text(n, '\x01'), desc(Dia::DebugServer::kSimHelpMaxDescription, '\x01'), params(Dia::DebugServer::kSimHelpMaxParams)
+        {
+            for (auto& p : params)
+                p = { "n", "string", false, text.c_str(), nullptr, false, 0.f, 0.f, nullptr };
+        }
+        Dia::DebugServer::SimHelpInfo Info() const
+        {
+            return Dia::DebugServer::SimHelpInfo{ desc.c_str(), nullptr, nullptr, params.data(), Dia::DebugServer::kSimHelpMaxParams, false };
+        }
+        std::string text, desc;
+        std::vector<Dia::API::ValueParam> params;
+    };
+
+    // First control-char count whose register message no longer fits the event (name "edge.n", seq 1).
+    uint32_t FirstNonFittingSize()
+    {
+        for (uint32_t n = 0; n <= Dia::DebugServer::kSimHelpMaxParamDescription; ++n)
+        {
+            BoundaryHelp b(n);
+            Dia::DebugServer::SimHelpStored stored;
+            std::memset(&stored, 0, sizeof(stored));
+            if (Dia::DebugServer::CopyHelp(b.Info(), stored) != Dia::DebugServer::SimHelpResult::Ok)
+                return 0;
+            std::unique_ptr<Dia::DebugServer::SimReplyEvent> reply(new Dia::DebugServer::SimReplyEvent);
+            std::memset(reply.get(), 0, sizeof(Dia::DebugServer::SimReplyEvent));
+            if (!Cluiche::AppFlow::BuildSimRegistrationReply(SimRegistrationOp::Register, "edge.n", SimKind::Query, 1, &stored, *reply))
+                return n;
+        }
+        return 0;
+    }
+}
+
+TEST(SimQueryHostHelp, HelpExactlyAtTheEventBoundaryRegistersOneByteMoreIsRolledBackWithoutConsumingASequenceNumber)
+{
+    const uint32_t firstFail = FirstNonFittingSize();
+    ASSERT_GT(firstFail, 0u);
+
+    {   // Largest size that fits: accepted, announced with seq 1, carried intact.
+        TestSim m;
+        BoundaryHelp fits(firstFail - 1);
+        ASSERT_TRUE(m.RegisterQuery("edge.n", fits.Info(), &Ok));
+        const std::vector<Sent> sent = m.TakeSent();
+        ASSERT_EQ(1u, sent.size());
+        EXPECT_EQ(1u, sent[0].parsed.seq);
+        ASSERT_TRUE(sent[0].info != nullptr);
+        ExpectSameInfo(*m.GetHost().GetHelp(StringCRC("edge.n")), *sent[0].info);
+        EXPECT_LT(sent[0].json.size(), static_cast<size_t>(Dia::DebugServer::kSimPayloadBytes));
+    }
+    {   // One control char more: rejected, host registration absent, no message, sequence number not consumed.
+        TestSim m;
+        LogCapture log("DebugServer");
+        BoundaryHelp over(firstFail);
+        EXPECT_FALSE(m.RegisterQuery("edge.n", over.Info(), &Ok));
+        EXPECT_GE(log.Errors("edge.n"), 1u);
+        EXPECT_FALSE(m.GetHost().Has(StringCRC("edge.n")));
+        EXPECT_TRUE(m.GetHost().GetHelp(StringCRC("edge.n")) == nullptr);
+        EXPECT_TRUE(m.TakeSent().empty());
+
+        ASSERT_TRUE(m.RegisterQuery("edge.ok", Dia::DebugServer::SimHelpInfo{ "small" }, &Ok));
+        const std::vector<Sent> sent = m.TakeSent();
+        ASSERT_EQ(1u, sent.size());
+        EXPECT_EQ(1u, sent[0].parsed.seq);   // the failed attempt consumed no seq
+        m.Frame();
+        m.PushResyncRequest();
+        const std::vector<Sent> f = m.Frame();
+        ASSERT_EQ(2u, f.size());
+        EXPECT_EQ(1u, f[0].parsed.count);    // and the rolled-back name is not announced
+        EXPECT_EQ(1u, f[0].parsed.seq);
+    }
+}
+
+TEST(SimQueryHostHelp, MixOfMinimalAndMaximalHelpAllReplaysWithIdenticalInfo)
+{
+    TestSim m;
+    const std::string cat(Dia::DebugServer::kSimHelpMaxCategory, 'c'), owner(Dia::DebugServer::kSimHelpMaxOwner, 'o');
+    const std::string desc(Dia::DebugServer::kSimHelpMaxDescription, 'd'), pd(Dia::DebugServer::kSimHelpMaxParamDescription, 'p');
+    const std::string pe(Dia::DebugServer::kSimHelpMaxParamEnum, 'e');
+    std::vector<Dia::API::ValueParam> params(Dia::DebugServer::kSimHelpMaxParams);
+    for (auto& p : params)
+        p = { "param", "enum", true, pd.c_str(), "unit", true, -2.5f, 7.5f, pe.c_str() };
+
+    for (int i = 0; i < 12; ++i)
+    {
+        const std::string n = "mix." + std::to_string(i);
+        Dia::DebugServer::SimHelpInfo info{ "minimal" };
+        if (i % 3 == 1) info = Dia::DebugServer::SimHelpInfo{ desc.c_str(), cat.c_str(), owner.c_str(), params.data(), Dia::DebugServer::kSimHelpMaxParams, false };
+        if (i % 3 == 2) info = RichHelp();
+        ASSERT_TRUE(i % 2 ? m.RegisterCommand(n.c_str(), info, &Ok) : m.RegisterQuery(n.c_str(), info, &Ok)) << n;
+    }
+    m.TakeSent();
+    m.Frame();
+    m.PushResyncRequest();
+    std::vector<Sent> all = m.Frame();
+    for (int guard = 0; guard < 4 && all.size() < 13; ++guard)
+    {
+        const std::vector<Sent> more = m.Frame();
+        all.insert(all.end(), more.begin(), more.end());
+    }
+    ASSERT_EQ(13u, all.size());
+    EXPECT_EQ(12u, all[0].parsed.count);
+    for (size_t i = 1; i < all.size(); ++i)
+    {
+        ASSERT_EQ(SimRegistrationOp::Replay, all[i].parsed.op) << i;
+        ASSERT_TRUE(all[i].info != nullptr) << i;
+        ExpectSameInfo(*m.GetHost().GetHelp(StringCRC(all[i].parsed.name)), *all[i].info);
     }
 }
 
