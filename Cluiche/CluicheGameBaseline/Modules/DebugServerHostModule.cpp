@@ -12,6 +12,8 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/MetricInfo.h>
 
 #include "Modules/InspectorSources/ModuleStateSource.h"
 #include "Modules/InspectorSources/StreamStateSource.h"
@@ -152,6 +154,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         mMetricTickMs = reg.RegisterHistogram(
             Dia::Core::StringCRC("dia.debugserver.tick_ms"), kTickBuckets, 6);
     }
+    RegisterAnnounceMetrics();
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -218,6 +221,7 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
         mMetricSubscriptions->Set(static_cast<double>(stats.subscriptionCount));
     if (mMetricTickMs)
         mMetricTickMs->Observe(static_cast<double>(stats.debugServerOverheadMs));
+    PublishAnnounceMetrics();
     if (mMetricMessagesSent && stats.messagesSentTotal > mPrevMessagesSent)
     {
         mMetricMessagesSent->Inc(static_cast<uint64_t>(stats.messagesSentTotal - mPrevMessagesSent));
@@ -248,7 +252,7 @@ void DebugServerHostModule::DrainSimReplies()
         mSimReplies.Consume(batch);
         for (unsigned int i = 0; i < batch.Size(); ++i)
         {
-            HandleSimReply(batch[i].payload, SteadyNowMs());
+            HandleSimReply(batch[i].payload, SteadyNowMs(), batch[i].senderCrc);
         }
     }
 }
@@ -296,9 +300,57 @@ void DebugServerHostModule::TickAnnounce(uint64_t nowMs)
         DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: sim announcement resync timed out, staging discarded");
 }
 
-void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs)
+void DebugServerHostModule::RegisterAnnounceMetrics()
+{
+    using Dia::Observation::Metric::MetricInfo;
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    mMetricAnnounceGaps = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.announce_gaps"),
+        MetricInfo{ "Sim announce gaps", "Sim-hosted name announcements whose sequence number skipped, repeated or went backwards", "count" });
+    mMetricDigestMismatches = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.digest_mismatches"),
+        MetricInfo{ "Sim digest mismatches", "Sim name-set digests that disagreed with the Main-side table", "count" });
+    mMetricResyncsRequested = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resyncs_requested"),
+        MetricInfo{ "Sim resyncs requested", "Resync requests Main posted to the SimPU host", "count" });
+    mMetricResyncsCompleted = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resyncs_completed"),
+        MetricInfo{ "Sim resyncs completed", "Resyncs whose replayed name set was installed atomically", "count" });
+    mMetricResyncTimeouts = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.sim.resync_timeouts"),
+        MetricInfo{ "Sim resync timeouts", "Resync stagings discarded because the replay did not complete in time", "count" });
+}
+
+void DebugServerHostModule::PublishAnnounceMetrics()
+{
+    auto publish = [](Dia::Observation::Metric::Counter* c, uint32_t now, uint32_t& prev)
+    {
+        if (c != nullptr && now > prev)
+            c->Inc(static_cast<uint64_t>(now - prev));
+        prev = now;
+    };
+    publish(mMetricAnnounceGaps,     mAnnounce.AnnounceGaps(),     mPrevGaps);
+    publish(mMetricDigestMismatches, mAnnounce.DigestMismatches(), mPrevMismatches);
+    publish(mMetricResyncsRequested, mAnnounce.ResyncsRequested(), mPrevRequested);
+    publish(mMetricResyncsCompleted, mAnnounce.ResyncsCompleted(), mPrevCompleted);
+    publish(mMetricResyncTimeouts,   mAnnounce.ResyncTimeouts(),   mPrevTimeouts);
+}
+
+void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs, unsigned int senderCrc)
 {
     const SimRegistration reg = ParseSimRegistrationReply(reply);
+    if (reg.op != SimRegistrationOp::NotRegistration && senderCrc != 0)
+    {
+        if (mAnnounceOwnerCrc == 0)
+            mAnnounceOwnerCrc = senderCrc;
+        else if (senderCrc != mAnnounceOwnerCrc)
+        {
+            ++mForeignAnnounceIgnored;
+            if (mLoggedForeignCrc != senderCrc)
+            {
+                mLoggedForeignCrc = senderCrc;
+                DIA_LOG_ERROR("DebugServer",
+                    "DebugServerHostModule: a second SimQueryHostModule (sender 0x%08x) is announcing; only one sim host per application is supported, its announcements are ignored",
+                    senderCrc);
+            }
+            return;
+        }
+    }
     switch (reg.op)
     {
         case SimRegistrationOp::NotRegistration:
@@ -391,6 +443,9 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
     mMetricSubscriptions = nullptr;
     mMetricMessagesSent  = nullptr;
     mMetricTickMs        = nullptr;
+    mMetricAnnounceGaps = mMetricDigestMismatches = mMetricResyncsRequested = nullptr;
+    mMetricResyncsCompleted = mMetricResyncTimeouts = nullptr;
+    mAnnounceOwnerCrc = mLoggedForeignCrc = 0;
 
     return Dia::ApplicationFlow::StopResult::kDone;
 }

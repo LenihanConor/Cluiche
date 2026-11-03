@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include "Types/SimRegistrationMessage.h"
 
@@ -31,6 +32,10 @@ SimQueryHostModule::~SimQueryHostModule()
 
 Dia::ApplicationFlow::StartResult SimQueryHostModule::DoStart()
 {
+    mMetricOverflow = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(
+        Dia::Core::StringCRC("dia.debugserver.sim.announce_overflow"),
+        Dia::Observation::Metric::MetricInfo{ "Sim announce overflow",
+            "Announce-path messages the SimQueryReply stream dropped or rejected (digest and resync repair them)", "count" });
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -107,6 +112,8 @@ Dia::ApplicationFlow::SendResult SimQueryHostModule::PostAnnounce(const Dia::Deb
     if (result != Dia::ApplicationFlow::SendResult::kDelivered)
     {
         ++mAnnounceOverflow;
+        if (mMetricOverflow != nullptr)
+            mMetricOverflow->Inc();
         if (!mOverflowLogged || (mFrame - mLastOverflowLogFrame) >= kOverflowLogIntervalFrames)
         {
             mOverflowLogged = true;
@@ -129,6 +136,7 @@ Dia::ApplicationFlow::StopResult SimQueryHostModule::DoStop()
     mAnnounced.RemoveAll();
     mBatch.RemoveAll();
     mBatchIndex = 0;
+    mMetricOverflow = nullptr;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

@@ -101,7 +101,15 @@ protected:
 
     // Handles one SimQueryReply event (registration side channel + announcement resync, else CompleteSimReply).
     // nowMs is a monotonic millisecond clock.  Exposed to derived test doubles.
-    void HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs);
+    // senderCrc is the stream envelope's sender (0 = unknown, never guarded). The first sender of an announcement
+    // owns the sim-hosted name table; announcements from any other sender are ignored with an Error (one host per app).
+    void HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs, unsigned int senderCrc = 0);
+
+    // Registers the five Main-side announce metrics (announce_overflow lives on SimQueryHostModule). Called from DoStart.
+    void RegisterAnnounceMetrics();
+    // Publishes tracker counter deltas to the registry. Called once per update.
+    void PublishAnnounceMetrics();
+    uint32_t IgnoredForeignAnnounceCount() const { return mForeignAnnounceIgnored; }
 
     // Times out a stalled resync staging.  Called once per update.
     void TickAnnounce(uint64_t nowMs);
@@ -141,6 +149,19 @@ private:
     Dia::Observation::Metric::Counter*   mMetricMessagesSent  = nullptr;
     Dia::Observation::Metric::Histogram* mMetricTickMs        = nullptr;
     int                                  mPrevMessagesSent    = 0;
+
+    // Announcement resync metrics (counters mirror the SimAnnounceTracker's cumulative counts).
+    Dia::Observation::Metric::Counter*   mMetricAnnounceGaps     = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricDigestMismatches = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncsRequested = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncsCompleted = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncTimeouts   = nullptr;
+    uint32_t mPrevGaps = 0, mPrevMismatches = 0, mPrevRequested = 0, mPrevCompleted = 0, mPrevTimeouts = 0;
+
+    // Second-host guard: the sender of the first announcement owns the table.
+    unsigned int mAnnounceOwnerCrc       = 0;
+    unsigned int mLoggedForeignCrc       = 0;
+    uint32_t     mForeignAnnounceIgnored = 0;
 
     // Inspector data sources — created in DoStart, activated, ticked, deactivated.
     static constexpr unsigned int kSourceCount = 5;

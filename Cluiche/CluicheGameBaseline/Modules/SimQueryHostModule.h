@@ -30,6 +30,8 @@
 #include <DiaStreams/EventStreamWriter.h>
 #include <DiaStreams/SendResult.h>
 
+namespace Dia { namespace Observation { namespace Metric { class Counter; } } }
+
 namespace Cluiche { namespace AppFlow {
 
 class SimQueryHostModule
@@ -123,6 +125,7 @@ private:
     unsigned int mReplayIndex = 0;
 
     uint32_t mAnnounceOverflow = 0;
+    Dia::Observation::Metric::Counter* mMetricOverflow = nullptr;   // owned by MetricRegistry; Counter is thread-safe
     uint32_t mFrame = 0;
     uint32_t mLastOverflowLogFrame = 0;
     bool     mOverflowLogged = false;

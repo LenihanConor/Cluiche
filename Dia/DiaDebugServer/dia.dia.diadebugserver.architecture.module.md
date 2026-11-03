@@ -39,6 +39,15 @@ responsibilities:
     and posts SimReplyEvents to an ISimReplySink; fixed-size payloads (SimHostedTypes.h)
   - Sim-hosted observability: counters dia.debugserver.sim.{requests,replies,timeouts,busy,too_large,handler_failed},
     gauge dia.debugserver.sim.pending, Info logs on sink attach/detach and name register/unregister, Warning on timeout
+  - Sim-hosted announcement resync: every register/unregister announcement carries a per-host `seq`; the SimPU host sends a
+    digest (count + order-independent hash of its name set) about once a second on a quiet frame. Main-side (CluicheGameBaseline
+    SimAnnounceTracker) detects a seq gap or digest mismatch and posts a SimKind::Resync control request; the host
+    (SimQueryHost::SetResyncHandler) replays resync_begin + one replay per name; Main stages the set and installs it atomically via
+    DebugServer::ReplaceSimHosted (compare with GetSimHostedDigest). Staging times out after 1000 ms. One SimQueryHostModule per
+    application: announcements from a second sender are ignored with an Error log.
+  - Announcement resync observability: counters dia.debugserver.sim.{announce_gaps,digest_mismatches,resyncs_requested,
+    resyncs_completed,resync_timeouts,announce_overflow} (registered with MetricInfo by DebugServerHostModule / SimQueryHostModule),
+    Warning logs on gap, digest mismatch, resync timeout and announce overflow, Info log on resync completion with the name count
   - Test seams: DebugServer::SetNowMsFunction (clock) and SetSendHook (outgoing messages, no socket)
 
 non_responsibilities:
@@ -57,11 +66,11 @@ public_api:
     - Dia/DiaDebugServer/StateSerializer.h
     - Dia/DiaDebugServer/CommandDispatcher.h
     - Dia/DiaDebugServer/QueryRegistry.h      # Register/Unregister/Has/Execute; SetRegisterVeto (refuses names that are sim-hosted)
-    - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook
-    - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
+    - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook, ReplaceSimHosted, GetSimHostedDigest
+    - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind (Query/Command/Resync), SimHostedName, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
     - Dia/DiaDebugServer/ISimRequestSink.h
     - Dia/DiaDebugServer/SimPendingTable.h
-    - Dia/DiaDebugServer/SimQueryHost.h       # SimQueryHost, ISimRequestSource, ISimReplySink
+    - Dia/DiaDebugServer/SimQueryHost.h       # SimQueryHost (SetResyncHandler), ISimRequestSource, ISimReplySink
   namespaces:
     - Dia::DebugServer
   entry_points:

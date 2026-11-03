@@ -13,6 +13,7 @@
 #include <Types/SimRegistrationMessage.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cstring>
 #include <deque>
@@ -80,6 +81,8 @@ namespace
 			DoUpdate(ctx);
 		}
 
+		void StartForTest() { DoStart(); }
+
 		bool TryPop(SimRequestEvent& out) override;
 		SendResult SendReply(const SimReplyEvent& reply) override;
 		Rig& rig;
@@ -91,6 +94,9 @@ namespace
 		explicit MainSide(Rig& r) : DebugServerHostModule(StringCRC("ResyncItMain")), rig(r) {}
 		using DebugServerHostModule::HandleSimReply;
 		using DebugServerHostModule::TickAnnounce;
+		using DebugServerHostModule::RegisterAnnounceMetrics;
+		using DebugServerHostModule::PublishAnnounceMetrics;
+		using DebugServerHostModule::IgnoredForeignAnnounceCount;
 		using DebugServerHostModule::GetAnnounceTracker;
 		bool PostRequest(const SimRequestEvent& r) override;
 		Rig& rig;
@@ -142,10 +148,11 @@ namespace
 					toMain.pop_front();
 					const SimRegistration reg = Cluiche::AppFlow::ParseSimRegistrationReply(*m);
 					if (reg.op == SimRegistrationOp::Digest) ++digestsDelivered;
-					main.HandleSimReply(*m, gNowMs);
+					main.HandleSimReply(*m, gNowMs, sim.GetInstanceId().Value());
 					if (onDelivered && reg.op != SimRegistrationOp::NotRegistration) onDelivered(reg);
 				}
 				main.TickAnnounce(gNowMs);
+				main.PublishAnnounceMetrics();
 				gNowMs += 34;
 			}
 		}
@@ -414,6 +421,84 @@ TEST(SimAnnounceResyncIntegration, RegisterAfterAResyncContinuesTheSequenceWithN
 	EXPECT_TRUE(r.Tracker().InSync());
 	EXPECT_EQ(r.MainCount(), 6u);
 	EXPECT_TRUE(r.Answers("it.fresh"));
+}
+
+// AC 13: the six metrics are registered with info and track the tracker / Sim counters.
+TEST(SimAnnounceResyncIntegration, MetricsMirrorTheCountersAndCarryInfo)
+{
+	using Dia::Observation::Metric::MetricRegistry;
+	MetricRegistry& reg = MetricRegistry::Instance();
+	Rig r;
+	r.main.RegisterAnnounceMetrics();
+	r.sim.StartForTest();
+
+	static const char* const kNames[] = {
+		"dia.debugserver.sim.announce_gaps", "dia.debugserver.sim.digest_mismatches", "dia.debugserver.sim.resyncs_requested",
+		"dia.debugserver.sim.resyncs_completed", "dia.debugserver.sim.resync_timeouts", "dia.debugserver.sim.announce_overflow" };
+	uint64_t base[6];
+	for (int i = 0; i < 6; ++i)
+	{
+		ASSERT_NE(reg.FindCounter(StringCRC(kNames[i])), nullptr) << kNames[i];
+		const Dia::Observation::Metric::MetricInfo* info = reg.GetInfo(StringCRC(kNames[i]));
+		ASSERT_NE(info, nullptr) << kNames[i];
+		EXPECT_NE(info->label, nullptr);
+		EXPECT_NE(info->description, nullptr);
+		EXPECT_NE(info->unit, nullptr);
+		base[i] = reg.FindCounter(StringCRC(kNames[i]))->Value();
+	}
+
+	SyncedStart(r, 3);
+	// Mid-burst loss -> gap + resync; tail loss -> digest mismatch + resync.
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "it.lost") == 0; };
+	r.Add("it.lost");
+	r.drop = nullptr;
+	r.Add("it.after");
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() >= 1; }, 20));
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "it.tail") == 0; };
+	r.Add("it.tail");
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() >= 2; }, 60));
+	r.Step(2);
+
+	const uint32_t expected[5] = { r.Tracker().AnnounceGaps(), r.Tracker().DigestMismatches(), r.Tracker().ResyncsRequested(),
+		r.Tracker().ResyncsCompleted(), r.Tracker().ResyncTimeouts() };
+	EXPECT_GE(expected[0], 1u);
+	EXPECT_GE(expected[1], 1u);
+	for (int i = 0; i < 5; ++i)
+		EXPECT_EQ(reg.FindCounter(StringCRC(kNames[i]))->Value() - base[i], expected[i]) << kNames[i];
+	EXPECT_GE(r.sim.AnnounceOverflowCount(), 2u);
+	EXPECT_EQ(reg.FindCounter(StringCRC(kNames[5]))->Value() - base[5], r.sim.AnnounceOverflowCount());
+}
+
+// AC 12: a second SimQueryHostModule is ignored (Error logged); the first host's table and sequence are untouched.
+TEST(SimAnnounceResyncIntegration, SecondSimHostAnnouncementsAreIgnoredAndTheFirstHostIsUnaffected)
+{
+	Rig r;
+	SyncedStart(r, 3);
+	const uint32_t seq = r.Tracker().LastSeq();
+	const uint32_t gaps = r.Tracker().AnnounceGaps();
+	ASSERT_EQ(r.main.IgnoredForeignAnnounceCount(), 0u);
+
+	const unsigned int rogue = StringCRC("SecondSimHost").Value();
+	std::unique_ptr<SimReplyEvent> msg(new SimReplyEvent);
+	std::memset(msg.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(SimRegistrationOp::Register, "rogue.name", SimKind::Query, 99, *msg));
+	r.main.HandleSimReply(*msg, gNowMs, rogue);
+	std::memset(msg.get(), 0, sizeof(SimReplyEvent));
+	ASSERT_TRUE(Cluiche::AppFlow::BuildSimDigestReply(7, 1, 0x1234u, *msg));
+	r.main.HandleSimReply(*msg, gNowMs, rogue);
+
+	EXPECT_EQ(r.main.IgnoredForeignAnnounceCount(), 2u);
+	EXPECT_EQ(r.MainCount(), 3u);
+	EXPECT_FALSE(r.Routes("rogue.name"));
+	EXPECT_EQ(r.Tracker().LastSeq(), seq);
+	EXPECT_EQ(r.Tracker().AnnounceGaps(), gaps);
+	EXPECT_EQ(r.Tracker().DigestMismatches(), 0u);
+
+	r.Add("it.more");
+	r.Step(2);
+	EXPECT_EQ(r.MainCount(), 4u);
+	EXPECT_TRUE(r.Answers("it.more"));
+	EXPECT_EQ(r.Tracker().AnnounceGaps(), gaps);
 }
 
 #endif // DIA_DEBUG
