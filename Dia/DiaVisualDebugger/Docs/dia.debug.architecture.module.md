@@ -29,6 +29,13 @@ responsibilities:
   - DiaAPI commands: debug.layer.enable, debug.layer.disable, debug.scale, debug.pick
   - Global debug scale exposed via SetDebugScale/GetDebugScale
   - Picking seam stubs: SetSelectedEntityId/GetSelectedEntityId
+  - Domain state snapshots (Console/): PackDomainStates packs every registered IDebugDomain's panel JSON
+    on SimPU into a fixed-size DomainStateSnapshot (whole-domain 128 KB budget, truncated flag);
+    DomainStateSnapshotPublisher writes it once per Sim frame only while Main has expressed interest;
+    ParseDomainStateSnapshot / QueryDomainState read it on Main. The snapshot (FrameStream) and the
+    interest event (EventStream) are the only cross-PU data, no mutex or atomic crosses the boundary.
+    DomainStateHealth reports dia.debugvisualiser.domain_snapshot (stale or never published).
+  - BuildDomainState replaces NaN/Infinity with null and treats a non-object domain state as {}.
 
 non_responsibilities:
   - Rendering — layers submit to FrameData; DiaSFML owns rendering
@@ -50,6 +57,9 @@ public_api:
     - DiaVisualDebugger/Domain/SchemaControl.h
     - DiaVisualDebugger/Domain/ISchemaKeyResolver.h
     - DiaVisualDebugger/Domain/ServiceKeyResolver.h
+    - DiaVisualDebugger/Console/DomainStateSnapshot.h
+    - DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h
+    - DiaVisualDebugger/Console/DomainStateQuery.h
   namespaces:
     - Dia::Debug
     - Dia::Debug::LayerNames
@@ -58,6 +68,9 @@ public_api:
     - DebugLayerManager
     - DebugColourPalette
     - DebugLayerNames constants
+    - PackDomainStates / DomainStateSnapshot (Sim-side packer and fixed-size snapshot POD)
+    - DomainStateSnapshotPublisher, DomainStateHealth (interest-gated producer; health reporter)
+    - ParseDomainStateSnapshot, QueryDomainState, ApplySchemaVersion (Main-side readers)
     - SchemaControl (schemaKey/packId control JSON + schemaVersion; ISchemaKeyResolver seam, no DiaValueSchema dependency)
 
 dependencies:

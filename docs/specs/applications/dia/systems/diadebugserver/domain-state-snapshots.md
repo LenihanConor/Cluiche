@@ -107,4 +107,4 @@ Exact types are fixed in Task 1 after measuring the real payload of the 14 migra
 
 ## Status
 
-`In Progress` (Tasks 1-4 Done, 5-8 pending). Plan: @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.plan.md
+`Done` (all 8 tasks, closed 2026-11-03). Plan: @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.plan.md
