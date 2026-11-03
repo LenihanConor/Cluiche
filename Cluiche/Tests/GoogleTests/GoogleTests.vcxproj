@@ -1107,6 +1107,7 @@
     <ClCompile Include="DiaCellHistory\TestEventPayloadValidation.cpp" />
     <ClCompile Include="DiaCellHistory\TestCellHistoryTracking.cpp" />
     <ClCompile Include="DiaCellHistory\TestCellHistoryCommands.cpp" />
+    <ClCompile Include="DiaCellHistory\TestCellHistoryModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

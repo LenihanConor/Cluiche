@@ -28,6 +28,7 @@
     <ClInclude Include="EventLog.h" />
     <ClInclude Include="CellHistoryRecorder.h" />
     <ClInclude Include="CellHistoryCommands.h" />
+    <ClInclude Include="CellHistoryModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -37,6 +38,7 @@
     <ClCompile Include="EventLog.cpp" />
     <ClCompile Include="CellHistoryRecorder.cpp" />
     <ClCompile Include="CellHistoryCommands.cpp" />
+    <ClCompile Include="CellHistoryModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
