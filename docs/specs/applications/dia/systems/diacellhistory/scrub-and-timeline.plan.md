@@ -24,3 +24,30 @@ Feature 2 of DiaCellHistory (system order 1 → 2 → 4 → 3 → 5). **Prerequi
 | 2.9 | Panel timeline card + banner ("Viewing sample N ... not live", Back to live), step / event / live buttons, slider runs `cells.history.view`; contract golden updated; both `debug-panel.html` pages; `cells.view.state.history` field `null` or `{mode, sample, label}` (AC 8, 13, 15, 16) | Golden + page tests; visual gate | Pending | sonnet | Blocked on 2.8 approval |
 | 2.10 | CluicheTest wiring + E2E: stage creates the module, samples on a timer, E2E scrubs, steps, jumps to events, asserts viewed values and banner; perf tests (view change, rebuild at 2,080 samples) | `dia test e2e --scenario="*celllayers*"` (run once, after a `compile-code` pipeline) | Pending | sonnet | Quiet machine only (known load-sensitive flake) |
 | 2.11 | Finalize: `dia check deps`, STL grep, module doc, Observation Opportunity Scan (notes), gap audit + edge tests, scoped GoogleTests, `dia docs spec-done` | Verify gate | Pending | haiku | Not Done until 2.9's visual gate is approved. No full suite / sanitizer / Release here (system task S7) |
+
+## Hook audit (2026-11-03)
+
+Task 2.1. Spec text amended to the built signature (`scrub-and-timeline.md` hook block, `compare.md` hook addition). Audit by code reading; paths under `Dia/DiaCellLayers/`.
+
+| Consumer | Consults source | Keys on (version, ViewEpoch) | GetValues false = no data, no live fallback | Verdict |
+|---|---|---|---|---|
+| LayerUploader | Yes, `LayerUploader.cpp:108,149` (from `registry.ViewValueSource()`) | Yes, gate at `:139` also keys fromSource; epoch stored `:194` | Yes, `:151-154` releases slot, returns `NoData` | OK |
+| LayerReader | Yes, `LayerReader.cpp:127-128,156` | Yes, `:139-140` (version, epoch, fromSource) | Yes, `:156,170` hasData=false, values=nullptr | OK |
+| Hover | Indirect: `CellLayerViewerDomain.cpp:296-310` reads `LayerUploader::BaseValues` (copy of the uploaded, i.e. viewed, values) | Inherits the uploader gate | `UpdateHover` returns invalid unless result is `Ok` (`:299`), so NoData shows no hover | OK |
+| Query | Yes, `QueryEvaluator.cpp:127` via `LayerReader` | Via reader | Reader hasData flag | OK (test `TestQueryCommands.cpp:524`) |
+| Selection tools / category | Yes, `SelectionTools.cpp:258`, `SelectionStats.cpp:159,190,194` via reader | Via reader | Reader hasData flag | OK |
+| Inspector single-cell / card | Yes, `InspectorModel.cpp:66` via reader (re-read each build) | Via reader | Test `TestInspectorModel.cpp:162` | OK |
+| **Inspector stats cache** | Reads go via reader, but recompute is not triggered | **No.** `InspectorState.cpp:296-308` (`NeedsCompute`, `NeedsComputeA`) and `:363` compare layer `version()` only | n/a | **GAP 1** |
+| `cells.layer.values` | Yes, `MirrorQueries.cpp:151` via reader | Via reader | `:152` returns error "layer has no data in this view" (test `TestMirrorLayerValues.cpp:707`) | OK |
+| `cells.select.stats` mirror cache | Reads via reader | **No.** Cache key `MirrorQueries.cpp:300-320` pushes `version()` only; no `ViewEpoch()` or `IsLive()` | n/a | **GAP 2** (low: entries are also per-frame, `:331`, and depend on GAP 1's inspector for Layers mode) |
+| Registry reject second source | `CellLayerRegistry.cpp:46-50` logs `DIA_LOG_ERROR("CEL", ...)`, returns false | n/a | n/a | OK (test `TestViewValueSource.cpp:128`) |
+| Registry `IsLive()` | `CellLayerRegistry.h:108` = no source or `source->IsLive()` | n/a | n/a | OK (tests `TestViewValueSource.cpp:137`, `TestCellLayerRegistryEdge.cpp:247`) |
+
+### Gap list
+
+- **GAP 1: InspectorState dirty check ignores the view source.** While scrubbed (installed, not live, or `ViewEpoch()` changed) with an unchanged layer `version()`, the shown selection stats (mean/min/max/histogram, A/B stats) stay at the previously computed values. Failing test added: `SelectionInspectorStateTest.ScrubbedSourceEpochChangeRecomputesStats` in `Cluiche/Tests/GoogleTests/DiaCellLayers/TestInspectorState.cpp` (RED: mean stays 2.5, expected 25 then 150). Fix: `NeedsCompute`/`NeedsComputeA` and the stored `seenVersion` compare an additional (fromSource, epoch) pair. **Needs DiaCellLayers production edit (AD-001 sign-off).**
+- **GAP 2: `cells.select.stats` cache key omits `ViewEpoch()`/IsLive.** `MirrorQueries.cpp:300-320`. Bounded to one frame by the `mFrame` check, so only a same-frame view change returns a stale answer. Not tested (needs the full mirror rig; the same-frame window makes it hard to observe). Fix: push `registry.ViewValueSource()` epoch and live flag into `StatsKey`. **Needs DiaCellLayers production edit (AD-001 sign-off).**
+- **Not a gap, noted:** hover depends on the uploader result being `Ok`; during NoData there is deliberately no hover value.
+- **Not a gap, noted:** `LayerReader` cache is per-reader slot (LRU); source epoch wrap is covered by `TestViewSourceModuleEdge.cpp:72`.
+
+Task 2.5 must not be marked Done with GAP 1 open (inspector would show live stats under a "viewing sample N" banner).

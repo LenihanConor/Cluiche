@@ -47,11 +47,11 @@ GroupDeltaTable         per-group means and change for the inspector
 
 ### The hook addition (DiaCellLayers)
 
-Feature 2's `IViewValueSource` gains one optional method, so a source can tell the viewer how to colour what it returns:
+Feature 2's `IViewValueSource` (built, `uint64_t ViewEpoch()`, `GetValues(const CellLayerDesc&, float*, uint32_t)`) already has one optional method, so a source can tell the viewer how to colour what it returns:
 
 ```cpp
-struct ViewPresentation { StringCRC rampId; float rangeMin; float rangeMax; const char* unitPrefix; };  // e.g. "Δ"
-virtual bool GetPresentation(StringCRC layerId, ViewPresentation& out) { return false; }   // default: schema colouring
+struct ViewPresentation { StringCRC rampId; float rangeMin = 0; float rangeMax = 1; char unitPrefix[8] = {}; };  // e.g. a delta sign
+virtual bool GetPresentation(const CellLayerDesc& layer, ViewPresentation& out) { return false; }   // default: schema colouring
 ```
 
 When it returns true, the viewer uses that ramp and range instead of the schema's (registering the ramp with CellField as usual), and the legend shows `unitPrefix` before the unit. The default keeps scrub unchanged.

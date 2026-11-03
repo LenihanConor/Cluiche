@@ -50,11 +50,13 @@ HistoryCommands                     view, live, step, event
 ```cpp
 class IViewValueSource {
 public:
-    virtual ~IViewValueSource() = default;
+    virtual ~IViewValueSource() {}
     // true: out holds the values to show; false: no data for this layer in the current view
-    virtual bool GetValues(StringCRC layerId, float* out, uint32 count) = 0;
+    virtual bool GetValues(const CellLayerDesc& layer, float* out, uint32_t n) = 0;
     virtual bool IsLive() const = 0;          // true: the viewer reads live values itself
-    virtual uint32 ViewEpoch() const = 0;     // changes whenever the view changes (sample or mode)
+    virtual uint64_t ViewEpoch() const = 0;   // changes whenever the view changes (sample or mode)
+    // Optional (default false): ramp id, value range and unit prefix that replace the schema colouring and appear in the legend
+    virtual bool GetPresentation(const CellLayerDesc& layer, ViewPresentation& out) { return false; }
 };
 ```
 
