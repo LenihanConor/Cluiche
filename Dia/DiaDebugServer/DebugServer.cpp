@@ -35,6 +35,7 @@ namespace Dia
 			, mAutoStart(true)
 			, mObservationBridge(nullptr)
 			, mSimSink(nullptr)
+			, mSimHelp(new SimHelpStored[kMaxSimNames]())
 			, mNowMsFn(nullptr)
 			, mSendHook(nullptr)
 			, mSendHookContext(nullptr)
@@ -112,14 +113,20 @@ namespace Dia
 				DIA_LOG_INFO("DebugServer", "Sim request sink detached");
 		}
 
-		bool DebugServer::RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind)
+		bool DebugServer::RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind, const SimHelpStored& info)
 		{
 			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
 			{
 				if (mSimNames[i].name == name)
 				{
-					DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' is already sim-hosted", name.AsChar());
-					return false;
+					if (mSimNames[i].kind != kind)
+					{
+						DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' is already sim-hosted", name.AsChar());
+						return false;
+					}
+					mSimHelp[i] = info;   // same kind: replace the entry's help
+					DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' re-registered (kind=%u), help replaced", name.AsChar(), static_cast<unsigned>(kind));
+					return true;
 				}
 			}
 			if (mQueryRegistry.Has(name))
@@ -135,6 +142,7 @@ namespace Dia
 			SimName entry;
 			entry.name = name;
 			entry.kind = kind;
+			mSimHelp[mSimNames.Size()] = info;
 			mSimNames.Add(entry);
 			DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' registered (kind=%u)", name.AsChar(), static_cast<unsigned>(kind));
 			return true;
@@ -146,6 +154,9 @@ namespace Dia
 			{
 				if (mSimNames[i].name == name)
 				{
+					const unsigned int last = mSimNames.Size() - 1;
+					for (unsigned int j = i; j < last; ++j)
+						mSimHelp[j] = mSimHelp[j + 1];   // keep the catalogue parallel to the shifted table
 					mSimNames.RemoveAt(i);
 					DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' unregistered", name.AsChar());
 					return;
@@ -161,13 +172,20 @@ namespace Dia
 				return false;
 			}
 
-			// Build the new table off to the side; only swap if every entry is acceptable.
+			// Build the new table off to the side ('src' remembers which input entry supplies each slot's help);
+			// only swap if every entry is acceptable.
 			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> next;
+			const SimHelpStored* src[kMaxSimNames];
 			for (uint32_t i = 0; i < count; ++i)
 			{
 				if (names[i].name[0] == '\0' || memchr(names[i].name, '\0', kSimHostedNameMax) == nullptr)
 				{
 					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: entry %u has an empty or unterminated name, swap rejected", i);
+					return false;
+				}
+				if (names[i].help == nullptr)
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: '%s' has no help, swap rejected", names[i].name);
 					return false;
 				}
 				const Dia::Core::StringCRC crc(names[i].name);
@@ -182,6 +200,7 @@ namespace Dia
 					if (next[j].name == crc)
 					{
 						next[j].kind = names[i].kind;   // duplicate: last wins
+						src[j]       = names[i].help;
 						found = true;
 						break;
 					}
@@ -196,12 +215,36 @@ namespace Dia
 				SimName entry;
 				entry.name = crc;
 				entry.kind = names[i].kind;
+				src[next.Size()] = names[i].help;
 				next.Add(entry);
 			}
 
+			// Commit: nothing below can fail.
+			for (unsigned int j = 0; j < next.Size(); ++j)
+				mSimHelp[j] = *src[j];
 			mSimNames = next;
 			DIA_LOG_INFO("DebugServer", "Sim-hosted table replaced (%u names)", mSimNames.Size());
 			return true;
+		}
+
+		bool DebugServer::GetSimHostedEntry(uint32_t index, SimHostedEntryView& out) const
+		{
+			if (index >= mSimNames.Size())
+				return false;
+			out.name = mSimNames[index].name;
+			out.kind = mSimNames[index].kind;
+			out.help = &mSimHelp[index];
+			return true;
+		}
+
+		const SimHelpStored* DebugServer::FindSimHostedHelp(Dia::Core::StringCRC name) const
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+					return &mSimHelp[i];
+			}
+			return nullptr;
 		}
 
 		void DebugServer::GetSimHostedDigest(uint32_t& count, uint32_t& hash) const

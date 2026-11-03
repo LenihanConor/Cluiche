@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/ISimRequestSink.h>
@@ -113,7 +114,7 @@ protected:
 
 TEST_F(SimHostedDispatchTest, DeferralSendsNoReplyUntilCompleted)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(3, "sim.q");
 	EXPECT_TRUE(mSent.empty());
 	ASSERT_EQ(mSink.posted.size(), 1u);
@@ -125,7 +126,7 @@ TEST_F(SimHostedDispatchTest, DeferralSendsNoReplyUntilCompleted)
 
 TEST_F(SimHostedDispatchTest, PostRequestReceivesIdNameKindAndArgs)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.cmd"), SimKind::Command));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.cmd"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Json::Value args;
 	args["x"] = 5;
 	Send(1, "sim.cmd", &args);
@@ -138,7 +139,7 @@ TEST_F(SimHostedDispatchTest, PostRequestReceivesIdNameKindAndArgs)
 
 TEST_F(SimHostedDispatchTest, NoArgsPostsEmptyObject)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(1, "sim.q");
 	ASSERT_EQ(mSink.posted.size(), 1u);
 	EXPECT_STREQ(mSink.posted[0].json, "{}");
@@ -152,7 +153,7 @@ TEST_F(SimHostedDispatchTest, ReplyWireMatchesMainHostedQuery)
 		v["b"] = "hi";
 		return v;
 	});
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 
 	Send(4, "main.q");
 	Send(4, "sim.q");
@@ -171,7 +172,7 @@ TEST_F(SimHostedDispatchTest, ReplyWireMatchesMainHostedQuery)
 
 TEST_F(SimHostedDispatchTest, TimeoutRepliesSimTimeout)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(2, "sim.q");
 	gNowMs += 1999;
 	DebugServerTestAccess::Sweep(mServer);
@@ -191,7 +192,7 @@ TEST_F(SimHostedDispatchTest, TimeoutRepliesSimTimeout)
 
 TEST_F(SimHostedDispatchTest, LateReplyAfterTimeoutIsDropped)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(2, "sim.q");
 	const uint32_t id = mSink.posted[0].requestId;
 	gNowMs += 2000;
@@ -205,7 +206,7 @@ TEST_F(SimHostedDispatchTest, LateReplyAfterTimeoutIsDropped)
 
 TEST_F(SimHostedDispatchTest, BusyWhenTableFull)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	for (uint32_t i = 0; i < Dia::DebugServer::SimPendingTable::kCapacity; ++i)
 		Send(1, "sim.q");
 	EXPECT_TRUE(mSent.empty());
@@ -221,7 +222,7 @@ TEST_F(SimHostedDispatchTest, BusyWhenTableFull)
 
 TEST_F(SimHostedDispatchTest, BusyWhenPostRequestFailsAndEntryNotLeaked)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	mSink.accept = false;
 	for (uint32_t i = 0; i < Dia::DebugServer::SimPendingTable::kCapacity + 5; ++i)
 		Send(1, "sim.q");
@@ -239,7 +240,7 @@ TEST_F(SimHostedDispatchTest, BusyWhenPostRequestFailsAndEntryNotLeaked)
 
 TEST_F(SimHostedDispatchTest, NoSinkIsBusy)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	mServer.SetSimRequestSink(nullptr);
 	Send(1, "sim.q");
 	ASSERT_EQ(mSent.size(), 1u);
@@ -248,7 +249,7 @@ TEST_F(SimHostedDispatchTest, NoSinkIsBusy)
 
 TEST_F(SimHostedDispatchTest, ArgsTooLargeRejectedImmediately)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Json::Value args;
 	args["big"] = std::string(Dia::DebugServer::kSimPayloadBytes, 'x');
 	Send(1, "sim.q", &args);
@@ -260,7 +261,7 @@ TEST_F(SimHostedDispatchTest, ArgsTooLargeRejectedImmediately)
 
 TEST_F(SimHostedDispatchTest, TooLargeReplyStatusMapsToError)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(1, "sim.q");
 	mServer.CompleteSimReply(MakeReply(mSink.posted[0].requestId, SimReplyStatus::TooLarge, ""));
 	ASSERT_EQ(mSent.size(), 1u);
@@ -271,7 +272,7 @@ TEST_F(SimHostedDispatchTest, TooLargeReplyStatusMapsToError)
 
 TEST_F(SimHostedDispatchTest, NonOkStatusesMapToErrors)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(1, "sim.q");
 	Send(1, "sim.q");
 	mServer.CompleteSimReply(MakeReply(mSink.posted[0].requestId, SimReplyStatus::HandlerFailed, ""));
@@ -285,7 +286,7 @@ TEST_F(SimHostedDispatchTest, NonOkStatusesMapToErrors)
 
 TEST_F(SimHostedDispatchTest, OkWithUnparseableJsonIsHandlerFailed)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(1, "sim.q");
 	mServer.CompleteSimReply(MakeReply(mSink.posted[0].requestId, SimReplyStatus::Ok, "{not json"));
 	ASSERT_EQ(mSent.size(), 1u);
@@ -295,7 +296,7 @@ TEST_F(SimHostedDispatchTest, OkWithUnparseableJsonIsHandlerFailed)
 
 TEST_F(SimHostedDispatchTest, ConnectionCloseDropsEntry)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(5, "sim.q");
 	Send(6, "sim.q");
 	DebugServerTestAccess::HandleConnection(mServer, 5, false);
@@ -316,23 +317,23 @@ TEST_F(SimHostedDispatchTest, ConnectionCloseDropsEntry)
 
 TEST_F(SimHostedDispatchTest, DuplicateSimRegistrationRejected)
 {
-	EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
-	EXPECT_FALSE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Command));
+	EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	EXPECT_FALSE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));
 }
 
 TEST_F(SimHostedDispatchTest, NameAlreadyInQueryRegistryRejected)
 {
 	mServer.GetQueryRegistry().Register(StringCRC("both"), [](const Json::Value&) { return Json::Value(); });
-	EXPECT_FALSE(mServer.RegisterSimHosted(StringCRC("both"), SimKind::Query));
+	EXPECT_FALSE(mServer.RegisterSimHosted(StringCRC("both"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Send(1, "both");
 	EXPECT_TRUE(mSink.posted.empty());
 }
 
 TEST_F(SimHostedDispatchTest, UnregisterRestoresFallThrough)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	mServer.UnregisterSimHosted(StringCRC("sim.q"));
-	EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	mServer.UnregisterSimHosted(StringCRC("sim.q"));
 	Send(1, "sim.q");
 	EXPECT_TRUE(mSink.posted.empty());
@@ -341,7 +342,7 @@ TEST_F(SimHostedDispatchTest, UnregisterRestoresFallThrough)
 
 TEST_F(SimHostedDispatchTest, UnregisteredNameFallsThroughToQueryRegistryThenDiaApi)
 {
-	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query));
+	ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC("sim.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	mServer.GetQueryRegistry().Register(StringCRC("main.q"), [](const Json::Value&) {
 		Json::Value v;
 		v["ok"] = true;

@@ -182,6 +182,8 @@ private:
 
     // Announcement resync state machine (Main thread only; no locking).
     SimAnnounceTracker mAnnounce;
+    // Decode target for the help carried by register/replay messages (~7 KB): allocated once, reused per message.
+    std::unique_ptr<Dia::DebugServer::SimHelpStored> mParsedHelp;
 
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.

@@ -8,7 +8,7 @@
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
-    <ClInclude Include="IInspectorDataSource.h">
+    <ClInclude Include="IInspectorDataSource.h" />
     <ClInclude Include="InspectorDataSourceBase.h">
       <Filter>DiaDebugServer</Filter>
     </ClInclude>
@@ -17,8 +17,6 @@
     <ClInclude Include="SimPendingTable.h" />
     <ClInclude Include="SimQueryHost.h" />
     <ClInclude Include="SimHelpInfo.h" />
-      <Filter>DiaDebugServer</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />

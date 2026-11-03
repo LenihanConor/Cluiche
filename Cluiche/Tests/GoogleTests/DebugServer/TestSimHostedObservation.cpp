@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/ISimRequestSink.h>
@@ -101,7 +102,7 @@ protected:
 		mServer.SetNowMsFunction(&ObsFakeNow);
 		mServer.SetSendHook(&ObsDiscardSend, nullptr);
 		mServer.SetSimRequestSink(&mSink);
-		mServer.RegisterSimHosted(StringCRC("obs.q"), SimKind::Query);
+		mServer.RegisterSimHosted(StringCRC("obs.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp());
 		for (int i = 0; i < 6; ++i) mBase[i] = Counter(kNames[i]);
 	}
 
@@ -219,7 +220,7 @@ TEST(SimHostedObservationLogs, RegisterAndUnregisterLogInfo)
 {
 	DebugServer server;
 	LogCapture log("DebugServer");
-	ASSERT_TRUE(server.RegisterSimHosted(StringCRC("obs.named"), SimKind::Query));
+	ASSERT_TRUE(server.RegisterSimHosted(StringCRC("obs.named"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	EXPECT_EQ(1u, log.Count(LogCapture::Level::kInfo, "obs.named"));
 	server.UnregisterSimHosted(StringCRC("obs.named"));
 	EXPECT_EQ(2u, log.Count(LogCapture::Level::kInfo, "obs.named"));
@@ -234,7 +235,7 @@ TEST(SimHostedObservationLogs, TimeoutLogsWarning)
 	server.SetNowMsFunction(&ObsFakeNow);
 	server.SetSendHook(&ObsDiscardSend, nullptr);
 	server.SetSimRequestSink(&sink);
-	server.RegisterSimHosted(StringCRC("obs.q"), SimKind::Query);
+	server.RegisterSimHosted(StringCRC("obs.q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp());
 	DebugServerTestAccess::HandleCommand(server, 1, ObsMakeCommand("obs.q"));
 	LogCapture log("DebugServer");
 	gObsNowMs += SimPendingTable::kTimeoutMs + 1000;

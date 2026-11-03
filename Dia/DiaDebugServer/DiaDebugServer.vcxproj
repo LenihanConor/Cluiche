@@ -34,6 +34,7 @@
     <ClInclude Include="SimPendingTable.h" />
     <ClInclude Include="SimQueryHost.h" />
     <ClInclude Include="SimHelpInfo.h" />
+    <ClInclude Include="Testing\SimHelpTesting.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />

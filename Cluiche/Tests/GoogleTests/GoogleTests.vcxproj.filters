@@ -2409,5 +2409,8 @@
     <ClCompile Include="CluicheGameBaseline\TestSimRegistrationHelp.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestSimHostedCatalogue.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -23,11 +23,13 @@
 #include "DiaDebugServer/IDebugStateProvider.h"
 #include "DiaDebugServer/ObservationBridge.h"
 #include "DiaDebugServer/ISimRequestSink.h"
+#include "DiaDebugServer/SimHelpInfo.h"
 #include "DiaDebugServer/SimHostedTypes.h"
 #include "DiaDebugServer/SimPendingTable.h"
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 
 namespace dia { namespace debug { class DebugMessage; } }
 
@@ -212,21 +214,32 @@ namespace Dia
 			// Logs Info on attach (non-null) and detach (null).
 			void SetSimRequestSink(ISimRequestSink* sink);
 
-			// False (Error log) if already sim-registered or the name exists in QueryRegistry.
+			// Registers a sim-hosted name together with its help (copied into the catalogue; 'info' need not outlive the call).
+			// Re-registering a name with the SAME kind replaces its entry (help included).  False (Error log) if the name is
+			// already sim-hosted with a DIFFERENT kind, the name exists in QueryRegistry, or the 32-name table is full.
 			// The reverse is also refused: QueryRegistry::Register of an already sim-hosted name
 			// logs an Error and does not register (veto installed by the DebugServer constructor).
-			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind);
+			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind, const SimHelpStored& info);
+			// Removes the entry and its help.  Unknown names are ignored.
 			void UnregisterSimHosted(Dia::Core::StringCRC name);
 
-			// Atomically replaces the whole sim-hosted table with 'names' (announcement resync install).
-			// Duplicate names in the input: the LAST entry wins (its kind is used).  Returns false and leaves
-			// the table untouched (Error log) if a name is null/empty, the deduplicated set exceeds the table
-			// capacity (32), or a name already exists in the QueryRegistry.  count==0 clears the table.
+			// Atomically replaces the whole sim-hosted table AND catalogue with 'names' (announcement resync install).
+			// Each entry carries a pointer to its help (required; copied).  Duplicate names in the input: the LAST entry
+			// wins (kind and help).  Returns false and leaves table and catalogue untouched (Error log) if a name is
+			// null/empty, a help pointer is null, the deduplicated set exceeds the table capacity (32), or a name already
+			// exists in the QueryRegistry.  count==0 clears both.
 			bool ReplaceSimHosted(const SimHostedName* names, uint32_t count);
 
 			// Entry count and wrapping uint32 sum of SimNameSetEntryHash over every sim-hosted entry
-			// (order independent).  Empty table gives 0 / 0.
+			// (order independent; name+kind only, help is not hashed).  Empty table gives 0 / 0.
 			void GetSimHostedDigest(uint32_t& count, uint32_t& hash) const;
+
+			// Read-only catalogue access (Main thread only).  Entries are in registration order.
+			uint32_t SimHostedCount() const { return mSimNames.Size(); }
+			// False if index >= SimHostedCount().  'out.help' stays valid until the next catalogue mutation.
+			bool GetSimHostedEntry(uint32_t index, SimHostedEntryView& out) const;
+			// Null if 'name' is not sim-hosted.
+			const SimHelpStored* FindSimHostedHelp(Dia::Core::StringCRC name) const;
 
 			// Sends the deferred COMMAND_RESPONSE for reply.requestId.  Late/unknown ids are dropped.
 			void CompleteSimReply(const SimReplyEvent& reply);
@@ -339,6 +352,9 @@ namespace Dia
 			ISimRequestSink*   mSimSink;
 			SimPendingTable    mSimPending;
 			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> mSimNames;
+			// Help catalogue, parallel to mSimNames (index i is the help of mSimNames[i]).  kMaxSimNames x ~7 KB lives on
+			// the heap, allocated once in the constructor, so sizeof(DebugServer) stays small.
+			std::unique_ptr<SimHelpStored[]> mSimHelp;
 			NowMsFunction      mNowMsFn;
 			SendHook           mSendHook;
 			void*              mSendHookContext;

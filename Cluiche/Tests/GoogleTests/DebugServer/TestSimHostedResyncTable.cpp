@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/SimHostedTypes.h>
@@ -26,6 +27,7 @@ namespace
 		std::memset(&n, 0, sizeof(n));
 		std::strncpy(n.name, name, sizeof(n.name) - 1);
 		n.kind = kind;
+		n.help = &Dia::DebugServer::Testing::DefaultSimHelp();
 		return n;
 	}
 
@@ -43,8 +45,8 @@ namespace
 TEST(SimHostedResyncTable, ReplaceSwapsTableAndRemovedNamesBecomeUnknown)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("old.a"), SimKind::Query));
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("keep.b"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("old.a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("keep.b"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 
 	const SimHostedName next[] = { Make("keep.b"), Make("new.c", SimKind::Command) };
 	ASSERT_TRUE(s.ReplaceSimHosted(next, 2));
@@ -55,15 +57,15 @@ TEST(SimHostedResyncTable, ReplaceSwapsTableAndRemovedNamesBecomeUnknown)
 	EXPECT_EQ(SetHash({ next[0], next[1] }), hash);
 
 	// old.a is gone: it can be registered afresh; new.c is taken.
-	EXPECT_TRUE(s.RegisterSimHosted(StringCRC("old.a"), SimKind::Query));
-	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("new.c"), SimKind::Query));
-	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("keep.b"), SimKind::Query));
+	EXPECT_TRUE(s.RegisterSimHosted(StringCRC("old.a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("new.c"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("keep.b"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));
 }
 
 TEST(SimHostedResyncTable, ReplaceWithEmptyClearsTable)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	ASSERT_TRUE(s.ReplaceSimHosted(nullptr, 0));
 	uint32_t count = 99, hash = 99;
 	Digest(s, count, hash);
@@ -74,7 +76,7 @@ TEST(SimHostedResyncTable, ReplaceWithEmptyClearsTable)
 TEST(SimHostedResyncTable, ReplaceRejectsNullArrayWithCount)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	Dia::CellLayers::Testing::LogCapture log("DebugServer");
 	EXPECT_FALSE(s.ReplaceSimHosted(nullptr, 3));
 	EXPECT_EQ(1u, log.Errors("null name array"));
@@ -86,7 +88,7 @@ TEST(SimHostedResyncTable, ReplaceRejectsNullArrayWithCount)
 TEST(SimHostedResyncTable, ReplaceRejectsEmptyNameAndLeavesTableIntact)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	uint32_t c0 = 0, h0 = 0;
 	Digest(s, c0, h0);
 
@@ -101,7 +103,7 @@ TEST(SimHostedResyncTable, ReplaceRejectsEmptyNameAndLeavesTableIntact)
 TEST(SimHostedResyncTable, ReplaceOverCapacityRejectsWholeSwapAndLeavesTableIntact)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	uint32_t c0 = 0, h0 = 0;
 	Digest(s, c0, h0);
 
@@ -116,7 +118,7 @@ TEST(SimHostedResyncTable, ReplaceOverCapacityRejectsWholeSwapAndLeavesTableInta
 	Digest(s, c1, h1);
 	EXPECT_EQ(c0, c1);
 	EXPECT_EQ(h0, h1);
-	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));   // still there
+	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("a"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));   // still there (kind conflict)
 
 	// Exactly 32 fits.
 	big.pop_back();
@@ -151,7 +153,7 @@ TEST(SimHostedResyncTable, DuplicatesDoNotCountTowardCapacity)
 TEST(SimHostedResyncTable, ReplaceRejectsNameAlreadyInQueryRegistry)
 {
 	DebugServer s;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	s.GetQueryRegistry().Register(StringCRC("local.q"), [](const Json::Value&) { return Json::Value(); });
 	ASSERT_TRUE(s.GetQueryRegistry().Has(StringCRC("local.q")));
 
@@ -174,12 +176,12 @@ TEST(SimHostedResyncTable, DigestOfEmptyTableIsZero)
 TEST(SimHostedResyncTable, DigestIsOrderIndependentAndMatchesMessageHelpers)
 {
 	DebugServer a, b;
-	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.one"), SimKind::Query));
-	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.two"), SimKind::Command));
-	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.three"), SimKind::Query));
-	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.three"), SimKind::Query));
-	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.one"), SimKind::Query));
-	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.two"), SimKind::Command));
+	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.one"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.two"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(a.RegisterSimHosted(StringCRC("x.three"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.three"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.one"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
+	ASSERT_TRUE(b.RegisterSimHosted(StringCRC("x.two"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));
 
 	uint32_t ca = 0, ha = 0, cb = 0, hb = 0;
 	a.GetSimHostedDigest(ca, ha);
@@ -194,9 +196,9 @@ TEST(SimHostedResyncTable, DigestChangesWithKindRegisterAndUnregister)
 {
 	DebugServer s;
 	uint32_t c = 0, h0 = 0, h1 = 0, h2 = 0;
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("q"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("q"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	s.GetSimHostedDigest(c, h0);
-	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("r"), SimKind::Query));
+	ASSERT_TRUE(s.RegisterSimHosted(StringCRC("r"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 	s.GetSimHostedDigest(c, h1);
 	EXPECT_EQ(2u, c);
 	EXPECT_NE(h0, h1);

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <Types/SimAnnounceTracker.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #include <cstdio>
 #include <cstring>
@@ -10,6 +11,11 @@ using Dia::DebugServer::SimKind;
 
 namespace
 {
+    const Dia::DebugServer::SimHelpStored* TestInfo()
+    {
+        static const Dia::DebugServer::SimHelpStored sInfo = Dia::DebugServer::Testing::MakeSimHelp();
+        return &sInfo;
+    }
     SimRegistration Reg(uint32_t seq, const char* name = "sim.a", SimRegistrationOp op = SimRegistrationOp::Register)
     {
         SimRegistration m;
@@ -192,14 +198,14 @@ TEST(SimAnnounceTracker, ResyncInstallsOnLastReplay)
 
     EXPECT_EQ(t.OnResyncBegin(Begin(20, 3), 10), SimAnnounceAction::None);
     EXPECT_TRUE(t.Staging());
-    EXPECT_EQ(t.OnReplay(Replay("sim.a"), 11), SimAnnounceAction::None);
-    EXPECT_EQ(t.OnReplay(Replay("sim.b", SimKind::Command), 12), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("sim.a"), TestInfo(), 11), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("sim.b", SimKind::Command), TestInfo(), 12), SimAnnounceAction::None);
     // Nothing signalled a table change before the last replay.
     EXPECT_FALSE(t.InSync());
     EXPECT_EQ(t.LastSeq(), 9u);
     EXPECT_EQ(t.ResyncsCompleted(), 0u);
 
-    EXPECT_EQ(t.OnReplay(Replay("sim.c"), 13), SimAnnounceAction::InstallSet);
+    EXPECT_EQ(t.OnReplay(Replay("sim.c"), TestInfo(), 13), SimAnnounceAction::InstallSet);
     EXPECT_TRUE(t.InSync());
     EXPECT_EQ(t.LastSeq(), 20u);
     EXPECT_EQ(t.ResyncsCompleted(), 1u);
@@ -239,7 +245,7 @@ TEST(SimAnnounceTracker, EmptyResyncInstallsImmediately)
 TEST(SimAnnounceTracker, ReplayWithoutStagingIgnored)
 {
     SimAnnounceTracker t;
-    EXPECT_EQ(t.OnReplay(Replay("sim.a"), 0), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("sim.a"), TestInfo(), 0), SimAnnounceAction::None);
     EXPECT_EQ(t.StagedCount(), 0u);
 }
 
@@ -247,8 +253,8 @@ TEST(SimAnnounceTracker, ExtraReplaysAfterCompletionIgnored)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(2, 1), 0);
-    EXPECT_EQ(t.OnReplay(Replay("sim.a"), 1), SimAnnounceAction::InstallSet);
-    EXPECT_EQ(t.OnReplay(Replay("sim.b"), 2), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("sim.a"), TestInfo(), 1), SimAnnounceAction::InstallSet);
+    EXPECT_EQ(t.OnReplay(Replay("sim.b"), TestInfo(), 2), SimAnnounceAction::None);
     EXPECT_EQ(t.ResyncsCompleted(), 1u);
 }
 
@@ -256,10 +262,10 @@ TEST(SimAnnounceTracker, DuplicateReplayNamesCountOnce)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(2, 2), 0);
-    EXPECT_EQ(t.OnReplay(Replay("sim.a"), 1), SimAnnounceAction::None);
-    EXPECT_EQ(t.OnReplay(Replay("sim.a", SimKind::Query), 2), SimAnnounceAction::None);   // dup: not counted
+    EXPECT_EQ(t.OnReplay(Replay("sim.a"), TestInfo(), 1), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("sim.a", SimKind::Query), TestInfo(), 2), SimAnnounceAction::None);   // dup: not counted
     EXPECT_EQ(t.StagedCount(), 1u);
-    EXPECT_EQ(t.OnReplay(Replay("sim.b"), 3), SimAnnounceAction::InstallSet);
+    EXPECT_EQ(t.OnReplay(Replay("sim.b"), TestInfo(), 3), SimAnnounceAction::InstallSet);
     EXPECT_EQ(t.StagedCount(), 2u);
 }
 
@@ -267,18 +273,18 @@ TEST(SimAnnounceTracker, SameNameDifferentKindAreDistinct)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(2, 2), 0);
-    t.OnReplay(Replay("sim.a", SimKind::Query), 1);
-    EXPECT_EQ(t.OnReplay(Replay("sim.a", SimKind::Command), 2), SimAnnounceAction::InstallSet);
+    t.OnReplay(Replay("sim.a", SimKind::Query), TestInfo(), 1);
+    EXPECT_EQ(t.OnReplay(Replay("sim.a", SimKind::Command), TestInfo(), 2), SimAnnounceAction::InstallSet);
 }
 
 TEST(SimAnnounceTracker, SecondBeginRestartsStaging)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(2, 2), 0);
-    t.OnReplay(Replay("old"), 1);
+    t.OnReplay(Replay("old"), TestInfo(), 1);
     EXPECT_EQ(t.OnResyncBegin(Begin(5, 1), 100), SimAnnounceAction::None);
     EXPECT_EQ(t.StagedCount(), 0u);
-    EXPECT_EQ(t.OnReplay(Replay("new"), 101), SimAnnounceAction::InstallSet);
+    EXPECT_EQ(t.OnReplay(Replay("new"), TestInfo(), 101), SimAnnounceAction::InstallSet);
     EXPECT_EQ(t.LastSeq(), 5u);
     EXPECT_STREQ(t.StagedName(0), "new");
     // Timeout window measured from the restart.
@@ -306,7 +312,7 @@ TEST(SimAnnounceTracker, OversizedBeginDoesNotDisturbActiveStaging)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(5, 2), 0);
-    t.OnReplay(Replay("a"), 1);
+    t.OnReplay(Replay("a"), TestInfo(), 1);
     EXPECT_EQ(t.OnResyncBegin(Begin(6, kSimAnnounceMaxStaged + 1), 2), SimAnnounceAction::None);
     EXPECT_EQ(t.StagedCount(), 1u);
 }
@@ -317,7 +323,7 @@ TEST(SimAnnounceTracker, WrongOpsIgnoredByBeginAndReplay)
     EXPECT_EQ(t.OnResyncBegin(Reg(1), 0), SimAnnounceAction::None);
     EXPECT_FALSE(t.Staging());
     t.OnResyncBegin(Begin(2, 1), 0);
-    EXPECT_EQ(t.OnReplay(Reg(1), 1), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Reg(1), TestInfo(), 1), SimAnnounceAction::None);
     EXPECT_EQ(t.StagedCount(), 0u);
 }
 
@@ -327,8 +333,8 @@ TEST(SimAnnounceTracker, LostReplayTimesOutAndRecovers)
     t.OnRegistration(Reg(1), 0);
     t.OnDigest(Digest(4, 3, 7), 1, 1, 100);   // request #1
     t.OnResyncBegin(Begin(4, 3), 110);
-    t.OnReplay(Replay("a"), 111);
-    t.OnReplay(Replay("b"), 112);             // third replay lost
+    t.OnReplay(Replay("a"), TestInfo(), 111);
+    t.OnReplay(Replay("b"), TestInfo(), 112);             // third replay lost
 
     EXPECT_EQ(t.Tick(1000), SimAnnounceAction::None);   // 890 ms after start
     EXPECT_EQ(t.Tick(1110), SimAnnounceAction::DiscardStaging);
@@ -343,9 +349,9 @@ TEST(SimAnnounceTracker, LostReplayTimesOutAndRecovers)
     // Next digest mismatch requests again, and a fresh resync completes.
     EXPECT_EQ(t.OnDigest(Digest(4, 3, 7), 1, 1, 1300), SimAnnounceAction::RequestResync);
     EXPECT_EQ(t.OnResyncBegin(Begin(4, 3), 1310), SimAnnounceAction::None);
-    t.OnReplay(Replay("a"), 1311);
-    t.OnReplay(Replay("b"), 1312);
-    EXPECT_EQ(t.OnReplay(Replay("c"), 1313), SimAnnounceAction::InstallSet);
+    t.OnReplay(Replay("a"), TestInfo(), 1311);
+    t.OnReplay(Replay("b"), TestInfo(), 1312);
+    EXPECT_EQ(t.OnReplay(Replay("c"), TestInfo(), 1313), SimAnnounceAction::InstallSet);
     EXPECT_TRUE(t.InSync());
     EXPECT_EQ(t.LastSeq(), 4u);
 }
@@ -360,7 +366,7 @@ TEST(SimAnnounceTracker, LateReplayAfterTimeoutDiscards)
 {
     SimAnnounceTracker t;
     t.OnResyncBegin(Begin(4, 1), 0);
-    EXPECT_EQ(t.OnReplay(Replay("a"), 1000), SimAnnounceAction::DiscardStaging);
+    EXPECT_EQ(t.OnReplay(Replay("a"), TestInfo(), 1000), SimAnnounceAction::DiscardStaging);
     EXPECT_EQ(t.ResyncTimeouts(), 1u);
     EXPECT_EQ(t.ResyncsCompleted(), 0u);
 }
@@ -392,4 +398,43 @@ TEST(SimAnnounceTracker, DigestAcrossWrapMatches)
     Seed(t, 0xFFFFFFFFu);
     t.OnRegistration(Reg(0u), 0);
     EXPECT_EQ(t.OnDigest(Digest(0u, 1, 9), 1, 9, 0), SimAnnounceAction::None);
+}
+
+// ---- Sim-Hosted Command Help, Task 3: staged entries carry their help ----
+
+TEST(SimAnnounceTracker, StagedEntriesCarryTheirOwnHelp)
+{
+    using Dia::DebugServer::Testing::MakeSimHelp;
+    SimAnnounceTracker t;
+    t.OnResyncBegin(Begin(4, 2), 0);
+    const Dia::DebugServer::SimHelpStored a = MakeSimHelp("help of a");
+    const Dia::DebugServer::SimHelpStored b = MakeSimHelp("help of b");
+    EXPECT_EQ(t.OnReplay(Replay("a"), &a, 1), SimAnnounceAction::None);
+    EXPECT_EQ(t.OnReplay(Replay("b"), &b, 2), SimAnnounceAction::InstallSet);
+    ASSERT_EQ(t.StagedCount(), 2u);
+    EXPECT_STREQ(t.StagedHelp(0).description, "help of a");
+    EXPECT_STREQ(t.StagedHelp(1).description, "help of b");
+}
+
+TEST(SimAnnounceTracker, DuplicateReplayKeepsTheFirstHelp)
+{
+    using Dia::DebugServer::Testing::MakeSimHelp;
+    SimAnnounceTracker t;
+    t.OnResyncBegin(Begin(4, 2), 0);
+    const Dia::DebugServer::SimHelpStored first = MakeSimHelp("first");
+    const Dia::DebugServer::SimHelpStored dup   = MakeSimHelp("duplicate");
+    t.OnReplay(Replay("a"), &first, 1);
+    EXPECT_EQ(t.OnReplay(Replay("a"), &dup, 2), SimAnnounceAction::None);
+    EXPECT_EQ(t.StagedCount(), 1u);
+    EXPECT_STREQ(t.StagedHelp(0).description, "first");
+}
+
+TEST(SimAnnounceTracker, ReplayWithoutInfoIsIgnoredAndNotCounted)
+{
+    SimAnnounceTracker t;
+    t.OnResyncBegin(Begin(4, 1), 0);
+    EXPECT_EQ(t.OnReplay(Replay("a"), nullptr, 1), SimAnnounceAction::None);
+    EXPECT_EQ(t.StagedCount(), 0u);
+    EXPECT_TRUE(t.Staging());
+    EXPECT_EQ(t.OnReplay(Replay("a"), TestInfo(), 2), SimAnnounceAction::InstallSet);
 }

@@ -4,6 +4,7 @@
 
 #include <Modules/SimQueryHostModule.h>
 #include <Types/SimAnnounceTracker.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 #include <Types/SimRegistrationMessage.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -24,6 +25,12 @@ namespace
 {
     using Cluiche::AppFlow::SimAnnounceAction;
     using Cluiche::AppFlow::SimAnnounceTracker;
+    const Dia::DebugServer::SimHelpStored* TestInfo()
+    {
+        static const Dia::DebugServer::SimHelpStored sInfo = Dia::DebugServer::Testing::MakeSimHelp();
+        return &sInfo;
+    }
+
     using Cluiche::AppFlow::SimQueryHostModule;
     using Cluiche::AppFlow::SimRegistration;
     using Cluiche::AppFlow::SimRegistrationOp;
@@ -431,7 +438,7 @@ TEST(SimQueryHostResync, DroppedAnnouncementIsRepairedByDigestThenResync)
                 a = tracker.OnResyncBegin(r, nowMs);
                 break;
             case SimRegistrationOp::Replay:
-                a = tracker.OnReplay(r, nowMs);
+                a = tracker.OnReplay(r, TestInfo(), nowMs);
                 break;
             default:
                 FAIL() << "unexpected op";

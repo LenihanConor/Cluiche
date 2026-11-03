@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #ifdef DIA_DEBUG
 
@@ -181,7 +182,7 @@ namespace
 					{
 					case Cluiche::AppFlow::SimRegistrationOp::NotRegistration: server.CompleteSimReply(reply); ++completed; break;
 					case Cluiche::AppFlow::SimRegistrationOp::Register:
-						if (server.RegisterSimHosted(StringCRC(reg.name), reg.kind)) registered.push_back(reg.name);
+						if (server.RegisterSimHosted(StringCRC(reg.name), reg.kind, Dia::DebugServer::Testing::DefaultSimHelp())) registered.push_back(reg.name);
 						break;
 					case Cluiche::AppFlow::SimRegistrationOp::Unregister:
 						server.UnregisterSimHosted(StringCRC(reg.name));

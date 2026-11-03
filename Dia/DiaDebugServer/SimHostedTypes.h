@@ -1,6 +1,8 @@
 #ifndef DIA_DEBUG_SERVER_SIM_HOSTED_TYPES_H
 #define DIA_DEBUG_SERVER_SIM_HOSTED_TYPES_H
 
+#include <DiaCore/CRC/StringCRC.h>
+
 #include <cstdint>
 #include <type_traits>
 
@@ -46,11 +48,24 @@ namespace Dia
 		// Max length (excluding NUL) of a sim-hosted name carried in SimHostedName.
 		static constexpr uint32_t kSimHostedNameMax = 96;
 
-		// One (name, kind) entry for DebugServer::ReplaceSimHosted.  Fixed storage, no heap.
+		struct SimHelpStored;   // SimHelpInfo.h
+
+		// One (name, kind, help) entry for DebugServer::ReplaceSimHosted.  'help' points at the caller's stored help
+		// (~7 KB, required, copied by the call) so a 32-entry array stays small on the caller's stack.
 		struct SimHostedName
 		{
-			char    name[kSimHostedNameMax];
-			SimKind kind;
+			char                 name[kSimHostedNameMax];
+			SimKind              kind;
+			const SimHelpStored* help;
+		};
+
+		// Read-only view of one sim-hosted catalogue entry (DebugServer::GetSimHostedEntry).  'help' points into the
+		// DebugServer and is valid until the next Register/Unregister/ReplaceSimHosted call.
+		struct SimHostedEntryView
+		{
+			Dia::Core::StringCRC name;
+			SimKind              kind = SimKind::Query;
+			const SimHelpStored* help = nullptr;
 		};
 
 		// Per-entry hash of (name, kind): FNV-1a over the name bytes, then the kind value, then an avalanche.

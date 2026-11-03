@@ -1091,6 +1091,7 @@
     <ClCompile Include="CluicheGameBaseline\TestSimAnnounceResyncIntegration.cpp" />
     <ClCompile Include="DebugServer\TestSimHelpInfo.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestSimRegistrationHelp.cpp" />
+    <ClCompile Include="DebugServer\TestSimHostedCatalogue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

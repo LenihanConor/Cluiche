@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaDebugServer/Testing/SimHelpTesting.h>
 
 #ifdef DIA_DEBUG
 
@@ -210,7 +211,7 @@ TEST(SimHostedModules, MatchingDigestPostsNothingMismatchPostsResync)
 TEST(SimHostedModules, ResyncReplayCompletionSwapsTableAndLogsInfo)
 {
     std::unique_ptr<TestableHostModule> m(new TestableHostModule());
-    ASSERT_TRUE(m->GetServer()->RegisterSimHosted(StringCRC("stale.a"), SimKind::Query));
+    ASSERT_TRUE(m->GetServer()->RegisterSimHosted(StringCRC("stale.a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
 
     ReplyBox box;
     LogCapture log("DebugServer");
@@ -238,7 +239,7 @@ TEST(SimHostedModules, ResyncReplayCompletionSwapsTableAndLogsInfo)
 TEST(SimHostedModules, StalledResyncStagingIsDiscardedByTickAndLiveTableKept)
 {
     std::unique_ptr<TestableHostModule> m(new TestableHostModule());
-    ASSERT_TRUE(m->GetServer()->RegisterSimHosted(StringCRC("live.a"), SimKind::Query));
+    ASSERT_TRUE(m->GetServer()->RegisterSimHosted(StringCRC("live.a"), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp()));
     ReplyBox box;
     ASSERT_TRUE(Cluiche::AppFlow::BuildSimResyncBeginReply(4, 3, *box));
     m->HandleSimReply(*box, 3000);

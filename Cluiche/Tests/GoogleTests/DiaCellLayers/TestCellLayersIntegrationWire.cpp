@@ -159,7 +159,7 @@ namespace
 			ASSERT_TRUE(Cluiche::AppFlow::BuildSimRegistrationReply(op, name, kind, ++mAnnounceSeq, TestHelp(), msg)) << name;
 			const Cluiche::AppFlow::SimRegistration reg = Cluiche::AppFlow::ParseSimRegistrationReply(msg);
 			if (reg.op == Cluiche::AppFlow::SimRegistrationOp::Register)
-				EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC(reg.name), reg.kind)) << name;
+				EXPECT_TRUE(mServer.RegisterSimHosted(StringCRC(reg.name), reg.kind, *TestHelp())) << name;
 			else if (reg.op == Cluiche::AppFlow::SimRegistrationOp::Unregister)
 				mServer.UnregisterSimHosted(StringCRC(reg.name));
 			else

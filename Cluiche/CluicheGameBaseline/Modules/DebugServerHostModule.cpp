@@ -41,6 +41,7 @@ const Dia::Core::StringCRC DebugServerHostModule::kTypeId("DebugServerHostModule
 
 DebugServerHostModule::DebugServerHostModule(const Dia::Core::StringCRC& instanceId)
     : Dia::ApplicationFlow::MainModule(instanceId)
+    , mParsedHelp(new Dia::DebugServer::SimHelpStored())
 {
 }
 
@@ -281,12 +282,14 @@ void DebugServerHostModule::RequestResync()
 void DebugServerHostModule::InstallStagedSet()
 {
     const uint32_t count = mAnnounce.StagedCount();
+    // The entries point at the tracker's staged help; ReplaceSimHosted copies it into the catalogue.
     std::vector<Dia::DebugServer::SimHostedName> names(count);
     for (uint32_t i = 0; i < count; ++i)
     {
         std::memset(&names[i], 0, sizeof(names[i]));
         std::strncpy(names[i].name, mAnnounce.StagedName(i), sizeof(names[i].name) - 1);
         names[i].kind = mAnnounce.StagedKind(i);
+        names[i].help = &mAnnounce.StagedHelp(i);
     }
     if (mServer.ReplaceSimHosted(names.data(), count))
         DIA_LOG_INFO("DebugServer", "DebugServerHostModule: sim announcement resync complete, %u names", count);
@@ -333,7 +336,7 @@ void DebugServerHostModule::PublishAnnounceMetrics()
 
 void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs, unsigned int senderCrc)
 {
-    const SimRegistration reg = ParseSimRegistrationReply(reply);
+    const SimRegistration reg = ParseSimRegistrationReply(reply, mParsedHelp.get());
     if (reg.op != SimRegistrationOp::NotRegistration && senderCrc != 0)
     {
         if (mAnnounceOwnerCrc == 0)
@@ -367,7 +370,7 @@ void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent
             if (action == SimAnnounceAction::Apply || action == SimAnnounceAction::ApplyAndRequestResync)
             {
                 if (reg.op == SimRegistrationOp::Register)
-                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind);
+                    mServer.RegisterSimHosted(Dia::Core::StringCRC(reg.name), reg.kind, *mParsedHelp);
                 else
                     mServer.UnregisterSimHosted(Dia::Core::StringCRC(reg.name));
             }
@@ -395,7 +398,7 @@ void DebugServerHostModule::HandleSimReply(const Dia::DebugServer::SimReplyEvent
             break;
         case SimRegistrationOp::Replay:
         {
-            const SimAnnounceAction action = mAnnounce.OnReplay(reg, nowMs);
+            const SimAnnounceAction action = mAnnounce.OnReplay(reg, mParsedHelp.get(), nowMs);
             if (action == SimAnnounceAction::InstallSet)
                 InstallStagedSet();
             else if (action == SimAnnounceAction::DiscardStaging)

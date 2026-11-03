@@ -107,9 +107,9 @@ public:
         return SimAnnounceAction::None;
     }
 
-    SimAnnounceAction OnReplay(const SimRegistration& msg, uint64_t nowMs)
+    SimAnnounceAction OnReplay(const SimRegistration& msg, const Dia::DebugServer::SimHelpStored* info, uint64_t nowMs)
     {
-        if (msg.op != SimRegistrationOp::Replay || !mStagingActive)
+        if (msg.op != SimRegistrationOp::Replay || !mStagingActive || info == nullptr)
             return SimAnnounceAction::None;
         if (Expired(nowMs))
             return Discard();
@@ -119,7 +119,7 @@ public:
             if (e.kind == msg.kind && e.name == msg.name)
                 return SimAnnounceAction::None;   // duplicate: not counted
         }
-        mStaged.push_back(Entry{ std::string(msg.name), msg.kind });
+        mStaged.push_back(Entry{ std::string(msg.name), msg.kind, *info });
         if (mStaged.size() >= mExpected)
             return Complete();
         return SimAnnounceAction::None;
@@ -148,6 +148,7 @@ public:
     uint32_t                  StagedCount() const { return static_cast<uint32_t>(mStaged.size()); }
     const char*               StagedName(uint32_t i) const { return mStaged[i].name.c_str(); }
     Dia::DebugServer::SimKind StagedKind(uint32_t i) const { return mStaged[i].kind; }
+    const Dia::DebugServer::SimHelpStored& StagedHelp(uint32_t i) const { return mStaged[i].help; }
 
     uint32_t AnnounceGaps() const      { return mAnnounceGaps; }
     uint32_t DigestMismatches() const  { return mDigestMismatches; }
@@ -162,6 +163,7 @@ private:
     {
         std::string               name;
         Dia::DebugServer::SimKind kind;
+        Dia::DebugServer::SimHelpStored help;   // ~7 KB per staged name; the vector grows only with replays received
     };
 
     bool TryRequest(uint64_t nowMs)

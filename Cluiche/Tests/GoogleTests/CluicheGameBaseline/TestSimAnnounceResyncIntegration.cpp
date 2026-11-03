@@ -717,4 +717,102 @@ TEST(SimAnnounceResyncIntegration, ControlWordsAreNotClientCommands)
 		EXPECT_FALSE(r.sent[i].msg.command_response().success());
 }
 
+
+// ---- Sim-Hosted Command Help, Task 3: the Main-side catalogue through the real host modules ----
+
+namespace
+{
+	void AddWithHelp(Rig& r, const char* name, const char* description, bool command = false)
+	{
+		Dia::DebugServer::SimHelpInfo info{ description };
+		info.category = "it.cat";
+		ASSERT_TRUE(command ? r.sim.RegisterCommand(name, info, &Ok) : r.sim.RegisterQuery(name, info, &Ok)) << name;
+	}
+
+	std::string HelpOf(Rig& r, const char* name)
+	{
+		const Dia::DebugServer::SimHelpStored* h = r.main.GetServer()->FindSimHostedHelp(StringCRC(name));
+		return h != nullptr ? std::string(h->description) : std::string("<none>");
+	}
+}
+
+// AC 4 end to end: a register announced over the stream lands in the catalogue with its info.
+TEST(SimAnnounceResyncIntegration, RegisterWithInfoIsStoredInTheMainCatalogue)
+{
+	Rig r;
+	AddWithHelp(r, "it.one", "first help");
+	AddWithHelp(r, "it.two", "second help", true);
+	r.Step(3);
+	ASSERT_EQ(r.MainCount(), 2u);
+	EXPECT_EQ(HelpOf(r, "it.one"), "first help");
+	EXPECT_EQ(HelpOf(r, "it.two"), "second help");
+	EXPECT_STREQ(r.main.GetServer()->FindSimHostedHelp(StringCRC("it.one"))->category, "it.cat");
+	Dia::DebugServer::SimHostedEntryView view;
+	ASSERT_TRUE(r.main.GetServer()->GetSimHostedEntry(1, view));
+	EXPECT_EQ(view.kind, SimKind::Command);
+}
+
+// AC 4 + resync: a lost register is repaired by the resync and its help arrives intact (replay carries info).
+TEST(SimAnnounceResyncIntegration, LostRegisterIsRepairedByResyncWithItsHelpIntact)
+{
+	Rig r;
+	SyncedStart(r, 2);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "it.lost") == 0; };
+	AddWithHelp(r, "it.lost", "help of the lost one");
+	r.drop = nullptr;
+	AddWithHelp(r, "it.after", "help after the gap");
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 10));
+
+	EXPECT_EQ(r.MainCount(), 4u);
+	EXPECT_EQ(HelpOf(r, "it.lost"), "help of the lost one");
+	EXPECT_EQ(HelpOf(r, "it.after"), "help after the gap");
+	EXPECT_EQ(HelpOf(r, "it.n0"), "test help");
+}
+
+// AC 12 end to end: unregister on the Sim side (stage teardown) removes the help on Main.
+TEST(SimAnnounceResyncIntegration, UnregisterOnSimRemovesTheCatalogueEntryOnMain)
+{
+	Rig r;
+	AddWithHelp(r, "it.gone", "going away");
+	AddWithHelp(r, "it.stay", "staying");
+	r.Step(3);
+	ASSERT_EQ(HelpOf(r, "it.gone"), "going away");
+	r.sim.UnregisterQuery("it.gone");
+	r.Step(3);
+	EXPECT_EQ(HelpOf(r, "it.gone"), "<none>");
+	EXPECT_EQ(HelpOf(r, "it.stay"), "staying");
+	EXPECT_EQ(r.MainCount(), 1u);
+}
+
+// AC 12 through the resync path: a lost unregister leaves a stale entry; the resync removes the entry and its help.
+TEST(SimAnnounceResyncIntegration, LostUnregisterStaleHelpIsRemovedByResync)
+{
+	Rig r;
+	AddWithHelp(r, "it.stale", "stale help");
+	AddWithHelp(r, "it.live", "live help");
+	r.Step(3);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Unregister; };
+	r.sim.UnregisterQuery("it.stale");
+	r.drop = nullptr;
+	r.Step(2);
+	ASSERT_EQ(HelpOf(r, "it.stale"), "stale help") << "Main still holds the stale entry";
+	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 60));
+	EXPECT_EQ(HelpOf(r, "it.stale"), "<none>");
+	EXPECT_EQ(HelpOf(r, "it.live"), "live help");
+}
+
+// A re-registration (stage restart without a clean unregister seen by Main) replaces the help.
+TEST(SimAnnounceResyncIntegration, ReRegisteredNameReplacesItsHelpOnMain)
+{
+	Rig r;
+	AddWithHelp(r, "it.again", "version one");
+	r.Step(3);
+	ASSERT_EQ(HelpOf(r, "it.again"), "version one");
+	r.sim.UnregisterQuery("it.again");
+	AddWithHelp(r, "it.again", "version two");
+	r.Step(3);
+	EXPECT_EQ(HelpOf(r, "it.again"), "version two");
+	EXPECT_EQ(r.MainCount(), 1u);
+}
+
 #endif // DIA_DEBUG
