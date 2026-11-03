@@ -259,6 +259,9 @@
     <Filter Include="DiaCellLayers">
       <UniqueIdentifier>{2a8c12fd-53d0-4060-98ae-92cc64482f64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaCellHistory">
+      <UniqueIdentifier>{89118f48-3ea6-4469-8179-8d412b2da638}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -2429,6 +2432,9 @@
     </ClCompile>
     <ClCompile Include="CluicheTest\CellLayersHoverOverrideTests.cpp">
       <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryConfig.cpp">
+      <Filter>DiaCellHistory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
