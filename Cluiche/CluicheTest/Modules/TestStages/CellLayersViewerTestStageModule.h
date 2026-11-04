@@ -270,6 +270,9 @@ private:
     Dia::Core::UniquePtr<Dia::CellHistory::ExportObservation>      mExportObservation;
     Dia::Core::UniquePtr<Dia::CellHistory::HistoryExportCommands>  mExportCommands;
     bool mExportCommandsRegistered = false;
+    Dia::Core::UniquePtr<Dia::CellHistory::QueryObservation>       mQueryObservation;
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryQueries>         mHistoryQueries;
+    bool mHistoryQueriesRegistered = false;
     char mWorldName[64] = {};
     // Live topics (DiaCellHistory Feature 5): cells.history.aggregates / .events. Ticked on SimPU after sampling and published through
     // DebugServer::PublishTopicOrdered (any-thread, FIFO, drop-newest) - the server pointer comes from the "DebugServerService" stream.

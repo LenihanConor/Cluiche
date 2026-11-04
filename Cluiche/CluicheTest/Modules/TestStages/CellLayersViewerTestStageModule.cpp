@@ -839,6 +839,16 @@ void CellLayersViewerTestStageModule::BuildSnapshots(Dia::CellHistory::CellHisto
     if (!mExportCommandsRegistered)
         DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.export registration failed");
 
+    // cells.history.meta/aggregates/events/cells: catch-up queries, every reply chunked under the 16 KB sim-hosted limit.
+    mQueryObservation = Dia::Core::MakeUnique<QueryObservation>();
+    mHistoryQueries = Dia::Core::MakeUnique<HistoryQueries>(recorder);
+    mHistoryQueries->SetAppName("CluicheTest");
+    mHistoryQueries->SetSnapshots(mSnapshotManager.Get());
+    mHistoryQueries->SetObservation(mQueryObservation.Get());
+    mHistoryQueriesRegistered = mHistoryQueries->Register(*mHistoryRegistrar);
+    if (!mHistoryQueriesRegistered)
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.meta/aggregates/events/cells registration failed");
+
     BuildHistoryTopics(recorder);
 }
 
@@ -886,6 +896,11 @@ void CellLayersViewerTestStageModule::TeardownSnapshots()
     // Export commands (they borrow the manager), then the snapshot commands (their handlers capture the manager and
     // store), then manager, observation, store. The recorder may already be withdrawn, so its world provider is not touched
     // (it points at mWorldName, which lives as long as the stage).
+    if (mHistoryQueries && mHistoryQueriesRegistered && mHistoryRegistrar)
+        mHistoryQueries->Unregister(*mHistoryRegistrar);
+    mHistoryQueriesRegistered = false;
+    mHistoryQueries.Reset();
+    mQueryObservation.Reset();
     if (mExportCommands && mExportCommandsRegistered && mHistoryRegistrar)
         mExportCommands->Unregister(*mHistoryRegistrar);
     mExportCommandsRegistered = false;
