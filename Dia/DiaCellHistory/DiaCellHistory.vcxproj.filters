@@ -10,6 +10,9 @@
     <Filter Include="Dia">
       <UniqueIdentifier>{bf6304fd-201c-4f7a-bc8e-d0be8b9acbef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ScrubObservation">
+      <UniqueIdentifier>{6597dd55-1887-4697-b762-94bb1e493177}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiaCellHistory.h" />
@@ -40,6 +43,9 @@
     <ClInclude Include="HistoryViewCommands.h" />
     <ClInclude Include="HistoryViewStatus.h" />
     <ClInclude Include="TimelineModel.h" />
+    <ClInclude Include="ScrubObservation\ScrubObservation.h">
+      <Filter>ScrubObservation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -58,6 +64,9 @@
     <ClCompile Include="HistoryViewCommands.cpp" />
     <ClCompile Include="HistoryViewStatus.cpp" />
     <ClCompile Include="TimelineModel.cpp" />
+    <ClCompile Include="ScrubObservation\ScrubObservation.cpp">
+      <Filter>ScrubObservation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

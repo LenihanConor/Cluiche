@@ -1,6 +1,7 @@
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <cstdio>
 
 namespace Dia::CellHistory
@@ -17,6 +18,8 @@ namespace Dia::CellHistory
 
 	bool HistoryViewState::ViewSample(uint32_t sample, ViewResult& out)
 	{
+		DIA_PROFILE_SCOPE("cellhistory.view_sample", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
 		out.mOk = false;
 		out.mError[0] = '\0';
 		const uint32_t count = mRecorder.SampleCount();
@@ -42,6 +45,8 @@ namespace Dia::CellHistory
 
 	void HistoryViewState::GoLive()
 	{
+		DIA_PROFILE_SCOPE("cellhistory.go_live", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
 		if (mMode == ViewMode::Live)
 		{
 			return;

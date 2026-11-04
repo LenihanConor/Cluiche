@@ -3,6 +3,7 @@
 #include <DiaValueSchema/RampData.h>
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <chrono>
 #include <cmath>
@@ -122,6 +123,8 @@ namespace Dia::CellHistory
 	void TimelineModel::Build(const CellHistoryRecorder& recorder, const HistoryViewState& view, Dia::Core::StringCRC baseLayer,
 		const Dia::ValueSchema::ValueSchemaService* schema, const HistoryConfig* config, uint32_t bucketCount)
 	{
+		DIA_PROFILE_SCOPE("cellhistory.timeline_build", ::Dia::Observation::Profile::Category::kDiaGraphics);
+
 		const auto t0 = std::chrono::steady_clock::now();
 
 		const uint32_t count = recorder.SampleCount();
