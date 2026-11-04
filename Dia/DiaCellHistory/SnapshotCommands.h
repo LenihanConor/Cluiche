@@ -36,6 +36,7 @@ namespace Dia::CellHistory
 	class ISnapshotStore;
 	class SnapshotManager;
 	class SnapshotObservation;
+	class SnapshotCellCache;
 
 	class SnapshotCommands
 	{
@@ -53,6 +54,9 @@ namespace Dia::CellHistory
 
 		// Optional metrics (borrowed; null = none): delete failures, queries served, and the ready-snapshot count after a list scan.
 		void SetObservation(SnapshotObservation* obs) { mObs = obs; }
+
+		// Optional, borrowed: invalidated (Invalidate(name)) when a snapshot is deleted, so a delta never reads a deleted snapshot stale.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mCache = cache; }
 
 		Json::Value Take(const Json::Value& args);
 		Json::Value Restore(const Json::Value& args);
@@ -74,6 +78,7 @@ namespace Dia::CellHistory
 		SnapshotManager&			mManager;
 		ISnapshotStore&				mStore;
 		SnapshotObservation*		mObs = nullptr;
+		SnapshotCellCache*			mCache = nullptr;
 		static constexpr uint32_t	kOrphanMemory = 32;
 		char						mOrphansWarned[kOrphanMemory][33] = {};		// orphan names already warned about (once per name per lifetime)
 		uint32_t					mOrphanCount = 0;

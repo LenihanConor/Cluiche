@@ -138,8 +138,11 @@ namespace Dia::CellHistory
 		uint32_t					SparklineCount() const { return mSpark.Size(); }
 		const TimelineSparkPoint&	SparklinePoint(uint32_t i) const { return mSpark[i]; }
 
-		// Delta mode (Feature 4): the A/B markers. Samples for `sample:` sides; `now` and `snapshot:` sides have none (a snapshot
-		// marker lands with snapshot support). Captured by Build; DeltaActive() is false outside delta mode.
+		// Optional, borrowed: lets a `snapshot:<name>` delta side show its marker (the snapshot's header sample). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mSnapshotCache = cache; }
+
+		// Delta mode (Feature 4): the A/B markers. Samples for `sample:` sides; a `snapshot:` side has the snapshot's header sample
+		// when a cache is set and the snapshot loads, else none; `now` has none. Captured by Build; DeltaActive() is false outside delta mode.
 		bool					DeltaActive() const { return mDeltaActive; }
 		bool					DeltaAHasSample() const { return mDeltaAHasSample; }
 		bool					DeltaBHasSample() const { return mDeltaBHasSample; }
@@ -162,6 +165,7 @@ namespace Dia::CellHistory
 		CellHistoryRecorder::StatusGap mEventGaps[CellHistoryRecorder::HistoryStatus::kMaxGaps];
 		uint32_t		mAggregateGapCount = 0, mCellGapCount = 0, mEventGapCount = 0;
 		TimelineSpan	mPreWindow;
+		SnapshotCellCache*	mSnapshotCache = nullptr;
 		bool			mDeltaActive = false;
 		bool			mDeltaAHasSample = false, mDeltaBHasSample = false;
 		uint32_t		mDeltaASample = 0, mDeltaBSample = 0;

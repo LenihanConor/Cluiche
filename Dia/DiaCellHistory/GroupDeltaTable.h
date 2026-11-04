@@ -83,6 +83,9 @@ namespace Dia::CellHistory
 		void Build(const Dia::CellLayers::CellLayerDesc& base, const DeltaSpec& delta, const Dia::CellLayers::CellLayerDesc* groupLayers,
 			uint32_t groupLayerCount, const uint8_t* selectedMask, GroupDeltaTable& out);
 
+		// Optional, borrowed: where snapshot sides are read from (see SideReader). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mReader.SetSnapshotCache(cache); }
+
 		// Re-arms the once-per-builder live-fallback warning (call on a new delta).
 		void ResetWarnings() { mWarned = false; }
 

@@ -13,6 +13,9 @@
     <Filter Include="ScrubObservation">
       <UniqueIdentifier>{6597dd55-1887-4697-b762-94bb1e493177}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaCellHistory">
+      <UniqueIdentifier>{8b322efa-387f-4a34-9f38-de07ebe8b40d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DiaCellHistory.h" />
@@ -65,6 +68,9 @@
     <ClInclude Include="SnapshotManager.h" />
     <ClInclude Include="SnapshotCommands.h" />
     <ClInclude Include="SnapshotObservation.h" />
+    <ClInclude Include="SnapshotCellCache.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -101,6 +107,9 @@
     <ClCompile Include="SnapshotManager.cpp" />
     <ClCompile Include="SnapshotCommands.cpp" />
     <ClCompile Include="SnapshotObservation.cpp" />
+    <ClCompile Include="SnapshotCellCache.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

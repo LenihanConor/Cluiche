@@ -33,6 +33,7 @@ namespace Dia::CellHistory
 	class CellHistoryRecorder;
 	class ISnapshotStore;
 	class SnapshotObservation;
+	class SnapshotCellCache;
 
 	struct TakeResult
 	{
@@ -101,6 +102,9 @@ namespace Dia::CellHistory
 		void SetTimeProvider(UnixTimeFn fn, void* user) { mTimeFn = fn; mTimeUser = user; }	// null fn = system clock
 		void SetResetSeedProvider(SeedFn fn, void* user) { mSeedFn = fn; mSeedUser = user; }	// null fn = default
 		void SetViewState(HistoryViewState* view) { mView = view; }		// optional; borrowed
+		// Optional, borrowed: invalidated (Invalidate(name)) when a take completes and writes the cell file, so an overwritten
+		// snapshot is never read stale by a delta.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mCache = cache; }
 		void SetWorld(const char* world);		// copied (truncated to 63 chars); null clears
 
 		// Optional metrics (borrowed; null = none). Failures counted: every refused/failed take, restore and store/file failure.
@@ -144,6 +148,7 @@ namespace Dia::CellHistory
 		void*										mSeedUser = nullptr;
 		uint64_t									mResetCounter = 0;
 		HistoryViewState*							mView = nullptr;
+		SnapshotCellCache*							mCache = nullptr;
 		SnapshotHeader								mRestoreHeader;
 		char										mRestoreName[33] = {};
 		RestoreOutcome								mLastRestore;

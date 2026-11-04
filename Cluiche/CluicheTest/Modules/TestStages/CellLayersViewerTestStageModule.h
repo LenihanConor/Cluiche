@@ -32,6 +32,7 @@
 #include <DiaCellLayers/DebugServerTopicSink.h>
 #include <DiaCellLayers/CellPicker.h>
 #include <DiaCellHistory/CellHistoryDomain.h>
+#include <DiaCellHistory/SnapshotCellCache.h>
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/SnapshotCommands.h>
 #include <DiaCellHistory/SnapshotObservation.h>
@@ -253,6 +254,7 @@ private:
     // Snapshots (DiaCellHistory Feature 3): stage-local store saving the animated state (temperature version, sample phase) to
     // out/CluicheTest/snapshots/<name>.state. Its queued request runs at the start of OnUpdate (the Sim frame boundary).
     Dia::Core::UniquePtr<CellLayersSnapshotStore>                  mSnapshotStore;
+    Dia::Core::UniquePtr<Dia::CellHistory::SnapshotCellCache>      mSnapshotCache;   // 2-entry LRU of cell files for snapshot delta sides
     Dia::Core::UniquePtr<Dia::CellHistory::SnapshotManager>        mSnapshotManager;
     Dia::Core::UniquePtr<Dia::CellHistory::SnapshotObservation>    mSnapshotObservation;
     Dia::Core::UniquePtr<Dia::CellHistory::SnapshotCommands>       mSnapshotCommands;

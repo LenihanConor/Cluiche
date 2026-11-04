@@ -5,6 +5,8 @@
 #include <DiaCellHistory/HistoryConfig.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/SideReader.h>
+#include <DiaCellHistory/SnapshotCellCache.h>
+#include <DiaCellHistory/SnapshotNaming.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -300,8 +302,31 @@ namespace Dia::CellHistory
 		SideParseResult pe;
 		if (!ParseSide(args["a"].asString().c_str(), a, pe)) { return Fail(kDeltaName, pe.error); }
 		if (!ParseSide(args["b"].asString().c_str(), b, pe)) { return Fail(kDeltaName, pe.error); }
-		// Snapshot sides parse but cannot be entered until snapshot support lands (task 4.9 replaces this one check).
-		if (a.kind == SideKind::Snapshot || b.kind == SideKind::Snapshot) { return Fail(kDeltaName, "snapshot sides are not available yet"); }
+		for (const Side* s : { &a, &b })
+		{
+			if (s->kind != SideKind::Snapshot) { continue; }
+			if (mSnapshots == nullptr) { return Fail(kDeltaName, "snapshot sides are not available yet"); }
+			const char* name = s->snapshot.AsCStr();
+			char msg[256];
+			if (!IsValidSnapshotName(name)) { return Fail(kDeltaName, "invalid snapshot name (1 to 32 characters from A-Z a-z 0-9 _ -)"); }
+			if (!mSnapshots->Exists(name))
+			{
+				std::snprintf(msg, sizeof(msg), "unknown snapshot '%s'", name);
+				return Fail(kDeltaName, msg);
+			}
+			char reason[160] = {};
+			const SnapshotCellData* data = mSnapshots->Get(name, reason, sizeof(reason));	// logs the failure itself
+			if (data == nullptr)
+			{
+				std::snprintf(msg, sizeof(msg), "snapshot '%s': %.160s", name, reason);
+				return Fail(kDeltaName, msg);
+			}
+			if (layer->grid == nullptr || !SnapshotCellCache::GridMatches(*data, *layer->grid))
+			{
+				std::snprintf(msg, sizeof(msg), "snapshot '%s' is for a different grid (%u x %u)", name, data->mGrid.mWidth, data->mGrid.mHeight);
+				return Fail(kDeltaName, msg);
+			}
+		}
 		if (SidesEqual(a, b)) { return Fail(kDeltaName, "delta sides are identical"); }
 		const uint32_t count = mRecorder.SampleCount();
 		for (const Side* s : { &a, &b })
@@ -316,7 +341,8 @@ namespace Dia::CellHistory
 		// Only both sides lacking data is an error; one side lacking data is allowed (DeltaValueSource warns when it reads).
 		const uint32_t cells = layer->grid != nullptr ? static_cast<uint32_t>(layer->grid->width) * layer->grid->height : 0u;
 		std::vector<float> scratch(cells);
-		const SideReader reader(mRecorder);
+		SideReader reader(mRecorder);
+		reader.SetSnapshotCache(mSnapshots);
 		const bool aData = reader.Read(a, *layer, scratch.data(), cells) == SideReadStatus::Ok;
 		const bool bData = reader.Read(b, *layer, scratch.data(), cells) == SideReadStatus::Ok;
 		if (!aData && !bData) { return Fail(kDeltaName, "the layer has no data on either side"); }

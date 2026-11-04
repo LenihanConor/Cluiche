@@ -50,6 +50,9 @@ namespace Dia::CellHistory
 		// and ALWAYS bumps the epoch once, even when already live, because truncate-then-resample to the same count is
 		// invisible to count-based change detection.
 		void NotifyHistoryReset();
+		// A snapshot's cell file was overwritten or deleted: bumps the epoch only when the delta in force uses that snapshot on either
+		// side (so the viewer re-reads); otherwise a no-op. Never changes the mode.
+		void NotifySnapshotChanged(const char* name);
 
 		// Re-evaluates eviction against the recorder: when the per-cell window first passes the viewed sample the view
 		// stays, the epoch bumps and ONE Warning is logged. Returns true if that transition happened on this call.

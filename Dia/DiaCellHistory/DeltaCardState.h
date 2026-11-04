@@ -48,6 +48,9 @@ namespace Dia::CellHistory
 		DeltaCardState(const DeltaCardState&) = delete;
 		DeltaCardState& operator=(const DeltaCardState&) = delete;
 
+		// Optional, borrowed: where snapshot sides are read from (group table, hover). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mBuilder.SetSnapshotCache(cache); mCells.SetSnapshotCache(cache); }
+
 		// Once per frame. hoverQ/hoverR < 0: nothing hovered. registry and schema may be null.
 		void Update(Dia::CellLayers::CellLayerRegistry* registry, const Dia::ValueSchema::ValueSchemaService* schema, int32_t hoverQ, int32_t hoverR);
 

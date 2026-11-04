@@ -24,6 +24,7 @@ namespace Dia::CellLayers { struct CellLayerDesc; class CellLayerRegistry; }
 namespace Dia::CellHistory
 {
 	class CellHistoryRecorder;
+	class SnapshotCellCache;
 
 	struct DeltaCellInfo
 	{
@@ -41,6 +42,9 @@ namespace Dia::CellHistory
 		~DeltaCellReader();
 		DeltaCellReader(const DeltaCellReader&) = delete;
 		DeltaCellReader& operator=(const DeltaCellReader&) = delete;
+
+		// Optional, borrowed: where snapshot sides are read from (see SideReader). nullptr clears.
+		void		SetSnapshotCache(SnapshotCellCache* cache) { mReader.SetSnapshotCache(cache); }
 
 		// False when cell >= CellCount (out untouched).
 		bool		Get(const Dia::CellLayers::CellLayerDesc& layer, const DeltaSpec& delta, uint64_t viewEpoch, uint32_t cell, DeltaCellInfo& out);
@@ -66,6 +70,7 @@ namespace Dia::CellHistory
 	{
 	public:
 		DeltaCellDetails(const CellHistoryRecorder& recorder, const HistoryViewState& view);
+		void		SetSnapshotCache(SnapshotCellCache* cache) { mCells.SetSnapshotCache(cache); }
 		~DeltaCellDetails();
 		DeltaCellDetails(const DeltaCellDetails&) = delete;
 		DeltaCellDetails& operator=(const DeltaCellDetails&) = delete;

@@ -1,5 +1,6 @@
 #include "TimelineModel.h"
 
+#include <DiaCellHistory/SnapshotCellCache.h>
 #include <DiaValueSchema/RampData.h>
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
@@ -115,6 +116,22 @@ namespace Dia::CellHistory
 		void EventVisitorFn(const EventView& e, void* ctx) { static_cast<EventTally*>(ctx)->Add(e); }
 	}
 
+	namespace
+	{
+		// A delta side's timeline marker: the sample of a `sample:` side, the header sample of a loadable snapshot; none otherwise.
+		bool MarkerSample(const Side& side, SnapshotCellCache* cache, uint32_t& out)
+		{
+			out = 0;
+			if (side.kind == SideKind::Sample) { out = side.sample; return true; }
+			if (side.kind != SideKind::Snapshot || cache == nullptr) { return false; }
+			char err[160];
+			const SnapshotCellData* data = cache->Get(side.snapshot.AsCStr(), err, sizeof(err));
+			if (data == nullptr) { return false; }
+			out = data->mHeader.mSample;
+			return true;
+		}
+	}
+
 	bool TimelineModel::NeedsRebuild(const CellHistoryRecorder& recorder, const HistoryViewState& view, Dia::Core::StringCRC baseLayer) const
 	{
 		return !mBuilt || mStampSamples != recorder.SampleCount() || mStampEpoch != view.Epoch() || !(mStampLayer == baseLayer);
@@ -133,10 +150,8 @@ namespace Dia::CellHistory
 		mRange.mLatestSample = count > 0 ? count - 1 : 0;
 		// In delta mode the timeline shows the view held before the delta.
 		mDeltaActive = view.InDelta();
-		mDeltaAHasSample = mDeltaActive && view.Delta().a.kind == SideKind::Sample;
-		mDeltaBHasSample = mDeltaActive && view.Delta().b.kind == SideKind::Sample;
-		mDeltaASample = mDeltaAHasSample ? view.Delta().a.sample : 0;
-		mDeltaBSample = mDeltaBHasSample ? view.Delta().b.sample : 0;
+		mDeltaAHasSample = mDeltaActive && MarkerSample(view.Delta().a, mSnapshotCache, mDeltaASample);
+		mDeltaBHasSample = mDeltaActive && MarkerSample(view.Delta().b, mSnapshotCache, mDeltaBSample);
 		mPosition.mMode = view.InDelta() ? view.HeldMode() : view.Mode();
 		mPosition.mSample = mPosition.mMode == ViewMode::Live ? mRange.mLatestSample : view.Sample();
 

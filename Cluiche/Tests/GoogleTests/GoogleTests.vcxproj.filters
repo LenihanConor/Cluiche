@@ -2541,5 +2541,11 @@
     <ClCompile Include="CluicheTest\CellLayersSnapshotStoreTests.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellCache.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaSnapshotSide.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

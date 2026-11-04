@@ -34,6 +34,9 @@ namespace Dia::CellHistory
 		// The history value of cells.view.state: null when recorder or view is null.
 		static Json::Value HistoryField(const CellHistoryRecorder* recorder, const HistoryViewState* view);
 
+		// Optional, borrowed: lets a snapshot delta side show its timeline marker (see TimelineModel). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mTimeline.SetSnapshotCache(cache); }
+
 		// Rebuilds the cached card when its inputs changed. Returns true when it rebuilt.
 		bool Update(const CellHistoryRecorder& recorder, const HistoryViewState& view, Dia::Core::StringCRC baseLayer,
 			const Dia::ValueSchema::ValueSchemaService* schema, const HistoryConfig* config,

@@ -1,6 +1,7 @@
 #include <DiaCellHistory/SideReader.h>
 
 #include <DiaCellHistory/CellHistoryRecorder.h>
+#include <DiaCellHistory/SnapshotCellCache.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
 
 #include <cstdio>
@@ -78,7 +79,15 @@ namespace Dia::CellHistory
 
 	SideReadStatus SideReader::Read(const Side& side, const Dia::CellLayers::CellLayerDesc& layer, float* out, uint32_t n) const
 	{
-		if (side.kind == SideKind::Snapshot) { return SideReadStatus::Unavailable; }
+		if (side.kind == SideKind::Snapshot)
+		{
+			if (mCache == nullptr) { return SideReadStatus::Unavailable; }
+			if (out == nullptr || n == 0 || layer.grid == nullptr) { return SideReadStatus::NoData; }
+			char err[160];
+			const SnapshotCellData* data = mCache->Get(side.snapshot.AsCStr(), err, sizeof(err));	// logs its own failure
+			if (data == nullptr || !SnapshotCellCache::GridMatches(*data, *layer.grid) || n != data->CellCount()) { return SideReadStatus::NoData; }
+			return SnapshotCellFile::Dequantise(*data, layer.id, out, n) ? SideReadStatus::Ok : SideReadStatus::NoData;
+		}
 		if (out == nullptr || n == 0) { return SideReadStatus::NoData; }
 
 		if (side.kind == SideKind::Now)

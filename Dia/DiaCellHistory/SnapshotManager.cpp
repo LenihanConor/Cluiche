@@ -1,4 +1,5 @@
 #include <DiaCellHistory/SnapshotManager.h>
+#include <DiaCellHistory/SnapshotCellCache.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/ISnapshotStore.h>
@@ -174,6 +175,7 @@ namespace Dia::CellHistory
 				rec->mBytes = ec ? 0 : uint64_t(size);
 				rec->mStatus = SnapshotStatus::Ready;
 				rec->mReason[0] = '\0';
+				if (mCache != nullptr) { mCache->Invalidate(rec->mName); }	// an overwrite must not be read stale
 				if (mObs != nullptr) { mObs->OnTakeCompleted(mTakeCaptureMs, mObs->NowMs() - writeStart, rec->mBytes); }
 				DIA_LOG_INFO("HIS", "cell history snapshot '%s': taken at sample %u (%llu bytes)", rec->mName, rec->mSample, (unsigned long long)rec->mBytes);
 			}

@@ -51,6 +51,9 @@ namespace Dia::CellHistory
 		// Optional, borrowed (must outlive the domain): the layer registry (selection, grouping layers, detail providers) and hover.
 		void SetLayerRegistry(Dia::CellLayers::CellLayerRegistry* registry) { mLayers = registry; }
 		void SetHoverFn(HoverCellFn fn) { mHover = fn; }
+		// Optional, borrowed (must outlive the domain): where snapshot delta sides are read from (timeline markers, group table, hover,
+		// selected-cell rows). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mCard.SetSnapshotCache(cache); mDeltaCard.SetSnapshotCache(cache); mDeltaDetails.SetSnapshotCache(cache); }
 		const DeltaCardState& DeltaCard() const { return mDeltaCard; }
 		// Bind to CellLayerViewerDomain::AddHoverExtraFn: A / B / Delta lines for the hovered cell in delta mode (see DeltaCardState::HoverExtra).
 		void HoverExtra(const Dia::CellLayers::CellLayerViewerDomain::HoverInfo& hover, Dia::CellLayers::CellLayerViewerDomain::HoverExtraLines& out) { mDeltaCard.HoverExtra(hover, out); }

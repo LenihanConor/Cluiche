@@ -803,13 +803,22 @@ void CellLayersViewerTestStageModule::BuildSnapshots(Dia::CellHistory::CellHisto
     mSnapshotStore = Dia::Core::MakeUnique<CellLayersSnapshotStore>(folder.string(),
         [this]() { CellLayersStageState s; s.tempVersion = mTempVersion; s.animateCounter = mAnimateCounter; s.historyFrame = mHistoryFrame; return s; },
         [this](const CellLayersStageState& s) { mTempVersion = s.tempVersion; mAnimateCounter = s.animateCounter; mHistoryFrame = s.historyFrame; });
+    // One cache per history setup: the delta commands, value source, domain (timeline markers, group table, hover), manager (overwrite)
+    // and commands (delete) all share it. Created after the store (it reads the store's folder) and destroyed before it.
+    mSnapshotCache = Dia::Core::MakeUnique<SnapshotCellCache>(*mSnapshotStore);
+    mSnapshotCache->SetViewState(mScrubView.Get());
+    mScrubViewCommands->SetSnapshotCache(mSnapshotCache.Get());
+    mScrubSource->SetSnapshotCache(mSnapshotCache.Get());
+    mScrubDomain->SetSnapshotCache(mSnapshotCache.Get());
     mSnapshotManager = Dia::Core::MakeUnique<SnapshotManager>(recorder, *mRegistry, schema, *mSnapshotStore);
+    mSnapshotManager->SetSnapshotCache(mSnapshotCache.Get());
     mSnapshotManager->SetViewState(mScrubView.Get());
     mSnapshotManager->SetWorld(GetStageName().AsChar());
     mSnapshotObservation = Dia::Core::MakeUnique<SnapshotObservation>();
     mSnapshotManager->SetObservation(mSnapshotObservation.Get());
     mSnapshotCommands = Dia::Core::MakeUnique<SnapshotCommands>(recorder, *mSnapshotManager, *mSnapshotStore);
     mSnapshotCommands->SetObservation(mSnapshotObservation.Get());
+    mSnapshotCommands->SetSnapshotCache(mSnapshotCache.Get());
     mSnapshotCommandsRegistered = mSnapshotCommands->Register(*mHistoryRegistrar);
     if (!mSnapshotCommandsRegistered)
         DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.snapshot.* / cells.history.snapshot registration failed");
@@ -824,6 +833,16 @@ void CellLayersViewerTestStageModule::TeardownSnapshots()
     mSnapshotCommands.Reset();
     mSnapshotManager.Reset();
     mSnapshotObservation.Reset();
+    // Detach the cache from its (still alive) users before it goes, then drop it ahead of the store it reads from.
+    if (mSnapshotCache)
+        mSnapshotCache->SetViewState(nullptr);
+    if (mScrubViewCommands)
+        mScrubViewCommands->SetSnapshotCache(nullptr);
+    if (mScrubSource)
+        mScrubSource->SetSnapshotCache(nullptr);
+    if (mScrubDomain)
+        mScrubDomain->SetSnapshotCache(nullptr);
+    mSnapshotCache.Reset();
     mSnapshotStore.Reset();
 }
 

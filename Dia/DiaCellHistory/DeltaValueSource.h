@@ -27,6 +27,7 @@ namespace Dia::CellHistory
 {
 	class CellHistoryRecorder;
 	class HistoryViewState;
+	class SnapshotCellCache;
 
 	class DeltaValueSource
 	{
@@ -45,6 +46,9 @@ namespace Dia::CellHistory
 
 		// True when the view's delta uses the auto scale (false when fixed or not in delta). The panel's "auto"/"fixed" label.
 		bool IsAutoScale(const HistoryViewState& view) const;
+
+		// Optional, borrowed: where snapshot sides are read from (see SideReader). nullptr clears.
+		void SetSnapshotCache(SnapshotCellCache* cache) { mReader.SetSnapshotCache(cache); }
 
 		// Optional schema: lets GetPresentation resolve the layer's ui.delta_ramp. Borrowed; must outlive this. nullptr clears.
 		void SetSchema(const Dia::ValueSchema::ValueSchemaService* schema);

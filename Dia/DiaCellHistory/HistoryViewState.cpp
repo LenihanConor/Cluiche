@@ -4,6 +4,7 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 namespace Dia::CellHistory
 {
@@ -219,6 +220,19 @@ namespace Dia::CellHistory
 		++mEpoch;
 		DIA_LOG_INFO("HIS", "cell history view: delta group table uses side %s", useB ? "B" : "A");
 		return true;
+	}
+
+	void HistoryViewState::NotifySnapshotChanged(const char* name)
+	{
+		if (mMode != ViewMode::Delta || name == nullptr) { return; }
+		for (const Side* s : { &mDelta.a, &mDelta.b })
+		{
+			if (s->kind == SideKind::Snapshot && std::strcmp(s->snapshot.AsCStr(), name) == 0)
+			{
+				++mEpoch;
+				return;
+			}
+		}
 	}
 
 	bool HistoryViewState::Update()

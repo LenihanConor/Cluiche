@@ -1133,6 +1133,8 @@
     <ClCompile Include="DiaCellHistory\TestSnapshotCommands.cpp" />
     <ClCompile Include="DiaCellHistory\TestSnapshotObservation.cpp" />
     <ClCompile Include="CluicheTest\CellLayersSnapshotStoreTests.cpp" />
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellCache.cpp" />
+    <ClCompile Include="DiaCellHistory\TestDeltaSnapshotSide.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

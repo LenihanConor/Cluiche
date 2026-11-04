@@ -4,6 +4,7 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryEncoding.h>
 #include <DiaCellHistory/ISnapshotStore.h>
+#include <DiaCellHistory/SnapshotCellCache.h>
 #include <DiaCellHistory/SnapshotCellFile.h>
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/SnapshotNaming.h>
@@ -295,6 +296,7 @@ namespace Dia::CellHistory
 			}
 		}
 		mManager.RemoveRecord(name);
+		if (mCache != nullptr) { mCache->Invalidate(name); }
 		DIA_LOG_INFO("HIS", "cell history snapshot '%s': deleted (state %s, cell file %s)", name, hasState ? "removed" : "absent", hasCells ? "removed" : "absent");
 		Json::Value out(Json::objectValue);
 		out["ok"] = true;
