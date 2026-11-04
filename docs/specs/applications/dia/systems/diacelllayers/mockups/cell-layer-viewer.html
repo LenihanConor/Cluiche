@@ -477,6 +477,138 @@ body {
   color: #5a9fd4;
 }
 
+/* ===== DiaCellHistory F2: SCRUB + TIMELINE CARD (task 2.8) ===== */
+.timeline-bar.tl-card { height: auto; padding: 6px 12px 8px; }
+
+/* Mockup-only state switcher (not part of the real UI) */
+.mock-switch {
+  display: flex; align-items: center; gap: 4px; margin-bottom: 6px;
+  padding: 3px 6px; border: 1px dashed #4a3a6a; background: #17121f; border-radius: 2px;
+}
+.mock-switch .ms-title { font-size: 9px; color: #9b59b6; margin-right: 6px; letter-spacing: 0.5px; }
+.mock-switch button {
+  background: #1f1f1f; border: 1px solid #333; color: #999; font-family: inherit;
+  font-size: 9px; padding: 2px 7px; border-radius: 2px; cursor: pointer;
+}
+.mock-switch button:hover { color: #ddd; }
+.mock-switch button.on { background: #1a2530; border-color: #5a9fd4; color: #5a9fd4; }
+.mock-switch .ms-note { margin-left: auto; font-size: 9px; color: #666; }
+
+.tl-head { display: flex; align-items: center; gap: 10px; font-size: 9px; color: #888; margin-bottom: 3px; }
+.tl-head .tl-title { color: #aaa; font-weight: 600; letter-spacing: 0.5px; }
+.tl-head .tl-layer { color: #5a9fd4; }
+.tl-legend { margin-left: auto; display: flex; gap: 8px; align-items: center; color: #666; }
+.tl-legend i { display: inline-block; width: 6px; height: 8px; margin-right: 3px; vertical-align: -1px; }
+.tl-legend .density { display: inline-flex; align-items: flex-end; gap: 1px; margin: 0 3px; }
+.tl-legend .density b { width: 2px; background: #aaa; display: inline-block; }
+
+.tl-plot {
+  position: relative; height: 96px; margin: 0 4px;
+  background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 2px; overflow: hidden; cursor: pointer;
+}
+.tl-spark { position: absolute; left: 0; right: 0; top: 2px; height: 32px; width: 100%; }
+.tl-spark path { fill: none; stroke: #6fb36f; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.tl-lane { position: absolute; left: 0; right: 0; top: 40px; bottom: 14px; }
+.tl-lane-track { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #3a3a3a; }
+.tl-band { position: absolute; top: 0; bottom: 0; width: 1px; background: #232323; }
+.tl-band.major { background: #3a3a3a; }
+.tl-band-label { position: absolute; bottom: 1px; font-size: 8px; color: #666; transform: translateX(2px); }
+.tl-band-label.major { color: #999; }
+.tl-ev { position: absolute; bottom: 50%; width: 2px; margin-bottom: 2px; border-radius: 1px; }
+.tl-gap {
+  position: absolute; top: 0; bottom: 0;
+  background: repeating-linear-gradient(135deg, rgba(231,76,60,0.28) 0 3px, transparent 3px 6px);
+  border-left: 1px solid #7a3a34; border-right: 1px solid #7a3a34;
+}
+.tl-gap.events { background: repeating-linear-gradient(135deg, rgba(245,166,35,0.22) 0 3px, transparent 3px 6px);
+  border-color: #7a5a24; top: 38px; bottom: 14px; }
+.tl-gap-label { position: absolute; font-size: 8px; white-space: nowrap; }
+.tl-dim { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.55); border-right: 1px dashed #5a9fd4; }
+.tl-dim-label { position: absolute; top: 3px; right: 3px; font-size: 8px; color: #5a9fd4; background: #0f0f0fcc; padding: 0 3px; }
+.tl-snap { position: absolute; top: 56px; font-size: 12px; color: #5a9fd4; transform: translateX(-50%); }
+.tl-thumb {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: #e8e8e8; z-index: 5;
+  transition: left 0.15s;
+}
+.tl-thumb::before {
+  content: ''; position: absolute; top: 36px; left: -5px; width: 12px; height: 16px;
+  background: #e8e8e8; border-radius: 2px; border: 1px solid #5a9fd4;
+}
+.tl-thumb .tl-thumb-tag {
+  position: absolute; top: 2px; left: 6px; font-size: 9px; white-space: nowrap;
+  background: #1a2530; border: 1px solid #5a9fd4; color: #9fd0f5; padding: 0 4px; border-radius: 2px;
+}
+.tl-thumb.flip .tl-thumb-tag { left: auto; right: 6px; }
+.tl-livemark {
+  position: absolute; top: 0; bottom: 0; right: 0; width: 2px; background: #4a8a4a; z-index: 4;
+}
+.tl-livemark span {
+  position: absolute; bottom: 2px; right: 5px; font-size: 8px; color: #8aea8a; background: #0f0f0fcc; padding: 0 3px; white-space: nowrap;
+}
+.tl-livemark::before {
+  content: ''; position: absolute; top: 6px; right: 0; width: 7px; height: 7px; border-radius: 50%; background: #8aea8a;
+}
+body[data-state="live"] .tl-livemark span { color: #8aea8a; }
+body:not([data-state="live"]) .tl-livemark { opacity: 0.6; }
+body:not([data-state="live"]) .tl-livemark::before { background: transparent; border: 1px solid #8aea8a; }
+
+.tl-controls { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.tl-btn {
+  background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit;
+  font-size: 10px; padding: 2px 7px; border-radius: 2px; cursor: pointer;
+}
+.tl-btn:hover { background: #2a2a2a; color: #fff; }
+.tl-btn.ev-prev, .tl-btn.ev-next { border-color: #5a4a2a; color: #f5a623; }
+.tl-sep { width: 1px; height: 16px; background: #333; margin: 0 4px; }
+.tl-pos { font-size: 10px; color: #ccc; margin-left: 8px; }
+.tl-pos .dim { color: #666; }
+.tl-controls .live-btn { margin-left: auto; }
+body[data-state="live"] .live-btn { background: #1d2a1d; border-color: #2f4f2f; color: #5a8a5a; cursor: default; }
+.tl-track-note { font-size: 9px; color: #666; }
+
+/* Annotation tags mapping elements to acceptance criteria (mockup-only) */
+.ac {
+  display: inline-block; font-size: 8px; line-height: 1; padding: 2px 4px; margin-left: 4px;
+  background: #2a1a3a; color: #c9a0e8; border: 1px solid #4a3a6a; border-radius: 8px; vertical-align: middle;
+  font-weight: 400;
+}
+.tl-plot .ac { position: absolute; z-index: 8; margin: 0; pointer-events: none; }
+
+/* Viewer banner + map-state overlays */
+.view-banner {
+  display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+  background: #3a2a0a; border-bottom: 1px solid #f5a623; color: #ffd27a;
+  padding: 6px 12px; font-size: 11px; align-items: center; gap: 12px;
+}
+.view-banner b { color: #fff; font-weight: 600; }
+.view-banner .vb-extra { color: #ffb3a8; }
+.view-banner .live-btn { margin-left: auto; }
+body:not([data-state="live"]) .view-banner { display: flex; }
+
+.map-overlay { display: none; position: absolute; left: 0; right: 0; top: 30px; bottom: 0; z-index: 10;
+  align-items: center; justify-content: center; text-align: center; }
+.map-overlay .mo-box { max-width: 380px; padding: 16px 20px; border-radius: 3px; font-size: 11px; line-height: 1.5; }
+.map-overlay .mo-box h4 { font-size: 12px; margin-bottom: 6px; font-weight: 600; }
+.map-overlay.nohist { background: repeating-linear-gradient(0deg, #17171c 0 20px, #14141a 20px 40px); }
+.map-overlay.nohist .mo-box { background: #0f0f0f; border: 1px solid #3a3a3a; color: #aaa; }
+.map-overlay.nohist .mo-box h4 { color: #ddd; }
+.track-btn { margin-top: 10px; padding: 4px 14px; background: #1a2530; border: 1px solid #5a9fd4; color: #5a9fd4;
+  font-family: inherit; font-size: 11px; border-radius: 2px; cursor: pointer; }
+.map-overlay.evicted { background: repeating-linear-gradient(135deg, #1a1210 0 10px, #140e0c 10px 20px); }
+.map-overlay.evicted .mo-box { background: #1c1210; border: 1px solid #7a3a34; color: #e0a8a0; }
+.map-overlay.evicted .mo-box h4 { color: #e74c3c; }
+body[data-state="nohist"] .map-overlay.nohist { display: flex; }
+body[data-state="evicted"] .map-overlay.evicted { display: flex; }
+
+.hover-demo { display: none; position: absolute; left: 560px; top: 250px; z-index: 15; }
+body[data-state="hover"] .hover-demo { display: block; }
+.hover-demo .hex-ring { width: 30px; height: 28px; border: 2px solid #fff; border-radius: 6px; margin-left: -4px; }
+.hover-tip { position: absolute; left: 36px; top: -6px; width: 190px; background: #111; border: 1px solid #5a9fd4;
+  border-radius: 3px; padding: 6px 8px; font-size: 10px; color: #ccc; }
+.sample-badge { display: inline-block; background: #3a2a0a; border: 1px solid #f5a623; color: #ffd27a;
+  font-size: 9px; padding: 0 5px; border-radius: 2px; margin-bottom: 4px; }
+.hover-tip .ht-row { display: flex; justify-content: space-between; }
+
 /* FOOTER */
 .footer-commands {
   background: #161616;
@@ -780,6 +912,49 @@ body {
       <!-- Label -->
       <text x="20" y="30" font-size="14" fill="#3a3a4a" font-family="Consolas">40 × 26 HEX GRID · VEGETATION BASE LAYER</text>
     </svg>
+
+    <!-- F2: NOT-LIVE BANNER (shown in every state except LIVE) -->
+    <div class="view-banner" id="viewBanner">
+      <span>Viewing sample <b id="vbSample">391</b> (<b id="vbLabel">Year 31 Wk 5</b>) &mdash; not live</span>
+      <span class="vb-extra" id="vbExtra"></span>
+      <span class="ac">AC 8</span>
+      <button class="live-btn">Back to live</button>
+    </div>
+
+    <!-- F2: map state (b) layer has no per-cell history -->
+    <div class="map-overlay nohist">
+      <div class="mo-box">
+        <h4>No per-cell history for Herbivores <span class="ac">AC 5</span></h4>
+        Herbivores is not tracked, so there is no per-cell data for sample 391.
+        Live values are never shown while scrubbed. World aggregates are still on the timeline.
+        <br><button class="track-btn">Track this layer</button>
+        <div style="color:#666; font-size:9px; margin-top:6px;">runs: cells.history.track herbivores</div>
+      </div>
+    </div>
+
+    <!-- F2: map state (c) sample before per-cell window start / window passed it -->
+    <div class="map-overlay evicted">
+      <div class="mo-box">
+        <h4>Per-cell data evicted <span class="ac">AC 6</span></h4>
+        Sample 148 (Year 12 Wk 21) is older than the per-cell window, which now starts at
+        sample 312 (Year 25 Wk 1). Aggregates and events for this sample may still exist on the timeline.
+        <div style="color:#666; font-size:9px; margin-top:6px;">
+          If the window passes the viewed sample while scrubbed, the view stays here and switches to this state with this notice.
+        </div>
+      </div>
+    </div>
+
+    <!-- F2: hover sample badge (state: hover) -->
+    <div class="hover-demo">
+      <div class="hex-ring"></div>
+      <div class="hover-tip">
+        <span class="sample-badge">sample 391</span> <span class="ac">AC 7</span>
+        <div class="ht-row"><span>Cell</span><span>(22, 12)</span></div>
+        <div class="ht-row"><span>Vegetation</span><span>0.41</span></div>
+        <div class="ht-row"><span>Biome</span><span>Grassland</span></div>
+        <div style="color:#666; font-size:9px; margin-top:3px;">query, inspector and cells.layer.values also show sample 391</div>
+      </div>
+    </div>
   </div>
 
   <!-- RIGHT PANEL: Selection Inspector -->
@@ -930,29 +1105,159 @@ body {
 
 </div>
 
-<!-- HISTORY TIMELINE BAR -->
-<div class="timeline-bar">
-  <div class="timeline-controls">
-    <div class="timeline-label">Year 1–14:</div>
-    <div class="timeline-scrubber">
-      <div class="timeline-track"></div>
-      <div class="timeline-playhead"></div>
-      <!-- Event markers -->
-      <div class="timeline-marker drought" title="Drought (Y8)">▲</div>
-      <div class="timeline-marker transition" title="Grassland → Scrub (Y10)">●</div>
-      <div class="timeline-marker crash" title="Herbivore crash (Y12)">✕</div>
-      <!-- Snapshot diamonds -->
-      <div class="timeline-snapshot pre" title="Snapshot: pre-drought (Y11)">◆</div>
-      <div class="timeline-snapshot post" title="Snapshot: after-fire (Y12)">◆</div>
-    </div>
-    <div class="timeline-status">Year 12 Wk 30 (viewing history)</div>
-    <button class="live-btn">Live</button>
+<!-- HISTORY TIMELINE BAR (F2 task 2.8: scrub + timeline card; 40-year run, 520 samples) -->
+<div class="timeline-bar tl-card">
+
+  <!-- MOCKUP-ONLY state switcher -->
+  <div class="mock-switch">
+    <span class="ms-title">MOCKUP STATE</span>
+    <button data-st="live" class="on">LIVE</button>
+    <button data-st="scrubbed">SCRUBBED</button>
+    <button data-st="nohist">NO PER-CELL HISTORY</button>
+    <button data-st="evicted">EVICTED</button>
+    <button data-st="hover">SCRUBBED + HOVER BADGE</button>
+    <span class="ms-note">switcher is not part of the real UI</span>
   </div>
-  <div class="timeline-info">
-    <div>tracked per-cell: vegetation, herbivores, precipitation · <span class="timeline-budget">38 / 64 MB</span></div>
-    <div style="color: #9b59b6; cursor: pointer;">Delta view: now − pre-drought [thumbnail ▼]</div>
+
+  <div class="tl-head">
+    <span class="tl-title">TIMELINE</span>
+    <span>base layer: <span class="tl-layer" id="tlLayer">Vegetation</span> (world mean)</span>
+    <span class="ac">AC 10</span>
+    <div class="tl-legend">
+      <span><i style="background:#f5a623"></i>drought</span>
+      <span><i style="background:#9b59b6"></i>transition</span>
+      <span><i style="background:#e74c3c"></i>crash</span>
+      <span><i style="background:#ff7a3d"></i>fire</span>
+      <span>density <span class="density"><b style="height:4px"></b><b style="height:7px"></b><b style="height:11px"></b><b style="height:15px"></b></span> events/bucket</span>
+      <span><i style="background:repeating-linear-gradient(135deg,#e74c3c 0 2px,transparent 2px 4px)"></i>aggregates evicted</span>
+      <span><i style="background:repeating-linear-gradient(135deg,#f5a623 0 2px,transparent 2px 4px)"></i>events evicted</span>
+      <span><i style="background:#000;border:1px solid #5a9fd4"></i>no per-cell data</span>
+      <span style="color:#5a9fd4">&#9670; snapshot</span>
+    </div>
+  </div>
+
+  <div class="tl-plot" id="tlPlot" title="Drag to run cells.history.view (AC 11)">
+    <svg class="tl-spark" id="tlSpark" viewBox="0 0 1000 32" preserveAspectRatio="none"></svg>
+    <div class="tl-lane" id="tlLane">
+      <div class="tl-lane-track"></div>
+    </div>
+    <div class="tl-livemark"><span>LIVE head</span></div>
+    <div class="tl-thumb" id="tlThumb"><span class="tl-thumb-tag" id="tlThumbTag">391</span></div>
+  </div>
+
+  <div class="tl-controls">
+    <button class="tl-btn" title="cells.history.step -band">&#9198; &minus;band</button>
+    <button class="tl-btn" title="cells.history.step -1">&#9664; &minus;1</button>
+    <button class="tl-btn" title="cells.history.step +1">+1 &#9654;</button>
+    <button class="tl-btn" title="cells.history.step +band">+band &#9197;</button>
+    <span class="tl-sep"></span>
+    <button class="tl-btn ev-prev" title="cells.history.event prev">&#9664; event</button>
+    <button class="tl-btn ev-next" title="cells.history.event next">event &#9654;</button>
+    <span class="ac">AC 3</span>
+    <span class="tl-pos" id="tlPos"></span>
+    <button class="live-btn" title="cells.history.live">Back to live</button>
+  </div>
+
+  <div class="timeline-info" style="margin-top:5px;">
+    <div>tracked per-cell: vegetation, precipitation (window: sample 312&ndash;519) &middot; <span class="timeline-budget">38 / 64 MB</span> &middot; <span class="tl-track-note">sparkline: 256 points</span></div>
+    <div style="color: #9b59b6; cursor: pointer;">Delta view: now &minus; pre-drought [thumbnail &#9660;]</div>
   </div>
 </div>
+
+<script>
+(function () {
+  var LAST = 519, WIN = 312;                     // head sample, per-cell window start
+  var AGG = [228, 247], EVG = [0, 78];           // aggregate gap, events-evicted range
+  var pct = function (n) { return (n / LAST * 100); };
+  var label = function (n) { return 'Year ' + (Math.floor(n / 13) + 1) + ' Wk ' + ((n % 13) * 4 + 1); };
+  var lane = document.getElementById('tlLane'), plot = document.getElementById('tlPlot');
+
+  function add(parent, cls, css, html) {
+    var d = document.createElement('div'); d.className = cls; d.style.cssText = css || '';
+    if (html) d.innerHTML = html; parent.appendChild(d); return d;
+  }
+
+  // gaps and dimmed pre-window region
+  add(plot, 'tl-dim', 'width:' + pct(WIN) + '%',
+      '<span class="tl-dim-label">no per-cell data before sample ' + WIN + ' (' + label(WIN) + ') <span class="ac" style="position:static">AC 6</span></span>');
+  add(plot, 'tl-gap', 'left:' + pct(AGG[0]) + '%;width:' + (pct(AGG[1]) - pct(AGG[0])) + '%');
+  add(plot, 'tl-gap-label', 'left:' + pct(AGG[0]) + '%;top:2px;color:#e74c3c;margin-left:4px', 'aggregates evicted');
+  add(plot, 'tl-gap events', 'left:0;width:' + pct(EVG[1]) + '%');
+  add(plot, 'tl-gap-label', 'left:4px;top:42px;color:#f5a623', 'events evicted');
+
+  // band ticks: a line at every Year start, labelled every 5th
+  for (var y = 0; y < 40; y++) {
+    var major = (y % 5 === 0), x = pct(y * 13);
+    add(lane, 'tl-band' + (major ? ' major' : ''), 'left:' + x + '%;top:-40px;bottom:-14px');
+    if (major || y === 39) add(lane, 'tl-band-label' + (major ? ' major' : ''), 'left:' + x + '%;bottom:-13px', 'Y' + (y + 1));
+  }
+
+  // event ticks: 130 buckets of 4 samples; one tick per non-empty bucket, coloured by dominant type;
+  // height + opacity (+ width at 3 or more) encode the number of events in the bucket
+  var C = { drought: '#f5a623', transition: '#9b59b6', crash: '#e74c3c', fire: '#ff7a3d' };
+  var ev = {};
+  function put(b, t, c) { ev[b] = { type: t, count: c }; }
+  [[62,'transition',1],[70,'drought',2],[71,'crash',3],[72,'crash',5],[73,'transition',2],
+   [84,'fire',1],[90,'transition',1],[96,'drought',1],[99,'fire',2],[110,'transition',2],[115,'crash',1],
+   [118,'drought',1]].forEach(function (e) { put(e[0], e[1], e[2]); });
+  for (var b = 44; b <= 48; b++) put(b, 'drought', 2 + (b % 3));
+  for (var b2 = 80; b2 <= 83; b2++) put(b2, 'crash', 3 + (b2 % 4));
+  for (var b3 = 100; b3 <= 103; b3++) put(b3, 'fire', 2 + (b3 % 3));
+  [21, 26, 33, 38, 41, 54, 58, 66, 76, 106, 124, 127].forEach(function (bb, i) { put(bb, ['transition', 'drought', 'fire', 'crash'][i % 4], 1); });
+  Object.keys(ev).forEach(function (k) {
+    var e = ev[k], s = k * 4 + 2; if (s < EVG[1]) return;
+    var h = Math.min(20, 5 + 3.5 * e.count), op = Math.min(1, 0.45 + 0.1 * e.count);
+    var d = add(lane, 'tl-ev', 'left:' + pct(s) + '%;height:' + h + 'px;background:' + C[e.type] + ';opacity:' + op + ';width:' + (e.count >= 3 ? 3 : 2) + 'px;');
+    d.title = e.count + ' x ' + e.type + ' near sample ' + s;
+  });
+
+  // existing snapshot diamonds (Feature 3) stay
+  [[200, 'pre-drought'], [370, 'after-fire']].forEach(function (s) {
+    var d = add(lane, 'tl-snap', 'left:' + pct(s[0]) + '%;top:auto;bottom:-8px', '&#9670;'); d.title = 'Snapshot: ' + s[1];
+  });
+
+  // sparkline: 256 points of the active base layer world mean, path broken across the aggregate gap
+  var seg = '', pen = false, svg = document.getElementById('tlSpark');
+  for (var k = 0; k < 256; k++) {
+    var s2 = k * LAST / 255;
+    if (s2 >= AGG[0] && s2 <= AGG[1]) { pen = false; continue; }
+    var v = 0.55 + 0.12 * Math.sin(s2 / 13 * 6.283) + 0.0004 * s2
+          - 0.28 * Math.exp(-Math.pow((s2 - 190) / 14, 2)) - 0.22 * Math.exp(-Math.pow((s2 - 335) / 12, 2))
+          - 0.25 * Math.exp(-Math.pow((s2 - 470) / 10, 2));
+    seg += (pen ? 'L' : 'M') + (s2 / LAST * 1000).toFixed(1) + ',' + (30 - v * 28).toFixed(1) + ' '; pen = true;
+  }
+  svg.innerHTML = '<path d="' + seg + '"/>';
+
+  // state handling
+  var ST = {
+    live:     { s: LAST, layer: 'Vegetation' },
+    scrubbed: { s: 391,  layer: 'Vegetation' },
+    nohist:   { s: 391,  layer: 'Herbivores', extra: 'Herbivores has no per-cell history' },
+    evicted:  { s: 148,  layer: 'Vegetation', extra: 'per-cell data evicted' },
+    hover:    { s: 391,  layer: 'Vegetation' }
+  };
+  function setState(name) {
+    var c = ST[name]; document.body.setAttribute('data-state', name);
+    document.querySelectorAll('.mock-switch button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-st') === name); });
+    var th = document.getElementById('tlThumb'); th.style.left = pct(c.s) + '%'; th.classList.toggle('flip', pct(c.s) > 80);
+    document.getElementById('tlThumbTag').textContent = name === 'live' ? 'LIVE ' + c.s : c.s;
+    document.getElementById('tlLayer').textContent = c.layer;
+    document.getElementById('vbSample').textContent = c.s;
+    document.getElementById('vbLabel').textContent = label(c.s);
+    document.getElementById('vbExtra').textContent = c.extra ? '· ' + c.extra : '';
+    document.getElementById('tlPos').innerHTML = name === 'live'
+      ? 'Following sim <span class="dim">&middot; head = sample ' + LAST + ' (' + label(LAST) + ')</span>'
+      : 'Sample <b>' + c.s + '</b> <span class="dim">/ ' + LAST + ' &middot; ' + label(c.s) + '</span>';
+  }
+  document.querySelectorAll('.mock-switch button').forEach(function (b) {
+    b.addEventListener('click', function () { setState(b.getAttribute('data-st')); });
+  });
+  document.querySelectorAll('.live-btn').forEach(function (b) {
+    b.addEventListener('click', function () { setState('live'); });
+  });
+  setState('live');
+})();
+</script>
 
 <!-- FOOTER: DiaAPI Commands -->
 <div class="footer-commands">
