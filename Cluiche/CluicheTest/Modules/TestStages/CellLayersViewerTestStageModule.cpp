@@ -245,6 +245,7 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
     FitCameraToActiveGrid();
     SubmitPointerInput();
     SampleHistory();
+    UpdateHistoryScrub();
 #endif
 
     if (++mReadyFrames >= kHoldFrames)
@@ -408,6 +409,8 @@ bool CellLayersViewerTestStageModule::BuildViewer()
 
 void CellLayersViewerTestStageModule::TeardownViewer()
 {
+    TeardownHistoryScrub();   // first: it unregisters from the debugger/registrar/registry/publisher that are torn down below
+    mScrubBuildFailed = false;
     if (auto* vd = mVisualDebuggerRef.Get())
     {
         if (mLayerRegistered)
@@ -720,6 +723,101 @@ void CellLayersViewerTestStageModule::UnregisterHistoryCommand()
     if (mHistoryCommandRegistered && mHistoryRegistrar)
         mHistoryRegistrar->Unregister("cluichetest.celllayers.history_emit");   // handler captures this
     mHistoryCommandRegistered = false;
+}
+
+bool CellLayersViewerTestStageModule::BuildHistoryScrub()
+{
+    using namespace Dia::CellHistory;
+    CellHistoryRecorder* recorder = FindCellHistoryRecorder(mHistoryStream);
+    if (recorder == nullptr || mRegistry == nullptr || !mDomain || !mHistoryRegistrar)
+        return false;   // not ready yet (the recorder appears on CellHistoryModule's first update)
+
+    CellHistoryModule* module = mHistoryModuleRef.Get();
+    const HistoryConfig* config = module != nullptr ? &module->GetConfig() : nullptr;
+    const Dia::ValueSchema::ValueSchemaService* schema = mSchemaStream.IsAvailable() ? &mSchemaStream.Get() : nullptr;
+
+    mScrubRecorder = recorder;
+    mScrubView = Dia::Core::MakeUnique<HistoryViewState>(*recorder);
+    mScrubViewCommands = Dia::Core::MakeUnique<HistoryViewCommands>(*recorder, *mScrubView, config);
+    mScrubCommandsRegistered = mScrubViewCommands->Register(*mHistoryRegistrar);
+    if (!mScrubCommandsRegistered)
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.view/live/step/event registration failed");
+
+    mScrubSource = Dia::Core::MakeUnique<HistoryValueSource>(*mRegistry, *recorder, *mScrubView);
+    if (!mScrubSource->Install())
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: HistoryValueSource install failed (another view source is installed) - scrubbing shows live values");
+
+    mScrubAdapter = Dia::Core::MakeUnique<ViewHistorySourceAdapter>(*recorder, *mScrubView);
+    if (mMirrorPublisher)
+        mMirrorPublisher->SetHistorySource(mScrubAdapter.Get());
+
+    mScrubPanelCommands = Dia::Core::MakeUnique<CellHistoryCommands>(*recorder);
+    mScrubDomain = Dia::Core::MakeUnique<CellHistoryDomain>(*recorder, *mScrubView, *mScrubViewCommands, *mScrubPanelCommands,
+        CellHistoryDomain::BaseLayerFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::ActiveBaseLayer)),
+        schema, config);
+
+    CellLayersStateRelayModule* relay = mStateRelayRef.Get();
+    mScrubPanelDomain = relay != nullptr ? relay->AttachHistory(*mScrubDomain) : nullptr;
+    auto* vd = mVisualDebuggerRef.Get();
+    if (mScrubPanelDomain == nullptr || vd == nullptr)
+    {
+        DIA_LOG_ERROR("HIS", "CellLayersStateRelay or VisualDebugger unavailable - the history timeline card cannot appear in the panel");
+        return false;
+    }
+    vd->RegisterDomain(*mScrubPanelDomain);
+    mScrubDomainRegistered = true;
+    DIA_LOG_INFO("HIS", "CellLayersViewerTestStage: history scrub wired (view commands, value source, timeline domain)");
+    return true;
+}
+
+void CellLayersViewerTestStageModule::TeardownHistoryScrub()
+{
+    // Reverse of BuildHistoryScrub. Nothing here touches the recorder, which can already be withdrawn from its stream.
+    if (mScrubDomainRegistered)
+    {
+        if (auto* vd = mVisualDebuggerRef.Get())
+            vd->UnregisterDomain(*mScrubPanelDomain);
+        mScrubDomainRegistered = false;
+    }
+    if (mScrubPanelDomain != nullptr)
+    {
+        if (auto* relay = mStateRelayRef.Get())
+            relay->DetachHistory();
+        mScrubPanelDomain = nullptr;
+    }
+    mScrubDomain.Reset();
+    mScrubPanelCommands.Reset();
+    if (mMirrorPublisher)
+        mMirrorPublisher->SetHistorySource(nullptr);
+    mScrubAdapter.Reset();
+    if (mScrubSource)
+        mScrubSource->Uninstall();
+    mScrubSource.Reset();
+    if (mScrubViewCommands && mScrubCommandsRegistered && mHistoryRegistrar)
+        mScrubViewCommands->Unregister(*mHistoryRegistrar);   // handlers capture the view commands and the view
+    mScrubCommandsRegistered = false;
+    mScrubViewCommands.Reset();
+    mScrubView.Reset();
+    mScrubRecorder = nullptr;
+}
+
+void CellLayersViewerTestStageModule::UpdateHistoryScrub()
+{
+    // SimPU, once per frame. Drops the scrub objects if the recorder was replaced or withdrawn.
+    Dia::CellHistory::CellHistoryRecorder* recorder = Dia::CellHistory::FindCellHistoryRecorder(mHistoryStream);
+    if (mScrubRecorder != nullptr && recorder != mScrubRecorder)
+        TeardownHistoryScrub();
+    if (mScrubRecorder == nullptr)
+    {
+        if (!mScrubBuildFailed && recorder != nullptr && mLayersRegistered && !BuildHistoryScrub() && mScrubRecorder != nullptr)
+        {
+            mScrubBuildFailed = true;   // partially built: undo it and do not retry this stage run
+            TeardownHistoryScrub();
+        }
+        return;
+    }
+    mScrubSource->Tick();
+    mScrubDomain->Update();
 }
 
 void CellLayersViewerTestStageModule::SampleHistory()

@@ -31,6 +31,9 @@
 #include <DiaCellLayers/MirrorQueries.h>
 #include <DiaCellLayers/DebugServerTopicSink.h>
 #include <DiaCellLayers/CellPicker.h>
+#include <DiaCellHistory/CellHistoryDomain.h>
+#include <DiaCellHistory/HistoryValueSource.h>
+#include <DiaCellHistory/ViewHistorySourceAdapter.h>
 #include "Modules/TestStages/CellLayersPointerQueue.h"
 #include "Modules/TestStages/CellLayersHoverOverride.h"
 #include <DiaCore/DebugDraw/IVisualDebugger.h>
@@ -219,6 +222,23 @@ private:
     void SampleHistory();
     bool RegisterHistoryCommand();
     void UnregisterHistoryCommand();
+    // History scrub (DiaCellHistory Feature 2): built lazily on SimPU once the recorder is published (CellHistoryModule creates it on
+    // its first update, after this stage's OnStart). Torn down in TeardownViewer before the layers/registry go.
+    bool BuildHistoryScrub();
+    void TeardownHistoryScrub();
+    void UpdateHistoryScrub();
+    Dia::Core::StringCRC ActiveBaseLayer() const { return mDomain ? mDomain->ActiveBase() : Dia::Core::StringCRC::kZero; }
+    Dia::CellHistory::CellHistoryRecorder* mScrubRecorder = nullptr;   // recorder the scrub objects were built over; null = not built
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryViewState>       mScrubView;
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryViewCommands>    mScrubViewCommands;
+    Dia::Core::UniquePtr<Dia::CellHistory::CellHistoryCommands>    mScrubPanelCommands;   // executor for the panel "track" command only (not registered)
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryValueSource>     mScrubSource;
+    Dia::Core::UniquePtr<Dia::CellHistory::ViewHistorySourceAdapter> mScrubAdapter;
+    Dia::Core::UniquePtr<Dia::CellHistory::CellHistoryDomain>      mScrubDomain;
+    Dia::VisualDebugger::IDebugDomain* mScrubPanelDomain = nullptr;   // owned by the relay
+    bool mScrubDomainRegistered = false;
+    bool mScrubCommandsRegistered = false;
+    bool mScrubBuildFailed = false;
     bool  mLayerRegistered = false;
     bool  mLayersRegistered = false;
     const Dia::Graphics::CellGridDesc* mFittedGrid = nullptr;

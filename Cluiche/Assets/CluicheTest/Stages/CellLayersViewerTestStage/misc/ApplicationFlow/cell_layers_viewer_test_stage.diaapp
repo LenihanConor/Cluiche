@@ -4,6 +4,9 @@
         { "id": "CellViewerState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
         { "id": "CellViewerDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
         { "id": "CellViewerStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" },
+        { "id": "CellHistoryState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "CellHistoryDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "CellHistoryStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" },
         { "id": "CellHistoryRecorderService", "kind": "ServiceStream", "payload_type": "CellHistoryRecorder", "from": "SimPU" }
     ],
     "processing_units": [
@@ -22,7 +25,10 @@
                     "channels": [
                         { "id": "CellViewerState", "role": "reads" },
                         { "id": "CellViewerDemand", "role": "writes" },
-                        { "id": "CellViewerStateChannel", "role": "provides" }
+                        { "id": "CellViewerStateChannel", "role": "provides" },
+                        { "id": "CellHistoryState", "role": "reads" },
+                        { "id": "CellHistoryDemand", "role": "writes" },
+                        { "id": "CellHistoryStateChannel", "role": "provides" }
                     ]
                 }
             ]
@@ -78,7 +84,10 @@
                     "channels": [
                         { "id": "CellViewerState", "role": "writes" },
                         { "id": "CellViewerDemand", "role": "reads" },
-                        { "id": "CellViewerStateChannel", "role": "consumes" }
+                        { "id": "CellViewerStateChannel", "role": "consumes" },
+                        { "id": "CellHistoryState", "role": "writes" },
+                        { "id": "CellHistoryDemand", "role": "reads" },
+                        { "id": "CellHistoryStateChannel", "role": "consumes" }
                     ]
                 },
                 {

@@ -34,6 +34,9 @@ public:
     Dia::VisualDebugger::IDebugDomain* Attach(Dia::VisualDebugger::IDebugDomain& viewer);
     // SimPU. Drops the adapter and publisher. The caller unregisters the adapter from the registry first.
     void Detach();
+    // Same pair for the Cell History timeline domain (own snapshot/demand/channel streams). The adapter is for the DebugDomain registry.
+    Dia::VisualDebugger::IDebugDomain* AttachHistory(Dia::VisualDebugger::IDebugDomain& domain);
+    void DetachHistory();
     bool IsAttached() const { return static_cast<bool>(mAdapter); }
     uint32_t PublishCount() const { return mPublisher ? mPublisher->PublishCount() : 0u; }
 
@@ -61,6 +64,13 @@ private:
     SnapshotSink mSink{mSnapshotOut};
     Dia::Core::UniquePtr<Dia::CellLayers::ViewerStateSnapshotPublisher> mPublisher;
     Dia::Core::UniquePtr<Dia::CellLayers::ViewerStateAdapter> mAdapter;
+
+    Dia::ApplicationFlow::StreamWriter<Dia::CellLayers::ViewerStateSlot> mHistorySnapshotOut{this, CellLayersStateBridgeModule::kHistorySnapshotStreamId};
+    Dia::ApplicationFlow::EventStreamReader<Dia::CellLayers::ViewerStateDemandEvent> mHistoryDemandIn{this, CellLayersStateBridgeModule::kHistoryDemandStreamId};
+    Dia::ApplicationFlow::ServiceStreamReader<CellViewerStateChannel> mHistoryChannel{this, CellLayersStateBridgeModule::kHistoryChannelStreamId};
+    SnapshotSink mHistorySink{mHistorySnapshotOut};
+    Dia::Core::UniquePtr<Dia::CellLayers::ViewerStateSnapshotPublisher> mHistoryPublisher;
+    Dia::Core::UniquePtr<Dia::CellLayers::ViewerStateAdapter> mHistoryAdapter;
 };
 
 } // namespace CluicheTest

@@ -116,6 +116,21 @@ TEST_F(ViewStateTest, HistorySourceFieldIsPublished)
 	EXPECT_EQ(topic.Last()["history"]["mode"].asString(), "sample");
 }
 
+// Regression (found by the scrub E2E): attaching a source AFTER the first publish whose stamp is 0 (live at epoch 0) must still
+// republish, i.e. 'source present with stamp 0' must differ from 'no source'.
+TEST_F(ViewStateTest, AttachingAZeroStampSourceAfterFirstPublishRepublishesTheHistoryObject)
+{
+	Frame();
+	ASSERT_EQ(topic.Count(), 1u);
+	ASSERT_TRUE(topic.Last()["history"].isNull());
+	FakeHistorySource src;
+	src.stamp = 0;
+	publisher.SetHistorySource(&src);
+	clock.Advance(200); Frame();
+	ASSERT_EQ(topic.Count(), 2u);
+	ASSERT_TRUE(topic.Last()["history"].isObject());
+}
+
 TEST_F(ViewStateTest, HistoryStampChangeRepublishesAndUnchangedDoesNot)
 {
 	FakeHistorySource src;

@@ -347,6 +347,9 @@ namespace
 			AddStream(manifest, "CellViewerState", "FrameStream", "SimPU", "MainPU");
 			AddStream(manifest, "CellViewerDemand", "EventStream", "MainPU", "SimPU", 8);
 			AddStream(manifest, "CellViewerStateChannel", "ServiceStream", "MainPU", "SimPU");
+			AddStream(manifest, "CellHistoryState", "FrameStream", "SimPU", "MainPU");
+			AddStream(manifest, "CellHistoryDemand", "EventStream", "MainPU", "SimPU", 8);
+			AddStream(manifest, "CellHistoryStateChannel", "ServiceStream", "MainPU", "SimPU");
 
 			ProcessingUnitDeclaration mainPu;
 			mainPu.instanceId = StringCRC("MainPU");
@@ -354,7 +357,8 @@ namespace
 			mainPu.dedicatedThread = false;
 			mainPu.modules.Add(Mod(IntMainShim::kTypeId, "shim", { { "SimQueryRequest", "writes" }, { "SimQueryReply", "reads" } }));
 			mainPu.modules.Add(Mod(CellLayersStateBridgeModule::kTypeId, "bridge",
-				{ { "CellViewerState", "reads" }, { "CellViewerDemand", "writes" }, { "CellViewerStateChannel", "provides" } }));
+				{ { "CellViewerState", "reads" }, { "CellViewerDemand", "writes" }, { "CellViewerStateChannel", "provides" },
+				  { "CellHistoryState", "reads" }, { "CellHistoryDemand", "writes" }, { "CellHistoryStateChannel", "provides" } }));
 			manifest.processingUnits.Add(mainPu);
 
 			ProcessingUnitDeclaration simPu;
@@ -363,7 +367,8 @@ namespace
 			simPu.dedicatedThread = false;
 			simPu.modules.Add(Mod(SimQueryHostModule::kTypeId, "host", { { "SimQueryRequest", "reads" }, { "SimQueryReply", "writes" } }));
 			simPu.modules.Add(Mod(CellLayersStateRelayModule::kTypeId, "relay",
-				{ { "CellViewerState", "writes" }, { "CellViewerDemand", "reads" }, { "CellViewerStateChannel", "consumes" } }));
+				{ { "CellViewerState", "writes" }, { "CellViewerDemand", "reads" }, { "CellViewerStateChannel", "consumes" },
+				  { "CellHistoryState", "writes" }, { "CellHistoryDemand", "reads" }, { "CellHistoryStateChannel", "consumes" } }));
 			simPu.modules.Add(Mod(IntSimDriver::kTypeId, "driver", {}, { "host", "relay" }));
 			manifest.processingUnits.Add(simPu);
 
@@ -485,7 +490,7 @@ TEST(CellLayersIntegrationStreams, MoreRequestsThanTheStreamHoldsEachGetExactlyO
 	EXPECT_GE(served, 16 - 1) << "the 16 the stream can hold are served";
 }
 
-// The announce stream holds 48 events (drop-oldest). Names are capped at 32 per module, but unregister/register churn between two
+// The announce stream holds 48 events (drop-oldest). Names are capped at 64 per module, but unregister/register churn between two
 // Main drains can exceed 48 events, so Main loses the oldest announcements. The announcement resync (seq gap -> resync request ->
 // paced replay -> atomic table swap) must repair this: every hosted name ends up routable at Main. Main runs the real
 // DebugServerHostModule announcement handling with a deterministic clock (34 ms per Main frame).
@@ -499,7 +504,7 @@ TEST(CellLayersIntegrationStreams, AnnouncementChurnPastStreamCapacityNeverLeave
 	auto noop = [](const Json::Value&) { return Json::Value(Json::objectValue); };
 	for (int round = 0; round < 3; ++round)
 	{
-		for (int i = 0; i < 32; ++i)
+		for (int i = 0; i < 64; ++i)
 		{
 			const std::string n = "churn.n" + std::to_string(i);
 			if (round > 0) gHost->UnregisterQuery(n.c_str());
@@ -507,7 +512,7 @@ TEST(CellLayersIntegrationStreams, AnnouncementChurnPastStreamCapacityNeverLeave
 		}
 	}
 	gShim->drainPaused = false;
-	// Converge: gap detected on the first drain, resync requested, begin + 32 replays paced 16 per Sim frame, table swapped.
+	// Converge: gap detected on the first drain, resync requested, begin + 64 replays paced 16 per Sim frame, table swapped.
 	ASSERT_TRUE(h.PumpUntil([&] { return gShim->probe.GetAnnounceTracker().ResyncsCompleted() > 0; }, 300))
 		<< "Main never completed a resync after the churn: gaps=" << gShim->probe.GetAnnounceTracker().AnnounceGaps()
 		<< " requested=" << gShim->probe.GetAnnounceTracker().ResyncsRequested() << " timeouts=" << gShim->probe.GetAnnounceTracker().ResyncTimeouts()
@@ -515,8 +520,8 @@ TEST(CellLayersIntegrationStreams, AnnouncementChurnPastStreamCapacityNeverLeave
 	EXPECT_TRUE(gShim->probe.GetAnnounceTracker().InSync());
 	uint32_t count = 0, hash = 0;
 	gShim->probe.GetServer()->GetSimHostedDigest(count, hash);
-	EXPECT_EQ(count, 32u);
-	for (int i = 0; i < 32; ++i)
+	EXPECT_EQ(count, 64u);
+	for (int i = 0; i < 64; ++i)
 	{
 		const std::string n = "churn.n" + std::to_string(i);
 		ASSERT_TRUE(gHost->GetHost().Has(StringCRC(n.c_str())));

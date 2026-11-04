@@ -75,7 +75,8 @@ namespace HistoryRig
 
 	struct Rig
 	{
-		Dia::CellHistory::Testing::StubGrid grid{ 4, 3 };	// 12 cells
+		Rig(uint16_t width = 4, uint16_t height = 3) : grid(width, height) {}
+		Dia::CellHistory::Testing::StubGrid grid;	// default 4x3 = 12 cells
 		Dia::CellHistory::Testing::StubGrid other{ 2, 2 };	// a second grid (different size, same registry)
 		SchemaSet schema;
 		Dia::CellLayers::CellLayerRegistry registry;

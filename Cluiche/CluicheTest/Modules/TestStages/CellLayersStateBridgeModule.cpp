@@ -28,6 +28,7 @@ CellLayersStateBridgeModule::CellLayersStateBridgeModule(const Dia::Core::String
     : MainModule(instanceId)
 {
     mChannel.SetSnapshotReader(&mSnapshotIn);
+    mHistoryChannel.SetSnapshotReader(&mHistorySnapshotIn);
 }
 
 void CellLayersStateBridgeModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
@@ -35,11 +36,15 @@ void CellLayersStateBridgeModule::OnConnectStreams(Dia::ApplicationFlow::Applica
     mSnapshotIn.Connect(app);
     mDemandOut.Connect(app);
     mChannelOut.Connect(app);
+    mHistorySnapshotIn.Connect(app);
+    mHistoryDemandOut.Connect(app);
+    mHistoryChannelOut.Connect(app);
 }
 
 Dia::ApplicationFlow::StartResult CellLayersStateBridgeModule::DoStart()
 {
     mChannelOut.Register(mChannel);
+    mHistoryChannelOut.Register(mHistoryChannel);
     DIA_LOG_INFO("CEL", "CellLayersStateBridgeModule: viewer state channel published on '%s'", kChannelStreamId);
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -49,11 +54,14 @@ void CellLayersStateBridgeModule::DoUpdate(const Dia::SimTime::MainTimeContext& 
     // One demand event per Main tick, however many GetJSONState calls the panel and queries made.
     if (mChannel.TakeDemand())
         mDemandOut.Send(Dia::CellLayers::ViewerStateDemandEvent{});
+    if (mHistoryChannel.TakeDemand())
+        mHistoryDemandOut.Send(Dia::CellLayers::ViewerStateDemandEvent{});
 }
 
 Dia::ApplicationFlow::StopResult CellLayersStateBridgeModule::DoStop()
 {
     mChannelOut.Deregister();
+    mHistoryChannelOut.Deregister();
     DIA_LOG_INFO("CEL", "CellLayersStateBridgeModule: viewer state channel withdrawn");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

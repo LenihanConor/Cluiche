@@ -100,7 +100,8 @@ def test_celllayers_mirror(dia_client):
         assert st0["base"] == "temperature", st0
         assert st0["overlays"] == [], st0["overlays"]
         assert st0["selection"]["count"] == 0 and st0["selection"]["hash"] == "0000000000000000", st0["selection"]
-        assert st0["history"] is None, st0
+        # The stage installs the DiaCellHistory view source (Feature 2), so the field reports the live view.
+        assert st0["history"] == {"mode": "live", "sample": None, "label": None}, st0
         assert st0["viewVersion"] >= 1 and st0["layersVersion"] >= 1, st0
 
         # 2. Base change: new update, larger viewVersion, layersVersion unchanged.

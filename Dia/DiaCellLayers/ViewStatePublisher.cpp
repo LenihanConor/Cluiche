@@ -54,7 +54,7 @@ namespace Dia::CellLayers
 		const ICellSelectionView* sel = mViewer.ActiveSelectionView();
 		if (sel != nullptr) { out.selection = mFingerprint.Get(*sel); }
 		else { out.selection = SelectionFingerprint(); mFingerprint.Invalidate(); }
-			out.historyStamp = mHistory ? mHistory->HistoryStamp() : 0;
+			out.historyStamp = mHistory ? mHistory->HistoryStamp() + 1 : 0;	// +1: a present source at stamp 0 must differ from no source
 	}
 
 	void ViewStatePublisher::Update()

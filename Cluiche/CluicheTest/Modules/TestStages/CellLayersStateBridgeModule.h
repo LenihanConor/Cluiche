@@ -48,6 +48,10 @@ public:
     static constexpr const char* kSnapshotStreamId = "CellViewerState";
     static constexpr const char* kDemandStreamId   = "CellViewerDemand";
     static constexpr const char* kChannelStreamId  = "CellViewerStateChannel";
+    // Second, identical set for the Cell History timeline card domain ("cellhistory").
+    static constexpr const char* kHistorySnapshotStreamId = "CellHistoryState";
+    static constexpr const char* kHistoryDemandStreamId   = "CellHistoryDemand";
+    static constexpr const char* kHistoryChannelStreamId  = "CellHistoryStateChannel";
 
     explicit CellLayersStateBridgeModule(const Dia::Core::StringCRC& instanceId);
 
@@ -62,6 +66,11 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<Dia::CellLayers::ViewerStateDemandEvent> mDemandOut{this, kDemandStreamId};
     Dia::ApplicationFlow::ServiceStreamWriter<CellViewerStateChannel> mChannelOut{this, kChannelStreamId};
     CellViewerStateChannel mChannel;
+
+    Dia::ApplicationFlow::StreamReader<Dia::CellLayers::ViewerStateSlot> mHistorySnapshotIn{this, kHistorySnapshotStreamId};
+    Dia::ApplicationFlow::EventStreamWriter<Dia::CellLayers::ViewerStateDemandEvent> mHistoryDemandOut{this, kHistoryDemandStreamId};
+    Dia::ApplicationFlow::ServiceStreamWriter<CellViewerStateChannel> mHistoryChannelOut{this, kHistoryChannelStreamId};
+    CellViewerStateChannel mHistoryChannel;
 };
 
 } // namespace CluicheTest

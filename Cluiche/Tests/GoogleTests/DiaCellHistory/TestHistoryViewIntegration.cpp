@@ -412,6 +412,66 @@ TEST_F(HistoryViewIntegration, EachViewChangeCostsExactlyOneReadAndOneUpload)
 	EXPECT_EQ(r.grid.ReadCount("temp") - liveReads, 1u);
 }
 
+TEST_F(HistoryViewIntegration, ViewChangeAtLargeGridCostsExactlyOneReadAndOneUpload)
+{
+	// Large grid (104 x 64 = 6,656 cells): scrubbing is one recorded-sample read and one upload per view change.
+	constexpr uint32_t kCells = 104u * 64u;
+	Rig r(104, 64);
+	ASSERT_EQ(r.grid.CellCount(), kCells);
+	r.grid.SetTopology("hex.flat.oddq");
+	r.grid.AddFloatLayer("temp", 0.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100000) }));
+	r.cfg.mTrackCount = 0;
+	r.cfg.mTrack[r.cfg.mTrackCount++] = Dia::Core::Containers::String64("%s", "temp");
+	r.Start(nullptr, false);
+	for (uint32_t s = 0; s < 4; ++s)
+	{
+		for (uint32_t c = 0; c < kCells; ++c) { r.grid.Set("temp", c, 1000.0f * s + float(c % 100)); }
+		r.grid.BumpVersion("temp");
+		r.Take();
+	}
+	for (uint32_t c = 0; c < kCells; ++c) { r.grid.Set("temp", c, -1.0f); }
+	r.grid.BumpVersion("temp");
+
+	Dia::Graphics::CellFieldRegistry cellField;
+	FakeDebugDraw draw;
+	LayerUploader uploader(cellField, r.schema.service.get());
+	CellLayerViewerDomain domain(r.registry, uploader, r.schema.service.get(), CellLayerViewerDomain::ViewFn(&ViewFn0));
+	HistoryViewState view(*r.rec);
+	HistoryValueSource source(r.registry, *r.rec, view);
+	ASSERT_TRUE(source.Install());
+	HistoryViewCommands commands(*r.rec, view, &r.cfg);
+	FakeMirrorRegistrar registrar;
+	ASSERT_TRUE(commands.Register(registrar));
+	ASSERT_TRUE(domain.SetBase(StringCRC("temp")));
+	auto frame = [&] { source.Tick(); domain.Update(draw); };
+	frame();
+
+	Json::Value a(Json::objectValue);
+	a["sample"] = 2;
+	ASSERT_TRUE(registrar.Execute("cells.history.view", a)["ok"].asBool());
+	frame(); frame();	// settle
+
+	uint64_t reads = uploader.Reads(), uploads = uploader.Uploads();
+	a["sample"] = 3;
+	ASSERT_TRUE(registrar.Execute("cells.history.view", a)["ok"].asBool());
+	frame();
+	EXPECT_EQ(uploader.Reads() - reads, 1u);
+	EXPECT_EQ(uploader.Uploads() - uploads, 1u);
+	uint32_t n = 0;
+	const float* base = uploader.BaseValues(StringCRC("temp"), n);
+	ASSERT_NE(base, nullptr);
+	ASSERT_EQ(n, kCells);
+	EXPECT_NEAR(base[0], 3000.0f, 2.0f);	// recorded values are quantised to the schema range
+	EXPECT_NEAR(base[kCells - 1], 3000.0f + float((kCells - 1) % 100), 2.0f);
+
+	reads = uploader.Reads(); uploads = uploader.Uploads();
+	frame(); frame();
+	EXPECT_EQ(uploader.Reads(), reads);
+	EXPECT_EQ(uploader.Uploads(), uploads);
+	commands.Unregister(registrar);
+}
+
 TEST_F(HistoryViewIntegration, ScrubbedViewNeverCallsTheLiveReadDelegate)
 {
 	ViewRig r; r.Setup(false);
