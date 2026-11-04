@@ -41,6 +41,33 @@ namespace Dia::CellHistory
 		return &mRecords[0];	// unreachable in practice: the cap keeps at most 16 ready records
 	}
 
+	uint32_t SnapshotManager::ListSummaries(SnapshotSummary* out, uint32_t cap) const
+	{
+		if (out == nullptr) { return 0; }
+		uint32_t n = 0;
+		for (const SnapshotRecord& r : mRecords)
+		{
+			if (n >= cap) { break; }
+			if (!r.mUsed || r.mStatus != SnapshotStatus::Ready) { continue; }
+			out[n] = SnapshotSummary();
+			Copy(out[n].mName, sizeof(out[n].mName), r.mName);
+			out[n].mSample = r.mSample;
+			Copy(out[n].mLabel, sizeof(out[n].mLabel), r.mLabel);
+			++n;
+		}
+		return n;
+	}
+
+	bool SnapshotManager::RemoveRecord(const char* name)
+	{
+		if (name == nullptr || mGate.InFlight()) { return false; }
+		for (SnapshotRecord& r : mRecords)
+		{
+			if (r.mUsed && std::strcmp(r.mName, name) == 0) { r = SnapshotRecord(); return true; }
+		}
+		return false;
+	}
+
 	bool SnapshotManager::Take(const char* name, bool overwrite, TakeResult& out)
 	{
 		out = TakeResult();

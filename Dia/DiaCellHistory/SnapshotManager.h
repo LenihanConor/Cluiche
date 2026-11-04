@@ -76,6 +76,14 @@ namespace Dia::CellHistory
 		uint64_t		mRunId = 0;
 	};
 
+	// What cells.history.meta and the export list for each ready snapshot (Feature 5 wires it).
+	struct SnapshotSummary
+	{
+		char		mName[33] = {};
+		uint32_t	mSample = 0;
+		char		mLabel[32] = {};
+	};
+
 	class SnapshotManager
 	{
 	public:
@@ -98,6 +106,12 @@ namespace Dia::CellHistory
 
 		bool Restore(const char* name, RestoreResult& out);
 		const RestoreOutcome& LastRestore() const { return mLastRestore; }
+
+		// Ready snapshots of this session's records, in record order: fills up to `cap` entries of `out`, returns the count.
+		uint32_t ListSummaries(SnapshotSummary* out, uint32_t cap) const;
+
+		// Drops the record of `name` (no files, no store). False when there is none or an operation is in flight.
+		bool RemoveRecord(const char* name);
 
 		bool OperationInFlight() const { return mGate.InFlight(); }
 		uint32_t Count() const { return kMaxRecords; }		// slots; check mUsed
