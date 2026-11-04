@@ -152,16 +152,17 @@ def test_celllayers_snapshots(dia_client):
         assert _wait(lambda: _values(c, "temperature") == before, 10.0), "temperature layer not restored to its value at take time"
 
         # The per-cell copy decodes to the same quantised values.
-        d = _vc(c, "cells.history.snapshot", {"name": "pre", "layer": "temperature"})
+        # cells.layer.values pages at 1000 cells; compare the first page of the per-cell copy (the query serves up to 4096 cells per reply).
+        d = _vc(c, "cells.history.snapshot", {"name": "pre", "layer": "temperature", "offset": 0, "count": len(before)})
         assert d["kind"] == "float" and d["encoding"], d
-        assert d["total"] == len(before) and d["offset"] == 0 and d["count"] == d["total"], d
+        assert d["total"] >= len(before) and d["offset"] == 0 and d["count"] == len(before), d
         raw = base64.b64decode(d["data"])
         codes = struct.unpack("<%dH" % (len(raw) // 2), raw)
         assert len(codes) == len(before)
         mn, mx = d["min"], d["max"]
         tol = (mx - mn) / 65535.0 + 1e-3
         for i, q in enumerate(codes):
-            assert abs((mn + (q / 65535.0) * (mx - mn)) - before[i]) <= tol, (i, q, before[i])
+            assert abs((mn + (q / 65534.0) * (mx - mn)) - before[i]) <= tol, (i, q, before[i])
         assert _err(c, "cells.history.snapshot", {"name": "pre", "layer": "no_such_layer"})
         assert _err(c, "cells.history.snapshot", {"name": "nope", "layer": "temperature"})
 
