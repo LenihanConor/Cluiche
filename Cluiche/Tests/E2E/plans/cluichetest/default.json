@@ -31,6 +31,7 @@
         "scenarios/cluichetest/celllayers/test_celllayers_help.py",
         "scenarios/cluichetest/celllayers/test_celllayers_history_scrub.py",
         "scenarios/cluichetest/celllayers/test_celllayers_snapshots.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_export.py",
         "scenarios/cluichetest/sim_hosted/test_sim_hosted_query.py"
     ],
     "generic_run_skip": {
