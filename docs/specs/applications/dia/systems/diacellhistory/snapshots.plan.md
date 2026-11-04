@@ -1,0 +1,29 @@
+**Spec:** @docs/specs/applications/dia/systems/diacellhistory/snapshots.md
+**Status:** In Progress
+
+Feature 3 of DiaCellHistory (system order 1 → 2 → 4 → 3 → 5). **Prerequisites:** Features 1 and 2 built; Feature 5 task 5.1 (`HistoryEncoding`) built first (it is pulled ahead of this feature). TDD throughout (RED proven with quoted output). Commit after each task. Models are sonnet or haiku only; any opus use needs the user's confirmation first. Split out of `diacellhistory.plan.md` on 2026-11-04.
+
+**Verification policy (agreed 2026-11-03/04):** per task and per feature, scoped GoogleTests only (`--filter` including fixture-named suites, `--shards >= 2`). Full run, sanitizer (one mid-run after this feature), Release and full E2E live in the system plan's S7. Per feature: Observation scan (notes only) and a short gap audit with edge tests. **Mutation checks only on pure threshold/arithmetic logic** (none planned here); no mutation checks on orchestration, file or command code.
+
+**Facts carried from earlier features (checked 2026-11-04):**
+- `CellHistoryRecorder` (`Dia/DiaCellHistory/CellHistoryRecorder.h`) already has `TruncateAfter(sample)` ("drops every sample > sample from all tiers and headers; next Sample gets index sample+1"), `RunId()` (SplitMix64 of a caller seed, fixed at construction), `SampleCount()`, `FirstRetained()`, `Header(sample)`, `CellValues`, `Events`, `Ring()`. Check what it does with emitted-but-unattached events (3.5) and add a `ResetHistory(newRunSeed)` / run-id regeneration for the foreign-run rule (3.6, a small Feature 1 addition; the recorder is constructed with a registry, schema and config that must be kept).
+- Quantisation: ring values are uint16 over the schema min..max for float layers and uint8 ids for category layers; the cell file uses the same scheme via `HistoryEncoding` (task 5.1).
+- `HistoryViewState` (Feature 2/4): `GoLive()`, `Update()` (returns to live with a Warning when a truncate drops the viewed sample), delta mode returns to the held view; a restore must send the viewer to live and bump the view epoch (carry-over: `TimelineModel::NeedsRebuild` cannot see truncate-then-resample to the same count, so 3.5/3.6 must bump the view epoch or add a recorder generation counter).
+- `SnapshotCellCache` and the `snapshot:<name>` side of Feature 4 (task 4.9) read this feature's cell file; `SideReader` returns `Unavailable` for snapshot sides today and `cells.history.delta` rejects them in one replaceable check.
+- Sim-hosted name ceiling is 64; the CellLayersViewer stage registers about 13 `cells.*`/stage names now. This feature adds `cells.snapshot.take/restore/list/delete` and `cells.history.snapshot` (5 names).
+- Test utilities live in `DiaCellHistory/Testing/`; `HistoryTestRig.h` has the `Rig` fixture.
+- The CoW `ISnapshotStore` adapter over E1 is a separate CoW row; Dia work uses a fake store.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 3.1 | `ISnapshotStore` interface + `FakeSnapshotStore` in `Testing/` (scripted success / failure, recorded callbacks, temp-folder helper) | Used by 3.2 on | Pending | sonnet | Interface per spec; callbacks via function pointer + user data |
+| 3.2 | `SnapshotCellFile` write / read (`dia.cell_snapshot` v1, header, grid, layers via `HistoryEncoding`), atomic temp + rename (AC 2) | RED-GREEN: round trip within range/65,535 | Pending | sonnet | Needs 5.1 encoders |
+| 3.3 | Name validation (1–32 of `A-Za-z0-9_-`), 16-snapshot cap counting files from the store folder, overwrite rule, one-operation-in-flight (AC 3, 8a) | RED-GREEN | Pending | sonnet | |
+| 3.4 | `SnapshotManager::Take`: pending result, frame-boundary capture of every recorded layer, store request, cell file write, both-or-neither with cleanup (`Delete`) on any failure (AC 1, 4) | RED-GREEN: success, store fails, file write fails, no partial files | Pending | sonnet | |
+| 3.5 | `Restore` same run: grid check before the store call, truncate samples / aggregates / ring slots / events (including unattached), Warning with the dropped count, older-than-window empties the ring with a gap (AC 5, 6, 8a) | RED-GREEN | Pending | sonnet | Truncation exists on every tier; verify unattached events; bump the view epoch |
+| 3.6 | `Restore` foreign run: reset history, new `runId`, sample numbering from 0; store failure leaves history untouched; viewer to live, selection kept (AC 7, 8, 9) | RED-GREEN | Pending | sonnet | Small Feature 1 addition: recorder reset + run id regeneration |
+| 3.7 | Commands `cells.snapshot.take [overwrite]`, `restore`, `list` (with orphans as `failed`), `delete` (both halves) (AC 10) | RED-GREEN | Pending | sonnet | 4 sim-hosted names; help info mandatory |
+| 3.8 | Query `cells.history.snapshot {name, layer}` and the `snapshots` field of meta / export (AC 11, 12) | RED-GREEN | Pending | sonnet | Meta field wired in Feature 5 |
+| 3.9 | Observation (metrics, profile scopes, logs); perf: capture 64 layers at Large, cell file < ~1 MB (AC 13) | RED-GREEN | Pending | sonnet | |
+| 3.10 | Panel snapshot list / take / restore controls (mockup has snapshots); golden, pages, visual gate; E2E with the fake store in the CluicheTest stage | Golden + E2E | Pending | sonnet | User approves the snapshot controls by eye; E2E on a quiet machine |
+| 3.11 | Finalize: `dia check deps`, STL grep, module doc, observation scan (notes), gap audit + edge tests, scoped GoogleTests, close spec by hand if `dia docs spec-done` cannot parse it. CoW adapter and S-3 proof (state hash match) tracked on the CoW `ISnapshotStore` row | Verify gate | Pending | haiku | |
