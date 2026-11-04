@@ -260,6 +260,8 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
     SubmitPointerInput();
     SampleHistory();
     UpdateHistoryScrub();
+    if (mHistoryTopics)
+        mHistoryTopics->Tick();   // after sampling; UpdateHistoryScrub has already torn the topics down if the recorder went away
 #endif
 
     if (++mReadyFrames >= kHoldFrames)
@@ -836,11 +838,52 @@ void CellLayersViewerTestStageModule::BuildSnapshots(Dia::CellHistory::CellHisto
     mExportCommandsRegistered = mExportCommands->Register(*mHistoryRegistrar);
     if (!mExportCommandsRegistered)
         DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.export registration failed");
+
+    BuildHistoryTopics(recorder);
+}
+
+bool CellLayersViewerTestStageModule::HistoryTopicPublisher::Publish(Dia::Core::StringCRC topic, const Json::Value& payload)
+{
+    const unsigned int before = mServer.GetOrderedDroppedCount();
+    mServer.PublishTopicOrdered(topic, payload);   // any thread; queued FIFO, delivered by the server's Main tick
+    return mServer.GetOrderedDroppedCount() == before;   // a full queue drops the NEW message and counts it
+}
+
+uint32_t CellLayersViewerTestStageModule::HistoryTopicPublisher::SubscriberCount() const
+{
+    return mServer.GetTopicSubscriberCount(Dia::Core::StringCRC("cells.history.aggregates"))
+        + mServer.GetTopicSubscriberCount(Dia::Core::StringCRC("cells.history.events"));
+}
+
+void CellLayersViewerTestStageModule::BuildHistoryTopics(Dia::CellHistory::CellHistoryRecorder& recorder)
+{
+    // Same server lookup as BuildMirror: the pointer is published by Main on the "DebugServerService" ServiceStream.
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    auto* store = app ? app->FindStream(Dia::Core::StringCRC("DebugServerService")) : nullptr;
+    if (store == nullptr || !store->IsCommitted())
+    {
+        DIA_LOG_WARNING("HIS", "CellLayersViewerTestStage: DebugServerService stream unavailable - cells.history topics not published");
+        return;
+    }
+    Dia::DebugServer::DebugServer* server = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store)->Get();
+    if (server == nullptr)
+    {
+        DIA_LOG_WARNING("HIS", "CellLayersViewerTestStage: no DebugServer - cells.history topics not published");
+        return;
+    }
+    mTopicPublisher = Dia::Core::MakeUnique<HistoryTopicPublisher>(*server);
+    mTopicObservation = Dia::Core::MakeUnique<Dia::CellHistory::TopicObservation>();
+    mHistoryTopics = Dia::Core::MakeUnique<Dia::CellHistory::HistoryTopics>(recorder, *mTopicPublisher);
+    mHistoryTopics->SetObservation(mTopicObservation.Get());
 }
 
 void CellLayersViewerTestStageModule::TeardownSnapshots()
 {
-    // Export commands first (they borrow the manager), then the snapshot commands (their handlers capture the manager and
+    // Topics first: they borrow the recorder and the publisher (which borrows the server).
+    mHistoryTopics.Reset();
+    mTopicObservation.Reset();
+    mTopicPublisher.Reset();
+    // Export commands (they borrow the manager), then the snapshot commands (their handlers capture the manager and
     // store), then manager, observation, store. The recorder may already be withdrawn, so its world provider is not touched
     // (it points at mWorldName, which lives as long as the stage).
     if (mExportCommands && mExportCommandsRegistered && mHistoryRegistrar)

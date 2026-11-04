@@ -4,6 +4,7 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryEncoding.h>
 #include <DiaCellHistory/HistoryExporter.h>
+#include <DiaCellHistory/HistoryRows.h>
 #include <DiaCellHistory/QueryObservation.h>
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
@@ -27,6 +28,10 @@ namespace Dia::CellHistory
 {
 	using Dia::API::ValueParam;
 	using Dia::Core::StringCRC;
+	using Rows::B64U16;
+	using Rows::SchemaFor;
+	using Rows::FirstRowSample;
+	using Rows::EnumValues;
 
 	namespace
 	{
@@ -70,22 +75,6 @@ namespace Dia::CellHistory
 			return true;
 		}
 
-		std::string B64F32(const float* v, uint32_t n)
-		{
-			std::string s(size_t(EncodedLength(n * 4u)) + 1, '\0');
-			uint32_t len = 0;
-			if (!EncodeFloat32(v, n, &s[0], uint32_t(s.size()), len)) { len = 0; }
-			s.resize(len);
-			return s;
-		}
-		std::string B64U16(const uint16_t* v, uint32_t n)
-		{
-			std::string s(size_t(EncodedLength(n * 2u)) + 1, '\0');
-			uint32_t len = 0;
-			if (!EncodeUInt16(v, n, &s[0], uint32_t(s.size()), len)) { len = 0; }
-			s.resize(len);
-			return s;
-		}
 		std::string B64U8(const uint8_t* v, uint32_t n)
 		{
 			std::string s(size_t(EncodedLength(n)) + 1, '\0');
@@ -140,43 +129,10 @@ namespace Dia::CellHistory
 			return i;
 		}
 
-		const Dia::ValueSchema::ValueInfo* SchemaFor(const CellHistoryRecorder& rec, StringCRC layer)
-		{
-			const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema();
-			if (schema == nullptr) { return nullptr; }
-			const Dia::CellLayers::CellLayerDesc* desc = rec.Registry().Find(layer);
-			return schema->Find(desc != nullptr ? desc->schemaKey : layer);
-		}
-
 		StringCRC SchemaKeyFor(const CellHistoryRecorder& rec, StringCRC layer)
 		{
 			const Dia::CellLayers::CellLayerDesc* desc = rec.Registry().Find(layer);
 			return desc != nullptr ? desc->schemaKey : layer;
-		}
-
-		// First sample in [aggFirst, count) that has a row for the layer (count when none), as the file's `first`.
-		uint32_t FirstRowSample(const CellHistoryRecorder& rec, StringCRC layer, AggregateKind kind, uint32_t enumCount, uint32_t aggFirst, uint32_t count)
-		{
-			const StringCRC world = AggregateStore::WorldGroup();
-			uint16_t probe[AggregateStore::kMaxEnumCount];
-			for (uint32_t s = aggFirst; s < count; ++s)
-			{
-				AggregateStats st;
-				if (kind == AggregateKind::Float ? rec.Aggregate(s, layer, world, st) : rec.CategoryCounts(s, layer, world, probe, enumCount)) { return s; }
-			}
-			return count;
-		}
-
-		Json::Value EnumValues(const CellHistoryRecorder& rec, StringCRC layer, uint32_t enumCount)
-		{
-			Json::Value values(Json::arrayValue);
-			const Dia::ValueSchema::ValueInfo* info = SchemaFor(rec, layer);
-			for (uint32_t v = 0; v < enumCount; ++v)
-			{
-				if (info != nullptr && v < info->mEnumValues.Size()) { values.append(info->mEnumValues[v].mId.AsCStr()); }
-				else { char b[12]; snprintf(b, sizeof(b), "%u", v); values.append(b); }
-			}
-			return values;
 		}
 
 		template <class Store>
@@ -194,71 +150,13 @@ namespace Dia::CellHistory
 			return list;
 		}
 
-		// ---- events (the file's event shape) ----
-
-		struct GroupInfo { std::string id; uint32_t layerCrc; uint32_t value; };
-		struct TypeInfo { uint32_t crc; std::string key; };
-
-		void CollectGroups(const CellHistoryRecorder& rec, std::vector<GroupInfo>& groups)
-		{
-			const AggregateStore& agg = rec.Aggregates();
-			for (uint32_t g = 1; g < agg.GroupCount(); ++g)
-			{
-				StringCRC layer;
-				uint32_t value = 0;
-				if (rec.GroupSource(g, layer, value)) { groups.push_back({ agg.GroupAt(g).AsChar(), layer.Value(), value }); }
-			}
-		}
-
-		void CollectTypes(const CellHistoryRecorder& rec, std::vector<TypeInfo>& types)
-		{
-			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
-			{
-				for (unsigned int i = 0; i < schema->Count(); ++i)
-				{
-					const Dia::ValueSchema::ValueInfo* v = schema->At(i);
-					if (v != nullptr && v->mKind == Dia::ValueSchema::ValueKind::Event) { types.push_back({ StringCRC(v->mKey.AsCStr()).Value(), v->mKey.AsCStr() }); }
-				}
-			}
-		}
-
-		Json::Value EventToJson(const EventView& e, const std::vector<GroupInfo>& groups, const std::vector<TypeInfo>& types)
-		{
-			Json::Value j(Json::objectValue);
-			j["sample"] = e.mSample;
-			const unsigned int typeCrc = e.mType.Value();
-			const char* typeText = nullptr;
-			for (const TypeInfo& t : types) { if (t.crc == typeCrc) { typeText = t.key.c_str(); break; } }
-			char fallback[24];
-			if (typeText == nullptr) { snprintf(fallback, sizeof(fallback), "crc:%08x", typeCrc); typeText = fallback; }
-			j["type"] = typeText;
-			const char* groupId = nullptr;
-			if (!e.GroupIsNone())
-			{
-				for (const GroupInfo& g : groups) { if (g.layerCrc == e.mGroupLayer.Value() && g.value == e.mGroupValue) { groupId = g.id.c_str(); break; } }
-			}
-			if (groupId != nullptr) { j["group"] = groupId; } else { j["group"] = Json::Value(Json::nullValue); }
-			if (e.mCell == HistoryEvent::kNoCell) { j["cell"] = Json::Value(Json::nullValue); } else { j["cell"] = e.mCell; }
-			Json::Value payload(Json::nullValue);
-			if (e.mPayloadJson != nullptr && e.mPayloadJson[0] != '\0')
-			{
-				Json::Value parsed;
-				Json::Reader reader;
-				if (reader.parse(e.mPayloadJson, parsed, false) && parsed.isObject()) { payload = parsed; }
-			}
-			j["payload"] = payload;
-			if (e.mText != nullptr && e.mText[0] != '\0') { j["text"] = e.mText; }
-			return j;
-		}
-
 		struct EventScan
 		{
 			uint32_t						from = 0;
 			uint32_t						skip = 0;
 			bool							useFilter = false;
 			std::vector<uint32_t>			filter;
-			const std::vector<GroupInfo>*	groups = nullptr;
-			const std::vector<TypeInfo>*	types = nullptr;
+			const Rows::EventContext*		ctx = nullptr;
 			size_t							used = 0;
 			size_t							budget = 0;
 			uint32_t						maxEvents = 0;
@@ -288,7 +186,7 @@ namespace Dia::CellHistory
 				for (uint32_t crc : c.filter) { if (crc == e.mType.Value()) { match = true; break; } }
 				if (!match) { return; }
 			}
-			Json::Value item = EventToJson(e, *c.groups, *c.types);
+			Json::Value item = Rows::EventToJson(e, *c.ctx);
 			const size_t s = JsonSize(item) + (c.out.empty() ? 0 : 1);	// a comma between events
 			if (c.out.size() >= c.maxEvents || c.used + s > c.budget)
 			{
@@ -498,7 +396,6 @@ namespace Dia::CellHistory
 		}
 
 		// Layer selection (recorded order).
-		struct LayerSel { StringCRC id; bool isFloat = true; uint32_t enumCount = 0; uint32_t first = 0; Json::Value values; };
 		std::vector<bool> wanted(rec.RecordedLayerCount(), !args.isMember("layers"));
 		if (args.isMember("layers"))
 		{
@@ -512,96 +409,19 @@ namespace Dia::CellHistory
 				if (!found) { snprintf(err, sizeof(err), "unknown layer '%.100s' (not a recorded layer)", v.asString().c_str()); return Fail(kAggName, err); }
 			}
 		}
-		std::vector<LayerSel> layers;
-		for (uint32_t li = 0; li < rec.RecordedLayerCount(); ++li)
-		{
-			if (!wanted[li]) { continue; }
-			LayerSel l;
-			l.id = rec.RecordedLayerId(li);
-			AggregateKind kind;
-			if (!agg.LayerInfo(l.id, kind, l.enumCount)) { continue; }
-			l.isFloat = kind == AggregateKind::Float;
-			l.first = FirstRowSample(rec, l.id, kind, l.enumCount, aggFirst, count);
-			if (!l.isFloat) { l.values = EnumValues(rec, l.id, l.enumCount); }
-			layers.push_back(l);
-		}
-		const uint32_t groups = agg.GroupCount();
+		std::vector<Rows::AggLayer> layers;
+		Rows::CollectAggLayers(rec, &wanted, aggFirst, count, layers);
 		char hex[24];
 		snprintf(hex, sizeof(hex), "%016llx", (unsigned long long)rec.StructureHash());
 
 		// Builds the reply for [from, from+n). fill=false uses placeholder text of the exact encoded length (cheap sizing).
 		auto build = [&](uint32_t n, bool fill) -> Json::Value
 		{
-			Json::Value r(Json::objectValue);
+			Json::Value r = Rows::BuildAggregateBody(rec, layers, from, n, fill);
 			r["structure"] = hex;
 			r["from"] = from;
 			r["count"] = n;
 			if (from + n < to) { Json::Value nx(Json::objectValue); nx["from"] = from + n; r["next"] = nx; }
-			Json::Value samples(Json::arrayValue);
-			for (uint32_t i = 0; i < n; ++i)
-			{
-				const SampleHeader& h = rec.Header(from + i);
-				Json::Value s(Json::objectValue);
-				s["tick"] = Json::UInt64(h.mTick); s["label"] = h.mLabel.AsCStr(); s["band"] = unsigned(h.mBand);
-				samples.append(s);
-			}
-			r["samples"] = samples;
-			Json::Value sizes(Json::objectValue);
-			std::vector<uint16_t> u16;
-			std::vector<float> f0, f1, f2;
-			for (uint32_t g = 0; g < groups; ++g)
-			{
-				const StringCRC gid = agg.GroupAt(g);
-				if (!fill) { sizes[gid.AsChar()] = std::string(EncodedLength(n * 2u), 'A'); continue; }
-				u16.assign(n, 0);
-				for (uint32_t i = 0; i < n; ++i) { uint16_t v = 0; if (agg.GroupSize(from + i, gid, v)) { u16[i] = v; } }
-				sizes[gid.AsChar()] = B64U16(u16.data(), n);
-			}
-			r["groupSizes"] = sizes;
-			Json::Value rows(Json::objectValue);
-			for (const LayerSel& l : layers)
-			{
-				Json::Value lr(Json::objectValue);
-				lr["kind"] = l.isFloat ? "float" : "category";
-				lr["first"] = l.first;
-				if (!l.isFloat) { lr["values"] = l.values; }
-				Json::Value gs(Json::objectValue);
-				for (uint32_t g = 0; g < groups; ++g)
-				{
-					const StringCRC gid = agg.GroupAt(g);
-					if (l.isFloat)
-					{
-						Json::Value gv(Json::objectValue);
-						if (!fill)
-						{
-							const std::string ph(EncodedLength(n * 4u), 'A');
-							gv["min"] = ph; gv["mean"] = ph; gv["max"] = ph;
-						}
-						else
-						{
-							const float nan = std::numeric_limits<float>::quiet_NaN();
-							f0.assign(n, nan); f1.assign(n, nan); f2.assign(n, nan);
-							for (uint32_t i = 0; i < n; ++i)
-							{
-								AggregateStats st;
-								if (from + i >= l.first && rec.Aggregate(from + i, l.id, gid, st)) { f0[i] = st.mMin; f1[i] = st.mMean; f2[i] = st.mMax; }
-							}
-							gv["min"] = B64F32(f0.data(), n); gv["mean"] = B64F32(f1.data(), n); gv["max"] = B64F32(f2.data(), n);
-						}
-						gs[gid.AsChar()] = gv;
-					}
-					else if (!fill) { gs[gid.AsChar()] = std::string(EncodedLength(n * l.enumCount * 2u), 'A'); }
-					else
-					{
-						u16.assign(size_t(n) * l.enumCount, 0);
-						for (uint32_t i = 0; i < n; ++i) { if (from + i >= l.first) { rec.CategoryCounts(from + i, l.id, gid, u16.data() + size_t(i) * l.enumCount, l.enumCount); } }
-						gs[gid.AsChar()] = B64U16(u16.data(), uint32_t(u16.size()));
-					}
-				}
-				lr["groups"] = gs;
-				rows[l.id.AsChar()] = lr;
-			}
-			r["rows"] = rows;
 			return r;
 		};
 
@@ -653,10 +473,8 @@ namespace Dia::CellHistory
 				filter.push_back(StringCRC(v.asString().c_str()).Value());
 			}
 		}
-		std::vector<GroupInfo> groups;
-		CollectGroups(rec, groups);
-		std::vector<TypeInfo> types;
-		CollectTypes(rec, types);
+		Rows::EventContext evCtx;
+		evCtx.Collect(rec);
 
 		// The reply skeleton (without events) is what the events must fit beside. Whether `next` is present, and how wide it is, is
 		// only known after a scan, so: scan without `next`; if everything fit, done. Otherwise rescan reserving the cursor the last scan
@@ -675,8 +493,7 @@ namespace Dia::CellHistory
 			scan.skip = skip;
 			scan.useFilter = useFilter;
 			scan.filter = filter;
-			scan.groups = &groups;
-			scan.types = &types;
+			scan.ctx = &evCtx;
 			scan.budget = mMaxReplyBytes;
 			scan.maxEvents = mMaxEvents;
 			scan.used = base;

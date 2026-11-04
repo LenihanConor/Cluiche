@@ -40,6 +40,8 @@
 #include <DiaCellHistory/ExportObservation.h>
 #include <DiaCellHistory/HistoryQueries.h>
 #include <DiaCellHistory/QueryObservation.h>
+#include <DiaCellHistory/HistoryTopics.h>
+#include <DiaCellHistory/TopicObservation.h>
 #include "Modules/TestStages/CellLayersSnapshotStore.h"
 #include <DiaCellHistory/HistoryValueSource.h>
 #include <DiaCellHistory/ViewHistorySourceAdapter.h>
@@ -269,6 +271,22 @@ private:
     Dia::Core::UniquePtr<Dia::CellHistory::HistoryExportCommands>  mExportCommands;
     bool mExportCommandsRegistered = false;
     char mWorldName[64] = {};
+    // Live topics (DiaCellHistory Feature 5): cells.history.aggregates / .events. Ticked on SimPU after sampling and published through
+    // DebugServer::PublishTopicOrdered (any-thread, FIFO, drop-newest) - the server pointer comes from the "DebugServerService" stream.
+    // Torn down with the snapshots (before the recorder / server go).
+    class HistoryTopicPublisher : public Dia::CellHistory::ITopicPublisher
+    {
+    public:
+        explicit HistoryTopicPublisher(Dia::DebugServer::DebugServer& server) : mServer(server) {}
+        bool Publish(Dia::Core::StringCRC topic, const Json::Value& payload) override;
+        uint32_t SubscriberCount() const override;
+    private:
+        Dia::DebugServer::DebugServer& mServer;
+    };
+    void BuildHistoryTopics(Dia::CellHistory::CellHistoryRecorder& recorder);
+    Dia::Core::UniquePtr<HistoryTopicPublisher>                    mTopicPublisher;
+    Dia::Core::UniquePtr<Dia::CellHistory::TopicObservation>       mTopicObservation;
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryTopics>          mHistoryTopics;
     bool mScrubDomainRegistered = false;
     bool mScrubCommandsRegistered = false;
     bool mScrubBuildFailed = false;

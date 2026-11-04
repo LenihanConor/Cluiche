@@ -118,6 +118,9 @@
     <ClInclude Include="AtomicFile.h" />
     <ClInclude Include="HistoryQueries.h" />
     <ClInclude Include="QueryObservation.h" />
+    <ClInclude Include="HistoryRows.h" />
+    <ClInclude Include="TopicObservation.h" />
+    <ClInclude Include="HistoryTopics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -157,6 +160,9 @@
     <ClCompile Include="AtomicFile.cpp" />
     <ClCompile Include="HistoryQueries.cpp" />
     <ClCompile Include="QueryObservation.cpp" />
+    <ClCompile Include="HistoryRows.cpp" />
+    <ClCompile Include="TopicObservation.cpp" />
+    <ClCompile Include="HistoryTopics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

@@ -84,6 +84,9 @@
     <ClInclude Include="QueryObservation.h">
       <Filter>DiaCellHistory</Filter>
     </ClInclude>
+    <ClInclude Include="HistoryRows.h" />
+    <ClInclude Include="TopicObservation.h" />
+    <ClInclude Include="HistoryTopics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -133,6 +136,9 @@
     <ClCompile Include="QueryObservation.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="HistoryRows.cpp" />
+    <ClCompile Include="TopicObservation.cpp" />
+    <ClCompile Include="HistoryTopics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
