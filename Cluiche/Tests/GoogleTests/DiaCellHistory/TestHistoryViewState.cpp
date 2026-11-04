@@ -196,3 +196,58 @@ TEST(HistoryViewState, LogsInfoOnEnteringScrubAndReturningToLive)
 	v.GoLive();
 	EXPECT_EQ(log.Count(LogLevel::kInfo, "live"), 1u);	// no-op logs nothing
 }
+
+TEST(HistoryViewState, EvictionBumpsEpochExactlyOnce)
+{
+	Rig r; AddLayers(r);
+	StartWithWindow3(r);
+	TakeN(r, 4);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(2, res));
+	const uint64_t e = v.Epoch();
+	TakeN(r, 3);
+	EXPECT_TRUE(v.Update());
+	EXPECT_EQ(v.Epoch(), e + 1);
+}
+
+TEST(HistoryViewState, TruncatingBelowTheViewedSampleReturnsToLiveWithAWarning)
+{
+	LogCapture log("HIS");
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(4, res));
+	const uint64_t e = v.Epoch();
+	r.rec->TruncateAfter(2);			// samples 3.. gone, viewed sample 4 no longer exists
+	EXPECT_TRUE(v.Update());
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_EQ(v.Epoch(), e + 1);
+	EXPECT_EQ(log.Count(LogLevel::kWarning, "truncat"), 1u);
+	EXPECT_FALSE(v.Update());			// settled: nothing more
+	EXPECT_EQ(v.Epoch(), e + 1);
+}
+
+TEST(HistoryViewState, TruncatingAtOrAboveTheViewedSampleKeepsTheView)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(2, res));
+	const uint64_t e = v.Epoch();
+	r.rec->TruncateAfter(2);			// viewed sample 2 is the last one kept
+	EXPECT_FALSE(v.Update());
+	EXPECT_EQ(v.Mode(), ViewMode::Sample);
+	EXPECT_EQ(v.Sample(), 2u);
+	EXPECT_EQ(v.Epoch(), e);
+}
+
+TEST(HistoryViewState, TruncatingWhileLiveChangesNothing)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	r.rec->TruncateAfter(1);
+	EXPECT_FALSE(v.Update());
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_EQ(v.Epoch(), 0u);
+}

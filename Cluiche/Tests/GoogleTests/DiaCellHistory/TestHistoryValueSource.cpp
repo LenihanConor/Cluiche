@@ -185,3 +185,32 @@ TEST(HistoryValueSource, UninstallDoesNotRemoveAForeignSource)
 	a.Uninstall();	// never installed
 	EXPECT_EQ(r.registry.ViewValueSource(), nullptr);
 }
+
+TEST(HistoryValueSource, NullOrZeroSizedOutputBufferHasNoData)
+{
+	Rig r; AddLayers(r); Track(r, "biome"); r.Start(); TakeN(r, 3);
+	HistoryViewState v(*r.rec);
+	HistoryValueSource s(r.registry, *r.rec, v);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(1, res));
+	float out[12];
+	EXPECT_FALSE(s.GetValues(Desc(r, "biome"), nullptr, 12));
+	EXPECT_FALSE(s.GetValues(Desc(r, "biome"), out, 0));
+	EXPECT_TRUE(s.GetValues(Desc(r, "biome"), out, 12));
+}
+
+TEST(HistoryValueSource, ViewedSampleTruncatedAwayHasNoDataAndTickReturnsToLive)
+{
+	Rig r; AddLayers(r); Track(r, "biome"); r.Start(); TakeN(r, 5);
+	HistoryViewState v(*r.rec);
+	HistoryValueSource s(r.registry, *r.rec, v);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(4, res));
+	r.rec->TruncateAfter(1);
+	float out[12];
+	EXPECT_FALSE(s.GetValues(Desc(r, "biome"), out, 12)) << "a sample that no longer exists has no values";
+	const uint64_t e = s.ViewEpoch();
+	EXPECT_TRUE(s.Tick());
+	EXPECT_TRUE(s.IsLive());
+	EXPECT_NE(s.ViewEpoch(), e);
+}

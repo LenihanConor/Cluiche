@@ -19,6 +19,8 @@
 //   - a sparkline of the base layer's world mean per bucket (<= kMaxSparkPoints points). Missing / NaN aggregates make a
 //     point invalid (a gap) rather than zero; a layer with no aggregate data at all gives an empty sparkline.
 // Rebuild only when NeedsRebuild() (sample recorded, view changed, base layer changed), not every frame.
+// Known limit: the stamp is the sample COUNT, so TruncateAfter followed by re-sampling back to the same count (with the
+// view untouched) is not detected; the recorder exposes no truncate generation. Callers that truncate (restore) must force a rebuild.
 
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryViewState.h>

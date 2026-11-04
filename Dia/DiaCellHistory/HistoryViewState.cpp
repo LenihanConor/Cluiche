@@ -59,6 +59,15 @@ namespace Dia::CellHistory
 
 	bool HistoryViewState::Update()
 	{
+		if (mMode == ViewMode::Sample && mSample >= mRecorder.SampleCount())
+		{
+			// The recorder was truncated below the viewed sample (e.g. a restore): it no longer exists, so follow live.
+			DIA_LOG_WARNING("HIS", "cell history view: sample %u was truncated away (%u recorded); back to live", mSample, mRecorder.SampleCount());
+			mMode = ViewMode::Live;
+			mEvictedSeen = false;
+			++mEpoch;
+			return true;
+		}
 		const bool evicted = IsEvicted();
 		if (evicted == mEvictedSeen)
 		{

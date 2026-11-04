@@ -33,6 +33,8 @@ namespace Dia::CellHistory
 
 		// Re-evaluates eviction against the recorder: when the per-cell window first passes the viewed sample the view
 		// stays, the epoch bumps and ONE Warning is logged. Returns true if that transition happened on this call.
+		// If the recorder was truncated below the viewed sample the view returns to live (epoch bumps, one Warning) and this
+		// also returns true.
 		bool Update();
 
 		ViewMode	Mode() const { return mMode; }

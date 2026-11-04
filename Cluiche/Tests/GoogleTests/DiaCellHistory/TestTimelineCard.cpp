@@ -210,6 +210,46 @@ TEST(TimelineCard, RebuildsOnlyOnNewSampleOrViewChange)
 	EXPECT_EQ(r.card.Card()["baseLayer"].asString(), "biome");
 }
 
+TEST(TimelineCard, ZeroSamplesBuildsAnEmptyLiveCard)
+{
+	CardRig r;
+	r.grid.AddFloatLayer("temp", 40.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start(nullptr, false);
+	r.view = std::make_unique<HistoryViewState>(*r.rec);
+	ASSERT_EQ(r.rec->SampleCount(), 0u);
+	ASSERT_TRUE(r.Update("temp"));
+	const Json::Value& c = r.card.Card();
+	EXPECT_TRUE(c["available"].asBool());
+	EXPECT_FALSE(c["banner"]["visible"].asBool());
+	EXPECT_TRUE(c["banner"]["sample"].isNull());
+	EXPECT_EQ(c["timeline"]["range"]["latest"].asUInt(), 0u);
+	EXPECT_EQ(c["timeline"]["position"]["mode"].asString(), "live");
+	EXPECT_FALSE(r.Update("temp"));
+	r.Take();
+	EXPECT_TRUE(r.Update("temp")) << "first sample rebuilds";
+}
+
+TEST(TimelineCard, OneSampleCanBeScrubbedAndReturnedToLive)
+{
+	CardRig r;
+	r.grid.AddFloatLayer("temp", 40.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start(nullptr, false);
+	r.Take();
+	r.view = std::make_unique<HistoryViewState>(*r.rec);
+	ASSERT_TRUE(r.Update("temp"));
+	EXPECT_EQ(r.card.Card()["timeline"]["range"]["latest"].asUInt(), 0u);
+	ViewResult vr;
+	ASSERT_TRUE(r.view->ViewSample(0, vr));
+	ASSERT_TRUE(r.Update("temp"));
+	EXPECT_TRUE(r.card.Card()["banner"]["visible"].asBool());
+	EXPECT_EQ(r.card.Card()["banner"]["sample"].asUInt(), 0u);
+	r.view->GoLive();
+	ASSERT_TRUE(r.Update("temp"));
+	EXPECT_FALSE(r.card.Card()["banner"]["visible"].asBool());
+}
+
 #ifdef DIA_DEBUG
 
 namespace
@@ -381,6 +421,51 @@ TEST(CellHistoryDomain, GoldenUntracked)
 	DomainRig r; r.Build(false);
 	r.Cmd("view", Obj("sample", 3));
 	CheckGolden("domain_states_cellhistory_untracked.json", DomainJson(*r.domain));
+}
+
+TEST(CellHistoryDomain, ViewCommandWithMissingOrBadParamsIsAnErrorAndChangesNothing)
+{
+	DomainRig r; r.Build();
+	const Json::Value before = r.State();
+	r.Cmd("view");								// no args at all
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("view", Str("sample", "abc"));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("step", Str("n", "abc"));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("event", Str("direction", "sideways"));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	EXPECT_EQ(r.State(), before);
+}
+
+TEST(CellHistoryDomain, CommandsWithNoRecordedSamplesAreErrorsNotCrashes)
+{
+	DomainRig r;
+	r.grid.AddFloatLayer("temp", 40.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start(nullptr, false);
+	r.view = std::make_unique<HistoryViewState>(*r.rec);
+	r.Wire();
+	r.domain->Update();
+	r.Cmd("view", Obj("sample", 0));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("step", Obj("n", 1));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("event", Str("direction", "next"));
+	EXPECT_TRUE(r.domain->LastResult().isMember("error"));
+	r.Cmd("live");
+	EXPECT_FALSE(r.State()["banner"]["visible"].asBool());
+}
+
+TEST(CellHistoryDomain, TruncatingBelowTheViewedSampleReturnsThePanelToLive)
+{
+	DomainRig r; r.Build();
+	r.Cmd("view", Obj("sample", 5));
+	ASSERT_TRUE(r.State()["banner"]["visible"].asBool());
+	r.rec->TruncateAfter(2);
+	r.domain->Update();
+	EXPECT_FALSE(r.State()["banner"]["visible"].asBool());
+	EXPECT_EQ(r.State()["timeline"]["range"]["latest"].asUInt(), 2u);
 }
 
 #endif

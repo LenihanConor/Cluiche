@@ -200,6 +200,31 @@ TEST(ScrubObservation, ViewChangesCounterDoesNotIncrementOnNoOp)
 	}
 }
 
+TEST(ScrubObservation, ViewChangesCounterDoesNotIncrementAfterARejectedView)
+{
+	Rig r;
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("test_f", 0.0, 1.0, "{\"group\":true}") }));
+	r.Start();
+
+	auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+	auto counter = metrics.FindCounter(StringCRC("dia.cellhistory.view_changes"));
+	ASSERT_NE(counter, nullptr);
+
+	r.Take();
+	ViewResult result;
+	ASSERT_TRUE(r.view->ViewSample(0, result));
+	r.obs->OnViewChange(*r.view, *r.timeline);
+	const uint64_t before = counter->Value();
+
+	EXPECT_FALSE(r.view->ViewSample(99, result));	// rejected: out of range
+	r.obs->OnViewChange(*r.view, *r.timeline);
+	EXPECT_EQ(counter->Value(), before);
+	r.obs->Tick(1.0);								// still scrubbing at sample 0
+	auto gauge = metrics.FindGauge(StringCRC("dia.cellhistory.scrub_seconds"));
+	ASSERT_NE(gauge, nullptr);
+	EXPECT_GT(gauge->Value(), 0.0);
+}
+
 // ---- Scrub Seconds Gauge Tests ----
 
 TEST(ScrubObservation, ScrubSecondsGaugeAccumulatesInScrubMode)
