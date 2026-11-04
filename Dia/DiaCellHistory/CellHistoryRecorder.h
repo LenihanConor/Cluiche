@@ -165,6 +165,15 @@ namespace Dia::CellHistory
 		// Drops every sample with index > sample from all tiers and the headers; the next Sample gets index sample+1.
 		void TruncateAfter(uint32_t sample);
 
+		// Clears ALL history (headers, aggregates, per-cell ring, committed and pending events, every gate memory), restarts
+		// numbering at 0 and sets a new run id = SplitMix64(runIdSeed) (re-mixed once if it would equal the current id, so a
+		// reset always changes the id). Kept: registry/schema/config/budgets, the resolved grid and layer layout, the aggregate
+		// row layout, tracked layers and the groups. Used by a foreign-run snapshot restore.
+		void ResetHistory(uint64_t runIdSeed);
+
+		// The recorded grid (resolves it lazily like Sample does); null when no grid is registered or it cannot be recorded.
+		const Dia::Graphics::CellGridDesc* ActiveGrid();
+
 		uint32_t SampleCount() const { return mSampleCount; }
 		uint32_t FirstRetained() const { return mRing ? mRing->FirstRetained() : 0u; }	// per-cell window start
 		uint32_t AggregateFirstRetained() const { return mAggregates.FirstRetained(); }

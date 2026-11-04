@@ -436,3 +436,84 @@ TEST(CellHistoryRecorder, TruncateAfterDropsLaterSamplesAndResumesNumbering)
 	EXPECT_FLOAT_EQ(st.mMean, 9.0f);
 	EXPECT_EQ(r.grid.ReadCount("temp"), 2u);
 }
+
+TEST(CellHistoryRecorder, TruncateAfterDropsAnEventEmittedButNotYetAttached)
+{
+	Rig r;
+	r.grid.AddFloatLayer("temp", 1.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start();
+	HistoryEvent e;
+	e.type = StringCRC("test.simple");
+	for (int i = 0; i < 3; ++i) { r.rec->Emit(e); r.Take(); }
+	ASSERT_EQ(r.rec->Emit(e), EmitResult::Ok);		// pending: belongs to sample 3
+	r.rec->TruncateAfter(2);
+	r.Take();										// sample 3
+	EXPECT_EQ(r.rec->Events(3, 3).Count(), 0u);
+	EXPECT_EQ(r.rec->Events(0, 9).Count(), 3u);
+}
+
+TEST(CellHistoryRecorder, ResetHistoryClearsEveryTierAndRestartsNumberingWithANewRunId)
+{
+	Rig r;
+	r.grid.AddFloatLayer("temp", 1.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100, "{\"track\":true}") }));
+	r.Start();
+	HistoryEvent e;
+	e.type = StringCRC("test.simple");
+	for (int i = 0; i < 5; ++i) { r.rec->Emit(e); r.Take(); }
+	r.rec->Emit(e);		// pending
+	const uint64_t oldId = r.rec->RunId();
+	r.rec->ResetHistory(12345);
+	EXPECT_NE(r.rec->RunId(), oldId);
+	EXPECT_EQ(r.rec->RunId(), r.rec->RunId());
+	EXPECT_EQ(r.rec->SampleCount(), 0u);
+	EXPECT_FALSE(r.rec->HasHeader(0));
+	AggregateStats st;
+	float v[12];
+	EXPECT_FALSE(r.rec->Aggregate(0, StringCRC("temp"), kWorld, st));
+	EXPECT_FALSE(r.rec->CellValues(0, StringCRC("temp"), v, 12));
+	EXPECT_EQ(r.rec->Events(0, 99).Count(), 0u);
+	EXPECT_TRUE(r.rec->IsTracked(StringCRC("temp")));		// layout and tracking are kept
+	EXPECT_EQ(r.rec->RecordedLayerCount(), 1u);
+
+	r.grid.SetAll("temp", 9.0f);	// no version bump: the gate memory must be reset
+	const SampleResult next = r.Take();
+	EXPECT_EQ(next.mSample, 0u);
+	EXPECT_EQ(next.mLayersRecorded, 1u);
+	ASSERT_TRUE(r.rec->Aggregate(0, StringCRC("temp"), kWorld, st));
+	EXPECT_FLOAT_EQ(st.mMean, 9.0f);
+	ASSERT_TRUE(r.rec->CellValues(0, StringCRC("temp"), v, 12));
+	EXPECT_NEAR(v[0], 9.0f, 0.01f);
+	EXPECT_EQ(r.rec->Events(0, 0).Count(), 0u);		// the pending event did not survive
+	EXPECT_EQ(r.rec->FirstRetained(), 0u);
+}
+
+TEST(CellHistoryRecorder, ResetHistoryIsDeterministicPerSeedAndNeverKeepsTheOldId)
+{
+	Rig r;
+	r.grid.AddFloatLayer("temp", 1.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start();		// recorder seed 99
+	r.rec->ResetHistory(5);
+	const uint64_t a = r.rec->RunId();
+	r.rec->ResetHistory(5);
+	EXPECT_NE(r.rec->RunId(), a);		// the same seed twice in a row still changes the id
+	const uint64_t b = r.rec->RunId();
+	r.rec->ResetHistory(6);
+	EXPECT_NE(r.rec->RunId(), b);
+}
+
+TEST(CellHistoryRecorder, ActiveGridReportsTheRecordedGridBeforeAndAfterTheFirstSample)
+{
+	Rig r;
+	r.grid.AddFloatLayer("temp", 1.0f);
+	ASSERT_TRUE(r.schema.Load({ FloatEntry("temp", 0, 100) }));
+	r.Start();
+	const Dia::Graphics::CellGridDesc* g = r.rec->ActiveGrid();
+	ASSERT_NE(g, nullptr);
+	EXPECT_EQ(g->width, 4);
+	EXPECT_EQ(g->height, 3);
+	r.Take();
+	EXPECT_EQ(r.rec->ActiveGrid(), g);
+}

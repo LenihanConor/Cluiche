@@ -11,6 +11,16 @@
 // a partial store state is removed with Delete only if it exists. On a cell file write failure the store's half is
 // removed with Delete. The one-operation-in-flight gate is released in the callback whatever happened.
 //
+// Restore: refuses (error text, nothing changed, store not called) on an invalid name, an operation in flight, a missing
+// state or cell file, an unreadable cell file, or a grid (id, width, height) different from the recorder's. Otherwise it
+// begins the gate and calls store.RequestRestore; the callback (same frame as the game restore) then, on success:
+//   same run (header run id == recorder's AND header sample < SampleCount): recorder.TruncateAfter(sample) (every tier,
+//     headers, events attached later AND emitted-not-attached), Warning "dropped N samples after sample S" when N > 0;
+//   otherwise (foreign run, or a sample the history does not contain): recorder.ResetHistory(seed), Warning "history reset".
+//   Then the view (if set) goes live with an epoch bump. On store failure nothing in history or the view changes (Error log,
+//   LastRestore() holds the message). The gate is released in every path. Selection and snapshot records are never touched.
+// The reset seed comes from SetResetSeedProvider (default: the time provider mixed with an increasing counter).
+//
 // Documented deviation: a take with no samples recorded yet is refused ("no samples recorded yet").
 // Same-PU contract (SimPU); no locking; no singletons; borrowed objects must outlive the manager. No STL (PD-004).
 
@@ -28,6 +38,26 @@ namespace Dia::CellHistory
 		bool	ok = false;			// accepted (true) or refused (false, see error)
 		bool	pending = false;	// accepted and waiting for the store callback
 		char	error[192] = {};
+	};
+
+	class HistoryViewState;
+
+	struct RestoreResult
+	{
+		bool	ok = false;			// accepted (true) or refused (false, see error)
+		bool	pending = false;	// accepted and waiting for the store callback
+		char	error[192] = {};
+	};
+
+	// Outcome of the most recent restore that reached the store callback.
+	struct RestoreOutcome
+	{
+		bool		mDone = false;		// a restore has completed (successfully or not)
+		bool		mOk = false;
+		bool		mReset = false;		// foreign run: history was reset
+		uint32_t	mDropped = 0;		// same run: samples dropped
+		char		mName[33] = {};
+		char		mMessage[192] = {};	// the store's message on failure, a short summary on success
 	};
 
 	enum class SnapshotStatus : uint8_t { Pending, Ready, Failed };
@@ -52,6 +82,7 @@ namespace Dia::CellHistory
 		static constexpr uint32_t kMaxRecords = kMaxSnapshots + 8;		// 16 snapshots + room for failed records
 
 		using UnixTimeFn = int64_t(*)(void* user);
+		using SeedFn = uint64_t(*)(void* user);
 
 		SnapshotManager(CellHistoryRecorder& recorder, Dia::CellLayers::CellLayerRegistry& registry,
 			const Dia::ValueSchema::ValueSchemaService* schema, ISnapshotStore& store);
@@ -59,9 +90,14 @@ namespace Dia::CellHistory
 		SnapshotManager& operator=(const SnapshotManager&) = delete;
 
 		void SetTimeProvider(UnixTimeFn fn, void* user) { mTimeFn = fn; mTimeUser = user; }	// null fn = system clock
+		void SetResetSeedProvider(SeedFn fn, void* user) { mSeedFn = fn; mSeedUser = user; }	// null fn = default
+		void SetViewState(HistoryViewState* view) { mView = view; }		// optional; borrowed
 		void SetWorld(const char* world);		// copied (truncated to 63 chars); null clears
 
 		bool Take(const char* name, bool overwrite, TakeResult& out);
+
+		bool Restore(const char* name, RestoreResult& out);
+		const RestoreOutcome& LastRestore() const { return mLastRestore; }
 
 		bool OperationInFlight() const { return mGate.InFlight(); }
 		uint32_t Count() const { return kMaxRecords; }		// slots; check mUsed
@@ -70,6 +106,10 @@ namespace Dia::CellHistory
 	private:
 		static void OnTakeDone(bool ok, const char* message, void* user);
 		void FinishTake(bool ok, const char* message);
+		static void OnRestoreDone(bool ok, const char* message, void* user);
+		void FinishRestore(bool ok, const char* message);
+		uint64_t NextResetSeed();
+		void RefuseRestore(RestoreResult& out, const char* msg) const;
 		SnapshotRecord* SlotFor(const char* name);
 		void Refuse(TakeResult& out, const char* msg) const;
 
@@ -79,6 +119,13 @@ namespace Dia::CellHistory
 		ISnapshotStore&								mStore;
 		UnixTimeFn									mTimeFn = nullptr;
 		void*										mTimeUser = nullptr;
+		SeedFn										mSeedFn = nullptr;
+		void*										mSeedUser = nullptr;
+		uint64_t									mResetCounter = 0;
+		HistoryViewState*							mView = nullptr;
+		SnapshotHeader								mRestoreHeader;
+		char										mRestoreName[33] = {};
+		RestoreOutcome								mLastRestore;
 		char										mWorld[64] = {};
 		SnapshotGate								mGate;
 		SnapshotCellData							mPending;		// held until the store callback

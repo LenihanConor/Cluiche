@@ -70,6 +70,15 @@ namespace Dia::CellHistory
 		DIA_LOG_INFO("HIS", "cell history view: back to live");
 	}
 
+	void HistoryViewState::NotifyHistoryReset()
+	{
+		mMode = ViewMode::Live;
+		mHeldMode = ViewMode::Live;
+		mEvictedSeen = false;
+		++mEpoch;
+		DIA_LOG_INFO("HIS", "cell history view: history changed under the view, back to live");
+	}
+
 	void HistoryViewState::RestoreHeld()
 	{
 		if (mHeldMode == ViewMode::Sample && mHeldSample < mRecorder.SampleCount())

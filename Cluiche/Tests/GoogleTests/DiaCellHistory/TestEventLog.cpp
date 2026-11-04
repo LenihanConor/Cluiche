@@ -358,3 +358,35 @@ TEST(EventLog, StressRingWrapStaysConsistent)
 	}
 	EXPECT_GT(log.DroppedEventCount(), 0u);
 }
+
+TEST(EventLog, ClearDropsCommittedAndPendingAndRestartsFromSampleZero)
+{
+	EventLog log(kBig);
+	HistoryEvent e; e.type = StringCRC("t");
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);
+	ASSERT_TRUE(log.CommitSample(0));
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);
+	ASSERT_TRUE(log.CommitSample(1));
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);	// pending
+	log.Clear();
+	EXPECT_EQ(log.EventCount(), 0u);
+	EXPECT_EQ(log.PendingCount(), 0u);
+	EXPECT_EQ(log.GapCount(), 0u);
+	EXPECT_EQ(log.BytesUsed(), 0u);
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);
+	ASSERT_TRUE(log.CommitSample(0));		// not refused as "<= latest"
+	EXPECT_EQ(Read(log, 0, 10).size(), 1u);
+}
+
+TEST(EventLog, TruncateAfterAlsoDropsPendingEventsNotYetAttached)
+{
+	EventLog log(kBig);
+	HistoryEvent e; e.type = StringCRC("t");
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);
+	ASSERT_TRUE(log.CommitSample(0));
+	ASSERT_EQ(log.Emit(e), EmitResult::Ok);	// pending for sample 1
+	log.TruncateAfter(0);
+	EXPECT_EQ(log.PendingCount(), 0u);
+	ASSERT_TRUE(log.CommitSample(1));
+	EXPECT_EQ(Read(log, 0, 10).size(), 1u);	// the pending event did not attach to sample 1
+}

@@ -1,6 +1,8 @@
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
+#include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/ISnapshotStore.h>
+#include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
@@ -135,6 +137,131 @@ namespace Dia::CellHistory
 			}
 		}
 		mPending.Clear();
+		mGate.End();
+	}
+
+	// ---- restore -------------------------------------------------------------------------------------------
+
+	void SnapshotManager::RefuseRestore(RestoreResult& out, const char* msg) const
+	{
+		out.ok = false;
+		out.pending = false;
+		Copy(out.error, sizeof(out.error), msg);
+	}
+
+	uint64_t SnapshotManager::NextResetSeed()
+	{
+		if (mSeedFn != nullptr) { return mSeedFn(mSeedUser); }
+		const int64_t now = mTimeFn != nullptr ? mTimeFn(mTimeUser) : int64_t(std::time(nullptr));
+		return uint64_t(now) + (++mResetCounter) * 0x9E3779B97F4A7C15ull;
+	}
+
+	bool SnapshotManager::Restore(const char* name, RestoreResult& out)
+	{
+		out = RestoreResult();
+		char err[192] = {};
+		if (!IsValidSnapshotName(name))
+		{
+			RefuseRestore(out, "invalid snapshot name (1 to 32 characters from A-Z a-z 0-9 _ -)");
+			return false;
+		}
+		if (mGate.InFlight())
+		{
+			mGate.TryBegin(err, sizeof(err));		// fails and fills the standard message; changes nothing
+			RefuseRestore(out, err);
+			return false;
+		}
+
+		char path[512] = {};
+		if (!SnapshotCellFile::Path(mStore.Folder(), name, path, sizeof(path)))
+		{
+			RefuseRestore(out, "cannot build the cell file path");
+			return false;
+		}
+		std::error_code ec;
+		const bool hasState = mStore.Exists(name);
+		const bool hasCells = std::filesystem::exists(path, ec);
+		if (!hasState || !hasCells)
+		{
+			if (!hasState && !hasCells) { std::snprintf(err, sizeof(err), "snapshot '%s' not found", name); }
+			else if (!hasState) { std::snprintf(err, sizeof(err), "snapshot '%s': state missing (the game store has no state for it)", name); }
+			else { std::snprintf(err, sizeof(err), "snapshot '%s': cell file missing", name); }
+			RefuseRestore(out, err);
+			return false;
+		}
+
+		SnapshotHeader header;
+		SnapshotGridInfo grid;
+		if (!SnapshotCellFile::ReadHeaderOnly(path, header, grid, err, sizeof(err)))
+		{
+			char msg[192] = {};
+			std::snprintf(msg, sizeof(msg), "snapshot '%s': cell file unreadable: %.120s", name, err);
+			RefuseRestore(out, msg);
+			return false;
+		}
+
+		const Dia::Graphics::CellGridDesc* active = mRecorder.ActiveGrid();
+		const bool sameGrid = active != nullptr && grid.mWidth == uint32_t(active->width) && grid.mHeight == uint32_t(active->height)
+			&& std::strcmp(grid.mId, active->id.AsChar()) == 0;
+		if (!sameGrid)
+		{
+			std::snprintf(err, sizeof(err), "snapshot is for a different grid (%u x %u); load that world first", grid.mWidth, grid.mHeight);
+			RefuseRestore(out, err);
+			return false;
+		}
+
+		if (!mGate.TryBegin(err, sizeof(err))) { RefuseRestore(out, err); return false; }
+		mRestoreHeader = header;
+		Copy(mRestoreName, sizeof(mRestoreName), name);
+		DIA_LOG_INFO("HIS", "cell history snapshot '%s': restore requested (sample %u)", name, header.mSample);
+		mStore.RequestRestore(name, &SnapshotManager::OnRestoreDone, this);
+		out.ok = true;
+		out.pending = true;
+		return true;
+	}
+
+	void SnapshotManager::OnRestoreDone(bool ok, const char* message, void* user)
+	{
+		static_cast<SnapshotManager*>(user)->FinishRestore(ok, message);
+	}
+
+	void SnapshotManager::FinishRestore(bool ok, const char* message)
+	{
+		mLastRestore = RestoreOutcome();
+		mLastRestore.mDone = true;
+		Copy(mLastRestore.mName, sizeof(mLastRestore.mName), mRestoreName);
+
+		if (!ok)
+		{
+			Copy(mLastRestore.mMessage, sizeof(mLastRestore.mMessage), message && message[0] ? message : "store failed");
+			DIA_LOG_ERROR("HIS", "cell history snapshot '%s': restore failed in the store: %s (history unchanged)", mRestoreName, mLastRestore.mMessage);
+			mGate.End();
+			return;
+		}
+
+		DIA_PROFILE_SCOPE("cellhistory.snapshot_restore", ::Dia::Observation::Profile::Category::kDiaGraphics);
+		const uint32_t before = mRecorder.SampleCount();
+		const uint32_t sample = mRestoreHeader.mSample;
+		const bool sameRun = mRestoreHeader.mRunId == mRecorder.RunId() && sample < before;
+		mLastRestore.mOk = true;
+		if (sameRun)
+		{
+			mRecorder.TruncateAfter(sample);
+			const uint32_t dropped = before - (sample + 1);
+			mLastRestore.mDropped = dropped;
+			std::snprintf(mLastRestore.mMessage, sizeof(mLastRestore.mMessage), "dropped %u samples after sample %u", dropped, sample);
+			if (dropped > 0) { DIA_LOG_WARNING("HIS", "cell history snapshot: restored '%s': dropped %u samples after sample %u", mRestoreName, dropped, sample); }
+			DIA_LOG_INFO("HIS", "cell history snapshot '%s': restored (same run, dropped %u)", mRestoreName, dropped);
+		}
+		else
+		{
+			mRecorder.ResetHistory(NextResetSeed());
+			mLastRestore.mReset = true;
+			std::snprintf(mLastRestore.mMessage, sizeof(mLastRestore.mMessage), "history reset (snapshot from another run)");
+			DIA_LOG_WARNING("HIS", "cell history snapshot: restored '%s': history reset (snapshot from another run)", mRestoreName);
+			DIA_LOG_INFO("HIS", "cell history snapshot '%s': restored (history reset, new run id)", mRestoreName);
+		}
+		if (mView != nullptr) { mView->NotifyHistoryReset(); }
 		mGate.End();
 	}
 }

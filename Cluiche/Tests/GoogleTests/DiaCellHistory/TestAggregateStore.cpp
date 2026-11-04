@@ -381,3 +381,19 @@ TEST(AggregateStore, TwentyLayersTwentySevenGroupsCost)
 	EXPECT_NEAR(6534.0, double(s.BytesPerSample()), 100.0);	// ~6.5 KB
 	EXPECT_GT(s.WindowLength(), 9000u);
 }
+
+TEST(AggregateStore, ClearDropsEverythingKeepsTheLayoutAndRestartsNumbering)
+{
+	AggregateStore s(kBig);
+	Layout(s);
+	for (uint32_t i = 0; i < 4; ++i) { Fill(s, i, kMaskA, kMaskB); }
+	s.Clear();
+	EXPECT_TRUE(s.Empty());
+	EXPECT_EQ(s.GapCount(), 0u);
+	EXPECT_EQ(s.LayerCount(), 2u);
+	EXPECT_EQ(s.GroupCount(), 3u);
+	EXPECT_FALSE(s.HasSample(0));
+	Fill(s, 0, kMaskA, kMaskB);
+	EXPECT_TRUE(s.HasSample(0));
+	EXPECT_EQ(s.RetainedCount(), 1u);
+}

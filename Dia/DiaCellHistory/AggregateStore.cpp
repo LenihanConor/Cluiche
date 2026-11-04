@@ -295,6 +295,15 @@ namespace Dia::CellHistory
 		if (dropped) { mInEpisode = false; }
 	}
 
+	void AggregateStore::Clear()
+	{
+		mCount = 0;
+		mHead = 0;
+		mInEpisode = false;
+		mEpisodeCount = 0;
+		mGapCount = 0;
+	}
+
 	uint32_t AggregateStore::FirstRetained() const { return mCount ? mIds[SlotOf(0)] : 0; }
 	uint32_t AggregateStore::LatestSample() const { return mCount ? mIds[SlotOf(mCount - 1)] : 0; }
 	uint64_t AggregateStore::BytesUsed() const { return uint64_t(mWindow) * mSlotBytes; }

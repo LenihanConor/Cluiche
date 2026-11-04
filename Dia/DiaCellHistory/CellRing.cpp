@@ -274,6 +274,24 @@ namespace Dia::CellHistory
 		bool dropped = false;
 		while (mCount > 0 && mIds[SlotOf(mCount - 1)] > sample) { --mCount; dropped = true; }
 		if (dropped) { mInEpisode = false; }
+		while (mGapCount > 0 && mGaps[mGapCount - 1].mFirstDropped > sample) { --mGapCount; }
+		for (uint32_t i = 0; i < mGapCount; ++i) { if (mGaps[i].mLastDropped > sample) { mGaps[i].mLastDropped = sample; } }
+		for (uint32_t i = 0; i < mLayerCount; ++i)
+		{
+			Layer& l = mLayers[i];
+			if (!l.mPending && l.mFirstSample > sample) { l.mPending = true; l.mFirstSample = 0; }
+		}
+	}
+
+	void CellRing::Clear()
+	{
+		mHead = 0;
+		mCount = 0;
+		mOpen = false;
+		mInEpisode = false;
+		mEpisodeCount = 0;
+		mGapCount = 0;
+		for (uint32_t i = 0; i < mLayerCount; ++i) { mLayers[i].mPending = true; mLayers[i].mFirstSample = 0; }
 	}
 
 	uint32_t CellRing::FirstRetained() const { return mCount ? mIds[SlotOf(0)] : 0; }

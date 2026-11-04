@@ -370,3 +370,64 @@ TEST(CellRing, MemoryNeverExceedsBudget)
 		EXPECT_LE(r.RetainedCount(), r.WindowLength());
 	}
 }
+
+TEST(CellRing, TruncateBelowTheWindowStartEmptiesTheRingAndClampsTheEvictionGapToTheSample)
+{
+	CellRing r(kCells, T::BudgetBytesForWindow(3, kCells * 2));
+	MakeFloat(r);
+	for (uint32_t s = 0; s < 10; ++s) ASSERT_TRUE(Sample(r, s, float(s)));	// retains 7,8,9; samples 0..6 evicted
+	ASSERT_EQ(r.GapCount(), 1u);
+	ASSERT_EQ(r.Gap(0).mFirstDropped, 0u);
+	ASSERT_EQ(r.Gap(0).mLastDropped, 6u);
+	r.TruncateAfter(4);
+	EXPECT_TRUE(r.Empty());
+	ASSERT_EQ(r.GapCount(), 1u);
+	EXPECT_EQ(r.Gap(0).mFirstDropped, 0u);
+	EXPECT_EQ(r.Gap(0).mLastDropped, 4u);	// the gap no longer claims samples that will be re-recorded
+	ASSERT_TRUE(Sample(r, 5, 5.f));
+	EXPECT_TRUE(r.HasSample(5));
+}
+
+TEST(CellRing, TruncateRemovesAGapThatLiesEntirelyAfterTheSample)
+{
+	CellRing r(kCells, T::BudgetBytesForWindow(3, kCells * 2));
+	MakeFloat(r);
+	for (uint32_t s = 10; s < 20; ++s) ASSERT_TRUE(Sample(r, s, 1.f));	// gap 10..16
+	ASSERT_EQ(r.GapCount(), 1u);
+	r.TruncateAfter(5);
+	EXPECT_EQ(r.GapCount(), 0u);
+}
+
+TEST(CellRing, TruncateBeforeALayersFirstSampleMakesItPendingAgain)
+{
+	CellRing r(kCells, 1 << 20);
+	MakeFloat(r);
+	for (uint32_t s = 0; s < 3; ++s) ASSERT_TRUE(Sample(r, s, 1.f));
+	ASSERT_TRUE(r.Track(kB, CellRingKind::Category8, 0, 0));
+	for (uint32_t s = 3; s < 6; ++s) { ASSERT_TRUE(r.BeginSample(s)); ASSERT_TRUE(Put(r, kA, 1.f)); ASSERT_TRUE(Put(r, kB, 2.f)); }
+	r.TruncateAfter(1);		// below layer b's first sample (3)
+	ASSERT_TRUE(r.BeginSample(2));
+	ASSERT_TRUE(Put(r, kA, 1.f));
+	ASSERT_TRUE(Put(r, kB, 7.f));
+	bool ok = false;
+	EXPECT_NEAR(ReadCell0(r, 2, kB, &ok), 7.f, 0.01f);
+	EXPECT_TRUE(ok);
+}
+
+TEST(CellRing, ClearDropsEverythingGapsAndKeepsTheTrackedLayers)
+{
+	CellRing r(kCells, T::BudgetBytesForWindow(3, kCells * 2));
+	MakeFloat(r);
+	for (uint32_t s = 0; s < 10; ++s) ASSERT_TRUE(Sample(r, s, float(s)));
+	r.Clear();
+	EXPECT_TRUE(r.Empty());
+	EXPECT_EQ(r.GapCount(), 0u);
+	EXPECT_EQ(r.EvictionEpisodeCount(), 0u);
+	EXPECT_TRUE(r.IsTracked(kA));
+	EXPECT_EQ(r.WindowLength(), 3u);
+	ASSERT_TRUE(Sample(r, 0, 42.f));	// numbering restarts
+	bool ok = false;
+	EXPECT_NEAR(ReadCell0(r, 0, kA, &ok), 42.f, 0.01f);
+	EXPECT_TRUE(ok);
+	EXPECT_EQ(r.FirstRetained(), 0u);
+}

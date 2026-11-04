@@ -46,6 +46,10 @@ namespace Dia::CellHistory
 		// Enters (or moves) scrub mode on `sample`. sample >= SampleCount() is an error and changes nothing.
 		bool ViewSample(uint32_t sample, ViewResult& out);
 		void GoLive();											// no-op when already live
+		// The recorder's history was truncated or reset under the view (snapshot restore): goes live (leaving delta mode)
+		// and ALWAYS bumps the epoch once, even when already live, because truncate-then-resample to the same count is
+		// invisible to count-based change detection.
+		void NotifyHistoryReset();
 
 		// Re-evaluates eviction against the recorder: when the per-cell window first passes the viewed sample the view
 		// stays, the epoch bumps and ONE Warning is logged. Returns true if that transition happened on this call.

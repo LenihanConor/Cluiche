@@ -62,8 +62,13 @@ namespace Dia::CellHistory
 		bool Read(uint32_t sample, Dia::Core::StringCRC layer, float* out, uint32_t n) const;
 		bool HasSample(uint32_t sample) const;
 
-		// Drops all samples with index > sample.
+		// Drops all samples with index > sample. Gaps are clamped to <= sample (a gap never claims samples that will be
+		// re-recorded; a gap wholly after `sample` is removed), and a layer whose first sample is > sample becomes pending
+		// again so it picks up data from the next BeginSample. If the ring becomes empty the sample is older than the window
+		// start: the eviction gap that already covers it is kept (clamped).
 		void TruncateAfter(uint32_t sample);
+		// Drops every sample, all gaps and episodes; tracked layers and the window stay, and every layer is pending again.
+		void Clear();
 
 		bool Empty() const { return mCount == 0; }
 		uint32_t FirstRetained() const;		// 0 when empty

@@ -2529,5 +2529,8 @@
     <ClCompile Include="DiaCellHistory\TestSnapshotManagerTake.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotManagerRestore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

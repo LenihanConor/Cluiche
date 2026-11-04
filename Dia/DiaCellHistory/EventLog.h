@@ -83,6 +83,8 @@ namespace Dia::CellHistory
 		bool CommitSample(uint32_t sampleIndex);
 		// Drops committed events with sample > sample and ALL pending events.
 		void TruncateAfter(uint32_t sample);
+		// Drops every committed and pending event, the gaps and the floor; sample numbering may restart at 0.
+		void Clear();
 
 		// Visits committed events with fromSample <= sample <= toSample in emit order. Returns the count visited.
 		uint32_t ForEachEvent(uint32_t fromSample, uint32_t toSample, EventVisitor visitor, void* context) const;

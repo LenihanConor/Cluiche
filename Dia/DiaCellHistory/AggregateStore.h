@@ -79,6 +79,8 @@ namespace Dia::CellHistory
 		bool HasSample(uint32_t sample) const;
 
 		void TruncateAfter(uint32_t sample);	// drops all samples with index > sample
+		// Drops every sample, the gaps and the eviction episodes; keeps the layout (layers, groups, window). Numbering may restart at 0.
+		void Clear();
 
 		bool Empty() const { return mCount == 0; }
 		uint32_t FirstRetained() const;		// 0 when empty

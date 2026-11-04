@@ -715,6 +715,27 @@ namespace Dia::CellHistory
 		ResetGate();
 	}
 
+	void CellHistoryRecorder::ResetHistory(uint64_t runIdSeed)
+	{
+		mAggregates.Clear();
+		if (mRing != nullptr) { mRing->Clear(); }
+		mEvents.Clear();
+		mSampleCount = 0;
+		mHeaderCount = 0;
+		mHeaderHead = 0;
+		mHeaderFirst = 0;
+		ResetGate();
+		uint64_t id = SplitMix64(runIdSeed);
+		if (id == mRunId) { id = SplitMix64(id + 1); }
+		mRunId = id;
+	}
+
+	const Dia::Graphics::CellGridDesc* CellHistoryRecorder::ActiveGrid()
+	{
+		ResolveGrid();
+		return mGrid;
+	}
+
 	bool CellHistoryRecorder::HasHeader(uint32_t sample) const
 	{
 		return mHeaderCount > 0 && sample >= mHeaderFirst && (sample - mHeaderFirst) < mHeaderCount;

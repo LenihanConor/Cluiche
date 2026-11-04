@@ -458,3 +458,33 @@ TEST(HistoryViewState, FormatSideText)
 	FormatSide(s, buf, sizeof(buf));
 	EXPECT_STREQ(buf, "snapshot:before");
 }
+
+TEST(HistoryViewState, NotifyHistoryResetBumpsTheEpochEvenWhenAlreadyLive)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 3);
+	HistoryViewState v(*r.rec);
+	const uint64_t e0 = v.Epoch();
+	v.NotifyHistoryReset();
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_EQ(v.Epoch(), e0 + 1);
+}
+
+TEST(HistoryViewState, NotifyHistoryResetFromScrubAndDeltaGoesLiveWithOneEpochBump)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 4);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(1, res));
+	uint64_t e = v.Epoch();
+	v.NotifyHistoryReset();
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_EQ(v.Epoch(), e + 1);
+
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Sample, 0), MakeSide(SideKind::Sample, 2), res));
+	e = v.Epoch();
+	v.NotifyHistoryReset();
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_FALSE(v.InDelta());
+	EXPECT_EQ(v.Epoch(), e + 1);
+	EXPECT_FALSE(v.ExitDelta());
+}

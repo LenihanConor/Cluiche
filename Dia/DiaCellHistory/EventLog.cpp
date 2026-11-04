@@ -216,6 +216,23 @@ namespace Dia::CellHistory
 		mLatestSample = latest;
 	}
 
+	void EventLog::Clear()
+	{
+		mHead = mTail;
+		mCommittedEnd = mTail;
+		mCommittedCount = 0;
+		mPendingCount = 0;
+		mNextSequence = 0;
+		mLatestSample = 0;
+		mHasCommitted = false;
+		mFloor = 0;
+		mInEpisode = false;
+		mEpisodeCount = 0;
+		mDroppedCount = 0;
+		mGapCount = 0;
+		mGapOpen = false;
+	}
+
 	uint32_t EventLog::ForEachEvent(uint32_t fromSample, uint32_t toSample, EventVisitor visitor, void* context) const
 	{
 		if (visitor == nullptr || fromSample > toSample) { return 0; }
