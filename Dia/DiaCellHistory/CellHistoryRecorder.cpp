@@ -302,6 +302,19 @@ namespace Dia::CellHistory
 		}
 	}
 
+	StringCRC CellHistoryRecorder::RecordedLayerId(uint32_t i) const
+	{
+		for (uint32_t k = 0; k < mRecordedCount; ++k)
+		{
+			if (mRecorded[k].mAggregated)
+			{
+				if (i == 0) { return mRecorded[k].mId; }
+				--i;
+			}
+		}
+		return StringCRC();
+	}
+
 	bool CellHistoryRecorder::TrackRecorded(Recorded& r)
 	{
 		if (r.mTracked) { return true; }

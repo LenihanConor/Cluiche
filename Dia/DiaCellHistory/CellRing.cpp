@@ -10,33 +10,33 @@ namespace Dia::CellHistory
 	namespace
 	{
 		constexpr double kFloatMaxCode = 65534.0;
+	}
 
-		uint16_t QuantiseFloat(float v, float mn, float mx)
-		{
-			if (std::isnan(v)) { return CellRing::kFloatNaNCode; }
-			if (v < mn) { v = mn; }
-			if (v > mx) { v = mx; }
-			const double range = double(mx) - double(mn);
-			double t = (double(v) - double(mn)) / range;
-			if (t < 0.0) { t = 0.0; }
-			if (t > 1.0) { t = 1.0; }
-			return uint16_t(std::lround(t * kFloatMaxCode));
-		}
+	uint16_t QuantiseCellFloat(float v, float mn, float mx)
+	{
+		if (std::isnan(v)) { return CellRing::kFloatNaNCode; }
+		if (v < mn) { v = mn; }
+		if (v > mx) { v = mx; }
+		const double range = double(mx) - double(mn);
+		double t = (double(v) - double(mn)) / range;
+		if (t < 0.0) { t = 0.0; }
+		if (t > 1.0) { t = 1.0; }
+		return uint16_t(std::lround(t * kFloatMaxCode));
+	}
 
-		float DequantiseFloat(uint16_t q, float mn, float mx)
-		{
-			if (q == CellRing::kFloatNaNCode) { return std::nanf(""); }
-			const double range = double(mx) - double(mn);
-			return float(double(mn) + (double(q) / kFloatMaxCode) * range);
-		}
+	float DequantiseCellFloat(uint16_t q, float mn, float mx)
+	{
+		if (q == CellRing::kFloatNaNCode) { return std::nanf(""); }
+		const double range = double(mx) - double(mn);
+		return float(double(mn) + (double(q) / kFloatMaxCode) * range);
+	}
 
-		uint8_t QuantiseCategory(float v)
-		{
-			if (std::isnan(v)) { return CellRing::kCategoryNone; }
-			if (v <= 0.f) { return 0; }
-			if (v >= 255.f) { return 255; }
-			return uint8_t(std::lround(v));
-		}
+	uint8_t QuantiseCellCategory(float v)
+	{
+		if (std::isnan(v)) { return CellRing::kCategoryNone; }
+		if (v <= 0.f) { return 0; }
+		if (v >= 255.f) { return 255; }
+		return uint8_t(std::lround(v));
 	}
 
 	CellRing::CellRing(uint32_t cellCount, uint64_t budgetBytes) : mCellCount(cellCount), mBudget(budgetBytes) {}
@@ -213,13 +213,13 @@ namespace Dia::CellHistory
 		{
 			for (uint32_t i = 0; i < n; ++i)
 			{
-				const uint16_t q = QuantiseFloat(values[i], l.mMin, l.mMax);
+				const uint16_t q = QuantiseCellFloat(values[i], l.mMin, l.mMax);
 				std::memcpy(dst + size_t(i) * 2, &q, 2);
 			}
 		}
 		else
 		{
-			for (uint32_t i = 0; i < n; ++i) { dst[i] = QuantiseCategory(values[i]); }
+			for (uint32_t i = 0; i < n; ++i) { dst[i] = QuantiseCellCategory(values[i]); }
 		}
 		return true;
 	}
@@ -259,7 +259,7 @@ namespace Dia::CellHistory
 			{
 				uint16_t q;
 				std::memcpy(&q, src + size_t(i) * 2, 2);
-				out[i] = DequantiseFloat(q, l.mMin, l.mMax);
+				out[i] = DequantiseCellFloat(q, l.mMin, l.mMax);
 			}
 		}
 		else

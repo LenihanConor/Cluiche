@@ -19,6 +19,12 @@
 
 namespace Dia::CellHistory
 {
+	// The ring's quantisation, shared with the snapshot cell file so both stay bit-identical.
+	// Float: NaN -> 0xFFFF, out-of-range clamps, code = round(t * 65534). Category: round, clamp 0..255, NaN -> 255.
+	uint16_t QuantiseCellFloat(float v, float mn, float mx);
+	float DequantiseCellFloat(uint16_t q, float mn, float mx);
+	uint8_t QuantiseCellCategory(float v);
+
 	enum class CellRingKind : uint8_t { Float16, Category8 };
 
 	struct CellRingGap

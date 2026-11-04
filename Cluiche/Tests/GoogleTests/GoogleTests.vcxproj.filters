@@ -2517,5 +2517,14 @@
     <ClCompile Include="DiaCellHistory\TestHistoryEncoding.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellFile.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSnapshotNaming.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestFakeSnapshotStore.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

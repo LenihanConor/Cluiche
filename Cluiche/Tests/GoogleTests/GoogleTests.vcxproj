@@ -1125,6 +1125,9 @@
     <ClCompile Include="DiaCellHistory\TestDeltaViewIntegration.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayerHoverExtra.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryEncoding.cpp" />
+    <ClCompile Include="DiaCellHistory\TestSnapshotCellFile.cpp" />
+    <ClCompile Include="DiaCellHistory\TestSnapshotNaming.cpp" />
+    <ClCompile Include="DiaCellHistory\TestFakeSnapshotStore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

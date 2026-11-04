@@ -176,6 +176,8 @@ namespace Dia::CellHistory
 		EventRange Events(uint32_t fromSample, uint32_t toSample) const;
 
 		uint32_t RecordedLayerCount() const { return mAggregatedCount; }	// aggregated layers
+		// Id of the i-th aggregated (recorded) layer in registration order; a default StringCRC when i >= RecordedLayerCount().
+		Dia::Core::StringCRC RecordedLayerId(uint32_t i) const;
 		uint32_t SkippedLayerCount() const { return mSkippedLayers; }
 		uint64_t VersionGatedSkips() const { return mVersionGatedSkips; }	// layer-samples whose read was avoided
 		uint32_t GroupCount() const { return mAggregates.GroupCount(); }

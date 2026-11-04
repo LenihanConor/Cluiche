@@ -20,6 +20,10 @@ public_api:
   headers:
     - DiaCellHistory/DiaCellHistory.h
     - DiaCellHistory/HistoryEncoding.h
+    - DiaCellHistory/ISnapshotStore.h
+    - DiaCellHistory/SnapshotCellFile.h
+    - DiaCellHistory/SnapshotNaming.h
+    - DiaCellHistory/Testing/FakeSnapshotStore.h
     - DiaCellHistory/Testing/StubGrid.h
     - DiaCellHistory/Testing/FakeClock.h
     - DiaCellHistory/Testing/BudgetSizing.h
@@ -66,5 +70,8 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `EventLog` | Tier 3: typed events assigned to the next sample, budgeted. |
 | `CellHistoryObservation` / `CellHistoryHealth` | Metrics, trace/profile scopes, Degraded above 90% of any budget. |
 | `HistoryEncoding` | Feature 5 (Export): base64 encoders/decoders for float32, uint16 and uint8 arrays with little-endian byte order. Encoder functions (`EncodeFloat32`, `EncodeUInt16`, `EncodeUInt8`) write to caller-provided buffers with capacity checking; decoder functions (`DecodeFloat32`, `DecodeUInt16`, `DecodeUInt8`) read from base64 text. `EncodedLength` computes required buffer size. Used by export file writer and live query replies. |
+| `ISnapshotStore` | Feature 3 (Snapshots): game-implemented interface (RequestTake/RequestRestore with frame-boundary callbacks, Exists, Delete, Folder). DiaCellHistory never touches the game's state files. `Testing/FakeSnapshotStore.h` is the scripted fake (queued requests run by `RunFrameBoundary()`, `FailNext`, optional real `.state` files, per-test `TempFolder`). |
+| `SnapshotCellFile` | Feature 3: `dia.cell_snapshot` v1 per-cell copies file `<store folder>/snapshot_<name>.cells.json`. `SnapshotCellData` model (header, grid, up to 64 layers), `BuildFromLive` (quantises every recorded layer from live values with CellRing's `QuantiseCellFloat/Category`), `WriteAtomic` (temp + rename), `Read`/`ReadHeaderOnly` (validating), `Dequantise`. |
+| `SnapshotNaming` | Feature 3: `IsValidSnapshotName` (1-32 of `A-Za-z0-9_-`), `CountSnapshots` (cell files in the store folder; `kMaxSnapshots = 16`), `SnapshotGate` (one operation in flight), `CheckTake` pre-flight (name, in flight, exists unless overwrite, cap). |
 
 All tier stores provide `TruncateAfter(sample)` for Feature 3 (snapshot restore). `Testing/` ships stubs (`StubGrid`, `FakeClock`, `BudgetSizing`, `FixtureEventSchemas`).

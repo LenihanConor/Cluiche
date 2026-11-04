@@ -56,6 +56,12 @@
     <ClInclude Include="DeltaCellInfo.h" />
     <ClInclude Include="DeltaCardState.h" />
     <ClInclude Include="HistoryEncoding.h" />
+    <ClInclude Include="ISnapshotStore.h" />
+    <ClInclude Include="SnapshotCellFile.h" />
+    <ClInclude Include="SnapshotNaming.h" />
+    <ClInclude Include="Testing\FakeSnapshotStore.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -87,6 +93,8 @@
     <ClCompile Include="DeltaCellInfo.cpp" />
     <ClCompile Include="DeltaCardState.cpp" />
     <ClCompile Include="HistoryEncoding.cpp" />
+    <ClCompile Include="SnapshotCellFile.cpp" />
+    <ClCompile Include="SnapshotNaming.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
