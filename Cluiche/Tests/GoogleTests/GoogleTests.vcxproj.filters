@@ -2502,5 +2502,8 @@
     <ClCompile Include="DiaCellHistory\TestDeltaPresentation.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryDeltaCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

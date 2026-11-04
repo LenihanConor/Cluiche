@@ -51,6 +51,7 @@ namespace Dia::CellHistory
 		else if (cmd == StringCRC("live")) { name = "live"; result = mViewCommands.Live(); }
 		else if (cmd == StringCRC("step")) { name = "step"; result = mViewCommands.Step(args); }
 		else if (cmd == StringCRC("event")) { name = "event"; result = mViewCommands.Event(args); }
+		else if (cmd == StringCRC("delta")) { name = "delta"; result = mViewCommands.Delta(args); }
 		else if (cmd == StringCRC("track"))
 		{
 			name = "track";

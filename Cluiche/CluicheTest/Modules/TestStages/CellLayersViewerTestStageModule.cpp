@@ -739,11 +739,13 @@ bool CellLayersViewerTestStageModule::BuildHistoryScrub()
     mScrubRecorder = recorder;
     mScrubView = Dia::Core::MakeUnique<HistoryViewState>(*recorder);
     mScrubViewCommands = Dia::Core::MakeUnique<HistoryViewCommands>(*recorder, *mScrubView, config);
+    mScrubViewCommands->SetLayerRegistry(mRegistry);
     mScrubCommandsRegistered = mScrubViewCommands->Register(*mHistoryRegistrar);
     if (!mScrubCommandsRegistered)
-        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.view/live/step/event registration failed");
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.view/live/step/event/delta registration failed");
 
     mScrubSource = Dia::Core::MakeUnique<HistoryValueSource>(*mRegistry, *recorder, *mScrubView);
+    mScrubSource->SetSchema(schema);
     if (!mScrubSource->Install())
         DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: HistoryValueSource install failed (another view source is installed) - scrubbing shows live values");
 

@@ -10,6 +10,13 @@
 //   cells.history.live  (no args)                    -> { ok, mode, sample, label }
 //   cells.history.step  { n, band? }                 -> { ok, mode, sample, label }
 //   cells.history.event { direction, type? }         -> { ok, mode, sample, label }
+//   cells.history.delta  one of (mixing forms is an error):
+//     { layer, a, b, scale? }  enter delta mode (a/b: now | sample:<i> | snapshot:<name>; scale: number > 0 or "auto")
+//     { scale }                fix the symmetric colour range to +/-scale, or "auto"
+//     { groupside }            "A" or "B": which side's grouping defines the group table's cells (default B)
+//     { off: true }            leave delta, back to the live / sample view held before it (result as view/live)
+//                              -> in delta: { ok, mode:"delta", a, b, scale (null = auto), layer, groupside }
+// Delta needs the layer registry (SetLayerRegistry); without it entering returns "layer registry not available".
 // Integer args may be JSON integers or decimal strings (console-friendly). mode is "live" or "sample". While live,
 // `sample` is the latest recorded sample (-1 when nothing is recorded yet) and label is that sample's label.
 // Errors use the sim-hosted convention { "error": "<message>" } and change nothing (mode, sample, epoch).
@@ -28,6 +35,8 @@
 
 #include <DiaCellLayers/MirrorQueries.h>
 
+namespace Dia::CellLayers { class CellLayerRegistry; }
+
 namespace Dia::CellHistory
 {
 	class CellHistoryRecorder;
@@ -39,6 +48,9 @@ namespace Dia::CellHistory
 	public:
 		HistoryViewCommands(const CellHistoryRecorder& recorder, HistoryViewState& view, const HistoryConfig* config = nullptr);
 
+		// Borrowed; needed by cells.history.delta to resolve the layer and read its sides. Optional.
+		void SetLayerRegistry(Dia::CellLayers::CellLayerRegistry* registry) { mLayers = registry; }
+
 		// false (and nothing left registered by this call) if the registrar rejects a name. Idempotent when already registered.
 		bool Register(Dia::CellLayers::IMirrorQueryRegistrar& registrar);
 		void Unregister(Dia::CellLayers::IMirrorQueryRegistrar& registrar);
@@ -47,14 +59,17 @@ namespace Dia::CellHistory
 		Json::Value Live();
 		Json::Value Step(const Json::Value& args);
 		Json::Value Event(const Json::Value& args);
+		Json::Value Delta(const Json::Value& args);
 
 	private:
 		Json::Value Result() const;
 		Json::Value Fail(const char* command, const char* message) const;
+		Json::Value EnterDelta(const Json::Value& args);
 
 		const CellHistoryRecorder&	mRecorder;
 		HistoryViewState&			mView;
 		const HistoryConfig*		mConfig;
+		Dia::CellLayers::CellLayerRegistry*	mLayers = nullptr;
 		bool						mRegistered = false;
 	};
 }

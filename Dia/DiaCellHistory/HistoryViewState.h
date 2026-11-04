@@ -25,6 +25,7 @@ namespace Dia::CellHistory
 		Side					b;
 		bool					autoScale = true;
 		float					fixedScale = 0.0f;	// > 0 when !autoScale
+		bool					groupSideB = true;	// which side's grouping defines the group table's cells; reset to B on each entry
 	};
 
 	// "now", "sample:3" or "snapshot:name" into buf (terminated for n >= 1).
@@ -58,6 +59,7 @@ namespace Dia::CellHistory
 		bool ExitDelta();										// back to the held view; false (no-op) when not in delta
 		bool SetDeltaScaleFixed(float scale, ViewResult& out);	// finite and > 0, only in delta
 		bool SetDeltaScaleAuto(ViewResult& out);				// only in delta
+		bool SetDeltaGroupSide(bool useB, ViewResult& out);		// only in delta; bumps the epoch only when it changes
 		bool				InDelta() const { return mMode == ViewMode::Delta; }
 		const DeltaSpec&	Delta() const { return mDelta; }			// valid when InDelta()
 		ViewMode			HeldMode() const { return mHeldMode; }		// Live or Sample; meaningful in delta

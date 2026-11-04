@@ -84,11 +84,11 @@ namespace
 	}
 }
 
-TEST(HistoryViewCommands, RegistersFourCommandsWithHelp)
+TEST(HistoryViewCommands, RegistersFiveCommandsWithHelp)
 {
 	ViewRig r; r.Setup(3);
-	EXPECT_EQ(r.registrar.Count(), 4u);
-	for (const char* name : { "cells.history.view", "cells.history.live", "cells.history.step", "cells.history.event" })
+	EXPECT_EQ(r.registrar.Count(), 5u);
+	for (const char* name : { "cells.history.view", "cells.history.live", "cells.history.step", "cells.history.event", "cells.history.delta" })
 	{
 		ASSERT_TRUE(r.registrar.Has(name)) << name;
 		EXPECT_TRUE(r.registrar.IsCommand(name)) << name;
@@ -112,11 +112,11 @@ TEST(HistoryViewCommands, UnregisterRemovesAllAndRegisterIsIdempotent)
 {
 	ViewRig r; r.Setup(3);
 	EXPECT_TRUE(r.commands->Register(r.registrar));
-	EXPECT_EQ(r.registrar.Count(), 4u);
+	EXPECT_EQ(r.registrar.Count(), 5u);
 	r.commands->Unregister(r.registrar);
 	EXPECT_EQ(r.registrar.Count(), 0u);
 	EXPECT_TRUE(r.commands->Register(r.registrar));
-	EXPECT_EQ(r.registrar.Count(), 4u);
+	EXPECT_EQ(r.registrar.Count(), 5u);
 }
 
 TEST(HistoryViewCommands, RegisterRollsBackWhenTheRegistrarRejectsAName)

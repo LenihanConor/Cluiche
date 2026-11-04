@@ -125,6 +125,7 @@ namespace Dia::CellHistory
 			mHeldMode = mMode;
 			mHeldSample = (mMode == ViewMode::Sample) ? mSample : 0;
 		}
+		mDelta.groupSideB = true;
 		mMode = ViewMode::Delta;
 		mDelta.layer = layer;
 		mDelta.a = a;
@@ -190,6 +191,24 @@ namespace Dia::CellHistory
 		mDelta.fixedScale = 0.0f;
 		++mEpoch;
 		DIA_LOG_INFO("HIS", "cell history view: delta scale set to auto");
+		return true;
+	}
+
+	bool HistoryViewState::SetDeltaGroupSide(bool useB, ViewResult& out)
+	{
+		out.mOk = false;
+		out.mError[0] = '\0';
+		if (mMode != ViewMode::Delta)
+		{
+			std::snprintf(out.mError, ViewResult::kErrorChars, "not in delta mode");
+			DIA_LOG_ERROR("HIS", "cell history delta: %s", out.mError);
+			return false;
+		}
+		out.mOk = true;
+		if (mDelta.groupSideB == useB) { return true; }
+		mDelta.groupSideB = useB;
+		++mEpoch;
+		DIA_LOG_INFO("HIS", "cell history view: delta group table uses side %s", useB ? "B" : "A");
 		return true;
 	}
 
