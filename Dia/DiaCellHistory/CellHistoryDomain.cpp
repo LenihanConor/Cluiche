@@ -12,7 +12,7 @@ namespace Dia::CellHistory
 	CellHistoryDomain::CellHistoryDomain(CellHistoryRecorder& recorder, HistoryViewState& view, HistoryViewCommands& viewCommands,
 		CellHistoryCommands& historyCommands, BaseLayerFn baseLayer, const Dia::ValueSchema::ValueSchemaService* schema, const HistoryConfig* config)
 		: mRecorder(recorder), mView(view), mViewCommands(viewCommands), mHistoryCommands(historyCommands), mBaseLayer(baseLayer)
-		, mSchema(schema), mConfig(config)
+		, mSchema(schema), mConfig(config), mDeltaCard(recorder, view), mDeltaDetails(recorder, view)
 	{
 	}
 
@@ -27,6 +27,10 @@ namespace Dia::CellHistory
 		mView.Update();
 		const StringCRC base = mBaseLayer.empty() ? StringCRC::kZero : mBaseLayer();
 		mCard.Update(mRecorder, mView, base, mSchema, mConfig);
+		mDeltaDetails.Sync(mLayers);
+		int32_t q = -1, r = -1;
+		if (mHover.empty() || !mHover(q, r)) { q = -1; r = -1; }
+		mDeltaCard.Update(mLayers, mSchema, q, r);
 	}
 
 	void CellHistoryDomain::GetJSONState(Json::Value& out)
@@ -41,6 +45,7 @@ namespace Dia::CellHistory
 		{
 			out[it.name()] = *it;
 		}
+		if (!mDeltaCard.Card().isNull()) { out["delta"] = mDeltaCard.Card(); }
 	}
 
 	void CellHistoryDomain::OnCommand(StringCRC cmd, const Json::Value& args)

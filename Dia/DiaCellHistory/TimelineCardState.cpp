@@ -19,6 +19,8 @@ namespace Dia::CellHistory
 			h["a"] = text;
 			FormatSide(view->Delta().b, text, sizeof(text));
 			h["b"] = text;
+			h["layer"] = view->Delta().layer.AsChar();
+			h["groupside"] = view->Delta().groupSideB ? "B" : "A";
 			h["scale"] = view->Delta().autoScale ? Json::Value(Json::nullValue) : Json::Value(static_cast<double>(view->Delta().fixedScale));
 			h["sample"] = Json::Value(Json::nullValue);
 			h["label"] = Json::Value(Json::nullValue);

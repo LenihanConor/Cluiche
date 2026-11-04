@@ -138,7 +138,16 @@ namespace Dia::CellHistory
 		uint32_t					SparklineCount() const { return mSpark.Size(); }
 		const TimelineSparkPoint&	SparklinePoint(uint32_t i) const { return mSpark[i]; }
 
-		// Card JSON (range, position, live, buckets, bandTicks, gaps, preWindowDim, sparkline).
+		// Delta mode (Feature 4): the A/B markers. Samples for `sample:` sides; `now` and `snapshot:` sides have none (a snapshot
+		// marker lands with snapshot support). Captured by Build; DeltaActive() is false outside delta mode.
+		bool					DeltaActive() const { return mDeltaActive; }
+		bool					DeltaAHasSample() const { return mDeltaAHasSample; }
+		bool					DeltaBHasSample() const { return mDeltaBHasSample; }
+		uint32_t				DeltaASample() const { return mDeltaASample; }
+		uint32_t				DeltaBSample() const { return mDeltaBSample; }
+
+		// Card JSON (range, position, live, buckets, bandTicks, gaps, preWindowDim, sparkline, and deltaMarkers { a, b } - each a
+		// sample index or null - only in delta mode).
 		Json::Value ToJson() const;
 
 	private:
@@ -153,6 +162,9 @@ namespace Dia::CellHistory
 		CellHistoryRecorder::StatusGap mEventGaps[CellHistoryRecorder::HistoryStatus::kMaxGaps];
 		uint32_t		mAggregateGapCount = 0, mCellGapCount = 0, mEventGapCount = 0;
 		TimelineSpan	mPreWindow;
+		bool			mDeltaActive = false;
+		bool			mDeltaAHasSample = false, mDeltaBHasSample = false;
+		uint32_t		mDeltaASample = 0, mDeltaBSample = 0;
 
 		bool			mBuilt = false;
 		uint32_t		mStampSamples = 0;

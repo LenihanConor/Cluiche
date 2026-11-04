@@ -132,6 +132,11 @@ namespace Dia::CellHistory
 		mRange.mCount = count;
 		mRange.mLatestSample = count > 0 ? count - 1 : 0;
 		// In delta mode the timeline shows the view held before the delta.
+		mDeltaActive = view.InDelta();
+		mDeltaAHasSample = mDeltaActive && view.Delta().a.kind == SideKind::Sample;
+		mDeltaBHasSample = mDeltaActive && view.Delta().b.kind == SideKind::Sample;
+		mDeltaASample = mDeltaAHasSample ? view.Delta().a.sample : 0;
+		mDeltaBSample = mDeltaBHasSample ? view.Delta().b.sample : 0;
 		mPosition.mMode = view.InDelta() ? view.HeldMode() : view.Mode();
 		mPosition.mSample = mPosition.mMode == ViewMode::Live ? mRange.mLatestSample : view.Sample();
 
@@ -241,6 +246,13 @@ namespace Dia::CellHistory
 		pos["mode"] = mPosition.mMode == ViewMode::Live ? "live" : "sample";
 		pos["sample"] = mPosition.mSample;
 		j["position"] = pos;
+		if (mDeltaActive)
+		{
+			Json::Value m(Json::objectValue);
+			m["a"] = mDeltaAHasSample ? Json::Value(mDeltaASample) : Json::Value(Json::nullValue);
+			m["b"] = mDeltaBHasSample ? Json::Value(mDeltaBSample) : Json::Value(Json::nullValue);
+			j["deltaMarkers"] = m;
+		}
 		j["liveMarker"] = HasLiveMarker() ? Json::Value(mRange.mLatestSample) : Json::Value(Json::nullValue);
 
 		Json::Value buckets(Json::arrayValue);

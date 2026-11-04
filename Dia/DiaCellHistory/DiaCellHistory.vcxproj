@@ -100,6 +100,8 @@
     <ClInclude Include="DeltaValueSource.h" />
     <ClInclude Include="DeltaScale.h" />
     <ClInclude Include="GroupDeltaTable.h" />
+    <ClInclude Include="DeltaCellInfo.h" />
+    <ClInclude Include="DeltaCardState.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -124,6 +126,8 @@
     <ClCompile Include="DeltaValueSource.cpp" />
     <ClCompile Include="DeltaScale.cpp" />
     <ClCompile Include="GroupDeltaTable.cpp" />
+    <ClCompile Include="DeltaCellInfo.cpp" />
+    <ClCompile Include="DeltaCardState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

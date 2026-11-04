@@ -227,6 +227,14 @@ private:
     bool BuildHistoryScrub();
     void TeardownHistoryScrub();
     void UpdateHistoryScrub();
+    bool HoveredCell(int32_t& q, int32_t& r) const
+    {
+        if (!mDomain) return false;
+        const Dia::CellLayers::CellLayerViewerDomain::HoverInfo h = mDomain->Hover();
+        q = h.q;
+        r = h.r;
+        return h.valid;
+    }
     Dia::Core::StringCRC ActiveBaseLayer() const { return mDomain ? mDomain->ActiveBase() : Dia::Core::StringCRC::kZero; }
     Dia::CellHistory::CellHistoryRecorder* mScrubRecorder = nullptr;   // recorder the scrub objects were built over; null = not built
     Dia::Core::UniquePtr<Dia::CellHistory::HistoryViewState>       mScrubView;

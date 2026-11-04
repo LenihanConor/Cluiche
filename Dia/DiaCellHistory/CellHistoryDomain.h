@@ -18,10 +18,17 @@
 //   "track" { layer? }              -> CellHistoryCommands::Track({layers:[layer]}); layer defaults to the current base layer
 // Failures log a Warning on HIS and change nothing. The last result is kept in LastResult() for tests and the console.
 //
+// Delta mode (Feature 4): when SetLayerRegistry has been called the domain adds a "delta" object to its state while the view is in
+// delta mode (see DeltaCardState.h: group table restricted to the viewer's selection, hover cell with both side values) and keeps a
+// "History delta" cell-detail provider registered for the selected-cell card (DeltaCellDetails). SetHoverFn supplies the hovered cell
+// (q, r; false = none), e.g. from CellLayerViewerDomain::Hover(). The "timeline" object gains deltaMarkers (see TimelineModel).
+//
 // All collaborators are borrowed and must outlive the domain. baseLayer supplies the viewer's active base layer
 // (CellLayerViewerDomain::ActiveBase via a delegate); kZero when unknown.
 
 #include <DiaCellHistory/CellHistoryCommands.h>
+#include <DiaCellHistory/DeltaCardState.h>
+#include <DiaCellHistory/DeltaCellInfo.h>
 #include <DiaCellHistory/HistoryViewCommands.h>
 #include <DiaCellHistory/TimelineCardState.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
@@ -37,6 +44,14 @@ namespace Dia::CellHistory
 		CellHistoryDomain(CellHistoryRecorder& recorder, HistoryViewState& view, HistoryViewCommands& viewCommands,
 			CellHistoryCommands& historyCommands, BaseLayerFn baseLayer,
 			const Dia::ValueSchema::ValueSchemaService* schema = nullptr, const HistoryConfig* config = nullptr);
+
+		// Returns true with the hovered cell's (q, r) when the pointer is over a cell.
+		typedef fastdelegate::FastDelegate2<int32_t&, int32_t&, bool> HoverCellFn;
+
+		// Optional, borrowed (must outlive the domain): the layer registry (selection, grouping layers, detail providers) and hover.
+		void SetLayerRegistry(Dia::CellLayers::CellLayerRegistry* registry) { mLayers = registry; }
+		void SetHoverFn(HoverCellFn fn) { mHover = fn; }
+		const DeltaCardState& DeltaCard() const { return mDeltaCard; }
 
 		Dia::Core::StringCRC GetDomainId()     const override;
 		const char*          GetDisplayName()  const override;
@@ -63,6 +78,10 @@ namespace Dia::CellHistory
 		const HistoryConfig*		mConfig;
 		TimelineCardState			mCard;
 		Json::Value					mLastResult;
+		Dia::CellLayers::CellLayerRegistry*	mLayers = nullptr;
+		HoverCellFn					mHover;
+		DeltaCardState				mDeltaCard;
+		DeltaCellDetails			mDeltaDetails;
 	};
 }
 

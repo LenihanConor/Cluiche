@@ -757,6 +757,8 @@ bool CellLayersViewerTestStageModule::BuildHistoryScrub()
     mScrubDomain = Dia::Core::MakeUnique<CellHistoryDomain>(*recorder, *mScrubView, *mScrubViewCommands, *mScrubPanelCommands,
         CellHistoryDomain::BaseLayerFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::ActiveBaseLayer)),
         schema, config);
+    mScrubDomain->SetLayerRegistry(mRegistry);   // delta mode: selection-restricted group table, selected-cell detail rows
+    mScrubDomain->SetHoverFn(CellHistoryDomain::HoverCellFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::HoveredCell)));
 
     CellLayersStateRelayModule* relay = mStateRelayRef.Get();
     mScrubPanelDomain = relay != nullptr ? relay->AttachHistory(*mScrubDomain) : nullptr;

@@ -15,7 +15,10 @@
 //     "timeline": <TimelineModel::ToJson()> }
 //
 // HistoryField (the future cells.view.state.history value) is null when no source is installed, otherwise
-// { "mode": "live"|"sample", "sample": <index or null>, "label": "<text or null>" }. "delta" is reserved (Feature 4).
+// { "mode": "live"|"sample", "sample": <index or null>, "label": "<text or null>" }, or in delta mode
+// { "mode": "delta", "a": "<side>", "b": "<side>", "scale": <number or null in auto>, "layer": "<id>", "groupside": "A"|"B",
+//   "sample": null, "label": null }.
+// The timeline gains "deltaMarkers": { "a": <sample or null>, "b": <sample or null> } in delta mode only (see TimelineModel).
 
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/HistoryViewStatus.h>
