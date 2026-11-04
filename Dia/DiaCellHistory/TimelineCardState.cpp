@@ -11,7 +11,19 @@ namespace Dia::CellHistory
 		if (recorder == nullptr || view == nullptr) { return Json::Value(Json::nullValue); }
 		const HistoryViewStatus s = DescribeHistoryView(*recorder, *view);
 		Json::Value h(Json::objectValue);
-		if (s.mMode == ViewMode::Sample)
+		if (view->InDelta())
+		{
+			char text[80];
+			h["mode"] = "delta";
+			FormatSide(view->Delta().a, text, sizeof(text));
+			h["a"] = text;
+			FormatSide(view->Delta().b, text, sizeof(text));
+			h["b"] = text;
+			h["scale"] = view->Delta().autoScale ? Json::Value(Json::nullValue) : Json::Value(static_cast<double>(view->Delta().fixedScale));
+			h["sample"] = Json::Value(Json::nullValue);
+			h["label"] = Json::Value(Json::nullValue);
+		}
+		else if (s.mMode == ViewMode::Sample)
 		{
 			h["mode"] = "sample";
 			h["sample"] = s.mSample;

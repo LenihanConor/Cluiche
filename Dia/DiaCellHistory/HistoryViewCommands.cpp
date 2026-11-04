@@ -111,7 +111,13 @@ namespace Dia::CellHistory
 		Json::Value out(Json::objectValue);
 		out["ok"] = true;
 		const uint32_t count = mRecorder.SampleCount();
-		if (mView.IsLive())
+		if (mView.InDelta())
+		{
+			out["mode"] = "delta";	// full delta results arrive with the delta commands (task 4.6)
+			out["sample"] = Json::Value(Json::nullValue);
+			out["label"] = "";
+		}
+		else if (mView.IsLive())
 		{
 			out["mode"] = "live";
 			out["sample"] = count == 0 ? -1 : static_cast<Json::Int64>(count - 1);
@@ -152,6 +158,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryViewCommands::Step(const Json::Value& args)
 	{
+		if (mView.InDelta()) { return Fail(kStepName, "leave delta mode first"); }
 		int64_t n = 0;
 		if (!args.isObject() || !args.isMember("n") || !ParseInt(args["n"], n)) { return Fail(kStepName, "missing or non-integer param 'n'"); }
 		if (n > (int64_t(1) << 40)) { n = int64_t(1) << 40; }	// far beyond any sample count; keeps base + n from overflowing
@@ -193,6 +200,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryViewCommands::Event(const Json::Value& args)
 	{
+		if (mView.InDelta()) { return Fail(kEventName, "leave delta mode first"); }
 		if (!args.isObject() || !args.isMember("direction") || !args["direction"].isString()) { return Fail(kEventName, "missing or non-string param 'direction'"); }
 		const std::string dir = args["direction"].asString();
 		if (dir != "prev" && dir != "next") { return Fail(kEventName, "param 'direction' must be prev or next"); }

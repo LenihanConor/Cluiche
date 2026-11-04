@@ -421,4 +421,38 @@ TEST(HistoryViewCommands, BandByNameNeedsAConfig)
 	EXPECT_EQ(r.view->Sample(), 52u);
 }
 
+
+TEST(HistoryViewCommands, StepAndEventAreRefusedInDeltaMode)
+{
+	ViewRig r; r.Setup(10);
+	ViewResult vr;
+	Side now; now.kind = SideKind::Now;
+	Side smp; smp.kind = SideKind::Sample; smp.sample = 1;
+	ASSERT_TRUE(r.view->EnterDelta(StringCRC("temp"), now, smp, vr));
+	Snap before(*r.view);
+	const Json::Value step = r.Step(-1);
+	ASSERT_TRUE(IsError(step));
+	EXPECT_EQ(step["error"].asString(), "leave delta mode first");
+	const Json::Value ev = r.Event("prev");
+	ASSERT_TRUE(IsError(ev));
+	EXPECT_EQ(ev["error"].asString(), "leave delta mode first");
+	EXPECT_TRUE(before.Same(*r.view));
+	EXPECT_TRUE(r.view->InDelta());
+}
+
+TEST(HistoryViewCommands, ViewAndLiveLeaveDeltaMode)
+{
+	ViewRig r; r.Setup(10);
+	ViewResult vr;
+	Side now; now.kind = SideKind::Now;
+	Side smp; smp.kind = SideKind::Sample; smp.sample = 1;
+	ASSERT_TRUE(r.view->EnterDelta(StringCRC("temp"), now, smp, vr));
+	ExpectOkAt(r, r.View(4), 4);
+	EXPECT_FALSE(r.view->InDelta());
+	ASSERT_TRUE(r.view->EnterDelta(StringCRC("temp"), now, smp, vr));
+	const Json::Value live = r.Run("cells.history.live");
+	EXPECT_EQ(live["mode"].asString(), "live");
+	EXPECT_FALSE(r.view->InDelta());
+}
+
 #endif // DIA_DEBUG

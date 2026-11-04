@@ -131,8 +131,9 @@ namespace Dia::CellHistory
 		mRange = TimelineRange();
 		mRange.mCount = count;
 		mRange.mLatestSample = count > 0 ? count - 1 : 0;
-		mPosition.mMode = view.Mode();
-		mPosition.mSample = view.IsLive() ? mRange.mLatestSample : view.Sample();
+		// In delta mode the timeline shows the view held before the delta.
+		mPosition.mMode = view.InDelta() ? view.HeldMode() : view.Mode();
+		mPosition.mSample = mPosition.mMode == ViewMode::Live ? mRange.mLatestSample : view.Sample();
 
 		mBuckets.RemoveAll();
 		mBandTicks.RemoveAll();

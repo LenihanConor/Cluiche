@@ -10,6 +10,6 @@ namespace Dia::CellHistory
 
 	uint64_t ViewHistorySourceAdapter::HistoryStamp() const
 	{
-		return mView.Epoch() * 2 + (mView.Mode() == ViewMode::Sample ? 1 : 0);
+		return mView.Epoch() * 2 + (mView.Mode() != ViewMode::Live ? 1 : 0);
 	}
 }

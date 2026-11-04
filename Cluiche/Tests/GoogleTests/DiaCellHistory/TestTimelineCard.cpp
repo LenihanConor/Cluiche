@@ -468,4 +468,29 @@ TEST(CellHistoryDomain, TruncatingBelowTheViewedSampleReturnsThePanelToLive)
 	EXPECT_EQ(r.State()["timeline"]["range"]["latest"].asUInt(), 2u);
 }
 
+
+TEST(TimelineCard, HistoryFieldDeltaReportsSidesAndScale)
+{
+	CardRig r; r.Setup();
+	ViewHistorySourceAdapter adapter(*r.rec, *r.view);
+	const uint64_t before = adapter.HistoryStamp();
+	ViewResult vr;
+	Side now; now.kind = SideKind::Now;
+	Side smp; smp.kind = SideKind::Sample; smp.sample = 2;
+	ASSERT_TRUE(r.view->EnterDelta(StringCRC("temp"), now, smp, vr));
+	const uint64_t entered = adapter.HistoryStamp();
+	EXPECT_NE(entered, before);
+	Json::Value h = adapter.HistoryField();
+	EXPECT_EQ(h["mode"].asString(), "delta");
+	EXPECT_EQ(h["a"].asString(), "now");
+	EXPECT_EQ(h["b"].asString(), "sample:2");
+	EXPECT_TRUE(h["scale"].isNull());
+	ASSERT_TRUE(r.view->SetDeltaScaleFixed(7.5f, vr));
+	EXPECT_NE(adapter.HistoryStamp(), entered);
+	h = adapter.HistoryField();
+	EXPECT_NEAR(h["scale"].asDouble(), 7.5, 1e-6);
+	r.Update("temp");	// the card must build without crashing in delta mode
+	ASSERT_TRUE(r.view->ExitDelta());
+	EXPECT_EQ(adapter.HistoryField()["mode"].asString(), "live");
+}
 #endif

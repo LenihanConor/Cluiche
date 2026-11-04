@@ -214,3 +214,18 @@ TEST(HistoryValueSource, ViewedSampleTruncatedAwayHasNoDataAndTickReturnsToLive)
 	EXPECT_TRUE(s.IsLive());
 	EXPECT_NE(s.ViewEpoch(), e);
 }
+
+TEST(HistoryValueSource, DeltaModeGetValuesReturnsFalse)
+{
+	Rig r; AddLayers(r); Track(r, "biome"); r.Start(); TakeN(r, 4);
+	HistoryViewState v(*r.rec);
+	HistoryValueSource s(r.registry, *r.rec, v);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(2, res));
+	Side now; now.kind = SideKind::Now;
+	Side smp; smp.kind = SideKind::Sample; smp.sample = 1;
+	ASSERT_TRUE(v.EnterDelta(Dia::Core::StringCRC("biome"), now, smp, res));
+	float out[12] = {};
+	EXPECT_FALSE(s.IsLive());
+	EXPECT_FALSE(s.GetValues(Desc(r, "biome"), out, 12));
+}

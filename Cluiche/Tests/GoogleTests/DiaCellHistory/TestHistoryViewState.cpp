@@ -1,4 +1,7 @@
 #include "HistoryTestRig.h"
+#include <cstring>
+#include <limits>
+#include <string>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 
@@ -250,4 +253,208 @@ TEST(HistoryViewState, TruncatingWhileLiveChangesNothing)
 	EXPECT_FALSE(v.Update());
 	EXPECT_TRUE(v.IsLive());
 	EXPECT_EQ(v.Epoch(), 0u);
+}
+
+// ---- Delta mode (Feature 4 task 4.2) ----
+
+namespace
+{
+	Side MakeSide(SideKind k, uint32_t sample = 0)
+	{
+		Side s; s.kind = k; s.sample = sample; return s;
+	}
+	const Dia::Core::StringCRC kTemp("temp");
+}
+
+TEST(HistoryViewState, DeltaFromLiveAndOffReturnsLive)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 5);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 2), res)) << res.mError;
+	EXPECT_EQ(v.Mode(), ViewMode::Delta);
+	EXPECT_TRUE(v.InDelta());
+	EXPECT_FALSE(v.IsLive());
+	EXPECT_FALSE(v.IsEvicted());
+	EXPECT_EQ(v.HeldMode(), ViewMode::Live);
+	EXPECT_TRUE(v.Delta().layer == kTemp);
+	EXPECT_TRUE(v.Delta().autoScale);
+	EXPECT_TRUE(v.ExitDelta());
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_FALSE(v.InDelta());
+}
+
+TEST(HistoryViewState, DeltaFromSampleAndOffReturnsSample)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(3, res));
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	EXPECT_EQ(v.HeldMode(), ViewMode::Sample);
+	EXPECT_EQ(v.HeldSample(), 3u);
+	EXPECT_EQ(v.Sample(), 3u);
+	EXPECT_TRUE(v.ExitDelta());
+	EXPECT_EQ(v.Mode(), ViewMode::Sample);
+	EXPECT_EQ(v.Sample(), 3u);
+}
+
+TEST(HistoryViewState, ReplacingDeltaKeepsOriginalHeldView)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(3, res));
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Sample, 4), MakeSide(SideKind::Sample, 0), res));
+	EXPECT_EQ(v.Delta().a.sample, 4u);
+	EXPECT_EQ(v.HeldMode(), ViewMode::Sample);
+	EXPECT_EQ(v.HeldSample(), 3u);
+	EXPECT_TRUE(v.ExitDelta());
+	EXPECT_EQ(v.Sample(), 3u);
+	EXPECT_EQ(v.Mode(), ViewMode::Sample);
+}
+
+TEST(HistoryViewState, ViewAndLiveLeaveDeltaAndDropHeld)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	ASSERT_TRUE(v.ViewSample(2, res));
+	EXPECT_EQ(v.Mode(), ViewMode::Sample);
+	EXPECT_EQ(v.Sample(), 2u);
+	EXPECT_FALSE(v.ExitDelta());
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	v.GoLive();
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_FALSE(v.ExitDelta());
+	EXPECT_TRUE(v.IsLive());
+}
+
+TEST(HistoryViewState, DeltaEpochBumpsOnEnterExitScaleAndNotOnNoOp)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 5);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	EXPECT_FALSE(v.ExitDelta());
+	EXPECT_EQ(v.Epoch(), 0u);
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	uint64_t e = v.Epoch();
+	EXPECT_EQ(e, 1u);
+	ASSERT_TRUE(v.SetDeltaScaleAuto(res));
+	EXPECT_EQ(v.Epoch(), e) << "auto -> auto is a no-op";
+	ASSERT_TRUE(v.SetDeltaScaleFixed(5.0f, res));
+	EXPECT_EQ(v.Epoch(), e + 1); e = v.Epoch();
+	EXPECT_FALSE(v.Delta().autoScale);
+	EXPECT_EQ(v.Delta().fixedScale, 5.0f);
+	ASSERT_TRUE(v.SetDeltaScaleFixed(5.0f, res));
+	EXPECT_EQ(v.Epoch(), e);
+	ASSERT_TRUE(v.SetDeltaScaleFixed(6.0f, res));
+	EXPECT_EQ(v.Epoch(), e + 1); e = v.Epoch();
+	ASSERT_TRUE(v.SetDeltaScaleAuto(res));
+	EXPECT_EQ(v.Epoch(), e + 1); e = v.Epoch();
+	EXPECT_TRUE(v.Delta().autoScale);
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	EXPECT_EQ(v.Epoch(), e) << "identical re-enter is a no-op";
+	ASSERT_TRUE(v.ExitDelta());
+	EXPECT_EQ(v.Epoch(), e + 1);
+}
+
+TEST(HistoryViewState, DeltaRejectionsChangeNothing)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 5);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	LogCapture log("HIS");
+	EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Now), res));
+	EXPECT_FALSE(res.mOk);
+	EXPECT_GT(strlen(res.mError), 0u);
+	EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Sample, 2), MakeSide(SideKind::Sample, 2), res));
+	EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 5), res));
+	EXPECT_NE(std::string(res.mError).find("out of range"), std::string::npos);
+	EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Sample, 9), MakeSide(SideKind::Now), res));
+	const float bad[] = { 0.0f, -1.0f, std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN() };
+	for (float s : bad)
+	{
+		EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res, false, s));
+	}
+	EXPECT_TRUE(v.IsLive());
+	EXPECT_EQ(v.Epoch(), 0u);
+	EXPECT_EQ(log.Count(LogLevel::kError, ""), 8u);
+
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	const uint64_t e = v.Epoch();
+	for (float s : bad) { EXPECT_FALSE(v.SetDeltaScaleFixed(s, res)); }
+	EXPECT_TRUE(v.Delta().autoScale);
+	EXPECT_FALSE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Now), res));
+	EXPECT_EQ(v.Delta().b.sample, 1u);
+	EXPECT_EQ(v.Epoch(), e);
+	v.ExitDelta();
+	EXPECT_FALSE(v.SetDeltaScaleFixed(2.0f, res)) << "not in delta";
+	EXPECT_FALSE(v.SetDeltaScaleAuto(res));
+}
+
+TEST(HistoryViewState, DeltaEvictedSampleSideIsAllowedAndUpdateIgnoresIt)
+{
+	LogCapture log("HIS");
+	Rig r; AddLayers(r);
+	StartWithWindow3(r);
+	TakeN(r, 4);	// window [1..3]
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	const uint64_t e = v.Epoch();
+	TakeN(r, 4);	// sample 1 evicted
+	EXPECT_FALSE(v.Update());
+	EXPECT_TRUE(v.InDelta());
+	EXPECT_EQ(v.Epoch(), e);
+	EXPECT_EQ(log.Count(LogLevel::kWarning, "delta"), 0u);
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 0), res)) << "evicted side allowed";
+}
+
+TEST(HistoryViewState, DeltaTruncatedSideLeavesDeltaWithOneWarning)
+{
+	LogCapture log("HIS");
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(1, res));
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 4), res));
+	const uint64_t e = v.Epoch();
+	r.rec->TruncateAfter(2);
+	EXPECT_TRUE(v.Update());
+	EXPECT_EQ(v.Mode(), ViewMode::Sample);
+	EXPECT_EQ(v.Sample(), 1u);
+	EXPECT_NE(v.Epoch(), e);
+	EXPECT_EQ(log.Count(LogLevel::kWarning, "delta"), 1u);
+	EXPECT_FALSE(v.Update());
+	EXPECT_EQ(log.Count(LogLevel::kWarning, "delta"), 1u);
+}
+
+TEST(HistoryViewState, DeltaTruncatedHeldSampleGoesLive)
+{
+	Rig r; AddLayers(r); r.Start(); TakeN(r, 6);
+	HistoryViewState v(*r.rec);
+	ViewResult res;
+	ASSERT_TRUE(v.ViewSample(5, res));
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 1), res));
+	r.rec->TruncateAfter(2);	// held 5 gone, side 1 remains
+	EXPECT_FALSE(v.Update());	// no side lost: still in delta
+	ASSERT_TRUE(v.EnterDelta(kTemp, MakeSide(SideKind::Now), MakeSide(SideKind::Sample, 2), res));
+	r.rec->TruncateAfter(1);	// side 2 gone and held 5 gone
+	EXPECT_TRUE(v.Update());
+	EXPECT_TRUE(v.IsLive());
+}
+
+TEST(HistoryViewState, FormatSideText)
+{
+	char buf[64];
+	FormatSide(MakeSide(SideKind::Now), buf, sizeof(buf));
+	EXPECT_STREQ(buf, "now");
+	FormatSide(MakeSide(SideKind::Sample, 7), buf, sizeof(buf));
+	EXPECT_STREQ(buf, "sample:7");
+	Side s; s.kind = SideKind::Snapshot; s.snapshot = Dia::Core::Containers::String64("%s", "before");
+	FormatSide(s, buf, sizeof(buf));
+	EXPECT_STREQ(buf, "snapshot:before");
 }
