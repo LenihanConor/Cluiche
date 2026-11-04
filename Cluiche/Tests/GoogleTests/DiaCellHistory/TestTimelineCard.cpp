@@ -1,6 +1,7 @@
 #include "HistoryTestRig.h"
 #include <DiaCellHistory/CellHistoryDomain.h>
 #include <DiaCellHistory/TimelineCardState.h>
+#include <DiaCellHistory/ViewHistorySourceAdapter.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
@@ -69,6 +70,41 @@ TEST(TimelineCard, HistoryFieldSampleModeCarriesIndexAndLabel)
 	EXPECT_EQ(h["sample"].asUInt(), 3u);
 	ASSERT_TRUE(h["label"].isString());
 	EXPECT_EQ(h["label"].asString(), std::string(r.rec->Header(3).mLabel.AsCStr()));
+}
+
+TEST(TimelineCard, ViewHistorySourceAdapterLiveThenScrubbed)
+{
+	CardRig r; r.Setup();
+	ViewHistorySourceAdapter adapter(*r.rec, *r.view);
+	const uint64_t liveStamp = adapter.HistoryStamp();
+	Json::Value h = adapter.HistoryField();
+	EXPECT_EQ(h["mode"].asString(), "live");
+	EXPECT_TRUE(h["sample"].isNull());
+	EXPECT_TRUE(h["label"].isNull());
+
+	ViewResult vr;
+	ASSERT_TRUE(r.view->ViewSample(3, vr));
+	const uint64_t scrubStamp = adapter.HistoryStamp();
+	EXPECT_NE(scrubStamp, liveStamp);
+	h = adapter.HistoryField();
+	EXPECT_EQ(h["mode"].asString(), "sample");
+	EXPECT_EQ(h["sample"].asUInt(), 3u);
+	EXPECT_EQ(h["label"].asString(), std::string(r.rec->Header(3).mLabel.AsCStr()));
+
+	ASSERT_TRUE(r.view->ViewSample(4, vr));
+	EXPECT_NE(adapter.HistoryStamp(), scrubStamp);
+	r.view->GoLive();
+	EXPECT_NE(adapter.HistoryStamp(), scrubStamp);
+	EXPECT_TRUE(adapter.HistoryField()["sample"].isNull());
+}
+
+TEST(TimelineCard, ViewHistorySourceAdapterStampIgnoresNewSamples)
+{
+	CardRig r; r.Setup();
+	ViewHistorySourceAdapter adapter(*r.rec, *r.view);
+	const uint64_t before = adapter.HistoryStamp();
+	r.Take();
+	EXPECT_EQ(adapter.HistoryStamp(), before);
 }
 
 TEST(TimelineCard, LiveCardHasHiddenBannerAndTimeline)

@@ -5,7 +5,7 @@
 // (SimPU): call Update() once per frame. Read-only: it only reads the viewer, registry and selection.
 //
 // Payload: { viewVersion, layersVersion, grid {id, topology, width, height}, base, overlays[], selection {count, version,
-// hash (16 hex)}, history (null until DiaCellHistory) }. grid.id is CellGridDesc::id when set, else "grid.<index>" (index = the
+// hash (16 hex)}, history (IViewHistorySource::HistoryField(); null with no source) }. grid.id is CellGridDesc::id when set, else "grid.<index>" (index = the
 // grid's position in CellLayerRegistry::GridAt). Empty state: grid null, base "".
 //
 // Change detection: a cheap state snapshot is compared with the last PUBLISHED snapshot each frame; the JSON is only built on
@@ -17,6 +17,7 @@
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/ITopicSink.h>
+#include <DiaCellLayers/IViewHistorySource.h>
 #include <DiaCellLayers/SelectionFingerprint.h>
 
 namespace Dia::Observation::Metric { class Counter; }
@@ -36,6 +37,10 @@ namespace Dia::CellLayers
 
 		void		Update();
 
+		// Installs the source of the "history" value (borrowed, not owned; must outlive the publisher or be cleared).
+		// nullptr (default) publishes history: null. A changed HistoryStamp() triggers a republish.
+		void		SetHistorySource(const IViewHistorySource* source) { mHistory = source; }
+
 		uint32_t	ViewVersion() const { return mViewVersion; }
 		uint32_t	PublishCount() const { return mPublishCount; }
 		uint32_t	CoalescedCount() const { return mCoalescedCount; }	// Update calls that held a change back
@@ -52,6 +57,7 @@ namespace Dia::CellLayers
 			uint32_t				overlayCount = 0;
 			Dia::Core::StringCRC	overlays[CellLayerRegistry::kMaxOverlays];	// enabled overlays, registry order
 			SelectionFingerprint	selection;
+			uint64_t				historyStamp = 0;	// IViewHistorySource::HistoryStamp(), 0 with no source
 			bool operator==(const Snapshot& o) const;
 			bool operator!=(const Snapshot& o) const { return !(*this == o); }
 		};
@@ -63,6 +69,7 @@ namespace Dia::CellLayers
 		const CellLayerViewerDomain&	mViewer;
 		ITopicSink&						mSink;
 		const IMonotonicClock&			mClock;
+		const IViewHistorySource*		mHistory = nullptr;
 		SelectionFingerprintCache		mFingerprint;
 		Snapshot						mPublished;
 		bool							mHasPublished = false;

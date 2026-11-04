@@ -26,6 +26,7 @@ public_api:
     - DiaCellHistory/CellHistoryCommands.h
     - DiaCellHistory/TimelineCardState.h
     - DiaCellHistory/CellHistoryDomain.h
+    - DiaCellHistory/ViewHistorySourceAdapter.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []
@@ -44,6 +45,7 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `CellHistoryModule` | SimPU module: creates the recorder, applies the `.diastage` `history` block, registers commands. |
 | `CellHistoryCommands` | `cells.history.track`, `untrack`, `status` (DIA_DEBUG). |
 | `TimelineCardState` | Typed model of the timeline card + not-live banner JSON (`TimelineModel` + `HistoryViewStatus`); `HistoryField` is the future `cells.view.state.history` value. Rebuilds only on sample/view/layer-state change. |
+| `ViewHistorySourceAdapter` | `IViewHistorySource` over (recorder, `HistoryViewState`): `HistoryField()` = `TimelineCardState::HistoryField`, `HistoryStamp()` = `Epoch()*2 + (Sample mode ? 1 : 0)` (new recorder samples do not change the field, so they are not in the stamp). Install with `ViewStatePublisher::SetHistorySource`. |
 | `CellHistoryDomain` | Panel-only `IDebugDomain` "Cell History" (id `cellhistory`): state = the card; panel commands `view`/`live`/`step`/`event`/`track` call the same executors as `cells.history.*` (DIA_DEBUG). |
 | `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
 | `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |

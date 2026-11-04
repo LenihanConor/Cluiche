@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaCellLayers/ViewStatePublisher.h>
+#include <DiaCellLayers/IViewHistorySource.h>
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
@@ -86,6 +87,58 @@ TEST_F(ViewStateTest, PayloadCarriesEveryField)
 	EXPECT_EQ(p["selection"]["hash"].asString().size(), 16u);
 	ASSERT_TRUE(p.isMember("history"));
 	EXPECT_TRUE(p["history"].isNull());
+}
+
+namespace
+{
+	struct FakeHistorySource : IViewHistorySource
+	{
+		uint64_t stamp = 1;
+		std::string mode = "live";
+		Json::Value HistoryField() const override
+		{
+			Json::Value v(Json::objectValue);
+			v["mode"] = mode;
+			return v;
+		}
+		uint64_t HistoryStamp() const override { return stamp; }
+	};
+}
+
+TEST_F(ViewStateTest, HistorySourceFieldIsPublished)
+{
+	FakeHistorySource src;
+	src.mode = "sample";
+	publisher.SetHistorySource(&src);
+	Frame();
+	ASSERT_EQ(topic.Count(), 1u);
+	ASSERT_TRUE(topic.Last()["history"].isObject());
+	EXPECT_EQ(topic.Last()["history"]["mode"].asString(), "sample");
+}
+
+TEST_F(ViewStateTest, HistoryStampChangeRepublishesAndUnchangedDoesNot)
+{
+	FakeHistorySource src;
+	publisher.SetHistorySource(&src);
+	Frame();
+	ASSERT_EQ(topic.Count(), 1u);
+	clock.Advance(200); Frame();
+	EXPECT_EQ(topic.Count(), 1u);
+	src.stamp = 2; src.mode = "sample";
+	clock.Advance(200); Frame();
+	ASSERT_EQ(topic.Count(), 2u);
+	EXPECT_EQ(topic.Last()["history"]["mode"].asString(), "sample");
+}
+
+TEST_F(ViewStateTest, ClearingHistorySourceReturnsToNullAndRepublishes)
+{
+	FakeHistorySource src;
+	publisher.SetHistorySource(&src);
+	Frame();
+	publisher.SetHistorySource(nullptr);
+	clock.Advance(200); Frame();
+	ASSERT_EQ(topic.Count(), 2u);
+	EXPECT_TRUE(topic.Last()["history"].isNull());
 }
 
 TEST_F(ViewStateTest, NoPublishWhenNothingChanged)

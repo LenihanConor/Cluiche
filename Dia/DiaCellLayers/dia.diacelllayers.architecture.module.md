@@ -26,6 +26,7 @@ public_api:
     - DiaCellLayers/CellLayersTypes.h
     - DiaCellLayers/CellLayerRegistry.h
     - DiaCellLayers/IViewValueSource.h
+    - DiaCellLayers/IViewHistorySource.h
     - DiaCellLayers/HotkeyTable.h
     - DiaCellLayers/CellLayerLegend.h
     - DiaCellLayers/CellLayerViewerDomain.h
@@ -57,6 +58,7 @@ public_api:
     - CellValueKind
     - CellLayerRegistry
     - IViewValueSource
+    - IViewHistorySource
     - ViewPresentation
     - PresentedLegend
     - HotkeyTable
@@ -115,6 +117,7 @@ Provides a registry system that allows any module or application to register cel
 | `CellLayersModule` | Module (PUAffinity::kAny, no per-frame work) that owns the `CellLayerRegistry` and publishes it on the `CellLayerRegistryService` ServiceStream (CL-006, no singletons). The registry is built in DoStart on the module's PU, which becomes its owner PU (register layers from that PU); DoStop withdraws the stream. Consumes the `ValueSchemaService` stream (declare `consumes` in the manifest) and attaches it to the registry via `CellLayerRegistry::SetSchema` on the first update that sees it (so `ui.default_base` works for manifest-built modules). Seams: `SetSchema` (explicit override, wins over the stream), `SetCurrentPuIdFn`. Consumers hold a `ServiceStreamReader<CellLayerRegistry>` on `kServiceStreamId` and resolve it with `FindCellLayerRegistry(reader)` (null when unavailable) in DoUpdate or later (the store commits after all providers' DoStart); the result feeds `CellLayerViewerDomain`'s `CellLayerRegistry&` constructor |
 | `CellSelection` | Mutable cell selection set (bitset + cached count + version) bound to a single grid. One per grid owned by the registry (`SelectionFor`). Grid identity is pointer + width + height + topology; re-binding clears the selection. Version increments on net change only. `BeginEdit` / `EndEdit` batch edits into at most one version bump. Generic with no game types (CL-005) or singletons (CL-006). Accessed via registry interface `ICellSelectionView` (read-only). |
 | `ICellSelectionView` | Read-only interface to a cell selection: `Version()`, `Count()`, `Contains(cellIndex)`, `ForEach()` visitor. Handed to overlay draw callbacks by `CellLayerViewerDomain` so systems can visualize the current selection. |
+| `IViewHistorySource` | Optional seam installed on `ViewStatePublisher::SetHistorySource` (borrowed; null = `history: null`). `HistoryField()` is the JSON published as `history`; `HistoryStamp()` is folded into the publisher snapshot so a changed stamp republishes (subject to the 100 ms coalescing). |
 | `LayerReader` | Cached reader over registered layers: reads the layer's values (or substitutes from `IViewValueSource` if installed) with a cache key per layer and source epoch. Unifies value access for selection, query and aggregate operations so each layer reads at most once per version. Not thread-safe; owned by one PU. Metrics `Reads()` (actual read calls) and `CacheHits()` available but not yet registered to DiaObservation. |
 | `SelectionTools` | Pure tool functions: `SelectCell` (replace), `ToggleCell`, `SelectBox`, `ClearSelection`, `SelectPolygon` (point-in-polygon), `SelectCells` (by coordinate list, capped at 2048 per call), `SelectCategory` (by layer value). Each returns `ToolResult { ok, changed, count }` or specialized `CellsResult` / `CategoryResult` with error details. Coordinates are cell (q=column, r=row); out-of-bounds ignored. Each call bumps version at most once on net change. Commands wire via `CellLayerViewerDomain` on `cells.select.*` path. |
 | `SelectionOutline` | Cached perimeter of a selection (flat-top odd-q hex edges between selected and non-selected neighbours). Capped at 4000 edges; above that marked `TooLarge()` and not stored. Rebuilds only when selection version or grid identity (width, height, cellSize) changes. Supplies `OutlineEdge` array for debug drawing. Metrics `EdgeCount()`, `SelectedCountForBanner()`, `Rebuilds()` available but not yet registered. |

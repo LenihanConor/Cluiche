@@ -117,6 +117,7 @@
     <ClInclude Include="Testing\FakeMirrorRegistrar.h" />
     <ClInclude Include="Testing\ViewerCommands.h" />
     <ClInclude Include="ViewerStateSnapshot.h" />
+    <ClInclude Include="IViewHistorySource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

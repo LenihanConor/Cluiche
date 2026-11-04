@@ -14,7 +14,7 @@ namespace Dia::CellLayers
 	bool ViewStatePublisher::Snapshot::operator==(const Snapshot& o) const
 	{
 		if (layersVersion != o.layersVersion || grid != o.grid || topology != o.topology || width != o.width || height != o.height
-			|| base != o.base || overlayCount != o.overlayCount || selection != o.selection)
+			|| base != o.base || overlayCount != o.overlayCount || selection != o.selection || historyStamp != o.historyStamp)
 		{
 			return false;
 		}
@@ -54,6 +54,7 @@ namespace Dia::CellLayers
 		const ICellSelectionView* sel = mViewer.ActiveSelectionView();
 		if (sel != nullptr) { out.selection = mFingerprint.Get(*sel); }
 		else { out.selection = SelectionFingerprint(); mFingerprint.Invalidate(); }
+			out.historyStamp = mHistory ? mHistory->HistoryStamp() : 0;
 	}
 
 	void ViewStatePublisher::Update()
@@ -111,7 +112,7 @@ namespace Dia::CellLayers
 		sel["version"] = s.selection.mVersion;
 		sel["hash"] = hex;
 		p["selection"] = sel;
-		p["history"] = Json::Value(Json::nullValue);
+		p["history"] = mHistory ? mHistory->HistoryField() : Json::Value(Json::nullValue);
 
 		mSink.Publish(TopicId(), p);
 		mPublished = s;
