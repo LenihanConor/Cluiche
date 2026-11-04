@@ -2511,5 +2511,8 @@
     <ClCompile Include="DiaCellHistory\TestDeltaViewIntegration.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerHoverExtra.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

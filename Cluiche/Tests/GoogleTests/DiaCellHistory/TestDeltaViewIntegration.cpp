@@ -697,4 +697,69 @@ TEST_F(DeltaViewIntegration, SelectedCellDetailsShowABAndDeltaRowsOnlyInDeltaMod
 	EXPECT_TRUE(detailTexts().empty());
 }
 
+namespace
+{
+	void PointAt(DomainRig& r, int q, int c)
+	{
+		const Dia::Maths::Vector2D p = Dia::Pathfinding::HexTopology::CellCenter(Dia::Pathfinding::CellCoord{ q, c }, 1.0f);
+		float sx, sy;
+		Dia::CellLayers::Testing::WorldToScreen(TestView(), p.X(), p.Y(), sx, sy);
+		r.draw.mouse = Dia::Maths::Vector2D(sx, sy);
+	}
+}
+
+TEST_F(DeltaViewIntegration, HoverExtraCarriesABAndDeltaLinesOnlyInDeltaMode)
+{
+	DomainRig r; r.SetupDomain();
+	ASSERT_TRUE(r.domain->AddHoverExtraFn(CellLayerViewerDomain::HoverExtraFn(r.hdomain.get(), &CellHistoryDomain::HoverExtra)));
+	PointAt(r, 1, 0);	// cell 1: veg A = 51, B = 31
+	r.Frame();
+	Json::Value s;
+	r.domain->GetJSONState(s);
+	ASSERT_TRUE(s["hover"]["valid"].asBool());
+	EXPECT_FALSE(s["hover"].isMember("extra")) << "live view: no extra";
+
+	ASSERT_TRUE(r.Delta("veg", "sample:0", "sample:1")["ok"].asBool());
+	r.hdomain->Update();
+	r.domain->GetJSONState(s);
+	const Json::Value& extra = s["hover"]["extra"];
+	ASSERT_TRUE(extra.isArray()) << s["hover"].toStyledString();
+	ASSERT_EQ(extra.size(), 3u);
+	EXPECT_EQ(extra[0u]["label"].asString(), "A (sample:0)");
+	EXPECT_EQ(extra[0u]["text"].asString(), "51");
+	EXPECT_EQ(extra[1u]["label"].asString(), "B (sample:1)");
+	EXPECT_EQ(extra[1u]["text"].asString(), "31");
+	EXPECT_EQ(extra[2u]["label"].asString(), "Delta");
+	EXPECT_EQ(extra[2u]["text"].asString(), "-20");
+
+	// Now side: the live value.
+	ASSERT_TRUE(r.Delta("veg", "sample:2", "now")["ok"].asBool());
+	r.hdomain->Update();
+	r.domain->GetJSONState(s);
+	ASSERT_EQ(s["hover"]["extra"].size(), 3u);
+	EXPECT_EQ(s["hover"]["extra"][1u]["label"].asString(), "B (now)");
+	EXPECT_EQ(s["hover"]["extra"][1u]["text"].asString(), "61");
+
+	r.DeltaOff();
+	r.hdomain->Update();
+	r.domain->GetJSONState(s);
+	EXPECT_TRUE(s["hover"]["valid"].asBool());
+	EXPECT_FALSE(s["hover"].isMember("extra")) << "after off: no extra";
+	r.domain->RemoveHoverExtraFn(CellLayerViewerDomain::HoverExtraFn(r.hdomain.get(), &CellHistoryDomain::HoverExtra));
+}
+
+TEST_F(DeltaViewIntegration, HoverExtraIsEmptyWhenTheHoveredLayerIsNotTheDeltaLayer)
+{
+	DomainRig r; r.SetupDomain();
+	ASSERT_TRUE(r.domain->AddHoverExtraFn(CellLayerViewerDomain::HoverExtraFn(r.hdomain.get(), &CellHistoryDomain::HoverExtra)));
+	PointAt(r, 1, 0);
+	ASSERT_TRUE(r.Delta("temp", "sample:0", "sample:1")["ok"].asBool());	// base stays veg
+	r.hdomain->Update();
+	Json::Value s;
+	r.domain->GetJSONState(s);
+	ASSERT_TRUE(s["hover"]["valid"].asBool());
+	EXPECT_FALSE(s["hover"].isMember("extra")) << s["hover"].toStyledString();
+	r.domain->RemoveHoverExtraFn(CellLayerViewerDomain::HoverExtraFn(r.hdomain.get(), &CellHistoryDomain::HoverExtra));
+}
+
 #endif // DIA_DEBUG

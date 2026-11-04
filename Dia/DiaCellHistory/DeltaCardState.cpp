@@ -6,6 +6,7 @@
 #include <DiaValueSchema/ValueSchemaService.h>
 
 #include <cmath>
+#include <cstdio>
 
 namespace Dia::CellHistory
 {
@@ -54,6 +55,7 @@ namespace Dia::CellHistory
 
 	void DeltaCardState::Update(Dia::CellLayers::CellLayerRegistry* registry, const Dia::ValueSchema::ValueSchemaService* schema, int32_t hoverQ, int32_t hoverR)
 	{
+		mRegistry = registry;
 		if (!mView.InDelta())
 		{
 			if (!mCard.isNull()) { Clear(); }
@@ -212,4 +214,33 @@ namespace Dia::CellHistory
 		h["bHasData"] = info.bHasData;
 		mHoverJson = h;
 	}
+
+#ifdef DIA_DEBUG
+	void DeltaCardState::HoverExtra(const Dia::CellLayers::CellLayerViewerDomain::HoverInfo& hover, Dia::CellLayers::CellLayerViewerDomain::HoverExtraLines& out)
+	{
+		if (!hover.valid || mRegistry == nullptr || !mView.InDelta() || hover.q < 0 || hover.r < 0) { return; }
+		const DeltaSpec& d = mView.Delta();
+		if (!(hover.layer == d.layer)) { return; }
+		const Dia::CellLayers::CellLayerDesc* layer = mRegistry->Find(d.layer);
+		if (layer == nullptr || layer->grid == nullptr) { return; }
+		const Dia::Graphics::CellGridDesc& grid = *layer->grid;
+		if (hover.q >= static_cast<int32_t>(grid.width) || hover.r >= static_cast<int32_t>(grid.height)) { return; }
+		DeltaCellInfo info;
+		if (!mCells.Get(*layer, d, mView.Epoch(), static_cast<uint32_t>(hover.r) * grid.width + static_cast<uint32_t>(hover.q), info)) { return; }
+		char side[80], label[96], text[48];
+		auto line = [&](const char* what, const Side& s, float v, bool has)
+		{
+			FormatSide(s, side, sizeof(side));
+			std::snprintf(label, sizeof(label), "%s (%s)", what, side);
+			if (has) { std::snprintf(text, sizeof(text), "%.4g", static_cast<double>(v)); }
+			else { std::snprintf(text, sizeof(text), "no data"); }
+			out.Add(label, text);
+		};
+		line("A", d.a, info.a, info.aHasData);
+		line("B", d.b, info.b, info.bHasData);
+		if (std::isnan(info.delta)) { std::snprintf(text, sizeof(text), "no data"); }
+		else { std::snprintf(text, sizeof(text), "%+.4g", static_cast<double>(info.delta)); }
+		out.Add("Delta", text);
+	}
+#endif
 }

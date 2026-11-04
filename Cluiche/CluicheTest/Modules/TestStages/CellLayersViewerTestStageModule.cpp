@@ -759,6 +759,8 @@ bool CellLayersViewerTestStageModule::BuildHistoryScrub()
         schema, config);
     mScrubDomain->SetLayerRegistry(mRegistry);   // delta mode: selection-restricted group table, selected-cell detail rows
     mScrubDomain->SetHoverFn(CellHistoryDomain::HoverCellFn(fastdelegate::MakeDelegate(this, &CellLayersViewerTestStageModule::HoveredCell)));
+    if (mDomain)   // delta mode: the hover tooltip also shows the A / B side values (removed in TeardownHistoryScrub)
+        mDomain->AddHoverExtraFn(Dia::CellLayers::CellLayerViewerDomain::HoverExtraFn(fastdelegate::MakeDelegate(mScrubDomain.Get(), &CellHistoryDomain::HoverExtra)));
 
     CellLayersStateRelayModule* relay = mStateRelayRef.Get();
     mScrubPanelDomain = relay != nullptr ? relay->AttachHistory(*mScrubDomain) : nullptr;
@@ -789,6 +791,8 @@ void CellLayersViewerTestStageModule::TeardownHistoryScrub()
             relay->DetachHistory();
         mScrubPanelDomain = nullptr;
     }
+    if (mDomain && mScrubDomain)
+        mDomain->RemoveHoverExtraFn(Dia::CellLayers::CellLayerViewerDomain::HoverExtraFn(fastdelegate::MakeDelegate(mScrubDomain.Get(), &Dia::CellHistory::CellHistoryDomain::HoverExtra)));
     mScrubDomain.Reset();
     mScrubPanelCommands.Reset();
     if (mMirrorPublisher)

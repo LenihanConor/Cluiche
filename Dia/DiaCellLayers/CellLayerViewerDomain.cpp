@@ -428,6 +428,38 @@ namespace Dia::CellLayers
 		out["legend"] = legend;
 	}
 
+	bool CellLayerViewerDomain::HoverExtraLines::Add(const char* label, const char* text)
+	{
+		if (mCount >= kMaxLines) { return false; }
+		Line& l = mLines[mCount++];
+		l.label = Dia::Core::Containers::String32("%s", label != nullptr ? label : "");	// printf-style ctor: truncates
+		l.text = Dia::Core::Containers::String64("%s", text != nullptr ? text : "");
+		return true;
+	}
+
+	bool CellLayerViewerDomain::AddHoverExtraFn(HoverExtraFn fn)
+	{
+		if (fn.empty()) { return false; }
+		int free = -1;
+		for (uint32_t i = 0; i < kMaxHoverExtraFns; ++i)
+		{
+			if (mHoverExtra[i] == fn) { return false; }
+			if (free < 0 && mHoverExtra[i].empty()) { free = static_cast<int>(i); }
+		}
+		if (free < 0) { return false; }
+		mHoverExtra[free] = fn;
+		return true;
+	}
+
+	void CellLayerViewerDomain::RemoveHoverExtraFn(HoverExtraFn fn)
+	{
+		if (fn.empty()) { return; }
+		for (uint32_t i = 0; i < kMaxHoverExtraFns; ++i)
+		{
+			if (mHoverExtra[i] == fn) { mHoverExtra[i].clear(); return; }
+		}
+	}
+
 	void CellLayerViewerDomain::WriteHover(Json::Value& out) const
 	{
 		Json::Value hover(Json::objectValue);
@@ -462,6 +494,21 @@ namespace Dia::CellLayers
 			else if (unit[0] != '\0') { snprintf(text, sizeof(text), "%g %s", static_cast<double>(mHover.value), unit); }
 			else { snprintf(text, sizeof(text), "%g", static_cast<double>(mHover.value)); }
 			hover["text"] = text;
+			Json::Value extra(Json::arrayValue);
+			for (uint32_t f = 0; f < kMaxHoverExtraFns; ++f)
+			{
+				if (mHoverExtra[f].empty()) { continue; }
+				HoverExtraLines lines;
+				mHoverExtra[f](mHover, lines);
+				for (uint32_t i = 0; i < lines.Count(); ++i)
+				{
+					Json::Value line(Json::objectValue);
+					line["label"] = lines.At(i).label.AsCStr();
+					line["text"] = lines.At(i).text.AsCStr();
+					extra.append(line);
+				}
+			}
+			if (extra.size() > 0) { hover["extra"] = extra; }
 		}
 		out["hover"] = hover;
 	}

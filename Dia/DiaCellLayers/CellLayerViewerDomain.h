@@ -48,6 +48,8 @@
 #include <DiaCellLayers/SelectionInput.h>
 #include <DiaCellLayers/SelectionOutline.h>
 #include <DiaCore/Containers/Misc/FastDelegate.h>
+#include <DiaCore/Strings/String32.h>
+#include <DiaCore/Strings/String64.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaValueSchema/RampLegend.h>
@@ -71,6 +73,30 @@ namespace Dia::CellLayers
 			float		value = 0.0f;
 			Dia::Core::StringCRC	layer;
 		};
+
+		// Hover extras: other systems append "label: text" lines to the hover tooltip (JSON "hover.extra": [{label, text}]).
+		// A fn receives the hovered cell + layer and appends up to kMaxLines lines to `out` (a fresh, fixed-capacity buffer per call:
+		// no heap; extra lines are dropped, label truncated to 31 and text to 63 chars). Fns run in registration order from GetJSONState,
+		// ONLY while a valid hover exists, and "extra" is omitted unless at least one line was added (so state without fns is
+		// byte-identical). AddHoverExtraFn holds kMaxHoverExtraFns slots: false when full, empty or already registered; RemoveHoverExtraFn
+		// of an unknown fn is a no-op. Same-PU contract: add, remove and the fn calls all happen on the viewer PU (no locking).
+		// The domain knows nothing about the consumers (CL-005); the owner must Remove before the fn's target dies.
+		struct HoverExtraLines
+		{
+			static const uint32_t kMaxLines = 4;
+			struct Line { Dia::Core::Containers::String32 label; Dia::Core::Containers::String64 text; };
+
+			bool			Add(const char* label, const char* text);	// false (line dropped) when full; null -> ""
+			uint32_t		Count() const { return mCount; }
+			const Line&		At(uint32_t i) const { return mLines[i]; }
+		private:
+			Line		mLines[kMaxLines];
+			uint32_t	mCount = 0;
+		};
+		typedef fastdelegate::FastDelegate2<const HoverInfo&, HoverExtraLines&> HoverExtraFn;
+		static const uint32_t kMaxHoverExtraFns = 4;
+		bool	AddHoverExtraFn(HoverExtraFn fn);
+		void	RemoveHoverExtraFn(HoverExtraFn fn);
 
 		// registry, uploader and schema are borrowed and must outlive the domain. schema may be null.
 		CellLayerViewerDomain(CellLayerRegistry& registry, LayerUploader& uploader, const Dia::ValueSchema::ValueSchemaService* schema, ViewFn view = ViewFn());
@@ -204,6 +230,7 @@ namespace Dia::CellLayers
 		OverlayState			mOverlays[CellLayerRegistry::kMaxOverlays];
 		uint32_t				mOverlayCount = 0;
 		HoverInfo				mHover;
+		HoverExtraFn			mHoverExtra[kMaxHoverExtraFns];
 		bool					mCommandsRegistered = false;
 		HealthImpl				mHealth;
 

@@ -52,6 +52,8 @@ namespace Dia::CellHistory
 		void SetLayerRegistry(Dia::CellLayers::CellLayerRegistry* registry) { mLayers = registry; }
 		void SetHoverFn(HoverCellFn fn) { mHover = fn; }
 		const DeltaCardState& DeltaCard() const { return mDeltaCard; }
+		// Bind to CellLayerViewerDomain::AddHoverExtraFn: A / B / Delta lines for the hovered cell in delta mode (see DeltaCardState::HoverExtra).
+		void HoverExtra(const Dia::CellLayers::CellLayerViewerDomain::HoverInfo& hover, Dia::CellLayers::CellLayerViewerDomain::HoverExtraLines& out) { mDeltaCard.HoverExtra(hover, out); }
 
 		Dia::Core::StringCRC GetDomainId()     const override;
 		const char*          GetDisplayName()  const override;

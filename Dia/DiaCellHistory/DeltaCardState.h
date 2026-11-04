@@ -17,12 +17,18 @@
 // Cost: the group table is rebuilt once per change of its inputs, never per frame: view epoch, selection version/count, the per-cell
 // window start, the registry's layers version and (only when a side is `now`) the version() of the delta layer and grouping layers.
 // Hover is rebuilt when the hovered cell, the epoch or the layer version changes. BuildCount() counts table builds.
+// HoverExtra (DIA_DEBUG) implements CellLayerViewerDomain::HoverExtraFn (register it with AddHoverExtraFn): in delta mode, when the hovered layer is the
+// delta layer, it appends "A (<side>)", "B (<side>)" and "Delta" lines (value "%.4g", Delta "%+.4g", "no data" for a side without data / NaN delta; no units,
+// same as the selected-cell detail rows) from the cached DeltaCellReader (no extra layer read per hover move). Needs a prior Update() for the registry.
 // Selection restriction uses the registry's SelectionView for the delta layer's grid. Same-PU contract (the viewer PU); no singletons.
 
 #include <DiaCellHistory/DeltaCellInfo.h>
 #include <DiaCellHistory/GroupDeltaTable.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
+#ifdef DIA_DEBUG
+#include <DiaCellLayers/CellLayerViewerDomain.h>
+#endif
 #include <json/json.h>
 
 #include <cstdint>
@@ -45,6 +51,9 @@ namespace Dia::CellHistory
 		// Once per frame. hoverQ/hoverR < 0: nothing hovered. registry and schema may be null.
 		void Update(Dia::CellLayers::CellLayerRegistry* registry, const Dia::ValueSchema::ValueSchemaService* schema, int32_t hoverQ, int32_t hoverR);
 
+#ifdef DIA_DEBUG
+		void HoverExtra(const Dia::CellLayers::CellLayerViewerDomain::HoverInfo& hover, Dia::CellLayers::CellLayerViewerDomain::HoverExtraLines& out);
+#endif
 		const Json::Value&	Card() const { return mCard; }	// null outside delta mode
 		uint32_t			BuildCount() const { return mBuilds; }
 
@@ -59,6 +68,7 @@ namespace Dia::CellHistory
 		GroupDeltaBuilder			mBuilder;
 		std::unique_ptr<GroupDeltaTable>	mTable;
 		DeltaCellReader				mCells;
+		Dia::CellLayers::CellLayerRegistry*	mRegistry = nullptr;	// last registry seen by Update (for HoverExtra)
 		std::unique_ptr<Dia::CellLayers::CellLayerDesc[]>	mGroupDescs;	// kMaxGroupLayers
 		uint32_t					mGroupCount = 0;
 		uint8_t*					mMask = nullptr;
