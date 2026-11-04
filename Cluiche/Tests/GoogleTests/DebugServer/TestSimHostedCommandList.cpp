@@ -249,16 +249,16 @@ namespace
 	}
 }
 
-TEST_F(SimHostedCommandListTest, ThirtyTwoSimNamesWithSixteenParamsEachAreAllListed)
+TEST_F(SimHostedCommandListTest, SixtyFourSimNamesWithSixteenParamsEachAreAllListed)
 {
 	auto s = NewServer();
 	std::vector<std::string> pnames;
 	for (int i = 0; i < 16; ++i) pnames.push_back("p" + std::to_string(i));
-	for (int i = 0; i < 32; ++i)
+	for (int i = 0; i < 64; ++i)
 		ASSERT_TRUE(s->RegisterSimHosted(StringCRC(("cmdlist.big" + std::to_string(i)).c_str()), i % 2 ? SimKind::Command : SimKind::Query,
 		                                 SixteenParamHelp("help " + std::to_string(i), pnames))) << i;
 	const Json::Value list = BuildMergedCommandList(s.get());
-	for (int i = 0; i < 32; ++i)
+	for (int i = 0; i < 64; ++i)
 	{
 		const std::string n = "cmdlist.big" + std::to_string(i);
 		ASSERT_EQ(1u, CountName(list, n.c_str())) << n;

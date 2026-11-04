@@ -359,7 +359,7 @@ namespace Dia
 				Dia::Core::StringCRC name;
 				SimKind              kind;
 			};
-			static const unsigned int kMaxSimNames = 32;
+			static const unsigned int kMaxSimNames = 64;
 			ISimRequestSink*   mSimSink;
 			SimPendingTable    mSimPending;
 			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> mSimNames;

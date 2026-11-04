@@ -126,10 +126,10 @@ TEST(SimHostedModules, UnregisterUnknownAndNullAreHarmlessAndNameCanBeReRegister
     EXPECT_TRUE(m->RegisterQuery("m.q", Dia::DebugServer::SimHelpInfo{"test help"}, &Ok));
 }
 
-TEST(SimHostedModules, AnnounceTableHoldsExactly32Names)
+TEST(SimHostedModules, AnnounceTableHoldsExactly64Names)
 {
     auto m = MakeSimModule();
-    for (int i = 0; i < 32; ++i)
+    for (int i = 0; i < 64; ++i)
     {
         const std::string n = "m.cap" + std::to_string(i);
         ASSERT_TRUE(m->RegisterQuery(n.c_str(), Dia::DebugServer::SimHelpInfo{"test help"}, &Ok)) << n;

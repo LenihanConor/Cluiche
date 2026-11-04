@@ -108,7 +108,7 @@ TEST(SimHostedResyncTable, ReplaceOverCapacityRejectsWholeSwapAndLeavesTableInta
 	Digest(s, c0, h0);
 
 	std::vector<SimHostedName> big;
-	for (int i = 0; i < 33; ++i)
+	for (int i = 0; i < 65; ++i)
 		big.push_back(Make(("cap" + std::to_string(i)).c_str()));
 	Dia::CellLayers::Testing::LogCapture log("DebugServer");
 	EXPECT_FALSE(s.ReplaceSimHosted(big.data(), static_cast<uint32_t>(big.size())));
@@ -120,11 +120,11 @@ TEST(SimHostedResyncTable, ReplaceOverCapacityRejectsWholeSwapAndLeavesTableInta
 	EXPECT_EQ(h0, h1);
 	EXPECT_FALSE(s.RegisterSimHosted(StringCRC("a"), SimKind::Command, Dia::DebugServer::Testing::DefaultSimHelp()));   // still there (kind conflict)
 
-	// Exactly 32 fits.
+	// Exactly 64 fits.
 	big.pop_back();
-	EXPECT_TRUE(s.ReplaceSimHosted(big.data(), 32));
+	EXPECT_TRUE(s.ReplaceSimHosted(big.data(), 64));
 	Digest(s, c1, h1);
-	EXPECT_EQ(32u, c1);
+	EXPECT_EQ(64u, c1);
 }
 
 TEST(SimHostedResyncTable, ReplaceDuplicatesLastWinsAndCountsOnce)

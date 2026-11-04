@@ -95,7 +95,7 @@ private:
 
     // Small batch: each event is ~16 KB, so keep the stack/member footprint modest.
     static constexpr unsigned int kBatch        = 2;
-    static constexpr unsigned int kMaxAnnounced = 32;
+    static constexpr unsigned int kMaxAnnounced = 64;
     static constexpr unsigned int kNameBytes    = 96;
 
     struct AnnouncedName

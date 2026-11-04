@@ -535,17 +535,17 @@ namespace
 	bool DropTail(const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "it.tail") == 0; }
 }
 
-// Edge: a full 32-name set (the per-module cap) replays across three Updates and installs.
-TEST(SimAnnounceResyncIntegration, ReplayOfThirtyTwoNamesCompletes)
+// Edge: a full 64-name set (the per-module cap) replays across four Updates and installs.
+TEST(SimAnnounceResyncIntegration, ReplayOfSixtyFourNamesCompletes)
 {
 	Rig r;
-	SyncedStart(r, 31);
+	SyncedStart(r, 63);
 	r.drop = &DropTail;
 	r.Add("it.tail");
 	r.drop = nullptr;
 	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 60));
-	EXPECT_EQ(r.MainCount(), 32u);
-	for (int i = 0; i < 31; ++i) EXPECT_TRUE(r.Answers(("it.n" + std::to_string(i)).c_str())) << i;
+	EXPECT_EQ(r.MainCount(), 64u);
+	for (int i = 0; i < 63; ++i) EXPECT_TRUE(r.Answers(("it.n" + std::to_string(i)).c_str())) << i;
 	EXPECT_TRUE(r.Answers("it.tail"));
 }
 
@@ -844,9 +844,9 @@ namespace
 	}
 }
 
-// Cap check through the whole pipeline: 32 names x 16 params each reach Main, a lost register is repaired by the replay of
-// all 32 with their params intact, and a 33rd name is refused on the Sim side before Main hears of it.
-TEST(SimAnnounceResyncIntegration, ThirtyTwoNamesWithSixteenParamsEachSurviveRegisterAndResync)
+// Cap check through the whole pipeline: 64 names x 16 params each reach Main, a lost register is repaired by the replay of
+// all 64 with their params intact, and a 65th name is refused on the Sim side before Main hears of it.
+TEST(SimAnnounceResyncIntegration, SixtyFourNamesWithSixteenParamsEachSurviveRegisterAndResync)
 {
 	Rig r;
 	const std::string pdesc(150, 'p');
@@ -857,19 +857,19 @@ TEST(SimAnnounceResyncIntegration, ThirtyTwoNamesWithSixteenParamsEachSurviveReg
 		params[i] = { pnames[i].c_str(), "enum", i % 2 == 0, pdesc.c_str(), "u", true, -1.0f, static_cast<float>(i), "alpha|beta|gamma" };
 
 	const std::string desc(200, 'd');
-	for (int i = 0; i < 31; ++i)
+	for (int i = 0; i < 63; ++i)
 		AddRich(r, ("big.n" + std::to_string(i)).c_str(), i % 2 == 1, params, desc);
 	r.Step(3);
-	ASSERT_EQ(r.MainCount(), 31u);
+	ASSERT_EQ(r.MainCount(), 63u);
 
-	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "big.n31") == 0; };
-	AddRich(r, "big.n31", false, params, desc);
+	r.drop = [](const SimRegistration& m) { return m.op == SimRegistrationOp::Register && std::strcmp(m.name, "big.n63") == 0; };
+	AddRich(r, "big.n63", false, params, desc);
 	r.drop = nullptr;
-	EXPECT_FALSE(r.sim.RegisterQuery("big.n32", Dia::DebugServer::SimHelpInfo{ "one too many" }, &Ok));
+	EXPECT_FALSE(r.sim.RegisterQuery("big.n64", Dia::DebugServer::SimHelpInfo{ "one too many" }, &Ok));
 	ASSERT_TRUE(r.StepUntil([&] { return r.Tracker().ResyncsCompleted() > 0; }, 200));
 
-	ASSERT_EQ(r.MainCount(), 32u);
-	for (int i = 0; i < 32; ++i)
+	ASSERT_EQ(r.MainCount(), 64u);
+	for (int i = 0; i < 64; ++i)
 	{
 		const std::string n = "big.n" + std::to_string(i);
 		const Dia::DebugServer::SimHelpStored* h = r.main.GetServer()->FindSimHostedHelp(StringCRC(n.c_str()));
@@ -880,7 +880,7 @@ TEST(SimAnnounceResyncIntegration, ThirtyTwoNamesWithSixteenParamsEachSurviveReg
 		EXPECT_FLOAT_EQ(h->params[15].max, 15.0f) << n;
 		EXPECT_EQ(std::strlen(h->description), 200u) << n;
 	}
-	EXPECT_EQ(HelpOf(r, "big.n32"), "<none>");
+	EXPECT_EQ(HelpOf(r, "big.n64"), "<none>");
 }
 
 // A name registered with no stage-side help change but a resync mid-flight must not lose or mix the help of other names.
