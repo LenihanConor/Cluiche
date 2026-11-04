@@ -16,6 +16,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <set>
 #include <string>
 #include <vector>
@@ -29,8 +30,9 @@ namespace Dia::CellHistory::Testing
 		TempFolder()
 		{
 			static std::atomic<unsigned> sCounter{ 0 };
+			static const unsigned sProcessSalt = std::random_device{}();	// two shard processes can share a steady_clock stamp and counter
 			const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
-			mPath = (std::filesystem::temp_directory_path() / ("dia_cellhistory_" + std::to_string(stamp) + "_" + std::to_string(sCounter++))).string();
+			mPath = (std::filesystem::temp_directory_path() / ("dia_cellhistory_" + std::to_string(stamp) + "_" + std::to_string(sProcessSalt) + "_" + std::to_string(sCounter++))).string();
 			std::filesystem::create_directories(mPath);
 		}
 		~TempFolder() { std::error_code ec; std::filesystem::remove_all(mPath, ec); }

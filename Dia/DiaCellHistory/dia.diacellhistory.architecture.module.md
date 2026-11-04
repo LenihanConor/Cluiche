@@ -23,6 +23,7 @@ public_api:
     - DiaCellHistory/ISnapshotStore.h
     - DiaCellHistory/SnapshotCellFile.h
     - DiaCellHistory/SnapshotNaming.h
+    - DiaCellHistory/SnapshotManager.h
     - DiaCellHistory/Testing/FakeSnapshotStore.h
     - DiaCellHistory/Testing/StubGrid.h
     - DiaCellHistory/Testing/FakeClock.h
@@ -73,5 +74,6 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `ISnapshotStore` | Feature 3 (Snapshots): game-implemented interface (RequestTake/RequestRestore with frame-boundary callbacks, Exists, Delete, Folder). DiaCellHistory never touches the game's state files. `Testing/FakeSnapshotStore.h` is the scripted fake (queued requests run by `RunFrameBoundary()`, `FailNext`, optional real `.state` files, per-test `TempFolder`). |
 | `SnapshotCellFile` | Feature 3: `dia.cell_snapshot` v1 per-cell copies file `<store folder>/snapshot_<name>.cells.json`. `SnapshotCellData` model (header, grid, up to 64 layers), `BuildFromLive` (quantises every recorded layer from live values with CellRing's `QuantiseCellFloat/Category`), `WriteAtomic` (temp + rename), `Read`/`ReadHeaderOnly` (validating), `Dequantise`. |
 | `SnapshotNaming` | Feature 3: `IsValidSnapshotName` (1-32 of `A-Za-z0-9_-`), `CountSnapshots` (cell files in the store folder; `kMaxSnapshots = 16`), `SnapshotGate` (one operation in flight), `CheckTake` pre-flight (name, in flight, exists unless overwrite, cap). |
+| `SnapshotManager` | Feature 3: `Take(name, overwrite, TakeResult&)` (pending result; checks via `CheckTake` plus a no-samples refusal; capture of live quantised data at the sim frame boundary; store `RequestTake`; cell file written atomically in the store callback; `Delete` of the store half on a cell file failure, of a partial state on a store failure; gate released in the callback), fixed `SnapshotRecord` list (24 slots) for list, injectable time and world. |
 
 All tier stores provide `TruncateAfter(sample)` for Feature 3 (snapshot restore). `Testing/` ships stubs (`StubGrid`, `FakeClock`, `BudgetSizing`, `FixtureEventSchemas`).

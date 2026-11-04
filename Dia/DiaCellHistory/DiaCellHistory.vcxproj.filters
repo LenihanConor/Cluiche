@@ -62,6 +62,7 @@
     <ClInclude Include="Testing\FakeSnapshotStore.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="SnapshotManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -95,6 +96,7 @@
     <ClCompile Include="HistoryEncoding.cpp" />
     <ClCompile Include="SnapshotCellFile.cpp" />
     <ClCompile Include="SnapshotNaming.cpp" />
+    <ClCompile Include="SnapshotManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
