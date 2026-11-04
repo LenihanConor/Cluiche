@@ -1,0 +1,30 @@
+**Spec:** @docs/specs/applications/dia/systems/diacellhistory/compare.md
+**Status:** In Progress
+
+Feature 4 of DiaCellHistory (system order 1 → 2 → 4 → 3 → 5). **Prerequisites:** Features 1 and 2 built (they are). TDD throughout (RED proven with quoted output). Commit after each task. Models are sonnet or haiku only; any opus use needs the user's confirmation first. Split out of `diacellhistory.plan.md` on 2026-11-04; that file keeps a pointer.
+
+**Scope of this build:** tasks 4.1-4.8 now. Task 4.9 (snapshot side) waits for Feature 3's cell file; 4.10 and 4.11 follow 4.9 for the snapshot parts, but the non-snapshot panel/E2E work in them may run first if 4.9 is still pending (decide at that point).
+
+**Verification policy (agreed 2026-11-03):** per task and per feature, scoped GoogleTests only (`--filter` including fixture-named suites, `--shards >= 2`). Full run, sanitizer, Release and full E2E live in the system plan's S7. Per feature: Observation scan (notes only), short gap audit with edge tests, mutation checks on pure logic (4.3, 4.4, 4.7).
+
+**Facts carried from Feature 2 (checked 2026-11-04):**
+- `IViewValueSource` (`DiaCellLayers/IViewValueSource.h`) already has `GetPresentation(const CellLayerDesc&, ViewPresentation&)` with `rampId`, `rangeMin`, `rangeMax`, `unitPrefix[8]`. No DiaCellLayers hook work for 4.5 beyond verifying the viewer honours it; any DiaCellLayers production edit needs AD-001 sign-off from the user first.
+- `HistoryViewState` (`ViewMode { Live, Sample }`, `Epoch()`, `Update()`, `ViewSample`, `GoLive`) and `HistoryValueSource` (`Install/Tick/GetValues/IsLive/ViewEpoch`) are the Feature 2 plumbing 4.2 and 4.3 extend. Only one source may be installed on the registry; the delta source must be the same installed object or be switched by it (decide in 4.3: delegate from `HistoryValueSource` to `DeltaValueSource` when the view mode is Delta).
+- `HistoryViewState::TruncateAfter` handling already returns to live with a Warning; delta mode must do the same when a side sample falls out of range.
+- Sim-hosted name ceiling is 64 (about 33 used by the CellLayersViewer stage after Feature 2): the delta commands must be registered as one command with sub-forms (as `cells.history.view/step/event` are) and the count checked in 4.6.
+- `cells.view.state.history` field is produced by `ViewHistorySourceAdapter`/`TimelineCardState::HistoryField`; 4.8 extends it with the delta shape; stamp = epoch*2 + sample-mode today, delta must change the stamp.
+- Test utilities live in `DiaCellHistory/Testing/`; add fixtures there, not in GoogleTests.
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 4.1 | `SideReader` for `now` and `sample:<i>`: window edges, untracked layer, NaN; snapshot side stubbed to "unavailable" until 4.9 (AC 1, 2, 8) | RED-GREEN | Pending | sonnet | |
+| 4.2 | `HistoryViewState` gains `Delta(A, B, scale)` and `off` returning to the held view; `view` / `live` leave delta; `step` / `event` refused ("leave delta mode first"); `IsLive()` false (AC 10, 11) | RED-GREEN: all transitions | Pending | sonnet | |
+| 4.3 | `DeltaValueSource`: B − A, NaN on either side, category layers no data, quantisation bound `2 × range / 65,535` for recorded sides (AC 1, 2, 8, 12) | RED-GREEN: fixtures, NaN, category | Pending | sonnet | Reuses the Feature 2 source plumbing |
+| 4.4 | Auto scale: nice number (1/2/5 × 10ⁿ), grow immediately, shrink after 2 s under 40% (injectable clock), `scale <n>` fixes, `auto` (AC 5) | RED-GREEN with fake clock | Pending | sonnet | `Testing/FakeClock.h` exists |
+| 4.5 | `GetPresentation` for delta: `ResolveDeltaRamp`, range ±scale, unit prefix "Δ"; scrub unchanged (AC 4, 6) | RED-GREEN with a fake viewer | Pending | sonnet | Hook already supports it; verify the viewer honours ramp, range and prefix |
+| 4.6 | Commands `cells.history.delta <layer> <A> <B>`, `scale`, `groupside`, `off` with every error case (AC 3, 10) | RED-GREEN: all errors change nothing | Pending | sonnet | Check the 64-name ceiling |
+| 4.7 | `GroupDeltaTable`: per grouping layer, mean A / mean B / change, sorted by absolute change, side switch (default B), selection restriction, omit empty groups, fallback to live grouping (AC 9) | RED-GREEN | Pending | sonnet | One pass per frame on the viewer PU |
+| 4.8 | Viewer integration: hover signed delta with both side values, query over deltas, inspector stats over deltas ("no data" layers listed), `cells.view.state.history` delta shape, timeline A / B markers (AC 7, 15) | Fixture integration | Pending | sonnet | Query part needs DiaCellLayers Feature 3 (built) |
+| 4.9 | `SnapshotCellCache` (2-entry LRU, synchronous load, failure = Error + no change) and the `snapshot:<name>` side (AC 13) | RED-GREEN with fake cell files | Pending | sonnet | **After Feature 3's cell file exists** |
+| 4.10 | Observation, panel banner / legend / group table, golden, both pages, visual gate against the mockup delta view (AC 14, 16, 17) | Golden + page + visual gate | Pending | sonnet | Mockup exists; user approves the delta view by eye |
+| 4.11 | E2E extension (take two samples, delta, assert sign and group table), perf at Large, finalize | E2E + verify | Pending | sonnet | |

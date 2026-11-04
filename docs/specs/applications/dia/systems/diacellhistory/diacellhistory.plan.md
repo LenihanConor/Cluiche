@@ -30,7 +30,7 @@ Build order 1 → 2 → 4 → 3 → 5. TDD throughout (RED proven with quoted ou
 |---|------|------|--------|-------|-------|
 | S1 | Feature 1: Recorder and tiers | [recorder-and-tiers.plan.md](recorder-and-tiers.plan.md) | Pending | sonnet | Needs DiaCellLayers Feature 1 (Done); plan written 2026-10-29 |
 | S2 | Feature 2: Scrub and timeline | [scrub-and-timeline.plan.md](scrub-and-timeline.plan.md) | In Progress | sonnet | Hook exists; amend spec; DiaCellLayers 5 for the `history` field |
-| S3 | Feature 4: Compare | see below | Pending | sonnet | Needs Feature 3's cell file for snapshot sides: build 4 with snapshot sides last, or build 3 first (see order note) |
+| S3 | Feature 4: Compare | [compare.plan.md](compare.plan.md) | In Progress | sonnet | Needs Feature 3's cell file for snapshot sides: build 4 with snapshot sides last, or build 3 first (see order note) |
 | S4 | Feature 3: Snapshots | see below | Pending | sonnet | Fake store in Dia; CoW adapter is a separate row |
 | S5 | Feature 5: Export | see below | Pending | sonnet | `HistoryEncoding` is reused by Feature 3's cell file, so Task 5.1 can be pulled forward |
 | S6 | System close: CoW proof hooks, docs, backlog | module doc, `dia docs registry`, backlog | Pending | haiku | System spec Done only when all child specs are Approved |

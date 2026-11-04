@@ -186,4 +186,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `GetPresentation` addition to DiaCellLayers' `IViewValueSource`.
+`Approved` (2026-10-20). Plan: [compare.plan.md](compare.plan.md). Build needs AD-001 sign-off for the `GetPresentation` addition to DiaCellLayers' `IViewValueSource`.
