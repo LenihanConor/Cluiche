@@ -21,6 +21,14 @@
 #include <cmath>
 #include <cstdio>
 #include <vector>
+#include <filesystem>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
 
 namespace CluicheTest {
 
@@ -234,6 +242,12 @@ void CellLayersViewerTestStageModule::OnUpdate(float /*deltaTime*/)
 {
     if (!mReady)
         return;
+
+#ifdef DIA_DEBUG
+    // Sim frame boundary: a queued snapshot take/restore runs here, before this frame mutates the animated state.
+    if (mSnapshotStore)
+        mSnapshotStore->RunFrameBoundary();
+#endif
 
     if (mAnimate.load() && ++mAnimateCounter >= kAnimateEveryFrames)
     {
@@ -772,13 +786,51 @@ bool CellLayersViewerTestStageModule::BuildHistoryScrub()
     }
     vd->RegisterDomain(*mScrubPanelDomain);
     mScrubDomainRegistered = true;
+    BuildSnapshots(*recorder, schema);
     DIA_LOG_INFO("HIS", "CellLayersViewerTestStage: history scrub wired (view commands, value source, timeline domain)");
     return true;
+}
+
+void CellLayersViewerTestStageModule::BuildSnapshots(Dia::CellHistory::CellHistoryRecorder& recorder, const Dia::ValueSchema::ValueSchemaService* schema)
+{
+    using namespace Dia::CellHistory;
+    // Folder: <exeDir>/../../../../out/CluicheTest/snapshots (same base as the capture metrics of TestStageModuleBase).
+    char exePath[512] = {};
+    GetModuleFileNameA(nullptr, exePath, sizeof(exePath) - 1);
+    std::filesystem::path folder = std::filesystem::path(exePath).parent_path() / ".." / ".." / ".." / ".." / "out" / "CluicheTest" / "snapshots";
+    folder = folder.lexically_normal();
+
+    mSnapshotStore = Dia::Core::MakeUnique<CellLayersSnapshotStore>(folder.string(),
+        [this]() { CellLayersStageState s; s.tempVersion = mTempVersion; s.animateCounter = mAnimateCounter; s.historyFrame = mHistoryFrame; return s; },
+        [this](const CellLayersStageState& s) { mTempVersion = s.tempVersion; mAnimateCounter = s.animateCounter; mHistoryFrame = s.historyFrame; });
+    mSnapshotManager = Dia::Core::MakeUnique<SnapshotManager>(recorder, *mRegistry, schema, *mSnapshotStore);
+    mSnapshotManager->SetViewState(mScrubView.Get());
+    mSnapshotManager->SetWorld(GetStageName().AsChar());
+    mSnapshotObservation = Dia::Core::MakeUnique<SnapshotObservation>();
+    mSnapshotManager->SetObservation(mSnapshotObservation.Get());
+    mSnapshotCommands = Dia::Core::MakeUnique<SnapshotCommands>(recorder, *mSnapshotManager, *mSnapshotStore);
+    mSnapshotCommands->SetObservation(mSnapshotObservation.Get());
+    mSnapshotCommandsRegistered = mSnapshotCommands->Register(*mHistoryRegistrar);
+    if (!mSnapshotCommandsRegistered)
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.snapshot.* / cells.history.snapshot registration failed");
+}
+
+void CellLayersViewerTestStageModule::TeardownSnapshots()
+{
+    // Commands first (their handlers capture the manager and store), then manager, observation, store.
+    if (mSnapshotCommands && mSnapshotCommandsRegistered && mHistoryRegistrar)
+        mSnapshotCommands->Unregister(*mHistoryRegistrar);
+    mSnapshotCommandsRegistered = false;
+    mSnapshotCommands.Reset();
+    mSnapshotManager.Reset();
+    mSnapshotObservation.Reset();
+    mSnapshotStore.Reset();
 }
 
 void CellLayersViewerTestStageModule::TeardownHistoryScrub()
 {
     // Reverse of BuildHistoryScrub. Nothing here touches the recorder, which can already be withdrawn from its stream.
+    TeardownSnapshots();
     if (mScrubDomainRegistered)
     {
         if (auto* vd = mVisualDebuggerRef.Get())

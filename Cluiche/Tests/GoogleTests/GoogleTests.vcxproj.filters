@@ -2538,5 +2538,8 @@
     <ClCompile Include="DiaCellHistory\TestSnapshotObservation.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\CellLayersSnapshotStoreTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

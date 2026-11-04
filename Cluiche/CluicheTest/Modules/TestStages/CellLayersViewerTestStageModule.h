@@ -32,6 +32,10 @@
 #include <DiaCellLayers/DebugServerTopicSink.h>
 #include <DiaCellLayers/CellPicker.h>
 #include <DiaCellHistory/CellHistoryDomain.h>
+#include <DiaCellHistory/SnapshotManager.h>
+#include <DiaCellHistory/SnapshotCommands.h>
+#include <DiaCellHistory/SnapshotObservation.h>
+#include "Modules/TestStages/CellLayersSnapshotStore.h"
 #include <DiaCellHistory/HistoryValueSource.h>
 #include <DiaCellHistory/ViewHistorySourceAdapter.h>
 #include "Modules/TestStages/CellLayersPointerQueue.h"
@@ -226,6 +230,8 @@ private:
     // its first update, after this stage's OnStart). Torn down in TeardownViewer before the layers/registry go.
     bool BuildHistoryScrub();
     void TeardownHistoryScrub();
+    void BuildSnapshots(Dia::CellHistory::CellHistoryRecorder& recorder, const Dia::ValueSchema::ValueSchemaService* schema);
+    void TeardownSnapshots();
     void UpdateHistoryScrub();
     bool HoveredCell(int32_t& q, int32_t& r) const
     {
@@ -244,6 +250,13 @@ private:
     Dia::Core::UniquePtr<Dia::CellHistory::ViewHistorySourceAdapter> mScrubAdapter;
     Dia::Core::UniquePtr<Dia::CellHistory::CellHistoryDomain>      mScrubDomain;
     Dia::VisualDebugger::IDebugDomain* mScrubPanelDomain = nullptr;   // owned by the relay
+    // Snapshots (DiaCellHistory Feature 3): stage-local store saving the animated state (temperature version, sample phase) to
+    // out/CluicheTest/snapshots/<name>.state. Its queued request runs at the start of OnUpdate (the Sim frame boundary).
+    Dia::Core::UniquePtr<CellLayersSnapshotStore>                  mSnapshotStore;
+    Dia::Core::UniquePtr<Dia::CellHistory::SnapshotManager>        mSnapshotManager;
+    Dia::Core::UniquePtr<Dia::CellHistory::SnapshotObservation>    mSnapshotObservation;
+    Dia::Core::UniquePtr<Dia::CellHistory::SnapshotCommands>       mSnapshotCommands;
+    bool mSnapshotCommandsRegistered = false;
     bool mScrubDomainRegistered = false;
     bool mScrubCommandsRegistered = false;
     bool mScrubBuildFailed = false;

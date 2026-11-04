@@ -147,6 +147,7 @@
     <ClInclude Include="Modules\TestStages\CellLayersStateBridgeModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersStateRelayModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h" />
+    <ClInclude Include="Modules\TestStages\CellLayersSnapshotStore.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
