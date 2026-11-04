@@ -3,6 +3,9 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
+#include <DiaCellLayers/IViewValueSource.h>
+#include <DiaValueSchema/RampResolver.h>
+#include <string.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
@@ -41,6 +44,33 @@ namespace Dia::CellHistory
 		if (!spec.autoScale) { return spec.fixedScale; }
 		if (view.Epoch() != mScaleEpoch) { return DeltaScale::kDefault; }	// reset pending: nothing observed since the change
 		return mScale.Current();
+	}
+
+	bool DeltaValueSource::IsAutoScale(const HistoryViewState& view) const
+	{
+		return view.InDelta() && view.Delta().autoScale;
+	}
+
+	void DeltaValueSource::SetSchema(const Dia::ValueSchema::ValueSchemaService* schema)
+	{
+		mSchema = schema;
+		mResolver.reset(schema != nullptr ? new Dia::ValueSchema::RampResolver(*schema) : nullptr);
+	}
+
+	bool DeltaValueSource::GetPresentation(const Dia::CellLayers::CellLayerDesc& layer, Dia::CellLayers::ViewPresentation& out)
+	{
+		if (!mView.InDelta() || mSchema == nullptr || mResolver == nullptr) { return false; }
+		if (layer.kind != Dia::CellLayers::CellValueKind::Float) { return false; }
+		const Dia::ValueSchema::ValueInfo* info = mSchema->Find(layer.schemaKey);
+		if (info == nullptr) { return false; }
+		const float s = CurrentScale(mView);
+		const Dia::ValueSchema::ResolvedRamp ramp = mResolver->ResolveDeltaRamp(*info, s);
+		out = Dia::CellLayers::ViewPresentation();
+		out.rampId = Dia::Core::StringCRC(ramp.mRamp.mName.AsCStr());
+		out.rangeMin = ramp.mMin;
+		out.rangeMax = ramp.mMax;
+		memcpy(out.unitPrefix, "\xCE\x94", 3);	// UTF-8 for U+0394 plus the terminator
+		return true;
 	}
 
 	void DeltaValueSource::ObserveScale(const float* out, uint32_t n)

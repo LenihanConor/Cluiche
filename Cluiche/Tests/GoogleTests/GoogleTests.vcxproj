@@ -1119,6 +1119,7 @@
     <ClCompile Include="DiaCellHistory\TestSideReader.cpp" />
     <ClCompile Include="DiaCellHistory\TestDeltaValueSource.cpp" />
     <ClCompile Include="DiaCellHistory\TestDeltaScale.cpp" />
+    <ClCompile Include="DiaCellHistory\TestDeltaPresentation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -37,6 +37,11 @@ namespace Dia::CellHistory
 		return mRecorder.CellValues(mView.Sample(), layer.id, out, n);
 	}
 
+	bool HistoryValueSource::GetPresentation(const Dia::CellLayers::CellLayerDesc& layer, Dia::CellLayers::ViewPresentation& out)
+	{
+		return mView.InDelta() && mDelta.GetPresentation(layer, out);
+	}
+
 	bool HistoryValueSource::IsLive() const { return mView.IsLive(); }
 	uint64_t HistoryValueSource::ViewEpoch() const { return mView.Epoch(); }
 }

@@ -2499,5 +2499,8 @@
     <ClCompile Include="DiaCellHistory\TestDeltaScale.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaPresentation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

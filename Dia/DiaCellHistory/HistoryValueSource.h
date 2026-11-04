@@ -41,7 +41,14 @@ namespace Dia::CellHistory
 		// Once per frame. Returns true if the eviction epoch bump happened on this call.
 		bool	Tick();
 
+		// Optional (borrowed; must outlive this): needed for the delta presentation's ramp. nullptr clears.
+		void		SetSchema(const Dia::ValueSchema::ValueSchemaService* schema) { mDelta.SetSchema(schema); }
+		// True when the view is in delta with the auto scale (the panel's "auto"/"fixed" label).
+		bool		IsAutoScale() const { return mDelta.IsAutoScale(mView); }
+
 		bool		GetValues(const Dia::CellLayers::CellLayerDesc& layer, float* out, uint32_t n) override;
+		// In delta mode: the delta ramp, range [-s, +s] and "\xCE\x94" prefix (see DeltaValueSource::GetPresentation); else false.
+		bool		GetPresentation(const Dia::CellLayers::CellLayerDesc& layer, Dia::CellLayers::ViewPresentation& out) override;
 		bool		IsLive() const override;
 		uint64_t	ViewEpoch() const override;
 

@@ -18,8 +18,10 @@
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstdint>
+#include <memory>
 
-namespace Dia::CellLayers { struct CellLayerDesc; }
+namespace Dia::CellLayers { struct CellLayerDesc; struct ViewPresentation; }
+namespace Dia::ValueSchema { class ValueSchemaService; class RampResolver; }
 
 namespace Dia::CellHistory
 {
@@ -41,6 +43,18 @@ namespace Dia::CellHistory
 		// Legend scale for the view's delta: fixedScale when fixed, else the auto scale (1.0 until observed). 1.0 when not in delta.
 		float CurrentScale(const HistoryViewState& view) const;
 
+		// True when the view's delta uses the auto scale (false when fixed or not in delta). The panel's "auto"/"fixed" label.
+		bool IsAutoScale(const HistoryViewState& view) const;
+
+		// Optional schema: lets GetPresentation resolve the layer's ui.delta_ramp. Borrowed; must outlive this. nullptr clears.
+		void SetSchema(const Dia::ValueSchema::ValueSchemaService* schema);
+
+		// Delta presentation for the viewer: the layer's delta ramp (ui.delta_ramp, default diverging.blue_red), range
+		// [-s, +s] with s = CurrentScale, unit prefix "\xCE\x94" (UTF-8 Greek capital delta). False when not in delta, for a
+		// non-Float layer, with no schema, or when the layer has no ValueInfo (the viewer then keeps schema colouring).
+		// Any Float layer gets it in delta mode: the viewer only asks for its active base layer.
+		bool GetPresentation(const Dia::CellLayers::CellLayerDesc& layer, Dia::CellLayers::ViewPresentation& out);
+
 		// Seconds source for the 2 s shrink rule. nullptr restores the default monotonic wall clock.
 		void SetClock(double (*fn)(void*), void* ctx);
 
@@ -58,6 +72,8 @@ namespace Dia::CellHistory
 		float*						mBufA = nullptr;
 		float*						mBufB = nullptr;
 		uint32_t					mBufCount = 0;
+		const Dia::ValueSchema::ValueSchemaService*			mSchema = nullptr;
+		std::unique_ptr<Dia::ValueSchema::RampResolver>		mResolver;
 		DeltaScale					mScale;
 		uint64_t					mScaleEpoch = 0;
 		double						(*mClockFn)(void*) = nullptr;
