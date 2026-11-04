@@ -21,7 +21,7 @@ If you change a builder on purpose, regenerate and review the diff:
 `dia test game-ui` and commit the changed files together.
 
 Files: domain_states, domain_states_schema (controls carrying schemaKey/packId + schemaVersion), palette_results_{all,commands,domains}, console_result_{ok,notfound,parse_error},
-domain_states_celllayers{,_category,_empty,_nodata} (the real CellLayerViewerDomain state; consumers `celllayers.test.ts` and `celllayers.cow.test.ts`), console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).
+domain_states_celllayers{,_category,_empty,_nodata} (the real CellLayerViewerDomain state; consumers `celllayers.test.ts` and `celllayers.cow.test.ts`), domain_states_cellhistory_{live,scrubbed,untracked} (the real CellHistoryDomain state, produced by `TimelineCard`/`CellHistoryDomain` tests in DiaCellHistory; consumer `cellhistory.test.ts`, both pages), console_completions, console_set_input, console_set_input_restore, append_log_lines (all `.json`).
 
 Every domain state carries `_id` (the registry id, `IDebugDomain::GetDomainId()`) next to `_displayName`. The state is keyed by
 display name, but `app.onCommand(domainId, ...)` is resolved by id (`DiaDebugDomainRegistry::FindDomain`), so both pages

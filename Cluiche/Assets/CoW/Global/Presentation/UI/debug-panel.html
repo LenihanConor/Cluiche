@@ -305,6 +305,63 @@ body {
 .query-recent .q-recent-item { font-family: 'Consolas', monospace; font-size: 9px; color: #888; padding: 1px 4px; cursor: pointer; border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .query-recent .q-recent-item:hover { background: #252525; color: #ccc; }
 .cl-banner { padding: 6px 8px; font-size: 10px; color: #f5a623; background: #2a2510; border: 1px solid #4a4520; border-radius: 2px; margin-bottom: 8px; }
+/* Cell History card (DiaCellHistory F2; mockup diacelllayers/mockups/cell-layer-viewer.html: timeline card, banner, notices) */
+.cl-tl { padding: 2px 0 4px; }
+.cl-tl .tl-head { display: flex; align-items: center; gap: 10px; font-size: 9px; color: #888; margin-bottom: 3px; flex-wrap: wrap; }
+.cl-tl .tl-title { color: #aaa; font-weight: 600; letter-spacing: 0.5px; }
+.cl-tl .tl-layer { color: #5a9fd4; }
+.cl-tl .tl-legend { margin-left: auto; display: flex; gap: 8px; align-items: center; color: #666; flex-wrap: wrap; }
+.cl-tl .tl-legend i { display: inline-block; width: 6px; height: 8px; margin-right: 3px; vertical-align: -1px; }
+.cl-tl .tl-legend .density { display: inline-flex; align-items: flex-end; gap: 1px; margin: 0 3px; }
+.cl-tl .tl-legend .density b { width: 2px; background: #aaa; display: inline-block; }
+.tl-plot { position: relative; height: 96px; margin: 0 4px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 2px; overflow: hidden; cursor: pointer; }
+.tl-spark { position: absolute; left: 0; right: 0; top: 2px; height: 32px; width: 100%; }
+.tl-spark path { fill: none; stroke: #6fb36f; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.tl-lane { position: absolute; left: 0; right: 0; top: 40px; bottom: 14px; }
+.tl-lane-track { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #3a3a3a; }
+.tl-band { position: absolute; top: -40px; bottom: -14px; width: 1px; background: #232323; }
+.tl-band.major { background: #3a3a3a; }
+.tl-band-label { position: absolute; bottom: -13px; font-size: 8px; color: #666; transform: translateX(2px); }
+.tl-band-label.major { color: #999; }
+.tl-ev { position: absolute; bottom: 50%; width: 2px; margin-bottom: 2px; border-radius: 1px; }
+.tl-gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(231,76,60,0.28) 0 3px, transparent 3px 6px); border-left: 1px solid #7a3a34; border-right: 1px solid #7a3a34; }
+.tl-gap.events { background: repeating-linear-gradient(135deg, rgba(245,166,35,0.22) 0 3px, transparent 3px 6px); border-color: #7a5a24; top: 38px; bottom: 14px; }
+.tl-gap-label { position: absolute; font-size: 8px; white-space: nowrap; }
+.tl-dim { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.55); border-right: 1px dashed #5a9fd4; }
+.tl-dim-label { position: absolute; top: 3px; right: 3px; font-size: 8px; color: #5a9fd4; background: #0f0f0fcc; padding: 0 3px; }
+.tl-thumb { position: absolute; top: 0; bottom: 0; width: 2px; background: #e8e8e8; z-index: 5; }
+.tl-thumb::before { content: ''; position: absolute; top: 36px; left: -5px; width: 12px; height: 16px; background: #e8e8e8; border-radius: 2px; border: 1px solid #5a9fd4; }
+.tl-thumb .tl-thumb-tag { position: absolute; top: 2px; left: 6px; font-size: 9px; white-space: nowrap; background: #1a2530; border: 1px solid #5a9fd4; color: #9fd0f5; padding: 0 4px; border-radius: 2px; }
+.tl-thumb.flip .tl-thumb-tag { left: auto; right: 6px; }
+.tl-livemark { position: absolute; top: 0; bottom: 0; right: 0; width: 2px; background: #4a8a4a; z-index: 4; }
+.tl-livemark span { position: absolute; bottom: 2px; right: 5px; font-size: 8px; color: #8aea8a; background: #0f0f0fcc; padding: 0 3px; white-space: nowrap; }
+.tl-livemark::before { content: ''; position: absolute; top: 6px; right: 0; width: 7px; height: 7px; border-radius: 50%; background: #8aea8a; }
+.cl-tl:not(.is-live) .tl-livemark { opacity: 0.6; }
+.cl-tl:not(.is-live) .tl-livemark::before { background: transparent; border: 1px solid #8aea8a; }
+.cl-tl .tl-controls { display: flex; align-items: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.cl-tl .tl-btn { background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit; font-size: 10px; padding: 2px 7px; border-radius: 2px; cursor: pointer; }
+.cl-tl .tl-btn:hover { background: #2a2a2a; color: #fff; }
+.cl-tl .tl-btn[disabled] { opacity: 0.4; cursor: default; }
+.cl-tl .tl-btn.ev-prev, .cl-tl .tl-btn.ev-next { border-color: #5a4a2a; color: #f5a623; }
+.cl-tl .tl-sep { width: 1px; height: 16px; background: #333; margin: 0 4px; }
+.cl-tl .tl-pos { font-size: 10px; color: #ccc; margin-left: 8px; }
+.cl-tl .tl-pos .dim { color: #666; }
+.cl-tl .live-btn { margin-left: auto; }
+.cl-tl.is-live .live-btn { background: #1d2a1d; border-color: #2f4f2f; color: #5a8a5a; cursor: default; }
+.cl-tl .tl-info { margin-top: 5px; font-size: 9px; color: #666; }
+.cl-hist-banner { display: flex; align-items: center; gap: 12px; padding: 6px 12px; margin-bottom: 8px; font-size: 11px; background: #3a2a0a; border: 1px solid #f5a623; border-radius: 2px; color: #ffd27a; }
+.cl-hist-banner b { color: #fff; font-weight: 600; }
+.cl-hist-banner .vb-extra { color: #ffb3a8; }
+.cl-hist-banner .live-btn { margin-left: auto; background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit; font-size: 10px; padding: 2px 7px; border-radius: 2px; cursor: pointer; }
+.cl-hist-notice { padding: 16px 20px; margin-bottom: 8px; border-radius: 3px; font-size: 11px; line-height: 1.5; text-align: center; }
+.cl-hist-notice h4 { font-size: 12px; margin: 0 0 6px 0; font-weight: 600; }
+.cl-hist-notice.untracked { background: repeating-linear-gradient(0deg, #17171c 0 20px, #14141a 20px 40px); border: 1px solid #3a3a3a; color: #aaa; }
+.cl-hist-notice.untracked h4 { color: #ddd; }
+.cl-hist-notice.evicted { background: repeating-linear-gradient(135deg, #1a1210 0 10px, #140e0c 10px 20px); border: 1px solid #7a3a34; color: #e0a8a0; }
+.cl-hist-notice.evicted h4 { color: #e74c3c; }
+.cl-hist-notice .track-btn { margin-top: 10px; padding: 4px 14px; background: #1a2530; border: 1px solid #5a9fd4; color: #5a9fd4; font-family: inherit; font-size: 11px; border-radius: 2px; cursor: pointer; }
+.cl-hist-notice .runs { color: #666; font-size: 9px; margin-top: 6px; }
+.sample-badge { display: inline-block; font-size: 9px; padding: 0 5px; margin-bottom: 3px; background: #3a2a0a; border: 1px solid #f5a623; color: #ffd27a; border-radius: 2px; }
 /* Selection Inspector card (diacelllayers/mockups/cell-layer-viewer.html: stats table, biome chips, histogram, pin buttons) */
 .cl-inspector { margin-top: 4px; margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #222; }
 .insp-title { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
@@ -715,11 +772,392 @@ function domainsOf(data) {
       controls: Array.isArray(d.controls) ? d.controls : [],
       custom:  (typeof d.panel === 'string') ? d.panel : '',
       viewer:  isViewerState(d) ? d : null,
+      history: isHistoryState(d) ? d : null,
       raw:     d
     });
   }
   out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
   return out;
+}
+
+// ── Cell History (DiaCellHistory F2): timeline card, not-live banner, untracked / evicted notices ──
+// State from CellHistoryDomain (the typed TimelineCardState card): {available, baseLayer, banner{visible,state,layer,sample,label,
+// firstRetained}, history{mode,sample,label}|null, timeline{range{first,latest,count}, position{mode,sample}, liveMarker, buckets[{first,last,
+// events,colour,types}], bandTicks[{sample,band,name}], gaps{aggregate,cell,event}, preWindowDim{first,last}|null, sparkline[{first,last,value|null}]}}.
+// The page only sends commands to the history domain (same executors as cells.history.*): view {sample}, live {}, step {n, band?},
+// event {direction}, track {layer}. The viewer card shows the banner and notices from this state; it never computes history itself.
+
+function isHistoryState(d) {
+  return !!d && typeof d === 'object' && !!d.timeline && typeof d.timeline === 'object' && !!d.banner && typeof d.banner === 'object';
+}
+
+function histPct(n, latest) {
+  if (!(latest > 0)) return 0;
+  var p = Number(n) / latest * 100;
+  return p < 0 ? 0 : (p > 100 ? 100 : p);
+}
+
+function histHead(hist) {
+  var r = hist.timeline.range || {};
+  return Number(r.latest) || 0;
+}
+
+function histHeadlineStat(hist) {
+  return hist.banner.visible && hist.banner.sample !== null && hist.banner.sample !== undefined ? 'sample ' + hist.banner.sample : 'live';
+}
+
+function buildHistoryCard(domain) {
+  var cmdId = domain.cmdId;
+  var root = el('div', 'cl-tl is-live');
+  root.setAttribute('data-role', 'history-timeline');
+
+  var head = el('div', 'tl-head');
+  head.appendChild(el('span', 'tl-title', 'TIMELINE'));
+  var lay = el('span', '', 'base layer: ');
+  var layName = el('span', 'tl-layer', '');
+  layName.setAttribute('data-role', 'tl-layer');
+  lay.appendChild(layName);
+  lay.appendChild(document.createTextNode(' (world mean)'));
+  head.appendChild(lay);
+  var legend = el('div', 'tl-legend');
+  var dens = el('span', '', 'density ');
+  var densBars = el('span', 'density');
+  var hs = [4, 7, 11, 15];
+  for (var hi = 0; hi < hs.length; ++hi) { var bar = el('b', ''); bar.style.height = hs[hi] + 'px'; densBars.appendChild(bar); }
+  dens.appendChild(densBars);
+  dens.appendChild(document.createTextNode(' events/bucket'));
+  legend.appendChild(dens);
+  var lg = [['aggregates evicted', 'repeating-linear-gradient(135deg,#e74c3c 0 2px,transparent 2px 4px)'],
+            ['events evicted', 'repeating-linear-gradient(135deg,#f5a623 0 2px,transparent 2px 4px)'],
+            ['no per-cell data', '#000;border:1px solid #5a9fd4']];
+  for (var li = 0; li < lg.length; ++li) {
+    var item = el('span', '');
+    var sw = el('i', '');
+    sw.setAttribute('style', 'background:' + lg[li][1]);
+    item.appendChild(sw);
+    item.appendChild(document.createTextNode(lg[li][0]));
+    legend.appendChild(item);
+  }
+  head.appendChild(legend);
+  root.appendChild(head);
+
+  var plot = el('div', 'tl-plot');
+  plot.setAttribute('data-role', 'tl-plot');
+  plot.setAttribute('title', 'Drag to scrub (cells.history.view)');
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'tl-spark');
+  svg.setAttribute('viewBox', '0 0 1000 32');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('data-role', 'tl-spark');
+  plot.appendChild(svg);
+  var under = el('div', '');          // dim + gaps (rebuilt with the data)
+  under.setAttribute('data-role', 'tl-under');
+  plot.appendChild(under);
+  var lane = el('div', 'tl-lane');
+  lane.setAttribute('data-role', 'tl-lane');
+  lane.appendChild(el('div', 'tl-lane-track'));
+  var laneDyn = el('div', '');        // band ticks + event ticks (rebuilt with the data)
+  laneDyn.setAttribute('data-role', 'tl-lane-dyn');
+  lane.appendChild(laneDyn);
+  plot.appendChild(lane);
+  var lm = el('div', 'tl-livemark');
+  lm.appendChild(el('span', '', 'LIVE head'));
+  plot.appendChild(lm);
+  var thumb = el('div', 'tl-thumb');
+  thumb.setAttribute('data-role', 'tl-thumb');
+  var tag = el('span', 'tl-thumb-tag', '');
+  tag.setAttribute('data-role', 'tl-thumb-tag');
+  thumb.appendChild(tag);
+  plot.appendChild(thumb);
+  root.appendChild(plot);
+
+  function sampleAt(e) {
+    var rect = plot.getBoundingClientRect();
+    var w = rect.width || 1;
+    var f = (e.clientX - rect.left) / w;
+    f = f < 0 ? 0 : (f > 1 ? 1 : f);
+    return Math.round(f * (root._latest || 0));
+  }
+  function scrubTo(e) {
+    var s = sampleAt(e);
+    if (root._lastSent === s) return;
+    root._lastSent = s;
+    sendCommand(cmdId, 'view', { sample: s });
+  }
+  plot.addEventListener('mousedown', function (e) { e.stopPropagation(); root._drag = true; root._lastSent = -1; scrubTo(e); });
+  plot.addEventListener('mousemove', function (e) { if (root._drag) { e.stopPropagation(); scrubTo(e); } });
+  var endDrag = function () { root._drag = false; };
+  plot.addEventListener('mouseup', endDrag);
+  plot.addEventListener('mouseleave', endDrag);
+  document.addEventListener('mouseup', endDrag);
+
+  var controls = el('div', 'tl-controls');
+  var defs = [
+    ['step-band-back', '⏮ −band', 'cells.history.step -band', function () { return ['step', { n: -1, band: root._topBand }]; }],
+    ['step-back', '◀ −1', 'cells.history.step -1', function () { return ['step', { n: -1 }]; }],
+    ['step-fwd', '+1 ▶', 'cells.history.step +1', function () { return ['step', { n: 1 }]; }],
+    ['step-band-fwd', '+band ⏭', 'cells.history.step +band', function () { return ['step', { n: 1, band: root._topBand }]; }],
+    null,
+    ['event-prev', '◀ event', 'cells.history.event prev', function () { return ['event', { direction: 'prev' }]; }, 'ev-prev'],
+    ['event-next', 'event ▶', 'cells.history.event next', function () { return ['event', { direction: 'next' }]; }, 'ev-next']
+  ];
+  for (var di = 0; di < defs.length; ++di) {
+    if (!defs[di]) { controls.appendChild(el('span', 'tl-sep')); continue; }
+    var b = el('button', 'tl-btn' + (defs[di][4] ? ' ' + defs[di][4] : ''), defs[di][1]);
+    b.setAttribute('type', 'button');
+    b.setAttribute('data-act', defs[di][0]);
+    b.setAttribute('title', defs[di][2]);
+    (function (make) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var c = make();
+        if (c[1].band === undefined) delete c[1].band;
+        sendCommand(cmdId, c[0], c[1]);
+      });
+    })(defs[di][3]);
+    controls.appendChild(b);
+  }
+  var pos = el('span', 'tl-pos', '');
+  pos.setAttribute('data-role', 'tl-pos');
+  controls.appendChild(pos);
+  var live = el('button', 'tl-btn live-btn', 'Back to live');
+  live.setAttribute('type', 'button');
+  live.setAttribute('data-act', 'live');
+  live.setAttribute('title', 'cells.history.live');
+  live.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'live', {}); });
+  controls.appendChild(live);
+  root.appendChild(controls);
+
+  var info = el('div', 'tl-info', '');
+  info.setAttribute('data-role', 'tl-info');
+  root.appendChild(info);
+  return root;
+}
+
+function histEventPx(count) { return Math.min(20, 5 + 3.5 * count); }
+
+function renderHistoryData(root, hist) {
+  var tl = hist.timeline;
+  var latest = histHead(hist);
+  root._latest = latest;
+  var under = root.querySelector('[data-role="tl-under"]');
+  var laneDyn = root.querySelector('[data-role="tl-lane-dyn"]');
+  var svg = root.querySelector('[data-role="tl-spark"]');
+  under.innerHTML = '';
+  laneDyn.innerHTML = '';
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  var dim = tl.preWindowDim;
+  if (dim && typeof dim === 'object') {
+    var dw = el('div', 'tl-dim');
+    dw.setAttribute('data-role', 'tl-dim');
+    dw.style.width = histPct(Number(dim.last) + 1, latest) + '%';
+    dw.appendChild(el('span', 'tl-dim-label', 'no per-cell data before sample ' + (Number(dim.last) + 1)));
+    under.appendChild(dw);
+  }
+  var gaps = tl.gaps || {};
+  var aggs = Array.isArray(gaps.aggregate) ? gaps.aggregate : [];
+  for (var a = 0; a < aggs.length; ++a) {
+    var ga = el('div', 'tl-gap');
+    ga.setAttribute('data-role', 'tl-gap-aggregate');
+    ga.style.left = histPct(aggs[a].first, latest) + '%';
+    ga.style.width = Math.max(0.5, histPct(Number(aggs[a].last) + 1, latest) - histPct(aggs[a].first, latest)) + '%';
+    under.appendChild(ga);
+    if (a === 0) {
+      var gl = el('div', 'tl-gap-label', 'aggregates evicted');
+      gl.style.left = histPct(aggs[a].first, latest) + '%'; gl.style.top = '2px'; gl.style.color = '#e74c3c'; gl.style.marginLeft = '4px';
+      under.appendChild(gl);
+    }
+  }
+  var evg = Array.isArray(gaps.event) ? gaps.event : [];
+  for (var g = 0; g < evg.length; ++g) {
+    var ge = el('div', 'tl-gap events');
+    ge.setAttribute('data-role', 'tl-gap-event');
+    ge.style.left = histPct(evg[g].first, latest) + '%';
+    ge.style.width = Math.max(0.5, histPct(Number(evg[g].last) + 1, latest) - histPct(evg[g].first, latest)) + '%';
+    under.appendChild(ge);
+    if (g === 0) {
+      var gl2 = el('div', 'tl-gap-label', 'events evicted');
+      gl2.style.left = '4px'; gl2.style.top = '42px'; gl2.style.color = '#f5a623';
+      under.appendChild(gl2);
+    }
+  }
+
+  var ticks = Array.isArray(tl.bandTicks) ? tl.bandTicks : [];
+  var top = -1;
+  for (var t = 0; t < ticks.length; ++t) if (ticks[t].band > top) top = ticks[t].band;
+  root._topBand = top >= 0 ? top : undefined;
+  for (var k = 0; k < ticks.length; ++k) {
+    var major = ticks[k].band === top;
+    var bt = el('div', 'tl-band' + (major ? ' major' : ''));
+    bt.setAttribute('data-role', 'tl-band');
+    bt.style.left = histPct(ticks[k].sample, latest) + '%';
+    laneDyn.appendChild(bt);
+    if (major && ticks[k].name) {
+      var bl = el('div', 'tl-band-label major', ticks[k].name);
+      bl.style.left = histPct(ticks[k].sample, latest) + '%';
+      laneDyn.appendChild(bl);
+    }
+  }
+
+  var buckets = Array.isArray(tl.buckets) ? tl.buckets : [];
+  for (var bi = 0; bi < buckets.length; ++bi) {
+    var bk = buckets[bi];
+    if (!(bk.events > 0)) continue;
+    var mid = (Number(bk.first) + Number(bk.last)) / 2;
+    var ev = el('div', 'tl-ev');
+    ev.setAttribute('data-role', 'tl-event');
+    ev.style.left = histPct(mid, latest) + '%';
+    ev.style.height = histEventPx(bk.events) + 'px';
+    ev.style.background = viewerRgb(bk.colour);
+    ev.style.opacity = String(Math.min(1, 0.45 + 0.1 * bk.events));
+    ev.style.width = (bk.events >= 3 ? 3 : 2) + 'px';
+    ev.setAttribute('title', bk.events + ' event' + (bk.events === 1 ? '' : 's') + ' near sample ' + Math.round(mid));
+    laneDyn.appendChild(ev);
+  }
+
+  var spark = Array.isArray(tl.sparkline) ? tl.sparkline : [];
+  var mn = Infinity, mx = -Infinity;
+  for (var s = 0; s < spark.length; ++s) {
+    if (spark[s].value === null || spark[s].value === undefined) continue;
+    if (spark[s].value < mn) mn = spark[s].value;
+    if (spark[s].value > mx) mx = spark[s].value;
+  }
+  var d = '', pen = false;
+  for (var p = 0; p < spark.length; ++p) {
+    var v = spark[p].value;
+    if (v === null || v === undefined) { pen = false; continue; }
+    var x = histPct((Number(spark[p].first) + Number(spark[p].last)) / 2, latest) * 10;
+    var y = mx > mn ? 30 - (v - mn) / (mx - mn) * 28 : 16;
+    d += (pen ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    pen = true;
+  }
+  if (d) {
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  }
+
+  var info = root.querySelector('[data-role="tl-info"]');
+  var first = dim && typeof dim === 'object' ? Number(dim.last) + 1 : 0;
+  info.textContent = 'per-cell window: sample ' + first + '–' + latest + ' · ' + buckets.length + ' buckets · sparkline: ' + spark.length + ' points';
+}
+
+function refreshHistory(card, hist) {
+  var root = card.querySelector('[data-role="history-timeline"]');
+  if (!root) return;
+  var tl = hist.timeline;
+  var latest = histHead(hist);
+  var dataKey = [hist.baseLayer, tl.range && tl.range.count, tl.range && tl.range.latest, JSON.stringify(tl.gaps || {}), JSON.stringify(tl.preWindowDim || null),
+                 (tl.buckets || []).length, (tl.sparkline || []).length, (tl.bandTicks || []).length].join('|');
+  if (root._dataKey !== dataKey) { root._dataKey = dataKey; renderHistoryData(root, hist); }
+  root._latest = latest;
+
+  var pos = tl.position || {};
+  var live = pos.mode !== 'sample';
+  root.classList.toggle('is-live', live);
+  var sample = live ? latest : Number(pos.sample) || 0;
+  var thumb = root.querySelector('[data-role="tl-thumb"]');
+  thumb.style.left = histPct(sample, latest) + '%';
+  thumb.classList.toggle('flip', histPct(sample, latest) > 80);
+  root.querySelector('[data-role="tl-thumb-tag"]').textContent = live ? 'LIVE ' + sample : String(sample);
+  root.querySelector('[data-role="tl-layer"]').textContent = hist.baseLayer || '';
+  var label = hist.banner.label ? ' · ' + hist.banner.label : '';
+  var posEl = root.querySelector('[data-role="tl-pos"]');
+  posEl.textContent = '';
+  if (tl.range && tl.range.count > 0) {
+    if (live) {
+      posEl.appendChild(document.createTextNode('Following sim '));
+      posEl.appendChild(el('span', 'dim', '· head = sample ' + latest + (hist.banner.label ? ' (' + hist.banner.label + ')' : '')));
+    } else {
+      posEl.appendChild(document.createTextNode('Sample '));
+      posEl.appendChild(el('b', '', String(sample)));
+      posEl.appendChild(el('span', 'dim', ' / ' + latest + label));
+    }
+  } else {
+    posEl.appendChild(el('span', 'dim', 'No samples recorded yet'));
+  }
+  var bandBtns = root.querySelectorAll('[data-act="step-band-back"], [data-act="step-band-fwd"]');
+  for (var i = 0; i < bandBtns.length; ++i) bandBtns[i].disabled = (root._topBand === undefined);
+}
+
+// Banner + notices on the cell-layer viewer card, driven by the history domain's state (no history domain: nothing shown).
+function applyHistoryToViewer(domains) {
+  var hist = null, histCmd = '';
+  for (var i = 0; i < domains.length; ++i) if (domains[i].history) { hist = domains[i].history; histCmd = domains[i].cmdId; break; }
+  for (var j = 0; j < domains.length; ++j) {
+    if (!domains[j].viewer) continue;
+    var card = document.querySelector('.domain[data-domain="' + cssEscape(domains[j].id) + '"]');
+    var root = card && card.querySelector('[data-role="cell-layer-viewer"]');
+    if (!root) continue;
+    var banner = root.querySelector('[data-role="history-banner"]');
+    var notice = root.querySelector('[data-role="history-notice"]');
+    var b = hist && hist.banner;
+    if (!b || !b.visible) {
+      if (banner) banner.parentNode.removeChild(banner);
+      if (notice) notice.parentNode.removeChild(notice);
+      var stale = root.querySelector('.sample-badge');
+      if (stale) stale.parentNode.removeChild(stale);
+      continue;
+    }
+    var key = JSON.stringify([b.state, b.layer, b.sample, b.label, b.firstRetained]);
+    if (!banner || banner._key !== key) {
+      if (banner) banner.parentNode.removeChild(banner);
+      if (notice) notice.parentNode.removeChild(notice);
+      banner = el('div', 'cl-hist-banner');
+      banner.setAttribute('data-role', 'history-banner');
+      banner._key = key;
+      var msg = el('span', '');
+      msg.appendChild(document.createTextNode('Viewing sample '));
+      msg.appendChild(el('b', '', String(b.sample)));
+      if (b.label) {
+        msg.appendChild(document.createTextNode(' ('));
+        msg.appendChild(el('b', '', b.label));
+        msg.appendChild(document.createTextNode(')'));
+      }
+      msg.appendChild(document.createTextNode(' — not live'));
+      banner.appendChild(msg);
+      if (b.state === 'untracked') banner.appendChild(el('span', 'vb-extra', '· ' + b.layer + ' has no per-cell history'));
+      else if (b.state === 'evicted') banner.appendChild(el('span', 'vb-extra', '· per-cell data evicted'));
+      var lb = el('button', 'live-btn', 'Back to live');
+      lb.setAttribute('type', 'button');
+      lb.setAttribute('data-act', 'live');
+      lb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(histCmd, 'live', {}); });
+      banner.appendChild(lb);
+      root.insertBefore(banner, root.firstChild);
+
+      if (b.state === 'untracked' || b.state === 'evicted') {
+        notice = el('div', 'cl-hist-notice ' + b.state);
+        notice.setAttribute('data-role', 'history-notice');
+        if (b.state === 'untracked') {
+          notice.appendChild(el('h4', '', 'No per-cell history for ' + b.layer));
+          notice.appendChild(document.createTextNode(b.layer + ' is not tracked, so there is no per-cell data for sample ' + b.sample +
+            '. Live values are never shown while scrubbed. World aggregates are still on the timeline.'));
+          notice.appendChild(document.createElement('br'));
+          var tb = el('button', 'track-btn', 'Track this layer');
+          tb.setAttribute('type', 'button');
+          tb.setAttribute('data-act', 'track');
+          tb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(histCmd, 'track', { layer: b.layer }); });
+          notice.appendChild(tb);
+          notice.appendChild(el('div', 'runs', 'runs: cells.history.track ' + b.layer));
+        } else {
+          notice.appendChild(el('h4', '', 'Per-cell data evicted'));
+          notice.appendChild(document.createTextNode('Sample ' + b.sample + (b.label ? ' (' + b.label + ')' : '') +
+            ' is older than the per-cell window, which now starts at sample ' + b.firstRetained +
+            '. Aggregates and events for this sample may still exist on the timeline.'));
+        }
+        banner.parentNode.insertBefore(notice, banner.nextSibling);
+      }
+    }
+    var hover = root.querySelector('[data-role="hover"]');
+    var badge = hover && hover.querySelector('.sample-badge');
+    if (hover && hover.firstChild && !badge) {
+      badge = el('span', 'sample-badge', '');
+      badge.setAttribute('data-role', 'sample-badge');
+      hover.insertBefore(badge, hover.firstChild);
+    }
+    if (badge) badge.textContent = 'sample ' + b.sample;
+  }
 }
 
 // A cell-layer viewer state (DiaCellLayers CellLayerViewerDomain) is recognised by shape.
@@ -728,7 +1166,7 @@ function isViewerState(d) {
 }
 
 function isDomainEnabled(domain) {
-  if (domain.viewer) return true;   // overlays are its drawers; the card is not "off" when none are on
+  if (domain.viewer || domain.history) return true;   // overlays are its drawers; the card is not "off" when none are on
   for (var i = 0; i < domain.drawers.length; ++i) {
     if (domain.drawers[i] && domain.drawers[i].enabled) return true;
   }
@@ -736,6 +1174,7 @@ function isDomainEnabled(domain) {
 }
 
 function headlineStat(domain) {
+  if (domain.history) return histHeadlineStat(domain.history);
   if (domain.viewer) return domain.viewer.empty ? 'no layers' : 'base: ' + domain.viewer.activeBase;
   for (var k in domain.stats) {
     if (!Object.prototype.hasOwnProperty.call(domain.stats, k)) continue;
@@ -874,7 +1313,7 @@ function el(tag, cls, text) {
 }
 
 function buildDomainCard(domain) {
-  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner') || !!domain.viewer;
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner') || !!domain.viewer || !!domain.history;
 
   var enabled = isDomainEnabled(domain);
 
@@ -917,9 +1356,10 @@ function buildDomainCard(domain) {
   }
 
   if (domain.viewer) body.appendChild(buildViewer(domain));
+  if (domain.history) body.appendChild(buildHistoryCard(domain));
 
   var drawers = el('div', 'drawers');
-  for (var i = 0; !domain.viewer && i < domain.drawers.length; ++i) {   // viewer overlays render as checkboxes below
+  for (var i = 0; !domain.viewer && !domain.history && i < domain.drawers.length; ++i) {   // viewer overlays render as checkboxes below
     var dw = domain.drawers[i];
     if (!dw || !dw.name) continue;
     var row = el('div', 'dr ' + (dw.enabled ? 'on' : 'off'));
@@ -1998,6 +2438,7 @@ function refresh(domains) {
     if (headline) headline.textContent = headlineStat(domain);
 
     if (domain.viewer) refreshViewer(card, domain.viewer);
+    if (domain.history) refreshHistory(card, domain.history);
 
     for (var d = 0; d < domain.drawers.length; ++d) {
       var dw = domain.drawers[d];
@@ -2099,6 +2540,7 @@ function updateDomainState(data) {
     rebuild(domains);
   }
   refresh(domains);
+  applyHistoryToViewer(domains);
 }
 window.updateDomainState = updateDomainState;
 

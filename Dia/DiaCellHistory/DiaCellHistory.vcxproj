@@ -93,6 +93,8 @@
     <ClInclude Include="HistoryViewStatus.h" />
     <ClInclude Include="TimelineModel.h" />
     <ClInclude Include="ScrubObservation.h" />
+    <ClInclude Include="TimelineCardState.h" />
+    <ClInclude Include="CellHistoryDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -110,6 +112,8 @@
     <ClCompile Include="HistoryViewStatus.cpp" />
     <ClCompile Include="TimelineModel.cpp" />
     <ClCompile Include="ScrubObservation.cpp" />
+    <ClCompile Include="TimelineCardState.cpp" />
+    <ClCompile Include="CellHistoryDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

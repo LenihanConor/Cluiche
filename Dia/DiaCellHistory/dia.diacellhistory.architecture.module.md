@@ -14,6 +14,7 @@ dependencies:
     - dia.valueschema
     - dia.celllayers
     - dia.debugserver
+    - dia.visualdebugger
   forbidden: []
 public_api:
   headers:
@@ -23,6 +24,8 @@ public_api:
     - DiaCellHistory/Testing/BudgetSizing.h
     - DiaCellHistory/Testing/FixtureEventSchemas.h
     - DiaCellHistory/CellHistoryCommands.h
+    - DiaCellHistory/TimelineCardState.h
+    - DiaCellHistory/CellHistoryDomain.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []
@@ -40,6 +43,8 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `CellHistoryRecorder` | `Sample`, `Emit`, `TrackLayer`/`Untrack`, read API (`Header`, `Aggregate`, `CategoryCounts`, `CellValues`, `Events`), status. Published via a `ServiceStream`. |
 | `CellHistoryModule` | SimPU module: creates the recorder, applies the `.diastage` `history` block, registers commands. |
 | `CellHistoryCommands` | `cells.history.track`, `untrack`, `status` (DIA_DEBUG). |
+| `TimelineCardState` | Typed model of the timeline card + not-live banner JSON (`TimelineModel` + `HistoryViewStatus`); `HistoryField` is the future `cells.view.state.history` value. Rebuilds only on sample/view/layer-state change. |
+| `CellHistoryDomain` | Panel-only `IDebugDomain` "Cell History" (id `cellhistory`): state = the card; panel commands `view`/`live`/`step`/`event`/`track` call the same executors as `cells.history.*` (DIA_DEBUG). |
 | `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
 | `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |
 | `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |

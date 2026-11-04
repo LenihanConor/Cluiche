@@ -46,6 +46,8 @@
     <ClInclude Include="ScrubObservation\ScrubObservation.h">
       <Filter>ScrubObservation</Filter>
     </ClInclude>
+    <ClInclude Include="TimelineCardState.h" />
+    <ClInclude Include="CellHistoryDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -67,6 +69,8 @@
     <ClCompile Include="ScrubObservation\ScrubObservation.cpp">
       <Filter>ScrubObservation</Filter>
     </ClCompile>
+    <ClCompile Include="TimelineCardState.cpp" />
+    <ClCompile Include="CellHistoryDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">
