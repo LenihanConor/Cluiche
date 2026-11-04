@@ -181,4 +181,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [scrub-and-timeline.plan.md](scrub-and-timeline.plan.md) (In Progress). Build needs AD-001 sign-off for the `IViewValueSource` hook in DiaCellLayers.
+`Done` (2026-11-04). Plan: [scrub-and-timeline.plan.md](scrub-and-timeline.plan.md). Visual gate (AC 16) checked by the user by eye 2026-11-04. Full suite, sanitizer, Release and full E2E run in system task S7.
