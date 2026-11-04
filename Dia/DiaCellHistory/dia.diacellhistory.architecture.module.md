@@ -27,6 +27,7 @@ public_api:
     - DiaCellHistory/TimelineCardState.h
     - DiaCellHistory/CellHistoryDomain.h
     - DiaCellHistory/ViewHistorySourceAdapter.h
+    - DiaCellHistory/SideReader.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []
@@ -47,6 +48,7 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `TimelineCardState` | Typed model of the timeline card + not-live banner JSON (`TimelineModel` + `HistoryViewStatus`); `HistoryField` is the future `cells.view.state.history` value. Rebuilds only on sample/view/layer-state change. |
 | `ViewHistorySourceAdapter` | `IViewHistorySource` over (recorder, `HistoryViewState`): `HistoryField()` = `TimelineCardState::HistoryField`, `HistoryStamp()` = `Epoch()*2 + (Sample mode ? 1 : 0)` (new recorder samples do not change the field, so they are not in the stamp). Install with `ViewStatePublisher::SetHistorySource`. |
 | `CellHistoryDomain` | Panel-only `IDebugDomain` "Cell History" (id `cellhistory`): state = the card; panel commands `view`/`live`/`step`/`event`/`track` call the same executors as `cells.history.*` (DIA_DEBUG). |
+| `SideReader` | Compare (F4): reads one delta side (`now` = layer live `read`; `sample:<i>` = ring `CellValues`; `snapshot:<name>` = Unavailable until 4.9) with `ParseSide`/`SidesEqual`. NoData never falls back to live. |
 | `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
 | `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |
 | `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |

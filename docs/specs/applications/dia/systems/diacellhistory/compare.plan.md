@@ -17,7 +17,7 @@ Feature 4 of DiaCellHistory (system order 1 → 2 → 4 → 3 → 5). **Prerequi
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 4.1 | `SideReader` for `now` and `sample:<i>`: window edges, untracked layer, NaN; snapshot side stubbed to "unavailable" until 4.9 (AC 1, 2, 8) | RED-GREEN | Pending | sonnet | |
+| 4.1 | `SideReader` for `now` and `sample:<i>`: window edges, untracked layer, NaN; snapshot side stubbed to "unavailable" until 4.9 (AC 1, 2, 8) | RED-GREEN | Done | sonnet | Done 2026-11-04: `SideReader` (`ParseSide`, `SidesEqual`, `Read` -> Ok/NoData/Unavailable), 16 tests; RED was a link failure on the stub; scoped 79 tests pass over 2 shards; `dia check deps` clean. Takes only the recorder (no registry); `now` calls `layer.read`; snapshot side returns Unavailable until 4.9. Observation suggestions: log side failures on HIS in 4.6; NoData/Unavailable counter; profile scope on the `now` read. |
 | 4.2 | `HistoryViewState` gains `Delta(A, B, scale)` and `off` returning to the held view; `view` / `live` leave delta; `step` / `event` refused ("leave delta mode first"); `IsLive()` false (AC 10, 11) | RED-GREEN: all transitions | Pending | sonnet | |
 | 4.3 | `DeltaValueSource`: B − A, NaN on either side, category layers no data, quantisation bound `2 × range / 65,535` for recorded sides (AC 1, 2, 8, 12) | RED-GREEN: fixtures, NaN, category | Pending | sonnet | Reuses the Feature 2 source plumbing |
 | 4.4 | Auto scale: nice number (1/2/5 × 10ⁿ), grow immediately, shrink after 2 s under 40% (injectable clock), `scale <n>` fixes, `auto` (AC 5) | RED-GREEN with fake clock | Pending | sonnet | `Testing/FakeClock.h` exists |

@@ -2490,5 +2490,8 @@
     <ClCompile Include="DiaCellHistory\TestTimelineCard.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestSideReader.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
