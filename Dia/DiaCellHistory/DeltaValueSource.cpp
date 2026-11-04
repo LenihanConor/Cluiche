@@ -6,6 +6,9 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
+#include <chrono>
+#include <cmath>
+
 namespace Dia::CellHistory
 {
 	DeltaValueSource::DeltaValueSource(const CellHistoryRecorder& recorder, const HistoryViewState& view)
@@ -17,6 +20,41 @@ namespace Dia::CellHistory
 	{
 		delete[] mBufA;
 		delete[] mBufB;
+	}
+
+	double DeltaValueSource::Now() const
+	{
+		if (mClockFn != nullptr) { return mClockFn(mClockCtx); }
+		return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+	}
+
+	void DeltaValueSource::SetClock(double (*fn)(void*), void* ctx)
+	{
+		mClockFn = fn;
+		mClockCtx = ctx;
+	}
+
+	float DeltaValueSource::CurrentScale(const HistoryViewState& view) const
+	{
+		if (!view.InDelta()) { return DeltaScale::kDefault; }
+		const DeltaSpec& spec = view.Delta();
+		if (!spec.autoScale) { return spec.fixedScale; }
+		if (view.Epoch() != mScaleEpoch) { return DeltaScale::kDefault; }	// reset pending: nothing observed since the change
+		return mScale.Current();
+	}
+
+	void DeltaValueSource::ObserveScale(const float* out, uint32_t n)
+	{
+		float maxAbs = 0.0f;
+		bool any = false;
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			const float v = out[i];
+			if (std::isnan(v)) { continue; }
+			const float a = std::fabs(v);
+			if (!any || a > maxAbs) { maxAbs = a; any = true; }
+		}
+		if (any) { mScale.Observe(maxAbs, Now()); }
 	}
 
 	void DeltaValueSource::WarnNoData(const Dia::CellLayers::CellLayerDesc& layer, const Side& side, const char* which)
@@ -59,6 +97,15 @@ namespace Dia::CellHistory
 		for (uint32_t i = 0; i < n; ++i)
 		{
 			out[i] = mBufB[i] - mBufA[i];	// NaN on either side propagates
+		}
+		if (layer.id == spec.layer)
+		{
+			if (mView.Epoch() != mScaleEpoch)
+			{
+				mScaleEpoch = mView.Epoch();
+				mScale.Reset();
+			}
+			if (spec.autoScale) { ObserveScale(out, n); }
 		}
 		return true;
 	}

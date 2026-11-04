@@ -1,5 +1,6 @@
 #include "HistoryTestRig.h"
 #include <DiaCellHistory/DeltaValueSource.h>
+#include <DiaCellHistory/DeltaScale.h>
 #include <DiaCellHistory/HistoryValueSource.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
@@ -265,4 +266,143 @@ TEST(HistoryValueSourceDelta, LiveAndSampleModesUnchangedAroundDelta)
 	ASSERT_TRUE(v.ExitDelta());
 	ASSERT_TRUE(s.GetValues(Desc(r, "temp"), out, 12));
 	for (int i = 0; i < 12; ++i) { EXPECT_EQ(out[i], want[i]) << i; }
+}
+
+namespace
+{
+	double gFakeNow = 0.0;
+	double FakeNow(void*) { return gFakeNow; }
+}
+
+TEST(DeltaValueSourceScale, AutoScaleIsNiceCeilOfMaxAbsDelta)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr); gFakeNow = 0.0;
+	ASSERT_TRUE(Enter(v, "temp", S(0), S(1)));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);	// |60.3| -> 100
+	EXPECT_EQ(DeltaScale::NiceCeil(60.3f), d.CurrentScale(v));
+}
+
+TEST(DeltaValueSourceScale, ReversedSidesSameScaleAndSmallDelta)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start();
+	r.grid.Set("temp", 3, 1.0f); r.grid.BumpVersion("temp"); r.Take();
+	r.grid.Set("temp", 3, 1.3f); r.grid.BumpVersion("temp"); r.Take();
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr);
+	ASSERT_TRUE(Enter(v, "temp", S(1), S(0)));	// negative deltas: absolute value used
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 0.5f);	// |-0.3| -> 0.5
+}
+
+TEST(DeltaValueSourceScale, NaNCellsIgnoredAllNaNMakesNoObservation)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); r.Take();
+	r.grid.SetAll("temp", std::numeric_limits<float>::quiet_NaN());
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr);
+	ASSERT_TRUE(Enter(v, "temp", S(0), Now()));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 1.0f);	// default, no observation yet
+	r.grid.SetAll("temp", 41.5f);
+	r.grid.Set("temp", 2, std::numeric_limits<float>::quiet_NaN());
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 2.0f);	// 1 (+ quantisation) -> 2 not influenced by NaN
+}
+
+TEST(DeltaValueSourceScale, FixedScaleReturnedAndNotObserved)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr);
+	ASSERT_TRUE(Enter(v, "temp", S(0), S(1)));
+	ViewResult res; ASSERT_TRUE(v.SetDeltaScaleFixed(7.0f, res));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 7.0f);
+}
+
+TEST(DeltaValueSourceScale, FixedToAutoReobservesAfresh)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr);
+	ASSERT_TRUE(Enter(v, "temp", S(0), S(1)));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	ViewResult res; ASSERT_TRUE(v.SetDeltaScaleFixed(7.0f, res));
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 7.0f);
+	ASSERT_TRUE(v.SetDeltaScaleAuto(res));
+	EXPECT_EQ(d.CurrentScale(v), 1.0f);	// nothing observed yet since the switch
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+}
+
+TEST(DeltaValueSourceScale, NewDeltaResetsScale)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r); r.Take();	// sample 2 == sample 1
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr); gFakeNow = 0.0;
+	ASSERT_TRUE(Enter(v, "temp", S(0), S(1)));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	gFakeNow = 0.5;	// a new delta must reset at once, not wait 2 s to shrink
+	ASSERT_TRUE(Enter(v, "temp", S(1), S(2)));	// zero delta
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 1.0f);	// first read of the new delta, not the old 100
+}
+
+TEST(DeltaValueSourceScale, ViewedDataChangingDoesNotResetTimer)
+{
+	// now side: value changes between reads, same delta spec -> scale still obeys the 2 s rule
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr); gFakeNow = 0.0;
+	ASSERT_TRUE(Enter(v, "temp", S(0), Now()));
+	float out[12];
+	r.grid.SetAll("temp", 90.0f);
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	r.grid.SetAll("temp", 11.0f);	// deltas -29 .. 1 -> max ~29 < 40
+	gFakeNow = 1.0;
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	gFakeNow = 2.9;
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	gFakeNow = 3.0;
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 50.0f);
+}
+
+TEST(DeltaValueSourceScale, FailedReadDoesNotObserve)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	d.SetClock(&FakeNow, nullptr);
+	ASSERT_TRUE(Enter(v, "temp", S(0), Snap()));	// snapshot unavailable
+	float out[12];
+	EXPECT_FALSE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 1.0f);
+}
+
+TEST(DeltaValueSourceScale, DefaultClockIsUsable)
+{
+	Rig r; AddLayers(r); Track(r, "temp"); r.Start(); TwoSamples(r);
+	HistoryViewState v(*r.rec); DeltaValueSource d(*r.rec, v);
+	ASSERT_TRUE(Enter(v, "temp", S(0), S(1)));
+	float out[12];
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
+	d.SetClock(nullptr, nullptr);	// null restores the default
+	ASSERT_TRUE(d.GetValues(Desc(r, "temp"), out, 12));
+	EXPECT_EQ(d.CurrentScale(v), 100.0f);
 }
