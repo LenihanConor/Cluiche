@@ -20,6 +20,8 @@
 
 #include <cstdint>
 
+namespace Json { class Value; }
+
 namespace Dia::CellHistory
 {
 	class CellHistoryRecorder;
@@ -48,6 +50,10 @@ namespace Dia::CellHistory
 	class HistoryExporter
 	{
 	public:
+		// The file's embedded `schema` ({entries, ramps}) for a recorder: ExportSubset of every recorded layer, grouping layer and event
+		// type present in the log. Same content as the `schema` section of WriteFile; logs nothing (used by cells.history.meta pages).
+		static bool BuildSchema(const CellHistoryRecorder& recorder, Json::Value& out);
+
 		static bool WriteFile(const CellHistoryRecorder& recorder, const ExportOptions& options, const char* path, ExportResult& result);
 
 		// Resolves a user path (PD-009). An absolute (rooted) path is copied as is. A relative path must not contain a `..`

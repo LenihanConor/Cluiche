@@ -779,4 +779,23 @@ namespace Dia::CellHistory
 		r.mTo = toSample;
 		return r;
 	}
+
+	uint64_t CellHistoryRecorder::StructureHash() const
+	{
+		// FNV-1a over the aggregated layers (id, kind, enum count) in order, then the group ids in order.
+		uint64_t h = 1469598103934665603ull;
+		auto mix = [&h](uint32_t v) { for (int i = 0; i < 4; ++i) { h ^= (v >> (i * 8)) & 0xFFu; h *= 1099511628211ull; } };
+		mix(mAggregatedCount);
+		for (uint32_t i = 0; i < mAggregatedCount; ++i)
+		{
+			const Dia::Core::StringCRC id = RecordedLayerId(i);
+			AggregateKind kind;
+			uint32_t enumCount = 0;
+			mix(id.Value());
+			if (mAggregates.LayerInfo(id, kind, enumCount)) { mix(uint32_t(kind) + 1u); mix(enumCount); } else { mix(0u); }
+		}
+		mix(mAggregates.GroupCount());
+		for (uint32_t g = 0; g < mAggregates.GroupCount(); ++g) { mix(mAggregates.GroupAt(g).Value()); }
+		return h;
+	}
 }

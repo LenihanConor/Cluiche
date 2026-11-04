@@ -308,6 +308,63 @@ namespace Dia::CellHistory
 			out.Char('}');
 		}
 
+		void CollectTypes(const CellHistoryRecorder& rec, std::vector<TypeName>& types)
+		{
+			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
+			{
+				for (unsigned int i = 0; i < schema->Count(); ++i)
+				{
+					const Dia::ValueSchema::ValueInfo* v = schema->At(i);
+					if (v != nullptr && v->mKind == Dia::ValueSchema::ValueKind::Event) { types.push_back({ StringCRC(v->mKey.AsCStr()).Value(), v->mKey.AsCStr(), StringCRC(v->mFullKey.AsCStr()) }); }
+				}
+			}
+		}
+
+		// The embedded schema: ExportSubset of every recorded layer's key, every grouping layer's key and every event type seen.
+		// unresolved (optional) counts event types without an entry; each logs one Warning when warn is set.
+		void BuildSchemaJson(const CellHistoryRecorder& rec, const std::vector<SeenType>& seen, const std::vector<TypeName>& types, uint32_t groupCount,
+			uint32_t* unresolved, Json::Value& subset, bool warn = true)
+		{
+			std::vector<StringCRC> keys;
+			for (uint32_t li = 0; li < rec.RecordedLayerCount(); ++li) { keys.push_back(SchemaKeyFor(rec, rec.RecordedLayerId(li))); }
+			for (uint32_t g = 1; g < groupCount; ++g)
+			{
+				StringCRC layer;
+				uint32_t value = 0;
+				if (rec.GroupSource(g, layer, value)) { keys.push_back(SchemaKeyFor(rec, layer)); }
+			}
+			for (const SeenType& t : seen)
+			{
+				if (t.resolved)
+				{
+					for (const TypeName& n : types) { if (n.crc == t.crc) { keys.push_back(n.fullKey); break; } }
+					continue;
+				}
+				if (unresolved != nullptr) { ++*unresolved; }
+				if (warn) { DIA_LOG_WARNING("HIS", "export: event type crc:%08x has no schema entry; exported without one", t.crc); }
+			}
+			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
+			{
+				schema->ExportSubset(keys.data(), unsigned(keys.size()), subset);
+			}
+			else
+			{
+				subset["entries"] = Json::Value(Json::arrayValue);
+				subset["ramps"] = Json::Value(Json::arrayValue);
+			}
+		}
+
+		void NoteSeen(const EventView& e, void* context)
+		{
+			auto* c = static_cast<std::pair<const std::vector<TypeName>*, std::vector<SeenType>*>*>(context);
+			const unsigned int crc = e.mType.Value();
+			for (const SeenType& t : *c->second) { if (t.crc == crc) { return; } }
+			bool resolved = false;
+			for (const TypeName& n : *c->first) { if (n.crc == crc) { resolved = true; break; } }
+			c->second->push_back({ crc, resolved });
+		}
+
+
 		bool WriteBody(const CellHistoryRecorder& rec, const ExportOptions& opt, Sink& out, ExportResult& result)
 		{
 			Scratch sc;
@@ -391,14 +448,7 @@ namespace Dia::CellHistory
 
 			// Events. Type names come from the schema's `kind: event` entries (the log keeps only the CRC).
 			std::vector<TypeName> types;
-			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
-			{
-				for (unsigned int i = 0; i < schema->Count(); ++i)
-				{
-					const Dia::ValueSchema::ValueInfo* v = schema->At(i);
-					if (v != nullptr && v->mKind == Dia::ValueSchema::ValueKind::Event) { types.push_back({ StringCRC(v->mKey.AsCStr()).Value(), v->mKey.AsCStr(), StringCRC(v->mFullKey.AsCStr()) }); }
-				}
-			}
+			CollectTypes(rec, types);
 			out.Raw(",\"events\":[");
 			std::vector<SeenType> seen;
 			if (count > 0)
@@ -444,35 +494,9 @@ namespace Dia::CellHistory
 			}
 
 			// Embedded schema: recorded layers, grouping layers and the event types present (one Warning per unresolved type).
-			std::vector<StringCRC> keys;
-			for (uint32_t li = 0; li < rec.RecordedLayerCount(); ++li) { keys.push_back(SchemaKeyFor(rec, rec.RecordedLayerId(li))); }
-			for (uint32_t g = 1; g < groupCount; ++g)
-			{
-				StringCRC layer;
-				uint32_t value = 0;
-				if (rec.GroupSource(g, layer, value)) { keys.push_back(SchemaKeyFor(rec, layer)); }
-			}
-			for (const SeenType& t : seen)
-			{
-				if (t.resolved)
-				{
-					for (const TypeName& n : types) { if (n.crc == t.crc) { keys.push_back(n.fullKey); break; } }
-					continue;
-				}
-				++result.unresolvedEventTypes;
-				DIA_LOG_WARNING("HIS", "export: event type crc:%08x has no schema entry; exported without one", t.crc);
-			}
 			out.Raw(",\"schema\":");
 			Json::Value subset(Json::objectValue);
-			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
-			{
-				schema->ExportSubset(keys.data(), unsigned(keys.size()), subset);
-			}
-			else
-			{
-				subset["entries"] = Json::Value(Json::arrayValue);
-				subset["ramps"] = Json::Value(Json::arrayValue);
-			}
+			BuildSchemaJson(rec, seen, types, groupCount, &result.unresolvedEventTypes, subset);
 			Json::StreamWriterBuilder builder;
 			builder["indentation"] = "";
 			const std::string schemaText = Json::writeString(builder, subset);
@@ -482,6 +506,7 @@ namespace Dia::CellHistory
 			result.samples = count;
 			return out.Good();
 		}
+
 
 		void SetError(ExportResult& r, const char* fmt, const char* a)
 		{
@@ -561,6 +586,23 @@ namespace Dia::CellHistory
 			else { n = snprintf(buf, bufCapacity, "%s/history/%s", outDir, path); }
 		}
 		if (n < 0 || uint32_t(n) >= bufCapacity) { buf[0] = '\0'; return fail("resolved path is too long"); }
+		return true;
+	}
+
+
+	bool HistoryExporter::BuildSchema(const CellHistoryRecorder& recorder, Json::Value& out)
+	{
+		std::vector<TypeName> types;
+		CollectTypes(recorder, types);
+		std::vector<SeenType> seen;
+		const uint32_t count = recorder.SampleCount();
+		if (count > 0)
+		{
+			std::pair<const std::vector<TypeName>*, std::vector<SeenType>*> ctx(&types, &seen);
+			recorder.Events(0, count - 1).ForEach(&NoteSeen, &ctx);
+		}
+		out = Json::Value(Json::objectValue);
+		BuildSchemaJson(recorder, seen, types, recorder.Aggregates().GroupCount(), nullptr, out, false);
 		return true;
 	}
 

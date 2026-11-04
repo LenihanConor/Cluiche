@@ -38,6 +38,8 @@
 #include <DiaCellHistory/SnapshotObservation.h>
 #include <DiaCellHistory/HistoryExportCommands.h>
 #include <DiaCellHistory/ExportObservation.h>
+#include <DiaCellHistory/HistoryQueries.h>
+#include <DiaCellHistory/QueryObservation.h>
 #include "Modules/TestStages/CellLayersSnapshotStore.h"
 #include <DiaCellHistory/HistoryValueSource.h>
 #include <DiaCellHistory/ViewHistorySourceAdapter.h>

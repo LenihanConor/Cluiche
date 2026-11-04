@@ -78,6 +78,12 @@
     <ClInclude Include="ExportObservation.h" />
     <ClInclude Include="HistoryExportCommands.h" />
     <ClInclude Include="AtomicFile.h" />
+    <ClInclude Include="HistoryQueries.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
+    <ClInclude Include="QueryObservation.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -121,6 +127,12 @@
     <ClCompile Include="ExportObservation.cpp" />
     <ClCompile Include="HistoryExportCommands.cpp" />
     <ClCompile Include="AtomicFile.cpp" />
+    <ClCompile Include="HistoryQueries.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="QueryObservation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

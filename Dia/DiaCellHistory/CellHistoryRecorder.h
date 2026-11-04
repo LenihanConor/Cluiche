@@ -206,6 +206,10 @@ namespace Dia::CellHistory
 		// The grouping behind AggregateStore group `storeIndex` (1..GroupCount()-1; 0 is world and returns false).
 		bool GroupSource(uint32_t storeIndex, Dia::Core::StringCRC& layer, uint32_t& enumValue) const;
 
+		// Stable 64-bit hash of the recorded structure: the aggregated layers (id, kind, enum count, in order) and the groups (ids, in
+		// order). Changes when a layer or grouping is added; never with new samples. Used by cells.history.meta and the live topic.
+		uint64_t StructureHash() const;
+
 		// World-id provider (Feature 5, header.world of an export). The game installs it (CoW: the loaded world id; stages: the
 		// stage name). The returned text is read at export time and must stay valid until the call returns. No provider (or a
 		// provider returning null) -> WorldId() is the empty string.
