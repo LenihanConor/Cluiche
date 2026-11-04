@@ -1131,6 +1131,7 @@
     <ClCompile Include="DiaCellHistory\TestSnapshotManagerTake.cpp" />
     <ClCompile Include="DiaCellHistory\TestSnapshotManagerRestore.cpp" />
     <ClCompile Include="DiaCellHistory\TestSnapshotCommands.cpp" />
+    <ClCompile Include="DiaCellHistory\TestSnapshotObservation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

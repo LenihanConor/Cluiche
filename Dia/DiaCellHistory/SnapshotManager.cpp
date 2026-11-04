@@ -2,6 +2,7 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/HistoryViewState.h>
 #include <DiaCellHistory/ISnapshotStore.h>
+#include <DiaCellHistory/SnapshotObservation.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -58,17 +59,32 @@ namespace Dia::CellHistory
 		return n;
 	}
 
+	void SnapshotManager::PublishCount() const
+	{
+		if (mObs == nullptr) { return; }
+		uint32_t n = 0;
+		for (const SnapshotRecord& r : mRecords) { if (r.mUsed && r.mStatus == SnapshotStatus::Ready) { ++n; } }
+		mObs->SetSnapshotCount(n);
+	}
+
 	bool SnapshotManager::RemoveRecord(const char* name)
 	{
 		if (name == nullptr || mGate.InFlight()) { return false; }
 		for (SnapshotRecord& r : mRecords)
 		{
-			if (r.mUsed && std::strcmp(r.mName, name) == 0) { r = SnapshotRecord(); return true; }
+			if (r.mUsed && std::strcmp(r.mName, name) == 0) { r = SnapshotRecord(); PublishCount(); return true; }
 		}
 		return false;
 	}
 
 	bool SnapshotManager::Take(const char* name, bool overwrite, TakeResult& out)
+	{
+		const bool ok = TakeImpl(name, overwrite, out);
+		if (!ok && mObs != nullptr) { mObs->OnFailure(); }
+		return ok;
+	}
+
+	bool SnapshotManager::TakeImpl(const char* name, bool overwrite, TakeResult& out)
 	{
 		out = TakeResult();
 		char err[192] = {};
@@ -77,11 +93,13 @@ namespace Dia::CellHistory
 
 		const int64_t now = mTimeFn != nullptr ? mTimeFn(mTimeUser) : int64_t(std::time(nullptr));
 		bool built = false;
+		const double captureStart = mObs != nullptr ? mObs->NowMs() : 0.0;
 		{
 			DIA_PROFILE_SCOPE("cellhistory.snapshot_take", ::Dia::Observation::Profile::Category::kDiaGraphics);
 			mPending.Clear();
 			built = SnapshotCellFile::BuildFromLive(mRecorder, mRegistry, mSchema, name, now, mWorld, mPending, err, sizeof(err));
 		}
+		mTakeCaptureMs = mObs != nullptr ? mObs->NowMs() - captureStart : 0.0;
 		if (!built)
 		{
 			DIA_LOG_ERROR("HIS", "cell history snapshot '%s': capture failed: %s", name, err);
@@ -132,12 +150,14 @@ namespace Dia::CellHistory
 			DIA_LOG_ERROR("HIS", "cell history snapshot '%s': store failed: %s", rec->mName, message ? message : "");
 			if (mStore.Exists(rec->mName)) { mStore.Delete(rec->mName); }
 			fail(message ? message : "store failed");
+			if (mObs != nullptr) { mObs->OnFailure(); }
 		}
 		else
 		{
 			char path[512] = {};
 			char err[192] = {};
 			bool written = false;
+			const double writeStart = mObs != nullptr ? mObs->NowMs() : 0.0;
 			if (!SnapshotCellFile::Path(mStore.Folder(), rec->mName, path, sizeof(path)))
 			{
 				std::snprintf(err, sizeof(err), "cannot build the cell file path");
@@ -154,6 +174,7 @@ namespace Dia::CellHistory
 				rec->mBytes = ec ? 0 : uint64_t(size);
 				rec->mStatus = SnapshotStatus::Ready;
 				rec->mReason[0] = '\0';
+				if (mObs != nullptr) { mObs->OnTakeCompleted(mTakeCaptureMs, mObs->NowMs() - writeStart, rec->mBytes); }
 				DIA_LOG_INFO("HIS", "cell history snapshot '%s': taken at sample %u (%llu bytes)", rec->mName, rec->mSample, (unsigned long long)rec->mBytes);
 			}
 			else
@@ -161,10 +182,12 @@ namespace Dia::CellHistory
 				DIA_LOG_ERROR("HIS", "cell history snapshot '%s': cell file write failed: %s", rec->mName, err);
 				mStore.Delete(rec->mName);		// remove the store's half: both or neither
 				fail(err);
+				if (mObs != nullptr) { mObs->OnFailure(); }
 			}
 		}
 		mPending.Clear();
 		mGate.End();
+		PublishCount();
 	}
 
 	// ---- restore -------------------------------------------------------------------------------------------
@@ -184,6 +207,13 @@ namespace Dia::CellHistory
 	}
 
 	bool SnapshotManager::Restore(const char* name, RestoreResult& out)
+	{
+		const bool ok = RestoreImpl(name, out);
+		if (!ok && mObs != nullptr) { mObs->OnFailure(); }
+		return ok;
+	}
+
+	bool SnapshotManager::RestoreImpl(const char* name, RestoreResult& out)
 	{
 		out = RestoreResult();
 		char err[192] = {};
@@ -239,6 +269,7 @@ namespace Dia::CellHistory
 
 		if (!mGate.TryBegin(err, sizeof(err))) { RefuseRestore(out, err); return false; }
 		mRestoreHeader = header;
+		mRestoreStartMs = mObs != nullptr ? mObs->NowMs() : 0.0;
 		Copy(mRestoreName, sizeof(mRestoreName), name);
 		DIA_LOG_INFO("HIS", "cell history snapshot '%s': restore requested (sample %u)", name, header.mSample);
 		mStore.RequestRestore(name, &SnapshotManager::OnRestoreDone, this);
@@ -262,6 +293,7 @@ namespace Dia::CellHistory
 		{
 			Copy(mLastRestore.mMessage, sizeof(mLastRestore.mMessage), message && message[0] ? message : "store failed");
 			DIA_LOG_ERROR("HIS", "cell history snapshot '%s': restore failed in the store: %s (history unchanged)", mRestoreName, mLastRestore.mMessage);
+			if (mObs != nullptr) { mObs->OnFailure(); }
 			mGate.End();
 			return;
 		}
@@ -289,6 +321,7 @@ namespace Dia::CellHistory
 			DIA_LOG_INFO("HIS", "cell history snapshot '%s': restored (history reset, new run id)", mRestoreName);
 		}
 		if (mView != nullptr) { mView->NotifyHistoryReset(); }
+		if (mObs != nullptr) { mObs->OnRestoreCompleted(mObs->NowMs() - mRestoreStartMs); }
 		mGate.End();
 	}
 }

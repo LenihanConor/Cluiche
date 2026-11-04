@@ -7,8 +7,10 @@
 #include <DiaCellHistory/SnapshotCellFile.h>
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/SnapshotNaming.h>
+#include <DiaCellHistory/SnapshotObservation.h>
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <json/json.h>
 
@@ -151,8 +153,20 @@ namespace Dia::CellHistory
 		return out;
 	}
 
+	void SnapshotCommands::WarnOrphanOnce(const char* name, const char* why)
+	{
+		for (uint32_t i = 0; i < mOrphanCount; ++i) { if (std::strcmp(mOrphansWarned[i], name) == 0) { return; } }
+		if (mOrphanCount < kOrphanMemory)
+		{
+			std::snprintf(mOrphansWarned[mOrphanCount], sizeof(mOrphansWarned[0]), "%s", name);
+			++mOrphanCount;
+		}
+		DIA_LOG_WARNING("HIS", "cell history snapshot '%s': orphan found: %s", name, why);
+	}
+
 	Json::Value SnapshotCommands::List()
 	{
+		DIA_PROFILE_SCOPE("cellhistory.snapshot_list", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		const uint64_t runId = mRecorder.RunId();
 		const char* folder = mStore.Folder();
 		std::vector<ListEntry> entries;
@@ -192,11 +206,11 @@ namespace Dia::CellHistory
 			ListEntry fresh;
 			ListEntry& e = rec != nullptr ? *rec : fresh;
 			e.name = f.first;
-			if (!SnapshotCellFile::ReadHeaderOnly(f.second.c_str(), header, grid, err, sizeof(err))) { MarkFailed(e, err); }
+			if (!SnapshotCellFile::ReadHeaderOnly(f.second.c_str(), header, grid, err, sizeof(err))) { MarkFailed(e, err); WarnOrphanOnce(f.first.c_str(), err); }
 			else
 			{
 				FillFromHeader(e, header, runId, ec ? 0 : size);
-				if (!mStore.Exists(f.first.c_str())) { MarkFailed(e, "state file missing"); }
+				if (!mStore.Exists(f.first.c_str())) { MarkFailed(e, "state file missing"); WarnOrphanOnce(f.first.c_str(), "state file missing"); }
 			}
 			if (rec == nullptr) { entries.push_back(e); }
 		}
@@ -206,13 +220,20 @@ namespace Dia::CellHistory
 			if (!e.fromRecord || e.status != SnapshotStatus::Ready) { continue; }
 			bool seen = false;
 			for (const auto& f : files) { if (f.first == e.name) { seen = true; break; } }
-			if (!seen) { MarkFailed(e, "cell file missing"); }
+			if (!seen) { MarkFailed(e, "cell file missing"); WarnOrphanOnce(e.name.c_str(), "cell file missing"); }
 		}
 
 		std::sort(entries.begin(), entries.end(), [](const ListEntry& a, const ListEntry& b)
 		{
 			return a.created != b.created ? a.created < b.created : a.name < b.name;
 		});
+
+		if (mObs != nullptr)
+		{
+			uint32_t ready = 0;
+			for (const ListEntry& e : entries) { if (e.status == SnapshotStatus::Ready) { ++ready; } }
+			mObs->SetSnapshotCount(ready);
+		}
 
 		Json::Value out(Json::objectValue);
 		Json::Value& list = out["snapshots"] = Json::Value(Json::arrayValue);
@@ -236,6 +257,13 @@ namespace Dia::CellHistory
 	}
 
 	Json::Value SnapshotCommands::Delete(const Json::Value& args)
+	{
+		Json::Value out = DeleteImpl(args);
+		if (mObs != nullptr && out.isMember("error")) { mObs->OnFailure(); }
+		return out;
+	}
+
+	Json::Value SnapshotCommands::DeleteImpl(const Json::Value& args)
 	{
 		const char* name = nullptr; std::string store; const char* error = nullptr;
 		if (!NameArg(args, name, store, error)) { return Fail(kDeleteName, error); }
@@ -274,6 +302,13 @@ namespace Dia::CellHistory
 	}
 
 	Json::Value SnapshotCommands::Layer(const Json::Value& args)
+	{
+		DIA_PROFILE_SCOPE("cellhistory.snapshot_query", ::Dia::Observation::Profile::Category::kDiaGraphics);
+		if (mObs != nullptr) { mObs->OnQueryServed(); }
+		return LayerImpl(args);
+	}
+
+	Json::Value SnapshotCommands::LayerImpl(const Json::Value& args)
 	{
 		const char* name = nullptr; std::string nameStore; const char* error = nullptr;
 		if (!NameArg(args, name, nameStore, error)) { return Fail(kLayerName, error); }

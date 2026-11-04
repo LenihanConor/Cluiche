@@ -35,6 +35,7 @@ namespace Dia::CellHistory
 	class CellHistoryRecorder;
 	class ISnapshotStore;
 	class SnapshotManager;
+	class SnapshotObservation;
 
 	class SnapshotCommands
 	{
@@ -50,6 +51,9 @@ namespace Dia::CellHistory
 
 		static constexpr uint32_t kNameCount = 5;
 
+		// Optional metrics (borrowed; null = none): delete failures, queries served, and the ready-snapshot count after a list scan.
+		void SetObservation(SnapshotObservation* obs) { mObs = obs; }
+
 		Json::Value Take(const Json::Value& args);
 		Json::Value Restore(const Json::Value& args);
 		Json::Value List();
@@ -61,11 +65,18 @@ namespace Dia::CellHistory
 		uint32_t	MaxChunk() const { return mMaxChunk; }
 
 	private:
+		Json::Value DeleteImpl(const Json::Value& args);
+		Json::Value LayerImpl(const Json::Value& args);
+		void WarnOrphanOnce(const char* name, const char* why);
 		Json::Value Fail(const char* command, const char* message) const;
 
 		const CellHistoryRecorder&	mRecorder;
 		SnapshotManager&			mManager;
 		ISnapshotStore&				mStore;
+		SnapshotObservation*		mObs = nullptr;
+		static constexpr uint32_t	kOrphanMemory = 32;
+		char						mOrphansWarned[kOrphanMemory][33] = {};		// orphan names already warned about (once per name per lifetime)
+		uint32_t					mOrphanCount = 0;
 		uint32_t					mMaxChunk = kMaxChunkCells;
 		bool						mRegistered = false;
 	};

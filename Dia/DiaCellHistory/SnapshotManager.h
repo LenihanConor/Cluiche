@@ -32,6 +32,7 @@ namespace Dia::CellHistory
 {
 	class CellHistoryRecorder;
 	class ISnapshotStore;
+	class SnapshotObservation;
 
 	struct TakeResult
 	{
@@ -102,6 +103,9 @@ namespace Dia::CellHistory
 		void SetViewState(HistoryViewState* view) { mView = view; }		// optional; borrowed
 		void SetWorld(const char* world);		// copied (truncated to 63 chars); null clears
 
+		// Optional metrics (borrowed; null = none). Failures counted: every refused/failed take, restore and store/file failure.
+		void SetObservation(SnapshotObservation* obs) { mObs = obs; }
+
 		bool Take(const char* name, bool overwrite, TakeResult& out);
 
 		bool Restore(const char* name, RestoreResult& out);
@@ -118,6 +122,9 @@ namespace Dia::CellHistory
 		const SnapshotRecord* Records() const { return mRecords; }
 
 	private:
+		bool TakeImpl(const char* name, bool overwrite, TakeResult& out);
+		bool RestoreImpl(const char* name, RestoreResult& out);
+		void PublishCount() const;
 		static void OnTakeDone(bool ok, const char* message, void* user);
 		void FinishTake(bool ok, const char* message);
 		static void OnRestoreDone(bool ok, const char* message, void* user);
@@ -144,6 +151,9 @@ namespace Dia::CellHistory
 		SnapshotGate								mGate;
 		SnapshotCellData							mPending;		// held until the store callback
 		SnapshotRecord*								mPendingRecord = nullptr;
+		SnapshotObservation*						mObs = nullptr;
+		double										mTakeCaptureMs = 0.0;
+		double										mRestoreStartMs = 0.0;
 		SnapshotRecord								mRecords[kMaxRecords];
 	};
 }
