@@ -97,6 +97,7 @@
     <ClInclude Include="CellHistoryDomain.h" />
     <ClInclude Include="ViewHistorySourceAdapter.h" />
     <ClInclude Include="SideReader.h" />
+    <ClInclude Include="DeltaValueSource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="CellHistoryDomain.cpp" />
     <ClCompile Include="ViewHistorySourceAdapter.cpp" />
     <ClCompile Include="SideReader.cpp" />
+    <ClCompile Include="DeltaValueSource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

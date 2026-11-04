@@ -7,12 +7,14 @@
 // GetValues is pure: false for a layer that is not tracked, for evicted data (viewed sample before the per-cell window
 // start), when n != recorder.CellCount(), and while live (the uploader uses the layer's own read when live, so GetValues
 // is not meaningful then). False is "no data", never a fallback to live values.
+// In delta mode GetValues delegates to the owned DeltaValueSource (B - A; see that header).
 // IsLive() follows the view state; ViewEpoch() is the view state's epoch.
 // Tick() must be called once per frame by the owner (the module): it calls HistoryViewState::Update() so the epoch
 // bumps when the per-cell window passes the viewed sample.
 // Install() puts this on the registry (false when the registry rejects it, e.g. another source is installed; the
 // registry logs the Error). Uninstall() and the destructor remove it only if it is the installed source.
 
+#include <DiaCellHistory/DeltaValueSource.h>
 #include <DiaCellLayers/IViewValueSource.h>
 
 #include <cstdint>
@@ -47,6 +49,7 @@ namespace Dia::CellHistory
 		Dia::CellLayers::CellLayerRegistry&	mRegistry;
 		const CellHistoryRecorder&			mRecorder;
 		HistoryViewState&					mView;
+		DeltaValueSource					mDelta;
 		bool								mInstalled = false;
 	};
 }

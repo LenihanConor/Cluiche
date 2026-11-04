@@ -28,6 +28,7 @@ public_api:
     - DiaCellHistory/CellHistoryDomain.h
     - DiaCellHistory/ViewHistorySourceAdapter.h
     - DiaCellHistory/SideReader.h
+    - DiaCellHistory/DeltaValueSource.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []
@@ -49,6 +50,7 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `ViewHistorySourceAdapter` | `IViewHistorySource` over (recorder, `HistoryViewState`): `HistoryField()` = `TimelineCardState::HistoryField`, `HistoryStamp()` = `Epoch()*2 + (Sample mode ? 1 : 0)` (new recorder samples do not change the field, so they are not in the stamp). Install with `ViewStatePublisher::SetHistorySource`. |
 | `CellHistoryDomain` | Panel-only `IDebugDomain` "Cell History" (id `cellhistory`): state = the card; panel commands `view`/`live`/`step`/`event`/`track` call the same executors as `cells.history.*` (DIA_DEBUG). |
 | `SideReader` | Compare (F4): reads one delta side (`now` = layer live `read`; `sample:<i>` = ring `CellValues`; `snapshot:<name>` = Unavailable until 4.9) with `ParseSide`/`SidesEqual`. NoData never falls back to live. |
+| `DeltaValueSource` | Compare (F4): delta-mode values, helper owned by `HistoryValueSource` (not installed itself). Float layer = B - A from two `SideReader` reads; NaN on either side = NaN cell; category layer, NoData or Unavailable side = `GetValues` false (no live fallback). Recorded-vs-recorded error <= 2 x range / 65,535; `now` exact. One HIS Warning per layer per view epoch on a data gap; profile scope `cellhistory.delta_read`. |
 | `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
 | `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |
 | `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |

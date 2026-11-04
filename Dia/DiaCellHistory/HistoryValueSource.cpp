@@ -7,7 +7,7 @@
 namespace Dia::CellHistory
 {
 	HistoryValueSource::HistoryValueSource(Dia::CellLayers::CellLayerRegistry& registry, const CellHistoryRecorder& recorder, HistoryViewState& view)
-		: mRegistry(registry), mRecorder(recorder), mView(view)
+		: mRegistry(registry), mRecorder(recorder), mView(view), mDelta(recorder, view)
 	{
 	}
 
@@ -31,7 +31,8 @@ namespace Dia::CellHistory
 
 	bool HistoryValueSource::GetValues(const Dia::CellLayers::CellLayerDesc& layer, float* out, uint32_t n)
 	{
-		if (mView.IsLive() || mView.InDelta() || out == nullptr || n != mRecorder.CellCount() || n == 0) { return false; }
+		if (mView.InDelta()) { return mDelta.GetValues(layer, out, n); }
+		if (mView.IsLive() || out == nullptr || n != mRecorder.CellCount() || n == 0) { return false; }
 		if (mView.Sample() < mRecorder.FirstRetained()) { return false; }
 		return mRecorder.CellValues(mView.Sample(), layer.id, out, n);
 	}

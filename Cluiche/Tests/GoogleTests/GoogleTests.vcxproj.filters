@@ -2493,5 +2493,8 @@
     <ClCompile Include="DiaCellHistory\TestSideReader.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestDeltaValueSource.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
