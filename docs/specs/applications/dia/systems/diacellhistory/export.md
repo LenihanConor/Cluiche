@@ -207,4 +207,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `FindEvent` addition to `ValueSchemaService`.
+`Approved` (2026-10-20). Plan: [export.plan.md](export.plan.md). Build needs AD-001 sign-off for the `FindEvent` addition to `ValueSchemaService`.
