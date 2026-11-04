@@ -12,6 +12,7 @@
 #include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
@@ -239,6 +240,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryQueries::Meta(const Json::Value& argsIn)
 	{
+		DIA_TRACE_ZONE("cellhistory.query_meta", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.query_meta", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		Json::Value args;
 		char err[160];
@@ -377,6 +379,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryQueries::Aggregates(const Json::Value& argsIn)
 	{
+		DIA_TRACE_ZONE("cellhistory.query_aggregates", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.query_aggregates", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		Json::Value args;
 		char err[200];
@@ -439,6 +442,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryQueries::Events(const Json::Value& argsIn)
 	{
+		DIA_TRACE_ZONE("cellhistory.query_events", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.query_events", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		Json::Value args;
 		char err[200];
@@ -550,6 +554,7 @@ namespace Dia::CellHistory
 
 	Json::Value HistoryQueries::Cells(const Json::Value& argsIn)
 	{
+		DIA_TRACE_ZONE("cellhistory.query_cells", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.query_cells", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		Json::Value args;
 		char err[240];

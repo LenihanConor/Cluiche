@@ -101,7 +101,11 @@ namespace Dia::CellHistory
 
 		const double t0 = mObs != nullptr ? mObs->NowMs() : 0.0;
 		ExportResult result;
-		if (!HistoryExporter::WriteFile(mRecorder, options, resolved, result)) { return Fail(result.error); }
+		if (!HistoryExporter::WriteFile(mRecorder, options, resolved, result))
+		{
+			if (mObs != nullptr) { mObs->OnFailed(); }
+			return Fail(result.error);
+		}
 		if (mObs != nullptr) { mObs->OnExported(mObs->NowMs() - t0, result.bytes); }
 
 		Json::Value out(Json::objectValue);

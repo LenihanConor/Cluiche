@@ -7,6 +7,7 @@
 //   - dia.cellhistory.exports (counter): files written successfully
 //   - dia.cellhistory.export_ms (gauge): duration of the last successful export
 //   - dia.cellhistory.export_bytes (gauge): size of the last successful export
+//   - dia.cellhistory.export_failures (counter): exports that failed or were refused (command path)
 //
 // The clock (milliseconds, monotonic) is injectable so tests are deterministic. Same-PU contract (SimPU); no locks.
 
@@ -27,11 +28,13 @@ namespace Dia::CellHistory
 
 		double NowMs() const;
 		void OnExported(double elapsedMs, uint64_t bytes);
+		void OnFailed();
 
 	private:
 		ClockMsFn	mClock = nullptr;
 		void*		mClockUser = nullptr;
 		Dia::Observation::Metric::Counter*	mExports = nullptr;
+		Dia::Observation::Metric::Counter*	mFailures = nullptr;
 		Dia::Observation::Metric::Gauge*	mMs = nullptr;
 		Dia::Observation::Metric::Gauge*	mBytes = nullptr;
 	};

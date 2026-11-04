@@ -266,4 +266,19 @@ TEST(ExportObservation, DefaultClockIsMonotonicAndOnExportedSetsGauges)
 	EXPECT_DOUBLE_EQ(G("dia.cellhistory.export_bytes"), 4096.0);
 }
 
+TEST(ExportObservation, FailedExportsAreCountedAndSuccessesAreNot)
+{
+	Fix f; f.Setup();
+	ExportObservation obs(&StepClock, nullptr);
+	f.cmds->SetObservation(&obs);
+	const uint64_t fails0 = C("dia.cellhistory.export_failures");
+	ASSERT_FALSE(IsError(f.Run("fail.json")));
+	EXPECT_EQ(C("dia.cellhistory.export_failures"), fails0);
+	ASSERT_TRUE(IsError(f.Run("fail.json")));		// refused: the file exists and overwrite was not given
+	EXPECT_EQ(C("dia.cellhistory.export_failures"), fails0 + 1);
+	obs.OnFailed();
+	EXPECT_EQ(C("dia.cellhistory.export_failures"), fails0 + 2);
+	f.cmds->SetObservation(nullptr);
+}
+
 #endif // DIA_DEBUG

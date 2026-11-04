@@ -6,6 +6,7 @@
 #include <DiaCellHistory/TopicObservation.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <json/json.h>
 
@@ -157,6 +158,7 @@ namespace Dia::CellHistory
 	{
 		if (count <= mAggEnd) { return; }
 		if (mPublishedAggregates && now - mLastAggregateTime < mInterval) { return; }
+		DIA_TRACE_ZONE("cellhistory.topic_build", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.topic_build", ::Dia::Observation::Profile::Category::kDiaGraphics);
 
 		const AggregateStore& agg = mRecorder.Aggregates();
@@ -198,6 +200,7 @@ namespace Dia::CellHistory
 	void HistoryTopics::PublishEvents(uint32_t count)
 	{
 		if (mEventSample >= count) { return; }
+		DIA_TRACE_ZONE("cellhistory.topic_build", ::Dia::Observation::Trace::Category::kDiaGraphics);
 		DIA_PROFILE_SCOPE("cellhistory.topic_build", ::Dia::Observation::Profile::Category::kDiaGraphics);
 
 		Rows::EventContext ctx;

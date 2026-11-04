@@ -1,0 +1,33 @@
+{
+  "cellCount" : 12,
+  "cellOffset" : 0,
+  "cellTotal" : 12,
+  "cells" : null,
+  "data" : 
+  [
+    "JLTSu4DDLsvc0oraOOLm6ZTxQvn+/xEG",
+    "EMa+zWzVGt3I5HbsJPTS+/IAoAhPEP0X",
+    "+9ep31fnBe+z9mH+ggMwC94SjBo6Iugp",
+    "5umU8UL5/v8RBr8NbRUbHckkdywlNNM7",
+    "0vvyAKAITxD9F6sfWScHL7U2Yz4RRr9N",
+    "MAveEowaOiLoKZYxRDnyQKBITlD8V6pf",
+    "Gx3JJHcsJTTTO4FDL0vdUotaOWLnaZVx",
+    "By+1NmM+EUa/TW1VG13JZHdsJXTTe4GD",
+    "8kCgSE5Q/FeqX1hnBm+0dmJ+EIa+jWyV",
+    "3VKLWjli52mVcUN58YCfiE6Q/Jeqn1in",
+    "yWR3bCV003uBgy+L3ZKLmjmi56mVsUO5"
+  ],
+  "from" : 10,
+  "height" : 3,
+  "kind" : "float",
+  "layer" : "temp",
+  "max" : 100,
+  "min" : 0,
+  "next" : 
+  {
+    "cellOffset" : 0,
+    "from" : 21
+  },
+  "to" : 21,
+  "width" : 4
+}

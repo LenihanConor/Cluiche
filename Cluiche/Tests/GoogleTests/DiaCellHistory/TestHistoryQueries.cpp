@@ -9,6 +9,7 @@
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <json/json.h>
@@ -1287,6 +1288,25 @@ TEST(HistoryQueriesObservation, ClampedRepliesWarnOncePerInstance)
 	LogCapture log2("HIS");
 	g.Call(kAgg);
 	EXPECT_EQ(log2.Warnings("clamped"), 0u);
+}
+
+TEST(HistoryQueriesObservation, LargestReplyGaugeTracksTheBiggestReplyServed)
+{
+	QFix f; f.Setup(); f.Run(6);
+	QueryObservation obs;
+	f.q->SetObservation(&obs);
+	auto gauge = []() { auto* g = MetricRegistry::Instance().FindGauge(StringCRC("dia.cellhistory.query_max_reply_bytes")); return g ? g->Value() : -1.0; };
+	ASSERT_GE(gauge(), 0.0);
+	size_t biggest = 0;
+	for (const char* name : { kEvents, kAgg, kMeta, kAgg })
+	{
+		biggest = std::max(biggest, Size(f.Call(name)));
+		EXPECT_DOUBLE_EQ(gauge(), double(biggest));
+	}
+	// A smaller reply never lowers it; an error does not move it.
+	Json::Value bad = Obj(); bad["layer"] = "nope";
+	f.Call(kCells, bad);
+	EXPECT_DOUBLE_EQ(gauge(), double(biggest));
 }
 
 #endif // DIA_DEBUG

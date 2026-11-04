@@ -6,12 +6,13 @@
 // Metrics (counters; successful replies only, errors are not counted):
 //   - dia.cellhistory.query_meta / query_aggregates / query_events / query_cells: replies served per query kind
 //   - dia.cellhistory.query_bytes: serialised bytes served by all four
+//   - dia.cellhistory.query_max_reply_bytes (gauge): largest single reply served since this object was created
 //
 // Same-PU contract (SimPU); no locks.
 
 #include <stdint.h>
 
-namespace Dia::Observation::Metric { class Counter; }
+namespace Dia::Observation::Metric { class Counter; class Gauge; }
 
 namespace Dia::CellHistory
 {
@@ -29,5 +30,7 @@ namespace Dia::CellHistory
 	private:
 		Dia::Observation::Metric::Counter*	mByKind[4] = {};
 		Dia::Observation::Metric::Counter*	mBytes = nullptr;
+		Dia::Observation::Metric::Gauge*	mMaxReply = nullptr;
+		uint64_t							mMaxReplyBytes = 0;
 	};
 }

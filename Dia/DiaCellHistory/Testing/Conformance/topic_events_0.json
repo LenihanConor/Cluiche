@@ -1,0 +1,93 @@
+{
+  "events" : 
+  [
+    {
+      "cell" : 0,
+      "group" : "region=north",
+      "payload" : 
+      {
+        "weeks" : 7
+      },
+      "sample" : 30,
+      "text" : "event 24",
+      "type" : "cow.drought"
+    },
+    {
+      "cell" : null,
+      "group" : "region=centre",
+      "payload" : 
+      {
+        "river" : "Liffey"
+      },
+      "sample" : 31,
+      "text" : "event 25",
+      "type" : "cow.flood"
+    },
+    {
+      "cell" : null,
+      "group" : null,
+      "payload" : 
+      {
+        "weeks" : 9
+      },
+      "sample" : 31,
+      "text" : "event 26",
+      "type" : "cow.drought"
+    },
+    {
+      "cell" : 3,
+      "group" : "region=north",
+      "payload" : 
+      {
+        "river" : "Liffey"
+      },
+      "sample" : 34,
+      "text" : "event 27",
+      "type" : "cow.flood"
+    },
+    {
+      "cell" : null,
+      "group" : "region=centre",
+      "payload" : 
+      {
+        "weeks" : 2
+      },
+      "sample" : 34,
+      "text" : "event 28",
+      "type" : "cow.drought"
+    },
+    {
+      "cell" : null,
+      "group" : null,
+      "payload" : 
+      {
+        "river" : "Liffey"
+      },
+      "sample" : 35,
+      "text" : "event 29",
+      "type" : "cow.flood"
+    },
+    {
+      "cell" : 6,
+      "group" : "region=north",
+      "payload" : 
+      {
+        "weeks" : 4
+      },
+      "sample" : 37,
+      "text" : "event 30",
+      "type" : "cow.drought"
+    },
+    {
+      "cell" : null,
+      "group" : "region=centre",
+      "payload" : 
+      {
+        "river" : "Liffey"
+      },
+      "sample" : 37,
+      "text" : "event 31",
+      "type" : "cow.flood"
+    }
+  ]
+}
