@@ -30,6 +30,7 @@ public_api:
     - DiaCellHistory/SideReader.h
     - DiaCellHistory/DeltaValueSource.h
     - DiaCellHistory/DeltaScale.h
+    - DiaCellHistory/GroupDeltaTable.h
   namespaces:
     - Dia::CellHistory::
   entry_points: []
@@ -53,6 +54,7 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `SideReader` | Compare (F4): reads one delta side (`now` = layer live `read`; `sample:<i>` = ring `CellValues`; `snapshot:<name>` = Unavailable until 4.9) with `ParseSide`/`SidesEqual`. NoData never falls back to live. |
 | `DeltaValueSource` | Compare (F4): delta-mode values, helper owned by `HistoryValueSource` (not installed itself). Float layer = B - A from two `SideReader` reads; NaN on either side = NaN cell; category layer, NoData or Unavailable side = `GetValues` false (no live fallback). Recorded-vs-recorded error <= 2 x range / 65,535; `now` exact. One HIS Warning per layer per view epoch on a data gap; profile scope `cellhistory.delta_read`. |
 | `DeltaScale` | Compare (F4): pure auto-scale logic for delta mode, time injected. Scale = max abs delta rounded up to 1/2/5 x 10^n (`NiceCeil`); grows immediately; shrinks only after max < 40% of scale for 2 s; first read of an all-zero delta = 1.0, floor 1e-6; NaN/inf/negative maxima ignored. `DeltaValueSource::CurrentScale(view)` returns the fixed scale or the auto value; reset on view epoch change (new delta, fixed/auto switch); `SetClock` injects the wall clock. |
+| `GroupDeltaTable` | Compare (F4): inspector group summary for delta mode. `AccumulateGroups`/`SortByAbsChange` (pure) plus `GroupDeltaBuilder::Build`: per group of each grouping category layer, mean on side A, mean on side B and change (B - A) over cells where both base sides are non-NaN, sorted by abs change (ties: group value, layer order), capped at 512 rows (`truncated`). Membership from the chosen side's grouping values (`DeltaSpec::groupSideB`), falling back to live values (`usedLive`, one HIS Warning per builder) when that side has none; base with no data on a side = empty table + `baseNoData`. Selection is a plain `uint8_t` mask (nullptr = none). Group values must be whole numbers in [0, 256). Profile scope `cellhistory.group_table`. |
 | `HistoryConfig` | Parsed `history` block (bands, track, grid, budgets, `maxAggregateLayers`). |
 | `AggregateStore` | Tier 1: per-group min/mean/max and category counts per sample; oldest-row eviction with gaps. |
 | `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |
