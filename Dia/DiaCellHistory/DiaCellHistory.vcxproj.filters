@@ -71,6 +71,10 @@
     <ClInclude Include="SnapshotCellCache.h">
       <Filter>DiaCellHistory</Filter>
     </ClInclude>
+    <ClInclude Include="HistoryExporter.h" />
+    <ClInclude Include="Testing\ExportDecoder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -110,6 +114,7 @@
     <ClCompile Include="SnapshotCellCache.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="HistoryExporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

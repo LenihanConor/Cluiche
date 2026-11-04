@@ -111,6 +111,8 @@
     <ClInclude Include="SnapshotCommands.h" />
     <ClInclude Include="SnapshotObservation.h" />
     <ClInclude Include="SnapshotCellCache.h" />
+    <ClInclude Include="HistoryExporter.h" />
+    <ClInclude Include="Testing\ExportDecoder.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -144,6 +146,7 @@
     <ClCompile Include="SnapshotCommands.cpp" />
     <ClCompile Include="SnapshotObservation.cpp" />
     <ClCompile Include="SnapshotCellCache.cpp" />
+    <ClCompile Include="HistoryExporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

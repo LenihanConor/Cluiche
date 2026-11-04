@@ -243,6 +243,15 @@ namespace Dia::CellHistory
 		return false;
 	}
 
+	bool AggregateStore::LayerInfo(StringCRC id, AggregateKind& kind, uint32_t& enumCount) const
+	{
+		const int li = FindLayer(id);
+		if (li < 0) { return false; }
+		kind = mLayers[li].mKind;
+		enumCount = mLayers[li].mKind == AggregateKind::Category ? mLayers[li].mEnumCount : 0u;
+		return true;
+	}
+
 	bool AggregateStore::HasSample(uint32_t sample) const
 	{
 		uint32_t logical;

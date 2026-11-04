@@ -269,6 +269,31 @@ namespace Dia::CellHistory
 		return true;
 	}
 
+	bool CellRing::LayerInfo(StringCRC layer, CellRingKind& kind, float& rangeMin, float& rangeMax, uint32_t& firstSample, bool& pending) const
+	{
+		const int idx = FindLayer(layer);
+		if (idx < 0) { return false; }
+		const Layer& l = mLayers[idx];
+		kind = l.mKind;
+		rangeMin = l.mMin;
+		rangeMax = l.mMax;
+		firstSample = l.mFirstSample;
+		pending = l.mPending;
+		return true;
+	}
+
+	bool CellRing::ReadQuantised(uint32_t sample, StringCRC layer, void* out, uint32_t bytes) const
+	{
+		const int idx = FindLayer(layer);
+		if (idx < 0 || out == nullptr) { return false; }
+		const Layer& l = mLayers[idx];
+		const size_t slotBytes = size_t(mCellCount) * Stride(l);
+		uint32_t logical;
+		if (bytes < slotBytes || l.mPending || sample < l.mFirstSample || !FindLogical(sample, logical)) { return false; }
+		std::memcpy(out, l.mData + size_t(SlotOf(logical)) * slotBytes, slotBytes);
+		return true;
+	}
+
 	void CellRing::TruncateAfter(uint32_t sample)
 	{
 		bool dropped = false;

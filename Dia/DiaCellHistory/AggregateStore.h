@@ -89,6 +89,9 @@ namespace Dia::CellHistory
 		uint32_t WindowLength() const { return mWindow; }	// 0 until the first BeginSample
 		uint32_t LayerCount() const { return mLayerCount; }
 		uint32_t GroupCount() const { return mGroupCount; }
+		Dia::Core::StringCRC GroupAt(uint32_t i) const { return i < mGroupCount ? mGroups[i] : Dia::Core::StringCRC(); }	// 0 = world
+		// Layout of a layer (false if unknown). enumCount is 0 for float layers.
+		bool LayerInfo(Dia::Core::StringCRC id, AggregateKind& kind, uint32_t& enumCount) const;
 		uint64_t BytesPerSample() const;	// row cost for the current layout
 		uint64_t BytesUsed() const;			// window * bytesPerSample (allocated)
 		double UsedFraction() const;		// retained rows * bytesPerSample / budget

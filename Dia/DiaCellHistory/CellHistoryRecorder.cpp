@@ -736,6 +736,15 @@ namespace Dia::CellHistory
 		return mGrid;
 	}
 
+	bool CellHistoryRecorder::GroupSource(uint32_t storeIndex, StringCRC& layer, uint32_t& enumValue) const
+	{
+		if (storeIndex == 0 || storeIndex > mGroupDefCount) { return false; }
+		const GroupDef& g = mGroupDefs[storeIndex - 1];
+		layer = mRecorded[g.mSourceLayer].mId;
+		enumValue = g.mValue;
+		return true;
+	}
+
 	bool CellHistoryRecorder::HasHeader(uint32_t sample) const
 	{
 		return mHeaderCount > 0 && sample >= mHeaderFirst && (sample - mHeaderFirst) < mHeaderCount;

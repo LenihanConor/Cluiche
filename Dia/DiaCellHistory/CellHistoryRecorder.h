@@ -196,6 +196,16 @@ namespace Dia::CellHistory
 		const EventLog& EventsLog() const { return mEvents; }
 		const CellRing* Ring() const { return mRing; }
 
+		// Export support (Feature 5).
+		const Dia::CellLayers::CellLayerRegistry& Registry() const { return mRegistry; }
+		const Dia::ValueSchema::ValueSchemaService* Schema() const { return mSchema; }
+		uint32_t BandCount() const { return mConfig.mBandCount; }
+		const char* BandName(uint32_t i) const { return i < mConfig.mBandCount ? mConfig.mBands[i].AsCStr() : ""; }
+		// Sample index of the oldest retained header (SampleCount() when no header is retained).
+		uint32_t HeaderFirst() const { return mHeaderCount > 0 ? mHeaderFirst : mSampleCount; }
+		// The grouping behind AggregateStore group `storeIndex` (1..GroupCount()-1; 0 is world and returns false).
+		bool GroupSource(uint32_t storeIndex, Dia::Core::StringCRC& layer, uint32_t& enumValue) const;
+
 	private:
 		struct Recorded
 		{

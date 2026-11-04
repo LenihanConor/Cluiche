@@ -61,6 +61,11 @@ namespace Dia::CellHistory
 
 		bool Read(uint32_t sample, Dia::Core::StringCRC layer, float* out, uint32_t n) const;
 		bool HasSample(uint32_t sample) const;
+		// Layout of a tracked layer (false if unknown). firstSample is the first sample with data (meaningless while pending).
+		bool LayerInfo(Dia::Core::StringCRC layer, CellRingKind& kind, float& rangeMin, float& rangeMax, uint32_t& firstSample, bool& pending) const;
+		// Copies the raw quantised payload of one sample (cellCount * 2 bytes for Float16, cellCount for Category8), in the
+		// ring's native byte order. false if the layer/sample has no data or bytes is too small.
+		bool ReadQuantised(uint32_t sample, Dia::Core::StringCRC layer, void* out, uint32_t bytes) const;
 
 		// Drops all samples with index > sample. Gaps are clamped to <= sample (a gap never claims samples that will be
 		// re-recorded; a gap wholly after `sample` is removed), and a layer whose first sample is > sample becomes pending
