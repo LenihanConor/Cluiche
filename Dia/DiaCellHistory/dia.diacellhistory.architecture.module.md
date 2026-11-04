@@ -19,6 +19,7 @@ dependencies:
 public_api:
   headers:
     - DiaCellHistory/DiaCellHistory.h
+    - DiaCellHistory/HistoryEncoding.h
     - DiaCellHistory/Testing/StubGrid.h
     - DiaCellHistory/Testing/FakeClock.h
     - DiaCellHistory/Testing/BudgetSizing.h
@@ -64,5 +65,6 @@ Log channel: `HIS`. Namespace: `Dia::CellHistory`. Runs on SimPU with the DiaCel
 | `CellRing` | Tier 2: shared-window quantised per-cell rings (uint16 float, uint8 category). |
 | `EventLog` | Tier 3: typed events assigned to the next sample, budgeted. |
 | `CellHistoryObservation` / `CellHistoryHealth` | Metrics, trace/profile scopes, Degraded above 90% of any budget. |
+| `HistoryEncoding` | Feature 5 (Export): base64 encoders/decoders for float32, uint16 and uint8 arrays with little-endian byte order. Encoder functions (`EncodeFloat32`, `EncodeUInt16`, `EncodeUInt8`) write to caller-provided buffers with capacity checking; decoder functions (`DecodeFloat32`, `DecodeUInt16`, `DecodeUInt8`) read from base64 text. `EncodedLength` computes required buffer size. Used by export file writer and live query replies. |
 
 All tier stores provide `TruncateAfter(sample)` for Feature 3 (snapshot restore). `Testing/` ships stubs (`StubGrid`, `FakeClock`, `BudgetSizing`, `FixtureEventSchemas`).

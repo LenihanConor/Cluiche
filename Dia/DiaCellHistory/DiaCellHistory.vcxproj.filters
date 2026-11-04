@@ -55,6 +55,7 @@
     <ClInclude Include="GroupDeltaTable.h" />
     <ClInclude Include="DeltaCellInfo.h" />
     <ClInclude Include="DeltaCardState.h" />
+    <ClInclude Include="HistoryEncoding.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -85,6 +86,7 @@
     <ClCompile Include="GroupDeltaTable.cpp" />
     <ClCompile Include="DeltaCellInfo.cpp" />
     <ClCompile Include="DeltaCardState.cpp" />
+    <ClCompile Include="HistoryEncoding.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

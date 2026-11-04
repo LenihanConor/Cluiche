@@ -94,7 +94,7 @@ Detailed plan: [recorder-and-tiers.plan.md](recorder-and-tiers.plan.md) (14 task
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 5.1 | `HistoryEncoding`: base64 float32 / uint16 / uint8, little-endian, edge lengths | RED-GREEN: round trips, endianness, padding | Pending | haiku | **Pull forward before Feature 3**; mechanical |
+| 5.1 | `HistoryEncoding`: base64 float32 / uint16 / uint8, little-endian, edge lengths | RED-GREEN: round trips, endianness, padding | Done | haiku | Done 2026-11-04: `HistoryEncoding.h/.cpp`, caller-buffer encoders `EncodeFloat32/UInt16/UInt8(v, n, char* out, capacity, outLen)` (PD-004: first version used `std::string` in the public header; caught in review and fixed), decoders `DecodeFloat32/UInt16/UInt8(text, len, out, n)`, `EncodedLength`; 40 tests (20 per shard) pass; deps clean. Bit-exact float round trips, little-endian by shifts. |
 | 5.2 | `HistoryExporter::WriteFile` core sections: header, bands, samples, groups, groupSizes, aggregates, events, tracked, gaps (AC 1, 2) | RED-GREEN: fixture recorder, decode and compare exactly | Pending | sonnet | Streams from stores, no second copy |
 | 5.3 | `--cells` section, mid-run registered layers (`first`), evicted gaps (AC 5) | RED-GREEN | Pending | sonnet | |
 | 5.4 | Embedded `schema` via `ValueSchemaService::ExportSubset` for recorded layers, grouping layers and event types (`FindEvent`); unresolved event type Warning once; world-id provider (`SetWorldIdProvider`) (AC 3, 4, 13) | RED-GREEN | Pending | sonnet | Both services already exist |
