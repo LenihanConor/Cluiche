@@ -3,17 +3,23 @@
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/Testing/ExportDecoder.h>
 #include <DiaCellHistory/Testing/FakeSnapshotStore.h>
+#include <DiaCellLayers/Testing/LogCapture.h>
+#include <DiaValueSchema/RampLoader.h>
+#include <DiaValueSchema/RampRegistry.h>
 
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 
 using namespace Dia::CellHistory;
 using namespace Dia::CellHistory::Testing;
 using namespace HistoryRig;
 using Dia::Core::StringCRC;
+using Dia::CellLayers::Testing::LogCapture;
 
 namespace
 {
@@ -580,4 +586,318 @@ TEST(HistoryExporterSize, FortyYearWeeklyTwentyLayersTwentySevenGroupsIsUnderTwe
 		(unsigned long long)f.res.bytes, double(f.res.bytes) / 1048576.0, perCell, ms);
 	EXPECT_LT(f.res.bytes, 20ull * 1000 * 1000);
 	EXPECT_LT(perCell, 20.0);	// 12 raw bytes -> 16 base64 chars, plus group sizes and JSON framing
+}
+
+
+// ---- Task 5.4: embedded schema, event types, world id ---------------------------------------------------------
+
+namespace
+{
+	const Json::Value* FindEntry(const Json::Value& schema, const char* key)
+	{
+		for (const Json::Value& e : schema["entries"]) { if (e["for"].asString() + "/" + e["key"].asString() == key) { return &e; } }
+		return nullptr;
+	}
+	void EmitType(ExpFix& f, const char* type, uint32_t count = 1)
+	{
+		for (uint32_t i = 0; i < count; ++i) { HistoryEvent e; e.type = StringCRC(type); f.r.rec->Emit(e); }
+	}
+	const char* WorldFn(void* user) { return static_cast<const char*>(user); }
+	const char* NullWorldFn(void*) { return nullptr; }
+
+	const char* kTwoRamps = "{\"format\":\"dia.ramps\",\"version\":1,\"ramps\":["
+		"{\"id\":\"seq.a\",\"kind\":\"continuous\",\"stops\":[{\"t\":0.0,\"colour\":\"#000000\"},{\"t\":1.0,\"colour\":\"#ffffff\"}]},"
+		"{\"id\":\"seq.unused\",\"kind\":\"continuous\",\"stops\":[{\"t\":0.0,\"colour\":\"#000000\"},{\"t\":1.0,\"colour\":\"#ff0000\"}]}]}";
+}
+
+TEST(HistoryExporterSchema, HasEntriesForEveryRecordedLayerGroupingLayerAndEventTypePresent)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	EmitType(f, "cow.drought");
+	f.Vary(2);
+	f.r.Take();
+	ASSERT_TRUE(f.Export()) << f.res.error;
+	const Json::Value& schema = f.dec.root["schema"];
+	ASSERT_TRUE(schema.isObject());
+	ASSERT_TRUE(schema["entries"].isArray());
+	ASSERT_TRUE(schema["ramps"].isArray());
+	EXPECT_NE(FindEntry(schema, "cells/temp"), nullptr);
+	EXPECT_NE(FindEntry(schema, "cells/biome"), nullptr);
+	EXPECT_NE(FindEntry(schema, "cells/region"), nullptr);		// grouping layer
+	EXPECT_NE(FindEntry(schema, "cells/cow.drought"), nullptr);	// event type present
+	EXPECT_EQ(schema["entries"].size(), 4u);
+}
+
+TEST(HistoryExporterSchema, EventTypeNotPresentInTheLogIsNotEmbedded)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	ASSERT_TRUE(f.Export());
+	EXPECT_EQ(FindEntry(f.dec.root["schema"], "cells/cow.drought"), nullptr);
+}
+
+TEST(HistoryExporterSchema, EmbeddedSchemaEqualsTheLiveExportSubsetForTheSameKeys)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	EmitType(f, "cow.drought");
+	f.Vary(2);
+	f.r.Take();
+	ASSERT_TRUE(f.Export());
+	const StringCRC keys[] = { StringCRC("cells/temp"), StringCRC("cells/biome"), StringCRC("cells/region"), StringCRC("cells/cow.drought") };
+	Json::Value live;
+	ASSERT_TRUE(f.r.schema.service->ExportSubset(keys, 4, live));
+	const Json::Value& embedded = f.dec.root["schema"];
+	ASSERT_EQ(embedded["entries"].size(), live["entries"].size());
+	for (const Json::Value& e : live["entries"])
+	{
+		const Json::Value* got = FindEntry(embedded, (e["for"].asString() + "/" + e["key"].asString()).c_str());
+		ASSERT_NE(got, nullptr) << e["key"].asString();
+		EXPECT_EQ((*got)["label"].asString(), e["label"].asString());
+		EXPECT_EQ((*got)["unit"].asString(), e["unit"].asString());
+		Json::Value viaText;	// the file went through text, so compare the live entry after the same round trip
+		Json::StreamWriterBuilder wb;
+		wb["indentation"] = "";
+		Json::Reader rd;
+		ASSERT_TRUE(rd.parse(Json::writeString(wb, e), viaText, false));
+		EXPECT_EQ(*got, viaText);
+	}
+}
+
+TEST(HistoryExporterSchema, RampsUsedByEmbeddedEntriesAreIncludedAndOthersAreNot)
+{
+	ExpFix f;
+	f.r.grid.AddFloatLayer("temp", 40.0f);
+	std::string entry = FloatEntry("temp", 0, 100);
+	entry.insert(entry.size() - 1, ",\"ui\":{\"ramp\":\"seq.a\"}");
+	ASSERT_TRUE(f.r.schema.Load({ entry }));
+	Dia::ValueSchema::RampRegistry ramps;
+	Dia::ValueSchema::RampLoadResult lr = Dia::ValueSchema::RampLoader::LoadFromText(kTwoRamps, "t.json");
+	ASSERT_TRUE(lr.mOk);
+	for (unsigned i = 0; i < lr.mRamps.Size(); ++i) { ramps.Register(lr.mRamps[i], true, "t.json"); }
+	ramps.Publish();
+	f.r.schema.service = std::make_unique<Dia::ValueSchema::ValueSchemaService>(f.r.schema.registry, &ramps);
+	f.r.Start();
+	f.Run(2);
+	ASSERT_TRUE(f.Export()) << f.res.error;
+	const Json::Value& schema = f.dec.root["schema"];
+	ASSERT_EQ(schema["ramps"].size(), 1u);
+	EXPECT_EQ(schema["ramps"][0]["id"].asString(), "seq.a");
+}
+
+TEST(HistoryExporterSchema, UnresolvedEventTypeWarnsOncePerTypeAndTheEventIsStillExported)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(1);
+	EmitType(f, "missing.one", 3);
+	EmitType(f, "missing.two", 2);
+	EmitType(f, "cow.drought", 1);
+	f.Vary(1);
+	f.r.Take();
+	LogCapture log("HIS");
+	log.Clear();
+	ASSERT_TRUE(f.Export()) << f.res.error;
+	EXPECT_EQ(log.Warnings("has no schema entry"), 2u);
+	EXPECT_EQ(f.res.unresolvedEventTypes, 2u);
+	EXPECT_EQ(f.dec.root["events"].size(), 6u);
+	char expect[24];
+	snprintf(expect, sizeof(expect), "crc:%08x", StringCRC("missing.one").Value());
+	EXPECT_EQ(f.dec.root["events"][0]["type"].asString(), expect);
+	EXPECT_EQ(FindEntry(f.dec.root["schema"], "cells/missing.one"), nullptr);
+	EXPECT_NE(FindEntry(f.dec.root["schema"], "cells/cow.drought"), nullptr);
+	// A second export warns again (once per type per export).
+	log.Clear();
+	ASSERT_TRUE(f.Export("again.cell_history.json"));
+	EXPECT_EQ(log.Warnings("has no schema entry"), 2u);
+}
+
+TEST(HistoryExporterSchema, ResolvedEventsOnlyReportZeroUnresolved)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(1);
+	EmitType(f, "cow.drought", 2);
+	f.Vary(1);
+	f.r.Take();
+	LogCapture log("HIS");
+	log.Clear();
+	ASSERT_TRUE(f.Export());
+	EXPECT_EQ(f.res.unresolvedEventTypes, 0u);
+	EXPECT_EQ(log.Warnings("has no schema entry"), 0u);
+}
+
+TEST(HistoryExporterWorld, ProviderFillsHeaderWorldWhenOptionIsEmpty)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(1);
+	f.r.rec->SetWorldIdProvider(&WorldFn, const_cast<char*>("coast_range"));
+	ASSERT_TRUE(f.Export());
+	EXPECT_EQ(f.dec.Header()["world"].asString(), "coast_range");
+}
+
+TEST(HistoryExporterWorld, NoProviderOrNullReturnGivesEmptyString)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(1);
+	ASSERT_TRUE(f.Export());
+	EXPECT_TRUE(f.dec.Header()["world"].isString());
+	EXPECT_EQ(f.dec.Header()["world"].asString(), "");
+	f.r.rec->SetWorldIdProvider(&NullWorldFn, nullptr);
+	ASSERT_TRUE(f.Export("null_provider.cell_history.json"));
+	EXPECT_EQ(f.dec.Header()["world"].asString(), "");
+}
+
+TEST(HistoryExporterWorld, ExplicitOptionWinsOverTheProvider)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(1);
+	f.r.rec->SetWorldIdProvider(&WorldFn, const_cast<char*>("from_provider"));
+	f.opt.world = "from_option";
+	ASSERT_TRUE(f.Export());
+	EXPECT_EQ(f.dec.Header()["world"].asString(), "from_option");
+}
+
+// ---- Task 5.5: atomic write, overwrite, path rule ---------------------------------------------------------------
+
+namespace
+{
+	bool Exists(const std::string& p) { std::error_code ec; return std::filesystem::exists(p, ec); }
+	std::string Slurp(const std::string& p) { std::ifstream f(p, std::ios::binary); std::stringstream ss; ss << f.rdbuf(); return ss.str(); }
+}
+
+TEST(HistoryExporterAtomic, SuccessLeavesTheFinalFileAndNoTempFile)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	ASSERT_TRUE(f.Export()) << f.res.error;
+	EXPECT_TRUE(Exists(f.Path()));
+	EXPECT_FALSE(Exists(f.Path() + ".tmp"));
+}
+
+TEST(HistoryExporterAtomic, MissingFolderFailsWithNoFileAndAnErrorLog)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	const std::string path = f.tmp.File("no_such_folder/run.json");
+	LogCapture log("HIS");
+	log.Clear();
+	EXPECT_FALSE(HistoryExporter::WriteFile(*f.r.rec, f.opt, path.c_str(), f.res));
+	EXPECT_FALSE(f.res.ok);
+	EXPECT_GT(strlen(f.res.error), 0u);
+	EXPECT_FALSE(Exists(path));
+	EXPECT_FALSE(Exists(path + ".tmp"));
+	EXPECT_EQ(log.Errors("export"), 1u);
+}
+
+TEST(HistoryExporterAtomic, TempFileThatCannotBeCreatedFailsAndTouchesNothing)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	std::filesystem::create_directories(f.Path() + ".tmp");		// a directory squats on the temp name
+	EXPECT_FALSE(HistoryExporter::WriteFile(*f.r.rec, f.opt, f.Path().c_str(), f.res));
+	EXPECT_FALSE(f.res.ok);
+	EXPECT_FALSE(Exists(f.Path()));
+	EXPECT_TRUE(std::filesystem::is_directory(f.Path() + ".tmp"));	// not ours to remove
+}
+
+TEST(HistoryExporterAtomic, FailedRenameRemovesTheTempAndLeavesTheTargetAlone)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	std::filesystem::create_directories(f.Path());					// the final name is a directory
+	std::ofstream(f.Path() + "/keep.txt") << "keep";
+	f.opt.overwrite = true;
+	EXPECT_FALSE(HistoryExporter::WriteFile(*f.r.rec, f.opt, f.Path().c_str(), f.res));
+	EXPECT_FALSE(f.res.ok);
+	EXPECT_FALSE(Exists(f.Path() + ".tmp"));
+	EXPECT_TRUE(Exists(f.Path() + "/keep.txt"));
+}
+
+TEST(HistoryExporterAtomic, ExistingFileIsRefusedWithoutOverwriteAndStaysByteIdentical)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	std::ofstream(f.Path(), std::ios::binary) << "ORIGINAL";
+	LogCapture log("HIS");
+	log.Clear();
+	EXPECT_FALSE(HistoryExporter::WriteFile(*f.r.rec, f.opt, f.Path().c_str(), f.res));
+	EXPECT_FALSE(f.res.ok);
+	EXPECT_NE(std::string(f.res.error).find("use --overwrite"), std::string::npos) << f.res.error;
+	EXPECT_EQ(Slurp(f.Path()), "ORIGINAL");
+	EXPECT_FALSE(Exists(f.Path() + ".tmp"));
+	EXPECT_EQ(log.Warnings("exists"), 1u);
+	EXPECT_EQ(log.Errors(), 0u);
+}
+
+TEST(HistoryExporterAtomic, OverwriteReplacesAnExistingFile)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(2);
+	std::ofstream(f.Path(), std::ios::binary) << "ORIGINAL";
+	f.opt.overwrite = true;
+	ASSERT_TRUE(f.Export()) << f.res.error;
+	EXPECT_EQ(f.dec.root["format"].asString(), "dia.cell_history");
+	EXPECT_FALSE(Exists(f.Path() + ".tmp"));
+}
+
+TEST(HistoryExporterAtomic, SuccessLogsOneInfoWithPathBytesAndSamples)
+{
+	ExpFix f;
+	f.Setup();
+	f.Run(3);
+	LogCapture log("HIS");
+	log.Clear();
+	ASSERT_TRUE(f.Export());
+	EXPECT_EQ(log.Count(LogCapture::Level::kInfo, "export written"), 1u);
+}
+
+TEST(HistoryExporterPath, RelativePathResolvesUnderOutAppHistory)
+{
+	char buf[512], err[128];
+	ASSERT_TRUE(HistoryExporter::ResolvePath("run.json", "CluicheTest", "C:/work/out", buf, sizeof(buf), err, sizeof(err))) << err;
+	EXPECT_EQ(std::filesystem::path(buf).lexically_normal(), std::filesystem::path("C:/work/out/CluicheTest/history/run.json").lexically_normal());
+	ASSERT_TRUE(HistoryExporter::ResolvePath("sub\\a/run.json", "App", "C:/work/out", buf, sizeof(buf), err, sizeof(err))) << err;
+	EXPECT_EQ(std::filesystem::path(buf).lexically_normal(), std::filesystem::path("C:/work/out/App/history/sub/a/run.json").lexically_normal());
+}
+
+TEST(HistoryExporterPath, DotDotSegmentsInRelativePathsAreRejected)
+{
+	char buf[512], err[128];
+	for (const char* p : { "../x.json", "a/../../x.json", "a\\..\\x.json", ".." })
+	{
+		EXPECT_FALSE(HistoryExporter::ResolvePath(p, "App", "C:/work/out", buf, sizeof(buf), err, sizeof(err))) << p;
+		EXPECT_GT(strlen(err), 0u) << p;
+	}
+	EXPECT_TRUE(HistoryExporter::ResolvePath("a..b/x..json", "App", "C:/work/out", buf, sizeof(buf), err, sizeof(err)));	// not segments
+}
+
+TEST(HistoryExporterPath, AbsolutePathsPassThroughUnchanged)
+{
+	char buf[512], err[128];
+	ASSERT_TRUE(HistoryExporter::ResolvePath("C:/elsewhere/../run.json", "App", "C:/work/out", buf, sizeof(buf), err, sizeof(err))) << err;
+	EXPECT_STREQ(buf, "C:/elsewhere/../run.json");
+}
+
+TEST(HistoryExporterPath, BadInputsFail)
+{
+	char buf[512], err[128];
+	EXPECT_FALSE(HistoryExporter::ResolvePath("", "App", "C:/out", buf, sizeof(buf), err, sizeof(err)));
+	EXPECT_FALSE(HistoryExporter::ResolvePath(nullptr, "App", "C:/out", buf, sizeof(buf), err, sizeof(err)));
+	EXPECT_FALSE(HistoryExporter::ResolvePath("x.json", "App", "", buf, sizeof(buf), err, sizeof(err)));		// relative with no base
+	EXPECT_FALSE(HistoryExporter::ResolvePath("x.json", "App", "C:/out", buf, 8, err, sizeof(err)));			// overflow
+	EXPECT_TRUE(HistoryExporter::ResolvePath("C:/abs/x.json", "App", "", buf, sizeof(buf), err, sizeof(err)));	// absolute needs no base
 }

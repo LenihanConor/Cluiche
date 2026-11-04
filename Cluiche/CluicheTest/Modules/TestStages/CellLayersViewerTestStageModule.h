@@ -36,6 +36,8 @@
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/SnapshotCommands.h>
 #include <DiaCellHistory/SnapshotObservation.h>
+#include <DiaCellHistory/HistoryExportCommands.h>
+#include <DiaCellHistory/ExportObservation.h>
 #include "Modules/TestStages/CellLayersSnapshotStore.h"
 #include <DiaCellHistory/HistoryValueSource.h>
 #include <DiaCellHistory/ViewHistorySourceAdapter.h>
@@ -259,6 +261,12 @@ private:
     Dia::Core::UniquePtr<Dia::CellHistory::SnapshotObservation>    mSnapshotObservation;
     Dia::Core::UniquePtr<Dia::CellHistory::SnapshotCommands>       mSnapshotCommands;
     bool mSnapshotCommandsRegistered = false;
+    // Export (DiaCellHistory Feature 5): cells.history.export, relative paths under out/CluicheTest/history. Torn down before the
+    // snapshot manager it borrows. mWorldName backs the recorder's world-id provider (the stage name).
+    Dia::Core::UniquePtr<Dia::CellHistory::ExportObservation>      mExportObservation;
+    Dia::Core::UniquePtr<Dia::CellHistory::HistoryExportCommands>  mExportCommands;
+    bool mExportCommandsRegistered = false;
+    char mWorldName[64] = {};
     bool mScrubDomainRegistered = false;
     bool mScrubCommandsRegistered = false;
     bool mScrubBuildFailed = false;

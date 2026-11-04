@@ -822,11 +822,32 @@ void CellLayersViewerTestStageModule::BuildSnapshots(Dia::CellHistory::CellHisto
     mSnapshotCommandsRegistered = mSnapshotCommands->Register(*mHistoryRegistrar);
     if (!mSnapshotCommandsRegistered)
         DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.snapshot.* / cells.history.snapshot registration failed");
+
+    // cells.history.export: relative paths resolve under <exeDir>/../../../../out/CluicheTest/history. The world id is the stage name.
+    snprintf(mWorldName, sizeof(mWorldName), "%s", GetStageName().AsChar());
+    recorder.SetWorldIdProvider([](void* user) -> const char* { return static_cast<const char*>(user); }, mWorldName);
+    const std::filesystem::path outDir = (std::filesystem::path(exePath).parent_path() / ".." / ".." / ".." / ".." / "out").lexically_normal();
+    mExportObservation = Dia::Core::MakeUnique<ExportObservation>();
+    mExportCommands = Dia::Core::MakeUnique<HistoryExportCommands>(recorder);
+    mExportCommands->SetAppName("CluicheTest");
+    mExportCommands->SetOutDir(outDir.string().c_str());
+    mExportCommands->SetSnapshots(mSnapshotManager.Get());
+    mExportCommands->SetObservation(mExportObservation.Get());
+    mExportCommandsRegistered = mExportCommands->Register(*mHistoryRegistrar);
+    if (!mExportCommandsRegistered)
+        DIA_LOG_ERROR("HIS", "CellLayersViewerTestStage: sim-hosted cells.history.export registration failed");
 }
 
 void CellLayersViewerTestStageModule::TeardownSnapshots()
 {
-    // Commands first (their handlers capture the manager and store), then manager, observation, store.
+    // Export commands first (they borrow the manager), then the snapshot commands (their handlers capture the manager and
+    // store), then manager, observation, store. The recorder may already be withdrawn, so its world provider is not touched
+    // (it points at mWorldName, which lives as long as the stage).
+    if (mExportCommands && mExportCommandsRegistered && mHistoryRegistrar)
+        mExportCommands->Unregister(*mHistoryRegistrar);
+    mExportCommandsRegistered = false;
+    mExportCommands.Reset();
+    mExportObservation.Reset();
     if (mSnapshotCommands && mSnapshotCommandsRegistered && mHistoryRegistrar)
         mSnapshotCommands->Unregister(*mHistoryRegistrar);
     mSnapshotCommandsRegistered = false;

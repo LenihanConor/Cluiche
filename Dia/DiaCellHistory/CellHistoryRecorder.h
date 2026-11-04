@@ -206,6 +206,13 @@ namespace Dia::CellHistory
 		// The grouping behind AggregateStore group `storeIndex` (1..GroupCount()-1; 0 is world and returns false).
 		bool GroupSource(uint32_t storeIndex, Dia::Core::StringCRC& layer, uint32_t& enumValue) const;
 
+		// World-id provider (Feature 5, header.world of an export). The game installs it (CoW: the loaded world id; stages: the
+		// stage name). The returned text is read at export time and must stay valid until the call returns. No provider (or a
+		// provider returning null) -> WorldId() is the empty string.
+		using WorldIdFn = const char* (*)(void* user);
+		void SetWorldIdProvider(WorldIdFn fn, void* user) { mWorldIdFn = fn; mWorldIdUser = user; }
+		const char* WorldId() const { const char* w = mWorldIdFn != nullptr ? mWorldIdFn(mWorldIdUser) : nullptr; return w != nullptr ? w : ""; }
+
 	private:
 		struct Recorded
 		{
@@ -253,6 +260,8 @@ namespace Dia::CellHistory
 
 		Dia::CellLayers::CellLayerRegistry&			mRegistry;
 		const Dia::ValueSchema::ValueSchemaService*	mSchema;
+		WorldIdFn		mWorldIdFn = nullptr;
+		void*			mWorldIdUser = nullptr;
 		HistoryConfig	mConfig;
 		RecorderBudgets	mBudgets;
 		uint64_t		mRunId;

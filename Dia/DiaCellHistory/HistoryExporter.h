@@ -41,6 +41,7 @@ namespace Dia::CellHistory
 		bool		ok = false;
 		uint64_t	bytes = 0;
 		uint32_t	samples = 0;		// recorder sample count
+		uint32_t	unresolvedEventTypes = 0;	// distinct event types with no `kind: event` schema entry (one Warning each)
 		char		error[192] = {};
 	};
 
@@ -48,5 +49,11 @@ namespace Dia::CellHistory
 	{
 	public:
 		static bool WriteFile(const CellHistoryRecorder& recorder, const ExportOptions& options, const char* path, ExportResult& result);
+
+		// Resolves a user path (PD-009). An absolute (rooted) path is copied as is. A relative path must not contain a `..`
+		// segment and resolves to `<outDir>/<app>/history/<path>` (outDir = the `Cluiche/out` folder, supplied by the host;
+		// app empty -> no app segment). Returns false with a reason in err on an empty path, `..` in a relative path, a
+		// missing outDir for a relative path, or an overflow of buf. Pure: creates nothing.
+		static bool ResolvePath(const char* path, const char* app, const char* outDir, char* buf, uint32_t bufCapacity, char* err, uint32_t errCapacity);
 	};
 }

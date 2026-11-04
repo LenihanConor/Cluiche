@@ -2550,5 +2550,8 @@
     <ClCompile Include="DiaCellHistory\TestHistoryExporter.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryExportCommands.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -113,6 +113,9 @@
     <ClInclude Include="SnapshotCellCache.h" />
     <ClInclude Include="HistoryExporter.h" />
     <ClInclude Include="Testing\ExportDecoder.h" />
+    <ClInclude Include="ExportObservation.h" />
+    <ClInclude Include="HistoryExportCommands.h" />
+    <ClInclude Include="AtomicFile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -147,6 +150,9 @@
     <ClCompile Include="SnapshotObservation.cpp" />
     <ClCompile Include="SnapshotCellCache.cpp" />
     <ClCompile Include="HistoryExporter.cpp" />
+    <ClCompile Include="ExportObservation.cpp" />
+    <ClCompile Include="HistoryExportCommands.cpp" />
+    <ClCompile Include="AtomicFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md" />

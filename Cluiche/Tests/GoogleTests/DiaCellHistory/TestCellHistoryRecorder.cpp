@@ -517,3 +517,23 @@ TEST(CellHistoryRecorder, ActiveGridReportsTheRecordedGridBeforeAndAfterTheFirst
 	r.Take();
 	EXPECT_EQ(r.rec->ActiveGrid(), g);
 }
+
+
+namespace
+{
+	const char* WorldName(void* user) { return static_cast<const char*>(user); }
+}
+
+TEST(CellHistoryRecorderWorldId, EmptyWithoutAProviderAndFollowsTheInstalledOne)
+{
+	CellLayerRegistry registry;
+	HistoryConfig cfg;
+	CellHistoryRecorder rec(registry, nullptr, cfg, 1);
+	EXPECT_STREQ(rec.WorldId(), "");
+	rec.SetWorldIdProvider(&WorldName, const_cast<char*>("coast_range"));
+	EXPECT_STREQ(rec.WorldId(), "coast_range");
+	rec.SetWorldIdProvider(nullptr, nullptr);
+	EXPECT_STREQ(rec.WorldId(), "");
+	rec.SetWorldIdProvider([](void*) -> const char* { return nullptr; }, nullptr);
+	EXPECT_STREQ(rec.WorldId(), "");
+}

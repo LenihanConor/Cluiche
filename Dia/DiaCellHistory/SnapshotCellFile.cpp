@@ -1,4 +1,5 @@
 #include <DiaCellHistory/SnapshotCellFile.h>
+#include <DiaCellHistory/AtomicFile.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/CellRing.h>
 #include <DiaCellHistory/HistoryEncoding.h>
@@ -324,13 +325,10 @@ namespace Dia::CellHistory
 				return false;
 			}
 		}
-		std::error_code ec;
-		fs::rename(tmp, path, ec);
-		if (ec)
+		char commitError[256];
+		if (!AtomicFile::Commit(tmp.c_str(), path, commitError, sizeof(commitError)))
 		{
-			std::error_code rm;
-			fs::remove(tmp, rm);
-			SetError(err, errCapacity, "cannot move temporary file into place: %s", ec.message().c_str());
+			SetError(err, errCapacity, "%s", commitError);
 			return false;
 		}
 		return true;

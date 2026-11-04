@@ -75,6 +75,9 @@
     <ClInclude Include="Testing\ExportDecoder.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="ExportObservation.h" />
+    <ClInclude Include="HistoryExportCommands.h" />
+    <ClInclude Include="AtomicFile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />
@@ -115,6 +118,9 @@
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
     <ClCompile Include="HistoryExporter.cpp" />
+    <ClCompile Include="ExportObservation.cpp" />
+    <ClCompile Include="HistoryExportCommands.cpp" />
+    <ClCompile Include="AtomicFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.cellhistory.architecture.module.md">

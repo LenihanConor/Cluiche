@@ -1,4 +1,5 @@
 #include <DiaCellHistory/HistoryExporter.h>
+#include <DiaCellHistory/AtomicFile.h>
 #include <DiaCellHistory/CellHistoryRecorder.h>
 #include <DiaCellHistory/CellRing.h>
 #include <DiaCellHistory/HistoryEncoding.h>
@@ -6,6 +7,8 @@
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaValueSchema/ValueInfo.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
@@ -89,7 +92,8 @@ namespace Dia::CellHistory
 			uint32_t	value = GroupRef::kNoValue;
 		};
 
-		struct TypeName { uint32_t crc; std::string key; };
+		struct TypeName { uint32_t crc; std::string key; StringCRC fullKey; };
+			struct SeenType { uint32_t crc; bool resolved; };
 
 		struct EventCtx
 		{
@@ -97,6 +101,7 @@ namespace Dia::CellHistory
 			bool								first = true;
 			const std::vector<GroupEntry>*		groups;
 			const std::vector<TypeName>*		types;
+			std::vector<SeenType>*				seen;		// distinct event types met, in first-seen order
 		};
 
 		void WriteEvent(const EventView& e, void* context)
@@ -111,6 +116,11 @@ namespace Dia::CellHistory
 			const unsigned int typeCrc = e.mType.Value();
 			const char* typeText = nullptr;
 			for (const TypeName& t : *c.types) { if (t.crc == typeCrc) { typeText = t.key.c_str(); break; } }
+			{
+				bool known = false;
+				for (const SeenType& t : *c.seen) { if (t.crc == typeCrc) { known = true; break; } }
+				if (!known) { c.seen->push_back({ typeCrc, typeText != nullptr }); }
+			}
 			char fallback[24];
 			if (typeText == nullptr) { snprintf(fallback, sizeof(fallback), "crc:%08x", typeCrc); typeText = fallback; }
 			out.Str(typeText);
@@ -146,6 +156,12 @@ namespace Dia::CellHistory
 			if (schema == nullptr) { return nullptr; }
 			const Dia::CellLayers::CellLayerDesc* desc = rec.Registry().Find(layer);
 			return schema->Find(desc != nullptr ? desc->schemaKey : layer);
+		}
+
+		StringCRC SchemaKeyFor(const CellHistoryRecorder& rec, StringCRC layer)
+		{
+			const Dia::CellLayers::CellLayerDesc* desc = rec.Registry().Find(layer);
+			return desc != nullptr ? desc->schemaKey : layer;
 		}
 
 		template <class Store, class GapT>
@@ -306,7 +322,7 @@ namespace Dia::CellHistory
 			out.Raw("\"app\":"); out.Str(opt.app);
 			out.Raw(",\"git_commit\":"); out.Str(opt.gitCommit);
 			out.Raw(",\"generated_at\":"); out.Str(opt.generatedAt);
-			out.Raw(",\"world\":"); out.Str(opt.world);
+			out.Raw(",\"world\":"); out.Str(opt.world[0] != '\0' ? opt.world : rec.WorldId());
 			out.Raw(",\"sampleCount\":"); out.UInt(count);
 			out.Raw(",\"sampleFirst\":"); out.UInt(sampleFirst);
 			out.Raw(",\"aggregateFirst\":"); out.UInt(aggFirst);
@@ -380,13 +396,15 @@ namespace Dia::CellHistory
 				for (unsigned int i = 0; i < schema->Count(); ++i)
 				{
 					const Dia::ValueSchema::ValueInfo* v = schema->At(i);
-					if (v != nullptr && v->mKind == Dia::ValueSchema::ValueKind::Event) { types.push_back({ StringCRC(v->mKey.AsCStr()).Value(), v->mKey.AsCStr() }); }
+					if (v != nullptr && v->mKind == Dia::ValueSchema::ValueKind::Event) { types.push_back({ StringCRC(v->mKey.AsCStr()).Value(), v->mKey.AsCStr(), StringCRC(v->mFullKey.AsCStr()) }); }
 				}
 			}
 			out.Raw(",\"events\":[");
+			std::vector<SeenType> seen;
 			if (count > 0)
 			{
 				EventCtx ctx;
+				ctx.seen = &seen;
 				ctx.out = &out;
 				ctx.groups = &groups;
 				ctx.types = &types;
@@ -424,6 +442,41 @@ namespace Dia::CellHistory
 				out.Raw(",\"cells\":");
 				WriteCells(out, sc, rec, status);
 			}
+
+			// Embedded schema: recorded layers, grouping layers and the event types present (one Warning per unresolved type).
+			std::vector<StringCRC> keys;
+			for (uint32_t li = 0; li < rec.RecordedLayerCount(); ++li) { keys.push_back(SchemaKeyFor(rec, rec.RecordedLayerId(li))); }
+			for (uint32_t g = 1; g < groupCount; ++g)
+			{
+				StringCRC layer;
+				uint32_t value = 0;
+				if (rec.GroupSource(g, layer, value)) { keys.push_back(SchemaKeyFor(rec, layer)); }
+			}
+			for (const SeenType& t : seen)
+			{
+				if (t.resolved)
+				{
+					for (const TypeName& n : types) { if (n.crc == t.crc) { keys.push_back(n.fullKey); break; } }
+					continue;
+				}
+				++result.unresolvedEventTypes;
+				DIA_LOG_WARNING("HIS", "export: event type crc:%08x has no schema entry; exported without one", t.crc);
+			}
+			out.Raw(",\"schema\":");
+			Json::Value subset(Json::objectValue);
+			if (const Dia::ValueSchema::ValueSchemaService* schema = rec.Schema())
+			{
+				schema->ExportSubset(keys.data(), unsigned(keys.size()), subset);
+			}
+			else
+			{
+				subset["entries"] = Json::Value(Json::arrayValue);
+				subset["ramps"] = Json::Value(Json::arrayValue);
+			}
+			Json::StreamWriterBuilder builder;
+			builder["indentation"] = "";
+			const std::string schemaText = Json::writeString(builder, subset);
+			out.Raw(schemaText.data(), schemaText.size());
 			out.Raw("}\n");
 
 			result.samples = count;
@@ -436,29 +489,85 @@ namespace Dia::CellHistory
 			snprintf(r.error, sizeof(r.error), fmt, a != nullptr ? a : "");
 		}
 
-		// The one place the file is written (task 5.5 swaps this for temp file + rename + overwrite refusal).
+		// The one place the file is written: stream into <path>.tmp, then rename over the final name. A failed write removes
+		// the temp and leaves nothing under the final name; an existing file is refused (checked first) unless overwrite.
 		bool WriteToPath(const CellHistoryRecorder& rec, const ExportOptions& opt, const char* path, ExportResult& result)
 		{
-			std::ofstream f(path, std::ios::binary | std::ios::trunc);
-			if (!f) { SetError(result, "cannot create '%s'", path); return false; }
-			Sink sink(f);
-			const bool bodyOk = WriteBody(rec, opt, sink, result);
-			f.flush();
-			if (!bodyOk || !f)
+			std::error_code ec;
+			if (!opt.overwrite && std::filesystem::exists(path, ec))
 			{
-				f.close();
-				std::error_code ec;
-				std::filesystem::remove(path, ec);
-				SetError(result, "write failed for '%s' (disk full or not writable)", path);
+				SetError(result, "file exists; use --overwrite%s", "");
+				DIA_LOG_WARNING("HIS", "export refused: '%s' already exists (use overwrite)", path);
 				return false;
 			}
-			result.bytes = sink.Bytes();
+			char tmp[1100];
+			if (!AtomicFile::TempPath(path, tmp, sizeof(tmp))) { SetError(result, "path too long '%s'", path); return false; }
+			{
+				std::ofstream f(tmp, std::ios::binary | std::ios::trunc);
+				if (!f)
+				{
+					SetError(result, "cannot create temporary file '%s'", tmp);
+					DIA_LOG_ERROR("HIS", "export failed: %s", result.error);
+					return false;
+				}
+				Sink sink(f);
+				const bool bodyOk = WriteBody(rec, opt, sink, result);
+				f.flush();
+				if (!bodyOk || !f)
+				{
+					f.close();
+					AtomicFile::Discard(tmp);
+					SetError(result, "write failed for '%s' (disk full or not writable)", tmp);
+					DIA_LOG_ERROR("HIS", "export failed: %s (temporary file removed)", result.error);
+					return false;
+				}
+				result.bytes = sink.Bytes();
+			}
+			char err[160];
+			if (!AtomicFile::Commit(tmp, path, err, sizeof(err)))
+			{
+				SetError(result, "%s", err);
+				DIA_LOG_ERROR("HIS", "export failed: %s (temporary file removed)", result.error);
+				return false;
+			}
 			return true;
 		}
 	}
 
+	bool HistoryExporter::ResolvePath(const char* path, const char* app, const char* outDir, char* buf, uint32_t bufCapacity, char* err, uint32_t errCapacity)
+	{
+		auto fail = [&](const char* why) { if (err != nullptr && errCapacity > 0) { snprintf(err, errCapacity, "%s", why); } return false; };
+		if (buf == nullptr || bufCapacity == 0) { return fail("no output buffer"); }
+		buf[0] = '\0';
+		if (path == nullptr || path[0] == '\0') { return fail("no path given"); }
+		int n = 0;
+		if (std::filesystem::path(path).has_root_path())
+		{
+			n = snprintf(buf, bufCapacity, "%s", path);
+		}
+		else
+		{
+			// No `..` segment: a relative path stays inside the history folder.
+			const char* p = path;
+			while (*p != '\0')
+			{
+				const char* e = p;
+				while (*e != '\0' && *e != '/' && *e != '\\') { ++e; }
+				if (e - p == 2 && p[0] == '.' && p[1] == '.') { return fail("relative path must not contain '..'"); }
+				p = (*e == '\0') ? e : e + 1;
+			}
+			if (outDir == nullptr || outDir[0] == '\0') { return fail("no output folder configured for relative paths"); }
+			if (app != nullptr && app[0] != '\0') { n = snprintf(buf, bufCapacity, "%s/%s/history/%s", outDir, app, path); }
+			else { n = snprintf(buf, bufCapacity, "%s/history/%s", outDir, path); }
+		}
+		if (n < 0 || uint32_t(n) >= bufCapacity) { buf[0] = '\0'; return fail("resolved path is too long"); }
+		return true;
+	}
+
 	bool HistoryExporter::WriteFile(const CellHistoryRecorder& recorder, const ExportOptions& options, const char* path, ExportResult& result)
 	{
+		DIA_TRACE_ZONE("cellhistory.export", ::Dia::Observation::Trace::Category::kDiaGraphics);
+		DIA_PROFILE_SCOPE("cellhistory.export", ::Dia::Observation::Profile::Category::kDiaGraphics);
 		result = ExportResult();
 		if (path == nullptr || path[0] == '\0') { SetError(result, "no path given%s", ""); return false; }
 		ExportOptions opt = options;
@@ -468,6 +577,7 @@ namespace Dia::CellHistory
 		if (opt.world == nullptr) { opt.world = ""; }
 		if (!WriteToPath(recorder, opt, path, result)) { return false; }
 		result.ok = true;
+		DIA_LOG_INFO("HIS", "export written (%s, %llu bytes, %u samples)", path, (unsigned long long)result.bytes, result.samples);
 		return true;
 	}
 }
