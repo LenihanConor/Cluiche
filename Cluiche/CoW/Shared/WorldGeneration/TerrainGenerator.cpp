@@ -382,8 +382,28 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                       static_cast<int>(surfaces.size()), out, mStage9);
         break;
     }
-    case TerrainStage::Classify:    break;   // TODO: classify (later task)
-    case TerrainStage::Latitude:    break;   // TODO: latitude (later task)
+    case TerrainStage::Classify:
+    {
+        Stage10Layers out;
+        out.slope        = mLayers.FloatLayer(mLayers.FindLayer("slope"));
+        out.terrainType  = mLayers.UIntLayer(mLayers.FindLayer("terrainType"));
+        out.waterSource  = mLayers.UIntLayer(mLayers.FindLayer("waterSource"));
+        out.terrainFlags = mLayers.UIntLayer(mLayers.FindLayer("terrainFlags"));
+        ComputeStage10(mRules, mDims, mLayers.GetUInt(mLayers.FindLayer("landmass")),
+                       mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
+                       mLayers.GetUInt(mLayers.FindLayer("volcanic")),
+                       mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),
+                       mLayers.GetUInt(mLayers.FindLayer("passMask")),
+                       mStage3.band.empty() ? nullptr : mStage3.band.data(),
+                       mLayers.GetUInt(mLayers.FindLayer("riverMask")),
+                       mLayers.GetUInt(mLayers.FindLayer("lakeMask")),
+                       mLayers.GetFloat(mLayers.FindLayer("elevation")), out);
+        break;
+    }
+    case TerrainStage::Latitude:
+        ComputeStage11(mDims, mShape.latitudeNorthDeg, mShape.latitudeSouthDeg,
+                       mLayers.FloatLayer(mLayers.FindLayer("latitude")));
+        break;
     default:                        break;   // Feature 8 stages never run
     }
 }

@@ -50,6 +50,7 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainDepthZones.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainValleys.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainClassify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -81,6 +82,7 @@
     <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainDepthZones.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainValleys.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainClassify.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

@@ -10,6 +10,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
 #pragma once
 
+#include <Shared/WorldGeneration/TerrainClassify.h>
 #include <Shared/WorldGeneration/TerrainDepthZones.h>
 #include <Shared/WorldGeneration/TerrainDrainage.h>
 #include <Shared/WorldGeneration/TerrainLandmass.h>
@@ -65,7 +66,14 @@ struct StageTiming
     X("lakeMask",        LayerType::UInt,  TerrainStage::Lakes) \
     X("zoneCostBase",    LayerType::Float, TerrainStage::DepthZones) \
     X("zoneCost",        LayerType::Float, TerrainStage::DepthZones) \
-    X("depthZone",       LayerType::UInt,  TerrainStage::DepthZones)     X("valleyCarve",     LayerType::Float, TerrainStage::Valleys)     X("elevation",       LayerType::Float, TerrainStage::Valleys)
+    X("depthZone",     LayerType::UInt,  TerrainStage::DepthZones) \
+    X("valleyCarve",   LayerType::Float, TerrainStage::Valleys) \
+    X("elevation",     LayerType::Float, TerrainStage::Valleys) \
+    X("slope",         LayerType::Float, TerrainStage::Classify) \
+    X("terrainType",   LayerType::UInt,  TerrainStage::Classify) \
+    X("waterSource",   LayerType::UInt,  TerrainStage::Classify) \
+    X("terrainFlags",  LayerType::UInt,  TerrainStage::Classify) \
+    X("latitude",      LayerType::Float, TerrainStage::Latitude)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;

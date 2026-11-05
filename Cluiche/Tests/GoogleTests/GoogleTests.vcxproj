@@ -1166,6 +1166,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.cpp" />
     <ClCompile Include="CoW\TestTerrainValleys.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainValleys.cpp" />
+    <ClCompile Include="CoW\TestTerrainClassify.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainClassify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
