@@ -40,6 +40,7 @@
     <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp" />
     <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp" />
     <ClCompile Include="Modules\SnapshotStoreAdapter.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -61,6 +62,7 @@
     <ClInclude Include="Modules\WorldGenerationMessages.h" />
     <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h" />
     <ClInclude Include="Modules\SnapshotStoreAdapter.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

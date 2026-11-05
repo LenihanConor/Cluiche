@@ -2574,5 +2574,11 @@
     <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

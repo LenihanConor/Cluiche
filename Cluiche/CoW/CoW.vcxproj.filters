@@ -58,6 +58,9 @@
     <ClCompile Include="Modules\SnapshotStoreAdapter.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -116,6 +119,9 @@
     </ClInclude>
     <ClInclude Include="Modules\SnapshotStoreAdapter.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
+      <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

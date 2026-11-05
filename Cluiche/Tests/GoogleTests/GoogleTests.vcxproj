@@ -1145,6 +1145,8 @@
     <ClCompile Include="DiaCellHistory\TestHistoryClosingEdges.cpp" />
     <ClCompile Include="DiaCellHistory\TestUtf8.cpp" />
     <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTypes.cpp" />
+    <ClCompile Include="CoW\TestTerrainTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
