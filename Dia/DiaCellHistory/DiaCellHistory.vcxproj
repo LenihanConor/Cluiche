@@ -121,6 +121,7 @@
     <ClInclude Include="HistoryRows.h" />
     <ClInclude Include="TopicObservation.h" />
     <ClInclude Include="HistoryTopics.h" />
+    <ClInclude Include="Utf8.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaCellHistory.cpp" />

@@ -1,4 +1,6 @@
 #include <DiaCellHistory/CellHistoryRecorder.h>
+#include <DiaCellHistory/Utf8.h>
+#include <cstring>
 #include <DiaCellLayers/CellLayerRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
@@ -580,7 +582,11 @@ namespace Dia::CellHistory
 		}
 		SampleHeader& h = mHeaders[(mHeaderHead + mHeaderCount) % mHeaderCap];
 		h.mTick = info.tick;
-		Dia::ValueSchema::SetText(h.mLabel, info.label);
+		char label[32];
+		const size_t labelLen = Utf8SafeLength(info.label, 31);
+		if (labelLen > 0) { std::memcpy(label, info.label, labelLen); }
+		label[labelLen] = '\0';
+		Dia::ValueSchema::SetText(h.mLabel, label);
 		h.mBand = info.band;
 		++mHeaderCount;
 	}

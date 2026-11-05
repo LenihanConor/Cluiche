@@ -53,7 +53,7 @@ HistoryQueries       meta, aggregates, events, cells
 
 - **Float arrays** (min, mean, max): little-endian float32, base64.
 - **Counts and group sizes:** little-endian uint16, base64.
-- **Per-cell values:** the recorder's quantised storage, little-endian uint16 (float layers) or uint8 (category layers), base64, with the layer's `min` and `max` so a client dequantises: `v = min + q / 65535 × (max − min)`.
+- **Per-cell values:** the recorder's quantised storage, little-endian uint16 (float layers) or uint8 (category layers), base64, with the layer's `min` and `max` so a client dequantises: `v = min + q / 65534 × (max − min)`, with `q = 0xFFFF` meaning NaN (the quantiser reserves the top code; corrected 2026-11-04 to match the code).
 - Everything else is plain JSON. Sample and layer indices are the recorder's absolute sample indices.
 
 ### The `dia.cell_history` file (v1)

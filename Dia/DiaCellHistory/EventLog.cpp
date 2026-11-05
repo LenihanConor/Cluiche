@@ -1,4 +1,5 @@
 #include <DiaCellHistory/EventLog.h>
+#include <DiaCellHistory/Utf8.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <algorithm>
 #include <cstring>
@@ -35,7 +36,7 @@ namespace Dia::CellHistory
 	uint32_t EventLog::RecordBytes(const HistoryEvent& e)
 	{
 		const size_t p = BoundedLen(e.payloadJson, kMaxPayloadBytes + 1);
-		const size_t t = BoundedLen(e.text, kMaxTextChars);
+		const size_t t = Utf8SafeLength(e.text, kMaxTextChars);
 		return Align4(uint32_t(kHeaderBytes + p + t));
 	}
 
@@ -114,7 +115,7 @@ namespace Dia::CellHistory
 			DIA_LOG_ERROR("HIS", "event '%s' payload exceeds %u bytes; rejected", e.type.AsChar(), kMaxPayloadBytes);
 			return EmitResult::PayloadTooLarge;
 		}
-		const size_t textLen = BoundedLen(e.text, kMaxTextChars);
+		const size_t textLen = Utf8SafeLength(e.text, kMaxTextChars);
 		const uint32_t rec = Align4(uint32_t(kHeaderBytes + payloadLen + textLen));
 		if (rec > mBudget)
 		{

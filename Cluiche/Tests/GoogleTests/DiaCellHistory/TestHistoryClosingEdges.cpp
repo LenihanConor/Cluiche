@@ -316,9 +316,9 @@ TEST(HistoryClosingEdgesExport, ALabelWithQuotesBackslashesControlCharactersAndU
 	EXPECT_TRUE(ValidUtf8(f.FileText()));
 }
 
-// BUG (found by the closing audit, reported not fixed): SetText (DiaValueSchema/ValueInfo.h) truncates the 31-char sample label
+// Regression (closing audit, fixed 2026-11-04 with Utf8SafeLength): the 31-byte sample label was cut byte-wise and could end in half a UTF-8 character.
 // byte-wise, so a multi-byte character straddling the cap leaves a lone lead byte and the exported file is not valid UTF-8.
-TEST(HistoryClosingEdgesExport, DISABLED_ALabelTruncatedMidUtf8SequenceStillExportsValidUtf8)
+TEST(HistoryClosingEdgesExport, ALabelTruncatedMidUtf8SequenceStillExportsValidUtf8)
 {
 	ExFix f; f.Setup();
 	const std::string label = std::string(30, 'x') + "\xC3\xA9";		// the 31-byte cap cuts the 2-byte character in half
@@ -327,8 +327,8 @@ TEST(HistoryClosingEdgesExport, DISABLED_ALabelTruncatedMidUtf8SequenceStillExpo
 	EXPECT_TRUE(ValidUtf8(f.FileText())) << "label: " << f.dec.root["samples"][0]["label"].asString();
 }
 
-// BUG (found by the closing audit, reported not fixed): EventLog BoundedLen cuts the 64-char event text byte-wise, same effect.
-TEST(HistoryClosingEdgesExport, DISABLED_EventTextTruncatedMidUtf8SequenceStillExportsValidUtf8)
+// Regression (closing audit, fixed 2026-11-04): the 64-byte event text was cut byte-wise, same effect.
+TEST(HistoryClosingEdgesExport, EventTextTruncatedMidUtf8SequenceStillExportsValidUtf8)
 {
 	ExFix f; f.Setup();
 	f.TakeLabelled("a");

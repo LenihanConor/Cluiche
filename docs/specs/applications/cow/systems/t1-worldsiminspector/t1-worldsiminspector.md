@@ -189,6 +189,20 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 2. **CSV export in v1, PNG later** (2026-10-19). "Export CSV" writes the current chart's series.
 3. **Cause events only for tracked layers** (2026-10-19). A1 emits `cow.ecology.cause` per region per band, top 3 causes, only for layers tracked in DiaCellHistory.
 
+## Proposed Amendment (2026-11-04, pending user approval): Feature 7, Snapshots and cell compare
+
+**Origin:** DiaCellHistory was closed with its in-game panel work deferred (snapshot list and controls, delta banner/legend/group table; Dia features 3 and 4 tasks 3.10b and 4.10). The user decided these belong in the CluicheEditor Inspector, not in the in-game debug panel. The engine side is built and tested (commands, queries, topics, export); this amendment re-homes the UI here. **This section changes nothing until approved; T-1 stays `Approved` as written.**
+
+**Scope (new Feature 7):**
+1. **Snapshot panel.** List via `cells.snapshot.list` (name, sample, label, world, size, `sameRun`, status `pending|ready|failed` with reason, orphans shown as failed). Take (`cells.snapshot.take <name> [overwrite]`), Delete (`cells.snapshot.delete`), and Restore (`cells.snapshot.restore`) with a confirm that states the consequence (same run: history after the sample is dropped, N samples; earlier session: history is reset; other grid: refused, button disabled with the reason). The 16-snapshot cap, the one-operation-in-flight rule and the name rules (1-32 of `A-Za-z0-9_-`) are shown inline. Every action is a DiaAPI/wire command (the panel calls the same commands as the console). The visual reference is the snapshot states already drawn in `docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html` (unapproved; port into `mockups/world-sim-inspector.html` before building).
+2. **Cell compare on the mini-map.** Snapshot vs now, snapshot vs snapshot, and sample vs sample for a chosen layer, computed **in the editor** from `cells.history.cells` (per-sample cell series) and `cells.history.snapshot {name, layer, offset, count}` (chunked), drawn with the layer's delta ramp, symmetric around zero, with a fixed/auto scale (grow at once, shrink after 2 s under 40%, the same rule as DiaCellHistory F4). A per-group table of mean A, mean B and change, sorted by absolute change. This is separate from Feature 5's run-vs-run compare (aggregates over two sources).
+3. **Gating.** Take and Restore change the live game, so they need a live connection whose world id matches (the Feature 6 rule); offline file sources show snapshots read-only if the file lists them (`snapshots` field), without controls.
+
+**Requirements this places on Dia (backlog items, not part of T-1 itself):**
+- **Layer cursor for the aggregates catch-up.** `cells.history.aggregates` replies are capped at 15,000 bytes (the sim-hosted limit is 16,384 per reply), so a request without a `layers` filter errors for a 20-layer x 27-group run, and a 2,000-sample catch-up costs about 100 queries per layer. Feature 1's live source needs a cursor that walks the layers (or a groups filter, or a coarser first-screen summary).
+- **Spec correction for decoders:** a float cell code `q` dequantises as `min + q/65534 x (max - min)` with `q = 0xFFFF` meaning NaN (DiaCellHistory export spec says /65535; fixed there on 2026-11-04). The conformance fixtures in `Dia/DiaCellHistory/Testing/Conformance/` follow the code.
+- Text fields (labels, event text) are now truncated on UTF-8 boundaries, so exported files are valid UTF-8.
+
 ## Status
 
 `Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
