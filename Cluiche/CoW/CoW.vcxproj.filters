@@ -67,6 +67,9 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainLandmass.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -133,6 +136,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainLandmass.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

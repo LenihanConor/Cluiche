@@ -2592,5 +2592,11 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainGenerator.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestTerrainLandmass.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainLandmass.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

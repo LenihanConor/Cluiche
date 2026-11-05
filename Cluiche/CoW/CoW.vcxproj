@@ -43,6 +43,7 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainLandmass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -67,6 +68,7 @@
     <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainRules.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainLandmass.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

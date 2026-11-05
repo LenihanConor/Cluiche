@@ -253,7 +253,12 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
     switch (stage)
     {
     case TerrainStage::SeedFields:  RunSeedFields(wldStream); break;
-    case TerrainStage::Landmass:    break;   // TODO: landmass (later task)
+    case TerrainStage::Landmass:
+    {
+        const int idx = mLayers.FindLayer("landPotential");
+        ComputeStage1(mRules, mShape, mDims, mSeedFields, mLayers.FloatLayer(idx), mStage1);
+        break;
+    }
     case TerrainStage::Mountains:   break;   // TODO: mountains (later task)
     case TerrainStage::Barrier:     break;   // TODO: barrier (later task)
     case TerrainStage::Elevation:   break;   // TODO: elevation (later task)

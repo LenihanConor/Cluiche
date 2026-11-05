@@ -10,6 +10,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
 #pragma once
 
+#include <Shared/WorldGeneration/TerrainLandmass.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -37,8 +38,9 @@ struct StageTiming
     bool         ranLastUpdate = false;
 };
 
-// X(name, LayerType, producing TerrainStage). Empty until stages that produce layers exist.
-#define TERRAIN_LAYERS_TABLE(X)
+// X(name, LayerType, producing TerrainStage).
+#define TERRAIN_LAYERS_TABLE(X) \
+    X("landPotential", LayerType::Float, TerrainStage::Landmass)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;
@@ -159,6 +161,8 @@ public:
     const StageTiming*   GetTimings() const { return mTimings; }   // TerrainStage::Count entries
     float                GetLastTotalMs() const { return mLastTotalMs; }
     const SeedFields&    GetSeedFields() const { return mSeedFields; }
+    // Part-A seam (see TerrainLandmass.h): budgets and M ranking from Stage 1; task 5 extends it.
+    const Stage1Debug&   GetStage1Debug() const { return mStage1; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -167,6 +171,7 @@ private:
     TerrainRules     mRules;
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
+    Stage1Debug      mStage1;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;
 
