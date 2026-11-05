@@ -150,6 +150,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h" />
     <ClInclude Include="Editor\GameScopedPluginFixtures.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1161,6 +1162,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDrainage.cpp" />
     <ClCompile Include="CoW\TestTerrainRivers.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRivers.cpp" />
+    <ClCompile Include="CoW\TestTerrainDepthZones.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

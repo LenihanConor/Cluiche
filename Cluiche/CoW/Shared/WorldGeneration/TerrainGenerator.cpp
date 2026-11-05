@@ -348,7 +348,20 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                                          ocean.data(), mLayers.UIntLayer(mLayers.FindLayer("lakeMask")), mStage7);
         break;
     }
-    case TerrainStage::DepthZones:  break;   // TODO: depth zones (later task)
+    case TerrainStage::DepthZones:
+    {
+        Stage8Layers out;
+        out.zoneCostBase = mLayers.FloatLayer(mLayers.FindLayer("zoneCostBase"));
+        out.zoneCost     = mLayers.FloatLayer(mLayers.FindLayer("zoneCost"));
+        out.depthZone    = mLayers.UIntLayer(mLayers.FindLayer("depthZone"));
+        ComputeStage8(mRules, mDims, mShape.barrier, mEffective.mainLandmass,
+                      mLayers.GetUInt(mLayers.FindLayer("landmass")),
+                      mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
+                      mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),
+                      mLayers.GetFloat(mLayers.FindLayer("barrierMask")),
+                      mLayers.GetUInt(mLayers.FindLayer("riverMask")), out, mStage8);
+        break;
+    }
     case TerrainStage::Valleys:     break;   // TODO: valleys (later task)
     case TerrainStage::Classify:    break;   // TODO: classify (later task)
     case TerrainStage::Latitude:    break;   // TODO: latitude (later task)

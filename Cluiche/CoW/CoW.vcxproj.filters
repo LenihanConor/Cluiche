@@ -82,6 +82,9 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainDepthZones.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -163,6 +166,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainDepthZones.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

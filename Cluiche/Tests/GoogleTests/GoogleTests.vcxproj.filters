@@ -1777,6 +1777,9 @@
     <ClInclude Include="Editor\GameScopedPluginFixtures.h">
       <Filter>Editor</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -2620,6 +2623,12 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRivers.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainDepthZones.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
