@@ -278,8 +278,27 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                       mLayers.UIntLayer(mLayers.FindLayer("passMask")), mStage2, mEffective);
         break;
     }
-    case TerrainStage::Barrier:     break;   // TODO: barrier (later task)
-    case TerrainStage::Elevation:   break;   // TODO: elevation (later task)
+    case TerrainStage::Barrier:
+    {
+        Stage3Layers out;
+        out.barrierMask = mLayers.FloatLayer(mLayers.FindLayer("barrierMask"));
+        out.volcanic    = mLayers.UIntLayer(mLayers.FindLayer("volcanic"));
+        ComputeStage3(mRules, mShape, mDims, mSeedFields, mLayers.GetUInt(mLayers.FindLayer("landmass")),
+                      mLayers.GetUInt(mLayers.FindLayer("coastDistance")), mEffective.mainLandmass, out, mStage3);
+        break;
+    }
+    case TerrainStage::Elevation:
+    {
+        Stage4Layers out;
+        out.elevationRaw = mLayers.FloatLayer(mLayers.FindLayer("elevationRaw"));
+        out.oceanDepth   = mLayers.FloatLayer(mLayers.FindLayer("oceanDepth"));
+        ComputeStage4(mRules, mShape, mDims, mSeedFields, mLayers.GetUInt(mLayers.FindLayer("landmass")),
+                      mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
+                      mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),
+                      mLayers.GetFloat(mLayers.FindLayer("barrierMask")),
+                      mLayers.GetUInt(mLayers.FindLayer("volcanic")), out);
+        break;
+    }
     case TerrainStage::Drainage:    break;   // TODO: drainage (later task)
     case TerrainStage::Rivers:      break;   // TODO: rivers (later task)
     case TerrainStage::Lakes:       break;   // TODO: lakes (later task)
