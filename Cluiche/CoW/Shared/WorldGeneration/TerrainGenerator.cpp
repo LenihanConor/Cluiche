@@ -540,5 +540,52 @@ void TerrainGenerator::RunSeedFields(Dia::Maths::RandomStream& rng)
     mSeedFields = f;
 }
 
+void TerrainGenerator::WriteTerrain(WorldStructure& world) const
+{
+    if (!mHasCache)
+    {
+        return;   // never updated (or invalidated): leave the world untouched
+    }
+
+    world.Resize(mDims);
+    world.mainLandmass = static_cast<uint8_t>(std::clamp(mEffective.mainLandmass, 0, 255));
+    world.provenance = WorldProvenance{};   // value-init: zeroes padding and presetId
+    world.provenance.seed = mSeed;
+    world.provenance.shape = mShape;
+    world.provenance.generatorVersion = kTerrainGeneratorVersion;
+    world.provenance.rulesVersion = mRules.rulesVersion;
+
+    const int n = world.CellCount();
+    if (n == 0)
+    {
+        return;
+    }
+
+    const float*    elevation = mLayers.GetFloat(mLayers.FindLayer("elevation"));
+    const float*    latitude  = mLayers.GetFloat(mLayers.FindLayer("latitude"));
+    const uint32_t* water     = mLayers.GetUInt(mLayers.FindLayer("waterSource"));
+    const uint32_t* type      = mLayers.GetUInt(mLayers.FindLayer("terrainType"));
+    const uint32_t* zone      = mLayers.GetUInt(mLayers.FindLayer("depthZone"));
+    const uint32_t* landmass  = mLayers.GetUInt(mLayers.FindLayer("landmass"));
+    const uint32_t* flags     = mLayers.GetUInt(mLayers.FindLayer("terrainFlags"));
+    const uint32_t* flow      = mLayers.GetUInt(mLayers.FindLayer("flowDirection"));
+
+    Cell* cells = world.Cells();
+    for (int i = 0; i < n; ++i)
+    {
+        Cell c;
+        std::memset(&c, 0, sizeof(Cell));   // deterministic padding bytes (AC1 compares Cell arrays bytewise)
+        c.elevation    = elevation[i];
+        c.latitude     = latitude[i];
+        c.waterSource  = static_cast<WaterSource>(water[i]);
+        c.terrain      = static_cast<TerrainType>(type[i]);
+        c.depthZone    = static_cast<DepthZone>(zone[i]);
+        c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255
+        c.terrainFlags = static_cast<uint8_t>(flags[i]);
+        c.downstream   = (c.waterSource == WaterSource::River && flow[i] < 6u) ? static_cast<uint8_t>(flow[i]) : kNoDirection;
+        std::memcpy(&cells[i], &c, sizeof(Cell));
+    }
+}
+
 } // namespace WorldGeneration
 } // namespace CoW

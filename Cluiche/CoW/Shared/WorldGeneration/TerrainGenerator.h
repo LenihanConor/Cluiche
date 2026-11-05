@@ -190,6 +190,13 @@ public:
                 Dia::Maths::RandomStream& wldStream);
     void Invalidate();
 
+    // Fills the Cell terrain fields and provenance (everything except presetId, which is left
+    // empty for the module/presets to fill) from the current layers. Each Cell is value-initialised
+    // before assignment so the array is byte-deterministic. downstream is the flowDirection (0..5)
+    // on River cells and kNoDirection elsewhere. landmass ids saturate at 255. If Update has never
+    // run (or after Invalidate) the world is left untouched.
+    void WriteTerrain(WorldStructure& world) const;
+
     const TerrainLayers& GetLayers() const { return mLayers; }
     const StageTiming*   GetTimings() const { return mTimings; }   // TerrainStage::Count entries
     float                GetLastTotalMs() const { return mLastTotalMs; }
