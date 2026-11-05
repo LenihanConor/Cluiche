@@ -13,10 +13,15 @@ Shared between the C++ GoogleTests (`Cluiche/Tests/GoogleTests/DiaCellHistory/Te
 | `query_aggregates_page0.json` | First reply of `cells.history.aggregates {from:0}`, has `next` |
 | `query_events_page0.json` | First reply of `cells.history.events {from:0}`, has `next` |
 | `query_cells_page0.json` | First reply of `cells.history.cells {layer:"temp", from:10}`, has `next` |
+| `query_aggregates_groups_world.json` | `cells.history.aggregates {from:0, groups:["world"]}` at the default budget: all 40 samples, only the `world` group, no `next` |
+| `query_aggregates_stride4_world.json` | `{from:0, groups:["world"], stride:4}`: 10 windows of 4 samples (float min/max extrema, group-size-weighted mean, category counts of the window's last sample), `stride: 4` echoed, no `next` |
+| `query_aggregates_slice_page0.json` | `{from:0}` with a 1,000-byte budget (below one whole sample): a layer slice, `layerOffset 0`, `layerCount 2`, `layerTotal 4`, `count 1`, `next {from:0, layerOffset:2, structure}` |
+| `query_aggregates_slice_page1.json` | The page reached by following page 0's `next`: layers 2..3 of sample 0, `next {from:1, layerOffset:0, structure}` |
+| `query_aggregates_stride_slice_page0.json` | `{from:0, stride:4}` with the same budget: the first layer slice of window [0,4), `stride 4`, `next {from:0, layerOffset:2, structure}` |
 | `topic_aggregates_0.json` | First `cells.history.aggregates` topic message (samples 30..39) |
 | `topic_events_0.json` | First `cells.history.events` topic message |
 
-The query pages are pretty-printed (2 spaces, sorted keys); the export files are the exporter's raw compact bytes. Pages use deliberately tiny reply budgets (600..2400 bytes) so that every page has a `next` cursor; real replies are up to 15,000 bytes (sim-hosted limit 16,384).
+The query pages are pretty-printed (2 spaces, sorted keys); the export files are the exporter's raw compact bytes. Pages use deliberately tiny reply budgets (600..2400 bytes; 1,000 for the layer-sliced aggregates pages) so that every page has a `next` cursor; real replies are up to 15,000 bytes (sim-hosted limit 16,384).
 
 ## The fixture run
 
@@ -31,6 +36,14 @@ The query pages are pretty-printed (2 spaces, sorted keys); the export files are
 - `events`: `{sample, type, group?, cell?, payload?, text?}` in order; `type` is the schema key (`crc:xxxxxxxx` when the type has no schema entry).
 - `cells[layer]` (only with `--cells`): `{kind, first, count, width, height, min, max, data}`; `data[i]` is sample `first + i`: width*height codes. Float layers: uint16 code `q`, value = `min + q / 65534 * (max - min)`, and `q = 65535 (0xFFFF)` is NaN. Category layers: uint8 category id per cell.
 - Query replies and topic messages use the same field names and encodings: an aggregates reply or topic message carries `{count, samples, groupSizes, rows}` where `rows[layer]` is shaped like `aggregates[layer]` but covers only `[from, from+count)` (topic: `[fromSample, fromSample+count)`); a reply before a layer's `first` is NaN / zero counts. Cursors: aggregates `next:{from}`, events `next:{from, skip}` (pass both back), cells `next:{from, cellOffset}`, meta `next:{part, offset}`. `structure` is a 16-hex hash; a topic message with `structureChanged: true` means re-fetch `cells.history.meta`.
+
+## Catch-up cursor (for T-1)
+
+- Request `cells.history.aggregates {from?, to?, layers?, groups?, stride?, layerOffset?, structure?}`. `groups` is an array of group ids; `stride` N >= 1 re-aggregates windows of N samples relative to `from` (partial last window kept; float min/max/group-size-weighted mean; category layers = the window's last sample's counts); `stride` is echoed in the reply only when > 1.
+- Normal path (whole samples fit the 15,000-byte budget): `count` samples/windows, `next = {from}` while more remain.
+- When one whole sample (or window) does not fit, the reply is ONE sample/window holding a layer slice `[layerOffset, layerOffset+layerCount)` of `layerTotal` layers (`count` 1; `samples` and `groupSizes` repeat in every slice), with `next = {from, layerOffset, structure}`; when the slice completes and more remain, `next = {from + 1 (or + stride), layerOffset: 0, structure}`.
+- The server is stateless: re-send to/layers/groups/stride plus the `next` fields (`from`, `layerOffset`, `structure`) unchanged. Merge slices of the same `from` by layer name.
+- Errors: stale `structure` -> `structure changed: restart the catch-up` (re-fetch meta and restart); one layer too big -> `reply too large: request fewer groups`.
 
 ## Regenerating
 

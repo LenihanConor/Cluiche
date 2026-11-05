@@ -106,7 +106,7 @@ HistoryQueries       meta, aggregates, events, cells
 | Query | Arguments | Result |
 |---|---|---|
 | `cells.history.meta` | none | `header`, `bands`, `groups`, `tracked`, `gaps`, `structure`, per-layer `first` and kind, and the embedded `schema` |
-| `cells.history.aggregates` | `{ from?, to?, layers? }` | The aggregate rows for that sample range in the file's shape, chunked: each reply stays under 1 MB and carries `next` when more remain |
+| `cells.history.aggregates` | `{ from?, to?, layers?, groups?, stride?, layerOffset?, structure? }` | The aggregate rows for that sample range in the file's shape, chunked: each reply stays under the 15,000-byte sim-hosted budget (not 1 MB) and carries `next` when more remain (`{from}`; when one sample or window does not fit, a layer slice with `next = {from, layerOffset, structure}`). Groups filter, stride re-aggregation and layer slicing: see [aggregate-catch-up.md](aggregate-catch-up.md) |
 | `cells.history.events` | `{ from?, to?, types? }` | Events in the range, at most 2,000 per reply with `next` |
 | `cells.history.cells` | `{ layer, cells?, from, to }` | Quantised per-cell series for a tracked layer: `{ layer, kind, min, max, width, height, from, to, cells, data }`, chunked by sample range so each reply is under 1 MB; `cells` is an optional list of indices (default all) |
 
@@ -202,9 +202,9 @@ No conflicts.
 ## Open Design Questions
 
 1. **Export hitch.** Writing on SimPU blocks the simulation, up to a couple of seconds for a Large run with `--cells`. That suits an explicit command and an end-of-run runner. If an in-game "export" button causes visible stalls, move the write to a worker over a copied snapshot.
-2. **Aggregate catch-up size.** A reply carries as many samples as fit under 1 MB, so catching up on 2,000 samples of a 64-layer run takes tens of queries. If T-1's connect time is noticeable, add a streaming mode or a coarser summary for the first screen.
+2. **Aggregate catch-up size.** A reply carries as many samples as fit under 1 MB, so catching up on 2,000 samples of a 64-layer run takes tens of queries. If T-1's connect time is noticeable, add a streaming mode or a coarser summary for the first screen. **Resolved by Feature 6 ([aggregate-catch-up.md](aggregate-catch-up.md)):** groups filter, stride re-aggregation and layer-sliced replies with a `layerOffset` cursor.
 3. **Event type resolution.** Event types are resolved by `key` across all `for` formats, so two games or two systems must not reuse an event key. Feature 1 of DiaValueSchema now rejects duplicate event keys; revisit if namespacing is wanted.
 
 ## Status
 
-`Done` (2026-11-04). Plan: [export.plan.md](export.plan.md). AC 15 (Release export time) is unverified: the Release gate was skipped by the user. Replies are capped at 15,000 bytes (the sim-hosted limit is 16,384), not 1 MB, so a catch-up needs a layer cursor for big runs: tracked as a Dia backlog item and a requirement of the proposed T-1 Feature 7.
+`Done` (2026-11-04). Plan: [export.plan.md](export.plan.md). AC 15 (Release export time) is unverified: the Release gate was skipped by the user. Replies are capped at 15,000 bytes (the sim-hosted limit is 16,384), not 1 MB, so a catch-up needs a layer cursor for big runs: tracked as a Dia backlog item and a requirement of the proposed T-1 Feature 7. Aggregates catch-up extended by Feature 6 (aggregate-catch-up.md).

@@ -9,6 +9,7 @@
 #include <json/json.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -43,6 +44,7 @@ namespace
 	const uint32_t kRunSamples = 40;
 	const uint32_t kTrackAt = 10;		// `temp` is tracked from this sample (mid-run)
 	const uint32_t kSubscribeAt = 30;	// the topic subscriber appears here; topic message 0 covers [30, 40)
+	const uint32_t kSliceBudget = 1000;	// below one whole sample (all layers, all groups): aggregates replies become layer slices
 
 	std::string LabelledEnum(const char* key, std::initializer_list<const char*> ids, std::initializer_list<const char*> labels, const char* history = nullptr)
 	{
@@ -295,7 +297,7 @@ namespace
 			files[name] = ReadAll(path);
 			ASSERT_FALSE(files[name].empty());
 		}
-		void Page(const char* fileName, const char* query, Json::Value args, uint32_t budget, bool expectNext)
+		void Page(const char* fileName, const char* query, Json::Value args, uint32_t budget, bool expectNext, Json::Value* out = nullptr)
 		{
 			q->SetMaxReplyBytes(budget);
 			Json::Value reply;
@@ -306,6 +308,7 @@ namespace
 			ASSERT_FALSE(reply.isMember("error")) << fileName << ": " << reply["error"].asString();
 			ASSERT_EQ(reply.isMember("next"), expectNext) << fileName << " (budget " << budget << ")";
 			files[fileName] = Pretty(reply);
+			if (out != nullptr) { *out = reply; }
 		}
 
 		void Run()
@@ -341,6 +344,24 @@ namespace
 			Page("query_aggregates_page0.json", "cells.history.aggregates", aggArgs, 2400, true);
 			Page("query_events_page0.json", "cells.history.events", evArgs, 1000, true);
 			Page("query_cells_page0.json", "cells.history.cells", cellArgs, 600, true);
+
+			// Aggregate catch-up (Feature 6): groups filter, stride, layer slicing (a budget under one whole sample), slicing + stride.
+			Json::Value groupsArgs = Obj(); groupsArgs["from"] = 0; groupsArgs["groups"].append("world");
+			Page("query_aggregates_groups_world.json", "cells.history.aggregates", groupsArgs, 15000, false);
+			Json::Value strideArgs = groupsArgs; strideArgs["stride"] = 4;
+			Page("query_aggregates_stride4_world.json", "cells.history.aggregates", strideArgs, 15000, false);
+			Json::Value slice0;
+			Page("query_aggregates_slice_page0.json", "cells.history.aggregates", aggArgs, kSliceBudget, true, &slice0);
+			ASSERT_FALSE(::testing::Test::HasFatalFailure());
+			ASSERT_TRUE(slice0.isMember("layerTotal"));
+			Json::Value slice1Args = aggArgs;
+			for (const char* k : { "from", "layerOffset", "structure" }) { slice1Args[k] = slice0["next"][k]; }
+			Page("query_aggregates_slice_page1.json", "cells.history.aggregates", slice1Args, kSliceBudget, true);
+			Json::Value strideSliceArgs = aggArgs; strideSliceArgs["stride"] = 4;
+			Json::Value ss0;
+			Page("query_aggregates_stride_slice_page0.json", "cells.history.aggregates", strideSliceArgs, kSliceBudget, true, &ss0);
+			ASSERT_FALSE(::testing::Test::HasFatalFailure());
+			ASSERT_TRUE(ss0.isMember("layerTotal"));
 
 			const std::vector<Json::Value> agg = s.pub.Of(kAggTopic);
 			const std::vector<Json::Value> ev = s.pub.Of(kEvTopic);
@@ -419,7 +440,7 @@ TEST(HistoryConformance, FixtureRunIsDeterministic)
 	ASSERT_FALSE(HasFatalFailure());
 	ASSERT_EQ(a.files.size(), b.files.size());
 	for (const auto& kv : a.files) { EXPECT_EQ(kv.second, b.files.at(kv.first)) << kv.first; }
-	EXPECT_EQ(a.files.size(), 9u);
+	EXPECT_EQ(a.files.size(), 14u);
 }
 
 // ---- committed fixtures decode and are consistent ---------------------------------------------------------------------------
@@ -562,6 +583,151 @@ TEST(HistoryConformance, QueryPageFixturesAgreeWithTheExportFile)
 	{
 		EXPECT_EQ(cells["data"][i].asString(), file.root["cells"]["temp"]["data"][cells["from"].asUInt() - first + i].asString()) << i;
 	}
+}
+
+namespace
+{
+	// Checks a (possibly layer-sliced) strided aggregates reply against an independent reduction of the file's per-sample aggregates:
+	// window w covers file samples [from + w*stride, min(.. + stride, sampleCount)); float min/max are the extrema, mean the group-size
+	// weighted mean, category counts and group sizes the last sample's.
+	void ExpectStridedMatchesFile(const Json::Value& rep, const DecodedExport& file, uint32_t stride)
+	{
+		const uint32_t n = rep["count"].asUInt();
+		const uint32_t from = rep["from"].asUInt();
+		const uint32_t total = file.SampleCount();
+		auto windowEnd = [&](uint32_t w) { return std::min(from + (w + 1) * stride, total); };
+		for (const std::string& g : rep["groupSizes"].getMemberNames())
+		{
+			std::vector<uint16_t> v, fs;
+			ASSERT_TRUE(DecodedExport::DecodeU16(rep["groupSizes"][g], n, v));
+			ASSERT_TRUE(file.GroupSizes(g.c_str(), fs));
+			for (uint32_t w = 0; w < n; ++w) { EXPECT_EQ(v[w], fs[windowEnd(w) - 1]) << g << " window " << w; }
+		}
+		ASSERT_GE(rep["rows"].getMemberNames().size(), 1u);
+		for (const std::string& layer : rep["rows"].getMemberNames())
+		{
+			const Json::Value& l = rep["rows"][layer];
+			for (const std::string& g : l["groups"].getMemberNames())
+			{
+				std::vector<uint16_t> fs;
+				ASSERT_TRUE(file.GroupSizes(g.c_str(), fs));
+				if (l["kind"].asString() == "float")
+				{
+					std::vector<float> mn, mean, mx, fmn, fmean, fmx;
+					uint32_t first = 0;
+					ASSERT_TRUE(DecodedExport::DecodeF32(l["groups"][g]["min"], n, mn));
+					ASSERT_TRUE(DecodedExport::DecodeF32(l["groups"][g]["mean"], n, mean));
+					ASSERT_TRUE(DecodedExport::DecodeF32(l["groups"][g]["max"], n, mx));
+					ASSERT_TRUE(file.FloatSeries(layer.c_str(), g.c_str(), "min", fmn, first));
+					ASSERT_TRUE(file.FloatSeries(layer.c_str(), g.c_str(), "mean", fmean, first));
+					ASSERT_TRUE(file.FloatSeries(layer.c_str(), g.c_str(), "max", fmx, first));
+					for (uint32_t w = 0; w < n; ++w)
+					{
+						float emn = 0, emx = 0;
+						double sum = 0, weight = 0;
+						bool any = false;
+						for (uint32_t i = from + w * stride; i < windowEnd(w); ++i)
+						{
+							if (fs[i] == 0 || std::isnan(fmn[i])) { continue; }
+							emn = any ? std::min(emn, fmn[i]) : fmn[i];
+							emx = any ? std::max(emx, fmx[i]) : fmx[i];
+							sum += double(fmean[i]) * fs[i]; weight += fs[i];
+							any = true;
+						}
+						ASSERT_TRUE(any) << layer << "|" << g << " window " << w;
+						EXPECT_EQ(mn[w], emn) << layer << "|" << g << " window " << w;
+						EXPECT_EQ(mx[w], emx) << layer << "|" << g << " window " << w;
+						EXPECT_NEAR(mean[w], sum / weight, 1e-3) << layer << "|" << g << " window " << w;
+					}
+				}
+				else
+				{
+					const uint32_t e = l["values"].size();
+					std::vector<uint16_t> v, fc;
+					uint32_t first = 0, fe = 0;
+					ASSERT_TRUE(DecodedExport::DecodeU16(l["groups"][g], n * e, v));
+					ASSERT_TRUE(file.CategorySeries(layer.c_str(), g.c_str(), fc, first, fe));
+					ASSERT_EQ(e, fe);
+					for (uint32_t w = 0; w < n; ++w) { for (uint32_t k = 0; k < e; ++k) { EXPECT_EQ(v[w * e + k], fc[size_t(windowEnd(w) - 1) * e + k]) << layer << "|" << g << " window " << w; } }
+				}
+			}
+		}
+	}
+}
+
+TEST(HistoryConformance, AggregateCatchUpFixturesAgreeWithTheExportFile)
+{
+	const std::filesystem::path folder = FixtureFolder();
+	ASSERT_FALSE(folder.empty());
+	DecodedExport file;
+	ASSERT_TRUE(file.Load((folder / "export_cells.cell_history.json").string().c_str())) << file.error;
+	Json::Value groups, stride, slice0, slice1, strideSlice;
+	ASSERT_TRUE(LoadJson("query_aggregates_groups_world.json", groups));
+	ASSERT_TRUE(LoadJson("query_aggregates_stride4_world.json", stride));
+	ASSERT_TRUE(LoadJson("query_aggregates_slice_page0.json", slice0));
+	ASSERT_TRUE(LoadJson("query_aggregates_slice_page1.json", slice1));
+	ASSERT_TRUE(LoadJson("query_aggregates_stride_slice_page0.json", strideSlice));
+
+	// groups filter: only `world`, every sample in one reply (no cursor), rows equal the file's world rows.
+	EXPECT_EQ(groups["count"].asUInt(), kRunSamples);
+	EXPECT_FALSE(groups.isMember("next"));
+	EXPECT_FALSE(groups.isMember("stride"));
+	EXPECT_FALSE(groups.isMember("layerTotal"));
+	ASSERT_EQ(groups["groupSizes"].getMemberNames().size(), 1u);
+	EXPECT_TRUE(groups["groupSizes"].isMember("world"));
+	for (const std::string& layer : groups["rows"].getMemberNames())
+	{
+		ASSERT_EQ(groups["rows"][layer]["groups"].getMemberNames().size(), 1u) << layer;
+		EXPECT_TRUE(groups["rows"][layer]["groups"].isMember("world")) << layer;
+	}
+	Series gs;
+	gs.Add(groups);
+	ASSERT_FALSE(HasFatalFailure());
+	gs.ExpectEqualsFile(file, 0);
+
+	// stride 4: ceil(40 / 4) windows, echoed, no cursor, windows reduce the file's samples.
+	EXPECT_EQ(stride["stride"].asUInt(), 4u);
+	EXPECT_EQ(stride["count"].asUInt(), (kRunSamples + 3) / 4);
+	EXPECT_FALSE(stride.isMember("next"));
+	ASSERT_EQ(stride["groupSizes"].getMemberNames().size(), 1u);
+	ExpectStridedMatchesFile(stride, file, 4);
+	ASSERT_FALSE(HasFatalFailure());
+
+	// layer slices: one sample per page, disjoint consecutive layer slices of the same sample that match the file; the cursor chains.
+	for (const Json::Value* page : { &slice0, &slice1 })
+	{
+		EXPECT_EQ((*page)["count"].asUInt(), 1u);
+		EXPECT_EQ((*page)["from"].asUInt(), 0u);
+		EXPECT_EQ((*page)["layerTotal"].asUInt(), 4u);
+		EXPECT_EQ((*page)["rows"].getMemberNames().size(), (*page)["layerCount"].asUInt());
+		EXPECT_EQ((*page)["groupSizes"].getMemberNames().size(), 4u);
+		EXPECT_EQ((*page)["samples"].size(), 1u);
+		EXPECT_TRUE(JsonEq((*page)["samples"][0], file.root["samples"][0]));
+		Series ps;
+		ps.Add(*page);
+		ASSERT_FALSE(HasFatalFailure());
+		ps.ExpectEqualsFile(file, 0);
+	}
+	EXPECT_EQ(slice0["layerOffset"].asUInt(), 0u);
+	EXPECT_EQ(slice1["layerOffset"].asUInt(), slice0["layerCount"].asUInt());
+	EXPECT_EQ(slice0["next"]["from"].asUInt(), 0u);
+	EXPECT_EQ(slice0["next"]["layerOffset"].asUInt(), slice1["layerOffset"].asUInt());
+	EXPECT_EQ(slice0["next"]["structure"].asString().size(), 16u);
+	for (const std::string& name : slice0["rows"].getMemberNames()) { EXPECT_FALSE(slice1["rows"].isMember(name)) << name; }
+	// page 1 finishes sample 0 (layers 2..3 of 4) and moves on to sample 1.
+	EXPECT_EQ(slice1["layerOffset"].asUInt() + slice1["layerCount"].asUInt(), 4u);
+	EXPECT_EQ(slice1["next"]["from"].asUInt(), 1u);
+	EXPECT_EQ(slice1["next"]["layerOffset"].asUInt(), 0u);
+	EXPECT_EQ(slice1["next"]["structure"].asString(), slice0["next"]["structure"].asString());
+
+	// stride + slicing: the first window's first layer slice, window = samples [0, 4).
+	EXPECT_EQ(strideSlice["stride"].asUInt(), 4u);
+	EXPECT_EQ(strideSlice["count"].asUInt(), 1u);
+	EXPECT_EQ(strideSlice["layerOffset"].asUInt(), 0u);
+	EXPECT_EQ(strideSlice["layerTotal"].asUInt(), 4u);
+	EXPECT_EQ(strideSlice["next"]["from"].asUInt(), 0u);
+	EXPECT_EQ(strideSlice["next"]["layerOffset"].asUInt(), strideSlice["layerCount"].asUInt());
+	ExpectStridedMatchesFile(strideSlice, file, 4);
 }
 
 TEST(HistoryConformance, TopicFixturesAgreeWithTheExportFile)
