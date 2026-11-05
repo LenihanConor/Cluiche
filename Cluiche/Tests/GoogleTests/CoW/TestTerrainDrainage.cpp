@@ -554,7 +554,7 @@ TEST(TerrainDrainage, GeneratorInvariantsOnThreeSeeds)
         ASSERT_NE(F(r.gen, "filledElevation"), nullptr);
         EXPECT_EQ(0, CheckGenerator(r.gen, kSmall, "seed " + std::to_string(seed)));
         EXPECT_EQ(r.gen.GetEffective().eligibleBasins, r.gen.GetStage5Debug().eligibleBasins);
-        EXPECT_EQ(r.gen.GetEffective().lakes, 0);
+        EXPECT_LE(r.gen.GetEffective().lakes, r.gen.GetEffective().eligibleBasins);   // stage 7: min(Lakes, eligible)
         int land = 0;
         const float* acc = F(r.gen, "flowAccumulation");
         float maxAcc = 0.0f;

@@ -47,6 +47,7 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainMountains.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainRelief.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainDrainage.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -75,6 +76,7 @@
     <ClInclude Include="Shared\WorldGeneration\TerrainMountains.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainRelief.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainDrainage.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

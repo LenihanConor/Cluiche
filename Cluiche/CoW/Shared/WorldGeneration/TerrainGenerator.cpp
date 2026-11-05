@@ -320,8 +320,34 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         mEffective.eligibleBasins = mStage5.eligibleBasins;
         break;
     }
-    case TerrainStage::Rivers:      break;   // TODO: rivers (later task)
-    case TerrainStage::Lakes:       break;   // TODO: lakes (later task)
+    case TerrainStage::Rivers:
+    {
+        const size_t n = (mDims.width > 0 && mDims.height > 0) ? static_cast<size_t>(mDims.width) * mDims.height : 0u;
+        const float* elevation = mLayers.GetFloat(mLayers.FindLayer("elevationRaw"));
+        std::vector<uint8_t> ocean(n, 0);
+        for (size_t i = 0; i < n && elevation != nullptr; ++i)
+        {
+            ocean[i] = elevation[i] <= 0.0f ? 1 : 0;
+        }
+        ComputeStage6(mRules, mDims, mShape.rivers, mLayers.GetFloat(mLayers.FindLayer("filledElevation")),
+                      mLayers.GetUInt(mLayers.FindLayer("flowDirection")),
+                      mLayers.GetFloat(mLayers.FindLayer("flowAccumulation")), ocean.data(),
+                      mLayers.UIntLayer(mLayers.FindLayer("riverMask")), mStage6);
+        break;
+    }
+    case TerrainStage::Lakes:
+    {
+        const size_t n = (mDims.width > 0 && mDims.height > 0) ? static_cast<size_t>(mDims.width) * mDims.height : 0u;
+        const float* elevation = mLayers.GetFloat(mLayers.FindLayer("elevationRaw"));
+        std::vector<uint8_t> ocean(n, 0);
+        for (size_t i = 0; i < n && elevation != nullptr; ++i)
+        {
+            ocean[i] = elevation[i] <= 0.0f ? 1 : 0;
+        }
+        mEffective.lakes = ComputeStage7(mDims, mShape.lakes, mStage5, mLayers.GetUInt(mLayers.FindLayer("flowDirection")),
+                                         ocean.data(), mLayers.UIntLayer(mLayers.FindLayer("lakeMask")), mStage7);
+        break;
+    }
     case TerrainStage::DepthZones:  break;   // TODO: depth zones (later task)
     case TerrainStage::Valleys:     break;   // TODO: valleys (later task)
     case TerrainStage::Classify:    break;   // TODO: classify (later task)
