@@ -681,7 +681,7 @@ TEST(HistoryQueriesAggregates, ChunksReassembleToTheFile)
 {
 	QFix f; f.Setup(); f.Run(30);
 	ASSERT_TRUE(f.Export());
-	auto countAt = [&](uint32_t b) { f.Budget(b); const Json::Value r = f.Call(kAgg); return IsError(r) ? -1 : int(r["count"].asUInt()); };
+	auto countAt = [&](uint32_t b) { f.Budget(b); const Json::Value r = f.Call(kAgg); return (IsError(r) || r.isMember("layerCount")) ? -1 : int(r["count"].asUInt()); };
 	const int b1 = SmallestBudgetFor(countAt, 1, HistoryQueries::kMinReplyBytes, 15000);
 	ASSERT_GT(b1, 0);
 	for (uint32_t budget : { 15000u, 1400u, uint32_t(b1) + 8 })
@@ -700,7 +700,7 @@ TEST(HistoryQueriesAggregates, ChunksReassembleToTheFile)
 TEST(HistoryQueriesAggregates, BoundaryBudgetsHoldExactlyOneThenTwoSamples)
 {
 	QFix f; f.Setup(); f.Run(12);
-	auto countAt = [&](uint32_t b) { f.Budget(b); const Json::Value r = f.Call(kAgg); return IsError(r) ? -1 : int(r["count"].asUInt()); };
+	auto countAt = [&](uint32_t b) { f.Budget(b); const Json::Value r = f.Call(kAgg); return (IsError(r) || r.isMember("layerCount")) ? -1 : int(r["count"].asUInt()); };
 	const int b1 = SmallestBudgetFor(countAt, 1, HistoryQueries::kMinReplyBytes, 15000);
 	ASSERT_GT(b1, 0);
 	EXPECT_EQ(countAt(uint32_t(b1) - 1), -1);				// one byte under: not even a sample fits
@@ -925,13 +925,146 @@ TEST(HistoryQueriesAggregates, CatchUpParamsAreInTheHelp)
 	EXPECT_LE(strlen(help->description), 256u);
 }
 
-TEST(HistoryQueriesAggregates, OneSampleThatDoesNotFitIsAnErrorNotAnOversizedReply)
+TEST(HistoryQueriesAggregates, OneLayerThatDoesNotFitIsAnErrorNotAnOversizedReply)
 {
 	QFix f; f.Setup(); f.Run(5);
 	f.Budget(HistoryQueries::kMinReplyBytes);
 	const Json::Value r = f.Call(kAgg);
 	EXPECT_TRUE(ErrorHas(r, "reply too large"));
-	EXPECT_TRUE(ErrorHas(r, "fewer layers"));
+	EXPECT_TRUE(ErrorHas(r, "fewer groups"));
+	Json::Value a = Obj(); a["layerOffset"] = 1;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "fewer groups"));
+}
+
+namespace
+{
+	// Budget that is one byte under the full single-sample reply: forces the slice path.
+	uint32_t SliceBudget(QFix& f)
+	{
+		Json::Value a = Obj(); a["from"] = 0; a["to"] = 1;
+		return uint32_t(Size(f.Call(kAgg, a))) - 1;
+	}
+
+	// Follows the layer cursor to the end, re-sending to/layers/groups and the `next` fields.
+	Pages PageSlices(QFix& f, Json::Value args)
+	{
+		Pages p;
+		for (int guard = 0; guard < 10000; ++guard)
+		{
+			const Json::Value rep = f.Call(kAgg, args);
+			if (IsError(rep)) { p.failed = true; p.error = rep["error"].asString(); return p; }
+			p.maxBytes = std::max(p.maxBytes, Size(rep));
+			p.replies.push_back(rep);
+			if (!rep.isMember("next")) { return p; }
+			args["from"] = rep["next"]["from"];
+			args["layerOffset"] = rep["next"]["layerOffset"];
+			args["structure"] = rep["next"]["structure"];
+		}
+		p.failed = true;
+		p.error = "runaway paging";
+		return p;
+	}
+}
+
+TEST(HistoryQueriesAggregates, SampleThatDoesNotFitReturnsALayerSliceWithACursor)
+{
+	QFix f; f.Setup(); f.Run(6);
+	const uint32_t budget = SliceBudget(f);
+	f.Budget(budget);
+	const Json::Value r = f.Call(kAgg);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["count"].asUInt(), 1u);
+	EXPECT_EQ(r["from"].asUInt(), 0u);
+	EXPECT_EQ(r["layerOffset"].asUInt(), 0u);
+	EXPECT_EQ(r["layerTotal"].asUInt(), 3u);
+	EXPECT_GE(r["layerCount"].asUInt(), 1u);
+	EXPECT_LT(r["layerCount"].asUInt(), 3u);
+	EXPECT_EQ(r["rows"].size(), r["layerCount"].asUInt());
+	ASSERT_TRUE(r.isMember("next"));
+	EXPECT_EQ(r["next"]["from"].asUInt(), 0u);
+	EXPECT_EQ(r["next"]["layerOffset"].asUInt(), r["layerCount"].asUInt());
+	EXPECT_EQ(r["next"]["structure"].asString(), r["structure"].asString());
+	EXPECT_LE(Size(r), size_t(budget));
+	EXPECT_EQ(r["samples"].size(), 1u);
+
+	// layerOffset > 0 returns exactly one sample (the rest of that sample's layers), even if more would otherwise fit.
+	f.Budget(15000);
+	Json::Value a = Obj(); a["layerOffset"] = 1;
+	const Json::Value rest = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(rest)) << rest.toStyledString();
+	EXPECT_EQ(rest["count"].asUInt(), 1u);
+	EXPECT_EQ(rest["layerOffset"].asUInt(), 1u);
+	EXPECT_EQ(rest["layerCount"].asUInt(), 2u);
+	EXPECT_EQ(rest["rows"].size(), 2u);
+	ASSERT_TRUE(rest.isMember("next"));
+	EXPECT_EQ(rest["next"]["from"].asUInt(), 1u);
+	EXPECT_EQ(rest["next"]["layerOffset"].asUInt(), 0u);
+}
+
+TEST(HistoryQueriesAggregates, FollowingTheLayerCursorReassemblesTheUnlimitedData)
+{
+	QFix f; f.Setup(); f.Run(6);
+	const uint32_t budget = SliceBudget(f);
+	f.Budget(budget);
+	Json::Value args = Obj(); args["to"] = 4;
+	const Pages p = PageSlices(f, args);
+	ASSERT_FALSE(p.failed) << p.error;
+	EXPECT_LE(p.maxBytes, size_t(budget));
+	EXPECT_GT(p.replies.size(), 4u);
+	// Per sample: the slices tile layers 0..3 in order with no gaps.
+	std::map<uint32_t, std::map<std::string, Json::Value>> bySample;
+	std::map<uint32_t, uint32_t> covered;
+	for (const Json::Value& rep : p.replies)
+	{
+		const uint32_t s = rep["from"].asUInt();
+		EXPECT_EQ(rep["count"].asUInt(), 1u);
+		EXPECT_EQ(rep["layerOffset"].asUInt(), covered[s]);
+		covered[s] += rep["layerCount"].asUInt();
+		for (const std::string& l : rep["rows"].getMemberNames()) { bySample[s][l] = rep["rows"][l]; }
+	}
+	ASSERT_EQ(covered.size(), 4u);
+	f.Budget(15000);
+	for (uint32_t s = 0; s < 4; ++s)
+	{
+		EXPECT_EQ(covered[s], 3u);
+		Json::Value ref = Obj(); ref["from"] = s; ref["to"] = s + 1;
+		const Json::Value whole = f.Call(kAgg, ref);
+		ASSERT_FALSE(IsError(whole));
+		ASSERT_EQ(bySample[s].size(), whole["rows"].size()) << s;
+		for (const std::string& l : whole["rows"].getMemberNames()) { EXPECT_TRUE(JsonEq(bySample[s][l], whole["rows"][l])) << s << " " << l; }
+	}
+	// The last reply has no cursor; every earlier one does.
+	EXPECT_FALSE(p.replies.back().isMember("next"));
+	EXPECT_EQ(p.replies.back()["from"].asUInt(), 3u);
+}
+
+TEST(HistoryQueriesAggregates, SliceCursorWithAStaleStructureIsRejectedAndAFreshRequestSucceeds)
+{
+	QFix f; f.Setup(); f.Run(4);
+	f.Budget(SliceBudget(f));
+	const Json::Value first = f.Call(kAgg);
+	ASSERT_TRUE(first.isMember("next"));
+	// A recorder's structure cannot change live; a cursor from another structure is simulated with a different hash.
+	Json::Value a = Obj();
+	a["from"] = first["next"]["from"]; a["layerOffset"] = first["next"]["layerOffset"]; a["structure"] = "0123456789abcdef";
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "structure changed"));
+	a["structure"] = first["next"]["structure"];
+	EXPECT_FALSE(IsError(f.Call(kAgg, a)));
+	f.Budget(15000);
+	EXPECT_FALSE(IsError(f.Call(kAgg)));
+}
+
+TEST(HistoryQueriesAggregates, SliceWithAGroupFilterHonoursTheBudget)
+{
+	QFix f; f.Setup(); f.Run(6);
+	Json::Value g = Obj(); g["groups"] = StrList({ "world" });
+	Json::Value one = g; one["from"] = 0; one["to"] = 1;
+	const uint32_t budget = uint32_t(Size(f.Call(kAgg, one))) - 1;
+	f.Budget(budget);
+	const Pages p = PageSlices(f, g);
+	ASSERT_FALSE(p.failed) << p.error;
+	EXPECT_GT(p.replies.size(), 6u);
+	EXPECT_LE(p.maxBytes, size_t(budget));
 }
 
 // ---- events ---------------------------------------------------------------------------------------------------------
@@ -1303,8 +1436,17 @@ TEST(HistoryQueriesLarge, EveryReplyStaysUnderTheHostLimitAndReassemblesToTheFil
 		EXPECT_TRUE(JsonEq(entries, f.dec.root["schema"]["entries"]));
 	}
 
-	// The whole 20-layer row set of even one sample cannot fit in one reply: the error says to request fewer layers.
-	EXPECT_TRUE(ErrorHas(f.Call(kAgg), "fewer layers"));
+	// The whole 20-layer row set of even one sample cannot fit in one reply: it is returned as a layer slice with a cursor.
+	{
+		const Json::Value slice = f.Call(kAgg);
+		ASSERT_FALSE(IsError(slice)) << slice.toStyledString();
+		EXPECT_EQ(slice["count"].asUInt(), 1u);
+		EXPECT_EQ(slice["layerTotal"].asUInt(), 20u);
+		EXPECT_LT(slice["layerCount"].asUInt(), 20u);
+		ASSERT_TRUE(slice.isMember("next"));
+		EXPECT_EQ(slice["next"]["layerOffset"].asUInt(), slice["layerCount"].asUInt());
+		EXPECT_LE(Size(slice), size_t(kHostLimit));
+	}
 
 	// aggregates: one layer at a time (the catch-up pattern for a wide run), reassembled against the file.
 	{

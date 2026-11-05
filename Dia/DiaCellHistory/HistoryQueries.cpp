@@ -471,14 +471,49 @@ namespace Dia::CellHistory
 			return r;
 		};
 
+		if (req.layerOffset > 0 && from >= to) { return Fail(kAggName, "invalid cursor: layerOffset needs a sample inside the range"); }
+
 		uint32_t n = 0;
-		if (to > from)
+		if (to > from && req.layerOffset == 0)
 		{
 			n = FitCount(to - from, mMaxReplyBytes, [&](uint32_t k) { return JsonSize(build(k, false)); });
-			if (n == 0) { return Fail(kAggName, "reply too large: request fewer layers (not even one sample of the requested layers fits in one reply)"); }
 		}
-		Json::Value reply = build(n, true);
-		return Finish(kAggName, 1, reply, from + n < to);
+		if (n > 0 || (to <= from && req.layerOffset == 0))
+		{
+			Json::Value reply = build(n, true);
+			return Finish(kAggName, 1, reply, from + n < to);
+		}
+
+		// Slice path: one sample, layers [layerOffset, layerOffset+k). samples/groupSizes repeat in every slice (one sample: cheap).
+		// Sizing always includes a worst-case `next` so the final reply never exceeds the budget.
+		const uint32_t total = uint32_t(layers.size());
+		const uint32_t offset = req.layerOffset;
+		auto buildSlice = [&](uint32_t k, bool fill) -> Json::Value
+		{
+			const std::vector<Rows::AggLayer> sub(layers.begin() + offset, layers.begin() + offset + k);
+			Json::Value r = Rows::BuildAggregateBody(rec, sub, from, 1, fill, req.hasGroups ? &req.groupWanted : nullptr);
+			r["structure"] = hex;
+			r["from"] = from;
+			r["count"] = 1;
+			r["layerOffset"] = offset;
+			r["layerCount"] = k;
+			r["layerTotal"] = total;
+			return r;
+		};
+		auto withNext = [&](Json::Value r, uint32_t nextFrom, uint32_t nextLayer) -> Json::Value
+		{
+			Json::Value nx(Json::objectValue);
+			nx["from"] = nextFrom; nx["layerOffset"] = nextLayer; nx["structure"] = hex;
+			r["next"] = nx;
+			return r;
+		};
+		const uint32_t k = FitCount(total - offset, mMaxReplyBytes, [&](uint32_t kk) { return JsonSize(withNext(buildSlice(kk, false), to, total)); });
+		if (k == 0) { return Fail(kAggName, "reply too large: request fewer groups (one layer of the requested groups does not fit in one reply)"); }
+		Json::Value reply = buildSlice(k, true);
+		bool more = false;
+		if (offset + k < total) { reply = withNext(reply, from, offset + k); more = true; }
+		else if (from + 1 < to) { reply = withNext(reply, from + 1, 0); more = true; }
+		return Finish(kAggName, 1, reply, more);
 	}
 
 	// ---- events ---------------------------------------------------------------------------------------------------------

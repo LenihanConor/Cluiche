@@ -34,7 +34,10 @@
 // Aggregates. { structure, from, count, next?:{from}, samples:[{tick,label,band}], groupSizes:{group:b64 u16 per sample},
 //   rows:{layer:{kind, first, values?, groups:{group:{min,mean,max}|b64 u16 sample-major}}} } for as many whole samples as fit
 //   (at least 1). Arrays cover [from, from+count); a sample before the layer's `first` is NaN (floats) / zero counts (categories),
-//   exactly as in the file. If one sample of the requested layers does not fit: error "reply too large: request fewer layers".
+//   exactly as in the file. If not even one whole sample fits (or the request has layerOffset > 0) the reply is a layer slice: ONE
+//   sample (count 1) holding layers [layerOffset, layerOffset+layerCount) of layerTotal, plus samples/groupSizes, and
+//   next:{from,layerOffset,structure} continuing the same sample or (layerOffset 0) the next one; the client re-sends to/layers/groups.
+//   If one layer of the requested groups alone does not fit: error "reply too large: request fewer groups".
 // Events. { from, to, events:[file-shaped], next?:{from,skip} } at most MaxEvents() (2,000) events and within the budget. `next`
 //   resumes inside a sample: `from` is the sample and `skip` the number of that sample's events (before any `types` filter)
 //   already delivered; pass both back (request fields `from`, `skip`). Keep the same `to` and `types` while following a cursor.
