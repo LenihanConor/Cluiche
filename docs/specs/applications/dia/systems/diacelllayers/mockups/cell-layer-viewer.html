@@ -609,6 +609,106 @@ body[data-state="hover"] .hover-demo { display: block; }
   font-size: 9px; padding: 0 5px; border-radius: 2px; margin-bottom: 4px; }
 .hover-tip .ht-row { display: flex; justify-content: space-between; }
 
+/* ===== DiaCellHistory F3: SNAPSHOTS section (mockup) ===== */
+.timeline-bar.tl-card { max-height: 62vh; overflow-y: auto; }
+.mock-switch2 {
+  display: flex; align-items: center; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;
+  padding: 3px 6px; border: 1px dashed #4a3a6a; background: #17121f; border-radius: 2px;
+}
+.mock-switch2 .ms-title { font-size: 9px; color: #9b59b6; margin-right: 6px; letter-spacing: 0.5px; }
+.mock-switch2 button {
+  background: #1f1f1f; border: 1px solid #333; color: #999; font-family: inherit;
+  font-size: 9px; padding: 2px 7px; border-radius: 2px; cursor: pointer;
+}
+.mock-switch2 button:hover { color: #ddd; }
+.mock-switch2 button.on { background: #1a2530; border-color: #5a9fd4; color: #5a9fd4; }
+
+.sn-sec { margin-top: 8px; border-top: 1px solid #2a2a2a; padding-top: 6px; }
+.sn-head { display: flex; align-items: center; gap: 10px; font-size: 9px; color: #888; margin-bottom: 4px; }
+.sn-title { color: #aaa; font-weight: 600; letter-spacing: 0.5px; }
+.sn-count { color: #5a9fd4; font-size: 10px; }
+.sn-count.full { color: #e74c3c; font-weight: 600; }
+.sn-note { color: #666; }
+.sn-wrap { overflow-x: auto; }
+.sn-cols, .sn-row {
+  display: grid; align-items: center; column-gap: 6px;
+  grid-template-columns: 14px 128px 112px 84px 72px 52px 170px 96px minmax(230px, 1fr);
+  min-width: 960px;
+}
+.sn-cols { font-size: 8px; color: #666; padding: 2px 6px; letter-spacing: 0.4px; text-transform: uppercase; border-bottom: 1px solid #222; }
+.sn-list { max-height: 176px; overflow-y: auto; background: #0f0f0f; border: 1px solid #2a2a2a; border-top: 0; min-width: 960px; }
+.sn-empty { padding: 14px; text-align: center; color: #777; font-size: 10px; line-height: 1.6; }
+.sn-empty b { color: #aaa; }
+.sn-row { padding: 3px 6px; font-size: 10px; color: #aaa; border-bottom: 1px solid #181818; cursor: pointer; }
+.sn-row:hover { background: #151a20; }
+.sn-row.sel { background: #1a2530; box-shadow: inset 2px 0 0 #5a9fd4; }
+.sn-row.flash { animation: snflash 1.2s; }
+@keyframes snflash { 0%,60% { background: #2a3f55; } 100% { background: transparent; } }
+.sn-dia { color: #5a9fd4; font-size: 11px; }
+.sn-row.failed .sn-dia { color: #e74c3c; }
+.sn-row.pending .sn-dia { color: #f5a623; }
+.sn-name { color: #e0e0e0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sn-dim { color: #777; }
+.sn-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; padding: 1px 6px; border-radius: 8px; border: 1px solid; max-width: 100%; overflow: hidden; white-space: nowrap; }
+.sn-pill.ready { background: #1d2a1d; border-color: #2f4f2f; color: #8aea8a; }
+.sn-pill.pending { background: #3a2a0a; border-color: #f5a623; color: #ffd27a; }
+.sn-pill.failed { background: #2a1210; border-color: #7a3a34; color: #ff9a8e; }
+.sn-spin { width: 8px; height: 8px; border: 2px solid #f5a62366; border-top-color: #f5a623; border-radius: 50%; animation: snspin 0.8s linear infinite; display: inline-block; }
+@keyframes snspin { to { transform: rotate(360deg); } }
+.sn-badge { font-size: 8px; padding: 1px 5px; border-radius: 2px; border: 1px solid #333; color: #888; white-space: nowrap; }
+.sn-badge.same { color: #7fb8e0; border-color: #2a3a50; background: #131b24; }
+.sn-badge.earlier { color: #c9a0e8; border-color: #4a3a6a; background: #1a1424; }
+.sn-badge.grid { color: #ffd27a; border-color: #f5a623; background: #3a2a0a; }
+.sn-acts { display: flex; gap: 4px; justify-content: flex-end; }
+.sn-btn { background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit; font-size: 9px; padding: 2px 7px; border-radius: 2px; cursor: pointer; white-space: nowrap; }
+.sn-btn:hover:not(:disabled) { background: #2a2a2a; color: #fff; }
+.sn-btn.restore { border-color: #2f4f2f; color: #8aea8a; }
+.sn-btn.compare { border-color: #4a3a6a; color: #c9a0e8; }
+.sn-btn.del { border-color: #5a2a26; color: #e0867c; }
+.sn-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.sn-sub { grid-column: 2 / -1; font-size: 9px; padding: 1px 0 2px; }
+.sn-sub.err { color: #ff9a8e; }
+.sn-sub.warn { color: #ffd27a; }
+.sn-sub.cmds { color: #666; }
+.sn-sub.cmds span { color: #5a9fd4; margin-right: 12px; }
+.sn-sub.conf { display: flex; align-items: center; gap: 8px; color: #ffb3a8; background: #2a1210; border: 1px solid #5a2a26; padding: 3px 6px; border-radius: 2px; }
+.sn-sub.conf .c { color: #5a9fd4; }
+.sn-capline { margin-top: 3px; font-size: 9px; color: #666; min-height: 12px; }
+.sn-capline .c { color: #5a9fd4; }
+.sn-form { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.sn-form input[type=text] { width: 220px; background: #0f0f0f; border: 1px solid #3a3a3a; color: #ccc; font-family: inherit; font-size: 10px; padding: 3px 6px; border-radius: 2px; outline: none; }
+.sn-form input[type=text]:focus { border-color: #5a9fd4; }
+.sn-form input[type=text].bad { border-color: #e74c3c; }
+.sn-form input[type=text]:disabled { opacity: 0.4; }
+.sn-form label { font-size: 10px; color: #999; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.sn-take { background: #1a2530; border: 1px solid #5a9fd4; color: #9fd0f5; font-family: inherit; font-size: 10px; padding: 3px 14px; border-radius: 2px; cursor: pointer; }
+.sn-take:disabled { opacity: 0.35; cursor: not-allowed; }
+.sn-msg { font-size: 9px; }
+.sn-msg.err { color: #ff9a8e; }
+.sn-msg.warn { color: #ffd27a; }
+.sn-msg.info { color: #777; }
+
+.sn-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; }
+.sn-modal-bg.open { display: flex; }
+.sn-modal { width: 480px; background: #1a1a1a; border: 1px solid #f5a623; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+.sn-modal.reset { border-color: #9b59b6; }
+.sn-modal h4 { padding: 8px 12px; font-size: 12px; color: #ffd27a; background: #2a2210; border-bottom: 1px solid #5a4a2a; font-weight: 600; }
+.sn-modal.reset h4 { color: #c9a0e8; background: #1f1829; border-color: #4a3a6a; }
+.sn-modal .mb { padding: 12px; font-size: 11px; line-height: 1.55; color: #ccc; }
+.sn-modal .mb b { color: #fff; }
+.sn-modal .mb ul { margin: 6px 0 0 16px; color: #999; font-size: 10px; }
+.sn-modal .mc { padding: 0 12px 8px; font-size: 9px; color: #666; }
+.sn-modal .mc span { color: #5a9fd4; }
+.sn-modal .mf { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 12px; border-top: 1px solid #2a2a2a; }
+.sn-modal .mf button { font-family: inherit; font-size: 10px; padding: 4px 12px; border-radius: 2px; cursor: pointer; background: #252525; border: 1px solid #3a3a3a; color: #ccc; }
+.sn-modal .mf button.go { background: #3a2a0a; border-color: #f5a623; color: #ffd27a; }
+.sn-modal.reset .mf button.go { background: #2a1f3a; border-color: #9b59b6; color: #d9b8f0; }
+.sn-toast { display: none; position: fixed; right: 16px; top: 44px; z-index: 300; max-width: 430px; background: #1d2a1d; border: 1px solid #4a8a4a; color: #b5f0b5; padding: 8px 12px; border-radius: 3px; font-size: 11px; line-height: 1.5; box-shadow: 0 6px 16px rgba(0,0,0,0.7); cursor: pointer; }
+.sn-toast.show { display: block; }
+.sn-toast .t2 { color: #7aa87a; font-size: 9px; }
+.sn-toast.warn { background: #3a2a0a; border-color: #f5a623; color: #ffd27a; }
+.sn-toast.warn .t2 { color: #b89550; }
+
 /* FOOTER */
 .footer-commands {
   background: #161616;
@@ -1160,9 +1260,43 @@ body[data-state="hover"] .hover-demo { display: block; }
 
   <div class="timeline-info" style="margin-top:5px;">
     <div>tracked per-cell: vegetation, precipitation (window: sample 312&ndash;519) &middot; <span class="timeline-budget">38 / 64 MB</span> &middot; <span class="tl-track-note">sparkline: 256 points</span></div>
-    <div style="color: #9b59b6; cursor: pointer;">Delta view: now &minus; pre-drought [thumbnail &#9660;]</div>
+    <div style="color: #9b59b6; cursor: pointer;" id="tlDelta">Delta view: now &minus; pre-drought [thumbnail &#9660;]</div>
+  </div>
+
+  <!-- F3: SNAPSHOTS section -->
+  <div class="sn-sec" id="snSec">
+    <div class="mock-switch2">
+      <span class="ms-title">SNAPSHOT STATE</span>
+      <button data-sn="empty">SNAPSHOTS: EMPTY</button>
+      <button data-sn="list">SNAPSHOTS: LIST</button>
+      <button data-sn="failed">SNAPSHOTS: FAILED + ORPHAN</button>
+      <button data-sn="cap">SNAPSHOTS: CAP REACHED</button>
+      <button data-sn="rc_same">SNAPSHOTS: RESTORE CONFIRM (same run)</button>
+      <button data-sn="rc_earlier">SNAPSHOTS: RESTORE CONFIRM (earlier session)</button>
+      <button data-sn="refused">SNAPSHOTS: RESTORE REFUSED (other grid)</button>
+      <button data-sn="delete">SNAPSHOTS: DELETE CONFIRM</button>
+    </div>
+    <div class="sn-head">
+      <span class="sn-title">SNAPSHOTS</span>
+      <span class="sn-count" id="snCount">0 / 16</span>
+      <span class="sn-note">named, kept as files (game state + cell file); survive restarts; separate from the game's save slots</span>
+    </div>
+    <div class="sn-wrap">
+      <div class="sn-cols"><span></span><span>Name</span><span>Sample</span><span>World</span><span>Taken</span><span>Size</span><span>Status</span><span>Run</span><span style="text-align:right">Actions</span></div>
+      <div class="sn-list" id="snList"></div>
+    </div>
+    <div class="sn-capline" id="snCapline"></div>
+    <div class="sn-form">
+      <input type="text" id="snName" placeholder="snapshot name (A-Z a-z 0-9 _ -)" autocomplete="off">
+      <label><input type="checkbox" id="snOver"> Overwrite</label>
+      <button class="sn-take" id="snTake">Take</button>
+      <span class="sn-msg info" id="snMsg"></span>
+    </div>
   </div>
 </div>
+
+<div class="sn-modal-bg" id="snModalBg"><div class="sn-modal" id="snModal"></div></div>
+<div class="sn-toast" id="snToast"></div>
 
 <script>
 (function () {
@@ -1211,10 +1345,7 @@ body[data-state="hover"] .hover-demo { display: block; }
     d.title = e.count + ' x ' + e.type + ' near sample ' + s;
   });
 
-  // existing snapshot diamonds (Feature 3) stay
-  [[200, 'pre-drought'], [370, 'after-fire']].forEach(function (s) {
-    var d = add(lane, 'tl-snap', 'left:' + pct(s[0]) + '%;top:auto;bottom:-8px', '&#9670;'); d.title = 'Snapshot: ' + s[1];
-  });
+  // snapshot diamonds are rendered by the Snapshots script below (from the snapshot list)
 
   // sparkline: 256 points of the active base layer world mean, path broken across the aggregate gap
   var seg = '', pen = false, svg = document.getElementById('tlSpark');
@@ -1255,7 +1386,250 @@ body[data-state="hover"] .hover-demo { display: block; }
   document.querySelectorAll('.live-btn').forEach(function (b) {
     b.addEventListener('click', function () { setState('live'); });
   });
+  window.__cellSetState = setState;
   setState('live');
+})();
+</script>
+
+<script>
+/* F3 Snapshots section (mockup). Static data; buttons move between the matching states. */
+(function () {
+  var LAST = 519, ACTIVE_GRID = '104x64', WORLD = 'coast_range';
+  var lane = document.getElementById('tlLane');
+  var $ = function (id) { return document.getElementById(id); };
+  function lab(n) { return 'Y' + (Math.floor(n / 13) + 1) + ' W' + ((n % 13) * 4 + 1); }
+  function R(name, sample, created, kb, status, same, extra) {
+    var r = { name: name, sample: sample, world: WORLD, grid: ACTIVE_GRID, created: created, kb: kb, status: status, same: same, reason: '', orphan: false };
+    for (var k in extra) r[k] = extra[k];
+    return r;
+  }
+  function baseList() {
+    return [
+      R('pre-drought', 200, '3 h ago', 412, 'ready', true, {}),
+      R('after-fire', 370, '1 h ago', 408, 'ready', true, {}),
+      R('pre-fire-test', 455, '22 min ago', 410, 'ready', true, {}),
+      R('spring-baseline', 140, 'yesterday', 396, 'ready', false, {})
+    ];
+  }
+  var rows = [], sel = null, delFor = null, modalFor = null, notice = '', hoverCmd = '';
+
+  var SCN = {
+    empty: function () { rows = []; sel = null; },
+    list: function () {
+      rows = baseList(); rows.push(R('wet-year', 519, 'just now', null, 'pending', true, {})); sel = 'pre-drought';
+    },
+    failed: function () {
+      rows = baseList().slice(0, 1);
+      rows.push(R('big-test', 519, '2 min ago', null, 'failed', true, { reason: 'store failed: cow.save already pending; nothing was written' }));
+      rows.push(R('old-run', 77, '4 days ago', null, 'failed', false, { orphan: true, reason: 'state file missing: snapshot_old-run.cells.json has no game state (orphan)' }));
+      rows.push(R('lost-cells', 300, '4 days ago', null, 'failed', false, { orphan: true, reason: 'cell file missing: game state exists but snapshot_lost-cells.cells.json does not (orphan)' }));
+      sel = 'big-test';
+    },
+    cap: function () {
+      rows = baseList();
+      for (var i = 5; i <= 16; i++) rows.push(R('snap-' + (i < 10 ? '0' : '') + i, 40 + i * 25, (i % 3) + ' days ago', 380 + i, 'ready', false, {}));
+      sel = 'pre-drought';
+    },
+    rc_same: function () { SCN.list(); rows.pop(); sel = 'pre-drought'; modalFor = 'pre-drought'; },
+    rc_earlier: function () { SCN.list(); rows.pop(); sel = 'spring-baseline'; modalFor = 'spring-baseline'; },
+    refused: function () {
+      SCN.list(); rows.pop();
+      rows.push(R('river-delta', 233, 'yesterday', 301, 'ready', false, { world: 'river_delta', grid: '96x64' }));
+      sel = 'river-delta';
+      notice = "Restore refused: snapshot 'river-delta' is for a different grid (96 x 64); load that world first. Nothing was changed.";
+    },
+    'delete': function () { SCN.list(); rows.pop(); sel = 'pre-fire-test'; delFor = 'pre-fire-test'; }
+  };
+
+  function find(n) { for (var i = 0; i < rows.length; i++) if (rows[i].name === n) return rows[i]; return null; }
+  function busy() { return rows.some(function (r) { return r.status === 'pending'; }); }
+  function otherGrid(r) { return r.grid !== ACTIVE_GRID; }
+
+  function validate() {
+    var n = $('snName').value, over = $('snOver').checked;
+    if (busy()) return { ok: false, kind: 'warn', msg: 'snapshot operation in progress' };
+    if (n === '') return { ok: false, kind: 'info', msg: rows.length >= 16 ? '16 of 16 — delete a snapshot first' : 'Type a name, then Take' };
+    if (n.length > 32) return { ok: false, kind: 'err', bad: 1, msg: 'name is ' + n.length + ' characters; the limit is 32' };
+    if (!/^[A-Za-z0-9_-]+$/.test(n)) return { ok: false, kind: 'err', bad: 1, msg: 'name may only use A-Z a-z 0-9 _ - (no spaces, dots or slashes)' };
+    if (rows.length >= 16) return { ok: false, kind: 'err', msg: '16 of 16 — delete a snapshot first' };
+    if (find(n) && !over) return { ok: false, kind: 'err', bad: 1, msg: "'" + n + "' already exists; tick Overwrite to replace it" };
+    if (find(n)) return { ok: true, kind: 'warn', msg: "will replace the existing '" + n + "' (state file and cell file)" };
+    return { ok: true, kind: 'info', msg: 'ready' };
+  }
+
+  function renderDiamonds() {
+    Array.prototype.slice.call(lane.querySelectorAll('.tl-snap')).forEach(function (d) { d.parentNode.removeChild(d); });
+    rows.forEach(function (r) {
+      if (!r.same || r.status === 'failed' || r.sample > LAST) return;
+      var d = document.createElement('div'); d.className = 'tl-snap'; d.setAttribute('data-name', r.name);
+      d.style.cssText = 'left:' + (r.sample / LAST * 100) + '%;top:auto;bottom:-8px;cursor:pointer;z-index:6;' + (r.status === 'pending' ? 'color:#f5a623;' : '') + (r.name === sel ? 'color:#fff;text-shadow:0 0 6px #5a9fd4;' : '');
+      d.innerHTML = '&#9670;';
+      d.title = 'Snapshot ' + r.name + ' — sample ' + r.sample + ' (' + lab(r.sample) + ') [' + r.status + ']';
+      d.addEventListener('click', function (e) { e.stopPropagation(); select(r.name, true); });
+      lane.appendChild(d);
+    });
+  }
+
+  function render() {
+    var full = rows.length >= 16, b = busy();
+    $('snCount').textContent = rows.length + ' / 16';
+    $('snCount').className = 'sn-count' + (full ? ' full' : '');
+    var h = '';
+    if (!rows.length) {
+      h = '<div class="sn-empty"><b>No snapshots yet.</b><br>Type a name below and press Take to keep the world as it is now (game state + a copy of every recorded layer).<br>' +
+          'Later you can compare against it or restore it, even after the history rolls over or the game restarts.</div>';
+    }
+    rows.forEach(function (r) {
+      var og = otherGrid(r), canRestore = r.status === 'ready' && !og && !b;
+      var why = og ? 'other grid' : (b ? 'snapshot operation in progress' : '');
+      var pill = r.status === 'pending' ? '<span class="sn-pill pending"><span class="sn-spin"></span>pending</span>'
+               : r.status === 'failed' ? '<span class="sn-pill failed" title="' + r.reason + '">failed: ' + r.reason.split(':')[0] + '</span>'
+               : '<span class="sn-pill ready">ready</span>';
+      var badge = og ? '<span class="sn-badge grid">other grid ' + r.grid.replace('x', ' x ') + '</span>'
+                : r.same ? '<span class="sn-badge same">same run</span>' : '<span class="sn-badge earlier">earlier session</span>';
+      h += '<div class="sn-row ' + r.status + (r.name === sel ? ' sel' : '') + '" data-name="' + r.name + '">' +
+        '<span class="sn-dia">&#9670;</span><span class="sn-name" title="' + r.name + '">' + r.name + '</span>' +
+        '<span>' + (r.orphan && r.sample === 300 ? '<span class="sn-dim">unknown</span>' : r.sample + ' <span class="sn-dim">' + lab(r.sample) + '</span>') + '</span>' +
+        '<span class="sn-dim">' + r.world + '</span><span class="sn-dim">' + r.created + '</span><span class="sn-dim">' + (r.kb ? r.kb + ' KB' : '—') + '</span>' +
+        '<span>' + pill + '</span><span>' + badge + '</span>' +
+        '<span class="sn-acts">' +
+          '<button class="sn-btn restore" data-act="restore" data-name="' + r.name + '"' + (canRestore ? '' : ' disabled') + ' title="' + (canRestore ? 'cells.snapshot.restore ' + r.name : (why || 'not restorable')) + '">Restore</button>' +
+          '<button class="sn-btn compare" data-act="compare" data-name="' + r.name + '"' + (r.status === 'ready' && !og ? '' : ' disabled') + ' title="cells.history.delta &lt;layer&gt; snapshot:' + r.name + ' now">Compare to now</button>' +
+          '<button class="sn-btn del" data-act="delete" data-name="' + r.name + '" title="cells.snapshot.delete ' + r.name + '">Delete</button>' +
+        '</span>';
+      if (r.status === 'failed') h += '<span class="sn-sub err">' + r.reason + '</span>';
+      else if (og) h += '<span class="sn-sub warn">Restore unavailable: snapshot is for a different grid (' + r.grid.replace('x', ' x ') + '; active is ' + ACTIVE_GRID.replace('x', ' x ') + '); load that world first</span>';
+      else if (b && r.status === 'ready' && r.name === sel) h += '<span class="sn-sub warn">Restore disabled: snapshot operation in progress</span>';
+      if (r.name === sel && r.status === 'ready' && !og)
+        h += '<span class="sn-sub cmds"><span>cells.snapshot.restore ' + r.name + '</span><span>cells.history.delta vegetation snapshot:' + r.name + ' now</span><span>cells.snapshot.delete ' + r.name + '</span></span>';
+      if (r.name === sel && r.status === 'failed')
+        h += '<span class="sn-sub cmds"><span>cells.snapshot.delete ' + r.name + '</span> removes any leftover half and clears this entry</span>';
+      if (delFor === r.name)
+        h += '<span class="sn-sub conf">Delete \'' + r.name + '\'? Removes the game state and the cell file (' + (r.kb ? r.kb + ' KB' : 'both halves') + '). This cannot be undone.' +
+             '<span class="c">cells.snapshot.delete ' + r.name + '</span>' +
+             '<button class="sn-btn del" data-act="delok" data-name="' + r.name + '">Yes, delete</button><button class="sn-btn" data-act="delno">Cancel</button></span>';
+      h += '</div>';
+    });
+    $('snList').innerHTML = h;
+
+    $('snCapline').innerHTML = notice ? '<span style="color:#ffd27a">' + notice + '</span>' :
+      (hoverCmd ? 'runs: <span class="c">' + hoverCmd + '</span>' : 'Hover or select a row to see the command each button runs.');
+
+    var v = validate(), nm = $('snName').value;
+    $('snTake').disabled = !v.ok;
+    $('snName').disabled = b || full;
+    $('snName').className = v.bad ? 'bad' : '';
+    $('snOver').disabled = b;
+    var cmd = 'cells.snapshot.take ' + (nm || '<name>') + ($('snOver').checked ? ' overwrite' : '');
+    $('snMsg').className = 'sn-msg ' + v.kind;
+    $('snMsg').innerHTML = (v.msg ? v.msg + ' &middot; ' : '') + '<span style="color:#5a9fd4">' + cmd.replace(/</g, '&lt;') + '</span> &middot; ' + rows.length + ' / 16';
+    $('snTake').title = cmd;
+    renderDiamonds();
+    renderModal();
+  }
+
+  function renderModal() {
+    var bg = $('snModalBg'), m = $('snModal'), r = modalFor && find(modalFor);
+    if (!r) { bg.className = 'sn-modal-bg'; return; }
+    var dropped = LAST - r.sample, same = r.same;
+    m.className = 'sn-modal' + (same ? '' : ' reset');
+    m.innerHTML = same
+      ? '<h4>Restore \'' + r.name + '\'?</h4><div class="mb">History after sample <b>' + r.sample + '</b> (' + lab(r.sample) + ') will be dropped &mdash; <b>' + dropped + ' samples</b>.' +
+        '<ul><li>aggregate rows, per-cell ring slots and events after that sample are removed (a Warning logs the count)</li>' +
+        '<li>game state is loaded through the store, no re-simulation</li><li>the viewer returns to live; your selection is kept</li></ul></div>'
+      : '<h4>Restore \'' + r.name + '\'?</h4><div class="mb">History will be <b>reset</b> (snapshot is from another run).' +
+        '<ul><li>all recorded history (' + (LAST + 1) + ' samples) is cleared, a new run starts and sample numbering restarts at 0</li>' +
+        '<li>game state is loaded through the store, no re-simulation</li><li>the viewer returns to live; your selection is kept</li></ul></div>';
+    m.innerHTML += '<div class="mc">runs: <span>cells.snapshot.restore ' + r.name + '</span></div>' +
+      '<div class="mf"><button data-act="mcancel">Cancel</button><button class="go" data-act="mok">' + (same ? 'Restore and drop ' + dropped + ' samples' : 'Restore and reset history') + '</button></div>';
+    bg.className = 'sn-modal-bg open';
+  }
+
+  var toastT;
+  function toast(l1, l2, warn) {
+    var t = $('snToast'); t.className = 'sn-toast show' + (warn ? ' warn' : '');
+    t.innerHTML = l1 + (l2 ? '<div class="t2">' + l2 + '</div>' : '');
+    clearTimeout(toastT); toastT = setTimeout(function () { t.className = 'sn-toast'; }, 7000);
+  }
+  $('snToast').addEventListener('click', function () { this.className = 'sn-toast'; });
+
+  function select(name, scroll) {
+    sel = name; notice = ''; render();
+    var el = $('snList').querySelector('.sn-row[data-name="' + name + '"]');
+    if (el && scroll) { el.scrollIntoView({ block: 'nearest' }); el.classList.add('flash'); }
+  }
+
+  function remove(name) { rows = rows.filter(function (r) { return r.name !== name; }); if (sel === name) sel = null; }
+
+  function act(a, name) {
+    var r = name && find(name);
+    if (a === 'restore' && r) { modalFor = name; sel = name; notice = ''; }
+    else if (a === 'mcancel') { modalFor = null; }
+    else if (a === 'mok' && r) {
+      modalFor = null;
+      if (r.same) toast('Restored \'' + r.name + '\': dropped ' + (LAST - r.sample) + ' samples', 'Warning logged &middot; viewer is live &middot; selection kept');
+      else toast('Restored \'' + r.name + '\': history reset (new run, numbering restarts at 0)', 'Warning logged &middot; viewer is live &middot; selection kept', true);
+      if (window.__cellSetState) window.__cellSetState('live');
+    }
+    else if (a === 'compare' && r) {
+      sel = name; notice = '';
+      $('tlDelta').innerHTML = 'Delta view: A = snapshot:' + r.name + ' &rarr; B = now &middot; Vegetation <span style="color:#666">[cells.history.delta vegetation snapshot:' + r.name + ' now]</span>';
+      toast('Delta view on: A = snapshot:' + r.name + ', B = now', 'cells.history.delta vegetation snapshot:' + r.name + ' now');
+    }
+    else if (a === 'delete' && r) { delFor = name; sel = name; }
+    else if (a === 'delno') { delFor = null; }
+    else if (a === 'delok' && r) { remove(name); delFor = null; toast('Deleted \'' + name + '\'', 'cells.snapshot.delete ' + name + ' &middot; state file and cell file removed'); }
+    render();
+  }
+
+  $('snList').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-act]') : null;
+    if (b) { e.stopPropagation(); if (!b.disabled) act(b.getAttribute('data-act'), b.getAttribute('data-name')); return; }
+    var row = e.target.closest ? e.target.closest('.sn-row') : null;
+    if (row) select(row.getAttribute('data-name'), false);
+  });
+  $('snList').addEventListener('mouseover', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-act]') : null, c = '';
+    if (b && !b.disabled) {
+      var n = b.getAttribute('data-name'), a = b.getAttribute('data-act');
+      c = a === 'restore' ? 'cells.snapshot.restore ' + n : a === 'compare' ? 'cells.history.delta <layer> snapshot:' + n + ' now' : a === 'delete' ? 'cells.snapshot.delete ' + n : '';
+    }
+    if (c !== hoverCmd) { hoverCmd = c; if (!notice) $('snCapline').innerHTML = c ? 'runs: <span class="c">' + c.replace(/</g, '&lt;') + '</span>' : 'Hover or select a row to see the command each button runs.'; }
+  });
+  $('snModal').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button[data-act]') : null;
+    if (b) act(b.getAttribute('data-act'), modalFor);
+  });
+  $('snModalBg').addEventListener('click', function (e) { if (e.target === this) act('mcancel'); });
+
+  $('snName').addEventListener('input', function () { notice = ''; render(); });
+  $('snOver').addEventListener('change', render);
+  $('snTake').addEventListener('click', function () {
+    var v = validate(); if (!v.ok) return;
+    var n = $('snName').value, old = find(n);
+    if (old) remove(n);
+    var r = R(n, LAST, 'just now', null, 'pending', true, {});
+    rows.unshift(r); sel = n; notice = ''; $('snName').value = ''; $('snOver').checked = false; render();
+    setTimeout(function () {                 // the store answers at the next frame boundary
+      if (rows.indexOf(r) < 0) return;
+      r.status = 'ready'; r.kb = 411; render();
+      toast('Snapshot \'' + n + '\' ready (sample ' + LAST + ', 411 KB)', 'cells.snapshot.list shows status: ready');
+    }, 2200);
+  });
+
+  document.querySelectorAll('.mock-switch2 button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-sn');
+      delFor = null; modalFor = null; notice = ''; hoverCmd = '';
+      $('snName').value = ''; $('snOver').checked = false;
+      SCN[k]();
+      if (k === 'cap') { $('snName').value = 'pre-drought'; }
+      document.querySelectorAll('.mock-switch2 button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      render();
+      if (sel) { var el = $('snList').querySelector('.sn-row.sel'); if (el) el.scrollIntoView({ block: 'nearest' }); }
+    });
+  });
+  document.querySelector('.mock-switch2 button[data-sn="list"]').click();
 })();
 </script>
 
@@ -1266,7 +1640,11 @@ body[data-state="hover"] .hover-demo { display: block; }
   <span class="footer-cmd">cells.select.query "vegetation < 0.2 and biome = Grassland"</span> ·
   <span class="footer-cmd">cells.history.track vegetation herbivores precipitation</span> ·
   <span class="footer-cmd">cells.snapshot.take pre-drought</span> ·
+  <span class="footer-cmd">cells.snapshot.take pre-drought overwrite</span> ·
   <span class="footer-cmd">cells.snapshot.restore pre-drought</span> ·
+  <span class="footer-cmd">cells.snapshot.list</span> ·
+  <span class="footer-cmd">cells.snapshot.delete pre-drought</span> ·
+  <span class="footer-cmd">cells.history.delta vegetation snapshot:pre-drought now</span> ·
   <span class="footer-cmd">cells.overlay.toggle_by_id {"id":"weather.wind"}</span> ·
   <span class="footer-cmd">cells.overlay.toggle_by_id {"id":"region_edges"}</span> ·
   <span class="footer-cmd">cells.select.pin A</span> ·
