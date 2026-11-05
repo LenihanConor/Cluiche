@@ -255,8 +255,13 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
     case TerrainStage::SeedFields:  RunSeedFields(wldStream); break;
     case TerrainStage::Landmass:
     {
-        const int idx = mLayers.FindLayer("landPotential");
-        ComputeStage1(mRules, mShape, mDims, mSeedFields, mLayers.FloatLayer(idx), mStage1);
+        Stage1Layers out;
+        out.landPotential   = mLayers.FloatLayer(mLayers.FindLayer("landPotential"));
+        out.islandPotential = mLayers.FloatLayer(mLayers.FindLayer("islandPotential"));
+        out.landmass        = mLayers.UIntLayer(mLayers.FindLayer("landmass"));
+        out.coastDistance   = mLayers.UIntLayer(mLayers.FindLayer("coastDistance"));
+        out.volcanic        = mLayers.UIntLayer(mLayers.FindLayer("volcanic"));
+        ComputeStage1(mRules, mShape, mDims, mSeedFields, out, mStage1, mEffective);
         break;
     }
     case TerrainStage::Mountains:   break;   // TODO: mountains (later task)

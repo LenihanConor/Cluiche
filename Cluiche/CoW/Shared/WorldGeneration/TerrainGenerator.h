@@ -40,7 +40,11 @@ struct StageTiming
 
 // X(name, LayerType, producing TerrainStage).
 #define TERRAIN_LAYERS_TABLE(X) \
-    X("landPotential", LayerType::Float, TerrainStage::Landmass)
+    X("landPotential",   LayerType::Float, TerrainStage::Landmass) \
+    X("islandPotential", LayerType::Float, TerrainStage::Landmass) \
+    X("landmass",        LayerType::UInt,  TerrainStage::Landmass) \
+    X("coastDistance",   LayerType::UInt,  TerrainStage::Landmass) \
+    X("volcanic",        LayerType::UInt,  TerrainStage::Landmass)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;
@@ -161,8 +165,9 @@ public:
     const StageTiming*   GetTimings() const { return mTimings; }   // TerrainStage::Count entries
     float                GetLastTotalMs() const { return mLastTotalMs; }
     const SeedFields&    GetSeedFields() const { return mSeedFields; }
-    // Part-A seam (see TerrainLandmass.h): budgets and M ranking from Stage 1; task 5 extends it.
+    // Stage 1 internals (budgets, M ranking, masks, island groups) and effective slider values.
     const Stage1Debug&   GetStage1Debug() const { return mStage1; }
+    const Effective&     GetEffective() const { return mEffective; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -172,6 +177,7 @@ private:
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
     Stage1Debug      mStage1;
+    Effective        mEffective;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;
 

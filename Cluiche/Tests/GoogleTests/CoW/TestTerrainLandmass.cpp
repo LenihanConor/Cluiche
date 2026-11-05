@@ -4,7 +4,9 @@
 
 #include <DiaPathfinding/HexTopology.h>
 
+#include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -159,11 +161,11 @@ static void CheckLandCountSweep(uint64_t seedCount)
                 const int L = Land(s.landFraction, n);
                 ASSERT_FALSE(d.landClamped);
                 ASSERT_EQ(d.landTarget, L);
-                ASSERT_EQ(Count(d.ReferenceMainland()), L);
+                ASSERT_EQ(Count(d.TopMask(L)), L);
                 ASSERT_NEAR(static_cast<float>(L) / static_cast<float>(n), s.landFraction, 0.01f);
                 ASSERT_GE(d.islandBudget, 0);
                 ASSERT_LE(d.islandBudget, L);
-                ASSERT_EQ(Count(d.Mainland(d.islandBudget)), L - d.islandBudget);
+                ASSERT_EQ(Count(d.TopMask(L - d.islandBudget)), L - d.islandBudget);
             }
         }
     }
@@ -204,7 +206,7 @@ TEST(TerrainLandmass, LandTargetClampedToEligibleCells)
     EXPECT_EQ(d.landTargetRequested, 65);
     EXPECT_EQ(d.eligibleCount, 36);
     EXPECT_EQ(d.landTarget, 36);
-    EXPECT_EQ(Count(d.ReferenceMainland()), 36);
+    EXPECT_EQ(Count(d.TopMask(d.landTarget)), 36);
 }
 
 // AC5
@@ -219,7 +221,7 @@ static void CheckSubsetSweep(uint64_t seedCount)
             WorldShapeParams s;
             s.landFraction = 0.20f + 0.05f * static_cast<float>(step);
             r.Go(seed, s);
-            const auto cur = r.gen.GetStage1Debug().ReferenceMainland();
+            const auto cur = r.gen.GetStage1Debug().TopMask(r.gen.GetStage1Debug().landTarget);
             for (size_t i = 0; i < prev.size(); ++i)
             {
                 ASSERT_LE(prev[i], cur[i]) << "seed " << seed << " step " << step << " cell " << i;
@@ -259,7 +261,7 @@ static void CheckPeninsulaSweep(uint64_t seedCount)
             s.peninsulas = static_cast<uint8_t>(pen);
             r.Go(seed, s);
             ASSERT_EQ(r.gen.GetSeedFields(), sf);   // directions are stage-0 draws
-            ASSERT_EQ(Count(r.gen.GetStage1Debug().ReferenceMainland()), Land(s.landFraction, n));
+            ASSERT_EQ(Count(r.gen.GetStage1Debug().TopMask(r.gen.GetStage1Debug().landTarget)), Land(s.landFraction, n));
             const float phi = sf.peninsulaAngles[pen - 1];
             const int before = SectorCount(prevM.data(), sf, phi, threshold, kSmall);
             const int after = SectorCount(Potential(r.gen), sf, phi, threshold, kSmall);
@@ -360,7 +362,7 @@ TEST(SLOW_TerrainLandmass, WideSweepBudgetsSubsetsAndBorder)
                 s.peninsulas = static_cast<uint8_t>(seed % 4);
                 s.coastline = static_cast<float>(seed % 5) * 0.25f;
                 r.Go(seed, s, d);
-                const auto cur = r.gen.GetStage1Debug().ReferenceMainland();
+                const auto cur = r.gen.GetStage1Debug().TopMask(r.gen.GetStage1Debug().landTarget);
                 ASSERT_EQ(Count(cur), Land(s.landFraction, n));
                 for (size_t i = 0; i < prev.size(); ++i) { ASSERT_LE(prev[i], cur[i]); }
                 for (int i = 0; i < n; ++i)
@@ -371,4 +373,556 @@ TEST(SLOW_TerrainLandmass, WideSweepBudgetsSubsetsAndBorder)
             }
         }
     }
+}
+
+// ===========================================================================
+// Task 5: Stage 1 part B (islands, clean-up, landmasses, coast distance)
+// ===========================================================================
+namespace {
+
+using Dia::Pathfinding::HexTopology;
+using Dia::Pathfinding::CellCoord;
+using Dia::Pathfinding::kNoCell;
+
+const uint32_t* UIntLayer(const TerrainGenerator& g, const char* name)
+{
+    return g.GetLayers().GetUInt(g.GetLayers().FindLayer(name));
+}
+const float* FloatLayer(const TerrainGenerator& g, const char* name)
+{
+    return g.GetLayers().GetFloat(g.GetLayers().FindLayer(name));
+}
+
+bool NextTo(const HexTopology& t, int cell, const std::vector<uint8_t>& mask)
+{
+    for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
+    {
+        const uint32_t nb = t.NeighbourAt(static_cast<uint32_t>(cell), d);
+        if (nb != kNoCell && mask[nb]) { return true; }
+    }
+    return false;
+}
+
+int HexDist(const HexTopology& t, int a, int b)
+{
+    return static_cast<int>(HexTopology::Distance(t.ToCoord(static_cast<uint32_t>(a)), t.ToCoord(static_cast<uint32_t>(b))));
+}
+
+// Structural checks of the current generator state against the spec stage-1 guarantees.
+void CheckStage1Invariants(const TerrainGenerator& g, const WorldShapeParams& s, GridDimensions d, const std::string& ctx)
+{
+    const int n = d.width * d.height;
+    const HexTopology topo(d.width, d.height);
+    const Stage1Debug& dbg = g.GetStage1Debug();
+    const Effective& eff = g.GetEffective();
+    const uint32_t* landmass = UIntLayer(g, "landmass");
+    const uint32_t* coast = UIntLayer(g, "coastDistance");
+    const uint32_t* volc = UIntLayer(g, "volcanic");
+    const float* ip = FloatLayer(g, "islandPotential");
+    ASSERT_NE(landmass, nullptr) << ctx;
+    ASSERT_EQ(static_cast<int>(dbg.refMainland.size()), n) << ctx;
+    ASSERT_EQ(static_cast<int>(dbg.mainland.size()), n) << ctx;
+    ASSERT_EQ(static_cast<int>(dbg.islandMask.size()), n) << ctx;
+    ASSERT_EQ(static_cast<int>(dbg.islandGroup.size()), n) << ctx;
+
+    int land = 0, islandCells = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        const bool isLand = dbg.mainland[i] || dbg.islandMask[i];
+        ASSERT_EQ(landmass[i] != 0, isLand) << ctx << " cell " << i;
+        ASSERT_FALSE(dbg.mainland[i] && dbg.islandMask[i]) << ctx << " cell " << i;
+        land += isLand ? 1 : 0;
+        if (dbg.islandMask[i])
+        {
+            ++islandCells;
+            ASSERT_GE(dbg.islandGroup[i], 0) << ctx;
+            ASSERT_LT(dbg.islandGroup[i], eff.islands) << ctx;
+            ASSERT_GT(ip[i], 0.0f) << ctx << " cell " << i;
+            ASSERT_FALSE(dbg.refMainland[i]) << ctx << " cell " << i;
+            ASSERT_FALSE(NextTo(topo, i, dbg.refMainland)) << ctx << " island next to M_ref " << i;
+            ASSERT_FALSE(NextTo(topo, i, dbg.mainland)) << ctx << " island next to mainland " << i;
+            ASSERT_GE(EdgeSteps(i % d.width, i / d.width, d), 3) << ctx << " cell " << i;
+            for (uint32_t dir = 0; dir < 6; ++dir)
+            {
+                const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), dir);
+                if (nb != kNoCell && dbg.islandMask[nb])
+                {
+                    ASSERT_EQ(dbg.islandGroup[nb], dbg.islandGroup[i]) << ctx << " cross-group adjacency at " << i;
+                }
+            }
+        }
+        else
+        {
+            ASSERT_EQ(dbg.islandGroup[i], -1) << ctx;
+        }
+    }
+    ASSERT_EQ(land, dbg.landCells) << ctx;
+    ASSERT_EQ(islandCells, dbg.islandCellsPlaced) << ctx;
+
+    // Land total (AC4 full form), unless the target was clamped by the grid.
+    if (!dbg.landClamped)
+    {
+        ASSERT_NEAR(static_cast<float>(land) / static_cast<float>(n), s.landFraction, 0.01f) << ctx;
+    }
+
+    // Island budget with overflow.
+    ASSERT_LE(eff.islands, static_cast<int>(s.islands)) << ctx;
+    ASSERT_EQ(static_cast<int>(eff.islandCentres.size()), eff.islands) << ctx;
+    const int expectPlaced = eff.islands == 0 ? 0 : std::min(dbg.islandCapacity, std::max(dbg.islandBudget, 3 * eff.islands));
+    ASSERT_EQ(islandCells, expectPlaced) << ctx;
+    ASSERT_FLOAT_EQ(eff.islandShare, land > 0 ? static_cast<float>(islandCells) / static_cast<float>(land) : 0.0f) << ctx;
+    ASSERT_EQ(eff.continents, static_cast<int>(s.continents)) << ctx;
+
+    // Accepted group centres (step 6).
+    for (int a = 0; a < eff.islands; ++a)
+    {
+        const int c = eff.islandCentres[a];
+        ASSERT_TRUE(dbg.islandMask[c]) << ctx << " centre " << a << " must be island land";
+        ASSERT_EQ(dbg.islandGroup[c], a) << ctx;
+        ASSERT_FALSE(dbg.refMainland[c]) << ctx;
+        ASSERT_GE(EdgeSteps(c % d.width, c / d.width, d), 3) << ctx;
+        int best = 1 << 20;
+        for (int i = 0; i < n; ++i)
+        {
+            if (dbg.refMainland[i]) { best = std::min(best, HexDist(topo, c, i)); }
+        }
+        ASSERT_GE(best, 2) << ctx << " centre " << a;
+        ASSERT_LE(best, 7) << ctx << " centre " << a;
+        for (int b = 0; b < a; ++b)
+        {
+            ASSERT_GE(HexDist(topo, c, eff.islandCentres[b]), 6) << ctx << " centres " << a << "," << b;
+        }
+    }
+
+    // Vent: only on group 0's centre.
+    int vents = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        if (volc[i])
+        {
+            ++vents;
+            ASSERT_TRUE(dbg.islandMask[i]) << ctx;
+            ASSERT_EQ(dbg.islandGroup[i], 0) << ctx;
+        }
+    }
+    if (eff.islands >= 1) { ASSERT_EQ(vents, 1) << ctx; ASSERT_EQ(volc[eff.islandCentres[0]], 1u) << ctx; }
+    else { ASSERT_EQ(vents, 0) << ctx; }
+
+    // Landmass labelling: numbered by smallest cell index; adjacent land shares a label.
+    uint32_t nextId = 1;
+    for (int i = 0; i < n; ++i)
+    {
+        if (landmass[i] == 0) { continue; }
+        ASSERT_LE(landmass[i], nextId) << ctx << " labels must first appear in index order";
+        if (landmass[i] == nextId) { ++nextId; }
+        for (uint32_t dir = 0; dir < 6; ++dir)
+        {
+            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), dir);
+            if (nb != kNoCell && landmass[nb] != 0) { ASSERT_EQ(landmass[nb], landmass[i]) << ctx << " adjacent land cells share a label"; }
+        }
+    }
+    if (dbg.protectedPeak >= 0)
+    {
+        ASSERT_TRUE(dbg.mainland[dbg.protectedPeak]) << ctx;
+        ASSERT_EQ(static_cast<int>(landmass[dbg.protectedPeak]), eff.mainLandmass) << ctx;
+        ASSERT_GT(eff.mainLandmass, 0) << ctx;
+        const float* M = Potential(g);
+        for (int i = 0; i < n; ++i)
+        {
+            if (dbg.mainland[i]) { ASSERT_LE(M[i], M[dbg.protectedPeak]) << ctx; }
+        }
+    }
+
+    // Coast distance.
+    for (int i = 0; i < n; ++i)
+    {
+        const bool isLand = landmass[i] != 0;
+        bool adjOpposite = false;
+        for (uint32_t dir = 0; dir < 6; ++dir)
+        {
+            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), dir);
+            if (nb != kNoCell && (landmass[nb] != 0) != isLand) { adjOpposite = true; }
+        }
+        ASSERT_GE(coast[i], 1u) << ctx << " cell " << i;
+        ASSERT_EQ(coast[i] == 1u, adjOpposite) << ctx << " cell " << i;
+        for (uint32_t dir = 0; dir < 6; ++dir)
+        {
+            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(i), dir);
+            if (nb != kNoCell && (landmass[nb] != 0) == isLand)
+            {
+                const uint32_t a = coast[i], b = coast[nb];
+                ASSERT_LE(a > b ? a - b : b - a, 1u) << ctx << " coast distance is 1-Lipschitz";
+            }
+        }
+    }
+}
+
+} // namespace
+
+TEST(TerrainLandmass, PartBLayersRegistered)
+{
+    Harness r;
+    r.Go(7, WorldShapeParams{});
+    struct L { const char* name; LayerType type; };
+    for (const L& l : { L{"islandPotential", LayerType::Float}, L{"landmass", LayerType::UInt},
+                        L{"coastDistance", LayerType::UInt}, L{"volcanic", LayerType::UInt} })
+    {
+        const int idx = r.gen.GetLayers().FindLayer(l.name);
+        ASSERT_GE(idx, 0) << l.name;
+        EXPECT_EQ(TerrainLayers::GetLayerInfo(idx).type, l.type) << l.name;
+        EXPECT_EQ(TerrainLayers::GetLayerInfo(idx).stage, TerrainStage::Landmass) << l.name;
+    }
+    EXPECT_NE(UIntLayer(r.gen, "landmass"), nullptr);
+}
+
+TEST(TerrainLandmass, CleanUpRemovesSmallComponentsKeepsLarge)
+{
+    const GridDimensions d{ 12, 12 };
+    std::vector<uint8_t> m(144, 0);
+    const HexTopology t(12, 12);
+    // 5-cell blob around (3,3) is removed; 7-cell flower around (8,8) is kept.
+    auto flower = [&](int cx, int cy, int count)
+    {
+        const int c = static_cast<int>(t.ToIndex(CellCoord{ cx, cy }));
+        m[c] = 1;
+        for (uint32_t dir = 0; dir < static_cast<uint32_t>(count - 1); ++dir) { m[t.NeighbourAt(c, dir)] = 1; }
+    };
+    flower(3, 3, 5);
+    flower(8, 8, 7);
+    CleanUpLand(m, d, 6, -1);
+    int small = 0, big = 0;
+    for (int i = 0; i < 144; ++i)
+    {
+        const CellCoord c = t.ToCoord(i);
+        (c.x <= 5 ? small : big) += m[i];
+    }
+    EXPECT_EQ(small, 0);
+    EXPECT_EQ(big, 7);
+}
+
+TEST(TerrainLandmass, CleanUpProtectedCellKeepsItsSmallComponent)
+{
+    const GridDimensions d{ 12, 12 };
+    const HexTopology t(12, 12);
+    std::vector<uint8_t> m(144, 0);
+    const int peak = static_cast<int>(t.ToIndex(CellCoord{ 6, 6 }));
+    m[peak] = 1;
+    CleanUpLand(m, d, 6, peak);
+    EXPECT_EQ(m[peak], 1);
+    int total = 0;
+    for (uint8_t v : m) { total += v; }
+    EXPECT_EQ(total, 1);
+    CleanUpLand(m, d, 6, -1);
+    EXPECT_EQ(m[peak], 0);
+}
+
+TEST(TerrainLandmass, CleanUpFillsEnclosedSeaButNotOpenBay)
+{
+    const GridDimensions d{ 14, 14 };
+    const HexTopology t(14, 14);
+    // Enclosed: ring of 6 around (4,4). Open bay: ring of 5 around (9,9), one cell missing.
+    std::vector<uint8_t> m(196, 0);
+    const int enclosed = static_cast<int>(t.ToIndex(CellCoord{ 4, 4 }));
+    for (uint32_t dir = 0; dir < 6; ++dir) { m[t.NeighbourAt(enclosed, dir)] = 1; }
+    const int bay = static_cast<int>(t.ToIndex(CellCoord{ 9, 9 }));
+    for (uint32_t dir = 0; dir < 5; ++dir) { m[t.NeighbourAt(bay, dir)] = 1; }
+    CleanUpLand(m, d, 5, -1);
+    EXPECT_EQ(m[enclosed], 1) << "enclosed sea becomes land";
+    EXPECT_EQ(m[bay], 0) << "bay open to the ocean stays ocean";
+}
+
+TEST(TerrainLandmass, CleanUpRemovalHappensBeforeFill)
+{
+    // A 5-cell arc is removed entirely; nothing is filled.
+    const GridDimensions d{ 14, 14 };
+    const HexTopology t(14, 14);
+    std::vector<uint8_t> m(196, 0);
+    const int c = static_cast<int>(t.ToIndex(CellCoord{ 6, 6 }));
+    for (uint32_t dir = 0; dir < 5; ++dir) { m[t.NeighbourAt(c, dir)] = 1; }
+    CleanUpLand(m, d, 6, -1);
+    for (uint8_t v : m) { EXPECT_EQ(v, 0); }
+}
+
+TEST(TerrainLandmass, LabelLandmassesNumbersBySmallestCellIndex)
+{
+    const GridDimensions d{ 8, 6 };
+    const HexTopology t(8, 6);
+    std::vector<uint8_t> m(48, 0);
+    m[t.ToIndex(CellCoord{ 6, 4 })] = 1;
+    const int b = static_cast<int>(t.ToIndex(CellCoord{ 1, 1 }));
+    m[b] = 1;
+    m[t.NeighbourAt(b, 4)] = 1;
+    std::vector<uint32_t> out(48, 99);
+    EXPECT_EQ(LabelLandmasses(m, d, out.data()), 2);
+    EXPECT_EQ(out[b], 1u);
+    EXPECT_EQ(out[t.NeighbourAt(b, 4)], 1u);
+    EXPECT_EQ(out[t.ToIndex(CellCoord{ 6, 4 })], 2u);
+    int zeros = 0;
+    for (uint32_t v : out) { zeros += v == 0 ? 1 : 0; }
+    EXPECT_EQ(zeros, 45);
+}
+
+TEST(TerrainLandmass, CoastDistanceHandBuiltGrid)
+{
+    // 12x12 map: land = hex disc of radius 2 around (6,6).
+    const GridDimensions d{ 12, 12 };
+    const HexTopology t(12, 12);
+    const int centre = static_cast<int>(t.ToIndex(CellCoord{ 6, 6 }));
+    std::vector<uint8_t> m(144, 0);
+    for (int i = 0; i < 144; ++i) { if (HexDist(t, i, centre) <= 2) { m[i] = 1; } }
+    std::vector<uint32_t> out(144, 77);
+    ComputeCoastDistance(m, d, out.data());
+    for (int i = 0; i < 144; ++i)
+    {
+        const int hd = HexDist(t, i, centre);
+        const uint32_t expect = hd <= 2 ? static_cast<uint32_t>(3 - hd) : static_cast<uint32_t>(hd - 2);
+        EXPECT_EQ(out[i], expect) << "cell " << i << " hex distance " << hd;
+    }
+}
+
+TEST(TerrainLandmass, DefaultParamsInvariantsAndDeterminism)
+{
+    for (uint64_t seed = 1; seed <= 3; ++seed)
+    {
+        Harness a, b;
+        a.Go(seed, WorldShapeParams{});
+        b.Go(seed, WorldShapeParams{});
+        CheckStage1Invariants(a.gen, WorldShapeParams{}, kSmall, "seed " + std::to_string(seed));
+        const int n = kSmall.width * kSmall.height;
+        for (const char* name : { "landmass", "coastDistance", "volcanic" })
+        {
+            const uint32_t* ua = UIntLayer(a.gen, name);
+            const uint32_t* ub = UIntLayer(b.gen, name);
+            ASSERT_NE(ua, nullptr);
+            ASSERT_EQ(std::memcmp(ua, ub, sizeof(uint32_t) * n), 0) << name;
+        }
+        ASSERT_EQ(std::memcmp(FloatLayer(a.gen, "islandPotential"), FloatLayer(b.gen, "islandPotential"), sizeof(float) * n), 0);
+        EXPECT_EQ(a.gen.GetEffective().islandCentres, b.gen.GetEffective().islandCentres);
+        EXPECT_GE(a.gen.GetEffective().islands, 1) << "default params should place islands on a 66x42 map, seed " << seed;
+    }
+}
+
+// AC4 full form + invariants over the whole landFraction x continentIslands sweep.
+static void CheckLandTotals(uint64_t seedCount)
+{
+    for (uint64_t seed = 1; seed <= seedCount; ++seed)
+    {
+        Harness r;
+        for (int step = 0; step <= 9; ++step)
+        {
+            for (float ci : { 0.0f, 0.7f, 1.0f })
+            {
+                WorldShapeParams s;
+                s.landFraction = 0.20f + 0.05f * static_cast<float>(step);
+                s.continentIslands = ci;
+                r.Go(seed, s);
+                CheckStage1Invariants(r.gen, s, kSmall, "seed " + std::to_string(seed) + " step " + std::to_string(step) + " ci " + std::to_string(ci));
+                if (::testing::Test::HasFatalFailure()) { return; }
+            }
+        }
+    }
+}
+
+TEST(TerrainLandmass, TotalLandWithinOnePercentAfterCleanUp)
+{
+    CheckLandTotals(3);
+}
+
+TEST(SLOW_TerrainLandmass, TotalLandSweep20Seeds)
+{
+    CheckLandTotals(20);
+}
+
+// AC5 (final mainland after clean-up, fixed ContinentIslands).
+static void CheckMainlandSubset(uint64_t seedCount)
+{
+    for (uint64_t seed = 1; seed <= seedCount; ++seed)
+    {
+        for (float ci : { 0.0f, 0.7f, 1.0f })
+        {
+            Harness r;
+            std::vector<uint8_t> prev;
+            for (int step = 0; step <= 9; ++step)
+            {
+                WorldShapeParams s;
+                s.landFraction = 0.20f + 0.05f * static_cast<float>(step);
+                s.continentIslands = ci;
+                r.Go(seed, s);
+                const auto cur = r.gen.GetStage1Debug().mainland;
+                for (size_t i = 0; i < prev.size(); ++i)
+                {
+                    ASSERT_LE(prev[i], cur[i]) << "seed " << seed << " ci " << ci << " step " << step << " cell " << i;
+                }
+                prev = cur;
+            }
+        }
+    }
+}
+
+TEST(TerrainLandmass, MainlandGrowsMonotonicallyWithLandFraction)
+{
+    CheckMainlandSubset(3);
+}
+
+TEST(SLOW_TerrainLandmass, MainlandSubsetSweep20Seeds)
+{
+    CheckMainlandSubset(20);
+}
+
+// AC5b
+static void CheckContinentIslandsSweep(uint64_t seedCount)
+{
+    const int n = kSmall.width * kSmall.height;
+    for (uint64_t seed = 1; seed <= seedCount; ++seed)
+    {
+        Harness r;
+        float prevShare = 2.0f;
+        std::vector<uint8_t> prevMainland, prevIslands;
+        std::vector<int> prevCentres;
+        for (int step = 0; step <= 10; ++step)
+        {
+            WorldShapeParams s;
+            s.islands = 4;
+            s.continentIslands = 0.1f * static_cast<float>(step);
+            r.Go(seed, s);
+            const std::string ctx = "seed " + std::to_string(seed) + " ci " + std::to_string(s.continentIslands);
+            CheckStage1Invariants(r.gen, s, kSmall, ctx);
+            if (::testing::Test::HasFatalFailure()) { return; }
+            const Stage1Debug& d = r.gen.GetStage1Debug();
+            const Effective& e = r.gen.GetEffective();
+            ASSERT_LE(e.islandShare, prevShare + 1e-6f) << ctx;
+            prevShare = e.islandShare;
+            if (step == 0)
+            {
+                // Share 0.95 overflows island capacity: the placed share is the capacity.
+                ASSERT_GT(d.islandBudget, d.islandCapacity) << ctx;
+                ASSERT_EQ(d.islandCellsPlaced, d.islandCapacity) << ctx;
+            }
+            if (step == 10) { ASSERT_LE(e.islandShare, 0.05f) << ctx; }
+            if (step > 0)
+            {
+                ASSERT_EQ(e.islandCentres, prevCentres) << ctx;
+                for (int i = 0; i < n; ++i)
+                {
+                    ASSERT_GE(d.mainland[i], prevMainland[i]) << ctx << " mainland superset, cell " << i;
+                    ASSERT_LE(d.islandMask[i], prevIslands[i]) << ctx << " island subset, cell " << i;
+                }
+            }
+            prevMainland = d.mainland;
+            prevIslands = d.islandMask;
+            prevCentres = e.islandCentres;
+        }
+    }
+}
+
+TEST(TerrainLandmass, ContinentIslandsSweepShrinksIslandsKeepsLand)
+{
+    CheckContinentIslandsSweep(3);
+}
+
+TEST(SLOW_TerrainLandmass, ContinentIslandsSweep20Seeds)
+{
+    CheckContinentIslandsSweep(20);
+}
+
+// AC6 (stage-1 part)
+static void CheckMainLandmass(uint64_t seedCount, int* largerOtherCount)
+{
+    for (uint64_t seed = 1; seed <= seedCount; ++seed)
+    {
+        for (float ci : { 0.0f, 0.7f, 1.0f })
+        {
+            Harness r;
+            for (uint8_t cont = 1; cont <= 3; ++cont)
+            {
+                WorldShapeParams s;
+                s.continents = cont;
+                s.continentIslands = ci;
+                r.Go(seed, s);
+                const std::string ctx = "seed " + std::to_string(seed) + " ci " + std::to_string(ci) + " continents " + std::to_string(cont);
+                CheckStage1Invariants(r.gen, s, kSmall, ctx);
+                if (::testing::Test::HasFatalFailure()) { return; }
+                const Stage1Debug& d = r.gen.GetStage1Debug();
+                const uint32_t* lm = UIntLayer(r.gen, "landmass");
+                const float* M = Potential(r.gen);
+                int peak = -1;
+                for (int i = 0; i < kSmall.width * kSmall.height; ++i)
+                {
+                    if (d.mainland[i] && (peak < 0 || M[i] > M[peak])) { peak = i; }
+                }
+                ASSERT_GE(peak, 0) << ctx;
+                const int mainId = r.gen.GetEffective().mainLandmass;
+                ASSERT_EQ(static_cast<int>(lm[peak]), mainId) << ctx;
+                std::vector<int> size(256, 0);
+                for (int i = 0; i < kSmall.width * kSmall.height; ++i) { if (lm[i] && lm[i] < 256) { ++size[lm[i]]; } }
+                for (int id = 1; id < 256; ++id)
+                {
+                    if (id != mainId && size[id] > size[mainId])
+                    {
+                        if (largerOtherCount) { ++*largerOtherCount; }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST(TerrainLandmass, MainLandmassContainsMainlandPeak)
+{
+    int larger = 0;
+    CheckMainLandmass(3, &larger);
+    RecordProperty("CasesWhereAnotherLandmassIsLarger", larger);
+}
+
+TEST(SLOW_TerrainLandmass, MainLandmassSweep20Seeds)
+{
+    int larger = 0;
+    CheckMainLandmass(20, &larger);
+    RecordProperty("CasesWhereAnotherLandmassIsLarger", larger);
+    std::printf("[ INFO ] main landmass != largest in %d of %d cases\n", larger, 20 * 3 * 3);
+}
+
+// AC7 (stage-1 part)
+static void CheckIslandCountSweep(uint64_t seedCount)
+{
+    for (uint64_t seed = 1; seed <= seedCount; ++seed)
+    {
+        Harness r;
+        std::vector<int> prevCentres;
+        for (int islands = 0; islands <= 6; ++islands)
+        {
+            WorldShapeParams s;
+            s.islands = static_cast<uint8_t>(islands);
+            r.Go(seed, s);
+            const std::string ctx = "seed " + std::to_string(seed) + " islands " + std::to_string(islands);
+            CheckStage1Invariants(r.gen, s, kSmall, ctx);
+            if (::testing::Test::HasFatalFailure()) { return; }
+            const std::vector<int>& c = r.gen.GetEffective().islandCentres;
+            ASSERT_LE(c.size(), static_cast<size_t>(islands)) << ctx;
+            ASSERT_GE(c.size(), prevCentres.size()) << ctx;
+            for (size_t i = 0; i < prevCentres.size(); ++i) { ASSERT_EQ(c[i], prevCentres[i]) << ctx << " prefix " << i; }
+            prevCentres = c;
+        }
+    }
+}
+
+TEST(TerrainLandmass, IslandGroupsArePrefixStableAndVentIsOnFirstGroup)
+{
+    CheckIslandCountSweep(3);
+}
+
+TEST(SLOW_TerrainLandmass, IslandCountSweep20Seeds)
+{
+    CheckIslandCountSweep(20);
+}
+
+TEST(TerrainLandmass, IslandsFewerThanRequestedWhenCandidatesRunOut)
+{
+    // A tiny map has no room for 6 islands that satisfy the gap, spacing and edge rules.
+    Harness r;
+    WorldShapeParams s; s.islands = 6;
+    r.Go(3, s, GridDimensions{ 20, 14 });
+    EXPECT_LT(r.gen.GetEffective().islands, 6);
+    CheckStage1Invariants(r.gen, s, GridDimensions{ 20, 14 }, "tiny map");
 }
