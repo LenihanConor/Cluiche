@@ -11,6 +11,8 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaSaveGame/LoadContext.h>
+#include <DiaSaveGame/SaveContext.h>
+#include <DiaObservation/Metric/MetricInfo.h>
 #include <DiaSaveGame/SaveManifest.h>
 
 #include <cstdio>
@@ -56,6 +58,18 @@ SaveLoadModule::SaveLoadModule(const Dia::Core::StringCRC& instanceId)
     std::snprintf(mBaseDirectory, kBaseDirCapacity, "%s", kDefaultBaseDirectory);
     mConfig = DefaultConfig();
     mConfig.baseDirectory = mBaseDirectory;
+    UpdateSnapshotPaths();
+}
+
+void SaveLoadModule::UpdateSnapshotPaths()
+{
+    std::snprintf(mSnapshotFolder, sizeof(mSnapshotFolder), "%ssnapshots", mBaseDirectory);
+    std::snprintf(mSnapshotPrefix, sizeof(mSnapshotPrefix), "%ssnapshots/", mBaseDirectory);
+}
+
+void SaveLoadModule::BuildSnapshotPath(const char* name, char* out, uint32_t capacity) const
+{
+    std::snprintf(out, capacity, "%s%s.sav", mSnapshotPrefix, name);
 }
 
 SaveLoadModule::~SaveLoadModule()
@@ -85,6 +99,7 @@ void SaveLoadModule::OnConfigure(const char* configJson)
         const std::string dir = root["base_directory"].asString();
         const bool needsSlash = !dir.empty() && dir.back() != '/' && dir.back() != '\\';
         std::snprintf(mBaseDirectory, kBaseDirCapacity, "%s%s", dir.c_str(), needsSlash ? "/" : "");
+        UpdateSnapshotPaths();
     }
 }
 
@@ -271,6 +286,14 @@ Dia::ApplicationFlow::StartResult SaveLoadModule::DoStart()
     mLoadCounter     = metrics.RegisterCounter(Dia::Core::StringCRC("cow.saveload.loads"));
     mLoadFailCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.saveload.load_failures"));
 
+    using Dia::Observation::Metric::MetricInfo;
+    mSnapshotTakeCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.save.snapshot_takes"),
+        MetricInfo{ "Snapshot takes", "Game-state snapshots taken", "count" });
+    mSnapshotRestoreCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.save.snapshot_restores"),
+        MetricInfo{ "Snapshot restores", "Game-state snapshots restored", "count" });
+    mSnapshotFailCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.save.snapshot_failures"),
+        MetricInfo{ "Snapshot failures", "Snapshot takes and restores that failed or were refused", "count" });
+
     std::error_code ec;
     std::filesystem::create_directories(mBaseDirectory, ec);
     mSaveDirFailed = static_cast<bool>(ec);
@@ -305,6 +328,8 @@ void SaveLoadModule::UpdateHealth()
         mHealth.SetDegraded(Dia::Core::StringCRC("last_save_failed"));
     else if (!mLastLoadResult.Ok())
         mHealth.SetDegraded(Dia::Core::StringCRC("last_load_failed"));
+    else if (mLastSnapshotFailed)
+        mHealth.SetDegraded(Dia::Core::StringCRC("last_snapshot_failed"));
     else
         mHealth.SetOK();
 }
@@ -411,6 +436,134 @@ void SaveLoadModule::ExecuteLoad(Dia::Core::StringCRC slotId)
     }
 }
 
+namespace {
+    // Points the live config at the snapshot folder for one call: SaveManager and SlotManager hold a
+    // pointer to the config and read it on every call, so no Dia change is needed. Restored on exit.
+    class ScopedSnapshotConfig
+    {
+    public:
+        ScopedSnapshotConfig(Dia::SaveGame::SaveConfig& config, const char* snapshotPrefix)
+            : mConfig(config), mSaved(config)
+        {
+            config.baseDirectory = snapshotPrefix;
+            config.slotPattern   = "{id}.sav";
+            config.maxSlots      = 0;   // the slot cap never applies to snapshots
+        }
+        ~ScopedSnapshotConfig() { mConfig = mSaved; }
+        ScopedSnapshotConfig(const ScopedSnapshotConfig&) = delete;
+        ScopedSnapshotConfig& operator=(const ScopedSnapshotConfig&) = delete;
+    private:
+        Dia::SaveGame::SaveConfig& mConfig;
+        Dia::SaveGame::SaveConfig  mSaved;
+    };
+}
+
+void SaveLoadModule::NoteSnapshotFailure(bool isTake, const char* name, const char* reason)
+{
+    ++mSnapshotFailureCount;
+    mLastSnapshotFailed = true;
+    if (mSnapshotFailCounter)
+        mSnapshotFailCounter->Inc();
+    mHealth.IncrementErrors();
+    DIA_LOG_ERROR("CoW", "SaveLoadModule: snapshot %s '%s' failed: %s", isTake ? "take" : "restore", name, reason);
+    UpdateHealth();
+}
+
+bool SaveLoadModule::SnapshotSave(const char* name, char* message, uint32_t messageCapacity)
+{
+    if (!mStarted)
+    {
+        std::snprintf(message, messageCapacity, "save/load module is not started");
+        NoteSnapshotFailure(true, name, message);
+        return false;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(mSnapshotFolder, ec);
+    if (ec)
+    {
+        std::snprintf(message, messageCapacity, "cannot create snapshot folder: %s", ec.message().c_str());
+        NoteSnapshotFailure(true, name, message);
+        return false;
+    }
+
+    SaveResult result = SaveResult::Success();
+    {
+        ScopedSnapshotConfig scoped(mConfig, mSnapshotPrefix);
+        result = mManager.Save(Dia::Core::StringCRC(name));
+    }
+    if (!result.Ok())
+    {
+        std::snprintf(message, messageCapacity, "snapshot save failed (SaveResultCode %d)", static_cast<int>(result.code));
+        NoteSnapshotFailure(true, name, message);
+        return false;
+    }
+
+    ++mSnapshotTakeCount;
+    mLastSnapshotFailed = false;
+    if (mSnapshotTakeCounter)
+        mSnapshotTakeCounter->Inc();
+    UpdateHealth();
+    DIA_LOG_INFO("CoW", "SaveLoadModule: snapshot '%s' taken", name);
+    std::snprintf(message, messageCapacity, "ok");
+    return true;
+}
+
+bool SaveLoadModule::SnapshotLoad(const char* name, char* message, uint32_t messageCapacity)
+{
+    if (!mStarted)
+    {
+        std::snprintf(message, messageCapacity, "save/load module is not started");
+        NoteSnapshotFailure(false, name, message);
+        return false;
+    }
+
+    LoadResult result = LoadResult::Success();
+    {
+        ScopedSnapshotConfig scoped(mConfig, mSnapshotPrefix);
+        const Dia::Core::StringCRC id(name);
+        result = PreValidateLoad(id);   // a bad file leaves the game untouched
+        if (result.Ok())
+            result = mManager.Load(id);
+    }
+    if (!result.Ok())
+    {
+        if (result.code == LoadResultCode::SlotNotFound)
+            std::snprintf(message, messageCapacity, "snapshot '%s' not found", name);
+        else
+            std::snprintf(message, messageCapacity, "snapshot restore failed (LoadResultCode %d), game state untouched",
+                          static_cast<int>(result.code));
+        NoteSnapshotFailure(false, name, message);
+        return false;
+    }
+
+    ++mSnapshotRestoreCount;
+    mLastSnapshotFailed = false;
+    if (mSnapshotRestoreCounter)
+        mSnapshotRestoreCounter->Inc();
+    UpdateHealth();
+    DIA_LOG_INFO("CoW", "SaveLoadModule: snapshot '%s' restored", name);
+    std::snprintf(message, messageCapacity, "ok");
+    return true;
+}
+
+void SaveLoadModule::CaptureState(CapturedStateList& out) const
+{
+    out.Clear();
+    for (uint32_t i = 0; i < mRegistry.GetParticipantCount() && out.Size() < CapturedStateList::kCapacity; ++i)
+    {
+        const Dia::Core::StringCRC id = mRegistry.GetIdAt(i);
+        Dia::SaveGame::SaveContext ctx;   // one per participant: its root is then exactly that participant's JSON
+        ctx.BeginObject(id);
+        mRegistry.GetParticipantAt(i)->Serialize(ctx);
+        ctx.EndObject();
+
+        CapturedState& item = out.Append();
+        item.id = id;
+        item.state = ctx.Root()[id.AsChar()];
+    }
+}
+
 void SaveLoadModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 {
     DIA_TRACE_ZONE("SaveLoadModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
@@ -431,10 +584,14 @@ void SaveLoadModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         ExecuteLoad(slot);
         UpdateHealth();
     }
+
+    // After the user's own save/load, so a snapshot only waits when a request arrived mid-update.
+    mSnapshots.RunFrameBoundary();
 }
 
 Dia::ApplicationFlow::StopResult SaveLoadModule::DoStop()
 {
+    mSnapshots.FailAll("save/load module is stopping");
     UnregisterCommands();
     if (mHealthRegistered)
     {
@@ -449,6 +606,7 @@ Dia::ApplicationFlow::StopResult SaveLoadModule::DoStop()
     mHasPendingSave = false;
     mHasPendingLoad = false;
     mSaveCounter = mSaveFailCounter = mLoadCounter = mLoadFailCounter = nullptr;
+    mSnapshotTakeCounter = mSnapshotRestoreCounter = mSnapshotFailCounter = nullptr;
     DIA_LOG_INFO("CoW", "SaveLoadModule: stopped (%u saves, %u loads)", mSaveCount, mLoadCount);
     return Dia::ApplicationFlow::StopResult::kDone;
 }

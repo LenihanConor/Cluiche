@@ -12,6 +12,8 @@
 #include <DiaSaveGame/SaveResult.h>
 #include <DiaSaveGame/SlotInfo.h>
 #include <DiaSaveGame/SlotManager.h>
+#include <DiaCore/Json/external/json/json.h>
+#include "Modules/SnapshotStoreAdapter.h"
 #include <cstdint>
 
 namespace CoW {
@@ -24,6 +26,27 @@ class SaveLoadHealthReporter : public Dia::Observation::Health::HealthReporterBa
 public:
     SaveLoadHealthReporter() { SetOK(); }
     Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("SaveLoadModule"); }
+};
+
+// One participant's id and the JSON it would write (see SaveLoadModule::CaptureState).
+struct CapturedState
+{
+    Dia::Core::StringCRC id;
+    Json::Value          state;
+};
+
+// Fixed-capacity result of CaptureState, in registration order.
+class CapturedStateList
+{
+public:
+    static constexpr uint32_t kCapacity = Dia::SaveGame::SaveRegistry::kMaxParticipants;
+    uint32_t             Size() const { return mCount; }
+    const CapturedState& operator[](uint32_t i) const { return mItems[i]; }
+    void                 Clear() { mCount = 0; }
+    CapturedState&       Append() { return mItems[mCount++]; }   // callers stay within kCapacity
+private:
+    CapturedState mItems[kCapacity];
+    uint32_t      mCount = 0;
 };
 
 // Owns the DiaSaveGame SaveRegistry/SaveManager for CoW and executes save/load requests at the
@@ -74,6 +97,21 @@ public:
     static constexpr uint32_t kFailingAfterConsecutiveSaveFailures = 3;
     const SaveLoadHealthReporter& GetHealthReporter() const { return mHealth; }
 
+    // ---- Snapshots (docs/specs/.../e1-saveload/snapshot-store-adapter.md) ----
+    // The store DiaCellHistory's SnapshotManager takes: named game states in <base>/snapshots/<name>.sav,
+    // outside the slots (never listed by cow.save.list, never counted against maxSlots).
+    Dia::CellHistory::ISnapshotStore& GetSnapshotStore() { return mSnapshots; }
+    SnapshotStoreAdapter&             GetSnapshotAdapter() { return mSnapshots; }
+    const char*                       GetSnapshotFolder() const { return mSnapshotFolder; }   // no trailing slash
+    uint32_t GetSnapshotTakeCount() const    { return mSnapshotTakeCount; }
+    uint32_t GetSnapshotRestoreCount() const { return mSnapshotRestoreCount; }
+    uint32_t GetSnapshotFailureCount() const { return mSnapshotFailureCount; }
+
+    // Each registered participant's id and the JSON it would write, in registration order. Writes no
+    // slot, does no disk I/O, and changes neither game state, counters nor the pending flags.
+    // Call at the sim-frame boundary (like a save). Participants beyond kCapacity cannot exist.
+    void CaptureState(CapturedStateList& out) const;
+
 protected:
     void OnConfigure(const char* configJson) override;
     // Runs before any module's DoStart: hands our registry to a sibling DiaSimTimeModule (if the
@@ -84,6 +122,17 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    friend class SnapshotStoreAdapter;
+    static constexpr uint32_t kSnapshotPathCapacity = 512;
+
+    void BuildSnapshotPath(const char* name, char* out, uint32_t capacity) const;
+    void UpdateSnapshotPaths();
+    // Run by the adapter at the frame boundary. They point the config at the snapshot folder for the
+    // one call (folder, "{id}.sav", unlimited slots) and restore it afterwards.
+    bool SnapshotSave(const char* name, char* message, uint32_t messageCapacity);
+    bool SnapshotLoad(const char* name, char* message, uint32_t messageCapacity);
+    void NoteSnapshotFailure(bool isTake, const char* name, const char* reason);
+
     void ExecuteSave(Dia::Core::StringCRC slotId);
     void ExecuteLoad(Dia::Core::StringCRC slotId);
     // Reads the slot file and checks it would load. Returns Ok or the failing code.
@@ -114,6 +163,17 @@ private:
     uint32_t                       mLoadCount = 0;
     uint32_t                       mConsecutiveSaveFailures = 0;
     bool                           mSaveDirFailed = false;
+
+    char                           mSnapshotFolder[kBaseDirCapacity + 16] = {};   // "<base>snapshots"
+    char                           mSnapshotPrefix[kBaseDirCapacity + 16] = {};   // "<base>snapshots/"
+    SnapshotStoreAdapter           mSnapshots{*this};
+    uint32_t                       mSnapshotTakeCount = 0;
+    uint32_t                       mSnapshotRestoreCount = 0;
+    uint32_t                       mSnapshotFailureCount = 0;
+    bool                           mLastSnapshotFailed = false;
+    Dia::Observation::Metric::Counter* mSnapshotTakeCounter = nullptr;
+    Dia::Observation::Metric::Counter* mSnapshotRestoreCounter = nullptr;
+    Dia::Observation::Metric::Counter* mSnapshotFailCounter = nullptr;
 
     SaveLoadHealthReporter         mHealth;
     bool                           mHealthRegistered = false;

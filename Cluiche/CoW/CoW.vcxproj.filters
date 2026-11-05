@@ -55,6 +55,9 @@
     <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\SnapshotStoreAdapter.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -109,6 +112,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SnapshotStoreAdapter.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

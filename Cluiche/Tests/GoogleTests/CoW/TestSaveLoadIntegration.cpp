@@ -487,3 +487,48 @@ TEST(SaveLoadIntegration, TwoFullRunsProduceIdenticalSavesAndRngDraws)
     EXPECT_EQ(a.day, b.day);
     EXPECT_FALSE(a.draws.empty());
 }
+
+namespace {
+struct SnapProbe
+{
+    int calls = 0;
+    bool ok = false;
+    Fixture* f = nullptr;
+    TimeAbsolute clockAtCallback = TimeAbsolute::Zero();
+    uint64_t dayAtCallback = 0;
+};
+void OnSnap(bool ok, const char*, void* user)
+{
+    SnapProbe* p = static_cast<SnapProbe*>(user);
+    ++p->calls;
+    p->ok = ok;
+    p->clockAtCallback = p->f->World().Now();
+    p->dayAtCallback = p->f->Day();
+}
+}
+
+TEST(SaveLoadIntegration, SnapshotRestoreRestoresClockAndDayInTheCallbackFrame)
+{
+    Fixture f("sli_snapshot");
+    ASSERT_TRUE(f.Boot());
+    f.SetSpeed(SpeedTier::Fastest);
+    ASSERT_TRUE(f.PumpUntil([&] { return f.Day() >= 2; }, 300));
+
+    SnapProbe take; take.f = &f;
+    f.save->GetSnapshotStore().RequestTake("clock", &OnSnap, &take);
+    ASSERT_TRUE(f.PumpUntil([&] { return take.calls > 0; }));
+    ASSERT_TRUE(take.ok);
+    const uint64_t savedDay = f.Day();
+    const TimeAbsolute savedClock = f.World().Now();
+
+    ASSERT_TRUE(f.PumpUntil([&] { return f.Day() >= savedDay + 2; }, 300));
+    ASSERT_GT(f.World().Now(), savedClock);
+
+    SnapProbe restore; restore.f = &f;
+    f.save->GetSnapshotStore().RequestRestore("clock", &OnSnap, &restore);
+    ASSERT_TRUE(f.PumpUntil([&] { return restore.calls > 0; }));
+    ASSERT_TRUE(restore.ok);
+    EXPECT_EQ(restore.clockAtCallback, savedClock) << "clock restored in the same frame as the game restore";
+    EXPECT_EQ(restore.dayAtCallback, savedDay);
+    EXPECT_EQ(f.save->GetLoadCount(), 0u) << "a snapshot restore is not a slot load";
+}

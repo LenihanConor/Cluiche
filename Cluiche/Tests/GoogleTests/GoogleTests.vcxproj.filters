@@ -2571,5 +2571,8 @@
     <ClCompile Include="DiaCellHistory\TestUtf8.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

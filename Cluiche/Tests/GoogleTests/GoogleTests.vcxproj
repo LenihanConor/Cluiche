@@ -889,6 +889,7 @@
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\SaveLoadModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\SnapshotStoreAdapter.cpp" />
     <ClCompile Include="..\..\CoW\Modules\RandomStreamModule.cpp" />
     <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp" />
@@ -1143,6 +1144,7 @@
     <ClCompile Include="DiaCellHistory\TestHistoryExportPerf.cpp" />
     <ClCompile Include="DiaCellHistory\TestHistoryClosingEdges.cpp" />
     <ClCompile Include="DiaCellHistory\TestUtf8.cpp" />
+    <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
