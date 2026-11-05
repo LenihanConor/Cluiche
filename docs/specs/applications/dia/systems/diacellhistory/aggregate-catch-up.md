@@ -118,4 +118,4 @@ None.
 
 ## Status
 
-`Approved` (2026-11-05). Plan: [aggregate-catch-up.plan.md](aggregate-catch-up.plan.md).
+`Done` (2026-11-05). Plan: [aggregate-catch-up.plan.md](aggregate-catch-up.plan.md). AC 12 (world-only strided overview in 3 queries or fewer) was not measured: the perf check was skipped by the user. All other ACs are covered by tests; verification: full googletest 13,904 pass, sanitizer clean, export E2E pass.
