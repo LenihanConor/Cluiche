@@ -22,7 +22,9 @@
 using namespace Dia::CellHistory;
 using namespace Dia::CellHistory::Testing;
 using namespace HistoryRig;
+#ifdef DIA_DEBUG
 using Dia::CellLayers::Testing::FakeMirrorRegistrar;
+#endif
 using Dia::Core::StringCRC;
 
 namespace
@@ -248,6 +250,8 @@ TEST(HistoryClosingEdgesSnapshot, TwoManagersOnTheSameFolderCountEachOthersCellF
 	EXPECT_EQ(other.ListSummaries(b, 16), 8u);
 }
 
+#ifdef DIA_DEBUG
+
 // ==== Feature 5: export / queries ===========================================================================================
 
 namespace
@@ -404,3 +408,5 @@ TEST(HistoryClosingEdgesExport, QueriesOnAnEmptyRecorderAnswerWithoutCrashing)
 		EXPECT_TRUE(ev["next"].isNull());
 	}
 }
+
+#endif // DIA_DEBUG

@@ -19,7 +19,9 @@
 
 using namespace Dia::CellHistory;
 using namespace SnapRig;
+#ifdef DIA_DEBUG
 using Dia::CellLayers::Testing::FakeMirrorRegistrar;
+#endif
 using Dia::Core::StringCRC;
 
 namespace
