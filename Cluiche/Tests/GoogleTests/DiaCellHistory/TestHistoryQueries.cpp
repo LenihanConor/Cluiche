@@ -1308,14 +1308,163 @@ TEST(HistoryQueriesAggregatesStride, StridedRepliesFitTheBudget)
 	}
 }
 
-TEST(HistoryQueriesAggregatesStride, NeedingLayerSlicesWithStrideIsTemporarilyAnError)
+namespace
 {
-	QFix f; f.Setup(); f.Run(6);
-	f.Budget(SliceBudget(f));
-	EXPECT_TRUE(ErrorHas(f.Call(kAgg, StrideArgs(2)), "stride with layer slicing"));
+	// Budget one byte under the full single-window reply for [0, stride): forces the slice path for stride windows.
+	uint32_t StrideSliceBudget(QFix& f, uint32_t stride, const Json::Value& extra = Json::Value(Json::objectValue), uint32_t shrink = 1, uint32_t to = 0)
+	{
+		Json::Value a = extra; a["stride"] = stride; a["from"] = 0; a["to"] = to ? to : stride;
+		return uint32_t(Size(f.Call(kAgg, a))) - shrink;
+	}
+
+	// Checks stride slices tile layers per window and equal the single-window reference computed at the default budget.
+	void ExpectStrideSlicesMatch(QFix& f, const Pages& p, const Json::Value& baseArgs, uint32_t stride, uint32_t to, size_t budget)
+	{
+		ASSERT_FALSE(p.failed) << p.error;
+		EXPECT_LE(p.maxBytes, budget);
+		std::map<uint32_t, uint32_t> covered;
+		std::map<uint32_t, std::map<std::string, Json::Value>> rows;
+		std::map<uint32_t, Json::Value> samples;
+		for (const Json::Value& rep : p.replies)
+		{
+			const uint32_t w = rep["from"].asUInt();
+			EXPECT_EQ(rep["count"].asUInt(), 1u);
+			EXPECT_EQ(rep["stride"].asUInt(), stride);
+			EXPECT_EQ(rep["layerOffset"].asUInt(), covered[w]);
+			covered[w] += rep["layerCount"].asUInt();
+			samples[w] = rep["samples"];
+			for (const std::string& l : rep["rows"].getMemberNames()) { rows[w][l] = rep["rows"][l]; }
+			for (const std::string& g : rep["groupSizes"].getMemberNames()) { rows[w]["|sizes|" + g] = rep["groupSizes"][g]; }
+		}
+		f.Budget(15000);
+		const uint32_t windows = (to + stride - 1) / stride;
+		ASSERT_EQ(covered.size(), windows);
+		for (uint32_t i = 0; i < windows; ++i)
+		{
+			const uint32_t a = i * stride;
+			Json::Value ref = baseArgs; ref["stride"] = stride; ref["from"] = a; ref["to"] = std::min(a + stride, to);
+			const Json::Value whole = f.Call(kAgg, ref);
+			ASSERT_FALSE(IsError(whole)) << whole.toStyledString();
+			ASSERT_EQ(whole["count"].asUInt(), 1u);
+			EXPECT_EQ(covered[a], whole["rows"].size()) << a;
+			EXPECT_TRUE(JsonEq(samples[a], whole["samples"])) << a;
+			for (const std::string& l : whole["rows"].getMemberNames()) { EXPECT_TRUE(JsonEq(rows[a][l], whole["rows"][l])) << a << " " << l; }
+			for (const std::string& g : whole["groupSizes"].getMemberNames()) { EXPECT_TRUE(JsonEq(rows[a]["|sizes|" + g], whole["groupSizes"][g])) << a << " " << g; }
+		}
+		EXPECT_FALSE(p.replies.back().isMember("next"));
+	}
+}
+
+TEST(HistoryQueriesAggregatesStride, WindowThatDoesNotFitReturnsAStrideLayerSlice)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const uint32_t budget = StrideSliceBudget(f, 4);
+	f.Budget(budget);
+	const Json::Value r = f.Call(kAgg, StrideArgs(4));
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["count"].asUInt(), 1u);
+	EXPECT_EQ(r["stride"].asUInt(), 4u);
+	EXPECT_EQ(r["from"].asUInt(), 0u);
+	EXPECT_EQ(r["layerOffset"].asUInt(), 0u);
+	EXPECT_EQ(r["layerTotal"].asUInt(), 3u);
+	EXPECT_LT(r["layerCount"].asUInt(), 3u);
+	EXPECT_EQ(r["samples"].size(), 1u);
+	ASSERT_TRUE(r.isMember("next"));
+	EXPECT_EQ(r["next"]["from"].asUInt(), 0u);
+	EXPECT_EQ(r["next"]["layerOffset"].asUInt(), r["layerCount"].asUInt());
+	EXPECT_EQ(r["next"]["structure"].asString(), r["structure"].asString());
+	EXPECT_LE(Size(r), size_t(budget));
+
+	// layerOffset > 0 with stride returns the rest of that one window only.
 	f.Budget(15000);
-	Json::Value a = StrideArgs(2); a["layerOffset"] = 1;
-	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "stride with layer slicing"));
+	Json::Value a = StrideArgs(4); a["layerOffset"] = 1;
+	const Json::Value rest = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(rest)) << rest.toStyledString();
+	EXPECT_EQ(rest["count"].asUInt(), 1u);
+	EXPECT_EQ(rest["stride"].asUInt(), 4u);
+	EXPECT_EQ(rest["layerCount"].asUInt(), 2u);
+	ASSERT_TRUE(rest.isMember("next"));
+	EXPECT_EQ(rest["next"]["from"].asUInt(), 4u);
+	EXPECT_EQ(rest["next"]["layerOffset"].asUInt(), 0u);
+}
+
+TEST(HistoryQueriesAggregatesStride, FollowingTheStrideSliceCursorReassemblesEveryWindow)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const uint32_t budget = StrideSliceBudget(f, 4);
+	f.Budget(budget);
+	const Pages p = PageSlices(f, StrideArgs(4));
+	ASSERT_FALSE(p.failed) << p.error;
+	EXPECT_GT(p.replies.size(), 3u);
+	EXPECT_EQ(p.replies.back()["from"].asUInt(), 8u);		// windows [0,4) [4,8) [8,10)
+	ExpectStrideSlicesMatch(f, p, Obj(), 4, 10, budget);
+}
+
+TEST(HistoryQueriesAggregatesStride, GroupsLayersStrideAndSlicingCombine)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value full = f.Call(kAgg, StrideArgs(3));
+	const std::vector<std::string> names = full["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 2u);
+	Json::Value filt = Obj();
+	filt["groups"] = StrList({ names[0].c_str(), names[1].c_str() });
+	filt["layers"] = StrList({ "temp", "biome" });
+	const uint32_t budget = StrideSliceBudget(f, 3, filt, 1);
+	f.Budget(budget);
+	Json::Value args = filt; args["stride"] = 3;
+	const Pages p = PageSlices(f, args);
+	ASSERT_FALSE(p.failed) << p.error;
+	for (const Json::Value& rep : p.replies)
+	{
+		EXPECT_EQ(rep["layerTotal"].asUInt(), 2u);
+		EXPECT_EQ(rep["groupSizes"].size(), 2u);
+		EXPECT_TRUE(rep["groupSizes"].isMember(names[1]));
+		for (const std::string& l : rep["rows"].getMemberNames()) { EXPECT_TRUE(l == "temp" || l == "biome") << l; }
+	}
+	EXPECT_GT(p.replies.size(), 4u);
+	ExpectStrideSlicesMatch(f, p, filt, 3, 10, budget);
+}
+
+TEST(HistoryQueriesAggregatesStride, StrideSliceCursorWithAStaleStructureIsRejected)
+{
+	QFix f; f.Setup(); f.Run(10);
+	f.Budget(StrideSliceBudget(f, 4));
+	const Json::Value first = f.Call(kAgg, StrideArgs(4));
+	ASSERT_TRUE(first.isMember("next"));
+	Json::Value a = StrideArgs(4);
+	a["from"] = first["next"]["from"]; a["layerOffset"] = first["next"]["layerOffset"]; a["structure"] = "0123456789abcdef";
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "structure changed"));
+	a["structure"] = first["next"]["structure"];
+	EXPECT_FALSE(IsError(f.Call(kAgg, a)));
+}
+
+TEST(HistoryQueriesAggregatesStride, StrideSliceWhereOneLayerCannotFitIsTheFewerGroupsError)
+{
+	QFix f; f.Setup(); f.Run(10);
+	f.Budget(HistoryQueries::kMinReplyBytes);
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, StrideArgs(4)), "fewer groups"));
+	Json::Value a = StrideArgs(4); a["layerOffset"] = 1;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "fewer groups"));
+}
+
+TEST(HistoryQueriesAggregatesStride, StrideLargerThanTheRangeWithSlicingIsOneWindowWithNoNextWindow)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const uint32_t budget = StrideSliceBudget(f, 1000, Obj(), 1, 10);
+	f.Budget(budget);
+	const Pages p = PageSlices(f, StrideArgs(1000));
+	ASSERT_FALSE(p.failed) << p.error;
+	EXPECT_GT(p.replies.size(), 1u);
+	for (const Json::Value& rep : p.replies) { EXPECT_EQ(rep["from"].asUInt(), 0u); EXPECT_EQ(rep["stride"].asUInt(), 1000u); }
+	EXPECT_FALSE(p.replies.back().isMember("next"));
+	EXPECT_LE(p.maxBytes, size_t(budget));
+}
+
+TEST(HistoryQueriesAggregatesStride, LayerOffsetWithStrideNeedsASampleInsideTheRange)
+{
+	QFix f; f.Setup(); f.Run(10);
+	Json::Value a = StrideArgs(4); a["layerOffset"] = 1; a["from"] = 10;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "invalid cursor"));
 }
 
 // ---- events ---------------------------------------------------------------------------------------------------------

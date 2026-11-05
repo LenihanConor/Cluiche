@@ -473,10 +473,9 @@ namespace Dia::CellHistory
 
 		if (req.layerOffset > 0 && from >= to) { return Fail(kAggName, "invalid cursor: layerOffset needs a sample inside the range"); }
 
-		if (req.stride > 1)
+		const uint32_t stride = req.stride;
+		if (stride > 1 && req.layerOffset == 0)
 		{
-			if (req.layerOffset > 0) { return Fail(kAggName, "stride with layer slicing is not supported yet"); }	// TODO(task 5)
-			const uint32_t stride = req.stride;
 			const uint32_t windowsTotal = to > from ? uint32_t((uint64_t(to - from) + stride - 1) / stride) : 0u;
 			auto buildStrided = [&](uint32_t w, bool fill) -> Json::Value
 			{
@@ -490,33 +489,38 @@ namespace Dia::CellHistory
 			};
 			uint32_t w = 0;
 			if (windowsTotal > 0) { w = FitCount(windowsTotal, mMaxReplyBytes, [&](uint32_t k) { return JsonSize(buildStrided(k, false)); }); }
-			if (w == 0 && windowsTotal > 0) { return Fail(kAggName, "stride with layer slicing is not supported yet"); }	// TODO(task 5)
-			Json::Value reply = buildStrided(w, true);
-			return Finish(kAggName, 1, reply, w < windowsTotal);
+			if (w > 0 || windowsTotal == 0)
+			{
+				Json::Value reply = buildStrided(w, true);
+				return Finish(kAggName, 1, reply, w < windowsTotal);
+			}
+			// A single window across all layers does not fit: fall through to the slice path.
 		}
 
 		uint32_t n = 0;
-		if (to > from && req.layerOffset == 0)
+		if (stride == 1 && to > from && req.layerOffset == 0)
 		{
 			n = FitCount(to - from, mMaxReplyBytes, [&](uint32_t k) { return JsonSize(build(k, false)); });
 		}
-		if (n > 0 || (to <= from && req.layerOffset == 0))
+		if (stride == 1 && (n > 0 || (to <= from && req.layerOffset == 0)))
 		{
 			Json::Value reply = build(n, true);
 			return Finish(kAggName, 1, reply, from + n < to);
 		}
 
-		// Slice path: one sample, layers [layerOffset, layerOffset+k). samples/groupSizes repeat in every slice (one sample: cheap).
+		// Slice path: one sample (stride 1) or one stride window, layers [layerOffset, layerOffset+k). samples/groupSizes repeat in every slice (one sample: cheap).
 		// Sizing always includes a worst-case `next` so the final reply never exceeds the budget.
 		const uint32_t total = uint32_t(layers.size());
 		const uint32_t offset = req.layerOffset;
 		auto buildSlice = [&](uint32_t k, bool fill) -> Json::Value
 		{
 			const std::vector<Rows::AggLayer> sub(layers.begin() + offset, layers.begin() + offset + k);
-			Json::Value r = Rows::BuildAggregateBody(rec, sub, from, 1, fill, req.hasGroups ? &req.groupWanted : nullptr);
+			Json::Value r = stride > 1 ? Rows::BuildStridedAggregateBody(rec, sub, from, 1, stride, to, fill, req.hasGroups ? &req.groupWanted : nullptr)
+			                           : Rows::BuildAggregateBody(rec, sub, from, 1, fill, req.hasGroups ? &req.groupWanted : nullptr);
 			r["structure"] = hex;
 			r["from"] = from;
 			r["count"] = 1;
+			if (stride > 1) { r["stride"] = stride; }
 			r["layerOffset"] = offset;
 			r["layerCount"] = k;
 			r["layerTotal"] = total;
@@ -534,7 +538,7 @@ namespace Dia::CellHistory
 		Json::Value reply = buildSlice(k, true);
 		bool more = false;
 		if (offset + k < total) { reply = withNext(reply, from, offset + k); more = true; }
-		else if (from + 1 < to) { reply = withNext(reply, from + 1, 0); more = true; }
+		else if (uint64_t(from) + stride < to) { reply = withNext(reply, from + stride, 0); more = true; }
 		return Finish(kAggName, 1, reply, more);
 	}
 
