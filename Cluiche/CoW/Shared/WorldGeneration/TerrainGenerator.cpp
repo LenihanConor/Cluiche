@@ -264,7 +264,20 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         ComputeStage1(mRules, mShape, mDims, mSeedFields, out, mStage1, mEffective);
         break;
     }
-    case TerrainStage::Mountains:   break;   // TODO: mountains (later task)
+    case TerrainStage::Mountains:
+    {
+        const size_t n = (mDims.width > 0 && mDims.height > 0) ? static_cast<size_t>(mDims.width) * mDims.height : 0u;
+        const uint32_t* landmass = mLayers.GetUInt(mLayers.FindLayer("landmass"));
+        std::vector<uint8_t> mainMask(n, 0);
+        for (size_t i = 0; i < n && landmass != nullptr; ++i)
+        {
+            mainMask[i] = (mEffective.mainLandmass > 0 && landmass[i] == static_cast<uint32_t>(mEffective.mainLandmass)) ? 1 : 0;
+        }
+        ComputeStage2(mRules, mShape, mDims, mSeedFields, mainMask,
+                      mLayers.FloatLayer(mLayers.FindLayer("ridgeMask")),
+                      mLayers.UIntLayer(mLayers.FindLayer("passMask")), mStage2, mEffective);
+        break;
+    }
     case TerrainStage::Barrier:     break;   // TODO: barrier (later task)
     case TerrainStage::Elevation:   break;   // TODO: elevation (later task)
     case TerrainStage::Drainage:    break;   // TODO: drainage (later task)

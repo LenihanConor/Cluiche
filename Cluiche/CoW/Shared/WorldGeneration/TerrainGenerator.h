@@ -11,6 +11,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainLandmass.h>
+#include <Shared/WorldGeneration/TerrainMountains.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -44,7 +45,9 @@ struct StageTiming
     X("islandPotential", LayerType::Float, TerrainStage::Landmass) \
     X("landmass",        LayerType::UInt,  TerrainStage::Landmass) \
     X("coastDistance",   LayerType::UInt,  TerrainStage::Landmass) \
-    X("volcanic",        LayerType::UInt,  TerrainStage::Landmass)
+    X("volcanic",        LayerType::UInt,  TerrainStage::Landmass) \
+    X("ridgeMask",       LayerType::Float, TerrainStage::Mountains) \
+    X("passMask",        LayerType::UInt,  TerrainStage::Mountains)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;
@@ -168,6 +171,8 @@ public:
     // Stage 1 internals (budgets, M ranking, masks, island groups) and effective slider values.
     const Stage1Debug&   GetStage1Debug() const { return mStage1; }
     const Effective&     GetEffective() const { return mEffective; }
+    // Stage 2 internals (centre, curve, accepted passes, raw ridge).
+    const Stage2Debug&   GetStage2Debug() const { return mStage2; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -177,6 +182,7 @@ private:
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
     Stage1Debug      mStage1;
+    Stage2Debug      mStage2;
     Effective        mEffective;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;
