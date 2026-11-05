@@ -317,7 +317,6 @@ TEST(HistoryClosingEdgesExport, ALabelWithQuotesBackslashesControlCharactersAndU
 }
 
 // Regression (closing audit, fixed 2026-11-04 with Utf8SafeLength): the 31-byte sample label was cut byte-wise and could end in half a UTF-8 character.
-// byte-wise, so a multi-byte character straddling the cap leaves a lone lead byte and the exported file is not valid UTF-8.
 TEST(HistoryClosingEdgesExport, ALabelTruncatedMidUtf8SequenceStillExportsValidUtf8)
 {
 	ExFix f; f.Setup();

@@ -207,4 +207,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [export.plan.md](export.plan.md). Build needs AD-001 sign-off for the `FindEvent` addition to `ValueSchemaService`.
+`Done` (2026-11-04). Plan: [export.plan.md](export.plan.md). AC 15 (Release export time) is unverified: the Release gate was skipped by the user. Replies are capped at 15,000 bytes (the sim-hosted limit is 16,384), not 1 MB, so a catch-up needs a layer cursor for big runs: tracked as a Dia backlog item and a requirement of the proposed T-1 Feature 7.

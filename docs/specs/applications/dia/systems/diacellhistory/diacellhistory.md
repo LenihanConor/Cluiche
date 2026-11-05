@@ -172,4 +172,4 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
 
 ## Status
 
-`Approved` (2026-10-19). All 5 feature specs `Approved` (2026-10-20); no plan yet.
+`Done` (2026-11-04, engine scope). Feature 1 (recorder and tiers) Done 2026-11-03; Feature 2 (scrub and timeline) Done 2026-11-04; Features 3 (snapshots), 4 (compare) and 5 (export) Done 2026-11-04 except their in-game panel parts, which the user deferred and re-homed to the CluicheEditor Inspector (proposed T-1 Feature 7). Release perf gates skipped by decision. Plan: [diacellhistory.plan.md](diacellhistory.plan.md); follow-ups in `docs/BACKLOG.md` Loose Ends.

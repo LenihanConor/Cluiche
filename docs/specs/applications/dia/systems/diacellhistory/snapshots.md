@@ -198,4 +198,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. The CoW `ISnapshotStore` adapter over E1 is a separate consumer task.
+`Done` (2026-11-04, engine scope). Plan: [snapshots.plan.md](snapshots.plan.md). **Not built (deferred by the user, re-homed to T-1 Feature 7):** the in-game panel snapshot list and controls. The CoW `ISnapshotStore` adapter over E1 is a separate consumer task.

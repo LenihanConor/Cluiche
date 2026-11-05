@@ -186,4 +186,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan: [compare.plan.md](compare.plan.md). Build needs AD-001 sign-off for the `GetPresentation` addition to DiaCellLayers' `IViewValueSource`.
+`Done` (2026-11-04, engine scope). Plan: [compare.plan.md](compare.plan.md). **Not built (deferred by the user, re-homed to T-1 Feature 7):** the in-game panel banner, legend and group table (ACs 16, 17 and the panel part of AC 14). Everything else, including the snapshot side, hover lines and the editor-facing data, is built and tested.
