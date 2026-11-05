@@ -109,6 +109,19 @@
                 "Presentation/UI"
             ],
             "type": "ui"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.terrain_rules",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/WorldGen/terrain_rules.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
         }
     ]
 }

@@ -2580,5 +2580,11 @@
     <ClCompile Include="CoW\TestTerrainTypes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestTerrainRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

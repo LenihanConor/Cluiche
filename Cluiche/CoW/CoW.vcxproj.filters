@@ -61,6 +61,9 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -121,6 +124,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRules.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
