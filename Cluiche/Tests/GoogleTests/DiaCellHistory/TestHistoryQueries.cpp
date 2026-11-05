@@ -782,6 +782,58 @@ TEST(HistoryQueriesAggregates, ErrorsChangeNothing)
 	EXPECT_EQ(ok["count"].asUInt(), 5u);
 }
 
+TEST(HistoryQueriesAggregates, CatchUpParamsAreValidated)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const uint32_t samples = f.r.rec->SampleCount();
+	const uint64_t hash = f.r.rec->StructureHash();
+	auto call = [&](Json::Value a) { return f.Call(kAgg, a); };
+	Json::Value a = Obj();
+	a["stride"] = 0;
+	EXPECT_TRUE(ErrorHas(call(a), "param 'stride' must be an integer >= 1"));
+	a = Obj(); a["stride"] = -1;
+	EXPECT_TRUE(ErrorHas(call(a), "param 'stride' must be an integer >= 1"));
+	a = Obj(); a["stride"] = "x";
+	EXPECT_TRUE(ErrorHas(call(a), "param 'stride' must be an integer >= 1"));
+	a = Obj(); a["groups"] = StrList({ "nope" });
+	EXPECT_TRUE(ErrorHas(call(a), "unknown group 'nope'"));
+	a = Obj(); a["groups"] = "world";
+	EXPECT_TRUE(ErrorHas(call(a), "param 'groups' must be an array of group ids"));
+	a = Obj(); a["groups"] = Json::Value(Json::arrayValue); a["groups"].append(3);
+	EXPECT_TRUE(ErrorHas(call(a), "param 'groups' must be an array of group ids"));
+	a = Obj(); a["layerOffset"] = 1000;
+	EXPECT_TRUE(ErrorHas(call(a), "invalid cursor: layerOffset 1000 is past the last layer"));
+	a = Obj(); a["layers"] = StrList({ "temp" }); a["layerOffset"] = 1;
+	EXPECT_TRUE(ErrorHas(call(a), "invalid cursor: layerOffset 1 is past the last layer"));
+	a = Obj(); a["layerOffset"] = "x";
+	EXPECT_TRUE(ErrorHas(call(a), "layerOffset"));
+	a = Obj(); a["structure"] = "0000000000000000";
+	EXPECT_TRUE(ErrorHas(call(a), "structure changed: restart the catch-up"));
+	EXPECT_EQ(f.r.rec->SampleCount(), samples);
+	EXPECT_EQ(f.r.rec->StructureHash(), hash);
+
+	// Valid values are accepted and, for now, do not change the reply.
+	const Json::Value base = f.Call(kAgg);
+	Json::Value g = Obj();
+	g["groups"] = StrList({ "world" }); g["stride"] = 1; g["layerOffset"] = 0; g["structure"] = base["structure"];
+	const Json::Value ok = call(g);
+	ASSERT_FALSE(IsError(ok)) << ok.toStyledString();
+	EXPECT_TRUE(JsonEq(ok, base));
+}
+
+TEST(HistoryQueriesAggregates, CatchUpParamsAreInTheHelp)
+{
+	QFix f; f.Setup();
+	const Dia::DebugServer::SimHelpStored* help = f.registrar.Help(kAgg);
+	ASSERT_NE(help, nullptr);
+	EXPECT_EQ(help->paramCount, 7u);
+	std::string names;
+	for (unsigned i = 0; i < help->paramCount; ++i) { names += help->params[i].name; names += ","; }
+	for (const char* n : { "groups", "stride", "layerOffset", "structure" }) { EXPECT_NE(names.find(n), std::string::npos) << n; }
+	for (unsigned i = 0; i < help->paramCount; ++i) { EXPECT_GT(strlen(help->params[i].description), 0u); }
+	EXPECT_LE(strlen(help->description), 256u);
+}
+
 TEST(HistoryQueriesAggregates, OneSampleThatDoesNotFitIsAnErrorNotAnOversizedReply)
 {
 	QFix f; f.Setup(); f.Run(5);

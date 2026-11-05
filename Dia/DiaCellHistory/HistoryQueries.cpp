@@ -41,7 +41,9 @@ namespace Dia::CellHistory
 		const char* const kEventsName = "cells.history.events";
 		const char* const kCellsName = "cells.history.cells";
 		const ValueParam kParamsMeta[] = { { "part", "string", false, "core (default), groups, layers or schema" }, { "offset", "int", false, "Item to resume at (from next)" } };
-		const ValueParam kParamsAgg[] = { { "from", "int", false, "First sample (default: oldest retained)" }, { "to", "int", false, "End sample, exclusive (default: sample count)" }, { "layers", "array", false, "Layer ids to include (default: all)" } };
+		const ValueParam kParamsAgg[] = { { "from", "int", false, "First sample (default: oldest retained)" }, { "to", "int", false, "End sample, exclusive (default: sample count)" }, { "layers", "array", false, "Layer ids to include (default: all)" },
+			{ "groups", "array", false, "Group ids to include, e.g. [\"world\"] (default: all)" }, { "stride", "int", false, "Window size in recorded samples; 1 = no re-aggregation (default 1)" },
+			{ "layerOffset", "int", false, "Layer index to resume at (from next)" }, { "structure", "string", false, "Structure hash from the reply (from next); rejects a stale cursor" } };
 		const ValueParam kParamsEvents[] = { { "from", "int", false, "First sample" }, { "to", "int", false, "End sample, exclusive" }, { "types", "array", false, "Event type names" }, { "skip", "int", false, "Events of sample 'from' already delivered" } };
 		const ValueParam kParamsCells[] = { { "layer", "string", true, "Tracked layer id" }, { "from", "int", false, "First sample" }, { "to", "int", false, "End sample, exclusive" }, { "cells", "array", false, "Cell indices (default: all)" }, { "cellOffset", "int", false, "Column to resume at (from next)" } };
 
@@ -60,6 +62,15 @@ namespace Dia::CellHistory
 			b["indentation"] = "";
 			return Json::writeString(b, v).size();
 		}
+
+		// Validated catch-up request fields of cells.history.aggregates.
+		struct AggRequest
+		{
+			std::vector<bool> groupWanted;
+			bool hasGroups = false;
+			uint32_t stride = 1;
+			uint32_t layerOffset = 0;
+		};
 
 		bool ParseUInt(const Json::Value& v, uint32_t& out)
 		{
@@ -417,6 +428,38 @@ namespace Dia::CellHistory
 		char hex[24];
 		snprintf(hex, sizeof(hex), "%016llx", (unsigned long long)rec.StructureHash());
 
+		// Catch-up fields (validated here; applied by later tasks).
+		AggRequest req;
+		req.groupWanted.assign(agg.GroupCount(), false);
+		if (args.isMember("groups"))
+		{
+			if (!args["groups"].isArray()) { return Fail(kAggName, "param 'groups' must be an array of group ids"); }
+			req.hasGroups = true;
+			for (const Json::Value& v : args["groups"])
+			{
+				if (!v.isString()) { return Fail(kAggName, "param 'groups' must be an array of group ids"); }
+				const uint32_t crc = StringCRC(v.asString().c_str()).Value();
+				bool found = false;
+				for (uint32_t g = 0; g < agg.GroupCount(); ++g) { if (agg.GroupAt(g).Value() == crc) { req.groupWanted[g] = true; found = true; break; } }
+				if (!found) { snprintf(err, sizeof(err), "unknown group '%.100s'", v.asString().c_str()); return Fail(kAggName, err); }
+			}
+		}
+		if (args.isMember("stride") && (!ParseUInt(args["stride"], req.stride) || req.stride < 1)) { return Fail(kAggName, "param 'stride' must be an integer >= 1"); }
+		if (args.isMember("layerOffset"))
+		{
+			if (!ParseUInt(args["layerOffset"], req.layerOffset)) { return Fail(kAggName, "param 'layerOffset' must be a non-negative integer"); }
+			if (req.layerOffset != 0 && req.layerOffset >= layers.size())
+			{
+				snprintf(err, sizeof(err), "invalid cursor: layerOffset %u is past the last layer", req.layerOffset);
+				return Fail(kAggName, err);
+			}
+		}
+		if (args.isMember("structure"))
+		{
+			if (!args["structure"].isString()) { return Fail(kAggName, "param 'structure' must be a string"); }
+			if (args["structure"].asString() != hex) { return Fail(kAggName, "structure changed: restart the catch-up"); }
+		}
+
 		// Builds the reply for [from, from+n). fill=false uses placeholder text of the exact encoded length (cheap sizing).
 		auto build = [&](uint32_t n, bool fill) -> Json::Value
 		{
@@ -681,7 +724,7 @@ namespace Dia::CellHistory
 		struct Entry { const char* name; Dia::DebugServer::SimHelpInfo help; Dia::CellLayers::MirrorQueryHandler handler; };
 		const Entry entries[kNameCount] = {
 			{ kMetaName, Help("Catch-up: header, bands, groups, layers, tracked, gaps, snapshots, structure hash. part=schema pages the embedded schema. Pages of <= 15 KB; follow next.", kParamsMeta, 2u), [this](const Json::Value& a) { return Meta(a); } },
-			{ kAggName, Help("Aggregate rows (min/mean/max or category counts, base64) for samples [from,to), optional layers filter. Whole samples per reply (<= 15 KB); follow next.from.", kParamsAgg, 3u), [this](const Json::Value& a) { return Aggregates(a); } },
+			{ kAggName, Help("Aggregate rows (min/mean/max or category counts, base64) for samples [from,to), optional layers filter. Whole samples per reply (<= 15 KB); follow next. Also groups, stride, layerOffset.", kParamsAgg, 7u), [this](const Json::Value& a) { return Aggregates(a); } },
 			{ kEventsName, Help("Events in samples [from,to), optional types filter. At most 2000 and 15 KB per reply; follow next {from, skip}.", kParamsEvents, 4u), [this](const Json::Value& a) { return Events(a); } },
 			{ kCellsName, Help("Quantised per-cell series (base64) of a tracked layer for samples [from,to), optional cell list. Replies <= 15 KB; follow next {from, cellOffset}.", kParamsCells, 5u), [this](const Json::Value& a) { return Cells(a); } } };
 		uint32_t done = 0;

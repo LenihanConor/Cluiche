@@ -8,7 +8,9 @@
 // call on the recorder's PU; there is no state between calls (a cursor in `next` carries everything).
 //
 //   cells.history.meta        { part?, offset? }                       -> see Meta
-//   cells.history.aggregates  { from?, to?, layers? }                  -> see Aggregates
+//   cells.history.aggregates  { from?, to?, layers?, groups?, stride?, layerOffset?, structure? } -> see Aggregates
+//                             (groups: group ids, default all; stride: window in samples, default 1; layerOffset + structure:
+//                             resume cursor from `next`; a stale structure is rejected)
 //   cells.history.events      { from?, to?, types?, skip? }            -> see Events
 //   cells.history.cells       { layer, from?, to?, cells?, cellOffset? } -> see Cells
 //
