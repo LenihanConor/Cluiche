@@ -122,8 +122,9 @@ history.Sample({ tick, "Y12 W30", SampleBand::Week });
 | 3 | Snapshots | `ISnapshotStore` (asynchronous, frame-boundary), take/restore/list/delete, quantised copies of every recorded layer in a `dia.cell_snapshot` file, history truncation or reset on restore, 16-snapshot cap | Approved | [snapshots.md](snapshots.md) |
 | 4 | Compare | Delta mode (now/sample/snapshot sides; every float layer shows B minus A through the view value source), zero-centred diverging scale, per-group change table in the inspector; no category delta in v1 | Approved | [compare.md](compare.md) |
 | 5 | Export | Topics, chunked queries, `dia.cell_history` file (base64 numeric arrays, embedded schema, world id), runner integration through one `HistoryExporter::WriteFile` | Approved | [export.md](export.md) |
+| 6 | Aggregate catch-up | `cells.history.aggregates` layer cursor, `groups` filter and `stride` (re-aggregated windows) so any request fits the 15 KB reply and T-1 can catch up live; topic and file unchanged | Approved | [aggregate-catch-up.md](aggregate-catch-up.md) |
 
-Build order: 1 → 2 → 4 → 3 → 5. Feature 1 needs DiaCellLayers Feature 1.
+Build order: 1 → 2 → 4 → 3 → 5 → 6. Feature 1 needs DiaCellLayers Feature 1.
 
 ## Dependencies
 
