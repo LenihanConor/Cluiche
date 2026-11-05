@@ -1149,6 +1149,8 @@
     <ClCompile Include="CoW\TestTerrainTypes.cpp" />
     <ClCompile Include="CoW\TestTerrainRules.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRules.cpp" />
+    <ClCompile Include="CoW\TestTerrainGenerator.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -42,6 +42,7 @@
     <ClCompile Include="Modules\SnapshotStoreAdapter.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -65,6 +66,7 @@
     <ClInclude Include="Modules\SnapshotStoreAdapter.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainRules.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
