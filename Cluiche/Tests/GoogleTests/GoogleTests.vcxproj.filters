@@ -2565,5 +2565,8 @@
     <ClCompile Include="DiaCellHistory\TestHistoryExportPerf.cpp">
       <Filter>DiaCellHistory</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellHistory\TestHistoryClosingEdges.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
