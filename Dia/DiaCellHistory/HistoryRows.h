@@ -45,6 +45,19 @@ namespace Dia::CellHistory
 		// (cheap sizing; same serialised size).
 		Json::Value BuildAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t n, bool fill, const std::vector<bool>* groupWanted = nullptr);
 
+		// Re-aggregation of one float layer/group over a window of recorded samples.
+		struct WindowStats { float min; float mean; float max; bool valid; };
+		// Reduces n per-sample stats: min of mins, max of maxes, mean = sum(mean*weight)/sum(weight) (weight = group size). Samples with
+		// valid[i]==false are skipped. NaN inputs are skipped per field (a NaN min/max does not contribute; a NaN mean is left out of the
+		// mean entirely). Total weight 0 -> unweighted mean of the contributing means. Nothing contributing -> that field is quiet NaN.
+		// `valid` in the result is true when at least one sample was valid.
+		WindowStats ReduceFloatWindow(const float* mins, const float* means, const float* maxs, const uint16_t* weights, const bool* valid, uint32_t n);
+		// Like BuildAggregateBody but one entry per window of `stride` samples starting at `from` (the last window is clipped to
+		// rangeEnd, exclusive): samples[i] = header of the window's last sample, groupSizes = size at that sample, float layers
+		// re-aggregated per ReduceFloatWindow, category layers = counts at the window's last sample. Samples before a layer's `first` are
+		// invalid. fill=false emits placeholders of the same encoded length.
+		Json::Value BuildStridedAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t windows, uint32_t stride, uint32_t rangeEnd, bool fill, const std::vector<bool>* groupWanted = nullptr);
+
 		struct GroupInfo { std::string id; uint32_t layerCrc; uint32_t value; };
 		struct TypeInfo { uint32_t crc; std::string key; };
 		struct EventContext

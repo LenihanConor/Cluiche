@@ -2,6 +2,7 @@
 #include <DiaCellHistory/HistoryEncoding.h>
 #include <DiaCellHistory/HistoryExporter.h>
 #include <DiaCellHistory/HistoryQueries.h>
+#include <DiaCellHistory/HistoryRows.h>
 #include <DiaCellHistory/QueryObservation.h>
 #include <DiaCellHistory/SnapshotManager.h>
 #include <DiaCellHistory/Testing/ExportDecoder.h>
@@ -16,6 +17,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -1065,6 +1068,254 @@ TEST(HistoryQueriesAggregates, SliceWithAGroupFilterHonoursTheBudget)
 	ASSERT_FALSE(p.failed) << p.error;
 	EXPECT_GT(p.replies.size(), 6u);
 	EXPECT_LE(p.maxBytes, size_t(budget));
+}
+
+// ---- aggregates: stride ---------------------------------------------------------------------------------------------
+
+TEST(HistoryRowsReduce, MinMaxAndWeightedMean)
+{
+	const float mins[3] = { 5.f, 2.f, 4.f }, means[3] = { 10.f, 20.f, 40.f }, maxs[3] = { 15.f, 30.f, 50.f };
+	const uint16_t w[3] = { 1, 2, 5 };
+	const bool ok[3] = { true, true, true };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 3);
+	EXPECT_TRUE(r.valid);
+	EXPECT_FLOAT_EQ(r.min, 2.f);
+	EXPECT_FLOAT_EQ(r.max, 50.f);
+	EXPECT_NEAR(r.mean, (10.f * 1 + 20.f * 2 + 40.f * 5) / 8.f, 1e-4f);
+}
+
+TEST(HistoryRowsReduce, InvalidSamplesAreSkipped)
+{
+	const float mins[3] = { -100.f, 2.f, -200.f }, means[3] = { 1000.f, 20.f, 1000.f }, maxs[3] = { 900.f, 30.f, 900.f };
+	const uint16_t w[3] = { 9, 3, 9 };
+	const bool ok[3] = { false, true, false };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 3);
+	EXPECT_TRUE(r.valid);
+	EXPECT_FLOAT_EQ(r.min, 2.f);
+	EXPECT_FLOAT_EQ(r.mean, 20.f);
+	EXPECT_FLOAT_EQ(r.max, 30.f);
+}
+
+TEST(HistoryRowsReduce, ZeroWeightsFallBackToTheUnweightedMean)
+{
+	const float mins[2] = { 1.f, 1.f }, means[2] = { 10.f, 20.f }, maxs[2] = { 3.f, 3.f };
+	const uint16_t w[2] = { 0, 0 };
+	const bool ok[2] = { true, true };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 2);
+	EXPECT_TRUE(r.valid);
+	EXPECT_FLOAT_EQ(r.mean, 15.f);
+}
+
+TEST(HistoryRowsReduce, NothingValidIsNaN)
+{
+	const float v[2] = { 1.f, 2.f };
+	const uint16_t w[2] = { 1, 1 };
+	const bool ok[2] = { false, false };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(v, v, v, w, ok, 2);
+	EXPECT_FALSE(r.valid);
+	EXPECT_TRUE(r.min != r.min); EXPECT_TRUE(r.mean != r.mean); EXPECT_TRUE(r.max != r.max);
+	const Dia::CellHistory::Rows::WindowStats e = Dia::CellHistory::Rows::ReduceFloatWindow(v, v, v, w, ok, 0);
+	EXPECT_FALSE(e.valid);
+}
+
+TEST(HistoryRowsReduce, NaNInputsAreSkippedPerField)
+{
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	const float mins[2] = { nan, 4.f }, means[2] = { nan, 8.f }, maxs[2] = { 6.f, nan };
+	const uint16_t w[2] = { 5, 2 };
+	const bool ok[2] = { true, true };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 2);
+	EXPECT_TRUE(r.valid);
+	EXPECT_FLOAT_EQ(r.min, 4.f);
+	EXPECT_FLOAT_EQ(r.max, 6.f);
+	EXPECT_FLOAT_EQ(r.mean, 8.f);
+}
+
+TEST(HistoryRowsReduce, SingleSampleWindowEqualsTheInput)
+{
+	const float mn = 1.5f, me = 2.5f, mx = 3.5f;
+	const uint16_t w = 7;
+	const bool ok = true;
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(&mn, &me, &mx, &w, &ok, 1);
+	EXPECT_TRUE(r.valid);
+	EXPECT_FLOAT_EQ(r.min, mn); EXPECT_FLOAT_EQ(r.mean, me); EXPECT_FLOAT_EQ(r.max, mx);
+}
+
+namespace
+{
+	Json::Value StrideArgs(uint32_t stride) { Json::Value a = Obj(); a["stride"] = stride; return a; }
+
+	// Walks the strided reply `r` against the unstrided `base` (covering [baseFrom, ..)) over windows of `stride` from `from` to `to`.
+	void ExpectStridedMatchesReference(const Json::Value& base, const Json::Value& r, uint32_t stride, uint32_t baseFrom, uint32_t from, uint32_t to)
+	{
+		const uint32_t windows = r["count"].asUInt();
+		const uint32_t baseN = base["count"].asUInt();
+		ASSERT_EQ(r["samples"].size(), windows);
+		for (const std::string& g : r["groupSizes"].getMemberNames())
+		{
+			std::vector<float> rmn, rme, rmx;
+			std::vector<uint16_t> rsize, baseCat, cat, sz;
+			ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"][g]["min"], baseN, rmn));
+			ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"][g]["mean"], baseN, rme));
+			ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"][g]["max"], baseN, rmx));
+			ASSERT_TRUE(DecodedExport::DecodeU16(base["groupSizes"][g], baseN, rsize));
+			ASSERT_TRUE(DecodedExport::DecodeU16(base["rows"]["biome"]["groups"][g], baseN * 3u, baseCat));
+			std::vector<float> mn, me, mx;
+			ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"][g]["min"], windows, mn));
+			ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"][g]["mean"], windows, me));
+			ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"][g]["max"], windows, mx));
+			ASSERT_TRUE(DecodedExport::DecodeU16(r["groupSizes"][g], windows, sz));
+			ASSERT_TRUE(DecodedExport::DecodeU16(r["rows"]["biome"]["groups"][g], windows * 3u, cat));
+			for (uint32_t w = 0; w < windows; ++w)
+			{
+				const uint32_t a = from + w * stride;
+				const uint32_t b = std::min(a + stride, to);
+				double lo = 1e30, hi = -1e30, num = 0, den = 0;
+				for (uint32_t s = a; s < b; ++s)
+				{
+					const uint32_t i = s - baseFrom;
+					lo = std::min<double>(lo, rmn[i]); hi = std::max<double>(hi, rmx[i]);
+					num += double(rme[i]) * rsize[i]; den += rsize[i];
+				}
+				EXPECT_NEAR(mn[w], lo, 1e-3) << g << " w" << w;
+				EXPECT_NEAR(mx[w], hi, 1e-3) << g << " w" << w;
+				if (den > 0) { EXPECT_NEAR(me[w], num / den, 1e-2) << g << " w" << w; }
+				const uint32_t last = b - 1 - baseFrom;
+				EXPECT_EQ(sz[w], rsize[last]) << g << " w" << w;
+				for (uint32_t k = 0; k < 3; ++k) { EXPECT_EQ(cat[w * 3 + k], baseCat[last * 3 + k]) << g << " w" << w << " k" << k; }
+				EXPECT_TRUE(JsonEq(r["samples"][w], base["samples"][last])) << w;
+			}
+		}
+	}
+}
+
+TEST(HistoryQueriesAggregatesStride, WindowsMatchAnIndependentReference)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	const Json::Value r = f.Call(kAgg, StrideArgs(4));
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["count"].asUInt(), 3u);			// [0,4) [4,8) [8,10)
+	EXPECT_EQ(r["stride"].asUInt(), 4u);
+	EXPECT_EQ(r["from"].asUInt(), 0u);
+	EXPECT_FALSE(r.isMember("next"));
+	EXPECT_GE(r["groupSizes"].size(), 3u);
+	ExpectStridedMatchesReference(base, r, 4, 0, 0, 10);
+}
+
+TEST(HistoryQueriesAggregatesStride, StrideLargerThanTheRangeGivesOneWindow)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	const Json::Value r = f.Call(kAgg, StrideArgs(1000));
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["count"].asUInt(), 1u);
+	EXPECT_FALSE(r.isMember("next"));
+	ExpectStridedMatchesReference(base, r, 1000, 0, 0, 10);
+}
+
+TEST(HistoryQueriesAggregatesStride, StrideOneEqualsTheUnstridedReplyWithNoStrideField)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	const Json::Value r = f.Call(kAgg, StrideArgs(1));
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_FALSE(r.isMember("stride"));
+	EXPECT_TRUE(JsonEq(r, base));
+}
+
+TEST(HistoryQueriesAggregatesStride, WindowsAreRelativeToFromAndToCanCutTheLastWindow)
+{
+	QFix f; f.Setup(); f.Run(12);
+	Json::Value ba = Obj(); ba["from"] = 3; ba["to"] = 10;
+	const Json::Value base = f.Call(kAgg, ba);
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	Json::Value a = StrideArgs(2); a["from"] = 3; a["to"] = 10;
+	const Json::Value r = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["from"].asUInt(), 3u);
+	EXPECT_EQ(r["count"].asUInt(), 4u);			// [3,5) [5,7) [7,9) [9,10)
+	ExpectStridedMatchesReference(base, r, 2, 3, 3, 10);
+}
+
+TEST(HistoryQueriesAggregatesStride, NextCursorFollowsTheWindowsAndReassemblesTheOneShotResult)
+{
+	QFix f; f.Setup(); f.Run(30);
+	const Json::Value whole = f.Call(kAgg, StrideArgs(3));
+	ASSERT_FALSE(IsError(whole)) << whole.toStyledString();
+	ASSERT_EQ(whole["count"].asUInt(), 10u);
+	Json::Value four = StrideArgs(3); four["to"] = 12;
+	const uint32_t budget = uint32_t(Size(f.Call(kAgg, four))) + 20;	// about four windows
+	f.Budget(budget);
+	const Json::Value first = f.Call(kAgg, StrideArgs(3));
+	ASSERT_FALSE(IsError(first)) << first.toStyledString();
+	ASSERT_TRUE(first.isMember("next"));
+	EXPECT_EQ(first["next"]["from"].asUInt(), first["count"].asUInt() * 3u);
+	EXPECT_LE(Size(first), size_t(budget));
+	Json::Value args = StrideArgs(3);
+	std::vector<Json::Value> pages;
+	for (int guard = 0; guard < 1000; ++guard)
+	{
+		const Json::Value rep = f.Call(kAgg, args);
+		ASSERT_FALSE(IsError(rep)) << rep.toStyledString();
+		EXPECT_LE(Size(rep), size_t(budget));
+		pages.push_back(rep);
+		if (!rep.isMember("next")) { break; }
+		args["from"] = rep["next"]["from"];
+	}
+	EXPECT_GT(pages.size(), 2u);
+	AggAssembly paged, one;
+	Assemble(pages, paged);
+	Assemble({ whole }, one);
+	EXPECT_EQ(paged.total, 10u);
+	EXPECT_EQ(paged.f32bits, one.f32bits);
+	EXPECT_EQ(paged.u16, one.u16);
+	EXPECT_EQ(paged.sizes, one.sizes);
+	ASSERT_EQ(paged.samples.size(), one.samples.size());
+	for (size_t i = 0; i < one.samples.size(); ++i) { EXPECT_TRUE(JsonEq(paged.samples[i], one.samples[i])) << i; }
+}
+
+TEST(HistoryQueriesAggregatesStride, GroupAndLayerFiltersComposeWithStride)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value full = f.Call(kAgg, StrideArgs(4));
+	const std::vector<std::string> names = full["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 2u);
+	Json::Value a = StrideArgs(4);
+	a["groups"] = StrList({ names[1].c_str() });
+	a["layers"] = StrList({ "temp" });
+	const Json::Value r = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["groupSizes"].size(), 1u);
+	EXPECT_EQ(r["rows"].size(), 1u);
+	ASSERT_TRUE(r["rows"].isMember("temp"));
+	EXPECT_TRUE(JsonEq(r["groupSizes"][names[1]], full["groupSizes"][names[1]]));
+	EXPECT_TRUE(JsonEq(r["rows"]["temp"]["groups"][names[1]], full["rows"]["temp"]["groups"][names[1]]));
+}
+
+TEST(HistoryQueriesAggregatesStride, StridedRepliesFitTheBudget)
+{
+	QFix f; f.Setup(); f.Run(40);
+	const Json::Value whole = f.Call(kAgg, StrideArgs(2));
+	for (uint32_t budget : { uint32_t(Size(whole)) / 2, uint32_t(Size(whole)) / 4 })
+	{
+		f.Budget(budget);
+		const Json::Value r = f.Call(kAgg, StrideArgs(2));
+		ASSERT_FALSE(IsError(r)) << budget << " " << r.toStyledString();
+		EXPECT_LE(Size(r), size_t(budget));
+		EXPECT_TRUE(r.isMember("next"));
+	}
+}
+
+TEST(HistoryQueriesAggregatesStride, NeedingLayerSlicesWithStrideIsTemporarilyAnError)
+{
+	QFix f; f.Setup(); f.Run(6);
+	f.Budget(SliceBudget(f));
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, StrideArgs(2)), "stride with layer slicing"));
+	f.Budget(15000);
+	Json::Value a = StrideArgs(2); a["layerOffset"] = 1;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "stride with layer slicing"));
 }
 
 // ---- events ---------------------------------------------------------------------------------------------------------

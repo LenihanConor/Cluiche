@@ -473,6 +473,28 @@ namespace Dia::CellHistory
 
 		if (req.layerOffset > 0 && from >= to) { return Fail(kAggName, "invalid cursor: layerOffset needs a sample inside the range"); }
 
+		if (req.stride > 1)
+		{
+			if (req.layerOffset > 0) { return Fail(kAggName, "stride with layer slicing is not supported yet"); }	// TODO(task 5)
+			const uint32_t stride = req.stride;
+			const uint32_t windowsTotal = to > from ? uint32_t((uint64_t(to - from) + stride - 1) / stride) : 0u;
+			auto buildStrided = [&](uint32_t w, bool fill) -> Json::Value
+			{
+				Json::Value r = Rows::BuildStridedAggregateBody(rec, layers, from, w, stride, to, fill, req.hasGroups ? &req.groupWanted : nullptr);
+				r["structure"] = hex;
+				r["from"] = from;
+				r["count"] = w;
+				r["stride"] = stride;
+				if (w < windowsTotal) { Json::Value nx(Json::objectValue); nx["from"] = from + w * stride; r["next"] = nx; }
+				return r;
+			};
+			uint32_t w = 0;
+			if (windowsTotal > 0) { w = FitCount(windowsTotal, mMaxReplyBytes, [&](uint32_t k) { return JsonSize(buildStrided(k, false)); }); }
+			if (w == 0 && windowsTotal > 0) { return Fail(kAggName, "stride with layer slicing is not supported yet"); }	// TODO(task 5)
+			Json::Value reply = buildStrided(w, true);
+			return Finish(kAggName, 1, reply, w < windowsTotal);
+		}
+
 		uint32_t n = 0;
 		if (to > from && req.layerOffset == 0)
 		{

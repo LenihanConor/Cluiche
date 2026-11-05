@@ -37,6 +37,9 @@
 //   exactly as in the file. If not even one whole sample fits (or the request has layerOffset > 0) the reply is a layer slice: ONE
 //   sample (count 1) holding layers [layerOffset, layerOffset+layerCount) of layerTotal, plus samples/groupSizes, and
 //   next:{from,layerOffset,structure} continuing the same sample or (layerOffset 0) the next one; the client re-sends to/layers/groups.
+//   stride N > 1 re-aggregates windows of N samples from `from` (min of mins, max of maxes, size-weighted mean; categories = the
+//   window's last sample): arrays hold one entry per window, samples[i] is the window's last sample, count = windows, the reply
+//   echoes stride and next:{from} is the next window's first sample (the client re-sends stride/to/layers/groups).
 //   If one layer of the requested groups alone does not fit: error "reply too large: request fewer groups".
 // Events. { from, to, events:[file-shaped], next?:{from,skip} } at most MaxEvents() (2,000) events and within the budget. `next`
 //   resumes inside a sample: `from` is the sample and `skip` the number of that sample's events (before any `types` filter)

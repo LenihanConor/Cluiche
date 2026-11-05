@@ -8,6 +8,7 @@
 
 #include <cstdio>
 #include <limits>
+#include <memory>
 
 namespace Dia::CellHistory::Rows
 {
@@ -145,6 +146,128 @@ namespace Dia::CellHistory::Rows
 				{
 					u16.assign(size_t(n) * l.enumCount, 0);
 					for (uint32_t i = 0; i < n; ++i) { if (from + i >= l.first) { rec.CategoryCounts(from + i, l.id, gid, u16.data() + size_t(i) * l.enumCount, l.enumCount); } }
+					gs[gid.AsChar()] = B64U16(u16.data(), uint32_t(u16.size()));
+				}
+			}
+			lr["groups"] = gs;
+			rows[l.id.AsChar()] = lr;
+		}
+		r["rows"] = rows;
+		return r;
+	}
+
+	WindowStats ReduceFloatWindow(const float* mins, const float* means, const float* maxs, const uint16_t* weights, const bool* valid, uint32_t n)
+	{
+		const float nan = std::numeric_limits<float>::quiet_NaN();
+		WindowStats r{ nan, nan, nan, false };
+		bool haveMin = false, haveMax = false;
+		double weighted = 0.0, plain = 0.0, totalWeight = 0.0;
+		uint32_t meanCount = 0;
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			if (!valid[i]) { continue; }
+			r.valid = true;
+			if (mins[i] == mins[i] && (!haveMin || mins[i] < r.min)) { r.min = mins[i]; haveMin = true; }
+			if (maxs[i] == maxs[i] && (!haveMax || maxs[i] > r.max)) { r.max = maxs[i]; haveMax = true; }
+			if (means[i] == means[i])
+			{
+				weighted += double(means[i]) * double(weights[i]);
+				plain += double(means[i]);
+				totalWeight += double(weights[i]);
+				++meanCount;
+			}
+		}
+		if (meanCount > 0) { r.mean = totalWeight > 0.0 ? float(weighted / totalWeight) : float(plain / double(meanCount)); }
+		return r;
+	}
+
+	Json::Value BuildStridedAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t windows, uint32_t stride, uint32_t rangeEnd, bool fill, const std::vector<bool>* groupWanted)
+	{
+		const AggregateStore& agg = rec.Aggregates();
+		const uint32_t groups = agg.GroupCount();
+		const uint32_t n = windows;
+		auto winStart = [&](uint32_t w) { return from + w * stride; };
+		auto winEnd = [&](uint32_t w) { const uint64_t e = uint64_t(from) + uint64_t(w + 1) * stride; return uint32_t(e < rangeEnd ? e : rangeEnd); };
+		Json::Value r(Json::objectValue);
+		Json::Value samples(Json::arrayValue);
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			const SampleHeader& h = rec.Header(winEnd(i) - 1);
+			Json::Value s(Json::objectValue);
+			s["tick"] = Json::UInt64(h.mTick); s["label"] = h.mLabel.AsCStr(); s["band"] = unsigned(h.mBand);
+			samples.append(s);
+		}
+		r["samples"] = samples;
+		Json::Value sizes(Json::objectValue);
+		std::vector<uint16_t> u16;
+		std::vector<float> f0, f1, f2;
+		std::vector<float> sMin, sMean, sMax;
+		std::vector<uint16_t> sW;
+		for (uint32_t g = 0; g < groups; ++g)
+		{
+			if (groupWanted && !(*groupWanted)[g]) { continue; }
+			const StringCRC gid = agg.GroupAt(g);
+			if (!fill) { sizes[gid.AsChar()] = std::string(EncodedLength(n * 2u), 'A'); continue; }
+			u16.assign(n, 0);
+			for (uint32_t i = 0; i < n; ++i) { uint16_t v = 0; if (agg.GroupSize(winEnd(i) - 1, gid, v)) { u16[i] = v; } }
+			sizes[gid.AsChar()] = B64U16(u16.data(), n);
+		}
+		r["groupSizes"] = sizes;
+		Json::Value rows(Json::objectValue);
+		for (const AggLayer& l : layers)
+		{
+			Json::Value lr(Json::objectValue);
+			lr["kind"] = l.isFloat ? "float" : "category";
+			lr["first"] = l.first;
+			if (!l.isFloat) { lr["values"] = l.values; }
+			Json::Value gs(Json::objectValue);
+			for (uint32_t g = 0; g < groups; ++g)
+			{
+				if (groupWanted && !(*groupWanted)[g]) { continue; }
+				const StringCRC gid = agg.GroupAt(g);
+				if (l.isFloat)
+				{
+					Json::Value gv(Json::objectValue);
+					if (!fill)
+					{
+						const std::string ph(EncodedLength(n * 4u), 'A');
+						gv["min"] = ph; gv["mean"] = ph; gv["max"] = ph;
+					}
+					else
+					{
+						f0.assign(n, 0.0f); f1.assign(n, 0.0f); f2.assign(n, 0.0f);
+						for (uint32_t i = 0; i < n; ++i)
+						{
+							const uint32_t a = winStart(i), len = winEnd(i) - a;
+							sMin.assign(len, 0.0f); sMean.assign(len, 0.0f); sMax.assign(len, 0.0f);
+							sW.assign(len, 0);
+							std::unique_ptr<bool[]> ok(new bool[len]);
+							for (uint32_t j = 0; j < len; ++j)
+							{
+								AggregateStats st;
+								ok[j] = false;
+								if (a + j >= l.first && rec.Aggregate(a + j, l.id, gid, st))
+								{
+									ok[j] = true; sMin[j] = st.mMin; sMean[j] = st.mMean; sMax[j] = st.mMax;
+									uint16_t sz = 0; if (agg.GroupSize(a + j, gid, sz)) { sW[j] = sz; }
+								}
+							}
+							const WindowStats ws = ReduceFloatWindow(sMin.data(), sMean.data(), sMax.data(), sW.data(), ok.get(), len);
+							f0[i] = ws.min; f1[i] = ws.mean; f2[i] = ws.max;
+						}
+						gv["min"] = B64F32(f0.data(), n); gv["mean"] = B64F32(f1.data(), n); gv["max"] = B64F32(f2.data(), n);
+					}
+					gs[gid.AsChar()] = gv;
+				}
+				else if (!fill) { gs[gid.AsChar()] = std::string(EncodedLength(n * l.enumCount * 2u), 'A'); }
+				else
+				{
+					u16.assign(size_t(n) * l.enumCount, 0);
+					for (uint32_t i = 0; i < n; ++i)
+					{
+						const uint32_t last = winEnd(i) - 1;
+						if (last >= l.first) { rec.CategoryCounts(last, l.id, gid, u16.data() + size_t(i) * l.enumCount, l.enumCount); }
+					}
 					gs[gid.AsChar()] = B64U16(u16.data(), uint32_t(u16.size()));
 				}
 			}
