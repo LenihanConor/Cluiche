@@ -22,6 +22,20 @@ TEST(JsonDiaGameSerializer, Load_NameAndVersion)
     EXPECT_STREQ(m.version.AsCStr(), "2.0");
 }
 
+TEST(JsonDiaGameSerializer, Load_PercentInStringFieldsIsLiteral)
+{
+    JsonDiaGameSerializer s;
+    DiaGameManifest m;
+    const char* json = R"({"name":"100%s%n","version":"1%d","imports":[{"path":"a%s/b.diaapp"}],"config":{"asset_root":"r%s","asset_catalogue":"c%n.json"}})";
+    EXPECT_TRUE(s.Load(json, m).ok);
+    EXPECT_STREQ(m.name.AsCStr(), "100%s%n");
+    EXPECT_STREQ(m.version.AsCStr(), "1%d");
+    ASSERT_EQ(m.imports.Size(), 1u);
+    EXPECT_STREQ(m.imports[0].path.AsCStr(), "a%s/b.diaapp");
+    EXPECT_STREQ(m.config.assetRoot.AsCStr(), "r%s");
+    EXPECT_STREQ(m.config.assetCatalogue.AsCStr(), "c%n.json");
+}
+
 TEST(JsonDiaGameSerializer, Load_MissingNameDefaultsToEmpty)
 {
     JsonDiaGameSerializer s;

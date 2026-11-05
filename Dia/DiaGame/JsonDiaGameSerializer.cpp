@@ -24,10 +24,10 @@ namespace Dia
 				return Dia::Serializer::SerializeResult::Failure("json parse error");
 
 			if (root.isMember("name") && root["name"].isString())
-				outManifest.name = root["name"].asCString();
+				outManifest.name = Dia::Core::Containers::String256("%s", root["name"].asCString());
 
 			if (root.isMember("version") && root["version"].isString())
-				outManifest.version = root["version"].asCString();
+				outManifest.version = Dia::Core::Containers::String256("%s", root["version"].asCString());
 
 			if (root.isMember("imports") && root["imports"].isArray())
 			{
@@ -37,7 +37,7 @@ namespace Dia
 					if (importsJson[i].isObject() && importsJson[i].isMember("path"))
 					{
 						Dia::Application::TypedImport import;
-						import.path = importsJson[i]["path"].asCString();
+						import.path = Dia::Core::Containers::String256("%s", importsJson[i]["path"].asCString());
 						const std::string typeStr = importsJson[i].get("type", "manifest").asString();
 						import.type = (typeStr == "stage")
 							? Dia::Application::TypedImport::ImportType::kStage
@@ -51,9 +51,9 @@ namespace Dia
 			{
 				const Json::Value& cfg = root["config"];
 				if (cfg.isMember("asset_root") && cfg["asset_root"].isString())
-					outManifest.config.assetRoot = cfg["asset_root"].asCString();
+					outManifest.config.assetRoot = Dia::Core::Containers::String256("%s", cfg["asset_root"].asCString());
 				if (cfg.isMember("asset_catalogue") && cfg["asset_catalogue"].isString())
-					outManifest.config.assetCatalogue = cfg["asset_catalogue"].asCString();
+					outManifest.config.assetCatalogue = Dia::Core::Containers::String256("%s", cfg["asset_catalogue"].asCString());
 
 				delete outManifest.rawConfig;
 				outManifest.rawConfig = new Json::Value(cfg);

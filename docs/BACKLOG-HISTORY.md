@@ -8,6 +8,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
+| `JsonDiaGameSerializer` `%` footgun | 2026-11-05 | Five `const char*` to `String256` assignments in `Load` (name, version, import path, asset root, asset catalogue) now build through `String256("%s", ...)`; regression test `Load_PercentInStringFieldsIsLiteral` (31 serializer tests pass) |
+| `dia.bgfx.architecture.module.md` stale DiaSFML ownership | 2026-11-05 | Found already correct (DiaSDL::Window owns window/input); backlog row was out of date, no edit needed |
 | Webix removal (vendored 5.2.1 folder, catalogue entries, live docs; `dummyStage.html` rewritten as a styled plain HTML/CSS Exit Level panel) | 2026-10-13 | [webix_removal research](research/webix_removal/summary.md); commits `6de511c3`, `ce2829d9`, `82e9fd7c`, `da95d410`. Pending: manual check of the DummyStage panel render and Exit Level in Ultralight. Alpine/React game-UI convention is unaffected (spec already Done). |
 | CoW: `dia scaffold app` (data-driven target registry + templates, command, `ScratchApp` boot proof, docs) | before 2026-10-12 | [scaffold-app.md](specs/applications/dia/systems/diacli/scaffold-app.md); F-1 plan task 9 |
 | CoW: `new-cow-stage` skill (AC1 to AC3) | before 2026-10-12 | F-1 plan task 7; trial run (AC4/AC5) still open in the backlog |
