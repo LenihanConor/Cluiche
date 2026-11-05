@@ -231,7 +231,7 @@ private:
 | 3 | Save/Load Bus Messages | SaveRequested, SaveCompleted, LoadRequested, LoadCompleted | Deferred (no consumer until V-4) |
 | 4 | GameSpeedController Serialization | Day counter participant, version 1 | Moved to GameSpeedController's plan |
 | 5 | RandomStream Serialization | Master seed + per-stream state, version 1 | Moved to RandomStreamModule's plan |
-| 6 | Snapshot Store Adapter | `ISnapshotStore` over E1 (snapshot namespace, deferral behind user save/load) plus read-only `CaptureState()`. Spec: [snapshot-store-adapter.md](snapshot-store-adapter.md) | Approved |
+| 6 | Snapshot Store Adapter | `ISnapshotStore` over E1 (snapshot namespace, deferral behind user save/load) plus read-only `CaptureState()`. Spec: [snapshot-store-adapter.md](snapshot-store-adapter.md) | Done |
 
 > **Note:** Features 1-2 are E1's build scope and ship as one unit. Features 4-5 are owned by the systems that hold the state and register through E1; F-2 Test 5 depends on them. Future systems (A1, B-layer, etc.) add their own participants as they land.
 

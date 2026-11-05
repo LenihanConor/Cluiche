@@ -5,7 +5,7 @@
 
 **Gameplay Domains:** persistence
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ## Summary
 
@@ -137,6 +137,16 @@ GoogleTests with a fake `ISaveable` and the real `SaveLoadModule` over a temp fo
 3. **Who builds the adapter and owns `SnapshotManager`'s store reference.** `SnapshotManager` takes `ISnapshotStore&` at construction, so a CoW module must create the adapter before DiaCellHistory's host module builds the manager, and outlive it. The module that does this (a new small module, or an existing CoW debug-host module) is not decided.
 4. **Snapshot enumeration.** `cells.snapshot.list` cannot discover a state file with no cell file because the interface has no enumerate. Not fixed here; an interface change would be a Dia amendment.
 
+## As Built (2026-11-05)
+
+- **Q2 resolved, CoW-only.** `SaveManager` and `SlotManager` read the config through a pointer on every call, so `SaveLoadModule` points its own config at `<base>/snapshots/` (pattern `{id}.sav`, `maxSlots` 0) for the one call and restores it. No DiaSaveGame change.
+- **Q3 resolved.** `SaveLoadModule` owns the `SnapshotStoreAdapter` and runs it at the end of its `DoUpdate`; consumers get it from `GetSnapshotStore()` (via `ModuleRef<SaveLoadModule>`). No new module. Task 3's hand-off to `SnapshotManager` is **not done**: CoW has no DiaCellHistory host module yet, so whoever adds one passes `GetSnapshotStore()`.
+- **Q1:** N = 120 (`kDeferLimitFrames`), unchanged.
+- A second request while one is queued, or an invalid name, gets `ok = false` at the next boundary ("busy" / "invalid snapshot name"); counted as a snapshot failure.
+- Health reason `last_snapshot_failed` (Degraded) clears on the next successful snapshot.
+- Known gap: a request still queued when the module stops never gets its callback.
+- Tests: `GoogleTests/CoW/TestSnapshotStoreAdapter.cpp` (9). Live `dia run cow` smoke still owed (no headless launch).
+
 ## Dependencies
 
 **Requires:** E1 `SaveLoadModule` (Done), DiaSaveGame (Done), DiaCellHistory Feature 3 (`ISnapshotStore`, `SnapshotManager`; Done), DiaSimTime clock restore (Done).
@@ -145,5 +155,5 @@ GoogleTests with a fake `ISaveable` and the real `SaveLoadModule` over a temp fo
 
 ## Status
 
-**Status:** `Approved`
-**Plan:** none yet (create with `/implement` once Approved)
+**Status:** `Done` (live smoke signed off by the user 2026-11-05; the `SnapshotManager` hand-off is carried by the host module, see the backlog)
+**Plan:** [snapshot-store-adapter.plan.md](snapshot-store-adapter.plan.md)

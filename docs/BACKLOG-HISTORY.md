@@ -185,6 +185,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | `SLOW_DebugServer*` loopback tests share hard-coded port 9461 (2026-11-02) | 2026-11-02 | Moved by `dia docs backlog move` |
 | Dia | DiaCellLayers resume point (2026-10-30, end of session) | 2026-11-02 | Moved by `dia docs backlog move` |
 | sim-registered-queries | [spec](specs/) | 2026-11-03 | Marked done by `dia docs spec-done` |
+| CoW | `ISnapshotStore` adapter over E1 | 2026-11-05 | Moved by `dia docs backlog move` |
 
 ---
 
