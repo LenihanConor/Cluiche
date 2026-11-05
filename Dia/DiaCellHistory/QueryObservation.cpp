@@ -14,8 +14,16 @@ namespace Dia::CellHistory
 		mByKind[2] = metrics.RegisterCounter(StringCRC("dia.cellhistory.query_events"));
 		mByKind[3] = metrics.RegisterCounter(StringCRC("dia.cellhistory.query_cells"));
 		mBytes = metrics.RegisterCounter(StringCRC("dia.cellhistory.query_bytes"));
+		mSlices = metrics.RegisterCounter(StringCRC("dia.cellhistory.query_aggregates_slices"));
+		mStrided = metrics.RegisterCounter(StringCRC("dia.cellhistory.query_aggregates_strided"));
 		mMaxReply = metrics.RegisterGauge(StringCRC("dia.cellhistory.query_max_reply_bytes"));
 		if (mMaxReply) { mMaxReply->Set(0.0); }
+	}
+
+	void QueryObservation::OnAggregatesShape(bool sliced, bool strided)
+	{
+		if (sliced && mSlices) { mSlices->Inc(); }
+		if (strided && mStrided) { mStrided->Inc(); }
 	}
 
 	void QueryObservation::OnQuery(Kind kind, uint64_t bytes)

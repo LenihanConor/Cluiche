@@ -96,6 +96,8 @@ namespace Dia::CellHistory
 	private:
 		Json::Value Fail(const char* query, const char* message) const;
 		Json::Value Finish(const char* query, int kind, Json::Value& reply, bool clamped);
+		// Finish for aggregates replies; also counts a layer-sliced and/or strided reply on success.
+		Json::Value FinishAggregates(Json::Value& reply, bool clamped, bool sliced, bool strided);
 
 		const CellHistoryRecorder&	mRecorder;
 		const SnapshotManager*		mSnapshots = nullptr;

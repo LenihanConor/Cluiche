@@ -1467,6 +1467,759 @@ TEST(HistoryQueriesAggregatesStride, LayerOffsetWithStrideNeedsASampleInsideTheR
 	EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "invalid cursor"));
 }
 
+// ---- aggregates: exhaustive pass (Feature 6 task 7) -----------------------------------------------------------------
+
+namespace
+{
+	const uint32_t kMaxU32 = 0xFFFFFFFFu;
+
+	// A layer that is in the recorded layout but whose aggregate rows are unwritten for the first `lateBy` samples (its `first` is lateBy).
+	// The other of temp/biome is tracked first so the layout is resolved before the late layer is unregistered.
+	void SetupLate(QFix& f, const char* lateLayer, uint32_t lateBy, uint32_t total)
+	{
+		f.Setup(nullptr, false);
+		const bool lateIsTemp = std::strcmp(lateLayer, "temp") == 0;
+		const StringCRC other(lateIsTemp ? "biome" : "temp");
+		CellHistoryRecorder::TrackResult tr;
+		ASSERT_TRUE(f.r.rec->Track(&other, 1, tr)) << tr.mError;
+		ASSERT_TRUE(f.r.registry.Unregister(StringCRC(lateLayer)));
+		f.Run(lateBy);
+		Dia::CellLayers::CellLayerDesc d;
+		ASSERT_TRUE(f.r.grid.Describe(lateIsTemp ? 0u : 1u, d));
+		d.schemaKey = StringCRC((std::string("cells/") + lateLayer).c_str());
+		ASSERT_EQ(f.r.registry.Register(d), Dia::CellLayers::CellRegisterResult::Ok);
+		f.Run(total - lateBy);
+	}
+
+	// Independent reference: `r` (a strided or unstrided reply, possibly a layer slice, whose windows start at r["from"]) against `base`,
+	// the unstrided reply covering [baseFrom, ..). `to` is the request's exclusive end. Float: extrema over the non-NaN values, group-size
+	// weighted mean over the non-NaN means (unweighted when the weights sum to 0); category: the counts of the window's last sample.
+	void ExpectWindowsMatchBase(const Json::Value& base, const Json::Value& r, uint32_t stride, uint32_t baseFrom, uint32_t to)
+	{
+		const uint32_t from = r["from"].asUInt();
+		const uint32_t windows = r["count"].asUInt();
+		const uint32_t baseN = base["count"].asUInt();
+		ASSERT_EQ(r["samples"].size(), windows);
+		auto winStart = [&](uint32_t w) { return uint64_t(from) + uint64_t(w) * stride; };
+		auto winEnd = [&](uint32_t w) { const uint64_t e = uint64_t(from) + uint64_t(w + 1) * stride; return e < to ? e : uint64_t(to); };
+		const std::vector<std::string> groups = r["groupSizes"].getMemberNames();
+		for (const std::string& g : groups)
+		{
+			ASSERT_TRUE(base["groupSizes"].isMember(g)) << g;
+			std::vector<uint16_t> bsz, sz;
+			ASSERT_TRUE(DecodedExport::DecodeU16(base["groupSizes"][g], baseN, bsz));
+			ASSERT_TRUE(DecodedExport::DecodeU16(r["groupSizes"][g], windows, sz));
+			for (uint32_t w = 0; w < windows; ++w)
+			{
+				const uint32_t last = uint32_t(winEnd(w) - 1) - baseFrom;
+				EXPECT_EQ(sz[w], bsz[last]) << g << " w" << w;
+				EXPECT_TRUE(JsonEq(r["samples"][w], base["samples"][last])) << g << " w" << w;
+			}
+		}
+		for (const std::string& layer : r["rows"].getMemberNames())
+		{
+			ASSERT_TRUE(base["rows"].isMember(layer)) << layer;
+			const Json::Value& bl = base["rows"][layer];
+			const Json::Value& rl = r["rows"][layer];
+			EXPECT_TRUE(JsonEq(rl["kind"], bl["kind"])) << layer;
+			EXPECT_TRUE(JsonEq(rl["first"], bl["first"])) << layer;
+			EXPECT_EQ(rl["groups"].getMemberNames(), groups) << layer;
+			const bool isFloat = bl["kind"].asString() == "float";
+			const uint32_t enumCount = isFloat ? 0u : bl["values"].size();
+			for (const std::string& g : groups)
+			{
+				std::vector<uint16_t> bsz;
+				ASSERT_TRUE(DecodedExport::DecodeU16(base["groupSizes"][g], baseN, bsz));
+				if (isFloat)
+				{
+					std::vector<float> bmn, bme, bmx, mn, me, mx;
+					ASSERT_TRUE(DecodedExport::DecodeF32(bl["groups"][g]["min"], baseN, bmn));
+					ASSERT_TRUE(DecodedExport::DecodeF32(bl["groups"][g]["mean"], baseN, bme));
+					ASSERT_TRUE(DecodedExport::DecodeF32(bl["groups"][g]["max"], baseN, bmx));
+					ASSERT_TRUE(DecodedExport::DecodeF32(rl["groups"][g]["min"], windows, mn));
+					ASSERT_TRUE(DecodedExport::DecodeF32(rl["groups"][g]["mean"], windows, me));
+					ASSERT_TRUE(DecodedExport::DecodeF32(rl["groups"][g]["max"], windows, mx));
+					for (uint32_t w = 0; w < windows; ++w)
+					{
+						bool haveLo = false, haveHi = false;
+						float lo = 0.f, hi = 0.f;
+						double num = 0, den = 0, plain = 0;
+						uint32_t nMean = 0;
+						for (uint64_t s = winStart(w); s < winEnd(w); ++s)
+						{
+							const uint32_t i = uint32_t(s) - baseFrom;
+							if (bmn[i] == bmn[i] && (!haveLo || bmn[i] < lo)) { lo = bmn[i]; haveLo = true; }
+							if (bmx[i] == bmx[i] && (!haveHi || bmx[i] > hi)) { hi = bmx[i]; haveHi = true; }
+							if (bme[i] == bme[i]) { num += double(bme[i]) * bsz[i]; den += bsz[i]; plain += bme[i]; ++nMean; }
+						}
+						if (haveLo) { EXPECT_EQ(Bits(mn[w]), Bits(lo)) << layer << " " << g << " min w" << w; } else { EXPECT_TRUE(mn[w] != mn[w]) << layer << " " << g << " min w" << w; }
+						if (haveHi) { EXPECT_EQ(Bits(mx[w]), Bits(hi)) << layer << " " << g << " max w" << w; } else { EXPECT_TRUE(mx[w] != mx[w]) << layer << " " << g << " max w" << w; }
+						if (nMean > 0) { EXPECT_NEAR(me[w], den > 0 ? num / den : plain / nMean, 1e-3) << layer << " " << g << " mean w" << w; }
+						else { EXPECT_TRUE(me[w] != me[w]) << layer << " " << g << " mean w" << w; }
+					}
+				}
+				else
+				{
+					std::vector<uint16_t> bc, c;
+					ASSERT_TRUE(DecodedExport::DecodeU16(bl["groups"][g], baseN * enumCount, bc));
+					ASSERT_TRUE(DecodedExport::DecodeU16(rl["groups"][g], windows * enumCount, c));
+					for (uint32_t w = 0; w < windows; ++w)
+					{
+						const uint32_t last = uint32_t(winEnd(w) - 1) - baseFrom;
+						for (uint32_t k = 0; k < enumCount; ++k) { EXPECT_EQ(c[w * enumCount + k], bc[last * enumCount + k]) << layer << " " << g << " w" << w << " k" << k; }
+					}
+				}
+			}
+		}
+	}
+
+	// Follows `next` (from / layerOffset / structure when present), failing on a reply that does not advance the cursor or a runaway loop.
+	Pages PageChecked(QFix& f, Json::Value args, uint32_t maxPages)
+	{
+		Pages p;
+		bool haveKey = false;
+		uint64_t lastKey = 0;
+		for (uint32_t guard = 0; guard < maxPages; ++guard)
+		{
+			const Json::Value rep = f.Call(kAgg, args);
+			if (IsError(rep)) { p.failed = true; p.error = rep["error"].asString(); return p; }
+			const uint64_t key = (uint64_t(rep["from"].asUInt()) << 32) | (rep.isMember("layerOffset") ? rep["layerOffset"].asUInt() : 0u);
+			if (haveKey && key <= lastKey) { p.failed = true; p.error = "cursor did not advance"; return p; }
+			haveKey = true; lastKey = key;
+			p.maxBytes = std::max(p.maxBytes, Size(rep));
+			p.replies.push_back(rep);
+			if (!rep.isMember("next")) { return p; }
+			args["from"] = rep["next"]["from"];
+			if (rep["next"].isMember("layerOffset")) { args["layerOffset"] = rep["next"]["layerOffset"]; } else { args.removeMember("layerOffset"); }
+			if (rep["next"].isMember("structure")) { args["structure"] = rep["next"]["structure"]; } else { args.removeMember("structure"); }
+		}
+		p.failed = true;
+		p.error = "runaway paging";
+		return p;
+	}
+
+	// Every window of [from0, to) is delivered exactly once per layer, each page matches the reference and honours `budget`.
+	void ExpectPagesCoverAndMatch(const Pages& p, const Json::Value& base, uint32_t stride, uint32_t from0, uint32_t to, size_t budget, size_t layerTotal)
+	{
+		ASSERT_FALSE(p.failed) << p.error;
+		EXPECT_LE(p.maxBytes, budget);
+		std::map<uint64_t, std::map<std::string, int>> seen;
+		for (const Json::Value& rep : p.replies)
+		{
+			ExpectWindowsMatchBase(base, rep, stride, from0, to);
+			const uint32_t from = rep["from"].asUInt();
+			for (uint32_t w = 0; w < rep["count"].asUInt(); ++w)
+			{
+				for (const std::string& l : rep["rows"].getMemberNames()) { ++seen[uint64_t(from) + uint64_t(w) * stride][l]; }
+			}
+		}
+		const uint64_t windows = to > from0 ? (uint64_t(to - from0) + stride - 1) / stride : 0u;
+		ASSERT_EQ(seen.size(), windows);
+		uint64_t expectStart = from0;
+		for (const auto& kv : seen)
+		{
+			EXPECT_EQ(kv.first, expectStart);
+			expectStart += stride;
+			EXPECT_EQ(kv.second.size(), layerTotal) << kv.first;
+			for (const auto& l : kv.second) { EXPECT_EQ(l.second, 1) << kv.first << " " << l.first; }
+		}
+		EXPECT_FALSE(p.replies.back().isMember("next"));
+	}
+
+	Json::Value WithField(Json::Value a, const char* k, const Json::Value& v) { a[k] = v; return a; }
+	Json::Value FromTo(uint32_t from, uint32_t to) { Json::Value a = Obj(); a["from"] = from; a["to"] = to; return a; }
+
+	// Smallest budget (below `hi`, which must succeed) at which `args` succeeds; binary search (success is monotonic in the budget).
+	uint32_t MinSuccessBudget(QFix& f, const Json::Value& args, uint32_t hi)
+	{
+		uint32_t lo = HistoryQueries::kMinReplyBytes;
+		while (lo < hi)
+		{
+			const uint32_t mid = lo + (hi - lo) / 2;
+			f.Budget(mid);
+			if (IsError(f.Call(kAgg, args))) { lo = mid + 1; } else { hi = mid; }
+		}
+		return lo;
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, EmptyRangeIsAnEmptyReplyWithAndWithoutStride)
+{
+	QFix f; f.Setup(); f.Run(6);
+	for (uint32_t pos : { 0u, 3u, 6u })
+	{
+		for (uint32_t stride : { 1u, 4u, kMaxU32 })
+		{
+			Json::Value a = FromTo(pos, pos); a["stride"] = stride; a["layerOffset"] = 0;
+			const Json::Value r = f.Call(kAgg, a);
+			ASSERT_FALSE(IsError(r)) << pos << " " << stride << " " << r.toStyledString();
+			EXPECT_EQ(r["count"].asUInt(), 0u);
+			EXPECT_EQ(r["from"].asUInt(), pos);
+			EXPECT_EQ(r["samples"].size(), 0u);
+			EXPECT_FALSE(r.isMember("next"));
+			EXPECT_FALSE(r.isMember("layerCount"));
+			EXPECT_EQ(r["rows"].size(), 3u);
+			EXPECT_EQ(r.isMember("stride"), stride > 1u);
+		}
+	}
+	// No sample recorded at all: the default range is empty too.
+	QFix g; g.Setup();
+	for (uint32_t stride : { 1u, 5u })
+	{
+		const Json::Value r = g.Call(kAgg, StrideArgs(stride));
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		EXPECT_EQ(r["count"].asUInt(), 0u);
+		EXPECT_FALSE(r.isMember("next"));
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, LayerOffsetNeedsASampleInsideTheRange)
+{
+	QFix f; f.Setup(); f.Run(6);
+	for (uint32_t stride : { 1u, 4u })
+	{
+		for (uint32_t pos : { 3u, 6u })
+		{
+			Json::Value a = FromTo(pos, pos); a["stride"] = stride; a["layerOffset"] = 1;
+			EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "invalid cursor: layerOffset needs a sample inside the range")) << stride << " " << pos;
+		}
+	}
+	// One sample inside the range is enough.
+	Json::Value ok = FromTo(3, 4); ok["layerOffset"] = 1;
+	EXPECT_FALSE(IsError(f.Call(kAgg, ok)));
+}
+
+TEST(HistoryQueriesAggregatesEdge, LayerOffsetBoundsAndTheLastLayerSlice)
+{
+	QFix f; f.Setup(); f.Run(10);
+	for (uint32_t stride : { 1u, 4u })
+	{
+		Json::Value a = StrideArgs(stride);
+		a["layerOffset"] = 3;		// == layerTotal
+		EXPECT_TRUE(ErrorHas(f.Call(kAgg, a), "invalid cursor: layerOffset 3 is past the last layer")) << stride;
+		a["layerOffset"] = 2;		// the last layer index: a slice of exactly one layer
+		const Json::Value r = f.Call(kAgg, a);
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		EXPECT_EQ(r["layerOffset"].asUInt(), 2u);
+		EXPECT_EQ(r["layerCount"].asUInt(), 1u);
+		EXPECT_EQ(r["layerTotal"].asUInt(), 3u);
+		EXPECT_EQ(r["rows"].size(), 1u);
+		EXPECT_TRUE(r["rows"].isMember("region"));
+		ASSERT_TRUE(r.isMember("next"));
+		EXPECT_EQ(r["next"]["from"].asUInt(), stride);
+		EXPECT_EQ(r["next"]["layerOffset"].asUInt(), 0u);
+		// The last window / sample: nothing follows.
+		Json::Value tail = a; tail["from"] = stride == 1 ? 9u : 8u;
+		const Json::Value t = f.Call(kAgg, tail);
+		ASSERT_FALSE(IsError(t)) << t.toStyledString();
+		EXPECT_FALSE(t.isMember("next"));
+	}
+	// With a layers filter the offset indexes the filtered list.
+	Json::Value filt = Obj(); filt["layers"] = StrList({ "temp", "region" }); filt["layerOffset"] = 1;
+	const Json::Value r = f.Call(kAgg, filt);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["layerTotal"].asUInt(), 2u);
+	EXPECT_EQ(r["layerCount"].asUInt(), 1u);
+	EXPECT_TRUE(r["rows"].isMember("region"));
+	EXPECT_FALSE(r["rows"].isMember("temp"));
+	filt["layerOffset"] = 2;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, filt), "layerOffset 2 is past the last layer"));
+	filt["groups"] = StrList({ "world" }); filt["stride"] = 3;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, filt), "layerOffset 2 is past the last layer"));
+	// No layers selected at all: any offset is past the (empty) list; offset 0 is an empty, valid reply.
+	Json::Value none = Obj(); none["layers"] = Json::Value(Json::arrayValue);
+	const Json::Value e = f.Call(kAgg, none);
+	ASSERT_FALSE(IsError(e)) << e.toStyledString();
+	EXPECT_EQ(e["rows"].size(), 0u);
+	EXPECT_EQ(e["count"].asUInt(), 10u);
+	none["layerOffset"] = 1;
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, none), "past the last layer"));
+}
+
+TEST(HistoryQueriesAggregatesEdge, RangeOutsideTheRetainedWindowIsAnErrorWithStrideAndGroups)
+{
+	RecorderBudgets b;
+	b.mAggregateBytes = AggregateRowBytes(1, 6, 4) * 5;	// window [7, 12)
+	b.mCellBytes = 1 << 20;
+	b.mEventBytes = 1 << 20;
+	QFix f; f.Setup(&b); f.Run(12);
+	ASSERT_EQ(f.r.rec->AggregateFirstRetained(), 7u);
+	const uint32_t samples = f.r.rec->SampleCount();
+	for (uint32_t stride : { 1u, 2u, 100u, kMaxU32 })
+	{
+		for (bool groups : { false, true })
+		{
+			for (uint32_t off : { 0u, 1u })
+			{
+				auto call = [&](uint32_t from, uint32_t to)
+				{
+					Json::Value a = FromTo(from, to); a["stride"] = stride; a["layerOffset"] = off;
+					if (groups) { a["groups"] = StrList({ "world" }); }
+					return f.Call(kAgg, a);
+				};
+				EXPECT_TRUE(ErrorHas(call(6, 12), "outside the retained")) << stride << groups << off;
+				EXPECT_TRUE(ErrorHas(call(0, 3), "outside the retained")) << stride << groups << off;
+				EXPECT_TRUE(ErrorHas(call(7, 13), "outside the retained")) << stride << groups << off;
+				EXPECT_TRUE(ErrorHas(call(13, 13), "outside the retained")) << stride << groups << off;
+			}
+		}
+	}
+	EXPECT_EQ(f.r.rec->SampleCount(), samples);
+	// Inside the window the same stride works, windows start at the retained first sample.
+	Json::Value ok = StrideArgs(2); ok["groups"] = StrList({ "world" });
+	const Json::Value r = f.Call(kAgg, ok);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["from"].asUInt(), 7u);
+	EXPECT_EQ(r["count"].asUInt(), 3u);		// [7,9) [9,11) [11,12)
+	Json::Value baseArgs = ok; baseArgs.removeMember("stride");
+	ExpectWindowsMatchBase(f.Call(kAgg, baseArgs), r, 2, 7, 12);
+}
+
+TEST(HistoryQueriesAggregatesEdge, ARecorderWithOnlyTheWorldGroup)
+{
+	QFix f;
+	f.r.grid.AddFloatLayer("temp", 40.0f);
+	f.r.grid.AddFloatLayer("t2", 2.0f);
+	f.r.grid.AddFloatLayer("t3", 3.0f);
+	f.r.grid.AddCategoryLayer("biome", 1);
+	ASSERT_TRUE(f.r.schema.Load({ FloatEntry("temp", 0, 100), FloatEntry("t2", 0, 100), FloatEntry("t3", 0, 100), EnumEntry("biome", 3) }));
+	f.r.Start();
+	f.q = std::make_unique<HistoryQueries>(*f.r.rec);
+	ASSERT_TRUE(f.q->Register(f.registrar));
+	for (uint32_t i = 0; i < 11; ++i)
+	{
+		for (uint32_t c = 0; c < 12; ++c)
+		{
+			f.r.grid.Set("temp", c, float((i * 5 + c * 3) % 97) + 0.5f);
+			f.r.grid.Set("t2", c, float((i * 3 + c * 7) % 91) + 0.25f);
+			f.r.grid.Set("t3", c, float((i * 11 + c) % 83) + 0.75f);
+			f.r.grid.Set("biome", c, float((c + i) % 3));
+		}
+		f.r.grid.BumpVersion("temp"); f.r.grid.BumpVersion("t2"); f.r.grid.BumpVersion("t3"); f.r.grid.BumpVersion("biome");
+		f.r.Take();
+	}
+	const Json::Value base = f.Call(kAgg, Obj());
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	ASSERT_EQ(base["groupSizes"].size(), 1u);
+	ASSERT_TRUE(base["groupSizes"].isMember("world"));
+	for (uint32_t stride : { 1u, 3u, 4u, 11u, 12u })
+	{
+		const Json::Value r = f.Call(kAgg, StrideArgs(stride));
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		EXPECT_EQ(r["count"].asUInt(), (11 + stride - 1) / stride);
+		EXPECT_EQ(r["groupSizes"].size(), 1u);
+		ExpectWindowsMatchBase(base, r, stride, 0, 11);
+	}
+	Json::Value w = StrideArgs(3); w["groups"] = StrList({ "world" });
+	EXPECT_TRUE(JsonEq(f.Call(kAgg, w), f.Call(kAgg, StrideArgs(3))));
+	// Slicing with a single group.
+	const uint32_t whole = StrideSliceBudget(f, 3, Obj(), 0);
+	const uint32_t budget = MinSuccessBudget(f, WithField(FromTo(0, 3), "stride", 3), whole) + 40;
+	ASSERT_LT(budget, whole);
+	f.Budget(budget);
+	const Pages p = PageChecked(f, StrideArgs(3), 1000);
+	EXPECT_GT(p.replies.size(), 4u);
+	ExpectPagesCoverAndMatch(p, base, 3, 0, 11, budget, 4);
+}
+
+TEST(HistoryQueriesAggregatesEdge, GroupsListedTwiceEqualGroupsListedOnce)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	const std::vector<std::string> names = base["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 2u);
+	for (uint32_t stride : { 1u, 4u })
+	{
+		Json::Value once = StrideArgs(stride); once["groups"] = StrList({ names[1].c_str() });
+		Json::Value twice = StrideArgs(stride); twice["groups"] = StrList({ names[1].c_str(), names[1].c_str() });
+		Json::Value mixed = StrideArgs(stride); mixed["groups"] = StrList({ names[1].c_str(), names[0].c_str(), names[1].c_str() });
+		Json::Value two = StrideArgs(stride); two["groups"] = StrList({ names[0].c_str(), names[1].c_str() });
+		const Json::Value r1 = f.Call(kAgg, once), r2 = f.Call(kAgg, twice);
+		ASSERT_FALSE(IsError(r2)) << r2.toStyledString();
+		EXPECT_EQ(r2["groupSizes"].size(), 1u);
+		EXPECT_TRUE(JsonEq(r1, r2));
+		EXPECT_TRUE(JsonEq(f.Call(kAgg, mixed), f.Call(kAgg, two)));
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, AGroupWithNoMembersAtSomeSamplesStillAggregates)
+{
+	QFix f; f.Setup();
+	// Region 0 holds every cell for samples 0..4 (groups 1 and 2 are empty), then the cells spread over all three.
+	for (uint32_t i = 0; i < 11; ++i)
+	{
+		for (uint32_t c = 0; c < 12; ++c)
+		{
+			f.r.grid.Set("temp", c, float((i * 9 + c * 4) % 89) + 0.25f);
+			f.r.grid.Set("biome", c, float((c + i) % 3));
+			f.r.grid.Set("region", c, i < 5 ? 0.0f : float((c / 4 + i) % 3));
+		}
+		f.r.grid.BumpVersion("temp"); f.r.grid.BumpVersion("biome"); f.r.grid.BumpVersion("region");
+		f.r.Take();
+	}
+	const Json::Value base = f.Call(kAgg);
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	bool sawEmpty = false;
+	for (const std::string& g : base["groupSizes"].getMemberNames())
+	{
+		std::vector<uint16_t> sz;
+		ASSERT_TRUE(DecodedExport::DecodeU16(base["groupSizes"][g], 11, sz));
+		for (uint16_t s : sz) { if (s == 0) { sawEmpty = true; } }
+	}
+	ASSERT_TRUE(sawEmpty) << "fixture must contain an empty group";
+	for (uint32_t stride : { 1u, 3u, 5u, 11u })
+	{
+		const Json::Value r = f.Call(kAgg, StrideArgs(stride));
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		ExpectWindowsMatchBase(base, r, stride, 0, 11);
+		for (const std::string& g : base["groupSizes"].getMemberNames())
+		{
+			Json::Value a = StrideArgs(stride); a["groups"] = StrList({ g.c_str() });
+			const Json::Value one = f.Call(kAgg, a);
+			ASSERT_FALSE(IsError(one)) << g << " " << one.toStyledString();
+			ExpectWindowsMatchBase(base, one, stride, 0, 11);
+		}
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, StrideBoundaries)
+{
+	QFix f; f.Setup(); f.Run(12);
+	const Json::Value base = f.Call(kAgg);
+	ASSERT_FALSE(IsError(base));
+	// stride exactly dividing the range: no partial window.
+	for (uint32_t stride : { 1u, 2u, 3u, 4u, 6u, 12u })
+	{
+		const Json::Value r = f.Call(kAgg, StrideArgs(stride));
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		EXPECT_EQ(r["count"].asUInt(), 12u / stride);
+		EXPECT_FALSE(r.isMember("next"));
+		ExpectWindowsMatchBase(base, r, stride, 0, 12);
+	}
+	// range = stride * k + 1: the last window holds one sample.
+	for (uint32_t stride : { 2u, 3u, 5u, 11u })
+	{
+		const uint32_t to = (11 / stride) * stride + 1;
+		Json::Value a = StrideArgs(stride); a["to"] = to;
+		const Json::Value r = f.Call(kAgg, a);
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		EXPECT_EQ(r["count"].asUInt(), (to + stride - 1) / stride);
+		ExpectWindowsMatchBase(base, r, stride, 0, to);
+	}
+	{
+		Json::Value a = StrideArgs(4); a["to"] = 9;		// [0,4) [4,8) [8,9)
+		const Json::Value r = f.Call(kAgg, a);
+		ASSERT_FALSE(IsError(r));
+		ASSERT_EQ(r["count"].asUInt(), 3u);
+		std::vector<float> mn, me, mx, bmn, bme, bmx;
+		ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"]["world"]["min"], 3, mn));
+		ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"]["world"]["mean"], 3, me));
+		ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"]["world"]["max"], 3, mx));
+		ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"]["world"]["min"], 12, bmn));
+		ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"]["world"]["mean"], 12, bme));
+		ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"]["world"]["max"], 12, bmx));
+		EXPECT_EQ(Bits(mn[2]), Bits(bmn[8])); EXPECT_EQ(Bits(me[2]), Bits(bme[8])); EXPECT_EQ(Bits(mx[2]), Bits(bmx[8]));
+		EXPECT_TRUE(JsonEq(r["samples"][2], base["samples"][8]));
+	}
+	// A huge stride never overflows from + w * stride: one window, no cursor, with or without slicing.
+	for (uint32_t stride : { 1000u, 0x80000000u, 0xFFFFFFFEu, kMaxU32 })
+	{
+		f.Budget(15000);
+		Json::Value a = StrideArgs(stride); a["from"] = 5;
+		const Json::Value r = f.Call(kAgg, a);
+		ASSERT_FALSE(IsError(r)) << stride << " " << r.toStyledString();
+		EXPECT_EQ(r["count"].asUInt(), 1u);
+		EXPECT_EQ(r["stride"].asUInt(), stride);
+		EXPECT_FALSE(r.isMember("next"));
+		ExpectWindowsMatchBase(base, r, stride, 0, 12);
+		const uint32_t budget = StrideSliceBudget(f, stride, Obj(), 1, 12);
+		f.Budget(budget);
+		const Pages p = PageChecked(f, StrideArgs(stride), 1000);
+		ExpectPagesCoverAndMatch(p, base, stride, 0, 12, budget, 3);
+		EXPECT_GE(p.replies.size(), 2u);
+	}
+	f.Budget(15000);
+	// stride beyond 32 bits is rejected, not wrapped.
+	Json::Value big = Obj(); big["stride"] = Json::UInt64(4294967296ull);
+	EXPECT_TRUE(ErrorHas(f.Call(kAgg, big), "param 'stride' must be an integer >= 1"));
+}
+
+TEST(HistoryQueriesAggregatesEdge, StrideOneWithEveryOtherFieldEqualsTheUnstridedRequest)
+{
+	QFix f; f.Setup(); f.Run(12);
+	Json::Value plain = FromTo(2, 11);
+	plain["layers"] = StrList({ "temp", "region" });
+	plain["groups"] = StrList({ "world" });
+	Json::Value one = plain; one["stride"] = 1;
+	for (uint32_t budget : { 15000u, 700u, 450u })
+	{
+		f.Budget(budget);
+		const Pages a = PageChecked(f, plain, 1000), b = PageChecked(f, one, 1000);
+		ASSERT_FALSE(a.failed) << budget << " " << a.error;
+		ASSERT_FALSE(b.failed) << budget << " " << b.error;
+		ASSERT_EQ(a.replies.size(), b.replies.size()) << budget;
+		for (size_t i = 0; i < a.replies.size(); ++i)
+		{
+			EXPECT_TRUE(JsonEq(a.replies[i], b.replies[i])) << budget << " page " << i;
+			EXPECT_FALSE(b.replies[i].isMember("stride"));
+		}
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, OldShapeRequestsKeepTheirReplyShape)
+{
+	QFix f; f.Setup(); f.Run(10);
+	Json::Value req = FromTo(1, 8); req["layers"] = StrList({ "temp", "biome", "region" });
+	const Json::Value r = f.Call(kAgg, req);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	std::vector<std::string> keys = r.getMemberNames();
+	std::sort(keys.begin(), keys.end());
+	EXPECT_EQ(keys, (std::vector<std::string>{ "count", "from", "groupSizes", "rows", "samples", "structure" }));
+	EXPECT_EQ(r["from"].asUInt(), 1u);
+	EXPECT_EQ(r["count"].asUInt(), 7u);
+	// Listing every group is the same as no groups field.
+	const Json::Value base = f.Call(kAgg, Obj());
+	Json::Value all = Obj(); all["groups"] = Json::Value(Json::arrayValue);
+	for (const std::string& g : base["groupSizes"].getMemberNames()) { all["groups"].append(g); }
+	EXPECT_TRUE(JsonEq(f.Call(kAgg, all), base));
+	// An old-shape cursor stays {from} only when whole samples fit.
+	auto countAt = [&](uint32_t b) { f.Budget(b); const Json::Value x = f.Call(kAgg); return (IsError(x) || x.isMember("layerCount")) ? -1 : int(x["count"].asUInt()); };
+	const int b1 = SmallestBudgetFor(countAt, 1, HistoryQueries::kMinReplyBytes, 15000);
+	ASSERT_GT(b1, 0);
+	f.Budget(uint32_t(b1) + 8);
+	const Json::Value first = f.Call(kAgg, Obj());
+	ASSERT_FALSE(IsError(first));
+	ASSERT_TRUE(first.isMember("next"));
+	EXPECT_FALSE(first.isMember("layerCount"));
+	EXPECT_FALSE(first.isMember("stride"));
+	EXPECT_EQ(first["next"].getMemberNames(), std::vector<std::string>{ "from" });
+}
+
+TEST(HistoryQueriesAggregatesEdge, LateLayerWithStrideAndSlicing)
+{
+	for (const char* late : { "temp", "biome" })
+	{
+		const uint32_t lateBy = std::strcmp(late, "temp") == 0 ? 3u : 6u;
+		QFix f; SetupLate(f, late, lateBy, 10);
+		const Json::Value base = f.Call(kAgg);
+		ASSERT_FALSE(IsError(base)) << base.toStyledString();
+		ASSERT_EQ(base["rows"][late]["first"].asUInt(), lateBy) << late;
+		for (uint32_t stride : { 1u, 2u, 3u, 4u, 7u, 10u })
+		{
+			f.Budget(15000);
+			const Json::Value r = f.Call(kAgg, StrideArgs(stride));
+			ASSERT_FALSE(IsError(r)) << late << stride << r.toStyledString();
+			ExpectWindowsMatchBase(base, r, stride, 0, 10);
+			// Sliced: one byte under a whole window, and near the minimum slice budget.
+			const uint32_t tight = StrideSliceBudget(f, stride, Obj(), 1, std::min(stride, 10u));
+			const uint32_t minimum = MinSuccessBudget(f, WithField(FromTo(0, std::min(stride, 10u)), "stride", stride), tight) + 40;
+			for (uint32_t budget : { tight, minimum })
+			{
+				f.Budget(budget);
+				const Pages p = PageChecked(f, StrideArgs(stride), 1000);
+				ExpectPagesCoverAndMatch(p, base, stride, 0, 10, budget, 3);
+			}
+		}
+	}
+	// Stated explicitly: a float window entirely before the layer's first is NaN; a partly covered window uses the covered samples only.
+	{
+		QFix f; SetupLate(f, "temp", 3, 10);
+		const Json::Value base = f.Call(kAgg);
+		const Json::Value r = f.Call(kAgg, StrideArgs(3));		// [0,3) all before first=3; [3,6) fully covered
+		std::vector<float> mn, bmn;
+		ASSERT_TRUE(DecodedExport::DecodeF32(r["rows"]["temp"]["groups"]["world"]["min"], 4, mn));
+		ASSERT_TRUE(DecodedExport::DecodeF32(base["rows"]["temp"]["groups"]["world"]["min"], 10, bmn));
+		EXPECT_TRUE(mn[0] != mn[0]);
+		EXPECT_FALSE(mn[1] != mn[1]);
+		const Json::Value r4 = f.Call(kAgg, StrideArgs(4));		// [0,4): only sample 3 is valid
+		ASSERT_TRUE(DecodedExport::DecodeF32(r4["rows"]["temp"]["groups"]["world"]["min"], 3, mn));
+		EXPECT_EQ(Bits(mn[0]), Bits(bmn[3]));
+	}
+	// Category layer: the window's last sample decides, also when it is before first (all zero counts).
+	{
+		QFix f; SetupLate(f, "biome", 6, 10);
+		const Json::Value r = f.Call(kAgg, StrideArgs(4));		// [0,4) last=3 < 6; [4,8) last=7 >= 6; [8,10)
+		std::vector<uint16_t> c;
+		ASSERT_TRUE(DecodedExport::DecodeU16(r["rows"]["biome"]["groups"]["world"], 3 * 3, c));
+		EXPECT_EQ(c[0] + c[1] + c[2], 0);
+		EXPECT_EQ(c[3] + c[4] + c[5], 12);
+		EXPECT_EQ(c[6] + c[7] + c[8], 12);
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, SliceBudgetBoundariesAreExactAndTheCursorAlwaysAdvances)
+{
+	for (uint32_t stride : { 1u, 4u })
+	{
+		QFix f; f.Setup(); f.Run(10);
+		const Json::Value args = StrideArgs(stride);
+		const Json::Value base = f.Call(kAgg);
+		const Json::Value firstWindow = WithField(FromTo(0, stride), "stride", stride);
+		const uint32_t whole = uint32_t(Size(f.Call(kAgg, firstWindow)));
+		std::map<uint32_t, uint32_t> bestAt;		// k -> smallest budget giving k layers
+		uint32_t prevK = 0, errors = 0;
+		for (uint32_t b = HistoryQueries::kMinReplyBytes; b < whole; ++b)
+		{
+			f.Budget(b);
+			const Json::Value r = f.Call(kAgg, firstWindow);
+			if (IsError(r)) { ++errors; EXPECT_EQ(prevK, 0u) << "an error after a success at a smaller budget: " << b; continue; }
+			ASSERT_TRUE(r.isMember("layerCount")) << stride << " " << b;
+			EXPECT_LE(Size(r), size_t(b)) << stride << " " << b;
+			const uint32_t k = r["layerCount"].asUInt();
+			EXPECT_GE(k, prevK) << "layerCount shrank when the budget grew: " << b;
+			prevK = k;
+			if (!bestAt.count(k)) { bestAt[k] = b; }
+		}
+		EXPECT_GT(errors, 0u);
+		ASSERT_TRUE(bestAt.count(1)) << stride;
+		// Exactly at a threshold the reply has that many layers and (nearly) fills the budget; one byte less gives fewer.
+		for (const auto& kv : bestAt)
+		{
+			f.Budget(kv.second);
+			const Json::Value at = f.Call(kAgg, firstWindow);
+			EXPECT_EQ(at["layerCount"].asUInt(), kv.first);
+			EXPECT_LE(Size(at), size_t(kv.second));
+			EXPECT_GE(Size(at) + 12, size_t(kv.second)) << "the budget should be nearly full at the threshold, k=" << kv.first;
+			f.Budget(kv.second - 1);
+			const Json::Value under = f.Call(kAgg, firstWindow);
+			if (kv.first == 1) { EXPECT_TRUE(ErrorHas(under, "fewer groups")); }
+			else { EXPECT_LT(under["layerCount"].asUInt(), kv.first); }
+		}
+		// Following the cursor over the whole run terminates, advances, fits, and covers every (window, layer, group) at the reference values.
+		std::vector<uint32_t> budgets{ whole - 1, whole, whole + 40 };
+		for (const auto& kv : bestAt) { budgets.push_back(kv.second + 40); }
+		for (uint32_t b : budgets)
+		{
+			f.Budget(b);
+			const Pages p = PageChecked(f, args, 10u * 3u * 2u + 10u);
+			ExpectPagesCoverAndMatch(p, base, stride, 0, 10, b, 3);
+		}
+		f.Budget(15000);
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, EveryStrideBudgetAndFilterCombinationReassemblesToTheReference)
+{
+	QFix f; f.Setup(); f.Run(11);
+	struct Filter { const char* name; Json::Value args; size_t layers; };
+	std::vector<Filter> filters;
+	filters.push_back({ "none", Obj(), 3 });
+	filters.push_back({ "world", WithField(Obj(), "groups", StrList({ "world" })), 3 });
+	filters.push_back({ "layers", WithField(Obj(), "layers", StrList({ "temp", "region" })), 2 });
+	filters.push_back({ "both", WithField(WithField(Obj(), "layers", StrList({ "region", "temp" })), "groups", StrList({ "world" })), 2 });
+	for (const Filter& flt : filters)
+	{
+		f.Budget(15000);
+		const Json::Value base = f.Call(kAgg, flt.args);
+		ASSERT_FALSE(IsError(base)) << flt.name << base.toStyledString();
+		for (uint32_t stride : { 1u, 2u, 3u, 4u, 7u, 10u, 11u, 12u, kMaxU32 })
+		{
+			f.Budget(15000);
+			const Json::Value a = WithField(flt.args, "stride", stride);
+			const Json::Value firstWindow = WithField(WithField(a, "from", 0u), "to", std::min(stride, 11u));
+			const uint32_t whole = uint32_t(Size(f.Call(kAgg, firstWindow)));
+			const uint32_t minimum = MinSuccessBudget(f, firstWindow, whole) + 40;
+			for (uint32_t budget : { minimum, std::max(whole - 1, minimum), std::max(whole + 30, minimum), 15000u })
+			{
+				f.Budget(budget);
+				const Pages p = PageChecked(f, a, 11u * 3u + 11u);
+				ASSERT_FALSE(p.failed) << flt.name << " stride " << stride << " budget " << budget << ": " << p.error;
+				ExpectPagesCoverAndMatch(p, base, stride, 0, 11, budget, flt.layers);
+			}
+		}
+	}
+}
+
+TEST(HistoryQueriesAggregatesEdge, TheCursorKeepsFiltersAndStrideAcrossASliceWithLayersAndGroups)
+{
+	QFix f; f.Setup(); f.Run(10);
+	Json::Value filt = Obj();
+	filt["layers"] = StrList({ "temp", "region" });
+	const std::vector<std::string> names = f.Call(kAgg)["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 4u);
+	filt["groups"] = StrList({ names[0].c_str(), names[1].c_str(), names[2].c_str() });
+	f.Budget(15000);
+	const uint32_t whole = StrideSliceBudget(f, 3, filt, 0);
+	filt["stride"] = 3;
+	const uint32_t tight = MinSuccessBudget(f, WithField(WithField(filt, "from", 0u), "to", 3u), whole) + 8;
+	ASSERT_LT(tight, whole);
+	f.Budget(tight);
+	const Json::Value first = f.Call(kAgg, filt);
+	ASSERT_FALSE(IsError(first)) << first.toStyledString();
+	ASSERT_TRUE(first.isMember("layerCount"));
+	EXPECT_EQ(first["layerTotal"].asUInt(), 2u);
+	const std::vector<std::string> expectGroups(names.begin(), names.begin() + 3);
+	EXPECT_EQ(first["groupSizes"].getMemberNames(), expectGroups);
+	// Repeating the same request with only the cursor fields changed continues the same windows.
+	Json::Value next = filt;
+	for (const char* k : { "from", "layerOffset", "structure" }) { next[k] = first["next"][k]; }
+	const Json::Value second = f.Call(kAgg, next);
+	ASSERT_FALSE(IsError(second)) << second.toStyledString();
+	EXPECT_EQ(second["stride"].asUInt(), 3u);
+	EXPECT_EQ(second["layerOffset"].asUInt(), first["layerCount"].asUInt());
+	EXPECT_EQ(second["groupSizes"].getMemberNames(), first["groupSizes"].getMemberNames());
+	EXPECT_EQ(second["layerTotal"].asUInt(), 2u);
+}
+
+TEST(HistoryRowsReduce, ExtremaAreRightForAllNegativeValues)
+{
+	const float mins[3] = { -3.f, -9.f, -5.f }, means[3] = { -2.f, -8.f, -4.f }, maxs[3] = { -1.f, -7.f, -6.f };
+	const uint16_t w[3] = { 1, 1, 1 };
+	const bool ok[3] = { true, true, true };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 3);
+	EXPECT_FLOAT_EQ(r.min, -9.f);
+	EXPECT_FLOAT_EQ(r.max, -1.f);
+	EXPECT_FLOAT_EQ(r.mean, (-2.f - 8.f - 4.f) / 3.f);
+	// A valid zero after an invalid sample seeds the extrema and the mean.
+	const float z[2] = { 0.f, 0.f };
+	const uint16_t zw[2] = { 3, 3 };
+	const bool zok[2] = { false, true };
+	const Dia::CellHistory::Rows::WindowStats s = Dia::CellHistory::Rows::ReduceFloatWindow(z, z, z, zw, zok, 2);
+	EXPECT_TRUE(s.valid);
+	EXPECT_EQ(Bits(s.min), Bits(0.f)); EXPECT_EQ(Bits(s.max), Bits(0.f)); EXPECT_EQ(Bits(s.mean), Bits(0.f));
+}
+
+TEST(HistoryRowsReduce, ZeroWeightSampleDoesNotPullTheMeanAndLargeWeightsDoNotOverflow)
+{
+	const float mins[3] = { 1.f, 1.f, 1.f }, means[3] = { 100.f, 20.f, 40.f }, maxs[3] = { 3.f, 3.f, 3.f };
+	const uint16_t w[3] = { 0, 1, 3 };
+	const bool ok[3] = { true, true, true };
+	const Dia::CellHistory::Rows::WindowStats r = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 3);
+	EXPECT_NEAR(r.mean, (20.f * 1 + 40.f * 3) / 4.f, 1e-4f);		// the zero-weight 100 does not count
+	const uint16_t big[2] = { 65535, 65535 };
+	const float m2[2] = { 10.f, 30.f };
+	const bool ok2[2] = { true, true };
+	const Dia::CellHistory::Rows::WindowStats b = Dia::CellHistory::Rows::ReduceFloatWindow(m2, m2, m2, big, ok2, 2);
+	EXPECT_NEAR(b.mean, 20.f, 1e-4f);
+}
+
+TEST(HistoryRowsReduce, NaNMeansWithValidMinMaxAndMixedInvalidSamples)
+{
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	// Valid samples whose means are all NaN: min and max still reduce, the mean is NaN.
+	const float mins[2] = { 2.f, 1.f }, means[2] = { nan, nan }, maxs[2] = { 5.f, 9.f };
+	const uint16_t w[2] = { 4, 4 };
+	const bool ok[2] = { true, true };
+	const Dia::CellHistory::Rows::WindowStats a = Dia::CellHistory::Rows::ReduceFloatWindow(mins, means, maxs, w, ok, 2);
+	EXPECT_TRUE(a.valid);
+	EXPECT_FLOAT_EQ(a.min, 1.f); EXPECT_FLOAT_EQ(a.max, 9.f);
+	EXPECT_TRUE(a.mean != a.mean);
+	// All min/max NaN on valid samples: NaN extrema, a finite weighted mean.
+	const float m3[2] = { nan, nan }, me3[2] = { 10.f, 40.f };
+	const uint16_t w3[2] = { 3, 1 };
+	const Dia::CellHistory::Rows::WindowStats b = Dia::CellHistory::Rows::ReduceFloatWindow(m3, me3, m3, w3, ok, 2);
+	EXPECT_TRUE(b.valid);
+	EXPECT_TRUE(b.min != b.min); EXPECT_TRUE(b.max != b.max);
+	EXPECT_NEAR(b.mean, 17.5f, 1e-4f);
+	// Invalid samples carrying NaN interleaved with valid ones: only the valid ones count.
+	const float mm[4] = { nan, 4.f, nan, 8.f }, mean4[4] = { nan, 6.f, nan, 12.f }, mx4[4] = { nan, 7.f, nan, 15.f };
+	const uint16_t w4[4] = { 9, 1, 9, 2 };
+	const bool ok4[4] = { false, true, false, true };
+	const Dia::CellHistory::Rows::WindowStats c = Dia::CellHistory::Rows::ReduceFloatWindow(mm, mean4, mx4, w4, ok4, 4);
+	EXPECT_FLOAT_EQ(c.min, 4.f); EXPECT_FLOAT_EQ(c.max, 15.f);
+	EXPECT_NEAR(c.mean, (6.f * 1 + 12.f * 2) / 3.f, 1e-4f);
+}
+
 // ---- events ---------------------------------------------------------------------------------------------------------
 
 TEST(HistoryQueriesEvents, DefaultReturnsEveryEventInTheFilesShape)
@@ -1992,6 +2745,45 @@ TEST(HistoryQueriesObservation, LargestReplyGaugeTracksTheBiggestReplyServed)
 	Json::Value bad = Obj(); bad["layer"] = "nope";
 	f.Call(kCells, bad);
 	EXPECT_DOUBLE_EQ(gauge(), double(biggest));
+}
+
+TEST(HistoryQueriesObservation, CountsSlicedAndStridedAggregatesReplies)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const uint32_t sliceBudget = StrideSliceBudget(f, 4);
+	QueryObservation obs;
+	f.q->SetObservation(&obs);
+	const uint64_t s0 = C("dia.cellhistory.query_aggregates_slices"), t0 = C("dia.cellhistory.query_aggregates_strided");
+	auto slices = [&]() { return C("dia.cellhistory.query_aggregates_slices") - s0; };
+	auto strided = [&]() { return C("dia.cellhistory.query_aggregates_strided") - t0; };
+	// A plain whole-sample reply and the other query kinds count neither.
+	ASSERT_FALSE(IsError(f.Call(kAgg)));
+	f.Call(kMeta);
+	f.Call(kEvents);
+	EXPECT_EQ(slices(), 0u); EXPECT_EQ(strided(), 0u);
+	// stride 1 is not a strided request.
+	f.Call(kAgg, StrideArgs(1));
+	EXPECT_EQ(strided(), 0u);
+	// A strided request that fits whole.
+	ASSERT_FALSE(IsError(f.Call(kAgg, StrideArgs(4))));
+	EXPECT_EQ(strided(), 1u); EXPECT_EQ(slices(), 0u);
+	// A strided slice counts as both.
+	f.Budget(sliceBudget);
+	const Json::Value ss = f.Call(kAgg, StrideArgs(4));
+	ASSERT_TRUE(ss.isMember("layerCount"));
+	EXPECT_EQ(strided(), 2u); EXPECT_EQ(slices(), 1u);
+	// An unstrided slice (layerOffset > 0) counts as a slice only.
+	f.Budget(15000);
+	Json::Value a = Obj(); a["layerOffset"] = 1;
+	ASSERT_FALSE(IsError(f.Call(kAgg, a)));
+	EXPECT_EQ(strided(), 2u); EXPECT_EQ(slices(), 2u);
+	// Errors are not counted.
+	f.Call(kAgg, StrideArgs(0));
+	a["layerOffset"] = 1000;
+	f.Call(kAgg, a);
+	f.Budget(HistoryQueries::kMinReplyBytes);
+	f.Call(kAgg, StrideArgs(4));
+	EXPECT_EQ(strided(), 2u); EXPECT_EQ(slices(), 2u);
 }
 
 #endif // DIA_DEBUG

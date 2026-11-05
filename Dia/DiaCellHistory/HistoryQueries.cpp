@@ -388,6 +388,13 @@ namespace Dia::CellHistory
 
 	// ---- aggregates -----------------------------------------------------------------------------------------------------
 
+	Json::Value HistoryQueries::FinishAggregates(Json::Value& reply, bool clamped, bool sliced, bool strided)
+	{
+		Json::Value out = Finish(kAggName, 1, reply, clamped);
+		if (mObs != nullptr && !out.isMember("error")) { mObs->OnAggregatesShape(sliced, strided); }
+		return out;
+	}
+
 	Json::Value HistoryQueries::Aggregates(const Json::Value& argsIn)
 	{
 		DIA_TRACE_ZONE("cellhistory.query_aggregates", ::Dia::Observation::Trace::Category::kDiaGraphics);
@@ -492,7 +499,7 @@ namespace Dia::CellHistory
 			if (w > 0 || windowsTotal == 0)
 			{
 				Json::Value reply = buildStrided(w, true);
-				return Finish(kAggName, 1, reply, w < windowsTotal);
+				return FinishAggregates(reply, w < windowsTotal, false, true);
 			}
 			// A single window across all layers does not fit: fall through to the slice path.
 		}
@@ -505,7 +512,7 @@ namespace Dia::CellHistory
 		if (stride == 1 && (n > 0 || (to <= from && req.layerOffset == 0)))
 		{
 			Json::Value reply = build(n, true);
-			return Finish(kAggName, 1, reply, from + n < to);
+			return FinishAggregates(reply, from + n < to, false, false);
 		}
 
 		// Slice path: one sample (stride 1) or one stride window, layers [layerOffset, layerOffset+k). samples/groupSizes repeat in every slice (one sample: cheap).
@@ -539,7 +546,7 @@ namespace Dia::CellHistory
 		bool more = false;
 		if (offset + k < total) { reply = withNext(reply, from, offset + k); more = true; }
 		else if (uint64_t(from) + stride < to) { reply = withNext(reply, from + stride, 0); more = true; }
-		return Finish(kAggName, 1, reply, more);
+		return FinishAggregates(reply, more, true, stride > 1);
 	}
 
 	// ---- events ---------------------------------------------------------------------------------------------------------
