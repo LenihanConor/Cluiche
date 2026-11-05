@@ -463,7 +463,7 @@ namespace Dia::CellHistory
 		// Builds the reply for [from, from+n). fill=false uses placeholder text of the exact encoded length (cheap sizing).
 		auto build = [&](uint32_t n, bool fill) -> Json::Value
 		{
-			Json::Value r = Rows::BuildAggregateBody(rec, layers, from, n, fill);
+			Json::Value r = Rows::BuildAggregateBody(rec, layers, from, n, fill, req.hasGroups ? &req.groupWanted : nullptr);
 			r["structure"] = hex;
 			r["from"] = from;
 			r["count"] = n;

@@ -812,13 +812,104 @@ TEST(HistoryQueriesAggregates, CatchUpParamsAreValidated)
 	EXPECT_EQ(f.r.rec->SampleCount(), samples);
 	EXPECT_EQ(f.r.rec->StructureHash(), hash);
 
-	// Valid values are accepted and, for now, do not change the reply.
+	// Valid values are accepted and, for now, do not change the reply (groups is applied separately, see GroupsFilter tests).
 	const Json::Value base = f.Call(kAgg);
 	Json::Value g = Obj();
-	g["groups"] = StrList({ "world" }); g["stride"] = 1; g["layerOffset"] = 0; g["structure"] = base["structure"];
+	g["stride"] = 1; g["layerOffset"] = 0; g["structure"] = base["structure"];
 	const Json::Value ok = call(g);
 	ASSERT_FALSE(IsError(ok)) << ok.toStyledString();
 	EXPECT_TRUE(JsonEq(ok, base));
+}
+
+TEST(HistoryQueriesAggregates, GroupsFilterKeepsOnlyTheNamedGroups)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	const std::vector<std::string> names = base["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 3u);
+	for (const std::string& pick : { names[0], names[1] })
+	{
+		Json::Value a = Obj();
+		a["groups"] = StrList({ pick.c_str() });
+		const Json::Value r = f.Call(kAgg, a);
+		ASSERT_FALSE(IsError(r)) << r.toStyledString();
+		ASSERT_EQ(r["groupSizes"].size(), 1u);
+		EXPECT_TRUE(JsonEq(r["groupSizes"][pick], base["groupSizes"][pick]));
+		EXPECT_EQ(r["rows"].size(), base["rows"].size());
+		for (const std::string& layer : r["rows"].getMemberNames())
+		{
+			const Json::Value& gs = r["rows"][layer]["groups"];
+			ASSERT_EQ(gs.size(), 1u) << layer;
+			EXPECT_TRUE(JsonEq(gs[pick], base["rows"][layer]["groups"][pick])) << layer;
+		}
+		EXPECT_EQ(r["rows"]["temp"]["kind"].asString(), "float");
+		EXPECT_EQ(r["rows"]["biome"]["kind"].asString(), "category");
+		EXPECT_TRUE(JsonEq(r["samples"], base["samples"]));
+		EXPECT_EQ(r["structure"].asString(), base["structure"].asString());
+	}
+}
+
+TEST(HistoryQueriesAggregates, GroupsFilterWithTwoGroupsIsOrderIrrelevant)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	const std::vector<std::string> names = base["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 3u);
+	Json::Value a = Obj(); a["groups"] = StrList({ names[0].c_str(), names[2].c_str() });
+	Json::Value b = Obj(); b["groups"] = StrList({ names[2].c_str(), names[0].c_str() });
+	const Json::Value ra = f.Call(kAgg, a), rb = f.Call(kAgg, b);
+	ASSERT_FALSE(IsError(ra)) << ra.toStyledString();
+	EXPECT_EQ(ra["groupSizes"].size(), 2u);
+	EXPECT_TRUE(ra["groupSizes"].isMember(names[0]));
+	EXPECT_TRUE(ra["groupSizes"].isMember(names[2]));
+	EXPECT_TRUE(JsonEq(ra, rb));
+	for (const std::string& layer : ra["rows"].getMemberNames()) { EXPECT_EQ(ra["rows"][layer]["groups"].size(), 2u) << layer; }
+}
+
+TEST(HistoryQueriesAggregates, NoGroupsFieldIsIdenticalAtAFixedBudget)
+{
+	QFix f; f.Setup(); f.Run(10);
+	f.Budget(3000);
+	const Json::Value base = f.Call(kAgg);
+	ASSERT_FALSE(IsError(base)) << base.toStyledString();
+	Json::Value a = Obj(); a["layers"] = StrList({ "temp", "biome", "region" });
+	EXPECT_TRUE(JsonEq(f.Call(kAgg, a), base));
+	EXPECT_TRUE(JsonEq(f.Call(kAgg, Obj()), base));
+}
+
+TEST(HistoryQueriesAggregates, EmptyGroupsArrayIncludesNoGroupsAndSucceeds)
+{
+	QFix f; f.Setup(); f.Run(10);
+	const Json::Value base = f.Call(kAgg);
+	Json::Value a = Obj(); a["groups"] = Json::Value(Json::arrayValue);
+	const Json::Value r = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(r)) << r.toStyledString();
+	EXPECT_EQ(r["groupSizes"].size(), 0u);
+	EXPECT_EQ(r["rows"].size(), base["rows"].size());
+	for (const std::string& layer : r["rows"].getMemberNames()) { EXPECT_EQ(r["rows"][layer]["groups"].size(), 0u) << layer; }
+	EXPECT_EQ(r["count"].asUInt(), 10u);
+}
+
+TEST(HistoryQueriesAggregates, GroupsFilterShrinksTheReplyAndHonoursTheBudget)
+{
+	QFix f; f.Setup(); f.Run(30);
+	const Json::Value base = f.Call(kAgg);
+	const std::vector<std::string> names = base["groupSizes"].getMemberNames();
+	ASSERT_GE(names.size(), 2u);
+	Json::Value a = Obj(); a["groups"] = StrList({ names[0].c_str() });
+	const Json::Value filtered = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(filtered)) << filtered.toStyledString();
+	EXPECT_LT(Size(filtered), Size(base));
+	// Budget below the unfiltered size: the filtered reply must still fit and honour it (and cover at least as many samples).
+	const uint32_t budget = uint32_t(Size(base)) / 2;
+	f.Budget(budget);
+	const Json::Value u = f.Call(kAgg);
+	const Json::Value fl = f.Call(kAgg, a);
+	ASSERT_FALSE(IsError(u)) << u.toStyledString();
+	ASSERT_FALSE(IsError(fl)) << fl.toStyledString();
+	EXPECT_LE(Size(fl), size_t(budget));
+	EXPECT_GE(fl["count"].asUInt(), u["count"].asUInt());
 }
 
 TEST(HistoryQueriesAggregates, CatchUpParamsAreInTheHelp)

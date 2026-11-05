@@ -80,7 +80,7 @@ namespace Dia::CellHistory::Rows
 		}
 	}
 
-	Json::Value BuildAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t n, bool fill)
+	Json::Value BuildAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t n, bool fill, const std::vector<bool>* groupWanted)
 	{
 		const AggregateStore& agg = rec.Aggregates();
 		const uint32_t groups = agg.GroupCount();
@@ -99,6 +99,7 @@ namespace Dia::CellHistory::Rows
 		std::vector<float> f0, f1, f2;
 		for (uint32_t g = 0; g < groups; ++g)
 		{
+			if (groupWanted && !(*groupWanted)[g]) { continue; }
 			const StringCRC gid = agg.GroupAt(g);
 			if (!fill) { sizes[gid.AsChar()] = std::string(EncodedLength(n * 2u), 'A'); continue; }
 			u16.assign(n, 0);
@@ -116,6 +117,7 @@ namespace Dia::CellHistory::Rows
 			Json::Value gs(Json::objectValue);
 			for (uint32_t g = 0; g < groups; ++g)
 			{
+				if (groupWanted && !(*groupWanted)[g]) { continue; }
 				const StringCRC gid = agg.GroupAt(g);
 				if (l.isFloat)
 				{

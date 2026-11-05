@@ -43,7 +43,7 @@ namespace Dia::CellHistory
 		void CollectAggLayers(const CellHistoryRecorder& rec, const std::vector<bool>* wanted, uint32_t aggFirst, uint32_t count, std::vector<AggLayer>& out);
 		// { samples, groupSizes, rows } for samples [from, from+n). fill=false uses placeholder text of the exact encoded length
 		// (cheap sizing; same serialised size).
-		Json::Value BuildAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t n, bool fill);
+		Json::Value BuildAggregateBody(const CellHistoryRecorder& rec, const std::vector<AggLayer>& layers, uint32_t from, uint32_t n, bool fill, const std::vector<bool>* groupWanted = nullptr);
 
 		struct GroupInfo { std::string id; uint32_t layerCrc; uint32_t value; };
 		struct TypeInfo { uint32_t crc; std::string key; };
