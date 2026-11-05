@@ -362,7 +362,26 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                       mLayers.GetUInt(mLayers.FindLayer("riverMask")), out, mStage8);
         break;
     }
-    case TerrainStage::Valleys:     break;   // TODO: valleys (later task)
+    case TerrainStage::Valleys:
+    {
+        std::vector<float> surfaces;
+        surfaces.reserve(mStage7.lakes.size());
+        for (const Lake& lake : mStage7.lakes)
+        {
+            surfaces.push_back(lake.surfaceHeight);
+        }
+        Stage9Layers out;
+        out.valleyCarve = mLayers.FloatLayer(mLayers.FindLayer("valleyCarve"));
+        out.elevation   = mLayers.FloatLayer(mLayers.FindLayer("elevation"));
+        ComputeStage9(mRules, mDims, mShape.valleyDepth, mStage6.threshold,
+                      mLayers.GetFloat(mLayers.FindLayer("elevationRaw")),
+                      mLayers.GetUInt(mLayers.FindLayer("flowDirection")),
+                      mLayers.GetFloat(mLayers.FindLayer("flowAccumulation")),
+                      mLayers.GetUInt(mLayers.FindLayer("riverMask")),
+                      mLayers.GetUInt(mLayers.FindLayer("lakeMask")), surfaces.data(),
+                      static_cast<int>(surfaces.size()), out, mStage9);
+        break;
+    }
     case TerrainStage::Classify:    break;   // TODO: classify (later task)
     case TerrainStage::Latitude:    break;   // TODO: latitude (later task)
     default:                        break;   // Feature 8 stages never run

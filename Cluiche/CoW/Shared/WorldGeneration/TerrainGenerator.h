@@ -18,6 +18,7 @@
 #include <Shared/WorldGeneration/TerrainRivers.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
+#include <Shared/WorldGeneration/TerrainValleys.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -64,7 +65,7 @@ struct StageTiming
     X("lakeMask",        LayerType::UInt,  TerrainStage::Lakes) \
     X("zoneCostBase",    LayerType::Float, TerrainStage::DepthZones) \
     X("zoneCost",        LayerType::Float, TerrainStage::DepthZones) \
-    X("depthZone",       LayerType::UInt,  TerrainStage::DepthZones)
+    X("depthZone",       LayerType::UInt,  TerrainStage::DepthZones)     X("valleyCarve",     LayerType::Float, TerrainStage::Valleys)     X("elevation",       LayerType::Float, TerrainStage::Valleys)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;
@@ -199,6 +200,8 @@ public:
     const Stage7Debug&   GetStage7Debug() const { return mStage7; }
     // Stage 8 internals (t1, t2, hasAncient).
     const Stage8Debug&   GetStage8Debug() const { return mStage8; }
+    // Stage 9 internals (river cell, carve, floor and walk counts).
+    const Stage9Debug&   GetStage9Debug() const { return mStage9; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -214,6 +217,7 @@ private:
     Stage6Debug      mStage6;
     Stage7Debug      mStage7;
     Stage8Debug      mStage8;
+    Stage9Debug      mStage9;
     Effective        mEffective;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;
