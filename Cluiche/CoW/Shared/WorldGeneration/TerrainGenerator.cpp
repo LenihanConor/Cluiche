@@ -299,7 +299,27 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                       mLayers.GetUInt(mLayers.FindLayer("volcanic")), out);
         break;
     }
-    case TerrainStage::Drainage:    break;   // TODO: drainage (later task)
+    case TerrainStage::Drainage:
+    {
+        // Ocean is read from elevationRaw (ocean is exactly 0, land >= kCoastElev > 0), so stage 5
+        // reads only stage 4 as kStageReads declares.
+        const size_t n = (mDims.width > 0 && mDims.height > 0) ? static_cast<size_t>(mDims.width) * mDims.height : 0u;
+        const float* elevation = mLayers.GetFloat(mLayers.FindLayer("elevationRaw"));
+        std::vector<uint8_t> ocean(n, 0);
+        for (size_t i = 0; i < n && elevation != nullptr; ++i)
+        {
+            ocean[i] = elevation[i] <= 0.0f ? 1 : 0;
+        }
+        Stage5Layers out;
+        out.filledElevation  = mLayers.FloatLayer(mLayers.FindLayer("filledElevation"));
+        out.basinDepth       = mLayers.FloatLayer(mLayers.FindLayer("basinDepth"));
+        out.basinRank        = mLayers.UIntLayer(mLayers.FindLayer("basinRank"));
+        out.flowDirection    = mLayers.UIntLayer(mLayers.FindLayer("flowDirection"));
+        out.flowAccumulation = mLayers.FloatLayer(mLayers.FindLayer("flowAccumulation"));
+        ComputeStage5(mRules, mDims, elevation, ocean.data(), out, mStage5);
+        mEffective.eligibleBasins = mStage5.eligibleBasins;
+        break;
+    }
     case TerrainStage::Rivers:      break;   // TODO: rivers (later task)
     case TerrainStage::Lakes:       break;   // TODO: lakes (later task)
     case TerrainStage::DepthZones:  break;   // TODO: depth zones (later task)

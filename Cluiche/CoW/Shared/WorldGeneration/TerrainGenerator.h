@@ -10,6 +10,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
 #pragma once
 
+#include <Shared/WorldGeneration/TerrainDrainage.h>
 #include <Shared/WorldGeneration/TerrainLandmass.h>
 #include <Shared/WorldGeneration/TerrainMountains.h>
 #include <Shared/WorldGeneration/TerrainRelief.h>
@@ -48,7 +49,15 @@ struct StageTiming
     X("coastDistance",   LayerType::UInt,  TerrainStage::Landmass) \
     X("volcanic",        LayerType::UInt,  TerrainStage::Landmass) \
     X("ridgeMask",       LayerType::Float, TerrainStage::Mountains) \
-    X("passMask",        LayerType::UInt,  TerrainStage::Mountains)     X("barrierMask",     LayerType::Float, TerrainStage::Barrier)     X("elevationRaw",    LayerType::Float, TerrainStage::Elevation)     X("oceanDepth",      LayerType::Float, TerrainStage::Elevation)
+    X("passMask",        LayerType::UInt,  TerrainStage::Mountains) \
+    X("barrierMask",     LayerType::Float, TerrainStage::Barrier) \
+    X("elevationRaw",    LayerType::Float, TerrainStage::Elevation) \
+    X("oceanDepth",      LayerType::Float, TerrainStage::Elevation) \
+    X("filledElevation", LayerType::Float, TerrainStage::Drainage) \
+    X("basinDepth",      LayerType::Float, TerrainStage::Drainage) \
+    X("basinRank",       LayerType::UInt,  TerrainStage::Drainage) \
+    X("flowDirection",   LayerType::UInt,  TerrainStage::Drainage) \
+    X("flowAccumulation", LayerType::Float, TerrainStage::Drainage)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
 constexpr int kImplementedStageCount = 12;
@@ -176,6 +185,8 @@ public:
     const Stage2Debug&   GetStage2Debug() const { return mStage2; }
     // Stage 3 internals (b*, band, chain vents).
     const Stage3Debug&   GetStage3Debug() const { return mStage3; }
+    // Stage 5 internals (every basin, eligible ranking, epsilon-free fill level).
+    const Stage5Debug&   GetStage5Debug() const { return mStage5; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -187,6 +198,7 @@ private:
     Stage1Debug      mStage1;
     Stage2Debug      mStage2;
     Stage3Debug      mStage3;
+    Stage5Debug      mStage5;
     Effective        mEffective;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;

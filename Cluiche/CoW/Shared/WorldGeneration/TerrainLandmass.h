@@ -58,6 +58,7 @@ struct Effective
     int   continents = 1;       // requested continents clamped to [1, 3]
     int   passes = 0;           // placeholder until the Barrier stage
     int   lakes = 0;            // placeholder until the Lakes stage
+    int   eligibleBasins = 0;   // stage 5: eligible basins (the Lakes stage caps lakes at this)
     int   mainLandmass = 0;     // landmass id holding the mainland's highest-M cell (0 = none)
     std::vector<int> islandCentres;   // centre cell per accepted group, in acceptance order
 };
