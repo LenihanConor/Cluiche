@@ -94,6 +94,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldShapePreset.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -187,6 +190,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldShapePreset.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
