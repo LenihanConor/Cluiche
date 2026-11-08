@@ -9,6 +9,7 @@
 #include "Modules/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/RandomStreamModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include <cstdint>
 #include <string>
 
@@ -51,6 +52,18 @@ public:
     const WorldGenerationHealthReporter& GetHealthReporter() const { return mHealth; }
     bool IsHealthRegistered() const { return mHealthRegistered; }
 
+    // True once the cow.worldgen.* terrain-slice commands are registered with the SimQueryHostModule
+    // (false when no SimQueryHostModule is wired, or before DoStart / after DoStop).
+    bool CommandsRegistered() const { return mCommandsRegistered; }
+
+    // Every command and query this module registers, with its full dotted name.
+    static constexpr const char* kCommandNames[] = {
+        "cow.worldgen.set", "cow.worldgen.set_size", "cow.worldgen.regenerate",
+        "cow.worldgen.preset.load", "cow.worldgen.preset.save",
+        "cow.worldgen.params", "cow.worldgen.status", "cow.worldgen.presets",
+        "cow.worldgen.layers", "cow.worldgen.cell" };
+    static constexpr unsigned kCommandCount = sizeof(kCommandNames) / sizeof(kCommandNames[0]);
+
 protected:
     void OnConfigure(const char* configJson) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -58,6 +71,9 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    void RegisterCommands();
+    void UnregisterCommands();
+
     WorldGeneration::WorldGenSession mSession;
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
@@ -67,6 +83,10 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
     Dia::ApplicationFlow::ModuleRef<RandomStreamModule> mRandom{this};
+    // Optional: the cow.worldgen.* commands are sim-hosted, so they exist only when this module is wired.
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHost{this};
+
+    bool mCommandsRegistered = false;
 
     WorldGenerationHealthReporter mHealth;
     bool mHealthRegistered = false;

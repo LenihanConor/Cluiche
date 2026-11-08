@@ -2673,5 +2673,8 @@
     <ClCompile Include="..\..\CoW\Modules\WorldGenerationModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenCommands.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
