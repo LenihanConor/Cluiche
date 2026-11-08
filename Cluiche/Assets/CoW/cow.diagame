@@ -28,6 +28,10 @@
         {
             "path": "Stages/F2CoreRuntime/f2_core_runtime.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/S1WorldGenerationTestbedStage/s1world_generation_testbed_stage.diastage",
+            "type": "stage"
         }
     ],
     "editor": {

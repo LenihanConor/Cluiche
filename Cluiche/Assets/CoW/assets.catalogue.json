@@ -161,6 +161,37 @@
                 "World"
             ],
             "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.s1world_generation_testbed_stage",
+            "references": [
+                {
+                    "target": "manifest.s1world_generation_testbed_stage",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/S1WorldGenerationTestbedStage/s1world_generation_testbed_stage.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.s1world_generation_testbed_stage",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/S1WorldGenerationTestbedStage/misc/ApplicationFlow/s1world_generation_testbed_stage.diaapp",
+            "stage_name": "S1WorldGenerationTestbedStage",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
         }
     ]
 }

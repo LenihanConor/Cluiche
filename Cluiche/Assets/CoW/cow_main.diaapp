@@ -5,7 +5,8 @@
             "name": "Boot",
             "transitions": [
                 "FrontEnd",
-                "F2CoreRuntime"
+                "F2CoreRuntime",
+                "S1WorldGenerationTestbedStage"
             ],
             "auto_advance": false
         },
@@ -18,6 +19,13 @@
         },
         {
             "name": "FrontEnd",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "S1WorldGenerationTestbedStage",
             "transitions": [
                 "Boot"
             ],
@@ -194,6 +202,38 @@
             "from": "MainPU"
         },
         {
+            "id": "DebugServerService",
+            "kind": "ServiceStream",
+            "payload_type": "DebugServerService",
+            "from": "MainPU"
+        },
+        {
+            "id": "DebugServerPush",
+            "kind": "EventStream",
+            "payload_type": "DebugServerPushEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
+            "id": "SimQueryRequest",
+            "kind": "EventStream",
+            "payload_type": "SimRequestEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "SimQueryReply",
+            "kind": "EventStream",
+            "payload_type": "SimReplyEvent",
+            "overflow": "drop-oldest",
+            "capacity": 48,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "ValueSchemaService",
             "kind": "ServiceStream",
             "payload_type": "ValueSchemaService",
@@ -340,8 +380,8 @@
                     ]
                 },
                 {
-                    "instance_id": "ValueSchemaModule",
-                    "type_id": "ValueSchemaModule",
+                    "instance_id": "DebugServerHostModule",
+                    "type_id": "DebugServerHostModule",
                     "stages": [
                         "all"
                     ],
@@ -349,13 +389,55 @@
                         "ObservationModule"
                     ],
                     "config": {
-                        "schema_roots": ["root"],
-                        "ramp_roots": ["dia_data"]
+                        "port": 9002,
+                        "auto_start": true,
+                        "diagame_path": "assets/cow.diagame"
+                    },
+                    "channels": [
+                        {
+                            "id": "DebugServerService",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "DebugServerPush",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "SimQueryReply",
+                            "role": "reads"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "ValueSchemaModule",
+                    "type_id": "ValueSchemaModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "DebugServerHostModule"
+                    ],
+                    "config": {
+                        "schema_roots": [
+                            "root"
+                        ],
+                        "ramp_roots": [
+                            "dia_data"
+                        ]
                     },
                     "channels": [
                         {
                             "id": "ValueSchemaService",
                             "role": "provides"
+                        },
+                        {
+                            "id": "DebugServerService",
+                            "role": "consumes"
                         }
                     ]
                 },
@@ -643,6 +725,24 @@
                         "GameSpeedControllerModule"
                     ],
                     "channels": []
+                },
+                {
+                    "instance_id": "SimQueryHostModule",
+                    "type_id": "SimQueryHostModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryReply",
+                            "role": "writes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "LoadingScreenModule",

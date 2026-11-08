@@ -1,0 +1,60 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "WorldGenerationModule",
+                    "type_id": "WorldGenerationModule",
+                    "stages": [
+                        "S1WorldGenerationTestbedStage"
+                    ],
+                    "dependencies": [
+                        "MessageBusHostModule",
+                        "RandomStreamModule",
+                        "SimQueryHostModule"
+                    ],
+                    "config": {
+                        "presets_dir": "assets/global/misc",
+                        "out_presets_dir": "Cluiche/out/CoW/presets"
+                    },
+                    "channels": []
+                },
+                {
+                    "instance_id": "S1WorldGenerationTestbedStageModule",
+                    "type_id": "S1WorldGenerationTestbedStageModule",
+                    "stages": [
+                        "S1WorldGenerationTestbedStage"
+                    ],
+                    "dependencies": [
+                        "InputStreamModule",
+                        "WorldGenerationModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AssetLoadStatus",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AssetRuntimeService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
