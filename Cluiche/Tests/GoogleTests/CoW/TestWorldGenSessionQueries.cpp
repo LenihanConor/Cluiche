@@ -6,6 +6,7 @@
 #include <DiaPathfinding/HexTopology.h>
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -456,35 +457,238 @@ TEST(WorldGenSessionQueries, LayersSummaryBeforeGenerationHasEmptyLayers)
     }
 }
 
-TEST(WorldGenSessionQueries, LayersByNameReturnsAllCellValues)
+Json::Value PageArgs(const char* layer, const Json::Value& offset, const Json::Value& count)
+{
+    Json::Value o(Json::objectValue);
+    o["layer"] = layer;
+    if (!offset.isNull()) o["offset"] = offset;
+    if (!count.isNull()) o["count"] = count;
+    return o;
+}
+
+uint64_t RefFnv(const void* data, size_t bytes)
+{
+    const unsigned char* p = static_cast<const unsigned char*>(data);
+    uint64_t h = 14695981039346656037ull;
+    for (size_t i = 0; i < bytes; ++i) { h ^= p[i]; h *= 1099511628211ull; }
+    return h;
+}
+
+std::string HexOf(uint64_t h)
+{
+    char b[17];
+    std::snprintf(b, sizeof(b), "%016llx", static_cast<unsigned long long>(h));
+    return b;
+}
+
+std::string SummaryHash(const Json::Value& summary, const char* layer)
+{
+    for (const Json::Value& st : summary["stages"])
+        for (const Json::Value& l : st["layers"])
+            if (l["name"].asString() == layer)
+                return l.isMember("hash") ? l["hash"].asString() : std::string("<missing>");
+    return "<nolayer>";
+}
+
+TEST(WorldGenSessionQueries, LayersFirstPageUsesDefaults)
 {
     WorldGenSession s;
     Generate(s);
-    const size_t cells = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
-
+    const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
     const Json::Value e = s.Layers(Obj("layer", "elevation"));
     ASSERT_TRUE(Ok(e)) << e.toStyledString();
     EXPECT_EQ(e["name"].asString(), "elevation");
     EXPECT_EQ(e["type"].asString(), "float");
-    ASSERT_EQ(e["values"].size(), cells);
-    const int ei = s.Generator().GetLayers().FindLayer("elevation");
-    const float* ef = s.Generator().GetLayers().GetFloat(ei);
-    ASSERT_NE(ef, nullptr);
-    for (size_t i = 0; i < cells; ++i)
-    {
-        ASSERT_EQ(static_cast<float>(e["values"][static_cast<Json::ArrayIndex>(i)].asDouble()), ef[i]) << i;
-    }
+    EXPECT_EQ(e["offset"].asUInt(), 0u);
+    EXPECT_EQ(e["count"].asUInt(), 500u);
+    EXPECT_EQ(e["total"].asUInt(), total);
+    EXPECT_EQ(e["nextOffset"].asUInt(), 500u);
+    EXPECT_EQ(e["revision"].asUInt(), s.Revision());
+    EXPECT_EQ(e["values"].size(), 500u);
+}
 
-    const Json::Value m = s.Layers(Obj("layer", "landmass"));
-    ASSERT_TRUE(Ok(m));
-    EXPECT_EQ(m["type"].asString(), "uint");
-    ASSERT_EQ(m["values"].size(), cells);
-    const uint32_t* mu = s.Generator().GetLayers().GetUInt(s.Generator().GetLayers().FindLayer("landmass"));
-    ASSERT_NE(mu, nullptr);
-    for (size_t i = 0; i < cells; ++i)
+void ExpectReassembles(const char* layer, bool isFloat)
+{
+    WorldGenSession s;
+    Generate(s);
+    const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
+    const TerrainLayers& tl = s.Generator().GetLayers();
+    const int li = tl.FindLayer(layer);
+    const float* fd = isFloat ? tl.GetFloat(li) : nullptr;
+    const uint32_t* ud = isFloat ? nullptr : tl.GetUInt(li);
+    ASSERT_TRUE(isFloat ? fd != nullptr : ud != nullptr);
+
+    size_t offset = 0;
+    size_t got = 0;
+    int pages = 0;
+    for (;;)
     {
-        ASSERT_EQ(m["values"][static_cast<Json::ArrayIndex>(i)].asUInt(), mu[i]) << i;
+        const Json::Value r = s.Layers(PageArgs(layer, static_cast<Json::UInt>(offset), Json::Value()));
+        ASSERT_TRUE(Ok(r)) << r.toStyledString();
+        ASSERT_EQ(r["offset"].asUInt(), offset);
+        ASSERT_EQ(r["values"].size(), r["count"].asUInt());
+        for (Json::ArrayIndex k = 0; k < r["values"].size(); ++k)
+        {
+            const size_t i = offset + k;
+            if (isFloat)
+            {
+                const float f = static_cast<float>(r["values"][k].asDouble());
+                ASSERT_EQ(std::memcmp(&f, &fd[i], sizeof(float)), 0) << i;
+            }
+            else
+            {
+                ASSERT_EQ(r["values"][k].asUInt(), ud[i]) << i;
+            }
+        }
+        got += r["values"].size();
+        ++pages;
+        ASSERT_LT(pages, 50);
+        if (r["nextOffset"].isNull())
+        {
+            break;
+        }
+        ASSERT_EQ(r["nextOffset"].asUInt(), offset + r["count"].asUInt());
+        offset = r["nextOffset"].asUInt();
     }
+    EXPECT_EQ(got, total);
+    EXPECT_EQ(total, 2772u);
+}
+
+TEST(WorldGenSessionQueries, LayersPagesReassembleFloatLayerExactly)
+{
+    ExpectReassembles("elevation", true);
+}
+
+TEST(WorldGenSessionQueries, LayersPagesReassembleUIntLayerExactly)
+{
+    ExpectReassembles("terrainType", false);
+}
+
+TEST(WorldGenSessionQueries, LayersCustomCountAndClamp)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value a = s.Layers(PageArgs("landmass", 10, 7));
+    ASSERT_TRUE(Ok(a)) << a.toStyledString();
+    EXPECT_EQ(a["offset"].asUInt(), 10u);
+    EXPECT_EQ(a["count"].asUInt(), 7u);
+    EXPECT_EQ(a["nextOffset"].asUInt(), 17u);
+
+    const Json::Value b = s.Layers(PageArgs("landmass", 0, 5000));
+    ASSERT_TRUE(Ok(b)) << b.toStyledString();
+    EXPECT_EQ(b["count"].asUInt(), 1000u);
+    EXPECT_EQ(b["values"].size(), 1000u);
+    EXPECT_EQ(b["nextOffset"].asUInt(), 1000u);
+
+    // Float pages are capped at 500 so the reply stays under the 16 KB sim payload.
+    const Json::Value f = s.Layers(PageArgs("elevation", 0, 5000));
+    ASSERT_TRUE(Ok(f)) << f.toStyledString();
+    EXPECT_EQ(f["count"].asUInt(), 500u);
+    EXPECT_EQ(f["nextOffset"].asUInt(), 500u);
+}
+
+TEST(WorldGenSessionQueries, LayersLastPageHasNullNextOffset)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(PageArgs("landmass", 2700, Json::Value()));
+    ASSERT_TRUE(Ok(r)) << r.toStyledString();
+    EXPECT_EQ(r["count"].asUInt(), 72u);
+    EXPECT_TRUE(r.isMember("nextOffset"));
+    EXPECT_TRUE(r["nextOffset"].isNull());
+}
+
+TEST(WorldGenSessionQueries, LayersOffsetAtTotalIsEmptySuccessBeyondIsError)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(PageArgs("landmass", 2772, Json::Value()));
+    ASSERT_TRUE(Ok(r)) << r.toStyledString();
+    EXPECT_EQ(r["count"].asUInt(), 0u);
+    EXPECT_EQ(r["values"].size(), 0u);
+    EXPECT_TRUE(r["nextOffset"].isNull());
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", 2773, Json::Value()))));
+}
+
+TEST(WorldGenSessionQueries, LayersBadOffsetOrCountIsError)
+{
+    WorldGenSession s;
+    Generate(s);
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", -1, Json::Value()))));
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", Json::Value(), -5))));
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", 1.5, Json::Value()))));
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", Json::Value(), 2.5))));
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", "0", Json::Value()))));
+    EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", Json::Value(), "10"))));
+    const Json::Value e = s.Layers(PageArgs("landmass", -1, Json::Value()));
+    EXPECT_TRUE(e["error"].isString());
+}
+
+TEST(WorldGenSessionQueries, LayersCountZeroIsEmptySuccessWithSameNextOffset)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(PageArgs("landmass", 40, 0));
+    ASSERT_TRUE(Ok(r)) << r.toStyledString();
+    EXPECT_EQ(r["count"].asUInt(), 0u);
+    EXPECT_EQ(r["values"].size(), 0u);
+    EXPECT_EQ(r["nextOffset"].asUInt(), 40u);
+}
+
+TEST(WorldGenSessionQueries, LayersPagingValidationComesAfterLayerResolution)
+{
+    WorldGenSession s;
+    EXPECT_EQ(s.Layers(PageArgs("elevation", -1, Json::Value()))["error"].asString(), "no world generated yet");
+    Generate(s);
+    const std::string err = s.Layers(PageArgs("nonsense", -1, Json::Value()))["error"].asString();
+    EXPECT_NE(err.find("unknown layer"), std::string::npos) << err;
+}
+
+TEST(WorldGenSessionQueries, LayersWorstPageFitsInSimReply)
+{
+    WorldGenSession s;
+    Generate(s);
+    // Hard max count (1000) of every layer must serialise well under the 16 KB sim payload.
+    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    {
+        const LayerInfo& info = TerrainLayers::GetLayerInfo(i);
+        const Json::Value r = s.Layers(PageArgs(info.name, 0, 1000));
+        ASSERT_TRUE(Ok(r)) << info.name;
+        Json::StreamWriterBuilder builder;   // same writer SimQueryHost uses for the reply
+        builder["indentation"] = "";
+        EXPECT_LT(Json::writeString(builder, r).size(), 15000u) << info.name;
+    }
+}
+
+TEST(WorldGenSessionQueries, LayersSummaryHashMatchesIndependentFnv)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(Json::Value(Json::objectValue));
+    EXPECT_EQ(r["revision"].asUInt(), s.Revision());
+    const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
+    const TerrainLayers& tl = s.Generator().GetLayers();
+    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    {
+        const LayerInfo& info = TerrainLayers::GetLayerInfo(i);
+        const void* data = info.type == LayerType::Float ? static_cast<const void*>(tl.GetFloat(i))
+                                                         : static_cast<const void*>(tl.GetUInt(i));
+        ASSERT_NE(data, nullptr) << info.name;
+        EXPECT_EQ(SummaryHash(r, info.name), HexOf(RefFnv(data, total * 4))) << info.name;
+    }
+}
+
+TEST(WorldGenSessionQueries, LayersSummaryHashChangesOnlyForAffectedLayers)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value before = s.Layers(Json::Value(Json::objectValue));
+    s.Set(Obj("rivers", 0.9));
+    Generate(s);
+    const Json::Value after = s.Layers(Json::Value(Json::objectValue));
+    EXPECT_NE(SummaryHash(before, "riverMask"), SummaryHash(after, "riverMask"));
+    EXPECT_EQ(SummaryHash(before, "landmass"), SummaryHash(after, "landmass"));
+    EXPECT_GT(after["revision"].asUInt(), before["revision"].asUInt());
 }
 
 TEST(WorldGenSessionQueries, LayersUnknownLayerAndPreGenerationErrors)

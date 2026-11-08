@@ -378,7 +378,7 @@ All are `cow.worldgen.*` JSON commands (SD-S1-002), registered by `WorldGenerati
 | `preset.load` | action | `{id}` | Replaces every param (seed kept) and previews. Fails on an unknown id or an invalid file, with the reason. Subject to the lock |
 | `preset.save` | action | `{id, displayName, description?, overwrite?}` | Writes the preset from the current params: the source asset via the `dia launch` alias, or `out/CoW/presets/` without it. Returns `{success, writtenTo, isSource}`. Refuses an existing id unless `overwrite` |
 | `presets` | query | — | `[{id, displayName, description, version, sourcePath}]`, sorted by id |
-| `layers` | query | `{layer?}` | Without args: `{rulesVersion, totalMs, stages: [{id, name, ms, ranLastUpdate, layers: [{name, type, min, max}]}]}`. With `layer`: `{name, type, values[]}` in cell-index order. Imported worlds report `available: false` |
+| `layers` | query | `{layer?, offset?, count?}` | Without args: `{rulesVersion, totalMs, revision, stages: [{id, name, ms, ranLastUpdate, layers: [{name, type, min, max, hash}]}]}`; `hash` is FNV-1a 64 (16 hex digits) over the raw 4-byte cell values in cell-index order. With `layer`: one page `{name, type, revision, offset, count, total, nextOffset, values[]}` in cell-index order (amended 2026-11-08: sim replies are capped at 16 KB, so values are paged; `count` defaults to 500, max 1000 (500 for float layers, since doubles print at 17 digits and a 1000-value page would exceed 16 KB); `nextOffset` is null on the last page). Imported worlds report `available: false` |
 
 The Cell Inspector (Feature 6's `cell` query) adds every layer value for the cell, e.g. `flowAccumulation 37, basinDepth 0.04, zoneCost 11.5`.
 
@@ -682,7 +682,7 @@ Each command is called through `ExecuteCommandJson` from a non-SimPU thread. **P
 - An out-of-range value appears in `clamped`.
 - `preset.load {id: "highlands"}` makes `params` equal the file.
 - `preset.save` writes a file that `presets` lists, and refuses an existing id without `overwrite`.
-- `layers` lists every stage and layer, and `layers {layer: "flowAccumulation"}` returns 2,772 values equal to `GetLayers()`.
+- `layers` lists every stage and layer, and paging `layers {layer: "flowAccumulation"}` to the end returns 2,772 values equal to `GetLayers()` (amended 2026-11-08: paged, each reply under the 16 KB sim limit).
 - `params.effective` matches the generated world: `passes`, `islands` and `lakes` equal the accepted counts, and `islandShare` equals the measured share (checked with `lakes = 12`, `passes = 4`, `islands = 6`, where the request exceeds what fits on at least one seed).
 
 ### AC21: Locked import and provenance

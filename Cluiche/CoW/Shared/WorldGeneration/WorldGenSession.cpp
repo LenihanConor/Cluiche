@@ -80,6 +80,45 @@ double ShortestFloat(float f)
     return std::strtod(text, nullptr);
 }
 
+// FNV-1a 64 over raw cell bytes (4 bytes per cell, little-endian host), as 16 lowercase hex digits.
+std::string LayerHash(const void* data, size_t bytes)
+{
+    const unsigned char* p = static_cast<const unsigned char*>(data);
+    uint64_t h = 14695981039346656037ull;
+    for (size_t i = 0; i < bytes; ++i)
+    {
+        h ^= p[i];
+        h *= 1099511628211ull;
+    }
+    char text[17];
+    std::snprintf(text, sizeof(text), "%016llx", static_cast<unsigned long long>(h));
+    return text;
+}
+
+constexpr int64_t kLayersDefaultCount = 500;
+constexpr int64_t kLayersMaxCount = 1000;
+// The sim reply writer prints doubles with 17 significant digits (~21 chars each), so a 1000-value float page
+// would overflow the 16 KB reply; float pages are capped lower.
+constexpr int64_t kLayersMaxFloatCount = 500;
+
+// Optional non-negative integer argument; false (with outError set) when present but invalid.
+bool ReadPagingArg(const Json::Value& args, const char* key, int64_t defaultValue, int64_t& out, std::string& outError)
+{
+    out = defaultValue;
+    if (!args.isMember(key))
+    {
+        return true;
+    }
+    const Json::Value& v = args[key];
+    if (!v.isNumeric() || !v.isIntegral() || v.asDouble() < 0.0 || v.asDouble() > 9.0e15)
+    {
+        outError = std::string("\"") + key + "\" must be a non-negative integer";
+        return false;
+    }
+    out = static_cast<int64_t>(v.asDouble());
+    return true;
+}
+
 Json::Value Error(const std::string& message)
 {
     Json::Value r(Json::objectValue);
@@ -624,11 +663,27 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
         }
         const LayerInfo& info = TerrainLayers::GetLayerInfo(index);
 
+        int64_t offset = 0;
+        int64_t pageCount = 0;
+        std::string argError;
+        if (!ReadPagingArg(args, "offset", 0, offset, argError) ||
+            !ReadPagingArg(args, "count", kLayersDefaultCount, pageCount, argError))
+        {
+            return Error(argError);
+        }
+        const int64_t total = static_cast<int64_t>(count);
+        if (offset > total)
+        {
+            return Error("\"offset\" " + std::to_string(offset) + " is beyond the layer size " + std::to_string(total));
+        }
+        pageCount = std::min(pageCount, info.type == LayerType::Float ? kLayersMaxFloatCount : kLayersMaxCount);
+        pageCount = std::min(pageCount, total - offset);
+
         Json::Value values(Json::arrayValue);
         if (info.type == LayerType::Float)
         {
             const float* data = layers.GetFloat(index);
-            for (size_t i = 0; data != nullptr && i < count; ++i)
+            for (int64_t i = offset; data != nullptr && i < offset + pageCount; ++i)
             {
                 values.append(ShortestFloat(data[i]));
             }
@@ -636,16 +691,24 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
         else
         {
             const uint32_t* data = layers.GetUInt(index);
-            for (size_t i = 0; data != nullptr && i < count; ++i)
+            for (int64_t i = offset; data != nullptr && i < offset + pageCount; ++i)
             {
                 values.append(static_cast<Json::UInt>(data[i]));
             }
         }
 
+        const int64_t returned = static_cast<int64_t>(values.size());
+        const int64_t next = offset + returned;
         Json::Value r(Json::objectValue);
         r["success"] = true;
         r["name"] = info.name;
         r["type"] = info.type == LayerType::Float ? "float" : "uint";
+        r["revision"] = static_cast<Json::UInt>(mRevision);
+        r["offset"] = static_cast<Json::Int64>(offset);
+        r["count"] = static_cast<Json::Int64>(returned);
+        r["total"] = static_cast<Json::Int64>(total);
+        // Null once the end is reached (including offset == total); a count-0 request mid-layer echoes the offset.
+        r["nextOffset"] = next >= total ? Json::Value() : Json::Value(static_cast<Json::Int64>(next));
         r["values"] = values;
         return r;
     }
@@ -696,6 +759,13 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
             l["type"] = info.type == LayerType::Float ? "float" : "uint";
             l["min"] = lo;
             l["max"] = hi;
+            // Hash is omitted before the first generation (this loop only runs once mHasGenerated).
+            const void* raw = info.type == LayerType::Float ? static_cast<const void*>(layers.GetFloat(i))
+                                                            : static_cast<const void*>(layers.GetUInt(i));
+            if (raw != nullptr)
+            {
+                l["hash"] = LayerHash(raw, count * sizeof(uint32_t));
+            }
             stageLayers.append(l);
         }
         stage["layers"] = stageLayers;
@@ -704,6 +774,7 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
 
     Json::Value r(Json::objectValue);
     r["rulesVersion"] = static_cast<Json::UInt>(mRules.rulesVersion);
+    r["revision"] = static_cast<Json::UInt>(mRevision);
     r["totalMs"] = ShortestFloat(mLastMs);
     r["stages"] = stages;
     return r;

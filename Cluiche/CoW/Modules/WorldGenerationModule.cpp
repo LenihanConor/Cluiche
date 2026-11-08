@@ -194,7 +194,9 @@ void WorldGenerationModule::RegisterCommands()
         { "description", "string", false, "Preset description" },
         { "overwrite", "bool", false, "Replace an existing preset with the same id" } };
     static const ValueParam kLayersParams[] = {
-        { "layer", "string", false, "Layer name for full values; omit for the stage summary" } };
+        { "layer", "string", false, "Layer name for paged values; omit for the stage summary (with per-layer hash)" },
+        { "offset", "int", false, "First cell index of the page (default 0)" },
+        { "count", "int", false, "Cells in the page (default 500, max 1000; 500 for float layers)" } };
     static const ValueParam kCellParams[] = {
         { "x", "int", false, "Cell column (with y)" },
         { "y", "int", false, "Cell row (with x)" },
@@ -285,7 +287,7 @@ void WorldGenerationModule::RegisterCommands()
                     r["presets"] = s->Presets();
                     return r;
                 });
-    registerOne(false, "cow.worldgen.layers", "Terrain layer stage summary, or full values for one layer", kLayersParams, 1,
+    registerOne(false, "cow.worldgen.layers", "Terrain layer stage summary with hashes, or paged cell values (offset/count) for one layer", kLayersParams, 3,
                 [s](const Json::Value& a) { return s->Layers(a); });
     registerOne(false, "cow.worldgen.cell", "Terrain data for one cell, by x,y or linear index", kCellParams, 3,
                 [s](const Json::Value& a) { return s->Cell(a); });

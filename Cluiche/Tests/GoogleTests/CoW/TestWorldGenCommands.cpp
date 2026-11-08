@@ -331,7 +331,19 @@ TEST(WorldGenCommands, QueriesRoundTripWithExpectedShapes)
 	EXPECT_TRUE(layers["success"].asBool());
 	EXPECT_TRUE(layers["stages"].isArray());
 
-	// Full per-layer values exceed the 16 KB sim reply event, so only the summary is round-tripped here.
+	// Per-layer values are paged so every reply fits the 16 KB sim reply event (Call() fails on "reply too large").
+	size_t gathered = 0;
+	size_t offset = 0;
+	for (int page = 0; page < 20; ++page)
+	{
+		Json::Value pa(Json::objectValue); pa["layer"] = "elevation"; pa["offset"] = static_cast<Json::UInt>(offset);
+		const Json::Value pr = h.Call("cow.worldgen.layers", pa);
+		ASSERT_TRUE(pr["success"].asBool()) << pr.toStyledString();
+		gathered += pr["values"].size();
+		if (pr["nextOffset"].isNull()) break;
+		offset = pr["nextOffset"].asUInt();
+	}
+	EXPECT_EQ(gathered, 2772u);
 
 	Json::Value xy(Json::objectValue); xy["x"] = 3; xy["y"] = 4;
 	const Json::Value cell = h.Call("cow.worldgen.cell", xy);

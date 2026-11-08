@@ -49,3 +49,4 @@ Distilled from a code survey on 2026-11-08. Check against the real code before m
 ## Progress notes
 
 - 2026-11-08: Feature 6 command table approved and committed (`3bba2b16`). Terrain-only slice agreed.
+- 2026-11-08: `layers {layer}` paged (offset/count, default 500, max 1000, 500 for float layers because doubles print at 17 digits) plus per-layer FNV-1a hash in the summary, user chose paging over bigger replies, compression, or file export; specs amended (terrain-generator.md layers row + AC20, F-6 regenerate row). File export remains an option for bulk readers (T-2, regression modes).

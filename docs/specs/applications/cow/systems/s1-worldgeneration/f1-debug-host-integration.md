@@ -415,7 +415,7 @@ All commands are `cow.worldgen.*` (SD-S1-002). They are registered as sim-hosted
 |---|---|---|---|
 | `set` | action | Any subset of `WorldShapeParams` keys, plus optional `seed` and `unlock` | `{success, applied[], clamped[], rejected[]}`. Live preview. Full rules in @terrain-generator.md (DiaAPI commands) |
 | `set_size` | action | `{size: "Small" \| "Standard" \| "Large"}` | Changes the dimensions and regenerates. `{success, dimensions}` |
-| `regenerate` | action | `{seed?}` | `Invalidate()` then a full run. `{success, revision, ms}` |
+| `regenerate` | action | `{seed?}` | `Invalidate()` then a full run. `{success, revision, ms, pending: true}`: the run happens on the next SimPU tick, so `revision` and `ms` are those of the world before it (amended 2026-11-08); poll `status` for the new revision |
 | `preset.load` | action | `{id}` | As @terrain-generator.md (Presets). Seed kept, previews |
 | `preset.save` | action | `{id, displayName, description?, overwrite?}` | As @terrain-generator.md. Until the `source` alias is built it always writes `Cluiche/out/CoW/presets/` and returns `isSource: false` |
 | `params` | query | none | As @terrain-generator.md |
