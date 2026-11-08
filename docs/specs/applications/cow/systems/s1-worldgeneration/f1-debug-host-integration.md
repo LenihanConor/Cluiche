@@ -407,6 +407,30 @@ Export a passing world, hand-edit one Hearth onto an isolated cell, import, and 
 ### AC14 — Small Map *(added 2026-10-15)*
 **Pass:** the panel shows "Small 66 × 42", and a generated world has `dimensions == {66, 42}`.
 
+### Command set: terrain slice *(added 2026-11-08, plan task 8b)*
+
+All commands are `cow.worldgen.*` (SD-S1-002). They are registered as sim-hosted commands and queries (`SimQueryHost`), so every handler runs on SimPU and the panel, scripts and tests use the same path. This **supersedes SD-S1-002's "queries read a snapshot published per revision"**: queries are answered on SimPU, so there is no cross-PU read. Every command registers help metadata.
+
+| Command | Kind | Args | Result |
+|---|---|---|---|
+| `set` | action | Any subset of `WorldShapeParams` keys, plus optional `seed` and `unlock` | `{success, applied[], clamped[], rejected[]}`. Live preview. Full rules in @terrain-generator.md (DiaAPI commands) |
+| `set_size` | action | `{size: "Small" \| "Standard" \| "Large"}` | Changes the dimensions and regenerates. `{success, dimensions}` |
+| `regenerate` | action | `{seed?}` | `Invalidate()` then a full run. `{success, revision, ms}` |
+| `preset.load` | action | `{id}` | As @terrain-generator.md (Presets). Seed kept, previews |
+| `preset.save` | action | `{id, displayName, description?, overwrite?}` | As @terrain-generator.md. Until the `source` alias is built it always writes `Cluiche/out/CoW/presets/` and returns `isSource: false` |
+| `params` | query | none | As @terrain-generator.md |
+| `status` | query | none | `{state: "Idle" \| "Complete" \| "Failed", revision, seed, size, dimensions, locked, lastMs, stagesRan[]}` |
+| `presets` | query | none | As @terrain-generator.md, listing the deployed presets directory and `Cluiche/out/CoW/presets/`. When both hold the same id, the `out/` copy wins |
+| `layers` | query | `{layer?}` | As @terrain-generator.md |
+| `cell` | query | `{x, y}` or `{index}` | Coordinate, index, every `Cell` field, every layer value, and the six neighbours (`{x, y}` or `"edge"`) |
+
+**Rules.**
+- Within one frame the last value per key wins, and at most one generation runs per frame (in `DoUpdate`).
+- An out-of-range value is clamped and listed in `clamped[]`. An unknown key is listed in `rejected[]`. Bad argument types or a missing required arg return `success: false` with `error`.
+- `WorldGenerationComplete` is published on every accepted world change, with the new `worldRevision`.
+
+**Not in this slice.** Each is added with the task that builds its feature: `cancel`, `export`, `import`, `validate`, `report` (plan tasks 13-16), `regions`, `sites` (task 12). Selection and view state use DiaCellLayers `cells.*` commands (tasks 9-10), not `cow.worldgen.*`.
+
 ## Inherited Binding Decisions
 
 ### From Platform (Cluiche)
