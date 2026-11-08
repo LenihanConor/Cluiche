@@ -2646,5 +2646,8 @@
     <ClCompile Include="CoW\TestTerrainOutput.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestTerrainDeterminism.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
