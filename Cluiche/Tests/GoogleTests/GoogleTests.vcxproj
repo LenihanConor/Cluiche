@@ -1170,6 +1170,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainClassify.cpp" />
     <ClCompile Include="CoW\TestTerrainOutput.cpp" />
     <ClCompile Include="CoW\TestTerrainDeterminism.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldShapePreset.cpp" />
+    <ClCompile Include="CoW\TestWorldShapePreset.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

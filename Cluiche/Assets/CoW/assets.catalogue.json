@@ -122,6 +122,45 @@
                 "World"
             ],
             "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.worldshape_archipelago",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/WorldGen/Presets/archipelago.worldshape.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.worldshape_continental",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/WorldGen/Presets/continental.worldshape.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.worldshape_highlands",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/WorldGen/Presets/highlands.worldshape.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
         }
     ]
 }

@@ -1,0 +1,16 @@
+{
+  "format": "cow.worldshape",
+  "version": 1,
+  "id": "continental",
+  "displayName": "Continental",
+  "description": "One large continent, a gentle spine, plateau interior.",
+  "params": {
+    "landFraction": 0.42, "continents": 1, "islands": 4, "continentIslands": 0.7,
+    "peninsulas": 2, "coastline": 0.5,
+    "mountainousness": 0.55, "spineToRing": 0.15, "orientationDeg": 30, "passes": 2,
+    "barrier": 0.6, "barrierForm": "Plateau", "ruggedness": 0.4,
+    "rivers": 0.5, "valleyDepth": 0.4, "lakes": 4,
+    "latitudeNorthDeg": 60, "latitudeSouthDeg": 20,
+    "temperatureOffset": 0, "moistureOffset": 0
+  }
+}
