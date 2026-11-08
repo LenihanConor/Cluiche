@@ -2655,5 +2655,8 @@
     <ClCompile Include="CoW\TestWorldShapePreset.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestTerrainPresetShapes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

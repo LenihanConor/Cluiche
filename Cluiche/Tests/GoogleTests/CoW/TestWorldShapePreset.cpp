@@ -596,3 +596,26 @@ TEST(WorldShapePreset, IsValidPresetIdBoundaries)
     EXPECT_FALSE(IsValidPresetId("a.b"));
     EXPECT_FALSE(IsValidPresetId("a b"));
 }
+
+TEST(WorldShapePreset, FileWithUtf8BomLoadsAndEmptyFileIsParseError)
+{
+    TempDir tmp;
+    WorldShapePreset p;
+    p.id = "bom";
+    p.displayName = "Bom";
+    ASSERT_TRUE(SavePreset(tmp.Str(), p, false).Ok());
+    std::string text;
+    {
+        std::ifstream f(PresetFilePath(tmp.Str(), "bom"), std::ios::binary);
+        text.assign((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    }
+    const std::string bom = { static_cast<char>(0xEF), static_cast<char>(0xBB), static_cast<char>(0xBF) };
+    WriteFile(tmp.Path() / "bom.worldshape.json", bom + text);
+    WorldShapePreset out;
+    RuleWarnings w;
+    EXPECT_TRUE(LoadPreset(tmp.Str(), "bom", out, w).Ok());
+    EXPECT_EQ(out.id, "bom");
+
+    WriteFile(tmp.Path() / "empty.worldshape.json", "");
+    EXPECT_EQ(LoadPreset(tmp.Str(), "empty", out, w).status, PresetStatus::ParseError);
+}

@@ -325,7 +325,11 @@ PresetResult LoadPreset(const std::string& directory, const std::string& id, Wor
     Json::Value root;
     Json::CharReaderBuilder builder;
     std::string errors;
-    const std::string text = buffer.str();
+    std::string text = buffer.str();
+    if (text.size() >= 3 && static_cast<unsigned char>(text[0]) == 0xEF && static_cast<unsigned char>(text[1]) == 0xBB && static_cast<unsigned char>(text[2]) == 0xBF)
+    {
+        text.erase(0, 3);   // UTF-8 BOM (Windows editors add one)
+    }
     std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
     if (!reader->parse(text.data(), text.data() + text.size(), &root, &errors))
     {

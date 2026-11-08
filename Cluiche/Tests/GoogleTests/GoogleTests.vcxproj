@@ -1172,6 +1172,7 @@
     <ClCompile Include="CoW\TestTerrainDeterminism.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldShapePreset.cpp" />
     <ClCompile Include="CoW\TestWorldShapePreset.cpp" />
+    <ClCompile Include="CoW\TestTerrainPresetShapes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
