@@ -465,7 +465,7 @@ All commands are `cow.worldgen.*` (SD-S1-002). They are registered as sim-hosted
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-15: panel is the `WorldGenDebugDomain` card in DiaDebugPanel; adds View (colour mode, toggles), Cell Inspector, Validation section, Validate button and read-only Small map size (Goals 7–10, AC11–AC14); event structs match the notification shapes; failure keeps the previous world.
+`Approved` — 2026-10-11. Plan for the terrain slice (module + commands): [worldgen-module.plan.md](worldgen-module.plan.md). Amended 2026-10-15: panel is the `WorldGenDebugDomain` card in DiaDebugPanel; adds View (colour mode, toggles), Cell Inspector, Validation section, Validate button and read-only Small map size (Goals 7–10, AC11–AC14); event structs match the notification shapes; failure keeps the previous world.
 
 ---
 
