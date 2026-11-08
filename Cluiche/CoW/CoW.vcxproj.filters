@@ -97,6 +97,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\WorldGenerationModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -194,6 +197,9 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenerationModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

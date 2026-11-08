@@ -1176,6 +1176,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldGenSession.cpp" />
     <ClCompile Include="CoW\TestWorldGenSession.cpp" />
     <ClCompile Include="CoW\TestWorldGenSessionQueries.cpp" />
+    <ClCompile Include="CoW\TestWorldGenerationModule.cpp" />
+    <ClCompile Include="..\..\CoW\Modules\WorldGenerationModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
