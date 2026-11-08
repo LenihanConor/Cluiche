@@ -1,10 +1,14 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
+#include <DiaPathfinding/HexTopology.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
+#include <map>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -175,7 +179,8 @@ WorldGenSession::WorldGenSession()
 }
 
 WorldGenSession::WorldGenSession(const TerrainRules& rules)
-    : mGen(rules)
+    : mRules(rules)
+    , mGen(rules)
     , mDims(WorldSizeDimensions(WorldSize::Small))
 {
 }
@@ -457,6 +462,343 @@ Json::Value WorldGenSession::Status() const
     r["locked"] = false;
     r["lastMs"] = ShortestFloat(mLastMs);
     r["stagesRan"] = mStagesRan;
+    return r;
+}
+
+void WorldGenSession::SetPresetDirectories(const std::string& deployedDir, const std::string& outDir)
+{
+    mDeployedDir = deployedDir;
+    mOutDir = outDir;
+}
+
+Json::Value WorldGenSession::PresetLoad(const Json::Value& args)
+{
+    if (!args.isObject() || !args.isMember("id") || !args["id"].isString())
+    {
+        return Error("\"id\" must be a preset id string");
+    }
+    const std::string id = args["id"].asString();
+    if (!IsValidPresetId(id))
+    {
+        return Error("invalid preset id \"" + id + "\" (expected [a-z0-9_]{1,32})");
+    }
+
+    // The out/ copy wins over the deployed one; an invalid out/ copy is reported, not skipped.
+    std::string directory;
+    std::error_code ec;
+    if (!mOutDir.empty() && std::filesystem::exists(PresetFilePath(mOutDir, id), ec))
+    {
+        directory = mOutDir;
+    }
+    else if (!mDeployedDir.empty())
+    {
+        directory = mDeployedDir;
+    }
+    else
+    {
+        return Error("unknown preset \"" + id + "\"");
+    }
+
+    WorldShapePreset preset;
+    RuleWarnings warnings;
+    const PresetResult result = LoadPreset(directory, id, preset, warnings);
+    if (!result.Ok())
+    {
+        return Error(result.message.empty() ? std::string(PresetStatusName(result.status)) : result.message);
+    }
+
+    WorldShapeParams next = preset.params;
+    next.Clamp();
+    if (!(next == mShape))
+    {
+        mShape = next;
+        mDirty = true;
+    }
+    mPresetId = id;
+    mPresetModified = false;
+
+    Json::Value warningList(Json::arrayValue);
+    for (unsigned int i = 0; i < warnings.Size(); ++i)
+    {
+        warningList.append(warnings[i].AsChar());
+    }
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["id"] = id;
+    r["warnings"] = warningList;
+    return r;
+}
+
+Json::Value WorldGenSession::PresetSave(const Json::Value& args)
+{
+    if (!args.isObject() || !args.isMember("id") || !args["id"].isString())
+    {
+        return Error("\"id\" must be a preset id string");
+    }
+    if (mOutDir.empty())
+    {
+        return Error("preset output directory is not configured");
+    }
+
+    WorldShapePreset preset;
+    preset.id = args["id"].asString();
+    preset.displayName = args.isMember("displayName") && args["displayName"].isString() ? args["displayName"].asString() : preset.id;
+    if (args.isMember("description") && args["description"].isString())
+    {
+        preset.description = args["description"].asString();
+    }
+    preset.params = mShape;
+    const bool overwrite = args.isMember("overwrite") && args["overwrite"].isBool() && args["overwrite"].asBool();
+
+    const PresetResult result = SavePreset(mOutDir, preset, overwrite);
+    if (!result.Ok())
+    {
+        Json::Value r = Error(result.message.empty() ? std::string(PresetStatusName(result.status)) : result.message);
+        r["status"] = PresetStatusName(result.status);
+        return r;
+    }
+
+    mPresetId = preset.id;
+    mPresetModified = false;
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["writtenTo"] = result.path.empty() ? PresetFilePath(mOutDir, preset.id) : result.path;
+    r["isSource"] = false;
+    return r;
+}
+
+Json::Value WorldGenSession::Presets() const
+{
+    std::map<std::string, PresetInfo> byId;
+    if (!mDeployedDir.empty())
+    {
+        for (const PresetInfo& p : ListPresets(mDeployedDir))
+        {
+            byId[p.id] = p;
+        }
+    }
+    if (!mOutDir.empty())
+    {
+        for (const PresetInfo& p : ListPresets(mOutDir))
+        {
+            byId[p.id] = p;   // out/ wins
+        }
+    }
+
+    Json::Value list(Json::arrayValue);
+    for (const auto& entry : byId)
+    {
+        const PresetInfo& p = entry.second;
+        Json::Value e(Json::objectValue);
+        e["id"] = p.id;
+        e["displayName"] = p.displayName;
+        e["description"] = p.description;
+        e["version"] = static_cast<Json::UInt>(p.version);
+        e["sourcePath"] = p.sourcePath;
+        list.append(e);
+    }
+    return list;
+}
+
+Json::Value WorldGenSession::Layers(const Json::Value& args) const
+{
+    const TerrainLayers& layers = mGen.GetLayers();
+    const size_t count = static_cast<size_t>(mDims.width) * static_cast<size_t>(mDims.height);
+
+    if (args.isObject() && args.isMember("layer"))
+    {
+        if (!mHasGenerated)
+        {
+            return Error("no world generated yet");
+        }
+        if (!args["layer"].isString())
+        {
+            return Error("\"layer\" must be a layer name string");
+        }
+        const std::string name = args["layer"].asString();
+        const int index = layers.FindLayer(name.c_str());
+        if (index < 0)
+        {
+            return Error("unknown layer \"" + name + "\"");
+        }
+        const LayerInfo& info = TerrainLayers::GetLayerInfo(index);
+
+        Json::Value values(Json::arrayValue);
+        if (info.type == LayerType::Float)
+        {
+            const float* data = layers.GetFloat(index);
+            for (size_t i = 0; data != nullptr && i < count; ++i)
+            {
+                values.append(ShortestFloat(data[i]));
+            }
+        }
+        else
+        {
+            const uint32_t* data = layers.GetUInt(index);
+            for (size_t i = 0; data != nullptr && i < count; ++i)
+            {
+                values.append(static_cast<Json::UInt>(data[i]));
+            }
+        }
+
+        Json::Value r(Json::objectValue);
+        r["success"] = true;
+        r["name"] = info.name;
+        r["type"] = info.type == LayerType::Float ? "float" : "uint";
+        r["values"] = values;
+        return r;
+    }
+
+    const StageTiming* timings = mGen.GetTimings();
+
+    Json::Value stages(Json::arrayValue);
+    for (int s = 0; s < kImplementedStageCount; ++s)
+    {
+        Json::Value stage(Json::objectValue);
+        stage["id"] = s;
+        stage["name"] = TerrainStageName(static_cast<TerrainStage>(s));
+        stage["ms"] = ShortestFloat(timings[s].milliseconds);
+        stage["ranLastUpdate"] = timings[s].ranLastUpdate;
+
+        Json::Value stageLayers(Json::arrayValue);
+        for (int i = 0; mHasGenerated && i < TerrainLayers::GetLayerCount(); ++i)
+        {
+            const LayerInfo& info = TerrainLayers::GetLayerInfo(i);
+            if (static_cast<int>(info.stage) != s)
+            {
+                continue;
+            }
+            double lo = 0.0;
+            double hi = 0.0;
+            if (info.type == LayerType::Float)
+            {
+                const float* data = layers.GetFloat(i);
+                if (data != nullptr && count > 0)
+                {
+                    const auto mm = std::minmax_element(data, data + count);
+                    lo = ShortestFloat(*mm.first);
+                    hi = ShortestFloat(*mm.second);
+                }
+            }
+            else
+            {
+                const uint32_t* data = layers.GetUInt(i);
+                if (data != nullptr && count > 0)
+                {
+                    const auto mm = std::minmax_element(data, data + count);
+                    lo = static_cast<double>(*mm.first);
+                    hi = static_cast<double>(*mm.second);
+                }
+            }
+            Json::Value l(Json::objectValue);
+            l["name"] = info.name;
+            l["type"] = info.type == LayerType::Float ? "float" : "uint";
+            l["min"] = lo;
+            l["max"] = hi;
+            stageLayers.append(l);
+        }
+        stage["layers"] = stageLayers;
+        stages.append(stage);
+    }
+
+    Json::Value r(Json::objectValue);
+    r["rulesVersion"] = static_cast<Json::UInt>(mRules.rulesVersion);
+    r["totalMs"] = ShortestFloat(mLastMs);
+    r["stages"] = stages;
+    return r;
+}
+
+Json::Value WorldGenSession::Cell(const Json::Value& args) const
+{
+    if (!mHasGenerated)
+    {
+        return Error("no world generated yet");
+    }
+    if (!args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+
+    const int width = mWorld.dimensions.width;
+    const int height = mWorld.dimensions.height;
+    const int count = mWorld.CellCount();
+
+    int index = 0;
+    if (args.isMember("index"))
+    {
+        const Json::Value& v = args["index"];
+        if (!v.isIntegral() || !v.isInt64() || v.asInt64() < 0 || v.asInt64() >= count)
+        {
+            return Error("\"index\" must be an integer in [0, " + std::to_string(count) + ")");
+        }
+        index = static_cast<int>(v.asInt64());
+    }
+    else
+    {
+        if (!args.isMember("x") || !args.isMember("y") || !args["x"].isIntegral() || !args["y"].isIntegral())
+        {
+            return Error("expected integer \"x\" and \"y\", or integer \"index\"");
+        }
+        const Json::Int64 x = args["x"].isInt64() ? args["x"].asInt64() : -1;
+        const Json::Int64 y = args["y"].isInt64() ? args["y"].asInt64() : -1;
+        if (x < 0 || x >= width || y < 0 || y >= height)
+        {
+            return Error("cell out of range (grid is " + std::to_string(width) + "x" + std::to_string(height) + ")");
+        }
+        index = static_cast<int>(y) * width + static_cast<int>(x);
+    }
+
+    const WorldGeneration::Cell& c = mWorld.Cells()[index];
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["x"] = index % width;
+    r["y"] = index / width;
+    r["index"] = index;
+    r["elevation"] = ShortestFloat(c.elevation);
+    r["latitude"] = ShortestFloat(c.latitude);
+    r["waterSource"] = WaterSourceName(c.waterSource);
+    r["terrain"] = TerrainTypeName(c.terrain);
+    r["depthZone"] = DepthZoneName(c.depthZone);
+    r["landmass"] = static_cast<Json::UInt>(c.landmass);
+    r["flags"] = static_cast<Json::UInt>(c.terrainFlags);
+    r["downstream"] = c.downstream == kNoDirection ? Json::Value() : Json::Value(static_cast<Json::UInt>(c.downstream));
+
+    const TerrainLayers& layers = mGen.GetLayers();
+    Json::Value layerValues(Json::objectValue);
+    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    {
+        const LayerInfo& info = TerrainLayers::GetLayerInfo(i);
+        if (info.type == LayerType::Float)
+        {
+            const float* data = layers.GetFloat(i);
+            layerValues[info.name] = data != nullptr ? Json::Value(ShortestFloat(data[index])) : Json::Value();
+        }
+        else
+        {
+            const uint32_t* data = layers.GetUInt(i);
+            layerValues[info.name] = data != nullptr ? Json::Value(static_cast<Json::UInt>(data[index])) : Json::Value();
+        }
+    }
+    r["layers"] = layerValues;
+
+    const Dia::Pathfinding::HexTopology topology(width, height);
+    Json::Value neighbours(Json::arrayValue);
+    for (uint32_t dir = 0; dir < 6; ++dir)
+    {
+        const uint32_t n = topology.NeighbourAt(static_cast<uint32_t>(index), dir);
+        if (n == Dia::Pathfinding::kNoCell)
+        {
+            neighbours.append("edge");
+            continue;
+        }
+        Json::Value e(Json::objectValue);
+        e["dir"] = dir;
+        e["x"] = static_cast<int>(n) % width;
+        e["y"] = static_cast<int>(n) / width;
+        neighbours.append(e);
+    }
+    r["neighbours"] = neighbours;
     return r;
 }
 

@@ -9,6 +9,7 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
+#include <Shared/WorldGeneration/WorldShapePreset.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -37,12 +38,21 @@ public:
     Json::Value SetSize(const Json::Value& args);      // {"size":"Small"|"Standard"|"Large"}
     Json::Value Regenerate(const Json::Value& args);   // {"seed"?}: full re-run from scratch
 
+    // Presets: "deployed" is the shipped read-only directory, "out" the writable one (wins on equal id).
+    // An empty path disables that source.
+    void        SetPresetDirectories(const std::string& deployedDir, const std::string& outDir);
+    Json::Value PresetLoad(const Json::Value& args);   // {"id", "unlock"?}: replaces all shape params, keeps seed
+    Json::Value PresetSave(const Json::Value& args);   // {"id","displayName","description"?,"overwrite"?}: out dir only
+
     // Runs at most one generation if dirty. Returns true when the world changed (revision incremented).
     bool Tick(Dia::Maths::RandomStream& wldStream);
 
     // Queries
     Json::Value Params() const;
     Json::Value Status() const;
+    Json::Value Presets() const;                       // array of {id, displayName, description, version, sourcePath}
+    Json::Value Layers(const Json::Value& args) const; // {} stage summary, or {"layer"} full values
+    Json::Value Cell(const Json::Value& args) const;   // {"x","y"} or {"index"}
 
     const WorldStructure&   World() const      { return mWorld; }
     uint32_t                Revision() const   { return mRevision; }
@@ -54,6 +64,7 @@ public:
     bool                    IsDirty() const    { return mDirty; }
 
 private:
+    TerrainRules     mRules;
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;
@@ -65,6 +76,8 @@ private:
     uint32_t         mRevision = 0;
     bool             mDirty = true;           // a first generation is pending from construction
     bool             mForceFull = false;      // Regenerate: Invalidate() before the next Update
+    std::string      mDeployedDir;
+    std::string      mOutDir;
     bool             mHasGenerated = false;
     float            mLastMs = 0.0f;
     Json::Value      mStagesRan{Json::arrayValue};

@@ -2664,5 +2664,8 @@
     <ClCompile Include="CoW\TestWorldGenSession.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionQueries.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
