@@ -205,12 +205,6 @@
     <ClCompile Include="Modules\SimEchoTestModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\TestStages\CellLayersStateBridgeModule.cpp">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
-    <ClCompile Include="Modules\TestStages\CellLayersStateRelayModule.cpp">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h">
@@ -395,12 +389,6 @@
     </ClInclude>
     <ClInclude Include="Modules\SimEchoTestModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\TestStages\CellLayersStateBridgeModule.h">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\TestStages\CellLayersStateRelayModule.h">
-      <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h">
       <Filter>Modules\TestStages</Filter>

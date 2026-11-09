@@ -22,7 +22,7 @@
 #include "Modules/SimQueryHostModule.h"
 
 #include <cstdio>
-#include "Modules/TestStages/CellLayersStateRelayModule.h"
+#include "Modules/DomainStateRelayModule.h"
 #include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerViewerDomain.h>
 #include <DiaCellLayers/LayerUploader.h>
@@ -182,7 +182,7 @@ private:
 
     // Panel state (Streams Migration Task 4): the DebugDomain registry is read on Main, so it gets the relay's snapshot adapter,
     // never mDomain. The relay (SimPU) publishes the viewer's GetJSONState to a FrameStream while Main asks for it.
-    Dia::ApplicationFlow::ModuleRef<CellLayersStateRelayModule> mStateRelayRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DomainStateRelayModule> mStateRelayRef{this};
     Dia::VisualDebugger::IDebugDomain* mPanelDomain = nullptr;   // owned by the relay; null when not attached
 
     // Editor mirror (Feature 5): topic cells.view.state + four mirror queries, driven from the viewer's Update on SimPU.

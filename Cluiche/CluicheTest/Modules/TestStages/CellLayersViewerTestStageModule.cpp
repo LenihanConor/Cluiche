@@ -393,7 +393,7 @@ bool CellLayersViewerTestStageModule::BuildViewer()
 
     // The registry is read on Main by the debug panel and debug.domain_state, so it gets the snapshot adapter, never the live viewer.
     // The adapter forwards OnCommand (dispatched on SimPU) to the viewer.
-    CellLayersStateRelayModule* relay = mStateRelayRef.Get();
+    Cluiche::AppFlow::DomainStateRelayModule* relay = mStateRelayRef.Get();
     mPanelDomain = relay != nullptr ? relay->Attach(*mDomain) : nullptr;
     if (mPanelDomain == nullptr)
     {
@@ -439,7 +439,7 @@ void CellLayersViewerTestStageModule::TeardownViewer()
     if (mPanelDomain != nullptr)
     {
         if (auto* relay = mStateRelayRef.Get())
-            relay->Detach();   // drops the adapter and stops publishing before the viewer is destroyed
+            relay->Detach(*mDomain);   // drops the adapter and stops publishing before the viewer is destroyed
         mPanelDomain = nullptr;
     }
 
@@ -778,12 +778,12 @@ bool CellLayersViewerTestStageModule::BuildHistoryScrub()
     if (mDomain)   // delta mode: the hover tooltip also shows the A / B side values (removed in TeardownHistoryScrub)
         mDomain->AddHoverExtraFn(Dia::CellLayers::CellLayerViewerDomain::HoverExtraFn(fastdelegate::MakeDelegate(mScrubDomain.Get(), &CellHistoryDomain::HoverExtra)));
 
-    CellLayersStateRelayModule* relay = mStateRelayRef.Get();
-    mScrubPanelDomain = relay != nullptr ? relay->AttachHistory(*mScrubDomain) : nullptr;
+    Cluiche::AppFlow::DomainStateRelayModule* relay = mStateRelayRef.Get();
+    mScrubPanelDomain = relay != nullptr ? relay->Attach(*mScrubDomain) : nullptr;
     auto* vd = mVisualDebuggerRef.Get();
     if (mScrubPanelDomain == nullptr || vd == nullptr)
     {
-        DIA_LOG_ERROR("HIS", "CellLayersStateRelay or VisualDebugger unavailable - the history timeline card cannot appear in the panel");
+        DIA_LOG_ERROR("HIS", "DomainStateRelay or VisualDebugger unavailable - the history timeline card cannot appear in the panel");
         return false;
     }
     vd->RegisterDomain(*mScrubPanelDomain);
@@ -938,7 +938,7 @@ void CellLayersViewerTestStageModule::TeardownHistoryScrub()
     if (mScrubPanelDomain != nullptr)
     {
         if (auto* relay = mStateRelayRef.Get())
-            relay->DetachHistory();
+            relay->Detach(*mScrubDomain);
         mScrubPanelDomain = nullptr;
     }
     if (mDomain && mScrubDomain)

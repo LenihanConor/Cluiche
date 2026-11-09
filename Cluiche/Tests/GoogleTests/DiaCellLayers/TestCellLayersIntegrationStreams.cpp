@@ -25,10 +25,10 @@
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <Modules/DebugServerHostModule.h>
+#include <Modules/DomainStateBridgeModule.h>
+#include <Modules/DomainStateRelayModule.h>
 #include <Modules/SimQueryHostModule.h>
 #include <Modules/TestStages/CellLayersPointerQueue.h>
-#include <Modules/TestStages/CellLayersStateBridgeModule.h>
-#include <Modules/TestStages/CellLayersStateRelayModule.h>
 #include <Types/SimRegistrationMessage.h>
 
 #include <algorithm>
@@ -42,7 +42,7 @@
 #include <vector>
 
 // Cell Layers integration (Streams Migration end-of-implementation pass), real-stream half: a live two-PU Application (MainPU +
-// SimPU, ticked inline) with the REAL SimQueryHostModule, CellLayersStateRelayModule and CellLayersStateBridgeModule joined by the
+// SimPU, ticked inline) with the REAL SimQueryHostModule, DomainStateRelayModule and DomainStateBridgeModule joined by the
 // manifest's real EventStreams / FrameStream / ServiceStream. Two small test modules stand in for the parts that need a window or a
 // socket: a Main-side shim that holds a real (never started) DebugServer and drains SimQueryReply exactly as DebugServerHostModule
 // does, and a Sim-side driver that owns a real CellLayerViewerDomain and registers it through the same registrar seam the stage uses.
@@ -65,8 +65,8 @@ using namespace Dia::ApplicationFlow;
 using namespace Dia::CellLayers;
 using namespace Dia::CellLayers::Testing;
 using Cluiche::AppFlow::SimQueryHostModule;
-using CluicheTest::CellLayersStateBridgeModule;
-using CluicheTest::CellLayersStateRelayModule;
+using Cluiche::AppFlow::DomainStateBridgeModule;
+using Cluiche::AppFlow::DomainStateRelayModule;
 using Dia::Core::StringCRC;
 using Dia::DebugServer::DebugServer;
 using Dia::DebugServer::DebugServerTestAccess;
@@ -280,14 +280,14 @@ namespace
 	IntMainShim* gShim = nullptr;
 	IntSimDriver* gDriver = nullptr;
 	SimQueryHostModule* gHost = nullptr;
-	CellLayersStateRelayModule* gRelay = nullptr;
-	CellLayersStateBridgeModule* gBridge = nullptr;
+	DomainStateRelayModule* gRelay = nullptr;
+	DomainStateBridgeModule* gBridge = nullptr;
 
 	Module* MakeShim(const StringCRC& id) { gShim = new IntMainShim(id); return gShim; }
 	Module* MakeDriver(const StringCRC& id) { gDriver = new IntSimDriver(id); return gDriver; }
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
-	Module* MakeRelay(const StringCRC& id) { gRelay = new CellLayersStateRelayModule(id); return gRelay; }
-	Module* MakeBridge(const StringCRC& id) { gBridge = new CellLayersStateBridgeModule(id); return gBridge; }
+	Module* MakeRelay(const StringCRC& id) { gRelay = new DomainStateRelayModule(id); return gRelay; }
+	Module* MakeBridge(const StringCRC& id) { gBridge = new DomainStateBridgeModule(id); return gBridge; }
 
 	ModuleDeclaration Mod(const StringCRC& typeId, const char* instance,
 		std::initializer_list<std::pair<const char*, const char*>> channels, std::initializer_list<const char*> deps = {})
@@ -334,8 +334,8 @@ namespace
 			reg.Register(IntMainShim::kTypeId, MakeShim);
 			reg.Register(IntSimDriver::kTypeId, MakeDriver);
 			reg.Register(SimQueryHostModule::kTypeId, MakeHost);
-			reg.Register(CellLayersStateRelayModule::kTypeId, MakeRelay);
-			reg.Register(CellLayersStateBridgeModule::kTypeId, MakeBridge);
+			reg.Register(DomainStateRelayModule::kTypeId, MakeRelay);
+			reg.Register(DomainStateBridgeModule::kTypeId, MakeBridge);
 
 			manifest.version = 3;
 			StageDeclaration boot;
@@ -344,21 +344,20 @@ namespace
 			manifest.initialStage = StringCRC("Boot");
 			AddStream(manifest, "SimQueryRequest", "EventStream", "MainPU", "SimPU", 16);
 			AddStream(manifest, "SimQueryReply", "EventStream", "SimPU", "MainPU", 48);
-			AddStream(manifest, "CellViewerState", "FrameStream", "SimPU", "MainPU");
-			AddStream(manifest, "CellViewerDemand", "EventStream", "MainPU", "SimPU", 8);
-			AddStream(manifest, "CellViewerStateChannel", "ServiceStream", "MainPU", "SimPU");
-			AddStream(manifest, "CellHistoryState", "FrameStream", "SimPU", "MainPU");
-			AddStream(manifest, "CellHistoryDemand", "EventStream", "MainPU", "SimPU", 8);
-			AddStream(manifest, "CellHistoryStateChannel", "ServiceStream", "MainPU", "SimPU");
+			for (uint32_t i = 0; i < DomainStateBridgeModule::kSlotCount; ++i)
+			{
+				AddStream(manifest, DomainStateBridgeModule::kSnapshotStreamIds[i], "FrameStream", "SimPU", "MainPU");
+				AddStream(manifest, DomainStateBridgeModule::kDemandStreamIds[i], "EventStream", "MainPU", "SimPU", 8);
+				AddStream(manifest, DomainStateBridgeModule::kChannelStreamIds[i], "ServiceStream", "MainPU", "SimPU");
+			}
 
 			ProcessingUnitDeclaration mainPu;
 			mainPu.instanceId = StringCRC("MainPU");
 			mainPu.frequencyHz = 30.0f;
 			mainPu.dedicatedThread = false;
 			mainPu.modules.Add(Mod(IntMainShim::kTypeId, "shim", { { "SimQueryRequest", "writes" }, { "SimQueryReply", "reads" } }));
-			mainPu.modules.Add(Mod(CellLayersStateBridgeModule::kTypeId, "bridge",
-				{ { "CellViewerState", "reads" }, { "CellViewerDemand", "writes" }, { "CellViewerStateChannel", "provides" },
-				  { "CellHistoryState", "reads" }, { "CellHistoryDemand", "writes" }, { "CellHistoryStateChannel", "provides" } }));
+			mainPu.modules.Add(Mod(DomainStateBridgeModule::kTypeId, "bridge",
+				{ { DomainStateBridgeModule::kSnapshotStreamIds[0], "reads" }, { DomainStateBridgeModule::kDemandStreamIds[0], "writes" }, { DomainStateBridgeModule::kChannelStreamIds[0], "provides" }, { DomainStateBridgeModule::kSnapshotStreamIds[1], "reads" }, { DomainStateBridgeModule::kDemandStreamIds[1], "writes" }, { DomainStateBridgeModule::kChannelStreamIds[1], "provides" }, { DomainStateBridgeModule::kSnapshotStreamIds[2], "reads" }, { DomainStateBridgeModule::kDemandStreamIds[2], "writes" }, { DomainStateBridgeModule::kChannelStreamIds[2], "provides" }, { DomainStateBridgeModule::kSnapshotStreamIds[3], "reads" }, { DomainStateBridgeModule::kDemandStreamIds[3], "writes" }, { DomainStateBridgeModule::kChannelStreamIds[3], "provides" } }));
 			manifest.processingUnits.Add(mainPu);
 
 			ProcessingUnitDeclaration simPu;
@@ -366,9 +365,8 @@ namespace
 			simPu.frequencyHz = 30.0f;
 			simPu.dedicatedThread = false;
 			simPu.modules.Add(Mod(SimQueryHostModule::kTypeId, "host", { { "SimQueryRequest", "reads" }, { "SimQueryReply", "writes" } }));
-			simPu.modules.Add(Mod(CellLayersStateRelayModule::kTypeId, "relay",
-				{ { "CellViewerState", "writes" }, { "CellViewerDemand", "reads" }, { "CellViewerStateChannel", "consumes" },
-				  { "CellHistoryState", "writes" }, { "CellHistoryDemand", "reads" }, { "CellHistoryStateChannel", "consumes" } }));
+			simPu.modules.Add(Mod(DomainStateRelayModule::kTypeId, "relay",
+				{ { DomainStateBridgeModule::kSnapshotStreamIds[0], "writes" }, { DomainStateBridgeModule::kDemandStreamIds[0], "reads" }, { DomainStateBridgeModule::kChannelStreamIds[0], "consumes" }, { DomainStateBridgeModule::kSnapshotStreamIds[1], "writes" }, { DomainStateBridgeModule::kDemandStreamIds[1], "reads" }, { DomainStateBridgeModule::kChannelStreamIds[1], "consumes" }, { DomainStateBridgeModule::kSnapshotStreamIds[2], "writes" }, { DomainStateBridgeModule::kDemandStreamIds[2], "reads" }, { DomainStateBridgeModule::kChannelStreamIds[2], "consumes" }, { DomainStateBridgeModule::kSnapshotStreamIds[3], "writes" }, { DomainStateBridgeModule::kDemandStreamIds[3], "reads" }, { DomainStateBridgeModule::kChannelStreamIds[3], "consumes" } }));
 			simPu.modules.Add(Mod(IntSimDriver::kTypeId, "driver", {}, { "host", "relay" }));
 			manifest.processingUnits.Add(simPu);
 
@@ -379,7 +377,7 @@ namespace
 		{
 			if (!app->Start()) return false;
 			for (int i = 0; i < 20; ++i) app->Update(kDt);
-			return gShim && gDriver && gHost && gRelay && gBridge && gRelay->IsAttached() == false;
+			return gShim && gDriver && gHost && gRelay && gBridge && gRelay->AttachedCount() == 0;
 		}
 		void Pump(int n) { for (int i = 0; i < n; ++i) app->Update(kDt); }
 		template <typename Pred>
@@ -589,14 +587,14 @@ TEST(CellLayersIntegrationStreams, SnapshotIsPendingUntilDemandedThenFreshAndAdv
 	ASSERT_NE(adapter, nullptr);
 
 	h.Pump(10);
-	EXPECT_EQ(gRelay->PublishCount(), 0u) << "nothing publishes before the first demand";
+	EXPECT_EQ(gRelay->PublishCount(*gDriver->rig->domain), 0u) << "nothing publishes before the first demand";
 
 	Json::Value state(Json::objectValue);
 	adapter->GetJSONState(state);	// Main: no snapshot yet -> pending marker, and this call is the demand
 	EXPECT_TRUE(state["pending"].asBool());
 	EXPECT_TRUE(state["empty"].asBool());
 
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > 0; }, 20)) << "demand must arm publishing within a few ticks";
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > 0; }, 20)) << "demand must arm publishing within a few ticks";
 	Json::Value first(Json::objectValue);
 	adapter->GetJSONState(first);
 	ASSERT_FALSE(first.isMember("pending"));
@@ -608,7 +606,7 @@ TEST(CellLayersIntegrationStreams, SnapshotIsPendingUntilDemandedThenFreshAndAdv
 	Json::Value later(Json::objectValue);
 	adapter->GetJSONState(later);
 	EXPECT_GT(later["simFrame"].asUInt64(), frameA) << "simFrame advances while the window is armed";
-	gRelay->Detach();
+	gRelay->Detach(*gDriver->rig->domain);
 }
 
 TEST(CellLayersIntegrationStreams, PublishingStopsAfterTheSixtyTickWindowAndResumesOnNewDemand)
@@ -620,24 +618,24 @@ TEST(CellLayersIntegrationStreams, PublishingStopsAfterTheSixtyTickWindowAndResu
 	ASSERT_NE(adapter, nullptr);
 	Json::Value state(Json::objectValue);
 	adapter->GetJSONState(state);
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > 0; }, 20));
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > 0; }, 20));
 
 	h.Pump(80);	// well past the 60 tick window with no further demand
-	const uint32_t settled = gRelay->PublishCount();
+	const uint32_t settled = gRelay->PublishCount(*gDriver->rig->domain);
 	EXPECT_GE(settled, 55u);
 	EXPECT_LE(settled, 65u) << "about 60 snapshots per demand window";
 	h.Pump(30);
-	EXPECT_EQ(gRelay->PublishCount(), settled) << "no publishing once the window expired";
+	EXPECT_EQ(gRelay->PublishCount(*gDriver->rig->domain), settled) << "no publishing once the window expired";
 
 	Json::Value stale(Json::objectValue);
 	adapter->GetJSONState(stale);	// returns the last snapshot as is, and signals demand again
 	ASSERT_FALSE(stale.isMember("pending"));
 	const uint64_t staleFrame = stale["simFrame"].asUInt64();
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > settled; }, 20));
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > settled; }, 20));
 	Json::Value fresh(Json::objectValue);
 	adapter->GetJSONState(fresh);
 	EXPECT_GT(fresh["simFrame"].asUInt64(), staleFrame);
-	gRelay->Detach();
+	gRelay->Detach(*gDriver->rig->domain);
 }
 
 TEST(CellLayersIntegrationStreams, WorstCaseTwentyLayerStateRoundTripsThe32KbSlotUnchanged)
@@ -664,7 +662,7 @@ TEST(CellLayersIntegrationStreams, WorstCaseTwentyLayerStateRoundTripsThe32KbSlo
 	ASSERT_NE(adapter, nullptr);
 	Json::Value pending(Json::objectValue);
 	adapter->GetJSONState(pending);
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > 0; }, 20));
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > 0; }, 20));
 
 	Json::Value snap(Json::objectValue);
 	adapter->GetJSONState(snap);
@@ -684,7 +682,7 @@ TEST(CellLayersIntegrationStreams, WorstCaseTwentyLayerStateRoundTripsThe32KbSlo
 	EXPECT_EQ(Json::writeString(b, snapNoFrame), Json::writeString(b, live)) << "slot round trip must be lossless (simFrame " << simFrame << ")";
 	std::cout << "[ INFO ] worst-case snapshot over the real FrameStream: " << Json::writeString(b, snap).size() << " bytes of "
 		<< ViewerStateSlot::kCapacity << "\n";
-	gRelay->Detach();
+	gRelay->Detach(*gDriver->rig->domain);
 }
 
 TEST(CellLayersIntegrationStreams, StateBeyondTheSlotBecomesTheTooLargeMarkerEndToEnd)
@@ -715,12 +713,12 @@ TEST(CellLayersIntegrationStreams, StateBeyondTheSlotBecomesTheTooLargeMarkerEnd
 
 	Json::Value pending(Json::objectValue);
 	adapter->GetJSONState(pending);
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > 0; }, 20));
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > 0; }, 20));
 	Json::Value snap(Json::objectValue);
 	adapter->GetJSONState(snap);
 	EXPECT_EQ(snap["error"].asString(), "snapshot too large");
 	EXPECT_TRUE(snap.isMember("simFrame"));
-	gRelay->Detach();
+	gRelay->Detach(*gDriver->rig->domain);
 }
 
 TEST(CellLayersIntegrationStreams, DetachWhileDemandIsInFlightIsHarmlessAndShutdownIsClean)
@@ -734,19 +732,20 @@ TEST(CellLayersIntegrationStreams, DetachWhileDemandIsInFlightIsHarmlessAndShutd
 	adapter->GetJSONState(state);	// demand recorded on Main, not yet forwarded
 	h.Pump(1);	// the bridge forwards the demand event; the relay may or may not have consumed it yet
 	adapter = nullptr;
-	gRelay->Detach();	// stage exit: caller unregistered the adapter first
-	EXPECT_FALSE(gRelay->IsAttached());
+	const Dia::VisualDebugger::IDebugDomain* detachedDomain = gDriver->rig->domain.get();   // address only, compared after the rig dies
+	gRelay->Detach(*gDriver->rig->domain);	// stage exit: caller unregistered the adapter first
+	EXPECT_FALSE(gRelay->IsAttached(*gDriver->rig->domain));
 	gDriver->rig.reset();
 	h.Pump(100);	// demand events keep draining into a relay with no publisher: no crash, no publish
-	EXPECT_EQ(gRelay->PublishCount(), 0u);
+	EXPECT_EQ(gRelay->PublishCount(*detachedDomain), 0u);
 
 	// A new stage entry attaches again and works.
 	gDriver->rig.reset(new SimRig(*gHost, 5));
 	adapter = gRelay->Attach(*gDriver->rig->domain);
 	ASSERT_NE(adapter, nullptr);
 	adapter->GetJSONState(state);
-	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount() > 0; }, 20));
-	gRelay->Detach();
+	ASSERT_TRUE(h.PumpUntil([&] { return gRelay->PublishCount(*gDriver->rig->domain) > 0; }, 20));
+	gRelay->Detach(*gDriver->rig->domain);
 	h.Shutdown();
 }
 

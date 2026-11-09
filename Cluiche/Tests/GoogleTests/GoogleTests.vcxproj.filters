@@ -2376,12 +2376,6 @@
     <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationStreams.cpp">
       <Filter>DiaCellLayers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateRelayModule.cpp">
-      <Filter>CluicheTest</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateBridgeModule.cpp">
-      <Filter>CluicheTest</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>

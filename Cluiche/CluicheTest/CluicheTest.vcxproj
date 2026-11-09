@@ -79,8 +79,6 @@
     <ClCompile Include="Modules\TestStatusBridgeModule.cpp" />
     <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp" />
     <ClCompile Include="Modules\SimEchoTestModule.cpp" />
-    <ClCompile Include="Modules\TestStages\CellLayersStateBridgeModule.cpp" />
-    <ClCompile Include="Modules\TestStages\CellLayersStateRelayModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -144,8 +142,6 @@
     <ClInclude Include="Modules\TestStages\CellLayersPointerFrame.h" />
     <ClInclude Include="Modules\TestStages\CellLayersPointerQueue.h" />
     <ClInclude Include="Modules\SimEchoTestModule.h" />
-    <ClInclude Include="Modules\TestStages\CellLayersStateBridgeModule.h" />
-    <ClInclude Include="Modules\TestStages\CellLayersStateRelayModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h" />
     <ClInclude Include="Modules\TestStages\CellLayersSnapshotStore.h" />
   </ItemGroup>

@@ -1,12 +1,18 @@
 {
     "version": 3,
     "streams": [
-        { "id": "CellViewerState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
-        { "id": "CellViewerDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
-        { "id": "CellViewerStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" },
-        { "id": "CellHistoryState", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
-        { "id": "CellHistoryDemand", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
-        { "id": "CellHistoryStateChannel", "kind": "ServiceStream", "payload_type": "CellViewerStateChannel", "from": "MainPU" },
+        { "id": "DomainStateSnapshot0", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "DomainStateDemand0", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "DomainStateChannel0", "kind": "ServiceStream", "payload_type": "DomainStateChannel", "from": "MainPU" },
+        { "id": "DomainStateSnapshot1", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "DomainStateDemand1", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "DomainStateChannel1", "kind": "ServiceStream", "payload_type": "DomainStateChannel", "from": "MainPU" },
+        { "id": "DomainStateSnapshot2", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "DomainStateDemand2", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "DomainStateChannel2", "kind": "ServiceStream", "payload_type": "DomainStateChannel", "from": "MainPU" },
+        { "id": "DomainStateSnapshot3", "kind": "FrameStream", "payload_type": "ViewerStateSlot", "from": "SimPU", "to": "MainPU", "multi_writer": false },
+        { "id": "DomainStateDemand3", "kind": "EventStream", "payload_type": "ViewerStateDemandEvent", "overflow": "drop-oldest", "capacity": 8, "from": "MainPU", "to": "SimPU" },
+        { "id": "DomainStateChannel3", "kind": "ServiceStream", "payload_type": "DomainStateChannel", "from": "MainPU" },
         { "id": "CellHistoryRecorderService", "kind": "ServiceStream", "payload_type": "CellHistoryRecorder", "from": "SimPU" }
     ],
     "processing_units": [
@@ -16,19 +22,25 @@
             "dedicated_thread": false,
             "modules": [
                 {
-                    "instance_id": "CellLayersStateBridgeModule",
-                    "type_id": "CellLayersStateBridgeModule",
+                    "instance_id": "DomainStateBridgeModule",
+                    "type_id": "DomainStateBridgeModule",
                     "stages": [
                         "CellLayersViewerTestStage"
                     ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "CellViewerState", "role": "reads" },
-                        { "id": "CellViewerDemand", "role": "writes" },
-                        { "id": "CellViewerStateChannel", "role": "provides" },
-                        { "id": "CellHistoryState", "role": "reads" },
-                        { "id": "CellHistoryDemand", "role": "writes" },
-                        { "id": "CellHistoryStateChannel", "role": "provides" }
+                        { "id": "DomainStateSnapshot0", "role": "reads" },
+                        { "id": "DomainStateDemand0", "role": "writes" },
+                        { "id": "DomainStateChannel0", "role": "provides" },
+                        { "id": "DomainStateSnapshot1", "role": "reads" },
+                        { "id": "DomainStateDemand1", "role": "writes" },
+                        { "id": "DomainStateChannel1", "role": "provides" },
+                        { "id": "DomainStateSnapshot2", "role": "reads" },
+                        { "id": "DomainStateDemand2", "role": "writes" },
+                        { "id": "DomainStateChannel2", "role": "provides" },
+                        { "id": "DomainStateSnapshot3", "role": "reads" },
+                        { "id": "DomainStateDemand3", "role": "writes" },
+                        { "id": "DomainStateChannel3", "role": "provides" }
                     ]
                 }
             ]
@@ -75,19 +87,25 @@
                     ]
                 },
                 {
-                    "instance_id": "CellLayersStateRelayModule",
-                    "type_id": "CellLayersStateRelayModule",
+                    "instance_id": "DomainStateRelayModule",
+                    "type_id": "DomainStateRelayModule",
                     "stages": [
                         "CellLayersViewerTestStage"
                     ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "CellViewerState", "role": "writes" },
-                        { "id": "CellViewerDemand", "role": "reads" },
-                        { "id": "CellViewerStateChannel", "role": "consumes" },
-                        { "id": "CellHistoryState", "role": "writes" },
-                        { "id": "CellHistoryDemand", "role": "reads" },
-                        { "id": "CellHistoryStateChannel", "role": "consumes" }
+                        { "id": "DomainStateSnapshot0", "role": "writes" },
+                        { "id": "DomainStateDemand0", "role": "reads" },
+                        { "id": "DomainStateChannel0", "role": "consumes" },
+                        { "id": "DomainStateSnapshot1", "role": "writes" },
+                        { "id": "DomainStateDemand1", "role": "reads" },
+                        { "id": "DomainStateChannel1", "role": "consumes" },
+                        { "id": "DomainStateSnapshot2", "role": "writes" },
+                        { "id": "DomainStateDemand2", "role": "reads" },
+                        { "id": "DomainStateChannel2", "role": "consumes" },
+                        { "id": "DomainStateSnapshot3", "role": "writes" },
+                        { "id": "DomainStateDemand3", "role": "reads" },
+                        { "id": "DomainStateChannel3", "role": "consumes" }
                     ]
                 },
                 {
@@ -102,7 +120,7 @@
                         "InputStreamModule",
                         "CellLayersModule",
                         "SimQueryHostModule",
-                        "CellLayersStateRelayModule",
+                        "DomainStateRelayModule",
                         "CellHistoryModule"
                     ],
                     "channels": [

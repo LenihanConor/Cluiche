@@ -1079,8 +1079,6 @@
     <ClCompile Include="Editor\TestGameScopeDiscovery.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationWire.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayersIntegrationStreams.cpp" />
-    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateRelayModule.cpp" />
-    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\CellLayersStateBridgeModule.cpp" />
     <ClCompile Include="ApplicationFlow\TestSecondaryPUTick.cpp" />
     <ClCompile Include="DiaCellLayers\TestQueryExhaustive.cpp" />
     <ClCompile Include="DiaCellLayers\TestInspectorExhaustive.cpp" />
