@@ -1190,6 +1190,10 @@
     <ClCompile Include="CoW\TestWorldHexGrid.cpp" />
     <ClCompile Include="CoW\TestWorldLayerSource.cpp" />
     <ClCompile Include="CoW\TestWorldGenSchema.cpp" />
+    <ClCompile Include="CoW\TestWorldOverlayGeometry.cpp" />
+    <ClCompile Include="CoW\TestWorldCameraController.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldOverlayGeometry.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldCameraController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

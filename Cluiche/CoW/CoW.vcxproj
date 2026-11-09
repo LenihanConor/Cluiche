@@ -58,6 +58,8 @@
     <ClCompile Include="Modules\WorldGenDebugDomain.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -97,6 +99,8 @@
     <ClInclude Include="Modules\WorldGenDebugDomain.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
