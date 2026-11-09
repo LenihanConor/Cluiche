@@ -2667,6 +2667,9 @@
     <ClCompile Include="..\..\CoW\Modules\WorldGenerationModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldGenDebugDomain.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
     <ClCompile Include="CoW\TestWorldGenCommands.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -2675,6 +2678,9 @@
     </ClCompile>
     <ClCompile Include="CluicheGameBaseline\TestDomainStateModules.cpp">
       <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDebugDomain.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

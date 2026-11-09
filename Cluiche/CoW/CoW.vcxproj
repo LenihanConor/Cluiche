@@ -55,6 +55,7 @@
     <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp" />
     <ClCompile Include="Modules\WorldGenerationModule.cpp" />
     <ClCompile Include="Modules\S1WorldGenerationTestbedStageModule.cpp" />
+    <ClCompile Include="Modules\WorldGenDebugDomain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -91,6 +92,7 @@
     <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h" />
     <ClInclude Include="Modules\WorldGenerationModule.h" />
     <ClInclude Include="Modules\S1WorldGenerationTestbedStageModule.h" />
+    <ClInclude Include="Modules\WorldGenDebugDomain.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

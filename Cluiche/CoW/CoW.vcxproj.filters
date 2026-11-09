@@ -103,6 +103,9 @@
     <ClCompile Include="Modules\S1WorldGenerationTestbedStageModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\WorldGenDebugDomain.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -205,6 +208,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\S1WorldGenerationTestbedStageModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenDebugDomain.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
