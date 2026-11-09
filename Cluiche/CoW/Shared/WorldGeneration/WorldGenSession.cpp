@@ -643,7 +643,9 @@ Json::Value WorldGenSession::Presets() const
 Json::Value WorldGenSession::Layers(const Json::Value& args) const
 {
     const TerrainLayers& layers = mGen.GetLayers();
-    const size_t count = static_cast<size_t>(mDims.width) * static_cast<size_t>(mDims.height);
+    // Size of the GENERATED grid: SetSize only changes pending dimensions (mDims) until the next Tick, and the layer
+    // buffers still have the old size, so paging/min-max/hash must not use mDims here.
+    const size_t count = mHasGenerated ? static_cast<size_t>(mWorld.CellCount()) : 0u;
 
     if (args.isObject() && args.isMember("layer"))
     {

@@ -2676,5 +2676,8 @@
     <ClCompile Include="CoW\TestWorldGenCommands.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenEdgeCases.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
