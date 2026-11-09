@@ -2682,5 +2682,8 @@
     <ClCompile Include="CoW\TestWorldGenDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDomainStateRelay.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

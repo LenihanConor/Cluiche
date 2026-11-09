@@ -40,6 +40,20 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
     if (status.state != LoadState::kComplete)
         return StartResult::kLoading;
 
+#ifdef DIA_DEBUG
+    // Wait (bounded) for the relay and visual debugger; without them the stage still works headless.
+    if (!mPanelAdapter && !TryBuildPanel())
+    {
+        if (++mPanelWaitFrames < 300)
+            return StartResult::kLoading;
+        if (!mPanelWarned)
+        {
+            DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: state relay / visual debugger unavailable - World Generation card not shown");
+            mPanelWarned = true;
+        }
+    }
+#endif
+
     mExitRequested = false;
     DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: started (S1WorldGenerationTestbedStage stage running, %u assets) - press Escape to return to Boot",
                  status.loaded);
@@ -68,8 +82,56 @@ Dia::ApplicationFlow::StopResult S1WorldGenerationTestbedStageModule::DoStop()
 {
     DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: stopped");
     mWaitLogged = false;
+#ifdef DIA_DEBUG
+    TeardownPanel();
+#endif
     return Dia::ApplicationFlow::StopResult::kDone;
 }
+
+#ifdef DIA_DEBUG
+bool S1WorldGenerationTestbedStageModule::TryBuildPanel()
+{
+    WorldGenerationModule* wg = mWorldGen.Get();
+    Cluiche::AppFlow::DomainStateRelayModule* relay = mStateRelay.Get();
+    Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebugger.Get();
+    if (wg == nullptr || relay == nullptr || vd == nullptr)
+        return false;
+
+    auto domain = std::make_unique<WorldGenDebugDomain>(*wg);
+    Dia::VisualDebugger::IDebugDomain* adapter = relay->Attach(*domain);
+    if (adapter == nullptr)
+    {
+        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: DomainStateRelay has no free slot - World Generation card not shown");
+        mPanelWarned = true;
+        return false;
+    }
+    vd->RegisterDomain(*adapter);
+    mPanelDomainImpl = std::move(domain);
+    mPanelAdapter = adapter;
+    mPanelRegistered = true;
+    DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: World Generation card registered with the visual debugger");
+    return true;
+}
+
+void S1WorldGenerationTestbedStageModule::TeardownPanel()
+{
+    if (mPanelRegistered && mPanelAdapter != nullptr)
+    {
+        if (auto* vd = mVisualDebugger.Get())
+            vd->UnregisterDomain(*mPanelAdapter);
+    }
+    if (mPanelAdapter != nullptr && mPanelDomainImpl)
+    {
+        if (auto* relay = mStateRelay.Get())
+            relay->Detach(*mPanelDomainImpl);   // before the domain is destroyed
+    }
+    mPanelRegistered = false;
+    mPanelAdapter = nullptr;
+    mPanelDomainImpl.reset();
+    mPanelWaitFrames = 0;
+    mPanelWarned = false;
+}
+#endif
 
 void S1WorldGenerationTestbedStageModule::NavigateTo(const Dia::Core::StringCRC& target)
 {

@@ -1,4 +1,5 @@
 #pragma once
+#include "Modules/WorldGenerationModule.h"   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -9,6 +10,12 @@
 #include <DiaStreams/ServiceStreamReader.h>
 #include "Modules/InputStreamModule.h"
 #include "Types/AssetLoadStatus.h"
+#ifdef DIA_DEBUG
+#include "Modules/DomainStateRelayModule.h"
+#include "Modules/VisualDebuggerModule.h"
+#include "Modules/WorldGenDebugDomain.h"
+#include <memory>
+#endif
 
 namespace CoW {
 
@@ -31,6 +38,20 @@ protected:
 
 private:
     void NavigateTo(const Dia::Core::StringCRC& target);
+
+    Dia::ApplicationFlow::ModuleRef<WorldGenerationModule> mWorldGen{this};
+#ifdef DIA_DEBUG
+    // Panel wiring (SimPU): the domain lives here; Main sees it only through the relay's snapshot adapter.
+    bool TryBuildPanel();
+    void TeardownPanel();
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DomainStateRelayModule> mStateRelay{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebugger{this};
+    std::unique_ptr<WorldGenDebugDomain> mPanelDomainImpl;
+    Dia::VisualDebugger::IDebugDomain* mPanelAdapter = nullptr;
+    bool mPanelRegistered = false;
+    bool mPanelWarned = false;
+    unsigned mPanelWaitFrames = 0;
+#endif
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::InputStreamModule> mInput{this};
 
