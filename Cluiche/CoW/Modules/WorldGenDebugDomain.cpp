@@ -162,23 +162,47 @@ void WorldGenDebugDomain::RebuildStatic()
         next.presets.append(e);
     }
 
-    // view modes
+    // view modes + picker layers
     next.modes = Json::Value(Json::arrayValue);
+    next.layers = Json::Value(Json::arrayValue);
+    auto addLayer = [&next](const std::string& id, const std::string& label, const std::string& group) {
+        Json::Value e(Json::objectValue);
+        e["id"] = id;
+        e["label"] = label;
+        e["group"] = group;
+        next.layers.append(e);
+    };
     next.modes.append(kDefaultMode);
     if (mView != nullptr)
     {
-        mView->ListColourModes([&next](const char* id) {
-            if (std::strcmp(id, kViewDefaultId) != 0)
+        std::string reliefGroup = "Terrain";
+        Json::Value others(Json::arrayValue);
+        mView->ListColourGroups([&](const char* id, const char* group) {
+            if (std::strcmp(id, kViewDefaultId) == 0)
             {
-                next.modes.append(id);
+                reliefGroup = group;
+                return;
             }
+            next.modes.append(id);
+            Json::Value e(Json::objectValue);
+            e["id"] = id;
+            e["label"] = LabelFromKey(id);
+            e["group"] = group;
+            others.append(e);
         });
+        addLayer(kDefaultMode, "Relief", reliefGroup);
+        for (const Json::Value& e : others)
+        {
+            next.layers.append(e);
+        }
     }
     else
     {
+        addLayer(kDefaultMode, "Relief", "Terrain");
         for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
         {
             next.modes.append(TerrainLayers::GetLayerInfo(i).name);
+            addLayer(TerrainLayers::GetLayerInfo(i).name, LabelFromKey(TerrainLayers::GetLayerInfo(i).name), "Layers");
         }
     }
 
@@ -188,7 +212,7 @@ void WorldGenDebugDomain::RebuildStatic()
     }
 
     const bool changed = !mStaticBuilt || !(next.controlDefs == mStatic.controlDefs) || next.controlKeys != mStatic.controlKeys ||
-                         !(next.presets == mStatic.presets) || !(next.modes == mStatic.modes) || next.timingNames != mStatic.timingNames;
+                         !(next.presets == mStatic.presets) || !(next.modes == mStatic.modes) || !(next.layers == mStatic.layers) || next.timingNames != mStatic.timingNames;
     if (changed)
     {
         mStatic = std::move(next);
@@ -335,6 +359,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     if (full)
     {
         view["modes"] = mStatic.modes;
+        view["layers"] = mStatic.layers;
     }
     view["drawers"] = drawers;
 

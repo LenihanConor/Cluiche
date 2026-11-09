@@ -24,7 +24,7 @@
 // DYNAMIC part (everything else). A frame is either
 //   FULL  ("full": true)  : dynamic + static fields, i.e. the complete shape documented below; or
 //   LEAN  ("full": false) : dynamic fields only. Static fields are omitted: controls[] are {key, value}, sizes[] are
-//                           {name, selected}, timings[] are {stage, ms, ran}, presets and view.modes are absent.
+//                           {name, selected}, timings[] are {stage, ms, ran}, presets, view.modes and view.layers are absent.
 // Every frame carries "staticVersion" (int, bumped whenever the static content changes). A FULL frame is sent for the first
 // frame, whenever staticVersion changes, and every kFullFrameInterval frames (so a reloaded page recovers within ~1 s). The
 // page keeps the static fields of the last FULL frame and merges them into LEAN frames (debug-panel.html wgResolveState).
@@ -40,7 +40,10 @@
 //   presets  : [{id, displayName}]
 //   sizes    : [{name, width, height, selected}]
 //   timings  : [{stage, name, ms, ran}]               (per-stage ms of the last generation, ran = re-run last Update)
-//   view     : {colourMode, modes[names], drawers:[{name, enabled, available}], legend?}
+//   view     : {colourMode, modes[names], layers[{id,label,group}], drawers:[{name, enabled, available}], legend?}
+//              layers = [{id, label, group}] (STATIC, same order as modes, back-compat): the picker entries. "terrain" is
+//              labelled "Relief"; label = humanised id ("terrainType" -> "Terrain type"); group = the WorldLayerSource group
+//              (view: "Terrain", ...; no view: "Terrain" for the Relief entry, "Layers" for the rest).
 //              No view (fallback): modes = "terrain" followed by every terrain layer name; drawers = Tiles, Grid lines, Selection
 //              (available) then Region edges, Sites, Evidence (available=false); no legend key.
 //              With a view (IWorldGenView, the S-1 stage): colourMode = view->GetColourMode() with "relief" reported as "terrain";
@@ -115,6 +118,7 @@ private:
         Json::Value controlDefs;                 // key -> full control object without "value"
         Json::Value presets;                     // [{id, displayName}]
         Json::Value modes;                       // ["terrain", layer names...]
+        Json::Value layers;                      // [{id, label, group}] (picker), same order as modes
         std::vector<std::string> timingNames;    // by stage index
     };
     void RebuildStatic();

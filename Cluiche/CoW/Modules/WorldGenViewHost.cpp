@@ -444,6 +444,9 @@ void WorldGenViewHost::Draw(Dia::Core::IDebugDraw& draw)
         return;
     OnSizeChanged();   // a Tick may have changed the size since the last Update
     mDomain->Update(draw);
+    const uint32_t dropped = draw.DroppedCount();
+    if (dropped > mMaxDropped)
+        mMaxDropped = dropped;
     const uint64_t uploads = mUploader->Uploads();
     if (uploads != mSeenUploads)
     {
@@ -617,6 +620,12 @@ void WorldGenViewHost::ListColourModes(const std::function<void(const char* id)>
 {
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
         fn(WorldLayerSource::At(i).id);
+}
+
+void WorldGenViewHost::ListColourGroups(const std::function<void(const char* id, const char* group)>& fn)
+{
+    for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
+        fn(WorldLayerSource::At(i).id, WorldLayerSource::At(i).group);
 }
 
 bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)

@@ -34,7 +34,7 @@ Produced by `CoW::WorldGenDebugDomain::GetJSONState` (task 3; runs on SimPU, rel
 - `presets`: `[{id,displayName}]`
 - `sizes`: `[{name,width,height,selected}]`
 - `timings`: `[{stage,name,ms,ran}]` per-stage ms of the last generation (generator records these); `ran` = stage re-ran in the last update
-- `view`: `{colourMode, modes[], drawers:[{name,enabled,available}]}`; modes = `"terrain"` then every terrain layer name; drawers = Tiles, Grid lines, Selection (available), Region edges, Sites, Evidence (available=false)
+- `view`: `{colourMode, modes[], layers[{id,label,group}], drawers:[{name,enabled,available}], legend}`; modes = `"terrain"` then every other layer id (static, full frames only); layers = picker entries in the same order (static; "terrain" labelled "Relief"; group from WorldLayerSource); legend (dynamic, every frame) = null, `[{label,colour:"#rrggbb"}]` (category) or `{min,max,ramp,unit,stops:[{t,colour}]}` (float); drawers (S-1 stage) = Tiles, `rivers`, `selection.neighbours`, Selection (Tiles and Selection always on); the panel shows display names (Rivers, Neighbours (0-5)). Without a view: Grid lines, Region edges, Sites, Evidence local stubs.
 - `cell`: `null`, or `session.Cell({x,y})` (all fields, `layers{}`, `neighbours[]`) plus `selected:{x,y}`. Selection out of range or before first world => `cell:null` plus `cellError` string.
 - `lastSave`: `null`, or last presetSave result (`{success,writtenTo,isSource}` / `{success:false,error,status?}`)
 

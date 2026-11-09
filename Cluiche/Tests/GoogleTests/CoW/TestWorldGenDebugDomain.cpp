@@ -565,6 +565,10 @@ namespace
         }
         const char* GetColourMode() override { return mode.c_str(); }
         void ListColourModes(const std::function<void(const char*)>& fn) override { for (const char* m : { "relief", "elevation", "water" }) fn(m); }
+        void ListColourGroups(const std::function<void(const char*, const char*)>& fn) override
+        {
+            fn("relief", "Terrain"); fn("elevation", "Terrain"); fn("water", "Water");
+        }
         bool SetOverlayEnabled(const char* id, bool enabled) override
         {
             ++overlayCalls;
@@ -742,6 +746,7 @@ TEST(WorldGenDebugDomainView, SetViewBumpsStaticVersionAndLeanFramesKeepLegend)
     const Json::Value lean = f.Frame();
     EXPECT_FALSE(lean["full"].asBool());
     EXPECT_FALSE(lean["view"].isMember("modes"));
+    EXPECT_FALSE(lean["view"].isMember("layers"));
     EXPECT_TRUE(lean["view"].isMember("legend"));
     f.domain.SetView(nullptr);
 }
@@ -872,4 +877,30 @@ TEST(WorldGenDebugDomain, StaticVersionIsStableWhenNothingStaticChanged)
     f.Gen();
     const int v0 = f.State()["staticVersion"].asInt();
     EXPECT_EQ(f.State()["staticVersion"].asInt(), v0);
+}
+
+TEST(WorldGenDebugDomainView, FullFrameCarriesGroupedLayers)
+{
+    ViewFixture f;
+    const Json::Value st = f.State();
+    const Json::Value& layers = st["view"]["layers"];
+    ASSERT_EQ(layers.size(), 3u);
+    EXPECT_EQ(layers[0u]["id"].asString(), "terrain");
+    EXPECT_EQ(layers[0u]["label"].asString(), "Relief");
+    EXPECT_EQ(layers[0u]["group"].asString(), "Terrain");
+    EXPECT_EQ(layers[1u]["id"].asString(), "elevation");
+    EXPECT_EQ(layers[1u]["label"].asString(), "Elevation");
+    EXPECT_EQ(layers[2u]["id"].asString(), "water");
+    EXPECT_EQ(layers[2u]["label"].asString(), "Water");
+    EXPECT_EQ(layers[2u]["group"].asString(), "Water");
+}
+
+TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
+{
+    Fixture f;
+    const Json::Value st = f.State();
+    const Json::Value& layers = st["view"]["layers"];
+    ASSERT_EQ(layers.size(), st["view"]["modes"].size());
+    EXPECT_EQ(layers[0u]["id"].asString(), "terrain");
+    EXPECT_EQ(layers[0u]["label"].asString(), "Relief");
 }

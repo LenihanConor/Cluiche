@@ -56,6 +56,10 @@ private:
     // Hosts the DiaCellLayers viewer over the generated world; false = services not ready (or build failed).
     bool TryBuildView(Cluiche::AppFlow::VisualDebuggerModule& vd);
     void TeardownView();
+    // cow.worldgen.view: sim-hosted status query for the render E2E (CoW-only, works with or without the viewer).
+    void RegisterViewQuery();
+    void UnregisterViewQuery();
+    bool mViewQueryRegistered = false;
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule> mCamera{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHost{this};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::CellFieldRegistry> mCellFieldStream{this, "KernelCellFieldRegistry"};

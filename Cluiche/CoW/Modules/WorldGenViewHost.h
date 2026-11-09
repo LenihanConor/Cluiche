@@ -103,6 +103,8 @@ public:
     // Session revision whose data the viewer last uploaded; equals session.Revision() once the new world is visible.
     uint32_t LayerVersion() const { return mUploadedRevision; }
     uint64_t ReadFailures() const { return mUploader ? mUploader->ReadFailures() : 0u; }
+    // Largest IDebugDraw::DroppedCount() seen at the end of a viewer draw (the DebugDraw budget overflow signal).
+    uint32_t DroppedCount() const { return mMaxDropped; }
 
     const WorldGeneration::WorldHexGrid& Grid() const { return *mGrid; }
     Dia::CellLayers::CellLayerViewerDomain* Viewer() { return mDomain.Get(); }
@@ -117,6 +119,7 @@ public:
     bool SetColourMode(const char* id) override;
     const char* GetColourMode() override;
     void ListColourModes(const std::function<void(const char* id)>& fn) override;
+    void ListColourGroups(const std::function<void(const char* id, const char* group)>& fn) override;
     bool SetOverlayEnabled(const char* id, bool enabled) override;
     void ListOverlays(const std::function<void(const char* id, bool enabled, bool available)>& fn) override;
     void FillLegend(Json::Value& out) override;
@@ -184,6 +187,7 @@ private:
     uint64_t mSeenUploads = 0;
     uint32_t mUploadFrames = 0;
     uint32_t mUploadedRevision = 0;
+    uint32_t mMaxDropped = 0;
 
     // Caches (rebuilt only when their key changes).
     std::vector<WorldGeneration::LineSegment> mRiverSegments;

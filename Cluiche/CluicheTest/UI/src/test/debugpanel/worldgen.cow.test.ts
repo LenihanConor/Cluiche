@@ -160,7 +160,7 @@ describe("rendering", () => {
     expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "elevation", "latitude"]);
     const boxes = qa("[data-role=wg-drawers] input[type=checkbox]") as HTMLInputElement[];
     expect(boxes.map((b) => b.checked)).toEqual([true, false, true, false]);
-    expect(boxes.map((b) => b.disabled)).toEqual([false, false, false, true]);
+    expect(boxes.map((b) => b.disabled)).toEqual([true, false, true, true]);   // Tiles and Selection are fixed
   });
 
   it("validation section is a disabled stub", () => {
@@ -611,5 +611,149 @@ describe("partial pushes", () => {
     p.win.updateDomainState({ ...g, [NAME]: fixture() });
     p.win.updateDomainState({ [NAME]: fixture() });
     expect(p.doc.querySelectorAll(".domain").length).toBe(1);
+  });
+});
+
+// ---- VIEW section (worldgen-view plan task 10): grouped picker, legend, overlay labels ----
+
+function viewFixture(over: Record<string, any> = {}): any {
+  const f = fixture({ full: true, staticVersion: 1 });
+  f.view = {
+    colourMode: "terrain",
+    modes: ["terrain", "elevation", "terrainType"],
+    layers: [
+      { id: "terrain", label: "Relief", group: "Terrain" },
+      { id: "elevation", label: "Elevation", group: "Terrain" },
+      { id: "waterSource", label: "Water source", group: "Water" },
+      { id: "terrainType", label: "Terrain type", group: "Classification" },
+    ],
+    drawers: [
+      { name: "Tiles", enabled: true, available: true },
+      { name: "rivers", enabled: true, available: true },
+      { name: "selection.neighbours", enabled: false, available: false },
+      { name: "Selection", enabled: true, available: true },
+    ],
+    legend: null,
+    ...over,
+  };
+  return f;
+}
+const catLegend = [{ label: "Ocean", colour: "#102030" }, { label: "Plain", colour: "#a0b060" }];
+const floatLegend = { min: -1, max: 2.5, ramp: "sequential.terrain", unit: "m", stops: [{ t: 0, colour: "#000000" }, { t: 1, colour: "#ffffff" }] };
+
+describe("view section", () => {
+  it("picker lists layers in optgroups by group and labels the default Relief", () => {
+    push(viewFixture());
+    const m = q<HTMLSelectElement>("[data-role=wg-mode]");
+    const groups = Array.from(m.querySelectorAll("optgroup")).map((g) => (g as HTMLOptGroupElement).label);
+    expect(groups).toEqual(["Terrain", "Water", "Classification"]);
+    const opts = Array.from(m.options);
+    expect(opts.map((o) => o.value)).toEqual(["terrain", "elevation", "waterSource", "terrainType"]);
+    expect(opts.map((o) => o.textContent)).toEqual(["Relief", "Elevation", "Water source", "Terrain type"]);
+    expect(m.value).toBe("terrain");
+  });
+
+  it("picking a layer sends setColourMode with the layer id", () => {
+    push(viewFixture());
+    const m = q<HTMLSelectElement>("[data-role=wg-mode]");
+    m.value = "waterSource";
+    fire(m, "change");
+    expect(commands().pop()).toEqual({ id: ID, cmd: "setColourMode", args: { mode: "waterSource" } });
+  });
+
+  it("the picker follows colourMode from the state", () => {
+    push(viewFixture());
+    push(viewFixture({ colourMode: "terrainType" }));
+    expect(q<HTMLSelectElement>("[data-role=wg-mode]").value).toBe("terrainType");
+  });
+
+  it("a category legend renders a swatch grid with colour and label", () => {
+    push(viewFixture({ legend: catLegend }));
+    const items = qa("[data-role=wg-legend] .wg-lg-item");
+    expect(items.length).toBe(2);
+    expect(items[0].textContent).toContain("Ocean");
+    expect((items[0].querySelector(".wg-lg-sw") as HTMLElement).style.background).toMatch(/#102030|rgb\(16, 32, 48\)/);
+    expect(q("[data-role=wg-legend]").style.display).not.toBe("none");
+  });
+
+  it("a float legend renders a gradient bar with min, max and unit", () => {
+    push(viewFixture({ legend: floatLegend }));
+    const bar = q("[data-role=wg-legend-bar]");
+    expect(bar).not.toBeNull();
+    expect(bar.style.background).toContain("linear-gradient");
+    const t = q("[data-role=wg-legend]").textContent!;
+    expect(t).toContain("-1");
+    expect(t).toContain("2.5");
+    expect(t).toContain("m");
+    expect(qa("[data-role=wg-legend] .wg-lg-item").length).toBe(0);
+  });
+
+  it("a null legend hides the legend and a later legend shows it again", () => {
+    push(viewFixture({ legend: catLegend }));
+    push(viewFixture({ legend: null }));
+    expect(q("[data-role=wg-legend]").style.display).toBe("none");
+    expect(q("[data-role=wg-legend]").children.length).toBe(0);
+    push(viewFixture({ legend: floatLegend }));
+    expect(q("[data-role=wg-legend]").style.display).not.toBe("none");
+    expect(q("[data-role=wg-legend-bar]")).not.toBeNull();
+  });
+
+  it("overlay checkboxes use display names and disable when unavailable", () => {
+    push(viewFixture());
+    const labels = qa("[data-role=wg-drawers] label");
+    expect(labels.map((l) => l.textContent)).toEqual(["Tiles", "Rivers", "Neighbours (0-5)", "Selection"]);
+    const boxes = qa("[data-role=wg-drawers] input[type=checkbox]") as HTMLInputElement[];
+    expect(boxes.map((b) => b.checked)).toEqual([true, true, false, true]);
+    expect(boxes.map((b) => b.disabled)).toEqual([true, false, true, true]);
+  });
+
+  it("an unknown overlay id is humanised and becomes enabled when available", () => {
+    const f = viewFixture();
+    f.view.drawers.splice(3, 0, { name: "regionEdges", enabled: false, available: true });
+    push(f);
+    const lab = q("[data-role=wg-drawers] label[data-drawer=regionEdges]");
+    expect(lab.textContent).toBe("Region edges");
+    push(viewFixture());
+    const g = viewFixture();
+    g.view.drawers[2].available = true;
+    push(g);
+    const boxes = qa("[data-role=wg-drawers] input[type=checkbox]") as HTMLInputElement[];
+    expect(boxes[2].disabled).toBe(false);
+  });
+
+  it("toggling an overlay sends the drawer id, not the display name", () => {
+    push(viewFixture());
+    const box = qa("[data-role=wg-drawers] input[type=checkbox]")[1] as HTMLInputElement;
+    box.checked = false;
+    fire(box, "change");
+    expect(commands().pop()).toEqual({ id: ID, cmd: "toggle", args: { drawer: "rivers" } });
+  });
+
+  it("keeps the coordinate box and Clear button", () => {
+    push(viewFixture());
+    expect(q("[data-role=wg-cx]")).not.toBeNull();
+    click(q("[data-role=wg-cell-clear]"));
+    expect(commands().pop()).toEqual({ id: ID, cmd: "clearCell", args: {} });
+  });
+
+  it("a lean frame keeps the last static layer list while the legend follows every frame", () => {
+    const f = viewFixture({ legend: catLegend });
+    push(f);
+    const l = lean({ view: { colourMode: "terrainType", drawers: f.view.drawers, legend: floatLegend }, staticVersion: 1 });
+    push(l);
+    const m = q<HTMLSelectElement>("[data-role=wg-mode]");
+    expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "elevation", "waterSource", "terrainType"]);
+    expect(m.value).toBe("terrainType");
+    expect(q("[data-role=wg-legend-bar]")).not.toBeNull();
+    push(lean({ view: { colourMode: "terrainType", drawers: f.view.drawers, legend: null }, staticVersion: 1 }));
+    expect(q("[data-role=wg-legend]").style.display).toBe("none");
+    expect(Array.from(q<HTMLSelectElement>("[data-role=wg-mode]").options).length).toBe(4);
+  });
+
+  it("a layer-less state falls back to a flat picker built from modes", () => {
+    push(fixture());
+    const m = q<HTMLSelectElement>("[data-role=wg-mode]");
+    expect(m.querySelectorAll("optgroup").length).toBe(0);
+    expect(Array.from(m.options).map((o) => o.textContent)).toEqual(["Relief", "Elevation", "Latitude"]);
   });
 });

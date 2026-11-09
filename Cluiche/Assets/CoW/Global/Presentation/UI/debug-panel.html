@@ -690,6 +690,12 @@ body {
 .wg-tg label { color: #aaa; cursor: pointer; }
 .wg-tg label.off { color: #555; cursor: default; }
 .wg-tg input { vertical-align: middle; margin-right: 3px; }
+.wg-lg { margin: 4px 0 2px; }
+.wg-lg-grid { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.wg-lg-item { color: #aaa; white-space: nowrap; }
+.wg-lg-sw { display: inline-block; width: 10px; height: 10px; border: 1px solid #333; margin-right: 4px; vertical-align: middle; }
+.wg-lg-bar { height: 10px; border: 1px solid #333; background: #333; }
+.wg-lg-range { display: flex; justify-content: space-between; color: #888; font-size: 10px; margin-top: 1px; }
 .wg-kv { display: grid; grid-template-columns: 96px 1fr; gap: 1px 8px; margin-top: 4px; }
 .wg-kv .k { color: #777; }
 .wg-kv .h { color: #e8c97a; margin-top: 4px; letter-spacing: 1px; font-size: 10px; grid-column: 1 / 3; }
@@ -1520,7 +1526,8 @@ function formatValue(v, decimals) {
 // ("State JSON contract"). Mockup: s1-editor-mockup.html. The card only sends commands (setScale, setSeed,
 // regenerate, setSize, presetLoad, presetSave, selectCell, clearCell, setColourMode, toggle); the domain owns
 // all state. Hold rules: a dragged slider (ui.activeSlider), a focused/dirty/just-changed input is never
-// overwritten by the per-frame state push. No legend swatches: the contract carries no legend data.
+// overwritten by the per-frame state push. VIEW: grouped layer picker (view.layers), legend (view.legend, every frame),
+// overlay checkboxes with display names.
 
 var WG_THROTTLE_MS = 50;      // max one live setScale per window; trailing value always delivered
 var WG_HOLD_MS     = 300;     // keep a just-released control against one stale state push
@@ -1540,7 +1547,7 @@ function wgIsDomain(id, cmdId) { return cmdId === 'WorldGen' || id === 'World Ge
 // first contact, whenever "staticVersion" changes and about once a second; every other frame is LEAN (dynamic fields only:
 // controls [{key,value}], sizes [{name,selected}], timings [{stage,ms,ran}], no presets / view.modes). The page keeps the
 // static fields of the last FULL frame and rebuilds the complete contract shape here, so the rest of the card is unaware.
-var wgStatic = null;   // {version, controls, presets, sizes, timings, modes} from the last full frame
+var wgStatic = null;   // {version, controls, presets, sizes, timings, modes, layers} from the last full frame
 
 function wgResolveState(st) {
   if (!st || typeof st !== 'object') return st;
@@ -1551,7 +1558,8 @@ function wgResolveState(st) {
       presets:  st.presets,
       sizes:    Array.isArray(st.sizes) ? st.sizes : [],
       timings:  Array.isArray(st.timings) ? st.timings : [],
-      modes:    (st.view && Array.isArray(st.view.modes)) ? st.view.modes : []
+      modes:    (st.view && Array.isArray(st.view.modes)) ? st.view.modes : [],
+      layers:   (st.view && Array.isArray(st.view.layers)) ? st.view.layers : []
     };
     return st;
   }
@@ -1601,6 +1609,7 @@ function wgResolveState(st) {
   var lv = st.view || {};
   for (var vk in lv) { if (Object.prototype.hasOwnProperty.call(lv, vk)) view[vk] = lv[vk]; }
   view.modes = wgStatic.modes;
+  view.layers = wgStatic.layers;
   out.view = view;
   return out;
 }
@@ -1623,7 +1632,8 @@ function wgSignature(st) {
   }
   var v = st.view || {};
   return '+wg[' + parts.join(',') + '|' + wgNames(st.presets, 'id') + '|' + wgNames(st.sizes, 'name') + '|' +
-         (Array.isArray(v.modes) ? v.modes.join(',') : '') + '|' + wgNames(v.drawers, 'name') + ']';
+         (Array.isArray(v.modes) ? v.modes.join(',') : '') + '|' + wgNames(v.layers, 'id') + '|' + wgNames(v.layers, 'group') + '|' +
+         wgNames(v.drawers, 'name') + ']';
 }
 
 function wgFmt(v, step) {
@@ -1636,6 +1646,98 @@ function wgModified(v, def) {
   var a = parseFloat(v), b = parseFloat(def);
   if (!isFinite(a) || !isFinite(b)) return String(v) !== String(def);
   return Math.abs(a - b) > 1e-6;
+}
+
+// ── view helpers ──
+// "selection.neighbours" -> "Selection neighbours"; "terrainType" -> "Terrain type"; already-spaced names pass through.
+function wgHumanise(id) {
+  var t = String(id).replace(/[._]+/g, ' ').replace(/([a-z0-9])([A-Z])/g, function (m, a, b) { return a + ' ' + b.toLowerCase(); });
+  t = t.replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+}
+var WG_DRAWER_LABELS = { 'rivers': 'Rivers', 'selection.neighbours': 'Neighbours (0-5)' };
+function wgDrawerLabel(name) {
+  return Object.prototype.hasOwnProperty.call(WG_DRAWER_LABELS, name) ? WG_DRAWER_LABELS[name] : wgHumanise(name);
+}
+// Drawers that are always on: shown checked and disabled.
+function wgDrawerFixed(name) { return name === 'Tiles' || name === 'Selection'; }
+function wgModeLabel(id) { return id === 'terrain' ? 'Relief' : wgHumanise(id); }
+function wgColourOk(c) { return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c); }
+
+// Layer picker entries [{id,label,group}]: view.layers, else built from view.modes (single group).
+function wgLayerEntries(view) {
+  if (Array.isArray(view.layers) && view.layers.length) return view.layers;
+  var out = [], modes = Array.isArray(view.modes) ? view.modes : [];
+  for (var i = 0; i < modes.length; ++i) out.push({ id: modes[i], label: wgModeLabel(modes[i]), group: '' });
+  return out;
+}
+// Grouped <select>: one optgroup per group in first-seen order (no optgroup when group is empty).
+function wgBuildLayerSelect(role, entries) {
+  var s = document.createElement('select');
+  s.setAttribute('data-role', role);
+  var groups = {};
+  for (var i = 0; i < entries.length; ++i) {
+    var e = entries[i];
+    if (!e || e.id === undefined) continue;
+    var g = e.group ? String(e.group) : '';
+    var o = document.createElement('option');
+    o.value = String(e.id);
+    o.textContent = e.label ? String(e.label) : wgModeLabel(e.id);
+    if (!g) { s.appendChild(o); continue; }
+    if (!Object.prototype.hasOwnProperty.call(groups, g)) {
+      var og = document.createElement('optgroup');
+      og.label = g;
+      groups[g] = og;
+      s.appendChild(og);
+    }
+    groups[g].appendChild(o);
+  }
+  return s;
+}
+function wgFmtLegendNum(v) {
+  var n = Number(v);
+  if (!isFinite(n)) return String(v);
+  return String(Math.round(n * 100) / 100);
+}
+// Legend: category = swatch grid, float = gradient bar with min/max/unit, null = hidden.
+function wgRenderLegend(host, legend) {
+  var key = JSON.stringify(legend === undefined ? null : legend);
+  if (host._key === key) return;
+  host._key = key;
+  while (host.firstChild) host.removeChild(host.firstChild);
+  if (!legend || typeof legend !== 'object') { host.style.display = 'none'; return; }
+  host.style.display = '';
+  var i;
+  if (Array.isArray(legend)) {
+    var grid = el('div', 'wg-lg-grid');
+    grid.setAttribute('data-role', 'wg-legend-swatches');
+    for (i = 0; i < legend.length; ++i) {
+      var it = legend[i] || {};
+      var item = el('div', 'wg-lg-item');
+      var sw = el('span', 'wg-lg-sw');
+      if (wgColourOk(it.colour)) sw.style.background = it.colour;
+      item.appendChild(sw);
+      item.appendChild(el('span', 'wg-lg-l', it.label === undefined ? '' : String(it.label)));
+      grid.appendChild(item);
+    }
+    host.appendChild(grid);
+    return;
+  }
+  var stops = Array.isArray(legend.stops) ? legend.stops : [];
+  var css = [];
+  for (i = 0; i < stops.length; ++i) {
+    if (stops[i] && wgColourOk(stops[i].colour)) css.push(stops[i].colour + ' ' + (Number(stops[i].t) * 100) + '%');
+  }
+  var bar = el('div', 'wg-lg-bar');
+  bar.setAttribute('data-role', 'wg-legend-bar');
+  if (css.length >= 2) bar.style.background = 'linear-gradient(to right, ' + css.join(', ') + ')';
+  else if (css.length === 1) bar.style.background = css[0];
+  host.appendChild(bar);
+  var lab = el('div', 'wg-lg-range');
+  lab.appendChild(el('span', 'wg-lg-min', wgFmtLegendNum(legend.min)));
+  if (legend.unit) lab.appendChild(el('span', 'wg-lg-unit', String(legend.unit)));
+  lab.appendChild(el('span', 'wg-lg-max', wgFmtLegendNum(legend.max)));
+  host.appendChild(lab);
 }
 
 // ── widget helpers ──
@@ -1937,22 +2039,25 @@ function buildWorldGen(domain) {
 
   // VIEW
   var view = st.view || {};
-  var modes = Array.isArray(view.modes) ? view.modes : [];
   var modeRow = wgRow('Colour by');
-  var modeSel = wgSelect('wg-mode', modes);
+  var modeSel = wgBuildLayerSelect('wg-mode', wgLayerEntries(view));
   modeSel.addEventListener('change', function () {
     wgHold(modeSel);
     sendCommand(id, 'setColourMode', { mode: modeSel.value });
   });
   modeRow.appendChild(modeSel);
   secs.view.sb.appendChild(modeRow);
-  secs.view.sb.appendChild(el('div', 'wg-sub', 'DRAWERS'));
+  var legendHost = el('div', 'wg-lg');
+  legendHost.setAttribute('data-role', 'wg-legend');
+  legendHost.style.display = 'none';
+  secs.view.sb.appendChild(legendHost);
+  secs.view.sb.appendChild(el('div', 'wg-sub', 'OVERLAYS'));
   var dr = el('div', 'wg-tg');
   dr.setAttribute('data-role', 'wg-drawers');
   var vd = Array.isArray(view.drawers) ? view.drawers : [];
   for (var di = 0; di < vd.length; ++di) {
     (function (d) {
-      var cb = wgCheckbox(d.name, '');
+      var cb = wgCheckbox(wgDrawerLabel(d.name), '');
       cb.label.setAttribute('data-drawer', d.name);
       cb.box.addEventListener('change', function () {
         wgHold(cb.box);
@@ -2123,15 +2228,19 @@ function refreshWorldGen(card, st) {
   var view = st.view || {};
   var mode = q('wg-mode');
   if (mode && wgFree(mode) && view.colourMode !== undefined) mode.value = String(view.colourMode);
-  setSr('view', view.colourMode !== undefined ? String(view.colourMode) : '');
+  setSr('view', view.colourMode !== undefined ? wgModeLabel(String(view.colourMode)) : '');
+  var lgHost = q('wg-legend');
+  if (lgHost) wgRenderLegend(lgHost, view.legend);
   var vd = Array.isArray(view.drawers) ? view.drawers : [];
   for (var di = 0; di < vd.length; ++di) {
     var lab = root.querySelector('[data-role="wg-drawers"] label[data-drawer="' + cssEscape(vd[di].name) + '"]');
     if (!lab) continue;
     var cb = lab.querySelector('input');
-    cb.disabled = !vd[di].available;
-    lab.classList.toggle('off', !vd[di].available);
-    if (wgFree(cb)) cb.checked = !!vd[di].enabled;
+    var fixed = wgDrawerFixed(vd[di].name);
+    cb.disabled = fixed || !vd[di].available;
+    lab.classList.toggle('off', cb.disabled);
+    if (fixed) cb.checked = true;
+    else if (wgFree(cb)) cb.checked = !!vd[di].enabled;
   }
 
   // CELL INSPECTOR

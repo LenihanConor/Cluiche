@@ -131,6 +131,7 @@ bool S1WorldGenerationTestbedStageModule::TryBuildPanel(bool finalAttempt)
         mViewWarned = true;
     }
 
+    RegisterViewQuery();
     vd->RegisterDomain(*adapter);
     mPanelRegistered = true;
     DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: World Generation card registered with the visual debugger");
@@ -166,8 +167,62 @@ bool S1WorldGenerationTestbedStageModule::TryBuildView(Cluiche::AppFlow::VisualD
     return true;
 }
 
+void S1WorldGenerationTestbedStageModule::RegisterViewQuery()
+{
+    Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHost.Get();
+    if (host == nullptr || mViewQueryRegistered)
+        return;
+    Dia::DebugServer::SimHelpInfo help;
+    help.description = "World generation map view status: built, layerVersion (revision last uploaded), uploadCount, readFailures, "
+                       "droppedCount (largest DebugDraw dropped count seen), gridWidth/gridHeight, colourMode, selection";
+    help.category = "worldgen";
+    help.owner = "S1WorldGenerationTestbedStageModule";
+    help.noArgs = true;
+    mViewQueryRegistered = host->RegisterQuery("cow.worldgen.view", help, [this](const Json::Value&) -> Json::Value
+    {
+        Json::Value r(Json::objectValue);
+        r["success"] = true;
+        const bool built = mViewHost && mViewHost->IsBuilt();
+        r["built"] = built;
+        if (built)
+        {
+            r["layerVersion"] = mViewHost->LayerVersion();
+            r["uploadCount"] = mViewHost->UploadCount();
+            r["readFailures"] = static_cast<Json::UInt64>(mViewHost->ReadFailures());
+            r["droppedCount"] = mViewHost->DroppedCount();
+            const auto d = mViewHost->Grid().Dimensions();
+            r["gridWidth"] = d.width;
+            r["gridHeight"] = d.height;
+            r["colourMode"] = mViewHost->GetColourMode();
+            int x = 0, y = 0;
+            if (mViewHost->GetSelection(x, y))
+            {
+                r["selection"]["x"] = x;
+                r["selection"]["y"] = y;
+            }
+            else
+            {
+                r["selection"] = Json::Value(Json::nullValue);
+            }
+        }
+        return r;
+    });
+    if (!mViewQueryRegistered)
+        DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: cow.worldgen.view registration rejected by SimQueryHost");
+}
+
+void S1WorldGenerationTestbedStageModule::UnregisterViewQuery()
+{
+    if (!mViewQueryRegistered)
+        return;
+    if (auto* host = mSimQueryHost.Get())
+        host->UnregisterQuery("cow.worldgen.view");
+    mViewQueryRegistered = false;
+}
+
 void S1WorldGenerationTestbedStageModule::TeardownView()
 {
+    UnregisterViewQuery();
     if (mViewLayerRegistered)
     {
         if (auto* vd = mVisualDebugger.Get())

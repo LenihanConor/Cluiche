@@ -30,6 +30,12 @@ public:
     virtual const char* GetColourMode() = 0;
     // Calls back once per colour mode (every registered base layer id), in registration order.
     virtual void ListColourModes(const std::function<void(const char* id)>& fn) = 0;
+    // Same layers with their picker group (the WorldLayerSource group, e.g. "Terrain"). The default groups everything
+    // under "Layers"; the real host overrides it.
+    virtual void ListColourGroups(const std::function<void(const char* id, const char* group)>& fn)
+    {
+        ListColourModes([&fn](const char* id) { fn(id, "Layers"); });
+    }
 
     // Overlay ids: "rivers", "selection.neighbours". False for an unknown id.
     virtual bool SetOverlayEnabled(const char* id, bool enabled) = 0;
