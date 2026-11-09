@@ -46,3 +46,9 @@ Commands: `setScale{key,value}`, `regenerate{seed?}`, `setSeed{seed}`, `setSize{
   - Legend: add a `view.legend` (`[{label, colour}]` per colour mode) to the state contract when task 10 defines the CellField colour ramps, then render swatches in the View section.
 - `sendCommand` drops command args longer than 63 characters (String64), so `presetSave` with a long id or display name is refused in the panel. Fixing it needs a Dia change.
 - Seeds above 2^53 are rejected in the panel (it sends a JS number); random seeds are below 1e8.
+
+## Follow-up closed (2026-11-09)
+
+- Teardown E2E: S-1 to Boot to S-1 three times, card rebuilt each time, WorldGen domain gone while on Boot, no new ERROR log lines.
+- `debug.panel_command {domain, cmd, args?}`: sim-hosted, in `VisualDebuggerModule` (Baseline; AD-001 given 2026-11-09), registered lazily on the first sim tick with a host. Uses the panel's own `EnqueueCommand` path. CoW `cow/default` E2E now 7/7 (setScale, setSize, presetLoad, selectCell/clearCell, bad requests). The panel's JS to event-stream hop is still untested.
+- No RED run for the `debug.panel_command` gtests (implementation was written first).

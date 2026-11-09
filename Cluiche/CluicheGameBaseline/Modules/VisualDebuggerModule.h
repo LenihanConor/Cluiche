@@ -17,6 +17,7 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include "Types/DebugPanelCommandEvent.h"
 #include "Types/DebugConsoleLineEvent.h"
 #include "Types/DebugConsoleResultEvent.h"
@@ -60,9 +61,17 @@ public:
     const Dia::VisualDebugger::DiaDebugDomainRegistry& GetDomainRegistry() const { return mDomainRegistry; }
 
     // Called from Render PU (panel JS callback) — thread-safe
-    void EnqueueCommand(Dia::Core::StringCRC domainId,
+    // Returns false when the queue is full (command dropped).
+    bool EnqueueCommand(Dia::Core::StringCRC domainId,
                         Dia::Core::StringCRC cmd,
                         const char* argsJson);
+
+    // Sim-hosted "debug.panel_command": validates {domain, cmd, args?} and enqueues it exactly as the panel's
+    // DebugPanelCommand stream does. Returns {success:true,queued:true} or {success:false,error}.
+    Json::Value HandlePanelCommand(const Json::Value& args);
+    static constexpr const char* kPanelCommandName = "debug.panel_command";
+    // True once registered with a SimQueryHostModule (lazy: the host may start after this module).
+    bool PanelCommandRegistered() const { return mPanelCommandRegistered; }
 
     void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
     void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
@@ -73,6 +82,10 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
+    // Drain pending panel commands (enqueued from Render PU / debug.panel_command). Protected so tests can drive it.
+    void DrainPendingCommands();
+    static constexpr int kCommandQueueCapacity = 32;
+
 private:
     struct PendingCommand
     {
@@ -81,10 +94,8 @@ private:
         // args serialized as a JSON string; parsed back on sim thread
         char argsJson[512];
     };
-    static constexpr int kCommandQueueCapacity = 32;
 
-    // Drain pending panel commands (enqueued from Render PU)
-    void DrainPendingCommands();
+    void TryRegisterPanelCommand();
     // Drain DiaDebugPanel commands arriving from the Main PU over the
     // DebugPanelCommand EventStream and funnel them into the command queue.
     void DrainPanelCommandStream();
@@ -122,6 +133,10 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
     Dia::ApplicationFlow::ModuleRef<Camera2DModule>    mCameraRef{this};
+    // Optional: apps without a SimQueryHostModule simply do not get debug.panel_command.
+    Dia::ApplicationFlow::ModuleRef<SimQueryHostModule> mSimQueryHost{this};
+    bool mPanelCommandRegistered = false;
+    bool mPanelCommandAttempted = false;
 
     std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
     std::unique_ptr<Dia::Debug::Coord3DDebugDomain>  mCoord3DDomain;

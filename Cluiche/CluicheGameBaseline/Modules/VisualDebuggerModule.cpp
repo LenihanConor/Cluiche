@@ -5,6 +5,8 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/ValueParam.h>
+#include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -53,6 +55,9 @@ void VisualDebuggerModule::SnapshotSink::Write(const Dia::VisualDebugger::Consol
 void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+    if (!mPanelCommandRegistered && !mPanelCommandAttempted)
+        TryRegisterPanelCommand();
 
     DrainPanelCommandStream();
     DrainConsoleLines();
@@ -111,6 +116,13 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 
 Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
 {
+    if (mPanelCommandRegistered)
+    {
+        if (SimQueryHostModule* host = mSimQueryHost.Get())
+            host->UnregisterQuery(kPanelCommandName);
+        mPanelCommandRegistered = false;
+    }
+    mPanelCommandAttempted = false;
     mLayerManager.ClearDynamicLayers();
     if (mCoord2DDomain) { UnregisterDomain(*mCoord2DDomain); mCoord2DDomain.reset(); }
     if (mCoord3DDomain) { UnregisterDomain(*mCoord3DDomain); mCoord3DDomain.reset(); }
@@ -150,7 +162,7 @@ void VisualDebuggerModule::UnregisterDomain(Dia::VisualDebugger::IDebugDomain& d
     mDomainRegistry.Unregister(domain);
 }
 
-void VisualDebuggerModule::EnqueueCommand(Dia::Core::StringCRC domainId,
+bool VisualDebuggerModule::EnqueueCommand(Dia::Core::StringCRC domainId,
                                           Dia::Core::StringCRC cmd,
                                           const char* argsJson)
 {
@@ -166,7 +178,84 @@ void VisualDebuggerModule::EnqueueCommand(Dia::Core::StringCRC domainId,
             pending.argsJson[sizeof(pending.argsJson) - 1] = '\0';
         }
         mCommandQueue.Add(pending);
+        return true;
     }
+    return false;
+}
+
+namespace
+{
+    Json::Value PanelCommandError(const char* message)
+    {
+        Json::Value r(Json::objectValue);
+        r["success"] = false;
+        r["error"] = message;
+        return r;
+    }
+}
+
+Json::Value VisualDebuggerModule::HandlePanelCommand(const Json::Value& args)
+{
+    if (!args.isObject())
+        return PanelCommandError("args must be an object {domain, cmd, args?}");
+    if (!args.isMember("domain") || !args["domain"].isString() || args["domain"].asString().empty())
+        return PanelCommandError("'domain' is required and must be a non-empty string");
+    if (!args.isMember("cmd") || !args["cmd"].isString() || args["cmd"].asString().empty())
+        return PanelCommandError("'cmd' is required and must be a non-empty string");
+    if (args.isMember("args") && !args["args"].isNull() && !args["args"].isObject())
+        return PanelCommandError("'args' must be an object when given");
+
+    const std::string domainName = args["domain"].asString();
+    const Dia::Core::StringCRC domainId(domainName.c_str());
+    if (mDomainRegistry.FindDomain(domainId) == nullptr)
+        return PanelCommandError("unknown domain");
+
+    std::string argsJson = "{}";
+    if (args.isMember("args") && args["args"].isObject())
+    {
+        Json::FastWriter writer;
+        argsJson = writer.write(args["args"]);
+        // FastWriter appends a trailing line break; an object always ends with '}'.
+        argsJson.erase(argsJson.find_last_of('}') + 1);
+    }
+    if (argsJson.size() >= sizeof(PendingCommand::argsJson))
+        return PanelCommandError("args too large for the panel command queue");
+
+    const std::string cmdName = args["cmd"].asString();
+    if (!EnqueueCommand(domainId, Dia::Core::StringCRC(cmdName.c_str()), argsJson.c_str()))
+        return PanelCommandError("panel command queue is full");
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["queued"] = true;
+    return r;
+}
+
+void VisualDebuggerModule::TryRegisterPanelCommand()
+{
+    SimQueryHostModule* host = mSimQueryHost.Get();
+    if (!host)
+        return;   // optional: no SimQueryHostModule (yet) - retried each tick until the host is active
+
+    mPanelCommandAttempted = true;   // one attempt per start; a rejection is logged once
+
+    static const Dia::API::ValueParam kParams[] = {
+        { "domain", "string", true,  "Debug domain id as shown in the panel (e.g. WorldGen)" },
+        { "cmd",    "string", true,  "Domain command name (e.g. setScale)" },
+        { "args",   "object", false, "Command arguments object (under 512 bytes serialized)" } };
+
+    Dia::DebugServer::SimHelpInfo help;
+    help.description = "Send a debug-panel command to a registered debug domain, exactly as the panel UI does (applied on the next sim tick)";
+    help.category = "debug";
+    help.owner = "VisualDebuggerModule";
+    help.params = kParams;
+    help.paramCount = 3;
+    help.noArgs = false;
+
+    mPanelCommandRegistered = host->RegisterCommand(kPanelCommandName, help,
+        [this](const Json::Value& a) { return HandlePanelCommand(a); });
+    if (!mPanelCommandRegistered)
+        DIA_LOG_ERROR("Debug", "VisualDebuggerModule: %s registration rejected by SimQueryHost", kPanelCommandName);
 }
 
 void VisualDebuggerModule::DrainPendingCommands()

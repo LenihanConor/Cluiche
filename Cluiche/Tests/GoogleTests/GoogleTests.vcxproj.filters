@@ -2685,5 +2685,8 @@
     <ClCompile Include="CoW\TestWorldGenDomainStateRelay.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
