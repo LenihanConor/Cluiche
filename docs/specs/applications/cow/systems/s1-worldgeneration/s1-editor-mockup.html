@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>S-1 World Generation - editor panel mockup (plan task 8c)</title>
+<!--
+  MOCKUP ONLY. Visual gate for worldgen plan task 8c / Feature 6 (f1-debug-host-integration.md).
+  Styling follows Cluiche/Assets/CoW/Global/Presentation/UI/debug-panel.html (520px left overlay, Consolas, #181818).
+  Controls are the real WorldShapeParams (TerrainTypes.h) and the cow.worldgen.* commands from plan task 8b.
+  Interactive bits: drag a slider (live preview, dirty stages, timings), click presets, pick a map size,
+  toggle the "imported / locked" state, click the hex map to select a cell.
+  NEW widgets needed in debug-panel.html (see gap list at the bottom of the panel): marked [NEW].
+-->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background:#0c0e10; font-family:'Consolas','Courier New',monospace; font-size:12px; color:#d4d4d4; height:100vh; overflow:hidden; user-select:none; }
+#viewport { position:fixed; left:520px; right:0; top:0; bottom:0; display:flex; align-items:center; justify-content:center; }
+#panel { position:fixed; top:0; left:0; width:520px; height:100vh; background:#181818; border-right:1px solid #2a2a2a; display:flex; flex-direction:column; }
+.hdr { background:#1f1f1f; border-bottom:1px solid #2d2d2d; padding:7px 10px; display:flex; gap:8px; align-items:center; }
+.hdr .t { font-size:10px; color:#7a7a7a; letter-spacing:2px; font-weight:700; flex:1; }
+.hdr .pill { font-size:10px; padding:1px 6px; border-radius:8px; background:#243b2a; color:#7fd18b; }
+.hdr .pill.busy { background:#3b3524; color:#e0b84c; }
+.hdr .pill.fail { background:#3b2424; color:#e07070; }
+#scroll { flex:1; overflow-y:auto; }
+#scroll::-webkit-scrollbar { width:6px; } #scroll::-webkit-scrollbar-thumb { background:#333; }
+.sec { border-bottom:1px solid #2a2a2a; }
+.sec > .sh { display:flex; align-items:center; gap:6px; padding:5px 10px; background:#1c1c1c; color:#9a9a9a; font-size:10px; letter-spacing:1.5px; font-weight:700; cursor:pointer; }
+.sec > .sh .c { color:#555; width:10px; } .sec > .sh .r { margin-left:auto; color:#666; letter-spacing:0; font-weight:400; }
+.sec.closed > .sb { display:none; } .sec.closed > .sh .c::before { content:'\25B8'; } .sec:not(.closed) > .sh .c::before { content:'\25BE'; }
+.sb { padding:6px 10px 8px; }
+.row { display:flex; align-items:center; gap:6px; margin:3px 0; }
+.row label { width:128px; color:#aaa; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .v { width:46px; text-align:right; color:#9ec7e8; flex-shrink:0; }
+.row .st { width:14px; text-align:center; font-size:9px; color:#555; flex-shrink:0; }
+.row .st.dirty { color:#e0b84c; }
+.track { position:relative; flex:1; height:14px; display:flex; align-items:center; }
+.track input[type=range] { width:100%; height:3px; accent-color:#5a9fd4; cursor:pointer; }
+.dtick { position:absolute; top:1px; width:1px; height:12px; background:#666; pointer-events:none; }
+.modified label { color:#e8c97a; }
+.sub { color:#666; font-size:10px; letter-spacing:1px; margin:7px 0 2px; }
+input[type=text], input[type=number], select { background:#101010; border:1px solid #333; color:#d4d4d4; font:inherit; padding:2px 5px; height:20px; }
+input[type=text] { flex:1; min-width:0; }
+button { background:#2a2a2a; border:1px solid #3a3a3a; color:#d4d4d4; font:inherit; padding:2px 9px; height:21px; cursor:pointer; }
+button:hover { background:#333; } button.pri { background:#2a4a66; border-color:#3d6a92; } button:disabled { opacity:.35; cursor:default; }
+button.on { background:#2a4a66; border-color:#3d6a92; }
+.seg { display:flex; } .seg button { border-right-width:0; } .seg button:last-child { border-right-width:1px; }
+.lockbar { background:#3b3524; border-bottom:1px solid #5a4d2a; color:#e0c87a; padding:6px 10px; display:none; align-items:center; gap:8px; }
+.lockbar.show { display:flex; } .lockbar span { flex:1; }
+.revert { display:none; }
+.tim { display:grid; grid-template-columns:96px 1fr 52px; gap:2px 6px; align-items:center; }
+.tim .n { color:#aaa; } .tim .b { height:7px; background:#222; } .tim .b i { display:block; height:100%; background:#5a9fd4; }
+.tim .b.skip i { background:#2f3a44; } .tim .ms { text-align:right; color:#9ec7e8; } .tim .ms.skip { color:#555; }
+.legend { display:flex; flex-wrap:wrap; gap:2px 10px; margin:4px 0; color:#aaa; } .legend i { display:inline-block; width:9px; height:9px; margin-right:4px; }
+.tg { display:flex; flex-wrap:wrap; gap:2px 12px; } .tg label { color:#aaa; cursor:pointer; } .tg input { vertical-align:middle; margin-right:3px; }
+.kv { display:grid; grid-template-columns:96px 1fr; gap:1px 8px; } .kv .k { color:#777; } .kv .h { color:#e8c97a; margin-top:4px; letter-spacing:1px; font-size:10px; grid-column:1/3; }
+.kv .lay { color:#9ec7e8; }
+.stub { color:#555; font-style:italic; padding:4px 0; }
+.new { color:#e07a5f; font-size:9px; margin-left:4px; letter-spacing:0; }
+.gap { margin:6px 0; color:#aaa; } .gap td { padding:1px 8px 1px 0; vertical-align:top; } .gap .ok { color:#7fd18b; } .gap .no { color:#e07a5f; }
+canvas { image-rendering:pixelated; border:1px solid #222; }
+#hover { position:fixed; right:12px; bottom:10px; color:#666; }
+.note { position:fixed; right:12px; top:10px; color:#556; font-size:11px; text-align:right; max-width:360px; }
+</style>
+</head>
+<body>
+
+<div id="viewport"><canvas id="map" width="880" height="560"></canvas></div>
+<div class="note">MOCKUP: the viewport is the CellField hex view (task 10). The panel is the task 9 deliverable.<br>Click a cell to select it. Drag sliders to preview.</div>
+<div id="hover"></div>
+
+<div id="panel">
+  <div class="hdr"><span class="t">WORLD GENERATION</span><span class="pill" id="pill">Complete</span></div>
+  <div class="lockbar" id="lockbar"><span>Imported world is <b>locked</b>. Edits to params need unlock; the world has no stage cache.</span><button id="unlockBtn">Unlock &amp; edit</button></div>
+
+  <div id="scroll">
+
+    <div class="sec" id="s-world"><div class="sh"><span class="c"></span>WORLD<span class="r" id="worldSummary"></span></div><div class="sb">
+      <div class="row"><label>Seed</label><input type="text" id="seed" value="12345678"><button id="rnd">Random</button><button class="pri" id="regen">Regenerate</button></div>
+      <div class="row"><label>Map size</label>
+        <div class="seg" id="sizeSeg"><button data-s="Small" class="on">Small 66&times;42</button><button data-s="Standard">Standard 80&times;52</button><button data-s="Large">Large 104&times;64</button></div></div>
+      <div class="row"><label>Preset</label>
+        <select id="preset"><option value="continental">continental</option><option value="archipelago">archipelago</option><option value="highlands">highlands</option><option value="">(modified)</option></select>
+        <button id="presetLoad">Load</button><button id="presetSave">Save&hellip;</button></div>
+      <div class="row" id="saveRow" style="display:none"><label></label><input type="text" id="saveId" placeholder="preset id"><input type="text" id="saveName" placeholder="display name"><button id="saveGo" class="pri">Save</button></div>
+      <div class="row" id="saveMsg" style="display:none"><label></label><span style="color:#7fd18b">Wrote Cluiche/out/CoW/presets/my_world.worldshape.json (isSource: false)</span></div>
+      <div class="row"><label>Status</label><span id="status" style="color:#aaa">Complete &middot; revision 14 &middot; 38 ms</span></div>
+    </div></div>
+
+    <div class="sec" id="s-shape"><div class="sh"><span class="c"></span>TERRAIN SHAPE<span class="r">17 sliders &middot; live preview</span></div><div class="sb" id="shape"></div></div>
+
+    <div class="sec" id="s-timing"><div class="sh"><span class="c"></span>STAGE TIMINGS<span class="r" id="timTotal"></span></div><div class="sb"><div class="tim" id="tim"></div>
+      <div class="stub" style="margin-top:4px">A slider only re-runs its stage and the stages after it. Skipped stages show their cached time.</div></div></div>
+
+    <div class="sec" id="s-view"><div class="sh"><span class="c"></span>VIEW</div><div class="sb">
+      <div class="row"><label>Colour by</label><select id="mode" style="flex:1"></select></div>
+      <div class="legend" id="legend"></div>
+      <div class="sub">DRAWERS</div>
+      <div class="tg" id="drawers"></div>
+    </div></div>
+
+    <div class="sec" id="s-cell"><div class="sh"><span class="c"></span>CELL INSPECTOR<span class="r" id="cellHead">no selection</span></div><div class="sb">
+      <div class="row"><label>Cell x, y</label><input type="number" id="cx" value="23" style="width:56px"><input type="number" id="cy" value="17" style="width:56px"><button id="cgo">Select</button><button id="cclr">Clear</button></div>
+      <div class="kv" id="cell"></div>
+    </div></div>
+
+    <div class="sec closed" id="s-val"><div class="sh"><span class="c"></span>VALIDATION<span class="r">arrives with tasks 13-16</span></div><div class="sb">
+      <div class="stub">Validate, guarantee rows, attempt history, Cancel and Export/Import are not in the terrain slice. The section shows here so the final layout is agreed now.</div>
+      <div class="row"><button disabled>Validate</button><button disabled>Cancel</button><button disabled>Export</button><button disabled>Import</button></div>
+    </div></div>
+
+    <div class="sec" id="s-gap"><div class="sh"><span class="c"></span>MOCKUP NOTES: debug-panel.html widget gaps</div><div class="sb">
+      <table class="gap">
+        <tr><td class="no">GAP</td><td>Slider commits on <code>change</code> only (release). Live shaping needs a throttled <code>input</code> send, last value per frame wins.</td></tr>
+        <tr><td class="no">GAP</td><td>Only <code>type: slider</code> controls render. Need: button, select, text/number input, checkbox/toggle, segmented buttons, collapsible section, key/value grid, stage-timing bars, hex legend swatches.</td></tr>
+        <tr><td class="ok">OK</td><td>Default tick on slider track (<code>dtick</code>) exists. Reused for "default" and for the preset value.</td></tr>
+        <tr><td class="ok">OK</td><td>Card, ctrl row, <code>sendCommand(domain, cmd, args)</code>, <code>updateDomainState</code> exist.</td></tr>
+      </table>
+    </div></div>
+
+  </div>
+</div>
+
+<script>
+// ---- param table: WorldShapeParams (TerrainTypes.h), grouped by first stage (terrain-generator.md stage table) ----
+const P = [
+ // key, label, min, max, step, def, stage
+ ['landFraction','Land fraction',0.20,0.65,0.01,0.42,1],['continents','Continents',1,3,1,1,1],['islands','Islands',0,6,1,4,1],
+ ['continentIslands','Continent islands',0,1,0.01,0.7,1],['peninsulas','Peninsulas',0,3,1,2,1],['coastline','Coastline',0,1,0.01,0.5,1],
+ ['mountainousness','Mountainousness',0,1,0.01,0.55,2],['spineToRing','Spine to ring',0,1,0.01,0.15,2],['orientationDeg','Orientation (deg)',0,360,1,30,2],
+ ['passes','Passes',0,4,1,2,3],['barrier','Barrier',0,1,0.01,0.6,3],
+ ['ruggedness','Ruggedness',0,1,0.01,0.4,4],
+ ['rivers','Rivers',0,1,0.01,0.5,6],['valleyDepth','Valley depth',0,1,0.01,0.4,6],['lakes','Lakes',0,12,1,4,7],
+ ['latitudeNorthDeg','Latitude north',-90,90,1,60,8],['latitudeSouthDeg','Latitude south',-90,90,1,20,8],
+ ['temperatureOffset','Temperature offset',-0.3,0.3,0.01,0,8],['moistureOffset','Moisture offset',-0.3,0.3,0.01,0,8],
+];
+const STAGES = ['SeedFields','Landmass','Mountains','Barrier','Elevation','Drainage','Rivers','Lakes','Climate'];
+const BASE_MS = [3,9,7,4,6,5,8,3,5];
+const PRESETS = {
+ continental:{}, archipelago:{landFraction:0.30,continents:2,islands:5,continentIslands:0.5,peninsulas:2},
+ highlands:{landFraction:0.55,islands:3,continentIslands:0.85,peninsulas:1,mountainousness:0.8},
+};
+const vals = {}; P.forEach(p=>vals[p[0]]=p[5]);
+const dirty = new Set(); let locked=false, size='Small', rev=14, selected=[23,17];
+const DIMS = {Small:[66,42],Standard:[80,52],Large:[104,64]};
+const MODES = {
+ Terrain:[['Plain','#8aa56a'],['Hills','#a58f5a'],['Mountain','#8a8a8a'],['Water','#2f5f8f'],['River','#4f95d0']],
+ Elevation:[['low','#2f6f4f'],['mid','#b0a050'],['high','#f0ece0']],
+ Landmass:[['main','#c08050'],['other','#5080c0'],['water','#1d3a5a']],
+ 'Coast distance':[['0','#e0d090'],['3','#80a070'],['8+','#204030']],
+ Latitude:[['north','#7fb0e0'],['mid','#d0d090'],['south','#e08050']],
+ 'Water source':[['river','#4f95d0'],['lake','#2f6fa0'],['none','#333']],
+ Drainage:[['sink','#3070a0'],['flow','#70a0c0'],['divide','#d0d0b0']],
+};
+let mode='Terrain';
+const DRAW = [['Tiles',1],['Grid lines',0],['Region edges',0],['Sites',0],['Selection',1],['Evidence',0]];
+
+// ---- panel build ----
+const $=id=>document.getElementById(id);
+function buildShape(){
+  const el=$('shape'); el.innerHTML=''; let last=0;
+  P.forEach(p=>{
+    if(p[6]!==last){ last=p[6]; const s=document.createElement('div'); s.className='sub'; s.textContent='STAGE '+last+' · '+STAGES[last].toUpperCase(); el.appendChild(s); }
+    const r=document.createElement('div'); r.className='row'; r.id='r-'+p[0];
+    const tick=((p[5]-p[2])/(p[3]-p[2]))*100;
+    r.innerHTML=`<label title="${p[0]}">${p[1]}</label><div class="track"><input type="range" min="${p[2]}" max="${p[3]}" step="${p[4]}" value="${vals[p[0]]}"><div class="dtick" style="left:${tick}%"></div></div><span class="v"></span><span class="st">●</span>`;
+    const inp=r.querySelector('input'), v=r.querySelector('.v'), st=r.querySelector('.st');
+    const fmt=x=>p[4]>=1?String(Math.round(x)):(+x).toFixed(2);
+    v.textContent=fmt(vals[p[0]]);
+    inp.addEventListener('input',()=>{ if(locked){inp.value=vals[p[0]];return;} vals[p[0]]=+inp.value; v.textContent=fmt(+inp.value); touch(p); });
+    el.appendChild(r);
+  });
+}
+function touch(p){
+  dirty.clear(); for(let s=p[6];s<STAGES.length;s++) dirty.add(s);
+  P.forEach(q=>{ const row=$('r-'+q[0]); row.querySelector('.st').classList.toggle('dirty',false); });
+  $('r-'+p[0]).querySelector('.st').classList.add('dirty');
+  setPill('busy','Previewing…');
+  clearTimeout(touch.t); touch.t=setTimeout(()=>{ rev++; renderTimings(p[6]); setPill('','Complete'); document.querySelectorAll('.st.dirty').forEach(e=>e.classList.remove('dirty')); drawMap(); syncModified(); },160);
+}
+function syncModified(){
+  let match='';
+  for(const [id,ov] of Object.entries(PRESETS)){ const ok=P.every(p=>Math.abs(vals[p[0]]-(ov[p[0]]!==undefined?ov[p[0]]:p[5]))<1e-6); if(ok){match=id;break;} }
+  $('preset').value=match; P.forEach(p=>$('r-'+p[0]).classList.toggle('modified',Math.abs(vals[p[0]]-p[5])>1e-6));
+  $('worldSummary').textContent=(match||'modified')+' · '+DIMS[size].join('×');
+}
+function setPill(cls,txt){ const p=$('pill'); p.className='pill '+cls; p.textContent=txt; $('status').textContent=txt==='Complete'?`Complete · revision ${rev} · ${total} ms`:txt; }
+let total=0;
+function renderTimings(from){
+  from=from||0; const scale={Small:1,Standard:1.5,Large:2.5}[size]; let max=0; const ms=BASE_MS.map(b=>Math.round(b*scale)); max=Math.max(...ms);
+  total=0; const t=$('tim'); t.innerHTML='';
+  STAGES.forEach((n,i)=>{ const ran=i>=from; if(ran) total+=ms[i];
+    t.innerHTML+=`<span class="n">${i} ${n}</span><span class="b ${ran?'':'skip'}"><i style="width:${ms[i]/max*100}%"></i></span><span class="ms ${ran?'':'skip'}">${ms[i]} ms${ran?'':' ↺'}</span>`; });
+  $('timTotal').textContent=`ran ${STAGES.length-from} of ${STAGES.length} · ${total} ms`;
+  $('status').textContent=`Complete · revision ${rev} · ${total} ms`;
+}
+function buildView(){
+  const m=$('mode'); m.innerHTML=Object.keys(MODES).map(k=>`<option>${k}</option>`).join('');
+  m.onchange=()=>{mode=m.value; legend(); drawMap();}; legend();
+  $('drawers').innerHTML=DRAW.map(d=>`<label><input type="checkbox" ${d[1]?'checked':''} ${['Region edges','Sites','Evidence'].includes(d[0])?'disabled title="arrives with later tasks"':''}>${d[0]}</label>`).join('');
+}
+function legend(){ $('legend').innerHTML=MODES[mode].map(l=>`<span><i style="background:${l[1]}"></i>${l[0]}</span>`).join(''); }
+function cellPanel(){
+  const [x,y]=selected; if(x==null){ $('cellHead').textContent='no selection'; $('cell').innerHTML='<span class="stub" style="grid-column:1/3">Click a cell in the view, or type x, y.</span>'; return; }
+  const h=hash(x,y), idx=y*DIMS[size][0]+x, e=elev(x,y);
+  $('cellHead').textContent=`(${x}, ${y}) · index ${idx}`;
+  const nb=[[1,0],[0,-1],[-1,0],[-1,1],[0,1],[1,1]].map((d,i)=>{ const nx=x+d[0], ny=y+d[1]-((x%2)?0:(d[0]!==0?1:0))*(d[1]===1&&d[0]!==0?1:0); const ok=nx>=0&&ny>=0&&nx<DIMS[size][0]&&ny<DIMS[size][1]; return `${i}:${ok?`(${nx},${ny})`:'edge'}`; });
+  $('cell').innerHTML=`
+   <span class="k">terrain</span><span>${terrainAt(x,y)}</span><span class="k">landmass</span><span>${e>0.28?'1 (main)':'0 (water)'}</span>
+   <span class="k">elevation</span><span>${e.toFixed(2)}</span><span class="k">latitude</span><span>${(0.2+y/DIMS[size][1]*0.6).toFixed(2)}</span>
+   <span class="k">water source</span><span>${terrainAt(x,y)==='River'?'river':'none'}</span><span class="k">neighbours</span><span>${nb.slice(0,3).join(' ')}<br>${nb.slice(3).join(' ')}</span>
+   <span class="h">STAGE VALUES (layers)</span>
+   <span class="k">landPotential</span><span class="lay">${(e*1.1).toFixed(3)}</span><span class="k">coastDistance</span><span class="lay">${Math.max(0,Math.round((e-0.28)*20))}</span>
+   <span class="k">drainage</span><span class="lay">${(1-e).toFixed(3)}</span><span class="k">flowAccum</span><span class="lay">${Math.round(h*40)}</span>
+   <span class="h">NOT IN THIS SLICE</span><span class="k">biome / region / site</span><span class="stub">arrives with tasks 11-12</span>`;
+}
+function hash(x,y){ let h=(x*374761393+y*668265263+Number(vals.landFraction*100|0))^(x*y); h=(h^(h>>>13))*1274126177; return ((h^(h>>>16))>>>0)/4294967295; }
+function elev(x,y){ const [w,hh]=DIMS[size]; const dx=(x/w-0.5)*2, dy=(y/hh-0.5)*2; const blob=1-Math.sqrt(dx*dx*0.9+dy*dy*1.4)*(1.3-vals.landFraction); const n=(hash(x>>1,y>>1)-0.5)*(0.25+vals.ruggedness*0.35); return Math.max(0,Math.min(1,blob*0.8+n+0.15+(vals.mountainousness-0.55)*0.1*Math.sin(x*0.35+vals.orientationDeg*0.02))); }
+function terrainAt(x,y){ const e=elev(x,y); if(e<0.28) return 'Water'; if(e>0.62) return 'Mountain'; if(e>0.48) return 'Hills'; if(hash(x*3,y*7)<vals.rivers*0.12 && e<0.42) return 'River'; return 'Plain'; }
+function colour(x,y){
+  const e=elev(x,y), t=terrainAt(x,y);
+  if(mode==='Terrain') return {Water:'#2f5f8f',Plain:'#8aa56a',Hills:'#a58f5a',Mountain:'#8a8a8a',River:'#4f95d0'}[t];
+  if(mode==='Elevation'){ const k=Math.round(e*255); return `rgb(${k},${Math.min(255,k+30)},${Math.round(k*0.7)})`; }
+  if(mode==='Landmass') return e>0.28?'#c08050':'#1d3a5a';
+  if(mode==='Coast distance'){ const d=Math.max(0,(e-0.28)*20); return `hsl(${50+d*8},40%,${70-d*3}%)`; }
+  if(mode==='Latitude') return `hsl(${210-(y/DIMS[size][1])*180},50%,55%)`;
+  if(mode==='Water source') return t==='River'?'#4f95d0':'#333';
+  return `hsl(200,40%,${20+e*50}%)`;
+}
+function drawMap(){
+  const c=$('map'), g=c.getContext('2d'); g.fillStyle='#0c0e10'; g.fillRect(0,0,c.width,c.height);
+  const [w,h]=DIMS[size], R=Math.min(c.width/(w*1.5+0.5), c.height/(h*Math.sqrt(3)+1)); const hw=R*2, hh=R*Math.sqrt(3);
+  const grid=$('drawers').querySelectorAll('input')[1].checked, selOn=$('drawers').querySelectorAll('input')[4].checked;
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){
+    const cx=R+x*R*1.5, cy=hh/2+y*hh+((x%2)?hh/2:0);
+    g.beginPath(); for(let i=0;i<6;i++){ const a=Math.PI/3*i; g.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); } g.closePath();
+    g.fillStyle=colour(x,y); g.fill(); if(grid){g.strokeStyle='rgba(0,0,0,.35)';g.stroke();}
+    if(selOn&&selected[0]===x&&selected[1]===y){ g.lineWidth=2; g.strokeStyle='#fff'; g.stroke(); g.lineWidth=1; }
+  }
+  c._geom={R,hh,w,h};
+}
+$('map').addEventListener('click',e=>{ const c=$('map'), {R,hh,w,h}=c._geom, r=c.getBoundingClientRect(); const mx=(e.clientX-r.left)*c.width/r.width, my=(e.clientY-r.top)*c.height/r.height; let best=null,bd=1e9;
+  for(let x=0;x<w;x++)for(let y=0;y<h;y++){ const cx=R+x*R*1.5, cy=hh/2+y*hh+((x%2)?hh/2:0), d=(cx-mx)**2+(cy-my)**2; if(d<bd){bd=d;best=[x,y];} }
+  selected=best; $('cx').value=best[0]; $('cy').value=best[1]; cellPanel(); drawMap(); });
+$('map').addEventListener('mousemove',e=>{ $('hover').textContent=''; });
+
+// ---- actions ----
+document.querySelectorAll('.sec > .sh').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('closed')));
+$('rnd').onclick=()=>{ $('seed').value=Math.floor(Math.random()*1e8); };
+$('regen').onclick=()=>{ if(locked) return; rev++; setPill('busy','Generating…'); setTimeout(()=>{ renderTimings(0); setPill('','Complete'); drawMap(); cellPanel(); },200); };
+$('sizeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('sizeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); size=b.dataset.s; selected=[Math.min(selected[0],DIMS[size][0]-1),Math.min(selected[1],DIMS[size][1]-1)]; rev++; renderTimings(0); drawMap(); cellPanel(); syncModified(); });
+$('presetLoad').onclick=()=>{ const id=$('preset').value; if(!id||locked) return; P.forEach(p=>vals[p[0]]=PRESETS[id][p[0]]!==undefined?PRESETS[id][p[0]]:p[5]); buildShape(); rev++; renderTimings(1); drawMap(); syncModified(); };
+$('presetSave').onclick=()=>{ $('saveRow').style.display=$('saveRow').style.display==='none'?'flex':'none'; $('saveMsg').style.display='none'; };
+$('saveGo').onclick=()=>{ $('saveRow').style.display='none'; $('saveMsg').style.display='flex'; };
+$('cgo').onclick=()=>{ selected=[+$('cx').value,+$('cy').value]; cellPanel(); drawMap(); };
+$('cclr').onclick=()=>{ selected=[null,null]; cellPanel(); drawMap(); };
+function setLock(v){ locked=v; $('lockbar').classList.toggle('show',v); $('regen').disabled=v; document.querySelectorAll('#shape input').forEach(i=>i.disabled=v); $('presetLoad').disabled=v; if(v){ $('worldSummary').textContent='imported · locked'; $('tim').innerHTML='<span class="stub" style="grid-column:1/4">No stage cache for an imported world: nothing to re-run.</span>'; $('timTotal').textContent='n/a'; } else { syncModified(); renderTimings(0);} }
+$('unlockBtn').onclick=()=>setLock(false);
+// demo hook: ctrl+click header pill toggles the imported state
+$('pill').addEventListener('click',()=>setLock(!locked)); $('pill').title='click to preview the imported/locked state'; $('pill').style.cursor='pointer';
+
+buildShape(); buildView(); renderTimings(0); syncModified(); cellPanel(); drawMap();
+</script>
+</body>
+</html>
