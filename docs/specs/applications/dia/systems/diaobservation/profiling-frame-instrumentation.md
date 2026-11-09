@@ -10,6 +10,8 @@
 
 **Status:** `Approved` — 2026-05-19
 
+> **Amended 2026-11-09 (Approved):** module-attributed scopes, always-on unit timing, trip reports and `--perf`. See "Amendment 2026-11-09" at the end, and @perf-inspector.md / @perf-live-control.md.
+
 **Research:** @docs/research/observ_telemetry/summary.md
 
 **Depends on:** Feature #2 (foundation) — `SessionManager` wires `ProfileFileSink` and drives `Profiler`; session directory must exist. Feature #5 (metrics registry) — `DIA_PROFILE_SCOPE_METRIC` variant feeds `Histogram::Observe()`. Both must be Done before implementation begins.
@@ -317,3 +319,64 @@ Each registered thread maintains:
 ## Status
 
 `Approved` — 2026-05-19. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
+
+
+---
+
+## Amendment 2026-11-09: module attribution, always-on unit timing, trip reports
+
+**Status of this amendment:** `Approved` — 2026-11-09 (with @perf-inspector.md and @perf-live-control.md).
+**Why:** the S-1 panel perf investigation (docs/specs/applications/cow/systems/s1-worldgeneration/worldgen-panel.plan.md, "Perf fix") needed hand-written timers because (1) every module update uses the same scope name `module.update` with no module identity, (2) profiling and tracing default OFF, so a session had an empty `trace.jsonl` and no `profile.jsonl`, and (3) the only over-budget signal was a per-frame `pu.over_budget` log line (`ProcessingUnit.cpp`), which fed the panel's log push and kept the unit over budget (a feedback loop).
+
+### A1. Module-attributed scopes
+- `ScopeRecord` gains `Dia::Core::StringCRC subject` (the module or PU instance id; zero when not set). `name` stays `module.update` / `pu.update`, so existing filters keep working. `profile.jsonl` gains a `"subject"` field (omitted when zero).
+- `ScopedZone` gains an overload taking a subject; `Module::Update` and `ProcessingUnit::Update` pass their instance ids. No string building on the hot path (the CRC is stored on the module at construction).
+- Sections inside a module (`DIA_PROFILE_SCOPE`) inherit the subject of the enclosing module scope through the thread-local open stack, so no call-site changes are needed to attribute them.
+
+### A2. Always-on unit timing (independent of the profile pillar)
+- Each `ProcessingUnit` keeps a `UnitTimingTable` (new, pure, `Dia/DiaObservation/Profile/UnitTimingTable.h`): for each module, last ms, EWMA, and a ring of the last 128 frames' ms; plus the unit's own tick ms. Filled by the PU with two `steady_clock` reads per module per frame. Cost target: under 0.5 us per module per frame; the table's own cost is published as the gauge `perf.self_ms`.
+- Gauges: `pu.<unit>.module.<id>.ms` (EWMA), registered when the module is created. Existing `pu.<unit>.last_tick_ms` is unchanged.
+- Always compiled in (Debug and Release). Profile scopes stay opt-in (SD-O27 unchanged).
+
+### A3. Trip detector and trip report
+- `TripDetector` (new, pure, same folder): per unit, trips when the tick exceeds the budget for `tripFrames` consecutive frames (default 10) or exceeds `tripFactor` x budget in one frame (default 2.0). It re-arms after `rearmFrames` frames under budget (default 30). After a trip, further trips for that unit are suppressed for `minIntervalMs` (default 5000) and counted.
+- On a trip, **one** record is written to `trips.jsonl` in the session directory: unit, frame range, budget, peak ms, the top 5 modules by mean ms over the trip window (with sections), the worst frame's full breakdown, the last 60 frames of that unit from the ring, and the suppressed-trip count since the previous record. One Warning log line `pu.trip id=... frames=... peak_ms=... top=...` accompanies it.
+- The per-frame `pu.over_budget` Warning in `ProcessingUnit.cpp` is replaced by the counter `pu.<unit>.over_budget_frames` and the trip record. The log line must never be emitted at tick rate.
+- Budget: `target_ms` from the unit frequency, times `observation.perf.budget_scale` (default 1.0; Debug runs may set 1.5-2.0). Reports state the build configuration.
+
+### A4. Config and CLI
+- `observation.perf { trip_frames, trip_factor, rearm_frames, min_interval_ms, budget_scale }`; CLI `--perf` (shorthand: profile enabled with the ApplicationFlow category, trips on, and a `perf-summary.json` written at exit with per-unit, per-module p50/p95/max and trip counts). `dia run|launch <target> --perf[=seconds]` forwards `--perf` and, when given a duration, exits the app after that many seconds (automation exit path).
+
+### Acceptance criteria (amendment)
+| ID | Criterion | Verification |
+|----|-----------|--------------|
+| AA1 | A `module.update` record in `profile.jsonl` carries `subject` equal to the module's instance id; two modules in one frame are distinguishable | Unit test with two test modules |
+| AA2 | A section scope opened inside a module update inherits that module's subject | Unit test |
+| AA3 | `UnitTimingTable` reports last, EWMA and p95 per module; a module sleeping 5 ms shows 5 ms +/- 1 ms | Unit test |
+| AA4 | With profiling OFF, the per-module gauges still update | Unit test |
+| AA5 | `TripDetector`: 10 consecutive frames over budget produce exactly one trip; 1,000 frames over budget produce at most 1 trip per `minIntervalMs` and the next record states the suppressed count | Unit test with a fake clock |
+| AA6 | A trip record lists the top modules in descending mean ms and includes the last 60 frames | Unit test |
+| AA7 | A unit that is over budget for 1,000 frames writes no more than 1 `pu.trip` log line per 5 s and zero `pu.over_budget` lines | Integration test (the S-1 case: card open, Debug) |
+| AA8 | `UnitTimingTable` costs under 0.5 us per module per frame in Release | Benchmark test (reported, not gating) |
+| AA9 | `--perf` writes `perf-summary.json` with every module of every unit | Integration test |
+
+### Binding decisions (amendment)
+| ID | Decision | How it applies |
+|----|----------|----------------|
+| SD-PERF-1 | Module timing is always on and independent of profile categories | A2 is not gated by `profileEnabled` (SD-O27 stays for scopes) |
+| SD-PERF-2 | Telemetry never writes at tick rate | A3 replaces the per-frame warning; any future diagnostic needs a rate limit at the source |
+| SD-PERF-3 | Pure data types in DiaObservation; hosts in application code | `UnitTimingTable` and `TripDetector` depend only on DiaCore (SD-O21); `ProcessingUnit` (DiaApplicationFlow) fills them |
+
+### Open design questions (amendment)
+1. `ScopeRecord` grows by 4 bytes. Is the 512-entry closed ring (Thread-Local Design) still within budget? (Expected yes.)
+2. Where does the per-module gauge set live when modules are created and destroyed per stage? (Proposal: register on module start, unregister on stop, as the health reporters do.)
+3. Should trips also be raised by a single module exceeding a share of the frame (for example 40%) even when the unit is under budget? (Deferred; the mockup lists it as a trip option.)
+
+### Tasks (amendment)
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| A1 | `ScopeRecord.subject`, `ScopedZone` subject overload, `profile.jsonl` field, module/PU call sites, inheritance through the open stack | AA1, AA2 | Planned | sonnet | Dia |
+| A2 | `UnitTimingTable` + PU hookup + per-module gauges + `perf.self_ms` | AA3, AA4, AA8 | Planned | sonnet | Dia |
+| A3 | `TripDetector` + `trips.jsonl` writer + replace `pu.over_budget` | AA5, AA6, AA7 | Planned | sonnet | Dia; edits `ProcessingUnit.cpp` |
+| A4 | Config block, `--perf` flag, `perf-summary.json`, `dia run|launch --perf[=seconds]` | AA9 | Planned | sonnet | DiaCLI |
+| A5 | Update `dia.dia.observation.architecture.module.md` | - | Planned | haiku | |
