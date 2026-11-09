@@ -71,6 +71,8 @@
     <ClCompile Include="Modules\AppIdentity.cpp" />
     <ClCompile Include="Modules\MessageBusHostModule.cpp" />
     <ClCompile Include="Modules\SimQueryHostModule.cpp" />
+    <ClCompile Include="Modules\DomainStateBridgeModule.cpp" />
+    <ClCompile Include="Modules\DomainStateRelayModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -134,6 +136,8 @@
     <ClInclude Include="Modules\SimQueryHostModule.h" />
     <ClInclude Include="Types\SimRegistrationMessage.h" />
     <ClInclude Include="Types\DomainStateInterestEvent.h" />
+    <ClInclude Include="Modules\DomainStateBridgeModule.h" />
+    <ClInclude Include="Modules\DomainStateRelayModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

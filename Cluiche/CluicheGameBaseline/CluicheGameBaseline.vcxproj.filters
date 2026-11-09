@@ -141,6 +141,12 @@
     <ClCompile Include="Modules\SimQueryHostModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\DomainStateBridgeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainStateRelayModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -301,6 +307,12 @@
     </ClInclude>
     <ClInclude Include="Types\DomainStateInterestEvent.h">
       <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateBridgeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateRelayModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
