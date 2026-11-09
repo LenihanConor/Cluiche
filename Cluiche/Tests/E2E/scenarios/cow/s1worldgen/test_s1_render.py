@@ -4,7 +4,9 @@ cow.worldgen.view (sim-hosted) reports the hosted viewer's upload counter and th
 Pixels are not asserted here: layerVersion == status.revision means the viewer uploaded the new world to the CellField
 layer; the draw that shows it happens in the same Sim frame.
 
-Latency gate: p95 < 250 ms in Debug (2.5x the 100 ms Release target). The Release gate is documented, not enforced here.
+Latency gate: the part the view and the frame hand-offs add (total minus that run's generation lastMs) must stay under 100 ms at p95 in Debug.
+Total slider-to-visible time is printed but not gated: it is dominated by generation (Large ~190 ms in Debug) and varies by machine.
+The viewer only exists in DIA_DEBUG builds, so there is no Release measurement of the view.
 """
 import statistics
 import time
@@ -13,7 +15,7 @@ from client import AutomationError
 
 _STAGE = "S1WorldGenerationTestbedStage"
 _REPEATS = 20
-_DEBUG_P95_LIMIT_MS = 250.0
+_DEBUG_OVERHEAD_P95_LIMIT_MS = 100.0   # the whole slider-to-visible target, spent on non-generation work only
 
 
 def _report(request, text):
@@ -114,6 +116,7 @@ def test_idle_frames_upload_nothing(dia_client, request):
 def _measure(c, size):
     """_REPEATS alternating landFraction sets; elapsed ms from the set reply to layerVersion == the new revision."""
     samples = []
+    overheads = []   # elapsed minus that run's own generation time: what the view and the frame hand-offs add
     last_status = None
     values = (0.40, 0.52)
     for i in range(_REPEATS):
@@ -132,7 +135,8 @@ def _measure(c, size):
             time.sleep(0.005)
         last_status = c.send_command("cow.worldgen.status")
         assert last_status["revision"] == target, f"{size}: expected one revision per set, got {last_status['revision']} (target {target})"
-    return samples, last_status
+        overheads.append(max(0.0, samples[-1] - float(last_status.get("lastMs") or 0.0)))
+    return samples, overheads, last_status
 
 
 def test_slider_to_uploaded_latency(dia_client, request):
@@ -150,22 +154,25 @@ def test_slider_to_uploaded_latency(dia_client, request):
                 c.send_command("cow.worldgen.set_size", {"size": size})
             _wait_view_current(c)
             time.sleep(0.5)
-            samples, status = _measure(c, size)
-            results[size] = (samples, status)
+            samples, overheads, status = _measure(c, size)
+            results[size] = (samples, overheads, status)
     finally:
         c.send_command("cow.worldgen.set_size", {"size": "Small"})
         _wait_view_current(c)
 
     lines = []
     failed = []
-    for size, (samples, status) in results.items():
+    for size, (samples, overheads, status) in results.items():
         p50, p95, mx = statistics.median(samples), _percentile(samples, 95), max(samples)
-        lines.append(f"[ measured ] {size:8s} n={len(samples)} p50={p50:.0f} ms p95={p95:.0f} ms max={mx:.0f} ms | "
+        o50, o95 = statistics.median(overheads), _percentile(overheads, 95)
+        lines.append(f"[ measured ] {size:8s} n={len(samples)} total p50={p50:.0f} p95={p95:.0f} max={mx:.0f} ms | "
+                     f"view+hand-off overhead p50={o50:.0f} p95={o95:.0f} ms | "
                      f"last gen lastMs={status.get('lastMs')} stagesRan={status.get('stagesRan')}")
-        if p95 >= _DEBUG_P95_LIMIT_MS:
-            failed.append(f"{size} p95 {p95:.0f} ms")
+        # Gate on what the view adds, not on generation time (machine and build dependent, owned by the Terrain Generator).
+        if o95 >= _DEBUG_OVERHEAD_P95_LIMIT_MS:
+            failed.append(f"{size} overhead p95 {o95:.0f} ms")
     print("\n".join(lines))
-    assert not failed, "slider-to-uploaded p95 over the Debug limit of 250 ms: " + ", ".join(failed) + "\n" + "\n".join(lines)
+    assert not failed, f"view+hand-off overhead p95 over {_DEBUG_OVERHEAD_P95_LIMIT_MS:.0f} ms: " + ", ".join(failed) + "\n" + "\n".join(lines)
 
     v = _view(c)
     assert v["readFailures"] == 0, v
