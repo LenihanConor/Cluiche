@@ -56,6 +56,8 @@
     <ClCompile Include="Modules\WorldGenerationModule.cpp" />
     <ClCompile Include="Modules\S1WorldGenerationTestbedStageModule.cpp" />
     <ClCompile Include="Modules\WorldGenDebugDomain.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -93,6 +95,8 @@
     <ClInclude Include="Modules\WorldGenerationModule.h" />
     <ClInclude Include="Modules\S1WorldGenerationTestbedStageModule.h" />
     <ClInclude Include="Modules\WorldGenDebugDomain.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

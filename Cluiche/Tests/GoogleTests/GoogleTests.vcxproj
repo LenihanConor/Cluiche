@@ -1185,6 +1185,11 @@
     <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldHexGrid.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp" />
+    <ClCompile Include="CoW\TestWorldHexGrid.cpp" />
+    <ClCompile Include="CoW\TestWorldLayerSource.cpp" />
+    <ClCompile Include="CoW\TestWorldGenSchema.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

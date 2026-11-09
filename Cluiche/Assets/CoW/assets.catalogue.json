@@ -192,6 +192,19 @@
                 "misc/ApplicationFlow"
             ],
             "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.worldgen_schema",
+            "references": [],
+            "scope": "global",
+            "source_path": "Stages/S1WorldGenerationTestbedStage/worldgen.schema.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
         }
     ]
 }
