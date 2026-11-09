@@ -129,6 +129,8 @@ World → screen goes through the camera. Screen → cell uses the camera invers
 
 ### Selection Input
 
+> **Amended 2026-11-09:** the numbered route below is superseded. The click is handled on SimPU: the S-1 stage module (a SimModule) feeds pointer frames from `InputStreamModule` to the DiaCellLayers viewer, which does the picking and selection; no MainPU handler and no `cells.select.cell` command is sent for a click. Esc clears. The grid-lines drawer is replaced by an always-on small inset (no runtime toggle). See @worldgen-view.plan.md.
+
 > **Amended 2026-10-19 (DiaCellLayers/DiaCellHistory):** Selection uses DiaCellLayers commands: `cells.select.cell <q> <r>` replaces the old `selectCell {x,y}`, and the Cell Inspector (Feature 6) uses `describeCell` to show S-1's biome scores, stage values and neighbours alongside the field values.
 
 A left-click on the map selects a cell:
@@ -304,7 +306,7 @@ Click at cell centres on even and odd columns, just inside hex corners, and just
 | # | Question | Impact | Resolution |
 |---|----------|--------|------------|
 | 1 | Exact biome/terrain/region debug colours? | Clarity only | HSV-spaced placeholders; swap for thematic colours when Phase 2 names land |
-| 2 | How does a world click reach a SimPU domain command? | Selection (AC7) | Check at plan time how DiaDebugPanel commands are routed to SimPU domains, and send the click the same way. If no route exists for non-panel input, use the baseline render-to-sim request pattern (`RenderToSimNavRequest`) |
+| 2 | How does a world click reach a SimPU domain command? | Selection (AC7) | **Resolved 2026-11-09 (worldgen-view.plan.md):** no cross-PU hop. Input is read on SimPU (`InputStreamModule` via `ModuleRef`); the stage module builds a pointer frame and calls `CellLayerViewerDomain::SubmitPointerFrame`, and the viewer picks and selects itself (precedent: CluicheTest `CellLayersViewerTestStageModule`). Typed selection uses the sim-hosted `cells.select.cell/clear` commands |
 | 3 | Should a failed generation keep its last attempt's world, so violations can be drawn? | Debugging unsatisfiable seeds visually | Not for S-1: text diagnostics in Feature 6 plus "export what you have" is enough. Revisit if the S-1 challenge pass shows designers need it |
 | 4 | ~~Is ~23,000 primitives too slow through the immediate debug path?~~ | AC10 | **Resolved 2026-10-15:** tiles and grid moved to CellField (dia-needs #14); the immediate path keeps ~3,600 overlay primitives |
 
