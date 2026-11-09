@@ -649,6 +649,56 @@ body {
 .st-hdr .st-cell { color: #383838; font-weight: 700; }
 .st-row .st-cell { color: #5a5a5a; }
 
+/* ── S-1 World Generation card (mockup: docs/specs/applications/cow/systems/s1-worldgeneration/s1-editor-mockup.html) ── */
+.wg { margin: 2px -2px 0 -2px; font-size: 11px; color: #d4d4d4; }
+.wg-sec { border-bottom: 1px solid #2a2a2a; }
+.wg-sec > .wg-sh { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: #1c1c1c; color: #9a9a9a; font-size: 10px; letter-spacing: 1.5px; font-weight: 700; cursor: pointer; }
+.wg-sh .wg-c { color: #555; width: 10px; }
+.wg-sh .wg-sr { margin-left: auto; color: #666; letter-spacing: 0; font-weight: 400; }
+.wg-sec.closed > .wg-sb { display: none; }
+.wg-sec.closed > .wg-sh .wg-c::before { content: '\25B8'; }
+.wg-sec:not(.closed) > .wg-sh .wg-c::before { content: '\25BE'; }
+.wg-sb { padding: 6px 8px 8px; }
+.wg-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.wg-row > label, .wg-row > .wg-lbl { width: 112px; color: #aaa; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-row .wg-v { width: 42px; text-align: right; color: #9ec7e8; flex-shrink: 0; }
+.wg-row.modified > .wg-lbl { color: #e8c97a; }
+.wg-track { position: relative; flex: 1; min-width: 0; height: 14px; display: flex; align-items: center; }
+.wg-track input[type=range] { width: 100%; height: 3px; accent-color: #5a9fd4; cursor: pointer; }
+.wg-sub { color: #666; font-size: 10px; letter-spacing: 1px; margin: 7px 0 2px; }
+.wg input[type=text], .wg input[type=number], .wg select { background: #101010; border: 1px solid #333; color: #d4d4d4; font: inherit; padding: 2px 5px; height: 20px; }
+.wg input[type=text] { flex: 1; min-width: 0; }
+.wg input.bad { border-color: #a04040; }
+.wg select { min-width: 0; }
+.wg-row > select { flex: 1; }
+.wg button { background: #2a2a2a; border: 1px solid #3a3a3a; color: #d4d4d4; font: inherit; padding: 2px 9px; height: 21px; cursor: pointer; }
+.wg button:hover { background: #333; }
+.wg button.pri, .wg button.on { background: #2a4a66; border-color: #3d6a92; }
+.wg button:disabled { opacity: .35; cursor: default; }
+.wg-seg { display: flex; }
+.wg-seg button { border-right-width: 0; }
+.wg-seg button:last-child { border-right-width: 1px; }
+.wg-tim { display: flex; flex-direction: column; gap: 2px; }
+.wg-trow { display: grid; grid-template-columns: 96px 1fr 60px; gap: 6px; align-items: center; }
+.wg-trow .wg-n { color: #aaa; }
+.wg-bar { height: 7px; background: #222; }
+.wg-bar i { display: block; height: 100%; background: #5a9fd4; }
+.wg-trow.skip .wg-bar i { background: #2f3a44; }
+.wg-trow .wg-ms { text-align: right; color: #9ec7e8; }
+.wg-trow.skip .wg-ms { color: #555; }
+.wg-tg { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.wg-tg label { color: #aaa; cursor: pointer; }
+.wg-tg label.off { color: #555; cursor: default; }
+.wg-tg input { vertical-align: middle; margin-right: 3px; }
+.wg-kv { display: grid; grid-template-columns: 96px 1fr; gap: 1px 8px; margin-top: 4px; }
+.wg-kv .k { color: #777; }
+.wg-kv .h { color: #e8c97a; margin-top: 4px; letter-spacing: 1px; font-size: 10px; grid-column: 1 / 3; }
+.wg-kv .lay { color: #9ec7e8; }
+.wg-stub { color: #555; font-style: italic; padding: 4px 0; }
+.wg-err { color: #e07a5f; padding: 4px 0; }
+.wg-ok { color: #7fd18b; }
+.wg-note { color: #666; margin-top: 4px; }
+
 /* ── Utility ── */
 .hidden { display: none !important; }
 </style>
@@ -735,7 +785,9 @@ var ui = {
   queryText: '',     // cell layer viewer query box text (page session only)
   queryRecent: [],   // last 10 run queries, newest first
   queryTimer: null,  // pending debounced query_check
-  activeSlider: null // control element currently being dragged
+  activeSlider: null, // control element currently being dragged
+  wgOpen: {},         // WorldGen section key -> bool (collapsed state survives rebuilds)
+  wgSaveNote: ''      // WorldGen local preset-save message (validation), shown instead of lastSave
 };
 
 var latest = {};     // last pushed domain state, keyed by display name
@@ -771,6 +823,7 @@ function domainsOf(data) {
       stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
       controls: Array.isArray(d.controls) ? d.controls : [],
       custom:  (typeof d.panel === 'string') ? d.panel : '',
+      worldgen: wgIsDomain(d._displayName || name, d._id || ''),
       viewer:  isViewerState(d) ? d : null,
       history: isHistoryState(d) ? d : null,
       raw:     d
@@ -1166,7 +1219,7 @@ function isViewerState(d) {
 }
 
 function isDomainEnabled(domain) {
-  if (domain.viewer || domain.history) return true;   // overlays are its drawers; the card is not "off" when none are on
+  if (domain.viewer || domain.history || domain.worldgen) return true;   // overlays are its drawers; the card is not "off" when none are on
   for (var i = 0; i < domain.drawers.length; ++i) {
     if (domain.drawers[i] && domain.drawers[i].enabled) return true;
   }
@@ -1232,7 +1285,7 @@ function structureSignature(domains) {
       var id = controlId(c) || '?';
       return c.schemaKey ? id + '@' + c.schemaKey + (c.packId ? '#' + c.packId : '') : id;
     }).join(',');
-    parts.push(d.group + '/' + d.id + '@' + d.cmdId + '[' + drawers + '][' + ctrls + ']' + d.custom + (d.viewer ? viewerSignature(d.viewer) : ''));
+    parts.push(d.group + '/' + d.id + '@' + d.cmdId + '[' + drawers + '][' + ctrls + ']' + d.custom + (d.viewer ? viewerSignature(d.viewer) : '') + (d.worldgen ? wgSignature(d.raw) : ''));
   }
   return parts.join('|') + '~' + vs.gen;
 }
@@ -1313,7 +1366,7 @@ function el(tag, cls, text) {
 }
 
 function buildDomainCard(domain) {
-  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner') || !!domain.viewer || !!domain.history;
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = (domain.custom === 'f2_test_runner') || !!domain.viewer || !!domain.history || !!domain.worldgen;
 
   var enabled = isDomainEnabled(domain);
 
@@ -1351,6 +1404,12 @@ function buildDomainCard(domain) {
 
   if (domain.custom === 'f2_test_runner') {
     body.appendChild(buildF2Panel(domain));
+    card.appendChild(body);
+    return card;
+  }
+
+  if (domain.worldgen) {
+    body.appendChild(buildWorldGen(domain));
     card.appendChild(body);
     return card;
   }
@@ -1453,6 +1512,572 @@ function formatValue(v, decimals) {
   if (!isFinite(n)) return String(v);
   if (decimals !== undefined && decimals !== null) return n.toFixed(decimals);
   return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
+}
+
+// ── S-1 World Generation card (WorldGenDebugDomain) ───────────────────────
+// State JSON contract: docs/specs/applications/cow/systems/s1-worldgeneration/worldgen-panel.plan.md
+// ("State JSON contract"). Mockup: s1-editor-mockup.html. The card only sends commands (setScale, setSeed,
+// regenerate, setSize, presetLoad, presetSave, selectCell, clearCell, setColourMode, toggle); the domain owns
+// all state. Hold rules: a dragged slider (ui.activeSlider), a focused/dirty/just-changed input is never
+// overwritten by the per-frame state push. No legend swatches: the contract carries no legend data.
+
+var WG_THROTTLE_MS = 50;      // max one live setScale per window; trailing value always delivered
+var WG_HOLD_MS     = 300;     // keep a just-released control against one stale state push
+var WG_SECTIONS = [
+  { key: 'world',      title: 'WORLD',          open: true  },
+  { key: 'shape',      title: 'TERRAIN SHAPE',  open: true  },
+  { key: 'timings',    title: 'STAGE TIMINGS',  open: false },
+  { key: 'view',       title: 'VIEW',           open: false },
+  { key: 'cell',       title: 'CELL INSPECTOR', open: false },
+  { key: 'validation', title: 'VALIDATION',     open: false }
+];
+
+function wgIsDomain(id, cmdId) { return cmdId === 'WorldGen' || id === 'World Generation'; }
+
+function wgNames(arr, field) {
+  var out = [];
+  if (!Array.isArray(arr)) return '';
+  for (var i = 0; i < arr.length; ++i) out.push(arr[i] && typeof arr[i] === 'object' ? arr[i][field] : arr[i]);
+  return out.join(',');
+}
+
+// Anything that changes the built widgets (not just values) goes in here, so a rebuild is rare.
+function wgSignature(st) {
+  var parts = [];
+  var ctl = Array.isArray(st.controls) ? st.controls : [];
+  for (var i = 0; i < ctl.length; ++i) {
+    var c = ctl[i];
+    if (!c) continue;
+    parts.push([c.key, c.type, c.min, c.max, c.step, c.stageName, c.values ? c.values.join('/') : ''].join(':'));
+  }
+  var v = st.view || {};
+  return '+wg[' + parts.join(',') + '|' + wgNames(st.presets, 'id') + '|' + wgNames(st.sizes, 'name') + '|' +
+         (Array.isArray(v.modes) ? v.modes.join(',') : '') + '|' + wgNames(v.drawers, 'name') + ']';
+}
+
+function wgFmt(v, step) {
+  var n = parseFloat(v);
+  if (!isFinite(n)) return String(v);
+  return (step >= 1) ? String(Math.round(n)) : n.toFixed(2);
+}
+
+function wgModified(v, def) {
+  var a = parseFloat(v), b = parseFloat(def);
+  if (!isFinite(a) || !isFinite(b)) return String(v) !== String(def);
+  return Math.abs(a - b) > 1e-6;
+}
+
+// ── widget helpers ──
+function wgButton(label, role, cls, onClick) {
+  var b = el('button', cls || '', label);
+  b.setAttribute('data-role', role);
+  if (onClick) b.addEventListener('click', function (e) { e.stopPropagation(); onClick(b); });
+  return b;
+}
+function wgTextInput(role, placeholder) {
+  var i = document.createElement('input');
+  i.type = 'text';
+  i.setAttribute('data-role', role);
+  if (placeholder) i.setAttribute('placeholder', placeholder);
+  i.addEventListener('input', function () { i.setAttribute('data-dirty', '1'); i.classList.remove('bad'); });
+  return i;
+}
+function wgNumberInput(role) {
+  var i = document.createElement('input');
+  i.type = 'number';
+  i.setAttribute('data-role', role);
+  i.style.width = '56px';
+  i.addEventListener('input', function () { i.setAttribute('data-dirty', '1'); });
+  return i;
+}
+function wgSelect(role, values, labels) {
+  var s = document.createElement('select');
+  s.setAttribute('data-role', role);
+  for (var i = 0; i < values.length; ++i) {
+    var o = document.createElement('option');
+    o.value = String(values[i]);
+    o.textContent = labels ? labels[i] : String(values[i]);
+    s.appendChild(o);
+  }
+  return s;
+}
+function wgCheckbox(label, role) {
+  var l = document.createElement('label');
+  var c = document.createElement('input');
+  c.type = 'checkbox';
+  if (role) c.setAttribute('data-role', role);
+  l.appendChild(c);
+  l.appendChild(document.createTextNode(label));
+  return { label: l, box: c };
+}
+function wgRow(label) {
+  var r = el('div', 'wg-row');
+  r.appendChild(el('span', 'wg-lbl', label));
+  return r;
+}
+// Segmented buttons: items [{value,label}], onPick(value). Marks via .on in refresh.
+function wgSegmented(role, items, onPick) {
+  var seg = el('div', 'wg-seg');
+  seg.setAttribute('data-role', role);
+  for (var i = 0; i < items.length; ++i) {
+    (function (it) {
+      var b = el('button', '', it.label);
+      b.setAttribute('data-size', it.value);
+      b.addEventListener('click', function (e) { e.stopPropagation(); onPick(it.value); });
+      seg.appendChild(b);
+    })(items[i]);
+  }
+  return seg;
+}
+// Collapsible section; open state lives in ui.wgOpen so it survives rebuilds.
+function wgSection(def) {
+  if (!(def.key in ui.wgOpen)) ui.wgOpen[def.key] = def.open;
+  var sec = el('div', 'wg-sec' + (ui.wgOpen[def.key] ? '' : ' closed'));
+  sec.setAttribute('data-sec', def.key);
+  var sh = el('div', 'wg-sh');
+  sh.appendChild(el('span', 'wg-c'));
+  sh.appendChild(el('span', 'wg-st', def.title));
+  var sr = el('span', 'wg-sr');
+  sh.appendChild(sr);
+  sh.addEventListener('click', function (e) {
+    e.stopPropagation();
+    ui.wgOpen[def.key] = !ui.wgOpen[def.key];
+    sec.classList.toggle('closed', !ui.wgOpen[def.key]);
+  });
+  var sb = el('div', 'wg-sb');
+  sec.appendChild(sh);
+  sec.appendChild(sb);
+  return { sec: sec, sr: sr, sb: sb };
+}
+
+// A control is free to be overwritten by state unless the user is interacting with it.
+function wgHold(node) {
+  node.setAttribute('data-held', '1');
+  setTimeout(function () { node.removeAttribute('data-held'); }, WG_HOLD_MS);
+}
+function wgFree(node) {
+  return document.activeElement !== node && !node.getAttribute('data-held') && !node.getAttribute('data-dirty');
+}
+
+function wgParseSeed(text) {
+  var t = String(text).replace(/^\s+|\s+$/g, '');
+  if (!/^\d+$/.test(t)) return null;
+  var n = Number(t);
+  return (n <= 9007199254740991) ? n : null;
+}
+function wgParseInt(text) {
+  var t = String(text).replace(/^\s+|\s+$/g, '');
+  return /^-?\d+$/.test(t) ? Number(t) : null;
+}
+
+// Live drag: send on `input` at most once per WG_THROTTLE_MS with a trailing send, and on `change`.
+function wgBindSlider(cmdId, key, range, onLocal) {
+  var timer = null, pending = false;
+  function send() { sendCommand(cmdId, 'setScale', { key: key, value: parseFloat(range.value) }); }
+  function tick() {
+    timer = null;
+    if (pending) { pending = false; send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
+  }
+  range.addEventListener('input', function () {
+    ui.activeSlider = range;
+    onLocal();
+    if (timer === null) { send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
+    else pending = true;
+  });
+  range.addEventListener('change', function () {
+    onLocal();
+    pending = false;
+    if (timer !== null) { clearTimeout(timer); timer = null; }
+    send();
+    setTimeout(function () { if (ui.activeSlider === range) ui.activeSlider = null; }, WG_HOLD_MS);
+  });
+}
+
+function buildWgControl(cmdId, def) {
+  var row = el('div', 'wg-row');
+  row.setAttribute('data-control', def.key);
+  var lbl = el('span', 'wg-lbl', def.label || def.key);
+  lbl.title = def.key;
+  row.appendChild(lbl);
+
+  if (def.type === 'select') {
+    var vals = Array.isArray(def.values) ? def.values : [];
+    var sel = wgSelect('wg-ctl-select', vals);
+    sel.value = String(def.value);
+    sel.addEventListener('change', function () {
+      wgHold(sel);
+      row.classList.toggle('modified', wgModified(sel.value, def.default));
+      sendCommand(cmdId, 'setScale', { key: def.key, value: sel.value });
+    });
+    row.appendChild(sel);
+    row.classList.toggle('modified', wgModified(def.value, def.default));
+    return row;
+  }
+
+  var step = (def.step !== undefined) ? def.step : 0.01;
+  var track = el('div', 'wg-track');
+  var range = document.createElement('input');
+  range.type = 'range';
+  range.min = def.min; range.max = def.max; range.step = step;
+  range.value = (def.value !== undefined) ? def.value : 0;
+  track.appendChild(range);
+  if (def.default !== undefined && def.max > def.min) {
+    var frac = Math.max(0, Math.min(1, (def.default - def.min) / (def.max - def.min)));
+    var tick = el('div', 'dtick');
+    tick.setAttribute('data-role', 'default-tick');
+    tick.style.left = (frac * 100) + '%';
+    track.appendChild(tick);
+  }
+  var disp = el('span', 'wg-v', wgFmt(range.value, step));
+  row.appendChild(track);
+  row.appendChild(disp);
+  row.classList.toggle('modified', wgModified(range.value, def.default));
+  wgBindSlider(cmdId, def.key, range, function () {
+    disp.textContent = wgFmt(range.value, step);
+    row.classList.toggle('modified', wgModified(range.value, def.default));
+  });
+  return row;
+}
+
+function buildWorldGen(domain) {
+  var id = domain.cmdId;
+  var st = domain.raw || {};
+  var root = el('div', 'wg');
+  root.setAttribute('data-role', 'worldgen');
+  var secs = {};
+  for (var si = 0; si < WG_SECTIONS.length; ++si) {
+    secs[WG_SECTIONS[si].key] = wgSection(WG_SECTIONS[si]);
+    root.appendChild(secs[WG_SECTIONS[si].key].sec);
+  }
+
+  // WORLD
+  var w = secs.world.sb;
+  var seedRow = wgRow('Seed');
+  var seed = wgTextInput('wg-seed');
+  seedRow.appendChild(seed);
+  seed.addEventListener('change', function () {
+    var n = wgParseSeed(seed.value);
+    if (n === null) { seed.classList.add('bad'); return; }
+    seed.removeAttribute('data-dirty');
+    sendCommand(id, 'setSeed', { seed: n });
+  });
+  seedRow.appendChild(wgButton('Random', 'wg-random', '', function () {
+    var n = Math.floor(Math.random() * 100000000);
+    seed.value = String(n);
+    seed.removeAttribute('data-dirty'); seed.classList.remove('bad');
+    sendCommand(id, 'regenerate', { seed: n });
+  }));
+  seedRow.appendChild(wgButton('Regenerate', 'wg-regen', 'pri', function () {
+    var n = wgParseSeed(seed.value);
+    if (n === null) {
+      seed.classList.add('bad');
+      sendCommand(id, 'regenerate', {});
+      return;
+    }
+    seed.removeAttribute('data-dirty');
+    sendCommand(id, 'regenerate', { seed: n });
+  }));
+  w.appendChild(seedRow);
+
+  var sizeRow = wgRow('Map size');
+  var sizeItems = [];
+  var sizes = Array.isArray(st.sizes) ? st.sizes : [];
+  for (var zi = 0; zi < sizes.length; ++zi)
+    sizeItems.push({ value: sizes[zi].name, label: sizes[zi].name + ' ' + sizes[zi].width + '×' + sizes[zi].height });
+  sizeRow.appendChild(wgSegmented('wg-size', sizeItems, function (name) { sendCommand(id, 'setSize', { size: name }); }));
+  w.appendChild(sizeRow);
+
+  var presets = Array.isArray(st.presets) ? st.presets : [];
+  var pIds = [''], pNames = ['(none)'];
+  for (var pi = 0; pi < presets.length; ++pi) { pIds.push(presets[pi].id); pNames.push(presets[pi].displayName || presets[pi].id); }
+  var presetRow = wgRow('Preset');
+  var presetSel = wgSelect('wg-preset', pIds, pNames);
+  presetSel.addEventListener('change', function () { presetSel.setAttribute('data-dirty', '1'); });
+  presetRow.appendChild(presetSel);
+  presetRow.appendChild(wgButton('Load', 'wg-preset-load', '', function () {
+    if (!presetSel.value) return;
+    presetSel.removeAttribute('data-dirty');
+    sendCommand(id, 'presetLoad', { id: presetSel.value });
+  }));
+  var saveRow = el('div', 'wg-row');
+  saveRow.setAttribute('data-role', 'wg-saverow');
+  saveRow.style.display = 'none';
+  presetRow.appendChild(wgButton('Save…', 'wg-preset-save', '', function () {
+    saveRow.style.display = (saveRow.style.display === 'none') ? 'flex' : 'none';
+  }));
+  w.appendChild(presetRow);
+
+  saveRow.appendChild(el('span', 'wg-lbl', ''));
+  var saveId = wgTextInput('wg-save-id', 'preset id');
+  var saveName = wgTextInput('wg-save-name', 'display name');
+  var ow = wgCheckbox('overwrite', 'wg-save-overwrite');
+  saveRow.appendChild(saveId);
+  saveRow.appendChild(saveName);
+  saveRow.appendChild(ow.label);
+  saveRow.appendChild(wgButton('Save', 'wg-save-go', 'pri', function () {
+    var pid = saveId.value.replace(/^\s+|\s+$/g, '');
+    if (!pid) { ui.wgSaveNote = 'preset id required'; refreshWgSaveMsg(root, st); return; }
+    var args = { id: pid, displayName: saveName.value };
+    if (ow.box.checked) args.overwrite = true;
+    var len = JSON.stringify(args).length;
+    if (len > MAX_ARG_JSON) {
+      ui.wgSaveNote = 'too long (' + len + ' of max ' + MAX_ARG_JSON + ' chars in id + name)';
+      refreshWgSaveMsg(root, st);
+      return;
+    }
+    ui.wgSaveNote = '';
+    sendCommand(id, 'presetSave', args);
+  }));
+  w.appendChild(saveRow);
+  var msgRow = el('div', 'wg-row');
+  msgRow.appendChild(el('span', 'wg-lbl', ''));
+  var msg = el('span', '');
+  msg.setAttribute('data-role', 'wg-savemsg');
+  msgRow.appendChild(msg);
+  w.appendChild(msgRow);
+
+  var statusRow = wgRow('Status');
+  var status = el('span', '');
+  status.setAttribute('data-role', 'wg-status');
+  statusRow.appendChild(status);
+  w.appendChild(statusRow);
+
+  // TERRAIN SHAPE: grouped by first stage
+  var shape = secs.shape.sb;
+  var ctl = Array.isArray(st.controls) ? st.controls : [];
+  var lastStage = null, count = 0;
+  for (var ci = 0; ci < ctl.length; ++ci) {
+    var c = ctl[ci];
+    if (!c || !c.key) continue;
+    if (c.stage !== lastStage) {
+      lastStage = c.stage;
+      shape.appendChild(el('div', 'wg-sub', 'STAGE ' + c.stage + ' · ' + String(c.stageName || '').toUpperCase()));
+    }
+    shape.appendChild(buildWgControl(id, c));
+    if (c.type !== 'select') ++count;
+  }
+  secs.shape.sr.textContent = count + ' sliders · live preview';
+
+  // STAGE TIMINGS
+  var tim = el('div', 'wg-tim');
+  tim.setAttribute('data-role', 'wg-timings');
+  secs.timings.sb.appendChild(tim);
+  secs.timings.sb.appendChild(el('div', 'wg-note', 'A slider only re-runs its stage and the stages after it. Skipped stages show their cached time.'));
+
+  // VIEW
+  var view = st.view || {};
+  var modes = Array.isArray(view.modes) ? view.modes : [];
+  var modeRow = wgRow('Colour by');
+  var modeSel = wgSelect('wg-mode', modes);
+  modeSel.addEventListener('change', function () {
+    wgHold(modeSel);
+    sendCommand(id, 'setColourMode', { mode: modeSel.value });
+  });
+  modeRow.appendChild(modeSel);
+  secs.view.sb.appendChild(modeRow);
+  secs.view.sb.appendChild(el('div', 'wg-sub', 'DRAWERS'));
+  var dr = el('div', 'wg-tg');
+  dr.setAttribute('data-role', 'wg-drawers');
+  var vd = Array.isArray(view.drawers) ? view.drawers : [];
+  for (var di = 0; di < vd.length; ++di) {
+    (function (d) {
+      var cb = wgCheckbox(d.name, '');
+      cb.label.setAttribute('data-drawer', d.name);
+      cb.box.addEventListener('change', function () {
+        wgHold(cb.box);
+        sendCommand(id, 'toggle', { drawer: d.name });
+      });
+      dr.appendChild(cb.label);
+    })(vd[di]);
+  }
+  secs.view.sb.appendChild(dr);
+
+  // CELL INSPECTOR
+  var cellRow = wgRow('Cell x, y');
+  var cx = wgNumberInput('wg-cx'), cy = wgNumberInput('wg-cy');
+  cellRow.appendChild(cx);
+  cellRow.appendChild(cy);
+  cellRow.appendChild(wgButton('Select', 'wg-cell-go', '', function () {
+    var x = wgParseInt(cx.value), y = wgParseInt(cy.value);
+    if (x === null || y === null || x < 0 || y < 0) return;
+    cx.removeAttribute('data-dirty'); cy.removeAttribute('data-dirty');
+    sendCommand(id, 'selectCell', { x: x, y: y });
+  }));
+  cellRow.appendChild(wgButton('Clear', 'wg-cell-clear', '', function () {
+    cx.value = ''; cy.value = '';
+    cx.removeAttribute('data-dirty'); cy.removeAttribute('data-dirty');
+    sendCommand(id, 'clearCell', {});
+  }));
+  secs.cell.sb.appendChild(cellRow);
+  var kv = el('div', 'wg-kv');
+  kv.setAttribute('data-role', 'wg-cell');
+  secs.cell.sb.appendChild(kv);
+
+  // VALIDATION (stub: tasks 13-16)
+  secs.validation.sr.textContent = 'arrives with tasks 13-16';
+  secs.validation.sb.appendChild(el('div', 'wg-stub', 'Validate, guarantee rows, attempt history, Cancel and Export/Import are not in the terrain slice. The section shows here so the final layout is agreed now.'));
+  var vrow = el('div', 'wg-row');
+  var vnames = ['Validate', 'Cancel', 'Export', 'Import'];
+  for (var vi = 0; vi < vnames.length; ++vi) {
+    var vb = el('button', '', vnames[vi]);
+    vb.disabled = true;
+    vrow.appendChild(vb);
+  }
+  secs.validation.sb.appendChild(vrow);
+
+  return root;
+}
+
+function refreshWgSaveMsg(root, st) {
+  var m = root.querySelector('[data-role="wg-savemsg"]');
+  if (!m) return;
+  var ls = st.lastSave;
+  var text = '', cls = '';
+  if (ui.wgSaveNote) { text = ui.wgSaveNote; cls = 'wg-err'; }
+  else if (ls && typeof ls === 'object') {
+    if (ls.success) { text = 'Wrote ' + ls.writtenTo + ' (isSource: ' + (ls.isSource ? 'true' : 'false') + ')'; cls = 'wg-ok'; }
+    else { text = 'Save failed: ' + (ls.error || 'unknown'); cls = 'wg-err'; }
+  }
+  m.textContent = text;
+  m.className = cls;
+}
+
+function wgKv(k, v) { return '<span class="k">' + escapeHtml(k) + '</span><span>' + escapeHtml(v) + '</span>'; }
+function wgCellVal(v) { return (v === null || v === undefined) ? '-' : (typeof v === 'object' ? JSON.stringify(v) : String(v)); }
+
+function wgCellHtml(st) {
+  var cell = st.cell;
+  if (st.cellError) return '<span class="wg-err" style="grid-column:1/3">' + escapeHtml(st.cellError) + '</span>';
+  if (!cell || typeof cell !== 'object')
+    return '<span class="wg-stub" style="grid-column:1/3">No cell selected. Type x, y and press Select.</span>';
+  var skip = { success: 1, layers: 1, neighbours: 1, selected: 1, x: 1, y: 1, index: 1 };
+  var html = '';
+  for (var k in cell) {
+    if (!Object.prototype.hasOwnProperty.call(cell, k) || skip[k]) continue;
+    html += wgKv(k, wgCellVal(cell[k]));
+  }
+  if (Array.isArray(cell.neighbours)) {
+    var nb = [];
+    for (var i = 0; i < cell.neighbours.length; ++i) {
+      var n = cell.neighbours[i];
+      nb.push(i + ':' + (n && typeof n === 'object' ? '(' + n.x + ',' + n.y + ')' : String(n)));
+    }
+    html += wgKv('neighbours', nb.join(' '));
+  }
+  var layers = cell.layers;
+  if (layers && typeof layers === 'object') {
+    var lh = '';
+    for (var lk in layers) {
+      if (!Object.prototype.hasOwnProperty.call(layers, lk)) continue;
+      lh += '<span class="k">' + escapeHtml(lk) + '</span><span class="lay">' + escapeHtml(wgCellVal(layers[lk])) + '</span>';
+    }
+    if (lh) html += '<span class="h">STAGE VALUES (layers)</span>' + lh;
+  }
+  html += '<span class="h">NOT IN THIS SLICE</span><span class="k">biome / region / site</span><span class="wg-stub">arrives with tasks 11-12</span>';
+  return html;
+}
+
+function refreshWorldGen(card, st) {
+  var root = card.querySelector('[data-role="worldgen"]');
+  if (!root) return;
+  var q = function (role) { return root.querySelector('[data-role="' + role + '"]'); };
+  var sec = function (key) { return root.querySelector('.wg-sec[data-sec="' + key + '"]'); };
+  var setSr = function (key, text) { var n = sec(key).querySelector('.wg-sr'); if (n && n.textContent !== text) n.textContent = text; };
+  var stats = (st.stats && typeof st.stats === 'object') ? st.stats : {};
+
+  // WORLD
+  var seed = q('wg-seed');
+  if (seed && wgFree(seed) && stats.seed !== undefined) seed.value = String(stats.seed);
+  var sizes = Array.isArray(st.sizes) ? st.sizes : [];
+  var segs = root.querySelectorAll('[data-role="wg-size"] button');
+  for (var zi = 0; zi < segs.length && zi < sizes.length; ++zi) segs[zi].classList.toggle('on', !!sizes[zi].selected);
+  var ps = q('wg-preset');
+  if (ps) {
+    var none = ps.options[0];
+    if (none) none.textContent = stats.presetModified ? '(modified)' : '(none)';
+    if (wgFree(ps)) ps.value = stats.preset ? String(stats.preset) : '';
+  }
+  var dims = (stats.width !== undefined) ? stats.width + '×' + stats.height : '';
+  setSr('world', (stats.preset ? stats.preset : (stats.presetModified ? 'modified' : 'no preset')) + (dims ? ' · ' + dims : ''));
+  var stEl = q('wg-status');
+  if (stEl) {
+    var stText = String(stats.status === undefined ? '' : stats.status) + ' · revision ' + formatStatValue(stats.revision) +
+                 ' · ' + formatStatValue(stats.lastMs) + ' ms';
+    if (stEl.textContent !== stText) stEl.textContent = stText;
+  }
+  refreshWgSaveMsg(root, st);
+
+  // TERRAIN SHAPE
+  var ctl = Array.isArray(st.controls) ? st.controls : [];
+  for (var ci = 0; ci < ctl.length; ++ci) {
+    var def = ctl[ci];
+    if (!def || !def.key || def.value === undefined) continue;
+    var row = root.querySelector('.wg-row[data-control="' + cssEscape(def.key) + '"]');
+    if (!row) continue;
+    if (def.type === 'select') {
+      var sel = row.querySelector('select');
+      if (sel && wgFree(sel)) { sel.value = String(def.value); row.classList.toggle('modified', wgModified(def.value, def.default)); }
+      continue;
+    }
+    var range = row.querySelector('input[type=range]');
+    if (!range || range === ui.activeSlider) continue;
+    range.value = def.value;
+    var disp = row.querySelector('.wg-v');
+    if (disp) disp.textContent = wgFmt(def.value, def.step !== undefined ? def.step : 0.01);
+    row.classList.toggle('modified', wgModified(def.value, def.default));
+  }
+
+  // STAGE TIMINGS
+  var tims = Array.isArray(st.timings) ? st.timings : [];
+  var tim = q('wg-timings');
+  if (tim) {
+    var max = 0, total = 0, ran = 0, ti;
+    for (ti = 0; ti < tims.length; ++ti) {
+      if (tims[ti].ms > max) max = tims[ti].ms;
+      if (tims[ti].ran) { total += tims[ti].ms; ++ran; }
+    }
+    var th = '';
+    for (ti = 0; ti < tims.length; ++ti) {
+      var t = tims[ti];
+      var pct = max > 0 ? Math.round(t.ms / max * 1000) / 10 : 0;
+      th += '<div class="wg-trow' + (t.ran ? '' : ' skip') + '"><span class="wg-n">' + escapeHtml(t.stage + ' ' + t.name) +
+            '</span><span class="wg-bar"><i style="width:' + pct + '%"></i></span><span class="wg-ms">' +
+            escapeHtml(formatStatValue(t.ms)) + ' ms' + (t.ran ? '' : ' ↺') + '</span></div>';
+    }
+    if (tim.innerHTML !== th) tim.innerHTML = th;
+    setSr('timings', tims.length ? 'ran ' + ran + ' of ' + tims.length + ' · ' + formatStatValue(total) + ' ms' : 'no data');
+  }
+
+  // VIEW
+  var view = st.view || {};
+  var mode = q('wg-mode');
+  if (mode && wgFree(mode) && view.colourMode !== undefined) mode.value = String(view.colourMode);
+  setSr('view', view.colourMode !== undefined ? String(view.colourMode) : '');
+  var vd = Array.isArray(view.drawers) ? view.drawers : [];
+  for (var di = 0; di < vd.length; ++di) {
+    var lab = root.querySelector('[data-role="wg-drawers"] label[data-drawer="' + cssEscape(vd[di].name) + '"]');
+    if (!lab) continue;
+    var cb = lab.querySelector('input');
+    cb.disabled = !vd[di].available;
+    lab.classList.toggle('off', !vd[di].available);
+    if (wgFree(cb)) cb.checked = !!vd[di].enabled;
+  }
+
+  // CELL INSPECTOR
+  var cell = st.cell;
+  var cx = q('wg-cx'), cy = q('wg-cy');
+  if (cell && cell.selected) {
+    if (cx && wgFree(cx)) cx.value = String(cell.selected.x);
+    if (cy && wgFree(cy)) cy.value = String(cell.selected.y);
+    setSr('cell', '(' + cell.selected.x + ', ' + cell.selected.y + ') · index ' + cell.index);
+  } else {
+    setSr('cell', st.cellError ? 'error' : 'no selection');
+  }
+  var kv = q('wg-cell');
+  if (kv) {
+    var kh = wgCellHtml(st);
+    if (kv.innerHTML !== kh) kv.innerHTML = kh;
+  }
 }
 
 // ── F-2 TestRunnerPanel ───────────────────────────────────────────────────
@@ -2436,6 +3061,8 @@ function refresh(domains) {
 
     var headline = card.querySelector('[data-role="headline"]');
     if (headline) headline.textContent = headlineStat(domain);
+
+    if (domain.worldgen) { refreshWorldGen(card, domain.raw); continue; }
 
     if (domain.viewer) refreshViewer(card, domain.viewer);
     if (domain.history) refreshHistory(card, domain.history);
