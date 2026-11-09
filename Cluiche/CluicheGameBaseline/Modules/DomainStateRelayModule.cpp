@@ -139,7 +139,11 @@ void DomainStateRelayModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         s->demandIn.Consume(demand);
         if (demand.Size() > 0)
             s->publisher->Arm(ctx.tick);
-        s->publisher->Update(ctx.tick);
+        // Serialising a domain costs milliseconds of SimPU time in Debug and the panel reads at most every 2nd Sim tick
+        // (VisualDebuggerModule::kSnapshotTickDivisor), so publish every kPublishTickDivisor-th tick only. The phase is offset
+        // by one tick from VisualDebuggerModule's snapshot pack (tick % divisor == 0) so the two costs do not share a tick.
+        if (ctx.tick % kPublishTickDivisor == 1)
+            s->publisher->Update(ctx.tick);
     }
 }
 

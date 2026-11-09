@@ -11,6 +11,7 @@
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaStreams/StreamReader.h>
 
+#include <atomic>
 #include <memory>
 
 namespace Cluiche::AppFlow {
@@ -23,14 +24,18 @@ class DomainStateChannel
 {
 public:
     bool ReadLatest(char* buffer, uint32_t capacity, uint32_t& length) override;
-    void RequestState() override { mDemandPending = true; }
+    void RequestState() override { mDemandPending.store(true, std::memory_order_relaxed); }
 
     void SetSnapshotReader(Dia::ApplicationFlow::StreamReader<Dia::CellLayers::ViewerStateSlot>* reader) { mReader = reader; }
-    bool TakeDemand() { const bool d = mDemandPending; mDemandPending = false; return d; }
+    bool TakeDemand() { return mDemandPending.exchange(false, std::memory_order_relaxed); }
 
 private:
     Dia::ApplicationFlow::StreamReader<Dia::CellLayers::ViewerStateSlot>* mReader = nullptr;
-    bool mDemandPending = false;   // Main thread only
+    // Written by RequestState and cleared by TakeDemand on DIFFERENT threads: the Sim-side snapshot publisher packs the registered
+    // ViewerStateAdapter (S1 stage: VisualDebuggerModule::RegisterDomain(adapter)), so GetJSONState -> RequestState runs on the Sim
+    // thread, while the bridge's DoUpdate (TakeDemand) runs on Main. Hence atomic; no ordering with other data is needed (the
+    // flag only triggers an event that carries nothing).
+    std::atomic<bool> mDemandPending{ false };
 };
 
 // Main-thread end of a fixed pool of kSlotCount generic debug-domain snapshot channels. Slot N uses streams

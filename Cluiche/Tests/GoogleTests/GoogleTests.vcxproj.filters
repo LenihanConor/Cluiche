@@ -2688,5 +2688,11 @@
     <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

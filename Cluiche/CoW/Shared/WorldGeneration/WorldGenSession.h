@@ -58,6 +58,8 @@ public:
     uint32_t                Revision() const   { return mRevision; }
     uint64_t                Seed() const       { return mSeed; }
     const WorldShapeParams& Shape() const      { return mShape; }
+    const std::string&      PresetId() const   { return mPresetId; }       // cheap reads for per-frame callers (Params() formats every float)
+    bool                    PresetModified() const { return mPresetModified; }
     GridDimensions          Dimensions() const { return mDims; }
     const TerrainGenerator& Generator() const  { return mGen; }
     WorldGenState           State() const      { return mState; }

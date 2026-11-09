@@ -24,10 +24,13 @@
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include "Modules/LogPushBatcher.h"
+#include "Modules/DomainRootDelta.h"
 
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -35,12 +38,13 @@ const Dia::Core::StringCRC DebugPanelPageModule::kTypeId("DebugPanelPageModule")
 
 struct DebugPanelPageModule::ConsoleRuntime
 {
-    static const unsigned int kMaxLinesPerFrame = 64;
-    static const unsigned int kJsonSize         = 64 * 1024;
+    static const unsigned int kMaxLinesPerPush = 200;   // newest lines kept; older pending lines are summarised as dropped
+    static const unsigned int kJsonSize        = 128 * 1024;
 
     Dia::VisualDebugger::Console::ConsoleLogRing ring;
     uint64_t                                     cursor = 0;
-    Dia::VisualDebugger::Console::ConsoleLogLine drain[kMaxLinesPerFrame];
+    LogPushBatcher                               batcher{250.0, kMaxLinesPerPush};   // <= 1 appendLogLines per 250 ms
+    Dia::VisualDebugger::Console::ConsoleLogLine drain[kMaxLinesPerPush + 1];        // [0] = optional "dropped" summary line
     char                                         json[kJsonSize];
 };
 
@@ -146,6 +150,8 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
     mHaveFrame = false;
     mLastSimFrame = 0;
     mPanelPushPending = false;
+    mDirtyDomains.clear();
+    mLastSnapshotJson.clear();
     mParseFailureLogged = false;
     mNextInterestMs = 0.0;
     mInterestUntilMs = 0.0;
@@ -385,26 +391,51 @@ void DebugPanelPageModule::PushLogLines()
     if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
         return;   // cursor stays put; the ring keeps the lines
 
-    uint64_t cursor = mConsole->cursor;
-    const unsigned n = mConsole->ring.DrainSince(cursor, mConsole->drain, ConsoleRuntime::kMaxLinesPerFrame);
-    if (n == 0)
+    // Paced: one push per 250 ms, newest 200 lines. Every push costs tens of ms in Ultralight; pushing each frame turned the
+    // "pu.over_budget" warning of a slow tick into a feedback loop (the warning is itself a new line to push next frame).
+    const LogPushBatcher::Plan plan = mConsole->batcher.Evaluate(mWallMs, mConsole->cursor, mConsole->ring.GetTotalWritten());
+    if (!plan.push)
+        return;
+
+    namespace Console = Dia::VisualDebugger::Console;
+    uint64_t cursor = plan.startCursor;
+    const unsigned n = mConsole->ring.DrainSince(cursor, mConsole->drain + 1, plan.take);
+
+    // Lines skipped because of the cap become one summary line at the front (lines lost to ring wrap are not counted).
+    unsigned first = 1;
+    if (plan.dropped > 0)
+    {
+        Console::ConsoleLogLine& s = mConsole->drain[0];
+        s.sequence    = (n > 0) ? mConsole->drain[1].sequence : plan.startCursor;
+        s.timestampNs = 0;
+        s.level       = Dia::Observation::Log::LogLevel::kWarning;
+        s.channel     = Dia::Core::StringCRC("Debug");
+        std::snprintf(s.message, sizeof(s.message), "[%llu older log lines not shown (panel pushes are batched)]",
+                      static_cast<unsigned long long>(plan.dropped));
+        first = 0;
+    }
+    const unsigned count = n + (1 - first);
+    if (count == 0)
     {
         mConsole->cursor = cursor;
+        mConsole->batcher.OnPushed(mWallMs);
         return;
     }
 
     unsigned written = 0;
-    if (Dia::VisualDebugger::Console::ConsoleJson::BuildAppendLogLines(
-            mConsole->drain, n, mConsole->json, ConsoleRuntime::kJsonSize, &written) && written > 0)
+    if (Console::ConsoleJson::BuildAppendLogLines(
+            mConsole->drain + first, count, mConsole->json, ConsoleRuntime::kJsonSize, &written) && written > 0)
     {
         uiSystem->CallJSFunction("appendLogLines", mConsole->json);
+        const unsigned realWritten = written - (1 - first);
         // If the JSON was truncated, resume right after the last emitted line.
-        mConsole->cursor = (written == n) ? cursor : mConsole->drain[written - 1].sequence + 1;
+        mConsole->cursor = (realWritten >= n) ? cursor : mConsole->drain[realWritten].sequence + 1;
     }
     else
     {
-        mConsole->cursor = cursor;   // cannot happen with a 64 KB buffer; skip rather than loop
+        mConsole->cursor = cursor;   // cannot happen with a 128 KB buffer; skip rather than loop
     }
+    mConsole->batcher.OnPushed(mWallMs);
 }
 
 void DebugPanelPageModule::CheckLogRingProbe()
@@ -525,11 +556,30 @@ void DebugPanelPageModule::PollDomainSnapshot()
     if (!mHaveFrame || snapshot->simFrame != mLastSimFrame)
     {
         // Cache by simFrame: a repeated frame is not re-parsed. A failed parse keeps the last good root.
-        if (Console::ParseDomainStateSnapshot(*snapshot, mDomainRoot))
+        const bool identical = mHaveDomainRoot && snapshot->jsonBytes == mLastSnapshotJson.size() &&
+                               std::memcmp(snapshot->json, mLastSnapshotJson.data(), snapshot->jsonBytes) == 0;
+        if (identical)
         {
-            Console::ApplySchemaVersion(mDomainRoot, &mKeyResolver);
+            // Nothing changed except the frame number: skip the parse and the page push (each costs milliseconds).
+            mDomainRoot["simFrame"] = Json::Value(Json::UInt64(snapshot->simFrame));
+        }
+        else if (Console::ParseDomainStateSnapshot(*snapshot, mScratchRoot))
+        {
+            Console::ApplySchemaVersion(mScratchRoot, &mKeyResolver);
+            static const Json::Value kNoRoot;
+            const DomainRootDelta delta = ComputeDomainRootDelta(mHaveDomainRoot ? static_cast<const Json::Value&>(mDomainRoot) : kNoRoot, mScratchRoot);
+            if (!mHaveDomainRoot || delta.structureChanged)
+            {
+                mPanelPushPending = true;
+                mDirtyDomains.clear();
+            }
+            else if (!mPanelPushPending)
+            {
+                mDirtyDomains.insert(delta.changed.begin(), delta.changed.end());
+            }
+            mDomainRoot.swap(mScratchRoot);
+            mLastSnapshotJson.assign(snapshot->json, snapshot->jsonBytes);
             mHaveDomainRoot = true;
-            mPanelPushPending = true;
             mParseFailureLogged = false;
         }
         else if (!mParseFailureLogged)
@@ -549,7 +599,7 @@ void DebugPanelPageModule::PollDomainSnapshot()
 
 void DebugPanelPageModule::PushDomainStatesToPanel()
 {
-    if (!mPanelPushPending || !mHaveDomainRoot)
+    if ((!mPanelPushPending && mDirtyDomains.empty()) || !mHaveDomainRoot)
         return;
 
     UIModule* ui = mUI.Get();
@@ -562,10 +612,21 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
 
     Json::FastWriter writer;
     writer.omitEndingLineFeed();
-    const std::string json = writer.write(mDomainRoot);
+    std::string json;
+    if (mPanelPushPending)
+    {
+        json = writer.write(mDomainRoot);
+    }
+    else
+    {
+        // Only the domains whose state changed; the page merges them into what it holds (see updateDomainState).
+        const std::vector<std::string> names(mDirtyDomains.begin(), mDirtyDomains.end());
+        json = writer.write(BuildPartialRoot(mDomainRoot, names));
+    }
 
     uiSystem->CallJSFunction("updateDomainState", json.c_str());
     mPanelPushPending = false;
+    mDirtyDomains.clear();
 }
 
 } } // namespace Cluiche::AppFlow

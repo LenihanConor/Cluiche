@@ -813,6 +813,7 @@ function domainsOf(data) {
     if (!Object.prototype.hasOwnProperty.call(data, name)) continue;
     var d = data[name];
     if (!d || typeof d !== 'object') continue;
+    if (wgIsDomain(d._displayName || name, d._id || '')) d = wgResolveState(d);
     out.push({
       id:      d._displayName || name,
       cmdId:   d._id || d._displayName || name,   // registry id: what app.onCommand / FindDomain expect (state is keyed by display name)
@@ -1533,6 +1534,76 @@ var WG_SECTIONS = [
 ];
 
 function wgIsDomain(id, cmdId) { return cmdId === 'WorldGen' || id === 'World Generation'; }
+
+// ── World Generation: static/lean frame merge ─────────────────────────────
+// WorldGenDebugDomain sends a FULL frame (control definitions, preset list, size dimensions, stage names, view modes) on
+// first contact, whenever "staticVersion" changes and about once a second; every other frame is LEAN (dynamic fields only:
+// controls [{key,value}], sizes [{name,selected}], timings [{stage,ms,ran}], no presets / view.modes). The page keeps the
+// static fields of the last FULL frame and rebuilds the complete contract shape here, so the rest of the card is unaware.
+var wgStatic = null;   // {version, controls, presets, sizes, timings, modes} from the last full frame
+
+function wgResolveState(st) {
+  if (!st || typeof st !== 'object') return st;
+  if (Array.isArray(st.presets)) {   // full frame
+    wgStatic = {
+      version:  st.staticVersion,
+      controls: Array.isArray(st.controls) ? st.controls : [],
+      presets:  st.presets,
+      sizes:    Array.isArray(st.sizes) ? st.sizes : [],
+      timings:  Array.isArray(st.timings) ? st.timings : [],
+      modes:    (st.view && Array.isArray(st.view.modes)) ? st.view.modes : []
+    };
+    return st;
+  }
+  if (!wgStatic) return st;          // lean frame before any full frame: render what there is until the next full one
+
+  var out = {};
+  for (var k in st) { if (Object.prototype.hasOwnProperty.call(st, k)) out[k] = st[k]; }
+  var i;
+
+  var vals = {};
+  var lc = Array.isArray(st.controls) ? st.controls : [];
+  for (i = 0; i < lc.length; ++i) if (lc[i] && lc[i].key !== undefined) vals[lc[i].key] = lc[i].value;
+  out.controls = [];
+  for (i = 0; i < wgStatic.controls.length; ++i) {
+    var def = wgStatic.controls[i], c = {};
+    for (var dk in def) { if (Object.prototype.hasOwnProperty.call(def, dk)) c[dk] = def[dk]; }
+    if (Object.prototype.hasOwnProperty.call(vals, c.key)) c.value = vals[c.key];
+    out.controls.push(c);
+  }
+
+  out.presets = wgStatic.presets;
+
+  var sel = {};
+  var ls = Array.isArray(st.sizes) ? st.sizes : [];
+  for (i = 0; i < ls.length; ++i) if (ls[i]) sel[ls[i].name] = !!ls[i].selected;
+  out.sizes = [];
+  for (i = 0; i < wgStatic.sizes.length; ++i) {
+    var sz = {};
+    for (var sk in wgStatic.sizes[i]) { if (Object.prototype.hasOwnProperty.call(wgStatic.sizes[i], sk)) sz[sk] = wgStatic.sizes[i][sk]; }
+    sz.selected = !!sel[sz.name];
+    out.sizes.push(sz);
+  }
+
+  var dyn = {};
+  var lt = Array.isArray(st.timings) ? st.timings : [];
+  for (i = 0; i < lt.length; ++i) if (lt[i]) dyn[lt[i].stage] = lt[i];
+  out.timings = [];
+  for (i = 0; i < wgStatic.timings.length; ++i) {
+    var t = {};
+    for (var tk in wgStatic.timings[i]) { if (Object.prototype.hasOwnProperty.call(wgStatic.timings[i], tk)) t[tk] = wgStatic.timings[i][tk]; }
+    var d = dyn[t.stage];
+    if (d) { t.ms = d.ms; t.ran = d.ran; }
+    out.timings.push(t);
+  }
+
+  var view = {};
+  var lv = st.view || {};
+  for (var vk in lv) { if (Object.prototype.hasOwnProperty.call(lv, vk)) view[vk] = lv[vk]; }
+  view.modes = wgStatic.modes;
+  out.view = view;
+  return out;
+}
 
 function wgNames(arr, field) {
   var out = [];
@@ -3157,16 +3228,31 @@ function updateDomainState(data) {
   }
   if (!data || typeof data !== 'object') return;
 
+  // Partial push (DebugPanelPageModule sends only the domains whose state changed): merge them into what we hold.
+  // A push without "__partial" is the complete state and replaces everything.
+  var partialOnly = null;
+  if (data.__partial === true) {
+    var merged = (latest && typeof latest === 'object') ? latest : {};
+    partialOnly = {};
+    for (var pk in data) {
+      if (pk !== '__partial' && Object.prototype.hasOwnProperty.call(data, pk)) { merged[pk] = data[pk]; partialOnly[pk] = data[pk]; }
+    }
+    data = merged;
+  }
+
   latest = data;
   vsScan(data);
   var domains = domainsOf(data);
   var sig = structureSignature(domains);
 
+  var rebuilt = false;
   if (sig !== ui.structureSig) {
     ui.structureSig = sig;
     rebuild(domains);
+    rebuilt = true;
   }
-  refresh(domains);
+  // A partial push only refreshes the domains it carried (unless the structure was rebuilt).
+  refresh((partialOnly && !rebuilt) ? domainsOf(partialOnly) : domains);
   applyHistoryToViewer(domains);
 }
 window.updateDomainState = updateDomainState;
@@ -3418,9 +3504,39 @@ function appendLogLines(data) {
     conLogLines.push({ t: l.t, level: lvl, channel: l.channel || '', msg: l.msg || '' });
   }
   if (conLogLines.length > CON_LOG_CAP) conLogLines.splice(0, conLogLines.length - CON_LOG_CAP);
-  conRenderLog();
+  conAppendLogDom(r.lines.length);
 }
 window.appendLogLines = appendLogLines;
+
+// A full conRenderLog() rebuilds up to CON_LOG_CAP rows with innerHTML (tens of ms in Ultralight). appendLogLines only needs
+// the new rows added at the end: do that, and fall back to the full render for anything unusual. A collapsed log view is
+// not rendered at all (conLogDirty is set and the header click renders it when it is opened).
+function conAppendLogDom(added) {
+  var body = conEl('log-body');
+  if (!body) return;
+  var view = conEl('log-view');
+  if (view && view.classList.contains('closed')) { conLogDirty = true; return; }
+  var sel = window.getSelection && window.getSelection();
+  if (conLogDirty || body.querySelector('.log-empty') || (sel && !sel.isCollapsed && body.contains(sel.anchorNode)) ||
+      added > conLogLines.length) {
+    conRenderLog();
+    return;
+  }
+  var stick = body.scrollHeight - body.scrollTop - body.clientHeight < 24;
+  var html = '';
+  for (var i = conLogLines.length - added; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  if (html) body.insertAdjacentHTML('beforeend', html);
+  while (body.children.length > CON_LOG_CAP) body.removeChild(body.firstChild);
+  if (stick) body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = body.children.length + ' / ' + conLogLines.length;
+}
 
 function conSend(text) {
   var seq = ++conSeq;
@@ -3517,6 +3633,7 @@ function conSend(text) {
     var v = conEl('log-view'), open = v.classList.contains('open');
     v.classList.toggle('open', !open);
     v.classList.toggle('closed', open);
+    if (!open && conLogDirty) conRenderLog();
   });
 
   conUpdateCounter();

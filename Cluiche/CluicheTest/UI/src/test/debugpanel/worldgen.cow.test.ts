@@ -528,3 +528,88 @@ describe("other domains are unchanged", () => {
     expect(card().querySelector(".wg")).not.toBeNull();
   });
 });
+
+// ---- Static / lean frames and partial pushes (perf fix 2026-11-09) ----
+// A FULL frame carries the static fields; a LEAN frame (what the domain sends most frames) has dynamic fields only and the
+// page merges the static ones from the last full frame. updateDomainState({__partial:true, ...}) merges changed domains.
+
+function lean(over: Record<string, any> = {}): any {
+  const full = fixture();
+  const st: any = {
+    _displayName: NAME, _id: ID, _group: "CoreDebug", full: false, staticVersion: 1,
+    drawers: [],
+    stats: full.stats,
+    controls: full.controls.map((c: any) => ({ key: c.key, value: c.value })),
+    sizes: full.sizes.map((s: any) => ({ name: s.name, selected: s.selected })),
+    timings: full.timings.map((t: any) => ({ stage: t.stage, ms: t.ms, ran: t.ran })),
+    view: { colourMode: "terrain", drawers: full.view.drawers },
+    cell: null, lastSave: null,
+  };
+  return { ...st, ...over };
+}
+
+describe("static / lean frames", () => {
+  it("a lean frame after a full frame renders the same card (definitions kept)", () => {
+    push({ ...fixture(), full: true, staticVersion: 1 });
+    const before = card().innerHTML;
+    push(lean());
+    expect(card().innerHTML).toBe(before);
+    expect(qa(".wg-row input[type=range]").length).toBe(4);
+    expect(qa(".wg-preset option, [data-role=wg-presets] option, select option").length).toBeGreaterThan(0);
+  });
+
+  it("lean frames still update values, selected size and timings", () => {
+    push({ ...fixture(), full: true, staticVersion: 1 });
+    const l = lean();
+    l.controls[1].value = 3;
+    l.sizes = l.sizes.map((s: any) => ({ name: s.name, selected: s.name === "Large" }));
+    l.timings[1].ms = 21;
+    push(l);
+    expect(range("continents").value).toBe("3");
+    expect(range("continents").max).toBe("3");              // static min/max survived
+    expect(qa("[data-role=wg-timings] .wg-trow")[1].textContent).toContain("Landmass");
+    expect(qa("[data-role=wg-timings] .wg-trow")[1].textContent).toContain("21 ms");
+  });
+
+  it("a lean frame before any full frame does not throw", () => {
+    expect(() => push(lean())).not.toThrow();
+  });
+
+  it("a new full frame (staticVersion bump) replaces the cached static part", () => {
+    push({ ...fixture(), full: true, staticVersion: 1 });
+    const f2 = fixture();
+    f2.presets = [{ id: "continental", displayName: "Continental" }, { id: "archipelago", displayName: "Archipelago" }, { id: "fresh", displayName: "Fresh" }];
+    push({ ...f2, full: true, staticVersion: 2 });
+    push(lean({ staticVersion: 2 }));
+    expect(card().innerHTML).toContain("Fresh");
+  });
+});
+
+describe("partial pushes", () => {
+  it("merges only the named domains and keeps the others", () => {
+    const g = JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "domain_states_celllayers.json"), "utf-8"));
+    p.win.updateDomainState({ ...g, [NAME]: fixture() });
+    expect(p.doc.querySelectorAll(".domain").length).toBe(2);
+    const st = fixture();
+    st.controls[1].value = 3;
+    p.win.updateDomainState({ __partial: true, [NAME]: st });
+    expect(p.doc.querySelectorAll(".domain").length).toBe(2);           // the other domain is still there
+    expect(range("continents").value).toBe("3");
+    expect(p.doc.querySelector("[data-role=cell-layer-viewer]")).not.toBeNull();
+  });
+
+  it("a partial push works with lean world-gen frames", () => {
+    push({ ...fixture(), full: true, staticVersion: 1 });
+    const l = lean();
+    l.controls[0].value = 0.5;
+    p.win.updateDomainState({ __partial: true, [NAME]: l });
+    expect((row("landFraction").querySelector(".wg-v") as HTMLElement).textContent).toBe("0.50");
+  });
+
+  it("a complete push (no __partial) replaces the state", () => {
+    const g = JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "domain_states_celllayers.json"), "utf-8"));
+    p.win.updateDomainState({ ...g, [NAME]: fixture() });
+    p.win.updateDomainState({ [NAME]: fixture() });
+    expect(p.doc.querySelectorAll(".domain").length).toBe(1);
+  });
+});

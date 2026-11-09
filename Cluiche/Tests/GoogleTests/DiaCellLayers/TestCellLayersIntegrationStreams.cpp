@@ -622,8 +622,9 @@ TEST(CellLayersIntegrationStreams, PublishingStopsAfterTheSixtyTickWindowAndResu
 
 	h.Pump(80);	// well past the 60 tick window with no further demand
 	const uint32_t settled = gRelay->PublishCount(*gDriver->rig->domain);
-	EXPECT_GE(settled, 55u);
-	EXPECT_LE(settled, 65u) << "about 60 snapshots per demand window";
+	// The relay publishes every kPublishTickDivisor-th (2nd) Sim tick, so a 60 tick window yields about 30 snapshots.
+	EXPECT_GE(settled, 27u);
+	EXPECT_LE(settled, 33u) << "about 30 snapshots per demand window";
 	h.Pump(30);
 	EXPECT_EQ(gRelay->PublishCount(*gDriver->rig->domain), settled) << "no publishing once the window expired";
 

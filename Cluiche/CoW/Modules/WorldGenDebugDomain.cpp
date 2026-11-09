@@ -96,27 +96,12 @@ const char*          WorldGenDebugDomain::GetDescription() const { return "S-1 t
 Dia::Core::StringCRC WorldGenDebugDomain::GetGroup()       const { return Dia::Core::StringCRC("Systems"); }
 Dia::Core::RGBA      WorldGenDebugDomain::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kCoreDebug; }
 
-void WorldGenDebugDomain::GetJSONState(Json::Value& out)
+void WorldGenDebugDomain::RebuildStatic()
 {
     const WorldGenSession& session = mModule.GetSession();
-    const Json::Value status = session.Status();
     const Json::Value params = session.Params();
 
-    out["drawers"] = Json::Value(Json::arrayValue);
-
-    // stats
-    Json::Value& stats = out["stats"] = Json::Value(Json::objectValue);
-    stats["status"]         = status["state"];
-    stats["revision"]       = status["revision"];
-    stats["seed"]           = status["seed"];
-    stats["size"]           = status["size"];
-    stats["width"]          = status["dimensions"]["width"];
-    stats["height"]         = status["dimensions"]["height"];
-    stats["locked"]         = false;
-    stats["lastMs"]         = status["lastMs"];
-    stats["preset"]         = params["preset"];
-    stats["presetModified"] = params["modified"];
-    stats["stagesRan"]      = status["stagesRan"];
+    StaticPart next;
 
     // controls, grouped by first stage affected
     struct Row { int stage; std::string key; };
@@ -128,7 +113,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     }
     std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.stage < b.stage; });
 
-    Json::Value& controls = out["controls"] = Json::Value(Json::arrayValue);
+    next.controlDefs = Json::Value(Json::objectValue);
     for (const Row& row : rows)
     {
         const Json::Value& range = ranges[row.key];
@@ -142,7 +127,6 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
         {
             c["type"]    = "select";
             c["values"]  = range["values"];
-            c["value"]   = value;
             c["default"] = range["values"][range["default"].asUInt()];
         }
         else
@@ -151,32 +135,124 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
             c["min"]     = range["min"];
             c["max"]     = range["max"];
             c["step"]    = value.type() == Json::uintValue ? Json::Value(1) : Json::Value(0.01);
-            c["value"]   = value;
             c["default"] = range["default"];
         }
-        controls.append(c);
+        next.controlKeys.push_back(row.key);
+        next.controlDefs[row.key] = c;
     }
 
-    // presets
-    Json::Value& presets = out["presets"] = Json::Value(Json::arrayValue);
+    // presets (directory scan: the expensive part, hence cached)
+    next.presets = Json::Value(Json::arrayValue);
     const Json::Value presetList = session.Presets();
     for (const Json::Value& p : presetList)
     {
         Json::Value e(Json::objectValue);
         e["id"] = p["id"];
         e["displayName"] = p["displayName"];
-        presets.append(e);
+        next.presets.append(e);
+    }
+
+    // view modes
+    next.modes = Json::Value(Json::arrayValue);
+    next.modes.append(kDefaultMode);
+    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    {
+        next.modes.append(TerrainLayers::GetLayerInfo(i).name);
+    }
+
+    for (int i = 0; i < kImplementedStageCount; ++i)
+    {
+        next.timingNames.push_back(TerrainStageName(static_cast<TerrainStage>(i)));
+    }
+
+    const bool changed = !mStaticBuilt || !(next.controlDefs == mStatic.controlDefs) || next.controlKeys != mStatic.controlKeys ||
+                         !(next.presets == mStatic.presets) || !(next.modes == mStatic.modes) || next.timingNames != mStatic.timingNames;
+    if (changed)
+    {
+        mStatic = std::move(next);
+        ++mStaticVersion;
+    }
+    mStaticBuilt = true;
+    mStaticDirty = false;
+    mStaticBuiltAt = std::chrono::steady_clock::now();
+}
+
+void WorldGenDebugDomain::GetJSONState(Json::Value& out)
+{
+    const WorldGenSession& session = mModule.GetSession();
+
+    // Refresh the cached static part only when needed (first call, after a presetSave, or every kStaticRefreshSeconds so
+    // preset files added on disk show up). Nothing here is O(cells).
+    if (!mStaticBuilt || mStaticDirty ||
+        std::chrono::steady_clock::now() - mStaticBuiltAt >= std::chrono::seconds(kStaticRefreshSeconds))
+    {
+        RebuildStatic();
+    }
+
+    const bool full = mForceFull || mStaticVersion != mLastFullVersion || ++mFramesSinceFull >= kFullFrameInterval;
+    if (full)
+    {
+        mForceFull = false;
+        mLastFullVersion = mStaticVersion;
+        mFramesSinceFull = 0;
+    }
+
+    const Json::Value status = session.Status();
+
+    // Param values only change when the shape does; Params() formats every float (shortest round-trip text), so it is
+    // re-run only then, not every frame.
+    if (!mHaveValues || !(session.Shape() == mValuesShape))
+    {
+        mValues = session.Params()["params"];
+        mValuesShape = session.Shape();
+        mHaveValues = true;
+    }
+
+    out["full"]          = full;
+    out["staticVersion"] = mStaticVersion;
+    out["drawers"] = Json::Value(Json::arrayValue);
+
+    // stats
+    Json::Value& stats = out["stats"] = Json::Value(Json::objectValue);
+    stats["status"]         = status["state"];
+    stats["revision"]       = status["revision"];
+    stats["seed"]           = status["seed"];
+    stats["size"]           = status["size"];
+    stats["width"]          = status["dimensions"]["width"];
+    stats["height"]         = status["dimensions"]["height"];
+    stats["locked"]         = false;
+    stats["lastMs"]         = status["lastMs"];
+    stats["preset"]         = session.PresetId();
+    stats["presetModified"] = session.PresetModified();
+    stats["stagesRan"]      = status["stagesRan"];
+
+    // controls: current values; the definitions ride along only in a full frame
+    Json::Value& controls = out["controls"] = Json::Value(Json::arrayValue);
+    for (const std::string& key : mStatic.controlKeys)
+    {
+        Json::Value c = full ? mStatic.controlDefs[key] : Json::Value(Json::objectValue);
+        c["key"]   = key;
+        c["value"] = mValues[key];
+        controls.append(c);
+    }
+
+    if (full)
+    {
+        out["presets"] = mStatic.presets;
     }
 
     // sizes
     Json::Value& sizes = out["sizes"] = Json::Value(Json::arrayValue);
     for (WorldSize s : { WorldSize::Small, WorldSize::Standard, WorldSize::Large })
     {
-        const GridDimensions d = WorldSizeDimensions(s);
         Json::Value e(Json::objectValue);
         e["name"] = WorldSizeName(s);
-        e["width"] = d.width;
-        e["height"] = d.height;
+        if (full)
+        {
+            const GridDimensions d = WorldSizeDimensions(s);
+            e["width"] = d.width;
+            e["height"] = d.height;
+        }
         e["selected"] = status["size"].asString() == WorldSizeName(s);
         sizes.append(e);
     }
@@ -188,7 +264,10 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     {
         Json::Value e(Json::objectValue);
         e["stage"] = i;
-        e["name"] = TerrainStageName(static_cast<TerrainStage>(i));
+        if (full)
+        {
+            e["name"] = mStatic.timingNames[static_cast<size_t>(i)];
+        }
         e["ms"] = static_cast<double>(st[i].milliseconds);
         e["ran"] = st[i].ranLastUpdate;
         timings.append(e);
@@ -197,13 +276,10 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     // view
     Json::Value& view = out["view"] = Json::Value(Json::objectValue);
     view["colourMode"] = mColourMode;
-    Json::Value modes(Json::arrayValue);
-    modes.append(kDefaultMode);
-    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    if (full)
     {
-        modes.append(TerrainLayers::GetLayerInfo(i).name);
+        view["modes"] = mStatic.modes;
     }
-    view["modes"] = modes;
     Json::Value drawers(Json::arrayValue);
     for (const Drawer& d : mDrawers)
     {
@@ -291,6 +367,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     {
         mLastSave = session.PresetSave(args);
         WarnIfFailed("presetSave", mLastSave);
+        mStaticDirty = true;   // the preset list may have changed
         acted = true;
     }
     else if (cmd == kCmdSelectCell)

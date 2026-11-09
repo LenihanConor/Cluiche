@@ -28,6 +28,7 @@ public:
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Sim end of the pooled debug-domain state snapshot: publishes domain state while demanded";
     static constexpr uint32_t kSlotCount = DomainStateBridgeModule::kSlotCount;
+    static constexpr uint64_t kPublishTickDivisor = 2;   // publish the armed domain state every 2nd Sim tick
 
     explicit DomainStateRelayModule(const Dia::Core::StringCRC& instanceId);
     ~DomainStateRelayModule() override;

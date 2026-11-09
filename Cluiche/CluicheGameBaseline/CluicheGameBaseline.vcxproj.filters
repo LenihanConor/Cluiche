@@ -147,6 +147,12 @@
     <ClCompile Include="Modules\DomainStateRelayModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\LogPushBatcher.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainRootDelta.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -312,6 +318,12 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\DomainStateRelayModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LogPushBatcher.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainRootDelta.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

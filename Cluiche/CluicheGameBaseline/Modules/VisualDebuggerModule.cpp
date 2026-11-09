@@ -70,7 +70,12 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         mDomainInterest.Consume(interest);
         for (unsigned int i = 0; i < interest.Size(); ++i)
             mSnapshotPublisher->Arm(interest[i].payload.windowMs);
-        mSnapshotPublisher->Update(ctx.tick);
+        // Packing every domain costs several ms of SimPU time per call (Debug). The panel does not need more than
+        // 30/kSnapshotTickDivisor updates per second, so publish every kSnapshotTickDivisor-th Sim tick only.
+        if (ctx.tick % kSnapshotTickDivisor == 0)
+        {
+            mSnapshotPublisher->Update(ctx.tick);
+        }
     }
 
     auto* app = GetApplication();

@@ -1183,6 +1183,8 @@
     <ClCompile Include="..\..\CoW\Modules\WorldGenDebugDomain.cpp" />
     <ClCompile Include="CoW\TestWorldGenDomainStateRelay.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -207,6 +207,32 @@ describe("console: log view", () => {
     p.win.appendLogLines({ lines: many });
     expect(n()).toBe(500);
   });
+  it("a second push appends to the existing rows (incremental), keeping order and the cap", () => {
+    const first = body.querySelector(".log-line") as HTMLElement;
+    p.win.appendLogLines({ lines: [{ t: 9, level: "WARN", channel: "pu", msg: "later" }] });
+    expect(n()).toBe(5);
+    expect(body.querySelector(".log-line")).toBe(first);   // not rebuilt
+    expect((body.lastElementChild as HTMLElement).textContent).toContain("later");
+    const many = Array.from({ length: 520 }, (_, i) => ({ t: i, level: "INFO", channel: "c", msg: "m" + i }));
+    p.win.appendLogLines({ lines: many });
+    expect(n()).toBe(500);
+    expect((body.lastElementChild as HTMLElement).textContent).toContain("m519");
+    expect(p.$("log-count").textContent).toBe("500 / 500");
+  });
+  it("an incremental push honours the active level filter", () => {
+    p.click(p.doc.querySelector('#log-filters [data-lvl="WARN"]')!);
+    p.win.appendLogLines({ lines: [{ t: 9, level: "INFO", channel: "x", msg: "skipped" }, { t: 10, level: "WARN", channel: "x", msg: "kept" }] });
+    expect(n()).toBe(2);
+    expect(p.$("log-count").textContent).toBe("2 / 6");
+  });
+  it("a collapsed log view is not rendered, and renders its backlog when opened", () => {
+    p.click(p.$("log-hdr"));   // close
+    p.win.appendLogLines({ lines: [{ t: 9, level: "WARN", channel: "pu", msg: "while closed" }] });
+    expect(body.textContent).not.toContain("while closed");
+    p.click(p.$("log-hdr"));   // open
+    expect(body.textContent).toContain("while closed");
+    expect(n()).toBe(5);
+  });
   it("header click toggles the log view", () => {
     const view = p.$("log-view");
     const was = view.classList.contains("open");

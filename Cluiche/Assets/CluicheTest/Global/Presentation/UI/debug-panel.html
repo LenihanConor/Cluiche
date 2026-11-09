@@ -2357,16 +2357,31 @@ function updateDomainState(data) {
   }
   if (!data || typeof data !== 'object') return;
 
+  // Partial push (DebugPanelPageModule sends only the domains whose state changed): merge them into what we hold.
+  // A push without "__partial" is the complete state and replaces everything.
+  var partialOnly = null;
+  if (data.__partial === true) {
+    var merged = (latest && typeof latest === 'object') ? latest : {};
+    partialOnly = {};
+    for (var pk in data) {
+      if (pk !== '__partial' && Object.prototype.hasOwnProperty.call(data, pk)) { merged[pk] = data[pk]; partialOnly[pk] = data[pk]; }
+    }
+    data = merged;
+  }
+
   latest = data;
   vsScan(data);
   var domains = domainsOf(data);
   var sig = structureSignature(domains);
 
+  var rebuilt = false;
   if (sig !== ui.structureSig) {
     ui.structureSig = sig;
     rebuild(domains);
+    rebuilt = true;
   }
-  refresh(domains);
+  // A partial push only refreshes the domains it carried (unless the structure was rebuilt).
+  refresh((partialOnly && !rebuilt) ? domainsOf(partialOnly) : domains);
   applyHistoryToViewer(domains);
 }
 window.updateDomainState = updateDomainState;
@@ -2618,9 +2633,39 @@ function appendLogLines(data) {
     conLogLines.push({ t: l.t, level: lvl, channel: l.channel || '', msg: l.msg || '' });
   }
   if (conLogLines.length > CON_LOG_CAP) conLogLines.splice(0, conLogLines.length - CON_LOG_CAP);
-  conRenderLog();
+  conAppendLogDom(r.lines.length);
 }
 window.appendLogLines = appendLogLines;
+
+// A full conRenderLog() rebuilds up to CON_LOG_CAP rows with innerHTML (tens of ms in Ultralight). appendLogLines only needs
+// the new rows added at the end: do that, and fall back to the full render for anything unusual. A collapsed log view is
+// not rendered at all (conLogDirty is set and the header click renders it when it is opened).
+function conAppendLogDom(added) {
+  var body = conEl('log-body');
+  if (!body) return;
+  var view = conEl('log-view');
+  if (view && view.classList.contains('closed')) { conLogDirty = true; return; }
+  var sel = window.getSelection && window.getSelection();
+  if (conLogDirty || body.querySelector('.log-empty') || (sel && !sel.isCollapsed && body.contains(sel.anchorNode)) ||
+      added > conLogLines.length) {
+    conRenderLog();
+    return;
+  }
+  var stick = body.scrollHeight - body.scrollTop - body.clientHeight < 24;
+  var html = '';
+  for (var i = conLogLines.length - added; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  if (html) body.insertAdjacentHTML('beforeend', html);
+  while (body.children.length > CON_LOG_CAP) body.removeChild(body.firstChild);
+  if (stick) body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = body.children.length + ' / ' + conLogLines.length;
+}
 
 function conSend(text) {
   var seq = ++conSeq;
@@ -2717,6 +2762,7 @@ function conSend(text) {
     var v = conEl('log-view'), open = v.classList.contains('open');
     v.classList.toggle('open', !open);
     v.classList.toggle('closed', open);
+    if (!open && conLogDirty) conRenderLog();
   });
 
   conUpdateCounter();

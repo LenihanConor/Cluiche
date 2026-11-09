@@ -125,6 +125,7 @@ private:
     Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot> mDomainSnapshotOut{this, "DomainStateSnapshot"};
     Dia::ApplicationFlow::EventStreamReader<DomainStateInterestEvent> mDomainInterest{this, "DomainStateInterest"};
     SnapshotSink mSnapshotSink{mDomainSnapshotOut};
+    static constexpr uint64_t kSnapshotTickDivisor = 2;   // publish the panel snapshot every 2nd Sim tick
     std::unique_ptr<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher> mSnapshotPublisher;
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;

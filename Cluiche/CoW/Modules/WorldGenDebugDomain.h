@@ -19,7 +19,18 @@
 //   setColourMode {mode}                              -> View colour layer
 //   toggle       {drawer}                             -> flips a View drawer ("Tiles", "Grid lines", ...)
 //
-// State JSON contract (consumed by debug-panel.html; compact size must stay under 12 KB at Large):
+// State JSON contract (consumed by debug-panel.html; compact size must stay under 12 KB at Large).
+// The state is split into a STATIC part (control definitions, preset list, size dimensions, view modes, stage names) and a
+// DYNAMIC part (everything else). A frame is either
+//   FULL  ("full": true)  : dynamic + static fields, i.e. the complete shape documented below; or
+//   LEAN  ("full": false) : dynamic fields only. Static fields are omitted: controls[] are {key, value}, sizes[] are
+//                           {name, selected}, timings[] are {stage, ms, ran}, presets and view.modes are absent.
+// Every frame carries "staticVersion" (int, bumped whenever the static content changes). A FULL frame is sent for the first
+// frame, whenever staticVersion changes, and every kFullFrameInterval frames (so a reloaded page recovers within ~1 s). The
+// page keeps the static fields of the last FULL frame and merges them into LEAN frames (debug-panel.html wgResolveState).
+// Why: the static JSON was rebuilt (preset list = directory scan) and re-serialised, parsed and pushed every Sim frame and
+// pushed MainPU/SimPU past their 33.3 ms budget in Debug.
+//   full, staticVersion : bool, int
 //   drawers  : []                                     (no world drawers)
 //   stats    : {status, revision, seed, size, width, height, locked(false), lastMs,
 //               preset (id or ""), presetModified, stagesRan[names]}
@@ -41,8 +52,11 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <Shared/WorldGeneration/TerrainTypes.h>
 
+#include <chrono>
 #include <string>
+#include <vector>
 
 namespace CoW {
 
@@ -60,7 +74,13 @@ public:
     Dia::Core::RGBA      GetAccentColour() const override;
     bool                 HasWorldDrawers() const override { return false; }
 
+    // A full frame is sent every this many GetJSONState calls (30 calls is about 1 s at the 30 Hz Sim snapshot rate).
+    static constexpr int kFullFrameInterval = 30;
+    // The preset list is re-read from disk at most this often (and right after a presetSave).
+    static constexpr int kStaticRefreshSeconds = 5;
+
     void GetJSONState(Json::Value& out) override;
+    void ForceFullFrame() { mForceFull = true; }
     void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
 
 private:
@@ -73,6 +93,31 @@ private:
     std::string mColourMode = "terrain";
     Drawer      mDrawers[6];
     Json::Value mLastSave;   // null until a presetSave ran
+
+    // Cached static part (see "State JSON contract").
+    struct StaticPart
+    {
+        std::vector<std::string> controlKeys;    // display order (grouped by first stage)
+        Json::Value controlDefs;                 // key -> full control object without "value"
+        Json::Value presets;                     // [{id, displayName}]
+        Json::Value modes;                       // ["terrain", layer names...]
+        std::vector<std::string> timingNames;    // by stage index
+    };
+    void RebuildStatic();
+
+    // Last param values (key -> value), refreshed only when the session's shape changes.
+    Json::Value                       mValues;
+    WorldGeneration::WorldShapeParams mValuesShape;
+    bool                              mHaveValues = false;
+
+    StaticPart mStatic;
+    bool       mStaticBuilt     = false;
+    bool       mStaticDirty     = false;   // a presetSave ran: re-read the preset list now
+    int        mStaticVersion   = 0;
+    int        mLastFullVersion = -1;
+    int        mFramesSinceFull = 0;
+    bool       mForceFull       = false;
+    std::chrono::steady_clock::time_point mStaticBuiltAt;
 };
 
 } // namespace CoW

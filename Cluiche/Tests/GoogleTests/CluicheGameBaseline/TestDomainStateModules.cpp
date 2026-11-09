@@ -10,14 +10,17 @@
 #include <Modules/DomainStateBridgeModule.h>
 #include <Modules/DomainStateRelayModule.h>
 
+#include <atomic>
 #include <memory>
 #include <string>
+#include <thread>
 
 // DomainStateBridgeModule (Main) + DomainStateRelayModule (Sim): a live two-PU Application ticked inline, joined by the manifest's
 // real per-slot FrameStream / EventStream / ServiceStream. Domains are tiny fakes that stamp a marker into their state.
 
 using namespace Dia::ApplicationFlow;
 using Cluiche::AppFlow::DomainStateBridgeModule;
+using Cluiche::AppFlow::DomainStateChannel;
 using Cluiche::AppFlow::DomainStateRelayModule;
 using Dia::Core::StringCRC;
 using Dia::VisualDebugger::IDebugDomain;
@@ -321,6 +324,38 @@ TEST(DomainStateModules, TenAttachDetachRoundTripsDoNotLeakSlots)
 	EXPECT_NE(gRelay->Attach(d1), nullptr);
 	EXPECT_NE(gRelay->Attach(d2), nullptr);
 	EXPECT_NE(gRelay->Attach(d3), nullptr);
+}
+
+// DomainStateChannel::RequestState runs on the Sim thread (the snapshot publisher packs the registered ViewerStateAdapter) while
+// TakeDemand runs on Main. The flag is atomic, so a request made on one thread is seen exactly once on the other.
+TEST(DomainStateChannel, DemandHandedAcrossThreadsIsNeverLostOrDuplicated)
+{
+	DomainStateChannel channel;
+	constexpr int kRequests = 20000;
+	std::atomic<int> requested{ 0 };
+	std::atomic<bool> done{ false };
+	int taken = 0;
+
+	std::thread sim([&] {
+		for (int i = 0; i < kRequests; ++i)
+		{
+			channel.RequestState();
+			requested.fetch_add(1);
+			while (requested.load() - taken > 1000000) {}   // never blocks in practice
+		}
+		done.store(true);
+	});
+	while (!done.load())
+		if (channel.TakeDemand()) ++taken;
+	sim.join();
+	if (channel.TakeDemand()) ++taken;
+
+	EXPECT_GE(taken, 1);
+	EXPECT_LE(taken, kRequests) << "a request must not be reported twice";
+	EXPECT_FALSE(channel.TakeDemand()) << "the flag is cleared by TakeDemand";
+	channel.RequestState();
+	EXPECT_TRUE(channel.TakeDemand());
+	EXPECT_FALSE(channel.TakeDemand());
 }
 
 #endif // DIA_DEBUG

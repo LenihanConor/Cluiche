@@ -42,7 +42,10 @@ namespace
         Dia::Maths::RandomStream rng{ 1 };
 
         void Gen() { module.GetSession().Tick(rng); }
-        Json::Value State() { Json::Value s; domain.GetJSONState(s); return s; }
+        // Always a full frame (static block included), the shape the contract documents for the first frame.
+        Json::Value State() { domain.ForceFullFrame(); return Frame(); }
+        // The next frame exactly as the Sim pack would receive it (lean unless a full frame is due).
+        Json::Value Frame() { Json::Value s; domain.GetJSONState(s); return s; }
         void Cmd(const char* name, const Json::Value& args) { domain.OnCommand(StringCRC(name), args); }
     };
 
@@ -540,3 +543,109 @@ TEST(WorldGenDebugDomain, CompactStateAtLargeWithCellAndLastSaveStaysUnderSlot)
 }
 
 #endif // DIA_DEBUG
+
+// ---- Static / dynamic split (perf fix 2026-11-09): lean frames carry only what changes per frame ----
+
+TEST(WorldGenDebugDomain, FirstFrameIsFullAndLaterFramesAreLean)
+{
+    Fixture f;
+    f.Gen();
+    const Json::Value first = f.Frame();
+    EXPECT_TRUE(first["full"].asBool());
+    EXPECT_TRUE(first.isMember("presets"));
+    EXPECT_TRUE(first["view"].isMember("modes"));
+    EXPECT_TRUE(first["controls"][0].isMember("min"));
+    EXPECT_TRUE(first["timings"][0].isMember("name"));
+    EXPECT_TRUE(first["sizes"][0].isMember("width"));
+
+    const Json::Value lean = f.Frame();
+    EXPECT_FALSE(lean["full"].asBool());
+    EXPECT_FALSE(lean.isMember("presets"));
+    EXPECT_FALSE(lean["view"].isMember("modes"));
+    EXPECT_EQ(lean["staticVersion"], first["staticVersion"]);
+    ASSERT_EQ(lean["controls"].size(), first["controls"].size());
+    for (Json::ArrayIndex i = 0; i < lean["controls"].size(); ++i)
+    {
+        EXPECT_EQ(lean["controls"][i].getMemberNames().size(), 2u);   // key + value only
+        EXPECT_EQ(lean["controls"][i]["key"], first["controls"][i]["key"]);
+        EXPECT_EQ(lean["controls"][i]["value"], first["controls"][i]["value"]);
+    }
+    ASSERT_EQ(lean["sizes"].size(), 3u);
+    EXPECT_FALSE(lean["sizes"][0].isMember("width"));
+    EXPECT_EQ(lean["sizes"][0]["selected"], first["sizes"][0]["selected"]);
+    ASSERT_EQ(lean["timings"].size(), first["timings"].size());
+    EXPECT_FALSE(lean["timings"][0].isMember("name"));
+    EXPECT_EQ(lean["timings"][0]["ms"], first["timings"][0]["ms"]);
+    EXPECT_EQ(lean["stats"], first["stats"]);
+}
+
+TEST(WorldGenDebugDomain, LeanFrameIsMuchSmallerThanFull)
+{
+    Fixture f;
+    f.Gen();
+    const size_t full = Compact(f.Frame()).size();
+    const size_t lean = Compact(f.Frame()).size();
+    EXPECT_LT(lean * 2, full) << "lean " << lean << " full " << full;
+}
+
+TEST(WorldGenDebugDomain, LeanFramesFollowLiveValues)
+{
+    Fixture f;
+    f.Gen();
+    f.Frame();   // full
+    f.Cmd("setScale", [] { Json::Value a(Json::objectValue); a["key"] = "landFraction"; a["value"] = 0.5; return a; }());
+    const Json::Value lean = f.Frame();
+    EXPECT_FALSE(lean["full"].asBool());
+    bool found = false;
+    for (const Json::Value& c : lean["controls"])
+    {
+        if (c["key"].asString() == "landFraction") { found = true; EXPECT_NEAR(c["value"].asDouble(), 0.5, 1e-6); }
+    }
+    EXPECT_TRUE(found);
+}
+
+TEST(WorldGenDebugDomain, FullFrameRepeatsEveryIntervalSoAReloadedPageRecovers)
+{
+    Fixture f;
+    f.Gen();
+    EXPECT_TRUE(f.Frame()["full"].asBool());
+    int fulls = 0;
+    for (int i = 0; i < static_cast<int>(WorldGenDebugDomain::kFullFrameInterval); ++i)
+    {
+        if (f.Frame()["full"].asBool()) ++fulls;
+    }
+    EXPECT_EQ(fulls, 1);
+}
+
+TEST(WorldGenDebugDomain, StaticVersionBumpsWhenPresetListChanges)
+{
+    Fixture f;
+    f.Gen();
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "wgdd_static_version";
+    std::filesystem::remove_all(dir);
+    f.module.GetSession().SetPresetDirectories("", dir.string());
+    const Json::Value before = f.State();
+    const int v0 = before["staticVersion"].asInt();
+
+    Json::Value args(Json::objectValue);
+    args["id"] = "freshpreset";
+    args["displayName"] = "Fresh";
+    f.Cmd("presetSave", args);
+
+    const Json::Value after = f.Frame();
+    EXPECT_TRUE(after["full"].asBool()) << "a changed static block is sent immediately";
+    EXPECT_GT(after["staticVersion"].asInt(), v0);
+    bool listed = false;
+    for (const Json::Value& p : after["presets"]) listed = listed || p["id"].asString() == "freshpreset";
+    EXPECT_TRUE(listed);
+    EXPECT_FALSE(f.Frame()["full"].asBool());
+    std::filesystem::remove_all(dir);
+}
+
+TEST(WorldGenDebugDomain, StaticVersionIsStableWhenNothingStaticChanged)
+{
+    Fixture f;
+    f.Gen();
+    const int v0 = f.State()["staticVersion"].asInt();
+    EXPECT_EQ(f.State()["staticVersion"].asInt(), v0);
+}

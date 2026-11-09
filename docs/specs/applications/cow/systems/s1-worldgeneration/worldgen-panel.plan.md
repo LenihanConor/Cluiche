@@ -62,3 +62,32 @@ Not covered: panel JS to event-stream hop; AC2 moisture effect through the panel
 **Limitation:** after a relay slot is reused, the new adapter can briefly show the previous occupant's last snapshot until the first fresh publish (the slot's FrameStream is not cleared on Attach). Converges within a frame or two. Fix option: publish an empty snapshot on Attach (a Baseline change, not made).
 
 **Observation suggestions (do not block Done):** trace/profile `WorldGenDebugDomain::GetJSONState` and the relay's per-slot publish; metrics for snapshot bytes per slot, attached-slot count, panel-command accepted/rejected, per-command counts; health reporters for `WorldGenDebugDomain` (Failed state) and the panel-command queue-full case; log `debug.panel_command` rejections and snapshot-oversize.
+
+## Perf fix (2026-11-09)
+
+Problem (Debug build only): with the World Generation card open, MainPU ran about 85 ms and SimPU 35 to 65 ms against a 33.3 ms budget.
+
+Causes and fixes (no Dia/ file changed):
+
+1. **Log feedback loop (Main).** `pu.over_budget` warnings fed the panel's log ring, and `PushLogLines` pushed every frame (each `appendLogLines` rebuilt up to 500 DOM rows, about 45 ms), keeping the PU over budget. Fix: `LogPushBatcher` (Baseline) limits pushes to one per 250 ms, newest 200 lines, with one "N older log lines not shown" summary line; `debug-panel.html` appends rows incrementally and does not render a collapsed log view.
+2. **Per-frame data flow.** (a) `DebugPanelPageModule` skips the parse and push for a byte-identical snapshot and pushes only changed domains (`DomainRootDelta`; `{"__partial":true, ...}`, merged by `updateDomainState`). (b) `WorldGenDebugDomain` splits state into static and dynamic parts (see the contract note below), caches the static JSON, scans the preset directory at most every 5 s or after `presetSave`, and re-runs `Params()` only when the shape changes (`GetJSONState` 6.5 ms to about 1.3 ms). (c) `VisualDebuggerModule` publishes the panel snapshot every 2nd Sim tick (`kSnapshotTickDivisor`) and `DomainStateRelayModule` publishes every 2nd tick on the other phase (`kPublishTickDivisor`); the panel therefore updates at about 15 Hz (user approved). `CellLayersIntegrationStreams.PublishingStopsAfterTheSixtyTickWindow...` now expects about 30 publishes per 60-tick window.
+3. **Race.** `DomainStateChannel::mDemandPending` was documented Main-only, but `ViewerStateAdapter::GetJSONState` (which calls `RequestState`) runs on the Sim thread: the S1 stage registers the adapter with the Sim-side `VisualDebuggerModule` registry and `DomainStateSnapshotPublisher::Update` packs on Sim, while `TakeDemand` runs on Main. Now `std::atomic<bool>` with `exchange`; comment corrected; cross-thread gtest added (no ThreadSanitizer run).
+
+**State JSON contract change.** Every frame carries `full` (bool) and `staticVersion` (int). A FULL frame (first call, `staticVersion` change, every `kFullFrameInterval` = 30 calls) has the complete shape documented above. A LEAN frame omits static fields: `controls[]` are `{key, value}`, `sizes[]` are `{name, selected}`, `timings[]` are `{stage, ms, ran}`, and `presets` and `view.modes` are absent. The page keeps the static part of the last full frame (`wgResolveState` in `debug-panel.html`). Both panel pages (CoW and CluicheTest) got the partial-merge change; the CluicheTest edit was signed off (AD-001) for the partial merge and log append only.
+
+| Debug, 40 s on S1 stage (ms, median / p95) | Main | Sim | over_budget lines |
+|---|---|---|---|
+| Before | 82-89 / 98-101 | 34-38 / 68-71 | hundreds (bistable 16 vs 600) |
+| After Fix 1 (log batching) | 34.1 / 78.3 | 33.9 / 69.9 | 705 |
+| After Fix 2 before throttles | 18-22 / 28-34 | 19-25 / 29-38 | Main 19-43, Sim 44-179 |
+| Final (two runs) | 18.1 / 26.1 and 10.3 / 23.9 | 19.3 / 26.2 and 17.8 / 23.4 | Main 6 and 0, Sim 22 and 8, Render 2 |
+| Stage without card (reference) | 10.3 / 15.5 | 13.4 / 27 | |
+
+No sustained over_budget remains; the residual Sim lines are isolated spikes (the 22-line run was about one per 2 s).
+
+**Dia changes wanted (not made, need approval):**
+1. `PackDomainStates` / `DomainStateSnapshotPublisher`: skip unchanged domains or cache per-domain JSON (the pack is 5 to 10 ms per call in Debug).
+2. `ViewerStateAdapter`: it re-parses the relayed JSON on the Sim thread and calls the Main-owned `StreamReader::FetchLatest` from Sim; it should not be registered in the Sim registry, or should read the text without parsing.
+3. `ProcessingUnit.cpp` `pu.over_budget` warning should be rate-limited (covered by the approved profiling amendment).
+
+**Not verified:** Release build, sanitizer run (ASan/UBSan only would not catch the race), full unscoped gtest run, in-page behaviour under Ultralight's JavaScriptCore (Vitest uses jsdom).

@@ -19,6 +19,9 @@
 #include <DiaVisualDebugger/Domain/ServiceKeyResolver.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
+#include <set>
+#include <string>
+
 #include "Modules/DebugPanelPage.h"
 #include "Modules/UIModule.h"
 #include "Types/DebugConsoleLineEvent.h"
@@ -154,7 +157,10 @@ private:
     bool        mHaveDomainRoot      = false;
     bool        mHaveFrame           = false;
     uint64_t    mLastSimFrame        = 0;
-    bool        mPanelPushPending    = false;      // a new root (or a re-shown panel) has not reached the page yet
+    bool        mPanelPushPending    = false;      // a FULL push is owed (structure change, or a re-shown panel)
+    std::set<std::string> mDirtyDomains;               // domains changed since the last push; sent as a partial push
+    Json::Value mScratchRoot{Json::objectValue};       // freshly parsed snapshot, compared with mDomainRoot before it replaces it
+    std::string mLastSnapshotJson;                     // bytes of the last parsed snapshot: a byte-identical one is not re-parsed
     bool        mParseFailureLogged  = false;
     double      mWallMs              = 0.0;        // accumulated MainTimeContext::wallClockDt
     double      mFrameChangedAtMs    = 0.0;        // mWallMs when simFrame last changed
