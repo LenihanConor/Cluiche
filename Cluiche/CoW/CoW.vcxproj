@@ -60,6 +60,7 @@
     <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp" />
+    <ClCompile Include="Modules\WorldGenViewHost.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -101,6 +102,9 @@
     <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h" />
+    <ClInclude Include="Modules\IWorldGenView.h" />
+    <ClInclude Include="Modules\WorldGenPointerFrame.h" />
+    <ClInclude Include="Modules\WorldGenViewHost.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
@@ -299,7 +303,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/jsoncpp-master/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <BrowseInformation>false</BrowseInformation>
@@ -326,7 +330,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/jsoncpp-master/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>

@@ -2724,5 +2724,11 @@
     <ClCompile Include="CluicheGameBaseline\TestInputStreamWheel.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenViewHost.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

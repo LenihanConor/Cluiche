@@ -118,6 +118,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\WorldGenViewHost.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -236,6 +239,15 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\IWorldGenView.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenPointerFrame.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenViewHost.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
