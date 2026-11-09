@@ -1194,6 +1194,7 @@
     <ClCompile Include="CoW\TestWorldCameraController.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldOverlayGeometry.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldCameraController.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestInputStreamWheel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

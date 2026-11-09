@@ -2721,5 +2721,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldCameraController.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestInputStreamWheel.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

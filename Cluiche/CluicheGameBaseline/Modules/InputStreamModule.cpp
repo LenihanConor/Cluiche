@@ -35,6 +35,7 @@ void InputStreamModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     memcpy(mPreviousKeys,  mCurrentKeys,  sizeof(mCurrentKeys));
     memcpy(mPreviousMouse, mCurrentMouse, sizeof(mCurrentMouse));
+    mWheelDelta = 0.0f;
 
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<MainToSimEvent>, 64> events;
     mInput.Consume(events);
@@ -74,6 +75,10 @@ void InputStreamModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
         {
             mMouseX = evt.mouseMove.x;
             mMouseY = evt.mouseMove.y;
+        }
+        else if (evt.type == InputEvent::EType::kMouseWheelMoved)
+        {
+            mWheelDelta += static_cast<float>(evt.mouseWheel.delta);
         }
     }
 }
