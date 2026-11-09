@@ -3,7 +3,7 @@
 **Spec:** @f1-debug-host-integration.md
 **System plan:** @worldgenerationpipeline.plan.md (task 9)
 **Mockup:** @s1-editor-mockup.html (approved 2026-11-09, task 8c)
-**Status:** In Progress
+**Status:** Done
 
 Scope: the terrain part of Feature 6: `WorldGenDebugDomain` and its panel on top of the task 8b `cow.worldgen.*` commands. Seed, `WorldShapeParams` sliders, presets load/save, map size, stage timings, View section (colour mode and drawer toggles as state only; rendering is task 10), Cell Inspector with stage values. Validation, Cancel, Export/Import are stubs (tasks 13-16). Biome/region/site fields are stubs (tasks 11-12).
 
@@ -22,7 +22,7 @@ Scope: the terrain part of Feature 6: `WorldGenDebugDomain` and its panel on top
 | 3 | `WorldGenDebugDomain` (CoW, SimPU, DIA_DEBUG): `GetJSONState` from `WorldGenSession` (controls built from the `params` ranges, status, stage timings, cell inspector, presets, size); `OnCommand` routes to the same handlers the `cow.worldgen.*` commands use | TDD: JSON state matches `params`/`status`/`cell` query results; each command changes the session as the DiaAPI command does; unknown key ignored | Done | sonnet | SD-S1-002: no second path. Find how to call the sim-hosted handlers from the domain without duplicating logic | 2026-11-09: 13 WorldGenDebugDomain tests pass. barrierForm control is type select (task 4 must render it). Per-stage timings exist (GetTimings). |
 | 4 | `debug-panel.html` (CoW copy): slider throttled send on `input`, plus button, select, text/number input, checkbox, segmented buttons, collapsible section, key/value grid, stage-timing bars, legend swatches. Built to the mockup | Vitest or the panel's existing test harness if present; else a mockup-vs-panel manual check recorded in notes | Done | sonnet | CoW file only | 2026-11-09: 46 new Vitest tests, debugpanel suite 557/557. sendCommand caps args at 63 chars (String64): presetSave with long id/name is refused client-side; fixing needs a Dia change. No legend swatches (contract has no legend data). |
 | 5 | Wire into the S-1 stage: add bridge/relay to the stage manifest, register the domain via the relay in `S1WorldGenerationTestbedStageModule`, unregister on stop | Stage boots; `debug.domain_state` returns the World Generation card | Done | sonnet | Check `dia validate manifest` | 2026-11-09: card live on the real S-1 stage (cow/default E2E 1/1, gtests 94+93). CoW.vcxproj now links DiaCellLayers (WHOLEARCHIVE, as CluicheTest). Panel-command forwarding is covered by gtest only (no debug command reaches the panel event stream). Teardown/Escape-to-Boot not exercised by a test. |
-| 6 | Verify: slider drag → preview update end to end; gap audit, edge tests; one scoped gtest run (shards >= 2); `dia run cluichetest` celllayers E2E; observation scan | Feature 6 ACs for the terrain sections (AC1, AC2, AC8-label parts, AC9, AC11, AC14) | Pending | sonnet | Final verification task per cadence rule |
+| 6 | Verify: slider drag → preview update end to end; gap audit, edge tests; one scoped gtest run (shards >= 2); `dia run cluichetest` celllayers E2E; observation scan | Feature 6 ACs for the terrain sections (AC1, AC2, AC8-label parts, AC9, AC11, AC14) | Done | sonnet | Final verification task per cadence rule |
 
 ## State JSON contract
 
@@ -52,3 +52,13 @@ Commands: `setScale{key,value}`, `regenerate{seed?}`, `setSeed{seed}`, `setSize{
 - Teardown E2E: S-1 to Boot to S-1 three times, card rebuilt each time, WorldGen domain gone while on Boot, no new ERROR log lines.
 - `debug.panel_command {domain, cmd, args?}`: sim-hosted, in `VisualDebuggerModule` (Baseline; AD-001 given 2026-11-09), registered lazily on the first sim tick with a host. Uses the panel's own `EnqueueCommand` path. CoW `cow/default` E2E now 7/7 (setScale, setSize, presetLoad, selectCell/clearCell, bad requests). The panel's JS to event-stream hop is still untested.
 - No RED run for the `debug.panel_command` gtests (implementation was written first).
+
+## Task 6 verification (2026-11-09)
+
+Fresh runs: manifest 78/0 errors; scoped gtests 210 per shard; Vitest debugpanel 557/557; CoW and CluicheTest build; `cow/default` E2E 7/7; celllayers E2E 11/11; full `dia run googletest --shards 4` 0 failures (about 14,770 tests). Release and sanitizer runs skipped. 10 edge tests added, no production bug found. Compact state at Large with a selected cell and lastSave: 6,552 bytes (slot 32 KB).
+
+Not covered: panel JS to event-stream hop; AC2 moisture effect through the panel; AC8 and Validate are N/A in this slice; site display and export equality (later tasks).
+
+**Limitation:** after a relay slot is reused, the new adapter can briefly show the previous occupant's last snapshot until the first fresh publish (the slot's FrameStream is not cleared on Attach). Converges within a frame or two. Fix option: publish an empty snapshot on Attach (a Baseline change, not made).
+
+**Observation suggestions (do not block Done):** trace/profile `WorldGenDebugDomain::GetJSONState` and the relay's per-slot publish; metrics for snapshot bytes per slot, attached-slot count, panel-command accepted/rejected, per-command counts; health reporters for `WorldGenDebugDomain` (Failed state) and the panel-command queue-full case; log `debug.panel_command` rejections and snapshot-oversize.

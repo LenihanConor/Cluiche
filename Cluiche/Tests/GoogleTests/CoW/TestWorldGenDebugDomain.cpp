@@ -8,7 +8,11 @@
 #include <Modules/WorldGenDebugDomain.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <climits>
+#include <cmath>
 #include <filesystem>
+#include <iostream>
+#include <limits>
 #include <string>
 
 using namespace CoW;
@@ -339,6 +343,200 @@ TEST(WorldGenDebugDomain, UnknownCommandAndBadArgsAreNoOps)
     const Json::Value after = f.State();
     EXPECT_EQ(Compact(before), Compact(after));
     EXPECT_FALSE(f.module.GetSession().IsDirty());
+}
+
+// ---- Gap audit (plan task 6) ----
+
+namespace
+{
+    Json::Value Xy(const Json::Value& x, const Json::Value& y)
+    {
+        Json::Value a(Json::objectValue);
+        a["x"] = x;
+        a["y"] = y;
+        return a;
+    }
+
+    std::string ControlKeys(const Json::Value& st)
+    {
+        std::string keys;
+        for (const Json::Value& c : st["controls"]) keys += c["key"].asString() + ",";
+        return keys;
+    }
+}
+
+TEST(WorldGenDebugDomain, StateBeforeFirstWorldIsCompleteAndSafe)
+{
+    Fixture f;
+    const Json::Value st = f.State();
+    EXPECT_EQ(st["stats"]["status"].asString(), "Idle");
+    EXPECT_EQ(st["stats"]["revision"].asUInt(), 0u);
+    EXPECT_FALSE(st["controls"].empty());
+    EXPECT_EQ(st["sizes"].size(), 3u);
+    EXPECT_EQ(st["timings"].size(), static_cast<unsigned>(kImplementedStageCount));
+    EXPECT_TRUE(st["cell"].isNull());
+    EXPECT_FALSE(st.isMember("cellError"));
+    EXPECT_TRUE(st["lastSave"].isNull());
+}
+
+TEST(WorldGenDebugDomain, SetSizeWithSelectionOutsideNewBoundsClearsToCellError)
+{
+    Fixture f;
+    f.Cmd("setSize", Obj("size", "Large"));
+    f.Gen();
+    f.Cmd("selectCell", Xy(100, 60));
+    EXPECT_TRUE(f.State()["cell"].isObject());
+
+    f.Cmd("setSize", Obj("size", "Small"));
+    // Pending size only: the generated grid is still Large, so the cell is still answerable.
+    EXPECT_TRUE(f.State()["cell"].isObject());
+    f.Gen();
+    const Json::Value st = f.State();
+    EXPECT_EQ(st["stats"]["width"].asInt(), 66);
+    EXPECT_TRUE(st["cell"].isNull());
+    EXPECT_TRUE(st["cellError"].isString());
+
+    // Selecting inside the new bounds recovers.
+    f.Cmd("selectCell", Xy(5, 5));
+    const Json::Value ok = f.State();
+    EXPECT_TRUE(ok["cell"].isObject());
+    EXPECT_FALSE(ok.isMember("cellError"));
+}
+
+TEST(WorldGenDebugDomain, SelectCellAtGridEdgesAndOutOfRange)
+{
+    Fixture f;
+    f.Gen();   // Small 66x42
+    f.Cmd("selectCell", Xy(65, 41));
+    Json::Value st = f.State();
+    ASSERT_TRUE(st["cell"].isObject());
+    EXPECT_EQ(st["cell"]["x"].asInt(), 65);
+    EXPECT_EQ(st["cell"]["y"].asInt(), 41);
+    EXPECT_EQ(st["cell"]["index"].asInt(), 41 * 66 + 65);
+
+    f.Cmd("selectCell", Xy(0, 0));
+    EXPECT_TRUE(f.State()["cell"].isObject());
+
+    const Json::Value bad[] = { Xy(66, 0), Xy(0, 42), Xy(-1, 0), Xy(0, -1), Xy(INT_MAX, INT_MAX), Xy(INT_MIN, INT_MIN) };
+    for (const Json::Value& b : bad)
+    {
+        f.Cmd("selectCell", b);
+        st = f.State();
+        EXPECT_TRUE(st["cell"].isNull()) << Compact(b);
+        EXPECT_TRUE(st["cellError"].isString()) << Compact(b);
+    }
+
+    // A value that does not fit an int is rejected before the selection changes (the last bad selection stays).
+    f.Cmd("selectCell", Xy(Json::Value(static_cast<Json::Int64>(1) << 40), 0));
+    EXPECT_TRUE(f.State()["cell"].isNull());
+    f.Cmd("selectCell", Xy(1.5, 2));   // non-integral: ignored
+    EXPECT_TRUE(f.State()["cell"].isNull());
+}
+
+TEST(WorldGenDebugDomain, BurstOfScaleCommandsCoalescesToOneGenerationLastValueWins)
+{
+    Fixture f;
+    f.Gen();
+    const unsigned rev0 = f.State()["stats"]["revision"].asUInt();
+    for (int i = 0; i < 100; ++i)
+    {
+        Json::Value a;
+        a["key"] = "landFraction";
+        a["value"] = 0.2 + 0.003 * i;
+        f.Cmd("setScale", a);
+    }
+    EXPECT_TRUE(f.module.GetSession().IsDirty());
+    f.Gen();
+    f.Gen();   // second tick must be a no-op
+    const Json::Value st = f.State();
+    EXPECT_EQ(st["stats"]["revision"].asUInt(), rev0 + 1);
+    for (const Json::Value& c : st["controls"])
+    {
+        if (c["key"].asString() == "landFraction") EXPECT_NEAR(c["value"].asDouble(), 0.2 + 0.003 * 99, 1e-4);
+    }
+}
+
+TEST(WorldGenDebugDomain, SetScaleWithNaNInfAndStringsNeverCorruptsState)
+{
+    Fixture f;
+    f.Gen();
+    const double before = [&] {
+        for (const Json::Value& c : f.State()["controls"]) if (c["key"].asString() == "landFraction") return c["value"].asDouble();
+        return -1.0;
+    }();
+    const Json::Value bad[] = {
+        Json::Value(std::numeric_limits<double>::quiet_NaN()),
+        Json::Value(std::numeric_limits<double>::infinity()),
+        Json::Value(-std::numeric_limits<double>::infinity()),
+        Json::Value("0.5"),
+        Json::Value("abc"),
+        Json::Value(Json::nullValue),
+        Json::Value(true),
+        Json::Value(Json::objectValue),
+    };
+    for (const Json::Value& v : bad)
+    {
+        Json::Value a;
+        a["key"] = "landFraction";
+        a["value"] = v;
+        f.Cmd("setScale", a);
+        f.Gen();
+        const Json::Value st = f.State();
+        const std::string text = Compact(st);
+        EXPECT_EQ(text.find("nan"), std::string::npos);
+        EXPECT_EQ(text.find("inf"), std::string::npos);
+        for (const Json::Value& c : st["controls"])
+        {
+            if (c["key"].asString() != "landFraction") continue;
+            ASSERT_TRUE(c["value"].isNumeric()) << Compact(v);
+            const double now = c["value"].asDouble();
+            EXPECT_TRUE(std::isfinite(now)) << Compact(v);
+            EXPECT_GE(now, c["min"].asDouble()) << Compact(v);
+            EXPECT_LE(now, c["max"].asDouble()) << Compact(v);
+        }
+    }
+    (void)before;
+}
+
+TEST(WorldGenDebugDomain, ControlListIsStableAcrossSizeChanges)
+{
+    Fixture f;
+    f.Gen();
+    const std::string keys = ControlKeys(f.State());
+    for (const char* size : { "Large", "Standard", "Small", "Large" })
+    {
+        f.Cmd("setSize", Obj("size", size));
+        f.Gen();
+        const Json::Value st = f.State();
+        EXPECT_EQ(ControlKeys(st), keys) << size;
+        EXPECT_EQ(st["stats"]["size"].asString(), size);
+    }
+}
+
+TEST(WorldGenDebugDomain, CompactStateAtLargeWithCellAndLastSaveStaysUnderSlot)
+{
+    namespace fs = std::filesystem;
+    const fs::path dir = fs::temp_directory_path() / "WorldGenDebugDomainSizeTest";
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+
+    Fixture f;
+    f.module.GetSession().SetPresetDirectories("", dir.string());
+    f.Cmd("setSize", Obj("size", "Large"));
+    f.Gen();
+    f.Cmd("selectCell", Xy(52, 32));
+    Json::Value save;
+    save["id"] = "size_test";
+    save["displayName"] = "Size Test";
+    save["description"] = std::string(200, 'd');
+    f.Cmd("presetSave", save);
+    const Json::Value st = f.State();
+    ASSERT_TRUE(st["cell"].isObject());
+    ASSERT_TRUE(st["lastSave"].isObject());
+    const size_t bytes = Compact(st).size();
+    std::cout << "[ measured ] compact WorldGen state at Large with cell + lastSave: " << bytes << " bytes\n";
+    EXPECT_LT(bytes, 12u * 1024u);   // contract; the snapshot slot is 32 KB
+    fs::remove_all(dir, ec);
 }
 
 #endif // DIA_DEBUG

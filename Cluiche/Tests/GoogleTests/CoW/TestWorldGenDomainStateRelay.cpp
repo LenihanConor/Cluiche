@@ -173,4 +173,33 @@ TEST(WorldGenDomainStateRelay, AdapterShowsCardStateAndForwardsCommands)
 	EXPECT_FALSE(gRelay->IsAttached(domain));
 }
 
+TEST(WorldGenDomainStateRelay, TenAttachDetachRoundTripsAtLargeFitTheSnapshotSlot)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+	Dia::Maths::RandomStream rng{ 1 };
+	Json::Value size(Json::objectValue);
+	size["size"] = "Large";
+	module.GetSession().SetSize(size);
+	module.GetSession().Tick(rng);
+	CoW::WorldGenDebugDomain domain{ module };
+	Json::Value sel(Json::objectValue);
+	sel["x"] = 103;
+	sel["y"] = 63;
+	domain.OnCommand(StringCRC("selectCell"), sel);
+
+	for (int i = 0; i < 10; ++i)
+	{
+		IDebugDomain* adapter = gRelay->Attach(domain);
+		ASSERT_NE(adapter, nullptr) << "round " << i;
+		Json::Value state;
+		ASSERT_TRUE(FetchState(h, *adapter, state)) << "round " << i;
+		EXPECT_EQ(state["stats"]["size"].asString(), "Large");
+		EXPECT_TRUE(state["cell"].isObject()) << "a Large state with a selected cell must survive the 32 KB slot";
+		gRelay->Detach(domain);
+		EXPECT_EQ(gRelay->AttachedCount(), 0u) << "round " << i;
+	}
+}
+
 #endif // DIA_DEBUG

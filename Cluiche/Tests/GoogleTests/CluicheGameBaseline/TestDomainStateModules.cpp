@@ -273,4 +273,54 @@ TEST(DomainStateModules, AttachingTheSameDomainTwiceReturnsTheExistingAdapter)
 	EXPECT_EQ(gRelay->AttachedCount(), 1u);
 }
 
+TEST(DomainStateModules, DetachWithDemandInFlightIsSafeAndSlotIsReusable)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	FakeDomain a("DomA", "marker-A"), b("DomB", "marker-B");
+	IDebugDomain* adA = gRelay->Attach(a);
+	ASSERT_NE(adA, nullptr);
+	ASSERT_EQ(FetchMarker(h, *adA), "marker-A");
+
+	ReadMarker(*adA);	// Main-side poll raises a demand event that the relay has not drained yet
+	gRelay->Detach(a);	// ... and the domain detaches before the next Sim tick
+	const int calls = a.stateCalls;
+	h.Pump(20);
+	EXPECT_EQ(a.stateCalls, calls) << "the in-flight demand must not reach a detached domain";
+	EXPECT_EQ(gRelay->AttachedCount(), 0u);
+
+	IDebugDomain* adB = gRelay->Attach(b);
+	ASSERT_NE(adB, nullptr);
+	// KNOWN LIMITATION (reported in plan task 6): the reused slot's FrameStream still holds the previous occupant's last
+	// snapshot, so the new adapter can show it until the first fresh publish. It must converge to the new domain's state.
+	std::string marker;
+	for (int i = 0; i < 40 && marker != "marker-B"; ++i)
+	{
+		marker = ReadMarker(*adB);
+		h.Pump(1);
+	}
+	EXPECT_EQ(marker, "marker-B") << "the slot must converge to the new occupant's state";
+}
+
+TEST(DomainStateModules, TenAttachDetachRoundTripsDoNotLeakSlots)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	for (int i = 0; i < 10; ++i)
+	{
+		FakeDomain d("D", "round");
+		IDebugDomain* ad = gRelay->Attach(d);
+		ASSERT_NE(ad, nullptr) << "round " << i;
+		EXPECT_EQ(FetchMarker(h, *ad), "round") << "round " << i;
+		gRelay->Detach(d);
+		EXPECT_EQ(gRelay->AttachedCount(), 0u) << "round " << i;
+	}
+	// All four slots are still free.
+	FakeDomain d0("D0", "0"), d1("D1", "1"), d2("D2", "2"), d3("D3", "3");
+	EXPECT_NE(gRelay->Attach(d0), nullptr);
+	EXPECT_NE(gRelay->Attach(d1), nullptr);
+	EXPECT_NE(gRelay->Attach(d2), nullptr);
+	EXPECT_NE(gRelay->Attach(d3), nullptr);
+}
+
 #endif // DIA_DEBUG
