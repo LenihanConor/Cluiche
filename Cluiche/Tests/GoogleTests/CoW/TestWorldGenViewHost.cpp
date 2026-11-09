@@ -12,8 +12,10 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
 
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <set>
 #include <sstream>
 
@@ -58,10 +60,11 @@ struct Rig
     bool haveInput = false;
     std::unique_ptr<WorldGenViewHost> host;
 
-    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr)
+    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true)
     {
         Dia::CellLayers::Testing::FakePuId() = 1;
-        Tick(12345);
+        if (generate)
+            Tick(12345);
         WorldGenViewHost::Deps d;
         d.registry = &registry;
         d.cellField = &cellField;
@@ -639,6 +642,226 @@ TEST(WorldGenViewHost, LegendIsNullWithoutASchema)
     Json::Value legend(Json::objectValue);
     r.host->FillLegend(legend);
     EXPECT_TRUE(legend.isNull() || legend.isObject());
+}
+
+// ---- Gap audit (task 12): edge cases ------------------------------------------------------------------------------
+
+TEST(WorldGenViewHost, NoWorldYetBuildUpdateDrawDoNotCrashAndUploadZeros)
+{
+    Rig r(nullptr, false);
+    ASSERT_EQ(r.session.Revision(), 0u);
+    ASSERT_TRUE(r.host->Build());
+    RecordingDraw draw;
+    for (int i = 0; i < 5; ++i)
+        r.Frame(draw);
+    EXPECT_EQ(r.host->ReadFailures(), 0u);
+    EXPECT_EQ(draw.lines.size(), 0u) << "rivers need a world";
+    EXPECT_EQ(draw.texts, 0u);
+    EXPECT_FALSE(r.host->HasSelection());
+    std::vector<bool> avail;
+    r.host->ListOverlays([&](const char*, bool, bool a) { avail.push_back(a); });
+    ASSERT_EQ(avail.size(), 2u);
+    EXPECT_FALSE(avail[0]) << "rivers unavailable without a world";
+    Json::Value legend;
+    r.host->FillLegend(legend);   // must not crash
+
+    // The first world arriving afterwards is picked up.
+    r.Tick(12345);
+    r.Frame(draw);
+    EXPECT_EQ(r.host->LayerVersion(), r.session.Revision());
+    EXPECT_EQ(r.host->ReadFailures(), 0u);
+}
+
+TEST(WorldGenViewHost, BuildTwiceTeardownTwiceAndTeardownBeforeBuildAreSafe)
+{
+    Rig r;
+    r.host->Teardown();   // before Build: nothing registered, nothing to undo
+    EXPECT_EQ(r.registry.LayerCount(), 0u);
+    EXPECT_FALSE(r.host->IsBuilt());
+
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.host->Build());   // second Build is a no-op, no duplicate registrations
+    EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
+    EXPECT_EQ(r.registry.OverlayCount(), 2u);
+    EXPECT_EQ(r.registry.GridCount(), 1u);
+
+    r.host->Teardown();
+    r.host->Teardown();
+    EXPECT_EQ(r.registry.LayerCount(), 0u);
+
+    ASSERT_TRUE(r.host->Build());   // rebuildable after teardown
+    EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
+    FakeDebugDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(r.host->LayerVersion(), r.session.Revision());
+}
+
+TEST(WorldGenViewHost, UnavailableOverlayToggleAndUnknownOverlayDoNotCrash)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    FakeDebugDraw draw;
+    r.Frame(draw);
+    EXPECT_TRUE(r.host->SetOverlayEnabled("selection.neighbours", false));   // nothing selected: still just a flag
+    EXPECT_TRUE(r.host->SetOverlayEnabled("selection.neighbours", true));
+    EXPECT_FALSE(r.host->SetOverlayEnabled("", true));
+    EXPECT_FALSE(r.host->SetOverlayEnabled(nullptr, true));
+    RecordingDraw d;
+    r.Frame(d);
+    EXPECT_EQ(d.texts, 0u);
+}
+
+TEST(WorldGenViewHost, WindowSizeZeroNeverFitsAndNeverProducesNonFiniteCamera)
+{
+    Rig r;
+    r.window = Vector2D(0.0f, 0.0f);
+    ASSERT_TRUE(r.host->Build());
+    FakeDebugDraw draw;
+    r.haveInput = true;
+    r.input.pointer.valid = true;
+    r.input.pointer.x = 10; r.input.pointer.y = 10;
+    r.input.pointer.left = true;
+    for (int i = 0; i < 5; ++i)
+        r.Frame(draw);   // pointer frames with a 0x0 viewport go through the picker
+    EXPECT_TRUE(std::isfinite(r.host->Camera().State().zoom));
+    EXPECT_TRUE(std::isfinite(r.host->Camera().State().centreX));
+    EXPECT_TRUE(std::isfinite(r.host->Camera().State().centreY));
+    EXPECT_GT(r.host->Camera().State().zoom, 0.0f);
+
+    r.window = Vector2D(1280.0f, 720.0f);   // the window appears: the camera fits now
+    r.input.pointer.left = false;
+    r.Frame(draw);
+    EXPECT_NEAR(r.camX, (r.host->Grid().BoundsMin().x + r.host->Grid().BoundsMax().x) * 0.5f, 1.0f);
+}
+
+TEST(WorldGenViewHost, HugeAndNonFiniteWheelAndPointerNeverCorruptTheCamera)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    FakeDebugDraw draw;
+    r.Frame(draw);
+    r.haveInput = true;
+    r.input.pointer.valid = true;
+    r.input.pointer.x = 640; r.input.pointer.y = 360;
+
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    const float wheels[] = { 1e9f, -1e9f, inf, -inf, nan, 3.0f };
+    for (float w : wheels)
+    {
+        r.input.camera.wheelDelta = w;
+        r.Frame(draw);
+        const CameraState& s = r.host->Camera().State();
+        SCOPED_TRACE(w);
+        EXPECT_TRUE(std::isfinite(s.zoom));
+        EXPECT_TRUE(std::isfinite(s.centreX));
+        EXPECT_TRUE(std::isfinite(s.centreY));
+        EXPECT_GE(s.zoom, WorldCameraController::kMinZoom);
+        EXPECT_LE(s.zoom, WorldCameraController::kMaxZoom);
+    }
+
+    r.input.camera.wheelDelta = 0.0f;
+    const float coords[][2] = { { nan, nan }, { inf, -inf }, { 1e30f, -1e30f } };
+    for (const auto& c : coords)
+    {
+        r.input.pointer.x = c[0];
+        r.input.pointer.y = c[1];
+        r.input.pointer.left = true;
+        r.input.pointer.middle = true;
+        r.Frame(draw);
+        r.input.pointer.left = false;
+        r.input.pointer.middle = false;
+        r.Frame(draw);
+        const CameraState& s = r.host->Camera().State();
+        EXPECT_TRUE(std::isfinite(s.zoom));
+        EXPECT_TRUE(std::isfinite(s.centreX));
+        EXPECT_TRUE(std::isfinite(s.centreY));
+        EXPECT_FALSE(r.host->HasSelection()) << "a garbage pointer must not select a cell";
+    }
+}
+
+TEST(WorldGenViewHost, SetSizeWhileASelectionExistsKeepsOrClearsAndNeverExhaustsSelectionStore)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    FakeDebugDraw draw;
+    r.Frame(draw);
+    for (int i = 0; i < 24; ++i)
+    {
+        ASSERT_TRUE(r.host->SelectCell(5, 5));
+        r.Resize(i % 3 == 0 ? "Large" : (i % 3 == 1 ? "Standard" : "Small"));
+        r.Frame(draw);
+        int x = -1, y = -1;
+        ASSERT_TRUE(r.host->GetSelection(x, y)) << i;   // (5,5) is in range at every size
+        EXPECT_EQ(x, 5);
+        EXPECT_EQ(y, 5);
+    }
+    EXPECT_EQ(r.registry.RejectedRegistrations(), 0u);
+    r.Resize("Large");
+    r.Frame(draw);
+    ASSERT_TRUE(r.host->SelectCell(103, 63));
+    r.Resize("Small");
+    r.Frame(draw);
+    EXPECT_FALSE(r.host->HasSelection());
+    EXPECT_EQ(r.registry.GridCount(), 1u);
+}
+
+TEST(WorldGenViewHost, ZeroRiverWorldDrawsNoRiverLinesAndDoesNotRebuildEveryFrame)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.host->SetOverlayEnabled("selection.neighbours", false));
+    // Strip the rivers from the generated world through the same session the host reads.
+    WorldStructure& w = const_cast<WorldStructure&>(r.session.World());
+    for (int i = 0; i < w.CellCount(); ++i)
+        w.Cells()[i].waterSource = WaterSource::None;
+    ASSERT_EQ(BuildRiverSegments(w, r.host->Grid()).size(), 0u);
+    RecordingDraw draw;
+    for (int i = 0; i < 5; ++i)
+        r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), 0u);
+    EXPECT_EQ(r.host->RiverSegmentRebuilds(), 1u);
+}
+
+TEST(WorldGenViewHost, FillLegendBeforeBuildAndAfterTeardownIsNull)
+{
+    Rig r;
+    Json::Value legend(Json::objectValue);
+    r.host->FillLegend(legend);   // no layer registered, no domain
+    EXPECT_TRUE(legend.isNull());
+    ASSERT_TRUE(r.host->Build());
+    r.host->Teardown();
+    r.host->FillLegend(legend);
+    EXPECT_TRUE(legend.isNull());
+    bool any = false;
+    r.host->ListOverlays([&](const char*, bool, bool) { any = true; });
+    EXPECT_FALSE(any);
+}
+
+TEST(WorldGenViewHost, CellSelectCommandOutOfRangeReturnsErrorAndKeepsSelection)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    FakeDebugDraw draw;
+    r.Frame(draw);
+    ASSERT_TRUE(r.host->SelectCell(4, 4));
+
+    const int bad[][2] = { { -1, 0 }, { 0, -1 }, { 66, 0 }, { 0, 42 }, { 100000, 100000 }, { (std::numeric_limits<int>::min)(), 5 } };
+    for (const auto& b : bad)
+    {
+        Json::Value args(Json::objectValue);
+        args["q"] = b[0];
+        args["r"] = b[1];
+        const Json::Value reply = r.registrar.Execute("cells.select.cell", args);
+        SCOPED_TRACE(b[0]);
+        EXPECT_FALSE(reply["success"].asBool()) << reply.toStyledString();
+    }
+    Json::Value missing(Json::objectValue);
+    r.registrar.Execute("cells.select.cell", missing);   // no q/r at all: no crash
+    int x = -1, y = -1;
+    ASSERT_TRUE(r.host->GetSelection(x, y));
+    EXPECT_EQ(x, 4);
+    EXPECT_EQ(y, 4);
 }
 
 #endif // DIA_DEBUG

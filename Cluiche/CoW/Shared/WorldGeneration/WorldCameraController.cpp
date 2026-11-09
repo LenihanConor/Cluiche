@@ -34,6 +34,8 @@ void WorldCameraController::ClampCentre()
 
 void WorldCameraController::Pan(float dx, float dy)
 {
+    if (!std::isfinite(dx) || !std::isfinite(dy))
+        return;
     mState.centreX += dx;
     mState.centreY += dy;
     ClampCentre();
@@ -47,6 +49,8 @@ Vector2D WorldCameraController::ScreenToWorld(float sx, float sy) const
 
 void WorldCameraController::ZoomBy(float factor, float anchorScreenX, float anchorScreenY)
 {
+    if (!std::isfinite(anchorScreenX) || !std::isfinite(anchorScreenY) || std::isnan(factor))
+        return;   // a NaN would stick in the state forever (std::min/max pass NaN through)
     const Vector2D anchor = ScreenToWorld(anchorScreenX, anchorScreenY);
     mState.zoom = (std::min)((std::max)(mState.zoom * factor, kMinZoom), kMaxZoom);
     mState.centreX = anchor.x - (anchorScreenX - mViewW * 0.5f) / mState.zoom;
@@ -54,8 +58,14 @@ void WorldCameraController::ZoomBy(float factor, float anchorScreenX, float anch
     ClampCentre();
 }
 
-void WorldCameraController::Update(const CameraInput& in)
+void WorldCameraController::Update(const CameraInput& raw)
 {
+    CameraInput in = raw;
+    auto clean = [](float& v) { if (!std::isfinite(v)) v = 0.0f; };
+    clean(in.dragDeltaX); clean(in.dragDeltaY); clean(in.dtSeconds);
+    if (std::isnan(in.wheelDelta)) in.wheelDelta = 0.0f;   // +-inf is clamped by ZoomBy
+    if (!std::isfinite(in.mouseX) || !std::isfinite(in.mouseY)) { in.mouseX = mViewW * 0.5f; in.mouseY = mViewH * 0.5f; }
+
     if (in.keyHome)
     {
         Reset();

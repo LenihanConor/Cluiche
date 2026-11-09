@@ -895,6 +895,24 @@ TEST(WorldGenDebugDomainView, FullFrameCarriesGroupedLayers)
     EXPECT_EQ(layers[2u]["group"].asString(), "Water");
 }
 
+TEST(WorldGenDebugDomainView, ViewLayersAndModesAreStableAcrossSizeChanges)
+{
+    ViewFixture f;
+    f.Gen();
+    const Json::Value first = f.State();
+    const std::string layers = first["view"]["layers"].toStyledString();
+    const std::string modes = first["view"]["modes"].toStyledString();
+    ASSERT_FALSE(first["view"]["layers"].empty());
+    for (const char* size : { "Large", "Standard", "Small", "Large" })
+    {
+        f.Cmd("setSize", Obj("size", size));
+        f.Gen();
+        const Json::Value st = f.State();
+        EXPECT_EQ(st["view"]["layers"].toStyledString(), layers) << size;
+        EXPECT_EQ(st["view"]["modes"].toStyledString(), modes) << size;
+    }
+}
+
 TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
 {
     Fixture f;

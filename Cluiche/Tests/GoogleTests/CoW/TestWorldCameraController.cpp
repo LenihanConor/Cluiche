@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::Vector2D;
@@ -175,4 +176,64 @@ TEST(WorldCameraController, KeyboardZoomInAndOutScaleWithDt)
     CameraInput q; q.keyQ = true; q.dtSeconds = 0.1f; q.mouseX = kW * 0.5f; q.mouseY = kH * 0.5f;
     f.cam.Update(q);
     EXPECT_NEAR(f.cam.State().zoom, z0, 1e-4f);
+}
+
+// ---- Gap audit (task 12) ----------------------------------------------------------------------------------------
+
+TEST(WorldCameraController, NonFiniteAndHugeInputNeverCorruptsState)
+{
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+    Fixture f;
+    const CameraState fit = f.cam.State();
+    auto finite = [&](const char* what)
+    {
+        SCOPED_TRACE(what);
+        EXPECT_TRUE(std::isfinite(f.cam.State().zoom));
+        EXPECT_TRUE(std::isfinite(f.cam.State().centreX));
+        EXPECT_TRUE(std::isfinite(f.cam.State().centreY));
+        EXPECT_GE(f.cam.State().zoom, WorldCameraController::kMinZoom);
+        EXPECT_LE(f.cam.State().zoom, WorldCameraController::kMaxZoom);
+    };
+
+    for (float w : { 1e9f, -1e9f, inf, -inf })
+    {
+        CameraInput in; in.wheelDelta = w; in.mouseX = 100; in.mouseY = 100;
+        f.cam.Update(in);
+        finite("wheel");
+    }
+
+    f.cam.Reset();
+    CameraInput nanWheel; nanWheel.wheelDelta = nan; nanWheel.mouseX = 100; nanWheel.mouseY = 100;
+    f.cam.Update(nanWheel);
+    finite("nan wheel");
+    EXPECT_FLOAT_EQ(f.cam.State().zoom, fit.zoom) << "a NaN wheel is ignored";
+
+    CameraInput nanMouse; nanMouse.wheelDelta = 1.0f; nanMouse.mouseX = nan; nanMouse.mouseY = nan;
+    f.cam.Update(nanMouse);
+    finite("nan mouse anchor");
+
+    CameraInput nanDrag; nanDrag.dragActive = true; nanDrag.dragDeltaX = nan; nanDrag.dragDeltaY = inf;
+    f.cam.Update(nanDrag);
+    finite("nan drag");
+
+    CameraInput nanDt; nanDt.keyD = true; nanDt.keyE = true; nanDt.dtSeconds = nan;
+    f.cam.Update(nanDt);
+    finite("nan dt");
+
+    f.cam.Pan(nan, inf);
+    finite("nan pan");
+    f.cam.ZoomBy(nan, 0, 0);
+    finite("nan zoom factor");
+}
+
+TEST(WorldCameraController, FitToZeroViewportKeepsFiniteMinimumZoom)
+{
+    WorldHexGrid grid({ 66, 42 });
+    WorldCameraController cam;
+    cam.FitToGrid(0.0f, 0.0f, grid.BoundsMin(), grid.BoundsMax(), 0.1f);
+    EXPECT_TRUE(std::isfinite(cam.State().zoom));
+    EXPECT_FLOAT_EQ(cam.State().zoom, WorldCameraController::kMinZoom);
+    cam.Reset();
+    EXPECT_TRUE(std::isfinite(cam.State().centreX));
 }

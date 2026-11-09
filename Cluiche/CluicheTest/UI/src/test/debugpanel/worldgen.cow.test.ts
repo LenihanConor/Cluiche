@@ -757,3 +757,46 @@ describe("view section", () => {
     expect(Array.from(m.options).map((o) => o.textContent)).toEqual(["Relief", "Elevation", "Latitude"]);
   });
 });
+
+describe("view section edge cases (task 12)", () => {
+  it("a 64-colour category legend renders 64 swatches", () => {
+    const big = Array.from({ length: 64 }, (_, i) => ({ label: "C" + i, colour: "#" + (i * 4).toString(16).padStart(2, "0") + "8040" }));
+    push(viewFixture({ legend: big }));
+    expect(qa("[data-role=wg-legend] .wg-lg-item").length).toBe(64);
+    expect(q("[data-role=wg-legend]").textContent).toContain("C63");
+  });
+
+  it("HTML in legend labels and layer labels is text, never markup", () => {
+    const evil = '<img src=x onerror="window.__pwned=1"><b>x</b>';
+    push(viewFixture({
+      legend: [{ label: evil, colour: "#102030" }],
+      layers: [{ id: "terrain", label: evil, group: evil }],
+    }));
+    expect(qa("[data-role=wg-legend] img").length).toBe(0);
+    expect(qa("[data-role=wg-legend] b").length).toBe(0);
+    expect(q("[data-role=wg-legend]").textContent).toContain("<img");
+    const m = q<HTMLSelectElement>("[data-role=wg-mode]");
+    expect(m.querySelectorAll("img, b").length).toBe(0);
+    expect((m.querySelector("optgroup") as HTMLOptGroupElement).label).toBe(evil);
+    expect((p.win as any).__pwned).toBeUndefined();
+  });
+
+  it("a hostile colour string is not applied as a style", () => {
+    push(viewFixture({ legend: [{ label: "x", colour: "red; background:url(javascript:1)" }] }));
+    const sw = q("[data-role=wg-legend] .wg-lg-sw") as HTMLElement;
+    expect(sw.style.background).toBe("");
+  });
+
+  it("a float legend with min == max renders without NaN or Infinity", () => {
+    push(viewFixture({ legend: { min: 0.5, max: 0.5, ramp: "sequential.terrain", unit: "", stops: [{ t: 0, colour: "#000000" }, { t: 1, colour: "#ffffff" }] } }));
+    const t = q("[data-role=wg-legend]").textContent!;
+    expect(t).not.toMatch(/NaN|Infinity/);
+    expect(t).toContain("0.5");
+    expect(q("[data-role=wg-legend-bar]")).not.toBeNull();
+  });
+
+  it("a float legend with no stops or missing numbers does not throw", () => {
+    expect(() => push(viewFixture({ legend: { ramp: "x" } }))).not.toThrow();
+    expect(() => push(viewFixture({ legend: { min: 1, max: 2, stops: [null, { t: 0.5 }] } }))).not.toThrow();
+  });
+});
