@@ -542,6 +542,230 @@ TEST(WorldGenDebugDomain, CompactStateAtLargeWithCellAndLastSaveStaysUnderSlot)
     fs::remove_all(dir, ec);
 }
 
+// ---- IWorldGenView forwarding (worldgen-view plan task 8) ----
+
+namespace
+{
+    // Records every forwarded call; selection / mode / overlays live here like they do in the real viewer.
+    class FakeView : public CoW::IWorldGenView
+    {
+    public:
+        bool SelectCell(int x, int y) override { ++selectCalls; if (x < 0 || y < 0 || x >= 66 || y >= 42) return false; hasSel = true; selX = x; selY = y; return true; }
+        void ClearSelection() override { ++clearCalls; hasSel = false; }
+        bool HasSelection() override { return hasSel; }
+        bool GetSelection(int& x, int& y) override { x = selX; y = selY; return hasSel; }
+        bool SetColourMode(const char* id) override
+        {
+            ++modeCalls;
+            lastMode = id;
+            std::string s = id;
+            if (s == "terrain") s = "relief";
+            for (const char* m : { "relief", "elevation", "water" }) { if (s == m) { mode = s; return true; } }
+            return false;
+        }
+        const char* GetColourMode() override { return mode.c_str(); }
+        void ListColourModes(const std::function<void(const char*)>& fn) override { for (const char* m : { "relief", "elevation", "water" }) fn(m); }
+        bool SetOverlayEnabled(const char* id, bool enabled) override
+        {
+            ++overlayCalls;
+            lastOverlay = id;
+            lastOverlayEnabled = enabled;
+            if (std::string(id) == "rivers") { rivers = enabled; return true; }
+            if (std::string(id) == "selection.neighbours") { neighbours = enabled; return true; }
+            return false;
+        }
+        void ListOverlays(const std::function<void(const char*, bool, bool)>& fn) override
+        {
+            fn("rivers", rivers, true);
+            fn("selection.neighbours", neighbours, hasSel);
+        }
+        void FillLegend(Json::Value& out) override { out = legend; }
+
+        int selectCalls = 0, clearCalls = 0, modeCalls = 0, overlayCalls = 0;
+        bool hasSel = false;
+        int selX = 0, selY = 0;
+        std::string mode = "relief", lastMode, lastOverlay;
+        bool rivers = true, neighbours = true, lastOverlayEnabled = false;
+        Json::Value legend{ Json::nullValue };
+    };
+
+    struct ViewFixture : Fixture
+    {
+        FakeView view;
+        ViewFixture() { domain.SetView(&view); }
+        ~ViewFixture() { domain.SetView(nullptr); }
+    };
+}
+
+TEST(WorldGenDebugDomainView, CommandsForwardToTheView)
+{
+    ViewFixture f;
+    f.Gen();
+    f.Cmd("selectCell", Xy(3, 4));
+    EXPECT_EQ(f.view.selectCalls, 1);
+    EXPECT_TRUE(f.view.hasSel);
+    EXPECT_EQ(f.view.selX, 3);
+    EXPECT_EQ(f.view.selY, 4);
+
+    f.Cmd("setColourMode", Obj("mode", "elevation"));
+    EXPECT_EQ(f.view.modeCalls, 1);
+    EXPECT_EQ(f.view.mode, "elevation");
+
+    f.Cmd("toggle", Obj("drawer", "rivers"));
+    EXPECT_EQ(f.view.lastOverlay, "rivers");
+    EXPECT_FALSE(f.view.lastOverlayEnabled);   // was on, flipped off
+    EXPECT_FALSE(f.view.rivers);
+    f.Cmd("toggle", Obj("drawer", "rivers"));
+    EXPECT_TRUE(f.view.rivers);
+
+    f.Cmd("clearCell", Json::Value(Json::objectValue));
+    EXPECT_EQ(f.view.clearCalls, 1);
+    EXPECT_FALSE(f.view.hasSel);
+}
+
+TEST(WorldGenDebugDomainView, ColourModeReportsReliefAsTerrainAndAcceptsTerrain)
+{
+    ViewFixture f;
+    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
+    f.Cmd("setColourMode", Obj("mode", "elevation"));
+    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "elevation");
+    f.Cmd("setColourMode", Obj("mode", "terrain"));
+    EXPECT_EQ(f.view.lastMode, "terrain");
+    EXPECT_EQ(f.view.mode, "relief");
+    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
+}
+
+TEST(WorldGenDebugDomainView, UnknownModeIsIgnored)
+{
+    ViewFixture f;
+    f.Cmd("setColourMode", Obj("mode", "notALayer"));
+    EXPECT_EQ(f.view.mode, "relief");
+    f.Cmd("setColourMode", Json::Value());
+    f.Cmd("setColourMode", Obj("mode", 5));
+    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
+}
+
+TEST(WorldGenDebugDomainView, ViewModesDrawersAndLegendShape)
+{
+    ViewFixture f;
+    Json::Value legend(Json::objectValue);
+    legend["min"] = 0.0;
+    legend["max"] = 1.0;
+    f.view.legend = legend;
+    f.Gen();
+    const Json::Value st = f.State();
+
+    ASSERT_EQ(st["view"]["modes"].size(), 3u);
+    EXPECT_EQ(st["view"]["modes"][0u].asString(), "terrain");
+    EXPECT_EQ(st["view"]["modes"][1u].asString(), "elevation");
+    EXPECT_EQ(st["view"]["modes"][2u].asString(), "water");
+
+    const Json::Value& d = st["view"]["drawers"];
+    ASSERT_EQ(d.size(), 4u);
+    EXPECT_EQ(d[0u]["name"].asString(), "Tiles");
+    EXPECT_TRUE(d[0u]["enabled"].asBool());
+    EXPECT_TRUE(d[0u]["available"].asBool());
+    EXPECT_EQ(d[1u]["name"].asString(), "rivers");
+    EXPECT_TRUE(d[1u]["enabled"].asBool());
+    EXPECT_EQ(d[2u]["name"].asString(), "selection.neighbours");
+    EXPECT_FALSE(d[2u]["available"].asBool());   // nothing selected
+    EXPECT_EQ(d[3u]["name"].asString(), "Selection");
+    EXPECT_TRUE(d[3u]["available"].asBool());
+
+    EXPECT_EQ(st["view"]["legend"], legend);
+    f.view.legend = Json::Value(Json::nullValue);
+    EXPECT_TRUE(f.Frame()["view"]["legend"].isNull());
+}
+
+TEST(WorldGenDebugDomainView, ViewerSideSelectionAppearsInCell)
+{
+    ViewFixture f;
+    f.Gen();
+    EXPECT_TRUE(f.State()["cell"].isNull());
+    f.view.hasSel = true;   // as a click in the viewer would
+    f.view.selX = 7;
+    f.view.selY = 9;
+    const Json::Value st = f.State();
+    ASSERT_TRUE(st["cell"].isObject());
+    EXPECT_EQ(st["cell"]["x"].asInt(), 7);
+    EXPECT_EQ(st["cell"]["selected"]["x"].asInt(), 7);
+    EXPECT_EQ(st["cell"]["selected"]["y"].asInt(), 9);
+    EXPECT_TRUE(st["view"]["drawers"][2u]["available"].asBool());
+
+    // selection outside the generated world: cellError behaviour unchanged
+    f.view.selX = 500;
+    const Json::Value bad = f.State();
+    EXPECT_TRUE(bad["cell"].isNull());
+    EXPECT_TRUE(bad["cellError"].isString());
+}
+
+TEST(WorldGenDebugDomainView, ViewerIsTheOnlyStateOwner)
+{
+    ViewFixture f;
+    f.Gen();
+    f.Cmd("selectCell", Xy(1, 1));
+    f.domain.SetView(nullptr);   // local fallback state was never touched
+    EXPECT_TRUE(f.State()["cell"].isNull());
+    f.domain.SetView(&f.view);
+    EXPECT_TRUE(f.State()["cell"].isObject());
+}
+
+TEST(WorldGenDebugDomainView, OutOfRangeSelectIsRejectedByTheView)
+{
+    ViewFixture f;
+    f.Gen();
+    f.Cmd("selectCell", Xy(9999, 1));
+    EXPECT_EQ(f.view.selectCalls, 1);
+    EXPECT_TRUE(f.State()["cell"].isNull());
+}
+
+TEST(WorldGenDebugDomainView, UnavailableOverlayToggleIsIgnored)
+{
+    ViewFixture f;
+    f.Cmd("toggle", Obj("drawer", "selection.neighbours"));   // unavailable: nothing selected
+    EXPECT_EQ(f.view.overlayCalls, 0);
+    f.Cmd("toggle", Obj("drawer", "Tiles"));                  // fixed entry, not an overlay
+    f.Cmd("toggle", Obj("drawer", "nope"));
+    EXPECT_EQ(f.view.overlayCalls, 0);
+}
+
+TEST(WorldGenDebugDomainView, SetViewBumpsStaticVersionAndLeanFramesKeepLegend)
+{
+    Fixture f;
+    f.Gen();
+    const int v0 = f.State()["staticVersion"].asInt();
+    FakeView view;
+    f.domain.SetView(&view);
+    const Json::Value first = f.Frame();
+    EXPECT_TRUE(first["full"].asBool());
+    EXPECT_GT(first["staticVersion"].asInt(), v0);
+    const Json::Value lean = f.Frame();
+    EXPECT_FALSE(lean["full"].asBool());
+    EXPECT_FALSE(lean["view"].isMember("modes"));
+    EXPECT_TRUE(lean["view"].isMember("legend"));
+    f.domain.SetView(nullptr);
+}
+
+TEST(WorldGenDebugDomainView, CompactStateAtLargeWithLegendStaysUnderSlot)
+{
+    ViewFixture f;
+    Json::Value legend(Json::arrayValue);   // worst realistic legend: 13-entry category layer
+    for (int i = 0; i < 13; ++i)
+    {
+        Json::Value e(Json::objectValue);
+        e["label"] = "Category label " + std::to_string(i);
+        e["colour"] = "#a1b2c3";
+        legend.append(e);
+    }
+    f.view.legend = legend;
+    f.Cmd("setSize", Obj("size", "Large"));
+    f.Gen();
+    f.Cmd("selectCell", Xy(52, 32));
+    const size_t bytes = Compact(f.State()).size();
+    std::cout << "[ measured ] compact WorldGen state at Large with view, legend (13 categories) + cell: " << bytes << " bytes\n";
+    EXPECT_LT(bytes, 12u * 1024u);
+}
+
 #endif // DIA_DEBUG
 
 // ---- Static / dynamic split (perf fix 2026-11-09): lean frames carry only what changes per frame ----

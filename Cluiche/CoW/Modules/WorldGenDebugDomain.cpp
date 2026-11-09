@@ -27,6 +27,7 @@ namespace {
     const Dia::Core::StringCRC kCmdToggle("toggle");
 
     const char* const kDefaultMode = "terrain";
+    const char* const kViewDefaultId = "relief";   // the viewer's default base layer, shown to the panel as "terrain"
 
     int StageIndex(const std::string& name)
     {
@@ -90,7 +91,16 @@ WorldGenDebugDomain::WorldGenDebugDomain(WorldGenerationModule& module)
     , mLastSave(Json::nullValue)
 {}
 
-Dia::Core::StringCRC WorldGenDebugDomain::GetDomainId()    const { return Dia::Core::StringCRC("WorldGen"); }
+void WorldGenDebugDomain::SetView(IWorldGenView* view)
+{
+    if (mView != view)
+    {
+        mView = view;
+        mStaticDirty = true;   // view.modes come from the viewer's registered base layers
+    }
+}
+
+Dia::Core::StringCRC WorldGenDebugDomain::GetDomainId()   const { return Dia::Core::StringCRC("WorldGen"); }
 const char*          WorldGenDebugDomain::GetDisplayName() const { return "World Generation"; }
 const char*          WorldGenDebugDomain::GetDescription() const { return "S-1 terrain generation: shape sliders, presets, timings and cell inspector"; }
 Dia::Core::StringCRC WorldGenDebugDomain::GetGroup()       const { return Dia::Core::StringCRC("Systems"); }
@@ -155,9 +165,21 @@ void WorldGenDebugDomain::RebuildStatic()
     // view modes
     next.modes = Json::Value(Json::arrayValue);
     next.modes.append(kDefaultMode);
-    for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+    if (mView != nullptr)
     {
-        next.modes.append(TerrainLayers::GetLayerInfo(i).name);
+        mView->ListColourModes([&next](const char* id) {
+            if (std::strcmp(id, kViewDefaultId) != 0)
+            {
+                next.modes.append(id);
+            }
+        });
+    }
+    else
+    {
+        for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+        {
+            next.modes.append(TerrainLayers::GetLayerInfo(i).name);
+        }
     }
 
     for (int i = 0; i < kImplementedStageCount; ++i)
@@ -275,34 +297,59 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
 
     // view
     Json::Value& view = out["view"] = Json::Value(Json::objectValue);
-    view["colourMode"] = mColourMode;
+    bool hasSelection = mHasSelection;
+    int selX = mSelX;
+    int selY = mSelY;
+    Json::Value drawers(Json::arrayValue);
+    if (mView != nullptr)
+    {
+        const char* mode = mView->GetColourMode();
+        view["colourMode"] = std::strcmp(mode, kViewDefaultId) == 0 ? kDefaultMode : mode;
+        auto add = [&drawers](const char* name, bool enabled, bool available) {
+            Json::Value e(Json::objectValue);
+            e["name"] = name;
+            e["enabled"] = enabled;
+            e["available"] = available;
+            drawers.append(e);
+        };
+        add("Tiles", true, true);
+        mView->ListOverlays([&add](const char* id, bool enabled, bool available) { add(id, enabled, available); });
+        add("Selection", true, true);
+        Json::Value legend(Json::nullValue);
+        mView->FillLegend(legend);
+        view["legend"] = legend;
+        hasSelection = mView->GetSelection(selX, selY);
+    }
+    else
+    {
+        view["colourMode"] = mColourMode;
+        for (const Drawer& d : mDrawers)
+        {
+            Json::Value e(Json::objectValue);
+            e["name"] = d.name;
+            e["enabled"] = d.enabled;
+            e["available"] = d.available;
+            drawers.append(e);
+        }
+    }
     if (full)
     {
         view["modes"] = mStatic.modes;
-    }
-    Json::Value drawers(Json::arrayValue);
-    for (const Drawer& d : mDrawers)
-    {
-        Json::Value e(Json::objectValue);
-        e["name"] = d.name;
-        e["enabled"] = d.enabled;
-        e["available"] = d.available;
-        drawers.append(e);
     }
     view["drawers"] = drawers;
 
     // cell inspector
     out["cell"] = Json::Value(Json::nullValue);
-    if (mHasSelection)
+    if (hasSelection)
     {
         Json::Value args(Json::objectValue);
-        args["x"] = mSelX;
-        args["y"] = mSelY;
+        args["x"] = selX;
+        args["y"] = selY;
         Json::Value cell = session.Cell(args);
         if (cell.isObject() && cell["success"].asBool())
         {
-            cell["selected"]["x"] = mSelX;
-            cell["selected"]["y"] = mSelY;
+            cell["selected"]["x"] = selX;
+            cell["selected"]["y"] = selY;
             out["cell"] = cell;
         }
         else
@@ -374,10 +421,19 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     {
         if (hasObj && args["x"].isIntegral() && args["y"].isIntegral() && args["x"].isInt() && args["y"].isInt())
         {
-            // TODO(plan task 10): route click selection through DiaCellLayers cells.select.cell.
-            mHasSelection = true;
-            mSelX = args["x"].asInt();
-            mSelY = args["y"].asInt();
+            if (mView != nullptr)
+            {
+                if (!mView->SelectCell(args["x"].asInt(), args["y"].asInt()))
+                {
+                    DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectCell (%d, %d) is outside the viewer grid", args["x"].asInt(), args["y"].asInt());
+                }
+            }
+            else
+            {
+                mHasSelection = true;
+                mSelX = args["x"].asInt();
+                mSelY = args["y"].asInt();
+            }
         }
         else
         {
@@ -386,11 +442,26 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     }
     else if (cmd == kCmdClearCell)
     {
-        mHasSelection = false;
+        if (mView != nullptr)
+        {
+            mView->ClearSelection();
+        }
+        else
+        {
+            mHasSelection = false;
+        }
     }
     else if (cmd == kCmdSetColourMode)
     {
-        if (hasObj && args["mode"].isString() && IsKnownMode(session, args["mode"].asString()))
+        if (mView != nullptr)
+        {
+            // "terrain" is the panel's name for the viewer's default base layer; the viewer accepts the alias.
+            if (!(hasObj && args["mode"].isString() && mView->SetColourMode(args["mode"].asCString())))
+            {
+                DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setColourMode needs a known {mode}");
+            }
+        }
+        else if (hasObj && args["mode"].isString() && IsKnownMode(session, args["mode"].asString()))
         {
             mColourMode = args["mode"].asString();
         }
@@ -402,7 +473,20 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     else if (cmd == kCmdToggle)
     {
         bool found = false;
-        if (hasObj && args["drawer"].isString())
+        if (mView != nullptr)
+        {
+            if (hasObj && args["drawer"].isString())
+            {
+                const std::string name = args["drawer"].asString();
+                mView->ListOverlays([&](const char* id, bool enabled, bool available) {
+                    if (!found && available && name == id)
+                    {
+                        found = mView->SetOverlayEnabled(id, !enabled);
+                    }
+                });
+            }
+        }
+        else if (hasObj && args["drawer"].isString())
         {
             for (Drawer& d : mDrawers)
             {

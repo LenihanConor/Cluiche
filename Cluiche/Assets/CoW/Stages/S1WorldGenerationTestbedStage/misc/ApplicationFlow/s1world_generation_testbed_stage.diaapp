@@ -67,6 +67,18 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "CellLayersModule",
+                    "type_id": "CellLayersModule",
+                    "stages": [
+                        "S1WorldGenerationTestbedStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "CellLayerRegistryService", "role": "provides" },
+                        { "id": "ValueSchemaService", "role": "consumes" }
+                    ]
+                },
+                {
                     "instance_id": "DomainStateRelayModule",
                     "type_id": "DomainStateRelayModule",
                     "stages": [
@@ -98,9 +110,16 @@
                         "InputStreamModule",
                         "VisualDebuggerModule",
                         "DomainStateRelayModule",
-                        "WorldGenerationModule"
+                        "WorldGenerationModule",
+                        "Camera2DModule",
+                        "SimQueryHostModule",
+                        "CellLayersModule"
                     ],
                     "channels": [
+                        { "id": "RenderToSim", "role": "reads" },
+                        { "id": "KernelCellFieldRegistry", "role": "consumes" },
+                        { "id": "ValueSchemaService", "role": "consumes" },
+                        { "id": "CellLayerRegistryService", "role": "consumes" },
                         {
                             "id": "AssetLoadStatus",
                             "role": "consumes"

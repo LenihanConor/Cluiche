@@ -4,6 +4,8 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaInput/EKey.h>
+#include <DiaGraphics/CellField/CellFieldRegistry.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace CoW {
@@ -42,7 +44,7 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
 
 #ifdef DIA_DEBUG
     // Wait (bounded) for the relay and visual debugger; without them the stage still works headless.
-    if (!mPanelAdapter && !TryBuildPanel())
+    if (!mPanelAdapter && !TryBuildPanel(mPanelWaitFrames >= 299))
     {
         if (++mPanelWaitFrames < 300)
             return StartResult::kLoading;
@@ -60,9 +62,14 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
     return StartResult::kReady;
 }
 
-void S1WorldGenerationTestbedStageModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
+void S1WorldGenerationTestbedStageModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 {
-    // Placeholder: idle. Game logic for the S1WorldGenerationTestbedStage stage goes here.
+#ifdef DIA_DEBUG
+    if (mViewHost)
+        mViewHost->Update(ctx);   // size check, input -> camera -> pointer frame (the viewer draws from the debug layer)
+#else
+    (void)ctx;
+#endif
 
     if (mExitRequested)
         return;
@@ -89,12 +96,18 @@ Dia::ApplicationFlow::StopResult S1WorldGenerationTestbedStageModule::DoStop()
 }
 
 #ifdef DIA_DEBUG
-bool S1WorldGenerationTestbedStageModule::TryBuildPanel()
+bool S1WorldGenerationTestbedStageModule::TryBuildPanel(bool finalAttempt)
 {
     WorldGenerationModule* wg = mWorldGen.Get();
     Cluiche::AppFlow::DomainStateRelayModule* relay = mStateRelay.Get();
     Cluiche::AppFlow::VisualDebuggerModule* vd = mVisualDebugger.Get();
     if (wg == nullptr || relay == nullptr || vd == nullptr)
+        return false;
+
+    // The map view needs services that publish a few frames after start; wait for them unless this is the last attempt.
+    const bool viewReady = Dia::CellLayers::FindCellLayerRegistry(mLayerRegistryStream) != nullptr &&
+                           mCellFieldStream.IsAvailable() && mCamera.Get() != nullptr;
+    if (!viewReady && !finalAttempt)
         return false;
 
     auto domain = std::make_unique<WorldGenDebugDomain>(*wg);
@@ -105,16 +118,73 @@ bool S1WorldGenerationTestbedStageModule::TryBuildPanel()
         mPanelWarned = true;
         return false;
     }
-    vd->RegisterDomain(*adapter);
     mPanelDomainImpl = std::move(domain);
     mPanelAdapter = adapter;
+
+    if (viewReady && TryBuildView(*vd))
+    {
+        mPanelDomainImpl->SetView(mViewHost.get());
+    }
+    else if (!mViewWarned)
+    {
+        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: map view unavailable (CellLayerRegistry / CellFieldRegistry / Camera2D) - card works without the viewer");
+        mViewWarned = true;
+    }
+
+    vd->RegisterDomain(*adapter);
     mPanelRegistered = true;
     DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: World Generation card registered with the visual debugger");
     return true;
 }
 
+bool S1WorldGenerationTestbedStageModule::TryBuildView(Cluiche::AppFlow::VisualDebuggerModule& vd)
+{
+    WorldGenerationModule* wg = mWorldGen.Get();
+    WorldGenViewHost::Deps deps;
+    deps.registry  = Dia::CellLayers::FindCellLayerRegistry(mLayerRegistryStream);
+    deps.cellField = mCellFieldStream.IsAvailable() ? &mCellFieldStream.Get() : nullptr;
+    deps.schema    = mSchemaStream.IsAvailable() ? &mSchemaStream.Get() : nullptr;
+    if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHost.Get())
+    {
+        mViewRegistrar = std::make_unique<WorldGenMirrorRegistrar>(*host);
+        deps.registrar = mViewRegistrar.get();
+    }
+    deps.camera = mCamera.Get();
+    deps.input  = mInput.Get();
+    if (deps.schema == nullptr)
+        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: no ValueSchemaService - map layers show without schema data");
+
+    mViewHost = std::make_unique<WorldGenViewHost>(wg->GetSession(), deps);
+    if (!mViewHost->Build())
+    {
+        mViewHost.reset();
+        mViewRegistrar.reset();
+        return false;
+    }
+    vd.GetLayerManager().Register(&mViewHost->DebugLayer(), 10, Dia::Core::StringCRC("S1WorldGenerationTestbedStage"));
+    mViewLayerRegistered = true;
+    return true;
+}
+
+void S1WorldGenerationTestbedStageModule::TeardownView()
+{
+    if (mViewLayerRegistered)
+    {
+        if (auto* vd = mVisualDebugger.Get())
+            vd->GetLayerManager().Unregister(mViewHost->DebugLayer().GetLayerName());
+        mViewLayerRegistered = false;
+    }
+    if (mPanelDomainImpl)
+        mPanelDomainImpl->SetView(nullptr);
+    if (mViewHost)
+        mViewHost->Teardown();   // viewer + uploader + cells.* commands, before the relay detaches the domain
+    mViewHost.reset();
+    mViewRegistrar.reset();      // after the host: Teardown unregisters through it
+}
+
 void S1WorldGenerationTestbedStageModule::TeardownPanel()
 {
+    TeardownView();
     if (mPanelRegistered && mPanelAdapter != nullptr)
     {
         if (auto* vd = mVisualDebugger.Get())
@@ -130,6 +200,7 @@ void S1WorldGenerationTestbedStageModule::TeardownPanel()
     mPanelDomainImpl.reset();
     mPanelWaitFrames = 0;
     mPanelWarned = false;
+    mViewWarned = false;
 }
 #endif
 
@@ -148,6 +219,11 @@ void S1WorldGenerationTestbedStageModule::OnConnectStreams(Dia::ApplicationFlow:
     mAssetLoadStatus.Connect(app);
     mAssetRuntime.Connect(app);
     mAutomation.Connect(app);
+#ifdef DIA_DEBUG
+    mCellFieldStream.Connect(app);
+    mSchemaStream.Connect(app);
+    mLayerRegistryStream.Connect(app);
+#endif
 }
 
 } // namespace CoW

@@ -249,5 +249,8 @@
     <ClInclude Include="Modules\WorldGenViewHost.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\WorldGenMirrorRegistrar.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

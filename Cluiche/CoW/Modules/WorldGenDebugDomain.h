@@ -14,10 +14,10 @@
 //   setSize      {size: Small|Standard|Large}         -> session.SetSize
 //   presetLoad   {id}                                 -> session.PresetLoad
 //   presetSave   {id, displayName, description?, overwrite?} -> session.PresetSave (result kept as "lastSave")
-//   selectCell   {x, y} / clearCell                   -> domain-held selection
-//                TODO(plan task 10): route click selection through DiaCellLayers cells.select.cell instead.
-//   setColourMode {mode}                              -> View colour layer
-//   toggle       {drawer}                             -> flips a View drawer ("Tiles", "Grid lines", ...)
+//   selectCell   {x, y} / clearCell                   -> view->SelectCell / ClearSelection (domain-held selection when no view)
+//   setColourMode {mode}                              -> view->SetColourMode ("terrain" = the viewer's "relief"); ignored+warned if unknown
+//   toggle       {drawer}                             -> view->SetOverlayEnabled ("rivers", "selection.neighbours"); unavailable ones ignored
+//                (no view: flips a local drawer, "Tiles", "Grid lines", ...)
 //
 // State JSON contract (consumed by debug-panel.html; compact size must stay under 12 KB at Large).
 // The state is split into a STATIC part (control definitions, preset list, size dimensions, view modes, stage names) and a
@@ -40,15 +40,23 @@
 //   presets  : [{id, displayName}]
 //   sizes    : [{name, width, height, selected}]
 //   timings  : [{stage, name, ms, ran}]               (per-stage ms of the last generation, ran = re-run last Update)
-//   view     : {colourMode, modes[names], drawers:[{name, enabled, available}]}
-//              modes = "terrain" followed by every terrain layer name; drawers = Tiles, Grid lines, Selection (available)
-//              then Region edges, Sites, Evidence (available=false).
+//   view     : {colourMode, modes[names], drawers:[{name, enabled, available}], legend?}
+//              No view (fallback): modes = "terrain" followed by every terrain layer name; drawers = Tiles, Grid lines, Selection
+//              (available) then Region edges, Sites, Evidence (available=false); no legend key.
+//              With a view (IWorldGenView, the S-1 stage): colourMode = view->GetColourMode() with "relief" reported as "terrain";
+//              modes = "terrain" then every other registered base layer id (STATIC part: only changes when the registered layers
+//              change, bumping staticVersion); drawers = Tiles (always on), one entry per viewer overlay ("rivers",
+//              "selection.neighbours"; available = has something to draw), Selection (always on); legend (DYNAMIC part, it follows
+//              the active base layer and the world) = view->FillLegend: null (none yet), a [{label, colour:"#rrggbb"}] array for
+//              category layers, or {min, max, ramp, unit, stops:[{t, colour}]} for float layers.
 //   cell     : null, or session.Cell({x,y}) result (all fields, layers{}, neighbours[]) plus "selected":{x,y}.
+//              With a view the selection is the viewer's first selected cell (so click selection shows up here too).
 //              Selection out of range / before the first world => cell null and "cellError" string.
 //   lastSave : null, or the last presetSave result ({success, writtenTo, isSource} or {success:false, error, status?}).
 #pragma once
 #ifdef DIA_DEBUG
 
+#include "Modules/IWorldGenView.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
@@ -83,7 +91,13 @@ public:
     void ForceFullFrame() { mForceFull = true; }
     void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
 
+    // Nullable. With a view set, selection / colour mode / overlays live in the viewer (single source of truth) and the
+    // domain's own state below is unused; without one the domain keeps its local fallback state (unit tests, headless).
+    // Must be set and cleared on the SimPU, and cleared before the view is destroyed.
+    void SetView(IWorldGenView* view);
+
 private:
+    IWorldGenView* mView = nullptr;
     struct Drawer { const char* name; bool enabled; bool available; };
 
     WorldGenerationModule& mModule;

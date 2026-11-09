@@ -14,8 +14,16 @@
 #include "Modules/DomainStateRelayModule.h"
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/WorldGenDebugDomain.h"
+#include "Modules/WorldGenViewHost.h"
+#include "Modules/WorldGenMirrorRegistrar.h"
+#include "Modules/Camera2DModule.h"
+#include "Modules/SimQueryHostModule.h"
+#include <DiaCellLayers/CellLayersModule.h>
 #include <memory>
 #endif
+
+namespace Dia { namespace Graphics { class CellFieldRegistry; } }
+namespace Dia { namespace ValueSchema { class ValueSchemaService; } }
 
 namespace CoW {
 
@@ -42,14 +50,27 @@ private:
     Dia::ApplicationFlow::ModuleRef<WorldGenerationModule> mWorldGen{this};
 #ifdef DIA_DEBUG
     // Panel wiring (SimPU): the domain lives here; Main sees it only through the relay's snapshot adapter.
-    bool TryBuildPanel();
+    // finalAttempt: build the card even when the map view cannot be hosted (services missing), warning once.
+    bool TryBuildPanel(bool finalAttempt);
     void TeardownPanel();
+    // Hosts the DiaCellLayers viewer over the generated world; false = services not ready (or build failed).
+    bool TryBuildView(Cluiche::AppFlow::VisualDebuggerModule& vd);
+    void TeardownView();
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule> mCamera{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHost{this};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::CellFieldRegistry> mCellFieldStream{this, "KernelCellFieldRegistry"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::ValueSchema::ValueSchemaService> mSchemaStream{this, "ValueSchemaService"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::CellLayers::CellLayerRegistry> mLayerRegistryStream{this, Dia::CellLayers::CellLayersModule::kServiceStreamId};
+    std::unique_ptr<WorldGenMirrorRegistrar> mViewRegistrar;   // outlives mViewHost: Teardown unregisters the cells.* commands through it
+    std::unique_ptr<WorldGenViewHost> mViewHost;
+    bool mViewLayerRegistered = false;
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DomainStateRelayModule> mStateRelay{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebugger{this};
     std::unique_ptr<WorldGenDebugDomain> mPanelDomainImpl;
     Dia::VisualDebugger::IDebugDomain* mPanelAdapter = nullptr;
     bool mPanelRegistered = false;
     bool mPanelWarned = false;
+    bool mViewWarned = false;
     unsigned mPanelWaitFrames = 0;
 #endif
 

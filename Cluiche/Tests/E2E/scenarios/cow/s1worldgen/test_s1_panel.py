@@ -223,3 +223,60 @@ def test_panel_command_rejects_bad_requests(dia_client):
                     {"domain": "WorldGen", "cmd": "setScale", "args": 5}):
         r = c.send_command("debug.panel_command", payload)
         assert r.get("success") is False and r.get("error"), (payload, r)
+
+
+def _wait_panel(c, predicate, what, timeout_s=15.0):
+    deadline = time.time() + timeout_s
+    st = _panel(c)
+    while time.time() < deadline and not predicate(st):
+        time.sleep(0.1)
+        st = _panel(c)
+    assert predicate(st), f"{what}: {st.get('view')!r:.400} cell={st.get('cell')!r:.200}"
+    return st
+
+
+def test_viewer_selection_colour_mode_and_size_round_trip(dia_client, request):
+    """The hosted DiaCellLayers viewer owns selection and colour mode; the card follows it (worldgen-view plan tasks 8-9)."""
+    from plugin import _collect_log_errors, _count_log_lines
+
+    c = dia_client
+    plan = getattr(request.config, "_dia_plan", None)
+    hwm = _count_log_lines(request.config, plan) if plan else 0
+
+    c.navigate_to(_STAGE, timeout_s=30.0)
+    _wait_complete(c)
+    st = _panel(c)
+    assert st["view"]["colourMode"] == "terrain", st["view"]
+    assert "legend" in st["view"], st["view"]   # dynamic part: present on every frame
+    full = _wait_panel(c, lambda s: s.get("full") is True, "a full frame", timeout_s=20.0)   # modes ride on full frames only
+    assert full["view"]["modes"][0] == "terrain" and "elevation" in full["view"]["modes"], full["view"]["modes"]
+
+    # Sim-hosted viewer command (DiaCellLayers) -> the card's cell block shows the same cell.
+    r = c.send_command("cells.select.cell", {"q": 6, "r": 7})
+    assert "error" not in r, r
+    st = _wait_panel(c, lambda s: s.get("cell") and s["cell"].get("selected") == {"x": 6, "y": 7}, "cell.selected after cells.select.cell")
+    assert st["cell"]["x"] == 6 and st["cell"]["y"] == 7
+
+    # Colour mode round trip through the panel command.
+    _panel_cmd(c, "setColourMode", {"mode": "elevation"})
+    _wait_panel(c, lambda s: s["view"]["colourMode"] == "elevation", "colourMode elevation")
+    _panel_cmd(c, "setColourMode", {"mode": "terrain"})
+    _wait_panel(c, lambda s: s["view"]["colourMode"] == "terrain", "colourMode terrain")
+
+    # Size change rebuilds the viewer grid and the app restores Small cleanly.
+    rev0 = _wait_complete(c)["revision"]
+    try:
+        _panel_cmd(c, "setSize", {"size": "Standard"})
+        _wait_complete(c, min_revision=rev0 + 1)
+        _panel(c)
+    finally:
+        _panel_cmd(c, "setSize", {"size": "Small"})
+    status = _wait_complete(c, min_revision=rev0 + 1)
+    st = _panel(c, min_revision=status["revision"])
+    assert st["stats"]["size"] == "Small", st["stats"]
+    c.send_command("cells.select.clear")
+    _wait_panel(c, lambda s: s.get("cell") is None, "cell cleared")
+
+    if plan:
+        errors = _collect_log_errors(request.config, plan, skip_lines=hwm)
+        assert not errors, "ERROR log lines: " + " | ".join(errors)

@@ -240,6 +240,12 @@
             "from": "MainPU"
         },
         {
+            "id": "CellLayerRegistryService",
+            "kind": "ServiceStream",
+            "payload_type": "CellLayerRegistry",
+            "from": "SimPU"
+        },
+        {
             "id": "JobSystemService",
             "kind": "ServiceStream",
             "payload_type": "JobSystem",
