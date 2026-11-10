@@ -141,9 +141,9 @@ Request/response between plugin UIs and their C++ halves is broken today for mos
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Game discovery record | `discovery.json` in the observation session folder; liveness by pid and process start; session id and out root plumbed into `DebugServerHostModule`; `"port": "auto"`; Python reader + `dia query games` | Draft (not written) | — |
-| 2 | Connection token | Per-launch token in the record; URL query checked in the WebSocket validate handler; `auth` config; editor, E2E, CLI clients adopt it in the same feature; AD-001 sign-off (DiaWebSocket, DiaDebugServer, DiaEditor) | Draft (not written) | — |
-| 3 | Shared client + `dia query` | `DiaClient` moves into `dia_cli/utils`, E2E imports it; `dia query`, `--list`; JSON output; exit codes; optional echoed `request_id` (VL-011; AD-001 sign-off for DiaDebugProtocol and DiaDebugServer) | Draft (not written) | — |
+| 1 | Game discovery record | `discovery.json` in the observation session folder; liveness by pid and process start; session id and out root plumbed into `DebugServerHostModule`; `"port": "auto"`; Python reader + `dia query games` | Approved | [discovery-record.md](discovery-record.md) |
+| 2 | Connection token | Per-launch token in the record; URL query checked in the WebSocket validate handler; `auth` config; editor, E2E, CLI clients adopt it in the same feature; AD-001 sign-off (DiaWebSocket, DiaDebugServer, DiaEditor) | Approved | [connection-token.md](connection-token.md) |
+| 3 | Shared client + `dia query` | `DiaClient` moves into `dia_cli/utils`, E2E imports it; `dia query`, `--list`; JSON output; exit codes; optional echoed `request_id` (VL-011; AD-001 sign-off for DiaDebugProtocol and DiaDebugServer) | Approved | [debug-client-and-query.md](debug-client-and-query.md) |
 | 4 | View request + `dia view` | `dia.view_request` v1; Python builder and validator; C++ `ViewRequest`/loader in DiaEditor; `EditorPluginMetadata` `viewHost` + `tier`, `--list-plugins`; `dia launch` arg passthrough; `dia view list`; `--launch` (VL-009, exit 7) | Draft (not written) | — |
 | 5 | View-state contract | `GetViewStateParams()` (`ValueParam`s) + `OnApplyViewState`; deliver on `view.ready`, re-apply on reload, replay connection state on ready; `--describe`; Entity and ApplicationFlow Inspector adopt. **Needs the editor bridge fix first** | Draft (not written) | — |
 | 6 | Headless plugin host | `Dia/DiaPluginHost` exe; WebSocket `IJSBridge`; minimal `EditorViewController` + `EditorModel`; host-owned `GameConnectionManager`; shell relay extracted from `EditorBridge.ts` and shared; `dia://` layout + theme injection served on 127.0.0.1; Edge `--app` window with an isolated profile and socket-based lifetime (VL-010); mockup gate; **Task 1 spike gates the feature** | Draft (not written) | — |
@@ -240,4 +240,4 @@ _None open at system level._ Feature-level questions go in each feature spec.
 
 ## Status
 
-`Approved` (2026-11-10, user sign-off). Feature specs not written; next is `/spec-feature` for Features 1–3. AD-001 sign-offs are asked when each feature is built.
+`Approved` (2026-11-10, user sign-off). Features 1–3 specs Approved 2026-11-10; Features 4–7 not written. Next: `/implement` Feature 1. AD-001 sign-offs are asked when each feature is built.
