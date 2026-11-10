@@ -26,6 +26,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](systems/diadebugprotocol/diadebugprotocol.md) |
 | DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](systems/diadebugserver/diadebugserver.md) |
 | DiaEditor | Editor framework system (MVC, plugin system, CEF UI, command integration, live WebSocket connection) | [diaeditor.md](systems/diaeditor/diaeditor.md) |
+| DiaViewLaunch | Open one Inspector view of a running game from the CLI, already connected and in state, or get its data as JSON: game discovery record, per-launch DebugServer token, `dia query`, `ViewRequest` + `dia view`, view-state contract, headless `DiaPluginHost` (spike-gated) with editor focus mode as fallback. Approved 2026-11-10 | [diaviewlaunch.md](systems/diaviewlaunch/diaviewlaunch.md) |
 | DiaUICEF | CEF-based UI system implementing IUISystem | [diauicef.md](systems/diauicef/diauicef.md) |
 | DiaUIUltralight | Ultralight-based IUISystem implementation | [diauiultralight.md](systems/diauiultralight/diauiultralight.md) |
 | DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](systems/diawebsocket/diawebsocket.md) |
