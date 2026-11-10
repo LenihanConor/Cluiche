@@ -441,7 +441,7 @@ Render the Regions view and region edges for each preset on 3 fixed seeds, along
 
 - Feature 9 of @worldgenerationpipeline.md.
 - Re-scope (2026-10-18, at the user's direction, twice): Hearths, Nexus nodes, thrones and dynasty starts moved to the dragon layer, which uses a generic site hook; S-1 keeps regions and builds the geography nodes (corridors, rivers, Hunting and Resource) as plain code, not hooks. Amends the system spec and Features 2, 3, 4, 6 and 7 as listed under Amendments to other specs.
-- Build is plan task 12, after the Terrain Generator (task 7) and Biome Classification (task 11).
+- Build is plan task 12, after the Terrain Generator (task 7) and Biome Classification (task 11). Plan: @regions-and-sites.plan.md (In Progress; built standalone of Features 2 and 3 by user decision 2026-11-10).
 
 ---
 
