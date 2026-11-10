@@ -1208,6 +1208,7 @@
     <ClCompile Include="CoW\TestBiomeClassify.cpp" />
     <ClCompile Include="CoW\TestBiomeGenerator.cpp" />
     <ClCompile Include="CoW\TestBiomeAcceptance.cpp" />
+    <ClCompile Include="CoW\TestBiomeEdgeCases.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
