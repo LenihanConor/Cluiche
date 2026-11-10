@@ -1,0 +1,745 @@
+// S-1 Biome Classification task 4: Stage 14 (pins, plateau, climate score, zone and forbidden fix-ups).
+// Hand-built grids only (no generator). AC2, AC3, AC4, AC5, AC6, AC7 parts.
+#include <gtest/gtest.h>
+#include <Shared/WorldGeneration/BiomeClassify.h>
+#include <Shared/WorldGeneration/Testing/BiomeChecks.h>
+#include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
+
+#include <DiaPathfinding/HexTopology.h>
+
+#include <cmath>
+#include <cstring>
+#include <limits>
+#include <vector>
+
+using namespace CoW::WorldGeneration;
+using namespace CoW::WorldGeneration::Testing;
+
+namespace
+{
+    constexpr float kEps = 1e-5f;
+
+    int Nb(const BiomeGrid& g, int c, int d)
+    {
+        const Dia::Pathfinding::HexTopology topo(g.dims.width, g.dims.height);
+        const uint32_t                      nb = topo.NeighbourAt(static_cast<uint32_t>(c), static_cast<uint32_t>(d));
+        return nb == Dia::Pathfinding::kNoCell ? -1 : static_cast<int>(nb);
+    }
+
+    bool Adjacent(const BiomeGrid& g, int a, int b)
+    {
+        for (int d = 0; d < 6; ++d)
+        {
+            if (Nb(g, a, d) == b)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Interior cell of a 9x9 grid, far from every edge.
+    constexpr int kCentreX = 4;
+    constexpr int kCentreY = 4;
+
+    template <typename T>
+    bool BytesEqual(const std::vector<T>& a, const std::vector<T>& b)
+    {
+        return a.size() == b.size() && (a.empty() || std::memcmp(a.data(), b.data(), a.size() * sizeof(T)) == 0);
+    }
+
+    // Deterministic noise grid used by the invariant tests.
+    BiomeGrid MakeNoiseGrid(uint32_t seed, int w, int h)
+    {
+        BiomeGrid g(w, h);
+        uint32_t  s = seed * 2654435761u + 12345u;
+        auto      rnd = [&s]() { s = s * 1664525u + 1013904223u; return static_cast<float>((s >> 8) & 0xFFFF) / 65535.0f; };
+        const int n = w * h;
+        for (int c = 0; c < n; ++c)
+        {
+            g.SetClimate(c, rnd(), rnd());
+            const float z = rnd();
+            g.SetZone(c, z < 0.33f ? DepthZone::FirstShores : (z < 0.75f ? DepthZone::WildReaches : DepthZone::AncientInteriors));
+            g.elevation[c] = rnd() * 0.3f;
+            const float k = rnd();
+            if (k < 0.08f)       { g.SetWater(c, WaterSource::Ocean); }
+            else if (k < 0.12f)  { g.SetWater(c, WaterSource::Lake); }
+            else if (k < 0.18f)  { g.SetWater(c, WaterSource::River); }
+            else if (k < 0.24f)  { g.AddFlag(c, TerrainFlag::Volcanic); }
+            else if (k < 0.32f)  { g.SetTerrain(c, TerrainType::Mountain); }
+            else if (k < 0.45f)  { g.AddFlag(c, TerrainFlag::Coast); }
+        }
+        return g;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// AC7: climate table
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, ClimateScoreFormula)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::GrasslandSteppe, 0.60f, 0.35f), 0.0f, kEps);
+    // One wT away in temperature: -1.
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::GrasslandSteppe, 0.85f, 0.35f), -1.0f, kEps);
+    // One wM away in moisture: -1. Both: -2.
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::TemperateForest, 0.50f, 0.80f), -1.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::TundraBoreal, 0.27f, 0.60f), -2.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::DesertBasin, 0.80f, 0.08f), 0.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(rules, Biome::Rainforest, 0.85f, 0.90f), 0.0f, kEps);
+}
+
+TEST(BiomeClassify, ClimateScoreOfNonClimateBiomeIsLowest)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    const float        lowest = std::numeric_limits<float>::lowest();
+    EXPECT_EQ(BiomeClimateScore(rules, Biome::Ocean, 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(rules, Biome::WetlandDelta, 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(rules, Biome::AlpineMountain, 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(rules, Biome::VolcanicAshland, 0.5f, 0.5f), lowest);
+}
+
+TEST(BiomeClassify, ClimateTableWinners)
+{
+    // Test cells sit three columns apart so none is adjacent to another; the rest is Grassland-perfect land.
+    struct Case { int x; int y; float t; float m; Biome expect; };
+    const Case cases[] = {
+        { 1, 1,  0.85f, 0.90f, Biome::Rainforest },        // warm + wet
+        { 4, 1,  0.80f, 0.08f, Biome::DesertBasin },       // warm + dry
+        { 7, 1,  0.10f, 0.30f, Biome::TundraBoreal },      // cold
+        { 10, 1, 0.12f, 0.80f, Biome::TundraBoreal },      // cold stays tundra even wet (wM 0.30 is wide)
+        { 1, 5,  0.60f, 0.30f, Biome::GrasslandSteppe },   // mid, low moisture; margin: forest score -2.17 vs -0.25
+        { 4, 5,  0.50f, 0.65f, Biome::TemperateForest },   // mid, high moisture; margin: grass -2.40... vs -0.06
+        { 7, 5,  0.60f, 0.60f, Biome::TemperateForest },   // M 0.60: forest -0.16 vs grass -1.56
+        { 10, 5, 0.55f, 0.40f, Biome::GrasslandSteppe },   // M 0.40: grass -0.07 vs forest -1.30
+    };
+    BiomeGrid g(12, 8);
+    for (const Case& k : cases) { g.SetClimate(g.Index(k.x, k.y), k.t, k.m); }
+    const BiomeResult r = RunBiomes(g);
+    const TerrainRules rules = TerrainRules::Defaults();
+    for (const Case& k : cases)
+    {
+        const int c = g.Index(k.x, k.y);
+        EXPECT_EQ(r.At(c), k.expect) << "cell " << k.x << "," << k.y;
+        EXPECT_EQ(r.pin[c], BiomePin::None);
+        EXPECT_EQ(r.fixup[c], BiomeFixup::None);
+        EXPECT_NEAR(r.score[c], BiomeClimateScore(rules, k.expect, k.t, k.m), kEps);
+    }
+}
+
+TEST(BiomeClassify, BoundaryTiesGoToLowestEnum)
+{
+    // Give two biomes identical targets so their scores are bit-equal; the lower enum value must win.
+    TerrainRules rules = TerrainRules::Defaults();
+    rules.values[static_cast<uint32_t>(Rule::kT0_Forest)] = rules.kT0_Grass();
+    rules.values[static_cast<uint32_t>(Rule::kM0_Forest)] = rules.kM0_Grass();
+    rules.values[static_cast<uint32_t>(Rule::kWT_Forest)] = rules.kWT_Grass();
+    rules.values[static_cast<uint32_t>(Rule::kWM_Forest)] = rules.kWM_Grass();
+    BiomeGrid g(3, 3);
+    EXPECT_EQ(RunBiomes(g, rules).At(g.Index(1, 1)), Biome::GrasslandSteppe);
+
+    // Rainforest set equal to Desert: Desert (5) beats Rainforest (8).
+    TerrainRules rules2 = TerrainRules::Defaults();
+    rules2.values[static_cast<uint32_t>(Rule::kT0_Rainforest)] = rules2.kT0_Desert();
+    rules2.values[static_cast<uint32_t>(Rule::kM0_Rainforest)] = rules2.kM0_Desert();
+    rules2.values[static_cast<uint32_t>(Rule::kWT_Rainforest)] = rules2.kWT_Desert();
+    rules2.values[static_cast<uint32_t>(Rule::kWM_Rainforest)] = rules2.kWM_Desert();
+    BiomeGrid g2(3, 3, 0.8f, 0.08f);
+    EXPECT_EQ(RunBiomes(g2, rules2).At(g2.Index(1, 1)), Biome::DesertBasin);
+}
+
+// ---------------------------------------------------------------------------
+// AC6: pins and precedence
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, WaterCellsArePinnedOceanAndLake)
+{
+    BiomeGrid g(9, 9);
+    const int ocean = g.Index(2, 2);
+    const int lake = g.Index(6, 6);
+    g.SetWater(ocean, WaterSource::Ocean);
+    g.SetWater(lake, WaterSource::Lake);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(ocean), Biome::Ocean);
+    EXPECT_EQ(r.pin[ocean], BiomePin::Water);
+    EXPECT_EQ(r.At(lake), Biome::Lake);
+    EXPECT_EQ(r.pin[lake], BiomePin::Water);
+    EXPECT_EQ(r.fixup[ocean], BiomeFixup::None);
+    EXPECT_EQ(r.fixup[lake], BiomeFixup::None);
+}
+
+TEST(BiomeClassify, WaterBeatsEveryOtherRule)
+{
+    BiomeGrid g(9, 9);
+    const int c = g.Index(4, 4);
+    g.SetWater(c, WaterSource::Ocean);
+    g.AddFlag(c, TerrainFlag::Volcanic);
+    g.SetTerrain(c, TerrainType::Volcano);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(c), Biome::Ocean);
+    EXPECT_EQ(r.pin[c], BiomePin::Water);
+}
+
+TEST(BiomeClassify, VolcanicPinRules)
+{
+    BiomeGrid g(12, 4);
+    const int flag = g.Index(1, 1);
+    const int volcano = g.Index(4, 1);
+    const int chain = g.Index(7, 1);
+    const int plateauBarrier = g.Index(10, 1);
+    g.AddFlag(flag, TerrainFlag::Volcanic);
+    g.SetTerrain(volcano, TerrainType::Volcano);
+    g.AddFlag(chain, TerrainFlag::Barrier);
+    g.AddFlag(plateauBarrier, TerrainFlag::Barrier);
+
+    BiomeGrid chainGrid = g;
+    chainGrid.barrierForm = BarrierForm::VolcanicChain;
+    const BiomeResult rc = RunBiomes(chainGrid);
+    EXPECT_EQ(rc.At(flag), Biome::VolcanicAshland);
+    EXPECT_EQ(rc.pin[flag], BiomePin::Volcanic);
+    EXPECT_EQ(rc.At(volcano), Biome::VolcanicAshland);
+    EXPECT_EQ(rc.At(chain), Biome::VolcanicAshland);
+    EXPECT_EQ(rc.pin[chain], BiomePin::Volcanic);
+    EXPECT_EQ(rc.At(plateauBarrier), Biome::VolcanicAshland);   // chain form: any Barrier-flag cell
+
+    // Plateau form: the Barrier flag alone is not volcanic.
+    const BiomeResult rp = RunBiomes(g);
+    EXPECT_EQ(rp.At(chain), Biome::GrasslandSteppe);
+    EXPECT_EQ(rp.pin[chain], BiomePin::None);
+    EXPECT_EQ(rp.At(flag), Biome::VolcanicAshland);
+    EXPECT_EQ(rp.At(volcano), Biome::VolcanicAshland);
+}
+
+TEST(BiomeClassify, AlpinePinRules)
+{
+    BiomeGrid g(12, 4);
+    const TerrainType types[] = { TerrainType::Mountain, TerrainType::Peak, TerrainType::Cliff, TerrainType::Pass };
+    int               cells[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        cells[i] = g.Index(1 + 3 * i, 1);
+        g.SetTerrain(cells[i], types[i]);
+    }
+    const int hills = g.Index(1, 3);
+    g.SetTerrain(hills, TerrainType::Hills);
+    const BiomeResult r = RunBiomes(g);
+    for (int i = 0; i < 4; ++i)
+    {
+        EXPECT_EQ(r.At(cells[i]), Biome::AlpineMountain) << TerrainTypeName(types[i]);
+        EXPECT_EQ(r.pin[cells[i]], BiomePin::Alpine);
+        EXPECT_EQ(r.fixup[cells[i]], BiomeFixup::None);
+    }
+    EXPECT_NE(r.At(hills), Biome::AlpineMountain);
+}
+
+TEST(BiomeClassify, RulePrecedenceVolcanicAlpineWetland)
+{
+    BiomeGrid g(12, 4);
+    // Mountain + Volcanic flag -> Volcanic beats Alpine.
+    const int a = g.Index(1, 1);
+    g.SetTerrain(a, TerrainType::Mountain);
+    g.AddFlag(a, TerrainFlag::Volcanic);
+    // Mountain on a wet low coast (wetland-eligible) -> Alpine beats Wetland.
+    const int b = g.Index(4, 1);
+    g.SetTerrain(b, TerrainType::Mountain);
+    g.AddFlag(b, TerrainFlag::Coast);
+    g.moisture[b] = 0.9f;
+    g.elevation[b] = 0.05f;
+    // Volcanic on a wet low coast -> Volcanic beats Wetland.
+    const int c = g.Index(7, 1);
+    g.AddFlag(c, TerrainFlag::Volcanic);
+    g.AddFlag(c, TerrainFlag::Coast);
+    g.moisture[c] = 0.9f;
+    g.elevation[c] = 0.05f;
+    // Plain wet low coast -> Wetland.
+    const int d = g.Index(10, 1);
+    g.AddFlag(d, TerrainFlag::Coast);
+    g.moisture[d] = 0.9f;
+    g.elevation[d] = 0.05f;
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(a), Biome::VolcanicAshland);
+    EXPECT_EQ(r.pin[a], BiomePin::Volcanic);
+    EXPECT_EQ(r.At(b), Biome::AlpineMountain);
+    EXPECT_EQ(r.pin[b], BiomePin::Alpine);
+    EXPECT_EQ(r.At(c), Biome::VolcanicAshland);
+    EXPECT_EQ(r.pin[c], BiomePin::Volcanic);
+    EXPECT_EQ(r.At(d), Biome::WetlandDelta);
+    EXPECT_EQ(r.pin[d], BiomePin::Wetland);
+}
+
+// ---------------------------------------------------------------------------
+// Plateau interior
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, PlateauInteriorChoosesRainforestOrDesertByMoisture)
+{
+    BiomeGrid g(12, 4);
+    g.barrierForm = BarrierForm::Plateau;
+    g.barrier = 0.6f;
+    const int wet = g.Index(1, 1);
+    const int dry = g.Index(4, 1);
+    const int edge = g.Index(7, 1);
+    const int wetBoundary = g.Index(10, 1);
+    for (int c : { wet, dry, edge, wetBoundary }) { g.barrierMask[c] = 0.6f; }
+    g.barrierMask[edge] = 0.49f;
+    g.moisture[wet] = 0.9f;
+    g.moisture[dry] = 0.3f;
+    g.moisture[wetBoundary] = 0.5f;   // moisture >= kPlateauWet (0.5): Rainforest
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(wet), Biome::Rainforest);
+    EXPECT_EQ(r.At(dry), Biome::DesertBasin);
+    EXPECT_EQ(r.At(wetBoundary), Biome::Rainforest);
+    EXPECT_EQ(r.At(edge), Biome::GrasslandSteppe);   // mask below kPlateauInner: ordinary climate
+    EXPECT_EQ(r.pin[wet], BiomePin::None);           // not pinned
+    EXPECT_EQ(r.pin[dry], BiomePin::None);
+    EXPECT_EQ(r.fixup[wet], BiomeFixup::None);
+}
+
+TEST(BiomeClassify, PlateauInteriorOffWhenBarrierZeroOrChainForm)
+{
+    BiomeGrid g(5, 5);
+    const int c = g.Index(2, 2);
+    g.barrierMask[c] = 0.9f;   // climate is Grassland-perfect (M 0.35); plateau rule would give Desert
+    g.barrier = 0.0f;
+    EXPECT_EQ(RunBiomes(g).At(c), Biome::GrasslandSteppe);
+
+    g.barrier = 0.6f;
+    g.barrierForm = BarrierForm::VolcanicChain;
+    EXPECT_EQ(RunBiomes(g).At(c), Biome::GrasslandSteppe);
+
+    g.barrierForm = BarrierForm::Plateau;
+    EXPECT_EQ(RunBiomes(g).At(c), Biome::DesertBasin);   // M 0.35 < kPlateauWet
+    g.moisture[c] = 0.9f;
+    EXPECT_EQ(RunBiomes(g).At(c), Biome::Rainforest);
+}
+
+TEST(BiomeClassify, PlateauInteriorMayStillBeFixedUpByZone)
+{
+    BiomeGrid g(5, 5);
+    const int c = g.Index(2, 2);
+    g.barrier = 0.6f;
+    g.barrierMask[c] = 0.8f;
+    g.moisture[c] = 0.9f;
+    g.SetZone(c, DepthZone::FirstShores);   // Rainforest is not valid in First Shores
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_NE(r.At(c), Biome::Rainforest);
+    EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
+}
+
+// ---------------------------------------------------------------------------
+// AC5: wetland eligibility
+// ---------------------------------------------------------------------------
+namespace
+{
+    struct MouthCase
+    {
+        BiomeGrid g{9, 9};
+        int       ocean = 0, mouth = 0, step = 0, far = 0;
+    };
+
+    MouthCase MakeMouthCase()
+    {
+        MouthCase m;
+        m.ocean = m.g.Index(kCentreX, kCentreY);
+        m.g.SetWater(m.ocean, WaterSource::Ocean);
+        m.mouth = Nb(m.g, m.ocean, 0);
+        m.g.SetWater(m.mouth, WaterSource::River);
+        m.g.elevation[m.mouth] = 0.05f;
+        for (int d = 0; d < 6 && m.step == 0; ++d)
+        {
+            const int nb = Nb(m.g, m.mouth, d);
+            if (nb >= 0 && nb != m.ocean && !Adjacent(m.g, nb, m.ocean))
+            {
+                m.step = nb;
+            }
+        }
+        m.g.elevation[m.step] = 0.05f;
+        m.far = m.g.Index(0, 0);
+        m.g.elevation[m.far] = 0.05f;
+        return m;
+    }
+}
+
+TEST(BiomeClassify, WetlandEligibleAtRiverMouthAndOneStepFromIt)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    MouthCase          m = MakeMouthCase();
+    ASSERT_NE(m.step, 0);
+    const Stage14Inputs in = m.g.Inputs();
+    EXPECT_TRUE(IsRiverMouth(in, m.mouth));
+    EXPECT_FALSE(IsRiverMouth(in, m.step));
+    EXPECT_TRUE(IsWetlandEligible(rules, in, m.mouth));
+    EXPECT_TRUE(IsWetlandEligible(rules, in, m.step));
+    EXPECT_FALSE(IsWetlandEligible(rules, in, m.far));
+    EXPECT_FALSE(IsWetlandEligible(rules, in, m.ocean));
+
+    const BiomeResult r = RunBiomes(m.g);
+    EXPECT_EQ(r.At(m.mouth), Biome::WetlandDelta);
+    EXPECT_EQ(r.pin[m.mouth], BiomePin::Wetland);
+    EXPECT_EQ(r.At(m.step), Biome::WetlandDelta);
+    EXPECT_NE(r.At(m.far), Biome::WetlandDelta);
+    EXPECT_TRUE(CheckWetlandRule(rules, in, r.biome.data()).empty());
+}
+
+TEST(BiomeClassify, WetlandElevationCap)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    MouthCase          m = MakeMouthCase();
+    m.g.elevation[m.step] = 0.12f;
+    EXPECT_TRUE(IsWetlandEligible(rules, m.g.Inputs(), m.step));
+    m.g.elevation[m.step] = 0.13f;
+    EXPECT_FALSE(IsWetlandEligible(rules, m.g.Inputs(), m.step));
+    EXPECT_NE(RunBiomes(m.g).At(m.step), Biome::WetlandDelta);
+}
+
+TEST(BiomeClassify, WetlandNextToLake)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    BiomeGrid          g(9, 9);
+    const int          lake = g.Index(kCentreX, kCentreY);
+    g.SetWater(lake, WaterSource::Lake);
+    const int shore = Nb(g, lake, 1);
+    const int away = g.Index(0, 8);
+    g.elevation[shore] = 0.05f;
+    g.elevation[away] = 0.05f;
+    EXPECT_TRUE(IsWetlandEligible(rules, g.Inputs(), shore));
+    EXPECT_FALSE(IsWetlandEligible(rules, g.Inputs(), away));
+    EXPECT_FALSE(IsWetlandEligible(rules, g.Inputs(), lake));
+    g.elevation[shore] = 0.3f;
+    EXPECT_FALSE(IsWetlandEligible(rules, g.Inputs(), shore));
+}
+
+TEST(BiomeClassify, WetlandWetCoast)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    BiomeGrid          g(9, 9);
+    const int          c = g.Index(2, 2);
+    g.AddFlag(c, TerrainFlag::Coast);
+    g.elevation[c] = 0.05f;
+    g.moisture[c] = 0.7f;   // boundary: >= kWetlandMoist
+    EXPECT_TRUE(IsWetlandEligible(rules, g.Inputs(), c));
+    g.moisture[c] = 0.69f;
+    EXPECT_FALSE(IsWetlandEligible(rules, g.Inputs(), c));
+
+    // Wet but not on the coast.
+    const int inland = g.Index(6, 6);
+    g.elevation[inland] = 0.05f;
+    g.moisture[inland] = 0.95f;
+    EXPECT_FALSE(IsWetlandEligible(rules, g.Inputs(), inland));
+}
+
+// ---------------------------------------------------------------------------
+// AC2: water cells are exactly Ocean / Lake
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, WaterCellsAreExactlyOceanAndLake)
+{
+    for (uint32_t seed = 1; seed <= 4; ++seed)
+    {
+        const BiomeGrid   g = MakeNoiseGrid(seed, 16, 16);
+        const BiomeResult r = RunBiomes(g);
+        for (size_t c = 0; c < r.biome.size(); ++c)
+        {
+            const bool ocean = g.waterSource[c] == static_cast<uint32_t>(WaterSource::Ocean);
+            const bool lake = g.waterSource[c] == static_cast<uint32_t>(WaterSource::Lake);
+            EXPECT_EQ(r.At(static_cast<int>(c)) == Biome::Ocean, ocean);
+            EXPECT_EQ(r.At(static_cast<int>(c)) == Biome::Lake, lake);
+            EXPECT_LT(r.biome[c], static_cast<uint32_t>(kBiomeCount));
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: zone fix-up
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, PinnedAlpineOnFirstShoresBecomesGrasslandOrForest)
+{
+    BiomeGrid g(12, 4);
+    const int grass = g.Index(1, 1);
+    const int forest = g.Index(4, 1);
+    for (int c : { grass, forest })
+    {
+        g.SetTerrain(c, TerrainType::Mountain);
+        g.SetZone(c, DepthZone::FirstShores);
+    }
+    g.SetClimate(grass, 0.6f, 0.35f);
+    g.SetClimate(forest, 0.5f, 0.62f);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(grass), Biome::GrasslandSteppe);
+    EXPECT_EQ(r.At(forest), Biome::TemperateForest);
+    EXPECT_EQ(r.fixup[grass], BiomeFixup::Zone);
+    EXPECT_EQ(r.fixup[forest], BiomeFixup::Zone);
+    EXPECT_EQ(r.pin[grass], BiomePin::Alpine);   // the pin that fired is still reported
+    EXPECT_EQ(r.debug.zoneChanges, 2);
+}
+
+TEST(BiomeClassify, ZoneFixupRepicksBestValidClimateBiome)
+{
+    BiomeGrid g(12, 8);
+    const int desertFirst = g.Index(1, 1);      // desert climate, First Shores: Grass (-2.46) beats Forest (-8.2)
+    const int rainFirst = g.Index(4, 1);        // rainforest climate, First Shores: Forest (-4.21) beats Grass (-8.56)
+    const int grassAncient = g.Index(7, 1);     // grass climate, Ancient: Desert (-5.7) is the best valid
+    const int desertAncient = g.Index(10, 1);   // desert in Ancient is valid: untouched
+    g.SetClimate(desertFirst, 0.8f, 0.08f);
+    g.SetZone(desertFirst, DepthZone::FirstShores);
+    g.SetClimate(rainFirst, 0.85f, 0.9f);
+    g.SetZone(rainFirst, DepthZone::FirstShores);
+    g.SetZone(grassAncient, DepthZone::AncientInteriors);
+    g.SetClimate(desertAncient, 0.8f, 0.08f);
+    g.SetZone(desertAncient, DepthZone::AncientInteriors);
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(desertFirst), Biome::GrasslandSteppe);
+    EXPECT_EQ(r.fixup[desertFirst], BiomeFixup::Zone);
+    EXPECT_EQ(r.At(rainFirst), Biome::TemperateForest);
+    EXPECT_EQ(r.fixup[rainFirst], BiomeFixup::Zone);
+    EXPECT_EQ(r.At(grassAncient), Biome::DesertBasin);
+    EXPECT_EQ(r.fixup[grassAncient], BiomeFixup::Zone);
+    EXPECT_EQ(r.At(desertAncient), Biome::DesertBasin);
+    EXPECT_EQ(r.fixup[desertAncient], BiomeFixup::None);
+}
+
+TEST(BiomeClassify, ZoneFixupRanksWetlandBelowClimateBiomes)
+{
+    // A pinned Alpine cell that is also wetland-eligible, on First Shores, becomes Grassland (not Wetland):
+    // WetlandDelta has no climate score, so it is only the last-resort candidate.
+    BiomeGrid g(9, 9);
+    const int c = g.Index(2, 2);
+    g.SetTerrain(c, TerrainType::Mountain);
+    g.SetZone(c, DepthZone::FirstShores);
+    g.AddFlag(c, TerrainFlag::Coast);
+    g.elevation[c] = 0.05f;
+    g.moisture[c] = 0.9f;
+    g.temperature[c] = 0.6f;
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_TRUE(r.At(c) == Biome::GrasslandSteppe || r.At(c) == Biome::TemperateForest);
+    EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
+}
+
+TEST(BiomeClassify, VentIslandKeepsVolcanicInAnyZone)
+{
+    BiomeGrid g(12, 4);
+    const int flagged = g.Index(1, 1);
+    const int vent = g.Index(4, 1);
+    const int chainOnly = g.Index(7, 1);   // Barrier flag in chain form but not near a vent: no exemption
+    g.AddFlag(flagged, TerrainFlag::Volcanic);
+    g.SetTerrain(vent, TerrainType::Volcano);
+    g.AddFlag(chainOnly, TerrainFlag::Barrier);
+    g.barrierForm = BarrierForm::VolcanicChain;
+    for (int c : { flagged, vent, chainOnly }) { g.SetZone(c, DepthZone::FirstShores); }
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(flagged), Biome::VolcanicAshland);
+    EXPECT_EQ(r.fixup[flagged], BiomeFixup::None);
+    EXPECT_EQ(r.At(vent), Biome::VolcanicAshland);
+    EXPECT_EQ(r.fixup[vent], BiomeFixup::None);
+    EXPECT_NE(r.At(chainOnly), Biome::VolcanicAshland);
+    EXPECT_EQ(r.fixup[chainOnly], BiomeFixup::Zone);
+
+    EXPECT_TRUE(FindZoneViolations(g.Inputs(), r.biome.data()).empty());
+}
+
+TEST(BiomeClassify, WaterCellsAreSkippedByZoneFixup)
+{
+    BiomeGrid g(5, 5);
+    const int c = g.Index(2, 2);
+    g.SetWater(c, WaterSource::Lake);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(c), Biome::Lake);
+    EXPECT_EQ(r.fixup[c], BiomeFixup::None);
+}
+
+// ---------------------------------------------------------------------------
+// Step 5: forbidden-neighbour fix-up
+// ---------------------------------------------------------------------------
+namespace
+{
+    // Rainforest-climate cell (slightly off target so its score is below 0) next to a perfect Desert cell.
+    void BuildRainforestDesertPair(BiomeGrid& g, int rain, int desert)
+    {
+        g.SetClimate(rain, 0.85f, 0.8f);     // score -0.44
+        g.SetClimate(desert, 0.8f, 0.08f);   // score 0
+    }
+}
+
+TEST(BiomeClassify, ForbiddenPairLowerScoreCellMovesToCandidateWithNoForbiddenNeighbour)
+{
+    for (int lowerFirst = 0; lowerFirst < 2; ++lowerFirst)
+    {
+        BiomeGrid g(9, 9);
+        const int a = g.Index(kCentreX, kCentreY);
+        const int b = Nb(g, a, 0);
+        const int rain = lowerFirst != 0 ? std::min(a, b) : std::max(a, b);
+        const int desert = rain == a ? b : a;
+        BuildRainforestDesertPair(g, rain, desert);
+
+        const BiomeResult r = RunBiomes(g);
+        // The Rainforest cell has the lower score, so it re-picks regardless of cell index.
+        // Forest would score better than Grassland but forms a forbidden pair with the Desert neighbour.
+        EXPECT_EQ(r.At(desert), Biome::DesertBasin);
+        EXPECT_EQ(r.At(rain), Biome::GrasslandSteppe);
+        EXPECT_EQ(r.fixup[rain], BiomeFixup::Forbidden);
+        EXPECT_EQ(r.fixup[desert], BiomeFixup::None);
+        EXPECT_EQ(r.debug.unresolvedPairs, 0);
+        EXPECT_TRUE(FindForbiddenPairs(g.dims, r.biome.data()).empty());
+    }
+}
+
+TEST(BiomeClassify, ForbiddenPairEqualPinEqualScoreLowerIndexMoves)
+{
+    BiomeGrid g(9, 9);
+    const int a = g.Index(kCentreX, kCentreY);
+    const int b = Nb(g, a, 0);
+    const int lo = std::min(a, b);
+    const int hi = std::max(a, b);
+    g.SetClimate(lo, 0.85f, 0.9f);   // Rainforest, score 0
+    g.SetClimate(hi, 0.8f, 0.08f);   // Desert, score 0
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(hi), Biome::DesertBasin);
+    EXPECT_NE(r.At(lo), Biome::Rainforest);
+    EXPECT_EQ(r.fixup[lo], BiomeFixup::Forbidden);
+    EXPECT_EQ(r.fixup[hi], BiomeFixup::None);
+}
+
+TEST(BiomeClassify, ForbiddenPairLowerPinCellMoves)
+{
+    // Wetland (pin 1) next to Volcanic (pin 3): Wetland moves.
+    {
+        BiomeGrid g(9, 9);
+        const int v = g.Index(kCentreX, kCentreY);
+        const int w = Nb(g, v, 0);
+        g.AddFlag(v, TerrainFlag::Volcanic);
+        g.AddFlag(w, TerrainFlag::Coast);
+        g.elevation[w] = 0.05f;
+        g.moisture[w] = 0.9f;
+        const BiomeResult r = RunBiomes(g);
+        EXPECT_EQ(r.At(v), Biome::VolcanicAshland);
+        EXPECT_NE(r.At(w), Biome::WetlandDelta);
+        EXPECT_EQ(r.pin[w], BiomePin::Wetland);
+        EXPECT_EQ(r.fixup[w], BiomeFixup::Forbidden);
+        EXPECT_EQ(r.fixup[v], BiomeFixup::None);
+    }
+    // Tundra-climate (pin 0, perfect score) next to Volcanic (pin 3): Tundra moves.
+    {
+        BiomeGrid g(9, 9);
+        const int v = g.Index(kCentreX, kCentreY);
+        const int t = Nb(g, v, 3);
+        g.AddFlag(v, TerrainFlag::Volcanic);
+        g.SetClimate(t, 0.12f, 0.3f);
+        const BiomeResult r = RunBiomes(g);
+        EXPECT_EQ(r.At(v), Biome::VolcanicAshland);
+        EXPECT_NE(r.At(t), Biome::TundraBoreal);
+        EXPECT_EQ(r.fixup[t], BiomeFixup::Forbidden);
+    }
+}
+
+TEST(BiomeClassify, UnresolvablePairIsKeptAndCounted)
+{
+    // X (Rainforest, Ancient) has a Volcanic neighbour N1 (pin 3) and a Rainforest neighbour N2 on the opposite
+    // side. X must move, but Desert and Tundra clash with N2 and Rainforest clashes with N1: nothing is legal.
+    BiomeGrid g(9, 9);
+    const int x = g.Index(kCentreX, kCentreY);
+    const int n1 = Nb(g, x, 0);
+    const int n2 = Nb(g, x, 3);
+    ASSERT_FALSE(Adjacent(g, n1, n2));
+    g.AddFlag(n1, TerrainFlag::Volcanic);
+    g.SetClimate(x, 0.85f, 0.9f);
+    g.SetClimate(n2, 0.85f, 0.9f);
+    g.SetZone(x, DepthZone::AncientInteriors);
+    g.SetZone(n2, DepthZone::AncientInteriors);
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(x), Biome::Rainforest);
+    EXPECT_EQ(r.At(n1), Biome::VolcanicAshland);
+    EXPECT_EQ(r.At(n2), Biome::Rainforest);
+    EXPECT_EQ(r.fixup[x], BiomeFixup::None);
+    EXPECT_EQ(r.debug.unresolvedPairs, 1);
+    EXPECT_EQ(FindForbiddenPairs(g.dims, r.biome.data()).size(), 1u);
+}
+
+TEST(BiomeClassify, ForbiddenFixupHonoursPassLimit)
+{
+    // Chain of conflicts resolves from the left: with a single pass allowed the result must still be valid
+    // (never a new violation) and unresolvedPairs must match what is left.
+    TerrainRules rules = TerrainRules::Defaults();
+    rules.values[static_cast<uint32_t>(Rule::kMaxFixupPasses)] = 1.0f;
+    const BiomeGrid   g = MakeNoiseGrid(7, 14, 14);
+    const BiomeResult r = RunBiomes(g, rules);
+    EXPECT_LE(r.debug.passes, 1);
+    EXPECT_EQ(static_cast<size_t>(r.debug.unresolvedPairs), FindForbiddenPairs(g.dims, r.biome.data()).size());
+}
+
+TEST(BiomeClassify, FixupNeverCreatesNewViolations)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    for (uint32_t seed = 1; seed <= 12; ++seed)
+    {
+        const BiomeGrid     g = MakeNoiseGrid(seed, 20, 20);
+        const BiomeResult   r = RunBiomes(g, rules);
+        const Stage14Inputs in = g.Inputs();
+
+        EXPECT_TRUE(FindZoneViolations(in, r.biome.data()).empty()) << "seed " << seed;
+        EXPECT_EQ(static_cast<size_t>(r.debug.unresolvedPairs), FindForbiddenPairs(g.dims, r.biome.data()).size())
+            << "seed " << seed;
+        EXPECT_LE(r.debug.passes, rules.GetInt(Rule::kMaxFixupPasses));
+        EXPECT_TRUE(CheckWetlandRule(rules, in, r.biome.data()).empty()) << "seed " << seed;
+        for (size_t c = 0; c < r.fixup.size(); ++c)
+        {
+            EXPECT_LE(r.fixup[c], BiomeFixup::Forbidden);
+        }
+    }
+}
+
+TEST(BiomeClassify, FixupReducesForbiddenPairsComparedToNoFixup)
+{
+    // With zero extra passes allowed the classifier still runs one pass (kMaxFixupPasses >= 1); compare against
+    // the full default run: more passes never leave more pairs.
+    TerrainRules one = TerrainRules::Defaults();
+    one.values[static_cast<uint32_t>(Rule::kMaxFixupPasses)] = 1.0f;
+    for (uint32_t seed = 1; seed <= 6; ++seed)
+    {
+        const BiomeGrid g = MakeNoiseGrid(seed, 20, 20);
+        EXPECT_LE(RunBiomes(g).debug.unresolvedPairs, RunBiomes(g, one).debug.unresolvedPairs) << "seed " << seed;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Determinism and degenerate grids
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, DeterministicByteIdentical)
+{
+    const BiomeGrid   g = MakeNoiseGrid(3, 24, 24);
+    const BiomeResult a = RunBiomes(g);
+    const BiomeResult b = RunBiomes(g);
+    EXPECT_TRUE(BytesEqual(a.score, b.score));
+    EXPECT_TRUE(BytesEqual(a.pin, b.pin));
+    EXPECT_TRUE(BytesEqual(a.biome, b.biome));
+    EXPECT_TRUE(BytesEqual(a.fixup, b.fixup));
+    EXPECT_EQ(a.debug.unresolvedPairs, b.debug.unresolvedPairs);
+}
+
+TEST(BiomeClassify, EmptyAndSingleCellGridsDoNotCrash)
+{
+    {
+        BiomeGrid g(0, 0);
+        const BiomeResult r = RunBiomes(g);
+        EXPECT_TRUE(r.biome.empty());
+        EXPECT_EQ(r.debug.unresolvedPairs, 0);
+    }
+    {
+        BiomeGrid g(3, 0);
+        EXPECT_TRUE(RunBiomes(g).biome.empty());
+    }
+    {
+        BiomeGrid g(1, 1);
+        const BiomeResult r = RunBiomes(g);
+        ASSERT_EQ(r.biome.size(), 1u);
+        EXPECT_EQ(r.At(0), Biome::GrasslandSteppe);
+        EXPECT_EQ(r.pin[0], BiomePin::None);
+        EXPECT_EQ(r.debug.unresolvedPairs, 0);
+    }
+    {
+        BiomeGrid g(1, 1);
+        g.SetWater(0, WaterSource::Ocean);
+        EXPECT_EQ(RunBiomes(g).At(0), Biome::Ocean);
+    }
+}

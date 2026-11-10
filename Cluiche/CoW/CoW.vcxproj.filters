@@ -127,6 +127,9 @@
     <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -262,6 +265,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

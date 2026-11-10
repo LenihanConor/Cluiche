@@ -2751,5 +2751,11 @@
     <ClCompile Include="CoW\TestBiomeClimate.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClassify.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeClassify.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

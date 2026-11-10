@@ -2,6 +2,7 @@
 // Header-only. Row-major, index = y * width + x.
 #pragma once
 
+#include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <cstdint>
@@ -54,6 +55,100 @@ inline ClimateGrid MakeRidgeGrid(int w, int h, int ridgeX, float ridgeHeight, fl
         }
     }
     return g;
+}
+
+// Hand-built stage 14 grid. Defaults: every cell dry-ish grassland-perfect land (T 0.6, M 0.35), Lowland,
+// WildReaches, no flags, no water. Row-major, index = y * width + x.
+struct BiomeGrid
+{
+    GridDimensions        dims;
+    std::vector<float>    temperature, moisture, elevation, barrierMask;
+    std::vector<uint32_t> terrainType, depthZone, terrainFlags, waterSource;
+    BarrierForm           barrierForm = BarrierForm::Plateau;
+    float                 barrier = 0.0f;
+
+    BiomeGrid(int w, int h, float t = 0.6f, float m = 0.35f)
+        : dims{w, h},
+          temperature(static_cast<size_t>(w) * h, t),
+          moisture(static_cast<size_t>(w) * h, m),
+          elevation(static_cast<size_t>(w) * h, 0.3f),
+          barrierMask(static_cast<size_t>(w) * h, 0.0f),
+          terrainType(static_cast<size_t>(w) * h, static_cast<uint32_t>(TerrainType::Lowland)),
+          depthZone(static_cast<size_t>(w) * h, static_cast<uint32_t>(DepthZone::WildReaches)),
+          terrainFlags(static_cast<size_t>(w) * h, 0u),
+          waterSource(static_cast<size_t>(w) * h, 0u)
+    {
+    }
+
+    int Index(int x, int y) const { return y * dims.width + x; }
+
+    void SetClimate(int c, float t, float m) { temperature[c] = t; moisture[c] = m; }
+    void SetZone(int c, DepthZone z) { depthZone[c] = static_cast<uint32_t>(z); }
+    void SetTerrain(int c, TerrainType t) { terrainType[c] = static_cast<uint32_t>(t); }
+    void AddFlag(int c, uint8_t f) { terrainFlags[c] |= f; }
+    void SetWater(int c, WaterSource s)
+    {
+        waterSource[c] = static_cast<uint32_t>(s);
+        if (s == WaterSource::Ocean)
+        {
+            elevation[c] = 0.0f;
+            depthZone[c] = static_cast<uint32_t>(DepthZone::None);
+            terrainType[c] = static_cast<uint32_t>(TerrainType::DeepWater);
+        }
+        else if (s == WaterSource::Lake)
+        {
+            depthZone[c] = static_cast<uint32_t>(DepthZone::None);
+            terrainType[c] = static_cast<uint32_t>(TerrainType::Lake);
+        }
+    }
+
+    Stage14Inputs Inputs() const
+    {
+        Stage14Inputs in;
+        in.dims = dims;
+        in.temperature = temperature.data();
+        in.moisture = moisture.data();
+        in.elevation = elevation.data();
+        in.terrainType = terrainType.data();
+        in.depthZone = depthZone.data();
+        in.terrainFlags = terrainFlags.data();
+        in.barrierMask = barrierMask.data();
+        in.waterSource = waterSource.data();
+        in.barrierForm = barrierForm;
+        in.barrier = barrier;
+        return in;
+    }
+};
+
+struct BiomeResult
+{
+    std::vector<float>    score;
+    std::vector<uint32_t> pin, biome, fixup;
+    Stage14Debug          debug;
+
+    Biome At(int c) const { return static_cast<Biome>(biome[c]); }
+};
+
+inline BiomeResult RunBiomes(const BiomeGrid& g, const TerrainRules& rules)
+{
+    const size_t n = g.temperature.size();
+    BiomeResult  r;
+    r.score.assign(n, -123.0f);
+    r.pin.assign(n, 99u);
+    r.biome.assign(n, 99u);
+    r.fixup.assign(n, 99u);
+    Stage14Layers out;
+    out.biomeScore = r.score.data();
+    out.biomePin = r.pin.data();
+    out.biomeIndex = r.biome.data();
+    out.fixupChanges = r.fixup.data();
+    ComputeStage14(rules, g.Inputs(), out, r.debug);
+    return r;
+}
+
+inline BiomeResult RunBiomes(const BiomeGrid& g)
+{
+    return RunBiomes(g, TerrainRules::Defaults());
 }
 
 } // namespace Testing

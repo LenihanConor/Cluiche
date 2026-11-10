@@ -63,6 +63,7 @@
     <ClCompile Include="Modules\WorldGenViewHost.cpp" />
     <ClCompile Include="Shared\WorldGeneration\BiomeTypes.cpp" />
     <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -110,6 +111,7 @@
     <ClInclude Include="Modules\WorldGenMirrorRegistrar.h" />
     <ClInclude Include="Shared\WorldGeneration\BiomeTypes.h" />
     <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h" />
+    <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
