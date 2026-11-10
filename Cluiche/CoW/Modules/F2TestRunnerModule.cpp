@@ -836,7 +836,7 @@ void F2TestRunnerModule::FinishC5a(bool passed, const char* detail)
 {
     mHasC5a = true;
     mC5aPassed = passed;
-    std::strncpy(mC5aSummary, detail, kSummaryLen - 1);
+    strncpy_s(mC5aSummary, kSummaryLen, detail, _TRUNCATE);
     mC5aSummary[kSummaryLen - 1] = '\0';
     const int i = static_cast<int>(F2CheckId::SaveLoadProof);
     if (passed)
@@ -1022,7 +1022,7 @@ void F2TestRunnerModule::FinishC5b(bool passed, const char* detail)
 {
     mHasC5b = true;
     mC5bPassed = passed;
-    std::strncpy(mC5bSummary, detail, kSummaryLen - 1);
+    strncpy_s(mC5bSummary, kSummaryLen, detail, _TRUNCATE);
     mC5bSummary[kSummaryLen - 1] = '\0';
     if (!passed)
         DIA_LOG_ERROR("CoW", "F2 C5b failed: %s", mC5bSummary);
@@ -1042,7 +1042,7 @@ void F2TestRunnerModule::FinishC5b(bool passed, const char* detail)
         // Already failed in phase 4: keep that result first and append part b, without a second event.
         char summary[kSummaryLen];
         std::snprintf(summary, sizeof(summary), "%s; (b) %s", mLastResult[i], passed ? "failed loads leave state untouched" : mC5bSummary);
-        std::strncpy(mLastResult[i], summary, kSummaryLen - 1);
+        strncpy_s(mLastResult[i], kSummaryLen, summary, _TRUNCATE);
         mLastResult[i][kSummaryLen - 1] = '\0';
     }
     else
@@ -1165,13 +1165,13 @@ void F2TestRunnerModule::CompleteCheck(F2CheckId check, bool passed, const char*
     if (i < 0 || i >= kF2CheckCount)
         return;
     mStatus[i] = passed ? F2CheckStatus::Pass : F2CheckStatus::Fail;
-    std::strncpy(mLastResult[i], summary ? summary : "", kSummaryLen - 1);
+    strncpy_s(mLastResult[i], kSummaryLen, summary ? summary : "", _TRUNCATE);
     mLastResult[i][kSummaryLen - 1] = '\0';
 
     F2CheckCompleted msg;
     msg.check = check;
     msg.passed = passed;
-    std::strncpy(msg.summary, mLastResult[i], sizeof(msg.summary) - 1);
+    strncpy_s(msg.summary, sizeof(msg.summary), mLastResult[i], _TRUNCATE);
     Publish(msg);
 }
 

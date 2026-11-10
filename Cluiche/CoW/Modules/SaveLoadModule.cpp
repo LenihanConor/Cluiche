@@ -343,7 +343,9 @@ LoadResult SaveLoadModule::PreValidateLoad(Dia::Core::StringCRC slotId)
     mSlots.BuildPath(slotId, path, sizeof(path));
 
     auto buffer = std::make_unique<char[]>(Dia::SaveGame::SaveManager::kBufferSize);
-    FILE* f = std::fopen(path, "rb");
+    FILE* f = nullptr;
+    if (fopen_s(&f, path, "rb") != 0)
+        f = nullptr;
     if (!f)
         return LoadResult::Fail(LoadResultCode::FileReadError);
     const size_t bytes = std::fread(buffer.get(), 1, Dia::SaveGame::SaveManager::kBufferSize - 1, f);
