@@ -19,6 +19,13 @@
 
 namespace CluicheTest {
 
+namespace {
+    // SimPU ticks at 30 Hz: the shapes are shown for 5 s (150 frames) before the stage reports passed. The checkpoint passes
+    // at 2 s so an E2E poll has about 3 s to read it before the automation auto-exit unregisters it.
+    constexpr unsigned int kDisplayFrames    = 150;
+    constexpr unsigned int kCheckpointFrame  = 60;
+}
+
 const Dia::Core::StringCRC Geometry2DTestStageModule::kTypeId("Geometry2DTestStageModule");
 
 Geometry2DTestStageModule::Geometry2DTestStageModule(const Dia::Core::StringCRC& instanceId)
@@ -65,7 +72,9 @@ void Geometry2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
 
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.geometry2d.passed"),
         [this]() -> Dia::Automation::CheckpointResult {
-            bool passed = IsResolved();
+            // Pass once the shapes are up (kCheckpointFrame), well before the stage resolves and leaves for Boot in automation
+            // mode: the checkpoint is unregistered with the stage, so it must be readable for a while before that.
+            bool passed = IsResolved() || GetFrameCount() >= kCheckpointFrame;
             return { passed, passed ? "all shapes set up" : "pending", 0.0f };
         });
 
@@ -223,7 +232,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
     }
 #endif
 
-    if (!IsResolved() && GetFrameCount() >= 300)
+    if (!IsResolved() && GetFrameCount() >= kDisplayFrames)
         ReportPassed();
 }
 
