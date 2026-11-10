@@ -78,6 +78,15 @@ namespace
     DIA_COW_TERRAIN_READER(ReadLakeMask,        "lakeMask")
     DIA_COW_TERRAIN_READER(ReadPassMask,        "passMask")
     DIA_COW_TERRAIN_READER(ReadVolcanic,        "volcanic")
+    DIA_COW_TERRAIN_READER(ReadTemperature,     "temperature")
+    DIA_COW_TERRAIN_READER(ReadMoisture,        "moisture")
+    DIA_COW_TERRAIN_READER(ReadWaterDistance,   "waterDistance")
+    DIA_COW_TERRAIN_READER(ReadAirMoisture,     "airMoisture")
+    DIA_COW_TERRAIN_READER(ReadRainOut,         "rainOut")
+    DIA_COW_TERRAIN_READER(ReadBiomeScore,      "biomeScore")
+    DIA_COW_TERRAIN_READER(ReadBiomePin,        "biomePin")
+    DIA_COW_TERRAIN_READER(ReadBiomeIndex,      "biomeIndex")
+    DIA_COW_TERRAIN_READER(ReadFixupChanges,    "fixupChanges")
 #undef DIA_COW_TERRAIN_READER
 
     void ReadTerrainType(const WorldGenSession& s, float* out, uint32_t count)
@@ -131,6 +140,16 @@ namespace
         { "lakeMask",         "Water",    WorldLayerKind::Category, kLakeIdValues, ReadLakeMask, false },
         { "passMask",         "Mountains", WorldLayerKind::Category, 2, ReadPassMask,        false },
         { "volcanic",         "Mountains", WorldLayerKind::Category, 2, ReadVolcanic,        false },
+        // Climate and biomes (stages 12-14)
+        { "temperature",      "Climate",  WorldLayerKind::Float,    0, ReadTemperature,      false },
+        { "moisture",         "Climate",  WorldLayerKind::Float,    0, ReadMoisture,         false },
+        { "waterDistance",    "Climate",  WorldLayerKind::Float,    0, ReadWaterDistance,    false },
+        { "airMoisture",      "Climate",  WorldLayerKind::Float,    0, ReadAirMoisture,      false },
+        { "rainOut",          "Climate",  WorldLayerKind::Float,    0, ReadRainOut,          false },
+        { "biomeScore",       "Biomes",   WorldLayerKind::Float,    0, ReadBiomeScore,       false },
+        { "biomePin",         "Biomes",   WorldLayerKind::Category, 5, ReadBiomePin,         false },
+        { "biomeIndex",       "Biomes",   WorldLayerKind::Category, static_cast<uint32_t>(Biome::Count), ReadBiomeIndex, false },
+        { "fixupChanges",     "Biomes",   WorldLayerKind::Category, 3, ReadFixupChanges,     false },
     };
 
     constexpr uint32_t kRowCount = static_cast<uint32_t>(sizeof(kRows) / sizeof(kRows[0]));

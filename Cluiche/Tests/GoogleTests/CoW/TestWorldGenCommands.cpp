@@ -368,6 +368,79 @@ TEST(WorldGenCommands, SetChangesTheWorldAndParamsReflectIt)
 	EXPECT_NEAR(h.Call("cow.worldgen.params")["params"]["rivers"].asDouble(), 0.9, 1e-6);
 }
 
+TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const uint32_t before = h.Rev();
+
+	Json::Value a(Json::objectValue); a["moistureOffset"] = 0.2;
+	const Json::Value r = h.Call("cow.worldgen.set", a);
+	EXPECT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(r["clamped"].size(), 0u);
+	h.Pump(3);
+	EXPECT_EQ(h.Rev(), before + 1);
+	const Json::Value p = h.Call("cow.worldgen.params");
+	EXPECT_NEAR(p["params"]["moistureOffset"].asDouble(), 0.2, 1e-6);
+	EXPECT_NEAR(p["ranges"]["moistureOffset"]["max"].asDouble(), 0.3, 1e-6);
+	EXPECT_TRUE(p["ranges"].isMember("temperatureOffset"));
+	EXPECT_TRUE(p["effective"].isMember("unresolvedPairs"));
+
+	Json::Value b(Json::objectValue); b["moistureOffset"] = 0.9;
+	const Json::Value rb = h.Call("cow.worldgen.set", b);
+	ASSERT_EQ(rb["clamped"].size(), 1u) << rb.toStyledString();
+	EXPECT_EQ(rb["clamped"][0].asString(), "moistureOffset");
+	h.Pump(3);
+	EXPECT_NEAR(h.Call("cow.worldgen.params")["params"]["moistureOffset"].asDouble(), 0.3, 1e-6);
+}
+
+TEST(WorldGenCommands, BiomeLayersTimingsCountsAndCellRoundTrip)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	const Json::Value summary = h.Call("cow.worldgen.layers");
+	ASSERT_EQ(summary["stages"].size(), 15u);
+	std::string names;
+	for (const Json::Value& st : summary["stages"])
+		for (const Json::Value& l : st["layers"]) names += l["name"].asString() + ",";
+	for (const char* n : { "temperature", "waterDistance", "airMoisture", "rainOut", "moisture", "biomeScore", "biomePin", "biomeIndex", "fixupChanges" })
+		EXPECT_NE(names.find(std::string(n) + ","), std::string::npos) << n;
+	for (int s = 12; s <= 14; ++s)
+		EXPECT_TRUE(summary["stages"][s].isMember("ms")) << s;
+	int sum = 0;
+	ASSERT_TRUE(summary["biomeCounts"].isArray());
+	for (const Json::Value& e : summary["biomeCounts"]) sum += e["count"].asInt();
+	EXPECT_EQ(sum, 66 * 42);
+
+	// "moisture" values equal the generator's layer at every page window.
+	const CoW::WorldGeneration::TerrainLayers& layers = gWg->GetSession().Generator().GetLayers();
+	const float* ref = layers.GetFloat(layers.FindLayer("moisture"));
+	ASSERT_NE(ref, nullptr);
+	size_t offset = 0;
+	size_t gathered = 0;
+	for (int page = 0; page < 40; ++page)
+	{
+		Json::Value pa(Json::objectValue); pa["layer"] = "moisture"; pa["offset"] = static_cast<Json::UInt>(offset);
+		const Json::Value pr = h.Call("cow.worldgen.layers", pa);
+		ASSERT_TRUE(pr["success"].asBool()) << pr.toStyledString();
+		for (Json::ArrayIndex i = 0; i < pr["values"].size(); ++i)
+			EXPECT_EQ(static_cast<float>(pr["values"][i].asDouble()), ref[offset + i]) << offset + i;
+		gathered += pr["values"].size();
+		if (pr["nextOffset"].isNull()) break;
+		offset = pr["nextOffset"].asUInt();
+	}
+	EXPECT_EQ(gathered, static_cast<size_t>(66 * 42));
+
+	Json::Value idx(Json::objectValue); idx["index"] = 20 * 66 + 30;
+	const Json::Value cell = h.Call("cow.worldgen.cell", idx);
+	ASSERT_TRUE(cell["success"].asBool()) << cell.toStyledString();
+	for (const char* k : { "temperature", "moisture", "waterDistance", "biome", "biomeRunnerUp", "biomePin", "fixupChanges" })
+		EXPECT_TRUE(cell.isMember(k)) << k;
+}
+
 TEST(WorldGenCommands, TwoSetsBackToBackCoalesceIntoOneRevision)
 {
 	Harness h;

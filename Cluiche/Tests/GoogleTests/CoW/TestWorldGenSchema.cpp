@@ -2,6 +2,7 @@
 // The shipped worldgen.schema.json must describe every WorldLayerSource layer.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <Shared/WorldGeneration/BiomeTypes.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
@@ -125,6 +126,8 @@ TEST(WorldGenSchema, EnumCountsEqualCodeEnumSizes)
     EXPECT_EQ(count("waterSource"), static_cast<unsigned>(WaterSource::River) + 1u);
     EXPECT_EQ(count("depthZone"), static_cast<unsigned>(DepthZone::AncientInteriors) + 1u);
     EXPECT_EQ(count("flowDirection"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
+    EXPECT_EQ(count("biomeIndex"), static_cast<unsigned>(kBiomeCount));
+    EXPECT_EQ(count("fixupChanges"), 3u);   // none, zone, neighbour
 }
 
 TEST(WorldGenSchema, EveryRampExists)
@@ -176,4 +179,21 @@ TEST(WorldGenSchema, InsetAndBackdropOnEveryLayer)
         EXPECT_LT(inset.asDouble(), 0.5) << e["key"].asString();
         EXPECT_TRUE(e["ui"]["backdrop"].isString() && e["ui"]["backdrop"].asString().size() == 7) << e["key"].asString();
     }
+}
+
+TEST(WorldGenSchema, BiomeLayersAreDescribed)
+{
+    const Loaded& l = Get();
+    ASSERT_TRUE(l.ok);
+    for (const char* k : { "temperature", "moisture", "waterDistance", "airMoisture", "rainOut", "biomeScore", "biomePin", "biomeIndex", "fixupChanges" })
+    {
+        EXPECT_NE(FindEntry(l, k), nullptr) << k;
+        EXPECT_NE(WorldLayerSource::Find(k), nullptr) << k;
+    }
+    const Json::Value* biome = FindEntry(l, "biomeIndex");
+    ASSERT_NE(biome, nullptr);
+    std::set<std::string> colours;
+    for (const Json::Value& v : (*biome)["values"])
+        colours.insert(v["colour"].asString());
+    EXPECT_EQ(colours.size(), static_cast<size_t>(kBiomeCount)) << "biome colours must be distinct";
 }

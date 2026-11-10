@@ -1,6 +1,9 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
+#include <Shared/WorldGeneration/BiomeClassify.h>
+#include <Shared/WorldGeneration/BiomeTypes.h>
+
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -175,6 +178,28 @@ Json::Value ParamValueJson(const ParamRow& r, const WorldShapeParams& p)
     case Kind::Form:  return Json::Value(BarrierFormName(p.barrierForm));
     }
     return Json::Value();
+}
+
+const char* BiomePinName(uint32_t pin)
+{
+    switch (pin)
+    {
+    case BiomePin::None:     return "None";
+    case BiomePin::Wetland:  return "Wetland";
+    case BiomePin::Alpine:   return "Alpine";
+    case BiomePin::Volcanic: return "Volcanic";
+    case BiomePin::Water:    return "Water";
+    }
+    return "Unknown";
+}
+
+Json::Value ScoredBiomeJson(Biome b, float score)
+{
+    Json::Value v(Json::objectValue);
+    v["id"] = static_cast<int>(b);
+    v["name"] = BiomeName(b);
+    v["score"] = ShortestFloat(score);
+    return v;
 }
 
 } // namespace
@@ -459,6 +484,7 @@ Json::Value WorldGenSession::Params() const
         effective["islandShare"] = ShortestFloat(e.islandShare);
         effective["passes"] = e.passes;
         effective["lakes"] = e.lakes;
+        effective["unresolvedPairs"] = e.unresolvedPairs;
     }
     else
     {
@@ -467,6 +493,7 @@ Json::Value WorldGenSession::Params() const
         effective["islandShare"] = 0.0;
         effective["passes"] = static_cast<int>(mShape.passes);
         effective["lakes"] = static_cast<int>(mShape.lakes);
+        effective["unresolvedPairs"] = 0;
     }
 
     Json::Value r(Json::objectValue);
@@ -779,6 +806,27 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
     r["revision"] = static_cast<Json::UInt>(mRevision);
     r["totalMs"] = ShortestFloat(mLastMs);
     r["stages"] = stages;
+
+    // Cells per biome (all ten ids, zero before the first generation).
+    int biomeTotals[kBiomeCount] = {};
+    for (size_t i = 0; i < count; ++i)
+    {
+        const int b = static_cast<int>(mWorld.Cells()[i].biome);
+        if (b >= 0 && b < kBiomeCount)
+        {
+            ++biomeTotals[b];
+        }
+    }
+    Json::Value biomeCounts(Json::arrayValue);
+    for (int b = 0; b < kBiomeCount; ++b)
+    {
+        Json::Value e(Json::objectValue);
+        e["id"] = b;
+        e["name"] = BiomeName(static_cast<Biome>(b));
+        e["count"] = biomeTotals[b];
+        biomeCounts.append(e);
+    }
+    r["biomeCounts"] = biomeCounts;
     return r;
 }
 
@@ -854,6 +902,82 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
         }
     }
     r["layers"] = layerValues;
+
+    // Biome classification (stages 12-14).
+    auto floatAt = [&](const char* name) -> const float* { return layers.GetFloat(layers.FindLayer(name)); };
+    auto uintAt = [&](const char* name) -> const uint32_t* { return layers.GetUInt(layers.FindLayer(name)); };
+    const float* temperature = floatAt("temperature");
+    const float* moisture = floatAt("moisture");
+    const uint32_t* waterDistance = uintAt("waterDistance");
+    const uint32_t* biomePin = uintAt("biomePin");
+    const uint32_t* fixup = uintAt("fixupChanges");
+    r["temperature"] = temperature != nullptr ? Json::Value(ShortestFloat(temperature[index])) : Json::Value();
+    r["moisture"] = moisture != nullptr ? Json::Value(ShortestFloat(moisture[index])) : Json::Value();
+    r["waterDistance"] = waterDistance != nullptr ? Json::Value(static_cast<Json::UInt>(waterDistance[index])) : Json::Value();
+
+    Json::Value biome(Json::objectValue);
+    biome["id"] = static_cast<int>(c.biome);
+    biome["name"] = BiomeName(c.biome);
+    r["biome"] = biome;
+
+    const uint32_t pin = biomePin != nullptr ? biomePin[index] : BiomePin::None;
+    Json::Value pinJson(Json::objectValue);
+    pinJson["id"] = static_cast<Json::UInt>(pin);
+    pinJson["name"] = BiomePinName(pin);
+    r["biomePin"] = pinJson;
+
+    // Winning and runner-up of the five climate biomes (ties: lowest enum value). Pinned cells never reach the
+    // climate score, so they report the pinned biome with a null score and no runner-up.
+    Json::Value ranking(Json::objectValue);
+    Biome climateWinner = c.biome;
+    if (pin != BiomePin::None || temperature == nullptr || moisture == nullptr)
+    {
+        Json::Value winner(Json::objectValue);
+        winner["id"] = static_cast<int>(c.biome);
+        winner["name"] = BiomeName(c.biome);
+        winner["score"] = Json::Value();
+        ranking["winner"] = winner;
+        ranking["runnerUp"] = Json::Value();
+    }
+    else
+    {
+        const Biome kClimate[] = { Biome::GrasslandSteppe, Biome::TemperateForest, Biome::DesertBasin, Biome::TundraBoreal, Biome::Rainforest };
+        int best = -1;
+        int second = -1;
+        float scores[5];
+        for (int k = 0; k < 5; ++k)
+        {
+            scores[k] = BiomeClimateScore(mRules, kClimate[k], temperature[index], moisture[index]);
+            if (best < 0 || scores[k] > scores[best])
+            {
+                second = best;
+                best = k;
+            }
+            else if (second < 0 || scores[k] > scores[second])
+            {
+                second = k;
+            }
+        }
+        climateWinner = kClimate[best];
+        ranking["winner"] = ScoredBiomeJson(kClimate[best], scores[best]);
+        ranking["runnerUp"] = ScoredBiomeJson(kClimate[second], scores[second]);
+    }
+    r["biomeRunnerUp"] = ranking;
+
+    const uint32_t fix = fixup != nullptr ? fixup[index] : BiomeFixup::None;
+    Json::Value fixJson(Json::objectValue);
+    fixJson["id"] = static_cast<Json::UInt>(fix);
+    std::string reason;
+    if (fix == BiomeFixup::Zone)
+    {
+        reason = std::string("zone: ") + BiomeName(climateWinner) + " is not valid in " + DepthZoneName(c.depthZone);
+    }
+    else if (fix == BiomeFixup::Forbidden)
+    {
+        reason = "forbidden neighbour fix-up";
+    }
+    fixJson["reason"] = reason;
+    r["fixupChanges"] = fixJson;
 
     const Dia::Pathfinding::HexTopology topology(width, height);
     Json::Value neighbours(Json::arrayValue);

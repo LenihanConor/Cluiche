@@ -2,6 +2,8 @@
 // WorldGenSession preset.load/save, presets, layers and cell queries.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/BiomeClassify.h>
+#include <Shared/WorldGeneration/BiomeTypes.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -857,4 +859,134 @@ TEST(WorldGenSessionQueries, CellBadArgsFail)
     EXPECT_FALSE(Ok(s.Cell(a)));
     a["y"] = "q";
     EXPECT_FALSE(Ok(s.Cell(a)));
+}
+
+// ---- S-1 Biome Classification, AC13 (Feature 8 query surface) ----
+
+TEST(WorldGenSessionQueries, EffectiveReportsUnresolvedPairs)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value p = s.Params();
+    ASSERT_TRUE(p["effective"].isMember("unresolvedPairs")) << p["effective"].toStyledString();
+    EXPECT_EQ(p["effective"]["unresolvedPairs"].asInt(), s.Generator().GetEffective().unresolvedPairs);
+    EXPECT_TRUE(p["ranges"].isMember("temperatureOffset"));
+    EXPECT_TRUE(p["ranges"].isMember("moistureOffset"));
+}
+
+TEST(WorldGenSessionQueries, LayersSummaryListsBiomeStagesAndLayers)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(Json::Value(Json::objectValue));
+    for (TerrainStage st : { TerrainStage::Temperature, TerrainStage::Moisture, TerrainStage::Biomes })
+    {
+        const Json::Value& stage = r["stages"][static_cast<int>(st)];
+        EXPECT_EQ(stage["name"].asString(), TerrainStageName(st));
+        EXPECT_TRUE(stage["ranLastUpdate"].asBool());
+        EXPECT_GT(stage["layers"].size(), 0u);
+    }
+    EXPECT_EQ(r["stages"][static_cast<int>(TerrainStage::Moisture)]["layers"].size(), 4u);
+}
+
+TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
+{
+    WorldGenSession s;
+    Generate(s);
+    const Json::Value r = s.Layers(Json::Value(Json::objectValue));
+    ASSERT_TRUE(r["biomeCounts"].isArray()) << r.toStyledString();
+    ASSERT_EQ(r["biomeCounts"].size(), static_cast<unsigned>(kBiomeCount));
+    int sum = 0;
+    for (int b = 0; b < kBiomeCount; ++b)
+    {
+        const Json::Value& e = r["biomeCounts"][b];
+        EXPECT_EQ(e["id"].asInt(), b);
+        EXPECT_EQ(e["name"].asString(), BiomeName(static_cast<Biome>(b)));
+        int expected = 0;
+        for (int i = 0; i < s.World().CellCount(); ++i)
+            expected += s.World().Cells()[i].biome == static_cast<Biome>(b) ? 1 : 0;
+        EXPECT_EQ(e["count"].asInt(), expected) << b;
+        sum += e["count"].asInt();
+    }
+    EXPECT_EQ(sum, s.World().CellCount());
+}
+
+TEST(WorldGenSessionQueries, BiomeCountsAreZeroBeforeGeneration)
+{
+    WorldGenSession s;
+    const Json::Value r = s.Layers(Json::Value(Json::objectValue));
+    ASSERT_TRUE(r["biomeCounts"].isArray());
+    for (const Json::Value& e : r["biomeCounts"])
+        EXPECT_EQ(e["count"].asInt(), 0);
+}
+
+TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
+{
+    WorldGenSession s;
+    Generate(s);
+    const TerrainLayers& layers = s.Generator().GetLayers();
+    const uint32_t* pin = layers.GetUInt(layers.FindLayer("biomePin"));
+    const float* temp = layers.GetFloat(layers.FindLayer("temperature"));
+    const float* moist = layers.GetFloat(layers.FindLayer("moisture"));
+    int land = -1, pinnedLand = -1, ocean = -1;
+    for (int i = 0; i < s.World().CellCount(); ++i)
+    {
+        const Biome b = s.World().Cells()[i].biome;
+        if (b == Biome::Ocean) { if (ocean < 0) ocean = i; }
+        else if (pin[i] != BiomePin::None) { if (pinnedLand < 0 && pin[i] != BiomePin::Water) pinnedLand = i; }
+        else if (land < 0) land = i;
+    }
+    ASSERT_GE(land, 0);
+    ASSERT_GE(ocean, 0);
+    ASSERT_GE(pinnedLand, 0) << "default world should have a wetland/alpine/volcanic cell";
+
+    const Json::Value c = s.Cell(Obj("index", land));
+    ASSERT_TRUE(Ok(c)) << c.toStyledString();
+    EXPECT_NEAR(c["temperature"].asDouble(), temp[land], 1e-6);
+    EXPECT_NEAR(c["moisture"].asDouble(), moist[land], 1e-6);
+    EXPECT_TRUE(c.isMember("waterDistance"));
+    EXPECT_EQ(c["biome"]["id"].asInt(), static_cast<int>(s.World().Cells()[land].biome));
+    EXPECT_EQ(c["biome"]["name"].asString(), BiomeName(s.World().Cells()[land].biome));
+    EXPECT_EQ(c["biomePin"]["name"].asString(), "None");
+    ASSERT_TRUE(c["biomeRunnerUp"].isObject()) << c.toStyledString();
+    const Json::Value& w = c["biomeRunnerUp"]["winner"];
+    const Json::Value& ru = c["biomeRunnerUp"]["runnerUp"];
+    ASSERT_TRUE(ru.isObject());
+    EXPECT_GE(w["score"].asDouble(), ru["score"].asDouble());
+    EXPECT_NE(w["id"].asInt(), ru["id"].asInt());
+    EXPECT_TRUE(c["fixupChanges"].isObject());
+    EXPECT_TRUE(c["fixupChanges"]["reason"].isString());
+
+    const Json::Value p = s.Cell(Obj("index", pinnedLand));
+    ASSERT_TRUE(Ok(p));
+    EXPECT_NE(p["biomePin"]["name"].asString(), "None");
+    EXPECT_EQ(p["biomePin"]["id"].asUInt(), pin[pinnedLand]);
+    EXPECT_TRUE(p["biomeRunnerUp"]["runnerUp"].isNull());
+
+    const Json::Value o = s.Cell(Obj("index", ocean));
+    ASSERT_TRUE(Ok(o));
+    EXPECT_EQ(o["biome"]["name"].asString(), "Ocean");
+    EXPECT_EQ(o["biomePin"]["name"].asString(), "Water");
+    EXPECT_TRUE(o["biomeRunnerUp"]["runnerUp"].isNull());
+    EXPECT_EQ(o["fixupChanges"]["reason"].asString(), "");
+}
+
+TEST(WorldGenSessionQueries, CellFixupReasonMatchesFixupLayer)
+{
+    WorldGenSession s;
+    Generate(s);
+    const TerrainLayers& layers = s.Generator().GetLayers();
+    const uint32_t* fix = layers.GetUInt(layers.FindLayer("fixupChanges"));
+    for (int i = 0; i < s.World().CellCount(); ++i)
+    {
+        const Json::Value c = s.Cell(Obj("index", i));
+        const std::string reason = c["fixupChanges"]["reason"].asString();
+        EXPECT_EQ(c["fixupChanges"]["id"].asUInt(), fix[i]);
+        if (fix[i] == BiomeFixup::None)
+            EXPECT_EQ(reason, "");
+        else if (fix[i] == BiomeFixup::Zone)
+            EXPECT_EQ(reason.rfind("zone: ", 0), 0u) << reason;
+        else
+            EXPECT_EQ(reason, "forbidden neighbour fix-up");
+    }
 }

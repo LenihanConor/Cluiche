@@ -142,6 +142,12 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     mGenerationsCounter->Inc();
     mRevisionGauge->Set(static_cast<double>(mSession.Revision()));
     mLastMsGauge->Set(static_cast<double>(mSession.Generator().GetLastTotalMs()));
+    const int unresolvedPairs = mSession.Generator().GetEffective().unresolvedPairs;
+    if (unresolvedPairs > 0)
+    {
+        DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u left %d forbidden biome neighbour pair(s) unresolved",
+                     mSession.Revision(), unresolvedPairs);
+    }
 
     WorldGenerationComplete msg;
     msg.seed = mSession.Seed();

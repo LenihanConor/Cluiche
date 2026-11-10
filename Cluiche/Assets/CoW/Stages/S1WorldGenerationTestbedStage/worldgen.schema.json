@@ -632,6 +632,240 @@
         "backdrop": "#101418",
         "select_group": true
       }
+    },
+    {
+      "key": "temperature",
+      "kind": "field",
+      "label": "Temperature",
+      "description": "Temperature per cell (0 cold to 1 hot), from latitude, elevation and the temperature offset.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "moisture",
+      "kind": "field",
+      "label": "Moisture",
+      "description": "Moisture per cell (0 dry to 1 wet), from water proximity, rain shadow and the moisture offset.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "waterDistance",
+      "kind": "field",
+      "label": "Water distance",
+      "description": "Hex steps to the nearest ocean, lake or river (rivers start with a penalty); saturates at 32.",
+      "type": "float",
+      "min": 0,
+      "max": 32,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "airMoisture",
+      "kind": "field",
+      "label": "Air moisture",
+      "description": "Moisture carried by the wind sweeps before rain-out.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "rainOut",
+      "kind": "field",
+      "label": "Rain out",
+      "description": "Moisture dropped on each cell as rain (rain shadow diagnostic).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "biomeScore",
+      "kind": "field",
+      "label": "Biome score",
+      "description": "Climate score of the winning climate biome (0 is a perfect match, lower is a worse fit).",
+      "type": "float",
+      "min": -1,
+      "max": 0,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "biomePin",
+      "kind": "field",
+      "label": "Biome pin",
+      "description": "Which pin rule fixed the biome before the climate score was used.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Classified by climate score.",
+          "colour": "#6e7681"
+        },
+        {
+          "id": "wetland",
+          "label": "Wetland",
+          "description": "Wetland pin.",
+          "colour": "#4f9a8a"
+        },
+        {
+          "id": "alpine",
+          "label": "Alpine",
+          "description": "Alpine pin.",
+          "colour": "#d8dde5"
+        },
+        {
+          "id": "volcanic",
+          "label": "Volcanic",
+          "description": "Volcanic pin.",
+          "colour": "#c8553d"
+        },
+        {
+          "id": "water",
+          "label": "Water",
+          "description": "Ocean or lake.",
+          "colour": "#2f6fb5"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "biomeIndex",
+      "kind": "field",
+      "label": "Biome",
+      "description": "Final biome per cell.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "ocean",
+          "label": "Ocean",
+          "description": "Open sea.",
+          "colour": "#1f4f8f"
+        },
+        {
+          "id": "lake",
+          "label": "Lake",
+          "description": "Inland lake.",
+          "colour": "#4aa3df"
+        },
+        {
+          "id": "grasslandSteppe",
+          "label": "Grassland / Steppe",
+          "description": "Dry open plains.",
+          "colour": "#a6c04a"
+        },
+        {
+          "id": "temperateForest",
+          "label": "Temperate Forest",
+          "description": "Mild wooded land.",
+          "colour": "#2f7d3a"
+        },
+        {
+          "id": "wetlandDelta",
+          "label": "Wetland / Delta",
+          "description": "River mouths and marsh.",
+          "colour": "#4fb39a"
+        },
+        {
+          "id": "desertBasin",
+          "label": "Desert Basin",
+          "description": "Hot, dry basin.",
+          "colour": "#d9b45a"
+        },
+        {
+          "id": "alpineMountain",
+          "label": "Alpine Mountain",
+          "description": "High mountain.",
+          "colour": "#c4c9d1"
+        },
+        {
+          "id": "tundraBoreal",
+          "label": "Tundra / Boreal",
+          "description": "Cold land.",
+          "colour": "#8aa39a"
+        },
+        {
+          "id": "rainforest",
+          "label": "Rainforest",
+          "description": "Hot, wet forest.",
+          "colour": "#0f5a2a"
+        },
+        {
+          "id": "volcanicAshland",
+          "label": "Volcanic Ashland",
+          "description": "Land around a vent.",
+          "colour": "#6b3a36"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "fixupChanges",
+      "kind": "field",
+      "label": "Biome fix-ups",
+      "description": "Cells changed by a stage 14 fix-up after the climate pick.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Not changed.",
+          "colour": "#3a424c"
+        },
+        {
+          "id": "zone",
+          "label": "Zone",
+          "description": "Changed because the biome is not valid in the depth zone.",
+          "colour": "#e0a030"
+        },
+        {
+          "id": "neighbour",
+          "label": "Neighbour",
+          "description": "Changed to remove a forbidden neighbour pair.",
+          "colour": "#d84a8a"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
     }
   ]
 }
