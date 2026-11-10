@@ -251,6 +251,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
+| DebugServer WebSocket origin | 2026-11-10 | `DiaWebSocket::Server` listens on 127.0.0.1 only and a validate handler refuses any `Origin` whose host is not localhost, 127.0.0.1 or [::1] (no Origin header allowed; commit 15767d29). 4 `SLOW_WebSocketOrigin` raw-handshake tests; confirmed in a real browser by the user. Editor unaffected (native client, no Origin). Side effect: no remote-host connections. Per-launch token moved to the DiaViewLaunch row as a prerequisite |
 | DiaApplicationFlow — v1 source removal | 2026-05-20 | All v1 Manifest files deleted (`ApplicationManifest`, `ApplicationManifestLoader`, `ManifestComposer`, `ManifestValidator`, `JsonApplicationManifestSerializer`). `GameFileComposer` deleted (zero callers). `DiaGameManifestLoader` return type simplified to `bool`. v1 `ApplicationTypeRegistry`, `RegistrationMacros.h`, and `ModuleRef.h` deleted (all callers already on v2 equivalents). 4798 tests pass. |
 |------|-----------|-------|
 | FlatStateMachine `WildcardTransitionFiresFromAnyState` crash | 2026-05-05 | Stack overflow from `MetadataArray` embedded in each `StateDef`; fixed by moving state metadata to parallel slab `mStateMetadata` on definition, reducing `StateDef` from ~2604 B to ~432 B |
