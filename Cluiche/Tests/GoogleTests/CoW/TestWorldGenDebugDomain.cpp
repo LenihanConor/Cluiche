@@ -771,8 +771,6 @@ TEST(WorldGenDebugDomainView, CompactStateAtLargeWithLegendStaysUnderSlot)
     EXPECT_LT(bytes, 12u * 1024u);
 }
 
-#endif // DIA_DEBUG
-
 // ---- Static / dynamic split (perf fix 2026-11-09): lean frames carry only what changes per frame ----
 
 TEST(WorldGenDebugDomain, FirstFrameIsFullAndLaterFramesAreLean)
@@ -922,3 +920,5 @@ TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
     EXPECT_EQ(layers[0u]["id"].asString(), "terrain");
     EXPECT_EQ(layers[0u]["label"].asString(), "Relief");
 }
+
+#endif // DIA_DEBUG
