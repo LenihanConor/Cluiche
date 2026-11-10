@@ -1197,6 +1197,7 @@
     <ClCompile Include="CluicheGameBaseline\TestInputStreamWheel.cpp" />
     <ClCompile Include="CoW\TestWorldGenViewHost.cpp" />
     <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

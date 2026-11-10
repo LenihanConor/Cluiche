@@ -2730,5 +2730,8 @@
     <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

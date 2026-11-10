@@ -7,6 +7,7 @@
 
 #include <map>
 #include <cstring>
+#include <string>
 
 namespace Dia
 {
@@ -324,7 +325,37 @@ namespace Dia
 					mImpl->OnFail(hdl);
 				});
 
-				mImpl->mServer.listen(mImpl->mPort);
+				// Reject browser pages from other origins (cross-site WebSocket hijacking).
+				// Clients without an Origin header (native tools, Python) are allowed.
+				mImpl->mServer.set_validate_handler([this](Internal::ConnectionHdl hdl) -> bool {
+					auto con = mImpl->mServer.get_con_from_hdl(hdl);
+					std::string origin = con->get_origin();
+					if (origin.empty()) return true;
+
+					std::string host = origin;
+					size_t scheme = host.find("://");
+					if (scheme != std::string::npos) host = host.substr(scheme + 3);
+					size_t slash = host.find('/');
+					if (slash != std::string::npos) host = host.substr(0, slash);
+					if (!host.empty() && host[0] == '[')
+					{
+						size_t close = host.find(']');
+						if (close != std::string::npos) host = host.substr(0, close + 1);
+					}
+					else
+					{
+						size_t colon = host.find(':');
+						if (colon != std::string::npos) host = host.substr(0, colon);
+					}
+
+					if (host == "localhost" || host == "127.0.0.1" || host == "[::1]") return true;
+
+					DIA_LOG_WARNING("WebSocket", "Server: Rejected connection from origin '%s'", origin.c_str());
+					return false;
+				});
+
+				// Loopback only: the debug server must not be reachable from the network.
+				mImpl->mServer.listen("127.0.0.1", std::to_string(mImpl->mPort));
 				mImpl->mServer.start_accept();
 			}
 			catch (const std::exception& e)
