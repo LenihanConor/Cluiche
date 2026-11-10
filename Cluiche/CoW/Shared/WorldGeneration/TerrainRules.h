@@ -71,7 +71,40 @@ namespace WorldGeneration {
     X(kMountainElev,     0.55f,  0.0f,   1.0f) \
     X(kHighlandElev,     0.35f,  0.0f,   1.0f) \
     X(kHillElev,         0.15f,  0.0f,   1.0f) \
-    X(kHillSlope,        0.05f,  0.0f,   1.0f)
+    X(kHillSlope,        0.05f,  0.0f,   1.0f) \
+    X(kLatCool,          0.85f,  0.0f,   2.0f) \
+    X(kLapse,            0.6f,   0.0f,   2.0f) \
+    X(kRiverPenalty,     2.0f,   0.0f,   16.0f) \
+    X(kMoistScale,       8.0f,   1.0f,   64.0f) \
+    X(kBandBlend,        5.0f,   0.0f,   15.0f) \
+    X(kAirDecay,         0.04f,  0.0f,   0.5f) \
+    X(kOrographic,       4.0f,   0.0f,   32.0f) \
+    X(kProximityMix,     0.4f,   0.0f,   1.0f) \
+    X(kRainBonus,        1.0f,   0.0f,   4.0f) \
+    X(kWetlandMaxElev,   0.12f,  0.0f,   1.0f) \
+    X(kWetlandMoist,     0.7f,   0.0f,   1.0f) \
+    X(kPlateauWet,       0.5f,   0.0f,   1.0f) \
+    X(kMaxFixupPasses,   8.0f,   1.0f,   64.0f) \
+    X(kT0_Grass,         0.60f,  0.0f,   1.0f) \
+    X(kM0_Grass,         0.35f,  0.0f,   1.0f) \
+    X(kWT_Grass,         0.25f,  0.0f,   1.0f) \
+    X(kWM_Grass,         0.20f,  0.0f,   1.0f) \
+    X(kT0_Forest,        0.50f,  0.0f,   1.0f) \
+    X(kM0_Forest,        0.60f,  0.0f,   1.0f) \
+    X(kWT_Forest,        0.25f,  0.0f,   1.0f) \
+    X(kWM_Forest,        0.20f,  0.0f,   1.0f) \
+    X(kT0_Desert,        0.80f,  0.0f,   1.0f) \
+    X(kM0_Desert,        0.08f,  0.0f,   1.0f) \
+    X(kWT_Desert,        0.25f,  0.0f,   1.0f) \
+    X(kWM_Desert,        0.12f,  0.0f,   1.0f) \
+    X(kT0_Tundra,        0.12f,  0.0f,   1.0f) \
+    X(kM0_Tundra,        0.30f,  0.0f,   1.0f) \
+    X(kWT_Tundra,        0.15f,  0.0f,   1.0f) \
+    X(kWM_Tundra,        0.30f,  0.0f,   1.0f) \
+    X(kT0_Rainforest,    0.85f,  0.0f,   1.0f) \
+    X(kM0_Rainforest,    0.90f,  0.0f,   1.0f) \
+    X(kWT_Rainforest,    0.20f,  0.0f,   1.0f) \
+    X(kWM_Rainforest,    0.15f,  0.0f,   1.0f)
 
 enum class Rule : uint32_t
 {
@@ -100,7 +133,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 const RuleDef& GetRuleDef(Rule r);
 const RuleDef& GetRuleDef(uint32_t index);
 
-constexpr uint32_t kDefaultRulesVersion = 1;
+constexpr uint32_t kDefaultRulesVersion = 2;
 
 struct TerrainRules
 {

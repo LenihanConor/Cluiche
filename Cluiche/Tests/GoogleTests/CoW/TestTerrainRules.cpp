@@ -49,7 +49,7 @@ std::filesystem::path FindShippedRules()
 TEST(TerrainRules, DefaultsMatchTable)
 {
     const TerrainRules r = TerrainRules::Defaults();
-    EXPECT_EQ(r.rulesVersion, 1u);
+    EXPECT_EQ(r.rulesVersion, 2u);
     EXPECT_FALSE(r.degraded);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
@@ -238,9 +238,77 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
     EXPECT_TRUE(r.LoadFromJson(root, warnings));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(r.degraded);
-    EXPECT_EQ(r.rulesVersion, 1u);
+    EXPECT_EQ(r.rulesVersion, 2u);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
         EXPECT_FLOAT_EQ(r.values[i], GetRuleDef(i).defaultValue) << GetRuleDef(i).key;
     }
+}
+
+TEST(TerrainRules, NewBiomeRulesDefaultsMatch)
+{
+    const TerrainRules r = TerrainRules::Defaults();
+
+    // Global biome tuning
+    EXPECT_FLOAT_EQ(r.kLatCool(), 0.85f);
+    EXPECT_FLOAT_EQ(r.kLapse(), 0.6f);
+    EXPECT_FLOAT_EQ(r.kRiverPenalty(), 2.0f);
+    EXPECT_FLOAT_EQ(r.kMoistScale(), 8.0f);
+    EXPECT_FLOAT_EQ(r.kBandBlend(), 5.0f);
+    EXPECT_FLOAT_EQ(r.kAirDecay(), 0.04f);
+    EXPECT_FLOAT_EQ(r.kOrographic(), 4.0f);
+    EXPECT_FLOAT_EQ(r.kProximityMix(), 0.4f);
+    EXPECT_FLOAT_EQ(r.kRainBonus(), 1.0f);
+    EXPECT_FLOAT_EQ(r.kWetlandMaxElev(), 0.12f);
+    EXPECT_FLOAT_EQ(r.kWetlandMoist(), 0.7f);
+    EXPECT_FLOAT_EQ(r.kPlateauWet(), 0.5f);
+    EXPECT_EQ(r.GetInt(Rule::kMaxFixupPasses), 8);
+
+    // Grass
+    EXPECT_FLOAT_EQ(r.kT0_Grass(), 0.60f);
+    EXPECT_FLOAT_EQ(r.kM0_Grass(), 0.35f);
+    EXPECT_FLOAT_EQ(r.kWT_Grass(), 0.25f);
+    EXPECT_FLOAT_EQ(r.kWM_Grass(), 0.20f);
+
+    // Forest
+    EXPECT_FLOAT_EQ(r.kT0_Forest(), 0.50f);
+    EXPECT_FLOAT_EQ(r.kM0_Forest(), 0.60f);
+    EXPECT_FLOAT_EQ(r.kWT_Forest(), 0.25f);
+    EXPECT_FLOAT_EQ(r.kWM_Forest(), 0.20f);
+
+    // Desert
+    EXPECT_FLOAT_EQ(r.kT0_Desert(), 0.80f);
+    EXPECT_FLOAT_EQ(r.kM0_Desert(), 0.08f);
+    EXPECT_FLOAT_EQ(r.kWT_Desert(), 0.25f);
+    EXPECT_FLOAT_EQ(r.kWM_Desert(), 0.12f);
+
+    // Tundra
+    EXPECT_FLOAT_EQ(r.kT0_Tundra(), 0.12f);
+    EXPECT_FLOAT_EQ(r.kM0_Tundra(), 0.30f);
+    EXPECT_FLOAT_EQ(r.kWT_Tundra(), 0.15f);
+    EXPECT_FLOAT_EQ(r.kWM_Tundra(), 0.30f);
+
+    // Rainforest
+    EXPECT_FLOAT_EQ(r.kT0_Rainforest(), 0.85f);
+    EXPECT_FLOAT_EQ(r.kM0_Rainforest(), 0.90f);
+    EXPECT_FLOAT_EQ(r.kWT_Rainforest(), 0.20f);
+    EXPECT_FLOAT_EQ(r.kWM_Rainforest(), 0.15f);
+}
+
+TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
+{
+    const TerrainRules a = TerrainRules::Defaults();
+    const Json::Value json = a.ToJson();
+
+    TerrainRules b;
+    RuleWarnings warnings;
+    EXPECT_TRUE(b.LoadFromJson(json, warnings));
+    EXPECT_EQ(warnings.Size(), 0u);
+    EXPECT_FALSE(b.degraded);
+
+    // Check new biome rules round-trip
+    EXPECT_FLOAT_EQ(b.kLatCool(), a.kLatCool());
+    EXPECT_FLOAT_EQ(b.kLapse(), a.kLapse());
+    EXPECT_FLOAT_EQ(b.kT0_Grass(), a.kT0_Grass());
+    EXPECT_FLOAT_EQ(b.kM0_Rainforest(), a.kM0_Rainforest());
 }
