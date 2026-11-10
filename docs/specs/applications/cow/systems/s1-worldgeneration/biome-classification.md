@@ -345,7 +345,7 @@ Render the Biome view for each preset on 3 fixed seeds (alongside the terrain AC
 
 ## Status
 
-`Approved` 2026-10-18 (S-1 plan task 11). Open design questions 1–3 stand as written.
+`Done` 2026-11-10 except AC12 (A4 baseline table test is DISABLED until A4 Feature 1 exists) and AC14 (needs export/import, system plan task 16); AC15 signed off by the user 2026-11-10. Was `Approved` 2026-10-18 (S-1 plan task 11). Open design questions 1–3 stand as written.
 
 - Feature 8 of @worldgenerationpipeline.md.
 - Amended 2026-11-10 (user-approved): step 2 picks one climate per connected plateau interior by mean moisture, and step 5 accepts zone-valid AlpineMountain as a last-resort candidate. Reason: Rainforest and Desert are a forbidden pair and the plateau interior is Ancient Interiors, where only Desert, Tundra and Rainforest are legal, so a per-cell moisture split left unresolved pairs. AC2/AC3 wording also clarified so water cells are skipped by the zone check.
