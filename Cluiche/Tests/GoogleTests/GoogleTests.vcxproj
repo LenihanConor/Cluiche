@@ -1209,6 +1209,9 @@
     <ClCompile Include="CoW\TestBiomeGenerator.cpp" />
     <ClCompile Include="CoW\TestBiomeAcceptance.cpp" />
     <ClCompile Include="CoW\TestBiomeEdgeCases.cpp" />
+    <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\Sites.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

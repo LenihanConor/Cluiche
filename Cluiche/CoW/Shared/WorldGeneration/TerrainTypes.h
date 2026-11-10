@@ -6,6 +6,10 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 
+#include "TerrainEnums.h"
+#include "Regions.h"
+#include "Sites.h"
+
 #include <cstdint>
 #include <vector>
 
@@ -17,20 +21,7 @@ constexpr uint32_t kTerrainGeneratorVersion = 1;
 // ---------------------------------------------------------------------------
 // Cell enums
 // ---------------------------------------------------------------------------
-enum class WaterSource : uint8_t { None = 0, Ocean, Lake, River };
-enum class DepthZone   : uint8_t { None = 0, FirstShores, WildReaches, AncientInteriors }; // None = ocean
-enum class TerrainType : uint8_t { DeepWater, ShallowWater, Lake, River, Lowland, Hills, Highland,
-                                   Mountain, Peak, Cliff, Pass, Volcano, Count };
-enum class BarrierForm : uint8_t { Plateau, VolcanicChain };
-// Defined here (not BiomeTypes.h) so Cell can store it without a circular include.
-enum class Biome : uint8_t { Ocean, Lake, GrasslandSteppe, TemperateForest, WetlandDelta, DesertBasin,
-                             AlpineMountain, TundraBoreal, Rainforest, VolcanicAshland, Count };
-constexpr int kBiomeCount = static_cast<int>(Biome::Count);
-
-namespace TerrainFlag
-{
-    enum : uint8_t { Coast = 1, Ridge = 2, Barrier = 4, Pass = 8, Volcanic = 16, RiverCrossesBarrier = 32 };
-}
+// (enums live in TerrainEnums.h)
 
 constexpr uint8_t kNoDirection = 7;
 
@@ -216,6 +207,7 @@ struct Cell
     uint8_t     terrainFlags = 0;                     // TerrainFlag bits
     uint8_t     downstream   = kNoDirection;          // river cells: direction 0..5
     Biome       biome        = Biome::Ocean;          // S-1 biome classification (stage 14)
+    RegionId    region       = kNoRegion;             // S-1 regions (0 = ocean / not yet assigned); fills the old tail padding byte
 };
 
 // Cell storage is heap-backed (grid sizes 1x1..128x128 exceed any fixed-capacity
@@ -225,11 +217,16 @@ struct WorldStructure
     GridDimensions  dimensions;
     WorldProvenance provenance{};
     uint8_t         mainLandmass = 0;
+    RegionTable     regions;   // empty until RegionsAndSites::Place runs
+    SiteSet         sites;     // empty until RegionsAndSites::Place runs
 
-    // Resizes to width*height default cells (existing contents are discarded).
+    // Resizes to width*height default cells (existing contents are discarded,
+    // including regions and sites).
     void Resize(GridDimensions dims)
     {
         dimensions = dims;
+        regions = RegionTable{};
+        sites.Clear();
         const int n = (dims.width > 0 && dims.height > 0) ? dims.width * dims.height : 0;
         mCells.assign(static_cast<size_t>(n), Cell{});
     }

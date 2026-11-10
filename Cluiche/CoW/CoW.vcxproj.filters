@@ -130,6 +130,12 @@
     <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\Sites.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -268,6 +274,21 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainEnums.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Regions.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Sites.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\PlaceResult.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

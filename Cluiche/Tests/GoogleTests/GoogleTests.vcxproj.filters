@@ -2766,5 +2766,14 @@
     <ClCompile Include="CoW\TestBiomeEdgeCases.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\Sites.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
