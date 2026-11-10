@@ -349,7 +349,7 @@ Render the Biome view for each preset on 3 fixed seeds (alongside the terrain AC
 
 - Feature 8 of @worldgenerationpipeline.md.
 - Amends the Approved Terrain Generator (@terrain-generator.md): `WorldShapeParams` gains `temperatureOffset` and `moistureOffset`, `ShapeParam`/`TerrainStage` gain the three new stages, and the preset files gain the two keys. Amends the system spec: `GenParams::biomeWeights[]` removed, Feature 6 and Test 2b reworded.
-- Build is plan task 11, after the Terrain Generator build (plan task 7).
+- Build is plan task 11, after the Terrain Generator build (plan task 7). Plan: @biome-classification.plan.md (In Progress).
 
 ---
 
