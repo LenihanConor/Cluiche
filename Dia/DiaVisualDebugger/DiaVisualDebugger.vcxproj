@@ -95,11 +95,35 @@
     <ClInclude Include="Coord3D\Coord3DAxesDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DGridDrawer.h" />
     <ClInclude Include="Coord3D\Coord3DCameraDrawer.h" />
+    <ClInclude Include="Domain\IDebugDomain.h" />
+    <ClInclude Include="Domain\IDebugLayerRegistry.h" />
+    <ClInclude Include="Domain\DebugGroupAccents.h" />
     <ClInclude Include="Domain\\DiaDebugDomainRegistry.h" />
     <ClInclude Include="Coord2D\Coord2DDebugDomain.h" />
     <ClInclude Include="Coord3D\Coord3DDebugDomain.h" />
+    <ClInclude Include="Console\CommandLineParser.h" />
+    <ClInclude Include="Console\ConsoleLineAssembler.h" />
+    <ClInclude Include="Console\ConsoleExecutor.h" />
+    <ClInclude Include="Console\ConsoleHistory.h" />
+    <ClInclude Include="Console\ConsoleLogRing.h" />
+    <ClInclude Include="Console\FuzzyMatcher.h" />
+    <ClInclude Include="Console\CommandCompleter.h" />
+    <ClInclude Include="Console\ConsoleJson.h" />
+    <ClInclude Include="Console\PaletteIndex.h" />
+    <ClInclude Include="Console\PanelController.h" />
+    <ClInclude Include="Console\PanelJson.h" />
+    <ClInclude Include="Domain\SchemaControl.h" />
+    <ClInclude Include="Domain\ISchemaKeyResolver.h" />
+    <ClInclude Include="Domain\ServiceKeyResolver.h" />
+    <ClInclude Include="Console\DomainStateQuery.h" />
+    <ClInclude Include="Console\DomainStateSnapshot.h" />
+    <ClInclude Include="Console\DomainStateSnapshotPublisher.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DebugLayerManager.cpp" />
+    <ClCompile Include="DebugColourPalette.cpp" />
+    <ClCompile Include="FixedPrimitiveBuffer.cpp" />
+    <ClCompile Include="FixedDrawRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DAxesDrawer.cpp" />
     <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp" />
@@ -109,9 +133,25 @@
     <ClCompile Include="Coord3D\Coord3DAxesDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DGridDrawer.cpp" />
     <ClCompile Include="Coord3D\Coord3DCameraDrawer.cpp" />
+    <ClCompile Include="Domain\DebugGroupAccents.cpp" />
     <ClCompile Include="Domain\\DiaDebugDomainRegistry.cpp" />
     <ClCompile Include="Coord2D\Coord2DDebugDomain.cpp" />
     <ClCompile Include="Coord3D\Coord3DDebugDomain.cpp" />
+    <ClCompile Include="Console\CommandLineParser.cpp" />
+    <ClCompile Include="Console\ConsoleLineAssembler.cpp" />
+    <ClCompile Include="Console\ConsoleExecutor.cpp" />
+    <ClCompile Include="Console\ConsoleHistory.cpp" />
+    <ClCompile Include="Console\ConsoleLogRing.cpp" />
+    <ClCompile Include="Console\FuzzyMatcher.cpp" />
+    <ClCompile Include="Console\CommandCompleter.cpp" />
+    <ClCompile Include="Console\ConsoleJson.cpp" />
+    <ClCompile Include="Console\PaletteIndex.cpp" />
+    <ClCompile Include="Console\PanelController.cpp" />
+    <ClCompile Include="Console\PanelJson.cpp" />
+    <ClCompile Include="Domain\SchemaControl.cpp" />
+    <ClCompile Include="Console\DomainStateQuery.cpp" />
+    <ClCompile Include="Console\DomainStateSnapshot.cpp" />
+    <ClCompile Include="Console\DomainStateSnapshotPublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />
@@ -143,10 +183,6 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">
-      <Project>{c3d4e5f6-a7b8-9012-cdef-345678901234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

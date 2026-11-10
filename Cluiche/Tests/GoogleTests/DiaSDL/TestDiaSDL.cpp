@@ -150,6 +150,66 @@ TEST(DiaSDLEventTranslation, MouseMoved)
     EXPECT_EQ(out.mouseMove.y, 200);
 }
 
+namespace
+{
+    static SDL_Event MakeWheelEvent(float y, SDL_MouseWheelDirection dir = SDL_MOUSEWHEEL_NORMAL)
+    {
+        SDL_Event e{};
+        e.type            = SDL_EVENT_MOUSE_WHEEL;
+        e.wheel.y         = y;
+        e.wheel.direction = dir;
+        e.wheel.mouse_x   = 12.0f;
+        e.wheel.mouse_y   = 34.0f;
+        return e;
+    }
+}
+
+TEST(DiaSDLEventTranslation, MouseWheelUp)
+{
+    Dia::Input::Event out{};
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(2.0f), out));
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kMouseWheelMoved);
+    EXPECT_EQ(out.mouseWheel.delta, 2);
+    EXPECT_EQ(out.mouseWheel.x, 12);
+    EXPECT_EQ(out.mouseWheel.y, 34);
+}
+
+TEST(DiaSDLEventTranslation, MouseWheelDown)
+{
+    Dia::Input::Event out{};
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(-3.0f), out));
+    EXPECT_EQ(out.mouseWheel.delta, -3);
+}
+
+TEST(DiaSDLEventTranslation, MouseWheelFractionalNeverCollapsesToZero)
+{
+    Dia::Input::Event out{};
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(0.1f), out));
+    EXPECT_EQ(out.mouseWheel.delta, 1);
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(-0.4f), out));
+    EXPECT_EQ(out.mouseWheel.delta, -1);
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(1.4f), out));
+    EXPECT_EQ(out.mouseWheel.delta, 1);
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(1.6f), out));
+    EXPECT_EQ(out.mouseWheel.delta, 2);
+}
+
+TEST(DiaSDLEventTranslation, MouseWheelFlippedDirectionNegates)
+{
+    Dia::Input::Event out{};
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(2.0f, SDL_MOUSEWHEEL_FLIPPED), out));
+    EXPECT_EQ(out.mouseWheel.delta, -2);
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(-0.2f, SDL_MOUSEWHEEL_FLIPPED), out));
+    EXPECT_EQ(out.mouseWheel.delta, 1);
+}
+
+TEST(DiaSDLEventTranslation, MouseWheelZeroStaysZero)
+{
+    Dia::Input::Event out{};
+    ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(MakeWheelEvent(0.0f), out));
+    EXPECT_EQ(out.mouseWheel.delta, 0);
+}
+
 TEST(DiaSDLEventTranslation, MouseButtonPressed)
 {
     SDL_Event sdl{};

@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Game-Scoped Plugins — Mockup</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --surface: #282840;
+    --surface2: #313150;
+    --border: #44446a;
+    --text: #cdd6f4;
+    --text-dim: #7f849c;
+    --accent: #89b4fa;
+    --green: #a6e3a1;
+    --yellow: #f9e2af;
+    --red: #f38ba8;
+    --orange: #fab387;
+    --grey: #585b70;
+    --blue: #74c7ec;
+    --mauve: #cba6f7;
+    --teal: #94e2d5;
+    --pink: #f5c2e7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Consolas, monospace;
+    font-size: 13px;
+    background: #0a0a0f;
+    color: var(--text);
+    padding: 16px;
+  }
+
+  .mockup-container {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .editor-window {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-width: 420px;
+    max-width: 420px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 680px;
+  }
+
+  /* Title bar */
+  .title-bar {
+    background: var(--surface2);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .title-bar .app-name { font-weight: 700; color: var(--accent); }
+  .title-bar .project-name { color: var(--text); font-weight: 600; }
+  .title-bar .spacer { flex: 1; }
+  .connection-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .connection-pill.connected {
+    background: rgba(166,227,161,0.15);
+    color: var(--green);
+  }
+  .connection-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .connection-pill.disconnected {
+    background: rgba(127,132,156,0.15);
+    color: var(--text-dim);
+  }
+
+  /* Panel header */
+  .panel-header {
+    padding: 6px 10px;
+    background: var(--surface2);
+    font-weight: 600;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+  }
+
+  /* Search bar */
+  .search-row {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .search-row input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 5px 8px;
+    outline: none;
+  }
+  .search-row input::placeholder { color: #666; }
+  .search-row input:focus { border-color: var(--accent); }
+
+  /* Filter chips */
+  .chips-row {
+    display: flex;
+    gap: 6px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .chip {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .chip.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  /* Plugin list area */
+  .plugin-list-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px;
+    background: var(--bg);
+  }
+  .plugin-list-area::-webkit-scrollbar { width: 6px; }
+  .plugin-list-area::-webkit-scrollbar-track { background: var(--bg); }
+  .plugin-list-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Compact plugin row */
+  .plugin-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 2px;
+  }
+  .plugin-row:hover { background: rgba(137,180,250,0.08); }
+  .plugin-row.selected { background: rgba(137,180,250,0.15); }
+  .plugin-row .loaded-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+  .plugin-row .plugin-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .plugin-row .origin-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .origin-badge.game {
+    background: rgba(203,166,247,0.18);
+    color: var(--mauve);
+  }
+  .plugin-row .btn-load {
+    padding: 2px 10px;
+    background: var(--accent);
+    border: none;
+    border-radius: 2px;
+    color: var(--bg);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .plugin-row .btn-unload {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Section header in list */
+  .list-section-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-dim);
+    padding: 8px 8px 4px;
+    margin-top: 6px;
+  }
+  .list-section-header:first-child { margin-top: 0; }
+
+  /* Detail pane */
+  .detail-pane {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 12px;
+    min-height: 140px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .detail-empty {
+    color: var(--text-dim);
+    font-size: 11px;
+    font-style: italic;
+    padding: 20px 0;
+    text-align: center;
+  }
+  .detail-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .detail-desc {
+    font-size: 11px;
+    color: var(--blue);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .detail-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+  .detail-meta-label {
+    display: inline-block;
+    min-width: 55px;
+    color: var(--text-dim);
+  }
+  .detail-meta-value {
+    color: var(--text);
+  }
+  .detail-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .detail-status.loaded {
+    background: rgba(166,227,161,0.18);
+    color: var(--green);
+  }
+
+  /* Console output */
+  .console-strip {
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    padding: 8px 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .console-line {
+    margin-bottom: 2px;
+  }
+  .console-level {
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .console-level.info { color: var(--blue); }
+  .console-msg { color: var(--text-dim); }
+
+  /* Asset catalogue panel */
+  .asset-catalogue-overlay {
+    position: relative;
+    flex: 1;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  .asset-list {
+    padding: 8px;
+  }
+  .asset-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    position: relative;
+  }
+  .asset-item:hover { background: rgba(137,180,250,0.08); }
+  .asset-icon {
+    width: 16px;
+    height: 16px;
+    background: var(--surface2);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .asset-icon.ecology { background: rgba(166,227,161,0.3); }
+  .asset-name { color: var(--text); }
+
+  /* Context menu */
+  .context-menu {
+    position: absolute;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 0;
+    min-width: 220px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 100;
+  }
+  .context-menu-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .context-menu-item:hover { background: rgba(137,180,250,0.12); }
+  .context-menu-item.disabled {
+    color: var(--text-dim);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .context-menu-item.disabled:hover { background: transparent; }
+
+  /* Legend */
+  .legend {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    max-width: 100%;
+  }
+  .legend-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .legend-row {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    line-height: 2;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .legend-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .legend-badge.builtin {
+    background: rgba(137,180,250,0.18);
+    color: var(--accent);
+  }
+  .legend-badge.project {
+    background: rgba(148,226,213,0.18);
+    color: var(--teal);
+  }
+  .legend-badge.game {
+    background: rgba(203,166,247,0.18);
+    color: var(--mauve);
+  }
+  .legend-text { color: var(--text-dim); }
+
+  /* State label */
+  .state-label {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(137,180,250,0.2);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* Switch dialogs (states 4 and 5) */
+  .editor-window { position: relative; }
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,10,15,0.62);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .dialog {
+    width: 360px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    padding: 16px;
+  }
+  .dialog-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .dialog-body { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 12px; }
+  .dialog-body strong { color: var(--text); }
+  .dirty-list {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 8px;
+    margin-bottom: 14px;
+  }
+  .dirty-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: var(--text); }
+  .dirty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+  .dirty-row .dirty-note { margin-left: auto; font-size: 10px; color: var(--text-dim); }
+  .dirty-row .dirty-note.failed { color: var(--red); font-weight: 600; }
+  .dialog-buttons { display: flex; gap: 8px; justify-content: flex-end; }
+  .dlg-btn {
+    padding: 5px 14px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  .dlg-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .dlg-btn.danger { color: var(--red); border-color: rgba(243,139,168,0.5); }
+  .dialog-hint { font-size: 10px; color: var(--text-dim); margin-top: 10px; line-height: 1.5; }
+  .frozen-note { padding: 14px; font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center; }
+
+  .mockup-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-title">Game-Scoped Editor Plugins — CluicheEditor States 1 to 5 (4 and 5: switch dialogs)</div>
+
+<div class="mockup-container">
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 1: CoW loaded, connected to running game                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 1</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cow.diagame</span>
+      <span class="spacer"></span>
+      <div class="connection-pill connected">
+        <div class="connection-pill-dot"></div>
+        CoW · S-3 Ecology
+      </div>
+    </div>
+
+    <div class="panel-header">Plugin Browser</div>
+
+    <div class="search-row">
+      <input type="text" placeholder="Search plugins…" />
+    </div>
+
+    <div class="chips-row">
+      <button class="chip active">All</button>
+      <button class="chip">Loaded</button>
+      <button class="chip">Available</button>
+    </div>
+
+    <div class="plugin-list-area">
+      <div class="list-section-header">Dia Built-In</div>
+      <div class="plugin-row">
+        <div class="plugin-name">Scene Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Entity Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Asset Catalogue Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Scalar Field Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Blackboard Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Application Flow Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+
+      <div class="list-section-header">CoW</div>
+      <div class="plugin-row selected">
+        <div class="loaded-dot"></div>
+        <div class="plugin-name">
+          CoW World Sim Inspector
+          <span class="origin-badge game">game: cow</span>
+        </div>
+        <button class="btn-unload">Unload</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">
+          CoW World Data Editor
+          <span class="origin-badge game">game: cow</span>
+        </div>
+        <button class="btn-load">Load</button>
+      </div>
+    </div>
+
+    <div class="detail-pane">
+      <div class="detail-title">CoW World Sim Inspector</div>
+      <div class="detail-desc">Live inspector for world simulation state — tile grid, weather, succession, and site lifecycle</div>
+      <div class="detail-meta">
+        <div>
+          <span class="detail-meta-label">Origin:</span>
+          <span class="detail-meta-value">cow.diagame → cow_editor.diaapp</span>
+        </div>
+        <div>
+          <span class="detail-meta-label">Status:</span>
+          <span class="detail-status loaded">Loaded</span>
+        </div>
+        <div>
+          <span class="detail-meta-label">Author:</span>
+          <span class="detail-meta-value">CoW</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 2: CluicheTest loaded, console shows closed CoW plugins       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 2</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cluichetest.diagame</span>
+      <span class="spacer"></span>
+      <div class="connection-pill disconnected">
+        <div class="connection-pill-dot"></div>
+        No connection
+      </div>
+    </div>
+
+    <div class="panel-header">Plugin Browser</div>
+
+    <div class="search-row">
+      <input type="text" placeholder="Search plugins…" />
+    </div>
+
+    <div class="chips-row">
+      <button class="chip active">All</button>
+      <button class="chip">Loaded</button>
+      <button class="chip">Available</button>
+    </div>
+
+    <div class="plugin-list-area">
+      <div class="list-section-header">Dia Built-In</div>
+      <div class="plugin-row">
+        <div class="plugin-name">Scene Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Entity Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Asset Catalogue Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Scalar Field Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Blackboard Inspector</div>
+        <button class="btn-load">Load</button>
+      </div>
+      <div class="plugin-row">
+        <div class="plugin-name">Application Flow Editor</div>
+        <button class="btn-load">Load</button>
+      </div>
+
+      <div class="detail-empty" style="margin-top:40px;">
+        (No CoW plugins listed — out of scope for cluichetest.diagame)
+      </div>
+    </div>
+
+    <div class="detail-pane">
+      <div class="detail-empty">Select a plugin to see details</div>
+    </div>
+
+    <div class="console-strip">
+      <div class="console-line">
+        <span class="console-level info">[EDITOR] INFO</span>
+        <span class="console-msg">closing CoWWorldSimInspector (out of scope: cow)</span>
+      </div>
+      <div class="console-line">
+        <span class="console-level info">[EDITOR] INFO</span>
+        <span class="console-msg">skipped layout entry CoWWorldDataEditor (out of scope: cow)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 3: open_asset comparison                                       -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 3</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">Asset Catalogue</span>
+      <span class="spacer"></span>
+    </div>
+
+    <div class="panel-header">Asset Catalogue</div>
+
+    <div class="asset-catalogue-overlay">
+      <!-- CoW loaded context menu -->
+      <div style="padding:20px 16px; border-bottom:1px solid var(--border); background:var(--surface);">
+        <div style="font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">With cow.diagame loaded:</div>
+        <div class="asset-list">
+          <div class="asset-item">
+            <div class="asset-icon ecology"></div>
+            <span class="asset-name">lush.ecology.json</span>
+          </div>
+        </div>
+        <div class="context-menu" style="position:relative; top:8px; left:80px;">
+          <div class="context-menu-item">Open</div>
+          <div class="context-menu-item" style="background:rgba(137,180,250,0.12); font-weight:600;">Open in CoW World Data Editor</div>
+          <div class="context-menu-item">Copy Path</div>
+          <div class="context-menu-item">Reveal in Explorer</div>
+        </div>
+      </div>
+
+      <!-- CluicheTest loaded context menu -->
+      <div style="padding:20px 16px; background:var(--bg);">
+        <div style="font-size:11px; font-weight:600; color:var(--text-dim); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">With cluichetest.diagame loaded:</div>
+        <div class="asset-list">
+          <div class="asset-item">
+            <div class="asset-icon ecology"></div>
+            <span class="asset-name">lush.ecology.json</span>
+          </div>
+        </div>
+        <div class="context-menu" style="position:relative; top:8px; left:80px;">
+          <div class="context-menu-item" style="background:rgba(137,180,250,0.12); font-weight:600;">Open with default app</div>
+          <div class="context-menu-item">Copy Path</div>
+          <div class="context-menu-item">Reveal in Explorer</div>
+        </div>
+      </div>
+
+      <div style="padding:16px; background:var(--surface); border-top:1px solid var(--border);">
+        <div style="font-size:11px; color:var(--text-dim); line-height:1.8;">
+          <div style="margin-bottom:6px; color:var(--accent); font-weight:600;">Behavior:</div>
+          <div>→ With <strong>CoW</strong> loaded: game-scoped plugin registers <code style="background:var(--bg); padding:2px 6px; border-radius:2px; font-size:10px; color:var(--mauve);">.ecology.json</code> handler</div>
+          <div>→ With <strong>CluicheTest</strong>: handler unregistered, fallback to OS default</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 4: switching games with unsaved game-scoped plugins (AC8)     -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 4</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cow.diagame</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-header">World Data Editor</div>
+    <div class="frozen-note">(editor stays on cow.diagame until you choose)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cluichetest.diagame?</div>
+        <div class="dialog-body">
+          These <strong>cow.diagame</strong> plugins have unsaved changes and will close:
+        </div>
+        <div class="dirty-list">
+          <div class="dirty-row"><span class="dirty-dot"></span>CoW World Data Editor <span class="dirty-note">lush.ecology.json</span></div>
+          <div class="dirty-row"><span class="dirty-dot"></span>CoW World Sim Inspector <span class="dirty-note">saved view</span></div>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Cancel</button>
+          <button class="dlg-btn danger">Discard</button>
+          <button class="dlg-btn primary">Save all and switch</button>
+        </div>
+        <div class="dialog-hint">
+          Cancel keeps cow.diagame loaded. Discard closes the plugins without saving.
+          If a save fails the dialog stays open and the failed plugin is marked.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 4b: a save failed                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 4b</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cow.diagame</span>
+      <span class="spacer"></span>
+    </div>
+    <div class="panel-header">World Data Editor</div>
+    <div class="frozen-note">(still on cow.diagame)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cluichetest.diagame?</div>
+        <div class="dialog-body">
+          Could not save every plugin, so nothing was closed:
+        </div>
+        <div class="dirty-list">
+          <div class="dirty-row"><span class="dirty-dot" style="background:var(--green)"></span>CoW World Data Editor <span class="dirty-note">saved</span></div>
+          <div class="dirty-row"><span class="dirty-dot" style="background:var(--red)"></span>CoW World Sim Inspector <span class="dirty-note failed">save failed</span></div>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Cancel</button>
+          <button class="dlg-btn danger">Discard</button>
+          <button class="dlg-btn primary">Retry save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- STATE 5: a different game connects live (AC9)                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div class="editor-window">
+    <div class="state-label">STATE 5</div>
+    <div class="title-bar">
+      <span class="app-name">CluicheEditor</span>
+      <span class="project-name">cluichetest.diagame</span>
+      <span class="spacer"></span>
+      <div class="connection-pill connected">
+        <div class="connection-pill-dot"></div>
+        Connected: CoW
+      </div>
+    </div>
+    <div class="panel-header">Plugin Browser</div>
+    <div class="frozen-note">(CoW plugins stay unavailable until you switch)</div>
+
+    <div class="scrim">
+      <div class="dialog">
+        <div class="dialog-title">Switch to cow.diagame?</div>
+        <div class="dialog-body">
+          The running game is <strong>CoW</strong>, but the editor has <strong>cluichetest.diagame</strong> loaded.
+          Switching makes CoW's editor plugins available and closes any cluichetest-only plugins.
+        </div>
+        <div class="dialog-buttons">
+          <button class="dlg-btn">Stay on cluichetest</button>
+          <button class="dlg-btn primary">Switch to cow</button>
+        </div>
+        <div class="dialog-hint">
+          Staying keeps the connection up; only the game scope is unchanged.
+          If the same game connects, nothing is asked. If plugins have unsaved changes, State 4 follows.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-title">Plugin Origin Types</div>
+  <div class="legend-row">
+    <div class="legend-item">
+      <span class="legend-badge builtin">Built-in / Dia</span>
+      <span class="legend-text">Always available in every game (generic engine plugins)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-badge project">.cluicheproj</span>
+      <span class="legend-text">Display filter only (SCPB-002) — hides from list but doesn't unload</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-badge game">.diagame</span>
+      <span class="legend-text">Game-scoped — fully unavailable when out of scope (cannot be created, no open_asset routes, no palette commands)</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -7,8 +7,8 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/AttributeSetComponent.h>

@@ -13,6 +13,9 @@ namespace Dia { namespace Observation { namespace Capture {
         virtual ~IFrameCaptureSource() = default;
         virtual Dia::Graphics::FrameCaptureToken  RequestFrameCapture() = 0;
         virtual Dia::Graphics::FrameCaptureResult PollFrameCapture(const Dia::Graphics::FrameCaptureToken& token) = 0;
+        // Return the token's slot to the source once the caller has consumed (or abandoned) the capture.
+        // Without this a ring-buffered source runs out of slots after its first few captures.
+        virtual void ReleaseFrameCapture(const Dia::Graphics::FrameCaptureToken& /*token*/) {}
     };
 
 } } } // namespace Dia::Observation::Capture

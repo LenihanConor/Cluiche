@@ -15,7 +15,7 @@ include: conditional
 
 **Graphics & Multimedia**: SFML (Simple and Fast Multimedia Library)  
 **JSON Parsing**: jsoncpp (wrapped in `DiaCore/Json/`)  
-**Web UI/Visualization**: Webix, VisJS (for debugging/visualization tools)  
+**Web UI/Visualization**: VisJS (for debugging/visualization tools)  
 **Testing**: Google Test (C++ testing framework)  
 **Module Analysis**: Custom Python tooling (`Tools/dia_modules.py`)
 

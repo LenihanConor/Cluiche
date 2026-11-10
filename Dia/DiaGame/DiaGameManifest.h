@@ -23,6 +23,8 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Dia::Application::TypedImport, 16> imports;
 			DiaGameConfig config;
 			Json::Value* rawConfig;
+			// Editor manifests (relative to the .diagame) whose plugins exist only while this game is loaded.
+			Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String256, 8> editorManifests;
 
 			DiaGameManifest();
 			~DiaGameManifest();

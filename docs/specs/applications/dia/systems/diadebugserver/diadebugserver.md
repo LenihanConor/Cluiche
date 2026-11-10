@@ -259,6 +259,12 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Query Registry | Structured remote query dispatch — domain modules register JSON-in/JSON-out handlers; migrates protocol commands | @docs/specs/applications/dia/systems/diadebugserver/query-registry.md | Approved |
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/applications/dia/systems/diadebugserver/server-self-monitoring.md | Approved |
 | Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/applications/dia/systems/diadebugserver/connection-health.md | Approved |
+| Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
+| Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Approved |
+| Sim-Hosted Announcement Resync | Sequence numbers + digest + resync/replay make Sim to Main name announcements self-healing when the drop-oldest SimQueryReply stream overflows | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md | Approved |
+| Debug Domain State Snapshots | Sim-owned debug domains serialise their panel state on SimPU into a FrameStream snapshot; the Main panel and `debug.domain_state` read only the snapshot (retires the Main-thread `GetJSONState` calls, unlocked registry maps and the UtilityAI atomic) | @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.md | Approved |
+| Sim-Registered Queries | SimPU modules' QueryRegistry handlers move to SimQueryHost; QueryRegistry rejects registration from a non-owner thread | @docs/specs/applications/dia/systems/diadebugserver/sim-registered-queries.md | Approved |
+| Debug Layer Broadcast Removal | Delete the dead, thread-unsafe `DebugLayerManager::BroadcastLayerState` after proving nothing depends on it | @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.md | Approved |
 
 ## AI Review Questions
 
@@ -301,6 +307,8 @@ DiaDebugServer runs on a separate thread (server thread). All communication with
 - WebSocket messages queued → processed in DoUpdate() (main thread)
 - Broadcast requests queued → sent from server thread
 - Subscription changes protected by mutex
+
+Domain state read by remote queries is reached via sim-hosted queries over EventStreams (see sim-hosted-queries.md), not shared mutexes.
 
 **Debug vs Release:**
 ```cpp

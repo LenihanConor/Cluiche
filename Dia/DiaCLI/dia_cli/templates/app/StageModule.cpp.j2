@@ -1,0 +1,95 @@
+#include "Modules/{{ stage }}Module.h"
+
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaInput/EKey.h>
+#include <DiaObservation/Log/DiaLog.h>
+
+namespace {{ name }} {
+
+const Dia::Core::StringCRC {{ stage }}Module::kTypeId("{{ stage }}Module");
+
+{{ stage }}Module::{{ stage }}Module(const Dia::Core::StringCRC& instanceId)
+    : SimModule(instanceId)
+{}
+
+Dia::ApplicationFlow::StartResult {{ stage }}Module::DoStart()
+{
+    using Dia::ApplicationFlow::StartResult;
+    using LoadState = Cluiche::AppFlow::AssetLoadStatus::State;
+
+    if (!mWaitLogged)
+    {
+        DIA_LOG_INFO("{{ name }}", "{{ stage }}Module: waiting for stage assets");
+        mWaitLogged = true;
+    }
+
+    if (!mAssetRuntime.IsAvailable() || !mAssetLoadStatus.IsAvailable())
+        return StartResult::kLoading;
+
+    const Cluiche::AppFlow::AssetLoadStatus& status = mAssetLoadStatus.Get();
+    if (status.stageId != Dia::Core::StringCRC("{{ stage }}"))
+        return StartResult::kLoading;
+
+    if (status.state == LoadState::kFailed)
+    {
+        DIA_LOG_ERROR("{{ name }}", "{{ stage }}Module: stage asset load failed");
+        return StartResult::kFailed;
+    }
+    if (status.state != LoadState::kComplete)
+        return StartResult::kLoading;
+
+    mExitRequested = false;
+    DIA_LOG_INFO("{{ name }}", "{{ stage }}Module: started ({{ stage }} stage running, %u assets) - press Escape to return to Boot",
+                 status.loaded);
+    return StartResult::kReady;
+}
+
+void {{ stage }}Module::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
+{
+    // Placeholder: idle. Game logic for the {{ stage }} stage goes here.
+
+    if (mExitRequested)
+        return;
+
+    if (Cluiche::AppFlow::InputStreamModule* input = mInput.Get())
+    {
+        if (input->WasKeyPressed(Dia::Input::EKey::Escape))
+        {
+            DIA_LOG_INFO("{{ name }}", "{{ stage }}Module: Escape pressed - returning to Boot");
+            mExitRequested = true;
+            NavigateTo(Dia::Core::StringCRC("Boot"));
+        }
+    }
+}
+
+Dia::ApplicationFlow::StopResult {{ stage }}Module::DoStop()
+{
+    DIA_LOG_INFO("{{ name }}", "{{ stage }}Module: stopped");
+    mWaitLogged = false;
+    return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void {{ stage }}Module::NavigateTo(const Dia::Core::StringCRC& target)
+{
+    // Same rule as SimNavigationHandlerModule: while AutomationModule holds
+    // navigation, a plain TransitionTo() would wait on the guard forever.
+    if (mAutomation.IsAvailable() && mAutomation.Get().IsHolding())
+        mAutomation.Get().ReleaseNavigationHold(target);
+    else
+        TransitionTo(target);
+}
+
+void {{ stage }}Module::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mAssetLoadStatus.Connect(app);
+    mAssetRuntime.Connect(app);
+    mAutomation.Connect(app);
+}
+
+} // namespace {{ name }}
+
+namespace { using {{ stage }}Module_ = {{ name }}::{{ stage }}Module; }
+DIA_MODULE({{ stage }}Module_);
+DIA_DESCRIBE({{ stage }}Module_::kTypeId, "Placeholder logic for the {{ stage }} stage: logs on start, idles, Escape returns to Boot.");

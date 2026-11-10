@@ -22,7 +22,10 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaDebugServer/ISimRequestSink.h>
+#include <DiaDebugServer/SimHostedTypes.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaDebugServer/IInspectorDataSource.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -30,6 +33,7 @@
 
 #include <DiaBlackboard/BlackboardRegistry.h>
 #include "Types/DebugServerPushEvent.h"
+#include "Types/SimAnnounceTracker.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -42,6 +46,7 @@ namespace Cluiche { namespace AppFlow {
 class DebugServerHostModule
     : public Dia::ApplicationFlow::MainModule
     , private Dia::DebugServer::IDebugStateProvider
+    , private Dia::DebugServer::ISimRequestSink
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -90,8 +95,38 @@ protected:
         const void* bytes,
         size_t size) override;
 
+    // ISimRequestSink — posts a sim-hosted request onto the SimQueryRequest EventStream
+    // (Main -> Sim). False if the stream is not connected or rejected the event.
+    bool PostRequest(const Dia::DebugServer::SimRequestEvent& request) override;
+
+    // Handles one SimQueryReply event (registration side channel + announcement resync, else CompleteSimReply).
+    // nowMs is a monotonic millisecond clock.  Exposed to derived test doubles.
+    // senderCrc is the stream envelope's sender (0 = unknown, never guarded). The first sender of an announcement
+    // owns the sim-hosted name table; announcements from any other sender are ignored with an Error (one host per app).
+    void HandleSimReply(const Dia::DebugServer::SimReplyEvent& reply, uint64_t nowMs, unsigned int senderCrc = 0);
+
+    // Registers the five Main-side announce metrics (announce_overflow lives on SimQueryHostModule). Called from DoStart.
+    void RegisterAnnounceMetrics();
+    // Publishes tracker counter deltas to the registry. Called once per update.
+    void PublishAnnounceMetrics();
+    uint32_t IgnoredForeignAnnounceCount() const { return mForeignAnnounceIgnored; }
+
+    // Times out a stalled resync staging.  Called once per update.
+    void TickAnnounce(uint64_t nowMs);
+
+    const SimAnnounceTracker& GetAnnounceTracker() const { return mAnnounce; }
+
 private:
+    void RequestResync();
+    void InstallStagedSet();
+    static uint64_t SteadyNowMs();
+
     void QueryMemory();
+
+    // Drains SimQueryReply (Sim -> Main). Reply requestId 0 is a registration message
+    // (Types/SimRegistrationMessage.h) -> RegisterSimHosted / UnregisterSimHosted; any other
+    // reply -> DebugServer::CompleteSimReply. Runs on Main before mServer.Tick().
+    void DrainSimReplies();
 
     Dia::DebugServer::DebugServer mServer;
     Dia::DebugServer::DebugServer* mServerPtr = nullptr;
@@ -115,6 +150,19 @@ private:
     Dia::Observation::Metric::Histogram* mMetricTickMs        = nullptr;
     int                                  mPrevMessagesSent    = 0;
 
+    // Announcement resync metrics (counters mirror the SimAnnounceTracker's cumulative counts).
+    Dia::Observation::Metric::Counter*   mMetricAnnounceGaps     = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricDigestMismatches = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncsRequested = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncsCompleted = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricResyncTimeouts   = nullptr;
+    uint32_t mPrevGaps = 0, mPrevMismatches = 0, mPrevRequested = 0, mPrevCompleted = 0, mPrevTimeouts = 0;
+
+    // Second-host guard: the sender of the first announcement owns the table.
+    unsigned int mAnnounceOwnerCrc       = 0;
+    unsigned int mLoggedForeignCrc       = 0;
+    uint32_t     mForeignAnnounceIgnored = 0;
+
     // Inspector data sources — created in DoStart, activated, ticked, deactivated.
     static constexpr unsigned int kSourceCount = 5;
     std::unique_ptr<Dia::DebugServer::IInspectorDataSource> mSources[kSourceCount];
@@ -124,6 +172,18 @@ private:
     // DebugServerHostModule forwards each event without knowing the sender.
     Dia::ApplicationFlow::EventStreamReader<DebugServerPushEvent> mDebugPushReader{
         this, Dia::Core::StringCRC("DebugServerPush")};
+
+    // Sim-hosted queries: Main -> Sim requests, Sim -> Main replies (and name registrations).
+    // Counterpart on the SimPU is SimQueryHostModule.
+    Dia::ApplicationFlow::EventStreamWriter<Dia::DebugServer::SimRequestEvent> mSimRequests{
+        this, Dia::Core::StringCRC("SimQueryRequest")};
+    Dia::ApplicationFlow::EventStreamReader<Dia::DebugServer::SimReplyEvent> mSimReplies{
+        this, Dia::Core::StringCRC("SimQueryReply")};
+
+    // Announcement resync state machine (Main thread only; no locking).
+    SimAnnounceTracker mAnnounce;
+    // Decode target for the help carried by register/replay messages (~7 KB): allocated once, reused per message.
+    std::unique_ptr<Dia::DebugServer::SimHelpStored> mParsedHelp;
 
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.

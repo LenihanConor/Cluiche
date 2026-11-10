@@ -9,9 +9,9 @@
 #include "EntityStatsDrawer.h"
 #include "SelectionInspectorDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaEntity/IEntityInspectable.h>
 
 namespace Dia::EntityVisualDebugger

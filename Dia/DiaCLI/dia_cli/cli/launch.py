@@ -1,18 +1,47 @@
 """dia launch <target> — execute an already-built target without rebuilding."""
 import subprocess
+import sys
 import click
 from pathlib import Path
 
 from dia_cli.utils.repo_root import find_repo_root
+from dia_cli.commands.pipeline.pipeline_config import (
+    PipelineConfigError,
+    launchable_targets,
+    load_pipeline_config,
+    resolve_target_exe,
+)
 
 
 _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
 
-_TARGET_EXE_MAP = {
-    "googletest": "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe",
-    "cluichetest": "Cluiche/bin/CluicheTest/{config}/x64/CluicheTest.exe",
-    "cluicheeditor": "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe",
-}
+# Exit code launch_target returns when `timeout` elapsed and the process tree was terminated (same value as timeout(1)).
+TIMEOUT_EXIT_CODE = 124
+
+# Targets whose Main understands `--automation` (CluicheTest parses it; CoW's Main does not).
+AUTOMATION_TARGETS = frozenset({"cluichetest"})
+
+
+def supports_automation(target: str) -> bool:
+    return target in AUTOMATION_TARGETS
+
+
+def _terminate_tree(proc: "subprocess.Popen") -> None:
+    """Terminate `proc` and every descendant (taskkill /T on Windows, process-group kill elsewhere)."""
+    import os
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        try:
+            import signal
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except OSError:
+            proc.kill()
+    try:
+        proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        proc.kill()
 
 
 @click.command()
@@ -29,11 +58,13 @@ _TARGET_EXE_MAP = {
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
 @click.option("--automation", "automation", is_flag=True, default=False,
               help="For cluichetest: enable timed auto-exit after each stage resolves (used by E2E runner).")
+@click.option("--source", "source", default=None, metavar="PATH",
+              help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source):
     """Launch an already-built target executable.
 
-    TARGET is one of: googletest, cluichetest, cluicheeditor.
+    TARGET is any launchable target in pipeline.toml (one with `exe` or `app_name`).
 
     This does NOT build — use 'dia run <target>' to pipeline + launch.
     """
@@ -45,22 +76,56 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automatio
         run_all=run_all,
         shards=shards,
         automation=automation,
+        source_override=source,
     )
     ctx.exit(exit_code)
 
 
+def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
+    """Return ['--dev-alias', 'source=<abs>'] for app targets whose asset dir exists, else []."""
+    try:
+        t = load_pipeline_config(repo_root).targets.get(target)
+    except PipelineConfigError:
+        return []
+    # app_name defaults to the target name in TargetConfig, so only targets that
+    # derive their exe from app_name (launchable, no explicit exe) count as apps.
+    if t is None or not t.launchable or t.exe or not t.app_name:
+        return []
+    source = repo_root / "Cluiche" / "Assets" / t.app_name
+    if not source.is_dir():
+        return []
+    return ["--dev-alias", f"source={source}"]
+
+
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False, run_all: bool = False, shards: int = 0,
-                  automation: bool = False) -> int:
+                  automation: bool = False, source_override: str | None = None,
+                  extra_args: list[str] | None = None, timeout: float | None = None) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
-    if target not in _TARGET_EXE_MAP:
-        known = ", ".join(sorted(_TARGET_EXE_MAP.keys()))
+    try:
+        pipeline_config = load_pipeline_config(repo_root)
+    except PipelineConfigError as e:
+        click.echo(f"ERROR: {e}", err=True)
+        return 2
+
+    exe_template = None
+    if target in pipeline_config.targets:
+        exe_template = resolve_target_exe(pipeline_config.targets[target])
+    if exe_template is None:
+        known = ", ".join(sorted(launchable_targets(pipeline_config)))
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
         return 2
 
-    exe_rel = _TARGET_EXE_MAP[target].format(config=config)
+    if source_override is not None:
+        src = Path(source_override)
+        if not src.is_absolute() or not src.is_dir():
+            click.echo(f"ERROR: --source must be an existing absolute directory: {source_override}",
+                       err=True)
+            return 2
+
+    exe_rel = exe_template.format(config=config)
     exe_path = repo_root / exe_rel
     if not exe_path.exists():
         click.echo(
@@ -83,9 +148,17 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         )
 
     cmd = [str(exe_path)]
-    if target == "cluichetest" and automation:
+    if source_override is not None:
+        if _resolve_dev_aliases(target, repo_root):
+            cmd += ["--dev-alias", f"source={source_override}"]
+    else:
+        cmd += _resolve_dev_aliases(target, repo_root)
+    if supports_automation(target) and automation:
         cmd.append("--automation")
+    if extra_args:
+        cmd += list(extra_args)
     if target == "googletest":
+        from dia_cli.commands.test.slow_suites import DEFAULT_GTEST_FILTER_ARG
         from dia_cli.commands.test.googletest_runner import (
             _gtest_xml_output_path,
             _warn_untagged_slow_suites,
@@ -93,7 +166,7 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         if filter_pattern:
             cmd.append(f"--gtest_filter={filter_pattern}")
         elif not run_all:
-            cmd.append("--gtest_filter=-SLOW_*")
+            cmd.append(DEFAULT_GTEST_FILTER_ARG)
         if verbose:
             cmd.append("--gtest_print_time=1")
         out_xml = _gtest_xml_output_path(repo_root)
@@ -102,7 +175,20 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
 
     out_dir = exe_path.parent
     try:
-        result = subprocess.run(cmd, cwd=str(out_dir))
+        from dia_cli.utils.asan_runtime import with_asan_runtime_on_path
+        env = with_asan_runtime_on_path(None, config)
+        if timeout is None:
+            result = subprocess.run(cmd, cwd=str(out_dir), env=env)
+        else:
+            popen_kw = {} if sys.platform == "win32" else {"start_new_session": True}
+            proc = subprocess.Popen(cmd, cwd=str(out_dir), env=env, **popen_kw)
+            try:
+                code = proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                _terminate_tree(proc)
+                click.echo(f"[dia] {target}: TIMED OUT after {timeout:g}s (process tree terminated)", err=True)
+                return TIMEOUT_EXIT_CODE
+            result = subprocess.CompletedProcess(cmd, code)
         if target == "googletest":
             _warn_untagged_slow_suites(out_xml)
         if result.returncode == 0:

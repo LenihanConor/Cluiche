@@ -11,7 +11,8 @@
         "observation": "cluichetest.diaobservation",
         "path_aliases": {
             "root": ".",
-            "ui_common": "./global/Presentation/UI"
+            "ui_common": "./global/Presentation/UI",
+            "dia_data": "./dia_data"
         },
         "ultralight": {
             "resource_path_prefix": "global/Misc/Resources/"
@@ -120,6 +121,18 @@
         },
         {
             "path": "Stages/MessageBusTestStage/message_bus_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/MessageBusStressTestStage/message_bus_stress_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/CellFieldRenderTestStage/cell_field_render_test_stage.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stages/CellLayersViewerTestStage/cell_layers_viewer_test_stage.diastage",
             "type": "stage"
         }
     ],

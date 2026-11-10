@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b55a4fb9-18fb-404d-b64a-143ec7b15a3b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ValueSchemaVersion.h" />
+    <ClInclude Include="ValueInfo.h" />
+    <ClInclude Include="ValueSchemaRegistry.h" />
+    <ClInclude Include="Testing/ValueInfoBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ValueSchemaLoader.h" />
+    <ClInclude Include="CategoricalColours.h" />
+    <ClInclude Include="Testing/SchemaFixtureBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ValueClamper.h" />
+    <ClInclude Include="ValueSchemaService.h" />
+    <ClInclude Include="IValueSchemaContributor.h" />
+    <ClInclude Include="SchemaDirectoryLoader.h" />
+    <ClInclude Include="ValueSchemaHealth.h" />
+    <ClInclude Include="ValueSchemaModule.h" />
+    <ClInclude Include="Testing\SchemaTempDirectory.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="RampData.h" />
+    <ClInclude Include="RampLoader.h" />
+    <ClInclude Include="Testing\ColourMath.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="RampRegistry.h" />
+    <ClInclude Include="RampSetLoader.h" />
+    <ClInclude Include="RampSample.h" />
+    <ClInclude Include="RampResolver.h" />
+    <ClInclude Include="RampLegend.h" />
+    <ClInclude Include="CodeSideCollector.h" />
+    <ClInclude Include="Testing\FakeCodeSideSource.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentFieldCollector.h" />
+    <ClInclude Include="ComponentAttributeAudit.h" />
+    <ClInclude Include="ValueSchemaQuery.h" />
+    <ClInclude Include="ValueSchemaExporter.h" />
+    <ClInclude Include="DescribeMode.h" />
+    <ClInclude Include="DescribeSession.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ValueSchemaVersion.cpp" />
+    <ClCompile Include="ValueInfo.cpp" />
+    <ClCompile Include="ValueSchemaRegistry.cpp" />
+    <ClCompile Include="ValueSchemaLoader.cpp" />
+    <ClCompile Include="CategoricalColours.cpp" />
+    <ClCompile Include="ValueClamper.cpp" />
+    <ClCompile Include="ValueSchemaService.cpp" />
+    <ClCompile Include="SchemaDirectoryLoader.cpp" />
+    <ClCompile Include="ValueSchemaHealth.cpp" />
+    <ClCompile Include="ValueSchemaModule.cpp" />
+    <ClCompile Include="RampData.cpp" />
+    <ClCompile Include="RampLoader.cpp" />
+    <ClCompile Include="RampRegistry.cpp" />
+    <ClCompile Include="RampSetLoader.cpp" />
+    <ClCompile Include="RampSample.cpp" />
+    <ClCompile Include="RampResolver.cpp" />
+    <ClCompile Include="RampLegend.cpp" />
+    <ClCompile Include="CodeSideCollector.cpp" />
+    <ClCompile Include="ComponentFieldCollector.cpp" />
+    <ClCompile Include="ComponentAttributeAudit.cpp" />
+    <ClCompile Include="ValueSchemaQuery.cpp" />
+    <ClCompile Include="ValueSchemaExporter.cpp" />
+    <ClCompile Include="ValueSchemaSubset.cpp" />
+    <ClCompile Include="DescribeMode.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.diavalueschema.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

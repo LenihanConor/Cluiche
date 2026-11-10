@@ -29,7 +29,7 @@ namespace Dia
 
 			void Update();
 
-			void Send(const void* data, size_t length, MessageType type = MessageType::kText);
+			bool Send(const void* data, size_t length, MessageType type = MessageType::kText);
 			void SendText(const char* text);
 			void SendBinary(const void* data, size_t length);
 

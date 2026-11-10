@@ -66,7 +66,7 @@ void EconomyInspectorModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         return;
 
     const int connCount = mDebugServer->GetConnectionCount();
-    const int subCount  = static_cast<int>(mDebugServer->GetStats().subscriptionCount);
+    const int subCount  = static_cast<int>(mDebugServer->GetSubscriptionCount());	// thread-safe; GetStats() is Main-written
 
     if (mSchemaSource)    mSchemaSource->Tick(dt, connCount, subCount);
     if (mInstancesSource) mInstancesSource->Tick(dt, connCount, subCount);

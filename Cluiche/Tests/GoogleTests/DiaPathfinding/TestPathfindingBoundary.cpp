@@ -131,6 +131,153 @@ TEST(SquarePathGrid_Boundary, GetNeighbours_EdgeCellMid4Connected_Returns2)
 }
 
 // ===========================================================================
+// SquarePathGrid Large Sizes (AC6 — scalable storage)
+// ===========================================================================
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_66x42_Constructs)
+{
+    // CoW Small map: 2,772 cells
+    SquarePathGrid grid4(66, 42, SquareConnectivity::k4Connected);
+    EXPECT_EQ(grid4.GetWidth(), 66);
+    EXPECT_EQ(grid4.GetHeight(), 42);
+
+    SquarePathGrid grid8(66, 42, SquareConnectivity::k8Connected);
+    EXPECT_EQ(grid8.GetWidth(), 66);
+    EXPECT_EQ(grid8.GetHeight(), 42);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_80x52_Constructs)
+{
+    // CoW Standard map: 4,160 cells
+    SquarePathGrid grid4(80, 52, SquareConnectivity::k4Connected);
+    EXPECT_EQ(grid4.GetWidth(), 80);
+    EXPECT_EQ(grid4.GetHeight(), 52);
+
+    SquarePathGrid grid8(80, 52, SquareConnectivity::k8Connected);
+    EXPECT_EQ(grid8.GetWidth(), 80);
+    EXPECT_EQ(grid8.GetHeight(), 52);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_104x64_Constructs)
+{
+    // CoW Large map: 6,656 cells
+    SquarePathGrid grid4(104, 64, SquareConnectivity::k4Connected);
+    EXPECT_EQ(grid4.GetWidth(), 104);
+    EXPECT_EQ(grid4.GetHeight(), 64);
+
+    SquarePathGrid grid8(104, 64, SquareConnectivity::k8Connected);
+    EXPECT_EQ(grid8.GetWidth(), 104);
+    EXPECT_EQ(grid8.GetHeight(), 64);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_128x128_Constructs)
+{
+    // 16,384 cells
+    SquarePathGrid grid4(128, 128, SquareConnectivity::k4Connected);
+    EXPECT_EQ(grid4.GetWidth(), 128);
+    EXPECT_EQ(grid4.GetHeight(), 128);
+
+    SquarePathGrid grid8(128, 128, SquareConnectivity::k8Connected);
+    EXPECT_EQ(grid8.GetWidth(), 128);
+    EXPECT_EQ(grid8.GetHeight(), 128);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_256x256_Constructs)
+{
+    // Tested ceiling: 65,536 cells
+    SquarePathGrid grid4(256, 256, SquareConnectivity::k4Connected);
+    EXPECT_EQ(grid4.GetWidth(), 256);
+    EXPECT_EQ(grid4.GetHeight(), 256);
+
+    SquarePathGrid grid8(256, 256, SquareConnectivity::k8Connected);
+    EXPECT_EQ(grid8.GetWidth(), 256);
+    EXPECT_EQ(grid8.GetHeight(), 256);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_AllCellsStartPassable)
+{
+    // Every in-bounds cell of a 104×64 grid starts passable
+    SquarePathGrid grid(104, 64);
+    for (int y = 0; y < 64; ++y)
+        for (int x = 0; x < 104; ++x)
+            ASSERT_TRUE(grid.IsPassable({x, y})) << "Cell (" << x << "," << y << ") not passable";
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_OutOfBoundsCellsNotPassable)
+{
+    SquarePathGrid grid(104, 64);
+    EXPECT_FALSE(grid.IsPassable({-1, 0}));
+    EXPECT_FALSE(grid.IsPassable({104, 0}));
+    EXPECT_FALSE(grid.IsPassable({0, -1}));
+    EXPECT_FALSE(grid.IsPassable({0, 64}));
+    EXPECT_FALSE(grid.IsPassable({200, 200}));
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_SetPassableOutOfBounds_NoOp)
+{
+    SquarePathGrid grid(104, 64);
+    grid.SetPassable({200, 200}, false); // out of bounds — must not crash
+    EXPECT_FALSE(grid.IsPassable({200, 200})); // still returns false
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_InteriorCell_Has4or8Neighbours)
+{
+    // Interior cell (50, 30) has 4 neighbours in 4-connected, 8 in 8-connected
+    SquarePathGrid grid4(104, 64, SquareConnectivity::k4Connected);
+    DynamicArrayC<CellCoord, 16> neighbours4;
+    grid4.GetNeighbours({50, 30}, neighbours4);
+    EXPECT_EQ(neighbours4.Size(), 4);
+
+    SquarePathGrid grid8(104, 64, SquareConnectivity::k8Connected);
+    DynamicArrayC<CellCoord, 16> neighbours8;
+    grid8.GetNeighbours({50, 30}, neighbours8);
+    EXPECT_EQ(neighbours8.Size(), 8);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_FindPath_CornerToCorner)
+{
+    // 104×64 grid (CoW Large map): corner-to-corner path length = max(dx, dy) for 8-connected,
+    // dx + dy for 4-connected
+    SquarePathGrid grid8(104, 64, SquareConnectivity::k8Connected);
+    FlatCostProvider flat;
+    PathResult result8 = FindPath(grid8, {0, 0}, {103, 63}, flat);
+    ASSERT_TRUE(result8.success);
+    // 8-connected: diagonal moves, so path length is max(103, 63) + 1 = 104
+    EXPECT_EQ(result8.cells.Size(), 104u);
+
+    SquarePathGrid grid4(104, 64, SquareConnectivity::k4Connected);
+    PathResult result4 = FindPath(grid4, {0, 0}, {103, 63}, flat);
+    ASSERT_TRUE(result4.success);
+    // 4-connected: cardinal only, so path length is 103 + 63 + 1 = 167
+    EXPECT_EQ(result4.cells.Size(), 167u);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_FindPath_FailsAcrossWall)
+{
+    // 104×64 grid with a full vertical wall at x=52 — left side cannot reach right side
+    SquarePathGrid grid(104, 64);
+    for (int y = 0; y < 64; ++y)
+        grid.SetPassable({52, y}, false);
+
+    FlatCostProvider flat;
+    PathResult result = FindPath(grid, {0, 0}, {103, 63}, flat);
+    EXPECT_FALSE(result.success);
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, LargeGrid_FindPath_SucceedsThroughGap)
+{
+    // 104×64 grid with a wall at x=52, but a gap at y=32
+    SquarePathGrid grid(104, 64);
+    for (int y = 0; y < 64; ++y)
+        if (y != 32)
+            grid.SetPassable({52, y}, false);
+
+    FlatCostProvider flat;
+    PathResult result = FindPath(grid, {0, 0}, {103, 63}, flat);
+    EXPECT_TRUE(result.success);
+}
+
+// ===========================================================================
 // HexPathGrid_Boundary
 // ===========================================================================
 
@@ -408,4 +555,29 @@ TEST(PathfindingSystem_Boundary, FailedRequest_ObserverCalledOnce)
 
     EXPECT_EQ(obs.foundCount,  0);
     EXPECT_EQ(obs.failedCount, 1);
+}
+
+// ===========================================================================
+// SquarePathGrid edge cases for size validation
+// ===========================================================================
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_Width0_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(0, 10), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_Height0_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(10, 0), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_IntOverflow_Asserts) {
+    // 100000 × 100000 overflows int
+    EXPECT_DEATH(SquarePathGrid(100000, 100000), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeWidth_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(-1, 10), "");
+}
+
+TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeHeight_Asserts) {
+    EXPECT_DEATH(SquarePathGrid(10, -1), "");
 }

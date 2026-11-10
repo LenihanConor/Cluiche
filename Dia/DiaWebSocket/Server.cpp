@@ -141,18 +141,10 @@ namespace Dia
 				evt.message.type = msgType;
 				evt.message.connectionId = connId;
 
-				if (msgType == MessageType::kText)
-				{
-					evt.dataBuffer.Assign(payload.c_str(), static_cast<unsigned int>(payload.size() + 1));
-					evt.message.length = payload.size();
-				}
-				else
-				{
-					evt.dataBuffer.Assign(payload.data(), static_cast<unsigned int>(payload.size()));
-					evt.message.length = payload.size();
-				}
+				evt.dataBuffer.Assign(payload.data(), payload.size(), msgType == MessageType::kText);
+				evt.message.length = payload.size();
 
-				evt.message.data = &evt.dataBuffer.At(0);
+				evt.message.data = evt.dataBuffer.Data();
 				mIncomingQueue.Add(evt);
 			}
 
@@ -209,7 +201,7 @@ namespace Dia
 							try
 							{
 								mServer.send(pair.second,
-									&msg.dataBuffer.At(0),
+									msg.dataBuffer.Data(),
 									msg.dataLength,
 									opcode);
 							}
@@ -230,7 +222,7 @@ namespace Dia
 							try
 							{
 								mServer.send(it->second,
-									&msg.dataBuffer.At(0),
+									msg.dataBuffer.Data(),
 									msg.dataLength,
 									opcode);
 							}
@@ -423,7 +415,7 @@ namespace Dia
 				switch (evt.eventType)
 				{
 				case Internal::QueuedEvent::Type::kMessage:
-					evt.message.data = &evt.dataBuffer.At(0);
+					evt.message.data = evt.dataBuffer.Data();
 					if (mImpl->mOnMessage)
 					{
 						mImpl->mOnMessage(evt.connectionId, evt.message);
@@ -460,7 +452,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				DIA_LOG_WARNING("WebSocket", "Server: Broadcast message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Broadcast message too large (%zu > %zu bytes)", length, mImpl->mMaxMessageSize);
 				return;
 			}
 
@@ -468,17 +460,8 @@ namespace Dia
 			msg.connectionId = -1;
 			msg.type = type;
 
-			if (type == MessageType::kText)
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length + 1));
-				msg.dataBuffer.At(static_cast<unsigned int>(length)) = '\0';
+				msg.dataBuffer.Assign(data, length, type == MessageType::kText);
 				msg.dataLength = length;
-			}
-			else
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length));
-				msg.dataLength = length;
-			}
 
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 
@@ -495,7 +478,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				DIA_LOG_WARNING("WebSocket", "Server: Send message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Send message too large (%zu > %zu bytes)", length, mImpl->mMaxMessageSize);
 				return false;
 			}
 
@@ -503,17 +486,8 @@ namespace Dia
 			msg.connectionId = connectionId;
 			msg.type = type;
 
-			if (type == MessageType::kText)
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length + 1));
-				msg.dataBuffer.At(static_cast<unsigned int>(length)) = '\0';
+				msg.dataBuffer.Assign(data, length, type == MessageType::kText);
 				msg.dataLength = length;
-			}
-			else
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length));
-				msg.dataLength = length;
-			}
 
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 

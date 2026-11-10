@@ -8,6 +8,7 @@
 #include <DiaCore/Architecture/Observer.h>
 
 #include "DiaSaveGame/SaveConfig.h"
+#include "DiaSaveGame/SaveContext.h"
 #include "DiaSaveGame/SaveResult.h"
 #include "DiaSaveGame/SlotInfo.h"
 #include "DiaSaveGame/SlotManager.h"
@@ -29,7 +30,7 @@ enum class SaveEvent : int {
 class SaveManager {
 public:
     static const unsigned int kMaxPathLen  = 512;
-    static const unsigned int kBufferSize  = 65536;
+    static const unsigned int kBufferSize  = SaveContext::kBufferSize;
 
     SaveManager() = default;
 

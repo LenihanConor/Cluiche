@@ -4,7 +4,11 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+#include <memory>
+
 #include <DiaGraphics/Frame/DebugFrameData.h>
+#include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugPrimitive.h>
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -197,4 +201,85 @@ TEST(DebugBudget_EntityId, EntityIdPreservedAcrossRequestDraw)
 	ASSERT_EQ(fd.GetDebugPrimitiveCount(), 1u);
 	const DebugPrimitive& retrieved = fd.GetDebugPrimitive(0u);
 	EXPECT_EQ(retrieved.entityId, 0u);  // default value survives round-trip
+}
+
+// ===========================================================================
+// Suite: Capacity (dia-needs #13: geometry budget raised 2,048 -> 8,192)
+// ===========================================================================
+
+namespace
+{
+	// Submit a mix of circle, line, rect and triangle primitives; returns how many were requested.
+	static void FillMixed(DebugFrameData& fd, uint32_t count)
+	{
+		const Vector2D p2(1.0f, 0.0f);
+		const Vector2D p3(0.0f, 1.0f);
+		for (uint32_t i = 0; i < count; ++i)
+		{
+			switch (i % 4)
+			{
+				case 0: fd.RequestDraw(kZero, 1.0f, kWhite); break;
+				case 1: fd.RequestDraw(kZero, kOne, kWhite); break;
+				case 2: fd.RequestDrawRect(kZero, kOne, kWhite, kWhite); break;
+				default: fd.RequestDraw(kZero, p2, p3, kWhite, kWhite); break;
+			}
+		}
+	}
+}
+
+TEST(DebugBudget_Capacity, GeometryCapacityIs8192)
+{
+	EXPECT_EQ(DebugFrameData::kGeometryCapacity, 8192u);
+	EXPECT_EQ(DebugFrameData::kCapacity, DebugFrameData::kGeometryCapacity);
+}
+
+TEST(DebugBudget_Capacity, MixedPrimitivesFillToCapacityWithoutDrops)
+{
+	auto fd = std::make_unique<DebugFrameData>();
+	FillMixed(*fd, DebugFrameData::kGeometryCapacity);
+	EXPECT_EQ(fd->GetDebugPrimitiveCount(), 8192u);
+	EXPECT_EQ(fd->DroppedCount(), 0u);
+	EXPECT_FALSE(fd->IsOverCapacity());
+}
+
+TEST(DebugBudget_Capacity, FirstPrimitiveOverCapacityIsDropped)
+{
+	auto fd = std::make_unique<DebugFrameData>();
+	FillMixed(*fd, DebugFrameData::kGeometryCapacity);
+	fd->RequestDraw(kZero, 1.0f, kWhite);   // the 8,193rd
+	EXPECT_EQ(fd->GetDebugPrimitiveCount(), 8192u);
+	EXPECT_EQ(fd->DroppedCount(), 1u);
+	EXPECT_TRUE(fd->IsOverCapacity());
+}
+
+TEST(DebugBudget_Capacity, TextAndThreeDBudgetsUnchanged)
+{
+	EXPECT_EQ(DebugFrameData::kTextCapacity, 256u);
+	EXPECT_EQ(DebugFrameData::kDebug3DCapacity, 2048u);
+}
+
+TEST(DebugBudget_Capacity, FullFrameDataCopyPreservesEveryPrimitive)
+{
+	auto src = std::make_unique<FrameData>();
+	FillMixed(*src, DebugFrameData::kGeometryCapacity);
+
+	auto dst = std::make_unique<FrameData>();
+	dst->Copy(*src);
+	ASSERT_EQ(dst->GetDebugPrimitiveCount(), 8192u);
+	for (uint32_t i = 0; i < 8192u; ++i)
+		EXPECT_EQ(dst->GetDebugPrimitive(i).type, src->GetDebugPrimitive(i).type) << "index " << i;
+
+	auto assigned = std::make_unique<FrameData>();
+	*assigned = *src;
+	EXPECT_EQ(assigned->GetDebugPrimitiveCount(), 8192u);
+	EXPECT_EQ(assigned->DroppedCount(), 0u);
+}
+
+TEST(DebugBudget_Capacity, ReportFrameDataSize)
+{
+	// Informational: many tests hold a FrameData on the stack, so its size matters (1 MB default stack).
+	std::cout << "[budget] sizeof(DebugPrimitive)=" << sizeof(DebugPrimitive)
+	          << " sizeof(DebugFrameData)=" << sizeof(DebugFrameData)
+	          << " sizeof(FrameData)=" << sizeof(FrameData) << std::endl;
+	SUCCEED();
 }

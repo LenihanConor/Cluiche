@@ -31,6 +31,13 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>/fsanitize=address %(AdditionalOptions)</AdditionalOptions>
+      <!-- Prebuilt third-party static libs (libprotobufd + absl_* folded into DiaProtobuf.lib, the ASTC
+           encoder folded into DiaBgfx3D.lib) are built WITHOUT ASan, so their objects carry the MSVC STL
+           detect_mismatch annotate_string=0 / annotate_vector=0, while our /fsanitize=address objects carry 1.
+           The linker then fails with LNK1319/LNK2038. Defining these makes every object consistent (0).
+           Cost: ASan no longer checks the annotated edges of std::string / std::vector capacity;
+           heap/stack overflow and use-after-free detection are unaffected. -->
+      <PreprocessorDefinitions>_DISABLE_STRING_ANNOTATION;_DISABLE_VECTOR_ANNOTATION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

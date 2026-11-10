@@ -42,6 +42,7 @@ responsibilities:
       struct, never add streams. Roles: reads / writes.
     - EventStream (frame-batched): discrete events flushed at producer tick boundary.
       Consumer gets exactly the previous frame's batch. Roles: reads / writes.
+      Manifest `capacity` (per-reader ring size, 0 = default 256) and `overflow` are honoured via IStreamConnector::GetDeclaredEventStreamConfig (Application implements it).
   - Unified channels[] array on ModuleDeclaration — each entry is {id, role} where role
     is one of reads / writes / provides / consumes.
   - ServiceStreamStore / ServiceStreamWriter / ServiceStreamReader — ServiceStream impl.
@@ -52,6 +53,7 @@ responsibilities:
   - ApplicationManifestV3 POD structs — in-memory representation of .diaapp v3 + .diastage files; stages are objects {name, transitions[], auto_advance} (SD-019)
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
+  - ManifestBootstrap — LoadManifest (compose + path_aliases + validate) and RegisterPathAliases, and RegisterDevAliases (--dev-alias name=path, reserved `source`); app keeps loop/frame rate
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
   - IApplicationInspectable — read-only runtime introspection for debug tools and tests; FindStream(StringCRC) → IStreamStore*
@@ -81,6 +83,7 @@ public_api:
     - Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestComposerV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestValidatorV2.h
+    - Dia/DiaApplicationFlow/Manifest/ManifestBootstrap.h
     - Dia/DiaApplicationFlow/Streams/IStreamStore.h
     - Dia/DiaApplicationFlow/Streams/FrameStreamStore.h
     - Dia/DiaApplicationFlow/Streams/EventStreamStore.h

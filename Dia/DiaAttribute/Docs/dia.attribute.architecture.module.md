@@ -23,7 +23,10 @@ intent: >
   defines.
 
 responsibilities:
-  - AttributeSchema JSON asset loading, attribute definitions, range validation
+  - AttributeSchema JSON asset loading, attribute definitions, range validation, band_schema_version
+  - Band-based initialization — AttributeSchema.bands (StringCRC→BandRange map per attribute), 
+    AttributeSet::InitializeFromBands(DynamicArrayC<BandValue>) resolves band names to midpoint of [min, max],
+    stores as base value; schema-versioned (band_schema_version); fallback to default_value on missing band
   - AttributeSet runtime state — CreateFromSchema, GetValue/GetBaseValue/SetBaseValue
   - Modifier stack — Add (sum), Multiply (product), Override (exclusive slot) resolution pipeline
   - ModifierHandle-based AddModifier/RemoveModifier with generational-handle safety

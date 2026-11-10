@@ -23,24 +23,25 @@ from .arch_module_map import build_module_map
 _LAYER_TO_FOLDER: dict[str, str] = {
     "foundation/core":        "1.0-Core",
     "foundation/maths":       "1.1-Maths",
-    "foundation/maths/tools": "1.1-Maths-Tools",
     "foundation/services":    "1.1-Services",
-    "foundation/services/tools": "1.1-Services-Tools",
     "foundation/platform":    "1.2-Platform",
     "foundation/application": "1.2-Application",
     "foundation/assets":      "2.0-Assets",
     "assets/core":            "2.0-Assets",
-    "assets/tools":           "2.1-Assets-Tools",
     "domain/visual/core":     "3.0-Visual",
-    "domain/visual/tools":    "3.1-Visual-Tools",
     "domain/physics/core":    "3.0-Physics",
-    "domain/physics/tools":   "3.1-Physics-Tools",
     "domain/animation/core":  "3.0-Animation",
-    "domain/animation/tools": "3.1-Animation-Tools",
     "domain/gameplay/core":   "3.0-Gameplay",
-    "domain/gameplay/tools":  "3.1-Gameplay-Tools",
     "tools/editor":           "4.0-Editors",
     "tools/inspector":        "4.0-Inspectors",
+    "4.0":                    "4.0-VisualDebuggers",
+    "4.1-Gameplay":           "4.1-VisualDebuggers-Gameplay",
+    "4.1-Physics":            "4.1-VisualDebuggers-Physics",
+    "4.1-Animation":          "4.1-VisualDebuggers-Animation",
+    "4.1-Visual":             "4.1-VisualDebuggers-Visual",
+    "4.1-Maths":              "4.1-VisualDebuggers-Maths",
+    "4.1-Assets":             "4.1-VisualDebuggers-Assets",
+    "4.1-Services":           "4.1-VisualDebuggers-Services",
 }
 
 # Folder → parent-folder name, for nesting inside the .sln tree. Anything not
@@ -49,16 +50,16 @@ _LAYER_TO_FOLDER: dict[str, str] = {
 # and Foundation sub-groups nest under 1.0-Core.
 _FOLDER_PARENT: dict[str, str] = {
     "1.1-Maths":            "1.0-Core",
-    "1.1-Maths-Tools":      "1.1-Maths",
     "1.1-Services":         "1.0-Core",
-    "1.1-Services-Tools":   "1.1-Services",
     "1.2-Application":      "1.0-Core",
     "1.2-Platform":         "1.0-Core",
-    "2.1-Assets-Tools":     "2.0-Assets",
-    "3.1-Visual-Tools":     "3.0-Visual",
-    "3.1-Physics-Tools":    "3.0-Physics",
-    "3.1-Animation-Tools":  "3.0-Animation",
-    "3.1-Gameplay-Tools":   "3.0-Gameplay",
+    "4.1-VisualDebuggers-Gameplay":  "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Physics":   "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Animation": "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Visual":    "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Maths":     "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Assets":    "4.0-VisualDebuggers",
+    "4.1-VisualDebuggers-Services":  "4.0-VisualDebuggers",
 }
 
 _SOLUTION_FOLDER_TYPE = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}"

@@ -58,6 +58,7 @@ JobSystemModule             →  DiaThreading + DiaObservation (no cycle)
 |---|---------|------|--------|
 | 1 | job-system-extraction | [job-system-extraction.md](job-system-extraction.md) | Approved |
 | 2 | job-metrics | [job-metrics.md](job-metrics.md) | Approved |
+| 3 | jobsystem-servicestream | [jobsystem-servicestream.md](jobsystem-servicestream.md) | Done |
 
 ---
 

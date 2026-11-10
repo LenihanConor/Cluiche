@@ -4,67 +4,55 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaDebugServer/DebugServer.h>
+#include "Modules/DebugServerHostModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaInput/InputRouter.h>
 #include <DiaUI/IUISystem.h>
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaVisualDebugger/Console/CommandCompleter.h>
+#include <DiaVisualDebugger/Console/CommandLineParser.h>
+#include <DiaVisualDebugger/Console/ConsoleJson.h>
+#include <DiaVisualDebugger/Console/ConsoleLineAssembler.h>
+#include <DiaVisualDebugger/Console/ConsoleLogRing.h>
+#include <DiaVisualDebugger/Console/DomainStateQuery.h>
+#include <DiaObservation/Health/HealthRegistry.h>
+#include <DiaVisualDebugger/Console/PanelJson.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include "Modules/LogPushBatcher.h"
+#include "Modules/DomainRootDelta.h"
 
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace Cluiche { namespace AppFlow {
 
-namespace
-{
-    // Canonical group keys from the DiaDebugDomain spec. IDebugDomain::GetGroup()
-    // returns a StringCRC, which cannot be reversed to text, so the panel-facing
-    // group label is recovered by matching against this table.
-    struct GroupEntry
-    {
-        const char* name;
-    };
-
-    const GroupEntry kGroups[] =
-    {
-        { "CoreDebug"  },
-        { "Physics"    },
-        { "Animation"  },
-        { "Navigation" },
-        { "Rendering"  },
-        { "Spatial"    },
-        { "Entity"     },
-        { "AIBehavior" },
-    };
-
-    const char* ResolveGroupName(Dia::Core::StringCRC groupId)
-    {
-        for (const GroupEntry& entry : kGroups)
-        {
-            if (groupId == Dia::Core::StringCRC(entry.name))
-                return entry.name;
-        }
-        return "CoreDebug";
-    }
-
-    // "#rrggbb" — the panel sets each card's --accent CSS variable from this.
-    void FormatAccentHex(const Dia::Core::RGBA& colour, char (&out)[8])
-    {
-        snprintf(out, sizeof(out), "#%02x%02x%02x",
-                 static_cast<unsigned int>(colour.R()),
-                 static_cast<unsigned int>(colour.G()),
-                 static_cast<unsigned int>(colour.B()));
-    }
-}
-
 const Dia::Core::StringCRC DebugPanelPageModule::kTypeId("DebugPanelPageModule");
+
+struct DebugPanelPageModule::ConsoleRuntime
+{
+    static const unsigned int kMaxLinesPerPush = 200;   // newest lines kept; older pending lines are summarised as dropped
+    static const unsigned int kJsonSize        = 128 * 1024;
+
+    Dia::VisualDebugger::Console::ConsoleLogRing ring;
+    uint64_t                                     cursor = 0;
+    LogPushBatcher                               batcher{250.0, kMaxLinesPerPush};   // <= 1 appendLogLines per 250 ms
+    Dia::VisualDebugger::Console::ConsoleLogLine drain[kMaxLinesPerPush + 1];        // [0] = optional "dropped" summary line
+    char                                         json[kJsonSize];
+};
 
 DebugPanelPageModule::DebugPanelPageModule(const Dia::Core::StringCRC& instanceId)
     : MainModule(instanceId)
-{}
+{
+    mPanel.SetQueryExecutor(&mQueryBridge);
+}
 
 Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
 {
@@ -76,6 +64,16 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     {
         mPage.InitializePage();
         mPageInitialized = true;
+    }
+
+    if (mConsole == nullptr)
+    {
+        mConsole = new ConsoleRuntime();
+        Dia::Observation::Log::Logger::Instance().RegisterSink(&mConsole->ring);
+        // RegisterSink is void and ignores the call when Logger::kMaxSinks is full,
+        // so this line doubles as a probe checked in DoUpdate.
+        DIA_LOG_INFO("Debug", "ConsoleLogRing registered");
+        mProbeFramesLeft = 10;
     }
 
     // Auto-open panel when entering a test stage
@@ -91,12 +89,26 @@ Dia::ApplicationFlow::StartResult DebugPanelPageModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
+void DebugPanelPageModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 {
     DIA_TRACE_ZONE("DebugPanelPageModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
+    mWallMs += static_cast<double>(ctx.wallClockDt) * 1000.0;
+
+    RefreshSchemaService();
+    RegisterDomainStateQuery();
     DrainToggleEvents();
+    if (mPanelVisible && mWallMs >= mNextInterestMs)
+        SignalInterest();
+    PollDomainSnapshot();
+    // Sim-hosted command help for the palette: a read-only view of the Main-owned catalogue (this module is Main PU
+    // only, like the DebugServer host). Resolved per frame because the server can be replaced across stage changes.
+    mPanel.SetSimHostedCatalogue(FindDebugServer());
+    mPanel.ProcessWithRoot(*this, mHaveDomainRoot ? &mDomainRoot : nullptr);
     PushDomainStatesToPanel();
+    PushConsoleResults();
+    PushLogLines();
+    CheckLogRingProbe();
 }
 
 Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
@@ -119,16 +131,46 @@ Dia::ApplicationFlow::StopResult DebugPanelPageModule::DoStop()
         mPanelVisible = false;
     }
 
+    if (mConsole != nullptr)
+    {
+        Dia::Observation::Log::Logger::Instance().UnregisterSink(&mConsole->ring);
+        delete mConsole;
+        mConsole = nullptr;
+    }
+    mProbeFramesLeft = 0;
+
+    UnregisterDomainStateQuery();
+    if (mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+        mHealthRegistered = false;
+    }
+    mDomainRoot = Json::Value(Json::objectValue);
+    mHaveDomainRoot = false;
+    mHaveFrame = false;
+    mLastSimFrame = 0;
+    mPanelPushPending = false;
+    mDirtyDomains.clear();
+    mLastSnapshotJson.clear();
+    mParseFailureLogged = false;
+    mNextInterestMs = 0.0;
+    mInterestUntilMs = 0.0;
+    mPanel.Reset();
+    mKeyResolver.SetService(nullptr);
+
     mPageInitialized = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
 void DebugPanelPageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
-    mDomainRegistry.Connect(app);
+    mSnapshotIn.Connect(app);
+    mInterestOut.Connect(app);
     mPanelCommands.Connect(app);
     mPanelToggle.Connect(app);
     mPanelSetVisibility.Connect(app);
+    mConsoleLines.Connect(app);
+    mConsoleResults.Connect(app);
 }
 
 void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, const char* argsJson)
@@ -150,6 +192,263 @@ void DebugPanelPageModule::OnCommand(const char* domainId, const char* cmd, cons
     mPanelCommands.Send(event);
 }
 
+void DebugPanelPageModule::OnConsoleLine(unsigned int seq, const char* const* parts, unsigned int partCount)
+{
+    using namespace Dia::VisualDebugger::Console;
+
+    DebugConsoleLineEvent event{};
+    event.seq = seq;
+
+    if (!ConsoleLineAssembler::Assemble(parts, partCount, event.text, sizeof(event.text)))
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: console line %u rejected (too long)", seq);
+        // Deferred: this runs inside a JS callback, so no CallJSFunction here (see mPanel).
+        mPanel.RequestRejectedLine(seq);
+        return;
+    }
+
+    mPanel.AddToHistory(event.text);
+    mConsoleLines.Send(event);
+}
+
+// The handlers below run inside a JS callback. They only record the request; the work and the
+// CallJSFunction push happen in mPanel.Process() from DoUpdate.
+void DebugPanelPageModule::OnConsoleComplete(const char* token)
+{
+    mPanel.RequestComplete(token);
+}
+
+void DebugPanelPageModule::OnConsoleHistory(bool previous)
+{
+    mPanel.RequestHistory(previous);
+}
+
+void DebugPanelPageModule::OnPaletteOpen()
+{
+    mPanel.RequestPaletteOpen();
+}
+
+void DebugPanelPageModule::OnPaletteSearch(const char* query, int mask)
+{
+    mPanel.RequestPaletteSearch(query, mask);
+}
+
+void DebugPanelPageModule::OnValueSchemaGet(const char* prefix)
+{
+    mPanel.RequestValueSchemaGet(prefix);
+}
+
+void DebugPanelPageModule::RefreshSchemaService()
+{
+    const Dia::ValueSchema::ValueSchemaService* service = nullptr;
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    if (app != nullptr)
+    {
+        // static_cast, not dynamic_cast: the store is instantiated in DiaValueSchema, which is built /GR- (no RTTI), so a
+        // dynamic_cast from this RTTI-enabled TU aborts the process. The stream id fixes the payload type.
+        auto* base = app->FindStream(Dia::Core::StringCRC(kValueSchemaStreamId));
+        if (base != nullptr && base->IsCommitted())
+        {
+            auto* store = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::ValueSchema::ValueSchemaService>*>(base);
+            service = &store->Get();
+        }
+    }
+    mKeyResolver.SetService(service);
+}
+
+Dia::DebugServer::DebugServer* DebugPanelPageModule::FindDebugServer()
+{
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
+    if (app == nullptr)
+        return nullptr;
+    auto* store = app->FindStream(Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
+    // Get() asserts until the framework commits the store; callers retry from DoUpdate.
+    if (store == nullptr || !store->IsCommitted())
+        return nullptr;
+    auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+    return typed ? typed->Get() : nullptr;
+}
+
+Dia::DebugServer::QueryRegistry* DebugPanelPageModule::FindQueryRegistry()
+{
+    Dia::DebugServer::DebugServer* server = FindDebugServer();
+    return server ? &server->GetQueryRegistry() : nullptr;
+}
+
+void DebugPanelPageModule::RegisterDomainStateQuery()
+{
+    if (mDomainStateQueryRegistered)
+        return;
+    Dia::DebugServer::QueryRegistry* queries = FindQueryRegistry();
+    if (queries == nullptr)
+        return;
+
+    queries->Register(Dia::Core::StringCRC(Dia::VisualDebugger::Console::kDomainStateQueryName),
+        [this](const Json::Value& args)
+        {
+            // A query is interest too: ask the Sim to publish, and answer from the latest snapshot on hand.
+            SignalInterest();
+            return Dia::VisualDebugger::Console::QueryDomainState(mHaveDomainRoot ? &mDomainRoot : nullptr, args);
+        });
+    mDomainStateQueryRegistered = true;
+    DIA_LOG_INFO("Debug", "DebugPanelPageModule: registered %s", Dia::VisualDebugger::Console::kDomainStateQueryName);
+}
+
+void DebugPanelPageModule::UnregisterDomainStateQuery()
+{
+    if (!mDomainStateQueryRegistered)
+        return;
+    if (Dia::DebugServer::QueryRegistry* queries = FindQueryRegistry())
+        queries->Unregister(Dia::Core::StringCRC(Dia::VisualDebugger::Console::kDomainStateQueryName));
+    mDomainStateQueryRegistered = false;
+}
+
+bool DebugPanelPageModule::QueryBridge::ExecuteQuery(const char* queryName, const char* argsJson,
+                                                     char* outJson, unsigned capacity)
+{
+    // Resolve per call: the DebugServer is published on a ServiceStream by DebugServerHostModule (Main PU),
+    // and may not exist yet, or may have been replaced across a stage change.
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(mOwner.GetApplication());
+    if (app == nullptr)
+        return false;
+    auto* typed = dynamic_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(
+        app->FindStream(Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId)));
+    Dia::DebugServer::DebugServer* server = typed ? typed->Get() : nullptr;
+    if (server == nullptr)
+        return false;
+
+    const Dia::DebugServer::QueryRegistry& registry = server->GetQueryRegistry();
+    const Dia::Core::StringCRC name(queryName);
+    if (!registry.Has(name))
+        return false;
+
+    Json::Value args;
+    Json::Reader reader;
+    if (!reader.parse(argsJson != nullptr ? argsJson : "{}", args))
+        args = Json::Value(Json::objectValue);
+
+    const Json::Value result = registry.Execute(name, args);
+
+    Json::FastWriter writer;
+    writer.omitEndingLineFeed();
+    const std::string text = writer.write(result);
+    if (text.size() + 1 > capacity)
+    {
+        DIA_LOG_WARNING("Debug", "DebugPanelPageModule: query '%s' result (%u bytes) exceeds the %u byte buffer",
+                        queryName, static_cast<unsigned>(text.size()), capacity);
+        return false;
+    }
+    memcpy(outJson, text.c_str(), text.size() + 1);
+    return true;
+}
+
+bool DebugPanelPageModule::PushToPage(const char* jsFunction, const char* json)
+{
+    UIModule* ui = mUI.Get();
+    if (ui == nullptr || !mPanelVisible || !mPageInitialized)
+        return false;
+
+    Dia::UI::IUISystem* uiSystem = ui->GetUISystem();
+    if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
+        return false;
+
+    uiSystem->CallJSFunction(jsFunction, json);
+    return true;
+}
+
+void DebugPanelPageModule::PushConsoleResults()
+{
+    UIModule* ui = mUI.Get();
+    if (ui == nullptr || !mPanelVisible || !mPageInitialized)
+        return;
+    Dia::UI::IUISystem* uiSystem = ui->GetUISystem();
+    if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
+        return;   // leave results queued until the panel is shown
+
+    Dia::Core::Containers::DynamicArrayC<
+        Dia::ApplicationFlow::Event<DebugConsoleResultEvent>, 16> events;
+    mConsoleResults.Consume(events);
+
+    char json[2048];
+    for (unsigned int i = 0; i < events.Size(); ++i)
+    {
+        const DebugConsoleResultEvent& r = events[i].payload;
+        if (Dia::VisualDebugger::Console::ConsoleJson::BuildConsoleResult(
+                r.seq, r.exitCode, r.parseError, r.text, json, sizeof(json)))
+            uiSystem->CallJSFunction("consoleResult", json);
+    }
+}
+
+void DebugPanelPageModule::PushLogLines()
+{
+    if (mConsole == nullptr)
+        return;
+
+    UIModule* ui = mUI.Get();
+    if (ui == nullptr || !mPanelVisible || !mPageInitialized)
+        return;
+    Dia::UI::IUISystem* uiSystem = ui->GetUISystem();
+    if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
+        return;   // cursor stays put; the ring keeps the lines
+
+    // Paced: one push per 250 ms, newest 200 lines. Every push costs tens of ms in Ultralight; pushing each frame turned the
+    // "pu.over_budget" warning of a slow tick into a feedback loop (the warning is itself a new line to push next frame).
+    const LogPushBatcher::Plan plan = mConsole->batcher.Evaluate(mWallMs, mConsole->cursor, mConsole->ring.GetTotalWritten());
+    if (!plan.push)
+        return;
+
+    namespace Console = Dia::VisualDebugger::Console;
+    uint64_t cursor = plan.startCursor;
+    const unsigned n = mConsole->ring.DrainSince(cursor, mConsole->drain + 1, plan.take);
+
+    // Lines skipped because of the cap become one summary line at the front (lines lost to ring wrap are not counted).
+    unsigned first = 1;
+    if (plan.dropped > 0)
+    {
+        Console::ConsoleLogLine& s = mConsole->drain[0];
+        s.sequence    = (n > 0) ? mConsole->drain[1].sequence : plan.startCursor;
+        s.timestampNs = 0;
+        s.level       = Dia::Observation::Log::LogLevel::kWarning;
+        s.channel     = Dia::Core::StringCRC("Debug");
+        std::snprintf(s.message, sizeof(s.message), "[%llu older log lines not shown (panel pushes are batched)]",
+                      static_cast<unsigned long long>(plan.dropped));
+        first = 0;
+    }
+    const unsigned count = n + (1 - first);
+    if (count == 0)
+    {
+        mConsole->cursor = cursor;
+        mConsole->batcher.OnPushed(mWallMs);
+        return;
+    }
+
+    unsigned written = 0;
+    if (Console::ConsoleJson::BuildAppendLogLines(
+            mConsole->drain + first, count, mConsole->json, ConsoleRuntime::kJsonSize, &written) && written > 0)
+    {
+        uiSystem->CallJSFunction("appendLogLines", mConsole->json);
+        const unsigned realWritten = written - (1 - first);
+        // If the JSON was truncated, resume right after the last emitted line.
+        mConsole->cursor = (realWritten >= n) ? cursor : mConsole->drain[realWritten].sequence + 1;
+    }
+    else
+    {
+        mConsole->cursor = cursor;   // cannot happen with a 128 KB buffer; skip rather than loop
+    }
+    mConsole->batcher.OnPushed(mWallMs);
+}
+
+void DebugPanelPageModule::CheckLogRingProbe()
+{
+    if (mProbeFramesLeft == 0 || mConsole == nullptr)
+        return;
+    if (--mProbeFramesLeft != 0)
+        return;
+
+    if (mConsole->ring.GetTotalWritten() == 0)
+        DIA_LOG_WARNING("Debug", "ConsoleLogRing received no log lines (sink table full?)");
+}
+
 void DebugPanelPageModule::DrainToggleEvents()
 {
     UIModule* ui = mUI.Get();
@@ -163,8 +462,11 @@ void DebugPanelPageModule::DrainToggleEvents()
     for (unsigned int i = 0; i < events.Size(); ++i)
     {
         mPanelVisible = !mPanelVisible;
+        mPanelPushPending = mHaveDomainRoot;   // the page is reloaded: send the cached state again
         if (mPanelVisible)
         {
+            mFrameChangedAtMs = mWallMs;   // do not report stale for the time the panel was hidden
+            SignalInterest();
             ui->LoadPage(mPage);
             ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
             mInputModePushed = true;
@@ -200,8 +502,11 @@ void DebugPanelPageModule::DrainSetVisibilityEvents()
             continue;
 
         mPanelVisible = desiredVisibility;
+        mPanelPushPending = mHaveDomainRoot;
         if (mPanelVisible)
         {
+            mFrameChangedAtMs = mWallMs;
+            SignalInterest();
             ui->LoadPage(mPage);
             ui->PushInputMode(Dia::Input::EInputRouting::kGameAndUI);
             mInputModePushed = true;
@@ -220,8 +525,83 @@ void DebugPanelPageModule::DrainSetVisibilityEvents()
     }
 }
 
+void DebugPanelPageModule::SignalInterest()
+{
+    DomainStateInterestEvent event;
+    event.windowMs = kInterestWindowMs;
+    mInterestOut.Send(event);
+    mNextInterestMs  = mWallMs + kInterestIntervalMs;
+    mInterestUntilMs = mWallMs + static_cast<double>(kInterestWindowMs);
+}
+
+void DebugPanelPageModule::PollDomainSnapshot()
+{
+    namespace Console = Dia::VisualDebugger::Console;
+
+    if (!mHealthRegistered)
+    {
+        Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+        mHealthRegistered = true;
+    }
+
+    const bool interested = mWallMs < mInterestUntilMs;
+    const Console::DomainStateSnapshot* snapshot = mSnapshotIn.FetchLatest();
+    if (snapshot == nullptr)
+    {
+        if (interested)
+            mHealth.OnPending();
+        return;
+    }
+
+    if (!mHaveFrame || snapshot->simFrame != mLastSimFrame)
+    {
+        // Cache by simFrame: a repeated frame is not re-parsed. A failed parse keeps the last good root.
+        const bool identical = mHaveDomainRoot && snapshot->jsonBytes == mLastSnapshotJson.size() &&
+                               std::memcmp(snapshot->json, mLastSnapshotJson.data(), snapshot->jsonBytes) == 0;
+        if (identical)
+        {
+            // Nothing changed except the frame number: skip the parse and the page push (each costs milliseconds).
+            mDomainRoot["simFrame"] = Json::Value(Json::UInt64(snapshot->simFrame));
+        }
+        else if (Console::ParseDomainStateSnapshot(*snapshot, mScratchRoot))
+        {
+            Console::ApplySchemaVersion(mScratchRoot, &mKeyResolver);
+            static const Json::Value kNoRoot;
+            const DomainRootDelta delta = ComputeDomainRootDelta(mHaveDomainRoot ? static_cast<const Json::Value&>(mDomainRoot) : kNoRoot, mScratchRoot);
+            if (!mHaveDomainRoot || delta.structureChanged)
+            {
+                mPanelPushPending = true;
+                mDirtyDomains.clear();
+            }
+            else if (!mPanelPushPending)
+            {
+                mDirtyDomains.insert(delta.changed.begin(), delta.changed.end());
+            }
+            mDomainRoot.swap(mScratchRoot);
+            mLastSnapshotJson.assign(snapshot->json, snapshot->jsonBytes);
+            mHaveDomainRoot = true;
+            mParseFailureLogged = false;
+        }
+        else if (!mParseFailureLogged)
+        {
+            mParseFailureLogged = true;
+            DIA_LOG_WARNING("Debug", "DebugPanelPageModule: domain state snapshot (frame %llu, %u bytes) failed to parse; keeping the last good state",
+                            static_cast<unsigned long long>(snapshot->simFrame), snapshot->jsonBytes);
+        }
+        mHaveFrame = true;
+        mLastSimFrame = snapshot->simFrame;
+        mFrameChangedAtMs = mWallMs;
+    }
+
+    if (interested)
+        mHealth.OnSnapshot(static_cast<uint64_t>(mWallMs - mFrameChangedAtMs));
+}
+
 void DebugPanelPageModule::PushDomainStatesToPanel()
 {
+    if ((!mPanelPushPending && mDirtyDomains.empty()) || !mHaveDomainRoot)
+        return;
+
     UIModule* ui = mUI.Get();
     if (ui == nullptr || !mPanelVisible)
         return;
@@ -230,37 +610,23 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
     if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
         return;
 
-    if (!mDomainRegistry.IsAvailable())
-        return;
-
-    const Dia::VisualDebugger::DiaDebugDomainRegistry& registry = mDomainRegistry.Get();
-
-    Json::Value root(Json::objectValue);
-    registry.VisitAll([&root](Dia::VisualDebugger::IDebugDomain& domain)
-    {
-        Json::Value state(Json::objectValue);
-        domain.GetJSONState(state);
-
-        const char* displayName = domain.GetDisplayName();
-        if (displayName == nullptr)
-            return;
-
-        char accentHex[8] = {};
-        FormatAccentHex(domain.GetAccentColour(), accentHex);
-
-        state["_displayName"] = displayName;
-        state["_group"]       = ResolveGroupName(domain.GetGroup());
-        state["_description"] = domain.GetDescription() ? domain.GetDescription() : "";
-        state["_accent"]      = accentHex;
-
-        root[displayName] = state;
-    });
-
     Json::FastWriter writer;
     writer.omitEndingLineFeed();
-    const std::string json = writer.write(root);
+    std::string json;
+    if (mPanelPushPending)
+    {
+        json = writer.write(mDomainRoot);
+    }
+    else
+    {
+        // Only the domains whose state changed; the page merges them into what it holds (see updateDomainState).
+        const std::vector<std::string> names(mDirtyDomains.begin(), mDirtyDomains.end());
+        json = writer.write(BuildPartialRoot(mDomainRoot, names));
+    }
 
     uiSystem->CallJSFunction("updateDomainState", json.c_str());
+    mPanelPushPending = false;
+    mDirtyDomains.clear();
 }
 
 } } // namespace Cluiche::AppFlow

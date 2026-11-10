@@ -9,10 +9,12 @@
       "description": "Holds 2D world-space position (x, y) for an entity.",
       "fields": [
         {
+          "default": 0,
           "kind": "primitive",
           "name": "x"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "y"
         }
@@ -22,16 +24,18 @@
     {
       "debug_name": "VisualTestRenderComponent",
       "default_values": {
-        "colour": 0,
-        "radius": 0
+        "colour": 1338243071,
+        "radius": 12
       },
       "description": "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.",
       "fields": [
         {
+          "default": 12,
           "kind": "primitive",
           "name": "radius"
         },
         {
+          "default": 1338243071,
           "kind": "primitive",
           "name": "colour"
         }
@@ -47,6 +51,7 @@
       "description": "Registers a circle shape with the picking service so the entity can be selected in the test stage.",
       "fields": [
         {
+          "default": 0,
           "kind": "primitive",
           "name": "objectIdx"
         }
@@ -57,15 +62,17 @@
       "debug_name": "ParentComponent",
       "default_values": {
         "parentGen": 0,
-        "parentIndex": 0
+        "parentIndex": 4294967295
       },
       "description": "Stores the parent entity handle; links this entity into the scene hierarchy.",
       "fields": [
         {
+          "default": 4294967295,
           "kind": "primitive",
           "name": "parentIndex"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "parentGen"
         }
@@ -93,30 +100,37 @@
       "description": "",
       "fields": [
         {
+          "default": null,
           "kind": "string_id",
           "name": "blueprintId"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "rate"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "burstCount"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "cap"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "lifetime"
         },
         {
+          "default": 0,
           "kind": "primitive",
           "name": "despawnRadius"
         },
         {
+          "default": false,
           "kind": "primitive",
           "name": "active"
         }
@@ -149,15 +163,17 @@
       "default_values": {
         "layerMask": 0,
         "position": null,
-        "radius": 0
+        "radius": 1
       },
       "description": "",
       "fields": [
         {
+          "default": null,
           "kind": "nested",
           "name": "position"
         },
         {
+          "default": 1,
           "kind": "primitive",
           "name": "radius"
         },
@@ -183,6 +199,7 @@
       "description": "Wraps one AttributeSet \u00e2\u20ac\u201d resolved base+modifier attribute values for this entity.",
       "fields": [
         {
+          "default": null,
           "kind": "string_id",
           "name": "schema_name"
         }
@@ -192,11 +209,6 @@
   ],
   "game": "cluichetest",
   "modules": [
-    {
-      "allowed_pus": "render",
-      "description": "Displays the CluicheTest boot menu for selecting which test stage to run.",
-      "type_id": "BootMenuModule"
-    },
     {
       "allowed_pus": "main",
       "description": "Drives CluicheTest top-level state: stage selection, transitions, and test lifecycle.",
@@ -226,6 +238,16 @@
       "allowed_pus": "render",
       "description": "Shared HUD overlay for all CluicheTest stages: shows stage name, controls, and test status.",
       "type_id": "TestStageHUDModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Hosts the DiaCellLayers viewer over synthetic layers on two hex grids.",
+      "type_id": "CellLayersViewerTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Renders CellField layers for real and captures frames for pixel verification.",
+      "type_id": "CellFieldRenderTestStageModule"
     },
     {
       "allowed_pus": "sim",
@@ -348,6 +370,46 @@
       "type_id": "EntitySpatialTestStageModule"
     },
     {
+      "allowed_pus": "render",
+      "description": "Publishes TestResultsRegistry results to StageStatusModule for the boot menu.",
+      "type_id": "TestStatusBridgeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Integration test for cross-PU JobSystemService access",
+      "type_id": "JobSystemServiceTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Registers the sim.echo sim-hosted debug query used by the Sim-Hosted Queries E2E.",
+      "type_id": "SimEchoTestModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Sim end of the pooled debug-domain state snapshot: publishes domain state while demanded.",
+      "type_id": "DomainStateRelayModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Main end of the pooled debug-domain state snapshot: reads snapshot FrameStreams, signals demand.",
+      "type_id": "DomainStateBridgeModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Runs debug queries and commands that touch SimPU-owned state, requested over EventStreams by the Main-side DebugServer.",
+      "type_id": "SimQueryHostModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Hosts the DiaMessageBus Bus for a game and shows it in the debug panel.",
+      "type_id": "MessageBusHostModule"
+    },
+    {
+      "allowed_pus": "render",
+      "description": "Displays a boot menu for selecting which stage to launch, with optional per-stage status badges.",
+      "type_id": "BootMenuModule"
+    },
+    {
       "allowed_pus": "main",
       "description": "Ultralight HTML debug panel overlay: domain accordions, drawer toggles, live stats, scale sliders.",
       "type_id": "DebugPanelPageModule"
@@ -444,6 +506,11 @@
     },
     {
       "allowed_pus": "render",
+      "description": "Holds per-stage status (label, severity, visited) keyed by stage CRC.",
+      "type_id": "StageStatusModule"
+    },
+    {
+      "allowed_pus": "render",
       "description": "Renders in-game debug UI panels via ImGui for development diagnostics.",
       "type_id": "DebugUIModule"
     },
@@ -493,6 +560,21 @@
       "type_id": "AutomationModule"
     },
     {
+      "allowed_pus": "any",
+      "description": "Owns the CellLayerRegistry and publishes it on the CellLayerRegistryService ServiceStream.",
+      "type_id": "CellLayersModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Owns the CellHistoryRecorder and publishes it on the CellHistoryRecorderService ServiceStream.",
+      "type_id": "CellHistoryModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
+      "type_id": "ValueSchemaModule"
+    },
+    {
       "allowed_pus": "sim",
       "description": "Umbrella SimPU module: assembles the sim-time scheduler, budget, and registry into the per-tick gate loop and publishes SimTimeContext onto the SimTime FrameStream.",
       "type_id": "DiaSimTime"
@@ -500,7 +582,7 @@
   ],
   "processing_units": [],
   "version": {
-    "major": 1,
-    "minor": 33
+    "major": 2,
+    "minor": 0
   }
 }

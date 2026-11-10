@@ -11,6 +11,9 @@ Dia is the game engine application that provides all shared engine infrastructur
 
 | System | Description | Spec |
 |--------|-------------|------|
+| DiaCellLayers | Per-cell layer registry + one viewer: exactly one coloured base layer plus overlays, legend/tooltips from DiaValueSchema, multi-cell selection (click/shift/box/lasso/category/query), selection inspector with all-layer stats + pin/compare, editor mirror. Draws via CellField. Approved 2026-10-19 | [diacelllayers.md](systems/diacelllayers/diacelllayers.md) |
+| DiaCellHistory | Tiered cell-grid history (aggregates + events whole run, opt-in 16-bit per-cell rings in a budget), timeline scrub, named snapshots via game ISnapshotStore (restore = load), delta compare, streamed + exported in one format. Approved 2026-10-19 | [diacellhistory.md](systems/diacellhistory/diacellhistory.md) |
+| DiaValueSchema | One description per value (parameters, state fields, entity component fields, metrics, command args): sidecar `.schema.json` + `MetricInfo`/`ValueParam`, `ValueSchemaService`, debug-panel tooltips, named ramps → CellField, `dia validate schema`, export + reference docs. Approved 2026-10-19 (first consumer CoW; 7 features) | [diavalueschema.md](systems/diavalueschema/diavalueschema.md) |
 | DiaAPI | C++ command registration and execution API framework - provides runtime command infrastructure | [diaapi.md](systems/diaapi/diaapi.md) |
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](systems/diacli/diacli.md) |
 | DiaConsole | Native-window web console over DiaCLI — command browsing, typed execution results, presets, project/target context | [diaconsole.md](systems/diaconsole/diaconsole.md) |
@@ -133,7 +136,7 @@ Dia is the engine - it provides dependencies for other applications rather than 
 
 - **SDL3** (External/SDL3) - Window management and input (replaces SFML window/input path; git submodule, built via `dia env setup`)
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
-- **Webix / VisJS** (External/) - Web UI for debugging/visualization
+- **VisJS** (External/) - Visualization for debugging
 - **GoogleTest** (External/googletest) - Unit testing framework
 
 ## Out of Scope

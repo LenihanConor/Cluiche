@@ -27,12 +27,28 @@ def resolve_category(tags: list[str]) -> str:
     return "misc"
 
 
+def compute_world_subfolder(source_path: str) -> str:
+    """Return folders between the 'Global' part and the filename ('' if none/absent)."""
+    parts = Path(source_path).parts
+    if "Global" not in parts:
+        return ""
+    inner = parts[parts.index("Global") + 1:-1]
+    return "/".join(inner)
+
+
+def world_record_outside_global(record: dict) -> bool:
+    """True if a 'world'-tagged record's source_path has no 'Global' folder."""
+    return "world" in record.get("tags", []) and "Global" not in Path(record.get("source_path", "")).parts
+
+
 def resolve_deploy_path(record: dict, context: "BuildContext") -> Path:
     """Resolve the full output path for an asset from its scope and category tag.
 
     Scope rule:
         global -> <deploy_root>/global/<category>/
         stage  -> <deploy_root>/stages/<stage_name>/<category>/
+        global + 'world' tag -> <deploy_root>/global/world/<subfolder under Global/>/
+        (stage scope wins over the world tag)
 
     Folder assets (type 'folder') get a trailing slash appended to signal
     directory-based loading to DiaAssetRuntime (SD-CAT-013).
@@ -46,6 +62,19 @@ def resolve_deploy_path(record: dict, context: "BuildContext") -> Path:
     if scope == "stage":
         stage_name = record.get("stage_name", "")
         base = context.deploy_root / "stages" / stage_name / category
+    elif "world" in tags:
+        source_path = record.get("source_path", "")
+        if world_record_outside_global(record):
+            context.output.warn(
+                "asset",
+                f"[{record.get('id', '')}] 'world' asset source_path '{source_path}' has no"
+                " 'Global/' folder - deploying flat to global/world/;"
+                " move it under a 'Global/<subfolder>/' path to preserve structure",
+            )
+        sub = compute_world_subfolder(source_path)
+        base = context.deploy_root / "global" / "world"
+        if sub:
+            base = base / sub
     else:
         base = context.deploy_root / "global" / category
 

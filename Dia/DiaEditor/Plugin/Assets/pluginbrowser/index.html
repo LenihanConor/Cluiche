@@ -172,7 +172,7 @@ function t(t){return Array.isArray?Array.isArray(t):"[object Array]"===u(t)}func
           delete pending[msg.reqId];
           cb(msg.result);
         }
-        if (msg.__dia && msg.topic === "panels_changed") {
+        if (msg.__dia && (msg.topic === "panels_changed" || msg.topic === "plugin_browser_changed")) {
           fetchPlugins();
         }
       });

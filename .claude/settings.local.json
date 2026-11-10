@@ -1428,7 +1428,12 @@
       "Bash(mkdir -p \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\Tests\\\\GoogleTests\\\\DiaBlackboardVisualDebugger\")",
       "Bash(mkdir -p \"C:/GitHub/Cluiche/Dia/DiaFlowFieldVisualDebugger/Docs\")",
       "Bash(mkdir -p \"C:/GitHub/Cluiche/Cluiche/Tests/GoogleTests/DiaFlowFieldVisualDebugger\")",
-      "PowerShell(dia scaffold *)"
+      "PowerShell(dia scaffold *)",
+      "PowerShell(dia *)",
+      "PowerShell(explorer.exe \"C:\\\\GitHub\\\\Cluiche\\\\docs\\\\specs\\\\applications\\\\cow\\\\systems\\\\f1-harness\")",
+      "PowerShell(Invoke-Item *)",
+      "Bash(cd *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -)"
     ],
     "defaultMode": "auto"
   }

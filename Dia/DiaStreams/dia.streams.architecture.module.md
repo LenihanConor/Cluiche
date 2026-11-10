@@ -24,6 +24,7 @@ responsibilities:
   - Stream reader/writer handles (StreamReader, StreamWriter, EventStreamReader/Writer, ServiceStreamReader/Writer)
   - Stream type serialization registry (StreamTypeRegistry)
   - Stream diagnostics (FrameStreamDiagnostics)
+  - Honour manifest-declared EventStream settings: EventStreamReader/Writer::Connect() asks the IStreamConnector (GetDeclaredEventStreamConfig) for the declared per-reader ring capacity (nonzero overrides the default 256) and overflow policy; undeclared streams keep defaults. The first Connect() for a stream creates the store.
 
 non_responsibilities:
   - Application lifecycle (DiaApplicationFlow)

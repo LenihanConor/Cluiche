@@ -1,7 +1,9 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <algorithm>
+#include <cstring>
 #include <chrono>
 
 namespace Dia
@@ -65,6 +67,7 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Counter();
                 mCounters.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
             }
 
@@ -87,6 +90,7 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Gauge();
                 mGauges.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
             }
 
@@ -111,7 +115,132 @@ namespace Dia
                 entry.name      = name;
                 entry.primitive = new Histogram(bucketBounds, bucketCount);
                 mHistograms.push_back(entry);
+                ++mGeneration;
                 return entry.primitive;
+            }
+
+            static bool SameStr(const char* a, const char* b)
+            {
+                if (a == b) return true;
+                if (!a || !b) return false;
+                return std::strcmp(a, b) == 0;
+            }
+
+            static bool SameInfo(const MetricInfo& a, const MetricInfo& b)
+            {
+                return SameStr(a.label, b.label) && SameStr(a.description, b.description)
+                    && SameStr(a.unit, b.unit);
+            }
+
+            bool MetricRegistry::ApplyInfoLocked(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                for (auto& e : mInfos)
+                {
+                    if (!(e.name == name))
+                        continue;
+                    if (SameInfo(e.info, info))
+                        return false;
+                    if (e.warned)
+                        return false;
+                    e.warned = true;
+                    ++mConflictWarnings;
+                    return true;
+                }
+                mInfos.push_back(InfoEntry{ name, info, false });
+                ++mGeneration;
+                return false;
+            }
+
+            void MetricRegistry::WarnConflict(const Dia::Core::StringCRC& name)
+            {
+                DIA_LOG_WARNING("VSC", "Metric '%s' re-registered with conflicting info; keeping the first",
+                                name.AsChar());
+            }
+
+            Counter* MetricRegistry::RegisterCounter(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                Counter* c = RegisterCounter(name);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return c;
+            }
+
+            Gauge* MetricRegistry::RegisterGauge(const Dia::Core::StringCRC& name, const MetricInfo& info)
+            {
+                Gauge* g = RegisterGauge(name);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return g;
+            }
+
+            Histogram* MetricRegistry::RegisterHistogram(const Dia::Core::StringCRC& name,
+                                                          const float*  bucketBounds,
+                                                          unsigned int  bucketCount,
+                                                          const MetricInfo& info)
+            {
+                Histogram* h = RegisterHistogram(name, bucketBounds, bucketCount);
+                bool warn;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    warn = ApplyInfoLocked(name, info);
+                }
+                if (warn) WarnConflict(name);
+                return h;
+            }
+
+            const MetricInfo* MetricRegistry::GetInfo(const Dia::Core::StringCRC& name) const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                for (const auto& e : mInfos)
+                {
+                    if (e.name == name)
+                        return &e.info;
+                }
+                return nullptr;
+            }
+
+            void MetricRegistry::ForEachMetric(MetricVisitor visitor, void* user) const
+            {
+                if (!visitor)
+                    return;
+
+                struct Item { Dia::Core::StringCRC name; MetricKind kind; const MetricInfo* info; };
+                std::vector<Item> items;
+                {
+                    std::lock_guard<std::mutex> lock(mMutex);
+                    items.reserve(mCounters.size() + mGauges.size() + mHistograms.size());
+                    auto infoFor = [this](const Dia::Core::StringCRC& n) -> const MetricInfo*
+                    {
+                        for (const auto& i : mInfos)
+                            if (i.name == n) return &i.info;
+                        return nullptr;
+                    };
+                    for (const auto& e : mCounters)   items.push_back(Item{ e.name, MetricKind::Counter,   infoFor(e.name) });
+                    for (const auto& e : mGauges)     items.push_back(Item{ e.name, MetricKind::Gauge,     infoFor(e.name) });
+                    for (const auto& e : mHistograms) items.push_back(Item{ e.name, MetricKind::Histogram, infoFor(e.name) });
+                }
+                for (const auto& it : items)
+                    visitor(it.name, it.kind, it.info, user);
+            }
+
+            unsigned int MetricRegistry::Generation() const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                return mGeneration;
+            }
+
+            unsigned int MetricRegistry::ConflictWarningCount() const
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                return mConflictWarnings;
             }
 
             Counter* MetricRegistry::FindCounter(const Dia::Core::StringCRC& name) const
@@ -251,6 +380,8 @@ namespace Dia
                 mCounters.clear();
                 mGauges.clear();
                 mHistograms.clear();
+                mInfos.clear();
+                ++mGeneration;
                 mSinks.clear();
             }
 

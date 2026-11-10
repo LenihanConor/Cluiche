@@ -1,6 +1,8 @@
 #pragma once
 #include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaThreading/JobSystem.h>
@@ -19,11 +21,13 @@ public:
     const Dia::Threading::JobSystem& GetJobSystem() const;
 
 protected:
+    void                              OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
     Dia::ApplicationFlow::StartResult DoStart()         override;
     void                              DoUpdate(const Dia::SimTime::MainTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult  DoStop()          override;
 
 private:
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Threading::JobSystem> mJobSystemService{this, "JobSystemService"};
     Dia::Observation::Metric::JobSystemMetricsAdapter mMetricsAdapter;
     Dia::Threading::JobSystem                         mJobSystem;
 };

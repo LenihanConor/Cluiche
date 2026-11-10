@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.entityspatialvisualdebugger
 name: DiaEntitySpatialVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaEntitySpatialVisualDebugger
 status: active
 maturity: dev

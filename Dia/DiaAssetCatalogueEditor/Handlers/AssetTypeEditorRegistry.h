@@ -22,7 +22,13 @@ namespace Dia
 				bool RegisterTypeEditor(const Dia::Core::StringCRC& assetTypeId,
 				                        const Dia::Core::StringCRC& editorPluginTypeId);
 
-				// Find the editor plugin type for a given asset type. Returns default StringCRC if not found.
+				// Remove a route. Only removes when assetTypeId is currently mapped to editorPluginTypeId,
+					// so a plugin can only remove its own routes (never another plugin's or a built-in).
+					// Returns false if nothing was removed.
+					bool UnregisterTypeEditor(const Dia::Core::StringCRC& assetTypeId,
+					                          const Dia::Core::StringCRC& editorPluginTypeId);
+
+					// Find the editor plugin type for a given asset type. Returns default StringCRC if not found.
 				Dia::Core::StringCRC FindEditorForType(const Dia::Core::StringCRC& assetTypeId) const;
 
 			private:

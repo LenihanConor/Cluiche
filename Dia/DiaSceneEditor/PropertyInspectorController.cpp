@@ -1,4 +1,5 @@
 #include "DiaSceneEditor/PropertyInspectorController.h"
+#include "DiaEntityTemplateEditor/SchemaReader.h"
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -176,6 +177,21 @@ namespace Dia
 
 				Json::Value fields(Json::arrayValue);
 
+				// Field metadata from registeredtypes.diaschema, if attached and it knows this type
+				const Dia::EntityTemplateEditor::SchemaComponentEntry* schemaEntry = nullptr;
+				if (mSchema)
+				{
+					const Dia::Core::StringCRC typeCrc(typeName);
+					for (unsigned int si = 0; si < mSchema->GetComponentCount(); ++si)
+					{
+						if (mSchema->GetComponent(si).typeId == typeCrc)
+						{
+							schemaEntry = &mSchema->GetComponent(si);
+							break;
+						}
+					}
+				}
+
 				auto buildField = [&](const char* name, const Json::Value& entityTemplateVal)
 				{
 					// Override key in instance_data is "ComponentType.fieldName"
@@ -208,6 +224,29 @@ namespace Dia
 						}
 					}
 					if (!fieldJson.isMember("kind")) fieldJson["kind"] = "primitive";
+
+					if (schemaEntry)
+					{
+						for (unsigned int sf = 0; sf < schemaEntry->fields.Size(); ++sf)
+						{
+							const Dia::EntityTemplateEditor::SchemaFieldEntry& e = schemaEntry->fields[sf];
+							if (strcmp(e.name, name) != 0) continue;
+							if (e.label[0] != '\0')       fieldJson["label"]       = e.label;
+							if (e.description[0] != '\0') fieldJson["description"] = e.description;
+							if (e.unit[0] != '\0')        fieldJson["unit"]        = e.unit;
+							if (e.hint[0] != '\0')        fieldJson["hint"]        = e.hint;
+							if (e.hasMin)                 fieldJson["min"]         = e.min;
+							if (e.hasMax)                 fieldJson["max"]         = e.max;
+							if (e.hasDefault)
+							{
+								Json::Value parsed;
+								Json::Reader defReader;
+								if (defReader.parse(e.defaultJson, parsed))
+									fieldJson["default"] = parsed;
+							}
+							break;
+						}
+					}
 					fields.append(fieldJson);
 				};
 

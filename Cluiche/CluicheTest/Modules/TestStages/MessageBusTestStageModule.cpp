@@ -93,11 +93,21 @@ const Dia::Core::StringCRC MessageBusTestStageModule::kTypeId("MessageBusTestSta
 
 MessageBusTestStageModule::MessageBusTestStageModule(const Dia::Core::StringCRC& instanceId)
     : TestStageModuleBase(instanceId)
-{}
+{
+    // Detect stress mode from instance ID
+    const Dia::Core::StringCRC stressId("MessageBusStressTestStageModule");
+    if (instanceId == stressId)
+    {
+        mStressMode    = true;
+        mPulseInterval = kStressPulseIntervalSeconds;
+        mPingInterval  = kStressPingIntervalSeconds;
+    }
+}
 
 Dia::Core::StringCRC MessageBusTestStageModule::GetStageName() const
 {
-    return Dia::Core::StringCRC("MessageBusTestStage");
+    return mStressMode ? Dia::Core::StringCRC("MessageBusStressTestStage")
+                       : Dia::Core::StringCRC("MessageBusTestStage");
 }
 
 const Dia::Core::StringCRC* MessageBusTestStageModule::GetCheckpointNames(unsigned int& outCount) const
@@ -108,8 +118,9 @@ const Dia::Core::StringCRC* MessageBusTestStageModule::GetCheckpointNames(unsign
         Dia::Core::StringCRC("msgbus.first_pong"),
         Dia::Core::StringCRC("msgbus.twenty_pulses"),
         Dia::Core::StringCRC("msgbus.ten_pings"),
+        Dia::Core::StringCRC("msgbus.stress_complete"),
     };
-    outCount = 5;
+    outCount = mStressMode ? 6 : 5;
     return names;
 }
 
@@ -164,6 +175,7 @@ void MessageBusTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     mBurstsFired                    = 0;
     mPingsDeliveredToWrongReceiver  = 0;
     mDroppedTotal                   = 0;
+    mDuplicatesDetected             = 0;
 
     for (unsigned int i = 0; i < kNodeCount; ++i)
     {
@@ -286,6 +298,7 @@ void MessageBusTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     mMetricPongsReceived = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.msgbus.pongs_received"));
     mMetricBursts        = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.msgbus.bursts"));
     mMetricDropped       = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.msgbus.dropped"));
+    mMetricDuplicates    = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.msgbus.duplicates"));
 
 #ifdef DIA_DEBUG
     if (auto* vd = mVisualDebuggerRef.Get())
@@ -319,7 +332,7 @@ void MessageBusTestStageModule::OnUpdate(float deltaTime)
         TickWander(mEmitters[i], kEmitterWanderDirs[i], kEmitterSpeed, deltaTime);
 
         mEmitterPulseTimer[i] += deltaTime;
-        if (mEmitterPulseTimer[i] >= kPulseIntervalSeconds)
+        if (mEmitterPulseTimer[i] >= mPulseInterval)
         {
             mBusModule.GetBus().Broadcast<NetworkPulseEvent>({ i });
             ++mPulsesSent;
@@ -327,7 +340,7 @@ void MessageBusTestStageModule::OnUpdate(float deltaTime)
         }
 
         mEmitterPingTimer[i] += deltaTime;
-        if (mEmitterPingTimer[i] >= kPingIntervalSeconds)
+        if (mEmitterPingTimer[i] >= mPingInterval)
         {
             const unsigned int targetReceiver = i % kNodeCount;
             DirectPingEvent msg{ i, targetReceiver };
@@ -369,6 +382,7 @@ void MessageBusTestStageModule::OnUpdate(float deltaTime)
     if (mMetricPongsReceived) mMetricPongsReceived->Set(static_cast<double>(mPongsReceived));
     if (mMetricBursts)        mMetricBursts->Set(static_cast<double>(mBurstsFired));
     if (mMetricDropped)       mMetricDropped->Set(static_cast<double>(mDroppedTotal));
+    if (mMetricDuplicates)    mMetricDuplicates->Set(static_cast<double>(mDuplicatesDetected));
 
 #ifdef DIA_DEBUG
     if (!mDomainRegistered && mDebugDomain)
@@ -383,19 +397,34 @@ void MessageBusTestStageModule::OnUpdate(float deltaTime)
 
     // 6. Pass condition — all 5 checkpoints satisfied plus the burst delivered
     //    to every Receiver, held for kMinDisplayFrames so the visual is watchable.
-    // NOTE: gated on mPulsesSent (not mPulsesDelivered) — NetworkPulseEvent is
-    // fanned out to all 5 Receivers per broadcast, so mPulsesDelivered inflates
-    // 5x per send and would satisfy ">=20" after a single broadcast round.
-    // mPulsesSent is the counter cluichetest.msgbus.pulses_sent reports, and
-    // matches the spec's own "20 total by ~8s" budget math (see
-    // RegisterCheckpoints' msgbus.twenty_pulses for the matching fix).
-    const bool allPassed =
-        mPulsesSent      >= 20 &&
-        mPingsDelivered  >= 10 &&
-        mPongsReceived   >= 1  &&
-        mBurstDeliveryCount >= kNodeCount;
+    // Pass condition: stress mode gates on 10k messages sent with 1:1 delivery;
+    // standard mode gates on the original checkpoints.
+    bool allPassed = false;
+    if (mStressMode)
+    {
+        const unsigned int totalSent = mPulsesSent + mPingsSent;
+        const unsigned int totalDelivered = mPulsesDelivered + mPingsDelivered;
+        allPassed = (totalSent >= kStressTargetMessages) &&
+                    (totalSent == totalDelivered) &&
+                    (mDroppedTotal == 0) &&
+                    (mDuplicatesDetected == 0);
+    }
+    else
+    {
+        // NOTE: gated on mPulsesSent (not mPulsesDelivered) — NetworkPulseEvent is
+        // fanned out to all 5 Receivers per broadcast, so mPulsesDelivered inflates
+        // 5x per send and would satisfy ">=20" after a single broadcast round.
+        // mPulsesSent is the counter cluichetest.msgbus.pulses_sent reports, and
+        // matches the spec's own "20 total by ~8s" budget math (see
+        // RegisterCheckpoints' msgbus.twenty_pulses for the matching fix).
+        allPassed =
+            mPulsesSent      >= 20 &&
+            mPingsDelivered  >= 10 &&
+            mPongsReceived   >= 1  &&
+            mBurstDeliveryCount >= kNodeCount;
+    }
 
-    if (allPassed && !IsResolved() && GetFrameCount() >= kMinDisplayFrames)
+    if (allPassed && !IsResolved() && (mStressMode || GetFrameCount() >= kMinDisplayFrames))
         ReportPassed();
 }
 
@@ -469,6 +498,17 @@ void MessageBusTestStageModule::RegisterCheckpoints()
         [this]() -> Dia::Automation::CheckpointResult {
             return { mPingsDelivered >= 10, mPingsDelivered >= 10 ? "10 pings delivered" : "pending", 0.0f };
         });
+
+    if (mStressMode)
+    {
+        service->RegisterCheckpoint(this, Dia::Core::StringCRC("msgbus.stress_complete"),
+            [this]() -> Dia::Automation::CheckpointResult {
+                const unsigned int totalSent = mPulsesSent + mPingsSent;
+                const unsigned int totalDelivered = mPulsesDelivered + mPingsDelivered;
+                const bool complete = totalSent >= kStressTargetMessages && totalSent == totalDelivered;
+                return { complete, complete ? "10k messages sent and delivered 1:1" : "pending", 0.0f };
+            });
+    }
 }
 
 // ---------------------------------------------------------------------------

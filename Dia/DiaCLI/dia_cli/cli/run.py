@@ -37,11 +37,13 @@ def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
               help="For googletest: include SLOW_* suites (default excludes them).")
 @click.option("--shards", default=0, metavar="N", type=int,
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
+@click.option("--source", "source", default=None, metavar="PATH",
+              help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards):
+def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards, source):
     """Run the full pipeline then launch a target.
 
-    TARGET is one of: googletest, cluichetest, cluicheeditor.
+    TARGET is any target in pipeline.toml (see `dia launch --help`).
 
     Equivalent to: dia pipeline --target TARGET && dia launch TARGET
     """
@@ -55,7 +57,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
     repo_root = find_repo_root(__file__)
 
     if not no_build:
-        exit_code = _run_pipeline(repo_root, target, config, force)
+        exit_code = _run_pipeline(ctx, repo_root, target, config, force)
         if exit_code != 0:
             ctx.exit(exit_code)
             return
@@ -72,14 +74,14 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
         verbose=verbose,
         run_all=run_all,
         shards=shards,
+        source_override=source,
     )
     ctx.exit(exit_code)
 
 
-def _run_pipeline(repo_root: Path, target: str, config: str, force: bool) -> int:
+def _run_pipeline(ctx, repo_root: Path, target: str, config: str, force: bool) -> int:
     from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
     from dia_cli.commands.pipeline.pipeline_runner import run_pipeline
-    from dia_cli.utils.dia_output import OutputContext
 
     try:
         pipeline_config = load_pipeline_config(repo_root)
@@ -92,8 +94,18 @@ def _run_pipeline(repo_root: Path, target: str, config: str, force: bool) -> int
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
         return 2
 
-    log_dir = repo_root / "Cluiche" / "out" / "DiaCLI" / "logs"
-    output = OutputContext(log_dir=log_dir)
+    # Reuse the root `dia` command's own OutputContext (honours a --log-json
+    # override, e.g. DiaConsole's per-execution NDJSON path) instead of always
+    # creating a disconnected one -- confirmed as a real bug: `dia run` always
+    # wrote to the default Cluiche/out/DiaCLI/logs/<system>/last-run.ndjson
+    # regardless of --log-json, so DiaConsole's tailed file never received any
+    # event at all and reported "execution failed" even on a real PASSED run.
+    # Mirrors dia_cli/cli/pipeline.py's identical fallback pattern.
+    output = ctx.obj.output if ctx.obj and hasattr(ctx.obj, "output") else None
+    if output is None:
+        from dia_cli.utils.dia_output import OutputContext
+        log_dir = repo_root / "Cluiche" / "out" / "DiaCLI" / "logs"
+        output = OutputContext(log_dir=log_dir)
 
     stages = pipeline_config.targets[target].stages
 

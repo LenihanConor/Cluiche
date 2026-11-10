@@ -17,6 +17,10 @@ namespace Dia::Reflect {
 struct FieldAttribute {
     virtual ~FieldAttribute() = default;
     virtual const char* GetKind() const = 0;
+
+    // Generic range read — true only for numeric RangeAttribute<T>.
+    // Lets consumers read any range without knowing T.
+    virtual bool GetRange(double& lo, double& hi) const { (void)lo; (void)hi; return false; }
 };
 
 // =============================================================================
@@ -41,6 +45,31 @@ struct RangeAttribute : FieldAttribute {
 
     RangeAttribute() = default;
     RangeAttribute(T mn, T mx, bool cl = false) : minValue(mn), maxValue(mx), clamp(cl) {}
+
+    const char* GetKind() const override { return kKind; }
+
+    bool GetRange(double& lo, double& hi) const override {
+        if constexpr (std::is_arithmetic_v<T>) {
+            lo = static_cast<double>(minValue);
+            hi = static_cast<double>(maxValue);
+            return true;
+        } else {
+            (void)lo; (void)hi;
+            return false;
+        }
+    }
+};
+
+// =============================================================================
+// DescribeAttribute — human-facing label/unit/description for a field
+// All strings are literals (not owned). unit "" or null means no unit.
+// =============================================================================
+struct DescribeAttribute : FieldAttribute {
+    static constexpr const char* kKind = "Describe";
+    const char* label       = nullptr;
+    const char* unit        = nullptr;
+    const char* description = nullptr;
+    const char* hint        = nullptr;   // optional
 
     const char* GetKind() const override { return kKind; }
 };
@@ -79,10 +108,13 @@ struct FieldAttributeList {
 
     bool IsFull() const { return count >= kMaxAttrsPerField; }
 
-    void Add(const FieldAttribute* attr) {
-        if (!IsFull()) {
-            attrs[count++] = attr;
+    // Returns false (and stores nothing) when the list is full.
+    bool Add(const FieldAttribute* attr) {
+        if (IsFull()) {
+            return false;
         }
+        attrs[count++] = attr;
+        return true;
     }
 };
 
@@ -91,7 +123,7 @@ struct FieldAttributeList {
 // =============================================================================
 class FieldAttributeRegistry {
 public:
-    static constexpr unsigned int kMaxEntries = 256u;
+    static constexpr unsigned int kMaxEntries = 2048u;
 
     static FieldAttributeRegistry& Instance();
 
@@ -102,7 +134,9 @@ public:
         for (unsigned int i = 0u; i < mEntries.Size(); ++i) {
             if (mEntries.At(i).key.typeCrc == typeCrc &&
                 mEntries.At(i).key.fieldCrc == fieldCrc) {
-                mEntries.At(i).Add(attr);
+                if (!mEntries.At(i).Add(attr)) {
+                    ++mDroppedCount;
+                }
                 return;
             }
         }
@@ -113,8 +147,19 @@ public:
             list.key.fieldCrc = fieldCrc;
             list.Add(attr);
             mEntries.Add(list);
+        } else {
+            ++mDroppedCount;
         }
     }
+
+    // Number of registrations lost to a capacity limit (entry table full, or
+    // more than kMaxAttrsPerField attributes on one field). Reset by Clear().
+    unsigned int DroppedCount() const { return mDroppedCount; }
+
+    // Read-only iteration: EntryCount() distinct (type, field) keys are in use (<= kMaxEntries);
+    // EntryAt(i) is valid for i < EntryCount().
+    unsigned int EntryCount() const { return mEntries.Size(); }
+    const FieldAttributeList& EntryAt(unsigned int index) const { return mEntries.At(index); }
 
     // Returns all attributes for a (type, field) pair.
     // outAttrs is filled with up to maxOut pointers; returns actual count found.
@@ -153,10 +198,11 @@ public:
     }
 
     // For testing: clear all entries
-    void Clear() { mEntries.RemoveAll(); }
+    void Clear() { mEntries.RemoveAll(); mDroppedCount = 0u; }
 
 private:
     FieldAttributeRegistry() = default;
+    unsigned int mDroppedCount = 0u;
     Dia::Core::Containers::DynamicArrayC<FieldAttributeList, kMaxEntries> mEntries;
 };
 
@@ -277,3 +323,9 @@ void EnforceRange(T& value, uint32_t typeCrc, uint32_t fieldCrc, Archive& ar) {
     }; \
     static TypeName##_##fieldName##_AssetRefReg s_##TypeName##_##fieldName##_AssetRefReg; \
     }
+
+// DIA_ATTR_DESCRIBE — register a DescribeAttribute (no hint) for (TypeName, fieldName)
+#define DIA_ATTR_DESCRIBE(TypeName, fieldName, Label, Unit, Description)     namespace {     struct TypeName##_##fieldName##_DescribeReg {         TypeName##_##fieldName##_DescribeReg() {             static Dia::Reflect::DescribeAttribute _attr_ = [] {                 Dia::Reflect::DescribeAttribute a;                 a.label = (Label); a.unit = (Unit); a.description = (Description);                 return a; }();             Dia::Reflect::FieldAttributeRegistry::Instance().Register(                 Dia::Core::StringCRC(#TypeName).Value(),                 Dia::Core::StringCRC(#fieldName).Value(),                 &_attr_);         }     };     static TypeName##_##fieldName##_DescribeReg s_##TypeName##_##fieldName##_DescribeReg;     }
+
+// DIA_ATTR_DESCRIBE_HINT — as DIA_ATTR_DESCRIBE, plus an optional hint string
+#define DIA_ATTR_DESCRIBE_HINT(TypeName, fieldName, Label, Unit, Description, Hint)     namespace {     struct TypeName##_##fieldName##_DescribeHintReg {         TypeName##_##fieldName##_DescribeHintReg() {             static Dia::Reflect::DescribeAttribute _attr_ = [] {                 Dia::Reflect::DescribeAttribute a;                 a.label = (Label); a.unit = (Unit); a.description = (Description); a.hint = (Hint);                 return a; }();             Dia::Reflect::FieldAttributeRegistry::Instance().Register(                 Dia::Core::StringCRC(#TypeName).Value(),                 Dia::Core::StringCRC(#fieldName).Value(),                 &_attr_);         }     };     static TypeName##_##fieldName##_DescribeHintReg s_##TypeName##_##fieldName##_DescribeHintReg;     }

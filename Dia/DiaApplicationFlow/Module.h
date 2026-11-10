@@ -37,7 +37,8 @@ namespace Dia { namespace ApplicationFlow {
     {
     public:
         explicit Module(const Dia::Core::StringCRC& instanceId);
-        virtual ~Module() = default;
+        // Unregisters the lifecycle health reporter if the module is destroyed without completing a Stop.
+        virtual ~Module();
 
         Module(const Module&) = delete;
         Module& operator=(const Module&) = delete;

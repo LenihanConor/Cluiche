@@ -22,20 +22,6 @@
 
 namespace Dia { namespace ApplicationFlow {
 
-    // File-static stream metrics — lazily initialized on first use.
-    static Observation::Metric::Counter* sServiceStreamCommitCount  = nullptr;
-    static Observation::Metric::Counter* sServiceStreamResetCount   = nullptr;
-    static Observation::Metric::Gauge*   sServiceStreamCommittedGauge = nullptr;
-
-    static void EnsureStreamMetrics()
-    {
-        if (sServiceStreamCommitCount) return;
-        auto& reg = Observation::Metric::MetricRegistry::Instance();
-        sServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
-        sServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
-        sServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
-    }
-
     //--------------------------------------------------------------------------
     // Constructor / Destructor
     //--------------------------------------------------------------------------
@@ -53,6 +39,11 @@ namespace Dia { namespace ApplicationFlow {
         , mStarted(false)
         , mShutdownInitiated(false)
     {
+        // Resolve registry-owned stream metrics per instance (registry Reset() frees them).
+        auto& reg = Observation::Metric::MetricRegistry::Instance();
+        mServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
+        mServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
+        mServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
     }
 
     //--------------------------------------------------------------------------
@@ -175,7 +166,7 @@ namespace Dia { namespace ApplicationFlow {
             // Build a fixed-capacity list of EventStreamStore pointers for this PU.
             // We capture raw pointers — stores are owned by mStreamStores[] which
             // outlives the PU; the lambda is destroyed when the PU is destroyed.
-            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 16> ownedStores;
+            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 64> ownedStores;
             for (unsigned int si = 0; si < mManifest.streams.Size(); ++si)
             {
                 const StreamDeclaration& sd = mManifest.streams[si];
@@ -184,8 +175,12 @@ namespace Dia { namespace ApplicationFlow {
                 if (sd.fromPU != puId)
                     continue;
                 IStreamStore* store = FindStreamStore(sd.id);
-                if (store && !ownedStores.IsFull())
-                    ownedStores.Add(store);
+                if (store)
+                {
+                    DIA_ASSERT(!ownedStores.IsFull(), "Application: PU owns more EventStreams than the flush list capacity; raise ownedStores size");
+                    if (!ownedStores.IsFull())
+                        ownedStores.Add(store);
+                }
             }
 
             if (ownedStores.IsEmpty())
@@ -278,10 +273,7 @@ namespace Dia { namespace ApplicationFlow {
             }
 
             // Tick the main PU so stopping modules can wind down.
-            if (mProcessingUnitCount > 0)
-            {
-                mProcessingUnits[0]->Update(deltaTime);
-            }
+            UpdateInlineProcessingUnits(deltaTime);
 
             // Return false once everything has settled.
             if (AllModulesInactive())
@@ -312,10 +304,7 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- Tick the main PU ------------------------------------------------
-        if (mProcessingUnitCount > 0)
-        {
-            mProcessingUnits[0]->Update(deltaTime);
-        }
+        UpdateInlineProcessingUnits(deltaTime);
 
         // --- Commit gate: make registered ServiceStreams visible to consumers ---
         CommitReadyServiceStreams();
@@ -915,7 +904,6 @@ namespace Dia { namespace ApplicationFlow {
         {
             DIA_PROFILE_SCOPE("app.service_stream_reset", Observation::Profile::Category::kDiaApplicationFlow);
             DIA_TRACE_ZONE("app.service_stream_reset", Observation::Trace::Category::kDiaApplicationFlow);
-            EnsureStreamMetrics();
 
             static const Dia::Core::StringCRC kProvides("provides");
             static const Dia::Core::StringCRC kServiceStream("ServiceStream");
@@ -951,7 +939,8 @@ namespace Dia { namespace ApplicationFlow {
                     DIA_LOG_INFO("Application", "Resetting ServiceStream '%s' — provider leaving stage",
                                  streamId.AsChar());
                     store->Reset();
-                    sServiceStreamResetCount->Inc();
+                    if (mServiceStreamResetCount)
+                        mServiceStreamResetCount->Inc();
                 }
             }
         }
@@ -1021,6 +1010,23 @@ namespace Dia { namespace ApplicationFlow {
                     module->BeginStop();
                 }
             }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // UpdateInlineProcessingUnits  (private)
+    //
+    // PU 0 always runs inline. A secondary PU declared dedicatedThread=false also
+    // runs inline (it has no thread), so it is ticked here after PU 0, in manifest
+    // order. Dedicated-thread PUs are driven by their own thread.
+    //--------------------------------------------------------------------------
+
+    void Application::UpdateInlineProcessingUnits(float deltaTime)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            if (p == 0 || !mProcessingUnits[p]->IsDedicatedThread())
+                mProcessingUnits[p]->Update(deltaTime);
         }
     }
 
@@ -1185,7 +1191,6 @@ namespace Dia { namespace ApplicationFlow {
         DIA_PROFILE_SCOPE("app.service_commit_gate", Observation::Profile::Category::kDiaApplicationFlow);
         DIA_TRACE_ZONE("app.service_commit_gate", Observation::Trace::Category::kDiaApplicationFlow);
 
-        EnsureStreamMetrics();
         unsigned int committedTotal = 0;
 
         for (unsigned int i = 0; i < mStreamStoreCount; ++i)
@@ -1197,7 +1202,8 @@ namespace Dia { namespace ApplicationFlow {
             if (store->IsRegistered() && !store->IsCommitted())
             {
                 store->Commit();
-                sServiceStreamCommitCount->Inc();
+                if (mServiceStreamCommitCount)
+                    mServiceStreamCommitCount->Inc();
                 DIA_LOG_INFO("Application", "ServiceStream '%s' committed", store->GetId().AsChar());
             }
 
@@ -1205,8 +1211,8 @@ namespace Dia { namespace ApplicationFlow {
                 ++committedTotal;
         }
 
-        if (sServiceStreamCommittedGauge)
-            sServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
+        if (mServiceStreamCommittedGauge)
+            mServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
     }
 
     // ModuleIsInStage  (private, static)
@@ -1383,6 +1389,29 @@ namespace Dia { namespace ApplicationFlow {
         mStreamStores[mStreamStoreCount] = std::move(newStore);
         ++mStreamStoreCount;
         return raw;
+    }
+
+    //--------------------------------------------------------------------------
+    // GetDeclaredEventStreamConfig  (IStreamConnector override)
+    //--------------------------------------------------------------------------
+
+    bool Application::GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                                   unsigned int& outCapacity,
+                                                   OverflowPolicy& outPolicy,
+                                                   unsigned int& outBlockTimeoutMs) const
+    {
+        for (unsigned int i = 0; i < mManifest.streams.Size(); ++i)
+        {
+            const StreamDeclaration& sd = mManifest.streams[i];
+            if (sd.id == streamId)
+            {
+                outCapacity       = sd.capacity;
+                outPolicy         = sd.overflowPolicy;
+                outBlockTimeoutMs = sd.blockTimeoutMs;
+                return true;
+            }
+        }
+        return false;
     }
 
     //--------------------------------------------------------------------------

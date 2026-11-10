@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>S-3.5 World Sim Testbed — CoW Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* TOP BAR */
+.app-titlebar {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #1f1f1f 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.app-title { font-size: 11px; color: #999; flex: 1; }
+.titlebar-badge {
+  font-size: 10px; color: #666; background: #161616;
+  padding: 2px 8px; border-radius: 3px; border: 1px solid #2a2a2a;
+}
+
+/* MODE TABS */
+.mode-tabs {
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  gap: 0;
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+.mode-tab {
+  padding: 8px 20px;
+  font-size: 11px;
+  color: #777;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.mode-tab:hover { color: #999; background: #1f1f1f; }
+.mode-tab.active {
+  color: #5a9fd4;
+  border-bottom-color: #5a9fd4;
+}
+
+/* MAIN LAYOUT */
+.main-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mode-view {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+}
+.mode-view.active { display: flex; }
+
+/* AUTHOR VIEW */
+.author-view {
+  flex-direction: row;
+}
+
+.step-rail {
+  width: 280px;
+  background: #161616;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.step-rail-header {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.step {
+  margin-bottom: 8px;
+  padding: 10px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  position: relative;
+}
+
+.step.done {
+  border-color: #2a5a2a;
+  background: #1a2a1a;
+}
+
+.step-number {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2a2a2a;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.step.done .step-number {
+  background: #2a5a2a;
+  color: #8aea8a;
+}
+
+.step.done .step-number::after {
+  content: '✓';
+}
+
+.step-content {
+  margin-left: 30px;
+}
+
+.step-title {
+  font-size: 11px;
+  color: #ccc;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.step-desc {
+  font-size: 9px;
+  color: #777;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.step-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.slider-label {
+  width: 70px;
+  color: #666;
+}
+
+.slider {
+  flex: 1;
+  height: 4px;
+  background: #2a2a2a;
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+
+.slider-fill {
+  height: 100%;
+  background: #5a9fd4;
+  border-radius: 2px;
+}
+
+.slider-value {
+  width: 35px;
+  text-align: right;
+  color: #999;
+}
+
+.step-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 9px;
+}
+
+.step-field-label {
+  color: #666;
+  width: 40px;
+}
+
+.step-field-input {
+  flex: 1;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  color: #ccc;
+  padding: 3px 6px;
+  font-family: inherit;
+  font-size: 9px;
+  border-radius: 2px;
+}
+
+.step-btn {
+  padding: 4px 10px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  font-size: 9px;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+
+.step-btn:hover { background: #2a2a2a; color: #ccc; }
+
+.step-btn.primary {
+  background: #2a3a4a;
+  border-color: #3a5a7a;
+  color: #5a9fd4;
+}
+
+.step-btn.primary:hover { background: #3a4a5a; color: #7ab9f4; }
+
+.step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.step-meta {
+  margin-top: 4px;
+  font-size: 8px;
+  color: #555;
+}
+
+.center-viewport {
+  flex: 1;
+  position: relative;
+  background: #0d0d12;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-panel {
+  width: 420px;
+  background: #161616;
+  border-left: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-footer {
+  background: #1a1a1a;
+  border-top: 1px solid #2a2a2a;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.footer-btn {
+  flex: 1;
+  padding: 6px 12px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 2px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.footer-btn:hover { background: #2a2a2a; color: #ccc; }
+
+/* WORLD ASSETS CARD (compact) */
+.card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.card-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.card-icon {
+  width: 14px;
+  height: 14px;
+  background: #f5a623;
+  color: #fff;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+
+.card-title {
+  flex: 1;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.card-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.bundle-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #222;
+}
+
+.bundle-name {
+  flex: 1;
+  font-size: 12px;
+  color: #5a9fd4;
+  font-weight: 600;
+}
+
+.pill {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-weight: 600;
+}
+
+.pill.ok {
+  color: #3a7a3a;
+  background: #1a2a1a;
+  border-color: #2a4a2a;
+}
+
+.part {
+  background: #1b1b1b;
+  border: 1px solid #252525;
+  border-radius: 3px;
+  padding: 8px;
+}
+
+.part-label {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.part-value {
+  font-size: 10px;
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta {
+  font-size: 8px;
+  color: #555;
+}
+
+/* RUN VIEW */
+.run-view {
+  flex-direction: row;
+}
+
+.run-left {
+  width: 320px;
+  background: #161616;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.run-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.run-right {
+  width: 380px;
+  background: #161616;
+  border-left: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-card {
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-card-header {
+  background: #1f1f1f;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.panel-card-body {
+  background: #0f0f0f;
+  padding: 8px;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: 10px;
+  color: #999;
+  cursor: pointer;
+}
+
+.layer-item:hover { color: #ccc; background: #1a1a1a; }
+
+.layer-radio {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #3a3a3a;
+  background: #0f0f0f;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.layer-radio.active {
+  border-color: #5a9fd4;
+  background: #5a9fd4;
+  position: relative;
+}
+
+.layer-radio.active::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+.layer-checkbox {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #3a3a3a;
+  background: #0f0f0f;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.layer-checkbox.checked {
+  background: #5a9fd4;
+  border-color: #5a9fd4;
+  position: relative;
+}
+
+.layer-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: -2px;
+  left: 1px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #1a2a1a;
+  border: 1px solid #2a4a2a;
+  color: #5a9fd4;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.selection-header {
+  font-size: 10px;
+  color: #5a9fd4;
+  margin-bottom: 6px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9px;
+}
+
+.stats-table th {
+  background: #1a1a1a;
+  padding: 3px 4px;
+  text-align: left;
+  font-weight: 600;
+  color: #777;
+  font-size: 8px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.stats-table td {
+  padding: 2px 4px;
+  color: #aaa;
+  border-bottom: 1px solid #0f0f0f;
+}
+
+.timeline-bar {
+  height: 70px;
+  background: #1a1a1a;
+  border-top: 1px solid #3a3a3a;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-label {
+  font-size: 9px;
+  color: #666;
+  width: 50px;
+}
+
+.timeline-scrubber {
+  flex: 1;
+  height: 20px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  position: relative;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 9px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: #3a3a3a;
+}
+
+.timeline-playhead {
+  position: absolute;
+  top: 4px;
+  left: 75%;
+  width: 3px;
+  height: 12px;
+  background: #5a9fd4;
+  border-radius: 1px;
+}
+
+.timeline-info {
+  font-size: 9px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+
+.timeline-budget {
+  color: #5a9fd4;
+}
+
+/* REGRESSION VIEW */
+.regression-view {
+  flex-direction: column;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.regression-header {
+  font-size: 13px;
+  color: #5a9fd4;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.regression-table {
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.regression-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.regression-table th {
+  background: #1f1f1f;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #888;
+  font-size: 10px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.regression-table td {
+  padding: 8px 12px;
+  color: #aaa;
+  border-bottom: 1px solid #1a1a1a;
+  font-size: 10px;
+}
+
+.regression-table tbody tr:hover {
+  background: #1a1a1a;
+}
+
+.check-name {
+  color: #ccc;
+  font-weight: 600;
+}
+
+.check-cell {
+  text-align: center;
+}
+
+.check-status {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  line-height: 16px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.check-status.pass {
+  background: #2a5a2a;
+  color: #8aea8a;
+}
+
+.check-status.amber {
+  background: #4a3a1a;
+  color: #f5a623;
+}
+
+.check-status.fail {
+  background: #4a2a2a;
+  color: #e74c3c;
+}
+
+.check-details {
+  font-size: 8px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.regression-footer {
+  margin-top: 16px;
+  padding: 12px;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.regression-footer-title {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.regression-link {
+  font-size: 9px;
+  color: #5a9fd4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.regression-link:hover { text-decoration: underline; }
+
+.regression-command {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  padding: 8px 10px;
+  border-radius: 2px;
+  font-size: 10px;
+  color: #888;
+  font-family: 'Consolas', monospace;
+  margin-top: 8px;
+}
+
+.regression-command .cmd {
+  color: #5a9fd4;
+}
+
+.run-headless-btn {
+  padding: 6px 12px;
+  background: #2a3a4a;
+  border: 1px solid #3a5a7a;
+  color: #5a9fd4;
+  border-radius: 2px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.run-headless-btn:hover { background: #3a4a5a; color: #7ab9f4; }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="app-titlebar">
+  <div class="app-title">CoW - S-3.5 World Sim Testbed</div>
+  <div class="titlebar-badge">Integration Test</div>
+  <div class="titlebar-badge">archipelago_lush</div>
+</div>
+
+<!-- Mode Tabs -->
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="showMode('author')">Author</button>
+  <button class="mode-tab" onclick="showMode('run')">Run</button>
+  <button class="mode-tab" onclick="showMode('regression')">Regression</button>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- AUTHOR VIEW -->
+  <div class="mode-view author-view active" id="author-view">
+
+    <!-- Step Rail (Left) -->
+    <div class="step-rail">
+      <div class="step-rail-header">Authoring Pipeline</div>
+
+      <!-- Step 1: Shape Terrain -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Shape Terrain</div>
+          <div class="step-desc">Live sliders shape the world</div>
+          <div class="step-controls">
+            <div class="slider-control">
+              <span class="slider-label">Land</span>
+              <div class="slider"><div class="slider-fill" style="width: 42%;"></div></div>
+              <span class="slider-value">0.42</span>
+            </div>
+            <div class="slider-control">
+              <span class="slider-label">Continents</span>
+              <div class="slider"><div class="slider-fill" style="width: 35%;"></div></div>
+              <span class="slider-value">0.35</span>
+            </div>
+            <div class="slider-control">
+              <span class="slider-label">Islands</span>
+              <div class="slider"><div class="slider-fill" style="width: 60%;"></div></div>
+              <span class="slider-value">0.60</span>
+            </div>
+            <div class="step-field">
+              <span class="step-field-label">Seed:</span>
+              <input class="step-field-input" value="42" readonly>
+            </div>
+            <div class="step-field">
+              <span class="step-field-label">Size:</span>
+              <input class="step-field-input" value="Standard 80×52" readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Bake Terrain -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Bake Terrain</div>
+          <div class="step-desc">Save shaped world as asset</div>
+          <div class="step-controls">
+            <button class="step-btn" disabled>Bake as "archipelago_s42"</button>
+            <div class="step-meta">baked ✓ · Standard 80×52 · 9f3c…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Weather Pack -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Weather Pack</div>
+          <div class="step-desc">Load or tune weather parameters</div>
+          <div class="step-controls">
+            <button class="step-btn" disabled>Load: harsh_winters</button>
+            <div class="step-meta">loaded · 2 overrides</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Ecology Pack -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Ecology Pack</div>
+          <div class="step-desc">Load or tune ecology parameters</div>
+          <div class="step-controls">
+            <button class="step-btn" disabled>Load: lush</button>
+            <div class="step-meta">loaded · 3 overrides</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Start State -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Start State</div>
+          <div class="step-desc">Paint ecology cells (requires baked terrain)</div>
+          <div class="step-controls">
+            <button class="step-btn" disabled>Load: archipelago_s42</button>
+            <div class="step-meta">loaded · 14 cells</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 6: Save Bundle -->
+      <div class="step done">
+        <div class="step-number"></div>
+        <div class="step-content">
+          <div class="step-title">Save Bundle</div>
+          <div class="step-desc">Package all parts as a world bundle</div>
+          <div class="step-controls">
+            <button class="step-btn primary">Save as "archipelago_lush"</button>
+            <div class="step-meta">saved ✓</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7: Set Default -->
+      <div class="step">
+        <div class="step-number">7</div>
+        <div class="step-content">
+          <div class="step-title">Set as Default World</div>
+          <div class="step-desc">Write to cow.diagame default_world</div>
+          <div class="step-controls">
+            <button class="step-btn">Set Default</button>
+            <div class="step-meta">current: archipelago_lush</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Center: Hex Map -->
+    <div class="center-viewport">
+      <svg width="100%" height="100%" viewBox="0 0 1200 800">
+        <rect width="1200" height="800" fill="#0d0d12"/>
+
+        <!-- Hex grid (Relief coloring) -->
+        <g id="hexGrid">
+          <script>
+            const svg = document.querySelector('#hexGrid');
+            const cols = 40, rows = 26;
+            const hexWidth = 30, hexHeight = 26;
+
+            function seededRandom(x, y) {
+              const seed = x * 73856093 + y * 19349663;
+              return ((seed * 2654435761) % 2147483647) / 2147483647;
+            }
+
+            function reliefColor(val) {
+              // Brown-to-green gradient for relief
+              if (val < 0.3) return `rgb(${50 + val * 100}, ${90 + val * 150}, ${150 + val * 50})`;
+              else if (val < 0.5) return `rgb(${60 + val * 80}, ${120 + val * 80}, ${50 + val * 40})`;
+              else return `rgb(${80 + val * 60}, ${90 + val * 60}, ${40 + val * 30})`;
+            }
+
+            for (let row = 0; row < rows; row++) {
+              for (let col = 0; col < cols; col++) {
+                const xOdd = (row % 2) * hexWidth / 2;
+                const x = col * hexWidth + xOdd + 50;
+                const y = row * hexHeight * 0.75 + 50;
+
+                const relief = seededRandom(col, row) * 0.7 + 0.2 + Math.sin(col * 0.2 + row * 0.3) * 0.1;
+                const color = reliefColor(relief);
+
+                const points = [
+                  [x + hexWidth * 0.5, y],
+                  [x + hexWidth, y + hexHeight * 0.25],
+                  [x + hexWidth, y + hexHeight * 0.75],
+                  [x + hexWidth * 0.5, y + hexHeight],
+                  [x, y + hexHeight * 0.75],
+                  [x, y + hexHeight * 0.25]
+                ].map(p => p.join(',')).join(' ');
+
+                const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                hex.setAttribute('points', points);
+                hex.setAttribute('fill', color);
+                hex.setAttribute('stroke', 'none');
+                svg.appendChild(hex);
+              }
+            }
+          </script>
+        </g>
+
+        <text x="20" y="30" font-size="14" fill="#3a3a4a" font-family="Consolas">RELIEF BASE LAYER · STANDARD 80 × 52</text>
+      </svg>
+    </div>
+
+    <!-- Right: World Assets Card -->
+    <div class="right-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">⚙</div>
+          <div class="card-title">WORLD ASSETS</div>
+        </div>
+
+        <div class="card-body">
+          <div class="bundle-header">
+            <div class="bundle-name">archipelago_lush</div>
+            <div class="pill ok">source: Cluiche/Assets/CoW</div>
+          </div>
+
+          <div class="part">
+            <div class="part-label">Terrain</div>
+            <div class="part-value">
+              <span>archipelago_s42</span>
+              <span class="meta">baked</span>
+              <span class="meta">Standard 80×52</span>
+              <span class="meta">9f3c…</span>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="part-label">Weather Pack</div>
+            <div class="part-value">
+              <span>harsh_winters</span>
+              <span class="meta">2 overrides</span>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="part-label">Ecology Pack</div>
+            <div class="part-value">
+              <span>lush</span>
+              <span class="meta">3 overrides</span>
+            </div>
+          </div>
+
+          <div class="part">
+            <div class="part-label">Start State</div>
+            <div class="part-value">
+              <span>archipelago_s42</span>
+              <span class="meta">14 cells</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <button class="footer-btn">Open in S-2.5<br><span style="font-size: 8px; color: #666;">(same bundle)</span></button>
+        <button class="footer-btn">Open in S-3<br><span style="font-size: 8px; color: #666;">(same bundle)</span></button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RUN VIEW -->
+  <div class="mode-view run-view" id="run-view">
+
+    <!-- Left: Layer Picker -->
+    <div class="run-left">
+      <div class="panel-card">
+        <div class="panel-card-header">LAYER PICKER</div>
+        <div class="panel-card-body">
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Relief</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio active"></span>
+            <span>Vegetation</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Herbivores</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-radio"></span>
+            <span>Predators</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-card-header">OVERLAYS</div>
+        <div class="panel-card-body">
+          <div class="layer-item">
+            <span class="layer-checkbox checked"></span>
+            <span>Wind arrows</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox"></span>
+            <span>Region edges</span>
+          </div>
+          <div class="layer-item">
+            <span class="layer-checkbox"></span>
+            <span>Grid</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Viewport + Timeline -->
+    <div class="run-center">
+      <div class="center-viewport">
+        <svg width="100%" height="100%" viewBox="0 0 1200 800">
+          <rect width="1200" height="800" fill="#0d0d12"/>
+
+          <!-- Hex grid (Vegetation coloring) -->
+          <g id="hexGridRun">
+            <script>
+              const svgRun = document.querySelector('#hexGridRun');
+              const colsRun = 40, rowsRun = 26;
+              const hexWidthRun = 30, hexHeightRun = 26;
+
+              function seededRandomRun(x, y) {
+                const seed = x * 73856093 + y * 19349663;
+                return ((seed * 2654435761) % 2147483647) / 2147483647;
+              }
+
+              function vegColorRun(val) {
+                const intensity = Math.floor(val * 255);
+                const r = Math.floor(26 + intensity * 0.3);
+                const g = Math.floor(90 + intensity * 0.5);
+                const b = 42;
+                return `rgb(${r},${g},${b})`;
+              }
+
+              for (let row = 0; row < rowsRun; row++) {
+                for (let col = 0; col < colsRun; col++) {
+                  const xOdd = (row % 2) * hexWidthRun / 2;
+                  const x = col * hexWidthRun + xOdd + 50;
+                  const y = row * hexHeightRun * 0.75 + 50;
+
+                  const veg = seededRandomRun(col, row) * 0.8 + 0.1 + Math.sin(col * 0.3 + row * 0.2) * 0.1;
+                  const color = vegColorRun(veg);
+
+                  const points = [
+                    [x + hexWidthRun * 0.5, y],
+                    [x + hexWidthRun, y + hexHeightRun * 0.25],
+                    [x + hexWidthRun, y + hexHeightRun * 0.75],
+                    [x + hexWidthRun * 0.5, y + hexHeightRun],
+                    [x, y + hexHeightRun * 0.75],
+                    [x, y + hexHeightRun * 0.25]
+                  ].map(p => p.join(',')).join(' ');
+
+                  const hex = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                  hex.setAttribute('points', points);
+                  hex.setAttribute('fill', color);
+                  hex.setAttribute('stroke', 'none');
+                  svgRun.appendChild(hex);
+                }
+              }
+            </script>
+          </g>
+
+          <!-- Wind arrows -->
+          <g opacity="0.7">
+            <path d="M 200,150 L 240,150 L 235,145 M 240,150 L 235,155" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+            <path d="M 350,180 L 390,180 L 385,175 M 390,180 L 385,185" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+            <path d="M 500,220 L 540,220 L 535,215 M 540,220 L 535,225" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+            <path d="M 650,280 L 690,280 L 685,275 M 690,280 L 685,285" stroke="#5a9fd4" stroke-width="2" fill="none"/>
+          </g>
+
+          <text x="20" y="30" font-size="14" fill="#3a3a4a" font-family="Consolas">VEGETATION BASE + WIND OVERLAY · Y3 W12</text>
+        </svg>
+      </div>
+
+      <div class="timeline-bar">
+        <div class="timeline-controls">
+          <div class="timeline-label">Y1–Y5:</div>
+          <div class="timeline-scrubber">
+            <div class="timeline-track"></div>
+            <div class="timeline-playhead"></div>
+          </div>
+          <div style="font-size: 9px; color: #666;">Year 3 Week 12</div>
+        </div>
+        <div class="timeline-info">
+          <div>tracked: vegetation, herbivores, precipitation · <span class="timeline-budget">24 / 64 MB</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Selection Inspector -->
+    <div class="run-right">
+      <div class="panel-card" style="flex: 1;">
+        <div class="panel-card-header">STATUS</div>
+        <div class="panel-card-body">
+          <div class="status-pill">T-1 Inspector connected</div>
+          <div style="font-size: 9px; color: #888; line-height: 1.4;">
+            Bundle: archipelago_lush<br>
+            Running: Year 3 Week 12<br>
+            Sim rate: 1.0x
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="flex: 1;">
+        <div class="panel-card-header">SELECTION INSPECTOR</div>
+        <div class="panel-card-body">
+          <div class="selection-header">86 cells · Region 2</div>
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>Layer</th>
+                <th>Min</th>
+                <th>Mean</th>
+                <th>Max</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Vegetation</td>
+                <td>0.12</td>
+                <td>0.48</td>
+                <td>0.91</td>
+              </tr>
+              <tr>
+                <td>Herbivores</td>
+                <td>0.05</td>
+                <td>0.33</td>
+                <td>0.69</td>
+              </tr>
+              <tr>
+                <td>Predators</td>
+                <td>0.00</td>
+                <td>0.08</td>
+                <td>0.22</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- REGRESSION VIEW -->
+  <div class="mode-view regression-view" id="regression-view">
+
+    <div class="regression-header">
+      <span>Regression Test Matrix</span>
+      <span style="font-size: 10px; color: #666;">archipelago_lush · Last run: 2026-10-19 14:23</span>
+    </div>
+
+    <div class="regression-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30%;">Check</th>
+            <th style="width: 15%;">Small</th>
+            <th style="width: 15%;">Standard</th>
+            <th style="width: 15%;">Large</th>
+            <th style="width: 25%;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="check-name">Reproducible world</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">hash after 20y: 1/3/17 seeds match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">hash after 20y: 1/3/17 seeds match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">hash after 20y: 1/3/17 seeds match</div>
+            </td>
+            <td>3 seeds per size</td>
+          </tr>
+          <tr>
+            <td class="check-name">Save/load mid-run</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y10: save → load → hash match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y10: save → load → hash match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y10: save → load → hash match</div>
+            </td>
+            <td>Snapshot at Y10</td>
+          </tr>
+          <tr>
+            <td class="check-name">Snapshot restore</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y8 pre-drought restored</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y8 pre-drought restored</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">Y8 pre-drought restored</div>
+            </td>
+            <td>History rewind</td>
+          </tr>
+          <tr>
+            <td class="check-name">Authoring round trip</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">bake → save → load → match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">bake → save → load → match</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">bake → save → load → match</div>
+            </td>
+            <td>Bundle fidelity</td>
+          </tr>
+          <tr>
+            <td class="check-name">Perf at Large</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">all ticks within budget</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">all ticks within budget</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status amber">⚠</div>
+              <div class="check-details">A4 week 11.2 ms, A1 season 15.8 ms, worst 27.4 ms (> 26 ms budget)</div>
+            </td>
+            <td>A4 week ≤10 ms, A1 season ≤16 ms, worst ≤26 ms</td>
+          </tr>
+          <tr>
+            <td class="check-name">Coverage</td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">schema valid, all layers described</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">schema valid, all layers described</div>
+            </td>
+            <td class="check-cell">
+              <div class="check-status pass">✓</div>
+              <div class="check-details">schema valid, all layers described</div>
+            </td>
+            <td>dia validate schema clean</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="regression-footer">
+      <div class="regression-footer-title">Reports & History</div>
+      <div class="regression-link">📄 report: out/CoW/s35/regression_s42.json</div>
+      <div class="regression-link">📄 report: out/CoW/s35/regression_s1729.json</div>
+      <div class="regression-link">📄 report: out/CoW/s35/regression_s90210.json</div>
+      <div class="regression-link">📊 history: out/CoW/s35/cell_history_s42.json</div>
+      <div class="regression-link">📊 history: out/CoW/s35/cell_history_s1729.json</div>
+
+      <button class="run-headless-btn" style="margin-top: 8px;">Run headless</button>
+
+      <div class="regression-command">
+        <span class="cmd">dia run cow --stage s35_world_sim --automation regression</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function showMode(mode) {
+  // Hide all views
+  document.querySelectorAll('.mode-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+
+  // Show selected view
+  document.getElementById(mode + '-view').classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

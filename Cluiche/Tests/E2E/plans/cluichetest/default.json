@@ -14,15 +14,26 @@
         "scenarios/cluichetest/animation2d/test_anim2d_playback.py",
         "scenarios/cluichetest/assetruntime/test_asset_lifecycle.py",
         "scenarios/cluichetest/entity_test_stage/smoke.py",
+        "scenarios/cluichetest/entity_test_stage/test_entity_inspect_sim_hosted.py",
         "scenarios/cluichetest/scene2d_stage/smoke.py",
         "scenarios/cluichetest/geometry2d_stage/smoke.py",
+        "scenarios/cluichetest/geometry2d_stage/test_geometry2d_counts_sim_hosted.py",
         "scenarios/cluichetest/scalarfield_stage/smoke.py",
         "scenarios/cluichetest/entityspatial_stage/smoke.py",
         "scenarios/cluichetest/arena/test_arena_e2e.py",
         "scenarios/cluichetest/economy_inspector/test_economy_inspector.py",
         "scenarios/cluichetest/behaviourtree/test_bt_e2e.py",
         "scenarios/cluichetest/aicallout/test_aicallout_e2e.py",
-        "scenarios/cluichetest/msgbus/test_msgbus_e2e.py"
+        "scenarios/cluichetest/msgbus/test_msgbus_e2e.py",
+        "scenarios/cluichetest/cellfield_render/test_cellfield_render.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_smoke.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_mirror.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_help.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_history_scrub.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_snapshots.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_export.py",
+        "scenarios/cluichetest/celllayers/test_celllayers_delta.py",
+        "scenarios/cluichetest/sim_hosted/test_sim_hosted_query.py"
     ],
     "generic_run_skip": {
         "UIUltralightTestStage": "crashes app on second UIModule init — tracked in docs/research/e2e_testing/uiultralight_crash_notes.md"

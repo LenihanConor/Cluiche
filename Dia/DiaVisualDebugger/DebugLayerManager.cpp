@@ -13,9 +13,6 @@
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Camera/Camera2D.h>
 #include <DiaGraphics/Camera/ViewportTransform.h>
-#include <DiaDebugServer/DebugServer.h>
-#include <DiaDebugProtocol/DiaDebugProtocol.h>
-#include <DiaProtobuf/ProtoJsonCodec.h>
 #include <cstdlib>  // std::atof
 
 namespace Dia
@@ -43,7 +40,6 @@ namespace Dia
                 if (mLayers[static_cast<unsigned int>(existing)].debugger == debugger)
                 {
                     mLayers[static_cast<unsigned int>(existing)].active = true;
-                    mLayersDirty = true;
                     return;
                 }
                 DIA_ASSERT(false, "DebugLayerManager::Register — layer name already registered with different pointer");
@@ -59,8 +55,7 @@ namespace Dia
             entry.stageTag  = stageTag;
             entry.active    = true;
             mLayers.Add(entry);
-            mSortDirty   = true;
-            mLayersDirty = true;
+            mSortDirty = true;
         }
 
         void DebugLayerManager::RegisterWithoutDraw(IVisualDebugger* debugger, int priority,
@@ -75,8 +70,7 @@ namespace Dia
         void DebugLayerManager::ClearDynamicLayers()
         {
             mLayers.RemoveAll();
-            mSortDirty   = true;
-            mLayersDirty = true;
+            mSortDirty = true;
         }
 
         void DebugLayerManager::Unregister(Dia::Core::StringCRC layerName)
@@ -88,8 +82,7 @@ namespace Dia
             // Remove by index (swap-with-last pattern; order re-sorted on next Draw)
             unsigned int ui = static_cast<unsigned int>(index);
             mLayers.RemoveAt(ui);
-            mSortDirty  = true;
-            mLayersDirty = true;
+            mSortDirty = true;
         }
 
         // --------------------------------------------------------------------
@@ -102,13 +95,11 @@ namespace Dia
             if (index >= 0)
             {
                 mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(true);
-                mLayersDirty = true;
                 return;
             }
             if (mFixedRegistry.HasLayer(layerName))
             {
                 mFixedRegistry.EnableLayer(layerName);
-                mLayersDirty = true;
             }
         }
 
@@ -118,13 +109,11 @@ namespace Dia
             if (index >= 0)
             {
                 mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(false);
-                mLayersDirty = true;
                 return;
             }
             if (mFixedRegistry.HasLayer(layerName))
             {
                 mFixedRegistry.DisableLayer(layerName);
-                mLayersDirty = true;
             }
         }
 
@@ -145,7 +134,6 @@ namespace Dia
                 if (mLayers[i].stageTag == stageTag)
                 {
                     mLayers[i].active = active;
-                    mLayersDirty = true;
                 }
             }
         }
@@ -237,14 +225,6 @@ namespace Dia
                 if (d->IsEnabled())
                     d->Draw(draw);
             }
-
-            // Cache dropped count — IDebugDraw exposes DroppedCount
-            const uint32_t droppedNow = draw.DroppedCount();
-            if (droppedNow != mLastDroppedCount)
-            {
-                mLastDroppedCount = droppedNow;
-                mLayersDirty = true;
-            }
         }
 
         // --------------------------------------------------------------------
@@ -286,19 +266,6 @@ namespace Dia
                 }
             });
 
-            // debug.layer.list — returns 0; used by editor to trigger BroadcastLayerState
-            Dia::API::RegisterCommand({
-                Dia::Core::StringCRC("debug.layer.list"),
-                "List all registered debug layers and their enabled state",
-                Dia::Core::StringCRC("debug"),
-                "DiaVisualDebugger", "1.0.0",
-                "debug.layer.list",
-                [this](const Dia::API::CommandArgs&) -> int {
-                    (void)this;
-                    return 0;
-                }
-            });
-
             // debug.scale <float>
             // std::atof used internally — acceptable per AI review Q3 (not in public API)
             Dia::API::RegisterCommand({
@@ -323,39 +290,6 @@ namespace Dia
                 "debug.pick 320 240",
                 [](const Dia::API::CommandArgs&) -> int { return 0; }
             });
-        }
-
-        // --------------------------------------------------------------------
-        // BroadcastLayerState
-        // Serialises the current layer list + dropped count to a DATA_UPDATE
-        // envelope and broadcasts to all subscribers of "debug.layer.state".
-        // Only broadcasts when mLayersDirty is true; clears the flag after send.
-        // --------------------------------------------------------------------
-
-        void DebugLayerManager::BroadcastLayerState(
-            Dia::DebugServer::DebugServer* debugServer)
-        {
-            if (debugServer == nullptr) return;
-            if (!mLayersDirty) return;
-
-            Json::Value payload;
-            payload["droppedCount"] = mLastDroppedCount;
-
-            Json::Value layers(Json::arrayValue);
-            for (unsigned int i = 0; i < mLayers.Size(); ++i)
-            {
-                Json::Value entry;
-                entry["name"]     = mLayers[i].debugger->GetLayerName().AsChar();
-                entry["enabled"]  = mLayers[i].debugger->IsEnabled();
-                entry["priority"] = mLayers[i].priority;
-                entry["stage"]    = mLayers[i].stageTag.AsChar();   // may be "" for global layers
-                entry["active"]   = mLayers[i].active;
-                layers.append(entry);
-            }
-            payload["layers"] = layers;
-
-            debugServer->NotifySubscribers(Dia::Core::StringCRC("debug.layer.state"), payload);
-            mLayersDirty = false;
         }
 
         // --------------------------------------------------------------------

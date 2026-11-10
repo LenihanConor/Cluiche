@@ -2,6 +2,10 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Json/external/json/json.h>
+#include "DiaEditor/EditorManifestLoader.h"
+#include "DiaEditor/Plugin/EditorPluginRegistry.h"
+#include "DiaEditor/Project/GamePath.h"
+#include "DiaEditor/Project/GameScopeDiscovery.h"
 #include <DiaGame/DiaGameManifestLoader.h>
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -73,6 +77,7 @@ namespace Dia
 				strncat_s(outBuf, outSize, "/", _TRUNCATE);
 				strncat_s(outBuf, outSize, rel, _TRUNCATE);
 			}
+
 		}
 
 		EditorModel::EditorModel()
@@ -237,6 +242,15 @@ namespace Dia
 					ProjectContext::kMaxPath);
 			}
 
+			// Game scope: plugin types listed by the .diagame's editor manifests exist only while it is loaded.
+			// The game id is StringCRC of the path as passed; reloading the same path does not change the active game.
+			{
+				GameScopeDiscovery::TypeList types;
+				const Dia::Core::StringCRC gameId = GameScopeDiscovery::CollectGameScope(diagamePath, manifest, types);
+				EditorPluginRegistry::Instance().SetGameScope(gameId, types);
+				DIA_LOG_INFO("Editor", "EditorModel: game scope '%s' types=%u", diagamePath, types.Size());
+			}
+
 			DIA_LOG_INFO("Editor", "EditorModel: firing project callbacks for '%s'", diagamePath);
 			FireProjectCallbacks();
 			DIA_LOG_INFO("Editor", "EditorModel: LoadDiagameProject complete");
@@ -246,6 +260,7 @@ namespace Dia
 		void EditorModel::ClearDiagameProject()
 		{
 			mDiagameContext = ProjectContext{};
+			EditorPluginRegistry::Instance().ClearGameScope();
 			FireProjectCallbacks();
 		}
 

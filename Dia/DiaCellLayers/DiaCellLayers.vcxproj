@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2F7H8I9J-K0L1-661F-B43B-99H44I8E88G0}</ProjectGuid>
+    <RootNamespace>DiaCellLayers</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="CellLayersTypes.h" />
+    <ClInclude Include="CellLayerRegistry.h" />
+    <ClInclude Include="Testing\CellLayerTestSupport.h" />
+    <ClInclude Include="LayerUploader.h" />
+    <ClInclude Include="Testing\LayerUploaderTestSupport.h" />
+    <ClInclude Include="CellPicker.h" />
+    <ClInclude Include="Testing\CellPickerTestSupport.h" />
+    <ClInclude Include="HotkeyTable.h" />
+    <ClInclude Include="CellLayerLegend.h" />
+    <ClInclude Include="CellLayerViewerDomain.h" />
+    <ClInclude Include="CellLayersModule.h" />
+    <ClInclude Include="IViewValueSource.h" />
+    <ClInclude Include="Testing\ViewValueSourceTestSupport.h" />
+    <ClInclude Include="Testing\LogCapture.h" />
+    <ClInclude Include="Testing\FakeDebugDraw.h" />
+    <ClInclude Include="CellSelection.h" />
+    <ClInclude Include="Testing\SelectionTestSupport.h" />
+    <ClInclude Include="LayerReader.h" />
+    <ClInclude Include="Testing\LayerReaderTestSupport.h" />
+    <ClInclude Include="SelectionTools.h" />
+    <ClInclude Include="SelectionOutline.h" />
+    <ClInclude Include="ICellSelectionView.h" />
+    <ClInclude Include="SelectionInput.h" />
+    <ClInclude Include="SelectionStats.h" />
+    <ClInclude Include="InspectorState.h" />
+    <ClInclude Include="CellDetailRegistry.h" />
+    <ClInclude Include="Testing\CellDetailTestSupport.h" />
+    <ClInclude Include="InspectorModel.h" />
+    <ClInclude Include="QueryError.h" />
+    <ClInclude Include="QueryLexer.h" />
+    <ClInclude Include="QueryParser.h" />
+    <ClInclude Include="QueryResolver.h" />
+    <ClInclude Include="Testing\QueryTestSupport.h" />
+    <ClInclude Include="QueryEvaluator.h" />
+    <ClInclude Include="SelectionFingerprint.h" />
+    <ClInclude Include="ITopicSink.h" />
+    <ClInclude Include="DebugServerTopicSink.h" />
+    <ClInclude Include="ViewStatePublisher.h" />
+    <ClInclude Include="Testing\ViewStateTestSupport.h" />
+    <ClInclude Include="MirrorQueries.h" />
+    <ClInclude Include="Testing\FakeMirrorRegistrar.h" />
+    <ClInclude Include="Testing\ViewerCommands.h" />
+    <ClInclude Include="ViewerStateSnapshot.h" />
+    <ClInclude Include="IViewHistorySource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CellLayersTypes.cpp" />
+    <ClCompile Include="CellLayerRegistry.cpp" />
+    <ClCompile Include="LayerUploader.cpp" />
+    <ClCompile Include="CellPicker.cpp" />
+    <ClCompile Include="HotkeyTable.cpp" />
+    <ClCompile Include="CellLayerLegend.cpp" />
+    <ClCompile Include="CellLayerViewerDomain.cpp" />
+    <ClCompile Include="CellLayersModule.cpp" />
+    <ClCompile Include="CellSelection.cpp" />
+    <ClCompile Include="LayerReader.cpp" />
+    <ClCompile Include="SelectionTools.cpp" />
+    <ClCompile Include="SelectionOutline.cpp" />
+    <ClCompile Include="SelectionInput.cpp" />
+    <ClCompile Include="SelectionStats.cpp" />
+    <ClCompile Include="InspectorState.cpp" />
+    <ClCompile Include="CellDetailRegistry.cpp" />
+    <ClCompile Include="InspectorModel.cpp" />
+    <ClCompile Include="QueryLexer.cpp" />
+    <ClCompile Include="QueryParser.cpp" />
+    <ClCompile Include="QueryResolver.cpp" />
+    <ClCompile Include="QueryEvaluator.cpp" />
+    <ClCompile Include="SelectionFingerprint.cpp" />
+    <ClCompile Include="DebugServerTopicSink.cpp" />
+    <ClCompile Include="ViewStatePublisher.cpp" />
+    <ClCompile Include="MirrorQueries.cpp" />
+    <ClCompile Include="ViewerStateSnapshot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.diacelllayers.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaValueSchema\DiaValueSchema.vcxproj">
+      <Project>{21E6E786-B115-550E-A32A-88E43C7D77F9}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
+      <Project>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaPathfinding\DiaPathfinding.vcxproj">
+      <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
+      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+</Project>

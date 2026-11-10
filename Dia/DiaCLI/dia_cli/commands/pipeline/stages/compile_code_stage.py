@@ -287,6 +287,8 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         f"/p:Configuration={build_config}",
         f"/p:Platform={platform}",
         f"/p:SolutionDir={solution_dir}",
+        # Use the 64-bit host compiler/linker; the 32-bit host hits C1002 (out of heap) in LTCG builds.
+        "/p:PreferredToolArchitecture=x64",
         "/m:2",
         "/v:minimal",
         "/nologo",

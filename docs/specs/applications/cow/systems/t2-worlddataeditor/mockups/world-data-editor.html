@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>World Data Editor — CoW World Assets</title>
+<style>
+  :root {
+    --bg: #1e1e2e; --surface: #282840; --surface2: #313150; --border: #44446a;
+    --text: #cdd6f4; --text-dim: #7f849c; --accent: #89b4fa;
+    --green: #a6e3a1; --yellow: #f9e2af; --red: #f38ba8; --orange: #fab387;
+    --grey: #585b70; --blue: #74c7ec; --mauve: #cba6f7; --teal: #94e2d5; --pink: #f5c2e7;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Consolas, monospace; font-size: 13px; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+
+  .toolbar {
+    background: var(--surface); padding: 6px 12px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar .title { font-weight: 600; font-size: 14px; color: var(--accent); }
+  .toolbar .conn-badge { background: #103820; color: var(--green); border: 1px solid #1e5030; padding: 2px 10px; border-radius: 10px; font-size: 11px; margin-left: auto; }
+  .tool-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-family: inherit;
+  }
+  .tool-btn:hover { background: var(--border); }
+  .tool-btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+
+  .main-layout {
+    display: grid; grid-template-columns: 280px 1fr 340px; height: 100%; overflow: hidden; gap: 1px; background: var(--border);
+  }
+
+  .panel { background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header {
+    padding: 6px 10px; background: var(--surface2); font-weight: 600; font-size: 12px;
+    border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim);
+  }
+  .panel-body { flex: 1; overflow-y: auto; }
+
+  /* Asset Tree */
+  .asset-tree { padding: 0; }
+  .tree-group { border-bottom: 1px solid var(--border); }
+  .tree-group-header {
+    padding: 6px 10px; background: var(--surface2); font-size: 11px; font-weight: 600;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px;
+    cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;
+  }
+  .tree-group-header:hover { background: var(--border); }
+  .tree-chevron { font-size: 9px; transition: transform 0.15s; }
+  .tree-group-header.closed .tree-chevron { transform: rotate(-90deg); }
+  .tree-item {
+    padding: 5px 10px 5px 24px; font-size: 12px; cursor: pointer;
+    border-bottom: 1px solid rgba(68,68,106,0.3); display: flex; align-items: center; gap: 6px;
+  }
+  .tree-item:hover { background: rgba(137,180,250,0.06); }
+  .tree-item.selected { background: rgba(137,180,250,0.12); }
+  .type-icon { width: 16px; height: 16px; border-radius: 3px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .icon-species { background: rgba(166,227,161,0.18); color: var(--green); }
+  .icon-biomes { background: rgba(137,180,250,0.18); color: var(--accent); }
+  .icon-params { background: rgba(249,226,175,0.18); color: var(--yellow); }
+  .icon-pack { background: rgba(203,166,247,0.18); color: var(--mauve); }
+  .icon-world { background: rgba(148,226,213,0.18); color: var(--teal); }
+  .stale-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--orange); color: var(--bg); font-weight: 700; margin-left: auto; }
+
+  /* Center Tabs */
+  .center-tabs {
+    display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .center-tab {
+    padding: 7px 16px; font-size: 12px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent;
+  }
+  .center-tab:hover { color: var(--text); background: rgba(137,180,250,0.04); }
+  .center-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Center Content */
+  .center-view { flex: 1; overflow-y: auto; display: none; }
+  .center-view.active { display: block; }
+
+  /* Table Editor */
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.data-table thead { background: var(--surface2); position: sticky; top: 0; z-index: 1; }
+  table.data-table th {
+    text-align: left; padding: 6px 10px; font-size: 11px; color: var(--text-dim);
+    border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px;
+    position: relative;
+  }
+  table.data-table th .info-icon {
+    margin-left: 4px; color: var(--accent); cursor: help; font-size: 10px;
+  }
+  table.data-table td {
+    padding: 6px 10px; border-bottom: 1px solid rgba(68,68,106,0.3);
+  }
+  table.data-table tr:hover { background: rgba(137,180,250,0.06); }
+  .td-error { position: relative; }
+  .td-error input { border-bottom: 2px solid var(--red); }
+  .error-msg {
+    position: absolute; top: 100%; left: 10px; background: var(--surface); border: 1px solid var(--red);
+    padding: 4px 8px; font-size: 11px; color: var(--red); white-space: nowrap; z-index: 10;
+    border-radius: 3px; margin-top: 2px;
+  }
+  .chip {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px;
+    background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-right: 3px;
+  }
+
+  /* Pack Diff View */
+  .pack-diff { padding: 0; }
+  .stale-banner {
+    background: rgba(250,179,135,0.1); border-left: 4px solid var(--orange); padding: 8px 12px;
+    font-size: 12px; color: var(--orange); border-bottom: 1px solid var(--border);
+  }
+  .diff-toolbar {
+    padding: 6px 12px; background: var(--surface2); border-bottom: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: center; font-size: 11px;
+  }
+  .diff-toolbar label { color: var(--text-dim); }
+  .diff-toolbar input[type=checkbox] { cursor: pointer; }
+  table.diff-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: monospace; }
+  table.diff-table th {
+    text-align: left; padding: 5px 10px; font-size: 10px; color: var(--text-dim);
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  table.diff-table td {
+    padding: 5px 10px; border-bottom: 1px solid rgba(68,68,106,0.3);
+  }
+  table.diff-table tr.override { background: rgba(137,180,250,0.08); }
+  .val-default { color: var(--text-dim); }
+  .val-override { color: var(--yellow); font-weight: 600; }
+  .val-delta { color: var(--green); font-size: 11px; }
+
+  /* Right Panel */
+  .prop-section { padding: 10px; border-bottom: 1px solid var(--border); }
+  .prop-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .prop-row { display: flex; gap: 10px; margin-bottom: 8px; font-size: 12px; }
+  .prop-label { color: var(--text-dim); min-width: 80px; }
+  .prop-value { color: var(--text); }
+  .used-by { font-size: 11px; color: var(--accent); }
+
+  /* Validation Panel */
+  .validation-panel { background: rgba(243,139,168,0.08); border-top: 1px solid var(--border); padding: 8px 12px; }
+  .validation-panel .title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .val-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 11px; }
+  .val-icon { color: var(--red); font-size: 14px; }
+  .val-file { color: var(--accent); min-width: 120px; }
+  .val-msg { color: var(--text); }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute; background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 10px; font-size: 11px; z-index: 100; border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 300px; line-height: 1.4;
+    display: none;
+  }
+  .tooltip.visible { display: block; }
+  .tooltip .tt-label { color: var(--text-dim); margin-bottom: 4px; }
+  .tooltip .tt-desc { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="title">World Data Editor</span>
+  <button class="tool-btn">Validate</button>
+  <button class="tool-btn primary">Save</button>
+  <button class="tool-btn">Open in testbed</button>
+  <span class="conn-badge">● Connected — CoW · S-3 Ecology</span>
+</div>
+
+<div class="main-layout">
+  <!-- LEFT: Asset Tree -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>World Assets</span>
+      <span style="font-size:11px; font-weight:normal; color:var(--text-dim)">12 files</span>
+    </div>
+    <div class="panel-body">
+      <div class="asset-tree">
+        <!-- WorldGen Group -->
+        <div class="tree-group">
+          <div class="tree-group-header">
+            <span class="tree-chevron">▶</span>
+            <span>WorldGen</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-params">🗺</div>
+            <span>terrain_rules.json</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-world">🌍</div>
+            <span>archipelago_s42.wld</span>
+          </div>
+        </div>
+
+        <!-- Weather Group -->
+        <div class="tree-group">
+          <div class="tree-group-header">
+            <span class="tree-chevron">▶</span>
+            <span>Weather</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-params">⛅</div>
+            <span>weather_parameters.json</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-pack">📦</div>
+            <span>harsh_winters.weather</span>
+          </div>
+        </div>
+
+        <!-- Ecology Group (expanded) -->
+        <div class="tree-group">
+          <div class="tree-group-header">
+            <span class="tree-chevron">▼</span>
+            <span>Ecology</span>
+          </div>
+          <div class="tree-item selected">
+            <div class="type-icon icon-species">🦌</div>
+            <span>species.json</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-biomes">🌲</div>
+            <span>biomes.json</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-params">⚙</div>
+            <span>ecology_parameters.json</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-pack">📦</div>
+            <span>lush.ecology</span>
+            <span class="stale-badge">STALE</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-pack">📦</div>
+            <span>arid.ecology</span>
+          </div>
+        </div>
+
+        <!-- Succession Group -->
+        <div class="tree-group">
+          <div class="tree-group-header">
+            <span class="tree-chevron">▶</span>
+            <span>Succession</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-params">🔄</div>
+            <span>succession_rules.json</span>
+          </div>
+        </div>
+
+        <!-- Worlds Group -->
+        <div class="tree-group">
+          <div class="tree-group-header">
+            <span class="tree-chevron">▶</span>
+            <span>Worlds</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-world">🌐</div>
+            <span>archipelago_lush.cowworld</span>
+          </div>
+          <div class="tree-item">
+            <div class="type-icon icon-world">🌐</div>
+            <span>archipelago_arid.cowworld</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Tabbed Editor -->
+  <div class="panel">
+    <div class="center-tabs">
+      <div class="center-tab active" onclick="switchTab(0)">species.json</div>
+      <div class="center-tab" onclick="switchTab(1)">lush.ecology.json (diff)</div>
+      <div class="center-tab" onclick="switchTab(2)">Compare Packs</div>
+    </div>
+
+    <!-- Tab 1: species.json Table Editor -->
+    <div class="center-view active" id="tab-0">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Trophic Level</th>
+            <th>Diet</th>
+            <th>Preferred Biomes <span class="info-icon" onmouseover="showTooltip(event, 'biomes-tt')" onmouseout="hideTooltip()">ⓘ</span></th>
+            <th>Growth Rate</th>
+            <th>Juvenile → Adult (seasons)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Deer</td>
+            <td>Herbivore</td>
+            <td>grass, shrub</td>
+            <td><span class="chip">Grassland</span><span class="chip">TemperateForest</span></td>
+            <td>0.15</td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td>Elk</td>
+            <td>Herbivore</td>
+            <td>grass</td>
+            <td><span class="chip">Tundra</span><span class="chip">Alpine</span></td>
+            <td>0.12</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>Wolf</td>
+            <td>Predator</td>
+            <td>medium_herbivore</td>
+            <td class="td-error">
+              <input type="text" value="Forest" style="background:none; border:none; color:var(--text); width:100%; outline:none;">
+              <div class="error-msg">⚠ Unknown biome 'Forest' (biomes.json has TemperateForest)</div>
+            </td>
+            <td>0.08</td>
+            <td>8</td>
+          </tr>
+          <tr>
+            <td>Bear</td>
+            <td>Predator</td>
+            <td>medium_herbivore, small_herbivore, carrion</td>
+            <td><span class="chip">TemperateForest</span><span class="chip">Alpine</span></td>
+            <td>0.06</td>
+            <td>12</td>
+          </tr>
+          <tr>
+            <td>Rabbit</td>
+            <td>Herbivore</td>
+            <td>grass</td>
+            <td><span class="chip">Grassland</span><span class="chip">Scrub</span></td>
+            <td>0.25</td>
+            <td>2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tab 2: Pack Diff View -->
+    <div class="center-view" id="tab-1">
+      <div class="pack-diff">
+        <div class="stale-banner">
+          ⚠ Built against ecology_parameters v3, current v4 — 1 key dropped ("recovery.old_multiplier")
+        </div>
+        <div class="diff-toolbar">
+          <label><input type="checkbox" checked> Show all keys</label>
+          <span style="margin-left:auto; color:var(--text-dim); font-size:11px;">12 overrides / 38 total keys</span>
+        </div>
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Default</th>
+              <th>Pack Value</th>
+              <th>Delta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="override">
+              <td>grazing.rate</td>
+              <td class="val-default">1.0</td>
+              <td class="val-override">0.8</td>
+              <td class="val-delta">−20%</td>
+            </tr>
+            <tr class="override">
+              <td>regrowth.forest</td>
+              <td class="val-default">1.0</td>
+              <td class="val-override">1.25</td>
+              <td class="val-delta">+25%</td>
+            </tr>
+            <tr>
+              <td>predation.base_rate</td>
+              <td class="val-default">0.05</td>
+              <td class="val-default">0.05</td>
+              <td></td>
+            </tr>
+            <tr class="override">
+              <td>reproduction.herbivore_boost</td>
+              <td class="val-default">1.0</td>
+              <td class="val-override">1.3</td>
+              <td class="val-delta">+30%</td>
+            </tr>
+            <tr>
+              <td>migration.base_rate</td>
+              <td class="val-default">0.15</td>
+              <td class="val-default">0.15</td>
+              <td></td>
+            </tr>
+            <tr class="override">
+              <td>water.retention</td>
+              <td class="val-default">0.7</td>
+              <td class="val-override">0.9</td>
+              <td class="val-delta">+29%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Compare View (stub) -->
+    <div class="center-view" id="tab-2" style="padding:20px; color:var(--text-dim); text-align:center;">
+      <div style="margin-top:40px;">
+        <div style="font-size:14px; margin-bottom:12px;">Select two packs to compare</div>
+        <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+          <select style="background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:4px 12px; border-radius:3px; font-size:12px;">
+            <option>lush.ecology</option>
+            <option>arid.ecology</option>
+          </select>
+          <span style="align-self:center;">vs</span>
+          <select style="background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:4px 12px; border-radius:3px; font-size:12px;">
+            <option>arid.ecology</option>
+            <option>lush.ecology</option>
+          </select>
+        </div>
+        <button class="tool-btn" style="margin-top:12px;">Compare</button>
+      </div>
+    </div>
+
+    <div class="validation-panel">
+      <div class="title">Validation (1 error, 0 warnings)</div>
+      <div class="val-item">
+        <span class="val-icon">⚠</span>
+        <span class="val-file">species.json</span>
+        <span class="val-msg">Row 3 (Wolf): Unknown biome 'Forest' (biomes.json has TemperateForest)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Properties Panel -->
+  <div class="panel">
+    <div class="panel-header">Properties — species.json</div>
+    <div class="panel-body">
+      <div class="prop-section">
+        <div class="prop-section-title">Selected Row</div>
+        <div class="prop-row">
+          <span class="prop-label">Name</span>
+          <span class="prop-value">Deer</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Trophic Level</span>
+          <span class="prop-value">Herbivore</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Max Density</span>
+          <span class="prop-value">0.8 per cell</span>
+        </div>
+        <div class="prop-row">
+          <span class="prop-label">Habitat</span>
+          <span class="prop-value">land</span>
+        </div>
+      </div>
+      <div class="prop-section">
+        <div class="prop-section-title">Schema Info</div>
+        <div style="font-size:11px; color:var(--text-dim); line-height:1.6;">
+          <strong style="color:var(--text);">preferred_biomes:</strong> List of biome ids where this species spawns at world init and receives affinity bonus. Must match biomes.json.
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.6;">
+          <strong style="color:var(--text);">growth_rate:</strong> Baseline reproduction rate, [0, 1]. Modified by year quality and ecology state.
+        </div>
+      </div>
+      <div class="prop-section">
+        <div class="prop-section-title">Used By</div>
+        <div class="used-by">Bundle: archipelago_lush</div>
+        <div class="used-by">Bundle: default</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-label">preferred_biomes</div>
+  <div class="tt-desc">List of biome StringCRC ids where this species has affinity > 0. Must match the biomes defined in biomes.json. Species will spawn at world init in these biomes.</div>
+</div>
+
+<script>
+function switchTab(index) {
+  document.querySelectorAll('.center-tab').forEach((t, i) => t.classList.toggle('active', i === index));
+  document.querySelectorAll('.center-view').forEach((v, i) => v.classList.toggle('active', i === index));
+}
+
+function showTooltip(event, id) {
+  const tt = document.getElementById('tooltip');
+  tt.style.left = event.pageX + 10 + 'px';
+  tt.style.top = event.pageY + 10 + 'px';
+  tt.classList.add('visible');
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').classList.remove('visible');
+}
+</script>
+
+</body>
+</html>

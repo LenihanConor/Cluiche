@@ -1,0 +1,9 @@
+{
+    "name": "S1WorldGenerationTestbedStage",
+    "manifest": "Stages/S1WorldGenerationTestbedStage/misc/ApplicationFlow/s1world_generation_testbed_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

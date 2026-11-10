@@ -468,4 +468,4 @@ A stub `IVisualDebugger` implementation is used throughout (`TestLayer` — reco
 
 ## Status
 
-`Approved`
+`Approved`. **Amended 2026-11-02:** `BroadcastLayerState()` and the `debug.layer.list` command were removed (never called; see @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.md). Statements above that describe them are historical.

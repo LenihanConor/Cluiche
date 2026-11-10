@@ -75,10 +75,13 @@ class BuildDepsConfig:
 class TargetConfig:
     project: str
     app_name: str = ""
+    exe: str = ""
+    launchable: bool = False
     stages: list[str] = field(default_factory=list)
     deploy: DeployConfig = field(default_factory=DeployConfig)
     build_deps: BuildDepsConfig = field(default_factory=BuildDepsConfig)
     full_suite_config: str = "Debug"
+    hidden: bool = False
 
 
 @dataclass
@@ -148,10 +151,28 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
         targets[name] = TargetConfig(
             project=traw["project"],
             app_name=traw.get("app_name", name),
+            exe=traw.get("exe", ""),
+            launchable="exe" in traw or "app_name" in traw,
             stages=stages,
             deploy=DeployConfig(files=dep_files, ui_builds=dep_ui_builds),
             build_deps=build_deps,
             full_suite_config=traw.get("full_suite_config", "Debug"),
+            hidden=traw.get("hidden", False),
         )
 
     return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets, bgfx_shaders=bgfx_shaders_cfg)
+
+
+def resolve_target_exe(target: TargetConfig) -> str | None:
+    """Repo-relative exe path template (with a {config} placeholder), or None if not launchable."""
+    if not target.launchable:
+        return None
+    if target.exe:
+        return target.exe
+    return f"Cluiche/bin/{target.app_name}/{{config}}/x64/{target.app_name}.exe"
+
+
+def launchable_targets(config: PipelineConfig) -> list[str]:
+    """Names of targets that produce an executable (set `exe` or `app_name` in pipeline.toml)."""
+    return [name for name, t in config.targets.items() if t.launchable]
+

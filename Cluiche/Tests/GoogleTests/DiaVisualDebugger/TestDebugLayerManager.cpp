@@ -354,17 +354,6 @@ TEST(DebugLayerManager_Registration, MaxCapacity_NoAssert)
         delete layers[i];
 }
 
-TEST(DebugLayerManager_Registration, Register_SetsLayerDirty_AfterRegister)
-{
-    DebugLayerManager mgr;
-    TestLayer layer("test.dirty.broadcast");
-    mgr.Register(&layer);
-    // BroadcastLayerState(nullptr) must be a no-op (nullptr guard) — no crash
-    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
-    // A second call must also be safe
-    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
-}
-
 // ============================================================================
 // Toggle suite — additional tests
 // ============================================================================

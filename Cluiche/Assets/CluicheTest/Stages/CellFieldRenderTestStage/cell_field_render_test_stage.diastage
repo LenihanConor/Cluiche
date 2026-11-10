@@ -1,0 +1,9 @@
+{
+    "name": "CellFieldRenderTestStage",
+    "manifest": "Stages/CellFieldRenderTestStage/misc/ApplicationFlow/cell_field_render_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

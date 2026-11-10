@@ -1,0 +1,9 @@
+{
+    "name": "F2CoreRuntime",
+    "manifest": "Stages/F2CoreRuntime/misc/ApplicationFlow/f2_core_runtime.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

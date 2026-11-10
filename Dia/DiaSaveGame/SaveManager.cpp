@@ -11,9 +11,12 @@
 #include "DiaSaveGame/SaveManifest.h"
 
 #include <stdio.h>
+#include <time.h>
 #include <string.h>
+#include <windows.h>
 #include <thread>
 #include <memory>
+#include <vector>
 
 namespace Dia::SaveGame {
 
@@ -35,6 +38,12 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
     DIA_ASSERT(mConfig   != nullptr, "SaveManager::Save called before Init");
     DIA_ASSERT(mRegistry != nullptr, "SaveManager::Save called before Init");
 
+    if (!SlotManager::IsValidSlotId(slotId.AsChar()))
+    {
+        DIA_LOG_WARNING("savegame", "Save: invalid slot id '%s'", slotId.AsChar());
+        return SaveResult::Fail(SaveResultCode::InvalidSlotId);
+    }
+
     if (mConfig->maxSlots > 0 && mSlotManager.IsMaxSlotsReached())
     {
         DIA_LOG_WARNING("savegame", "Save: slot capacity reached (%u)", mConfig->maxSlots);
@@ -47,6 +56,7 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
     // Build manifest
     SaveManifest manifest;
     manifest.Build(*mRegistry, mConfig->format);
+    manifest.SetTimestamp(static_cast<uint64_t>(time(nullptr)));
 
     // Serialize all participants + manifest into one SaveContext
     SaveContext ctx;
@@ -78,10 +88,26 @@ SaveResult SaveManager::Save(Dia::Core::StringCRC slotId)
     {
         char* rawBuf = writeBuffer.get();
         std::thread writer([&writeOk, rawBuf, len, &path]() {
-            FILE* f = fopen(path, "wb");
-            if (!f) { writeOk = false; return; }
-            writeOk = (fwrite(rawBuf, 1, len, f) == len);
-            fclose(f);
+            // Write to <path>.tmp, then atomically replace the destination so a failed
+            // write never damages the previous save.
+            char tmpPath[kMaxPathLen + 8];
+            snprintf(tmpPath, sizeof(tmpPath), "%s.tmp", path);
+            writeOk = false;
+
+            FILE* f = fopen(tmpPath, "wb");
+            if (!f) { return; }
+            bool ok = (fwrite(rawBuf, 1, len, f) == len);
+            ok = (fflush(f) == 0) && ok;
+            ok = (fclose(f) == 0) && ok;
+            if (ok)
+            {
+                ok = MoveFileExA(tmpPath, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+            }
+            if (!ok)
+            {
+                DeleteFileA(tmpPath);
+            }
+            writeOk = ok;
         });
         writer.join();
     }
@@ -102,6 +128,12 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
     DIA_ASSERT(mConfig   != nullptr, "SaveManager::Load called before Init");
     DIA_ASSERT(mRegistry != nullptr, "SaveManager::Load called before Init");
 
+    if (!SlotManager::IsValidSlotId(slotId.AsChar()))
+    {
+        DIA_LOG_WARNING("savegame", "Load: invalid slot id '%s'", slotId.AsChar());
+        return LoadResult::Fail(LoadResultCode::InvalidSlotId);
+    }
+
     DIA_LOG_INFO("savegame", "Load: starting slot '%s'", slotId.AsChar());
     mOnLoadStarted.NotifyObservers(static_cast<int>(SaveEvent::LoadStarted));
 
@@ -119,12 +151,14 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
     auto readBuffer = std::make_unique<char[]>(kBufferSize);
     bool readOk = false;
     size_t readBytes = 0;
+    bool tooLarge = false;
     {
         char* rawBuf = readBuffer.get();
-        std::thread reader([&readOk, &readBytes, rawBuf, &path]() {
+        std::thread reader([&readOk, &readBytes, &tooLarge, rawBuf, &path]() {
             FILE* f = fopen(path, "rb");
             if (!f) { readOk = false; return; }
             readBytes = fread(rawBuf, 1, kBufferSize - 1, f);
+            tooLarge = (readBytes == kBufferSize - 1) && (fgetc(f) != EOF);
             fclose(f);
             rawBuf[readBytes] = '\0';
             readOk = true;
@@ -136,6 +170,12 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
     {
         DIA_LOG_ERROR("savegame", "Load: cannot open '%s'", path);
         return LoadResult::Fail(LoadResultCode::FileReadError);
+    }
+
+    if (tooLarge)
+    {
+        DIA_LOG_ERROR("savegame", "Load: file too large for slot '%s' (limit %u bytes)", slotId.AsChar(), kBufferSize);
+        return LoadResult::Fail(LoadResultCode::ParseError);
     }
 
     // Parse JSON on the calling thread
@@ -176,7 +216,11 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         return UINT32_MAX;
     };
 
-    // Deserialize participants in registration order, applying migrations as needed.
+    // Pass 1 — migrate and validate every participant. No live state is touched here, so any
+    // failure aborts the load with nothing restored (all-or-nothing).
+    // Slot i is null when the participant is absent from the save.
+    std::vector<std::unique_ptr<LoadContext>> contexts(mRegistry->GetParticipantCount());
+
     for (uint32_t i = 0; i < mRegistry->GetParticipantCount(); ++i)
     {
         ISaveable* p = mRegistry->GetParticipantAt(i);
@@ -189,7 +233,8 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
         }
 
         // Wrap the participant's sub-object in a child LoadContext
-        LoadContext pCtx(root[id.AsChar()]);
+        contexts[i] = std::make_unique<LoadContext>(root[id.AsChar()]);
+        LoadContext& pCtx = *contexts[i];
 
         // Apply migration chain when the saved version is behind the live version
         const uint32_t savedVersion = FindSavedVersion(id);
@@ -216,7 +261,23 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
             }
         }
 
-        p->Deserialize(pCtx);
+        // Validate on a throwaway copy so navigation state left behind by Validate
+        // cannot leak into Deserialize.
+        LoadContext validateCtx(pCtx.Root());
+        if (!p->Validate(validateCtx))
+        {
+            DIA_LOG_ERROR("savegame", "Load: participant '%s' failed validation — aborting, nothing restored", id.AsChar());
+            return LoadResult::Fail(LoadResultCode::DeserializeError);
+        }
+    }
+
+    // Pass 2 — restore in registration order.
+    for (uint32_t i = 0; i < mRegistry->GetParticipantCount(); ++i)
+    {
+        if (contexts[i])
+        {
+            mRegistry->GetParticipantAt(i)->Deserialize(*contexts[i]);
+        }
     }
 
     DIA_LOG_INFO("savegame", "Load: completed slot '%s'", slotId.AsChar());
@@ -227,12 +288,22 @@ LoadResult SaveManager::Load(Dia::Core::StringCRC slotId)
 void SaveManager::DeleteSlot(Dia::Core::StringCRC slotId)
 {
     DIA_ASSERT(mConfig != nullptr, "SaveManager not initialised");
+    if (!SlotManager::IsValidSlotId(slotId.AsChar()))
+    {
+        DIA_LOG_WARNING("savegame", "DeleteSlot: invalid slot id '%s'", slotId.AsChar());
+        return;
+    }
     mSlotManager.DeleteSlot(slotId);
 }
 
 void SaveManager::RenameSlot(Dia::Core::StringCRC fromId, Dia::Core::StringCRC toId)
 {
     DIA_ASSERT(mConfig != nullptr, "SaveManager not initialised");
+    if (!SlotManager::IsValidSlotId(fromId.AsChar()) || !SlotManager::IsValidSlotId(toId.AsChar()))
+    {
+        DIA_LOG_WARNING("savegame", "RenameSlot: invalid slot id ('%s' -> '%s')", fromId.AsChar(), toId.AsChar());
+        return;
+    }
     mSlotManager.RenameSlot(fromId, toId);
 }
 

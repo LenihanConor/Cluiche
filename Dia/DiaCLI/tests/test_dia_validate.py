@@ -81,3 +81,46 @@ def test_validate_manifest_verbose_shows_ok(tmp_path):
         result = runner.invoke(validate_cli, ["manifest", "--path", str(stage_file), "--verbose"])
     assert result.exit_code == 0
     assert "OK" in result.output
+
+
+# ---------------------------------------------------------------------------
+# ServiceStream composition (.diagame + imported manifests)
+# ---------------------------------------------------------------------------
+
+def _service_game(tmp_path: Path, consumer: bool) -> Path:
+    def module(role: str) -> dict:
+        return {"instance_id": role, "type_id": role, "stages": [], "dependencies": [],
+                "channels": [{"id": "Svc", "role": role}]}
+
+    main = {
+        "version": 3,
+        "streams": [{"id": "Svc", "kind": "ServiceStream", "payload_type": "P"}],
+        "processing_units": [{"instance_id": "PU", "frequency_hz": 30, "dedicated_thread": False,
+                              "modules": [module("provides")]}],
+    }
+    (tmp_path / "main.diaapp").write_text(json.dumps(main), encoding="utf-8")
+    imports = [{"path": "main.diaapp", "type": "manifest"}]
+    if consumer:
+        stage = {"version": 3, "processing_units": [{"instance_id": "PU", "frequency_hz": 30,
+                 "dedicated_thread": False, "modules": [module("consumes")]}]}
+        (tmp_path / "stage.diaapp").write_text(json.dumps(stage), encoding="utf-8")
+        (tmp_path / "s.diastage").write_text(json.dumps(
+            {"name": "S", "manifest": "stage.diaapp", "config": {"path_aliases": {}}}), encoding="utf-8")
+        imports.append({"path": "s.diastage", "type": "stage"})
+    game = {"name": "G", "version": 1, "config": {"name": "G", "window": {"title": "G"}}, "imports": imports}
+    return _write_stage(tmp_path, "g.diagame", game)
+
+
+def test_validate_manifest_flags_orphan_service_provider(tmp_path):
+    game = _service_game(tmp_path, consumer=False)
+    with patch("dia_cli.cli.cli_validate.find_repo_root", return_value=tmp_path):
+        result = CliRunner().invoke(validate_cli, ["manifest", "--path", str(game)])
+    assert result.exit_code == 1
+    assert "SERVICE_STREAM_ORPHAN_PROVIDER" in result.output
+
+
+def test_validate_manifest_service_consumer_in_stage_import_is_ok(tmp_path):
+    game = _service_game(tmp_path, consumer=True)
+    with patch("dia_cli.cli.cli_validate.find_repo_root", return_value=tmp_path):
+        result = CliRunner().invoke(validate_cli, ["manifest", "--path", str(game)])
+    assert result.exit_code == 0, result.output

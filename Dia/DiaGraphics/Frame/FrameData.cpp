@@ -25,6 +25,7 @@ namespace Dia
 			DebugFrameData::ClearDebugBuffer();
 			UIFrameData::ClearUIBuffer();
 			EntityFrameData::Clear();
+			CellFieldFrameData::ClearCellFieldBuffer();
 			mCamera = Dia::Camera2D::Camera2D();
 			mWindowSize = Dia::Maths::Vector2D(0.0f, 0.0f);
 			mMousePixel = Dia::Maths::Vector2D(0.0f, 0.0f);
@@ -32,8 +33,10 @@ namespace Dia
 
 		void FrameData::Copy(const FrameData& rhs)
 		{
+			if (this == &rhs) { return; }	// the clear-then-copy steps below would wipe the source
 			DebugFrameData::CopyDebugBuffer(rhs);
 			UIFrameData::CopyUIBuffer(rhs);
+			CellFieldFrameData::CopyCellFieldBuffer(rhs);
 
 			// Copy entity frame data (sprites)
 			EntityFrameData::Clear();

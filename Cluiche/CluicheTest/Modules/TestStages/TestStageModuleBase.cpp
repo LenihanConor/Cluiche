@@ -134,6 +134,8 @@ void TestStageModuleBase::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         && TestResultsRegistry::GetInstance().IsAutomationMode())
     {
         mNavigationReleased = true;
+        DIA_LOG_INFO("TestStage", "%s: resolved at frame %u, releasing the navigation hold to Boot (automation mode)",
+            GetStageName().AsChar(), mFrameCount);
         auto* svc = GetAutomationService();
         if (svc)
         {

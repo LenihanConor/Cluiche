@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>World Sim Inspector — CoW Ecology Long-Run Analysis</title>
+<style>
+  :root {
+    --bg: #1a1a1a; --bg2: #212121; --bg3: #2a2a2a; --bg4: #333; --bg5: #3c3c3c;
+    --border: #3a3a3a; --text: #d4d4d4; --text-dim: #777; --text-header: #9cdcfe;
+    --accent: #569cd6; --green: #4ec9b0; --green-bg: #102820;
+    --yellow: #dcdcaa; --warn: #ce9178; --warn-bg: #3d2b1e;
+    --red: #f48771; --purple: #c586c0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Titlebar */
+  .titlebar { height: 36px; background: #0f0f0f; display: flex; align-items: center; padding: 0 16px; gap: 12px; border-bottom: 1px solid #111; flex-shrink: 0; }
+  .titlebar-name { font-size: 13px; font-weight: 600; color: var(--text-header); }
+  .titlebar-sub { font-size: 11px; color: var(--text-dim); }
+  .conn-badge { margin-left: auto; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-family: Consolas, monospace; }
+  .conn-badge.connected { background: #103820; color: var(--green); border: 1px solid #1e5030; }
+
+  /* Toolbar */
+  .toolbar {
+    background: var(--bg3); border-bottom: 1px solid var(--border); padding: 6px 12px;
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap;
+  }
+  .toolbar label { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .toolbar select, .toolbar input {
+    background: var(--bg5); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 8px; border-radius: 3px; font-size: 11px; font-family: inherit;
+  }
+  .toolbar .source-pill {
+    padding: 3px 10px; border-radius: 10px; font-size: 11px;
+    background: var(--bg5); border: 1px solid var(--border); cursor: pointer;
+  }
+  .toolbar .source-pill.active { background: #0d2a3f; border-color: var(--accent); color: var(--accent); }
+  .time-brush {
+    flex: 1; min-width: 200px; height: 24px; background: var(--bg5); border: 1px solid var(--border);
+    border-radius: 3px; position: relative; cursor: pointer; display: flex; align-items: center; padding: 0 6px;
+  }
+  .time-brush-fill { height: 100%; background: rgba(86,156,214,0.2); position: absolute; left: 0; top: 0; }
+  .time-brush-text { position: relative; z-index: 1; font-size: 10px; color: var(--text-dim); }
+
+  /* Main Layout */
+  .main-layout {
+    display: grid; grid-template-columns: 1fr 350px; grid-template-rows: 280px 1fr 220px; height: 100%; overflow: hidden; gap: 1px; background: var(--border);
+  }
+
+  .panel { background: var(--bg2); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header {
+    padding: 6px 12px; background: var(--bg3); font-weight: 600; font-size: 11px;
+    border-bottom: 1px solid var(--border); color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .panel-body { flex: 1; overflow-y: auto; }
+
+  /* Chart Area */
+  .chart-container { padding: 12px; position: relative; }
+  svg { display: block; }
+
+  /* Correlation Scatter */
+  .scatter-grid line { stroke: var(--border); stroke-width: 1; }
+  .scatter-point { fill: rgba(86,156,214,0.4); }
+  .scatter-trend { stroke: var(--accent); stroke-width: 2; fill: none; }
+  .axis-label { fill: var(--text-dim); font-size: 10px; }
+
+  /* Distribution Histogram */
+  .hist-bar { fill: rgba(78,201,176,0.6); }
+  .hist-bar:hover { fill: var(--green); }
+
+  /* Region Table */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead { background: var(--bg3); }
+  th { padding: 5px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+  td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  tr:hover { background: var(--bg4); }
+  .sparkline-mini { width: 60px; height: 18px; }
+
+  /* Why Panel */
+  .why-panel { padding: 12px; }
+  .why-header { font-size: 12px; color: var(--text-header); margin-bottom: 10px; }
+  .why-bar-chart { display: flex; flex-direction: column; gap: 6px; }
+  .why-bar-row { display: flex; align-items: center; gap: 8px; }
+  .why-label { min-width: 80px; font-size: 11px; color: var(--text-dim); }
+  .why-bar-track { flex: 1; height: 18px; background: var(--bg4); border-radius: 3px; position: relative; overflow: hidden; }
+  .why-bar-fill { height: 100%; border-radius: 3px; }
+  .why-bar-grazing { background: rgba(206,145,120,0.7); }
+  .why-bar-drought { background: rgba(244,135,113,0.7); }
+  .why-bar-succession { background: rgba(197,134,192,0.7); }
+  .why-bar-value { font-size: 10px; color: var(--text); margin-left: 6px; font-family: Consolas, monospace; }
+  .why-link { font-size: 11px; color: var(--accent); cursor: pointer; margin-top: 8px; display: inline-block; }
+  .why-link:hover { text-decoration: underline; }
+
+  /* Event Timeline */
+  .event-timeline { padding: 0; }
+  .event-item {
+    display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+    border-bottom: 1px solid var(--border); font-size: 11px; cursor: pointer;
+  }
+  .event-item:hover { background: var(--bg4); }
+  .event-year { min-width: 50px; color: var(--text-dim); font-family: Consolas, monospace; }
+  .event-icon { width: 18px; height: 18px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .icon-drought { background: rgba(244,135,113,0.2); color: var(--red); }
+  .icon-transition { background: rgba(197,134,192,0.2); color: var(--purple); }
+  .icon-crash { background: rgba(206,145,120,0.2); color: var(--warn); }
+  .event-desc { flex: 1; color: var(--text); }
+  .event-jump { color: var(--accent); font-size: 10px; }
+
+  /* Hex Mini-Map */
+  .hex-map { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .hex-grid { display: flex; flex-wrap: wrap; gap: 2px; max-width: 300px; }
+  .hex-cell {
+    width: 16px; height: 16px; clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+    cursor: pointer;
+  }
+  .hex-legend { display: flex; gap: 12px; font-size: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 2px; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg5); border-radius: 3px; }
+
+  /* Info Tooltip */
+  .info-icon { cursor: help; color: var(--accent); font-size: 10px; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <span class="titlebar-name">World Sim Inspector</span>
+  <span class="titlebar-sub">Long-Run Analysis v1.0</span>
+  <span class="conn-badge connected">● Connected — CoW · S-3 Ecology · Living</span>
+</div>
+
+<div class="toolbar">
+  <label>Source:</label>
+  <div class="source-pill active">Live</div>
+  <div class="source-pill">Report file</div>
+  <select style="min-width:200px;">
+    <option>out/CoW/s3/longrun_42.json</option>
+    <option>out/CoW/s3/longrun_17.json</option>
+    <option>out/CoW/s3/longrun_99.json</option>
+  </select>
+  <label style="margin-left:16px;">Compare:</label>
+  <select>
+    <option>None</option>
+    <option>Pack: lush vs arid</option>
+    <option>Run: seed 42 vs 17</option>
+  </select>
+  <div class="time-brush">
+    <div class="time-brush-fill" style="width:60%;"></div>
+    <div class="time-brush-text">Year 1–40</div>
+  </div>
+</div>
+
+<div class="main-layout">
+  <!-- Top Left: Time Series Chart -->
+  <div class="panel" style="grid-column:1; grid-row:1;">
+    <div class="panel-header">Time Series — Map Totals <span class="info-icon" title="Vegetation mean, herbivore/predator populations, rainfall (weekly mean)">ⓘ</span></div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <svg viewBox="0 0 700 220" style="width:100%; height:auto;">
+          <defs>
+            <marker id="marker-drought" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+              <polygon points="3,0 6,3 3,6 0,3" fill="var(--red)" />
+            </marker>
+            <marker id="marker-transition" markerWidth="8" markerHeight="8" refX="4" refY="4">
+              <circle cx="4" cy="4" r="3" fill="var(--purple)" />
+            </marker>
+          </defs>
+          <!-- Grid -->
+          <g opacity="0.15">
+            <line x1="50" y1="20" x2="50" y2="180" stroke="var(--border)" stroke-width="1"/>
+            <line x1="50" y1="180" x2="690" y2="180" stroke="var(--border)" stroke-width="1"/>
+            <line x1="50" y1="100" x2="690" y2="100" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="50" y1="60" x2="690" y2="60" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
+            <line x1="50" y1="140" x2="690" y2="140" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
+          </g>
+          <!-- Vegetation (green) -->
+          <polyline fill="none" stroke="#4ec9b0" stroke-width="2"
+            points="50,120 80,110 110,100 140,95 170,90 200,85 230,80 260,75 290,70 320,75 350,85 380,90 410,85 440,80 470,75 500,70 530,65 560,60 590,62 620,68 650,72 680,75"/>
+          <!-- Herbivores (blue) -->
+          <polyline fill="none" stroke="#569cd6" stroke-width="2"
+            points="50,140 80,135 110,130 140,125 170,120 200,115 230,110 260,105 290,100 320,105 350,115 380,120 410,125 440,130 470,135 500,140 530,145 560,150 590,155 620,160 650,162 680,165"/>
+          <!-- Predators (purple) -->
+          <polyline fill="none" stroke="#c586c0" stroke-width="2"
+            points="50,160 80,158 110,156 140,154 170,152 200,150 230,148 260,146 290,144 320,146 350,150 380,152 410,154 440,156 470,158 500,160 530,162 560,164 590,166 620,168 650,169 680,170"/>
+          <!-- Rainfall (yellow, dashed) -->
+          <polyline fill="none" stroke="#dcdcaa" stroke-width="1.5" stroke-dasharray="4,3"
+            points="50,90 80,88 110,85 140,80 170,75 200,70 230,72 260,78 290,85 320,90 350,95 380,100 410,95 440,88 470,82 500,75 530,70 560,68 590,72 620,78 650,85 680,90"/>
+          <!-- Event markers -->
+          <line x1="290" y1="20" x2="290" y2="180" stroke="var(--red)" stroke-width="1" opacity="0.3"/>
+          <polygon points="290,15 285,20 295,20" fill="var(--red)" opacity="0.7"/>
+          <text x="295" y="18" font-size="9" fill="var(--red)">Drought</text>
+          <circle cx="380" cy="90" r="3" fill="var(--purple)" opacity="0.8"/>
+          <text x="385" y="92" font-size="9" fill="var(--purple)">Scrub→Grassland</text>
+          <line x1="560" y1="150" x2="560" y2="180" stroke="var(--warn)" stroke-width="2" opacity="0.5"/>
+          <text x="565" y="175" font-size="9" fill="var(--warn)">Crash</text>
+          <!-- Axes -->
+          <text x="10" y="25" font-size="10" fill="var(--text-dim)">1.0</text>
+          <text x="10" y="105" font-size="10" fill="var(--text-dim)">0.5</text>
+          <text x="10" y="185" font-size="10" fill="var(--text-dim)">0.0</text>
+          <text x="50" y="200" font-size="10" fill="var(--text-dim)">Y1</text>
+          <text x="680" y="200" font-size="10" fill="var(--text-dim)">Y40</text>
+          <!-- Legend -->
+          <g transform="translate(550, 205)">
+            <line x1="0" y1="0" x2="12" y2="0" stroke="#4ec9b0" stroke-width="2"/>
+            <text x="16" y="4" font-size="9" fill="var(--text-dim)">Vegetation</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Right: Correlation Scatter -->
+  <div class="panel" style="grid-column:2; grid-row:1;">
+    <div class="panel-header">Correlation: Rainfall vs Herbivore Change</div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <svg viewBox="0 0 320 220" style="width:100%; height:auto;">
+          <g class="scatter-grid">
+            <line x1="40" y1="20" x2="40" y2="190"/>
+            <line x1="40" y1="190" x2="310" y2="190"/>
+            <line x1="40" y1="105" x2="310" y2="105" stroke-dasharray="2,2"/>
+            <line x1="175" y1="20" x2="175" y2="190" stroke-dasharray="2,2"/>
+          </g>
+          <!-- Points (seeded random) -->
+          <circle class="scatter-point" cx="60" cy="160" r="3"/>
+          <circle class="scatter-point" cx="80" cy="140" r="3"/>
+          <circle class="scatter-point" cx="100" cy="120" r="3"/>
+          <circle class="scatter-point" cx="120" cy="100" r="3"/>
+          <circle class="scatter-point" cx="140" cy="85" r="3"/>
+          <circle class="scatter-point" cx="160" cy="70" r="3"/>
+          <circle class="scatter-point" cx="180" cy="60" r="3"/>
+          <circle class="scatter-point" cx="200" cy="50" r="3"/>
+          <circle class="scatter-point" cx="220" cy="45" r="3"/>
+          <circle class="scatter-point" cx="240" cy="40" r="3"/>
+          <circle class="scatter-point" cx="260" cy="38" r="3"/>
+          <circle class="scatter-point" cx="280" cy="35" r="3"/>
+          <circle class="scatter-point" cx="75" cy="165" r="3"/>
+          <circle class="scatter-point" cx="95" cy="135" r="3"/>
+          <circle class="scatter-point" cx="115" cy="110" r="3"/>
+          <circle class="scatter-point" cx="135" cy="90" r="3"/>
+          <circle class="scatter-point" cx="155" cy="75" r="3"/>
+          <!-- Trend line -->
+          <line class="scatter-trend" x1="50" y1="170" x2="290" y2="30"/>
+          <!-- Axes -->
+          <text class="axis-label" x="175" y="210" text-anchor="middle">Rainfall</text>
+          <text class="axis-label" x="10" y="110" text-anchor="middle" transform="rotate(-90 10 110)">Herbivore Δ</text>
+          <text x="250" y="55" font-size="11" fill="var(--accent)">r = 0.84</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Left: Distribution Histogram -->
+  <div class="panel" style="grid-column:1; grid-row:2;">
+    <div class="panel-header">Distribution: Vegetation by Biome</div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <svg viewBox="0 0 700 200" style="width:100%; height:auto;">
+          <text x="50" y="15" font-size="10" fill="var(--text-dim)">Grassland</text>
+          <rect class="hist-bar" x="50" y="25" width="80" height="10"/><text x="135" y="34" font-size="9" fill="var(--text-dim)">0.72</text>
+          <rect class="hist-bar" x="50" y="40" width="120" height="10"/><text x="175" y="49" font-size="9" fill="var(--text-dim)">0.85</text>
+          <rect class="hist-bar" x="50" y="55" width="60" height="10"/><text x="115" y="64" font-size="9" fill="var(--text-dim)">0.65</text>
+
+          <text x="50" y="85" font-size="10" fill="var(--text-dim)">TemperateForest</text>
+          <rect class="hist-bar" x="50" y="95" width="100" height="10"/><text x="155" y="104" font-size="9" fill="var(--text-dim)">0.78</text>
+          <rect class="hist-bar" x="50" y="110" width="110" height="10"/><text x="165" y="119" font-size="9" fill="var(--text-dim)">0.81</text>
+
+          <text x="50" y="140" font-size="10" fill="var(--text-dim)">Scrub</text>
+          <rect class="hist-bar" x="50" y="150" width="45" height="10"/><text x="100" y="159" font-size="9" fill="var(--text-dim)">0.52</text>
+          <rect class="hist-bar" x="50" y="165" width="55" height="10"/><text x="110" y="174" font-size="9" fill="var(--text-dim)">0.60</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Right: Region Breakdown Table -->
+  <div class="panel" style="grid-column:2; grid-row:2;">
+    <div class="panel-header">Region Breakdown (Year 40)</div>
+    <div class="panel-body">
+      <table>
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Veg</th>
+            <th>Herb</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--text-header)">Lowlands</td>
+            <td>0.72</td>
+            <td>0.58</td>
+            <td>
+              <svg class="sparkline-mini" viewBox="0 0 60 18">
+                <polyline fill="none" stroke="var(--green)" stroke-width="1.5"
+                  points="0,14 12,12 24,10 36,8 48,9 60,8"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-header)">Highlands</td>
+            <td>0.45</td>
+            <td>0.32</td>
+            <td>
+              <svg class="sparkline-mini" viewBox="0 0 60 18">
+                <polyline fill="none" stroke="var(--accent)" stroke-width="1.5"
+                  points="0,10 12,11 24,12 36,13 48,14 60,15"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-header)">Wetlands</td>
+            <td>0.88</td>
+            <td>0.71</td>
+            <td>
+              <svg class="sparkline-mini" viewBox="0 0 60 18">
+                <polyline fill="none" stroke="var(--green)" stroke-width="1.5"
+                  points="0,12 12,11 24,10 36,9 48,8 60,7"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-header)">Desert Edge</td>
+            <td>0.21</td>
+            <td>0.09</td>
+            <td>
+              <svg class="sparkline-mini" viewBox="0 0 60 18">
+                <polyline fill="none" stroke="var(--red)" stroke-width="1.5"
+                  points="0,8 12,10 24,12 36,14 48,15 60,16"/>
+              </svg>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom Left: "Why" Panel (Change Ledger) -->
+  <div class="panel" style="grid-column:1; grid-row:3;">
+    <div class="panel-header">"Why" Panel — Vegetation Loss in Region 3, Year 12</div>
+    <div class="panel-body">
+      <div class="why-panel">
+        <div class="why-header">Top causes (from A1 change ledger)</div>
+        <div class="why-bar-chart">
+          <div class="why-bar-row">
+            <div class="why-label">Grazing</div>
+            <div class="why-bar-track">
+              <div class="why-bar-fill why-bar-grazing" style="width:38%;"></div>
+            </div>
+            <div class="why-bar-value">−38%</div>
+          </div>
+          <div class="why-bar-row">
+            <div class="why-label">Drought</div>
+            <div class="why-bar-track">
+              <div class="why-bar-fill why-bar-drought" style="width:27%;"></div>
+            </div>
+            <div class="why-bar-value">−27%</div>
+          </div>
+          <div class="why-bar-row">
+            <div class="why-label">Succession</div>
+            <div class="why-bar-track">
+              <div class="why-bar-fill why-bar-succession" style="width:12%;"></div>
+            </div>
+            <div class="why-bar-value">−12%</div>
+          </div>
+          <div class="why-bar-row">
+            <div class="why-label">Fire</div>
+            <div class="why-bar-track">
+              <div class="why-bar-fill" style="width:8%; background:rgba(206,145,120,0.5);"></div>
+            </div>
+            <div class="why-bar-value">−8%</div>
+          </div>
+        </div>
+        <div class="why-link">→ Show cells (highlights 127 cells in Region 3)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Right: Event Timeline + Hex Map -->
+  <div class="panel" style="grid-column:2; grid-row:3;">
+    <div class="panel-header">Event Timeline (Filtered: Droughts, Transitions)</div>
+    <div class="panel-body" style="display:flex; flex-direction:column;">
+      <div class="event-timeline" style="flex:1; overflow-y:auto;">
+        <div class="event-item">
+          <div class="event-year">Y 38</div>
+          <div class="event-icon icon-transition">●</div>
+          <div class="event-desc">Scrub→Grassland (14 cells, Lowlands)</div>
+          <div class="event-jump">↗</div>
+        </div>
+        <div class="event-item">
+          <div class="event-year">Y 35</div>
+          <div class="event-icon icon-drought">▲</div>
+          <div class="event-desc">Drought front (Region 2, 42 cells)</div>
+          <div class="event-jump">↗</div>
+        </div>
+        <div class="event-item">
+          <div class="event-year">Y 28</div>
+          <div class="event-icon icon-crash">✕</div>
+          <div class="event-desc">Herbivore crash (Desert Edge)</div>
+          <div class="event-jump">↗</div>
+        </div>
+        <div class="event-item">
+          <div class="event-year">Y 21</div>
+          <div class="event-icon icon-transition">●</div>
+          <div class="event-desc">Grassland→Scrub (8 cells, Highlands)</div>
+          <div class="event-jump">↗</div>
+        </div>
+        <div class="event-item">
+          <div class="event-year">Y 12</div>
+          <div class="event-icon icon-drought">▲</div>
+          <div class="event-desc">Drought (Region 3, 127 cells)</div>
+          <div class="event-jump">↗</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border); padding:8px 12px;">
+        <div style="font-size:10px; color:var(--text-dim); margin-bottom:6px;">Hex Map: Vegetation at Y40</div>
+        <div style="display:flex; gap:12px;">
+          <div class="hex-grid">
+            <!-- Generate hex cells with gradient colors -->
+            <div class="hex-cell" style="background:#1a4d2e;" title="0.82"></div>
+            <div class="hex-cell" style="background:#2d5a3a;" title="0.75"></div>
+            <div class="hex-cell" style="background:#3f6745;" title="0.68"></div>
+            <div class="hex-cell" style="background:#527451;" title="0.61"></div>
+            <div class="hex-cell" style="background:#64815c;" title="0.54"></div>
+            <div class="hex-cell" style="background:#768e68;" title="0.47"></div>
+            <div class="hex-cell" style="background:#1a4d2e;" title="0.80"></div>
+            <div class="hex-cell" style="background:#2d5a3a;" title="0.73"></div>
+            <div class="hex-cell" style="background:#3f6745;" title="0.66"></div>
+            <div class="hex-cell" style="background:#527451;" title="0.59"></div>
+            <div class="hex-cell" style="background:#64815c;" title="0.52"></div>
+            <div class="hex-cell" style="background:#768e68;" title="0.45"></div>
+            <div class="hex-cell" style="background:#889b73;" title="0.38"></div>
+            <div class="hex-cell" style="background:#1a4d2e;" title="0.78"></div>
+            <div class="hex-cell" style="background:#2d5a3a;" title="0.71"></div>
+            <div class="hex-cell" style="background:#3f6745;" title="0.64"></div>
+            <div class="hex-cell" style="background:#527451;" title="0.57"></div>
+            <div class="hex-cell" style="background:#64815c;" title="0.50"></div>
+            <div class="hex-cell" style="background:#768e68;" title="0.43"></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; font-size:9px;">
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="width:12px; height:12px; background:#1a4d2e; border-radius:2px;"></div>
+              <span style="color:var(--text-dim);">High</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="width:12px; height:12px; background:#527451; border-radius:2px;"></div>
+              <span style="color:var(--text-dim);">Med</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="width:12px; height:12px; background:#889b73; border-radius:2px;"></div>
+              <span style="color:var(--text-dim);">Low</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Seed for deterministic "random" data generation
+function seededRandom(seed) {
+  let x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+}
+
+// Generate time series data
+let vegData = [], herbData = [], predData = [], rainData = [];
+for (let i = 0; i < 40; i++) {
+  const base = 0.7 - i * 0.002;
+  vegData.push(base + seededRandom(i) * 0.1);
+  herbData.push(0.5 + i * 0.003 + seededRandom(i + 100) * 0.08);
+  predData.push(0.3 + i * 0.001 + seededRandom(i + 200) * 0.05);
+  rainData.push(0.6 + Math.sin(i * 0.3) * 0.15);
+}
+
+console.log('World Sim Inspector mockup loaded. Data: vegetation, herbivores, predators, rainfall over 40 years.');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+#include "Modules/WorldGenDebugDomain.h"
+#ifdef DIA_DEBUG
+
+#include "Modules/WorldGenerationModule.h"
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+
+#include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <vector>
+
+namespace CoW {
+
+namespace {
+    using namespace WorldGeneration;
+
+    const Dia::Core::StringCRC kCmdSetScale("setScale");
+    const Dia::Core::StringCRC kCmdRegenerate("regenerate");
+    const Dia::Core::StringCRC kCmdSetSeed("setSeed");
+    const Dia::Core::StringCRC kCmdSetSize("setSize");
+    const Dia::Core::StringCRC kCmdPresetLoad("presetLoad");
+    const Dia::Core::StringCRC kCmdPresetSave("presetSave");
+    const Dia::Core::StringCRC kCmdSelectCell("selectCell");
+    const Dia::Core::StringCRC kCmdClearCell("clearCell");
+    const Dia::Core::StringCRC kCmdSetColourMode("setColourMode");
+    const Dia::Core::StringCRC kCmdToggle("toggle");
+
+    const char* const kDefaultMode = "terrain";
+    const char* const kViewDefaultId = "relief";   // the viewer's default base layer, shown to the panel as "terrain"
+
+    int StageIndex(const std::string& name)
+    {
+        for (int i = 0; i < static_cast<int>(TerrainStage::Count); ++i)
+        {
+            if (name == TerrainStageName(static_cast<TerrainStage>(i)))
+            {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    // "landFraction" -> "Land fraction"
+    std::string LabelFromKey(const std::string& key)
+    {
+        std::string out;
+        for (size_t i = 0; i < key.size(); ++i)
+        {
+            const char c = key[i];
+            if (i == 0)
+            {
+                out += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+            }
+            else if (std::isupper(static_cast<unsigned char>(c)))
+            {
+                out += ' ';
+                out += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            }
+            else
+            {
+                out += c;
+            }
+        }
+        return out;
+    }
+
+    bool IsKnownMode(const WorldGenSession& session, const std::string& mode)
+    {
+        if (mode == kDefaultMode)
+        {
+            return true;
+        }
+        return session.Generator().GetLayers().FindLayer(mode.c_str()) >= 0;
+    }
+
+    void WarnIfFailed(const char* what, const Json::Value& result)
+    {
+        if (result.isObject() && result.isMember("success") && result["success"].isBool() && !result["success"].asBool())
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: %s failed: %s", what,
+                result.isMember("error") && result["error"].isString() ? result["error"].asCString() : "unknown error");
+        }
+    }
+}
+
+WorldGenDebugDomain::WorldGenDebugDomain(WorldGenerationModule& module)
+    : mModule(module)
+    , mDrawers{ { "Tiles", true, true }, { "Grid lines", false, true }, { "Selection", true, true },
+                { "Region edges", false, false }, { "Sites", false, false }, { "Evidence", false, false } }
+    , mLastSave(Json::nullValue)
+{}
+
+void WorldGenDebugDomain::SetView(IWorldGenView* view)
+{
+    if (mView != view)
+    {
+        mView = view;
+        mStaticDirty = true;   // view.modes come from the viewer's registered base layers
+    }
+}
+
+Dia::Core::StringCRC WorldGenDebugDomain::GetDomainId()   const { return Dia::Core::StringCRC("WorldGen"); }
+const char*          WorldGenDebugDomain::GetDisplayName() const { return "World Generation"; }
+const char*          WorldGenDebugDomain::GetDescription() const { return "S-1 terrain generation: shape sliders, presets, timings and cell inspector"; }
+Dia::Core::StringCRC WorldGenDebugDomain::GetGroup()       const { return Dia::Core::StringCRC("Systems"); }
+Dia::Core::RGBA      WorldGenDebugDomain::GetAccentColour() const { return Dia::VisualDebugger::DebugGroupAccents::kCoreDebug; }
+
+void WorldGenDebugDomain::RebuildStatic()
+{
+    const WorldGenSession& session = mModule.GetSession();
+    const Json::Value params = session.Params();
+
+    StaticPart next;
+
+    // controls, grouped by first stage affected
+    struct Row { int stage; std::string key; };
+    std::vector<Row> rows;
+    const Json::Value& ranges = params["ranges"];
+    for (const std::string& key : ranges.getMemberNames())
+    {
+        rows.push_back(Row{ StageIndex(ranges[key]["firstStage"].asString()), key });
+    }
+    std::stable_sort(rows.begin(), rows.end(), [](const Row& a, const Row& b) { return a.stage < b.stage; });
+
+    next.controlDefs = Json::Value(Json::objectValue);
+    for (const Row& row : rows)
+    {
+        const Json::Value& range = ranges[row.key];
+        const Json::Value& value = params["params"][row.key];
+        Json::Value c(Json::objectValue);
+        c["key"]       = row.key;
+        c["label"]     = LabelFromKey(row.key);
+        c["stage"]     = row.stage;
+        c["stageName"] = range["firstStage"];
+        if (range.isMember("values"))
+        {
+            c["type"]    = "select";
+            c["values"]  = range["values"];
+            c["default"] = range["values"][range["default"].asUInt()];
+        }
+        else
+        {
+            c["type"]    = "slider";
+            c["min"]     = range["min"];
+            c["max"]     = range["max"];
+            c["step"]    = value.type() == Json::uintValue ? Json::Value(1) : Json::Value(0.01);
+            c["default"] = range["default"];
+        }
+        next.controlKeys.push_back(row.key);
+        next.controlDefs[row.key] = c;
+    }
+
+    // presets (directory scan: the expensive part, hence cached)
+    next.presets = Json::Value(Json::arrayValue);
+    const Json::Value presetList = session.Presets();
+    for (const Json::Value& p : presetList)
+    {
+        Json::Value e(Json::objectValue);
+        e["id"] = p["id"];
+        e["displayName"] = p["displayName"];
+        next.presets.append(e);
+    }
+
+    // view modes + picker layers
+    next.modes = Json::Value(Json::arrayValue);
+    next.layers = Json::Value(Json::arrayValue);
+    auto addLayer = [&next](const std::string& id, const std::string& label, const std::string& group) {
+        Json::Value e(Json::objectValue);
+        e["id"] = id;
+        e["label"] = label;
+        e["group"] = group;
+        next.layers.append(e);
+    };
+    next.modes.append(kDefaultMode);
+    if (mView != nullptr)
+    {
+        std::string reliefGroup = "Terrain";
+        Json::Value others(Json::arrayValue);
+        mView->ListColourGroups([&](const char* id, const char* group) {
+            if (std::strcmp(id, kViewDefaultId) == 0)
+            {
+                reliefGroup = group;
+                return;
+            }
+            next.modes.append(id);
+            Json::Value e(Json::objectValue);
+            e["id"] = id;
+            e["label"] = LabelFromKey(id);
+            e["group"] = group;
+            others.append(e);
+        });
+        addLayer(kDefaultMode, "Relief", reliefGroup);
+        for (const Json::Value& e : others)
+        {
+            next.layers.append(e);
+        }
+    }
+    else
+    {
+        addLayer(kDefaultMode, "Relief", "Terrain");
+        for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
+        {
+            next.modes.append(TerrainLayers::GetLayerInfo(i).name);
+            addLayer(TerrainLayers::GetLayerInfo(i).name, LabelFromKey(TerrainLayers::GetLayerInfo(i).name), "Layers");
+        }
+    }
+
+    for (int i = 0; i < kImplementedStageCount; ++i)
+    {
+        next.timingNames.push_back(TerrainStageName(static_cast<TerrainStage>(i)));
+    }
+
+    const bool changed = !mStaticBuilt || !(next.controlDefs == mStatic.controlDefs) || next.controlKeys != mStatic.controlKeys ||
+                         !(next.presets == mStatic.presets) || !(next.modes == mStatic.modes) || !(next.layers == mStatic.layers) || next.timingNames != mStatic.timingNames;
+    if (changed)
+    {
+        mStatic = std::move(next);
+        ++mStaticVersion;
+    }
+    mStaticBuilt = true;
+    mStaticDirty = false;
+    mStaticBuiltAt = std::chrono::steady_clock::now();
+}
+
+void WorldGenDebugDomain::GetJSONState(Json::Value& out)
+{
+    const WorldGenSession& session = mModule.GetSession();
+
+    // Refresh the cached static part only when needed (first call, after a presetSave, or every kStaticRefreshSeconds so
+    // preset files added on disk show up). Nothing here is O(cells).
+    if (!mStaticBuilt || mStaticDirty ||
+        std::chrono::steady_clock::now() - mStaticBuiltAt >= std::chrono::seconds(kStaticRefreshSeconds))
+    {
+        RebuildStatic();
+    }
+
+    const bool full = mForceFull || mStaticVersion != mLastFullVersion || ++mFramesSinceFull >= kFullFrameInterval;
+    if (full)
+    {
+        mForceFull = false;
+        mLastFullVersion = mStaticVersion;
+        mFramesSinceFull = 0;
+    }
+
+    const Json::Value status = session.Status();
+
+    // Param values only change when the shape does; Params() formats every float (shortest round-trip text), so it is
+    // re-run only then, not every frame.
+    if (!mHaveValues || !(session.Shape() == mValuesShape))
+    {
+        mValues = session.Params()["params"];
+        mValuesShape = session.Shape();
+        mHaveValues = true;
+    }
+
+    out["full"]          = full;
+    out["staticVersion"] = mStaticVersion;
+    out["drawers"] = Json::Value(Json::arrayValue);
+
+    // stats
+    Json::Value& stats = out["stats"] = Json::Value(Json::objectValue);
+    stats["status"]         = status["state"];
+    stats["revision"]       = status["revision"];
+    stats["seed"]           = status["seed"];
+    stats["size"]           = status["size"];
+    stats["width"]          = status["dimensions"]["width"];
+    stats["height"]         = status["dimensions"]["height"];
+    stats["locked"]         = false;
+    stats["lastMs"]         = status["lastMs"];
+    stats["preset"]         = session.PresetId();
+    stats["presetModified"] = session.PresetModified();
+    stats["stagesRan"]      = status["stagesRan"];
+
+    // controls: current values; the definitions ride along only in a full frame
+    Json::Value& controls = out["controls"] = Json::Value(Json::arrayValue);
+    for (const std::string& key : mStatic.controlKeys)
+    {
+        Json::Value c = full ? mStatic.controlDefs[key] : Json::Value(Json::objectValue);
+        c["key"]   = key;
+        c["value"] = mValues[key];
+        controls.append(c);
+    }
+
+    if (full)
+    {
+        out["presets"] = mStatic.presets;
+    }
+
+    // sizes
+    Json::Value& sizes = out["sizes"] = Json::Value(Json::arrayValue);
+    for (WorldSize s : { WorldSize::Small, WorldSize::Standard, WorldSize::Large })
+    {
+        Json::Value e(Json::objectValue);
+        e["name"] = WorldSizeName(s);
+        if (full)
+        {
+            const GridDimensions d = WorldSizeDimensions(s);
+            e["width"] = d.width;
+            e["height"] = d.height;
+        }
+        e["selected"] = status["size"].asString() == WorldSizeName(s);
+        sizes.append(e);
+    }
+
+    // timings: per-stage ms recorded by the generator on its last Update
+    Json::Value& timings = out["timings"] = Json::Value(Json::arrayValue);
+    const StageTiming* st = session.Generator().GetTimings();
+    for (int i = 0; i < kImplementedStageCount; ++i)
+    {
+        Json::Value e(Json::objectValue);
+        e["stage"] = i;
+        if (full)
+        {
+            e["name"] = mStatic.timingNames[static_cast<size_t>(i)];
+        }
+        e["ms"] = static_cast<double>(st[i].milliseconds);
+        e["ran"] = st[i].ranLastUpdate;
+        timings.append(e);
+    }
+
+    // view
+    Json::Value& view = out["view"] = Json::Value(Json::objectValue);
+    bool hasSelection = mHasSelection;
+    int selX = mSelX;
+    int selY = mSelY;
+    Json::Value drawers(Json::arrayValue);
+    if (mView != nullptr)
+    {
+        const char* mode = mView->GetColourMode();
+        view["colourMode"] = std::strcmp(mode, kViewDefaultId) == 0 ? kDefaultMode : mode;
+        auto add = [&drawers](const char* name, bool enabled, bool available) {
+            Json::Value e(Json::objectValue);
+            e["name"] = name;
+            e["enabled"] = enabled;
+            e["available"] = available;
+            drawers.append(e);
+        };
+        add("Tiles", true, true);
+        mView->ListOverlays([&add](const char* id, bool enabled, bool available) { add(id, enabled, available); });
+        add("Selection", true, true);
+        Json::Value legend(Json::nullValue);
+        mView->FillLegend(legend);
+        view["legend"] = legend;
+        hasSelection = mView->GetSelection(selX, selY);
+    }
+    else
+    {
+        view["colourMode"] = mColourMode;
+        for (const Drawer& d : mDrawers)
+        {
+            Json::Value e(Json::objectValue);
+            e["name"] = d.name;
+            e["enabled"] = d.enabled;
+            e["available"] = d.available;
+            drawers.append(e);
+        }
+    }
+    if (full)
+    {
+        view["modes"] = mStatic.modes;
+        view["layers"] = mStatic.layers;
+    }
+    view["drawers"] = drawers;
+
+    // cell inspector
+    out["cell"] = Json::Value(Json::nullValue);
+    if (hasSelection)
+    {
+        Json::Value args(Json::objectValue);
+        args["x"] = selX;
+        args["y"] = selY;
+        Json::Value cell = session.Cell(args);
+        if (cell.isObject() && cell["success"].asBool())
+        {
+            cell["selected"]["x"] = selX;
+            cell["selected"]["y"] = selY;
+            out["cell"] = cell;
+        }
+        else
+        {
+            out["cellError"] = cell.isMember("error") ? cell["error"] : Json::Value("no cell");
+        }
+    }
+
+    out["lastSave"] = mLastSave;
+}
+
+void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args)
+{
+    WorldGenSession& session = mModule.GetSession();
+    const bool hasObj = args.isObject();
+    bool acted = false;
+
+    if (cmd == kCmdSetScale)
+    {
+        if (hasObj && args["key"].isString() && args.isMember("value"))
+        {
+            Json::Value set(Json::objectValue);
+            set[args["key"].asString()] = args["value"];
+            WarnIfFailed("setScale", session.Set(set));
+            acted = true;
+        }
+        else
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setScale needs {key, value}");
+        }
+    }
+    else if (cmd == kCmdRegenerate)
+    {
+        WarnIfFailed("regenerate", session.Regenerate(hasObj ? args : Json::Value(Json::objectValue)));
+        acted = true;
+    }
+    else if (cmd == kCmdSetSeed)
+    {
+        if (hasObj && args.isMember("seed"))
+        {
+            Json::Value set(Json::objectValue);
+            set["seed"] = args["seed"];
+            WarnIfFailed("setSeed", session.Set(set));
+            acted = true;
+        }
+        else
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setSeed needs {seed}");
+        }
+    }
+    else if (cmd == kCmdSetSize)
+    {
+        WarnIfFailed("setSize", session.SetSize(args));
+        acted = true;
+    }
+    else if (cmd == kCmdPresetLoad)
+    {
+        WarnIfFailed("presetLoad", session.PresetLoad(args));
+        acted = true;
+    }
+    else if (cmd == kCmdPresetSave)
+    {
+        mLastSave = session.PresetSave(args);
+        WarnIfFailed("presetSave", mLastSave);
+        mStaticDirty = true;   // the preset list may have changed
+        acted = true;
+    }
+    else if (cmd == kCmdSelectCell)
+    {
+        if (hasObj && args["x"].isIntegral() && args["y"].isIntegral() && args["x"].isInt() && args["y"].isInt())
+        {
+            if (mView != nullptr)
+            {
+                if (!mView->SelectCell(args["x"].asInt(), args["y"].asInt()))
+                {
+                    DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectCell (%d, %d) is outside the viewer grid", args["x"].asInt(), args["y"].asInt());
+                }
+            }
+            else
+            {
+                mHasSelection = true;
+                mSelX = args["x"].asInt();
+                mSelY = args["y"].asInt();
+            }
+        }
+        else
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectCell needs integer {x, y}");
+        }
+    }
+    else if (cmd == kCmdClearCell)
+    {
+        if (mView != nullptr)
+        {
+            mView->ClearSelection();
+        }
+        else
+        {
+            mHasSelection = false;
+        }
+    }
+    else if (cmd == kCmdSetColourMode)
+    {
+        if (mView != nullptr)
+        {
+            // "terrain" is the panel's name for the viewer's default base layer; the viewer accepts the alias.
+            if (!(hasObj && args["mode"].isString() && mView->SetColourMode(args["mode"].asCString())))
+            {
+                DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setColourMode needs a known {mode}");
+            }
+        }
+        else if (hasObj && args["mode"].isString() && IsKnownMode(session, args["mode"].asString()))
+        {
+            mColourMode = args["mode"].asString();
+        }
+        else
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setColourMode needs a known {mode}");
+        }
+    }
+    else if (cmd == kCmdToggle)
+    {
+        bool found = false;
+        if (mView != nullptr)
+        {
+            if (hasObj && args["drawer"].isString())
+            {
+                const std::string name = args["drawer"].asString();
+                mView->ListOverlays([&](const char* id, bool enabled, bool available) {
+                    if (!found && available && name == id)
+                    {
+                        found = mView->SetOverlayEnabled(id, !enabled);
+                    }
+                });
+            }
+        }
+        else if (hasObj && args["drawer"].isString())
+        {
+            for (Drawer& d : mDrawers)
+            {
+                if (args["drawer"].asString() == d.name && d.available)
+                {
+                    d.enabled = !d.enabled;
+                    found = true;
+                }
+            }
+        }
+        if (!found)
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: toggle needs an available {drawer}");
+        }
+    }
+    else
+    {
+        DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: unknown command ignored");
+    }
+
+    if (acted)
+    {
+        mModule.NotifyAction();
+    }
+}
+
+} // namespace CoW
+
+#endif // DIA_DEBUG

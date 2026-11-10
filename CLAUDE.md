@@ -116,7 +116,7 @@ The codebase extensively uses `StringCRC` for efficient string comparison via co
 Located in `External/`:
 - **SFML** - Graphics, window, and multimedia library
 - **jsoncpp-master** - JSON parsing (used via `DiaCore/Json/`)
-- **Webix** & **VisJS** - Web UI frameworks for debugging/visualization
+- **VisJS** - Visualization framework for debugging
 
 ## Project Structure
 
@@ -281,7 +281,7 @@ When including headers:
 ### Thread Safety
 
 Processing units can run on separate threads. When accessing shared state:
-- Use `std::mutex` for synchronization
+- Across PU boundaries use streams (EventStream request/reply, FrameStream snapshots); use `std::mutex` only for state private to one PU
 - `QueuePhaseTransition()` is thread-safe (vs immediate `TransitionPhase()`)
 - Review phase ordering and module dependencies for race conditions
 

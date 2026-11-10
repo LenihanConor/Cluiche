@@ -123,6 +123,36 @@
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\StageStatusModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuLogic.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AppIdentity.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\MessageBusHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SimQueryHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainStateBridgeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainStateRelayModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\LogPushBatcher.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainRootDelta.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -252,6 +282,48 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageStatusModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuLogic.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AppIdentity.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleLineEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleResultEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\MessageBusHostModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SimQueryHostModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\SimRegistrationMessage.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DomainStateInterestEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateBridgeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateRelayModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LogPushBatcher.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainRootDelta.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>

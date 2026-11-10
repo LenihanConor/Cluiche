@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.root
 
 summary: >
-  Groups Graphics submodules: Frame, Interface, Misc.
+  Groups Graphics submodules: CellField, Frame, Interface, Misc.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Graphics area.
@@ -27,6 +27,7 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
+  - dia.graphics.cellfield
   - dia.graphics.frame
   - dia.graphics.interface
   - dia.graphics.misc

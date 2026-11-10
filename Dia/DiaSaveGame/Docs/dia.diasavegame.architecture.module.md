@@ -23,7 +23,7 @@ intent: >
   call Save(slotId)/Load(slotId) only — DiaSaveGame handles everything else.
 
 responsibilities:
-  - ISaveable — contract (Serialize/Deserialize/GetVersion) any participant implements
+  - ISaveable — contract (Serialize/Deserialize/GetVersion, optional Validate for all-or-nothing loads) any participant implements
   - SaveRegistry — ordered participant registration and migration callback registration
   - SaveContext / LoadContext — typed read/write handles backed by DiaSerializer primitives
   - SaveManifest — versioned header with engine version, participant list+versions, format tag

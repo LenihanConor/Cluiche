@@ -402,3 +402,70 @@ TEST_F(AssetCatalogueEditorPluginTest, CreateAsset_InvalidDirectory_ReturnsError
 	Json::Value r = Invoke("asset_catalogue.create_asset", data);
 	EXPECT_FALSE(r["success"].asBool());
 }
+
+// ===========================================================================
+// register_type_editor / unregister_type_editor (game-scoped plugin asset routes)
+// ===========================================================================
+
+static Json::Value RouteReq(const char* assetType, const char* editor)
+{
+	Json::Value d(Json::objectValue);
+	d["assetType"]        = assetType;
+	d["editorPluginType"] = editor;
+	return d;
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, RegisterTypeEditor_NewRoute_ReportsRegistered)
+{
+	Json::Value r = Invoke("asset_catalogue.register_type_editor", RouteReq("cow_dragon", "CowEditor"));
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_TRUE(r["registered"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, RegisterTypeEditor_ExistingRoute_NotOverridden)
+{
+	Invoke("asset_catalogue.register_type_editor", RouteReq("cow_dragon", "CowEditor"));
+	Json::Value r = Invoke("asset_catalogue.register_type_editor", RouteReq("cow_dragon", "OtherEditor"));
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_FALSE(r["registered"].asBool());
+	// the first route is still the one that can be removed
+	EXPECT_FALSE(Invoke("asset_catalogue.unregister_type_editor", RouteReq("cow_dragon", "OtherEditor"))["removed"].asBool());
+	EXPECT_TRUE(Invoke("asset_catalogue.unregister_type_editor", RouteReq("cow_dragon", "CowEditor"))["removed"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, RegisterTypeEditor_BuiltInType_NotOverridden)
+{
+	Json::Value r = Invoke("asset_catalogue.register_type_editor", RouteReq("diascene", "CowEditor"));
+	EXPECT_FALSE(r["registered"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, UnregisterTypeEditor_OwnRoute_Removed)
+{
+	Invoke("asset_catalogue.register_type_editor", RouteReq("cow_dragon", "CowEditor"));
+	Json::Value r = Invoke("asset_catalogue.unregister_type_editor", RouteReq("cow_dragon", "CowEditor"));
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_TRUE(r["removed"].asBool());
+	EXPECT_FALSE(Invoke("asset_catalogue.unregister_type_editor", RouteReq("cow_dragon", "CowEditor"))["removed"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, UnregisterTypeEditor_BuiltInRouteOfOtherEditor_Kept)
+{
+	Json::Value r = Invoke("asset_catalogue.unregister_type_editor", RouteReq("diascene", "CowEditor"));
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_FALSE(r["removed"].asBool());
+	// built-in route still there: re-registering it elsewhere is refused
+	EXPECT_FALSE(Invoke("asset_catalogue.register_type_editor", RouteReq("diascene", "CowEditor"))["registered"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, UnregisterTypeEditor_UnknownType_NoRemoval)
+{
+	Json::Value r = Invoke("asset_catalogue.unregister_type_editor", RouteReq("never_registered", "CowEditor"));
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_FALSE(r["removed"].asBool());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, UnregisterTypeEditor_MissingParams_Fails)
+{
+	Json::Value r = Invoke("asset_catalogue.unregister_type_editor");
+	EXPECT_FALSE(r["success"].asBool());
+}

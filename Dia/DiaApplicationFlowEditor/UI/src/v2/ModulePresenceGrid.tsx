@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
-import { TrafficLightDot } from './TrafficLightDot';
+import { TrafficLightDot } from '@dia/editor-ui';
 import type { ModuleV2, ProcessingUnitV2, StageV2 } from './types';
 
 const ROW_HEIGHT = 28;

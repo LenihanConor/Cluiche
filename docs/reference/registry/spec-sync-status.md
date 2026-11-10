@@ -19,6 +19,11 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | async-asset-loading | Unknown | — | — | no Public Interfaces |
 | cluichetestscenarios | Unknown | — | — | no Public Interfaces |
 | teststages | Unknown | ❌ | — | RigidBody2DTestModule |
+| cow | Unknown | — | — | no Public Interfaces |
+| e1-saveload | Approved | ❌ | — | SaveLoadModule |
+| f1-harness | Approved | — | — | no Public Interfaces |
+| f2-core-runtime | Unknown | — | — | no Public Interfaces |
+| gamespeedcontroller | Unknown | ❌ | — | GameSpeedController, GameSpeedControllerModule |
 | dia | Unknown | — | — | no Public Interfaces |
 | asset-system-overview | Unknown | — | — | no Public Interfaces |
 | diaaibroadcast | Unknown | ✅ | Callout, CalloutHandle, QueryFilter, CalloutRegistry | — |
@@ -39,7 +44,7 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diaassetruntime | Unknown | — | — | no Public Interfaces |
 | diaassetruntimeinspector | Unknown | ✅ | DiaAssetRuntimeInspector | — |
 | diaassetruntimevisualdebugger | Approved | — | — | no Public Interfaces |
-| diaattribute | Approved | ❌ | — | AttributeDefinition, AttributeSchema, ModifierOperation, AttributeModifier, ModifierTag, AttributeSet, AttributeSetComponent, AttributeChangedEvent, IAttributeObserver, AttributeObserverSubject, AttributeAccessorBridge |
+| diaattribute | Done | ✅ | AttributeDefinition, AttributeSchema, ModifierOperation, AttributeModifier, ModifierTag, AttributeSet, AttributeSetComponent, AttributeChangedEvent, IAttributeObserver, AttributeObserverSubject, AttributeAccessorBridge | — |
 | diaautomation | Unknown | ✅ | CheckpointResult, AutomationService, CheckpointEntry, PauseResumeEntry | — |
 | diabehaviourtree | Done | ✅ | NodeResult, ActionRegistry, BehaviourTreeAsset, IBehaviourTreeEventListener, DecoratorContext, IDecoratorNode, DecoratorRegistry, BehaviourTreeComponent, BehaviourTreeSystem, SpyAction | — |
 | diabehaviourtreevisualdebugger | Approved | ✅ | BehaviourTreeComponent, BehaviourTreeVisualDebugger, NodeVisit | — |
@@ -53,6 +58,7 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diacamera3d | Unknown | — | — | no Public Interfaces |
 | diacli | Unknown | — | — | no Public Interfaces |
 | diacondition | Unknown | ✅ | IConditionContext, ConditionRegistry, ConditionOp, ConditionExpr, MockConditionContext | — |
+| diaconsole | Unknown | — | — | no Public Interfaces |
 | diacore | Unknown | — | — | no Public Interfaces |
 | diadata | Unknown | — | — | no Public Interfaces |
 | diadebugdomain | Done | ✅ | IDebugDomain, DiaDebugDomainRegistry | — |

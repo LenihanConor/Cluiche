@@ -146,7 +146,10 @@ def run_pipeline(
                 output.stage_skipped(system=system, stage=stage_name, reason="not in active stage list")
                 continue
 
-            if stage_name in checkpoint:
+            # compile-code is never resumed from a checkpoint: msbuild is incremental, and a
+            # checkpoint left by a failed later stage would otherwise reuse a stale binary
+            # after the source was edited.
+            if stage_name in checkpoint and stage_name != "compile-code":
                 output.stage_skipped(system=system, stage=stage_name, reason="checkpoint")
                 pass_count += 1
                 continue

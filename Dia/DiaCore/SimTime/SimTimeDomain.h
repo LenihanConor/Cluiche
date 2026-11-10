@@ -23,10 +23,12 @@ namespace Dia::SimTime {
         Core::TimeRelative  Step() const;       // current effective step size
 
         void  SetScale(float scale);
+        void  SetScaleImmediate(float scale);   // Applies at once, bypassing the one-tick queue. For restoring saved state only.
         void  Pause();
         void  Resume();
         void  Step(Core::TimeRelative step);    // manual single-step advance (bypasses pause)
         void  AdvanceTo(Core::TimeAbsolute t);
+        void  SetTime(Core::TimeAbsolute t);    // Rewind-capable; immediate. For restoring saved state only.
 
         float               GetScale() const;
         bool                IsPaused() const;

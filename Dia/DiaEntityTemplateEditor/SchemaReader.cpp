@@ -5,6 +5,24 @@
 
 namespace Dia { namespace EntityTemplateEditor {
 
+    namespace {
+        // Bounded copy of an optional string member; leaves dst empty if absent / not a string.
+        void CopyOptionalString(const Json::Value& obj, const char* key, char* dst, size_t dstSize)
+        {
+            dst[0] = '\0';
+            if (obj.isMember(key) && obj[key].isString())
+                strncpy_s(dst, dstSize, obj[key].asCString(), _TRUNCATE);
+        }
+    }
+
+    SchemaReader::SchemaReader()
+        : mComponentsPtr(new ComponentArray())
+        , mComponents(*mComponentsPtr)
+    {
+    }
+
+    SchemaReader::~SchemaReader() = default;
+
     void SchemaReader::LoadFromFile(const char* schemaPath)
     {
         Clear();
@@ -88,6 +106,31 @@ namespace Dia { namespace EntityTemplateEditor {
                               field.get("name", "").asCString(), _TRUNCATE);
                     strncpy_s(fieldEntry.kind, sizeof(fieldEntry.kind),
                               field.get("kind", "primitive").asCString(), _TRUNCATE);
+                    CopyOptionalString(field, "label", fieldEntry.label, sizeof(fieldEntry.label));
+                    CopyOptionalString(field, "description", fieldEntry.description, sizeof(fieldEntry.description));
+                    CopyOptionalString(field, "unit", fieldEntry.unit, sizeof(fieldEntry.unit));
+                    CopyOptionalString(field, "hint", fieldEntry.hint, sizeof(fieldEntry.hint));
+                    if (field.isMember("min") && field["min"].isNumeric())
+                    {
+                        fieldEntry.min = field["min"].asDouble();
+                        fieldEntry.hasMin = true;
+                    }
+                    if (field.isMember("max") && field["max"].isNumeric())
+                    {
+                        fieldEntry.max = field["max"].asDouble();
+                        fieldEntry.hasMax = true;
+                    }
+                    if (field.isMember("default"))
+                    {
+                        Json::FastWriter writer;
+                        writer.omitEndingLineFeed();
+                        const std::string text = writer.write(field["default"]);
+                        if (text.size() < sizeof(fieldEntry.defaultJson))
+                        {
+                            memcpy(fieldEntry.defaultJson, text.c_str(), text.size() + 1);
+                            fieldEntry.hasDefault = true;
+                        }
+                    }
                     entry.fields.Add(fieldEntry);
                 }
             }

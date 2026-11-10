@@ -4,6 +4,8 @@
 
 namespace Dia
 {
+	namespace EntityTemplateEditor { class SchemaReader; }
+
 	namespace SceneEditor
 	{
 		// Right panel: context-sensitive detail view for the selected scene item.
@@ -33,11 +35,18 @@ namespace Dia
 
 			// Load a blueprint JSON file and return its component array.
 			// Returns empty array on failure.
+			// Optional non-owning field-metadata source (registeredtypes.diaschema). When set,
+			// field objects gain label/description/unit/hint/min/max/default where the schema
+			// has them; fields without metadata are unchanged. Caller keeps it alive.
+			void SetSchema(const Dia::EntityTemplateEditor::SchemaReader* schema) { mSchema = schema; }
+
 			Json::Value LoadBlueprintComponents(const char* entityTemplateId,
 			                                    const char* entityTemplateBasePath,
 			                                    const char* itemType) const;
 
 		private:
+			const Dia::EntityTemplateEditor::SchemaReader* mSchema = nullptr;
+
 			// Extract the string value from either a plain string or {"value":"..."} wrapper.
 			static const char* ExtractStr(const Json::Value& val, char* buf, int bufSize);
 

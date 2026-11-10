@@ -12,15 +12,16 @@ language: cpp
 parent_module_id: dia.graphics
 
 summary: >
-  Defines Frame APIs (DebugFrameData, DebugFrameDataBase, DebugFrameDataCircle2D, DebugFrameDataLine2D, DebugFrameDataVisitor, FrameData, UIFrameData) including: DebugFrameData, DebugFrameDataBase, DebugFrameDataCircle2D, DebugFrameDataLine2D, DebugFrameDataVisitor, FrameData, UIFrameData.
+  Defines Frame APIs including: DebugFrameData, DebugFrameDataBase, DebugFrameDataCircle2D, DebugFrameDataLine2D, DebugFrameDataVisitor, FrameData, UIFrameData, CellFieldFrameData.
 
 intent: >
   Provide reusable Frame building blocks with consistent semantics for higher-level systems.
 
 responsibilities:
-  - Expose primary types: DebugFrameData, DebugFrameDataBase, DebugFrameDataCircle2D, DebugFrameDataLine2D, DebugFrameDataVisitor, FrameData, UIFrameData
+  - Expose primary types: DebugFrameData, DebugFrameDataBase, DebugFrameDataCircle2D, DebugFrameDataLine2D, DebugFrameDataVisitor, FrameData, UIFrameData, CellFieldFrameData
   - Define and maintain the public header surface for this module
   - Provide lightweight operations with predictable behavior
+  - Track per-frame CellField draw requests in CellFieldFrameData (with dropped counter and copy/clear semantics)
 
 non_responsibilities:
   - Domain-specific gameplay behavior
@@ -43,6 +44,7 @@ public_api:
     - Dia/DiaGraphics/Frame/DebugFrameDataVisitor.h
     - Dia/DiaGraphics/Frame/FrameData.h
     - Dia/DiaGraphics/Frame/UIFrameData.h
+    - Dia/DiaGraphics/Frame/CellFieldFrameData.h
   namespaces: []
   entry_points:
     - DebugFrameData
@@ -52,6 +54,7 @@ public_api:
     - DebugFrameDataVisitor
     - FrameData
     - UIFrameData
+    - CellFieldFrameData
 
 dependencies:
   required:

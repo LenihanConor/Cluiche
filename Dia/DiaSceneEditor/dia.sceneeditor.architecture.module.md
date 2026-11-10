@@ -11,6 +11,7 @@ dependencies:
   - dia.scene2d
   - dia.game
   - dia.entity
+  - dia.EntityTemplateEditor
   - dia.core
   - dia.observation
 

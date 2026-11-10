@@ -66,13 +66,10 @@
                     ],
                     "dependencies": [
                         "EntityModule",
-                        "VisualDebuggerModule"
+                        "VisualDebuggerModule",
+                        "SimQueryHostModule"
                     ],
                     "channels": [
-                        {
-                            "id": "DebugServerService",
-                            "role": "consumes"
-                        },
                         {
                             "id": "DebugServerPush",
                             "role": "writes"

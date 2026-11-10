@@ -42,6 +42,7 @@ public_api:
     - Dia/DiaCore/Strings/String64.h
     - Dia/DiaCore/Strings/String8.h
     - Dia/DiaCore/Strings/stringutils.h
+    - Dia/DiaCore/Strings/Base64.h
   namespaces:
     - Dia::Dia
   entry_points:

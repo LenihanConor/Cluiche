@@ -222,7 +222,7 @@ def test_run_default_injects_slow_filter(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
-    assert "--gtest_filter=-SLOW_*" in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" in args  # also excludes parameterized Prefix/SLOW_X suites
 
 
 @patch("dia_cli.commands.test.googletest_runner.subprocess.run")
@@ -231,7 +231,7 @@ def test_run_all_skips_default_filter(mock_run, tmp_path):
     mock_run.return_value = MagicMock(returncode=0)
     run(repo_root=tmp_path, config="Debug", filter_pattern=None, verbose=False, docker=False, run_all=True)
     args = mock_run.call_args[0][0]
-    assert "--gtest_filter=-SLOW_*" not in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" not in args
     assert not any("gtest_filter" in a for a in args)
 
 
@@ -242,7 +242,7 @@ def test_run_explicit_filter_overrides_default(mock_run, tmp_path):
     run(repo_root=tmp_path, config="Debug", filter_pattern="TestArray*", verbose=False, docker=False, run_all=False)
     args = mock_run.call_args[0][0]
     assert "--gtest_filter=TestArray*" in args
-    assert "--gtest_filter=-SLOW_*" not in args
+    assert "--gtest_filter=-SLOW_*:*/SLOW_*" not in args
 
 
 @patch("dia_cli.commands.test.googletest_runner.subprocess.run")
@@ -421,6 +421,21 @@ def test_run_shards_uses_gtest_env_vars(mock_run, tmp_path):
     assert shard_indices == [0, 1, 2]
 
 
+@patch("dia_cli.commands.test.shard_runner.with_asan_runtime_on_path")
+@patch("dia_cli.commands.test.shard_runner.subprocess.run")
+def test_run_shards_puts_asan_runtime_on_path(mock_run, mock_asan, tmp_path):
+    _make_staged(tmp_path, "Debug-Asan")
+    mock_run.return_value = MagicMock(returncode=0)
+    mock_asan.side_effect = lambda env, config: {"PATH": "ASAN;x"}
+    run(repo_root=tmp_path, config="Debug-Asan", filter_pattern=None,
+        verbose=False, docker=False, run_all=False, shards=2)
+    assert all(c.args[1] == "Debug-Asan" for c in mock_asan.call_args_list)
+    for call in mock_run.call_args_list:
+        env = call[1]["env"]
+        assert env["PATH"].startswith("ASAN;")
+        assert "GTEST_SHARD_INDEX" in env
+
+
 @patch("dia_cli.commands.test.shard_runner.subprocess.run")
 def test_run_shards_returns_nonzero_if_any_shard_fails(mock_run, tmp_path):
     _make_staged(tmp_path)
@@ -490,3 +505,13 @@ def test_googletest_help_shows_shards():
     result = runner.invoke(cli, ["test", "googletest", "--help"])
     assert result.exit_code == 0
     assert "--shards" in result.output
+
+
+def test_is_slow_suite_recognises_parameterized_prefix():
+    from dia_cli.commands.test.slow_suites import is_slow_suite
+    assert is_slow_suite("SLOW_Physics")
+    assert is_slow_suite("Once/SLOW_WebSocketLargeMessagesLimitTest")
+    assert is_slow_suite("Sizes/SLOW_WebSocketLargeMessagesTest")
+    assert not is_slow_suite("Physics")
+    assert not is_slow_suite("Once/FastTest")
+    assert not is_slow_suite("NotSLOW_Name")

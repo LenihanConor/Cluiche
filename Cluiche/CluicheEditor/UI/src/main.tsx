@@ -4,6 +4,7 @@ import { injectThemeVars } from "@dia/editor-ui";
 import { DockingManager } from "./layout/DockingManager";
 import { CommandPalette } from "./components/CommandPalette";
 import { SplashScreen } from "./components/SplashScreen";
+import { GameSwitchModal } from "./components/GameSwitchModal";
 import { EditorBridge } from "./bridge/EditorBridge";
 import { ToastRenderer } from "./notifications/ToastRenderer";
 import "./notifications/useNotifications"; // side-effect: wires setToastDispatch
@@ -67,6 +68,7 @@ function App() {
       <SplashScreen visible={splashVisible} />
       <DockingManager onReady={handleReady} />
       <ToastRenderer />
+      <GameSwitchModal />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       {lastAction && (
         <div style={{

@@ -1,0 +1,66 @@
+{
+    "assets": [
+        {
+            "content_hash": 0,
+            "id": "stage.global",
+            "references": [
+                {
+                    "target": "manifest.{{ lower }}_main",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "global.stage.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.{{ lower }}_main",
+            "references": [],
+            "scope": "global",
+            "source_path": "{{ lower }}_main.diaapp",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        },
+        {
+            "content_hash": 0,
+            "id": "stage.{{ stage_snake }}",
+            "references": [
+                {
+                    "target": "manifest.{{ stage_snake }}",
+                    "type": "contains"
+                }
+            ],
+            "scope": "global",
+            "source_path": "Stages/{{ stage }}/{{ stage_snake }}.diastage",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "misc"
+            ],
+            "type": "stage"
+        },
+        {
+            "content_hash": 0,
+            "id": "manifest.{{ stage_snake }}",
+            "references": [],
+            "scope": "stage",
+            "source_path": "Stages/{{ stage }}/misc/ApplicationFlow/{{ stage_snake }}.diaapp",
+            "stage_name": "{{ stage }}",
+            "status": "active",
+            "tags": [
+                "misc/ApplicationFlow"
+            ],
+            "type": "manifest"
+        }
+    ]
+}

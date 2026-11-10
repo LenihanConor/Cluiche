@@ -66,6 +66,22 @@ namespace Dia
 					}
 				}
 			}
+
+			// Copies a full BGRA frame from src into dst, writing RGBA. One pass over the whole
+			// frame: independent of CEF dirty rects (clean regions and overlapping rects both
+			// come out correctly). dst and src must not overlap.
+			inline void CopyBGRAtoRGBA(unsigned char* dst, const unsigned char* src, int width, int height)
+			{
+				const int pixelCount = width * height;
+				for (int i = 0; i < pixelCount; ++i)
+				{
+					const int o = i * 4;
+					dst[o + 0] = src[o + 2];
+					dst[o + 1] = src[o + 1];
+					dst[o + 2] = src[o + 0];
+					dst[o + 3] = src[o + 3];
+				}
+			}
 		}
 	}
 }

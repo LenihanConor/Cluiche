@@ -2,14 +2,35 @@
 import click
 from pathlib import Path
 
+from dia_cli.utils.repo_root import find_repo_root
 
-@click.group("deploy")
+
+class _TomlDeployGroup(click.Group):
+    """Deploy group whose subcommands are every [targets.*] block in pipeline.toml."""
+
+    def _target_names(self) -> list[str]:
+        from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
+        try:
+            return list(load_pipeline_config(find_repo_root(__file__)).targets)
+        except (PipelineConfigError, RuntimeError):
+            return []
+
+    def list_commands(self, ctx):
+        return sorted(self._target_names())
+
+    def get_command(self, ctx, cmd_name):
+        if cmd_name not in self._target_names():
+            return None
+        return _make_deploy_cmd(cmd_name)
+
+
+@click.group("deploy", cls=_TomlDeployGroup)
 def deploy_group():
     """Deploy runtime files for a build target to its output directory."""
 
 
 def _make_deploy_cmd(target_name: str):
-    @deploy_group.command(target_name)
+    @click.command(target_name)
     @click.option("--config", default="Debug", show_default=True,
                   help="Build configuration (Debug or Release).")
     @click.option("--out-dir", required=True, metavar="PATH",
@@ -17,7 +38,6 @@ def _make_deploy_cmd(target_name: str):
     @click.option("--force", is_flag=True, default=False,
                   help="Re-copy files even if already up to date.")
     def _deploy(config, out_dir, force):
-        from dia_cli.utils.repo_root import find_repo_root
         from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
         from dia_cli.commands.pipeline.stages.package_stage import run_deploy
 
@@ -47,16 +67,5 @@ def _make_deploy_cmd(target_name: str):
         )
         raise SystemExit(exit_code)
 
-    _deploy.__name__ = f"deploy_{target_name}"
+    return _deploy
 
-
-_DEPLOY_TARGETS = [
-    "cluichetest",
-    "googletest",
-    "cluicheeditor",
-    "diasfml",
-    "diauiultralight",
-]
-
-for _target in _DEPLOY_TARGETS:
-    _make_deploy_cmd(_target)

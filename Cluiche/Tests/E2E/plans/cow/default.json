@@ -1,0 +1,9 @@
+{
+    "app": "cow",
+    "port": 9002,
+    "config": "Debug",
+    "scenarios": [
+        "scenarios/cow/s1worldgen/test_s1_panel.py",
+        "scenarios/cow/s1worldgen/test_s1_render.py"
+    ]
+}

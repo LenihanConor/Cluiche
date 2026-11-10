@@ -319,7 +319,6 @@ SFML integration layer:
 |---------|---------|---------|-------|
 | **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML backend, primary rendering |
 | **JsonCpp** | master | JSON parsing and serialization | Configuration files, save/load |
-| **Webix** | Multiple | JavaScript UI framework | UI pages, web console |
 | **VisJS** | - | Data visualization | Debugging visualizations |
 
 **[→ External dependencies details](external-dependencies.md)**  

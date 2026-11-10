@@ -2,7 +2,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaUtilityAI/UtilitySet.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -27,7 +27,7 @@ Dia::Core::RGBA UtilityAIDebugDomain::GetAccentColour() const   { return Dia::Vi
 
 void UtilityAIDebugDomain::GetJSONState(Json::Value& out)
 {
-    const bool enabled = mScoresEnabled.load();
+    const bool enabled = mScoresEnabled;
 
     Json::Value drawers(Json::arrayValue);
     {
@@ -87,7 +87,7 @@ void UtilityAIDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value
     {
         if (!args.isMember("drawer") || !args["drawer"].isString()) return;
         if (Dia::Core::StringCRC(args["drawer"].asCString()) == kDrawerScores)
-            mScoresEnabled = !mScoresEnabled.load();
+            mScoresEnabled = !mScoresEnabled;
     }
     // "setScale" — no-op for panel-only domain
 }

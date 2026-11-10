@@ -1,0 +1,637 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.worldgen.layers",
+  "entries": [
+    {
+      "key": "relief",
+      "kind": "field",
+      "label": "Relief",
+      "description": "Elevation shaded as terrain relief (default base layer; hillshade comes from the elevation layer).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain",
+        "default_base": true,
+        "elevation_layer": "elevation"
+      }
+    },
+    {
+      "key": "elevation",
+      "kind": "field",
+      "label": "Elevation",
+      "description": "Final elevation after valley carving: ocean 0, land from the coast level up to 1, lakes at their surface.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "latitude",
+      "kind": "field",
+      "label": "Latitude",
+      "description": "Normalised distance from the equator: 0 at the equator, 1 at the pole.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "coastDistance",
+      "kind": "field",
+      "label": "Coast distance",
+      "description": "Hex steps from the nearest coast cell.",
+      "unit": "cells",
+      "type": "float",
+      "min": 0,
+      "max": 20,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "landPotential",
+      "kind": "field",
+      "label": "Land potential",
+      "description": "Landmass stage land potential before thresholding (ocean cells may hold -infinity, shown at the low end).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "islandPotential",
+      "kind": "field",
+      "label": "Island potential",
+      "description": "Landmass stage island-blob potential.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.green"
+      }
+    },
+    {
+      "key": "landmass",
+      "kind": "field",
+      "label": "Landmass id",
+      "description": "Landmass id per cell: 0 is ocean, 1.. one per landmass (ids saturate at 255, so this is a ramp, not a palette).",
+      "type": "float",
+      "min": 0,
+      "max": 16,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.purple"
+      }
+    },
+    {
+      "key": "ridgeMask",
+      "kind": "field",
+      "label": "Ridge mask",
+      "description": "Mountain ridge strength produced by the Mountains stage.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "barrierMask",
+      "kind": "field",
+      "label": "Barrier mask",
+      "description": "Barrier (plateau or volcanic chain) strength.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "elevationRaw",
+      "kind": "field",
+      "label": "Raw elevation",
+      "description": "Elevation before drainage fill and valley carving.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "filledElevation",
+      "kind": "field",
+      "label": "Filled elevation",
+      "description": "Elevation after depression filling (drainage).",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.terrain"
+      }
+    },
+    {
+      "key": "basinDepth",
+      "kind": "field",
+      "label": "Basin depth",
+      "description": "Depth of each depression removed by the fill.",
+      "type": "float",
+      "min": 0,
+      "max": 0.05,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "flowAccumulation",
+      "kind": "field",
+      "label": "Flow accumulation",
+      "description": "Number of upstream cells draining through each cell.",
+      "unit": "cells",
+      "type": "float",
+      "min": 0,
+      "max": 200,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "valleyCarve",
+      "kind": "field",
+      "label": "Valley carve",
+      "description": "Elevation removed by river valley carving.",
+      "type": "float",
+      "min": 0,
+      "max": 0.04,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.purple"
+      }
+    },
+    {
+      "key": "slope",
+      "kind": "field",
+      "label": "Slope",
+      "description": "Steepest elevation drop to a neighbour, used to classify cliffs.",
+      "type": "float",
+      "min": 0,
+      "max": 0.5,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.grey"
+      }
+    },
+    {
+      "key": "oceanDepth",
+      "kind": "field",
+      "label": "Ocean depth",
+      "description": "Depth below the coast level for ocean cells.",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.blue"
+      }
+    },
+    {
+      "key": "zoneCost",
+      "kind": "field",
+      "label": "Zone cost",
+      "description": "Depth-zone cost field (distance-like cost from the shore).",
+      "type": "float",
+      "min": 0,
+      "max": 40,
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "ramp": "sequential.heat"
+      }
+    },
+    {
+      "key": "terrainType",
+      "kind": "field",
+      "label": "Terrain type",
+      "description": "Classified terrain per cell.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "deepWater",
+          "label": "Deep water",
+          "description": "Ocean beyond the shallows.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "shallowWater",
+          "label": "Shallow water",
+          "description": "Ocean near the coast.",
+          "colour": "#d89d61"
+        },
+        {
+          "id": "lake",
+          "label": "Lake",
+          "description": "Inland lake.",
+          "colour": "#d8d861"
+        },
+        {
+          "id": "river",
+          "label": "River",
+          "description": "River cell.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "lowland",
+          "label": "Lowland",
+          "description": "Low flat land.",
+          "colour": "#61d861"
+        },
+        {
+          "id": "hills",
+          "label": "Hills",
+          "description": "Rolling hills.",
+          "colour": "#61d89d"
+        },
+        {
+          "id": "highland",
+          "label": "Highland",
+          "description": "High plateau land.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "mountain",
+          "label": "Mountain",
+          "description": "Mountain.",
+          "colour": "#619dd8"
+        },
+        {
+          "id": "peak",
+          "label": "Peak",
+          "description": "Mountain peak.",
+          "colour": "#6161d8"
+        },
+        {
+          "id": "cliff",
+          "label": "Cliff",
+          "description": "Steep cliff.",
+          "colour": "#9d61d8"
+        },
+        {
+          "id": "pass",
+          "label": "Pass",
+          "description": "Pass through a barrier.",
+          "colour": "#d861d8"
+        },
+        {
+          "id": "volcano",
+          "label": "Volcano",
+          "description": "Volcanic vent.",
+          "colour": "#d8619d"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "waterSource",
+      "kind": "field",
+      "label": "Water source",
+      "description": "What kind of water a cell holds.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Dry land.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "ocean",
+          "label": "Ocean",
+          "description": "Ocean.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "lake",
+          "label": "Lake",
+          "description": "Lake.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "river",
+          "label": "River",
+          "description": "River.",
+          "colour": "#9d61d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "depthZone",
+      "kind": "field",
+      "label": "Depth zone",
+      "description": "Distance-from-shore zone (None for ocean).",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "firstShores",
+          "label": "First shores",
+          "description": "Near the coast.",
+          "colour": "#9dd861"
+        },
+        {
+          "id": "wildReaches",
+          "label": "Wild reaches",
+          "description": "Mid interior.",
+          "colour": "#61d8d8"
+        },
+        {
+          "id": "ancientInteriors",
+          "label": "Ancient interiors",
+          "description": "Deep interior.",
+          "colour": "#9d61d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "flowDirection",
+      "kind": "field",
+      "label": "Flow direction",
+      "description": "Direction water flows out of the cell, as a Dia hex direction.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "ne",
+          "label": "NE",
+          "description": "Direction 0.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "n",
+          "label": "N",
+          "description": "Direction 1.",
+          "colour": "#d8c761"
+        },
+        {
+          "id": "nw",
+          "label": "NW",
+          "description": "Direction 2.",
+          "colour": "#83d861"
+        },
+        {
+          "id": "sw",
+          "label": "SW",
+          "description": "Direction 3.",
+          "colour": "#61d8a5"
+        },
+        {
+          "id": "s",
+          "label": "S",
+          "description": "Direction 4.",
+          "colour": "#61a5d8"
+        },
+        {
+          "id": "se",
+          "label": "SE",
+          "description": "Direction 5.",
+          "colour": "#8361d8"
+        },
+        {
+          "id": "sink",
+          "label": "Sink",
+          "description": "Terminal cell (sea or lake).",
+          "colour": "#d861c7"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "riverMask",
+      "kind": "field",
+      "label": "River mask",
+      "description": "Cells that hold a river.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "No river",
+          "description": "Not a river cell.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "River",
+          "description": "River cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "lakeMask",
+      "kind": "field",
+      "label": "Lake mask",
+      "description": "Lake id per cell: none, then lake 1..12 in rank order.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Not a lake cell.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "lake1",
+          "label": "Lake 1",
+          "description": "Lake id 1.",
+          "colour": "#d89861"
+        },
+        {
+          "id": "lake2",
+          "label": "Lake 2",
+          "description": "Lake id 2.",
+          "colour": "#d8cf61"
+        },
+        {
+          "id": "lake3",
+          "label": "Lake 3",
+          "description": "Lake id 3.",
+          "colour": "#aad861"
+        },
+        {
+          "id": "lake4",
+          "label": "Lake 4",
+          "description": "Lake id 4.",
+          "colour": "#73d861"
+        },
+        {
+          "id": "lake5",
+          "label": "Lake 5",
+          "description": "Lake id 5.",
+          "colour": "#61d886"
+        },
+        {
+          "id": "lake6",
+          "label": "Lake 6",
+          "description": "Lake id 6.",
+          "colour": "#61d8bd"
+        },
+        {
+          "id": "lake7",
+          "label": "Lake 7",
+          "description": "Lake id 7.",
+          "colour": "#61bdd8"
+        },
+        {
+          "id": "lake8",
+          "label": "Lake 8",
+          "description": "Lake id 8.",
+          "colour": "#6186d8"
+        },
+        {
+          "id": "lake9",
+          "label": "Lake 9",
+          "description": "Lake id 9.",
+          "colour": "#7361d8"
+        },
+        {
+          "id": "lake10",
+          "label": "Lake 10",
+          "description": "Lake id 10.",
+          "colour": "#aa61d8"
+        },
+        {
+          "id": "lake11",
+          "label": "Lake 11",
+          "description": "Lake id 11.",
+          "colour": "#d861cf"
+        },
+        {
+          "id": "lake12",
+          "label": "Lake 12",
+          "description": "Lake id 12.",
+          "colour": "#d86198"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "passMask",
+      "kind": "field",
+      "label": "Pass mask",
+      "description": "Cells flagged as a pass through a mountain barrier.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "No pass",
+          "description": "Not a pass.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "Pass",
+          "description": "Pass cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    },
+    {
+      "key": "volcanic",
+      "kind": "field",
+      "label": "Volcanic",
+      "description": "Cells flagged as volcanic.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "no",
+          "label": "Not volcanic",
+          "description": "Not volcanic.",
+          "colour": "#d86161"
+        },
+        {
+          "id": "yes",
+          "label": "Volcanic",
+          "description": "Volcanic cell.",
+          "colour": "#61d8d8"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
+    }
+  ]
+}

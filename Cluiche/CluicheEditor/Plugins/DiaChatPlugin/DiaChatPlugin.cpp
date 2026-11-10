@@ -384,11 +384,7 @@ namespace CluicheEditor
 						const Dia::Editor::EditorActionParam& param = e.params.params[p];
 						if (param.name == nullptr)
 							continue;
-						Json::Value pj(Json::objectValue);
-						pj["name"]        = param.name;
-						pj["type"]        = param.type        ? param.type        : "string";
-						pj["required"]    = param.required;
-						pj["description"] = param.description ? param.description : "";
+						Json::Value pj = Dia::Editor::EditorActionParamToJson(param);
 						params.append(pj);
 					}
 					action["params"] = params;

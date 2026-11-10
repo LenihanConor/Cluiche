@@ -7,6 +7,7 @@
 #include "DiaAssetCatalogueEditor/Commands/RemoveRelationshipCommand.h"
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include "DiaAssetCatalogueEditor/Commands/ApplyRulesCommand.h"
+#include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaEditor/UI/FileDialogHandler.h>
 
@@ -153,6 +154,14 @@ namespace Dia
 				SeedAssetTemplates();
 				RegisterRequestHandlers();
 				DualRegisterActions();
+
+				// Replay routes held by plugins that loaded before this one (first registration wins; never
+				// overrides built-ins, and routes already registered here are rejected as duplicates).
+				{
+					const Dia::Editor::EditorPluginRegistry& pluginRegistry = Dia::Editor::EditorPluginRegistry::Instance();
+					for (unsigned int i = 0; i < pluginRegistry.GetAssetRouteCount(); ++i)
+						mTypeEditorRegistry.RegisterTypeEditor(pluginRegistry.GetAssetRouteAssetType(i), pluginRegistry.GetAssetRouteEditor(i));
+				}
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
 			}
@@ -1138,7 +1147,29 @@ namespace Dia
 						}
 						Dia::Core::StringCRC assetType(data["assetType"].asCString());
 						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
-						mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);
+						result["registered"] = mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);   // first registration wins
+						result["success"] = true;
+						return result;
+					});
+
+				// unregister_type_editor - removes a route a plugin added (e.g. a game-scoped plugin's OnUnload).
+				// Only removes when the type is currently routed to the given editor, so built-in routes and
+				// other plugins' routes are never removed. After removal open_asset falls back to the OS default app.
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_catalogue.unregister_type_editor"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("assetType") || !data["assetType"].isString() ||
+						    !data.isMember("editorPluginType") || !data["editorPluginType"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing assetType or editorPluginType";
+							return result;
+						}
+						Dia::Core::StringCRC assetType(data["assetType"].asCString());
+						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
+						result["removed"] = mTypeEditorRegistry.UnregisterTypeEditor(assetType, editorType);
 						result["success"] = true;
 						return result;
 					});

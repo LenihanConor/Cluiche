@@ -14,6 +14,7 @@
 #include "DiaGridVisibility/Testing/VisibilityTestHelpers.h"
 
 #include "DiaPathfinding/SquarePathGrid.h"
+#include <DiaPathfinding/HexPathGrid.h>
 #include "DiaPathfinding/CellCoord.h"
 
 #include "DiaEntity/Domain.h"
@@ -71,6 +72,9 @@ TEST(GridVisibilityConcept, SquarePathGridSatisfiesCVisibilityGraph)
                   "SquarePathGrid must satisfy CVisibilityGraph");
     SUCCEED();
 }
+
+// NOTE: Test removed - HexPathGrid now DOES satisfy CVisibilityGraph after hex visibility support was added.
+// See TestHexGridVisibility.cpp for hex-specific tests.
 
 // ---------------------------------------------------------------------------
 // Construction / consolidation
@@ -540,3 +544,5 @@ TEST(GridVisibilityMock, AssertCellVisible_AfterUpdate)
     AssertCellVisible(*sys, CellCoord{ 8, 8 }, blue);
     AssertCanSee(*sys, src, blue);
 }
+
+// ===========================================================================

@@ -32,7 +32,6 @@ C:\GitHub\Cluiche\
 ├── External/                     # Third-party dependencies
 │   ├── SFML/                     # Graphics/window/multimedia
 │   ├── jsoncpp-master/           # JSON parsing
-│   ├── Webix/                    # Web UI framework
 │   └── VisJS/                    # Visualization framework
 │
 ├── Tools/                        # Build and analysis tools

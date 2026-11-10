@@ -518,3 +518,23 @@ TEST_F(EntityInspectSerializerTest, SerializeInspectPayload_HierarchyDepth_Match
     EXPECT_EQ((*cJson)["d"].asInt(),  2);
     EXPECT_EQ((*cJson)["pi"].asInt(), static_cast<int>(parent.GetIndex()));
 }
+
+// ===========================================================================
+// Component type id: SerializeInspectPayload emits "id" (the valueschema `for`)
+// ===========================================================================
+
+TEST_F(EntityInspectSerializerTest, SerializeInspectPayload_Component_CarriesTypeIdString)
+{
+    Entity e = MakeLiveEntityWithComp("withcomp");
+    EntityDebugInfo infos[1] = { { e, "withcomp" } };
+
+    Json::Value result = SerializeInspectPayload(mDomain, infos, 1, 1);
+    ASSERT_EQ(result["entities"].size(), 1u);
+    const Json::Value& comps = result["entities"][0]["components"];
+    bool found = false;
+    for (unsigned int i = 0; i < comps.size(); ++i)
+    {
+        if (comps[i].get("id", "").asString() == "insp-comp") found = true;
+    }
+    EXPECT_TRUE(found);
+}

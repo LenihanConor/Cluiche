@@ -10,6 +10,12 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+
+#include <cstring>
+#include <memory>
+#include <set>
+#include <string>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -23,18 +29,141 @@ namespace Dia
 {
 	namespace DebugServer
 	{
+		namespace
+		{
+			void AppendParams(Json::Value& details, const Dia::API::ValueParam* params, unsigned int count)
+			{
+				Json::Value list(Json::arrayValue);
+				for (unsigned int i = 0; params != nullptr && i < count; ++i)
+				{
+					const Dia::API::ValueParam& p = params[i];
+					Json::Value v(Json::objectValue);
+					v["name"] = p.name != nullptr ? p.name : "";
+					v["type"] = p.type != nullptr ? p.type : "";
+					v["required"] = p.required;
+					v["description"] = p.description != nullptr ? p.description : "";
+					v["unit"] = p.unit != nullptr ? p.unit : "";
+					v["hasRange"] = p.hasRange;
+					if (p.hasRange)
+					{
+						v["min"] = p.min;
+						v["max"] = p.max;
+					}
+					v["enum"] = p.enumValues != nullptr ? p.enumValues : "";
+					list.append(v);
+				}
+				details["params"] = list;
+			}
+
+			Json::Value ApiDetail(const char* name, const char* description, const char* category, const char* owner,
+				bool noArgs, const Dia::API::ValueParam* params, unsigned int paramCount)
+			{
+				Json::Value d(Json::objectValue);
+				d["name"] = name;
+				d["source"] = "api";
+				d["description"] = description != nullptr ? description : "";
+				d["category"] = category != nullptr ? category : "";
+				d["owner"] = owner != nullptr ? owner : "";
+				d["noArgs"] = noArgs;
+				AppendParams(d, params, paramCount);
+				return d;
+			}
+		}
+
+		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim)
+		{
+			Json::Value result(Json::objectValue);
+			Json::Value names(Json::arrayValue);
+			Json::Value details(Json::arrayValue);
+			std::set<std::string> seen;
+
+			// std::function members make these arrays large; keep them off the stack.
+			auto plain = std::make_unique<Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256>>();
+			Dia::API::ListCommandInfos(*plain);
+			for (unsigned int i = 0; i < plain->Size(); ++i)
+			{
+				const Dia::API::CommandInfo& ci = (*plain)[i];
+				if (!seen.insert(ci.name.AsChar()).second)
+					continue;
+				names.append(ci.name.AsChar());
+				details.append(ApiDetail(ci.name.AsChar(), ci.description, ci.category.AsChar(), ci.owner, ci.noArgs, ci.params, ci.paramCount));
+			}
+			auto json = std::make_unique<Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfoJson, 256>>();
+			Dia::API::ListJsonCommandInfos(*json);
+			for (unsigned int i = 0; i < json->Size(); ++i)
+			{
+				const Dia::API::CommandInfoJson& ci = (*json)[i];
+				if (!seen.insert(ci.name.AsChar()).second)
+					continue;
+				names.append(ci.name.AsChar());
+				details.append(ApiDetail(ci.name.AsChar(), ci.description, ci.category.AsChar(), ci.owner, ci.noArgs, ci.params, ci.paramCount));
+			}
+
+			for (uint32_t i = 0; sim != nullptr && i < sim->SimHostedCount(); ++i)
+			{
+				SimHostedEntryView view;
+				if (!sim->GetSimHostedEntry(i, view) || view.help == nullptr)
+					continue;
+				const char* name = view.name.AsChar();
+				if (!seen.insert(name).second)
+				{
+					DIA_LOG_WARNING("DebugServer", "Command list: '%s' is both a DiaAPI command and sim-hosted; reporting the Main-hosted entry only", name);
+					continue;
+				}
+				names.append(name);
+
+				Dia::API::ValueParam params[kSimHelpMaxParams];
+				const uint32_t count = SimHelpToParams(*view.help, params);
+				Json::Value d(Json::objectValue);
+				d["name"] = name;
+				d["source"] = "sim";
+				d["kind"] = view.kind == SimKind::Query ? "query" : "command";
+				d["description"] = view.help->description;
+				d["category"] = view.help->category;
+				d["owner"] = view.help->owner;
+				d["noArgs"] = view.help->noArgs;
+				AppendParams(d, params, count);
+				details.append(d);
+			}
+
+			result["api_commands"] = names;
+			result["command_details"] = details;
+			return result;
+		}
+
 		DebugServer::DebugServer()
 			: mServer(nullptr)
 			, mStateProvider(nullptr)
 			, mPort(8080)
 			, mAutoStart(true)
 			, mObservationBridge(nullptr)
+			, mSimSink(nullptr)
+			, mSimHelp(new SimHelpStored[kMaxSimNames]())
+			, mNowMsFn(nullptr)
+			, mSendHook(nullptr)
+			, mSendHookContext(nullptr)
+			, mLoggedLateSimReply(false)
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
+			mOrderedHead    = 0;
+			mOrderedCount   = 0;
+			mOrderedDropped = 0;
 			mGameName[0]    = '\0';
 			mGameBuild[0]   = '\0';
 			mDiagamePath[0] = '\0';
+			mQueryRegistry.SetRegisterVeto(&DebugServer::SimNameVeto, this);
+		}
+
+		bool DebugServer::SimNameVeto(void* context, const Dia::Core::StringCRC& name)
+		{
+			const DebugServer* self = static_cast<const DebugServer*>(context);
+			for (unsigned int i = 0; i < self->mSimNames.Size(); ++i)
+			{
+				if (self->mSimNames[i].name == name)
+					return true;
+			}
+			return false;
 		}
 
 		DebugServer::~DebugServer()
@@ -55,6 +184,288 @@ namespace Dia
 		{
 			if (diagamePath) strncpy_s(mDiagamePath, sizeof(mDiagamePath), diagamePath, _TRUNCATE);
 			else mDiagamePath[0] = '\0';
+		}
+
+		//---------------------------------------------------------------------
+		// Sim-hosted queries (Main thread only)
+		//---------------------------------------------------------------------
+
+		namespace
+		{
+			// Sim-hosted counters (dia.debugserver.sim.*). RegisterCounter is idempotent; call rate is per client command.
+			void BumpSimMetric(const char* name)
+			{
+				if (auto* c = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(Dia::Core::StringCRC(name)))
+					c->Inc();
+			}
+
+			void SetSimPendingGauge(uint32_t count)
+			{
+				if (auto* g = Dia::Observation::Metric::MetricRegistry::Instance().RegisterGauge(
+						Dia::Core::StringCRC("dia.debugserver.sim.pending")))
+					g->Set(static_cast<double>(count));
+			}
+		}
+
+		void DebugServer::SetSimRequestSink(ISimRequestSink* sink)
+		{
+			mSimSink = sink;
+			if (sink)
+				DIA_LOG_INFO("DebugServer", "Sim request sink attached");
+			else
+				DIA_LOG_INFO("DebugServer", "Sim request sink detached");
+		}
+
+		bool DebugServer::RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind, const SimHelpStored& info)
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+				{
+					if (mSimNames[i].kind != kind)
+					{
+						DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' is already sim-hosted", name.AsChar());
+						return false;
+					}
+					mSimHelp[i] = info;   // same kind: replace the entry's help
+					DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' re-registered (kind=%u), help replaced", name.AsChar(), static_cast<unsigned>(kind));
+					return true;
+				}
+			}
+			if (mQueryRegistry.Has(name))
+			{
+				DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: '%s' already exists in QueryRegistry", name.AsChar());
+				return false;
+			}
+			if (mSimNames.IsFull())
+			{
+				DIA_LOG_ERROR("DebugServer", "RegisterSimHosted: capacity reached, cannot register '%s'", name.AsChar());
+				return false;
+			}
+			SimName entry;
+			entry.name = name;
+			entry.kind = kind;
+			mSimHelp[mSimNames.Size()] = info;
+			mSimNames.Add(entry);
+			DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' registered (kind=%u)", name.AsChar(), static_cast<unsigned>(kind));
+			return true;
+		}
+
+		void DebugServer::UnregisterSimHosted(Dia::Core::StringCRC name)
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+				{
+					const unsigned int last = mSimNames.Size() - 1;
+					for (unsigned int j = i; j < last; ++j)
+						mSimHelp[j] = mSimHelp[j + 1];   // keep the catalogue parallel to the shifted table
+					mSimNames.RemoveAt(i);
+					DIA_LOG_INFO("DebugServer", "Sim-hosted name '%s' unregistered", name.AsChar());
+					return;
+				}
+			}
+		}
+
+		bool DebugServer::ReplaceSimHosted(const SimHostedName* names, uint32_t count)
+		{
+			if (count > 0 && names == nullptr)
+			{
+				DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: null name array with count %u", count);
+				return false;
+			}
+
+			// Build the new table off to the side ('src' remembers which input entry supplies each slot's help);
+			// only swap if every entry is acceptable.
+			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> next;
+			const SimHelpStored* src[kMaxSimNames];
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				if (names[i].name[0] == '\0' || memchr(names[i].name, '\0', kSimHostedNameMax) == nullptr)
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: entry %u has an empty or unterminated name, swap rejected", i);
+					return false;
+				}
+				if (names[i].help == nullptr)
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: '%s' has no help, swap rejected", names[i].name);
+					return false;
+				}
+				const Dia::Core::StringCRC crc(names[i].name);
+				if (mQueryRegistry.Has(crc))
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: '%s' already exists in QueryRegistry, swap rejected", names[i].name);
+					return false;
+				}
+				bool found = false;
+				for (unsigned int j = 0; j < next.Size(); ++j)
+				{
+					if (next[j].name == crc)
+					{
+						next[j].kind = names[i].kind;   // duplicate: last wins
+						src[j]       = names[i].help;
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					continue;
+				if (next.IsFull())
+				{
+					DIA_LOG_ERROR("DebugServer", "ReplaceSimHosted: %u names exceed capacity %u, swap rejected", count, kMaxSimNames);
+					return false;
+				}
+				SimName entry;
+				entry.name = crc;
+				entry.kind = names[i].kind;
+				src[next.Size()] = names[i].help;
+				next.Add(entry);
+			}
+
+			// Commit: nothing below can fail.
+			for (unsigned int j = 0; j < next.Size(); ++j)
+				mSimHelp[j] = *src[j];
+			mSimNames = next;
+			DIA_LOG_INFO("DebugServer", "Sim-hosted table replaced (%u names)", mSimNames.Size());
+			return true;
+		}
+
+		bool DebugServer::GetSimHostedEntry(uint32_t index, SimHostedEntryView& out) const
+		{
+			if (index >= mSimNames.Size())
+				return false;
+			out.name = mSimNames[index].name;
+			out.kind = mSimNames[index].kind;
+			out.help = &mSimHelp[index];
+			return true;
+		}
+
+		const SimHelpStored* DebugServer::FindSimHostedHelp(Dia::Core::StringCRC name) const
+		{
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (mSimNames[i].name == name)
+					return &mSimHelp[i];
+			}
+			return nullptr;
+		}
+
+		void DebugServer::GetSimHostedDigest(uint32_t& count, uint32_t& hash) const
+		{
+			count = mSimNames.Size();
+			hash  = 0;
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+				hash += SimNameSetEntryHash(mSimNames[i].name.AsChar(), mSimNames[i].kind);
+		}
+
+		void DebugServer::SetNowMsFunction(NowMsFunction fn)
+		{
+			mNowMsFn = fn;
+		}
+
+		uint64_t DebugServer::NowMs() const
+		{
+			if (mNowMsFn)
+				return mNowMsFn();
+			return Dia::DebugProtocol::GetTimestampNow() / 1000;
+		}
+
+		void DebugServer::SendSimError(int connId, const char* commandName, const char* error)
+		{
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_command_response();
+			resp->set_command(commandName);
+			resp->set_success(false);
+			resp->set_message(error);
+			Json::Value body;
+			body["success"] = false;
+			body["error"] = error;
+			Dia::Proto::JsonValueToProtoStruct(body, resp->mutable_payload());
+			SendProtoMessage(connId, response);
+		}
+
+		void DebugServer::SweepSimTimeouts()
+		{
+			if (mSimPending.Count() == 0)
+				return;
+			SimPendingTable::Entry expired[SimPendingTable::kCapacity];
+			const uint32_t n = mSimPending.Expire(NowMs(), expired, SimPendingTable::kCapacity);
+			for (uint32_t i = 0; i < n; ++i)
+			{
+				const char* name = expired[i].commandName;
+				DIA_LOG_WARNING("DebugServer", "Sim-hosted request %u ('%s') timed out", expired[i].requestId, name);
+				BumpSimMetric("dia.debugserver.sim.timeouts");
+				SendSimError(expired[i].connectionId, name, "sim timeout");
+			}
+			SetSimPendingGauge(mSimPending.Count());
+		}
+
+		void DebugServer::CompleteSimReply(const SimReplyEvent& reply)
+		{
+			SimPendingTable::Entry entry;
+			if (!mSimPending.Complete(reply.requestId, entry))
+			{
+				if (!mLoggedLateSimReply)
+				{
+					mLoggedLateSimReply = true;
+					DIA_LOG_WARNING("DebugServer", "Dropping late/unknown sim reply (requestId=%u); further occurrences not logged",
+						reply.requestId);
+				}
+				return;
+			}
+
+			SetSimPendingGauge(mSimPending.Count());
+
+			const char* name = entry.commandName;
+
+			switch (static_cast<SimReplyStatus>(reply.status))
+			{
+			case SimReplyStatus::Ok:
+				break;
+			case SimReplyStatus::TooLarge:
+				BumpSimMetric("dia.debugserver.sim.too_large");
+				SendSimError(entry.connectionId, name, "reply too large");
+				return;
+			case SimReplyStatus::UnknownName:
+				SendSimError(entry.connectionId, name, "unknown name");
+				return;
+			case SimReplyStatus::HandlerFailed:
+			default:
+				BumpSimMetric("dia.debugserver.sim.handler_failed");
+				SendSimError(entry.connectionId, name, "handler failed");
+				return;
+			}
+
+			// Json must be NUL-terminated inside the fixed buffer.
+			const void* nul = std::memchr(reply.json, 0, kSimPayloadBytes);
+			Json::Value result;
+			bool parsed = false;
+			if (nul)
+			{
+				Json::CharReaderBuilder builder;
+				std::string errs;
+				std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+				parsed = reader->parse(reply.json, static_cast<const char*>(nul), &result, &errs);
+			}
+			if (!parsed)
+			{
+				DIA_LOG_ERROR("DebugServer", "Sim reply for '%s' has unparseable JSON", name);
+				BumpSimMetric("dia.debugserver.sim.handler_failed");
+				SendSimError(entry.connectionId, name, "handler failed");
+				return;
+			}
+
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_command_response();
+			resp->set_command(name);
+			resp->set_success(true);
+			Dia::Proto::JsonValueToProtoStruct(result, resp->mutable_payload());
+			SendProtoMessage(entry.connectionId, response);
+			BumpSimMetric("dia.debugserver.sim.replies");
 		}
 
 		void DebugServer::SetStageTransitionCallback(StageTransitionCallback cb)
@@ -129,6 +540,7 @@ namespace Dia
 			Dia::Observation::Log::Logger::Instance().RegisterSink(&mLogSink);
 
 			mStartTimestamp = Dia::DebugProtocol::GetTimestampNow();
+			mQueryRegistry.SetOwnerThread(QueryRegistry::CurrentThreadId());
 			mStarted = true;
 		}
 
@@ -166,6 +578,10 @@ namespace Dia
 
 			mLogSink.FlushToServer();
 			mServer->Update();
+			SweepSimTimeouts();
+
+			DrainPublishedTopics();
+			DrainOrderedTopics();
 
 			if (mObservationBridge)
 				mObservationBridge->Flush(deltaTime);
@@ -197,6 +613,7 @@ namespace Dia
 				}
 			}
 			mClientTaps.RemoveAll();
+			RebuildSubscriberCounts();
 
 			if (mObservationBridge)
 			{
@@ -215,6 +632,7 @@ namespace Dia
 				delete mServer;
 				mServer = nullptr;
 			}
+			mQueryRegistry.ClearOwnerThread();
 			mStarted = false;
 		}
 
@@ -292,6 +710,8 @@ namespace Dia
 						++i;
 					}
 				}
+				RebuildSubscriberCounts();
+				mSimPending.DropConnection(connId);
 			}
 		}
 
@@ -399,6 +819,7 @@ namespace Dia
 
 			Dia::Core::StringCRC dataType(sub.data_type().c_str());
 			const char* ackMessage = "subscribed";
+			bool replayVirtualTopic = false;
 			if (mStateProvider)
 			{
 				auto* store = mStateProvider->FindStream(dataType);
@@ -445,6 +866,7 @@ namespace Dia
 						ct.streamId = dataType;
 						ct.tapId    = tapHandle.id;
 						mClientTaps.Add(ct);
+						RebuildSubscriberCounts();
 					}
 				}
 				else
@@ -457,6 +879,8 @@ namespace Dia
 					ct.streamId = dataType;
 					ct.tapId    = 0;
 					mClientTaps.Add(ct);
+					RebuildSubscriberCounts();
+					replayVirtualTopic = true;
 				}
 			}
 			else
@@ -473,6 +897,31 @@ namespace Dia
 			ack->set_success(true);
 			ack->set_message(ackMessage);
 			SendProtoMessage(connId, ackMsg);
+
+			// Late subscriber: send the last published value of a virtual topic (this connection only).
+			if (replayVirtualTopic)
+			{
+				Json::Value retained;
+				bool hasRetained = false;
+				{
+					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+					for (unsigned int i = 0; i < mPublished.Size(); ++i)
+					{
+						if (mPublished[i].topic == dataType)
+						{
+							retained = mPublished[i].latest;
+							hasRetained = true;
+							break;
+						}
+					}
+				}
+				if (hasRetained)
+				{
+					DIA_LOG_DEBUG("DebugServer", "HandleSubscribe: replaying retained value of '%s' to connId=%d",
+						dataType.AsChar(), connId);
+					SendDataUpdateToConnection(connId, dataType, retained);
+				}
+			}
 		}
 
 		void DebugServer::HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg)
@@ -497,6 +946,7 @@ namespace Dia
 					++i;
 				}
 			}
+			RebuildSubscriberCounts();
 		}
 
 		void DebugServer::HandleCommand(int connId, const dia::debug::DebugMessage& msg)
@@ -518,6 +968,61 @@ namespace Dia
 			Json::Value payload;
 			if (cmd.has_payload())
 				payload = Dia::Proto::ProtoStructToJsonValue(cmd.payload());
+
+			// Sim-hosted names are deferred: post to SimPU, reply in CompleteSimReply.
+			for (unsigned int i = 0; i < mSimNames.Size(); ++i)
+			{
+				if (!(mSimNames[i].name == commandName))
+					continue;
+
+				std::string argsText = "{}";
+				if (!payload.isNull())
+				{
+					Json::StreamWriterBuilder compact;
+					compact["indentation"] = "";
+					argsText = Json::writeString(compact, payload);
+				}
+				if (argsText.size() >= kSimPayloadBytes)
+				{
+					BumpSimMetric("dia.debugserver.sim.too_large");
+					SendSimError(connId, cmd.command().c_str(), "reply too large");
+					return;
+				}
+
+				const uint32_t requestId = mSimPending.Add(connId, commandName.Value(), NowMs(), cmd.command().c_str());
+				if (requestId == 0 || !mSimSink)
+				{
+					if (requestId != 0)
+					{
+						SimPendingTable::Entry discard;
+						mSimPending.Complete(requestId, discard);
+					}
+					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim busy for '%s'", cmd.command().c_str());
+					BumpSimMetric("dia.debugserver.sim.busy");
+					SendSimError(connId, cmd.command().c_str(), "sim busy");
+					return;
+				}
+
+				SimRequestEvent request;
+				request.requestId = requestId;
+				request.nameCrc = commandName.Value();
+				request.kind = static_cast<uint32_t>(mSimNames[i].kind);
+				std::memcpy(request.json, argsText.c_str(), argsText.size() + 1);
+				if (!mSimSink->PostRequest(request))
+				{
+					SimPendingTable::Entry discard;
+					mSimPending.Complete(requestId, discard);
+					DIA_LOG_WARNING("DebugServer", "HandleCommand: sim request stream full for '%s'", cmd.command().c_str());
+					BumpSimMetric("dia.debugserver.sim.busy");
+					SendSimError(connId, cmd.command().c_str(), "sim busy");
+				}
+				else
+				{
+					BumpSimMetric("dia.debugserver.sim.requests");
+					SetSimPendingGauge(mSimPending.Count());
+				}
+				return;
+			}
 
 			dia::debug::DebugMessage response;
 			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
@@ -544,6 +1049,21 @@ namespace Dia
 					Dia::Proto::JsonValueToProtoStruct(result["data"], resp->mutable_payload());
 				else if (result.isMember("error") && result["error"].isString())
 					resp->set_message(result["error"].asString());
+				else if (result.isMember("error") && result["error"].isObject())
+				{
+					const Json::Value& errorObj = result["error"];
+					if (errorObj.isMember("message") && errorObj["message"].isString())
+					{
+						resp->set_message(errorObj["message"].asString());
+					}
+					else
+					{
+						Json::StreamWriterBuilder writer;
+						writer["indentation"] = "";
+						resp->set_message(Json::writeString(writer, errorObj));
+					}
+					Dia::Proto::JsonValueToProtoStruct(errorObj, resp->mutable_payload());
+				}
 			}
 
 			SendProtoMessage(connId, response);
@@ -584,6 +1104,12 @@ namespace Dia
 
 		void DebugServer::NotifySubscribers(const Dia::Core::StringCRC& dataType,
 		                                     const Json::Value& payload)
+		{
+			NotifySubscribersMainThread(dataType, payload);
+		}
+
+		void DebugServer::NotifySubscribersMainThread(const Dia::Core::StringCRC& dataType,
+		                                               const Json::Value& payload)
 		{
 			if (!mServer) return;
 
@@ -634,6 +1160,198 @@ namespace Dia
 			}
 		}
 
+		unsigned int DebugServer::GetSubscriptionCount() const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			unsigned int total = 0;
+			for (unsigned int i = 0; i < mSubscriberCounts.Size(); ++i)
+				total += mSubscriberCounts[i].count;
+			return total;
+		}
+
+		unsigned int DebugServer::GetTopicSubscriberCount(const Dia::Core::StringCRC& topic) const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			for (unsigned int i = 0; i < mSubscriberCounts.Size(); ++i)
+			{
+				if (mSubscriberCounts[i].topic == topic) return mSubscriberCounts[i].count;
+			}
+			return 0;
+		}
+
+		// Recomputed from mClientTaps (the single source of truth) after every mutation, so the counts cannot drift.
+		// Counts distinct connections per topic: duplicate subscribes from one connection count once (unsubscribe removes all).
+		void DebugServer::RebuildSubscriberCounts()
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mSubscriberMutex);
+			mSubscriberCounts.RemoveAll();
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+			{
+				bool duplicate = false;
+				for (unsigned int j = 0; j < i; ++j)
+				{
+					if (mClientTaps[j].connId == mClientTaps[i].connId && mClientTaps[j].streamId == mClientTaps[i].streamId)
+					{
+						duplicate = true;
+						break;
+					}
+				}
+				if (duplicate) continue;
+
+				bool found = false;
+				for (unsigned int k = 0; k < mSubscriberCounts.Size(); ++k)
+				{
+					if (mSubscriberCounts[k].topic == mClientTaps[i].streamId)
+					{
+						++mSubscriberCounts[k].count;
+						found = true;
+						break;
+					}
+				}
+				if (!found && !mSubscriberCounts.IsFull())
+				{
+					TopicSubscribers ts;
+					ts.topic = mClientTaps[i].streamId;
+					ts.count = 1;
+					mSubscriberCounts.Add(ts);
+				}
+			}
+		}
+
+		void DebugServer::PublishTopic(const Dia::Core::StringCRC& topic, const Json::Value& payload)
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+			for (unsigned int i = 0; i < mPublished.Size(); ++i)
+			{
+				if (mPublished[i].topic == topic)
+				{
+					mPublished[i].latest  = payload;
+					mPublished[i].pending = true;
+					return;
+				}
+			}
+			if (mPublished.IsFull())
+			{
+				DIA_LOG_ERROR("DebugServer", "PublishTopic — topic table full (%u), topic '%s' dropped",
+					kMaxPublishedTopics, topic.AsChar());
+				return;
+			}
+			PublishedTopic entry;
+			entry.topic   = topic;
+			entry.latest  = payload;
+			entry.pending = true;
+			mPublished.Add(entry);
+			DIA_LOG_DEBUG("DebugServer", "PublishTopic: new topic '%s'", topic.AsChar());
+		}
+
+		void DebugServer::DrainPublishedTopics()
+		{
+			// Copy pending payloads out under the lock; send outside it.
+			Dia::Core::Containers::DynamicArrayC<PublishedTopic, kMaxPublishedTopics> toSend;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mPublishMutex);
+				for (unsigned int i = 0; i < mPublished.Size(); ++i)
+				{
+					if (mPublished[i].pending)
+					{
+						toSend.Add(mPublished[i]);
+						mPublished[i].pending = false;
+					}
+				}
+			}
+			for (unsigned int i = 0; i < toSend.Size(); ++i)
+				NotifySubscribersMainThread(toSend[i].topic, toSend[i].latest);
+		}
+
+		void DebugServer::PublishTopicOrdered(const Dia::Core::StringCRC& topic, const Json::Value& payload)
+		{
+			unsigned int droppedTotal = 0;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+				if (mOrderedCount >= kOrderedQueueCapacity)
+				{
+					droppedTotal = ++mOrderedDropped;
+				}
+				else
+				{
+					OrderedEvent& slot = mOrdered[(mOrderedHead + mOrderedCount) % kOrderedQueueCapacity];
+					slot.topic   = topic;
+					slot.payload = payload;
+					++mOrderedCount;
+				}
+			}
+			// Log outside the lock; first drop and then every 100th, so a flood does not flood the log.
+			if (droppedTotal == 1 || (droppedTotal != 0 && droppedTotal % 100 == 0))
+			{
+				DIA_LOG_ERROR("DebugServer", "PublishTopicOrdered — queue full (%u), event for topic '%s' dropped (%u dropped in total)",
+					kOrderedQueueCapacity, topic.AsChar(), droppedTotal);
+			}
+		}
+
+		unsigned int DebugServer::GetOrderedDroppedCount() const
+		{
+			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+			return mOrderedDropped;
+		}
+
+		void DebugServer::DrainOrderedTopics()
+		{
+			// Only what was queued when the drain began, so a producer that never stops cannot pin Main here.
+			unsigned int toDrain = 0;
+			{
+				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+				toDrain = mOrderedCount;
+			}
+			for (unsigned int n = 0; n < toDrain; ++n)
+			{
+				Dia::Core::StringCRC topic;
+				Json::Value          payload;
+				{
+					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mOrderedMutex);
+					OrderedEvent& front = mOrdered[mOrderedHead];
+					topic = front.topic;
+					payload.swap(front.payload);	// cheap move; slot is left null
+					mOrderedHead = (mOrderedHead + 1) % kOrderedQueueCapacity;
+					--mOrderedCount;
+				}
+				NotifySubscribersMainThread(topic, payload);	// outside the lock
+			}
+		}
+
+		void DebugServer::SendDataUpdateToConnection(int connId, const Dia::Core::StringCRC& topic,
+		                                              const Json::Value& payload)
+		{
+			if (!mServer) return;
+
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* update = msg.mutable_data_update();
+			update->set_data_type(topic.AsChar());
+			Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
+
+			char jsonBuffer[65536];
+			if (!Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+			{
+				DIA_LOG_WARNING("DebugServer", "SendDataUpdateToConnection: ToJson failed for topic='%s' — payload too large for buffer",
+					topic.AsChar());
+				return;
+			}
+			if (mServer->SendText(connId, jsonBuffer))
+			{
+				mStats.messagesSentTotal++;
+				RecordTopicSent(topic, true);
+			}
+			else
+			{
+				DIA_LOG_ERROR("DebugServer", "SendDataUpdateToConnection — queue full for connId=%d topic='%s', message dropped",
+					connId, topic.AsChar());
+				mStats.messagesDropped++;
+				RecordTopicSent(topic, false);
+				SendDropNotification(connId);
+			}
+		}
+
 		//---------------------------------------------------------------------
 		// Query commands
 		//---------------------------------------------------------------------
@@ -667,11 +1385,9 @@ namespace Dia
 					queryCmds.append("get_server_stats");
 					result["query_commands"] = queryCmds;
 
-					Json::Value apiCmds(Json::arrayValue);
-					auto commands = Dia::API::ListCommands();
-					for (unsigned int i = 0; i < commands.Size(); ++i)
-						apiCmds.append(commands[i]->name.AsChar());
-					result["api_commands"] = apiCmds;
+					const Json::Value merged = BuildMergedCommandList(this);
+					result["api_commands"] = merged["api_commands"];
+					result["command_details"] = merged["command_details"];
 
 					return result;
 				}
@@ -727,6 +1443,11 @@ namespace Dia
 
 		void DebugServer::SendProtoMessage(int connId, const dia::debug::DebugMessage& msg)
 		{
+			if (mSendHook)
+			{
+				mSendHook(mSendHookContext, connId, msg);
+				return;
+			}
 			std::string buffer;
 			if (Dia::Proto::ToJson(msg, buffer))
 			{

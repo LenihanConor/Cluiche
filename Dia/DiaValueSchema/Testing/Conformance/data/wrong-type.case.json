@@ -1,0 +1,147 @@
+{
+  "description": "String for float, float for int, bool for number, number for bool/string/enum.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology_parameters",
+      "entries": [
+        {
+          "key": "grazing.rate",
+          "kind": "parameter",
+          "label": "grazing.rate",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 2,
+          "default": 1
+        },
+        {
+          "key": "grazing.juvenile_rate_scale",
+          "kind": "parameter",
+          "label": "grazing.juvenile_rate_scale",
+          "description": "d",
+          "type": "float"
+        },
+        {
+          "key": "mode",
+          "kind": "parameter",
+          "label": "mode",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "fast"
+            },
+            {
+              "id": "slow"
+            }
+          ],
+          "default": "fast"
+        },
+        {
+          "key": "count",
+          "kind": "parameter",
+          "label": "count",
+          "description": "d",
+          "type": "int",
+          "min": 1
+        },
+        {
+          "key": "enabled",
+          "kind": "parameter",
+          "label": "enabled",
+          "description": "d",
+          "type": "bool",
+          "default": true
+        },
+        {
+          "key": "name",
+          "kind": "parameter",
+          "label": "name",
+          "description": "d",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Ecology/Packs/lush.ecology.json",
+      "pack": true,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1,
+        "grazing": {
+          "rate": "fast"
+        },
+        "count": 2.5,
+        "enabled": 1,
+        "name": 5
+      }
+    },
+    {
+      "name": "Global/Ecology/Packs/b.ecology.json",
+      "pack": true,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1,
+        "grazing": {
+          "juvenile_rate_scale": true
+        }
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/Ecology/Packs/lush.ecology.json",
+      "key": "grazing.rate",
+      "path": "grazing.rate",
+      "record": null,
+      "messageContains": "grazing.rate",
+      "suggestion": null
+    },
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/Ecology/Packs/lush.ecology.json",
+      "key": "count",
+      "path": "count",
+      "record": null,
+      "messageContains": "count",
+      "suggestion": null
+    },
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/Ecology/Packs/lush.ecology.json",
+      "key": "enabled",
+      "path": "enabled",
+      "record": null,
+      "messageContains": "enabled",
+      "suggestion": null
+    },
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/Ecology/Packs/lush.ecology.json",
+      "key": "name",
+      "path": "name",
+      "record": null,
+      "messageContains": "name",
+      "suggestion": null
+    },
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/Ecology/Packs/b.ecology.json",
+      "key": "grazing.juvenile_rate_scale",
+      "path": "grazing.juvenile_rate_scale",
+      "record": null,
+      "messageContains": "grazing.juvenile_rate_scale",
+      "suggestion": null
+    }
+  ]
+}

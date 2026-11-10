@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b64e4101-33cf-4a90-8098-8d92fb79879f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CellLayersTypes.h" />
+    <ClInclude Include="CellLayerRegistry.h" />
+    <ClInclude Include="Testing\CellLayerTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="LayerUploader.h" />
+    <ClInclude Include="Testing\LayerUploaderTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CellPicker.h" />
+    <ClInclude Include="Testing\CellPickerTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="HotkeyTable.h" />
+    <ClInclude Include="CellLayerLegend.h" />
+    <ClInclude Include="CellLayerViewerDomain.h" />
+    <ClInclude Include="CellLayersModule.h" />
+    <ClInclude Include="IViewValueSource.h" />
+    <ClInclude Include="Testing\ViewValueSourceTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\LogCapture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\FakeDebugDraw.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CellSelection.h" />
+    <ClInclude Include="Testing\SelectionTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="LayerReader.h" />
+    <ClInclude Include="Testing\LayerReaderTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="SelectionTools.h" />
+    <ClInclude Include="SelectionOutline.h" />
+    <ClInclude Include="ICellSelectionView.h" />
+    <ClInclude Include="SelectionInput.h" />
+    <ClInclude Include="SelectionStats.h" />
+    <ClInclude Include="InspectorState.h" />
+    <ClInclude Include="CellDetailRegistry.h" />
+    <ClInclude Include="Testing\CellDetailTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="InspectorModel.h" />
+    <ClInclude Include="QueryError.h" />
+    <ClInclude Include="QueryLexer.h" />
+    <ClInclude Include="QueryParser.h" />
+    <ClInclude Include="QueryResolver.h" />
+    <ClInclude Include="Testing\QueryTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="QueryEvaluator.h" />
+    <ClInclude Include="SelectionFingerprint.h" />
+    <ClInclude Include="ITopicSink.h" />
+    <ClInclude Include="DebugServerTopicSink.h" />
+    <ClInclude Include="ViewStatePublisher.h" />
+    <ClInclude Include="Testing\ViewStateTestSupport.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="MirrorQueries.h" />
+    <ClInclude Include="Testing\FakeMirrorRegistrar.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ViewerCommands.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewerStateSnapshot.h" />
+    <ClInclude Include="IViewHistorySource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CellLayersTypes.cpp" />
+    <ClCompile Include="CellLayerRegistry.cpp" />
+    <ClCompile Include="LayerUploader.cpp" />
+    <ClCompile Include="CellPicker.cpp" />
+    <ClCompile Include="HotkeyTable.cpp" />
+    <ClCompile Include="CellLayerLegend.cpp" />
+    <ClCompile Include="CellLayerViewerDomain.cpp" />
+    <ClCompile Include="CellLayersModule.cpp" />
+    <ClCompile Include="CellSelection.cpp" />
+    <ClCompile Include="LayerReader.cpp" />
+    <ClCompile Include="SelectionTools.cpp" />
+    <ClCompile Include="SelectionOutline.cpp" />
+    <ClCompile Include="SelectionInput.cpp" />
+    <ClCompile Include="SelectionStats.cpp" />
+    <ClCompile Include="InspectorState.cpp" />
+    <ClCompile Include="CellDetailRegistry.cpp" />
+    <ClCompile Include="InspectorModel.cpp" />
+    <ClCompile Include="QueryLexer.cpp" />
+    <ClCompile Include="QueryParser.cpp" />
+    <ClCompile Include="QueryResolver.cpp" />
+    <ClCompile Include="QueryEvaluator.cpp" />
+    <ClCompile Include="SelectionFingerprint.cpp" />
+    <ClCompile Include="DebugServerTopicSink.cpp" />
+    <ClCompile Include="ViewStatePublisher.cpp" />
+    <ClCompile Include="MirrorQueries.cpp" />
+    <ClCompile Include="ViewerStateSnapshot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.diacelllayers.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

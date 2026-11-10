@@ -2,6 +2,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { FieldRow } from './FieldRow';
 
 vi.mock('@dia/editor-ui', () => ({
+    // Undescribed fields only: no schema binding, so ValueLabel is never rendered.
+    componentFieldToValueInfo: () => null,
+    ValueLabel: () => null,
     theme: { textMuted: '#888', text: '#d4d4d4', border: '#3c3c3c' },
     inputStyle: (o?: object) => ({ ...o }),
 }));

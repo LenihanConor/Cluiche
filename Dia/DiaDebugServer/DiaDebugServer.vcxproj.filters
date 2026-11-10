@@ -8,12 +8,16 @@
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
-    <ClInclude Include="IInspectorDataSource.h">
+    <ClInclude Include="IInspectorDataSource.h" />
     <ClInclude Include="InspectorDataSourceBase.h">
       <Filter>DiaDebugServer</Filter>
     </ClInclude>
-      <Filter>DiaDebugServer</Filter>
-    </ClInclude>
+    <ClInclude Include="SimHostedTypes.h" />
+    <ClInclude Include="ISimRequestSink.h" />
+    <ClInclude Include="SimPendingTable.h" />
+    <ClInclude Include="SimQueryHost.h" />
+    <ClInclude Include="SimHelpInfo.h" />
+    <ClInclude Include="ISimHostedCatalogue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
@@ -21,5 +25,8 @@
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
     <ClCompile Include="QueryRegistry.cpp" />
+    <ClCompile Include="SimPendingTable.cpp" />
+    <ClCompile Include="SimQueryHost.cpp" />
+    <ClCompile Include="SimHelpInfo.cpp" />
   </ItemGroup>
 </Project>

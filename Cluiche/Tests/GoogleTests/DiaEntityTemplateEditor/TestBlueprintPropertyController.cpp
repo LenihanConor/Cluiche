@@ -368,3 +368,65 @@ TEST(BlueprintPropertyController, BuildPropertyJson_WithSchema_FieldHasCodeDefau
 
 	remove(kBPCSchemaWithDefaultsPath);
 }
+
+// ===========================================================================
+// BuildPropertyJson — field metadata passthrough
+// ===========================================================================
+
+static const char* kBPCMetaPath = "TestBPCSchemaMeta_temp.diaschema";
+
+static const char* kBPCSchemaMeta =
+	"{"
+	"  \"version\": { \"major\": 1, \"minor\": 0 },"
+	"  \"components\": ["
+	"    { \"type_id\": \"t.meta\", \"debug_name\": \"Meta\","
+	"      \"fields\": ["
+	"        {\"name\": \"speed\", \"kind\": \"primitive\", \"label\": \"Speed\","
+	"         \"description\": \"100% fast\", \"unit\": \"m/s\", \"hint\": \"slider\","
+	"         \"min\": 0, \"max\": 12.5, \"default\": 3.5 },"
+	"        {\"name\": \"plain\", \"kind\": \"primitive\"}"
+	"      ] }"
+	"  ]"
+	"}";
+
+static Json::Value BuildMetaFields()
+{
+	WriteSchemaForBPC(kBPCMetaPath, kBPCSchemaMeta);
+	SchemaReader schema;
+	schema.LoadFromFile(kBPCMetaPath);
+	BlueprintPropertyController ctrl;
+	Json::Value root = MakeEntityRoot();
+	root = AddComponent(root, "t.meta", "plain", 7);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
+	remove(kBPCMetaPath);
+	return result["components"][0]["fields"];
+}
+
+TEST(BlueprintPropertyController, BuildPropertyJson_DescribedField_IncludesMetadata)
+{
+	Json::Value fields = BuildMetaFields();
+	ASSERT_EQ(fields.size(), 2u);
+	const Json::Value& f = fields[0];
+	EXPECT_EQ(f["label"].asString(), "Speed");
+	EXPECT_EQ(f["description"].asString(), "100% fast");
+	EXPECT_EQ(f["unit"].asString(), "m/s");
+	EXPECT_EQ(f["hint"].asString(), "slider");
+	ASSERT_TRUE(f["min"].isNumeric());
+	EXPECT_DOUBLE_EQ(f["min"].asDouble(), 0.0);
+	ASSERT_TRUE(f["max"].isNumeric());
+	EXPECT_DOUBLE_EQ(f["max"].asDouble(), 12.5);
+	ASSERT_TRUE(f.isMember("default"));
+	EXPECT_DOUBLE_EQ(f["default"].asDouble(), 3.5);
+}
+
+TEST(BlueprintPropertyController, BuildPropertyJson_UndescribedField_OutputUnchanged)
+{
+	Json::Value fields = BuildMetaFields();
+	ASSERT_EQ(fields.size(), 2u);
+	const Json::Value& f = fields[1];
+	// Exactly the pre-change keys: name, kind, value
+	EXPECT_EQ(f.getMemberNames().size(), 3u);
+	EXPECT_EQ(f["name"].asString(), "plain");
+	EXPECT_EQ(f["kind"].asString(), "primitive");
+	EXPECT_EQ(f["value"].asInt(), 7);
+}

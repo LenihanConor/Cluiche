@@ -1,0 +1,122 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: CellFieldDrawParams.h
+// Description: Pure (bgfx-free) description of one CellField draw: the shader uniform
+//              values plus the colour-map texture the draw needs. Also the CPU reference
+//              of the shader's palette lookup, which pins the shader semantics for tests.
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include <DiaCore/DebugDraw/CellFieldDrawRequest.h>
+#include <DiaGraphics/CellField/CellFieldRegistry.h>
+
+#include <stdint.h>
+
+namespace Dia
+{
+    namespace Bgfx
+    {
+        // Shader map modes (u_params1.z).
+        enum class CellFieldMapMode : uint32_t { Palette = 0, Ramp = 1, Backdrop = 2 };
+
+        // What the draw needs to know about its layer.
+        struct CellFieldLayerInfo
+        {
+            uint16_t                          width = 0;
+            uint16_t                          height = 0;
+            float                             cellSize = 1.0f;
+            Dia::Graphics::CellFieldValueKind kind = Dia::Graphics::CellFieldValueKind::Float;
+        };
+
+        // Uniform values in fs/vs_cellfield.sc layout, ready for bgfx::setUniform.
+        struct CellFieldDrawParams
+        {
+            float params0[4]         = {};   // rampMin, rampMax, inset, cellSize
+            float params1[4]         = {};   // hillshadeStrength, elevationScale, mapMode, hasElevation
+            float params2[4]         = {};   // smooth, ambient, -, -
+            float gridInfo[4]        = {};   // w, h, 1/w, 1/h
+            float fallbackColour[4]  = {};
+            float backdropColour[4]  = {};
+            float lightDir[4]        = {};
+            CellFieldMapMode mapMode = CellFieldMapMode::Palette;
+            uint32_t colourMapId       = 0;  // colour-map texture required by this draw
+            uint32_t colourMapRevision = 0;
+        };
+
+        // 0xRRGGBBAA -> float4 in [0,1].
+        void CellFieldUnpackRgba8(uint32_t rgba8, float out[4]);
+
+        // CPU mirror of the fragment shader's paletteColour(): index = floor(v + 0.5);
+        // < 0, >= 64, >= count, or non-finite -> palette fallback.
+        bool     CellFieldPaletteIndex(const Dia::Graphics::CellFieldPaletteData& palette, float categoryValue, uint32_t& outIndex);
+        uint32_t CellFieldPaletteLookup(const Dia::Graphics::CellFieldPaletteData& palette, float categoryValue);
+
+        // CPU mirror of the fragment shader's rampColour(), sampling the 256 baked texels
+        // (BakeRamp output) the way the 256x1 linear-filtered clamped texture does.
+        //   range = rampMax - rampMin; if |range| <= 1e-20 the range is taken as 1 (no divide by zero)
+        //   t     = clamp((v - rampMin) / range, 0, 1); NaN (value, min or max) -> t = 0
+        //   shader samples u = (t*255 + 0.5)/256  =>  texel coordinate u*256 - 0.5 = t*255, so
+        //   i0 = floor(t*255), f = t*255 - i0, result = lerp(texel[i0], texel[min(i0+1,255)], f)
+        //   per channel, rounded to nearest. rampMin > rampMax inverts the ramp.
+        uint32_t CellFieldRampLookup(const uint32_t* bakedTexels256, float value, float rampMin, float rampMax);
+        // Convenience: bakes the ramp first.
+        uint32_t CellFieldRampLookup(const Dia::Graphics::CellFieldRampData& ramp, float value, float rampMin, float rampMax);
+
+        // Inset: valid range [0, 0.5). Negative -> 0, NaN -> 0, >= 0.5 (incl. +inf) -> kMaxInset.
+        const float kCellFieldMaxInset = 0.499f;
+        float CellFieldEffectiveInset(float inset);
+
+        // Axis-aligned world rectangle.
+        struct CellFieldBounds
+        {
+            float minX = 0.0f, minY = 0.0f, maxX = 0.0f, maxY = 0.0f;
+        };
+
+        // Bounds of a flat-top hex grid (HexFlatTopOddQBuilder corners: x = +-cellSize at the
+        // tips, y = +-cellSize*sqrt(3)/2 at the flat edges) around the min/max cell centres.
+        // Returns false for null centres or an empty grid.
+        bool CellFieldGridBounds(const float* centresXY, uint32_t width, uint32_t height, float cellSize, CellFieldBounds& out);
+
+        // CPU mirror of the vertex shader: centre + offset * cellSize * (1 - inset).
+        // The inset is used as given (callers pass CellFieldEffectiveInset's result).
+        void CellFieldInsetVertexPosition(const float centre[2], const float offset[2], float cellSize, float inset, float out[2]);
+
+        // True only when the effective inset > 0 and the RGBA8 backdrop alpha is non-zero.
+        bool CellFieldNeedsBackdrop(float inset, uint32_t backdropRgba8);
+
+        // Hillshade ambient term (u_params2.y): the shade factor of a surface facing fully away
+        // from the light. Final colour = colour * (ambient + strength * max(0, dot(n, light))).
+        const float kCellFieldHillshadeAmbient = 0.4f;
+        const float kCellFieldDefaultLightAzimuthDeg = 315.0f;
+        const float kCellFieldDefaultLightElevationDeg = 45.0f;
+
+        // Unit vector pointing TOWARD the light, in the shader's world space (x right, y down on
+        // screen, z toward the viewer). Azimuth is degrees clockwise from north, north = screen up
+        // = -y, so x = sin(az)cos(el), y = -cos(az)cos(el), z = sin(el). 315/45 = north-west,
+        // elevated (x<0, y<0, z>0). Elevation 90 = (0,0,1); az 90 / el 0 = +x (east).
+        // Non-finite azimuth or elevation -> the defaults (315, 45).
+        void CellFieldLightDirection(float azimuthDeg, float elevationDeg, float out[3]);
+
+        // CPU mirror of the shader's hillshade factor for a plane. dhdx/dhdy = height gradient per
+        // world unit (before elevationScale); pixelWorldSize = world units per pixel (zoom).
+        // P = (x, y, h*scale): dFdx(P) = s*(1,0,scale*dhdx), dFdy(P) = s*(0,1,scale*dhdy), so
+        // n = normalize(cross) = normalize(-scale*dhdx, -scale*dhdy, 1) (the pixel size cancels,
+        // which is the zoom invariance). Returns ambient + strength*max(0, dot(n, light)), or 1
+        // (colour unchanged) when strength <= 0 or non-finite. Non-finite gradient -> n = (0,0,1).
+        float CellFieldHillshadeReference(float dhdx, float dhdy, float elevationScale, float pixelWorldSize,
+                                          const float lightDir[3], float strength);
+
+        // Computes the uniforms for one draw. Exactly one of palette / ramp is used, chosen by
+        // layer.kind (Category -> palette, Float -> ramp). Returns false if the needed
+        // colour map is null. Inset (clamped) and backdrop colour are
+        // passed through. `elevation` describes the resolved elevation layer (null = none/stale/
+        // invalid); hillshade is enabled only when it is non-null, Float, the same width/height as
+        // `layer`, and request.hillshadeStrength > 0 (finite); otherwise params1.x and .w are 0.
+        bool BuildCellFieldDrawParams(const Dia::Core::CellFieldDrawRequest& request,
+                                      const CellFieldLayerInfo& layer,
+                                      const Dia::Graphics::CellFieldPaletteData* palette,
+                                      const Dia::Graphics::CellFieldRampData* ramp,
+                                      CellFieldDrawParams& out,
+                                      const CellFieldLayerInfo* elevation = nullptr);
+
+    } // namespace Bgfx
+} // namespace Dia

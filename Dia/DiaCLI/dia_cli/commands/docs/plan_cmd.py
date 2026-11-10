@@ -16,8 +16,26 @@ _TRANSITIONS = {
     "Done": set(),
 }
 
+_STATUS_ALIASES = {
+    "pending": "Not Started",
+    "todo": "Not Started",
+    "notstarted": "Not Started",
+    "not started": "Not Started",
+    "inprogress": "In Progress",
+    "in progress": "In Progress",
+    "in-progress": "In Progress",
+    "done": "Done",
+    "blocked": "Blocked",
+}
+
+
+def _normalize_status(value: str) -> str:
+    """Map aliases (Pending, Todo, InProgress, ...) to canonical status values."""
+    return _STATUS_ALIASES.get(value.strip().lower(), value.strip())
+
+
 _TABLE_ROW_RE = re.compile(
-    r"^\|\s*([\w.]+)\s*\|"
+    r"^\|\s*([\w.\-]+)\s*\|"
     r"\s*(.*?)\s*\|"
     r"\s*(.*?)\s*\|"
     r"\s*(.*?)\s*\|"
@@ -73,9 +91,10 @@ def update_plan_task(
             continue
 
         found = True
-        old_status = row["status"]
+        old_status = _normalize_status(row["status"])
 
         if status:
+            status = _normalize_status(status)
             if status not in _STATUS_VALUES:
                 raise click.ClickException(
                     f"Invalid status '{status}'. Must be one of: {', '.join(sorted(_STATUS_VALUES))}"
@@ -111,8 +130,8 @@ def update_plan_task(
 @click.command("plan")
 @click.argument("plan_path", type=click.Path(exists=True))
 @click.argument("task_num")
-@click.option("--status", "-s", type=click.Choice(sorted(_STATUS_VALUES)), default=None,
-              help="New status value.")
+@click.option("--status", "-s", default=None,
+              help="New status value (Not Started, In Progress, Done, Blocked; aliases like InProgress accepted).")
 @click.option("--notes", "-n", default=None, help="Notes to append.")
 @click.option("--model", "-m", default=None, help="Model override (haiku/sonnet/opus).")
 @click.option("--force", is_flag=True, default=False, help="Skip status transition validation.")

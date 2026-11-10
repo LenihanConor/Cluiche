@@ -6,8 +6,8 @@
 #include "AnimClipCursorDrawer.h"
 #include "AnimSpringDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaAnimation2D/AnimationEvaluator.h>
 #include <DiaAnimation2D/AnimClipPlayer.h>
 #include <DiaAnimation2D/SpringChain.h>

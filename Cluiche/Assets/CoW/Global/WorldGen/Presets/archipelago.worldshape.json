@@ -1,0 +1,16 @@
+{
+  "format": "cow.worldshape",
+  "version": 1,
+  "id": "archipelago",
+  "displayName": "Archipelago",
+  "description": "Two continents and a scatter of islands, a volcanic chain barrier, long ragged coasts.",
+  "params": {
+    "landFraction": 0.3, "continents": 2, "islands": 5, "continentIslands": 0.5,
+    "peninsulas": 2, "coastline": 0.8,
+    "mountainousness": 0.4, "spineToRing": 0, "orientationDeg": 60, "passes": 3,
+    "barrier": 0.45, "barrierForm": "VolcanicChain", "ruggedness": 0.5,
+    "rivers": 0.35, "valleyDepth": 0.3, "lakes": 2,
+    "latitudeNorthDeg": 40, "latitudeSouthDeg": 10,
+    "temperatureOffset": 0, "moistureOffset": 0
+  }
+}

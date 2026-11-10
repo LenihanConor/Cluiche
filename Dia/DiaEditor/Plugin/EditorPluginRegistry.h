@@ -30,7 +30,39 @@ namespace Dia
 			void ClearActiveManifests();
 			bool IsInScopeFilter(const Dia::Core::StringCRC& typeId) const;
 
+			// Game scope: a type tagged for a game is available only while that game is active.
+			// A game-scoped tag takes precedence over a .cluicheproj manifest tag. An empty gameId clears the tag.
+			typedef void (*GameScopeChangedCallback)(void* userData, const Dia::Core::StringCRC& oldGame, const Dia::Core::StringCRC& newGame);
+			static const unsigned int kMaxGameScopeListeners = 8;
+
+			void TagGameScoped(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& gameId);
+			void SetGameScope(const Dia::Core::StringCRC& gameId, const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxPlugins>& scopedTypeIds);
+			void ClearGameScope();
+			const Dia::Core::StringCRC& GetActiveGameId() const;
+			bool IsGameScoped(const Dia::Core::StringCRC& typeId) const;
+			bool IsAvailable(const Dia::Core::StringCRC& typeId) const;
+			// Registered, game-scoped, and its game is not the active one. Ignores the .cluicheproj display filter.
+			bool IsOutOfGameScope(const Dia::Core::StringCRC& typeId) const;
+
+			void AddGameScopeListener(GameScopeChangedCallback callback, void* userData);
+			void RemoveGameScopeListener(GameScopeChangedCallback callback, void* userData);
+
+			// Held asset routes (assetType -> editorPluginType) added by AssetRoutes helpers. They outlive the
+			// asset catalogue plugin's load order: the catalogue replays them in its OnPluginLoad.
+			static const unsigned int kMaxAssetRoutes = 32;
+
+			// False if the exact pair is already held or capacity is reached.
+			bool AddAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType);
+			// False if the pair is not held.
+			bool RemoveAssetRoute(const Dia::Core::StringCRC& assetType, const Dia::Core::StringCRC& editorPluginType);
+			void ClearAssetRoutes();
+			unsigned int GetAssetRouteCount() const;
+			const Dia::Core::StringCRC& GetAssetRouteAssetType(unsigned int index) const;
+			const Dia::Core::StringCRC& GetAssetRouteEditor(unsigned int index) const;
+
 		private:
+			void ChangeActiveGame(const Dia::Core::StringCRC& newGame);
+
 			EditorPluginRegistry() = default;
 			~EditorPluginRegistry() = default;
 			EditorPluginRegistry(const EditorPluginRegistry&) = delete;
@@ -41,10 +73,27 @@ namespace Dia
 				Dia::Core::StringCRC typeId;
 				IEditorPluginFactory* factory;
 				Dia::Core::StringCRC manifestId;  // empty = built-in
+				Dia::Core::StringCRC gameId;      // empty = not game-scoped
 			};
 
+			struct GameScopeListener
+			{
+				GameScopeChangedCallback callback;
+				void* userData;
+			};
+
+			struct AssetRoute
+			{
+				Dia::Core::StringCRC assetType;
+				Dia::Core::StringCRC editorPluginType;
+			};
+
+			Dia::Core::Containers::DynamicArrayC<AssetRoute, kMaxAssetRoutes> mAssetRoutes;
 			Dia::Core::Containers::DynamicArrayC<PluginEntry, kMaxPlugins> mEntries;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxManifests> mActiveManifests;
+			Dia::Core::StringCRC mActiveGameId;
+			GameScopeListener mListeners[kMaxGameScopeListeners] = {};
+			unsigned int mListenerCount = 0;
 		};
 	}
 }

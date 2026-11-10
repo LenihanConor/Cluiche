@@ -4,16 +4,13 @@
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
 #include <DiaEntity/DebugDataTypes.h>
-#include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaEntity/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
-#include "Modules/DebugServerHostModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -34,26 +31,7 @@ Dia::ApplicationFlow::StartResult EntityInspectorModule::DoStart()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::DoStart");
 
-    // Resolve the DebugServer pointer via the cross-PU service stream.
-    // Used only for one-time query/command handler registration (single-threaded,
-    // safe — DoStart runs sequentially within this PU and MainPU has already started).
-    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication());
-    if (app)
-    {
-        auto* store = app->FindStream(
-            Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
-        auto* typed = dynamic_cast<
-            Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
-        if (typed)
-            mDebugServer = typed->Get();
-        else
-            DIA_LOG_WARNING("Application", "EntityInspectorModule: DebugServerService stream not found or wrong type");
-    }
-
-    if (mDebugServer)
-        RegisterHandlers();
-    else
-        DIA_LOG_WARNING("Application", "EntityInspectorModule: no DebugServer — handlers not registered");
+    RegisterHandlers();
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -121,117 +99,146 @@ void EntityInspectorModule::PushInspect(uint32_t /*selectedId*/)
 
 void EntityInspectorModule::RegisterHandlers()
 {
-    if (!mDebugServer) return;
-
-    auto& queryReg = mDebugServer->GetQueryRegistry();
-
-    queryReg.Register(
-        Dia::Entity::DebugDataType::kEntityInspectRequest,
-        [this](const Json::Value& args) -> Json::Value
-        {
-            DIA_TRACE_ZONE("entity.inspect_request", Dia::Observation::Trace::Category::kNone);
-            auto* entityMod = mEntityRef.Get();
-            if (!entityMod) return Json::Value{};
-
-            if (!args.isMember("index"))
-                return Json::Value{};
-
-            const uint32_t idx = static_cast<uint32_t>(args["index"].asInt());
-            Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
-            if (!entity.IsValid()) return Json::Value{};
-
-            return Dia::EntityInspector::SerializeEntityInspect(
-                entityMod->GetInspectable(), entity);
-        });
-
-    (void)mDebugServer->GetCommandDispatcher();
-
+    // Sim-hosted (Sim-Registered Queries): QueryRegistry belongs to Main and refuses registration from SimPU.
+    SimQueryHostModule* host = mSimQueryHostRef.Get();
+    if (!host)
     {
-        Dia::API::CommandInfoJson writeField;
-        writeField.name        = Dia::Entity::DebugDataType::kEntityWriteField;
-        writeField.description = "Write a field value on a live entity component (editor only)";
-        writeField.category    = Dia::Core::StringCRC("debug");
-        writeField.owner       = "EntityInspectorModule";
-        writeField.callback    = [this](const Json::Value& params) -> Json::Value
-        {
-            DIA_TRACE_ZONE("entity.write_field", Dia::Observation::Trace::Category::kNone);
-            auto* entityMod = mEntityRef.Get();
-            if (!entityMod) { Json::Value e; e["error"] = "entity module unavailable"; return e; }
-
-            if (!params.isMember("index") || !params.isMember("componentCrc")
-                || !params.isMember("field") || !params.isMember("value"))
-            {
-                Json::Value e; e["error"] = "missing index, componentCrc, field, or value";
-                return e;
-            }
-
-            const uint32_t idx    = static_cast<uint32_t>(params["index"].asInt());
-            const uint32_t crc    = static_cast<uint32_t>(params["componentCrc"].asUInt());
-            const char*    field  = params["field"].asCString();
-            const Json::Value& val = params["value"];
-
-            Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
-            if (!entity.IsValid()) { Json::Value e; e["error"] = "entity not alive"; return e; }
-
-            Dia::Core::StringCRC componentTypeId;
-            static_cast<Dia::Core::CRC&>(componentTypeId) = crc;
-
-            if (!entityMod->GetInspectable().WriteField(entity, componentTypeId, field, val))
-            {
-                Json::Value e; e["error"] = "WriteField failed";
-                DIA_LOG_WARNING("Application", "entity.write_field: WriteField failed for field '%s'", field);
-                return e;
-            }
-
-            Json::Value ok; ok["success"] = true;
-            return ok;
-        };
-        Dia::API::RegisterCommandJson(writeField);
+        DIA_LOG_WARNING("Application", "EntityInspectorModule: no SimQueryHostModule - entity.inspect_request not registered");
     }
-
+    else
     {
-        Dia::API::CommandInfoJson findByName;
-        findByName.name        = Dia::Entity::DebugDataType::kEntityFindByName;
-        findByName.description = "Find a live entity by debug name (O(N) scan)";
-        findByName.category    = Dia::Core::StringCRC("debug");
-        findByName.owner       = "EntityInspectorModule";
-        findByName.callback    = [this](const Json::Value& params) -> Json::Value
-        {
-            auto* entityMod = mEntityRef.Get();
-            if (!entityMod) { Json::Value r; r["index"] = -1; return r; }
-
-            if (!params.isMember("name")) { Json::Value r; r["index"] = -1; return r; }
-            const char* searchName = params["name"].asCString();
-
-            auto& domain = entityMod->GetDomain();
-            Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> entities;
-            entityMod->GetInspectable().GetAllEntities(entities);
-
-            for (uint32_t i = 0; i < entities.Size(); ++i)
+        Dia::DebugServer::SimHelpInfo help;
+        help.description = "Full inspect payload (components and fields) for one live entity, by index";
+        help.category    = "entity";
+        help.owner       = "EntityInspectorModule";
+        mQueryRegistered = host->RegisterQuery(
+            "entity.inspect_request", help,
+            [this](const Json::Value& args) -> Json::Value
             {
-                const char* dbgName = domain.GetDebugName(entities[i]);
-                if (dbgName && strcmp(dbgName, searchName) == 0)
-                {
-                    Json::Value r;
-                    r["index"] = static_cast<int>(entities[i].GetIndex());
-                    r["gen"]   = static_cast<int>(entities[i].GetGeneration());
-                    return r;
-                }
-            }
+                // Sim-hosted replies must be JSON objects: "nothing to report" is {} (a null reply is a handler failure).
+                DIA_TRACE_ZONE("entity.inspect_request", Dia::Observation::Trace::Category::kNone);
+                auto* entityMod = mEntityRef.Get();
+                if (!entityMod) return Json::Value(Json::objectValue);
 
-            Json::Value r; r["index"] = -1;
-            return r;
-        };
-        Dia::API::RegisterCommandJson(findByName);
+                if (!args.isMember("index"))
+                    return Json::Value(Json::objectValue);
+
+                const uint32_t idx = static_cast<uint32_t>(args["index"].asInt());
+                Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
+                if (!entity.IsValid()) return Json::Value(Json::objectValue);
+
+                return Dia::EntityInspector::SerializeEntityInspect(
+                    entityMod->GetInspectable(), entity);
+            });
+        if (!mQueryRegistered)
+            DIA_LOG_ERROR("Application", "EntityInspectorModule: entity.inspect_request registration rejected by SimQueryHost");
+
+        {
+            static const Dia::API::ValueParam kWriteParams[] = {
+                { "index",        "int",    true, "Entity index" },
+                { "componentCrc", "int",    true, "CRC of the component type" },
+                { "field",        "string", true, "Field name" },
+                { "value",        "string", true, "New value (any JSON value)" },
+            };
+            Dia::DebugServer::SimHelpInfo writeHelp;
+            writeHelp.description = "Write a field value on a live entity component (editor only)";
+            writeHelp.category    = "debug";
+            writeHelp.owner       = "EntityInspectorModule";
+            writeHelp.params      = kWriteParams;
+            writeHelp.paramCount  = 4;
+            mWriteRegistered = host->RegisterCommand("entity.write_field", writeHelp,
+                [this](const Json::Value& params) -> Json::Value
+            {
+                DIA_TRACE_ZONE("entity.write_field", Dia::Observation::Trace::Category::kNone);
+                auto* entityMod = mEntityRef.Get();
+                if (!entityMod) { Json::Value e; e["error"] = "entity module unavailable"; return e; }
+
+                if (!params.isMember("index") || !params.isMember("componentCrc")
+                    || !params.isMember("field") || !params.isMember("value"))
+                {
+                    Json::Value e; e["error"] = "missing index, componentCrc, field, or value";
+                    return e;
+                }
+
+                const uint32_t idx    = static_cast<uint32_t>(params["index"].asInt());
+                const uint32_t crc    = static_cast<uint32_t>(params["componentCrc"].asUInt());
+                const char*    field  = params["field"].asCString();
+                const Json::Value& val = params["value"];
+
+                Dia::Entity::Entity entity = entityMod->GetDomain().GetAliveEntity(idx);
+                if (!entity.IsValid()) { Json::Value e; e["error"] = "entity not alive"; return e; }
+
+                Dia::Core::StringCRC componentTypeId;
+                static_cast<Dia::Core::CRC&>(componentTypeId) = crc;
+
+                if (!entityMod->GetInspectable().WriteField(entity, componentTypeId, field, val))
+                {
+                    Json::Value e; e["error"] = "WriteField failed";
+                    DIA_LOG_WARNING("Application", "entity.write_field: WriteField failed for field '%s'", field);
+                    return e;
+                }
+
+                Json::Value ok; ok["success"] = true;
+                return ok;
+            });
+        }
+
+        {
+            static const Dia::API::ValueParam kFindParams[] = {
+                { "name", "string", true, "Entity debug name" },
+            };
+            Dia::DebugServer::SimHelpInfo findHelp;
+            findHelp.description = "Find a live entity by debug name (O(N) scan)";
+            findHelp.category    = "debug";
+            findHelp.owner       = "EntityInspectorModule";
+            findHelp.params      = kFindParams;
+            findHelp.paramCount  = 1;
+            mFindRegistered = host->RegisterQuery("entity.find_by_name", findHelp,
+                [this](const Json::Value& params) -> Json::Value
+            {
+                auto* entityMod = mEntityRef.Get();
+                if (!entityMod) { Json::Value r; r["index"] = -1; return r; }
+
+                if (!params.isMember("name")) { Json::Value r; r["index"] = -1; return r; }
+                const char* searchName = params["name"].asCString();
+
+                auto& domain = entityMod->GetDomain();
+                Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, Dia::Entity::kMaxEntitiesPerDomain> entities;
+                entityMod->GetInspectable().GetAllEntities(entities);
+
+                for (uint32_t i = 0; i < entities.Size(); ++i)
+                {
+                    const char* dbgName = domain.GetDebugName(entities[i]);
+                    if (dbgName && strcmp(dbgName, searchName) == 0)
+                    {
+                        Json::Value r;
+                        r["index"] = static_cast<int>(entities[i].GetIndex());
+                        r["gen"]   = static_cast<int>(entities[i].GetGeneration());
+                        return r;
+                    }
+                }
+
+                Json::Value r; r["index"] = -1;
+                return r;
+            });
+        }
     }
 }
 
 void EntityInspectorModule::UnregisterHandlers()
 {
     DIA_LOG_INFO("Application", "EntityInspectorModule::UnregisterHandlers");
-    if (!mDebugServer) return;
-    mDebugServer->GetQueryRegistry().Unregister(Dia::Entity::DebugDataType::kEntityInspectRequest);
-    mDebugServer = nullptr;
+    // Stage-scoped: remove the sim-hosted names registered in RegisterHandlers so the
+    // next stage entry can register them again (duplicates are rejected).
+    if (SimQueryHostModule* host = mSimQueryHostRef.Get())
+    {
+        if (mQueryRegistered) host->UnregisterQuery("entity.inspect_request");
+        if (mWriteRegistered) host->UnregisterQuery("entity.write_field");
+        if (mFindRegistered)  host->UnregisterQuery("entity.find_by_name");
+    }
+    mQueryRegistered = false;
+    mWriteRegistered = false;
+    mFindRegistered  = false;
 }
 
 } } // namespace Cluiche::AppFlow

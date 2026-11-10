@@ -7,8 +7,8 @@
 #include "SoftAnchorLinksDrawer.h"
 #include "SoftVelocityDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaSoftBody2D/SoftBodyWorld.h>
 #include <DiaSoftBody2D/Rope.h>
 #include <DiaSoftBody2D/Cloth.h>

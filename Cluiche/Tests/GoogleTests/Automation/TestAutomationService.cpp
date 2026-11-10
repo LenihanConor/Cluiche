@@ -671,6 +671,45 @@ TEST_F(AutomationServiceTest, NavigationHold_ReleaseValidStage)
     for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
 }
 
+// Regression (celllayers E2E): a navigate_to that targets the stage the app is already in (e.g. the harness's trailing
+// navigate_to("Boot") arriving after a stage already self-returned to Boot and re-armed the hold) must NOT consume the hold,
+// otherwise the next real navigate_to is swallowed with 'not currently holding'.
+TEST_F(AutomationServiceTest, NavigationHold_ReleaseToCurrentStageKeepsTheHold)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddTwoStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+    ASSERT_EQ(app.GetCurrentStage(), StringCRC("Boot"));
+
+    Dia::Automation::AutomationService service(app);
+    service.EnableNavigationHold();
+    ASSERT_TRUE(service.IsHolding());
+
+    bool success = false;
+    const char* errMsg = nullptr;
+    service.ReleaseNavigationHold(StringCRC("Boot"), &success, &errMsg);
+    EXPECT_TRUE(success);
+    EXPECT_TRUE(service.IsHolding()) << "releasing to the current stage must keep the hold";
+
+    // A real navigation afterwards still works.
+    app.TransitionTo(StringCRC("Game"));
+    for (int i = 0; i < 5; ++i) app.Update(1.0f / 60.0f);
+    service.ReleaseNavigationHold(StringCRC("Game"), &success, &errMsg);
+    EXPECT_TRUE(success);
+    for (int i = 0; i < 50; ++i)
+    {
+        app.Update(1.0f / 60.0f);
+        if (app.GetCurrentStage() == StringCRC("Game") && !app.IsTransitioning())
+            break;
+    }
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
 // AC6 — dia.automation.navigate_to command releases hold and transitions
 TEST_F(AutomationServiceTest, NavigationHold_NavigateToCommand)
 {

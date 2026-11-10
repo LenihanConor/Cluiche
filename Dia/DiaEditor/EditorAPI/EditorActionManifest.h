@@ -18,6 +18,9 @@ namespace Dia
 			DispatchThread          dispatchThread = DispatchThread::kMainThread;
 		};
 
+		// JSON for one param (name/type/required/description; extra keys only when set)
+		Json::Value EditorActionParamToJson(const EditorActionParam& param);
+
 		// Full manifest: all registered actions, queryable by name or owner
 		class EditorActionManifest
 		{

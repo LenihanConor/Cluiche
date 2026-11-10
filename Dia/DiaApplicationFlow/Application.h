@@ -25,6 +25,8 @@ namespace Json { class Value; }
 #include <mutex>
 #include <thread>
 
+namespace Dia { namespace Observation { namespace Metric { class Counter; class Gauge; } } }
+
 namespace Dia { namespace ApplicationFlow {
 
     // ---------------------------------------------------------------------------
@@ -110,7 +112,14 @@ namespace Dia { namespace ApplicationFlow {
         // dedicated PU threads are launched.  Calling it after Start() has
         // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
         // in release the unsynchronized store array would be a data race.
-        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
+        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore) override;
+
+        // Reports the manifest-declared capacity / overflow policy for a stream
+        // so EventStreamReader/Writer::Connect() can honour them.
+        bool GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                          unsigned int& outCapacity,
+                                          OverflowPolicy& outPolicy,
+                                          unsigned int& outBlockTimeoutMs) const override;
 
         // FindStreamStore: lookup only, no creation. Returns null if not found.
         // Safe to call at any time — mStreamStores is immutable after Start().
@@ -166,6 +175,10 @@ namespace Dia { namespace ApplicationFlow {
         // Returns true if every module in every PU is kInactive or kFailed.
         bool AllModulesInactive() const;
 
+        // Ticks PU 0 and every non-dedicated secondary PU inline, in manifest order.
+        // Dedicated-thread PUs run on their own thread and are not ticked here.
+        void UpdateInlineProcessingUnits(float deltaTime);
+
         // Walk all registered ServiceStreamStores; commit any that are registered
         // but not yet committed (i.e., provider called Register() and this is
         // the first frame where all providers are registered).
@@ -220,6 +233,10 @@ namespace Dia { namespace ApplicationFlow {
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
+        // Registry-owned stream metrics, resolved once in the constructor.
+        Observation::Metric::Counter* mServiceStreamCommitCount     = nullptr;
+        Observation::Metric::Counter* mServiceStreamResetCount      = nullptr;
+        Observation::Metric::Gauge*   mServiceStreamCommittedGauge  = nullptr;
         // True only while ConnectModuleStreams() is running.  Guards
         // RegisterOrFindStreamStore — calls outside this window
         // would race against dedicated-PU threads.

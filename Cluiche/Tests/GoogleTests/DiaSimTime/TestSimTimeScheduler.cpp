@@ -492,3 +492,49 @@ TEST(SimTimeSchedulerTest, TickIgnoresWallClockOnlyCurrentTimeParamGoverns)
     sched.Tick(Ms(100), fired);
     EXPECT_EQ(fired.Size(), 1u) << "fires once the caller-supplied game time actually reaches it";
 }
+
+TEST(SimTimeSchedulerTest, ClearDropsAllPendingEntriesAndInvalidatesHandles)
+{
+    SimTimeScheduler sched;
+    const ScheduleHandle h1 = sched.ScheduleAt(Ms(100), StringCRC("A"), StringCRC("sys"));
+    const ScheduleHandle h2 = sched.ScheduleRecurring(RMs(50), StringCRC("B"), StringCRC("sys"));
+    const ScheduleHandle h3 = sched.ScheduleAt(Ms(60000), StringCRC("C"), StringCRC("sys")); // heap
+    ASSERT_EQ(sched.GetQueueDepth(), 3);
+
+    sched.Clear();
+    EXPECT_EQ(sched.GetQueueDepth(), 0);
+
+    // Stale handles: Cancel / Reschedule are safe no-ops.
+    sched.Cancel(h1);
+    sched.Cancel(h2);
+    sched.Reschedule(h3, Ms(10));
+    EXPECT_EQ(sched.GetQueueDepth(), 0);
+
+    DynamicArrayC<SimTimeSchedulerFire, 8> fired;
+    sched.Tick(Ms(100000), fired);
+    EXPECT_EQ(fired.Size(), 0u) << "nothing may fire after Clear";
+}
+
+TEST(SimTimeSchedulerTest, ClearThenScheduleWorksAndOldHandleCannotCancelNewEntry)
+{
+    SimTimeScheduler sched;
+    const ScheduleHandle old = sched.ScheduleAt(Ms(100), StringCRC("A"), StringCRC("sys"));
+    sched.Clear();
+
+    const ScheduleHandle fresh = sched.ScheduleAt(Ms(100), StringCRC("N"), StringCRC("sys"));
+    EXPECT_NE(old, fresh);
+    sched.Cancel(old);   // reused slot, older generation -> must not cancel the new entry
+    EXPECT_EQ(sched.GetQueueDepth(), 1);
+
+    DynamicArrayC<SimTimeSchedulerFire, 8> fired;
+    sched.Tick(Ms(100), fired);
+    ASSERT_EQ(fired.Size(), 1u);
+    EXPECT_EQ(fired[0].eventType, StringCRC("N"));
+}
+
+TEST(SimTimeSchedulerTest, ClearOnEmptySchedulerIsSafe)
+{
+    SimTimeScheduler sched;
+    sched.Clear();
+    EXPECT_EQ(sched.GetQueueDepth(), 0);
+}

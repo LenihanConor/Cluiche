@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { bridgeRequest } from './bridge';
-import { TrafficLightDot } from './TrafficLightDot';
+import { TrafficLightDot } from '@dia/editor-ui';
 import type { ChannelRole } from './types';
 
 export interface ModuleInspectorProps {

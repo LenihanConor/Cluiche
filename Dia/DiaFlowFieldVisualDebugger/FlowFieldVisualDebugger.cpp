@@ -7,8 +7,8 @@
 
 #include "DirectionArrowsDrawer.h"
 #include "ReachabilityOverlayDrawer.h"
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaFlowField/FlowField.h>
 #include <DiaPathfinding/CellCoord.h>
 #include <memory>

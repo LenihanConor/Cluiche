@@ -14,6 +14,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/IStreamConnector.h>
 #include <DiaStreams/SendResult.h>
 #include <DiaStreams/OverflowPolicy.h>
 #include <DiaStreams/Event.h>
@@ -59,6 +60,29 @@ public:
                               OverflowPolicy policy    = OverflowPolicy::kDropOldest,
                               unsigned int blockTimeoutMs = 100);
     ~EventStreamStore();
+
+    // Creates a store for Connect(): honours the manifest-declared capacity
+    // (when nonzero) and overflow policy via the connector; otherwise defaults.
+    static EventStreamStore* CreateForConnect(const IStreamConnector& connector,
+                                              const Dia::Core::StringCRC& id,
+                                              unsigned int maxReaders)
+    {
+        unsigned int   capacity       = kDefaultCapacity;
+        OverflowPolicy policy         = OverflowPolicy::kDropOldest;
+        unsigned int   blockTimeoutMs = 100;
+        unsigned int   declaredCap    = 0;
+        OverflowPolicy declaredPolicy = OverflowPolicy::kDropOldest;
+        unsigned int   declaredBlock  = 100;
+        if (connector.GetDeclaredEventStreamConfig(id, declaredCap, declaredPolicy, declaredBlock))
+        {
+            if (declaredCap != 0)
+                capacity = declaredCap;
+            policy         = declaredPolicy;
+            blockTimeoutMs = declaredBlock;
+        }
+        return new EventStreamStore(id, Dia::Core::StringCRC::kZero, capacity, maxReaders,
+                                    policy, blockTimeoutMs);
+    }
 
     EventStreamStore(const EventStreamStore&)            = delete;
     EventStreamStore& operator=(const EventStreamStore&) = delete;

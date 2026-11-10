@@ -24,10 +24,10 @@ namespace Dia
 				return Dia::Serializer::SerializeResult::Failure("json parse error");
 
 			if (root.isMember("name") && root["name"].isString())
-				outManifest.name = root["name"].asCString();
+				outManifest.name = Dia::Core::Containers::String256("%s", root["name"].asCString());
 
 			if (root.isMember("version") && root["version"].isString())
-				outManifest.version = root["version"].asCString();
+				outManifest.version = Dia::Core::Containers::String256("%s", root["version"].asCString());
 
 			if (root.isMember("imports") && root["imports"].isArray())
 			{
@@ -37,7 +37,7 @@ namespace Dia
 					if (importsJson[i].isObject() && importsJson[i].isMember("path"))
 					{
 						Dia::Application::TypedImport import;
-						import.path = importsJson[i]["path"].asCString();
+						import.path = Dia::Core::Containers::String256("%s", importsJson[i]["path"].asCString());
 						const std::string typeStr = importsJson[i].get("type", "manifest").asString();
 						import.type = (typeStr == "stage")
 							? Dia::Application::TypedImport::ImportType::kStage
@@ -51,12 +51,30 @@ namespace Dia
 			{
 				const Json::Value& cfg = root["config"];
 				if (cfg.isMember("asset_root") && cfg["asset_root"].isString())
-					outManifest.config.assetRoot = cfg["asset_root"].asCString();
+					outManifest.config.assetRoot = Dia::Core::Containers::String256("%s", cfg["asset_root"].asCString());
 				if (cfg.isMember("asset_catalogue") && cfg["asset_catalogue"].isString())
-					outManifest.config.assetCatalogue = cfg["asset_catalogue"].asCString();
+					outManifest.config.assetCatalogue = Dia::Core::Containers::String256("%s", cfg["asset_catalogue"].asCString());
 
 				delete outManifest.rawConfig;
 				outManifest.rawConfig = new Json::Value(cfg);
+			}
+
+			if (root.isMember("editor") && root["editor"].isObject()
+				&& root["editor"].isMember("manifests") && root["editor"]["manifests"].isArray())
+			{
+				const Json::Value& manifestsJson = root["editor"]["manifests"];
+				for (unsigned int i = 0; i < manifestsJson.size(); ++i)
+				{
+					if (!manifestsJson[i].isString() || manifestsJson[i].asString().empty())
+						continue;
+					if (outManifest.editorManifests.IsFull())
+					{
+						DIA_LOG_WARNING("Game", "editor.manifests truncated: max %u entries", outManifest.editorManifests.Size());
+						break;
+					}
+					// "%s" format: String256 construction/assignment from const char* is printf-style, a '%' in a path must not be interpreted.
+					outManifest.editorManifests.Add(Dia::Core::Containers::String256("%s", manifestsJson[i].asCString()));
+				}
 			}
 
 			return Dia::Serializer::SerializeResult::Success();
@@ -91,6 +109,16 @@ namespace Dia
 				if (manifest.config.assetCatalogue.Length() > 0)
 					configJson["asset_catalogue"] = manifest.config.assetCatalogue.AsCStr();
 				root["config"] = configJson;
+			}
+
+			if (manifest.editorManifests.Size() > 0)
+			{
+				Json::Value manifestsJson(Json::arrayValue);
+				for (unsigned int i = 0; i < manifest.editorManifests.Size(); ++i)
+					manifestsJson.append(manifest.editorManifests[i].AsCStr());
+				Json::Value editorJson(Json::objectValue);
+				editorJson["manifests"] = manifestsJson;
+				root["editor"] = editorJson;
 			}
 
 			Json::StyledWriter writer;

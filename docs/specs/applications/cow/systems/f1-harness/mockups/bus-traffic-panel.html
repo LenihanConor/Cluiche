@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bus Traffic Viewer — UX Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─────────────────────────────── PANEL WINDOW ─── */
+.panel-window {
+  width: 1000px;
+  height: 650px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Title bar ── */
+.title-bar {
+  background: linear-gradient(to bottom, #2a2a2a 0%, #222 100%);
+  border-bottom: 1px solid #3a3a3a;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: move;
+  user-select: none;
+}
+.title-icon {
+  width: 14px;
+  height: 14px;
+  background: #f5a623;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.title-text {
+  flex: 1;
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.recording-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #2a1a1a;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid #5a2a2a;
+  font-size: 10px;
+  color: #e74c3c;
+}
+.recording-dot {
+  width: 6px;
+  height: 6px;
+  background: #e74c3c;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+.control-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+.control-btn.minimize { background: #f5a623; }
+.control-btn.close { background: #e74c3c; }
+
+/* ── Toolbar ── */
+.toolbar {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2a2a2a;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: #3a3a3a;
+}
+.toolbar-btn {
+  padding: 4px 10px;
+  background: #252525;
+  border: 1px solid #3a3a3a;
+  color: #999;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.toolbar-btn:hover { background: #2a2a2a; color: #ccc; }
+.toolbar-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.toolbar-btn.danger { background: #3a1a1a; border-color: #5a2a2a; color: #e74c3c; }
+.toolbar-btn.danger:hover { background: #4a2a2a; }
+.filter-input {
+  flex: 1;
+  background: #0f0f0f;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  outline: none;
+  min-width: 200px;
+}
+.filter-input:focus { border-color: #5a9fd4; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  background: #161616;
+  border-bottom: 1px solid #2a2a2a;
+  padding: 6px 12px;
+  display: flex;
+  gap: 20px;
+  font-size: 10px;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-label { color: #666; }
+.stat-value { color: #5a9fd4; font-weight: 600; }
+.stat-value.high { color: #f5a623; }
+
+/* ── Table ── */
+.table-container {
+  flex: 1;
+  overflow: auto;
+  background: #0f0f0f;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+thead {
+  position: sticky;
+  top: 0;
+  background: #1a1a1a;
+  border-bottom: 1px solid #3a3a3a;
+  z-index: 10;
+}
+th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+}
+th:hover { color: #aaa; background: #252525; }
+th.sortable::after {
+  content: ' ↕';
+  color: #444;
+}
+th.sorted-asc::after {
+  content: ' ↑';
+  color: #5a9fd4;
+}
+th.sorted-desc::after {
+  content: ' ↓';
+  color: #5a9fd4;
+}
+tbody tr {
+  border-bottom: 1px solid #1a1a1a;
+}
+tbody tr:hover { background: #161616; }
+td {
+  padding: 6px 12px;
+  color: #ccc;
+}
+.tick-col { color: #777; font-size: 10px; }
+.type-col { color: #5a9fd4; font-weight: 600; }
+.router-col { color: #888; }
+.pass-col {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+.pass-col.primary { background: #1a3a5a; color: #5a9fd4; }
+.pass-col.reaction { background: #3a2a1a; color: #f5a623; }
+.count-col { color: #999; text-align: right; }
+
+/* ── Footer ── */
+.footer {
+  background: #161616;
+  border-top: 1px solid #2a2a2a;
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #666;
+}
+.footer-right {
+  display: flex;
+  gap: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="panel-window">
+  <!-- Title bar -->
+  <div class="title-bar">
+    <div class="title-icon">⚡</div>
+    <div class="title-text">BUS TRAFFIC VIEWER</div>
+    <div class="recording-badge">
+      <span class="recording-dot"></span>
+      <span>RECORDING</span>
+    </div>
+    <div class="window-controls">
+      <button class="control-btn minimize"></button>
+      <button class="control-btn close"></button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-section">
+      <button class="toolbar-btn active">▶ Live</button>
+      <button class="toolbar-btn">⏸ Pause</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-section">
+      <button class="toolbar-btn">Primary</button>
+      <button class="toolbar-btn">Reaction</button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-section" style="flex: 1;">
+      <span style="color: #666; font-size: 10px;">Filter:</span>
+      <input type="text" class="filter-input" placeholder="Type to filter by type or router ID...">
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="toolbar-section">
+      <button class="toolbar-btn danger">🗑 Clear</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-label">Total Messages:</span>
+      <span class="stat-value">12,847</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Messages/sec:</span>
+      <span class="stat-value high">487</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Unique Types:</span>
+      <span class="stat-value">23</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Unique Routers:</span>
+      <span class="stat-value">8</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Buffer:</span>
+      <span class="stat-value">500/1000</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable sorted-desc">Tick</th>
+          <th class="sortable">Type ID</th>
+          <th class="sortable">Router ID</th>
+          <th>Pass</th>
+          <th>Count</th>
+          <th>Payload Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tick-col">5,281</td>
+          <td class="type-col">DragonMoveCommand</td>
+          <td class="router-col">simulation</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">1</td>
+          <td class="count-col">24 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,281</td>
+          <td class="type-col">DragonStateUpdate</td>
+          <td class="router-col">simulation</td>
+          <td><span class="pass-col reaction">Reaction</span></td>
+          <td class="count-col">3</td>
+          <td class="count-col">48 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,280</td>
+          <td class="type-col">WorldTickEvent</td>
+          <td class="router-col">__global__</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">1</td>
+          <td class="count-col">8 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,280</td>
+          <td class="type-col">CellUpdateEvent</td>
+          <td class="router-col">world</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">144</td>
+          <td class="count-col">16 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,280</td>
+          <td class="type-col">DragonMoveCommand</td>
+          <td class="router-col">simulation</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">1</td>
+          <td class="count-col">24 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,280</td>
+          <td class="type-col">DragonStateUpdate</td>
+          <td class="router-col">simulation</td>
+          <td><span class="pass-col reaction">Reaction</span></td>
+          <td class="count-col">3</td>
+          <td class="count-col">48 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,279</td>
+          <td class="type-col">WorldTickEvent</td>
+          <td class="router-col">__global__</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">1</td>
+          <td class="count-col">8 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,279</td>
+          <td class="type-col">ResourceGatherEvent</td>
+          <td class="router-col">world</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">12</td>
+          <td class="count-col">32 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,279</td>
+          <td class="type-col">CellUpdateEvent</td>
+          <td class="router-col">world</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">144</td>
+          <td class="count-col">16 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,278</td>
+          <td class="type-col">WorldTickEvent</td>
+          <td class="router-col">__global__</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">1</td>
+          <td class="count-col">8 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,278</td>
+          <td class="type-col">DragonStateUpdate</td>
+          <td class="router-col">simulation</td>
+          <td><span class="pass-col reaction">Reaction</span></td>
+          <td class="count-col">3</td>
+          <td class="count-col">48 bytes</td>
+        </tr>
+        <tr>
+          <td class="tick-col">5,278</td>
+          <td class="type-col">AIDecisionEvent</td>
+          <td class="router-col">ai</td>
+          <td><span class="pass-col primary">Primary</span></td>
+          <td class="count-col">5</td>
+          <td class="count-col">64 bytes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Showing last 500 messages (scroll for more)</div>
+    <div class="footer-right">
+      <span>Click column headers to sort</span>
+      <span>Double-click row for details</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

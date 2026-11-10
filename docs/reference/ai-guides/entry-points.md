@@ -729,7 +729,7 @@ Uses `std::mutex` internally, safe for producer/consumer.
 
 **1. Locate UI Files**
 
-UI pages in: `External/Webix/` or custom HTML files
+UI pages in: the application's `Presentation/UI/` asset folder (HTML files)
 
 **2. Edit HTML**
 

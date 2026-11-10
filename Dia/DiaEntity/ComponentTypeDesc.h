@@ -27,6 +27,8 @@ namespace Dia::Entity {
     // Function pointer types for type-erased component operations.
     using LoadFromJsonFn = void (*)(IComponent* dst, const Json::Value& config);
     using SaveToJsonFn   = void (*)(const IComponent* src, Json::Value& outConfig);
+    // Placement-news a default-constructed component into mem (size/alignment per ComponentTypeDesc).
+    using ConstructDefaultFn = void (*)(void* mem);
 
     inline constexpr uint16_t kFlagOverridesDoUpdate = 1u << 0;
     inline constexpr uint16_t kFlagReadOnly          = 1u << 1;
@@ -51,6 +53,9 @@ namespace Dia::Entity {
         LoadFromJsonFn loadFromJson;
         SaveToJsonFn   saveToJson;
         const char*    description = nullptr;
+
+        // nullptr when the component was not registered via DIA_COMPONENT_REGISTER (no default available).
+        ConstructDefaultFn constructDefault = nullptr;
     };
 
 } // namespace Dia::Entity

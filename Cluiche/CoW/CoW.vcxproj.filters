@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{4d2b8f61-7c3e-4a95-b1d0-9e6a2c5f8b17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared">
+      <UniqueIdentifier>{b157cd77-a81d-4d7c-bef8-ccbd67f06c87}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\FrontEndModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\RandomStreamModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusProbeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusRecorderModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeedControllerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeedDebugDomain.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SaveLoadModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2TestRunnerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Fingerprint.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2StreamIndependence.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Scenario.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2DragonStub.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2PanelModel.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SnapshotStoreAdapter.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainLandmass.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainMountains.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRelief.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainDrainage.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainDepthZones.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainValleys.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainClassify.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldShapePreset.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGenerationModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\S1WorldGenerationTestbedStageModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGenDebugDomain.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGenViewHost.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\FrontEndModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\RandomStreamModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusProbeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusRecorderModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\GameSpeedController.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeedControllerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeedMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeedDebugDomain.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SaveLoadModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2TestRunnerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Fingerprint.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2StreamIndependence.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Scenario.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2DragonStub.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2PanelModel.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2TestRunnerDebugDomain.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenerationMessages.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SnapshotStoreAdapter.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRules.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainLandmass.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainMountains.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRelief.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainDrainage.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainDepthZones.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainValleys.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainClassify.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldShapePreset.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenerationModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\S1WorldGenerationTestbedStageModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenDebugDomain.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\IWorldGenView.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenPointerFrame.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenViewHost.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGenMirrorRegistrar.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

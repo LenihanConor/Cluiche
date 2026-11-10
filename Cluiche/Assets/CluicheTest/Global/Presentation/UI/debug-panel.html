@@ -231,6 +231,227 @@ body {
   accent-color: var(--accent); cursor: pointer;
 }
 .ctrl .cv { width: 30px; text-align: right; color: #666; }
+.ctrl .track { position: relative; flex: 1; display: flex; align-items: center; min-width: 0; }
+.ctrl .track input[type=range] { width: 100%; }
+.dtick { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #f5a623; opacity: 0.6; pointer-events: none; }
+.pack-marker { flex-shrink: 0; font-size: 8px; padding: 0 4px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; }
+
+/* Value info icon + tooltip (DiaValueSchema F3; mockup f3-worldassets/mockups/field-schema-tooltips.html) */
+.info-icon {
+  width: 12px; height: 12px; flex-shrink: 0;
+  border: 1px solid #3a3a3a; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #666; cursor: help; outline: none;
+}
+.info-icon:hover, .info-icon:focus { border-color: #5a9fd4; color: #5a9fd4; }
+.vt {
+  position: fixed; z-index: 100; box-sizing: border-box; width: 320px; max-width: 320px;
+  background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 3px; padding: 10px 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+  font-size: 10px; color: #ccc; text-align: left; font-weight: normal; user-select: none;
+}
+.vt [data-vt-section] { margin-top: 6px; }
+.vt .vt-title { margin-top: 0; font-size: 11px; color: #5a9fd4; font-weight: 600; }
+.vt .vt-desc { color: #aaa; line-height: 1.4; }
+.vt .vt-enum-label { color: #ccc; font-weight: 600; }
+.vt .vt-enum-desc { color: #777; }
+.vt .vt-hint { color: #f5a623; font-style: italic; }
+.vt .vt-meta { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+.vt .vt-meta-item { display: flex; gap: 4px; }
+.vt .vt-meta-label { color: #555; }
+.vt .vt-meta-value { color: #999; }
+.vt .vt-affects { display: flex; flex-wrap: wrap; gap: 4px; }
+.vt .vt-chip { font-size: 8px; padding: 2px 6px; background: #1a2530; border: 1px solid #2a3a50; color: #5a9fd4; border-radius: 2px; }
+.vt .vt-related { padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+.vt .vt-related-label { color: #666; font-weight: 700; margin-right: 4px; }
+.vt .vt-link { background: transparent; border: none; padding: 0; margin-right: 8px; font-family: inherit; font-size: 9px; color: #5a9fd4; cursor: pointer; text-decoration: none; }
+.vt .vt-link:hover, .vt .vt-link:focus { text-decoration: underline; }
+.vt .vt-plain { margin-right: 8px; }
+.vt .vt-source { font-size: 9px; color: #555; font-style: italic; }
+.vt .vt-pack { display: inline-block; font-size: 8px; padding: 2px 5px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; border-radius: 2px; }
+
+/* Cell layer viewer card (DiaCellLayers; mockup diacelllayers/mockups/cell-layer-viewer.html) */
+.cl-viewer { margin-bottom: 6px; }
+.cl-empty { padding: 10px 6px; font-size: 11px; color: #555; font-style: italic; text-align: center; }
+.cl-grids { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.cl-viewer .tool-btn {
+  padding: 3px 8px; background: #252525; border: 1px solid #3a3a3a; color: #999;
+  border-radius: 2px; font-size: 9px; cursor: pointer; font-family: inherit;
+}
+.cl-viewer .tool-btn.active { background: #5a9fd4; color: #fff; border-color: #5a9fd4; }
+.selection-header { font-size: 11px; color: #5a9fd4; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #222; }
+.selection-tools { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.selection-group { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; }
+.selection-group select {
+  flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
+  font-family: inherit; font-size: 10px; padding: 3px 4px; border-radius: 2px; outline: none; text-transform: none; letter-spacing: 0;
+}
+.selection-group select:focus { border-color: #5a9fd4; }
+.query-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; padding: 6px 8px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 2px; }
+.query-row { display: flex; gap: 4px; }
+.query-input { flex: 1; min-width: 0; background: #0f0f0f; border: 1px solid #3a3a3a; color: #ccc; font-family: 'Consolas', monospace; font-size: 10px; padding: 4px 6px; border-radius: 2px; outline: none; }
+.query-input:focus { border-color: #5a9fd4; }
+.query-field .query-run { background: #1e1e1e; color: #ccc; border: 1px solid #3a3a3a; border-radius: 2px; font-size: 9px; font-family: inherit; padding: 2px 8px; cursor: pointer; }
+.query-field .query-run:hover { border-color: #5a9fd4; }
+.query-result { font-size: 9px; color: #5a9fd4; }
+.query-result:empty { display: none; }
+.query-error { font-size: 9px; color: #f5a623; }
+.query-error .q-msg { color: #e8573f; }
+.query-error .q-text { font-family: 'Consolas', monospace; color: #999; margin: 2px 0; white-space: pre-wrap; word-break: break-all; }
+.query-error mark.q-span { background: #5a2a22; color: #ffb3a6; border-radius: 1px; }
+.query-error .q-suggest { background: none; border: 0; padding: 0; color: #5a9fd4; font-family: inherit; font-size: 9px; cursor: pointer; text-decoration: underline; }
+.query-recent { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
+.query-recent .q-recent-title { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; }
+.query-recent .q-recent-item { font-family: 'Consolas', monospace; font-size: 9px; color: #888; padding: 1px 4px; cursor: pointer; border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.query-recent .q-recent-item:hover { background: #252525; color: #ccc; }
+.cl-banner { padding: 6px 8px; font-size: 10px; color: #f5a623; background: #2a2510; border: 1px solid #4a4520; border-radius: 2px; margin-bottom: 8px; }
+/* Cell History card (DiaCellHistory F2; mockup diacelllayers/mockups/cell-layer-viewer.html: timeline card, banner, notices) */
+.cl-tl { padding: 2px 0 4px; }
+.cl-tl .tl-head { display: flex; align-items: center; gap: 10px; font-size: 9px; color: #888; margin-bottom: 3px; flex-wrap: wrap; }
+.cl-tl .tl-title { color: #aaa; font-weight: 600; letter-spacing: 0.5px; }
+.cl-tl .tl-layer { color: #5a9fd4; }
+.cl-tl .tl-legend { margin-left: auto; display: flex; gap: 8px; align-items: center; color: #666; flex-wrap: wrap; }
+.cl-tl .tl-legend i { display: inline-block; width: 6px; height: 8px; margin-right: 3px; vertical-align: -1px; }
+.cl-tl .tl-legend .density { display: inline-flex; align-items: flex-end; gap: 1px; margin: 0 3px; }
+.cl-tl .tl-legend .density b { width: 2px; background: #aaa; display: inline-block; }
+.tl-plot { position: relative; height: 96px; margin: 0 4px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 2px; overflow: hidden; cursor: pointer; }
+.tl-spark { position: absolute; left: 0; right: 0; top: 2px; height: 32px; width: 100%; }
+.tl-spark path { fill: none; stroke: #6fb36f; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.tl-lane { position: absolute; left: 0; right: 0; top: 40px; bottom: 14px; }
+.tl-lane-track { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #3a3a3a; }
+.tl-band { position: absolute; top: -40px; bottom: -14px; width: 1px; background: #232323; }
+.tl-band.major { background: #3a3a3a; }
+.tl-band-label { position: absolute; bottom: -13px; font-size: 8px; color: #666; transform: translateX(2px); }
+.tl-band-label.major { color: #999; }
+.tl-ev { position: absolute; bottom: 50%; width: 2px; margin-bottom: 2px; border-radius: 1px; }
+.tl-gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, rgba(231,76,60,0.28) 0 3px, transparent 3px 6px); border-left: 1px solid #7a3a34; border-right: 1px solid #7a3a34; }
+.tl-gap.events { background: repeating-linear-gradient(135deg, rgba(245,166,35,0.22) 0 3px, transparent 3px 6px); border-color: #7a5a24; top: 38px; bottom: 14px; }
+.tl-gap-label { position: absolute; font-size: 8px; white-space: nowrap; }
+.tl-dim { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.55); border-right: 1px dashed #5a9fd4; }
+.tl-dim-label { position: absolute; top: 3px; right: 3px; font-size: 8px; color: #5a9fd4; background: #0f0f0fcc; padding: 0 3px; }
+.tl-thumb { position: absolute; top: 0; bottom: 0; width: 2px; background: #e8e8e8; z-index: 5; }
+.tl-thumb::before { content: ''; position: absolute; top: 36px; left: -5px; width: 12px; height: 16px; background: #e8e8e8; border-radius: 2px; border: 1px solid #5a9fd4; }
+.tl-thumb .tl-thumb-tag { position: absolute; top: 2px; left: 6px; font-size: 9px; white-space: nowrap; background: #1a2530; border: 1px solid #5a9fd4; color: #9fd0f5; padding: 0 4px; border-radius: 2px; }
+.tl-thumb.flip .tl-thumb-tag { left: auto; right: 6px; }
+.tl-livemark { position: absolute; top: 0; bottom: 0; right: 0; width: 2px; background: #4a8a4a; z-index: 4; }
+.tl-livemark span { position: absolute; bottom: 2px; right: 5px; font-size: 8px; color: #8aea8a; background: #0f0f0fcc; padding: 0 3px; white-space: nowrap; }
+.tl-livemark::before { content: ''; position: absolute; top: 6px; right: 0; width: 7px; height: 7px; border-radius: 50%; background: #8aea8a; }
+.cl-tl:not(.is-live) .tl-livemark { opacity: 0.6; }
+.cl-tl:not(.is-live) .tl-livemark::before { background: transparent; border: 1px solid #8aea8a; }
+.cl-tl .tl-controls { display: flex; align-items: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.cl-tl .tl-btn { background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit; font-size: 10px; padding: 2px 7px; border-radius: 2px; cursor: pointer; }
+.cl-tl .tl-btn:hover { background: #2a2a2a; color: #fff; }
+.cl-tl .tl-btn[disabled] { opacity: 0.4; cursor: default; }
+.cl-tl .tl-btn.ev-prev, .cl-tl .tl-btn.ev-next { border-color: #5a4a2a; color: #f5a623; }
+.cl-tl .tl-sep { width: 1px; height: 16px; background: #333; margin: 0 4px; }
+.cl-tl .tl-pos { font-size: 10px; color: #ccc; margin-left: 8px; }
+.cl-tl .tl-pos .dim { color: #666; }
+.cl-tl .live-btn { margin-left: auto; }
+.cl-tl.is-live .live-btn { background: #1d2a1d; border-color: #2f4f2f; color: #5a8a5a; cursor: default; }
+.cl-tl .tl-info { margin-top: 5px; font-size: 9px; color: #666; }
+.cl-hist-banner { display: flex; align-items: center; gap: 12px; padding: 6px 12px; margin-bottom: 8px; font-size: 11px; background: #3a2a0a; border: 1px solid #f5a623; border-radius: 2px; color: #ffd27a; }
+.cl-hist-banner b { color: #fff; font-weight: 600; }
+.cl-hist-banner .vb-extra { color: #ffb3a8; }
+.cl-hist-banner .live-btn { margin-left: auto; background: #1f1f1f; border: 1px solid #3a3a3a; color: #bbb; font-family: inherit; font-size: 10px; padding: 2px 7px; border-radius: 2px; cursor: pointer; }
+.cl-hist-notice { padding: 16px 20px; margin-bottom: 8px; border-radius: 3px; font-size: 11px; line-height: 1.5; text-align: center; }
+.cl-hist-notice h4 { font-size: 12px; margin: 0 0 6px 0; font-weight: 600; }
+.cl-hist-notice.untracked { background: repeating-linear-gradient(0deg, #17171c 0 20px, #14141a 20px 40px); border: 1px solid #3a3a3a; color: #aaa; }
+.cl-hist-notice.untracked h4 { color: #ddd; }
+.cl-hist-notice.evicted { background: repeating-linear-gradient(135deg, #1a1210 0 10px, #140e0c 10px 20px); border: 1px solid #7a3a34; color: #e0a8a0; }
+.cl-hist-notice.evicted h4 { color: #e74c3c; }
+.cl-hist-notice .track-btn { margin-top: 10px; padding: 4px 14px; background: #1a2530; border: 1px solid #5a9fd4; color: #5a9fd4; font-family: inherit; font-size: 11px; border-radius: 2px; cursor: pointer; }
+.cl-hist-notice .runs { color: #666; font-size: 9px; margin-top: 6px; }
+.sample-badge { display: inline-block; font-size: 9px; padding: 0 5px; margin-bottom: 3px; background: #3a2a0a; border: 1px solid #f5a623; color: #ffd27a; border-radius: 2px; }
+/* Selection Inspector card (diacelllayers/mockups/cell-layer-viewer.html: stats table, biome chips, histogram, pin buttons) */
+.cl-inspector { margin-top: 4px; margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #222; }
+.insp-title { display: flex; align-items: center; gap: 8px; font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+.insp-updating { font-size: 8px; padding: 1px 5px; border-radius: 2px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; text-transform: none; letter-spacing: 0; }
+.insp-empty { padding: 8px 6px; font-size: 11px; color: #555; font-style: italic; text-align: center; }
+.pin-buttons { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+.pin-btn { flex: 1; padding: 4px 8px; background: #252525; border: 1px solid #3a3a3a; color: #999; border-radius: 2px; font-size: 9px; cursor: pointer; font-family: inherit; }
+.pin-btn:hover { background: #2a2a2a; color: #ccc; }
+.pin-btn[disabled] { opacity: 0.4; cursor: default; }
+.pinned-chip { display: inline-block; font-size: 9px; padding: 4px 8px; background: #1a2530; border: 1px solid #2a3a50; color: #5a9fd4; border-radius: 2px; margin-bottom: 6px; }
+.frozen-badge { display: inline-block; font-size: 8px; padding: 1px 5px; margin-left: 4px; border-radius: 2px; background: #1a2a3a; border: 1px solid #3a5a80; color: #8fc4f0; }
+.insp-group { margin-bottom: 6px; }
+.insp-group-header { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 6px; background: #1a1a1a; border-radius: 2px; cursor: pointer; user-select: none; }
+.insp-group-header:hover { color: #ccc; }
+.insp-group-header .caret { display: inline-block; width: 10px; color: #5a9fd4; }
+.insp-scroll { overflow-x: auto; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 10px; margin: 4px 0; }
+.stats-table th { background: #1a1a1a; padding: 3px 4px; text-align: left; font-weight: 600; color: #777; font-size: 9px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
+.stats-table th.cmp-a { color: #8fc4f0; }
+.stats-table th.cmp-d { color: #5a9fd4; }
+.stats-table td { padding: 3px 4px; color: #aaa; border-bottom: 1px solid #0f0f0f; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stats-table td:first-child { color: #999; }
+.stats-table td.num { text-align: right; }
+.stats-table td.unit { color: #666; }
+.stats-table td.nf { color: #666; font-style: italic; }
+.stats-table tr:hover { background: #1a1a1a; }
+.stats-table .d-pos { color: #5a9fd4; }
+.stats-table .d-neg { color: #e74c3c; }
+.stats-table .d-zero { color: #999; }
+.range-bar { position: relative; width: 48px; height: 6px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 1px; display: inline-block; vertical-align: middle; }
+.range-bar .span { position: absolute; top: 0; bottom: 0; background: #2a5a2a; }
+.range-bar .mean { position: absolute; top: -1px; bottom: -1px; width: 2px; background: #5a9fd4; }
+.biome-counts { margin: 4px 0; padding: 4px 6px; background: #1a1a1a; border-radius: 2px; }
+.biome-counts-title { font-size: 9px; color: #666; margin-bottom: 3px; }
+.biome-chip { display: inline-block; font-size: 9px; padding: 2px 6px; background: #252525; border: 1px solid #3a3a3a; color: #999; border-radius: 2px; margin-right: 4px; margin-bottom: 2px; }
+.insp-histogram-title { font-size: 9px; color: #666; margin: 6px 0 3px 0; }
+.histogram { height: 60px; background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 2px; margin-bottom: 4px; display: flex; align-items: flex-end; padding: 4px; gap: 2px; }
+.histogram-bar { flex: 1; background: linear-gradient(to top, #2a5a2a, #5a9fd4); border-radius: 1px; min-height: 1px; }
+.histogram-foot { display: flex; justify-content: space-between; font-size: 9px; color: #666; margin-bottom: 6px; }
+.histogram-foot .oor { color: #f5a623; }
+.insp-cell-title { font-size: 11px; color: #5a9fd4; margin: 6px 0 4px 0; }
+.insp-details-section td { background: #1a1a1a; color: #888; font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; }
+.layer-search { margin-bottom: 8px; }
+.layer-search input {
+  width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; color: #ccc;
+  font-family: inherit; font-size: 10px; padding: 4px 6px; border-radius: 2px; outline: none;
+}
+.layer-search input:focus { border-color: #5a9fd4; }
+.layer-group { margin-bottom: 10px; }
+.layer-group-header {
+  font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 4px 6px; background: #1a1a1a; border-radius: 2px; margin-bottom: 4px;
+}
+.layer-item {
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px;
+  font-size: 10px; color: #999; cursor: pointer; position: relative;
+}
+.layer-item:hover { color: #ccc; background: #1a1a1a; }
+.layer-radio, .layer-checkbox {
+  width: 12px; height: 12px; border: 1px solid #3a3a3a; background: #0f0f0f; flex-shrink: 0;
+}
+.layer-radio { border-radius: 50%; }
+.layer-checkbox { border-radius: 2px; }
+.layer-radio.active { border-color: #5a9fd4; background: #5a9fd4; position: relative; }
+.layer-radio.active::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 4px; height: 4px; background: #fff; border-radius: 50%;
+}
+.layer-checkbox.checked { background: #5a9fd4; border-color: #5a9fd4; position: relative; }
+.layer-checkbox.checked::after { content: '✓'; position: absolute; top: -2px; left: 1px; color: #fff; font-size: 10px; }
+.layer-num { width: 8px; color: #555; font-size: 9px; text-align: right; flex-shrink: 0; }
+.layer-label { flex: 1; }
+.layer-item .info-icon { margin-left: 6px; }
+.cl-nodata { padding: 8px 6px; font-size: 11px; color: #888; font-style: italic; text-align: center; border: 1px dashed #333; margin-top: 6px; }
+.layer-hotkey { font-size: 9px; color: #5a9fd4; border: 1px solid #2a3a50; background: #1a2530; padding: 0 4px; border-radius: 2px; }
+.cl-legend .card-header {
+  background: #1f1f1f; padding: 6px 10px; font-size: 10px; color: #aaa; font-weight: 600;
+  letter-spacing: 0.5px; border-bottom: 1px solid #2a2a2a;
+}
+.cl-legend .legend-strip { padding: 8px; background: #0f0f0f; }
+.legend-strip { display: flex; flex-direction: column; gap: 4px; }
+.legend-ramp { height: 20px; border-radius: 2px; border: 1px solid #2a2a2a; }
+.legend-labels { display: flex; justify-content: space-between; font-size: 9px; color: #666; }
+.legend-unit { font-size: 9px; color: #777; }
+.legend-range { font-size: 9px; color: #999; margin-top: 4px; }
+.legend-swatch { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #999; }
+.legend-swatch-box { width: 12px; height: 12px; border: 1px solid #2a2a2a; border-radius: 2px; flex-shrink: 0; }
+.cl-hover { margin-top: 6px; }
+.cl-hover-cell { font-size: 9px; color: #666; }
+.cl-hover-value { font-size: 12px; color: #d4d4d4; margin: 2px 0 4px 0; }
+.cl-hover .vt { position: static; width: auto; max-width: none; box-shadow: none; }
 
 /* Desc */
 .desc { font-size: 10px; color: #434343; margin-bottom: 7px; font-style: italic; line-height: 1.4; }
@@ -301,25 +522,86 @@ body {
 }
 .btn-unlock:hover { color: #eab308; border-color: #6a5000; }
 
-/* ── Phase 2: Command strip ── */
-.command-strip {
-  border-top: 1px solid #222;
-  padding: 5px 10px;
-  display: flex; align-items: center; gap: 6px;
-  flex-shrink: 0; background: #141414;
-}
-.cmd-prefix { font-size: 11px; color: #3a3a3a; flex-shrink: 0; }
-.cmd-input {
-  flex: 1; min-width: 0;
-  background: transparent; border: none;
-  color: #9a9a9a; font-family: inherit; font-size: 11px;
-  padding: 0; outline: none;
-}
-.cmd-input:focus        { color: #c8c8c8; }
-.cmd-input::placeholder { color: #2a2a2a; }
-.cmd-result { font-size: 10px; flex-shrink: 0; color: #333; }
-.cmd-result.ok  { color: #3a7a3a; }
-.cmd-result.err { color: #7a3a3a; }
+/* -- Console: Log view + command strip (panel-console) -- */
+.log-view { flex-shrink: 0; border-top: 1px solid #222; background: #141414; }
+.log-hdr { display: flex; align-items: center; gap: 8px; padding: 5px 10px; cursor: pointer; }
+.log-hdr:hover { background: #1a1a1a; }
+.log-arrow { width: 10px; font-size: 9px; color: #3a3a3a; }
+.log-view.open .log-arrow::after { content: '\25BC'; } .log-view.closed .log-arrow::after { content: '\25B6'; }
+.log-title { font-size: 10px; letter-spacing: 1.2px; font-weight: 700; color: #6b7280; flex: 1; }
+.log-count { font-size: 10px; color: #333; }
+.log-filters { display: flex; gap: 4px; }
+.flt { font-family: inherit; font-size: 9px; padding: 2px 7px; border: 1px solid #2d2d2d; background: transparent; color: #555; cursor: pointer; }
+.flt:hover { background: #1a1a1a; color: #888; }
+.flt.active { border-color: #5a9fd4; color: #5a9fd4; }
+.flt[data-lvl=WARN].active { border-color: #c8882a; color: #c8882a; }
+.flt[data-lvl=ERROR].active { border-color: #c03030; color: #c03030; }
+.log-view.closed .log-body, .log-view.closed .log-filters { display: none; }
+.log-body { height: 150px; overflow-y: auto; background: #0f0f0f; border-top: 1px solid #1e1e1e; padding: 2px 0; user-select: text; cursor: text; }
+.log-body * { user-select: text; }
+.log-line { display: flex; gap: 7px; padding: 1px 10px; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.log-line:nth-child(odd) { background: #121212; }
+.log-ts { color: #3a3a3a; flex-shrink: 0; }
+.badge { width: 38px; text-align: center; font-size: 9px; font-weight: 700; flex-shrink: 0; line-height: 1.6; border: 1px solid; }
+.badge.INFO { color: #4a7a9a; border-color: #1f3340; } .badge.WARN { color: #c8882a; border-color: #4a3410; } .badge.ERROR { color: #c03030; border-color: #4a1a1a; }
+.log-ch { color: #6a6a8a; width: 78px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+.log-msg { color: #8a8a8a; overflow: hidden; text-overflow: ellipsis; }
+.log-line.ERROR .log-msg { color: #b05050; } .log-line.WARN .log-msg { color: #a88040; }
+.log-empty { padding: 10px; color: #3a3a3a; font-style: italic; text-align: center; font-size: 11px; }
+
+/* Command strip (upgraded) */
+.command-strip { position: relative; border-top: 1px solid #222; padding: 5px 10px 4px; flex-shrink: 0; background: #141414; }
+.cmd-row { display: flex; align-items: center; gap: 6px; }
+.cmd-prefix { font-size: 11px; color: #3a3a3a; }
+.cmd-input { flex: 1; min-width: 0; background: transparent; border: none; color: #9a9a9a; font-family: inherit; font-size: 11px; outline: none; }
+.cmd-input:focus { color: #c8c8c8; } .cmd-input::placeholder { color: #2a2a2a; }
+.cmd-counter { font-size: 9px; color: #7a6a2a; display: none; } .cmd-counter.warn { display: inline; } .cmd-counter.max { color: #c03030; }
+.cmd-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 3px; min-height: 14px; font-size: 10px; }
+.cmd-result { color: #333; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cmd-result .echo { color: #666; }
+.cmd-result .code { font-weight: 700; margin-left: 6px; }
+.cmd-result .code.ok { color: #3a9a5a; } .cmd-result .code.err { color: #c03030; }
+.cmd-hint { color: #2e2e2e; flex-shrink: 0; } .cmd-hint kbd { font-family: inherit; color: #555; border: 1px solid #2a2a2a; padding: 0 3px; font-size: 9px; }
+.ac { position: absolute; left: 10px; right: 10px; bottom: 100%; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 -4px 12px rgba(0,0,0,.5); display: none; z-index: 5; }
+.ac.show { display: block; }
+.ac-item { display: flex; gap: 10px; padding: 3px 8px; font-size: 11px; color: #7a7a7a; cursor: pointer; }
+.ac-item.sel { background: #243447; color: #d4d4d4; }
+.ac-item .nm { flex-shrink: 0; } .ac-item .ds { color: #3f3f3f; font-size: 10px; margin-left: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ac-item.sel .ds { color: #6a7a8a; }
+.ac-item mark { background: none; color: #5a9fd4; font-weight: 700; text-decoration: underline; }
+.ac-foot { padding: 2px 8px; font-size: 9px; color: #3a3a3a; border-top: 1px solid #262626; }
+.ac-foot kbd { font-family: inherit; color: #666; border: 1px solid #2a2a2a; padding: 0 3px; }
+
+/* -- Palette overlay (panel-palette; approved mockup debug-palette.html) -- */
+.domain.flash { background: #25303d; box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(90,159,212,.35); }
+#pal-overlay { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,.55); display: none; z-index: 10; justify-content: center; align-items: flex-start; padding-top: 70px; }
+#pal-overlay.show { display: flex; }
+.pal { width: 460px; max-height: 70vh; background: #1b1b1b; border: 1px solid #3a3a3a; box-shadow: 0 10px 30px rgba(0,0,0,.7); display: flex; flex-direction: column; }
+.pal-input { background: #0d0d0d; border: none; border-bottom: 1px solid #2d2d2d; color: #d4d4d4; font-family: inherit; font-size: 13px; padding: 9px 12px; outline: none; }
+.pal-input:focus { border-bottom-color: #5a9fd4; } .pal-input::placeholder { color: #3a3a3a; }
+.pal-tabs { display: flex; border-bottom: 1px solid #262626; background: #161616; }
+.pal-tab { padding: 5px 12px; font-size: 10px; color: #555; cursor: pointer; border-bottom: 2px solid transparent; }
+.pal-tab:hover { color: #999; } .pal-tab.active { color: #5a9fd4; border-bottom-color: #5a9fd4; }
+.pal-tab .n { color: #3a3a3a; margin-left: 4px; } .pal-tab.active .n { color: #4a7a9a; }
+.pal-list { overflow-y: auto; flex: 1; min-height: 60px; scrollbar-width: thin; scrollbar-color: #2d2d2d transparent; }
+.pal-row { display: flex; align-items: center; gap: 9px; padding: 6px 12px; cursor: pointer; border-left: 2px solid transparent; }
+.pal-row.sel { background: #243447; border-left-color: #5a9fd4; }
+.pal-type { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid; }
+.pal-type.command { color: #5a9fd4; border-color: #1f3a52; background: #101a24; } .pal-type.domain { color: #10b981; border-color: #124a38; background: #0e1b17; }
+.pal-info { flex: 1; min-width: 0; }
+.pal-nm { font-size: 12px; color: #b0b0b0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-ds { font-size: 10px; color: #4a4a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.pal-row.sel .pal-ds { color: #7a8a9a; }
+.pal-args { margin-top: 3px; font-size: 10px; color: #5a5a5a; }
+.pal-arg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pal-arg-nm { color: #8a8a8a; } .pal-arg-nm.req { color: #c9a26b; }
+.pal-arg-meta { color: #4f6f8a; } .pal-arg-ds { color: #4a4a4a; }
+.pal-cat { font-size: 9px; color: #6a6a6a; border: 1px solid #2a2a2a; padding: 1px 6px; flex-shrink: 0; letter-spacing: .5px; }
+.pal mark { background: none; color: #f0c040; font-weight: 700; }
+.pal-empty { padding: 22px 12px; text-align: center; color: #3a3a3a; font-style: italic; font-size: 11px; }
+.pal-foot { border-top: 1px solid #262626; background: #161616; padding: 5px 12px; font-size: 9px; color: #444; display: flex; gap: 12px; }
+.pal-foot .tot { margin-left: auto; }
+.pal-foot kbd { font-family: inherit; color: #777; border: 1px solid #2d2d2d; padding: 0 4px; background: #181818; }
 
 /* ── Stats mini-table (IK2D chains, Animation2D layers, etc.) ── */
 .st-table { width: 100%; margin: 5px 0 2px 0; }
@@ -364,11 +646,30 @@ body {
     <button class="btn-unlock" id="btn-unlock" style="display:none" onclick="onUnlockClick()">&#x2715;</button>
   </div>
 
+  <div class="log-view open" id="log-view">
+    <div class="log-hdr" id="log-hdr"><span class="log-arrow"></span><span class="log-title">LOG</span><span class="log-count" id="log-count"></span>
+      <div class="log-filters" id="log-filters">
+        <button class="flt active" data-lvl="ALL">All</button><button class="flt" data-lvl="INFO">Info</button>
+        <button class="flt" data-lvl="WARN">Warn</button><button class="flt" data-lvl="ERROR">Error</button></div></div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
   <div class="command-strip">
-    <span class="cmd-prefix">&gt;</span>
-    <input class="cmd-input" id="cmd-input" type="text" placeholder="debug.layer.enable…"
-           onfocus="pushUIOnlyMode()" onblur="popInputMode()">
-    <span class="cmd-result" id="cmd-result"></span>
+    <div class="ac" id="ac"></div>
+    <div class="cmd-row"><span class="cmd-prefix">&gt;</span>
+      <input class="cmd-input" id="cmd-input" type="text" maxlength="240" spellcheck="false" autocomplete="off" placeholder="debug.layer.enable…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <span class="cmd-counter" id="cmd-counter"></span></div>
+    <div class="cmd-meta"><span class="cmd-result" id="cmd-result"></span>
+      <span class="cmd-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> history &nbsp;<kbd>Tab</kbd> complete &nbsp;<kbd>Ctrl+P</kbd> palette</span></div>
+  </div>
+
+  <div id="pal-overlay">
+    <div class="pal">
+      <input class="pal-input" id="pal-input" type="text" maxlength="60" autocomplete="off" spellcheck="false" placeholder="Search commands and domains…" onfocus="pushUIOnlyMode()" onblur="popInputMode()">
+      <div class="pal-tabs" id="pal-tabs"></div>
+      <div class="pal-list" id="pal-list"></div>
+      <div class="pal-foot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> select</span><span><kbd>Tab</kbd> tab</span><span><kbd>Esc</kbd> close</span><span class="tot" id="pal-tot"></span></div>
+    </div>
   </div>
 
 </div>
@@ -393,6 +694,10 @@ var ui = {
   groupOpen:   {},   // groupKey  -> bool
   domainOpen:  {},   // domainId  -> bool
   structureSig: null,
+  layerFilter: '',   // cell layer viewer search text
+  queryText: '',     // cell layer viewer query box text (page session only)
+  queryRecent: [],   // last 10 run queries, newest first
+  queryTimer: null,  // pending debounced query_check
   activeSlider: null // control element currently being dragged
 };
 
@@ -421,19 +726,408 @@ function domainsOf(data) {
     if (!d || typeof d !== 'object') continue;
     out.push({
       id:      d._displayName || name,
+      cmdId:   d._id || d._displayName || name,   // registry id: what app.onCommand / FindDomain expect (state is keyed by display name)
       group:   d._group || 'CoreDebug',
       desc:    d._description || '',
       accent:  d._accent || '',
       drawers: Array.isArray(d.drawers) ? d.drawers : [],
       stats:   (d.stats && typeof d.stats === 'object') ? d.stats : {},
-      controls: Array.isArray(d.controls) ? d.controls : []
+      controls: Array.isArray(d.controls) ? d.controls : [],
+      viewer:  isViewerState(d) ? d : null,
+      history: isHistoryState(d) ? d : null
     });
   }
   out.sort(function (a, b) { return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0); });
   return out;
 }
 
+// ── Cell History (DiaCellHistory F2): timeline card, not-live banner, untracked / evicted notices ──
+// State from CellHistoryDomain (the typed TimelineCardState card): {available, baseLayer, banner{visible,state,layer,sample,label,
+// firstRetained}, history{mode,sample,label}|null, timeline{range{first,latest,count}, position{mode,sample}, liveMarker, buckets[{first,last,
+// events,colour,types}], bandTicks[{sample,band,name}], gaps{aggregate,cell,event}, preWindowDim{first,last}|null, sparkline[{first,last,value|null}]}}.
+// The page only sends commands to the history domain (same executors as cells.history.*): view {sample}, live {}, step {n, band?},
+// event {direction}, track {layer}. The viewer card shows the banner and notices from this state; it never computes history itself.
+
+function isHistoryState(d) {
+  return !!d && typeof d === 'object' && !!d.timeline && typeof d.timeline === 'object' && !!d.banner && typeof d.banner === 'object';
+}
+
+function histPct(n, latest) {
+  if (!(latest > 0)) return 0;
+  var p = Number(n) / latest * 100;
+  return p < 0 ? 0 : (p > 100 ? 100 : p);
+}
+
+function histHead(hist) {
+  var r = hist.timeline.range || {};
+  return Number(r.latest) || 0;
+}
+
+function histHeadlineStat(hist) {
+  return hist.banner.visible && hist.banner.sample !== null && hist.banner.sample !== undefined ? 'sample ' + hist.banner.sample : 'live';
+}
+
+function buildHistoryCard(domain) {
+  var cmdId = domain.cmdId;
+  var root = el('div', 'cl-tl is-live');
+  root.setAttribute('data-role', 'history-timeline');
+
+  var head = el('div', 'tl-head');
+  head.appendChild(el('span', 'tl-title', 'TIMELINE'));
+  var lay = el('span', '', 'base layer: ');
+  var layName = el('span', 'tl-layer', '');
+  layName.setAttribute('data-role', 'tl-layer');
+  lay.appendChild(layName);
+  lay.appendChild(document.createTextNode(' (world mean)'));
+  head.appendChild(lay);
+  var legend = el('div', 'tl-legend');
+  var dens = el('span', '', 'density ');
+  var densBars = el('span', 'density');
+  var hs = [4, 7, 11, 15];
+  for (var hi = 0; hi < hs.length; ++hi) { var bar = el('b', ''); bar.style.height = hs[hi] + 'px'; densBars.appendChild(bar); }
+  dens.appendChild(densBars);
+  dens.appendChild(document.createTextNode(' events/bucket'));
+  legend.appendChild(dens);
+  var lg = [['aggregates evicted', 'repeating-linear-gradient(135deg,#e74c3c 0 2px,transparent 2px 4px)'],
+            ['events evicted', 'repeating-linear-gradient(135deg,#f5a623 0 2px,transparent 2px 4px)'],
+            ['no per-cell data', '#000;border:1px solid #5a9fd4']];
+  for (var li = 0; li < lg.length; ++li) {
+    var item = el('span', '');
+    var sw = el('i', '');
+    sw.setAttribute('style', 'background:' + lg[li][1]);
+    item.appendChild(sw);
+    item.appendChild(document.createTextNode(lg[li][0]));
+    legend.appendChild(item);
+  }
+  head.appendChild(legend);
+  root.appendChild(head);
+
+  var plot = el('div', 'tl-plot');
+  plot.setAttribute('data-role', 'tl-plot');
+  plot.setAttribute('title', 'Drag to scrub (cells.history.view)');
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'tl-spark');
+  svg.setAttribute('viewBox', '0 0 1000 32');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('data-role', 'tl-spark');
+  plot.appendChild(svg);
+  var under = el('div', '');          // dim + gaps (rebuilt with the data)
+  under.setAttribute('data-role', 'tl-under');
+  plot.appendChild(under);
+  var lane = el('div', 'tl-lane');
+  lane.setAttribute('data-role', 'tl-lane');
+  lane.appendChild(el('div', 'tl-lane-track'));
+  var laneDyn = el('div', '');        // band ticks + event ticks (rebuilt with the data)
+  laneDyn.setAttribute('data-role', 'tl-lane-dyn');
+  lane.appendChild(laneDyn);
+  plot.appendChild(lane);
+  var lm = el('div', 'tl-livemark');
+  lm.appendChild(el('span', '', 'LIVE head'));
+  plot.appendChild(lm);
+  var thumb = el('div', 'tl-thumb');
+  thumb.setAttribute('data-role', 'tl-thumb');
+  var tag = el('span', 'tl-thumb-tag', '');
+  tag.setAttribute('data-role', 'tl-thumb-tag');
+  thumb.appendChild(tag);
+  plot.appendChild(thumb);
+  root.appendChild(plot);
+
+  function sampleAt(e) {
+    var rect = plot.getBoundingClientRect();
+    var w = rect.width || 1;
+    var f = (e.clientX - rect.left) / w;
+    f = f < 0 ? 0 : (f > 1 ? 1 : f);
+    return Math.round(f * (root._latest || 0));
+  }
+  function scrubTo(e) {
+    var s = sampleAt(e);
+    if (root._lastSent === s) return;
+    root._lastSent = s;
+    sendCommand(cmdId, 'view', { sample: s });
+  }
+  plot.addEventListener('mousedown', function (e) { e.stopPropagation(); root._drag = true; root._lastSent = -1; scrubTo(e); });
+  plot.addEventListener('mousemove', function (e) { if (root._drag) { e.stopPropagation(); scrubTo(e); } });
+  var endDrag = function () { root._drag = false; };
+  plot.addEventListener('mouseup', endDrag);
+  plot.addEventListener('mouseleave', endDrag);
+  document.addEventListener('mouseup', endDrag);
+
+  var controls = el('div', 'tl-controls');
+  var defs = [
+    ['step-band-back', '⏮ −band', 'cells.history.step -band', function () { return ['step', { n: -1, band: root._topBand }]; }],
+    ['step-back', '◀ −1', 'cells.history.step -1', function () { return ['step', { n: -1 }]; }],
+    ['step-fwd', '+1 ▶', 'cells.history.step +1', function () { return ['step', { n: 1 }]; }],
+    ['step-band-fwd', '+band ⏭', 'cells.history.step +band', function () { return ['step', { n: 1, band: root._topBand }]; }],
+    null,
+    ['event-prev', '◀ event', 'cells.history.event prev', function () { return ['event', { direction: 'prev' }]; }, 'ev-prev'],
+    ['event-next', 'event ▶', 'cells.history.event next', function () { return ['event', { direction: 'next' }]; }, 'ev-next']
+  ];
+  for (var di = 0; di < defs.length; ++di) {
+    if (!defs[di]) { controls.appendChild(el('span', 'tl-sep')); continue; }
+    var b = el('button', 'tl-btn' + (defs[di][4] ? ' ' + defs[di][4] : ''), defs[di][1]);
+    b.setAttribute('type', 'button');
+    b.setAttribute('data-act', defs[di][0]);
+    b.setAttribute('title', defs[di][2]);
+    (function (make) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var c = make();
+        if (c[1].band === undefined) delete c[1].band;
+        sendCommand(cmdId, c[0], c[1]);
+      });
+    })(defs[di][3]);
+    controls.appendChild(b);
+  }
+  var pos = el('span', 'tl-pos', '');
+  pos.setAttribute('data-role', 'tl-pos');
+  controls.appendChild(pos);
+  var live = el('button', 'tl-btn live-btn', 'Back to live');
+  live.setAttribute('type', 'button');
+  live.setAttribute('data-act', 'live');
+  live.setAttribute('title', 'cells.history.live');
+  live.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'live', {}); });
+  controls.appendChild(live);
+  root.appendChild(controls);
+
+  var info = el('div', 'tl-info', '');
+  info.setAttribute('data-role', 'tl-info');
+  root.appendChild(info);
+  return root;
+}
+
+function histEventPx(count) { return Math.min(20, 5 + 3.5 * count); }
+
+function renderHistoryData(root, hist) {
+  var tl = hist.timeline;
+  var latest = histHead(hist);
+  root._latest = latest;
+  var under = root.querySelector('[data-role="tl-under"]');
+  var laneDyn = root.querySelector('[data-role="tl-lane-dyn"]');
+  var svg = root.querySelector('[data-role="tl-spark"]');
+  under.innerHTML = '';
+  laneDyn.innerHTML = '';
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  var dim = tl.preWindowDim;
+  if (dim && typeof dim === 'object') {
+    var dw = el('div', 'tl-dim');
+    dw.setAttribute('data-role', 'tl-dim');
+    dw.style.width = histPct(Number(dim.last) + 1, latest) + '%';
+    dw.appendChild(el('span', 'tl-dim-label', 'no per-cell data before sample ' + (Number(dim.last) + 1)));
+    under.appendChild(dw);
+  }
+  var gaps = tl.gaps || {};
+  var aggs = Array.isArray(gaps.aggregate) ? gaps.aggregate : [];
+  for (var a = 0; a < aggs.length; ++a) {
+    var ga = el('div', 'tl-gap');
+    ga.setAttribute('data-role', 'tl-gap-aggregate');
+    ga.style.left = histPct(aggs[a].first, latest) + '%';
+    ga.style.width = Math.max(0.5, histPct(Number(aggs[a].last) + 1, latest) - histPct(aggs[a].first, latest)) + '%';
+    under.appendChild(ga);
+    if (a === 0) {
+      var gl = el('div', 'tl-gap-label', 'aggregates evicted');
+      gl.style.left = histPct(aggs[a].first, latest) + '%'; gl.style.top = '2px'; gl.style.color = '#e74c3c'; gl.style.marginLeft = '4px';
+      under.appendChild(gl);
+    }
+  }
+  var evg = Array.isArray(gaps.event) ? gaps.event : [];
+  for (var g = 0; g < evg.length; ++g) {
+    var ge = el('div', 'tl-gap events');
+    ge.setAttribute('data-role', 'tl-gap-event');
+    ge.style.left = histPct(evg[g].first, latest) + '%';
+    ge.style.width = Math.max(0.5, histPct(Number(evg[g].last) + 1, latest) - histPct(evg[g].first, latest)) + '%';
+    under.appendChild(ge);
+    if (g === 0) {
+      var gl2 = el('div', 'tl-gap-label', 'events evicted');
+      gl2.style.left = '4px'; gl2.style.top = '42px'; gl2.style.color = '#f5a623';
+      under.appendChild(gl2);
+    }
+  }
+
+  var ticks = Array.isArray(tl.bandTicks) ? tl.bandTicks : [];
+  var top = -1;
+  for (var t = 0; t < ticks.length; ++t) if (ticks[t].band > top) top = ticks[t].band;
+  root._topBand = top >= 0 ? top : undefined;
+  for (var k = 0; k < ticks.length; ++k) {
+    var major = ticks[k].band === top;
+    var bt = el('div', 'tl-band' + (major ? ' major' : ''));
+    bt.setAttribute('data-role', 'tl-band');
+    bt.style.left = histPct(ticks[k].sample, latest) + '%';
+    laneDyn.appendChild(bt);
+    if (major && ticks[k].name) {
+      var bl = el('div', 'tl-band-label major', ticks[k].name);
+      bl.style.left = histPct(ticks[k].sample, latest) + '%';
+      laneDyn.appendChild(bl);
+    }
+  }
+
+  var buckets = Array.isArray(tl.buckets) ? tl.buckets : [];
+  for (var bi = 0; bi < buckets.length; ++bi) {
+    var bk = buckets[bi];
+    if (!(bk.events > 0)) continue;
+    var mid = (Number(bk.first) + Number(bk.last)) / 2;
+    var ev = el('div', 'tl-ev');
+    ev.setAttribute('data-role', 'tl-event');
+    ev.style.left = histPct(mid, latest) + '%';
+    ev.style.height = histEventPx(bk.events) + 'px';
+    ev.style.background = viewerRgb(bk.colour);
+    ev.style.opacity = String(Math.min(1, 0.45 + 0.1 * bk.events));
+    ev.style.width = (bk.events >= 3 ? 3 : 2) + 'px';
+    ev.setAttribute('title', bk.events + ' event' + (bk.events === 1 ? '' : 's') + ' near sample ' + Math.round(mid));
+    laneDyn.appendChild(ev);
+  }
+
+  var spark = Array.isArray(tl.sparkline) ? tl.sparkline : [];
+  var mn = Infinity, mx = -Infinity;
+  for (var s = 0; s < spark.length; ++s) {
+    if (spark[s].value === null || spark[s].value === undefined) continue;
+    if (spark[s].value < mn) mn = spark[s].value;
+    if (spark[s].value > mx) mx = spark[s].value;
+  }
+  var d = '', pen = false;
+  for (var p = 0; p < spark.length; ++p) {
+    var v = spark[p].value;
+    if (v === null || v === undefined) { pen = false; continue; }
+    var x = histPct((Number(spark[p].first) + Number(spark[p].last)) / 2, latest) * 10;
+    var y = mx > mn ? 30 - (v - mn) / (mx - mn) * 28 : 16;
+    d += (pen ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    pen = true;
+  }
+  if (d) {
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+  }
+
+  var info = root.querySelector('[data-role="tl-info"]');
+  var first = dim && typeof dim === 'object' ? Number(dim.last) + 1 : 0;
+  info.textContent = 'per-cell window: sample ' + first + '–' + latest + ' · ' + buckets.length + ' buckets · sparkline: ' + spark.length + ' points';
+}
+
+function refreshHistory(card, hist) {
+  var root = card.querySelector('[data-role="history-timeline"]');
+  if (!root) return;
+  var tl = hist.timeline;
+  var latest = histHead(hist);
+  var dataKey = [hist.baseLayer, tl.range && tl.range.count, tl.range && tl.range.latest, JSON.stringify(tl.gaps || {}), JSON.stringify(tl.preWindowDim || null),
+                 (tl.buckets || []).length, (tl.sparkline || []).length, (tl.bandTicks || []).length].join('|');
+  if (root._dataKey !== dataKey) { root._dataKey = dataKey; renderHistoryData(root, hist); }
+  root._latest = latest;
+
+  var pos = tl.position || {};
+  var live = pos.mode !== 'sample';
+  root.classList.toggle('is-live', live);
+  var sample = live ? latest : Number(pos.sample) || 0;
+  var thumb = root.querySelector('[data-role="tl-thumb"]');
+  thumb.style.left = histPct(sample, latest) + '%';
+  thumb.classList.toggle('flip', histPct(sample, latest) > 80);
+  root.querySelector('[data-role="tl-thumb-tag"]').textContent = live ? 'LIVE ' + sample : String(sample);
+  root.querySelector('[data-role="tl-layer"]').textContent = hist.baseLayer || '';
+  var label = hist.banner.label ? ' · ' + hist.banner.label : '';
+  var posEl = root.querySelector('[data-role="tl-pos"]');
+  posEl.textContent = '';
+  if (tl.range && tl.range.count > 0) {
+    if (live) {
+      posEl.appendChild(document.createTextNode('Following sim '));
+      posEl.appendChild(el('span', 'dim', '· head = sample ' + latest + (hist.banner.label ? ' (' + hist.banner.label + ')' : '')));
+    } else {
+      posEl.appendChild(document.createTextNode('Sample '));
+      posEl.appendChild(el('b', '', String(sample)));
+      posEl.appendChild(el('span', 'dim', ' / ' + latest + label));
+    }
+  } else {
+    posEl.appendChild(el('span', 'dim', 'No samples recorded yet'));
+  }
+  var bandBtns = root.querySelectorAll('[data-act="step-band-back"], [data-act="step-band-fwd"]');
+  for (var i = 0; i < bandBtns.length; ++i) bandBtns[i].disabled = (root._topBand === undefined);
+}
+
+// Banner + notices on the cell-layer viewer card, driven by the history domain's state (no history domain: nothing shown).
+function applyHistoryToViewer(domains) {
+  var hist = null, histCmd = '';
+  for (var i = 0; i < domains.length; ++i) if (domains[i].history) { hist = domains[i].history; histCmd = domains[i].cmdId; break; }
+  for (var j = 0; j < domains.length; ++j) {
+    if (!domains[j].viewer) continue;
+    var card = document.querySelector('.domain[data-domain="' + cssEscape(domains[j].id) + '"]');
+    var root = card && card.querySelector('[data-role="cell-layer-viewer"]');
+    if (!root) continue;
+    var banner = root.querySelector('[data-role="history-banner"]');
+    var notice = root.querySelector('[data-role="history-notice"]');
+    var b = hist && hist.banner;
+    if (!b || !b.visible) {
+      if (banner) banner.parentNode.removeChild(banner);
+      if (notice) notice.parentNode.removeChild(notice);
+      var stale = root.querySelector('.sample-badge');
+      if (stale) stale.parentNode.removeChild(stale);
+      continue;
+    }
+    var key = JSON.stringify([b.state, b.layer, b.sample, b.label, b.firstRetained]);
+    if (!banner || banner._key !== key) {
+      if (banner) banner.parentNode.removeChild(banner);
+      if (notice) notice.parentNode.removeChild(notice);
+      banner = el('div', 'cl-hist-banner');
+      banner.setAttribute('data-role', 'history-banner');
+      banner._key = key;
+      var msg = el('span', '');
+      msg.appendChild(document.createTextNode('Viewing sample '));
+      msg.appendChild(el('b', '', String(b.sample)));
+      if (b.label) {
+        msg.appendChild(document.createTextNode(' ('));
+        msg.appendChild(el('b', '', b.label));
+        msg.appendChild(document.createTextNode(')'));
+      }
+      msg.appendChild(document.createTextNode(' — not live'));
+      banner.appendChild(msg);
+      if (b.state === 'untracked') banner.appendChild(el('span', 'vb-extra', '· ' + b.layer + ' has no per-cell history'));
+      else if (b.state === 'evicted') banner.appendChild(el('span', 'vb-extra', '· per-cell data evicted'));
+      var lb = el('button', 'live-btn', 'Back to live');
+      lb.setAttribute('type', 'button');
+      lb.setAttribute('data-act', 'live');
+      lb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(histCmd, 'live', {}); });
+      banner.appendChild(lb);
+      root.insertBefore(banner, root.firstChild);
+
+      if (b.state === 'untracked' || b.state === 'evicted') {
+        notice = el('div', 'cl-hist-notice ' + b.state);
+        notice.setAttribute('data-role', 'history-notice');
+        if (b.state === 'untracked') {
+          notice.appendChild(el('h4', '', 'No per-cell history for ' + b.layer));
+          notice.appendChild(document.createTextNode(b.layer + ' is not tracked, so there is no per-cell data for sample ' + b.sample +
+            '. Live values are never shown while scrubbed. World aggregates are still on the timeline.'));
+          notice.appendChild(document.createElement('br'));
+          var tb = el('button', 'track-btn', 'Track this layer');
+          tb.setAttribute('type', 'button');
+          tb.setAttribute('data-act', 'track');
+          tb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(histCmd, 'track', { layer: b.layer }); });
+          notice.appendChild(tb);
+          notice.appendChild(el('div', 'runs', 'runs: cells.history.track ' + b.layer));
+        } else {
+          notice.appendChild(el('h4', '', 'Per-cell data evicted'));
+          notice.appendChild(document.createTextNode('Sample ' + b.sample + (b.label ? ' (' + b.label + ')' : '') +
+            ' is older than the per-cell window, which now starts at sample ' + b.firstRetained +
+            '. Aggregates and events for this sample may still exist on the timeline.'));
+        }
+        banner.parentNode.insertBefore(notice, banner.nextSibling);
+      }
+    }
+    var hover = root.querySelector('[data-role="hover"]');
+    var badge = hover && hover.querySelector('.sample-badge');
+    if (hover && hover.firstChild && !badge) {
+      badge = el('span', 'sample-badge', '');
+      badge.setAttribute('data-role', 'sample-badge');
+      hover.insertBefore(badge, hover.firstChild);
+    }
+    if (badge) badge.textContent = 'sample ' + b.sample;
+  }
+}
+
+// A cell-layer viewer state (DiaCellLayers CellLayerViewerDomain) is recognised by shape.
+function isViewerState(d) {
+  return Array.isArray(d.layers) && Array.isArray(d.overlays) && typeof d.activeBase === 'string';
+}
+
 function isDomainEnabled(domain) {
+  if (domain.viewer || domain.history) return true;   // overlays are its drawers; the card is not "off" when none are on
   for (var i = 0; i < domain.drawers.length; ++i) {
     if (domain.drawers[i] && domain.drawers[i].enabled) return true;
   }
@@ -441,6 +1135,8 @@ function isDomainEnabled(domain) {
 }
 
 function headlineStat(domain) {
+  if (domain.history) return histHeadlineStat(domain.history);
+  if (domain.viewer) return domain.viewer.empty ? 'no layers' : 'base: ' + domain.viewer.activeBase;
   for (var k in domain.stats) {
     if (!Object.prototype.hasOwnProperty.call(domain.stats, k)) continue;
     var v = domain.stats[k];
@@ -492,15 +1188,20 @@ function structureSignature(domains) {
   for (var i = 0; i < domains.length; ++i) {
     var d = domains[i];
     var drawers = d.drawers.map(function (x) { return x && x.name ? x.name : '?'; }).join(',');
-    var ctrls   = d.controls.map(function (c) { return c && c.key ? c.key : '?'; }).join(',');
-    parts.push(d.group + '/' + d.id + '[' + drawers + '][' + ctrls + ']');
+    var ctrls   = d.controls.map(function (c) {
+      if (!c) return '?';
+      var id = controlId(c) || '?';
+      return c.schemaKey ? id + '@' + c.schemaKey + (c.packId ? '#' + c.packId : '') : id;
+    }).join(',');
+    parts.push(d.group + '/' + d.id + '@' + d.cmdId + '[' + drawers + '][' + ctrls + ']' + (d.viewer ? viewerSignature(d.viewer) : ''));
   }
-  return parts.join('|');
+  return parts.join('|') + '~' + vs.gen;
 }
 
 // ── Build (structure changed) ─────────────────────────────────────────────
 
 function rebuild(domains) {
+  vtClose();
   var list = document.getElementById('groups-list');
   list.innerHTML = '';
 
@@ -573,7 +1274,7 @@ function el(tag, cls, text) {
 }
 
 function buildDomainCard(domain) {
-  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = false;
+  if (!(domain.id in ui.domainOpen)) ui.domainOpen[domain.id] = !!domain.viewer || !!domain.history;
 
   var enabled = isDomainEnabled(domain);
 
@@ -609,8 +1310,11 @@ function buildDomainCard(domain) {
   var body = el('div', 'domain-body');
   if (domain.desc) body.appendChild(el('div', 'desc', domain.desc));
 
+  if (domain.viewer) body.appendChild(buildViewer(domain));
+  if (domain.history) body.appendChild(buildHistoryCard(domain));
+
   var drawers = el('div', 'drawers');
-  for (var i = 0; i < domain.drawers.length; ++i) {
+  for (var i = 0; !domain.viewer && !domain.history && i < domain.drawers.length; ++i) {   // viewer overlays render as checkboxes below
     var dw = domain.drawers[i];
     if (!dw || !dw.name) continue;
     var row = el('div', 'dr ' + (dw.enabled ? 'on' : 'off'));
@@ -620,7 +1324,7 @@ function buildDomainCard(domain) {
     (function (name) {
       row.addEventListener('click', function (e) {
         e.stopPropagation();
-        sendCommand(domain.id, 'toggle', { drawer: name });
+        sendCommand(domain.cmdId, 'toggle', { drawer: name });
       });
     })(dw.name);
     drawers.appendChild(row);
@@ -634,8 +1338,8 @@ function buildDomainCard(domain) {
   var controls = el('div', 'controls');
   for (var c = 0; c < domain.controls.length; ++c) {
     var ctrlDef = domain.controls[c];
-    if (!ctrlDef || !ctrlDef.key) continue;
-    controls.appendChild(buildControl(domain.id, ctrlDef));
+    if (!ctrlDef || !controlId(ctrlDef) || !isSliderControl(ctrlDef)) continue;
+    controls.appendChild(buildControl(domain.cmdId, ctrlDef));
   }
   body.appendChild(controls);
 
@@ -643,40 +1347,900 @@ function buildDomainCard(domain) {
   return card;
 }
 
+// A control is identified by `key` (legacy providers) or `name` (SchemaControl providers).
+// Only slider controls (the default when `type` is absent) are rendered today.
+function controlId(def) { return (def && (def.key || def.name)) || ''; }
+function isSliderControl(def) { return !def.type || def.type === 'slider'; }
+
 function buildControl(domainId, def) {
+  var rc = resolveControl(def);
   var ctrl = el('div', 'ctrl');
-  ctrl.setAttribute('data-control', def.key);
+  ctrl.setAttribute('data-control', rc.id);
+  if (typeof def.schemaKey === 'string') ctrl.setAttribute('data-schema-key', def.schemaKey);
+  if (rc.decimals !== null) ctrl.setAttribute('data-decimals', String(rc.decimals));
 
-  ctrl.appendChild(el('span', 'ctrl-label', def.label || def.key));
+  ctrl.appendChild(el('span', 'ctrl-label', rc.label));
+  if (rc.entry) ctrl.appendChild(vtBuildIcon(rc, def));
 
+  var track = el('div', 'track');
   var range = document.createElement('input');
   range.type  = 'range';
-  range.min   = (def.min  !== undefined) ? def.min  : 0;
-  range.max   = (def.max  !== undefined) ? def.max  : 1;
-  range.step  = (def.step !== undefined) ? def.step : 0.01;
+  range.min   = rc.min;
+  range.max   = rc.max;
+  range.step  = rc.step;
   range.value = (def.value !== undefined) ? def.value : 0;
+  track.appendChild(range);
 
-  var display = el('span', 'cv', formatValue(range.value));
+  if (rc.hasDefault && rc.max > rc.min) {
+    var frac = (rc.defaultValue - rc.min) / (rc.max - rc.min);
+    frac = Math.max(0, Math.min(1, frac));
+    var tick = el('div', 'dtick');
+    tick.setAttribute('data-role', 'default-tick');
+    tick.style.left = (frac * 100) + '%';
+    track.appendChild(tick);
+  }
+
+  var display = el('span', 'cv', formatValue(range.value, rc.decimals));
 
   range.addEventListener('input', function () {
     ui.activeSlider = range;
-    display.textContent = formatValue(range.value);
+    display.textContent = formatValue(range.value, rc.decimals);
   });
   range.addEventListener('change', function () {
     ui.activeSlider = null;
-    display.textContent = formatValue(range.value);
-    sendCommand(domainId, 'setScale', { key: def.key, value: parseFloat(range.value) });
+    display.textContent = formatValue(range.value, rc.decimals);
+    sendCommand(domainId, 'setScale', { key: rc.id, value: parseFloat(range.value) });
   });
 
-  ctrl.appendChild(range);
+  ctrl.appendChild(track);
   ctrl.appendChild(display);
+  if (rc.entry && def.packId) {
+    var pm = el('span', 'pack-marker', 'pack: ' + def.packId);
+    pm.setAttribute('data-role', 'pack-marker');
+    ctrl.appendChild(pm);
+  }
   return ctrl;
 }
 
-function formatValue(v) {
+// `decimals` (optional, from control or schema ui.decimals) fixes the displayed precision.
+function formatValue(v, decimals) {
   var n = parseFloat(v);
   if (!isFinite(n)) return String(v);
+  if (decimals !== undefined && decimals !== null) return n.toFixed(decimals);
   return (Math.abs(n) >= 10 || n === Math.floor(n)) ? String(n) : n.toFixed(2);
+}
+
+// ── Cell layer viewer card (DiaCellLayers) ────────────────────────────────
+// State from CellLayerViewerDomain: empty, noData, activeBase, layers[{id,label,unit,kind,hotkey,selected,group,
+// groupNumber,description?}], groups[{name,layers[ids]}], overlays[{id,label,enabled}], grids[], gridSelector[] (multi-grid only),
+// legend{available,category,ramp,stops,ticks,unit,seen,swatches}, hover{valid,q,r,label,description,unit,text}.
+// selection{count,tool,group,groups[{id,label,selected}],tooLarge,tooLargeText?}. The page only sends commands (base {id}, grid {index}, toggle {drawer},
+// select_tool {tool}, select_group {layer}, select_clear {}, select_pin {freeze?}, select_unpin {}, inspector_expand {group, expanded}); the domain owns all state.
+// inspector{...}: the Selection Inspector card (see renderInspector). Commands are
+// addressed by the domain's registry id (domain.cmdId, from the state's _id; the card is keyed by display name).
+// Layout/classes follow docs/specs/applications/dia/systems/diacelllayers/mockups/cell-layer-viewer.html.
+
+function viewerSignature(v) {
+  var parts = [v.empty ? 'E' : 'F'];
+  for (var i = 0; i < v.layers.length; ++i) {
+    var l = v.layers[i];
+    parts.push([l.id, l.label, l.group, l.groupNumber, l.hotkey, l.description || ''].join(','));
+  }
+  for (var o = 0; o < v.overlays.length; ++o) parts.push('o:' + v.overlays[o].id + ',' + v.overlays[o].label);
+  if (Array.isArray(v.gridSelector)) {
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gs = v.gridSelector[g];
+      parts.push('g:' + gs.index + ',' + gs.width + ',' + gs.height + ',' + gs.layerCount);
+    }
+  }
+  if (v.selection && Array.isArray(v.selection.groups)) {
+    for (var sg = 0; sg < v.selection.groups.length; ++sg) parts.push('s:' + v.selection.groups[sg].id + ',' + v.selection.groups[sg].label);
+  }
+  return '{' + parts.join(';') + '}';
+}
+
+function viewerRgb(rgba8) {
+  var n = Number(rgba8) >>> 0;   // 0xRRGGBBAA
+  return 'rgb(' + ((n >>> 24) & 255) + ', ' + ((n >>> 16) & 255) + ', ' + ((n >>> 8) & 255) + ')';
+}
+
+function buildSelectionSection(cmdId, s) {
+  var sec = el('div', 'cl-selection');
+  sec.setAttribute('data-role', 'selection');
+  var hdr = el('div', 'selection-header', '');
+  hdr.setAttribute('data-role', 'selection-count');
+  sec.appendChild(hdr);
+
+  var tools = el('div', 'selection-tools');
+  tools.setAttribute('data-role', 'selection-tools');
+  var defs = [['select', 'Select'], ['pan', 'Pan']];
+  for (var i = 0; i < defs.length; ++i) {
+    var tb = el('button', 'tool-btn', defs[i][1]);
+    tb.setAttribute('type', 'button');
+    tb.setAttribute('data-tool', defs[i][0]);
+    (function (tool) {
+      tb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_tool', { tool: tool }); });
+    })(defs[i][0]);
+    tools.appendChild(tb);
+  }
+  var clear = el('button', 'tool-btn', 'Clear');
+  clear.setAttribute('type', 'button');
+  clear.setAttribute('data-role', 'selection-clear');
+  clear.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_clear', {}); });
+  tools.appendChild(clear);
+  sec.appendChild(tools);
+
+  var grp = el('div', 'selection-group');
+  grp.setAttribute('data-role', 'selection-group');
+  grp.appendChild(el('span', '', 'Group'));
+  var sel = document.createElement('select');
+  var groups = Array.isArray(s.groups) ? s.groups : [];
+  for (var g = 0; g < groups.length; ++g) {
+    var opt = document.createElement('option');
+    opt.value = groups[g].id;
+    opt.textContent = groups[g].label || groups[g].id;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('click', function (e) { e.stopPropagation(); });
+  sel.addEventListener('change', function (e) { e.stopPropagation(); sendCommand(cmdId, 'select_group', { layer: sel.value }); });
+  grp.appendChild(sel);
+  sec.appendChild(grp);
+  grp.style.display = groups.length > 0 ? '' : 'none';
+
+  refreshSelection(sec, s);
+  return sec;
+}
+
+function refreshSelection(root, s) {
+  var sec = root.querySelector('[data-role="selection"]') || root;
+  if (!s) return;
+  var n = Number(s.count) || 0;
+  var hdr = sec.querySelector('[data-role="selection-count"]');
+  if (hdr) hdr.textContent = n + (n === 1 ? ' cell selected' : ' cells selected');
+  var btns = sec.querySelectorAll('[data-tool]');
+  for (var i = 0; i < btns.length; ++i) btns[i].classList.toggle('active', btns[i].getAttribute('data-tool') === s.tool);
+  var select = sec.querySelector('[data-role="selection-group"] select');
+  if (select && select.value !== s.group && document.activeElement !== select) select.value = s.group;
+  var banner = sec.querySelector('[data-role="selection-banner"]');
+  if (s.tooLarge && !banner) {
+    banner = el('div', 'cl-banner', '');
+    banner.setAttribute('data-role', 'selection-banner');
+    sec.appendChild(banner);
+  } else if (!s.tooLarge && banner) {
+    banner.parentNode.removeChild(banner);
+    banner = null;
+  }
+  if (banner) banner.textContent = s.tooLargeText || 'Selection too large to outline';
+}
+
+// ── Query box (DiaCellLayers Query, viewer card) ──────────────────────────
+// State "query" (CellLayerViewerDomain): {available, check?{expr, ok, count | error{message,column,length,suggestion?}}, last?{same, from query_run}}.
+// The panel bridge is fire-and-forget (no reply), so the page sends panel commands query_check {e} (debounced) / query_run {e} and renders the outcome
+// the domain pushes back in state. A check outcome is shown only while its expr equals the input (stale guard). Args are capped at 63 chars by the
+// bridge, hence the short key "e"; a longer expression (up to 512 chars) is sent as query_part {i,s} chunks followed by query_check / query_run {n: partCount}.
+// The input text and the recent list are page-session state (ui.*), not persisted.
+var QUERY_DEBOUNCE_MS = 250;
+var QUERY_MAX_RECENT = 10;
+
+var QUERY_MAX_CHARS = 512;
+
+function queryTooLong(text) { return String(text).length > QUERY_MAX_CHARS; }
+
+// Splits text into chunks so every JSON.stringify({i:k,s:chunk}) fits the bridge cap; never splits a surrogate pair. null if it cannot fit.
+function queryParts(text) {
+  var parts = [], pos = 0;
+  while (pos < text.length) {
+    var best = pos;
+    for (var j = pos + 1; j <= text.length; ++j) {
+      if (j < text.length) {
+        var hi = text.charCodeAt(j - 1), lo = text.charCodeAt(j);
+        if (hi >= 0xD800 && hi <= 0xDBFF && lo >= 0xDC00 && lo <= 0xDFFF) continue;
+      }
+      if (JSON.stringify({ i: parts.length, s: text.substring(pos, j) }).length > MAX_ARG_JSON) break;
+      best = j;
+    }
+    if (best === pos) return null;
+    parts.push(text.substring(pos, best));
+    pos = best;
+  }
+  return parts;
+}
+
+function sendQueryCommand(sec, cmd, text) {
+  if (JSON.stringify({ e: text }).length <= MAX_ARG_JSON) { sendCommand(sec._cmdId, cmd, { e: text }); return; }
+  var parts = queryParts(text);
+  if (!parts) return;
+  for (var k = 0; k < parts.length; ++k) sendCommand(sec._cmdId, 'query_part', { i: k, s: parts[k] });
+  sendCommand(sec._cmdId, cmd, { n: parts.length });
+}
+
+function scheduleQueryCheck(sec) {
+  clearTimeout(ui.queryTimer);
+  ui.queryTimer = null;
+  var text = ui.queryText;
+  if (!String(text).trim() || queryTooLong(text)) return;
+  ui.queryTimer = setTimeout(function () {
+    ui.queryTimer = null;
+    if (ui.queryText === text) sendQueryCommand(sec, 'query_check', text);
+  }, QUERY_DEBOUNCE_MS);
+}
+
+function runQuery(sec) {
+  var text = ui.queryText;
+  if (!String(text).trim()) return;
+  clearTimeout(ui.queryTimer);
+  ui.queryTimer = null;
+  if (queryTooLong(text)) { refreshQueryBox(sec); return; }
+  sendQueryCommand(sec, 'query_run', text);
+  var r = ui.queryRecent;
+  for (var i = r.length - 1; i >= 0; --i) if (r[i] === text) r.splice(i, 1);
+  r.unshift(text);
+  if (r.length > QUERY_MAX_RECENT) r.length = QUERY_MAX_RECENT;
+  refreshQueryBox(sec);
+}
+
+function setQueryText(sec, text) {
+  var input = sec.querySelector('[data-role="query-input"]');
+  ui.queryText = text;
+  if (input) input.value = text;
+  scheduleQueryCheck(sec);
+  refreshQueryBox(sec);
+}
+
+function buildQuerySection(cmdId, q) {
+  var sec = el('div', 'query-field');
+  sec.setAttribute('data-role', 'query');
+  sec._cmdId = cmdId;
+  sec._q = q;
+  var row = el('div', 'query-row');
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'query-input';
+  input.placeholder = 'Query, e.g. temp > 3 and biome == water';
+  input.setAttribute('data-role', 'query-input');
+  input.value = ui.queryText || '';
+  input.addEventListener('click', function (e) { e.stopPropagation(); });
+  input.addEventListener('keydown', function (e) {
+    e.stopPropagation();
+    if (e.key === 'Enter') runQuery(sec);
+  });
+  input.addEventListener('input', function () {
+    ui.queryText = input.value;
+    scheduleQueryCheck(sec);
+    refreshQueryBox(sec);
+  });
+  row.appendChild(input);
+  var run = el('button', 'query-run', 'Run');
+  run.setAttribute('type', 'button');
+  run.setAttribute('data-role', 'query-run');
+  run.addEventListener('click', function (e) { e.stopPropagation(); runQuery(sec); });
+  row.appendChild(run);
+  sec.appendChild(row);
+  var res = el('div', 'query-result', '');
+  res.setAttribute('data-role', 'query-result');
+  sec.appendChild(res);
+  var errHost = el('div', '', '');
+  errHost.setAttribute('data-role', 'query-error-host');
+  sec.appendChild(errHost);
+  var rec = el('div', 'query-recent', '');
+  rec.setAttribute('data-role', 'query-recent');
+  sec.appendChild(rec);
+  refreshQueryBox(sec);
+  return sec;
+}
+
+function refreshQuery(root, v) {
+  var sec = root.querySelector('[data-role="query"]');
+  if (!sec || !v.query) return;
+  sec._q = v.query;
+  refreshQueryBox(sec);
+}
+
+function queryEntryFor(q, text) {
+  if (!q) return null;
+  if (q.check && q.check.expr === text) return q.check;
+  if (q.last && q.last.expr === text) return q.last;
+  return null;
+}
+
+function refreshQueryBox(sec) {
+  var text = ui.queryText || '';
+  var res = sec.querySelector('[data-role="query-result"]');
+  var errHost = sec.querySelector('[data-role="query-error-host"]');
+  var rec = sec.querySelector('[data-role="query-recent"]');
+  var resText = '', errInfo = null;
+  if (String(text).trim()) {
+    if (queryTooLong(text)) {
+      errInfo = { message: 'query too long (max ' + QUERY_MAX_CHARS + ' characters)', column: 0, length: 0 };
+    } else {
+      var entry = queryEntryFor(sec._q, text);
+      if (entry && entry.ok) resText = '→ ' + entry.count + (entry.count === 1 ? ' cell matches' : ' cells match');
+      else if (entry && entry.error) errInfo = entry.error;
+    }
+  }
+  if (res.textContent !== resText) res.textContent = resText;
+  var errSig = errInfo ? JSON.stringify([text, errInfo]) : '';
+  if (errHost._sig !== errSig) {
+    errHost._sig = errSig;
+    while (errHost.firstChild) errHost.removeChild(errHost.firstChild);
+    if (errInfo) {
+      var box = el('div', 'query-error', '');
+      box.setAttribute('data-role', 'query-error');
+      box.appendChild(el('div', 'q-msg', errInfo.message || 'invalid query'));
+      var col = Number(errInfo.column) || 0, len = Number(errInfo.length) || 0;
+      var qt = el('div', 'q-text', '');
+      if (len > 0 && col < text.length) {
+        qt.appendChild(document.createTextNode(text.substring(0, col)));
+        qt.appendChild(el('mark', 'q-span', text.substring(col, col + len)));
+        qt.appendChild(document.createTextNode(text.substring(col + len)));
+      } else {
+        qt.appendChild(document.createTextNode(text));
+      }
+      box.appendChild(qt);
+      if (errInfo.suggestion) {
+        var sg = el('button', 'q-suggest', 'did you mean \'' + errInfo.suggestion + '\'?');
+        sg.setAttribute('type', 'button');
+        sg.setAttribute('data-role', 'query-suggest');
+        sg.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setQueryText(sec, text.substring(0, col) + errInfo.suggestion + text.substring(col + len));
+        });
+        box.appendChild(sg);
+      }
+      errHost.appendChild(box);
+    }
+  }
+  var rsig = ui.queryRecent.join('\n');
+  if (rec._sig !== rsig) {
+    rec._sig = rsig;
+    while (rec.firstChild) rec.removeChild(rec.firstChild);
+    if (ui.queryRecent.length > 0) {
+      rec.appendChild(el('div', 'q-recent-title', 'Recent'));
+      for (var i = 0; i < ui.queryRecent.length; ++i) {
+        (function (t) {
+          var it = el('div', 'q-recent-item', t);
+          it.setAttribute('title', t);
+          it.addEventListener('click', function (e) { e.stopPropagation(); setQueryText(sec, t); });
+          rec.appendChild(it);
+        })(ui.queryRecent[i]);
+      }
+    }
+  }
+}
+
+// ── Selection Inspector card (Feature 4) ──────────────────────────────────
+// State "inspector" (InspectorModel::BuildCardJson, built from the domain's cache): hasSelection, updating, expandedGroups[], base,
+// layers[{id,schemaKey,label,unit,tooltip,kind,group,rangeMin?,rangeMax?,count,nanCount,min,mean,max,categories?,other?,
+// a?{..}|{notFrozen}|{notComputed}, delta?{count,min,mean,max}}], histogram{bins[16],minRange,maxRange,valid,outOfRangeLow,
+// outOfRangeHigh,count,nanCount} | {categories,other,nanCount}, pinned{count,frozen}, cell{index,q,r,rows[],details[]}.
+// The page only renders it and sends commands: select_pin {freeze?}, select_unpin {}, inspector_expand {group, expanded}.
+
+function inspNum(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return '–';
+  var n = Number(x);
+  if (n === Math.floor(n)) return String(n);
+  return String(Number(n.toPrecision(5)));
+}
+
+function inspExact(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return '–';
+  return String(Number(Number(x).toPrecision(7)));
+}
+
+function inspDelta(x) {
+  if (x === null || x === undefined || !isFinite(Number(x))) return ['–', 'd-zero'];
+  var n = Number(x);
+  if (n === 0) return ['0', 'd-zero'];
+  return [(n > 0 ? '+' : '−') + inspNum(Math.abs(n)), n > 0 ? 'd-pos' : 'd-neg'];
+}
+
+function inspCell(tr, text, cls) {
+  var td = el('td', cls || '', text);
+  tr.appendChild(td);
+  return td;
+}
+
+function inspRangeBar(l) {
+  var bar = el('span', 'range-bar');
+  var lo = Number(l.rangeMin), hi = Number(l.rangeMax);
+  if (l.rangeMin === undefined || l.rangeMax === undefined || !(hi > lo) || l.min === null || l.min === undefined) return bar;
+  var pos = function (v) { return Math.max(0, Math.min(100, (Number(v) - lo) / (hi - lo) * 100)); };
+  var a = pos(l.min), b = pos(l.max);
+  var span = el('span', 'span');
+  span.style.left = a + '%';
+  span.style.width = Math.max(1, b - a) + '%';
+  bar.appendChild(span);
+  var mean = el('span', 'mean');
+  mean.style.left = pos(l.mean) + '%';
+  bar.appendChild(mean);
+  return bar;
+}
+
+function inspCategoryChips(title, o, role) {
+  var box = el('div', 'biome-counts');
+  if (role) box.setAttribute('data-role', role);
+  if (title) box.appendChild(el('div', 'biome-counts-title', title));
+  var cats = Array.isArray(o.categories) ? o.categories : [];
+  for (var i = 0; i < cats.length; ++i) {
+    if (!(cats[i].count > 0)) continue;
+    var chip = el('span', 'biome-chip', (cats[i].label || cats[i].id) + ': ' + cats[i].count);
+    chip.setAttribute('data-category', cats[i].id);
+    box.appendChild(chip);
+  }
+  if (o.other > 0) box.appendChild(el('span', 'biome-chip', 'Other: ' + o.other));
+  if (o.nanCount > 0) box.appendChild(el('span', 'biome-chip', 'NaN: ' + o.nanCount));
+  return box;
+}
+
+function inspStatsTable(layers, pinned, frozen) {
+  var wrap = el('div', 'insp-scroll');
+  var table = el('table', 'stats-table');
+  var head = el('tr');
+  var cols = ['Layer', 'Count', 'Min', 'Mean', 'Max', 'Unit'];
+  var hcls = ['', '', '', '', '', ''];
+  if (!pinned) { cols.push(''); hcls.push(''); }   // range bar column; the compare columns need the width instead
+  if (pinned) {
+    var sub = ['n', 'min', 'mean', 'max'];
+    for (var s = 0; s < sub.length; ++s) { cols.push('A ' + sub[s]); hcls.push('cmp-a'); }
+    for (var d = 0; d < sub.length; ++d) { cols.push('Δ ' + sub[d]); hcls.push('cmp-d'); }
+  }
+  for (var c = 0; c < cols.length; ++c) {
+    var th = el('th', hcls[c], cols[c]);
+    if (pinned && c === 6 && frozen) { var fb = el('span', 'frozen-badge', 'frozen'); fb.setAttribute('data-role', 'frozen-badge'); th.appendChild(fb); }
+    head.appendChild(th);
+  }
+  var thead = el('thead');
+  thead.appendChild(head);
+  table.appendChild(thead);
+  var tbody = el('tbody');
+  for (var i = 0; i < layers.length; ++i) {
+    var l = layers[i];
+    var tr = el('tr');
+    tr.setAttribute('data-layer', l.id);
+    var name = inspCell(tr, l.label || l.id);
+    if (l.tooltip) name.title = l.tooltip;
+    if (l.kind === 'category') {
+      var cc = el('td');
+      cc.setAttribute('colspan', String(cols.length - 1));
+      var chips = inspCategoryChips(null, l);
+      chips.insertBefore(el('span', 'biome-chip', 'n: ' + l.count), chips.firstChild);
+      cc.appendChild(chips);
+      tr.appendChild(cc);
+      tbody.appendChild(tr);
+      continue;
+    }
+    inspCell(tr, inspNum(l.count), 'num');
+    inspCell(tr, inspNum(l.min), 'num');
+    inspCell(tr, inspNum(l.mean), 'num');
+    inspCell(tr, inspNum(l.max), 'num');
+    inspCell(tr, l.unit || '', 'unit');
+    if (!pinned) {
+      var barCell = el('td');
+      barCell.appendChild(inspRangeBar(l));
+      tr.appendChild(barCell);
+    }
+    if (pinned) {
+      var a = l.a || {};
+      if (a.notFrozen || a.notComputed) {
+        var nf = inspCell(tr, a.notFrozen ? 'not frozen' : 'not computed', 'nf');
+        nf.setAttribute('colspan', '8');
+        if (a.notFrozen) nf.setAttribute('data-role', 'not-frozen');
+      } else {
+        inspCell(tr, inspNum(a.count), 'num');
+        inspCell(tr, inspNum(a.min), 'num');
+        inspCell(tr, inspNum(a.mean), 'num');
+        inspCell(tr, inspNum(a.max), 'num');
+        var dl = l.delta || {};
+        var keys = ['count', 'min', 'mean', 'max'];
+        for (var k = 0; k < keys.length; ++k) {
+          var dv = inspDelta(dl[keys[k]]);
+          var dtd = inspCell(tr, dv[0], 'num ' + dv[1]);
+          if (k > 0 && l.unit && dv[0] !== '–') dtd.title = l.unit;
+        }
+      }
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function inspHistogram(insp, baseLabel) {
+  var h = insp.histogram;
+  var box = el('div', 'insp-histogram');
+  box.setAttribute('data-role', 'histogram');
+  if (!h) return box;
+  if (Array.isArray(h.bins)) {
+    box.appendChild(el('div', 'insp-histogram-title', 'Histogram: ' + baseLabel));
+    var hist = el('div', 'histogram');
+    var maxBin = 0;
+    for (var i = 0; i < h.bins.length; ++i) maxBin = Math.max(maxBin, h.bins[i]);
+    var span = Number(h.maxRange) - Number(h.minRange);
+    for (var b = 0; b < h.bins.length; ++b) {
+      var bar = el('div', 'histogram-bar');
+      bar.style.height = (maxBin > 0 ? (h.bins[b] / maxBin * 100) : 0) + '%';
+      bar.title = (h.valid ? inspNum(Number(h.minRange) + span * b / h.bins.length) + ' – ' + inspNum(Number(h.minRange) + span * (b + 1) / h.bins.length) + ': ' : '') + h.bins[b];
+      hist.appendChild(bar);
+    }
+    box.appendChild(hist);
+    var foot = el('div', 'histogram-foot');
+    foot.appendChild(el('span', '', h.valid ? inspNum(h.minRange) : ''));
+    if (h.outOfRangeLow > 0 || h.outOfRangeHigh > 0) {
+      var oor = el('span', 'oor', 'out of range: ' + h.outOfRangeLow + ' low, ' + h.outOfRangeHigh + ' high');
+      oor.setAttribute('data-role', 'histogram-oor');
+      foot.appendChild(oor);
+    }
+    foot.appendChild(el('span', '', h.valid ? inspNum(h.maxRange) : ''));
+    box.appendChild(foot);
+  } else {
+    box.appendChild(inspCategoryChips(baseLabel + ' counts:', h, 'histogram-categories'));
+  }
+  return box;
+}
+
+function inspCellSection(cell) {
+  var sec = el('div', 'insp-cell');
+  sec.setAttribute('data-role', 'inspector-cell');
+  sec.appendChild(el('div', 'insp-cell-title', 'Cell (' + cell.q + ', ' + cell.r + ')  #' + cell.index));
+  var table = el('table', 'stats-table');
+  var rows = Array.isArray(cell.rows) ? cell.rows : [];
+  for (var i = 0; i < rows.length; ++i) {
+    var r = rows[i];
+    var tr = el('tr');
+    tr.setAttribute('data-layer', r.layer);
+    inspCell(tr, r.label || r.layer);
+    var text;
+    if (!r.hasData) text = 'no data';
+    else if (r.isNaN) text = 'NaN';
+    else if (r.kind === 'category') text = r.otherValue ? 'other (' + inspExact(r.value) + ')' : (r.enumLabel || r.enumId || inspExact(r.value));
+    else text = inspExact(r.value);
+    inspCell(tr, text, 'num');
+    inspCell(tr, r.kind === 'category' ? '' : (r.unit || ''), 'unit');
+    table.appendChild(tr);
+  }
+  var details = Array.isArray(cell.details) ? cell.details : [];
+  for (var d = 0; d < details.length; ++d) {
+    var dr = details[d];
+    var dtr = el('tr');
+    if (dr.kind === 'section') {
+      dtr.className = 'insp-details-section';
+      var st = inspCell(dtr, dr.label);
+      st.setAttribute('colspan', '3');
+    } else if (dr.kind === 'value') {
+      var lt = inspCell(dtr, dr.label || dr.schemaKey);
+      if (dr.tooltip) lt.title = dr.tooltip;
+      inspCell(dtr, dr.value === undefined ? '–' : inspExact(dr.value), 'num');
+      inspCell(dtr, dr.unit || '', 'unit');
+    } else {
+      inspCell(dtr, dr.label);
+      var tt = inspCell(dtr, dr.text);
+      tt.setAttribute('colspan', '2');
+    }
+    table.appendChild(dtr);
+  }
+  if (cell.detailsTruncated) {
+    var trn = el('tr');
+    var tc = inspCell(trn, 'more details not shown', 'nf');
+    tc.setAttribute('colspan', '3');
+    table.appendChild(trn);
+  }
+  sec.appendChild(table);
+  return sec;
+}
+
+function renderInspector(host, insp, v, cmdId) {
+  host.innerHTML = '';
+  var title = el('div', 'insp-title', 'Selection inspector');
+  var mark = el('span', 'insp-updating', 'updating');
+  mark.setAttribute('data-role', 'inspector-updating');
+  mark.style.display = insp.updating ? '' : 'none';
+  title.appendChild(mark);
+  host.appendChild(title);
+
+  var pinRow = el('div', 'pin-buttons');
+  pinRow.setAttribute('data-role', 'inspector-pin-row');
+  var defs = [['pin', 'Pin as A', 'select_pin', {}], ['freeze', 'Pin + freeze', 'select_pin', { freeze: true }], ['unpin', 'Unpin', 'select_unpin', {}]];
+  for (var i = 0; i < defs.length; ++i) {
+    var b = el('button', 'pin-btn', defs[i][1]);
+    b.setAttribute('type', 'button');
+    b.setAttribute('data-role', 'inspector-' + defs[i][0]);
+    if (defs[i][0] === 'unpin' ? !insp.pinned : !insp.hasSelection) b.setAttribute('disabled', 'disabled');
+    (function (cmd, args) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); if (!this.hasAttribute('disabled')) sendCommand(cmdId, cmd, args); });
+    })(defs[i][2], defs[i][3]);
+    pinRow.appendChild(b);
+  }
+  host.appendChild(pinRow);
+  if (insp.pinned) {
+    var chip = el('div', 'pinned-chip', 'A: ' + insp.pinned.count + (insp.pinned.count === 1 ? ' cell' : ' cells') + (insp.pinned.frozen ? '' : ' (live)'));
+    chip.setAttribute('data-role', 'inspector-pinned');
+    if (insp.pinned.frozen) {
+      var fb = el('span', 'frozen-badge', 'frozen');
+      fb.setAttribute('data-role', 'frozen-badge');
+      chip.appendChild(fb);
+    }
+    host.appendChild(chip);
+  }
+
+  if (!insp.hasSelection) {
+    var empty = el('div', 'insp-empty', 'Select cells to inspect');
+    empty.setAttribute('data-role', 'inspector-empty');
+    host.appendChild(empty);
+    return;
+  }
+
+  var byId = {};
+  var layers = Array.isArray(insp.layers) ? insp.layers : [];
+  for (var li = 0; li < layers.length; ++li) byId[layers[li].id] = layers[li];
+  var expanded = Array.isArray(insp.expandedGroups) ? insp.expandedGroups : [];
+  var groups = Array.isArray(v.groups) ? v.groups : [];
+  var baseLabel = insp.base || '';
+  for (var bl = 0; bl < layers.length; ++bl) if (layers[bl].schemaKey === insp.base) baseLabel = layers[bl].label || layers[bl].id;
+  var frozen = !!(insp.pinned && insp.pinned.frozen);
+  for (var g = 0; g < groups.length; ++g) {
+    var name = groups[g].name;
+    var open = expanded.indexOf(name) >= 0;
+    var grp = el('div', 'insp-group');
+    grp.setAttribute('data-group', name);
+    var gh = el('div', 'insp-group-header');
+    gh.setAttribute('data-role', 'inspector-group-header');
+    gh.setAttribute('aria-expanded', open ? 'true' : 'false');
+    gh.appendChild(el('span', 'caret', open ? '▾' : '▸'));
+    gh.appendChild(document.createTextNode(name || 'Layers'));
+    (function (n, o) {
+      gh.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'inspector_expand', { group: n, expanded: !o }); });
+    })(name, open);
+    grp.appendChild(gh);
+    var rows = [];
+    var ids = groups[g].layers || [];
+    for (var k = 0; k < ids.length; ++k) {
+      var row = byId[ids[k]];
+      // The active base is always shown, even when its group is collapsed.
+      if (row && (open || row.schemaKey === insp.base)) rows.push(row);
+    }
+    if (rows.length > 0) grp.appendChild(inspStatsTable(rows, !!insp.pinned, frozen));
+    host.appendChild(grp);
+  }
+  host.appendChild(inspHistogram(insp, baseLabel));
+  if (insp.cell) host.appendChild(inspCellSection(insp.cell));
+}
+
+function refreshInspector(root, v) {
+  var host = root.querySelector('[data-role="inspector"]');
+  if (!host || !v.inspector) return;
+  var insp = v.inspector;
+  // Re-render only when the content changed; the "updating" mark is flipped in place.
+  var copy = {};
+  for (var key in insp) if (key !== 'updating') copy[key] = insp[key];
+  var k = JSON.stringify([copy, v.groups]);
+  if (host._key !== k) { host._key = k; renderInspector(host, insp, v, host._cmdId); }
+  var mark = host.querySelector('[data-role="inspector-updating"]');
+  if (mark) mark.style.display = insp.updating ? '' : 'none';
+}
+
+function buildViewer(domain) {
+  var v = domain.viewer;
+  var cmdId = domain.cmdId;
+  var root = el('div', 'cl-viewer');
+  root.setAttribute('data-role', 'cell-layer-viewer');
+
+  if (v.empty) root.appendChild(el('div', 'cl-empty', 'No cell layers registered'));
+
+  if (Array.isArray(v.gridSelector) && v.gridSelector.length > 1) {
+    var grids = el('div', 'cl-grids');
+    grids.setAttribute('data-role', 'grid-selector');
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gs = v.gridSelector[g];
+      var gb = el('button', 'tool-btn', 'Grid ' + gs.index + ': ' + gs.width + '×' + gs.height);
+      gb.setAttribute('type', 'button');
+      gb.setAttribute('data-grid', String(gs.index));
+      (function (index) {
+        gb.addEventListener('click', function (e) { e.stopPropagation(); sendCommand(cmdId, 'grid', { index: index }); });
+      })(gs.index);
+      grids.appendChild(gb);
+    }
+    root.appendChild(grids);
+  }
+
+  if (v.selection) root.appendChild(buildSelectionSection(cmdId, v.selection));
+  if (v.query && v.query.available) root.appendChild(buildQuerySection(cmdId, v.query));
+  if (v.inspector) {
+    var insp = el('div', 'cl-inspector');
+    insp.setAttribute('data-role', 'inspector');
+    insp._cmdId = cmdId;
+    root.appendChild(insp);
+    refreshInspector(root, v);
+  }
+
+  if (!v.empty) {
+    var search = el('div', 'layer-search');
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Search layers...';
+    input.value = ui.layerFilter || '';
+    input.addEventListener('input', function () {
+      ui.layerFilter = input.value;
+      applyLayerFilter(root);
+    });
+    search.appendChild(input);
+    root.appendChild(search);
+
+    var byId = {};
+    for (var i = 0; i < v.layers.length; ++i) byId[v.layers[i].id] = v.layers[i];
+    var groups = Array.isArray(v.groups) ? v.groups : [];
+    for (var gi = 0; gi < groups.length; ++gi) {
+      var grp = el('div', 'layer-group');
+      grp.setAttribute('data-group', groups[gi].name);
+      grp.appendChild(el('div', 'layer-group-header', groups[gi].name || 'Layers'));
+      var ids = groups[gi].layers || [];
+      for (var k = 0; k < ids.length; ++k) {
+        if (byId[ids[k]]) grp.appendChild(buildLayerItem(cmdId, byId[ids[k]]));
+      }
+      root.appendChild(grp);
+    }
+  }
+
+  if (v.overlays.length > 0) {
+    var og = el('div', 'layer-group');
+    og.setAttribute('data-group', 'Overlays');
+    og.appendChild(el('div', 'layer-group-header', 'Overlays'));
+    for (var oi = 0; oi < v.overlays.length; ++oi) og.appendChild(buildOverlayItem(cmdId, v.overlays[oi]));
+    root.appendChild(og);
+  }
+
+  var legend = el('div', 'cl-legend');
+  legend.setAttribute('data-role', 'legend');
+  root.appendChild(legend);
+  var hover = el('div', 'cl-hover');
+  hover.setAttribute('data-role', 'hover');
+  root.appendChild(hover);
+
+  applyLayerFilter(root);
+  return root;
+}
+
+function buildLayerItem(cmdId, l) {
+  var item = el('div', 'layer-item');
+  item.setAttribute('data-layer', l.id);
+  item.setAttribute('data-search', (String(l.label) + ' ' + String(l.id)).toLowerCase());
+  item.appendChild(el('span', 'layer-radio' + (l.selected ? ' active' : '')));
+  item.appendChild(el('span', 'layer-num', l.groupNumber > 0 ? String(l.groupNumber) : ''));
+  item.appendChild(el('span', 'layer-label', l.label));
+  if (l.description) item.appendChild(vtBuildEntryIcon({ key: l.id, label: l.label, description: l.description, unit: l.unit }));
+  if (l.hotkey) item.appendChild(el('span', 'layer-hotkey', l.hotkey));
+  item.addEventListener('click', function (e) {
+    e.stopPropagation();
+    sendCommand(cmdId, 'base', { id: l.id });
+  });
+  return item;
+}
+
+function buildOverlayItem(cmdId, o) {
+  var item = el('div', 'layer-item');
+  item.setAttribute('data-overlay', o.id);
+  item.appendChild(el('span', 'layer-checkbox' + (o.enabled ? ' checked' : '')));
+  item.appendChild(el('span', 'layer-label', o.label));
+  item.addEventListener('click', function (e) {
+    e.stopPropagation();
+    sendCommand(cmdId, 'toggle', { drawer: o.id });
+  });
+  return item;
+}
+
+function applyLayerFilter(root) {
+  var q = String(ui.layerFilter || '').toLowerCase();
+  var groups = root.querySelectorAll('.layer-group');
+  for (var g = 0; g < groups.length; ++g) {
+    var items = groups[g].querySelectorAll('.layer-item[data-layer]');
+    var visible = 0;
+    for (var i = 0; i < items.length; ++i) {
+      var show = q === '' || (items[i].getAttribute('data-search') || '').indexOf(q) >= 0;
+      items[i].style.display = show ? '' : 'none';
+      if (show) ++visible;
+    }
+    if (items.length > 0) groups[g].style.display = visible > 0 ? '' : 'none';
+  }
+}
+
+function refreshViewer(card, v) {
+  var root = card.querySelector('[data-role="cell-layer-viewer"]');
+  if (!root) return;
+
+  var activeLabel = v.activeBase;
+  for (var i = 0; i < v.layers.length; ++i) {
+    var l = v.layers[i];
+    var item = root.querySelector('.layer-item[data-layer="' + cssEscape(l.id) + '"]');
+    if (item) {
+      var radio = item.querySelector('.layer-radio');
+      if (radio) radio.classList.toggle('active', !!l.selected);
+    }
+    if (l.selected) activeLabel = l.label;
+  }
+  for (var o = 0; o < v.overlays.length; ++o) {
+    var oi = root.querySelector('.layer-item[data-overlay="' + cssEscape(v.overlays[o].id) + '"]');
+    var cb = oi ? oi.querySelector('.layer-checkbox') : null;
+    if (cb) cb.classList.toggle('checked', !!v.overlays[o].enabled);
+  }
+  if (Array.isArray(v.gridSelector)) {
+    for (var g = 0; g < v.gridSelector.length; ++g) {
+      var gb = root.querySelector('[data-grid="' + cssEscape(String(v.gridSelector[g].index)) + '"]');
+      if (gb) gb.classList.toggle('active', !!v.gridSelector[g].active);
+    }
+  }
+
+  if (v.selection) refreshSelection(root, v.selection);
+  refreshInspector(root, v);
+  refreshQuery(root, v);
+
+  var noData = !!v.noData;   // source not live and no data: say so instead of a stale legend / hover
+  var legendHost = root.querySelector('[data-role="legend"]');
+  var nd = root.querySelector('[data-role="nodata"]');
+  if (noData && !nd && legendHost) {
+    nd = el('div', 'cl-nodata', 'No data in this view');
+    nd.setAttribute('data-role', 'nodata');
+    legendHost.parentNode.insertBefore(nd, legendHost);
+  } else if (!noData && nd) {
+    nd.parentNode.removeChild(nd);
+  }
+  if (legendHost) {
+    var lkey = JSON.stringify([activeLabel, noData ? null : (v.legend || null)]);
+    if (legendHost._key !== lkey) { legendHost._key = lkey; renderViewerLegend(legendHost, noData ? null : v.legend, activeLabel); }
+  }
+  var hoverHost = root.querySelector('[data-role="hover"]');
+  if (hoverHost) {
+    var hkey = JSON.stringify(noData ? null : (v.hover || null));
+    if (hoverHost._key !== hkey) { hoverHost._key = hkey; renderViewerHover(hoverHost, noData ? null : v.hover); }
+  }
+}
+
+function renderViewerLegend(host, legend, title) {
+  host.innerHTML = '';
+  if (!legend || !legend.available) return;
+  var hdr = el('div', 'card-header', 'LEGEND: ' + String(title).toUpperCase());
+  hdr.setAttribute('data-role', 'legend-title');
+  host.appendChild(hdr);
+
+  var strip = el('div', 'legend-strip');
+  if (legend.category) {
+    var sw = Array.isArray(legend.swatches) ? legend.swatches : [];
+    for (var i = 0; i < sw.length; ++i) {
+      var row = el('div', 'legend-swatch');
+      var box = el('span', 'legend-swatch-box');
+      box.style.background = viewerRgb(sw[i].rgba);
+      row.appendChild(box);
+      row.appendChild(el('span', 'legend-swatch-label', sw[i].label || sw[i].id));
+      strip.appendChild(row);
+    }
+  } else {
+    var ramp = el('div', 'legend-ramp');
+    var stops = Array.isArray(legend.stops) ? legend.stops : [];
+    var css = [];
+    for (var s = 0; s < stops.length; ++s) css.push(viewerRgb(stops[s].rgba) + ' ' + (stops[s].t * 100) + '%');
+    if (css.length === 1) css.push(css[0]);
+    if (css.length > 0) ramp.style.background = 'linear-gradient(to right, ' + css.join(', ') + ')';
+    strip.appendChild(ramp);
+    var labels = el('div', 'legend-labels');
+    var ticks = Array.isArray(legend.ticks) ? legend.ticks : [];
+    for (var t = 0; t < ticks.length; ++t) labels.appendChild(el('span', '', formatStatValue(ticks[t])));
+    strip.appendChild(labels);
+    if (legend.unit) strip.appendChild(el('div', 'legend-unit', legend.unit));
+    if (legend.seen) {
+      strip.appendChild(el('div', 'legend-range',
+        'seen in view: ' + formatStatValue(legend.seen.min) + ' – ' + formatStatValue(legend.seen.max)));
+    }
+  }
+  host.appendChild(strip);
+}
+
+function renderViewerHover(host, hover) {
+  host.innerHTML = '';
+  if (!hover || !hover.valid) return;
+  host.appendChild(el('div', 'cl-hover-cell', 'cell (' + hover.q + ', ' + hover.r + ')'));
+  host.appendChild(el('div', 'cl-hover-value', hover.text));
+  host.appendChild(renderValueTooltip(
+    { key: hover.layer, label: hover.label, description: hover.description, unit: hover.unit },
+    { inspector: false }));
 }
 
 // ── Refresh (structure unchanged — update text + classes only) ────────────
@@ -700,6 +2264,9 @@ function refresh(domains) {
     var headline = card.querySelector('[data-role="headline"]');
     if (headline) headline.textContent = headlineStat(domain);
 
+    if (domain.viewer) refreshViewer(card, domain.viewer);
+    if (domain.history) refreshHistory(card, domain.history);
+
     for (var d = 0; d < domain.drawers.length; ++d) {
       var dw = domain.drawers[d];
       if (!dw || !dw.name) continue;
@@ -714,14 +2281,15 @@ function refresh(domains) {
 
     for (var c = 0; c < domain.controls.length; ++c) {
       var def = domain.controls[c];
-      if (!def || !def.key || def.value === undefined) continue;
-      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(def.key) + '"]');
+      if (!def || !controlId(def) || def.value === undefined) continue;
+      var ctrl = card.querySelector('.ctrl[data-control="' + cssEscape(controlId(def)) + '"]');
       if (!ctrl) continue;
       var range = ctrl.querySelector('input[type=range]');
       if (!range || range === ui.activeSlider) continue;
       range.value = def.value;
       var cv = ctrl.querySelector('.cv');
-      if (cv) cv.textContent = formatValue(def.value);
+      var dec = ctrl.getAttribute('data-decimals');
+      if (cv) cv.textContent = formatValue(def.value, dec === null ? null : parseInt(dec, 10));
     }
   }
 }
@@ -769,7 +2337,7 @@ function setDomainAll(domainId, target) {
   for (var d = 0; d < domain.drawers.length; ++d) {
     var dw = domain.drawers[d];
     if (!dw || !dw.name) continue;
-    if (!!dw.enabled !== target) sendCommand(domainId, 'toggle', { drawer: dw.name });
+    if (!!dw.enabled !== target) sendCommand(domain.cmdId, 'toggle', { drawer: dw.name });
   }
 }
 
@@ -789,25 +2357,38 @@ function updateDomainState(data) {
   }
   if (!data || typeof data !== 'object') return;
 
+  // Partial push (DebugPanelPageModule sends only the domains whose state changed): merge them into what we hold.
+  // A push without "__partial" is the complete state and replaces everything.
+  var partialOnly = null;
+  if (data.__partial === true) {
+    var merged = (latest && typeof latest === 'object') ? latest : {};
+    partialOnly = {};
+    for (var pk in data) {
+      if (pk !== '__partial' && Object.prototype.hasOwnProperty.call(data, pk)) { merged[pk] = data[pk]; partialOnly[pk] = data[pk]; }
+    }
+    data = merged;
+  }
+
   latest = data;
+  vsScan(data);
   var domains = domainsOf(data);
   var sig = structureSignature(domains);
 
+  var rebuilt = false;
   if (sig !== ui.structureSig) {
     ui.structureSig = sig;
     rebuild(domains);
+    rebuilt = true;
   }
-  refresh(domains);
+  // A partial push only refreshes the domains it carried (unless the structure was rebuilt).
+  refresh((partialOnly && !rebuilt) ? domainsOf(partialOnly) : domains);
+  applyHistoryToViewer(domains);
 }
 window.updateDomainState = updateDomainState;
 
 // ── Phase 2 state ────────────────────────────────────────────────────────
 var currentFilter  = '';
 var lockedEntityId = '';
-
-// {"text":"..."} + overhead leaves 52 chars for the actual command text
-// before the Ultralight String64 63-char limit is hit.
-var MAX_CMD_TEXT = 52;
 
 // ── JS → C++ log bridge ───────────────────────────────────────────────────
 // Relayed to DIA_LOG_INFO("DebugPanelJS",...) via VisualDebuggerModule on
@@ -898,24 +2479,845 @@ function updateEntityLockUI() {
   btnUnlock.style.display = locked ? ''     : 'none';
 }
 
-// ── Command strip ─────────────────────────────────────────────────────────
+// ── Console (panel-console; contract in DebugPanelPage.h) ─────────────────
+// JS -> C++: app.onConsoleLine(seq, p0..p3), app.onConsoleComplete(token),
+// app.onConsoleHistory("prev"|"next"). Every string arg is <= 63 chars, so
+// the line is sent as up to 4 chunks of 60. C++ -> JS: consoleResult,
+// appendLogLines, consoleCompletions, consoleSetInput (JSON string or object).
+var CON_MAX_LINE  = 240;
+var CON_CHUNK     = 60;
+var CON_LOG_CAP   = 500;
+var conSeq        = 0;
+var conPending    = 0;     // seq awaiting consoleResult (0 = none)
+var conPendingTxt = '';
+var conDraft      = '';
+var conHistActive = false;
+var conAc         = [];
+var conAcSel      = 0;
+var conAcTimer    = null;
+var conLogFilter  = 'ALL';
+var conLogLines   = [];    // {t, level, channel, msg}
+
+function conEl(id) { return document.getElementById(id); }
+function conApp(name) { return typeof app !== 'undefined' && app && app[name]; }
+function conEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function conParse(data) {
+  if (typeof data === 'string') {
+    try { return JSON.parse(data); } catch (e) { return null; }
+  }
+  return (data && typeof data === 'object') ? data : null;
+}
+function conPad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+function conStamp(t) {
+  var ms = Math.floor((t || 0) * 1000), sec = Math.floor(ms / 1000);
+  var mm = Math.floor(sec / 60), hh = Math.floor(mm / 60);
+  return conPad(hh, 2) + ':' + conPad(mm % 60, 2) + ':' + conPad(sec % 60, 2) + '.' + conPad(ms % 1000, 3);
+}
+
+function conUpdateCounter() {
+  var input = conEl('cmd-input'), c = conEl('cmd-counter');
+  if (!input || !c) return;
+  var n = input.value.length;
+  c.textContent = n + '/' + CON_MAX_LINE;
+  c.className = 'cmd-counter' + (n > 200 ? ' warn' : '') + (n >= CON_MAX_LINE ? ' max' : '');
+}
+
+function conSetResult(text, exitCode, parseError) {
+  var el = conEl('cmd-result');
+  if (!el) return;
+  var echo = conPendingTxt.length > 44 ? conPendingTxt.substring(0, 43) + '…' : conPendingTxt;
+  var cls, label;
+  if (exitCode === 0 && !parseError) { cls = 'ok'; label = 'exit 0'; }
+  else if (exitCode === 3) { cls = 'err'; label = 'not found (3)'; }
+  else { cls = 'err'; label = parseError ? 'parse error (' + parseError + ')' : 'exit ' + exitCode; }
+  var extra = text ? ' <span class="echo">' + conEsc(text) + '</span>' : '';
+  el.innerHTML = '<span class="echo">&gt; ' + conEsc(echo) + '</span><span class="code ' + cls + '">' +
+                 conEsc(label) + '</span>' + extra;
+}
+
+function consoleResult(data) {
+  var r = conParse(data);
+  if (!r) return;
+  if (conPending && r.seq !== conPending) return;   // stale result
+  conPending = 0;
+  conSetResult(r.text || '', r.exitCode | 0, r.parseError | 0);
+}
+window.consoleResult = consoleResult;
+
+function conRenderAc() {
+  var ac = conEl('ac');
+  if (!ac) return;
+  if (!conAc.length) { ac.className = 'ac'; ac.innerHTML = ''; return; }
+  if (conAcSel >= conAc.length) conAcSel = 0;
+  var html = '';
+  for (var i = 0; i < conAc.length; ++i) {
+    html += '<div class="ac-item' + (i === conAcSel ? ' sel' : '') + '" data-i="' + i + '"><span class="nm">' +
+            conEsc(conAc[i].name) + '</span><span class="ds">' + conEsc(conAc[i].rank || '') + '</span></div>';
+  }
+  html += '<div class="ac-foot"><kbd>Tab</kbd> accept &nbsp;<kbd>&uarr;</kbd><kbd>&darr;</kbd> select</div>';
+  ac.innerHTML = html;
+  ac.className = 'ac show';
+}
+function conClearAc() { conAc = []; conAcSel = 0; conRenderAc(); }
+
+function consoleCompletions(data) {
+  var r = conParse(data);
+  if (!r || !r.items) return;
+  var input = conEl('cmd-input');
+  // Ignore late results if the first token is gone or finished.
+  if (!input || !input.value || input.value.indexOf(' ') >= 0) { conClearAc(); return; }
+  conAc = r.items.slice(0, 5);
+  conAcSel = 0;
+  conRenderAc();
+}
+window.consoleCompletions = consoleCompletions;
+
+function conAccept() {
+  if (!conAc.length) return false;
+  var input = conEl('cmd-input');
+  input.value = conAc[conAcSel].name + ' ';
+  conClearAc();
+  conUpdateCounter();
+  return true;
+}
+
+function consoleSetInput(data) {
+  var r = conParse(data);
+  var input = conEl('cmd-input');
+  if (!r || !input) return;
+  if (r.restore) { input.value = conDraft; conHistActive = false; }
+  else input.value = r.text || '';
+  conClearAc();
+  conUpdateCounter();
+}
+window.consoleSetInput = consoleSetInput;
+
+var conLogDirty = false;
+document.addEventListener('selectionchange', function () {
+  var sel = window.getSelection();
+  if (conLogDirty && (!sel || sel.isCollapsed)) conRenderLog();
+});
+
+function conRenderLog() {
+  var body = conEl('log-body');
+  if (!body) return;
+  // Don't rebuild the DOM while the user has text selected in the log (would wipe the selection).
+  var sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed && body.contains(sel.anchorNode)) { conLogDirty = true; return; }
+  conLogDirty = false;
+  var stick = body.scrollHeight - body.scrollTop - body.clientHeight < 24;
+  var html = '', shown = 0;
+  for (var i = 0; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    ++shown;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  body.innerHTML = html || '<div class="log-empty">No log lines at this level</div>';
+  if (stick) body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = shown + ' / ' + conLogLines.length;
+}
+
+function appendLogLines(data) {
+  var r = conParse(data);
+  if (!r || !r.lines) return;
+  for (var i = 0; i < r.lines.length; ++i) {
+    var l = r.lines[i];
+    var lvl = String(l.level || 'INFO').toUpperCase();
+    if (lvl !== 'WARN' && lvl !== 'ERROR' && lvl !== 'INFO') lvl = 'INFO';  // DEBUG shown as INFO
+    conLogLines.push({ t: l.t, level: lvl, channel: l.channel || '', msg: l.msg || '' });
+  }
+  if (conLogLines.length > CON_LOG_CAP) conLogLines.splice(0, conLogLines.length - CON_LOG_CAP);
+  conAppendLogDom(r.lines.length);
+}
+window.appendLogLines = appendLogLines;
+
+// A full conRenderLog() rebuilds up to CON_LOG_CAP rows with innerHTML (tens of ms in Ultralight). appendLogLines only needs
+// the new rows added at the end: do that, and fall back to the full render for anything unusual. A collapsed log view is
+// not rendered at all (conLogDirty is set and the header click renders it when it is opened).
+function conAppendLogDom(added) {
+  var body = conEl('log-body');
+  if (!body) return;
+  var view = conEl('log-view');
+  if (view && view.classList.contains('closed')) { conLogDirty = true; return; }
+  var sel = window.getSelection && window.getSelection();
+  if (conLogDirty || body.querySelector('.log-empty') || (sel && !sel.isCollapsed && body.contains(sel.anchorNode)) ||
+      added > conLogLines.length) {
+    conRenderLog();
+    return;
+  }
+  var stick = body.scrollHeight - body.scrollTop - body.clientHeight < 24;
+  var html = '';
+  for (var i = conLogLines.length - added; i < conLogLines.length; ++i) {
+    var l = conLogLines[i];
+    if (conLogFilter !== 'ALL' && l.level !== conLogFilter) continue;
+    html += '<div class="log-line ' + l.level + '"><span class="log-ts">' + conStamp(l.t) +
+            '</span><span class="badge ' + l.level + '">' + l.level + '</span><span class="log-ch">' +
+            conEsc(l.channel) + '</span><span class="log-msg">' + conEsc(l.msg) + '</span></div>';
+  }
+  if (html) body.insertAdjacentHTML('beforeend', html);
+  while (body.children.length > CON_LOG_CAP) body.removeChild(body.firstChild);
+  if (stick) body.scrollTop = body.scrollHeight;
+  var cnt = conEl('log-count');
+  if (cnt) cnt.textContent = body.children.length + ' / ' + conLogLines.length;
+}
+
+function conSend(text) {
+  var seq = ++conSeq;
+  conPending = seq;
+  conPendingTxt = text;
+  var el = conEl('cmd-result');
+  if (el) el.innerHTML = '<span class="echo">&gt; …</span>';
+  if (text.length > CON_MAX_LINE) {
+    conPending = 0;
+    conSetResult('line too long', 2, 0);
+    return;
+  }
+  if (!conApp('onConsoleLine')) { conPending = 0; return; }
+  var p = ['', '', '', ''];
+  for (var i = 0; i < 4; ++i) p[i] = text.substring(i * CON_CHUNK, (i + 1) * CON_CHUNK);
+  app.onConsoleLine(seq, p[0], p[1], p[2], p[3]);
+}
+
 (function () {
-  var input  = document.getElementById('cmd-input');
-  var result = document.getElementById('cmd-result');
+  var input = conEl('cmd-input');
   if (!input) return;
-  input.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter') return;
-    var text = input.value.trim();
-    if (!text) return;
-    if (text.length > MAX_CMD_TEXT) {
-      if (result) { result.textContent = 'too long'; result.className = 'cmd-result err'; }
-      return;
-    }
-    sendCommand('__console__', 'exec', { text: text });
-    if (result) { result.textContent = '→'; result.className = 'cmd-result'; }
-    input.value = '';
+
+  function requestComplete() {
+    conAcTimer = null;
+    var v = input.value;
+    var sp = v.indexOf(' ');
+    if (!v || sp >= 0) { conClearAc(); return; }
+    if (conApp('onConsoleComplete')) app.onConsoleComplete(v.substring(0, 63));
+  }
+
+  input.addEventListener('input', function () {
+    conHistActive = false;
+    conUpdateCounter();
+    if (conAcTimer) clearTimeout(conAcTimer);
+    conAcTimer = setTimeout(requestComplete, 100);
   });
+
+  input.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'Tab') { e.preventDefault(); conAccept(); }
+    else if (k === 'Escape') { conClearAc(); }
+    else if (k === 'ArrowUp' || k === 'ArrowDown') {
+      e.preventDefault();
+      var up = (k === 'ArrowUp');
+      if (conAc.length && !conHistActive) {
+        conAcSel = (conAcSel + (up ? conAc.length - 1 : 1)) % conAc.length;
+        conRenderAc();
+        return;
+      }
+      if (!conApp('onConsoleHistory')) return;
+      if (!conHistActive) {
+        if (!up) return;
+        conDraft = input.value;
+        conHistActive = true;
+      }
+      app.onConsoleHistory(up ? 'prev' : 'next');
+    }
+    else if (k === 'Enter') {
+      var t = input.value.replace(/^\s+|\s+$/g, '');
+      if (!t) return;
+      if (conAcTimer) { clearTimeout(conAcTimer); conAcTimer = null; }
+      conSend(t);
+      input.value = '';
+      conHistActive = false;
+      conClearAc();
+      conUpdateCounter();
+    }
+  });
+
+  var ac = conEl('ac');
+  if (ac) ac.addEventListener('mousedown', function (e) {
+    var n = e.target;
+    while (n && n !== ac && !(n.className && String(n.className).indexOf('ac-item') >= 0)) n = n.parentNode;
+    if (!n || n === ac) return;
+    e.preventDefault();
+    conAcSel = parseInt(n.getAttribute('data-i'), 10) || 0;
+    conAccept();
+    input.focus();
+  });
+
+  var flt = conEl('log-filters');
+  if (flt) flt.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var b = e.target;
+    if (!b || !b.getAttribute || !b.getAttribute('data-lvl')) return;
+    conLogFilter = b.getAttribute('data-lvl');
+    var all = flt.querySelectorAll('.flt');
+    for (var i = 0; i < all.length; ++i) all[i].classList.toggle('active', all[i] === b);
+    conRenderLog();
+  });
+
+  var hdr = conEl('log-hdr');
+  if (hdr) hdr.addEventListener('click', function () {
+    var v = conEl('log-view'), open = v.classList.contains('open');
+    v.classList.toggle('open', !open);
+    v.classList.toggle('closed', open);
+    if (!open && conLogDirty) conRenderLog();
+  });
+
+  conUpdateCounter();
+  conRenderLog();
 })();
+
+// ── Command palette (panel-palette; contract in DebugPanelPage.h) ──────────
+// Ctrl+P opens an overlay. JS -> C++: app.onPaletteOpen(), app.onPaletteSearch(query, mask)
+// with mask "1" commands / "2" domains / "3" all. C++ -> JS: paletteResults(json|object).
+// Enter on a "fill" item puts actionText in the console input (not run); on a
+// "reveal" item it expands the group + card whose data-domain equals actionText.
+var PAL_MAX_QUERY = 60;
+var PAL_TABS = [ { mask: '3', label: 'All', key: 'all' },
+                 { mask: '1', label: 'Commands', key: 'commands' },
+                 { mask: '2', label: 'Domains', key: 'domains' } ];
+var palTab    = 0;
+var palSel    = 0;
+var palItems  = [];
+var palCounts = { all: 0, commands: 0, domains: 0 };
+var palTotal  = 0;
+var palTimer  = null;
+
+function palIsOpen() {
+  var o = conEl('pal-overlay');
+  return !!o && o.className.indexOf('show') >= 0;
+}
+
+function palHighlight(name, hl) {
+  var out = '';
+  name = String(name || ''); hl = String(hl || '');
+  for (var i = 0; i < name.length; ++i) {
+    var ch = conEsc(name.charAt(i));
+    out += (hl.charAt(i) === '1') ? '<mark>' + ch + '</mark>' : ch;
+  }
+  return out;
+}
+
+function palArgsHtml(args) {
+  if (!Array.isArray(args) || !args.length) return '';
+  var h = '<div class="pal-args">';
+  for (var i = 0; i < args.length; ++i) {
+    var a = args[i] || {};
+    var meta = conEsc(a.type || '') + ' · ' + (a.required ? 'required' : 'optional');
+    if (a.unit) meta += ' · ' + conEsc(a.unit);
+    if (a.min != null && a.max != null) meta += ' · ' + conEsc(String(a.min)) + '..' + conEsc(String(a.max));
+    if (Array.isArray(a.values) && a.values.length) {
+      var vs = [];
+      for (var k = 0; k < a.values.length; ++k) vs.push(a.values[k] == null ? '' : conEsc(a.values[k]));
+      meta += ' · ' + vs.join('|');
+    }
+    h += '<div class="pal-arg"><span class="pal-arg-nm' + (a.required ? ' req' : '') + '">' + conEsc(a.name || '') +
+         (a.required ? '' : '?') + '</span> <span class="pal-arg-meta">' + meta + '</span>' +
+         (a.description ? ' <span class="pal-arg-ds">' + conEsc(a.description) + '</span>' : '') + '</div>';
+  }
+  return h + '</div>';
+}
+
+function palRender() {
+  var tabs = conEl('pal-tabs'), list = conEl('pal-list'), tot = conEl('pal-tot');
+  if (!tabs || !list) return;
+  var th = '';
+  for (var t = 0; t < PAL_TABS.length; ++t) {
+    th += '<div class="pal-tab' + (t === palTab ? ' active' : '') + '" data-t="' + t + '">' + PAL_TABS[t].label +
+          '<span class="n">' + (palCounts[PAL_TABS[t].key] | 0) + '</span></div>';
+  }
+  tabs.innerHTML = th;
+  if (palSel >= palItems.length) palSel = Math.max(0, palItems.length - 1);
+  var html = '';
+  for (var i = 0; i < palItems.length; ++i) {
+    var it = palItems[i], isDom = (it.type === 'domain');
+    html += '<div class="pal-row' + (i === palSel ? ' sel' : '') + '" data-i="' + i + '"><span class="pal-type ' +
+            (isDom ? 'domain' : 'command') + '">' + (isDom ? '▣' : '&gt;_') + '</span><div class="pal-info"><div class="pal-nm">' +
+            palHighlight(it.name, it.hl) + '</div><div class="pal-ds">' + conEsc(it.description || '') +
+            '</div>' + palArgsHtml(it.args) + '</div><span class="pal-cat">' + conEsc(it.category || '') + '</span></div>';
+  }
+  list.innerHTML = html || '<div class="pal-empty">No results found</div>';
+  if (tot) tot.textContent = palTotal > palItems.length ? 'showing ' + palItems.length + ' of ' + palTotal
+                                                         : palTotal + ' result' + (palTotal === 1 ? '' : 's');
+  palScrollSel();
+}
+
+function palScrollSel() {
+  var list = conEl('pal-list');
+  if (!list) return;
+  var rows = list.querySelectorAll('.pal-row');
+  var r = rows[palSel];
+  if (!r) return;
+  if (r.offsetTop < list.scrollTop) list.scrollTop = r.offsetTop;
+  else if (r.offsetTop + r.offsetHeight > list.scrollTop + list.clientHeight)
+    list.scrollTop = r.offsetTop + r.offsetHeight - list.clientHeight;
+}
+
+function palSetSel(i) {
+  var rows = conEl('pal-list').querySelectorAll('.pal-row');
+  if (!rows.length) { palSel = 0; return; }
+  palSel = (i + rows.length) % rows.length;
+  for (var k = 0; k < rows.length; ++k) {
+    rows[k].className = 'pal-row' + (k === palSel ? ' sel' : '');
+  }
+  palScrollSel();
+}
+
+function paletteResults(data) {
+  var r = conParse(data);
+  if (!r) return;
+  palItems  = (r.items && r.items.length) ? r.items.slice(0, 50) : [];
+  var c = r.counts || {};
+  palCounts = { all: c.all | 0, commands: c.commands | 0, domains: c.domains | 0 };
+  palTotal  = (typeof r.total === 'number') ? r.total : palItems.length;
+  palSel    = 0;
+  palRender();
+}
+window.paletteResults = paletteResults;
+
+function palSearchNow() {
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  var inp = conEl('pal-input');
+  if (!inp || !conApp('onPaletteSearch')) return;
+  var q = inp.value;
+  if (q.length > PAL_MAX_QUERY) q = q.substring(0, PAL_MAX_QUERY);
+  app.onPaletteSearch(q, PAL_TABS[palTab].mask);
+}
+
+function palOpen() {
+  var inp = conEl('pal-input'), ov = conEl('pal-overlay');
+  if (!inp || !ov) return;
+  inp.value = '';
+  palTab = 0; palSel = 0; palItems = []; palTotal = 0;
+  palCounts = { all: 0, commands: 0, domains: 0 };
+  ov.className = 'show';
+  palRender();
+  inp.focus();
+  if (conApp('onPaletteOpen')) app.onPaletteOpen();
+}
+
+function palClose(focusConsole) {
+  var ov = conEl('pal-overlay');
+  if (palTimer) { clearTimeout(palTimer); palTimer = null; }
+  if (ov) ov.className = '';
+  if (focusConsole) { var ci = conEl('cmd-input'); if (ci) ci.focus(); }
+}
+
+function palRevealDomain(id) {
+  var cards = document.querySelectorAll('.domain');
+  var card = null;
+  for (var i = 0; i < cards.length; ++i) {
+    if (cards[i].getAttribute('data-domain') === id) { card = cards[i]; break; }
+  }
+  if (!card) return;
+  var g = card.parentNode;
+  while (g && !(g.className && String(g.className).indexOf('group ') === 0)) g = g.parentNode;
+  if (g) {
+    var gk = g.getAttribute('data-group-key');
+    if (gk) ui.groupOpen[gk] = true;
+    g.classList.add('open'); g.classList.remove('closed');
+    g.classList.remove('hidden');
+  }
+  ui.domainOpen[id] = true;
+  card.classList.add('open'); card.classList.remove('closed');
+  card.classList.remove('hidden');
+  try { card.scrollIntoView(true); } catch (e) { /* old engine */ }
+  card.classList.add('flash');
+  setTimeout(function () { card.classList.remove('flash'); }, 1500);
+}
+
+function palChoose(i) {
+  var it = palItems[i];
+  if (!it) return;
+  palClose(false);
+  if (it.action === 'reveal') {
+    palRevealDomain(String(it.actionText || it.domainId || ''));
+  } else {
+    var ci = conEl('cmd-input');
+    if (!ci) return;
+    ci.value = String(it.actionText || it.name || '');
+    conUpdateCounter();
+    ci.focus();
+    try { ci.setSelectionRange(ci.value.length, ci.value.length); } catch (e) { /* ignore */ }
+  }
+}
+
+function palSwitchTab(t) {
+  palTab = (t + PAL_TABS.length) % PAL_TABS.length;
+  palSel = 0;
+  palRender();
+  palSearchNow();
+}
+
+document.addEventListener('keydown', function (e) {
+  var k = e.key;
+  if (e.ctrlKey && (k === 'p' || k === 'P')) {
+    e.preventDefault();
+    if (palIsOpen()) { var pi = conEl('pal-input'); if (pi) pi.focus(); }
+    else palOpen();
+    return;
+  }
+  if (!palIsOpen()) return;
+  if (k === 'Escape') { e.preventDefault(); palClose(true); }
+  else if (k === 'ArrowDown') { e.preventDefault(); palSetSel(palSel + 1); }
+  else if (k === 'ArrowUp') { e.preventDefault(); palSetSel(palSel - 1); }
+  else if (k === 'Enter') { e.preventDefault(); palChoose(palSel); }
+  else if (k === 'Tab') { e.preventDefault(); palSwitchTab(palTab + (e.shiftKey ? -1 : 1)); }
+});
+
+(function () {
+  var inp = conEl('pal-input');
+  if (!inp) return;
+  inp.addEventListener('input', function () {
+    if (palTimer) clearTimeout(palTimer);
+    palTimer = setTimeout(palSearchNow, 60);
+  });
+  var tabs = conEl('pal-tabs');
+  if (tabs) tabs.addEventListener('click', function (e) {
+    var n = e.target;
+    while (n && n !== tabs && !(n.getAttribute && n.getAttribute('data-t') !== null)) n = n.parentNode;
+    if (!n || n === tabs) return;
+    palSwitchTab(parseInt(n.getAttribute('data-t'), 10) || 0);
+    inp.focus();
+  });
+  var list = conEl('pal-list');
+  function rowOf(e) {
+    var n = e.target;
+    while (n && n !== list && !(n.getAttribute && n.getAttribute('data-i') !== null)) n = n.parentNode;
+    return (n && n !== list) ? parseInt(n.getAttribute('data-i'), 10) : -1;
+  }
+  if (list) {
+    list.addEventListener('mousemove', function (e) { var i = rowOf(e); if (i >= 0 && i !== palSel) palSetSel(i); });
+    list.addEventListener('click', function (e) { var i = rowOf(e); if (i >= 0) palChoose(i); });
+  }
+  var ov = conEl('pal-overlay');
+  if (ov) ov.addEventListener('mousedown', function (e) { if (e.target === ov) palClose(true); });
+  palRender();
+})();
+
+// ── Value schema + tooltips (DiaValueSchema Feature 3; spec tooltips.md) ──────
+// A control may carry "schemaKey" ("<for>/<key>") and "packId". The page resolves label, range, step,
+// decimals and the default tick from the cached schema; anything present on the control wins.
+// JS -> C++: app.onValueSchemaGet(prefix)   prefix = "<for>/" (<= 63 chars), once per distinct prefix
+//            per open; again only when a state frame's "schemaVersion" differs from the last one seen.
+// C++ -> JS: valueSchemaResult(json|object)   the valueschema.get result {"version":N,"entries":[...]}
+//            (sidecar field names: for, key, label, description, unit, min, max, default, ui{step,decimals}...).
+// Panel rows are never "inspector" rows, so the tooltip omits Hint here.
+// Tooltip placement (narrow left-docked panel): fixed under the (i), flipped above near the bottom of the
+// view, clamped horizontally into the view, max width min(320, view width - 16).
+var vs = {
+  entries:   {},    // "<for>/<key>" -> schema entry
+  requested: {},    // prefix -> true (asked for under the current schemaVersion)
+  version:   null,  // last schemaVersion seen in a state frame
+  gen:       0      // bumped when entries arrive; part of the structure signature
+};
+
+function vsPrefixOf(key) {
+  var i = key.lastIndexOf('/');
+  return i >= 0 ? key.substring(0, i + 1) : key;
+}
+
+function vsScan(data) {
+  var wanted = [], seen = {}, ver = null;
+  for (var name in data) {
+    if (!Object.prototype.hasOwnProperty.call(data, name)) continue;
+    var d = data[name];
+    if (!d || typeof d !== 'object') continue;
+    if (typeof d.schemaVersion === 'number') ver = d.schemaVersion;
+    if (!Array.isArray(d.controls)) continue;
+    for (var i = 0; i < d.controls.length; ++i) {
+      var c = d.controls[i];
+      if (!c || typeof c.schemaKey !== 'string' || !c.schemaKey) continue;
+      var pre = vsPrefixOf(c.schemaKey);
+      if (!seen[pre]) { seen[pre] = true; wanted.push(pre); }
+    }
+  }
+  if (ver !== null) {
+    if (vs.version !== null && vs.version !== ver) vs.requested = {};
+    vs.version = ver;
+  }
+  for (var w = 0; w < wanted.length; ++w) {
+    if (vs.requested[wanted[w]]) continue;
+    vs.requested[wanted[w]] = true;
+    if (conApp('onValueSchemaGet')) app.onValueSchemaGet(wanted[w]);
+  }
+}
+
+function valueSchemaResult(data) {
+  var r = conParse(data);
+  if (!r || !Array.isArray(r.entries)) return;
+  for (var i = 0; i < r.entries.length; ++i) {
+    var e = r.entries[i];
+    if (e && typeof e.for === 'string' && typeof e.key === 'string') vs.entries[e.for + '/' + e.key] = e;
+  }
+  ++vs.gen;
+  if (latest && typeof latest === 'object') updateDomainState(latest);
+}
+window.valueSchemaResult = valueSchemaResult;
+
+function vsEntryFor(def) {
+  if (!def || typeof def.schemaKey !== 'string') return null;
+  return Object.prototype.hasOwnProperty.call(vs.entries, def.schemaKey) ? vs.entries[def.schemaKey] : null;
+}
+
+function vtIsSet(v) { return v !== undefined && v !== null; }
+
+// Control value wins; else the schema; else the page default.
+function resolveControl(def) {
+  var entry = vsEntryFor(def);
+  var u = (entry && entry.ui && typeof entry.ui === 'object') ? entry.ui : {};
+  var id = controlId(def);
+  var dflt = entry ? entry.default : undefined;
+  function pick(own, fromEntry, fallback) {
+    if (vtIsSet(own)) return own;
+    if (vtIsSet(fromEntry)) return fromEntry;
+    return fallback;
+  }
+  var rc = {
+    id:       id,
+    entry:    entry,
+    label:    def.label || (entry && entry.label) || def.name || def.key,
+    min:      pick(def.min, entry ? entry.min : undefined, 0),
+    max:      pick(def.max, entry ? entry.max : undefined, 1),
+    step:     pick(def.step, u.step, 0.01),
+    decimals: pick(def.decimals, u.decimals, null),
+    hasDefault: typeof dflt === 'number' && isFinite(dflt),
+    defaultValue: dflt
+  };
+  return rc;
+}
+
+// ── renderValueTooltip: DOM contract shared with @dia/editor-ui ValueTooltip ──
+// (see Cluiche/Tests/Contracts/valuetooltip/README.md). Root has data-vt-tooltip; each present
+// section is a direct child with data-vt-section="<name>"; empty sections are absent.
+function vtFormatRange(min, max) {
+  if (vtIsSet(min) && vtIsSet(max)) return String(min) + ' – ' + String(max);
+  if (vtIsSet(min)) return '≥ ' + String(min);
+  if (vtIsSet(max)) return '≤ ' + String(max);
+  return null;
+}
+
+function vtFormatDefault(value, decimals) {
+  if (typeof value === 'number' && vtIsSet(decimals)) return value.toFixed(decimals);
+  return String(value);
+}
+
+function vtSection(root, name, cls, text) {
+  var n = el('div', cls);
+  n.setAttribute('data-vt-section', name);
+  if (text !== undefined) n.textContent = vtIsSet(text) ? String(text) : '';
+  root.appendChild(n);
+  return n;
+}
+
+function renderValueTooltip(entry, options) {
+  entry = entry || {};
+  options = options || {};
+  var forId = vtIsSet(options.forId) ? options.forId : entry.for;
+  var resolvable = Array.isArray(options.resolvable) ? options.resolvable : [];
+
+  var root = el('div', 'vt');
+  root.setAttribute('role', 'tooltip');
+  root.setAttribute('data-vt-tooltip', '');
+
+  vtSection(root, 'title', 'vt-title', entry.label);
+  vtSection(root, 'description', 'vt-desc', entry.description);
+
+  if (Array.isArray(entry.values) && entry.values.length) {
+    var ev = vtSection(root, 'enum_values', 'vt-enum');
+    for (var i = 0; i < entry.values.length; ++i) {
+      var v = entry.values[i] || {};
+      var row = el('div');
+      row.setAttribute('data-vt-enum-id', vtIsSet(v.id) ? String(v.id) : '');
+      var l = el('span', 'vt-enum-label', vtIsSet(v.label) ? String(v.label) : '');
+      l.setAttribute('data-vt-enum-label', '');
+      var ds = el('span', 'vt-enum-desc', vtIsSet(v.description) ? String(v.description) : '');
+      ds.setAttribute('data-vt-enum-desc', '');
+      row.appendChild(l);
+      row.appendChild(document.createTextNode(' '));
+      row.appendChild(ds);
+      ev.appendChild(row);
+    }
+  }
+
+  if (options.inspector && entry.hint) vtSection(root, 'hint', 'vt-hint', entry.hint);
+
+  var meta = [];
+  if (entry.unit) meta.push(['unit', String(entry.unit)]);
+  var range = vtFormatRange(entry.min, entry.max);
+  if (range !== null) meta.push(['range', range]);
+  if (vtIsSet(entry.default)) meta.push(['default', vtFormatDefault(entry.default, entry.ui ? entry.ui.decimals : undefined)]);
+  if (meta.length) {
+    var mn = vtSection(root, 'meta', 'vt-meta');
+    for (var m = 0; m < meta.length; ++m) {
+      var item = el('span', 'vt-meta-item');
+      item.setAttribute('data-vt-kind', meta[m][0]);
+      item.appendChild(el('span', 'vt-meta-label', meta[m][0]));
+      var val = el('span', 'vt-meta-value', meta[m][1]);
+      val.setAttribute('data-vt-value', '');
+      item.appendChild(val);
+      mn.appendChild(item);
+    }
+  }
+
+  if (Array.isArray(entry.affects) && entry.affects.length) {
+    var af = vtSection(root, 'affects', 'vt-affects');
+    for (var a = 0; a < entry.affects.length; ++a) {
+      var chip = el('span', 'vt-chip', String(entry.affects[a]));
+      chip.setAttribute('data-vt-chip', String(entry.affects[a]));
+      af.appendChild(chip);
+    }
+  }
+
+  if (Array.isArray(entry.related) && entry.related.length) {
+    var rl = vtSection(root, 'related', 'vt-related');
+    rl.appendChild(el('span', 'vt-related-label', 'Related:'));
+    for (var r = 0; r < entry.related.length; ++r) {
+      (function (key) {
+        var isLink = resolvable.indexOf(key) >= 0;
+        var node = el(isLink ? 'button' : 'span', isLink ? 'vt-link' : 'vt-plain', key);
+        node.setAttribute('data-vt-key', key);
+        node.setAttribute('data-vt-link', isLink ? 'true' : 'false');
+        if (isLink) {
+          node.setAttribute('type', 'button');
+          node.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (typeof options.onFocusKey === 'function') options.onFocusKey(key);
+          });
+        }
+        rl.appendChild(node);
+      })(String(entry.related[r]));
+    }
+  }
+
+  if (entry.source) {
+    var sn = vtSection(root, 'source', 'vt-source');
+    var s1 = el('span', '', String(entry.source));
+    s1.setAttribute('data-vt-source', '');
+    var s2 = el('span', '', String(forId) + ' · ' + String(entry.key));
+    s2.setAttribute('data-vt-defined-in', '');
+    sn.appendChild(s1);
+    sn.appendChild(document.createTextNode(' · Defined in '));
+    sn.appendChild(s2);
+  }
+
+  if (options.packId) vtSection(root, 'pack_badge', 'vt-pack', 'overridden by pack ' + options.packId);
+
+  return root;
+}
+window.renderValueTooltip = renderValueTooltip;
+
+// ── (i) icon wiring: hover / focus opens, blur / leave / Esc closes ──────────
+var vt = { el: null, timer: null };
+
+function vtCancelHide() { if (vt.timer) { clearTimeout(vt.timer); vt.timer = null; } }
+function vtScheduleHide() { vtCancelHide(); vt.timer = setTimeout(vtClose, 150); }
+function vtClose() {
+  vtCancelHide();
+  if (vt.el && vt.el.parentNode) vt.el.parentNode.removeChild(vt.el);
+  vt.el = null;
+}
+
+function vtFindControl(fullKey) {
+  var all = document.querySelectorAll('.ctrl[data-schema-key]');
+  for (var i = 0; i < all.length; ++i) {
+    if (all[i].getAttribute('data-schema-key') === fullKey) return all[i];
+  }
+  return null;
+}
+
+function vtResolvable(entry) {
+  var out = [];
+  if (!Array.isArray(entry.related)) return out;
+  for (var i = 0; i < entry.related.length; ++i) {
+    if (vtFindControl(entry.for + '/' + entry.related[i])) out.push(String(entry.related[i]));
+  }
+  return out;
+}
+
+// Related link: reveal the card holding the matching control (if collapsed), then focus its slider.
+function vtFocusControl(fullKey) {
+  var c = vtFindControl(fullKey);
+  vtClose();
+  if (!c) return;
+  var card = c.parentNode;
+  while (card && !(card.className && String(card.className).indexOf('domain ') === 0)) card = card.parentNode;
+  if (card) palRevealDomain(card.getAttribute('data-domain'));
+  var range = c.querySelector('input[type=range]');
+  if (range) range.focus();
+}
+
+function vtShow(icon, def) {
+  var entry = vsEntryFor(def);
+  if (!entry) { vtClose(); return; }
+  vtShowEntry(icon, entry, {
+    inspector: false,
+    packId: def.packId || null,
+    resolvable: vtResolvable(entry),
+    forId: entry.for,
+    onFocusKey: function (key) { vtFocusControl(entry.for + '/' + key); }
+  });
+}
+
+function vtShowEntry(icon, entry, options) {
+  vtClose();
+  var tip = renderValueTooltip(entry, options);
+  tip.addEventListener('mouseenter', vtCancelHide);
+  tip.addEventListener('mouseleave', vtScheduleHide);
+
+  var vw = window.innerWidth || document.documentElement.clientWidth || 520;
+  var vh = window.innerHeight || document.documentElement.clientHeight || 600;
+  tip.style.position = 'fixed';
+  tip.style.maxWidth = Math.min(320, vw - 16) + 'px';
+  tip.style.width = tip.style.maxWidth;
+  tip.style.left = '0px';
+  tip.style.top = '0px';
+  document.body.appendChild(tip);
+  vt.el = tip;
+
+  var rect = icon.getBoundingClientRect();
+  var tw = tip.offsetWidth || 320, th = tip.offsetHeight || 0;
+  var left = Math.max(8, Math.min(rect.left, vw - tw - 8));
+  var top = rect.bottom + 6;
+  if (top + th > vh - 8 && rect.top - th - 6 >= 8) top = rect.top - th - 6;   // flip above
+  tip.style.left = left + 'px';
+  tip.style.top = Math.max(8, top) + 'px';
+}
+
+function vtBuildIcon(rc, def) {
+  var icon = el('span', 'info-icon', 'i');
+  icon.setAttribute('tabindex', '0');
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('data-role', 'info');
+  icon.setAttribute('aria-label', 'About ' + rc.label);
+  icon.addEventListener('mouseenter', function () { vtCancelHide(); vtShow(icon, def); });
+  icon.addEventListener('mouseleave', vtScheduleHide);
+  icon.addEventListener('focus', function () { vtCancelHide(); vtShow(icon, def); });
+  icon.addEventListener('blur', vtScheduleHide);
+  return icon;
+}
+
+// (i) icon for a plain entry {key,label,description,unit} (cell layer picker rows). Clicking it never reaches the row.
+function vtBuildEntryIcon(entry) {
+  var icon = el('span', 'info-icon', 'i');
+  icon.setAttribute('tabindex', '0');
+  icon.setAttribute('role', 'button');
+  icon.setAttribute('data-role', 'info');
+  icon.setAttribute('aria-label', 'About ' + entry.label);
+  function open() { vtCancelHide(); vtShowEntry(icon, entry, { inspector: false }); }
+  icon.addEventListener('mouseenter', open);
+  icon.addEventListener('mouseleave', vtScheduleHide);
+  icon.addEventListener('focus', open);
+  icon.addEventListener('blur', vtScheduleHide);
+  icon.addEventListener('click', function (e) { e.stopPropagation(); });
+  return icon;
+}
+
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && vt.el) vtClose();
+});
 
 // ── Global scale slider ──────────────────────────────────────────────────
 (function () {

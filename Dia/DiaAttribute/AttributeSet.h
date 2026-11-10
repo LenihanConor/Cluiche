@@ -21,6 +21,15 @@
 namespace Dia::Attribute {
 
     // -----------------------------------------------------------------------
+    // BandValue — Feature 7 band-based initialization
+    // -----------------------------------------------------------------------
+    struct BandValue
+    {
+        Dia::Core::StringCRC attribute_name;
+        Dia::Core::StringCRC band_name;
+    };
+
+    // -----------------------------------------------------------------------
     // ModifierOperation / AttributeModifier
     // -----------------------------------------------------------------------
     enum class ModifierOperation
@@ -84,6 +93,7 @@ namespace Dia::Attribute {
     public:
         static const unsigned int kMaxModifiersPerAttribute    = 16;
         static const uint32_t     kMaxModifiersPerAttributeSet = 256;
+        static const unsigned int kMaxBandValuesPerCall        = 64;
 
         AttributeSet();
         ~AttributeSet();
@@ -98,6 +108,16 @@ namespace Dia::Attribute {
         // Populates this (assumed freshly default-constructed / not-yet-sized)
         // AttributeSet from a schema, in place. See class comment above.
         void InitializeFromSchema(const AttributeSchema& schema);
+
+        // Feature 7: Initializes attributes from band names instead of direct floats.
+        // Resolves each band_name to a float using the schema's band ranges, stores as base value.
+        // For each BandValue:
+        // - If the attribute has no bands defined, logs a warning and uses default_value
+        // - If the band_name is not in the attribute's bands, logs a warning and uses default_value
+        // - Otherwise, resolves to midpoint of [min, max]
+        // Attributes not listed in band_values are left unchanged (keep their current base value).
+        // AC-3, AC-4, AC-5, AC-9, AC-10
+        void InitializeFromBands(const AttributeSchema& schema, const Dia::Core::Containers::DynamicArrayC<BandValue, kMaxBandValuesPerCall>& band_values);
 
         float GetValue(Dia::Core::StringCRC attribute_name) const;
         float GetBaseValue(Dia::Core::StringCRC attribute_name) const;

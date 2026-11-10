@@ -2,8 +2,10 @@
 #include <DiaApplicationFlowEditor/V2/ManifestLoader.h>
 #include <DiaCore/CRC/StringCRC.h>
 
+#include <process.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 using namespace Dia::ApplicationFlow::Editor;
 using namespace Dia::ApplicationFlow;
@@ -25,7 +27,9 @@ static void DeleteTempFile(const char* path)
     remove(path);
 }
 
-static const char* kTempPath = "TestManifestLoader_temp.diaapp";
+// Per-process name so parallel shards don't clobber each other's file.
+static const std::string kTempPathStr = "TestManifestLoader_temp_" + std::to_string(_getpid()) + ".diaapp";
+static const char* kTempPath = kTempPathStr.c_str();
 
 static const char* kValidMinimal =
     "{"

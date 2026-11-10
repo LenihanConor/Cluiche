@@ -118,6 +118,9 @@
     <Filter Include="UI">
       <UniqueIdentifier>{63d41a51-c4a5-470a-86aa-f8cd3ede1012}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{9c745873-24b3-4525-8e05-c97719183e7e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -674,6 +677,12 @@
     </ClInclude>
     <ClInclude Include="UI\IJSBridge.h">
       <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugDraw\CellFieldDrawRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\Base64.h">
+      <Filter>Strings</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

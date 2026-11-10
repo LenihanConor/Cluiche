@@ -39,14 +39,9 @@ namespace Dia
 
 			if (type == PET_VIEW)
 			{
-				memcpy(mPixelBuffer, buffer, bufferSize);
-
-				for (size_t i = 0; i < dirtyRects.size(); ++i)
-				{
-					const CefRect& rect = dirtyRects[i];
-					Utils::ConvertBGRAtoRGBA(mPixelBuffer, width, height,
-						rect.x, rect.y, rect.width, rect.height);
-				}
+				// Whole frame, one pass: dirty rects are ignored on purpose (see CopyBGRAtoRGBA).
+				(void)dirtyRects;
+				Utils::CopyBGRAtoRGBA(mPixelBuffer, static_cast<const unsigned char*>(buffer), width, height);
 
 				mWidth = width;
 				mHeight = height;

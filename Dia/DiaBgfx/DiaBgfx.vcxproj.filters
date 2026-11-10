@@ -34,6 +34,24 @@
     <ClInclude Include="Imgui\Win32WndProcChain.h">
       <Filter>Imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Resources\CellFieldGeometryCache.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\CellFieldRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\CellFieldDrawParams.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\Ortho2D.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\CellFieldViewOrder.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\CellFieldObservation.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -76,6 +94,21 @@
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_win32.cpp">
       <Filter>Imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Resources\CellFieldGeometryCache.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\CellFieldRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\CellFieldDrawParams.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\Ortho2D.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\CellFieldObservation.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
     <None Include="Shaders\varying.def.sc">
       <Filter>Shaders</Filter>
     </None>
@@ -95,6 +128,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\fs_ui_overlay.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_cellfield.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_cellfield.sc">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

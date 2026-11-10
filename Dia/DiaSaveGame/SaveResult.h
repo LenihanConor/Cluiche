@@ -9,6 +9,7 @@ enum class SaveResultCode : uint8_t {
     SlotAtCapacity,
     SerializeError,      // Flush/Write failed (buffer overflow)
     FileWriteError,
+    InvalidSlotId,       // slot id failed SlotManager::IsValidSlotId
 };
 
 enum class LoadResultCode : uint8_t {
@@ -19,6 +20,7 @@ enum class LoadResultCode : uint8_t {
     EngineMismatch,
     MigrationError,
     DeserializeError,
+    InvalidSlotId,       // slot id failed SlotManager::IsValidSlotId
 };
 
 struct [[nodiscard]] SaveResult {

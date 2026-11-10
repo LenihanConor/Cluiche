@@ -98,6 +98,38 @@ namespace Dia::Attribute {
     }
 
     // -----------------------------------------------------------------------
+    // InitializeFromBands — Feature 7 band-based initialization
+    // -----------------------------------------------------------------------
+    void AttributeSet::InitializeFromBands(const AttributeSchema& schema,
+                                            const Dia::Core::Containers::DynamicArrayC<BandValue, kMaxBandValuesPerCall>& band_values)
+    {
+        // AC-10: Empty band map leaves all attributes at their current base value (no-op)
+        if (band_values.Size() == 0)
+            return;
+
+        // AC-3: Resolve multiple attributes from bands in one call
+        for (unsigned int i = 0; i < band_values.Size(); ++i)
+        {
+            const BandValue& bv = band_values.At(i);
+
+            // Resolve band to float via schema
+            const float resolved = schema.ResolveBand(bv.attribute_name, bv.band_name);
+
+            // AC-9: Attributes not in band map are left unchanged
+            AttributeSlot* slot = mSlots.TryGetItem(bv.attribute_name);
+            if (slot != nullptr)
+            {
+                const float before = ResolveValue(*slot);
+                slot->base_value = resolved;
+                const float after = ResolveValue(*slot);
+
+                // Fire change notifications if value changed
+                NotifyIfChanged(bv.attribute_name, *slot, before, after);
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Resolution pipeline
     // -----------------------------------------------------------------------
     float AttributeSet::ResolveValue(const AttributeSlot& slot) const

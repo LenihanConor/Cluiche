@@ -763,4 +763,26 @@ namespace Dia::MessageBus::Testing {
             << "Snapshot bound must not under-deliver messages queued before Update() was called";
     }
 
+    // =========================================================================
+    // Manifest-instantiable: a module can be constructed with a manifest
+    // instanceId (the DIA_MODULE contract).
+    // =========================================================================
+    namespace {
+        class IdBusModule : public Dia::MessageBus::MessageBusModule {
+        public:
+            explicit IdBusModule(const Dia::Core::StringCRC& id) : MessageBusModule(id) {}
+        };
+    }
+
+    TEST(DiaMessageBusCore, Module_ConstructedWithInstanceId_UsesThatId) {
+        const Dia::Core::StringCRC id("cow-bus");
+        IdBusModule module(id);
+        EXPECT_EQ(module.GetInstanceId(), id);
+    }
+
+    TEST(DiaMessageBusCore, Module_DefaultConstructed_KeepsDefaultInstanceId) {
+        TestableMessageBusModule module;
+        EXPECT_EQ(module.GetInstanceId(), Dia::MessageBus::MessageBusModule::kInstanceId);
+    }
+
 } // namespace Dia::MessageBus::Testing

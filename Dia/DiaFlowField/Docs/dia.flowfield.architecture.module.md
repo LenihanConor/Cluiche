@@ -14,7 +14,8 @@ parent_module_id: dia.root
 summary: >
   Vector-field navigation for mass-unit movement — CFlowFieldGraph concept,
   sync ComputeFlowField<TGraph>() (Dijkstra sweep from goal), FlowField per-cell
-  direction array, FlowFieldCache with named dirty-flag invalidation; square + hex support.
+  direction array (heap-allocated, no cell cap), FlowFieldCache with named dirty-flag
+  invalidation; square + hex support.
 
 intent: >
   Provides O(grid_cells) shared-destination navigation for groups. One Dijkstra sweep
@@ -24,7 +25,7 @@ intent: >
 
 responsibilities:
   - CFlowFieldGraph concept — extends CPathGraph with CellToWorldPosition + WorldToCell
-  - FlowCell (direction Vector2, bool reachable) + FlowField (per-cell array, Sample, SampleWorld, IsComplete)
+  - FlowCell (direction Vector2, bool reachable) + FlowField (heap-allocated per-cell array, no cap; Sample/SampleWorld overloads for graph-aware and square-only sampling, IsComplete)
   - ComputeFlowField<TGraph>() — synchronous Dijkstra sweep from goal; returns complete FlowField
   - SquareFlowAdapter + HexFlowAdapter — thin wrappers adding world-space helpers to existing path grids
   - FlowFieldCache — named field store keyed by StringCRC; GetOrCompute/Invalidate/InvalidateAll/InvalidateRegion

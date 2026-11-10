@@ -7,16 +7,15 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/PUAffinity.h>
-#include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
-#include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
+#include <DiaApplicationFlow/Manifest/ManifestBootstrap.h>
+#include <DiaValueSchema/DescribeSession.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentSchemaJson.h>
 #include <DiaEntity/IComponent.h>
 #include <DiaCore/Metadata/DescriptionRegistry.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
 
-#include <DiaCore/FilePath/PathStore.h>
-#include <DiaCore/FilePath/Path.h>
 #include <DiaCore/Json/external/json/json.h>
 
 // Force-link all v2 modules via DIA_MODULE registrations
@@ -29,21 +28,6 @@ namespace {
 // --dump-schema helpers
 // ---------------------------------------------------------------------------
 
-// Convert a FieldKind enum to its lowercase JSON string representation.
-const char* FieldKindToString(Dia::Entity::FieldKind kind)
-{
-    switch (kind)
-    {
-    case Dia::Entity::FieldKind::Primitive:    return "primitive";
-    case Dia::Entity::FieldKind::StringId:     return "string_id";
-    case Dia::Entity::FieldKind::Math:         return "math";
-    case Dia::Entity::FieldKind::AssetHandle:  return "asset_handle";
-    case Dia::Entity::FieldKind::EntityRef:    return "entity_ref";
-    case Dia::Entity::FieldKind::Nested:       return "nested";
-    case Dia::Entity::FieldKind::Container:    return "container";
-    default:                                   return "unknown";
-    }
-}
 
 // Convert a PUAffinity bitmask to a human-readable string tag.
 // Combinations are joined with '|' (e.g. "main|sim").
@@ -92,98 +76,7 @@ int DumpSchema()
         {
             const Dia::Entity::ComponentTypeDesc& desc = reg.GetByIndex(i);
 
-            Json::Value comp(Json::objectValue);
-
-            // type_id: prefer the string stored in the StringCRC; fall back to hex CRC value.
-            const char* typeIdStr = desc.typeId.AsChar();
-            if (typeIdStr && typeIdStr[0] != '\0')
-            {
-                comp["type_id"] = typeIdStr;
-            }
-            else
-            {
-                char hexBuf[20];
-                snprintf(hexBuf, sizeof(hexBuf), "0x%08X", desc.typeId.Value());
-                comp["type_id"] = hexBuf;
-            }
-
-            comp["debug_name"] = desc.debugName ? desc.debugName : "";
-
-            const char* compDesc = Dia::Core::Metadata::DescriptionRegistry::Get(desc.typeId);
-            comp["description"] = compDesc ? compDesc : "";
-
-            Json::Value fields(Json::arrayValue);
-            for (uint16_t f = 0; f < desc.fieldCount; ++f)
-            {
-                const Dia::Entity::FieldDesc& fd = desc.fields[f];
-                Json::Value field(Json::objectValue);
-                field["name"] = fd.name ? fd.name : "";
-                field["kind"] = FieldKindToString(fd.kind);
-                fields.append(field);
-            }
-            comp["fields"] = fields;
-
-            // default_values: serialise a zero-initialised default instance via saveToJson.
-            Json::Value defaultValuesJson(Json::objectValue);
-            if (desc.saveToJson != nullptr)
-            {
-                // Guard against zero alignment (shouldn't happen, but be safe).
-                const size_t alignment = (desc.alignment > 0)
-                    ? static_cast<size_t>(desc.alignment)
-                    : alignof(std::max_align_t);
-
-                void* buf = _aligned_malloc(static_cast<size_t>(desc.size), alignment);
-                if (buf)
-                {
-                    memset(buf, 0, static_cast<size_t>(desc.size));
-                    const Dia::Entity::IComponent* ptr =
-                        static_cast<const Dia::Entity::IComponent*>(buf);
-                    desc.saveToJson(ptr, defaultValuesJson);
-                    _aligned_free(buf);
-                }
-            }
-            else
-            {
-                fprintf(stderr,
-                    "reflect: WARNING: %s has no saveToJson — default_values will be zero-filled\n",
-                    desc.debugName ? desc.debugName : "unknown");
-
-                for (uint16_t f = 0; f < desc.fieldCount; ++f)
-                {
-                    const Dia::Entity::FieldDesc& fd = desc.fields[f];
-                    const char* fieldName = fd.name ? fd.name : "";
-                    switch (fd.kind)
-                    {
-                    case Dia::Entity::FieldKind::Primitive:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    case Dia::Entity::FieldKind::StringId:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::Math:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    case Dia::Entity::FieldKind::AssetHandle:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::EntityRef:
-                        defaultValuesJson[fieldName] = Json::Value("");
-                        break;
-                    case Dia::Entity::FieldKind::Nested:
-                        defaultValuesJson[fieldName] = Json::Value(Json::objectValue);
-                        break;
-                    case Dia::Entity::FieldKind::Container:
-                        defaultValuesJson[fieldName] = Json::Value(Json::arrayValue);
-                        break;
-                    default:
-                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
-                        break;
-                    }
-                }
-            }
-            comp["default_values"] = defaultValuesJson;
-
-            components.append(comp);
+            components.append(Dia::Entity::BuildComponentSchemaJson(desc));
         }
     }
     root["components"] = components;
@@ -218,62 +111,6 @@ int DumpSchema()
     return 0;
 }
 
-// ---------------------------------------------------------------------------
-// Path / manifest helpers
-// ---------------------------------------------------------------------------
-
-// Compute baseDir from a file path — everything up to and including the last
-// separator, so that ResolveRelative can concatenate directly.
-void ComputeBaseDir(const char* filePath, char* baseDir, unsigned int baseDirSize)
-{
-    const char* lastSlash = nullptr;
-    for (const char* p = filePath; *p != '\0'; ++p)
-    {
-        if (*p == '/' || *p == '\\')
-            lastSlash = p;
-    }
-    if (lastSlash)
-    {
-        unsigned int len = static_cast<unsigned int>(lastSlash - filePath) + 1;
-        if (len >= baseDirSize) len = baseDirSize - 1;
-        for (unsigned int i = 0; i < len; ++i)
-            baseDir[i] = filePath[i];
-        baseDir[len] = '\0';
-    }
-    else
-    {
-        baseDir[0] = '\0';
-    }
-}
-
-// Register path_aliases from the already-composed manifest's diagameConfig.
-// Must be called before any module that resolves a FilePath.
-void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& manifest,
-                         const char* diagamePath)
-{
-    if (!manifest.diagameConfig) return;
-    const Json::Value& config = *manifest.diagameConfig;
-    if (!config.isMember("path_aliases") || !config["path_aliases"].isObject()) return;
-
-    char baseDir[512] = {};
-    ComputeBaseDir(diagamePath, baseDir, sizeof(baseDir));
-
-    const Json::Value& aliases = config["path_aliases"];
-    Json::Value::Members members = aliases.getMemberNames();
-    for (unsigned int i = 0; i < static_cast<unsigned int>(members.size()); ++i)
-    {
-        const std::string& aliasName = members[i];
-        const char* relPath = aliases[aliasName].asCString();
-
-        Dia::Core::Containers::String512 resolved;
-        Dia::Core::Path::ResolveRelative(baseDir, relPath, resolved);
-
-        Dia::Core::Path::Alias alias(aliasName.c_str());
-        Dia::Core::Path::String pathStr(resolved.AsCStr());
-        Dia::Core::PathStore::RegisterToStore(alias, pathStr);
-    }
-}
-
 } // namespace
 
 #pragma warning(push)
@@ -292,6 +129,11 @@ int main(int argc, const char* argv[])
             automationMode = true;
     }
 
+    // --describe-schema <path> [--stage <name>]: DiaValueSchema describe mode. ValueSchemaModule writes the export once
+    // every PU has finished Init, then requests shutdown; the exit code is returned below (see DescribeMode.h).
+    if (!Dia::ValueSchema::BeginDescribeFromArgs(argc, argv, "cluichetest"))
+        return 1;
+
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
     // Heap-allocate manifest — the struct grows with module/channel count and
@@ -299,32 +141,14 @@ int main(int argc, const char* argv[])
     std::unique_ptr<Dia::ApplicationFlow::ApplicationManifestV3> manifestOwner(
         new Dia::ApplicationFlow::ApplicationManifestV3());
     Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
-    Dia::ApplicationFlow::ComposeResult composeResult =
-        Dia::ApplicationFlow::ManifestComposerV2::Compose(kDiagamePath, manifest);
-
-    if (composeResult != Dia::ApplicationFlow::ComposeResult::kSuccess)
-    {
-        printf("Failed to compose manifest (result: %d)\n", static_cast<int>(composeResult));
-        return 1;
-    }
-
-    // Register path aliases from diagameConfig BEFORE any module resolves a FilePath.
-    RegisterPathAliases(manifest, kDiagamePath);
-
-    // Validate manifest against registered types
     Dia::ApplicationFlow::TypeRegistry& registry = Dia::ApplicationFlow::TypeRegistry::Global();
-    Dia::ApplicationFlow::ManifestValidatorV2 validator(registry);
-    validator.Validate(manifest);
 
-    if (validator.HasErrors())
-    {
-        const auto& results = validator.GetResults();
-        for (unsigned int i = 0; i < results.Size(); ++i)
-        {
-            printf("Validation error: %s\n", results[i].message.AsCStr());
-        }
+    // --dev-alias name=path (set by `dia launch`) must register before the manifest loads.
+    Dia::ApplicationFlow::RegisterDevAliases(argc, argv);
+
+    // Compose, register path aliases (before any module resolves a FilePath), validate.
+    if (!Dia::ApplicationFlow::LoadManifest(kDiagamePath, manifest, registry))
         return 1;
-    }
 
     // Create session-scoped test results registry
     CluicheTest::TestResultsRegistry::Create();
@@ -349,6 +173,6 @@ int main(int argc, const char* argv[])
     }
 
     CluicheTest::TestResultsRegistry::Destroy();
-    return 0;
+    return Dia::ValueSchema::DescribeSession::FinalExitCode();  // 0 unless --describe-schema was requested
 }
 #pragma warning(pop)
