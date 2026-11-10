@@ -73,7 +73,7 @@ struct Cell {
     uint8_t terrainFlags;    // Coast, Ridge, Barrier, Pass, Volcanic, RiverCrossesBarrier
     uint8_t downstream;      // river cells: direction 0..5 to the next cell; kNoDirection otherwise
     // Biomes (Feature 8)
-    Dia::Core::StringCRC biome;  // GDD's 8 biomes + Ocean/Lake (SD-S1-005)
+    Biome biome;  // enum (amended 2026-11-10: StringCRC is not trivially copyable); BiomeId(b) gives the StringCRC. GDD's 8 biomes + Ocean/Lake (SD-S1-005)
     // Regions (Feature 9)
     RegionId region;         // 10-16 regions grown inside depth zones
 };

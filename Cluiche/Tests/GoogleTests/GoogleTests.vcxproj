@@ -151,6 +151,7 @@
     <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h" />
     <ClInclude Include="Editor\GameScopedPluginFixtures.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1198,6 +1199,8 @@
     <ClCompile Include="CoW\TestWorldGenViewHost.cpp" />
     <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp" />
+    <ClCompile Include="CoW\TestBiomeTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -57,7 +57,7 @@ enum class Biome : uint8_t {
 Dia::Core::StringCRC BiomeId(Biome b);   // "Biome.Grassland", "Biome.TemperateForest", ... (PD-001)
 ```
 
-`Cell::biome` holds `BiomeId(b)`. The ids are the ones A4's `IBiomeSeasonalBaseline` and A3's `BiomeTransitionComplete` use.
+`Cell::biome` holds the `Biome` enum itself (uint8_t; amended 2026-11-10: `StringCRC` is ~68 bytes and not trivially copyable, and `Cell` is memcpy'd and compared bytewise). Boundaries convert with `BiomeId(b)`. The ids are the ones A4's `IBiomeSeasonalBaseline` and A3's `BiomeTransitionComplete` use.
 
 ### Pipeline stages
 
@@ -230,7 +230,7 @@ bool                 AreBiomesForbidden(Biome a, Biome b);         // symmetric;
 } // namespace CoW::WorldGeneration
 ```
 
-`WorldShapeParams` (terrain spec) gains `float temperatureOffset = 0; float moistureOffset = 0;` (each −0.3..0.3). `ShapeParam` gains `TemperatureOffset` and `MoistureOffset`, and `TerrainStage` gains `Temperature`, `Moisture` and `Biomes`. `FirstStageAffected` returns the stages in the table. The `Cell` already has `Dia::Core::StringCRC biome` (system spec).
+`WorldShapeParams` (terrain spec) gains `float temperatureOffset = 0; float moistureOffset = 0;` (each −0.3..0.3). `ShapeParam` gains `TemperatureOffset` and `MoistureOffset`, and `TerrainStage` gains `Temperature`, `Moisture` and `Biomes`. `FirstStageAffected` returns the stages in the table. `Cell` gains `Biome biome` (the enum is defined in `TerrainTypes.h` so `Cell` can hold it; `BiomeTypes.h` includes it).
 
 ```cpp
 // CoW/Shared/WorldGeneration/BiomeClassifier.h
@@ -325,7 +325,7 @@ Render the Biome view for each preset on 3 fixed seeds (alongside the terrain AC
 
 | ID | Decision | How this feature complies |
 |----|----------|---------------------------|
-| PD-001 | StringCRC ids | `BiomeId` returns `StringCRC`; `Cell::biome` is a `StringCRC`; the ten ids are the shared ids |
+| PD-001 | StringCRC ids | `BiomeId` returns `StringCRC`; `Cell::biome` is the `Biome` enum and `BiomeId` gives the shared `StringCRC` id for each; the ten ids are the shared ids |
 | PD-004 | No STL containers in public APIs | Layers are `DynamicArrayC`; `WorldShapeParams` stays trivially copyable with the two new floats |
 | AD-002 | Classify cross-cutting needs | Feature-local CoW-Shared code. The sweeps and BFS are small and local; no Dia change |
 | SD-S1-002 | Every action/query is a DiaAPI command | Climate sliders go through `set`; no new command or second path |

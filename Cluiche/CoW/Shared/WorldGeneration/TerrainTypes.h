@@ -22,6 +22,10 @@ enum class DepthZone   : uint8_t { None = 0, FirstShores, WildReaches, AncientIn
 enum class TerrainType : uint8_t { DeepWater, ShallowWater, Lake, River, Lowland, Hills, Highland,
                                    Mountain, Peak, Cliff, Pass, Volcano, Count };
 enum class BarrierForm : uint8_t { Plateau, VolcanicChain };
+// Defined here (not BiomeTypes.h) so Cell can store it without a circular include.
+enum class Biome : uint8_t { Ocean, Lake, GrasslandSteppe, TemperateForest, WetlandDelta, DesertBasin,
+                             AlpineMountain, TundraBoreal, Rainforest, VolcanicAshland, Count };
+constexpr int kBiomeCount = static_cast<int>(Biome::Count);
 
 namespace TerrainFlag
 {
@@ -211,6 +215,7 @@ struct Cell
     uint8_t     landmass     = 0;                     // 0 = ocean; 1.. per landmass
     uint8_t     terrainFlags = 0;                     // TerrainFlag bits
     uint8_t     downstream   = kNoDirection;          // river cells: direction 0..5
+    Biome       biome        = Biome::Ocean;          // S-1 biome classification (stage 14)
 };
 
 // Cell storage is heap-backed (grid sizes 1x1..128x128 exceed any fixed-capacity

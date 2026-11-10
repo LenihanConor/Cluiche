@@ -1780,6 +1780,9 @@
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h">
       <Filter>CoW</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -2732,6 +2735,12 @@
     </ClCompile>
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
       <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeTypes.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
