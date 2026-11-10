@@ -1783,6 +1783,9 @@
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h">
       <Filter>CoW</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -2740,6 +2743,12 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestBiomeTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeClimate.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>

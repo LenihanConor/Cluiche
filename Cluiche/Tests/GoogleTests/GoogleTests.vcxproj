@@ -152,6 +152,7 @@
     <ClInclude Include="Editor\GameScopedPluginFixtures.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1201,6 +1202,8 @@
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp" />
     <ClCompile Include="CoW\TestBiomeTypes.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp" />
+    <ClCompile Include="CoW\TestBiomeClimate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
