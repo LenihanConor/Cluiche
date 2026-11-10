@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/dia/systems/diaviewlaunch/diaviewlaunch.md (Feature 1)
 **Status:** Approved (2026-11-10)
+**Plan:** @docs/specs/applications/dia/systems/diaviewlaunch/discovery-record.plan.md
 
 ## Summary
 
