@@ -69,6 +69,7 @@ void Geometry2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
             return { passed, passed ? "all shapes set up" : "pending", 0.0f };
         });
 
+#ifdef DIA_DEBUG
     // REPL commands — allow the orchestrator to query metrics
     // Sim-hosted (Sim-Registered Queries): the counters are written on SimPU, so the handlers run there too.
     if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get())
@@ -102,6 +103,7 @@ void Geometry2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     {
         DIA_LOG_WARNING("CluicheTest", "Geometry2DTestStage: no SimQueryHostModule - REPL count queries not registered");
     }
+#endif
 }
 
 void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
@@ -227,6 +229,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void Geometry2DTestStageModule::OnStop()
 {
+#ifdef DIA_DEBUG
     if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHostRef.Get())
     {
         if (mShapeCountQuery)        host->UnregisterQuery("dia.geometry2d.shape_count");
@@ -234,6 +237,7 @@ void Geometry2DTestStageModule::OnStop()
     }
     mShapeCountQuery = false;
     mIntersectionPairsQuery = false;
+#endif
 
     mShapeCount = 0;
     mMetricShapeCount = nullptr;
