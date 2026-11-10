@@ -1,5 +1,5 @@
 {
-    "rulesVersion": 2,
+    "rulesVersion": 3,
     "kCoastElev": 0.02,
     "kBorderWidth": 2,
     "kEdgeFade": 0.5,
@@ -85,5 +85,17 @@
     "kT0_Rainforest": 0.85,
     "kM0_Rainforest": 0.90,
     "kWT_Rainforest": 0.20,
-    "kWM_Rainforest": 0.15
+    "kWM_Rainforest": 0.15,
+    "kMinRegionCells": 36,
+    "kSeedBiomeBonus": 3,
+    "kBiomeMismatch": 0.8,
+    "kRegionRidgeCost": 1.0,
+    "kMaxRegionShare": 1.7,
+    "kMaxRegionSlack": 8,
+    "kMaxAbsorbedShare": 0.03,
+    "kNodeSpacing": 3,
+    "kCorridorSpacing": 6,
+    "kCoastalGapReach": 4,
+    "kRiverNodeSpacing": 7,
+    "kCellsPerNode": 10
 }

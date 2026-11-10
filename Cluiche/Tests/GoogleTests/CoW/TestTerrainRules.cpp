@@ -49,7 +49,7 @@ std::filesystem::path FindShippedRules()
 TEST(TerrainRules, DefaultsMatchTable)
 {
     const TerrainRules r = TerrainRules::Defaults();
-    EXPECT_EQ(r.rulesVersion, 2u);
+    EXPECT_EQ(r.rulesVersion, 3u);
     EXPECT_FALSE(r.degraded);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
@@ -238,7 +238,7 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
     EXPECT_TRUE(r.LoadFromJson(root, warnings));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(r.degraded);
-    EXPECT_EQ(r.rulesVersion, 2u);
+    EXPECT_EQ(r.rulesVersion, 3u);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
         EXPECT_FLOAT_EQ(r.values[i], GetRuleDef(i).defaultValue) << GetRuleDef(i).key;
@@ -311,4 +311,89 @@ TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
     EXPECT_FLOAT_EQ(b.kLapse(), a.kLapse());
     EXPECT_FLOAT_EQ(b.kT0_Grass(), a.kT0_Grass());
     EXPECT_FLOAT_EQ(b.kM0_Rainforest(), a.kM0_Rainforest());
+}
+
+TEST(TerrainRules, RegionRulesDefaults)
+{
+    const TerrainRules r = TerrainRules::Defaults();
+
+    // Region partition and node placement constants
+    EXPECT_EQ(r.GetInt(Rule::kMinRegionCells), 36);
+    EXPECT_EQ(r.GetInt(Rule::kSeedBiomeBonus), 3);
+    EXPECT_FLOAT_EQ(r.kBiomeMismatch(), 0.8f);
+    EXPECT_FLOAT_EQ(r.kRegionRidgeCost(), 1.0f);
+    EXPECT_FLOAT_EQ(r.kMaxRegionShare(), 1.7f);
+    EXPECT_EQ(r.GetInt(Rule::kMaxRegionSlack), 8);
+    EXPECT_FLOAT_EQ(r.kMaxAbsorbedShare(), 0.03f);
+    EXPECT_EQ(r.GetInt(Rule::kNodeSpacing), 3);
+    EXPECT_EQ(r.GetInt(Rule::kCorridorSpacing), 6);
+    EXPECT_EQ(r.GetInt(Rule::kCoastalGapReach), 4);
+    EXPECT_EQ(r.GetInt(Rule::kRiverNodeSpacing), 7);
+    EXPECT_EQ(r.GetInt(Rule::kCellsPerNode), 10);
+}
+
+TEST(TerrainRules, RegionRulesOutOfRangeClamp)
+{
+    Json::Value json = TerrainRules::Defaults().ToJson();
+    json["kMinRegionCells"] = 0.5;     // min 1
+    json["kSeedBiomeBonus"] = 100.0;   // max 32
+    json["kBiomeMismatch"] = 2.0;      // max 1.0
+    json["kMaxRegionSlack"] = -5.0;    // min 1
+
+    TerrainRules r;
+    RuleWarnings warnings;
+    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+
+    EXPECT_EQ(r.GetInt(Rule::kMinRegionCells), 1);
+    EXPECT_EQ(r.GetInt(Rule::kSeedBiomeBonus), 32);
+    EXPECT_FLOAT_EQ(r.kBiomeMismatch(), 1.0f);
+    EXPECT_EQ(r.GetInt(Rule::kMaxRegionSlack), 1);
+
+    EXPECT_TRUE(HasWarning(warnings, "range:kMinRegionCells"));
+    EXPECT_TRUE(HasWarning(warnings, "range:kSeedBiomeBonus"));
+    EXPECT_TRUE(HasWarning(warnings, "range:kBiomeMismatch"));
+    EXPECT_TRUE(HasWarning(warnings, "range:kMaxRegionSlack"));
+    EXPECT_TRUE(r.degraded);
+}
+
+TEST(TerrainRules, RegionRulesMissingWithWarning)
+{
+    Json::Value json = TerrainRules::Defaults().ToJson();
+    json.removeMember("kNodeSpacing");
+    json.removeMember("kCoastalGapReach");
+
+    TerrainRules r;
+    RuleWarnings warnings;
+    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_EQ(r.GetInt(Rule::kNodeSpacing), 3);      // falls back to default
+    EXPECT_EQ(r.GetInt(Rule::kCoastalGapReach), 4);   // falls back to default
+    EXPECT_TRUE(HasWarning(warnings, "missing:kNodeSpacing"));
+    EXPECT_TRUE(HasWarning(warnings, "missing:kCoastalGapReach"));
+    EXPECT_FALSE(r.degraded);
+}
+
+TEST(TerrainRules, RegionRulesRoundTripThroughJson)
+{
+    const TerrainRules a = TerrainRules::Defaults();
+    const Json::Value json = a.ToJson();
+
+    TerrainRules b;
+    RuleWarnings warnings;
+    EXPECT_TRUE(b.LoadFromJson(json, warnings));
+    EXPECT_EQ(warnings.Size(), 0u);
+    EXPECT_FALSE(b.degraded);
+
+    // Check region rules round-trip
+    EXPECT_EQ(b.GetInt(Rule::kMinRegionCells), a.GetInt(Rule::kMinRegionCells));
+    EXPECT_EQ(b.GetInt(Rule::kSeedBiomeBonus), a.GetInt(Rule::kSeedBiomeBonus));
+    EXPECT_FLOAT_EQ(b.kBiomeMismatch(), a.kBiomeMismatch());
+    EXPECT_FLOAT_EQ(b.kRegionRidgeCost(), a.kRegionRidgeCost());
+    EXPECT_FLOAT_EQ(b.kMaxRegionShare(), a.kMaxRegionShare());
+    EXPECT_EQ(b.GetInt(Rule::kMaxRegionSlack), a.GetInt(Rule::kMaxRegionSlack));
+    EXPECT_FLOAT_EQ(b.kMaxAbsorbedShare(), a.kMaxAbsorbedShare());
+    EXPECT_EQ(b.GetInt(Rule::kNodeSpacing), a.GetInt(Rule::kNodeSpacing));
+    EXPECT_EQ(b.GetInt(Rule::kCorridorSpacing), a.GetInt(Rule::kCorridorSpacing));
+    EXPECT_EQ(b.GetInt(Rule::kCoastalGapReach), a.GetInt(Rule::kCoastalGapReach));
+    EXPECT_EQ(b.GetInt(Rule::kRiverNodeSpacing), a.GetInt(Rule::kRiverNodeSpacing));
+    EXPECT_EQ(b.GetInt(Rule::kCellsPerNode), a.GetInt(Rule::kCellsPerNode));
 }

@@ -104,7 +104,19 @@ namespace WorldGeneration {
     X(kT0_Rainforest,    0.85f,  0.0f,   1.0f) \
     X(kM0_Rainforest,    0.90f,  0.0f,   1.0f) \
     X(kWT_Rainforest,    0.20f,  0.0f,   1.0f) \
-    X(kWM_Rainforest,    0.15f,  0.0f,   1.0f)
+    X(kWM_Rainforest,    0.15f,  0.0f,   1.0f) \
+    X(kMinRegionCells,   36.0f,  1.0f,   256.0f) \
+    X(kSeedBiomeBonus,   3.0f,   1.0f,   32.0f) \
+    X(kBiomeMismatch,    0.8f,   0.0f,   1.0f) \
+    X(kRegionRidgeCost,  1.0f,   0.0f,   32.0f) \
+    X(kMaxRegionShare,   1.7f,   1.0f,   8.0f) \
+    X(kMaxRegionSlack,   8.0f,   1.0f,   64.0f) \
+    X(kMaxAbsorbedShare, 0.03f,  0.0f,   0.2f) \
+    X(kNodeSpacing,      3.0f,   1.0f,   32.0f) \
+    X(kCorridorSpacing,  6.0f,   1.0f,   32.0f) \
+    X(kCoastalGapReach,  4.0f,   1.0f,   32.0f) \
+    X(kRiverNodeSpacing, 7.0f,   1.0f,   32.0f) \
+    X(kCellsPerNode,     10.0f,  1.0f,   256.0f)
 
 enum class Rule : uint32_t
 {
@@ -133,7 +145,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 const RuleDef& GetRuleDef(Rule r);
 const RuleDef& GetRuleDef(uint32_t index);
 
-constexpr uint32_t kDefaultRulesVersion = 2;
+constexpr uint32_t kDefaultRulesVersion = 3;
 
 struct TerrainRules
 {
