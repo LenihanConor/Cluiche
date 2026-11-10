@@ -130,7 +130,7 @@ Steps 1–3 classify (climate wins). Step 4 fixes depth zones. Step 5 fixes neig
 
 **Wetland-eligible:** a land cell with `elevation ≤ kWetlandMaxElev = 0.12` that is (a) a river mouth cell (a river cell next to ocean) or a land cell within one step of one, or (b) next to a lake cell, or (c) a coast cell with `moisture ≥ kWetlandMoist = 0.7`.
 
-**2. Plateau interior.** A cell with `barrierMask ≥ kPlateauInner` (0.5) when `barrierForm == Plateau` and `Barrier > 0` chooses between Rainforest (`moisture ≥ kPlateauWet = 0.5`) and DesertBasin. It is not pinned (pin 0), so the fix-up may still change it.
+**2. Plateau interior.** A cell with `barrierMask ≥ kPlateauInner` (0.5) when `barrierForm == Plateau` and `Barrier > 0` chooses between Rainforest and DesertBasin. It is not pinned (pin 0), so the fix-up may still change it. (amended 2026-11-10) The choice is made once per connected plateau interior, not per cell: connected components (6-neighbour adjacency) of such cells that are land and not pinned by rules 1-4 each become Rainforest if the mean `moisture` of their cells is `≥ kPlateauWet = 0.5`, else DesertBasin. A pinned cell splits a plateau into separate components.
 
 **3. Climate score.** Every other land cell scores each climate biome by distance from its target:
 
@@ -168,7 +168,7 @@ A cell whose biome is not valid in its `depthZone` re-picks the best-scoring bio
 Up to `kMaxFixupPasses = 8` passes, each over the cells in index order. For each forbidden pair `(a, b)` of neighbours:
 
 1. The cell with the lower pin strength re-picks. On a tie in pin strength, the cell with the lower `biomeScore` re-picks, then the lower index.
-2. It re-picks the best-scoring zone-valid biome (candidates as in step 4) that forms no forbidden pair with any of its neighbours' current biomes.
+2. It re-picks the best-scoring zone-valid biome (candidates as in step 4) that forms no forbidden pair with any of its neighbours' current biomes. (amended 2026-11-10) If no climate or wetland candidate is free of forbidden pairs, AlpineMountain is accepted as the last-resort candidate, ranked below everything (like WetlandDelta), provided it is zone-valid. Alpine forms no forbidden pair. The zone fix-up (step 4) is unchanged.
 3. If none exists, it keeps its biome and the pair is left for a later pass.
 
 Changed cells set `fixupChanges = 2`. After the last pass, the number of pairs left is `unresolvedPairs`. Because the fix-up only ever moves a cell to a biome that forms no forbidden pair, a changed cell cannot create a new violation, so passes strictly reduce violations or stop.
@@ -270,10 +270,10 @@ Unless stated otherwise: Small (66 × 42), default params and the three presets,
 
 ### AC2: Valid ids and water
 - Every cell has exactly one `Biome` in range.
-- `waterSource == Ocean` ⇔ Ocean, `waterSource == Lake` ⇔ Lake, and no land cell is Ocean or Lake.
+- `waterSource == Ocean` ⇔ Ocean, `waterSource == Lake` ⇔ Lake, and no land cell is Ocean or Lake. (amended 2026-11-10: water cells are skipped by the zone check in AC3.)
 
 ### AC3: Zone rules
-**Pass:** for every cell, `IsBiomeValidInZone(biome, depthZone)`, except cells within `kVentRadius` of a vent, which may be VolcanicAshland in any zone. 100% on all worlds.
+**Pass:** for every land cell, `IsBiomeValidInZone(biome, depthZone)` (amended 2026-11-10: water cells, Ocean and Lake, are skipped by the zone check, as in step 4; lakes sit in Wild Reaches), except cells within `kVentRadius` of a vent, which may be VolcanicAshland in any zone. 100% on all worlds.
 
 ### AC4: Forbidden pairings
 **Pass:** no two neighbouring cells form a forbidden pair, on all default-param and preset worlds. `unresolvedPairs == 0`. If it is not zero on some world, the count is reported (`effective.unresolvedPairs`, Degraded health); the world is still produced.
@@ -285,7 +285,7 @@ Unless stated otherwise: Small (66 × 42), default params and the three presets,
 **Pass (on worlds, before the zone fix-up changes, and checked via `fixupChanges == 0`):**
 - Cells with a `Volcanic` flag, terrain `Volcano`, or the `Barrier` flag with `VolcanicChain` are VolcanicAshland.
 - Mountain, Peak, Cliff and Pass cells are AlpineMountain, unless a volcanic rule applies.
-- On a Plateau barrier, plateau-interior cells are Rainforest or DesertBasin (and Volcanic where flagged), unless `fixupChanges != 0`.
+- On a Plateau barrier, plateau-interior cells are Rainforest or DesertBasin (and Volcanic where flagged), unless `fixupChanges != 0`. (amended 2026-11-10) Each connected plateau interior is wholly Rainforest or wholly DesertBasin, unless `fixupChanges != 0`.
 
 ### AC7: Climate table (hand-built)
 On a hand-built grid with one cell per row, set temperature and moisture directly. **Pass:** warm and wet → Rainforest; warm and dry → DesertBasin; cold → TundraBoreal; mid → Grassland / TemperateForest by moisture; each at a documented margin from the next. Includes a tie at each boundary (lowest enum wins).
@@ -348,6 +348,7 @@ Render the Biome view for each preset on 3 fixed seeds (alongside the terrain AC
 `Approved` 2026-10-18 (S-1 plan task 11). Open design questions 1–3 stand as written.
 
 - Feature 8 of @worldgenerationpipeline.md.
+- Amended 2026-11-10 (user-approved): step 2 picks one climate per connected plateau interior by mean moisture, and step 5 accepts zone-valid AlpineMountain as a last-resort candidate. Reason: Rainforest and Desert are a forbidden pair and the plateau interior is Ancient Interiors, where only Desert, Tundra and Rainforest are legal, so a per-cell moisture split left unresolved pairs. AC2/AC3 wording also clarified so water cells are skipped by the zone check.
 - Amends the Approved Terrain Generator (@terrain-generator.md): `WorldShapeParams` gains `temperatureOffset` and `moistureOffset`, `ShapeParam`/`TerrainStage` gain the three new stages, and the preset files gain the two keys. Amends the system spec: `GenParams::biomeWeights[]` removed, Feature 6 and Test 2b reworded.
 - Build is plan task 11, after the Terrain Generator build (plan task 7). Plan: @biome-classification.plan.md (In Progress).
 

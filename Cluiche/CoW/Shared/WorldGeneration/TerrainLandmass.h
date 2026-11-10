@@ -59,6 +59,7 @@ struct Effective
     int   passes = 0;           // placeholder until the Barrier stage
     int   lakes = 0;            // stage 7: min(Lakes slider, eligibleBasins)
     int   eligibleBasins = 0;   // stage 5: eligible basins (the Lakes stage caps lakes at this)
+    int   unresolvedPairs = 0;  // stage 14: forbidden biome neighbour pairs left after fix-up
     int   mainLandmass = 0;     // landmass id holding the mainland's highest-M cell (0 = none)
     std::vector<int> islandCentres;   // centre cell per accepted group, in acceptance order
 };

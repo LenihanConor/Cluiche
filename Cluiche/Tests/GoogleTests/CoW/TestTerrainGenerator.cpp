@@ -106,14 +106,15 @@ TEST(TerrainGenerator, HardCodedDownstreamExpectations)
         g.Update(42, Tweak(p), kDims, rng);
         return RanStages(g);
     };
-    EXPECT_EQ(run(ShapeParam::Rivers), (std::set<int>{ 6, 8, 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::Lakes), (std::set<int>{ 7, 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::Ruggedness), (std::set<int>{ 4, 5, 6, 7, 8, 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::Barrier), (std::set<int>{ 3, 4, 5, 6, 7, 8, 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::LandFraction), (std::set<int>{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::ValleyDepth), (std::set<int>{ 9, 10 }));
-    EXPECT_EQ(run(ShapeParam::LatitudeNorth), (std::set<int>{ 11 }));
-    EXPECT_EQ(run(ShapeParam::TemperatureOffset), (std::set<int>{}));   // stage 12: Feature 8
+    EXPECT_EQ(run(ShapeParam::Rivers), (std::set<int>{ 6, 8, 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::Lakes), (std::set<int>{ 7, 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::Ruggedness), (std::set<int>{ 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::Barrier), (std::set<int>{ 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::LandFraction), (std::set<int>{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::ValleyDepth), (std::set<int>{ 9, 10, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::LatitudeNorth), (std::set<int>{ 11, 12, 13, 14 }));
+    EXPECT_EQ(run(ShapeParam::TemperatureOffset), (std::set<int>{ 12, 14 }));
+    EXPECT_EQ(run(ShapeParam::MoistureOffset), (std::set<int>{ 13, 14 }));
 }
 
 TEST(TerrainGenerator, StageReadsMatchSpecTable)

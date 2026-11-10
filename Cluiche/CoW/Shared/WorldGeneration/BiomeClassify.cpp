@@ -98,6 +98,11 @@ namespace
             {
                 consider(Biome::WetlandDelta, kLowest);   // no climate target: last resort only
             }
+            if (!found && checkNeighbours)
+            {
+                // Last resort (amended 2026-11-10): Alpine forms no forbidden pair, accepted when zone-valid.
+                consider(Biome::AlpineMountain, kLowest);
+            }
             return found;
         }
 
@@ -211,6 +216,8 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
 
     const bool plateau = in.barrierForm == BarrierForm::Plateau && in.barrier > 0.0f && in.barrierMask != nullptr;
 
+    std::vector<uint8_t> interior(static_cast<size_t>(n), 0);
+
     // Steps 1-3: pins, plateau interior, climate score.
     for (int c = 0; c < n; ++c)
     {
@@ -256,7 +263,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         out.biomePin[c] = BiomePin::None;
         if (plateau && in.barrierMask[c] >= rules.kPlateauInner())
         {
-            k.Assign(c, in.moisture[c] >= rules.kPlateauWet() ? Biome::Rainforest : Biome::DesertBasin);
+            interior[c] = 1;   // climate chosen per connected plateau below
             continue;
         }
 
@@ -273,6 +280,46 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         }
         out.biomeIndex[c] = static_cast<uint32_t>(best);
         out.biomeScore[c] = bestScore;
+    }
+
+    // Step 2 (amended 2026-11-10): one climate per connected plateau interior, by mean moisture.
+    {
+        std::vector<int> stack;
+        std::vector<int> members;
+        for (int s = 0; s < n; ++s)
+        {
+            if (interior[s] != 1)
+            {
+                continue;
+            }
+            members.clear();
+            stack.clear();
+            interior[s] = 2;
+            stack.push_back(s);
+            double sum = 0.0;
+            while (!stack.empty())
+            {
+                const int c = stack.back();
+                stack.pop_back();
+                members.push_back(c);
+                sum += static_cast<double>(in.moisture[c]);
+                for (uint32_t d = 0; d < 6u; ++d)
+                {
+                    const uint32_t nb = k.topo.NeighbourAt(static_cast<uint32_t>(c), d);
+                    if (nb != kNoCell && interior[nb] == 1)
+                    {
+                        interior[nb] = 2;
+                        stack.push_back(static_cast<int>(nb));
+                    }
+                }
+            }
+            const float mean = static_cast<float>(sum / static_cast<double>(members.size()));
+            const Biome b = mean >= rules.kPlateauWet() ? Biome::Rainforest : Biome::DesertBasin;
+            for (int c : members)
+            {
+                k.Assign(c, b);
+            }
+        }
     }
 
     // Step 4: zone fix-up.

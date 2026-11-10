@@ -10,6 +10,8 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
 #pragma once
 
+#include <Shared/WorldGeneration/BiomeClassify.h>
+#include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/TerrainClassify.h>
 #include <Shared/WorldGeneration/TerrainDepthZones.h>
 #include <Shared/WorldGeneration/TerrainDrainage.h>
@@ -73,16 +75,17 @@ struct StageTiming
     X("terrainType",   LayerType::UInt,  TerrainStage::Classify) \
     X("waterSource",   LayerType::UInt,  TerrainStage::Classify) \
     X("terrainFlags",  LayerType::UInt,  TerrainStage::Classify) \
-    X("latitude",      LayerType::Float, TerrainStage::Latitude)
+    X("latitude",      LayerType::Float, TerrainStage::Latitude)     X("temperature",   LayerType::Float, TerrainStage::Temperature)     X("waterDistance", LayerType::UInt,  TerrainStage::Moisture)     X("airMoisture",   LayerType::Float, TerrainStage::Moisture)     X("rainOut",       LayerType::Float, TerrainStage::Moisture)     X("moisture",      LayerType::Float, TerrainStage::Moisture)     X("biomeScore",    LayerType::Float, TerrainStage::Biomes)     X("biomePin",      LayerType::UInt,  TerrainStage::Biomes)     X("biomeIndex",    LayerType::UInt,  TerrainStage::Biomes)     X("fixupChanges",  LayerType::UInt,  TerrainStage::Biomes)
 
 // Number of stages the generator currently implements (stages >= this are Feature 8).
-constexpr int kImplementedStageCount = 12;
+constexpr int kImplementedStageCount = 15;
 
 constexpr uint32_t StageBit(TerrainStage s) { return 1u << static_cast<uint32_t>(s); }
 
 // kStageReads[t] has bit s set when stage t reads the output of upstream stage s.
-// Stage 0 has no reads (reseeds from the world seed); stage 11 reads the grid only;
-// stages 12-14 belong to Feature 8 and are never scheduled yet.
+// Stage 0 has no reads (reseeds from the world seed); stage 11 reads the grid only.
+// Stages 12 (Temperature) and 13 (Moisture) do not read each other, so temperatureOffset dirties
+// 12+14 only and moistureOffset 13+14 only.
 inline constexpr uint32_t kStageReads[static_cast<int>(TerrainStage::Count)] =
 {
     0,                                                                                  // 0 SeedFields
@@ -97,7 +100,9 @@ inline constexpr uint32_t kStageReads[static_cast<int>(TerrainStage::Count)] =
     (1u << 4) | (1u << 5) | (1u << 6) | (1u << 7),                                      // 9 Valleys {4,5,6,7}
     (1u << 1) | (1u << 2) | (1u << 3) | (1u << 6) | (1u << 7) | (1u << 8) | (1u << 9),  // 10 Classify
     0,                                                                                  // 11 Latitude (grid only)
-    0, 0, 0                                                                             // 12-14 Feature 8
+    (1u << 9) | (1u << 11),                                                             // 12 Temperature {9,11}
+    (1u << 9) | (1u << 10) | (1u << 11),                                                // 13 Moisture {9,10,11}
+    (1u << 3) | (1u << 8) | (1u << 9) | (1u << 10) | (1u << 12) | (1u << 13)            // 14 Biomes {3,8,9,10,12,13}
 };
 
 // ---------------------------------------------------------------------------
@@ -217,6 +222,8 @@ public:
     const Stage8Debug&   GetStage8Debug() const { return mStage8; }
     // Stage 9 internals (river cell, carve, floor and walk counts).
     const Stage9Debug&   GetStage9Debug() const { return mStage9; }
+    // Stage 14 internals (unresolved forbidden pairs, fix-up change counts).
+    const Stage14Debug&  GetStage14Debug() const { return mStage14; }
 
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
@@ -233,6 +240,7 @@ private:
     Stage7Debug      mStage7;
     Stage8Debug      mStage8;
     Stage9Debug      mStage9;
+    Stage14Debug     mStage14;
     Effective        mEffective;
     StageTiming      mTimings[static_cast<int>(TerrainStage::Count)];
     float            mLastTotalMs = 0.0f;

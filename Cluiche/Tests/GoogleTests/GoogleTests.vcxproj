@@ -1206,6 +1206,7 @@
     <ClCompile Include="CoW\TestBiomeClimate.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClassify.cpp" />
     <ClCompile Include="CoW\TestBiomeClassify.cpp" />
+    <ClCompile Include="CoW\TestBiomeGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

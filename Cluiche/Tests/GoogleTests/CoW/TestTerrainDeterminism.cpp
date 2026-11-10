@@ -23,10 +23,13 @@ const GridDimensions kSmall{ 66, 42 };
 const GridDimensions kIso{ 40, 30 };
 
 // Spec table: stage -> stages it reads (direct). Stage 11 reads only the grid.
-const std::set<int> kSpecReads[12] =
+constexpr int kTemperature = static_cast<int>(TerrainStage::Temperature);
+
+const std::set<int> kSpecReads[15] =
 {
     {}, { 0 }, { 0, 1 }, { 0, 1 }, { 0, 1, 2, 3 }, { 4 }, { 4, 5 }, { 5 },
-    { 1, 2, 3, 6 }, { 4, 5, 6, 7 }, { 1, 2, 3, 6, 7, 8, 9 }, {}
+    { 1, 2, 3, 6 }, { 4, 5, 6, 7 }, { 1, 2, 3, 6, 7, 8, 9 }, {},
+    { 9, 11 }, { 9, 10, 11 }, { 3, 8, 9, 10, 12, 13 }
 };
 
 // Spec Sliders table: first stage affected per slider (ShapeParam order, 18 terrain sliders).
@@ -46,7 +49,7 @@ const int kSpecFirstStage[kTerrainSliderCount] =
 std::set<int> SpecDirty(int first)
 {
     std::set<int> d{ first };
-    for (int s = 1; s < 12; ++s)
+    for (int s = 1; s < 15; ++s)
     {
         for (int r : kSpecReads[s])
         {
@@ -149,7 +152,7 @@ void CheckSliderIsolation(TerrainRunner& live, TerrainRunner& fresh, uint64_t se
 }
 
 // ---- Goldens ----------------------------------------------------------------------------------
-constexpr int kGoldenLayers = 27;
+constexpr int kGoldenLayers = 36;
 struct GoldenSet
 {
     uint64_t seed;
@@ -159,7 +162,7 @@ struct GoldenSet
 
 const GoldenSet kGolden[3] =
 {
-    { 1ull, 0x9806E9D075248467ull,
+    { 1ull, 0x1333956F80023984ull,
       {
           0x6C3C0775F70AC75Aull, 0x1CA0E078B1D52247ull, 0x9BEF190A3CA90285ull,
           0x54FB4C940896217Dull, 0x0F333F93568EC3E4ull, 0x0F120157F984B052ull,
@@ -170,8 +173,11 @@ const GoldenSet kGolden[3] =
           0x0394CD91C7DEEB58ull, 0xC098EDF9CA7B3BC6ull, 0x5DF1C2B01CA4275Cull,
           0xCE2DA522C444F6D4ull, 0x0672092CE311063Aull, 0x4253CD4D144F56F2ull,
           0xB214E33B643B7BB7ull, 0x23403465926278EAull, 0xBA892187C0868CAAull,
+          0x3249413F7BE02081ull, 0x523683B94EC131F1ull, 0x1AA494ED3FCBD5B1ull,
+          0x326F431F7B74C074ull, 0xA062FC65BC764F05ull, 0x7CF2BD7BA5757091ull,
+          0xAA9838024B2C3A30ull, 0x3CA775DF628A353Eull, 0x4CACB007028255F6ull,
       } },
-    { 12345ull, 0x3210F0B08F53D852ull,
+    { 12345ull, 0xBFCC1A2FBE718A4Dull,
       {
           0xB442BD9FCEF82277ull, 0x860B27D63D97D08Dull, 0x55CA2BEAC38282A5ull,
           0x4A0FFEF3F08EFD6Bull, 0x19AE0C668FD61864ull, 0xF3E9F16755F60E00ull,
@@ -182,8 +188,11 @@ const GoldenSet kGolden[3] =
           0x0BD4E5F148614C19ull, 0x78E29063104EFFE6ull, 0x2D82A9A246C08012ull,
           0xA45CFA9F1C092415ull, 0x3035D3CA0E040FCEull, 0x28B4C57F372FE92Full,
           0x38433A56F4843656ull, 0xC0FD5C15535C3D15ull, 0xBA892187C0868CAAull,
+          0x6298E39DB51C1D38ull, 0xCB38DC808FE729C2ull, 0xC827641F966F7BE9ull,
+          0x88C3FBEDB1C5915Eull, 0x6D4AF9E3C45CCCE0ull, 0x5F33046A941088C7ull,
+          0x18DF775F8FB122C5ull, 0xD796D96AD6CD30F6ull, 0x68D0F9E0FB1E4784ull,
       } },
-    { 0xDEADBEEFCAFEBABEull, 0x421D3BA5B494551Cull,
+    { 0xDEADBEEFCAFEBABEull, 0xED833529486C0366ull,
       {
           0xA09A3A9850077403ull, 0x97F22A2F7F2FEFD2ull, 0x7D604400DA8280F6ull,
           0x1C457649FAFD0B94ull, 0xA1859F07EB0DBA74ull, 0xD0FC37E7325E8985ull,
@@ -194,6 +203,9 @@ const GoldenSet kGolden[3] =
           0x2E90E293D340A237ull, 0xA5139C23FA93D775ull, 0xABA6CACC645E1DEDull,
           0x24AA06D60C9785DCull, 0x4F19B2DD1436D4C3ull, 0x3337198BF5A69D33ull,
           0xE1E5DC6D81951B47ull, 0x8F7ABC78ACF60D77ull, 0xBA892187C0868CAAull,
+          0xD0DB18DC6AD7B255ull, 0x32376288FEF8EAA6ull, 0x25D28710E33CE7ACull,
+          0x4D5F3A98DC98B223ull, 0x78F1464EC56774CDull, 0x00DDDC99DF928F7Full,
+          0xE27BAA6A98166750ull, 0x401C7DD5F22E9B87ull, 0x18F37A20064A8734ull,
       } },
 };
 
@@ -221,8 +233,8 @@ TEST(TerrainDeterminism, DriverScriptCoversEverySliderAndIsStable)
 
 TEST(TerrainDeterminism, SpecTablesMatchGenerator)
 {
-    ASSERT_EQ(kImplementedStageCount, 12);
-    for (int s = 0; s < 12; ++s)
+    ASSERT_EQ(kImplementedStageCount, 15);
+    for (int s = 0; s < 15; ++s)
     {
         uint32_t mask = 0;
         for (int r : kSpecReads[s]) { mask |= 1u << r; }
@@ -287,11 +299,14 @@ TEST(TerrainDeterminism, LatitudeChangeOnlyChangesLatitudeLayerAndCells)
     const TerrainSnapshot a = live.Run(5, p, kIso);
     p.latitudeNorthDeg = 75.0f;
     const TerrainSnapshot b = live.Run(5, p, kIso);
-    EXPECT_EQ(RanStages(live.Gen()), (std::set<int>{ 11 }));
+    EXPECT_EQ(RanStages(live.Gen()), (std::set<int>{ 11, 12, 13, 14 }));
     const std::vector<std::string> diff = DiffSnapshots(a, b);
     for (const std::string& n : diff)
     {
-        EXPECT_TRUE(n == "latitude" || n == "<cells>") << n;
+        // Latitude feeds the climate stages, so only their layers (and the Cell array) may also change.
+        const int idx = live.Gen().GetLayers().FindLayer(n.c_str());
+        const bool downstream = idx >= 0 && static_cast<int>(TerrainLayers::GetLayerInfo(idx).stage) >= kTemperature;
+        EXPECT_TRUE(n == "latitude" || n == "<cells>" || downstream) << n;
     }
     EXPECT_FALSE(diff.empty());
 }

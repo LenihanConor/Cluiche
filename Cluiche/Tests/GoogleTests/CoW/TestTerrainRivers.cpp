@@ -585,11 +585,11 @@ TEST(TerrainRivers, DirtyBitsRiversLakesAndRuggedness)
 
     s.rivers = 0.8f;
     r.Go(5, s);
-    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 6, 8, 9, 10 }));
+    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 6, 8, 9, 10, 12, 13, 14 }));
 
     s.lakes = 9;
     r.Go(5, s);
-    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 7, 9, 10 }));
+    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 7, 9, 10, 12, 13, 14 }));
 
     s.ruggedness = 0.9f;
     r.Go(5, s);

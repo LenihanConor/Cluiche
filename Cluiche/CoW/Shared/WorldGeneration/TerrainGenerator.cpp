@@ -404,7 +404,47 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         ComputeStage11(mDims, mShape.latitudeNorthDeg, mShape.latitudeSouthDeg,
                        mLayers.FloatLayer(mLayers.FindLayer("latitude")));
         break;
-    default:                        break;   // Feature 8 stages never run
+    case TerrainStage::Temperature:
+        ComputeStage12(mRules, mDims, mShape.temperatureOffset, mLayers.GetFloat(mLayers.FindLayer("elevation")),
+                       mLayers.GetFloat(mLayers.FindLayer("latitude")),
+                       mLayers.FloatLayer(mLayers.FindLayer("temperature")));
+        break;
+    case TerrainStage::Moisture:
+    {
+        Stage13Layers out;
+        out.waterDistance = mLayers.UIntLayer(mLayers.FindLayer("waterDistance"));
+        out.airMoisture   = mLayers.FloatLayer(mLayers.FindLayer("airMoisture"));
+        out.rainOut       = mLayers.FloatLayer(mLayers.FindLayer("rainOut"));
+        out.moisture      = mLayers.FloatLayer(mLayers.FindLayer("moisture"));
+        ComputeStage13(mRules, mDims, mShape.moistureOffset, mLayers.GetFloat(mLayers.FindLayer("elevation")),
+                       mLayers.GetFloat(mLayers.FindLayer("latitude")),
+                       mLayers.GetUInt(mLayers.FindLayer("waterSource")), out);
+        break;
+    }
+    case TerrainStage::Biomes:
+    {
+        Stage14Inputs in;
+        in.dims         = mDims;
+        in.temperature  = mLayers.GetFloat(mLayers.FindLayer("temperature"));
+        in.moisture     = mLayers.GetFloat(mLayers.FindLayer("moisture"));
+        in.elevation    = mLayers.GetFloat(mLayers.FindLayer("elevation"));
+        in.terrainType  = mLayers.GetUInt(mLayers.FindLayer("terrainType"));
+        in.depthZone    = mLayers.GetUInt(mLayers.FindLayer("depthZone"));
+        in.terrainFlags = mLayers.GetUInt(mLayers.FindLayer("terrainFlags"));
+        in.barrierMask  = mLayers.GetFloat(mLayers.FindLayer("barrierMask"));
+        in.waterSource  = mLayers.GetUInt(mLayers.FindLayer("waterSource"));
+        in.barrierForm  = mShape.barrierForm;
+        in.barrier      = mShape.barrier;
+        Stage14Layers out;
+        out.biomeScore   = mLayers.FloatLayer(mLayers.FindLayer("biomeScore"));
+        out.biomePin     = mLayers.UIntLayer(mLayers.FindLayer("biomePin"));
+        out.biomeIndex   = mLayers.UIntLayer(mLayers.FindLayer("biomeIndex"));
+        out.fixupChanges = mLayers.UIntLayer(mLayers.FindLayer("fixupChanges"));
+        ComputeStage14(mRules, in, out, mStage14);
+        mEffective.unresolvedPairs = mStage14.unresolvedPairs;
+        break;
+    }
+    default:                        break;
     }
 }
 
@@ -569,6 +609,7 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
     const uint32_t* landmass  = mLayers.GetUInt(mLayers.FindLayer("landmass"));
     const uint32_t* flags     = mLayers.GetUInt(mLayers.FindLayer("terrainFlags"));
     const uint32_t* flow      = mLayers.GetUInt(mLayers.FindLayer("flowDirection"));
+    const uint32_t* biome     = mLayers.GetUInt(mLayers.FindLayer("biomeIndex"));
 
     Cell* cells = world.Cells();
     for (int i = 0; i < n; ++i)
@@ -580,6 +621,7 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
         c.waterSource  = static_cast<WaterSource>(water[i]);
         c.terrain      = static_cast<TerrainType>(type[i]);
         c.depthZone    = static_cast<DepthZone>(zone[i]);
+        c.biome        = biome[i] < static_cast<uint32_t>(kBiomeCount) ? static_cast<Biome>(biome[i]) : Biome::Ocean;
         c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255
         c.terrainFlags = static_cast<uint8_t>(flags[i]);
         c.downstream   = (c.waterSource == WaterSource::River && flow[i] < 6u) ? static_cast<uint8_t>(flow[i]) : kNoDirection;

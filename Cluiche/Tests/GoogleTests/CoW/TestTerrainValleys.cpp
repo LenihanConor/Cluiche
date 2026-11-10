@@ -374,7 +374,7 @@ TEST(TerrainValleys, DirtyBitsValleyDepthRerunsNineAndTen)
     r.Go(11, s);
     s.valleyDepth = 0.9f;
     r.Go(11, s);
-    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 9, 10 }));
+    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 9, 10, 12, 13, 14 }));
 }
 
 TEST(TerrainValleys, DirtyBitsRiversRerunsSixEightNineTen)
@@ -384,7 +384,7 @@ TEST(TerrainValleys, DirtyBitsRiversRerunsSixEightNineTen)
     r.Go(11, s);
     s.rivers = 0.8f;
     r.Go(11, s);
-    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 6, 8, 9, 10 }));
+    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 6, 8, 9, 10, 12, 13, 14 }));
 }
 
 TEST(TerrainValleys, DirtyBitsLakesRerunsSevenNineTen)
@@ -394,7 +394,7 @@ TEST(TerrainValleys, DirtyBitsLakesRerunsSevenNineTen)
     r.Go(11, s);
     s.lakes = 7;
     r.Go(11, s);
-    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 7, 9, 10 }));
+    EXPECT_EQ(Ran(r.gen), (std::set<int>{ 7, 9, 10, 12, 13, 14 }));
 }
 
 TEST(TerrainValleys, DeterministicByteIdentical)

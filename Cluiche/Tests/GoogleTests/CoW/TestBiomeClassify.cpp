@@ -313,6 +313,61 @@ TEST(BiomeClassify, PlateauInteriorOffWhenBarrierZeroOrChainForm)
     EXPECT_EQ(RunBiomes(g).At(c), Biome::Rainforest);
 }
 
+namespace
+{
+    void MakePlateauRow(BiomeGrid& g, int y, int x0, int x1, const std::vector<float>& moisture)
+    {
+        g.barrierForm = BarrierForm::Plateau;
+        g.barrier = 0.6f;
+        for (int x = x0; x <= x1; ++x)
+        {
+            g.barrierMask[g.Index(x, y)] = 0.8f;
+            g.moisture[g.Index(x, y)] = moisture[static_cast<size_t>(x - x0)];
+        }
+    }
+}
+
+TEST(BiomeClassify, PlateauComponentTakesOneClimateByMeanMoisture)   // amended 2026-11-10
+{
+    // Moisture straddles kPlateauWet (0.5) inside one connected plateau; the mean decides for every cell.
+    BiomeGrid wetG(12, 4);
+    MakePlateauRow(wetG, 1, 3, 5, { 0.9f, 0.2f, 0.8f });   // mean 0.633
+    const BiomeResult wet = RunBiomes(wetG);
+    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(wet.At(wetG.Index(x, 1)), Biome::Rainforest) << x; }
+
+    BiomeGrid dryG(12, 4);
+    MakePlateauRow(dryG, 1, 3, 5, { 0.1f, 0.9f, 0.3f });   // mean 0.433
+    const BiomeResult dry = RunBiomes(dryG);
+    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(dry.At(dryG.Index(x, 1)), Biome::DesertBasin) << x; }
+    EXPECT_EQ(dry.debug.unresolvedPairs, 0);
+}
+
+TEST(BiomeClassify, SeparatePlateausChooseIndependently)
+{
+    BiomeGrid g(12, 8);
+    MakePlateauRow(g, 1, 2, 3, { 0.9f, 0.9f });
+    MakePlateauRow(g, 5, 2, 3, { 0.1f, 0.1f });
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(g.Index(2, 1)), Biome::Rainforest);
+    EXPECT_EQ(r.At(g.Index(3, 1)), Biome::Rainforest);
+    EXPECT_EQ(r.At(g.Index(2, 5)), Biome::DesertBasin);
+    EXPECT_EQ(r.At(g.Index(3, 5)), Biome::DesertBasin);
+}
+
+TEST(BiomeClassify, PinnedCellSplitsPlateauComponents)
+{
+    // An Alpine-pinned cell in the middle splits the row: unsplit mean (0.475) would make everything Desert.
+    BiomeGrid g(12, 4);
+    MakePlateauRow(g, 1, 2, 6, { 0.9f, 0.9f, 0.5f, 0.05f, 0.05f });
+    g.SetTerrain(g.Index(4, 1), TerrainType::Mountain);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(g.Index(4, 1)), Biome::AlpineMountain);
+    EXPECT_EQ(r.At(g.Index(2, 1)), Biome::Rainforest);
+    EXPECT_EQ(r.At(g.Index(3, 1)), Biome::Rainforest);
+    EXPECT_EQ(r.At(g.Index(5, 1)), Biome::DesertBasin);
+    EXPECT_EQ(r.At(g.Index(6, 1)), Biome::DesertBasin);
+}
+
 TEST(BiomeClassify, PlateauInteriorMayStillBeFixedUpByZone)
 {
     BiomeGrid g(5, 5);
@@ -632,20 +687,71 @@ TEST(BiomeClassify, ForbiddenPairLowerPinCellMoves)
     }
 }
 
-TEST(BiomeClassify, UnresolvablePairIsKeptAndCounted)
+namespace
 {
-    // X (Rainforest, Ancient) has a Volcanic neighbour N1 (pin 3) and a Rainforest neighbour N2 on the opposite
-    // side. X must move, but Desert and Tundra clash with N2 and Rainforest clashes with N1: nothing is legal.
+    // X (Rainforest) has a Volcanic neighbour N1 (pin 3) and a Rainforest neighbour N2 on the opposite side.
+    // X must move, but Desert and Tundra clash with N2 and Rainforest clashes with N1: only Alpine is free.
+    void BuildStuckCell(BiomeGrid& g, int& x, int& n1, int& n2, DepthZone zone)
+    {
+        x = g.Index(kCentreX, kCentreY);
+        n1 = Nb(g, x, 0);
+        n2 = Nb(g, x, 3);
+        g.AddFlag(n1, TerrainFlag::Volcanic);
+        g.SetClimate(x, 0.85f, 0.9f);
+        g.SetClimate(n2, 0.85f, 0.9f);
+        g.SetZone(x, zone);
+        g.SetZone(n2, zone);
+    }
+}
+
+TEST(BiomeClassify, StuckCellBecomesAlpineWhenZoneValid)   // amended 2026-11-10
+{
+    // AncientInteriors: Grassland and Forest are not zone-valid, so only Alpine is left.
     BiomeGrid g(9, 9);
-    const int x = g.Index(kCentreX, kCentreY);
-    const int n1 = Nb(g, x, 0);
-    const int n2 = Nb(g, x, 3);
+    int       x, n1, n2;
+    BuildStuckCell(g, x, n1, n2, DepthZone::AncientInteriors);
     ASSERT_FALSE(Adjacent(g, n1, n2));
-    g.AddFlag(n1, TerrainFlag::Volcanic);
-    g.SetClimate(x, 0.85f, 0.9f);
-    g.SetClimate(n2, 0.85f, 0.9f);
-    g.SetZone(x, DepthZone::AncientInteriors);
-    g.SetZone(n2, DepthZone::AncientInteriors);
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(x), Biome::AlpineMountain);
+    EXPECT_EQ(r.pin[x], BiomePin::None);
+    EXPECT_EQ(r.fixup[x], BiomeFixup::Forbidden);
+    EXPECT_EQ(r.At(n1), Biome::VolcanicAshland);
+    EXPECT_EQ(r.At(n2), Biome::Rainforest);
+    EXPECT_EQ(r.debug.unresolvedPairs, 0);
+    EXPECT_TRUE(FindForbiddenPairs(g.dims, r.biome.data()).empty());
+}
+
+TEST(BiomeClassify, WildReachesStuckLookingCellUsesForestNotAlpine)
+{
+    // In WildReaches Forest is zone-valid and forms no forbidden pair with Volcanic or Rainforest.
+    BiomeGrid g(9, 9);
+    int       x, n1, n2;
+    BuildStuckCell(g, x, n1, n2, DepthZone::WildReaches);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.At(x), Biome::TemperateForest);
+    EXPECT_EQ(r.debug.unresolvedPairs, 0);
+}
+
+TEST(BiomeClassify, AlpineSafetyNetNeverUsedWhenFreeCandidateExists)
+{
+    // A plain Rainforest/Desert clash resolves to Grassland, not Alpine.
+    BiomeGrid g(9, 9);
+    const int a = g.Index(kCentreX, kCentreY);
+    const int b = Nb(g, a, 0);
+    BuildRainforestDesertPair(g, a, b);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_NE(r.At(a), Biome::AlpineMountain);
+    EXPECT_NE(r.At(b), Biome::AlpineMountain);
+}
+
+TEST(BiomeClassify, UnresolvablePairIsKeptAndCountedWhenAlpineNotZoneValid)
+{
+    // Alpine is not zone-valid in FirstShores, but no land cell there can be stuck (Grassland forms no forbidden
+    // pair), so use DepthZone::None: no land biome is zone-valid, so the pair stays and is counted.
+    BiomeGrid g(9, 9);
+    int       x, n1, n2;
+    BuildStuckCell(g, x, n1, n2, DepthZone::None);
 
     const BiomeResult r = RunBiomes(g);
     EXPECT_EQ(r.At(x), Biome::Rainforest);
@@ -654,6 +760,18 @@ TEST(BiomeClassify, UnresolvablePairIsKeptAndCounted)
     EXPECT_EQ(r.fixup[x], BiomeFixup::None);
     EXPECT_EQ(r.debug.unresolvedPairs, 1);
     EXPECT_EQ(FindForbiddenPairs(g.dims, r.biome.data()).size(), 1u);
+}
+
+TEST(BiomeClassify, FirstShoresStuckNeighbourResolvesToGrasslandNotAlpine)
+{
+    // Rainforest is not valid in FirstShores: the zone fix-up moves it; Alpine is never chosen there.
+    BiomeGrid g(9, 9);
+    int       x, n1, n2;
+    BuildStuckCell(g, x, n1, n2, DepthZone::FirstShores);
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_NE(r.At(x), Biome::AlpineMountain);
+    EXPECT_NE(r.At(n2), Biome::AlpineMountain);
+    EXPECT_EQ(r.debug.unresolvedPairs, 0);
 }
 
 TEST(BiomeClassify, ForbiddenFixupHonoursPassLimit)

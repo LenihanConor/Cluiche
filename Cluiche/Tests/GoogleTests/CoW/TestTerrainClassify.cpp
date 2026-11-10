@@ -520,14 +520,14 @@ TEST(TerrainClassify, DirtySetsMatchStageReads)
     struct Row { const char* name; void (*apply)(WorldShapeParams&); std::set<int> expect; };
     const Row rows[] =
     {
-        { "valleyDepth", [](WorldShapeParams& s) { s.valleyDepth = 0.9f; }, { 9, 10 } },
-        { "rivers",      [](WorldShapeParams& s) { s.rivers = 0.9f; },      { 6, 8, 9, 10 } },
-        { "lakes",       [](WorldShapeParams& s) { s.lakes = 9; },          { 7, 9, 10 } },
-        { "passes",      [](WorldShapeParams& s) { s.passes = 4; },         { 2, 4, 5, 6, 7, 8, 9, 10 } },
-        { "barrier",     [](WorldShapeParams& s) { s.barrier = 0.9f; },     { 3, 4, 5, 6, 7, 8, 9, 10 } },
-        { "landFraction", [](WorldShapeParams& s) { s.landFraction = 0.5f; }, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 } },
-        { "latitudeNorth", [](WorldShapeParams& s) { s.latitudeNorthDeg = 50.0f; }, { 11 } },
-        { "latitudeSouth", [](WorldShapeParams& s) { s.latitudeSouthDeg = 10.0f; }, { 11 } },
+        { "valleyDepth", [](WorldShapeParams& s) { s.valleyDepth = 0.9f; }, { 9, 10, 12, 13, 14 } },
+        { "rivers",      [](WorldShapeParams& s) { s.rivers = 0.9f; },      { 6, 8, 9, 10, 12, 13, 14 } },
+        { "lakes",       [](WorldShapeParams& s) { s.lakes = 9; },          { 7, 9, 10, 12, 13, 14 } },
+        { "passes",      [](WorldShapeParams& s) { s.passes = 4; },         { 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 } },
+        { "barrier",     [](WorldShapeParams& s) { s.barrier = 0.9f; },     { 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 } },
+        { "landFraction", [](WorldShapeParams& s) { s.landFraction = 0.5f; }, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14 } },
+        { "latitudeNorth", [](WorldShapeParams& s) { s.latitudeNorthDeg = 50.0f; }, { 11, 12, 13, 14 } },
+        { "latitudeSouth", [](WorldShapeParams& s) { s.latitudeSouthDeg = 10.0f; }, { 11, 12, 13, 14 } },
     };
     for (const Row& row : rows)
     {
@@ -540,9 +540,9 @@ TEST(TerrainClassify, DirtySetsMatchStageReads)
         EXPECT_EQ(row.expect, Ran(r.gen)) << row.name;
     }
     // The literal sets above also follow from kStageReads.
-    EXPECT_EQ((std::set<int>{ 9, 10 }), Closure(9));
-    EXPECT_EQ((std::set<int>{ 6, 8, 9, 10 }), Closure(6));
-    EXPECT_EQ((std::set<int>{ 7, 9, 10 }), Closure(7));
+    EXPECT_EQ((std::set<int>{ 9, 10, 12, 13, 14 }), Closure(9));
+    EXPECT_EQ((std::set<int>{ 6, 8, 9, 10, 12, 13, 14 }), Closure(6));
+    EXPECT_EQ((std::set<int>{ 7, 9, 10, 12, 13, 14 }), Closure(7));
 }
 
 // ---------------------------------------------------------------------------
@@ -637,19 +637,19 @@ TEST(TerrainLatitude, SliderChangeRunsStageElevenOnly)
     Gen r;
     WorldShapeParams s;
     r.Go(6, s);
-    EXPECT_EQ(12u, Ran(r.gen).size());
+    EXPECT_EQ(15u, Ran(r.gen).size());
     WorldShapeParams t = s;
     t.latitudeNorthDeg = 45.0f;
     r.Go(6, t);
-    EXPECT_EQ((std::set<int>{ 11 }), Ran(r.gen));
+    EXPECT_EQ((std::set<int>{ 11, 12, 13, 14 }), Ran(r.gen));
     ASSERT_NE(nullptr, F(r.gen, "latitude"));
     EXPECT_NEAR(45.0f / 90.0f, F(r.gen, "latitude")[0], 1e-6);
     t.latitudeSouthDeg = -5.0f;
     r.Go(6, t);
-    EXPECT_EQ((std::set<int>{ 11 }), Ran(r.gen));
-    t.temperatureOffset = 0.1f;   // Feature 8 stage: no implemented stage re-runs
+    EXPECT_EQ((std::set<int>{ 11, 12, 13, 14 }), Ran(r.gen));
+    t.temperatureOffset = 0.1f;   // stage 12 and its reader 14 only
     r.Go(6, t);
-    EXPECT_TRUE(Ran(r.gen).empty());
+    EXPECT_EQ((std::set<int>{ 12, 14 }), Ran(r.gen));
 }
 
 TEST(TerrainLatitude, DegenerateGridsDoNotDivideByZero)
