@@ -70,6 +70,8 @@
     <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp" />
     <ClCompile Include="Shared\WorldGeneration\RegionRepair.cpp" />
     <ClCompile Include="Shared\WorldGeneration\NodesCorridor.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\NodesRiver.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -127,6 +129,8 @@
     <ClInclude Include="Shared\WorldGeneration\RegionPartition.h" />
     <ClInclude Include="Shared\WorldGeneration\RegionRepair.h" />
     <ClInclude Include="Shared\WorldGeneration\NodesCorridor.h" />
+    <ClInclude Include="Shared\WorldGeneration\NodesRiver.h" />
+    <ClInclude Include="Shared\WorldGeneration\NodesFill.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

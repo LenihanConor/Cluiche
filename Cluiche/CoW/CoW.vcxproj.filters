@@ -148,6 +148,12 @@
     <ClCompile Include="Shared\WorldGeneration\NodesCorridor.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesRiver.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -313,6 +319,12 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\NodesCorridor.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesRiver.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesFill.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

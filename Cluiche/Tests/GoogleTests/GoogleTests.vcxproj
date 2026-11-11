@@ -1220,6 +1220,9 @@
     <ClCompile Include="CoW\TestRegionRepair.cpp" />
     <ClCompile Include="CoW\TestNodesCorridor.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesCorridor.cpp" />
+    <ClCompile Include="CoW\TestNodesRiverFill.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesRiver.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesFill.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
