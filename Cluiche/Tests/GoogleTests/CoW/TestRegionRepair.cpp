@@ -1,0 +1,596 @@
+// S-1 Regions: region partition second half (repair, records, renumbering, write into the world).
+#include <gtest/gtest.h>
+#include <Shared/WorldGeneration/RegionRepair.h>
+#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/WorldShapePreset.h>
+#include <Shared/WorldGeneration/Testing/RegionChecks.h>
+#include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
+#include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+
+#include <DiaMaths/Core/RandomStream.h>
+
+#include <algorithm>
+#include <cstdio>
+#include <filesystem>
+#include <string>
+#include <vector>
+
+using namespace CoW::WorldGeneration;
+using namespace CoW::WorldGeneration::Testing;
+using Dia::Maths::RandomStream;
+
+namespace
+{
+    constexpr DepthZone FS = DepthZone::FirstShores;
+    constexpr DepthZone WR = DepthZone::WildReaches;
+    constexpr DepthZone AI = DepthZone::AncientInteriors;
+    constexpr Biome     G  = Biome::GrasslandSteppe;
+    constexpr Biome     F  = Biome::TemperateForest;
+    constexpr Biome     L  = Biome::Lake;
+
+    TerrainRules RulesMin(int minCells)
+    {
+        TerrainRules r = TerrainRules::Defaults();
+        r.values[static_cast<uint32_t>(Rule::kMinRegionCells)] = static_cast<float>(minCells);
+        return r;
+    }
+
+    struct Hand
+    {
+        WorldStructure w;
+        RegionGrowth   g;
+    };
+
+    // rows: one string per grid row. '.' ocean, '1'..'9' provisional region id, 'u' land with region 0.
+    // zones[i] = zone of region i+1 (its cells take that zone). uZone = zone of 'u' cells.
+    Hand Make(const std::vector<std::string>& rows, const std::vector<DepthZone>& zones, DepthZone uZone = FS, Biome biome = G)
+    {
+        Hand h;
+        const int W = static_cast<int>(rows[0].size());
+        const int H = static_cast<int>(rows.size());
+        h.w = MakeBlankWorld(W, H);
+        h.g.regionOf.assign(static_cast<size_t>(W) * H, kNoRegion);
+        for (int y = 0; y < H; ++y)
+        {
+            for (int x = 0; x < W; ++x)
+            {
+                const char ch = rows[y][x];
+                if (ch == '.') { SetOcean(h.w, x, y); continue; }
+                if (ch == 'u') { SetLand(h.w, x, y, uZone, biome); continue; }
+                const int id = ch - '0';
+                SetLand(h.w, x, y, zones[id - 1], biome);
+                h.g.regionOf[static_cast<size_t>(y) * W + x] = static_cast<RegionId>(id);
+            }
+        }
+        for (DepthZone z : zones)
+        {
+            RegionSeed s;
+            s.biome = biome; s.zone = z; s.landmass = 1;
+            h.g.seeds.push_back(s);
+        }
+        h.g.mainlandRegionCount = static_cast<uint8_t>(zones.size());
+        return h;
+    }
+
+    RegionBuild Finish(Hand& h, int minCells = 1) { return FinishRegions(h.w, RulesMin(minCells), h.g); }
+
+    RegionId At(const Hand& h, int x, int y) { return h.w.At(x, y).region; }
+
+    void ExpectChecksPass(const WorldStructure& w, float share = -1.0f)
+    {
+        const CheckErrors e = CheckAllRegions(w, share);
+        EXPECT_TRUE(e.empty()) << ChkJoin(e);
+    }
+}
+
+// ---------------------------------------------------------------- split pieces
+
+TEST(RegionRepair, SplitKeepsLargestPieceAndGivesRestToLongestBorder)
+{
+    Hand h = Make({ "11", "32", "32", "11", "11" }, { FS, FS, FS });
+    const RegionBuild b = Finish(h);
+    EXPECT_EQ(b.splitPiecesMoved, 1);
+    // Top piece borders old 3 with two edges and old 2 with one: goes to old 3 (which becomes id 1 by min cell).
+    EXPECT_EQ(At(h, 0, 0), 1); EXPECT_EQ(At(h, 1, 0), 1); EXPECT_EQ(At(h, 0, 1), 1); EXPECT_EQ(At(h, 0, 2), 1);
+    EXPECT_EQ(At(h, 1, 1), 2); EXPECT_EQ(At(h, 1, 2), 2);
+    EXPECT_EQ(At(h, 0, 3), 3); EXPECT_EQ(At(h, 1, 4), 3);
+    EXPECT_EQ(h.w.regions.regions.Size(), 3u);
+    EXPECT_EQ(h.w.regions.regions[0].cellCount, 4);
+    EXPECT_EQ(h.w.regions.regions[2].cellCount, 4);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, SplitPrefersSameZoneOverLongerBorder)
+{
+    // Same layout; old 1 and old 2 are WildReaches, old 3 FirstShores.
+    Hand h = Make({ "11", "32", "32", "11", "11" }, { WR, WR, FS });
+    Finish(h);
+    // Piece goes to old 2 despite the shorter border; old 2 then owns cell 0 -> id 1.
+    EXPECT_EQ(At(h, 0, 0), 1); EXPECT_EQ(At(h, 1, 0), 1); EXPECT_EQ(At(h, 1, 1), 1); EXPECT_EQ(At(h, 1, 2), 1);
+    EXPECT_EQ(At(h, 0, 1), 2);
+    EXPECT_EQ(At(h, 0, 3), 3);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, SplitTieOnPieceSizeKeepsLowestMinCell)
+{
+    Hand h = Make({ "1", "1", "2", "1", "1" }, { FS, FS });
+    const RegionBuild b = Finish(h);
+    EXPECT_EQ(b.splitPiecesMoved, 1);
+    EXPECT_EQ(At(h, 0, 0), 1); EXPECT_EQ(At(h, 0, 1), 1);
+    EXPECT_EQ(At(h, 0, 2), 2); EXPECT_EQ(At(h, 0, 3), 2); EXPECT_EQ(At(h, 0, 4), 2);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, RenumberedBySmallestCellIndex)
+{
+    // Provisional ids are reversed relative to cell order.
+    Hand h = Make({ "3", "3", "2", "2", "1", "1" }, { FS, FS, FS });
+    Finish(h);
+    EXPECT_EQ(At(h, 0, 0), 1); EXPECT_EQ(At(h, 0, 2), 2); EXPECT_EQ(At(h, 0, 4), 3);
+    ExpectChecksPass(h.w);
+}
+
+// ---------------------------------------------------------------- undersized merges
+
+TEST(RegionRepair, UndersizedMergesIntoSameZoneNeighbourFirst)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "1", "2", "2", "3", "3", "3", "3", "3", "3" }, { FS, WR, WR });
+    const RegionBuild b = Finish(h, 4);
+    EXPECT_EQ(b.undersizedMerged, 1);
+    EXPECT_EQ(h.w.regions.regions.Size(), 2u);
+    EXPECT_EQ(At(h, 0, 6), 2);   // joined the same-zone region despite the equal border
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, UndersizedMergesAnyZoneWhenNoSameZoneAndCountsAbsorbed)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "1", "2", "2", "3", "3", "3", "3", "3", "3" }, { FS, WR, AI });
+    Finish(h, 4);
+    // No same-zone neighbour: equal borders, lowest id wins -> region 1; its 2 cells are absorbed.
+    EXPECT_EQ(At(h, 0, 6), 1);
+    EXPECT_EQ(h.w.regions.regions.Size(), 2u);
+    EXPECT_EQ(h.w.regions.absorbedCells, 2);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, UndersizedMergesAscendingSizeAndCascades)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "1", "2", "2", "3" }, { FS, FS, FS });
+    const RegionBuild b = Finish(h, 4);
+    EXPECT_EQ(b.undersizedMerged, 2);   // size 1 into size 2 (size 3, still < 4), then into the big one
+    EXPECT_EQ(h.w.regions.regions.Size(), 1u);
+    EXPECT_EQ(h.w.regions.regions[0].cellCount, 9);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, UndersizedWithNoNeighbourStays)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", ".", "2", "2" }, { FS, FS });
+    Finish(h, 4);
+    EXPECT_EQ(h.w.regions.regions.Size(), 2u);
+    ExpectChecksPass(h.w);
+}
+
+// ---------------------------------------------------------------- loose land (tiny components, unzoned)
+
+TEST(RegionRepair, TinyComponentIsAbsorbedAndCounted)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "u", "u" }, { FS }, AI);
+    const RegionBuild b = Finish(h);
+    EXPECT_EQ(b.looseLandPiecesAbsorbed, 1);
+    EXPECT_EQ(b.orphanRegions, 0);
+    EXPECT_EQ(At(h, 0, 5), 1); EXPECT_EQ(At(h, 0, 6), 1);
+    EXPECT_EQ(h.w.regions.absorbedCells, 2);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, UnzonedCellIsAbsorbedAndCounted)
+{
+    Hand h = Make({ "1", "1", "1", "u" }, { FS }, DepthZone::None);
+    Finish(h);
+    EXPECT_EQ(At(h, 0, 3), 1);
+    EXPECT_EQ(h.w.regions.absorbedCells, 1);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
+{
+    Hand h = Make({ "1", "1", "1", "u", "u", "2", "2", "2" }, { FS, WR }, WR);
+    Finish(h);
+    EXPECT_EQ(At(h, 0, 3), 2); EXPECT_EQ(At(h, 0, 4), 2);   // equal borders; WildReaches piece joins the WR region
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, LoosePieceBehindAnotherPieceIsAbsorbedInLaterRound)
+{
+    Hand h = Make({ "1", "u", "u" }, { FS }, AI);
+    h.w.At(0, 2).depthZone = DepthZone::None;   // second piece is unzoned, touches only the first piece
+    const RegionBuild b = Finish(h);
+    EXPECT_EQ(b.looseLandPiecesAbsorbed, 2);
+    EXPECT_EQ(b.orphanRegions, 0);
+    EXPECT_EQ(At(h, 0, 2), 1);
+    EXPECT_EQ(h.w.regions.absorbedCells, 2);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, IsolatedPieceBecomesOrphanRegion)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", ".", "u", "u" }, { FS }, AI);
+    const RegionBuild b = Finish(h);
+    EXPECT_EQ(b.orphanRegions, 1);
+    EXPECT_EQ(b.unassignedLandCells, 0u);
+    ASSERT_EQ(h.w.regions.regions.Size(), 2u);
+    EXPECT_EQ(At(h, 0, 6), 2); EXPECT_EQ(At(h, 0, 7), 2);
+    EXPECT_EQ(h.w.regions.regions[1].zone, AI);
+    EXPECT_FALSE(h.w.regions.regions[1].isIsland);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, OrphanThatDoesNotFitStaysZeroAndIsReported)
+{
+    Hand h;
+    h.w = MakeBlankWorld(1, 66);
+    h.g.regionOf.assign(66, kNoRegion);
+    for (int i = 0; i < 64; ++i)
+    {
+        RegionSeed s; s.zone = FS; s.landmass = 1; s.biome = G;
+        h.g.seeds.push_back(s);
+        SetLand(h.w, 0, i, FS, G);
+        h.g.regionOf[i] = static_cast<RegionId>(i + 1);
+    }
+    SetOcean(h.w, 0, 64);
+    SetLand(h.w, 0, 65, AI, G);
+    const RegionBuild b = Finish(h);
+    EXPECT_TRUE(b.overflow);
+    EXPECT_EQ(b.orphanRegions, 0);
+    EXPECT_EQ(b.unassignedLandCells, 1u);
+    EXPECT_EQ(h.w.regions.regions.Size(), 64u);
+    EXPECT_EQ(At(h, 0, 65), 0);
+}
+
+TEST(RegionRepair, GrowthOverflowIsPropagated)
+{
+    Hand h = Make({ "1", "1" }, { FS });
+    h.g.overflow = true;
+    EXPECT_TRUE(Finish(h).overflow);
+}
+
+// ---------------------------------------------------------------- islands
+
+TEST(RegionRepair, IslandIsOneRegionWithMajorityZoneAndExemptFromRules)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", ".", "2", "2", "2" }, { FS, WR });
+    for (int y = 6; y < 9; ++y) { h.w.At(0, y).landmass = 2; }
+    h.w.At(0, 6).depthZone = FS;   // 1 FirstShores vs 2 WildReaches cells
+    h.g.seeds[1].isIsland = true;
+    h.g.seeds[1].landmass = 2;
+    const RegionBuild b = Finish(h, 4);   // island has 3 < 4 cells and a mixed zone: still untouched
+    EXPECT_EQ(b.undersizedMerged, 0);
+    ASSERT_EQ(h.w.regions.regions.Size(), 2u);
+    const RegionRecord& isl = h.w.regions.regions[1];
+    EXPECT_TRUE(isl.isIsland);
+    EXPECT_EQ(isl.landmass, 2);
+    EXPECT_EQ(isl.zone, WR);
+    EXPECT_EQ(isl.cellCount, 3);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 1);
+    ExpectChecksPass(h.w);
+}
+
+// ---------------------------------------------------------------- records
+
+namespace
+{
+    Hand OneRegionStrip(int len)
+    {
+        return Make(std::vector<std::string>(static_cast<size_t>(len), "1"), { FS });
+    }
+}
+
+TEST(RegionRepair, PrimaryBiomeIgnoresLakeCellsPurityCountsAllCells)
+{
+    Hand h = OneRegionStrip(10);
+    for (int y = 0; y < 4; ++y) { SetBiome(h.w, 0, y, L); h.w.At(0, y).waterSource = WaterSource::Lake; }
+    for (int y = 4; y < 7; ++y) { SetBiome(h.w, 0, y, G); }
+    for (int y = 7; y < 10; ++y) { SetBiome(h.w, 0, y, F); }
+    Finish(h);
+    const RegionRecord& r = h.w.regions.regions[0];
+    EXPECT_EQ(r.primaryBiome, G);   // 4 lake cells ignored; G 3 vs F 3 ties to the lowest enum
+    EXPECT_FLOAT_EQ(r.purity, 0.3f);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, PrimaryBiomeMajorityAndTieLowestEnum)
+{
+    Hand h = OneRegionStrip(10);
+    for (int y = 0; y < 6; ++y) { SetBiome(h.w, 0, y, F); }
+    for (int y = 6; y < 10; ++y) { SetBiome(h.w, 0, y, G); }
+    Finish(h);
+    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, F);
+    EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 0.6f);
+
+    Hand t = OneRegionStrip(10);
+    for (int y = 0; y < 5; ++y) { SetBiome(t.w, 0, y, F); }
+    for (int y = 5; y < 10; ++y) { SetBiome(t.w, 0, y, G); }
+    Finish(t);
+    EXPECT_EQ(t.w.regions.regions[0].primaryBiome, G);
+    EXPECT_FLOAT_EQ(t.w.regions.regions[0].purity, 0.5f);
+}
+
+TEST(RegionRepair, AllLakeRegionReportsLake)
+{
+    Hand h = OneRegionStrip(3);
+    for (int y = 0; y < 3; ++y) { SetBiome(h.w, 0, y, L); h.w.At(0, y).waterSource = WaterSource::Lake; }
+    Finish(h);
+    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, L);
+    EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 1.0f);
+}
+
+TEST(RegionRepair, CentreIsNearestCellToCentroid)
+{
+    Hand h = OneRegionStrip(9);
+    Finish(h);
+    EXPECT_EQ(h.w.regions.regions[0].centreCell, 4u);
+}
+
+TEST(RegionRepair, CentreMovesOffLakeToLowestIndexNearest)
+{
+    Hand h = OneRegionStrip(9);
+    SetBiome(h.w, 0, 4, L); h.w.At(0, 4).waterSource = WaterSource::Lake;
+    Finish(h);
+    EXPECT_EQ(h.w.regions.regions[0].centreCell, 3u);
+}
+
+TEST(RegionRepair, CentreOfUShapedRegionIsARegionCell)
+{
+    // U: columns 0 and 2 plus the bottom link; the centroid sits in the ocean gap.
+    std::vector<std::string> rows(6, "1.1");
+    rows[4] = "111"; rows[5] = "...";
+    Hand h = Make(rows, { FS });
+    Finish(h);
+    ExpectChecksPass(h.w);
+    const uint32_t c = h.w.regions.regions[0].centreCell;
+    EXPECT_EQ(h.w.Cells()[c].region, 1);
+}
+
+TEST(RegionRepair, NeighboursAreSymmetricAndMatchEdgeScan)
+{
+    Hand h = Make({ "11", "32", "32", "11", "11" }, { FS, FS, FS });
+    Finish(h);
+    ExpectChecksPass(h.w);
+    EXPECT_TRUE(h.w.regions.AreAdjacent(1, 2));
+    EXPECT_TRUE(h.w.regions.AreAdjacent(2, 3));
+    EXPECT_FALSE(h.w.regions.AreAdjacent(1, 1));
+}
+
+TEST(RegionRepair, DistantRegionsAreNotNeighbours)
+{
+    Hand h = Make({ "1", "1", ".", "2", "2" }, { FS, FS });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.regions[0].neighbours.Size(), 0u);
+    EXPECT_FALSE(h.w.regions.AreAdjacent(1, 2));
+}
+
+TEST(RegionRepair, NeighbourOverflowKeepsLowestSixteenAndFlags)
+{
+    // Hub = column 0 rows 0..19; each (1,y) is its own region touching the hub.
+    const int H = 20;
+    Hand h;
+    h.w = MakeBlankWorld(2, H);
+    h.g.regionOf.assign(static_cast<size_t>(2) * H, kNoRegion);
+    RegionSeed hub; hub.zone = FS; hub.landmass = 1; hub.biome = G;
+    h.g.seeds.push_back(hub);
+    for (int y = 0; y < H; ++y)
+    {
+        SetLand(h.w, 0, y, FS, G);
+        h.g.regionOf[static_cast<size_t>(y) * 2] = 1;
+        SetLand(h.w, 1, y, FS, G);
+        h.g.regionOf[static_cast<size_t>(y) * 2 + 1] = static_cast<RegionId>(2 + y);
+        h.g.seeds.push_back(hub);
+    }
+    const RegionBuild b = Finish(h);
+    EXPECT_TRUE(b.neighbourOverflow);
+    ASSERT_EQ(h.w.regions.regions.Size(), 21u);
+    const RegionRecord& r = h.w.regions.regions[0];
+    ASSERT_EQ(r.neighbours.Size(), RegionRecord::kMaxNeighbours);
+    for (unsigned i = 0; i < r.neighbours.Size(); ++i) { EXPECT_EQ(r.neighbours[i], i + 2); }
+    EXPECT_TRUE(h.w.regions.AreAdjacent(1, 21));   // symmetric answer even though 1's list is truncated
+    const CheckErrors e = CheckNeighbours(h.w);
+    EXPECT_TRUE(e.empty()) << ChkJoin(e);
+}
+
+TEST(RegionRepair, ClearsPreviousContentsAndIsIdempotent)
+{
+    Hand h = Make({ "11", "32", "32", "11", "11" }, { FS, FS, FS });
+    h.w.regions.AddRegion(RegionRecord{});
+    h.w.regions.absorbedCells = 99;
+    h.w.At(0, 0).region = 7;
+    Finish(h);
+    const RegionTable first = h.w.regions;
+    const std::vector<RegionId> firstIds = [&] { std::vector<RegionId> v; for (int i = 0; i < h.w.CellCount(); ++i) { v.push_back(h.w.Cells()[i].region); } return v; }();
+    EXPECT_EQ(first.absorbedCells, 0);
+    Finish(h);
+    EXPECT_TRUE(first == h.w.regions);
+    for (int i = 0; i < h.w.CellCount(); ++i) { EXPECT_EQ(h.w.Cells()[i].region, firstIds[i]); }
+}
+
+// ---------------------------------------------------------------- generated worlds
+
+namespace
+{
+    const GridDimensions kSmall{ 66, 42 };
+
+    std::string FindShippedPresetDir()
+    {
+        std::error_code       ec;
+        std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+        while (!dir.empty())
+        {
+            const std::filesystem::path candidate = dir / "Cluiche/Assets/CoW/Global/WorldGen/Presets";
+            if (std::filesystem::exists(candidate, ec)) { return candidate.string(); }
+            if (dir == dir.parent_path()) { break; }
+            dir = dir.parent_path();
+        }
+        return {};
+    }
+
+    WorldShapeParams LoadParams(const char* id)
+    {
+        WorldShapePreset  p;
+        RuleWarnings      w;
+        const std::string dir = FindShippedPresetDir();
+        EXPECT_FALSE(dir.empty());
+        const PresetResult r = LoadPreset(dir, id, p, w);
+        EXPECT_TRUE(r.Ok()) << r.message;
+        return p.params;
+    }
+
+    struct Sweep
+    {
+        int      worlds = 0;
+        int      regions = 0;
+        int      lowPurityRegions = 0;       // purity < 0.6 (tuning-gated)
+        int      mainMin = 1000, mainMax = 0, overAbsorb = 0;
+        int      orphanRegions = 0, neighbourOverflows = 0, splitMoved = 0, merged = 0, limited = 0, belowTen = 0;
+        uint32_t maxRegionCells = 0;
+        float    maxRegionShare = 0.0f;      // of main-landmass land (tuning-gated)
+        float    minPurity = 1.0f, purityTotal = 0.0f;
+        float    maxAbsorbedShare = 0.0f;
+    };
+
+    // limits=false: structural checks only (AC2, AC6, islands, purity bookkeeping). limits=true: also AC3's absorbed
+    // share and AC4's region counts.
+    void CheckGeneratedWorld(const char* label, uint64_t seed, const WorldShapeParams& shape, Sweep& st, bool limits)
+    {
+        SCOPED_TRACE(std::string(label) + " seed " + std::to_string(seed));
+        TerrainRunner runner;
+        runner.Run(seed, shape, kSmall);
+        WorldStructure w = runner.World();
+        const TerrainRules rules = TerrainRules::Defaults();
+        RandomStream rng(7);
+        const RegionGrowth g = BuildProvisionalRegions(w, rules, rng);
+        const RegionBuild b = FinishRegions(w, rules, g);
+
+        EXPECT_FALSE(b.overflow);
+        EXPECT_EQ(b.unassignedLandCells, 0u);
+        const CheckErrors e = CheckAllRegions(w, limits ? rules.kMaxAbsorbedShare() : -1.0f);
+        EXPECT_TRUE(e.empty()) << ChkJoin(e);
+
+        // AC4: counts.
+        int mainland = 0;
+        uint32_t mainLand = 0;
+        for (unsigned i = 0; i < w.regions.regions.Size(); ++i) { const RegionRecord& r = w.regions.regions[i]; if (!r.isIsland) { ++mainland; mainLand += r.cellCount; } }
+        EXPECT_EQ(w.regions.mainlandRegionCount, mainland);
+        EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy);
+        if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != DepthZone::None)
+            << "mainland regions " << mainland << " targets " << int(g.targets.total); }
+
+        const float land = static_cast<float>(ChkLandCount(w));
+        ++st.worlds;
+        st.overAbsorb += w.regions.absorbedCells > rules.kMaxAbsorbedShare() * static_cast<float>(ChkLandCount(w));
+        st.regions += static_cast<int>(w.regions.regions.Size());
+        st.mainMin = std::min(st.mainMin, mainland);
+        st.mainMax = std::max(st.mainMax, mainland);
+        st.orphanRegions += b.orphanRegions; st.neighbourOverflows += b.neighbourOverflow;
+        st.splitMoved += b.splitPiecesMoved; st.merged += b.undersizedMerged;
+        st.limited += w.regions.limitedBy != DepthZone::None;
+        st.belowTen += mainland < 10;
+        st.maxAbsorbedShare = std::max(st.maxAbsorbedShare, land > 0 ? w.regions.absorbedCells / land : 0.0f);
+        for (unsigned ri = 0; ri < w.regions.regions.Size(); ++ri)
+        {
+            const RegionRecord& r = w.regions.regions[ri];
+            st.maxRegionCells = std::max<uint32_t>(st.maxRegionCells, r.cellCount);
+            if (!r.isIsland && mainLand > 0) { st.maxRegionShare = std::max(st.maxRegionShare, static_cast<float>(r.cellCount) / mainLand); }
+            st.minPurity = std::min(st.minPurity, r.purity);
+            st.purityTotal += r.purity;
+            st.lowPurityRegions += r.purity < 0.6f;
+        }
+    }
+
+    void PrintSweep(const char* label, const Sweep& s)
+    {
+        std::printf("[RegionRepair sweep] %s: worlds %d regions %d mainland[%d..%d] belowTen %d overAbsorb %d limitedBy %d | maxRegionCells %u "
+                    "maxRegionShareOfMain %.3f | purity min %.3f avg %.3f lowPurity(<0.6) %d | absorbedMax %.4f | orphans %d "
+                    "neighbourOverflow %d splitMoved %d merged %d\n",
+                    label, s.worlds, s.regions, s.mainMin, s.mainMax, s.belowTen, s.overAbsorb, s.limited, s.maxRegionCells, s.maxRegionShare,
+                    s.minPurity, s.regions ? s.purityTotal / s.regions : 0.0f, s.lowPurityRegions, s.maxAbsorbedShare,
+                    s.orphanRegions, s.neighbourOverflows, s.splitMoved, s.merged);
+    }
+}
+
+TEST(RegionRepair, GeneratedWorldsDefaultPresetThreeSeeds)
+{
+    Sweep st;
+    for (uint64_t seed : { 123ull, 4ull, 77ull }) { CheckGeneratedWorld("default", seed, WorldShapeParams{}, st, true); }
+    PrintSweep("default x3", st);
+}
+
+TEST(RegionRepair, BuildRegionsEqualsProvisionalPlusFinish)
+{
+    TerrainRunner runner;
+    runner.Run(123, WorldShapeParams{}, kSmall);
+    WorldStructure a = runner.World();
+    WorldStructure b = runner.World();
+    const TerrainRules rules = TerrainRules::Defaults();
+    RandomStream ra(7), rb(7);
+    BuildRegions(a, rules, ra);
+    const RegionGrowth g = BuildProvisionalRegions(b, rules, rb);
+    FinishRegions(b, rules, g);
+    EXPECT_TRUE(a.regions == b.regions);
+    for (int i = 0; i < a.CellCount(); ++i) { ASSERT_EQ(a.Cells()[i].region, b.Cells()[i].region); }
+}
+
+TEST(RegionRepair, GeneratedWorldOtherCellFieldsUntouchedAndRebuildIsIdentical)
+{
+    TerrainRunner runner;
+    runner.Run(123, WorldShapeParams{}, kSmall);
+    WorldStructure w = runner.World();
+    const std::vector<Cell> before(w.Cells(), w.Cells() + w.CellCount());
+    const TerrainRules rules = TerrainRules::Defaults();
+    RandomStream r1(7);
+    BuildRegions(w, rules, r1);
+    for (int i = 0; i < w.CellCount(); ++i)
+    {
+        const Cell& a = before[i];
+        const Cell& c = w.Cells()[i];
+        ASSERT_TRUE(a.elevation == c.elevation && a.latitude == c.latitude && a.waterSource == c.waterSource &&
+                    a.terrain == c.terrain && a.depthZone == c.depthZone && a.landmass == c.landmass &&
+                    a.terrainFlags == c.terrainFlags && a.downstream == c.downstream && a.biome == c.biome)
+            << "cell " << i;
+    }
+    const RegionTable first = w.regions;
+    RandomStream r2(7);
+    BuildRegions(w, rules, r2);   // rebuild over existing regions
+    EXPECT_TRUE(first == w.regions);
+}
+
+namespace
+{
+    void SweepPresets(bool limits)
+    {
+        for (const char* id : { "continental", "archipelago", "highlands" })
+        {
+            Sweep st;
+            const WorldShapeParams shape = LoadParams(id);
+            for (uint64_t seed = 500; seed < 520; ++seed) { CheckGeneratedWorld(id, seed, shape, st, limits); }
+            PrintSweep(id, st);
+        }
+    }
+}
+
+TEST(SLOW_RegionRepair, GeneratedWorldsThreePresetsTwentySeedsStructure)
+{
+    SweepPresets(false);
+}
+
+// AC3 absorbed share and AC4 counts over the sweep.
+TEST(SLOW_RegionRepair, GeneratedWorldsThreePresetsTwentySeedsCountsAndAbsorbLimits)
+{
+    SweepPresets(true);
+}

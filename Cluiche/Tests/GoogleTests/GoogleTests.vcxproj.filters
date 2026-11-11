@@ -2787,5 +2787,11 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionPartition.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionRepair.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestRegionRepair.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
