@@ -30,10 +30,24 @@ bool Contains(const Json::Value& arr, const char* s)
     return false;
 }
 
+// Terrain and biome bytes only: Cell::region is set by Regenerate's placement pass, not by terrain generation.
 bool SameCells(const WorldStructure& a, const WorldStructure& b)
 {
-    return a.CellCount() == b.CellCount() &&
-           std::memcmp(a.Cells(), b.Cells(), static_cast<size_t>(a.CellCount()) * sizeof(Cell)) == 0;
+    if (a.CellCount() != b.CellCount())
+    {
+        return false;
+    }
+    for (int i = 0; i < a.CellCount(); ++i)
+    {
+        Cell x = a.Cells()[i];
+        Cell y = b.Cells()[i];
+        x.region = y.region = kNoRegion;
+        if (std::memcmp(&x, &y, sizeof(Cell)) != 0)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace

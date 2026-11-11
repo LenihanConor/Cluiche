@@ -16,7 +16,9 @@ const Dia::Core::StringCRC WorldGenerationModule::kTypeId("WorldGenerationModule
 
 WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanceId)
     : SimModule(instanceId)
-{}
+{
+    mSession.SetSiteRegistry(&mSiteRegistry);
+}
 
 WorldGenerationModule::~WorldGenerationModule()
 {
@@ -59,6 +61,18 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                     mAutoGenerate = root["auto_generate"].asBool();
                 else
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: auto_generate must be a bool, ignored");
+            }
+            if (root.isMember("regenerate_on_start"))
+            {
+                // A Regenerate pending from the start: regions and sites are placed by the first generation, which
+                // waits for dependants' registrations (see HoldGeneration).
+                if (root["regenerate_on_start"].isBool())
+                {
+                    if (root["regenerate_on_start"].asBool())
+                        mSession.Regenerate(Json::Value(Json::objectValue));
+                }
+                else
+                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: regenerate_on_start must be a bool, ignored");
             }
             if (root.isMember("size"))
             {
@@ -124,6 +138,15 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 {
     DIA_TRACE_ZONE("WorldGenerationModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
     DIA_PROFILE_SCOPE("WorldGenerationModule::DoUpdate", Dia::Observation::Trace::Category::kNone);
+
+    // Registrations by dependent modules happen in their DoStart: hold the first generation until they are in place.
+    if (mStartDeferral)
+    {
+        mStartDeferral = false;
+        return;
+    }
+    if (mGenerationHolds > 0)
+        return;
 
     if (!mAutoGenerate && !mActionSeen)
         return;
@@ -257,6 +280,11 @@ void WorldGenerationModule::RegisterCommands()
         ok = ok && r;
     };
 
+    static const ValueParam kSitesParams[] = {
+        { "kind", "string", false, "Only sites of this kind id (e.g. CoW.Node.Corridor or a registered kind)" },
+        { "offset", "int", false, "First site of the page (default 0)" },
+        { "limit", "int", false, "Sites in the page (default and max 80)" } };
+
     WorldGeneration::WorldGenSession* s = &mSession;
     registerOne(true, "cow.worldgen.set", "Set world shape parameters and/or the seed; regenerates on the next sim tick",
                 kSetParams, 1, [s](const Json::Value& a) { return s->Set(a); });
@@ -297,6 +325,10 @@ void WorldGenerationModule::RegisterCommands()
                 [s](const Json::Value& a) { return s->Layers(a); });
     registerOne(false, "cow.worldgen.cell", "Terrain data for one cell, by x,y or linear index", kCellParams, 3,
                 [s](const Json::Value& a) { return s->Cell(a); });
+    registerOne(false, "cow.worldgen.regions", "Every region record (zone, landmass, biome, purity, cells, neighbours) of the generated world", nullptr, 0,
+                [s](const Json::Value&) { return s->Regions(); });
+    registerOne(false, "cow.worldgen.sites", "Paged sites (built-in nodes and registered kinds) with the kind table, optionally of one kind", kSitesParams, 3,
+                [s](const Json::Value& a) { return s->Sites(a); });
 
     mCommandsRegistered = ok;
 }

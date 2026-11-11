@@ -23,6 +23,7 @@
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/RandomStreamModule.h>
 #include <Modules/SimQueryHostModule.h>
+#include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Types/SimRegistrationMessage.h>
 
 #include <filesystem>
@@ -124,7 +125,45 @@ namespace
 	};
 	const StringCRC WgMainShim::kTypeId("WgMainShim");
 
+	// A later SimPU module that registers a site kind in DoStart (as a game stage would). It holds generation while it
+	// "loads" for a few frames, so the registration lands after the WorldGenerationModule's own DoStart finished.
+	class WgRegistrar : public Dia::ApplicationFlow::SimModule
+	{
+	public:
+		static const StringCRC kTypeId;
+		explicit WgRegistrar(const StringCRC& id) : SimModule(id) {}
+		CoW::WorldGeneration::Testing::TestPlacer placer{ "Test.Registered", {}, 7 };
+		bool registered = false;
+		bool unregistered = false;
+		int loadingFrames = 3;
+	protected:
+		StartResult DoStart() override
+		{
+			CoW::WorldGenerationModule* wg = mWg.Get();
+			if (!wg) return StartResult::kLoading;
+			if (!mHeld) { wg->HoldGeneration(); mHeld = true; }
+			if (loadingFrames-- > 0) return StartResult::kLoading;
+			mWgPtr = wg;
+			registered = wg->GetSiteRegistry().Register(&placer);
+			wg->ReleaseGeneration();
+			return StartResult::kReady;
+		}
+		void DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
+		StopResult DoStop() override
+		{
+			// ModuleRef::Get() is null while the target is also stopping; use the pointer kept from DoStart.
+			if (mWgPtr) unregistered = mWgPtr->GetSiteRegistry().Unregister(StringCRC("Test.Registered"));
+			return StopResult::kDone;
+		}
+	private:
+		ModuleRef<CoW::WorldGenerationModule> mWg{ this };
+		CoW::WorldGenerationModule* mWgPtr = nullptr;
+		bool mHeld = false;
+	};
+	const StringCRC WgRegistrar::kTypeId("WgRegistrar");
+
 	WgMainShim* gShim = nullptr;
+	WgRegistrar* gRegistrar = nullptr;
 	SimQueryHostModule* gHost = nullptr;
 	CoW::WorldGenerationModule* gWg = nullptr;
 	Cluiche::AppFlow::MessageBusHostModule* gBus = nullptr;
@@ -134,6 +173,7 @@ namespace
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
 	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); return gWg; }
 	Module* MakeBus(const StringCRC& id) { gBus = new Cluiche::AppFlow::MessageBusHostModule(id); return gBus; }
+	Module* MakeRegistrar(const StringCRC& id) { gRegistrar = new WgRegistrar(id); return gRegistrar; }
 	Module* MakeRng(const StringCRC& id) { gRng = new CoW::RandomStreamModule(id); return gRng; }
 
 	ModuleDeclaration Mod(const StringCRC& typeId, const char* instance,
@@ -194,8 +234,9 @@ namespace
 		int nextConn = 1;
 
 		// withHost=false leaves SimQueryHostModule out of the SimPU (the module must still start).
-		explicit Harness(const std::string& cfg = std::string(), bool withHost = true) : config(cfg)
+		explicit Harness(const std::string& cfg = std::string(), bool withHost = true, bool withRegistrar = false) : config(cfg)
 		{
+			gRegistrar = nullptr;
 			gShim = nullptr; gHost = nullptr; gWg = nullptr; gBus = nullptr; gRng = nullptr;
 			gNowMs = 10000;
 			reg.Register(WgMainShim::kTypeId, MakeShim);
@@ -203,6 +244,7 @@ namespace
 			reg.Register(CoW::WorldGenerationModule::kTypeId, MakeWg);
 			reg.Register(StringCRC("MessageBusHostModule"), MakeBus);
 			reg.Register(StringCRC("RandomStreamModule"), MakeRng);
+			reg.Register(WgRegistrar::kTypeId, MakeRegistrar);
 
 			manifest.version = 3;
 			StageDeclaration boot;
@@ -232,6 +274,8 @@ namespace
 				: Mod(CoW::WorldGenerationModule::kTypeId, "WorldGenerationModule", {}, { "MessageBusHostModule", "RandomStreamModule" });
 			if (!config.empty()) wg.configJson = config.c_str();
 			simPu.modules.Add(wg);
+			if (withRegistrar)
+				simPu.modules.Add(Mod(WgRegistrar::kTypeId, "WgRegistrar", {}, { "WorldGenerationModule" }));
 			manifest.processingUnits.Add(simPu);
 
 			app.reset(new Application(manifest, reg));
@@ -590,6 +634,154 @@ TEST(WorldGenCommands, ModuleWithoutSimQueryHostStartsAndRegistersNothing)
 	h.Pump(3);
 	EXPECT_FALSE(gWg->CommandsRegistered());
 	EXPECT_EQ(gWg->GetWorldRevision(), 1u);
+}
+
+// ---- Regions and sites (AC13): real stream round trip -------------------------------------------------------------
+
+TEST(WorldGenCommands, RegionsQueryRoundTripReturnsEveryRecord)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+
+	const Json::Value r = h.Call("cow.worldgen.regions");   // Call() fails on a reply over 16 KB
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_TRUE(r["fresh"].asBool());
+	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	ASSERT_NE(w, nullptr);
+	ASSERT_EQ(r["regions"].size(), w->regions.regions.Size());
+	ASSERT_GT(r["regions"].size(), 0u);
+	for (unsigned i = 0; i < r["regions"].size(); ++i)
+	{
+		const Json::Value& j = r["regions"][i];
+		EXPECT_EQ(j["id"].asUInt(), static_cast<unsigned>(w->regions.regions[i].id));
+		EXPECT_TRUE(j["neighbours"].isArray());
+		EXPECT_EQ(j["neighbours"].size(), w->regions.regions[i].neighbours.Size());
+	}
+	EXPECT_TRUE(r.isMember("limitedBy"));
+	EXPECT_TRUE(r.isMember("absorbedCells"));
+	EXPECT_TRUE(r.isMember("mainlandRegionCount"));
+}
+
+TEST(WorldGenCommands, SitesQueryRoundTripPagesAllSitesAndFiltersByKind)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	ASSERT_NE(w, nullptr);
+	const int total = w->sites.Count();
+	ASSERT_GT(total, 100);
+
+	size_t gathered = 0;
+	for (int page = 0; page < 20 && gathered < static_cast<size_t>(total); ++page)
+	{
+		Json::Value a = Obj(); a["offset"] = static_cast<Json::UInt>(gathered);
+		const Json::Value r = h.Call("cow.worldgen.sites", a);   // default page must fit the 16 KB reply
+		ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+		EXPECT_EQ(r["total"].asInt(), total);
+		ASSERT_GT(r["sites"].size(), 0u);
+		gathered += r["sites"].size();
+	}
+	EXPECT_EQ(gathered, static_cast<size_t>(total));
+
+	Json::Value big = Obj(); big["limit"] = 100000;
+	EXPECT_TRUE(h.Call("cow.worldgen.sites", big)["success"].asBool());   // clamped, still under the reply cap
+
+	Json::Value f = Obj(); f["kind"] = "CoW.Node.Corridor";
+	const Json::Value fr = h.Call("cow.worldgen.sites", f);
+	EXPECT_EQ(fr["total"].asInt(), w->sites.Count(CoW::WorldGeneration::BuiltinNodeKinds::Corridor()));
+	for (const Json::Value& s : fr["sites"]) EXPECT_EQ(s["kind"].asString(), "CoW.Node.Corridor");
+
+	Json::Value bad = Obj(); bad["kind"] = "No.Such.Kind";
+	EXPECT_TRUE(Failed(h.Call("cow.worldgen.sites", bad)));
+}
+
+TEST(WorldGenCommands, ParamsEffectiveAndStatusReportRegionLimitsAndFreshness)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+
+	const Json::Value eff = h.Call("cow.worldgen.params")["effective"];
+	ASSERT_TRUE(eff["corridorLimited"].isArray());
+	EXPECT_EQ(eff["corridorLimited"].size(), 2u);
+	EXPECT_TRUE(eff["nodeLimited"].isBool());
+	EXPECT_TRUE(eff["regionLimitedBy"].isString());
+
+	Json::Value st = h.Call("cow.worldgen.status");
+	EXPECT_TRUE(st["regionsFresh"].asBool());
+	ASSERT_TRUE(st["layout"].isObject());
+	EXPECT_TRUE(st["layout"]["ok"].asBool()) << st["layout"].toStyledString();
+
+	Json::Value a = Obj(); a["rivers"] = 0.8;
+	ASSERT_TRUE(h.Call("cow.worldgen.set", a)["success"].asBool());
+	h.Pump(3);
+	st = h.Call("cow.worldgen.status");
+	EXPECT_FALSE(st["regionsFresh"].asBool());
+	EXPECT_EQ(h.Call("cow.worldgen.regions")["regions"].size(), 0u);
+	EXPECT_EQ(h.Call("cow.worldgen.sites")["total"].asInt(), 0);
+}
+
+TEST(WorldGenCommands, CellQueryReportsRegionZoneAndSitesAndEveryLandCellHasARegion)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	ASSERT_NE(w, nullptr);
+
+	for (int i = 0; i < w->CellCount(); ++i)
+	{
+		const CoW::WorldGeneration::Cell& c = w->Cells()[i];
+		const bool water = c.terrain == CoW::WorldGeneration::TerrainType::DeepWater ||
+		                   c.terrain == CoW::WorldGeneration::TerrainType::ShallowWater ||
+		                   c.terrain == CoW::WorldGeneration::TerrainType::Lake;
+		if (!water) ASSERT_NE(c.region, CoW::WorldGeneration::kNoRegion) << "land cell " << i;
+	}
+
+	const CoW::WorldGeneration::Site& site = w->sites.All().front();
+	Json::Value a = Obj(); a["index"] = site.cell;
+	const Json::Value r = h.Call("cow.worldgen.cell", a);
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w->Cells()[site.cell].region));
+	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::DepthZoneName(w->Cells()[site.cell].depthZone));
+	ASSERT_TRUE(r["sites"].isArray());
+	EXPECT_GE(r["sites"].size(), 1u);
+}
+
+TEST(WorldGenCommands, ModuleOwnsRegistryAndDefersGenerationUntilDependantRegisters)
+{
+	// regenerate_on_start: the Regenerate is pending from the module's start, i.e. requested before the registrar ran.
+	Harness h("{\"regenerate_on_start\":true}", true, true);
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	ASSERT_NE(gRegistrar, nullptr);
+	EXPECT_TRUE(gRegistrar->registered);
+	// The very first generation already includes the dependant's kind: generation waited for the hold to be released.
+	EXPECT_EQ(gWg->GetSession().World().sites.Count(StringCRC("Test.Registered")), 1);
+
+	Json::Value a = Obj(); a["kind"] = "Test.Registered";
+	const Json::Value r = h.Call("cow.worldgen.sites", a);
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_EQ(r["total"].asInt(), 1);
+	EXPECT_EQ(r["sites"][0u]["cell"].asInt(), 7);
+
+	WgRegistrar* reg = gRegistrar;
+	CoW::WorldGenerationModule* wg = gWg;
+	h.app->RequestShutdown();
+	for (int guard = 0; guard < 1000 && h.app->Update(Harness::kDt); ++guard) {}
+	EXPECT_TRUE(reg->unregistered);
+	EXPECT_EQ(wg->GetSiteRegistry().Count(), 0);
+	h.app.reset();
 }
 
 #else

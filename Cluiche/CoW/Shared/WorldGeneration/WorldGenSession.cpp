@@ -3,6 +3,7 @@
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/WorldGeneration/DeriveSubSeed.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -200,6 +201,85 @@ Json::Value ScoredBiomeJson(Biome b, float score)
     v["name"] = BiomeName(b);
     v["score"] = ShortestFloat(score);
     return v;
+}
+
+// Site listing page size. A site row is ~90 bytes of JSON (a registered kind id can be 64 chars longer), so 80 rows plus
+// the kind table stay well under the 16 KB sim reply.
+constexpr int64_t kSitesMaxLimit = 80;
+
+const char* SiteShapeName(SiteShape s)
+{
+    switch (s)
+    {
+    case SiteShape::Dot:      return "Dot";
+    case SiteShape::Diamond:  return "Diamond";
+    case SiteShape::Square:   return "Square";
+    case SiteShape::Triangle: return "Triangle";
+    case SiteShape::Star:     return "Star";
+    case SiteShape::Ring:     return "Ring";
+    }
+    return "Dot";
+}
+
+const Dia::Core::StringCRC kBuiltinKinds[] = {
+    BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(), BuiltinNodeKinds::Resource() };
+
+// Info for a stored kind id: built-in node kinds, then registered placers; false when unknown.
+bool FindKindInfo(const SiteRegistry& registry, uint32_t kindCrc, SiteKindInfo& out)
+{
+    for (const Dia::Core::StringCRC& k : kBuiltinKinds)
+    {
+        if (SiteKindId(k) == kindCrc)
+        {
+            out = BuiltinNodeKindInfo(k);
+            return true;
+        }
+    }
+    for (ISitePlacer* p : registry.Order())
+    {
+        if (p->Info().kindCrc == kindCrc)
+        {
+            out = p->Info();
+            return true;
+        }
+    }
+    return false;
+}
+
+Json::Value KindInfoJson(const SiteKindInfo& i)
+{
+    Json::Value k(Json::objectValue);
+    k["kind"] = i.id;
+    k["displayName"] = i.displayName;
+    k["debugColour"] = static_cast<Json::UInt>(i.debugColour);
+    k["debugShape"] = SiteShapeName(i.debugShape);
+    k["variantLabel"] = i.variantLabel;
+    return k;
+}
+
+std::string KindIdText(const SiteRegistry& registry, uint32_t kindCrc)
+{
+    SiteKindInfo info;
+    if (FindKindInfo(registry, kindCrc, info))
+    {
+        return info.id;
+    }
+    char text[16];
+    std::snprintf(text, sizeof(text), "0x%08X", kindCrc);
+    return text;
+}
+
+Json::Value SiteJson(const SiteRegistry& registry, const Site& s, int width)
+{
+    Json::Value e(Json::objectValue);
+    e["kind"] = KindIdText(registry, s.kindCrc);
+    e["cell"] = static_cast<Json::UInt>(s.cell);
+    e["x"] = static_cast<int>(s.cell) % width;
+    e["y"] = static_cast<int>(s.cell) / width;
+    e["region"] = static_cast<Json::UInt>(s.region);
+    e["variant"] = static_cast<Json::UInt>(s.variant);
+    e["flags"] = static_cast<Json::UInt>(s.flags);
+    return e;
 }
 
 } // namespace
@@ -418,12 +498,29 @@ bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
     {
         return false;
     }
+    // Placement runs on Regenerate only (SD-S1-004); the first generation and live preview leave regions empty.
+    const bool placeRegions = mForceFull;
     if (mForceFull)
     {
         mGen.Invalidate();
     }
     mGen.Update(mSeed, mShape, mDims, wldStream);
-    mGen.WriteTerrain(mWorld);
+    mGen.WriteTerrain(mWorld);   // also clears regions, sites and Cell::region
+
+    mRegionsFresh = false;
+    mLimits = LayoutLimits{};
+    mLayout = LayoutReport{};
+    mPlaceResult = PlaceResult::Ok();
+    if (placeRegions)
+    {
+        const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
+        RegionsAndSites::PlaceReport report;
+        RegionsAndSites::Place(mWorld, registry, mRules, DeriveSubSeed(mSeed, 0ull), 0, wldStream, &report);
+        mLimits = report.limits;
+        mPlaceResult = report.result;
+        mLayout = CheckLayout(mWorld, mRules, mLimits);
+        mRegionsFresh = true;
+    }
 
     mLastMs = mGen.GetLastTotalMs();
     mStagesRan = Json::Value(Json::arrayValue);
@@ -495,6 +592,12 @@ Json::Value WorldGenSession::Params() const
         effective["lakes"] = static_cast<int>(mShape.lakes);
         effective["unresolvedPairs"] = 0;
     }
+    Json::Value corridorLimited(Json::arrayValue);
+    corridorLimited.append(mLimits.corridorLimited[0]);
+    corridorLimited.append(mLimits.corridorLimited[1]);
+    effective["corridorLimited"] = corridorLimited;
+    effective["nodeLimited"] = mLimits.nodeLimited;
+    effective["regionLimitedBy"] = DepthZoneName(mLimits.regionLimitedBy);
 
     Json::Value r(Json::objectValue);
     r["seed"] = static_cast<Json::UInt64>(mSeed);
@@ -528,6 +631,27 @@ Json::Value WorldGenSession::Status() const
     r["locked"] = false;
     r["lastMs"] = ShortestFloat(mLastMs);
     r["stagesRan"] = mStagesRan;
+    r["regionsFresh"] = mRegionsFresh;
+
+    // Layout check summary of the current regions and sites; null when there are none (not generated or live preview).
+    Json::Value layout;
+    if (mRegionsFresh)
+    {
+        layout = Json::Value(Json::objectValue);
+        layout["ok"] = mLayout.ok && mPlaceResult.IsOk();
+        layout["placeResult"] = mPlaceResult.IsOk() ? "Ok" : mPlaceResult.reason;
+        Json::Value violations(Json::arrayValue);
+        for (const LayoutViolation& v : mLayout.violations)
+        {
+            Json::Value e(Json::objectValue);
+            e["code"] = LayoutCodeName(v.code);
+            e["region"] = static_cast<Json::UInt>(v.region);
+            e["count"] = static_cast<Json::UInt>(v.count);
+            violations.append(e);
+        }
+        layout["violations"] = violations;
+    }
+    r["layout"] = layout;
     return r;
 }
 
@@ -883,6 +1007,18 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     r["depthZone"] = DepthZoneName(c.depthZone);
     r["landmass"] = static_cast<Json::UInt>(c.landmass);
     r["flags"] = static_cast<Json::UInt>(c.terrainFlags);
+    r["zone"] = DepthZoneName(c.depthZone);
+    r["region"] = static_cast<Json::UInt>(c.region);
+    {
+        const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
+        Json::Value cellSites(Json::arrayValue);
+        const SitesAtCell here = mWorld.sites.At(static_cast<uint32_t>(index));
+        for (unsigned i = 0; i < here.Size(); ++i)
+        {
+            cellSites.append(SiteJson(registry, here[i], width));
+        }
+        r["sites"] = cellSites;
+    }
     r["downstream"] = c.downstream == kNoDirection ? Json::Value() : Json::Value(static_cast<Json::UInt>(c.downstream));
 
     const TerrainLayers& layers = mGen.GetLayers();
@@ -996,6 +1132,106 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
         neighbours.append(e);
     }
     r["neighbours"] = neighbours;
+    return r;
+}
+
+Json::Value WorldGenSession::Regions() const
+{
+    Json::Value list(Json::arrayValue);
+    for (unsigned i = 0; i < mWorld.regions.regions.Size(); ++i)
+    {
+        const RegionRecord& rec = mWorld.regions.regions[i];
+        Json::Value e(Json::objectValue);
+        e["id"] = static_cast<Json::UInt>(rec.id);
+        e["zone"] = DepthZoneName(rec.zone);
+        e["landmass"] = static_cast<Json::UInt>(rec.landmass);
+        e["isIsland"] = rec.isIsland;
+        e["primaryBiome"] = BiomeName(rec.primaryBiome);
+        e["purity"] = ShortestFloat(rec.purity);
+        e["cellCount"] = static_cast<Json::UInt>(rec.cellCount);
+        e["centreCell"] = static_cast<Json::UInt>(rec.centreCell);
+        Json::Value neighbours(Json::arrayValue);
+        for (unsigned n = 0; n < rec.neighbours.Size(); ++n)
+        {
+            neighbours.append(static_cast<Json::UInt>(rec.neighbours[n]));
+        }
+        e["neighbours"] = neighbours;
+        list.append(e);
+    }
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["regions"] = list;
+    r["limitedBy"] = DepthZoneName(mWorld.regions.limitedBy);
+    r["absorbedCells"] = static_cast<Json::UInt>(mWorld.regions.absorbedCells);
+    r["mainlandRegionCount"] = static_cast<Json::UInt>(mWorld.regions.mainlandRegionCount);
+    r["fresh"] = mRegionsFresh;
+    return r;
+}
+
+Json::Value WorldGenSession::Sites(const Json::Value& args) const
+{
+    if (!args.isNull() && !args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+    const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
+
+    std::span<const Site> source = mWorld.sites.All();
+    if (args.isObject() && args.isMember("kind"))
+    {
+        if (!args["kind"].isString())
+        {
+            return Error("\"kind\" must be a site kind id string");
+        }
+        const std::string kind = args["kind"].asString();
+        const uint32_t crc = SiteKindId(Dia::Core::StringCRC(kind.c_str()));
+        SiteKindInfo info;
+        if (!FindKindInfo(registry, crc, info))
+        {
+            return Error("unknown site kind \"" + kind + "\"");
+        }
+        source = mWorld.sites.Of(crc);
+    }
+
+    int64_t offset = 0;
+    int64_t limit = kSitesMaxLimit;
+    std::string argError;
+    if (args.isObject() &&
+        (!ReadPagingArg(args, "offset", 0, offset, argError) || !ReadPagingArg(args, "limit", kSitesMaxLimit, limit, argError)))
+    {
+        return Error(argError);
+    }
+    const int64_t total = static_cast<int64_t>(source.size());
+    limit = std::min(limit, kSitesMaxLimit);
+    offset = std::min(offset, total);
+    limit = std::min(limit, total - offset);
+
+    const int width = std::max(mWorld.dimensions.width, 1);
+    Json::Value page(Json::arrayValue);
+    for (int64_t i = offset; i < offset + limit; ++i)
+    {
+        page.append(SiteJson(registry, source[static_cast<size_t>(i)], width));
+    }
+
+    Json::Value kinds(Json::arrayValue);
+    for (const Dia::Core::StringCRC& k : kBuiltinKinds)
+    {
+        kinds.append(KindInfoJson(BuiltinNodeKindInfo(k)));
+    }
+    for (ISitePlacer* p : registry.Order())
+    {
+        kinds.append(KindInfoJson(p->Info()));
+    }
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["total"] = static_cast<Json::Int64>(total);
+    r["offset"] = static_cast<Json::Int64>(offset);
+    r["count"] = static_cast<Json::Int64>(page.size());
+    r["sites"] = page;
+    r["kinds"] = kinds;
+    r["fresh"] = mRegionsFresh;
     return r;
 }
 

@@ -51,10 +51,24 @@ void Generate(WorldGenSession& s)
     s.Tick(rng);
 }
 
+// Terrain and biome bytes only: Cell::region is set by Regenerate's placement pass, not by terrain generation.
 bool SameCells(const WorldStructure& a, const WorldStructure& b)
 {
-    return a.CellCount() == b.CellCount() &&
-           std::memcmp(a.Cells(), b.Cells(), static_cast<size_t>(a.CellCount()) * sizeof(CoW::WorldGeneration::Cell)) == 0;
+    if (a.CellCount() != b.CellCount())
+    {
+        return false;
+    }
+    for (int i = 0; i < a.CellCount(); ++i)
+    {
+        CoW::WorldGeneration::Cell x = a.Cells()[i];
+        CoW::WorldGeneration::Cell y = b.Cells()[i];
+        x.region = y.region = CoW::WorldGeneration::kNoRegion;
+        if (std::memcmp(&x, &y, sizeof(CoW::WorldGeneration::Cell)) != 0)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Session generated once and left clean, for tests that only inspect Set() replies.

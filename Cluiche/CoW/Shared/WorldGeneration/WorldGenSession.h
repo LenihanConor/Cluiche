@@ -6,6 +6,9 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #pragma once
 
+#include <Shared/WorldGeneration/LayoutCheck.h>
+#include <Shared/WorldGeneration/RegionsAndSites.h>
+#include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
@@ -44,7 +47,13 @@ public:
     Json::Value PresetLoad(const Json::Value& args);   // {"id", "unlock"?}: replaces all shape params, keeps seed
     Json::Value PresetSave(const Json::Value& args);   // {"id","displayName","description"?,"overwrite"?}: out dir only
 
+    // Site registry used by the placement pass; nullptr (default) means no registered kinds. Not owned: the owner
+    // (WorldGenerationModule) keeps it alive for the session's lifetime.
+    void SetSiteRegistry(const SiteRegistry* registry) { mRegistry = registry; }
+
     // Runs at most one generation if dirty. Returns true when the world changed (revision incremented).
+    // Regions and sites (RegionsAndSites::Place, attempt 0) are computed on Regenerate only; any other generation
+    // (first one, Set / SetSize / preset load = live preview) leaves them empty (regionsFresh = false).
     bool Tick(Dia::Maths::RandomStream& wldStream);
 
     // Queries
@@ -53,6 +62,8 @@ public:
     Json::Value Presets() const;                       // array of {id, displayName, description, version, sourcePath}
     Json::Value Layers(const Json::Value& args) const; // {} stage summary, or {"layer"} full values
     Json::Value Cell(const Json::Value& args) const;   // {"x","y"} or {"index"}
+    Json::Value Regions() const;                       // every RegionRecord + table summary + fresh
+    Json::Value Sites(const Json::Value& args) const;  // {"kind"?,"offset"?,"limit"?}: paged sites + kind table
 
     const WorldStructure&   World() const      { return mWorld; }
     uint32_t                Revision() const   { return mRevision; }
@@ -64,6 +75,7 @@ public:
     const TerrainGenerator& Generator() const  { return mGen; }
     WorldGenState           State() const      { return mState; }
     bool                    IsDirty() const    { return mDirty; }
+    bool                    RegionsFresh() const { return mRegionsFresh; }
 
 private:
     TerrainRules     mRules;
@@ -83,6 +95,14 @@ private:
     bool             mHasGenerated = false;
     float            mLastMs = 0.0f;
     Json::Value      mStagesRan{Json::arrayValue};
+
+    // Regions and sites (S-1 placement pass).
+    const SiteRegistry*  mRegistry = nullptr;
+    SiteRegistry         mEmptyRegistry;          // used when mRegistry is null
+    bool                 mRegionsFresh = false;   // the world's regions/sites belong to its current terrain
+    LayoutLimits         mLimits;
+    LayoutReport         mLayout;
+    PlaceResult          mPlaceResult;
 };
 
 } // namespace WorldGeneration

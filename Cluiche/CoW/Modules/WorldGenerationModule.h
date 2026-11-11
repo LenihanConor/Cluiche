@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include "Modules/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
@@ -46,6 +47,17 @@ public:
     }
     uint32_t GetWorldRevision() const { return mSession.Revision(); }
 
+    // Site placers for the regions-and-sites pass. A module that depends on this one registers its kinds here in its
+    // own DoStart (and Unregisters them in DoStop). SimPU thread only.
+    // Deferral: generation is held back until the first DoUpdate after this module's DoStart (so every dependant that
+    // becomes ready in the same start pass has registered), and for as long as any HoldGeneration() is outstanding.
+    // A dependant whose DoStart returns kLoading across frames calls HoldGeneration() in its first DoStart call and
+    // ReleaseGeneration() once its registrations are in place.
+    WorldGeneration::SiteRegistry& GetSiteRegistry() { return mSiteRegistry; }
+    const WorldGeneration::SiteRegistry& GetSiteRegistry() const { return mSiteRegistry; }
+    void HoldGeneration() { ++mGenerationHolds; }
+    void ReleaseGeneration() { if (mGenerationHolds > 0) --mGenerationHolds; }
+
     // Lets a module configured with auto_generate=false start generating after an explicit action.
     void NotifyAction() { mActionSeen = true; }
 
@@ -61,7 +73,7 @@ public:
         "cow.worldgen.set", "cow.worldgen.set_size", "cow.worldgen.regenerate",
         "cow.worldgen.preset.load", "cow.worldgen.preset.save",
         "cow.worldgen.params", "cow.worldgen.status", "cow.worldgen.presets",
-        "cow.worldgen.layers", "cow.worldgen.cell" };
+        "cow.worldgen.layers", "cow.worldgen.cell", "cow.worldgen.regions", "cow.worldgen.sites" };
     static constexpr unsigned kCommandCount = sizeof(kCommandNames) / sizeof(kCommandNames[0]);
 
 protected:
@@ -75,6 +87,9 @@ private:
     void UnregisterCommands();
 
     WorldGeneration::WorldGenSession mSession;
+    WorldGeneration::SiteRegistry mSiteRegistry;
+    int  mGenerationHolds = 0;
+    bool mStartDeferral = true;      // skip the first DoUpdate: dependants started in the same pass have registered by then
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
     bool mAutoGenerate = true;

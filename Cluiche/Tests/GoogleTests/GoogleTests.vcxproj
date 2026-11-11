@@ -1226,6 +1226,7 @@
     <ClCompile Include="CoW\TestRegionsAndSites.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionsAndSites.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\LayoutCheck.cpp" />
+    <ClCompile Include="CoW\TestWorldGenSessionRegions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
