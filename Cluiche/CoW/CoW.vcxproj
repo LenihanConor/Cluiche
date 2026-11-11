@@ -66,6 +66,7 @@
     <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp" />
     <ClCompile Include="Shared\WorldGeneration\Sites.cpp" />
     <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -119,6 +120,7 @@
     <ClInclude Include="Shared\WorldGeneration\Sites.h" />
     <ClInclude Include="Shared\WorldGeneration\PlaceResult.h" />
     <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h" />
+    <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
