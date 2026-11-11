@@ -578,12 +578,7 @@ TEST(RegionsAndSites, GeneratedDefaultWorldsPassLayoutCheckThreeSeeds)
         RegionsAndSites::PlaceReport rep;
         ASSERT_TRUE(PlaceWorld(w, reg, seed, 0, &rep).IsOk());
         const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), rep.limits);
-        // KNOWN OPEN ISSUE (NodesCorridor): corridors of barrier 1 and barrier 2 are spaced only within their own
-        // barrier, so a barrier-1 and a barrier-2 corridor node can sit 2 steps apart (seed 123). Tolerated here only.
-        for (const LayoutViolation& v : r.violations)
-        {
-            EXPECT_EQ(v.code, LayoutCode::NodeSpacing) << "seed " << seed << ": " << Codes(r);
-        }
+        EXPECT_TRUE(r.ok) << "seed " << seed << ": " << Codes(r);
     }
 }
 

@@ -81,6 +81,8 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
     if (n == 0) { out.corridorLimited[0] = out.corridorLimited[1] = true; return out; }
 
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
+    const uint32_t nodeSpacing = static_cast<uint32_t>(rules.GetInt(Rule::kNodeSpacing));
+    std::vector<uint32_t> earlierBarriers;   // corridor nodes of earlier barriers: kNodeSpacing applies across barriers
 
     for (int b = 0; b < 2; ++b)
     {
@@ -112,6 +114,10 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
             {
                 if (HexTopology::Distance(cc, topo.ToCoord(other)) < static_cast<uint32_t>(spacing)) { tooClose = true; break; }
             }
+            for (uint32_t other : earlierBarriers)
+            {
+                if (HexTopology::Distance(cc, topo.ToCoord(other)) < nodeSpacing) { tooClose = true; break; }
+            }
             if (tooClose || world.sites.Find(BuiltinNodeKinds::Corridor(), c.cell)) { continue; }
 
             std::vector<uint32_t> cells{ c.cell };
@@ -124,6 +130,12 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
                     if (nb == kNoCell) { continue; }
                     if (SourceOf(world, topo, nb, barrier, gapReach) != c.source) { continue; }
                     if (world.sites.Find(BuiltinNodeKinds::Corridor(), nb)) { continue; }
+                    bool nearEarlier = false;
+                    for (uint32_t other : earlierBarriers)
+                    {
+                        if (HexTopology::Distance(topo.ToCoord(nb), topo.ToCoord(other)) < nodeSpacing) { nearEarlier = true; break; }
+                    }
+                    if (nearEarlier) { continue; }
                     extra.push_back(nb);
                 }
                 std::sort(extra.begin(), extra.end());
@@ -144,6 +156,7 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
             }
             ++accepted;
         }
+        earlierBarriers.insert(earlierBarriers.end(), nodes.begin(), nodes.end());
         out.accepted[b] = static_cast<uint8_t>(accepted);
         out.corridorLimited[b] = accepted < 2;
     }

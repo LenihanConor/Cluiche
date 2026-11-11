@@ -609,3 +609,25 @@ TEST(NodesCorridor, NeverPlacesOnPeakOrVolcanoCells)
         }
     }
 }
+
+// kNodeSpacing applies between corridor nodes of different barriers too (spec: all node placers share it).
+TEST(NodesCorridor, CrossBarrierCorridorNodesRespectNodeSpacing)
+{
+    // Barriers on rows 4/5 and 6/7 are only 2 rows apart, so unspaced passes would collide.
+    for (unsigned seed = 1; seed <= 20; ++seed)
+    {
+        WorldStructure w = MakeZonedBarrierWorld(40, 12, 5, 7);
+        for (int x = 2; x < 38; ++x) { MarkPass(w, x, 5); MarkPass(w, x, 6); }
+        Place(w, seed);
+        const auto sites = w.sites.All();
+        for (size_t i = 0; i < sites.size(); ++i)
+        {
+            for (size_t j = i + 1; j < sites.size(); ++j)
+            {
+                if (CorridorBarrier(sites[i].flags) == CorridorBarrier(sites[j].flags)) { continue; }
+                const int d = Dist(w, static_cast<int>(sites[i].cell), static_cast<int>(sites[j].cell));
+                EXPECT_GE(d, 3) << "seed " << seed << " cells " << sites[i].cell << "," << sites[j].cell;
+            }
+        }
+    }
+}
