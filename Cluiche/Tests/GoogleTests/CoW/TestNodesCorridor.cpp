@@ -443,7 +443,8 @@ namespace
 
     bool IndLand(const Cell& c)
     {
-        return c.landmass != 0 && c.waterSource != WaterSource::Ocean && c.waterSource != WaterSource::Lake;
+        return c.landmass != 0 && c.waterSource != WaterSource::Ocean && c.waterSource != WaterSource::Lake
+            && c.terrain != TerrainType::Peak && c.terrain != TerrainType::Volcano;
     }
 
     bool IndOnBoundary(const WorldStructure& w, int idx, int barrier)
@@ -582,5 +583,29 @@ TEST(SLOW_NodesCorridor, TwentySeedsAllPresets)
         SweepStats st;
         RunGenerated(id, 100, 20, st);
         Report(id, st);
+    }
+}
+
+// AC8b: no node on Peak or Volcano cells. Corridor candidates and widened cells must skip them.
+TEST(NodesCorridor, NeverPlacesOnPeakOrVolcanoCells)
+{
+    for (unsigned seed = 1; seed <= 12; ++seed)
+    {
+        WorldStructure w = Zoned();
+        for (int x = 4; x <= 24; ++x)
+        {
+            MarkRiverCut(w, x, 4);
+            MarkRiverCut(w, x, 5);
+            if (x % 2 == 0) { w.At(x, 4).terrain = TerrainType::Volcano; w.At(x, 5).terrain = TerrainType::Peak; }
+        }
+        MarkPass(w, 40, 5);
+        w.At(40, 5).terrain = TerrainType::Volcano;
+        Place(w, seed);
+        for (const Site& s : w.sites.All())
+        {
+            const TerrainType t = w.Cells()[s.cell].terrain;
+            EXPECT_NE(t, TerrainType::Volcano) << "seed " << seed << " cell " << s.cell;
+            EXPECT_NE(t, TerrainType::Peak) << "seed " << seed << " cell " << s.cell;
+        }
     }
 }

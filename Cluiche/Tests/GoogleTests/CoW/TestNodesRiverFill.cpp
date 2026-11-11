@@ -898,6 +898,7 @@ namespace
                     label, st.worlds, st.minRegions, st.maxRegions, st.inRangeWorlds, st.limited,
                     st.worlds ? static_cast<double>(st.totalSum) / st.worlds : 0.0, st.totalMin, st.totalMax,
                     st.regionMin, st.regionMax, st.overQuotaRegions, st.mouthCorridorSpacingPairs, st.droppedSum, st.quotaLimitedWorlds, st.corridorOnPeakVolcano);
+        EXPECT_EQ(st.corridorOnPeakVolcano, 0) << label;
         for (int b = 2; b < kBiomeCount; ++b)
         {
             if (st.hunting[b] + st.resource[b] == 0) { continue; }

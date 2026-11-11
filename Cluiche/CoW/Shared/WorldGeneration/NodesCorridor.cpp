@@ -22,7 +22,8 @@ namespace
 
     bool IsNodeLand(const Cell& c)
     {
-        return c.landmass != 0 && c.waterSource != WaterSource::Ocean && c.waterSource != WaterSource::Lake;
+        return c.landmass != 0 && c.waterSource != WaterSource::Ocean && c.waterSource != WaterSource::Lake
+            && c.terrain != TerrainType::Peak && c.terrain != TerrainType::Volcano;   // AC8b: no node on Peak/Volcano
     }
 
     bool OnBoundary(const WorldStructure& world, const HexTopology& topo, uint32_t cell, int barrier)
