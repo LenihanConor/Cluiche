@@ -1214,6 +1214,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp" />
     <ClCompile Include="CoW\TestSiteRegistry.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRegistry.cpp" />
+    <ClCompile Include="CoW\TestRegionPartition.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionPartition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -139,6 +139,9 @@
     <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -295,6 +298,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\RegionPartition.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

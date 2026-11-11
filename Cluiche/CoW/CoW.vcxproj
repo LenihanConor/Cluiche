@@ -67,6 +67,7 @@
     <ClCompile Include="Shared\WorldGeneration\Sites.cpp" />
     <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -121,6 +122,7 @@
     <ClInclude Include="Shared\WorldGeneration\PlaceResult.h" />
     <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h" />
+    <ClInclude Include="Shared\WorldGeneration\RegionPartition.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

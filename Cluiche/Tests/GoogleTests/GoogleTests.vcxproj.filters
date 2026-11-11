@@ -2781,5 +2781,11 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRegistry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestRegionPartition.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionPartition.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
