@@ -96,8 +96,11 @@ RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRul
 // Seeds per non-tiny component: share = max(1, floor(quota)) with quota = n_Z * compCells / (cells of the zone's
 // non-tiny components); the remaining n_Z - sum go to the largest fractional quotas (largest remainder, ties by
 // component order). If the zone has more non-tiny components than n_Z the sum exceeds n_Z (each still gets 1).
+// With minRegionCells > 0 a component's share is capped at max(1, floor(cells / minRegionCells)) (it cannot hold more
+// regions of that size) and the surplus goes to components with room; if none has room the zone gets fewer regions.
 // Result is indexed like `components`; tiny components get 0.
-std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets);
+std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets,
+                                    int minRegionCells = 0);
 
 // Farthest-point sampling inside one component. First seed: cells[rng.RandomInt() % size]; each next seed
 // maximises minHexDistance(seeds) + kSeedBiomeBonus * [biome differs from every seed's biome], ties lowest cell.

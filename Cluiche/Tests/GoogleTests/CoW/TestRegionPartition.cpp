@@ -213,6 +213,21 @@ TEST(RegionPartition, SharesLargestRemainderAndMinOne)
     EXPECT_EQ(shares[0], 2); EXPECT_EQ(shares[1], 1); EXPECT_EQ(shares[2], 2);
 }
 
+TEST(RegionPartition, SharesAreCappedByWhatEachComponentCanHold)
+{
+    WorldStructure w = MakeBlankWorld(40, 12);
+    FillLand(w, 0, 0, 10, 10, FS, G);   // 100 -> at most 2 regions of 36
+    FillLand(w, 12, 0, 20, 10, FS, G);  // 80  -> at most 2
+    FillLand(w, 22, 0, 26, 10, FS, G);  // 40  -> at most 1
+    const auto comps = FindZoneComponents(w, Rules());
+    RegionTargets t; t.count[0] = 5;
+    const auto shares = AllocateSeedShares(comps, t, 36);
+    EXPECT_EQ(shares[0], 2); EXPECT_EQ(shares[1], 2); EXPECT_EQ(shares[2], 1);   // surplus from the 40-cell component moves on
+    t.count[0] = 6;
+    const auto full = AllocateSeedShares(comps, t, 36);
+    EXPECT_EQ(full[0] + full[1] + full[2], 5);   // 2 + 2 + 1: nowhere left to put the sixth
+}
+
 TEST(RegionPartition, SeedsFarthestPointWithLowestIndexTie)
 {
     const WorldStructure w = Strip(21);
@@ -296,6 +311,21 @@ TEST(RegionPartition, CapIsRespectedBeforeLeftoverPhase)
     EXPECT_EQ(g.leftoverCells, 16u);
     EXPECT_EQ(Count(g, 3), 38);
     EXPECT_EQ(Count(g, 1) + Count(g, 2) + Count(g, 3), 40);
+}
+
+TEST(RegionPartition, FloorPhaseLetsASatisfiedRegionYieldSoNeighbourReachesMinimum)
+{
+    // 10x6 room (60 cells) with a 30-cell corridor leaving its right edge; seed 1 in the room, seed 2 in the corridor.
+    // Plain capped Dijkstra gives the room (and the corridor mouth) to region 1 and leaves region 2 under kMinRegionCells.
+    WorldStructure w = MakeBlankWorld(40, 6);
+    FillLand(w, 0, 0, 10, 6, FS, G);
+    FillLand(w, 10, 2, 40, 3, FS, G);
+    const int minCells = Rules().GetInt(Rule::kMinRegionCells);
+    const RegionGrowth g = GrowWith(w, { 2u * 40u + 5u, 2u * 40u + 14u });
+    ASSERT_EQ(g.seeds.size(), 2u);
+    EXPECT_GE(Count(g, 1), minCells);
+    EXPECT_GE(Count(g, 2), minCells);
+    EXPECT_EQ(Count(g, 1) + Count(g, 2), 90);
 }
 
 TEST(RegionPartition, RidgeShiftsBoundaryOntoNeighbour)

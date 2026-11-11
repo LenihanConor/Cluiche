@@ -140,7 +140,7 @@ RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRul
     return ComputeRegionTargets(world, rules, FindZoneComponents(world, rules), rng);
 }
 
-std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets)
+std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets, int minRegionCells)
 {
     std::vector<int> shares(components.size(), 0);
     for (int z = 0; z < kRegionZoneCount; ++z)
@@ -155,19 +155,34 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
         const int nZ = targets.count[z];
         std::vector<double> frac(idx.size());
         int sum = 0;
+        // A component can't hold more regions than floor(cells / kMinRegionCells) (min 1); the surplus goes to other components.
+        std::vector<int> room(idx.size(), 0x7FFFFFFF);
+        if (minRegionCells > 0)
+        {
+            for (size_t k = 0; k < idx.size(); ++k)
+            {
+                room[k] = std::max(1, static_cast<int>(components[idx[k]].cells.size() / static_cast<size_t>(minRegionCells)));
+            }
+        }
         for (size_t k = 0; k < idx.size(); ++k)
         {
             const double q = static_cast<double>(nZ) * static_cast<double>(components[idx[k]].cells.size()) / static_cast<double>(bigCells);
-            const int base = std::max(1, static_cast<int>(std::floor(q)));
+            const int base = std::min(room[k], std::max(1, static_cast<int>(std::floor(q))));
             shares[idx[k]] = base;
             frac[k] = q - std::floor(q);
             sum += base;
         }
-        for (int rem = nZ - sum; rem > 0; --rem)
+        while (sum < nZ)
         {
-            size_t best = 0;
-            for (size_t k = 1; k < idx.size(); ++k) { if (frac[k] > frac[best]) { best = k; } }
+            size_t best = idx.size();
+            for (size_t k = 0; k < idx.size(); ++k)
+            {
+                if (shares[idx[k]] >= room[k]) { continue; }
+                if (best == idx.size() || frac[k] > frac[best]) { best = k; }
+            }
+            if (best == idx.size()) { break; }   // every component is full: the zone gets fewer regions than targeted
             ++shares[idx[best]];
+            ++sum;
             frac[best] = -1.0;   // each component takes a remainder unit once before any takes a second
             bool allUsed = true;
             for (double f : frac) { if (f >= 0.0) { allUsed = false; break; } }
@@ -263,22 +278,36 @@ namespace
         {
             heap.push({ 0.0f, seedCells[i], static_cast<RegionId>(firstId + i) });
         }
-        while (!heap.empty())
+        // Phase 1 (floor): a region that has claimed `floorCells` is satisfied and idles (its entries are parked), so
+        // neighbours still under kMinRegionCells can claim before it takes more. Phase 2: parked entries rejoin the heap
+        // and the normal capped multi-source Dijkstra resumes.
+        const uint32_t floorCells = std::min<uint32_t>(capCells, static_cast<uint32_t>(std::max(1, rules.GetInt(Rule::kMinRegionCells))));
+        std::vector<HeapEntry> parked;
+        for (int phase = 0; phase < 2; ++phase)
         {
-            const HeapEntry e = heap.top();
-            heap.pop();
-            if (out.regionOf[e.cell] != kNoRegion) { continue; }
-            const int ri = e.region - firstId;
-            if (claimed[ri] >= capCells) { continue; }   // capped: no longer a source
-            out.regionOf[e.cell] = e.region;
-            dist[e.cell] = e.cost;
-            ++claimed[ri];
-            const Biome sb = out.seeds[e.region - 1].biome;
-            for (uint32_t d = 0; d < 6; ++d)
+            if (phase == 1)
             {
-                const uint32_t nb = topo.NeighbourAt(e.cell, d);
-                if (nb == kNoCell || out.regionOf[nb] != kNoRegion || !inComp(nb)) { continue; }
-                heap.push({ e.cost + stepCost(sb, nb), nb, e.region });
+                for (const HeapEntry& p : parked) { heap.push(p); }
+                parked.clear();
+            }
+            while (!heap.empty())
+            {
+                const HeapEntry e = heap.top();
+                heap.pop();
+                if (out.regionOf[e.cell] != kNoRegion) { continue; }
+                const int ri = e.region - firstId;
+                if (claimed[ri] >= capCells) { continue; }   // capped: no longer a source
+                if (phase == 0 && claimed[ri] >= floorCells) { parked.push_back(e); continue; }   // satisfied: idle
+                out.regionOf[e.cell] = e.region;
+                dist[e.cell] = e.cost;
+                ++claimed[ri];
+                const Biome sb = out.seeds[e.region - 1].biome;
+                for (uint32_t d = 0; d < 6; ++d)
+                {
+                    const uint32_t nb = topo.NeighbourAt(e.cell, d);
+                    if (nb == kNoCell || out.regionOf[nb] != kNoRegion || !inComp(nb)) { continue; }
+                    heap.push({ e.cost + stepCost(sb, nb), nb, e.region });
+                }
             }
         }
         for (int i = 0; i < k; ++i) { out.capClaims[firstId - 1 + i] = static_cast<uint16_t>(claimed[i]); }
@@ -393,7 +422,7 @@ RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainR
     RegionGrowth out;
     out.components = FindZoneComponents(world, rules);
     out.targets = ComputeRegionTargets(world, rules, out.components, rng);
-    const std::vector<int> shares = AllocateSeedShares(out.components, out.targets);
+    const std::vector<int> shares = AllocateSeedShares(out.components, out.targets, rules.GetInt(Rule::kMinRegionCells));
     std::vector<std::vector<uint32_t>> seeds(out.components.size());
     for (size_t i = 0; i < out.components.size(); ++i)
     {
