@@ -145,6 +145,9 @@
     <ClCompile Include="Shared\WorldGeneration\RegionRepair.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesCorridor.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -307,6 +310,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\RegionRepair.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesCorridor.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

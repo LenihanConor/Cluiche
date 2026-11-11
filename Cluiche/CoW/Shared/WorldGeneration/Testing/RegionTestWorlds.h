@@ -51,6 +51,37 @@ inline void SetOcean(WorldStructure& world, int x, int y)
     world.At(x, y).waterSource = WaterSource::Ocean;
 }
 
+
+// ---- Corridor-node test worlds ---------------------------------------------------------------------
+// All-land world: rows < row1 FirstShores, rows < row2 WildReaches, the rest AncientInteriors (row2 <= 0 or
+// >= h means no third zone). Barrier 1 boundary = rows row1-1 and row1; barrier 2 = rows row2-1 and row2.
+inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
+{
+    WorldStructure world = MakeBlankWorld(w, h);
+    for (int y = 0; y < h; ++y)
+    {
+        const DepthZone z = y < row1 ? DepthZone::FirstShores : (y < row2 ? DepthZone::WildReaches : DepthZone::AncientInteriors);
+        FillLand(world, 0, y, w, y + 1, z, Biome::GrasslandSteppe);
+    }
+    return world;
+}
+
+inline void MarkPass(WorldStructure& world, int x, int y)
+{
+    world.At(x, y).terrain = TerrainType::Pass;
+    world.At(x, y).terrainFlags |= TerrainFlag::Pass;
+}
+
+inline void MarkRiverCut(WorldStructure& world, int x, int y)
+{
+    world.At(x, y).waterSource = WaterSource::River;
+    world.At(x, y).terrain = TerrainType::River;
+    world.At(x, y).terrainFlags |= TerrainFlag::RiverCrossesBarrier;
+}
+
+inline void MarkCoast(WorldStructure& world, int x, int y) { world.At(x, y).terrainFlags |= TerrainFlag::Coast; }
+inline void MarkRidge(WorldStructure& world, int x, int y) { world.At(x, y).terrainFlags |= TerrainFlag::Ridge; }
+
 } // namespace Testing
 } // namespace WorldGeneration
 } // namespace CoW
