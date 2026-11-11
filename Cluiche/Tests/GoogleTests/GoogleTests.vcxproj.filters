@@ -2808,5 +2808,14 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesFill.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestRegionsAndSites.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionsAndSites.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\LayoutCheck.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

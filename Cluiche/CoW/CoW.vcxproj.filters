@@ -154,6 +154,12 @@
     <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\RegionsAndSites.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -325,6 +331,12 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\NodesFill.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\RegionsAndSites.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
