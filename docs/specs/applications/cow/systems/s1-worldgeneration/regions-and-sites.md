@@ -340,8 +340,12 @@ Unless stated otherwise: Small (66 × 42), default params and the three presets,
 ### AC3: Zone purity
 **Pass:** every main-landmass region's cells share one depth zone, except absorbed cells, and `absorbedCells ≤ kMaxAbsorbedShare · land` on all worlds. Island regions are exempt.
 
+*Amended 2026-11-10 (user decision, S-1 plan task 5):* cells of a **tiny fragment** (a zone component under `kMinRegionCells`, absorbed whole by step 5) are counted separately as `RegionTable::fragmentCells` and do not count towards `absorbedCells`. Absorbing a disconnected fragment is forced by the spec (it cannot be its own region, AC5), so it measures the terrain, not the partitioner. A sanity bound keeps terrain pathologies visible: `fragmentCells ≤ kMaxFragmentShare · land` (`kMaxFragmentShare = 0.06`).
+
 ### AC4: Counts
 **Pass:** the main landmass has 10–16 regions, with First Shores 4–6, Wild Reaches 4–6 and Ancient Interiors 2–4, **or** the world is terrain-limited (`limitedBy != None`) and each count equals `min(range-driven target, capacity)`. Every non-main landmass has exactly one region. At `landFraction = 0.20` the world is reported terrain-limited if capacity requires it, never failed.
+
+*Amended 2026-11-10 (user decision):* if repair (undersize merges) leaves the mainland with fewer than 10 regions, the world is reported terrain-limited (`limitedBy` names the zone that lost regions) instead of failing; the counts then equal what the repaired partition holds.
 
 ### AC5: Sizes
 **Pass:** every main-landmass region has ≥ `kMinRegionCells` cells, and none has more than `kMaxRegionShare · mean + kMaxRegionSlack` cells (tuning-gated).
@@ -441,6 +445,7 @@ Render the Regions view and region edges for each preset on 3 fixed seeds, along
 
 - Feature 9 of @worldgenerationpipeline.md.
 - Re-scope (2026-10-18, at the user's direction, twice): Hearths, Nexus nodes, thrones and dynasty starts moved to the dragon layer, which uses a generic site hook; S-1 keeps regions and builds the geography nodes (corridors, rivers, Hunting and Resource) as plain code, not hooks. Amends the system spec and Features 2, 3, 4, 6 and 7 as listed under Amendments to other specs.
+- Amended 2026-11-10 (user decision, plan task 5 unblock): AC3 excludes tiny-fragment cells from `absorbedCells` (separate `fragmentCells`, bound 6%); AC4 reports terrain-limited when repair drops the mainland below 10 regions. Terrain-side fix (merge tiny disconnected zone pieces in the depth-zone stage) logged as a backlog follow-up.
 - Build is plan task 12, after the Terrain Generator (task 7) and Biome Classification (task 11). Plan: @regions-and-sites.plan.md (In Progress; built standalone of Features 2 and 3 by user decision 2026-11-10).
 
 ---
