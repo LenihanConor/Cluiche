@@ -2859,5 +2859,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayoutGuarantee.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestValidationEdge.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

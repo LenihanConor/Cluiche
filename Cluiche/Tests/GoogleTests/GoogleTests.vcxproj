@@ -1240,6 +1240,7 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteGuarantees.cpp" />
     <ClCompile Include="CoW\TestWorldLayoutGuarantee.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayoutGuarantee.cpp" />
+    <ClCompile Include="CoW\TestValidationEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
