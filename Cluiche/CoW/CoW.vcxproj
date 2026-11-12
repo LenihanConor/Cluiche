@@ -74,6 +74,7 @@
     <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp" />
     <ClCompile Include="Shared\WorldGeneration\RegionsAndSites.cpp" />
     <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\ValidationTypes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -135,6 +136,7 @@
     <ClInclude Include="Shared\WorldGeneration\NodesFill.h" />
     <ClInclude Include="Shared\WorldGeneration\RegionsAndSites.h" />
     <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h" />
+    <ClInclude Include="Shared\WorldGeneration\ValidationTypes.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

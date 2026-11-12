@@ -160,6 +160,9 @@
     <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\ValidationTypes.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -337,6 +340,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\ValidationTypes.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
