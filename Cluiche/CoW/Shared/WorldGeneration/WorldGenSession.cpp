@@ -4,6 +4,8 @@
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
+#include <Shared/WorldGeneration/WorldFiles.h>
+#include <Shared/WorldGeneration/WorldJson.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -321,6 +323,12 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
     {
         return Error("args must be a JSON object");
     }
+    Json::Value lockRefusal;
+    bool unlocking = false;
+    if (!CheckLock(args, lockRefusal, unlocking))
+    {
+        return lockRefusal;
+    }
 
     Json::Value applied(Json::arrayValue);
     Json::Value clamped(Json::arrayValue);
@@ -332,7 +340,7 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
 
         if (key == "unlock")
         {
-            continue;   // accepted and ignored in this slice
+            continue;   // consumed by the lock gate; any shape is accepted and ignored (only `true` unlocks a locked world)
         }
         if (key == "seed")
         {
@@ -424,6 +432,11 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
         }
     }
 
+    if (unlocking)
+    {
+        DropLock();   // the hand edits are discarded even if no slider value changed
+    }
+
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["applied"] = applied;
@@ -443,11 +456,21 @@ Json::Value WorldGenSession::SetSize(const Json::Value& args)
     {
         return Error("unknown size \"" + args["size"].asString() + "\" (expected Small, Standard or Large)");
     }
+    Json::Value lockRefusal;
+    bool unlocking = false;
+    if (!CheckLock(args, lockRefusal, unlocking))
+    {
+        return lockRefusal;
+    }
     const GridDimensions dims = WorldSizeDimensions(size);
     if (dims.width != mDims.width || dims.height != mDims.height)
     {
         mDims = dims;
         mDirty = true;
+    }
+    if (unlocking)
+    {
+        DropLock();
     }
     Json::Value r(Json::objectValue);
     r["success"] = true;
@@ -476,6 +499,16 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
             return Error("\"maxRetryAttempts\" must be a non-negative integer");
         }
         maxRetry = ClampMaxRetryAttempts(static_cast<uint32_t>(v.asDouble()));
+    }
+    Json::Value lockRefusal;
+    bool unlocking = false;
+    if (!CheckLock(args, lockRefusal, unlocking))
+    {
+        return lockRefusal;
+    }
+    if (unlocking)
+    {
+        DropLock();
     }
     mSeed = seed;
     mGenParams.maxRetryAttempts = maxRetry;
@@ -529,6 +562,7 @@ bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
         ++mReportRevision;
     }
 
+    mImported = false;
     mLastMs = mGen.GetLastTotalMs();
     mStagesRan = Json::Value(Json::arrayValue);
     const StageTiming* timings = mGen.GetTimings();
@@ -580,7 +614,8 @@ Json::Value WorldGenSession::Params() const
     }
 
     Json::Value effective(Json::objectValue);
-    if (mHasGenerated)
+    effective["imported"] = mImported;
+    if (mHasGenerated && !mImported)
     {
         const Effective& e = mGen.GetEffective();
         effective["continents"] = e.continents;
@@ -611,7 +646,8 @@ Json::Value WorldGenSession::Params() const
     r["params"] = params;
     r["preset"] = mPresetId;
     r["modified"] = mPresetModified;
-    r["locked"] = false;
+    r["locked"] = mLocked;
+    r["source"] = mImported ? "imported" : "generated";
     r["ranges"] = ranges;
     r["effective"] = effective;
     r["maxRetryAttempts"] = static_cast<Json::UInt>(mGenParams.maxRetryAttempts);
@@ -636,7 +672,8 @@ Json::Value WorldGenSession::Status() const
     r["seed"] = static_cast<Json::UInt64>(mSeed);
     r["size"] = sizeName;
     r["dimensions"] = DimensionsJson(mDims);
-    r["locked"] = false;
+    r["locked"] = mLocked;
+    r["source"] = mImported ? "imported" : "generated";
     r["lastMs"] = ShortestFloat(mLastMs);
     r["stagesRan"] = mStagesRan;
     r["regionsFresh"] = mRegionsFresh;
@@ -673,6 +710,192 @@ Json::Value WorldGenSession::Status() const
         generation["reportRevision"] = static_cast<Json::UInt>(mReportRevision);
     }
     r["generation"] = generation;
+    return r;
+}
+
+bool WorldGenSession::CheckLock(const Json::Value& args, Json::Value& refusal, bool& unlocking) const
+{
+    unlocking = false;
+    if (!mLocked)
+    {
+        return true;
+    }
+    if (args.isObject() && args.isMember("unlock") && args["unlock"].isBool() && args["unlock"].asBool())
+    {
+        unlocking = true;
+        return true;
+    }
+    refusal = Error("locked");
+    refusal["locked"] = true;
+    refusal["needsConfirm"] = true;
+    refusal["message"] = "the world is a locked import; repeat the action with \"unlock\":true to discard its edits and regenerate from the recorded recipe";
+    return false;
+}
+
+void WorldGenSession::DropLock()
+{
+    mLocked = false;
+    mDirty = true;   // the imported world is replaced by a generation on the next tick
+}
+
+void WorldGenSession::SetWorldDirectories(const std::string& deployedDir, const std::string& outDir)
+{
+    mWorldsDeployedDir = deployedDir;
+    mWorldsOutDir = outDir;
+}
+
+namespace {
+
+Json::Value WarningList(const std::vector<std::string>& warnings)
+{
+    Json::Value list(Json::arrayValue);
+    for (const std::string& w : warnings)
+    {
+        list.append(w);
+    }
+    return list;
+}
+
+}
+
+Json::Value WorldGenSession::ExportWorld(const Json::Value& args) const
+{
+    if (!args.isNull() && !args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+    if (!mHasGenerated)
+    {
+        return Error("no world generated yet");
+    }
+    std::string name = DefaultWorldName(mWorld.provenance.seed);
+    if (args.isObject() && args.isMember("name"))
+    {
+        if (!args["name"].isString())
+        {
+            return Error("\"name\" must be a world name string");
+        }
+        name = args["name"].asString();
+    }
+    const bool overwrite = args.isObject() && args.isMember("overwrite") && args["overwrite"].isBool() && args["overwrite"].asBool();
+    if (!IsValidWorldName(name))
+    {
+        Json::Value r = Error("invalid world name \"" + name + "\" (expected [A-Za-z0-9_-]{1,64})");
+        r["status"] = WorldFileStatusName(WorldFileStatus::InvalidName);
+        return r;
+    }
+
+    WorldJsonContext context;
+    context.registry = &Registry();
+    context.presetId = mPresetId;
+    std::string text;
+    JsonIssue issue;
+    if (!ExportWorldText(mWorld, context, text, issue))
+    {
+        Json::Value r = Error("cannot export: " + issue.message);
+        r["field"] = issue.field;
+        return r;
+    }
+    const WorldFileResult written = WriteWorldFile(mWorldsOutDir, name, text, overwrite);
+    if (!written.Ok())
+    {
+        Json::Value r = Error(written.message);
+        r["status"] = WorldFileStatusName(written.status);
+        return r;
+    }
+
+    std::vector<std::string> warnings;
+    if (mWorld.regions.regions.Size() == 0)
+    {
+        warnings.push_back("the world has no regions or sites (it did not come from Regenerate); the file holds terrain and biomes only");
+    }
+    if (mDirty)
+    {
+        warnings.push_back("a regeneration is pending; the file holds the world as it is now");
+    }
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["name"] = name;
+    r["path"] = written.path;
+    r["bytes"] = static_cast<Json::UInt64>(written.bytes);
+    r["revision"] = static_cast<Json::UInt>(mRevision);
+    r["warnings"] = WarningList(warnings);
+    return r;
+}
+
+Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
+{
+    if (!args.isObject() || !args.isMember("name") || !args["name"].isString())
+    {
+        return Error("\"name\" must be a world name string");
+    }
+    const std::string name = args["name"].asString();
+    if (!IsValidWorldName(name))
+    {
+        Json::Value r = Error("invalid world name \"" + name + "\" (expected [A-Za-z0-9_-]{1,64})");
+        r["status"] = WorldFileStatusName(WorldFileStatus::InvalidName);
+        return r;
+    }
+
+    std::string text;
+    const WorldFileResult read = ReadWorldFile(mWorldsOutDir, mWorldsDeployedDir, name, text);
+    if (!read.Ok())
+    {
+        Json::Value r = Error(read.message);
+        r["status"] = WorldFileStatusName(read.status);
+        return r;
+    }
+
+    WorldJsonContext context;
+    context.registry = &Registry();
+    context.rulesVersion = mRules.rulesVersion;
+    WorldStructure imported;
+    const WorldImportResult result = ImportWorldText(text, context, imported);
+    if (!result.ok)
+    {
+        Json::Value r = Error("cannot import " + name + ": " + result.error.message);
+        r["field"] = result.error.field;
+        r["status"] = "Invalid";
+        return r;
+    }
+
+    // Everything validated: adopt the world and its recipe, rebuild the generator layers, open locked.
+    mWorld = std::move(imported);
+    mSeed = mWorld.provenance.seed;
+    mShape = mWorld.provenance.shape;
+    mDims = mWorld.dimensions;
+    mPresetId = mWorld.provenance.presetId;
+    mPresetModified = false;
+    mGen.ImportLayers(mWorld);
+
+    mPlaceResult = PlaceResult::Ok();
+    mLimits = LayoutLimits{};
+    mLimits.regionLimitedBy = mWorld.regions.limitedBy;
+    mRegionsFresh = mWorld.regions.regions.Size() > 0;
+    mLayout = mRegionsFresh ? CheckLayout(mWorld, mRules, mLimits) : LayoutReport{};
+
+    mState = WorldGenState::Complete;
+    ++mRevision;
+    mHasGenerated = true;
+    mDirty = false;
+    mForceFull = false;
+    mLastMs = 0.0f;
+    mStagesRan = Json::Value(Json::arrayValue);
+    mLocked = true;
+    mImported = true;
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["name"] = name;
+    r["path"] = read.path;
+    r["bytes"] = static_cast<Json::UInt64>(read.bytes);
+    r["revision"] = static_cast<Json::UInt>(mRevision);
+    r["locked"] = true;
+    r["seed"] = static_cast<Json::UInt64>(mSeed);
+    r["preset"] = mPresetId;
+    r["dimensions"] = DimensionsJson(mDims);
+    r["regionsFresh"] = mRegionsFresh;
+    r["warnings"] = WarningList(result.warnings);
     return r;
 }
 
@@ -718,12 +941,22 @@ Json::Value WorldGenSession::PresetLoad(const Json::Value& args)
         return Error(result.message.empty() ? std::string(PresetStatusName(result.status)) : result.message);
     }
 
+    Json::Value lockRefusal;
+    bool unlocking = false;
+    if (!CheckLock(args, lockRefusal, unlocking))
+    {
+        return lockRefusal;
+    }
     WorldShapeParams next = preset.params;
     next.Clamp();
     if (!(next == mShape))
     {
         mShape = next;
         mDirty = true;
+    }
+    if (unlocking)
+    {
+        DropLock();
     }
     mPresetId = id;
     mPresetModified = false;

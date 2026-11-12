@@ -195,6 +195,12 @@ public:
                 Dia::Maths::RandomStream& wldStream);
     void Invalidate();
 
+    // Makes the layer buffers describe an imported world as far as its cells allow: elevation, latitude, waterSource,
+    // terrainType, depthZone, landmass, terrainFlags, flowDirection (river cells), biomeIndex, riverMask, passMask,
+    // ridgeMask, barrierMask and volcanic are read back from the cells; every other layer is zero (it cannot be
+    // reconstructed). The stage cache is invalidated, so the next Update regenerates everything from its inputs.
+    void ImportLayers(const WorldStructure& world);
+
     // Fills the Cell terrain fields and provenance (everything except presetId, which is left
     // empty for the module/presets to fill) from the current layers. Each Cell is value-initialised
     // before assignment so the array is byte-deterministic. downstream is the flowDirection (0..5)

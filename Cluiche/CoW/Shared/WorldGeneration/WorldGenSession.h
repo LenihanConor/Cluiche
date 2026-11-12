@@ -49,6 +49,20 @@ public:
     Json::Value PresetLoad(const Json::Value& args);   // {"id", "unlock"?}: replaces all shape params, keeps seed
     Json::Value PresetSave(const Json::Value& args);   // {"id","displayName","description"?,"overwrite"?}: out dir only
 
+    // World files (WorldJson.h / WorldFiles.h): where `<name>.wld.json` is written (out) and also read from
+    // (deployed, read-only). An empty path disables that source.
+    void        SetWorldDirectories(const std::string& deployedDir, const std::string& outDir);
+    // {"name"?, "overwrite"?}: writes the current world (terrain, biomes, regions, sites, provenance) to
+    // `<out>/<name>.wld.json`; the default name is the seed. Reply: {success, name, path, bytes, warnings[]}.
+    Json::Value ExportWorld(const Json::Value& args) const;
+    // {"name"}: reads `<name>.wld.json` (out directory first, then deployed) and, only if it validates completely,
+    // replaces the world with it. The session adopts the file's seed, shape params, size and preset, the generator
+    // layers are rebuilt from the cells, and the world opens LOCKED (SD-S1-009): Set, SetSize, PresetLoad and
+    // Regenerate refuse with {success:false, error:"locked", locked:true, needsConfirm:true} unless they carry
+    // "unlock":true, which drops the hand edits and regenerates from the recorded recipe. A failed import changes
+    // nothing. Reply: {success, name, path, revision, locked, warnings[]} or {success:false, error, field}.
+    Json::Value ImportWorld(const Json::Value& args);
+
     // Site registry used by the placement pass; nullptr (default) means no registered kinds. Not owned: the owner
     // (WorldGenerationModule) keeps it alive for the session's lifetime.
     void SetSiteRegistry(const SiteRegistry* registry) { mRegistry = registry; }
@@ -92,6 +106,8 @@ public:
     WorldGenState           State() const      { return mState; }
     bool                    IsDirty() const    { return mDirty; }
     bool                    RegionsFresh() const { return mRegionsFresh; }
+    bool                    IsLocked() const   { return mLocked; }         // an imported world that has not been unlocked
+    bool                    IsImported() const { return mImported; }       // the world came from a file, not the generator
 
 private:
     TerrainRules     mRules;
@@ -119,6 +135,17 @@ private:
     LayoutLimits         mLimits;
     LayoutReport         mLayout;
     PlaceResult          mPlaceResult;
+
+    // Imported worlds (Feature 4, SD-S1-009).
+    std::string          mWorldsDeployedDir;
+    std::string          mWorldsOutDir;
+    bool                 mLocked = false;     // set by ImportWorld; cleared by an action carrying "unlock":true
+    bool                 mImported = false;   // cleared by the next generation
+
+    // Lock gate for the actions: true if the action may proceed. A locked session refuses unless args.unlock is true
+    // (then *unlocking is set and the caller calls DropLock() once the action is known to proceed).
+    bool CheckLock(const Json::Value& args, Json::Value& refusal, bool& unlocking) const;
+    void DropLock();
 
     // Retry (Feature 3).
     GenParams            mGenParams;

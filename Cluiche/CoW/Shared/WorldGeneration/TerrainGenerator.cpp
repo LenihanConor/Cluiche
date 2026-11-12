@@ -182,6 +182,57 @@ void TerrainGenerator::Invalidate()
     mHasCache = false;
 }
 
+void TerrainGenerator::ImportLayers(const WorldStructure& world)
+{
+    mHasCache = false;
+    mDims = world.dimensions;
+    mEffective = Effective{};
+    mEffective.mainLandmass = world.mainLandmass;
+    const int n = world.CellCount();
+    mLayers.Resize(n);
+    if (n == 0)
+    {
+        return;
+    }
+
+    auto floatLayer = [&](const char* name) { return mLayers.FloatLayer(mLayers.FindLayer(name)); };
+    auto uintLayer  = [&](const char* name) { return mLayers.UIntLayer(mLayers.FindLayer(name)); };
+    float*    elevation = floatLayer("elevation");
+    float*    latitude  = floatLayer("latitude");
+    float*    ridge     = floatLayer("ridgeMask");
+    float*    barrier   = floatLayer("barrierMask");
+    uint32_t* water     = uintLayer("waterSource");
+    uint32_t* type      = uintLayer("terrainType");
+    uint32_t* zone      = uintLayer("depthZone");
+    uint32_t* landmass  = uintLayer("landmass");
+    uint32_t* flags     = uintLayer("terrainFlags");
+    uint32_t* flow      = uintLayer("flowDirection");
+    uint32_t* biome     = uintLayer("biomeIndex");
+    uint32_t* river     = uintLayer("riverMask");
+    uint32_t* pass      = uintLayer("passMask");
+    uint32_t* volcanic  = uintLayer("volcanic");
+
+    const Cell* cells = world.Cells();
+    for (int i = 0; i < n; ++i)
+    {
+        const Cell& c = cells[i];
+        elevation[i] = c.elevation;
+        latitude[i]  = c.latitude;
+        ridge[i]     = (c.terrainFlags & TerrainFlag::Ridge) != 0 ? 1.0f : 0.0f;
+        barrier[i]   = (c.terrainFlags & TerrainFlag::Barrier) != 0 ? 1.0f : 0.0f;
+        water[i]     = static_cast<uint32_t>(c.waterSource);
+        type[i]      = static_cast<uint32_t>(c.terrain);
+        zone[i]      = static_cast<uint32_t>(c.depthZone);
+        landmass[i]  = c.landmass;
+        flags[i]     = c.terrainFlags;
+        flow[i]      = c.downstream < 6 ? c.downstream : 6u;   // 6 = no direction in the layer
+        biome[i]     = static_cast<uint32_t>(c.biome);
+        river[i]     = c.waterSource == WaterSource::River ? 1u : 0u;
+        pass[i]      = (c.terrainFlags & TerrainFlag::Pass) != 0 ? 1u : 0u;
+        volcanic[i]  = (c.terrainFlags & TerrainFlag::Volcanic) != 0 ? 1u : 0u;
+    }
+}
+
 void TerrainGenerator::Update(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims,
                               Dia::Maths::RandomStream& wldStream)
 {

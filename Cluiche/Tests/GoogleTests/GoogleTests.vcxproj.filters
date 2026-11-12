@@ -2898,5 +2898,8 @@
     <ClCompile Include="CoW\TestWorldFiles.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionImport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
