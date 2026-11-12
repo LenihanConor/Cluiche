@@ -363,6 +363,24 @@ TEST(DynamicArrayC, ComparisonOperators_CheckEquality)
 	EXPECT_FALSE(array1 != array2);
 }
 
+TEST(DynamicArrayC, ComparisonOperators_DifferentSizesAreNotEqual)
+{
+	int cArray[5] = {1, 2, 3, 4, 5};
+
+	DynamicArrayC<int, 5> longer(cArray, 5);
+	DynamicArrayC<int, 5> shorter(cArray, 3);   // prefix of longer
+	DynamicArrayC<int, 5> empty;
+	DynamicArrayC<int, 5> otherEmpty;
+
+	// Neither direction may read past the shorter array.
+	EXPECT_FALSE(longer == shorter);
+	EXPECT_FALSE(shorter == longer);
+	EXPECT_TRUE(longer != shorter);
+	EXPECT_FALSE(empty == longer);
+	EXPECT_FALSE(longer == empty);
+	EXPECT_TRUE(empty == otherEmpty);
+}
+
 TEST(DynamicArrayC, ElementAccess_WorksCorrectlyWithBoundsChecking)
 {
 	using IntArray5 = DynamicArrayC<int, 5>;
