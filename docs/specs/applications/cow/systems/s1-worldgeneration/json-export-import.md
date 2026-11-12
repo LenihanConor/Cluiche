@@ -406,7 +406,7 @@ Export world without specifying file path (use default). **Pass:** File written 
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-14 (A4 Weather, hex world): `topology`, terrain fields, notification-only import event, map sizes.
+`Approved` — 2026-10-11. Amended 2026-10-14 (A4 Weather, hex world): `topology`, terrain fields, notification-only import event, map sizes. Plan: @json-export-import.plan.md (In Progress, 2026-11-12).
 
 ---
 
