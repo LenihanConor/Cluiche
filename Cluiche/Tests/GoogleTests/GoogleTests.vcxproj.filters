@@ -2877,5 +2877,8 @@
     <ClCompile Include="CoW\TestWorldGenSessionRetry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestGenerationSystem.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
