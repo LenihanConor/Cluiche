@@ -78,6 +78,8 @@ public:
     const GenerationReport* LastReport() const { return mHasReport ? &mReport : nullptr; }
     uint32_t                ReportRevision() const { return mReportRevision; }
     uint32_t                MaxRetryAttempts() const { return mGenParams.maxRetryAttempts; }
+    // Config-time setter (clamped to 1..64); does not trigger a generation.
+    void                    SetMaxRetryAttempts(uint32_t attempts) { mGenParams.maxRetryAttempts = ClampMaxRetryAttempts(attempts); }
 
     const WorldStructure&   World() const      { return mWorld; }
     uint32_t                Revision() const   { return mRevision; }

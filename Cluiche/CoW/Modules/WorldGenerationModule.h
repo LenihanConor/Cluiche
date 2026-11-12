@@ -61,6 +61,10 @@ public:
     // Lets a module configured with auto_generate=false start generating after an explicit action.
     void NotifyAction() { mActionSeen = true; }
 
+    // Report of the last finished Regenerate (retry attempts, outcome, evidence); nullptr before the first. SimPU only.
+    const WorldGeneration::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
+    uint32_t GetReportRevision() const { return mSession.ReportRevision(); }
+
     const WorldGenerationHealthReporter& GetHealthReporter() const { return mHealth; }
     bool IsHealthRegistered() const { return mHealthRegistered; }
 
@@ -86,6 +90,8 @@ protected:
 private:
     void RegisterCommands();
     void UnregisterCommands();
+    // A Regenerate finished its retry loop: retry events, counters, health.
+    void OnRetryRunFinished();
 
     WorldGeneration::WorldGenSession mSession;
     WorldGeneration::SiteRegistry mSiteRegistry;
@@ -96,6 +102,8 @@ private:
     bool mAutoGenerate = true;
     bool mActionSeen = false;
     bool mPublishFailed = false;
+    uint32_t mPublishedReportRevision = 0;   // last report revision this module has handled
+    bool mGenerationUnsatisfiable = false;   // the last Regenerate exhausted its retries
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
     Dia::ApplicationFlow::ModuleRef<RandomStreamModule> mRandom{this};
@@ -109,6 +117,8 @@ private:
 
     Dia::Observation::Metric::Counter* mGenerationsCounter = nullptr;
     Dia::Observation::Metric::Counter* mPublishDroppedCounter = nullptr;
+    Dia::Observation::Metric::Counter* mAttemptsCounter = nullptr;
+    Dia::Observation::Metric::Counter* mUnsatisfiableCounter = nullptr;
     Dia::Observation::Metric::Gauge*   mLastMsGauge = nullptr;
     Dia::Observation::Metric::Gauge*   mRevisionGauge = nullptr;
 };

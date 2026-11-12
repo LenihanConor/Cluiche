@@ -9,8 +9,11 @@
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/RandomStreamModule.h>
+#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <cstring>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace Dia::ApplicationFlow;
@@ -273,4 +276,144 @@ TEST(WorldGenModule, StopUnregistersHealthReporter)
     f.app->RequestShutdown();
     f.Pump(20);
     EXPECT_FALSE(f.wg->IsHealthRegistered());
+}
+
+// ---- Retry mechanism (Feature 3): events, Complete.retryAttempts, counters, health --------------------------------------
+
+namespace {
+
+struct RetryTap
+{
+    Dia::MessageBus::BusSubscriptionHandle sub;
+    std::vector<WorldGenerationRetry> msgs;
+    explicit RetryTap(Fixture& f)
+    {
+        f.bus->GetBus().RegisterType<WorldGenerationRetry, 16>();
+        sub = f.bus->GetBus().Subscribe<WorldGenerationRetry>(StringCRC("TestRetrySink"),
+            [this](const WorldGenerationRetry& m) { msgs.push_back(m); });
+    }
+};
+
+uint64_t CounterValue(const char* name)
+{
+    auto* c = Dia::Observation::Metric::MetricRegistry::Instance().FindCounter(StringCRC(name));
+    return c ? c->Value() : 0u;
+}
+
+Dia::Observation::Health::HealthStatus HealthOf(Fixture& f) { return f.wg->GetHealthReporter().Report().status; }
+
+} // namespace
+
+TEST(WorldGenModuleRetry, FirstAttemptSuccessPublishesNoRetryEventAndZeroRetryAttempts)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    RetryTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.Pump(2);
+    EXPECT_TRUE(tap.msgs.empty());
+    ASSERT_EQ(f.msgs.size(), 1u);
+    EXPECT_EQ(f.msgs[0].retryAttempts, 0u);
+    ASSERT_NE(f.wg->GetLastReport(), nullptr);
+    EXPECT_EQ(f.wg->GetLastReport()->attempts.Size(), 1u);
+    EXPECT_EQ(f.wg->GetReportRevision(), 1u);
+}
+
+TEST(WorldGenModuleRetry, EachFailedAttemptPublishesARetryEventAndCompleteCarriesTheRetryCount)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    RetryTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 2);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
+
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.Pump(2);
+
+    ASSERT_EQ(tap.msgs.size(), 2u);
+    EXPECT_EQ(tap.msgs[0].attemptNumber, 1u);
+    EXPECT_EQ(tap.msgs[1].attemptNumber, 2u);
+    for (const WorldGenerationRetry& m : tap.msgs)
+    {
+        EXPECT_EQ(m.maxAttempts, WorldGeneration::kDefaultMaxRetryAttempts);
+        EXPECT_EQ(m.failedGuaranteeCount, 1u);
+    }
+    ASSERT_EQ(f.msgs.size(), 1u);
+    EXPECT_EQ(f.msgs[0].retryAttempts, 2u);
+    EXPECT_EQ(f.msgs[0].worldRevision, f.wg->GetWorldRevision());
+    EXPECT_EQ(f.wg->GetLastReport()->attempts.Size(), 3u);
+}
+
+TEST(WorldGenModuleRetry, UnsatisfiableGenerationPublishesNoCompleteFailsHealthAndRecoversOnTheNextSuccess)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    RetryTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    const uint64_t attemptsBefore = CounterValue("cow.worldgen.attempts");
+    const uint64_t unsatBefore = CounterValue("cow.worldgen.unsatisfiable");
+
+    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 3);   // fails the first three validations
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 3;
+    f.wg->GetSession().Regenerate(a);
+    f.Pump(2);
+
+    EXPECT_TRUE(f.msgs.empty());                 // no world accepted: no Complete
+    ASSERT_EQ(tap.msgs.size(), 3u);              // every failed attempt, including the last
+    EXPECT_EQ(f.wg->GetLastReport()->outcome, WorldGeneration::GenerationOutcome::Unsatisfiable);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_EQ(CounterValue("cow.worldgen.attempts") - attemptsBefore, 3u);
+    EXPECT_EQ(CounterValue("cow.worldgen.unsatisfiable") - unsatBefore, 1u);
+
+    // The guarantee now passes (its three failing calls are used up): the next Regenerate succeeds and health recovers.
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.Pump(2);
+    ASSERT_EQ(f.msgs.size(), 1u);
+    EXPECT_EQ(f.msgs[0].retryAttempts, 0u);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    EXPECT_EQ(CounterValue("cow.worldgen.unsatisfiable") - unsatBefore, 1u);   // not incremented again
+}
+
+TEST(WorldGenModuleRetry, LivePreviewNeverPublishesRetryEventsOrTouchesTheReport)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    RetryTap tap(f);
+    f.Pump(3);
+    Json::Value s(Json::objectValue); s["rivers"] = 0.9;
+    f.wg->GetSession().Set(s);
+    f.Pump(2);
+    EXPECT_TRUE(tap.msgs.empty());
+    EXPECT_EQ(f.wg->GetLastReport(), nullptr);
+    EXPECT_EQ(f.wg->GetReportRevision(), 0u);
+}
+
+TEST(WorldGenModuleRetry, ConfigSetsTheRetryBoundAndBadValuesKeepTheDefault)
+{
+    Fixture f("{\"max_retry_attempts\":4}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_EQ(f.wg->GetSession().MaxRetryAttempts(), 4u);
+
+    Fixture g("{\"max_retry_attempts\":\"many\"}");
+    ASSERT_TRUE(g.Boot());
+    g.Pump(3);
+    EXPECT_EQ(g.wg->GetSession().MaxRetryAttempts(), WorldGeneration::kDefaultMaxRetryAttempts);
+}
+
+TEST(WorldGenModuleRetry, RetryEventIsTriviallyCopyableWithAStableTypeId)
+{
+    EXPECT_TRUE(std::is_trivially_copyable_v<WorldGenerationRetry>);
+    EXPECT_EQ(WorldGenerationRetry::kTypeId, StringCRC("CoW.WorldGenerationRetry"));
+    const WorldGenerationRetry m{};
+    EXPECT_EQ(m.attemptNumber, 0u);
+    EXPECT_EQ(m.maxAttempts, 0u);
+    EXPECT_EQ(m.failedGuaranteeCount, 0u);
 }

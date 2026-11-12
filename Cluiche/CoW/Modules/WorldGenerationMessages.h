@@ -15,4 +15,14 @@ struct WorldGenerationComplete
     uint32_t worldRevision = 0;   // matches GetWorldRevision() at publish time
 };
 
+// Published once per failed generation attempt, for live progress ("Attempt 2/10: 1 guarantee failed"). A small POD:
+// the reasons are in the module's GenerationReport (GetLastReport()). Not published for live preview (it never retries).
+struct WorldGenerationRetry
+{
+    static inline const Dia::Core::StringCRC kTypeId{ "CoW.WorldGenerationRetry" };
+    uint32_t attemptNumber        = 0;   // 1-indexed
+    uint32_t maxAttempts          = 0;
+    uint32_t failedGuaranteeCount = 0;   // guarantees that failed in the attempt that just failed
+};
+
 } // namespace CoW

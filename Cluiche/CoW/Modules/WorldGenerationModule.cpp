@@ -74,6 +74,14 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                 else
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: regenerate_on_start must be a bool, ignored");
             }
+            if (root.isMember("max_retry_attempts"))
+            {
+                const Json::Value& v = root["max_retry_attempts"];
+                if (v.isNumeric() && v.isIntegral() && v.asDouble() >= 0.0 && v.asDouble() <= 4.0e9)
+                    mSession.SetMaxRetryAttempts(static_cast<uint32_t>(v.asDouble()));
+                else
+                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: max_retry_attempts must be a non-negative integer, ignored");
+            }
             if (root.isMember("size"))
             {
                 Json::Value args(Json::objectValue);
@@ -113,6 +121,8 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
     mGenerationsCounter    = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.generations"));
     mPublishDroppedCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.publish_dropped"));
+    mAttemptsCounter       = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.attempts"));
+    mUnsatisfiableCounter  = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.unsatisfiable"));
     mLastMsGauge           = metrics.RegisterGauge(Dia::Core::StringCRC("cow.worldgen.last_ms"));
     mRevisionGauge         = metrics.RegisterGauge(Dia::Core::StringCRC("cow.worldgen.revision"));
 
@@ -121,6 +131,8 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     Dia::MessageBus::Bus& bus = host->GetBus();
     bus.RegisterType<WorldGenerationComplete, 4>();
     bus.RegisterProducer<WorldGenerationComplete>(GetInstanceId());
+    bus.RegisterType<WorldGenerationRetry, 16>();
+    bus.RegisterProducer<WorldGenerationRetry>(GetInstanceId());
 
     mPublishFailed = false;
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
@@ -172,15 +184,27 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
                      mSession.Revision(), unresolvedPairs);
     }
 
+    // A Regenerate just finished its retry loop (live preview and the first generation never retry).
+    const bool retryRun = mSession.ReportRevision() != mPublishedReportRevision;
+    if (retryRun)
+    {
+        mPublishedReportRevision = mSession.ReportRevision();
+        OnRetryRunFinished();
+    }
+    if (mSession.State() == WorldGeneration::WorldGenState::Failed)
+        return;   // unsatisfiable: no accepted world, so no WorldGenerationComplete
+
     WorldGenerationComplete msg;
     msg.seed = mSession.Seed();
-    msg.retryAttempts = 0;
+    msg.retryAttempts = (retryRun && mSession.LastReport()->attempts.Size() > 0)
+                            ? static_cast<uint32_t>(mSession.LastReport()->attempts.Size() - 1) : 0u;
     msg.worldRevision = mSession.Revision();
     Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
     if (host && host->GetBus().Broadcast(msg))
     {
         mPublishFailed = false;
-        mHealth.SetOK();
+        if (!mGenerationUnsatisfiable)
+            mHealth.SetOK();
         DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u generated (seed %llu)",
                      msg.worldRevision, static_cast<unsigned long long>(msg.seed));
     }
@@ -194,6 +218,41 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         mPublishFailed = true;
         mHealth.SetFailing(Dia::Core::StringCRC("publish_failed"));
     }
+}
+
+void WorldGenerationModule::OnRetryRunFinished()
+{
+    const WorldGeneration::GenerationReport* report = mSession.LastReport();
+    if (!report)
+        return;
+
+    mAttemptsCounter->Inc(report->attempts.Size());
+    Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
+    for (unsigned i = 0; i < report->attempts.Size(); ++i)
+    {
+        const WorldGeneration::AttemptRecord& a = report->attempts[i];
+        if (a.passed)
+            continue;
+        WorldGenerationRetry retry;
+        retry.attemptNumber = a.attempt + 1;
+        retry.maxAttempts = report->maxAttempts;
+        retry.failedGuaranteeCount = a.failedGuaranteeCount;
+        if (!host || !host->GetBus().Broadcast(retry))
+            mPublishDroppedCounter->Inc();   // progress events are best effort; the report keeps the full detail
+    }
+
+    if (report->outcome == WorldGeneration::GenerationOutcome::Success)
+    {
+        mGenerationUnsatisfiable = false;
+        return;
+    }
+    mGenerationUnsatisfiable = true;
+    mUnsatisfiableCounter->Inc();
+    mHealth.IncrementErrors();
+    mHealth.SetFailing(Dia::Core::StringCRC("generation_unsatisfiable"));
+    DIA_LOG_ERROR("CoW", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s); see cow.worldgen.report",
+                  static_cast<unsigned long long>(report->outerSeed), WorldGeneration::GenerationOutcomeName(report->outcome),
+                  static_cast<unsigned>(report->attempts.Size()));
 }
 
 void WorldGenerationModule::RegisterCommands()
@@ -358,7 +417,7 @@ Dia::ApplicationFlow::StopResult WorldGenerationModule::DoStop()
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
         mHealthRegistered = false;
     }
-    mGenerationsCounter = mPublishDroppedCounter = nullptr;
+    mGenerationsCounter = mPublishDroppedCounter = mAttemptsCounter = mUnsatisfiableCounter = nullptr;
     mLastMsGauge = mRevisionGauge = nullptr;
     DIA_LOG_INFO("CoW", "WorldGenerationModule: stopped at revision %u", mSession.Revision());
     return Dia::ApplicationFlow::StopResult::kDone;
