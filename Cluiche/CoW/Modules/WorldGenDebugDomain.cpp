@@ -267,7 +267,8 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     stats["size"]           = status["size"];
     stats["width"]          = status["dimensions"]["width"];
     stats["height"]         = status["dimensions"]["height"];
-    stats["locked"]         = false;
+    stats["locked"]         = status["locked"];
+    stats["source"]         = status["source"];
     stats["lastMs"]         = status["lastMs"];
     stats["preset"]         = session.PresetId();
     stats["presetModified"] = session.PresetModified();

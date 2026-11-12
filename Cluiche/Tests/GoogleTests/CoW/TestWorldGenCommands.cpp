@@ -26,7 +26,10 @@
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Types/SimRegistrationMessage.h>
 
+#include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -816,6 +819,230 @@ TEST(WorldGenCommands, ModuleOwnsRegistryAndDefersGenerationUntilDependantRegist
 	EXPECT_TRUE(reg->unregistered);
 	EXPECT_EQ(wg->GetSiteRegistry().Count(), 0);
 	h.app.reset();
+}
+
+// ---- JSON export / import (Feature 4): real stream round trip ----------------------------------------------------------
+
+namespace
+{
+	// A temporary worlds directory, configured through the module's out_worlds_dir key.
+	struct WorldsDir
+	{
+		std::filesystem::path path;
+		WorldsDir()
+		{
+			static int counter = 0;
+			path = std::filesystem::temp_directory_path() / ("cow_cmd_worlds_" + std::to_string(++counter) + "_" +
+				std::to_string(reinterpret_cast<uintptr_t>(this) & 0xFFFFFF));
+			std::error_code ec;
+			std::filesystem::remove_all(path, ec);
+		}
+		~WorldsDir() { std::error_code ec; std::filesystem::remove_all(path, ec); }
+		std::string Config() const { return "{\"out_worlds_dir\":\"" + path.generic_string() + "\"}"; }
+	};
+
+	bool SameCellBytes(const CoW::WorldGeneration::WorldStructure& a, const CoW::WorldGeneration::WorldStructure& b)
+	{
+		return a.CellCount() == b.CellCount() &&
+		       std::memcmp(a.Cells(), b.Cells(), sizeof(CoW::WorldGeneration::Cell) * static_cast<size_t>(a.CellCount())) == 0;
+	}
+}
+
+TEST(WorldGenCommands, ExportThenImportRestoresTheWorldAndOpensLocked)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	Json::Value regen = Obj(); regen["seed"] = 4242;
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", regen)["success"].asBool());
+	h.Pump(4);
+	const CoW::WorldGeneration::WorldStructure original = gWg->GetSession().World();
+	ASSERT_GT(original.regions.regions.Size(), 0u);
+
+	Json::Value ex = Obj(); ex["name"] = "roundtrip";
+	const Json::Value exported = h.Call("cow.worldgen.export", ex);
+	ASSERT_TRUE(exported["success"].asBool()) << exported.toStyledString();
+	EXPECT_EQ(exported["name"].asString(), "roundtrip");
+	EXPECT_TRUE(std::filesystem::exists(dir.path / "roundtrip.wld.json"));
+	EXPECT_GT(exported["bytes"].asUInt64(), 1000u);
+
+	// Move to a different world, then bring the exported one back.
+	Json::Value other = Obj(); other["seed"] = 9;
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", other)["success"].asBool());
+	h.Pump(4);
+	ASSERT_FALSE(SameCellBytes(gWg->GetSession().World(), original));
+
+	Json::Value im = Obj(); im["name"] = "roundtrip";
+	const Json::Value imported = h.Call("cow.worldgen.import", im);
+	ASSERT_TRUE(imported["success"].asBool()) << imported.toStyledString();
+	EXPECT_TRUE(imported["locked"].asBool());
+	EXPECT_EQ(imported["warnings"].size(), 0u);
+	EXPECT_TRUE(SameCellBytes(gWg->GetSession().World(), original));
+	EXPECT_TRUE(gWg->GetSession().World().regions == original.regions);
+	EXPECT_TRUE(gWg->GetSession().World().sites == original.sites);
+
+	// The query side agrees.
+	const Json::Value status = h.Call("cow.worldgen.status");
+	EXPECT_TRUE(status["locked"].asBool());
+	EXPECT_EQ(status["source"].asString(), "imported");
+	EXPECT_EQ(status["seed"].asUInt64(), 4242u);
+	h.Pump(4);
+	EXPECT_EQ(h.Call("cow.worldgen.status")["revision"].asUInt(), status["revision"].asUInt()) << "an imported world is not regenerated away";
+	EXPECT_TRUE(h.Call("cow.worldgen.params")["locked"].asBool());
+}
+
+TEST(WorldGenCommands, LockedImportRefusesActionsUntilUnlockedThroughTheCommands)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	Json::Value regen = Obj(); regen["seed"] = 77;
+	h.Call("cow.worldgen.regenerate", regen);
+	h.Pump(4);
+	Json::Value ex = Obj(); ex["name"] = "w";
+	ASSERT_TRUE(h.Call("cow.worldgen.export", ex)["success"].asBool());
+	Json::Value im = Obj(); im["name"] = "w";
+	ASSERT_TRUE(h.Call("cow.worldgen.import", im)["success"].asBool());
+	const uint32_t rev = h.Rev();
+
+	Json::Value slider = Obj(); slider["rivers"] = 0.9;
+	const Json::Value setRefused = h.Call("cow.worldgen.set", slider);
+	EXPECT_FALSE(setRefused["success"].asBool());
+	EXPECT_EQ(setRefused["error"].asString(), "locked");
+	EXPECT_TRUE(setRefused["needsConfirm"].asBool());
+	const Json::Value regenRefused = h.Call("cow.worldgen.regenerate", Obj());
+	EXPECT_FALSE(regenRefused["success"].asBool());
+	EXPECT_EQ(regenRefused["error"].asString(), "locked");
+	Json::Value size = Obj(); size["size"] = "Large";
+	EXPECT_EQ(h.Call("cow.worldgen.set_size", size)["error"].asString(), "locked");
+	h.Pump(4);
+	EXPECT_EQ(h.Rev(), rev);
+
+	slider["unlock"] = true;
+	const Json::Value unlocked = h.Call("cow.worldgen.set", slider);
+	EXPECT_TRUE(unlocked["success"].asBool()) << unlocked.toStyledString();
+	h.Pump(4);
+	EXPECT_GT(h.Rev(), rev);
+	const Json::Value status = h.Call("cow.worldgen.status");
+	EXPECT_FALSE(status["locked"].asBool());
+	EXPECT_EQ(status["source"].asString(), "generated");
+}
+
+TEST(WorldGenCommands, ImportPublishesWorldGenerationCompleteAndUpdatesTheRevision)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	std::vector<CoW::WorldGenerationComplete> msgs;
+	gBus->GetBus().RegisterType<CoW::WorldGenerationComplete, 4>();
+	auto sub = gBus->GetBus().Subscribe<CoW::WorldGenerationComplete>(StringCRC("TestImportSink"),
+		[&msgs](const CoW::WorldGenerationComplete& m) { msgs.push_back(m); });
+
+	Json::Value regen = Obj(); regen["seed"] = 5;
+	h.Call("cow.worldgen.regenerate", regen);
+	h.Pump(4);
+	Json::Value ex = Obj(); ex["name"] = "w";
+	h.Call("cow.worldgen.export", ex);
+	msgs.clear();
+	Json::Value im = Obj(); im["name"] = "w";
+	ASSERT_TRUE(h.Call("cow.worldgen.import", im)["success"].asBool());
+	h.Pump(3);
+	ASSERT_EQ(msgs.size(), 1u);
+	EXPECT_EQ(msgs[0].seed, 5u);
+	EXPECT_EQ(msgs[0].retryAttempts, 0u);
+	EXPECT_EQ(msgs[0].worldRevision, gWg->GetSession().Revision());
+}
+
+TEST(WorldGenCommands, ExportAndImportErrorsAreStructuredAndChangeNothing)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const uint32_t rev = h.Rev();
+
+	Json::Value bad = Obj(); bad["name"] = "../escape";
+	for (const char* cmd : { "cow.worldgen.export", "cow.worldgen.import" })
+	{
+		SCOPED_TRACE(cmd);
+		const Json::Value r = h.Call(cmd, bad);
+		EXPECT_TRUE(Failed(r)) << r.toStyledString();
+		EXPECT_EQ(r["status"].asString(), "InvalidName");
+	}
+	Json::Value missing = Obj(); missing["name"] = "ghost";
+	const Json::Value gone = h.Call("cow.worldgen.import", missing);
+	EXPECT_TRUE(Failed(gone));
+	EXPECT_EQ(gone["status"].asString(), "NotFound");
+	EXPECT_TRUE(Failed(h.Call("cow.worldgen.import", Obj())));   // name is required
+
+	// A corrupt file: structured error naming the problem, session untouched.
+	std::filesystem::create_directories(dir.path);
+	{ std::ofstream f(dir.path / "broken.wld.json"); f << "{ \"format\": \"cow.world\", \"version\": 2 }"; }
+	Json::Value broken = Obj(); broken["name"] = "broken";
+	const Json::Value r = h.Call("cow.worldgen.import", broken);
+	EXPECT_TRUE(Failed(r));
+	EXPECT_EQ(r["field"].asString(), "version");
+	EXPECT_NE(r["error"].asString().find("Unsupported cow.world version: 2"), std::string::npos);
+	EXPECT_EQ(h.Rev(), rev);
+	EXPECT_FALSE(h.Call("cow.worldgen.status")["locked"].asBool());
+}
+
+TEST(WorldGenCommands, ImportReplyStaysUnderTheReplyCapWithManyWarnings)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	Json::Value regen = Obj(); regen["seed"] = 3;
+	h.Call("cow.worldgen.regenerate", regen);
+	h.Pump(4);
+	Json::Value ex = Obj(); ex["name"] = "w";
+	ASSERT_TRUE(h.Call("cow.worldgen.export", ex)["success"].asBool());
+
+	// 600 unknown top-level fields => hundreds of warnings in the importer; the reply must still fit.
+	std::string text;
+	{ std::ifstream f(dir.path / "w.wld.json", std::ios::binary); text.assign((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>()); }
+	std::string junk;
+	for (int i = 0; i < 600; ++i) junk += "  \"junk_with_a_rather_long_field_name_" + std::to_string(i) + "\": " + std::to_string(i) + ",\n";
+	text.insert(text.find("\"version\""), junk);
+	{ std::ofstream f(dir.path / "noisy.wld.json", std::ios::binary); f << text; }
+
+	Json::Value im = Obj(); im["name"] = "noisy";
+	const Json::Value r = h.Call("cow.worldgen.import", im);
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString().substr(0, 400);
+	EXPECT_LE(r["warnings"].size(), 41u);
+	EXPECT_NE(r["warnings"][r["warnings"].size() - 1].asString().find("more"), std::string::npos);
+}
+
+TEST(WorldGenCommands, ExportOverwriteRulesApplyThroughTheCommand)
+{
+	WorldsDir dir;
+	Harness h(dir.Config());
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	Json::Value ex = Obj(); ex["name"] = "once";
+	ASSERT_TRUE(h.Call("cow.worldgen.export", ex)["success"].asBool());
+	const Json::Value again = h.Call("cow.worldgen.export", ex);
+	EXPECT_TRUE(Failed(again));
+	EXPECT_EQ(again["status"].asString(), "AlreadyExists");
+	ex["overwrite"] = true;
+	EXPECT_TRUE(h.Call("cow.worldgen.export", ex)["success"].asBool());
+	// Default name is the seed.
+	const Json::Value byDefault = h.Call("cow.worldgen.export", Obj());
+	ASSERT_TRUE(byDefault["success"].asBool()) << byDefault.toStyledString();
+	EXPECT_EQ(byDefault["name"].asString(), std::to_string(gWg->GetSession().Seed()));
+}
+
+TEST(WorldGenCommands, WorldsDirectoryConfigKeysAreTypeChecked)
+{
+	Harness h("{\"out_worlds_dir\":5,\"worlds_dir\":[]}");
+	ASSERT_TRUE(h.Start());   // wrong types are ignored with a warning; the defaults stay
+	h.Pump(3);
+	EXPECT_EQ(gWg->GetWorldRevision(), 1u);
 }
 
 #else

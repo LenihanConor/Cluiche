@@ -55,6 +55,20 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                 else
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: out_presets_dir must be a string, ignored");
             }
+            if (root.isMember("worlds_dir"))
+            {
+                if (root["worlds_dir"].isString())
+                    mWorldsDir = root["worlds_dir"].asString();
+                else
+                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: worlds_dir must be a string, ignored");
+            }
+            if (root.isMember("out_worlds_dir"))
+            {
+                if (root["out_worlds_dir"].isString())
+                    mOutWorldsDir = root["out_worlds_dir"].asString();
+                else
+                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: out_worlds_dir must be a string, ignored");
+            }
             if (root.isMember("auto_generate"))
             {
                 if (root["auto_generate"].isBool())
@@ -106,6 +120,7 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
         }
     }
     mSession.SetPresetDirectories(mPresetsDir, mOutPresetsDir);
+    mSession.SetWorldDirectories(mWorldsDir, mOutWorldsDir);
 }
 
 Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
@@ -255,6 +270,48 @@ void WorldGenerationModule::OnRetryRunFinished()
                   static_cast<unsigned>(report->attempts.Size()));
 }
 
+void WorldGenerationModule::LogWorldFileReply(const char* action, const Json::Value& reply) const
+{
+    if (!reply.isObject())
+        return;
+    if (!reply.isMember("success") || !reply["success"].asBool())
+    {
+        DIA_LOG_WARNING("CoW", "WorldGenerationModule: world %s failed: %s", action, reply["error"].asCString());
+        return;
+    }
+    DIA_LOG_INFO("CoW", "WorldGenerationModule: world %s ok: %s (%llu bytes)", action, reply["path"].asCString(),
+                 static_cast<unsigned long long>(reply["bytes"].asUInt64()));
+    const Json::Value& warnings = reply["warnings"];
+    for (Json::ArrayIndex i = 0; warnings.isArray() && i < warnings.size() && i < 20; ++i)
+        DIA_LOG_INFO("CoW", "WorldGenerationModule: world %s: %s", action, warnings[i].asCString());
+}
+
+void WorldGenerationModule::OnWorldImported()
+{
+    // The world changed without a generation: keep the gauges and health honest and tell the dependants.
+    if (mRevisionGauge)
+        mRevisionGauge->Set(static_cast<double>(mSession.Revision()));
+    mGenerationUnsatisfiable = false;
+    mHealth.SetOK();
+
+    WorldGenerationComplete msg;
+    msg.seed = mSession.Seed();
+    msg.retryAttempts = 0;
+    msg.worldRevision = mSession.Revision();
+    Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
+    if (host && host->GetBus().Broadcast(msg))
+    {
+        DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u imported (seed %llu), world is locked",
+                     msg.worldRevision, static_cast<unsigned long long>(msg.seed));
+    }
+    else
+    {
+        if (mPublishDroppedCounter)
+            mPublishDroppedCounter->Inc();
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: WorldGenerationComplete for imported revision %u could not be published", msg.worldRevision);
+    }
+}
+
 void WorldGenerationModule::RegisterCommands()
 {
     using Dia::API::ValueParam;
@@ -268,15 +325,17 @@ void WorldGenerationModule::RegisterCommands()
     }
 
     static const ValueParam kSetParams[] = {
-        { "params", "object", false, "Any WorldShapeParams key (landFraction, continents, rivers, ...), plus seed and unlock" } };
+        { "params", "object", false, "Any WorldShapeParams key (landFraction, continents, rivers, ...), plus seed and unlock (true is required on a locked imported world; it drops the imported edits)" } };
     static const ValueParam kSetSizeParams[] = {
-        { "size", "string", true, "World size: Small, Standard or Large" } };
+        { "size", "string", true, "World size: Small, Standard or Large" },
+        { "unlock", "bool", false, "Required (true) on a locked imported world; drops the imported edits" } };
     static const ValueParam kRegenParams[] = {
         { "seed", "int", false, "Optional new seed; the whole pipeline re-runs from scratch" },
-        { "maxRetryAttempts", "int", false, "Retry bound for regions and sites (default 10, clamped to 1..64); sticks for later regenerates" } };
+        { "maxRetryAttempts", "int", false, "Retry bound for regions and sites (default 10, clamped to 1..64); sticks for later regenerates" },
+        { "unlock", "bool", false, "Required (true) on a locked imported world; drops the imported edits" } };
     static const ValueParam kLoadParams[] = {
         { "id", "string", true, "Preset id" },
-        { "unlock", "bool", false, "Ignored; accepted for compatibility" } };
+        { "unlock", "bool", false, "Required (true) on a locked imported world; drops the imported edits" } };
     static const ValueParam kSaveParams[] = {
         { "id", "string", true, "Preset id to write into the out presets directory" },
         { "displayName", "string", true, "Human readable preset name" },
@@ -340,6 +399,11 @@ void WorldGenerationModule::RegisterCommands()
         ok = ok && r;
     };
 
+    static const ValueParam kExportParams[] = {
+        { "name", "string", false, "World file name, [A-Za-z0-9_-]{1,64}; default the seed. Written to the out worlds directory as <name>.wld.json" },
+        { "overwrite", "bool", false, "Replace an existing file with the same name" } };
+    static const ValueParam kImportParams[] = {
+        { "name", "string", true, "World file name (out worlds directory first, then the deployed one). The world opens locked" } };
     static const ValueParam kReportParams[] = {
         { "offset", "int", false, "First attempt of the page (default 0)" },
         { "limit", "int", false, "Attempts in the page (default and max 12)" } };
@@ -352,9 +416,9 @@ void WorldGenerationModule::RegisterCommands()
     registerOne(true, "cow.worldgen.set", "Set world shape parameters and/or the seed; regenerates on the next sim tick",
                 kSetParams, 1, [s](const Json::Value& a) { return s->Set(a); });
     registerOne(true, "cow.worldgen.set_size", "Set the world size (Small, Standard, Large); regenerates on the next sim tick",
-                kSetSizeParams, 1, [s](const Json::Value& a) { return s->SetSize(a); });
+                kSetSizeParams, 2, [s](const Json::Value& a) { return s->SetSize(a); });
     registerOne(true, "cow.worldgen.regenerate", "Re-run world generation from scratch, optionally with a new seed",
-                kRegenParams, 2, [s](const Json::Value& a)
+                kRegenParams, 3, [s](const Json::Value& a)
                 {
                     Json::Value r = s->Regenerate(a);
                     if (r.isObject() && r.isMember("success") && r["success"].asBool())
@@ -371,6 +435,23 @@ void WorldGenerationModule::RegisterCommands()
                 kLoadParams, 2, [s](const Json::Value& a) { return s->PresetLoad(a); });
     registerOne(true, "cow.worldgen.preset.save", "Save the current shape params as a preset in the writable presets directory",
                 kSaveParams, 4, [s](const Json::Value& a) { return s->PresetSave(a); });
+
+    registerOne(true, "cow.worldgen.export", "Write the current world (terrain, biomes, regions, sites, provenance) to a .wld.json file",
+                kExportParams, 2, [this, s](const Json::Value& a)
+                {
+                    Json::Value r = s->ExportWorld(a);
+                    LogWorldFileReply("export", r);
+                    return r;
+                });
+    registerOne(true, "cow.worldgen.import", "Replace the world with one read from a .wld.json file; the world opens locked (set/regenerate need unlock:true)",
+                kImportParams, 1, [this, s](const Json::Value& a)
+                {
+                    Json::Value r = s->ImportWorld(a);
+                    LogWorldFileReply("import", r);
+                    if (r.isObject() && r.isMember("success") && r["success"].asBool())
+                        OnWorldImported();
+                    return r;
+                });
 
     registerOne(false, "cow.worldgen.params", "Current world shape parameters, seed and size", nullptr, 0,
                 [s](const Json::Value&) { return s->Params(); });

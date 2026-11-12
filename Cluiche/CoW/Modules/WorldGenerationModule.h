@@ -78,7 +78,7 @@ public:
         "cow.worldgen.preset.load", "cow.worldgen.preset.save",
         "cow.worldgen.params", "cow.worldgen.status", "cow.worldgen.presets",
         "cow.worldgen.layers", "cow.worldgen.cell", "cow.worldgen.regions", "cow.worldgen.sites",
-        "cow.worldgen.report" };
+        "cow.worldgen.report", "cow.worldgen.export", "cow.worldgen.import" };
     static constexpr unsigned kCommandCount = sizeof(kCommandNames) / sizeof(kCommandNames[0]);
 
 protected:
@@ -92,6 +92,10 @@ private:
     void UnregisterCommands();
     // A Regenerate finished its retry loop: retry events, counters, health.
     void OnRetryRunFinished();
+    // A world was imported from a file: gauges, health and the WorldGenerationComplete notification (the world changed).
+    void OnWorldImported();
+    // Logs the outcome of an export or import command reply (Info on success with each warning, Warning on failure).
+    void LogWorldFileReply(const char* action, const Json::Value& reply) const;
 
     WorldGeneration::WorldGenSession mSession;
     WorldGeneration::SiteRegistry mSiteRegistry;
@@ -99,6 +103,8 @@ private:
     bool mStartDeferral = true;      // skip the first DoUpdate: dependants started in the same pass have registered by then
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
+    std::string mWorldsDir;                                        // read-only deployed worlds (none by default)
+    std::string mOutWorldsDir = "Cluiche/out/CoW/worlds";          // PD-009: exports land here
     bool mAutoGenerate = true;
     bool mActionSeen = false;
     bool mPublishFailed = false;

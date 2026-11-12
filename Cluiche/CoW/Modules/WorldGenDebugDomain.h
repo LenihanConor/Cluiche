@@ -32,7 +32,7 @@
 // pushed MainPU/SimPU past their 33.3 ms budget in Debug.
 //   full, staticVersion : bool, int
 //   drawers  : []                                     (no world drawers)
-//   stats    : {status, revision, seed, size, width, height, locked(false), lastMs,
+//   stats    : {status, revision, seed, size, width, height, locked, source, lastMs,
 //               preset (id or ""), presetModified, stagesRan[names]}
 //   controls : [{key,label,type:"slider",min,max,step,value,default,stage,stageName}] one per WorldShapeParams key.
 //              barrierForm is {type:"select", values[], value:string, default:string} (no min/max/step).

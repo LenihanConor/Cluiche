@@ -93,6 +93,32 @@ TEST(WorldGenDebugDomain, StatsMatchSession)
     (void)params;
 }
 
+TEST(WorldGenDebugDomain, LockedAndSourceStatsFollowAnImport)
+{
+    Fixture f;
+    f.Gen();
+    EXPECT_FALSE(f.State()["stats"]["locked"].asBool());
+    EXPECT_EQ(f.State()["stats"]["source"].asString(), "generated");
+
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "cow_domain_locked_test";
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    WorldGenSession& session = f.module.GetSession();
+    session.SetWorldDirectories("", dir.string());
+    Json::Value ex(Json::objectValue); ex["name"] = "w";
+    ASSERT_TRUE(session.ExportWorld(ex)["success"].asBool());
+    ASSERT_TRUE(session.ImportWorld(ex)["success"].asBool());
+    EXPECT_TRUE(f.State()["stats"]["locked"].asBool());
+    EXPECT_EQ(f.State()["stats"]["source"].asString(), "imported");
+
+    Json::Value unlock(Json::objectValue); unlock["unlock"] = true;
+    ASSERT_TRUE(session.Set(unlock)["success"].asBool());   // panel commands do not carry unlock yet (task 17)
+    f.Gen();
+    EXPECT_FALSE(f.State()["stats"]["locked"].asBool());
+    EXPECT_EQ(f.State()["stats"]["source"].asString(), "generated");
+    std::filesystem::remove_all(dir, ec);
+}
+
 TEST(WorldGenDebugDomain, ControlsCoverEveryParamKey)
 {
     Fixture f;

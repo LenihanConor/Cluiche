@@ -746,12 +746,19 @@ void WorldGenSession::SetWorldDirectories(const std::string& deployedDir, const 
 
 namespace {
 
+// Replies are capped at 16 KB: at most 40 warnings, each at most 240 characters, then a count of the rest.
 Json::Value WarningList(const std::vector<std::string>& warnings)
 {
+    constexpr size_t kMaxListed = 40;
+    constexpr size_t kMaxLength = 240;
     Json::Value list(Json::arrayValue);
-    for (const std::string& w : warnings)
+    for (size_t i = 0; i < warnings.size() && i < kMaxListed; ++i)
     {
-        list.append(w);
+        list.append(warnings[i].size() > kMaxLength ? warnings[i].substr(0, kMaxLength) + "..." : warnings[i]);
+    }
+    if (warnings.size() > kMaxListed)
+    {
+        list.append("... and " + std::to_string(warnings.size() - kMaxListed) + " more");
     }
     return list;
 }
