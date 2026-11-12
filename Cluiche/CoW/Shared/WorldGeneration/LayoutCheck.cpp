@@ -72,6 +72,7 @@ const char* LayoutCodeName(LayoutCode code)
     case LayoutCode::CorridorCount:      return "CorridorCount";
     case LayoutCode::RegionNodeCount:    return "RegionNodeCount";
     case LayoutCode::TotalNodeCount:     return "TotalNodeCount";
+    case LayoutCode::FragmentOverCap:    return "FragmentOverCap";
     }
     return "Unknown";
 }
@@ -104,6 +105,10 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
         if (static_cast<float>(world.regions.absorbedCells) > rules.kMaxAbsorbedShare() * static_cast<float>(land))
         {
             Add(report, LayoutCode::AbsorbedOverCap, kNoRegion, world.regions.absorbedCells);
+        }
+        if (static_cast<float>(world.regions.fragmentCells) > rules.kMaxFragmentShare() * static_cast<float>(land))
+        {
+            Add(report, LayoutCode::FragmentOverCap, kNoRegion, world.regions.fragmentCells);
         }
     }
 

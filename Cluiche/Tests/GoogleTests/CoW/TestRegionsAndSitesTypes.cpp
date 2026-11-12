@@ -116,6 +116,9 @@ TEST(RegionTypes, TableEqualityIsMemberWise)
     b.absorbedCells = 1;
     EXPECT_FALSE(a == b);
     b.absorbedCells = 0;
+    b.fragmentCells = 1;
+    EXPECT_FALSE(a == b);
+    b.fragmentCells = 0;
     b.regions[0].neighbours.Add(5);
     EXPECT_FALSE(a == b);
     b.regions[0].neighbours.RemoveAll();

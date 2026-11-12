@@ -1164,6 +1164,7 @@ Json::Value WorldGenSession::Regions() const
     r["regions"] = list;
     r["limitedBy"] = DepthZoneName(mWorld.regions.limitedBy);
     r["absorbedCells"] = static_cast<Json::UInt>(mWorld.regions.absorbedCells);
+    r["fragmentCells"] = static_cast<Json::UInt>(mWorld.regions.fragmentCells);
     r["mainlandRegionCount"] = static_cast<Json::UInt>(mWorld.regions.mainlandRegionCount);
     r["fresh"] = mRegionsFresh;
     return r;

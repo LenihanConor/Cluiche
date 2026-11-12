@@ -112,6 +112,7 @@ namespace WorldGeneration {
     X(kMaxRegionShare,   1.7f,   1.0f,   8.0f) \
     X(kMaxRegionSlack,   8.0f,   1.0f,   64.0f) \
     X(kMaxAbsorbedShare, 0.03f,  0.0f,   0.2f) \
+    X(kMaxFragmentShare, 0.06f,  0.0f,   0.3f) \
     X(kNodeSpacing,      3.0f,   1.0f,   32.0f) \
     X(kCorridorSpacing,  6.0f,   1.0f,   32.0f) \
     X(kCoastalGapReach,  4.0f,   1.0f,   32.0f) \
@@ -145,7 +146,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 const RuleDef& GetRuleDef(Rule r);
 const RuleDef& GetRuleDef(uint32_t index);
 
-constexpr uint32_t kDefaultRulesVersion = 3;
+constexpr uint32_t kDefaultRulesVersion = 4;
 
 struct TerrainRules
 {

@@ -169,6 +169,8 @@ TEST(WorldGenSessionRegions, RegionsQueryReturnsEveryRecord)
     EXPECT_TRUE(r["fresh"].asBool());
     EXPECT_EQ(r["limitedBy"].asString(), DepthZoneName(w.regions.limitedBy));
     EXPECT_EQ(r["absorbedCells"].asUInt(), static_cast<unsigned>(w.regions.absorbedCells));
+    ASSERT_TRUE(r.isMember("fragmentCells"));
+    EXPECT_EQ(r["fragmentCells"].asUInt(), static_cast<unsigned>(w.regions.fragmentCells));
     EXPECT_EQ(r["mainlandRegionCount"].asUInt(), static_cast<unsigned>(w.regions.mainlandRegionCount));
     ASSERT_EQ(r["regions"].size(), w.regions.regions.Size());
     for (unsigned i = 0; i < w.regions.regions.Size(); ++i)

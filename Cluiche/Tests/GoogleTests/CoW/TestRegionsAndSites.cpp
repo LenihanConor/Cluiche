@@ -460,6 +460,22 @@ TEST(LayoutCheck, AbsorbedCellsOverCap)
     EXPECT_EQ(v->count, 44u);
 }
 
+TEST(LayoutCheck, FragmentCellsOverCap)
+{
+    WorldStructure w = ValidWorld();   // 1440 land cells, cap 0.06 * 1440 = 86.4
+    w.regions.fragmentCells = 86;
+    w.regions.absorbedCells = 0;
+    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), NoBarriers()), LayoutCode::FragmentOverCap), nullptr);
+    w.regions.fragmentCells = 87;
+    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutViolation* v = Find(r, LayoutCode::FragmentOverCap);
+    ASSERT_NE(v, nullptr) << Codes(r);
+    EXPECT_EQ(v->count, 87u);
+    EXPECT_FALSE(r.ok);
+    EXPECT_EQ(Find(r, LayoutCode::AbsorbedOverCap), nullptr);   // fragments never count as absorbed
+    EXPECT_STREQ(LayoutCodeName(LayoutCode::FragmentOverCap), "FragmentOverCap");
+}
+
 TEST(LayoutCheck, NodeOnWater)
 {
     WorldStructure w = ValidWorld();

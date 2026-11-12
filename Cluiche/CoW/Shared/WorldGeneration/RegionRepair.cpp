@@ -243,7 +243,14 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         const auto p = HexTopology::CellCenter(R.topo.ToCoord(static_cast<uint32_t>(c)), 1.0f);
         return std::pair<double, double>(static_cast<double>(p.x), static_cast<double>(p.y));
     };
-    uint32_t absorbed = 0;
+    // Cells of tiny zone components (AC3 amendment): absorbed whole, counted as fragmentCells instead of absorbed.
+    std::vector<uint8_t> inFragment(static_cast<size_t>(n), 0);
+    for (uint32_t ci : growth.tinyComponents)
+    {
+        if (ci >= growth.components.size()) { continue; }
+        for (uint32_t c : growth.components[ci].cells) { if (c < static_cast<uint32_t>(n)) { inFragment[c] = 1; } }
+    }
+    uint32_t absorbed = 0, fragment = 0;
     for (int c = 0; c < n; ++c)
     {
         const RegionId r = cells[c].region;
@@ -254,10 +261,11 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         const auto p = centre(c);
         s.sx += p.first; s.sy += p.second;
         const Info& inf = R.info[oldOf[r - 1]];
-        if (!inf.island && cells[c].depthZone != inf.zone) { ++absorbed; }
+        if (!inf.island && cells[c].depthZone != inf.zone) { ++(inFragment[c] ? fragment : absorbed); }
     }
 
     world.regions.absorbedCells = static_cast<uint16_t>(std::min<uint32_t>(absorbed, 0xFFFFu));
+    world.regions.fragmentCells = static_cast<uint16_t>(std::min<uint32_t>(fragment, 0xFFFFu));
     world.regions.limitedBy = growth.targets.limitedBy;
 
     // Nearest cell to the centroid, preferring non-Lake cells; ties (within 1e-4) keep the lowest index.
@@ -328,6 +336,25 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         if (!inf.island) { ++mainland; }
     }
     world.regions.mainlandRegionCount = static_cast<uint8_t>(mainland);
+
+    // AC4 amendment: repair (undersize merges) leaving the mainland below 10 regions reports terrain-limited, naming
+    // the zone that lost the most regions against its target (ties: zone order).
+    if (world.regions.limitedBy == DepthZone::None && static_cast<int>(mainland) < kTotalRegionsMin)
+    {
+        int finalCount[kRegionZoneCount] = {};
+        for (unsigned i = 0; i < world.regions.regions.Size(); ++i)
+        {
+            const RegionRecord& rec = world.regions.regions[i];
+            const int slot = ZoneSlot(rec.zone);
+            if (!rec.isIsland && slot >= 0 && slot < kRegionZoneCount) { ++finalCount[slot]; }
+        }
+        int worst = 0;
+        for (int z = 1; z < kRegionZoneCount; ++z)
+        {
+            if (growth.targets.count[z] - finalCount[z] > growth.targets.count[worst] - finalCount[worst]) { worst = z; }
+        }
+        world.regions.limitedBy = ZoneFromSlot(worst);
+    }
     out.regionCount = static_cast<uint16_t>(count);
     return out;
 }

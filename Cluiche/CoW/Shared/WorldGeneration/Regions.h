@@ -36,7 +36,8 @@ struct RegionTable
     static constexpr unsigned kMaxRegions = 64;
 
     Dia::Core::Containers::DynamicArrayC<RegionRecord, kMaxRegions> regions;   // index = id - 1
-    uint16_t  absorbedCells       = 0;
+    uint16_t  absorbedCells       = 0;                                         // zone-mismatched cells, excluding fragment cells (AC3)
+    uint16_t  fragmentCells       = 0;                                         // cells of tiny zone fragments absorbed into another zone's region
     uint8_t   mainlandRegionCount = 0;
     DepthZone limitedBy           = DepthZone::None;                           // None unless terrain-limited
 
@@ -75,7 +76,7 @@ struct RegionTable
 
     bool operator==(const RegionTable& o) const
     {
-        return regions == o.regions && absorbedCells == o.absorbedCells &&
+        return regions == o.regions && absorbedCells == o.absorbedCells && fragmentCells == o.fragmentCells &&
                mainlandRegionCount == o.mainlandRegionCount && limitedBy == o.limitedBy;
     }
 };

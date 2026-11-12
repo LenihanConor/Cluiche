@@ -49,7 +49,7 @@ std::filesystem::path FindShippedRules()
 TEST(TerrainRules, DefaultsMatchTable)
 {
     const TerrainRules r = TerrainRules::Defaults();
-    EXPECT_EQ(r.rulesVersion, 3u);
+    EXPECT_EQ(r.rulesVersion, 4u);
     EXPECT_FALSE(r.degraded);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
@@ -238,7 +238,7 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
     EXPECT_TRUE(r.LoadFromJson(root, warnings));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(r.degraded);
-    EXPECT_EQ(r.rulesVersion, 3u);
+    EXPECT_EQ(r.rulesVersion, 4u);
     for (uint32_t i = 0; i < kRuleCount; ++i)
     {
         EXPECT_FLOAT_EQ(r.values[i], GetRuleDef(i).defaultValue) << GetRuleDef(i).key;
@@ -325,6 +325,7 @@ TEST(TerrainRules, RegionRulesDefaults)
     EXPECT_FLOAT_EQ(r.kMaxRegionShare(), 1.7f);
     EXPECT_EQ(r.GetInt(Rule::kMaxRegionSlack), 8);
     EXPECT_FLOAT_EQ(r.kMaxAbsorbedShare(), 0.03f);
+    EXPECT_FLOAT_EQ(r.kMaxFragmentShare(), 0.06f);
     EXPECT_EQ(r.GetInt(Rule::kNodeSpacing), 3);
     EXPECT_EQ(r.GetInt(Rule::kCorridorSpacing), 6);
     EXPECT_EQ(r.GetInt(Rule::kCoastalGapReach), 4);
@@ -339,6 +340,7 @@ TEST(TerrainRules, RegionRulesOutOfRangeClamp)
     json["kSeedBiomeBonus"] = 100.0;   // max 32
     json["kBiomeMismatch"] = 2.0;      // max 1.0
     json["kMaxRegionSlack"] = -5.0;    // min 1
+    json["kMaxFragmentShare"] = 0.9;   // max 0.3
 
     TerrainRules r;
     RuleWarnings warnings;
@@ -348,11 +350,13 @@ TEST(TerrainRules, RegionRulesOutOfRangeClamp)
     EXPECT_EQ(r.GetInt(Rule::kSeedBiomeBonus), 32);
     EXPECT_FLOAT_EQ(r.kBiomeMismatch(), 1.0f);
     EXPECT_EQ(r.GetInt(Rule::kMaxRegionSlack), 1);
+    EXPECT_FLOAT_EQ(r.kMaxFragmentShare(), 0.3f);
 
     EXPECT_TRUE(HasWarning(warnings, "range:kMinRegionCells"));
     EXPECT_TRUE(HasWarning(warnings, "range:kSeedBiomeBonus"));
     EXPECT_TRUE(HasWarning(warnings, "range:kBiomeMismatch"));
     EXPECT_TRUE(HasWarning(warnings, "range:kMaxRegionSlack"));
+    EXPECT_TRUE(HasWarning(warnings, "range:kMaxFragmentShare"));
     EXPECT_TRUE(r.degraded);
 }
 
@@ -391,6 +395,7 @@ TEST(TerrainRules, RegionRulesRoundTripThroughJson)
     EXPECT_FLOAT_EQ(b.kMaxRegionShare(), a.kMaxRegionShare());
     EXPECT_EQ(b.GetInt(Rule::kMaxRegionSlack), a.GetInt(Rule::kMaxRegionSlack));
     EXPECT_FLOAT_EQ(b.kMaxAbsorbedShare(), a.kMaxAbsorbedShare());
+    EXPECT_FLOAT_EQ(b.kMaxFragmentShare(), a.kMaxFragmentShare());
     EXPECT_EQ(b.GetInt(Rule::kNodeSpacing), a.GetInt(Rule::kNodeSpacing));
     EXPECT_EQ(b.GetInt(Rule::kCorridorSpacing), a.GetInt(Rule::kCorridorSpacing));
     EXPECT_EQ(b.GetInt(Rule::kCoastalGapReach), a.GetInt(Rule::kCoastalGapReach));

@@ -144,7 +144,7 @@ inline CheckErrors CheckIdOrder(const WorldStructure& w)
     return e;
 }
 
-// Cells of non-island regions whose zone differs from the region's zone.
+// Cells of non-island regions whose zone differs from the region's zone (absorbed + fragment cells).
 inline uint32_t CountAbsorbedCells(const WorldStructure& w)
 {
     uint32_t n = 0;
@@ -158,13 +158,19 @@ inline uint32_t CountAbsorbedCells(const WorldStructure& w)
     return n;
 }
 
-// Zone purity excluding absorbed cells: absorbed count recomputed independently, equals the table's value, and
-// (maxShare >= 0) stays within maxShare * land.
+// Zone purity excluding absorbed cells: zone-mismatched cells recounted independently equal the table's
+// absorbedCells + fragmentCells (AC3 amendment: tiny-fragment cells are counted apart), and (maxShare >= 0)
+// absorbedCells stays within maxShare * land.
 inline CheckErrors CheckZonePurity(const WorldStructure& w, float maxShare)
 {
     CheckErrors e;
-    const uint32_t absorbed = CountAbsorbedCells(w);
-    if (absorbed != w.regions.absorbedCells) { e.push_back("absorbedCells " + std::to_string(w.regions.absorbedCells) + " vs recount " + std::to_string(absorbed)); }
+    const uint32_t mismatched = CountAbsorbedCells(w);
+    const uint32_t absorbed = w.regions.absorbedCells;
+    if (mismatched != absorbed + w.regions.fragmentCells)
+    {
+        e.push_back("absorbedCells " + std::to_string(absorbed) + " + fragmentCells " + std::to_string(w.regions.fragmentCells) +
+                    " vs recount " + std::to_string(mismatched));
+    }
     if (maxShare >= 0.0f && absorbed > maxShare * static_cast<float>(ChkLandCount(w)))
     {
         e.push_back("absorbed " + std::to_string(absorbed) + " exceeds " + std::to_string(maxShare) + " of land " + std::to_string(ChkLandCount(w)));

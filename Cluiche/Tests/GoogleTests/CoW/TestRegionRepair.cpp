@@ -72,6 +72,20 @@ namespace
         return h;
     }
 
+    // Registers the given cells as one tiny zone component (as BuildProvisionalRegions does for components under
+    // kMinRegionCells).
+    void MarkTiny(Hand& h, const std::vector<std::pair<int, int>>& xy)
+    {
+        RegionComponent comp;
+        comp.landmass = 1;
+        comp.tiny = true;
+        for (const auto& q : xy) { comp.cells.push_back(static_cast<uint32_t>(q.second * h.w.dimensions.width + q.first)); }
+        std::sort(comp.cells.begin(), comp.cells.end());
+        comp.zone = h.w.Cells()[comp.cells[0]].depthZone;
+        h.g.tinyComponents.push_back(static_cast<uint32_t>(h.g.components.size()));
+        h.g.components.push_back(comp);
+    }
+
     RegionBuild Finish(Hand& h, int minCells = 1) { return FinishRegions(h.w, RulesMin(minCells), h.g); }
 
     RegionId At(const Hand& h, int x, int y) { return h.w.At(x, y).region; }
@@ -194,7 +208,89 @@ TEST(RegionRepair, UnzonedCellIsAbsorbedAndCounted)
     Finish(h);
     EXPECT_EQ(At(h, 0, 3), 1);
     EXPECT_EQ(h.w.regions.absorbedCells, 1);
+    EXPECT_EQ(h.w.regions.fragmentCells, 0);
     ExpectChecksPass(h.w);
+}
+
+// AC3 amendment: a tiny zone fragment absorbed whole counts as fragmentCells, not absorbedCells.
+TEST(RegionRepair, TinyFragmentAbsorbedCountsAsFragmentNotAbsorbed)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "u", "u" }, { FS }, AI);
+    MarkTiny(h, { { 0, 5 }, { 0, 6 } });
+    Finish(h);
+    EXPECT_EQ(At(h, 0, 5), 1); EXPECT_EQ(At(h, 0, 6), 1);
+    EXPECT_EQ(h.w.regions.fragmentCells, 2);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, FragmentAndUnzonedCountedSeparately)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", "u", "u", "u" }, { FS }, AI);
+    h.w.At(0, 7).depthZone = DepthZone::None;   // unzoned, not part of the tiny fragment
+    MarkTiny(h, { { 0, 5 }, { 0, 6 } });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.fragmentCells, 2);
+    EXPECT_EQ(h.w.regions.absorbedCells, 1);
+    ExpectChecksPass(h.w);
+}
+
+TEST(RegionRepair, TinyFragmentJoiningSameZoneRegionIsNeitherFragmentNorAbsorbed)
+{
+    Hand h = Make({ "1", "1", "1", "u", "u" }, { AI }, AI);
+    MarkTiny(h, { { 0, 3 }, { 0, 4 } });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.fragmentCells, 0);
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+}
+
+TEST(RegionRepair, TinyFragmentThatBecomesOrphanRegionIsNotAFragment)
+{
+    Hand h = Make({ "1", "1", "1", "1", "1", ".", "u", "u" }, { FS }, AI);
+    MarkTiny(h, { { 0, 6 }, { 0, 7 } });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.fragmentCells, 0);   // own (orphan) region of its own zone
+    EXPECT_EQ(h.w.regions.absorbedCells, 0);
+}
+
+// ---------------------------------------------------------------- AC4 amendment: terrain-limited after repair
+
+TEST(RegionRepair, MergesBelowTenSetLimitedByToZoneThatLostRegions)
+{
+    Hand h = Make({ "1", "1", "1", "1", "2", "3", "3", "3", "3" }, { FS, WR, AI });
+    h.g.targets.count[0] = 1; h.g.targets.count[1] = 1; h.g.targets.count[2] = 1;
+    const RegionBuild b = Finish(h, 4);
+    EXPECT_EQ(b.undersizedMerged, 1);   // the WildReaches region merged away
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 2);
+    EXPECT_EQ(h.w.regions.limitedBy, WR);
+}
+
+TEST(RegionRepair, GrowthLimitedByIsKeptAfterRepair)
+{
+    Hand h = Make({ "1", "1", "1", "1", "2", "3", "3", "3", "3" }, { FS, WR, AI });
+    h.g.targets.count[0] = 1; h.g.targets.count[1] = 1; h.g.targets.count[2] = 1;
+    h.g.targets.limitedBy = AI;
+    Finish(h, 4);
+    EXPECT_EQ(h.w.regions.limitedBy, AI);
+}
+
+TEST(RegionRepair, BelowTenDeficitTieGoesToZoneOrder)
+{
+    // Targets 2/2/1, final 1/1/1: FirstShores and WildReaches both lost one; zone order picks FirstShores.
+    Hand h = Make({ "1", "1", "1", "2", "3", "3", "3", "4", "5", "5", "5" }, { FS, FS, WR, WR, AI });
+    h.g.targets.count[0] = 2; h.g.targets.count[1] = 2; h.g.targets.count[2] = 1;
+    Finish(h, 3);
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 3);
+    EXPECT_EQ(h.w.regions.limitedBy, FS);
+}
+
+TEST(RegionRepair, BelowTenWithoutDeficitStillReportsLimited)
+{
+    // Targets unset (0/0/0): no zone lost a region, yet the mainland is below 10. Never left None.
+    Hand h = Make({ "1", "1", "2", "2", "3", "3" }, { FS, WR, AI });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 3);
+    EXPECT_EQ(h.w.regions.limitedBy, FS);
 }
 
 TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
@@ -462,6 +558,7 @@ namespace
         float    maxRegionShare = 0.0f;      // of main-landmass land (tuning-gated)
         float    minPurity = 1.0f, purityTotal = 0.0f;
         float    maxAbsorbedShare = 0.0f;
+        float    maxFragmentShare = 0.0f;
     };
 
     // limits=false: structural checks only (AC2, AC6, islands, purity bookkeeping). limits=true: also AC3's absorbed
@@ -487,7 +584,13 @@ namespace
         uint32_t mainLand = 0;
         for (unsigned i = 0; i < w.regions.regions.Size(); ++i) { const RegionRecord& r = w.regions.regions[i]; if (!r.isIsland) { ++mainland; mainLand += r.cellCount; } }
         EXPECT_EQ(w.regions.mainlandRegionCount, mainland);
-        EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy);
+        // AC4 (amended): growth's limitedBy is kept; repair dropping the mainland below 10 also reports terrain-limited.
+        if (g.targets.limitedBy != DepthZone::None) { EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy); }
+        else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, DepthZone::None); }
+        else { EXPECT_EQ(w.regions.limitedBy, DepthZone::None); }
+        // AC3 (amended): tiny-fragment cells have their own bound.
+        if (limits) { EXPECT_LE(static_cast<float>(w.regions.fragmentCells), rules.kMaxFragmentShare() * static_cast<float>(ChkLandCount(w)))
+            << "fragmentCells " << w.regions.fragmentCells; }
         if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != DepthZone::None)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
 
@@ -502,6 +605,7 @@ namespace
         st.limited += w.regions.limitedBy != DepthZone::None;
         st.belowTen += mainland < 10;
         st.maxAbsorbedShare = std::max(st.maxAbsorbedShare, land > 0 ? w.regions.absorbedCells / land : 0.0f);
+        st.maxFragmentShare = std::max(st.maxFragmentShare, land > 0 ? w.regions.fragmentCells / land : 0.0f);
         for (unsigned ri = 0; ri < w.regions.regions.Size(); ++ri)
         {
             const RegionRecord& r = w.regions.regions[ri];
@@ -516,10 +620,10 @@ namespace
     void PrintSweep(const char* label, const Sweep& s)
     {
         std::printf("[RegionRepair sweep] %s: worlds %d regions %d mainland[%d..%d] belowTen %d overAbsorb %d limitedBy %d | maxRegionCells %u "
-                    "maxRegionShareOfMain %.3f | purity min %.3f avg %.3f lowPurity(<0.6) %d | absorbedMax %.4f | orphans %d "
+                    "maxRegionShareOfMain %.3f | purity min %.3f avg %.3f lowPurity(<0.6) %d | absorbedMax %.4f fragmentMax %.4f | orphans %d "
                     "neighbourOverflow %d splitMoved %d merged %d\n",
                     label, s.worlds, s.regions, s.mainMin, s.mainMax, s.belowTen, s.overAbsorb, s.limited, s.maxRegionCells, s.maxRegionShare,
-                    s.minPurity, s.regions ? s.purityTotal / s.regions : 0.0f, s.lowPurityRegions, s.maxAbsorbedShare,
+                    s.minPurity, s.regions ? s.purityTotal / s.regions : 0.0f, s.lowPurityRegions, s.maxAbsorbedShare, s.maxFragmentShare,
                     s.orphanRegions, s.neighbourOverflows, s.splitMoved, s.merged);
     }
 }

@@ -1,5 +1,5 @@
 {
-    "rulesVersion": 3,
+    "rulesVersion": 4,
     "kCoastElev": 0.02,
     "kBorderWidth": 2,
     "kEdgeFade": 0.5,
@@ -93,6 +93,7 @@
     "kMaxRegionShare": 1.7,
     "kMaxRegionSlack": 8,
     "kMaxAbsorbedShare": 0.03,
+    "kMaxFragmentShare": 0.06,
     "kNodeSpacing": 3,
     "kCorridorSpacing": 6,
     "kCoastalGapReach": 4,

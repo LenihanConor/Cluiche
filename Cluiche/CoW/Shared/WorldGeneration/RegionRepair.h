@@ -14,7 +14,11 @@
 //      longest border, else the adjacent region with the longest border of any zone; one with no neighbour stays;
 //   5. regions are renumbered 1..N by smallest cell index.
 // Island regions (non-main landmass) are never split or merged. absorbedCells = cells of non-island regions
-// whose depth zone differs from the region's zone.
+// whose depth zone differs from the region's zone, except cells of a tiny zone component
+// (RegionGrowth::tinyComponents), which count as fragmentCells instead (AC3 amendment: absorbing a disconnected
+// fragment is forced, so it measures the terrain, not the partitioner).
+// limitedBy = the growth targets' value; if that is None and the repaired mainland has fewer than 10 regions, it
+// becomes the zone with the largest (target - final) region deficit, ties zone order (AC4 amendment).
 //
 // Records: purity = majority-biome cells / ALL cells of the region (lakes count in the denominator); a region
 // of only Lake cells reports Lake with purity 1 for those cells. cellCount saturates at 65535.

@@ -16,6 +16,7 @@
 //   CorridorCount                       a barrier with more than 4, or fewer than 2 unless corridor-limited (region = barrier)
 //   RegionNodeCount                     a region with built-in nodes outside 6..15 (skipped when node-limited)
 //   TotalNodeCount                      built-in nodes outside 80..150 (skipped when node-limited)
+//   FragmentOverCap                     RegionTable::fragmentCells > kMaxFragmentShare * land cells (count = fragment cells)
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Layout guarantee)
 #pragma once
 
@@ -38,7 +39,7 @@ struct LayoutLimits
 enum class LayoutCode : uint8_t
 {
     UncoveredLand, OceanHasRegion, RegionDisconnected, RegionTwoZones, RegionTooSmall, RegionCountRange,
-    AbsorbedOverCap, NodeOnWater, NodeSpacing, CorridorCount, RegionNodeCount, TotalNodeCount
+    AbsorbedOverCap, NodeOnWater, NodeSpacing, CorridorCount, RegionNodeCount, TotalNodeCount, FragmentOverCap
 };
 
 const char* LayoutCodeName(LayoutCode code);
