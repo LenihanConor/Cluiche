@@ -169,6 +169,9 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainTableNavigationProfile.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\ReachabilityValidator.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -355,6 +358,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\TerrainTableNavigationProfile.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\ReachabilityValidator.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

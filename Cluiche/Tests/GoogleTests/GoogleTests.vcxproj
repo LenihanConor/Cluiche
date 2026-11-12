@@ -1234,6 +1234,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NavigationQuery.cpp" />
     <ClCompile Include="CoW\TestTerrainNavigation.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTableNavigationProfile.cpp" />
+    <ClCompile Include="CoW\TestReachabilityValidator.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\ReachabilityValidator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

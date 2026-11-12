@@ -110,6 +110,7 @@ struct ValidationResult
 {
     bool passed = false;                     // every guarantee satisfied (and a profile was supplied)
     EvidenceList<GuaranteeResult> guarantees; // one per injected guarantee, injection order
+    EvidenceList<Diagnostic> diagnostics;    // validation-level problems (e.g. no navigation profile supplied)
 
     const GuaranteeResult* Find(const Dia::Core::StringCRC& id) const { return Find(id.Value()); }
     const GuaranteeResult* Find(uint32_t idCrc) const;   // nullptr if not present
