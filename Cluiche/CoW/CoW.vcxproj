@@ -80,6 +80,7 @@
     <ClCompile Include="Shared\WorldGeneration\ReachabilityValidator.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteGuarantees.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldLayoutGuarantee.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -147,6 +148,7 @@
     <ClInclude Include="Shared\WorldGeneration\ReachabilityValidator.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteGuarantees.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldLayoutGuarantee.h" />
+    <ClInclude Include="Shared\WorldGeneration\GenerationReport.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

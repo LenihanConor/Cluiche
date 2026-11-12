@@ -178,6 +178,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldLayoutGuarantee.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -373,6 +376,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldLayoutGuarantee.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationReport.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
