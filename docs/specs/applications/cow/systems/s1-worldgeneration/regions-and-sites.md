@@ -441,7 +441,7 @@ Render the Regions view and region edges for each preset on 3 fixed seeds, along
 
 ## Status
 
-`Approved` 2026-10-18 (S-1 plan task 12). Open design questions 1–6 stand as written.
+`Done` 2026-11-12 (standalone build, plan task 12 closed) except AC10 (retry, system plan task 14), the JSON parts of AC11 and AC14 (export/import, task 16) and the `WorldLayoutGuarantee` wrapper of AC8 (task 13; the pure `CheckLayout` is built and tested). AC12 passes in Release (`Place` median 0.97 ms against 15 ms). AC15 signed off by the user 2026-11-12. **Tuning-gated items not met, accepted untuned at the visual gate:** AC7 purity (average 0.50-0.57, at least 0.6 on 7 of 80 sweep worlds; border coherence beats a random partition on archipelago 18/20 and highlands 19/20 but only 10/20 on default and continental) and the AC5 upper bound (4-6 regions per 20 worlds). Was `Approved` 2026-10-18 (S-1 plan task 12). Open design questions 1–6 stand as written.
 
 - Feature 9 of @worldgenerationpipeline.md.
 - Re-scope (2026-10-18, at the user's direction, twice): Hearths, Nexus nodes, thrones and dynasty starts moved to the dragon layer, which uses a generic site hook; S-1 keeps regions and builds the geography nodes (corridors, rivers, Hunting and Resource) as plain code, not hooks. Amends the system spec and Features 2, 3, 4, 6 and 7 as listed under Amendments to other specs.
