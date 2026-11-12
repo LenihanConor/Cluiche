@@ -75,6 +75,8 @@
     <ClCompile Include="Shared\WorldGeneration\RegionsAndSites.cpp" />
     <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp" />
     <ClCompile Include="Shared\WorldGeneration\ValidationTypes.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\NavigationQuery.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainTableNavigationProfile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -137,6 +139,8 @@
     <ClInclude Include="Shared\WorldGeneration\RegionsAndSites.h" />
     <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h" />
     <ClInclude Include="Shared\WorldGeneration\ValidationTypes.h" />
+    <ClInclude Include="Shared\WorldGeneration\NavigationQuery.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainTableNavigationProfile.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

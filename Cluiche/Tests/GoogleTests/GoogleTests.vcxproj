@@ -1230,6 +1230,10 @@
     <ClCompile Include="CoW\TestRegionsAndSitesEdge.cpp" />
     <ClCompile Include="CoW\TestValidationTypes.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\ValidationTypes.cpp" />
+    <ClCompile Include="CoW\TestNavigationQuery.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NavigationQuery.cpp" />
+    <ClCompile Include="CoW\TestTerrainNavigation.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTableNavigationProfile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
