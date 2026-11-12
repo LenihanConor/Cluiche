@@ -293,6 +293,23 @@ TEST(RegionRepair, BelowTenWithoutDeficitStillReportsLimited)
     EXPECT_EQ(h.w.regions.limitedBy, FS);
 }
 
+// Exactly ten mainland regions is in range: not reported terrain-limited (mutation check, plan task 12).
+TEST(RegionRepair, ExactlyTenMainlandRegionsIsNotTerrainLimited)
+{
+    Hand h = Make({ "123456789:" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS, FS });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 10);
+    EXPECT_EQ(h.w.regions.limitedBy, DepthZone::None);
+}
+
+TEST(RegionRepair, NineMainlandRegionsIsTerrainLimited)
+{
+    Hand h = Make({ "123456789" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS });
+    Finish(h);
+    EXPECT_EQ(h.w.regions.mainlandRegionCount, 9);
+    EXPECT_NE(h.w.regions.limitedBy, DepthZone::None);
+}
+
 TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
 {
     Hand h = Make({ "1", "1", "1", "u", "u", "2", "2", "2" }, { FS, WR }, WR);
@@ -559,6 +576,8 @@ namespace
         float    minPurity = 1.0f, purityTotal = 0.0f;
         float    maxAbsorbedShare = 0.0f;
         float    maxFragmentShare = 0.0f;
+        int      overMaxSize = 0;            // AC5 upper bound kMaxRegionShare * mean + kMaxRegionSlack (tuning-gated)
+        int      zoneBelowMinAfterRepair = 0; // worlds where merges left a zone under its range minimum (total >= 10)
     };
 
     // limits=false: structural checks only (AC2, AC6, islands, purity bookkeeping). limits=true: also AC3's absorbed
@@ -593,6 +612,39 @@ namespace
             << "fragmentCells " << w.regions.fragmentCells; }
         if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != DepthZone::None)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
+        // AC4 per zone: First Shores 4-6, Wild Reaches 4-6, Ancient Interiors 2-4 unless terrain-limited.
+        int zoneCount[kRegionZoneCount] = {};
+        for (unsigned i = 0; i < w.regions.regions.Size(); ++i)
+        {
+            const RegionRecord& r = w.regions.regions[i];
+            const int z = ZoneSlot(r.zone);
+            if (!r.isIsland && z >= 0 && z < kRegionZoneCount) { ++zoneCount[z]; }
+        }
+        // Undersize merges can take a zone below its minimum while the total stays >= 10; the AC4 amendment only reports
+        // terrain-limited below 10 in total, so those worlds are counted (zoneBelowMinAfterRepair), not failed. Open
+        // decision for the user (plan task 12 notes). Without merges the targets guarantee the ranges: asserted.
+        if (limits && w.regions.limitedBy == DepthZone::None)
+        {
+            bool below = false;
+            for (int z = 0; z < kRegionZoneCount; ++z)
+            {
+                const bool inRange = zoneCount[z] >= kZoneCountMin[z] && zoneCount[z] <= kZoneCountMax[z];
+                if (b.undersizedMerged == 0) { EXPECT_TRUE(inRange) << "zone slot " << z << " count " << zoneCount[z]; }
+                else { EXPECT_LE(zoneCount[z], kZoneCountMax[z]) << "zone slot " << z; below |= zoneCount[z] < kZoneCountMin[z]; }
+            }
+            st.zoneBelowMinAfterRepair += below ? 1 : 0;
+        }
+        // AC5: every mainland region reaches kMinRegionCells; the upper bound is tuning-gated (counted, printed).
+        const int minCells = rules.GetInt(Rule::kMinRegionCells);
+        const float meanSize = mainland ? static_cast<float>(mainLand) / mainland : 0.0f;
+        const float maxSize = rules.kMaxRegionShare() * meanSize + static_cast<float>(rules.GetInt(Rule::kMaxRegionSlack));
+        for (unsigned i = 0; i < w.regions.regions.Size(); ++i)
+        {
+            const RegionRecord& r = w.regions.regions[i];
+            if (r.isIsland) { continue; }
+            if (limits) { EXPECT_GE(static_cast<int>(r.cellCount), minCells) << "region " << int(r.id); }
+            st.overMaxSize += static_cast<float>(r.cellCount) > maxSize ? 1 : 0;
+        }
 
         const float land = static_cast<float>(ChkLandCount(w));
         ++st.worlds;
@@ -621,10 +673,10 @@ namespace
     {
         std::printf("[RegionRepair sweep] %s: worlds %d regions %d mainland[%d..%d] belowTen %d overAbsorb %d limitedBy %d | maxRegionCells %u "
                     "maxRegionShareOfMain %.3f | purity min %.3f avg %.3f lowPurity(<0.6) %d | absorbedMax %.4f fragmentMax %.4f | orphans %d "
-                    "neighbourOverflow %d splitMoved %d merged %d\n",
+                    "neighbourOverflow %d splitMoved %d merged %d | overMaxSize(AC5, tuning-gated) %d zoneBelowMinAfterRepair %d\n",
                     label, s.worlds, s.regions, s.mainMin, s.mainMax, s.belowTen, s.overAbsorb, s.limited, s.maxRegionCells, s.maxRegionShare,
                     s.minPurity, s.regions ? s.purityTotal / s.regions : 0.0f, s.lowPurityRegions, s.maxAbsorbedShare, s.maxFragmentShare,
-                    s.orphanRegions, s.neighbourOverflows, s.splitMoved, s.merged);
+                    s.orphanRegions, s.neighbourOverflows, s.splitMoved, s.merged, s.overMaxSize, s.zoneBelowMinAfterRepair);
     }
 }
 

@@ -476,6 +476,25 @@ TEST(LayoutCheck, FragmentCellsOverCap)
     EXPECT_STREQ(LayoutCodeName(LayoutCode::FragmentOverCap), "FragmentOverCap");
 }
 
+// Caps compare with strict greater-than at an exactly representable limit (share 0.5 of 1440 land = 720.0).
+TEST(LayoutCheck, AbsorbedAndFragmentCapsAreInclusiveAtTheExactLimit)
+{
+    TerrainRules rules = TerrainRules::Defaults();
+    rules.values[static_cast<uint32_t>(Rule::kMaxAbsorbedShare)] = 0.5f;
+    rules.values[static_cast<uint32_t>(Rule::kMaxFragmentShare)] = 0.5f;
+    WorldStructure w = ValidWorld();
+    w.regions.absorbedCells = 720;
+    w.regions.fragmentCells = 720;
+    const LayoutReport at = CheckLayout(w, rules, NoBarriers());
+    EXPECT_EQ(Find(at, LayoutCode::AbsorbedOverCap), nullptr) << Codes(at);
+    EXPECT_EQ(Find(at, LayoutCode::FragmentOverCap), nullptr) << Codes(at);
+    w.regions.absorbedCells = 721;
+    w.regions.fragmentCells = 721;
+    const LayoutReport over = CheckLayout(w, rules, NoBarriers());
+    EXPECT_NE(Find(over, LayoutCode::AbsorbedOverCap), nullptr) << Codes(over);
+    EXPECT_NE(Find(over, LayoutCode::FragmentOverCap), nullptr) << Codes(over);
+}
+
 TEST(LayoutCheck, NodeOnWater)
 {
     WorldStructure w = ValidWorld();

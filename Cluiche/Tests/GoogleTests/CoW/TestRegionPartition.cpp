@@ -76,6 +76,47 @@ TEST(RegionPartition, RebalanceRemovesFromLeastSpareCapacityTiesByZoneOrder)
     EXPECT_EQ(count[0], 5); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 6);
 }
 
+// Mutation-check additions (plan task 12): exact tie and floor behaviour of the rebalance loops.
+TEST(RegionPartition, RebalanceAddTieGoesToEarlierZoneWhenOnlyOneAddIsNeeded)
+{
+    uint8_t count[3] = { 2, 4, 3 };            // total 9: exactly one add
+    const uint16_t cap[3] = { 2, 6, 5 };       // zone 1 and zone 2 both have 2 unused
+    DepthZone lim;
+    RebalanceRegionCounts(count, cap, lim);
+    EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
+    EXPECT_EQ(lim, DepthZone::None);
+}
+
+TEST(RegionPartition, RebalanceRemoveNeverTakesAZoneAtItsRangeMinimum)
+{
+    uint8_t count[3] = { 4, 7, 6 };            // total 17; zone 0 sits at its minimum with no spare capacity
+    const uint16_t cap[3] = { 4, 7, 6 };
+    DepthZone lim;
+    RebalanceRegionCounts(count, cap, lim);
+    EXPECT_EQ(count[0], 4); EXPECT_EQ(count[1], 6); EXPECT_EQ(count[2], 6);
+}
+
+TEST(RegionPartition, TargetsReachBothEndsOfEveryZoneRange)
+{
+    // Capacity 8 / 8 / 6 (300 cells each at 36 per region) never limits, so the desired count is the final count.
+    WorldStructure w = MakeBlankWorld(60, 30);
+    FillLand(w, 0, 0, 20, 15, FS, G);
+    FillLand(w, 20, 0, 40, 15, WR, G);
+    FillLand(w, 40, 0, 60, 15, AI, G);
+    int lo[3] = { 99, 99, 99 }, hi[3] = { 0, 0, 0 };
+    for (unsigned seed = 1; seed <= 300; ++seed)
+    {
+        RandomStream rng(seed);
+        const RegionTargets t = ComputeRegionTargets(w, Rules(), rng);
+        for (int z = 0; z < 3; ++z) { lo[z] = std::min<int>(lo[z], t.count[z]); hi[z] = std::max<int>(hi[z], t.count[z]); }
+    }
+    for (int z = 0; z < 3; ++z)
+    {
+        EXPECT_EQ(lo[z], kZoneCountMin[z]) << "zone " << z;
+        EXPECT_EQ(hi[z], kZoneCountMax[z]) << "zone " << z;
+    }
+}
+
 TEST(RegionPartition, RebalanceTerrainLimitedNamesSmallestCapacityToMinimum)
 {
     uint8_t count[3] = { 3, 2, 2 };
