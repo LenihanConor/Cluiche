@@ -50,6 +50,8 @@ public:
     // Site registry used by the placement pass; nullptr (default) means no registered kinds. Not owned: the owner
     // (WorldGenerationModule) keeps it alive for the session's lifetime.
     void SetSiteRegistry(const SiteRegistry* registry) { mRegistry = registry; }
+    // The registry in use (an empty one when none is set).
+    const SiteRegistry& Registry() const { return mRegistry != nullptr ? *mRegistry : mEmptyRegistry; }
 
     // Runs at most one generation if dirty. Returns true when the world changed (revision incremented).
     // Regions and sites (RegionsAndSites::Place, attempt 0) are computed on Regenerate only; any other generation

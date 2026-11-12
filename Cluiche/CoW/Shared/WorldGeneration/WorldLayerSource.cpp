@@ -106,6 +106,11 @@ namespace
         ReadCellField(s, out, count, [](const Cell& c) { return static_cast<uint32_t>(c.landmass); });
     }
 
+    void ReadRegions(const WorldGenSession& s, float* out, uint32_t count)
+    {
+        ReadCellField(s, out, count, [](const Cell& c) { return RegionPaletteSlot(c.region); });
+    }
+
     constexpr uint32_t kLakeIdValues = 13;   // none + lake ids 1..12 (shape.lakes max 12)
 
     // schemaKey is built at first use (see Table()); the table stores the id and group only.
@@ -150,6 +155,8 @@ namespace
         { "biomePin",         "Biomes",   WorldLayerKind::Category, 5, ReadBiomePin,         false },
         { "biomeIndex",       "Biomes",   WorldLayerKind::Category, static_cast<uint32_t>(Biome::Count), ReadBiomeIndex, false },
         { "fixupChanges",     "Biomes",   WorldLayerKind::Category, 3, ReadFixupChanges,     false },
+        // Regions (placement pass; empty until a Regenerate)
+        { "regions",          "Regions",  WorldLayerKind::Category, kRegionPaletteSlots, ReadRegions, false },
     };
 
     constexpr uint32_t kRowCount = static_cast<uint32_t>(sizeof(kRows) / sizeof(kRows[0]));

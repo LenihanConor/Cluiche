@@ -45,6 +45,20 @@ namespace BuiltinNodeKinds
     Dia::Core::StringCRC Resource() { return Dia::Core::StringCRC("CoW.Node.Resource"); }
 }
 
+const char* SiteShapeName(SiteShape shape)
+{
+    switch (shape)
+    {
+    case SiteShape::Dot:      return "Dot";
+    case SiteShape::Diamond:  return "Diamond";
+    case SiteShape::Square:   return "Square";
+    case SiteShape::Triangle: return "Triangle";
+    case SiteShape::Star:     return "Star";
+    case SiteShape::Ring:     return "Ring";
+    }
+    return "Dot";
+}
+
 SiteKindInfo BuiltinNodeKindInfo(const Dia::Core::StringCRC& kind)
 {
     if (kind == BuiltinNodeKinds::Corridor()) { return MakeSiteKindInfo(kind, "Corridor Node",    0xE8A33D, SiteShape::Diamond,  "Corridor"); }

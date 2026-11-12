@@ -866,6 +866,404 @@
         "backdrop": "#101418",
         "select_group": true
       }
+    },
+    {
+      "key": "regions",
+      "kind": "field",
+      "label": "Regions",
+      "description": "Region id per cell (S-1 region partition). Categorical colours cycle so neighbouring ids differ; empty until a Regenerate.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean, or regions not computed (they are placed on Regenerate only).",
+          "colour": "#1a1e24"
+        },
+        {
+          "id": "region1",
+          "label": "Region 1",
+          "description": "Region id 1 (and id 64: ids past 63 cycle).",
+          "colour": "#e25a5a"
+        },
+        {
+          "id": "region2",
+          "label": "Region 2",
+          "description": "Region id 2.",
+          "colour": "#25d057"
+        },
+        {
+          "id": "region3",
+          "label": "Region 3",
+          "description": "Region id 3.",
+          "colour": "#c086ea"
+        },
+        {
+          "id": "region4",
+          "label": "Region 4",
+          "description": "Region id 4.",
+          "colour": "#d8ca64"
+        },
+        {
+          "id": "region5",
+          "label": "Region 5",
+          "description": "Region id 5.",
+          "colour": "#31abc4"
+        },
+        {
+          "id": "region6",
+          "label": "Region 6",
+          "description": "Region id 6.",
+          "colour": "#e28dbb"
+        },
+        {
+          "id": "region7",
+          "label": "Region 7",
+          "description": "Region id 7.",
+          "colour": "#83d369"
+        },
+        {
+          "id": "region8",
+          "label": "Region 8",
+          "description": "Region id 8.",
+          "colour": "#3d37be"
+        },
+        {
+          "id": "region9",
+          "label": "Region 9",
+          "description": "Region id 9.",
+          "colour": "#dfab90"
+        },
+        {
+          "id": "region10",
+          "label": "Region 10",
+          "description": "Region id 10.",
+          "colour": "#5ae2af"
+        },
+        {
+          "id": "region11",
+          "label": "Region 11",
+          "description": "Region id 11.",
+          "colour": "#c225d0"
+        },
+        {
+          "id": "region12",
+          "label": "Region 12",
+          "description": "Region id 12.",
+          "colour": "#d5ea86"
+        },
+        {
+          "id": "region13",
+          "label": "Region 13",
+          "description": "Region id 13.",
+          "colour": "#649ed8"
+        },
+        {
+          "id": "region14",
+          "label": "Region 14",
+          "description": "Region id 14.",
+          "colour": "#c4314f"
+        },
+        {
+          "id": "region15",
+          "label": "Region 15",
+          "description": "Region id 15.",
+          "colour": "#8de294"
+        },
+        {
+          "id": "region16",
+          "label": "Region 16",
+          "description": "Region id 16.",
+          "colour": "#9169d3"
+        },
+        {
+          "id": "region17",
+          "label": "Region 17",
+          "description": "Region id 17.",
+          "colour": "#be9137"
+        },
+        {
+          "id": "region18",
+          "label": "Region 18",
+          "description": "Region id 18.",
+          "colour": "#90dfdc"
+        },
+        {
+          "id": "region19",
+          "label": "Region 19",
+          "description": "Region id 19.",
+          "colour": "#e25ac0"
+        },
+        {
+          "id": "region20",
+          "label": "Region 20",
+          "description": "Region id 20.",
+          "colour": "#73d025"
+        },
+        {
+          "id": "region21",
+          "label": "Region 21",
+          "description": "Region id 21.",
+          "colour": "#8696ea"
+        },
+        {
+          "id": "region22",
+          "label": "Region 22",
+          "description": "Region id 22.",
+          "colour": "#d87364"
+        },
+        {
+          "id": "region23",
+          "label": "Region 23",
+          "description": "Region id 23.",
+          "colour": "#31c46f"
+        },
+        {
+          "id": "region24",
+          "label": "Region 24",
+          "description": "Region id 24.",
+          "colour": "#ca8de2"
+        },
+        {
+          "id": "region25",
+          "label": "Region 25",
+          "description": "Region id 25.",
+          "colour": "#d3d369"
+        },
+        {
+          "id": "region26",
+          "label": "Region 26",
+          "description": "Region id 26.",
+          "colour": "#3796be"
+        },
+        {
+          "id": "region27",
+          "label": "Region 27",
+          "description": "Region id 27.",
+          "colour": "#df90b1"
+        },
+        {
+          "id": "region28",
+          "label": "Region 28",
+          "description": "Region id 28.",
+          "colour": "#6be25a"
+        },
+        {
+          "id": "region29",
+          "label": "Region 29",
+          "description": "Region id 29.",
+          "colour": "#4225d0"
+        },
+        {
+          "id": "region30",
+          "label": "Region 30",
+          "description": "Region id 30.",
+          "colour": "#eab486"
+        },
+        {
+          "id": "region31",
+          "label": "Region 31",
+          "description": "Region id 31.",
+          "colour": "#64d8bc"
+        },
+        {
+          "id": "region32",
+          "label": "Region 32",
+          "description": "Region id 32.",
+          "colour": "#c431bd"
+        },
+        {
+          "id": "region33",
+          "label": "Region 33",
+          "description": "Region id 33.",
+          "colour": "#c6e28d"
+        },
+        {
+          "id": "region34",
+          "label": "Region 34",
+          "description": "Region id 34.",
+          "colour": "#6990d3"
+        },
+        {
+          "id": "region35",
+          "label": "Region 35",
+          "description": "Region id 35.",
+          "colour": "#be3742"
+        },
+        {
+          "id": "region36",
+          "label": "Region 36",
+          "description": "Region id 36.",
+          "colour": "#90dfa1"
+        },
+        {
+          "id": "region37",
+          "label": "Region 37",
+          "description": "Region id 37.",
+          "colour": "#9f5ae2"
+        },
+        {
+          "id": "region38",
+          "label": "Region 38",
+          "description": "Region id 38.",
+          "colour": "#d0ad25"
+        },
+        {
+          "id": "region39",
+          "label": "Region 39",
+          "description": "Region id 39.",
+          "colour": "#86e1ea"
+        },
+        {
+          "id": "region40",
+          "label": "Region 40",
+          "description": "Region id 40.",
+          "colour": "#d864ac"
+        },
+        {
+          "id": "region41",
+          "label": "Region 41",
+          "description": "Region id 41.",
+          "colour": "#61c431"
+        },
+        {
+          "id": "region42",
+          "label": "Region 42",
+          "description": "Region id 42.",
+          "colour": "#8d90e2"
+        },
+        {
+          "id": "region43",
+          "label": "Region 43",
+          "description": "Region id 43.",
+          "colour": "#d38469"
+        },
+        {
+          "id": "region44",
+          "label": "Region 44",
+          "description": "Region id 44.",
+          "colour": "#37be81"
+        },
+        {
+          "id": "region45",
+          "label": "Region 45",
+          "description": "Region id 45.",
+          "colour": "#d290df"
+        },
+        {
+          "id": "region46",
+          "label": "Region 46",
+          "description": "Region id 46.",
+          "colour": "#d0e25a"
+        },
+        {
+          "id": "region47",
+          "label": "Region 47",
+          "description": "Region id 47.",
+          "colour": "#2588d0"
+        },
+        {
+          "id": "region48",
+          "label": "Region 48",
+          "description": "Region id 48.",
+          "colour": "#ea86a2"
+        },
+        {
+          "id": "region49",
+          "label": "Region 49",
+          "description": "Region id 49.",
+          "colour": "#64d865"
+        },
+        {
+          "id": "region50",
+          "label": "Region 50",
+          "description": "Region id 50.",
+          "colour": "#5d31c4"
+        },
+        {
+          "id": "region51",
+          "label": "Region 51",
+          "description": "Region id 51.",
+          "colour": "#e2bf8d"
+        },
+        {
+          "id": "region52",
+          "label": "Region 52",
+          "description": "Region id 52.",
+          "colour": "#69d3c7"
+        },
+        {
+          "id": "region53",
+          "label": "Region 53",
+          "description": "Region id 53.",
+          "colour": "#be37a6"
+        },
+        {
+          "id": "region54",
+          "label": "Region 54",
+          "description": "Region id 54.",
+          "colour": "#badf90"
+        },
+        {
+          "id": "region55",
+          "label": "Region 55",
+          "description": "Region id 55.",
+          "colour": "#5a7be2"
+        },
+        {
+          "id": "region56",
+          "label": "Region 56",
+          "description": "Region id 56.",
+          "colour": "#d02d25"
+        },
+        {
+          "id": "region57",
+          "label": "Region 57",
+          "description": "Region id 57.",
+          "colour": "#86eaa8"
+        },
+        {
+          "id": "region58",
+          "label": "Region 58",
+          "description": "Region id 58.",
+          "colour": "#ae64d8"
+        },
+        {
+          "id": "region59",
+          "label": "Region 59",
+          "description": "Region id 59.",
+          "colour": "#c4b931"
+        },
+        {
+          "id": "region60",
+          "label": "Region 60",
+          "description": "Region id 60.",
+          "colour": "#8dd0e2"
+        },
+        {
+          "id": "region61",
+          "label": "Region 61",
+          "description": "Region id 61.",
+          "colour": "#d3699d"
+        },
+        {
+          "id": "region62",
+          "label": "Region 62",
+          "description": "Region id 62.",
+          "colour": "#52be37"
+        },
+        {
+          "id": "region63",
+          "label": "Region 63",
+          "description": "Region id 63.",
+          "colour": "#9890df"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
     }
   ]
 }

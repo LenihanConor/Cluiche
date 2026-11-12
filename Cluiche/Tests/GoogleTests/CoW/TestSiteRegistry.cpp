@@ -3,6 +3,9 @@
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
+#include <set>
+#include <string>
+
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::Core::StringCRC;
@@ -205,4 +208,40 @@ TEST(SiteRegistry, TestPlacerPlacesOrFails)
     EXPECT_EQ(retry.Place(ctx, rng, out).code, PlaceResult::Code::Retryable);
     TestPlacer terr("Test.T", {}, 0, PlaceResult::Code::TerrainCause);
     EXPECT_EQ(terr.Place(ctx, rng, out).code, PlaceResult::Code::TerrainCause);
+}
+
+// ---- Regions plan task 10: kind listing for the Sites overlay ----
+
+TEST(SiteRegistry, ListSiteKindsIsTheFourBuiltinsThenRegisteredInOrder)
+{
+    SiteRegistry r;
+    std::vector<SiteKindInfo> k = ListSiteKinds(r);
+    ASSERT_EQ(k.size(), 4u);
+    EXPECT_EQ(k[0].kindCrc, SiteKindId(BuiltinNodeKinds::Corridor()));
+    EXPECT_EQ(k[1].kindCrc, SiteKindId(BuiltinNodeKinds::River()));
+    EXPECT_EQ(k[2].kindCrc, SiteKindId(BuiltinNodeKinds::Hunting()));
+    EXPECT_EQ(k[3].kindCrc, SiteKindId(BuiltinNodeKinds::Resource()));
+    for (const SiteKindInfo& i : k)
+        EXPECT_NE(i.displayName[0], '\0') << i.id << ": built-ins carry display info";
+
+    TestPlacerSet p;
+    ASSERT_TRUE(r.Register(&p.b));
+    ASSERT_TRUE(r.Register(&p.c));
+    ASSERT_TRUE(r.Register(&p.a));
+    k = ListSiteKinds(r);
+    ASSERT_EQ(k.size(), 7u);
+    EXPECT_STREQ(k[4].id, "Test.A");   // Order(): A pulled forward before its dependant B
+    EXPECT_STREQ(k[5].id, "Test.B");
+    EXPECT_STREQ(k[6].id, "Test.C");
+    EXPECT_EQ(k[4].debugColour, 0xFF00FFu);
+    EXPECT_EQ(k[4].debugShape, SiteShape::Dot);
+}
+
+TEST(SiteRegistry, SiteShapeNamesAreDistinct)
+{
+    std::set<std::string> names;
+    for (SiteShape s : { SiteShape::Dot, SiteShape::Diamond, SiteShape::Square, SiteShape::Triangle, SiteShape::Star, SiteShape::Ring })
+        names.insert(SiteShapeName(s));
+    EXPECT_EQ(names.size(), 6u);
+    EXPECT_STREQ(SiteShapeName(SiteShape::Star), "Star");
 }

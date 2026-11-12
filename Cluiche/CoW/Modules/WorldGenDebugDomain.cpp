@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdio>
 #include <cstring>
 #include <vector>
 
@@ -325,6 +326,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     int selX = mSelX;
     int selY = mSelY;
     Json::Value drawers(Json::arrayValue);
+    Json::Value siteKinds(Json::arrayValue);   // stays empty without a hosted view
     if (mView != nullptr)
     {
         const char* mode = mView->GetColourMode();
@@ -342,6 +344,20 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
         Json::Value legend(Json::nullValue);
         mView->FillLegend(legend);
         view["legend"] = legend;
+        // AC11: one row per site kind with its toggle id, colour and shape (the Sites overlay draws them generically).
+        mView->ListSiteKinds([&siteKinds](const IWorldGenView::SiteKindRow& k) {
+            char colour[8];
+            std::snprintf(colour, sizeof(colour), "#%06x", k.info->debugColour & 0xFFFFFFu);
+            Json::Value e(Json::objectValue);
+            e["overlay"] = k.overlay;
+            e["kind"] = k.info->id;
+            e["displayName"] = k.info->displayName;
+            e["colour"] = colour;
+            e["shape"] = WorldGeneration::SiteShapeName(k.info->debugShape);
+            e["enabled"] = k.enabled;
+            e["count"] = k.count;
+            siteKinds.append(e);
+        });
         hasSelection = mView->GetSelection(selX, selY);
     }
     else
@@ -362,6 +378,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
         view["layers"] = mStatic.layers;
     }
     view["drawers"] = drawers;
+    view["siteKinds"] = siteKinds;
 
     // cell inspector
     out["cell"] = Json::Value(Json::nullValue);

@@ -32,6 +32,9 @@ struct Site
 
 enum class SiteShape : uint8_t { Dot, Diamond, Square, Triangle, Star, Ring };
 
+// "Dot", "Diamond", ... (JSON and view listings).
+const char* SiteShapeName(SiteShape shape);
+
 struct SiteKindInfo
 {
     uint32_t  kindCrc         = 0;

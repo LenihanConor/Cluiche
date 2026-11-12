@@ -128,6 +128,7 @@ TEST(WorldGenSchema, EnumCountsEqualCodeEnumSizes)
     EXPECT_EQ(count("flowDirection"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
     EXPECT_EQ(count("biomeIndex"), static_cast<unsigned>(kBiomeCount));
     EXPECT_EQ(count("fixupChanges"), 3u);   // none, zone, neighbour
+    EXPECT_EQ(count("regions"), kRegionPaletteSlots);   // none + 63 cycling region slots
 }
 
 TEST(WorldGenSchema, EveryRampExists)
@@ -196,4 +197,20 @@ TEST(WorldGenSchema, BiomeLayersAreDescribed)
     for (const Json::Value& v : (*biome)["values"])
         colours.insert(v["colour"].asString());
     EXPECT_EQ(colours.size(), static_cast<size_t>(kBiomeCount)) << "biome colours must be distinct";
+}
+
+TEST(WorldGenSchema, RegionLayerHas64DistinctColoursAndNoneIsDark)
+{
+    const Loaded& l = Get();
+    ASSERT_TRUE(l.ok);
+    const Json::Value* e = FindEntry(l, "regions");
+    ASSERT_NE(e, nullptr);
+    ASSERT_EQ((*e)["values"].size(), kRegionPaletteSlots);
+    std::set<std::string> colours;
+    for (const Json::Value& v : (*e)["values"])
+        colours.insert(v["colour"].asString());
+    EXPECT_EQ(colours.size(), static_cast<size_t>(kRegionPaletteSlots)) << "slot colours must be distinct";
+    EXPECT_EQ((*e)["values"][0u]["id"].asString(), "none");
+    const unsigned none = std::stoul((*e)["values"][0u]["colour"].asString().substr(1), nullptr, 16);
+    EXPECT_LT(((none >> 16) & 0xFF) + ((none >> 8) & 0xFF) + (none & 0xFF), 3u * 0x50u) << "region 0 / ocean is dark, unlike any region";
 }

@@ -45,6 +45,7 @@ float Expected(const WorldGenSession& s, const std::string& id, uint32_t i)
     if (id == "waterSource") return static_cast<float>(c.waterSource);
     if (id == "depthZone")   return static_cast<float>(c.depthZone);
     if (id == "landmass")    return static_cast<float>(c.landmass);
+    if (id == "regions")     return c.region == 0 ? 0.0f : static_cast<float>(1 + (c.region - 1) % 63);
     const int idx = L.FindLayer(id.c_str());
     if (const float* f = L.GetFloat(idx)) return f[i];
     if (const uint32_t* u = L.GetUInt(idx)) return static_cast<float>(u[i]);
@@ -165,4 +166,45 @@ TEST(WorldLayerSource, LargeReadAllLayersTiming)
     const double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
     std::cout << "[ INFO ] WorldLayerSource Large read of all " << WorldLayerSource::Count() << " layers: " << ms << " ms\n";
     SUCCEED();
+}
+
+// ---- Regions plan task 10: region colour layer ----
+
+TEST(WorldLayerSource, RegionLayerIsCategoricalWithA64SlotPalette)
+{
+    const WorldLayerDesc* d = WorldLayerSource::Find("regions");
+    ASSERT_NE(d, nullptr);
+    EXPECT_EQ(d->kind, WorldLayerKind::Category);
+    EXPECT_EQ(d->categoryCount, kRegionPaletteSlots);
+    EXPECT_EQ(kRegionPaletteSlots, 64u) << "CellField palettes hold 64 colours";
+    EXPECT_STREQ(d->group, "Regions");
+}
+
+TEST(WorldLayerSource, RegionPaletteSlotKeepsZeroAndWrapsPastSlot63)
+{
+    EXPECT_EQ(RegionPaletteSlot(0), 0u);
+    EXPECT_EQ(RegionPaletteSlot(1), 1u);
+    EXPECT_EQ(RegionPaletteSlot(63), 63u);
+    EXPECT_EQ(RegionPaletteSlot(64), 1u);
+    for (uint32_t r = 1; r <= 64; ++r)
+        EXPECT_LT(RegionPaletteSlot(static_cast<RegionId>(r)), kRegionPaletteSlots);
+}
+
+TEST(WorldLayerSource, RegionLayerReadsFreshRegionsAndIsZeroAfterLivePreview)
+{
+    WorldGenSession s;
+    Generate(s, 4321);
+    ASSERT_TRUE(s.RegionsFresh());
+    const WorldLayerDesc* d = WorldLayerSource::Find("regions");
+    ASSERT_NE(d, nullptr);
+    const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
+    std::set<float> seen;
+    for (float v : Read(*d, s, n)) seen.insert(v);
+    EXPECT_GE(seen.size(), 11u) << "region 0 plus at least 10 mainland regions";
+
+    Dia::Maths::RandomStream rng(4321);
+    s.Set(Obj("rivers", 0.31));         // live preview clears regions (SD-S1-004)
+    ASSERT_TRUE(s.Tick(rng));
+    ASSERT_FALSE(s.RegionsFresh());
+    for (float v : Read(*d, s, n)) ASSERT_EQ(v, 0.0f);
 }

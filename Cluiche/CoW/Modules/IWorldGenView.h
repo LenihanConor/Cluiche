@@ -6,6 +6,7 @@
 #pragma once
 
 #include <DiaCore/Json/external/json/json.h>
+#include <Shared/WorldGeneration/Sites.h>
 
 #include <functional>
 
@@ -37,10 +38,22 @@ public:
         ListColourModes([&fn](const char* id) { fn(id, "Layers"); });
     }
 
-    // Overlay ids: "rivers", "selection.neighbours". False for an unknown id.
+    // Overlay ids: "rivers", "selection.neighbours", "regions.edges", "sites" (master for all site kinds) and one
+    // "sites.<kind id>" toggle per site kind (built-in node kinds, then registered kinds). False for an unknown id.
     virtual bool SetOverlayEnabled(const char* id, bool enabled) = 0;
     // Calls back once per overlay. available = the overlay has something to draw right now.
     virtual void ListOverlays(const std::function<void(const char* id, bool enabled, bool available)>& fn) = 0;
+
+    // One row per site kind the Sites overlay can draw (AC11): its toggle id, display info (colour, shape), whether the
+    // kind's toggle is on and how many sites of it the world holds. Pointers are valid for the callback only.
+    struct SiteKindRow
+    {
+        const char*                              overlay = "";   // "sites.<kind id>"
+        const WorldGeneration::SiteKindInfo*     info = nullptr;
+        bool                                     enabled = true;
+        int                                      count = 0;
+    };
+    virtual void ListSiteKinds(const std::function<void(const SiteKindRow&)>& /*fn*/) {}
 
     // view.legend for the active base layer: a JSON array of {label, colour:"#rrggbb"} for category layers,
     // or an object {min, max, ramp, unit, stops:[{t, colour}]} for float layers. Null when no legend yet.

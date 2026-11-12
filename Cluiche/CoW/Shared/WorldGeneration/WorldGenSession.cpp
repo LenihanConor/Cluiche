@@ -207,20 +207,6 @@ Json::Value ScoredBiomeJson(Biome b, float score)
 // the kind table stay well under the 16 KB sim reply.
 constexpr int64_t kSitesMaxLimit = 80;
 
-const char* SiteShapeName(SiteShape s)
-{
-    switch (s)
-    {
-    case SiteShape::Dot:      return "Dot";
-    case SiteShape::Diamond:  return "Diamond";
-    case SiteShape::Square:   return "Square";
-    case SiteShape::Triangle: return "Triangle";
-    case SiteShape::Star:     return "Star";
-    case SiteShape::Ring:     return "Ring";
-    }
-    return "Dot";
-}
-
 const Dia::Core::StringCRC kBuiltinKinds[] = {
     BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(), BuiltinNodeKinds::Resource() };
 
@@ -1216,13 +1202,9 @@ Json::Value WorldGenSession::Sites(const Json::Value& args) const
     }
 
     Json::Value kinds(Json::arrayValue);
-    for (const Dia::Core::StringCRC& k : kBuiltinKinds)
+    for (const SiteKindInfo& k : ListSiteKinds(registry))
     {
-        kinds.append(KindInfoJson(BuiltinNodeKindInfo(k)));
-    }
-    for (ISitePlacer* p : registry.Order())
-    {
-        kinds.append(KindInfoJson(p->Info()));
+        kinds.append(KindInfoJson(k));
     }
 
     Json::Value r(Json::objectValue);

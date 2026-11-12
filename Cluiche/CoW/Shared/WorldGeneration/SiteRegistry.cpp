@@ -113,5 +113,20 @@ const SiteKindInfo* SiteRegistry::FindInfo(Dia::Core::StringCRC kind) const
     return i < 0 ? nullptr : &mPlacers[i]->Info();
 }
 
+std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry)
+{
+    std::vector<SiteKindInfo> out;
+    for (const Dia::Core::StringCRC& k : { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(),
+                                           BuiltinNodeKinds::Resource() })
+    {
+        out.push_back(BuiltinNodeKindInfo(k));
+    }
+    for (ISitePlacer* p : registry.Order())
+    {
+        out.push_back(p->Info());
+    }
+    return out;
+}
+
 } // namespace WorldGeneration
 } // namespace CoW

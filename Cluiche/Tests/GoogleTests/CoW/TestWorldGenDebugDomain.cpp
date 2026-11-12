@@ -14,6 +14,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <vector>
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
@@ -584,7 +585,16 @@ namespace
             fn("selection.neighbours", neighbours, hasSel);
         }
         void FillLegend(Json::Value& out) override { out = legend; }
+        void ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn) override
+        {
+            for (const CoW::WorldGeneration::SiteKindInfo& k : siteKinds)
+            {
+                const std::string overlay = std::string("sites.") + k.id;
+                fn(SiteKindRow{ overlay.c_str(), &k, true, 3 });
+            }
+        }
 
+        std::vector<CoW::WorldGeneration::SiteKindInfo> siteKinds;
         int selectCalls = 0, clearCalls = 0, modeCalls = 0, overlayCalls = 0;
         bool hasSel = false;
         int selX = 0, selY = 0;
@@ -919,6 +929,35 @@ TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
     ASSERT_EQ(layers.size(), st["view"]["modes"].size());
     EXPECT_EQ(layers[0u]["id"].asString(), "terrain");
     EXPECT_EQ(layers[0u]["label"].asString(), "Relief");
+}
+
+// AC11: the Sites overlay lists a toggle per kind with its debug colour and shape (no per-kind drawer code).
+TEST(WorldGenDebugDomainView, SiteKindsListEachKindWithColourAndShape)
+{
+    ViewFixture f;
+    f.view.siteKinds.push_back(CoW::WorldGeneration::BuiltinNodeKindInfo(CoW::WorldGeneration::BuiltinNodeKinds::River()));
+    f.view.siteKinds.push_back(CoW::WorldGeneration::MakeSiteKindInfo(Dia::Core::StringCRC("Test.Hearth"), "Hearth Site", 0xFF00FF,
+                                                                       CoW::WorldGeneration::SiteShape::Ring));
+    const Json::Value k = f.State()["view"]["siteKinds"];
+    ASSERT_EQ(k.size(), 2u);
+    EXPECT_EQ(k[0u]["kind"].asString(), "CoW.Node.River");
+    EXPECT_EQ(k[0u]["shape"].asString(), "Triangle");
+    EXPECT_EQ(k[0u]["colour"].asString(), "#3d9be8");
+    EXPECT_EQ(k[1u]["overlay"].asString(), "sites.Test.Hearth");
+    EXPECT_EQ(k[1u]["kind"].asString(), "Test.Hearth");
+    EXPECT_EQ(k[1u]["displayName"].asString(), "Hearth Site");
+    EXPECT_EQ(k[1u]["colour"].asString(), "#ff00ff");
+    EXPECT_EQ(k[1u]["shape"].asString(), "Ring");
+    EXPECT_TRUE(k[1u]["enabled"].asBool());
+    EXPECT_EQ(k[1u]["count"].asInt(), 3);
+}
+
+TEST(WorldGenDebugDomainView, SiteKindsIsAnEmptyArrayWithoutKinds)
+{
+    ViewFixture f;
+    const Json::Value k = f.State()["view"]["siteKinds"];
+    EXPECT_TRUE(k.isArray());
+    EXPECT_EQ(k.size(), 0u);
 }
 
 #endif // DIA_DEBUG

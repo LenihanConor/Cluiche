@@ -74,5 +74,9 @@ private:
     mutable bool                      mOrderValid = false;
 };
 
+// Every kind the world can hold, for listings and the Sites overlay: the four built-in node kinds (Corridor, River,
+// Hunting, Resource, with BuiltinNodeKindInfo display info), then the registered kinds in Order().
+std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry);
+
 } // namespace WorldGeneration
 } // namespace CoW

@@ -12,8 +12,10 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 namespace CoW {
 
@@ -73,6 +75,9 @@ bool SameDims(GridDimensions a, GridDimensions b) { return a.width == b.width &&
 const char* const WorldGenViewHost::kOverlayRivers     = "rivers";
 const char* const WorldGenViewHost::kOverlayNeighbours = "selection.neighbours";
 const char* const WorldGenViewHost::kDefaultModeAlias  = "terrain";
+const char* const WorldGenViewHost::kOverlayRegionEdges = "regions.edges";
+const char* const WorldGenViewHost::kOverlaySites       = "sites";
+const char* const WorldGenViewHost::kSiteKindPrefix     = "sites.";
 
 void WorldGenViewHost::LayerBinding::Read(float* out, uint32_t count)
 {
@@ -228,8 +233,20 @@ bool WorldGenViewHost::RegisterOverlays()
     neighbours.group.Append("Selection");
     neighbours.label.Append("Neighbours 0-5");
     neighbours.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawNeighbours);
+    CellOverlayDesc edges;
+    edges.id = StringCRC(kOverlayRegionEdges);
+    edges.group.Append("Regions");
+    edges.label.Append("Region edges");
+    edges.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawRegionEdges);
+    CellOverlayDesc sites;
+    sites.id = StringCRC(kOverlaySites);
+    sites.group.Append("Regions");
+    sites.label.Append("Sites");
+    sites.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawSites);
     if (mDeps.registry->RegisterOverlay(rivers) != CellRegisterResult::Ok ||
-        mDeps.registry->RegisterOverlay(neighbours) != CellRegisterResult::Ok)
+        mDeps.registry->RegisterOverlay(neighbours) != CellRegisterResult::Ok ||
+        mDeps.registry->RegisterOverlay(edges) != CellRegisterResult::Ok ||
+        mDeps.registry->RegisterOverlay(sites) != CellRegisterResult::Ok)
     {
         DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering overlays failed");
         UnregisterOverlays();
@@ -245,6 +262,8 @@ void WorldGenViewHost::UnregisterOverlays()
         return;
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayRivers));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayNeighbours));
+    mDeps.registry->UnregisterOverlay(StringCRC(kOverlayRegionEdges));
+    mDeps.registry->UnregisterOverlay(StringCRC(kOverlaySites));
     mOverlaysRegistered = false;
 }
 
@@ -266,7 +285,7 @@ bool WorldGenViewHost::Build()
     mUploader = Dia::Core::MakeUnique<Dia::CellLayers::LayerUploader>(*mDeps.cellField, mDeps.schema);
     mDomain = Dia::Core::MakeUnique<Dia::CellLayers::CellLayerViewerDomain>(*mDeps.registry, *mUploader, mDeps.schema,
         Dia::CellLayers::CellLayerViewerDomain::ViewFn(fastdelegate::MakeDelegate(this, &WorldGenViewHost::PickerView)));
-    mDomain->ToggleOverlay(StringCRC(kOverlayRivers));       // both overlays start on
+    mDomain->ToggleOverlay(StringCRC(kOverlayRivers));       // rivers + neighbours start on; region edges + sites off
     mDomain->ToggleOverlay(StringCRC(kOverlayNeighbours));
 
     if (mDeps.registrar != nullptr)
@@ -508,6 +527,61 @@ void WorldGenViewHost::DrawNeighbours(Dia::Core::IDebugDraw& draw, const void* s
     }
 }
 
+void WorldGenViewHost::DrawRegionEdges(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
+{
+    if (mSession.Revision() == 0)
+        return;
+    if (mRegionEdgeRevision != mSession.Revision() || mRegionEdgeGridGeneration != mGridGeneration)
+    {
+        mRegionEdges = BuildRegionEdges(mSession.World(), *mGrid);   // empty while regions are not fresh
+        mRegionEdgeRevision = mSession.Revision();
+        mRegionEdgeGridGeneration = mGridGeneration;
+        ++mRegionEdgeRebuilds;
+    }
+    const Dia::Core::RGBA colour(250, 250, 250, 255);
+    for (const LineSegment& s : mRegionEdges)
+        draw.RequestDraw(s.a, s.b, colour);
+}
+
+bool WorldGenViewHost::SiteKindEnabled(uint32_t kindCrc) const
+{
+    return std::find(mSiteKindsOff.begin(), mSiteKindsOff.end(), kindCrc) == mSiteKindsOff.end();
+}
+
+void WorldGenViewHost::DrawSites(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
+{
+    if (mSession.Revision() == 0)
+        return;
+    // The kind list can change between generations (registry edits), so it is part of the cache key.
+    const std::vector<SiteKindInfo> kinds = WorldGeneration::ListSiteKinds(mSession.Registry());
+    bool same = mSiteRevision == mSession.Revision() && mSiteGridGeneration == mGridGeneration && kinds.size() == mSiteMarkers.size();
+    for (size_t i = 0; same && i < kinds.size(); ++i)
+    {
+        const SiteKindInfo& a = kinds[i];
+        const SiteKindInfo& b = mSiteMarkers[i].info;
+        same = a.kindCrc == b.kindCrc && a.debugColour == b.debugColour && a.debugShape == b.debugShape;
+    }
+    if (!same)
+    {
+        mSiteMarkers.clear();
+        const float radius = mGrid->CellSize() * kSiteMarkerScale;
+        for (const SiteKindInfo& k : kinds)
+            mSiteMarkers.push_back({ k, BuildSiteMarkers(mSession.World(), *mGrid, k.kindCrc, k.debugShape, radius) });
+        mSiteRevision = mSession.Revision();
+        mSiteGridGeneration = mGridGeneration;
+    }
+    for (const SiteKindMarkers& m : mSiteMarkers)
+    {
+        if (!SiteKindEnabled(m.info.kindCrc))
+            continue;
+        const uint32_t c = m.info.debugColour;
+        const Dia::Core::RGBA colour(static_cast<uint8_t>((c >> 16) & 0xFFu), static_cast<uint8_t>((c >> 8) & 0xFFu),
+                                     static_cast<uint8_t>(c & 0xFFu), 255);
+        for (const LineSegment& s : m.lines)
+            draw.RequestDraw(s.a, s.b, colour);
+    }
+}
+
 // ---- Detail provider ---------------------------------------------------------------------------------------------
 
 void WorldGenViewHost::BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out)
@@ -632,7 +706,24 @@ bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)
 {
     if (!mDomain || id == nullptr)
         return false;
-    if (std::strcmp(id, kOverlayRivers) != 0 && std::strcmp(id, kOverlayNeighbours) != 0)
+    const size_t prefix = std::strlen(kSiteKindPrefix);
+    if (std::strncmp(id, kSiteKindPrefix, prefix) == 0)
+    {
+        for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+        {
+            if (std::strcmp(k.id, id + prefix) != 0)
+                continue;
+            const auto it = std::find(mSiteKindsOff.begin(), mSiteKindsOff.end(), k.kindCrc);
+            if (enabled && it != mSiteKindsOff.end())
+                mSiteKindsOff.erase(it);
+            else if (!enabled && it == mSiteKindsOff.end())
+                mSiteKindsOff.push_back(k.kindCrc);
+            return true;
+        }
+        return false;
+    }
+    if (std::strcmp(id, kOverlayRivers) != 0 && std::strcmp(id, kOverlayNeighbours) != 0 &&
+        std::strcmp(id, kOverlayRegionEdges) != 0 && std::strcmp(id, kOverlaySites) != 0)
         return false;
     const StringCRC crc(id);
     if (mDomain->IsOverlayEnabled(crc) != enabled)
@@ -647,6 +738,32 @@ void WorldGenViewHost::ListOverlays(const std::function<void(const char* id, boo
     const bool hasWorld = mSession.Revision() > 0;
     fn(kOverlayRivers, mDomain->IsOverlayEnabled(StringCRC(kOverlayRivers)), hasWorld);
     fn(kOverlayNeighbours, mDomain->IsOverlayEnabled(StringCRC(kOverlayNeighbours)), HasSelection());
+    const bool fresh = hasWorld && mSession.RegionsFresh();   // regions and sites exist only after a Regenerate
+    fn(kOverlayRegionEdges, mDomain->IsOverlayEnabled(StringCRC(kOverlayRegionEdges)), fresh);
+    fn(kOverlaySites, mDomain->IsOverlayEnabled(StringCRC(kOverlaySites)), fresh);
+    std::string toggle;
+    for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+    {
+        toggle = kSiteKindPrefix;
+        toggle += k.id;
+        fn(toggle.c_str(), SiteKindEnabled(k.kindCrc), fresh);
+    }
+}
+
+void WorldGenViewHost::ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn)
+{
+    std::string toggle;
+    for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+    {
+        toggle = kSiteKindPrefix;
+        toggle += k.id;
+        SiteKindRow row;
+        row.overlay = toggle.c_str();
+        row.info = &k;
+        row.enabled = SiteKindEnabled(k.kindCrc);
+        row.count = mSession.World().sites.Count(k.Kind());
+        fn(row);
+    }
 }
 
 void WorldGenViewHost::FillLegend(Json::Value& out)

@@ -11,6 +11,7 @@
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
 #include <cmath>
 #include <filesystem>
@@ -100,12 +101,12 @@ struct Rig
 int IndexOf(const Rig& r, int x, int y) { return y * r.host->Grid().Dimensions().width + x; }
 }
 
-TEST(WorldGenViewHost, BuildRegistersEveryDescriptorAndTwoOverlaysAgainstOneGrid)
+TEST(WorldGenViewHost, BuildRegistersEveryDescriptorAndFourOverlaysAgainstOneGrid)
 {
     Rig r;
     ASSERT_TRUE(r.host->Build());
     EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
-    EXPECT_EQ(r.registry.OverlayCount(), 2u);
+    EXPECT_EQ(r.registry.OverlayCount(), 4u);   // rivers, selection.neighbours, regions.edges, sites
     ASSERT_EQ(r.registry.GridCount(), 1u);
     EXPECT_EQ(r.registry.GridAt(0), &r.host->Grid().Desc());
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
@@ -117,6 +118,8 @@ TEST(WorldGenViewHost, BuildRegistersEveryDescriptorAndTwoOverlaysAgainstOneGrid
     }
     EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("rivers")), nullptr);
     EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("selection.neighbours")), nullptr);
+    EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("regions.edges")), nullptr);
+    EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("sites")), nullptr);
     EXPECT_TRUE(r.registrar.Has("cells.select.cell"));
     EXPECT_TRUE(r.registrar.Has("cells.layer.base_by_id"));
 }
@@ -393,7 +396,11 @@ TEST(WorldGenViewHost, ListOverlaysReportsEnabledAndAvailable)
         return rows;
     };
     std::vector<Row> rows = list();
-    ASSERT_EQ(rows.size(), 2u);
+    ASSERT_EQ(rows.size(), 8u);   // rivers, neighbours, regions.edges, sites + one toggle per built-in kind
+    EXPECT_EQ(rows[2].id, "regions.edges");
+    EXPECT_EQ(rows[3].id, "sites");
+    EXPECT_EQ(rows[4].id, "sites.CoW.Node.Corridor");
+    EXPECT_EQ(rows[7].id, "sites.CoW.Node.Resource");
     EXPECT_EQ(rows[0].id, "rivers");
     EXPECT_TRUE(rows[0].enabled);
     EXPECT_TRUE(rows[0].available);
@@ -660,8 +667,9 @@ TEST(WorldGenViewHost, NoWorldYetBuildUpdateDrawDoNotCrashAndUploadZeros)
     EXPECT_FALSE(r.host->HasSelection());
     std::vector<bool> avail;
     r.host->ListOverlays([&](const char*, bool, bool a) { avail.push_back(a); });
-    ASSERT_EQ(avail.size(), 2u);
+    ASSERT_EQ(avail.size(), 8u);   // 4 overlays + 4 built-in site kind toggles
     EXPECT_FALSE(avail[0]) << "rivers unavailable without a world";
+    for (size_t i = 2; i < avail.size(); ++i) EXPECT_FALSE(avail[i]) << "region and site overlays need fresh regions";
     Json::Value legend;
     r.host->FillLegend(legend);   // must not crash
 
@@ -682,7 +690,7 @@ TEST(WorldGenViewHost, BuildTwiceTeardownTwiceAndTeardownBeforeBuildAreSafe)
     ASSERT_TRUE(r.host->Build());
     ASSERT_TRUE(r.host->Build());   // second Build is a no-op, no duplicate registrations
     EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
-    EXPECT_EQ(r.registry.OverlayCount(), 2u);
+    EXPECT_EQ(r.registry.OverlayCount(), 4u);   // rivers, neighbours, regions.edges, sites
     EXPECT_EQ(r.registry.GridCount(), 1u);
 
     r.host->Teardown();
@@ -862,6 +870,148 @@ TEST(WorldGenViewHost, CellSelectCommandOutOfRangeReturnsErrorAndKeepsSelection)
     ASSERT_TRUE(r.host->GetSelection(x, y));
     EXPECT_EQ(x, 4);
     EXPECT_EQ(y, 4);
+}
+
+// ---- Regions plan task 10: region edges and the Sites overlay ----
+
+
+namespace
+{
+std::vector<std::string> OverlayIds(WorldGenViewHost& h)
+{
+    std::vector<std::string> ids;
+    h.ListOverlays([&](const char* id, bool, bool) { ids.push_back(id); });
+    return ids;
+}
+
+void OnlyOverlay(Rig& r, const char* keep)
+{
+    for (const std::string& id : OverlayIds(*r.host))
+        if (id.rfind("sites.", 0) != 0)   // per-kind toggles stay on; the master "sites" decides
+            ASSERT_TRUE(r.host->SetOverlayEnabled(id.c_str(), id == keep)) << id;
+}
+
+size_t SiteLines(const Rig& r, const std::vector<SiteKindInfo>& kinds)
+{
+    size_t n = 0;
+    for (const SiteKindInfo& k : kinds)
+        n += BuildSiteMarkers(r.session.World(), r.host->Grid(), k.kindCrc, k.debugShape, r.host->Grid().CellSize() * WorldGenViewHost::kSiteMarkerScale).size();
+    return n;
+}
+}
+
+TEST(WorldGenViewHost, RegionEdgesOverlayStartsOffDrawsTheGeometryAndCachesPerRevision)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.session.RegionsFresh());
+    bool enabled = true;
+    r.host->ListOverlays([&](const char* id, bool en, bool) { if (std::string(id) == "regions.edges") enabled = en; });
+    EXPECT_FALSE(enabled) << "region edges start off";
+
+    OnlyOverlay(r, "regions.edges");
+    const size_t expected = BuildRegionEdges(r.session.World(), r.host->Grid()).size();
+    ASSERT_GT(expected, 0u);
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), expected);
+    for (int i = 0; i < 10; ++i) r.Frame(draw);
+    EXPECT_EQ(r.host->RegionEdgeRebuilds(), 1u);
+    r.Tick(999);
+    r.Frame(draw);
+    EXPECT_EQ(r.host->RegionEdgeRebuilds(), 2u);
+}
+
+TEST(WorldGenViewHost, RegionEdgesAndSitesDrawNothingWhenRegionsAreNotFresh)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    r.session.Set(Obj("rivers", 0.31));   // live preview clears regions and sites
+    ASSERT_TRUE(r.session.Tick(r.rng));
+    ASSERT_FALSE(r.session.RegionsFresh());
+    OnlyOverlay(r, "regions.edges");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", true));
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), 0u);
+    bool edgesAvailable = true, sitesAvailable = true;
+    r.host->ListOverlays([&](const char* id, bool, bool av) {
+        if (std::string(id) == "regions.edges") edgesAvailable = av;
+        if (std::string(id) == "sites") sitesAvailable = av;
+    });
+    EXPECT_FALSE(edgesAvailable);
+    EXPECT_FALSE(sitesAvailable);
+}
+
+TEST(WorldGenViewHost, SitesOverlayDrawsEveryEnabledKindGenericallyAndPerKindTogglesRemoveOneKind)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    OnlyOverlay(r, "sites");
+    const std::vector<SiteKindInfo> kinds = ListSiteKinds(r.session.Registry());
+    ASSERT_EQ(kinds.size(), 4u);
+    const size_t all = SiteLines(r, kinds);
+    ASSERT_GT(all, 0u);
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), all);
+
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites.CoW.Node.Hunting", false));
+    std::vector<SiteKindInfo> rest;
+    for (const SiteKindInfo& k : kinds)
+        if (k.kindCrc != SiteKindId(BuiltinNodeKinds::Hunting())) rest.push_back(k);
+    RecordingDraw less;
+    r.Frame(less);
+    EXPECT_EQ(less.lines.size(), SiteLines(r, rest));
+    EXPECT_LT(less.lines.size(), all);
+
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    RecordingDraw none;
+    r.Frame(none);
+    EXPECT_EQ(none.lines.size(), 0u);
+    EXPECT_FALSE(r.host->SetOverlayEnabled("sites.Unknown.Kind", true));
+}
+
+TEST(WorldGenViewHost, RegisteredKindGetsAToggleWithItsColourAndShape)
+{
+    Rig r(nullptr, false);
+    SiteRegistry registry;
+    Testing::TestPlacer placer("Test.Hearth", {}, 0);
+    ASSERT_TRUE(registry.Register(&placer));
+    r.session.SetSiteRegistry(&registry);
+    r.Tick(12345);
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_EQ(r.session.World().sites.Count(Dia::Core::StringCRC("Test.Hearth")), 1);
+
+    const std::vector<std::string> ids = OverlayIds(*r.host);
+    ASSERT_EQ(ids.size(), 9u);
+    EXPECT_EQ(ids.back(), "sites.Test.Hearth");
+
+    struct KindRow { std::string overlay, kind; uint32_t colour; SiteShape shape; bool enabled; int count; };
+    std::vector<KindRow> rows;
+    r.host->ListSiteKinds([&](const IWorldGenView::SiteKindRow& k) {
+        rows.push_back({ k.overlay, k.info->id, k.info->debugColour, k.info->debugShape, k.enabled, k.count });
+    });
+    ASSERT_EQ(rows.size(), 5u);
+    EXPECT_EQ(rows[4].overlay, "sites.Test.Hearth");
+    EXPECT_EQ(rows[4].kind, "Test.Hearth");
+    EXPECT_EQ(rows[4].colour, 0xFF00FFu);
+    EXPECT_EQ(rows[4].shape, SiteShape::Dot);
+    EXPECT_TRUE(rows[4].enabled);
+    EXPECT_EQ(rows[4].count, 1);
+    EXPECT_EQ(rows[0].kind, "CoW.Node.Corridor");
+    EXPECT_EQ(rows[0].shape, SiteShape::Diamond);
+
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites.Test.Hearth", false));
+    r.host->ListSiteKinds([&](const IWorldGenView::SiteKindRow& k) { if (std::string(k.info->id) == "Test.Hearth") EXPECT_FALSE(k.enabled); });
+
+    OnlyOverlay(r, "sites");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites.Test.Hearth", true));
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), SiteLines(r, ListSiteKinds(registry))) << "no per-kind drawer code: the test kind draws too";
+
+    r.session.SetSiteRegistry(nullptr);   // registry outlives the session's use of it
 }
 
 #endif // DIA_DEBUG
