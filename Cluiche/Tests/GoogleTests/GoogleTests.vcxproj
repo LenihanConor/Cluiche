@@ -1251,6 +1251,8 @@
     <ClCompile Include="CoW\TestWorldJsonExport.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldJsonImport.cpp" />
     <ClCompile Include="CoW\TestWorldJsonImport.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldFiles.cpp" />
+    <ClCompile Include="CoW\TestWorldFiles.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

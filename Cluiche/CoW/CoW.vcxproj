@@ -84,6 +84,7 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -154,6 +155,7 @@
     <ClInclude Include="Shared\WorldGeneration\GenerationReport.h" />
     <ClInclude Include="Shared\WorldGeneration\GenerationRun.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldJson.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldFiles.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

@@ -2892,5 +2892,11 @@
     <ClCompile Include="CoW\TestWorldJsonImport.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldFiles.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldFiles.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
