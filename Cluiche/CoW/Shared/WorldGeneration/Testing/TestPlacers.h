@@ -53,11 +53,19 @@ struct TestPlacerSet
     TestPlacer c{ "Test.C" };
 };
 
-class TestGuarantee : public ILayoutGuarantee
+// A registrable guarantee that is always satisfied (id = the name).
+class TestGuarantee : public IWorldGuarantee
 {
 public:
     explicit TestGuarantee(const char* name) : mName(name) {}
-    const char* Name() const override { return mName.c_str(); }
+    Dia::Core::StringCRC GetId() const override { return Dia::Core::StringCRC(mName.c_str()); }
+    GuaranteeResult Check(const ValidationContext&) const override
+    {
+        GuaranteeResult r;
+        r.idCrc = GetId().Value();
+        r.satisfied = true;
+        return r;
+    }
 private:
     std::string mName;
 };

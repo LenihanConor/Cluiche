@@ -57,15 +57,14 @@ bool SiteRegistry::Register(ISitePlacer* placer)
     return true;
 }
 
-bool SiteRegistry::RegisterGuarantee(ILayoutGuarantee* guarantee)
+bool SiteRegistry::RegisterGuarantee(IWorldGuarantee* guarantee)
 {
     if (!guarantee) return false;
-    const char* name = guarantee->Name();
-    for (const ILayoutGuarantee* g : mGuarantees)
+    const uint32_t id = guarantee->GetId().Value();
+    for (const IWorldGuarantee* g : mGuarantees)
     {
         if (g == guarantee) return false;
-        const char* other = g->Name();
-        if (name && other && std::strcmp(name, other) == 0) return false;
+        if (g->GetId().Value() == id) return false;
     }
     mGuarantees.push_back(guarantee);
     return true;

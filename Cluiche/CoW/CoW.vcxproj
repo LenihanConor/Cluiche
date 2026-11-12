@@ -79,6 +79,7 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainTableNavigationProfile.cpp" />
     <ClCompile Include="Shared\WorldGeneration\ReachabilityValidator.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteGuarantees.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldLayoutGuarantee.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -145,6 +146,7 @@
     <ClInclude Include="Shared\WorldGeneration\TerrainTableNavigationProfile.h" />
     <ClInclude Include="Shared\WorldGeneration\ReachabilityValidator.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteGuarantees.h" />
+    <ClInclude Include="Shared\WorldGeneration\WorldLayoutGuarantee.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
