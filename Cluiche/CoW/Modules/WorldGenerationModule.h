@@ -72,6 +72,10 @@ public:
     // (false when no SimQueryHostModule is wired, or before DoStart / after DoStop).
     bool CommandsRegistered() const { return mCommandsRegistered; }
 
+    // Default writable worlds directory (PD-009: generated output lives under Cluiche/out/<AppName>/).
+    static constexpr const char* kDefaultOutWorldsDir = "Cluiche/out/CoW/worlds";
+    const std::string& GetOutWorldsDirectory() const { return mOutWorldsDir; }
+
     // Every command and query this module registers, with its full dotted name.
     static constexpr const char* kCommandNames[] = {
         "cow.worldgen.set", "cow.worldgen.set_size", "cow.worldgen.regenerate",
@@ -104,7 +108,7 @@ private:
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
     std::string mWorldsDir;                                        // read-only deployed worlds (none by default)
-    std::string mOutWorldsDir = "Cluiche/out/CoW/worlds";          // PD-009: exports land here
+    std::string mOutWorldsDir = kDefaultOutWorldsDir;              // PD-009: exports land here
     bool mAutoGenerate = true;
     bool mActionSeen = false;
     bool mPublishFailed = false;

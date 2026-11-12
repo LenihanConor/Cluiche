@@ -2901,5 +2901,8 @@
     <ClCompile Include="CoW\TestWorldGenSessionImport.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldJsonExhaustive.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

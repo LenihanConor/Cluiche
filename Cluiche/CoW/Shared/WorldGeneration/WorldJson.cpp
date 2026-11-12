@@ -345,6 +345,10 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
     out += "  }\n";
     out += "}\n";
 
+    if (out.size() > kMaxWorldJsonBytes)   // import refuses larger files, so writing one would be a trap
+    {
+        return Fail(error, "world", "the exported text would be larger than " + std::to_string(kMaxWorldJsonBytes) + " bytes");
+    }
     text = std::move(out);
     return true;
 }
