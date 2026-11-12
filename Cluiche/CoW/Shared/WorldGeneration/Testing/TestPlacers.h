@@ -70,6 +70,38 @@ private:
     std::string mName;
 };
 
+// Fails Retryable while PlacementContext::attempt < succeedFromAttempt, then places one site (attempt-gated, so
+// the retry tests control exactly which attempts fail without depending on the seed).
+class AttemptGatedPlacer : public ISitePlacer
+{
+public:
+    AttemptGatedPlacer(const char* kindId, int succeedFromAttempt, PlaceResult::Code failure = PlaceResult::Code::Retryable)
+        : mInfo(MakeSiteKindInfo(Dia::Core::StringCRC(kindId), kindId, 0x00FFFF, SiteShape::Dot))
+        , mSucceedFrom(succeedFromAttempt), mFailure(failure) {}
+
+    const SiteKindInfo& Info() const override { return mInfo; }
+    std::span<const Dia::Core::StringCRC> DependsOn() const override { return {}; }
+    PlaceResult Place(const PlacementContext& ctx, Dia::Maths::RandomStream&, SiteSet& out) override
+    {
+        ++placeCalls;
+        if (ctx.attempt < mSucceedFrom)
+        {
+            return mFailure == PlaceResult::Code::TerrainCause ? PlaceResult::TerrainCause("gated terrain cause")
+                                                              : PlaceResult::Retryable("gated retryable");
+        }
+        Site s; s.kindCrc = mInfo.kindCrc; s.cell = 0;
+        out.Add(s);
+        return PlaceResult::Ok();
+    }
+
+    int placeCalls = 0;
+
+private:
+    SiteKindInfo mInfo;
+    int mSucceedFrom;
+    PlaceResult::Code mFailure;
+};
+
 } // namespace Testing
 } // namespace WorldGeneration
 } // namespace CoW

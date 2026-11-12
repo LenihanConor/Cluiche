@@ -181,6 +181,9 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -379,6 +382,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\GenerationReport.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationRun.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
