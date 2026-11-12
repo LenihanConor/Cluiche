@@ -310,6 +310,18 @@ TEST(WorldThroneGuarantee, InvalidTypeIsReported)
     EXPECT_TRUE(AnyDiagnosticContains(r, "invalid Apotheosis type 9"));
 }
 
+TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
+{
+    WorldStructure w = MakeAllLandWorld(30, 20);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 6 : t)); }
+    BlockWaterProfile p("P");
+    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    EXPECT_FALSE(r.satisfied);
+    EXPECT_TRUE(AnyDiagnosticContains(r, "invalid Apotheosis type 6"));
+    EXPECT_TRUE(AnyDiagnosticContains(r, "no world-throne of Apotheosis type 5"));
+}
+
 TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesIt)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
