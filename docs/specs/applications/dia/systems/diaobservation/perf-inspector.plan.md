@@ -1,0 +1,67 @@
+# Plan: Perf Inspector
+
+**Spec:** @docs/specs/applications/dia/systems/diaobservation/perf-inspector.md
+**Status:** Not Started
+**Depends on:** `profiling-frame-instrumentation.plan.md` (timing table, trips, `--perf`) and `perf-live-control.plan.md` (markers, switches, latency probes). Trace-linked streams are deferred, so the live chain panel ships as "chain unavailable".
+**Mockup:** `docs/mockups/perf-inspector-mockup.html` (approved 2026-11-09, the visual acceptance gate). Workers view: `docs/mockups/perf-inspector-workers-mockup.html` (approved 2026-11-12).
+**Revision 2026-11-12:** spec revision (Workers view, wire tiers, SD-PERF-7 budgets) Approved 2026-11-12. Workers mockup approved 2026-11-12.
+
+## Sign-offs needed (AD-001)
+
+| Change | Where | Status |
+|---|---|---|
+| Bridge channels `perf.window`, `perf.frame`, `perf.timing` (10 Hz push), `perf.trip` (event push) | DiaDebugServer `ObservationBridge` | Given 2026-11-12 |
+| New module `DiaPerfInspector` (C++ plugin + `UI/`) | Dia, new project, `dia scaffold plugin` | Given 2026-11-12 |
+| `CluicheEditor.vcxproj` reference to the new plugin | CluicheEditor | Given 2026-11-12 |
+| Long coarse ring (now in the spec's Architecture, 2026-11-10) | DiaObservation | Given 2026-11-12 |
+| Revision 2026-11-12: `JobTimingTable`, `perf.jobs` query, job tiers on `perf.timing` / `perf.window`, encode on the DebugServer thread | DiaObservation, DiaDebugServer | Given 2026-11-12 |
+
+## Open design questions
+
+| # | Question | Proposal |
+|---|---|---|
+| 1 | Frame retention: 128 detailed frames is about 4 s, the UI shows 10-60 s | **Decided (spec):** long coarse ring. Task 1 |
+| 2 | Sections when profiling is off | Module-level only, with a one-click "enable profiling" |
+| 3 | Unequal frame rates (Render at 60 Hz) | Time-aligned x axis in the lane model (Task 4) |
+
+## Project rules that apply to this plan
+
+- Editor actions and queries are DiaAPI/bridge commands; the panel calls the same ones (`feedback_editor_actions_diaapi`).
+- Business logic separate from UI: the lane model, window decoding and Chrome-trace builder are pure TypeScript with tests; React components depend only on them (`feedback_ui_business_separation`).
+- Inspector tier: live game through DiaDebugServer, never in-game rendering (`feedback_tool_tiers`).
+- Sim-hosted replies are capped at 16 KB (`kSimPayloadBytes`). `perf.window` targets under 120 KB, so it must be Main-hosted, and each PU's timing data must reach Main by stream (the unit tables are written on their own threads). Task 0 confirms the WebSocket transport has no lower cap.
+
+## Tasks
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 0 | Get sign-offs. Then read `ObservationBridge.cpp/.h`, `DebugServer` `PublishTopic`/`PublishTopicOrdered`, `DiaApplicationFlowInspector` (`LiveStateStore`, `UI/src/bridge.ts`, vitest setup, `PUFrameBudgetGauge.tsx`), `LiveConnectionPluginBase.h` (DiaEditor/Plugin), `dia scaffold plugin` output, the mockup, `@dia/editor-ui` exports. Confirm the WebSocket transport limit | - | Not Started | sonnet | Not haiku: ends in a stream design for Main-side timing data |
+| 1 | Long coarse ring in DiaObservation (per unit, per module ms, fixed-point 0.01 ms, 60 s at the unit rate), filled alongside `UnitTimingTable`; published to Main by FrameStream snapshot | Unit tests: wrap, fixed-point rounding, 60 s sizing, Sim fixed-step entries | Not Started | sonnet | Spec Architecture (long coarse ring). Same entry definition as the amendment (fixed step on Sim). Clamp and flag values over 655.35 ms. Published to Main by `FrameStream`. Not a numbered spec task |
+| 2 | Bridge, query side: `perf.window {seconds}` (per unit per frame tick ms + module ms arrays, markers, trips) and `perf.frame {unit, frame}` (sections; says so when profiling is off) | AC7 (60 s, 3 units, 13 modules under 120 KB), part of AC6 | Not Started | sonnet | Arrays not objects, 0.01 ms fixed point. Help text on both commands. Size check: 60 s x 30 Hz x 13 modules is about 23,400 numbers, plus Render at 60 Hz, which is tight against 120 KB as JSON text; measure the real byte count early. If it misses, default the window to 30 s and fetch 60 s as two requests (spec). Spec task 1 |
+| 3 | Bridge, push side: `perf.timing` at 10 Hz via `PublishTopic` (latest wins), carrying module EWMA/p95 plus latency p50/p95 per action, `perf.self_ms`, marker drops and suppressed counts; `perf.trip` via `PublishTopicOrdered` | AC3 (server half), AC6 attach/detach cost measured in Task 11 | Not Started | sonnet | Never per-frame push (SD-PERF-2). Spec task 1 |
+| 4 | Scaffold `DiaPerfInspector` (`dia scaffold plugin`), plugin shell, `LiveConnectionPluginBase` connection handling; pure TS **lane model**: time-aligned axis, stacked module bars, unattributed remainder, budget line, trip shading, window 10/30/60 s, pause freezes view only | AC1, AC2 (module bars sum to tick ms within 1 ms) | Not Started | sonnet | Vitest on recorded fixtures (record one from a real `--perf` session so it matches the wire format). Mockup lanes are the acceptance reference. `npx vitest run` with node on PATH. Spec task 2 |
+| 5a | **Mockup check gate:** open `perf-inspector-mockup.html` against the built lane view and list differences | Visual acceptance, user sign-off | Not Started | haiku | Required before building the remaining panels |
+| 5 | Module table (p50/p95, sections, A/B switch buttons calling `perf.pause`/`perf.resume`), selected-frame detail, trips list with jump-to-frame, markers row | AC3 (E2E: sleeping test module forces a trip, appears in under 1 s, click selects first frame), AC4 | Not Started | sonnet | Switch buttons need live-control Task 5. The sleeping test module is CluicheTest-side (layer rule). Spec task 3 |
+| 6 | Cross-thread chain view + stream edges (bytes, rate, data age, share of one budget) | AC5 (fixture half; the live half is deferred) | Not Started | sonnet | Build on fixtures; against a live game show "chain unavailable" until the trace-linked streams follow-up lands. Spec task 4 |
+| 7 | Latency panel (per action vs target, p50/p95) and telemetry self-cost panel (`perf.self_ms`, suppressed log lines) | UI tests on fixtures | Not Started | sonnet | Reads `perf.timing` (Task 3). Needs live-control Task 6 (latency probes) for live data. Spec task 5 |
+| 8 | Chrome-trace/Perfetto export built client-side from `perf.window` + `perf.frame`; schema test; manual Perfetto load recorded in the notes | AC8 | Not Started | haiku | Pure TS builder, no engine change. Spec task 6 |
+| 9 | Register in `CluicheEditor` (`.vcxproj` reference, plugin browser entry, deploy via `dia pipeline --target cluicheeditor`) | Editor starts and the plugin appears | Not Started | sonnet | Needs the CluicheEditor sign-off. Build UI before copy; editor targets need the full pipeline. **Run right after Task 4**, not here: Tasks 5a-8 need the plugin running in the editor to check it against the mockup. Not a spec task |
+| 10 | **Gap audit and edge tests** (explicit task): empty window, unit with no modules, module added mid-window, window longer than retention, trip during pause, bridge reconnect, profiling toggled while viewing, duplicate frame numbers, non-monotonic timestamps. Mutation check only on the lane model arithmetic and percentile code | All | Not Started | sonnet | |
+| 11 | **Final verification.** Attach/detach cost test against the revised AC6 budgets (SD-PERF-7: detached < 0.02/0.05 ms; attached Sim < 0.05/0.1 ms, Main < 0.1/0.25 ms, average/worst frame), on S-1 and a 10,000 jobs/s flood, E2E for AC1, AC3, AC9 against the S-1 stage, full GoogleTests + Vitest, `dia check deps`, `dia check sanitizer`, Release link | AC1-AC9 | Not Started | sonnet | Heavy gates once, here. Quiet machine for E2E. AC9 needs the disconnect hook from live-control Task 5. Spec task 7 |
+| 13 | **Revision 2026-11-12, spec task 8.** `JobTimingTable` (inbox drain, per-owner per-frame aggregates, deferred-step summaries, ~5 s raw ring); tier 1 on `perf.timing`, tier 2 on `perf.window`, `perf.jobs` query (2,000-record cap); encode on the DebugServer thread | AC11 (table), AC13, AC14 | Not Started | sonnet | Needs job-observation (DiaThreading Feature 4) tasks 2-4 and DiaDeferredStep Feature 4 step summaries. Run before Task 11 |
+| 14 | **Revision 2026-11-12, spec task 9.** Mockup check gate against `perf-inspector-workers-mockup.html`, then the Workers view UI (heat strip and slices, cap row, deferred-step rows, step detail, owner share, pool health, late results) | AC10, AC11, AC12 | Not Started | sonnet | Pure TS model first (owner share, wait split), then components. Run before Task 11 |
+| 12 | Docs: module doc for `DiaPerfInspector`, `dia docs registry`, DiaDebugServer bridge doc, spec tasks Done; `dia docs spec-done` for the three specs (the system spec rule: all child features Approved) | - | Not Started | haiku | `dia docs spec-done` fails on some feature specs (DiaCellLayers precedent): close by hand if so |
+
+## Commit rhythm
+
+One commit per task, plan updated in the same commit.
+
+## Observation scan (at task 11)
+
+Likely gaps: logs on bridge subscribe/unsubscribe and reply truncation, a counter for `perf.window` reply bytes and build time, a health reporter for the coarse ring and the push topics.
+
+## Risks
+
+- Reply size on `perf.window`: if the transport cap is below 120 KB, add chunking to the query and amend the spec's AC7 wording.
+- Task 7 depends on live-control latency probes; if they slip, it ships on fixtures only rather than blocking Tasks 8-11. Task 6's live half is deferred by decision.
+- The plugin is Dia-level; no CoW or CluicheTest code may be referenced from it (layer rule). CoW only adds markers (live-control Task 9).

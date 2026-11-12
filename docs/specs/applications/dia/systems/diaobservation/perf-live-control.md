@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/dia/systems/diaobservation/diaobservation.md
 **Depends on:** @profiling-frame-instrumentation.md (Amendment 2026-11-09, A1-A3). Consumed by @perf-inspector.md
 **Mockup:** @docs/mockups/perf-inspector-mockup.html (approved 2026-11-09)
-**Status:** `Approved` — 2026-11-09
+**Status:** `Approved` — 2026-11-09. **Revised 2026-11-10** after the plan audit: pause ownership and delivery decided (Open Questions 4, 5); trace-linked stream writes (Goal 4 linking, AC10, task 6) deferred to a follow-up feature on the backlog.
 
 ## Summary
 
@@ -20,7 +20,8 @@ Three additions that turn measurements into answers: (1) **A/B switches** to pau
 1. **Switches.** `perf.pause {kind: "module"|"domain", id}`, `perf.resume {...}` and `perf.resume_all`. A paused module skips `DoUpdate` (lifecycle, streams and registrations stay, so dependents do not hang); a paused debug domain is excluded from snapshot packing and from `GetJSONState`. All pauses are released when the DiaDebugServer client that set them disconnects, and are listed in the app report.
 2. **Markers.** `DIA_PERF_MARK(name)` / `DIA_PERF_MARK_VALUE(name, u64)` write to a per-thread lock-free ring (no allocation, no I/O). Automatic markers: stage transitions, module start/stop, trips. S-1 adds markers for slider drag start/end, preset load, regenerate and size change.
 3. **Latency probes.** `LatencyProbe::Begin(actionCrc)` returns a probe id; `Stamp(id, hopCrc)` records a steady-clock timestamp per hop; `End(id)` closes it. Ids travel where payloads already exist (panel command args carry `_lat`; snapshot slots already carry `simFrame`, so the visible hop is matched by "first snapshot with simFrame at or after the frame that applied the command"). A small ring of recent completions per action gives p50/p95 over the last 40.
-4. **Stream edge diagnostics.** For streams on a traced chain, report bytes per write, rate, data age at read and write/read cost, reusing `FrameStreamDiagnostics`. A stream write records the active scope's trace id so the reading scope can be linked as its child (trace pillar parent/child; no new id scheme).
+4. **Stream edge diagnostics.** For streams on a traced chain, report bytes per write, rate, data age at read and write/read cost, reusing `FrameStreamDiagnostics`. A stream write records the active scope's trace id so the reading scope can be linked as its child (trace pillar parent/child; no new id scheme). **Deferred 2026-11-10:** the trace linking (and AC10) moves to a follow-up feature, because it may touch every stream. Task 6 becomes a design spike that records the decision (Open Question 1); the build is a backlog row.
+5. **Pause ownership and delivery (2026-11-10).** Main owns the pause set. Each pause has an owner: a DebugServer client (released on that client's disconnect, through a new public `DebugServer` client-disconnect callback) or a local owner for in-process callers such as tests (released on stage exit, on loss of the editor connection, and at shutdown). The in-game panel does not pause anything in this feature. Main publishes the set as a small `FrameStream` snapshot (bitset by module index plus a generation); each PU reads it once per `Update()`, and Sim reads the same snapshot for debug-domain pauses. No mutex crosses a PU boundary.
 
 ## Non-Goals
 
@@ -42,7 +43,8 @@ Three additions that turn measurements into answers: (1) **A/B switches** to pau
 | AC7 | Stage transition, module start/stop and trips appear as markers without call-site changes | Unit test |
 | AC8 | A probe from `Begin` to `End` reports each hop's delta; 40 probes give p50 and p95 | Unit test with a fake clock |
 | AC9 | S-1: slider drag to visible has a measured p95 compared to the 100 ms target | E2E (reports; fails above 2x target) |
-| AC10 | A traced stream write links the reader's scope as a child; the chain GetJSONState to PushDomainStatesToPanel is one trace | Integration test |
+| ~~AC10~~ | ~~A traced stream write links the reader's scope as a child; the chain GetJSONState to PushDomainStatesToPanel is one trace~~ **Deferred 2026-11-10** to the trace-linked streams follow-up | - |
+| AC11 | A pause set by a local owner is released on stage exit and at shutdown; a module paused on Main stops updating on Sim within one Sim `Update()` | Unit test |
 
 ## Tasks
 
@@ -53,7 +55,7 @@ Three additions that turn measurements into answers: (1) **A/B switches** to pau
 | 3 | Pause for debug domains (registry exclusion) | AC2 | Planned | sonnet | `VisualDebuggerModule` (Baseline) / DiaVisualDebugger |
 | 4 | `perf.pause`, `perf.resume`, `perf.resume_all` commands + app report listing | AC1-AC4 | Planned | sonnet | DiaDebugServer |
 | 5 | `LatencyProbe` + panel-command `_lat` + simFrame correlation | AC8 | Planned | sonnet | |
-| 6 | Trace-linked stream writes/reads + edge stats | AC10 | Planned | opus | Cross-thread tracing design; confirm with the user before dispatching opus |
+| 6 | Design spike for trace-linked stream writes (Open Question 1), recorded in this spec; build deferred to a backlog follow-up | - | Planned | sonnet | Was opus build of AC10; deferred 2026-11-10 |
 | 7 | CoW S-1 markers and latency E2E | AC9 | Planned | sonnet | CoW |
 | 8 | Gap audit, edge tests, overhead measurement | All | Planned | sonnet | Final verification |
 
@@ -71,3 +73,5 @@ Three additions that turn measurements into answers: (1) **A/B switches** to pau
 1. **Trace-linked stream writes (task 6).** FrameStream slots are fixed payload structs; linking needs either a header word on every slot (touches all streams) or a side table keyed by (stream, write sequence). The side table avoids payload changes but adds a lookup per write. Needs a small design spike before dispatch.
 2. **What does "paused" mean for a module that publishes a stream each frame?** Readers may log "no data" warnings. Proposal: a pause records a marker and silences those warnings for paused writers.
 3. **Switch granularity for domains.** Pause the domain's snapshot only, or also its `OnCommand`? Proposal: snapshot only, so the panel stays usable.
+4. ~~Who owns a pause set without a DebugServer client?~~ **Resolved 2026-11-10:** a local owner, released on stage exit, editor disconnect and shutdown (Goal 5).
+5. ~~How does a pause set on Main reach modules on other PUs?~~ **Resolved 2026-11-10:** a `FrameStream` snapshot published by Main (Goal 5).

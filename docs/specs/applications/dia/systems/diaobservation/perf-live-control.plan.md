@@ -1,0 +1,58 @@
+# Plan: Perf Live Control
+
+**Spec:** @docs/specs/applications/dia/systems/diaobservation/perf-live-control.md
+**Status:** Not Started
+**Depends on:** `profiling-frame-instrumentation.plan.md` tasks 1-7 (subject, timing table, trips). Consumed by `perf-inspector.plan.md`.
+
+## Sign-offs needed (AD-001)
+
+| Change | Where | Status |
+|---|---|---|
+| Debug-only pause hook in the module update path | DiaApplicationFlow (`Module.cpp`) | Given 2026-11-12 |
+| Debug-domain exclusion | DiaVisualDebugger / `VisualDebuggerModule` | Given 2026-11-12 |
+| `perf.pause`, `perf.resume`, `perf.resume_all` commands | DiaDebugServer | Given 2026-11-12 |
+| **New public client-disconnect hook** (`DebugServer.h` has none; disconnect is only logged inside `DebugServer.cpp` ~695). AC4 and the inspector's AC9 need it | DiaDebugServer | Given 2026-11-12 |
+| `_lat` argument on panel commands | In-game debug panel (`DebugPanelPageModule`, CluicheGameBaseline) and/or DebugServer command args; Task 0 confirms which path S-1 slider commands take | Given 2026-11-12 |
+| ~~Trace linking on stream writes~~ | Deferred to a backlog follow-up (spec revised 2026-11-10) | - |
+
+## Open design questions
+
+| # | Question | Resolve by |
+|---|---|---|
+| 1 | Trace-linked stream writes: header word on every slot vs side table keyed by (stream, write sequence) | Task 7 spike records the decision; the build is deferred |
+| 2 | Meaning of "paused" for a module that publishes each frame: proposal is a marker and silenced no-data warnings for paused writers | Task 3 |
+| 3 | Domain pause granularity: proposal is snapshot only, so the panel stays usable | Task 4 |
+| 4 | **Pause ownership with no client.** Pauses belong to the DebugServer client that set them. Who owns a pause set by the in-game panel or a test, and when is it released? | **Decided (spec Goal 5):** local owner, released on stage exit, editor disconnect and shutdown; the in-game panel does not pause |
+| 5 | **Where the pause check lives.** Modules run on their own PU; commands arrive on Main. The pause set has to reach each PU by stream (PU-boundary rule) | **Decided (spec Goal 5):** Main publishes a `FrameStream` snapshot; each PU reads it once per `Update()` |
+
+## Tasks
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 0 | Get sign-offs (open questions 4 and 5 are resolved in the spec). Then read `Module.cpp` `FrameTick` `kActive` (~253), module start/stop, `VisualDebuggerModule` snapshot packing and `GetJSONState`, `DebugServer.cpp` disconnect (~695), the S-1 slider command path (in-game panel vs DebugServer), `FrameStreamDiagnostics.h` (DiaApplicationFlow/Streams). Report only | - | Not Started | sonnet | Not haiku: it ends in design choices. The 3 commands are Main-hosted, so they use no sim-hosted name slots |
+| 1 | `PerfMarkers`: per-thread lock-free ring of 1,024 (name CRC, optional u64, steady ns), drop-oldest with a drop counter; `DIA_PERF_MARK`, `DIA_PERF_MARK_VALUE`; `Drain`/snapshot API for the bridge | AC6 (under 50 ns, no allocation; benchmark reported) | Not Started | sonnet | Dia/DiaObservation. Thread registration like `Profiler::RegisterThreadScopeBuffer` (16-thread cap there); an unregistered thread drops markers and counts them. Reading another thread's ring from the bridge must be single-producer safe (head/tail atomics, as `tClosedHead`). Spec task 1 |
+| 2 | Automatic markers: stage transition, module start/stop, trip (hooks the `TripDetector` from the amendment) with no call-site changes | AC7 | Not Started | sonnet | Touches `Application.cpp`/`Module.cpp` lifecycle points; one test per marker type. Spec task 1 |
+| 3 | Module pause in ApplicationFlow, `#if DIA_DEBUG` only: pause set checked before `DoUpdate`; lifecycle, streams and registrations untouched; denylist (Kernel, DebugServerHost, SimQueryHost); owner token per pause so disconnect releases; marker on pause/resume; silence no-data warnings for paused writers | AC1 (unit), AC3, AC5 (Release has no symbols), AC11 | Not Started | sonnet | Open Q2 resolved here. Includes the Main-published pause snapshot and its per-PU read, and the local owner. `DIA_DEBUG` is defined per app vcxproj (CluicheGameBaseline, CluicheTest, CoW, GoogleTests): check DiaApplicationFlow's own vcxproj defines it in Debug before relying on `#if DIA_DEBUG` in `Module.cpp`. Spec task 2 |
+| 4 | Debug-domain pause: paused domain excluded from snapshot packing and `GetJSONState`; `OnCommand` stays live | AC2 (unit part) | Not Started | sonnet | `VisualDebuggerModule` (Baseline) / DiaVisualDebugger. Open Q3 resolved here. Domains are packed on Sim: reuse the pause snapshot from open question 5. Spec task 3 |
+| 5 | New `DebugServer` client-disconnect hook (sign-off row), then Main-hosted commands `perf.pause {kind,id}`, `perf.resume {kind,id}`, `perf.resume_all`, owned per client; disconnect releases that client's pauses; app report lists active pauses. Registered Debug-only. Unknown and denylisted ids return `success:false` with a reason | AC1-AC4 (unit with fake client), AC5 | Not Started | sonnet | PU boundaries are streams (`feedback_pu_boundary_streams`). `help` text on every command (description mandatory). Spec task 4 |
+| 6 | `LatencyProbe`: `Begin(actionCrc)`, `Stamp(id, hopCrc)`, `End(id)`; ring of the last 40 completions per action, p50/p95; panel-command `_lat` arg; visible hop matched by first snapshot with `simFrame` at or after the applying frame | AC8 (fake clock) | Not Started | sonnet | Dia/DiaObservation for the type; `_lat` plumbing on the path Task 0 found. `Begin`/`Stamp`/`End` run on different threads (Main, Sim), so the probe table needs a stated threading model (lock-free slots, or per-thread stamps merged on Main). Probe ids ride existing payloads (SD-PERF-6). Spec task 5 |
+| 7 | **Design spike (no code):** stream write trace-link options. Measure slot sizes, write cost, who reads `FrameStreamDiagnostics`; write a short note appended to the spec resolving Open Q1 with a recommendation | - | Not Started | sonnet | Output is a decision for the user, written into the spec's Open Question 1 and the backlog row. `FrameStreamDiagnostics` is in DiaApplicationFlow/Streams; `FrameStreamStore` in DiaStreams. Spec task 6 |
+| 8 | ~~Trace-linked stream writes/reads + edge stats~~ **Deferred 2026-11-10** to the backlog row "Trace-linked stream writes" (was opus, AC10). Not built in this plan | - | Blocked | opus | Deferred by decision (CLI has no Deferred status). Recorded so the numbering stays stable. Do not dispatch |
+| 9 | CoW S-1 markers: slider drag start/end, preset load, regenerate, size change; E2E for slider-to-visible p95 vs the 100 ms target (report, fail above 2x) | AC9 | Not Started | sonnet | CoW-side call sites stay in CoW (layer rule). No CoW E2E pytest scenario exists (S-1 follow-up 4), so AC9 needs a new CoW E2E fixture or a DiaClient script; decide in Task 0 and size it (it may be its own task). Spec task 7 |
+| 10 | **Gap audit, edge tests, overhead measurement** (explicit task): pause twice, resume without pause, pause unknown id, disconnect during pause, resume_all with none, probe `End` with unknown id, probe ring wrap, marker ring overflow count, denylist for all three names, local pause across a stage exit | All | Not Started | sonnet | Mutation checks only on the ring/percentile arithmetic. Spec task 8 |
+| 11 | **Verification.** Full `dia run googletest --shards 2`, `dia check deps`, `dia check sanitizer`, Release link (confirm pause commands absent), E2E for AC1, AC2, AC4, AC9 (quiet machine, kill leftover `CluicheTest.exe`, read the session log; E2E does not build, so run `dia pipeline --target cluichetest --stage compile-code` first) | AC1-AC9, AC11 | Not Started | sonnet | Heavy gates once, here |
+| 12 | Update module docs (`dia.dia.observation...`, DiaDebugServer, ApplicationFlow), `dia docs registry`, set spec tasks Done, record the trace-link decision | - | Not Started | haiku | |
+
+## Commit rhythm
+
+One commit per task, plan updated in the same commit.
+
+## Observation scan (at task 11)
+
+Likely gaps: logs on pause/resume and denylist refusals, a gauge for active pauses and marker drops, a health reporter for the pause registry.
+
+## Risks
+
+- Task 3 sits on the module update hot path: measure the added branch cost with pauses unused (Debug only, but keep it to a single flag read).
+- Task 5 crosses PU boundaries. If the pause set cannot be read on Sim via a stream snapshot cheaply, fall back to a `FrameStream` of the pause set published from Main; do not use a mutex.
+- The trace-linked stream build (old Task 8) is deferred; if the spike shows the header-word option is needed, that is the follow-up's problem, not this plan's.

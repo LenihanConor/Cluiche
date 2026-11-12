@@ -59,6 +59,7 @@ JobSystemModule             →  DiaThreading + DiaObservation (no cycle)
 | 1 | job-system-extraction | [job-system-extraction.md](job-system-extraction.md) | Approved |
 | 2 | job-metrics | [job-metrics.md](job-metrics.md) | Approved |
 | 3 | jobsystem-servicestream | [jobsystem-servicestream.md](jobsystem-servicestream.md) | Done |
+| 4 | job-observation | [job-observation.md](job-observation.md) | Approved |
 
 ---
 
@@ -91,4 +92,4 @@ JobSystemModule             →  DiaThreading + DiaObservation (no cycle)
 
 ## Status
 
-`Done` — 2026-05-20. Both features complete. 4818 tests pass.
+`In Progress` — reopened 2026-11-12 for Feature 4 (job-observation, Approved 2026-11-12). Features 1-3 were completed 2026-05-20 (4818 tests passed).
