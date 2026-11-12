@@ -105,6 +105,26 @@ SitesAtCell SiteSet::At(uint32_t cell) const
     return out;
 }
 
+bool SiteSet::RememberKindName(uint32_t kindCrc, const std::string& name)
+{
+    if (name.empty() || Dia::Core::StringCRC(name.c_str()).Value() != kindCrc) { return false; }
+    for (auto& entry : mKindNames)
+    {
+        if (entry.first == kindCrc) { entry.second = name; return true; }
+    }
+    mKindNames.emplace_back(kindCrc, name);
+    return true;
+}
+
+const char* SiteSet::KindName(uint32_t kindCrc) const
+{
+    for (const auto& entry : mKindNames)
+    {
+        if (entry.first == kindCrc) { return entry.second.c_str(); }
+    }
+    return nullptr;
+}
+
 const Site* SiteSet::Find(const Dia::Core::StringCRC& kind, uint32_t cell) const
 {
     const uint32_t k = SiteKindId(kind);

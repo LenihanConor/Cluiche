@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <span>
+#include <string>
 #include <vector>
 
 namespace CoW {
@@ -85,12 +86,20 @@ public:
     SitesAtCell At(uint32_t cell) const;                         // truncated at 8 kinds per cell
     const Site* Find(const Dia::Core::StringCRC& kind, uint32_t cell) const;
 
-    void Clear() { mSites.clear(); }
+    void Clear() { mSites.clear(); mKindNames.clear(); }
+
+    // Kind id text for kinds nobody registered (filled by world import so an unknown kind re-exports under its
+    // original name). Not part of the world's identity: operator== and sites ignore it. A name is stored only if
+    // it hashes to kindCrc; empty names are ignored. Returns false when the name was not stored.
+    bool        RememberKindName(uint32_t kindCrc, const std::string& name);
+    // nullptr when no name was remembered for the kind.
+    const char* KindName(uint32_t kindCrc) const;
 
     bool operator==(const SiteSet& o) const { return mSites == o.mSites; }
 
 private:
     std::vector<Site> mSites;
+    std::vector<std::pair<uint32_t, std::string>> mKindNames;
 };
 
 } // namespace WorldGeneration

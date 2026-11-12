@@ -184,6 +184,9 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -385,6 +388,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\GenerationRun.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldJson.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
