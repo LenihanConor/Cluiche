@@ -29,6 +29,15 @@ inline bool AddSiteAt(WorldStructure& world, const char* kindId, int x, int y, u
     return world.sites.Add(s);
 }
 
+inline bool AddSiteAt(WorldStructure& world, const Dia::Core::StringCRC& kind, int x, int y, uint16_t variant = 0)
+{
+    Site s;
+    s.kindCrc = kind.Value();
+    s.cell = Idx(world, x, y);
+    s.variant = variant;
+    return world.sites.Add(s);
+}
+
 // All-land w x h world (one zone), no water.
 inline WorldStructure MakeAllLandWorld(int w, int h, DepthZone zone = DepthZone::WildReaches)
 {
