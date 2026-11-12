@@ -105,6 +105,23 @@ public:
     }
 };
 
+// Fails without any diagnostic (a vacuous failure must never be mistaken for a terrain cause).
+class SilentFailGuarantee : public IWorldGuarantee
+{
+public:
+    explicit SilentFailGuarantee(const char* id) : mId(id) {}
+    Dia::Core::StringCRC GetId() const override { return Dia::Core::StringCRC(mId.c_str()); }
+    GuaranteeResult Check(const ValidationContext&) const override
+    {
+        GuaranteeResult r;
+        r.idCrc = GetId().Value();
+        r.satisfied = false;
+        return r;
+    }
+private:
+    std::string mId;
+};
+
 } // namespace Testing
 } // namespace WorldGeneration
 } // namespace CoW

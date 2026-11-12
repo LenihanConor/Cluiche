@@ -417,3 +417,25 @@ TEST(WorldGenModuleRetry, RetryEventIsTriviallyCopyableWithAStableTypeId)
     EXPECT_EQ(m.maxAttempts, 0u);
     EXPECT_EQ(m.failedGuaranteeCount, 0u);
 }
+
+TEST(WorldGenModuleRetry, UnsatisfiableHealthSurvivesALivePreviewTick)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 2;
+    f.wg->GetSession().Regenerate(a);
+    f.Pump(2);
+    ASSERT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
+
+    // A live-preview tick publishes Complete for its terrain-only world but is not a retry generation: the failure stands.
+    f.msgs.clear();
+    Json::Value s(Json::objectValue); s["rivers"] = 0.9;
+    f.wg->GetSession().Set(s);
+    f.Pump(2);
+    EXPECT_EQ(f.msgs.size(), 1u);
+    EXPECT_EQ(f.msgs[0].retryAttempts, 0u);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
+}

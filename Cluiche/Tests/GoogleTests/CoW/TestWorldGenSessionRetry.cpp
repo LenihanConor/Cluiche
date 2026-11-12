@@ -294,3 +294,25 @@ TEST(WorldGenSessionRetry, AcceptedAttemptKeepsThePreviousBehaviourWhenAttemptZe
     EXPECT_TRUE(g.s.Status()["layout"].isObject());
     EXPECT_TRUE(g.s.Status()["layout"]["ok"].asBool());
 }
+
+TEST(WorldGenSessionRetry, UnsatisfiableReportIsNotStaleAndALaterRegenerateRecovers)
+{
+    FailFirstNGuarantee flaky("Test.Flaky", 3);   // fails the first three validations, passes afterwards
+    SiteRegistry reg;
+    ASSERT_TRUE(reg.RegisterGuarantee(&flaky));
+    Gen g(&reg);
+    Json::Value a = Obj(); a["maxRetryAttempts"] = 3;
+    ASSERT_TRUE(g.Regenerate(a));
+    EXPECT_EQ(g.s.State(), WorldGenState::Failed);
+    const Json::Value failed = g.s.Report(Obj());
+    EXPECT_EQ(failed["outcome"].asString(), "Unsatisfiable");
+    EXPECT_FALSE(failed["stale"].asBool());          // worldRevision 0 means "no world", not "an old world"
+    EXPECT_EQ(failed["worldRevision"].asUInt(), 0u);
+
+    ASSERT_TRUE(g.Regenerate());                      // the guarantee passes now
+    EXPECT_EQ(g.s.State(), WorldGenState::Complete);
+    EXPECT_TRUE(g.s.RegionsFresh());
+    EXPECT_EQ(g.s.LastReport()->outcome, GenerationOutcome::Success);
+    EXPECT_EQ(g.s.ReportRevision(), 2u);
+    EXPECT_GT(g.s.World().regions.regions.Size(), 0u);
+}

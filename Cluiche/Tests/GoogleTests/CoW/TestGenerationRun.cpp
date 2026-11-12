@@ -439,3 +439,91 @@ TEST(GenerationRun, AC4_ExhaustionLogsAnErrorWithTheAttemptCount)
     EXPECT_EQ(log.Warnings("failed (seed 1"), 3u);
     EXPECT_EQ(log.Errors("failed after 3 attempt"), 1u);
 }
+
+TEST(GenerationRun, AFailureWithoutAnyDiagnosticIsNeverATerrainCause)
+{
+    Fixture f;
+    SilentFailGuarantee silent("Test.Silent");
+    ASSERT_TRUE(f.registry.RegisterGuarantee(&silent));
+    GenerationRun run = f.Make(1, 3);
+    run.Run();
+    EXPECT_EQ(run.Report().attempts.Size(), 3u);   // retried to the bound
+    for (const AttemptRecord& r : run.Report().attempts)
+    {
+        EXPECT_FALSE(r.terrainCause);
+        EXPECT_EQ(r.failedGuaranteeCount, 1u);
+        EXPECT_EQ(r.diagnosticCount, 0u);
+    }
+}
+
+TEST(GenerationRun, AnIndependentExtraPlacerNeverChangesTheAttemptSequenceOrTheRegions)
+{
+    // Registered kinds are placed after regions and built-in nodes, on their own sub-seeds, so adding one that always
+    // succeeds leaves every attempt's sub-seed, pass/fail and the regions/built-in nodes unchanged.
+    Fixture a;
+    EvenRegionCountGuarantee evenA;
+    ASSERT_TRUE(a.registry.RegisterGuarantee(&evenA));
+    Fixture b;
+    EvenRegionCountGuarantee evenB;
+    TestPlacer extra("Test.Extra", {}, 3);
+    ASSERT_TRUE(b.registry.RegisterGuarantee(&evenB));
+    ASSERT_TRUE(b.registry.Register(&extra));
+
+    int compared = 0;
+    for (uint64_t seed = 1; seed <= 12; ++seed)
+    {
+        GenerationRun ra = a.Make(seed, 10); ra.Run();
+        GenerationRun rb = b.Make(seed, 10); rb.Run();
+        ASSERT_EQ(ra.Report().attempts.Size(), rb.Report().attempts.Size()) << "seed " << seed;
+        for (unsigned i = 0; i < ra.Report().attempts.Size(); ++i)
+        {
+            EXPECT_EQ(ra.Report().attempts[i].subSeed, rb.Report().attempts[i].subSeed);
+            EXPECT_EQ(ra.Report().attempts[i].passed, rb.Report().attempts[i].passed);
+        }
+        if (ra.HasAcceptedWorld())
+        {
+            ASSERT_TRUE(rb.HasAcceptedWorld());
+            EXPECT_TRUE(ra.AcceptedWorld().regions == rb.AcceptedWorld().regions) << "seed " << seed;
+            EXPECT_EQ(rb.AcceptedWorld().sites.Count(), ra.AcceptedWorld().sites.Count() + 1);   // only the extra site
+            ++compared;
+        }
+    }
+    EXPECT_GE(compared, 10);
+}
+
+TEST(GenerationRun, TinyAndDegenerateGridsFinishWithAConsistentReport)
+{
+    const TerrainRules rules = TerrainRules::Defaults();
+    SiteRegistry registry;
+    RandomStream rng(1);
+    for (GridDimensions dims : { GridDimensions{ 1, 1 }, GridDimensions{ 3, 3 }, GridDimensions{ 8, 6 }, GridDimensions{ 20, 14 } })
+    {
+        TerrainRunner runner;
+        runner.Run(5, WorldShapeParams{}, dims);
+        const WorldStructure terrain = runner.World();
+        GenParams p; p.maxRetryAttempts = 4;
+        GenerationRun run(terrain, registry, rules, 5, p, rng);
+        run.Run();
+        SCOPED_TRACE(dims.width * 1000 + dims.height);
+        EXPECT_TRUE(run.IsFinished());
+        EXPECT_GE(run.Report().attempts.Size(), 1u);
+        EXPECT_LE(run.Report().attempts.Size(), 4u);
+        const GenerationOutcome o = run.Outcome();
+        EXPECT_TRUE(o == GenerationOutcome::Success || o == GenerationOutcome::Unsatisfiable);
+        EXPECT_EQ(o == GenerationOutcome::Success, run.Report().attempts[run.Report().attempts.Size() - 1].passed);
+        EXPECT_EQ(run.HasAcceptedWorld(), o == GenerationOutcome::Success);
+    }
+}
+
+TEST(GenerationRun, ReportKeepsTheLastAttemptsValidationWhenNothingWasAccepted)
+{
+    Fixture f;
+    FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.registry.RegisterGuarantee(&never));
+    GenerationRun run = f.Make(1, 2);
+    run.Run();
+    EXPECT_FALSE(run.Report().finalValidation.passed);
+    const GuaranteeResult* g = run.Report().finalValidation.Find(StringCRC("Test.Never"));
+    ASSERT_NE(g, nullptr);
+    EXPECT_FALSE(g->satisfied);
+}
