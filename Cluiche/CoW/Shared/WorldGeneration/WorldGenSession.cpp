@@ -796,11 +796,13 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
         }
         const std::string name = args["layer"].asString();
         const int index = layers.FindLayer(name.c_str());
-        if (index < 0)
+        // Cell-derived layers (not generator buffers): "regions" = raw Cell::region ids (0 while not fresh).
+        const bool regionLayer = index < 0 && name == "regions";
+        if (index < 0 && !regionLayer)
         {
             return Error("unknown layer \"" + name + "\"");
         }
-        const LayerInfo& info = TerrainLayers::GetLayerInfo(index);
+        const LayerInfo info = regionLayer ? LayerInfo{ "regions", LayerType::UInt } : TerrainLayers::GetLayerInfo(index);
 
         int64_t offset = 0;
         int64_t pageCount = 0;
@@ -825,6 +827,14 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
             for (int64_t i = offset; data != nullptr && i < offset + pageCount; ++i)
             {
                 values.append(ShortestFloat(data[i]));
+            }
+        }
+        else if (regionLayer)
+        {
+            const auto* cells = mWorld.Cells();
+            for (int64_t i = offset; i < offset + pageCount; ++i)
+            {
+                values.append(static_cast<Json::UInt>(cells[i].region));
             }
         }
         else

@@ -10,6 +10,7 @@
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <set>
+#include <vector>
 #include <string>
 
 using namespace CoW::WorldGeneration;
@@ -400,4 +401,41 @@ TEST(WorldGenSessionRegions, NullRegistryAndEmptyRegistryAgree)
     c.s.Regenerate(Obj());
     ASSERT_TRUE(c.s.Tick(c.rng));
     EXPECT_TRUE(a.s.World().sites == c.s.World().sites);
+}
+
+// The cell-derived "regions" layer pages through the layers command like a generator layer: raw region ids,
+// matching Cell::region, zeros while regions are not fresh.
+TEST(WorldGenSessionRegions, LayersCommandServesRegionIds)
+{
+    Gen g;
+    const WorldStructure& w = g.s.World();
+    std::vector<uint32_t> ids;
+    Json::Value next(0);
+    while (!next.isNull())
+    {
+        Json::Value a = Obj(); a["layer"] = "regions"; a["offset"] = next; a["count"] = 500;
+        const Json::Value r = g.s.Layers(a);
+        ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+        EXPECT_EQ(r["name"].asString(), "regions");
+        EXPECT_EQ(r["type"].asString(), "uint");
+        EXPECT_EQ(r["total"].asInt(), w.CellCount());
+        for (const Json::Value& v : r["values"]) { ids.push_back(v.asUInt()); }
+        next = r["nextOffset"];
+    }
+    ASSERT_EQ(ids.size(), static_cast<size_t>(w.CellCount()));
+    bool anyRegion = false;
+    for (int i = 0; i < w.CellCount(); ++i)
+    {
+        ASSERT_EQ(ids[i], w.Cells()[i].region) << "cell " << i;
+        anyRegion |= ids[i] != kNoRegion;
+    }
+    EXPECT_TRUE(anyRegion);
+
+    Json::Value s = Obj(); s["rivers"] = 0.9;   // live preview clears regions
+    g.s.Set(s);
+    ASSERT_TRUE(g.s.Tick(g.rng));
+    Json::Value a = Obj(); a["layer"] = "regions"; a["count"] = 500;
+    const Json::Value r = g.s.Layers(a);
+    ASSERT_TRUE(r["success"].asBool());
+    for (const Json::Value& v : r["values"]) { ASSERT_EQ(v.asUInt(), 0u); }
 }
