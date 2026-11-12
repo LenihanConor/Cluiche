@@ -262,7 +262,7 @@ Generate with a seed that needs ≥2 attempts. **Pass:** `GetLastReport()` has o
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-15 (task 1: per-frame stepping, SD-S1-008 retry scope): `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small.
+`Approved` — 2026-10-11. Amended 2026-10-15 (task 1: per-frame stepping, SD-S1-008 retry scope): `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small. Plan: @retry-mechanism.plan.md (In Progress, built standalone of Feature 5 by decision 2026-11-12).
 
 ---
 
