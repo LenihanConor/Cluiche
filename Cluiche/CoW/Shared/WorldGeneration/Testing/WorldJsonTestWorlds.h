@@ -1,10 +1,10 @@
 // Test worlds for the S-1 JSON export/import tests (header-only).
-// MakeTinyWorld(): 4x3 hand-built world that uses every cell enum value that fits, two regions, built-in sites, a
-// test kind and an unknown kind. Region summaries are consistent with the cells (computed by RecomputeRegionRecords
-// when it exists; here they are written by hand and checked by the tests that need them).
+// MakeTinyWorld(): 4x3 hand-built world that uses every cell enum value that fits, two regions, built-in sites and a
+// test kind. Region summaries are consistent with the cells (RecomputeRegionRecords).
 // GenerateWorld(): a world generated through WorldGenSession (Regenerate => regions and sites present).
 #pragma once
 
+#include "../RegionRepair.h"
 #include "../WorldGenSession.h"
 #include "../WorldJson.h"
 
@@ -86,10 +86,10 @@ inline WorldStructure MakeTinyWorld()
     r2.purity = 1.0f / 5.0f; r2.cellCount = 5; r2.centreCell = 8; r2.neighbours.Add(1);
     w.regions.AddRegion(r1);
     w.regions.AddRegion(r2);
-    w.regions.mainlandRegionCount = 2;
     w.regions.absorbedCells = 2;
     w.regions.fragmentCells = 1;
     w.regions.limitedBy = DepthZone::WildReaches;
+    RecomputeRegionRecords(w);   // summaries consistent with the cells: import recomputes them with the same code
 
     auto add = [&](const Dia::Core::StringCRC& kind, uint32_t cell, RegionId region, uint16_t variant, uint16_t flags)
     {

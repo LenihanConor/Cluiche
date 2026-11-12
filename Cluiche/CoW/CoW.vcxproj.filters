@@ -187,6 +187,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">

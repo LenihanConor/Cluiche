@@ -43,6 +43,8 @@ struct WorldJsonContext
     const SiteRegistry* registry = nullptr;
     // Export: written as provenance.preset_id when non-empty, else the world's own provenance.presetId.
     std::string presetId;
+    // Import: this build's terrain_rules version; a file recorded with another one gets a warning. 0 = do not compare.
+    uint32_t rulesVersion = 0;
 };
 
 // "Biome.TemperateForest", "Lowland", ... (the names the file uses; parse is the exact inverse).
@@ -60,6 +62,22 @@ std::string WorldJsonSiteKindKey(uint32_t kindCrc, const SiteRegistry* registry,
 // Writes the world. False (text cleared, error set) for a world that cannot be written faithfully: a
 // non-finite elevation/latitude/purity, an enum out of range, a site outside the grid.
 bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& context, std::string& text, JsonIssue& error);
+
+struct WorldImportResult
+{
+    bool                     ok = false;
+    JsonIssue                error;      // the first problem when !ok
+    std::vector<std::string> warnings;   // import succeeded but the file was unusual (at most kMaxImportWarnings + 1)
+};
+
+constexpr size_t kMaxImportWarnings = 64;
+
+// Parses and validates `text` into a scratch world; `out` is replaced only when the result is ok (all-or-nothing).
+// Derived region fields (cell_count, primary_biome, purity, centre_cell, neighbours) are recomputed from the cells with
+// the generator's own arithmetic; where the file disagrees a warning is added and the recomputed value wins.
+// Site kinds are kept whether or not they are registered; the original kind text is remembered in out.sites so a
+// re-export writes it back unchanged.
+WorldImportResult ImportWorldText(const std::string& text, const WorldJsonContext& context, WorldStructure& out);
 
 } // namespace WorldGeneration
 } // namespace CoW

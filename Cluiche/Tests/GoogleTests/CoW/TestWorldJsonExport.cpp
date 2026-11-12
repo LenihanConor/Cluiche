@@ -7,6 +7,7 @@
 
 #include <DiaCore/Json/external/json/json.h>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <set>
@@ -182,15 +183,24 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
     const Json::Value root = Parse(Export(w));
     const Json::Value& regions = root["world"]["regions"];
     ASSERT_EQ(regions.size(), 2u);
-    EXPECT_EQ(regions[0]["id"].asUInt(), 1u);
+    for (unsigned r = 0; r < 2; ++r)
+    {
+        const RegionRecord& rec = w.regions.regions[r];
+        EXPECT_EQ(regions[r]["id"].asUInt(), rec.id);
+        EXPECT_EQ(regions[r]["zone"].asString(), DepthZoneName(rec.zone));
+        EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
+        EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
+        EXPECT_EQ(regions[r]["primary_biome"].asString(), WorldJsonBiomeName(rec.primaryBiome));
+        EXPECT_EQ(static_cast<float>(regions[r]["purity"].asDouble()), rec.purity);
+        EXPECT_EQ(regions[r]["cell_count"].asUInt(), rec.cellCount);
+        EXPECT_EQ(regions[r]["centre_cell"].asUInt(), rec.centreCell);
+        ASSERT_EQ(regions[r]["neighbours"].size(), rec.neighbours.Size());
+        for (unsigned k = 0; k < rec.neighbours.Size(); ++k) { EXPECT_EQ(regions[r]["neighbours"][k].asUInt(), rec.neighbours[k]); }
+    }
     EXPECT_EQ(regions[0]["zone"].asString(), "FirstShores");
-    EXPECT_FALSE(regions[0]["is_island"].asBool());
     EXPECT_EQ(regions[0]["primary_biome"].asString(), "Biome.Grassland");
-    EXPECT_EQ(static_cast<float>(regions[0]["purity"].asDouble()), 0.25f);
     EXPECT_EQ(regions[0]["cell_count"].asUInt(), 4u);
-    EXPECT_EQ(regions[0]["centre_cell"].asUInt(), 3u);
-    ASSERT_EQ(regions[0]["neighbours"].size(), 1u);
-    EXPECT_EQ(regions[0]["neighbours"][0].asUInt(), 2u);
+    EXPECT_FALSE(regions[0]["is_island"].asBool());
     const Json::Value& table = root["world"]["region_table"];
     EXPECT_EQ(table["absorbed_cells"].asUInt(), 2u);
     EXPECT_EQ(table["fragment_cells"].asUInt(), 1u);
@@ -468,8 +478,8 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
       { "biome": "Biome.Grassland", "terrain": "Cliff", "region": 0, "elevation": 0.100000001, "latitude": 0.333333343, "water_source": "None", "depth_zone": "WildReaches", "landmass": 2, "terrain_flags": 0, "downstream": 7 }
     ],
     "regions": [
-      { "id": 1, "zone": "FirstShores", "landmass": 1, "is_island": false, "primary_biome": "Biome.Grassland", "purity": 0.25, "cell_count": 4, "centre_cell": 3, "neighbours": [2] },
-      { "id": 2, "zone": "AncientInteriors", "landmass": 1, "is_island": false, "primary_biome": "Biome.Alpine", "purity": 0.200000003, "cell_count": 5, "centre_cell": 8, "neighbours": [1] }
+      { "id": 1, "zone": "FirstShores", "landmass": 1, "is_island": false, "primary_biome": "Biome.Grassland", "purity": 0.25, "cell_count": 4, "centre_cell": 2, "neighbours": [2] },
+      { "id": 2, "zone": "AncientInteriors", "landmass": 1, "is_island": false, "primary_biome": "Biome.Desert", "purity": 0.200000003, "cell_count": 5, "centre_cell": 10, "neighbours": [1] }
     ],
     "region_table": { "absorbed_cells": 2, "fragment_cells": 1, "limited_by": "WildReaches" },
     "sites": {
@@ -493,5 +503,8 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
   }
 }
 )JSON";
-    EXPECT_EQ(text, kExpected);
+    // A CRLF checkout must not turn the golden into a different string.
+    std::string expected = kExpected;
+    expected.erase(std::remove(expected.begin(), expected.end(), '\r'), expected.end());
+    EXPECT_EQ(text, expected);
 }

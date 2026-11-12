@@ -83,6 +83,7 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp" />
     <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />

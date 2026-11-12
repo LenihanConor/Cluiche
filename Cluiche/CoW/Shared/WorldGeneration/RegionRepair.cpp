@@ -112,6 +112,113 @@ namespace
     };
 }
 
+bool RecomputeRegionRecords(WorldStructure& world)
+{
+    const int n = world.CellCount();
+    const unsigned count = world.regions.regions.Size();
+    world.regions.mainlandRegionCount = 0;
+    HexTopology topo(world.dimensions.width, world.dimensions.height);
+    const Cell* cells = world.Cells();
+
+    struct Stats
+    {
+        uint32_t count = 0;
+        uint32_t biome[kBiomeCount] = {};
+        double   sx = 0.0, sy = 0.0;
+    };
+    std::vector<Stats> stats(count + 1);
+    auto centre = [&](int c) {
+        const auto p = HexTopology::CellCenter(topo.ToCoord(static_cast<uint32_t>(c)), 1.0f);
+        return std::pair<double, double>(static_cast<double>(p.x), static_cast<double>(p.y));
+    };
+    for (int c = 0; c < n; ++c)
+    {
+        const RegionId r = cells[c].region;
+        if (r == kNoRegion || r > count) { continue; }
+        Stats& s = stats[r];
+        ++s.count;
+        ++s.biome[static_cast<int>(cells[c].biome)];
+        const auto p = centre(c);
+        s.sx += p.first; s.sy += p.second;
+    }
+
+    // Nearest cell to the centroid, preferring non-Lake cells; ties (within 1e-4) keep the lowest index.
+    std::vector<uint32_t> centreCell(count + 1, 0);
+    std::vector<double>   centreDist(count + 1, 0.0);
+    std::vector<uint8_t>  centreLake(count + 1, 2);
+    for (int c = 0; c < n; ++c)
+    {
+        const RegionId r = cells[c].region;
+        if (r == kNoRegion || r > count) { continue; }
+        const Stats& s = stats[r];
+        const auto p = centre(c);
+        const double dx = p.first - s.sx / s.count, dy = p.second - s.sy / s.count;
+        const double d = dx * dx + dy * dy;
+        const uint8_t lake = cells[c].waterSource == WaterSource::Lake ? 1 : 0;
+        if (centreLake[r] == 2 || lake < centreLake[r] || (lake == centreLake[r] && d < centreDist[r] - 1e-4))   // epsilon: float32 cell centres must not break index ties
+        {
+            centreLake[r] = lake; centreDist[r] = d; centreCell[r] = static_cast<uint32_t>(c);
+        }
+    }
+
+    // Edge adjacency straight from the cells.
+    static_assert(kMaxId <= 64, "adjacency bitmask is 64 bits");
+    std::vector<uint64_t> adj(count + 1, 0);
+    for (int c = 0; c < n; ++c)
+    {
+        const RegionId r = cells[c].region;
+        if (r == kNoRegion || r > count) { continue; }
+        for (uint32_t d = 0; d < 6; ++d)
+        {
+            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
+            if (nb == kNoCell) { continue; }
+            const RegionId o = cells[nb].region;
+            if (o != kNoRegion && o <= count && o != r) { adj[r] |= 1ull << (o - 1); }
+        }
+    }
+
+    bool neighbourOverflow = false;
+    unsigned mainland = 0;
+    for (unsigned id = 1; id <= count; ++id)
+    {
+        const Stats& s = stats[id];
+        RegionRecord& rec = world.regions.regions[id - 1];
+        if (s.count == 0)
+        {
+            rec.primaryBiome = Biome::Ocean;
+            rec.purity = 0.0f;
+            rec.cellCount = 0;
+            rec.centreCell = 0;
+        }
+        else
+        {
+            int best = -1;
+            for (int b = 0; b < kBiomeCount; ++b)
+            {
+                if (b == static_cast<int>(Biome::Lake) || s.biome[b] == 0) { continue; }
+                if (best < 0 || s.biome[b] > s.biome[best]) { best = b; }
+            }
+            if (best < 0) { best = static_cast<int>(Biome::Lake); }   // all-Lake region
+            rec.primaryBiome = static_cast<Biome>(best);
+            rec.purity = static_cast<float>(s.biome[best]) / static_cast<float>(s.count);
+            rec.cellCount = static_cast<uint16_t>(std::min<uint32_t>(s.count, 0xFFFFu));   // saturates
+            rec.centreCell = centreCell[id];
+        }
+        rec.neighbours = decltype(rec.neighbours){};
+        unsigned listed = 0;
+        for (unsigned o = 1; o <= count; ++o)
+        {
+            if (!(adj[id] & (1ull << (o - 1)))) { continue; }
+            if (listed == RegionRecord::kMaxNeighbours) { neighbourOverflow = true; break; }
+            rec.neighbours.Add(static_cast<RegionId>(o));
+            ++listed;
+        }
+        if (!rec.isIsland) { ++mainland; }
+    }
+    world.regions.mainlandRegionCount = static_cast<uint8_t>(mainland);
+    return neighbourOverflow;
+}
+
 RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth)
 {
     RegionBuild out;
@@ -232,17 +339,6 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     }
     for (int c = 0; c < n; ++c) { cells[c].region = newId[R.reg[c]]; }
 
-    struct Stats
-    {
-        uint32_t count = 0;
-        uint32_t biome[kBiomeCount] = {};
-        double   sx = 0.0, sy = 0.0;
-    };
-    std::vector<Stats> stats(count + 1);
-    auto centre = [&](int c) {
-        const auto p = HexTopology::CellCenter(R.topo.ToCoord(static_cast<uint32_t>(c)), 1.0f);
-        return std::pair<double, double>(static_cast<double>(p.x), static_cast<double>(p.y));
-    };
     // Cells of tiny zone components (AC3 amendment): absorbed whole, counted as fragmentCells instead of absorbed.
     std::vector<uint8_t> inFragment(static_cast<size_t>(n), 0);
     for (uint32_t ci : growth.tinyComponents)
@@ -255,11 +351,6 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     {
         const RegionId r = cells[c].region;
         if (r == kNoRegion) { continue; }
-        Stats& s = stats[r];
-        ++s.count;
-        ++s.biome[static_cast<int>(cells[c].biome)];
-        const auto p = centre(c);
-        s.sx += p.first; s.sy += p.second;
         const Info& inf = R.info[oldOf[r - 1]];
         if (!inf.island && cells[c].depthZone != inf.zone) { ++(inFragment[c] ? fragment : absorbed); }
     }
@@ -268,74 +359,19 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     world.regions.fragmentCells = static_cast<uint16_t>(std::min<uint32_t>(fragment, 0xFFFFu));
     world.regions.limitedBy = growth.targets.limitedBy;
 
-    // Nearest cell to the centroid, preferring non-Lake cells; ties (within 1e-4) keep the lowest index.
-    std::vector<uint32_t> centreCell(count + 1, 0);
-    std::vector<double>   centreDist(count + 1, 0.0);
-    std::vector<uint8_t>  centreLake(count + 1, 2);
-    for (int c = 0; c < n; ++c)
-    {
-        const RegionId r = cells[c].region;
-        if (r == kNoRegion) { continue; }
-        const Stats& s = stats[r];
-        const auto p = centre(c);
-        const double dx = p.first - s.sx / s.count, dy = p.second - s.sy / s.count;
-        const double d = dx * dx + dy * dy;
-        const uint8_t lake = cells[c].waterSource == WaterSource::Lake ? 1 : 0;
-        if (centreLake[r] == 2 || lake < centreLake[r] || (lake == centreLake[r] && d < centreDist[r] - 1e-4))   // epsilon: float32 cell centres must not break index ties
-        {
-            centreLake[r] = lake; centreDist[r] = d; centreCell[r] = static_cast<uint32_t>(c);
-        }
-    }
-
-    // Edge adjacency straight from the written cells.
-    static_assert(kMaxId <= 64, "adjacency bitmask is 64 bits");
-    std::vector<uint64_t> adj(count + 1, 0);
-    for (int c = 0; c < n; ++c)
-    {
-        const RegionId r = cells[c].region;
-        if (r == kNoRegion) { continue; }
-        for (uint32_t d = 0; d < 6; ++d)
-        {
-            const uint32_t nb = R.topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb == kNoCell) { continue; }
-            const RegionId o = cells[nb].region;
-            if (o != kNoRegion && o != r) { adj[r] |= 1ull << (o - 1); }
-        }
-    }
-
-    unsigned mainland = 0;
+    // Records: identity from the repair, everything derived from the written cells.
     for (unsigned id = 1; id <= count; ++id)
     {
-        const Stats& s = stats[id];
         const Info& inf = R.info[oldOf[id - 1]];
         RegionRecord rec;
         rec.id = static_cast<RegionId>(id);
         rec.zone = inf.zone;
         rec.landmass = inf.landmass;
         rec.isIsland = inf.island;
-        int best = -1;
-        for (int b = 0; b < kBiomeCount; ++b)
-        {
-            if (b == static_cast<int>(Biome::Lake) || s.biome[b] == 0) { continue; }
-            if (best < 0 || s.biome[b] > s.biome[best]) { best = b; }
-        }
-        if (best < 0) { best = static_cast<int>(Biome::Lake); }   // all-Lake region
-        rec.primaryBiome = static_cast<Biome>(best);
-        rec.purity = static_cast<float>(s.biome[best]) / static_cast<float>(s.count);
-        rec.cellCount = static_cast<uint16_t>(std::min<uint32_t>(s.count, 0xFFFFu));   // saturates
-        rec.centreCell = centreCell[id];
-        unsigned listed = 0;
-        for (unsigned o = 1; o <= count; ++o)
-        {
-            if (!(adj[id] & (1ull << (o - 1)))) { continue; }
-            if (listed == RegionRecord::kMaxNeighbours) { out.neighbourOverflow = true; break; }
-            rec.neighbours.Add(static_cast<RegionId>(o));
-            ++listed;
-        }
         world.regions.AddRegion(rec);
-        if (!inf.island) { ++mainland; }
     }
-    world.regions.mainlandRegionCount = static_cast<uint8_t>(mainland);
+    out.neighbourOverflow = RecomputeRegionRecords(world);
+    const unsigned mainland = world.regions.mainlandRegionCount;
 
     // AC4 amendment: repair (undersize merges) leaving the mainland below 10 regions reports terrain-limited, naming
     // the zone that lost the most regions against its target (ties: zone order).
