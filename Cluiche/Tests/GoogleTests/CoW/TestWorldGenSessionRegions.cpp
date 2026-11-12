@@ -380,14 +380,19 @@ TEST(WorldGenSessionRegions, RegisteredPlacerSitesAppearWithItsKindInfo)
     for (const Json::Value& s : cell5["sites"]) { atCell = atCell || s["kind"].asString() == "Test.Site"; }
     EXPECT_TRUE(atCell);
 
-    // Failing placer: the pass result is reported by status and the layout is not ok.
+    // Failing placer: Regenerate retries (Feature 3) until the bound, then the generation is unsatisfiable: no regions,
+    // no layout, and the failing placer is named in the report.
     SiteRegistry bad;
     TestPlacer failing("Test.Fail", {}, 0, PlaceResult::Code::Retryable);
     ASSERT_TRUE(bad.Register(&failing));
     Gen h(&bad);
     const Json::Value st = h.s.Status();
-    EXPECT_FALSE(st["layout"]["ok"].asBool());
-    EXPECT_NE(st["layout"]["placeResult"].asString().find("Test.Fail"), std::string::npos) << st.toStyledString();
+    EXPECT_TRUE(st["layout"].isNull());
+    EXPECT_FALSE(h.s.RegionsFresh());
+    EXPECT_EQ(st["generation"]["outcome"].asString(), "Unsatisfiable");
+    EXPECT_EQ(failing.placeCalls, static_cast<int>(kDefaultMaxRetryAttempts));
+    ASSERT_NE(h.s.LastReport(), nullptr);
+    EXPECT_NE(std::string(h.s.LastReport()->attempts[0].placeReason).find("Test.Fail"), std::string::npos);
 }
 
 TEST(WorldGenSessionRegions, NullRegistryAndEmptyRegistryAgree)

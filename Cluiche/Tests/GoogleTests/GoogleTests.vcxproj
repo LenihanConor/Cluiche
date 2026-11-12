@@ -1245,6 +1245,7 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationReport.cpp" />
     <ClCompile Include="CoW\TestGenerationRun.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationRun.cpp" />
+    <ClCompile Include="CoW\TestWorldGenSessionRetry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

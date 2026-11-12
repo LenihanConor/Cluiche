@@ -213,7 +213,8 @@ void WorldGenerationModule::RegisterCommands()
     static const ValueParam kSetSizeParams[] = {
         { "size", "string", true, "World size: Small, Standard or Large" } };
     static const ValueParam kRegenParams[] = {
-        { "seed", "int", false, "Optional new seed; the whole pipeline re-runs from scratch" } };
+        { "seed", "int", false, "Optional new seed; the whole pipeline re-runs from scratch" },
+        { "maxRetryAttempts", "int", false, "Retry bound for regions and sites (default 10, clamped to 1..64); sticks for later regenerates" } };
     static const ValueParam kLoadParams[] = {
         { "id", "string", true, "Preset id" },
         { "unlock", "bool", false, "Ignored; accepted for compatibility" } };
@@ -280,6 +281,9 @@ void WorldGenerationModule::RegisterCommands()
         ok = ok && r;
     };
 
+    static const ValueParam kReportParams[] = {
+        { "offset", "int", false, "First attempt of the page (default 0)" },
+        { "limit", "int", false, "Attempts in the page (default and max 12)" } };
     static const ValueParam kSitesParams[] = {
         { "kind", "string", false, "Only sites of this kind id (e.g. CoW.Node.Corridor or a registered kind)" },
         { "offset", "int", false, "First site of the page (default 0)" },
@@ -291,7 +295,7 @@ void WorldGenerationModule::RegisterCommands()
     registerOne(true, "cow.worldgen.set_size", "Set the world size (Small, Standard, Large); regenerates on the next sim tick",
                 kSetSizeParams, 1, [s](const Json::Value& a) { return s->SetSize(a); });
     registerOne(true, "cow.worldgen.regenerate", "Re-run world generation from scratch, optionally with a new seed",
-                kRegenParams, 1, [s](const Json::Value& a)
+                kRegenParams, 2, [s](const Json::Value& a)
                 {
                     Json::Value r = s->Regenerate(a);
                     if (r.isObject() && r.isMember("success") && r["success"].asBool())
@@ -329,6 +333,8 @@ void WorldGenerationModule::RegisterCommands()
                 [s](const Json::Value&) { return s->Regions(); });
     registerOne(false, "cow.worldgen.sites", "Paged sites (built-in nodes and registered kinds) with the kind table, optionally of one kind", kSitesParams, 3,
                 [s](const Json::Value& a) { return s->Sites(a); });
+    registerOne(false, "cow.worldgen.report", "The last generation report: outcome, per-attempt sub-seed, failed guarantees and diagnostics (paged)", kReportParams, 2,
+                [s](const Json::Value& a) { return s->Report(a); });
 
     mCommandsRegistered = ok;
 }

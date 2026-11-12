@@ -461,20 +461,30 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
     {
         return Error("args must be a JSON object");
     }
-    if (args.isObject() && args.isMember("seed"))
+    // Validate everything before changing anything.
+    uint64_t seed = mSeed;
+    if (args.isObject() && args.isMember("seed") && !ParseSeed(args["seed"], seed))
     {
-        uint64_t seed = 0;
-        if (!ParseSeed(args["seed"], seed))
-        {
-            return Error("\"seed\" must be a non-negative integer");
-        }
-        mSeed = seed;
+        return Error("\"seed\" must be a non-negative integer");
     }
+    uint32_t maxRetry = mGenParams.maxRetryAttempts;
+    if (args.isObject() && args.isMember("maxRetryAttempts"))
+    {
+        const Json::Value& v = args["maxRetryAttempts"];
+        if (!v.isNumeric() || !v.isIntegral() || v.asDouble() < 0.0 || v.asDouble() > 4.0e9)
+        {
+            return Error("\"maxRetryAttempts\" must be a non-negative integer");
+        }
+        maxRetry = ClampMaxRetryAttempts(static_cast<uint32_t>(v.asDouble()));
+    }
+    mSeed = seed;
+    mGenParams.maxRetryAttempts = maxRetry;
     mDirty = true;
     mForceFull = true;
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["pending"] = true;
+    r["maxRetryAttempts"] = static_cast<Json::UInt>(mGenParams.maxRetryAttempts);
     return r;
 }
 
@@ -497,15 +507,26 @@ bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
     mLimits = LayoutLimits{};
     mLayout = LayoutReport{};
     mPlaceResult = PlaceResult::Ok();
+    bool succeeded = true;
     if (placeRegions)
     {
+        // Retry loop over Regions and Sites; terrain and biomes (mWorld as written above) stay fixed (SD-S1-008).
         const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
-        RegionsAndSites::PlaceReport report;
-        RegionsAndSites::Place(mWorld, registry, mRules, DeriveSubSeed(mSeed, 0ull), 0, wldStream, &report);
-        mLimits = report.limits;
-        mPlaceResult = report.result;
-        mLayout = CheckLayout(mWorld, mRules, mLimits);
-        mRegionsFresh = true;
+        GenerationRun run(mWorld, registry, mRules, mSeed, mGenParams, wldStream);
+        run.Run();
+        succeeded = run.HasAcceptedWorld();
+        if (succeeded)
+        {
+            mWorld = std::move(run.AcceptedWorld());
+            mLimits = run.AcceptedLimits();
+            mPlaceResult = run.LastPlaceReport().result;
+            mLayout = CheckLayout(mWorld, mRules, mLimits);
+            mRegionsFresh = true;
+            run.SetWorldRevision(mRevision + 1);
+        }
+        mReport = run.Report();
+        mHasReport = true;
+        ++mReportRevision;
     }
 
     mLastMs = mGen.GetLastTotalMs();
@@ -520,7 +541,7 @@ bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
     }
 
     ++mRevision;
-    mState = WorldGenState::Complete;
+    mState = succeeded ? WorldGenState::Complete : WorldGenState::Failed;
     mHasGenerated = true;
     mDirty = false;
     mForceFull = false;
@@ -593,6 +614,7 @@ Json::Value WorldGenSession::Params() const
     r["locked"] = false;
     r["ranges"] = ranges;
     r["effective"] = effective;
+    r["maxRetryAttempts"] = static_cast<Json::UInt>(mGenParams.maxRetryAttempts);
     return r;
 }
 
@@ -638,6 +660,19 @@ Json::Value WorldGenSession::Status() const
         layout["violations"] = violations;
     }
     r["layout"] = layout;
+
+    // One-line summary of the last Regenerate's retry run; null before the first.
+    Json::Value generation;
+    if (mHasReport)
+    {
+        generation = Json::Value(Json::objectValue);
+        generation["outcome"] = GenerationOutcomeName(mReport.outcome);
+        generation["attempts"] = static_cast<Json::UInt>(mReport.attempts.Size());
+        generation["maxAttempts"] = static_cast<Json::UInt>(mReport.maxAttempts);
+        generation["worldRevision"] = static_cast<Json::UInt>(mReport.worldRevision);
+        generation["reportRevision"] = static_cast<Json::UInt>(mReportRevision);
+    }
+    r["generation"] = generation;
     return r;
 }
 
@@ -1225,6 +1260,111 @@ Json::Value WorldGenSession::Sites(const Json::Value& args) const
     r["sites"] = page;
     r["kinds"] = kinds;
     r["fresh"] = mRegionsFresh;
+    return r;
+}
+
+namespace
+{
+    // Attempt rows carry up to 4 diagnostics of 160 chars plus ids, so ~1 KB each; 12 rows plus the final-validation
+    // summary stay under the 16 KB sim reply.
+    constexpr int64_t kReportMaxLimit = 12;
+
+    const char* PlaceCodeName(PlaceResult::Code c)
+    {
+        switch (c)
+        {
+        case PlaceResult::Code::Ok:           return "Ok";
+        case PlaceResult::Code::Retryable:    return "Retryable";
+        case PlaceResult::Code::TerrainCause: return "TerrainCause";
+        }
+        return "Unknown";
+    }
+
+    Json::Value AttemptJson(const AttemptRecord& a)
+    {
+        Json::Value e(Json::objectValue);
+        e["attempt"] = static_cast<Json::UInt>(a.attempt);
+        e["subSeed"] = static_cast<Json::UInt64>(a.subSeed);
+        e["passed"] = a.passed;
+        e["terrainCause"] = a.terrainCause;
+        e["placeResult"] = PlaceCodeName(a.placeCode);
+        e["placeReason"] = a.placeReason;
+        Json::Value failed(Json::arrayValue);
+        for (uint32_t i = 0; i < a.failedGuaranteeCount; ++i)
+        {
+            Json::Value g(Json::objectValue);
+            g["id"] = static_cast<Json::UInt>(a.failedGuarantees[i]);
+            failed.append(g);
+        }
+        e["failedGuarantees"] = failed;
+        Json::Value diags(Json::arrayValue);
+        for (uint32_t i = 0; i < a.diagnosticCount; ++i) { diags.append(a.diagnostics[i].text); }
+        e["diagnostics"] = diags;
+        e["droppedDiagnostics"] = static_cast<Json::UInt>(a.droppedDiagnostics);
+        e["elapsedMs"] = ShortestFloat(a.elapsedMs);
+        return e;
+    }
+}
+
+Json::Value WorldGenSession::Report(const Json::Value& args) const
+{
+    if (!args.isNull() && !args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+    int64_t offset = 0;
+    int64_t limit = kReportMaxLimit;
+    std::string argError;
+    if (args.isObject() &&
+        (!ReadPagingArg(args, "offset", 0, offset, argError) || !ReadPagingArg(args, "limit", kReportMaxLimit, limit, argError)))
+    {
+        return Error(argError);
+    }
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["hasReport"] = mHasReport;
+    r["reportRevision"] = static_cast<Json::UInt>(mReportRevision);
+    r["currentRevision"] = static_cast<Json::UInt>(mRevision);
+    if (!mHasReport)
+    {
+        return r;
+    }
+
+    const int64_t total = static_cast<int64_t>(mReport.attempts.Size());
+    limit = std::min(limit, kReportMaxLimit);
+    offset = std::min(offset, total);
+    limit = std::min(limit, total - offset);
+
+    r["outcome"] = GenerationOutcomeName(mReport.outcome);
+    r["outerSeed"] = static_cast<Json::UInt64>(mReport.outerSeed);
+    r["maxAttempts"] = static_cast<Json::UInt>(mReport.maxAttempts);
+    r["worldRevision"] = static_cast<Json::UInt>(mReport.worldRevision);
+    // The evidence belongs to the world with this revision; once live preview or another run replaced it, it is stale.
+    r["stale"] = mReport.worldRevision != 0 && mReport.worldRevision != mRevision;
+    r["attemptCount"] = static_cast<Json::UInt>(total);
+    Json::Value page(Json::arrayValue);
+    for (int64_t i = offset; i < offset + limit; ++i) { page.append(AttemptJson(mReport.attempts[static_cast<unsigned>(i)])); }
+    r["offset"] = static_cast<Json::Int64>(offset);
+    r["count"] = static_cast<Json::Int64>(page.size());
+    r["nextOffset"] = (offset + limit) >= total ? Json::Value() : Json::Value(static_cast<Json::Int64>(offset + limit));
+    r["attempts"] = page;
+
+    Json::Value fin(Json::objectValue);
+    fin["passed"] = mReport.finalValidation.passed;
+    Json::Value guarantees(Json::arrayValue);
+    for (unsigned i = 0; i < mReport.finalValidation.guarantees.Size(); ++i)
+    {
+        const GuaranteeResult& g = mReport.finalValidation.guarantees[i];
+        Json::Value e(Json::objectValue);
+        e["id"] = static_cast<Json::UInt>(g.idCrc);
+        e["satisfied"] = g.satisfied;
+        e["violatingCells"] = static_cast<Json::UInt>(g.violatingCells.Size());
+        e["diagnostics"] = static_cast<Json::UInt>(g.diagnostics.Size());
+        guarantees.append(e);
+    }
+    fin["guarantees"] = guarantees;
+    r["finalValidation"] = fin;
     return r;
 }
 

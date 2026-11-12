@@ -6,6 +6,8 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #pragma once
 
+#include <Shared/WorldGeneration/GenerationReport.h>
+#include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/RegionsAndSites.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
@@ -39,7 +41,7 @@ public:
     // Actions: mutate pending state, mark dirty when something changed, return the command's JSON result.
     Json::Value Set(const Json::Value& args);          // any shape param key, "seed", "unlock" (ignored)
     Json::Value SetSize(const Json::Value& args);      // {"size":"Small"|"Standard"|"Large"}
-    Json::Value Regenerate(const Json::Value& args);   // {"seed"?}: full re-run from scratch
+    Json::Value Regenerate(const Json::Value& args);   // {"seed"?, "maxRetryAttempts"?}: full re-run from scratch
 
     // Presets: "deployed" is the shipped read-only directory, "out" the writable one (wins on equal id).
     // An empty path disables that source.
@@ -54,8 +56,12 @@ public:
     const SiteRegistry& Registry() const { return mRegistry != nullptr ? *mRegistry : mEmptyRegistry; }
 
     // Runs at most one generation if dirty. Returns true when the world changed (revision incremented).
-    // Regions and sites (RegionsAndSites::Place, attempt 0) are computed on Regenerate only; any other generation
-    // (first one, Set / SetSize / preset load = live preview) leaves them empty (regionsFresh = false).
+    // Regions and sites are computed on Regenerate only, by a GenerationRun (retry loop over RegionsAndSites::Place,
+    // GenParams::maxRetryAttempts attempts, terrain fixed); any other generation (first one, Set / SetSize / preset
+    // load = live preview) leaves them empty (regionsFresh = false) and never retries.
+    // Unsatisfiable run: the freshly generated terrain stays with regions and sites cleared, state = Failed, the
+    // revision still increments (the visible world changed) and the report has worldRevision 0. Keeping the previous
+    // world instead is Feature 5's discard behaviour (not built).
     bool Tick(Dia::Maths::RandomStream& wldStream);
 
     // Queries
@@ -66,6 +72,12 @@ public:
     Json::Value Cell(const Json::Value& args) const;   // {"x","y"} or {"index"}
     Json::Value Regions() const;                       // every RegionRecord + table summary + fresh
     Json::Value Sites(const Json::Value& args) const;  // {"kind"?,"offset"?,"limit"?}: paged sites + kind table
+    Json::Value Report(const Json::Value& args) const; // {"offset"?,"limit"?}: the last GenerationReport, attempts paged
+
+    // The last finished generation's report (replaced by every Regenerate); nullptr before the first.
+    const GenerationReport* LastReport() const { return mHasReport ? &mReport : nullptr; }
+    uint32_t                ReportRevision() const { return mReportRevision; }
+    uint32_t                MaxRetryAttempts() const { return mGenParams.maxRetryAttempts; }
 
     const WorldStructure&   World() const      { return mWorld; }
     uint32_t                Revision() const   { return mRevision; }
@@ -105,6 +117,12 @@ private:
     LayoutLimits         mLimits;
     LayoutReport         mLayout;
     PlaceResult          mPlaceResult;
+
+    // Retry (Feature 3).
+    GenParams            mGenParams;
+    GenerationReport     mReport;
+    bool                 mHasReport = false;
+    uint32_t             mReportRevision = 0;
 };
 
 } // namespace WorldGeneration

@@ -701,6 +701,40 @@ TEST(WorldGenCommands, SitesQueryRoundTripPagesAllSitesAndFiltersByKind)
 	EXPECT_TRUE(Failed(h.Call("cow.worldgen.sites", bad)));
 }
 
+TEST(WorldGenCommands, ReportCommandRoundTripsTheRetryReport)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	// Before any Regenerate (boot generation is terrain only) there is no report.
+	const Json::Value none = h.Call("cow.worldgen.report");
+	ASSERT_TRUE(none["success"].asBool()) << none.toStyledString();
+
+	Json::Value a = Obj(); a["maxRetryAttempts"] = 6;
+	const Json::Value regen = h.Call("cow.worldgen.regenerate", a);
+	ASSERT_TRUE(regen["success"].asBool()) << regen.toStyledString();
+	EXPECT_EQ(regen["maxRetryAttempts"].asUInt(), 6u);
+	h.Pump(3);
+
+	const Json::Value r = h.Call("cow.worldgen.report");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_TRUE(r["hasReport"].asBool());
+	EXPECT_EQ(r["outcome"].asString(), "Success");
+	EXPECT_EQ(r["maxAttempts"].asUInt(), 6u);
+	EXPECT_GE(r["attemptCount"].asUInt(), 1u);
+	EXPECT_EQ(r["worldRevision"].asUInt(), gWg->GetWorldRevision());
+	EXPECT_FALSE(r["stale"].asBool());
+	ASSERT_GE(r["attempts"].size(), 1u);
+	EXPECT_TRUE(r["attempts"][r["attempts"].size() - 1]["passed"].asBool());
+
+	const Json::Value st = h.Call("cow.worldgen.status");
+	EXPECT_EQ(st["generation"]["outcome"].asString(), "Success");
+
+	Json::Value bad = Obj(); bad["offset"] = -3;
+	EXPECT_TRUE(Failed(h.Call("cow.worldgen.report", bad)));
+}
+
 TEST(WorldGenCommands, ParamsEffectiveAndStatusReportRegionLimitsAndFreshness)
 {
 	Harness h;
