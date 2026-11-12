@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 > **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): the retried stage is `RegionsAndSites::Place` (regions + registered site kinds), each kind on its own sub-seed. `PlaceResult::terrainCause` ends generation with no retry. `GenerationReport` records the placers that ran. Where this spec says Hearths/Nexus/starts, read the dragon layer's registered kinds. Full text updated when this feature is built.*
+> **Built 2026-11-12 (standalone of Feature 5, @retry-mechanism.plan.md):** the loop is `GenerationRun` (CoW-Shared, one attempt per `Step()`, an observer seam for Feature 5's abort); `GenParams` holds only `maxRetryAttempts` (default 10, clamped 1..64); sub-seeds are `DeriveSubSeed(outer, attempt)` (hash-based, Open Q 3); validation uses the registry's guarantees plus a per-attempt `WorldLayoutGuarantee`; a terrain cause is a placer `TerrainCause` or a failure whose every diagnostic carries `(terrain cause`. The report is `GenerationReport` on the session (`LastReport()`, `ReportRevision()`, `cow.worldgen.report`); `AttemptRecord` is trivially copyable. An unsatisfiable Regenerate keeps the freshly generated terrain with regions and sites cleared, state `Failed`, the revision still increments and `report.worldRevision == 0`; AC7's "`GetWorldRevision()` unchanged" is Feature 5's discard-and-keep-previous and is asserted at the `GenerationRun` level only. `WorldGenerationRetry` is published for every failed attempt, `WorldGenerationComplete.retryAttempts` is attempts minus one and Complete is not published for an unsatisfiable run.*
 
 **Gameplay Domains:** simulation
 
@@ -262,7 +263,7 @@ Generate with a seed that needs ≥2 attempts. **Pass:** `GetLastReport()` has o
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-15 (task 1: per-frame stepping, SD-S1-008 retry scope): `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small. Plan: @retry-mechanism.plan.md (In Progress, built standalone of Feature 5 by decision 2026-11-12).
+`Done` — 2026-11-12 (was `Approved` 2026-10-11). Amended 2026-10-15 (task 1: per-frame stepping, SD-S1-008 retry scope): `GenerationReport` + `GetLastReport()` (AC7); `WorldGenerationComplete` matches the parent's notification shape; `WorldGenerationRetry` reduced to small POD (Open Q #2 resolved); AC3 at Small. Plan: @retry-mechanism.plan.md. Built 2026-11-12 (standalone of Feature 5); Feature 5 (timeout, cancel, Error outcome, per-frame stepping, discard-and-keep-previous) is task 15.
 
 ---
 
