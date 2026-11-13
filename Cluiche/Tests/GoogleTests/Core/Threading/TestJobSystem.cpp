@@ -600,3 +600,39 @@ TEST(JobSystemObserver, JobTagRangePropagatesToRecord)
     EXPECT_EQ(obs.seen[0].beginCtx.attribution.range, 3u);
     EXPECT_EQ(obs.seen[0].beginCtx.attribution.rangeCount, 8u);
 }
+
+namespace
+{
+    struct CountingMetrics : IJobMetrics
+    {
+        std::atomic<int> completed{0};
+        void OnJobSubmitted() override {}
+        void OnJobCompleted() override { completed.fetch_add(1); }
+        void OnQueueDepthChanged(double) override {}
+        void OnActiveWorkersChanged(double) override {}
+    };
+}
+
+TEST(JobSystemInstance, ThrowingJobNullObserver_StillCompletes)
+{
+    CountingMetrics metrics;
+    auto js = std::make_shared<JobSystem>();
+    js->Initialize(1, &metrics);
+
+    JobHandle h = js->Submit([]() { throw 42; });
+
+    // Wait on a helper thread with a timeout so a regression fails instead of hanging the suite.
+    auto done = std::make_shared<std::atomic<bool>>(false);
+    std::thread waiter([js, h, done]() { js->Wait(h); done->store(true); });
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+    while (!done->load() && std::chrono::steady_clock::now() < deadline)
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+    const bool completed = done->load();
+    EXPECT_TRUE(completed) << "Wait() hung on a throwing job";
+    EXPECT_TRUE(js->IsComplete(h));
+    EXPECT_EQ(metrics.completed.load(), 1);
+    EXPECT_EQ(js->GetCompletedCount(), 1u);
+    if (completed) { waiter.join(); js->Shutdown(); }
+    else           { waiter.detach(); } // spinning waiter keeps js alive; leak rather than hang
+}

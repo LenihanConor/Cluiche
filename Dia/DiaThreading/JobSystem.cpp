@@ -132,14 +132,22 @@ namespace Dia
 				mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
 				                      metrics,
 				                      pool = mThreadPool]() {
-					if (fn) fn();
-					jobPtr->unfinishedJobs.store(0, std::memory_order_release);
-					if (metrics)
+					// Runs on all exits (including exceptions) so Wait() never hangs.
+					struct Complete
 					{
-						metrics->OnJobCompleted();
-						metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
-						metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
-					}
+						Job* job; IJobMetrics* metrics; Dia::Core::ThreadPool* pool;
+						~Complete()
+						{
+							job->unfinishedJobs.store(0, std::memory_order_release);
+							if (metrics)
+							{
+								metrics->OnJobCompleted();
+								metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
+								metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
+							}
+						}
+					} complete{jobPtr.get(), metrics, pool};
+					if (fn) fn();
 				});
 			}
 			else
