@@ -95,19 +95,27 @@ _FILTERED_ENTRY = re.compile(
 def infer_filter(filters_path: Path, relative_path: str) -> str | None:
     """Pick a filter for a new file: reuse the filter of existing entries in the
     same directory, else the nearest ancestor directory that has filtered
-    entries, else the first path segment (None for a file at the project root)."""
+    entries, else the first path segment (None for a file at the project root).
+
+    Leading `..`/`.` segments (cross-project sources such as
+    `..\\..\\CoW\\Shared\\X.cpp`) are not folders: they never become a filter
+    name, and a bare `..\\..` ancestor is never matched (it would borrow another
+    project's filter). The first real segment (`CoW`) is the fallback."""
     parts = relative_path.replace("/", "\\").split("\\")
+    lead = 0
+    while lead < len(parts) - 1 and parts[lead] in ("..", "."):
+        lead += 1
     dir_filters: dict[str, str] = {}
     if filters_path.exists():
         text = filters_path.read_text(encoding="utf-8")
         for include, flt in _FILTERED_ENTRY.findall(text):
             d = include.replace("/", "\\").rpartition("\\")[0].lower()
             dir_filters.setdefault(d, flt.strip())
-        for depth in range(len(parts) - 1, 0, -1):
+        for depth in range(len(parts) - 1, lead, -1):
             found = dir_filters.get("\\".join(parts[:depth]).lower())
             if found:
                 return found
-    return parts[0] if len(parts) > 1 else None
+    return parts[lead] if len(parts) > lead + 1 else None
 
 
 def add_to_filters(filters_path: Path, relative_path: str, is_header: bool, filter_name: str | None) -> bool:

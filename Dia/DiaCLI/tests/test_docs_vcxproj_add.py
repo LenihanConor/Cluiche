@@ -78,3 +78,34 @@ def test_infer_filter_falls_back_to_nearest_ancestor(tmp_path):
 def test_infer_filter_falls_back_to_first_segment_or_none(tmp_path):
     assert _infer(tmp_path, r"Brand\New\X.cpp") == "Brand"
     assert _infer(tmp_path, "X.cpp") is None
+
+
+def test_infer_filter_cross_project_path_never_yields_dotdot(tmp_path):
+    # Regression (2026-11-05): `..\..\CoW\...` produced a bogus `..` filter.
+    assert _infer(tmp_path, r"..\..\CoW\Shared\WorldGeneration\X.cpp") == "CoW"
+    assert _infer(tmp_path, r".\..\CoW\X.cpp") == "CoW"
+    assert _infer(tmp_path, r"..\X.cpp") is None
+
+
+def test_infer_filter_ignores_bare_dotdot_ancestor(tmp_path):
+    from dia_cli.commands.docs.vcxproj_cmd import infer_filter
+
+    f = tmp_path / "P.vcxproj.filters"
+    f.write_text(
+        r"""<Project>
+  <ItemGroup>
+    <ClCompile Include="..\..\Root.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Y.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
+""",
+        encoding="utf-8",
+    )
+    # The bare `..\..` dir must not lend its filter to an unrelated project.
+    assert infer_filter(f, r"..\..\NewGame\Z.cpp") == "NewGame"
+    # A real shared ancestor still wins.
+    assert infer_filter(f, r"..\..\CoW\Shared\New\Z.cpp") == "CoW"
