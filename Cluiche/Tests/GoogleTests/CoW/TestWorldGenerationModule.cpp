@@ -332,7 +332,7 @@ TEST(WorldGenModuleRetry, EachFailedAttemptPublishesARetryEventAndCompleteCarrie
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
 
     f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
-    f.Pump(2);
+    f.Pump(5);   // one attempt per frame
 
     ASSERT_EQ(tap.msgs.size(), 2u);
     EXPECT_EQ(tap.msgs[0].attemptNumber, 1u);
@@ -363,7 +363,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableGenerationPublishesNoCompleteFailsHealthA
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 3;
     f.wg->GetSession().Regenerate(a);
-    f.Pump(2);
+    f.Pump(5);   // one attempt per frame
 
     EXPECT_TRUE(f.msgs.empty());                 // no world accepted: no Complete
     ASSERT_EQ(tap.msgs.size(), 3u);              // every failed attempt, including the last
@@ -374,7 +374,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableGenerationPublishesNoCompleteFailsHealthA
 
     // The guarantee now passes (its three failing calls are used up): the next Regenerate succeeds and health recovers.
     f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
-    f.Pump(2);
+    f.Pump(5);
     ASSERT_EQ(f.msgs.size(), 1u);
     EXPECT_EQ(f.msgs[0].retryAttempts, 0u);
     EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
@@ -427,7 +427,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableHealthSurvivesALivePreviewTick)
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 2;
     f.wg->GetSession().Regenerate(a);
-    f.Pump(2);
+    f.Pump(5);   // one attempt per frame
     ASSERT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
 
     // A live-preview tick publishes Complete for its terrain-only world but is not a retry generation: the failure stands.

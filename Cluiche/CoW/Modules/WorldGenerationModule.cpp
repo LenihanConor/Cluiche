@@ -186,7 +186,17 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         return;
     }
 
-    if (!mSession.Tick(*stream))
+    const bool worldChanged = mSession.Tick(*stream);
+
+    // A Regenerate just finished (live preview and the first generation never retry): events, counters and health,
+    // whether or not it produced a new world (a failed one keeps the previous world and returns false).
+    const bool retryRun = mSession.ReportRevision() != mPublishedReportRevision;
+    if (retryRun)
+    {
+        mPublishedReportRevision = mSession.ReportRevision();
+        OnRetryRunFinished();
+    }
+    if (!worldChanged)
         return;
 
     mGenerationsCounter->Inc();
@@ -199,13 +209,6 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
                      mSession.Revision(), unresolvedPairs);
     }
 
-    // A Regenerate just finished its retry loop (live preview and the first generation never retry).
-    const bool retryRun = mSession.ReportRevision() != mPublishedReportRevision;
-    if (retryRun)
-    {
-        mPublishedReportRevision = mSession.ReportRevision();
-        OnRetryRunFinished();
-    }
     if (mSession.State() == WorldGeneration::WorldGenState::Failed)
         return;   // unsatisfiable: no accepted world, so no WorldGenerationComplete
 

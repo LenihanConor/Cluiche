@@ -4,6 +4,7 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -31,7 +32,7 @@ namespace
         {
             const Json::Value r = s.Regenerate(args);
             EXPECT_TRUE(r["success"].asBool()) << r.toStyledString();
-            return s.Tick(rng);
+            return TickUntilIdle(s, rng);
         }
     };
 }

@@ -10,6 +10,7 @@
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
@@ -140,7 +141,7 @@ namespace
             a["maxRetryAttempts"] = maxRetry;
             const Json::Value r = s.Regenerate(a);
             EXPECT_TRUE(r["success"].asBool());
-            return s.Tick(rng);
+            return TickUntilIdle(s, rng);
         }
     };
 }

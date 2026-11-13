@@ -1257,6 +1257,7 @@
     <ClCompile Include="CoW\TestWorldJsonExhaustive.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationGuard.cpp" />
     <ClCompile Include="CoW\TestGenerationGuard.cpp" />
+    <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
+#include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -36,7 +37,7 @@ struct Gen
     {
         if (reg) { s.SetSiteRegistry(reg); }
         s.Regenerate(Obj());
-        EXPECT_TRUE(s.Tick(rng));
+        EXPECT_TRUE(TickUntilIdle(s, rng));
     }
 };
 

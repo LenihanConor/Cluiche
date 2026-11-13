@@ -2910,5 +2910,8 @@
     <ClCompile Include="CoW\TestGenerationGuard.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

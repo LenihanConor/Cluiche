@@ -7,14 +7,17 @@
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <map>
+#include <memory>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -279,6 +282,7 @@ const char* WorldGenStateName(WorldGenState state)
     case WorldGenState::Idle:     return "Idle";
     case WorldGenState::Complete: return "Complete";
     case WorldGenState::Failed:   return "Failed";
+    case WorldGenState::Generating: return "Generating";
     }
     return "Unknown";
 }
@@ -315,6 +319,20 @@ WorldGenSession::WorldGenSession(const TerrainRules& rules)
     , mGen(rules)
     , mDims(WorldSizeDimensions(WorldSize::Small))
 {
+    CaptureAccepted();
+}
+
+bool WorldGenSession::BusyRefusal(Json::Value& refusal) const
+{
+    if (mRun == nullptr)
+    {
+        return false;
+    }
+    refusal = Error("busy");
+    refusal["busy"] = true;
+    refusal["generating"] = true;
+    refusal["message"] = "a Regenerate is in progress; wait for it to finish or cancel it";
+    return true;
 }
 
 Json::Value WorldGenSession::Set(const Json::Value& args)
@@ -322,6 +340,11 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
     if (!args.isObject())
     {
         return Error("args must be a JSON object");
+    }
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
     }
     Json::Value lockRefusal;
     bool unlocking = false;
@@ -447,6 +470,11 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
 
 Json::Value WorldGenSession::SetSize(const Json::Value& args)
 {
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
+    }
     if (!args.isObject() || !args.isMember("size") || !args["size"].isString())
     {
         return Error("\"size\" must be one of Small, Standard, Large");
@@ -484,6 +512,11 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
     {
         return Error("args must be a JSON object");
     }
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
+    }
     // Validate everything before changing anything.
     uint64_t seed = mSeed;
     if (args.isObject() && args.isMember("seed") && !ParseSeed(args["seed"], seed))
@@ -500,6 +533,16 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
         }
         maxRetry = ClampMaxRetryAttempts(static_cast<uint32_t>(v.asDouble()));
     }
+    float timeout = mGenParams.timeoutSeconds;
+    if (args.isObject() && args.isMember("timeoutSeconds"))
+    {
+        const Json::Value& v = args["timeoutSeconds"];
+        if (!v.isNumeric() || v.asDouble() < 0.0 || v.asDouble() != v.asDouble())
+        {
+            return Error("\"timeoutSeconds\" must be a non-negative number");
+        }
+        timeout = ClampTimeoutSeconds(static_cast<float>(std::min(v.asDouble(), static_cast<double>(kMaxTimeoutSeconds))));
+    }
     Json::Value lockRefusal;
     bool unlocking = false;
     if (!CheckLock(args, lockRefusal, unlocking))
@@ -512,57 +555,30 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
     }
     mSeed = seed;
     mGenParams.maxRetryAttempts = maxRetry;
+    mGenParams.timeoutSeconds = timeout;
     mDirty = true;
     mForceFull = true;
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["pending"] = true;
     r["maxRetryAttempts"] = static_cast<Json::UInt>(mGenParams.maxRetryAttempts);
+    r["timeoutSeconds"] = ShortestFloat(mGenParams.timeoutSeconds);
     return r;
 }
 
-bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
+void WorldGenSession::CaptureAccepted()
 {
-    if (!mDirty)
-    {
-        return false;
-    }
-    // Placement runs on Regenerate only (SD-S1-004); the first generation and live preview leave regions empty.
-    const bool placeRegions = mForceFull;
-    if (mForceFull)
-    {
-        mGen.Invalidate();
-    }
-    mGen.Update(mSeed, mShape, mDims, wldStream);
-    mGen.WriteTerrain(mWorld);   // also clears regions, sites and Cell::region
+    mAccepted.seed = mSeed;
+    mAccepted.shape = mShape;
+    mAccepted.dims = mDims;
+    mAccepted.presetId = mPresetId;
+    mAccepted.presetModified = mPresetModified;
+    mAccepted.locked = mLocked;
+    mAccepted.state = mState;
+}
 
-    mRegionsFresh = false;
-    mLimits = LayoutLimits{};
-    mLayout = LayoutReport{};
-    mPlaceResult = PlaceResult::Ok();
-    bool succeeded = true;
-    if (placeRegions)
-    {
-        // Retry loop over Regions and Sites; terrain and biomes (mWorld as written above) stay fixed (SD-S1-008).
-        const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
-        GenerationRun run(mWorld, registry, mRules, mSeed, mGenParams, wldStream);
-        run.Run();
-        succeeded = run.HasAcceptedWorld();
-        if (succeeded)
-        {
-            mWorld = std::move(run.AcceptedWorld());
-            mLimits = run.AcceptedLimits();
-            mPlaceResult = run.LastPlaceReport().result;
-            mLayout = CheckLayout(mWorld, mRules, mLimits);
-            mRegionsFresh = true;
-            run.SetWorldRevision(mRevision + 1);
-        }
-        mReport = run.Report();
-        mHasReport = true;
-        ++mReportRevision;
-    }
-
-    mImported = false;
+void WorldGenSession::RefreshStageInfo()
+{
     mLastMs = mGen.GetLastTotalMs();
     mStagesRan = Json::Value(Json::arrayValue);
     const StageTiming* timings = mGen.GetTimings();
@@ -573,13 +589,228 @@ bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
             mStagesRan.append(TerrainStageName(static_cast<TerrainStage>(i)));
         }
     }
+}
+
+void WorldGenSession::ReleaseRun()
+{
+    mRun.reset();      // before the guard and terrain it points at
+    mGuard.reset();
+    mCandGen.reset();
+    mCandTerrain = WorldStructure{};
+}
+
+bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
+{
+    if (mRun != nullptr)
+    {
+        return AdvanceRun();   // one attempt per Tick
+    }
+    if (!mDirty)
+    {
+        return false;
+    }
+    if (mForceFull)
+    {
+        return StartRegenerate(wldStream);   // placement runs on Regenerate only (SD-S1-004)
+    }
+
+    // First generation and live preview: terrain and biomes only, regions and sites stay empty.
+    mGen.Update(mSeed, mShape, mDims, wldStream);
+    mGen.WriteTerrain(mWorld);   // also clears regions, sites and Cell::region
+
+    mRegionsFresh = false;
+    mLimits = LayoutLimits{};
+    mLayout = LayoutReport{};
+    mPlaceResult = PlaceResult::Ok();
+
+    mImported = false;
+    RefreshStageInfo();
 
     ++mRevision;
-    mState = succeeded ? WorldGenState::Complete : WorldGenState::Failed;
+    mState = WorldGenState::Complete;
     mHasGenerated = true;
     mDirty = false;
     mForceFull = false;
+    CaptureAccepted();
     return true;
+}
+
+bool WorldGenSession::StartRegenerate(Dia::Maths::RandomStream& wldStream)
+{
+    // The candidate terrain is generated next to the accepted world, which stays untouched until the run succeeds.
+    mDirty = false;
+    mForceFull = false;
+    try
+    {
+        mCandGen = std::make_unique<TerrainGenerator>(mRules);
+        mCandGen->Update(mSeed, mShape, mDims, wldStream);
+        mCandTerrain = WorldStructure{};
+        mCandGen->WriteTerrain(mCandTerrain);   // terrain and biomes; regions and sites empty
+    }
+    catch (const std::exception& e)
+    {
+        GenerationReport report;
+        report.outerSeed = mSeed;
+        report.outcome = GenerationOutcome::Error;
+        report.maxAttempts = ClampMaxRetryAttempts(mGenParams.maxRetryAttempts);
+        char message[kFailureMessageSize];
+        std::snprintf(message, sizeof(message), "FAILURE: World generation error: %s", e.what());
+        report.SetFailureMessage(message);
+        DIA_LOG_ERROR("CoW", "%s (terrain, seed %llu)", message, static_cast<unsigned long long>(mSeed));
+        mCandGen.reset();
+        mCandTerrain = WorldStructure{};
+        return FailRegenerate(report);
+    }
+
+    mGuard = std::make_unique<GenerationGuard>(ClampTimeoutSeconds(mGenParams.timeoutSeconds), mClock);
+    mRun = std::make_unique<GenerationRun>(mCandTerrain, Registry(), mRules, mSeed, mGenParams, wldStream, mGuard.get());
+    mState = WorldGenState::Generating;
+    return AdvanceRun();
+}
+
+bool WorldGenSession::AdvanceRun()
+{
+    mRun->Step();
+    if (!mRun->IsFinished())
+    {
+        mState = WorldGenState::Generating;
+        return false;
+    }
+    if (mRun->HasAcceptedWorld())
+    {
+        return CommitRun();
+    }
+    const GenerationReport report = mRun->Report();
+    mRun.reset();      // the candidate generator and terrain stay until FailRegenerate has decided what to keep
+    mGuard.reset();
+    const bool changed = FailRegenerate(report);
+    mCandGen.reset();
+    mCandTerrain = WorldStructure{};
+    return changed;
+}
+
+bool WorldGenSession::CommitRun()
+{
+    mRun->SetWorldRevision(mRevision + 1);
+    mReport = mRun->Report();
+    mHasReport = true;
+    ++mReportRevision;
+
+    mWorld = std::move(mRun->AcceptedWorld());
+    mLimits = mRun->AcceptedLimits();
+    mPlaceResult = mRun->LastPlaceReport().result;
+    mGen = std::move(*mCandGen);
+    mLayout = CheckLayout(mWorld, mRules, mLimits);
+    mRegionsFresh = true;
+    ReleaseRun();
+
+    mImported = false;
+    mLocked = false;
+    RefreshStageInfo();
+    ++mRevision;
+    mState = WorldGenState::Complete;
+    mHasGenerated = true;
+    CaptureAccepted();
+    return true;
+}
+
+bool WorldGenSession::FailRegenerate(const GenerationReport& report)
+{
+    mReport = report;
+    mReport.worldRevision = 0;
+    mHasReport = true;
+    ++mReportRevision;
+
+    if (!mHasGenerated)
+    {
+        // Nothing to keep: the very first generation was a Regenerate. A terrain-level error leaves no world at all;
+        // otherwise the candidate terrain stays with regions and sites cleared (the Retry-plan behaviour).
+        if (mCandGen == nullptr)
+        {
+            mState = WorldGenState::Failed;
+            return false;
+        }
+        mGen = std::move(*mCandGen);
+        mWorld = std::move(mCandTerrain);
+        mRegionsFresh = false;
+        mLimits = LayoutLimits{};
+        mLayout = LayoutReport{};
+        mPlaceResult = PlaceResult::Ok();
+        mImported = false;
+        RefreshStageInfo();
+        ++mRevision;
+        mState = WorldGenState::Failed;
+        mHasGenerated = true;
+        CaptureAccepted();
+        return true;
+    }
+
+    // The previous world survives untouched; only the pending request reverts to what produced it.
+    mSeed = mAccepted.seed;
+    mShape = mAccepted.shape;
+    mDims = mAccepted.dims;
+    mPresetId = mAccepted.presetId;
+    mPresetModified = mAccepted.presetModified;
+    mLocked = mAccepted.locked;
+    mDirty = false;
+    mForceFull = false;
+    mState = report.outcome == GenerationOutcome::Cancelled ? mAccepted.state : WorldGenState::Failed;
+    return false;
+}
+
+Json::Value WorldGenSession::Cancel(const Json::Value& args)
+{
+    if (!args.isNull() && !args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    if (mRun != nullptr)
+    {
+        mGuard->RequestCancel();
+        mRun->Step();   // the guard reports Cancelled at once: nothing more runs
+        const GenerationReport report = mRun->Report();
+        mRun.reset();
+        mGuard.reset();
+        FailRegenerate(report);
+        mCandGen.reset();
+        mCandTerrain = WorldStructure{};
+        r["cancelled"] = true;
+        r["outcome"] = GenerationOutcomeName(report.outcome);
+        r["attempts"] = static_cast<Json::UInt>(report.attempts.Size());
+        r["message"] = report.failureMessage;
+        return r;
+    }
+    if (mDirty && mForceFull)
+    {
+        // A Regenerate that has not started: drop it and revert the pending request.
+        GenerationReport report;
+        report.outerSeed = mSeed;
+        report.outcome = GenerationOutcome::Cancelled;
+        report.maxAttempts = ClampMaxRetryAttempts(mGenParams.maxRetryAttempts);
+        report.SetFailureMessage("CANCEL: World generation cancelled by user");
+        DIA_LOG_INFO("CoW", "%s (before it started, seed %llu)", report.failureMessage, static_cast<unsigned long long>(mSeed));
+        if (mHasGenerated)
+        {
+            FailRegenerate(report);
+        }
+        else
+        {
+            mReport = report;
+            mHasReport = true;
+            ++mReportRevision;
+            mForceFull = false;   // the first generation still happens, terrain only
+        }
+        r["cancelled"] = true;
+        r["outcome"] = GenerationOutcomeName(report.outcome);
+        r["attempts"] = 0;
+        r["message"] = report.failureMessage;
+        return r;
+    }
+    r["cancelled"] = false;
+    r["message"] = "no generation in progress";
+    return r;
 }
 
 Json::Value WorldGenSession::Params() const
@@ -677,6 +908,16 @@ Json::Value WorldGenSession::Status() const
     r["lastMs"] = ShortestFloat(mLastMs);
     r["stagesRan"] = mStagesRan;
     r["regionsFresh"] = mRegionsFresh;
+    r["generating"] = mRun != nullptr;
+    if (mRun != nullptr)
+    {
+        Json::Value progress(Json::objectValue);
+        progress["attempts"] = static_cast<Json::UInt>(mRun->AttemptsRun());
+        progress["maxAttempts"] = static_cast<Json::UInt>(mRun->Report().maxAttempts);
+        progress["elapsedSeconds"] = ShortestFloat(static_cast<float>(mGuard->ElapsedSeconds()));
+        progress["timeoutSeconds"] = ShortestFloat(mGuard->TimeoutSeconds());
+        r["progress"] = progress;
+    }
 
     // Layout check summary of the current regions and sites; null when there are none (not generated or live preview).
     Json::Value layout;
@@ -704,6 +945,7 @@ Json::Value WorldGenSession::Status() const
     {
         generation = Json::Value(Json::objectValue);
         generation["outcome"] = GenerationOutcomeName(mReport.outcome);
+        generation["message"] = mReport.failureMessage;
         generation["attempts"] = static_cast<Json::UInt>(mReport.attempts.Size());
         generation["maxAttempts"] = static_cast<Json::UInt>(mReport.maxAttempts);
         generation["worldRevision"] = static_cast<Json::UInt>(mReport.worldRevision);
@@ -771,6 +1013,11 @@ Json::Value WorldGenSession::ExportWorld(const Json::Value& args) const
     {
         return Error("args must be a JSON object");
     }
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;   // the session's seed/shape describe the pending request, not the world still on show
+    }
     if (!mHasGenerated)
     {
         return Error("no world generated yet");
@@ -832,6 +1079,11 @@ Json::Value WorldGenSession::ExportWorld(const Json::Value& args) const
 
 Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
 {
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
+    }
     if (!args.isObject() || !args.isMember("name") || !args["name"].isString())
     {
         return Error("\"name\" must be a world name string");
@@ -890,6 +1142,7 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
     mStagesRan = Json::Value(Json::arrayValue);
     mLocked = true;
     mImported = true;
+    CaptureAccepted();
 
     Json::Value r(Json::objectValue);
     r["success"] = true;
@@ -914,6 +1167,11 @@ void WorldGenSession::SetPresetDirectories(const std::string& deployedDir, const
 
 Json::Value WorldGenSession::PresetLoad(const Json::Value& args)
 {
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
+    }
     if (!args.isObject() || !args.isMember("id") || !args["id"].isString())
     {
         return Error("\"id\" must be a preset id string");
@@ -1577,6 +1835,7 @@ Json::Value WorldGenSession::Report(const Json::Value& args) const
     limit = std::min(limit, total - offset);
 
     r["outcome"] = GenerationOutcomeName(mReport.outcome);
+    r["message"] = mReport.failureMessage;
     r["outerSeed"] = static_cast<Json::UInt64>(mReport.outerSeed);
     r["maxAttempts"] = static_cast<Json::UInt>(mReport.maxAttempts);
     r["worldRevision"] = static_cast<Json::UInt>(mReport.worldRevision);
