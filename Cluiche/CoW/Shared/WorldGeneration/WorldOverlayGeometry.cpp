@@ -1,6 +1,10 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
 
+#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/WorldLayerSource.h>
+
+#include <algorithm>
 #include <cmath>
 
 namespace CoW {
@@ -92,6 +96,14 @@ namespace
 std::vector<LineSegment> BuildRegionEdges(const WorldStructure& world, const WorldHexGrid& grid)
 {
     std::vector<LineSegment> out;
+    for (const RegionEdge& e : BuildColouredRegionEdges(world, grid))
+        out.push_back(e.seg);
+    return out;
+}
+
+std::vector<RegionEdge> BuildColouredRegionEdges(const WorldStructure& world, const WorldHexGrid& grid)
+{
+    std::vector<RegionEdge> out;
     if (!SameDimensions(world, grid))
         return out;
     const Cell* cells = world.Cells();
@@ -123,8 +135,13 @@ std::vector<LineSegment> BuildRegionEdges(const WorldStructure& world, const Wor
                 const float dist = (sm.x - m.x) * (sm.x - m.x) + (sm.y - m.y) * (sm.y - m.y);
                 if (k == 0 || dist < bestDist) { best = k; bestDist = dist; }
             }
-            out.push_back({ Polar(ca, size, kPi / 3.0f * static_cast<float>(best)),
-                            Polar(ca, size, kPi / 3.0f * static_cast<float>(best + 1)) });
+            RegionEdge e;
+            e.seg = { Polar(ca, size, kPi / 3.0f * static_cast<float>(best)),
+                      Polar(ca, size, kPi / 3.0f * static_cast<float>(best + 1)) };
+            e.regionA    = cells[i].region;
+            e.regionB    = cells[nb].region;
+            e.colourSlot = RegionPaletteSlot(e.regionA != kNoRegion ? e.regionA : e.regionB);
+            out.push_back(e);
         }
     }
     return out;
@@ -170,6 +187,129 @@ std::vector<LineSegment> BuildSiteMarkers(const WorldStructure& world, const Wor
             AppendSiteMarker(out, grid.CellCenter(s.cell), radius, shape);
     }
     return out;
+}
+
+std::vector<SiteMarker> BuildSiteMarkers(const WorldStructure& world, const WorldHexGrid& grid,
+                                         std::span<const SiteKindInfo> kinds, float radius)
+{
+    std::vector<SiteMarker> out;
+    if (!SameDimensions(world, grid))
+        return out;
+    for (const SiteKindInfo& k : kinds)
+    {
+        for (const Site& s : world.sites.Of(k.kindCrc))
+        {
+            if (s.cell >= grid.CellCount())
+                continue;
+            SiteMarker m;
+            m.kindCrc = k.kindCrc;
+            m.cell    = s.cell;
+            m.shape   = k.debugShape;
+            m.colour  = k.debugColour;
+            m.centre  = grid.CellCenter(s.cell);
+            AppendSiteMarker(m.lines, m.centre, radius, k.debugShape);
+            out.push_back(std::move(m));
+        }
+    }
+    return out;
+}
+
+std::vector<DynastyStartMarker> BuildDynastyStarts(const WorldStructure& world, const WorldHexGrid& grid,
+                                                   float spacingParam, const GuaranteeResult* evidence, float markerRadius)
+{
+    std::vector<DynastyStartMarker> out;
+    if (!SameDimensions(world, grid))
+        return out;
+    const float ringRadius = std::max(spacingParam, 0.0f) * std::sqrt(3.0f) * grid.CellSize();   // one hex step = sqrt(3) * size
+    for (const Site& s : world.sites.Of(SiteKinds::DynastyStart()))
+    {
+        if (s.cell >= grid.CellCount())
+            continue;
+        DynastyStartMarker m;
+        m.cell   = s.cell;
+        m.centre = grid.CellCenter(s.cell);
+        if (evidence)
+        {
+            for (const CellPair& p : evidence->violatingPairs)
+                if (p.a == s.cell || p.b == s.cell)
+                    m.violating = true;
+        }
+        AppendSiteMarker(m.marker, m.centre, markerRadius, SiteShape::Star);
+        if (ringRadius > 0.0f)
+            AppendPolygon(m.ring, m.centre, ringRadius, 24, 0.0f);
+        out.push_back(std::move(m));
+    }
+    return out;
+}
+
+size_t GuaranteeEvidenceGeometry::LineCount() const
+{
+    size_t n = 0;
+    for (const EvidencePolyline& p : polylines)
+        n += p.points.size() > 1 ? p.points.size() - 1 : 0;
+    for (const ViolatingCellMark& v : violations)
+        n += v.outline.size() + v.cross.size();
+    return n;
+}
+
+GuaranteeEvidenceGeometry BuildGuaranteeEvidence(const ValidationResult* evidence, const WorldHexGrid& grid,
+                                                 uint32_t expandedGuaranteeId)
+{
+    GuaranteeEvidenceGeometry out;
+    if (!evidence)
+        return out;
+    const uint32_t count = grid.CellCount();
+    for (const GuaranteeResult& g : evidence->guarantees)
+    {
+        if (expandedGuaranteeId != 0 && g.idCrc == expandedGuaranteeId)
+        {
+            for (const ProofPath& p : g.proofPaths)
+            {
+                EvidencePolyline line;
+                line.guaranteeCrc = g.idCrc;
+                for (const uint32_t c : p.cells)
+                    if (c < count)
+                        line.points.push_back(grid.CellCenter(c));
+                if (line.points.size() > 1)
+                    out.polylines.push_back(std::move(line));
+            }
+        }
+        if (g.satisfied)
+            continue;
+        for (const uint32_t c : g.violatingCells)
+        {
+            if (c >= count)
+                continue;
+            ViolatingCellMark v;
+            v.guaranteeCrc = g.idCrc;
+            v.cell         = c;
+            const Vector2D ctr = grid.CellCenter(c);
+            const float r = grid.CellSize();
+            AppendHexOutline(v.outline, ctr, r);
+            const float h = r * 0.5f;
+            v.cross.push_back({ Vector2D(ctr.x - h, ctr.y - h), Vector2D(ctr.x + h, ctr.y + h) });
+            v.cross.push_back({ Vector2D(ctr.x - h, ctr.y + h), Vector2D(ctr.x + h, ctr.y - h) });
+            out.violations.push_back(std::move(v));
+        }
+    }
+    return out;
+}
+
+bool EvidenceIsFresh(uint32_t reportWorldRevision, uint32_t freshValidateRevision, uint32_t currentRevision)
+{
+    return currentRevision != 0 && (reportWorldRevision == currentRevision || freshValidateRevision == currentRevision);
+}
+
+const ValidationResult* FreshEvidence(const GenerationReport* report, const ValidationResult* validate,
+                                      uint32_t validateRevision, uint32_t currentRevision)
+{
+    if (currentRevision == 0)
+        return nullptr;
+    if (validate && validateRevision == currentRevision)
+        return validate;
+    if (report && report->worldRevision == currentRevision)
+        return &report->finalValidation;
+    return nullptr;
 }
 
 } // namespace WorldGeneration

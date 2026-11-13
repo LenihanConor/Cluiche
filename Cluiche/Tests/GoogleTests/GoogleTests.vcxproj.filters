@@ -2919,5 +2919,8 @@
     <ClCompile Include="CoW\TestWorldGenDebugDomainPanel.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

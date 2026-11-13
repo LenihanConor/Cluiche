@@ -1260,6 +1260,7 @@
     <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp" />
     <ClCompile Include="CoW\TestWorldGenSessionValidate.cpp" />
     <ClCompile Include="CoW\TestWorldGenDebugDomainPanel.cpp" />
+    <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
