@@ -18,6 +18,16 @@
 //   setColourMode {mode}                              -> view->SetColourMode ("terrain" = the viewer's "relief"); ignored+warned if unknown
 //   toggle       {drawer}                             -> view->SetOverlayEnabled ("rivers", "selection.neighbours"); unavailable ones ignored
 //                (no view: flips a local drawer, "Tiles", "Grid lines", ...)
+//   validate     {}                                   -> session.Validate (cow.worldgen.validate); a refusal shows as "validateError"
+//   export       {name?, overwrite?}                  -> module.ExportWorldFile (cow.worldgen.export); result kept as file.lastExport
+//   import       {name}                               -> module.ImportWorldFile (cow.worldgen.import); result kept as file.lastImport
+//   cancel       {}                                   -> session.Cancel (cow.worldgen.cancel)
+//   selectWorld  {name}                               -> file.selected (a name from the merged worlds list; others ignored)
+//   discard      {cmd?, args?}                        -> SD-S1-009 "Discard": drops a locked import's edits through the existing
+//                "unlock":true arg. With {cmd, args} (cmd one of setScale/setSeed/setSize/presetLoad/regenerate, args as that
+//                command takes them) the pending change the locked world refused is replayed with unlock:true; without, the
+//                world is unlocked and regenerates from its recorded recipe (session.Set({unlock:true})). Not locked: no-op.
+//                "Keep" needs no command: the panel restores the slider. Every shape command also accepts "unlock":true itself.
 //
 // State JSON contract (consumed by debug-panel.html; compact size must stay under 12 KB at Large).
 // The state is split into a STATIC part (control definitions, preset list, size dimensions, view modes, stage names) and a
@@ -55,7 +65,36 @@
 //   cell     : null, or session.Cell({x,y}) result (all fields, layers{}, neighbours[]) plus "selected":{x,y}.
 //              With a view the selection is the viewer's first selected cell (so click selection shows up here too).
 //              Selection out of range / before the first world => cell null and "cellError" string.
+//              cell also carries "absorbed" (bool): the cell sits in a non-island region of another depth zone (an undersize-merge
+//              or fragment cell, regions-and-sites.md); false without regions.
 //   lastSave : null, or the last presetSave result ({success, writtenTo, isSource} or {success:false, error, status?}).
+// Panel sections (worldgen-panel-rest plan task 2). All three are DYNAMIC (sent in every frame, lean or full):
+//   validation : null until a generation report or a Validate result exists, else
+//                {outcome, seed, worldRevision, fresh, passed, source, guarantees[], attemptCount, attempts[]}.
+//                outcome = the last report's outcome text (Complete/Unsatisfiable/TIMEOUT/CANCEL/FAILURE) or "Validated" without a report;
+//                source = "validate" (fresh Validate evidence for this revision) | "generation" (the report's final validation);
+//                fresh = the rows describe the CURRENT world (Validate ran for this revision, or the report produced it);
+//                worldRevision = the revision the rows belong to (0 for a failed run: no world came out of it);
+//                guarantees[] = {id, name, ok, counts{proofPaths,violatingCells,violatingPairs}, diagnostics[<=4 strings]};
+//                attempts[] (first 12 of attemptCount) = {index, subSeed, failedGuarantees[names], ms}.
+//                No proof paths or violating cells here: evidence geometry is consumed by the overlays on the SimPU, not the panel.
+//   validateError : only present (string) while the last validate command was refused ("busy", "no world generated yet").
+//   file       : {worlds[{name,source}], selected, defaultName, lastExport, lastImport, locked, imported, origin?}
+//                worlds = the merged out+deployed list (cow.worldgen.worlds; re-read every 5 s, after export/import/selectWorld
+//                and on full frames); selected = the selectWorld choice ("" if none); defaultName = the export name used when none is
+//                given (from the seed); lastExport/lastImport = null or {success, name, path, bytes, revision, warningCount,
+//                warnings[<=3], error, status, field, line, column} (line/column only on a malformed import file); locked / imported
+//                = the session flags (SD-S1-009); origin = {seed, generatorVersion, rulesVersion, preset} of the current world.
+//   progress   : {state, attempt, maxAttempts, elapsedMs, timeoutMs, lastOutcome}
+//                state = Idle | Generating | Complete | Failed; after a failed or cancelled Regenerate that kept the previous
+//                world the pill reads Complete (the card is the red one). attempt/maxAttempts/elapsedMs/timeoutMs are 0 unless
+//                Generating. lastOutcome = null, or the card
+//                  {kind:"generation", outcome, message, attempts, maxAttempts, revision, previousWorldKept} (outcome =
+//                   Complete | Unsatisfiable | TIMEOUT | CANCEL | FAILURE), or
+//                  {kind:"import", outcome:"Imported", name, revision, seed, previousWorldKept:false}.
+//                An imported world shows the import card, never a generation outcome; a later generation report replaces it
+//                (a failed Regenerate on an imported world keeps the import in force: previousWorldKept true), a live preview
+//                (Set) clears it. A failed import is not a card: its error is file.lastImport.
 #pragma once
 #ifdef DIA_DEBUG
 
@@ -122,6 +161,28 @@ private:
         std::vector<std::string> timingNames;    // by stage index
     };
     void RebuildStatic();
+
+    // Panel sections (dynamic).
+    Json::Value BuildValidation() const;
+    Json::Value BuildFile(bool full);
+    Json::Value BuildProgress();
+    void        UpdateOutcomeCard();
+    void        RefreshWorlds();
+
+    // File / outcome state.
+    Json::Value  mLastExport;            // compact result, null until an export command ran
+    Json::Value  mLastImport;            // compact result, null until an import command ran
+    std::string  mValidateError;         // empty unless the last validate command was refused
+    std::string  mSelectedWorld;
+    Json::Value  mWorlds;                // cached merged list (directory scan)
+    bool         mWorldsBuilt = false;
+    bool         mWorldsDirty = false;
+    std::chrono::steady_clock::time_point mWorldsBuiltAt;
+    Json::Value  mCard;                  // the last-outcome card, null if none
+    uint32_t     mSeenReportRevision = 0;
+    uint32_t     mCardImportRevision = 0;
+    std::string  mImportName;            // name of the last import this domain ran
+    uint32_t     mImportNameRevision = 0;
 
     // Last param values (key -> value), refreshed only when the session's shape changes.
     Json::Value                       mValues;

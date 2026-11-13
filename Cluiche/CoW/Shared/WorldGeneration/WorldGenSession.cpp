@@ -701,6 +701,7 @@ bool WorldGenSession::CommitRun()
     mReport = mRun->Report();
     mHasReport = true;
     ++mReportRevision;
+    mLastRunKeptPrevious = false;
 
     mWorld = std::move(mRun->AcceptedWorld());
     mLimits = mRun->AcceptedLimits();
@@ -726,6 +727,7 @@ bool WorldGenSession::FailRegenerate(const GenerationReport& report)
     mReport.worldRevision = 0;
     mHasReport = true;
     ++mReportRevision;
+    mLastRunKeptPrevious = false;
 
     if (!mHasGenerated)
     {
@@ -761,6 +763,7 @@ bool WorldGenSession::FailRegenerate(const GenerationReport& report)
     mDirty = false;
     mForceFull = false;
     mState = report.outcome == GenerationOutcome::Cancelled ? mAccepted.state : WorldGenState::Failed;
+    mLastRunKeptPrevious = true;
     return false;
 }
 
@@ -806,6 +809,7 @@ Json::Value WorldGenSession::Cancel(const Json::Value& args)
             mReport = report;
             mHasReport = true;
             ++mReportRevision;
+            mLastRunKeptPrevious = false;
             mForceFull = false;   // the first generation still happens, terrain only
         }
         r["cancelled"] = true;
@@ -1590,6 +1594,17 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     r["flags"] = static_cast<Json::UInt>(c.terrainFlags);
     r["zone"] = DepthZoneName(c.depthZone);
     r["region"] = static_cast<Json::UInt>(c.region);
+    // Absorbed: the cell sits in a (non-island) region of another depth zone, i.e. an undersize-merge or fragment cell
+    // (regions-and-sites.md); false without regions.
+    {
+        bool absorbed = false;
+        if (c.region != 0 && c.region <= mWorld.regions.regions.Size())
+        {
+            const RegionRecord& rec = mWorld.regions.regions[c.region - 1];
+            absorbed = !rec.isIsland && c.depthZone != rec.zone;
+        }
+        r["absorbed"] = absorbed;
+    }
     {
         const SiteRegistry& registry = mRegistry != nullptr ? *mRegistry : mEmptyRegistry;
         Json::Value cellSites(Json::arrayValue);
@@ -1947,6 +1962,11 @@ namespace
         e["elapsedMs"] = ShortestFloat(a.elapsedMs);
         return e;
     }
+}
+
+std::string WorldGenSession::GuaranteeLabel(uint32_t idCrc)
+{
+    return GuaranteeName(idCrc);
 }
 
 Json::Value WorldGenSession::Report(const Json::Value& args) const

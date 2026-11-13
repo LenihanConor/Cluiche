@@ -428,6 +428,22 @@ void WorldGenerationModule::ApplyHandoffWorldFile()
     ReportHandoffFailure();
 }
 
+Json::Value WorldGenerationModule::ExportWorldFile(const Json::Value& args)
+{
+    Json::Value r = mSession.ExportWorld(args);
+    LogWorldFileReply("export", r);
+    return r;
+}
+
+Json::Value WorldGenerationModule::ImportWorldFile(const Json::Value& args)
+{
+    Json::Value r = mSession.ImportWorld(args);
+    LogWorldFileReply("import", r);
+    if (r.isObject() && r.isMember("success") && r["success"].asBool())
+        OnWorldImported();
+    return r;
+}
+
 void WorldGenerationModule::OnWorldImported()
 {
     // The world changed without a generation: keep the gauges and health honest and tell the dependants.
@@ -585,21 +601,9 @@ void WorldGenerationModule::RegisterCommands()
                 kSaveParams, 4, [s](const Json::Value& a) { return s->PresetSave(a); });
 
     registerOne(true, "cow.worldgen.export", "Write the current world (terrain, biomes, regions, sites, provenance) to a .wld.json file",
-                kExportParams, 2, [this, s](const Json::Value& a)
-                {
-                    Json::Value r = s->ExportWorld(a);
-                    LogWorldFileReply("export", r);
-                    return r;
-                });
+                kExportParams, 2, [this](const Json::Value& a) { return ExportWorldFile(a); });
     registerOne(true, "cow.worldgen.import", "Replace the world with one read from a .wld.json file; the world opens locked (set/regenerate need unlock:true)",
-                kImportParams, 1, [this, s](const Json::Value& a)
-                {
-                    Json::Value r = s->ImportWorld(a);
-                    LogWorldFileReply("import", r);
-                    if (r.isObject() && r.isMember("success") && r["success"].asBool())
-                        OnWorldImported();
-                    return r;
-                });
+                kImportParams, 1, [this](const Json::Value& a) { return ImportWorldFile(a); });
 
     registerOne(true, "cow.worldgen.validate", "Run the validation guarantees on the current world without changing it; the result is kept as fresh evidence for report and the evidence overlay",
                 nullptr, 0, [s](const Json::Value& a) { return s->Validate(a); });

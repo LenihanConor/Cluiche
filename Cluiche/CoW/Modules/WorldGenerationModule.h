@@ -68,6 +68,12 @@ public:
     // Lets a module configured with auto_generate=false start generating after an explicit action.
     void NotifyAction() { mActionSeen = true; }
 
+    // World file actions: the ONE path behind cow.worldgen.export / cow.worldgen.import and the panel's export / import
+    // commands (SD-S1-002). Import also does the module-side follow-up (gauges, health, WorldGenerationComplete).
+    // SimPU thread only; the caller still calls NotifyAction().
+    Json::Value ExportWorldFile(const Json::Value& args);
+    Json::Value ImportWorldFile(const Json::Value& args);
+
     // Report of the last finished Regenerate (retry attempts, outcome, evidence); nullptr before the first. SimPU only.
     const WorldGeneration::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
     uint32_t GetReportRevision() const { return mSession.ReportRevision(); }

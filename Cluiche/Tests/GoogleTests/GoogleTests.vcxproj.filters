@@ -2916,5 +2916,8 @@
     <ClCompile Include="CoW\TestWorldGenSessionValidate.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenDebugDomainPanel.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
