@@ -286,3 +286,187 @@ TEST(GenerationSystem, AC1_AtLeastThreeRetrySeedsGiveTheSameCountAndWorldEveryRu
     }
     EXPECT_GE(retried, 3);
 }
+
+// ---- Test 4 (timeout path), Test 5 (failure path) and Test 5a re-checked with the previous world kept ------------------------
+
+#include <DiaCellLayers/Testing/LogCapture.h>
+#include <Shared/WorldGeneration/GenerationGuard.h>
+#include <cstring>
+#include <stdexcept>
+
+namespace {
+
+struct SysClock : IGenerationClock
+{
+    double now = 5.0;
+    double NowSeconds() const override { return now; }
+};
+
+// Passes or fails on demand; can drag the clock forward or throw.
+class SysSwitchGuarantee : public IWorldGuarantee
+{
+public:
+    Dia::Core::StringCRC GetId() const override { return Dia::Core::StringCRC("Test.SysSwitch"); }
+    GuaranteeResult Check(const ValidationContext&) const override
+    {
+        if (clock != nullptr) { clock->now += step; }
+        if (throws) { throw std::runtime_error("injected generation error"); }
+        GuaranteeResult r;
+        r.idCrc = GetId().Value();
+        r.satisfied = pass;
+        if (!pass) { r.AddDiagnostic("engineered failure"); }
+        return r;
+    }
+    bool pass = true;
+    bool throws = false;
+    SysClock* clock = nullptr;
+    double step = 0.0;
+};
+
+bool SameShownWorld(const WorldGenSession& a, const WorldStructure& b)
+{
+    const WorldStructure& w = a.World();
+    if (w.CellCount() != b.CellCount() || !(w.regions == b.regions) || w.sites.Count() != b.sites.Count()) { return false; }
+    return std::memcmp(w.Cells(), b.Cells(), sizeof(Cell) * static_cast<size_t>(w.CellCount())) == 0;
+}
+
+struct SysGen
+{
+    WorldGenSession s;
+    RandomStream rng{ 1 };
+    SiteRegistry registry;
+    SysSwitchGuarantee sw;
+    SysClock clock;
+    SysGen()
+    {
+        registry.RegisterGuarantee(&sw);
+        s.SetSiteRegistry(&registry);
+        s.SetGenerationClock(&clock);
+        Json::Value a(Json::objectValue);
+        a["seed"] = 21;
+        EXPECT_TRUE(s.Regenerate(a)["success"].asBool());
+        EXPECT_TRUE(TickUntilIdle(s, rng));
+        EXPECT_EQ(s.State(), WorldGenState::Complete);
+    }
+    void Regenerate(uint64_t seed, uint32_t maxRetry, float timeout)
+    {
+        Json::Value a(Json::objectValue);
+        a["seed"] = static_cast<Json::UInt64>(seed);
+        a["maxRetryAttempts"] = maxRetry;
+        a["timeoutSeconds"] = timeout;
+        EXPECT_TRUE(s.Regenerate(a)["success"].asBool());
+        TickUntilIdle(s, rng);
+    }
+};
+
+}
+
+TEST(GenerationSystem, Test4_ForcedPastTheHardTimeoutAutoCancelsWithAMessageIdentifyingTimeout)
+{
+    Dia::CellLayers::Testing::LogCapture log("CoW");
+    SysGen g;
+    const WorldStructure before = g.s.World();
+    const uint32_t revision = g.s.Revision();
+    g.sw.pass = false;
+    g.sw.clock = &g.clock;
+    g.sw.step = 3.0;                                   // each attempt "takes" 3 s against a 5 s budget
+    log.Clear();
+    g.Regenerate(21, 64, 5.0f);
+
+    const GenerationReport& rep = *g.s.LastReport();
+    EXPECT_EQ(rep.outcome, GenerationOutcome::Timeout);
+    EXPECT_STREQ(rep.failureMessage, "TIMEOUT: World generation exceeded 5.0 seconds");
+    EXPECT_LT(rep.attempts.Size(), 64u);               // the timeout interrupted the retry loop
+    // Discard-and-return: the attempt is gone, the previous world and revision stand, the stage stays open.
+    EXPECT_TRUE(SameShownWorld(g.s, before));
+    EXPECT_EQ(g.s.Revision(), revision);
+    EXPECT_EQ(g.s.State(), WorldGenState::Failed);
+    EXPECT_EQ(g.s.Status()["generation"]["outcome"].asString(), "Timeout");
+
+    // Distinct from a cancel and from a failure, in the log and in the enum.
+    EXPECT_EQ(log.Errors("TIMEOUT: World generation exceeded 5.0 seconds"), 1u);
+    EXPECT_EQ(log.Errors("CANCEL"), 0u);
+    EXPECT_EQ(log.Errors("FAILURE"), 0u);
+    EXPECT_EQ(log.Count(Dia::CellLayers::Testing::LogCapture::Level::kInfo, "CANCEL"), 0u);
+}
+
+TEST(GenerationSystem, Test5_AGenerationErrorRoutesThroughDiscardAndReturnWithAMessageIdentifyingFailure)
+{
+    Dia::CellLayers::Testing::LogCapture log("CoW");
+    SysGen g;
+    const WorldStructure before = g.s.World();
+    const uint32_t revision = g.s.Revision();
+    g.sw.throws = true;                                // an error, not merely slowness
+    log.Clear();
+    g.Regenerate(21, 10, 30.0f);
+
+    const GenerationReport& rep = *g.s.LastReport();
+    EXPECT_EQ(rep.outcome, GenerationOutcome::Error);
+    EXPECT_STREQ(rep.failureMessage, "FAILURE: World generation error: injected generation error");
+    EXPECT_TRUE(SameShownWorld(g.s, before));
+    EXPECT_EQ(g.s.Revision(), revision);
+    EXPECT_EQ(g.s.State(), WorldGenState::Failed);
+
+    EXPECT_EQ(log.Errors("FAILURE: World generation error: injected generation error"), 1u);
+    EXPECT_EQ(log.Errors("TIMEOUT"), 0u);
+    EXPECT_EQ(log.Errors("CANCEL"), 0u);
+
+    // The session is still usable on the previous world: the next Regenerate (the error gone) succeeds.
+    g.sw.throws = false;
+    g.Regenerate(22, 10, 30.0f);
+    EXPECT_EQ(g.s.LastReport()->outcome, GenerationOutcome::Success);
+    EXPECT_EQ(g.s.Revision(), revision + 1);
+}
+
+TEST(GenerationSystem, Test5_AllFourFailureModesAreDistinguishable)
+{
+    std::string messages[4];
+    GenerationOutcome outcomes[4];
+    for (int mode = 0; mode < 4; ++mode)
+    {
+        SysGen g;
+        if (mode == 0) { g.sw.pass = false; g.sw.clock = &g.clock; g.sw.step = 9.0; g.Regenerate(21, 10, 5.0f); }
+        if (mode == 1) { g.sw.pass = false; g.Regenerate(21, 3, 30.0f); }
+        if (mode == 2) { g.sw.throws = true; g.Regenerate(21, 3, 30.0f); }
+        if (mode == 3)
+        {
+            g.sw.pass = false;
+            Json::Value a(Json::objectValue); a["seed"] = 21; a["maxRetryAttempts"] = 10;
+            ASSERT_TRUE(g.s.Regenerate(a)["success"].asBool());
+            g.s.Tick(g.rng);
+            ASSERT_TRUE(g.s.Cancel(Json::Value(Json::objectValue))["cancelled"].asBool());
+        }
+        messages[mode] = g.s.LastReport()->failureMessage;
+        outcomes[mode] = g.s.LastReport()->outcome;
+    }
+    EXPECT_EQ(outcomes[0], GenerationOutcome::Timeout);
+    EXPECT_EQ(outcomes[1], GenerationOutcome::Unsatisfiable);
+    EXPECT_EQ(outcomes[2], GenerationOutcome::Error);
+    EXPECT_EQ(outcomes[3], GenerationOutcome::Cancelled);
+    EXPECT_EQ(messages[0].rfind("TIMEOUT", 0), 0u);
+    EXPECT_EQ(messages[1].rfind("FAILURE", 0), 0u);
+    EXPECT_EQ(messages[2].rfind("FAILURE", 0), 0u);
+    EXPECT_EQ(messages[3].rfind("CANCEL", 0), 0u);
+    EXPECT_NE(messages[1], messages[2]);               // the two FAILURE modes are told apart by their text
+}
+
+TEST(GenerationSystem, Test5a_ANeverSatisfiedSeedFallsThroughAndKeepsThePreviousWorldInsteadOfAViolatingOne)
+{
+    SysGen g;
+    const WorldStructure before = g.s.World();
+    const uint32_t revision = g.s.Revision();
+    g.sw.pass = false;                                 // engineered to never satisfy the guarantee
+    g.Regenerate(21, 5, 30.0f);
+
+    const GenerationReport& rep = *g.s.LastReport();
+    EXPECT_EQ(rep.outcome, GenerationOutcome::Unsatisfiable);
+    EXPECT_EQ(rep.attempts.Size(), 5u);
+    EXPECT_TRUE(SameShownWorld(g.s, before));          // never a world that violates the guarantee
+    EXPECT_EQ(g.s.Revision(), revision);
+
+    // Same outer seed: the same sequence and outcome every time.
+    SysGen h;
+    h.sw.pass = false;
+    h.Regenerate(21, 5, 30.0f);
+    EXPECT_TRUE(SameApartFromTiming(*g.s.LastReport(), *h.s.LastReport()));
+}
