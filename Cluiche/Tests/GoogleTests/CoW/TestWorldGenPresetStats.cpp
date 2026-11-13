@@ -51,7 +51,7 @@ namespace
             ++land;
             if (c.waterSource == WaterSource::River) { ++rivers; }
             if (c.waterSource == WaterSource::Lake) { ++lakes; }
-            if (c.terrain == TerrainType::Mountain || c.terrain == TerrainType::Peak) { ++mountain; }
+            if (c.terrain == TerrainType::Mountain || c.terrain == TerrainType::Peak || c.terrain == TerrainType::Cliff) { ++mountain; }   // steep ground classifies as Cliff first
         }
         for (int i = 0; i < n; ++i)
         {
@@ -130,7 +130,7 @@ TEST(WorldGenPresetStats, PresetIntentOrderings)
     const Stats& hig = mean["highlands"];
     EXPECT_GT(arc.landmasses, con.landmasses) << "archipelago should have more landmasses than continental";
     EXPECT_GT(con.largestShare, arc.largestShare) << "continental largest-landmass share should exceed archipelago";
-    // Left out: highlands mountain fraction > continental. Measured 0.044 vs 0.067 (Small, seeds 1..8): the expectation FAILS, see backlog.
-    (void)hig;
+    EXPECT_GT(hig.mountainFraction, con.mountainFraction) << "highlands should be more mountainous than continental";
+    EXPECT_GT(arc.riverCells, 0.0) << "archipelago should have rivers";
     EXPECT_GT(con.landFraction, arc.landFraction) << "continental should have more land than archipelago";
 }
