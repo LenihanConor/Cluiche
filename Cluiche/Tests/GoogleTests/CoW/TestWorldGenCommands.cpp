@@ -1415,6 +1415,51 @@ TEST(WorldHandoff, AManualRegenerateAfterAFailedWorldFileWorks)
 	EXPECT_GT(gWg->GetWorldRevision(), 0u);
 }
 
+TEST(WorldHandoff, WorldFileWinsOverARegenerateOnStartRequest)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 90);
+	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"regenerate_on_start\":true"));
+	ASSERT_TRUE(h.Start());
+	h.Pump(10);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected)) << "the pending Regenerate must not replace the named, locked world";
+	EXPECT_TRUE(gWg->GetSession().IsLocked());
+	EXPECT_EQ(gWg->GetSession().Seed(), 90u);
+}
+
+TEST(WorldHandoff, NullAndEmptyValuedKeysFail)
+{
+	ExpectHandoffFails("{\"preset\":null}", "preset");
+	ExpectHandoffFails("{\"world_file\":null}", "world_file");
+	ExpectHandoffFails("{\"world_file\":\"\"}", "world_file");
+	ExpectHandoffFails("{\"world_bundle\":null}", "world_bundle");
+}
+
+TEST(WorldHandoff, WorldFileLoadsAfterADependantHasRegisteredItsKinds)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 14);
+	Harness h(FileConfig(dir, "\"world_file\":\"hand\""), true, true);
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_NE(gRegistrar, nullptr);
+	EXPECT_TRUE(gRegistrar->registered);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected));
+	EXPECT_TRUE(gWg->GetHandoffError().empty());
+}
+
+TEST(WorldHandoff, MalformedConfigJsonIsNotAHandoffFailure)
+{
+	Harness h("{ not json");
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	EXPECT_TRUE(gWg->GetHandoffError().empty());
+	EXPECT_FALSE(HandoffFailing());
+	EXPECT_NE(gWg->GetCurrentWorld(), nullptr) << "defaults apply";
+}
+
 #else
 TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
 #endif

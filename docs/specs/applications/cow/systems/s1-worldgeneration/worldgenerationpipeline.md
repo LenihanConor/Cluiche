@@ -225,6 +225,24 @@ struct GenParams {
 - **`cow.worldgen.validate`** reports its result to F-3 (`SetWorldValidated(relPath, ok)`, by module reference), which updates the catalogue record's `validated` flag.
 - `IsReady(rev)` is `GetWorldRevision() >= rev`.
 
+### World hand-off (SD-S1-010, built 2026-11-12)
+
+A stage names its world in the `config` object of its `WorldGenerationModule` entry in the `.diaapp`/`.diastage` manifest. At most one of these keys; any two is an error:
+
+| Key | World | When it loads |
+|---|---|---|
+| `world_file` | `"<name>"`: the file `<name>.wld.json` found in `out_worlds_dir`, then `worlds_dir`. Imported all-or-nothing and opens **locked** (SD-S1-009). `seed` and `size` keys are ignored (a Warning is logged) | The first frame after the module's start deferral and any `HoldGeneration` holds, so dependants started after S-1 have subscribed to `WorldGenerationComplete`; loads even with `auto_generate` off |
+| `preset` | `"<id>"`: the preset's shape with the config's `seed` and `size` (defaults as today), then a Regenerate, so regions and sites are placed. Deterministic: the same preset, seed and size give the same world | At the end of configuration; generated on the same first frame |
+| `world_bundle` | F-3 World Assets bundle id. **Not built** (F-3 is spec only): rejected as a failure, the seam is the key name | n/a |
+
+With none of the keys the module behaves as before (`seed`/`size`/`auto_generate`/`regenerate_on_start` unchanged).
+
+Consumers read the world through `GetCurrentWorld()` (nullptr until revision 1), `GetWorldRevision()` and `IsReady(rev)` (`GetWorldRevision() >= rev`), and learn of it from `WorldGenerationComplete` (an imported world publishes it like a generated one, `retryAttempts` 0).
+
+**Failure.** A key of the wrong type or empty, two sources, `world_bundle`, an unknown or invalid preset id, or a missing, invalid or corrupt world file or world name: `GetHandoffError()` holds the reason, the module logs it at Error, reports health **Failing** (`world_handoff_failed`) and stays started. No substitute world is generated: `GetCurrentWorld()` stays nullptr and the revision stays 0 until an explicit action (`regenerate`, `set`, `import`, ...). A failed import changes nothing (no half world).
+
+Tests: `WorldHandoff.*` in `TestWorldGenCommands.cpp`. Plan: @world-handoff.plan.md.
+
 ### Events
 
 **Published by WorldGenerationModule:**
@@ -395,6 +413,7 @@ The following binding decisions from parent specs apply to this system:
 `Approved` — 2026-10-11. Amended 2026-10-14 for A4 Weather: hex grid (Dia's rectangular `HexPathGrid` and `HexTopology`; map-size presets Small/Standard/Large), per-cell `elevation`/`latitude`/`waterSource`, world read accessor, `WorldGenerationComplete` reduced to a notification. No code existed, so the JSON schema stays at v1. Amended 2026-10-15: S-1 targets the Small map only (Standard and Large deferred); the debug view is a `WorldGenDebugDomain` that explains the data (colour-by per-cell field, cell inspector, guarantee evidence, retry history), which adds evidence to `GuaranteeResult`, a `GenerationReport` to the retry loop, and a Dia debug-draw budget raise (dia-needs #13). Same day: tiles and grid move to a Dia CellField renderer (dia-needs #14), and #13 shrinks to 8,192. Same day: Feature 1 becomes a rule-based Terrain Generator shaped live by sliders (re-spec pending; deviates from S-1 GDD decision 1), and Biome Classification (8) and Regions and Sites (9) are added; build order is terrain, then biomes, then the rest. Amended 2026-10-18: Feature 8 spec'd (climate offsets replace `biomeWeights[]`); Feature 9 re-scoped at the user's direction to regions, the geography nodes (corridors, rivers, Hunting and Resource) built in, and a generic site hook used only by the dragon layer, with Hearths, Nexus nodes, thrones and dynasty starts (and their three GDD guarantees) moved to it.
 
 **Plan:** @worldgenerationpipeline.plan.md
+**World hand-off plan (SD-S1-010, task 16b):** @world-handoff.plan.md
 
 ---
 
