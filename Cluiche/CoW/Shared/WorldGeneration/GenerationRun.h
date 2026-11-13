@@ -27,6 +27,7 @@
 
 #include <DiaMaths/Core/RandomStream.h>
 
+#include <chrono>
 #include <cstdint>
 
 namespace CoW {
@@ -37,8 +38,11 @@ class IGenerationObserver
 public:
     virtual ~IGenerationObserver() = default;
     // Polled at each attempt boundary before the attempt runs. Return true and set 'reason' (Timeout, Cancelled or
-    // Error) to end the run with no accepted world. Nothing sets this yet (Feature 5).
+    // Error) to end the run with no accepted world. GenerationGuard (Feature 5) implements Timeout and Cancelled.
     virtual bool ShouldAbort(GenerationOutcome& reason) { (void)reason; return false; }
+    // The distinguishing text for the abort just reported by ShouldAbort ("TIMEOUT: ...", "CANCEL: ..."), recorded in
+    // GenerationReport::failureMessage. nullptr lets the run use its generic text for the outcome.
+    virtual const char* AbortMessage() const { return nullptr; }
     // After every attempt (passed or not) has been recorded.
     virtual void OnAttemptFinished(const AttemptRecord& record, uint32_t maxAttempts) { (void)record; (void)maxAttempts; }
 };
@@ -70,7 +74,8 @@ public:
     const RegionsAndSites::PlaceReport& LastPlaceReport() const { return mPlaceReport; }
 
 private:
-    void Finish(GenerationOutcome outcome);
+    void Finish(GenerationOutcome outcome, const char* message = nullptr);
+    void FinishWithError(AttemptRecord& rec, std::chrono::steady_clock::time_point started, const char* what);
 
     const WorldStructure&     mTerrain;
     const SiteRegistry&       mRegistry;
@@ -88,6 +93,8 @@ private:
 };
 
 // Blocking convenience: terrain in, report out. On Success 'outWorld' (if non-null) receives the accepted world.
+// Enforces params.timeoutSeconds on the steady clock (a GenerationGuard); the overload in GenerationGuard.h takes the
+// guard so tests can inject a clock and a cancel.
 GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld = nullptr);

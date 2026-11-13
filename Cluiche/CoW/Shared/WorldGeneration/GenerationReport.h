@@ -20,11 +20,20 @@ constexpr uint32_t kDefaultMaxRetryAttempts = 10;   // placeholder (Open Q 1); A
 constexpr uint32_t kMaxRetryAttemptsLimit   = 64;   // bounds report size
 constexpr unsigned kMaxAttemptDiagnostics   = 4;
 
-// Only what Features 1-3 need; Feature 5 adds its timeout fields.
+constexpr float kDefaultTimeoutSeconds = 30.0f;     // placeholder (Feature 5 Open Q 1): a safety net, far above the 5 s target
+constexpr float kMaxTimeoutSeconds     = 3600.0f;
+constexpr unsigned kFailureMessageSize = 128;
+
+// Feature 3 (retry bound) and Feature 5 (wall-clock budget for the whole generation, all attempts).
 struct GenParams
 {
     uint32_t maxRetryAttempts = kDefaultMaxRetryAttempts;
+    float    timeoutSeconds   = kDefaultTimeoutSeconds;
 };
+
+// NaN -> default, negative -> 0, above kMaxTimeoutSeconds -> kMaxTimeoutSeconds. 0 means "already exceeded at the
+// first attempt boundary" (the check is a strict elapsed > timeout).
+float ClampTimeoutSeconds(float requested);
 
 // 0 is clamped to 1 (at least one attempt), anything above kMaxRetryAttemptsLimit is clamped down.
 uint32_t ClampMaxRetryAttempts(uint32_t requested);
@@ -60,6 +69,11 @@ struct GenerationReport
     EvidenceList<AttemptRecord> attempts;
     ValidationResult finalValidation;     // accepted world's, else the last attempt's
     uint32_t worldRevision = 0;           // revision produced, 0 if none
+    // Feature 5: the distinguishing text of a non-Success outcome ("TIMEOUT: ...", "FAILURE: ...", "CANCEL: ...");
+    // empty on Success. Deterministic: a timeout names the budget, not the measured time.
+    char     failureMessage[kFailureMessageSize] = {};
+
+    void SetFailureMessage(const char* message);
 };
 
 // Equal in every field except AttemptRecord::elapsedMs.

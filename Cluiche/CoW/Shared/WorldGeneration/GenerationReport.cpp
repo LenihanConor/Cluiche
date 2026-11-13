@@ -14,6 +14,22 @@ uint32_t ClampMaxRetryAttempts(uint32_t requested)
     return std::clamp<uint32_t>(requested, 1u, kMaxRetryAttemptsLimit);
 }
 
+float ClampTimeoutSeconds(float requested)
+{
+    if (requested != requested) { return kDefaultTimeoutSeconds; }   // NaN
+    return std::clamp(requested, 0.0f, kMaxTimeoutSeconds);
+}
+
+void GenerationReport::SetFailureMessage(const char* message)
+{
+    failureMessage[0] = '\0';
+    if (message)
+    {
+        std::strncpy(failureMessage, message, sizeof(failureMessage) - 1);
+        failureMessage[sizeof(failureMessage) - 1] = '\0';
+    }
+}
+
 const char* GenerationOutcomeName(GenerationOutcome outcome)
 {
     switch (outcome)
@@ -80,7 +96,8 @@ namespace
 bool SameApartFromTiming(const GenerationReport& a, const GenerationReport& b)
 {
     if (a.outerSeed != b.outerSeed || a.outcome != b.outcome || a.maxAttempts != b.maxAttempts ||
-        a.worldRevision != b.worldRevision || a.attempts.Size() != b.attempts.Size() ||
+        a.worldRevision != b.worldRevision || std::strncmp(a.failureMessage, b.failureMessage, sizeof(a.failureMessage)) != 0 ||
+        a.attempts.Size() != b.attempts.Size() ||
         !(a.finalValidation == b.finalValidation))
     {
         return false;

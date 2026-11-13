@@ -193,6 +193,9 @@
     <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -400,6 +403,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldFiles.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

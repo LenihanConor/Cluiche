@@ -2,6 +2,7 @@
 #include <Shared/WorldGeneration/GenerationRun.h>
 
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
+#include <Shared/WorldGeneration/GenerationGuard.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
@@ -9,7 +10,9 @@
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <chrono>
+#include <cstdio>
 #include <cstring>
+#include <exception>
 #include <utility>
 
 namespace CoW {
@@ -71,11 +74,12 @@ GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& 
     mReport.maxAttempts = mMaxAttempts;
 }
 
-void GenerationRun::Finish(GenerationOutcome outcome)
+void GenerationRun::Finish(GenerationOutcome outcome, const char* message)
 {
     mFinished = true;
     mReport.outcome = outcome;
     mReport.worldRevision = 0;
+    mReport.SetFailureMessage(message);
 }
 
 bool GenerationRun::Step()
@@ -85,8 +89,22 @@ bool GenerationRun::Step()
     GenerationOutcome abortReason = GenerationOutcome::Cancelled;
     if (mObserver != nullptr && mObserver->ShouldAbort(abortReason))
     {
-        DIA_LOG_WARNING("CoW", "World generation aborted before attempt %u (%s)", mNextAttempt + 1, GenerationOutcomeName(abortReason));
-        Finish(abortReason);
+        // Timeout and Cancelled are the observer's (Feature 5); anything else it reports is an Error.
+        if (abortReason != GenerationOutcome::Timeout && abortReason != GenerationOutcome::Cancelled) { abortReason = GenerationOutcome::Error; }
+        const char* given = mObserver->AbortMessage();
+        const char* fallback = abortReason == GenerationOutcome::Timeout ? "TIMEOUT: World generation timed out"
+                             : abortReason == GenerationOutcome::Cancelled ? "CANCEL: World generation cancelled by user"
+                                                                           : "FAILURE: World generation aborted";
+        const char* message = (given != nullptr && given[0] != '\0') ? given : fallback;
+        if (abortReason == GenerationOutcome::Cancelled)
+        {
+            DIA_LOG_INFO("CoW", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
+        }
+        else
+        {
+            DIA_LOG_ERROR("CoW", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
+        }
+        Finish(abortReason, message);
         return false;
     }
 
@@ -97,39 +115,52 @@ bool GenerationRun::Step()
     rec.attempt = attempt;
     rec.subSeed = DeriveSubSeed(mOuterSeed, static_cast<uint64_t>(attempt));
 
-    mWorld = mTerrain;   // terrain and biomes are identical on every attempt
-    const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, rec.subSeed, static_cast<int>(attempt), mRng, &mPlaceReport);
-
     bool passed = false;
     bool terrainCause = false;
-    if (!placed.IsOk())
+    try
     {
-        rec.SetPlaceFailure(placed.code, placed.reason);
-        rec.AddDiagnostic("placement failed: %s", placed.reason);
-        terrainCause = placed.code == PlaceResult::Code::TerrainCause;
-    }
-    else
-    {
-        const TerrainTableNavigationProfile profile;
-        const WorldLayoutGuarantee layout(mRules, mPlaceReport.limits);
-        ValidationParams vp;
-        vp.AddProfile(&profile);
-        bool registryHasLayout = false;
-        for (const IWorldGuarantee* g : mRegistry.Guarantees())
-        {
-            vp.AddGuarantee(g);
-            registryHasLayout = registryHasLayout || g->GetId() == layout.GetId();
-        }
-        if (!registryHasLayout) { vp.AddGuarantee(&layout); }
+        mWorld = mTerrain;   // terrain and biomes are identical on every attempt
+        const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, rec.subSeed, static_cast<int>(attempt), mRng, &mPlaceReport);
 
-        ValidationResult validation = ReachabilityValidator::Validate(mWorld, vp);
-        passed = validation.passed;
-        if (!passed)
+        if (!placed.IsOk())
         {
-            RecordValidation(rec, validation);
-            terrainCause = FailureIsTerrainCause(validation);
+            rec.SetPlaceFailure(placed.code, placed.reason);
+            rec.AddDiagnostic("placement failed: %s", placed.reason);
+            terrainCause = placed.code == PlaceResult::Code::TerrainCause;
         }
-        mReport.finalValidation = std::move(validation);
+        else
+        {
+            const TerrainTableNavigationProfile profile;
+            const WorldLayoutGuarantee layout(mRules, mPlaceReport.limits);
+            ValidationParams vp;
+            vp.AddProfile(&profile);
+            bool registryHasLayout = false;
+            for (const IWorldGuarantee* g : mRegistry.Guarantees())
+            {
+                vp.AddGuarantee(g);
+                registryHasLayout = registryHasLayout || g->GetId() == layout.GetId();
+            }
+            if (!registryHasLayout) { vp.AddGuarantee(&layout); }
+
+            ValidationResult validation = ReachabilityValidator::Validate(mWorld, vp);
+            passed = validation.passed;
+            if (!passed)
+            {
+                RecordValidation(rec, validation);
+                terrainCause = FailureIsTerrainCause(validation);
+            }
+            mReport.finalValidation = std::move(validation);
+        }
+    }
+    catch (const std::exception& e)
+    {
+        FinishWithError(rec, started, e.what());
+        return false;
+    }
+    catch (...)
+    {
+        FinishWithError(rec, started, "unknown exception");
+        return false;
     }
 
     rec.passed = passed;
@@ -157,19 +188,35 @@ bool GenerationRun::Step()
     }
     if (terrainCause)
     {
-        DIA_LOG_ERROR("CoW", "World generation unsatisfiable: terrain cause at attempt %u (seed %llu): %s", attempt + 1,
-                      static_cast<unsigned long long>(mOuterSeed), Headline(rec));
-        Finish(GenerationOutcome::Unsatisfiable);
+        char message[kFailureMessageSize];
+        std::snprintf(message, sizeof(message), "FAILURE: World generation unsatisfiable: terrain cause at attempt %u", attempt + 1);
+        DIA_LOG_ERROR("CoW", "%s (seed %llu): %s", message, static_cast<unsigned long long>(mOuterSeed), Headline(rec));
+        Finish(GenerationOutcome::Unsatisfiable, message);
         return false;
     }
     if (mNextAttempt >= mMaxAttempts)
     {
-        DIA_LOG_ERROR("CoW", "World generation failed after %u attempt(s) (seed %llu): retry exhausted", mNextAttempt,
-                      static_cast<unsigned long long>(mOuterSeed));
-        Finish(GenerationOutcome::Unsatisfiable);
+        char message[kFailureMessageSize];
+        std::snprintf(message, sizeof(message), "FAILURE: World generation failed after %u attempts (unsatisfiable seed or parameters)", mNextAttempt);
+        DIA_LOG_ERROR("CoW", "%s (seed %llu)", message, static_cast<unsigned long long>(mOuterSeed));
+        Finish(GenerationOutcome::Unsatisfiable, message);
         return false;
     }
     return true;
+}
+
+void GenerationRun::FinishWithError(AttemptRecord& rec, std::chrono::steady_clock::time_point started, const char* what)
+{
+    rec.passed = false;
+    rec.terrainCause = false;
+    rec.AddDiagnostic("error: %s", what);
+    rec.elapsedMs = std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - started).count();
+    mReport.attempts.Add(rec);
+    char message[kFailureMessageSize];
+    std::snprintf(message, sizeof(message), "FAILURE: World generation error: %s", what);
+    DIA_LOG_ERROR("CoW", "%s (attempt %u, seed %llu)", message, rec.attempt + 1, static_cast<unsigned long long>(mOuterSeed));
+    if (mObserver != nullptr) { mObserver->OnAttemptFinished(rec, mMaxAttempts); }
+    Finish(GenerationOutcome::Error, message);
 }
 
 void GenerationRun::Run()
@@ -181,7 +228,15 @@ GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld)
 {
-    GenerationRun run(terrain, registry, rules, outerSeed, params, rng);
+    GenerationGuard guard(ClampTimeoutSeconds(params.timeoutSeconds));
+    return GenerateWorld(terrain, registry, rules, outerSeed, params, rng, guard, outWorld);
+}
+
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
+                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
+                               GenerationGuard& guard, WorldStructure* outWorld)
+{
+    GenerationRun run(terrain, registry, rules, outerSeed, params, rng, &guard);
     run.Run();
     if (outWorld != nullptr && run.HasAcceptedWorld()) { *outWorld = run.AcceptedWorld(); }
     return run.Report();
