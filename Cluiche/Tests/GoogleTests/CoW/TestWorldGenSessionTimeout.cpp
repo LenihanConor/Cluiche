@@ -579,3 +579,112 @@ TEST(WorldGenSessionTimeout, CancelDuringAnUnlockRegenerateRelocksTheImport)
     EXPECT_TRUE(g.s.IsLocked());
     ExpectUntouched(before, g.s, "cancelled unlock");
 }
+
+// ---- edge cases (Timeout plan task 5) -------------------------------------------------------------------------------------------
+
+TEST(WorldGenSessionTimeoutEdge, ATimeoutExactlyAtTheBudgetDoesNotFireUntilItIsExceeded)
+{
+    Gen g;
+    const Snapshot before(g.s);
+    g.sw.pass = false;
+    g.sw.clock = &g.clock;
+    g.sw.step = 5.0;                                   // each failing attempt takes exactly the 5 s budget
+    Json::Value a = Obj(); a["seed"] = 7; a["timeoutSeconds"] = 5;
+    ASSERT_TRUE(g.s.Regenerate(a)["success"].asBool());
+    EXPECT_FALSE(TickUntilIdle(g.s, g.rng));
+    EXPECT_EQ(g.s.LastReport()->outcome, GenerationOutcome::Timeout);
+    EXPECT_EQ(g.s.LastReport()->attempts.Size(), 2u);   // elapsed 0 and exactly 5 are not > 5; 10 is
+    ExpectUntouched(before, g.s, "boundary");
+}
+
+TEST(WorldGenSessionTimeoutEdge, AZeroBudgetOnTheRealClockTimesOutBeforeTheFirstAttemptAndKeepsTheWorld)
+{
+    WorldGenSession s;                                  // no injected clock: the steady clock
+    Dia::Maths::RandomStream rng{ 1 };
+    ASSERT_TRUE(s.Regenerate(Obj())["success"].asBool());
+    ASSERT_TRUE(TickUntilIdle(s, rng));
+    ASSERT_EQ(s.State(), WorldGenState::Complete);
+    const Snapshot before(s);
+
+    Json::Value a = Obj(); a["seed"] = 7; a["timeoutSeconds"] = 0;
+    ASSERT_TRUE(s.Regenerate(a)["success"].asBool());
+    EXPECT_FALSE(TickUntilIdle(s, rng));
+    EXPECT_EQ(s.LastReport()->outcome, GenerationOutcome::Timeout);
+    EXPECT_EQ(s.LastReport()->attempts.Size(), 0u);     // the candidate terrain took real time, so the budget was gone
+    ExpectUntouched(before, s, "zero budget");
+}
+
+TEST(WorldGenSessionTimeoutEdge, AHugeBudgetIsClampedAndNeverGetsInTheWay)
+{
+    Gen g;
+    Json::Value a = Obj(); a["seed"] = 7; a["timeoutSeconds"] = 1.0e30;
+    ASSERT_TRUE(g.s.Regenerate(a)["success"].asBool());
+    EXPECT_TRUE(TickUntilIdle(g.s, g.rng));
+    EXPECT_EQ(g.s.LastReport()->outcome, GenerationOutcome::Success);
+    EXPECT_FLOAT_EQ(g.s.TimeoutSeconds(), kMaxTimeoutSeconds);
+}
+
+TEST(WorldGenSessionTimeoutEdge, CancelThenRegenerateStraightAwayRunsCleanly)
+{
+    Gen g;
+    g.sw.pass = false;
+    ASSERT_TRUE(g.Regen(7, 10)["success"].asBool());
+    g.s.Tick(g.rng);
+    ASSERT_TRUE(g.s.Cancel(Obj())["cancelled"].asBool());
+    EXPECT_FALSE(g.s.Cancel(Obj())["cancelled"].asBool());   // a second cancel has nothing to cancel
+
+    g.sw.pass = true;
+    ASSERT_TRUE(g.Regen(8)["success"].asBool());
+    EXPECT_TRUE(TickUntilIdle(g.s, g.rng));
+    EXPECT_EQ(g.s.State(), WorldGenState::Complete);
+    EXPECT_EQ(g.s.LastReport()->outcome, GenerationOutcome::Success);
+    EXPECT_EQ(g.s.Seed(), 8u);
+}
+
+TEST(WorldGenSessionTimeoutEdge, TicksAfterAFailureDoNothingAndCancelAfterAFailureIsANoOp)
+{
+    Gen g;
+    g.sw.pass = false;
+    ASSERT_TRUE(g.Regen(7, 2)["success"].asBool());
+    TickUntilIdle(g.s, g.rng);
+    ASSERT_EQ(g.s.State(), WorldGenState::Failed);
+    const Snapshot after(g.s);
+    const uint32_t reports = g.s.ReportRevision();
+    for (int i = 0; i < 5; ++i) { EXPECT_FALSE(g.s.Tick(g.rng)); }
+    EXPECT_FALSE(g.s.Cancel(Obj())["cancelled"].asBool());
+    ExpectUntouched(after, g.s, "idle after failure");
+    EXPECT_EQ(g.s.ReportRevision(), reports);
+    EXPECT_EQ(g.s.State(), WorldGenState::Failed);
+}
+
+TEST(WorldGenSessionTimeoutEdge, ExportAfterAFailedRegenerateWritesThePreviousWorldWithItsOwnSeed)
+{
+    TempDir dir;
+    Gen g;                                              // accepted seed is the default (1)
+    g.s.SetWorldDirectories("", dir.path.string());
+    g.sw.pass = false;
+    ASSERT_TRUE(g.Regen(99, 2)["success"].asBool());
+    TickUntilIdle(g.s, g.rng);
+    ASSERT_EQ(g.s.State(), WorldGenState::Failed);
+
+    Json::Value ex = Obj(); ex["name"] = "afterfail";
+    const Json::Value r = g.s.ExportWorld(ex);
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    Json::Value im = Obj(); im["name"] = "afterfail";
+    WorldGenSession other;
+    other.SetWorldDirectories("", dir.path.string());
+    ASSERT_TRUE(other.ImportWorld(im)["success"].asBool());
+    EXPECT_EQ(other.Seed(), 1u);                        // the provenance names the seed that produced the world on show
+}
+
+TEST(WorldGenSessionTimeoutEdge, ARunThatAlreadyFailedLeavesNoCandidateStateBehind)
+{
+    Gen g;
+    g.sw.pass = false;
+    ASSERT_TRUE(g.Regen(7, 2)["success"].asBool());
+    TickUntilIdle(g.s, g.rng);
+    EXPECT_FALSE(g.s.IsGenerating());
+    EXPECT_FALSE(g.s.IsDirty());
+    Json::Value shape = Obj(); shape["rivers"] = 0.2;
+    EXPECT_TRUE(g.s.Set(shape)["success"].asBool());    // actions are accepted again straight away
+}
