@@ -5,6 +5,7 @@
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <DiaObservation/Health/HealthRegistry.h>
@@ -292,8 +293,7 @@ void WorldGenerationModule::OnRetryRunFinished()
     }
     failed.seed = report->outerSeed;
     failed.attempts = static_cast<uint32_t>(report->attempts.Size());
-    std::strncpy(failed.message, report->failureMessage, sizeof(failed.message) - 1);
-    failed.message[sizeof(failed.message) - 1] = '\0';
+    std::snprintf(failed.message, sizeof(failed.message), "%s", report->failureMessage);   // truncated, always terminated
     if (!host || !host->GetBus().Broadcast(failed))
         mPublishDroppedCounter->Inc();
 

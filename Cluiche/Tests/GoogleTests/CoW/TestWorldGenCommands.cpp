@@ -24,6 +24,7 @@
 #include <Modules/RandomStreamModule.h>
 #include <Modules/SimQueryHostModule.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Types/SimRegistrationMessage.h>
 
 #include <cstring>
@@ -1045,13 +1046,8 @@ TEST(WorldGenCommands, WorldsDirectoryConfigKeysAreTypeChecked)
 	EXPECT_EQ(gWg->GetWorldRevision(), 1u);
 }
 
-#else
-TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
-#endif
-
 // ---- Timeout and failure handling (Feature 5): cow.worldgen.cancel ------------------------------------------------------------
 
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 
 TEST(WorldGenCommandsCancel, CancelWithNothingRunningSucceedsAndSaysSo)
 {
@@ -1124,3 +1120,7 @@ TEST(WorldGenCommandsCancel, RegenerateTakesATimeoutAndTheCommandIsListed)
 	EXPECT_TRUE(listed);
 	EXPECT_TRUE(gHost->GetHost().Has(StringCRC("cow.worldgen.cancel")));
 }
+
+#else
+TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
+#endif

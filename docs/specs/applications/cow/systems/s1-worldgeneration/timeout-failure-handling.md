@@ -268,7 +268,15 @@ Generate world on fast machine (should succeed within 5 seconds), then artificia
 
 ## Status
 
-`Approved` — 2026-10-11. Clarified 2026-10-15: failure keeps the previous world and the stage open (Goal 5a); success publishes the notification-shaped `WorldGenerationComplete`.
+`Done` — 2026-11-12. Plan: @timeout-failure-handling.plan.md. Approved 2026-10-11. Clarified 2026-10-15: failure keeps the previous world and the stage open (Goal 5a); success publishes the notification-shaped `WorldGenerationComplete`.
+
+**Built 2026-11-12, as built (amendments to the text above):**
+- `GenerationGuard` (CoW-Shared) is the timeout and cancel check, polled at each attempt boundary (strict `elapsed > timeoutSeconds`, cancel first); the clock is injectable (`IGenerationClock`), so tests never sleep. The blocking form is the free function `GenerateWorld(terrain, registry, rules, seed, params, rng[, guard])`, not a `WorldGenerationModule` method.
+- `CancelGeneration()` and the `WorldGenerationCancelled` event are replaced by the `cow.worldgen.cancel` command (SD-S1-002). Commands are sim-hosted, so cancel and the step run on the same thread and the flag is a plain bool, not an atomic.
+- A Regenerate runs one attempt per `Tick` (`WorldGenState::Generating`); one that succeeds on attempt 1 finishes in the same Tick. While it runs, `set`, `set_size`, `preset.load`, `regenerate`, `import` and `export` refuse with `busy`; `cancel` and every query stay available.
+- `FailureReason` is `Timeout, Unsatisfiable, Error, ManualCancel`. `WorldGenerationFailed` also carries `seed` and `attempts`. `GenerationReport::failureMessage[128]` holds the distinguishing text (the timeout text names the budget, not the measured time).
+- Timeout, Unsatisfiable, Error: state `Failed`; Cancelled returns to the previous state and is not a health failure. With no previous world (the very first generation was a Regenerate) the candidate terrain is adopted with regions and sites cleared (state `Failed`, revision + 1).
+- `maxRetryAttempts` is clamped to 64, so AC2 is tested at 64 retries, not 100. `timeoutSeconds` defaults to 30 and is clamped to 0..3600; module config `timeout_seconds`, `regenerate{timeoutSeconds}`.
 
 ---
 
