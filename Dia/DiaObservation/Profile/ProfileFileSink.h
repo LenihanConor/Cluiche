@@ -38,6 +38,13 @@ namespace Dia
 			int          mCurrentFrameSlot; // index into mFrameRing for current frame (-1 if none)
 			uint32_t     mLastFrameNumber;
 
+			void AnnounceThread(uint32_t threadId);   // writes a thread_name line once per (id, name)
+
+			static const unsigned int kMaxAnnounced = 128;
+			struct Announced { uint32_t id; char name[32]; };
+			Announced    mAnnounced[kMaxAnnounced];
+			unsigned int mAnnouncedCount;
+
 			FILE*   mFile;
 			char    mFinalPath[512];
 			char    mSessionId[32];

@@ -357,6 +357,73 @@ namespace Dia
 			return true;
 		}
 
+		namespace
+		{
+			struct ThreadNameEntry { uint32_t id; char name[Profiler::kThreadNameLen]; };
+			ThreadNameEntry sThreadNames[Profiler::kMaxThreadNames];
+			unsigned int    sThreadNameCount = 0;
+			std::mutex      sThreadNameMutex;
+		}
+
+		uint32_t Profiler::CurrentThreadId()
+		{
+			return static_cast<uint32_t>(GetCurrentThreadId());
+		}
+
+		bool Profiler::RegisterThreadName(uint32_t threadId, const char* name)
+		{
+			if (name == nullptr)
+				return false;
+
+			std::lock_guard<std::mutex> lock(sThreadNameMutex);
+			ThreadNameEntry* entry = nullptr;
+			for (unsigned int i = 0; i < sThreadNameCount; ++i)
+			{
+				if (sThreadNames[i].id == threadId)
+				{
+					entry = &sThreadNames[i];
+					break;
+				}
+			}
+			if (!entry)
+			{
+				if (sThreadNameCount >= kMaxThreadNames)
+					return false;
+				entry = &sThreadNames[sThreadNameCount++];
+				entry->id = threadId;
+			}
+			strncpy_s(entry->name, kThreadNameLen, name, _TRUNCATE);
+			return true;
+		}
+
+		bool Profiler::ResolveThreadName(uint32_t threadId, char* buf, size_t bufSize)
+		{
+			if (!buf || bufSize == 0)
+				return false;
+			std::lock_guard<std::mutex> lock(sThreadNameMutex);
+			for (unsigned int i = 0; i < sThreadNameCount; ++i)
+			{
+				if (sThreadNames[i].id == threadId)
+				{
+					strncpy_s(buf, bufSize, sThreadNames[i].name, _TRUNCATE);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void Profiler::ClearSubjectNames()
+		{
+			std::lock_guard<std::mutex> lock(sSubjectMutex);
+			sSubjectCount = 0;
+		}
+
+		void Profiler::ClearThreadNames()
+		{
+			std::lock_guard<std::mutex> lock(sThreadNameMutex);
+			sThreadNameCount = 0;
+		}
+
 		const char* Profiler::ResolveSubjectName(uint32_t subject, char* buf, size_t bufSize)
 		{
 			if (!buf || bufSize == 0)

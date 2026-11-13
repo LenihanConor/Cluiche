@@ -63,6 +63,16 @@ namespace Dia
 			// Writes the registered name, or "0x%08x" when unknown. Returns buf (NUL-terminated).
 			static const char* ResolveSubjectName(uint32_t subject, char* buf, size_t bufSize);
 
+			// Thread name table (fixed capacity). Registration is off the hot path.
+			// threadId is the same value ScopeRecord::threadId carries (CurrentThreadId()).
+			static const unsigned int kMaxThreadNames = 128;
+			static const unsigned int kThreadNameLen  = 32;
+			static uint32_t CurrentThreadId();                                       // id used in ScopeRecord::threadId
+			static bool RegisterThreadName(uint32_t threadId, const char* name);     // duplicate id overwrites; false if full / null name
+			static bool ResolveThreadName(uint32_t threadId, char* buf, size_t bufSize);   // false if unnamed
+			static void ClearSubjectNames();   // test aid
+			static void ClearThreadNames();                                         // test / shutdown aid
+
 			// Copies not-yet-drained closed records of the CALLING thread (oldest first). Test/diagnostic aid.
 			unsigned int PeekThreadClosedRecords(ScopeRecord* out, unsigned int maxOut) const;
 

@@ -16,6 +16,7 @@ namespace Dia
 			, mFrameCount(0)
 			, mCurrentFrameSlot(-1)
 			, mLastFrameNumber(UINT32_MAX)
+			, mAnnouncedCount(0)
 			, mFile(nullptr)
 			, mEpochOffsetNs(epochOffsetNs)
 		{
@@ -41,11 +42,50 @@ namespace Dia
 			}
 		}
 
+		void ProfileFileSink::AnnounceThread(uint32_t threadId)
+		{
+			char name[Profiler::kThreadNameLen];
+			if (!Profiler::ResolveThreadName(threadId, name, sizeof(name)))
+				return;
+
+			Announced* entry = nullptr;
+			for (unsigned int i = 0; i < mAnnouncedCount; ++i)
+			{
+				if (mAnnounced[i].id == threadId)
+				{
+					entry = &mAnnounced[i];
+					break;
+				}
+			}
+			if (entry)
+			{
+				if (std::strcmp(entry->name, name) == 0)
+					return;
+			}
+			else
+			{
+				if (mAnnouncedCount >= kMaxAnnounced)
+					return;
+				entry = &mAnnounced[mAnnouncedCount++];
+				entry->id = threadId;
+			}
+			strncpy_s(entry->name, sizeof(entry->name), name, _TRUNCATE);
+
+			char line[160];
+			int len = snprintf(line, sizeof(line),
+				"{\"record_type\":\"thread_name\",\"thread_id\":%u,\"name\":\"%s\"}\n",
+				threadId, name);
+			if (len > 0)
+				fwrite(line, 1, static_cast<size_t>(len), mFile);
+		}
+
 		void ProfileFileSink::OnRecord(const ScopeRecord& record)
 		{
 			// --- Write to .jsonl ---
 			if (mFile)
 			{
+				AnnounceThread(record.threadId);
+
 				int64_t startUnixNano = static_cast<int64_t>(record.startUnixNano) + mEpochOffsetNs;
 
 				// Subject text resolved at write time (drain thread), never on the hot path.

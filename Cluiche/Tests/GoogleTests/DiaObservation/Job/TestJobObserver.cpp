@@ -8,6 +8,9 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <fstream>
+#include <string>
+#include <iterator>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -325,4 +328,94 @@ TEST_F(SLOW_JobObserverTest, Benchmark_ObserverOverheadPerJob)
 #ifdef NDEBUG
 	EXPECT_LT(hookNsPerJob, 200.0);
 #endif
+}
+
+// ---------------------------------------------------------------------------------------------
+// B1 / AB1 / AB2: worker thread names and worker scopes in profile.jsonl
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+	std::string ReadJsonl(const char* path)
+	{
+		std::ifstream f(path);
+		return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+	}
+
+	size_t CountOf(const std::string& hay, const std::string& needle)
+	{
+		size_t n = 0;
+		for (size_t p = hay.find(needle); p != std::string::npos; p = hay.find(needle, p + 1)) ++n;
+		return n;
+	}
+}
+
+TEST_F(SLOW_JobObserverTest, AB2_EachWorkerHasExactlyOneThreadNameRecord)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(3, nullptr, &observer);
+
+	std::atomic<int> arrived{0};
+	std::vector<Dia::Threading::JobHandle> hs;
+	for (int i = 0; i < 3; ++i)
+		hs.push_back(js.Submit([&]
+		{
+			++arrived;
+			for (int s = 0; s < 5000000 && arrived.load() < 3; ++s) std::this_thread::yield();
+		}));
+	for (auto& h : hs) js.Wait(h);
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	Profiler::Instance().BeginFrame();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+
+	for (int w = 0; w < 3; ++w)
+	{
+		EXPECT_EQ(CountOf(content, "\"name\":\"Worker " + std::to_string(w) + "\"}"), 1u) << "worker " << w << " " << content;
+	}
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"thread_name\""), 3u);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB1_WorkerScopeCarriesWorkerThreadIdAndOwnerSubject)
+{
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
+	ASSERT_TRUE(Profiler::RegisterSubjectName(kOwner, "ab1.owner"));
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(1, nullptr, &observer);
+
+	std::atomic<uint32_t> workerTid{0};
+	JobTag tag; tag.owner = kOwner;
+	js.Wait(js.Submit([&]
+	{
+		DIA_PROFILE_SCOPE("ab1.inner", Dia::Observation::Profile::Category::kAll);
+		workerTid = Profiler::CurrentThreadId();
+	}, tag));
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	Profiler::Instance().BeginFrame();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+
+	ASSERT_NE(workerTid.load(), 0u);
+	ASSERT_NE(workerTid.load(), Profiler::CurrentThreadId());
+	const std::string inner = std::to_string(Dia::Core::StringCRC("ab1.inner").Value());
+	size_t pos = content.find("\"scope_name\":" + inner + ",");
+	ASSERT_NE(pos, std::string::npos) << content;
+	size_t lineStart = content.rfind('\n', pos);
+	lineStart = (lineStart == std::string::npos) ? 0 : lineStart + 1;
+	const std::string line = content.substr(lineStart, content.find('\n', pos) - lineStart);
+	EXPECT_NE(line.find("\"thread_id\":" + std::to_string(workerTid.load()) + ","), std::string::npos) << line;
+	EXPECT_NE(line.find("\"subject\":\"ab1.owner\""), std::string::npos) << line;
+	// the job.run scope also carries the subject
+	const std::string jobRun = std::to_string(Dia::Core::StringCRC("job.run").Value());
+	EXPECT_NE(content.find("\"scope_name\":" + jobRun + ","), std::string::npos);
+	Profiler::ClearThreadNames();
 }

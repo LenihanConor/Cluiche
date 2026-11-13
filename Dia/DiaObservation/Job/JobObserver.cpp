@@ -5,6 +5,7 @@
 #include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Trace/Tracer.h>
 
+#include <cstdio>
 #include <functional>
 #include <new>
 #include <thread>
@@ -31,12 +32,14 @@ namespace Dia
 			void JobObserver::InstallThreadInbox(JobInbox* inbox) { tInbox = inbox; }
 			void JobObserver::ClearThreadInbox() { tInbox = nullptr; }
 
-			void JobObserver::OnWorkerStart(unsigned /*workerIndex*/)
+			void JobObserver::OnWorkerStart(unsigned workerIndex)
 			{
-				// Thread naming ("Worker N") is a later amendment; hook belongs here.
 				Log::Logger::Instance().RegisterThreadBuffer();
 				Trace::Tracer::Instance().RegisterThreadSpanBuffer();
 				Profile::Profiler::Instance().RegisterThreadScopeBuffer();
+				char name[Profile::Profiler::kThreadNameLen];
+				snprintf(name, sizeof(name), "Worker %u", workerIndex);
+				Profile::Profiler::RegisterThreadName(Profile::Profiler::CurrentThreadId(), name);
 			}
 
 			void JobObserver::OnWorkerStop(unsigned /*workerIndex*/)

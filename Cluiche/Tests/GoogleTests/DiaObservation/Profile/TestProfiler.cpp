@@ -595,3 +595,88 @@ TEST(ProfilerSubjectNames, ZZ_TableFullReturnsFalseWithoutCrash)
     EXPECT_TRUE(Profiler::RegisterSubjectName(0xA0000005u, "Renamed"));
     EXPECT_STREQ("0xc0000000", Profiler::ResolveSubjectName(0xC0000000u, buf, sizeof(buf)));
 }
+
+// ---------------------------------------------------------------------------
+// B1 - thread names (profiling-frame-instrumentation Amendment 2026-11-12)
+// ---------------------------------------------------------------------------
+
+TEST_F(ProfilerTest, B1_RegisterThreadName_DuplicateOverwrites)
+{
+    Profiler::ClearThreadNames();
+    EXPECT_TRUE(Profiler::RegisterThreadName(4001u, "First"));
+    EXPECT_TRUE(Profiler::RegisterThreadName(4001u, "Second"));
+    char buf[64];
+    ASSERT_TRUE(Profiler::ResolveThreadName(4001u, buf, sizeof(buf)));
+    EXPECT_STREQ("Second", buf);
+    EXPECT_FALSE(Profiler::ResolveThreadName(4002u, buf, sizeof(buf)));
+    Profiler::ClearThreadNames();
+}
+
+TEST_F(ProfilerTest, B1_RegisterThreadName_FullReturnsFalse)
+{
+    Profiler::ClearThreadNames();
+    for (unsigned int i = 0; i < Profiler::kMaxThreadNames; ++i)
+        ASSERT_TRUE(Profiler::RegisterThreadName(5000u + i, "T"));
+    EXPECT_FALSE(Profiler::RegisterThreadName(9999u, "Overflow"));
+    EXPECT_TRUE(Profiler::RegisterThreadName(5000u, "Existing"));   // overwrite still OK when full
+    Profiler::ClearThreadNames();
+}
+
+TEST_F(ProfilerTest, B1_RegisterThreadName_NullNameRejected)
+{
+    EXPECT_FALSE(Profiler::RegisterThreadName(4003u, nullptr));
+}
+
+TEST_F(ProfilerTest, B1_SinkWritesThreadNameBeforeFirstScope)
+{
+    Profiler::ClearThreadNames();
+    const uint32_t tid = Profiler::CurrentThreadId();
+    ASSERT_TRUE(Profiler::RegisterThreadName(tid, "Test Main"));
+    {
+        DIA_PROFILE_SCOPE("B1First", Category::kDiaApplicationFlow);
+    }
+    {
+        DIA_PROFILE_SCOPE("B1Second", Category::kDiaApplicationFlow);
+    }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    const std::string nameLine = "{\"record_type\":\"thread_name\",\"thread_id\":" + std::to_string(tid) + ",\"name\":\"Test Main\"}";
+    size_t namePos = content.find(nameLine);
+    ASSERT_NE(namePos, std::string::npos) << content;
+    EXPECT_EQ(content.find(nameLine, namePos + 1), std::string::npos) << "announced once only";
+    size_t scopePos = content.find("\"thread_id\":" + std::to_string(tid) + ",\"scope_name\"");
+    ASSERT_NE(scopePos, std::string::npos);
+    EXPECT_LT(namePos, scopePos);
+    Profiler::ClearThreadNames();
+}
+
+TEST_F(ProfilerTest, B1_UnnamedThreadHasNoThreadNameRecord)
+{
+    Profiler::ClearThreadNames();
+    {
+        DIA_PROFILE_SCOPE("B1Unnamed", Category::kDiaApplicationFlow);
+    }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    EXPECT_NE(content.find(std::to_string(Dia::Core::StringCRC("B1Unnamed").Value())), std::string::npos);
+    EXPECT_EQ(content.find("thread_name"), std::string::npos);
+}
+
+TEST_F(ProfilerTest, B1_ChangedNameIsReannounced)
+{
+    Profiler::ClearThreadNames();
+    const uint32_t tid = Profiler::CurrentThreadId();
+    Profiler::RegisterThreadName(tid, "Before");
+    { DIA_PROFILE_SCOPE("B1A", Category::kDiaApplicationFlow); }
+    FlushAndWait();
+    Profiler::RegisterThreadName(tid, "After");
+    { DIA_PROFILE_SCOPE("B1B", Category::kDiaApplicationFlow); }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    EXPECT_NE(content.find("\"name\":\"Before\""), std::string::npos);
+    EXPECT_NE(content.find("\"name\":\"After\""), std::string::npos);
+    Profiler::ClearThreadNames();
+}
