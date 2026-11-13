@@ -53,6 +53,7 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
 | `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
 | `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
+| `dia perf convert <session-dir\|profile.jsonl>` | Convert profile.jsonl (+ trips.jsonl) to Chrome-trace JSON for Perfetto; `--out`, `--from/--to` seconds. |
 | `dia check spec-sync` | Check spec Public Interface symbols against Dia headers; write spec-sync-status.md. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
