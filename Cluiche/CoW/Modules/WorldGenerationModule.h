@@ -82,7 +82,7 @@ public:
         "cow.worldgen.preset.load", "cow.worldgen.preset.save",
         "cow.worldgen.params", "cow.worldgen.status", "cow.worldgen.presets",
         "cow.worldgen.layers", "cow.worldgen.cell", "cow.worldgen.regions", "cow.worldgen.sites",
-        "cow.worldgen.report", "cow.worldgen.export", "cow.worldgen.import" };
+        "cow.worldgen.report", "cow.worldgen.export", "cow.worldgen.import", "cow.worldgen.cancel" };
     static constexpr unsigned kCommandCount = sizeof(kCommandNames) / sizeof(kCommandNames[0]);
 
 protected:
@@ -94,7 +94,7 @@ protected:
 private:
     void RegisterCommands();
     void UnregisterCommands();
-    // A Regenerate finished its retry loop: retry events, counters, health.
+    // A Regenerate finished (any outcome): retry events, the failure event, counters, health. A cancel is not a health failure.
     void OnRetryRunFinished();
     // A world was imported from a file: gauges, health and the WorldGenerationComplete notification (the world changed).
     void OnWorldImported();
@@ -113,7 +113,7 @@ private:
     bool mActionSeen = false;
     bool mPublishFailed = false;
     uint32_t mPublishedReportRevision = 0;   // last report revision this module has handled
-    bool mGenerationUnsatisfiable = false;   // the last Regenerate exhausted its retries
+    bool mGenerationUnsatisfiable = false;   // the last Regenerate ended in a failure that is not a cancel (unsatisfiable, timeout, error)
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBus{this};
     Dia::ApplicationFlow::ModuleRef<RandomStreamModule> mRandom{this};
@@ -129,6 +129,9 @@ private:
     Dia::Observation::Metric::Counter* mPublishDroppedCounter = nullptr;
     Dia::Observation::Metric::Counter* mAttemptsCounter = nullptr;
     Dia::Observation::Metric::Counter* mUnsatisfiableCounter = nullptr;
+    Dia::Observation::Metric::Counter* mTimeoutsCounter = nullptr;
+    Dia::Observation::Metric::Counter* mErrorsCounter = nullptr;
+    Dia::Observation::Metric::Counter* mCancelsCounter = nullptr;
     Dia::Observation::Metric::Gauge*   mLastMsGauge = nullptr;
     Dia::Observation::Metric::Gauge*   mRevisionGauge = nullptr;
 };

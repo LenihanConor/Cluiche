@@ -4,6 +4,8 @@
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <algorithm>
+#include <cstring>
 #include <functional>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -96,6 +98,14 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                 else
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: max_retry_attempts must be a non-negative integer, ignored");
             }
+            if (root.isMember("timeout_seconds"))
+            {
+                const Json::Value& v = root["timeout_seconds"];
+                if (v.isNumeric() && v.asDouble() >= 0.0)
+                    mSession.SetTimeoutSeconds(static_cast<float>(v.asDouble() < 1.0e9 ? v.asDouble() : 1.0e9));
+                else
+                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: timeout_seconds must be a non-negative number, ignored");
+            }
             if (root.isMember("size"))
             {
                 Json::Value args(Json::objectValue);
@@ -138,6 +148,9 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     mPublishDroppedCounter = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.publish_dropped"));
     mAttemptsCounter       = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.attempts"));
     mUnsatisfiableCounter  = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.unsatisfiable"));
+    mTimeoutsCounter       = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.timeouts"));
+    mErrorsCounter         = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.errors"));
+    mCancelsCounter        = metrics.RegisterCounter(Dia::Core::StringCRC("cow.worldgen.cancels"));
     mLastMsGauge           = metrics.RegisterGauge(Dia::Core::StringCRC("cow.worldgen.last_ms"));
     mRevisionGauge         = metrics.RegisterGauge(Dia::Core::StringCRC("cow.worldgen.revision"));
 
@@ -148,6 +161,8 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     bus.RegisterProducer<WorldGenerationComplete>(GetInstanceId());
     bus.RegisterType<WorldGenerationRetry, 16>();
     bus.RegisterProducer<WorldGenerationRetry>(GetInstanceId());
+    bus.RegisterType<WorldGenerationFailed, 4>();
+    bus.RegisterProducer<WorldGenerationFailed>(GetInstanceId());
 
     mPublishFailed = false;
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
@@ -259,18 +274,58 @@ void WorldGenerationModule::OnRetryRunFinished()
             mPublishDroppedCounter->Inc();   // progress events are best effort; the report keeps the full detail
     }
 
-    if (report->outcome == WorldGeneration::GenerationOutcome::Success)
+    using WorldGeneration::GenerationOutcome;
+    if (report->outcome == GenerationOutcome::Success)
     {
         mGenerationUnsatisfiable = false;
         return;
     }
+
+    // Ended without a world: tell the dependants why. The previous world and its revision are untouched.
+    WorldGenerationFailed failed;
+    switch (report->outcome)
+    {
+    case GenerationOutcome::Timeout:   failed.reason = FailureReason::Timeout; break;
+    case GenerationOutcome::Cancelled: failed.reason = FailureReason::ManualCancel; break;
+    case GenerationOutcome::Error:     failed.reason = FailureReason::Error; break;
+    default:                           failed.reason = FailureReason::Unsatisfiable; break;
+    }
+    failed.seed = report->outerSeed;
+    failed.attempts = static_cast<uint32_t>(report->attempts.Size());
+    std::strncpy(failed.message, report->failureMessage, sizeof(failed.message) - 1);
+    failed.message[sizeof(failed.message) - 1] = '\0';
+    if (!host || !host->GetBus().Broadcast(failed))
+        mPublishDroppedCounter->Inc();
+
+    if (report->outcome == GenerationOutcome::Cancelled)
+    {
+        mCancelsCounter->Inc();   // a user action: not a failure, health unchanged
+        DIA_LOG_INFO("CoW", "WorldGenerationModule: generation for seed %llu cancelled after %u attempt(s); the previous world is kept",
+                     static_cast<unsigned long long>(report->outerSeed), static_cast<unsigned>(report->attempts.Size()));
+        return;
+    }
+
     mGenerationUnsatisfiable = true;
-    mUnsatisfiableCounter->Inc();
     mHealth.IncrementErrors();
-    mHealth.SetFailing(Dia::Core::StringCRC("generation_unsatisfiable"));
-    DIA_LOG_ERROR("CoW", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s); see cow.worldgen.report",
+    const char* healthReason = "generation_unsatisfiable";
+    if (report->outcome == GenerationOutcome::Timeout)
+    {
+        mTimeoutsCounter->Inc();
+        healthReason = "generation_timeout";
+    }
+    else if (report->outcome == GenerationOutcome::Error)
+    {
+        mErrorsCounter->Inc();
+        healthReason = "generation_error";
+    }
+    else
+    {
+        mUnsatisfiableCounter->Inc();
+    }
+    mHealth.SetFailing(Dia::Core::StringCRC(healthReason));
+    DIA_LOG_ERROR("CoW", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s) (%s); see cow.worldgen.report",
                   static_cast<unsigned long long>(report->outerSeed), WorldGeneration::GenerationOutcomeName(report->outcome),
-                  static_cast<unsigned>(report->attempts.Size()));
+                  static_cast<unsigned>(report->attempts.Size()), report->failureMessage);
 }
 
 void WorldGenerationModule::LogWorldFileReply(const char* action, const Json::Value& reply) const
@@ -335,6 +390,7 @@ void WorldGenerationModule::RegisterCommands()
     static const ValueParam kRegenParams[] = {
         { "seed", "int", false, "Optional new seed; the whole pipeline re-runs from scratch" },
         { "maxRetryAttempts", "int", false, "Retry bound for regions and sites (default 10, clamped to 1..64); sticks for later regenerates" },
+        { "timeoutSeconds", "float", false, "Wall-clock budget for the whole generation, all attempts (default 30, clamped to 0..3600); sticks for later regenerates" },
         { "unlock", "bool", false, "Required (true) on a locked imported world; drops the imported edits" } };
     static const ValueParam kLoadParams[] = {
         { "id", "string", true, "Preset id" },
@@ -421,7 +477,7 @@ void WorldGenerationModule::RegisterCommands()
     registerOne(true, "cow.worldgen.set_size", "Set the world size (Small, Standard, Large); regenerates on the next sim tick",
                 kSetSizeParams, 2, [s](const Json::Value& a) { return s->SetSize(a); });
     registerOne(true, "cow.worldgen.regenerate", "Re-run world generation from scratch, optionally with a new seed",
-                kRegenParams, 3, [s](const Json::Value& a)
+                kRegenParams, 4, [s](const Json::Value& a)
                 {
                     Json::Value r = s->Regenerate(a);
                     if (r.isObject() && r.isMember("success") && r["success"].asBool())
@@ -434,6 +490,8 @@ void WorldGenerationModule::RegisterCommands()
                     }
                     return r;
                 });
+    registerOne(true, "cow.worldgen.cancel", "Cancel the Regenerate in progress (or pending): the previous world is kept; nothing to cancel is not an error",
+                nullptr, 0, [s](const Json::Value& a) { return s->Cancel(a); });
     registerOne(true, "cow.worldgen.preset.load", "Load a shape preset by id (replaces all shape params, keeps the seed)",
                 kLoadParams, 2, [s](const Json::Value& a) { return s->PresetLoad(a); });
     registerOne(true, "cow.worldgen.preset.save", "Save the current shape params as a preset in the writable presets directory",
@@ -502,6 +560,7 @@ Dia::ApplicationFlow::StopResult WorldGenerationModule::DoStop()
         mHealthRegistered = false;
     }
     mGenerationsCounter = mPublishDroppedCounter = mAttemptsCounter = mUnsatisfiableCounter = nullptr;
+    mTimeoutsCounter = mErrorsCounter = mCancelsCounter = nullptr;
     mLastMsGauge = mRevisionGauge = nullptr;
     DIA_LOG_INFO("CoW", "WorldGenerationModule: stopped at revision %u", mSession.Revision());
     return Dia::ApplicationFlow::StopResult::kDone;

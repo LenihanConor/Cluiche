@@ -1048,3 +1048,79 @@ TEST(WorldGenCommands, WorldsDirectoryConfigKeysAreTypeChecked)
 #else
 TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
 #endif
+
+// ---- Timeout and failure handling (Feature 5): cow.worldgen.cancel ------------------------------------------------------------
+
+#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+
+TEST(WorldGenCommandsCancel, CancelWithNothingRunningSucceedsAndSaysSo)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const uint32_t revision = h.Rev();
+	const Json::Value r = h.Call("cow.worldgen.cancel");
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_FALSE(r["cancelled"].asBool());
+	EXPECT_EQ(h.Rev(), revision);
+}
+
+TEST(WorldGenCommandsCancel, CancelMidRunThroughTheStreamKeepsThePreviousWorldAndReportsIt)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const uint32_t revision = h.Rev();
+	CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+	ASSERT_TRUE(gWg->GetSiteRegistry().RegisterGuarantee(&never));
+
+	Json::Value a = Obj(); a["maxRetryAttempts"] = 64;
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", a)["success"].asBool());
+	h.Pump(2);
+
+	// A run is stepping: world-changing actions are refused with "busy", queries answer.
+	Json::Value s = Obj(); s["rivers"] = 0.9;
+	const Json::Value busy = h.Call("cow.worldgen.set", s);
+	EXPECT_FALSE(busy["success"].asBool());
+	EXPECT_EQ(busy["error"].asString(), "busy");
+	EXPECT_TRUE(busy["generating"].asBool());
+	const Json::Value mid = h.Call("cow.worldgen.status");
+	EXPECT_TRUE(mid["generating"].asBool());
+	EXPECT_EQ(mid["state"].asString(), "Generating");
+	EXPECT_EQ(mid["revision"].asUInt(), revision);
+
+	const Json::Value c = h.Call("cow.worldgen.cancel");
+	ASSERT_TRUE(c["success"].asBool()) << c.toStyledString();
+	EXPECT_TRUE(c["cancelled"].asBool());
+	EXPECT_EQ(c["outcome"].asString(), "Cancelled");
+	EXPECT_LT(c["attempts"].asUInt(), 64u);
+	EXPECT_EQ(c["message"].asString(), "CANCEL: World generation cancelled by user");
+
+	h.Pump(2);
+	EXPECT_EQ(h.Rev(), revision);
+	const Json::Value rep = h.Call("cow.worldgen.report");
+	EXPECT_EQ(rep["outcome"].asString(), "Cancelled");
+	EXPECT_EQ(rep["message"].asString(), "CANCEL: World generation cancelled by user");
+	EXPECT_EQ(rep["worldRevision"].asUInt(), 0u);
+
+	// Free again.
+	EXPECT_TRUE(h.Call("cow.worldgen.set", s)["success"].asBool());
+}
+
+TEST(WorldGenCommandsCancel, RegenerateTakesATimeoutAndTheCommandIsListed)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	Json::Value a = Obj(); a["timeoutSeconds"] = 12.5;
+	const Json::Value r = h.Call("cow.worldgen.regenerate", a);
+	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+	EXPECT_FLOAT_EQ(r["timeoutSeconds"].asFloat(), 12.5f);
+	Json::Value bad = Obj(); bad["timeoutSeconds"] = -1;
+	EXPECT_TRUE(Failed(h.Call("cow.worldgen.regenerate", bad)));
+
+	bool listed = false;
+	for (const char* n : CoW::WorldGenerationModule::kCommandNames) listed = listed || std::string(n) == "cow.worldgen.cancel";
+	EXPECT_TRUE(listed);
+	EXPECT_TRUE(gHost->GetHost().Has(StringCRC("cow.worldgen.cancel")));
+}

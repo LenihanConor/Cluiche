@@ -439,3 +439,232 @@ TEST(WorldGenModuleRetry, UnsatisfiableHealthSurvivesALivePreviewTick)
     EXPECT_EQ(f.msgs[0].retryAttempts, 0u);
     EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
 }
+
+// ---- Timeout and failure handling (Feature 5): Failed event, cancel, timeout, error, health ------------------------------
+
+#include <Shared/WorldGeneration/GenerationGuard.h>
+#include <stdexcept>
+
+namespace {
+
+struct FailedTap
+{
+    Dia::MessageBus::BusSubscriptionHandle sub;
+    std::vector<WorldGenerationFailed> msgs;
+    explicit FailedTap(Fixture& f)
+    {
+        f.bus->GetBus().RegisterType<WorldGenerationFailed, 4>();
+        sub = f.bus->GetBus().Subscribe<WorldGenerationFailed>(StringCRC("TestFailedSink"),
+            [this](const WorldGenerationFailed& m) { msgs.push_back(m); });
+    }
+};
+
+struct StepClock : WorldGeneration::IGenerationClock
+{
+    double now = 10.0;
+    double NowSeconds() const override { return now; }
+};
+
+// Fails every validation, advances the clock, optionally throws.
+class DragGuarantee : public WorldGeneration::IWorldGuarantee
+{
+public:
+    DragGuarantee(StepClock& clock, double step, bool throws) : step(step), mClock(clock), mThrows(throws) {}
+    StringCRC GetId() const override { return StringCRC("Test.Drag"); }
+    WorldGeneration::GuaranteeResult Check(const WorldGeneration::ValidationContext&) const override
+    {
+        mClock.now += step;
+        if (mThrows) { throw std::runtime_error("Test error"); }
+        WorldGeneration::GuaranteeResult r;
+        r.idCrc = GetId().Value();
+        r.satisfied = !fail;
+        if (fail) { r.AddDiagnostic("drag"); }
+        return r;
+    }
+    double step;
+    bool fail = true;
+private:
+    StepClock& mClock;
+    bool mThrows;
+};
+
+} // namespace
+
+TEST(WorldGenModuleTimeout, FailedEventIsTriviallyCopyableWithAStableTypeId)
+{
+    EXPECT_TRUE(std::is_trivially_copyable_v<WorldGenerationFailed>);
+    EXPECT_EQ(WorldGenerationFailed::kTypeId, StringCRC("CoW.WorldGenerationFailed"));
+    const WorldGenerationFailed m{};
+    EXPECT_EQ(m.reason, FailureReason::Unsatisfiable);
+    EXPECT_EQ(m.seed, 0u);
+    EXPECT_EQ(m.attempts, 0u);
+    EXPECT_EQ(m.message[0], 0);
+    EXPECT_EQ(sizeof(m.message), 128u);
+}
+
+TEST(WorldGenModuleTimeout, ARegenerateRunsOneAttemptPerFrame)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 4;
+    f.wg->GetSession().Regenerate(a);
+    f.wg->NotifyAction();
+    f.Pump(1);
+    EXPECT_TRUE(f.wg->GetSession().IsGenerating());
+    EXPECT_EQ(f.wg->GetSession().Status()["progress"]["attempts"].asUInt(), 1u);
+    f.Pump(2);
+    EXPECT_TRUE(f.wg->GetSession().IsGenerating());
+    f.Pump(2);
+    EXPECT_FALSE(f.wg->GetSession().IsGenerating());
+    EXPECT_EQ(f.wg->GetLastReport()->attempts.Size(), 4u);
+}
+
+TEST(WorldGenModuleTimeout, ATimeoutPublishesFailedKeepsTheWorldFailsHealthAndRecovers)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    FailedTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    const uint32_t revision = f.wg->GetWorldRevision();
+    const uint64_t timeoutsBefore = CounterValue("cow.worldgen.timeouts");
+
+    StepClock clock;
+    DragGuarantee drag(clock, 4.0, false);
+    f.wg->GetSession().SetGenerationClock(&clock);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&drag));
+    Json::Value a(Json::objectValue); a["timeoutSeconds"] = 5;
+    f.wg->GetSession().Regenerate(a);
+    f.wg->NotifyAction();
+    f.Pump(6);
+
+    ASSERT_EQ(tap.msgs.size(), 1u);
+    EXPECT_EQ(tap.msgs[0].reason, FailureReason::Timeout);
+    EXPECT_EQ(tap.msgs[0].attempts, 2u);
+    EXPECT_STREQ(tap.msgs[0].message, "TIMEOUT: World generation exceeded 5.0 seconds");
+    EXPECT_TRUE(f.msgs.empty());                                   // no WorldGenerationComplete
+    EXPECT_EQ(f.wg->GetWorldRevision(), revision);                 // the previous world stands
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_EQ(CounterValue("cow.worldgen.timeouts") - timeoutsBefore, 1u);
+
+    // Recover: the guarantee passes now; the next Regenerate succeeds and health recovers.
+    drag.fail = false;
+    drag.step = 0.0;
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.wg->NotifyAction();
+    f.Pump(3);
+    ASSERT_EQ(f.msgs.size(), 1u);
+    EXPECT_EQ(f.wg->GetWorldRevision(), revision + 1);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+}
+
+TEST(WorldGenModuleTimeout, AnErrorPublishesFailedWithTheExceptionMessageAndFailsHealth)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    FailedTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    const uint32_t revision = f.wg->GetWorldRevision();
+    const uint64_t errorsBefore = CounterValue("cow.worldgen.errors");
+
+    StepClock clock;
+    DragGuarantee boom(clock, 0.0, true);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&boom));
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.wg->NotifyAction();
+    f.Pump(3);
+
+    ASSERT_EQ(tap.msgs.size(), 1u);
+    EXPECT_EQ(tap.msgs[0].reason, FailureReason::Error);
+    EXPECT_STREQ(tap.msgs[0].message, "FAILURE: World generation error: Test error");
+    EXPECT_TRUE(f.msgs.empty());
+    EXPECT_EQ(f.wg->GetWorldRevision(), revision);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_EQ(CounterValue("cow.worldgen.errors") - errorsBefore, 1u);
+}
+
+TEST(WorldGenModuleTimeout, UnsatisfiableAlsoPublishesFailedWithItsOwnReason)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    FailedTap tap(f);
+    f.Pump(3);
+    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 2;
+    f.wg->GetSession().Regenerate(a);
+    f.wg->NotifyAction();
+    f.Pump(5);
+    ASSERT_EQ(tap.msgs.size(), 1u);
+    EXPECT_EQ(tap.msgs[0].reason, FailureReason::Unsatisfiable);
+    EXPECT_EQ(tap.msgs[0].attempts, 2u);
+    EXPECT_EQ(std::strncmp(tap.msgs[0].message, "FAILURE", 7), 0);
+}
+
+TEST(WorldGenModuleTimeout, ACancelMidRunPublishesFailedKeepsTheWorldAndLeavesHealthAlone)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    FailedTap tap(f);
+    f.Pump(3);
+    f.msgs.clear();
+    const uint32_t revision = f.wg->GetWorldRevision();
+    const uint64_t cancelsBefore = CounterValue("cow.worldgen.cancels");
+    ASSERT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+
+    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 10;
+    f.wg->GetSession().Regenerate(a);
+    f.wg->NotifyAction();
+    f.Pump(2);
+    ASSERT_TRUE(f.wg->GetSession().IsGenerating());
+
+    const Json::Value r = f.wg->GetSession().Cancel(Json::Value(Json::objectValue));
+    ASSERT_TRUE(r["cancelled"].asBool());
+    f.Pump(2);
+
+    ASSERT_EQ(tap.msgs.size(), 1u);
+    EXPECT_EQ(tap.msgs[0].reason, FailureReason::ManualCancel);
+    EXPECT_EQ(tap.msgs[0].attempts, 2u);
+    EXPECT_STREQ(tap.msgs[0].message, "CANCEL: World generation cancelled by user");
+    EXPECT_TRUE(f.msgs.empty());
+    EXPECT_EQ(f.wg->GetWorldRevision(), revision);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);   // a user action is not a failure
+    EXPECT_EQ(CounterValue("cow.worldgen.cancels") - cancelsBefore, 1u);
+    EXPECT_FALSE(f.wg->GetSession().IsGenerating());
+}
+
+TEST(WorldGenModuleTimeout, ASuccessfulRegeneratePublishesNoFailedEvent)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    FailedTap tap(f);
+    f.Pump(3);
+    f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    f.wg->NotifyAction();
+    f.Pump(3);
+    EXPECT_TRUE(tap.msgs.empty());
+}
+
+TEST(WorldGenModuleTimeout, ConfigSetsTheTimeoutAndBadValuesKeepTheDefault)
+{
+    Fixture f("{\"timeout_seconds\":12.5}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_FLOAT_EQ(f.wg->GetSession().TimeoutSeconds(), 12.5f);
+
+    Fixture g("{\"timeout_seconds\":\"soon\"}");
+    ASSERT_TRUE(g.Boot());
+    g.Pump(3);
+    EXPECT_FLOAT_EQ(g.wg->GetSession().TimeoutSeconds(), WorldGeneration::kDefaultTimeoutSeconds);
+
+    Fixture h("{\"timeout_seconds\":-3}");
+    ASSERT_TRUE(h.Boot());
+    h.Pump(3);
+    EXPECT_FLOAT_EQ(h.wg->GetSession().TimeoutSeconds(), WorldGeneration::kDefaultTimeoutSeconds);
+}
