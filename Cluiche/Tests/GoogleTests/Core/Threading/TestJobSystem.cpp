@@ -524,3 +524,79 @@ TEST(JobSystemObserver, NullObserver_RunsJobsNormally)
     EXPECT_EQ(counter.Load(), 3);
     js.Shutdown();
 }
+
+// ------------------------------------------------------------------------------
+// Gap audit (Job Observation task 5)
+// ------------------------------------------------------------------------------
+
+#include <stdexcept>
+
+TEST(JobSystemObserver, ShutdownWithQueuedJobs_DrainsBalancedAndStopsAfterLastJob)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+    Atomic<int> ran{0};
+    js.Submit([&] { std::this_thread::sleep_for(std::chrono::milliseconds(30)); ran.Increment(); });
+    for (int i = 0; i < 50; ++i) js.Submit([&] { ran.Increment(); });
+    js.Shutdown();   // jobs still queued
+    EXPECT_EQ(ran.Load(), 51);
+    EXPECT_EQ(obs.seen.size(), 51u);   // one End per Begin
+    EXPECT_EQ(obs.starts.size(), 1u);
+    EXPECT_EQ(obs.stops.size(), 1u);
+}
+
+TEST(JobSystemObserver, ThrowingJob_StillEndsAndCompletes)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+    JobHandle h = js.Submit([] { throw std::runtime_error("boom"); });
+    js.Wait(h);
+    EXPECT_TRUE(js.IsComplete(h));
+    JobHandle h2 = js.Submit([] {});
+    js.Wait(h2);
+    js.Shutdown();
+    EXPECT_EQ(obs.seen.size(), 2u);
+}
+
+TEST(JobSystemObserver, TrySubmitAfterShutdown_NoCaptureInvalidHandle)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+    js.Shutdown();
+    JobHandle h = js.TrySubmit([] {});
+    EXPECT_FALSE(h.IsValid());
+    EXPECT_TRUE(obs.captureThreads.empty());
+}
+
+TEST(JobSystemObserver, ReinitializeWithDifferentObserver_OnlyNewObserverSeesJobs)
+{
+    RecordingJobObserver a, b;
+    JobSystem js;
+    js.Initialize(1, nullptr, &a);
+    js.Wait(js.Submit([] {}));
+    js.Shutdown();
+    js.Initialize(1, nullptr, &b);
+    js.Wait(js.Submit([] {}));
+    js.Shutdown();
+    EXPECT_EQ(a.seen.size(), 1u);
+    EXPECT_EQ(b.seen.size(), 1u);
+    EXPECT_EQ(b.starts.size(), 1u);
+    EXPECT_EQ(b.stops.size(), 1u);
+}
+
+TEST(JobSystemObserver, JobTagRangePropagatesToRecord)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+    js.Wait(js.Submit([] {}, JobTag{11, 22, 3, 8}));
+    js.Shutdown();
+    ASSERT_EQ(obs.seen.size(), 1u);
+    EXPECT_EQ(obs.seen[0].rec.range, 3u);
+    EXPECT_EQ(obs.seen[0].rec.rangeCount, 8u);
+    EXPECT_EQ(obs.seen[0].beginCtx.attribution.range, 3u);
+    EXPECT_EQ(obs.seen[0].beginCtx.attribution.rangeCount, 8u);
+}
