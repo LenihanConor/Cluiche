@@ -79,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="ViewerStateSnapshot.h" />
     <ClInclude Include="IViewHistorySource.h" />
+    <ClInclude Include="Testing\CellLayerGolden.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

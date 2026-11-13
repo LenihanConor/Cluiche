@@ -1263,6 +1263,8 @@
     <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp" />
     <ClCompile Include="CoW\TestWorldGenSizes.cpp" />
     <ClCompile Include="CoW\TestWorldGenPresetStats.cpp" />
+    <ClCompile Include="DiaCellLayers\TestCellLayerGolden.cpp" />
+    <ClCompile Include="CoW\TestWorldGenLayerGoldens.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

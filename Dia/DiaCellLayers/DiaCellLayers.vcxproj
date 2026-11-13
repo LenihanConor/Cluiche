@@ -118,6 +118,7 @@
     <ClInclude Include="Testing\ViewerCommands.h" />
     <ClInclude Include="ViewerStateSnapshot.h" />
     <ClInclude Include="IViewHistorySource.h" />
+    <ClInclude Include="Testing\CellLayerGolden.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CellLayersTypes.cpp" />

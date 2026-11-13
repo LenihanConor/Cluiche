@@ -2928,5 +2928,11 @@
     <ClCompile Include="CoW\TestWorldGenPresetStats.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaCellLayers\TestCellLayerGolden.cpp">
+      <Filter>DiaCellLayers</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenLayerGoldens.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
