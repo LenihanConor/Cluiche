@@ -186,6 +186,11 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaCellLayers resume point (2026-10-30, end of session) | 2026-11-02 | Moved by `dia docs backlog move` |
 | sim-registered-queries | [spec](specs/) | 2026-11-03 | Marked done by `dia docs spec-done` |
 | CoW | `ISnapshotStore` adapter over E1 | 2026-11-05 | Moved by `dia docs backlog move` |
+| Dia | Remove `TrafficLightDot` forwarding shims | 2026-11-10 | Fixed 2026-11-10. The TrafficLightDot shims were already deleted in 3f31b8c9; removed the other four re-export shims (ConnectionStatusDot, LiveConnectionButton, AppFlowEditor navigateFailedUtils, PipelineEditor EmptyState) plus their duplicate tests and a stale vi.mock |
+| Dia | `dia docs backlog move` matches by substring | 2026-11-10 | Fixed 2026-11-10. Matches the whole Project/Item cell (case/punctuation-insensitive, optional trailing parenthetical); refuses multiple matches without --all; spec-done uses the same matcher. tests/test_docs_backlog_move.py |
+| Dia | `dia docs vcxproj-add` makes a bogus `..` filter (2026-11-05) | 2026-11-10 | Fixed 2026-11-10. infer_filter skips leading ../. segments (fallback is the first real segment, e.g. CoW) and never borrows a filter from a bare ..\.. ancestor |
+| Dia | `dia reflect` skips rewriting when only defaults or metadata change (found 2026-10-22) | 2026-11-10 | Fixed 2026-11-10. _compute_version compares the whole schema minus version; any other content change bumps minor. tests/test_reflect_versioning.py |
+| CoW | S-1 World Generation | 2026-11-13 | Moved by `dia docs backlog move` |
 
 ---
 
