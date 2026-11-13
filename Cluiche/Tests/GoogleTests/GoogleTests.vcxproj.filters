@@ -2922,5 +2922,8 @@
     <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSizes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
