@@ -7,6 +7,7 @@
 #include <DiaGraphics/CellField/CellFieldRegistry.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Capture/DiaCapture.h>
 
 namespace CoW {
 
@@ -209,6 +210,33 @@ void S1WorldGenerationTestbedStageModule::RegisterViewQuery()
     });
     if (!mViewQueryRegistered)
         DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: cow.worldgen.view registration rejected by SimQueryHost");
+
+    // Acceptance screenshots: queue a DiaObservation frame capture; the PNG lands in <out>/captures/run/<tag>.png.
+    Dia::DebugServer::SimHelpInfo capHelp;
+    capHelp.description = "Queue a frame capture of the next presented frame under {tag} (PNG written to captures/run/<tag>.png)";
+    capHelp.category = "worldgen";
+    capHelp.owner = "S1WorldGenerationTestbedStageModule";
+    if (!host->RegisterQuery("cow.worldgen.capture", capHelp, [](const Json::Value& args) -> Json::Value
+    {
+        Json::Value r(Json::objectValue);
+        const std::string tag = args.isObject() && args["tag"].isString() ? args["tag"].asString() : std::string();
+        auto* cm = Dia::Observation::SessionManager::GetActiveCaptureManager();
+        if (tag.empty() || cm == nullptr)
+        {
+            r["success"] = false;
+            r["error"] = tag.empty() ? "tag is required" : "no active capture manager";
+            return r;
+        }
+        Dia::Observation::Capture::CaptureMetadata meta;
+        meta.tag = Dia::Core::StringCRC(tag.c_str());
+        meta.trigger = Dia::Observation::Capture::TriggerSource::kCode;
+        strncpy_s(meta.context, sizeof(meta.context), "worldgen acceptance", _TRUNCATE);
+        const auto status = cm->RequestCapture(meta);
+        r["success"] = status == Dia::Observation::Capture::CaptureRequestStatus::kAccepted;
+        r["status"] = static_cast<int>(status);
+        return r;
+    }))
+        DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: cow.worldgen.capture registration rejected by SimQueryHost");
 }
 
 void S1WorldGenerationTestbedStageModule::UnregisterViewQuery()
@@ -216,7 +244,10 @@ void S1WorldGenerationTestbedStageModule::UnregisterViewQuery()
     if (!mViewQueryRegistered)
         return;
     if (auto* host = mSimQueryHost.Get())
+    {
         host->UnregisterQuery("cow.worldgen.view");
+        host->UnregisterQuery("cow.worldgen.capture");
+    }
     mViewQueryRegistered = false;
 }
 
