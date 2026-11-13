@@ -11,6 +11,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 
@@ -46,6 +47,8 @@ namespace Dia { namespace ApplicationFlow {
         , mStartLogged(false)
         , mStopLogged(false)
     {
+        // Profile subject name (one-time; hot path only passes the CRC value).
+        Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
     }
 
     //--------------------------------------------------------------------------
@@ -250,7 +253,7 @@ namespace Dia { namespace ApplicationFlow {
 
             case ModuleState::kActive:
             {
-                DIA_PROFILE_SCOPE("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+                DIA_PROFILE_SCOPE_SUBJECT("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow, mInstanceId.Value());
                 DIA_TRACE_ZONE("module.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
                 DoUpdate(deltaTime);
                 break;

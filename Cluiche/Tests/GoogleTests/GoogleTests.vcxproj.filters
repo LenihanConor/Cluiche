@@ -2940,5 +2940,8 @@
     <ClCompile Include="DiaObservation\Job\TestJobObserver.cpp">
       <Filter>DiaObservation</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestModuleProfileSubject.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

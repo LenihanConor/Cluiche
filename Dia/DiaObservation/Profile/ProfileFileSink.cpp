@@ -1,4 +1,5 @@
 #include "DiaObservation/Profile/ProfileFileSink.h"
+#include "DiaObservation/Profile/Profiler.h"
 
 #include "DiaCore/Json/external/json/json.h"
 
@@ -47,7 +48,17 @@ namespace Dia
 			{
 				int64_t startUnixNano = static_cast<int64_t>(record.startUnixNano) + mEpochOffsetNs;
 
-				char line[512];
+				// Subject text resolved at write time (drain thread), never on the hot path.
+				char subjectField[160];
+				subjectField[0] = '\0';
+				if (record.subject != 0)
+				{
+					char nameBuf[Profiler::kSubjectNameLen + 16];
+					Profiler::ResolveSubjectName(record.subject, nameBuf, sizeof(nameBuf));
+					snprintf(subjectField, sizeof(subjectField), ",\"subject\":\"%s\"", nameBuf);
+				}
+
+				char line[640];
 				int len = snprintf(line, sizeof(line),
 					"{\"frame_number\":%u,"
 					"\"thread_id\":%u,"
@@ -56,7 +67,7 @@ namespace Dia
 					"\"scope_id\":%llu,"
 					"\"parent_scope_id\":%llu,"
 					"\"start_unix_nano\":%lld,"
-					"\"duration_ns\":%llu}\n",
+					"\"duration_ns\":%llu%s}\n",
 					record.frameNumber,
 					record.threadId,
 					static_cast<unsigned int>(record.name.Value()),
@@ -64,7 +75,8 @@ namespace Dia
 					static_cast<unsigned long long>(record.scopeId),
 					static_cast<unsigned long long>(record.parentScopeId),
 					static_cast<long long>(startUnixNano),
-					static_cast<unsigned long long>(record.durationNs));
+					static_cast<unsigned long long>(record.durationNs),
+					subjectField);
 
 				if (len > 0)
 					fwrite(line, 1, static_cast<size_t>(len), mFile);
@@ -147,6 +159,12 @@ namespace Dia
 					scopeObj["duration_ns"]    = Json::Value(static_cast<Json::UInt64>(record.durationNs));
 					scopeObj["frame_number"]   = Json::Value(static_cast<Json::UInt>(record.frameNumber));
 					scopeObj["thread_id"]      = Json::Value(static_cast<Json::UInt>(record.threadId));
+					if (record.subject != 0)
+					{
+						char nameBuf[Profiler::kSubjectNameLen + 16];
+						Profiler::ResolveSubjectName(record.subject, nameBuf, sizeof(nameBuf));
+						scopeObj["subject"] = Json::Value(nameBuf);
+					}
 					scopesArray.append(scopeObj);
 				}
 

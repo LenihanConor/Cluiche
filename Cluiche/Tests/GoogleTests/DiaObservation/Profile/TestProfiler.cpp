@@ -370,6 +370,46 @@ TEST_F(ProfilerTest, A1a_MacroSubjectRecorded)
     EXPECT_EQ(0x77u, recs[0].subject);
 }
 
+// A1b — file sink writes subject text
+TEST_F(ProfilerTest, A1b_SinkWritesRegisteredSubjectName)
+{
+    Profiler::RegisterSubjectName(0xD1000001u, "SinkNamedSubject");
+    {
+        ScopedZone z(Dia::Core::StringCRC("A1bNamed"), Category::kDiaApplicationFlow, 0xD1000001u);
+        DIA_PROFILE_SCOPE("A1bNamedChild", Category::kDiaApplicationFlow);
+    }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    EXPECT_NE(content.find("\"subject\":\"SinkNamedSubject\""), std::string::npos);
+    // parent + inheriting child both carry it
+    size_t first = content.find("\"subject\":\"SinkNamedSubject\"");
+    EXPECT_NE(content.find("\"subject\":\"SinkNamedSubject\"", first + 1), std::string::npos);
+}
+
+TEST_F(ProfilerTest, AA12_SinkWritesUnregisteredSubjectAsHex)
+{
+    {
+        ScopedZone z(Dia::Core::StringCRC("A1bHex"), Category::kDiaApplicationFlow, 0xD1000002u);
+    }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    EXPECT_NE(content.find("\"subject\":\"0xd1000002\""), std::string::npos);
+}
+
+TEST_F(ProfilerTest, A1b_SinkOmitsSubjectWhenZero)
+{
+    {
+        DIA_PROFILE_SCOPE("A1bNoSubject", Category::kDiaApplicationFlow);
+    }
+    FlushAndWait();
+    Profiler::Instance().Stop();
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    ASSERT_NE(content.find(std::to_string(Dia::Core::StringCRC("A1bNoSubject").Value())), std::string::npos);
+    EXPECT_EQ(content.find("\"subject\""), std::string::npos);
+}
+
 TEST_F(ProfilerTest, AA2_PlainNestedScopeInheritsSubject)
 {
     {

@@ -12,6 +12,7 @@
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
@@ -41,6 +42,9 @@ namespace Dia { namespace ApplicationFlow {
         else if (instanceId == Dia::Core::StringCRC("SimPU"))    mAffinity = PUAffinity::kSim;
         else if (instanceId == Dia::Core::StringCRC("RenderPU")) mAffinity = PUAffinity::kRender;
         else                                                      mAffinity = PUAffinity::kAny;
+
+        // Profile subject name (one-time; hot path only passes the CRC value).
+        Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
@@ -210,7 +214,7 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void ProcessingUnit::Update(float deltaTime)
     {
-        DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_PROFILE_SCOPE_SUBJECT("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow, mInstanceId.Value());
         DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
         // Task 34 — measure tick duration
