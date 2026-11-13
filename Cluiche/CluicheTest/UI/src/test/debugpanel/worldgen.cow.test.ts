@@ -96,10 +96,10 @@ const click = (el: Element) => p.click(el);
 describe("rendering", () => {
   beforeEach(() => push());
 
-  it("renders one card with the six sections in mockup order", () => {
+  it("renders one card with the seven sections in mockup order", () => {
     expect(p.doc.querySelectorAll(".domain").length).toBe(1);
     const keys = qa(".wg-sec").map((s) => s.getAttribute("data-sec"));
-    expect(keys).toEqual(["world", "shape", "timings", "view", "cell", "validation"]);
+    expect(keys).toEqual(["world", "file", "validation", "shape", "timings", "view", "cell"]);
   });
 
   it("renders one slider per slider control, a select for barrierForm, grouped by stage", () => {
@@ -163,12 +163,6 @@ describe("rendering", () => {
     expect(boxes.map((b) => b.disabled)).toEqual([true, false, true, true]);   // Tiles and Selection are fixed
   });
 
-  it("validation section is a disabled stub", () => {
-    const s = sec("validation");
-    expect(s.querySelectorAll("button:disabled").length).toBe(4);
-    expect(s.textContent).toContain("tasks 13-16");
-  });
-
   it("headline stat and enabled card", () => {
     expect(q("[data-role=headline]").textContent).toContain("Complete");
     expect(card().classList.contains("enabled")).toBe(true);
@@ -176,10 +170,10 @@ describe("rendering", () => {
 });
 
 describe("collapsible sections", () => {
-  it("opens only WORLD and TERRAIN SHAPE by default", () => {
+  it("opens WORLD, WORLD FILE, VALIDATION and TERRAIN SHAPE by default", () => {
     push();
     const closed = qa(".wg-sec").filter((s) => s.classList.contains("closed")).map((s) => s.getAttribute("data-sec"));
-    expect(closed).toEqual(["timings", "view", "cell", "validation"]);
+    expect(closed).toEqual(["timings", "view", "cell"]);
   });
 
   it("collapse/expand survives a state push and a structural rebuild", () => {

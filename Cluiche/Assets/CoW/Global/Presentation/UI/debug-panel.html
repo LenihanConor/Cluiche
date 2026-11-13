@@ -704,6 +704,43 @@ body {
 .wg-err { color: #e07a5f; padding: 4px 0; }
 .wg-ok { color: #7fd18b; }
 .wg-note { color: #666; margin-top: 4px; }
+.wg .badge { width: auto; padding: 0 5px; border-color: #444; color: #aaa; }
+.wg .badge.ok { color: #7fd18b; border-color: #2f5a37; }
+.wg .badge.bad { color: #e07a5f; border-color: #6a2f25; }
+.wg .badge.info { color: #9ec7e8; border-color: #2f4a66; }
+.wg-pill { padding: 0 8px; border: 1px solid #444; color: #aaa; font-size: 10px; letter-spacing: 1px; line-height: 17px; }
+.wg-pill.Generating { color: #e8c97a; border-color: #6a5a2a; }
+.wg-pill.Failed { color: #e07a5f; border-color: #6a2f25; }
+.wg-pill.Complete { color: #7fd18b; border-color: #2f5a37; }
+.wg-pbar { height: 7px; background: #222; margin: 4px 0 2px; }
+.wg-pbar i { display: block; height: 100%; background: #5a9fd4; }
+.wg-progl { display: flex; justify-content: space-between; color: #888; font-size: 10px; }
+.wg-card { border: 1px solid #333; background: #181818; padding: 4px 6px; margin-top: 4px; color: #bbb; }
+.wg-card.bad { border-color: #6a2f25; background: #241614; color: #e8a090; }
+.wg-wlist { border: 1px solid #2a2a2a; margin: 3px 0; max-height: 110px; overflow-y: auto; }
+.wg-wl { display: flex; gap: 8px; padding: 2px 6px; cursor: pointer; color: #ccc; }
+.wg-wl:hover { background: #222; }
+.wg-wl.sel { background: #2a4a66; }
+.wg-wl .dim { margin-left: auto; color: #777; }
+.wg-g { border: 1px solid #2a2a2a; margin: 3px 0; }
+.wg-g-head { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: #1c1c1c; cursor: pointer; }
+.wg-g-head .wg-ct { margin-left: auto; color: #777; font-size: 10px; }
+.wg-g-head .car::before { content: 'B8'; color: #555; }
+.wg-g.open .wg-g-head .car::before { content: 'BE'; }
+.wg-g-body { display: none; padding: 4px 8px; }
+.wg-g.open .wg-g-body { display: block; }
+.wg-diag { color: #e8a090; padding: 1px 0; }
+.wg-chip { display: inline-block; border: 1px solid #3a3a3a; padding: 0 4px; margin: 0 1px; color: #9ec7e8; cursor: pointer; }
+.wg-chip:hover { background: #2a2a2a; }
+.wg-att { color: #aaa; padding: 1px 0; }
+.wg-att.bad { color: #e8a090; }
+.wg-dialog { display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0,0,0,.55); align-items: center; justify-content: center; z-index: 90; }
+.wg-dialog.show { display: flex; }
+.wg-dialog .box { width: 340px; background: #1e1e1e; border: 1px solid #444; padding: 12px 14px; box-shadow: 0 8px 30px rgba(0,0,0,.6); }
+.wg-dialog h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: 1px; color: #e8c97a; }
+.wg-dialog p { color: #bbb; margin: 4px 0; line-height: 1.4; }
+.wg-dialog .bt { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.wg button.dng { background: #4a2a24; border-color: #7a3a30; }
 
 /* ── Utility ── */
 .hidden { display: none !important; }
@@ -793,7 +830,12 @@ var ui = {
   queryTimer: null,  // pending debounced query_check
   activeSlider: null, // control element currently being dragged
   wgOpen: {},         // WorldGen section key -> bool (collapsed state survives rebuilds)
-  wgSaveNote: ''      // WorldGen local preset-save message (validation), shown instead of lastSave
+  wgSaveNote: '',     // WorldGen local preset-save message (validation), shown instead of lastSave
+  wgFileNote: '',     // WorldGen local World File message (name validation / 63-char command cap)
+  wgGOpen: {},        // WorldGen guarantee id -> bool (row expanded; unset = open when failing)
+  wgLocked: false,    // latest file.locked: gates world-changing commands behind the confirm dialog
+  wgPending: null,    // {id, cmd, args} the refused change waiting for Keep / Discard
+  wgSt: null          // latest WorldGen state (restore values for Keep)
 };
 
 var latest = {};     // last pushed domain state, keyed by display name
@@ -1533,11 +1575,12 @@ var WG_THROTTLE_MS = 50;      // max one live setScale per window; trailing valu
 var WG_HOLD_MS     = 300;     // keep a just-released control against one stale state push
 var WG_SECTIONS = [
   { key: 'world',      title: 'WORLD',          open: true  },
+  { key: 'file',       title: 'WORLD FILE',     open: true  },
+  { key: 'validation', title: 'VALIDATION',     open: true  },
   { key: 'shape',      title: 'TERRAIN SHAPE',  open: true  },
   { key: 'timings',    title: 'STAGE TIMINGS',  open: false },
   { key: 'view',       title: 'VIEW',           open: false },
-  { key: 'cell',       title: 'CELL INSPECTOR', open: false },
-  { key: 'validation', title: 'VALIDATION',     open: false }
+  { key: 'cell',       title: 'CELL INSPECTOR', open: false }
 ];
 
 function wgIsDomain(id, cmdId) { return cmdId === 'WorldGen' || id === 'World Generation'; }
@@ -1843,21 +1886,83 @@ function wgParseInt(text) {
   return /^-?\d+$/.test(t) ? Number(t) : null;
 }
 
+// ── locked-import gate (SD-S1-009) ──
+// While file.locked, a world-changing action is NOT sent: the control is restored and the confirm dialog opens. Keep drops the
+// refused change (nothing sent); Discard sends discard {} (unlock) then the refused command with its normal args. No business logic here.
+function wgCtlValue(key) {
+  var ctl = (ui.wgSt && Array.isArray(ui.wgSt.controls)) ? ui.wgSt.controls : [];
+  for (var i = 0; i < ctl.length; ++i) if (ctl[i] && ctl[i].key === key) return ctl[i].value;
+  return undefined;
+}
+function wgGate(cmdId, cmd, args, restore) {
+  if (!ui.wgLocked) return false;
+  if (restore) restore();
+  if (!ui.wgPending) { ui.wgPending = { id: cmdId, cmd: cmd, args: args }; }
+  wgSyncDialog();
+  return true;
+}
+function wgSyncDialog() {
+  var d = document.querySelector('[data-role="wg-dialog"]');
+  if (!d) return;
+  d.classList.toggle('show', !!ui.wgPending);
+  var t = d.querySelector('[data-role="wg-dlgtext"]');
+  if (t) {
+    var what = ui.wgPending ? ui.wgPending.cmd : '';
+    var st = ui.wgSt || {};
+    var lo = st.progress && st.progress.lastOutcome;
+    var li = st.file && st.file.lastImport;
+    var nm = (lo && lo.kind === 'import' && lo.name) ? lo.name : ((li && li.success && li.name) ? li.name : '');
+    t.textContent = 'The world ' + (nm ? nm + ' ' : '') + 'was imported from a file and is locked. Applying this change (' + what +
+                    ') re-generates it from its recorded seed and params, which replaces the imported terrain, regions and sites.';
+  }
+}
+function wgDialogKeep() {
+  ui.wgPending = null;
+  wgSyncDialog();
+}
+// Discard: unlock the world (discard {}, no args), then send the refused command exactly as it would go when unlocked.
+function wgDialogDiscard() {
+  var p = ui.wgPending;
+  if (!p) return;
+  ui.wgPending = null;
+  wgSyncDialog();
+  sendCommand(p.id, 'discard', {});
+  sendCommand(p.id, p.cmd, p.args);
+}
+// Send a command whose args may exceed the 63-char cap: report instead of silently dropping.
+function wgSendChecked(cmdId, cmd, args) {
+  var len = JSON.stringify(args).length;
+  if (len > MAX_ARG_JSON) {
+    ui.wgFileNote = cmd + ' too long to send (' + len + ' of max ' + MAX_ARG_JSON + ' chars)';
+    return false;
+  }
+  ui.wgFileNote = '';
+  sendCommand(cmdId, cmd, args);
+  return true;
+}
+
 // Live drag: send on `input` at most once per WG_THROTTLE_MS with a trailing send, and on `change`.
 function wgBindSlider(cmdId, key, range, onLocal) {
   var timer = null, pending = false;
+  function restore() {
+    var v = wgCtlValue(key);
+    if (v !== undefined) range.value = v;
+    onLocal();
+  }
   function send() { sendCommand(cmdId, 'setScale', { key: key, value: parseFloat(range.value) }); }
   function tick() {
     timer = null;
     if (pending) { pending = false; send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
   }
   range.addEventListener('input', function () {
+    if (ui.wgLocked) { wgGate(cmdId, 'setScale', { key: key, value: parseFloat(range.value) }, restore); return; }
     ui.activeSlider = range;
     onLocal();
     if (timer === null) { send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
     else pending = true;
   });
   range.addEventListener('change', function () {
+    if (ui.wgLocked) { restore(); return; }
     onLocal();
     pending = false;
     if (timer !== null) { clearTimeout(timer); timer = null; }
@@ -1878,6 +1983,9 @@ function buildWgControl(cmdId, def) {
     var sel = wgSelect('wg-ctl-select', vals);
     sel.value = String(def.value);
     sel.addEventListener('change', function () {
+      if (wgGate(cmdId, 'setScale', { key: def.key, value: sel.value }, function () {
+        var v = wgCtlValue(def.key); if (v !== undefined) sel.value = String(v);
+      })) return;
       wgHold(sel);
       row.classList.toggle('modified', wgModified(sel.value, def.default));
       sendCommand(cmdId, 'setScale', { key: def.key, value: sel.value });
@@ -1927,15 +2035,22 @@ function buildWorldGen(domain) {
   var w = secs.world.sb;
   var seedRow = wgRow('Seed');
   var seed = wgTextInput('wg-seed');
+  function wgRestoreSeed() {
+    var s0 = ui.wgSt && ui.wgSt.stats;
+    if (s0 && s0.seed !== undefined) seed.value = String(s0.seed);
+    seed.removeAttribute('data-dirty'); seed.classList.remove('bad');
+  }
   seedRow.appendChild(seed);
   seed.addEventListener('change', function () {
     var n = wgParseSeed(seed.value);
     if (n === null) { seed.classList.add('bad'); return; }
+    if (wgGate(id, 'setSeed', { seed: n }, wgRestoreSeed)) return;
     seed.removeAttribute('data-dirty');
     sendCommand(id, 'setSeed', { seed: n });
   });
   seedRow.appendChild(wgButton('Random', 'wg-random', '', function () {
     var n = Math.floor(Math.random() * 100000000);
+    if (wgGate(id, 'regenerate', { seed: n }, wgRestoreSeed)) return;
     seed.value = String(n);
     seed.removeAttribute('data-dirty'); seed.classList.remove('bad');
     sendCommand(id, 'regenerate', { seed: n });
@@ -1943,10 +2058,12 @@ function buildWorldGen(domain) {
   seedRow.appendChild(wgButton('Regenerate', 'wg-regen', 'pri', function () {
     var n = wgParseSeed(seed.value);
     if (n === null) {
+      if (wgGate(id, 'regenerate', {}, wgRestoreSeed)) return;
       seed.classList.add('bad');
       sendCommand(id, 'regenerate', {});
       return;
     }
+    if (wgGate(id, 'regenerate', { seed: n }, wgRestoreSeed)) return;
     seed.removeAttribute('data-dirty');
     sendCommand(id, 'regenerate', { seed: n });
   }));
@@ -1957,7 +2074,10 @@ function buildWorldGen(domain) {
   var sizes = Array.isArray(st.sizes) ? st.sizes : [];
   for (var zi = 0; zi < sizes.length; ++zi)
     sizeItems.push({ value: sizes[zi].name, label: sizes[zi].name + ' ' + sizes[zi].width + '×' + sizes[zi].height });
-  sizeRow.appendChild(wgSegmented('wg-size', sizeItems, function (name) { sendCommand(id, 'setSize', { size: name }); }));
+  sizeRow.appendChild(wgSegmented('wg-size', sizeItems, function (name) {
+    if (wgGate(id, 'setSize', { size: name }, null)) return;
+    sendCommand(id, 'setSize', { size: name });
+  }));
   w.appendChild(sizeRow);
 
   var presets = Array.isArray(st.presets) ? st.presets : [];
@@ -1969,6 +2089,11 @@ function buildWorldGen(domain) {
   presetRow.appendChild(presetSel);
   presetRow.appendChild(wgButton('Load', 'wg-preset-load', '', function () {
     if (!presetSel.value) return;
+    if (wgGate(id, 'presetLoad', { id: presetSel.value }, function () {
+      var s0 = ui.wgSt && ui.wgSt.stats;
+      presetSel.value = (s0 && s0.preset) ? String(s0.preset) : '';
+      presetSel.removeAttribute('data-dirty');
+    })) return;
     presetSel.removeAttribute('data-dirty');
     sendCommand(id, 'presetLoad', { id: presetSel.value });
   }));
@@ -2015,6 +2140,135 @@ function buildWorldGen(domain) {
   statusRow.appendChild(status);
   w.appendChild(statusRow);
 
+  // Progress: state pill + Cancel; attempt / bar / elapsed only while Generating; last-outcome card.
+  var progRow = wgRow('Generation');
+  var pill = el('span', 'wg-pill', '');
+  pill.setAttribute('data-role', 'wg-pill');
+  progRow.appendChild(pill);
+  var cancelBtn = wgButton('Cancel', 'wg-cancel', 'dng', function () { sendCommand(id, 'cancel', {}); });
+  cancelBtn.disabled = true;
+  progRow.appendChild(cancelBtn);
+  w.appendChild(progRow);
+  var progBox = el('div', '');
+  progBox.setAttribute('data-role', 'wg-progbox');
+  progBox.style.display = 'none';
+  var pbar = el('div', 'wg-pbar');
+  pbar.setAttribute('data-role', 'wg-pbar');
+  pbar.appendChild(document.createElement('i'));
+  progBox.appendChild(pbar);
+  var progl = el('div', 'wg-progl');
+  var attEl = el('span', ''); attEl.setAttribute('data-role', 'wg-attempt');
+  var elEl = el('span', ''); elEl.setAttribute('data-role', 'wg-elapsed');
+  progl.appendChild(attEl); progl.appendChild(elEl);
+  progBox.appendChild(progl);
+  w.appendChild(progBox);
+  var outcome = el('div', 'wg-card');
+  outcome.setAttribute('data-role', 'wg-outcome');
+  outcome.style.display = 'none';
+  w.appendChild(outcome);
+
+  // WORLD FILE
+  var fsb = secs.file.sb;
+  var expRow = wgRow('Export as');
+  var expName = wgTextInput('wg-exp-name', 'world name');
+  expRow.appendChild(expName);
+  var expOw = wgCheckbox('overwrite', 'wg-exp-overwrite');
+  expRow.appendChild(expOw.label);
+  expRow.appendChild(wgButton('Export', 'wg-export', 'pri', function () {
+    var name = expName.value.replace(/^\s+|\s+$/g, '');
+    if (name && !/^[A-Za-z0-9_-]{1,64}$/.test(name)) {
+      ui.wgFileNote = 'World name: A-Z a-z 0-9 _ - only, 1 to 64 chars';
+      refreshWgFileNote(root);
+      return;
+    }
+    var args = {};
+    if (name) args.name = name;
+    if (expOw.box.checked) args.overwrite = true;
+    wgSendChecked(id, 'export', args);
+    refreshWgFileNote(root);
+  }));
+  fsb.appendChild(expRow);
+  var lastExp = el('div', ''); lastExp.setAttribute('data-role', 'wg-lastexport');
+  fsb.appendChild(lastExp);
+  fsb.appendChild(el('div', 'wg-sub', 'IMPORT'));
+  var wlist = el('div', 'wg-wlist');
+  wlist.setAttribute('data-role', 'wg-worlds');
+  wlist.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== wlist && !(t.getAttribute && t.getAttribute('data-world'))) t = t.parentNode;
+    if (!t || t === wlist) return;
+    wgSendChecked(id, 'selectWorld', { name: t.getAttribute('data-world') });
+    refreshWgFileNote(root);
+  });
+  fsb.appendChild(wlist);
+  var impRow = el('div', 'wg-row');
+  var impBtn = wgButton('Import selected', 'wg-import', 'pri', function () {
+    var cur = (ui.wgSt && ui.wgSt.file && ui.wgSt.file.selected) ? String(ui.wgSt.file.selected) : '';
+    if (!cur) return;
+    wgSendChecked(id, 'import', { name: cur });
+    refreshWgFileNote(root);
+  });
+  impBtn.disabled = true;
+  impRow.appendChild(impBtn);
+  impRow.appendChild(el('span', 'wg-stub', 'opens locked; replaces the current world'));
+  fsb.appendChild(impRow);
+  var lastImp = el('div', ''); lastImp.setAttribute('data-role', 'wg-lastimport');
+  fsb.appendChild(lastImp);
+  var fnote = el('div', 'wg-err'); fnote.setAttribute('data-role', 'wg-filenote');
+  fsb.appendChild(fnote);
+  var provRow = el('div', 'wg-row');
+  var lockBadge = el('span', 'badge info', ''); lockBadge.setAttribute('data-role', 'wg-lockbadge');
+  var originEl = el('span', ''); originEl.setAttribute('data-role', 'wg-origin');
+  provRow.appendChild(lockBadge); provRow.appendChild(originEl);
+  fsb.appendChild(provRow);
+
+  // VALIDATION
+  var vsb = secs.validation.sb;
+  var vrow = el('div', 'wg-row');
+  var valBtn = wgButton('Validate', 'wg-validate', 'pri', function () { sendCommand(id, 'validate', {}); });
+  vrow.appendChild(valBtn);
+  var valSum = el('span', ''); valSum.setAttribute('data-role', 'wg-valsum');
+  vrow.appendChild(valSum);
+  vsb.appendChild(vrow);
+  var valErr = el('div', 'wg-err'); valErr.setAttribute('data-role', 'wg-valerr');
+  vsb.appendChild(valErr);
+  var valBody = el('div', ''); valBody.setAttribute('data-role', 'wg-valbody');
+  valBody.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== valBody) {
+      if (t.classList && t.classList.contains('wg-chip')) {
+        sendCommand(id, 'selectCell', { x: Number(t.getAttribute('data-x')), y: Number(t.getAttribute('data-y')) });
+        return;
+      }
+      if (t.classList && t.classList.contains('wg-g-head')) {
+        var g = t.parentNode;
+        var gid = Number(g.getAttribute('data-gid'));
+        var open = !g.classList.contains('open');
+        ui.wgGOpen[gid] = open;
+        g.classList.toggle('open', open);
+        sendCommand(id, 'expandGuarantee', { id: open ? gid : 0 });
+        return;
+      }
+      t = t.parentNode;
+    }
+  });
+  vsb.appendChild(valBody);
+
+  // Locked-import confirm dialog (Keep / Discard)
+  var dlg = el('div', 'wg-dialog');
+  dlg.setAttribute('data-role', 'wg-dialog');
+  var box = el('div', 'box');
+  box.appendChild(el('h4', '', 'DISCARD THE IMPORTED WORLD?'));
+  var dtext = el('p', ''); dtext.setAttribute('data-role', 'wg-dlgtext');
+  box.appendChild(dtext);
+  box.appendChild(el('p', 'wg-stub', 'Hand edits in the file are lost unless you exported them.'));
+  var bt = el('div', 'bt');
+  bt.appendChild(wgButton('Keep imported world', 'wg-keep', '', function () { wgDialogKeep(); }));
+  bt.appendChild(wgButton('Discard and apply', 'wg-discard', 'dng', function () { wgDialogDiscard(); }));
+  box.appendChild(bt);
+  dlg.appendChild(box);
+  root.appendChild(dlg);
+
   // TERRAIN SHAPE: grouped by first stage
   var shape = secs.shape.sb;
   var ctl = Array.isArray(st.controls) ? st.controls : [];
@@ -2057,7 +2311,7 @@ function buildWorldGen(domain) {
   var vd = Array.isArray(view.drawers) ? view.drawers : [];
   for (var di = 0; di < vd.length; ++di) {
     (function (d) {
-      var cb = wgCheckbox(wgDrawerLabel(d.name), '');
+      var cb = wgCheckbox(d.label ? String(d.label) : wgDrawerLabel(d.name), '');
       cb.label.setAttribute('data-drawer', d.name);
       cb.box.addEventListener('change', function () {
         wgHold(cb.box);
@@ -2067,6 +2321,10 @@ function buildWorldGen(domain) {
     })(vd[di]);
   }
   secs.view.sb.appendChild(dr);
+  var evh = el('div', 'wg-note');
+  evh.setAttribute('data-role', 'wg-evhidden');
+  evh.style.display = 'none';
+  secs.view.sb.appendChild(evh);
 
   // CELL INSPECTOR
   var cellRow = wgRow('Cell x, y');
@@ -2089,17 +2347,9 @@ function buildWorldGen(domain) {
   kv.setAttribute('data-role', 'wg-cell');
   secs.cell.sb.appendChild(kv);
 
-  // VALIDATION (stub: tasks 13-16)
-  secs.validation.sr.textContent = 'arrives with tasks 13-16';
-  secs.validation.sb.appendChild(el('div', 'wg-stub', 'Validate, guarantee rows, attempt history, Cancel and Export/Import are not in the terrain slice. The section shows here so the final layout is agreed now.'));
-  var vrow = el('div', 'wg-row');
-  var vnames = ['Validate', 'Cancel', 'Export', 'Import'];
-  for (var vi = 0; vi < vnames.length; ++vi) {
-    var vb = el('button', '', vnames[vi]);
-    vb.disabled = true;
-    vrow.appendChild(vb);
-  }
-  secs.validation.sb.appendChild(vrow);
+  ui.wgSt = st;
+  ui.wgLocked = !!(st.file && st.file.locked);
+  wgSyncDialog();
 
   return root;
 }
@@ -2160,6 +2410,8 @@ function refreshWorldGen(card, st) {
   var sec = function (key) { return root.querySelector('.wg-sec[data-sec="' + key + '"]'); };
   var setSr = function (key, text) { var n = sec(key).querySelector('.wg-sr'); if (n && n.textContent !== text) n.textContent = text; };
   var stats = (st.stats && typeof st.stats === 'object') ? st.stats : {};
+  ui.wgSt = st;
+  ui.wgLocked = !!(st.file && st.file.locked);
 
   // WORLD
   var seed = q('wg-seed');
@@ -2239,6 +2491,8 @@ function refreshWorldGen(card, st) {
     var fixed = wgDrawerFixed(vd[di].name);
     cb.disabled = fixed || !vd[di].available;
     lab.classList.toggle('off', cb.disabled);
+    var want = vd[di].label ? String(vd[di].label) : wgDrawerLabel(vd[di].name);
+    if (lab.lastChild && lab.lastChild.nodeType === 3 && lab.lastChild.nodeValue !== want) lab.lastChild.nodeValue = want;
     if (fixed) cb.checked = true;
     else if (wgFree(cb)) cb.checked = !!vd[di].enabled;
   }
@@ -2257,6 +2511,196 @@ function refreshWorldGen(card, st) {
   if (kv) {
     var kh = wgCellHtml(st);
     if (kv.innerHTML !== kh) kv.innerHTML = kh;
+  }
+
+  var evh = q('wg-evhidden');
+  if (evh) {
+    var evText = (view.evidenceHidden !== undefined && view.evidenceHidden !== null) ? String(view.evidenceHidden) : '';
+    if (evh.textContent !== evText) evh.textContent = evText;
+    evh.style.display = evText ? '' : 'none';
+  }
+
+  wgRefreshProgress(root, st, q);
+  wgRefreshFile(root, st, q, setSr);
+  wgRefreshValidation(root, st, q, setSr);
+  wgSyncDialog();
+}
+
+// ── progress, last-outcome card ──
+function wgSecs(ms) { return (Number(ms) / 1000).toFixed(1); }
+
+function wgRefreshProgress(root, st, q) {
+  var pr = (st.progress && typeof st.progress === 'object') ? st.progress : {};
+  var state = pr.state ? String(pr.state) : 'Idle';
+  var gen = state === 'Generating';
+  var pill = q('wg-pill');
+  if (pill) { pill.textContent = state; pill.className = 'wg-pill ' + state; }
+  var cancel = q('wg-cancel');
+  if (cancel) cancel.disabled = !gen;
+  var box = q('wg-progbox');
+  if (box) box.style.display = gen ? '' : 'none';
+  if (gen) {
+    var att = q('wg-attempt');
+    if (att) att.textContent = 'attempt ' + pr.attempt + ' of ' + pr.maxAttempts;
+    var frac = Number(pr.timeoutMs) > 0 ? Number(pr.elapsedMs) / Number(pr.timeoutMs)
+             : (Number(pr.maxAttempts) > 0 ? Number(pr.attempt) / Number(pr.maxAttempts) : 0);
+    var pct = Math.max(0, Math.min(1, frac)) * 100;
+    var bar = q('wg-pbar');
+    if (bar && bar.firstChild) bar.firstChild.setAttribute('style', 'width:' + (Math.round(pct * 10) / 10) + '%');
+    var elp = q('wg-elapsed');
+    if (elp) elp.textContent = wgSecs(pr.elapsedMs) + ' s' + (Number(pr.timeoutMs) > 0 ? ' of ' + wgSecs(pr.timeoutMs) + ' s budget' : '');
+  }
+  var vb = q('wg-validate'); if (vb) vb.disabled = gen;
+  var eb = q('wg-export'); if (eb) eb.disabled = gen;
+
+  var card = q('wg-outcome');
+  if (!card) return;
+  var lo = pr.lastOutcome;
+  if (!lo || typeof lo !== 'object') { card.style.display = 'none'; card.textContent = ''; card.className = 'wg-card'; return; }
+  var text, bad = false;
+  if (lo.kind === 'import') {
+    text = 'Imported ' + lo.name + (lo.revision !== undefined ? ' · revision ' + lo.revision : '') + (lo.seed !== undefined ? ' · seed ' + lo.seed : '');
+  } else {
+    bad = String(lo.outcome) !== 'Complete';
+    text = 'Last generation: ' + lo.outcome;
+    if (lo.attempts !== undefined) text += ' · attempts ' + lo.attempts + (lo.maxAttempts ? ' of ' + lo.maxAttempts : '');
+    if (lo.revision !== undefined) text += ' · revision ' + lo.revision;
+    if (lo.message) text += ' · ' + lo.message;
+    if (lo.previousWorldKept) text += ' · previous world kept';
+  }
+  if (card.textContent !== text) card.textContent = text;
+  card.className = 'wg-card' + (bad ? ' bad' : '');
+  card.style.display = '';
+}
+
+// ── WORLD FILE ──
+function refreshWgFileNote(root) {
+  var n = root.querySelector('[data-role="wg-filenote"]');
+  if (n && n.textContent !== ui.wgFileNote) n.textContent = ui.wgFileNote;
+}
+function wgFileResultLine(r, what) {
+  if (!r || typeof r !== 'object') return { text: '', cls: '' };
+  if (r.success) {
+    var t = what + ' ' + (r.name || '') + (r.path ? ' -> ' + r.path : '') + (r.bytes !== undefined ? ' (' + r.bytes + ' bytes)' : '') +
+            (r.revision !== undefined ? ' · revision ' + r.revision : '');
+    if (r.warningCount) t += ' · ' + r.warningCount + ' warning(s): ' + (Array.isArray(r.warnings) ? r.warnings.join('; ') : '');
+    return { text: t, cls: 'wg-ok' };
+  }
+  var e = what + ' failed: ' + (r.error || r.status || 'unknown');
+  if (r.field) e += ' · field ' + r.field;
+  if (r.line !== undefined && r.line !== null) e += ' · line ' + r.line + (r.column !== undefined ? ', column ' + r.column : '');
+  return { text: e, cls: 'wg-err' };
+}
+function wgRefreshFile(root, st, q, setSr) {
+  var file = (st.file && typeof st.file === 'object') ? st.file : {};
+  var worlds = Array.isArray(file.worlds) ? file.worlds : [];
+  var sel = file.selected ? String(file.selected) : '';
+  var list = q('wg-worlds');
+  if (list) {
+    var sig = sel + '|' + JSON.stringify(worlds);
+    if (list.getAttribute('data-sig') !== sig) {
+      list.setAttribute('data-sig', sig);
+      list.innerHTML = '';
+      for (var i = 0; i < worlds.length; ++i) {
+        var w = worlds[i] || {};
+        var row = el('div', 'wg-wl' + (String(w.name) === sel ? ' sel' : ''));
+        row.setAttribute('data-world', String(w.name));
+        row.appendChild(el('span', '', String(w.name) + '.wld.json'));
+        row.appendChild(el('span', 'dim', String(w.source || '')));
+        list.appendChild(row);
+      }
+      if (!worlds.length) list.appendChild(el('div', 'wg-stub', 'No saved worlds.'));
+    }
+  }
+  setSr('file', worlds.length + ' world' + (worlds.length === 1 ? '' : 's'));
+  var gen = st.progress && st.progress.state === 'Generating';
+  var imp = q('wg-import');
+  if (imp) imp.disabled = !sel || !!gen;
+  var nm = q('wg-exp-name');
+  if (nm && wgFree(nm) && file.defaultName !== undefined && nm.value !== String(file.defaultName)) nm.value = String(file.defaultName);
+
+  var le = wgFileResultLine(file.lastExport, 'Export');
+  var leEl = q('wg-lastexport');
+  if (leEl) { if (leEl.textContent !== le.text) leEl.textContent = le.text; leEl.className = le.cls; }
+  var li = wgFileResultLine(file.lastImport, 'Import');
+  var liEl = q('wg-lastimport');
+  if (liEl) { if (liEl.textContent !== li.text) liEl.textContent = li.text; liEl.className = li.cls; }
+  refreshWgFileNote(root);
+
+  var badge = q('wg-lockbadge');
+  if (badge) {
+    var bt = file.locked ? 'locked' : (file.imported ? 'imported' : '');
+    badge.textContent = bt;
+    badge.style.display = bt ? '' : 'none';
+  }
+  var og = q('wg-origin');
+  if (og) {
+    var o = file.origin;
+    var ot = '';
+    if (o && typeof o === 'object')
+      ot = 'seed ' + o.seed + ' · preset ' + (o.preset ? o.preset : '(none)') + ' · rules v' + o.rulesVersion + ' · generator v' + o.generatorVersion;
+    if (og.textContent !== ot) og.textContent = ot;
+  }
+}
+
+// ── VALIDATION ──
+function wgDiagHtml(text) {
+  return escapeHtml(text).replace(/\((\d+),\s*(\d+)\)/g, '<span class="wg-chip" data-x="$1" data-y="$2">($1, $2)</span>');
+}
+function wgRefreshValidation(root, st, q, setSr) {
+  var v = (st.validation && typeof st.validation === 'object') ? st.validation : null;
+  var err = q('wg-valerr');
+  var etext = st.validateError ? 'Validate refused: ' + String(st.validateError) : '';
+  if (err && err.textContent !== etext) err.textContent = etext;
+  var sum = q('wg-valsum');
+  var body = q('wg-valbody');
+  if (!v) {
+    if (sum) sum.textContent = 'not validated';
+    setSr('validation', 'not validated');
+    if (body && body.getAttribute('data-sig') !== 'none') {
+      body.setAttribute('data-sig', 'none');
+      body.innerHTML = '<div class="wg-stub">No validation yet. Press Validate to check the current world.</div>';
+    }
+    return;
+  }
+  var gs = Array.isArray(v.guarantees) ? v.guarantees : [];
+  var okN = 0, gi;
+  for (gi = 0; gi < gs.length; ++gi) if (gs[gi] && gs[gi].ok) ++okN;
+  var line = String(v.outcome) + ' · seed ' + v.seed + ' · ' + (v.passed ? 'passed' : 'failed') + ' · ' + (v.fresh ? 'fresh' : 'stale');
+  if (sum && sum.textContent !== line) sum.textContent = line;
+  setSr('validation', gs.length ? okN + ' of ' + gs.length + ' satisfied' : (v.passed ? 'passed' : 'failed'));
+
+  var h = '';
+  if (!v.fresh) h += '<div class="wg-stub">These rows describe an earlier world (revision ' + escapeHtml(v.worldRevision) + '). Press Validate for the current one.</div>';
+  for (gi = 0; gi < gs.length; ++gi) {
+    var g = gs[gi] || {};
+    var gid = Number(g.id);
+    var open = Object.prototype.hasOwnProperty.call(ui.wgGOpen, gid) ? !!ui.wgGOpen[gid] : !g.ok;
+    var c = g.counts || {};
+    h += '<div class="wg-g' + (open ? ' open' : '') + '" data-gid="' + gid + '"><div class="wg-g-head"><span class="car"></span><span>' +
+         escapeHtml(g.name !== undefined ? g.name : gid) + '</span><span class="badge ' + (g.ok ? 'ok' : 'bad') + '">' + (g.ok ? 'satisfied' : 'violated') +
+         '</span><span class="wg-ct">paths ' + escapeHtml(c.proofPaths === undefined ? 0 : c.proofPaths) + ' · cells ' + escapeHtml(c.violatingCells === undefined ? 0 : c.violatingCells) +
+         ' · pairs ' + escapeHtml(c.violatingPairs === undefined ? 0 : c.violatingPairs) + '</span></div><div class="wg-g-body">';
+    var diags = Array.isArray(g.diagnostics) ? g.diagnostics : [];
+    if (!diags.length) h += '<div class="wg-stub">' + (g.ok ? 'No violations.' : 'No diagnostics.') + '</div>';
+    for (var di = 0; di < diags.length; ++di) h += '<div class="wg-diag">' + wgDiagHtml(diags[di]) + '</div>';
+    h += '</div></div>';
+  }
+  var at = Array.isArray(v.attempts) ? v.attempts : [];
+  if (at.length) {
+    h += '<div class="wg-sub">ATTEMPTS</div>';
+    for (var ai = 0; ai < at.length; ++ai) {
+      var a = at[ai] || {};
+      var failed = Array.isArray(a.failedGuarantees) ? a.failedGuarantees : [];
+      h += '<div class="wg-att' + (failed.length ? ' bad' : '') + '">#' + escapeHtml(a.index) + ' sub-seed ' + escapeHtml(a.subSeed) + ' · ' +
+           (failed.length ? 'failed: ' + escapeHtml(failed.join(', ')) : 'ok') + ' · ' + escapeHtml(a.ms) + ' ms</div>';
+    }
+    var more = Number(v.attemptCount) - at.length;
+    if (more > 0) h += '<div class="wg-stub">' + more + ' more attempts not shown</div>';
+  }
+  if (body && body.getAttribute('data-sig') !== h) {
+    body.setAttribute('data-sig', h);
+    body.innerHTML = h;
   }
 }
 
