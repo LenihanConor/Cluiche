@@ -63,10 +63,20 @@ namespace
             const Json::Value& v = obj[key];
             const std::string field = path + "." + key;
             if (!v.isNumeric() || v.isBool() || !v.isIntegral()) { return Fail(field, "must be an integer"); }
-            if (v.isUInt64() && v.asUInt64() > static_cast<uint64_t>(hi)) { return Fail(field, "value " + std::to_string(v.asUInt64()) + " is out of range"); }
             if (!v.isUInt64() && !v.isInt64()) { return Fail(field, "must be an integer"); }
-            const int64_t value = v.isUInt64() ? static_cast<int64_t>(v.asUInt64()) : v.asInt64();
-            if (value < lo || value > hi) { return Fail(field, "value " + std::to_string(value) + " is out of range " + std::to_string(lo) + ".." + std::to_string(hi)); }
+            const std::string range = std::to_string(lo) + ".." + std::to_string(hi);
+            int64_t value = 0;
+            if (v.isUInt64())   // every non-negative integer is a UInt64 in jsoncpp
+            {
+                const uint64_t u = v.asUInt64();
+                if (u > static_cast<uint64_t>(hi)) { return Fail(field, "value " + std::to_string(u) + " is out of range " + range); }
+                value = static_cast<int64_t>(u);
+            }
+            else
+            {
+                value = v.asInt64();   // negative
+            }
+            if (value < lo) { return Fail(field, "value " + std::to_string(value) + " is out of range " + range); }
             out = value;
             return true;
         }
