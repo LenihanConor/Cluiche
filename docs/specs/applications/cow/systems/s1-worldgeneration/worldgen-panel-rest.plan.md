@@ -1,0 +1,34 @@
+# Plan: S-1 World Generation panel, the rest (system plan task 17)
+
+**Spec:** @f1-debug-host-integration.md (Feature 6: Validation, World File, progress, AC3-AC7, AC12, AC13) and @layered-debug-rendering.md (Feature 7: RegionEdges, Sites, DynastyStarts, GuaranteeEvidence; AC3-AC6)
+**System plan:** @worldgenerationpipeline.plan.md (task 17)
+**Mockup:** @s1-editor-mockup-v2.html (signed off 2026-11-12; answers to its 5 open questions are the mockup defaults)
+**Builds on:** @worldgen-panel.plan.md (card, `WorldGenDebugDomain`, panel widgets) and @worldgen-view.plan.md (`WorldGenViewHost`, drawers, `IWorldGenView`)
+**Status:** In Progress
+
+Scope: everything the terrain-slice panel stubbed. A Validate button and Validation section (per-guarantee rows with evidence, per-attempt rows), a World File section (export, import, merged world list, locked-import state, Discard), Cancel and progress, the last-outcome card, and the RegionEdges, Sites, DynastyStarts and GuaranteeEvidence drawers.
+
+## Decisions (mockup v2 answers, 2026-11-12)
+
+- Validate is a **manual button**; the layout summary comes from `status`.
+- The world list **merges** `Cluiche/out/CoW/worlds` and the deployed worlds directory; `out/` wins on a name clash (as presets do).
+- The evidence overlay draws the **expanded** guarantee's proof paths, plus violating cells of every failing row.
+- After a failed Regenerate the pill reads "Complete" and a red last-outcome card says "previous world kept".
+- **Discard also unlocks.** "Keep" leaves the slider at its old value.
+- SD-S1-002: every panel action and query is a `cow.worldgen.*` command; the panel calls the same commands. UI depends on the typed command model only.
+- Fix before build: the last-outcome card shows "Imported" on an imported world (should name the import, not the generation outcome).
+
+## Tasks
+
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Command and query gaps: `cow.worldgen.validate` (runs the default validation set on the current world, does not bump the revision, stores fresh evidence); fuller `report.finalValidation` (per-guarantee id, ok, evidence counts, proof paths, violating cells/pairs); `worlds` query (merged out + deployed, out wins); `status` gains `unavailableLayers[]`; `import` error carries line/col | RED first: validate on a passing world, on a hand-edited violating world (revision unchanged); report evidence counts equal `proofPaths`/`violatingCells` sizes; worlds merge and clash; bad JSON import reports line/col | Pending | sonnet | Help metadata for each. SD-S1-002 |
+| 2 | Domain state: Validation, World File, progress/last-outcome, locked state in `WorldGenDebugDomain` JSON; commands `validate`, `export`, `import`, `cancel`, `selectWorld`, `discard`; per-cell `absorbed` flag in the cell inspector; evidence snapshot kept per revision | TDD: JSON matches `report`/`status`/`worlds` query results; each command changes the session as the DiaAPI command does; state under 12 KB at Large with a failed report | Pending | sonnet | Update the contract section in worldgen-panel.plan.md in place. Last-outcome distinguishes import from generation |
+| 3 | Overlay geometry (pure, CoW-Shared): `BuildRegionEdges`, `BuildSiteMarkers` (per registered kind, colour/shape from `SiteKindInfo`), `BuildDynastyStarts` (rings red on violating pairs), `BuildGuaranteeEvidence` (expanded guarantee polylines, violating cell crosses); freshness rule (`report.worldRevision == revision` or fresh Validate result) | RED first: edge count on a two-region world; markers at site cells; red ring only for the violating pair; one polyline per proof path; stale report draws nothing; counts within the spec budgets at Large | Pending | sonnet | FakeDebugDraw pattern from worldgen-view.plan.md task 5 |
+| 4 | Register the four drawers in `WorldGenViewHost` + `IWorldGenView`; drawer names/labels in `view.drawers`; toggle state kept across regenerate and import (Feature 7 AC11) | Host tests: drawers registered, toggle on/off, state survives a world change, size change; one overlay per toggle | Pending | sonnet | Region colour mode if not already present from task 11/12 |
+| 5 | CoW `debug-panel.html`: World File section, Validation section (rows expand to evidence; click a violation selects its cell), progress bar and elapsed, last-outcome card, locked-import confirm dialog (Keep / Discard), Validate and Cancel buttons. Built to the mockup | Vitest for each section; mockup-vs-panel check noted | Pending | sonnet | CoW copy only |
+| 6 | Verify: scoped gtests (`*WorldGen*`, shards >= 2), Vitest, manifest, CoW build, CoW E2E for validate, export/import round trip, cancel, failed-regenerate keeps world (system Test 2b), Feature 6 AC3-AC7, AC12, AC13; gap audit and edge tests; observation scan | Per list | Pending | sonnet | Final task of the row. One full run is left to system task 18 |
+
+## Open items
+
+- Pixels for the new overlays are not checked by any test; the user walkthrough happens in system task 18.
