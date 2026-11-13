@@ -971,7 +971,7 @@ TEST(WorldGenDebugDomainView, SiteKindsListEachKindWithColourAndShape)
     EXPECT_EQ(k[0u]["colour"].asString(), "#3d9be8");
     EXPECT_EQ(k[1u]["overlay"].asString(), "sites.Test.Hearth");
     EXPECT_EQ(k[1u]["kind"].asString(), "Test.Hearth");
-    EXPECT_EQ(k[1u]["displayName"].asString(), "Hearth Site");
+    EXPECT_FALSE(k[1u].isMember("displayName")) << "the kind label rides in view.drawers (\"Sites <label>\")";
     EXPECT_EQ(k[1u]["colour"].asString(), "#ff00ff");
     EXPECT_EQ(k[1u]["shape"].asString(), "Ring");
     EXPECT_TRUE(k[1u]["enabled"].asBool());

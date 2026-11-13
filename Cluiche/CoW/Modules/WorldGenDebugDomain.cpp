@@ -27,6 +27,7 @@ namespace {
     const Dia::Core::StringCRC kCmdClearCell("clearCell");
     const Dia::Core::StringCRC kCmdSetColourMode("setColourMode");
     const Dia::Core::StringCRC kCmdToggle("toggle");
+    const Dia::Core::StringCRC kCmdExpandGuarantee("expandGuarantee");
 
     const Dia::Core::StringCRC kCmdValidate("validate");
     const Dia::Core::StringCRC kCmdExport("export");
@@ -404,9 +405,12 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     {
         const char* mode = mView->GetColourMode();
         view["colourMode"] = std::strcmp(mode, kViewDefaultId) == 0 ? kDefaultMode : mode;
-        auto add = [&drawers](const char* name, bool enabled, bool available) {
+        auto add = [&drawers, this](const char* name, bool enabled, bool available) {
             Json::Value e(Json::objectValue);
             e["name"] = name;
+            const std::string label = mView->OverlayLabel(name);
+            if (label != name)
+                e["label"] = label;   // omitted when it would repeat the name (keeps view.drawers small)
             e["enabled"] = enabled;
             e["available"] = available;
             drawers.append(e);
@@ -424,7 +428,6 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
             Json::Value e(Json::objectValue);
             e["overlay"] = k.overlay;
             e["kind"] = k.info->id;
-            e["displayName"] = k.info->displayName;
             e["colour"] = colour;
             e["shape"] = WorldGeneration::SiteShapeName(k.info->debugShape);
             e["enabled"] = k.enabled;
@@ -432,6 +435,11 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
             siteKinds.append(e);
         });
         hasSelection = mView->GetSelection(selX, selY);
+        const std::string hidden = mView->EvidenceHiddenReason();
+        if (!hidden.empty())
+            view["evidenceHidden"] = hidden;
+        if (mView->ExpandedGuarantee() != 0)
+            view["expandedGuarantee"] = static_cast<Json::UInt>(mView->ExpandedGuarantee());
     }
     else
     {
@@ -832,6 +840,12 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         {
             DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: toggle needs an available {drawer}");
         }
+    }
+    else if (cmd == kCmdExpandGuarantee)
+    {
+        // {id} = a guarantee id from validation.guarantees[].id; missing, 0 or non-numeric collapses.
+        if (mView != nullptr)
+            mView->ExpandGuarantee(hasObj && args["id"].isUInt() ? args["id"].asUInt() : 0u);
     }
     else if (cmd == kCmdValidate)
     {

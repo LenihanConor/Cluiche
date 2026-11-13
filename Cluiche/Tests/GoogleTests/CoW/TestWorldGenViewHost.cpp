@@ -4,14 +4,18 @@
 
 #ifdef DIA_DEBUG
 
+#include <Modules/WorldGenerationModule.h>   // before windows.h users (RandomStream min/max)
 #include "Modules/WorldGenViewHost.h"
+#include "Modules/WorldGenDebugDomain.h"
 
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/SiteGuarantees.h>
 
 #include <cmath>
 #include <filesystem>
@@ -106,7 +110,7 @@ TEST(WorldGenViewHost, BuildRegistersEveryDescriptorAndFourOverlaysAgainstOneGri
     Rig r;
     ASSERT_TRUE(r.host->Build());
     EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
-    EXPECT_EQ(r.registry.OverlayCount(), 4u);   // rivers, selection.neighbours, regions.edges, sites
+    EXPECT_EQ(r.registry.OverlayCount(), 6u);   // rivers, selection.neighbours, regions.edges, sites, dynasty.starts, guarantee.evidence
     ASSERT_EQ(r.registry.GridCount(), 1u);
     EXPECT_EQ(r.registry.GridAt(0), &r.host->Grid().Desc());
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
@@ -315,6 +319,7 @@ TEST(WorldGenViewHost, RiverOverlayEmitsOneLinePerSegmentAndCachesPerRevision)
     ASSERT_TRUE(r.host->Build());
     ASSERT_TRUE(r.host->SetOverlayEnabled("rivers", true));
     ASSERT_TRUE(r.host->SetOverlayEnabled("selection.neighbours", false));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));   // sites default on
     const size_t expected = BuildRiverSegments(r.session.World(), r.host->Grid()).size();
     ASSERT_GT(expected, 0u);
 
@@ -396,7 +401,7 @@ TEST(WorldGenViewHost, ListOverlaysReportsEnabledAndAvailable)
         return rows;
     };
     std::vector<Row> rows = list();
-    ASSERT_EQ(rows.size(), 8u);   // rivers, neighbours, regions.edges, sites + one toggle per built-in kind
+    ASSERT_EQ(rows.size(), 10u);   // rivers, neighbours, regions.edges, sites, one toggle per built-in kind, dynasty.starts, guarantee.evidence
     EXPECT_EQ(rows[2].id, "regions.edges");
     EXPECT_EQ(rows[3].id, "sites");
     EXPECT_EQ(rows[4].id, "sites.CoW.Node.Corridor");
@@ -667,7 +672,7 @@ TEST(WorldGenViewHost, NoWorldYetBuildUpdateDrawDoNotCrashAndUploadZeros)
     EXPECT_FALSE(r.host->HasSelection());
     std::vector<bool> avail;
     r.host->ListOverlays([&](const char*, bool, bool a) { avail.push_back(a); });
-    ASSERT_EQ(avail.size(), 8u);   // 4 overlays + 4 built-in site kind toggles
+    ASSERT_EQ(avail.size(), 10u);   // 6 overlays + 4 built-in site kind toggles
     EXPECT_FALSE(avail[0]) << "rivers unavailable without a world";
     for (size_t i = 2; i < avail.size(); ++i) EXPECT_FALSE(avail[i]) << "region and site overlays need fresh regions";
     Json::Value legend;
@@ -690,7 +695,7 @@ TEST(WorldGenViewHost, BuildTwiceTeardownTwiceAndTeardownBeforeBuildAreSafe)
     ASSERT_TRUE(r.host->Build());
     ASSERT_TRUE(r.host->Build());   // second Build is a no-op, no duplicate registrations
     EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count());
-    EXPECT_EQ(r.registry.OverlayCount(), 4u);   // rivers, neighbours, regions.edges, sites
+    EXPECT_EQ(r.registry.OverlayCount(), 6u);   // rivers, neighbours, regions.edges, sites, dynasty.starts, guarantee.evidence
     EXPECT_EQ(r.registry.GridCount(), 1u);
 
     r.host->Teardown();
@@ -819,6 +824,7 @@ TEST(WorldGenViewHost, ZeroRiverWorldDrawsNoRiverLinesAndDoesNotRebuildEveryFram
     Rig r;
     ASSERT_TRUE(r.host->Build());
     ASSERT_TRUE(r.host->SetOverlayEnabled("selection.neighbours", false));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));   // sites default on
     // Strip the rivers from the generated world through the same session the host reads.
     WorldStructure& w = const_cast<WorldStructure&>(r.session.World());
     for (int i = 0; i < w.CellCount(); ++i)
@@ -984,8 +990,8 @@ TEST(WorldGenViewHost, RegisteredKindGetsAToggleWithItsColourAndShape)
     ASSERT_EQ(r.session.World().sites.Count(Dia::Core::StringCRC("Test.Hearth")), 1);
 
     const std::vector<std::string> ids = OverlayIds(*r.host);
-    ASSERT_EQ(ids.size(), 9u);
-    EXPECT_EQ(ids.back(), "sites.Test.Hearth");
+    ASSERT_EQ(ids.size(), 11u);
+    EXPECT_EQ(ids[8], "sites.Test.Hearth");
 
     struct KindRow { std::string overlay, kind; uint32_t colour; SiteShape shape; bool enabled; int count; };
     std::vector<KindRow> rows;
@@ -1012,6 +1018,466 @@ TEST(WorldGenViewHost, RegisteredKindGetsAToggleWithItsColourAndShape)
     EXPECT_EQ(draw.lines.size(), SiteLines(r, ListSiteKinds(registry))) << "no per-kind drawer code: the test kind draws too";
 
     r.session.SetSiteRegistry(nullptr);   // registry outlives the session's use of it
+}
+
+// ---- worldgen-panel-rest plan task 4: RegionEdges / Sites / DynastyStarts / GuaranteeEvidence drawers ----
+
+namespace
+{
+// DebugFrameData's geometry budget: lines past kCap are counted as dropped (the real IDebugDraw behaviour).
+struct CappedDraw : public RecordingDraw
+{
+    static constexpr size_t kCap = 8192;
+    uint32_t dropped = 0;
+    void RequestDraw(const Vector2D& a, const Vector2D& b, Dia::Core::RGBA c) override
+    {
+        if (lines.size() >= kCap) { ++dropped; return; }
+        RecordingDraw::RequestDraw(a, b, c);
+    }
+    uint32_t DroppedCount() const override { return dropped; }
+};
+
+bool OverlayEnabled(WorldGenViewHost& h, const char* id, bool* available = nullptr)
+{
+    bool en = false;
+    bool found = false;
+    h.ListOverlays([&](const char* i, bool e, bool a) { if (std::string(i) == id) { en = e; found = true; if (available) *available = a; } });
+    EXPECT_TRUE(found) << id;
+    return en;
+}
+
+std::vector<std::pair<std::string, bool>> OverlayState(WorldGenViewHost& h)
+{
+    std::vector<std::pair<std::string, bool>> v;
+    h.ListOverlays([&](const char* i, bool e, bool) { v.push_back({ i, e }); });
+    return v;
+}
+
+void AllOverlays(Rig& r, bool on)
+{
+    for (const std::string& id : OverlayIds(*r.host))
+        ASSERT_TRUE(r.host->SetOverlayEnabled(id.c_str(), on)) << id;
+}
+
+void SetWorldDir(Rig& r, const std::filesystem::path& dir)
+{
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    r.session.SetWorldDirectories("", dir.string());
+}
+
+size_t DynastyLines(Rig& r, const GuaranteeResult* spacing)
+{
+    float spacingParam = kDefaultMinimumDynastySpacing;
+    if (spacing)
+        for (const Measurement& m : spacing->measurements)
+            if (m.keyCrc == MeasurementKeys::MinimumSpacing().Value()) spacingParam = m.value;
+    const float radius = r.host->Grid().CellSize() * WorldGenViewHost::kSiteMarkerScale;
+    size_t n = 0;
+    for (const DynastyStartMarker& m : BuildDynastyStarts(r.session.World(), r.host->Grid(), spacingParam, spacing, radius))
+        n += m.marker.size() + m.ring.size();
+    return n;
+}
+
+const ValidationResult* Fresh(Rig& r)
+{
+    return FreshEvidence(r.session.LastReport(), &r.session.Evidence(), r.session.EvidenceRevision(), r.session.Revision());
+}
+
+// Places sites of one built-in dragon-layer kind on the main landmass, evenly spread through its land cells (row order).
+// S-1 ships no Hearth / Nexus / DynastyStart placer yet, so the evidence and start drawers need these.
+class MainlandPlacer : public ISitePlacer
+{
+public:
+    MainlandPlacer(const Dia::Core::StringCRC& kind, const char* name, int slot, int count)
+        : mInfo(MakeSiteKindInfo(kind, name, 0x00C0FF, SiteShape::Ring)), mSlot(slot), mCount(count) {}
+    const SiteKindInfo& Info() const override { return mInfo; }
+    std::span<const Dia::Core::StringCRC> DependsOn() const override { return {}; }
+    PlaceResult Place(const PlacementContext& ctx, Dia::Maths::RandomStream&, SiteSet& out) override
+    {
+        std::vector<uint32_t> land;
+        for (int i = 0; i < ctx.world.CellCount(); ++i)
+        {
+            const Cell& c = ctx.world.Cells()[i];
+            if (c.landmass == ctx.world.mainLandmass && c.waterSource == WaterSource::None)
+                land.push_back(static_cast<uint32_t>(i));
+        }
+        if (land.empty())
+            return PlaceResult::TerrainCause("no land");
+        for (int k = 0; k < mCount; ++k)
+        {
+            Site s;
+            s.kindCrc = mInfo.kindCrc;
+            s.cell = land[land.size() * static_cast<size_t>(mSlot + k + 1) / 8u];
+            out.Add(s);
+        }
+        return PlaceResult::Ok();
+    }
+private:
+    SiteKindInfo mInfo;
+    int mSlot;
+    int mCount;
+};
+
+// 2 hearths, 2 nexuses, 3 dynasty starts: enough for the HearthNexus proof paths and the spacing rings.
+struct DragonSites
+{
+    MainlandPlacer hearth{ SiteKinds::Hearth(), "Hearth", 0, 2 };
+    MainlandPlacer nexus{ SiteKinds::Nexus(), "Nexus", 2, 2 };
+    MainlandPlacer start{ SiteKinds::DynastyStart(), "Dynasty start", 4, 3 };
+    SiteRegistry registry;
+    DragonSites() { registry.Register(&hearth); registry.Register(&nexus); registry.Register(&start); }
+    // For a session-owned rig: registry must outlive the rig (declare DragonSites first), generation uses it from here on.
+    void Install(Rig& r) { r.session.SetSiteRegistry(&registry); r.Tick(12345); }
+};
+
+// First guarantee in the fresh evidence with proof paths.
+uint32_t GuaranteeWithProofs(Rig& r)
+{
+    const ValidationResult* ev = Fresh(r);
+    if (ev)
+        for (const GuaranteeResult& g : ev->guarantees)
+            if (g.proofPaths.Size() > 0) return g.idCrc;
+    return 0;
+}
+
+}
+
+TEST(WorldGenViewHost, PanelRestDrawersAreRegisteredWithTheSpecDefaults)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    EXPECT_EQ(r.registry.OverlayCount(), 6u);   // + dynasty.starts, guarantee.evidence
+    EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("dynasty.starts")), nullptr);
+    EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("guarantee.evidence")), nullptr);
+    EXPECT_TRUE(OverlayEnabled(*r.host, "rivers"));
+    EXPECT_FALSE(OverlayEnabled(*r.host, "regions.edges"));
+    EXPECT_TRUE(OverlayEnabled(*r.host, "sites")) << "Sites default On";
+    EXPECT_TRUE(OverlayEnabled(*r.host, "sites.CoW.Node.Corridor"));
+    EXPECT_FALSE(OverlayEnabled(*r.host, "dynasty.starts"));
+    EXPECT_FALSE(OverlayEnabled(*r.host, "guarantee.evidence"));
+    r.host->Teardown();
+    EXPECT_EQ(r.registry.OverlayCount(), 0u);
+}
+
+TEST(WorldGenViewHost, RegionEdgesAreDrawnInTheRegionPaletteColours)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    OnlyOverlay(r, "regions.edges");
+    RecordingDraw draw;
+    r.Frame(draw);
+    ASSERT_EQ(draw.lines.size(), BuildColouredRegionEdges(r.session.World(), r.host->Grid()).size());
+    std::set<uint32_t> colours;
+    for (const auto& l : draw.lines) colours.insert((l.colour.R() << 16) | (l.colour.G() << 8) | l.colour.B());
+    EXPECT_GT(colours.size(), 1u) << "one colour per region slot, not a single white";
+}
+
+TEST(WorldGenViewHost, DynastyStartsToggleAddsAndRemovesMarkersAndRings)
+{
+    DragonSites sites;
+    Rig r(nullptr, false);
+    sites.Install(r);
+    ASSERT_TRUE(r.host->Build());
+    OnlyOverlay(r, "sites");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    const ValidationResult* ev = Fresh(r);
+    const size_t expected = DynastyLines(r, ev ? ev->Find(Dia::Core::StringCRC("CoW.Guarantee.DynastySpacing")) : nullptr);
+    ASSERT_GT(expected, 0u);
+    RecordingDraw off;
+    r.Frame(off);
+    EXPECT_EQ(off.lines.size(), 0u);
+    ASSERT_TRUE(r.host->SetOverlayEnabled("dynasty.starts", true));
+    RecordingDraw on;
+    r.Frame(on);
+    EXPECT_EQ(on.lines.size(), expected);
+    ASSERT_TRUE(r.host->SetOverlayEnabled("dynasty.starts", false));
+    RecordingDraw off2;
+    r.Frame(off2);
+    EXPECT_EQ(off2.lines.size(), 0u);
+}
+
+TEST(WorldGenViewHost, ExpandGuaranteeChangesThePolylinesDrawn)
+{
+    DragonSites sites;
+    Rig r(nullptr, false);
+    sites.Install(r);
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    const uint32_t id = GuaranteeWithProofs(r);
+    ASSERT_NE(id, 0u);
+    OnlyOverlay(r, "guarantee.evidence");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    EXPECT_EQ(r.host->ExpandedGuarantee(), 0u);
+
+    RecordingDraw collapsed;
+    r.Frame(collapsed);
+    EXPECT_EQ(collapsed.lines.size(), BuildGuaranteeEvidence(Fresh(r), r.host->Grid(), 0).LineCount());
+
+    r.host->ExpandGuarantee(id);
+    EXPECT_EQ(r.host->ExpandedGuarantee(), id);
+    const size_t expanded = BuildGuaranteeEvidence(Fresh(r), r.host->Grid(), id).LineCount();
+    ASSERT_GT(expanded, collapsed.lines.size());
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), expanded);
+
+    r.host->ExpandGuarantee(0);
+    RecordingDraw back;
+    r.Frame(back);
+    EXPECT_EQ(back.lines.size(), collapsed.lines.size());
+
+    ASSERT_TRUE(r.host->SetOverlayEnabled("guarantee.evidence", false));
+    r.host->ExpandGuarantee(id);
+    RecordingDraw none;
+    r.Frame(none);
+    EXPECT_EQ(none.lines.size(), 0u);
+}
+
+TEST(WorldGenViewHost, StaleEvidenceDrawsNothingAndSaysWhy)
+{
+    DragonSites sites;
+    Rig r(nullptr, false);
+    sites.Install(r);
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    const uint32_t id = GuaranteeWithProofs(r);
+    ASSERT_NE(id, 0u);
+    OnlyOverlay(r, "guarantee.evidence");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    r.host->ExpandGuarantee(id);
+    bool available = false;
+    OverlayEnabled(*r.host, "guarantee.evidence", &available);
+    EXPECT_TRUE(available);
+    EXPECT_EQ(r.host->EvidenceHiddenReason(), "");
+    RecordingDraw fresh;
+    r.Frame(fresh);
+    ASSERT_GT(fresh.lines.size(), 0u);
+
+    r.session.Set(Obj("rivers", 0.31));   // live preview: a new revision, evidence belongs to the old world
+    ASSERT_TRUE(r.session.Tick(r.rng));
+    RecordingDraw stale;
+    r.Frame(stale);
+    EXPECT_EQ(stale.lines.size(), 0u);
+    EXPECT_NE(r.host->EvidenceHiddenReason().find("Evidence hidden"), std::string::npos);
+    OverlayEnabled(*r.host, "guarantee.evidence", &available);
+    EXPECT_FALSE(available);
+}
+
+TEST(WorldGenViewHost, FailedGenerationHidesEvidenceWithTheFailedReason)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    SiteRegistry registry;
+    ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
+    r.session.SetSiteRegistry(&registry);
+    ASSERT_TRUE(r.session.Regenerate(Obj("maxRetryAttempts", 2))["success"].asBool());
+    for (int i = 0; i < 80 && (r.session.IsDirty() || r.session.IsGenerating()); ++i) r.session.Tick(r.rng);
+    ASSERT_NE(r.session.LastReport(), nullptr);
+    ASSERT_NE(r.session.LastReport()->outcome, GenerationOutcome::Success);
+    OnlyOverlay(r, "guarantee.evidence");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), 0u);
+    EXPECT_EQ(r.host->EvidenceHiddenReason(), "Evidence hidden: last generation failed (see Validation)");
+    r.session.SetSiteRegistry(nullptr);
+}
+
+TEST(WorldGenViewHost, ImportedWorldHasNoEvidenceAndSaysSo)
+{
+    Rig r;
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "cow_view_host_import";
+    SetWorldDir(r, dir);
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.session.ExportWorld(Obj("name", "w"))["success"].asBool());
+    ASSERT_TRUE(r.session.ImportWorld(Obj("name", "w"))["success"].asBool());
+    OnlyOverlay(r, "guarantee.evidence");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), 0u);
+    EXPECT_NE(r.host->EvidenceHiddenReason().find("Evidence hidden"), std::string::npos);
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+}
+
+TEST(WorldGenViewHost, DrawerToggleStateAndExpandedGuaranteeSurviveRegenerateSizeChangeAndImport)
+{
+    Rig r;
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "cow_view_host_persist";
+    SetWorldDir(r, dir);
+    ASSERT_TRUE(r.host->Build());
+    const uint32_t hearthNexus = Dia::Core::StringCRC("CoW.Guarantee.HearthNexus").Value();
+    ASSERT_TRUE(r.host->SetOverlayEnabled("regions.edges", true));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites.CoW.Node.Hunting", false));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("dynasty.starts", true));
+    ASSERT_TRUE(r.host->SetOverlayEnabled("guarantee.evidence", true));
+    r.host->ExpandGuarantee(hearthNexus);
+    const auto before = OverlayState(*r.host);
+    FakeDebugDraw draw;
+
+    r.Tick(999);   // regenerate
+    r.Frame(draw);
+    EXPECT_EQ(OverlayState(*r.host), before);
+    EXPECT_EQ(r.host->ExpandedGuarantee(), hearthNexus);
+
+    r.Resize("Standard");   // size change re-registers the layers
+    r.Frame(draw);
+    EXPECT_EQ(OverlayState(*r.host), before);
+
+    ASSERT_TRUE(r.session.ExportWorld(Obj("name", "w"))["success"].asBool());
+    ASSERT_TRUE(r.session.ImportWorld(Obj("name", "w"))["success"].asBool());
+    r.Frame(draw);
+    EXPECT_EQ(OverlayState(*r.host), before);
+    EXPECT_EQ(r.host->ExpandedGuarantee(), hearthNexus);
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+}
+
+TEST(WorldGenViewHost, EveryDrawerOnAtLargeWithEvidenceExpandedNeverDropsGeometry)
+{
+    DragonSites sites;
+    Rig r(nullptr, false);
+    r.session.SetSize(Obj("size", "Large"));
+    sites.Install(r);
+    ASSERT_TRUE(r.host->Build());
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    AllOverlays(r, true);
+    ASSERT_TRUE(r.host->SelectCell(52, 32));
+    std::vector<uint32_t> ids{ 0 };
+    ASSERT_NE(Fresh(r), nullptr);
+    for (const GuaranteeResult& g : Fresh(r)->guarantees) ids.push_back(g.idCrc);
+    size_t worst = 0;
+    for (const uint32_t id : ids)
+    {
+        r.host->ExpandGuarantee(id);
+        CappedDraw draw;
+        r.Frame(draw);
+        worst = (std::max)(worst, draw.lines.size());
+        EXPECT_EQ(draw.DroppedCount(), 0u) << "expanded " << id;
+    }
+    std::cout << "[ measured ] Large, every drawer on, worst expanded guarantee: " << worst << " lines\n";
+    EXPECT_EQ(r.host->DroppedCount(), 0u);
+    EXPECT_LT(worst, CappedDraw::kCap);
+}
+
+TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAndEvidenceReason)
+{
+    DragonSites sites;
+    WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+    WorldGenDebugDomain domain{ module };
+    Dia::Maths::RandomStream rng{ 7 };
+    Dia::Graphics::CellFieldRegistry cellField;
+    Dia::CellLayers::CellLayerRegistry registry{ nullptr, &Dia::CellLayers::Testing::FakePuIdFn };
+    FakeMirrorRegistrar registrar;
+    Dia::CellLayers::Testing::FakePuId() = 1;
+    ASSERT_TRUE(module.GetSiteRegistry().Register(&sites.hearth));
+    ASSERT_TRUE(module.GetSiteRegistry().Register(&sites.nexus));
+    ASSERT_TRUE(module.GetSiteRegistry().Register(&sites.start));
+    WorldGenViewHost::Deps d;
+    d.registry = &registry;
+    d.cellField = &cellField;
+    d.registrar = &registrar;
+    WorldGenViewHost host(module.GetSession(), d);
+    ASSERT_TRUE(host.Build());
+    domain.SetView(&host);
+    auto state = [&]() { Json::Value s; domain.ForceFullFrame(); domain.GetJSONState(s); return s["view"]; };
+    auto find = [](const Json::Value& view, const char* name) -> Json::Value
+    {
+        for (const Json::Value& e : view["drawers"]) if (e["name"].asString() == name) return e;
+        return Json::Value(Json::nullValue);
+    };
+
+    // No world yet: nothing to draw.
+    Json::Value v = state();
+    EXPECT_FALSE(find(v, "regions.edges")["available"].asBool());
+    EXPECT_FALSE(find(v, "guarantee.evidence")["available"].asBool());
+
+    module.GetSession().Regenerate(Obj("seed", 12345));
+    for (int i = 0; i < 80 && (module.GetSession().IsDirty() || module.GetSession().IsGenerating()); ++i) module.GetSession().Tick(rng);
+    v = state();
+    EXPECT_EQ(find(v, "regions.edges")["label"].asString(), "Region edges");
+    EXPECT_TRUE(find(v, "regions.edges")["available"].asBool());
+    EXPECT_FALSE(find(v, "regions.edges")["enabled"].asBool());
+    EXPECT_EQ(find(v, "sites")["label"].asString(), "Sites");
+    EXPECT_TRUE(find(v, "sites")["enabled"].asBool());
+    EXPECT_EQ(find(v, "sites.CoW.Node.Hunting")["label"].asString().rfind("Sites ", 0), 0u);
+    EXPECT_EQ(find(v, "dynasty.starts")["label"].asString(), "Dynasty starts");
+    EXPECT_TRUE(find(v, "dynasty.starts")["available"].asBool());
+    EXPECT_EQ(find(v, "guarantee.evidence")["label"].asString(), "Guarantee evidence");
+    EXPECT_TRUE(find(v, "guarantee.evidence")["available"].asBool()) << "a successful generation's report is fresh evidence";
+    EXPECT_FALSE(v.isMember("evidenceHidden"));
+
+    // expandGuarantee {id}: stored on the host; 0 collapses.
+    const uint32_t id = Dia::Core::StringCRC("CoW.Guarantee.HearthNexus").Value();
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", id));
+    EXPECT_EQ(host.ExpandedGuarantee(), id);
+    EXPECT_EQ(state()["expandedGuarantee"].asUInt(), id);
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", 0));
+    EXPECT_EQ(host.ExpandedGuarantee(), 0u);
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", id));
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Json::Value(Json::objectValue));   // no id: collapse
+    EXPECT_EQ(host.ExpandedGuarantee(), 0u);
+
+    // Toggling through the existing command works for the new drawers.
+    domain.OnCommand(Dia::Core::StringCRC("toggle"), Obj("drawer", "dynasty.starts"));
+    EXPECT_TRUE(OverlayEnabled(host, "dynasty.starts"));
+
+    // A stale world hides evidence and the reason rides in the view JSON.
+    module.GetSession().Set(Obj("rivers", 0.31));
+    module.GetSession().Tick(rng);
+    v = state();
+    EXPECT_FALSE(find(v, "guarantee.evidence")["available"].asBool());
+    EXPECT_NE(v["evidenceHidden"].asString().find("Evidence hidden"), std::string::npos);
+    domain.SetView(nullptr);
+}
+
+TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder12Kb)
+{
+    WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+    WorldGenDebugDomain domain{ module };
+    Dia::Maths::RandomStream rng{ 7 };
+    Dia::Graphics::CellFieldRegistry cellField;
+    Dia::CellLayers::CellLayerRegistry registry{ nullptr, &Dia::CellLayers::Testing::FakePuIdFn };
+    FakeMirrorRegistrar registrar;
+    Dia::CellLayers::Testing::FakePuId() = 1;
+    WorldGenSession& s = module.GetSession();
+    auto settle = [&]() { for (int i = 0; i < 80 && (s.IsDirty() || s.IsGenerating()); ++i) s.Tick(rng); };
+    s.SetSize(Obj("size", "Large"));
+    s.Regenerate(Obj("seed", 12345));
+    settle();
+    WorldGenViewHost::Deps d;
+    d.registry = &registry;
+    d.cellField = &cellField;
+    d.registrar = &registrar;
+    WorldGenViewHost host(s, d);
+    ASSERT_TRUE(host.Build());
+    domain.SetView(&host);
+    domain.OnCommand(Dia::Core::StringCRC("validate"), Json::Value(Json::objectValue));
+    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    ASSERT_TRUE(module.GetSiteRegistry().RegisterGuarantee(&flaky));
+    s.Regenerate(Obj("maxRetryAttempts", 2));
+    settle();
+    ASSERT_NE(s.LastReport(), nullptr);
+    host.ExpandGuarantee(Dia::Core::StringCRC("CoW.Guarantee.HearthNexus").Value());
+    Json::Value xy(Json::objectValue);
+    xy["x"] = 52;
+    xy["y"] = 32;
+    domain.OnCommand(Dia::Core::StringCRC("selectCell"), xy);
+    Json::Value st;
+    domain.ForceFullFrame();
+    domain.GetJSONState(st);
+    Json::StreamWriterBuilder b;
+    b["indentation"] = "";
+    const size_t bytes = Json::writeString(b, st).size();
+    std::cout << "[ measured ] compact WorldGen state at Large with real view, failed report: " << bytes << " bytes\n";
+    for (const std::string& k : st.getMemberNames()) std::cout << "  [section] " << k << ": " << Json::writeString(b, st[k]).size() << "\n";
+    for (const std::string& k : st["view"].getMemberNames()) std::cout << "  [view] " << k << ": " << Json::writeString(b, st["view"][k]).size() << "\n";
+    EXPECT_LT(bytes, 12u * 1024u);
+    domain.SetView(nullptr);
 }
 
 #endif // DIA_DEBUG

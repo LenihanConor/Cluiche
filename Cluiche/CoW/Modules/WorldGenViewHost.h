@@ -40,6 +40,7 @@
 
 #include <functional>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace Cluiche { namespace AppFlow { class Camera2DModule; class InputStreamModule; } }
@@ -125,11 +126,18 @@ public:
     void ListOverlays(const std::function<void(const char* id, bool enabled, bool available)>& fn) override;
     void FillLegend(Json::Value& out) override;
     void ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn) override;
+    std::string OverlayLabel(const char* id) override;
+    void ExpandGuarantee(uint32_t idCrc) override { mExpandedGuarantee = idCrc; }
+    uint32_t ExpandedGuarantee() override { return mExpandedGuarantee; }
+    std::string EvidenceHiddenReason() override;
 
     static const char* const kOverlayRivers;
     static const char* const kOverlayNeighbours;
     static const char* const kOverlayRegionEdges;   // "regions.edges" (starts off)
-    static const char* const kOverlaySites;         // "sites": master toggle for every site kind (starts off)
+    static const char* const kOverlaySites;         // "sites": master toggle for every site kind (starts on)
+    static const char* const kOverlayDynastyStarts; // "dynasty.starts" (starts off)
+    static const char* const kOverlayEvidence;      // "guarantee.evidence" (starts off)
+    static constexpr size_t  kEvidenceLineBudget = 1500;   // evidence lines per frame (layered-debug-rendering drawer table)
     static const char* const kSiteKindPrefix;       // "sites.": per-kind toggle ids are "sites.<kind id>" (start on)
     static constexpr float   kSiteMarkerScale = 0.45f;   // marker radius = cell size * scale
     static const char* const kDefaultModeAlias;   // "terrain"
@@ -166,6 +174,10 @@ private:
     void DrawNeighbours(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawRegionEdges(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawSites(Dia::Core::IDebugDraw& draw, const void* selection);
+    void DrawDynastyStarts(Dia::Core::IDebugDraw& draw, const void* selection);
+    void DrawEvidence(Dia::Core::IDebugDraw& draw, const void* selection);
+    const WorldGeneration::ValidationResult* FreshEvidenceNow() const;
+    uint32_t RegionColour(uint32_t slot);   // 0xRRGGBBAA from the "regions" layer's palette (the Region colour mode's)
     bool SiteKindEnabled(uint32_t kindCrc) const;
     void BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out);
 
@@ -203,7 +215,6 @@ private:
     uint32_t mRiverRevision = 0xFFFFFFFFu;
     uint32_t mRiverGridGeneration = 0;
     uint32_t mRiverRebuilds = 0;
-    std::vector<WorldGeneration::LineSegment> mRegionEdges;
     uint32_t mRegionEdgeRevision = 0xFFFFFFFFu;
     uint32_t mRegionEdgeGridGeneration = 0;
     uint32_t mRegionEdgeRebuilds = 0;
@@ -215,6 +226,20 @@ private:
     std::vector<SiteKindMarkers> mSiteMarkers;      // generic: one entry per kind, no per-kind drawer code
     uint32_t mSiteRevision = 0xFFFFFFFFu;
     uint32_t mSiteGridGeneration = 0;
+    std::vector<WorldGeneration::RegionEdge> mColouredEdges;
+    std::vector<uint32_t> mRegionPalette;           // lazily resolved from the schema, else the categorical default
+    std::vector<WorldGeneration::DynastyStartMarker> mStarts;
+    uint32_t mStartsRevision = 0xFFFFFFFFu;
+    uint32_t mStartsEvidenceRevision = 0xFFFFFFFFu;
+    uint32_t mStartsReportRevision = 0xFFFFFFFFu;
+    uint32_t mStartsGridGeneration = 0;
+    WorldGeneration::GuaranteeEvidenceGeometry mEvidence;
+    uint32_t mEvidenceRevision = 0xFFFFFFFFu;
+    uint32_t mEvidenceEvidenceRevision = 0xFFFFFFFFu;
+    uint32_t mEvidenceReportRevision = 0xFFFFFFFFu;
+    uint32_t mEvidenceExpanded = 0xFFFFFFFFu;
+    uint32_t mEvidenceGridGeneration = 0;
+    uint32_t mExpandedGuarantee = 0;                // survives regenerate, import and size change (AC11)
     std::vector<uint32_t> mSiteKindsOff;            // kind CRCs whose "sites.<id>" toggle is off
     WorldGeneration::NeighbourOutline mOutline;
     int      mOutlineCell = -1;

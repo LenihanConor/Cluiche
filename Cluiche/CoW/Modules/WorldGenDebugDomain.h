@@ -62,6 +62,12 @@
 //              "selection.neighbours"; available = has something to draw), Selection (always on); legend (DYNAMIC part, it follows
 //              the active base layer and the world) = view->FillLegend: null (none yet), a [{label, colour:"#rrggbb"}] array for
 //              category layers, or {min, max, ramp, unit, stops:[{t, colour}]} for float layers.
+//              Drawer entries are {name (overlay id), label?, enabled, available}; label (display name, omitted when it equals the
+//              id) is "Region edges", "Sites", "Sites <kind label>" (one per site kind), "Dynasty starts", "Guarantee evidence".
+//              The kind's colour and shape are in view.siteKinds[{overlay, kind, colour, shape, enabled, count}].
+//              "evidenceHidden" (string, only when the evidence drawer has nothing to draw: e.g. "Evidence hidden: last
+//              generation failed (see Validation)") and "expandedGuarantee" (uint id, only when one is expanded).
+//   expandGuarantee {id}: with a view, expands that guarantee's proof paths in the evidence drawer; missing or 0 collapses.
 //   cell     : null, or session.Cell({x,y}) result (all fields, layers{}, neighbours[]) plus "selected":{x,y}.
 //              With a view the selection is the viewer's first selected cell (so click selection shows up here too).
 //              Selection out of range / before the first world => cell null and "cellError" string.

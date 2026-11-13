@@ -3,6 +3,8 @@
 #include "Modules/WorldGenViewHost.h"
 #include "Modules/WorldGenPointerFrame.h"
 
+#include <Shared/WorldGeneration/SiteGuarantees.h>
+
 #include "Modules/Camera2DModule.h"
 #include "Modules/InputStreamModule.h"
 
@@ -10,10 +12,13 @@
 #include <DiaCellLayers/SelectionTools.h>
 #include <DiaInput/EKey.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaValueSchema/CategoricalColours.h>
+#include <DiaValueSchema/RampResolver.h>
 #include <DiaValueSchema/ValueSchemaService.h>
 
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -69,6 +74,12 @@ GridDimensions TargetDims(const WorldGenSession& s)
     return s.Revision() > 0 ? s.World().dimensions : s.Dimensions();
 }
 
+Dia::Core::RGBA FromRgba8(uint32_t c)
+{
+    return Dia::Core::RGBA(static_cast<uint8_t>((c >> 24) & 0xFFu), static_cast<uint8_t>((c >> 16) & 0xFFu),
+                           static_cast<uint8_t>((c >> 8) & 0xFFu), static_cast<uint8_t>(c & 0xFFu));
+}
+
 bool SameDims(GridDimensions a, GridDimensions b) { return a.width == b.width && a.height == b.height; }
 } // namespace
 
@@ -78,6 +89,8 @@ const char* const WorldGenViewHost::kDefaultModeAlias  = "terrain";
 const char* const WorldGenViewHost::kOverlayRegionEdges = "regions.edges";
 const char* const WorldGenViewHost::kOverlaySites       = "sites";
 const char* const WorldGenViewHost::kSiteKindPrefix     = "sites.";
+const char* const WorldGenViewHost::kOverlayDynastyStarts = "dynasty.starts";
+const char* const WorldGenViewHost::kOverlayEvidence      = "guarantee.evidence";
 
 void WorldGenViewHost::LayerBinding::Read(float* out, uint32_t count)
 {
@@ -243,7 +256,19 @@ bool WorldGenViewHost::RegisterOverlays()
     sites.group.Append("Regions");
     sites.label.Append("Sites");
     sites.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawSites);
+    CellOverlayDesc starts;
+    starts.id = StringCRC(kOverlayDynastyStarts);
+    starts.group.Append("Regions");
+    starts.label.Append("Dynasty starts");
+    starts.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawDynastyStarts);
+    CellOverlayDesc evidence;
+    evidence.id = StringCRC(kOverlayEvidence);
+    evidence.group.Append("Validation");
+    evidence.label.Append("Guarantee evidence");
+    evidence.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawEvidence);
     if (mDeps.registry->RegisterOverlay(rivers) != CellRegisterResult::Ok ||
+        mDeps.registry->RegisterOverlay(starts) != CellRegisterResult::Ok ||
+        mDeps.registry->RegisterOverlay(evidence) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(neighbours) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(edges) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(sites) != CellRegisterResult::Ok)
@@ -264,6 +289,8 @@ void WorldGenViewHost::UnregisterOverlays()
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayNeighbours));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayRegionEdges));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlaySites));
+    mDeps.registry->UnregisterOverlay(StringCRC(kOverlayDynastyStarts));
+    mDeps.registry->UnregisterOverlay(StringCRC(kOverlayEvidence));
     mOverlaysRegistered = false;
 }
 
@@ -285,8 +312,9 @@ bool WorldGenViewHost::Build()
     mUploader = Dia::Core::MakeUnique<Dia::CellLayers::LayerUploader>(*mDeps.cellField, mDeps.schema);
     mDomain = Dia::Core::MakeUnique<Dia::CellLayers::CellLayerViewerDomain>(*mDeps.registry, *mUploader, mDeps.schema,
         Dia::CellLayers::CellLayerViewerDomain::ViewFn(fastdelegate::MakeDelegate(this, &WorldGenViewHost::PickerView)));
-    mDomain->ToggleOverlay(StringCRC(kOverlayRivers));       // rivers + neighbours start on; region edges + sites off
+    mDomain->ToggleOverlay(StringCRC(kOverlayRivers));       // rivers, neighbours and sites start on; the rest off
     mDomain->ToggleOverlay(StringCRC(kOverlayNeighbours));
+    mDomain->ToggleOverlay(StringCRC(kOverlaySites));
 
     if (mDeps.registrar != nullptr)
     {
@@ -533,14 +561,130 @@ void WorldGenViewHost::DrawRegionEdges(Dia::Core::IDebugDraw& draw, const void* 
         return;
     if (mRegionEdgeRevision != mSession.Revision() || mRegionEdgeGridGeneration != mGridGeneration)
     {
-        mRegionEdges = BuildRegionEdges(mSession.World(), *mGrid);   // empty while regions are not fresh
+        mColouredEdges = BuildColouredRegionEdges(mSession.World(), *mGrid);   // empty while regions are not fresh
         mRegionEdgeRevision = mSession.Revision();
         mRegionEdgeGridGeneration = mGridGeneration;
         ++mRegionEdgeRebuilds;
     }
-    const Dia::Core::RGBA colour(250, 250, 250, 255);
-    for (const LineSegment& s : mRegionEdges)
-        draw.RequestDraw(s.a, s.b, colour);
+    for (const RegionEdge& e : mColouredEdges)
+        draw.RequestDraw(e.seg.a, e.seg.b, FromRgba8(RegionColour(e.colourSlot)));
+}
+
+// The "regions" layer's own palette (what the Region colour mode paints): the schema's resolved enum colours, else the
+// categorical default the schema loader would assign. Region edges therefore always match the tiles.
+uint32_t WorldGenViewHost::RegionColour(uint32_t slot)
+{
+    if (mRegionPalette.empty())
+    {
+        mRegionPalette.assign(kRegionPaletteSlots, 0x808080FFu);
+        bool resolved = false;
+        if (mDeps.schema != nullptr)
+        {
+            const WorldLayerDesc* wd = WorldLayerSource::Find("regions");
+            const Dia::ValueSchema::ValueInfo* info = wd ? mDeps.schema->Find(StringCRC(wd->schemaKey)) : nullptr;
+            if (info != nullptr)
+            {
+                Dia::ValueSchema::RampResolver resolver(*mDeps.schema);
+                const Dia::ValueSchema::ResolvedPalette pal = resolver.ResolvePalette(*info);
+                for (uint32_t i = 0; i < kRegionPaletteSlots && i < pal.mEntries.Size(); ++i)
+                    mRegionPalette[i] = pal.mEntries[i].mRgba8;
+                resolved = true;
+            }
+        }
+        if (!resolved)
+        {
+            for (uint32_t i = 0; i < kRegionPaletteSlots; ++i)
+            {
+                const char* hex = Dia::ValueSchema::GetCategoricalColour(i);
+                mRegionPalette[i] = (static_cast<uint32_t>(std::strtoul(hex + 1, nullptr, 16)) << 8) | 0xFFu;
+            }
+        }
+    }
+    return mRegionPalette[slot % kRegionPaletteSlots];
+}
+
+const ValidationResult* WorldGenViewHost::FreshEvidenceNow() const
+{
+    return FreshEvidence(mSession.LastReport(), &mSession.Evidence(), mSession.EvidenceRevision(), mSession.Revision());
+}
+
+std::string WorldGenViewHost::EvidenceHiddenReason()
+{
+    if (mSession.Revision() == 0 || FreshEvidenceNow() != nullptr)
+        return std::string();
+    if (mSession.IsImported())
+        return "Evidence hidden: imported world has no report (run Validate)";
+    const GenerationReport* report = mSession.LastReport();
+    if (report != nullptr && report->outcome != GenerationOutcome::Success)
+        return "Evidence hidden: last generation failed (see Validation)";
+    return "Evidence hidden: the world changed since it was validated (run Validate)";
+}
+
+void WorldGenViewHost::DrawDynastyStarts(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
+{
+    if (mSession.Revision() == 0 || !mSession.RegionsFresh())
+        return;
+    if (mStartsRevision != mSession.Revision() || mStartsGridGeneration != mGridGeneration ||
+        mStartsEvidenceRevision != mSession.EvidenceRevision() || mStartsReportRevision != mSession.ReportRevision())
+    {
+        const ValidationResult* ev = FreshEvidenceNow();
+        const GuaranteeResult* spacing = ev ? ev->Find(StringCRC("CoW.Guarantee.DynastySpacing")) : nullptr;
+        float spacingParam = kDefaultMinimumDynastySpacing;
+        if (spacing != nullptr)
+            for (const Measurement& m : spacing->measurements)
+                if (m.keyCrc == MeasurementKeys::MinimumSpacing().Value())
+                    spacingParam = m.value;
+        mStarts = BuildDynastyStarts(mSession.World(), *mGrid, spacingParam, spacing, mGrid->CellSize() * kSiteMarkerScale);
+        mStartsRevision = mSession.Revision();
+        mStartsGridGeneration = mGridGeneration;
+        mStartsEvidenceRevision = mSession.EvidenceRevision();
+        mStartsReportRevision = mSession.ReportRevision();
+    }
+    const Dia::Core::RGBA ok(255, 205, 60, 255);
+    const Dia::Core::RGBA ring(120, 170, 255, 255);
+    const Dia::Core::RGBA bad(255, 60, 60, 255);
+    for (const DynastyStartMarker& m : mStarts)
+    {
+        for (const LineSegment& s : m.marker)
+            draw.RequestDraw(s.a, s.b, m.violating ? bad : ok);
+        for (const LineSegment& s : m.ring)
+            draw.RequestDraw(s.a, s.b, m.violating ? bad : ring);
+    }
+}
+
+void WorldGenViewHost::DrawEvidence(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
+{
+    if (mSession.Revision() == 0)
+        return;
+    const ValidationResult* ev = FreshEvidenceNow();
+    if (ev == nullptr)
+        return;   // stale, imported or failed: nothing to draw (the panel shows EvidenceHiddenReason)
+    if (mEvidenceRevision != mSession.Revision() || mEvidenceGridGeneration != mGridGeneration ||
+        mEvidenceEvidenceRevision != mSession.EvidenceRevision() || mEvidenceReportRevision != mSession.ReportRevision() ||
+        mEvidenceExpanded != mExpandedGuarantee)
+    {
+        mEvidence = BuildGuaranteeEvidence(ev, *mGrid, mExpandedGuarantee);
+        mEvidenceRevision = mSession.Revision();
+        mEvidenceGridGeneration = mGridGeneration;
+        mEvidenceEvidenceRevision = mSession.EvidenceRevision();
+        mEvidenceReportRevision = mSession.ReportRevision();
+        mEvidenceExpanded = mExpandedGuarantee;
+    }
+    size_t budget = kEvidenceLineBudget;   // keeps the worst case inside DebugFrameData's geometry budget
+    const Dia::Core::RGBA path(80, 220, 120, 255);
+    const Dia::Core::RGBA bad(255, 60, 60, 255);
+    for (const EvidencePolyline& p : mEvidence.polylines)
+    {
+        for (size_t i = 1; i < p.points.size() && budget > 0; ++i, --budget)
+            draw.RequestDraw(p.points[i - 1], p.points[i], path);
+    }
+    for (const ViolatingCellMark& v : mEvidence.violations)
+    {
+        for (const LineSegment& s : v.outline)
+            if (budget > 0) { draw.RequestDraw(s.a, s.b, bad); --budget; }
+        for (const LineSegment& s : v.cross)
+            if (budget > 0) { draw.RequestDraw(s.a, s.b, bad); --budget; }
+    }
 }
 
 bool WorldGenViewHost::SiteKindEnabled(uint32_t kindCrc) const
@@ -723,7 +867,8 @@ bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)
         return false;
     }
     if (std::strcmp(id, kOverlayRivers) != 0 && std::strcmp(id, kOverlayNeighbours) != 0 &&
-        std::strcmp(id, kOverlayRegionEdges) != 0 && std::strcmp(id, kOverlaySites) != 0)
+        std::strcmp(id, kOverlayRegionEdges) != 0 && std::strcmp(id, kOverlaySites) != 0 &&
+        std::strcmp(id, kOverlayDynastyStarts) != 0 && std::strcmp(id, kOverlayEvidence) != 0)
         return false;
     const StringCRC crc(id);
     if (mDomain->IsOverlayEnabled(crc) != enabled)
@@ -748,6 +893,27 @@ void WorldGenViewHost::ListOverlays(const std::function<void(const char* id, boo
         toggle += k.id;
         fn(toggle.c_str(), SiteKindEnabled(k.kindCrc), fresh);
     }
+    fn(kOverlayDynastyStarts, mDomain->IsOverlayEnabled(StringCRC(kOverlayDynastyStarts)),
+       fresh && mSession.World().sites.Count(SiteKinds::DynastyStart()) > 0);
+    fn(kOverlayEvidence, mDomain->IsOverlayEnabled(StringCRC(kOverlayEvidence)), hasWorld && FreshEvidenceNow() != nullptr);
+}
+
+std::string WorldGenViewHost::OverlayLabel(const char* id)
+{
+    if (id == nullptr)
+        return std::string();
+    if (std::strcmp(id, kOverlayRivers) == 0)         return "Rivers";
+    if (std::strcmp(id, kOverlayNeighbours) == 0)     return "Neighbours 0-5";
+    if (std::strcmp(id, kOverlayRegionEdges) == 0)    return "Region edges";
+    if (std::strcmp(id, kOverlaySites) == 0)          return "Sites";
+    if (std::strcmp(id, kOverlayDynastyStarts) == 0)  return "Dynasty starts";
+    if (std::strcmp(id, kOverlayEvidence) == 0)       return "Guarantee evidence";
+    const size_t prefix = std::strlen(kSiteKindPrefix);
+    if (std::strncmp(id, kSiteKindPrefix, prefix) == 0)
+        for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+            if (std::strcmp(k.id, id + prefix) == 0)
+                return std::string("Sites ") + k.displayName;
+    return id;
 }
 
 void WorldGenViewHost::ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn)

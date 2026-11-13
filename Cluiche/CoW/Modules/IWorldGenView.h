@@ -8,7 +8,9 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <Shared/WorldGeneration/Sites.h>
 
+#include <cstdint>
 #include <functional>
+#include <string>
 
 namespace CoW {
 
@@ -39,10 +41,22 @@ public:
     }
 
     // Overlay ids: "rivers", "selection.neighbours", "regions.edges", "sites" (master for all site kinds) and one
-    // "sites.<kind id>" toggle per site kind (built-in node kinds, then registered kinds). False for an unknown id.
+    // "sites.<kind id>" toggle per site kind (built-in node kinds, then registered kinds), then "dynasty.starts" and
+    // "guarantee.evidence". False for an unknown id.
     virtual bool SetOverlayEnabled(const char* id, bool enabled) = 0;
     // Calls back once per overlay. available = the overlay has something to draw right now.
     virtual void ListOverlays(const std::function<void(const char* id, bool enabled, bool available)>& fn) = 0;
+
+    // Display name of an overlay id for the panel ("Region edges", "Sites <kind label>", "Dynasty starts", ...). Unknown id: the id.
+    virtual std::string OverlayLabel(const char* id) { return id; }
+
+    // Overlay ids also include "dynasty.starts" and "guarantee.evidence" (worldgen-panel-rest task 4).
+    // The guarantee whose proof paths the evidence overlay draws (a ValidationResult guarantee id CRC); 0 = none expanded.
+    // Violating cells of every failing guarantee are drawn regardless. Kept across regenerate, import and size change.
+    virtual void     ExpandGuarantee(uint32_t /*idCrc*/) {}
+    virtual uint32_t ExpandedGuarantee() { return 0; }
+    // Why the evidence overlay has nothing to draw ("Evidence hidden: ..."), or empty when evidence is fresh or there is no world.
+    virtual std::string EvidenceHiddenReason() { return std::string(); }
 
     // One row per site kind the Sites overlay can draw (AC11): its toggle id, display info (colour, shape), whether the
     // kind's toggle is on and how many sites of it the world holds. Pointers are valid for the callback only.
