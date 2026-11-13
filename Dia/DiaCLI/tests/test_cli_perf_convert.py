@@ -217,3 +217,22 @@ def test_ab5_200mb_bounded_memory(tmp_path, capsys):
               f"peak {peak / 1e6:.1f} MB (tracemalloc), {secs:.1f} s")
     assert peak < 500 * 1024 * 1024
     assert stats["events"] > n
+
+
+def test_engine_produced_profile_converts(tmp_path):
+    """Real engine-path profile.jsonl (written by the C++ test
+    SLOW_JobObserverTest.Integration_WritesRealEngineProfileForConverter).
+    Set DIA_ENGINE_PROFILE_FIXTURE to the file; skipped when absent."""
+    src = os.environ.get("DIA_ENGINE_PROFILE_FIXTURE")
+    if not src or not Path(src).is_file():
+        pytest.skip("engine-produced profile.jsonl fixture not present")
+    out = tmp_path / "engine.json"
+    stats = convert_files(Path(src), None, out)
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    validate_chrome_trace(doc)
+    evs = doc["traceEvents"]
+    names = {e["args"]["name"] for e in evs if e["ph"] == "M" and e["name"] == "thread_name"}
+    assert {"Worker 0", "Worker 1", "Worker 2"} <= names
+    assert stats["skipped"] == 0 and stats["jobs"] == 24
+    assert sum(1 for e in evs if e["ph"] == "s") == sum(1 for e in evs if e["ph"] == "f") == 24
+    assert any(e["ph"] == "X" and e["args"].get("subject") == "ecology" for e in evs)

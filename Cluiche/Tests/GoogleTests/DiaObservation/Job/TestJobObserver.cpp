@@ -2,13 +2,16 @@
 #include <DiaObservation/Job/JobObserver.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Profile/Profiler.h>
+#include <DiaObservation/Profile/ProfileFileSink.h>
 #include <DiaObservation/Testing/ProfileFixture.h>
 #include <DiaThreading/JobSystem.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <iterator>
 #include <stdexcept>
@@ -631,4 +634,380 @@ TEST_F(SLOW_JobObserverTest, AB3_WorkerStopFlushesUndrainedJobRecords)
 	Profiler::Instance().Stop();
 	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "\"record_type\":\"profile_job\""), 12u);
 	Profiler::ClearThreadNames();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Task 5 gap audit: edge cases for worker-thread profiling (profiling-worker-threads plan)
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+	std::string WriteTempPath(const char* name) { return std::string("profiler-edge-") + name + ".jsonl"; }
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_ThrowingJob_StillWritesProfileJobAndPopsScope)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(1, nullptr, &observer);
+
+	JobTag tag; tag.owner = kOwner; tag.tag = 9;
+	js.Wait(js.Submit([] { throw std::runtime_error("boom"); }, tag));
+	std::atomic<uint32_t> after{1};
+	js.Wait(js.Submit([&] { after = Profiler::CurrentSubject(); }));   // no owner: must not inherit a leaked scope
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	Profiler::Instance().BeginFrame();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+
+	const auto lines = LinesWith(content, "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), 2u) << content;
+	size_t withTag9 = 0;
+	for (const auto& l : lines) if (NumField(l, "tag") == 9) ++withTag9;
+	EXPECT_EQ(withTag9, 1u);
+	EXPECT_EQ(after.load(), 0u);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_InlineHooksOnRegisteredNonWorkerThread_UseThatThreadsRing)
+{
+	// TrySubmit never runs a job inline today, so this drives the same hooks a caller-runs fallback would:
+	// begin/end on a registered, non-worker thread (the fixture's main thread).
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobInbox inbox(8);
+	JobObserver::InstallThreadInbox(&inbox);
+
+	const uint32_t tid = Profiler::CurrentThreadId();
+	Dia::Threading::JobContext ctx = observer.CaptureContext();
+	ctx.attribution.owner = kOwner;
+	ctx.attribution.tag = 3;
+	Dia::Threading::JobTimingRecord rec{};
+	rec.submitNs = 100; rec.startNs = 200; rec.endNs = 300;
+	rec.owner = kOwner; rec.tag = 3;
+	observer.OnJobBegin(ctx);
+	observer.OnJobEnd(ctx, rec);
+	JobObserver::ClearThreadInbox();
+
+	EXPECT_EQ(Profiler::Instance().PeekThreadJobRecordCount(), 1u);   // landed in THIS thread's ring
+	EXPECT_EQ(inbox.PushedCount(), 1u);
+	Profiler::Instance().BeginFrame();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	EXPECT_EQ(Profiler::Instance().PeekThreadJobRecordCount(), 0u);   // drained
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+	const auto lines = LinesWith(content, "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), 1u) << content;
+	EXPECT_EQ(NumField(lines[0], "thread_id"), static_cast<long long>(tid));
+	EXPECT_EQ(NumField(lines[0], "submit_thread"), static_cast<long long>(tid));
+	EXPECT_EQ(NumField(lines[0], "start_unix_nano"), 200);
+	EXPECT_NE(content.find("\"scope_name\":" + std::to_string(Dia::Core::StringCRC("job.run").Value()) + ","), std::string::npos);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_StopWhileWorkersMidJob_NoCrashAndLateRecordsDropped)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(3, nullptr, &observer);
+
+	std::atomic<int> started{0};
+	std::atomic<bool> release{false};
+	std::vector<Dia::Threading::JobHandle> hs;
+	for (int i = 0; i < 3; ++i)
+		hs.push_back(js.Submit([&]
+		{
+			DIA_PROFILE_SCOPE("edge.mid", Dia::Observation::Profile::Category::kAll);
+			++started;
+			for (int s = 0; s < 50000000 && !release.load(); ++s) std::this_thread::yield();
+		}));
+	SpinUntil([&] { return started.load() == 3; });
+	ASSERT_EQ(started.load(), 3);
+
+	Profiler::Instance().Stop();      // sink deleted while 3 workers are inside jobs
+	release = true;
+	for (auto& h : hs) js.Wait(h);
+	js.Shutdown();                    // OnWorkerStop -> Unregister with no sink
+	EXPECT_FALSE(Profiler::Instance().IsStarted());
+	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "\"record_type\":\"profile_job\""), 0u);   // ended after Stop: dropped
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_StopDuringSubmitFlood_NoCrash)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(4, nullptr, &observer);
+	std::atomic<int> ran{0};
+	std::vector<Dia::Threading::JobHandle> hs;
+	for (int i = 0; i < 5000; ++i) hs.push_back(js.Submit([&] { DIA_PROFILE_SCOPE("edge.flood", Dia::Observation::Profile::Category::kAll); ++ran; }));
+	Profiler::Instance().BeginFrame();
+	Profiler::Instance().Stop();   // races with workers recording and the drain
+	for (auto& h : hs) js.Wait(h);
+	js.Shutdown();
+	EXPECT_EQ(ran.load(), 5000);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_WorkerStopWithEmptyRings_NoRecordsNoCrash)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(3, nullptr, &observer);
+	std::this_thread::sleep_for(std::chrono::milliseconds(30));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+	EXPECT_EQ(CountOf(content, "profile_job"), 0u);
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"thread_name\""), 0u);   // names announced lazily, with records
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_StartStopStart_WorkerRegistrationsSurviveRestart)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 4, tag);
+	Profiler::Instance().Stop();
+	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "\"record_type\":\"profile_job\""), 4u);
+
+	const std::string path2 = WriteTempPath("restart");
+	std::remove(path2.c_str());
+	ASSERT_TRUE(Profiler::Instance().Start(path2.c_str(), Dia::Observation::Profile::Category::kAll, "restart", 0));
+	RunJobsAndDrain(js, 6, tag);              // same workers, still registered, new sink
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string second = ReadJsonl(path2.c_str());
+	EXPECT_EQ(CountOf(second, "\"record_type\":\"profile_job\""), 6u) << second;
+	EXPECT_GE(CountOf(second, "\"record_type\":\"thread_name\""), 2u) << second;   // re-announced for the new sink
+	EXPECT_EQ(CountOf(second, "\"name\":\"Worker 0\"") + CountOf(second, "\"name\":\"Worker 1\""), 2u) << second;
+	std::remove(path2.c_str());
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, Edge_ThreadNameTableFullWithRealWorkers_NoCrashStillRecords)
+{
+	Profiler::ClearThreadNames();
+	for (unsigned i = 0; i < Profiler::kMaxThreadNames; ++i) ASSERT_TRUE(Profiler::RegisterThreadName(900000u + i, "Filler"));
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);   // OnWorkerStart: RegisterThreadName returns false, ignored
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 5, tag);
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"profile_job\""), 5u);
+	EXPECT_EQ(CountOf(content, "\"name\":\"Worker "), 0u);
+	Profiler::ClearThreadNames();
+}
+
+// --- ProfileFileSink direct edge cases (no threads needed) ---
+
+TEST(ProfilerSinkEdge, AnnouncedSetFull_129thThreadDoesNotCrashOrAnnounce)
+{
+	using namespace Dia::Observation::Profile;
+	const std::string path = WriteTempPath("announce");
+	std::remove(path.c_str());
+	Profiler::ClearThreadNames();
+	{
+		std::unique_ptr<ProfileFileSink> sink(new ProfileFileSink(path.c_str(), nullptr, "t", 0));
+		ASSERT_TRUE(sink->IsOpen());
+		for (uint32_t i = 0; i < 128; ++i) Profiler::RegisterThreadName(7000u + i, "A");
+		ProfileJobRecord r{}; r.startNs = 1; r.submitNs = 1; r.endNs = 2;
+		for (uint32_t i = 0; i < 128; ++i) { r.threadId = 7000u + i; r.submitThread = 7000u + i; sink->OnJobRecord(r); }
+		// 128 fresh ids: the announced set is full, so none is announced (and no crash).
+		Profiler::ClearThreadNames();
+		for (uint32_t i = 0; i < 128; ++i) Profiler::RegisterThreadName(8000u + i, "B");
+		for (uint32_t i = 0; i < 128; ++i) { r.threadId = 8000u + i; r.submitThread = 8000u + i; sink->OnJobRecord(r); }
+	}
+	const std::string content = ReadJsonl(path.c_str());
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"thread_name\""), 128u);
+	EXPECT_EQ(CountOf(content, "\"name\":\"B\""), 0u);
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"profile_job\""), 256u);   // records still written
+	std::remove(path.c_str());
+	Profiler::ClearThreadNames();
+}
+
+TEST(ProfilerSinkEdge, SubjectTableFull_JobOwnerWrittenAsHex)
+{
+	using namespace Dia::Observation::Profile;
+	const std::string path = WriteTempPath("subjfull");
+	std::remove(path.c_str());
+	Profiler::ClearSubjectNames();
+	for (uint32_t i = 0; i < Profiler::kMaxSubjectNames; ++i) ASSERT_TRUE(Profiler::RegisterSubjectName(0xD0000000u + i, "Filler"));
+	EXPECT_FALSE(Profiler::RegisterSubjectName(0xE0000001u, "Late"));
+	{
+		std::unique_ptr<ProfileFileSink> sink(new ProfileFileSink(path.c_str(), nullptr, "t", 0));
+		ProfileJobRecord r{}; r.owner = 0xE0000001u; r.threadId = 1; r.submitThread = 1; r.startNs = 1; r.submitNs = 1; r.endNs = 2;
+		sink->OnJobRecord(r);
+		r.owner = 0xD0000003u;   // registered one still resolves
+		sink->OnJobRecord(r);
+	}
+	const std::string content = ReadJsonl(path.c_str());
+	EXPECT_NE(content.find("\"owner\":\"0xe0000001\""), std::string::npos) << content;
+	EXPECT_NE(content.find("\"owner\":\"Filler\""), std::string::npos) << content;
+	std::remove(path.c_str());
+	Profiler::ClearSubjectNames();
+}
+
+TEST(ProfilerSinkEdge, SubmitThreadZeroOrUnknown_WrittenWithoutThreadNameLine)
+{
+	using namespace Dia::Observation::Profile;
+	const std::string path = WriteTempPath("submit0");
+	std::remove(path.c_str());
+	Profiler::ClearThreadNames();
+	Profiler::RegisterThreadName(42u, "Worker 0");
+	{
+		std::unique_ptr<ProfileFileSink> sink(new ProfileFileSink(path.c_str(), nullptr, "t", 0));
+		ProfileJobRecord r{}; r.threadId = 42u; r.startNs = 5; r.submitNs = 4; r.endNs = 6;
+		r.submitThread = 0;        sink->OnJobRecord(r);
+		r.submitThread = 99999u;   sink->OnJobRecord(r);   // never named
+	}
+	const std::string content = ReadJsonl(path.c_str());
+	const auto lines = LinesWith(content, "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), 2u) << content;
+	EXPECT_EQ(NumField(lines[0], "submit_thread"), 0);
+	EXPECT_EQ(NumField(lines[1], "submit_thread"), 99999);
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"thread_name\""), 1u);   // only the worker
+	std::remove(path.c_str());
+	Profiler::ClearThreadNames();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Flood benchmark (open question 1). Reports ring drops; does not gate.
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+	struct FloodResult { uint64_t jobs, jobLines, ringDrops, scopeLines, scopeDrops; double wallMs; };
+
+	// frames > 1: `perFrame` jobs per frame, 16 ms sleep + BeginFrame per frame.
+	// frames == 1: burst, everything submitted inside one frame.
+	FloodResult RunFlood(const char* jsonlPath, unsigned workers, unsigned frames, unsigned perFrame)
+	{
+		Profiler::ClearThreadNames();
+		JobObserver observer;
+		JobSystem js;
+		js.Initialize(workers, nullptr, &observer);
+		const uint64_t dropsBefore = Profiler::DroppedJobRecords();
+		JobTag tag; tag.owner = kOwner;
+		std::vector<Dia::Threading::JobHandle> hs;
+		hs.reserve(static_cast<size_t>(frames) * perFrame);
+		const auto t0 = std::chrono::steady_clock::now();
+		for (unsigned f = 0; f < frames; ++f)
+		{
+			for (unsigned i = 0; i < perFrame; ++i) hs.push_back(js.Submit([] {}, tag));
+			if (frames > 1) std::this_thread::sleep_for(std::chrono::milliseconds(16));
+			Profiler::Instance().BeginFrame();
+		}
+		for (auto& h : hs) js.Wait(h);
+		const double wall = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+		const uint64_t drops = Profiler::DroppedJobRecords() - dropsBefore;
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		Profiler::Instance().BeginFrame();
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		js.Shutdown();
+		Profiler::Instance().Stop();
+		const std::string content = ReadJsonl(jsonlPath);
+		FloodResult r{};
+		r.jobs = static_cast<uint64_t>(frames) * perFrame;
+		r.jobLines = CountOf(content, "\"record_type\":\"profile_job\"");
+		r.ringDrops = drops;
+		r.scopeLines = CountOf(content, "\"scope_name\":" + std::to_string(Dia::Core::StringCRC("job.run").Value()) + ",");
+		r.scopeDrops = r.jobs > r.scopeLines ? r.jobs - r.scopeLines : 0;
+		r.wallMs = wall;
+		Profiler::ClearThreadNames();
+		return r;
+	}
+
+	void PrintFlood(const char* label, unsigned workers, const FloodResult& r)
+	{
+		std::printf("[BENCH] %s workers=%u jobs=%llu wall=%.0fms  job lines=%llu ring drops=%llu  job.run scopes=%llu scope drops=%llu\n",
+			label, workers, (unsigned long long)r.jobs, r.wallMs, (unsigned long long)r.jobLines,
+			(unsigned long long)r.ringDrops, (unsigned long long)r.scopeLines, (unsigned long long)r.scopeDrops);
+	}
+}
+
+TEST_F(SLOW_JobObserverTest, Benchmark_ProfileJobFlood_Uniform10kPerSec)
+{
+	for (unsigned workers : {2u, 3u, 4u})
+	{
+		Profiler::Instance().Stop();
+		std::remove(mJsonlPath);
+		ASSERT_TRUE(Profiler::Instance().Start(mJsonlPath, Dia::Observation::Profile::Category::kAll, "flood", 0));
+		const FloodResult r = RunFlood(mJsonlPath, workers, 100, 310);   // Windows sleep_for(16ms) ~ 31 ms real, so 310/frame ~ 10,000 jobs/s
+		PrintFlood("uniform 10k/s", workers, r);
+	}
+}
+
+TEST_F(SLOW_JobObserverTest, Benchmark_ProfileJobFlood_BurstInOneFrame)
+{
+	for (unsigned workers : {2u, 4u})
+	{
+		for (unsigned burst : {1000u, 10000u})
+		{
+			Profiler::Instance().Stop();
+			std::remove(mJsonlPath);
+			ASSERT_TRUE(Profiler::Instance().Start(mJsonlPath, Dia::Observation::Profile::Category::kAll, "flood", 0));
+			const FloodResult r = RunFlood(mJsonlPath, workers, 1, burst);
+			PrintFlood(burst == 1000u ? "burst 1k/frame" : "burst 10k/frame", workers, r);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------
+// Converter integration: real engine-path profile.jsonl. Written to $DIA_ENGINE_PROFILE_FIXTURE
+// (or ./engine-profile-fixture.jsonl); Dia/DiaCLI/tests/test_cli_perf_convert.py picks it up.
+// ---------------------------------------------------------------------------------------------
+
+TEST_F(SLOW_JobObserverTest, Integration_WritesRealEngineProfileForConverter)
+{
+	const char* env = std::getenv("DIA_ENGINE_PROFILE_FIXTURE");
+	const std::string out = (env && *env) ? env : "engine-profile-fixture.jsonl";
+	Profiler::Instance().Stop();
+	std::remove(out.c_str());
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
+	ASSERT_TRUE(Profiler::RegisterSubjectName(kOwner, "ecology"));
+	ASSERT_TRUE(Profiler::Instance().Start(out.c_str(), Dia::Observation::Profile::Category::kAll, "engine-fixture", 1700000000000000000LL));
+	Profiler::RegisterThreadName(Profiler::CurrentThreadId(), "Main");
+
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(3, nullptr, &observer);
+	JobTag tag; tag.owner = kOwner; tag.tag = 4; tag.rangeCount = 8;
+	for (int frame = 0; frame < 3; ++frame)
+	{
+		std::vector<Dia::Threading::JobHandle> hs;
+		{
+			DIA_PROFILE_SCOPE("fixture.frame", Dia::Observation::Profile::Category::kAll);
+			for (unsigned i = 0; i < 8; ++i)
+			{
+				tag.range = static_cast<uint16_t>(i);
+				hs.push_back(js.Submit([] { DIA_PROFILE_SCOPE("fixture.work", Dia::Observation::Profile::Category::kAll); std::this_thread::sleep_for(std::chrono::microseconds(300)); }, tag));
+			}
+			for (auto& h : hs) js.Wait(h);
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
+		Profiler::Instance().BeginFrame();
+	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(out.c_str());
+	EXPECT_EQ(CountOf(content, "\"record_type\":\"profile_job\""), 24u);
+	EXPECT_GE(CountOf(content, "\"record_type\":\"thread_name\""), 2u);
+	EXPECT_NE(content.find("\"subject\":\"ecology\""), std::string::npos);
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
 }
