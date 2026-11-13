@@ -23,6 +23,23 @@ namespace Dia
 			, mHistogram(histogram)
 			, mActive(false)
 		{
+			Open(name, category, 0);
+		}
+
+		ScopedZone::ScopedZone(const Dia::Core::StringCRC& name, ProfileCategory category, uint32_t subject,
+		                       Dia::Observation::Metric::Histogram* histogram)
+			: mScopeId(0)
+			, mParentScopeId(0)
+			, mStartNs(0)
+			, mFrameNumber(0)
+			, mHistogram(histogram)
+			, mActive(false)
+		{
+			Open(name, category, subject);
+		}
+
+		void ScopedZone::Open(const Dia::Core::StringCRC& name, ProfileCategory category, uint32_t subject)
+		{
 			// Early-out if this category is not active
 			if (!(Profiler::Instance().ActiveMask() & category))
 				return;
@@ -30,7 +47,7 @@ namespace Dia
 			mStartNs = static_cast<uint64_t>(
 				std::chrono::steady_clock::now().time_since_epoch().count());
 
-			mScopeId = Profiler::Instance().OnScopeOpen(name, category, mFrameNumber, mParentScopeId);
+			mScopeId = Profiler::Instance().OnScopeOpen(name, category, mFrameNumber, mParentScopeId, subject);
 			if (mScopeId == 0)
 				return; // Overflow or not started
 

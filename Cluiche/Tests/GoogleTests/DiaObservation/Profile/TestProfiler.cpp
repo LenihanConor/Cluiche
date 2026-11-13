@@ -12,6 +12,8 @@
 #include <chrono>
 #include <cstring>
 #include <cstdio>
+#include <memory>
+#include <vector>
 
 using namespace Dia::Observation::Profile;
 
@@ -324,4 +326,232 @@ TEST_F(ProfilerTest, AC19_StopDrainsRemainingRecords)
     std::string crcStr = std::to_string(crc);
     EXPECT_NE(content.find(crcStr), std::string::npos)
         << "AC19Zone (CRC " << crc << ") must appear in profile.jsonl after Stop() drains remaining records";
+}
+
+// ---------------------------------------------------------------------------
+// A1a - Subject on ScopeRecord / ScopedZone (profiling-frame-instrumentation A1, AA2, AA12)
+// ---------------------------------------------------------------------------
+
+namespace
+{
+    unsigned int PeekRecords(ScopeRecord* out, unsigned int maxOut)
+    {
+        return Profiler::Instance().PeekThreadClosedRecords(out, maxOut);
+    }
+
+    const ScopeRecord* FindByName(const ScopeRecord* recs, unsigned int n, const char* name)
+    {
+        Dia::Core::StringCRC crc(name);
+        for (unsigned int i = 0; i < n; ++i)
+            if (recs[i].name == crc)
+                return &recs[i];
+        return nullptr;
+    }
+}
+
+TEST_F(ProfilerTest, A1a_ExplicitSubjectRecorded)
+{
+    {
+        ScopedZone z(Dia::Core::StringCRC("A1aExplicit"), Category::kDiaApplicationFlow, 0x1234u);
+    }
+    ScopeRecord recs[16];
+    unsigned int n = PeekRecords(recs, 16);
+    ASSERT_EQ(1u, n);
+    EXPECT_EQ(0x1234u, recs[0].subject);
+}
+
+TEST_F(ProfilerTest, A1a_MacroSubjectRecorded)
+{
+    {
+        DIA_PROFILE_SCOPE_SUBJECT("A1aMacro", Category::kDiaApplicationFlow, 0x77u);
+    }
+    ScopeRecord recs[16];
+    ASSERT_EQ(1u, PeekRecords(recs, 16));
+    EXPECT_EQ(0x77u, recs[0].subject);
+}
+
+TEST_F(ProfilerTest, AA2_PlainNestedScopeInheritsSubject)
+{
+    {
+        ScopedZone outer(Dia::Core::StringCRC("A1aOuter"), Category::kDiaApplicationFlow, 0xABCDu);
+        {
+            DIA_PROFILE_SCOPE("A1aInner", Category::kDiaApplicationFlow);
+            {
+                DIA_PROFILE_SCOPE("A1aInnerInner", Category::kDiaApplicationFlow);
+            }
+        }
+    }
+    ScopeRecord recs[16];
+    unsigned int n = PeekRecords(recs, 16);
+    ASSERT_EQ(3u, n);
+    EXPECT_EQ(0xABCDu, FindByName(recs, n, "A1aOuter")->subject);
+    EXPECT_EQ(0xABCDu, FindByName(recs, n, "A1aInner")->subject);
+    EXPECT_EQ(0xABCDu, FindByName(recs, n, "A1aInnerInner")->subject);
+}
+
+TEST_F(ProfilerTest, A1a_NestedExplicitSubjectOverrides)
+{
+    {
+        ScopedZone outer(Dia::Core::StringCRC("A1aOvOuter"), Category::kDiaApplicationFlow, 0x11u);
+        {
+            ScopedZone mid(Dia::Core::StringCRC("A1aOvMid"), Category::kDiaApplicationFlow, 0x22u);
+            DIA_PROFILE_SCOPE("A1aOvLeaf", Category::kDiaApplicationFlow);
+        }
+    }
+    ScopeRecord recs[16];
+    unsigned int n = PeekRecords(recs, 16);
+    ASSERT_EQ(3u, n);
+    EXPECT_EQ(0x11u, FindByName(recs, n, "A1aOvOuter")->subject);
+    EXPECT_EQ(0x22u, FindByName(recs, n, "A1aOvMid")->subject);
+    EXPECT_EQ(0x22u, FindByName(recs, n, "A1aOvLeaf")->subject);
+}
+
+TEST_F(ProfilerTest, A1a_SubjectZeroStaysZero)
+{
+    {
+        DIA_PROFILE_SCOPE("A1aZeroRoot", Category::kDiaApplicationFlow);
+        DIA_PROFILE_SCOPE("A1aZeroChild", Category::kDiaApplicationFlow);
+    }
+    {
+        ScopedZone z(Dia::Core::StringCRC("A1aZeroExplicit"), Category::kDiaApplicationFlow, 0u);
+    }
+    ScopeRecord recs[16];
+    unsigned int n = PeekRecords(recs, 16);
+    ASSERT_EQ(3u, n);
+    for (unsigned int i = 0; i < n; ++i)
+        EXPECT_EQ(0u, recs[i].subject);
+}
+
+TEST_F(ProfilerTest, A1a_CurrentSubjectInsideAndOutside)
+{
+    EXPECT_EQ(0u, Profiler::CurrentSubject());
+    {
+        ScopedZone outer(Dia::Core::StringCRC("A1aCurOuter"), Category::kDiaApplicationFlow, 0x5u);
+        EXPECT_EQ(0x5u, Profiler::CurrentSubject());
+        {
+            DIA_PROFILE_SCOPE("A1aCurPlain", Category::kDiaApplicationFlow);
+            EXPECT_EQ(0x5u, Profiler::CurrentSubject());
+            {
+                ScopedZone inner(Dia::Core::StringCRC("A1aCurInner"), Category::kDiaApplicationFlow, 0x6u);
+                EXPECT_EQ(0x6u, Profiler::CurrentSubject());
+            }
+            EXPECT_EQ(0x5u, Profiler::CurrentSubject());
+        }
+    }
+    EXPECT_EQ(0u, Profiler::CurrentSubject());
+}
+
+TEST_F(ProfilerTest, A1a_SiblingAfterSubjectScopeDoesNotInherit)
+{
+    {
+        ScopedZone first(Dia::Core::StringCRC("A1aSibFirst"), Category::kDiaApplicationFlow, 0x99u);
+    }
+    {
+        DIA_PROFILE_SCOPE("A1aSibSecond", Category::kDiaApplicationFlow);
+    }
+    ScopeRecord recs[16];
+    unsigned int n = PeekRecords(recs, 16);
+    ASSERT_EQ(2u, n);
+    EXPECT_EQ(0x99u, FindByName(recs, n, "A1aSibFirst")->subject);
+    EXPECT_EQ(0u, FindByName(recs, n, "A1aSibSecond")->subject);
+}
+
+TEST_F(ProfilerTest, A1a_OpenScopesSnapshotCarriesSubject)
+{
+    ScopedZone outer(Dia::Core::StringCRC("A1aSnapOuter"), Category::kDiaApplicationFlow, 0x31u);
+    DIA_PROFILE_SCOPE("A1aSnapInner", Category::kDiaApplicationFlow);
+    Profiler::OpenScopeEntry entries[8];
+    unsigned int n = Profiler::Instance().GetOpenScopesSnapshot(entries, 8);
+    ASSERT_GE(n, 2u);
+    unsigned int found = 0;
+    for (unsigned int i = 0; i < n; ++i)
+        if (entries[i].name == Dia::Core::StringCRC("A1aSnapOuter") ||
+            entries[i].name == Dia::Core::StringCRC("A1aSnapInner"))
+        {
+            EXPECT_EQ(0x31u, entries[i].subject);
+            ++found;
+        }
+    EXPECT_EQ(2u, found);
+}
+
+TEST_F(ProfilerTest, A1a_Depth64StackInheritsSubject)
+{
+    std::vector<std::unique_ptr<ScopedZone>> zones;
+    zones.emplace_back(new ScopedZone(Dia::Core::StringCRC("A1aDeep"), Category::kDiaApplicationFlow, 0xD00Du));
+    for (int i = 1; i < 64; ++i)
+        zones.emplace_back(new ScopedZone(Dia::Core::StringCRC("A1aDeep"), Category::kDiaApplicationFlow));
+    EXPECT_EQ(0xD00Du, Profiler::CurrentSubject());
+    while (!zones.empty())
+        zones.pop_back();
+    EXPECT_EQ(0u, Profiler::CurrentSubject());
+
+    ScopeRecord recs[128];
+    unsigned int n = PeekRecords(recs, 128);
+    ASSERT_EQ(64u, n);
+    for (unsigned int i = 0; i < n; ++i)
+        EXPECT_EQ(0xD00Du, recs[i].subject);
+}
+
+TEST_F(ProfilerTest, A1a_ScopeRecordSizeReport)
+{
+    // Subject packs after threadId; record grows 112 -> 120 (8-byte alignment).
+    RecordProperty("sizeof_ScopeRecord", static_cast<int>(sizeof(ScopeRecord)));
+    EXPECT_LE(sizeof(ScopeRecord), 120u);
+}
+
+TEST(ProfilerSubjectNames, AA12_UnknownResolvesToHex)
+{
+    char buf[32];
+    EXPECT_STREQ("0xdeadbeef", Profiler::ResolveSubjectName(0xDEADBEEFu, buf, sizeof(buf)));
+    EXPECT_STREQ("0x00001a2b", Profiler::ResolveSubjectName(0x1A2Bu, buf, sizeof(buf)));
+}
+
+TEST(ProfilerSubjectNames, AA12_RegisteredResolvesToName)
+{
+    char buf[64];
+    EXPECT_TRUE(Profiler::RegisterSubjectName(0xA0000001u, "RenderModule"));
+    EXPECT_STREQ("RenderModule", Profiler::ResolveSubjectName(0xA0000001u, buf, sizeof(buf)));
+}
+
+TEST(ProfilerSubjectNames, DuplicateRegistrationOverwrites)
+{
+    char buf[64];
+    EXPECT_TRUE(Profiler::RegisterSubjectName(0xA0000002u, "First"));
+    EXPECT_TRUE(Profiler::RegisterSubjectName(0xA0000002u, "Second"));
+    EXPECT_STREQ("Second", Profiler::ResolveSubjectName(0xA0000002u, buf, sizeof(buf)));
+}
+
+TEST(ProfilerSubjectNames, InvalidRegistrationRejected)
+{
+    EXPECT_FALSE(Profiler::RegisterSubjectName(0u, "Zero"));
+    EXPECT_FALSE(Profiler::RegisterSubjectName(0xA0000003u, nullptr));
+}
+
+TEST(ProfilerSubjectNames, SmallBufferTruncatesSafely)
+{
+    char buf[4];
+    Profiler::RegisterSubjectName(0xA0000004u, "LongModuleName");
+    Profiler::ResolveSubjectName(0xA0000004u, buf, sizeof(buf));
+    EXPECT_EQ('\0', buf[3]);
+}
+
+// Keep last: fills the process-wide table.
+TEST(ProfilerSubjectNames, ZZ_TableFullReturnsFalseWithoutCrash)
+{
+    char buf[64];
+    ASSERT_TRUE(Profiler::RegisterSubjectName(0xA0000005u, "Survivor"));
+    bool sawFull = false;
+    for (uint32_t i = 0; i < Profiler::kMaxSubjectNames + 8; ++i)
+    {
+        if (!Profiler::RegisterSubjectName(0xB0000000u + i, "Filler"))
+        {
+            sawFull = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(sawFull);
+    EXPECT_FALSE(Profiler::RegisterSubjectName(0xC0000000u, "Overflow"));
+    EXPECT_STREQ("Survivor", Profiler::ResolveSubjectName(0xA0000005u, buf, sizeof(buf)));
+    EXPECT_TRUE(Profiler::RegisterSubjectName(0xA0000005u, "Renamed"));
+    EXPECT_STREQ("0xc0000000", Profiler::ResolveSubjectName(0xC0000000u, buf, sizeof(buf)));
 }

@@ -18,6 +18,7 @@ namespace Dia
 			uint64_t             durationNs;
 			uint32_t             frameNumber;
 			uint32_t             threadId;
+			uint32_t             subject;         // CRC value of the owning subject (module/PU); 0 = unset
 		};
 	}
 } // namespace Observation

@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <cstdint>
+#include <cstddef>
 
 namespace Dia
 {
@@ -34,7 +35,8 @@ namespace Dia
 
 			// Called by ScopedZone only
 			uint64_t OnScopeOpen(const Dia::Core::StringCRC& name, ProfileCategory category,
-			                     uint32_t& outFrameNumber, uint64_t& outParentScopeId);
+			                     uint32_t& outFrameNumber, uint64_t& outParentScopeId,
+			                     uint32_t subject = 0);
 			void     OnScopeClose(uint64_t scopeId, const Dia::Core::StringCRC& name,
 			                      ProfileCategory category, uint64_t parentScopeId,
 			                      uint64_t startNs, uint64_t durationNs,
@@ -47,8 +49,22 @@ namespace Dia
 				uint64_t             startUnixNano;
 				uint32_t             frameNumber;
 				uint32_t             threadId;
+				uint32_t             subject;
 			};
 			unsigned int GetOpenScopesSnapshot(OpenScopeEntry* out, unsigned int maxOut) const;
+
+			// Subject of the innermost open scope on the calling thread (0 if none).
+			static uint32_t CurrentSubject();
+
+			// Subject name table (fixed capacity). Registration is off the hot path.
+			static const unsigned int kMaxSubjectNames = 256;
+			static const unsigned int kSubjectNameLen  = 64;
+			static bool RegisterSubjectName(uint32_t subject, const char* name);   // false if table full / invalid
+			// Writes the registered name, or "0x%08x" when unknown. Returns buf (NUL-terminated).
+			static const char* ResolveSubjectName(uint32_t subject, char* buf, size_t bufSize);
+
+			// Copies not-yet-drained closed records of the CALLING thread (oldest first). Test/diagnostic aid.
+			unsigned int PeekThreadClosedRecords(ScopeRecord* out, unsigned int maxOut) const;
 
 			bool IsStarted() const { return mStarted.load(std::memory_order_acquire); }
 
@@ -71,6 +87,7 @@ namespace Dia
 				uint64_t*                  openStartNs;
 				Dia::Core::StringCRC*      openNames;
 				uint32_t*                  openFrameNumbers;
+				uint32_t*                  openSubjects;
 				uint32_t                   threadId;
 			};
 

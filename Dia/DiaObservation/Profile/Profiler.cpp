@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstring>
 #include <climits>
+#include <cstdio>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -29,6 +30,7 @@ namespace Dia
 		static thread_local Dia::Core::StringCRC tOpenName[kOpenStackCapacity];
 		static thread_local ProfileCategory      tOpenCategory[kOpenStackCapacity];
 		static thread_local uint32_t             tOpenFrameNumber[kOpenStackCapacity];
+		static thread_local uint32_t             tOpenSubject[kOpenStackCapacity];      // inherited/explicit subject per open scope
 		static thread_local unsigned int         tOpenCount     = 0;
 		static thread_local ScopeRecord          tClosedRing[kClosedRingCapacity];
 		static thread_local std::atomic<unsigned int> tClosedHead{0};
@@ -184,6 +186,7 @@ namespace Dia
 				ref.openStartNs     = tOpenStartNs;
 				ref.openNames       = tOpenName;
 				ref.openFrameNumbers = tOpenFrameNumber;
+				ref.openSubjects    = tOpenSubject;
 				ref.threadId        = thisThreadId;
 				++mThreadRingCount;
 			}
@@ -218,7 +221,8 @@ namespace Dia
 		}
 
 		uint64_t Profiler::OnScopeOpen(const Dia::Core::StringCRC& name, ProfileCategory category,
-		                                uint32_t& outFrameNumber, uint64_t& outParentScopeId)
+		                                uint32_t& outFrameNumber, uint64_t& outParentScopeId,
+		                                uint32_t subject)
 		{
 			if (!tRegistered || !mStarted.load(std::memory_order_acquire))
 				return 0;
@@ -240,6 +244,7 @@ namespace Dia
 			tOpenName[tOpenCount]         = name;
 			tOpenCategory[tOpenCount]     = category;
 			tOpenFrameNumber[tOpenCount]  = frameNumber;
+			tOpenSubject[tOpenCount]      = (subject != 0) ? subject : ((tOpenCount > 0) ? tOpenSubject[tOpenCount - 1] : 0u);
 			++tOpenCount;
 
 			outFrameNumber    = frameNumber;
@@ -256,8 +261,12 @@ namespace Dia
 			if (!tRegistered)
 				return;
 
+			uint32_t subject = 0;
 			if (tOpenCount > 0)
+			{
+				subject = tOpenSubject[tOpenCount - 1];
 				--tOpenCount;
+			}
 
 			// Write ScopeRecord to closed ring (drop-oldest on overflow)
 			unsigned int head     = tClosedHead.load(std::memory_order_relaxed);
@@ -272,6 +281,7 @@ namespace Dia
 			record.durationNs     = durationNs;
 			record.frameNumber    = frameNumber;
 			record.threadId       = threadId;
+			record.subject        = subject;
 
 			unsigned int nextHead = (head + 1) % kClosedRingCapacity;
 			if (nextHead == tail)
@@ -300,11 +310,86 @@ namespace Dia
 					out[total].startUnixNano = ref.openStartNs[j];
 					out[total].frameNumber  = ref.openFrameNumbers[j];
 					out[total].threadId     = ref.threadId;
+					out[total].subject      = ref.openSubjects[j];
 					++total;
 				}
 			}
 
 			return total;
+		}
+
+		uint32_t Profiler::CurrentSubject()
+		{
+			return (tOpenCount > 0) ? tOpenSubject[tOpenCount - 1] : 0u;
+		}
+
+		namespace
+		{
+			struct SubjectEntry { uint32_t value; char name[Profiler::kSubjectNameLen]; };
+			SubjectEntry sSubjects[Profiler::kMaxSubjectNames];
+			unsigned int sSubjectCount = 0;
+			std::mutex   sSubjectMutex;
+		}
+
+		bool Profiler::RegisterSubjectName(uint32_t subject, const char* name)
+		{
+			if (subject == 0 || name == nullptr)
+				return false;
+
+			std::lock_guard<std::mutex> lock(sSubjectMutex);
+			SubjectEntry* entry = nullptr;
+			for (unsigned int i = 0; i < sSubjectCount; ++i)
+			{
+				if (sSubjects[i].value == subject)
+				{
+					entry = &sSubjects[i];
+					break;
+				}
+			}
+			if (!entry)
+			{
+				if (sSubjectCount >= kMaxSubjectNames)
+					return false;
+				entry = &sSubjects[sSubjectCount++];
+				entry->value = subject;
+			}
+			strncpy_s(entry->name, kSubjectNameLen, name, _TRUNCATE);
+			return true;
+		}
+
+		const char* Profiler::ResolveSubjectName(uint32_t subject, char* buf, size_t bufSize)
+		{
+			if (!buf || bufSize == 0)
+				return buf;
+
+			{
+				std::lock_guard<std::mutex> lock(sSubjectMutex);
+				for (unsigned int i = 0; i < sSubjectCount; ++i)
+				{
+					if (sSubjects[i].value == subject)
+					{
+						strncpy_s(buf, bufSize, sSubjects[i].name, _TRUNCATE);
+						return buf;
+					}
+				}
+			}
+			snprintf(buf, bufSize, "0x%08x", subject);
+			return buf;
+		}
+
+		unsigned int Profiler::PeekThreadClosedRecords(ScopeRecord* out, unsigned int maxOut) const
+		{
+			if (!out || maxOut == 0)
+				return 0;
+			unsigned int tail = tClosedTail.load(std::memory_order_acquire);
+			unsigned int head = tClosedHead.load(std::memory_order_acquire);
+			unsigned int n = 0;
+			while (tail != head && n < maxOut)
+			{
+				out[n++] = tClosedRing[tail];
+				tail = (tail + 1) % kClosedRingCapacity;
+			}
+			return n;
 		}
 
 		void Profiler::DrainLoop()
