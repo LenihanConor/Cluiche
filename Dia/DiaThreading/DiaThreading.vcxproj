@@ -76,6 +76,8 @@
   <ItemGroup>
     <ClInclude Include="JobSystem.h" />
     <ClInclude Include="IJobMetrics.h" />
+    <ClInclude Include="JobContext.h" />
+    <ClInclude Include="IJobObserver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem.cpp" />

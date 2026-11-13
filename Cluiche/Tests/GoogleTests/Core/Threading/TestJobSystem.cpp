@@ -333,3 +333,194 @@ TEST(JobSystemInstance, StressTest_ManySmallJobs)
 
     js.Shutdown();
 }
+
+// ==============================================================================
+// IJobObserver (Job Observation feature)
+// ==============================================================================
+
+#include <DiaThreading/IJobObserver.h>
+#include <mutex>
+#include <thread>
+#include <set>
+#include <map>
+#include <atomic>
+#include <vector>
+
+namespace
+{
+    class RecordingJobObserver : public IJobObserver
+    {
+    public:
+        struct Seen { std::thread::id beginThread, endThread; JobContext beginCtx, endCtx; JobTimingRecord rec; };
+
+        std::mutex mutex;
+        std::vector<unsigned> starts, stops;
+        std::vector<Seen> seen;
+        std::vector<std::thread::id> captureThreads;
+        std::vector<std::thread::id> startThreads;
+        uint32_t nextOwner = 7;
+        uint32_t nextTag   = 9;
+        std::atomic<int> beginsBeforeStart{0};
+
+        void OnWorkerStart(unsigned i) override
+        {
+            std::lock_guard<std::mutex> l(mutex);
+            starts.push_back(i);
+            startThreads.push_back(std::this_thread::get_id());
+        }
+        void OnWorkerStop(unsigned i) override
+        {
+            std::lock_guard<std::mutex> l(mutex);
+            stops.push_back(i);
+        }
+        JobContext CaptureContext() override
+        {
+            std::lock_guard<std::mutex> l(mutex);
+            captureThreads.push_back(std::this_thread::get_id());
+            JobContext c;
+            c.attribution.owner = nextOwner;
+            c.attribution.tag   = nextTag;
+            c.attribution.range = 1;
+            c.attribution.rangeCount = 2;
+            c.traceParent = 42;
+            return c;
+        }
+        void OnJobBegin(const JobContext& ctx) override
+        {
+            std::lock_guard<std::mutex> l(mutex);
+            // The beginning thread must already have run OnWorkerStart.
+            bool started = false;
+            for (auto& t : startThreads) started |= (t == std::this_thread::get_id());
+            if (!started) ++beginsBeforeStart;
+            pending[std::this_thread::get_id()] = { std::this_thread::get_id(), {}, ctx, {}, {} };
+        }
+        void OnJobEnd(const JobContext& ctx, const JobTimingRecord& rec) override
+        {
+            std::lock_guard<std::mutex> l(mutex);
+            Seen s = pending[std::this_thread::get_id()];
+            s.endThread = std::this_thread::get_id();
+            s.endCtx = ctx;
+            s.rec = rec;
+            seen.push_back(s);
+        }
+    private:
+        std::map<std::thread::id, Seen> pending;
+    };
+}
+
+TEST(JobSystemObserver, WorkerStartStop_OncePerWorker)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(3, nullptr, &obs);
+
+    std::vector<JobHandle> hs;
+    for (int i = 0; i < 20; ++i) hs.push_back(js.Submit([] {}));
+    for (auto& h : hs) js.Wait(h);
+    js.Shutdown();
+
+    EXPECT_EQ(obs.starts.size(), 3u);
+    EXPECT_EQ(obs.stops.size(), 3u);
+    EXPECT_EQ(std::set<unsigned>(obs.starts.begin(), obs.starts.end()).size(), 3u);
+    EXPECT_EQ(std::set<unsigned>(obs.stops.begin(), obs.stops.end()).size(), 3u);
+    EXPECT_EQ(obs.beginsBeforeStart.load(), 0);
+}
+
+TEST(JobSystemObserver, ContextCapturedOnSubmitter_BeginEndOnWorker)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(2, nullptr, &obs);
+
+    JobHandle h = js.Submit([] {});
+    js.Wait(h);
+    js.Shutdown();
+
+    ASSERT_EQ(obs.captureThreads.size(), 1u);
+    EXPECT_EQ(obs.captureThreads[0], std::this_thread::get_id());
+    ASSERT_EQ(obs.seen.size(), 1u);
+    const auto& s = obs.seen[0];
+    EXPECT_NE(s.beginThread, std::this_thread::get_id());
+    EXPECT_EQ(s.beginThread, s.endThread);
+    EXPECT_EQ(s.beginCtx.attribution.owner, 7u);
+    EXPECT_EQ(s.endCtx.attribution.owner, 7u);
+    EXPECT_EQ(s.endCtx.traceParent, 42u);
+}
+
+TEST(JobSystemObserver, ExplicitTagOverridesCapturedAttribution)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+
+    JobTag tag; tag.owner = 100; tag.tag = 200; tag.range = 3; tag.rangeCount = 5;
+    JobHandle a = js.Submit([] {}, tag);
+    js.Wait(a);
+    JobHandle b = js.Submit([] {});
+    js.Wait(b);
+    js.Shutdown();
+
+    ASSERT_EQ(obs.seen.size(), 2u);
+    EXPECT_EQ(obs.seen[0].endCtx.attribution.owner, 100u);
+    EXPECT_EQ(obs.seen[0].endCtx.attribution.tag, 200u);
+    EXPECT_EQ(obs.seen[0].endCtx.attribution.range, 3);
+    EXPECT_EQ(obs.seen[0].endCtx.attribution.rangeCount, 5);
+    EXPECT_EQ(obs.seen[0].endCtx.traceParent, 42u);   // other captured fields preserved
+    EXPECT_EQ(obs.seen[1].endCtx.attribution.owner, 7u);
+    EXPECT_EQ(obs.seen[1].endCtx.attribution.tag, 9u);
+}
+
+TEST(JobSystemObserver, OneTimingRecordPerJob)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(3, nullptr, &obs);
+
+    const int kJobs = 50;
+    std::vector<JobHandle> hs;
+    for (int i = 0; i < kJobs; ++i)
+    {
+        JobTag t; t.owner = 11; t.tag = static_cast<uint32_t>(i); t.range = 1; t.rangeCount = 4;
+        hs.push_back(js.Submit([] { std::this_thread::sleep_for(std::chrono::microseconds(50)); }, t));
+    }
+    for (auto& h : hs) js.Wait(h);
+    js.Shutdown();
+
+    ASSERT_EQ(obs.seen.size(), static_cast<size_t>(kJobs));
+    std::set<uint32_t> tags;
+    for (auto& s : obs.seen)
+    {
+        EXPECT_LE(s.rec.submitNs, s.rec.startNs);
+        EXPECT_LE(s.rec.startNs, s.rec.endNs);
+        EXPECT_LT(s.rec.worker, 3);
+        EXPECT_EQ(s.rec.owner, 11u);
+        EXPECT_EQ(s.rec.range, 1);
+        EXPECT_EQ(s.rec.rangeCount, 4);
+        tags.insert(s.rec.tag);
+    }
+    EXPECT_EQ(tags.size(), static_cast<size_t>(kJobs));
+}
+
+TEST(JobSystemObserver, NullFunction_StillEndsAndCompletes)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+    JobHandle h = js.Submit(JobFn{});
+    js.Wait(h);
+    js.Shutdown();
+    EXPECT_EQ(obs.seen.size(), 1u);
+}
+
+TEST(JobSystemObserver, NullObserver_RunsJobsNormally)
+{
+    JobSystem js;
+    js.Initialize(2, nullptr, nullptr);
+    Atomic<int> counter{0};
+    JobHandle h = js.Submit([&] { counter.Increment(); });
+    JobHandle h2 = js.Submit([&] { counter.Increment(); }, JobTag{1, 2, 0, 0});
+    JobHandle h3 = js.TrySubmit([&] { counter.Increment(); });
+    js.Wait(h); js.Wait(h2); js.Wait(h3);
+    EXPECT_EQ(counter.Load(), 3);
+    js.Shutdown();
+}

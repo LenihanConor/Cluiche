@@ -1,6 +1,8 @@
 #pragma once
 
 #include <DiaThreading/IJobMetrics.h>
+#include <DiaThreading/IJobObserver.h>
+#include <DiaThreading/JobContext.h>
 #include <functional>
 #include <memory>
 #include <cstdint>
@@ -66,7 +68,9 @@ namespace Dia
 			// numThreads = 0 means use hardware concurrency.
 			// metrics may be null — pass a JobSystemMetricsAdapter to enable instrumentation.
 			// Calling Initialize twice without an intervening Shutdown asserts.
-			void       Initialize(unsigned int numThreads = 0, IJobMetrics* metrics = nullptr);
+			// observer may be null; when set it receives worker start/stop, context capture
+			// on Submit, and begin/end + a JobTimingRecord around each job.
+			void       Initialize(unsigned int numThreads = 0, IJobMetrics* metrics = nullptr, IJobObserver* observer = nullptr);
 
 			// Drains pending tasks then joins all workers. Idempotent.
 			void       Shutdown();
@@ -74,6 +78,9 @@ namespace Dia
 			// Returns an invalid handle (and asserts) if called before Initialize
 			// or after Shutdown.
 			JobHandle  Submit(JobFn fn);
+
+			// Explicit owner/tag/range overrides the captured attribution.
+			JobHandle  Submit(JobFn fn, const JobTag& tag);
 
 			// Non-asserting variant of Submit.
 			// Returns an invalid JobHandle (IsValid() == false) if called before Initialize
@@ -96,7 +103,10 @@ namespace Dia
 
 		private:
 			Dia::Core::ThreadPool* mThreadPool;
+			JobHandle  SubmitImpl(JobFn fn, const JobTag* tag);
+
 			IJobMetrics*           mMetrics = nullptr;
+			IJobObserver*          mObserver = nullptr;
 			[[maybe_unused]] uint64_t mPrevSubmitted = 0;
 			[[maybe_unused]] uint64_t mPrevCompleted = 0;
 		};

@@ -5,6 +5,8 @@
     <ClInclude Include="IJobMetrics.h">
       <Filter>IJobMetrics</Filter>
     </ClInclude>
+    <ClInclude Include="JobContext.h" />
+    <ClInclude Include="IJobObserver.h" />
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>

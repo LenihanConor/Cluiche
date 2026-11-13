@@ -5,11 +5,23 @@
 #include "DiaCore/Memory/Memory.h"
 
 #include <atomic>
+#include <chrono>
 
 namespace Dia
 {
 	namespace Threading
 	{
+		namespace
+		{
+			thread_local uint16_t tWorkerIndex = 0xFFFF;
+
+			uint64_t NowNs()
+			{
+				return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+					std::chrono::steady_clock::now().time_since_epoch()).count());
+			}
+		}
+
 		//-----------------------------------------------------------------------------
 		// Job — minimal completion flag, owned by JobHandle's shared_ptr.
 		//-----------------------------------------------------------------------------
@@ -47,13 +59,29 @@ namespace Dia
 
 		JobSystem::~JobSystem() { Shutdown(); }
 
-		void JobSystem::Initialize(unsigned int numThreads, IJobMetrics* metrics)
+		void JobSystem::Initialize(unsigned int numThreads, IJobMetrics* metrics, IJobObserver* observer)
 		{
 			DIA_ASSERT(mThreadPool == nullptr, "JobSystem::Initialize called twice without an intervening Shutdown");
 			if (mThreadPool)
 				return;
-			mThreadPool = DIA_NEW(Dia::Core::ThreadPool(numThreads));
-			mMetrics    = metrics;
+			if (observer)
+			{
+				Dia::Core::ThreadPool::ThreadHooks hooks;
+				hooks.onStart = [observer](unsigned int i) {
+					tWorkerIndex = static_cast<uint16_t>(i);
+					observer->OnWorkerStart(i);
+				};
+				hooks.onStop = [observer](unsigned int i) {
+					observer->OnWorkerStop(i);
+				};
+				mThreadPool = DIA_NEW(Dia::Core::ThreadPool(numThreads, std::move(hooks)));
+			}
+			else
+			{
+				mThreadPool = DIA_NEW(Dia::Core::ThreadPool(numThreads));
+			}
+			mMetrics  = metrics;
+			mObserver = observer;
 		}
 
 		void JobSystem::Shutdown()
@@ -63,7 +91,8 @@ namespace Dia
 				DIA_DELETE(mThreadPool);
 				mThreadPool = nullptr;
 			}
-			mMetrics = nullptr;
+			mMetrics  = nullptr;
+			mObserver = nullptr;
 		}
 
 		JobHandle JobSystem::Submit(JobFn fn)
@@ -71,33 +100,15 @@ namespace Dia
 			DIA_ASSERT(mThreadPool != nullptr, "JobSystem::Submit called before Initialize or after Shutdown");
 			if (!mThreadPool)
 				return JobHandle();
+			return SubmitImpl(std::move(fn), nullptr);
+		}
 
-			auto jobPtr = std::make_shared<Job>();
-
-			// Capture metrics and pool by value so the lambda is self-contained.
-			auto* metrics = mMetrics;
-			mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
-			                      metrics,
-			                      pool = mThreadPool]() {
-				if (fn) fn();
-				jobPtr->unfinishedJobs.store(0, std::memory_order_release);
-				if (metrics)
-				{
-					metrics->OnJobCompleted();
-					metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
-					metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
-				}
-			});
-
-			if (mMetrics)
-			{
-				mMetrics->OnJobSubmitted();
-				mMetrics->OnQueueDepthChanged(static_cast<double>(mThreadPool->GetQueueDepth()));
-			}
-
-			JobHandle handle;
-			handle.mPtr = jobPtr;
-			return handle;
+		JobHandle JobSystem::Submit(JobFn fn, const JobTag& tag)
+		{
+			DIA_ASSERT(mThreadPool != nullptr, "JobSystem::Submit called before Initialize or after Shutdown");
+			if (!mThreadPool)
+				return JobHandle();
+			return SubmitImpl(std::move(fn), &tag);
 		}
 
 		JobHandle JobSystem::TrySubmit(JobFn fn)
@@ -105,23 +116,75 @@ namespace Dia
 			// Non-asserting variant: return invalid handle if pool is null.
 			if (!mThreadPool)
 				return JobHandle();
+			return SubmitImpl(std::move(fn), nullptr);
+		}
 
+		JobHandle JobSystem::SubmitImpl(JobFn fn, const JobTag* tag)
+		{
 			auto jobPtr = std::make_shared<Job>();
 
 			// Capture metrics and pool by value so the lambda is self-contained.
-			auto* metrics = mMetrics;
-			mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
-			                      metrics,
-			                      pool = mThreadPool]() {
-				if (fn) fn();
-				jobPtr->unfinishedJobs.store(0, std::memory_order_release);
-				if (metrics)
-				{
-					metrics->OnJobCompleted();
-					metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
-					metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
-				}
-			});
+			auto* metrics  = mMetrics;
+			auto* observer = mObserver;
+
+			if (!observer)
+			{
+				mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
+				                      metrics,
+				                      pool = mThreadPool]() {
+					if (fn) fn();
+					jobPtr->unfinishedJobs.store(0, std::memory_order_release);
+					if (metrics)
+					{
+						metrics->OnJobCompleted();
+						metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
+						metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
+					}
+				});
+			}
+			else
+			{
+				JobContext ctx = observer->CaptureContext();
+				if (tag)
+					ctx.attribution = *tag;
+				const uint64_t submitNs = NowNs();
+
+				mThreadPool->Enqueue([fn = std::move(fn), jobPtr,
+				                      metrics, observer, ctx, submitNs,
+				                      pool = mThreadPool]() {
+					const uint64_t startNs = NowNs();
+					// Runs on all exits (including exceptions): end notification, then completion.
+					struct Finish
+					{
+						IJobObserver* observer; const JobContext& ctx; uint64_t submitNs; uint64_t startNs;
+						Job* job; IJobMetrics* metrics; Dia::Core::ThreadPool* pool;
+						~Finish()
+						{
+							JobTimingRecord rec{};
+							rec.submitNs   = submitNs;
+							rec.startNs    = startNs;
+							rec.endNs      = NowNs();
+							rec.owner      = ctx.attribution.owner;
+							rec.tag        = ctx.attribution.tag;
+							rec.range      = ctx.attribution.range;
+							rec.rangeCount = ctx.attribution.rangeCount;
+							rec.worker     = tWorkerIndex;
+							rec.flags      = 0;
+							observer->OnJobEnd(ctx, rec);
+							job->unfinishedJobs.store(0, std::memory_order_release);
+							if (metrics)
+							{
+								metrics->OnJobCompleted();
+								metrics->OnActiveWorkersChanged(static_cast<double>(pool->GetActiveTaskCount()));
+								metrics->OnQueueDepthChanged   (static_cast<double>(pool->GetQueueDepth()));
+							}
+						}
+					} finish{observer, ctx, submitNs, startNs, jobPtr.get(), metrics, pool};
+
+					observer->OnJobBegin(ctx);
+					if (fn) fn();
+				});
+			}
 
 			if (mMetrics)
 			{
