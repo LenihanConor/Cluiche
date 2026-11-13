@@ -79,6 +79,38 @@ namespace Dia
 				fwrite(line, 1, static_cast<size_t>(len), mFile);
 		}
 
+		void ProfileFileSink::OnJobRecord(const ProfileJobRecord& r)
+		{
+			if (!mFile)
+				return;
+
+			AnnounceThread(r.threadId);
+			AnnounceThread(r.submitThread);
+
+			char owner[Profiler::kSubjectNameLen + 16];
+			Profiler::ResolveSubjectName(r.owner, owner, sizeof(owner));
+
+			char line[480];
+			int len = snprintf(line, sizeof(line),
+				"{\"record_type\":\"profile_job\","
+				"\"thread_id\":%u,"
+				"\"submit_thread\":%u,"
+				"\"owner\":\"%s\","
+				"\"tag\":%u,"
+				"\"range\":%u,"
+				"\"range_count\":%u,"
+				"\"submit_unix_nano\":%lld,"
+				"\"start_unix_nano\":%lld,"
+				"\"end_unix_nano\":%lld}\n",
+				r.threadId, r.submitThread, owner, r.tag,
+				static_cast<unsigned int>(r.range), static_cast<unsigned int>(r.rangeCount),
+				static_cast<long long>(static_cast<int64_t>(r.submitNs) + mEpochOffsetNs),
+				static_cast<long long>(static_cast<int64_t>(r.startNs) + mEpochOffsetNs),
+				static_cast<long long>(static_cast<int64_t>(r.endNs) + mEpochOffsetNs));
+			if (len > 0 && len < static_cast<int>(sizeof(line)))
+				fwrite(line, 1, static_cast<size_t>(len), mFile);
+		}
+
 		void ProfileFileSink::OnRecord(const ScopeRecord& record)
 		{
 			// --- Write to .jsonl ---

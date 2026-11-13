@@ -35,7 +35,11 @@ namespace Dia
 		static thread_local ScopeRecord          tClosedRing[kClosedRingCapacity];
 		static thread_local std::atomic<unsigned int> tClosedHead{0};
 		static thread_local std::atomic<unsigned int> tClosedTail{0};
+		static thread_local ProfileJobRecord     tJobRing[Profiler::kJobRingCapacity];
+		static thread_local std::atomic<unsigned int> tJobHead{0};
+		static thread_local std::atomic<unsigned int> tJobTail{0};
 		static thread_local bool                 tRegistered    = false;
+		static std::atomic<uint64_t>             sDroppedJobRecords{0};
 
 		// --- Profiler singleton ---
 
@@ -120,11 +124,14 @@ namespace Dia
 			// Final drain: flush all remaining records regardless of frame
 			DrainAllRings(UINT32_MAX);
 
-			if (mSink)
 			{
-				mSink->WriteFinalJson();
-				delete mSink;
-				mSink = nullptr;
+				std::lock_guard<std::mutex> lock(mRegistryMutex);   // workers flush into mSink under this lock
+				if (mSink)
+				{
+					mSink->WriteFinalJson();
+					delete mSink;
+					mSink = nullptr;
+				}
 			}
 		}
 
@@ -163,6 +170,8 @@ namespace Dia
 			tOpenCount    = 0;
 			tClosedHead.store(0, std::memory_order_relaxed);
 			tClosedTail.store(0, std::memory_order_relaxed);
+			tJobHead.store(0, std::memory_order_relaxed);
+			tJobTail.store(0, std::memory_order_relaxed);
 
 			uint32_t thisThreadId = 0;
 #ifdef _WIN32
@@ -187,6 +196,9 @@ namespace Dia
 				ref.openNames       = tOpenName;
 				ref.openFrameNumbers = tOpenFrameNumber;
 				ref.openSubjects    = tOpenSubject;
+				ref.jobRing         = tJobRing;
+				ref.jobHead         = &tJobHead;
+				ref.jobTail         = &tJobTail;
 				ref.threadId        = thisThreadId;
 				++mThreadRingCount;
 			}
@@ -205,6 +217,9 @@ namespace Dia
 				{
 					if (mThreadRings[i].closedRing == tClosedRing)
 					{
+						// Flush this thread's undrained records before the ring goes away (worker shutdown).
+						if (mSink)
+							DrainRing(mThreadRings[i], UINT32_MAX);
 						mThreadRings[i] = mThreadRings[mThreadRingCount - 1];
 						std::memset(&mThreadRings[mThreadRingCount - 1], 0, sizeof(ThreadRingRef));
 						--mThreadRingCount;
@@ -218,6 +233,41 @@ namespace Dia
 			tScopeCounter = 0;
 			tClosedHead.store(0, std::memory_order_relaxed);
 			tClosedTail.store(0, std::memory_order_relaxed);
+			tJobHead.store(0, std::memory_order_relaxed);
+			tJobTail.store(0, std::memory_order_relaxed);
+		}
+
+		void Profiler::RecordJob(ProfileJobRecord record)
+		{
+			if (!tRegistered || !mStarted.load(std::memory_order_acquire)
+			    || mActiveMask.load(std::memory_order_relaxed) == Category::kNone)
+				return;
+
+			const unsigned int head     = tJobHead.load(std::memory_order_relaxed);
+			const unsigned int tail     = tJobTail.load(std::memory_order_acquire);
+			const unsigned int nextHead = (head + 1) % kJobRingCapacity;
+			if (nextHead == tail)
+			{
+				sDroppedJobRecords.fetch_add(1, std::memory_order_relaxed);   // full: drop newest, never block
+				return;
+			}
+
+			record.threadId    = CurrentThreadId();
+			record.frameNumber = mCurrentFrame.load(std::memory_order_relaxed);
+			tJobRing[head]     = record;
+			tJobHead.store(nextHead, std::memory_order_release);
+		}
+
+		uint64_t Profiler::DroppedJobRecords()
+		{
+			return sDroppedJobRecords.load(std::memory_order_relaxed);
+		}
+
+		unsigned int Profiler::PeekThreadJobRecordCount() const
+		{
+			const unsigned int head = tJobHead.load(std::memory_order_acquire);
+			const unsigned int tail = tJobTail.load(std::memory_order_acquire);
+			return (head + kJobRingCapacity - tail) % kJobRingCapacity;
 		}
 
 		uint64_t Profiler::OnScopeOpen(const Dia::Core::StringCRC& name, ProfileCategory category,
@@ -478,30 +528,45 @@ namespace Dia
 			std::lock_guard<std::mutex> lock(mRegistryMutex);
 
 			for (unsigned int i = 0; i < mThreadRingCount; ++i)
+				DrainRing(mThreadRings[i], beforeFrame);
+		}
+
+		void Profiler::DrainRing(ThreadRingRef& ref, uint32_t beforeFrame)
+		{
+			if (ref.closedRing == nullptr)
+				return;
+
+			unsigned int tail = ref.tail->load(std::memory_order_acquire);
+			unsigned int head = ref.head->load(std::memory_order_acquire);
+
+			while (tail != head)
 			{
-				ThreadRingRef& ref = mThreadRings[i];
-				if (ref.closedRing == nullptr)
-					continue;
+				const ScopeRecord& record = ref.closedRing[tail];
 
-				unsigned int tail = ref.tail->load(std::memory_order_acquire);
-				unsigned int head = ref.head->load(std::memory_order_acquire);
+				// Only drain records from frames that are fully done
+				if (record.frameNumber >= beforeFrame)
+					break;
 
-				while (tail != head)
-				{
-					const ScopeRecord& record = ref.closedRing[tail];
+				if (mSink)
+					mSink->OnRecord(record);
 
-					// Only drain records from frames that are fully done
-					if (record.frameNumber >= beforeFrame)
-						break;
-
-					if (mSink)
-						mSink->OnRecord(record);
-
-					tail = (tail + 1) % kClosedRingCapacity;
-				}
-
-				ref.tail->store(tail, std::memory_order_release);
+				tail = (tail + 1) % kClosedRingCapacity;
 			}
+
+			ref.tail->store(tail, std::memory_order_release);
+
+			unsigned int jTail = ref.jobTail->load(std::memory_order_acquire);
+			const unsigned int jHead = ref.jobHead->load(std::memory_order_acquire);
+			while (jTail != jHead)
+			{
+				const ProfileJobRecord& job = ref.jobRing[jTail];
+				if (job.frameNumber >= beforeFrame)
+					break;
+				if (mSink)
+					mSink->OnJobRecord(job);
+				jTail = (jTail + 1) % kJobRingCapacity;
+			}
+			ref.jobTail->store(jTail, std::memory_order_release);
 		}
 	}
 } // namespace Observation

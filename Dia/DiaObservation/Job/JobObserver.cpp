@@ -54,7 +54,7 @@ namespace Dia
 				Dia::Threading::JobContext ctx;
 				ctx.attribution.owner = Profile::Profiler::CurrentSubject();
 				ctx.traceParent = 0;
-				ctx.submitThread = static_cast<uint32_t>(std::hash<std::thread::id>()(std::this_thread::get_id()));
+				ctx.submitThread = Profile::Profiler::CurrentThreadId();   // same id space as ScopeRecord::threadId
 				ctx.inbox = tInbox;
 				if (!ctx.inbox && tScopeDepth > 0 && tScopeDepth <= kMaxNestedJobScopes)
 					ctx.inbox = tJobInboxes[tScopeDepth - 1];   // nested submit from a worker
@@ -80,6 +80,20 @@ namespace Dia
 					--tScopeDepth;
 					if (tScopeDepth < kMaxNestedJobScopes)
 						reinterpret_cast<Profile::ScopedZone*>(tScopes[tScopeDepth].storage)->~ScopedZone();
+				}
+
+				{
+					// Queued on this (worker) thread's own job ring; drained by the profiler drain.
+					Profile::ProfileJobRecord pj{};
+					pj.submitNs     = rec.submitNs;
+					pj.startNs      = rec.startNs;
+					pj.endNs        = rec.endNs;
+					pj.owner        = rec.owner;
+					pj.tag          = rec.tag;
+					pj.submitThread = ctx.submitThread;
+					pj.range        = rec.range;
+					pj.rangeCount   = rec.rangeCount;
+					Profile::Profiler::Instance().RecordJob(pj);
 				}
 
 				if (ctx.inbox)

@@ -419,3 +419,216 @@ TEST_F(SLOW_JobObserverTest, AB1_WorkerScopeCarriesWorkerThreadIdAndOwnerSubject
 	EXPECT_NE(content.find("\"scope_name\":" + jobRun + ","), std::string::npos);
 	Profiler::ClearThreadNames();
 }
+
+// ---------------------------------------------------------------------------------------------
+// B2 / AB3: profile_job records written from the worker's ring via the drain
+// ---------------------------------------------------------------------------------------------
+
+namespace
+{
+	std::vector<std::string> LinesWith(const std::string& content, const std::string& needle)
+	{
+		std::vector<std::string> out;
+		size_t start = 0;
+		while (start < content.size())
+		{
+			size_t end = content.find('\n', start);
+			if (end == std::string::npos) end = content.size();
+			std::string line = content.substr(start, end - start);
+			if (line.find(needle) != std::string::npos) out.push_back(line);
+			start = end + 1;
+		}
+		return out;
+	}
+
+	long long NumField(const std::string& line, const char* key)
+	{
+		const std::string k = std::string("\"") + key + "\":";
+		size_t p = line.find(k);
+		if (p == std::string::npos) return -1;
+		return std::stoll(line.substr(p + k.size()));
+	}
+
+	// Runs n jobs (each tagged), then drains normally (BeginFrame + wait) before shutdown.
+	void RunJobsAndDrain(JobSystem& js, int n, const JobTag& tag, bool beginFrame = true)
+	{
+		std::vector<Dia::Threading::JobHandle> hs;
+		for (int i = 0; i < n; ++i) hs.push_back(js.Submit([] {}, tag));
+		for (auto& h : hs) js.Wait(h);
+		if (beginFrame)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			Profiler::Instance().BeginFrame();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+	}
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_ProfilingOn_NJobsWriteExactlyNProfileJobLines)
+{
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
+	ASSERT_TRUE(Profiler::RegisterSubjectName(kOwner, "ab3.owner"));
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);
+
+	JobTag tag; tag.owner = kOwner; tag.tag = 4; tag.range = 2; tag.rangeCount = 8;
+	constexpr int kN = 20;
+	RunJobsAndDrain(js, kN, tag);
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+
+	const auto lines = LinesWith(content, "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), static_cast<size_t>(kN)) << content;
+	for (const auto& l : lines)
+	{
+		EXPECT_NE(l.find("\"owner\":\"ab3.owner\""), std::string::npos) << l;
+		EXPECT_EQ(NumField(l, "tag"), 4) << l;
+		EXPECT_EQ(NumField(l, "range"), 2) << l;
+		EXPECT_EQ(NumField(l, "range_count"), 8) << l;
+		const long long s = NumField(l, "submit_unix_nano");
+		const long long b = NumField(l, "start_unix_nano");
+		const long long e = NumField(l, "end_unix_nano");
+		EXPECT_GT(s, 0) << l;
+		EXPECT_LE(s, b) << l;
+		EXPECT_LE(b, e) << l;
+		EXPECT_GT(NumField(l, "thread_id"), 0) << l;
+	}
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_ProfilingOff_NoProfileJobLines)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);
+	Profiler::Instance().SetActiveMask(Dia::Observation::Profile::Category::kNone);
+
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 10, tag);
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "profile_job"), 0u);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_ProfilerStopped_NoProfileJobLines)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);
+	Profiler::Instance().Stop();
+
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 10, tag, false);
+	js.Shutdown();
+	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "profile_job"), 0u);
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_UnknownOwner_WrittenAsHex)
+{
+	Profiler::ClearThreadNames();
+	Profiler::ClearSubjectNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(1, nullptr, &observer);
+
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 1, tag);
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const auto lines = LinesWith(ReadJsonl(mJsonlPath), "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), 1u);
+	EXPECT_NE(lines[0].find("\"owner\":\"0xabcd1234\""), std::string::npos) << lines[0];
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_SubmitThreadIsSubmitterIdAndMatchesScopeThreadId_WorkerWritesRecord)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(1, nullptr, &observer);
+
+	const uint32_t mainTid = Profiler::CurrentThreadId();
+	JobTag tag; tag.owner = kOwner;
+	{
+		DIA_PROFILE_SCOPE("ab3.submitter", Dia::Observation::Profile::Category::kAll);
+		js.Wait(js.Submit([] {}, tag));
+	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	Profiler::Instance().BeginFrame();
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	js.Shutdown();
+	Profiler::Instance().Stop();
+	const std::string content = ReadJsonl(mJsonlPath);
+
+	const auto lines = LinesWith(content, "\"record_type\":\"profile_job\"");
+	ASSERT_EQ(lines.size(), 1u) << content;
+	EXPECT_EQ(NumField(lines[0], "submit_thread"), static_cast<long long>(mainTid)) << lines[0];
+	// The record came from the worker's ring, not the submitter's.
+	EXPECT_NE(NumField(lines[0], "thread_id"), static_cast<long long>(mainTid)) << lines[0];
+	// submit_thread is in the same id space as thread_id of scope lines.
+	const std::string scopeName = std::to_string(Dia::Core::StringCRC("ab3.submitter").Value());
+	const auto scopeLines = LinesWith(content, "\"scope_name\":" + scopeName + ",");
+	ASSERT_EQ(scopeLines.size(), 1u) << content;
+	EXPECT_EQ(NumField(scopeLines[0], "thread_id"), NumField(lines[0], "submit_thread"));
+	Profiler::Instance();
+	Profiler::ClearThreadNames();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_JobRecordsNeverLandInSubmittingThreadsScopeRing)
+{
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(1, nullptr, &observer);
+	ScopeRecord before[512];
+	const unsigned nBefore = Profiler::Instance().PeekThreadClosedRecords(before, 512);
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 5, tag, false);
+	EXPECT_EQ(Profiler::Instance().PeekThreadJobRecordCount(), 0u);
+	ScopeRecord after[512];
+	EXPECT_EQ(Profiler::Instance().PeekThreadClosedRecords(after, 512), nBefore);
+	js.Shutdown();
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_JobRingFull_DropsCountedAndDoesNotBlock)
+{
+	const uint64_t droppedBefore = Profiler::DroppedJobRecords();
+	constexpr unsigned kPush = Dia::Observation::Profile::Profiler::kJobRingCapacity + 100;
+	std::atomic<bool> finished{false};
+	std::thread t([&]
+	{
+		Profiler::Instance().RegisterThreadScopeBuffer();
+		Dia::Observation::Profile::ProfileJobRecord r{};
+		r.startNs = 1;
+		for (unsigned i = 0; i < kPush; ++i) Profiler::Instance().RecordJob(r);
+		EXPECT_EQ(Profiler::Instance().PeekThreadJobRecordCount(), Dia::Observation::Profile::Profiler::kJobRingCapacity - 1);
+		finished = true;
+		Profiler::Instance().UnregisterThreadScopeBuffer();
+	});
+	t.join();
+	EXPECT_TRUE(finished.load());
+	EXPECT_EQ(Profiler::DroppedJobRecords() - droppedBefore,
+	          static_cast<uint64_t>(kPush - (Dia::Observation::Profile::Profiler::kJobRingCapacity - 1)));
+}
+
+TEST_F(SLOW_JobObserverTest, AB3_WorkerStopFlushesUndrainedJobRecords)
+{
+	Profiler::ClearThreadNames();
+	JobObserver observer;
+	JobSystem js;
+	js.Initialize(2, nullptr, &observer);
+	JobTag tag; tag.owner = kOwner;
+	RunJobsAndDrain(js, 12, tag, false);   // no BeginFrame: nothing drained by the frame loop
+	js.Shutdown();                         // OnWorkerStop must flush
+	Profiler::Instance().Stop();
+	EXPECT_EQ(CountOf(ReadJsonl(mJsonlPath), "\"record_type\":\"profile_job\""), 12u);
+	Profiler::ClearThreadNames();
+}

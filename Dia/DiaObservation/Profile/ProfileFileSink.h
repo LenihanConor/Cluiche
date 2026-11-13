@@ -18,6 +18,7 @@ namespace Dia
 
 			bool IsOpen() const { return mFile != nullptr; }
 			void OnRecord(const ScopeRecord& record);
+			void OnJobRecord(const ProfileJobRecord& record);
 			void WriteFinalJson();   // called by Profiler::Stop(), writes last <=60 frames
 
 		private:

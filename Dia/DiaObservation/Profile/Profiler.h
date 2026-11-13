@@ -73,6 +73,14 @@ namespace Dia
 			static void ClearSubjectNames();   // test aid
 			static void ClearThreadNames();                                         // test / shutdown aid
 
+			// Job records (amendment B2). Pushes onto the CALLING thread's job ring (workers); never
+			// blocks. No-op when the thread is unregistered, the profiler is stopped or the mask is
+			// empty. A full ring drops the NEW record and counts it in DroppedJobRecords().
+			static constexpr unsigned int kJobRingCapacity = 512;
+			void RecordJob(ProfileJobRecord record);
+			static uint64_t DroppedJobRecords();
+			unsigned int PeekThreadJobRecordCount() const;   // undrained job records of the calling thread
+
 			// Copies not-yet-drained closed records of the CALLING thread (oldest first). Test/diagnostic aid.
 			unsigned int PeekThreadClosedRecords(ScopeRecord* out, unsigned int maxOut) const;
 
@@ -98,8 +106,13 @@ namespace Dia
 				Dia::Core::StringCRC*      openNames;
 				uint32_t*                  openFrameNumbers;
 				uint32_t*                  openSubjects;
+				ProfileJobRecord*          jobRing;
+				std::atomic<unsigned int>* jobHead;
+				std::atomic<unsigned int>* jobTail;
 				uint32_t                   threadId;
 			};
+
+			void DrainRing(ThreadRingRef& ref, uint32_t beforeFrame);   // caller holds mRegistryMutex
 
 			static const unsigned int kMaxThreadRings = 16;
 			ThreadRingRef            mThreadRings[kMaxThreadRings];

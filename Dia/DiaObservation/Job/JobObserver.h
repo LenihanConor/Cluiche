@@ -21,8 +21,8 @@ namespace Dia
 			//     JobObserver::InstallThreadInbox(&myInbox);   // ... and ClearThreadInbox() at stop
 			// Threads without an inbox submit with inbox == nullptr; their records are only counted.
 			//
-			// Not yet done (later tasks): worker thread naming ("Worker N", amendment B1; hook is
-			// OnWorkerStart) and the `profile_job` record written to the worker's profile ring.
+			// Worker thread naming ("Worker N", B1) and the `profile_job` record (B2, pushed to the
+			// worker's job ring, written by the profile drain) are done.
 			// traceParent is always 0 until Tracer exposes the active span id.
 			class JobObserver : public Dia::Threading::IJobObserver
 			{
