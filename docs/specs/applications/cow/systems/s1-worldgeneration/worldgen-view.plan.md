@@ -4,7 +4,7 @@
 **System plan:** @worldgenerationpipeline.plan.md (task 10)
 **Panel plan:** @worldgen-panel.plan.md (tasks 1-6 Done; this builds on its card and `view` JSON)
 **Mockup:** @s1-editor-mockup.html (stand-in map; approved in task 8c). Not covered by it: Relief hillshade and ramps, rivers overlay, neighbour 0..5 labels, grid inset, camera, legend swatches. Verified live in task 12 (screenshots), no new mockup.
-**Status:** In Progress
+**Status:** Done
 
 Scope: Tiles via the CellField renderer through the existing DiaCellLayers viewer (Relief default, Elevation, Water, terrain type, stage-result layers), Rivers overlay, always-on small grid inset, Selection + neighbours 0..5, camera, click selection. Biomes, regions, sites and validation overlays are later tasks (11, 12, 13-16).
 

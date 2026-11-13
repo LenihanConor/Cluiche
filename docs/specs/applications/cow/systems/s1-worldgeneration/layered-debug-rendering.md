@@ -312,7 +312,7 @@ Click at cell centres on even and odd columns, just inside hex corners, and just
 
 ## Status
 
-`Approved` — 2026-10-11. Amended 2026-10-14 (hex world): hex tiles, hex picking, outline-based region edges. Amended 2026-10-15: rebuilt as `WorldGenDebugDomain` (`IDebugDomain`); colour-by modes for every per-cell field; Selection + neighbour labels; Guarantee Evidence with freshness rule; Design Reference moved into Feature 6's inspector; budget and performance measured at Small. Tiles and grid lines drawn through CellField (dia-needs #14); overlays through the debug-draw path with the budget raised to 8,192 (dia-needs #13). Blocked on both.
+`Done` — 2026-11-13 (was Approved 2026-10-11). Amended 2026-10-14 (hex world): hex tiles, hex picking, outline-based region edges. Amended 2026-10-15: rebuilt as `WorldGenDebugDomain` (`IDebugDomain`); colour-by modes for every per-cell field; Selection + neighbour labels; Guarantee Evidence with freshness rule; Design Reference moved into Feature 6's inspector; budget and performance measured at Small. Tiles and grid lines drawn through CellField (dia-needs #14); overlays through the debug-draw path with the budget raised to 8,192 (dia-needs #13). Blocked on both.
 
 ---
 
