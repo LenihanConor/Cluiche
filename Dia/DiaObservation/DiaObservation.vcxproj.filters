@@ -123,6 +123,9 @@
     <ClCompile Include="Capture\CaptureManager.cpp">
       <Filter>Capture</Filter>
     </ClCompile>
+    <ClCompile Include="Job\JobObserver.cpp">
+      <Filter>Job</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -284,6 +287,9 @@
       <Filter>Metric</Filter>
     </ClInclude>
     <ClInclude Include="Job\JobInbox.h">
+      <Filter>Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Job\JobObserver.h">
       <Filter>Job</Filter>
     </ClInclude>
   </ItemGroup>

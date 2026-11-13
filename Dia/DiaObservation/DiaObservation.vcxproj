@@ -49,6 +49,7 @@
       <DisableSpecificWarnings>4334;4267</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="Capture\CaptureManager.cpp" />
+    <ClCompile Include="Job\JobObserver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -105,6 +106,7 @@
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h" />
     <ClInclude Include="Metric\MetricInfo.h" />
     <ClInclude Include="Job\JobInbox.h" />
+    <ClInclude Include="Job\JobObserver.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

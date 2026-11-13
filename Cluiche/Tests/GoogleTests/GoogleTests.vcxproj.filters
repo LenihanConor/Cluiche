@@ -2937,5 +2937,8 @@
     <ClCompile Include="DiaObservation\Job\TestJobInbox.cpp">
       <Filter>DiaObservation\Metric</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Job\TestJobObserver.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

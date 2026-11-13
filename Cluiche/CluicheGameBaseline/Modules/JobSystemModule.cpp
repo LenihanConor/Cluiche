@@ -20,7 +20,7 @@ void JobSystemModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
-    mJobSystem.Initialize(0, &mMetricsAdapter);
+    mJobSystem.Initialize(0, &mMetricsAdapter, &mJobObserver);
     mJobSystemService.Register(mJobSystem);
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;

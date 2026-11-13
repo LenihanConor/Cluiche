@@ -7,6 +7,7 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaThreading/JobSystem.h>
 #include <DiaObservation/Metric/JobSystemMetricsAdapter.h>
+#include <DiaObservation/Job/JobObserver.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -29,6 +30,9 @@ protected:
 private:
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Threading::JobSystem> mJobSystemService{this, "JobSystemService"};
     Dia::Observation::Metric::JobSystemMetricsAdapter mMetricsAdapter;
+    // Declared before mJobSystem so it outlives it (members destruct in reverse order).
+    // A PU installs its inbox for its thread via JobObserver::InstallThreadInbox().
+    Dia::Observation::Job::JobObserver                mJobObserver;
     Dia::Threading::JobSystem                         mJobSystem;
 };
 
