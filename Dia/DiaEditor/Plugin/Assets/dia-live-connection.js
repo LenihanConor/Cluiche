@@ -29,11 +29,14 @@
 
     var _opts = null;
 
-    function _sendRequest(type, data) {
+    var _nextReqId = 0;
+    var kStateReqId = 'init_connection_state';
+
+    function _sendRequest(type, data, reqId) {
         if (global.parent && global.parent !== global) {
             global.parent.postMessage({
                 __diaFromFrame: true,
-                payload: { type: type, reqId: null, data: data || {} }
+                payload: { type: type, reqId: reqId || ('req_' + Date.now() + '_' + (_nextReqId++)), data: data || {} }
             }, '*');
         }
     }
@@ -99,6 +102,10 @@
         // Frame postMessage path (same data, different routing)
         global.addEventListener('message', function (e) {
             var env = e.data;
+            if (env && env.__diaResponse === true && env.reqId === kStateReqId) {
+                // get_connection_state is a request handler; its reply carries { connected }.
+                _dispatch(_opts.prefix + '.connection_state', env.result);
+            }
             if (env && env.__dia === true && typeof env.topic === 'string') {
                 _dispatch(env.topic, env.data);
             }
@@ -106,7 +113,7 @@
 
         // Start disconnected; query C++ for real state
         _setConnected(false);
-        _sendRequest(_opts.prefix + '.get_connection_state', {});
+        _sendRequest(_opts.prefix + '.get_connection_state', {}, kStateReqId);
     }
 
     global.DiaLiveConnection = { init: init, sendRequest: _sendRequest };

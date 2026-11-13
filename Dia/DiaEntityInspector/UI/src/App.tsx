@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, CSSProperties } from 'react';
-import { theme, ConnectionStatus, TabBar, useResizableDivider } from '@dia/editor-ui';
+import { theme, ConnectionStatus, TabBar, useResizableDivider, newFrameReqId } from '@dia/editor-ui';
 import type { Tab } from '@dia/editor-ui';
 import { useInspectorStore } from './store';
 import { SchemaCache } from './schemaCache';
@@ -10,6 +10,9 @@ import { QueriesTab } from './components/QueriesTab';
 import { MailboxTab } from './components/MailboxTab';
 import { WatchTab } from './components/WatchTab';
 import { StatusBar } from './components/StatusBar';
+
+// Fixed id for the priming get_connection_state request so its reply can be recognised.
+const kStateReqId = 'init_connection_state';
 
 export default function App() {
     const [searchText, setSearchText] = useState('');
@@ -45,7 +48,7 @@ export default function App() {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     __diaFromFrame: true,
-                    payload: { type: 'entity_inspector.schema_get', reqId: null, data: { prefix } },
+                    payload: { type: 'entity_inspector.schema_get', reqId: newFrameReqId(), data: { prefix } },
                 }, '*');
             }
         });
@@ -92,6 +95,10 @@ export default function App() {
 
         const onMessage = (e: MessageEvent) => {
             const env = e.data;
+            if (env && env.__diaResponse === true && env.reqId === kStateReqId) {
+                // get_connection_state is a request handler; its reply carries { connected }.
+                dispatch('entity_inspector.connection_state', env.result);
+            }
             if (env && env.__dia === true && typeof env.topic === 'string') {
                 dispatch(env.topic, env.data);
             }
@@ -106,7 +113,7 @@ export default function App() {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     __diaFromFrame: true,
-                    payload: { type, reqId: null, data: data || {} },
+                    payload: { type, reqId: kStateReqId, data: data || {} },
                 }, '*');
             }
         };
@@ -117,7 +124,7 @@ export default function App() {
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 __diaFromFrame: true,
-                payload: { type, reqId: null, data: data || {} },
+                payload: { type, reqId: newFrameReqId(), data: data || {} },
             }, '*');
         }
     }, []);

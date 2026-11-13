@@ -15,7 +15,7 @@ export type { Tab, TabBarProps } from './TabBar';
 export { ConnectionStatus } from './ConnectionStatus';
 export type { ConnectionState, ConnectionStatusProps } from './ConnectionStatus';
 
-export { useBridgeSubscribe, useBridgeRequest } from './useBridge';
+export { useBridgeSubscribe, useBridgeRequest, newFrameReqId } from './useBridge';
 export type { BridgeSubscription } from './useBridge';
 
 export { useToast, useToastStore } from './notifications/useToast';

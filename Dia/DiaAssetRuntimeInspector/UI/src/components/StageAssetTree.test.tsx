@@ -7,6 +7,7 @@ import { useAssetRuntimeStore } from '../store';
 // ─── Mock @dia/editor-ui (not used directly but imported transitively) ────────
 
 vi.mock('@dia/editor-ui', () => ({
+    newFrameReqId: () => 'req_test',
     theme: {
         bg: '#1e1e1e', bgPanel: '#252526', bgInput: '#2d2d2d', border: '#3c3c3c',
         borderMuted: '#555', text: '#d4d4d4', textMuted: '#888', accent: '#0e639c',

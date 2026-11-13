@@ -5,6 +5,7 @@ import { useAssetRuntimeStore } from '../store';
 import type { LogEntry } from '../types';
 
 vi.mock('@dia/editor-ui', () => ({
+    newFrameReqId: () => 'req_test',
     theme: {
         bg: '#1e1e1e',
         bgPanel: '#252526',

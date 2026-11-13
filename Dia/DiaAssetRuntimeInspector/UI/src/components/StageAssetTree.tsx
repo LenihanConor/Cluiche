@@ -1,3 +1,4 @@
+import { newFrameReqId } from '@dia/editor-ui';
 import type { CSSProperties } from 'react';
 import { useAssetRuntimeStore } from '../store';
 import type { AssetState } from '../types';
@@ -17,7 +18,7 @@ const STATE_COLORS: Record<AssetState, string> = {
 
 function sendBridgeRequest(type: string, data: unknown) {
     window.parent.postMessage(
-        { __diaFromFrame: true, payload: { type, reqId: null, data } },
+        { __diaFromFrame: true, payload: { type, reqId: newFrameReqId(), data } },
         '*',
     );
 }

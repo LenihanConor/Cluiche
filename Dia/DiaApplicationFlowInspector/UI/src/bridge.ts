@@ -9,10 +9,14 @@ export function bridgeRequest(type: string, data: object = {}): Promise<unknown>
 
         const handler = (e: MessageEvent) => {
             const p = e.data?.payload ?? e.data;
-            if (p?.type === 'DiaEditor_onResponse' && p?.reqId === reqId) {
+            // The editor shell replies { __diaResponse: true, reqId, result };
+            // keep the old { type: 'DiaEditor_onResponse' } shape as a fallback.
+            const isShellReply = e.data?.__diaResponse === true && e.data?.reqId === reqId;
+            const isLegacyReply = p?.type === 'DiaEditor_onResponse' && p?.reqId === reqId;
+            if (isShellReply || isLegacyReply) {
                 clearTimeout(timer);
                 window.removeEventListener('message', handler);
-                resolve(p.result);
+                resolve(isShellReply ? e.data.result : p.result);
             }
         };
 
