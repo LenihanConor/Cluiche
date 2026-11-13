@@ -1262,6 +1262,7 @@
     <ClCompile Include="CoW\TestWorldGenDebugDomainPanel.cpp" />
     <ClCompile Include="CoW\TestWorldOverlayEvidence.cpp" />
     <ClCompile Include="CoW\TestWorldGenSizes.cpp" />
+    <ClCompile Include="CoW\TestWorldGenPresetStats.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

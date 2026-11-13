@@ -2925,5 +2925,8 @@
     <ClCompile Include="CoW\TestWorldGenSizes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenPresetStats.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
