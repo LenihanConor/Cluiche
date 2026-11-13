@@ -34,6 +34,9 @@ struct JsonIssue
 {
     std::string field;
     std::string message;
+    // 1-based position of a JSON syntax error in the text; 0 when the problem is structural (no text position).
+    uint32_t    line = 0;
+    uint32_t    column = 0;
 };
 
 struct WorldJsonContext

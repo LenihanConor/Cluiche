@@ -70,6 +70,28 @@ std::string DefaultWorldName(uint64_t seed)
     return std::to_string(seed);
 }
 
+std::vector<std::string> ListWorldNames(const std::string& directory)
+{
+    std::vector<std::string> names;
+    if (directory.empty()) { return names; }
+    std::error_code ec;
+    fs::directory_iterator it(directory, ec);
+    if (ec) { return names; }
+    const std::string ext = kWorldFileExtension;
+    for (const fs::directory_iterator end; it != end; it.increment(ec))
+    {
+        if (ec) { break; }
+        std::error_code fileEc;
+        if (!it->is_regular_file(fileEc)) { continue; }
+        const std::string file = it->path().filename().string();
+        if (file.size() <= ext.size() || file.compare(file.size() - ext.size(), ext.size(), ext) != 0) { continue; }
+        const std::string stem = file.substr(0, file.size() - ext.size());
+        if (IsValidWorldName(stem)) { names.push_back(stem); }
+    }
+    std::sort(names.begin(), names.end());
+    return names;
+}
+
 WorldFileResult WriteWorldFile(const std::string& directory, const std::string& name, const std::string& text, bool overwrite)
 {
     if (!IsValidWorldName(name))

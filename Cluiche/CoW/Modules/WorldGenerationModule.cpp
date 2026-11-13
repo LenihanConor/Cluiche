@@ -549,7 +549,10 @@ void WorldGenerationModule::RegisterCommands()
         { "name", "string", true, "World file name (out worlds directory first, then the deployed one). The world opens locked" } };
     static const ValueParam kReportParams[] = {
         { "offset", "int", false, "First attempt of the page (default 0)" },
-        { "limit", "int", false, "Attempts in the page (default and max 12)" } };
+        { "limit", "int", false, "Attempts in the page (default and max 12)" },
+        { "guarantee", "string", false, "Only this guarantee in finalValidation (name such as CoW.Guarantee.HearthNexus, or its numeric id)" },
+        { "evidenceOffset", "int", false, "First evidence item (proof path, violating cell or pair) of each guarantee's page (default 0)" },
+        { "evidenceLimit", "int", false, "Evidence items per list in the page (default 2 paths, 32 cells, 16 pairs; max 8, 128, 64)" } };
     static const ValueParam kSitesParams[] = {
         { "kind", "string", false, "Only sites of this kind id (e.g. CoW.Node.Corridor or a registered kind)" },
         { "offset", "int", false, "First site of the page (default 0)" },
@@ -598,6 +601,11 @@ void WorldGenerationModule::RegisterCommands()
                     return r;
                 });
 
+    registerOne(true, "cow.worldgen.validate", "Run the validation guarantees on the current world without changing it; the result is kept as fresh evidence for report and the evidence overlay",
+                nullptr, 0, [s](const Json::Value& a) { return s->Validate(a); });
+
+    registerOne(false, "cow.worldgen.worlds", "List the saved worlds: the out and deployed worlds directories merged (out wins on a name clash)", nullptr, 0,
+                [s](const Json::Value&) { return s->Worlds(); });
     registerOne(false, "cow.worldgen.params", "Current world shape parameters, seed and size", nullptr, 0,
                 [s](const Json::Value&) { return s->Params(); });
     registerOne(false, "cow.worldgen.status", "Generation state, revision, seed, dimensions and last generation time", nullptr, 0,
@@ -618,7 +626,7 @@ void WorldGenerationModule::RegisterCommands()
                 [s](const Json::Value&) { return s->Regions(); });
     registerOne(false, "cow.worldgen.sites", "Paged sites (built-in nodes and registered kinds) with the kind table, optionally of one kind", kSitesParams, 3,
                 [s](const Json::Value& a) { return s->Sites(a); });
-    registerOne(false, "cow.worldgen.report", "The last generation report: outcome, per-attempt sub-seed, failed guarantees and diagnostics (paged)", kReportParams, 2,
+    registerOne(false, "cow.worldgen.report", "The last generation report: outcome, per-attempt sub-seed, failed guarantees and diagnostics (paged)", kReportParams, 5,
                 [s](const Json::Value& a) { return s->Report(a); });
 
     mCommandsRegistered = ok;

@@ -4,8 +4,13 @@
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
+#include <Shared/WorldGeneration/ReachabilityValidator.h>
+#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldJson.h>
+#include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaPathfinding/HexTopology.h>
@@ -14,6 +19,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <map>
@@ -885,6 +891,46 @@ Json::Value WorldGenSession::Params() const
     return r;
 }
 
+Json::Value WorldGenSession::UnavailableLayers() const
+{
+    // The generator layers ImportLayers rebuilds from the cells; every other generator layer (intermediate fields,
+    // climate) is not derivable from a file and stays empty for an imported world.
+    static const char* const kDerivable[] = {
+        "elevation", "latitude", "ridgeMask", "barrierMask", "waterSource", "terrainType", "depthZone", "landmass",
+        "terrainFlags", "flowDirection", "biomeIndex", "riverMask", "passMask", "volcanic" };
+
+    Json::Value out(Json::arrayValue);
+    const TerrainLayers& layers = mGen.GetLayers();
+    for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
+    {
+        const char* id = WorldLayerSource::At(i).id;
+        bool unavailable = !mHasGenerated;
+        if (!unavailable && std::strcmp(id, "regions") == 0)
+        {
+            unavailable = !mRegionsFresh;
+        }
+        else if (!unavailable && std::strcmp(id, "relief") != 0)
+        {
+            const int index = layers.FindLayer(id);
+            if (index >= 0)
+            {
+                unavailable = layers.GetFloat(index) == nullptr && layers.GetUInt(index) == nullptr;
+                if (!unavailable && mImported)
+                {
+                    bool derivable = false;
+                    for (const char* d : kDerivable) { derivable = derivable || std::strcmp(d, id) == 0; }
+                    unavailable = !derivable;
+                }
+            }
+        }
+        if (unavailable)
+        {
+            out.append(id);
+        }
+    }
+    return out;
+}
+
 Json::Value WorldGenSession::Status() const
 {
     const char* sizeName = "Custom";
@@ -909,6 +955,7 @@ Json::Value WorldGenSession::Status() const
     r["stagesRan"] = mStagesRan;
     r["regionsFresh"] = mRegionsFresh;
     r["generating"] = mRun != nullptr;
+    r["unavailableLayers"] = UnavailableLayers();
     if (mRun != nullptr)
     {
         Json::Value progress(Json::objectValue);
@@ -1115,6 +1162,11 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
         Json::Value r = Error("cannot import " + name + ": " + result.error.message);
         r["field"] = result.error.field;
         r["status"] = "Invalid";
+        if (result.error.line > 0)
+        {
+            r["line"] = static_cast<Json::UInt>(result.error.line);
+            r["column"] = static_cast<Json::UInt>(result.error.column);
+        }
         return r;
     }
 
@@ -1778,6 +1830,99 @@ namespace
         return "Unknown";
     }
 
+    // Evidence arrays are paged per guarantee so a reply stays under the 16 KB sim cap (a proof path is ~150 cells).
+    constexpr int64_t kEvidenceMaxPaths = 8;
+    constexpr int64_t kEvidenceMaxCells = 128;
+    constexpr int64_t kEvidenceMaxPairs = 64;
+    constexpr unsigned kMaxListedDiagnostics = 4;
+
+    struct EvidencePage
+    {
+        size_t offset = 0;
+        size_t pathLimit = 2;
+        size_t cellLimit = 32;
+        size_t pairLimit = 16;
+    };
+
+    std::string GuaranteeName(uint32_t crc)
+    {
+        static const char* const kKnown[] = {
+            "CoW.Guarantee.HearthNexus", "CoW.Guarantee.DynastySpacing", "CoW.Guarantee.WorldThrone", "CoW.Guarantee.WorldLayout" };
+        for (const char* name : kKnown)
+        {
+            if (Dia::Core::StringCRC(name).Value() == crc) { return name; }
+        }
+        char text[16];
+        std::snprintf(text, sizeof(text), "0x%08X", crc);
+        return text;
+    }
+
+    // `selector` is a guarantee id (CRC number) or name text.
+    bool GuaranteeMatches(const Json::Value& selector, uint32_t crc)
+    {
+        if (selector.isUInt()) { return selector.asUInt() == crc; }
+        const std::string text = selector.asString();
+        return GuaranteeName(crc) == text || Dia::Core::StringCRC(text.c_str()).Value() == crc;
+    }
+
+    // One page of `list` (offset, limit), reporting whether more remain.
+    template <class T, class Fn>
+    Json::Value PageOf(const EvidenceList<T>& list, size_t offset, size_t limit, bool& truncated, Fn toJson)
+    {
+        Json::Value page(Json::arrayValue);
+        const size_t total = list.Size();
+        const size_t begin = std::min(offset, total);
+        const size_t end = std::min(begin + limit, total);
+        for (size_t i = begin; i < end; ++i) { page.append(toJson(list[static_cast<unsigned>(i)])); }
+        truncated = truncated || end < total;
+        return page;
+    }
+
+    // Guarantee row: id, name, ok, evidence counts and diagnostics; with a page also the evidence arrays themselves.
+    // The counts are the sizes of the full lists, so they equal the array sizes whenever nothing was truncated.
+    Json::Value GuaranteeJson(const GuaranteeResult& g, const EvidencePage* page, bool& truncated)
+    {
+        Json::Value e(Json::objectValue);
+        e["id"] = static_cast<Json::UInt>(g.idCrc);
+        e["name"] = GuaranteeName(g.idCrc);
+        e["ok"] = g.satisfied;
+        e["satisfied"] = g.satisfied;
+        Json::Value counts(Json::objectValue);
+        counts["proofPaths"] = static_cast<Json::UInt>(g.proofPaths.Size());
+        counts["violatingCells"] = static_cast<Json::UInt>(g.violatingCells.Size());
+        counts["violatingPairs"] = static_cast<Json::UInt>(g.violatingPairs.Size());
+        e["counts"] = counts;
+        Json::Value diags(Json::arrayValue);
+        for (unsigned i = 0; i < g.diagnostics.Size() && i < kMaxListedDiagnostics; ++i) { diags.append(g.diagnostics[i].text); }
+        e["diagnostics"] = diags;
+        e["diagnosticCount"] = static_cast<Json::UInt>(g.diagnostics.Size() + g.droppedDiagnostics);
+        if (page == nullptr)
+        {
+            return e;
+        }
+        e["proofPaths"] = PageOf(g.proofPaths, page->offset, page->pathLimit, truncated, [](const ProofPath& p)
+        {
+            Json::Value v(Json::objectValue);
+            v["from"] = static_cast<Json::UInt>(p.from);
+            v["to"] = static_cast<Json::UInt>(p.to);
+            v["profile"] = static_cast<Json::UInt>(p.profileCrc);
+            Json::Value cells(Json::arrayValue);
+            for (uint32_t c : p.cells) { cells.append(static_cast<Json::UInt>(c)); }
+            v["cells"] = cells;
+            return v;
+        });
+        e["violatingCells"] = PageOf(g.violatingCells, page->offset, page->cellLimit, truncated,
+                                     [](uint32_t c) { return Json::Value(static_cast<Json::UInt>(c)); });
+        e["violatingPairs"] = PageOf(g.violatingPairs, page->offset, page->pairLimit, truncated, [](const CellPair& p)
+        {
+            Json::Value v(Json::arrayValue);
+            v.append(static_cast<Json::UInt>(p.a));
+            v.append(static_cast<Json::UInt>(p.b));
+            return v;
+        });
+        return e;
+    }
+
     Json::Value AttemptJson(const AttemptRecord& a)
     {
         Json::Value e(Json::objectValue);
@@ -1849,21 +1994,145 @@ Json::Value WorldGenSession::Report(const Json::Value& args) const
     r["nextOffset"] = (offset + limit) >= total ? Json::Value() : Json::Value(static_cast<Json::Int64>(offset + limit));
     r["attempts"] = page;
 
-    Json::Value fin(Json::objectValue);
-    fin["passed"] = mReport.finalValidation.passed;
-    Json::Value guarantees(Json::arrayValue);
-    for (unsigned i = 0; i < mReport.finalValidation.guarantees.Size(); ++i)
+    // Evidence: the fresh Validate result when it belongs to the current world, else the generation's own.
+    const bool freshEvidence = mHasEvidence && mEvidenceRevision == mRevision;
+    const ValidationResult& validation = freshEvidence ? mEvidence : mReport.finalValidation;
+
+    EvidencePage evidence;
+    std::string evidenceError;
+    int64_t evidenceOffset = 0;
+    int64_t evidenceLimit = 0;
+    if (args.isObject() &&
+        (!ReadPagingArg(args, "evidenceOffset", 0, evidenceOffset, evidenceError) ||
+         !ReadPagingArg(args, "evidenceLimit", 0, evidenceLimit, evidenceError)))
     {
-        const GuaranteeResult& g = mReport.finalValidation.guarantees[i];
-        Json::Value e(Json::objectValue);
-        e["id"] = static_cast<Json::UInt>(g.idCrc);
-        e["satisfied"] = g.satisfied;
-        e["violatingCells"] = static_cast<Json::UInt>(g.violatingCells.Size());
-        e["diagnostics"] = static_cast<Json::UInt>(g.diagnostics.Size());
-        guarantees.append(e);
+        return Error(evidenceError);
+    }
+    evidence.offset = static_cast<size_t>(evidenceOffset);
+    if (evidenceLimit > 0)
+    {
+        evidence.pathLimit = static_cast<size_t>(std::min(evidenceLimit, kEvidenceMaxPaths));
+        evidence.cellLimit = static_cast<size_t>(std::min(evidenceLimit, kEvidenceMaxCells));
+        evidence.pairLimit = static_cast<size_t>(std::min(evidenceLimit, kEvidenceMaxPairs));
+    }
+    const bool filtered = args.isObject() && args.isMember("guarantee");
+    if (filtered && !args["guarantee"].isString() && !args["guarantee"].isUInt())
+    {
+        return Error("\"guarantee\" must be a guarantee name or id");
+    }
+
+    Json::Value fin(Json::objectValue);
+    fin["passed"] = validation.passed;
+    fin["worldRevision"] = static_cast<Json::UInt>(freshEvidence ? mEvidenceRevision : mReport.worldRevision);
+    fin["source"] = freshEvidence ? "validate" : "generation";
+    Json::Value guarantees(Json::arrayValue);
+    bool truncated = false;
+    for (unsigned i = 0; i < validation.guarantees.Size(); ++i)
+    {
+        const GuaranteeResult& g = validation.guarantees[i];
+        if (filtered && !GuaranteeMatches(args["guarantee"], g.idCrc))
+        {
+            continue;
+        }
+        guarantees.append(GuaranteeJson(g, &evidence, truncated));
     }
     fin["guarantees"] = guarantees;
+    fin["evidenceOffset"] = static_cast<Json::UInt64>(evidence.offset);
+    fin["truncated"] = truncated;
     r["finalValidation"] = fin;
+    return r;
+}
+
+Json::Value WorldGenSession::Validate(const Json::Value& args)
+{
+    if (!args.isNull() && !args.isObject())
+    {
+        return Error("args must be a JSON object");
+    }
+    Json::Value busy;
+    if (BusyRefusal(busy))
+    {
+        return busy;
+    }
+    if (!mHasGenerated)
+    {
+        return Error("no world generated yet");
+    }
+
+    // The set a generation validates with (terrain profile, registry guarantees, layout), plus the built-in site
+    // guarantees. One of each id; WorldThrone only when the world holds throne sites (S-1 places none, so it would
+    // otherwise fail every world); layout only when regions are fresh (live-preview worlds have none).
+    const TerrainTableNavigationProfile profile;
+    const HearthNexusReachabilityGuarantee hearthNexus;
+    const DynastySpacingGuarantee dynastySpacing;
+    const WorldThroneGuarantee worldThrone;
+    const WorldLayoutGuarantee layout(mRules, mLimits);
+
+    ValidationParams params;
+    params.AddProfile(&profile);
+    std::vector<uint32_t> present;
+    auto add = [&](const IWorldGuarantee* g)
+    {
+        const uint32_t id = g->GetId().Value();
+        if (std::find(present.begin(), present.end(), id) != present.end())
+        {
+            return;
+        }
+        if (params.AddGuarantee(g))
+        {
+            present.push_back(id);
+        }
+    };
+    add(&hearthNexus);
+    add(&dynastySpacing);
+    if (!mWorld.sites.Of(SiteKinds::WorldThrone()).empty())
+    {
+        add(&worldThrone);
+    }
+    for (const IWorldGuarantee* g : Registry().Guarantees())
+    {
+        add(g);
+    }
+    if (mRegionsFresh)
+    {
+        add(&layout);
+    }
+
+    mEvidence = ReachabilityValidator::Validate(mWorld, params);
+    mEvidenceRevision = mRevision;
+    mHasEvidence = true;
+
+    Json::Value guarantees(Json::arrayValue);
+    bool truncated = false;
+    for (unsigned i = 0; i < mEvidence.guarantees.Size(); ++i)
+    {
+        guarantees.append(GuaranteeJson(mEvidence.guarantees[i], nullptr, truncated));
+    }
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["ok"] = mEvidence.passed;
+    r["revision"] = static_cast<Json::UInt>(mRevision);
+    r["guarantees"] = guarantees;
+    return r;
+}
+
+Json::Value WorldGenSession::Worlds() const
+{
+    std::map<std::string, const char*> byName;
+    for (const std::string& n : ListWorldNames(mWorldsDeployedDir)) { byName[n] = "deployed"; }
+    for (const std::string& n : ListWorldNames(mWorldsOutDir))      { byName[n] = "out"; }   // out wins
+
+    Json::Value list(Json::arrayValue);
+    for (const auto& entry : byName)
+    {
+        Json::Value e(Json::objectValue);
+        e["name"] = entry.first;
+        e["source"] = entry.second;
+        list.append(e);
+    }
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["worlds"] = list;
     return r;
 }
 

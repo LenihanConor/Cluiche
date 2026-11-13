@@ -1103,6 +1103,26 @@ TEST(WorldGenCommandsCancel, CancelMidRunThroughTheStreamKeepsThePreviousWorldAn
 	EXPECT_TRUE(h.Call("cow.worldgen.set", s)["success"].asBool());
 }
 
+// ---- Panel gaps (worldgen-panel-rest plan task 1): validate, worlds, status.unavailableLayers --------------------------------
+
+TEST(WorldGenCommandsPanelGaps, ValidateAndWorldsAreRegisteredAndAnswerThroughTheHost)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	EXPECT_TRUE(gHost->GetHost().Has(StringCRC("cow.worldgen.validate")));
+	EXPECT_TRUE(gHost->GetHost().Has(StringCRC("cow.worldgen.worlds")));
+	const uint32_t revision = h.Rev();
+	const Json::Value v = h.Call("cow.worldgen.validate");
+	ASSERT_TRUE(v["success"].asBool()) << v.toStyledString();
+	EXPECT_EQ(v["revision"].asUInt(), revision);
+	EXPECT_EQ(h.Rev(), revision);
+	const Json::Value w = h.Call("cow.worldgen.worlds");
+	ASSERT_TRUE(w["success"].asBool()) << w.toStyledString();
+	EXPECT_TRUE(w["worlds"].isArray());
+	EXPECT_TRUE(h.Call("cow.worldgen.status")["unavailableLayers"].isArray());
+}
+
 TEST(WorldGenCommandsCancel, RegenerateTakesATimeoutAndTheCommandIsListed)
 {
 	Harness h;

@@ -72,6 +72,19 @@ public:
     // nothing. Reply: {success, name, path, revision, locked, warnings[]} or {success:false, error, field}.
     Json::Value ImportWorld(const Json::Value& args);
 
+    // Runs the validation set on the CURRENT world (the terrain navigation profile, HearthNexus, DynastySpacing, the
+    // registry's guarantees, WorldLayout when regions are fresh, and WorldThrone when the world holds throne sites)
+    // without touching the world or its revision, and keeps the result as the one fresh-evidence slot, keyed to the
+    // revision it was computed for. Refuses like the other actions while a Regenerate runs.
+    // Reply: {success, ok, revision, guarantees[{id, name, ok, counts{proofPaths,violatingCells,violatingPairs}, diagnostics[]}]}.
+    Json::Value Validate(const Json::Value& args);
+    // Merged listing of the out and deployed worlds directories (out wins on a name clash): {success, worlds[{name, source}]}.
+    Json::Value Worlds() const;
+    // The evidence slot: the last Validate result, valid for the world revision it carries (stale once the revision moves).
+    bool                    HasEvidence() const        { return mHasEvidence; }
+    uint32_t                EvidenceRevision() const   { return mEvidenceRevision; }
+    const ValidationResult& Evidence() const           { return mEvidence; }
+
     // Site registry used by the placement pass; nullptr (default) means no registered kinds. Not owned: the owner
     // (WorldGenerationModule) keeps it alive for the session's lifetime.
     void SetSiteRegistry(const SiteRegistry* registry) { mRegistry = registry; }
@@ -105,7 +118,11 @@ public:
     Json::Value Cell(const Json::Value& args) const;   // {"x","y"} or {"index"}
     Json::Value Regions() const;                       // every RegionRecord + table summary + fresh
     Json::Value Sites(const Json::Value& args) const;  // {"kind"?,"offset"?,"limit"?}: paged sites + kind table
-    Json::Value Report(const Json::Value& args) const; // {"offset"?,"limit"?}: the last GenerationReport, attempts paged
+    // {"offset"?,"limit"?}: the last GenerationReport, attempts paged. finalValidation carries per-guarantee evidence:
+    // counts plus the proofPaths/violatingCells/violatingPairs arrays, capped per page ("evidenceOffset"?, "evidenceLimit"?,
+    // "guarantee"? = guarantee name or id to restrict to one) with "truncated" set when more remain. It is the fresh
+    // Validate evidence when that belongs to the current revision, else the generation's final validation.
+    Json::Value Report(const Json::Value& args) const;
 
     // The last finished generation's report (replaced by every Regenerate); nullptr before the first.
     const GenerationReport* LastReport() const { return mHasReport ? &mReport : nullptr; }
@@ -169,6 +186,11 @@ private:
     bool CheckLock(const Json::Value& args, Json::Value& refusal, bool& unlocking) const;
     void DropLock();
 
+    // Fresh evidence (Validate): one slot, valid while mEvidenceRevision == mRevision.
+    ValidationResult     mEvidence;
+    bool                 mHasEvidence = false;
+    uint32_t             mEvidenceRevision = 0;
+
     // Retry (Feature 3).
     GenParams            mGenParams;
     GenerationReport     mReport;
@@ -197,6 +219,9 @@ private:
     Accepted             mAccepted;
 
     bool BusyRefusal(Json::Value& refusal) const;
+    // Ids of the map layers (WorldLayerSource) that hold no data for the current world: all of them before the first
+    // world, "regions" until regions are fresh, and the generator-only layers of an imported world.
+    Json::Value UnavailableLayers() const;
     void CaptureAccepted();
     bool StartRegenerate(Dia::Maths::RandomStream& wldStream);
     bool AdvanceRun();

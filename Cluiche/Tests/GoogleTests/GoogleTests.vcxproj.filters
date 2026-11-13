@@ -2913,5 +2913,8 @@
     <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenSessionValidate.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

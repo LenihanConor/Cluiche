@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -55,6 +56,9 @@ std::string DefaultWorldName(uint64_t seed);
 // same directory which is then renamed over the target, so a failed write never leaves a half file or damages an
 // existing one. Refuses an existing file unless overwrite.
 WorldFileResult WriteWorldFile(const std::string& directory, const std::string& name, const std::string& text, bool overwrite);
+
+// The valid world names (stems of `*.wld.json`) in one directory, sorted. Empty for an empty/missing directory.
+std::vector<std::string> ListWorldNames(const std::string& directory);
 
 // Reads `<name>.wld.json` from outDirectory, else from deployedDirectory (either may be empty = not configured).
 WorldFileResult ReadWorldFile(const std::string& outDirectory, const std::string& deployedDirectory, const std::string& name,

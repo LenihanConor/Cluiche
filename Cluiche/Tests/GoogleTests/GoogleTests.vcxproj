@@ -1258,6 +1258,7 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationGuard.cpp" />
     <ClCompile Include="CoW\TestGenerationGuard.cpp" />
     <ClCompile Include="CoW\TestWorldGenSessionTimeout.cpp" />
+    <ClCompile Include="CoW\TestWorldGenSessionValidate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

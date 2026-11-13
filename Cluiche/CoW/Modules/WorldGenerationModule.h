@@ -89,7 +89,8 @@ public:
         "cow.worldgen.preset.load", "cow.worldgen.preset.save",
         "cow.worldgen.params", "cow.worldgen.status", "cow.worldgen.presets",
         "cow.worldgen.layers", "cow.worldgen.cell", "cow.worldgen.regions", "cow.worldgen.sites",
-        "cow.worldgen.report", "cow.worldgen.export", "cow.worldgen.import", "cow.worldgen.cancel" };
+        "cow.worldgen.report", "cow.worldgen.export", "cow.worldgen.import", "cow.worldgen.cancel",
+        "cow.worldgen.validate", "cow.worldgen.worlds" };
     static constexpr unsigned kCommandCount = sizeof(kCommandNames) / sizeof(kCommandNames[0]);
 
 protected:

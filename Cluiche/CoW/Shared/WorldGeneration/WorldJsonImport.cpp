@@ -313,6 +313,17 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
     {
         while (!parseErrors.empty() && (parseErrors.back() == '\n' || parseErrors.back() == '\r')) { parseErrors.pop_back(); }
         im.Fail("", "JSON parse error: " + parseErrors);
+        // JsonCpp formats each error as "* Line N, Column M"; the first one is the position of the first problem.
+        const size_t at = parseErrors.find("Line ");
+        if (at != std::string::npos)
+        {
+            unsigned line = 0, column = 0;
+            if (std::sscanf(parseErrors.c_str() + at, "Line %u, Column %u", &line, &column) == 2)
+            {
+                im.issue.line = line;
+                im.issue.column = column;
+            }
+        }
         return finish(false);
     }
     if (!root.isObject()) { im.Fail("", "the document must be a JSON object"); return finish(false); }
