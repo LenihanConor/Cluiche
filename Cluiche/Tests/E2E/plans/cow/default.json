@@ -4,6 +4,7 @@
     "config": "Debug",
     "scenarios": [
         "scenarios/cow/s1worldgen/test_s1_panel.py",
+        "scenarios/cow/s1worldgen/test_s1_panel_rest.py",
         "scenarios/cow/s1worldgen/test_s1_render.py"
     ]
 }

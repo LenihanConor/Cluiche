@@ -1422,6 +1422,18 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
     domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Json::Value(Json::objectValue));   // no id: collapse
     EXPECT_EQ(host.ExpandedGuarantee(), 0u);
 
+    // Bad ids collapse (non-numeric, negative, fractional); an unknown but numeric id is stored and matches no guarantee.
+    for (const Json::Value& bad : { Json::Value("abc"), Json::Value(-3), Json::Value(1.5), Json::Value(Json::nullValue) })
+    {
+        domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", id));
+        domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", bad));
+        EXPECT_EQ(host.ExpandedGuarantee(), 0u) << bad.toStyledString();
+    }
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Obj("id", 4040404u));
+    EXPECT_EQ(host.ExpandedGuarantee(), 4040404u);
+    domain.OnCommand(Dia::Core::StringCRC("expandGuarantee"), Json::Value(Json::nullValue));   // no args object at all
+    EXPECT_EQ(host.ExpandedGuarantee(), 0u);
+
     // Toggling through the existing command works for the new drawers.
     domain.OnCommand(Dia::Core::StringCRC("toggle"), Obj("drawer", "dynasty.starts"));
     EXPECT_TRUE(OverlayEnabled(host, "dynasty.starts"));

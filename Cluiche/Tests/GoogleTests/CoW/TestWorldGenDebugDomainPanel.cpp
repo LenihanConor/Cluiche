@@ -370,6 +370,62 @@ TEST(WorldGenDebugDomainPanel, ImportOfABadFileShowsTheErrorWithLineAndColumn)
     EXPECT_TRUE(f.State()["progress"]["lastOutcome"].isNull());   // a failed import is not an outcome card
 }
 
+TEST(WorldGenDebugDomainPanel, ImportOfAMissingFileOrInvalidNameChangesNothingAndRecordsTheError)
+{
+    PanelFixture f("import_missing");
+    f.Regen(9);
+    const uint32_t revision = f.S().Revision();
+    const std::string hashes = f.S().Layers(Json::Value(Json::objectValue)).toStyledString();
+
+    f.Cmd("import", Obj("name", "no_such_world"));
+    Json::Value imp = f.State()["file"]["lastImport"];
+    ASSERT_TRUE(imp.isObject());
+    EXPECT_FALSE(imp["success"].asBool());
+    EXPECT_TRUE(imp["error"].isString());
+    EXPECT_EQ(f.S().Revision(), revision);
+    EXPECT_FALSE(f.S().IsLocked());
+
+    f.Cmd("import", Obj("name", "../escape"));   // path separators are not a valid world name
+    imp = f.State()["file"]["lastImport"];
+    EXPECT_FALSE(imp["success"].asBool());
+    EXPECT_EQ(f.S().Revision(), revision);
+    EXPECT_EQ(f.S().Layers(Json::Value(Json::objectValue)).toStyledString(), hashes);
+    EXPECT_TRUE(f.State()["progress"]["lastOutcome"].isNull() ||
+                f.State()["progress"]["lastOutcome"]["kind"].asString() != "import");
+}
+
+TEST(WorldGenDebugDomainPanel, ExportWithoutOverwriteRefusesAnExistingFileAndKeepsIt)
+{
+    PanelFixture f("export_clash");
+    f.Regen(4);
+    f.Cmd("export", Obj("name", "same"));
+    ASSERT_TRUE(f.State()["file"]["lastExport"]["success"].asBool());
+    const auto path = f.dir / "same.wld.json";
+    const auto size = fs::file_size(path);
+
+    f.Regen(5);   // a different world
+    f.Cmd("export", Obj("name", "same"));
+    EXPECT_FALSE(f.State()["file"]["lastExport"]["success"].asBool());
+    EXPECT_EQ(fs::file_size(path), size);
+
+    Json::Value overwrite(Json::objectValue);
+    overwrite["name"] = "same";
+    overwrite["overwrite"] = true;
+    f.Cmd("export", overwrite);
+    EXPECT_TRUE(f.State()["file"]["lastExport"]["success"].asBool());
+}
+
+TEST(WorldGenDebugDomainPanel, ExportBeforeAnyWorldReportsTheErrorAndWritesNothing)
+{
+    PanelFixture f("export_empty");
+    f.Cmd("export", Obj("name", "early"));
+    EXPECT_FALSE(f.State()["file"]["lastExport"]["success"].asBool());
+    EXPECT_FALSE(fs::exists(f.dir / "early.wld.json"));
+    f.Cmd("cancel");   // nothing running: harmless
+    f.Cmd("discard");  // nothing locked: harmless
+    EXPECT_FALSE(f.S().IsLocked());
+}
+
 TEST(WorldGenDebugDomainPanel, SelectWorldKeepsOnlyKnownNames)
 {
     PanelFixture f("select");

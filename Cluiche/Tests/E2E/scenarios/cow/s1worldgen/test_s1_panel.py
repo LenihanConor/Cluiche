@@ -248,7 +248,17 @@ def test_viewer_selection_colour_mode_and_size_round_trip(dia_client, request):
     st = _panel(c)
     assert st["view"]["colourMode"] == "terrain", st["view"]
     assert "legend" in st["view"], st["view"]   # dynamic part: present on every frame
-    full = _wait_panel(c, lambda s: s.get("full") is True, "a full frame", timeout_s=20.0)   # modes ride on full frames only
+    # modes ride on full frames only; a full frame is one published frame in ~30, so poll raw snapshots (waiting for a "fresh" one per
+    # try steps in whole sim frames and can alias past the 60-frame full period forever).
+    full = None
+    deadline = time.time() + 20.0
+    while time.time() < deadline:
+        raw = _raw(c)
+        if raw.get("full") is True:
+            full = raw
+            break
+        time.sleep(0.02)
+    assert full is not None, "no full frame within 20 s"
     assert full["view"]["modes"][0] == "terrain" and "elevation" in full["view"]["modes"], full["view"]["modes"]
 
     # Sim-hosted viewer command (DiaCellLayers) -> the card's cell block shows the same cell.
