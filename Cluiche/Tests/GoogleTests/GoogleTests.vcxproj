@@ -1265,6 +1265,7 @@
     <ClCompile Include="CoW\TestWorldGenPresetStats.cpp" />
     <ClCompile Include="DiaCellLayers\TestCellLayerGolden.cpp" />
     <ClCompile Include="CoW\TestWorldGenLayerGoldens.cpp" />
+    <ClCompile Include="DiaObservation\Job\TestJobInbox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

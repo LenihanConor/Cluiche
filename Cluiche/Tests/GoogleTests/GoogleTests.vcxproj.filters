@@ -2934,5 +2934,8 @@
     <ClCompile Include="CoW\TestWorldGenLayerGoldens.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Job\TestJobInbox.cpp">
+      <Filter>DiaObservation\Metric</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -34,6 +34,9 @@
     <Filter Include="Capture\ThirdParty">
       <UniqueIdentifier>{bc2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Job">
+      <UniqueIdentifier>{3ed7f237-14af-449d-a255-8e0428bfb82e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log\Logger.cpp">
@@ -279,6 +282,9 @@
     </ClInclude>
     <ClInclude Include="Metric\MetricInfo.h">
       <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Job\JobInbox.h">
+      <Filter>Job</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

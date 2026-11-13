@@ -25,6 +25,7 @@ public_api:
     - DiaObservation/Log/DebugOutputSink.h
     - DiaObservation/Log/AssertSinkBridge.h
     - DiaObservation/Log/DiaLog.h
+    - DiaObservation/Job/JobInbox.h
     - DiaObservation/Testing/MockSink.h
   namespaces:
     - Dia::Observation::Log
