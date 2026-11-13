@@ -130,6 +130,8 @@ public:
     // True when the last finished Regenerate ended without a new world and the previous world was kept (failed or cancelled
     // with a world to fall back on). False after a success and when the failed run was the very first generation.
     bool                    LastRunKeptPreviousWorld() const { return mLastRunKeptPrevious; }
+    // True after a failed run kept the previous world and no Validate has run since: all evidence is hidden.
+    bool                    EvidenceHiddenByFailure() const { return mLastRunKeptPrevious && !mValidatedSinceFailure; }
     // Display name of a guarantee id (the known built-ins by name, else "0x%08X"), as used by Report and Validate.
     static std::string      GuaranteeLabel(uint32_t idCrc);
     uint32_t                MaxRetryAttempts() const { return mGenParams.maxRetryAttempts; }
@@ -202,6 +204,7 @@ private:
     bool                 mHasReport = false;
     uint32_t             mReportRevision = 0;
     bool                 mLastRunKeptPrevious = false;
+    bool                 mValidatedSinceFailure = false;
 
     // Timeout and failure handling (Feature 5): the Regenerate in progress. The candidate generator and terrain are
     // separate from mGen / mWorld, which stay the accepted ones until the run succeeds.

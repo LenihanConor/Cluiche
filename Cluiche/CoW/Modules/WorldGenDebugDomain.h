@@ -137,6 +137,7 @@ public:
 
     void GetJSONState(Json::Value& out) override;
     void ForceFullFrame() { mForceFull = true; }
+    uint32_t WorldScanCountForTest() const { return mWorldScanCount; }
     void OnCommand(Dia::Core::StringCRC cmd, const Json::Value& args) override;
 
     // Nullable. With a view set, selection / colour mode / overlays live in the viewer (single source of truth) and the
@@ -181,6 +182,7 @@ private:
     std::string  mValidateError;         // empty unless the last validate command was refused
     std::string  mSelectedWorld;
     Json::Value  mWorlds;                // cached merged list (directory scan)
+    uint32_t     mWorldScanCount = 0;    // directory scans performed (tests)
     bool         mWorldsBuilt = false;
     bool         mWorldsDirty = false;
     std::chrono::steady_clock::time_point mWorldsBuiltAt;

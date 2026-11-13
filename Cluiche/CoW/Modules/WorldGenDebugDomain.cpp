@@ -496,6 +496,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
 
 void WorldGenDebugDomain::RefreshWorlds()
 {
+    ++mWorldScanCount;
     mWorlds = mModule.GetSession().Worlds()["worlds"];
     mWorldsBuilt = true;
     mWorldsDirty = false;
@@ -640,14 +641,24 @@ Json::Value WorldGenDebugDomain::BuildValidation() const
 Json::Value WorldGenDebugDomain::BuildFile(bool full)
 {
     const WorldGenSession& s = mModule.GetSession();
-    if (!mWorldsBuilt || mWorldsDirty || full ||
+    (void)full;
+    if (!mWorldsBuilt || mWorldsDirty ||
         std::chrono::steady_clock::now() - mWorldsBuiltAt >= std::chrono::seconds(kStaticRefreshSeconds))
     {
         RefreshWorlds();
     }
 
     Json::Value f(Json::objectValue);
-    f["worlds"] = mWorlds;
+    {
+        constexpr Json::ArrayIndex kMaxWorldsSent = 32;
+        Json::Value capped(Json::arrayValue);
+        for (Json::ArrayIndex i = 0; i < mWorlds.size() && i < kMaxWorldsSent; ++i)
+        {
+            capped.append(mWorlds[i]);
+        }
+        f["worlds"] = capped;
+        f["worldCount"] = static_cast<Json::UInt>(mWorlds.size());
+    }
     f["selected"] = mSelectedWorld;
     f["defaultName"] = DefaultWorldName(s.Revision() > 0 ? s.World().provenance.seed : s.Seed());
     f["lastExport"] = mLastExport;
@@ -661,7 +672,8 @@ Json::Value WorldGenDebugDomain::BuildFile(bool full)
         prov["seed"] = static_cast<Json::UInt64>(p.seed);
         prov["generatorVersion"] = static_cast<Json::UInt>(p.generatorVersion);
         prov["rulesVersion"] = static_cast<Json::UInt>(p.rulesVersion);
-        prov["preset"] = std::string(p.presetId);
+        // The generator leaves provenance.presetId empty (only imports carry one); the session knows the preset that was run.
+        prov["preset"] = p.presetId[0] != '\0' ? std::string(p.presetId) : s.PresetId();
         f["origin"] = prov;
     }
     return f;
@@ -873,6 +885,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         {
             const Json::Value r = mModule.ImportWorldFile(args);
             mLastImport = CompactFileResult(r);
+            mWorldsDirty = true;
             if (r["success"].asBool())
             {
                 mImportName = args["name"].asString();
@@ -892,7 +905,10 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     }
     else if (cmd == kCmdSelectWorld)
     {
-        RefreshWorlds();
+        if (!mWorldsBuilt || mWorldsDirty)
+        {
+            RefreshWorlds();
+        }
         bool found = false;
         if (hasObj && args["name"].isString())
         {

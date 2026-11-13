@@ -605,17 +605,26 @@ uint32_t WorldGenViewHost::RegionColour(uint32_t slot)
 
 const ValidationResult* WorldGenViewHost::FreshEvidenceNow() const
 {
+    // A failed run that kept the previous world hides all evidence until a Validate runs after the failure.
+    if (mSession.EvidenceHiddenByFailure())
+        return nullptr;
     return FreshEvidence(mSession.LastReport(), &mSession.Evidence(), mSession.EvidenceRevision(), mSession.Revision());
 }
 
 std::string WorldGenViewHost::EvidenceHiddenReason()
 {
-    if (mSession.Revision() == 0 || FreshEvidenceNow() != nullptr)
+    if (mSession.Revision() == 0)
         return std::string();
+    if (FreshEvidenceNow() != nullptr)
+    {
+        if (mEvidenceRevision == mSession.Revision() && mEvidence.LineCount() > kEvidenceLineBudget)
+            return "Evidence truncated: too many lines to draw (failure marks are drawn first)";
+        return std::string();
+    }
     if (mSession.IsImported())
         return "Evidence hidden: imported world has no report (run Validate)";
     const GenerationReport* report = mSession.LastReport();
-    if (report != nullptr && report->outcome != GenerationOutcome::Success)
+    if (mSession.EvidenceHiddenByFailure() || (report != nullptr && report->outcome != GenerationOutcome::Success))
         return "Evidence hidden: last generation failed (see Validation)";
     return "Evidence hidden: the world changed since it was validated (run Validate)";
 }
@@ -673,17 +682,18 @@ void WorldGenViewHost::DrawEvidence(Dia::Core::IDebugDraw& draw, const void* /*s
     size_t budget = kEvidenceLineBudget;   // keeps the worst case inside DebugFrameData's geometry budget
     const Dia::Core::RGBA path(80, 220, 120, 255);
     const Dia::Core::RGBA bad(255, 60, 60, 255);
-    for (const EvidencePolyline& p : mEvidence.polylines)
-    {
-        for (size_t i = 1; i < p.points.size() && budget > 0; ++i, --budget)
-            draw.RequestDraw(p.points[i - 1], p.points[i], path);
-    }
+    // Violation marks first so long proof paths can never starve the failure marks.
     for (const ViolatingCellMark& v : mEvidence.violations)
     {
         for (const LineSegment& s : v.outline)
             if (budget > 0) { draw.RequestDraw(s.a, s.b, bad); --budget; }
         for (const LineSegment& s : v.cross)
             if (budget > 0) { draw.RequestDraw(s.a, s.b, bad); --budget; }
+    }
+    for (const EvidencePolyline& p : mEvidence.polylines)
+    {
+        for (size_t i = 1; i < p.points.size() && budget > 0; ++i, --budget)
+            draw.RequestDraw(p.points[i - 1], p.points[i], path);
     }
 }
 

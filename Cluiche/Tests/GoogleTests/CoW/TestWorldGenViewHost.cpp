@@ -1285,6 +1285,83 @@ TEST(WorldGenViewHost, FailedGenerationHidesEvidenceWithTheFailedReason)
     r.session.SetSiteRegistry(nullptr);
 }
 
+TEST(WorldGenViewHost, EvidenceFromBeforeAFailedRunIsHiddenAndAValidateAfterItIsShown)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    SiteRegistry registry;
+    ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
+    r.session.SetSiteRegistry(&registry);
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    ASSERT_NE(Fresh(r), nullptr);
+    EXPECT_EQ(r.host->EvidenceHiddenReason(), "");
+
+    ASSERT_TRUE(r.session.Regenerate(Obj("maxRetryAttempts", 2))["success"].asBool());
+    for (int i = 0; i < 80 && (r.session.IsDirty() || r.session.IsGenerating()); ++i) r.session.Tick(r.rng);
+    ASSERT_TRUE(r.session.LastRunKeptPreviousWorld());
+    ASSERT_EQ(r.session.EvidenceRevision(), r.session.Revision()) << "the pre-failure Validate still matches the kept world's revision";
+    EXPECT_EQ(r.host->EvidenceHiddenReason(), "Evidence hidden: last generation failed (see Validation)");
+
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    EXPECT_EQ(r.host->EvidenceHiddenReason().find("last generation failed"), std::string::npos);
+    r.session.SetSiteRegistry(nullptr);
+}
+
+namespace
+{
+// Fails with a few violating cells and many long proof paths (far more lines than the evidence budget).
+class ManyPathsFailingGuarantee : public IWorldGuarantee
+{
+public:
+    Dia::Core::StringCRC GetId() const override { return Dia::Core::StringCRC("Test.ManyPaths"); }
+    GuaranteeResult Check(const ValidationContext&) const override
+    {
+        GuaranteeResult g;
+        g.idCrc = GetId().Value();
+        g.satisfied = false;
+        g.AddDiagnostic("many paths");
+        for (uint32_t i = 0; i < 40; ++i)
+        {
+            ProofPath p;
+            for (uint32_t c = 0; c < 60; ++c) p.cells.Add(100 + i * 60 + c);
+            g.proofPaths.Add(p);
+        }
+        for (uint32_t c = 0; c < 3; ++c) g.violatingCells.Add(10 + c * 7);
+        return g;
+    }
+};
+}
+
+TEST(WorldGenViewHost, LongProofPathsNeverStarveTheViolationMarksAndTruncationIsReported)
+{
+    Rig r;
+    ASSERT_TRUE(r.host->Build());
+    ManyPathsFailingGuarantee many;
+    SiteRegistry registry;
+    ASSERT_TRUE(registry.RegisterGuarantee(&many));
+    r.session.SetSiteRegistry(&registry);
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
+    OnlyOverlay(r, "guarantee.evidence");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    r.host->ExpandGuarantee(Dia::Core::StringCRC("Test.ManyPaths").Value());
+
+    const GuaranteeEvidenceGeometry geo = BuildGuaranteeEvidence(Fresh(r), r.host->Grid(), Dia::Core::StringCRC("Test.ManyPaths").Value());
+    size_t markLines = 0;
+    for (const ViolatingCellMark& v : geo.violations) markLines += v.outline.size() + v.cross.size();
+    ASSERT_GT(markLines, 0u);
+    ASSERT_GT(geo.LineCount(), WorldGenViewHost::kEvidenceLineBudget);
+
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), WorldGenViewHost::kEvidenceLineBudget);
+    size_t red = 0;
+    for (const auto& l : draw.lines) if (l.colour.R() == 255 && l.colour.G() == 60 && l.colour.B() == 60) ++red;
+    EXPECT_EQ(red, markLines);
+    EXPECT_NE(r.host->EvidenceHiddenReason().find("Evidence truncated"), std::string::npos);
+    r.session.SetSiteRegistry(nullptr);
+}
+
 TEST(WorldGenViewHost, ImportedWorldHasNoEvidenceAndSaysSo)
 {
     Rig r;

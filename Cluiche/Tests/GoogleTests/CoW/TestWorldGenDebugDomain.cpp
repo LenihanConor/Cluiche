@@ -7,10 +7,12 @@
 
 #include <Modules/WorldGenDebugDomain.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <Shared/WorldGeneration/WorldJson.h>
 
 #include <climits>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
@@ -984,6 +986,49 @@ TEST(WorldGenDebugDomainView, SiteKindsIsAnEmptyArrayWithoutKinds)
     const Json::Value k = f.State()["view"]["siteKinds"];
     EXPECT_TRUE(k.isArray());
     EXPECT_EQ(k.size(), 0u);
+}
+
+TEST(WorldGenDebugDomain, FileWorldListIsCappedAndCarriesTheRealCount)
+{
+    Fixture f;
+    f.Gen();
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "cow_domain_worlds_cap_test";
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    std::filesystem::create_directories(dir, ec);
+    for (int i = 0; i < 200; ++i)
+    {
+        char name[32];
+        snprintf(name, sizeof(name), "w%03d%s", i, WorldGeneration::kWorldFileExtension);
+        std::ofstream((dir / name).string()) << "{}";
+    }
+    f.module.GetSession().SetWorldDirectories("", dir.string());
+    const Json::Value st = f.State();
+    EXPECT_EQ(st["file"]["worlds"].size(), 32u);
+    EXPECT_EQ(st["file"]["worldCount"].asUInt(), 200u);
+    std::filesystem::remove_all(dir, ec);
+}
+
+TEST(WorldGenDebugDomain, WorldDirectoryIsScannedOnceAcrossManyFullFramesAndAgainOnlyWhenDirty)
+{
+    Fixture f;
+    f.Gen();
+    const std::filesystem::path dir = std::filesystem::temp_directory_path() / "cow_domain_worlds_scan_test";
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    f.module.GetSession().SetWorldDirectories("", dir.string());
+    for (int i = 0; i < 20; ++i) f.State();
+    EXPECT_EQ(f.domain.WorldScanCountForTest(), 1u);   // first frame builds the list, full frames reuse it
+    EXPECT_TRUE(f.State()["file"]["worlds"].isArray());
+    Json::Value ex(Json::objectValue); ex["name"] = "w";
+    f.Cmd("export", ex);
+    f.State();
+    EXPECT_EQ(f.domain.WorldScanCountForTest(), 2u);
+    Json::Value sel(Json::objectValue); sel["name"] = "w";
+    f.Cmd("selectWorld", sel);
+    EXPECT_EQ(f.domain.WorldScanCountForTest(), 2u);   // cached list, not dirty
+    EXPECT_EQ(f.State()["file"]["selected"].asString(), "w");
+    std::filesystem::remove_all(dir, ec);
 }
 
 #endif // DIA_DEBUG

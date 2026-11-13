@@ -764,6 +764,7 @@ bool WorldGenSession::FailRegenerate(const GenerationReport& report)
     mForceFull = false;
     mState = report.outcome == GenerationOutcome::Cancelled ? mAccepted.state : WorldGenState::Failed;
     mLastRunKeptPrevious = true;
+    mValidatedSinceFailure = false;
     return false;
 }
 
@@ -2121,6 +2122,7 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     mEvidence = ReachabilityValidator::Validate(mWorld, params);
     mEvidenceRevision = mRevision;
     mHasEvidence = true;
+    mValidatedSinceFailure = true;
 
     Json::Value guarantees(Json::arrayValue);
     bool truncated = false;

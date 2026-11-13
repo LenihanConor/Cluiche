@@ -2612,7 +2612,8 @@ function wgRefreshFile(root, st, q, setSr) {
       if (!worlds.length) list.appendChild(el('div', 'wg-stub', 'No saved worlds.'));
     }
   }
-  setSr('file', worlds.length + ' world' + (worlds.length === 1 ? '' : 's'));
+  var wcount = (typeof file.worldCount === 'number') ? file.worldCount : worlds.length;
+  setSr('file', wcount + ' world' + (wcount === 1 ? '' : 's'));
   var gen = st.progress && st.progress.state === 'Generating';
   var imp = q('wg-import');
   if (imp) imp.disabled = !sel || !!gen;
