@@ -101,6 +101,10 @@ protected:
 private:
     void RegisterCommands();
     void UnregisterCommands();
+    // World hand-off failure: Error log, Failing health, automatic generation suppressed (mHandoffError holds the reason).
+    void ReportHandoffFailure();
+    // World hand-off, world_file form: imports the named file once (all-or-nothing, opens locked) and announces it.
+    void ApplyHandoffWorldFile();
     // A Regenerate finished (any outcome): retry events, the failure event, counters, health. A cancel is not a health failure.
     void OnRetryRunFinished();
     // A world was imported from a file: gauges, health and the WorldGenerationComplete notification (the world changed).

@@ -1274,6 +1274,147 @@ TEST(WorldHandoff, AManualActionStillWorksAfterAFailedHandoff)
 	EXPECT_NE(gWg->GetCurrentWorld(), nullptr);
 }
 
+namespace
+{
+	// Writes `<name>.wld.json` into `dir` by exporting a world a pure session generated (seed, preset-less defaults).
+	// Returns that world so a test can compare the module's world with it.
+	CoW::WorldGeneration::WorldStructure WriteWorldFile(const std::filesystem::path& dir, const char* name, uint64_t seed)
+	{
+		CoW::WorldGeneration::WorldGenSession s;
+		s.SetWorldDirectories(std::string(), dir.generic_string());
+		Json::Value sd = Obj(); sd["seed"] = static_cast<Json::UInt64>(seed);
+		s.Set(sd);
+		s.Regenerate(Obj());
+		Dia::Maths::RandomStream rng{ 1 };
+		for (int i = 0; i < 10 && (s.IsGenerating() || s.Revision() == 0); ++i) s.Tick(rng);
+		EXPECT_GT(s.World().regions.regions.Size(), 0u);
+		Json::Value ex = Obj(); ex["name"] = name;
+		const Json::Value r = s.ExportWorld(ex);
+		EXPECT_TRUE(r["success"].asBool()) << r.toStyledString();
+		return s.World();
+	}
+
+	std::string FileConfig(const WorldsDir& dir, const std::string& extra)
+	{
+		return "{\"out_worlds_dir\":\"" + dir.path.generic_string() + "\"," + extra + "}";
+	}
+
+	void WriteText(const std::filesystem::path& file, const std::string& text)
+	{
+		std::filesystem::create_directories(file.parent_path());
+		std::ofstream(file, std::ios::binary) << text;
+	}
+}
+
+TEST(WorldHandoff, WorldFileFormLoadsTheExportedWorldLockedAndUnchanged)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 4711);
+	Harness h(FileConfig(dir, "\"world_file\":\"hand\""));
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_GT(gWg->GetWorldRevision(), 0u);
+	EXPECT_TRUE(gWg->IsReady(1));
+	EXPECT_TRUE(gWg->GetHandoffError().empty()) << gWg->GetHandoffError();
+	EXPECT_FALSE(HandoffFailing());
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected));
+	EXPECT_TRUE(gWg->GetCurrentWorld()->regions == expected.regions);
+	EXPECT_TRUE(gWg->GetCurrentWorld()->sites == expected.sites);
+	EXPECT_EQ(gWg->GetSession().Seed(), 4711u) << "the seed comes from the file's provenance";
+	EXPECT_TRUE(gWg->GetSession().IsLocked());
+
+	const uint32_t rev = gWg->GetWorldRevision();
+	h.Pump(10);
+	EXPECT_EQ(gWg->GetWorldRevision(), rev) << "the named world is not regenerated away";
+	const Json::Value status = h.Call("cow.worldgen.status");
+	EXPECT_TRUE(status["locked"].asBool());
+	EXPECT_EQ(status["source"].asString(), "imported");
+}
+
+TEST(WorldHandoff, WorldFileIsFoundInTheDeployedWorldsDirectoryToo)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "shipped", 21);
+	WorldsDir emptyOut;
+	Harness h("{\"worlds_dir\":\"" + dir.path.generic_string() + "\",\"out_worlds_dir\":\"" + emptyOut.path.generic_string() + "\",\"world_file\":\"shipped\"}");
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected));
+}
+
+TEST(WorldHandoff, WorldFileIgnoresSeedAndSizeKeys)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 55);
+	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"seed\":999,\"size\":\"Large\""));
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_EQ(gWg->GetSession().Seed(), 55u);
+	EXPECT_EQ(gWg->GetCurrentWorld()->dimensions.width, expected.dimensions.width);
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected));
+}
+
+TEST(WorldHandoff, WorldFileLoadsEvenWhenAutoGenerateIsOff)
+{
+	WorldsDir dir;
+	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 8);
+	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"auto_generate\":false"));
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr) << "naming a world is an explicit request";
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected));
+}
+
+TEST(WorldHandoff, MissingWorldFileFails)
+{
+	WorldsDir dir;
+	ExpectHandoffFails(FileConfig(dir, "\"world_file\":\"ghost\""), "ghost");
+}
+
+TEST(WorldHandoff, CorruptWorldFileFailsWithNoHalfWorld)
+{
+	WorldsDir dir;
+	WriteText(dir.path / "bad.wld.json", "{ this is not json");
+	ExpectHandoffFails(FileConfig(dir, "\"world_file\":\"bad\""), "bad");
+}
+
+TEST(WorldHandoff, TruncatedWorldFileFailsWithNoHalfWorld)
+{
+	WorldsDir dir;
+	WriteWorldFile(dir.path, "cut", 3);
+	std::string text;
+	{
+		std::ifstream in(dir.path / "cut.wld.json", std::ios::binary);
+		text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+	}
+	ASSERT_GT(text.size(), 2000u);
+	WriteText(dir.path / "cut.wld.json", text.substr(0, text.size() / 2));
+	ExpectHandoffFails(FileConfig(dir, "\"world_file\":\"cut\""), "cut");
+}
+
+TEST(WorldHandoff, InvalidWorldNameFails)
+{
+	WorldsDir dir;
+	ExpectHandoffFails(FileConfig(dir, "\"world_file\":\"../escape\""), "escape");
+}
+
+TEST(WorldHandoff, AManualRegenerateAfterAFailedWorldFileWorks)
+{
+	WorldsDir dir;
+	Harness h(FileConfig(dir, "\"world_file\":\"ghost\""));
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_EQ(gWg->GetWorldRevision(), 0u);
+	Json::Value regen = Obj(); regen["seed"] = 6;
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", regen)["success"].asBool());
+	h.Pump(6);
+	EXPECT_GT(gWg->GetWorldRevision(), 0u);
+}
+
 #else
 TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
 #endif

@@ -154,7 +154,11 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
             else if (root.isMember("world_file"))
             {
                 if (root["world_file"].isString() && !root["world_file"].asString().empty())
+                {
                     mHandoffWorldFile = root["world_file"].asString();
+                    if (root.isMember("seed") || root.isMember("size"))
+                        DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed and size are ignored with world_file (the file carries its own)");
+                }
                 else
                     handoffFail("\"world_file\" must be a non-empty world name string");
             }
@@ -216,14 +220,7 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     RegisterCommands();
 
     if (!mHandoffError.empty())
-    {
-        // The hand-off named a world that cannot be loaded: say so loudly, stay started, and do not substitute a
-        // different world (no automatic generation until an explicit action).
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: world hand-off failed: %s", mHandoffError.c_str());
-        mHandoffFailed = true;
-        mHealth.SetFailing(Dia::Core::StringCRC("world_handoff_failed"));
-        mHealth.IncrementErrors();
-    }
+        ReportHandoffFailure();
 
     DIA_LOG_INFO("CoW", "WorldGenerationModule: started (auto_generate=%d, presets %s, out %s)",
                  mAutoGenerate ? 1 : 0, mPresetsDir.c_str(), mOutPresetsDir.c_str());
@@ -243,6 +240,12 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     }
     if (mGenerationHolds > 0)
         return;
+
+    // Import the named world file now, not in DoStart: dependants started after this module have subscribed to
+    // WorldGenerationComplete by the first real frame, and the import publishes it. Naming a world is an explicit
+    // request, so it loads even with auto_generate off.
+    if (!mHandoffWorldFile.empty())
+        ApplyHandoffWorldFile();
 
     if ((!mAutoGenerate || mHandoffFailed) && !mActionSeen)
         return;
@@ -395,6 +398,34 @@ void WorldGenerationModule::LogWorldFileReply(const char* action, const Json::Va
     const Json::Value& warnings = reply["warnings"];
     for (Json::ArrayIndex i = 0; warnings.isArray() && i < warnings.size() && i < 20; ++i)
         DIA_LOG_INFO("CoW", "WorldGenerationModule: world %s: %s", action, warnings[i].asCString());
+}
+
+void WorldGenerationModule::ReportHandoffFailure()
+{
+    // The hand-off named a world that cannot be loaded: say so loudly, stay started, and do not substitute a
+    // different world (no automatic generation until an explicit action).
+    DIA_LOG_ERROR("CoW", "WorldGenerationModule: world hand-off failed: %s", mHandoffError.c_str());
+    mHandoffFailed = true;
+    mHealth.SetFailing(Dia::Core::StringCRC("world_handoff_failed"));
+    mHealth.IncrementErrors();
+}
+
+void WorldGenerationModule::ApplyHandoffWorldFile()
+{
+    Json::Value args(Json::objectValue);
+    args["name"] = mHandoffWorldFile;
+    const Json::Value reply = mSession.ImportWorld(args);
+    LogWorldFileReply("import", reply);
+    const std::string name = mHandoffWorldFile;
+    mHandoffWorldFile.clear();   // once
+    if (reply.isObject() && reply.isMember("success") && reply["success"].asBool())
+    {
+        OnWorldImported();
+        return;
+    }
+    mHandoffError = "world file \"" + name + "\" could not be imported: " +
+                    (reply.isObject() && reply["error"].isString() ? reply["error"].asString() : std::string("unknown error"));
+    ReportHandoffFailure();
 }
 
 void WorldGenerationModule::OnWorldImported()
