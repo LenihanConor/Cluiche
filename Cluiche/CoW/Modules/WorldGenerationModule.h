@@ -46,6 +46,13 @@ public:
         return mSession.Revision() > 0 ? &mSession.World() : nullptr;
     }
     uint32_t GetWorldRevision() const { return mSession.Revision(); }
+    // True once a world of at least this revision exists (the hand-off contract for dependants, SD-S1-010).
+    bool IsReady(uint32_t revision) const { return GetWorldRevision() >= revision; }
+
+    // World hand-off (SD-S1-010): empty when the module config named no world or named it correctly. Otherwise the
+    // reason the named world could not be loaded (the module stays started, health is Failing, no world is generated
+    // until an explicit action).
+    const std::string& GetHandoffError() const { return mHandoffError; }
 
     // Site placers for the regions-and-sites pass. A module that depends on this one registers its kinds here in its
     // own DoStart (and Unregisters them in DoStop). SimPU thread only.
@@ -111,6 +118,11 @@ private:
     std::string mOutWorldsDir = kDefaultOutWorldsDir;              // PD-009: exports land here
     bool mAutoGenerate = true;
     bool mActionSeen = false;
+    // World hand-off, read from the module config (see OnConfigure): at most one source.
+    std::string mHandoffPreset;       // "preset": applied at the end of OnConfigure
+    std::string mHandoffWorldFile;    // "world_file": imported in DoStart
+    std::string mHandoffError;        // why the hand-off failed; empty if it did not
+    bool mHandoffFailed = false;      // automatic generation is suppressed until an explicit action
     bool mPublishFailed = false;
     uint32_t mPublishedReportRevision = 0;   // last report revision this module has handled
     bool mGenerationUnsatisfiable = false;   // the last Regenerate ended in a failure that is not a cancel (unsatisfiable, timeout, error)

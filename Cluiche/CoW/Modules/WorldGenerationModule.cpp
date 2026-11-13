@@ -128,10 +128,53 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed must be an unsigned integer, ignored");
                 }
             }
+
+            // World hand-off (SD-S1-010): the stage names its world. At most one of preset / world_file / world_bundle.
+            const char* const sources[] = { "preset", "world_file", "world_bundle" };
+            int named = 0;
+            for (const char* key : sources)
+                if (root.isMember(key)) ++named;
+            auto handoffFail = [this](const std::string& why) { if (mHandoffError.empty()) mHandoffError = why; };
+            if (named > 1)
+            {
+                handoffFail("more than one world source given (preset, world_file and world_bundle are mutually exclusive)");
+            }
+            else if (root.isMember("world_bundle"))
+            {
+                // F-3 World Assets is not built (spec only): the bundle form is a seam, not a feature.
+                handoffFail("world_bundle is not supported yet: F-3 World Assets is not built");
+            }
+            else if (root.isMember("preset"))
+            {
+                if (root["preset"].isString() && !root["preset"].asString().empty())
+                    mHandoffPreset = root["preset"].asString();
+                else
+                    handoffFail("\"preset\" must be a non-empty preset id string");
+            }
+            else if (root.isMember("world_file"))
+            {
+                if (root["world_file"].isString() && !root["world_file"].asString().empty())
+                    mHandoffWorldFile = root["world_file"].asString();
+                else
+                    handoffFail("\"world_file\" must be a non-empty world name string");
+            }
         }
     }
     mSession.SetPresetDirectories(mPresetsDir, mOutPresetsDir);
     mSession.SetWorldDirectories(mWorldsDir, mOutWorldsDir);
+
+    // Preset form: the preset's shape with the configured seed and size, then a Regenerate (regions and sites placed).
+    // The first generation still waits for the start deferral and any holds, like regenerate_on_start.
+    if (mHandoffError.empty() && !mHandoffPreset.empty())
+    {
+        Json::Value args(Json::objectValue);
+        args["id"] = mHandoffPreset;
+        const Json::Value loaded = mSession.PresetLoad(args);
+        if (loaded.isMember("success") && loaded["success"].asBool())
+            mSession.Regenerate(Json::Value(Json::objectValue));
+        else
+            mHandoffError = "preset \"" + mHandoffPreset + "\" could not be loaded: " + loaded["error"].asString();
+    }
 }
 
 Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
@@ -172,6 +215,16 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
 
     RegisterCommands();
 
+    if (!mHandoffError.empty())
+    {
+        // The hand-off named a world that cannot be loaded: say so loudly, stay started, and do not substitute a
+        // different world (no automatic generation until an explicit action).
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: world hand-off failed: %s", mHandoffError.c_str());
+        mHandoffFailed = true;
+        mHealth.SetFailing(Dia::Core::StringCRC("world_handoff_failed"));
+        mHealth.IncrementErrors();
+    }
+
     DIA_LOG_INFO("CoW", "WorldGenerationModule: started (auto_generate=%d, presets %s, out %s)",
                  mAutoGenerate ? 1 : 0, mPresetsDir.c_str(), mOutPresetsDir.c_str());
     return StartResult::kReady;
@@ -191,7 +244,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     if (mGenerationHolds > 0)
         return;
 
-    if (!mAutoGenerate && !mActionSeen)
+    if ((!mAutoGenerate || mHandoffFailed) && !mActionSeen)
         return;
 
     RandomStreamModule* rng = mRandom.Get();

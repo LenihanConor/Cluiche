@@ -1121,6 +1121,159 @@ TEST(WorldGenCommandsCancel, RegenerateTakesATimeoutAndTheCommandIsListed)
 	EXPECT_TRUE(gHost->GetHost().Has(StringCRC("cow.worldgen.cancel")));
 }
 
+// ---- World hand-off (SD-S1-010): the stage names its world in the module config ----------------------------------------
+
+namespace
+{
+	using HealthStatus = Dia::Observation::Health::HealthStatus;
+
+	bool HandoffFailing() { return gWg->GetHealthReporter().Report().status == HealthStatus::kFailing; }
+
+	// The world a pure session builds for the preset form: preset, seed and size, then one Regenerate.
+	CoW::WorldGeneration::WorldGenSession PresetWorld(const std::string& presets, const char* id, uint64_t seed, const char* size = nullptr)
+	{
+		CoW::WorldGeneration::WorldGenSession s;
+		s.SetPresetDirectories(presets, std::string());
+		if (size != nullptr) { Json::Value a = Obj(); a["size"] = size; s.SetSize(a); }
+		Json::Value sd = Obj(); sd["seed"] = static_cast<Json::UInt64>(seed);
+		s.Set(sd);
+		Json::Value p = Obj(); p["id"] = id;
+		EXPECT_TRUE(s.PresetLoad(p)["success"].asBool());
+		s.Regenerate(Obj());
+		Dia::Maths::RandomStream rng{ 1 };
+		for (int i = 0; i < 10 && s.IsGenerating(); ++i) s.Tick(rng);
+		for (int i = 0; i < 3 && s.Revision() == 0; ++i) s.Tick(rng);
+		return s;
+	}
+
+	std::string HandoffConfig(const std::string& extra, const std::string& presets = std::string())
+	{
+		std::string c = "{" + extra;
+		if (!presets.empty()) c += (extra.empty() ? "" : ",") + std::string("\"presets_dir\":\"") + presets + "\"";
+		return c + "}";
+	}
+}
+
+TEST(WorldHandoff, PresetFormGeneratesTheDeterministicWorldWithSeedAndSize)
+{
+	const std::string presets = FindShippedPresetDir();
+	ASSERT_FALSE(presets.empty());
+	Harness h(HandoffConfig("\"preset\":\"archipelago\",\"seed\":31", presets));
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_GT(gWg->GetWorldRevision(), 0u);
+	EXPECT_TRUE(gWg->IsReady(1));
+	EXPECT_FALSE(gWg->IsReady(gWg->GetWorldRevision() + 1));
+	EXPECT_TRUE(gWg->GetHandoffError().empty());
+	EXPECT_FALSE(HandoffFailing());
+	EXPECT_EQ(gWg->GetSession().Seed(), 31u);
+	EXPECT_EQ(gWg->GetSession().PresetId(), "archipelago");
+	EXPECT_GT(gWg->GetCurrentWorld()->regions.regions.Size(), 0u) << "the preset form places regions and sites (a Regenerate)";
+
+	const CoW::WorldGeneration::WorldGenSession expected = PresetWorld(presets, "archipelago", 31);
+	ASSERT_GT(expected.Revision(), 0u);
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected.World()));
+	EXPECT_TRUE(gWg->GetCurrentWorld()->regions == expected.World().regions);
+	EXPECT_TRUE(gWg->GetCurrentWorld()->sites == expected.World().sites);
+}
+
+TEST(WorldHandoff, PresetFormHonoursTheSizeKey)
+{
+	const std::string presets = FindShippedPresetDir();
+	ASSERT_FALSE(presets.empty());
+	Harness h(HandoffConfig("\"preset\":\"continental\",\"seed\":5,\"size\":\"Standard\"", presets));
+	ASSERT_TRUE(h.Start());
+	h.Pump(8);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	const CoW::WorldGeneration::WorldGenSession expected = PresetWorld(presets, "continental", 5, "Standard");
+	EXPECT_EQ(gWg->GetCurrentWorld()->dimensions.width, expected.World().dimensions.width);
+	EXPECT_EQ(gWg->GetCurrentWorld()->dimensions.height, expected.World().dimensions.height);
+	EXPECT_NE(gWg->GetCurrentWorld()->dimensions.width, 66) << "Standard is larger than Small";
+	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected.World()));
+}
+
+TEST(WorldHandoff, NoHandoffKeysKeepsTodaysBehaviour)
+{
+	Harness h("{\"seed\":12}");
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
+	EXPECT_TRUE(gWg->GetHandoffError().empty());
+	EXPECT_FALSE(HandoffFailing());
+	EXPECT_EQ(gWg->GetSession().Seed(), 12u);
+	EXPECT_EQ(gWg->GetCurrentWorld()->regions.regions.Size(), 0u) << "the plain auto-generated world is a live-preview world, no regions";
+}
+
+namespace
+{
+	// Starts a module with a bad hand-off config and checks the safe state.
+	void ExpectHandoffFails(const std::string& config, const char* errorContains)
+	{
+		SCOPED_TRACE(config);
+		Harness h(config);
+		ASSERT_TRUE(h.Start()) << "a bad hand-off must not stop the module from starting";
+		h.Pump(8);
+		EXPECT_EQ(gWg->GetCurrentWorld(), nullptr);
+		EXPECT_EQ(gWg->GetWorldRevision(), 0u);
+		EXPECT_FALSE(gWg->IsReady(1));
+		EXPECT_TRUE(HandoffFailing());
+		EXPECT_GE(gWg->GetHealthReporter().Report().errors, 1u);
+		EXPECT_NE(gWg->GetHandoffError().find(errorContains), std::string::npos) << gWg->GetHandoffError();
+		EXPECT_EQ(h.Call("cow.worldgen.status")["revision"].asUInt(), 0u);
+	}
+}
+
+TEST(WorldHandoff, UnknownPresetFailsClearly)
+{
+	const std::string presets = FindShippedPresetDir();
+	ASSERT_FALSE(presets.empty());
+	ExpectHandoffFails(HandoffConfig("\"preset\":\"no_such_preset\"", presets), "no_such_preset");
+}
+
+TEST(WorldHandoff, InvalidPresetIdFailsClearly)
+{
+	const std::string presets = FindShippedPresetDir();
+	ExpectHandoffFails(HandoffConfig("\"preset\":\"../x\"", presets), "preset");
+}
+
+TEST(WorldHandoff, MoreThanOneSourceFails)
+{
+	const std::string presets = FindShippedPresetDir();
+	ExpectHandoffFails(HandoffConfig("\"preset\":\"continental\",\"world_file\":\"w\"", presets), "more than one");
+	ExpectHandoffFails(HandoffConfig("\"preset\":\"continental\",\"world_bundle\":\"b\"", presets), "more than one");
+	ExpectHandoffFails(HandoffConfig("\"world_file\":\"w\",\"world_bundle\":\"b\""), "more than one");
+}
+
+TEST(WorldHandoff, WorldBundleIsRejectedBecauseWorldAssetsAreNotBuilt)
+{
+	ExpectHandoffFails("{\"world_bundle\":\"my_bundle\"}", "world_bundle");
+}
+
+TEST(WorldHandoff, KeysOfTheWrongTypeFail)
+{
+	ExpectHandoffFails("{\"preset\":5}", "preset");
+	ExpectHandoffFails("{\"world_file\":true}", "world_file");
+	ExpectHandoffFails("{\"world_bundle\":[1]}", "world_bundle");
+	ExpectHandoffFails("{\"preset\":\"\"}", "preset");
+}
+
+TEST(WorldHandoff, AManualActionStillWorksAfterAFailedHandoff)
+{
+	Harness h("{\"world_bundle\":\"b\"}");
+	ASSERT_TRUE(h.Start());
+	h.Pump(6);
+	ASSERT_EQ(gWg->GetWorldRevision(), 0u);
+	ASSERT_TRUE(HandoffFailing());
+
+	Json::Value regen = Obj(); regen["seed"] = 3;
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", regen)["success"].asBool());
+	h.Pump(6);
+	EXPECT_GT(gWg->GetWorldRevision(), 0u);
+	EXPECT_NE(gWg->GetCurrentWorld(), nullptr);
+}
+
 #else
 TEST(WorldGenCommands, RequiresDebugBuild) { GTEST_SKIP() << "sim-hosted commands exist only in DIA_DEBUG builds"; }
 #endif
