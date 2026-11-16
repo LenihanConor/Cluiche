@@ -523,6 +523,9 @@ void WorldGenerationModule::RegisterCommands()
     };
 
     bool ok = true;
+    // Names this call actually registered, so a partial failure rolls back only our own (never a duplicate's owner's).
+    const char* registeredNames[kCommandCount] = {};
+    unsigned registeredCount = 0;
     auto registerOne = [&](bool isAction, const char* name, const char* desc, const ValueParam* params, unsigned count,
                            std::function<Json::Value(const Json::Value&)> fn)
     {
@@ -554,7 +557,14 @@ void WorldGenerationModule::RegisterCommands()
                     return result;
                 });
         }
-        if (!r) DIA_LOG_ERROR("CoW", "WorldGenerationModule: %s registration rejected by SimQueryHost", name);
+        if (r)
+        {
+            if (registeredCount < kCommandCount) registeredNames[registeredCount++] = name;
+        }
+        else
+        {
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: %s registration rejected by SimQueryHost", name);
+        }
         ok = ok && r;
     };
 
@@ -633,6 +643,14 @@ void WorldGenerationModule::RegisterCommands()
     registerOne(false, "cow.worldgen.report", "The last generation report: outcome, per-attempt sub-seed, failed guarantees and diagnostics (paged)", kReportParams, 5,
                 [s](const Json::Value& a) { return s->Report(a); });
 
+    if (!ok)
+    {
+        // All or nothing: a failed registration must not leave the others in the always-on SimQueryHost, because
+        // UnregisterCommands is skipped when mCommandsRegistered is false and the names would leak for good.
+        for (unsigned i = 0; i < registeredCount; ++i)
+            host->UnregisterQuery(registeredNames[i]);
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: rolled back %u cow.worldgen.* registrations after a failure", registeredCount);
+    }
     mCommandsRegistered = ok;
 }
 

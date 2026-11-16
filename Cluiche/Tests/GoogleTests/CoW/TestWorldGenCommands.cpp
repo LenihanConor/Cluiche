@@ -6,6 +6,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/ISimRequestSink.h>
 #include <DiaDebugServer/SimHostedTypes.h>
@@ -166,6 +167,37 @@ namespace
 	};
 	const StringCRC WgRegistrar::kTypeId("WgRegistrar");
 
+	// Occupies one cow.worldgen name before WorldGenerationModule starts, so exactly one of its registrations is
+	// rejected as a duplicate (a partial registration).
+	class WgSquatter : public Dia::ApplicationFlow::SimModule
+	{
+	public:
+		static const StringCRC kTypeId;
+		static constexpr const char* kName = "cow.worldgen.cell";
+		explicit WgSquatter(const StringCRC& id) : SimModule(id) {}
+		bool squatted = false;
+	protected:
+		StartResult DoStart() override
+		{
+			SimQueryHostModule* host = mHost.Get();
+			if (!host) return StartResult::kLoading;
+			mHostPtr = host;
+			squatted = host->RegisterQuery(kName, Dia::DebugServer::SimHelpInfo{ "squatter" },
+				[](const Json::Value&) { Json::Value v(Json::objectValue); v["success"] = true; return v; });
+			return StartResult::kReady;
+		}
+		void DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
+		StopResult DoStop() override
+		{
+			if (mHostPtr && squatted) mHostPtr->UnregisterQuery(kName);
+			return StopResult::kDone;
+		}
+	private:
+		ModuleRef<SimQueryHostModule> mHost{ this };
+		SimQueryHostModule* mHostPtr = nullptr;
+	};
+	const StringCRC WgSquatter::kTypeId("WgSquatter");
+
 	WgMainShim* gShim = nullptr;
 	WgRegistrar* gRegistrar = nullptr;
 	SimQueryHostModule* gHost = nullptr;
@@ -177,6 +209,7 @@ namespace
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
 	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); return gWg; }
 	Module* MakeBus(const StringCRC& id) { gBus = new Cluiche::AppFlow::MessageBusHostModule(id); return gBus; }
+	Module* MakeSquatter(const StringCRC& id) { return new WgSquatter(id); }
 	Module* MakeRegistrar(const StringCRC& id) { gRegistrar = new WgRegistrar(id); return gRegistrar; }
 	Module* MakeRng(const StringCRC& id) { gRng = new CoW::RandomStreamModule(id); return gRng; }
 
@@ -238,7 +271,7 @@ namespace
 		int nextConn = 1;
 
 		// withHost=false leaves SimQueryHostModule out of the SimPU (the module must still start).
-		explicit Harness(const std::string& cfg = std::string(), bool withHost = true, bool withRegistrar = false) : config(cfg)
+		explicit Harness(const std::string& cfg = std::string(), bool withHost = true, bool withRegistrar = false, bool withSquatter = false) : config(cfg)
 		{
 			gRegistrar = nullptr;
 			gShim = nullptr; gHost = nullptr; gWg = nullptr; gBus = nullptr; gRng = nullptr;
@@ -249,6 +282,7 @@ namespace
 			reg.Register(StringCRC("MessageBusHostModule"), MakeBus);
 			reg.Register(StringCRC("RandomStreamModule"), MakeRng);
 			reg.Register(WgRegistrar::kTypeId, MakeRegistrar);
+			reg.Register(WgSquatter::kTypeId, MakeSquatter);
 
 			manifest.version = 3;
 			StageDeclaration boot;
@@ -273,8 +307,12 @@ namespace
 				simPu.modules.Add(Mod(SimQueryHostModule::kTypeId, "SimQueryHostModule", { { "SimQueryRequest", "reads" }, { "SimQueryReply", "writes" } }));
 			simPu.modules.Add(Mod(StringCRC("MessageBusHostModule"), "MessageBusHostModule", {}));
 			simPu.modules.Add(Mod(StringCRC("RandomStreamModule"), "RandomStreamModule", {}));
+			if (withHost && withSquatter)
+				simPu.modules.Add(Mod(WgSquatter::kTypeId, "WgSquatter", {}, { "SimQueryHostModule" }));
 			ModuleDeclaration wg = withHost
-				? Mod(CoW::WorldGenerationModule::kTypeId, "WorldGenerationModule", {}, { "MessageBusHostModule", "RandomStreamModule", "SimQueryHostModule" })
+				? (withSquatter
+					? Mod(CoW::WorldGenerationModule::kTypeId, "WorldGenerationModule", {}, { "MessageBusHostModule", "RandomStreamModule", "SimQueryHostModule", "WgSquatter" })
+					: Mod(CoW::WorldGenerationModule::kTypeId, "WorldGenerationModule", {}, { "MessageBusHostModule", "RandomStreamModule", "SimQueryHostModule" }))
 				: Mod(CoW::WorldGenerationModule::kTypeId, "WorldGenerationModule", {}, { "MessageBusHostModule", "RandomStreamModule" });
 			if (!config.empty()) wg.configJson = config.c_str();
 			simPu.modules.Add(wg);
@@ -629,6 +667,39 @@ TEST(WorldGenCommands, CommandsAreUnregisteredOnStop)
 	for (const char* n : CoW::WorldGenerationModule::kCommandNames)
 		EXPECT_FALSE(host->GetHost().Has(StringCRC(n))) << n;
 	h.app.reset();
+}
+
+// Consumer Amendments ACs 10-11: a partial registration (one name already taken) leaves none of ours behind, and
+// re-entering the stage registers cleanly with no duplicate rejections.
+TEST(WorldGenCommands, PartialRegistrationRollsBackEveryNameItRegistered)
+{
+	SimQueryHostModule* host = nullptr;
+	{
+		Harness h(std::string(), true, false, true);
+		ASSERT_TRUE(h.Start());
+		h.Pump(3);
+		host = gHost;
+		EXPECT_FALSE(gWg->CommandsRegistered());
+		for (const char* n : CoW::WorldGenerationModule::kCommandNames)
+		{
+			SCOPED_TRACE(n);
+			// The squatter's name stays (it is not ours); every other name must be gone.
+			EXPECT_EQ(host->GetHost().Has(StringCRC(n)), std::string(n) == WgSquatter::kName);
+		}
+	}
+}
+
+TEST(WorldGenCommands, StageReEntryRegistersCleanlyWithNoDuplicateRejections)
+{
+	for (int visit = 0; visit < 3; ++visit)
+	{
+		Harness h;
+		Dia::CellLayers::Testing::LogCapture log("CoW");
+		ASSERT_TRUE(h.Start()) << "visit " << visit;
+		h.Pump(3);
+		EXPECT_TRUE(gWg->CommandsRegistered()) << "visit " << visit;
+		EXPECT_EQ(0u, log.Errors("registration rejected")) << "visit " << visit;
+	}
 }
 
 TEST(WorldGenCommands, ModuleWithoutSimQueryHostStartsAndRegistersNothing)
