@@ -35,13 +35,13 @@ def _cell_names(cell: str) -> List[str]:
     return [n for n in names if n]
 
 
-def _matched_cell(cells: List[str], name_key: str) -> int | None:
+def _matched_cell(cells: List[str], name_key: str, struck: bool = False) -> int | None:
     """Index of the name cell (first or second column) equal to the name, or None.
-    Struck cells (`~~...~~`) are already moved and never match."""
+    Struck cells (`~~...~~`) only match when `struck` is True (second pass)."""
     for i in range(min(2, len(cells))):
-        if "~~" in cells[i]:
+        if ("~~" in cells[i]) != struck:
             continue
-        if name_key in _cell_names(cells[i]):
+        if name_key in _cell_names(cells[i].replace("~~", "")):
             return i
     return None
 
@@ -50,16 +50,19 @@ def find_entry_lines(lines: List[str], name: str) -> List[int]:
     """Rows whose Project or Item cell is the whole name, never a substring of
     any cell text. Stops unrelated rows that merely mention the name in their
     notes from being struck (2026-10-14: S-1 and A4 rows were struck when moving
-    another entry)."""
+    another entry). Rows struck by hand match only when no live row does, so they
+    can still be moved to history (they are not re-struck)."""
     name_key = _normalise_name(name)
     if not name_key:
         return []
-    indices: List[int] = []
-    for i, line in enumerate(lines):
-        cells = _row_cells(line)
-        if cells and _matched_cell(cells, name_key) is not None:
-            indices.append(i)
-    return indices
+    for struck in (False, True):
+        indices = [
+            i for i, line in enumerate(lines)
+            if (cells := _row_cells(line)) and _matched_cell(cells, name_key, struck) is not None
+        ]
+        if indices:
+            return indices
+    return []
 
 
 def strike_row(line: str, name: str) -> str:
@@ -67,6 +70,8 @@ def strike_row(line: str, name: str) -> str:
     Project and Item for `| Project | Item | ...` rows (as hand-struck rows do),
     just the first cell when the name is in the first column."""
     cells = _row_cells(line)
+    if cells and any("~~" in c for c in cells[:2]):
+        return line  # already struck by hand
     matched = _matched_cell(cells, _normalise_name(name)) if cells else None
     for _ in range((matched or 0) + 1):
         line = re.sub(
@@ -117,7 +122,7 @@ def move_to_history(
 
     entry_note = notes if notes else "Moved by `dia docs backlog move`"
     for entry_line in moved_entries:
-        cells = [c.strip() for c in entry_line.split("|") if c.strip()]
+        cells = [c.strip().replace("~~", "") for c in entry_line.split("|") if c.strip()]
         display_name = cells[0] if cells else spec_name
         hist_entry = f"| {display_name} | {cells[1] if len(cells) > 1 else ''} | {today} | {entry_note} |"
 

@@ -39,7 +39,7 @@ def test_case_and_punctuation_insensitive():
 
 def test_struck_rows_and_headers_never_match():
     lines = _lines()
-    assert find_entry_lines(lines, "DiaCellHistory") == []
+    assert find_entry_lines(lines, "Weather") == []
     assert find_entry_lines(lines, "Item") == [2]  # header text only matches literally
 
 
@@ -84,3 +84,19 @@ def test_move_refuses_ambiguous_name_without_all(tmp_path):
     ok, _ = move_to_history(tmp_path, "A4 Weather", allow_multiple=True)
     assert ok
     assert backlog.read_text(encoding="utf-8").count("~~A4 Weather~~") == 2
+
+
+def test_hand_struck_row_matches_as_fallback_and_is_not_restruck(tmp_path):
+    lines = _lines()
+    assert find_entry_lines(lines, "DiaCellHistory") == [7]
+    assert find_entry_lines(lines, "~~DiaCellHistory~~") == [7]
+    assert strike_row(lines[7], "DiaCellHistory") == lines[7]
+
+    (tmp_path / "docs").mkdir()
+    backlog = tmp_path / "docs" / "BACKLOG.md"
+    backlog.write_text(BACKLOG, encoding="utf-8")
+    ok, msg = move_to_history(tmp_path, "DiaCellHistory")
+    assert ok, msg
+    assert backlog.read_text(encoding="utf-8").splitlines()[7] == lines[7]
+    hist = (tmp_path / "docs" / "BACKLOG-HISTORY.md").read_text(encoding="utf-8")
+    assert "| Dia | DiaCellHistory |" in hist
