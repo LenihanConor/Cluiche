@@ -31,6 +31,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
+#include <string>
 
 using namespace Dia::AssetCatalogue;
 using namespace Dia::AssetCatalogue::Editor;
@@ -42,6 +43,15 @@ using namespace Dia::Core;
 // ===========================================================================
 namespace
 {
+    // Per-process temp file path, so fixtures that write the same file in every
+    // test do not collide when `--shards` runs them in separate processes.
+    std::string ShardSafeTempPath(const char* name)
+    {
+        char buf[256];
+        _snprintf_s(buf, sizeof(buf), _TRUNCATE, "C:\\Temp\\%u_%s", GetCurrentProcessId(), name);
+        return std::string(buf);
+    }
+
     AssetRecord MakeRecord(const char* id, const char* type, const char* sourcePath = "")
     {
         AssetRecord rec;
@@ -1192,7 +1202,8 @@ protected:
     {
         RegisterBuiltInAssetTypes(typeRegistry);
 
-        const char* rulesPath = "C:\\Temp\\test_excluded_rules.json";
+        const std::string rulesPathStr = ShardSafeTempPath("test_excluded_rules.json");
+        const char* rulesPath = rulesPathStr.c_str();
         const char* rulesJson =
             "{\n"
             "  \"rules\": [\n"
@@ -1515,12 +1526,12 @@ protected:
 
     bool LoadScopeRule()
     {
-        return WriteScopeRule("C:\\Temp\\test_manual_scope_rule.json", typeRegistry, engine);
+        return WriteScopeRule(ShardSafeTempPath("test_manual_scope_rule.json").c_str(), typeRegistry, engine);
     }
 
     bool LoadTagRule()
     {
-        return WriteTagRule("C:\\Temp\\test_manual_tag_rule.json", typeRegistry, engine);
+        return WriteTagRule(ShardSafeTempPath("test_manual_tag_rule.json").c_str(), typeRegistry, engine);
     }
 };
 
@@ -1712,7 +1723,8 @@ protected:
 
     bool LoadRules(const char* json)
     {
-        const char* path = "C:\\Temp\\test_getrule.json";
+        const std::string pathStr = ShardSafeTempPath("test_getrule.json");
+        const char* path = pathStr.c_str();
         FILE* f = nullptr;
         fopen_s(&f, path, "w");
         if (!f) return false;

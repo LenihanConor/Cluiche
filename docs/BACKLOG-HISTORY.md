@@ -192,6 +192,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | `dia reflect` skips rewriting when only defaults or metadata change (found 2026-10-22) | 2026-11-10 | Fixed 2026-11-10. _compute_version compares the whole schema minus version; any other content change bumps minor. tests/test_reflect_versioning.py |
 | CoW | S-1 World Generation | 2026-11-13 | Moved by `dia docs backlog move` |
 | Dia | DiaThreading: Job Observation | 2026-11-16 | Moved by `dia docs backlog move` |
+| Dia | Other tests flake under `--shards` (2026-11-10) | 2026-11-16 | Moved by `dia docs backlog move` |
 
 ---
 
