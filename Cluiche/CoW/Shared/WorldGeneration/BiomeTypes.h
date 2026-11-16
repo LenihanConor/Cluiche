@@ -1,5 +1,5 @@
 // S-1 Biome Classification: biome vocabulary, zone validity and forbidden adjacency.
-// The Biome enum itself lives in TerrainTypes.h so Cell can store it.
+// The Biome enum itself lives in TerrainEnums.h so Cell can store it.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-classification.md
 #pragma once
 

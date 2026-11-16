@@ -10,7 +10,8 @@ using namespace CoW::WorldGeneration;
 
 static_assert(std::is_trivially_copyable_v<Cell>, "Cell is memset/memcpy'd; must stay trivially copyable");
 static_assert(sizeof(Cell) <= 24, "Cell grew unexpectedly");
-static_assert(kBiomeCount == 10, "ten biomes");
+static_assert(kBiomeCount == 13, "ten generated biomes plus three succession biomes");
+static_assert(kGeneratedBiomeCount == 10, "the generator emits only the first ten");
 
 namespace
 {
@@ -18,6 +19,10 @@ namespace
 
     bool ExpectedValid(Biome b, DepthZone z)
     {
+        if (!IsGeneratedBiome(b))
+        {
+            return false;   // succession biomes are classification predicates: never valid in a zone
+        }
         switch (b)
         {
         case Biome::Ocean:
@@ -54,14 +59,14 @@ namespace
     }
 }
 
-TEST(BiomeTypes, IdsAreTenDistinct)
+TEST(BiomeTypes, IdsAreThirteenDistinct)
 {
     std::set<uint32_t> ids;
     for (int i = 0; i < kBiomeCount; ++i)
     {
         ids.insert(static_cast<uint32_t>(BiomeId(B(i)).Value()));
     }
-    EXPECT_EQ(static_cast<int>(ids.size()), 10);
+    EXPECT_EQ(static_cast<int>(ids.size()), 13);
     EXPECT_EQ(BiomeId(Biome::Ocean), Dia::Core::StringCRC("Biome.Ocean"));
     EXPECT_EQ(BiomeId(Biome::Lake), Dia::Core::StringCRC("Biome.Lake"));
     EXPECT_EQ(BiomeId(Biome::GrasslandSteppe), Dia::Core::StringCRC("Biome.Grassland"));
@@ -72,6 +77,38 @@ TEST(BiomeTypes, IdsAreTenDistinct)
     EXPECT_EQ(BiomeId(Biome::TundraBoreal), Dia::Core::StringCRC("Biome.Tundra"));
     EXPECT_EQ(BiomeId(Biome::Rainforest), Dia::Core::StringCRC("Biome.Rainforest"));
     EXPECT_EQ(BiomeId(Biome::VolcanicAshland), Dia::Core::StringCRC("Biome.Volcanic"));
+    EXPECT_EQ(BiomeId(Biome::Scrub), Dia::Core::StringCRC("Biome.Scrub"));
+    EXPECT_EQ(BiomeId(Biome::BurnedAshland), Dia::Core::StringCRC("Biome.BurnedAshland"));
+    EXPECT_EQ(BiomeId(Biome::DesertifiedPlain), Dia::Core::StringCRC("Biome.DesertifiedPlain"));
+}
+
+// Tripwire: the committed S-1 layer goldens hash biomeIndex values, so the first ten must never renumber.
+TEST(BiomeTypes, GeneratedBiomeNumericValuesArePinned)
+{
+    EXPECT_EQ(static_cast<int>(Biome::Ocean), 0);
+    EXPECT_EQ(static_cast<int>(Biome::Lake), 1);
+    EXPECT_EQ(static_cast<int>(Biome::GrasslandSteppe), 2);
+    EXPECT_EQ(static_cast<int>(Biome::TemperateForest), 3);
+    EXPECT_EQ(static_cast<int>(Biome::WetlandDelta), 4);
+    EXPECT_EQ(static_cast<int>(Biome::DesertBasin), 5);
+    EXPECT_EQ(static_cast<int>(Biome::AlpineMountain), 6);
+    EXPECT_EQ(static_cast<int>(Biome::TundraBoreal), 7);
+    EXPECT_EQ(static_cast<int>(Biome::Rainforest), 8);
+    EXPECT_EQ(static_cast<int>(Biome::VolcanicAshland), 9);
+    EXPECT_EQ(static_cast<int>(Biome::Scrub), 10);
+    EXPECT_EQ(static_cast<int>(Biome::BurnedAshland), 11);
+    EXPECT_EQ(static_cast<int>(Biome::DesertifiedPlain), 12);
+    EXPECT_EQ(static_cast<int>(Biome::Count), 13);
+}
+
+TEST(BiomeTypes, IsGeneratedBiomeIsTrueForExactlyTheFirstTen)
+{
+    for (int i = 0; i < kBiomeCount; ++i)
+    {
+        EXPECT_EQ(IsGeneratedBiome(B(i)), i < 10) << i;
+    }
+    EXPECT_FALSE(IsGeneratedBiome(Biome::Count));
+    EXPECT_FALSE(IsGeneratedBiome(B(200)));
 }
 
 TEST(BiomeTypes, FromIdRoundTrips)
@@ -104,7 +141,7 @@ TEST(BiomeTypes, NamesAreNonEmptyAndExact)
         EXPECT_NE(std::string(n), "Unknown");
         names.insert(n);
     }
-    EXPECT_EQ(static_cast<int>(names.size()), 10);
+    EXPECT_EQ(static_cast<int>(names.size()), 13);
     EXPECT_STREQ(BiomeName(Biome::Ocean), "Ocean");
     EXPECT_STREQ(BiomeName(Biome::Lake), "Lake");
     EXPECT_STREQ(BiomeName(Biome::GrasslandSteppe), "Grassland / Steppe");
@@ -115,6 +152,9 @@ TEST(BiomeTypes, NamesAreNonEmptyAndExact)
     EXPECT_STREQ(BiomeName(Biome::TundraBoreal), "Tundra / Boreal");
     EXPECT_STREQ(BiomeName(Biome::Rainforest), "Rainforest");
     EXPECT_STREQ(BiomeName(Biome::VolcanicAshland), "Volcanic Ashland");
+    EXPECT_STREQ(BiomeName(Biome::Scrub), "Scrub");
+    EXPECT_STREQ(BiomeName(Biome::BurnedAshland), "Burned Ashland");
+    EXPECT_STREQ(BiomeName(Biome::DesertifiedPlain), "Desertified Plain");
     EXPECT_STREQ(BiomeName(Biome::Count), "Unknown");
 }
 

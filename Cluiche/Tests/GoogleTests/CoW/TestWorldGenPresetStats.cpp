@@ -134,3 +134,36 @@ TEST(WorldGenPresetStats, PresetIntentOrderings)
     EXPECT_GT(arc.riverCells, 0.0) << "archipelago should have rivers";
     EXPECT_GT(con.landFraction, arc.landFraction) << "continental should have more land than archipelago";
 }
+
+// Consumer Amendments AC 8: the shared Biome enum is wider than what the generator emits (succession biomes), so the
+// type no longer proves the generator's output. This test does: after any generation every cell is a generated biome.
+TEST(WorldGenPresetStats, EveryGeneratedCellHoldsAGeneratedBiome)
+{
+    const char* const presets[] = { "default", "continental", "archipelago", "highlands" };
+    for (const char* preset : presets)
+    {
+        for (uint64_t seed = 1; seed <= 3; ++seed)
+        {
+            WorldGenSession s;
+            Dia::Maths::RandomStream rng{ 1 };
+            s.SetPresetDirectories(FindShippedPresetDir(), "");
+            Json::Value sz(Json::objectValue); sz["size"] = "Small";
+            ASSERT_TRUE(s.SetSize(sz)["success"].asBool());
+            if (std::string(preset) != "default")
+            {
+                Json::Value p(Json::objectValue); p["id"] = preset;
+                ASSERT_TRUE(s.PresetLoad(p)["success"].asBool()) << preset;
+            }
+            Json::Value a(Json::objectValue); a["seed"] = static_cast<Json::UInt64>(seed);
+            ASSERT_TRUE(s.Regenerate(a)["success"].asBool());
+            TickUntilIdle(s, rng);
+            ASSERT_EQ(s.State(), WorldGenState::Complete) << preset << " seed " << seed;
+            const WorldStructure& w = s.World();
+            for (int i = 0; i < w.CellCount(); ++i)
+            {
+                ASSERT_TRUE(IsGeneratedBiome(w.Cells()[i].biome))
+                    << preset << " seed " << seed << " cell " << i << " biome " << static_cast<int>(w.Cells()[i].biome);
+            }
+        }
+    }
+}

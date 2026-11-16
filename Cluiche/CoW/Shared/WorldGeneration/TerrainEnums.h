@@ -15,8 +15,14 @@ enum class TerrainType : uint8_t { DeepWater, ShallowWater, Lake, River, Lowland
 enum class BarrierForm : uint8_t { Plateau, VolcanicChain };
 // Defined here (not BiomeTypes.h) so Cell can store it without a circular include.
 enum class Biome : uint8_t { Ocean, Lake, GrasslandSteppe, TemperateForest, WetlandDelta, DesertBasin,
-                             AlpineMountain, TundraBoreal, Rainforest, VolcanicAshland, Count };
+                             AlpineMountain, TundraBoreal, Rainforest, VolcanicAshland,
+                             // Succession biomes (A3). Appended so the first ten keep their values (goldens hash them).
+                             // The generator never emits these; see IsGeneratedBiome.
+                             Scrub, BurnedAshland, DesertifiedPlain, Count };
 constexpr int kBiomeCount = static_cast<int>(Biome::Count);
+// The generator emits only the first kGeneratedBiomeCount biomes; the rest are written by succession (A1/A3).
+constexpr int kGeneratedBiomeCount = 10;
+constexpr bool IsGeneratedBiome(Biome b) { return static_cast<int>(b) < kGeneratedBiomeCount; }
 
 namespace TerrainFlag
 {

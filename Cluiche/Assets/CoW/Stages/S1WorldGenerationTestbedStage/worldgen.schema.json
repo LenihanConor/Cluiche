@@ -827,6 +827,24 @@
           "label": "Volcanic Ashland",
           "description": "Land around a vent.",
           "colour": "#6b3a36"
+        },
+        {
+          "id": "scrub",
+          "label": "Scrub",
+          "description": "Succession: low shrubland after disturbance. Not generated.",
+          "colour": "#8f8a3c"
+        },
+        {
+          "id": "burnedAshland",
+          "label": "Burned Ashland",
+          "description": "Succession: fire-scorched ground. Not generated.",
+          "colour": "#2b2523"
+        },
+        {
+          "id": "desertifiedPlain",
+          "label": "Desertified Plain",
+          "description": "Succession: grassland lost to desert. Not generated.",
+          "colour": "#c98a4b"
         }
       ],
       "ui": {

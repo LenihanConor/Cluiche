@@ -157,6 +157,33 @@ TEST(WorldJsonImport, ImportedFloatsKeepEveryBit)
     EXPECT_TRUE(SameCells(original, imported));
 }
 
+// Consumer Amendments AC 7: the succession biomes export by id and import back; unknown names still fail.
+TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
+{
+    WorldStructure original = MakeTinyWorld();
+    original.Cells()[2].biome  = Biome::Scrub;
+    original.Cells()[3].biome  = Biome::BurnedAshland;
+    original.Cells()[7].biome  = Biome::DesertifiedPlain;
+    RecomputeRegionRecords(original);
+    const std::string text = Export(original);
+    EXPECT_NE(text.find("Biome.Scrub"), std::string::npos);
+    EXPECT_NE(text.find("Biome.BurnedAshland"), std::string::npos);
+    EXPECT_NE(text.find("Biome.DesertifiedPlain"), std::string::npos);
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(imported.Cells()[2].biome, Biome::Scrub);
+    EXPECT_EQ(imported.Cells()[3].biome, Biome::BurnedAshland);
+    EXPECT_EQ(imported.Cells()[7].biome, Biome::DesertifiedPlain);
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+TEST(WorldJsonImport, UnknownBiomeNameStillFailsCleanly)
+{
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][3]["biome"] = "Biome.Nonsense"; }),
+                   "world.cells[3].biome");
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // AC3 / AC5 / AC8: validation, all-or-nothing
 // ---------------------------------------------------------------------------------------------------------------------

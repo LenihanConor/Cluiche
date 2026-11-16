@@ -31,6 +31,9 @@ namespace
         { 1, 2 },   // TundraBoreal
         { 3, 2 },   // Rainforest
         { 1, 3 },   // VolcanicAshland
+        { 0, 0 },   // Scrub (succession; no nodes placed on generated worlds)
+        { 0, 0 },   // BurnedAshland
+        { 0, 0 },   // DesertifiedPlain
     };
 
     int Clamp(int v) { return std::clamp(v, kMinQuota, kMaxQuota); }

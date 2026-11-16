@@ -672,7 +672,7 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
         c.waterSource  = static_cast<WaterSource>(water[i]);
         c.terrain      = static_cast<TerrainType>(type[i]);
         c.depthZone    = static_cast<DepthZone>(zone[i]);
-        c.biome        = biome[i] < static_cast<uint32_t>(kBiomeCount) ? static_cast<Biome>(biome[i]) : Biome::Ocean;
+        c.biome        = biome[i] < static_cast<uint32_t>(kGeneratedBiomeCount) ? static_cast<Biome>(biome[i]) : Biome::Ocean;
         c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255
         c.terrainFlags = static_cast<uint8_t>(flags[i]);
         c.downstream   = (c.waterSource == WaterSource::River && flow[i] < 6u) ? static_cast<uint8_t>(flow[i]) : kNoDirection;

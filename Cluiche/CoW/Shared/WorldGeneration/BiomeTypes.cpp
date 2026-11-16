@@ -19,6 +19,9 @@ namespace
         case Biome::TundraBoreal:    return "Biome.Tundra";
         case Biome::Rainforest:      return "Biome.Rainforest";
         case Biome::VolcanicAshland: return "Biome.Volcanic";
+        case Biome::Scrub:             return "Biome.Scrub";
+        case Biome::BurnedAshland:     return "Biome.BurnedAshland";
+        case Biome::DesertifiedPlain:  return "Biome.DesertifiedPlain";
         case Biome::Count:           break;
         }
         return "Biome.Unknown";
@@ -49,6 +52,9 @@ const char* BiomeName(Biome b)
     case Biome::TundraBoreal:    return "Tundra / Boreal";
     case Biome::Rainforest:      return "Rainforest";
     case Biome::VolcanicAshland: return "Volcanic Ashland";
+    case Biome::Scrub:            return "Scrub";
+    case Biome::BurnedAshland:    return "Burned Ashland";
+    case Biome::DesertifiedPlain: return "Desertified Plain";
     case Biome::Count:           break;
     }
     return "Unknown";
@@ -85,6 +91,10 @@ bool IsBiomeValidInZone(Biome b, DepthZone z)
     case Biome::Rainforest:
     case Biome::VolcanicAshland:
         return z == DepthZone::WildReaches || z == DepthZone::AncientInteriors;
+    // Succession biomes are classification predicates: the generator never places them, so no zone admits them.
+    case Biome::Scrub:
+    case Biome::BurnedAshland:
+    case Biome::DesertifiedPlain:
     case Biome::Count:
         break;
     }
