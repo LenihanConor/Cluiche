@@ -129,6 +129,9 @@
     <ClCompile Include="Profile\UnitTimingTable.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\TripDetector.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -296,6 +299,9 @@
       <Filter>Job</Filter>
     </ClInclude>
     <ClInclude Include="Profile\UnitTimingTable.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripDetector.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

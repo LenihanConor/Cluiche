@@ -265,6 +265,9 @@
     <Filter Include="Cluiche">
       <UniqueIdentifier>{a5ec8eea-2c04-45d8-ae59-64971402a3c3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Profile">
+      <UniqueIdentifier>{63a7bc41-ab14-4103-b690-06184f013467}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -2948,6 +2951,9 @@
     </ClCompile>
     <ClCompile Include="ApplicationFlow\TestProcessingUnitTiming.cpp">
       <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestTripDetector.cpp">
+      <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
