@@ -493,7 +493,10 @@ TEST(WorldGenDebugDomain, SetScaleWithNaNInfAndStringsNeverCorruptsState)
     Fixture f;
     f.Gen();
     const double before = [&] {
-        for (const Json::Value& c : f.State()["controls"]) if (c["key"].asString() == "landFraction") return c["value"].asDouble();
+        // Keep the state alive for the loop: range-for over `f.State()["controls"]` dangles
+        // (the temporary Json::Value dies before the body runs).
+        const Json::Value state = f.State();
+        for (const Json::Value& c : state["controls"]) if (c["key"].asString() == "landFraction") return c["value"].asDouble();
         return -1.0;
     }();
     const Json::Value bad[] = {
