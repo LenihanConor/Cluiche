@@ -6,6 +6,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaObservation/Perf/LatencyProbe.h>
 
 #include <string>
 #include <vector>
@@ -154,5 +155,78 @@ TEST_F(PanelCommandFixture, WithoutSimQueryHostNothingRegistersAndModuleStillWor
 	EXPECT_FALSE(vd.PanelCommandRegistered());
 	EXPECT_TRUE(vd.HandlePanelCommand(Req("PanelCmdTest", "x"))["success"].asBool());
 }
+
+#ifdef _DEBUG
+namespace
+{
+	class ArmedVisualDebugger : public TestableVisualDebugger
+	{
+	public:
+		bool armed = true;
+	protected:
+		bool IsSnapshotArmed() const override { return armed; }
+	};
+
+	struct LatencyFixture : ::testing::Test
+	{
+		ArmedVisualDebugger vd;
+		RecordingDomain domain;
+		Dia::Observation::Perf::LatencyVisibleMatcher matcher{ vd.GetLatencyProbe() };
+		void SetUp() override { vd.RegisterDomain(domain); vd.SetLatencyMatcher(&matcher); }
+		void TearDown() override { vd.UnregisterDomain(domain); }
+	};
+}
+
+TEST_F(LatencyFixture, TaggedCommandCompletesAfterApplyAndSnapshotAndDomainNeverSeesLat)
+{
+	Json::Value a(Json::objectValue);
+	a["key"] = "k";
+	ASSERT_TRUE(vd.HandlePanelCommand(Req("PanelCmdTest", "setScale", &a))["success"].asBool());
+	vd.DrainPendingCommands();
+	ASSERT_EQ(domain.argList.size(), 1u);
+	EXPECT_FALSE(domain.argList[0].isMember("_lat"));
+	EXPECT_EQ(domain.argList[0]["key"].asString(), "k");
+
+	EXPECT_EQ(matcher.OnSnapshot(10), 1u);   // applied at tick 0 (<= 10): visible
+
+	const Json::Value r = vd.HandleLatencyQuery(Json::Value(Json::objectValue));
+	ASSERT_TRUE(r["actions"].isMember("PanelCmdTest.setScale"));
+	EXPECT_EQ(r["actions"]["PanelCmdTest.setScale"]["count"].asUInt(), 1u);
+	EXPECT_GE(r["actions"]["PanelCmdTest.setScale"]["p95Ms"].asDouble(), 0.0);
+	EXPECT_TRUE(r["counters"].isMember("tableFull"));
+}
+
+TEST_F(LatencyFixture, NoProbeWhenSnapshotsAreNotArmed)
+{
+	vd.armed = false;
+	ASSERT_TRUE(vd.HandlePanelCommand(Req("PanelCmdTest", "setScale"))["success"].asBool());
+	vd.DrainPendingCommands();
+	EXPECT_EQ(matcher.OnSnapshot(10), 0u);
+	EXPECT_TRUE(vd.HandleLatencyQuery(Json::Value(Json::objectValue))["actions"].empty());
+}
+
+TEST_F(LatencyFixture, ActionFilterAndUnknownActionReportZero)
+{
+	ASSERT_TRUE(vd.HandlePanelCommand(Req("PanelCmdTest", "a"))["success"].asBool());
+	vd.DrainPendingCommands();
+	matcher.OnSnapshot(10);
+	Json::Value q(Json::objectValue);
+	q["action"] = "PanelCmdTest.a";
+	EXPECT_EQ(vd.HandleLatencyQuery(q)["actions"]["PanelCmdTest.a"]["count"].asUInt(), 1u);
+	q["action"] = "nope";
+	const Json::Value r = vd.HandleLatencyQuery(q);
+	EXPECT_EQ(r["actions"]["nope"]["count"].asUInt(), 0u);
+	EXPECT_EQ(r["actions"].size(), 1u);
+}
+
+TEST_F(LatencyFixture, QueueFullDoesNotLeakProbeSlots)
+{
+	const int cap = ArmedVisualDebugger::kCommandQueueCapacity;
+	for (int i = 0; i < cap + 100; ++i)
+		vd.HandlePanelCommand(Req("PanelCmdTest", "x"));   // the overflow ones are rejected and their probe closed
+	const Json::Value r = vd.HandleLatencyQuery(Json::Value(Json::objectValue));
+	EXPECT_EQ(r["counters"]["tableFull"].asUInt64(), 0u);
+}
+#endif
 
 #endif // DIA_DEBUG

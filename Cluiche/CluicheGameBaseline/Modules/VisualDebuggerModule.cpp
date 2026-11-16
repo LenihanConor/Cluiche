@@ -82,7 +82,13 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
 #ifdef _DEBUG
             RefreshDomainPauses();
 #endif
+            const uint32_t publishedBefore = mSnapshotPublisher->PublishCount();
             mSnapshotPublisher->Update(ctx.tick);
+#ifdef _DEBUG
+            // "visible" = first snapshot written at or after the applying tick (Sim-side; see HandleLatencyQuery).
+            if (mLatencyMatcher && mSnapshotPublisher->PublishCount() != publishedBefore)
+                mLatencyMatcher->OnSnapshot(ctx.tick);
+#endif
         }
     }
 
@@ -132,7 +138,13 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
     if (mPanelCommandRegistered)
     {
         if (SimQueryHostModule* host = mSimQueryHost.Get())
+        {
             host->UnregisterQuery(kPanelCommandName);
+#ifdef _DEBUG
+            if (mLatencyQueryRegistered)
+                host->UnregisterQuery(kLatencyQueryName);
+#endif
+        }
         mPanelCommandRegistered = false;
     }
     mPanelCommandAttempted = false;
@@ -269,8 +281,35 @@ Json::Value VisualDebuggerModule::HandlePanelCommand(const Json::Value& args)
         return PanelCommandError("args too large for the panel command queue");
 
     const std::string cmdName = args["cmd"].asString();
+    uint32_t latId = 0;
+#ifdef _DEBUG
+    // perf-live-control: tag the command with a latency probe id ("_lat" inside args; stripped again in DrainPendingCommands).
+    if (mLatencyMatcher && IsSnapshotArmed() && argsJson.size() + 24 < sizeof(PendingCommand::argsJson))
+    {
+        const Dia::Core::StringCRC action = RememberLatencyAction(domainName + "." + cmdName);
+        if (action.Value() != 0)
+            latId = mLatencyProbe.Begin(action);
+        if (latId != 0)
+        {
+            Json::Value tagged(Json::objectValue);
+            if (args.isMember("args") && args["args"].isObject())
+                tagged = args["args"];
+            tagged["_lat"] = Json::UInt(latId);
+            Json::FastWriter writer;
+            std::string text = writer.write(tagged);
+            text.erase(text.find_last_of('}') + 1);
+            argsJson = text;
+        }
+    }
+#endif
     if (!EnqueueCommand(domainId, Dia::Core::StringCRC(cmdName.c_str()), argsJson.c_str()))
+    {
+#ifdef _DEBUG
+        if (latId != 0)
+            mLatencyProbe.End(latId);   // never queued: close it so the table slot is not leaked
+#endif
         return PanelCommandError("panel command queue is full");
+    }
 
     Json::Value r(Json::objectValue);
     r["success"] = true;
@@ -303,7 +342,78 @@ void VisualDebuggerModule::TryRegisterPanelCommand()
         [this](const Json::Value& a) { return HandlePanelCommand(a); });
     if (!mPanelCommandRegistered)
         DIA_LOG_ERROR("Debug", "VisualDebuggerModule: %s registration rejected by SimQueryHost", kPanelCommandName);
+
+#ifdef _DEBUG
+    static const Dia::API::ValueParam kLatParams[] = {
+        { "action", "string", false, "Action key '<domain>.<cmd>' (e.g. WorldGen.setScale); omit for all actions" } };
+    Dia::DebugServer::SimHelpInfo latHelp;
+    latHelp.description = "Panel-command latency percentiles (last 40 per action): Sim receive to first published domain snapshot";
+    latHelp.category = "perf";
+    latHelp.owner = "VisualDebuggerModule";
+    latHelp.params = kLatParams;
+    latHelp.paramCount = 1;
+    latHelp.noArgs = false;
+    mLatencyQueryRegistered = host->RegisterCommand(kLatencyQueryName, latHelp,
+        [this](const Json::Value& a) { return HandleLatencyQuery(a); });
+    if (!mLatencyQueryRegistered)
+        DIA_LOG_ERROR("Debug", "VisualDebuggerModule: %s registration rejected by SimQueryHost", kLatencyQueryName);
+#endif
 }
+
+#ifdef _DEBUG
+Dia::Core::StringCRC VisualDebuggerModule::RememberLatencyAction(const std::string& name)
+{
+    const Dia::Core::StringCRC crc(name.c_str());
+    for (unsigned i = 0; i < mLatencyActionCount; ++i)
+        if (mLatencyActions[i].crc == crc.Value())
+            return crc;
+    if (mLatencyActionCount >= kMaxLatencyActions)
+        return Dia::Core::StringCRC();   // table full: untracked
+    LatencyActionName& slot = mLatencyActions[mLatencyActionCount++];
+    slot.crc = crc.Value();
+    strncpy_s(slot.name, name.c_str(), sizeof(slot.name) - 1);
+    return crc;
+}
+
+Json::Value VisualDebuggerModule::HandleLatencyQuery(const Json::Value& args)
+{
+    namespace Perf = Dia::Observation::Perf;
+    auto statsJson = [this](Dia::Core::StringCRC crc) {
+        const Perf::LatencyStats s = mLatencyProbe.GetStats(crc);
+        Json::Value o(Json::objectValue);
+        o["count"] = s.count;
+        o["p50Ms"] = static_cast<double>(s.p50Ns) / 1.0e6;
+        o["p95Ms"] = static_cast<double>(s.p95Ns) / 1.0e6;
+        o["minMs"] = static_cast<double>(s.minNs) / 1.0e6;
+        o["maxMs"] = static_cast<double>(s.maxNs) / 1.0e6;
+        return o;
+    };
+
+    Json::Value out(Json::objectValue);
+    Json::Value actions(Json::objectValue);
+    if (args.isObject() && args["action"].isString() && !args["action"].asString().empty())
+    {
+        const std::string name = args["action"].asString();
+        actions[name] = statsJson(Dia::Core::StringCRC(name.c_str()));
+    }
+    else
+    {
+        for (unsigned i = 0; i < mLatencyActionCount; ++i)
+            actions[mLatencyActions[i].name] = statsJson(Dia::Core::StringCRC(mLatencyActions[i].name));
+    }
+    out["actions"] = actions;
+
+    const Perf::LatencyCounters c = mLatencyProbe.GetCounters();
+    Json::Value counters(Json::objectValue);
+    counters["rejected"] = Json::UInt64(c.rejected);
+    counters["tableFull"] = Json::UInt64(c.tableFull);
+    counters["hopOverflow"] = Json::UInt64(c.hopOverflow);
+    counters["completionsDropped"] = Json::UInt64(c.completionsDropped);
+    out["counters"] = counters;
+    out["scope"] = "sim_receive_to_snapshot_published";
+    return out;
+}
+#endif
 
 void VisualDebuggerModule::DrainPendingCommands()
 {

@@ -4,6 +4,7 @@
 #include "Modules/WorldGenerationModule.h"
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 #include <algorithm>
@@ -723,6 +724,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
             Json::Value set(Json::objectValue);
             set[args["key"].asString()] = args["value"];
             CarryUnlock(args, set);
+            DIA_PERF_MARK("cow.s1.slider_applied");   // panel sends one setScale per slider change; drag start/end are not discrete events here
             WarnIfFailed("setScale", session.Set(set));
             acted = true;
         }
@@ -733,6 +735,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     }
     else if (cmd == kCmdRegenerate)
     {
+        DIA_PERF_MARK("cow.s1.regenerate");
         WarnIfFailed("regenerate", session.Regenerate(hasObj ? args : Json::Value(Json::objectValue)));
         acted = true;
     }
@@ -743,6 +746,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
             Json::Value set(Json::objectValue);
             set["seed"] = args["seed"];
             CarryUnlock(args, set);
+            DIA_PERF_MARK("cow.s1.seed_change");
             WarnIfFailed("setSeed", session.Set(set));
             acted = true;
         }
@@ -753,11 +757,13 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
     }
     else if (cmd == kCmdSetSize)
     {
+        DIA_PERF_MARK("cow.s1.size_change");
         WarnIfFailed("setSize", session.SetSize(args));
         acted = true;
     }
     else if (cmd == kCmdPresetLoad)
     {
+        DIA_PERF_MARK("cow.s1.preset_load");
         WarnIfFailed("presetLoad", session.PresetLoad(args));
         acted = true;
     }

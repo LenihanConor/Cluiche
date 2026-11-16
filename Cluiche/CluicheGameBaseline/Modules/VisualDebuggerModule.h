@@ -80,7 +80,17 @@ public:
     // Perf latency probes: the owner (Main-side panel code) keeps the matcher and calls OnSnapshot with each
     // DomainStateSnapshot.simFrame. Optional; null = "_lat" is still stripped but nothing is stamped.
     // Set before the module starts (not synchronised).
+    // By default the module uses its own probe+matcher (see below); this overrides it.
     void SetLatencyMatcher(Dia::Observation::Perf::LatencyVisibleMatcher* matcher) { mLatencyMatcher = matcher; }
+
+#ifdef _DEBUG
+    // Sim-hosted "perf.latency {action?}": per-action {count,p50Ms,p95Ms,minMs,maxMs} plus probe counters.
+    // Action key is "<domain>.<cmd>" of a debug.panel_command. Probes run Sim-receive -> applied -> first published
+    // DomainStateSnapshot (the Sim-side "visible" point; the Main read and the websocket hop are NOT included).
+    Json::Value HandleLatencyQuery(const Json::Value& args);
+    static constexpr const char* kLatencyQueryName = "perf.latency";
+    Dia::Observation::Perf::LatencyProbe& GetLatencyProbe() { return mLatencyProbe; }
+#endif
 
     void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
     void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
@@ -94,6 +104,8 @@ protected:
     // Drain pending panel commands (enqueued from Render PU / debug.panel_command). Protected so tests can drive it.
     void DrainPendingCommands();
     static constexpr int kCommandQueueCapacity = 32;
+    // Probes only start while snapshots are being published, otherwise they could never become visible.
+    virtual bool IsSnapshotArmed() const { return mSnapshotPublisher && mSnapshotPublisher->IsArmed(); }
 
 private:
     struct PendingCommand
@@ -158,7 +170,18 @@ private:
     Dia::ApplicationFlow::ModuleRef<SimQueryHostModule> mSimQueryHost{this};
     bool mPanelCommandRegistered = false;
     bool mPanelCommandAttempted = false;
-    Dia::Observation::Perf::LatencyVisibleMatcher* mLatencyMatcher = nullptr;
+    Dia::Observation::Perf::LatencyProbe mLatencyProbe;
+    Dia::Observation::Perf::LatencyVisibleMatcher mOwnedLatencyMatcher{mLatencyProbe};
+    Dia::Observation::Perf::LatencyVisibleMatcher* mLatencyMatcher = &mOwnedLatencyMatcher;
+#ifdef _DEBUG
+    // Sim thread only (HandlePanelCommand and HandleLatencyQuery both run there).
+    struct LatencyActionName { uint32_t crc = 0; char name[64] = {}; };
+    static constexpr unsigned kMaxLatencyActions = Dia::Observation::Perf::LatencyProbe::kMaxActions;
+    LatencyActionName mLatencyActions[kMaxLatencyActions];
+    unsigned mLatencyActionCount = 0;
+    Dia::Core::StringCRC RememberLatencyAction(const std::string& name);
+    bool mLatencyQueryRegistered = false;
+#endif
     uint64_t mCurrentTick = 0;
 
     std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
