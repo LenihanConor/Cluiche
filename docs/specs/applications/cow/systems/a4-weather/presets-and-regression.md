@@ -191,7 +191,8 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 2. **"Mean precipitation" in the regression ratios** is the mean over every cell in the set and over **every week of the scenario** (for the 52-week coastal test, all 52 weeks; for the 13-week shadow test, all 13).
 3. **Golden file ownership.** This feature owns `weather_layers.golden.json`; Feature 2's entries use the `pipeline/` prefix (see Feature 2's amendment 6). The goldens are recorded at `MakeCoastRange(66, 42)`; "at Small" in the system spec means that size.
 4. **Wind-override timers** follow Feature 2's amendment 1: `weeks` of 0 is until cleared; `coastal_storm` (6 weeks) and `drought` (8 weeks) wind overrides therefore expire, and criterion 14 holds.
-5. `ClearForcings()` is Feature 2's API (its amendment 3); this feature calls it in `ApplyPreset` step 2.
+5. **`ClearForcings()` is added by this feature** to `WeatherSimulation` (Feature 2's class), as Feature 2's amendment 3 says; it is not part of Feature 2's own delivery. `ApplyPreset` step 2 calls it. The earlier wording "Feature 2's API" is superseded.
+6. **The `direction` zero-vector check (item 1) is made in `ApplyPreset`'s validate-first step**, not at preset load, because the gradient needs the terrain. A preset with an unresolvable direction returns `ok = false` and changes nothing.
 
 ## Status
 

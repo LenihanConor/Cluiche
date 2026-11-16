@@ -210,6 +210,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 3. **Hosting stage.** The manifest sample is S-2.5's. Every hosting stage (S-2.5, S-3, S-3.5) declares its own `WeatherModule` instance after its own `WorldStepModule`.
 4. **Season at the end of spin-up.** Spin-up runs `spinup_weeks` from calendar offset 0 (Spring). With 52 weeks it ends at the end of Winter, one step before Spring. The first live step takes its season from its step day and may differ from the season spin-up ended in (a world loaded mid-year). That is accepted: spin-up exists to settle winds, moisture and temperature, and temperature relaxes toward its seasonal target within the first weeks (heat capacity). No correction is made.
 5. **Season arithmetic** uses the real `kDaysPerSeason` and `kDaysPerWeek` constants from `GameSpeedController.h`, never a literal 91 or 7.
+6. **`WeatherSimulation::ClearWindOverrides()`** (remove every wind override, keep other forcings) is added by **this feature** alongside `QueueClearWindOverrides`; Feature 5's `wind clear` uses it through the queue.
 
 ## Status
 
