@@ -214,6 +214,18 @@ Pure parts first and heavily (command-line grammar, the validator rule table, th
 3. **Conditional required arguments.** A4's consolidated commands push "required when action is X" into the handler, so the T-2 editor and the validator cannot flag a missing `cell` while a scenario is being written. A `requiredWhen` field in the DiaValueSchema command catalogue would fix it for every consolidated command in the project; it is a Dia-side change and is not assumed here.
 4. **Fourteen scenarios is a content task, not just code.** Each needs a `watch` text and a two-to-four step walkthrough. The plan should treat authoring them as its own task with your review, since the wording is what a person reads.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **`needsComparison`.** Feature 2's `CheckRequirements.needsComparison` is what marks a check headless-only; the earlier `headlessOnly` name in this spec means that flag. A live context has no comparison trace, so those checks show `HeadlessOnly`.
+2. **Mockup path** is `s25-weatherpatterns/mockups/s25-card.html` (Feature 1's amendment 1); this feature's Task 1 depends on Feature 1's Task 1 having created it.
+3. **Overlay restore (criterion 14).** Leaving a scenario restores the **stage defaults** recorded in the stage config (base layer `weather.precipitation`, wind overlay off), not an earlier state, because no overlay-query command exists. If DiaCellLayers has one, plan Task 0 uses it and this item is dropped.
+4. **Line numbers.** `LoadScenarioFolder` builds a `JsonLineMap` (token offset to line) while parsing and passes it to the validator as an optional `ILineMap`; with none, findings carry the JSON path only.
+5. **`IWorldIds`.** The production implementation (`StageWorldIds`) lists the stage's `s25_worlds.json` ids, S-1's preset names and the `.wld.json` files S-1 can load. S-3 supplies its own.
+6. **`RegisterAll` and check lifetime** follow Feature 2's amendment 6.
+7. **Live value of headless-only scenarios.** `s25_t8_boundary` and `s25_t9_determinism` are mostly `HeadlessOnly` live; their `watch` text says so and names `cow.s25.run`. They exist for the walkthrough text, the setup lines and agreement with the plan runs.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [scenarios-and-walkthrough.plan.md](scenarios-and-walkthrough.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the panel mockup.**

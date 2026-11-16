@@ -201,6 +201,16 @@ GoogleTests with hand-built terrain, a fake `WorldStepModule` that records regis
 2. **Promotion inside `Capture` means a late spin-up is waited on.** If the spin-up is still running at the next due week, `IsReady()` is false and the week is simply not kicked (the coordinator waits). At 52 weeks and ~10 ms CPU that is well under a game week at every speed preset, but at the Slowest preset with a 2-worker cap it is an unmeasured assumption. Feature 5's `profile` and the first S-2.5 run should report spin-up wall time.
 3. **Should the module own its `WeatherSimulation` by value instead of two pointers?** Two heap instances (active and pending) allocate ~0.5 MB at Large per regeneration and are destroyed in `Capture`. A swap of two members is allocation-free but forces the pending sim to be built in place while the active one is still stepping. Pointer ownership chosen for clarity; revisit if the allocation shows in the Large perf profile.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Mutation queue entry types.** The queue's tagged entries are: `SetParam`, `ParamOverrides`, `Forcing`, `RegionForcing`, `BiomeChange`, `Preset`, `Reload`, plus **`StateReplace`** (a decoded weather-state record from `state import`, applied at `Capture` like a preset: reseed then restore) and **`ClearWindOverrides`** (removes every wind override). New API: `QueueStateReplace(const WeatherStateRecord&)` and `QueueClearWindOverrides()`. `QueueRegionForcing` is part of this feature's API (it is not a later amendment).
+2. **Spin-up completion.** The job writes its result into a SimPU-owned slot (`SpinUpSlot`: an atomic state `Idle/Running/Done/Cancelled`, the revision, and the simulation pointer). `WeatherModule::DoUpdate` polls the slot each update; on `Done` with the target revision it sets `mPending`. No bus message, no callback onto SimPU.
+3. **Hosting stage.** The manifest sample is S-2.5's. Every hosting stage (S-2.5, S-3, S-3.5) declares its own `WeatherModule` instance after its own `WorldStepModule`.
+4. **Season at the end of spin-up.** Spin-up runs `spinup_weeks` from calendar offset 0 (Spring). With 52 weeks it ends at the end of Winter, one step before Spring. The first live step takes its season from its step day and may differ from the season spin-up ended in (a world loaded mid-year). That is accepted: spin-up exists to settle winds, moisture and temperature, and temperature relaxes toward its seasonal target within the first weeks (heat capacity). No correction is made.
+5. **Season arithmetic** uses the real `kDaysPerSeason` and `kDaysPerWeek` constants from `GameSpeedController.h`, never a literal 91 or 7.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).

@@ -208,6 +208,18 @@ Layered so most of it needs no real A4 run: scripted check sets for the verdict 
 3. **Exclusive perf runs.** Running P1 and P2 last and alone keeps timings clean but means a cancelled or failed earlier run never produces perf numbers. Acceptable for report-only perf; revisit if perf becomes a gate.
 4. **Report size.** Each check's `detail` is a short string, and full traces are not written. If a failing check needs the underlying weekly series to debug, a `--keep-trace` option writing a `dia.cell_history` export is the natural addition; not specified now.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Verdict rule row `Pass`** reads: every Hard check is `Pass` and none is `InvalidWorld` or `Pending`. A Default check with no baseline entry is judged against the GDD default; unrecorded entries are listed under `baseline.unrecorded[]` and do not prevent `Pass`. The `SLOW_` test treats `Pass` and `MagnitudeMisses` (as warnings) as green.
+2. **Cross-feature command registration.** `S25WeatherModule` owns one `S25CommandRegistrar` that collects every `cow.s25.*` name (Feature 1's two and this feature's four) and rolls all of them back if any registration fails. Feature 4's three `cow.scenario.*` names belong to `ScenarioModule` and roll back separately.
+3. **Test executors.** A4 Feature 2's test-local reverse-order and fixed-range executors are reused; DiaDeferredStep's `Testing/` equivalents are used instead when they exist (consuming a Dia test helper is not a Dia edit).
+4. **Where the CPU report goes (criterion 26 of Feature 1 and this feature's performance block):** the report's `performance` section and the `INFO` log; `cow.s25.status` shows the last reported values.
+5. **P2 (Large)** runs no prechecks and no checks (performance only).
+6. **Command names** are this feature's: `cow.s25.run` (`start`/`cancel`), `cow.s25.report`, `cow.s25.baseline` (`record`), `cow.s25.livesmoke`. The system spec's `cow.s25.run.cancel` and `cow.s25.baseline.record` are superseded.
+7. **Readiness after a size change** uses `WeatherModule::IsReady(revision)` for the new revision (A4 Feature 3).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [headless-runner.plan.md](headless-runner.plan.md) (written 2026-11-16, not started).

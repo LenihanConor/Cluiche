@@ -186,6 +186,15 @@ Pure parts first and heavily (overlay plan, command parsing and validation, dete
 3. **How does the card get SimPU values?** The system spec says "the way other domains do" but the existing precedent (`debug.domain_state`) is the known cross-PU debt in memory. The stats-struct-through-streams route is assumed; the first plan task should confirm which stream the debug panel actually reads and use it rather than the mutex precedent.
 4. **Does `find` belong in A4 at all long-term?** `rain_shadow` and `storms` are weather-specific and fine here, but `droughts` is mostly a history query. If T-1 grows a generic history-query surface, `droughts` should move there and drop to 6 names.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Dependencies.** This feature also depends on Feature 4's codec (`EncodeState`/`DecodeState`, the `cow.weather_state` envelope defined in Feature 4's amendment 2) for `state export`/`import`.
+2. **Queue.** `QueueRegionForcing` already exists in Feature 3; this feature adds nothing to it. The two entries this feature needs, `StateReplace` and `ClearWindOverrides`, are in Feature 3's amendment 1.
+3. **`info profile`** returns Feature 2's 13 pass entries (1, 2, 3, 4, 5a, 5b, 6a, 6b, 7, 8, 9, 10, finish: `WeatherStepProfile::kPassCount`).
+4. **Drought at commit.** `DroughtDetector` at `Commit` cannot see the week being committed in DiaCellHistory (the driver samples afterwards). The history adapter therefore appends the **just-committed** `precipitation` as the newest week before evaluating; the same adapter is used by `find droughts`, which reads only committed, sampled weeks.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started).

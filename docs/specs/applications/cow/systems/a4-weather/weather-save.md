@@ -165,6 +165,16 @@ Pure codec tests first (no Dia save machinery), then the participant against a r
 2. **Is a parameter-hash warning enough for S-3.5 R2?** R2 (save/load determinism) loads under whatever tuning the bundle supplies; a deliberate pack change between save and load will warn, but R2's bit-identity claim holds only under matching tuning. If S-3.5 needs the stronger guarantee, add a `strict` load option that refuses on mismatch. Not built now.
 3. **Should the pending blob be skipped when the committed state is identical to the pending one?** At weekly cadence the pending working set differs from committed on every cell, so there is nothing to skip; mentioned only because the combined record is about 4 MB at Large and a faster cadence would double it.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **`Validate` and `version`.** `version` missing, `0` or greater than 1 fails. `week` is `int64_t` in the record and is range-checked (`>= 0`) in the codec; the codec casts to `uint64_t` only after that check, and passes the unsigned value to `SetCommittedWeek`.
+2. **`cow.weather_state` envelope (also used by Feature 5's `state export`/`import`).** `{"format":"cow.weather_state","version":1, ...}` followed by the **same fields as the save record** (`ready` is always true; `width`, `height`, `cell_count`, `week`, `params_hash`, the nine arrays, `biome`). The codec exposes `EncodeState(sim, out)` and `DecodeState(json, record)` for both the participant and the commands. Import additionally requires matching dimensions against the live world.
+3. **Event-order fallback is the committed design if the first-task spike finds the bad order.** The participant stashes the parsed, validated record and applies it on the **next** `WorldGenerationComplete` after the load (instead of spinning up) provided its dimensions match; a mismatching completion discards the stash with a Warning and spins up. The stash is dropped on `DoStop` and on any later regeneration.
+4. **Participant order.** The weather participant registers in `WeatherModule::DoStart`. The DeferredStep participant attaches on `DeferredStepModule`'s first `DoUpdate` (World Step Feature 3 amendment 5), so it always follows every stage participant regardless of manifest order. Criterion 13 asserts the resulting order.
+5. **`SaveContext` sub-objects for the pending blob** are the coordinator's (`BeginObject("stage_N")` around each stage); this stage writes into the current node.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).

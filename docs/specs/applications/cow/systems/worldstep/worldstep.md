@@ -347,6 +347,16 @@ namespace CoW::WorldStep {
 2. ~~**Is a skipped kick ever acceptable, or always a bug?**~~ **Resolved 2026-11-16 (Feature 2):** a missed week is retried on a following tick with the missed day as the stage key; a second miss is an Error and a lost week. Catch-up is covered by Feature 2 AC 12.
 3. ~~**Who implements `IStepKeySource`?**~~ **Resolved 2026-11-16 (Feature 2):** `WorldStepModule`, reading the day from `SimulationTick`. The same-step ordering hazard is Feature 2 Open Q1 and its first plan task.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Interfaces.** `RegisterStage` returns `bool` (false on a duplicate id or a full table). The `WorldStepChain` block is the one in `step-chain.md` (adds `UnknownStages`, `StageIdAt`, `CapturedKey`, `RestoreRan`, `SetObserver`); `LoadWorldStepConfig` takes a `ConfigError&`.
+2. **Test Strategy lifecycle line.** "A stage unregistering while live ... in-flight step is drained and committed first" is superseded: the step is drained and **abandoned** (no `Commit`, no history signal), matching Lifecycle.
+3. **History signal.** `OnWorldStepApplied({applyKey, stepDay, stageCount})` through `IWorldStepListener` (Feature 3). "Carries the apply key" is superseded.
+4. **Build order.** Feature 1 can start once **DiaDeferredStep Feature 1 Task 1** ships the headers (not "Feature 2").
+5. **Participant order and key-source timing** are resolved by Feature 3's amendment 5 and Feature 2's amendment 1.
+
 ## Status
 
 **Status:** `Approved` (2026-11-13). Interview completed 2026-11-13: module topology, the coordinator's home, band cadence, shared-grid ownership, history sampling and synchronous mode all decided by the user. Arose from the A4 Weather dependency audit (2026-11-13), which found that DiaDeferredStep leaves the `world` channel unowned.

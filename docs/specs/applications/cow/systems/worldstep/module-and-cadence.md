@@ -197,6 +197,20 @@ GoogleTests with a fake `SimulationTick` source, a real `DeferredStepScheduler` 
 2. ~~**What day does the history signal carry for a retried step?**~~ **Resolved 2026-11-16 (Feature 3):** the signal carries both `applyKey` and `stepDay`, and the driver labels by `stepDay`. Original question: The signal carries the **apply key** (system spec). For a retried step the apply key is `retry day + k`, so the history label drifts by the delay and `HistoryDriverModule`'s label arithmetic (S-3.5 Feature 1) must treat the key as "the day this snapshot became visible", not "the game week represented". That is consistent with its stated purpose (match the readable state) but the S-3.5 spec says labels come from the key. Confirm in Feature 3 and S-3.5, or pass `mStepDay` as well.
 3. **Is Degraded the right health for a retired stage?** On stages that deliberately end a layer early (S-3 Controlled drops weather) a retired stage should be silent. The module cannot tell deliberate from accidental. Current rule: Degraded with an Info log. If that proves noisy in S-3.5, make retirement silent and keep Failing for missing only.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **`SetKeySource` timing.** `DeferredStepModule` reads its key source lazily on each `DoUpdate`, so `SetKeySource` may be called **any time before the first `DoUpdate`**; `WorldStepModule` calls it in its own `DoStart` (which runs after `DeferredStepModule`'s `DoStart` and before any `DoUpdate`). The "before `DoStart`" wording here and in DiaDeferredStep Feature 4 is superseded (see that spec's amendment).
+2. **`slack_days`** is `applyKey - firstSeenCompleteDay`, where the module polls `scheduler.GetState(world)` at the start of each tick's cadence step and records the day it first sees `kComplete`. No new scheduler API.
+3. **`KickResult` handling.** `kLaunched` clears any pending week. `kAlreadyInFlight` is the retry case. `kUnknownChannel`: Error log, re-register the channel and treat the week as lost (`lost_weeks`). `kKeyNotMonotonic` and `kApplyBeforeKick`: Error log, assertion in Debug, treat the week as lost.
+4. **Retry and a new due week in the same tick.** Step 6 (retry) runs first. If it launches, the pending slot is empty, so the same tick's new due week then finds the channel in flight, misses, and becomes the new pending week. This is allowed; order is preserved.
+5. **`cow.worldstep.step`.** In **synchronous** mode it runs one inline step regardless of the week gate (there is no in-flight state to refuse). In **deferred** mode it forces one kick and is refused with a reason while a step is in flight, a week is pending, or stages are not ready. The contradictory sentence is superseded.
+6. **Metrics are five:** `step_ms`, `slack_days`, `stalls`, `late_kicks`, `lost_weeks` ("four metrics plus `lost_weeks`" is superseded).
+7. **`GetPendingVersion()`** is implemented by the module and returns the pending record version (`world_version`, 1).
+8. **`DeferredStepModule` is a hard dependency in every configuration** (the live Sync/Deferred switch needs it). "Need not be a dependency in synchronous mode" is superseded.
+9. **Stage failure after a load** (a stage that cannot restore its pending result) is **Degraded**, not Failing. Failing stays reserved for a missing configured stage.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).

@@ -215,6 +215,16 @@ Pure parts first (prechecks, world table loader, status model), then the module 
 2. **Is Small-only the right verdict size for the curated worlds?** At Standard and Large the same preset + seed generates different geography, so the two curated picks are not valid there. The system spec accepts this (one Large headless run for performance only). If you want verdicts at all three sizes, the scout must pick six worlds and the report grows; that is a feature, not a tweak.
 3. **Does the live Sync ↔ Deferred switch earn its complexity?** It adds a CoW-Shared amendment (`SetDeferred`) and its idle-only rule. The alternative, a launch-time choice, would need a second stage entry or a config override. The switch was chosen because the deferred smoke is the main reason to watch weather in S-2.5; revisit if `SetDeferred` proves awkward in World Step.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Mockup path.** `s25-weatherpatterns/mockups/s25-card.html` (a `mockups` folder inside the system's spec folder, as S-3.5 does), not `docs/mockups/`.
+2. **World scout.** Seeds 1..200 per S-1 preset (the preset list is S-1's), a 60 s budget per world, candidates ranked by their smallest precheck margin, the top 5 printed with every precheck value. The `<S-1 preset>` placeholders in `s25_worlds.json` are filled by the user's pick.
+3. **Criterion 19 (13-week retention)** needs `CellHistoryModule` **and** `HistoryDriverModule` (the driver does the sampling); it is gated with the step-back tasks.
+4. **Criterion 26 (CPU report)** goes to the log and `cow.s25.status` (see Feature 3's amendment 4).
+5. **Command registration** uses Feature 3's `S25CommandRegistrar` (Feature 3 amendment 2).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [stage-and-world.plan.md](stage-and-world.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the HTML mockup.**

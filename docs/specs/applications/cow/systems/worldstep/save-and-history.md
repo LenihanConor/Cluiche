@@ -168,6 +168,19 @@ GoogleTests with the real `DeferredStepScheduler` over its test launcher, `Defer
 2. **Is the participant order really a contract?** The DeferredStep participant must deserialize after every stage's own state participant. `SaveRegistry` order follows `Attach` order, which follows module start order, which follows the manifest. That is the same fragility the stage ordering decision rejected for `order`. A cleaner fix is a priority field on `ISaveable`, which is a Dia change and not proposed here; for now the manifest-order rule and the failing test above carry it.
 3. **Should the pending record also save `latestDay`?** The key source is rebuilt from the first `SimulationTick` after a load, so a restored step whose apply key is already `<= latestDay` applies on the first tick. That is correct, but the load-time key is momentarily 0 and `Tick(0)` applies nothing, so the apply is one tick late relative to the uninterrupted run in the degenerate case where a save is loaded exactly on its apply day. If bit-identity is the goal there, save and restore `latestDay` in the same record. Cheap, and it also gives the history driver a correct day on the first frame. Recommended default: yes, add it.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **`latestDay` is saved.** The pending record adds `latest_day` (`int64_t`), restored into `mLatestDay` on load so the key source is correct on the first frame. This is acceptance criteria 21 and 22 below; Open Design Question 3 is resolved (yes).
+   21. A save writes `latest_day`; a load restores it before the first `GetCurrentKey()`.
+   22. A pending step whose apply key is already `<= latest_day` applies on the first tick after the load.
+2. **`Validate` checks the enabled set.** The "stage in `order` with no blob" refusal applies to stages that are **registered and in `order`** at load time (the enabled set). A stage that is configured but not registered then is not required to have a blob (the load proceeds and the restored step is a logged no-op, see the Apply tolerance rule).
+3. **The Dia amendment is signed off.** Acceptance criterion 11 and the "if the amendment is declined" fallback paragraph are **not applicable** and are not planned.
+4. **Stage sub-objects.** The module wraps each stage's data in `ctx.BeginObject("stage_N")` / `EndObject()` before calling `SerializePending`/`DeserializePending`; the stage writes and reads at the current node.
+5. **Participant order is by lazy attach.** `DeferredStepModule` attaches its save participant on its **first `DoUpdate`** (after every module's `DoStart`), so it follows every stage participant whatever the manifest order. This is a DiaDeferredStep Feature 4 amendment (AD-001: a design change to an unbuilt Dia feature, confirmed with the user before that task). Open Design Question 2 is resolved by it.
+6. **A restore failure after Validate** (a stage returns not-ready from `DeserializePending`) is Degraded health (World Step Feature 2 amendment 9).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).

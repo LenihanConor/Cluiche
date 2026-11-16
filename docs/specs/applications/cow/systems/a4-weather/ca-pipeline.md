@@ -317,6 +317,17 @@ No Dia files are added or edited (AD-001). `IParallelExecutor` and `SerialExecut
 2. **Are forcing hook points A–D in the right places?** Pressure after pass 2, wind after pass 3, moisture after pass 4, rain after pass 8 are the earliest points where each held value is visible to every later pass. A `spawn_storm` that holds pressure low *and* moisture high touches two hooks. If Feature 5's scenarios need a storm to *start* in a cell rather than hold it, a one-shot "set value" forcing kind will be needed. It would be cheap to add here.
 3. **Bit-identity is per binary. Do the layer goldens hold across Debug and Release?** Range count and order do not change the instruction sequence per cell, so AC 30/31 hold in every configuration. But `sinf`/`cosf`/`atan2f` and any compiler contraction or vectorisation can differ between Debug and Release, so a golden hash over exact float bits may fail in the other configuration. Task 1 of the plan should check the CoW and DiaCore projects' floating-point settings (bgfx builds `Fast`; the CoW and DiaCore projects were not checked here) and whether `CellLayerGolden::HashLayer` hashes exact bits or quantised values. If exact, the golden is Debug-only or per-config.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Wind-override timers.** A `WindOverride` carries `weeksRemaining`: **0 means until cleared**, any positive value expires after that many weeks (`Commit` decrements it). The earlier "wind overrides carry no timer" line is superseded. `clear` (Feature 5) still removes every wind override at once. Acceptance criterion 36 (forcings expire) therefore covers wind overrides when `weeksRemaining > 0`.
+2. **`WindOverride` field mapping.** `value` is the wind direction in **radians** in [0, 2π), on-screen counter-clockwise, y-down world space (the same convention as `windDirection`); `value2` is the speed in [0, 1]. Callers that take degrees convert before building the record.
+3. **`ClearForcings()`** is part of `WeatherSimulation`'s API (added with Feature 6): it removes every forcing and keeps registered cell sets. `ClearCellSets()` removes the sets **and** every forcing that references one.
+4. **`cloud_decay`** is added to the parameter table by **Feature 1** (its criteria 3 and 4). This feature only reads it. The "adds one constant" wording and the "21st constant" sentence are superseded; the count of 21 stands.
+5. **Criterion 6 (no heap allocation in `Run`).** Mechanism: every scratch array, grid table and the cell-set storage is sized at `Initialise`; the test records each array's data pointer and capacity before and after `Run` and asserts they are unchanged, and a code rule forbids `new`, growing containers and `std::` allocation in the `Run` call tree. No global `operator new` hook is added (an engine concern).
+6. **Goldens.** `Tests/GoogleTests/CoW/Golden/weather_layers.golden.json` is **owned by Feature 6** (hand-built `MakeCoastRange(66, 42)`). This feature's golden entries use the key prefix `pipeline/`, and whichever feature lands first creates the file. Hashes are compared bit for bit, so Debug and Release must agree: the build must use `/fp:precise` with no fast-math in both configurations. Plan Task 0 verifies this and, if the two configurations still differ, stores one hash set per configuration (closes Open Question 3).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16).

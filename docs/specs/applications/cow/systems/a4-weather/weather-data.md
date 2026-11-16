@@ -177,6 +177,16 @@ All GoogleTests, no build of S-1 required. Tests are written first (RED) per the
 2. **Default baseline numbers.** The GDD gives constants but no per-biome seasonal temperatures; the 52 numbers are authored here. They set where the biomes sit relative to `snow_threshold` (0.3) and `condensation_temp` (0.4), so they steer Feature 6's seasonal-storm and snow-line ratios. If those regress, tune this table before touching GDD constants.
 3. **`SetParam` and the cross-field rule.** Raising `snow_threshold` above the current `melt_threshold` is rejected even though the author might intend to raise both. The alternative is a batch `SetParams` call, which Feature 5's command could use. Defer until Feature 5.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **`cloud_decay` is owned here.** The descriptor table (criteria 3 and 4) already holds it; it is the 21st constant (`solar.cloud_decay`, default 0.5, range [0, 1]). Feature 2 *uses* it and no longer "adds" it.
+2. **Parameter kinds and the three extension rows.** `ParamDescriptor` gains `ParamKind kind` (`Float` or `Bool`). `init.initial_moisture_water` (default **0.8**) and `init.initial_moisture_land` (default **0.3**) are `Float`, range [0, 1]; `boundary.edge_inflow` is `Bool` (default **1**), stored as a `float` member that must be exactly 0 or 1 (any other value is invalid; a `true`/`false` JSON literal is also accepted and converted). The two initial-moisture defaults are starting values that Feature 6's regression tests may tune (tuning log). The "GDD range column" rule applies to the 20 GDD constants; these rows carry the ranges stated here.
+3. **Land biomes (criterion 10).** "Land" means every biome except `Ocean` and `Lake`: the 11 others, including the three succession outputs. No exemptions: every one must be warmer in Summer than in Winter.
+4. **Types.** Error text uses `Dia::Core::Containers::String256` and dotted keys `String64`; `GetParamDescriptors()` returns a `(const ParamDescriptor*, uint32_t count)` pair, not a span. Plan Task 0 confirms these exist under those names and records any rename.
+5. **Seeding is one function.** `WeatherSimulation` holds a private `SeedFields(Season, params, baseline)`. `Initialise` calls it with `Season::Spring`; Feature 6's `Reseed` calls it with the preset's season. No other behaviour changes.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).

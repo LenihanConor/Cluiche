@@ -570,6 +570,15 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
 2. ~~**How much does the wind overlay decimate, and is per-cell wind worth it?**~~ **Resolved 2026-11-16 (Feature 5): adaptive 4 × 4 block plan.** Original question: One arrow per cell at Large is ~20k debug-draw primitives per frame against a budget that was raised to 8,192 geometry entries. Every Nth cell is the cheap answer, but a coarse flow-field style overlay (one arrow per 3×3 block, averaged) may read better and cost less. Affects Feature 5 only; decide against the mockup.
 3. **The sim-hosted name cap must be raised before S-3.5 is wired** (measured 2026-11-13; not an A4 blocker). The cap is per-stage in practice, so today's worst stage is 45/64 (CluicheTest CellLayersViewer) and CoW's S-1 stage is 38/64. But S-3.5's **built** components alone are 58/64, so it crosses 64 with just its own 10 names — before A4's 16, A1's ≥9, A3's 6 or F-3's ≥11 exist. Projected total **≥99**, over by ≥35. Release is not safe either (~59/64 if the new modules follow S-1's unguarded pattern). Recommended fix: raise all three tables 64 → 192 (there is precedent — commit `6b3a7f80` did 32 → 64; the SimPU table is a `std::vector` so costs nothing, and only `DebugServer::mSimHelp` has real cost at ~7 KB/slot, 450 KB → 1.35 MB Debug heap), plus raise the `SimQueryReply` stream capacity from 48. Needs AD-001 sign-off. Owned by S-3.5, not A4.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. The Features table's Feature 1 description reads "13-biome enum" (the shared `Biome` list was widened from 10 to 13); the "10-biome enum" wording is superseded.
+2. The parameter count is **21** (the 20 GDD constants plus `solar.cloud_decay`, owned by Feature 1).
+3. The sim-hosted name cap is 192 per PU in code (`SimQueryHost::kMaxHandlers`); the earlier 64 is stale.
+4. `WeatherRunner::Start` takes a `startWeekOffset` (S-2.5 Feature 3); `WeatherSimulation` gains `SetCommittedWeek`, `ClearForcings`, `Reseed`, `RegisterCellSet`/`ClearCellSets` (Features 2, 3, 6).
+
 ## Status
 
 **Status:** `Approved` (2026-10-14). **Revised 2026-11-13** by a dependency audit: the execution model moved to DiaDeferredStep, three "not built" dependencies turned out to be built, duplicated engine surfaces were removed, and the biome type, command hosting and history ownership were corrected. **Revision re-approved 2026-11-16** (user, during the Feature 2 interview).

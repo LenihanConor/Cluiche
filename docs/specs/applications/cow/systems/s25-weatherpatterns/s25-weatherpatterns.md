@@ -293,6 +293,15 @@ For the GDD session (`cow-29`) to fold back into `S2.5_WeatherPatterns.md`:
 
 None at system level. Feature-level questions go in each feature spec.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. Command names are Feature 3's (`cow.s25.run` with an `action`, `cow.s25.baseline`); the dotted forms `cow.s25.run.cancel` and `cow.s25.baseline.record` are superseded.
+2. `CheckResult.measured` and `threshold` are `double`, and the result has a `state` and `reopenSection` (Feature 2).
+3. Mockups live in `s25-weatherpatterns/mockups/`.
+4. The check-engine inputs, `WorldInfo` and the headless-only flag are defined in Feature 2's amendments.
+
 ## Status
 
 **Status:** `Approved` (2026-10-18). Interview done the same day (check runner, test worlds, Test 7 risk, shared scenarios, 52-week budget, baseline tolerance, graphs). Sibling amendments applied to A4 and S-3; GDD deviations sent to the GDD session (`cow-29`). No open system-level questions. No plan yet; create `s25-weatherpatterns.plan.md` when implementation starts (Feature 2 first, once A4 Feature 1 exists).

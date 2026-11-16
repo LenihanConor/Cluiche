@@ -198,6 +198,18 @@ Pure GoogleTests only, no engine, no A4 run: scripted traces over hand-built hex
 3. **One Large world at all?** All checks are defined on Small bands. The Large headless run in the system spec is performance only; if you want checks at Large the band thresholds (≥ 8 from ocean) need scaling rules, which are not defined here.
 4. **Per-test check ids are many (about 34).** Each is its own baseline entry, report line and check line. If that is too noisy live, Feature 4 can group them under the nine tests in the panel without changing the ids.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Evaluate takes inputs, not one trace.** `Evaluate(const CheckInputs&)` with `CheckInputs { const IWeatherTrace& primary; const IWeatherTrace* comparison; const WorldInfo& world; }`. `comparison` is the second run for `t2.shadow_repeatable`, `t8.*` (the other edge setting) and `t9.determinism`. `CheckRequirements` is `{ layers, minWeeks, firstWeek, needsComparison }`; with `needsComparison` true and a null `comparison` the check returns `Pending`, and a **live** context reports it as `HeadlessOnly` (Feature 4).
+2. **`WorldInfo`:** `{ StringCRC world; WorldSize size; const WeatherTerrain* terrain; uint32_t stormReleaseWeek; uint32_t stormSpawnCell; uint32_t holdWeeks; }`. The storm fields are used by Test 3 only and are 0 elsewhere.
+3. **Test 2 crest definition.** A **crest cell** is a land cell with elevation >= 0.6 whose elevation is >= both its prevailing-upwind and its downwind neighbour's and strictly greater than at least one of them (a local maximum along the wind line). The earlier wording ("lower than the prevailing-upwind neighbour's") is superseded.
+4. **`minWeeks`.** `t4.melt_crossing` uses weeks 1..13 (the first Spring after spin-up, minWeeks 13). `t5.*` use minWeeks 65 and firstWeek 40. Test 4's other checks use 52.
+5. **First run and `Pass`.** A Default check with no baseline entry is judged against the GDD default and is `Pass` if met. `Pass` does **not** require a recorded baseline; the report lists unrecorded Default checks as informational (`baseline.unrecorded[]`).
+6. **`RegisterAll(CheckRegistry&)`.** The check objects are function-local statics owned by `S25WeatherChecks`; the registry stores non-owning pointers valid for the process lifetime.
+7. **`measured` and `threshold` are `double`** (the system spec's `float` is superseded).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-checks.plan.md](weather-checks.plan.md) (written 2026-11-16, not started).

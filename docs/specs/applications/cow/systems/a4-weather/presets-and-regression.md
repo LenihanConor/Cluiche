@@ -183,6 +183,16 @@ TDD per the project rule: loader, selectors and distance first (no simulation), 
 2. **Is `cloud_decay` = 0.5 enough of a lever?** It is Feature 2's open question and this feature is where it is answered. If rain shadow fails by a wide margin, the cause is more likely the orographic pass than cloud decay, which would be a mechanic flag to the GDD owner and not a tuning change.
 3. **How is "toward land" / "away from the coast" expressed in a world-independent preset?** An angle in degrees is terrain-specific. `coastal_storm` and `drought` need a direction derived from the terrain (for example, the gradient of `distanceToWater`). The cleanest option is a `direction` of `"towardLand"` / `"awayFromWater"`, resolved once per cell set to the mean gradient direction snapped to a wind angle. Absolute angles stay available for `rain_shadow`. Decide when writing the plan; the fixture's geometry (ocean on the west) means a fixed 0° would work for tests but break on `s25_coast_range`.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Direction expression (closes Open Question 3).** A preset `WindOverride` takes either an absolute `angleDegrees` or a `direction` of `"inland"` or `"seaward"`. `"inland"` is the on-screen direction of increasing distance from water: at each selector cell the gradient vector is the sum over its six neighbours of `unitVector(d) * (distance(n) - distance(c))`, the vectors are summed over the selector's cells and snapped with `SnapWindDirection`. `"seaward"` is its opposite. A zero vector makes the preset invalid ("no inland direction") at load. `coastal_storm` uses `"inland"`; `drought` uses `"inland"` (away from the coast and from water is the same direction).
+2. **"Mean precipitation" in the regression ratios** is the mean over every cell in the set and over **every week of the scenario** (for the 52-week coastal test, all 52 weeks; for the 13-week shadow test, all 13).
+3. **Golden file ownership.** This feature owns `weather_layers.golden.json`; Feature 2's entries use the `pipeline/` prefix (see Feature 2's amendment 6). The goldens are recorded at `MakeCoastRange(66, 42)`; "at Small" in the system spec means that size.
+4. **Wind-override timers** follow Feature 2's amendment 1: `weeks` of 0 is until cleared; `coastal_storm` (6 weeks) and `drought` (8 weeks) wind overrides therefore expire, and criterion 14 holds.
+5. `ClearForcings()` is Feature 2's API (its amendment 3); this feature calls it in `ApplyPreset` step 2.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.

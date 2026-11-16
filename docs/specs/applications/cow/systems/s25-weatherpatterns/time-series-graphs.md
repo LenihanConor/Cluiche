@@ -109,6 +109,16 @@ Live aggregates over a real A4 module on hand-built terrain with a real `CellHis
 3. **Region groups depend on S-1.** If S-1's region layer is not a grouping layer, only the `world` curve exists. That is a one-line S-1 schema change, but it is an edit to a built system and would need your say.
 4. **Standalone recorder.** The headless export assumes `CellHistoryRecorder` runs outside a module. If it does not, the headless exports are dropped (criterion 11) and a failing check is debugged from the report's numbers and a live re-run.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Writer fill path.** `TraceHistoryWriter` builds a private `CellLayerRegistry` holding real `CellField`s (one per weather layer, sized from the terrain, with the same schema keys as live) and a `CellGridDesc` from the terrain dimensions; per trace week it copies the trace values into the fields and calls the recorder's `Sample`. It uses no module and no bus.
+2. **Group cap.** DiaCellHistory allows up to 127 non-world groups; S-1's `kMaxRegions` is 64. The budget estimate uses 64 and the test uses the real group count.
+3. **Aggregate arithmetic (criterion 2).** The expected value is the mean accumulated in `double` in ascending cell order and rounded to `float32`. Plan Task 1 confirms the recorder's own arithmetic; if it accumulates in `float`, the criterion compares within one float32 ULP and records that.
+4. **Criterion 10.** R1 and R2 aggregates are identical; R3's aggregates **differ from R1's** in at least `weather.moisture` (the layer the edge toggle acts on directly). Which other layers differ is not asserted (downstream effects).
+5. **Mockup path** is Feature 1's amendment 1.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [time-series-graphs.plan.md](time-series-graphs.plan.md) (written 2026-11-16, not started).

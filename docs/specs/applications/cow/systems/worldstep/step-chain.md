@@ -183,6 +183,16 @@ GoogleTests only, no engine or SimPU needed. TDD in the order: config load, regi
 2. **Should the chain, not the module, own the `Idle`-only restriction on `Configure`?** It does here, because a mid-step reconfigure would change which stages `Commit` walks. The module may prefer to refuse reconfiguration earlier and louder (an Error log); decide in Feature 2 whether the chain's silent `false` is enough.
 3. **Does criterion 14's "no stage called" hold for a half-built chain?** `Capture` walks stages in order; if stage 2's `Capture` could fail, stage 1 would already have captured. Stages cannot fail `Capture` today (void), so it holds, but it is a reason to keep `Capture` infallible in the contract.
 
+## Gap-pass amendments (2026-11-16)
+
+Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
+
+1. **Types.** `StageIdList` is `DynamicArrayC<StageId, kMaxStages>` with `StageId { StringCRC crc; String32 name; }` (the name is kept for logs and errors). `ConfigError { String32 key; String64 reason; }`. A hash collision between two names is detected on `crc`.
+2. **Optional observer.** The chain accepts an optional `IChainObserver*` (`SetObserver`), called as `OnStageBegin(index, phase)` / `OnStageEnd(index, phase)` around each stage's `Capture`/`Run`/`Commit`. It lets the module add per-stage profiling scopes without the chain depending on DiaObservation. Null by default.
+3. **Criterion 20 (no allocation).** The test records the enabled table's pointer and capacity and the internal arrays' capacity before and after a full `Capture`/`Run`/`Commit` and asserts they are unchanged; no global allocation hook is used.
+4. **Criterion 14 and the re-entrancy guard.** Calling a chain method from inside a stage method is a programming error: a debug assertion in Debug builds and a no-op returning false in Release. The test covers the **Release path only** (compiled out of Debug builds).
+5. **Ordering of criteria.** Criterion 27 (Restore) sits after 26 (Failure); ids are stable and are not renumbered.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).
