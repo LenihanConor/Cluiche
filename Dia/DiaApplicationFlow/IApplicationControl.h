@@ -14,7 +14,7 @@
 #include <functional>
 
 namespace Json { class Value; }
-namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
+namespace Dia { namespace Observation { namespace Profile { class TripReporter; struct TripConfig; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -62,6 +62,10 @@ namespace Dia { namespace ApplicationFlow {
         // Perf Inspector A3c: hand every ProcessingUnit the over-budget trip reporter (plain pointer,
         // not owned; nullptr detaches). Called by the module that owns the observation session.
         virtual void SetTripReporter(Dia::Observation::Profile::TripReporter* /*reporter*/) {}
+
+        // Perf Inspector A4a: apply trip detection config to all ProcessingUnits.
+        // Call before any unit starts ticking (typically from ObservationModule::DoStart).
+        virtual void SetTripConfig(const Dia::Observation::Profile::TripConfig& /*config*/) {}
     };
 
 }} // namespace Dia::ApplicationFlow

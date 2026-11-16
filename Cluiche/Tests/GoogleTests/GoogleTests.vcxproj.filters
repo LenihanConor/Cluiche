@@ -2958,5 +2958,8 @@
     <ClCompile Include="DiaObservation\Profile\TestTripRecord.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation/Config/TestObservationPerfConfig.cpp">
+      <Filter>DiaObservation\Config</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

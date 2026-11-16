@@ -1272,6 +1272,7 @@
     <ClCompile Include="ApplicationFlow\TestProcessingUnitTiming.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestTripDetector.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestTripRecord.cpp" />
+    <ClCompile Include="DiaObservation/Config/TestObservationPerfConfig.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

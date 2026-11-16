@@ -703,6 +703,12 @@ namespace Dia { namespace ApplicationFlow {
             mProcessingUnits[p]->SetTripReporter(reporter);
     }
 
+    void Application::SetTripConfig(const Dia::Observation::Profile::TripConfig& config)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetTripConfig(config);
+    }
+
     //--------------------------------------------------------------------------
     bool Application::BuildFromManifest()
     {

@@ -40,6 +40,9 @@ namespace Dia
 			const char* kTraceCategoriesPrefix = "--trace-categories=";
 			const size_t kTraceCategoriesPrefixLen = 19; // strlen("--trace-categories=")
 
+			const char* kPerfFlag = "--perf";
+			const size_t kPerfFlagLen = 6; // strlen("--perf")
+
 			for (int i = 1; i < argc; ++i)
 			{
 				if (argv[i] == nullptr)
@@ -173,6 +176,56 @@ namespace Dia
 					config.traceEnabled      = true;
 					config.traceCategoryMask = mask;
 					continue;
+				}
+
+				// --perf or --perf=<seconds>
+				// Shorthand for: enable profile with ApplicationFlow category + enable trips
+				if (strncmp(argv[i], kPerfFlag, kPerfFlagLen) == 0)
+				{
+					const char* afterFlag = argv[i] + kPerfFlagLen;
+
+					// Check if it's --perf (no value) or --perf=<seconds>
+					if (*afterFlag == '\0')
+					{
+						// Bare --perf: enable profiling with diaapplicationflow category and trips
+						config.profileEnabled = true;
+						config.profileCategoryMask |= (1u << 0); // diaapplicationflow
+						// Trips are configured via the perf config block (defaults apply)
+						continue;
+					}
+					else if (*afterFlag == '=')
+					{
+						// --perf=<seconds>
+						const char* secondsStr = afterFlag + 1;
+						if (secondsStr[0] != '\0')
+						{
+							// Parse the integer part
+							uint32_t seconds = 0;
+							const char* p = secondsStr;
+							while (*p >= '0' && *p <= '9')
+							{
+								seconds = seconds * 10 + static_cast<uint32_t>(*p - '0');
+								++p;
+							}
+
+							// Check for trailing junk — if there's anything after digits, it's invalid
+							if (*p == '\0' && p > secondsStr)
+							{
+								config.profileEnabled = true;
+								config.profileCategoryMask |= (1u << 0); // diaapplicationflow
+								config.perfConfig.perfExitSeconds = seconds;
+								continue;
+							}
+							else if (*p != '\0')
+							{
+								// Invalid (non-digit character or empty): silently ignore
+								continue;
+							}
+						}
+						// else empty string after '=', silently ignore
+						continue;
+					}
+					// else doesn't match --perf or --perf=, keep parsing
 				}
 
 				// Unknown --log-* flags are silently ignored

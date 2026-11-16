@@ -91,6 +91,20 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
     if (GetApplication() != nullptr)
         GetApplication()->SetTripReporter(mSessionManager.GetTripReporter());
 
+    // Perf Inspector A4a: apply trip detection config to all PUs
+    if (GetApplication() != nullptr)
+    {
+        // Convert ObservationConfig::PerfConfig to Dia::Observation::Profile::TripConfig
+        Dia::Observation::Profile::TripConfig tripConfig;
+        tripConfig.tripFrames    = obsConfig.perfConfig.tripFrames;
+        tripConfig.tripFactor    = obsConfig.perfConfig.tripFactor;
+        tripConfig.rearmFrames   = obsConfig.perfConfig.rearmFrames;
+        tripConfig.minIntervalMs = static_cast<double>(obsConfig.perfConfig.minIntervalMs);
+        tripConfig.budgetScale   = obsConfig.perfConfig.budgetScale;
+
+        GetApplication()->SetTripConfig(tripConfig);
+    }
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
