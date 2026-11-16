@@ -11,6 +11,7 @@
 #include <DiaObservation/Config/ObservationConfigLoader.h>
 #include <DiaObservation/Profile/PerfSummary.h>
 
+#include <chrono>
 #include <cstring>
 #include <cstdio>
 
@@ -18,6 +19,14 @@
 #include <windows.h>
 
 namespace Dia { namespace ApplicationFlow {
+
+namespace {
+    int64_t NowNs()
+    {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+    }
+}
 
 ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId,
                                      const char* appName,
@@ -79,6 +88,11 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
 
     ApplyConfigOverrides(obsConfig);
     mPerfEnabled = obsConfig.perfConfig.perfEnabled;
+    if (mPerfEnabled && obsConfig.perfConfig.perfExitSeconds > 0)
+    {
+        mPerfExitTimer.Arm(obsConfig.perfConfig.perfExitSeconds, NowNs());
+        DIA_LOG_INFO("Application", "ObservationModule: --perf exit armed for %u s", static_cast<unsigned>(obsConfig.perfConfig.perfExitSeconds));
+    }
 
     if (!mSessionManager.Start(config, obsConfig))
     {
@@ -114,6 +128,12 @@ void ObservationModule::DoUpdate(float dt)
 {
     mSessionManager.Tick(dt);
     mSessionManager.IncrementFrameCount();
+
+    if (mPerfExitTimer.ShouldExit(NowNs()) && GetApplication() != nullptr)
+    {
+        DIA_LOG_INFO("Application", "ObservationModule: --perf duration elapsed, requesting shutdown");
+        GetApplication()->RequestShutdown();
+    }
 }
 
 Dia::ApplicationFlow::StopResult ObservationModule::DoStop()

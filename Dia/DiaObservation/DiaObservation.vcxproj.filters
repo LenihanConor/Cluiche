@@ -322,5 +322,8 @@
     <ClInclude Include="Profile\PerfSummary.h">
       <Filter>Profile</Filter>
     </ClInclude>
+    <ClInclude Include="Profile\PerfExitTimer.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

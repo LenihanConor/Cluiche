@@ -26,6 +26,21 @@ def supports_automation(target: str) -> bool:
     return target in AUTOMATION_TARGETS
 
 
+def perf_args(perf: str | None) -> list[str]:
+    """Translate the --perf option value into game args: None -> [], "" -> ["--perf"], "30" -> ["--perf=30"]."""
+    if perf is None:
+        return []
+    if perf == "":
+        return ["--perf"]
+    if not perf.isdigit() or int(perf) <= 0:
+        raise click.BadParameter(f"--perf expects a positive whole number of seconds, got '{perf}'")
+    return [f"--perf={int(perf)}"]
+
+
+PERF_OPTION_HELP = ("Forward --perf to the game (profiling + perf-summary.json). "
+                    "Use --perf=SECONDS to also exit the app after that many seconds.")
+
+
 def _terminate_tree(proc: "subprocess.Popen") -> None:
     """Terminate `proc` and every descendant (taskkill /T on Windows, process-group kill elsewhere)."""
     import os
@@ -60,8 +75,10 @@ def _terminate_tree(proc: "subprocess.Popen") -> None:
               help="For cluichetest: enable timed auto-exit after each stage resolves (used by E2E runner).")
 @click.option("--source", "source", default=None, metavar="PATH",
               help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
+@click.option("--perf", "perf", is_flag=False, flag_value="", default=None, metavar="[SECONDS]",
+              help=PERF_OPTION_HELP)
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source, perf):
     """Launch an already-built target executable.
 
     TARGET is any launchable target in pipeline.toml (one with `exe` or `app_name`).
@@ -77,6 +94,7 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automatio
         shards=shards,
         automation=automation,
         source_override=source,
+        extra_args=perf_args(perf),
     )
     ctx.exit(exit_code)
 

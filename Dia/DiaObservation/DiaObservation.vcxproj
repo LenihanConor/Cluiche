@@ -117,6 +117,7 @@
     <ClInclude Include="Profile\TripRecord.h" />
     <ClInclude Include="Profile\TripReporter.h" />
     <ClInclude Include="Profile\PerfSummary.h" />
+    <ClInclude Include="Profile\PerfExitTimer.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -3,6 +3,7 @@ import click
 from pathlib import Path
 
 from dia_cli.utils.repo_root import find_repo_root
+from dia_cli.cli.launch import PERF_OPTION_HELP, perf_args
 
 
 _CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
@@ -39,8 +40,10 @@ def _resolve_full_suite_config(repo_root: Path, target: str) -> str:
               help="For googletest: run in N parallel shards (0=disabled, omit for cpu_count-1).")
 @click.option("--source", "source", default=None, metavar="PATH",
               help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
+@click.option("--perf", "perf", is_flag=False, flag_value="", default=None, metavar="[SECONDS]",
+              help=PERF_OPTION_HELP)
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards, source):
+def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, force, run_all, shards, source, perf):
     """Run the full pipeline then launch a target.
 
     TARGET is any target in pipeline.toml (see `dia launch --help`).
@@ -75,6 +78,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
         run_all=run_all,
         shards=shards,
         source_override=source,
+        extra_args=perf_args(perf),
     )
     ctx.exit(exit_code)
 

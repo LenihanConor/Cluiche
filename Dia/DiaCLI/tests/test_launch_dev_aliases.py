@@ -154,3 +154,63 @@ def test_run_forwards_source(repo, monkeypatch, tmp_path_factory):
     res = CliRunner().invoke(run.cli, ["cluichetest", "--no-build", "--source", str(other)])
     assert res.exit_code == 0, res.output
     assert seen["source_override"] == str(other)
+
+
+# ---- --perf[=seconds] forwarding (Perf Inspector A4c) ----
+
+def test_perf_args_translation():
+    from dia_cli.cli import launch
+    assert launch.perf_args(None) == []
+    assert launch.perf_args("") == ["--perf"]
+    assert launch.perf_args("30") == ["--perf=30"]
+
+
+@pytest.mark.parametrize("bad", ["abc", "0", "-5", "1.5"])
+def test_perf_args_rejects_bad_values(bad):
+    import click
+    from dia_cli.cli import launch
+    with pytest.raises(click.BadParameter):
+        launch.perf_args(bad)
+
+
+def test_launch_bare_perf_forwarded(repo):
+    from dia_cli.cli import launch
+    _, calls = repo
+    res = CliRunner().invoke(launch.cli, ["cluichetest", "--perf"])
+    assert res.exit_code == 0, res.output
+    assert "--perf" in calls[0]
+
+
+def test_launch_perf_seconds_forwarded(repo):
+    from dia_cli.cli import launch
+    _, calls = repo
+    res = CliRunner().invoke(launch.cli, ["cluichetest", "--perf=30"])
+    assert res.exit_code == 0, res.output
+    assert "--perf=30" in calls[0]
+    assert "--perf" not in calls[0]
+
+
+def test_launch_without_perf_has_no_perf_arg(repo):
+    from dia_cli.cli import launch
+    _, calls = repo
+    res = CliRunner().invoke(launch.cli, ["cluichetest"])
+    assert res.exit_code == 0, res.output
+    assert not any(a.startswith("--perf") for a in calls[0])
+
+
+def test_launch_bad_perf_rejected(repo):
+    from dia_cli.cli import launch
+    _, calls = repo
+    res = CliRunner().invoke(launch.cli, ["cluichetest", "--perf=abc"])
+    assert res.exit_code == 2
+    assert calls == []
+
+
+@pytest.mark.parametrize("argv,expected", [(["--perf"], ["--perf"]), (["--perf=12"], ["--perf=12"]), ([], [])])
+def test_run_forwards_perf(repo, monkeypatch, argv, expected):
+    from dia_cli.cli import launch, run
+    seen = {}
+    monkeypatch.setattr(launch, "launch_target", lambda **kw: seen.update(kw) or 0)
+    res = CliRunner().invoke(run.cli, ["cluichetest", "--no-build"] + argv)
+    assert res.exit_code == 0, res.output
+    assert seen["extra_args"] == expected
