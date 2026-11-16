@@ -131,6 +131,7 @@ namespace Dia { namespace ApplicationFlow {
         [[nodiscard]] const Json::Value* GetDiagameConfig() const override { return mManifest.diagameConfig; }
         void SetTripReporter(Dia::Observation::Profile::TripReporter* reporter) override;
         void SetTripConfig(const Dia::Observation::Profile::TripConfig& config) override;
+        void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const override;
 
         // Emit a lifecycle event on the $lifecycle stream.
         // Called internally by Application and Module; not part of the public module API.

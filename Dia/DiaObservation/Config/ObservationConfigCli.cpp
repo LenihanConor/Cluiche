@@ -189,6 +189,7 @@ namespace Dia
 					{
 						// Bare --perf: enable profiling with diaapplicationflow category and trips
 						config.profileEnabled = true;
+						config.perfConfig.perfEnabled = true;
 						config.profileCategoryMask |= (1u << 0); // diaapplicationflow
 						// Trips are configured via the perf config block (defaults apply)
 						continue;
@@ -212,6 +213,7 @@ namespace Dia
 							if (*p == '\0' && p > secondsStr)
 							{
 								config.profileEnabled = true;
+								config.perfConfig.perfEnabled = true;
 								config.profileCategoryMask |= (1u << 0); // diaapplicationflow
 								config.perfConfig.perfExitSeconds = seconds;
 								continue;

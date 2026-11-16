@@ -6,6 +6,7 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaCore/SimTime/SimTimeDomainRegistry.h>
+#include <DiaObservation/Profile/PerfSummary.h>
 #include <DiaObservation/Profile/TripDetector.h>
 #include <DiaObservation/Profile/TripRecord.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
@@ -101,6 +102,13 @@ namespace Dia { namespace ApplicationFlow {
         void SetTripConfig(const Dia::Observation::Profile::TripConfig& config) { mTripDetector.SetConfig(config); }
         [[nodiscard]] const Dia::Observation::Profile::TripDetector& GetTripDetector() const { return mTripDetector; }
 
+        // Perf Inspector A4b (AA9): per-module summary rows that outlive the module. A row is banked when a
+        // module leaves kStopping; capacity kCapacity rows (overflow is dropped and counted).
+        [[nodiscard]] const Dia::Observation::Profile::PerfSummaryAccumulator& GetPerfSummaryAccumulator() const { return mPerfAccumulator; }
+        // Appends this unit's summary to `out`: banked rows (stopped modules) merged with the live
+        // modules' current stats. Intended for shutdown; reads the table from the caller's thread.
+        void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const;
+
     private:
         static constexpr unsigned int kMaxModules = 64;
 
@@ -109,6 +117,7 @@ namespace Dia { namespace ApplicationFlow {
         // kStarting/kActive modules; RunReversePass ticks kStopping modules.
         void RunForwardPass(float deltaTime);
         void RunReversePass(float deltaTime);
+        void BuildModuleRow(unsigned int index, Dia::Observation::Profile::PerfModuleRow& out) const;
 
         struct ModuleEntry {
             Dia::Core::UniquePtr<Module> module;
@@ -143,6 +152,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // Perf Inspector A2b
         Dia::Observation::Profile::UnitTimingTable mTimingTable;
+        Dia::Observation::Profile::PerfSummaryAccumulator mPerfAccumulator;   // A4b: rows of stopped modules
         unsigned int                      mLastUpdateStepCount = 0;
         float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes
         Dia::Observation::Metric::Gauge*  mMetricSelfMs = nullptr;

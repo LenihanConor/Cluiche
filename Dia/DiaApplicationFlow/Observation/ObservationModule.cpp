@@ -9,6 +9,7 @@
 #include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Config/ObservationConfigLoader.h>
+#include <DiaObservation/Profile/PerfSummary.h>
 
 #include <cstring>
 #include <cstdio>
@@ -77,6 +78,7 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
     Dia::Observation::ObservationConfigLoader::Load(obsConfigPath, obsConfig);
 
     ApplyConfigOverrides(obsConfig);
+    mPerfEnabled = obsConfig.perfConfig.perfEnabled;
 
     if (!mSessionManager.Start(config, obsConfig))
     {
@@ -123,6 +125,18 @@ Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
 
     if (GetApplication() != nullptr)
         GetApplication()->SetTripReporter(nullptr);
+
+    // Perf Inspector A4b: one-shot perf-summary.json, before the session directory is finalised.
+    // File I/O happens here on the stopping thread, never on a PU tick.
+    if (mPerfEnabled && GetApplication() != nullptr)
+    {
+        Dia::Observation::Profile::PerfSummary summary;
+        GetApplication()->CollectPerfSummary(summary);
+        if (Dia::Observation::Profile::WritePerfSummaryIfEnabled(mPerfEnabled, summary, mSessionManager.GetSessionDirectory()))
+            DIA_LOG_INFO("Application", "ObservationModule wrote perf-summary.json (%u units)", static_cast<unsigned>(summary.units.size()));
+        else
+            DIA_LOG_ERROR("Application", "ObservationModule: failed to write perf-summary.json");
+    }
     mSessionManager.Stop();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)

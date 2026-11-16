@@ -17,6 +17,7 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Profile/PerfSummary.h>
 #include <DiaObservation/Profile/TripReporter.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
 
@@ -388,4 +389,129 @@ TEST_F(PUTripFixture, StartingModuleEntryIsSkipped)
     EXPECT_EQ(pu->GetTripDetector().GetOverBudgetFrames(), 0u);
     EXPECT_EQ(pu->GetTripDetector().GetTripCount(), 0u);
     EXPECT_EQ(reporter.GetSubmitted(), 0u);
+}
+
+
+// ---------------------------------------------------------------------------
+// Perf Inspector A4b (AA9): per-unit perf summary rows outlive stopped modules.
+// ---------------------------------------------------------------------------
+namespace {
+    struct PlainMainModule : Module
+    {
+        using Module::Module;
+        StartResult DoStart() override { return StartResult::kReady; }
+        StopResult  DoStop()  override { return StopResult::kDone; }
+        void DoUpdate(float) override {}
+    };
+    const StringCRC kPlainTypeId("PUTiming_PlainMainModule");
+
+    ApplicationManifestV3 BuildTwoPuTwoStageManifest()
+    {
+        ApplicationManifestV3 manifest;
+        manifest.version = 3;
+        StageDeclaration boot; boot.name = StringCRC("Boot");
+        StageDeclaration run;  run.name  = StringCRC("Run");
+        manifest.stages.Add(boot);
+        manifest.stages.Add(run);
+        manifest.initialStage = StringCRC("Boot");
+
+        auto addMod = [](ProcessingUnitDeclaration& pu, const char* id, const StringCRC& type, const char* stage1, const char* stage2)
+        {
+            ModuleDeclaration m;
+            m.instanceId = StringCRC(id);
+            m.typeId = type;
+            m.startTimeoutMs = 10000.0f;
+            m.stopTimeoutMs = 5000.0f;
+            if (stage1) m.stages.Add(StringCRC(stage1));
+            if (stage2) m.stages.Add(StringCRC(stage2));
+            pu.modules.Add(m);
+        };
+
+        ProcessingUnitDeclaration sim;
+        sim.instanceId = StringCRC("SimPU"); sim.frequencyHz = 60.0f; sim.dedicatedThread = false;
+        addMod(sim, "perfSimBoot", kTimedTypeId, "Boot", nullptr);
+        addMod(sim, "perfSimRun",  kTimedTypeId, "Run", nullptr);
+        manifest.processingUnits.Add(sim);
+
+        ProcessingUnitDeclaration main;
+        main.instanceId = StringCRC("PerfMainPU"); main.frequencyHz = 60.0f; main.dedicatedThread = false;
+        addMod(main, "perfMainBoot", kPlainTypeId, "Boot", nullptr);
+        addMod(main, "perfMainBoth", kPlainTypeId, "Boot", "Run");
+        manifest.processingUnits.Add(main);
+        return manifest;
+    }
+
+    const Dia::Observation::Profile::PerfModuleRow* FindRow(const Dia::Observation::Profile::PerfUnitSummary& u, const char* name)
+    {
+        for (uint32_t i = 0; i < u.modules.GetCount(); ++i)
+            if (std::strcmp(u.modules.GetRow(i).name, name) == 0)
+                return &u.modules.GetRow(i);
+        return nullptr;
+    }
+}
+
+TEST(PerfSummaryProcessingUnit, StoppedModuleKeepsRowAfterLaterModuleStarts_EveryModuleOfEveryUnitPresent)
+{
+    using namespace Dia::Observation::Profile;
+    g_timed = nullptr;
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    reg.Register(kPlainTypeId, [](const StringCRC& id) -> Module* { return new PlainMainModule(id); });
+
+    auto manifest = BuildTwoPuTwoStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+
+    for (int i = 0; i < 30; ++i) app.Update(kFixed60 * 1.1f);
+    ProcessingUnit* simPu = g_timed->GetProcessingUnit();
+    ASSERT_NE(simPu, nullptr);
+    Module* simBoot = simPu->FindModule(StringCRC("perfSimBoot"));
+    ASSERT_NE(simBoot, nullptr);
+    ASSERT_EQ(simBoot->GetState(), ModuleState::kActive);
+
+    app.TransitionTo(StringCRC("Run"));
+    Module* simRun = simPu->FindModule(StringCRC("perfSimRun"));
+    ASSERT_NE(simRun, nullptr);
+    for (int i = 0; i < 60 && simRun->GetState() != ModuleState::kActive; ++i)
+        app.Update(kFixed60 * 1.1f);
+    ASSERT_EQ(simRun->GetState(), ModuleState::kActive);
+    ASSERT_EQ(simBoot->GetState(), ModuleState::kInactive);
+
+    // The stopped module's row is already banked in the unit's accumulator (not just the live table).
+    bool banked = false;
+    for (uint32_t i = 0; i < simPu->GetPerfSummaryAccumulator().GetCount(); ++i)
+        if (std::strcmp(simPu->GetPerfSummaryAccumulator().GetRow(i).name, "perfSimBoot") == 0)
+            banked = simPu->GetPerfSummaryAccumulator().GetRow(i).entryCount > 0;
+    EXPECT_TRUE(banked);
+
+    // Collect through the Application control interface (as ObservationModule does).
+    PerfSummary summary;
+    static_cast<IApplicationControl&>(app).CollectPerfSummary(summary);
+    ASSERT_EQ(summary.units.size(), 2u);
+
+    const PerfUnitSummary* sim = nullptr;
+    const PerfUnitSummary* mainU = nullptr;
+    for (const PerfUnitSummary& u : summary.units)
+    {
+        if (std::strcmp(u.unit, "SimPU") == 0) sim = &u;
+        if (std::strcmp(u.unit, "PerfMainPU") == 0) mainU = &u;
+    }
+    ASSERT_NE(sim, nullptr);
+    ASSERT_NE(mainU, nullptr);
+
+    const PerfModuleRow* boot = FindRow(*sim, "perfSimBoot");
+    const PerfModuleRow* run  = FindRow(*sim, "perfSimRun");
+    ASSERT_NE(boot, nullptr);
+    ASSERT_NE(run, nullptr);
+    EXPECT_GT(boot->entryCount, 0u);
+    EXPECT_EQ(sim->modules.GetCount(), 2u);
+    EXPECT_GT(sim->entryCount, 0u);
+    EXPECT_FLOAT_EQ(sim->budgetMs, 1000.0f / 60.0f);
+
+    EXPECT_NE(FindRow(*mainU, "perfMainBoot"), nullptr);
+    EXPECT_NE(FindRow(*mainU, "perfMainBoth"), nullptr);
+    EXPECT_EQ(mainU->modules.GetCount(), 2u);
+    EXPECT_EQ(sim->tripCount, simPu->GetTripDetector().GetTripCount());
+    EXPECT_EQ(sim->overBudgetFrames, simPu->GetTripDetector().GetOverBudgetFrames());
+    EXPECT_EQ(sim->suppressedCount, simPu->GetTripDetector().GetSuppressedCount());
 }

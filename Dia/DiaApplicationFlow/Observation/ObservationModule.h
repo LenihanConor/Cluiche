@@ -40,6 +40,7 @@ private:
     Dia::Observation::Log::ISink* mOwnedSinks[kMaxSinks];
     unsigned int mOwnedSinkCount = 0;
     Dia::Observation::SessionManager mSessionManager;
+    bool mPerfEnabled = false;   // --perf: write perf-summary.json at DoStop (A4b)
 
     const char* mAppName;
     const char* mConfigAssetRelPath;

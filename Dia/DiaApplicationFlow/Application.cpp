@@ -709,6 +709,12 @@ namespace Dia { namespace ApplicationFlow {
             mProcessingUnits[p]->SetTripConfig(config);
     }
 
+    void Application::CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->CollectPerfSummary(out);
+    }
+
     //--------------------------------------------------------------------------
     bool Application::BuildFromManifest()
     {

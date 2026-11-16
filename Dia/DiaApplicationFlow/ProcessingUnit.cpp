@@ -299,9 +299,62 @@ namespace Dia { namespace ApplicationFlow {
             {
                 ModuleEntry& entry = mModules[i];
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
-                if (entry.metricEwmaMs && mModules[i].module->GetState() != ModuleState::kStopping)
-                    entry.metricEwmaMs->Set(0.0);   // module finished stopping: zero, leave registered
+                if (mModules[i].module->GetState() != ModuleState::kStopping)
+                {
+                    if (entry.metricEwmaMs)
+                        entry.metricEwmaMs->Set(0.0);   // module finished stopping: zero, leave registered
+                    // A4b (AA9): bank this module's stats so its row survives a later stage change.
+                    Dia::Observation::Profile::PerfModuleRow row;
+                    BuildModuleRow(static_cast<unsigned int>(i), row);
+                    mPerfAccumulator.Upsert(row);
+                }
             }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::BuildModuleRow(unsigned int index, Dia::Observation::Profile::PerfModuleRow& out) const
+    {
+        const Module& m = *mModules[index].module;
+        Dia::Observation::Profile::BuildPerfModuleRow(out, mTimingTable, index, m.GetInstanceId().AsChar(), m.GetInstanceId().Value());
+    }
+
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const
+    {
+        using namespace Dia::Observation::Profile;
+        out.units.emplace_back();
+        PerfUnitSummary& u = out.units.back();
+        strncpy_s(u.unit, sizeof(u.unit), mInstanceId.AsChar(), _TRUNCATE);
+
+        const float scale = mTripDetector.GetConfig().budgetScale;
+        const float baseBudget = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
+        u.budgetMs         = baseBudget * (scale > 0.0f ? scale : 1.0f);
+        u.entryCount       = mTimingTable.GetEntryCount();
+        u.unitP50Ms        = mTimingTable.GetUnitP50();
+        u.unitP95Ms        = mTimingTable.GetUnitP95();
+        u.unitMaxMs        = mTimingTable.GetUnitMax();
+        u.unitEwmaMs       = mTimingTable.GetUnitEwma();
+        u.tripCount        = mTripDetector.GetTripCount();
+        u.suppressedCount  = mTripDetector.GetSuppressedCount();
+        u.overBudgetFrames = mTripDetector.GetOverBudgetFrames();
+
+        // Banked rows first (stopped modules), then the live modules' current stats take precedence.
+        u.modules = mPerfAccumulator;
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            PerfModuleRow row;
+            BuildModuleRow(i, row);
+            u.modules.Upsert(row);
+        }
+
+        if (out.buildConfig[0] == '\0')
+        {
+#ifdef _DEBUG
+            strncpy_s(out.buildConfig, sizeof(out.buildConfig), "Debug", _TRUNCATE);
+#else
+            strncpy_s(out.buildConfig, sizeof(out.buildConfig), "Release", _TRUNCATE);
+#endif
         }
     }
 

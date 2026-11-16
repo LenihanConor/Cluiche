@@ -54,6 +54,7 @@ namespace Dia
 				uint32_t minIntervalMs = 5000;     // min gap (ms) between emitted trips
 				float    budgetScale   = 1.0f;     // multiplies budget; <= 0 means 1.0
 				uint32_t perfExitSeconds = 0;      // exit after N seconds of profiling; 0 = never
+				bool     perfEnabled     = false;  // --perf given: write perf-summary.json at exit (A4b)
 			};
 			PerfConfig perfConfig;
 		};

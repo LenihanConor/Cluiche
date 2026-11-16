@@ -22,6 +22,7 @@ TEST(ObservationConfigLoaderPerfConfig, DefaultPerfConfig)
     EXPECT_EQ(config.perfConfig.minIntervalMs, 5000u);
     EXPECT_EQ(config.perfConfig.budgetScale, 1.0f);
     EXPECT_EQ(config.perfConfig.perfExitSeconds, 0u);
+    EXPECT_FALSE(config.perfConfig.perfEnabled);
 }
 
 TEST(ObservationConfigLoaderPerfConfig, ParsePerfBlockAllFields)
@@ -212,6 +213,7 @@ TEST(ObservationConfigCliPerfConfig, BarePerf_EnablesProfileAndTrips)
     // --perf should enable profiling with diaapplicationflow category
     EXPECT_TRUE(config.profileEnabled);
     EXPECT_EQ(config.profileCategoryMask & (1u << 0), (1u << 0)); // diaapplicationflow bit
+    EXPECT_TRUE(config.perfConfig.perfEnabled);
     // perfExitSeconds should remain at default (0)
     EXPECT_EQ(config.perfConfig.perfExitSeconds, 0u);
 }
@@ -225,6 +227,7 @@ TEST(ObservationConfigCliPerfConfig, PerfWithSeconds_SetsExitSeconds)
 
     EXPECT_TRUE(config.profileEnabled);
     EXPECT_EQ(config.profileCategoryMask & (1u << 0), (1u << 0)); // diaapplicationflow bit
+    EXPECT_TRUE(config.perfConfig.perfEnabled);
     EXPECT_EQ(config.perfConfig.perfExitSeconds, 20u);
 }
 
@@ -235,6 +238,7 @@ TEST(ObservationConfigCliPerfConfig, PerfWithZeroSeconds)
 
     ObservationConfigCli::ApplyOverrides(2, argv, config);
 
+    EXPECT_TRUE(config.perfConfig.perfEnabled);
     EXPECT_TRUE(config.profileEnabled);
     EXPECT_EQ(config.profileCategoryMask & (1u << 0), (1u << 0));
     EXPECT_EQ(config.perfConfig.perfExitSeconds, 0u);

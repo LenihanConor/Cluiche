@@ -138,6 +138,9 @@
     <ClCompile Include="Profile\TripReporter.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\PerfSummary.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -314,6 +317,9 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Profile\TripReporter.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfSummary.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

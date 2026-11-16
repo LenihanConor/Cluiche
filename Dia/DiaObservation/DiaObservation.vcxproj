@@ -54,6 +54,7 @@
     <ClCompile Include="Profile\TripDetector.cpp" />
     <ClCompile Include="Profile\TripRecord.cpp" />
     <ClCompile Include="Profile\TripReporter.cpp" />
+    <ClCompile Include="Profile\PerfSummary.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -115,6 +116,7 @@
     <ClInclude Include="Profile\TripDetector.h" />
     <ClInclude Include="Profile\TripRecord.h" />
     <ClInclude Include="Profile\TripReporter.h" />
+    <ClInclude Include="Profile\PerfSummary.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

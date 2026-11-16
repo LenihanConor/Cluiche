@@ -14,7 +14,7 @@
 #include <functional>
 
 namespace Json { class Value; }
-namespace Dia { namespace Observation { namespace Profile { class TripReporter; struct TripConfig; } } }
+namespace Dia { namespace Observation { namespace Profile { class TripReporter; struct TripConfig; struct PerfSummary; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -66,6 +66,11 @@ namespace Dia { namespace ApplicationFlow {
         // Perf Inspector A4a: apply trip detection config to all ProcessingUnits.
         // Call before any unit starts ticking (typically from ObservationModule::DoStart).
         virtual void SetTripConfig(const Dia::Observation::Profile::TripConfig& /*config*/) {}
+
+        // Perf Inspector A4b: append one PerfUnitSummary per ProcessingUnit (every module, including
+        // modules that already stopped). Called once at shutdown from the thread that owns the
+        // observation session; not for per-frame use. Default: no-op.
+        virtual void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& /*out*/) const {}
     };
 
 }} // namespace Dia::ApplicationFlow

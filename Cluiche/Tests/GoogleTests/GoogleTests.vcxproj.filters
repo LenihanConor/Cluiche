@@ -2961,5 +2961,8 @@
     <ClCompile Include="DiaObservation/Config/TestObservationPerfConfig.cpp">
       <Filter>DiaObservation\Config</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfSummary.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
