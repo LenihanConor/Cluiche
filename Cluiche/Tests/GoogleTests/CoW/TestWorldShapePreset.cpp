@@ -95,9 +95,10 @@ WorldShapePreset Expected(const char* id)
     }
     else if (s == "archipelago")
     {
-        p.landFraction = 0.30f; p.continents = 2; p.islands = 5; p.continentIslands = 0.5f; p.peninsulas = 2; p.coastline = 0.8f;
-        p.mountainousness = 0.4f; p.spineToRing = 0.0f; p.orientationDeg = 60.0f; p.passes = 3; p.barrier = 0.45f;
-        p.barrierForm = BarrierForm::VolcanicChain; p.ruggedness = 0.5f; p.rivers = 0.35f; p.valleyDepth = 0.3f; p.lakes = 2;
+        p.landFraction = 0.30f; p.continents = 2; p.islands = 5; p.continentIslands = 0.5f; p.peninsulas = 2; p.coastline = 0.5f;
+        p.mountainousness = 0.8f; p.spineToRing = 0.0f; p.orientationDeg = 60.0f; p.passes = 3; p.barrier = 0.7f;
+        // Retuned in 1f5806d1: a VolcanicChain barrier blocked every river, so archipelago uses a Plateau barrier.
+        p.barrierForm = BarrierForm::Plateau; p.ruggedness = 0.7f; p.rivers = 1.0f; p.valleyDepth = 0.3f; p.lakes = 2;
         p.latitudeNorthDeg = 40.0f; p.latitudeSouthDeg = 10.0f;
     }
     else

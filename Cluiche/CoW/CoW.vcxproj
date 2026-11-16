@@ -385,7 +385,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;$(ProjectDir)../../External/jsoncpp-master/include;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
