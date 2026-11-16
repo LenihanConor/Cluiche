@@ -1,7 +1,7 @@
 # Plan: S-1 Consumer Amendments
 
 **Spec:** @docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md
-**Status:** In Progress
+**Status:** Done
 
 Six amendments, sequenced rather than bundled. **Amendment 1 (the shared biome list) runs first and alone**, because it gates A4 Feature 1 and A1 Feature 2 and nothing else in this feature does. Amendments 4 and 5 are F-3 gated and deliberately last — see spec Open Design Question 2, which asks whether they belong in F-3's plan instead. Decide that before starting row 8.
 
@@ -32,10 +32,10 @@ Amendment 6 (the NOT BUILT marker on the World assets participant section, plus 
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 10 | **Decision gate, not code:** resolve spec Open Design Question 2 — do amendments 4 and 5 stay here or move into F-3's plan? They have no consumer until F-3 is built | — | Not Started | — | Ask the user. Building an interface with no consumer is what produced the drift this whole feature is cleaning up |
-| 11 | Amendment 4, ACs 17–20: a path-accepting export/import seam beside the unchanged name-only default; refuse traversal outside the caller's root | Round-trip to a temp dir outside `out_worlds_dir`; the name-only surface still refuses path separators | Not Started | sonnet | Blocked on row 10 |
-| 12 | Amendment 5, ACs 21–24: `cow.worldgen.validate {file}` loads a `.wld.json` and validates it without touching the loaded world or its revision; reply carries the root-relative path | File form against known-good and known-bad worlds; the no-arg form unchanged | Not Started | sonnet | Blocked on row 10. The relative path is what lets `SetWorldValidated(relPath, ok)` key a catalogue record |
-| 13 | AC 26: record the two `GetWorldContentHash` open items (FNV-1a over canonical export text; whether S-1 links `CoWWorldAssetsCore`) in F-3 Feature 6's spec or plan | — | Not Started | haiku | AC 25 already met 2026-11-13 |
+| 10 | **Decision gate, not code:** resolve spec Open Design Question 2 — do amendments 4 and 5 stay here or move into F-3's plan? They have no consumer until F-3 is built | — | Done | — | Ask the user. Building an interface with no consumer is what produced the drift this whole feature is cleaning up; **Decided 2026-11-16 (user): move 4 and 5 into F-3 Feature 6** |
+| 11 | Amendment 4, ACs 17–20: a path-accepting export/import seam beside the unchanged name-only default; refuse traversal outside the caller's root | Round-trip to a temp dir outside `out_worlds_dir`; the name-only surface still refuses path separators | Moved | sonnet | Blocked on row 10; **Moved to F-3 Feature 6 (consumer-adoption.md, "S-1 seams moved here")** |
+| 12 | Amendment 5, ACs 21–24: `cow.worldgen.validate {file}` loads a `.wld.json` and validates it without touching the loaded world or its revision; reply carries the root-relative path | File form against known-good and known-bad worlds; the no-arg form unchanged | Moved | sonnet | Blocked on row 10. The relative path is what lets `SetWorldValidated(relPath, ok)` key a catalogue record; **Moved to F-3 Feature 6 (consumer-adoption.md, "S-1 seams moved here")** |
+| 13 | AC 26: record the two `GetWorldContentHash` open items (FNV-1a over canonical export text; whether S-1 links `CoWWorldAssetsCore`) in F-3 Feature 6's spec or plan | — | Done | haiku | AC 25 already met 2026-11-13; Done 2026-11-16: both items recorded in F-3 consumer-adoption.md |
 
 ## Rules for this plan
 

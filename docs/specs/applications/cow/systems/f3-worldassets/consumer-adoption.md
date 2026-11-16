@@ -133,6 +133,31 @@ S-2.5 and S-3 already read the session hint and `world_bundle` (amended 2026-10-
 - **A3** (`a3-biomesuccession.md`): the rules file moves to `Global/Succession/` with its envelope; no participant in v1.
 - **S-2.5, S-3, S-3.5:** no further change beyond what their 2026-10-19 and 2026-10-20 amendments state.
 
+## S-1 seams moved here (2026-11-16)
+
+Two S-1 seams were specced in `consumer-amendments.md` (amendments 4 and 5) and **moved into this feature** on 2026-11-16, because nothing calls them until F-3 exists and building an interface ahead of its consumer is what caused the drift the S-1 amendments were cleaning up. They are built as the first tasks of this feature's plan, before the terrain participant. Both add seams **beside** the built name-only surface, which stays unchanged (three specs and a shipped test suite depend on it).
+
+**A. A path-accepting export/import seam** (serves `ITerrainBaker::Bake(absolutePath)` and `Apply({"baked": path})`).
+
+- A1. A path-accepting export writes a byte-identical `.wld.json` to an arbitrary absolute path, outside `out_worlds_dir`.
+- A2. A path-accepting import reads such a file and behaves exactly as the name-based import (same locked state, same `WorldGenerationComplete`).
+- A3. The name-only surface is unchanged: `cow.worldgen.export {name}` still refuses path separators.
+- A4. Path traversal outside the caller-supplied root is refused and logged.
+
+**B. `cow.worldgen.validate {file}`** (serves F-3 Features 3 and 6, T-2 Feature 4, S-3.5 Author mode's "run Validate in game" lock).
+
+- B1. It loads a `.wld.json`, runs the guarantee validators against it and reports the result **without** changing the loaded world or its revision.
+- B2. With no argument it behaves exactly as today (current world only; `WorldGenSession::Validate` refuses with "no world generated yet" when none exists).
+- B3. The reply carries the validated file's path relative to its root, so `SetWorldValidated(relPath, ok)` can key a catalogue record.
+- B4. A missing, malformed or dimension-invalid file is a clean failure reply, not a crash or a world change.
+
+Code facts for the build: the no-arg validate is registered with `nullptr, 0` params in `WorldGenerationModule.cpp` (~`:608` before the 2026-11-16 edits).
+
+**Open items for this feature's plan** (carried from S-1 amendment 6, AC 26):
+
+1. **`GetWorldContentHash()`** is specified above as FNV-1a 64 over canonical export text. The only hashes in code today are the per-layer debug `LayerHash` and test-only helpers; neither is a document hash and neither is stable across formatting. It must be built, not assumed.
+2. **Where `WorldContentHash(Json)` lives.** This spec places it in `CoWWorldAssetsCore`, which would make S-1 link an F-3 library, a build dependency S-1's spec never agreed to. Decide at the start of this feature: S-1 links `CoWWorldAssetsCore`, or S-1 owns its own copy and the two are pinned equal by a test.
+
 ## Test Strategy
 
 - **GoogleTests:** the shared contract suite run once per participant (terrain, weather, ecology, ecology start) with fixture worlds at Small size; S-1's content-hash tests; A1's edit-set tests (load, paint, union, reinitialise); the import-publishes-completion test (A1 and A4 fakes initialise on it); the validate-hook test.
