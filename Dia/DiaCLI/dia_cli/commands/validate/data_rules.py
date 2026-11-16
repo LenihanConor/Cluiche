@@ -16,8 +16,25 @@ from dia_cli.commands.validate.schema_suggest import format_suggestion, suggest
 ENVELOPE_KEYS = ("format", "version")
 DATA_KINDS = ("parameter", "field")
 
-# Feature 5 (ramp library) will replace this fixed list with the real ramp names.
-KNOWN_RAMPS = {"sequential.green", "sequential.blue", "sequential.heat", "diverging.blue_red", "categorical.12"}
+# Fallback when the shipped ramp library cannot be read (the CLI installed away from the repo).
+_FALLBACK_RAMPS = {"sequential.green", "sequential.blue", "sequential.heat", "sequential.grey", "sequential.purple",
+                   "sequential.terrain", "diverging.blue_red", "categorical.12"}
+
+
+def _load_known_ramps() -> set:
+    """Ramp ids from the shipped library (Dia/DiaValueSchema/Data/ramps.json), so new ramps never drift from the validator."""
+    import json
+    from pathlib import Path
+    try:
+        path = Path(__file__).resolve().parents[4] / "DiaValueSchema" / "Data" / "ramps.json"
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        ids = {r["id"] for r in doc.get("ramps", []) if isinstance(r, dict) and isinstance(r.get("id"), str)}
+        return ids or set(_FALLBACK_RAMPS)
+    except (OSError, ValueError, IndexError, KeyError):
+        return set(_FALLBACK_RAMPS)
+
+
+KNOWN_RAMPS = _load_known_ramps()
 
 
 def _collect(node: object, segs: List[str]) -> List[object]:
