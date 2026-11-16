@@ -65,6 +65,17 @@ namespace Dia { namespace ApplicationFlow {
         // only ever incremented for kSim PUs.
         mMetricDroppedTicks = Dia::Observation::Metric::MetricRegistry::Instance()
                                   .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
+
+        // Perf Inspector A2b: names built once, off the hot path.
+        {
+            std::string name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".catchup_updates";
+            mMetricCatchupUpdates = Dia::Observation::Metric::MetricRegistry::Instance()
+                                        .RegisterCounter(Dia::Core::StringCRC(name.c_str()));
+            mMetricSelfMs = Dia::Observation::Metric::MetricRegistry::Instance()
+                                .RegisterGauge(Dia::Core::StringCRC("perf.self_ms"));
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -136,6 +147,18 @@ namespace Dia { namespace ApplicationFlow {
 
         entry.module->SetProcessingUnit(this);
 
+        // Per-module EWMA gauge. MetricRegistry has no unregister: registered once here
+        // (same name on stage re-entry returns the existing gauge), zeroed when the module stops.
+        {
+            std::string name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".module.";
+            name += entry.module->GetInstanceId().AsChar();
+            name += ".ms";
+            entry.metricEwmaMs = Dia::Observation::Metric::MetricRegistry::Instance()
+                                     .RegisterGauge(Dia::Core::StringCRC(name.c_str()));
+        }
+
         ++mModuleCount;
     }
 
@@ -184,16 +207,41 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void ProcessingUnit::RunForwardPass(float deltaTime)
     {
-        // Forward pass: starting/active modules.
+        // Perf Inspector A2b: always on (not gated on profile categories). One steady_clock
+        // read between modules (N+1 reads per pass); results are staged in stack arrays and
+        // recorded after the loop so the table's own cost can be bracketed. No allocation.
+        using Clock = std::chrono::steady_clock;
+        float        ms[kMaxModules];
+        bool         ran[kMaxModules];
+
+        Clock::time_point prev = Clock::now();
+        const Clock::time_point passStart = prev;
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
+            ran[i] = false;
             const ModuleState s = mModules[i].module->GetState();
             if (s == ModuleState::kStarting || s == ModuleState::kActive)
             {
                 ModuleEntry& entry = mModules[i];
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+                const Clock::time_point now = Clock::now();
+                ms[i]  = std::chrono::duration<float, std::milli>(now - prev).count();
+                ran[i] = true;
+                prev   = now;
             }
         }
+
+        // Table writes (bracketed for perf.self_ms; one extra clock read at the end).
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            if (!ran[i]) continue;
+            mTimingTable.RecordModule(i, mModules[i].module->GetInstanceId().Value(), ms[i]);
+            if (mModules[i].metricEwmaMs)
+                mModules[i].metricEwmaMs->Set(static_cast<double>(mTimingTable.GetEwma(i)));
+        }
+        mTimingTable.RecordUnitTick(std::chrono::duration<float, std::milli>(prev - passStart).count());
+        mTimingTable.CommitEntry();
+        mSelfMsAccum += std::chrono::duration<float, std::milli>(Clock::now() - prev).count();
     }
 
     //--------------------------------------------------------------------------
@@ -207,6 +255,8 @@ namespace Dia { namespace ApplicationFlow {
             {
                 ModuleEntry& entry = mModules[i];
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+                if (entry.metricEwmaMs && mModules[i].module->GetState() != ModuleState::kStopping)
+                    entry.metricEwmaMs->Set(0.0);   // module finished stopping: zero, leave registered
             }
         }
     }
@@ -218,7 +268,9 @@ namespace Dia { namespace ApplicationFlow {
         DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
         // Task 34 — measure tick duration
-        const auto tickStart = std::chrono::high_resolution_clock::now();
+        const auto tickStart = std::chrono::steady_clock::now();
+        mSelfMsAccum = 0.0f;
+        mLastUpdateStepCount = 1;
 
         switch (mAffinity)
         {
@@ -267,6 +319,9 @@ namespace Dia { namespace ApplicationFlow {
                         mSimAccumulatorSec = 0.0f;
                     }
                 }
+                mLastUpdateStepCount = ticksThisFrame;
+                if (ticksThisFrame > 1 && mMetricCatchupUpdates)
+                    mMetricCatchupUpdates->Inc();
                 break;   // forward pass already ran above (0..N times) — do not run it again below
             }
             case PUAffinity::kRender:
@@ -293,10 +348,13 @@ namespace Dia { namespace ApplicationFlow {
             mPostTickFn();
 
         // Task 34 — record elapsed tick time and update gauge
-        const auto tickEnd = std::chrono::high_resolution_clock::now();
+        const auto tickEnd = std::chrono::steady_clock::now();
         mLastTickMs = std::chrono::duration<float, std::milli>(tickEnd - tickStart).count();
         if (mMetricLastTickMs)
             mMetricLastTickMs->Set(static_cast<double>(mLastTickMs));
+
+        if (mMetricSelfMs)
+            mMetricSelfMs->Set(static_cast<double>(mSelfMsAccum));
 
         ++mTickCount;
 

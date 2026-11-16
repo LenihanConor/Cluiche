@@ -2946,5 +2946,8 @@
     <ClCompile Include="DiaObservation\Profile\TestUnitTimingTable.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestProcessingUnitTiming.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

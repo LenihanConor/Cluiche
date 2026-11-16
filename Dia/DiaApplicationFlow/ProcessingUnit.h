@@ -6,6 +6,7 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaCore/SimTime/SimTimeDomainRegistry.h>
+#include <DiaObservation/Profile/UnitTimingTable.h>
 #include <atomic>
 #include <thread>
 
@@ -78,6 +79,12 @@ namespace Dia { namespace ApplicationFlow {
         // True iff every module owned by this PU is kInactive or kFailed.
         [[nodiscard]] bool AllModulesSettled() const;
 
+        // Perf Inspector A2b — per-forward-pass timing (one entry per RunForwardPass;
+        // on Sim, one per fixed step). Slot = index in this PU's module array.
+        [[nodiscard]] const Dia::Observation::Profile::UnitTimingTable& GetUnitTimingTable() const { return mTimingTable; }
+        // Fixed steps the most recent Update() ran (Sim; 1 for other affinities).
+        [[nodiscard]] unsigned int GetLastUpdateStepCount() const { return mLastUpdateStepCount; }
+
         // Post-tick hook: called by Application once during Start() to register
         // a callback that flushes EventStreamStores owned by this PU.
         // The callback is invoked at the end of every Update() call.
@@ -97,6 +104,7 @@ namespace Dia { namespace ApplicationFlow {
             Dia::Core::UniquePtr<Module> module;
             float startTimeoutMs = 0.0f;
             float stopTimeoutMs  = 0.0f;
+            Dia::Observation::Metric::Gauge* metricEwmaMs = nullptr;   // pu.<unit>.module.<id>.ms (registered once in AddModule)
 
             ModuleEntry() = default;
             ModuleEntry(ModuleEntry&&) = default;
@@ -122,6 +130,13 @@ namespace Dia { namespace ApplicationFlow {
         float mLastTickMs = 0.0f;
         Dia::Observation::Metric::Gauge* mMetricLastTickMs = nullptr;
         unsigned int mTickCount = 0;
+
+        // Perf Inspector A2b
+        Dia::Observation::Profile::UnitTimingTable mTimingTable;
+        unsigned int                      mLastUpdateStepCount = 0;
+        float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes
+        Dia::Observation::Metric::Gauge*  mMetricSelfMs = nullptr;
+        Dia::Observation::Metric::Counter* mMetricCatchupUpdates = nullptr;
 
         // --- DiaSimTime (Task 1.4) -------------------------------------------
         // The SimPU owns the world clock directly. Constructed in the ctor
