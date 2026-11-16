@@ -377,7 +377,7 @@ Each registered thread maintains:
 | SD-PERF-3 | Pure data types in DiaObservation; hosts in application code | `UnitTimingTable` and `TripDetector` depend only on DiaCore (SD-O21); `ProcessingUnit` (DiaApplicationFlow) fills them |
 
 ### Open design questions (amendment)
-1. ~~`ScopeRecord` grows by 4 bytes. Is the 512-entry closed ring still within budget?~~ **Resolved 2026-11-10:** it grows by 4 bytes only because the subject is a `uint32_t` CRC value (see A1); a `StringCRC` would have been about 68 bytes.
+1. ~~`ScopeRecord` grows by 4 bytes. Is the 512-entry closed ring still within budget?~~ **Resolved 2026-11-10:** it grows by 4 bytes only because the subject is a `uint32_t` CRC value (see A1); a `StringCRC` would have been about 68 bytes. **Measured 2026-11-16 (task A5):** `sizeof(ScopeRecord)` = 112 bytes → 120 bytes after adding subject field (8-byte alignment padding).
 2. ~~Where does the per-module gauge set live when modules are created and destroyed per stage?~~ **Resolved 2026-11-10:** register on module start, unregister on stop (A2). If `MetricRegistry` has no unregister, adding one is part of task A2.
 4. ~~What is a "frame" on SimPU, which runs 0 to N fixed steps per `Update()`?~~ **Resolved 2026-11-10:** one fixed step (A2, A3).
 3. Should trips also be raised by a single module exceeding a share of the frame (for example 40%) even when the unit is under budget? (Deferred; the mockup lists it as a trip option.)
@@ -385,11 +385,11 @@ Each registered thread maintains:
 ### Tasks (amendment)
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| A1 | `ScopeRecord.subject` (`uint32_t`), subject name table, `ScopedZone` subject overload, `profile.jsonl` field, module/PU call sites, inheritance through the open stack | AA1, AA2, AA12 | Planned | sonnet | Dia |
-| A2 | `UnitTimingTable` + PU hookup (per forward pass) + Sim step count and `catchup_updates` + per-module gauges + `perf.self_ms` | AA3, AA4, AA8, AA10 | Planned | sonnet | Dia |
-| A3 | `TripDetector` (first-entry and starting-module skips) + `trips.jsonl` via the drain + replace `pu.over_budget` | AA5, AA6, AA7, AA11 | Planned | sonnet | Dia; edits `ProcessingUnit.cpp` |
-| A4 | Config block, `--perf` flag, `perf-summary.json`, `dia run|launch --perf[=seconds]` | AA9 | Planned | sonnet | DiaCLI |
-| A5 | Update `dia.dia.observation.architecture.module.md` | - | Planned | haiku | |
+| A1 | `ScopeRecord.subject` (`uint32_t`), subject name table, `ScopedZone` subject overload, `profile.jsonl` field, module/PU call sites, inheritance through the open stack | AA1, AA2, AA12 | Done | sonnet | Dia |
+| A2 | `UnitTimingTable` + PU hookup (per forward pass) + Sim step count and `catchup_updates` + per-module gauges + `perf.self_ms` | AA3, AA4, AA8, AA10 | Done | sonnet | Dia |
+| A3 | `TripDetector` (first-entry and starting-module skips) + `trips.jsonl` via the drain + replace `pu.over_budget` | AA5, AA6, AA7, AA11 | Done | sonnet | Dia; edits `ProcessingUnit.cpp` |
+| A4 | Config block, `--perf` flag, `perf-summary.json`, `dia run|launch --perf[=seconds]` | AA9 | Done | sonnet | DiaCLI |
+| A5 | Update `dia.dia.observation.architecture.module.md` | - | Done | haiku | |
 
 ## Amendment 2026-11-12: worker threads and offline analysis
 
