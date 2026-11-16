@@ -532,6 +532,22 @@ TEST_F(ProfilerTest, A1a_Depth64StackInheritsSubject)
         EXPECT_EQ(0xD00Du, recs[i].subject);
 }
 
+// Audit (task 11): the closed ring wraps/drops past 512 records; every surviving record keeps its subject.
+TEST_F(ProfilerTest, A1a_RingOverflowKeepsSubjectOnEveryRecord)
+{
+    for (int i = 0; i < 700; ++i)
+    {
+        ScopedZone z(Dia::Core::StringCRC("A1aWrap"), Category::kDiaApplicationFlow, 0x5EEDu);
+        DIA_PROFILE_SCOPE("A1aWrapChild", Category::kDiaApplicationFlow);
+    }
+    std::vector<ScopeRecord> recs(2048);
+    unsigned int n = PeekRecords(recs.data(), 2048);
+    ASSERT_GT(n, 0u);
+    EXPECT_LE(n, 1400u);
+    for (unsigned int i = 0; i < n; ++i)
+        EXPECT_EQ(0x5EEDu, recs[i].subject) << "record " << i;
+}
+
 TEST_F(ProfilerTest, A1a_ScopeRecordSizeReport)
 {
     // Subject packs after threadId; record grows 112 -> 120 (8-byte alignment).

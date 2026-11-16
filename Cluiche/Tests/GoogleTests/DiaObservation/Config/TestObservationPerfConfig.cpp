@@ -271,6 +271,32 @@ TEST(ObservationConfigCliPerfConfig, PerfWithNonDigits_Ignored)
     EXPECT_EQ(config.perfConfig.perfExitSeconds, 100u);
 }
 
+// Audit (task 11): a negative duration is invalid (leading '-' is not a digit) and leaves the config untouched.
+TEST(ObservationConfigCliPerfConfig, PerfWithNegativeSeconds_Ignored)
+{
+    const char* argv[] = { "program", "--perf=-5" };
+    ObservationConfig config;
+    config.perfConfig.perfExitSeconds = 100;
+
+    ObservationConfigCli::ApplyOverrides(2, argv, config);
+
+    EXPECT_FALSE(config.perfConfig.perfEnabled);
+    EXPECT_FALSE(config.profileEnabled);
+    EXPECT_EQ(config.perfConfig.perfExitSeconds, 100u);
+}
+
+// Audit (task 11): an invalid value does not enable perf mode.
+TEST(ObservationConfigCliPerfConfig, PerfWithNonDigits_DoesNotEnablePerf)
+{
+    const char* argv[] = { "program", "--perf=abc" };
+    ObservationConfig config;
+
+    ObservationConfigCli::ApplyOverrides(2, argv, config);
+
+    EXPECT_FALSE(config.perfConfig.perfEnabled);
+    EXPECT_FALSE(config.profileEnabled);
+}
+
 TEST(ObservationConfigCliPerfConfig, PerfEqualsEmpty_Ignored)
 {
     const char* argv[] = { "program", "--perf=" };

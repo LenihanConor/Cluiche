@@ -350,3 +350,56 @@ TEST(TripReporter, ReportSubmitsAndNeverThrows)
 	EXPECT_NO_THROW(g.rep.Report(r));
 	EXPECT_EQ(1u, g.rep.GetSubmitted());
 }
+
+// Audit (task 11): Stop() with records still queued (writer held) flushes every one to disk.
+TEST(TripReporter, StopWithQueuedRecordsFlushesThemAll)
+{
+	ReporterGuard g;
+	UnitTimingTable t;
+	Fill(t, 5);
+	const std::string dir = TempDir();
+	TripReporter& rep = g.rep;
+	ASSERT_TRUE(rep.Start(dir.c_str()));
+	rep.SetWriterPausedForTest(true);
+	TripRecord r = Build(t, 0, 4);
+	for (uint32_t i = 0; i < 3; ++i)
+		EXPECT_TRUE(rep.Submit(r));
+	rep.Stop();   // still paused: Stop must drain regardless
+	EXPECT_EQ(3u, rep.GetWritten());
+	EXPECT_EQ(3u, ReadLines(dir + "trips.jsonl").size());
+	EXPECT_FALSE(rep.IsStarted());
+	EXPECT_FALSE(rep.Submit(r));   // after Stop: counts only, no crash
+	EXPECT_EQ(4u, rep.GetSubmitted());
+}
+
+// Audit (task 11): trips.jsonl path that cannot be opened (a directory of that name) counts one failure, no crash.
+TEST(TripReporter, TripsFileBlockedByDirectoryCountsFailure)
+{
+	ReporterGuard g;
+	const std::string dir = TempDir();
+	ASSERT_TRUE(CreateDirectoryA((dir + "trips.jsonl").c_str(), nullptr) != 0);
+	EXPECT_FALSE(g.rep.Start(dir.c_str()));
+	EXPECT_FALSE(g.rep.IsStarted());
+	EXPECT_EQ(1u, g.rep.GetWriteFailures());
+	UnitTimingTable t;
+	Fill(t, 5);
+	EXPECT_FALSE(g.rep.Submit(Build(t, 0, 4)));
+	g.rep.Stop();
+}
+
+// Audit (task 11): restart after Stop appends to the same file.
+TEST(TripReporter, RestartAfterStopAppends)
+{
+	ReporterGuard g;
+	UnitTimingTable t;
+	Fill(t, 5);
+	const std::string dir = TempDir();
+	TripRecord r = Build(t, 0, 4);
+	ASSERT_TRUE(g.rep.Start(dir.c_str()));
+	g.rep.Submit(r);
+	g.rep.Stop();
+	ASSERT_TRUE(g.rep.Start(dir.c_str()));
+	g.rep.Submit(r);
+	g.rep.Stop();
+	EXPECT_EQ(2u, ReadLines(dir + "trips.jsonl").size());
+}

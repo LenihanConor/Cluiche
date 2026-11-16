@@ -127,3 +127,43 @@ TEST(UnitTimingTable, ResetClears)
 	EXPECT_EQ(0u, t.GetUnitSampleCount());
 	EXPECT_EQ(0u, t.GetModuleCrc(0));
 }
+
+// Audit (task 11): a unit with no modules still records its own tick series.
+TEST(UnitTimingTable, ZeroModulesUnitTickOnly)
+{
+	UnitTimingTable t;
+	for (int i = 0; i < 5; ++i)
+	{
+		t.RecordUnitTick(2.0f + static_cast<float>(i));
+		t.CommitEntry();
+	}
+	EXPECT_EQ(5u, t.GetEntryCount());
+	EXPECT_EQ(5u, t.GetUnitSampleCount());
+	EXPECT_FLOAT_EQ(6.0f, t.GetUnitLast());
+	EXPECT_FLOAT_EQ(6.0f, t.GetUnitMax());
+	for (uint32_t s = 0; s < UnitTimingTable::kMaxModules; ++s)
+		EXPECT_EQ(0u, t.GetSampleCount(s));
+}
+
+// Audit (task 11): all 64 module slots plus the unit series are independent and none bleeds into another.
+TEST(UnitTimingTable, FullSixtyFourModulesIndependent)
+{
+	UnitTimingTable t;
+	for (int pass = 0; pass < 3; ++pass)
+	{
+		for (uint32_t s = 0; s < UnitTimingTable::kMaxModules; ++s)
+			EXPECT_TRUE(t.RecordModule(s, 1000u + s, static_cast<float>(s) + 1.0f));
+		t.RecordUnitTick(500.0f);
+		t.CommitEntry();
+	}
+	EXPECT_FALSE(t.RecordModule(UnitTimingTable::kMaxModules, 1u, 1.0f));
+	for (uint32_t s = 0; s < UnitTimingTable::kMaxModules; ++s)
+	{
+		EXPECT_EQ(3u, t.GetSampleCount(s));
+		EXPECT_FLOAT_EQ(static_cast<float>(s) + 1.0f, t.GetLast(s));
+		EXPECT_FLOAT_EQ(static_cast<float>(s) + 1.0f, t.GetMax(s));
+		EXPECT_EQ(1000u + s, t.GetModuleCrc(s));
+	}
+	EXPECT_EQ(3u, t.GetUnitSampleCount());
+	EXPECT_FLOAT_EQ(500.0f, t.GetUnitLast());
+}

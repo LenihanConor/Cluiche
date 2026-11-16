@@ -221,6 +221,35 @@ TEST(ProcessingUnitTiming, SimEntryPerFixedStepAndCatchupCounter)
     EXPECT_EQ(pu->GetLastUpdateStepCount(), 0u);
 }
 
+// Audit (task 11): a catch-up burst hitting maxCatchUpTicksPerFrame (default 5) adds exactly the steps run
+// (5), counts one catchup_updates, and the excess backlog is dropped, not deferred.
+TEST(ProcessingUnitTiming, SimCatchupCapHitAddsStepsRunAndCountsOnce)
+{
+    g_timed = nullptr;
+    auto manifest = BuildManifest("capMod");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    DriveToActive(app, g_timed);
+
+    ProcessingUnit* pu = g_timed->GetProcessingUnit();
+    ASSERT_NE(pu, nullptr);
+    auto* catchup = MetricRegistry::Instance().FindCounter(StringCRC("pu.SimPU.catchup_updates"));
+    ASSERT_NE(catchup, nullptr);
+
+    const uint32_t entries = pu->GetUnitTimingTable().GetEntryCount();
+    const uint64_t catches = catchup->Value();
+    app.Update(20.0f * kFixed60);
+    EXPECT_EQ(pu->GetLastUpdateStepCount(), 5u);
+    EXPECT_EQ(pu->GetUnitTimingTable().GetEntryCount() - entries, 5u);
+    EXPECT_EQ(catchup->Value() - catches, 1u);
+
+    // Backlog was dropped: an immediate zero-dt update runs nothing.
+    app.Update(0.0f);
+    EXPECT_EQ(pu->GetLastUpdateStepCount(), 0u);
+}
+
 // AA8: cost per module per pass (reported, not gating). Build-config dependent: meaningful in Release.
 TEST(ProcessingUnitTiming, BenchmarkCostPerModulePerPass)
 {
