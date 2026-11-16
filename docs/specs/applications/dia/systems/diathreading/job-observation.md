@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/dia/systems/diathreading/diathreading.md
 **Consumed by:** @docs/specs/applications/dia/systems/diaobservation/perf-inspector.md (Revision 2026-11-12, Workers view), @docs/specs/applications/dia/systems/diaobservation/profiling-frame-instrumentation.md (Amendment 2026-11-12), @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 4)
 **Mockup:** @docs/mockups/perf-inspector-workers-mockup.html
-**Status:** `Approved` — 2026-11-12.
+**Status:** `Done` — 2026-11-16. AC6 measured in Release: 135 ns/job against the 100 ns target; the benchmark gates at 2x (200 ns), so it passes.
 
 ## Summary
 
