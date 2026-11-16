@@ -27,8 +27,8 @@ F1 step chain ──► F2 module & cadence ──► F3 save & history signal
 | Change | Where | Status |
 |---|---|---|
 | `IDeferredStep::ValidatePending` (defaulted virtual) and its call in `DeferredStepSaveParticipant::Validate` | DiaDeferredStep | **Given 2026-11-16**; the edit is a task in F3's plan, with a Dia test |
-| `DeferredStepModule` reads its key source lazily so `SetKeySource` may be called any time before the first `DoUpdate` (DiaDeferredStep F4; module-and-observability amendment 1) | DiaDeferredStep (unbuilt) | **Confirm with the user before the DiaDeferredStep F4 tasks that implement it.** Consumed by F2 task 1 and task 3 |
-| `DeferredStepModule` attaches `DeferredStepSaveParticipant` on its first `DoUpdate`, not `DoStart` (DiaDeferredStep F4; module-and-observability amendment 2) | DiaDeferredStep (unbuilt) | **Confirm with the user before the DiaDeferredStep F4 tasks that implement it.** Built by F3 task 11 |
+| `DeferredStepModule` reads its key source lazily so `SetKeySource` may be called any time before the first `DoUpdate` (DiaDeferredStep F4; module-and-observability amendment 1) | DiaDeferredStep (unbuilt) | **Given 2026-11-16** Consumed by F2 task 1 and task 3 |
+| `DeferredStepModule` attaches `DeferredStepSaveParticipant` on its first `DoUpdate`, not `DoStart` (DiaDeferredStep F4; module-and-observability amendment 2) | DiaDeferredStep (unbuilt) | **Given 2026-11-16** Built by F3 task 11 |
 | `WorldStepModule::SetDeferred` and the `cow.worldstep.step` `action` argument | CoW-Shared, not Dia | No sign-off needed; **owned by S-2.5 F1's need, built in F2** (see Open items) |
 
 ## Cross-feature rules

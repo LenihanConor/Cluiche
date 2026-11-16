@@ -19,7 +19,7 @@ the key-source design switches to variant B (task 3), which stays as the fallbac
 task 3 before task 1 is recorded.
 
 **Dia confirmations owed (AD-001, not triggered by this plan's own code):** the lazy `SetKeySource` read and the lazy
-save-participant attach are design changes to the unbuilt DiaDeferredStep Feature 4. Confirm with the user before the
+save-participant attach are design changes to the unbuilt DiaDeferredStep Feature 4. Signed off by the user 2026-11-16 (AD-001); proceed with the
 DiaDeferredStep Feature 4 tasks that implement them. This plan only consumes them (start condition: those Feature 4 tasks are built).
 
 No Dia code is edited by this feature (AD-001: not triggered). The per-stage hook is Feature 1's `IChainObserver`

@@ -29,7 +29,7 @@ None new for A4. Cross-system items that touch Dia and are owned elsewhere:
 | Change | Where | Status |
 |---|---|---|
 | `IDeferredStep::ValidatePending` | DiaDeferredStep (World Step F3 task) | Given 2026-11-16; code edit not yet made |
-| Additive `SimQueryHost::Execute(name, args)` | DiaDebugServer (S-2.5 F4 spike) | **Not given; ask first** |
+| Additive `SimQueryHost::Execute(name, args)` | DiaDebugServer (S-2.5 F4 spike) | **Given 2026-11-16** (only if the S-2.5 F4 spike finds no local dispatch) |
 
 ## Cross-feature rules
 

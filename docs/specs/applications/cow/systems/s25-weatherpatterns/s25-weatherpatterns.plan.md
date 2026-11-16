@@ -34,7 +34,7 @@ F1 stage & world ──────────────┤   (needs A4 F1-F6
 
 | Change | Where | Status |
 |---|---|---|
-| Additive `SimQueryHost::Execute(name, args)` if no local dispatch exists | DiaDebugServer | **Not given. Ask the user before F4's gated tasks** |
+| Additive `SimQueryHost::Execute(name, args)` if no local dispatch exists | DiaDebugServer | **Given 2026-11-16** (only if the F4 spike finds no local dispatch; the spike still runs first) |
 | `IDeferredStep::ValidatePending` | DiaDeferredStep (World Step F3) | Given 2026-11-16 |
 | None for F1, F2, F3, F5 | — | All used Dia APIs are built |
 

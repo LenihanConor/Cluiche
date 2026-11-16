@@ -307,5 +307,5 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 1. **`SetKeySource` timing (from World Step Feature 2).** `SetKeySource` may be called any time **before the first `DoUpdate`**; `DoUpdate` reads the source each step. "Before `DoStart`" is superseded. A key source registered after the first `DoUpdate` is still accepted but the module logs the one-time "no key source" Warning until it is.
 2. **Lazy attach of the save participant (from World Step Feature 3).** `DeferredStepModule` calls `DeferredStepSaveParticipant::Attach` on its **first `DoUpdate`**, not in `DoStart`, so the participant is registered after every other module's participants and deserializes last. If no `SaveLoadModule`/registry is injected, nothing is attached (unchanged).
-3. **AD-001:** both are design changes to an unbuilt Dia feature. Confirm with the user before the Feature 4 tasks that implement them.
+3. **AD-001: signed off by the user 2026-11-16** for both changes (lazy `SetKeySource` read and lazy save-participant attach); and, in the same sign-off, the additive `SimQueryHost::Execute` that S-2.5 Feature 4 may need.
 

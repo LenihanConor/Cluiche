@@ -8,7 +8,7 @@ Starts once S-2.5 Feature 1 (stage, `S25WeatherModule`, `LoadWorld`/`IsReady(rev
 
 **Gates in this plan (stop and ask the user):**
 1. Task 1 (mockup) must be signed off before **any** panel code (task 19).
-2. Task 0 decides whether a Dia change is needed. If `SimQueryHost::Execute(name,args)` is needed it is **AD-001, ASK THE USER FIRST**. Tasks 15 (live command sink), 17 (`ScenarioModule` run path), 25 (DiaAutomation smoke) block on it. Tasks 3-14, 16, 18 and 20-24 do not.
+2. Task 0 decides whether a Dia change is needed. If `SimQueryHost::Execute(name,args)` is needed it is **AD-001, SIGNED OFF 2026-11-16** (build it only if the spike finds no local dispatch). Tasks 15 (live command sink), 17 (`ScenarioModule` run path), 25 (DiaAutomation smoke) block on it. Tasks 3-14, 16, 18 and 20-24 do not.
 3. Task 21 (authoring the fourteen scenarios and vocabulary) ends with a user review of the wording.
 
 All implementation tasks are **sonnet**. If one proves to need more, **ask before escalating** (feedback_confirm_opus). No mutation checks. Scoped `--filter` while iterating, one full run at the end with `--shards 2` or more. Release perf (AC 11) is measured and reported, never enforced.
