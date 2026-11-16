@@ -164,3 +164,4 @@ before escalating" (feedback_confirm_opus).
 5. **Golden file ownership and "Small".** Resolved by amendment 3 (2026-11-16): this feature owns the file, Feature 2 uses the `pipeline/` prefix, and Small = `MakeCoastRange(66, 42)`.
 6. **Meaning of "season" for the regression run.** `ApplyPreset` returns the season and does not own the clock; the tests advance it with `WeekOf`/`SeasonOf`. Whether a `startWeekOffset` is wanted here is still open (confirm; assumed not).
 7. **"Mean precipitation" definition.** Resolved by amendment 2 (2026-11-16): mean over every cell in the set and every week of the scenario.
+- **Review 2026-11-16:** The coastal 1.5x ratio test uses the 66x42 fixture; 40x24 only for the fast tests (system plan, decision 3). No `startWeekOffset` here (decision 12).

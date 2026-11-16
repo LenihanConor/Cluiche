@@ -83,3 +83,4 @@ No Dia files are added or edited. `World Step Feature 3` is CoW code, so the `Ap
 4. **Spec outcome B.** Resolved by amendment 3 (2026-11-16): the stash-then-apply fallback is the committed design if the Task 1 spike finds the bad order.
 5. **`StepKey` type for `week`.** Resolved by amendment 1 (2026-11-16): `int64_t` in the record, `>= 0` check, then cast to `uint64_t`.
 6. **`WeatherStateRecord` ownership.** Declared by Feature 3 Task 7 (queue entry) and filled by this feature's codec; whichever lands first creates `WeatherStateRecord.h`.
+- **Review 2026-11-16:** `WeatherStateRecord.h` already exists from Feature 3 Task 7; this feature adds only the codec (decision 5). Field range names are verified in Task 4.

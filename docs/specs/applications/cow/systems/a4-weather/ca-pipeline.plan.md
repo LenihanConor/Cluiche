@@ -161,3 +161,4 @@ before escalating" (feedback_confirm_opus).
 6. **Golden hash exactness and Debug/Release (spec Open Q3).** Resolved by amendment 6 (2026-11-16): `/fp:precise`, no fast-math in both configurations; Task 0 verifies and stores per-configuration hashes only if they still differ.
 7. **Size of "Small" and "Large" test terrains** for Tasks 20 and 22 is not given here (Large is 6,656 cells per Feature 6). Use the dimensions defined by S-1's size presets; confirm if a hand-built Large terrain is wanted at those dimensions. Still open.
 8. **Test file names are tentative** in the spec ("until Feature 1 fixes the folder layout"). This plan follows Feature 1's layout. Still open (low impact).
+- **Review 2026-11-16:** Test terrains are hand-built at S-1 dimensions (Small 66x42, Large 104x64); file names follow Feature 1 (decisions 13, 18).

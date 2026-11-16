@@ -187,3 +187,4 @@ Spec silences and uncertain points. Resolved items are kept for traceability.
 - Command registration helper ownership: **Resolved by amendment 5 (2026-11-16)**: `S25CommandRegistrar`.
 - `cow.s25.status` field names beyond the spec's list are not defined (still open; the CPU-report values from amendment 4 are added to it).
 - Open Design Question 1 (build `HistoryDriverModule` before S-2.5) is unresolved and drives whether tasks 14/26 stay blocked.
+- **Review 2026-11-16:** `cow.s25.status` fields are fixed (system plan, decision 16); `HistoryDriverModule` is scheduled early (decision 1).

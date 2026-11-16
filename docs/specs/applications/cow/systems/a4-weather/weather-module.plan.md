@@ -101,3 +101,4 @@ No Dia files are added or edited (AD-001 not triggered). If any task finds it ne
 3. **Season of a step inside the spin-up.** Resolved by amendment 4 (2026-11-16): spin-up runs from calendar offset 0, ends one step before Spring at 52 weeks; the first live step takes its season from its step day; no correction.
 4. **Re-announced identical world** (spec Open Design Question 1) is accepted as a known one-week loss; no task builds a content-hash skip. Still open by design.
 5. **`WeatherStateRecord` ownership.** Declared by Task 7, filled by Feature 4's codec; whichever lands first creates `WeatherStateRecord.h`. Confirm if the plan order should differ.
+- **Review 2026-11-16:** `WeatherStateRecord` is created by this feature at Task 7 as a plain struct; Feature 4 fills it (decision 5).

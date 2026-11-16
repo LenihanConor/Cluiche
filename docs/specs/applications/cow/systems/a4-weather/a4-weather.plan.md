@@ -66,3 +66,18 @@ Row number = feature number. Recommended build order: **1, 2, 6, 3, 4, 5** (see 
 | F3 ODQ 2 | Spin-up wall time at the Slowest preset on a 2-worker cap is unmeasured | First S-2.5 run |
 | F4 ODQ 1 | E1 load vs S-1 `WorldGenerationComplete` order: possible silent overwrite after load | F4 first task |
 | F5 ODQ 3 | How the panel card gets SimPU values without the `debug.domain_state` cross-PU debt | F5 first task |
+
+## Open-items review (2026-11-16)
+
+All accepted by the user on 2026-11-16. These supersede the matching "Open items" lines in the feature plans.
+
+| # | Decision |
+|---|---|
+| 3 | The coastal 1.5x ratio regression runs on the **66x42** fixture (the golden size), not 40x24. 40x24 stays for the fast tests |
+| 5 | `WeatherStateRecord` is a plain struct created by **F3 Task 7**; F4's codec fills it (F3 precedes F4 in build order) |
+| 10 | A re-announced identical world re-spins and may lose one in-flight week; accepted until F-3 exposes a content hash |
+| 11 | `weather_parameters.json` lives at `Assets/CoW/Global/Weather/` |
+| 12 | No `startWeekOffset` in the F6 regression tests (only the S-2.5 headless runner uses it) |
+| 13 | `ca-pipeline` test terrains are hand-built at S-1's dimensions: Small 66x42, Large 104x64 |
+| 18 | Test file names follow Feature 1's layout; save-field range names are checked in `weather-save` Task 4 |
+| C | Settled by running: E1 load vs `WorldGenerationComplete` order (F4 Task 1), debug-panel stream and hotkey table (F5 spikes), spin-up wall time (first S-2.5 run) |

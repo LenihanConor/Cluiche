@@ -119,3 +119,4 @@ Resolved items are kept for traceability.
 6. **Line numbers.** **Resolved by amendment 4 (2026-11-16)**: `JsonLineMap` / `ILineMap`.
 7. **Scenario count wording.** **Resolved by amendment 7 (2026-11-16)** for the headless-only scenarios' watch text.
 8. **Open Design Questions 1-4** of the spec stand as written: local dispatch (task 0), pause-on-run default, `requiredWhen`, and content authoring (task 21).
+- **Review 2026-11-16:** Pause-on-run stays the default; `requiredWhen` deferred (decisions 7, 8).

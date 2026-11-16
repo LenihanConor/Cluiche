@@ -59,3 +59,15 @@ F1 step chain ──► F2 module & cadence ──► F3 save & history signal
 | F3 ODQ 3 | Resolved by amendment 1 (2026-11-16): `latest_day` saved (AC 21, 22) | Resolved |
 | System ODQ 1 | The Century tick has never been measured and may stall SimPU once per ~100 game years | A1's plan task; reopens the two-channel option only if measured badly |
 | S-2.5 F1 | `SetDeferred` idle-only rule: confirm it is cheap before F2 is closed | F2 plan |
+
+## Open-items review (2026-11-16)
+
+All accepted by the user on 2026-11-16. These supersede the matching "Open items" lines in the feature plans.
+
+| # | Decision |
+|---|---|
+| 9 | A retired stage reports Degraded (not silent); revisit if S-3.5 finds it noisy |
+| 15 | `Configure` while a step is in flight: the chain refuses (returns false) and the module logs the Error |
+| 17 | `RegisterStage` beyond 8 stages returns false, the same cap as `Configure` (`kMaxStages = 8`) |
+| C | Settled by running: key-source ordering hazard (F2 Task 1); if the fallback is needed it adds a `GameSpeedControllerModule` dependency then; Century tick cost is A1's measurement task |
+| A.1 | **New scheduled task, between World Step F3 and S-2.5 F1: build `HistoryDriverModule`** (the S-3.5 Feature 1 driver: world-step listener mode plus clock mode). It gates S-2.5's step-back, timeline, history export and Feature 5. Owned by S-3.5 F1; schedule it first in that feature |

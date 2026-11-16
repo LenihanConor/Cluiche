@@ -133,3 +133,4 @@ All code is CoW (application) code under `Cluiche/CoW/Shared/Weather/`. No Dia f
 3. **String type for `ParamError`.** Resolved by amendment 4 (2026-11-16): `String256` for error text, `String64` for keys; Task 0 confirms the names.
 4. **Where `weather_parameters.json` is read from** is outside this feature (Feature 3 reads the `.diaapp` config), but the asset location needs to match the asset pipeline. Task 13 follows the existing CoW `Global` asset convention unless told otherwise. Still open.
 5. **`Reseed` timing.** Resolved by amendment 5 (2026-11-16): `SeedFields` is private here; `Reseed` is Feature 6's and is not added in this plan.
+- **Review 2026-11-16:** `weather_parameters.json` is at `Assets/CoW/Global/Weather/` (decision 11).

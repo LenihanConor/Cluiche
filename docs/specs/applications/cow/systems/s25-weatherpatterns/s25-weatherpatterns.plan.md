@@ -79,3 +79,20 @@ Row number = feature number. Recommended build order: **2, 1, 3, 4, 5** (see the
 | F5 ODQ 1 | Nobody can see the curves on screen until T-1 F7 exists | Scheduling |
 
 Items previously open that the 2026-11-16 gap-pass amendments resolved: the mockup path (F1 amendment 1), scout budget (F1 amendment 2), two-trace checks and `WorldInfo` (F2 amendments 1-2), first-run `Pass` (F2 amendment 5, F3 amendment 1), cross-feature command registration (F3 amendment 2), command names (F3 amendment 6). Each is recorded as 'Resolved by amendment N (2026-11-16)' in the owning feature plan.
+
+## Open-items review (2026-11-16)
+
+All accepted by the user on 2026-11-16. These supersede the matching "Open items" lines in the feature plans.
+
+| # | Decision |
+|---|---|
+| 1 | **Build `HistoryDriverModule` early** (S-3.5 F1, scheduled between World Step F3 and S-2.5 F1) so the history-gated tasks in F1, F4 and F5 are not left on fakes |
+| 2 | `SLOW_S25Verdict` ships **strict**, with no known-failures list. If Test 7 fails by design, the first real run decides between adding a forcing, accepting periodic weather, or dropping the test (a GDD decision) |
+| 4 | T-1 Feature 7 (the Inspector graph panel, proposed) is to be specced **after S-2.5 F3**, since F3 produces the data. Not blocking: verdicts are numeric |
+| 6 | Verdicts at Small only; one Large performance run |
+| 7 | `cow.scenario.run` pauses the clock by default; revisit with S-3 F3 |
+| 8 | `requiredWhen` in the command catalogue is deferred; raise with T-2 only if authors hit run-time missing-argument errors |
+| 14 | A check with all-NaN data: Hard checks `Fail` with "non-finite data", Default checks `MagnitudeMiss`; `Pending` and `InvalidWorld` carry an empty `reopenSection` |
+| 16 | `cow.s25.status` fields: world, prechecks with values, step mode, day/week/season, history availability, hint source, last performance values |
+| 18 | The DiaAutomation scenario location and format follow F-2's pattern, found in `scenarios-and-walkthrough` Task 0 |
+| C | Settled by running: hard-check definitions (S-2.5 F3 proof run), S-1 blocking vs stepped generator agreement (F3 AC 12) |

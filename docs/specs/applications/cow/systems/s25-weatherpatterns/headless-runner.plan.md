@@ -171,3 +171,4 @@ Resolved items are kept for traceability.
 - **Where the CPU report goes**: **Resolved by amendment 4 (2026-11-16)**.
 - **DiaAutomation scenario file location and format** are "follow F-2's pattern" only (still open).
 - **Open Design Questions 1, 3 and 4** (known-failures list, exclusive perf runs, trace export) stay open; the plan builds the strict behaviour.
+- **Review 2026-11-16:** `SLOW_S25Verdict` stays strict, no known-failures list; the DiaAutomation scenario follows F-2 (decisions 2, 18).

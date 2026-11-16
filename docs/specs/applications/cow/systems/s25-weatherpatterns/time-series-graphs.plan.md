@@ -80,3 +80,4 @@ Resolved items are kept for traceability.
 5. **Float32 rounding vs Feature 2's aggregates.** **Resolved by amendment 3 (2026-11-16)**: double mean in ascending cell order rounded to float32; task 1 confirms the recorder's own arithmetic.
 6. **Snow coverage.** The spec excludes snow coverage percent as a series; the spec's checks still use it. No action here, noted so nobody adds it.
 7. **No visible curves.** Open Design Question 1 stands: until T-1 Feature 7 exists the series are only JSON. No graph task exists in this plan by design.
+- **Review 2026-11-16:** T-1 Feature 7 is to be specced after S-2.5 F3 (decision 4); `HistoryDriverModule` is scheduled early (decision 1).

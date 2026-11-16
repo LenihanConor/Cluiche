@@ -182,3 +182,4 @@ Resolved items are kept for traceability; only the last two are genuinely open.
 - The system spec's float `measured`/`threshold`: **Resolved by amendment 7 (2026-11-16)**: double.
 - **Pending versus `NaN measured`**: no rule for a check that gets all-NaN data (still open; task 18 documents the choice).
 - The Pending/InvalidWorld cases' `reopenSection` is assumed empty (spec only states it for the Test 7 Fail case; still open).
+- **Review 2026-11-16:** All-NaN data: Hard `Fail` with "non-finite data", Default `MagnitudeMiss`; `Pending`/`InvalidWorld` have empty `reopenSection` (decision 14).

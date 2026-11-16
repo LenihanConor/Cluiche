@@ -130,3 +130,4 @@ Spec silences and tensions, recorded and not resolved here.
 8. **AC numbering:** 27 is listed after 26 in the spec; resolved by amendment 5 (2026-11-16): ids are stable and not renumbered.
 9. **Open Design Question 2** (who owns the Idle-only `Configure` refusal, chain or module) is deferred to Feature 2;
    this plan implements the chain's silent `false`.
+- **Review 2026-11-16:** `Configure` mid-step is refused by the chain (the module logs); `RegisterStage` past 8 returns false (system plan, decisions 15, 17).
