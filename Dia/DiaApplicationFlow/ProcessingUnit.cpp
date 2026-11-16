@@ -232,6 +232,12 @@ namespace Dia { namespace ApplicationFlow {
             const ModuleState s = mModules[i].module->GetState();
             if (s == ModuleState::kStarting)
                 moduleStarting = true;
+#ifdef _DEBUG
+            // Paused (perf live control): skip ONLY the kActive update. kStarting still ticks so
+            // start/transition complete; stopping runs in RunReversePass, untouched by pause.
+            if (s == ModuleState::kActive && mPaused[i])
+                continue;
+#endif
             if (s == ModuleState::kStarting || s == ModuleState::kActive)
             {
                 ModuleEntry& entry = mModules[i];
@@ -361,6 +367,25 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+#ifdef _DEBUG
+    void ProcessingUnit::RefreshPauseTable()
+    {
+        if (!mPauseSource) return;
+        const PerfPauseSet* set = mPauseSource->FetchLatest();
+        if (!set || set->generation == mPauseGeneration) return;
+        const PerfPauseSet snap = *set;   // copy: the slot may be overwritten by the Main writer
+        mPauseGeneration = snap.generation;
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            bool paused = false;
+            const uint32_t crc = mModules[i].module->GetInstanceId().Value();
+            for (uint32_t k = 0; k < snap.moduleCount; ++k)
+                if (snap.moduleCrcs[k] == crc) { paused = true; break; }
+            mPaused[i] = paused;
+        }
+    }
+#endif
+
     void ProcessingUnit::Update(float deltaTime)
     {
         DIA_PROFILE_SCOPE_SUBJECT("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow, mInstanceId.Value());
@@ -370,6 +395,10 @@ namespace Dia { namespace ApplicationFlow {
         const auto tickStart = std::chrono::steady_clock::now();
         mSelfMsAccum = 0.0f;
         mLastUpdateStepCount = 1;
+
+#ifdef _DEBUG
+        RefreshPauseTable();   // one FrameStream read per Update(); table rebuilt only on a new generation
+#endif
 
         switch (mAffinity)
         {

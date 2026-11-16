@@ -24,6 +24,9 @@ namespace Json { class Value; }
 #include <atomic>
 #include <mutex>
 #include <thread>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
 
 namespace Dia { namespace Observation { namespace Metric { class Counter; class Gauge; } } }
 
@@ -136,6 +139,11 @@ namespace Dia { namespace ApplicationFlow {
         // Emit a lifecycle event on the $lifecycle stream.
         // Called internally by Application and Module; not part of the public module API.
         void EmitLifecycleEvent(const LifecycleEvent& ev);
+
+#ifdef _DEBUG
+        // Perf live control (task 3, Debug only). Main-thread only. Null until Start().
+        PerfPauseController* GetPerfPauseController() { return mPerfPause.Get(); }
+#endif
 
     private:
         // Maximum number of ProcessingUnits supported (matches spec).
@@ -257,6 +265,12 @@ namespace Dia { namespace ApplicationFlow {
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.
+#ifdef _DEBUG
+        // Framework-owned "$perfpause" FrameStream (store lives in mStreamStores) + its writer.
+        FrameStreamStore<PerfPauseSet>*              mPerfPauseStore = nullptr;
+        Dia::Core::UniquePtr<PerfPauseController>    mPerfPause;
+        static bool ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId);
+#endif
         bool                 mTransitionDraining = false;
         Dia::Core::StringCRC mDrainingToStage;
 

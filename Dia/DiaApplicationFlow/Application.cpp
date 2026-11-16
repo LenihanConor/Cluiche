@@ -138,11 +138,29 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+#ifdef _DEBUG
+        // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
+        {
+            auto* pauseStore = new FrameStreamStore<PerfPauseSet>(Dia::Core::StringCRC("$perfpause"));
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfPauseStore = pauseStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(pauseStore);
+            ++mStreamStoreCount;
+            mPerfPause = Dia::Core::UniquePtr<PerfPauseController>(new PerfPauseController(pauseStore));
+            mPerfPause->SetModuleResolver(&Application::ResolveModuleType, this);
+        }
+#endif
+
         // --- 2. Build PUs and modules from manifest --------------------------
         if (!BuildFromManifest())
         {
             return false;
         }
+
+#ifdef _DEBUG
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfPauseSource(mPerfPauseStore);
+#endif
 
         // --- 2b. Connect stream handles across all modules -------------------
         ConnectModuleStreams();
@@ -270,6 +288,9 @@ namespace Dia { namespace ApplicationFlow {
             if (!mShutdownInitiated)
             {
                 mShutdownInitiated = true;
+#ifdef _DEBUG
+                if (mPerfPause) mPerfPause->ReleaseOwner(PerfPauseController::kLocalOwner);
+#endif
                 BeginStopAllActive();
             }
 
@@ -624,6 +645,19 @@ namespace Dia { namespace ApplicationFlow {
             out.Add(mManifest.processingUnits[p].instanceId);
     }
 
+#ifdef _DEBUG
+    bool Application::ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId)
+    {
+        const Application* self = static_cast<const Application*>(ctx);
+        for (unsigned int p = 0; p < self->mProcessingUnitCount; ++p)
+        {
+            const Module* m = self->mProcessingUnits[p]->FindModule(instanceId);
+            if (m) { outTypeId = m->GetTypeId(); return true; }
+        }
+        return false;
+    }
+#endif
+
     //--------------------------------------------------------------------------
     // GetActiveModules
     //--------------------------------------------------------------------------
@@ -829,6 +863,11 @@ namespace Dia { namespace ApplicationFlow {
 
         DIA_LOG_INFO("Application", "Stage transition: '%s' -> '%s'",
                      mCurrentStage.AsChar(), newStage.AsChar());
+
+#ifdef _DEBUG
+        // Local (in-game/test) pauses never survive a stage exit.
+        if (mPerfPause) mPerfPause->ReleaseOwner(PerfPauseController::kLocalOwner);
+#endif
 
         {
             LifecycleEvent ev;

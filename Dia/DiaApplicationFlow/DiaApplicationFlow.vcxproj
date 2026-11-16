@@ -32,6 +32,7 @@
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
     <ClCompile Include="Observation\ObservationModule.cpp" />
     <ClCompile Include="Manifest\ManifestBootstrap.cpp" />
+    <ClCompile Include="PerfPause.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -58,6 +59,7 @@
     <ClInclude Include="RenderModule.h" />
     <ClInclude Include="MainModule.h" />
     <ClInclude Include="Manifest\ManifestBootstrap.h" />
+    <ClInclude Include="PerfPause.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>

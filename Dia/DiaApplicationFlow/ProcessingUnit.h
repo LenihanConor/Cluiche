@@ -12,6 +12,9 @@
 #include <DiaObservation/Profile/UnitTimingTable.h>
 #include <atomic>
 #include <thread>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
 namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
@@ -109,6 +112,12 @@ namespace Dia { namespace ApplicationFlow {
         // modules' current stats. Intended for shutdown; reads the table from the caller's thread.
         void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const;
 
+#ifdef _DEBUG
+        // Perf live control (task 3, Debug only): the framework-owned "$perfpause" stream. Read
+        // once per Update(); null = no pause support (a bare PU built outside Application).
+        void SetPerfPauseSource(const FrameStreamStore<PerfPauseSet>* source) { mPauseSource = source; }
+#endif
+
     private:
         static constexpr unsigned int kMaxModules = 64;
 
@@ -132,6 +141,16 @@ namespace Dia { namespace ApplicationFlow {
             ModuleEntry(const ModuleEntry&) = delete;
             ModuleEntry& operator=(const ModuleEntry&) = delete;
         };
+
+#ifdef _DEBUG
+        // Pause table: mPaused[i] is true when mModules[i] is in the latest pause snapshot. Rebuilt
+        // only when the snapshot generation changes; RunForwardPass reads one bool per module.
+        // Lives here (not in Module) so Module layout never depends on _DEBUG.
+        void RefreshPauseTable();
+        const FrameStreamStore<PerfPauseSet>* mPauseSource = nullptr;
+        uint32_t                              mPauseGeneration = 0;
+        bool                                  mPaused[kMaxModules] = {};
+#endif
 
         Dia::Core::StringCRC mInstanceId;
         PUAffinity           mAffinity;

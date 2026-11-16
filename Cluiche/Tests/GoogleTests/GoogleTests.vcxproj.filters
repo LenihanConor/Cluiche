@@ -2976,5 +2976,8 @@
     <ClCompile Include="ApplicationFlow\TestPerfAutoMarkers.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPerfPause.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

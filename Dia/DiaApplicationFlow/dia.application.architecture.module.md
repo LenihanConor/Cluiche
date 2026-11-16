@@ -73,6 +73,7 @@ public_api:
     - Dia/DiaApplicationFlow/Application.h
     - Dia/DiaApplicationFlow/Module.h
     - Dia/DiaApplicationFlow/ProcessingUnit.h
+    - Dia/DiaApplicationFlow/PerfPause.h   # Debug-only (_DEBUG) module/domain pause controller + $perfpause snapshot
     - Dia/DiaApplicationFlow/TypeRegistry.h
     - Dia/DiaApplicationFlow/StreamTypeRegistry.h
     - Dia/DiaApplicationFlow/ModuleRefV2.h
