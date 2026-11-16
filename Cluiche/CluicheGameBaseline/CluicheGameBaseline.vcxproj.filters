@@ -153,6 +153,9 @@
     <ClCompile Include="Modules\DomainRootDelta.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Types\PerfPauseCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -325,6 +328,9 @@
     </ClInclude>
     <ClInclude Include="Modules\DomainRootDelta.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfPauseCommands.h">
+      <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

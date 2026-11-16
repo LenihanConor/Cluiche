@@ -143,6 +143,8 @@ namespace Dia
 			, mSendHook(nullptr)
 			, mSendHookContext(nullptr)
 			, mLoggedLateSimReply(false)
+			, mCurrentCommandConnId(-1)
+			, mDisconnectObserverCount(0)
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
@@ -712,6 +714,45 @@ namespace Dia
 				}
 				RebuildSubscriberCounts();
 				mSimPending.DropConnection(connId);
+
+				// Snapshot first so an observer cannot disturb the iteration.
+				const unsigned int count = mDisconnectObserverCount;
+				DisconnectObserverEntry observers[kMaxDisconnectObservers];
+				for (unsigned int i = 0; i < count; ++i) observers[i] = mDisconnectObservers[i];
+				for (unsigned int i = 0; i < count; ++i) observers[i].fn(observers[i].context, connId);
+			}
+		}
+
+		bool DebugServer::AddDisconnectObserver(DisconnectObserver fn, void* context)
+		{
+			if (!fn)
+			{
+				DIA_LOG_ERROR("DebugServer", "AddDisconnectObserver: null callback");
+				return false;
+			}
+			for (unsigned int i = 0; i < mDisconnectObserverCount; ++i)
+				if (mDisconnectObservers[i].fn == fn && mDisconnectObservers[i].context == context)
+					return true;
+			if (mDisconnectObserverCount >= kMaxDisconnectObservers)
+			{
+				DIA_LOG_ERROR("DebugServer", "AddDisconnectObserver: observer table full (%u)", kMaxDisconnectObservers);
+				return false;
+			}
+			mDisconnectObservers[mDisconnectObserverCount++] = DisconnectObserverEntry{ fn, context };
+			return true;
+		}
+
+		void DebugServer::RemoveDisconnectObserver(DisconnectObserver fn, void* context)
+		{
+			for (unsigned int i = 0; i < mDisconnectObserverCount; ++i)
+			{
+				if (mDisconnectObservers[i].fn == fn && mDisconnectObservers[i].context == context)
+				{
+					for (unsigned int j = i + 1; j < mDisconnectObserverCount; ++j)
+						mDisconnectObservers[j - 1] = mDisconnectObservers[j];
+					--mDisconnectObserverCount;
+					return;
+				}
 			}
 		}
 
@@ -968,6 +1009,15 @@ namespace Dia
 			Json::Value payload;
 			if (cmd.has_payload())
 				payload = Dia::Proto::ProtoStructToJsonValue(cmd.payload());
+
+			// Main-hosted handlers read the caller via GetCurrentCommandConnId() for the duration of dispatch.
+			struct ConnIdScope
+			{
+				int& slot;
+				int  previous;
+				ConnIdScope(int& s, int id) : slot(s), previous(s) { slot = id; }
+				~ConnIdScope() { slot = previous; }
+			} connIdScope(mCurrentCommandConnId, connId);
 
 			// Sim-hosted names are deferred: post to SimPU, reply in CompleteSimReply.
 			for (unsigned int i = 0; i < mSimNames.Size(); ++i)

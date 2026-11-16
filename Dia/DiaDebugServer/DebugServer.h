@@ -264,6 +264,21 @@ namespace Dia
 			typedef void (*SendHook)(void* context, int connId, const dia::debug::DebugMessage& msg);
 			void SetSendHook(SendHook hook, void* context) { mSendHook = hook; mSendHookContext = context; }
 
+			// --- Client identity for Main-hosted commands (Main thread only) ----
+			// Connection id of the client whose command is being dispatched right now; -1 outside command
+			// dispatch (e.g. a Main-hosted handler invoked by anything other than a DebugServer client).
+			int GetCurrentCommandConnId() const { return mCurrentCommandConnId; }
+
+			// Disconnect observers: called on Main, in registration order, after a client's taps and pending sim
+			// requests have been dropped.  Fixed capacity (kMaxDisconnectObservers); false (Error log) when full
+			// or 'fn' is null.  The same (fn, ctx) pair may only be added once (re-adding returns true, no dup).
+			// Observers must not add/remove observers from inside the callback.
+			typedef void (*DisconnectObserver)(void* context, int connId);
+			static const unsigned int kMaxDisconnectObservers = 8;
+			bool AddDisconnectObserver(DisconnectObserver fn, void* context);
+			// Unknown pairs are ignored.
+			void RemoveDisconnectObserver(DisconnectObserver fn, void* context);
+
 		private:
 			friend struct DebugServerTestAccess;
 
@@ -370,6 +385,10 @@ namespace Dia
 			SendHook           mSendHook;
 			void*              mSendHookContext;
 			bool               mLoggedLateSimReply;
+			int                mCurrentCommandConnId;
+			struct DisconnectObserverEntry { DisconnectObserver fn; void* context; };
+			DisconnectObserverEntry mDisconnectObservers[kMaxDisconnectObservers];
+			unsigned int            mDisconnectObserverCount;
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;

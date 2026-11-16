@@ -2979,5 +2979,8 @@
     <ClCompile Include="ApplicationFlow\TestPerfPause.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfPauseCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

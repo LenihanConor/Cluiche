@@ -8,6 +8,7 @@
 
 #ifdef _DEBUG
 
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/PerfPause.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -326,6 +327,44 @@ TEST_F(PerfPauseFixture, DomainPausePublishedInSnapshot)
     ASSERT_NE(s, nullptr);
     EXPECT_EQ(s->domainCount, 1u);
     EXPECT_EQ(s->domainCrcs[0], StringCRC("someDomain").Value());
+}
+
+TEST_F(PerfPauseFixture, AppReportListsActivePauses)
+{
+    Rig r(MakeManifest("PPL", nullptr, 1));
+    // Application registers dia.app.report with a raw this-capture and never unregisters it, so a command left by an
+    // earlier (destroyed) Application would be called. Drop it first so this Application re-registers its own.
+    Dia::API::UnregisterCommandJson(StringCRC("dia.app.report"));
+    ASSERT_TRUE(r.app.Start());
+    Pump(r.app, 3);
+    PerfPauseController* ctl = r.app.GetPerfPauseController();
+    ASSERT_TRUE(ctl->Pause(5, PerfPauseKind::kModule, StringCRC("ppMod0")).ok);
+    ASSERT_TRUE(ctl->Pause(0, PerfPauseKind::kDomain, StringCRC("someDomain")).ok);
+
+    const Json::Value rep = Dia::API::ExecuteCommandJson(StringCRC("dia.app.report"), Json::Value(Json::objectValue));
+    ASSERT_TRUE(rep["success"].asBool());
+    const Json::Value& pauses = rep["data"]["activePauses"];
+    ASSERT_TRUE(pauses.isArray());
+    ASSERT_EQ(pauses.size(), 2u);
+    bool sawModule = false, sawDomain = false;
+    for (const Json::Value& e : pauses)
+    {
+        if (e["kind"].asString() == "module")
+        {
+            sawModule = true;
+            EXPECT_EQ(e["owner"].asUInt(), 5u);
+            EXPECT_EQ(e["id"].asString(), "ppMod0");
+            EXPECT_EQ(e["crc"].asUInt(), StringCRC("ppMod0").Value());
+        }
+        else if (e["kind"].asString() == "domain")
+        {
+            sawDomain = true;
+            EXPECT_EQ(e["crc"].asUInt(), StringCRC("someDomain").Value());
+        }
+    }
+    EXPECT_TRUE(sawModule);
+    EXPECT_TRUE(sawDomain);
+    Dia::API::UnregisterCommandJson(StringCRC("dia.app.report"));   // do not leave a dangling this-capture
 }
 
 #endif // _DEBUG

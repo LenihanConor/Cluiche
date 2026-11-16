@@ -1278,6 +1278,7 @@
     <ClCompile Include="DiaObservation\Perf\TestPerfMarkers.cpp" />
     <ClCompile Include="ApplicationFlow\TestPerfAutoMarkers.cpp" />
     <ClCompile Include="ApplicationFlow\TestPerfPause.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestPerfPauseCommands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

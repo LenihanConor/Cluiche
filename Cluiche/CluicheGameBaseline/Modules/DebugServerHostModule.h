@@ -34,6 +34,7 @@
 #include <DiaBlackboard/BlackboardRegistry.h>
 #include "Types/DebugServerPushEvent.h"
 #include "Types/SimAnnounceTracker.h"
+#include "Types/PerfPauseCommands.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -188,6 +189,11 @@ private:
     // Blackboard registry owned here (MainPU); game modules register/unregister
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.
     Dia::Blackboard::BlackboardRegistry mBlackboardRegistry;
+
+#ifdef _DEBUG
+    // perf.pause / perf.resume / perf.resume_all (Debug only; declared last so it is destroyed before mServer).
+    std::unique_ptr<PerfPauseCommands> mPerfPauseCommands;
+#endif
 };
 
 } } // namespace Cluiche::AppFlow

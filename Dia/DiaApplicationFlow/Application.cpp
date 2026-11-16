@@ -1206,6 +1206,39 @@ namespace Dia { namespace ApplicationFlow {
                 transition["heldByGuards"] = ti.heldByGuards;
                 result["transition"] = transition;
 
+#ifdef _DEBUG
+                // Perf live control: active module/domain pauses (Debug only). owner 0 = local, else connId + 1.
+                {
+                    Json::Value pausesArr(Json::arrayValue);
+                    if (mPerfPause)
+                    {
+                        PerfPauseEntry entries[PerfPauseController::kMaxEntries];
+                        const unsigned int n = mPerfPause->ActivePauses(entries, PerfPauseController::kMaxEntries);
+                        for (unsigned int i = 0; i < n; ++i)
+                        {
+                            Json::Value e;
+                            const bool isModule = entries[i].kind == PerfPauseKind::kModule;
+                            e["kind"]  = isModule ? "module" : "domain";
+                            e["crc"]   = entries[i].crc;
+                            e["owner"] = entries[i].owner;
+                            if (isModule)
+                            {
+                                // Names are not stored in the controller; recover them from the manifest.
+                                for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+                                {
+                                    const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+                                    for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
+                                        if (puDecl.modules[m].instanceId.Value() == entries[i].crc)
+                                            e["id"] = puDecl.modules[m].instanceId.AsChar();
+                                }
+                            }
+                            pausesArr.append(e);
+                        }
+                    }
+                    result["activePauses"] = pausesArr;
+                }
+#endif
+
                 return result;
             };
             Dia::API::RegisterCommandJson(reportCmd);

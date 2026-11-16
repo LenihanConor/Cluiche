@@ -116,6 +116,16 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     mServerPtr = &mServer;
     mServerService.Register(mServerPtr);
 
+#ifdef _DEBUG
+    // Perf live control: Debug only (AC5). Gate is _DEBUG, not DIA_DEBUG (DiaVisualDebugger defines that in Release).
+    auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+    if (auto* pause = appImpl ? appImpl->GetPerfPauseController() : nullptr)
+    {
+        mPerfPauseCommands = std::make_unique<PerfPauseCommands>(*pause, mServer);
+        mPerfPauseCommands->Register();
+    }
+#endif
+
     // Create and activate inspector data sources.
     {
         auto* ctrl = GetApplication();
@@ -432,6 +442,9 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
         src.reset();
     }
 
+#ifdef _DEBUG
+    mPerfPauseCommands.reset();   // unregisters the perf.* commands and the disconnect observer
+#endif
     mServerService.Deregister();
     mServerPtr = nullptr;
     mServer.SetSimRequestSink(nullptr);

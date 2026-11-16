@@ -75,6 +75,7 @@
     <ClCompile Include="Modules\DomainStateRelayModule.cpp" />
     <ClCompile Include="Modules\LogPushBatcher.cpp" />
     <ClCompile Include="Modules\DomainRootDelta.cpp" />
+    <ClCompile Include="Types\PerfPauseCommands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -142,6 +143,7 @@
     <ClInclude Include="Modules\DomainStateRelayModule.h" />
     <ClInclude Include="Modules\LogPushBatcher.h" />
     <ClInclude Include="Modules\DomainRootDelta.h" />
+    <ClInclude Include="Types\PerfPauseCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
