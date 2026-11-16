@@ -2973,5 +2973,8 @@
     <ClCompile Include="DiaObservation\Perf\TestPerfMarkers.cpp">
       <Filter>DiaObservation\Perf</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestPerfAutoMarkers.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

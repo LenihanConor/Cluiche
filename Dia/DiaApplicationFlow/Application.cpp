@@ -14,6 +14,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
@@ -1439,6 +1440,31 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::EmitLifecycleEvent(const LifecycleEvent& ev)
     {
+        // Perf markers (perf-live-control AC7). Runs on whichever thread emits; a thread that has not
+        // registered with PerfMarkers drops the mark silently.
+        switch (ev.kind)
+        {
+            case LifecycleEventKind::kStageTransitionRequested:
+                DIA_PERF_MARK_VALUE("stage.requested", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kStageTransitionStarted:
+                DIA_PERF_MARK_VALUE("stage.started", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kStageTransitionCommitted:
+                DIA_PERF_MARK_VALUE("stage.committed", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kModuleStateChanged:
+                if (ev.newState == ModuleState::kActive)
+                    DIA_PERF_MARK_VALUE("module.started", ev.moduleInstanceId.Value());
+                else if (ev.newState == ModuleState::kInactive && ev.previousState == ModuleState::kStopping)
+                    DIA_PERF_MARK_VALUE("module.stopped", ev.moduleInstanceId.Value());
+                else if (ev.newState == ModuleState::kFailed)
+                    DIA_PERF_MARK_VALUE("module.failed", ev.moduleInstanceId.Value());
+                break;
+            default:
+                break;
+        }
+
         if (!mLifecycleStore)
             return;
 

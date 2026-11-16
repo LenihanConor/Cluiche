@@ -1276,6 +1276,7 @@
     <ClCompile Include="DiaObservation\Profile\TestPerfSummary.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestPerfExitTimer.cpp" />
     <ClCompile Include="DiaObservation\Perf\TestPerfMarkers.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPerfAutoMarkers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

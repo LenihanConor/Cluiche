@@ -13,6 +13,7 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -242,6 +243,7 @@ namespace Dia { namespace ApplicationFlow {
                         DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart TIMEOUT (%.1f ms)", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
                         mLifecycleReporter.SetFailing(Dia::Core::StringCRC("module.start.timeout"));
                         mState.store(ModuleState::kFailed, std::memory_order_release);
+                        DIA_PERF_MARK_VALUE("module.failed", mInstanceId.Value());
                         DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
                                      mInstanceId.AsChar(),
                                      ModuleStateName(ModuleState::kStarting),

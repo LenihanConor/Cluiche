@@ -273,6 +273,7 @@ namespace Dia { namespace ApplicationFlow {
 
             if (trip.tripped)
             {
+                DIA_PERF_MARK_VALUE("trip", mInstanceId.Value());
                 TripReporter* reporter = mTripReporter.load(std::memory_order_acquire);
                 if (reporter != nullptr)
                 {

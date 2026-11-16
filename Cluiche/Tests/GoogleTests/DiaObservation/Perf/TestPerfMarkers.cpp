@@ -30,13 +30,14 @@ namespace
 
 TEST_F(PerfMarkerTest, RingKeepsOrderAndNoDrops)
 {
+    const uint64_t droppedBase = PerfMarkers::TotalDropped();   // process-wide: other tests' unregistered threads also count
     for (uint32_t i = 1; i <= 10; ++i)
         PerfMarkers::Mark(i);
 
     std::vector<PerfMarker> v;
     uint64_t dropped = 99;
     ASSERT_EQ(10u, Snap(v, &dropped));
-    EXPECT_EQ(0u, dropped);
+    EXPECT_EQ(0u, dropped - droppedBase);
     for (uint32_t i = 0; i < 10; ++i)
     {
         EXPECT_EQ(i + 1, v[i].nameCrc);
@@ -61,18 +62,20 @@ TEST_F(PerfMarkerTest, ValueFlagIsOptional)
 
 TEST_F(PerfMarkerTest, FullRingExactlyAtCapacityDropsNothing)
 {
+    const uint64_t droppedBase = PerfMarkers::TotalDropped();
     for (uint32_t i = 0; i < PerfMarkers::kRingCapacity; ++i)
         PerfMarkers::Mark(i);
 
     std::vector<PerfMarker> v;
     uint64_t dropped = 99;
     ASSERT_EQ(PerfMarkers::kRingCapacity, Snap(v, &dropped));
-    EXPECT_EQ(0u, dropped);
+    EXPECT_EQ(0u, dropped - droppedBase);
     EXPECT_EQ(0u, v.front().nameCrc);
 }
 
 TEST_F(PerfMarkerTest, OverflowDropsOldestAndCounts)
 {
+    const uint64_t droppedBase = PerfMarkers::TotalDropped();
     const uint32_t total = PerfMarkers::kRingCapacity + 100;
     for (uint32_t i = 0; i < total; ++i)
         PerfMarkers::Mark(i);
@@ -80,7 +83,7 @@ TEST_F(PerfMarkerTest, OverflowDropsOldestAndCounts)
     std::vector<PerfMarker> v;
     uint64_t dropped = 0;
     ASSERT_EQ(PerfMarkers::kRingCapacity, Snap(v, &dropped));
-    EXPECT_EQ(100u, dropped);
+    EXPECT_EQ(100u, dropped - droppedBase);
     EXPECT_EQ(100u, v.front().nameCrc);          // oldest 100 gone
     EXPECT_EQ(total - 1, v.back().nameCrc);
 }
