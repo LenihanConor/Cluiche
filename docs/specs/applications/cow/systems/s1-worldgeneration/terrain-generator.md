@@ -112,7 +112,7 @@ All later randomness is Dia seeded noise (dia-needs #15) sampled with these seed
 
    Stop after `Islands` accepted groups. Fewer are accepted if the candidates run out; the number accepted is reported as `effective.islands`.
    - **Island potential.** `I(c) = max over the accepted groups' blobs of (1 − dist(c, blob) / r_blob)` (`islandPotential` layer). It is positive only inside a blob.
-   - **Eligible cells:** `I > 0`, outside `M_ref`, not next to `M_ref`, and at least `kBorderWidth + 1` steps from the edge. Because `I > 0` confines every island to its own blobs, islands never grow into a second continent and groups never merge, whatever the budget.
+   - **Eligible cells:** `I > 0`, outside `M_ref`, not next to `M_ref`, and at least `kBorderWidth + 1` steps from the edge. Because `I > 0` confines every island to its own blobs, islands never grow into a second continent. A blob can reach about 6 cells, equal to `kIslandSpacing`, so two groups' blobs can touch; where adjacent eligible cells belong to different groups, the one with the lower `I` is dropped (ties by index), and groups never merge, whatever the budget. Each group's centre cell is forced to `I = 1`.
    - **Island cells.** The `min(eligible, max(K, 3 · groups))` eligible cells with the highest `I` become island land (ties by index). Every blob centre has `I = 1`, so every group gets its centre first.
    - **Overflow.** The island budget is a *preference* bounded by island capacity (the eligible cells). Any unplaced budget returns to the mainland. At the defaults, capacity is roughly 15–25% of land, so `ContinentIslands` below about 0.8 saturates there. `effective.islandShare` reports the share actually reached, and the panel shows it next to the slider.
 
@@ -165,13 +165,14 @@ elevationRaw = clamp(kCoastElev + base + mount + barrier + vents + rugged, kCoas
 ```
 
 - Ocean cells are `0`.
+- **`volcanic` layer bits:** bit 1 is the island vent (stage 1, group 0 only); bit 2 is the chain vents (stage 3 rewrites only bit 2 and never clears bit 1). Two writers, by design.
 - `oceanDepth = min(1, coastDistance / kShelfScale)` (with `kShelfScale = 6`) is a layer only, used for Relief shading. A4 sees ocean as elevation 0.
 - Ruggedness fades out over the first two cells inland, so coasts stay low.
 
 ### Stage 5: Drainage
 
 1. **Fill.** Priority-flood depression filling (seeded from every ocean cell, ε-increment `1e-5` per step, ties by cell index) gives `filledElevation`. In it, every land cell has a strictly descending path to the ocean.
-2. **Basins.** `basinDepth = filledElevation − elevationRaw`, treating values below `1e-4` as 0. Each connected group of cells with depth > 0 is a basin, with a volume (sum of depths), a maximum depth and a spill height (the fill level).
+2. **Basins.** `basinDepth = fillLevel − elevationRaw`, where `fillLevel` is the fill height **without** the ε increments (the `filledElevation` layer keeps the ε so paths descend strictly), treating values below `1e-4` as 0. The literal `filledElevation − elevationRaw` would make spurious basins on flats of more than 10 cells, where ε alone exceeds `1e-4`. Each connected group of cells with depth > 0 is a basin, with a volume (sum of depths), a maximum depth and a spill height (the fill level).
    - **Eligible:** max depth ≥ `kMinBasinDepth = 0.01` and at least 2 cells.
    - **Rank:** volume (largest first), then smallest cell index. `basinRank` is 1-based; 0 = not an eligible basin.
 3. **Flow direction.** Each land cell drains to the neighbour with the largest drop on `filledElevation` (ties by lowest `d`), and the neighbour is always ocean or lower land. Ocean cells are sinks (`flowDirection = 6`).
@@ -277,7 +278,7 @@ Depth zones come from the continent's shape: how far a cell is from the coast, c
 | `continentIslands` (ContinentIslands) | 0–1 | 0.7 | 1 Landmass | **Monotone split, total held, capacity-bound.** Lower values ask for more land in islands, but islands are limited to their blobs (stage 1 step 6), so the share saturates at island capacity. Total land is unchanged (±0.01). As the value rises, the mainland is a superset of the previous mainland and the island cells are a subset of the previous island cells, so the island share never rises |
 | `peninsulas` | 0–3 | 2 | 1 Landmass | **Rebalancing, positions fixed.** Lobe `j` keeps its direction and shape. Total land stays at `Land` |
 | `coastline` | 0–1 | 0.5 | 1 Landmass | **Bounded, total held.** Changes only cells near the coast: at least 95% of the land cells that are ≥ 4 steps inland at 0 stay land at 1. Coastline length (land–ocean edges) is larger at 1 than at 0 |
-| `mountainousness` | 0–1 | 0.55 | 2 Mountains | **Monotone.** The ridge curve is unchanged. Ridge width and height rise. `elevationRaw` never falls on any cell as it rises |
+| `mountainousness` | 0–1 | 0.55 | 2 Mountains | **Monotone.** The ridge curve is unchanged. Ridge width and height rise. With `passes = 0`, `elevationRaw` never falls on any cell as it rises. With `passes > 0` it can fall at a pass cell: the pass gap widens with ridge width, so the gap cells lose height (tested at `passes = 0` only) |
 | `spineToRing` | 0–1 | 0.15 | 2 Mountains | **Continuous.** Land and coast are unchanged. Moving the slider by 0.05 moves each curve point by at most `0.05 · |G(t) − L(t)|` |
 | `orientationDeg` | 0–359 (wraps) | 30 | 2 Mountains | **Rigid.** Land is unchanged. The line form rotates about the centroid. Passes keep their `t` |
 | `passes` | 0–4 | 2 | 2 Mountains | **Prefix of accepted passes.** Passes at `n + 1` = passes at `n` plus the next accepted candidate. A candidate that would crowd an accepted pass is skipped (stage 2 step 5), so a short range can have fewer than `n` (`effective.passes`). With `passes = 0` the ridge is one connected group of cells |
@@ -600,7 +601,7 @@ For each consecutive pair of `landFraction` values in AC4, at a fixed `continent
 **Pass:**
 - With `passes = 0`, the ridge cells (`Ridge` flag) form one connected group, at `spineToRing` 0, 0.5 and 1.
 - At `spineToRing = 1`, the ridge splits the rest of the main landmass into ≥ 2 connected parts (it encloses the interior) on ≥ 90% of seeds.
-- With `passes = n` at `spineToRing = 0`, the ridge has `effective.passes + 1` connected groups, and `effective.passes = n` whenever the curve is long enough (checked on the default params, where `n ≤ 3` fits on ≥ 90% of seeds).
+- With `passes = n` at `spineToRing = 0`, the ridge has `effective.passes + 1` connected groups, and `effective.passes = n` whenever the curve is long enough. On the default params at Small, `n ≤ 2` fits on ≥ 90% of seeds (measured 2026-11-05: n=1 20/20, n=2 20/20, n=3 11/20, n=4 0/20; the spine is about 30 cells and each pass takes about 6 cells of arc). Higher `n` is capped by `effective.passes`, which the panel shows.
 - Between every two accepted passes there is at least one ridge cell (no piece is erased).
 - Accepted passes are a prefix as `n` rises.
 
@@ -620,14 +621,14 @@ For each consecutive pair of `landFraction` values in AC4, at a fixed `continent
 
 ### AC12: Valley depth
 `valleyDepth` 0 → 1 in steps of 0.25. **Pass:**
-- River and lake cells are unchanged.
+- The river and lake masks are unchanged (river cells themselves are carved by stage 9 step 1; lake cells are not).
 - `elevation` is non-increasing on every cell as the value rises.
 - Only cells within 2 steps of a river change.
 - AC10's downhill rule holds at every value.
 
 ### AC13: Depth zones
 **Pass:**
-- On each landmass, every First Shores cell's `zoneCost` < every Wild Reaches cell's, which is < every Ancient Interiors cell's.
+- Every First Shores cell has `zoneCost ≤ t1`, and every Wild Reaches cell has `zoneCost > t1`. On the main landmass, every Ancient Interiors cell has `zoneCost ≥ t2`, where `t2 > t1`. A strict First < Wild < Ancient ordering does **not** hold: the `kAncientMinDepth` test demotes shallow high-cost cells to Wild Reaches, so Wild's cost range overlaps Ancient's.
 - `zoneCost ≤ zoneCostBase` on every cell.
 - Every `Coast` cell is First Shores.
 - Ancient Interiors cells are only on the main landmass, and there is at least one when the main landmass has ≥ 40 cells and the base costs have more than one distinct value above `t1` (stage 8 step 2).
@@ -700,7 +701,7 @@ The automated shape checks measure structure, not whether a map looks like a wor
 | ID | Decision | How it constrains this feature |
 |----|----------|--------------------------------|
 | PD-001 | StringCRC ids | `TerrainTypeId` names key the navigation table and JSON. Biomes are Feature 8's StringCRC ids |
-| PD-004 | No STL containers in public APIs | Layers and arrays are `DynamicArrayC`. `WorldShapeParams` and `WorldProvenance` are trivially copyable (fixed `char` buffer) |
+| PD-004 | No STL containers in public APIs | Accepted deviation (2026-11-16): `DynamicArrayC` is fixed-capacity and cannot hold per-cell data for 1x1 to 128x128 maps, and `DynamicArray<T>` truncates on assignment and asserts on an empty copy. Per-cell layers and `WorldStructure` cells are private `std::vector`; the public API exposes only `const T*` pointers and counts. `WorldShapeParams` and `WorldProvenance` are trivially copyable (fixed `char` buffer) |
 | AD-002 | Classify cross-cutting needs | Generator is CoW-Shared. Noise is Dia (dia-needs #15). Flood, BFS and Dijkstra stay local |
 | AD-003 | GDD owns design intent | This spec deviates from S-1 GDD decision 1 (via SD-S1-003). The GDD must be updated (BACKLOG loose end) |
 | SD-S1-002 | Every action/query is a DiaAPI command | Terrain commands above. The panel calls only these |
@@ -728,7 +729,10 @@ Archipelago's 2 continents is a deliberate deviation from the GDD (Presets).
 
 ## Status
 
-`Approved` 2026-10-18 (re-spec 2026-10-15, S-1 plan task 3; review pass below applied before approval).
+`Done` 2026-11-16 (built, plan tasks 1 to 16 complete; build amendments approved 2026-11-16). Previously `Approved` 2026-10-18 (re-spec 2026-10-15, S-1 plan task 3; review pass below applied before approval).
+
+- **Build amendments 2026-11-16 (approved):** AC9 (n ≤ 2 fits), AC12 (masks unchanged), AC13 (no strict zone-cost ordering), stage 5 `basinDepth` (ε-free fill level), stage 1 island eligibility rule, `volcanic` layer bits, `mountainousness` monotone only at `passes = 0`, PD-004 deviation (private `std::vector` cells).
+- Left to the S-1 tuning pass: continent 1/2 "furthest try" fallback on Small-shaped maps, guessed noise constants.
 
 - Supersedes the Placeholder Generation Algorithm (was `Approved` 2026-10-11, amended 2026-10-14).
 - **Deviates from S-1 GDD decision 1** ("placeholder is naive"): the GDD needs updating, and the BACKLOG has the loose end (SD-S1-003). The Archipelago preset's 2 continents is a second, deliberate deviation for the same fold-back.

@@ -380,7 +380,7 @@ Export world without specifying file path (use default). **Pass:** File written 
 | ID | Decision | How it applies |
 |----|----------|----------------|
 | PD-001 | Use StringCRC for all entity/component IDs | Biome/TerrainType/Region/ApotheosisType enums serialized as strings (human-readable names), converted to StringCRC at import time via `BiomeFromString()` helpers |
-| PD-004 | No STL containers in public APIs | `WorldStructure` uses `DynamicArrayC<T>` (already compliant per Feature 1); export/import internal code can use `std::ifstream`/`std::ofstream` (not public API) |
+| PD-004 | No STL containers in public APIs | `WorldStructure` keeps its cells in a private `std::vector` and exposes only pointers and counts (accepted deviation, see the terrain generator spec); export/import internal code can use `std::ifstream`/`std::ofstream` (not public API) |
 | PD-009 | All generated non-binary output lives under `Cluiche/out/<AppName>/` | Default export path is `Cluiche/out/CoW/worlds/`; user can override via Feature 6 debug host, but default must comply |
 
 ### From Application (CoW)
