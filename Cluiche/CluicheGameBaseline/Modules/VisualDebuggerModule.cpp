@@ -11,6 +11,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Perf/LatencyProbe.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 // Full domain definitions needed here so unique_ptr can destroy complete types.
@@ -62,6 +63,7 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
     if (!mPanelCommandRegistered && !mPanelCommandAttempted)
         TryRegisterPanelCommand();
 
+    mCurrentTick = ctx.tick;
     DrainPanelCommandStream();
     DrainConsoleLines();
     DrainPendingCommands();
@@ -381,7 +383,13 @@ void VisualDebuggerModule::DrainPendingCommands()
         Json::Value args;
         Json::Reader reader;
         reader.parse(std::string(pending.argsJson), args);
+
+        // perf-live-control: "_lat" carries a latency-probe id; strip it so domains never see it.
+        uint32_t latId = 0;
+        const bool hasLat = Dia::Observation::Perf::StripLatencyArg(args, latId);
         domain->OnCommand(pending.cmd, args);
+        if (hasLat && mLatencyMatcher)
+            mLatencyMatcher->NoteApplied(latId, mCurrentTick);   // stamps "applied"; "visible" on the first snapshot >= this tick
     }
 }
 

@@ -2982,5 +2982,8 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfPauseCommands.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Perf\TestLatencyProbe.cpp">
+      <Filter>DiaObservation\Perf</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

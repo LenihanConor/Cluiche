@@ -30,6 +30,7 @@
 #ifdef _DEBUG
 #include <DiaApplicationFlow/PerfPause.h>
 #endif
+#include <DiaObservation/Perf/LatencyProbe.h>
 #include <memory>
 #include <mutex>
 
@@ -75,6 +76,11 @@ public:
     static constexpr const char* kPanelCommandName = "debug.panel_command";
     // True once registered with a SimQueryHostModule (lazy: the host may start after this module).
     bool PanelCommandRegistered() const { return mPanelCommandRegistered; }
+
+    // Perf latency probes: the owner (Main-side panel code) keeps the matcher and calls OnSnapshot with each
+    // DomainStateSnapshot.simFrame. Optional; null = "_lat" is still stripped but nothing is stamped.
+    // Set before the module starts (not synchronised).
+    void SetLatencyMatcher(Dia::Observation::Perf::LatencyVisibleMatcher* matcher) { mLatencyMatcher = matcher; }
 
     void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
     void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
@@ -152,6 +158,8 @@ private:
     Dia::ApplicationFlow::ModuleRef<SimQueryHostModule> mSimQueryHost{this};
     bool mPanelCommandRegistered = false;
     bool mPanelCommandAttempted = false;
+    Dia::Observation::Perf::LatencyVisibleMatcher* mLatencyMatcher = nullptr;
+    uint64_t mCurrentTick = 0;
 
     std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
     std::unique_ptr<Dia::Debug::Coord3DDebugDomain>  mCoord3DDomain;

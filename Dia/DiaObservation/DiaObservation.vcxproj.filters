@@ -147,6 +147,9 @@
     <ClCompile Include="Perf\PerfMarkers.cpp">
       <Filter>Perf</Filter>
     </ClCompile>
+    <ClCompile Include="Perf\LatencyProbe.cpp">
+      <Filter>Perf</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -332,6 +335,9 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Perf\PerfMarkers.h">
+      <Filter>Perf</Filter>
+    </ClInclude>
+    <ClInclude Include="Perf\LatencyProbe.h">
       <Filter>Perf</Filter>
     </ClInclude>
   </ItemGroup>

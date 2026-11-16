@@ -56,6 +56,7 @@
     <ClCompile Include="Profile\TripReporter.cpp" />
     <ClCompile Include="Profile\PerfSummary.cpp" />
     <ClCompile Include="Perf\PerfMarkers.cpp" />
+    <ClCompile Include="Perf\LatencyProbe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -120,6 +121,7 @@
     <ClInclude Include="Profile\PerfSummary.h" />
     <ClInclude Include="Profile\PerfExitTimer.h" />
     <ClInclude Include="Perf\PerfMarkers.h" />
+    <ClInclude Include="Perf\LatencyProbe.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
