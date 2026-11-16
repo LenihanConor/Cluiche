@@ -9,6 +9,7 @@
 #include "DiaObservation/Metric/MetricRegistry.h"
 #include "DiaObservation/Health/HealthRegistry.h"
 #include "DiaObservation/Profile/Profiler.h"
+#include "DiaObservation/Profile/TripReporter.h"
 #include "DiaObservation/Capture/CaptureManager.h"
 
 #include "DiaCore/Json/external/json/json.h"
@@ -189,6 +190,9 @@ namespace Dia
 				}
 			}
 
+			// Trip records (always on, independent of the profiler): own writer thread, never the PU thread
+			Profile::TripReporter::Instance().Start(mSessionDir);
+
 			mMetricSnapshotAccumMs = 0.0f;
 
 			// Register retention callback for Warning/Error entries
@@ -287,6 +291,7 @@ namespace Dia
 
 			Trace::Tracer::Instance().Stop();
 			Profile::Profiler::Instance().Stop();
+			Profile::TripReporter::Instance().Stop();
 
 			// Write health.json from final health poll (conditionally)
 			if (mEnableHealthFileSink)

@@ -52,6 +52,8 @@
     <ClCompile Include="Job\JobObserver.cpp" />
     <ClCompile Include="Profile\UnitTimingTable.cpp" />
     <ClCompile Include="Profile\TripDetector.cpp" />
+    <ClCompile Include="Profile\TripRecord.cpp" />
+    <ClCompile Include="Profile\TripReporter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -111,6 +113,8 @@
     <ClInclude Include="Job\JobObserver.h" />
     <ClInclude Include="Profile\UnitTimingTable.h" />
     <ClInclude Include="Profile\TripDetector.h" />
+    <ClInclude Include="Profile\TripRecord.h" />
+    <ClInclude Include="Profile\TripReporter.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

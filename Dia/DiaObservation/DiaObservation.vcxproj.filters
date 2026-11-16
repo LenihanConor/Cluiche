@@ -132,6 +132,12 @@
     <ClCompile Include="Profile\TripDetector.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\TripRecord.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\TripReporter.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -302,6 +308,12 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Profile\TripDetector.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripReporter.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
