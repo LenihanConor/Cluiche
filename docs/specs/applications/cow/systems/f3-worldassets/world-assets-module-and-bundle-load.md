@@ -189,9 +189,9 @@ No conflicts. Two parent statements are amended by this spec and updated in the 
 | Dependency | Use | Status |
 |---|---|---|
 | Feature 1 | Envelope, packs, merge | Approved |
-| Feature 4 | The `world` alias and deploy so paths resolve in every build | Draft |
+| Feature 4 | The `world` alias and deploy so paths resolve in every build | Approved |
 | DiaMessageBus, DiaAPI `CommandRegistry`, `PathStore` | Events, commands, aliases | Done |
-| S-1 / A4 / A1 participants | Implemented in Feature 6 | Specced, not built |
+| S-1 / A4 / A1 participants | Implemented in Feature 6 | S-1 built (seams in Feature 6); A4, A1 specced, not built |
 | **Consumer requirements (Feature 6)** | A1 and A4 must read their parameters when they initialise, not cache them at module start, and expose `IsReady(revision)`. A1 and A4 keep initialising themselves on `WorldGenerationComplete` | To be added to their specs with Feature 6 |
 
 ## Open Design Questions

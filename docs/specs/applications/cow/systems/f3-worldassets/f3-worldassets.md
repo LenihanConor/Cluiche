@@ -246,15 +246,16 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 6 runs per consumer as each syst
 | DiaMessageBus | Events | Done |
 | F-1 debug host (panel console, palette) | Panel card | Done |
 | E1 SaveLoad | Not a dependency. Bundles are separate from saves: an E1 save is self-contained and holds the full resolved world state, so editing a bundle never changes an old save (CH-S35-02). A save records the bundle id it started from, for information only | Done |
-| **dia-needs #16: dev source-assets alias in `dia launch`** | `save_as` to source | **Proposed — Dia-tier, needs sign-off (AD-001)** |
-| **dia-needs #17: catalogue deploy category that keeps subfolders (`world` tag → `global/world/<subpath>`)** | Bundle paths resolve the same way in dev and deployed builds | **Proposed — Dia-tier, needs sign-off (AD-001)** |
-| S-1 / A4 / A1 modules | Participants | Specced, not built |
+| **dia-needs #16: dev source-assets alias in `dia launch`** | `save_as` to source | **Done (2026-10-20)** — signed off under AD-001 and built |
+| **dia-needs #17: catalogue deploy category that keeps subfolders (`world` tag → `global/world/<subpath>`)** | Bundle paths resolve the same way in dev and deployed builds | **Done (2026-10-20)** — signed off under AD-001 and built |
+| S-1 module | Terrain participant | Built (2026-11); the F-3 seams (path-accepting export/import, `cow.worldgen.validate {file}`, content hash) are built in Feature 6 |
+| A4 / A1 modules | Participants | Specced, not built |
 
 ## Binding Decisions
 
 | Source | Decision | How it constrains F-3 |
 |---|---|---|
-| AD-001 | Ask before Dia edits | The two DiaCLI changes (#16, #17) are proposals, not built from here |
+| AD-001 | Ask before Dia edits | The two DiaCLI changes (#16, #17) were signed off and built (2026-10-20) from their own specs, not from F-3 |
 | AD-002 | Four-tier placement | F-3 is CoW-Shared. Generic parts are kept free of CoW types so they can be extracted later |
 | AD-005 | One stage per testbed, modes in panel | Authoring is a panel card inside existing stages, never a new stage |
 | PD-009 | Generated output goes under `Cluiche/out/<App>/` | Authored files are source assets in `Assets/`. Reports and exports stay in `out/` |

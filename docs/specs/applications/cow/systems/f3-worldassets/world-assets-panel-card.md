@@ -148,7 +148,7 @@ No conflicts.
 | Amendments to Features 2 and 3 | `terrain.list` / `terrain.load`, `status.actions`, `save.preview` | Made with this spec (see those specs) |
 | F-1 debug host: `DiaVisualDebugger` panel, `IDebugDomain` | Hosting | Done |
 | CoW `debug-panel.html` copy and the panel page tests | The card and its tests | Done (extended) |
-| DiaValueSchema Feature 3 `renderValueTooltip` | Optional: stale-key tooltips could use it later | Approved; not required here |
+| DiaValueSchema Feature 3 `renderValueTooltip` | Optional: stale-key tooltips could use it later | Done; not required here |
 
 ## Open Design Questions
 

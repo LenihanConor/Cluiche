@@ -199,9 +199,9 @@ No conflicts.
 | Dependency | Use | Status |
 |---|---|---|
 | Features 1 and 2 | Envelope, diff, module, participants | Approved |
-| dia-needs #16 (`source` alias) | Where saves are written | Approved, build signed off, not built |
-| Feature 4 | `world` tag deploy and the `world` alias | Draft |
-| S-1 | `ExportWorld`, `GetCurrentWorld`, a world content hash, `cow.worldgen.validate` | Specced, not built (Feature 6 / S-1 Feature 4) |
+| dia-needs #16 (`source` alias) | Where saves are written | Done (2026-10-20) |
+| Feature 4 | `world` tag deploy and the `world` alias | Approved |
+| S-1 | `ExportWorld`, `GetCurrentWorld`, a world content hash, `cow.worldgen.validate` | S-1 built; the path-accepting export, content hash and `validate {file}` seams are built in Feature 6 |
 | A1 | `Capture()` of edited cells for start states | Specced, not built (Feature 6) |
 | T-2 | Writes `validated: false` on hand-edited worlds | Approved (system), features TBD |
 
@@ -218,4 +218,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Needs Features 1 and 2 and dia-needs #16 (build signed off, not started).
+`Approved` (2026-10-20). Plan not yet created. Needs Features 1 and 2 and dia-needs #16 (Done 2026-10-20).

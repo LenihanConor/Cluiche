@@ -97,7 +97,7 @@ public:
 
 ### Testbeds
 
-S-2.5 and S-3 already read the session hint and `world_bundle` (amended 2026-10-19). What remains: S-2.5's stage loads a terrain-only bundle without error when no ecology participant exists (Feature 2's missing-participant rule), its scenario files carry the envelope, and S-3 exposes the authoring loop through F-3's card (Feature 5). S-3.5 consumes everything above and is amended only where it names commands.
+S-2.5 and S-3 are specced to read the session hint and `world_bundle` (amended 2026-10-19); neither reads them in code yet, and S-1's hand-off rejects `world_bundle` until Feature 2 exists. What remains: S-2.5's stage loads a terrain-only bundle without error when no ecology participant exists (Feature 2's missing-participant rule), its scenario files carry the envelope, and S-3 exposes the authoring loop through F-3's card (Feature 5). S-3.5 consumes everything above and is amended only where it names commands.
 
 ### The shared contract test
 
@@ -183,7 +183,7 @@ No conflicts.
 | Dependency | Use | Status |
 |---|---|---|
 | Features 1 to 4 | Contract, loader, saver, locator | Approved |
-| S-1 Feature 4 (JSON export/import) and preset support | Import, hash, presets | Specced, not built |
+| S-1 Feature 4 (JSON export/import) and preset support | Import, presets | Built. The path-accepting export/import and the content hash are not; they are built first in this feature (see S-1 seams moved here) |
 | A4 Feature 3 (WeatherModule) | The weather adapter | Specced, not built |
 | A1 Features 2 and 7 (cell state, EcologyModule) | The ecology adapters and edit set | Specced, not built |
 | A3 Feature 1 | Creates the rules file at its new path | Specced, not built |

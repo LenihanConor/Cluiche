@@ -163,8 +163,8 @@ No conflicts. This feature amends one parent statement: the parent says `world` 
 
 | Dependency | Use | Status |
 |---|---|---|
-| dia-needs #17 (subfolder deploy) | Deploy path | Approved, build signed off, not built |
-| dia-needs #16 (`source` alias) | Dev lookup and saves | Approved, build signed off, not built |
+| dia-needs #17 (subfolder deploy) | Deploy path | Done (2026-10-20) |
+| dia-needs #16 (`source` alias) | Dev lookup and saves | Done (2026-10-20) |
 | Features 2 and 3 | Callers of the locator | Approved |
 | `PathStore` aliases (DiaCore) | Alias resolution | Done |
 | `dia pipeline`, `dia validate manifest` | Deploy and validation | Done (extended by #16, #17) |
@@ -181,4 +181,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. The Dia side is dia-needs #16 and #17 (build signed off, not started).
+`Approved` (2026-10-20). Plan not yet created. The Dia side is dia-needs #16 and #17 (both Done 2026-10-20).

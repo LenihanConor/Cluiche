@@ -194,7 +194,7 @@ No conflicts.
 | S-1 world-field schema sidecar (`for: cow.world`) | Layers, ramps, enums | To be authored with S-1 Feature 4 |
 | A1 per-cell field schema (`for: cow.ecology.cell`) | Start-state overlay fields | To be authored with A1 Feature 1 and 2 |
 | F-3 `WorldContentHash`, catalogue writer | Hash and flag updates | Approved |
-| DiaValueSchema Features 1, 3, 5 | Entries, tooltips, ramps | Approved, not built |
+| DiaValueSchema Features 1, 3, 5 | Entries, tooltips, ramps | Done |
 
 ## Resolved Decisions
 

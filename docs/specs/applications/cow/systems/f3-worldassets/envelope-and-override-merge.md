@@ -171,8 +171,8 @@ No conflicts.
 | Dependency | Use | Status |
 |---|---|---|
 | DiaCore Json (`jsoncpp`), `StringCRC` | Values, format ids | Done |
-| DiaValueSchema Feature 1 | Supplies ranges through the Feature 2 adapter, not used here | Approved |
-| Features 2 to 6 | Consumers | Draft |
+| DiaValueSchema Feature 1 | Supplies ranges through the Feature 2 adapter, not used here | Done |
+| Features 2 to 6 | Consumers | Approved |
 
 ## Resolved Decisions
 
