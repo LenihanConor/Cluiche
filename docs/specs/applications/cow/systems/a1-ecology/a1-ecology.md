@@ -25,7 +25,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 5. **Succession counters for every A3 path.** A data rule table covers every A3 transition. A1 evaluates it and raises `BiomeSuccessionTriggered` with a `pressure_source` (C7).
 6. **Deterministic.** Same world, data, weather and tick count give bit-identical state at any thread count. Randomness comes only from the `A1` stream of `RandomStreamModule`.
 7. **Save/load.** Ecology state round-trips through E1, and a reload continues bit-identically.
-8. **Observable.** A debug domain with per-cell overlays, a cell inspector, `cow.ecology.*` DiaAPI commands, and profiling, metrics and health.
+8. **Observable.** A debug domain with per-cell DiaCellLayers layers, per-cell detail rows, sim-hosted `cow.ecology.*` commands, and profiling, metrics and health.
 9. **Performance** (amended 2026-10-19, product review). Season band ≤ 16 ms in Release at Large (6,656 cells) with about 15 species. Small and Standard budgets scaled by cell count: Small (2,772 cells) ≤ 6.7 ms, Standard (4,160 cells) ≤ 10.0 ms. Reported gate.
 
 ## Non-Goals
@@ -48,11 +48,15 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 ```
 SimPU
   └─ EcologyModule (SimModule)
+       holds generation (HoldGeneration) in DoStart until subscribed  (added 2026-11-13)
        on WorldGenerationComplete → EcologySimulation::Initialise(world, data)
-       on WeatherUpdated{week}    → AccumulateWeek(A4 snapshot); week closes season → mSeasonPending
-       next sim frame with mSeasonPending (or SimulationTick band >= Season when input is the stub)
-                                  → StepBands(bands) → publish CellEcologyChanged / EventThresholdCrossed /
-                                    BiomeSuccessionTriggered
+       on WorldGenerationFailed   → do not initialise; report Unhealthy  (added 2026-11-13)
+       registers as World Step stage "ecology"; does NOT kick or schedule (amended 2026-11-13)
+       Capture(key) → latch weather accumulator + due bands from the key
+       Run(exec)    → StepBands on the working copy
+       Commit()     → swap, then publish CellEcologyChanged / EventThresholdCrossed /
+                      BiomeSuccessionTriggered. No history Sample() — HistoryDriverModule
+                      samples, signalled by the coordinator after every stage commits
        implements IBiomeSeasonalBaseline (A4 finds it via ModuleRef)
        owns: EcologySimulation, EcologyData, save participant, debug domain
 ```
@@ -63,13 +67,15 @@ Dia's `HexTopology` / `HexPathGrid(width, height)`: flat-top, odd-q offset, cell
 
 ### Biomes (C1, C2)
 
-One shared `StringCRC` id set, used by S-1, A1, A3, A4 and `species.json`:
+**One shared 13-value `Biome` enum** (amended 2026-11-13, user decision), declared in `CoW/Shared/WorldGeneration/TerrainEnums.h` and used by S-1, A1, A3, A4 and `species.json`. It is an enum, not a `StringCRC` set: one list means one palette, one name table and no mapping at any system boundary. S-1's enum is widened 10 → 13 by appending A3's outputs — see @docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md amendment 1, which **gates A1 Feature 2**.
 
-| Group | Ids |
-|-------|-----|
-| Primary (S-1 produces) | `Grassland`, `TemperateForest`, `Wetland`, `Desert`, `Alpine`, `Tundra`, `Rainforest`, `Volcanic` |
-| Succession outputs (A3 produces) | `Scrub`, `BurnedAshland`, `DesertifiedPlain` |
-| Water (S-1 produces) | `Ocean`, `Lake` |
+| Group | Enum values | `BiomeId` strings |
+|-------|-------------|-------------------|
+| Primary (S-1 generates, indices 0–9 with Ocean/Lake) | `GrasslandSteppe`, `TemperateForest`, `WetlandDelta`, `DesertBasin`, `AlpineMountain`, `TundraBoreal`, `Rainforest`, `VolcanicAshland` | `Biome.Grassland`, `Biome.TemperateForest`, `Biome.Wetland`, `Biome.Desert`, `Biome.Alpine`, `Biome.Tundra`, `Biome.Rainforest`, `Biome.Volcanic` |
+| Succession outputs (A3 produces, indices 10–12) | `Scrub`, `BurnedAshland`, `DesertifiedPlain` | `Biome.Scrub`, `Biome.BurnedAshland`, `Biome.DesertifiedPlain` |
+| Water (S-1 generates) | `Ocean`, `Lake` | `Biome.Ocean`, `Biome.Lake` |
+
+**Note the `BiomeId` strings carry a `Biome.` prefix and are not the enum names** — `species.json` affinity keys and `biomes.json` ids use the string form and resolve through `BiomeFromId` at load. `IsGeneratedBiome(b)` distinguishes the ten classification may place from the three only succession produces; S-1's `IsBiomeValidInZone` and `AreBiomesForbidden` are **classification** predicates and return `false` for the three, so A1 must not use them to validate a live cell.
 
 Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or depth zones, not biomes. `Volcanic` (primary, eruption ash) and `BurnedAshland` (fire succession) are different ids. A3 uses `BurnedAshland` consistently (amended 2026-10-19, product review). `biomes.json` gives every id a `BiomeProfile`, including its seasonal temperature for `IBiomeSeasonalBaseline` and a seasonal `rainfall_baseline` that S-3's pinned climate uses (the GDD's original per-biome seasonal patterns, TechnicalSpec §1b). An unknown id returns 0.5 and logs once (A4 EC-19).
 
@@ -77,7 +83,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 
 `EcologyFields` holds one `DynamicArrayC<float>` per scalar field, indexed by cell, so passes stream, saves are arrays and the parallel split matches A4's.
 
-- **Abiotic:** `biome` (palette index), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`.
+- **Abiotic:** `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`.
 - **Producers:** `grass`, `shrub`, `tree`, `aquatic`, `seed_bank`.
 - **Consumers:** dense `[species × cell]` arrays, `juvenile` and `adult`, as fractions of `max_density_per_cell` [0, 1] (C14). A species absent from a cell is 0. Functional-group totals are computed on demand from tags.
 - **Transients:** `carrion`, `waste`, `ash`, `disease_load`, `fire_intensity`, `drought_stress`.
@@ -98,7 +104,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 | `slope` | Largest elevation difference to any neighbour, normalised |
 | `river_overlay` | `waterSource == River` |
 | `corridor_node` | `terrainFlags & Pass` |
-| `hearth_site`, `nexus_node`, `world_throne_type` | S-1 Feature 9 sites. All false until Feature 9 is built |
+| `hearth_site`, `nexus_node`, `world_throne_type` | S-1's `SiteRegistry` / `SiteSet`. **Populated from the start** — amended 2026-11-13: S-1 Feature 9 (Regions and Sites) is built, so the old "all false until Feature 9" caveat is void |
 | `soil_fertility`, `soil_depth` | `BiomeProfile` defaults, varied ± by seeded noise (DiaMaths, `A1` seed) and reduced by slope |
 | `route_memory` | Base value, raised on river and corridor cells (EcologySystem §5.1, §5.3) |
 | Producers, populations | `BiomeProfile` starting values. Species are seeded where biome affinity is above zero, at affinity × the biome's starting density |
@@ -122,7 +128,7 @@ The Year, Decade and Century boundaries are also Season boundaries (364 = 4 × 9
 A1 reads weather through `IEcologyWeatherInput` (per-cell `Rainfall`, `Temperature`, `SnowCover`), not through A4 directly.
 
 - **Living mode and the game:** `WeatherSnapshotInput` adapts A4's `WeatherSnapshot`. On each `WeatherUpdated{week}`, A1 adds `Rainfall` into `rainfall_accumulator` and takes the latest `Temperature` and `SnowCover`.
-- **Timing:** the 13th week of a season arrives in the bus's Reaction pass, which can't post. A1 sets `mSeasonPending` and runs the season pipeline on the next sim frame, so week 13 always counts toward its own season.
+- **Timing (amended 2026-11-13, World Step Approved):** the `mSeasonPending` next-frame deferral is **deleted**, along with deviation 5 and Open Design Question 1. It existed because the 13th week of a season arrives in the bus's Reaction pass, which cannot post. Under World Step, `Capture` and `Commit` are explicit SimPU points outside the bus passes: A1 accumulates on `WeatherUpdated`, and the coordinator's `Capture(key)` tells it which bands are due from the game day. Week 13 counts toward its own season by construction.
 - **Controlled mode and tests:** `StubWeatherInput` (Testing/) supplies slider or scripted values. Its GOOD/AVERAGE/BAD selector scales the stub's rainfall; this is not an A1 field. With the stub, the module steps on `SimulationTick` with `band >= Season`.
 
 ### Ecology state (C4)
@@ -212,13 +218,17 @@ The herd-migration token event and the dragon kill field wait for Layer 2 and st
 
 ### Parallel execution and performance
 
-Passes are split into cell ranges through the same `IParallelExecutor` seam as A4: `SerialExecutor` first, then a `JobSystemService` executor with `TrySubmit` and an inline fallback. Each range writes only its own cells, and reductions are serial in range order, so results are bit-identical at any range count.
+Passes are split into cell ranges through **`Dia::DeferredStep::IParallelExecutor`** (amended 2026-11-13: the interface, `SerialExecutor` and the JobSystem-backed capped executor all moved into Dia with the AD-001 sign-off of 2026-11-12; A1 and A4 no longer define or implement them). The signature is `ParallelFor(count, minRange, fn)`, and calling it several times in one `Run` — once per pass — is the expected consumer shape. Each range writes only its own cells, and reductions are serial in range order, so results are bit-identical at any range count. The worker cap is strict and includes the coordinator, which runs ranges itself rather than idling.
 
 The season band is gated at ≤ 16 ms in Release at Large (6,656 cells) with about 15 species. Missing it is reported but doesn't fail the build. This replaces S-3's stale 200×200 target.
 
 ### Save/load (E1)
 
-`EcologySaveParticipant` writes every non-static `EcologyFields` array as a JSON array, plus the species and biome palettes (CRC lists). Floats are stored as doubles (`%.17g`) so they round-trip bit-exactly. Static geography is re-derived from the world on load. The estimated size is about 35 fields × 6,656 cells, inside the 100 MB buffer.
+`EcologySaveParticipant` writes every non-static `EcologyFields` array as a JSON array, plus the **species** palette (a CRC list). The **biome palette is gone** (amended 2026-11-13): `biome` is the shared enum stored as a byte, so it serializes as a plain `uint8_t` array. Floats are stored as doubles (`%.17g`) so they round-trip bit-exactly. Static geography is re-derived from the world on load. The estimated size is about 35 fields × 6,656 cells, inside the 100 MB buffer (`SaveContext::kBufferSize`, verified 2026-11-13).
+
+The real `ISaveable` interface (verified 2026-11-13) is `Serialize(SaveContext&) const`, `Deserialize(LoadContext&)`, **`GetVersion()`** (not `version`), and an optional `Validate(LoadContext&) const` that defaults to `true` and runs on *every* participant before *any* `Deserialize`, so a load is all-or-nothing. The participant **id is a registration argument**, not a member: `SaveLoadModule::RegisterParticipant(StringCRC("ecology"), &participant)`, and registration order is serialization order.
+
+**Pending deferred step.** A1's step may be complete but unapplied when a save is taken, so it implements `SerializePending` / `DeserializePending` on its World Step stage (DFS-005). A1 writes no other save code for this: DiaDeferredStep drains automatically on `SaveManager::OnSaveStarted` and owns the single `ISaveable` holding every channel's pending result, so **E1 needs no change**.
 
 ### Change ledger (why values changed)
 
@@ -232,18 +242,27 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 
 ### Debug, tuning and editing tools
 
-*Amended 2026-10-18, 2026-10-19.* The tools for understanding and tuning ecology belong to A1, as A4's do, so every stage that hosts A1 gets them: the Ecology testbed, and later the dragon testbeds. Every action is a `cow.ecology.*` DiaAPI command, and the panel calls the same commands. The commands and their execution model come first; the panel depends only on them.
+*Amended 2026-10-18, 2026-10-19, 2026-11-13.* The tools for understanding and tuning ecology belong to A1, as A4's do, so every stage that hosts A1 gets them: the Ecology testbed, and later the dragon testbeds. Every action is a `cow.ecology.*` command and the panel calls the same commands; the commands and their execution model come first, and the panel depends only on them.
+
+**Commands are sim-hosted, not DiaAPI** (amended 2026-11-13). `QueryRegistry` has an owner-thread veto, so a SimPU module cannot register there at all, and a DiaAPI handler runs on the caller's thread, which would race Sim-owned ecology state. A1 registers through `SimQueryHostModule::RegisterCommand(name, SimHelpInfo, handler)`:
+
+- **A description is mandatory** (non-empty, ≤ 256 chars) or registration fails with an Error. `category` is `"ecology"`, `owner` is `"EcologyModule"`, arguments are declared as `Dia::API::ValueParam`s (≤ 16).
+- **Arguments are JSON objects.** No positional forms.
+- **A partial registration must roll back** every name registered in that call — the failure mode that permanently leaks names in `WorldGenerationModule` today.
+- **Name budget.** A1 registers **14** names. The cap is 64 per SimPU, enforced per-stage in practice, and S-3.5's *built* components already occupy 58/64 — so S-3.5 needs the cap raised to 192 before it is wired (tracked in BACKLOG; owned by S-3.5, not A1). A1's own stage, S-3, is well under.
 
 `EcologyDebugDomain` (SimPU) provides:
 
 - **Panel:** season, year, cell count, state distribution, functional-group totals, last band profile, data source (file or fallback roster), weather input (A4 or stub), A3 present or not.
-- **Overlays (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** ecology overlays become registered DiaCellLayers layers (ecology state, health, biome, each producer, species density or functional-group density, each pressure field, succession progress). Top-3 migration arrows become an overlay through debug draw. Paint can apply to the current selection. Event clusters shown as overlays.
-- **Cell inspector (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** single-cell view uses `describeCell` to show every field of the selected cell, including per-species juvenile/adult counts and maturation, plus the **change ledger** for that cell: each value's change last band, broken down by cause.
-- **Graphs (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** a rolling time-series panel showing the selected cell's per-species juvenile/adult counts and producers, plus map-wide functional-group totals and the state distribution. Map-wide totals and the state distribution read DiaCellHistory aggregates, so they cover the whole run and are recorded whether or not the panel is open. Per-cell series need that layer to be tracked (`cells.history.track`). Long-run analysis lives in the World Sim Inspector.
+- **Layers and overlays (amended 2026-10-19; corrected 2026-11-13).** Ecology fields become registered DiaCellLayers layers (ecology state, health, biome, each producer, species or functional-group density, each pressure field, succession progress) — see the layer table below. Registration is `CellLayerRegistry::Register(CellLayerDesc)` with a **pull** `read(float*, uint32_t)` plus a `version()` change counter, reached through a `ServiceStreamReader<CellLayerRegistry>` on `"CellLayerRegistryService"` and resolved in `DoUpdate` or later. **Registration must happen on the owning PU (SimPU)** or it is rejected with `WrongProcessingUnit` and flips health to Degraded. A1 does **not** implement `IViewValueSource` — that is DiaCellHistory's replay seam.
+  - **Migration arrows are a draw-callback overlay, not a layer.** `CellValueKind` is `{Float, Category}` only — there is no vector kind — and `IDebugDraw` has **no 2D arrow primitive** (`RequestDrawArrow3D` is 3D-only). Each arrow is composed from a line or ray plus an explicit head, so the top-3 overlay **decimates by default** (every Nth cell, a panel control) and respects `DroppedCount()`. At Large, three arrows per cell is ~60k primitives, far past the 8,192 geometry budget.
+  - Paint applies to the current selection, which comes from DiaCellLayers' `cells.select.*`; A1 reads the selection, it does not implement one. Event clusters are a second draw-callback overlay.
+- **Per-cell detail rows (amended 2026-11-13; A1 does not build a cell inspector).** DiaCellLayers owns the inspector (`InspectorState` / `InspectorModel`, `cells.inspect`, stats, histogram, pin-delta). A1 registers a **detail provider** via `CellLayerRegistry::Details().Register(grid, name, builder)` — a `CellDetailBuilder` emitting sections and rows, 64 rows maximum, invoked only when exactly one cell is selected — plus a hover-extra fn for tooltip lines. The rows show every field of the selected cell, including per-species juvenile/adult counts and maturation, plus the **change ledger** for that cell: each value's change last band, broken down by cause. The 64-row cap matters for a large roster: with 15 species the per-species rows alone approach it, so the provider groups species and expands the selected group.
+- **Graphs (amended 2026-10-19; corrected 2026-11-13):** map-wide functional-group totals and the state distribution read DiaCellHistory aggregates, so they cover the whole run and are recorded whether or not any panel is open; per-cell series need that layer tracked (`cells.history.track`). **But DiaCellHistory's in-game panel was deliberately not built** (Feature 3 task 3.10b and Feature 4 task 4.10 were dropped at its close on 2026-11-04 and re-homed to the CluicheEditor Inspector as the proposed T-1 Feature 7). So A1 has **no in-game host for a rolling time-series panel**: the live card shows current-band values, and time series are reached through `cells.history.*` or T-1. Long-run analysis lives in the World Sim Inspector by design, not as a fallback.
 - **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes changes to the defaults files themselves via the `source` alias (dia-needs #16, F-3 World Assets; amended 2026-10-19). `cow.world.pack.save_as ecology <id>` is the normal tuning path, writing overrides-only ecology packs to `Assets/CoW/Global/Ecology/Packs/<id>.ecology.json`. Hot reload picks up hand edits.
 - **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. Painted/edited cells can be saved as an ecology start state via `cow.world.startstate.save_as` (baked terrain only; F-3 World Assets, amended 2026-10-19), written to `Assets/CoW/Global/Ecology/StartStates/<id>.ecostate.json`. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
-- **Commands:** `inspect`, `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data` (full name `cow.ecology.reload_data`: re-reads species, biomes, ecology parameters and succession rules from disk; used by T-2 "Reload in game"), `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3).
-- **Instrumentation (amended 2026-10-19, DiaCellLayers/DiaCellHistory):** `DIA_PROFILE_SCOPE` per step, `MetricRegistry` counters (cells per state, events per band, band time), an `IHealthReporter` (Degraded on the fallback roster or a failed data validation). Ecology state changes and crashes are emitted as DiaCellHistory events.
+- **Commands (14):** `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data` (full name `cow.ecology.reload_data`: re-reads species, biomes, ecology parameters and succession rules from disk; used by T-2 "Reload in game"), `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3), `cause` (the T-1 feed below). **Dropped 2026-11-13:** `inspect` — DiaCellLayers owns `cells.inspect` and the whole `cells.select.*` / `cells.query.*` surface; A1 must not re-spec selection or inspection.
+- **Instrumentation (amended 2026-10-19; extended 2026-11-13):** `DIA_PROFILE_SCOPE` per step and `DIA_TRACE_ZONE` per band; `MetricRegistry` counters (cells per state, events per band) plus **`cow.ecology.band_ms` registered with `MetricInfo`** — required by S-3.5 R5 and not optional; an `IHealthReporter` (Degraded on the fallback roster, a failed data validation, or rejected layer registrations). Ecology state changes and crashes are emitted as DiaCellHistory events — event types need `kind: "event"` DiaValueSchema entries with their payload field lists, or the recorder warns per type. **A1 does not call `Sample()`** (see the module diagram): CoW-Shared `HistoryDriverModule` owns sampling and is signalled by `WorldStepModule` once per applied step, and A1's emitted events are committed by that sample.
 - **Cause events for T-1 (amended 2026-10-19, T-1 World Sim Inspector):** each band, for each region and each layer tracked in DiaCellHistory, A1 emits its top 3 ledger causes as `cow.ecology.cause {group, layer, cause, delta, cells}` events. **Amended 2026-10-20 (T-1 Why Panel):** `cells` is the top 8 contributing cells by absolute delta, `[{q, r, delta}]`, taken from the ledger terms for that cause (their deltas never exceed the event's `delta`); it lets T-1's "Show cells" work for past bands and from files, since the ledger itself keeps only the last band. The event type is described in DiaValueSchema (`kind: event`). The counts are A1 parameters: `cause_events_per_region` (default 3) and `cause_cells_per_event` (default 8), so they can change as data without a spec amendment. This feeds T-1's why panel.
 
 - **Layer ids** (amended 2026-10-19, consistency pass): A1 registers these DiaCellLayers layers. Schema keys are `cow.ecology.cell/<field>`.
@@ -282,7 +301,7 @@ namespace CoW::Ecology {
     public:
         bool Initialise(const EcologyWorldInput& world, const EcologyData& data, uint64_t seed);
         void AccumulateWeek(const IEcologyWeatherInput& weather);           // one A4 week
-        void StepBands(TimeBand band, IParallelExecutor& executor);         // runs every band <= band, smallest first
+        void StepBands(TimeBand band, Dia::DeferredStep::IParallelExecutor& executor);   // every band <= band, smallest first
         void StepCell(uint32_t cell, TimeBand band);                        // one cell, no neighbour passes (tests)
 
         // A3 apply API (C9). A1 owns every cell field.
@@ -326,7 +345,7 @@ namespace CoW::Ecology {
     class EcologyModule : public Dia::ApplicationFlow::SimModule,
                           public CoW::Weather::IBiomeSeasonalBaseline {
     public:
-        float GetSeasonalTemperature(Dia::Core::StringCRC biome, CoW::Weather::Season season) const override;
+        float GetSeasonalTemperature(WorldGeneration::Biome biome, CoW::Weather::Season season) const override;
         const EcologySimulation& GetSimulation() const;
         void RegisterSuccessionResolver(ISuccessionResolver* resolver);    // A3's SuccessionModule, via ModuleRef
         // F-3 World Assets (amended 2026-10-20, Feature 6): two adapters, one per kind, exposed by reference.
@@ -349,12 +368,12 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
 | 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
-| 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `IParallelExecutor`, bit-identity, 16 ms gate. Pure logic, TDD | TBD | Draft |
+| 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
 | 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation, forward and recovery, with the recovery multiplier (C7), the `ISuccessionResolver` seam at step 10, `BiomeSuccessionTriggered`, one-shot `ApplyBiomeTransition` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
-| 7 | EcologyModule | SimModule: data load and hot reload, `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, `mSeasonPending` scheduling, stub-input mode, band gating, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `JobSystemService` executor, `cow_main.diaapp` entry | TBD | Draft |
+| 7 | EcologyModule | SimModule: data load and hot reload, `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, **registration as World Step stage `ecology` with `Capture`/`Run`/`Commit` and `SerializePending`/`DeserializePending`** (amended 2026-11-13; replaces `mSeasonPending` scheduling and the self-driven band gate), due-band resolution from the capture key, stub-input mode, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `cow_main.diaapp` entry | TBD | Draft |
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
-| 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first, then panel, inspector with change ledger, CellField overlays, migration arrows, graph panel, live tuning sliders + `tuning.save` write-back, cell edit/paint, `isolate_cell`, profiling, metrics, health. Needs an HTML mockup before build | TBD | Draft |
+| 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first (14 sim-hosted `cow.ecology.*` with mandatory help and rollback), then panel card, `CellDetailRegistry` rows with the change ledger + hover extras, DiaCellLayers layers, the decimated migration-arrow draw overlay, live tuning sliders + `tuning.save` write-back, cell edit/paint over the `cells.select.*` selection, `isolate_cell`, DiaCellHistory events, profiling, `cow.ecology.band_ms` with `MetricInfo`, health. **No cell inspector and no time-series panel** — DiaCellLayers owns the first, and DiaCellHistory's in-game panel was never built. Needs an HTML mockup before build | TBD | Draft |
 
 **Routed elsewhere:** the stage, its Controlled and Living modes, the guided proof scenarios (the old S-2 tests) and the long-run checks (the old S-3 tests) go to **S-3 Ecology** (S-2 and S-3 merged, 2026-10-18). Transition rules, legacy and recovery go to **A3**.
 
@@ -370,7 +389,7 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | PD-001 | StringCRC for ids | Biome, species, functional group and rule ids are `StringCRC`. Fields store palette indices |
 | PD-002 | ProcessingUnit/Phase/Module architecture | `EcologyModule` is a SimModule on SimPU. A4 finds the baseline provider and A3 finds the apply API through `ModuleRef`, never through singletons |
 | PD-004 | No STL containers in public APIs | `EcologyFields` uses `DynamicArrayC`. Views expose accessors, not `std::` types |
-| AD-001 | Ask permission before Dia/baseline edits | None needed. A1 uses existing DiaMessageBus, DiaSaveGame, `JobSystemService` (dia-needs #12, built 2026-10-15 (amended 2026-10-20)), DiaMaths noise (Done 2026-10-15), DiaAPI `CommandRegistry`. CellField (dia-needs #14) is Spec Approved, not built (amended 2026-10-19, product review) |
+| AD-001 | Ask permission before Dia/baseline edits | **None needed, and nothing A1 depends on is unbuilt in Dia** (re-verified 2026-11-13). A1 uses existing DiaMessageBus, DiaSaveGame, DiaMaths noise, DiaCellLayers, DiaCellHistory, DiaValueSchema, CellField (all built) and DiaDeferredStep (Approved, separately specced). `IParallelExecutor` moved into Dia under the sign-off of 2026-11-12, so A1 no longer proposes any shared-layer change |
 | AD-002 | Four-tier dependency model | CoW-Shared: A3, A4, S-3 Ecology and later systems consume it |
 | AD-003 | GDD owns design intent | GDD A1 owns the mechanics and constants. Deviations are listed below for the GDD owner |
 | AD-005 | One stage per testbed | A1 owns no stage. S-3 Ecology hosts it |
@@ -383,7 +402,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 2. **Ocean and Lake run aquatic-only ecology, with coastal cross-feeding** (C3). This is new content: an aquatic roster and `coastal_reach` need authoring.
 3. **Ecology state formula is new** (C4): a health index, one tier per move, `state_down_seasons` and `state_up_seasons`. S-2's five states become four plus a `recovering` flag.
 4. **No `delta_scale`** (C5). Each band's steps run once per boundary at that band's rate. EcologySystem §7's schedule wins over TechnicalSpec §11's pseudo-code. Steps are step-outer full-grid passes.
-5. **The season pipeline runs on the sim frame after week 13 arrives.** A2's ordering guarantee (CH-A1R-06) can't hold on the bus, because the Reaction pass can't post.
+5. ~~**The season pipeline runs on the sim frame after week 13 arrives.**~~ **Withdrawn 2026-11-13:** World Step's `Capture`/`Commit` are explicit SimPU points outside the bus passes, so A2's ordering guarantee (CH-A1R-06) holds after all and there is no deviation to fold back. Nothing is owed to the GDD here.
 6. **`year_quality` is dropped from A1** (C6). Rainfall comes from A4 only. This closes A4's PARK-A4-001 as "not needed". S-2's year-quality selector scales the stub weather input.
 7. **`succession_pressure` joins the cell schema, and succession counters come from a data rule table** owned by A3 (C7). Forest, wetland, tundra and rainforest counters are now defined, and `pressure_source` is always set.
 8. **A3 runs on A1's bands, synchronously, through `ISuccessionResolver`, and writes A1 only through `ApplyBiomeTransition`** (C9; refined by the A3 spec 2026-10-18). This corrects A3 TechnicalSpec §1's "does not subscribe to SimulationTick". Recovery counters are rules in the same table, and legacy deltas are one-shot.
@@ -401,15 +420,21 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 ## Dependencies
 
 **Requires:**
-- **S-1 World Generation**, Features 1 (Terrain) and 8 (Biome Classification), for `WorldGenerationComplete` and `GetCurrentWorld()`. Feature 9 (Regions and Sites) is soft: site flags stay false until it exists. A1 Features 1–6 don't need S-1 code.
-- GameSpeedController (`SimulationTick`, `TimeBand`, `SeasonOf`). Done.
-- `RandomStreamModule` (`A1` stream). Done.
-- E1 `SaveLoadModule`. Done.
-- `JobSystemService` + `TrySubmit` (dia-needs #12). Built 2026-10-15; A1 can read the pool through a `ServiceStreamReader<JobSystem>` and `TrySubmit` (amended 2026-10-20; CoW has a placeholder consumer until A4's real one).
-- DiaMaths seeded noise (dia-needs #15). Done.
-- DiaCellLayers, DiaCellHistory, DiaValueSchema (layers, history events, schema tooltips). Approved, not built (amended 2026-10-19, consistency pass).
-- Dia CellField renderer (dia-needs #14), for Feature 9's overlays. Spec Approved, not built.
-- DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, DiaCore (Json, StringCRC, containers, logging).
+*Statuses re-verified against code 2026-11-13; every "not built" below was stale.*
+
+- **S-1 World Generation — fully built** (system `Done` 2026-11-13), including Feature 9 Regions and Sites (`SiteRegistry`, `SiteSet`, `RegionTable`), so `hearth_site`, `nexus_node` and `world_throne_type` **can be populated at init** — the "all false until Feature 9" caveat in Initial state is obsolete. A1 reads the world through `GetCurrentWorld()` (null until `GetWorldRevision() >= 1`) and `IsReady(revision)`; note `IsReady` takes a revision and there is no zero-arg form. A1 Features 1–6 still need no S-1 code.
+- **S-1 Consumer Amendments, amendment 1** (@docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md, Draft) — the shared `Biome` enum widened 10 → 13. **Gates A1 Feature 2.**
+- **World Step** (@docs/specs/applications/cow/systems/worldstep/worldstep.md, Approved 2026-11-13) — A1 registers as stage `ecology`; the coordinator owns the cadence, the channel and history sampling. **Gates Feature 7.**
+- **DiaDeferredStep** — system Approved 2026-11-12, all five feature specs Approved 2026-11-13 with plans. Supplies `IParallelExecutor::ParallelFor(count, minRange, fn)`, `SerialExecutor` and the capped executor. **Gates Feature 4's executor work**; A1 implements none of them.
+- GameSpeedController (`SimulationTick`, `TimeBand`, `WeekOf`/`SeasonOf`, `kWeeksPerSeason`). Built. The band gate must use `>=`: `ResolveBand` returns only the largest band a day completes.
+- `RandomStreamModule` (`A1` stream), E1 `SaveLoadModule`, DiaMaths seeded noise — all built.
+- **DiaCellLayers — built.** Layer and overlay registration, `CellDetailRegistry`, selection and the `cells.*` surface. SimPU-only registration.
+- **DiaCellHistory — built (engine scope).** Aggregates, tracking, events. **Its in-game panel was not built** — see Graphs.
+- **DiaValueSchema — built.** Labels, ramps, `min`/`max`, `ui.hotkey`, and the `kind: "event"` entries A1's events need.
+- **CellField (dia-needs #14) — built, and fully behind DiaCellLayers.** It never blocked A1's overlays: layers reach the screen through layer registration, and the migration-arrow overlay goes through `IDebugDraw`. A1 does not touch CellField.
+- **`SimQueryHostModule`** — built. All `cow.ecology.*` commands register here with `SimHelpInfo`.
+- `JobSystemService` + `TrySubmit` — built, but consumed only *through* DiaDeferredStep's executor. A1 holds no `ServiceStreamReader<JobSystem>` of its own.
+- DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaCore (Json, StringCRC, containers, logging).
 
 **Soft dependencies (fallbacks until they exist):**
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
@@ -427,7 +452,9 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - Succession: counters rise and decay per rule; the trigger fires at 1.0 with the right `to` and `source`; every counter resets after `ApplyBiomeTransition`; legacy deltas apply once and clamp; recovery rules keep progress when their conditions fail, and multiply by the resolver's factor; triggers reach the resolver in cell-index order, and the biome changes before step 12; natural ignition is deterministic and scales with drought and fuel.
 - Grid passes: migration conserves population (out = in plus edge loss of 0); pressure fields decay faster than they spread with distance; Ocean and Lake are impassable to land species; coastal feeding is symmetric; lifeboats only seed Collapsed neighbours.
 - Events: cluster detection at and below the minimum size.
-- Determinism: same inputs give bit-identical fields. `SerialExecutor` vs 1, 3 and 17 ranges, and reversed range order, all give bit-identical fields after 40 years.
+- Determinism: same inputs give bit-identical fields. `SerialExecutor` vs 1, 3 and 17 ranges, and reversed range order, all give bit-identical fields after 40 years. **Added 2026-11-13:** a deferred run through World Step matches a synchronous run of the same bands bit-for-bit, and a capture-isolation test poisons the weather/world source after `Capture` to prove `Run` never reads Sim-owned state (DFS-002).
+
+**Layer goldens (added 2026-11-13, "cell data over pixels").** Verification is by cell data and stats, not screenshots. Features 3–5 use `Dia/DiaCellLayers/Testing/CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`) against `Tests/GoogleTests/CoW/Golden/ecology_layers.golden.json`: the default tracked layers plus `ecology.state` and `ecology.health`, over a fixed hand-built grid and roster after a fixed band count. Screenshots stay as a per-feature taste check for the user.
 
 **Integration (Features 7–8):**
 - The season pipeline runs once per season, after week 13 is accumulated (accumulator = sum of 13 stub weeks).
@@ -441,11 +468,14 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 
 ## Open Design Questions
 
-1. **Publishing on the frame after week 13.** The design assumes `EcologyModule` can publish from its own update on the next sim frame after setting `mSeasonPending`. Feature 7 must check this against DiaMessageBus's pass rules. If it can't, the season pipeline runs on the next day's `SimulationTick`, a one-day lag that changes no results.
+1. **What does the Century tick cost?** (opened 2026-11-13, World Step Resolved Decision 1.) Bands run smallest-first on the same tick and `ResolveBand` returns only the largest, so the worst case is **Season + Year + Decade + Century in one `Run`** — whole-grid major succession plus legacy recolonization on top of everything else. A1's only gate covers Season (Feature 4 measures Season and Year), so this combination has never been budgeted; DiaDeferredStep's spec notes "the Century frame has no budget at all". World Step accepts the resulting SimPU stall once per ~100 game-years as reported-but-unmeasured. **Feature 4 owes a plan task measuring the combined tick at Large in Release.** If it badly exceeds `k`'s slack, the options are splitting the world channel in two or making the Century band incremental — the latter is an A1 design change.
+   *(The former Open Question 1, "publishing on the frame after week 13", is resolved — see deviation 5.)*
 2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. S-3 Ecology's Controlled mode tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
 3. **Memory at scale.** Dense `[species × cell]` arrays cost 15 species × 2 × 6,656 floats (about 0.8 MB), which is fine. If the roster grows past about 40 species, a sparse per-biome species set may be needed. This is revisited in Feature 4's benchmark.
 4. **Same-tick Season+Year ledger loss (resolved 2026-10-19, DiaCellLayers/DiaCellHistory).** When the Season and Year bands run on the same tick (every 364 days), the last-band-only ledger is overwritten by the Year band, so the Season band's deltas are lost. **Resolved:** Recording the ledger's top causes per band as DiaCellHistory events preserves the Season delta information.
 
 ## Status
 
-**Status:** `Approved` (2026-10-18). Conflicts C1–C14 resolved in the interview the same day. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). Amended again on A3's approval (2026-10-18): the `ISuccessionResolver` seam, recovery rules, `RemoveLegacy` removed, natural ignition, and `years_low_herbivore_inflow` (deviations 17–18). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
+**Status:** `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.
+
+Conflicts C1–C14 resolved in the interview on 2026-10-18. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). Amended again on A3's approval (2026-10-18): the `ISuccessionResolver` seam, recovery rules, `RemoveLegacy` removed, natural ignition, and `years_low_herbivore_inflow` (deviations 17–18). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).

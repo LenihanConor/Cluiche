@@ -113,18 +113,42 @@ The capped executor counts deferred-step ranges in flight across all channels. W
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Scheduler core | `IDeferredStep`, channel lifecycle, `Kick` / `Tick` / `DrainAll`, kick-order apply, late stall, double-kick rejection, `Testing/` helpers. Pure logic, TDD with the manual executor | Draft (not written) | — |
-| 2 | Capped executor | `IParallelExecutor` + `SerialExecutor` moved into Dia; JobSystem-backed capped executor; `TrySubmit` inline fallback; serial-vs-parallel bit-identity tests | Draft (not written) | — |
-| 3 | Save / load | Drain on save; pending result + apply key serialized via `ISaveable`; restore applies at the key; load mid-run equals the uninterrupted run | Draft (not written) | — |
-| 4 | DeferredStepModule + observability | SimModule on SimPU, `.diaapp` worker cap, tick after DiaSimTime, shutdown drain, logs, metrics, health, trace zones; `JobTag` per range, step summary records, cap-wait measurement (2026-11-12) | Draft (not written) | — |
+| 1 | Scheduler core | `IDeferredStep`, `IStepLauncher`, channel lifecycle, `Kick` / `Tick` / `DrainAll`, kick-order apply, late stall, double-kick rejection, `Testing/` helpers. Also ships the `IParallelExecutor` interface + `SerialExecutor` (needed to compile `Run` and the manual launcher). Pure logic, TDD with the manual launcher | Approved | [scheduler-core.md](scheduler-core.md) |
+| 2 | Capped executor | `JobStepLauncher`, `CapGate` (strict M, coordinator participates), `CappedParallelExecutor`, `TrySubmit` inline fallback, per-range cap/worker timing, serial-vs-parallel bit-identity tests | Approved | [capped-executor.md](capped-executor.md) |
+| 3 | Save / load | Automatic drain on `OnSaveStarted`; one `ISaveable` participant holding every channel's pending result + apply key; abandon on `OnLoadStarted`; restore applies at the key; load mid-run equals the uninterrupted run | Approved | [save-load.md](save-load.md) |
+| 4 | DeferredStepModule + observability | SimModule on SimPU, `JobSystemService` reader, `.diaapp` worker cap, injected `IStepKeySource`, shutdown drain, logs, 9 global metrics, Degraded-only health, trace/profile zones; CluicheTest `DeferredStep` stage | Approved | [module-and-observability.md](module-and-observability.md) |
+| 5 | Job attribution + step summaries | Part A: `JobTag` per range and coordinator, `JobSystem::TrySubmit(fn, tag)`. Part B: one `StepSummaryRecord` per step instance into SimPU's `JobTimingTable`, with cap wait and worker wait measured inside DiaDeferredStep | Approved | [job-attribution.md](job-attribution.md) |
 
-**Build order:** 1 → 2 → 3 → 4. Features 1 and 2 are independent and can run in parallel if needed.
+**Build order:** 1 → 2 → 3 → 4 → 5. Features 1 and 2 are independent and can run in parallel if
+needed. Feature 5 Part B's final wiring task is the only work blocked on another system
+(perf-inspector Task 8, `JobTimingTable`); everything else is buildable today.
 
 **Consumer follow-ups (CoW, not in this system):**
 - Amend A4, A1 and A3 to run as one `world` channel.
 - Turn S-3.5's spike check into a SimPU-frame gate.
-- Amend E1's save to call `DrainAll`.
+- Implement `IStepKeySource` on CoW's game clock and register it with `DeferredStepModule`.
+- Retire `JobSystemPlaceholderConsumerModule` — `DeferredStepModule` becomes the real
+  `JobSystemService` consumer.
 - Choose k in game days for each speed preset.
+- ~~Amend E1's save to call `DrainAll`~~ — dropped 2026-11-13: Feature 3 drains automatically on
+  `SaveManager::OnSaveStarted`, so no game-side save change is needed.
+
+## Amendments
+
+**2026-11-13 (feature-spec interview).** Five decisions taken while writing Features 1–5; the
+Responsibilities and Design sections above read as originally approved except where noted here.
+
+| # | Amendment |
+|---|---|
+| A1 | **`IStepLauncher` is the single seam.** The scheduler holds only a launcher, which owns the executor and calls `Run`; the scheduler never sees `IParallelExecutor`, so Feature 1 has no DiaThreading dependency. `Launch` cannot fail — a launcher that cannot go async runs `Run` synchronously and returns a completed token |
+| A2 | **`IParallelExecutor` + `SerialExecutor` move from Feature 2 to Feature 1**, because `IDeferredStep::Run` needs the interface to compile and the manual launcher needs an executor to pass in. Feature 2 keeps the capped, JobSystem-backed implementation |
+| A3 | **The worker cap is strict and includes coordinators.** DFS-004 is read literally: all deferred-step jobs together hold at most M workers. Deadlock at M = 1 is avoided by the coordinator running ranges itself instead of idling inside `ParallelFor` |
+| A4 | **Feature 4 is split into 4 and 5.** `JobTimingTable` is perf-inspector Task 8 and still `Planned`, so job attribution and step summaries became Feature 5. Feature 4 ships the module and four pillars and is buildable today. DiaDeferredStep measures its own cap-wait and worker-wait figures, so Feature 5 depends on `JobTimingTable` only as a destination |
+| A5 | **The module reads its key from an injected `IStepKeySource`**, and registers only global metrics — per-channel detail lives in Feature 5's step summaries, so there is one source of truth for it. Health is Degraded-only, never Failing, so a stall cannot fail an E2E run |
+
+Also recorded: the module doc is `dia.diadeferredstep.architecture.module.md`, following the
+`dia.dia<module>.` convention DiaCellHistory uses rather than the `dia.deferredstep.` name written
+above; and the CluicheTest integration stage ships inside Feature 4.
 
 ## Dependencies
 
@@ -135,8 +159,8 @@ The capped executor counts deferred-step ranges in flight across all channels. W
 | DiaSimTime | `SimTimeContext`; module ordering after `DiaSimTimeModule` | Done |
 | DiaSaveGame | `ISaveable`, `SaveContext` / `LoadContext` | Done |
 | DiaObservation | Logs, `MetricRegistry`, `IHealthReporter`, trace and profile macros | Done |
-| DiaThreading job-observation | `JobTag` on `Submit`, worker-thread profile registration, `JobTimingRecord` (Feature 4) | Approved 2026-11-12; needed by Feature 4 only |
-| DiaObservation `JobTimingTable` | Step summary records (perf-inspector Revision 2026-11-12) | Approved 2026-11-12; needed by Feature 4 only |
+| DiaThreading job-observation | `JobTag` on `Submit`, worker-thread profile registration | Built (2026-11-13); Feature 5 adds a `TrySubmit(fn, tag)` overload |
+| DiaObservation `JobTimingTable` | Step summary destination only — DiaDeferredStep measures its own cap-wait and worker-wait figures | perf-inspector Task 8, `Planned`; blocks Feature 5 Part B's final wiring task only |
 
 ## Decisions
 
@@ -184,10 +208,14 @@ The capped executor counts deferred-step ranges in flight across all channels. W
 
 ## Open Design Questions
 
-1. **Is a pending result cheap enough to serialize?** DFS-005 stores completed results, so every consumer's working copy must be serializable. For A4 that is the weather grid (~100 KB at Large, as JSON text). If any consumer's result is large or awkward to serialize, the alternative is to apply immediately at drain time. That is simpler, but it changes the outcome versus the uninterrupted run. Also, `ISaveable::Serialize` is `const`, so the drain has to happen in a pre-save hook, not inside `Serialize`.
+1. **Is a pending result cheap enough to serialize?** DFS-005 stores completed results, so every consumer's working copy must be serializable. For A4 that is the weather grid (~100 KB at Large, as JSON text), well inside `SaveContext::kBufferSize` (100 MB). If any consumer's result is large or awkward to serialize, the alternative is to apply immediately at drain time. That is simpler, but it changes the outcome versus the uninterrupted run. — *The pre-save hook half of this question is resolved (2026-11-13): `SaveManager::OnSaveStarted` already fires synchronously before any `Serialize`, so Feature 3 drains there and needs no DiaSaveGame change.*
 2. **One `world` channel or several?** A1's bands (season, year, decade, century) run at different cadences from A4's weekly step. Putting the whole chain in one channel kicked weekly keeps ordering simple, but the rare Century step makes that one week's `Run` very long. Separate channels per band would need ordering between channels, which is out of scope today.
 3. **Choosing k.** A larger k gives more slack but more latency between the world changing and gameplay seeing it. At Fastest, a week is 7 frames (~233 ms); at Slow it is minutes. The choice is CoW's, but it may need to vary with the speed preset (a GameSpeedController amendment).
 
 ## Status
 
-`Approved` (2026-11-12). Interview complete 2026-11-10: home, late policy, save rule and worker cap decided by the user; Feature 4 observability added 2026-11-12. AD-001 sign-off for moving `IParallelExecutor` into Dia given 2026-11-12. Next: `/spec-feature` for Feature 1.
+`Approved` (2026-11-12), amended 2026-11-13. Interview complete 2026-11-10: home, late policy, save rule and worker cap decided by the user; Feature 4 observability added 2026-11-12. AD-001 sign-off for moving `IParallelExecutor` into Dia given 2026-11-12, and for `JobSystem::TrySubmit(fn, tag)` plus `Dia::Observation::Profile::StepSummaryRecord` given 2026-11-13.
+
+All five feature specs written and `Approved` 2026-11-13. Plans written 2026-11-13; see
+[diadeferredstep.plan.md](diadeferredstep.plan.md) for the system tracker and one plan per feature.
+Next: `/implement` Feature 1 (scheduler core).

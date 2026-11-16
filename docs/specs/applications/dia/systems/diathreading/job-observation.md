@@ -30,7 +30,7 @@ DiaObservation provides the implementation (`JobObserver`, beside `JobSystemMetr
 | AC3 | `Submit(fn, JobTag{owner, tag, range, rangeCount})` overrides the captured owner and tag; plain `Submit(fn)` uses the captured context unchanged | Unit test |
 | AC4 | Each completed job produces exactly one `JobTimingRecord` with `submitNs <= startNs <= endNs`, the worker index, owner, tag and range | Unit test |
 | AC5 | With no observer installed (`nullptr`), `Submit` and job execution cost one branch more than today and capture no context | Benchmark (reported) + code review |
-| AC6 | Observer overhead in Release: capture + begin + end + record write under 100 ns per job, measured with a 10,000 jobs/s synthetic flood | Benchmark (gating at 2x) |
+| AC6 | Observer overhead in Release: capture + begin + end + record write target under 100 ns per job, measured with a 10,000 jobs/s synthetic flood. The benchmark fails at 200 ns (2x the target, to absorb machine noise). Measured 135 ns/job on 2026-11-16: gate met, target missed | Benchmark (gate 200 ns) |
 | AC7 | A full inbox drops the newest record and counts the drop; it never blocks a worker | Unit test |
 | AC8 | `DIA_PROFILE_SCOPE` inside a job is recorded (worker registered) and inherits the job owner as its subject | Integration test with DiaObservation's `JobObserver` |
 | AC9 | DiaThreading still includes no DiaObservation header | `dia check deps` |
@@ -105,11 +105,11 @@ JobHandle JobSystem::Submit(JobFn fn, const JobTag& tag); // explicit owner/tag/
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | `ThreadPool` (DiaCore) gains optional thread start/stop callbacks | Unit test | Planned | sonnet | DiaCore change; AD-001 sign-off given 2026-11-12 |
-| 2 | `JobContext`, `JobTag`, `JobTimingRecord`, `IJobObserver`; `JobSystem` Initialize/Submit overloads; timing captured around `fn` | AC1-AC5, AC9 | Planned | sonnet | DiaThreading |
-| 3 | `JobInbox` (MPSC, fixed capacity, drop + count) | AC7 | Planned | sonnet | DiaObservation, pure, DiaCore only (SD-PERF-3) |
-| 4 | `JobObserver` in DiaObservation + wiring in `JobSystemModule`; PU installs its inbox for its thread at start | AC8 | Planned | sonnet | |
-| 5 | Benchmark + gap audit (submit from an unregistered thread, worker exit mid-job, inbox full, observer null) | AC5, AC6 | Planned | sonnet | Final verification |
+| 1 | `ThreadPool` (DiaCore) gains optional thread start/stop callbacks | Unit test | Done | sonnet | DiaCore change; AD-001 sign-off given 2026-11-12 |
+| 2 | `JobContext`, `JobTag`, `JobTimingRecord`, `IJobObserver`; `JobSystem` Initialize/Submit overloads; timing captured around `fn` | AC1-AC5, AC9 | Done | sonnet | DiaThreading |
+| 3 | `JobInbox` (MPSC, fixed capacity, drop + count) | AC7 | Done | sonnet | DiaObservation, pure, DiaCore only (SD-PERF-3) |
+| 4 | `JobObserver` in DiaObservation + wiring in `JobSystemModule`; PU installs its inbox for its thread at start | AC8 | Done | sonnet | |
+| 5 | Benchmark + gap audit (submit from an unregistered thread, worker exit mid-job, inbox full, observer null) | AC5, AC6 | Done | sonnet | Final verification |
 
 ## Binding Decisions
 

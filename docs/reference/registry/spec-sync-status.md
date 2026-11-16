@@ -20,10 +20,19 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | cluichetestscenarios | Unknown | — | — | no Public Interfaces |
 | teststages | Unknown | ❌ | — | RigidBody2DTestModule |
 | cow | Unknown | — | — | no Public Interfaces |
-| e1-saveload | Approved | ❌ | — | SaveLoadModule |
-| f1-harness | Approved | — | — | no Public Interfaces |
-| f2-core-runtime | Unknown | — | — | no Public Interfaces |
-| gamespeedcontroller | Unknown | ❌ | — | GameSpeedController, GameSpeedControllerModule |
+| a1-ecology | Unknown | ❌ | — | EcologySimulation, IEcologyWeatherInput, ISuccessionResolver, EcologyData, EcologyModule |
+| a3-biomesuccession | Unknown | ❌ | — | SuccessionSimulation, SuccessionData, SuccessionModule |
+| a4-weather | Unknown | ❌ | — | WeatherSimulation, WeatherParameters, WeatherRunner, WeatherStep, WeatherModule |
+| e1-saveload | Unknown | ❌ | — | SaveLoadModule |
+| f1-harness | Done | — | — | no Public Interfaces |
+| f2-core-runtime | Done | — | — | no Public Interfaces |
+| f3-worldassets | Unknown | — | — | no Public Interfaces |
+| gamespeedcontroller | Done | ❌ | — | GameSpeedController, GameSpeedControllerModule |
+| s25-weatherpatterns | Unknown | ❌ | — | S25WeatherChecks, S25RunParams, S25RunReport, S25HeadlessRunner, S25WeatherModule, Scenario, CheckRegistry |
+| s3-ecology | Unknown | ❌ | — | EcologyMode, S3ClimateInput, S3ClimatologyInput, S3EcologyModule |
+| s35-worldsim | Unknown | — | — | no Public Interfaces |
+| t1-worldsiminspector | Unknown | — | — | no Public Interfaces |
+| t2-worlddataeditor | Unknown | — | — | no Public Interfaces |
 | dia | Unknown | — | — | no Public Interfaces |
 | asset-system-overview | Unknown | — | — | no Public Interfaces |
 | diaaibroadcast | Unknown | ✅ | Callout, CalloutHandle, QueryFilter, CalloutRegistry | — |
@@ -56,6 +65,8 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diabugdetection | Approved | — | — | no Public Interfaces |
 | diacamera2d | Done | ✅ | Camera2D, ViewportTransform, CameraRegistry2D, ICameraBehaviour, CameraBehaviourRegistry | — |
 | diacamera3d | Unknown | — | — | no Public Interfaces |
+| diacellhistory | Unknown | — | — | no Public Interfaces |
+| diacelllayers | Unknown | — | — | no Public Interfaces |
 | diacli | Unknown | — | — | no Public Interfaces |
 | diacondition | Unknown | ✅ | IConditionContext, ConditionRegistry, ConditionOp, ConditionExpr, MockConditionContext | — |
 | diaconsole | Unknown | — | — | no Public Interfaces |
@@ -64,6 +75,7 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diadebugdomain | Done | ✅ | IDebugDomain, DiaDebugDomainRegistry | — |
 | diadebugprotocol | Unknown | ⚠️ | MessageType, HandshakeRequest, HandshakeResponse | MessageHeader, SubscribeMessage, CoreMetricsPayload, DataUpdateMessage, EventMessage, CommandRequestMessage, CommandResponseMessage, ErrorMessage |
 | diadebugserver | Unknown | ⚠️ | CoreMetrics, StateSerializer, Subscription, CommandDispatcher | DebugServerModule, SubscriptionManager |
+| diadeferredstep | Unknown | — | — | no Public Interfaces |
 | diaeconomy | Done | ✅ | ResourceDefinition, EconomySchema, EconomyInstance, TransactionResult, EconomySystem, PoolChangedEvent, TransactionClampedEvent, TransferCompletedEvent, EconomyObserverSubject, IEconomyObserver | — |
 | diaeconomyinspector | Unknown | ⚠️ | DiaEconomyInspectorPlugin, EconomyInstancesController, EconomyModifiersController, EconomyEventsController, EconomySchemaController | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource |
 | diaeditor | Unknown | ⚠️ | LayoutMode, IEditorPlugin, IEditorPluginFactory, EditorPluginRegistry, ClassName, EditorModel, EditorViewController, EditorView, EditorManifestLoader, PluginEntry, IEditorCommand, CommandHistory, CommandDispatcher, GameConnectionManager, State, WebUIBridge, DockingLayout | ManifestEditorData, ConnectionInfo, ConnectionResult, WebSocketClient |
@@ -139,6 +151,8 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diauiultralight | Unknown | — | — | no Public Interfaces |
 | diautilityai | Done | ✅ | CurveShape, ResponseCurve, ScorerDef, ActionDef, GroupConsiderationContext, UtilitySelection, UtilitySet, UtilitySetComponent, UtilityScoreDrawer | — |
 | diautilityaivisualdebugger | Done | ✅ | UtilityAIDebugDomain | — |
+| diavalueschema | Unknown | — | — | no Public Interfaces |
+| diaviewlaunch | Unknown | — | — | no Public Interfaces |
 | diavisualdebugger | Unknown | — | — | no Public Interfaces |
 | diawebsocket | Unknown | ⚠️ | MessageType, Message, Server, ConnectionState, Client | QueuedMessage |
 | render-backend | Unknown | — | — | no Public Interfaces |
