@@ -1268,6 +1268,7 @@
     <ClCompile Include="DiaObservation\Job\TestJobInbox.cpp" />
     <ClCompile Include="DiaObservation\Job\TestJobObserver.cpp" />
     <ClCompile Include="ApplicationFlow\TestModuleProfileSubject.cpp" />
+    <ClCompile Include="DiaObservation\Profile\TestUnitTimingTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

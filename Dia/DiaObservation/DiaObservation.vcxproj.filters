@@ -126,6 +126,9 @@
     <ClCompile Include="Job\JobObserver.cpp">
       <Filter>Job</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\UnitTimingTable.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -291,6 +294,9 @@
     </ClInclude>
     <ClInclude Include="Job\JobObserver.h">
       <Filter>Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\UnitTimingTable.h">
+      <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

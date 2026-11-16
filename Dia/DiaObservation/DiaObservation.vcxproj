@@ -50,6 +50,7 @@
     </ClCompile>
     <ClCompile Include="Capture\CaptureManager.cpp" />
     <ClCompile Include="Job\JobObserver.cpp" />
+    <ClCompile Include="Profile\UnitTimingTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -107,6 +108,7 @@
     <ClInclude Include="Metric\MetricInfo.h" />
     <ClInclude Include="Job\JobInbox.h" />
     <ClInclude Include="Job\JobObserver.h" />
+    <ClInclude Include="Profile\UnitTimingTable.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
