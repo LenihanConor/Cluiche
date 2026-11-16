@@ -185,4 +185,4 @@ GoogleTests only, no engine or SimPU needed. TDD in the order: config load, regi
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).

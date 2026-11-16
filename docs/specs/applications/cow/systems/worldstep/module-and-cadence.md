@@ -199,4 +199,4 @@ GoogleTests with a fake `SimulationTick` source, a real `DeferredStepScheduler` 
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).

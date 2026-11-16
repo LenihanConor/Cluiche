@@ -216,4 +216,4 @@ Pure parts first and heavily (command-line grammar, the validator rule table, th
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet. **Plan Task 1 is the panel mockup.**
+**Status:** `Approved` (2026-11-16). Plan: [scenarios-and-walkthrough.plan.md](scenarios-and-walkthrough.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the panel mockup.**

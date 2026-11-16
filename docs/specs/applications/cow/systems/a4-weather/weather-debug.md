@@ -188,4 +188,4 @@ Pure parts first and heavily (overlay plan, command parsing and validation, dete
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started).

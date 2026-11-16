@@ -111,4 +111,4 @@ Live aggregates over a real A4 module on hand-built terrain with a real `CellHis
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [time-series-graphs.plan.md](time-series-graphs.plan.md) (written 2026-11-16, not started).

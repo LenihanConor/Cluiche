@@ -203,4 +203,4 @@ GoogleTests with hand-built terrain, a fake `WorldStepModule` that records regis
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).

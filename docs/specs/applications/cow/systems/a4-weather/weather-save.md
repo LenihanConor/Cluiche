@@ -167,4 +167,4 @@ Pure codec tests first (no Dia save machinery), then the participant against a r
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).

@@ -217,4 +217,4 @@ Pure parts first (prechecks, world table loader, status model), then the module 
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet. **Plan Task 1 is the HTML mockup.**
+**Status:** `Approved` (2026-11-16). Plan: [stage-and-world.plan.md](stage-and-world.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the HTML mockup.**

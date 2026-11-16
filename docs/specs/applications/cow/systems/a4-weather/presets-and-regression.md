@@ -185,4 +185,4 @@ TDD per the project rule: loader, selectors and distance first (no simulation), 
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet. **Tuning log:** empty.
+**Status:** `Approved` (2026-11-16). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.

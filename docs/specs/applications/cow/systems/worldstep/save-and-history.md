@@ -170,4 +170,4 @@ GoogleTests with the real `DeferredStepScheduler` over its test launcher, `Defer
 
 ## Status
 
-**Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Plan: none yet.
+**Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).

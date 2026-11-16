@@ -210,4 +210,4 @@ Layered so most of it needs no real A4 run: scripted check sets for the verdict 
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [headless-runner.plan.md](headless-runner.plan.md) (written 2026-11-16, not started).

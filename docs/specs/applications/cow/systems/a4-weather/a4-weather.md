@@ -577,3 +577,5 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
 **Blocked on:** nothing in spec work. DiaDeferredStep's five features are Approved with plans (2026-11-13) and World Step is drafted, so A4 Features 2, 3 and 4 are gated only on those builds — Feature 2 can start as soon as DeferredStep Feature 1 Task 1 ships the headers. Features 1, 5 and 6 are startable now. The one real prerequisite is the **S-1 biome widening** (10 → 13), which gates Feature 1.
 
 **Ripple edits owed elsewhere:** `a1-ecology.md` (its `IParallelExecutor` seam and 16 ms band gate) and `s25-weatherpatterns.md` (its weekly tick budget and step-back controls). Both deliberately left until this spec is re-approved, so they are touched once.
+
+**Plan:** [a4-weather.plan.md](a4-weather.plan.md) (written 2026-11-16, not started).

@@ -200,4 +200,4 @@ Pure GoogleTests only, no engine, no A4 run: scripted traces over hand-built hex
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [weather-checks.plan.md](weather-checks.plan.md) (written 2026-11-16, not started).

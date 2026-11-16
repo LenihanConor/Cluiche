@@ -179,4 +179,4 @@ All GoogleTests, no build of S-1 required. Tests are written first (RED) per the
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: none yet.
+**Status:** `Approved` (2026-11-16). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).

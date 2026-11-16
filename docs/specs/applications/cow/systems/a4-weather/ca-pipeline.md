@@ -320,3 +320,5 @@ No Dia files are added or edited (AD-001). `IParallelExecutor` and `SerialExecut
 ## Status
 
 **Status:** `Approved` (2026-11-16).
+
+**Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).
