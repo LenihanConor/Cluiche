@@ -140,10 +140,10 @@ TEST(SimHostedCatalogue, ReRegisterWithDifferentKindIsRejectedAndKeepsTheOrigina
 	EXPECT_EQ(SimKind::Query, view.kind);
 }
 
-TEST(SimHostedCatalogue, FullCatalogueRejectsTheSixtyFifthNameAndKeepsTheRest)
+TEST(SimHostedCatalogue, FullCatalogueRejectsTheOneHundredNinetyThirdNameAndKeepsTheRest)
 {
 	auto s = NewServer();
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 	{
 		const std::string n = "cat.n" + std::to_string(i);
 		ASSERT_TRUE(s->RegisterSimHosted(StringCRC(n.c_str()), SimKind::Query, MakeSimHelp(n.c_str()))) << n;
@@ -151,7 +151,7 @@ TEST(SimHostedCatalogue, FullCatalogueRejectsTheSixtyFifthNameAndKeepsTheRest)
 	LogCapture log("DebugServer");
 	EXPECT_FALSE(s->RegisterSimHosted(StringCRC("cat.extra"), SimKind::Query, MakeSimHelp("x")));
 	EXPECT_EQ(1u, log.Errors("capacity"));
-	EXPECT_EQ(64u, s->SimHostedCount());
+	EXPECT_EQ(192u, s->SimHostedCount());
 	EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC("cat.extra")));
 	EXPECT_EQ("cat.n63", Desc(*s, "cat.n63"));
 
@@ -261,7 +261,7 @@ TEST(SimHostedCatalogue, FailedReplaceLeavesTableAndCatalogueUntouched)
 	// 4: more distinct names than the cap.
 	{
 		std::vector<SimHostedName> big;
-		for (int i = 0; i < 65; ++i)
+		for (int i = 0; i < 193; ++i)
 			big.push_back(Entry(("big.n" + std::to_string(i)).c_str(), SimKind::Query, &h));
 		EXPECT_FALSE(s->ReplaceSimHosted(big.data(), static_cast<uint32_t>(big.size())));
 	}
@@ -274,18 +274,18 @@ TEST(SimHostedCatalogue, FailedReplaceLeavesTableAndCatalogueUntouched)
 	EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC("big.n0")));
 }
 
-TEST(SimHostedCatalogue, ReplaceFillsAllSixtyFourSlotsWithTheirOwnHelp)
+TEST(SimHostedCatalogue, ReplaceFillsAllAllSlotsWithTheirOwnHelp)
 {
 	auto s = NewServer();
 	std::vector<SimHelpStored> helps;
 	std::vector<SimHostedName> names;
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 		helps.push_back(MakeSimHelp(("help " + std::to_string(i)).c_str()));
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 		names.push_back(Entry(("full.n" + std::to_string(i)).c_str(), SimKind::Query, &helps[i]));
-	ASSERT_TRUE(s->ReplaceSimHosted(names.data(), 64));
-	EXPECT_EQ(64u, s->SimHostedCount());
-	for (int i = 0; i < 64; ++i)
+	ASSERT_TRUE(s->ReplaceSimHosted(names.data(), 192));
+	EXPECT_EQ(192u, s->SimHostedCount());
+	for (int i = 0; i < 192; ++i)
 		EXPECT_EQ("help " + std::to_string(i), Desc(*s, ("full.n" + std::to_string(i)).c_str())) << i;
 }
 
@@ -310,20 +310,20 @@ namespace
 	}
 }
 
-TEST(SimHostedCatalogue, ReplaceWithSixtyFourMaximalHelpsSucceedsAndASixtyFifthRejectsTheWholeSwap)
+TEST(SimHostedCatalogue, ReplaceWithOneHundredNinetyTwoMaximalHelpsSucceedsAndAOneHundredNinetyThirdRejectsTheWholeSwap)
 {
 	auto s = NewServer();
 	std::vector<std::unique_ptr<SimHelpStored>> helps;
 	std::vector<SimHostedName> names;
-	for (int i = 0; i < 65; ++i)
+	for (int i = 0; i < 193; ++i)
 	{
 		helps.emplace_back(new SimHelpStored(MaximalHelp(static_cast<char>('A' + i % 26))));
 		names.push_back(Entry(("max.n" + std::to_string(i)).c_str(), i % 2 ? SimKind::Command : SimKind::Query, helps.back().get()));
 	}
 
-	ASSERT_TRUE(s->ReplaceSimHosted(names.data(), 64));
-	ASSERT_EQ(64u, s->SimHostedCount());
-	for (int i = 0; i < 64; ++i)
+	ASSERT_TRUE(s->ReplaceSimHosted(names.data(), 192));
+	ASSERT_EQ(192u, s->SimHostedCount());
+	for (int i = 0; i < 192; ++i)
 	{
 		const SimHelpStored* h = s->FindSimHostedHelp(StringCRC(("max.n" + std::to_string(i)).c_str()));
 		ASSERT_NE(nullptr, h) << i;
@@ -331,31 +331,31 @@ TEST(SimHostedCatalogue, ReplaceWithSixtyFourMaximalHelpsSucceedsAndASixtyFifthR
 		EXPECT_NE(h, helps[i].get()) << "the catalogue must hold a copy";
 	}
 
-	// 65 distinct names: the whole swap is refused, the previous 64 stay exactly as they were.
+	// 193 distinct names: the whole swap is refused, the previous 192 stay exactly as they were.
 	LogCapture log("DebugServer");
-	EXPECT_FALSE(s->ReplaceSimHosted(names.data(), 65));
+	EXPECT_FALSE(s->ReplaceSimHosted(names.data(), 193));
 	EXPECT_GE(log.Errors("ReplaceSimHosted"), 1u);
-	ASSERT_EQ(64u, s->SimHostedCount());
-	for (int i = 0; i < 64; ++i)
+	ASSERT_EQ(192u, s->SimHostedCount());
+	for (int i = 0; i < 192; ++i)
 	{
 		const SimHelpStored* h = s->FindSimHostedHelp(StringCRC(("max.n" + std::to_string(i)).c_str()));
 		ASSERT_NE(nullptr, h) << i;
 		EXPECT_EQ(0, std::memcmp(h, helps[i].get(), sizeof(SimHelpStored))) << i;
 	}
-	EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC("max.n64")));
+	EXPECT_EQ(nullptr, s->FindSimHostedHelp(StringCRC("max.n192")));
 }
 
 TEST(SimHostedCatalogue, RegisterUnregisterChurnAtCapacityKeepsHelpParallelToTheTable)
 {
 	auto s = NewServer();
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 	{
 		const std::string n = "churn.n" + std::to_string(i);
 		ASSERT_TRUE(s->RegisterSimHosted(StringCRC(n.c_str()), SimKind::Query, MakeSimHelp(n.c_str()))) << n;
 	}
 	for (int round = 0; round < 3; ++round)
 	{
-		for (int i = round; i < 64; i += 3)
+		for (int i = round; i < 192; i += 3)
 		{
 			const std::string n = "churn.n" + std::to_string(i);
 			s->UnregisterSimHosted(StringCRC(n.c_str()));
@@ -363,7 +363,7 @@ TEST(SimHostedCatalogue, RegisterUnregisterChurnAtCapacityKeepsHelpParallelToThe
 			ASSERT_TRUE(s->RegisterSimHosted(StringCRC(n.c_str()), SimKind::Command, MakeSimHelp((n + ".v" + std::to_string(round)).c_str()))) << n;
 		}
 	}
-	ASSERT_EQ(64u, s->SimHostedCount());
+	ASSERT_EQ(192u, s->SimHostedCount());
 	for (uint64_t i = 0; i < 32; ++i)
 	{
 		SimHostedEntryView v;

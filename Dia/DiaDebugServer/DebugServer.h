@@ -226,7 +226,7 @@ namespace Dia
 
 			// Registers a sim-hosted name together with its help (copied into the catalogue; 'info' need not outlive the call).
 			// Re-registering a name with the SAME kind replaces its entry (help included).  False (Error log) if the name is
-			// already sim-hosted with a DIFFERENT kind, the name exists in QueryRegistry, or the 32-name table is full.
+			// already sim-hosted with a DIFFERENT kind, the name exists in QueryRegistry, or the 192-name table is full.
 			// The reverse is also refused: QueryRegistry::Register of an already sim-hosted name
 			// logs an Error and does not register (veto installed by the DebugServer constructor).
 			bool RegisterSimHosted(Dia::Core::StringCRC name, SimKind kind, const SimHelpStored& info);
@@ -236,7 +236,7 @@ namespace Dia
 			// Atomically replaces the whole sim-hosted table AND catalogue with 'names' (announcement resync install).
 			// Each entry carries a pointer to its help (required; copied).  Duplicate names in the input: the LAST entry
 			// wins (kind and help).  Returns false and leaves table and catalogue untouched (Error log) if a name is
-			// null/empty, a help pointer is null, the deduplicated set exceeds the table capacity (32), or a name already
+			// null/empty, a help pointer is null, the deduplicated set exceeds the table capacity (192), or a name already
 			// exists in the QueryRegistry.  count==0 clears both.
 			bool ReplaceSimHosted(const SimHostedName* names, uint32_t count);
 
@@ -359,7 +359,7 @@ namespace Dia
 				Dia::Core::StringCRC name;
 				SimKind              kind;
 			};
-			static const unsigned int kMaxSimNames = 64;
+			static const unsigned int kMaxSimNames = 192;
 			ISimRequestSink*   mSimSink;
 			SimPendingTable    mSimPending;
 			Dia::Core::Containers::DynamicArrayC<SimName, kMaxSimNames> mSimNames;

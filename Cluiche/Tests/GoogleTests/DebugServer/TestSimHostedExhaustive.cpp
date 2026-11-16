@@ -421,9 +421,9 @@ TEST_F(SimHostedExhaustiveTest, SimRegistersNameThatExistsInQueryRegistryErrorsA
 	EXPECT_EQ(2u, mSent.size());
 }
 
-TEST_F(SimHostedExhaustiveTest, SimNameCapacityIs64ThenRegistrationFailsWithErrorAndSlotIsReusable)
+TEST_F(SimHostedExhaustiveTest, SimNameCapacityIs192ThenRegistrationFailsWithErrorAndSlotIsReusable)
 {
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 	{
 		const std::string n = "cap.n" + std::to_string(i);
 		ASSERT_TRUE(mServer.RegisterSimHosted(StringCRC(n.c_str()), SimKind::Query, Dia::DebugServer::Testing::DefaultSimHelp())) << n;

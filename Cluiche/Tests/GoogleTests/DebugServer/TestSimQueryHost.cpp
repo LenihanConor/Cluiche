@@ -253,10 +253,10 @@ TEST(SimQueryHost, DuplicateRegistrationReturnsFalse)
 	EXPECT_FALSE(f.host.RegisterCommand("q", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 }
 
-TEST(SimQueryHost, CapacityIs64ThenRegistrationFails)
+TEST(SimQueryHost, CapacityIs192ThenRegistrationFails)
 {
 	Fixture f;
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 		EXPECT_TRUE(f.host.RegisterQuery(StringCRC(("q" + std::to_string(i)).c_str()), Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 	EXPECT_FALSE(f.host.RegisterQuery("overflow", Dia::DebugServer::SimHelpInfo{"test help"}, OkHandler));
 	EXPECT_FALSE(f.host.Has("overflow"));

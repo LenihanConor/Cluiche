@@ -199,7 +199,7 @@ TEST(SimHelpInfo, DuplicateNameIsStillRejectedAndKeepsFirstHelp)
 TEST(SimHelpInfo, HostCapIsStillEnforcedWithHelp)
 {
 	SimQueryHost host;
-	for (int i = 0; i < 64; ++i)
+	for (int i = 0; i < 192; ++i)
 		EXPECT_TRUE(host.RegisterQuery(StringCRC(("cap" + std::to_string(i)).c_str()), Info("d"), Ok)) << i;
 	EXPECT_FALSE(host.RegisterQuery(StringCRC("cap.extra"), Info("d"), Ok));
 	EXPECT_EQ(host.GetHelp(StringCRC("cap.extra")), nullptr);

@@ -70,10 +70,10 @@ namespace Dia
 				Dia::Core::StringCRC name;
 				SimKind kind;
 				QueryHandler handler;
-				std::shared_ptr<SimHelpStored> help;   // heap: SimHelpStored is several KB, 64 entries inline would bloat the host
+				std::shared_ptr<SimHelpStored> help;   // heap: SimHelpStored is several KB, 192 entries inline would bloat the host
 			};
 
-			static const unsigned int kMaxHandlers = 64;
+			static const unsigned int kMaxHandlers = 192;
 
 			bool Register(Dia::Core::StringCRC name, SimKind kind, const SimHelpInfo& help, QueryHandler handler);
 			void Handle(const SimRequestEvent& request, SimReplyEvent& reply) const;
