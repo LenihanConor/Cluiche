@@ -19,6 +19,15 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool,
             output.stage_failed(system=system, stage=stage, error=err)
         return 1
 
+    # The schema is a tracked source asset and must come from a Debug build: Release compiles
+    # DIA_DEBUG-only code away, so the linker drops registrations nothing else references
+    # (e.g. AttributeSetComponent) and the dump would silently shrink the file.
+    if build_config != "Debug":
+        logger.info(f"reflect: skipped for [{build_config}] (schema is generated from Debug builds only)")
+        if output:
+            output.step_completed(system=system, stage=stage, step="dump-schema")
+        return 0
+
     if output:
         output.step_started(system=system, stage=stage, step="dump-schema",
                             detail=f"{target} [{build_config}]")
