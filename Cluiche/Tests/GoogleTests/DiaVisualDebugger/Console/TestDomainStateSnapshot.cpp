@@ -367,4 +367,72 @@ TEST_F(DomainStateSnapshotTest, DomainReplacingStateWithNonObject_DoesNotCrash)
 	EXPECT_TRUE(parsed.isMember("Ok"));
 }
 
+
+// ---- Perf live control: skip predicate (paused domains) ----
+namespace
+{
+	struct SkipCtx { uint32_t crc = 0; uint32_t calls = 0; };
+	bool SkipByCrc(void* ctx, StringCRC id)
+	{
+		SkipCtx* c = static_cast<SkipCtx*>(ctx);
+		++c->calls;
+		return id.Value() == c->crc;
+	}
+}
+
+TEST_F(DomainStateSnapshotTest, SkipPredicate_ExcludesNamedDomain)
+{
+	FakeDomain a("skip_a", "Alpha", 10), b("skip_b", "Beta", 10);
+	registry.Register(a);
+	registry.Register(b);
+	SkipCtx ctx; ctx.crc = StringCRC("skip_a").Value();
+
+	const PackResult r = PackDomainStates(registry, nullptr, 3, *snap, kMaxSnapshotBytes, &SkipByCrc, &ctx);
+
+	EXPECT_EQ(1u, snap->domainCount);
+	EXPECT_EQ(1u, r.includedCount);
+	EXPECT_EQ(0u, r.droppedCount);
+	EXPECT_FALSE(r.truncated);
+	const Json::Value parsed = ParseSnapshot(*snap);
+	EXPECT_FALSE(parsed.isMember("Alpha"));
+	EXPECT_TRUE(parsed.isMember("Beta"));
+}
+
+TEST_F(DomainStateSnapshotTest, SkipPredicate_NullMeansNothingSkipped)
+{
+	FakeDomain a("skip_a", "Alpha", 10), b("skip_b", "Beta", 10);
+	registry.Register(a);
+	registry.Register(b);
+	const PackResult r = PackDomainStates(registry, nullptr, 3, *snap, kMaxSnapshotBytes, nullptr, nullptr);
+	EXPECT_EQ(2u, r.includedCount);
+	EXPECT_EQ(2u, snap->domainCount);
+}
+
+TEST_F(DomainStateSnapshotTest, SkipPredicate_UnpauseRestoresDomain)
+{
+	FakeDomain a("skip_a", "Alpha", 10), b("skip_b", "Beta", 10);
+	registry.Register(a);
+	registry.Register(b);
+	SkipCtx ctx; ctx.crc = StringCRC("skip_a").Value();
+	PackDomainStates(registry, nullptr, 1, *snap, kMaxSnapshotBytes, &SkipByCrc, &ctx);
+	EXPECT_EQ(1u, snap->domainCount);
+
+	ctx.crc = 0;   // resumed
+	PackDomainStates(registry, nullptr, 2, *snap, kMaxSnapshotBytes, &SkipByCrc, &ctx);
+	EXPECT_EQ(2u, snap->domainCount);
+	EXPECT_TRUE(ParseSnapshot(*snap).isMember("Alpha"));
+}
+
+TEST_F(DomainStateSnapshotTest, SkipPredicate_SkippedDomainDoesNotConsumeBudgetOrTruncate)
+{
+	FakeDomain big("skip_big", "Big", 20000), small("skip_small", "Small", 10);
+	registry.Register(big);
+	registry.Register(small);
+	SkipCtx ctx; ctx.crc = StringCRC("skip_big").Value();
+	const PackResult r = PackDomainStates(registry, nullptr, 1, *snap, 1000, &SkipByCrc, &ctx);
+	EXPECT_FALSE(r.truncated);
+	EXPECT_EQ(0u, r.droppedCount);
+	EXPECT_EQ(1u, r.includedCount);
+}
+
 #endif // DIA_DEBUG

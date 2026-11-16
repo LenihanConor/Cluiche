@@ -59,7 +59,7 @@ namespace Dia
 				}
 
 				DIA_PROFILE_SCOPE("debugvisualiser.domain_snapshot.publish", ::Dia::Observation::Profile::Category::kDiaGraphics);
-				const PackResult result = PackDomainStates(mRegistry, mResolver, simFrame, *mScratch, mMaxBytes);
+				const PackResult result = PackDomainStates(mRegistry, mResolver, simFrame, *mScratch, mMaxBytes, mSkip, mSkipCtx);
 				if (result.truncated)
 				{
 					++mTruncatedCount;

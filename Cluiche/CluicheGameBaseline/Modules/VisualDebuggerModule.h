@@ -27,6 +27,9 @@
 #include <DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
 #include <memory>
 #include <mutex>
 
@@ -95,6 +98,12 @@ private:
         char argsJson[512];
     };
 
+#ifdef _DEBUG
+    // Perf live control: copy the latest "$perfpause" set (framework-owned FrameStream, found by name
+    // because it is not manifest-declared) and expose its paused domains to the snapshot publisher.
+    void RefreshDomainPauses();
+    static bool IsDomainPaused(void* ctx, Dia::Core::StringCRC domainId);
+#endif
     void TryRegisterPanelCommand();
     // Drain DiaDebugPanel commands arriving from the Main PU over the
     // DebugPanelCommand EventStream and funnel them into the command queue.
@@ -127,6 +136,11 @@ private:
     SnapshotSink mSnapshotSink{mDomainSnapshotOut};
     static constexpr uint64_t kSnapshotTickDivisor = 2;   // publish the panel snapshot every 2nd Sim tick
     std::unique_ptr<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher> mSnapshotPublisher;
+#ifdef _DEBUG
+    const Dia::ApplicationFlow::FrameStreamStore<Dia::ApplicationFlow::PerfPauseSet>* mPerfPauseStore = nullptr;
+    Dia::ApplicationFlow::PerfPauseSet mPauseSet;   // local copy; the stream slot may be overwritten by Main
+    bool mWarnedNoPauseStream = false;
+#endif
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;

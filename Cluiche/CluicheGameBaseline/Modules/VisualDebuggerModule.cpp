@@ -38,6 +38,9 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
     mLayerManagerService.Register(mLayerManager);
     mSnapshotPublisher = std::make_unique<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher>(
         mDomainRegistry, mSnapshotSink);
+#ifdef _DEBUG
+    mSnapshotPublisher->SetSkipPredicate(&VisualDebuggerModule::IsDomainPaused, this);
+#endif
     mLayerManager.SetDebugScale(50.0f);
     mLayerManager.RegisterDiaAPICommands();
     mCoord2DDomain = std::make_unique<Dia::Debug::Coord2DDebugDomain>();
@@ -74,6 +77,9 @@ void VisualDebuggerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
         // 30/kSnapshotTickDivisor updates per second, so publish every kSnapshotTickDivisor-th Sim tick only.
         if (ctx.tick % kSnapshotTickDivisor == 0)
         {
+#ifdef _DEBUG
+            RefreshDomainPauses();
+#endif
             mSnapshotPublisher->Update(ctx.tick);
         }
     }
@@ -132,6 +138,9 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
     if (mCoord2DDomain) { UnregisterDomain(*mCoord2DDomain); mCoord2DDomain.reset(); }
     if (mCoord3DDomain) { UnregisterDomain(*mCoord3DDomain); mCoord3DDomain.reset(); }
     mSnapshotPublisher.reset();
+#ifdef _DEBUG
+    mPauseSet = Dia::ApplicationFlow::PerfPauseSet();
+#endif
     mDomainRegistry.Clear();
     mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
@@ -151,7 +160,38 @@ void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
     mPanelSetVisibility.Connect(app);
     mDomainSnapshotOut.Connect(app);
     mDomainInterest.Connect(app);
+#ifdef _DEBUG
+    // "$perfpause" is framework-owned (not in any manifest), so look it up directly rather than via a
+    // manifest-gated StreamReader. Absent => nothing is ever paused.
+    mPerfPauseStore = static_cast<const Dia::ApplicationFlow::FrameStreamStore<Dia::ApplicationFlow::PerfPauseSet>*>(
+        app.FindStreamStore(Dia::Core::StringCRC("$perfpause")));
+    if (!mPerfPauseStore && !mWarnedNoPauseStream)
+    {
+        mWarnedNoPauseStream = true;
+        DIA_LOG_WARNING("Debug", "VisualDebuggerModule: $perfpause stream not found; debug-domain pause disabled");
+    }
+#endif
 }
+
+#ifdef _DEBUG
+void VisualDebuggerModule::RefreshDomainPauses()
+{
+    if (!mPerfPauseStore)
+        return;
+    if (const Dia::ApplicationFlow::PerfPauseSet* set = mPerfPauseStore->FetchLatest())
+        mPauseSet = *set;
+}
+
+bool VisualDebuggerModule::IsDomainPaused(void* ctx, Dia::Core::StringCRC domainId)
+{
+    const auto* self = static_cast<const VisualDebuggerModule*>(ctx);
+    const uint32_t crc = domainId.Value();
+    for (uint32_t i = 0; i < self->mPauseSet.domainCount && i < Dia::ApplicationFlow::PerfPauseSet::kMaxDomains; ++i)
+        if (self->mPauseSet.domainCrcs[i] == crc)
+            return true;
+    return false;
+}
+#endif
 
 void VisualDebuggerModule::RegisterDomain(Dia::VisualDebugger::IDebugDomain& domain)
 {

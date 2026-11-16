@@ -547,4 +547,43 @@ TEST(DomainStateStress, SimChurnsWhileMainReadsSnapshots)
 	EXPECT_LT(unreadable, reads / 10 + 1);
 }
 
+
+// ---- Perf live control: skip predicate forwarded by the publisher ----
+namespace
+{
+	uint32_t gPausedCrc = 0;
+	bool PausedPredicate(void* ctx, StringCRC id)
+	{
+		(void)ctx;
+		return id.Value() == gPausedCrc;
+	}
+}
+
+TEST_F(PublisherTest, SkipPredicateIsForwardedAndCanBeCleared)
+{
+	ThreadDomain a("pub.skip.a", "SkipA"), b("pub.skip.b", "SkipB");
+	registry.Register(a);
+	registry.Register(b);
+	DomainStateSnapshotPublisher pub(registry, sink, nullptr, &FakeNow);
+	pub.Arm(5000);
+
+	gPausedCrc = StringCRC("pub.skip.a").Value();
+	pub.SetSkipPredicate(&PausedPredicate, nullptr);
+	pub.Update(1);
+	EXPECT_EQ(1u, sink.lastCount);
+	EXPECT_EQ(std::string::npos, sink.lastJson.find("SkipA"));
+	EXPECT_NE(std::string::npos, sink.lastJson.find("SkipB"));
+	EXPECT_TRUE(a.mThreads.empty());   // GetJSONState never ran for the paused domain
+
+	gPausedCrc = 0;   // resume
+	pub.Update(2);
+	EXPECT_EQ(2u, sink.lastCount);
+	EXPECT_NE(std::string::npos, sink.lastJson.find("SkipA"));
+
+	pub.SetSkipPredicate(nullptr, nullptr);
+	gPausedCrc = StringCRC("pub.skip.a").Value();
+	pub.Update(3);
+	EXPECT_EQ(2u, sink.lastCount);
+}
+
 #endif // DIA_DEBUG

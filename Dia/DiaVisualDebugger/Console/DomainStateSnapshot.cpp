@@ -20,7 +20,8 @@ namespace Dia
 		namespace Console
 		{
 			PackResult PackDomainStates(const DiaDebugDomainRegistry& registry, const ISchemaKeyResolver* resolver,
-										uint64_t simFrame, DomainStateSnapshot& out, uint32_t maxBytes)
+										uint64_t simFrame, DomainStateSnapshot& out, uint32_t maxBytes,
+											SkipDomainFn skip, void* skipCtx)
 			{
 				const uint32_t budget = maxBytes < kMaxSnapshotBytes ? maxBytes : kMaxSnapshotBytes;
 
@@ -39,6 +40,9 @@ namespace Dia
 				Json::FastWriter writer;
 				registry.VisitAll([&](IDebugDomain& domain)
 				{
+					if (skip != nullptr && skip(skipCtx, domain.GetDomainId()))
+						return;
+
 					Json::Value state;
 					if (!BuildDomainState(domain, state, resolver))
 						return;

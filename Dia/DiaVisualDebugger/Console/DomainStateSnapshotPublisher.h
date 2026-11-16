@@ -58,6 +58,8 @@ namespace Dia
 				void Arm(uint32_t windowMs = kDefaultWindowMs);
 				// Once per Sim frame. Packs and writes one snapshot while armed; does nothing otherwise.
 				void Update(uint64_t simFrame);
+				// Perf live control: domains for which fn returns true are not packed (null = pack all).
+				void SetSkipPredicate(SkipDomainFn fn, void* ctx) { mSkip = fn; mSkipCtx = ctx; }
 
 				bool     IsArmed() const { return mArmed; }
 				uint32_t PublishCount() const { return mPublishCount; }
@@ -71,6 +73,8 @@ namespace Dia
 				NowMsFn							mNow;
 				uint32_t						mMaxBytes;
 				std::unique_ptr<DomainStateSnapshot> mScratch;	// ~128 KB: heap, never the stack
+				SkipDomainFn					mSkip = nullptr;
+				void*							mSkipCtx = nullptr;
 				bool							mArmed = false;
 				uint64_t						mArmedUntilMs = 0;
 				bool							mHaveWarned = false;

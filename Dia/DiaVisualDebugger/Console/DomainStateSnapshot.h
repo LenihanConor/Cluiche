@@ -47,6 +47,11 @@ namespace Dia
 				uint32_t droppedCount = 0;
 			};
 
+			// Optional per-domain skip predicate (perf live control: a paused domain is not packed, so its
+			// GetJSONState never runs). Receives the domain id (IDebugDomain::GetDomainId, the registry key).
+			// Skipped domains count as neither included nor dropped.
+			typedef bool (*SkipDomainFn)(void* ctx, Dia::Core::StringCRC domainId);
+
 			// Overwrites out with a JSON object {"<displayName>": {state...}, ...} (same per-domain
 			// content as BuildDomainStatesRoot). Total JSON length never exceeds
 			// min(maxBytes, kMaxSnapshotBytes). Domains with a null display name are skipped
@@ -54,7 +59,8 @@ namespace Dia
 			// fit is dropped and later, smaller ones may still be included.
 			PackResult PackDomainStates(const DiaDebugDomainRegistry& registry, const ISchemaKeyResolver* resolver,
 									   uint64_t simFrame, DomainStateSnapshot& out,
-									   uint32_t maxBytes = kMaxSnapshotBytes);
+									   uint32_t maxBytes = kMaxSnapshotBytes,
+										   SkipDomainFn skip = nullptr, void* skipCtx = nullptr);
 		}
 	}
 }
