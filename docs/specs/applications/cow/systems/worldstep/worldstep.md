@@ -134,7 +134,7 @@ Resolution rules, which differ by lifecycle phase — this distinction matters, 
 - Kick on `SimulationTick` with **`band >= TimeBand::Week`**. The `>=` is mandatory: `ResolveBand` returns only the *largest* band a day completes, so `== Week` would skip the four weeks a year that are also Season/Year boundaries.
 - `kickKey` is the game day; `applyKey` is `day + apply_after_days` (default **7**, one game week).
 - **No kick unless every enabled stage reports `IsReady()`.** Until then the coordinator idles and logs once.
-- A kick is skipped (not queued) if the channel still has a step in flight. DiaDeferredStep's `Tick` runs before the kick each frame, so a late step stalls and applies first and the kick then succeeds; a skipped week is therefore a reported anomaly, not normal operation (see Open Design Question 2).
+- **A kick that finds the channel in flight is retried, not skipped (amended 2026-11-16, Feature 2).** One pending week is remembered and kicked on the next free tick with the *missed* day as the stage key and `applyKey = current day + k`; a second miss while one is pending is an Error and a lost week. A late kick is a reported anomaly (Warning, `late_kicks`, Degraded).
 
 **Slack.** At 30 Hz, `k = 7` days is 7 sim frames (~233 ms) at the Fastest preset and minutes at Slow. Against a combined A4 + A1 Season cost of roughly 26 ms CPU (~13 ms wall on a 2-worker cap) that is more than an order of magnitude of headroom. The exception is the Century tick — see Resolved Design Decisions 1.
 
@@ -151,12 +151,12 @@ This exists for two reasons, both load-bearing:
 
 **The coordinator does not sample. It signals** (revised 2026-11-13, user decision — see Resolved Decision 2).
 
-After every stage has committed, the coordinator calls `historyDriver.OnWorldStepApplied(key)` **synchronously inside `Apply`**. CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`.
+After every stage has committed, the coordinator raises `OnWorldStepApplied({ applyKey, stepDay, stageCount })` **synchronously inside `Apply`** to registered `IWorldStepListener`s (Feature 3, amended 2026-11-16: a listener interface rather than a direct call, so there is no compile-time dependency on `HistoryDriverModule`). CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) registers as a listener and owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`. It labels the sample by **`stepDay`**, the day the step represents, not by the apply key (Feature 3).
 
 - **One sampler, one timeline.** A4's and A1's own `Sample()` calls are dropped, and the coordinator never acquires one.
 - **The key is correct under deferred execution.** This is the whole reason the trigger moves: `HistoryDriverModule`'s original trigger was a game-clock tick, which under deferred stepping would sample at tick N while the world state it reads is from week N−k — silently mislabelled data. A synchronous signal from `Apply` cannot drift.
 - **Stages with no world step are unaffected.** `HistoryDriverModule` keeps its clock trigger there (S-1's own testbed, T-1 fixtures), so nothing that records history today changes.
-- If no `HistoryDriverModule` is present the signal is a no-op — history is a soft dependency.
+- If no listener is registered the signal is a no-op — history is a soft dependency.
 
 `history_band`, the `bands` name list and the `uint8_t` band index all stay `HistoryDriverModule`'s concern, not the coordinator's.
 
@@ -183,9 +183,9 @@ Deliberately minimal, because the sim-hosted name budget is tight (58/64 of S-3.
 
 Both are sim-hosted through `SimQueryHostModule` with mandatory `SimHelpInfo`, category `worldstep`. **A partial registration rolls back** every name registered in that call — the failure mode that leaks names permanently in `WorldGenerationModule` today.
 
-- **Metrics:** `cow.worldstep.step_ms` (total CPU across stages, with `MetricInfo`), `cow.worldstep.slack_days` at completion, `cow.worldstep.stalls`, `cow.worldstep.skipped_kicks`.
-- **Health:** Degraded on any stall in a rolling window or on a skipped kick; Failing on a missing configured stage.
-- **Logs** (`WST` channel): Info on configure (mode, order, `k`), on first readiness, on drain. Warning on a skipped kick or an unknown registered stage. Error on a missing configured stage.
+- **Metrics:** `cow.worldstep.step_ms` (total CPU across stages, with `MetricInfo`), `cow.worldstep.slack_days` at completion, `cow.worldstep.stalls`, `cow.worldstep.late_kicks`, `cow.worldstep.lost_weeks`.
+- **Health:** Degraded on any stall or late kick in the last 16 applied steps; Failing on a missing configured stage.
+- **Logs** (`WST` channel): Info on configure (mode, order, `k`), on first readiness, on drain. Warning on a late kick or an unknown registered stage. Error on a missing configured stage.
 - **Trace and profiling:** `DIA_TRACE_ZONE` on Capture, Run and Apply; `DIA_PROFILE_SCOPE` per stage inside each phase, so the Perf Inspector can split weather from ecology. Worker scopes carry the `world` channel as subject through DiaDeferredStep's job attribution.
 
 ## Public Interfaces
@@ -201,28 +201,27 @@ namespace CoW::WorldStep {
 
     // Pure logic: stage table, declared order, readiness gating, phase sequencing.
     // No Dia module dependencies; unit-tested with fake stages.
-    class WorldStepChain {
+    class WorldStepChain {                                   // full contract: step-chain.md
     public:
-        bool  Configure(const WorldStepConfig& config);          // false on a bad order list
-        bool  RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);
-        void  UnregisterStage(Dia::Core::StringCRC id);
-
-        bool  AllReady() const;
-        bool  MissingStages(StageIdList& out) const;             // configured but unregistered
-
-        void  Capture(StepKey key);                         // enabled stages, declared order
-        void  Run(Dia::DeferredStep::IParallelExecutor& executor);
-        void  Commit();
-
+        bool Configure(const WorldStepConfig& config);
+        bool RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);
+        void UnregisterStage(Dia::Core::StringCRC id);      // removal deferred to the step boundary
+        bool AllReady() const;
+        bool MissingStages(StageIdList& out) const;
+        bool UnknownStages(StageIdList& out) const;
+        bool Capture(StepKey key);                          // false if out of sequence
+        bool Run(Dia::DeferredStep::IParallelExecutor& executor);
+        bool Commit();
+        void Abandon();                                     // discard the in-flight step, no Commit
+        ChainPhase Phase() const;
         uint32_t EnabledCount() const;
-        IWorldStepStage* StageAt(uint32_t index) const;          // declared order
+        IWorldStepStage* StageAt(uint32_t index) const;
     };
 
     struct WorldStepConfig {
         StageIdList order;
         uint32_t    applyAfterDays = 7;
         bool        deferred       = true;
-        Dia::Core::Containers::String32 historyBand{ "Week" };
     };
     bool LoadWorldStepConfig(const Json::Value& root, WorldStepConfig& out);
 
@@ -252,9 +251,9 @@ namespace CoW::WorldStep {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Step Chain | `IWorldStepStage`, `WorldStepChain`, `WorldStepConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | TBD | Draft |
-| 2 | Module & Cadence | `WorldStepModule`: `.diaapp` config, DiaDeferredStep channel registration, `SimulationTick` week gate with `>=`, `k`, kick gating on readiness and in-flight, synchronous mode, the two sim-hosted commands with rollback, metrics, health, logs, trace | TBD | Draft |
-| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, and the single synchronous `HistoryDriverModule::OnWorldStepApplied(key)` signal per applied step (no sampling logic here) | TBD | Draft |
+| 1 | Step Chain | `IWorldStepStage`, `WorldStepChain`, `WorldStepConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | @docs/specs/applications/cow/systems/worldstep/step-chain.md | Approved |
+| 2 | Module & Cadence | `WorldStepModule`: `.diaapp` config, DiaDeferredStep channel registration, `SimulationTick` week gate with `>=`, `k`, kick gating on readiness and in-flight, synchronous mode, the two sim-hosted commands with rollback, metrics, health, logs, trace | @docs/specs/applications/cow/systems/worldstep/module-and-cadence.md | Approved |
+| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, and the single synchronous `HistoryDriverModule::OnWorldStepApplied(key)` signal per applied step (no sampling logic here) | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
 
 **Build order:** 1 → 2 → 3. Feature 1 needs no Dia code beyond the `IParallelExecutor` declaration and can start as soon as DiaDeferredStep Feature 2 exists.
 
@@ -316,7 +315,7 @@ namespace CoW::WorldStep {
 **Lifecycle (Feature 2):**
 - A configured stage that has not registered before the first `SimulationTick` sets health Failing and blocks kicks; registering late during startup does not.
 - A stage unregistering while live stops kicks **without** an error, and an in-flight step is drained and committed first.
-- `DoStop` with a step in flight drains, commits and samples before the channel is unregistered.
+- `DoStop` with a step in flight drains and abandons it (no commit, no history signal) before the channel is unregistered, matching Lifecycle.
 - Stage re-entry (enter, exit, enter) rebuilds the chain from config and kicks again, with no leaked channel registration or stale keys. This is the pattern the CellLayers E2E flakes live in, so it gets an explicit test.
 - Under simulated catch-up (several sim steps drained in one real frame) the apply key never slips, and applies are more frequent rather than larger.
 
@@ -345,8 +344,8 @@ namespace CoW::WorldStep {
 ## Open Design Questions
 
 1. **What does the Century tick actually cost, and does it need the two-channel split?** Decision 1 accepts the stall unmeasured. A1's only perf gate covers the Season band (and Feature 4 measures Season and Year), so Season + Year + Decade + Century combined has never been budgeted — DiaDeferredStep's own spec notes *"the Century frame has no budget at all."* This needs an A1 plan task that measures the combined tick at Large in Release. If it exceeds `k`'s slack by a wide margin, revisit the two-channel option or make A1's Century band incremental.
-2. **Is a skipped kick ever acceptable, or always a bug?** `Tick` runs before the kick each frame, so a late step should stall, apply, and let the kick succeed — making a skipped week unreachable in theory. This spec treats it as a reported anomaly (Warning, counter, Degraded health). If it turns out to be reachable under catch-up, when several sim steps drain in one real frame, the coordinator may instead need to stall explicitly rather than skip. Feature 2 should test catch-up specifically.
-3. **Who implements `IStepKeySource`?** DeferredStep Feature 4 takes the current key by injection rather than reading a clock. CoW's key is the game day, which GameSpeedController already owns (`SimulationTick::day`, `GameSpeedState::dayCounter`) — so the source could be GameSpeedController, making it reusable by any future channel, or World Step, keeping the dependency pointing one way. Decide in Feature 2; it is a one-line difference either way but it sets who owns the key for every later consumer.
+2. ~~**Is a skipped kick ever acceptable, or always a bug?**~~ **Resolved 2026-11-16 (Feature 2):** a missed week is retried on a following tick with the missed day as the stage key; a second miss is an Error and a lost week. Catch-up is covered by Feature 2 AC 12.
+3. ~~**Who implements `IStepKeySource`?**~~ **Resolved 2026-11-16 (Feature 2):** `WorldStepModule`, reading the day from `SimulationTick`. The same-step ordering hazard is Feature 2 Open Q1 and its first plan task.
 
 ## Status
 

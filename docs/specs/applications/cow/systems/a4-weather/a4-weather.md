@@ -115,7 +115,7 @@ A4's committed/working split maps onto the contract directly, which is why the p
 |---|---|
 | `Capture()` (SimPU) | copy committed fields → working set; latch season, parameters, pending forcings and biome edits |
 | `Run(IParallelExecutor&)` (workers) | the 10 pipeline steps over the working set; reads nothing SimPU-owned |
-| `Apply()` (SimPU) | swap working → committed; advance the week; broadcast `WeatherUpdated`. **No history sampling** — the coordinator signals `HistoryDriverModule` once after every stage has committed |
+| `Commit()` (SimPU; the stage's `Commit`, called by `WorldStepModule` in `Apply`) | swap working → committed; set the week to `WeekOf(stepDay)` (Feature 3: the week and season come from the step day, not an internal counter); publish `WeatherUpdated`. **No history sampling** — the coordinator signals `HistoryDriverModule` once after every stage has committed |
 | `SerializePending` / `DeserializePending` | a completed-but-unapplied working set plus its apply key (DFS-005) |
 
 - **Readers only ever see committed state** (EC-14). `WeatherSnapshot`, the save participant and the debug layers all read committed.
@@ -128,7 +128,7 @@ A4's committed/working split maps onto the contract directly, which is why the p
 
 **Performance (amended 2026-11-13).** The gate is now **CPU time**, not frame time, because the step is off SimPU's critical path. One `Step()` at Large in Release, summed across ranges: **≤ 10 ms of CPU**, with Small ≤ 4.2 ms and Standard ≤ 6.3 ms (scaled by cell count). Separately, the step must complete within its slack — `k` weeks of wall time at the fastest speed preset — or DiaDeferredStep stalls SimPU and reports it (DFS-003). Missing either is reported but doesn't fail the build. A miss means optimising the hot pass or raising k, not spreading the pipeline across frames.
 
-**Spin-up** (52 weeks) runs synchronously through `WeatherRunner` at New Game and is accepted as a one-time cost.
+**Spin-up** (52 weeks) runs through `WeatherRunner` as a cancellable **worker job** on the capped executor (amended 2026-11-16, Feature 3): the stage reports not-ready until it finishes, and a newer world cancels it. SimPU never hitches on regeneration.
 
 ### Update pipeline
 
@@ -228,7 +228,7 @@ On `WorldGenerationComplete`:
    - moisture: `initial_moisture_water` on water-source cells, `initial_moisture_land` elsewhere
    - pressure: 0.5
    - all other fields: 0
-3. **Spin up.** Run `spinup_weeks` steps synchronously and silently (default 52, set in the module config). No `WeatherUpdated` is sent, and the week counter resets to 0 afterwards. The first published week has settled winds and moisture.
+3. **Spin up.** Run `spinup_weeks` steps silently, off SimPU as a cancellable job (Feature 3), (default 52, set in the module config). No `WeatherUpdated` is sent, and the week counter resets to 0 afterwards. The first published week has settled winds and moisture.
 
 Spin-up is deterministic, so a save does not need to know about it. A new game rerunning it gives the same result.
 
@@ -240,8 +240,8 @@ The tuning constants live in `Assets/CoW/Global/Weather/weather_parameters.json`
 {
     "instance_id": "WeatherModule",
     "type_id": "WeatherModule",
-    "stages": ["all"],
-    "dependencies": ["MessageBusHostModule", "WorldStepModule", "SimQueryHostModule"],
+    "stages": ["S25WeatherPatternsStage"],
+    "dependencies": ["MessageBusHostModule", "WorldStepModule", "WorldGenerationModule", "SimQueryHostModule"],
     "soft_dependencies": ["SaveLoadModule", "CellLayersModule", "CellHistoryModule"],
     "config": {
         "parameters": "Global/Weather/weather_parameters.json",
@@ -288,9 +288,9 @@ uint32_t GetVersion () const                 override;    // not `version`
 bool     Validate   (LoadContext& ctx) const override;    // optional; default returns true
 ```
 
-- **Serialize** writes the week, the cell count, and each committed `WeatherFields` array as a JSON float array (9 arrays). It also writes the cached biome per cell as a plain `uint8_t` array — the CRC palette is **gone**, since `Biome` is already a byte (amended 2026-11-13). Terrain is not saved; it comes back from S-1's world on load.
+- **Serialize** writes the format `version`, `ready`, `width`/`height`/`cell_count`, the applied `week` (derived from the step day), a 64-bit `params_hash` of the effective parameters, nine committed `WeatherFields` arrays as JSON float arrays and the A4-cached `uint8_t` biome array (amended 2026-11-16, Feature 4). Terrain is not saved; it comes back from S-1's world on load. `ready: false` is a valid no-op record.
 - **Pending deferred step (added 2026-11-13, DFS-005).** If a step has completed but not yet been applied when the save is taken, `SerializePending` writes the working set and its apply key alongside. On load it is restored and applied at that key, so a save taken mid-step reloads identically to the uninterrupted run. A4 writes **no** save code for this beyond `SerializePending`/`DeserializePending` on its step: DiaDeferredStep Feature 3 drains automatically on `SaveManager::OnSaveStarted` and owns the single `ISaveable` holding every channel's pending result, so **E1 needs no change** (corrected 2026-11-13; the planned "E1 calls `DrainAll`" amendment was dropped). The coordinator delegates to A4's step in declared order.
-- **Validate** rejects the load if the saved cell count doesn't match the world's, or if any field array has the wrong length. It runs on every participant before any `Deserialize`, so a load is all-or-nothing.
+- **Validate** checks internal consistency only (lengths, ranges, version), because the live world is still the old one. A dimension mismatch against the loaded world is handled in `Deserialize` by discarding the saved state and spinning up fresh. A `params_hash` mismatch warns and runs under the current tuning (Feature 4).
 - **Deserialize** restores everything into committed state.
 
 **Size.** A4's 9 float fields as JSON doubles (`%.17g`, bit-identical round-trip) at ~30 bytes per float: Small ≈ 0.8 MB, Standard ≈ 1.2 MB, Large ≈ 1.9 MB. Combined with A1's ~35 fields/cell the total ecology + weather save is projected at ~10–15 MB at Large, well inside `SaveContext::kBufferSize` (verified 2026-11-13: exactly 100 MB). The 8-slot cap limits total disk use to 800 MB.
@@ -320,22 +320,11 @@ Layers and overlays are hosted wherever the domain is registered: S-2.5 first, t
 
 - **A description is mandatory** (non-empty, ≤ 256 chars); registration fails and logs an Error without one. `category` is `"weather"`, `owner` is `"WeatherModule"`, and arguments are declared as `Dia::API::ValueParam`s (≤ 16).
 - **Arguments are JSON objects.** No positional forms.
-- **Name budget.** A4 registers **16** names. The cap is 64, enforced in three tables that must all hold (`SimQueryHost::kMaxHandlers`, `SimQueryHostModule::kMaxAnnounced`, `DebugServer::kMaxSimNames`); the 65th registration returns false and logs an Error, with no assert. It is **per-stage in practice** — names are unregistered on stage exit and an outgoing stage is fully down before the incoming one starts — so A4's own stages are safe (S-2.5 is well under). The problem is S-3.5, which hosts every layer at once and projects to **≥99**. A4 does not shrink to fit; the cap is raised. See Open Design Question 3.
+- **Name budget.** A4 registers **7** names (amended 2026-11-16). The cap is 64, enforced in three tables that must all hold (`SimQueryHost::kMaxHandlers`, `SimQueryHostModule::kMaxAnnounced`, `DebugServer::kMaxSimNames`); the 65th registration returns false and logs an Error, with no assert. It is **per-stage in practice** — names are unregistered on stage exit and an outgoing stage is fully down before the incoming one starts — so A4's own stages are safe (S-2.5 is well under). The problem is S-3.5, which hosts every layer at once and projects to **≥99**. A4 does not shrink to fit; the cap is raised. See Open Design Question 3.
 - All mutations are queued and latched at the next `Capture()`.
 - The commands are a typed command model (`WeatherCommandExecutor`) bound to a `WeatherSimulation&`, so a scenario's setup commands mean the same thing live and headless.
 
-| Command | Effect |
-|---|---|
-| `spawn_storm <cell> <intensity> <weeks>` | Forcing: hold pressure low and moisture high for N weeks |
-| `spawn_high_pressure <cell> <intensity> <weeks>` | Forcing: hold pressure high and moisture low for N weeks |
-| `force_rain <cell> <amount>` | One-week precipitation forcing |
-| `set_wind <cell> <deg> <speed>` / `set_wind_region <region> <deg> <speed>` / `clear_wind_overrides` | Wind overrides (replace §5 output for those cells) |
-| `reload` / `set_param <key> <value>` | Parameters (see Parameters above) |
-| `export_state <file>` / `import_state <file>` | JSON snapshot of committed state and week |
-| `find_storms` / `find_droughts <weeks>` | Pattern queries (pressure < 0.3 / consecutive dry weeks per S-1 region) |
-| `check_rain_shadow <cell>` | Compare windward and leeward precipitation |
-| `profile` / `report_memory` | Per-step timing for the last step / buffer sizes |
-| `load_preset <name>` | Apply a preset (state + forcings + season) |
+**Seven names (consolidated 2026-11-16, Feature 5; was sixteen).** `cow.weather.force` (storm / high_pressure / rain), `cow.weather.wind` (set / set_region / clear), `cow.weather.params` (reload / set), `cow.weather.state` (export / import), `cow.weather.load_preset`, and the queries `cow.weather.find` (storms / droughts / rain_shadow) and `cow.weather.info` (profile / memory). Each takes a JSON object with an `action` field and queues its mutation to the next `Capture`. Droughts are computed from the DiaCellHistory precipitation ring, not from A4 state. The wind overlay is a 4 × 4 block plan refined where wind varies or pressure is below 0.3, capped at 2,000 arrows. See `weather-debug.md`.
 
 **Dropped (owned elsewhere, 2026-11-13):** `inspect <cell>` → DiaCellLayers `cells.inspect`; `step_back` → DiaCellHistory `cells.history.view` and `cells.snapshot.restore`.
 
@@ -405,17 +394,19 @@ namespace CoW::Weather {
     public:
         bool Start(const WeatherTerrain& terrain, const WeatherParameters& params,
                    const IBiomeSeasonalBaseline& baseline, uint32_t spinupWeeks,
-                   Dia::DeferredStep::IParallelExecutor& executor);
+                   Dia::DeferredStep::IParallelExecutor& executor,
+                   uint64_t startWeekOffset = 0);   // calendar start (S-2.5 Feature 3, 2026-11-16): preset runs start at the preset's season
         void StepWeek(Dia::DeferredStep::IParallelExecutor& executor);
         WeatherSimulation& GetSimulation();
     };
 
     // The deferred-step contract. Registered as a stage with WorldStepModule, which owns the channel.
-    class WeatherStep final : public Dia::DeferredStep::IDeferredStep {
+    class WeatherStage final : public CoW::WorldStep::IWorldStepStage {   // Feature 3; was IDeferredStep
     public:
-        void Capture() override;                                        // SimPU
+        bool IsReady() const override;
+        void Capture(StepKey stepDay) override;                         // SimPU
         void Run(Dia::DeferredStep::IParallelExecutor&) override;        // workers, working copy only
-        void Apply() override;                                          // SimPU
+        void Commit() override;                                         // SimPU
         void SerializePending(SaveGame::SaveContext&) const override;
         void DeserializePending(SaveGame::LoadContext&) override;
     };
@@ -442,14 +433,14 @@ Messages (`WeatherUpdated`, `BiomeTransitionComplete`) are hand-written structs 
 |---|---------|-------------|------|--------|
 | 1 | Weather Data & Parameters | `WeatherFields`/`WeatherTerrain` SoA, `WeatherParameters` + JSON load/validate/defaults, `IBiomeSeasonalBaseline` + `TableBiomeSeasonalBaseline` over the 10-biome enum, `Initialise` (terrain ingest, seeding, EC-01 assert). Pure logic, TDD | @docs/specs/applications/cow/systems/a4-weather/weather-data.md | Approved |
 | 2 | CA Pipeline | The 10 GDD steps + clamping as full-grid passes, committed/working swap, gather transport, upwind edge inflow, precomputed hex directions, forcings/overrides. One test group per step plus EC-03 to EC-20, serial-vs-parallel bit-identity, CPU-time gate. Consumes `Dia::DeferredStep::IParallelExecutor`. Pure logic, TDD | @docs/specs/applications/cow/systems/a4-weather/ca-pipeline.md | Approved |
-| 3 | WeatherModule & Deferred Step | SimModule: `.diaapp` config, parameter file load and hot reload, `WeatherStep` (`Capture`/`Run`/`Apply`), registration as a `WorldStepModule` stage, `SimulationTick` week gate, `HoldGeneration` + `WorldGenerationComplete`/`Failed`, spin-up, baseline provider lookup and fallback, `WeatherUpdated` publish, snapshot access, `BiomeTransitionComplete`, `cow_main.diaapp` entry, deletion of `JobSystemPlaceholderConsumerModule` | TBD | Draft |
-| 4 | Weather Save/Load | `WeatherSaveParticipant`: JSON array serialize/deserialize of committed `WeatherFields` (9 float arrays) + `uint8_t` biome array; `SerializePending`/`DeserializePending` for an unapplied step (DFS-005); size-checking `Validate`; save/continue/load/continue round-trip test including a save taken mid-step | TBD | Draft |
-| 5 | Weather Debug | `WeatherDebugDomain` panel card, 7 base cell layers + the decimated wind overlay, `CellDetailRegistry` rows + hover extras, 16 sim-hosted `cow.weather.*` commands with help metadata, DiaCellHistory events, profiling, metrics, health | TBD | Draft |
-| 6 | Presets & Regression | The 5 preset data files + `load_preset`, and the 4 AuthoringDebug §6 scenarios as GoogleTests over hand-built hex terrains (GDD ratios), with layer goldens | TBD | Draft |
+| 3 | WeatherModule & Deferred Step | SimModule: `.diaapp` config, parameter file load and hot reload, `WeatherStep` (`Capture`/`Run`/`Apply`), registration as a `WorldStepModule` stage, `SimulationTick` week gate, `HoldGeneration` + `WorldGenerationComplete`/`Failed`, spin-up, baseline provider lookup and fallback, `WeatherUpdated` publish, snapshot access, `BiomeTransitionComplete`, `cow_main.diaapp` entry, deletion of `JobSystemPlaceholderConsumerModule` | @docs/specs/applications/cow/systems/a4-weather/weather-module.md | Approved |
+| 4 | Weather Save/Load | `WeatherSaveParticipant`: JSON array serialize/deserialize of committed `WeatherFields` (9 float arrays) + `uint8_t` biome array; `SerializePending`/`DeserializePending` for an unapplied step (DFS-005); size-checking `Validate`; save/continue/load/continue round-trip test including a save taken mid-step | @docs/specs/applications/cow/systems/a4-weather/weather-save.md | Approved |
+| 5 | Weather Debug | `WeatherDebugDomain` panel card, 7 base cell layers + the decimated wind overlay, `CellDetailRegistry` rows + hover extras, 7 sim-hosted `cow.weather.*` names (consolidated 2026-11-16) with help metadata, DiaCellHistory events, profiling, metrics, health | @docs/specs/applications/cow/systems/a4-weather/weather-debug.md | Approved |
+| 6 | Presets & Regression | The 5 preset data files + `load_preset`, and the 4 AuthoringDebug §6 scenarios as GoogleTests over hand-built hex terrains (GDD ratios), with layer goldens | @docs/specs/applications/cow/systems/a4-weather/presets-and-regression.md | Approved |
 
 **Routed elsewhere:** the stage, panels, click-to-inspect and success-criteria walkthrough go to the S-2.5 Weather Patterns testbed. The `world` channel, stage ordering and the choice of k go to `WorldStepModule`.
 
-**Build order (revised 2026-11-13):** 1 and 6 can start now on hand-built terrain. 2 follows DiaDeferredStep Feature 2 (the executor interface). 5 is largely unblocked — DiaCellLayers, DiaCellHistory and CellField are all built — and needs only Feature 1's fields to read. 3 needs `WorldStepModule` and S-1. 4 needs DiaDeferredStep Feature 3 for the pending-result rule.
+**Build order (revised 2026-11-16):** 1 can start now on hand-built terrain. 6's loader, selectors and fills need only 1, but its forcings and every regression test need 2 built. 2 follows DiaDeferredStep Feature 2 (the executor interface). 5 is largely unblocked — DiaCellLayers, DiaCellHistory and CellField are all built — and needs only Feature 1's fields to read. 3 needs `WorldStepModule` and S-1. 4 needs DiaDeferredStep Feature 3 for the pending-result rule.
 
 - Features 1, 2 and 6 need no S-1 code: their tests build `WeatherTerrain` by hand.
 - Features 3–5 need S-1 (built) and the engine dependencies below.
@@ -575,8 +566,8 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
 
 ## Open Design Questions
 
-1. **Does A4 seed from S-1's static climate, or ignore it?** S-1 computes `temperature`, `airMoisture` and `rainOut` and classified every biome from them; A4 recomputes both dynamically. Seeding from S-1's fields would make week 0 agree with the biome map, but those layers read **zero on imported and `world_file` worlds**, so the seed would silently differ between a generated and a loaded world — and A4 would then need a fallback anyway. Ignoring them keeps A4 self-consistent at the cost of visible disagreement with biome names. Affects Feature 1's seeding rules and GDD deviation 14.
-2. **How much does the wind overlay decimate, and is per-cell wind worth it?** One arrow per cell at Large is ~20k debug-draw primitives per frame against a budget that was raised to 8,192 geometry entries. Every Nth cell is the cheap answer, but a coarse flow-field style overlay (one arrow per 3×3 block, averaged) may read better and cost less. Affects Feature 5 only; decide against the mockup.
+1. ~~**Does A4 seed from S-1's static climate, or ignore it?**~~ **Resolved 2026-11-16 (Feature 1): A4 is self-contained.** Original question: S-1 computes `temperature`, `airMoisture` and `rainOut` and classified every biome from them; A4 recomputes both dynamically. Seeding from S-1's fields would make week 0 agree with the biome map, but those layers read **zero on imported and `world_file` worlds**, so the seed would silently differ between a generated and a loaded world — and A4 would then need a fallback anyway. Ignoring them keeps A4 self-consistent at the cost of visible disagreement with biome names. Affects Feature 1's seeding rules and GDD deviation 14.
+2. ~~**How much does the wind overlay decimate, and is per-cell wind worth it?**~~ **Resolved 2026-11-16 (Feature 5): adaptive 4 × 4 block plan.** Original question: One arrow per cell at Large is ~20k debug-draw primitives per frame against a budget that was raised to 8,192 geometry entries. Every Nth cell is the cheap answer, but a coarse flow-field style overlay (one arrow per 3×3 block, averaged) may read better and cost less. Affects Feature 5 only; decide against the mockup.
 3. **The sim-hosted name cap must be raised before S-3.5 is wired** (measured 2026-11-13; not an A4 blocker). The cap is per-stage in practice, so today's worst stage is 45/64 (CluicheTest CellLayersViewer) and CoW's S-1 stage is 38/64. But S-3.5's **built** components alone are 58/64, so it crosses 64 with just its own 10 names — before A4's 16, A1's ≥9, A3's 6 or F-3's ≥11 exist. Projected total **≥99**, over by ≥35. Release is not safe either (~59/64 if the new modules follow S-1's unguarded pattern). Recommended fix: raise all three tables 64 → 192 (there is precedent — commit `6b3a7f80` did 32 → 64; the SimPU table is a `std::vector` so costs nothing, and only `DebugServer::mSimHelp` has real cost at ~7 KB/slot, 450 KB → 1.35 MB Debug heap), plus raise the `SimQueryReply` stream capacity from 48. Needs AD-001 sign-off. Owned by S-3.5, not A4.
 
 ## Status

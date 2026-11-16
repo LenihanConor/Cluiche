@@ -146,6 +146,9 @@ namespace Dia::DeferredStep {
         virtual void Apply() = 0;
 
         // Feature 3. A completed-but-unapplied result; version is the step's own.
+        // Feature 3 amendment (2026-11-16, World Step Feature 3). Called by the save participant's
+        // Validate for each saved channel; must not mutate anything. false aborts the load.
+        virtual bool     ValidatePending(Dia::SaveGame::LoadContext& ctx) const { return true; }
         virtual uint32_t GetPendingVersion() const = 0;
         virtual void     SerializePending(Dia::SaveGame::SaveContext& ctx) const = 0;
         virtual void     DeserializePending(Dia::SaveGame::LoadContext& ctx) = 0;

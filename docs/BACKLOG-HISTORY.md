@@ -194,6 +194,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaThreading: Job Observation | 2026-11-16 | Moved by `dia docs backlog move` |
 | Dia | Other tests flake under `--shards` (2026-11-10) | 2026-11-16 | Moved by `dia docs backlog move` |
 | CoW | F-3's own specs carry stale dependency statuses (found 2026-11-13, F-3 audit) | 2026-11-16 | Fixed 2026-11-16: #16/#17 Done, S-1 built, Draft->Approved, DiaValueSchema Done, S-2.5/S-3 world_bundle claim corrected |
+| CoW | **14 missing feature specs block the weather effort** (found 2026-11-13) | 2026-11-16 | Moved by `dia docs backlog move` |
 
 ---
 

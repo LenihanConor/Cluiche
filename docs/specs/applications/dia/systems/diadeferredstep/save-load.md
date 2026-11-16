@@ -174,6 +174,7 @@ The exact `Observer` base and callback signature follow `DiaCore/Architecture/Ob
 11. `Validate` returns false when the stored `version` is greater than `kFormatVersion`.
 12. `Validate` returns true for a save with `pending_count: 0`, and for a save whose channels are all
     registered.
+12a. `Validate` calls `IDeferredStep::ValidatePending(ctx)` for each saved channel whose step is registered and returns false (aborting the load) when any returns false. The default returns true, so a step that does not override it behaves as before (amended 2026-11-16 for World Step Feature 3).
 13. `Validate` mutates nothing — no `RestorePending`, no `DeserializePending`. A failing load leaves
     the live scheduler exactly as it was.
 

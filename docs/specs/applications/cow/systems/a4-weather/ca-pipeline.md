@@ -1,7 +1,7 @@
 # Feature Spec: A4 CA Pipeline
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 2)
-**Status:** Approved (2026-11-16)
+**Status:** Approved (2026-11-16); region-forcing amendment re-approved 2026-11-16 with Feature 6
 **Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TechnicalSpec.md` §2–§12, `A4_EdgeCaseMatrix.md`
 **Depends on:** A4 Feature 1 (`WeatherFields`, `WeatherTerrain`, `WeatherParameters`, `IBiomeSeasonalBaseline`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers)
 
@@ -133,6 +133,7 @@ edgeInflow(c) = moistureOut[c]  if boundary.edge_inflow
 - Forcings are **latched at `Capture`** and applied at fixed points inside `Run`: hooks A–D in the table above (EC-15). A hold writes its target value after the pass that owns the field, so the next pass sees it. This is why a held low pressure survives the recomputation in pass 2.
 - `Commit` decrements `weeksRemaining` and drops expired records. Forcings are not saved.
 - Capacity: 64 active forcings, enforced with an error return from `AddForcing` rather than an unbounded vector.
+- **Region forcings (amended 2026-11-16, A4 Feature 6).** A forcing may name a **cell set** instead of a single cell. `RegisterCellSet` takes a sorted, de-duplicated list of cell indices (out-of-range or unsorted input is rejected), stores it in `WeatherSimulation`, and returns a handle. Up to 16 sets exist at once, each at most N cells. One record then covers a region, so the 64-record cap bounds records, not cells. Sets are latched at `Capture` with the forcings and are read-only in `Run`. Where a cell is covered by several records of the same kind, the **lowest record index** wins (deterministic, order-free of ranges). Cell sets are not saved and a set that references a cell beyond the grid after re-`Initialise` is dropped with its forcings.
 - Wind overrides persist until `clear_wind_overrides` (Feature 5), so they carry no timer.
 
 ### New constant
@@ -157,7 +158,10 @@ edgeInflow(c) = moistureOut[c]  if boundary.edge_inflow
 namespace CoW::Weather {
 
     enum class ForcingKind : uint8_t { PressureHold, MoistureHold, Rain, WindOverride };
-    struct WeatherForcing { ForcingKind kind; uint32_t cell; float value; float value2; uint16_t weeksRemaining; };
+    // Amended 2026-11-16 (Feature 6): a forcing targets one cell OR a registered cell set.
+    using CellSetHandle = uint16_t;  constexpr CellSetHandle kNoCellSet = 0xFFFF;
+    struct WeatherForcing { ForcingKind kind; uint32_t cell; CellSetHandle cellSet = kNoCellSet;
+                            float value; float value2; uint16_t weeksRemaining; };
 
     struct WeatherGridTotals { double meanMoisture = 0; double totalSnowPack = 0; uint32_t rainingCellCount = 0; };
 
@@ -180,7 +184,12 @@ namespace CoW::Weather {
         void Step(Season season, const IBiomeSeasonalBaseline& baseline,
                   Dia::DeferredStep::IParallelExecutor& executor);              // Capture + Run + Commit
         bool AddForcing(const WeatherForcing& forcing);                         // false when full
+        CellSetHandle RegisterCellSet(const DynamicArrayC<uint32_t>& sortedCells);   // false-equivalent: kNoCellSet when 16 sets exist
+        void ClearCellSets();                                                   // also drops forcings that reference them
         const WeatherGridTotals& GetGridTotals() const;
+        // Exported pure helpers for Feature 5 (2026-11-16, no behaviour change): PrevailingDirection(latitude),
+        // PressureGradient(cell, fields, tables), SnapWindDirection (above).
+        void SetCommittedWeek(uint64_t week);                                   // Feature 3: the module overwrites the counter with WeekOf(stepDay) after Commit
         const WeatherStepProfile& GetLastProfile() const;
     };
 }
@@ -242,6 +251,7 @@ namespace CoW::Weather {
 34. `PressureHold` survives the pressure recomputation in pass 2 and shapes the wind in pass 3. `MoistureHold` is visible to the transport passes. `WindOverride` replaces pass 3's output for its cells and changes `dirIndex`.
 35. `Rain` adds exactly `value` to `precipitation` for one week, routes to snow or ground water by temperature, and consumes no moisture.
 36. Forcings expire after `weeksRemaining`. `AddForcing` returns false at 64 active forcings and nothing is dropped silently. The same forcings applied in any order give identical results.
+36a. A region forcing (`PressureHold` or `WindOverride` over a registered cell set) applies to every cell in the set and to no other. A set with 0 cells is rejected. A 17th set returns `kNoCellSet`. Two records of the same kind overlapping on a cell resolve to the lower record index. Region and per-cell forms give identical output for the same cells.
 
 ### Performance
 
