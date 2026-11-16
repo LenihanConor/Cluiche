@@ -702,6 +702,34 @@ TEST(WorldGenCommands, StageReEntryRegistersCleanlyWithNoDuplicateRejections)
 	}
 }
 
+// Consumer Amendments ACs 13-14: the module owns the hex grid, exposes it, and rebuilds it in place on a size change.
+TEST(WorldGenCommands, ModuleExposesTheHexGridAndRebuildsItInPlaceOnASizeChange)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(5);
+	const Dia::Graphics::CellGridDesc* desc = nullptr;
+	{
+		const CoW::WorldGeneration::WorldHexGrid* g = gWg->GetHexGrid();
+		ASSERT_NE(g, nullptr);
+		const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+		ASSERT_NE(w, nullptr);
+		EXPECT_EQ(g->Dimensions().width, w->dimensions.width);
+		EXPECT_EQ(g->Dimensions().height, w->dimensions.height);
+		desc = &g->Desc();
+	}
+	Json::Value a = Obj();
+	a["size"] = "Standard";
+	h.Call("cow.worldgen.set_size", a);
+	ASSERT_TRUE(h.PumpUntil([&] { return gWg->GetCurrentWorld() && gWg->GetCurrentWorld()->dimensions.width != 66; }, 400));
+	h.Pump(2);
+	const CoW::WorldGeneration::WorldHexGrid* g = gWg->GetHexGrid();
+	ASSERT_NE(g, nullptr);
+	EXPECT_EQ(g->Dimensions().width, gWg->GetCurrentWorld()->dimensions.width);
+	EXPECT_EQ(g->Dimensions().height, gWg->GetCurrentWorld()->dimensions.height);
+	EXPECT_EQ(&g->Desc(), desc) << "same CellGridDesc address after the rebuild";
+}
+
 TEST(WorldGenCommands, ModuleWithoutSimQueryHostStartsAndRegistersNothing)
 {
 	Harness h(std::string(), false);

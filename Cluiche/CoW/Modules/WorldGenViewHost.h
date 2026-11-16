@@ -20,6 +20,7 @@
 
 #include <Shared/WorldGeneration/WorldCameraController.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/SharedWorldHexGrid.h>
 #include <Shared/WorldGeneration/WorldHexGrid.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
@@ -65,6 +66,9 @@ public:
         Dia::Graphics::CellFieldRegistry*           cellField = nullptr;  // "KernelCellFieldRegistry" stream
         // Optional.
         const Dia::ValueSchema::ValueSchemaService* schema = nullptr;     // "ValueSchemaService" stream; null = no schema data
+        // The world's shared hex grid (WorldGenerationModule::HexGridOwner()). The host registers against it and
+        // drives its rebuilds. Null = the host keeps a private grid (unit tests).
+        WorldGeneration::SharedWorldHexGrid*        sharedGrid = nullptr;
         Dia::CellLayers::IMirrorQueryRegistrar*     registrar = nullptr;  // sim-hosted cells.* commands; null = not registered
 
         // Application modules (stage module fills these). When a port below is empty and the module is set, the host binds it.
@@ -184,7 +188,8 @@ private:
     WorldGeneration::WorldGenSession& mSession;
     Deps                              mDeps;
 
-    std::optional<WorldGeneration::WorldHexGrid> mGrid;   // re-emplaced in place: the registry keeps its address
+    WorldGeneration::SharedWorldHexGrid  mOwnGrid;   // used only when Deps::sharedGrid is null
+    WorldGeneration::SharedWorldHexGrid& mGrid;      // re-emplaced in place: the registry keeps its address
     std::vector<LayerBinding>         mBindings;          // one per descriptor, stable addresses
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader>        mUploader;
     Dia::Core::UniquePtr<Dia::CellLayers::CellLayerViewerDomain> mDomain;

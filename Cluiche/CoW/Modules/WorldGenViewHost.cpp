@@ -111,9 +111,12 @@ uint64_t WorldGenViewHost::LayerBinding::Version()
 WorldGenViewHost::WorldGenViewHost(WorldGenSession& session, const Deps& deps)
     : mSession(session)
     , mDeps(deps)
+    , mGrid(deps.sharedGrid ? *deps.sharedGrid : mOwnGrid)
 {
     RefreshPorts();
-    mGrid.emplace(TargetDims(mSession));
+    mGrid.SetDriven(true);   // this host choreographs size changes (unregister, flush, rebuild, re-register)
+    if (!mGrid || !SameDims(mGrid->Dimensions(), TargetDims(mSession)))
+        mGrid.emplace(TargetDims(mSession));
     mBindings.resize(WorldLayerSource::Count());
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
     {
@@ -125,6 +128,7 @@ WorldGenViewHost::WorldGenViewHost(WorldGenSession& session, const Deps& deps)
 WorldGenViewHost::~WorldGenViewHost()
 {
     Teardown();
+    mGrid.SetDriven(false);   // the owner resumes keeping the shared grid in step
 }
 
 void WorldGenViewHost::RefreshPorts()

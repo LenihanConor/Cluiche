@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <Shared/WorldGeneration/SharedWorldHexGrid.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include "Modules/WorldGenerationMessages.h"
@@ -46,6 +47,15 @@ public:
         return mSession.Revision() > 0 ? &mSession.World() : nullptr;
     }
     uint32_t GetWorldRevision() const { return mSession.Revision(); }
+
+#ifdef DIA_DEBUG
+    // The one hex grid every cell-layer registrant of the world registers against (S-1 view, A4, A1). Null until the
+    // first Update after DoStart. Rebuilt in place when the world dimensions change (stable CellGridDesc address).
+    // Debug builds only: every registrant is debug-only, so Release neither builds nor references it.
+    const WorldGeneration::WorldHexGrid* GetHexGrid() const { return mHexGrid.Get(); }
+    // For a registrant that choreographs layer (un)registration around a size change (see SharedWorldHexGrid).
+    WorldGeneration::SharedWorldHexGrid& HexGridOwner() { return mHexGrid; }
+#endif
     // True once a world of at least this revision exists (the hand-off contract for dependants, SD-S1-010).
     bool IsReady(uint32_t revision) const { return GetWorldRevision() >= revision; }
 
@@ -121,6 +131,9 @@ private:
 
     WorldGeneration::WorldGenSession mSession;
     WorldGeneration::SiteRegistry mSiteRegistry;
+#ifdef DIA_DEBUG
+    WorldGeneration::SharedWorldHexGrid mHexGrid;
+#endif
     int  mGenerationHolds = 0;
     bool mStartDeferral = true;      // skip the first DoUpdate: dependants started in the same pass have registered by then
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";

@@ -7,6 +7,9 @@
     <Filter Include="Shared">
       <UniqueIdentifier>{b157cd77-a81d-4d7c-bef8-ccbd67f06c87}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shared\WorldGeneration">
+      <UniqueIdentifier>{a9b3affa-4bc7-4de6-a86a-68efa9c62b15}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -407,6 +410,9 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h">
+      <Filter>Shared\WorldGeneration</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

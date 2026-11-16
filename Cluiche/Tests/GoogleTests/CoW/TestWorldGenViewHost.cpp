@@ -65,7 +65,7 @@ struct Rig
     bool haveInput = false;
     std::unique_ptr<WorldGenViewHost> host;
 
-    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true)
+    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true, SharedWorldHexGrid* shared = nullptr)
     {
         Dia::CellLayers::Testing::FakePuId() = 1;
         if (generate)
@@ -74,6 +74,7 @@ struct Rig
         d.registry = &registry;
         d.cellField = &cellField;
         d.schema = schema;
+        d.sharedGrid = shared;
         d.registrar = &registrar;
         d.windowSize = [this]() { return window; };
         d.getCamera = [this](float& x, float& y, float& z) { x = camX; y = camY; z = camZoom; };
@@ -225,6 +226,38 @@ TEST(WorldGenViewHost, SetColourModeSwitchesActiveBaseAndRejectsUnknownIds)
     uint32_t modes = 0;
     r.host->ListColourModes([&](const char*) { ++modes; });
     EXPECT_EQ(modes, WorldLayerSource::Count());
+}
+
+// Consumer Amendments ACs 13-15: the host registers against the shared grid it is given, drives its rebuilds, and a second
+// registrant on the same grid yields one grid in the registry.
+TEST(WorldGenViewHost, UsesTheSharedGridRebuildsItInPlaceAndASecondRegistrantSharesIt)
+{
+    SharedWorldHexGrid shared;
+    FakeDebugDraw draw;
+    {
+        Rig r(nullptr, true, &shared);
+        ASSERT_TRUE(r.host->Build());
+        ASSERT_TRUE(static_cast<bool>(shared));
+        EXPECT_EQ(&r.host->Grid(), shared.Get()) << "the host must use the shared instance, not make its own";
+        EXPECT_TRUE(shared.IsDriven());
+        const Dia::Graphics::CellGridDesc* desc = &shared->Desc();
+
+        // A second, independent registrant given the same grid.
+        ASSERT_EQ(r.registry.Register(Dia::CellLayers::Testing::MakeLayer("second.registrant", &shared->Desc())), Dia::CellLayers::CellRegisterResult::Ok);
+        EXPECT_EQ(r.registry.GridCount(), 1u);
+        EXPECT_EQ(r.registry.GridAt(0), desc);
+
+        const uint32_t gen = shared.Generation();
+        r.Resize("Large");
+        r.Frame(draw);
+        EXPECT_GT(shared.Generation(), gen);
+        EXPECT_EQ(shared->Dimensions().width, 104);
+        EXPECT_EQ(&shared->Desc(), desc) << "rebuilt in place: registrants keep one desc address";
+        for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
+            EXPECT_EQ(r.registry.Find(Dia::Core::StringCRC(WorldLayerSource::At(i).id))->grid, desc);
+        EXPECT_EQ(r.registry.GridCount(), 1u);
+    }
+    EXPECT_FALSE(shared.IsDriven()) << "the owner takes the grid back when the host goes away";
 }
 
 TEST(WorldGenViewHost, SizeChangeKeepsInRangeSelectionOrClearsAndLeavesNoDanglingGrid)

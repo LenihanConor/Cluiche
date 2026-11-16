@@ -259,6 +259,12 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     }
 
     const bool worldChanged = mSession.Tick(*stream);
+#ifdef DIA_DEBUG
+    // Keep the shared grid in step with the world's dimensions unless a registrant drives rebuilds itself. Also builds
+    // the grid on the first frame, so GetHexGrid() is non-null from then on.
+    if (!mHexGrid.IsDriven())
+        mHexGrid.EnsureDims(mSession.Revision() > 0 ? mSession.World().dimensions : mSession.Dimensions());
+#endif
 
     // A Regenerate just finished (live preview and the first generation never retry): events, counters and health,
     // whether or not it produced a new world (a failed one keeps the previous world and returns false).
@@ -668,6 +674,9 @@ void WorldGenerationModule::UnregisterCommands()
 Dia::ApplicationFlow::StopResult WorldGenerationModule::DoStop()
 {
     UnregisterCommands();
+#ifdef DIA_DEBUG
+    mHexGrid.reset();
+#endif
     if (mHealthRegistered)
     {
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);

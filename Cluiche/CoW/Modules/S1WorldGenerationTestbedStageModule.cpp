@@ -153,6 +153,7 @@ bool S1WorldGenerationTestbedStageModule::TryBuildView(Cluiche::AppFlow::VisualD
     }
     deps.camera = mCamera.Get();
     deps.input  = mInput.Get();
+    deps.sharedGrid = &wg->HexGridOwner();   // one grid for every registrant of this world
     if (deps.schema == nullptr)
         DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: no ValueSchemaService - map layers show without schema data");
 
