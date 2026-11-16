@@ -13,6 +13,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Profile/Profiler.h>
+#include <DiaObservation/Profile/TripReporter.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
@@ -75,6 +76,13 @@ namespace Dia { namespace ApplicationFlow {
                                         .RegisterCounter(Dia::Core::StringCRC(name.c_str()));
             mMetricSelfMs = Dia::Observation::Metric::MetricRegistry::Instance()
                                 .RegisterGauge(Dia::Core::StringCRC("perf.self_ms"));
+
+            // Perf Inspector A3c: replaces the per-frame pu.over_budget log line.
+            name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".over_budget_frames";
+            mMetricOverBudgetFrames = Dia::Observation::Metric::MetricRegistry::Instance()
+                                          .RegisterCounter(Dia::Core::StringCRC(name.c_str()));
         }
     }
 
@@ -216,10 +224,13 @@ namespace Dia { namespace ApplicationFlow {
 
         Clock::time_point prev = Clock::now();
         const Clock::time_point passStart = prev;
+        bool moduleStarting = false;   // any module of this unit in kStarting during the pass (A3: skipped entry)
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
             ran[i] = false;
             const ModuleState s = mModules[i].module->GetState();
+            if (s == ModuleState::kStarting)
+                moduleStarting = true;
             if (s == ModuleState::kStarting || s == ModuleState::kActive)
             {
                 ModuleEntry& entry = mModules[i];
@@ -239,8 +250,41 @@ namespace Dia { namespace ApplicationFlow {
             if (mModules[i].metricEwmaMs)
                 mModules[i].metricEwmaMs->Set(static_cast<double>(mTimingTable.GetEwma(i)));
         }
-        mTimingTable.RecordUnitTick(std::chrono::duration<float, std::milli>(prev - passStart).count());
+        const float unitTickMs = std::chrono::duration<float, std::milli>(prev - passStart).count();
+        mTimingTable.RecordUnitTick(unitTickMs);
         mTimingTable.CommitEntry();
+
+        // Perf Inspector A3c: one detector observation per committed entry. The budget is the
+        // per-pass target (on Sim a pass is one fixed step, mFrequencyHz is the step rate).
+        {
+            using namespace Dia::Observation::Profile;
+            const float budgetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
+            const double nowMs = std::chrono::duration<double, std::milli>(Clock::now().time_since_epoch()).count();
+            const TripResult trip = mTripDetector.Observe(unitTickMs, budgetMs, moduleStarting, nowMs);
+
+            const uint32_t overTotal = mTripDetector.GetOverBudgetFrames();
+            if (overTotal != mOverBudgetReported)
+            {
+                if (mMetricOverBudgetFrames)
+                    mMetricOverBudgetFrames->Inc(static_cast<uint64_t>(overTotal - mOverBudgetReported));
+                mOverBudgetReported = overTotal;
+            }
+
+            if (trip.tripped)
+            {
+                TripReporter* reporter = mTripReporter.load(std::memory_order_acquire);
+                if (reporter != nullptr)
+                {
+#ifdef _DEBUG
+                    const char* buildConfig = "Debug";
+#else
+                    const char* buildConfig = "Release";
+#endif
+                    BuildTripRecord(mTripRecord, mInstanceId.AsChar(), trip, budgetMs, buildConfig, mTimingTable);
+                    reporter->Report(mTripRecord);
+                }
+            }
+        }
         mSelfMsAccum += std::chrono::duration<float, std::milli>(Clock::now() - prev).count();
     }
 
@@ -357,15 +401,7 @@ namespace Dia { namespace ApplicationFlow {
             mMetricSelfMs->Set(static_cast<double>(mSelfMsAccum));
 
         ++mTickCount;
-
-        // Task 35 — warn when tick exceeds target period (skip tick 1: includes module start costs)
-        // 7% tolerance to avoid noise from minor scheduling jitter (e.g. 17ms on a 60Hz/16.7ms budget)
-        const float targetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
-        if (targetMs > 0.0f && mLastTickMs > targetMs * 1.07f && mTickCount > 1)
-        {
-            DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f",
-                mInstanceId.AsChar(), mLastTickMs, targetMs);
-        }
+        // Over-budget detection moved to RunForwardPass (A3c trip detector + pu.<unit>.over_budget_frames).
     }
 
     //--------------------------------------------------------------------------

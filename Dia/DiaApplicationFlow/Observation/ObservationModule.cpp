@@ -1,5 +1,7 @@
 #include "ObservationModule.h"
 
+#include <DiaApplicationFlow/IApplicationControl.h>
+
 #include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/DebugOutputSink.h>
@@ -85,6 +87,10 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
         DIA_LOG_INFO("Application", "ObservationModule session: %s", mSessionManager.GetSessionId());
     }
 
+    // Perf Inspector A3c: plain pointer pass of the session's trip reporter to every PU.
+    if (GetApplication() != nullptr)
+        GetApplication()->SetTripReporter(mSessionManager.GetTripReporter());
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -101,6 +107,8 @@ Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
     Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.Stop();
 
+    if (GetApplication() != nullptr)
+        GetApplication()->SetTripReporter(nullptr);
     mSessionManager.Stop();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)

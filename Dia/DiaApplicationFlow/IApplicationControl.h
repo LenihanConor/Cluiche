@@ -14,6 +14,7 @@
 #include <functional>
 
 namespace Json { class Value; }
+namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -57,6 +58,10 @@ namespace Dia { namespace ApplicationFlow {
         // Read-only: returns the "config" block from the .diagame file.
         // Null if no .diagame config was present. Safe from any lifecycle method.
         [[nodiscard]] virtual const Json::Value* GetDiagameConfig() const = 0;
+
+        // Perf Inspector A3c: hand every ProcessingUnit the over-budget trip reporter (plain pointer,
+        // not owned; nullptr detaches). Called by the module that owns the observation session.
+        virtual void SetTripReporter(Dia::Observation::Profile::TripReporter* /*reporter*/) {}
     };
 
 }} // namespace Dia::ApplicationFlow

@@ -697,6 +697,13 @@ namespace Dia { namespace ApplicationFlow {
     // BuildFromManifest  (private)
     //--------------------------------------------------------------------------
 
+    void Application::SetTripReporter(Dia::Observation::Profile::TripReporter* reporter)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetTripReporter(reporter);
+    }
+
+    //--------------------------------------------------------------------------
     bool Application::BuildFromManifest()
     {
         DIA_ASSERT(mManifest.processingUnits.Size() <= kMaxProcessingUnits,

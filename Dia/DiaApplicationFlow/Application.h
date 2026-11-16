@@ -129,6 +129,7 @@ namespace Dia { namespace ApplicationFlow {
         // Compose() was not used or the .diagame had no config block.
         // Safe to call from any module lifecycle method (DoStart, OnConfigure, etc.).
         [[nodiscard]] const Json::Value* GetDiagameConfig() const override { return mManifest.diagameConfig; }
+        void SetTripReporter(Dia::Observation::Profile::TripReporter* reporter) override;
 
         // Emit a lifecycle event on the $lifecycle stream.
         // Called internally by Application and Module; not part of the public module API.

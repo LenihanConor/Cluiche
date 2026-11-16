@@ -12,14 +12,21 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Profile/TripReporter.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
 
 #include <chrono>
 #include <cstdio>
+#include <cstring>
+#include <mutex>
+#include <string>
 #include <thread>
+#include <vector>
 
 using namespace Dia::ApplicationFlow;
 using namespace Dia::Core;
@@ -34,7 +41,13 @@ namespace {
     {
         using SimModule::SimModule;
         int sleepMs = 0;
-        StartResult DoStart() override { return StartResult::kReady; }
+        static inline int startSleepMs = 0;   // slept inside DoStart (runs while the module is kStarting)
+        StartResult DoStart() override
+        {
+            if (startSleepMs > 0)
+                std::this_thread::sleep_for(std::chrono::milliseconds(startSleepMs));
+            return StartResult::kReady;
+        }
         StopResult  DoStop()  override { return StopResult::kDone; }
         void DoUpdate(const SimTimeContext&) override
         {
@@ -227,4 +240,152 @@ TEST(ProcessingUnitTiming, BenchmarkCostPerModulePerPass)
     std::printf("[ BENCH    ] ProcessingUnit pass: %.1f ns per module per pass (16 empty modules, includes module tick)\n",
                 totalNs / (kPasses * 16.0));
     SUCCEED();
+}
+
+// ---------------------------------------------------------------------------
+// Perf Inspector A3c (AA7, AA10, AA11): trip detector wired into the ProcessingUnit.
+// ---------------------------------------------------------------------------
+namespace {
+
+    class CaptureSink : public Dia::Observation::Log::ISink
+    {
+    public:
+        CaptureSink() { SetLevelThreshold(Dia::Observation::Log::LogLevel::kDebug); }
+        void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mMessages.emplace_back(e.message);
+        }
+        const char* GetName() const override { return "PUTripCaptureSink"; }
+        int Count(const char* needle) const
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            int n = 0;
+            for (const auto& m : mMessages)
+                if (m.find(needle) != std::string::npos) ++n;
+            return n;
+        }
+    private:
+        mutable std::mutex       mMutex;
+        std::vector<std::string> mMessages;
+    };
+
+    struct PUTripFixture : ::testing::Test
+    {
+        void SetUp() override
+        {
+            Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+            Dia::Observation::Log::Logger::Instance().RegisterSink(&sink);
+            g_timed = nullptr;
+            TimedSimModule::startSleepMs = 0;
+        }
+        void TearDown() override
+        {
+            TimedSimModule::startSleepMs = 0;
+            Dia::Observation::Log::Logger::Instance().UnregisterSink(&sink);
+            Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
+        }
+        void Flush() { Dia::Observation::Log::Logger::Instance().FlushSync(); }
+
+        CaptureSink sink;
+        Dia::Observation::Profile::TripReporter reporter;   // not started: counts-only, still logs pu.trip
+    };
+}
+
+// Many over-budget entries: one rate-limited trip, counter counts every over-budget entry, and the
+// per-frame pu.over_budget log line is gone.
+TEST_F(PUTripFixture, SustainedOverBudgetEmitsOneTripNoPerFrameLog)
+{
+    auto manifest = BuildManifest("tripSleep");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ProcessingUnit* pu = g_timed->GetProcessingUnit();
+    pu->SetTripReporter(&reporter);
+    DriveToActive(app, g_timed);
+
+    auto* over = MetricRegistry::Instance().FindCounter(StringCRC("pu.SimPU.over_budget_frames"));
+    ASSERT_NE(over, nullptr);
+    const uint64_t overBefore = over->Value();
+    const uint64_t submittedBefore = reporter.GetSubmitted();
+
+    g_timed->sleepMs = 40;   // > 2x the 16.7 ms budget: every step is a candidate trip
+    constexpr int kUpdates = 15;
+    for (int i = 0; i < kUpdates; ++i)
+        app.Update(kFixed60 * 1.1f);
+    Flush();
+
+    EXPECT_GE(over->Value() - overBefore, static_cast<uint64_t>(kUpdates));
+    EXPECT_EQ(reporter.GetSubmitted() - submittedBefore, 1u);   // minIntervalMs (5 s) >> test duration
+    EXPECT_EQ(sink.Count("pu.trip"), 1);
+    EXPECT_EQ(sink.Count("pu.over_budget"), 0);
+}
+
+// Detaching the reporter (null) keeps the counter but emits nothing.
+TEST_F(PUTripFixture, NullReporterCountsOnly)
+{
+    auto manifest = BuildManifest("tripNull");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ProcessingUnit* pu = g_timed->GetProcessingUnit();
+    pu->SetTripReporter(nullptr);
+    DriveToActive(app, g_timed);
+
+    auto* over = MetricRegistry::Instance().FindCounter(StringCRC("pu.SimPU.over_budget_frames"));
+    ASSERT_NE(over, nullptr);
+    const uint64_t overBefore = over->Value();
+
+    g_timed->sleepMs = 40;
+    for (int i = 0; i < 3; ++i)
+        app.Update(kFixed60 * 1.1f);
+    Flush();
+
+    EXPECT_GE(over->Value() - overBefore, 3u);
+    EXPECT_GE(pu->GetTripDetector().GetTripCount(), 1u);
+    EXPECT_EQ(reporter.GetSubmitted(), 0u);
+    EXPECT_EQ(sink.Count("pu.trip"), 0);
+}
+
+// AA10: a Sim Update() running several fixed steps, each within the per-step budget, never trips
+// (the budget is per step, not per real call).
+TEST_F(PUTripFixture, SimMultiStepWithinPerStepBudgetDoesNotTrip)
+{
+    auto manifest = BuildManifest("tripSteps");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ProcessingUnit* pu = g_timed->GetProcessingUnit();
+    pu->SetTripReporter(&reporter);
+    DriveToActive(app, g_timed);
+
+    const uint32_t overBefore = pu->GetTripDetector().GetOverBudgetFrames();
+    g_timed->sleepMs = 3;   // 3 steps x ~3 ms = ~9 ms real call, but each step is far under 16.7 ms
+    app.Update(3.0f * kFixed60);
+    EXPECT_GE(pu->GetLastUpdateStepCount(), 3u);
+    EXPECT_EQ(pu->GetTripDetector().GetOverBudgetFrames(), overBefore);
+    EXPECT_EQ(pu->GetTripDetector().GetTripCount(), 0u);
+    EXPECT_EQ(reporter.GetSubmitted(), 0u);
+}
+
+// A3: entries while a module is kStarting (here a 60 ms DoStart) and the unit's first entry are skipped.
+TEST_F(PUTripFixture, StartingModuleEntryIsSkipped)
+{
+    auto manifest = BuildManifest("tripStart");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ProcessingUnit* pu = g_timed->GetProcessingUnit();
+    pu->SetTripReporter(&reporter);
+
+    TimedSimModule::startSleepMs = 60;   // >> 2x budget, but only inside the kStarting pass
+    DriveToActive(app, g_timed);
+
+    EXPECT_EQ(pu->GetTripDetector().GetOverBudgetFrames(), 0u);
+    EXPECT_EQ(pu->GetTripDetector().GetTripCount(), 0u);
+    EXPECT_EQ(reporter.GetSubmitted(), 0u);
 }

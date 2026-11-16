@@ -6,11 +6,14 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaCore/SimTime/SimTimeDomainRegistry.h>
+#include <DiaObservation/Profile/TripDetector.h>
+#include <DiaObservation/Profile/TripRecord.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
 #include <atomic>
 #include <thread>
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
+namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -91,6 +94,13 @@ namespace Dia { namespace ApplicationFlow {
         using PostTickFn = std::function<void()>;
         void SetPostTickFn(PostTickFn fn);
 
+        // Perf Inspector A3c - over-budget trip reporting. The reporter is injected (plain pointer,
+        // not owned; null = counter only, no log/no record). Thread-safe to set while the unit runs.
+        void SetTripReporter(Dia::Observation::Profile::TripReporter* reporter) { mTripReporter.store(reporter, std::memory_order_release); }
+        // Apply trip tuning (task 8 config block). Call before the unit starts ticking.
+        void SetTripConfig(const Dia::Observation::Profile::TripConfig& config) { mTripDetector.SetConfig(config); }
+        [[nodiscard]] const Dia::Observation::Profile::TripDetector& GetTripDetector() const { return mTripDetector; }
+
     private:
         static constexpr unsigned int kMaxModules = 64;
 
@@ -137,6 +147,13 @@ namespace Dia { namespace ApplicationFlow {
         float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes
         Dia::Observation::Metric::Gauge*  mMetricSelfMs = nullptr;
         Dia::Observation::Metric::Counter* mMetricCatchupUpdates = nullptr;
+
+        // Perf Inspector A3c - trip detection (one Observe() per committed table entry).
+        Dia::Observation::Profile::TripDetector          mTripDetector;
+        std::atomic<Dia::Observation::Profile::TripReporter*> mTripReporter{nullptr};
+        Dia::Observation::Profile::TripRecord            mTripRecord;          // member buffer (~4 KB), PU thread only
+        uint32_t                                         mOverBudgetReported = 0;
+        Dia::Observation::Metric::Counter*               mMetricOverBudgetFrames = nullptr;
 
         // --- DiaSimTime (Task 1.4) -------------------------------------------
         // The SimPU owns the world clock directly. Constructed in the ctor

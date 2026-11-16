@@ -392,7 +392,7 @@ void DebugPanelPageModule::PushLogLines()
         return;   // cursor stays put; the ring keeps the lines
 
     // Paced: one push per 250 ms, newest 200 lines. Every push costs tens of ms in Ultralight; pushing each frame turned the
-    // "pu.over_budget" warning of a slow tick into a feedback loop (the warning is itself a new line to push next frame).
+    // over-budget warning of a slow tick into a feedback loop (the warning is itself a new line to push next frame).
     const LogPushBatcher::Plan plan = mConsole->batcher.Evaluate(mWallMs, mConsole->cursor, mConsole->ring.GetTotalWritten());
     if (!plan.push)
         return;

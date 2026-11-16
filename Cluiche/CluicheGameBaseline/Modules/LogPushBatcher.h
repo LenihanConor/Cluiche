@@ -9,7 +9,7 @@ namespace Cluiche { namespace AppFlow {
 // maxLines are kept and the rest are reported as dropped so the caller can emit a single summary line.
 //
 // Why: each appendLogLines CallJSFunction costs tens of ms on Main. Pushing every frame made an over-budget Main tick log
-// `pu.over_budget` every tick, which fed the ring, which forced another push next frame (a feedback loop).
+// the old per-frame over-budget warning every tick, which fed the ring, which forced another push next frame (a feedback loop).
 class LogPushBatcher
 {
 public:
