@@ -18,8 +18,11 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Perf/PerfMarkers.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 #include <vector>
 
 using namespace Dia::ApplicationFlow;
@@ -365,6 +368,215 @@ TEST_F(PerfPauseFixture, AppReportListsActivePauses)
     EXPECT_TRUE(sawModule);
     EXPECT_TRUE(sawDomain);
     Dia::API::UnregisterCommandJson(StringCRC("dia.app.report"));   // do not leave a dangling this-capture
+}
+
+// ---- perf-live-control task 10: gap audit ----
+namespace {
+    bool ResolveAlwaysPlain(void*, const StringCRC&, StringCRC& out) { out = StringCRC("PlainModule"); return true; }
+
+    struct StandaloneCtl
+    {
+        FrameStreamStore<PerfPauseSet> store{StringCRC("$perfpauseAudit")};
+        PerfPauseController ctl{&store};
+        StandaloneCtl() { ctl.SetModuleResolver(&ResolveAlwaysPlain, nullptr); }
+        static StringCRC Mod(unsigned i) { char b[24]; std::snprintf(b, sizeof(b), "auditMod%u", i); return StringCRC(b); }
+    };
+}
+
+TEST_F(PerfPauseFixture, PauseTwiceSameOwner_OneEntryOneMarkerNoGenerationBump)
+{
+    StandaloneCtl c;
+    const uint32_t crc = StringCRC("twice").Value();
+    const unsigned p0 = Count("perf.pause", crc);
+    EXPECT_TRUE(c.ctl.Pause(4, PerfPauseKind::kModule, StringCRC("twice")).ok);
+    const uint32_t gen = c.ctl.GetGeneration();
+    EXPECT_TRUE(c.ctl.Pause(4, PerfPauseKind::kModule, StringCRC("twice")).ok);
+    EXPECT_EQ(c.ctl.GetGeneration(), gen);
+    EXPECT_EQ(Count("perf.pause", crc), p0 + 1);
+    PerfPauseEntry e[4];
+    EXPECT_EQ(c.ctl.ActivePauses(e, 4), 1u);
+    EXPECT_TRUE(c.ctl.Resume(4, PerfPauseKind::kModule, StringCRC("twice")).ok);   // one resume is enough
+    EXPECT_FALSE(c.ctl.IsPaused(PerfPauseKind::kModule, StringCRC("twice")));
+}
+
+TEST_F(PerfPauseFixture, ResumeWithoutPauseFailsAndPublishesNothing)
+{
+    StandaloneCtl c;
+    const uint32_t gen = c.ctl.GetGeneration();
+    const PerfPauseResult r = c.ctl.Resume(1, PerfPauseKind::kModule, StringCRC("never"));
+    EXPECT_FALSE(r.ok);
+    EXPECT_NE(r.reason, nullptr);
+    EXPECT_EQ(c.ctl.GetGeneration(), gen);
+}
+
+TEST_F(PerfPauseFixture, ReleaseOwnerAfterAlreadyResumedIsNoOp)
+{
+    StandaloneCtl c;
+    c.ctl.Pause(8, PerfPauseKind::kModule, StringCRC("a"));
+    c.ctl.Resume(8, PerfPauseKind::kModule, StringCRC("a"));
+    const uint32_t gen = c.ctl.GetGeneration();
+    c.ctl.ReleaseOwner(8);          // disconnect after the client resumed everything
+    c.ctl.ResumeAll(77);            // owner that never paused
+    EXPECT_EQ(c.ctl.GetGeneration(), gen);
+    PerfPauseEntry e[2];
+    EXPECT_EQ(c.ctl.ActivePauses(e, 2), 0u);
+}
+
+TEST_F(PerfPauseFixture, ModuleSetFull_RefusesNewIdWithReason_ExistingStillWork)
+{
+    StandaloneCtl c;
+    for (unsigned i = 0; i < PerfPauseSet::kMaxModules; ++i)
+        ASSERT_TRUE(c.ctl.Pause(1, PerfPauseKind::kModule, StandaloneCtl::Mod(i)).ok) << i;
+    const PerfPauseResult r = c.ctl.Pause(1, PerfPauseKind::kModule, StandaloneCtl::Mod(PerfPauseSet::kMaxModules));
+    EXPECT_FALSE(r.ok);
+    ASSERT_NE(r.reason, nullptr);
+    EXPECT_NE(std::strstr(r.reason, "full"), nullptr);
+    EXPECT_FALSE(c.ctl.IsPaused(PerfPauseKind::kModule, StandaloneCtl::Mod(PerfPauseSet::kMaxModules)));
+    // Published set holds exactly the 32, nothing truncated silently.
+    EXPECT_EQ(c.ctl.GetStore()->FetchLatest()->moduleCount, PerfPauseSet::kMaxModules);
+    // A second owner may still join an id already in the set.
+    EXPECT_TRUE(c.ctl.Pause(2, PerfPauseKind::kModule, StandaloneCtl::Mod(0)).ok);
+    // After a resume there is room again.
+    EXPECT_TRUE(c.ctl.Resume(1, PerfPauseKind::kModule, StandaloneCtl::Mod(5)).ok);
+    EXPECT_TRUE(c.ctl.Pause(1, PerfPauseKind::kModule, StandaloneCtl::Mod(PerfPauseSet::kMaxModules)).ok);
+}
+
+TEST_F(PerfPauseFixture, DomainSetFull_RefusesSeventeenthWithReason)
+{
+    StandaloneCtl c;
+    char b[24];
+    for (unsigned i = 0; i < PerfPauseSet::kMaxDomains; ++i)
+    {
+        std::snprintf(b, sizeof(b), "dom%u", i);
+        ASSERT_TRUE(c.ctl.Pause(1, PerfPauseKind::kDomain, StringCRC(b)).ok) << i;
+    }
+    const PerfPauseResult r = c.ctl.Pause(1, PerfPauseKind::kDomain, StringCRC("domOverflow"));
+    EXPECT_FALSE(r.ok);
+    ASSERT_NE(r.reason, nullptr);
+    EXPECT_FALSE(c.ctl.IsPaused(PerfPauseKind::kDomain, StringCRC("domOverflow")));
+    EXPECT_EQ(c.ctl.GetStore()->FetchLatest()->domainCount, PerfPauseSet::kMaxDomains);
+}
+
+TEST_F(PerfPauseFixture, EntryTableFull_RefusesEvenForKnownId_ThenRecovers)
+{
+    StandaloneCtl c;
+    for (unsigned i = 0; i < PerfPauseSet::kMaxModules; ++i)
+    {
+        ASSERT_TRUE(c.ctl.Pause(1, PerfPauseKind::kModule, StandaloneCtl::Mod(i)).ok);
+        ASSERT_TRUE(c.ctl.Pause(2, PerfPauseKind::kModule, StandaloneCtl::Mod(i)).ok);
+    }
+    PerfPauseEntry all[PerfPauseController::kMaxEntries + 1];
+    ASSERT_EQ(c.ctl.ActivePauses(all, PerfPauseController::kMaxEntries + 1), PerfPauseController::kMaxEntries);
+    const PerfPauseResult r = c.ctl.Pause(3, PerfPauseKind::kModule, StandaloneCtl::Mod(0));
+    EXPECT_FALSE(r.ok);
+    ASSERT_NE(r.reason, nullptr);
+    EXPECT_NE(std::strstr(r.reason, "table full"), nullptr);
+    EXPECT_EQ(c.ctl.ActivePauses(all, PerfPauseController::kMaxEntries + 1), PerfPauseController::kMaxEntries);
+    c.ctl.ReleaseOwner(2);
+    EXPECT_TRUE(c.ctl.Pause(3, PerfPauseKind::kModule, StandaloneCtl::Mod(0)).ok);
+}
+
+// AC11 on another PU: a module on a dedicated thread stops updating after the pause and resumes afterwards.
+// Counts are atomic because the module runs on the PU thread.
+namespace {
+    struct AtomicCounterModule : SimModule
+    {
+        using SimModule::SimModule;
+        std::atomic<int> updates{0};
+        StartResult DoStart() override { return StartResult::kReady; }
+        StopResult  DoStop()  override { return StopResult::kDone; }
+        void DoUpdate(const SimTimeContext&) override { updates.fetch_add(1); }
+    };
+    const StringCRC kAtomicType("PerfPause_AtomicCounter");
+    AtomicCounterModule* g_atomicMod = nullptr;
+
+    void PumpFor(Application& app, int ms)
+    {
+        const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(ms);
+        while (std::chrono::steady_clock::now() < end)
+        {
+            app.Update(kStep);
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        }
+    }
+
+    bool WaitUntil(Application& app, bool (*pred)(), int timeoutMs)
+    {
+        const auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
+        while (std::chrono::steady_clock::now() < end)
+        {
+            app.Update(kStep);
+            if (pred()) return true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        }
+        return pred();
+    }
+}
+
+TEST_F(PerfPauseFixture, DedicatedThreadPU_PausedModuleStopsUpdatingAndResumes)
+{
+    TypeRegistry reg;
+    g_atomicMod = nullptr;
+    reg.Register(kAtomicType, [](const StringCRC& id) -> Module* { auto* m = new AtomicCounterModule(id); g_atomicMod = m; return m; });
+
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
+    StageDeclaration st; st.name = StringCRC("PPD");
+    manifest.stages.Add(st);
+    manifest.initialStage = StringCRC("PPD");
+    ProcessingUnitDeclaration pu;
+    pu.instanceId = StringCRC("PerfPauseDedicatedPU");
+    pu.frequencyHz = 200.0f;
+    pu.dedicatedThread = true;
+    ModuleDeclaration m;
+    m.instanceId = StringCRC("ppDed0"); m.typeId = kAtomicType;
+    m.startTimeoutMs = 10000.0f; m.stopTimeoutMs = 5000.0f;
+    m.stages.Add(StringCRC("PPD"));
+    pu.modules.Add(m);
+    manifest.processingUnits.Add(pu);
+
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_TRUE(WaitUntil(app, [] { return g_atomicMod && g_atomicMod->updates.load() > 5; }, 5000));
+
+    PerfPauseController* ctl = app.GetPerfPauseController();
+    ASSERT_TRUE(ctl->Pause(0, PerfPauseKind::kModule, StringCRC("ppDed0")).ok);
+    PumpFor(app, 100);   // PU picks up the snapshot on its next Update
+    const int frozen = g_atomicMod->updates.load();
+    PumpFor(app, 300);
+    EXPECT_EQ(g_atomicMod->updates.load(), frozen);
+
+    ASSERT_TRUE(ctl->Resume(0, PerfPauseKind::kModule, StringCRC("ppDed0")).ok);
+    PumpFor(app, 300);
+    EXPECT_GT(g_atomicMod->updates.load(), frozen);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 2000 && app.Update(kStep); ++i) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
+
+// Overhead of the per-pass pause check (reported, never gating): Application::Update with no pauses, with a
+// domain pause set (table rebuilt, nothing skipped) and with one module paused (one update skipped).
+TEST_F(PerfPauseFixture, BenchmarkPassCostWithAndWithoutPausesReported)
+{
+    Rig r(MakeManifest("PPM", nullptr, 16));
+    ASSERT_TRUE(r.app.Start());
+    Pump(r.app, 10);
+    PerfPauseController* ctl = r.app.GetPerfPauseController();
+    const int kIters = 20000;
+    auto run = [&]() {
+        Pump(r.app, 50);
+        const auto t0 = std::chrono::steady_clock::now();
+        Pump(r.app, kIters);
+        return std::chrono::duration<double, std::nano>(std::chrono::steady_clock::now() - t0).count() / kIters;
+    };
+    const double none = run();
+    ctl->Pause(0, PerfPauseKind::kDomain, StringCRC("benchDomain"));
+    const double domain = run();
+    ctl->Pause(0, PerfPauseKind::kModule, StringCRC("ppMod0"));
+    const double module = run();
+    std::printf("[ PERF ] Application::Update, 16 modules: no pauses %.0f ns, domain pause set %.0f ns, 1 module paused %.0f ns (reported, not gating)\n",
+                none, domain, module);
+    SUCCEED();
 }
 
 #endif // _DEBUG

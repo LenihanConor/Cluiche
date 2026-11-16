@@ -4,6 +4,8 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include <atomic>
+#include <chrono>
+#include <cstdio>
 #include <thread>
 
 using Dia::Core::StringCRC;
@@ -244,6 +246,52 @@ TEST_F(LatencyProbeTest, MatcherHandlesSeveralPendingAndRejectsZeroId)
     EXPECT_EQ(1u, m.OnSnapshot(6));
     EXPECT_EQ(1u, m.OnSnapshot(8));
     EXPECT_EQ(2u, probe.GetStats(action).count);
+}
+
+TEST_F(LatencyProbeTest, MatcherFullRejectsExtraThenAcceptsAfterSnapshot)
+{
+    LatencyVisibleMatcher m(probe);
+    uint32_t ids[LatencyVisibleMatcher::kCapacity + 1];
+    for (unsigned int i = 0; i < LatencyVisibleMatcher::kCapacity + 1; ++i)
+    {
+        ids[i] = probe.Begin(action);
+        ASSERT_NE(0u, ids[i]);
+    }
+    for (unsigned int i = 0; i < LatencyVisibleMatcher::kCapacity; ++i)
+        EXPECT_TRUE(m.NoteApplied(ids[i], 10));
+    EXPECT_FALSE(m.NoteApplied(ids[LatencyVisibleMatcher::kCapacity], 10));   // full: refused, not dropped silently
+    EXPECT_EQ(LatencyVisibleMatcher::kCapacity, m.OnSnapshot(10));
+    EXPECT_TRUE(m.NoteApplied(ids[LatencyVisibleMatcher::kCapacity], 11));    // space again
+    EXPECT_EQ(1u, m.OnSnapshot(11));
+}
+
+TEST_F(LatencyProbeTest, MatcherWithStaleIdDoesNotCompleteAnything)
+{
+    LatencyVisibleMatcher m(probe);
+    const uint32_t id = probe.Begin(action);
+    probe.End(id);                       // already ended: id is stale
+    const uint64_t before = probe.GetStats(action).count;
+    m.NoteApplied(id, 3);
+    m.OnSnapshot(3);
+    EXPECT_EQ(before, probe.GetStats(action).count);   // no second completion
+}
+
+TEST(LatencyProbeBenchmark, BeginStampEndCostReported)
+{
+    LatencyProbe probe;   // real steady clock
+    const StringCRC action("bench"), hop("hop");
+    const int kIters = 200000;
+    const auto t0 = std::chrono::steady_clock::now();
+    for (int i = 0; i < kIters; ++i)
+    {
+        const uint32_t id = probe.Begin(action);
+        probe.Stamp(id, hop);
+        probe.End(id);
+    }
+    const auto t1 = std::chrono::steady_clock::now();
+    const double ns = std::chrono::duration<double, std::nano>(t1 - t0).count() / kIters;
+    std::printf("[ PERF ] LatencyProbe Begin+Stamp+End: %.1f ns per probe (reported, not gating)\n", ns);
+    EXPECT_EQ(40u, probe.GetStats(action).count);
 }
 
 // ---- _lat argument ----
