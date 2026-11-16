@@ -11,6 +11,7 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Profile/TripReporter.h>
@@ -479,6 +480,7 @@ namespace Dia { namespace ApplicationFlow {
     void ProcessingUnit::operator()()
     {
         Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+        Dia::Observation::Perf::PerfMarkers::RegisterThread();
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread starting (%.0fHz)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz));
@@ -517,6 +519,7 @@ namespace Dia { namespace ApplicationFlow {
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread exiting",
                      mInstanceId.AsChar());
 
+        Dia::Observation::Perf::PerfMarkers::UnregisterThread();
         Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
     }
 

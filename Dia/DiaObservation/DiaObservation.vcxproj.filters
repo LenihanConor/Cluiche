@@ -37,6 +37,9 @@
     <Filter Include="Job">
       <UniqueIdentifier>{3ed7f237-14af-449d-a255-8e0428bfb82e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Perf">
+      <UniqueIdentifier>{245303f1-562c-4f7d-bfb2-1f5be6c6a124}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log\Logger.cpp">
@@ -140,6 +143,9 @@
     </ClCompile>
     <ClCompile Include="Profile\PerfSummary.cpp">
       <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Perf\PerfMarkers.cpp">
+      <Filter>Perf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -324,6 +330,9 @@
     </ClInclude>
     <ClInclude Include="Profile\PerfExitTimer.h">
       <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Perf\PerfMarkers.h">
+      <Filter>Perf</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -268,6 +268,9 @@
     <Filter Include="Profile">
       <UniqueIdentifier>{63a7bc41-ab14-4103-b690-06184f013467}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaObservation\Perf">
+      <UniqueIdentifier>{bc2dc8a6-dd38-43f9-857b-80841639deec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -2966,6 +2969,9 @@
     </ClCompile>
     <ClCompile Include="DiaObservation\Profile\TestPerfExitTimer.cpp">
       <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Perf\TestPerfMarkers.cpp">
+      <Filter>DiaObservation\Perf</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

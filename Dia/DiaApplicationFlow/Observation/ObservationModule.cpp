@@ -10,6 +10,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Config/ObservationConfigLoader.h>
 #include <DiaObservation/Profile/PerfSummary.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 
 #include <chrono>
 #include <cstring>
@@ -57,6 +58,7 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
 {
     Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
+    Dia::Observation::Perf::PerfMarkers::RegisterThread();   // Main PU thread
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
         logger.RegisterSink(mOwnedSinks[i]);
@@ -162,6 +164,7 @@ Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
         logger.UnregisterSink(mOwnedSinks[i]);
 
+    Dia::Observation::Perf::PerfMarkers::UnregisterThread();
     logger.UnregisterThreadBuffer();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)

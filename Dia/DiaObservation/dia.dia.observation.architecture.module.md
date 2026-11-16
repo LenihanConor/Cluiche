@@ -35,6 +35,7 @@ public_api:
     - DiaObservation/Profile/PerfSummary.h
     - DiaObservation/Profile/PerfSummaryAccumulator.h
     - DiaObservation/Profile/PerfExitTimer.h
+    - DiaObservation/Perf/PerfMarkers.h
     - DiaObservation/Profile/ScopeRecord.h
     - DiaObservation/Testing/MockSink.h
   namespaces:
