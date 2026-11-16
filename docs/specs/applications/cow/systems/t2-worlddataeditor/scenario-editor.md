@@ -86,6 +86,8 @@ A setup entry is a string: a command name, then arguments as `key=value` or posi
 
 `ScenarioValidator` is a pure class in `CoW/Shared/WorldAssets/Core/` (the `CoWWorldAssetsCore` library, alongside the F-3 code):
 
+**Owner (decided 2026-11-16): S-2.5 Feature 4 builds it** (the loader needs it first); this section's rule table is its contract. T-2 Feature 5 links `CoWWorldAssetsCore` and adds no validation rules of its own.
+
 ```cpp
 Findings Validate(const Json::Value& scenario, const ICommandCatalogue&, const IScenarioVocabulary&, const IWorldIds&);
 ```
