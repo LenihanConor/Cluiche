@@ -25,7 +25,10 @@ namespace Dia
 		public:
 			static constexpr uint32_t kQueueCapacity = 8;
 
-			static TripReporter& Instance();
+			TripReporter();
+			~TripReporter();
+			TripReporter(const TripReporter&) = delete;
+			TripReporter& operator=(const TripReporter&) = delete;
 
 			// sessionDir must end in a path separator (SessionManager::GetSessionDirectory()).
 			// Returns false (and counts a write failure) if trips.jsonl cannot be opened.
@@ -50,11 +53,6 @@ namespace Dia
 			void SetWriterPausedForTest(bool paused);
 
 		private:
-			TripReporter();
-			~TripReporter();
-			TripReporter(const TripReporter&) = delete;
-			TripReporter& operator=(const TripReporter&) = delete;
-
 			void WriterLoop();
 			void WriteOne(const TripRecord& record);
 			void NoteWriteFailure(const char* what);

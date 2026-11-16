@@ -13,12 +13,6 @@ namespace Dia
 {
 	namespace Observation { namespace Profile
 	{
-		TripReporter& TripReporter::Instance()
-		{
-			static TripReporter sInstance;
-			return sInstance;
-		}
-
 		TripReporter::TripReporter()
 			: mQueue(new TripRecord[kQueueCapacity])
 			, mHead(0)

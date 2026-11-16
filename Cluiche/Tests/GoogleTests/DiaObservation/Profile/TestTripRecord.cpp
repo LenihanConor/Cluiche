@@ -80,12 +80,11 @@ namespace
 
 	struct ReporterGuard
 	{
-		ReporterGuard() { TripReporter::Instance().Stop(); TripReporter::Instance().ResetCounters(); }
+		TripReporter rep;   // each test owns its own reporter
 		~ReporterGuard()
 		{
-			TripReporter::Instance().SetWriterPausedForTest(false);
-			TripReporter::Instance().Stop();
-			TripReporter::Instance().ResetCounters();
+			rep.SetWriterPausedForTest(false);
+			rep.Stop();
 		}
 	};
 }
@@ -247,7 +246,7 @@ TEST(TripReporter, SubmitWithNoSessionOnlyCounts)
 	UnitTimingTable t;
 	Fill(t, 5);
 	TripRecord r = Build(t, 0, 4);
-	TripReporter& rep = TripReporter::Instance();
+	TripReporter& rep = g.rep;
 	EXPECT_FALSE(rep.IsStarted());
 	EXPECT_FALSE(rep.Submit(r));
 	EXPECT_FALSE(rep.Submit(r));
@@ -262,7 +261,7 @@ TEST(TripReporter, WritesExactlyOneLinePerRecordToSessionDir)
 	UnitTimingTable t;
 	Fill(t, 5);
 	const std::string dir = TempDir();
-	TripReporter& rep = TripReporter::Instance();
+	TripReporter& rep = g.rep;
 	ASSERT_TRUE(rep.Start(dir.c_str()));
 	for (uint32_t i = 0; i < 5; ++i)
 	{
@@ -293,7 +292,7 @@ TEST(TripReporter, QueueFullDropsAndCountsNewRecords)
 	UnitTimingTable t;
 	Fill(t, 5);
 	const std::string dir = TempDir();
-	TripReporter& rep = TripReporter::Instance();
+	TripReporter& rep = g.rep;
 	ASSERT_TRUE(rep.Start(dir.c_str()));
 	rep.SetWriterPausedForTest(true);
 	TripRecord r = Build(t, 0, 4);
@@ -319,7 +318,7 @@ TEST(TripReporter, SubmitDoesNotBlockWhileWriterIsStalled)
 	UnitTimingTable t;
 	Fill(t, 5);
 	const std::string dir = TempDir();
-	TripReporter& rep = TripReporter::Instance();
+	TripReporter& rep = g.rep;
 	ASSERT_TRUE(rep.Start(dir.c_str()));
 	rep.SetWriterPausedForTest(true);
 	TripRecord r = Build(t, 0, 4);
@@ -333,7 +332,7 @@ TEST(TripReporter, SubmitDoesNotBlockWhileWriterIsStalled)
 TEST(TripReporter, StartOnUnwritableDirectoryCountsFailureAndStaysStopped)
 {
 	ReporterGuard g;
-	TripReporter& rep = TripReporter::Instance();
+	TripReporter& rep = g.rep;
 	EXPECT_FALSE(rep.Start("Z:\\definitely\\missing\\dir\\"));
 	EXPECT_FALSE(rep.IsStarted());
 	EXPECT_EQ(1u, rep.GetWriteFailures());
@@ -348,6 +347,6 @@ TEST(TripReporter, ReportSubmitsAndNeverThrows)
 	UnitTimingTable t;
 	Fill(t, 5);
 	TripRecord r = Build(t, 0, 4);
-	EXPECT_NO_THROW(TripReporter::Instance().Report(r));
-	EXPECT_EQ(1u, TripReporter::Instance().GetSubmitted());
+	EXPECT_NO_THROW(g.rep.Report(r));
+	EXPECT_EQ(1u, g.rep.GetSubmitted());
 }

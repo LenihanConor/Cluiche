@@ -191,7 +191,7 @@ namespace Dia
 			}
 
 			// Trip records (always on, independent of the profiler): own writer thread, never the PU thread
-			Profile::TripReporter::Instance().Start(mSessionDir);
+			mTripReporter.Start(mSessionDir);
 
 			mMetricSnapshotAccumMs = 0.0f;
 
@@ -291,7 +291,7 @@ namespace Dia
 
 			Trace::Tracer::Instance().Stop();
 			Profile::Profiler::Instance().Stop();
-			Profile::TripReporter::Instance().Stop();
+			mTripReporter.Stop();
 
 			// Write health.json from final health poll (conditionally)
 			if (mEnableHealthFileSink)
@@ -348,6 +348,11 @@ namespace Dia
 				mCaptureManager->SetCaptureSource(source);
 				DIA_LOG_INFO("Capture", "SessionManager::SetCaptureSource — capture source wired, CaptureManager now operational");
 			}
+		}
+
+		Profile::TripReporter* SessionManager::GetTripReporter()
+		{
+			return &mTripReporter;
 		}
 
 		Capture::CaptureManager* SessionManager::GetCaptureManager()

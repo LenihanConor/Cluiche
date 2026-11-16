@@ -3,6 +3,7 @@
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Config/ObservationConfig.h>
 #include <DiaObservation/Metric/MetricSnapshot.h>
+#include <DiaObservation/Profile/TripReporter.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstdint>
@@ -52,6 +53,7 @@ namespace Dia
 
 			void SetCaptureSource(Capture::IFrameCaptureSource* source);
 			Capture::CaptureManager* GetCaptureManager();
+			Profile::TripReporter* GetTripReporter();   // never null; counts-only until a session starts
 
 			static Capture::CaptureManager* GetActiveCaptureManager();
 			static void SetActiveCaptureSource(Capture::IFrameCaptureSource* source);
@@ -75,6 +77,7 @@ namespace Dia
 			Log::ObservationFileSink*       mObservationFileSink;
 			Metric::MetricsFileSink*        mMetricsFileSink;
 			Capture::CaptureManager*        mCaptureManager;
+			Profile::TripReporter           mTripReporter;
 
 			uint32_t mMetricSnapshotIntervalMs;
 			float    mMetricSnapshotAccumMs;
