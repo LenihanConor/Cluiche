@@ -11,6 +11,8 @@ namespace Dia
 			, unitHz(0.0f)
 			, nextExpectedSeq(0)
 			, gapCount(0)
+			, epoch(CoarseChunk::kNoEpoch)
+			, epochResets(0)
 			, tripCount(0)
 			, active(false)
 		{
@@ -37,6 +39,22 @@ namespace Dia
 				// chunk's entry index and its seq, so nothing before it counts as a gap.
 				entry->ring.ResetAt(chunk.firstEntry);
 				entry->nextExpectedSeq = chunk.seq;
+				entry->epoch = chunk.epoch;
+			}
+			else if (chunk.epoch != CoarseChunk::kNoEpoch)
+			{
+				// Epoch rule: kNoEpoch is a wildcard. A stored kNoEpoch adopts the first real epoch silently;
+				// two different real epochs mean the PU's builder restarted, so rebuild this unit from the chunk.
+				// gapCount (cumulative stream loss) is kept; epochResets counts the restarts.
+				if (entry->epoch == CoarseChunk::kNoEpoch)
+					entry->epoch = chunk.epoch;
+				else if (entry->epoch != chunk.epoch)
+				{
+					entry->epoch = chunk.epoch;
+					++entry->epochResets;
+					entry->ring.ResetAt(chunk.firstEntry);
+					entry->nextExpectedSeq = chunk.seq;
+				}
 			}
 
 			// A duplicate or late chunk (seq already passed) must not count as a gap nor move the cursor back,
@@ -110,6 +128,12 @@ namespace Dia
 		{
 			const UnitEntry* entry = FindUnit(unitCrc);
 			return entry ? entry->tripCount : 0;
+		}
+
+		uint32_t CoarseChunkAssembler::GetEpochResets(uint32_t unitCrc) const
+		{
+			const UnitEntry* entry = FindUnit(unitCrc);
+			return entry ? entry->epochResets : 0;
 		}
 
 		uint32_t CoarseChunkAssembler::GetGapCount(uint32_t unitCrc) const

@@ -29,6 +29,7 @@ namespace Dia
 			uint32_t GetDroppedUnknownUnitCount() const { return mDroppedUnknownUnit; }
 
 			const JobChunk* GetLatest(uint32_t unitCrc) const;           // tier 1 current state; null if unknown
+			uint32_t GetEpochResets(uint32_t unitCrc) const;             // times the unit restarted under a new epoch
 			uint32_t GetGapCount(uint32_t unitCrc) const;                // chunks lost on the stream
 			uint64_t GetRawLost(uint32_t unitCrc) const;                 // raw records known lost (stream gap or burst)
 			uint64_t GetAggLost(uint32_t unitCrc) const;
@@ -50,6 +51,8 @@ namespace Dia
 				JobChunk latest;
 				uint32_t nextSeq = 0;
 				uint32_t gapCount = 0;
+				uint32_t epoch = 0;
+				uint32_t epochResets = 0;
 				uint64_t nextRaw = 0;
 				uint64_t nextAgg = 0;
 				uint64_t rawLost = 0;

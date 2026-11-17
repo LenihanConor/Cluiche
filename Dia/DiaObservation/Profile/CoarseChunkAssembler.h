@@ -27,6 +27,7 @@ namespace Dia
 		float GetUnitHz(uint32_t unitCrc) const;                // 0 if the unit is unknown
 		uint32_t GetUnitCrcAt(uint32_t index) const;            // arrival order; 0 if index >= GetUnitCount()
 			uint32_t GetTripCount(uint32_t unitCrc) const;          // cumulative trips of the newest chunk applied; 0 if unknown
+			uint32_t GetEpochResets(uint32_t unitCrc) const;       // times the unit restarted under a new epoch (0 if unknown)
 			uint32_t GetGapCount(uint32_t unitCrc) const;          // seq gaps (chunks lost on the stream)
 			uint32_t GetDroppedUnknownUnitCount() const { return mDroppedUnknownUnit; }   // chunks from units beyond kMaxUnits
 
@@ -38,6 +39,8 @@ namespace Dia
 				CoarseRing  ring;
 				uint32_t    nextExpectedSeq;
 				uint32_t    gapCount;
+				uint32_t    epoch;
+				uint32_t    epochResets;
 				uint32_t    tripCount;
 				bool        active;
 

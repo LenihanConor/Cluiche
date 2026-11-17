@@ -6,14 +6,15 @@ namespace Dia
 	namespace Observation { namespace Profile
 	{
 		JobChunkBuilder::JobChunkBuilder()
-			: mUnitCrc(0), mSeq(0), mNextAgg(0), mNextRaw(0), mLastSeen(0), mLastDrops(0), mLastFlushMs(0.0)
+			: mUnitCrc(0), mEpoch(JobChunk::kNoEpoch), mSeq(0), mNextAgg(0), mNextRaw(0), mLastSeen(0), mLastDrops(0), mLastFlushMs(0.0)
 		{
 			std::memset(&mOut, 0, sizeof(mOut));
 		}
 
-		void JobChunkBuilder::Begin(uint32_t unitCrc)
+		void JobChunkBuilder::Begin(uint32_t unitCrc, uint32_t epoch)
 		{
 			mUnitCrc = unitCrc;
+			mEpoch = epoch;
 			mSeq = 0;
 			mNextAgg = 0;
 			mNextRaw = 0;
@@ -33,6 +34,7 @@ namespace Dia
 		{
 			JobChunk& c = mOut;
 			c.unitCrc = mUnitCrc;
+			c.epoch = mEpoch;
 			c.seq = mSeq++;
 			c.flags = table.GetPerJobRecording() ? JobChunk::kFlagPerJob : 0u;
 			c.recordsSeen = table.GetRecordsSeen();

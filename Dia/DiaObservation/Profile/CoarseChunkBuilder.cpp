@@ -15,9 +15,10 @@ namespace Dia
 			std::memset(&mOut, 0, sizeof(mOut));
 		}
 
-		void CoarseChunkBuilder::Begin(uint32_t unitCrc, float unitHz)
+		void CoarseChunkBuilder::Begin(uint32_t unitCrc, float unitHz, uint32_t epoch)
 		{
 			mChunk.unitCrc = unitCrc;
+			mChunk.epoch   = epoch;
 			mChunk.unitHz  = unitHz;
 			mChunk.count   = 0;
 			mChunk.moduleCount = 0;

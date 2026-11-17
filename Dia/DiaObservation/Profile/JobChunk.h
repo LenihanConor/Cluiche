@@ -20,7 +20,10 @@ namespace Dia
 			static constexpr uint32_t kMaxRaw        = 224;
 			static constexpr uint32_t kFlagPerJob    = 1;   // per-job recording was on
 
+			static constexpr uint32_t kNoEpoch = 0;   // unknown epoch: assemblers treat it as a wildcard
+
 			uint32_t unitCrc;
+			uint32_t epoch;               // builder run identity; changes when the PU's builder restarts
 			uint32_t seq;                 // increments per Take
 			uint32_t flags;
 			uint32_t ownerCount;

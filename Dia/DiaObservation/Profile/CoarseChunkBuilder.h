@@ -15,7 +15,7 @@ namespace Dia
 			CoarseChunkBuilder();
 
 			// Initialize for a new chunk stream.
-			void Begin(uint32_t unitCrc, float unitHz);
+			void Begin(uint32_t unitCrc, float unitHz, uint32_t epoch = CoarseChunk::kNoEpoch);
 
 			// Record one entry's ms for a module slot. Returns false if slot out of range.
 			bool RecordModule(uint32_t slot, uint32_t moduleCrc, float ms);

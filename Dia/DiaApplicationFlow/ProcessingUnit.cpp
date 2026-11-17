@@ -55,11 +55,16 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
         
         // Perf Inspector A1b: initialize chunk builder
-        mCoarseChunk.Begin(mInstanceId.Value(), mFrequencyHz);
+        // Epoch identifies this builder run so Main can tell a restarted stream from a stale chunk.
+        // Low 32 bits of the steady clock at construction, forced nonzero (0 is kNoEpoch).
+        uint32_t chunkEpoch = static_cast<uint32_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+        if (chunkEpoch == Dia::Observation::Profile::CoarseChunk::kNoEpoch)
+            chunkEpoch = 1;
+        mCoarseChunk.Begin(mInstanceId.Value(), mFrequencyHz, chunkEpoch);
 
         // Perf Inspector task 13: job timing table (storage allocated here, never on the hot path)
         mJobTable.Init();
-        mJobChunk.Begin(mInstanceId.Value());
+        mJobChunk.Begin(mInstanceId.Value(), chunkEpoch);
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),

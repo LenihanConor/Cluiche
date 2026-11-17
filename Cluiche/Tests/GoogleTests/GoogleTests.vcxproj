@@ -1300,6 +1300,7 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfEdgeCommands.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestTripChunk.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestPerfTripPublisher.cpp" />
+    <ClCompile Include="DiaObservation\Profile\TestChunkEpoch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

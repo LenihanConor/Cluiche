@@ -3045,5 +3045,8 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfTripPublisher.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestChunkEpoch.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

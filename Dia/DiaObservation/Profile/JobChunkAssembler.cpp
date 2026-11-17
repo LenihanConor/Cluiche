@@ -39,6 +39,26 @@ namespace Dia
 				e->nextSeq = chunk.seq;
 				e->nextRaw = chunk.rawFirst;
 				e->nextAgg = chunk.aggFirst;
+				e->epoch = chunk.epoch;
+			}
+			else if (chunk.epoch != JobChunk::kNoEpoch)
+			{
+				// Epoch rule (same as CoarseChunkAssembler): kNoEpoch is a wildcard; a stored kNoEpoch adopts the
+				// first real epoch; two different real epochs reset the unit's rings and cursors to this chunk.
+				// gapCount/rawLost/aggLost are cumulative and kept.
+				if (e->epoch == JobChunk::kNoEpoch)
+					e->epoch = chunk.epoch;
+				else if (e->epoch != chunk.epoch)
+				{
+					e->epoch = chunk.epoch;
+					++e->epochResets;
+					e->rawTotal = 0;
+					e->aggTotal = 0;
+					e->hasLatest = false;
+					e->nextSeq = chunk.seq;
+					e->nextRaw = chunk.rawFirst;
+					e->nextAgg = chunk.aggFirst;
+				}
 			}
 
 			if (chunk.seq < e->nextSeq)
@@ -92,6 +112,12 @@ namespace Dia
 		{
 			const UnitEntry* e = FindUnit(unitCrc);
 			return (e && e->hasLatest) ? &e->latest : nullptr;
+		}
+
+		uint32_t JobChunkAssembler::GetEpochResets(uint32_t unitCrc) const
+		{
+			const UnitEntry* e = FindUnit(unitCrc);
+			return e ? e->epochResets : 0;
 		}
 
 		uint32_t JobChunkAssembler::GetGapCount(uint32_t unitCrc) const

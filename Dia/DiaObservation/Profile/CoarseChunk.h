@@ -14,7 +14,10 @@ namespace Dia
 			static constexpr uint32_t kMaxEntries = 64;
 			static constexpr uint32_t kSeriesCount = CoarseRing::kMaxModules + 1;
 
+			static constexpr uint32_t kNoEpoch = 0;                   // unknown epoch: assemblers treat it as a wildcard
+
 			uint32_t unitCrc;                                         // ProcessingUnit instanceId CRC
+			uint32_t epoch;                                           // builder run identity; changes when the PU's builder restarts
 			uint32_t seq;                                             // chunk sequence number (increments per Take)
 			uint64_t firstEntry;                                      // absolute entry index of first entry in this chunk
 			uint32_t count;                                           // entries in this chunk (1..kMaxEntries)

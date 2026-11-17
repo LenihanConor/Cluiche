@@ -16,7 +16,7 @@ namespace Dia
 
 			JobChunkBuilder();
 
-			void Begin(uint32_t unitCrc);
+			void Begin(uint32_t unitCrc, uint32_t epoch = JobChunk::kNoEpoch);
 
 			// True when >= 100 ms since the last Take and the table saw new jobs or inbox drops.
 			bool ShouldFlush(const JobTimingTable& table, double nowMs) const;
@@ -28,6 +28,7 @@ namespace Dia
 		private:
 			JobChunk mOut;
 			uint32_t mUnitCrc;
+			uint32_t mEpoch;
 			uint32_t mSeq;
 			uint64_t mNextAgg;
 			uint64_t mNextRaw;
