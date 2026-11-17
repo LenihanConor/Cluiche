@@ -134,7 +134,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 5 | Correlation and run compare | Scatter with r and lag, Source B, alignment, overlay and Δ | Approved | [correlation-and-run-compare.md](correlation-and-run-compare.md) |
 | 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Approved | [navigation.md](navigation.md) |
 | 7 | Snapshots, cell compare and history status | Snapshot panel (list, take, delete, restore), delta compare on the mini-map, history status strip with Track/Untrack | Approved | [snapshots-and-compare.md](snapshots-and-compare.md) |
-| 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode (value minus a seasonal baseline); weather default view | Draft | TBD |
+| 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode on series and mini-map (value minus the typical value for that week); baseline is this run or a reference file; weather default view | Approved | [seasons.md](seasons.md) |
 | 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across reports | Draft | TBD |
 | 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks | Draft | TBD |
 | 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time; each schema-described | Draft | TBD |
@@ -227,7 +227,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - Typical year: x is week of year (from the `Y<year> W<week>` sample label), the line is the mean across years and the band is the spread (min-max or p10-p90).
 - Anomaly mode for any series: value minus a seasonal baseline.
 - A weather default view (precipitation, temperature, snow pack, ground water) beside the ecology one.
-- *Open:* which baseline. Options: computed from the run itself, A4's `IBiomeSeasonalBaseline` table, or S-2.5's `baseline.json`.
+- *Resolved 2026-11-16 (seasons.md):* the baseline is the run's own typical year or a reference history file. A4's table isn't in history files and `baseline.json` holds check magnitudes, so neither is used.
 
 **Feature 9, S-2.5 checks panel.** A new file source kind for `out/CoW/s25/report_<world>_<seed>.json` and `report_summary.json` (envelope `cow.s25_report` v1, S-2.5 Feature 3) plus `baseline.json`.
 - Shows the verdict with its precedence reason, prechecks, each check's state and measured value against its band, and the performance block (report-only).
@@ -267,4 +267,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 7 `Approved`; Feature 7 has a plan. Features 8 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 8 `Approved`; Feature 7 has a plan. Features 9 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
