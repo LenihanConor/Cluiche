@@ -36,6 +36,7 @@ public_api:
     - DiaObservation/Profile/PerfSummaryAccumulator.h
     - DiaObservation/Profile/PerfExitTimer.h
     - DiaObservation/Perf/PerfMarkers.h
+    - DiaObservation/Perf/LatencyProbe.h
     - DiaObservation/Profile/ScopeRecord.h
     - DiaObservation/Testing/MockSink.h
   namespaces:
@@ -98,6 +99,8 @@ responsibilities:
     - PerfExitTimer — wall-clock exit gate for --perf=<seconds>
     - Output files: trips.jsonl (per trip), perf-summary.json (at exit or session close)
     - dia CLI --perf[=seconds] flag and observation.perf config block (trip_frames, trip_factor, rearm_frames, min_interval_ms, budget_scale)
+    - PerfMarkers — per-thread lock-free ring of 1,024 markers (name CRC, optional u64 value, steady-clock ns), drop-oldest with drop counter; DIA_PERF_MARK and DIA_PERF_MARK_VALUE macros; thread registration (16-thread cap); Drain/snapshot API for the instrumentation bridge
+    - LatencyProbe — lock-free probe table (64 slots, 8 hops per slot, 16 actions, 40-completion ring per action), Begin/Stamp/End for cross-thread action tracking, p50/p95 latency percentiles; LatencyVisibleMatcher and StripLatencyArg for snapshot correlation via simFrame
     - Testing/MockSink.h — test utility (SD-O20)
   does_not_own:
     - Metric primitives (Counter/Gauge/Histogram) — DiaMetrics owns those

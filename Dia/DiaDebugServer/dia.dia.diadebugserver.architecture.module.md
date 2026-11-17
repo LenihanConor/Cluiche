@@ -58,6 +58,7 @@ responsibilities:
     a DiaAPI/sim name clash reports the Main-hosted entry and logs a Warning) and command_details (name, source "api"|"sim", kind,
     description, category, owner, noArgs, params). The visual debugger palette index and the DiaValueSchema code-side collector read
     the same catalogue by injection
+  - Client-disconnect hooks: GetCurrentCommandConnId() (returns Main-thread command dispatch client id, set around HandleCommand), AddDisconnectObserver(fn, context) and RemoveDisconnectObserver(fn, context) — cap 8 observers; invoked on client disconnect to release session-owned resources (e.g., pause sets from Task 5)
   - Test seams: DebugServer::SetNowMsFunction (clock) and SetSendHook (outgoing messages, no socket)
 
 non_responsibilities:

@@ -29,9 +29,10 @@ responsibilities:
   - ProcessingUnit — pure scheduler: owns modules, drives their FrameTick loop in manifest array
     order, supports dedicated thread; does NOT hold a back-pointer to Application
   - Application — manifest validation, PU/module creation, stage transition algorithm, error policy
-    (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
+    (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown); owns PerfPauseController (Main-only)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
+  - PerfPause (Debug-only, _DEBUG) — PerfPauseController (Main-owned) publishes $perfpause FrameStream snapshot; PerfPauseSet struct {generation, module bitset, domain CRCs}; denylist (Kernel, DebugServerHost, SimQueryHost); local owner for tests/in-process (released on stage exit / shutdown)
   - Three stream primitives — all manifest-authoritative, declared in .diaapp streams[]:
     - ServiceStream (once per scope): stable lifecycle handle (e.g. canvas, texture handler)
       shared from a provider PU to consumer PUs. Collected-then-committed model — all
