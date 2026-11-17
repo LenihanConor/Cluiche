@@ -4,6 +4,7 @@
 #include <DiaCore/Strings/Base64.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <vector>
 
@@ -69,6 +70,118 @@ namespace Dia
 				out.push_back('"');
 				Dia::Core::Base64::Encode(bytes.data(), bytes.size(), out);
 				out.push_back('"');
+			}
+
+			template <typename T>
+			void AppendRawBase64(std::string& out, const std::vector<T>& values)
+			{
+				std::vector<uint8_t> bytes(values.size() * sizeof(T));
+				for (size_t i = 0; i < values.size(); ++i)
+					for (size_t b = 0; b < sizeof(T); ++b)
+						bytes[i * sizeof(T) + b] = static_cast<uint8_t>((static_cast<uint64_t>(values[i]) >> (8 * b)) & 0xFF);
+				out.push_back('"');
+				Dia::Core::Base64::Encode(bytes.data(), bytes.size(), out);
+				out.push_back('"');
+			}
+
+			uint16_t SaturateU16(double v)
+			{
+				if (!(v > 0.0)) return 0;
+				if (v >= 65535.0) return 65535;
+				return static_cast<uint16_t>(std::lround(v));
+			}
+
+			void PackJobsUnit(const PerfJobsUnitInput& unit, float seconds, PerfNameResolver resolver, std::string& out)
+			{
+				const float hz = unit.unitHz > 0.0f ? unit.unitHz : 60.0f;
+				const uint32_t framesPerBucket = std::max<uint32_t>(1u, static_cast<uint32_t>(std::lround(hz * kJobsBucketMs / 1000.0f)));
+				const bool have = unit.perJobRecording && unit.aggs && unit.aggCount > 0;
+
+				std::vector<uint32_t> owners;
+				uint32_t bucketCount = 0;
+				uint64_t firstFrame = 0;
+				if (have)
+				{
+					for (uint32_t i = 0; i < unit.aggCount; ++i)
+						if (std::find(owners.begin(), owners.end(), unit.aggs[i].owner) == owners.end())
+							owners.push_back(unit.aggs[i].owner);
+					const uint64_t windowFrames = static_cast<uint64_t>(std::ceil(static_cast<double>(seconds) * hz));
+					bucketCount = static_cast<uint32_t>((windowFrames + framesPerBucket - 1) / framesPerBucket);
+					if (bucketCount == 0) bucketCount = 1;
+					const uint64_t span = static_cast<uint64_t>(bucketCount) * framesPerBucket;
+					const uint64_t end = static_cast<uint64_t>(unit.aggs[unit.aggCount - 1].frame) + 1;
+					firstFrame = end > span ? end - span : 0;
+				}
+
+				std::vector<uint16_t> count, busy, wait;
+				if (have)
+				{
+					const size_t cells = static_cast<size_t>(owners.size()) * bucketCount;
+					std::vector<double> busyAcc(cells, 0.0);
+					std::vector<uint32_t> countAcc(cells, 0);
+					std::vector<float> waitAcc(cells, 0.0f);
+					for (uint32_t i = 0; i < unit.aggCount; ++i)
+					{
+						const JobFrameAggregate& a = unit.aggs[i];
+						if (a.frame < firstFrame) continue;
+						const uint64_t b = (a.frame - firstFrame) / framesPerBucket;
+						if (b >= bucketCount) continue;
+						const size_t o = static_cast<size_t>(std::find(owners.begin(), owners.end(), a.owner) - owners.begin());
+						const size_t cell = o * bucketCount + static_cast<size_t>(b);
+						countAcc[cell] += a.count;
+						busyAcc[cell] += a.busyMs;
+						waitAcc[cell] = std::max(waitAcc[cell], a.worstWaitMs);
+					}
+					count.resize(cells); busy.resize(cells); wait.resize(cells);
+					for (size_t c = 0; c < cells; ++c)
+					{
+						count[c] = SaturateU16(countAcc[c]);
+						busy[c]  = SaturateU16(busyAcc[c] * 100.0);
+						wait[c]  = SaturateU16(static_cast<double>(waitAcc[c]) * 100.0);
+					}
+				}
+
+				out += "{\"unit\":";
+				AppendEscaped(out, unit.name);
+				out += ",\"unitCrc\":";
+				AppendUnsigned(out, unit.unitCrc);
+				out += unit.perJobRecording ? ",\"perJobRecording\":true" : ",\"perJobRecording\":false";
+				out += ",\"hz\":";
+				AppendNumber(out, "%g", hz);
+				out += ",\"firstFrame\":";
+				AppendUnsigned(out, firstFrame);
+				out += ",\"framesPerBucket\":";
+				AppendUnsigned(out, framesPerBucket);
+				out += ",\"bucketCount\":";
+				AppendUnsigned(out, bucketCount);
+				out += ",\"owners\":[";
+				for (size_t o = 0; o < owners.size(); ++o)
+				{
+					char nameBuf[128];
+					const char* name = nullptr;
+					if (owners[o] == 0)
+						name = "(other)";
+					else if (resolver)
+						name = resolver(owners[o], nameBuf, sizeof(nameBuf));
+					if (!name)
+					{
+						snprintf(nameBuf, sizeof(nameBuf), "0x%08x", owners[o]);
+						name = nameBuf;
+					}
+					if (o > 0) out.push_back(',');
+					out += "{\"crc\":";
+					AppendUnsigned(out, owners[o]);
+					out += ",\"name\":";
+					AppendEscaped(out, name);
+					out.push_back('}');
+				}
+				out += "],\"frameAgg\":{\"count\":";
+				AppendU16Base64(out, count);
+				out += ",\"busyMs\":";
+				AppendU16Base64(out, busy);
+				out += ",\"worstWaitMs\":";
+				AppendU16Base64(out, wait);
+				out += "}}";
 			}
 
 			void PackUnit(const PerfWindowUnitInput& unit, float seconds, PerfNameResolver resolver, std::string& out)
@@ -271,6 +384,76 @@ namespace Dia
 			}
 			outJson += "],\"sections\":{\"available\":false,\"reason\":"
 				"\"sections need profiling on and a per-frame stream; not wired\"}}";
+		}
+
+		void PackPerfWindowJobs(const PerfJobsUnitInput* units, uint32_t unitCount, float seconds,
+			PerfNameResolver resolver, std::string& outJson)
+		{
+			if (!(seconds >= 1.0f))
+				seconds = 1.0f;
+			if (seconds > 60.0f)
+				seconds = 60.0f;
+
+			bool anyOn = false;
+			for (uint32_t i = 0; i < unitCount; ++i)
+				anyOn = anyOn || units[i].perJobRecording;
+
+			outJson.clear();
+			outJson += "{\"bucketMs\":";
+			AppendUnsigned(outJson, kJobsBucketMs);
+			outJson += (unitCount == 0 || anyOn) ? ",\"perJobRecording\":true" : ",\"perJobRecording\":false";
+			outJson += ",\"units\":[";
+			for (uint32_t i = 0; i < unitCount; ++i)
+			{
+				if (i > 0)
+					outJson.push_back(',');
+				PackJobsUnit(units[i], seconds, resolver, outJson);
+			}
+			outJson += "],\"steps\":[]}";
+		}
+
+		void PackPerfJobsRecords(const char* unit, uint32_t unitCrc, uint64_t fromNs, uint64_t toNs,
+			const JobRecordPacked* records, uint32_t count, bool truncated, bool perJobRecording,
+			std::string& outJson)
+		{
+			std::vector<uint64_t> start(count);
+			std::vector<uint32_t> dur(count), owner(count), tag(count), waitUs(count);
+			std::vector<uint16_t> worker(count), range(count), rangeCount(count), flags(count);
+			for (uint32_t i = 0; i < count; ++i)
+			{
+				start[i] = records[i].startNs;
+				dur[i] = records[i].durNs;
+				owner[i] = records[i].owner;
+				tag[i] = records[i].tag;
+				waitUs[i] = records[i].waitUs;
+				worker[i] = records[i].worker;
+				range[i] = records[i].range;
+				rangeCount[i] = records[i].rangeCount;
+				flags[i] = records[i].flags;
+			}
+
+			outJson = "{\"v\":1,\"unit\":";
+			AppendEscaped(outJson, unit);
+			outJson += ",\"unitCrc\":";
+			AppendUnsigned(outJson, unitCrc);
+			outJson += ",\"fromNs\":";
+			AppendUnsigned(outJson, fromNs);
+			outJson += ",\"toNs\":";
+			AppendUnsigned(outJson, toNs);
+			outJson += perJobRecording ? ",\"perJobRecording\":true" : ",\"perJobRecording\":false";
+			outJson += truncated ? ",\"truncated\":true" : ",\"truncated\":false";
+			outJson += ",\"count\":";
+			AppendUnsigned(outJson, count);
+			outJson += ",\"startNs\":";   AppendRawBase64(outJson, start);
+			outJson += ",\"durNs\":";     AppendRawBase64(outJson, dur);
+			outJson += ",\"owner\":";     AppendRawBase64(outJson, owner);
+			outJson += ",\"tag\":";       AppendRawBase64(outJson, tag);
+			outJson += ",\"waitUs\":";    AppendRawBase64(outJson, waitUs);
+			outJson += ",\"worker\":";    AppendRawBase64(outJson, worker);
+			outJson += ",\"range\":";     AppendRawBase64(outJson, range);
+			outJson += ",\"rangeCount\":"; AppendRawBase64(outJson, rangeCount);
+			outJson += ",\"flags\":";     AppendRawBase64(outJson, flags);
+			outJson.push_back('}');
 		}
 	}}
 }

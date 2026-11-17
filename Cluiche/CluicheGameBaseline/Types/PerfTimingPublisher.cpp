@@ -69,6 +69,50 @@ namespace
         return hex;
     }
 
+    //  cap_use, peak_queue_depth, time_at_cap: the job observation does not expose pool occupancy, and
+    //  nothing calls JobTimingTable::NotePoolSample, so the pool counters stay 0 (published, but not real).
+    const char* const kJobsUnavailable[] = { "cap_use", "peak_queue_depth", "time_at_cap" };
+
+    Json::Value BuildJobs(const JobChunkAssembler& jobs, const NameTable& unitNames, const NameTable& moduleNames)
+    {
+        Json::Value out(Json::objectValue);
+        Json::Value units(Json::arrayValue);
+        for (uint32_t i = 0; i < jobs.GetUnitCount(); ++i)
+        {
+            const uint32_t crc = jobs.GetUnitCrcAt(i);
+            const JobChunk* latest = jobs.GetLatest(crc);
+            if (!latest) continue;
+            Json::Value u(Json::objectValue);
+            u["unit"] = DisplayName(unitNames, crc);
+            Json::Value owners(Json::arrayValue);
+            const uint32_t n = latest->ownerCount < JobChunk::kMaxOwners ? latest->ownerCount : JobChunk::kMaxOwners;
+            for (uint32_t o = 0; o < n; ++o)
+            {
+                const JobOwnerTier1& t = latest->owners[o];
+                Json::Value e(Json::objectValue);
+                e["name"]        = t.owner == 0 ? std::string("(other)") : DisplayName(moduleNames, t.owner);
+                e["crc"]         = t.owner;
+                e["count"]       = t.count;
+                e["busyMs"]      = static_cast<double>(t.busyNs) * 1e-6;
+                e["waitP50Ms"]   = static_cast<double>(t.waitP50Ms);
+                e["waitP95Ms"]   = static_cast<double>(t.waitP95Ms);
+                e["worstWaitMs"] = static_cast<double>(t.worstWaitMs);
+                owners.append(e);
+            }
+            u["owners"] = owners;
+            Json::Value pool(Json::objectValue);
+            pool["capUse"]          = latest->pool.capUse;
+            pool["timeAtCapMs"]     = static_cast<double>(latest->pool.timeAtCapMs);
+            pool["peakQueueDepth"]  = latest->pool.peakQueueDepth;
+            pool["inlineFallbacks"] = latest->pool.inlineFallbacks;
+            pool["inboxDrops"]      = latest->pool.inboxDrops;
+            u["pool"] = pool;
+            units.append(u);
+        }
+        out["units"] = units;
+        return out;
+    }
+
     // ms -> integer 0.01 ms steps.
     int Hundredths(float ms) { return static_cast<int>(std::lround(ms * 100.0f)); }
 
@@ -105,10 +149,12 @@ bool DebugServerPerfTimingSink::TryGetSelfMs(double& outMs) const
 
 PerfTimingPublisher::PerfTimingPublisher(const CoarseChunkAssembler& assembler,
                                          Dia::ApplicationFlow::IApplicationInspectable* app,
-                                         IPerfTimingSink& sink)
+                                         IPerfTimingSink& sink,
+                                         const JobChunkAssembler* jobs)
     : mAssembler(assembler)
     , mApp(app)
     , mSink(sink)
+    , mJobs(jobs)
     , mLastPublishSec(0.0)
     , mHasPublished(false)
     , mPublishCount(0)
@@ -176,6 +222,14 @@ void PerfTimingPublisher::Tick(double nowSec)
     Json::Value unavailable(Json::arrayValue);
     for (const char* name : kStaticUnavailable)
         unavailable.append(name);
+
+    if (mJobs)
+    {
+        root["jobs"] = BuildJobs(*mJobs, unitNames, moduleNames);
+        // The pool sampler does not exist yet, so these three are published as 0 and named here.
+        for (const char* name : kJobsUnavailable)
+            unavailable.append(name);
+    }
 
     double selfMs = 0.0;
     if (mSink.TryGetSelfMs(selfMs))

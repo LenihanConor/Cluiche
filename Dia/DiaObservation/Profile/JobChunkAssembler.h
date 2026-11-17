@@ -18,7 +18,7 @@ namespace Dia
 		public:
 			static constexpr uint32_t kMaxUnits         = 8;
 			static constexpr uint32_t kRawRingCapacity  = 8192;
-			static constexpr uint32_t kAggHistoryCapacity = 2048;
+			static constexpr uint32_t kAggHistoryCapacity = 16384;   // 60 s at 30 Hz with ~9 busy owners (tier 2 window)
 
 			JobChunkAssembler();
 

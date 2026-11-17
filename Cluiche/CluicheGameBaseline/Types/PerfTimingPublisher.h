@@ -9,6 +9,9 @@
 //   { "scale":0.01, "windowSec":2,
 //     "units":[ { "unit":name, "hz":60, "samples":n, "tick":[ewma,p95],
 //                 "modules":[names], "ewma":[..], "p95":[..] } ... ],
+//     "jobs":{ "units":[ { "unit":name, "owners":[ {"name","crc","count","busyMs","waitP50Ms","waitP95Ms","worstWaitMs"} ],
+//                          "pool":{ "capUse","timeAtCapMs","peakQueueDepth","inlineFallbacks","inboxDrops" } } ] },
+//                                       // tier 1 job timing; only when a job assembler is attached
 //     "selfMs":x,                       // omitted when unavailable
 //     "unavailable":[ "latency", ... ] }
 // Only values reachable on Main WITHOUT a cross-PU read are published.  Anything else is named in
@@ -21,6 +24,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaObservation/Profile/CoarseChunkAssembler.h>
+#include <DiaObservation/Profile/JobChunkAssembler.h>
 #include <DiaObservation/Profile/PerfTimingStats.h>
 
 #include <cstdint>
@@ -58,9 +62,11 @@ public:
     static const char*      TopicName() { return "perf.timing"; }
 
     // app may be null (unit/module names fall back to 0x%08x).
+    // jobs may be null (no "jobs" object, no job entries in "unavailable").
     PerfTimingPublisher(const Dia::Observation::Profile::CoarseChunkAssembler& assembler,
                         Dia::ApplicationFlow::IApplicationInspectable* app,
-                        IPerfTimingSink& sink);
+                        IPerfTimingSink& sink,
+                        const Dia::Observation::Profile::JobChunkAssembler* jobs = nullptr);
 
     PerfTimingPublisher(const PerfTimingPublisher&) = delete;
     PerfTimingPublisher& operator=(const PerfTimingPublisher&) = delete;
@@ -75,6 +81,7 @@ private:
     const Dia::Observation::Profile::CoarseChunkAssembler& mAssembler;
     Dia::ApplicationFlow::IApplicationInspectable*         mApp;
     IPerfTimingSink&                                       mSink;
+    const Dia::Observation::Profile::JobChunkAssembler*    mJobs;
     double                                                 mLastPublishSec;
     bool                                                   mHasPublished;
     uint32_t                                               mPublishCount;

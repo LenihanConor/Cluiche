@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DiaObservation/Profile/JobTimingTable.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -44,6 +46,41 @@ namespace Dia
 		// slots (crc 0) are skipped. Writes {"error":"..."} when the ring is null or frame is outside
 		// the retained range.
 		void PackPerfFrame(const PerfWindowUnitInput& unit, uint64_t frame, PerfNameResolver resolver,
+			std::string& outJson);
+
+		// ---- Jobs and workers (Perf Inspector task 13) ----
+
+		// One unit's tier 2 input: the unit's per-owner per-frame aggregates (oldest first).
+		struct PerfJobsUnitInput
+		{
+			uint32_t                 unitCrc;
+			const char*              name;
+			float                    unitHz;            // <= 0 falls back to 60
+			bool                     perJobRecording;   // false: aggregates are not produced (kill switch)
+			const JobFrameAggregate* aggs;
+			uint32_t                 aggCount;
+		};
+
+		// Aggregates are bucketed so 60 s of 5 owners fits the AC13 budget: kJobsBucketMs wide buckets
+		// (frames per bucket = round(hz * 0.2), at least 1).
+		static constexpr uint32_t kJobsBucketMs = 200;
+
+		// The "jobs" section of perf.window, a JSON object:
+		//   {"bucketMs":200,"perJobRecording":b,"units":[{"unit","unitCrc","perJobRecording","hz",
+		//    "firstFrame","framesPerBucket","bucketCount","owners":[{"crc","name"}],
+		//    "frameAgg":{"count":b64,"busyMs":b64,"worstWaitMs":b64}}],"steps":[]}
+		// frameAgg arrays are base64 little-endian uint16, owner-major (owner * bucketCount + bucket):
+		// count saturates at 65535, busyMs and worstWaitMs are 0.01 ms fixed point saturating at 655.35.
+		// A unit with perJobRecording false (or no aggregates) packs no owners and empty arrays.
+		// "steps" is always empty: deferred-step summaries have no producer yet.
+		void PackPerfWindowJobs(const PerfJobsUnitInput* units, uint32_t unitCount, float seconds,
+			PerfNameResolver resolver, std::string& outJson);
+
+		// perf.jobs payload: raw records as packed arrays, one base64 string per field, record-major order
+		// identical across arrays: startNs (u64), durNs/owner/tag/waitUs (u32), worker/range/rangeCount/flags
+		// (u16), all little-endian. End = startNs + durNs.
+		void PackPerfJobsRecords(const char* unit, uint32_t unitCrc, uint64_t fromNs, uint64_t toNs,
+			const JobRecordPacked* records, uint32_t count, bool truncated, bool perJobRecording,
 			std::string& outJson);
 	}}
 }

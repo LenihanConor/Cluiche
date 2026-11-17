@@ -3024,5 +3024,14 @@
     <ClCompile Include="DiaObservation\Profile\TestJobTimingTable.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfWindowPackerJobs.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfJobsCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfTimingJobs.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

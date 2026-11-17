@@ -20,6 +20,7 @@ namespace
 {
     const StringCRC kWindowName("perf.window");
     const StringCRC kFrameName("perf.frame");
+    const StringCRC kJobsName("perf.jobs");
 
     Json::Value Fail(const char* reason)
     {
@@ -83,7 +84,8 @@ namespace
     void HexName(uint32_t crc, char (&buf)[16]) { snprintf(buf, sizeof(buf), "0x%08x", crc); }
 
     // Unit selector: display name, "0x%08x" crc, or decimal crc.
-    bool FindUnitCrc(const CoarseChunkAssembler& assembler, const NameTable& units, const std::string& key, uint32_t& outCrc)
+    template <typename Assembler>
+    bool FindUnitCrc(const Assembler& assembler,const NameTable& units, const std::string& key, uint32_t& outCrc)
     {
         for (uint32_t i = 0; i < assembler.GetUnitCount(); ++i)
         {
@@ -114,6 +116,13 @@ namespace
         return hz > 0.0f ? hz : 60.0f;   // same fallback the assembler uses for the ring capacity
     }
 
+    // True when the unit's newest chunk says per-job recording was on.
+    bool JobUnitRecordingOn(const JobChunkAssembler& assembler, uint32_t crc)
+    {
+        const JobChunk* latest = assembler.GetLatest(crc);
+        return latest && (latest->flags & JobChunk::kFlagPerJob) != 0;
+    }
+
     // The packer returns JSON text.  The command registry replies with a Json::Value (it wraps it in
     // {"success":true,"data":...}), so there is no pre-serialized path: parse the text into the reply.
     // The text is a handful of big base64 strings, so parsing is cheap.
@@ -133,15 +142,31 @@ namespace
         { "unit",  "string",  true, "Processing unit name (as in perf.window units[].unit), or its crc as 0x%08x / decimal", nullptr, false, 0.0f, 0.0f, nullptr },
         { "frame", "int",     true, "Absolute coarse entry index of that unit (the window's firstEntry + i)", nullptr, false, 0.0f, 0.0f, nullptr },
     };
+    const Dia::API::ValueParam kJobsParams[] = {
+        { "unit",   "string", true, "Processing unit name (as in perf.window jobs.units[].unit), or its crc as 0x%08x / decimal", nullptr, false, 0.0f, 0.0f, nullptr },
+        { "fromNs", "int",    true, "Range start in nanoseconds on the job clock (the records' startNs)", "ns", false, 0.0f, 0.0f, nullptr },
+        { "toNs",   "int",    true, "Range end in nanoseconds (>= fromNs); jobs overlapping [fromNs, toNs] are returned", "ns", false, 0.0f, 0.0f, nullptr },
+    };
 }
 
 PerfWindowCommands::PerfWindowCommands(Dia::ApplicationFlow::EventStreamStore<CoarseChunk>* store,
-                                       Dia::ApplicationFlow::IApplicationInspectable* app)
+                                       Dia::ApplicationFlow::IApplicationInspectable* app,
+                                       Dia::ApplicationFlow::EventStreamStore<JobChunk>* jobsStore)
     : mStore(store)
     , mApp(app)
     , mReader(-1)
+    , mJobsStore(jobsStore)
+    , mJobsReader(-1)
     , mRegistered(false)
 {
+    if (mJobsStore)
+    {
+        mJobsReader = mJobsStore->RegisterReader();
+        if (mJobsReader < 0)
+            DIA_LOG_WARNING("PerfWindow", "No free reader on $perfjobs; perf.jobs will have no data");
+        else
+            mJobsScratch = std::make_unique<JobDrainBuffer>();
+    }
     if (mStore)
     {
         mReader = mStore->RegisterReader();
@@ -184,7 +209,18 @@ void PerfWindowCommands::Register()
         c.callback    = [this](const Json::Value& args) { return HandleFrame(args); };
         Dia::API::RegisterCommandJson(c);
     }
-    DIA_LOG_INFO("PerfWindow", "Registered perf.window and perf.frame");
+    {
+        Dia::API::CommandInfoJson c;
+        c.name        = kJobsName;
+        c.description = "Raw job records of a unit overlapping [fromNs, toNs] as packed arrays (worker, start, duration, owner, tag, range), at most 2000, with a truncated flag";
+        c.category    = StringCRC("perf");
+        c.owner       = "CluicheGameBaseline";
+        c.params      = kJobsParams;
+        c.paramCount  = 3;
+        c.callback    = [this](const Json::Value& args) { return HandleJobs(args); };
+        Dia::API::RegisterCommandJson(c);
+    }
+    DIA_LOG_INFO("PerfWindow", "Registered perf.window, perf.frame and perf.jobs");
 }
 
 void PerfWindowCommands::Unregister()
@@ -193,11 +229,23 @@ void PerfWindowCommands::Unregister()
     mRegistered = false;
     Dia::API::UnregisterCommandJson(kWindowName);
     Dia::API::UnregisterCommandJson(kFrameName);
-    DIA_LOG_INFO("PerfWindow", "Unregistered perf.window and perf.frame");
+    Dia::API::UnregisterCommandJson(kJobsName);
+    DIA_LOG_INFO("PerfWindow", "Unregistered perf.window, perf.frame and perf.jobs");
 }
 
 void PerfWindowCommands::Drain()
 {
+    if (mJobsStore && mJobsReader >= 0 && mJobsScratch)
+    {
+        for (int pass = 0; pass < 32; ++pass)
+        {
+            mJobsScratch->RemoveAll();
+            mJobsStore->Consume(mJobsReader, *mJobsScratch);
+            if (mJobsScratch->Size() == 0) break;
+            for (unsigned int i = 0; i < mJobsScratch->Size(); ++i)
+                mJobsAssembler.Apply((*mJobsScratch)[i].payload);
+        }
+    }
     if (!mStore || mReader < 0 || !mScratch) return;
     // Bounded: at most the stream capacity worth of chunks per tick; leftovers wait for the next tick.
     for (int pass = 0; pass < 32; ++pass)
@@ -239,6 +287,76 @@ Json::Value PerfWindowCommands::HandleWindow(const Json::Value& args)
         PackPerfWindow(inputs.data(), unitCount, seconds, &ResolveModuleName, text);
     }
     DIA_LOG_DEBUG("PerfWindow", "perf.window packed %u unit(s), %u bytes", unitCount, static_cast<unsigned>(text.size()));
+    Json::Value reply = ParsePacked(text);
+    if (reply.isMember("error"))
+        return reply;
+
+    // Tier 2 jobs section (an added key on the v1 reply; bucketed aggregates, empty "steps").
+    const uint32_t jobUnitCount = mJobsAssembler.GetUnitCount();
+    std::vector<std::vector<JobFrameAggregate>> aggStore(jobUnitCount);
+    std::vector<std::string> jobNames(jobUnitCount);
+    std::vector<PerfJobsUnitInput> jobInputs(jobUnitCount);
+    for (uint32_t i = 0; i < jobUnitCount; ++i)
+    {
+        const uint32_t crc = mJobsAssembler.GetUnitCrcAt(i);
+        char hex[16];
+        jobNames[i] = UnitDisplayName(unitNames, crc, hex);
+        const bool on = JobUnitRecordingOn(mJobsAssembler, crc);
+        if (on)
+        {
+            aggStore[i].resize(mJobsAssembler.GetAggCount(crc));
+            aggStore[i].resize(mJobsAssembler.CopyAggregates(crc, aggStore[i].data(), static_cast<uint32_t>(aggStore[i].size())));
+        }
+        jobInputs[i] = { crc, jobNames[i].c_str(), UnitHzOrDefault(mAssembler, crc), on,
+                         aggStore[i].data(), static_cast<uint32_t>(aggStore[i].size()) };
+    }
+    std::string jobsText;
+    {
+        ScopedNames scope(&moduleNames);
+        PackPerfWindowJobs(jobInputs.data(), jobUnitCount, seconds, &ResolveModuleName, jobsText);
+    }
+    DIA_LOG_DEBUG("PerfWindow", "perf.window jobs section %u unit(s), %u bytes", jobUnitCount, static_cast<unsigned>(jobsText.size()));
+    Json::Value jobs = ParsePacked(jobsText);
+    if (!jobs.isMember("error"))
+        reply["jobs"] = jobs;
+    return reply;
+}
+
+Json::Value PerfWindowCommands::HandleJobs(const Json::Value& args)
+{
+    if (!args.isObject() || !args["unit"].isString() || args["unit"].asString().empty())
+        return Fail("missing or empty 'unit'");
+    if (!args["fromNs"].isIntegral() || args["fromNs"].asInt64() < 0)
+        return Fail("missing or invalid 'fromNs' (expected non-negative integer)");
+    if (!args["toNs"].isIntegral() || args["toNs"].asInt64() < 0)
+        return Fail("missing or invalid 'toNs' (expected non-negative integer)");
+    const uint64_t fromNs = static_cast<uint64_t>(args["fromNs"].asInt64());
+    const uint64_t toNs   = static_cast<uint64_t>(args["toNs"].asInt64());
+    if (fromNs > toNs)
+        return Fail("'fromNs' is after 'toNs'");
+
+    NameTable unitNames, moduleNames;
+    BuildNames(mApp, unitNames, moduleNames);
+
+    uint32_t crc = 0;
+    if (!FindUnitCrc(mJobsAssembler, unitNames, args["unit"].asString(), crc))
+        return Fail("unknown unit");
+    char hex[16];
+    const std::string name = UnitDisplayName(unitNames, crc, hex);
+
+    std::string text;
+    if (!JobUnitRecordingOn(mJobsAssembler, crc))
+    {
+        // Kill switch (AC14): per-job records are not produced for this unit; do not replay stale ones.
+        PackPerfJobsRecords(name.c_str(), crc, fromNs, toNs, nullptr, 0, false, false, text);
+        return ParsePacked(text);
+    }
+
+    std::vector<JobRecordPacked> records(kMaxJobRecords);
+    bool truncated = false;
+    const uint32_t n = mJobsAssembler.CopyRaw(crc, fromNs, toNs, records.data(), kMaxJobRecords, &truncated);
+    PackPerfJobsRecords(name.c_str(), crc, fromNs, toNs, records.data(), n, truncated, true, text);
+    DIA_LOG_DEBUG("PerfWindow", "perf.jobs packed %u record(s)%s, %u bytes", n, truncated ? " (truncated)" : "", static_cast<unsigned>(text.size()));
     return ParsePacked(text);
 }
 
