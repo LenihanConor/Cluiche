@@ -27,6 +27,7 @@
     <ClInclude Include="DeferredStepScheduler.h" />
     <ClInclude Include="CapConfig.h" />
     <ClInclude Include="RangeTiming.h" />
+    <ClInclude Include="RangeSplit.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
