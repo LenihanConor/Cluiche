@@ -76,6 +76,7 @@
     <ClCompile Include="Modules\LogPushBatcher.cpp" />
     <ClCompile Include="Modules\DomainRootDelta.cpp" />
     <ClCompile Include="Types\PerfPauseCommands.cpp" />
+    <ClCompile Include="Types\PerfWindowCommands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -144,6 +145,7 @@
     <ClInclude Include="Modules\LogPushBatcher.h" />
     <ClInclude Include="Modules\DomainRootDelta.h" />
     <ClInclude Include="Types\PerfPauseCommands.h" />
+    <ClInclude Include="Types\PerfWindowCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

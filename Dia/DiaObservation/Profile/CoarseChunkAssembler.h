@@ -24,6 +24,8 @@ namespace Dia
 			// Accessors
 			uint32_t GetUnitCount() const { return mUnitCount; }
 			const CoarseRing* GetRing(uint32_t unitCrc) const;
+		float GetUnitHz(uint32_t unitCrc) const;                // 0 if the unit is unknown
+		uint32_t GetUnitCrcAt(uint32_t index) const;            // arrival order; 0 if index >= GetUnitCount()
 			uint32_t GetGapCount(uint32_t unitCrc) const;          // seq gaps (chunks lost on the stream)
 			uint32_t GetDroppedUnknownUnitCount() const { return mDroppedUnknownUnit; }   // chunks from units beyond kMaxUnits
 
@@ -31,6 +33,7 @@ namespace Dia
 			struct UnitEntry
 			{
 				uint32_t    unitCrc;
+			float       unitHz;
 				CoarseRing  ring;
 				uint32_t    nextExpectedSeq;
 				uint32_t    gapCount;

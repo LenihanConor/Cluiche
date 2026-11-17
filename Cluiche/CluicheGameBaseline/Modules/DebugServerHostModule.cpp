@@ -116,6 +116,17 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     mServerPtr = &mServer;
     mServerService.Register(mServerPtr);
 
+    // Perf Inspector perf.window / perf.frame: all builds (the coarse stream exists in Release).
+    if (!mPerfWindowCommands)
+    {
+        auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (appImpl && appImpl->GetPerfCoarseStore())
+            mPerfWindowCommands = std::make_unique<PerfWindowCommands>(
+                appImpl->GetPerfCoarseStore(), dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(appImpl));
+    }
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Register();
+
 #ifdef _DEBUG
     // Perf live control: Debug only (AC5). Gate is _DEBUG, not DIA_DEBUG (DiaVisualDebugger defines that in Release).
     auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
@@ -193,6 +204,9 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 
         if (mMetricUptimeSecs) mMetricUptimeSecs->Set(mUptimeSecs);
     }
+
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Drain();   // keeps the long coarse rings current for late attach
 
     QueryMemory();
     DrainSimReplies();
@@ -441,6 +455,9 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
         if (src) src->Deactivate();
         src.reset();
     }
+
+    if (mPerfWindowCommands)
+        mPerfWindowCommands->Unregister();   // object (and its reader) is kept for the next start
 
 #ifdef _DEBUG
     mPerfPauseCommands.reset();   // unregisters the perf.* commands and the disconnect observer

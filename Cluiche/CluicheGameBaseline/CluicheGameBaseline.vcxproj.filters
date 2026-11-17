@@ -156,6 +156,9 @@
     <ClCompile Include="Types\PerfPauseCommands.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\PerfWindowCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -330,6 +333,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Types\PerfPauseCommands.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfWindowCommands.h">
       <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>

@@ -37,5 +37,13 @@ namespace Dia
 		void PackPerfFrameUnavailable(std::string& outJson);
 		void PackPerfFrameSections(const char* unit, uint64_t frame, const PerfFrameSection* sections,
 			uint32_t count, std::string& outJson);
+
+		// perf.frame payload from the coarse ring alone: unit tick and per-module ms for the entry at
+		// absolute index 'frame' (the same index as a window's firstEntry + i), plus an honest
+		// sections.available=false (no per-frame section stream exists on Main yet). Unused module
+		// slots (crc 0) are skipped. Writes {"error":"..."} when the ring is null or frame is outside
+		// the retained range.
+		void PackPerfFrame(const PerfWindowUnitInput& unit, uint64_t frame, PerfNameResolver resolver,
+			std::string& outJson);
 	}}
 }

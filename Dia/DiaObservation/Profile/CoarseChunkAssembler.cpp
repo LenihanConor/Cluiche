@@ -7,6 +7,7 @@ namespace Dia
 	{
 		CoarseChunkAssembler::UnitEntry::UnitEntry()
 			: unitCrc(0)
+			, unitHz(0.0f)
 			, nextExpectedSeq(0)
 			, gapCount(0)
 			, active(false)
@@ -86,6 +87,17 @@ namespace Dia
 			return entry ? &entry->ring : nullptr;
 		}
 
+		float CoarseChunkAssembler::GetUnitHz(uint32_t unitCrc) const
+		{
+			const UnitEntry* entry = FindUnit(unitCrc);
+			return entry ? entry->unitHz : 0.0f;
+		}
+
+		uint32_t CoarseChunkAssembler::GetUnitCrcAt(uint32_t index) const
+		{
+			return index < mUnitCount ? mUnits[index].unitCrc : 0u;
+		}
+
 		uint32_t CoarseChunkAssembler::GetGapCount(uint32_t unitCrc) const
 		{
 			const UnitEntry* entry = FindUnit(unitCrc);
@@ -121,6 +133,7 @@ namespace Dia
 			++mUnitCount;
 
 			entry->unitCrc = unitCrc;
+		entry->unitHz = unitHz;
 			entry->active = true;
 			entry->nextExpectedSeq = 0;
 			entry->gapCount = 0;

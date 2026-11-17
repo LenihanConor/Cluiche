@@ -3012,5 +3012,8 @@
     <ClCompile Include="DiaObservation\Profile\TestPerfWindowPacker.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfWindowCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

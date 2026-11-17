@@ -74,11 +74,17 @@ namespace Dia
 			void PackUnit(const PerfWindowUnitInput& unit, float seconds, PerfNameResolver resolver, std::string& out)
 			{
 				const CoarseRing* ring = unit.ring;
-				const uint32_t moduleCount = ring ? ring->GetModuleCount() : 0;
+				const uint32_t slotCount = ring ? ring->GetModuleCount() : 0;
+				// Only recorded slots (crc != 0) are packed: assembler rings always have kMaxModules slots.
+				std::vector<uint32_t> slots;
+				for (uint32_t s = 0; s < slotCount; ++s)
+					if (ring->GetModuleCrc(s) != 0)
+						slots.push_back(s);
+				const uint32_t moduleCount = static_cast<uint32_t>(slots.size());
 
 				uint32_t count = 0;
 				uint64_t first = 0;
-				if (ring && moduleCount > 0)
+				if (ring && slotCount > 0)
 				{
 					const uint64_t oldest = ring->GetOldestAvailable();
 					const uint64_t end = ring->GetEntryCount();
@@ -102,7 +108,7 @@ namespace Dia
 				out += ",\"modules\":[";
 				for (uint32_t m = 0; m < moduleCount; ++m)
 				{
-					const uint32_t crc = ring->GetModuleCrc(m);
+					const uint32_t crc = ring->GetModuleCrc(slots[m]);
 					char nameBuf[128];
 					const char* name = resolver ? resolver(crc, nameBuf, sizeof(nameBuf)) : nullptr;
 					if (!name)
@@ -136,7 +142,7 @@ namespace Dia
 				{
 					values.resize(static_cast<size_t>(count) * moduleCount);
 					for (uint32_t m = 0; m < moduleCount; ++m)
-						ring->CopyRange(m, first, count, values.data() + static_cast<size_t>(m) * count);
+						ring->CopyRange(slots[m], first, count, values.data() + static_cast<size_t>(m) * count);
 				}
 				out += ",\"moduleMs\":";
 				AppendU16Base64(out, values);
@@ -202,6 +208,69 @@ namespace Dia
 				outJson.push_back('}');
 			}
 			outJson += "]}";
+		}
+
+		void PackPerfFrame(const PerfWindowUnitInput& unit, uint64_t frame, PerfNameResolver resolver,
+			std::string& outJson)
+		{
+			const CoarseRing* ring = unit.ring;
+			if (!ring || ring->GetModuleCount() == 0 || ring->GetEntryCount() == 0)
+			{
+				outJson = "{\"error\":\"no coarse data for unit\"}";
+				return;
+			}
+			if (frame < ring->GetOldestAvailable() || frame >= ring->GetEntryCount())
+			{
+				outJson = "{\"error\":\"frame outside retained range\"}";
+				return;
+			}
+
+			outJson = "{\"v\":1,\"unit\":";
+			AppendEscaped(outJson, unit.name);
+			outJson += ",\"frame\":";
+			AppendUnsigned(outJson, frame);
+
+			uint16_t value = 0;
+			ring->CopyRange(CoarseRing::kUnitSlot, frame, 1, &value);
+			outJson += ",\"unitMs\":";
+			AppendNumber(outJson, "%.2f", CoarseRing::FromFixed(value));
+
+			uint8_t flags = 0;
+			ring->CopyFlags(frame, 1, &flags);
+			if (flags != 0)
+			{
+				outJson += ",\"flags\":";
+				AppendUnsigned(outJson, flags);
+			}
+
+			outJson += ",\"modules\":[";
+			bool first = true;
+			for (uint32_t m = 0; m < ring->GetModuleCount(); ++m)
+			{
+				const uint32_t crc = ring->GetModuleCrc(m);
+				if (crc == 0)
+					continue;
+				char nameBuf[128];
+				const char* name = resolver ? resolver(crc, nameBuf, sizeof(nameBuf)) : nullptr;
+				if (!name)
+				{
+					snprintf(nameBuf, sizeof(nameBuf), "0x%08x", crc);
+					name = nameBuf;
+				}
+				ring->CopyRange(m, frame, 1, &value);
+				if (!first)
+					outJson.push_back(',');
+				first = false;
+				outJson += "{\"crc\":";
+				AppendUnsigned(outJson, crc);
+				outJson += ",\"name\":";
+				AppendEscaped(outJson, name);
+				outJson += ",\"ms\":";
+				AppendNumber(outJson, "%.2f", CoarseRing::FromFixed(value));
+				outJson.push_back('}');
+			}
+			outJson += "],\"sections\":{\"available\":false,\"reason\":"
+				"\"sections need profiling on and a per-frame stream; not wired\"}}";
 		}
 	}}
 }

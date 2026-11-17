@@ -496,3 +496,32 @@ TEST(CoarseChunkAssembler, ClampedFlagAndRawValueSurviveRebuild)
 	ASSERT_EQ(1u, ring->CopyRange(CoarseRing::kUnitSlot, 0, 1, &value));
 	EXPECT_EQ(123u, value);
 }
+
+TEST(CoarseChunkAssembler, GetUnitHzReportsChunkHzAndZeroForUnknown)
+{
+	CoarseChunkBuilder builder;
+	builder.Begin(0x6161u, 30.0f);
+	builder.RecordUnitTick(1.0f);
+	builder.CommitEntry(0.0);
+	CoarseChunkAssembler assembler;
+	assembler.Apply(builder.Take(10.0));
+	EXPECT_FLOAT_EQ(30.0f, assembler.GetUnitHz(0x6161u));
+	EXPECT_FLOAT_EQ(0.0f, assembler.GetUnitHz(0x9999u));
+}
+
+TEST(CoarseChunkAssembler, GetUnitCrcAtEnumeratesUnitsInArrivalOrder)
+{
+	CoarseChunkAssembler assembler;
+	for (uint32_t crc : { 0x11u, 0x22u })
+	{
+		CoarseChunkBuilder builder;
+		builder.Begin(crc, 60.0f);
+		builder.RecordUnitTick(1.0f);
+		builder.CommitEntry(0.0);
+		assembler.Apply(builder.Take(10.0));
+	}
+	ASSERT_EQ(2u, assembler.GetUnitCount());
+	EXPECT_EQ(0x11u, assembler.GetUnitCrcAt(0));
+	EXPECT_EQ(0x22u, assembler.GetUnitCrcAt(1));
+	EXPECT_EQ(0u, assembler.GetUnitCrcAt(2));
+}

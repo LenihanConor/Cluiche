@@ -35,6 +35,7 @@
 #include "Types/DebugServerPushEvent.h"
 #include "Types/SimAnnounceTracker.h"
 #include "Types/PerfPauseCommands.h"
+#include "Types/PerfWindowCommands.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -190,6 +191,9 @@ private:
     // boards via GetBlackboardRegistry(). mSources[4] polls this directly.
     Dia::Blackboard::BlackboardRegistry mBlackboardRegistry;
 
+    // perf.window / perf.frame (all builds).  Created once and kept across stop/start: it owns a reader on
+    // $perfcoarse, which has no unregister, and the store only has 2 reader slots.
+    std::unique_ptr<PerfWindowCommands> mPerfWindowCommands;
 #ifdef _DEBUG
     // perf.pause / perf.resume / perf.resume_all (Debug only; declared last so it is destroyed before mServer).
     std::unique_ptr<PerfPauseCommands> mPerfPauseCommands;

@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <DiaObservation/Profile/PerfWindowPacker.h>
 #include <DiaObservation/Profile/CoarseRing.h>
+#include <DiaObservation/Profile/CoarseChunkAssembler.h>
+#include <DiaObservation/Profile/CoarseChunkBuilder.h>
 #include <json/json.h>
 #include <cstdio>
 #include <iostream>
@@ -294,4 +296,143 @@ TEST(PerfWindowPacker, FrameSectionsInOrder)
 	EXPECT_EQ("Phys\"ics", root["sections"][0]["name"].asString());
 	EXPECT_FLOAT_EQ(1.5f, root["sections"][0]["ms"].asFloat());
 	EXPECT_EQ("Render", root["sections"][1]["name"].asString());
+}
+
+namespace
+{
+	// ring with 2 modules (crc 0xA, 0xB) filled with n entries: module0 = 1.00 + i*0.01 ms, module1 = 2.00 ms, unit = 3.00 ms.
+	void FillFrameRing(CoarseRing& ring, uint32_t n)
+	{
+		ring.Init(16, 2);
+		for (uint32_t i = 0; i < n; ++i)
+		{
+			ring.RecordModuleFixed(0, 0xAu, static_cast<uint16_t>(100 + i));
+			ring.RecordModuleFixed(1, 0xBu, 200);
+			ring.RecordUnitTickFixed(300);
+			ring.CommitEntry();
+		}
+	}
+}
+
+TEST(PerfWindowPacker, PackFrameKnownEntryReportsModulesAndUnitTick)
+{
+	CoarseRing ring;
+	FillFrameRing(ring, 5);
+	PerfWindowUnitInput in = { 0x77u, "Sim", 30.0f, &ring };
+	std::string json;
+	PackPerfFrame(in, 3, nullptr, json);
+	Json::Value root = Parse(json);
+	EXPECT_FALSE(root.isMember("error"));
+	EXPECT_EQ("Sim", root["unit"].asString());
+	EXPECT_EQ(3u, root["frame"].asUInt64());
+	EXPECT_FLOAT_EQ(3.0f, root["unitMs"].asFloat());
+	ASSERT_EQ(2u, root["modules"].size());
+	EXPECT_EQ(10u, root["modules"][0]["crc"].asUInt());
+	EXPECT_EQ("0x0000000a", root["modules"][0]["name"].asString());
+	EXPECT_NEAR(1.03f, root["modules"][0]["ms"].asFloat(), 0.001f);
+	EXPECT_NEAR(2.0f, root["modules"][1]["ms"].asFloat(), 0.001f);
+	EXPECT_FALSE(root["sections"]["available"].asBool());
+	EXPECT_FALSE(root["sections"]["reason"].asString().empty());
+}
+
+TEST(PerfWindowPacker, PackFrameSkipsUnusedModuleSlots)
+{
+	CoarseRing ring;
+	ring.Init(8, 4);	// slots 2,3 never recorded (crc 0)
+	ring.RecordModuleFixed(0, 0xAu, 100);
+	ring.RecordUnitTickFixed(300);
+	ring.CommitEntry();
+	PerfWindowUnitInput in = { 1u, "U", 30.0f, &ring };
+	std::string json;
+	PackPerfFrame(in, 0, nullptr, json);
+	Json::Value root = Parse(json);
+	EXPECT_EQ(1u, root["modules"].size());
+}
+
+TEST(PerfWindowPacker, PackFrameOutOfRangeAndNullRingAreErrors)
+{
+	CoarseRing ring;
+	FillFrameRing(ring, 5);
+	PerfWindowUnitInput in = { 0x77u, "Sim", 30.0f, &ring };
+	std::string json;
+	PackPerfFrame(in, 5, nullptr, json);	// not yet written
+	EXPECT_FALSE(Parse(json)["error"].asString().empty());
+	PackPerfFrame(in, 1000, nullptr, json);
+	EXPECT_FALSE(Parse(json)["error"].asString().empty());
+
+	CoarseRing wrapped;
+	FillFrameRing(wrapped, 40);	// capacity 16: entries 0..23 overwritten
+	PerfWindowUnitInput w = { 0x77u, "Sim", 30.0f, &wrapped };
+	PackPerfFrame(w, 3, nullptr, json);
+	EXPECT_FALSE(Parse(json)["error"].asString().empty());
+	PackPerfFrame(w, 39, nullptr, json);
+	EXPECT_FALSE(Parse(json).isMember("error"));
+
+	PerfWindowUnitInput none = { 0x77u, "Sim", 30.0f, nullptr };
+	PackPerfFrame(none, 0, nullptr, json);
+	EXPECT_FALSE(Parse(json)["error"].asString().empty());
+}
+
+TEST(PerfWindowPacker, PackFrameUsesResolverAndFlags)
+{
+	struct R { static const char* Resolve(uint32_t crc, char* buf, size_t n) { if (crc != 0xAu) return nullptr; snprintf(buf, n, "Physics"); return buf; } };
+	CoarseRing ring;
+	ring.Init(8, 1);
+	ring.RecordModuleFixed(0, 0xAu, 100);
+	ring.RecordUnitTickFixed(300);
+	ring.SetStagingFlags(CoarseRing::kFlagClamped);
+	ring.CommitEntry();
+	PerfWindowUnitInput in = { 1u, "U", 30.0f, &ring };
+	std::string json;
+	PackPerfFrame(in, 0, &R::Resolve, json);
+	Json::Value root = Parse(json);
+	EXPECT_EQ("Physics", root["modules"][0]["name"].asString());
+	EXPECT_EQ(static_cast<unsigned>(CoarseRing::kFlagClamped), root["flags"].asUInt());
+}
+
+// Regression: rings rebuilt by the assembler have 64 module slots; only slots that were recorded
+// (crc != 0) may be packed, otherwise a real 3-unit window is over 1 MB.
+TEST(PerfWindowPacker, AssemblerRingsPackOnlyRecordedModulesUnderBudget)
+{
+	struct UnitSpec { uint32_t crc; const char* name; float hz; uint32_t modules; };
+	const UnitSpec specs[3] = { { 0x1001u, "Main", 30.0f, 5 }, { 0x1002u, "Sim", 30.0f, 5 }, { 0x1003u, "Render", 60.0f, 3 } };
+
+	CoarseChunkAssembler assembler;
+	for (const UnitSpec& spec : specs)
+	{
+		CoarseChunkBuilder builder;
+		builder.Begin(spec.crc, spec.hz);
+		const uint32_t entries = CoarseRing::CapacityFor(spec.hz, 60.0f);
+		for (uint32_t e = 0; e < entries; ++e)
+		{
+			for (uint32_t m = 0; m < spec.modules; ++m)
+				builder.RecordModule(m, 0x100u * (m + 1) + spec.crc, 0.5f + 0.01f * static_cast<float>((e + m) % 50));
+			builder.RecordUnitTick(3.0f + 0.01f * static_cast<float>(e % 20));
+			builder.CommitEntry(0.0);
+			if ((e + 1) % CoarseChunk::kMaxEntries == 0)
+				assembler.Apply(builder.Take(1000.0));
+		}
+		assembler.Apply(builder.Take(1000.0));
+	}
+	ASSERT_EQ(3u, assembler.GetUnitCount());
+
+	PerfWindowUnitInput inputs[3];
+	for (uint32_t i = 0; i < 3; ++i)
+		inputs[i] = { specs[i].crc, specs[i].name, specs[i].hz, assembler.GetRing(specs[i].crc) };
+
+	std::string json;
+	PackPerfWindow(inputs, 3, 60.0f, nullptr, json);
+	EXPECT_LT(json.size(), 120000u);
+
+	Json::Value root = Parse(json);
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		const Json::Value& u = root["units"][i];
+		EXPECT_EQ(specs[i].modules, u["modules"].size()) << specs[i].name;
+		const uint32_t count = u["count"].asUInt();
+		EXPECT_EQ(CoarseRing::CapacityFor(specs[i].hz, 60.0f), count);
+		EXPECT_EQ(static_cast<size_t>(count) * specs[i].modules, DecodeU16(u["moduleMs"].asString()).size()) << specs[i].name;
+		for (uint32_t m = 0; m < specs[i].modules; ++m)
+			EXPECT_NE(0u, u["modules"][m]["crc"].asUInt());
+	}
 }

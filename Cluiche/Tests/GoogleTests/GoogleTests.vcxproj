@@ -1289,6 +1289,7 @@
     <ClCompile Include="ApplicationFlow\TestStreamEdgeStats.cpp" />
     <ClCompile Include="ApplicationFlow\TestStreamLinkEdgeCases.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestPerfWindowPacker.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestPerfWindowCommands.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
