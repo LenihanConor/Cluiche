@@ -1,7 +1,7 @@
 # Feature Spec: Scheduler Core
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 1)
-**Status:** Approved (2026-11-13)
+**Status:** Done (2026-11-17)
 **Plan:** @docs/specs/applications/dia/systems/diadeferredstep/scheduler-core.plan.md
 
 ## Summary

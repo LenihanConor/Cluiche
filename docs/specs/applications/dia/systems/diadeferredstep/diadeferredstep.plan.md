@@ -50,7 +50,7 @@ CluicheTest stage and one `.diaapp` entry.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | **Feature 1 — Scheduler core.** @scheduler-core.plan.md | Its Task 11 | Not Started | — | Tasks 0–11. Pure logic, no threads. Unblocks F2 and F3 after its Task 1 |
+| 1 | **Feature 1 — Scheduler core.** @scheduler-core.plan.md | Its Task 11 | Done | — | Tasks 0–11. Pure logic, no threads. Unblocks F2 and F3 after its Task 1; Feature 1 Done 2026-11-17: 61+60 scoped tests, ASan clean (121). Full suite/Release/E2E still owed at system Task 6 |
 | 2 | **Feature 2 — Capped executor.** @capped-executor.plan.md | Its Task 9 | Not Started | — | Tasks 0–9. The only real concurrency in the system; F2 Tasks 3–4 are the hardest work in it |
 | 3 | **Feature 3 — Save / load.** @save-load.plan.md | Its Task 8 | Not Started | — | Tasks 0–8. Can run in parallel with F2 — different files, no shared headers beyond F1's |
 | 4 | **Feature 4 — Module + observability.** @module-and-observability.plan.md | Its Task 11 | Not Started | — | Tasks 0–11, including the CluicheTest `DeferredStep` stage and its E2E |
