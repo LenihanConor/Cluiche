@@ -9,7 +9,7 @@ namespace Dia
 	namespace Editor
 	{
 		// Inspector-tier plugin: live performance view of a running game over DiaDebugServer.
-		// Shell only: forwards the perf.timing push to the UI and relays perf.window / perf.frame / perf.jobs queries.
+		// Shell only: forwards the perf.timing and perf.trip pushes to the UI and relays perf.window / perf.frame / perf.jobs queries.
 		class DiaPerfInspectorPlugin : public LiveConnectionPluginBase
 		{
 		public:

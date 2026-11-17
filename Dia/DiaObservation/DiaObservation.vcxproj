@@ -140,6 +140,7 @@
     <ClInclude Include="Profile\JobChunk.h" />
     <ClInclude Include="Profile\JobChunkBuilder.h" />
     <ClInclude Include="Profile\JobChunkAssembler.h" />
+    <ClInclude Include="Profile\TripChunk.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

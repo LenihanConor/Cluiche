@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -21,8 +22,10 @@ namespace
 {
     // Fields with no Main-reachable path today (no stream, data lives on PU threads or is not populated):
     //  latency          LatencyProbe lives in VisualDebuggerModule on the Sim PU, and is only fed in _DEBUG builds.
-    //  trips            CoarseChunk::tripCount is never populated (always 0); the detector lives on each PU.
-    //  marker_drops     CoarseChunk::markerDrops is never populated (always 0).
+    //  trips            only while the "$perftrips" reader is not attached (SetTripsAttached); then the cumulative
+    //                   CoarseChunk::tripCount is published per unit instead.
+    //  marker_drops     CoarseChunk::markerDrops is filled on the PU (process-wide PerfMarkers total, not per unit) but
+    //                   is not published: a global count under a per-unit field would mislead.
     //  suppressed_trips TripDetector::GetSuppressedCount() is PU-owned, only summarised at exit.
     //  suppressed_logs  no counter reachable from Main.
     const char* const kStaticUnavailable[] = { "latency", "trips", "marker_drops", "suppressed_trips", "suppressed_logs" };
@@ -196,6 +199,8 @@ void PerfTimingPublisher::Tick(double nowSec)
         PerfSeriesStats unitStats;
         ComputePerfRingSeriesStats(*ring, CoarseRing::kUnitSlot, hz, kPerfTimingWindowSecs, unitStats, mScratch);
         u["samples"] = unitStats.samples;
+        if (mTripsAttached)
+            u["trips"] = mAssembler.GetTripCount(crc);
         Json::Value tick(Json::arrayValue);
         tick.append(Hundredths(unitStats.ewmaMs));
         tick.append(Hundredths(unitStats.p95Ms));
@@ -221,7 +226,11 @@ void PerfTimingPublisher::Tick(double nowSec)
 
     Json::Value unavailable(Json::arrayValue);
     for (const char* name : kStaticUnavailable)
+    {
+        if (mTripsAttached && std::strcmp(name, "trips") == 0)
+            continue;
         unavailable.append(name);
+    }
 
     if (mJobs)
     {

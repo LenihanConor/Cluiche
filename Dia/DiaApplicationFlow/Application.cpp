@@ -169,6 +169,21 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b4. Create $perftrips stream (framework-owned, all builds; Perf Inspector task 3b) ---
+        // One TripChunk per emitted over-budget trip (rate limited per unit), so tiny traffic.
+        {
+            auto* tripsStore = new EventStreamStore<Dia::Observation::Profile::TripChunk>(
+                Dia::Core::StringCRC("$perftrips"),
+                Dia::Core::StringCRC("TripChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfTripsStore = tripsStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(tripsStore);
+            ++mStreamStoreCount;
+        }
+
 #ifdef _DEBUG
         // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
         {
@@ -192,6 +207,8 @@ namespace Dia { namespace ApplicationFlow {
             mProcessingUnits[p]->SetPerfCoarseSink(mPerfCoarseStore);
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
             mProcessingUnits[p]->SetPerfJobsSink(mPerfJobsStore);
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfTripsSink(mPerfTripsStore);
 
 #ifdef _DEBUG
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)

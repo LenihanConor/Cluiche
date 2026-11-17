@@ -11,6 +11,7 @@ namespace Dia
 			, unitHz(0.0f)
 			, nextExpectedSeq(0)
 			, gapCount(0)
+			, tripCount(0)
 			, active(false)
 		{
 		}
@@ -49,6 +50,7 @@ namespace Dia
 				++entry->gapCount;
 			}
 			entry->nextExpectedSeq = chunk.seq + 1;
+			entry->tripCount = chunk.tripCount;
 
 			// Check for entry gap
 			const uint64_t nextEntryIndex = entry->ring.GetEntryCount();
@@ -102,6 +104,12 @@ namespace Dia
 		uint32_t CoarseChunkAssembler::GetUnitCrcAt(uint32_t index) const
 		{
 			return index < mUnitCount ? mUnits[index].unitCrc : 0u;
+		}
+
+		uint32_t CoarseChunkAssembler::GetTripCount(uint32_t unitCrc) const
+		{
+			const UnitEntry* entry = FindUnit(unitCrc);
+			return entry ? entry->tripCount : 0;
 		}
 
 		uint32_t CoarseChunkAssembler::GetGapCount(uint32_t unitCrc) const

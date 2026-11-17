@@ -7,6 +7,7 @@
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaCore/SimTime/SimTimeDomainRegistry.h>
 #include <DiaObservation/Profile/PerfSummary.h>
+#include <DiaObservation/Profile/TripChunk.h>
 #include <DiaObservation/Profile/TripDetector.h>
 #include <DiaObservation/Profile/TripRecord.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
@@ -119,6 +120,8 @@ namespace Dia { namespace ApplicationFlow {
         void SetPerfCoarseSink(EventStreamStore<Dia::Observation::Profile::CoarseChunk>* sink) { mCoarseSink = sink; }
         // Perf Inspector task 13: framework-owned "$perfjobs" sink for JobChunk (jobs and workers). Null = no sends.
         void SetPerfJobsSink(EventStreamStore<Dia::Observation::Profile::JobChunk>* sink) { mJobSink = sink; }
+        // Perf Inspector task 3b: framework-owned "$perftrips" sink for TripChunk (one per emitted trip). Null = no sends.
+        void SetPerfTripsSink(EventStreamStore<Dia::Observation::Profile::TripChunk>* sink) { mTripSink = sink; }
         // Per-PU job timing (drained from this PU's JobInbox once per Update()).
         [[nodiscard]] const Dia::Observation::Profile::JobTimingTable& GetJobTimingTable() const { return mJobTable; }
         // Kill switch (observation.perf.jobs): false = tier 1 counters only. Set before the unit starts ticking.
@@ -196,6 +199,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Observation::Profile::JobTimingTable       mJobTable;
         Dia::Observation::Profile::JobChunkBuilder      mJobChunk;
         EventStreamStore<Dia::Observation::Profile::JobChunk>* mJobSink = nullptr;
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* mTripSink = nullptr;      // task 3b: "$perftrips"
         Dia::Observation::Profile::PerfSummaryAccumulator mPerfAccumulator;   // A4b: rows of stopped modules
         unsigned int                      mLastUpdateStepCount = 0;
         float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes

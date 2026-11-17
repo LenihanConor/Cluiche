@@ -37,6 +37,7 @@
 #include "Types/PerfPauseCommands.h"
 #include "Types/PerfWindowCommands.h"
 #include "Types/PerfTimingPublisher.h"
+#include "Types/PerfTripPublisher.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -198,6 +199,10 @@ private:
     // perf.timing push (all builds, 10 Hz, only while a client is subscribed).  Reads the assembler above.
     std::unique_ptr<DebugServerPerfTimingSink> mPerfTimingSink;
     std::unique_ptr<PerfTimingPublisher>       mPerfTimingPublisher;
+    // Perf Inspector task 3b: "perf.trip" ordered topic. The publisher (and its $perftrips reader) is created once
+    // and kept across stop/start; only the sink (bound to mServer) is recreated.
+    std::unique_ptr<PerfTripPublisher>         mPerfTripPublisher;
+    std::unique_ptr<DebugServerPerfTripSink>   mPerfTripSink;
 #ifdef _DEBUG
     // perf.pause / perf.resume / perf.resume_all (Debug only; declared last so it is destroyed before mServer).
     std::unique_ptr<PerfPauseCommands> mPerfPauseCommands;

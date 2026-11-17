@@ -136,6 +136,18 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
             *mPerfTimingSink,
             &mPerfWindowCommands->GetJobsAssembler());
     }
+    {
+        auto* appImpl2 = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (!mPerfTripPublisher && appImpl2 && appImpl2->GetPerfTripsStore())
+            mPerfTripPublisher = std::make_unique<PerfTripPublisher>(appImpl2->GetPerfTripsStore());
+        if (mPerfTripPublisher)
+        {
+            mPerfTripSink = std::make_unique<DebugServerPerfTripSink>(mServer);
+            mPerfTripPublisher->SetSink(mPerfTripSink.get());
+        }
+        if (mPerfTimingPublisher)
+            mPerfTimingPublisher->SetTripsAttached(mPerfTripPublisher && mPerfTripPublisher->HasReader());
+    }
 
 #ifdef _DEBUG
     // Perf live control: Debug only (AC5). Gate is _DEBUG, not DIA_DEBUG (DiaVisualDebugger defines that in Release).
@@ -217,6 +229,8 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 
     if (mPerfWindowCommands)
         mPerfWindowCommands->Drain();   // keeps the long coarse rings current for late attach
+    if (mPerfTripPublisher)
+        mPerfTripPublisher->Drain();   // one drain per tick; publishes perf.trip only when subscribed
     if (mPerfTimingPublisher)
         mPerfTimingPublisher->Tick(mUptimeSecs);   // gated on subscribers, 10 Hz
 
@@ -470,6 +484,9 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 
     mPerfTimingPublisher.reset();
     mPerfTimingSink.reset();
+    if (mPerfTripPublisher)
+        mPerfTripPublisher->SetSink(nullptr);   // publisher and its reader are kept for the next start
+    mPerfTripSink.reset();
     if (mPerfWindowCommands)
         mPerfWindowCommands->Unregister();   // object (and its reader) is kept for the next start
 

@@ -6,6 +6,7 @@ import type { PerfQueryReply } from './types';
 const REQUEST_TIMEOUT_MS = 5000;
 
 export const kTimingTopic = 'perf_inspector.timing';
+export const kTripTopic = 'perf_inspector.trip';
 export const kQueryResultTopic = 'perf_inspector.query_result';
 export const kConnectionPrefix = 'perf_inspector';
 

@@ -162,6 +162,9 @@
     <ClCompile Include="Types\PerfTimingPublisher.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\PerfTripPublisher.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -342,6 +345,9 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\PerfTimingPublisher.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfTripPublisher.h">
       <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>

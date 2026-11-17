@@ -18,6 +18,7 @@ namespace Json { class Value; }
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/JobChunk.h>
+#include <DiaObservation/Profile/TripChunk.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -147,6 +148,8 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::CoarseChunk>* GetPerfCoarseStore() { return mPerfCoarseStore; }
         // Perf Inspector task 13: the "$perfjobs" store (JobChunk, jobs and workers), for a Main-side reader.
         EventStreamStore<Dia::Observation::Profile::JobChunk>* GetPerfJobsStore() { return mPerfJobsStore; }
+        // Perf Inspector task 3b: the "$perftrips" store (TripChunk, one per emitted trip), for a Main-side reader.
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* GetPerfTripsStore() { return mPerfTripsStore; }
 
 #ifdef _DEBUG
         // Perf live control (task 3, Debug only). Main-thread only. Null until Start().
@@ -276,6 +279,8 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mPerfCoarseStore = nullptr;
         // Perf Inspector task 13: framework-owned "$perfjobs" EventStream (all builds): per-PU JobChunk.
         EventStreamStore<Dia::Observation::Profile::JobChunk>* mPerfJobsStore = nullptr;
+        // Perf Inspector task 3b: framework-owned "$perftrips" EventStream (all builds): per-PU TripChunk.
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* mPerfTripsStore = nullptr;
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.

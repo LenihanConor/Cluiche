@@ -8,18 +8,23 @@ import type { Marker, TripRecord } from './types';
 /** Always fetch the full retained window; the 10/30/60 choice slices client-side. */
 export const kFetchSeconds = 60;
 
+/** Newest trips kept for the list and the lane shading. */
+export const kMaxTrips = 200;
+
 interface WindowState {
     reply: PerfWindowReply | null;
     lanes: Lane[];
     view: ViewState;
-    /** Trip ranges for shading. Empty until the trip wire format lands (plan row 3b). */
+    /** Trip ranges for shading, derived from `trips` (the perf.trip push). */
     tripRanges: TripRange[];
-    /** Trip records and markers: empty until the game has topics for them (plan row 3b). */
+    /** Trip records (perf.trip push, newest last) and markers (no game topic yet). */
     trips: TripRecord[];
     markers: Marker[];
     loading: boolean;
     error: string | null;
     setTrips: (records: TripRecord[]) => void;
+    /** Appends one pushed trip (newest last), keeping at most kMaxTrips. */
+    appendTrip: (record: TripRecord) => void;
     setWindowSeconds: (seconds: ViewState['windowSeconds']) => void;
     togglePause: () => void;
     refresh: () => Promise<void>;
@@ -39,6 +44,11 @@ export const useWindowStore = create<WindowState>((set, get) => ({
     error: null,
 
     setTrips: (trips) => set({ trips, tripRanges: tripRangesFromRecords(trips) }),
+
+    appendTrip: (record) => set((s) => {
+        const trips = [...s.trips, record].slice(-kMaxTrips);
+        return { trips, tripRanges: tripRangesFromRecords(trips) };
+    }),
 
     setWindowSeconds: (windowSeconds) => set((s) => ({ view: { ...s.view, windowSeconds } })),
 

@@ -15,6 +15,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqCommand("perf_inspector.command");
 
 		static const Dia::Core::StringCRC kTopicPerfTiming("perf.timing");
+		static const Dia::Core::StringCRC kTopicPerfTrip("perf.trip");
 
 		DiaPerfInspectorPlugin::DiaPerfInspectorPlugin()
 			: LiveConnectionPluginBase({
@@ -43,6 +44,13 @@ namespace Dia
 			{
 				if (GetBridge())
 					GetBridge()->NotifyUIDataChanged("perf_inspector.timing", d);
+			});
+
+			// One ordered event per over-budget trip (published by the game only while subscribed).
+			RegisterGameTopic(kTopicPerfTrip, [this](const Json::Value& d)
+			{
+				if (GetBridge())
+					GetBridge()->NotifyUIDataChanged("perf_inspector.trip", d);
 			});
 		}
 

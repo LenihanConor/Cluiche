@@ -17,7 +17,9 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/PerfSummary.h>
+#include <DiaObservation/Profile/TripChunk.h>
 #include <DiaObservation/Profile/TripReporter.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
 
@@ -543,4 +545,61 @@ TEST(PerfSummaryProcessingUnit, StoppedModuleKeepsRowAfterLaterModuleStarts_Ever
     EXPECT_EQ(sim->tripCount, simPu->GetTripDetector().GetTripCount());
     EXPECT_EQ(sim->overBudgetFrames, simPu->GetTripDetector().GetOverBudgetFrames());
     EXPECT_EQ(sim->suppressedCount, simPu->GetTripDetector().GetSuppressedCount());
+}
+
+// Perf Inspector task 3b: a trip produces exactly one TripChunk on "$perftrips" (independent of any
+// TripReporter), and the unit's cumulative tripCount shows up in a later coarse chunk.
+namespace { struct SLOW_PUTripChunkFixture : PUTripFixture {}; }
+TEST_F(SLOW_PUTripChunkFixture, TripSendsOneTripChunkAndCoarseTripCount)
+{
+    using namespace Dia::Observation::Profile;
+    auto manifest = BuildManifest("tripChunk");
+    TypeRegistry reg;
+    RegisterTimed(reg);
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_NE(app.GetPerfTripsStore(), nullptr);
+    const int tripReader   = app.GetPerfTripsStore()->RegisterReader();
+    const int coarseReader = app.GetPerfCoarseStore()->RegisterReader();
+    ASSERT_GE(tripReader, 0);
+    ASSERT_GE(coarseReader, 0);
+    DriveToActive(app, g_timed);
+
+    g_timed->sleepMs = 40;   // > 2x the 16.7 ms budget
+    for (int i = 0; i < 15; ++i)
+        app.Update(kFixed60 * 1.1f);
+
+    const uint32_t simCrc = StringCRC("SimPU").Value();
+    auto trips = std::make_unique<Dia::Core::Containers::DynamicArrayC<Event<TripChunk>, 4>>();
+    int tripEvents = 0;
+    for (int pass = 0; pass < 32; ++pass)
+    {
+        trips->RemoveAll();
+        app.GetPerfTripsStore()->Consume(tripReader, *trips);
+        if (trips->Size() == 0) break;
+        for (unsigned int i = 0; i < trips->Size(); ++i)
+        {
+            const TripChunk& c = (*trips)[i].payload;
+            if (c.unitCrc != simCrc) continue;
+            ++tripEvents;
+            EXPECT_EQ(1u, c.seq);
+            EXPECT_STREQ("SimPU", c.record.unit);
+            EXPECT_GE(c.record.peakMs, 33.0f);
+            EXPECT_LE(c.record.firstFrame, c.record.lastFrame);
+        }
+    }
+    EXPECT_EQ(1, tripEvents);
+
+    auto coarse = std::make_unique<Dia::Core::Containers::DynamicArrayC<Event<CoarseChunk>, 4>>();
+    uint32_t lastTripCount = 0;
+    for (int pass = 0; pass < 32; ++pass)
+    {
+        coarse->RemoveAll();
+        app.GetPerfCoarseStore()->Consume(coarseReader, *coarse);
+        if (coarse->Size() == 0) break;
+        for (unsigned int i = 0; i < coarse->Size(); ++i)
+            if ((*coarse)[i].payload.unitCrc == simCrc)
+                lastTripCount = (*coarse)[i].payload.tripCount;
+    }
+    EXPECT_EQ(1u, lastTripCount);
 }

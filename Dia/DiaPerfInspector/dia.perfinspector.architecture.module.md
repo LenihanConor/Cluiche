@@ -19,6 +19,7 @@ public_api:
     - REGISTER_EDITOR_PLUGIN(DiaPerfInspectorPlugin, "DiaPerfInspector")
 responsibilities:
   - Subscribe the perf.timing game topic and forward it to the UI as perf_inspector.timing
+  - Subscribe the perf.trip game topic and forward it to the UI as perf_inspector.trip
   - Relay perf.window, perf.frame and perf.jobs queries, and the perf.pause / perf.resume / perf.resume_all commands, to the connected game and push replies as perf_inspector.query_result
   - Serve the Inspector UI via dia://plugins/diaperfinspector/index.html (Frames tab: lanes, module table, frame detail, trips, chain, latency and self-cost; Workers tab: job heat strip, steps, owner share, pool health; Chrome-trace export)
 non_responsibilities:

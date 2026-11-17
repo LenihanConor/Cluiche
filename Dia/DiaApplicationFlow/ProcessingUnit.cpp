@@ -298,6 +298,10 @@ namespace Dia { namespace ApplicationFlow {
                 wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
                 wrapped.senderCrc   = kFrameworkId.Value();
                 wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                // Task 3b: cumulative counters. Marker drops are the process-wide PerfMarkers total (no per-unit counter exists).
+                const uint64_t markerDrops = Dia::Observation::Perf::PerfMarkers::TotalDropped();
+                mCoarseChunk.SetCumulativeCounters(mTripDetector.GetTripCount(),
+                                                   markerDrops > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(markerDrops));
                 wrapped.payload     = mCoarseChunk.Take(nowMs);
                 mCoarseSink->Send(wrapped);
             }
@@ -323,7 +327,7 @@ namespace Dia { namespace ApplicationFlow {
             {
                 DIA_PERF_MARK_VALUE("trip", mInstanceId.Value());
                 TripReporter* reporter = mTripReporter.load(std::memory_order_acquire);
-                if (reporter != nullptr)
+                if (reporter != nullptr || mTripSink != nullptr)
                 {
 #ifdef _DEBUG
                     const char* buildConfig = "Debug";
@@ -331,7 +335,22 @@ namespace Dia { namespace ApplicationFlow {
                     const char* buildConfig = "Release";
 #endif
                     BuildTripRecord(mTripRecord, mInstanceId.AsChar(), trip, budgetMs, buildConfig, mTimingTable);
-                    reporter->Report(mTripRecord);
+                    if (reporter != nullptr)
+                        reporter->Report(mTripRecord);
+
+                    // Task 3b: one TripChunk per emitted trip (rate limited, never per frame) to the editor stream.
+                    if (mTripSink != nullptr)
+                    {
+                        static const Dia::Core::StringCRC kFrameworkTripId("$framework");
+                        Event<TripChunk> wrappedTrip;
+                        wrappedTrip.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                        wrappedTrip.senderCrc   = kFrameworkTripId.Value();
+                        wrappedTrip.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                        wrappedTrip.payload.unitCrc = mInstanceId.Value();
+                        wrappedTrip.payload.seq     = mTripDetector.GetTripCount();
+                        wrappedTrip.payload.record  = mTripRecord;
+                        mTripSink->Send(wrappedTrip);
+                    }
                 }
             }
         }

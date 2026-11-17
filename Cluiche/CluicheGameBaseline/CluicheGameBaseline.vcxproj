@@ -78,6 +78,7 @@
     <ClCompile Include="Types\PerfPauseCommands.cpp" />
     <ClCompile Include="Types\PerfWindowCommands.cpp" />
     <ClCompile Include="Types\PerfTimingPublisher.cpp" />
+    <ClCompile Include="Types\PerfTripPublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -148,6 +149,7 @@
     <ClInclude Include="Types\PerfPauseCommands.h" />
     <ClInclude Include="Types\PerfWindowCommands.h" />
     <ClInclude Include="Types\PerfTimingPublisher.h" />
+    <ClInclude Include="Types\PerfTripPublisher.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

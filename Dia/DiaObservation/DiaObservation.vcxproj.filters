@@ -394,5 +394,8 @@
     <ClInclude Include="Profile\JobChunkAssembler.h">
       <Filter>Profile</Filter>
     </ClInclude>
+    <ClInclude Include="Profile\TripChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

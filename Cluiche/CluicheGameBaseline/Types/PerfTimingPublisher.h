@@ -12,6 +12,7 @@
 //     "jobs":{ "units":[ { "unit":name, "owners":[ {"name","crc","count","busyMs","waitP50Ms","waitP95Ms","worstWaitMs"} ],
 //                          "pool":{ "capUse","timeAtCapMs","peakQueueDepth","inlineFallbacks","inboxDrops" } } ] },
 //                                       // tier 1 job timing; only when a job assembler is attached
+//     // each unit also carries "trips" (cumulative trip count) when the trip stream is attached
 //     "selfMs":x,                       // omitted when unavailable
 //     "unavailable":[ "latency", ... ] }
 // Only values reachable on Main WITHOUT a cross-PU read are published.  Anything else is named in
@@ -77,6 +78,10 @@ public:
 
     uint32_t GetPublishCount() const { return mPublishCount; }
 
+    // Task 3b: true once the "$perftrips" reader is attached.  Then "trips" leaves the unavailable list and
+    // every unit carries "trips" (its cumulative trip count, from the coarse chunks).
+    void SetTripsAttached(bool attached) { mTripsAttached = attached; }
+
 private:
     const Dia::Observation::Profile::CoarseChunkAssembler& mAssembler;
     Dia::ApplicationFlow::IApplicationInspectable*         mApp;
@@ -85,6 +90,7 @@ private:
     double                                                 mLastPublishSec;
     bool                                                   mHasPublished;
     uint32_t                                               mPublishCount;
+    bool                                                   mTripsAttached = false;
     Dia::Observation::Profile::PerfTimingScratch           mScratch;
 };
 

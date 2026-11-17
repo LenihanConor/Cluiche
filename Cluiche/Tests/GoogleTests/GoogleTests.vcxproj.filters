@@ -3039,5 +3039,11 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfEdgeCommands.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestTripChunk.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfTripPublisher.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -22,6 +22,9 @@ namespace Dia
 			void RecordUnitTick(float ms);
 			void CommitEntry(double nowMs);
 
+			// Cumulative per-unit counters stamped into the NEXT taken chunk (task 3b). Default 0.
+			void SetCumulativeCounters(uint32_t tripCount, uint32_t markerDrops) { mChunk.tripCount = tripCount; mChunk.markerDrops = markerDrops; }
+
 			// True when count == 64 or (count > 0 and nowMs - lastFlushMs >= 100).
 			bool ShouldFlush(double nowMs) const;
 

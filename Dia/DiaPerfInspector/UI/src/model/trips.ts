@@ -35,10 +35,10 @@ export function parseTripRecord(json: unknown): TripRecord | null {
 /**
  * Maps trip records to the lane model's TripRange (absolute coarse entry indexes).
  *
- * ASSUMPTION (unverified): TripRecord.firstFrame/lastFrame are unit frame numbers counted by the trip
- * detector, and one coarse-ring entry is one forward pass of the unit, so entry index == frame number
- * (offset 0). Nothing on the wire proves the two counters start together; `entryOffset` exists so the
- * mapping can be corrected once the trips topic lands. Inverted ranges are dropped.
+ * firstFrame/lastFrame are the trip detector's entry indexes. VERIFIED 1:1 with the coarse entry index in
+ * ProcessingUnit::RunForwardPass: the detector's Observe() and the coarse builder's CommitEntry() run once per
+ * forward pass from index 0 and are never reset separately, so entry index == frame number (offset 0). `entryOffset`
+ * stays as an escape hatch. Inverted ranges are dropped.
  */
 export function tripRangesFromRecords(records: TripRecord[], entryOffset = 0): TripRange[] {
     const out: TripRange[] = [];
