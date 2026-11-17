@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>World Sim Inspector v2 — CoW World Sim (mockup)</title>
+<style>
+  :root {
+    --bg: #1a1a1a; --bg2: #212121; --bg3: #2a2a2a; --bg4: #333; --bg5: #3c3c3c;
+    --border: #3a3a3a; --text: #d4d4d4; --text-dim: #808080; --text-header: #9cdcfe;
+    --accent: #569cd6; --green: #4ec9b0; --green-bg: #102820;
+    --yellow: #dcdcaa; --amber: #e0b341; --amber-bg: #3a3012; --warn: #ce9178; --warn-bg: #3d2b1e;
+    --red: #f48771; --red-bg: #3d1e1e; --purple: #c586c0; --purple-bg: #2e1f2e;
+    --wx: #4fa3e0; --eco: #6cc070; --suc: #c586c0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 12px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .mono { font-family: Consolas, monospace; }
+  .dim { color: var(--text-dim); }
+
+  .titlebar { height: 34px; background: #0f0f0f; display: flex; align-items: center; padding: 0 14px; gap: 12px; border-bottom: 1px solid #111; flex-shrink: 0; }
+  .titlebar b { font-size: 13px; color: var(--text-header); font-weight: 600; }
+  .conn { margin-left: auto; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-family: Consolas, monospace; background: #103820; color: var(--green); border: 1px solid #1e5030; }
+  .conn.off { background: var(--bg4); color: var(--text-dim); border-color: var(--border); }
+
+  .topbar { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 6px 12px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+  .topbar label { color: var(--text-dim); font-size: 11px; }
+  select, input[type=text] { background: var(--bg5); border: 1px solid var(--border); color: var(--text); padding: 3px 7px; border-radius: 3px; font-size: 11px; font-family: inherit; }
+  .pill { padding: 3px 10px; border-radius: 10px; font-size: 11px; background: var(--bg5); border: 1px solid var(--border); cursor: pointer; white-space: nowrap; }
+  .pill.on { background: #0d2a3f; border-color: var(--accent); color: var(--accent); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .seg span { padding: 3px 10px; font-size: 11px; cursor: pointer; background: var(--bg5); border-right: 1px solid var(--border); }
+  .seg span:last-child { border-right: none; }
+  .seg span.on { background: #0d2a3f; color: var(--accent); }
+  .seg span.wx.on { background: #0f2638; color: var(--wx); }
+  .seg span.eco.on { background: #12291a; color: var(--eco); }
+  .brush { flex: 1; min-width: 260px; height: 26px; background: var(--bg5); border: 1px solid var(--border); border-radius: 3px; position: relative; }
+  .brush .sel { position: absolute; top: 0; bottom: 0; background: rgba(86,156,214,.22); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .brush .lbl { position: absolute; right: 4px; top: 4px; font-size: 10px; color: var(--text); font-family: Consolas, monospace; background: rgba(30,30,30,.85); padding: 1px 5px; border-radius: 2px; z-index: 1; }
+  .brush svg { position: absolute; inset: 0; }
+  .chip { display: inline-flex; gap: 5px; align-items: center; padding: 2px 9px; border-radius: 10px; font-size: 10px; background: var(--bg5); border: 1px solid var(--border); white-space: nowrap; }
+  .chip b { color: var(--text-header); font-weight: 600; }
+
+  .app { flex: 1; display: grid; grid-template-columns: 158px 1fr; min-height: 0; }
+  .rail { background: #171717; border-right: 1px solid var(--border); padding: 8px 0; display: flex; flex-direction: column; gap: 2px; }
+  .rail .it { padding: 9px 14px; cursor: pointer; border-left: 3px solid transparent; color: var(--text-dim); }
+  .rail .it .t { font-size: 12px; color: var(--text); }
+  .rail .it .s { font-size: 10px; margin-top: 2px; }
+  .rail .it.on { background: var(--bg3); border-left-color: var(--accent); }
+  .rail .it.on .t { color: var(--text-header); }
+  .rail .foot { margin-top: auto; padding: 10px 14px; font-size: 10px; color: var(--text-dim); line-height: 1.5; }
+
+  .main { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .mockbar { background: #14202b; border-bottom: 1px solid #1d3347; padding: 5px 12px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; flex-shrink: 0; }
+  .mockbar .t { font-size: 10px; color: var(--accent); letter-spacing: .5px; margin-right: 4px; }
+  .mockbar button { background: var(--bg4); border: 1px solid var(--border); color: var(--text); font-size: 10px; padding: 2px 8px; border-radius: 3px; cursor: pointer; }
+  .mockbar button.on { background: #0d2a3f; border-color: var(--accent); color: var(--accent); }
+  .content { flex: 1; overflow: auto; padding: 10px; display: grid; gap: 10px; align-content: start; }
+
+  .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; min-width: 0; }
+  .ph { padding: 6px 10px; background: var(--bg3); border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .ph .r { margin-left: auto; display: flex; gap: 6px; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .pb { padding: 10px; }
+  .feat { font-size: 9px; background: #0d2a3f; color: var(--accent); border-radius: 8px; padding: 1px 6px; text-transform: none; letter-spacing: 0; }
+  .note { font-size: 10px; color: var(--text-dim); }
+  .banner { padding: 6px 10px; border-radius: 3px; font-size: 11px; }
+  .banner.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #5a3b27; }
+  .banner.info { background: #0d2a3f; color: var(--accent); border: 1px solid #1d3f5c; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--text-dim); background: var(--bg3); font-weight: 600; }
+  td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+  tr.click:hover { background: var(--bg4); cursor: pointer; }
+  .num { font-family: Consolas, monospace; text-align: right; }
+
+  .band { display: inline-block; font-size: 9px; padding: 1px 7px; border-radius: 8px; text-transform: uppercase; letter-spacing: .4px; }
+  .b-good { background: var(--green-bg); color: var(--green); }
+  .b-watch { background: var(--amber-bg); color: var(--amber); }
+  .b-bad { background: var(--red-bg); color: var(--red); }
+  .b-na { background: var(--bg5); color: var(--text-dim); }
+  .b-inv { background: var(--purple-bg); color: var(--purple); }
+
+  /* Overview cards */
+  .groups { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .card { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 8px; }
+  .card.prov { border-style: dashed; }
+  .card .top { display: flex; align-items: center; gap: 6px; }
+  .card .nm { font-size: 11px; color: var(--text); font-weight: 600; }
+  .card .val { font-size: 18px; font-family: Consolas, monospace; margin: 4px 0 2px; }
+  .card .val small { font-size: 10px; color: var(--text-dim); }
+  .card .src { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
+  .card .cmp { font-size: 10px; font-family: Consolas, monospace; margin-top: 2px; }
+  .card.na .val { color: var(--text-dim); font-size: 12px; }
+  .grp-title { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Charts */
+  svg text { font-family: 'Segoe UI', sans-serif; }
+  .axis { fill: var(--text-dim); font-size: 9px; }
+  .ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .ctrl label { color: var(--text-dim); font-size: 11px; }
+  .legend { display: flex; gap: 12px; font-size: 10px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; }
+
+  /* Space */
+  .space-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 10px; }
+  .badge { font-size: 9px; padding: 1px 7px; border-radius: 8px; background: var(--amber-bg); color: var(--amber); text-transform: uppercase; letter-spacing: .4px; }
+  .badge.cell { background: var(--green-bg); color: var(--green); }
+  .pmaps { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 8px; }
+  .pmap { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 5px; }
+  .pmap .l { font-size: 10px; display: flex; justify-content: space-between; margin-bottom: 3px; }
+  .pmap canvas { width: 100%; display: block; }
+  .playbar { display: flex; gap: 6px; align-items: center; padding: 6px 10px; border-top: 1px solid var(--border); }
+  .btn { background: var(--bg5); border: 1px solid var(--border); color: var(--text); font-size: 11px; padding: 3px 10px; border-radius: 3px; cursor: pointer; }
+  .btn.primary { background: #0d2a3f; border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .mapwrap { position: relative; }
+  .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .overlay span { background: rgba(0,0,0,.65); padding: 5px 12px; border-radius: 3px; font-size: 11px; color: var(--yellow); }
+
+  /* Causes */
+  .causes-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 10px; }
+  .progress { height: 6px; background: var(--bg5); border-radius: 3px; overflow: hidden; width: 160px; }
+  .progress i { display: block; height: 100%; background: var(--accent); }
+  .cand { font-size: 9px; color: var(--amber); }
+  .rec { font-size: 9px; color: var(--green); }
+  .chain-part { color: var(--text-header); cursor: pointer; }
+  .chain-part:hover { text-decoration: underline; }
+
+  /* Checks */
+  .checks-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 10px; }
+  .verdict { display: flex; align-items: center; gap: 14px; padding: 10px 12px; }
+  .verdict .v { font-size: 20px; font-weight: 600; }
+  .vbar { width: 150px; height: 10px; background: var(--bg5); border-radius: 5px; position: relative; display: inline-block; vertical-align: middle; }
+  .vbar .rg { position: absolute; top: 0; bottom: 0; background: rgba(78,201,176,.25); border-left: 1px solid var(--green); border-right: 1px solid var(--green); }
+  .vbar .mk { position: absolute; top: -3px; width: 3px; height: 16px; border-radius: 1px; }
+  .test-row td { background: var(--bg3); font-weight: 600; color: var(--text-header); }
+  .link { color: var(--accent); cursor: pointer; font-size: 10px; }
+  .link.off { color: var(--text-dim); cursor: not-allowed; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 11px; }
+  .kv .k { color: var(--text-dim); }
+  .copy { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .copy code { flex: 1; background: var(--bg); border: 1px solid var(--border); padding: 3px 6px; border-radius: 3px; font-size: 10px; color: var(--text-dim); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+  .compare-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--bg5); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <b>World Sim Inspector</b>
+  <span class="dim">CoW · weather + ecology + succession · mockup v2 (Features 1-12)</span>
+  <span class="conn" id="conn">● Connected · CoW · S-3.5 World Sim · Run · world seed 42 Standard</span>
+</div>
+
+<div class="topbar">
+  <label>Source A</label>
+  <span class="pill on" id="srcLive">Live</span>
+  <select id="srcFile"><option>File…</option><option>s25/history_R7_s25_dry_interior.json</option><option>s3/longrun_42.history.json</option></select>
+  <label>B</label>
+  <select id="srcB"><option value="">None</option><option value="arid">s3/longrun_42_arid.history.json</option></select>
+  <span class="chip" id="baselineChip">baseline <b>this run</b> · years 2-40</span>
+  <div class="brush" id="brush"><svg id="brushSvg" width="100%" height="24" preserveAspectRatio="none"></svg><div class="sel" style="left:22%;width:18%"></div><div class="lbl">Y10 W1 – Y17 W52 · 416 samples</div></div>
+  <label>Lens</label>
+  <div class="seg" id="lens"><span data-l="all" class="on">All</span><span data-l="wx" class="wx">Weather</span><span data-l="eco" class="eco">Ecology</span></div>
+  <span class="pill" title="Feature 6: in sync with the game's view">⇄ In sync</span>
+</div>
+
+<div class="app">
+  <div class="rail" id="rail">
+    <div class="it" data-ws="overview"><div class="t">Overview</div><div class="s">World health · F11</div></div>
+    <div class="it" data-ws="trends"><div class="t">Trends</div><div class="s">Series, seasons · F2 F8</div></div>
+    <div class="it" data-ws="space"><div class="t">Space</div><div class="s">Maps, strip, tracks · F3 F10</div></div>
+    <div class="it" data-ws="causes"><div class="t">Causes</div><div class="s">Why, chains, lag scan · F4 F12</div></div>
+    <div class="it" data-ws="compare"><div class="t">Compare</div><div class="s">Correlation, runs, snapshots · F5 F7</div></div>
+    <div class="it" data-ws="checks"><div class="t">Checks</div><div class="s">S-2.5 verdict · F9</div></div>
+    <div class="foot">Shared across workspaces: sources, brush, baseline, lens, navigation (F1, F6).<br><br>Mockup only: static data; the blue bar switches states.</div>
+  </div>
+  <div class="main">
+    <div class="mockbar" id="mockbar"></div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ---------- data ----------
+function rng(seed){ var s = seed >>> 0; return function(){ s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+var R = rng(42);
+var YEARS = 40, WPY = 52, N = YEARS * WPY;
+function noise(r, a){ return (r() - 0.5) * 2 * a; }
+var precip = [], temp = [], snow = [], prod = [], herb = [], pred = [], gw = [];
+(function(){
+  var r = rng(7);
+  for (var i = 0; i < N; i++) {
+    var y = Math.floor(i / WPY) + 1, w = i % WPY + 1;
+    var season = Math.cos(2 * Math.PI * (w - 48) / WPY); // wettest in winter (S-2.5 t4.winter_wetter)
+    var drought = (y == 12 && w >= 12 && w <= 38) ? -0.22 : (y == 27 && w >= 18 && w <= 34 ? -0.15 : 0);
+    var p = Math.max(0, 0.42 + 0.18 * season + drought + noise(r, 0.08));
+    precip.push(p);
+    temp.push(0.5 - 0.28 * Math.cos(2 * Math.PI * (w - 3) / WPY) + noise(r, 0.03) + i * 0.00001);
+    var s = (i > 0 ? snow[i - 1] : 0); s = Math.max(0, s + (temp[i] < 0.32 ? 0.05 * p : -0.06)); snow.push(Math.min(1, s));
+    gw.push(0.4 + 0.3 * (i > 6 ? snow[i - 6] : 0) * 0.8 + 0.2 * p + noise(r, 0.02));
+  }
+  for (var j = 0; j < N; j++) {
+    var lagP = 0; for (var k = 2; k <= 8; k++) lagP += precip[Math.max(0, j - k)]; lagP /= 7;
+    prod.push(Math.max(0, 0.3 + 0.55 * lagP + 0.7 * Math.max(0, temp[j] - 0.3) + noise(r, 0.03)));
+    herb.push(Math.max(0, 0.2 + 0.6 * (j > 20 ? prod[j - 20] : prod[j]) * 0.9 + 0.05 * Math.sin(2 * Math.PI * j / (WPY * 7)) + noise(r, 0.02)));
+  }
+  for (var m = 0; m < N; m++) pred.push(Math.max(0, 0.05 + 0.5 * (m > 52 ? herb[m - 52] : herb[m]) * 0.5 + noise(r, 0.01)));
+})();
+var BR_FROM = 9 * WPY, BR_TO = 17 * WPY; // brush Y10..Y17
+
+function typical(series, skipFirst) {
+  var out = [];
+  for (var w = 0; w < WPY; w++) {
+    var v = [];
+    for (var y = skipFirst ? 1 : 0; y < YEARS; y++) v.push(series[y * WPY + w]);
+    v.sort(function(a, b){ return a - b; });
+    var q = function(p){ var x = p * (v.length - 1), lo = Math.floor(x), hi = Math.ceil(x); return v[lo] + (v[hi] - v[lo]) * (x - lo); };
+    var mean = v.reduce(function(a, b){ return a + b; }, 0) / v.length;
+    out.push({ mean: mean, p10: q(0.1), p90: q(0.9), min: v[0], max: v[v.length - 1] });
+  }
+  return out;
+}
+var TYP = { precip: typical(precip, true), temp: typical(temp, true), prod: typical(prod, true), snow: typical(snow, true) };
+
+// ---------- svg helpers ----------
+function path(vals, x0, y0, w, h, vmin, vmax, step) {
+  step = step || 1; var d = '', n = vals.length;
+  for (var i = 0; i < n; i += step) {
+    var x = x0 + (i / (n - 1)) * w, y = y0 + h - ((vals[i] - vmin) / (vmax - vmin)) * h;
+    d += (d ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1);
+  }
+  return d;
+}
+function spark(vals, w, h, colour, pts) {
+  var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals); if (mx - mn < 1e-6) { mx = mn + 1; }
+  var s = '<svg width="' + w + '" height="' + h + '"><path d="' + path(vals, 2, 2, w - 4, h - 4, mn, mx) + '" stroke="' + colour + '" fill="none" stroke-width="1.3"/>';
+  if (pts) pts.forEach(function(p){ var x = 2 + p.i / (vals.length - 1) * (w - 4), y = 2 + (h - 4) - (vals[p.i] - mn) / (mx - mn) * (h - 4); s += '<circle cx="' + x + '" cy="' + y + '" r="2.4" fill="' + p.c + '"><title>' + (p.t || '') + '</title></circle>'; });
+  return s + '</svg>';
+}
+function slice(a, f, t){ return a.slice(f, t); }
+function down(a, n){ var o = [], st = a.length / n; for (var i = 0; i < n; i++) o.push(a[Math.floor(i * st)]); return o; }
+var BANDC = { good: 'var(--green)', watch: 'var(--amber)', bad: 'var(--red)' };
+
+// ---------- hex canvas ----------
+function hexMap(canvas, W, H, valueFn, colourFn, opts) {
+  opts = opts || {};
+  var s = opts.size || 6, hw = s * 1.5, hh = s * Math.sqrt(3);
+  canvas.width = Math.ceil(W * hw + s * 0.6); canvas.height = Math.ceil(H * hh + hh / 2 + 2);
+  var c = canvas.getContext('2d'); c.clearRect(0, 0, canvas.width, canvas.height);
+  for (var q = 0; q < W; q++) for (var r = 0; r < H; r++) {
+    var cx = s + q * hw, cy = hh / 2 + r * hh + (q % 2 ? hh / 2 : 0);
+    var v = valueFn(q, r), col = colourFn(v, q, r);
+    c.beginPath();
+    for (var k = 0; k < 6; k++) { var a = Math.PI / 3 * k; var x = cx + s * Math.cos(a), y = cy + s * Math.sin(a); k ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.closePath(); c.fillStyle = col; c.fill();
+  }
+  if (opts.after) opts.after(c, function(q, r){ return [s + q * hw, hh / 2 + r * hh + (q % 2 ? hh / 2 : 0)]; });
+}
+function ramp(t, a, b) { t = Math.max(0, Math.min(1, t)); return 'rgb(' + [0,1,2].map(function(i){ return Math.round(a[i] + (b[i] - a[i]) * t); }).join(',') + ')'; }
+function seqGreen(t){ return ramp(t, [40,40,30], [60,170,90]); }
+function seqBlue(t){ return ramp(t, [35,38,48], [70,150,230]); }
+function diverge(v, ext){ var t = Math.max(-1, Math.min(1, v / ext)); return t < 0 ? ramp(-t, [46,46,46], [59,111,212]) : ramp(t, [46,46,46], [224,138,60]); }
+var MW = 40, MH = 26;
+function isWater(q, r){ return (q < 4 && r > 14) || (q > 34 && r < 6) || ((q - 20) * (q - 20) + (r - 22) * (r - 22) < 10); }
+function regionOf(q, r){ return Math.min(5, Math.floor(q / 8)) + (r > 13 ? 6 : 0); }
+function field(q, r, t) { // precipitation-like field with a drifting dry front
+  if (isWater(q, r)) return NaN;
+  var front = 6 + (t % 300) / 300 * 28;
+  return 0.6 - 0.35 * Math.exp(-Math.pow((q - front) / 5, 2)) * (r > 6 ? 1 : 0.5) + 0.06 * Math.sin(q * 0.7 + r * 0.4);
+}
+
+// ---------- state ----------
+var ST = { ws: 'overview', st: {}, lens: 'all', compareB: false, playing: false, frame: 0 };
+var STATES = {
+  overview: [['normal','Healthy run'],['problems','Watch + bad'],['compare','A vs B'],['noA3','A3 not built'],['regions','Region table']],
+  trends: [['raw','Raw series'],['typical','Typical year'],['anomaly','Anomaly'],['few','Fewer than 5 years'],['reference','Reference file baseline']],
+  space: [['strip','Strip: latitude bands'],['regions','Strip: regions'],['tracks','Tracks on map'],['playing','Playback'],['buffering','Buffering'],['periods','Maps per period']],
+  causes: [['chains','Chains'],['scan','Lag scan running'],['scandone','Lag scan done + drill'],['noA3','A3 missing'],['why','Why panel']],
+  compare: [['corr','Correlation'],['runs','Run compare'],['snap','Snapshots + cell compare']],
+  checks: [['mm','MagnitudeMisses'],['pass','Pass'],['hard','HardFail'],['invalid','InvalidWorld'],['live','Live run in progress'],['old','Report predates run links']]
+};
+function cur(){ return ST.st[ST.ws] || STATES[ST.ws][0][0]; }
+
+// ---------- workspaces ----------
+var MEASURES = [
+  { g: 'Ecology core', c: 'var(--eco)', l: 'eco', items: [
+    { id: 'eco.state_mix', n: 'Ecology state mix', v: '6.1', u: '% collapsed', b: 'good', src: 'A1 §4 states · S-3 crit. 2', prov: true, reg: true, s: 1 },
+    { id: 'eco.biome_diversity', n: 'Biome diversity', v: '1.71', u: 'H (0.74 of max)', b: 'good', src: 'provisional', prov: true, reg: true, s: 2 },
+    { id: 'eco.biome_turnover', n: 'Biome turnover', v: '312', u: 'cells / decade', b: 'watch', src: 'provisional', prov: true, reg: true, s: 3, a3: true },
+    { id: 'eco.near_extinction', n: 'Near-extinction', v: '1', u: 'group (cougar) · 9 of 15 species', b: 'watch', src: 'A1 testbed extinction', prov: true, reg: true, s: 4 } ]},
+  { g: 'Dynamics', c: 'var(--accent)', l: 'all', items: [
+    { id: 'dyn.boom_bust_period', n: 'Boom-bust period', v: '7.1', u: 'years · r 0.42 (herbivore)', b: 'good', src: 'S-3 crit. 2', prov: true, reg: true, s: 5 },
+    { id: 'dyn.settle_time', n: 'Settle time', v: 'Y4 W30', u: 'producers', b: 'good', src: 'provisional', prov: true, reg: true, s: 6 },
+    { id: 'dyn.drift', n: 'Drift', v: '+0.8', u: '% / decade (producers)', b: 'good', src: 'S-3 crit. 5 (no drift)', prov: false, reg: true, s: 7 } ]},
+  { g: 'Weather health', c: 'var(--wx)', l: 'wx', items: [
+    { id: 'wx.dry_weeks', n: 'Dry weeks', v: '18.4', u: '% region-weeks (approx.)', b: 'watch', src: 'A4 dry_threshold 0.02', prov: true, reg: true, s: 8 },
+    { id: 'wx.storm_rate', n: 'Storm rate', v: '6.2', u: 'per year', b: 'good', src: 'provisional', prov: true, reg: false, s: 9 },
+    { id: 'wx.snow_line', n: 'Snow line', v: 'band 3', u: '52–44°N peak winter', b: 'good', src: 'provisional', prov: true, reg: false, s: 10 },
+    { id: 'wx.rain_variability', n: 'Rain variability', v: '0.21', u: 'CV of yearly totals', b: 'good', src: 'provisional', prov: true, reg: true, s: 11 } ]},
+  { g: 'Coupling', c: 'var(--purple)', l: 'all', items: [
+    { id: 'cpl.rain_producers', n: 'Rain → producers', v: '+5 w', u: 'r 0.71', b: 'good', src: 'provisional', prov: true, reg: true, s: 12 },
+    { id: 'cpl.prey_predator', n: 'Prey → predator', v: '+50 w', u: 'r 0.58', b: 'good', src: 'A1 testbed: ~1 year lag', prov: false, reg: true, s: 13 },
+    { id: 'cpl.snow_groundwater', n: 'Snow → ground water', v: '+6 w', u: 'r 0.64', b: 'good', src: 'A4 melt-flood · provisional', prov: true, reg: true, s: 14 } ]}
+];
+function overview() {
+  var s = cur(), cmp = s == 'compare' || ST.compareB, h = '';
+  if (s == 'noA3') h += '<div class="banner warn">A3 is not running in this source: biome turnover falls back to biome count deltas ("net only"); cause chains in Causes lose the succession lane.</div>';
+  h += '<div class="groups">';
+  MEASURES.forEach(function(g){
+    if (ST.lens == 'wx' && g.l == 'eco') return; if (ST.lens == 'eco' && g.l == 'wx') return;
+    h += '<div class="panel"><div class="ph"><span class="dot" style="background:' + g.c + '"></span>' + g.g + '<span class="r"><span class="feat">F11</span></span></div><div class="pb"><div class="cards">';
+    g.items.forEach(function(m){
+      var b = m.b; if (s == 'problems') b = { 'eco.state_mix': 'bad', 'dyn.drift': 'bad', 'wx.dry_weeks': 'bad', 'eco.near_extinction': 'bad', 'cpl.rain_producers': 'watch' }[m.id] || b;
+      var na = (s == 'noA3' && m.a3);
+      var r = rng(m.s * 31), vals = []; var x = 0.5; for (var i = 0; i < 40; i++) { x += noise(r, 0.08); vals.push(x + (s == 'problems' && b == 'bad' ? i * 0.03 : 0)); }
+      var pts = []; for (var j = 0; j < 40; j += 5) pts.push({ i: j, c: (s == 'problems' && b == 'bad' && j > 20) ? BANDC.bad : (j == 25 && b != 'good' ? BANDC.watch : BANDC.good), t: 'Y' + (j + 1) + ' window · click to move the brush' });
+      h += '<div class="card' + (m.prov ? ' prov' : '') + (na ? ' na' : '') + '" title="' + m.id + (m.prov ? ' · provisional target (dashed)' : '') + '">' +
+        '<div class="top"><span class="nm">' + m.n + '</span>' + (na ? '<span class="band b-na">n/a</span>' : '<span class="band b-' + b + '">' + b + '</span>') + '</div>' +
+        (na ? '<div class="val">not available: needs A3 transition events</div><div class="note">fallback "net only" shown in turnover detail</div>'
+            : '<div class="val">' + m.v + ' <small>' + m.u + '</small></div>' + spark(vals, 200, 30, 'var(--text-dim)', pts)) +
+        (cmp && !na ? '<div class="cmp">A ' + m.v + ' · B ' + (m.id == 'wx.dry_weeks' ? '31.0 <span class="band b-bad">bad</span>' : m.id == 'eco.state_mix' ? '14.8 <span class="band b-watch">watch</span>' : m.v + ' <span class="band b-good">good</span>') + ' · Δ ' + (m.id == 'wx.dry_weeks' ? '<span style="color:var(--red)">+12.6</span>' : m.id == 'eco.state_mix' ? '<span style="color:var(--red)">+8.7</span>' : '0') + '</div>' : '') +
+        '<div class="src">' + (m.prov ? '◌ ' : '● ') + m.src + (m.reg ? ' · region table' : '') + '</div></div>';
+    });
+    h += '</div></div></div>';
+  });
+  h += '</div>';
+  if (s == 'regions' || s == 'problems') {
+    h += '<div class="panel"><div class="ph">Region table · eco.state_mix, wx.dry_weeks, eco.near_extinction<span class="r note">click a row to select the region in-game (F6)</span></div><table><tr><th>Region</th><th class="num">% collapsed</th><th class="num">Dry weeks</th><th>Near-extinct groups</th><th class="num">Diversity</th></tr>';
+    [['R3 Lowlands', 21.4, 'bad', 34.2, 'bad', 'cougar, wolf', 1.21], ['R5 Delta', 9.8, 'watch', 22.0, 'watch', 'cougar', 1.55], ['R2 Highlands', 4.1, 'good', 15.1, 'watch', '—', 1.80], ['R1 Coast', 1.2, 'good', 8.4, 'good', '—', 1.92], ['R4 Desert Edge', 3.0, 'good', 41.0, 'good', '—', 0.88]].forEach(function(x){
+      h += '<tr class="click"><td>' + x[0] + '</td><td class="num">' + x[1] + ' <span class="band b-' + x[2] + '">' + x[2] + '</span></td><td class="num">' + x[3] + ' <span class="band b-' + x[4] + '">' + x[4] + '</span></td><td>' + x[5] + '</td><td class="num">' + x[6] + '</td></tr>';
+    });
+    h += '</table><div class="pb note">Desert Edge dry weeks are banded against its biome (in_range), so 41% reads good there.</div></div>';
+  }
+  h += '<div class="note">No overall score (decided 2026-11-16). Dashed cards have provisional targets; solid cards cite a GDD number. Thresholds live in health_measures.json; changes go through the GDD session.</div>';
+  return h;
+}
+
+function trends() {
+  var s = cur(), W = 960, H = 250, h = '';
+  var mode = (s == 'typical' || s == 'few' || s == 'reference') ? 'typical' : (s == 'anomaly' ? 'anomaly' : 'raw');
+  var wx = ST.lens != 'eco', eco = ST.lens != 'wx';
+  h += '<div class="panel"><div class="ph">Time series <span class="feat">F2</span><span class="feat">F8</span><span class="r">' +
+       '<select><option>' + (ST.lens == 'eco' ? 'Ecology view (built-in)' : 'Weather view (built-in)') + '</option><option>Ecology view (built-in)</option><option>My view: drought study</option></select>' +
+       '<button class="btn">Export CSV</button></span></div>' +
+       '<div class="ctrl"><div class="seg"><span class="' + (mode == 'raw' ? 'on' : '') + '">Raw</span><span class="' + (mode == 'typical' ? 'on' : '') + '">Typical year</span><span class="' + (mode == 'anomaly' ? 'on' : '') + '">Anomaly</span></div>' +
+       (mode == 'typical' ? '<label>Spread</label><div class="seg"><span class="' + (s == 'few' ? '' : 'on') + '">p10–p90</span><span class="' + (s == 'few' ? 'on' : '') + '">min–max</span></div><label>Overlay</label><select><option>Y12 (brush end)</option><option>Y27</option></select>' : '') +
+       '<span class="chip">' + (s == 'few' ? 'years <b>2-4</b> (3 full) · year 1 skipped (spin-up)' : s == 'reference' ? 'baseline <b>s3/longrun_42.history.json</b> · years 2-40' : 'years <b>2-40</b> · year 1 skipped (spin-up) · 0 partial') + '</span>' +
+       '<label style="margin-left:auto">Metrics</label><span class="chip" style="border-color:var(--wx)">weather.precipitation · mean · world</span>' + (eco ? '<span class="chip" style="border-color:var(--eco)">ecology.producers_total · mean · world</span>' : '') + '<span class="pill">+ metric</span></div>';
+  h += '<div class="pb"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">';
+  for (var g = 0; g <= 4; g++) h += '<line x1="40" x2="' + (W - 10) + '" y1="' + (10 + g * 50) + '" y2="' + (10 + g * 50) + '" stroke="#2c2c2c"/>';
+  if (mode == 'typical') {
+    var T = TYP.precip, up = '', lo = '';
+    var key = s == 'few' ? ['min', 'max'] : ['p10', 'p90'];
+    T.forEach(function(t, i){ var x = 40 + i / 51 * (W - 50); up += (i ? 'L' : 'M') + x + ',' + (210 - t[key[1]] * 300); });
+    for (var i = 51; i >= 0; i--) { var x = 40 + i / 51 * (W - 50); lo += 'L' + x + ',' + (210 - T[i][key[0]] * 300); }
+    h += '<path d="' + up + lo + 'Z" fill="rgba(79,163,224,.18)"/>';
+    h += '<path d="' + path(T.map(function(t){ return t.mean; }), 40, 10, W - 50, 200, -0.0, 0.667) + '" stroke="var(--wx)" stroke-width="2" fill="none"/>';
+    h += '<path d="' + path(slice(precip, 11 * WPY, 12 * WPY), 40, 10, W - 50, 200, 0, 0.667) + '" stroke="var(--yellow)" stroke-width="1.4" fill="none" stroke-dasharray="4 2"/>';
+    if (eco) h += '<path d="' + path(TYP.prod.map(function(t){ return t.mean; }), 40, 10, W - 50, 200, 0.3, 1.1) + '" stroke="var(--eco)" stroke-width="2" fill="none" opacity=".85"/>';
+    ['Spring', 'Summer', 'Autumn', 'Winter'].forEach(function(n, k){ h += '<text class="axis" x="' + (40 + (k * 13 + 6) / 51 * (W - 50)) + '" y="244">' + n + '</text>'; });
+    for (var w = 1; w <= 52; w += 13) h += '<text class="axis" x="' + (40 + (w - 1) / 51 * (W - 50)) + '" y="232">W' + w + '</text>';
+    h += '<text x="' + (W - 330) + '" y="26" fill="var(--yellow)" font-size="10">Y12 overlay: the drought sits below p10 from W14 to W36</text>';  } else {
+    var A = slice(precip, BR_FROM, BR_TO), P = slice(prod, BR_FROM, BR_TO);
+    if (mode == 'anomaly') {
+      A = A.map(function(v, i){ return v - TYP.precip[(BR_FROM + i) % WPY].mean; });
+      P = P.map(function(v, i){ return v - TYP.prod[(BR_FROM + i) % WPY].mean; });
+      h += '<line x1="40" x2="' + (W - 10) + '" y1="110" y2="110" stroke="#555" stroke-dasharray="3 3"/>';
+      h += '<path d="' + path(A, 40, 10, W - 50, 200, -0.35, 0.35) + '" stroke="var(--wx)" fill="none" stroke-width="1.3"/>';
+      if (eco) h += '<path d="' + path(P, 40, 10, W - 50, 200, -0.35, 0.35) + '" stroke="var(--eco)" fill="none" stroke-width="1.5"/>';
+      h += '<text class="axis" x="4" y="14">Δ +0.35</text><text class="axis" x="4" y="214">Δ −0.35</text>';
+    } else {
+      h += '<path d="' + path(A, 40, 10, W - 50, 200, 0, 0.8) + '" stroke="var(--wx)" fill="none" stroke-width="1.2"/>';
+      if (eco) h += '<path d="' + path(P, 40, 10, W - 50, 200, 0.2, 1.2) + '" stroke="var(--eco)" fill="none" stroke-width="1.5"/>';
+    }
+    var dx = 40 + ((11 * WPY + 12 - BR_FROM) / (BR_TO - BR_FROM)) * (W - 50), dx2 = 40 + ((11 * WPY + 38 - BR_FROM) / (BR_TO - BR_FROM)) * (W - 50);
+    h += '<rect x="' + dx + '" y="10" width="' + (dx2 - dx) + '" height="200" fill="rgba(244,135,113,.08)"/><text x="' + (dx + 3) + '" y="22" fill="var(--red)" font-size="10">▲ weather.drought R3 · R2</text>';
+    for (var y = 10; y <= 17; y++) h += '<text class="axis" x="' + (40 + ((y - 1) * WPY - BR_FROM) / (BR_TO - BR_FROM) * (W - 50)) + '" y="232">Y' + y + '</text>';
+    [[12, 30, '●', 'var(--purple)'], [13, 8, '●', 'var(--purple)'], [15, 3, '✕', 'var(--warn)']].forEach(function(e){ var ex = 40 + (((e[0] - 1) * WPY + e[1]) - BR_FROM) / (BR_TO - BR_FROM) * (W - 50); h += '<text x="' + ex + '" y="206" fill="' + e[3] + '" font-size="11">' + e[2] + '</text>'; });
+  }
+  h += '</svg><div class="legend"><span><i style="background:var(--wx)"></i>' + (mode == 'anomaly' ? 'Δ precipitation vs typical (this run) · 0–1' : 'weather.precipitation · mean · world · 0–1') + '</span>' + (eco ? '<span><i style="background:var(--eco)"></i>' + (mode == 'anomaly' ? 'Δ producers vs typical' : 'ecology.producers_total') + '</span>' : '') +
+       (mode == 'typical' ? '<span><i style="background:rgba(79,163,224,.5);height:8px"></i>' + (s == 'few' ? 'min–max' : 'p10–p90') + ' across years</span><span><i style="background:var(--yellow)"></i>overlay year</span><span class="dim">wetter winters, drier summers (S-2.5 t4.winter_wetter)</span>' : '<span style="color:var(--red)">▲ drought</span><span style="color:var(--purple)">● transition</span><span style="color:var(--warn)">✕ crash</span>') + '</div>';
+  if (s == 'few') h += '<div class="banner warn" style="margin-top:8px">Fewer than 5 years: showing min–max instead of p10–p90.</div>';
+  if (s == 'reference') h += '<div class="banner info" style="margin-top:8px">Baseline is a reference file. Groups matched by id: 27 of 27. Per-cell anomaly maps need the file\'s --cells data: available.</div>';
+  h += '</div></div>';
+  h += '<div class="panel"><div class="ph">Event timeline <span class="feat">F2</span><span class="r note">click to navigate (F6)</span></div><table>' +
+       [['Y15 W3', '✕', 'var(--warn)', 'Herbivore crash, R3 Lowlands'], ['Y13 W8', '●', 'var(--purple)', 'Grassland→Scrub ×14, R3 (source DROUGHT)'], ['Y12 W30', '●', 'var(--purple)', 'Grassland→Scrub ×6, R2'], ['Y12 W12', '▲', 'var(--red)', 'Drought R3 Lowlands, 8 dry weeks'], ['Y11 W40', '◆', 'var(--wx)', 'Storm #118, size 14, min pressure 0.21']].map(function(e){ return '<tr class="click"><td class="mono dim" style="width:80px">' + e[0] + '</td><td style="color:' + e[2] + ';width:20px">' + e[1] + '</td><td>' + e[3] + '</td><td class="link" style="width:30px">↗</td></tr>'; }).join('') + '</table></div>';
+  return h;
+}
+
+function space() {
+  var s = cur(), h = '';
+  h += '<div class="space-grid">';
+  h += '<div class="panel"><div class="ph">Mini-map <span class="feat">F3</span><span class="feat">F10</span><span class="r"><select><option>weather.precipitation</option><option>ecology.producers_total</option></select><label class="note"><input type="checkbox" ' + (s == 'tracks' ? 'checked' : '') + '> tracks</label><label class="note"><input type="checkbox"> anomaly</label></span></div>' +
+       '<div class="pb mapwrap"><canvas id="mainMap" style="width:100%"></canvas>' + (s == 'buffering' ? '<div class="overlay"><span>buffering… holding Y14 W22</span></div>' : '') + '</div>' +
+       '<div class="playbar"><button class="btn primary" id="playBtn">' + (s == 'playing' ? '❚❚' : '▶') + '</button><button class="btn">◀ step</button><button class="btn">step ▶</button><label class="note">speed</label><select><option>8 / s</option><option>1 / s</option><option>52 / s</option></select><label class="note"><input type="checkbox" checked> loop</label>' +
+       '<span class="mono" id="frameLbl" style="margin-left:auto">' + (s == 'buffering' ? 'Y14 W22' : 'Y12 W30') + '</span>' + (s == 'periods' ? '' : '<span class="badge ' + (s == 'buffering' ? '' : 'cell') + '">' + (s == 'buffering' ? 'region level after Y14' : 'per-cell') + '</span>') + '</div>' +
+       (s == 'tracks' ? '<div class="pb note"><b style="color:var(--wx)">Storm #118</b> Y11 W40–Y11 W47 · 8 weekly points · peak size 22 · min pressure 0.17 · click a point to jump the game there. <b style="color:var(--red)">Drought R3</b> Y12 W12–W40 (end may lag up to 4 weeks).</div>' : '') + '</div>';
+  var rows = s == 'regions' ? ['R1 Coast', 'R2 Highlands', 'R3 Lowlands', 'R5 Delta', 'R4 Desert Edge', 'R6 North', 'R7 Fells', 'R8 Marsh'] : ['band_0 76–68°N', 'band_1 68–60°N', 'band_2 60–52°N', 'band_3 52–44°N', 'band_4 44–36°N', 'band_5 36–28°N', 'band_6 28–20°N', 'band_7 20–12°N'];
+  h += '<div class="panel"><div class="ph">Strip chart · time × ' + (s == 'regions' ? 'regions' : 'latitude bands') + ' <span class="feat">F10</span><span class="r"><select><option>weather.snow_pack</option><option>weather.precipitation</option><option>ecology.producers_total</option></select><div class="seg"><span class="' + (s == 'regions' ? '' : 'on') + '">Latitude bands</span><span class="' + (s == 'regions' ? 'on' : '') + '">Regions</span></div><select><option>mean</option><option>min</option><option>max</option></select></span></div>' +
+       '<div class="pb" style="display:flex;gap:6px"><div style="display:flex;flex-direction:column;justify-content:space-around;font-size:10px;color:var(--text-dim);width:96px">' + rows.map(function(r){ return '<div>' + r + '</div>'; }).join('') + '</div><canvas id="strip" style="flex:1;height:200px;width:100%"></canvas></div>' +
+       '<div class="pb note" style="padding-top:0">Whole run (Y1–Y40) from aggregates; brush shaded. 2,080 samples binned to the pixel width (≈3.4 samples per pixel). ' + (s == 'regions' ? 'Regions ordered by mean latitude.' : 'Snow line creeps south in the Y20s, then recovers: the diagonal edge.') + ' ▲ markers are drought events on their rows.</div></div>';
+  h += '</div>';
+  var per = s == 'periods' ? 'decade' : 'year';
+  h += '<div class="panel"><div class="ph">Maps per period <span class="feat">F10</span><span class="r"><div class="seg"><span>Season</span><span class="' + (per == 'year' ? 'on' : '') + '">Year</span><span class="' + (per == 'decade' ? 'on' : '') + '">Decade</span></div><div class="seg"><span class="on">End of period</span><span title="' + (per == 'decade' ? 'Mean needs per-cell data for the whole period: disabled outside the window' : '') + '" style="' + (per == 'decade' ? 'opacity:.4' : '') + '">Period mean</span></div></span></div><div class="pb"><div class="pmaps" id="pmaps"></div>' +
+       '<div class="note" style="margin-top:6px">' + (per == 'decade' ? 'Per-cell window holds Y31–Y40 only; earlier decades are drawn at region level (each region filled with its aggregate).' : '6 years in the brush (Y10–Y15). Per-cell window starts at Y12; Y10–Y11 are region level.') + '</div></div></div>';
+  return h;
+}
+function drawSpace() {
+  var s = cur(), t = s == 'buffering' ? 220 : (ST.frame || 150);
+  var mm = document.getElementById('mainMap');
+  if (mm) hexMap(mm, MW, MH, function(q, r){ return field(q, r, t); }, function(v){ return isNaN(v) ? '#1b2a3a' : seqBlue(v); }, { size: 7, after: function(c, pos){
+    if (s != 'tracks') return;
+    var pts = [[6, 6], [9, 7], [12, 9], [15, 10], [18, 10], [21, 12], [24, 13], [26, 15]];
+    c.strokeStyle = '#4fa3e0'; c.lineWidth = 2; c.beginPath(); pts.forEach(function(p, i){ var xy = pos(p[0], p[1]); i ? c.lineTo(xy[0], xy[1]) : c.moveTo(xy[0], xy[1]); }); c.stroke();
+    pts.forEach(function(p, i){ var xy = pos(p[0], p[1]); c.beginPath(); c.arc(xy[0], xy[1], 3 + i * 0.9, 0, Math.PI * 2); c.fillStyle = 'rgba(79,163,224,' + (0.25 + i * 0.08) + ')'; c.fill(); c.strokeStyle = '#9fd0ff'; c.lineWidth = 1; c.stroke(); });
+    c.strokeStyle = '#f48771'; c.setLineDash([4, 3]); c.lineWidth = 2; var a = pos(16, 14), b = pos(31, 24); c.strokeRect(a[0], a[1], b[0] - a[0], b[1] - a[1]); c.setLineDash([]);
+    c.font = '11px Segoe UI'; c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(a[0] + 2, b[1] - 18, 150, 15);
+    c.fillStyle = '#f48771'; c.fillText('Drought R3 · Y12 W12–W40', a[0] + 5, b[1] - 7);
+    var e = pos(6, 6); c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(e[0] - 4, e[1] - 22, 128, 15);
+    c.fillStyle = '#9fd0ff'; c.fillText('Storm #118 · Y11 W40 →', e[0], e[1] - 11);
+  }});
+  var st = document.getElementById('strip');
+  if (st) {
+    var w = st.clientWidth || 600, hgt = 200; st.width = w; st.height = hgt; var c = st.getContext('2d');
+    var cols = w, rows = 8;
+    for (var x = 0; x < cols; x++) for (var r = 0; r < rows; r++) {
+      var i = Math.floor(x / cols * N), wk = i % WPY, yr = i / WPY;
+      var v;
+      if (s == 'regions') { v = precip[i] * (0.7 + r * 0.05) + (r == 2 && yr > 11 && yr < 12.8 ? -0.2 : 0); c.fillStyle = seqBlue(v * 1.4); }
+      else { var line = 2.5 + (yr > 18 && yr < 28 ? (yr - 18) * 0.3 : (yr >= 28 ? Math.max(0, 3 - (yr - 28) * 0.3) : 0)); var winter = 0.35 + 0.65 * Math.max(0, Math.cos(2 * Math.PI * (wk - 3) / WPY)); v = winter * (r + 0.5 < line ? 1 : Math.max(0, 1 - (r + 0.5 - line) * 1.4)); c.fillStyle = ramp(v, [30, 32, 40], [225, 235, 250]); }
+      c.fillRect(x, r * hgt / rows, 1, hgt / rows - 1);
+    }
+    var b0 = BR_FROM / N * w, b1 = BR_TO / N * w; c.strokeStyle = '#569cd6'; c.lineWidth = 2; c.strokeRect(b0, 0, b1 - b0, hgt); c.fillStyle = 'rgba(86,156,214,.08)'; c.fillRect(b0, 0, b1 - b0, hgt);
+    c.fillStyle = '#f48771'; c.font = '10px Segoe UI'; [[11.3, 2], [11.5, 3], [26.4, 4]].forEach(function(e){ c.fillText('▲', e[0] / YEARS * w, (e[1] + 0.7) * hgt / rows); });
+  }
+  var pm = document.getElementById('pmaps');
+  if (pm) {
+    var per = s == 'periods' ? 'decade' : 'year', labels = per == 'decade' ? ['Y1–10', 'Y11–20', 'Y21–30', 'Y31–40'] : ['Y10', 'Y11', 'Y12', 'Y13', 'Y14', 'Y15'];
+    pm.innerHTML = labels.map(function(l, k){ var region = per == 'decade' ? k < 3 : k < 2; return '<div class="pmap"><div class="l"><span>' + l + ' · end</span><span class="badge' + (region ? '' : ' cell') + '">' + (region ? 'region' : 'cell') + '</span></div><canvas id="pm' + k + '"></canvas></div>'; }).join('');
+    labels.forEach(function(l, k){
+      var region = per == 'decade' ? k < 3 : k < 2, tt = 40 + k * 45;
+      hexMap(document.getElementById('pm' + k), MW, MH, function(q, r){
+        if (isWater(q, r)) return NaN;
+        if (region) { var g = regionOf(q, r); return field(4 + (g % 6) * 6, g > 5 ? 18 : 8, tt); }
+        return field(q, r, tt);
+      }, function(v){ return isNaN(v) ? '#1b2a3a' : seqBlue(v); }, { size: 2.6 });
+    });
+  }
+}
+
+function causes() {
+  var s = cur(), h = '';
+  if (s == 'why') {
+    h += '<div class="panel"><div class="ph">Why panel <span class="feat">F4</span><span class="r"><select><option>R3 Lowlands</option></select><select><option>ecology.producers_total</option></select><span class="chip">Y12 W12 – Y12 W40</span></span></div><div class="pb">';
+    [['rainfall (weather)', 72, 'var(--wx)', '−0.31'], ['grazing', 34, 'var(--warn)', '−0.14'], ['regrowth', 18, 'var(--eco)', '+0.07'], ['fire', 8, 'var(--red)', '−0.03']].forEach(function(x){ h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:130px" class="dim">' + x[0] + '</span><div style="flex:1;height:16px;background:var(--bg4);border-radius:3px"><div style="width:' + x[1] + '%;height:100%;background:' + x[2] + ';opacity:.75;border-radius:3px"></div></div><span class="mono" style="width:50px">' + x[3] + '</span></div>'; });
+    h += '<div class="link">→ Show cells (top 8 per cause, 27 cells)</div><div class="note" style="margin-top:6px">From A1 cow.ecology.cause events. The weather cause becomes a recorded link in the chains view.</div></div></div>';
+    return h;
+  }
+  h += '<div class="causes-grid"><div class="panel"><div class="ph">Swimlanes · Y11 – Y16 <span class="feat">F12</span><span class="r"><label class="note">min score</label><input type="range" min="0" max="100" value="30" style="width:80px"><span class="mono">0.30</span><span class="rec">━ recorded</span><span class="cand">┅ candidate</span></span></div><div class="pb">';
+  var W = 760, H = 260, X = function(y, w){ return 90 + ((y - 11) * WPY + w) / (6 * WPY) * (W - 100); };
+  var lanes = [['Weather', 'var(--wx)', 45], ['Ecology', 'var(--eco)', 130], ['Succession', 'var(--suc)', 215]];
+  if (s == 'noA3') lanes = lanes.slice(0, 2);
+  h += '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">';
+  lanes.forEach(function(l){ h += '<rect x="85" y="' + (l[2] - 28) + '" width="' + (W - 90) + '" height="56" fill="#1d1d1d" stroke="#2c2c2c"/><text x="6" y="' + (l[2] + 4) + '" fill="' + l[1] + '" font-size="11" font-weight="600">' + l[0] + '</text>'; });
+  if (s == 'noA3') h += '<text x="6" y="219" fill="var(--text-dim)" font-size="10">Succession: A3 not in this source</text>';
+  for (var y = 11; y <= 16; y++) h += '<text class="axis" x="' + X(y, 0) + '" y="' + (H - 4) + '">Y' + y + '</text>';
+  // nodes
+  h += '<rect x="' + X(12, 12) + '" y="35" width="' + (X(12, 40) - X(12, 12)) + '" height="20" rx="3" fill="rgba(244,135,113,.35)" stroke="var(--red)"/><text x="' + (X(12, 12) + 2) + '" y="30" fill="var(--red)" font-size="10">Drought R3 · W12–W40 · 8 dry wk</text>';
+  h += '<circle cx="' + X(11, 40) + '" cy="45" r="7" fill="rgba(79,163,224,.5)" stroke="var(--wx)"/><text x="' + (X(11, 40) - 30) + '" y="30" fill="var(--wx)" font-size="10">Storm #118</text>';
+  h += '<circle cx="' + X(14, 30) + '" cy="45" r="6" fill="rgba(79,163,224,.5)" stroke="var(--wx)"/>';
+  h += '<rect x="' + X(12, 18) + '" y="118" width="' + (X(13, 2) - X(12, 18)) + '" height="22" rx="3" fill="rgba(108,192,112,.3)" stroke="var(--eco)" stroke-dasharray="3 2"/><text x="' + (X(12, 18) + 2) + '" y="113" fill="var(--eco)" font-size="10">anomaly: producers below p10 · R3 · 36 wk</text>';
+  h += '<circle cx="' + X(12, 6) + '" cy="129" r="6" fill="rgba(206,145,120,.6)" stroke="var(--warn)"/><text x="' + (X(12, 6) - 26) + '" y="152" fill="var(--warn)" font-size="10">crash R5</text>';
+  h += '<circle cx="' + X(15, 3) + '" cy="129" r="7" fill="rgba(206,145,120,.6)" stroke="var(--warn)"/><text x="' + (X(15, 3) - 50) + '" y="152" fill="var(--warn)" font-size="10">herbivore crash R3</text>';
+  if (s != 'noA3') { h += '<rect x="' + (X(13, 8) - 7) + '" y="205" width="14" height="14" fill="rgba(197,134,192,.6)" stroke="var(--suc)" transform="rotate(45 ' + X(13, 8) + ' 212)"/><text x="' + (X(13, 8) + 12) + '" y="216" fill="var(--suc)" font-size="10">Grassland→Scrub ×14 · DROUGHT</text>'; }
+  // links
+  h += '<path d="M' + X(12, 16) + ',55 C' + X(12, 16) + ',90 ' + X(12, 22) + ',90 ' + X(12, 22) + ',118" stroke="var(--green)" stroke-width="2" fill="none"><title>recorded: A1 cow.ecology.cause R3 producers, cause rainfall, Δ −0.31</title></path>';
+  h += '<path d="M' + X(11, 40) + ',52 C' + X(11, 46) + ',90 ' + X(12, 2) + ',100 ' + X(12, 6) + ',123" stroke="var(--amber)" stroke-width="1.5" fill="none" stroke-dasharray="5 4"><title>candidate: lag 18 w, score 0.41 (correlation)</title></path>';
+  if (s != 'noA3') h += '<path d="M' + X(12, 50) + ',140 C' + X(13, 0) + ',180 ' + X(13, 4) + ',185 ' + X(13, 8) + ',205" stroke="var(--green)" stroke-width="2" fill="none"><title>recorded: A3 transition source DROUGHT</title></path>';
+  h += '<path d="M' + X(13, 2) + ',132 C' + X(13, 40) + ',132 ' + X(14, 40) + ',132 ' + X(15, 0) + ',130" stroke="var(--amber)" stroke-width="1.5" fill="none" stroke-dasharray="5 4"><title>candidate: lag 105 w producers→herbivore crash, score 0.52</title></path>';
+  h += '</svg></div></div>';
+  // chain list
+  h += '<div class="panel"><div class="ph">Chains · top 50 by weakest link <span class="feat">F12</span></div><table><tr><th>Chain</th><th class="num">Score</th></tr>';
+  var chains = s == 'noA3' ? [] : [['<span class="chain-part">Drought R3 Y12 W12</span> <span class="rec">━</span> <span class="chain-part">producers −0.34 R3 (+6 w)</span> <span class="rec">━</span> <span class="chain-part">Grassland→Scrub ×14 (+41 w)</span>', '1.00']];
+  chains.push(['<span class="chain-part">Drought R3 Y12 W12</span> <span class="rec">━</span> <span class="chain-part">producers −0.34 R3</span> <span class="cand">┅</span> <span class="chain-part">herbivore crash R3 Y15 W3 (+105 w)</span>', '0.52']);
+  chains.push(['<span class="chain-part">Storm #118 Y11 W40</span> <span class="cand">┅</span> <span class="chain-part">crash R5 Y12 W6 (+18 w)</span>', '0.41']);
+  chains.forEach(function(c){ h += '<tr class="click"><td>' + c[0] + '</td><td class="num">' + c[1] + '</td></tr>'; });
+  h += '</table><div class="pb note">━ recorded: the sim says so (A1 cause names a weather input; A3 transition names its source).<br>┅ candidate (correlation): same region, lag inside the pair window, scored on lag match and size.</div></div></div>';
+  // lag scan
+  var running = s == 'scan';
+  h += '<div class="panel"><div class="ph">Lead/lag scan · world · anomaly series <span class="feat">F12</span><span class="r">' + (running ? '<span class="progress"><i style="width:46%"></i></span><span class="mono">1,852 / 4,032 pairs · 7 s</span><button class="btn">Cancel</button>' : '<span class="note">4,032 pairs · 64 layers · lags 0–104 w · 14.2 s · cached for this source + brush</span><button class="btn">Rescan</button>') + '<label class="note"><input type="checkbox" checked> anomalies</label><select><option>all layers</option><option>weather.*</option><option>ecology.*</option></select></span></div>';
+  h += '<table><tr><th>Leader</th><th>Follower</th><th class="num">Lag</th><th class="num">r</th><th class="num">n eff</th><th></th></tr>';
+  [['weather.precipitation', 'ecology.producers_total', '+5 w', '0.71', '310'], ['ecology.group.herbivore', 'ecology.group.predator', '+50 w', '0.58', '41'], ['weather.snow_pack', 'weather.ground_water', '+6 w', '0.64', '120'], ['weather.temperature', 'weather.snow_pack', '+1 w', '−0.62', '95'], ['ecology.producers_total', 'ecology.group.herbivore', '+19 w', '0.49', '88']].slice(0, running ? 3 : 5).forEach(function(r, i){
+    h += '<tr class="click"><td>' + r[0] + '</td><td>' + r[1] + '</td><td class="num">' + r[2] + '</td><td class="num">' + r[3] + '</td><td class="num">' + r[4] + '</td><td><span class="cand">candidate (correlation)</span>' + (i == 0 && s == 'scandone' ? ' <span class="link">▾ per region</span>' : ' <span class="link">per region</span>') + '</td></tr>';
+  });
+  h += '</table>';
+  if (s == 'scandone') {
+    h += '<div class="pb" style="display:flex;gap:14px;align-items:flex-start"><div><div class="note" style="margin-bottom:4px">weather.precipitation → ecology.producers_total · lag per region</div><canvas id="drillMap"></canvas></div><table style="width:auto"><tr><th>Region</th><th class="num">Lag</th><th class="num">r</th></tr>' +
+         [['R3 Lowlands', '+4 w', '0.82'], ['R5 Delta', '+3 w', '0.77'], ['R2 Highlands', '+8 w', '0.61'], ['R1 Coast', '+6 w', '0.44'], ['R4 Desert Edge', '+11 w', '0.38']].map(function(r){ return '<tr><td>' + r[0] + '</td><td class="num">' + r[1] + '</td><td class="num">' + r[2] + '</td></tr>'; }).join('') + '</table></div>';
+  }
+  h += '</div>';
+  return h;
+}
+function drawCauses() {
+  var d = document.getElementById('drillMap');
+  if (d) hexMap(d, MW, MH, function(q, r){ return isWater(q, r) ? NaN : regionOf(q, r); }, function(v){ if (isNaN(v)) return '#1b2a3a'; var lag = [6, 8, 4, 11, 3, 7, 9, 5, 6, 10, 4, 8][v]; return ramp(lag / 12, [240, 200, 90], [60, 60, 140]); }, { size: 4 });
+}
+
+function compare() {
+  var s = cur(), h = '';
+  if (s == 'corr') {
+    var W = 520, H = 280, r = rng(3), pts = '';
+    for (var i = 0; i < 260; i++) { var x = r(), y = 0.15 + 0.7 * x + noise(r, 0.12); pts += '<circle cx="' + (40 + x * (W - 60)) + '" cy="' + (H - 30 - y * (H - 50)) + '" r="2.2" fill="rgba(86,156,214,.45)"/>'; }
+    h += '<div class="compare-grid"><div class="panel"><div class="ph">Correlation <span class="feat">F5</span><span class="r"><select><option>X weather.precipitation</option></select><select><option>Y ecology.producers_total</option></select><label class="note">lag</label><select><option>5 w</option><option>0</option></select><label class="note"><input type="checkbox" checked> anomaly (F8)</label></span></div><div class="pb"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">' + pts +
+         '<line x1="40" y1="' + (H - 30 - 0.15 * (H - 50)) + '" x2="' + (W - 20) + '" y2="' + (H - 30 - 0.85 * (H - 50)) + '" stroke="var(--accent)" stroke-width="2"/><text x="50" y="22" fill="var(--text-header)" font-size="12">r = 0.71 · lag 5 w · n = 416 × 27 groups</text></svg></div></div>' +
+         '<div class="panel"><div class="ph">Run compare · A vs B <span class="feat">F5</span><span class="r note">B: longrun_42_arid · aligned by label</span></div><div class="pb"><svg viewBox="0 0 520 280" width="100%" height="280"><path d="' + path(down(slice(prod, BR_FROM, BR_TO), 200), 30, 20, 480, 220, 0.2, 1.2) + '" stroke="var(--eco)" fill="none" stroke-width="1.6"/><path d="' + path(down(slice(prod, BR_FROM, BR_TO), 200).map(function(v){ return v * 0.78; }), 30, 20, 480, 220, 0.2, 1.2) + '" stroke="var(--warn)" fill="none" stroke-width="1.6" stroke-dasharray="4 2"/><text x="40" y="16" fill="var(--eco)" font-size="10">A default</text><text x="110" y="16" fill="var(--warn)" font-size="10">B arid pack</text></svg></div></div></div>';
+  } else if (s == 'runs') {
+    h += '<div class="panel"><div class="ph">Run compare · breakdown A, B, Δ <span class="feat">F5</span><span class="r note">grouping: region · mean over the brush</span></div><table><tr><th>Group</th><th class="num">Producers A</th><th class="num">B</th><th class="num">Δ</th><th class="num">Precip A</th><th class="num">B</th><th class="num">Δ</th></tr>' +
+         [['R3 Lowlands', 0.61, 0.42], ['R5 Delta', 0.70, 0.58], ['R2 Highlands', 0.55, 0.49], ['R1 Coast', 0.74, 0.71]].map(function(g){ return '<tr><td>' + g[0] + '</td><td class="num">' + g[1].toFixed(2) + '</td><td class="num">' + g[2].toFixed(2) + '</td><td class="num" style="color:var(--red)">' + (g[2] - g[1]).toFixed(2) + '</td><td class="num">0.44</td><td class="num">0.33</td><td class="num" style="color:var(--red)">−0.11</td></tr>'; }).join('') + '</table><div class="pb note">Different worlds fall back to world-level only, with a warning (F5).</div></div>';
+  } else {
+    h += '<div class="compare-grid"><div class="panel"><div class="ph">Snapshots <span class="feat">F7</span><span class="r note">full state set: v1 mockup, "Snapshots &amp; Compare" tab (approved)</span></div><div class="pb" style="display:flex;gap:6px"><input type="text" placeholder="name (A-Z a-z 0-9 _ -)" style="flex:1"><button class="btn primary">Take</button></div><table>' +
+         [['pre-drought', 'Y12 W12', 'ready'], ['post-drought', 'Y13 W3', 'ready'], ['mid-run', 'Y14 W8', 'pending']].map(function(r){ return '<tr><td class="mono" style="color:var(--text-header)">◆ ' + r[0] + '</td><td class="dim">' + r[1] + '</td><td><span class="band ' + (r[2] == 'ready' ? 'b-good' : 'b-watch') + '">' + r[2] + '</span></td><td><button class="btn" disabled title="Snapshot operation in progress">Restore</button> <button class="btn">Compare</button></td></tr>'; }).join('') +
+         '</table><div class="pb note">History memory: cells 41/64 MB · aggregates 14/64 MB · events 15/16 MB (94%, red). Tracked: 4 layers, window 520 samples.</div></div>' +
+         '<div class="panel"><div class="ph">Cell compare · producers · now − pre-drought <span class="feat">F7</span><span class="r note">auto scale ±0.34</span></div><div class="pb"><canvas id="deltaMap"></canvas></div></div></div>';
+  }
+  return h;
+}
+function drawCompare() {
+  var d = document.getElementById('deltaMap');
+  if (d) hexMap(d, MW, MH, function(q, r){ if (isWater(q, r)) return NaN; var d1 = Math.hypot(q - 22, r - 18), d2 = Math.hypot(q - 8, r - 6); return -0.34 * Math.exp(-d1 * d1 / 40) + 0.2 * Math.exp(-d2 * d2 / 20); }, function(v){ return isNaN(v) ? '#202020' : diverge(v, 0.34); }, { size: 6 });
+}
+
+function checks() {
+  var s = cur(), h = '';
+  var V = { mm: ['MagnitudeMisses', 'var(--amber)', 'No Hard fail; 2 Default checks outside ±10% of baseline. Goes to you: adjust the threshold or reopen A4.'],
+            pass: ['Pass', 'var(--green)', 'Every Hard check passes; Default checks within band or judged against the GDD default (2 unrecorded).'],
+            hard: ['HardFail', 'var(--red)', '1 Hard check failed: t3.not_stationary. Reopen A4 TechSpec §2.'],
+            invalid: ['InvalidWorld', 'var(--purple)', 'Precheck failed on s25_dry_interior: no cell ≥ 8 steps from water. Re-pick the seed.'],
+            live: ['MagnitudeMisses', 'var(--amber)', 'Last report shown. A new run is in progress.'],
+            old: ['MagnitudeMisses', 'var(--amber)', 'Report written before run links existed: check → curve links are disabled.'] }[s];
+  if (s == 'live') h += '<div class="panel"><div class="pb" style="display:flex;gap:12px;align-items:center"><span class="band b-watch">running</span><span>cow.s25.report status: <b>Running</b> · R7 years · week 141 of 260</span><span class="progress" style="width:240px"><i style="width:54%"></i></span><span class="mono dim">elapsed 38.2 s</span><span class="note" style="margin-left:auto">the new report opens when it lands · read-only (no Run button)</span></div></div>';
+  h += '<div class="panel"><div class="verdict"><span class="v" style="color:' + V[1] + '">' + V[0] + '</span><span>' + V[2] + '</span><span style="margin-left:auto" class="note">report_summary.json · git a95ddfb · 2026-11-16 21:04 · Debug</span></div>' +
+       '<div class="pb" style="padding-top:0;display:flex;gap:8px"><span class="band b-good">Pass 19</span><span class="band b-watch">MagnitudeMiss ' + (s == 'pass' ? 0 : 2) + '</span><span class="band b-bad">Fail ' + (s == 'hard' ? 1 : 0) + '</span><span class="band b-inv">InvalidWorld ' + (s == 'invalid' ? 4 : 0) + '</span><span class="band b-na">Pending 0</span></div></div>';
+  h += '<div class="checks-grid"><div class="panel"><div class="ph"><div class="seg"><span class="on">s25_coast_range · seed 42 · Small</span><span>s25_dry_interior · seed 42 · Small</span></div><span class="r"><span class="chip">trend over 23 archived reports · split at world revision 7</span></span></div>';
+  h += '<table><tr><th>Check</th><th>Kind</th><th>State</th><th>Measured vs band</th><th>Trend</th><th>Runs</th></tr>';
+  var rows = [
+    ['T1 · Moisture', null], ['t1.moisture_monotonic', 'Hard', 'Pass', 'ocean 0.83 > coast 0.71 > inland 0.32', null, 'R1'],
+    ['t1.coast_moisture', 'Default', s == 'pass' ? 'Pass' : 'MagnitudeMiss', 0.61, [0.70, 0.77, 0.86], 'R1'],
+    ['T3 · Storm', null], ['t3.not_stationary', 'Hard', s == 'hard' ? 'Fail' : 'Pass', s == 'hard' ? 'centroid within 1 cell for 11 weeks · reopen A4 TechSpec §2' : 'moved 9 cells in 10 weeks', null, 'R4'],
+    ['t3.travel_5_cells', 'Default', 'Pass', 7, [5, 6.2, 7.6], 'R4'],
+    ['T4 · Seasons', null], ['t4.winter_summer_ratio', 'Default', s == 'pass' ? 'Pass' : 'MagnitudeMiss', 1.31, [1.53, 1.70, 1.87], 'R1'],
+    ['t4.temp_extremes', 'Hard', 'Pass', 'peak W19, trough W45', null, 'R1'],
+    ['T6 · Droughts', null], ['t6.droughts_found', 'Hard', s == 'invalid' ? 'InvalidWorld' : 'Pass', s == 'invalid' ? 're-pick the seed' : '3 regions', null, 'R6'],
+    ['T8 · Edge inflow', null], ['t8.edge_on_gt_off', 'Hard', 'Pass', 'upwind-edge moisture 0.62 on > 0.48 off', null, 'R1, R3']
+  ];
+  var SC = { Pass: 'b-good', MagnitudeMiss: 'b-watch', Fail: 'b-bad', InvalidWorld: 'b-inv', Pending: 'b-na' };
+  rows.forEach(function(r, k){
+    if (!r[1]) { h += '<tr class="test-row"><td colspan="6">' + r[0] + '</td></tr>'; return; }
+    var meas;
+    if (r[4]) { var lo = r[4][0], hi = r[4][2], span = (hi - lo) * 2.2, base = lo - (hi - lo) * 0.6, pos = function(v){ return Math.max(0, Math.min(100, (v - base) / span * 100)); };
+      meas = '<span class="mono">' + r[3] + '</span> <span class="vbar" title="baseline ' + r[4][1] + ' ±10% = ' + r[4][0] + '–' + r[4][2] + '"><span class="rg" style="left:' + pos(lo) + '%;width:' + (pos(hi) - pos(lo)) + '%"></span><span class="mk" style="left:' + pos(r[3]) + '%;background:' + (r[2] == 'Pass' ? 'var(--green)' : 'var(--amber)') + '"></span></span> <span class="note">baseline ' + r[4][1] + '</span>';
+    } else meas = '<span class="dim">' + r[3] + '</span>';
+    var tr = rng(k * 13), tv = []; var x = 0.5; for (var i = 0; i < 23; i++) { x += noise(tr, 0.06); tv.push(x - (r[2] == 'MagnitudeMiss' && i > 17 ? (i - 17) * 0.06 : 0)); }
+    var runs = s == 'old' ? '<span class="link off" title="report predates run links">' + r[5] + '</span>' : r[5].split(', ').map(function(x){ return '<span class="link" title="opens out/CoW/s25/history_' + x + '_s25_coast_range.json as Source A">' + x + ' ↗</span>'; }).join(' ');
+    h += '<tr><td class="mono">' + r[0] + '</td><td class="dim">' + r[1] + '</td><td><span class="band ' + SC[r[2]] + '">' + r[2] + '</span></td><td>' + meas + '</td><td>' + spark(tv, 90, 20, 'var(--text-dim)', [{ i: 22, c: r[2] == 'Pass' ? BANDC.good : r[2] == 'Fail' ? BANDC.bad : BANDC.watch }]) + '</td><td>' + runs + '</td></tr>';
+  });
+  h += '</table></div><div style="display:grid;gap:10px;align-content:start">';
+  h += '<div class="panel"><div class="ph">Prechecks</div><div class="pb kv"><span class="k">coast band</span><span>212 cells <span class="band b-good">pass</span></span><span class="k">inland ≥ 8</span><span>' + (s == 'invalid' ? '0 cells <span class="band b-inv">invalid</span>' : '96 cells <span class="band b-good">pass</span>') + '</span><span class="k">crest cells</span><span>11 <span class="band b-good">pass</span></span></div></div>';
+  h += '<div class="panel"><div class="ph">Performance <span class="r note">report only · never changes the verdict</span></div><div class="pb kv"><span class="k">P1 Small 52 w</span><span>4.6 s / 5 s <span class="band b-good">within</span></span><span class="k">P1 step CPU max</span><span>3.9 ms / 4.2 ms <span class="band b-good">within</span></span><span class="k">P2 Large step</span><span>NotMeasured (Debug)</span><span class="k">env</span><span class="mono">Debug · 16 cores · cap 6 · a95ddfb</span></div></div>';
+  h += '<div class="panel"><div class="ph">Baseline · baseline.json</div><div class="pb kv"><span class="k">recorded</span><span>11 Default checks</span><span class="k">missed</span><span style="color:var(--amber)">' + (s == 'pass' ? 'none' : 't1.coast_moisture, t4.winter_summer_ratio') + '</span><span class="k">unrecorded</span><span>t6.dry_spell_4w, t5.gw_peak_week (GDD default)</span></div><div class="pb" style="padding-top:0"><div class="note">Record or force a baseline in the game console (not sent from here):</div><div class="copy"><code>cow.s25.baseline {"action":"record"}</code><button class="btn">Copy</button></div><div class="copy"><code>cow.s25.run {"action":"start","world":"both"}</code><button class="btn">Copy</button></div></div></div>';
+  h += '<div class="panel"><div class="ph">Edge cases · 20</div><div class="pb kv"><span class="k">covered</span><span>17 (runs R1–R7)</span><span class="k">untested</span><span>EC-07 (needs Large), EC-14 (dragons), EC-19 (save mid-step)</span></div></div>';
+  h += '<div class="panel"><div class="ph">Live smoke · livesmoke.json</div><div class="pb kv"><span class="k">max step</span><span>3.4 ms / 4.2 ms <span class="band b-good">within</span></span><span class="k">wall</span><span>12.3 s (expected ≈ 12.1 s)</span><span class="k">stalls</span><span>0 (Deferred)</span></div></div>';
+  h += '</div></div>';
+  return h;
+}
+
+// ---------- shell ----------
+var RENDER = { overview: overview, trends: trends, space: space, causes: causes, compare: compare, checks: checks };
+var AFTER = { space: drawSpace, causes: drawCauses, compare: drawCompare };
+var timer = null;
+function render() {
+  document.querySelectorAll('.rail .it').forEach(function(e){ e.classList.toggle('on', e.getAttribute('data-ws') == ST.ws); });
+  document.getElementById('mockbar').innerHTML = '<span class="t">MOCKUP STATE</span>' + STATES[ST.ws].map(function(x){ return '<button data-st="' + x[0] + '" class="' + (cur() == x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('');
+  document.getElementById('content').innerHTML = RENDER[ST.ws]();
+  if (AFTER[ST.ws]) AFTER[ST.ws]();
+  if (timer) { clearInterval(timer); timer = null; }
+  if (ST.ws == 'space' && cur() == 'playing') { ST.frame = 150; timer = setInterval(function(){ ST.frame += 3; var y = 12 + Math.floor((ST.frame - 150) / 52), w = (ST.frame - 150) % 52 + 1; var l = document.getElementById('frameLbl'); if (l) l.textContent = 'Y' + y + ' W' + w; var mm = document.getElementById('mainMap'); if (mm) hexMap(mm, MW, MH, function(q, r){ return field(q, r, ST.frame); }, function(v){ return isNaN(v) ? '#1b2a3a' : seqBlue(v); }, { size: 7 }); }, 125); }
+  location.hash = 'ws=' + ST.ws + '&st=' + cur() + '&lens=' + ST.lens;
+}
+function drawBrush() {
+  var svg = document.getElementById('brushSvg'), w = 600;
+  svg.setAttribute('viewBox', '0 0 ' + w + ' 24');
+  svg.innerHTML = '<path d="' + path(down(precip, 300), 0, 3, w, 18, 0, 0.9) + '" stroke="#4a6a85" fill="none" stroke-width="1"/>';
+}
+document.getElementById('rail').onclick = function(e){ var it = e.target.closest('.it'); if (!it) return; ST.ws = it.getAttribute('data-ws'); render(); };
+document.getElementById('mockbar').onclick = function(e){ var b = e.target.closest('button'); if (!b) return; ST.st[ST.ws] = b.getAttribute('data-st'); render(); };
+document.getElementById('lens').onclick = function(e){ var sp = e.target.closest('span'); if (!sp) return; ST.lens = sp.getAttribute('data-l'); document.querySelectorAll('#lens span').forEach(function(x){ x.classList.toggle('on', x == sp); }); render(); };
+document.getElementById('srcB').onchange = function(){ ST.compareB = !!this.value; render(); };
+(function(){
+  var p = {}; location.hash.replace(/^#/, '').split('&').forEach(function(kv){ var a = kv.split('='); if (a[0]) p[a[0]] = a[1]; });
+  if (p.ws && RENDER[p.ws]) ST.ws = p.ws;
+  if (p.st) ST.st[ST.ws] = p.st;
+  if (p.lens) { ST.lens = p.lens; document.querySelectorAll('#lens span').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-l') == p.lens); }); }
+  drawBrush(); render();
+})();
+window.onerror = function(m, src, line){ document.title = 'ERR ' + m + ' @' + line; };
+</script>
+</body>
+</html>

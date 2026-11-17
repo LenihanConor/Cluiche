@@ -262,10 +262,10 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 **Not taken (2026-11-16):** seed ensembles (N-file bands and outlier seeds). Kept as an idea.
 
-**Mockup:** retitled World Sim (2026-11-16). **A new mockup is owed (user request 2026-11-16):** the current one is an ecology-era single screen with the Feature 7 tab bolted on, so it cannot hold Features 8 to 12. Draw a new world-sim mockup (layout and navigation for weather and ecology, plus every new view) once Features 8 to 12 are specced, and get it approved before any of their UI is built. Until then each feature spec says what its views must show.
+**Mockup:** retitled World Sim (2026-11-16). **New mockup drawn 2026-11-16, approved by the user 2026-11-16 (visual gate passed for Features 8 to 12 and the shared shell): [mockups/world-sim-inspector-v2.html](mockups/world-sim-inspector-v2.html)** (six workspaces: Overview, Trends, Space, Causes, Compare, Checks; lens toggle; per-workspace state bar; Feature 7's full state set stays in the v1 tab). Original request (user, 2026-11-16): the current one is an ecology-era single screen with the Feature 7 tab bolted on, so it cannot hold Features 8 to 12. Draw a new world-sim mockup (layout and navigation for weather and ecology, plus every new view) once Features 8 to 12 are specced, and get it approved before any of their UI is built. Until then each feature spec says what its views must show.
 
 **Ripple:** S-2.5 `time-series-graphs.md` named "T-1 Feature 7" as the graph viewer. It now points at Features 2, 8 and 9 (pointer-only edit, 2026-11-16).
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 12 feature specs `Approved` (8 to 12 on 2026-11-16); Feature 7 has a plan. Still owed before any Feature 8 to 12 UI is built: the new world-sim mockup (see the amendment). Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 12 feature specs `Approved` (8 to 12 on 2026-11-16); Feature 7 has a plan. The new world-sim mockup (v2) is approved, so the visual gate is passed for Features 8 to 12; none has a plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
