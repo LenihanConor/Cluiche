@@ -331,6 +331,17 @@ For the GDD session to fold back, on top of CHANGE-036:
 1. **Will natural ignition give a believable fire regime at default tuning?** Neither "fire every few decades in dry grassland" nor "never" is guaranteed. S-3 Controlled mode tunes it first, and the GDD may want to set the target fire return intervals per biome.
 2. **Is the tundra inflow proxy right?** `years_low_herbivore_inflow` stands in for "migration routes severed". If it fires too easily in naturally sparse tundra, it may need to compare against the cell's own historical inflow instead of a fixed threshold.
 
+## T-1 consumer amendment (2026-11-16, approved with T-1 Feature 12)
+
+Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/cross-system-causes.md, so a succession transition can be linked to the pressure that caused it.
+
+- The `cow.succession.transition` DiaCellHistory event payload is `{ cell, from, to, rule, source }`: `rule` is the `succession_rules.json` id, and `source` is that rule's `source` (for example `DROUGHT`).
+- Its `kind: "event"` DiaValueSchema entry lists these five fields, with `source` as an enum of the rule sources in use.
+- The `BiomeTransitionComplete` message is unchanged (A4 and others still read `{cell, from, to, nexus_node, hearth_site}`).
+- Forced transitions (`cow.succession.transition`, the debug command) emit `rule: "forced"` and `source: "FORCED"`.
+
+**Added criterion:** every transition event carries a `rule` that exists in the loaded rules file (or `forced`) and the matching `source`; the schema entry validates.
+
 ## Status
 
-**Status:** `Approved` (2026-10-18). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.
+**Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.

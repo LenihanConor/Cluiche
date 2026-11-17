@@ -138,7 +138,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across archived reports, check → run history link, performance/edge-case/live-smoke/baseline blocks, read-only live progress | Approved | [s25-checks-panel.md](s25-checks-panel.md) |
 | 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks; region-level fallback outside the per-cell window | Approved | [space-over-time.md](space-over-time.md) |
 | 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time, drift; weather health; fixed coupling pairs; bands cite the GDD or are provisional; rolling sparklines, region table, A vs B | Approved | [world-health.md](world-health.md) |
-| 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; preset pairs; automatic lead/lag scan | Draft | TBD |
+| 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; automatic lead/lag scan (preset pairs moved to Feature 11's coupling measures); recorded links (A1 causes, A3 source) vs candidate links; swimlanes + ranked chains | Approved | [cross-system-causes.md](cross-system-causes.md) |
 
 - **Build order:** 1 → 2 → 6 → 3 → 8 → 9 → 4 → 5 → 7 → 10 → 11 → 12 (amended 2026-11-16: 8 and 9 move ahead because S-2.5 has no other viewer).
 - Feature 1 can start against a hand-written `dia.cell_history` fixture before any simulation is built.
@@ -258,6 +258,7 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 - **Automatic lag scan** across metric pairs, per region, to find leading indicators.
 - v1 is editor-side links, labelled as "candidate" links (correlation, not proof). Only if that proves insufficient does it ask A4 and A3 for recorded cause events, which would be a game-side contract change.
 - Meaningful only once A4, A1 and A3 are built. Fixtures are enough to build it.
+- *Resolved 2026-11-16 (cross-system-causes.md):* links are recorded (A1 cause events naming weather, and A3 transitions naming their `source` via a small A3 amendment) or candidate, each badged. A4 needs no cause events. The preset pairs became Feature 11's coupling measures.
 
 **Not taken (2026-11-16):** seed ensembles (N-file bands and outlier seeds). Kept as an idea.
 
@@ -267,4 +268,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 11 `Approved`; Feature 7 has a plan. Feature 12 is `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 12 feature specs `Approved` (8 to 12 on 2026-11-16); Feature 7 has a plan. Still owed before any Feature 8 to 12 UI is built: the new world-sim mockup (see the amendment). Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
