@@ -11,6 +11,8 @@ import { ModuleTable } from './components/ModuleTable';
 import { FrameDetail } from './components/FrameDetail';
 import { TripsList } from './components/TripsList';
 import { EventsRow } from './components/EventsRow';
+import { ChainPanel } from './components/ChainPanel';
+import { useChainStore } from './useChainStore';
 
 const panel: React.CSSProperties = { background: '#252525', border: '1px solid #333', padding: '6px 8px', minWidth: 0 };
 const heading: React.CSSProperties = { margin: '0 0 4px', fontSize: 12, color: '#9cdcfe', fontWeight: 600 };
@@ -23,6 +25,10 @@ export default function App() {
     const trips = useWindowStore((s) => s.trips);
     const markers = useWindowStore((s) => s.markers);
     const select = useSelectionStore((s) => s.select);
+    const chain = useChainStore((s) => s.chain);
+    // One budget = the tick budget of the unit that ends the chain (falls back to the first lane).
+    const lastUnit = chain && chain.stages.length > 0 ? [...chain.stages].sort((a, b) => a.endMs - b.endMs)[chain.stages.length - 1].unit : null;
+    const chainBudgetMs = (lanes.find((l) => l.unit === lastUnit) ?? lanes[0])?.budgetMs ?? 0;
 
     useEffect(() => { setConnectionState(connection); }, [connection, setConnectionState]);
     useEffect(() => subscribePerfTiming(), []);
@@ -56,6 +62,10 @@ export default function App() {
                 <section data-testid="trips" style={panel}>
                     <h4 style={heading}>Trips</h4>
                     <TripsList records={trips} unavailable={unavailable} onSelect={(u, f) => { void select(u, f); }} />
+                </section>
+                <section data-testid="chain" style={{ ...panel, gridColumn: '1 / -1' }}>
+                    <h4 style={heading}>Cross-thread chain</h4>
+                    <ChainPanel budgetMs={chainBudgetMs} />
                 </section>
             </div>
         </div>

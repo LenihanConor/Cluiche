@@ -70,3 +70,38 @@ export interface FrameDetailData {
     sectionsUnavailableReason: string | null;
     sections: { name: string; ms: number }[];
 }
+
+/** One span of a cross-thread chain. Times are ms on the shared steady clock (SpanRecord start/end steady ns / 1e6). */
+export interface ChainStageData {
+    /** Span identity; edges refer to it (SpanRecord.spanId, as a decimal string). */
+    id: string;
+    unit: string;
+    name: string;
+    startMs: number;
+    endMs: number;
+}
+
+/**
+ * Stream hop between two stages: the reader span flow link (SpanRecord.linkSpanId) points at fromId.
+ * Fields are the per-stream edge metrics (stream.<id>.edge.*) already converted to ms / per second.
+ */
+export interface ChainEdgeData {
+    stream: string;
+    fromId: string;
+    toId: string;
+    /** Bytes of one write (edge.bytes / edge.writes). */
+    bytes: number;
+    /** Writes per second (rate of edge.writes). */
+    ratePerSec: number;
+    /** edge.data_age_ns in ms. */
+    dataAgeMs: number;
+    /** edge.write_cost_ns in ms. */
+    writeCostMs: number;
+}
+
+/** Shape a future perf.chain reply or topic would deliver. Stages may arrive in any order. */
+export interface ChainData {
+    name: string;
+    stages: ChainStageData[];
+    edges: ChainEdgeData[];
+}
