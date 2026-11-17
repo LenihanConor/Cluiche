@@ -52,7 +52,7 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 
 | # | Feature | Summary | Spec | Status |
 |---|---------|---------|------|--------|
-| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table), `hydrology_parameters.json` (validated, hot-reload, live override), the `Passability` enum. Pure logic, TDD | TBD | Draft |
+| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing`), 20 scalar descriptors + a 13-biome × 6-column `biome_table` (provisional defaults), versioned file, atomic overrides, `Initialise` (validation, biome-seeded soil/ground, full lakes, static tables). Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Draft |
 | 2 | Water Pipeline | The weekly passes: freeze, glacier, infiltration, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (same-week crossing and chained lakes), basin levels, floods against each river's running mean, passability, glacier counters, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Draft |
 | 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot`; init from S-1, spin-up, `HoldGeneration`/`WorldGenerationFailed` | TBD | Draft |
 | 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | TBD | Draft |
