@@ -191,7 +191,7 @@ namespace Dia::DeferredStep
 		for (unsigned int i = 0; i < mChannels.Size(); ++i)
 		{
 			const ChannelEntry& e = mChannels[i];
-			if (e.hasToken && e.state == StepState::kRunning && e.applyKey <= currentKey)
+			if (e.hasToken && (e.state == StepState::kRunning || e.state == StepState::kComplete) && e.applyKey <= currentKey)
 			{
 				unsigned int pos = dueCount++;
 				while (pos > 0 && mChannels[due[pos - 1]].kickSequence > e.kickSequence)
@@ -221,7 +221,7 @@ namespace Dia::DeferredStep
 				continue;
 			}
 			ChannelEntry& entry = mChannels[index];
-			if (!entry.hasToken || entry.state != StepState::kRunning)
+			if (!entry.hasToken || (entry.state != StepState::kRunning && entry.state != StepState::kComplete))
 			{
 				continue;
 			}
@@ -283,6 +283,52 @@ namespace Dia::DeferredStep
 				--mStats.inFlight;
 			}
 		}
+	}
+
+	void DeferredStepScheduler::DrainAll()
+	{
+		uint32_t drained = 0;
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			ChannelEntry& e = mChannels[i];
+			if (!e.hasToken || e.state != StepState::kRunning)
+			{
+				continue;
+			}
+			mLauncher.Wait(e.token);
+			e.state = StepState::kComplete;   // token, hasToken and applyKey kept: Tick still applies and releases it
+			if (!e.completionSeen)
+			{
+				// A drained step has no meaningful slack; run time is kick -> after Wait.
+				e.completionSeen = true;
+				e.stats.lastRunMicros = NowMicros() - e.kickTimeMicros;
+				e.stats.lastSlackKeys = 0;
+			}
+			++drained;
+		}
+		if (drained == 0)
+		{
+			return;
+		}
+		++mStats.drains;
+		mStats.drainedSteps += drained;
+		DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "DrainAll waited for %u in-flight step(s)", drained);
+	}
+
+	bool DeferredStepScheduler::GetApplyKey(Dia::Core::StringCRC channelId, StepKey& out) const
+	{
+		const int index = FindIndex(channelId);
+		if (index < 0)
+		{
+			return false;
+		}
+		const ChannelEntry& e = mChannels[index];
+		if (!e.hasToken || (e.state != StepState::kRunning && e.state != StepState::kComplete))
+		{
+			return false;
+		}
+		out = e.applyKey;
+		return true;
 	}
 
 	StepState DeferredStepScheduler::GetState(Dia::Core::StringCRC channelId) const

@@ -834,3 +834,271 @@ TEST_F(DeferredStepSchedulerTest, DueChannelIsCheckedOncePerTickNotDoublePolled)
 	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
 	mScheduler.Unregister(StringCRC("A"));
 }
+
+// ---- DrainAll / GetApplyKey (AC 25-27) ----
+
+TEST_F(DeferredStepSchedulerTest, DrainAllNothingRegisteredIsNoOp)
+{
+	mScheduler.DrainAll();
+	EXPECT_EQ(mLauncher.GetCallCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().drains, 0u);
+	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 0u);
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllIdleChannelIsNoOp)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	mScheduler.DrainAll();
+	EXPECT_EQ(mLauncher.GetCallCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().drains, 0u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllDoesNotApply)
+{
+	Testing::RecordingStep other;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), other));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 2, 8), KickResult::kLaunched);
+	mLauncher.ClearCalls();
+	mScheduler.DrainAll();
+	EXPECT_EQ(CountCalls(mLauncher, Testing::ManualStepLauncher::Call::kWait), 2u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 0u);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(other.GetApplyCount(), 0u);
+	EXPECT_EQ(mStep.GetRunCount(), 1u);
+	EXPECT_EQ(other.GetRunCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kComplete);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("B")), StepState::kComplete);
+	StepKey key = 0;
+	ASSERT_TRUE(mScheduler.GetApplyKey(StringCRC("A"), key));
+	EXPECT_EQ(key, 5u);
+	ASSERT_TRUE(mScheduler.GetApplyKey(StringCRC("B"), key));
+	EXPECT_EQ(key, 8u);
+	EXPECT_EQ(mScheduler.GetStats().drains, 1u);
+	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 2u);
+	EXPECT_EQ(mScheduler.GetStats().applies, 0u);
+	EXPECT_EQ(mScheduler.GetStats().inFlight, 2u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllCountsStepAlreadyCompleteInLauncher)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.DrainAll();
+	EXPECT_EQ(CountCalls(mLauncher, Testing::ManualStepLauncher::Call::kWait), 1u);
+	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kComplete);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllSecondCallIsNoOp)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mLauncher.ClearCalls();
+	mScheduler.DrainAll();
+	EXPECT_EQ(mLauncher.GetCallCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().drains, 1u);
+	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 1u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllOnlyCountsRunningChannels)
+{
+	Testing::RecordingStep other;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), other));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 2, 6), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	EXPECT_EQ(mScheduler.GetStats().drains, 2u);
+	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 2u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllSetsZeroSlackAndPollSkipsDrainedChannel)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 50), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 0);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(10);   // poll pass must not touch a drained channel
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickBelowApplyKeyAfterDrainAppliesNothing)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Tick(4);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 0u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kComplete);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickAfterDrainAppliesWithoutStallAndReleases)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
+	EXPECT_EQ(mLauncher.GetBadReleaseCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	EXPECT_EQ(mScheduler.GetStats().applies, 1u);
+	EXPECT_EQ(mScheduler.GetStats().inFlight, 0u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	StepKey key = 0;
+	EXPECT_FALSE(mScheduler.GetApplyKey(StringCRC("A"), key));
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+namespace
+{
+	struct DrainScriptResult
+	{
+		std::vector<int> order;
+		uint64_t applies = 0;
+		uint64_t stalls = 0;
+		uint64_t kicks = 0;
+		uint32_t releases = 0;
+	};
+
+	DrainScriptResult RunDrainScript(bool drainBeforeTicks)
+	{
+		DrainScriptResult r;
+		Testing::ManualStepLauncher launcher;
+		DeferredStepScheduler scheduler(launcher);
+		Testing::RecordingStep a(1, &r.order), b(2, &r.order), c(3, &r.order);
+		scheduler.Register(StringCRC("A"), a);
+		scheduler.Register(StringCRC("B"), b);
+		scheduler.Register(StringCRC("C"), c);
+		scheduler.Kick(StringCRC("C"), 1, 6);
+		scheduler.Kick(StringCRC("A"), 1, 4);
+		scheduler.Kick(StringCRC("B"), 2, 9);
+		if (drainBeforeTicks)
+		{
+			scheduler.DrainAll();
+		}
+		else
+		{
+			launcher.CompleteAll();
+		}
+		for (StepKey k = 3; k <= 10; ++k)
+		{
+			scheduler.Tick(k);
+		}
+		r.applies = scheduler.GetStats().applies;
+		r.stalls = scheduler.GetStats().stalls;
+		r.kicks = scheduler.GetStats().kicks;
+		r.releases = launcher.GetReleaseCount();
+		scheduler.Unregister(StringCRC("A"));
+		scheduler.Unregister(StringCRC("B"));
+		scheduler.Unregister(StringCRC("C"));
+		return r;
+	}
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainThenTickMatchesUninterruptedRun)
+{
+	const DrainScriptResult plain = RunDrainScript(false);
+	const DrainScriptResult drained = RunDrainScript(true);
+	ASSERT_EQ(plain.order.size(), 3u);
+	EXPECT_EQ(drained.order, plain.order);
+	// Apply happens in tick order of apply keys A(4), C(6), B(9); kick order only breaks ties on the same tick.
+	EXPECT_EQ(drained.applies, plain.applies);
+	EXPECT_EQ(drained.stalls, 0u);
+	EXPECT_EQ(plain.stalls, 0u);
+	EXPECT_EQ(drained.kicks, plain.kicks);
+	EXPECT_EQ(drained.releases, plain.releases);
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainThenSingleLateTickAppliesInKickOrder)
+{
+	std::vector<int> order;
+	Testing::RecordingStep a(1, &order), b(2, &order), c(3, &order);
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), a));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), b));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("C"), c));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("C"), 1, 6), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 4), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 2, 9), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Tick(10);
+	ASSERT_EQ(order.size(), 3u);
+	EXPECT_EQ(order[0], 3);
+	EXPECT_EQ(order[1], 1);
+	EXPECT_EQ(order[2], 2);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+	mScheduler.Unregister(StringCRC("C"));
+}
+
+TEST_F(DeferredStepSchedulerTest, KickOnCompleteChannelRejectedAlreadyInFlight)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 2, 6), KickResult::kAlreadyInFlight);
+	EXPECT_EQ(mStep.GetCaptureCount(), 1u);
+	EXPECT_EQ(mLauncher.GetLaunchCount(), 1u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, UnregisterCompleteChannelDoesNotApply)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Unregister(StringCRC("A"));
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
+	EXPECT_EQ(mLauncher.GetBadReleaseCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().inFlight, 0u);
+}
+
+TEST_F(DeferredStepSchedulerTest, GetApplyKeyUnknownAndIdleFalseRunningTrue)
+{
+	StepKey key = 99;
+	EXPECT_FALSE(mScheduler.GetApplyKey(StringCRC("Nope"), key));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	EXPECT_FALSE(mScheduler.GetApplyKey(StringCRC("A"), key));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 7), KickResult::kLaunched);
+	ASSERT_TRUE(mScheduler.GetApplyKey(StringCRC("A"), key));
+	EXPECT_EQ(key, 7u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, KickAfterDrainAndApplyWorks)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Tick(5);
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 6, 9), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	mScheduler.Tick(9);
+	EXPECT_EQ(mStep.GetApplyCount(), 2u);
+	EXPECT_EQ(mScheduler.GetStats().drains, 2u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}

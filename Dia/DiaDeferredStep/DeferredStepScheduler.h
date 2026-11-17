@@ -59,6 +59,13 @@ namespace Dia::DeferredStep
 		// A currentKey lower than the previous call asserts (Debug), logs a Warning and applies nothing.
 		void Tick(StepKey currentKey);
 
+		// Waits for every in-flight step but does NOT apply: each channel moves to kComplete with its applyKey intact
+		// and a later Tick applies it normally. No-op (no Wait, no log, drains unchanged) when nothing is in flight.
+		void DrainAll();
+
+		// True with the channel's applyKey while kRunning or kComplete; false for unknown or idle channels.
+		bool GetApplyKey(Dia::Core::StringCRC channelId, StepKey& out) const;
+
 		StepState GetState       (Dia::Core::StringCRC channelId) const;
 		uint32_t  GetChannelCount() const;
 		const SchedulerStats& GetStats() const;
