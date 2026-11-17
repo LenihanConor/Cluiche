@@ -27,10 +27,11 @@ describe('perf.timing store', () => {
 });
 
 describe('App shell', () => {
-    it('renders the disconnected banner and empty lanes area', () => {
+    it('renders the disconnected banner and lanes area with no lane rows', () => {
         render(<App />);
         expect(screen.getByTestId('connection-banner')).toHaveAttribute('data-state', 'disconnected');
-        expect(screen.getByTestId('lanes')).toBeEmptyDOMElement();
+        expect(screen.getByTestId('lanes')).toBeInTheDocument();
+        expect(screen.queryAllByTestId('lane-row')).toHaveLength(0);
     });
 
     it('renders the connected banner after a connection_state push', async () => {

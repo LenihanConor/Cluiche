@@ -1,0 +1,71 @@
+import { useEffect, useRef, useState } from 'react';
+import type { Lane, TimeDomain, TripRange } from '../model/laneModel';
+import { bucketize, tripSpans } from '../model/laneModel';
+import { drawLane } from '../model/drawLane';
+import type { MinimalCtx } from '../model/drawLane';
+
+export const kLaneHeight = 74;
+
+interface Props {
+    lane: Lane;
+    domain: TimeDomain;
+    trips: TripRange[];
+}
+
+export function LaneRow({ lane, domain, trips }: Props) {
+    const holderRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [width, setWidth] = useState(0);
+
+    useEffect(() => {
+        const el = holderRef.current;
+        if (!el) return;
+        setWidth(Math.floor(el.clientWidth));
+        if (typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver((entries) => {
+            const w = entries[0]?.contentRect.width;
+            if (typeof w === 'number') setWidth(Math.floor(w));
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (!canvas || !ctx || width < 1) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(kLaneHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const buckets = bucketize(lane, width, domain, trips);
+        drawLane(ctx as unknown as MinimalCtx, lane, buckets, {
+            width, height: kLaneHeight, domain, spans: tripSpans(lane, trips, domain),
+        });
+    }, [lane, domain, trips, width]);
+
+    return (
+        <div
+            data-testid="lane-row"
+            data-unit={lane.unit}
+            style={{ display: 'grid', gridTemplateColumns: '84px 1fr', alignItems: 'center', marginBottom: 2 }}
+        >
+            <div style={{ color: '#9cdcfe', fontWeight: 600 }}>
+                {lane.unit}
+                <small style={{ display: 'block', color: '#808080', fontWeight: 400 }}>
+                    {lane.hz} Hz
+                </small>
+                <small style={{ display: 'block', color: '#808080', fontWeight: 400 }}>
+                    budget {lane.budgetMs.toFixed(1)} ms
+                </small>
+            </div>
+            <div ref={holderRef} style={{ minWidth: 0 }}>
+                <canvas
+                    ref={canvasRef}
+                    data-testid="lane-canvas"
+                    style={{ display: 'block', width: '100%', height: kLaneHeight, background: '#1a1a1a' }}
+                />
+            </div>
+        </div>
+    );
+}

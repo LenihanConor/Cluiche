@@ -6,3 +6,6 @@ global.ResizeObserver = class ResizeObserver {
     unobserve() {}
     disconnect() {}
 };
+
+// jsdom has no canvas: return no context so components skip drawing without noisy "not implemented" errors
+HTMLCanvasElement.prototype.getContext = (() => null) as unknown as HTMLCanvasElement['getContext'];
