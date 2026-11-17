@@ -22,6 +22,7 @@
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Trace/Tracer.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/MetricInfo.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Counter.h>
 
@@ -193,6 +194,19 @@ private:
     // Metrics (Task 32/33)
     Dia::Observation::Metric::Gauge*   mMetricCurrentSize = nullptr;
     Dia::Observation::Metric::Counter* mMetricDropsTotal  = nullptr;
+
+    // Edge statistics (Task 5): per-stream metrics for write/read cost and data age.
+    std::atomic<uint64_t> mEdgeWrites{0};
+    std::atomic<uint64_t> mEdgeBytes{0};
+    std::atomic<uint64_t> mEdgeLastWriteSteadyNs{0};
+    std::atomic<uint64_t> mEdgeWriteNsTotal{0};
+    std::atomic<uint64_t> mEdgeReads{0};
+    std::atomic<uint64_t> mEdgeReadNsTotal{0};
+    Dia::Observation::Metric::Counter* mMetricEdgeWrites    = nullptr;
+    Dia::Observation::Metric::Counter* mMetricEdgeBytes     = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricEdgeDataAgeNs = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricEdgeWriteCostNs = nullptr;
+    Dia::Observation::Metric::Gauge*   mMetricEdgeReadCostNs  = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -219,10 +233,23 @@ inline EventStreamStore<T>::EventStreamStore(const Dia::Core::StringCRC& id,
 {
     mReaders = new ReaderBuffer[mMaxReaders];
 
-    auto& reg          = Dia::Observation::Metric::MetricRegistry::Instance();
+    using namespace Dia::Observation::Metric;
+    auto& reg          = MetricRegistry::Instance();
     const std::string  prefix = std::string("stream.") + mId.AsChar();
     mMetricCurrentSize = reg.RegisterGauge  (Dia::Core::StringCRC((prefix + ".current_size").c_str()));
     mMetricDropsTotal  = reg.RegisterCounter(Dia::Core::StringCRC((prefix + ".drops_total" ).c_str()));
+
+    // Edge statistics metrics (Task 5)
+    mMetricEdgeWrites = reg.RegisterCounter(Dia::Core::StringCRC((prefix + ".edge.writes").c_str()),
+        MetricInfo{"Edge Writes", "Number of Send() calls", "count"});
+    mMetricEdgeBytes = reg.RegisterCounter(Dia::Core::StringCRC((prefix + ".edge.bytes").c_str()),
+        MetricInfo{"Edge Bytes", "Total bytes sent (event payload size)", "bytes"});
+    mMetricEdgeDataAgeNs = reg.RegisterGauge(Dia::Core::StringCRC((prefix + ".edge.data_age_ns").c_str()),
+        MetricInfo{"Edge Data Age", "Steady time between send and consume", "nanoseconds"});
+    mMetricEdgeWriteCostNs = reg.RegisterGauge(Dia::Core::StringCRC((prefix + ".edge.write_cost_ns").c_str()),
+        MetricInfo{"Edge Write Cost", "Average steady time per Send() call", "nanoseconds"});
+    mMetricEdgeReadCostNs = reg.RegisterGauge(Dia::Core::StringCRC((prefix + ".edge.read_cost_ns").c_str()),
+        MetricInfo{"Edge Read Cost", "Average steady time per Consume() call", "nanoseconds"});
 }
 
 template<typename T>
@@ -290,16 +317,20 @@ inline int EventStreamStore<T>::RegisterReader()
 template<typename T>
 inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
 {
+    uint64_t sendStartNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
     // Capture trace link FIRST, before DIA_TRACE_ZONE (which opens its own span).
     // We want the CALLER's span, not Send()'s own span.
     Dia::Observation::Trace::TraceLink link = Dia::Observation::Trace::Tracer::GetCurrentLink();
     const_cast<Event<T>&>(event).traceId       = link.traceId;
     const_cast<Event<T>&>(event).spanId        = link.spanId;
-    const_cast<Event<T>&>(event).writeSteadyNs = static_cast<uint64_t>(
-        std::chrono::steady_clock::now().time_since_epoch().count());
+    const_cast<Event<T>&>(event).writeSteadyNs = sendStartNs;
 
     DIA_PROFILE_SCOPE("stream.send", Dia::Observation::Profile::Category::kDiaStream);
     DIA_TRACE_ZONE("stream.send", Dia::Observation::Trace::Category::kDiaStream);
+
+    SendResult result;
     if (mPolicy == OverflowPolicy::kBlock)
     {
         std::unique_lock<std::mutex> lock(mMutex);
@@ -318,25 +349,50 @@ inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
             });
 
         if (mShuttingDown.load(std::memory_order_relaxed))
-            return SendResult::kDroppedOldest;  // shutdown drain, discard silently
-
-        if (timedOut)
+            result = SendResult::kDroppedOldest;  // shutdown drain, discard silently
+        else if (timedOut)
         {
             // Timeout expired — fall through to drop-oldest for each blocked reader.
             SendResult r = SendInternal(event);
             mNotFullCv.notify_all();
-            return r == SendResult::kDroppedOldest ? SendResult::kBlockedThenDropped : r;
+            result = (r == SendResult::kDroppedOldest) ? SendResult::kBlockedThenDropped : r;
         }
-
-        SendResult r = SendInternal(event);
-        mNotFullCv.notify_all();
-        return r;
+        else
+        {
+            result = SendInternal(event);
+            mNotFullCv.notify_all();
+        }
     }
     else
     {
         std::lock_guard<std::mutex> lock(mMutex);
-        return SendInternal(event);
+        result = SendInternal(event);
     }
+
+    // Edge statistics (Task 5): update after send
+    uint64_t sendEndNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    uint64_t sendCostNs = sendEndNs - sendStartNs;
+
+    mEdgeWrites.fetch_add(1, std::memory_order_relaxed);
+    mEdgeBytes.fetch_add(sizeof(T), std::memory_order_relaxed);
+    mEdgeLastWriteSteadyNs.store(sendStartNs, std::memory_order_relaxed);
+    mEdgeWriteNsTotal.fetch_add(sendCostNs, std::memory_order_relaxed);
+
+    // Update gauges (average cost)
+    if (mMetricEdgeWrites)
+        mMetricEdgeWrites->Inc();
+    if (mMetricEdgeBytes)
+        mMetricEdgeBytes->Inc(sizeof(T));
+    if (mMetricEdgeWriteCostNs)
+    {
+        uint64_t writes = mEdgeWrites.load(std::memory_order_relaxed);
+        uint64_t totalNs = mEdgeWriteNsTotal.load(std::memory_order_relaxed);
+        if (writes > 0)
+            mMetricEdgeWriteCostNs->Set(static_cast<double>(totalNs) / static_cast<double>(writes));
+    }
+
+    return result;
 }
 
 template<typename T>
@@ -452,25 +508,59 @@ template<unsigned int N>
 inline void EventStreamStore<T>::Consume(int readerIndex,
     Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
 {
+    uint64_t readStartNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
     DIA_PROFILE_SCOPE("stream.consume", Dia::Observation::Profile::Category::kDiaStream);
     DIA_TRACE_ZONE("stream.consume", Dia::Observation::Trace::Category::kDiaStream);
     DIA_ASSERT(readerIndex >= 0 && readerIndex < mReaderCount,
         "EventStreamStore::Consume — invalid readerIndex %d", readerIndex);
 
-    std::lock_guard<std::mutex> lock(mMutex);
-    ReaderBuffer& rb = mReaders[readerIndex];
-    if (!rb.active)
-        return;
+    unsigned int eventCount = 0;
+    uint64_t lastWriteSteadyNs = 0;
 
-    while (rb.count > 0 && !outEvents.IsFull())
     {
-        outEvents.Add(rb.buffer[rb.tail]);
-        rb.tail = (rb.tail + 1) % rb.capacity;
-        --rb.count;
+        std::lock_guard<std::mutex> lock(mMutex);
+        ReaderBuffer& rb = mReaders[readerIndex];
+        if (!rb.active)
+            return;
+
+        while (rb.count > 0 && !outEvents.IsFull())
+        {
+            const Event<T>& evt = rb.buffer[rb.tail];
+            lastWriteSteadyNs = evt.writeSteadyNs;  // Track last event's write time
+            outEvents.Add(evt);
+            rb.tail = (rb.tail + 1) % rb.capacity;
+            --rb.count;
+            ++eventCount;
+        }
+
+        if (mPolicy == OverflowPolicy::kBlock)
+            mNotFullCv.notify_all();
     }
 
-    if (mPolicy == OverflowPolicy::kBlock)
-        mNotFullCv.notify_all();
+    // Edge statistics (Task 5): update after consume
+    if (eventCount > 0)
+    {
+        uint64_t readEndNs = static_cast<uint64_t>(
+            std::chrono::steady_clock::now().time_since_epoch().count());
+        uint64_t readCostNs = readEndNs - readStartNs;
+        uint64_t dataAgeNs = readStartNs - lastWriteSteadyNs;
+
+        mEdgeReads.fetch_add(1, std::memory_order_relaxed);
+        mEdgeReadNsTotal.fetch_add(readCostNs, std::memory_order_relaxed);
+
+        // Update gauges
+        if (mMetricEdgeDataAgeNs)
+            mMetricEdgeDataAgeNs->Set(static_cast<double>(dataAgeNs));
+        if (mMetricEdgeReadCostNs)
+        {
+            uint64_t reads = mEdgeReads.load(std::memory_order_relaxed);
+            uint64_t totalNs = mEdgeReadNsTotal.load(std::memory_order_relaxed);
+            if (reads > 0)
+                mMetricEdgeReadCostNs->Set(static_cast<double>(totalNs) / static_cast<double>(reads));
+        }
+    }
 }
 
 // --- Frame-batching API ------------------------------------------------------

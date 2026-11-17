@@ -236,3 +236,39 @@ def test_engine_produced_profile_converts(tmp_path):
     assert stats["skipped"] == 0 and stats["jobs"] == 24
     assert sum(1 for e in evs if e["ph"] == "s") == sum(1 for e in evs if e["ph"] == "f") == 24
     assert any(e["ph"] == "X" and e["args"].get("subject") == "ecology" for e in evs)
+
+
+def test_trace_linked_streams_emit_flow_events(tmp_path):
+    """Task 6: spans with link_trace_id and link_span_id emit Perfetto flow events."""
+    p = tmp_path / "profile.jsonl"
+    # Writer span (thread 1) with no link
+    writer = _scope(1, "Write", 0, 5_000_000)
+    # Reader span (thread 2) with link to writer (hex 16-char trace/span ids)
+    reader = _scope(2, "Read", 10_000_000, 2_000_000)
+    reader["link_trace_id"] = "00000000deadbeef"
+    reader["link_span_id"] = "0000000012345678"
+    # Another reader without a link (no flow events)
+    reader2 = _scope(3, "Read2", 20_000_000, 1_000_000)
+    # Reader with zero link (no flow events)
+    reader3 = _scope(4, "Read3", 30_000_000, 1_000_000)
+    reader3["link_trace_id"] = "0000000000000000"
+    reader3["link_span_id"] = "0000000000000000"
+    _write(p, [writer, reader, reader2, reader3])
+    out = tmp_path / "o.json"
+    stats = convert_files(p, None, out)
+    doc = _load(out)
+    validate_chrome_trace(doc)
+    # 4 complete events (X)
+    xs = _by_ph(doc, "X")
+    assert len(xs) == 4
+    # 1 flow event pair (s and f) for the reader with non-zero link
+    s_evs = _by_ph(doc, "s")
+    f_evs = _by_ph(doc, "f")
+    assert len(s_evs) == 1 and len(f_evs) == 1
+    assert s_evs[0]["id"] == f_evs[0]["id"]
+    assert s_evs[0]["name"] == "stream" and f_evs[0]["name"] == "stream"
+    assert s_evs[0]["cat"] == "flow" and f_evs[0]["cat"] == "flow"
+    assert f_evs[0]["bp"] == "e"
+    # Flow finish is at the reader span start; flow start is slightly before
+    reader_ev = [e for e in xs if e["name"] == "Read"][0]
+    assert s_evs[0]["ts"] < f_evs[0]["ts"] == reader_ev["ts"]

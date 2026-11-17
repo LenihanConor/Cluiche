@@ -3003,5 +3003,11 @@
     <ClCompile Include="ApplicationFlow\TestEventStreamLink.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamEdgeStats.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamLinkEdgeCases.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -3,6 +3,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
 
@@ -58,6 +59,7 @@ namespace Dia
 					return;
 				}
 
+				DIA_TRACE_ZONE("DomainStateSnapshotPublisher.Update", ::Dia::Observation::Trace::Category::kDiaApplicationFlow);
 				DIA_PROFILE_SCOPE("debugvisualiser.domain_snapshot.publish", ::Dia::Observation::Profile::Category::kDiaGraphics);
 				const PackResult result = PackDomainStates(mRegistry, mResolver, simFrame, *mScratch, mMaxBytes, mSkip, mSkipCtx);
 				if (result.truncated)

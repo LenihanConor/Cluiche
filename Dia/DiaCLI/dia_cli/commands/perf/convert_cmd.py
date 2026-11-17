@@ -173,6 +173,20 @@ def convert_files(profile: Path, trips: Optional[Path], out_path: Path,
                          "dur": _us(_as_int(rec["duration_ns"])),
                          "name": _name_of(rec.get("scope_name", rec.get("name", "?"))),
                          "cat": str(rec.get("category", "")), "args": args})
+                # Emit flow events when link fields are present (Task 6: trace-linked streams)
+                link_trace = rec.get("link_trace_id")
+                link_span = rec.get("link_span_id")
+                if link_trace and link_span and link_trace != "0" * 16 and link_span != "0" * 16:
+                    flow_id += 1
+                    # Flow start: emitted at the current span's start (writer span time unknown)
+                    # In a real implementation with full trace data, we'd emit "s" at the writer
+                    # span's end time. Here we emit it just before the reader span as a visual cue.
+                    # Use 1 ns before to ensure it's visible after rounding to 3 decimal places.
+                    w.event({"ph": "s", "id": flow_id, "pid": _PID, "tid": tid, "ts": _us(start - 1000),
+                             "name": "stream", "cat": "flow"})
+                    # Flow finish: at this span's start
+                    w.event({"ph": "f", "bp": "e", "id": flow_id, "pid": _PID, "tid": tid,
+                             "ts": _us(start), "name": "stream", "cat": "flow"})
             elif rtype == "thread_name":
                 tid = _as_int(rec.get("thread_id"))
                 explicit.add(tid)

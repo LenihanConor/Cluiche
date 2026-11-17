@@ -8,6 +8,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <cstdio>
 
@@ -76,7 +77,10 @@ namespace Dia
 				const char* displayName = domain.GetDisplayName();
 
 				state = Json::Value(Json::objectValue);
-				domain.GetJSONState(state);
+				{
+					DIA_TRACE_ZONE("IDebugDomain.GetJSONState", ::Dia::Observation::Trace::Category::kDiaApplicationFlow);
+					domain.GetJSONState(state);
+				}
 				// A domain may replace `out` with a non-object; the envelope below needs an object.
 				if (!state.isObject()) state = Json::Value(Json::objectValue);
 				ReplaceNonFinite(state);

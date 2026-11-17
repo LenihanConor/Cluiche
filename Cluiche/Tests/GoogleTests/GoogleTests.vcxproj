@@ -1286,6 +1286,8 @@
     <ClCompile Include="DiaObservation\Trace\TestTraceLink.cpp" />
     <ClCompile Include="ApplicationFlow\TestFrameStreamLink.cpp" />
     <ClCompile Include="ApplicationFlow\TestEventStreamLink.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamEdgeStats.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamLinkEdgeCases.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

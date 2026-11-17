@@ -6,6 +6,8 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaStreams/FrameStreamStore.h>
+#include <DiaObservation/Trace/ScopedZone.h>
 #include <DiaDebugServer/DebugServer.h>
 #include "Modules/DebugServerHostModule.h"
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -545,13 +547,20 @@ void DebugPanelPageModule::PollDomainSnapshot()
     }
 
     const bool interested = mWallMs < mInterestUntilMs;
-    const Console::DomainStateSnapshot* snapshot = mSnapshotIn.FetchLatest();
+    Dia::ApplicationFlow::StreamLink link;
+    const Console::DomainStateSnapshot* snapshot = mSnapshotIn.FetchLatestLinked(link);
     if (snapshot == nullptr)
     {
         if (interested)
             mHealth.OnPending();
         return;
     }
+
+    // Open a linked trace zone if the snapshot has a valid link (S-1 chain)
+    Dia::Observation::Trace::ScopedZone linkedZone(
+        Dia::Core::StringCRC("DebugPanelPageModule.PollDomainSnapshot"),
+        Dia::Observation::Trace::Category::kDiaApplicationFlow,
+        Dia::Observation::Trace::TraceLink{link.traceId, link.spanId});
 
     if (!mHaveFrame || snapshot->simFrame != mLastSimFrame)
     {
@@ -610,6 +619,7 @@ void DebugPanelPageModule::PushDomainStatesToPanel()
     if (uiSystem == nullptr || !uiSystem->IsPageLoaded())
         return;
 
+    DIA_TRACE_ZONE("DebugPanelPageModule.PushDomainStatesToPanel", Dia::Observation::Trace::Category::kDiaApplicationFlow);
     Json::FastWriter writer;
     writer.omitEndingLineFeed();
     std::string json;
