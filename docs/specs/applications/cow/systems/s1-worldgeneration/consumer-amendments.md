@@ -142,6 +142,24 @@ The implementation stays F-3's. Two items in that section need F-3's attention w
 25. The section carries an explicit not-built marker naming F-3 Feature 6.
 26. The two open items above are recorded in F-3's Feature 6 spec or its plan, not left only in S-1.
 
+## Amendment 7 — latitude band grouping layer (2026-11-16, approved with T-1 Feature 10)
+
+Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/space-over-time.md, so T-1's strip chart can have latitude rows over the whole run (DiaCellHistory only keeps whole-run aggregates for grouping layers).
+
+- `WorldLayerSource` registers `world.latitude_band`, a category layer.
+- **8 equal-width bands** over the map's latitude range, computed from the stage-11 `latitude` layer. Enum ids `band_0` (northmost) to `band_7`. Labels give the band's degree range from the world's north and south extent (for example `60–52°N`).
+- Schema `ui` carries `history.group: true` and a sequential palette.
+- **Static per world.** Recomputed on regenerate and on import (it is a derivable layer, so it joins the list rebuilt after import).
+- CoW code only, so no AD-001 sign-off.
+
+**Acceptance criteria**
+
+27. `world.latitude_band` is registered with 8 values, `band_0` contains the northmost row and `band_7` the southmost, and every land and water cell has exactly one band.
+28. Band edges are equal in latitude across the map's range; labels are degree ranges from the world's extent.
+29. The layer's schema flags it as a history grouping layer, so DiaCellHistory records aggregates for each band.
+30. The S-1 golden file gains `world.latitude_band` (updated with `DIA_UPDATE_GOLDEN=1`); every other layer's hash is unchanged, and a test checks that.
+31. After import and after regenerate the layer matches a freshly generated one.
+
 ## Public Interfaces
 
 ```cpp
@@ -181,6 +199,7 @@ Amendments 4 and 5 extend existing entry points rather than adding public types;
 - **F-3 World Assets Features 3, 4 and 6** — amendments 4, 5 and 6.
 - **T-2 Feature 4**, **S-3.5 Author mode** — amendment 5.
 - **A3** — amendment 1 (`ApplyBiomeTransition` needs the three values to exist).
+- **T-1 Feature 10** — amendment 7.
 
 ## Test Strategy
 
@@ -212,5 +231,7 @@ Scoped filter for iteration: `*Biome*:*WorldGen*:*Terrain*`.
 **Status:** `Approved` (2026-11-13). Found by the A4 Weather dependency audit and the F-3 audit, both the same day, after S-1 closed `Done`. No plan yet — create `consumer-amendments.plan.md` when implementation starts.
 
 **Update 2026-11-16:** amendments 1–3 are built (plan rows 1–9 Done). Amendments 4 and 5 moved to F-3 Feature 6, and AC 26 (the two `GetWorldContentHash` open items) is met there. Amendment 6 was applied 2026-11-13. This feature is complete for S-1's purposes; ACs 17–24 are tracked in F-3.
+
+**Update 2026-11-16 (later):** amendment 7 (latitude band grouping layer) added for T-1 Feature 10. Not built; it needs a plan row before implementation.
 
 **Blocking (historical):** A4 Feature 1 and A1 Feature 2 (amendment 1 only). Amendments 2 and 3 are independent; 4, 5 and 6 are F-3 gated.

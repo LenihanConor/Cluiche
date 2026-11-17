@@ -195,6 +195,27 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 3. **`info profile`** returns Feature 2's 13 pass entries (1, 2, 3, 4, 5a, 5b, 6a, 6b, 7, 8, 9, 10, finish: `WeatherStepProfile::kPassCount`).
 4. **Drought at commit.** `DroughtDetector` at `Commit` cannot see the week being committed in DiaCellHistory (the driver samples afterwards). The history adapter therefore appends the **just-committed** `precipitation` as the newest week before evaluating; the same adapter is used by `find droughts`, which reads only committed, sampled weeks.
 
+## T-1 consumer amendment (2026-11-16, approved with T-1 Feature 10)
+
+Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/space-over-time.md for storm and drought tracks. Supersedes contradicting text above.
+
+- **Storm ids.** `weather.storm` payload gains `id` (uint32, per world, from 1, reset on world change and on state import).
+- **`weather.storm_track`** (new type). Emitted at `Commit` every applied week for each active storm, the largest first, at most **8 per week**. Payload `{ id, anchor, centroid: [q, r], size, minPressure }` (about 100 bytes). The week a storm starts emits both `weather.storm` and its first `weather.storm_track`.
+- **Continuity.** A storm keeps its `id` while this week's low-pressure region overlaps last week's region with that id; the largest overlap wins. A split gives the smaller part a new id (and a `weather.storm` event, within the existing cap of 4 per week). A merge keeps the older id. A storm whose region has no overlap is over and its id is never reused. This extends the existing "anchor not part of a storm last week" rule; the per-storm cell sets of last week are kept on SimPU in the module (not saved; after a load, ids restart and the first week re-announces live storms).
+- **`weather.drought_end`** (new type). On the drought cadence (every 4th applied week), for a region already reported and not yet ended, the first evaluation with a non-dry week emits `{ region, weeks }`, where `weeks` is the episode length up to that evaluation.
+- **Schema.** Both new types get `kind: "event"` DiaValueSchema entries with their payload fields.
+- **Metric.** `cow.weather.storm_tracks_dropped` (counter, with `MetricInfo`) counts tracks beyond the cap of 8. AC 25 now covers four metrics.
+
+Added criteria:
+
+27. A storm that persists for N weeks emits one `weather.storm` and N `weather.storm_track` events with the same id; centroids follow the low-pressure region.
+28. A split keeps the id on the larger part and gives the smaller part a new id with its own `weather.storm`; a merge keeps the older id; ids are never reused within a world.
+29. At most 8 track events per week are emitted, the largest storms first, and the excess is counted in `cow.weather.storm_tracks_dropped`.
+30. A region reported in drought emits exactly one `weather.drought_end` on the first evaluation with a non-dry week, and none if the drought is still running.
+31. Both new event types have schema entries; payloads are under 1 KB.
+
+**Plan impact:** the plan (written, not started) needs these folded into its events task before it starts.
+
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).

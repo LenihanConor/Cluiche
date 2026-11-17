@@ -136,7 +136,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 7 | Snapshots, cell compare and history status | Snapshot panel (list, take, delete, restore), delta compare on the mini-map, history status strip with Track/Untrack | Approved | [snapshots-and-compare.md](snapshots-and-compare.md) |
 | 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode on series and mini-map (value minus the typical value for that week); baseline is this run or a reference file; weather default view | Approved | [seasons.md](seasons.md) |
 | 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across archived reports, check → run history link, performance/edge-case/live-smoke/baseline blocks, read-only live progress | Approved | [s25-checks-panel.md](s25-checks-panel.md) |
-| 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks | Draft | TBD |
+| 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks; region-level fallback outside the per-cell window | Approved | [space-over-time.md](space-over-time.md) |
 | 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time; each schema-described | Draft | TBD |
 | 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; preset pairs; automatic lead/lag scan | Draft | TBD |
 
@@ -240,7 +240,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - **One map per period:** a mini-map per decade or season.
 - **Playback** of the mini-map over the brush.
 - **Storm and drought tracks:** event footprints over time.
-- *Open:* `weather.storm` fires once per storm and does not re-fire while it persists, so a track has no per-week position. Either derive positions in the editor from tracked `weather.pressure`, or ask A4 for a per-week storm id and position (an A4 Feature 5 amendment).
+- *Resolved 2026-11-16 (space-over-time.md):* A4 emits `weather.storm_track` per week and `weather.drought_end` (an A4 Feature 5 amendment). Latitude rows come from a new S-1 grouping layer (S-1 amendment 7).
 
 **Feature 11, World health dashboard.** Designer measures instead of raw layers, derived in the editor:
 - **Diversity:** Shannon diversity of biome counts (category-layer aggregates).
@@ -267,4 +267,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 9 `Approved`; Feature 7 has a plan. Features 10 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 10 `Approved`; Feature 7 has a plan. Features 11 and 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
