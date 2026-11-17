@@ -147,6 +147,85 @@ namespace Dia::DeferredStep
 		return KickResult::kLaunched;
 	}
 
+	void DeferredStepScheduler::Tick(StepKey currentKey)
+	{
+		if (mHasTicked && currentKey < mLastTickKey)
+		{
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Tick key went backwards: %llu < previous %llu; nothing applied",
+				static_cast<unsigned long long>(currentKey), static_cast<unsigned long long>(mLastTickKey));
+			DIA_ASSERT(false, "DeferredStepScheduler::Tick called with a key lower than the previous call");
+			return;
+		}
+		mLastTickKey = currentKey;
+		mHasTicked = true;
+
+		// Collect due entries (no heap), then order them by kick sequence.
+		unsigned int due[kMaxChannels];
+		unsigned int dueCount = 0;
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			const ChannelEntry& e = mChannels[i];
+			if (e.hasToken && e.state == StepState::kRunning && e.applyKey <= currentKey)
+			{
+				unsigned int pos = dueCount++;
+				while (pos > 0 && mChannels[due[pos - 1]].kickSequence > e.kickSequence)
+				{
+					due[pos] = due[pos - 1];
+					--pos;
+				}
+				due[pos] = i;
+			}
+		}
+		if (dueCount == 0)
+		{
+			return;
+		}
+
+		// Apply may re-enter the scheduler, so re-resolve each channel by id rather than holding indices.
+		Dia::Core::StringCRC dueIds[kMaxChannels];
+		for (unsigned int i = 0; i < dueCount; ++i)
+		{
+			dueIds[i] = mChannels[due[i]].channelId;
+		}
+		for (unsigned int i = 0; i < dueCount; ++i)
+		{
+			const int index = FindIndex(dueIds[i]);
+			if (index < 0)
+			{
+				continue;
+			}
+			ChannelEntry& entry = mChannels[index];
+			if (!entry.hasToken || entry.state != StepState::kRunning)
+			{
+				continue;
+			}
+			const LaunchToken token = entry.token;
+			IDeferredStep* step = entry.step;
+			if (!mLauncher.IsComplete(token))
+			{
+				// TODO(task6): stall counters, timing and log
+				mLauncher.Wait(token);
+			}
+			step->Apply();
+			mLauncher.Release(token);
+
+			const int after = FindIndex(dueIds[i]);
+			if (after >= 0)
+			{
+				ChannelEntry& done = mChannels[after];
+				done.token = LaunchToken();
+				done.hasToken = false;
+				done.state = StepState::kIdle;
+				++done.stats.applies;
+			}
+			++mStats.applies;
+			if (mStats.inFlight > 0)
+			{
+				--mStats.inFlight;
+			}
+		}
+	}
+
 	StepState DeferredStepScheduler::GetState(Dia::Core::StringCRC channelId) const
 	{
 		const int index = FindIndex(channelId);

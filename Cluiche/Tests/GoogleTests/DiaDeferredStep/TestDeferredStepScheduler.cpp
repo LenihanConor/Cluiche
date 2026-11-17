@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
@@ -6,10 +7,43 @@
 using namespace Dia::DeferredStep;
 using Dia::Core::StringCRC;
 
-// TODO(task5): kKeyNotMonotonic needs Tick to return the channel to idle (floor persists after apply)
-
 namespace
 {
+#ifdef DEBUG
+	int gTickAssertCount = 0;
+	void CountingAssertHandler(const char*, const char*, int, const char*, ...)
+	{
+		++gTickAssertCount;
+	}
+#endif
+
+	// Records how many Wait calls the launcher had seen when Apply ran.
+	class WaitProbeStep final : public IDeferredStep
+	{
+	public:
+		explicit WaitProbeStep(const Testing::ManualStepLauncher& launcher) : mLauncher(launcher) {}
+		void Capture() override {}
+		void Run(IParallelExecutor&) override {}
+		void Apply() override
+		{
+			++mApplyCount;
+			for (uint32_t i = 0; i < mLauncher.GetCallCount(); ++i)
+			{
+				if (mLauncher.GetCall(i).kind == Testing::ManualStepLauncher::Call::kWait) { ++mWaitsAtApply; }
+				if (mLauncher.GetCall(i).kind == Testing::ManualStepLauncher::Call::kRelease) { ++mReleasesAtApply; }
+			}
+		}
+		uint32_t GetPendingVersion() const override { return 1; }
+		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
+		void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+
+		uint32_t mApplyCount = 0;
+		uint32_t mWaitsAtApply = 0;
+		uint32_t mReleasesAtApply = 0;
+	private:
+		const Testing::ManualStepLauncher& mLauncher;
+	};
+
 	// Records the launcher's launch count at the moment Capture runs, to prove Capture precedes Launch.
 	class OrderProbeStep final : public IDeferredStep
 	{
@@ -301,4 +335,215 @@ TEST_F(DeferredStepSchedulerTest, DestroyAfterInFlightUnregisterReleasesExactlyO
 	EXPECT_EQ(launcher.GetReleaseCount(), 1u);
 	EXPECT_EQ(launcher.GetBadReleaseCount(), 0u);
 	EXPECT_EQ(step.GetApplyCount(), 0u);
+}
+
+// ---- Tick ----
+
+namespace
+{
+	uint32_t CountCalls(const Testing::ManualStepLauncher& launcher, Testing::ManualStepLauncher::Call::Kind kind)
+	{
+		uint32_t n = 0;
+		for (uint32_t i = 0; i < launcher.GetCallCount(); ++i)
+		{
+			if (launcher.GetCall(i).kind == kind) { ++n; }
+		}
+		return n;
+	}
+}
+
+TEST_F(DeferredStepSchedulerTest, TickBelowApplyKeyDoesNotApplyEvenWhenComplete)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(4);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kRunning);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickAtApplyKeyAppliesOnceThenReleasesAndIdles)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(CountCalls(mLauncher, Testing::ManualStepLauncher::Call::kWait), 0u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
+	EXPECT_EQ(mLauncher.GetBadReleaseCount(), 0u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.applies, 1u);
+	EXPECT_EQ(mScheduler.GetStats().applies, 1u);
+	EXPECT_EQ(mScheduler.GetStats().inFlight, 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickAboveApplyKeyApplies)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(6);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickAppliesInKickOrderNotRegistrationOrder)
+{
+	std::vector<int> order;
+	Testing::RecordingStep a(1, &order), b(2, &order), c(3, &order);
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), a));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), b));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("C"), c));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("C"), 1, 5), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(5);
+	ASSERT_EQ(order.size(), 3u);
+	EXPECT_EQ(order[0], 3);
+	EXPECT_EQ(order[1], 1);
+	EXPECT_EQ(order[2], 2);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+	mScheduler.Unregister(StringCRC("C"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickKickOrderWinsOverApplyKeyOrder)
+{
+	std::vector<int> order;
+	Testing::RecordingStep a(1, &order), b(2, &order);
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), a));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), b));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 1, 9), KickResult::kLaunched);   // kicked first, later apply key
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 3), KickResult::kLaunched);   // kicked second, earlier apply key
+	mLauncher.CompleteAll();
+	mScheduler.Tick(10);
+	ASSERT_EQ(order.size(), 2u);
+	EXPECT_EQ(order[0], 2);
+	EXPECT_EQ(order[1], 1);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickJumpPastApplyKeyAppliesOnce)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(15);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickSameKeyTwiceAppliesOnce)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(5);
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickOnEmptySchedulerDoesNothing)
+{
+	mScheduler.Tick(100);
+	EXPECT_EQ(mLauncher.GetCallCount(), 0u);
+	EXPECT_EQ(mScheduler.GetStats().applies, 0u);
+}
+
+TEST_F(DeferredStepSchedulerTest, TickWithAllChannelsIdleMakesNoLauncherCalls)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), mStep));
+	mScheduler.Tick(100);
+	EXPECT_EQ(mLauncher.GetCallCount(), 0u);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickBackwardsKeyAssertsAndAppliesNothing)
+{
+#ifdef DEBUG
+	auto* prev = Dia::Core::g_pAssertFunc;
+	Dia::Core::g_pAssertFunc = CountingAssertHandler;
+	gTickAssertCount = 0;
+#endif
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(10);   // applies
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 11), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(8);    // backwards: nothing applied
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kRunning);
+#ifdef DEBUG
+	EXPECT_GT(gTickAssertCount, 0);
+	Dia::Core::g_pAssertFunc = prev;
+#endif
+	mScheduler.Tick(11);   // forward again works
+	EXPECT_EQ(mStep.GetApplyCount(), 2u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, KickLowerKickKeyAfterApplyRejectedNotMonotonic)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 11), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(11);
+	ASSERT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	const uint32_t launches = mLauncher.GetLaunchCount();
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 9, 12), KickResult::kKeyNotMonotonic);
+	EXPECT_EQ(mLauncher.GetLaunchCount(), launches);
+	EXPECT_EQ(mStep.GetCaptureCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.kicksRejected, 1u);
+	// Equal to the previous kickKey is accepted.
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 10, 12), KickResult::kLaunched);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, AlreadyCompleteLaunchStillRunningUntilTickAppliesAtApplyKey)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();   // launcher reports complete before any Tick
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kRunning);
+	mScheduler.Tick(4);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TickIncompleteAtApplyKeyWaitsBeforeApply)
+{
+	WaitProbeStep probe(mLauncher);
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), probe));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(5);
+	EXPECT_EQ(probe.mApplyCount, 1u);
+	EXPECT_EQ(probe.mWaitsAtApply, 1u);
+	EXPECT_EQ(probe.mReleasesAtApply, 0u);   // Release only after Apply
+	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
 }

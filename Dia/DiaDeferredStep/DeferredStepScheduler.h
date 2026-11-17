@@ -55,6 +55,10 @@ namespace Dia::DeferredStep
 		// applyKey == kickKey is accepted: it is synchronous and will stall at the next Tick.
 		KickResult Kick(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey);
 
+		// SimPU, once per drained sim step. Applies every step whose applyKey <= currentKey in kick order.
+		// A currentKey lower than the previous call asserts (Debug), logs a Warning and applies nothing.
+		void Tick(StepKey currentKey);
+
 		StepState GetState       (Dia::Core::StringCRC channelId) const;
 		uint32_t  GetChannelCount() const;
 		const SchedulerStats& GetStats() const;
@@ -86,5 +90,7 @@ namespace Dia::DeferredStep
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
 		SchedulerStats mStats;
 		uint64_t mKickSequence = 0;
+		StepKey mLastTickKey = 0;
+		bool mHasTicked = false;
 	};
 }
