@@ -2997,5 +2997,8 @@
     <ClCompile Include="DiaObservation\Trace\TestTraceLink.cpp">
       <Filter>DiaObservation\Trace</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestFrameStreamLink.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

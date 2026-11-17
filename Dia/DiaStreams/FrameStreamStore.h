@@ -3,12 +3,23 @@
 #include <atomic>
 #include <mutex>
 #include <optional>
+#include <chrono>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaStreams/IStreamStore.h>
 #include <DiaStreams/FrameStreamDiagnostics.h>
+#include <DiaObservation/Trace/Tracer.h>
 
 namespace Dia { namespace ApplicationFlow {
+
+// StreamLink: trace link captured at write time, exposed to readers.
+struct StreamLink
+{
+    uint64_t traceId;
+    uint64_t spanId;
+    uint64_t writeSteadyNs;
+    bool valid;
+};
 
 // FrameStreamStore<T>
 // ---------------------------------------------------------------------------
@@ -32,6 +43,7 @@ public:
 
     // Reader side (lock-free for single-writer)
     const T* FetchLatest() const;
+    const T* FetchLatestLinked(StreamLink& outLink) const;
     // FetchClosestTo: returns a pointer to the ALREADY-STORED sample whose
     // timestamp is nearest the requested time (nearest-sample selection, not a
     // blended/interpolated value — the const T* signature cannot return a
@@ -58,6 +70,11 @@ private:
         std::optional<T> data;
         long long timestampUs = 0LL;  // raw microseconds; TimeAbsolute has no default ctor
         bool     hasData      = false;
+        // Trace-link fields: writer's trace and span id at Write() time. Zero when
+        // the tracer is not started or no span is open. Always compiled; tracer-gated.
+        uint64_t traceId       = 0;
+        uint64_t spanId        = 0;
+        uint64_t writeSteadyNs = 0;
     };
 
     // Concurrency tradeoff: single-writer reads are lock-free. A reader captures
@@ -97,6 +114,11 @@ inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsol
 {
     mWarnedNoData.store(false, std::memory_order_relaxed);
 
+    // Capture trace link if tracer is active (one flag test when off; zero fields otherwise)
+    Dia::Observation::Trace::TraceLink link = Dia::Observation::Trace::Tracer::GetCurrentLink();
+    uint64_t writeSteadyNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
     auto doWrite = [&]()
     {
         // cur == -1 on the very first write yields next = (-1 + 1) % N == 0.
@@ -104,9 +126,12 @@ inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsol
         // modulo ever occurs; the first write always lands in slot 0.
         int cur  = mWriteCursor.load(std::memory_order_relaxed);
         int next = (cur + 1) % static_cast<int>(kRingCapacity);
-        mSlots[next].data        = data;
-        mSlots[next].timestampUs = timestamp.AsLongLongInMicroseconds();
-        mSlots[next].hasData     = true;
+        mSlots[next].data          = data;
+        mSlots[next].timestampUs   = timestamp.AsLongLongInMicroseconds();
+        mSlots[next].hasData       = true;
+        mSlots[next].traceId       = link.traceId;
+        mSlots[next].spanId        = link.spanId;
+        mSlots[next].writeSteadyNs = writeSteadyNs;
         mWriteCursor.store(next, std::memory_order_release);
     };
 
@@ -132,6 +157,25 @@ inline const T* FrameStreamStore<T>::FetchLatest() const
     }
     if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
         FrameStream_WarnNoData(mId);
+    return nullptr;
+}
+
+template<typename T>
+inline const T* FrameStreamStore<T>::FetchLatestLinked(StreamLink& outLink) const
+{
+    int cur = mWriteCursor.load(std::memory_order_acquire);
+    if (cur >= 0 && mSlots[cur].hasData)
+    {
+        mWarnedNoData.store(false, std::memory_order_relaxed);
+        outLink.traceId       = mSlots[cur].traceId;
+        outLink.spanId        = mSlots[cur].spanId;
+        outLink.writeSteadyNs = mSlots[cur].writeSteadyNs;
+        outLink.valid         = (mSlots[cur].traceId != 0 && mSlots[cur].spanId != 0);
+        return &(*mSlots[cur].data);
+    }
+    if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
+        FrameStream_WarnNoData(mId);
+    outLink.valid = false;
     return nullptr;
 }
 
