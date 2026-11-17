@@ -1,5 +1,7 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 
+#include <chrono>
+
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/IDeferredStep.h>
@@ -81,6 +83,68 @@ namespace Dia::DeferredStep
 		entry.token = LaunchToken();
 		entry.hasToken = false;
 		entry.state = StepState::kIdle;
+		if (mStats.inFlight > 0)
+		{
+			--mStats.inFlight;
+		}
+	}
+
+	KickResult DeferredStepScheduler::Kick(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey)
+	{
+		const int index = FindIndex(channelId);
+		if (index < 0)
+		{
+			++mStats.kicksRejected;
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Kick rejected: channel '%s' not registered", channelId.AsChar());
+			return KickResult::kUnknownChannel;
+		}
+
+		ChannelEntry& entry = mChannels[index];
+		KickResult rejection = KickResult::kLaunched;
+		if (entry.state != StepState::kIdle)
+		{
+			rejection = KickResult::kAlreadyInFlight;
+		}
+		else if (applyKey < kickKey)
+		{
+			rejection = KickResult::kApplyBeforeKick;
+		}
+		else if (entry.hasKeyFloor && kickKey < entry.keyFloor)
+		{
+			rejection = KickResult::kKeyNotMonotonic;
+		}
+
+		if (rejection != KickResult::kLaunched)
+		{
+			++mStats.kicksRejected;
+			++entry.stats.kicksRejected;
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Kick rejected on channel '%s' (reason %u): kickKey %llu applyKey %llu",
+				channelId.AsChar(), static_cast<unsigned int>(rejection), static_cast<unsigned long long>(kickKey), static_cast<unsigned long long>(applyKey));
+			return rejection;
+		}
+
+		entry.step->Capture();
+
+		entry.kickSequence = ++mKickSequence;
+		entry.kickKey = kickKey;
+		entry.applyKey = applyKey;
+		entry.keyFloor = kickKey;
+		entry.hasKeyFloor = true;
+		entry.completionSeen = false;
+		entry.kickTimeMicros = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::steady_clock::now().time_since_epoch()).count());
+		entry.state = StepState::kRunning;
+
+		LaunchInfo info;
+		info.channelId = channelId;
+		info.kickKey = kickKey;
+		entry.token = mLauncher.Launch(*entry.step, info);
+		entry.hasToken = true;
+
+		++entry.stats.kicks;
+		++mStats.kicks;
+		++mStats.inFlight;
+		return KickResult::kLaunched;
 	}
 
 	StepState DeferredStepScheduler::GetState(Dia::Core::StringCRC channelId) const

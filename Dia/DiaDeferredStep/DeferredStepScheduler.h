@@ -49,6 +49,12 @@ namespace Dia::DeferredStep
 		bool Register  (Dia::Core::StringCRC channelId, IDeferredStep& step);
 		void Unregister(Dia::Core::StringCRC channelId);   // drains that channel, discards unapplied
 
+		// Capture() then Launch() on the calling (SimPU) thread; one step per channel in flight.
+		// Checks in order: unknown channel, already in flight, applyKey < kickKey, kickKey < previous kickKey.
+		// A rejected kick does nothing but log a Warning and bump kicksRejected.
+		// applyKey == kickKey is accepted: it is synchronous and will stall at the next Tick.
+		KickResult Kick(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey);
+
 		StepState GetState       (Dia::Core::StringCRC channelId) const;
 		uint32_t  GetChannelCount() const;
 		const SchedulerStats& GetStats() const;
@@ -62,7 +68,8 @@ namespace Dia::DeferredStep
 			StepState state = StepState::kIdle;
 			StepKey kickKey = 0;
 			StepKey applyKey = 0;
-			StepKey keyFloor = 0;
+			StepKey keyFloor = 0;          // previous kickKey; persists after apply
+			bool hasKeyFloor = false;      // false until the first accepted kick
 			LaunchToken token;
 			bool hasToken = false;
 			uint64_t kickSequence = 0;
@@ -78,5 +85,6 @@ namespace Dia::DeferredStep
 		IStepLauncher& mLauncher;
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
 		SchedulerStats mStats;
+		uint64_t mKickSequence = 0;
 	};
 }
