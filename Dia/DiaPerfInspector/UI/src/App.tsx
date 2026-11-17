@@ -12,7 +12,10 @@ import { FrameDetail } from './components/FrameDetail';
 import { TripsList } from './components/TripsList';
 import { EventsRow } from './components/EventsRow';
 import { ChainPanel } from './components/ChainPanel';
+import { SelfCostPanel } from './components/SelfCostPanel';
+import { LatencyPanel } from './components/LatencyPanel';
 import { useChainStore } from './useChainStore';
+import { useLatencyStore } from './useLatencyStore';
 
 const panel: React.CSSProperties = { background: '#252525', border: '1px solid #333', padding: '6px 8px', minWidth: 0 };
 const heading: React.CSSProperties = { margin: '0 0 4px', fontSize: 12, color: '#9cdcfe', fontWeight: 600 };
@@ -21,6 +24,8 @@ export default function App() {
     const connection = useLiveConnection(kConnectionPrefix, bridgeRequest);
     const setConnectionState = usePerfTimingStore((s) => s.setConnectionState);
     const unavailable = usePerfTimingStore((s) => s.timing?.unavailable);
+    const selfMs = usePerfTimingStore((s) => s.timing?.selfMs);
+    const latency = useLatencyStore((s) => s.actions);
     const lanes = useWindowStore((s) => s.lanes);
     const trips = useWindowStore((s) => s.trips);
     const markers = useWindowStore((s) => s.markers);
@@ -66,6 +71,14 @@ export default function App() {
                 <section data-testid="chain" style={{ ...panel, gridColumn: '1 / -1' }}>
                     <h4 style={heading}>Cross-thread chain</h4>
                     <ChainPanel budgetMs={chainBudgetMs} />
+                </section>
+                <section data-testid="latency" style={{ ...panel, gridColumn: '1 / span 2' }}>
+                    <h4 style={heading}>Latency (end to end)</h4>
+                    <LatencyPanel actions={latency} unavailable={unavailable} />
+                </section>
+                <section data-testid="selfcost" style={panel}>
+                    <h4 style={heading}>Telemetry self-cost</h4>
+                    <SelfCostPanel selfMs={selfMs} unavailable={unavailable} />
                 </section>
             </div>
         </div>

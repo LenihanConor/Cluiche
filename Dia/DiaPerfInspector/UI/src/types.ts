@@ -105,3 +105,18 @@ export interface ChainData {
     stages: ChainStageData[];
     edges: ChainEdgeData[];
 }
+
+/**
+ * One action's end-to-end latency, as a future bridge would deliver it. Derived from the Sim-side `perf.latency`
+ * query reply (VisualDebuggerModule::HandleLatencyQuery: actions[name] = {count, p50Ms, p95Ms, minMs, maxMs}, scope
+ * "sim_receive_to_snapshot_published"). Action names are "<domain>.<command>". The game carries no targets; the
+ * only target the spec names is 100 ms for slider-drag-to-visible, so targetMs is supplied by the client.
+ */
+export interface LatencyAction {
+    action: string;
+    targetMs: number;
+    p50Ms: number;
+    p95Ms: number;
+    /** Completions in the probe ring (max 40). */
+    samples: number;
+}
