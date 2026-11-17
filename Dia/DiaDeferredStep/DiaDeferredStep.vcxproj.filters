@@ -28,9 +28,14 @@
     <ClInclude Include="CapConfig.h" />
     <ClInclude Include="RangeTiming.h" />
     <ClInclude Include="RangeSplit.h" />
+    <ClInclude Include="Testing\ConcurrencyProbe.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CapGate.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
+    <ClCompile Include="CapGate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
