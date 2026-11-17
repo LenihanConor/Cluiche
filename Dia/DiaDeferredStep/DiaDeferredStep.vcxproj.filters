@@ -12,6 +12,9 @@
     <ClInclude Include="IDeferredStep.h" />
     <ClInclude Include="IStepLauncher.h" />
     <ClInclude Include="DeferredStepObservation.h" />
+    <ClInclude Include="Testing\LogCapture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\ManualStepLauncher.h">
       <Filter>Testing</Filter>
     </ClInclude>

@@ -80,6 +80,7 @@
     <ClInclude Include="IDeferredStep.h" />
     <ClInclude Include="IStepLauncher.h" />
     <ClInclude Include="DeferredStepObservation.h" />
+    <ClInclude Include="Testing\LogCapture.h" />
     <ClInclude Include="Testing\ManualStepLauncher.h" />
     <ClInclude Include="Testing\RecordingStep.h" />
     <ClInclude Include="Testing\ScriptedKeyDriver.h" />

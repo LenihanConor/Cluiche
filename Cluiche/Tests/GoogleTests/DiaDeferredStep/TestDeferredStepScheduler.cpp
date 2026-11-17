@@ -2,6 +2,7 @@
 #include <chrono>
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
+#include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 
@@ -552,6 +553,7 @@ TEST_F(DeferredStepSchedulerTest, TickIncompleteAtApplyKeyWaitsBeforeApply)
 
 TEST_F(DeferredStepSchedulerTest, StallCountersOnSchedulerAndChannelWithMeasuredDuration)
 {
+	Testing::LogCapture log;
 	mStep.SetOnRun([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
 	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
 	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
@@ -565,7 +567,11 @@ TEST_F(DeferredStepSchedulerTest, StallCountersOnSchedulerAndChannelWithMeasured
 	EXPECT_GE(cs.totalStallMicros, cs.lastStallMicros);
 	EXPECT_EQ(cs.totalStallMicros, cs.lastStallMicros);
 	EXPECT_EQ(mScheduler.GetStats().totalStallMicros, cs.totalStallMicros);
-	// TODO(task9): assert exactly one Warning naming channel "A" (no reusable log capture outside DiaCellLayers).
+	EXPECT_EQ(log.Total(), 1u);
+	EXPECT_EQ(log.Warnings("'A'"), 1u);
+	EXPECT_EQ(log.Warnings("stalled"), 1u);
+	EXPECT_EQ(log.Warnings("apply key 5 "), 1u);
+	EXPECT_EQ(log.Warnings(" us"), 1u);
 	mScheduler.Unregister(StringCRC("A"));
 }
 
@@ -591,6 +597,7 @@ TEST_F(DeferredStepSchedulerTest, TwoStallsAccumulate)
 
 TEST_F(DeferredStepSchedulerTest, CompleteBeforeTickNoStallAndNoWait)
 {
+	Testing::LogCapture log;
 	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
 	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
 	mLauncher.CompleteAll();
@@ -608,7 +615,7 @@ TEST_F(DeferredStepSchedulerTest, CompleteBeforeTickNoStallAndNoWait)
 	{
 		EXPECT_NE(mLauncher.GetCall(i).kind, Testing::ManualStepLauncher::Call::kWait);
 	}
-	// TODO(task9): assert zero log records for a non-stall.
+	EXPECT_EQ(log.Total(), 0u);
 	mScheduler.Unregister(StringCRC("A"));
 }
 
@@ -1100,5 +1107,154 @@ TEST_F(DeferredStepSchedulerTest, KickAfterDrainAndApplyWorks)
 	EXPECT_EQ(mStep.GetApplyCount(), 2u);
 	EXPECT_EQ(mScheduler.GetStats().drains, 2u);
 	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+// ---- Observation (logs) ----
+
+TEST_F(DeferredStepSchedulerTest, LogCaptureSeesDuplicateRegisterWarning)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	EXPECT_EQ(log.Total(), 0u);
+	EXPECT_FALSE(mScheduler.Register(StringCRC("A"), mStep));
+	EXPECT_EQ(log.Warnings("already registered"), 1u);
+	EXPECT_EQ(log.Total(), 1u);
+	log.Clear();
+	EXPECT_EQ(log.Total(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, NinthRegisterLogsOneWarning)
+{
+	Testing::LogCapture log;
+	const char* names[9] = { "C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8" };
+	for (int i = 0; i < 8; ++i)
+	{
+		ASSERT_TRUE(mScheduler.Register(StringCRC(names[i]), mStep));
+	}
+	EXPECT_EQ(log.Total(), 0u);
+	EXPECT_FALSE(mScheduler.Register(StringCRC(names[8]), mStep));
+	EXPECT_EQ(log.Warnings("Register rejected"), 1u);
+	EXPECT_EQ(log.Total(), 1u);
+	for (int i = 0; i < 8; ++i)
+	{
+		mScheduler.Unregister(StringCRC(names[i]));
+	}
+}
+
+TEST_F(DeferredStepSchedulerTest, EachKickRejectionLogsOneWarning)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 11), KickResult::kLaunched);
+	EXPECT_EQ(log.Total(), 0u);
+
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 10, 12), KickResult::kAlreadyInFlight);
+	EXPECT_EQ(log.Warnings("Kick rejected"), 1u);
+
+	mLauncher.CompleteAll();
+	mScheduler.Tick(11);
+	EXPECT_EQ(log.Total(), 1u);
+
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 12, 11), KickResult::kApplyBeforeKick);
+	EXPECT_EQ(log.Warnings("Kick rejected"), 2u);
+
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 9, 12), KickResult::kKeyNotMonotonic);
+	EXPECT_EQ(log.Warnings("Kick rejected"), 3u);
+
+	EXPECT_EQ(mScheduler.Kick(StringCRC("Nope"), 1, 2), KickResult::kUnknownChannel);
+	EXPECT_EQ(log.Warnings("Kick rejected"), 4u);
+	EXPECT_EQ(log.Total(), 4u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, UnregisterCompletedUnappliedLogsDiscardWarning)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteNext();
+	mScheduler.Unregister(StringCRC("A"));
+	EXPECT_EQ(log.Warnings("discarding"), 1u);
+	EXPECT_EQ(log.Total(), 1u);
+}
+
+TEST_F(DeferredStepSchedulerTest, UnregisterInFlightIncompleteLogsNothing)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.Unregister(StringCRC("A"));
+	EXPECT_EQ(log.Total(), 0u);
+}
+
+TEST_F(DeferredStepSchedulerTest, BackwardsTickLogsOneWarning)
+{
+#ifdef DEBUG
+	auto* prev = Dia::Core::g_pAssertFunc;
+	Dia::Core::g_pAssertFunc = CountingAssertHandler;
+#endif
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	mScheduler.Tick(10);
+	EXPECT_EQ(log.Total(), 0u);
+	mScheduler.Tick(8);
+	EXPECT_EQ(log.Warnings("went backwards"), 1u);
+	EXPECT_EQ(log.Total(), 1u);
+#ifdef DEBUG
+	Dia::Core::g_pAssertFunc = prev;
+#endif
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllLogsOneInfoWithCount)
+{
+	Testing::RecordingStep other;
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), other));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 2, 8), KickResult::kLaunched);
+	mScheduler.DrainAll();
+	EXPECT_EQ(log.Infos("DrainAll"), 1u);
+	EXPECT_EQ(log.Infos("2 in-flight"), 1u);
+	EXPECT_EQ(log.Total(), 1u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DrainAllWithNothingInFlightLogsNothing)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	mScheduler.DrainAll();
+	EXPECT_EQ(log.Total(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, HundredIdleTicksWriteNoRecords)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	for (StepKey k = 1; k <= 100; ++k)
+	{
+		mScheduler.Tick(k);
+	}
+	EXPECT_EQ(log.Total(), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, HundredTicksWithNotYetDueIncompleteStepWriteNoRecords)
+{
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 1000), KickResult::kLaunched);
+	for (StepKey k = 1; k <= 100; ++k)
+	{
+		mScheduler.Tick(k);
+	}
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(log.Total(), 0u);
 	mScheduler.Unregister(StringCRC("A"));
 }

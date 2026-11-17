@@ -7,6 +7,8 @@
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IStepLauncher.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia::DeferredStep
 {
@@ -132,7 +134,11 @@ namespace Dia::DeferredStep
 			return rejection;
 		}
 
-		entry.step->Capture();
+		{
+			DIA_TRACE_ZONE("DeferredStep.Capture", Dia::Observation::Trace::Category::kNone);
+			DIA_PROFILE_SCOPE("DeferredStep.Capture", Dia::Observation::Profile::Category::kNone);
+			entry.step->Capture();
+		}
 
 		entry.kickSequence = ++mKickSequence;
 		entry.kickKey = kickKey;
@@ -235,7 +241,11 @@ namespace Dia::DeferredStep
 			if (!mLauncher.IsComplete(token))
 			{
 				const uint64_t waitStart = NowMicros();
-				mLauncher.Wait(token);
+				{
+					DIA_TRACE_ZONE("DeferredStep.StallWait", Dia::Observation::Trace::Category::kNone);
+					DIA_PROFILE_SCOPE("DeferredStep.StallWait", Dia::Observation::Profile::Category::kNone);
+					mLauncher.Wait(token);
+				}
 				const uint64_t waitEnd = NowMicros();
 				stallMicros = waitEnd - waitStart;
 				runMicros = waitEnd - entry.kickTimeMicros;   // upper bound: Kick -> after Wait returns
@@ -245,7 +255,11 @@ namespace Dia::DeferredStep
 			{
 				runMicros = NowMicros() - entry.kickTimeMicros;   // first observed on the apply key itself
 			}
-			step->Apply();
+			{
+				DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kNone);
+				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kNone);
+				step->Apply();
+			}
 			mLauncher.Release(token);
 
 			const int after = FindIndex(dueIds[i]);
@@ -287,6 +301,8 @@ namespace Dia::DeferredStep
 
 	void DeferredStepScheduler::DrainAll()
 	{
+		DIA_TRACE_ZONE("DeferredStep.DrainAll", Dia::Observation::Trace::Category::kNone);
+		DIA_PROFILE_SCOPE("DeferredStep.DrainAll", Dia::Observation::Profile::Category::kNone);
 		uint32_t drained = 0;
 		for (unsigned int i = 0; i < mChannels.Size(); ++i)
 		{
