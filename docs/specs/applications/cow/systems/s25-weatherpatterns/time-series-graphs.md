@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/s25-weatherpatterns/s25-weatherpatterns.md (Feature 5)
 **Status:** Approved (2026-11-16)
 **Depends on:** S-2.5 Feature 1 (stage, card, tracked-layer config); Feature 3 (the runner and report); A4 Feature 5 (the seven layers and their schema entries); DiaCellHistory (aggregates, `cells.history.aggregates`, `cells.history.export`; built); S-3.5 Feature 1's `HistoryDriverModule` (the sampler; **soft**, see Open Design Question 1); S-1's region layer flagged as a grouping layer.
-**Consumed by:** T-1 Feature 7 (the Inspector, which draws the curves; proposed, not specced), anyone reading `dia.cell_history` files.
+**Consumed by:** T-1 Features 2 (time series), 8 (seasons: typical year and anomaly) and 9 (S-2.5 checks panel), which draw the curves (pointer corrected 2026-11-16: Feature 7 became snapshots); anyone reading `dia.cell_history` files.
 
 ## Summary
 
@@ -22,7 +22,7 @@ It replaces the system spec's S-2.5-private 4 × 52-week aggregate ring, which i
 ## Non-Goals
 
 - Drawing graphs in-game, in any form (decided 2026-11-16).
-- The Inspector's graph panel and run-vs-run view (T-1 Feature 7, proposed).
+- The Inspector's graph panel and run-vs-run view (T-1 Features 2, 5, 8 and 9).
 - New recording machinery: DiaCellHistory's recorder, budgets and file format are used as built.
 - Changing which checks decide the verdict. Curves explain; Feature 2's checks decide.
 - Snow coverage percentage as a series: only the `snowPack` mean/min/max aggregate exists. (Coverage was an S-2.5 helper in Feature 2 for the checks, not a recorded layer.)
@@ -104,7 +104,7 @@ Live aggregates over a real A4 module on hand-built terrain with a real `CellHis
 
 ## Open Design Questions
 
-1. **Nobody can see the curves on screen yet.** T-1 Feature 7 is proposed, not specced, so until it exists the series are only JSON (`cells.history.aggregates`, exported files). Tests 4, 5 and 7 are decided by numbers, so the verdict is not blocked, but the "understand the seasons by looking at them" goal in the system spec is deferred to T-1. If that is too long a wait, a minimal in-game plot is the obvious fallback, and would reopen this decision.
+1. **Nobody can see the curves on screen yet.** T-1 Features 2, 8 and 9 are not built (8 and 9 are not specced yet; they were moved early in T-1's build order on 2026-11-16 for this reason), so until they exist the series are only JSON (`cells.history.aggregates`, exported files). Tests 4, 5 and 7 are decided by numbers, so the verdict is not blocked, but the "understand the seasons by looking at them" goal in the system spec is deferred to T-1. If that is too long a wait, a minimal in-game plot is the obvious fallback, and would reopen this decision.
 2. **`HistoryDriverModule` again.** As in Feature 1, everything live here depends on it (S-3.5 Feature 1). Without it only the headless exports work.
 3. **Region groups depend on S-1.** If S-1's region layer is not a grouping layer, only the `world` curve exists. That is a one-line S-1 schema change, but it is an edit to a built system and would need your say.
 4. **Standalone recorder.** The headless export assumes `CellHistoryRecorder` runs outside a module. If it does not, the headless exports are dropped (criterion 11) and a failing check is debugged from the report's numbers and a live re-run.

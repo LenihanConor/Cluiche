@@ -16,6 +16,9 @@ T-1 is a CluicheEditor plugin for understanding how CoW's world simulation behav
 - a "why" panel that sums the A1 ledger's causes
 - correlations between two metrics
 - run-vs-run compare, e.g. pack lush vs arid
+- (amended 2026-11-16) a typical-year and anomaly view, S-2.5 weather check results, space-over-time views, a world health dashboard and cross-system cause chains
+
+It covers the **whole world sim, weather as much as ecology** (amended 2026-11-16). S-2.5 has no in-game graphs, so T-1 is the only place to see weather over time.
 
 It mostly reads. Clicking an event or "show cells" sends navigation commands back to the game so the in-game viewer jumps to the same time, selection and layer.
 
@@ -33,6 +36,8 @@ This is the **Inspector** tier (feedback rule: Editor = offline files, Inspector
 4. **Compare runs.** Two sources are compared on aligned time: live vs file, or file vs file.
 5. **Jump to the game.** Clicking an event, a cell or "show cells" moves the live game's viewer there.
 6. **Every number is explained.** Labels, units and tooltips come from DiaValueSchema through the shared `ValueLabel` and `ValueTooltip`.
+7. **Weather is first-class** (amended 2026-11-16). Seasonal cycles, moving storms and droughts, and the S-2.5 checks have views built for them, not only the generic charts.
+8. **Judge the world, not just inspect it** (amended 2026-11-16). Health measures say whether the world is alive; cause chains link weather to ecology to succession.
 
 ## Non-Goals
 
@@ -129,8 +134,13 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 5 | Correlation and run compare | Scatter with r and lag, Source B, alignment, overlay and Δ | Approved | [correlation-and-run-compare.md](correlation-and-run-compare.md) |
 | 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Approved | [navigation.md](navigation.md) |
 | 7 | Snapshots, cell compare and history status | Snapshot panel (list, take, delete, restore), delta compare on the mini-map, history status strip with Track/Untrack | Approved | [snapshots-and-compare.md](snapshots-and-compare.md) |
+| 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode (value minus a seasonal baseline); weather default view | Draft | TBD |
+| 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across reports | Draft | TBD |
+| 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks | Draft | TBD |
+| 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time; each schema-described | Draft | TBD |
+| 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; preset pairs; automatic lead/lag scan | Draft | TBD |
 
-- **Build order:** 1 → 2 → 6 → 3 → 4 → 5 → 7.
+- **Build order:** 1 → 2 → 6 → 3 → 8 → 9 → 4 → 5 → 7 → 10 → 11 → 12 (amended 2026-11-16: 8 and 9 move ahead because S-2.5 has no other viewer).
 - Feature 1 can start against a hand-written `dia.cell_history` fixture before any simulation is built.
 - An HTML mockup already exists. The visual gate for each view is checked against it.
 
@@ -145,6 +155,9 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | DiaDebugServer, `LiveConnectionPluginBase` | Transport, plugin base | Done |
 | A1 cause events (`cow.ecology.cause`) | Why panel | Amend A1 (see below) |
 | uPlot (npm) | Time series | New dependency |
+| A4 Feature 5 (`weather.*` layers, `weather.storm` / `weather.drought` events) | Features 8, 10, 12 | Approved, not built |
+| S-2.5 Feature 3 (`cow.s25_report` v1) and Feature 5 (history files per check) | Feature 9 | Approved, not built |
+| A3 transition events | Features 11, 12 | Approved, not built |
 
 **Amendments when Approved:**
 - **A1:** emit `cow.ecology.cause` events each band per region (top causes per tracked layer).
@@ -206,6 +219,52 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - **Spec correction for decoders:** a float cell code `q` dequantises as `min + q/65534 x (max - min)` with `q = 0xFFFF` meaning NaN (DiaCellHistory export spec says /65535; fixed there on 2026-11-04). The conformance fixtures in `Dia/DiaCellHistory/Testing/Conformance/` follow the code.
 - Text fields (labels, event text) are now truncated on UTF-8 boundaries, so exported files are valid UTF-8.
 
+## Amendment (2026-11-16, approved by the user): world-sim scope, Features 8 to 12
+
+**Origin:** design discussion on the mockup. T-1 was ecology-shaped (the mockup said "Ecology Long-Run Analysis", the why panel reads only A1). The data side already handles weather: A4 Feature 5 registers seven `weather.*` layers and emits `weather.storm` / `weather.drought` events through DiaCellHistory, so they appear in Features 2 to 5 unchanged. What was missing are views built for weather and for judging a world. Each new feature needs its own `/spec-feature` interview and an approved mockup before building.
+
+**Feature 8, Seasons.** Weather is a strong yearly cycle plus weekly noise, so a 40-year raw line is unreadable.
+- Typical year: x is week of year (from the `Y<year> W<week>` sample label), the line is the mean across years and the band is the spread (min-max or p10-p90).
+- Anomaly mode for any series: value minus a seasonal baseline.
+- A weather default view (precipitation, temperature, snow pack, ground water) beside the ecology one.
+- *Open:* which baseline. Options: computed from the run itself, A4's `IBiomeSeasonalBaseline` table, or S-2.5's `baseline.json`.
+
+**Feature 9, S-2.5 checks panel.** A new file source kind for `out/CoW/s25/report_<world>_<seed>.json` and `report_summary.json` (envelope `cow.s25_report` v1, S-2.5 Feature 3) plus `baseline.json`.
+- Shows the verdict with its precedence reason, prechecks, each check's state and measured value against its band, and the performance block (report-only).
+- Opening several reports shows each check's trend across them.
+- A check links to its `dia.cell_history` file (S-2.5 Feature 5 writes one per check run), so a failing check opens straight into its curve.
+- *Open:* whether DiaAutomation runs (`livesmoke.json`) are shown too.
+
+**Feature 10, Space over time.** The mini-map shows one frame only.
+- **Strip chart:** time on x, space on y, with rows = latitude bands or regions and colour = a layer's mean. It shows drought fronts and seasonal belts moving. Built from per-cell history, or from aggregates when the rows are groups (no per-cell budget needed).
+- **One map per period:** a mini-map per decade or season.
+- **Playback** of the mini-map over the brush.
+- **Storm and drought tracks:** event footprints over time.
+- *Open:* `weather.storm` fires once per storm and does not re-fire while it persists, so a track has no per-week position. Either derive positions in the editor from tracked `weather.pressure`, or ask A4 for a per-week storm id and position (an A4 Feature 5 amendment).
+
+**Feature 11, World health dashboard.** Designer measures instead of raw layers, derived in the editor:
+- **Diversity:** Shannon diversity of biome counts (category-layer aggregates).
+- **Turnover:** cells changing biome per decade (A3 transition events or a biome delta).
+- **Near-extinction:** species or group layers below a floor.
+- **Boom-bust:** period from autocorrelation of a series.
+- **Settle time:** the time until rolling variance falls under a threshold.
+
+Each measure is defined in a data file with DiaValueSchema descriptions, so tooltips work like every other number. Thresholds are Inspector config, not simulation tuning.
+- *Open:* where the definitions live, and which measures need A1 to emit data rather than be derived.
+
+**Feature 12, Cross-system causes.**
+- **Chains:** a weather event in region R at week w, an ecology change in R at w+k, then succession transitions in R. They are linked by region overlap and a lag window, built from existing events, A1's `cow.ecology.cause` (its causes already name weather inputs, since A1 reads rainfall, temperature and snow through `IEcologyWeatherInput`) and per-region aggregates.
+- **Preset pairs:** rain → producers, snow pack → ground water.
+- **Automatic lag scan** across metric pairs, per region, to find leading indicators.
+- v1 is editor-side links, labelled as "candidate" links (correlation, not proof). Only if that proves insufficient does it ask A4 and A3 for recorded cause events, which would be a game-side contract change.
+- Meaningful only once A4, A1 and A3 are built. Fixtures are enough to build it.
+
+**Not taken (2026-11-16):** seed ensembles (N-file bands and outlier seeds). Kept as an idea.
+
+**Mockup:** retitled World Sim (2026-11-16). **A new mockup is owed (user request 2026-11-16):** the current one is an ecology-era single screen with the Feature 7 tab bolted on, so it cannot hold Features 8 to 12. Draw a new world-sim mockup (layout and navigation for weather and ecology, plus every new view) once Features 8 to 12 are specced, and get it approved before any of their UI is built. Until then each feature spec says what its views must show.
+
+**Ripple:** S-2.5 `time-series-graphs.md` named "T-1 Feature 7" as the graph viewer. It now points at Features 2, 8 and 9 (pointer-only edit, 2026-11-16).
+
 ## Status
 
-`Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 7 `Approved`; Feature 7 has a plan. Features 8 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
