@@ -12,6 +12,15 @@
     <ClInclude Include="IDeferredStep.h" />
     <ClInclude Include="IStepLauncher.h" />
     <ClInclude Include="DeferredStepObservation.h" />
+    <ClInclude Include="Testing\ManualStepLauncher.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\RecordingStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ScriptedKeyDriver.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
   </ItemGroup>
