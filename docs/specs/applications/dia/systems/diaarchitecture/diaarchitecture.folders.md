@@ -56,7 +56,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 `DiaApplicationFlowEditor` `DiaAssetCatalogueEditor` `DiaEntityTemplateEditor` `DiaPipelineEditor` `DiaPythonConsoleEditor` `DiaSceneEditor`
 
 ### 4.0-Inspectors
-`DiaAIInspector` `DiaApplicationFlowInspector` `DiaAssetRuntimeInspector` `DiaBlackboardInspector` `DiaEconomyInspector` `DiaEntityInspector` `DiaScalarFieldInspector` `DiaSchemaBrowser`
+`DiaAIInspector` `DiaApplicationFlowInspector` `DiaAssetRuntimeInspector` `DiaBlackboardInspector` `DiaEconomyInspector` `DiaEntityInspector` `DiaPerfInspector` `DiaScalarFieldInspector` `DiaSchemaBrowser`
 
 ### 4.0-VisualDebuggers
 `DiaVisualDebugger`
