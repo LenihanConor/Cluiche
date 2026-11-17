@@ -1,7 +1,7 @@
 # Plan: Perf Live Control
 
 **Spec:** @docs/specs/applications/dia/systems/diaobservation/perf-live-control.md
-**Status:** Not Started
+**Status:** Done
 **Depends on:** `profiling-frame-instrumentation.plan.md` tasks 1-7 (subject, timing table, trips). Consumed by `perf-inspector.plan.md`.
 
 ## Sign-offs needed (AD-001)

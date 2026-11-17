@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/dia/systems/diaobservation/diaobservation.md
 **Depends on:** @profiling-frame-instrumentation.md (Amendment 2026-11-09, A1-A3). Consumed by @perf-inspector.md
 **Mockup:** @docs/mockups/perf-inspector-mockup.html (approved 2026-11-09)
-**Status:** `Approved` — 2026-11-09. **Revised 2026-11-10** after the plan audit: pause ownership and delivery decided (Open Questions 4, 5); trace-linked stream writes (Goal 4 linking, AC10, task 6) deferred to a follow-up feature on the backlog.
+**Status:** `Done` — 2026-11-16 (tasks 1-5, 7, 8 built; task 6 spike recorded, AC10 deferred; AC9 measures Sim receive to snapshot published only, Main/websocket hop not wired). Plan: @perf-live-control.plan.md. Approved 2026-11-09. **Revised 2026-11-10** after the plan audit: pause ownership and delivery decided (Open Questions 4, 5); trace-linked stream writes (Goal 4 linking, AC10, task 6) deferred to a follow-up feature on the backlog.
 
 ## Summary
 
@@ -71,6 +71,16 @@ Three additions that turn measurements into answers: (1) **A/B switches** to pau
 ## Open Design Questions
 
 1. **Trace-linked stream writes (task 6).** FrameStream slots are fixed payload structs; linking needs either a header word on every slot (touches all streams) or a side table keyed by (stream, write sequence). The side table avoids payload changes but adds a lookup per write. Needs a small design spike before dispatch.
+   **Spike result (2026-11-16, task 7, code reading only; write cost is estimated, not benchmarked).**
+   - **The option framing was wrong.** `FrameStreamStore<T>` keeps per-slot metadata (`timestampUs`, `hasData`) in its own `Slot` struct, outside the payload `T`. A header word goes in that one template, so it touches no payload struct and none of the ~90 stream users. `Event<T>` already carries an envelope (`sequence`, `timestampUs`) the same way. SD-PERF-6 holds: ids ride the store envelope, not the payload.
+   - **Option B (side table) is the worse choice.** It duplicates the 8-slot ring's bookkeeping and needs its own synchronisation and a lookup per write, when the slot already holds the write's metadata.
+   - **Recommendation: Option A, in the store.** Add to `Slot`: `traceId`, `spanId` (the writer's open span), and `writeSteadyNs`. That is 24 bytes per slot, against payloads such as `DomainStateSnapshot` at ~128 KB (about 1 MB for 8 slots). Writing reads one `thread_local` and, when the tracer is started, one steady-clock read (~20-30 ns, estimated). With the tracer off the extra cost is a flag test. The write already copies the whole payload, which dominates.
+   - **Reader side.** `FetchLatest()` returns `const T*`, so the link needs a second accessor (for example `FetchLatestLinked(StreamLink&)`, or `LastLink()` on `StreamReader`). Plain `FetchLatest()` stays unchanged.
+   - **`Tracer` needs a small extension, needed under either option.** Trace state is `thread_local` (`tCurrentTraceId`, `tOpenStack`), and a span opened with an empty stack always becomes a new root. Recommendation: add `linkTraceId`/`linkSpanId` to `SpanRecord` (a flow link, not a parent), so each thread keeps its own span tree and `dia perf convert` can emit Perfetto flow events. Forcing the reader span to adopt the writer's trace as its parent would clash with the reader's own open stack (Main's module scopes).
+   - **Today's S-1 chain has no trace zones.** `DomainStateSnapshotPublisher::Update` has only `DIA_PROFILE_SCOPE`, and `GetJSONState` and `PushDomainStatesToPanel` are not traced. The feature also adds `DIA_TRACE_ZONE`s there.
+   - **Edge stats.** `FrameStreamDiagnostics` today is only the once-per-stream "no data" warning, so every edge stat (bytes, rate, data age, write and read cost) is new. Per-stream counters belong in the store (relaxed atomics).
+   - **Scope.** FrameStream first (it is the S-1 chain). `EventStream` follows through its existing envelope. `ServiceStream` is not examined and stays out of scope until needed.
+   - **Open for the feature spec:** cost under SD-PERF-7 once measured (the first task should be a write-path benchmark); behaviour when `Write` runs with no open span (link absent); whether `Debug`-only gating is wanted for the link fields.
 2. **What does "paused" mean for a module that publishes a stream each frame?** Readers may log "no data" warnings. Proposal: a pause records a marker and silences those warnings for paused writers.
 3. **Switch granularity for domains.** Pause the domain's snapshot only, or also its `OnCommand`? Proposal: snapshot only, so the panel stays usable.
 4. ~~Who owns a pause set without a DebugServer client?~~ **Resolved 2026-11-10:** a local owner, released on stage exit, editor disconnect and shutdown (Goal 5).
