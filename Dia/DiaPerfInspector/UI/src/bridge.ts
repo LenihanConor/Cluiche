@@ -100,3 +100,11 @@ export function queryWindow<T = unknown>(seconds: number): Promise<PerfQueryRepl
 export function queryFrame<T = unknown>(unit: string, frame: number): Promise<PerfQueryReply<T>> {
     return relayQuery<T>('perf_inspector.query_frame', { unit, frame });
 }
+
+/**
+ * Sends a whitelisted perf command (perf.pause, perf.resume, perf.resume_all) to the game through the
+ * plugin relay. The plugin rejects any other command name.
+ */
+export function sendPerfCommand<T = unknown>(command: string, args: object = {}): Promise<PerfQueryReply<T>> {
+    return relayQuery<T>('perf_inspector.command', { command, args });
+}

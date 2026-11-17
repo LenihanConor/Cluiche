@@ -24,6 +24,7 @@ namespace Dia
 		private:
 			Json::Value HandleQueryWindow(const Json::Value& data);
 			Json::Value HandleQueryFrame(const Json::Value& data);
+			Json::Value HandleCommand(const Json::Value& data);
 			Json::Value RelayQuery(const char* command, const Json::Value& args);
 
 			int mNextQueryId = 1;

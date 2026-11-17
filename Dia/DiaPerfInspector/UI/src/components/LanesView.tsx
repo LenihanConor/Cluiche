@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { selectView, useWindowStore } from '../useWindowStore';
+import { useSelectionStore } from '../useSelectionStore';
 import { LaneRow } from './LaneRow';
 import { ModuleLegend } from './ModuleLegend';
 
@@ -21,6 +22,8 @@ export function LanesView() {
     const error = useWindowStore((s) => s.error);
     const setWindowSeconds = useWindowStore((s) => s.setWindowSeconds);
     const togglePause = useWindowStore((s) => s.togglePause);
+    const selected = useSelectionStore((s) => s.selected);
+    const select = useSelectionStore((s) => s.select);
 
     const visible = useMemo(() => selectView({ lanes, view }), [lanes, view]);
     const paused = view.pausedAt !== null;
@@ -55,7 +58,14 @@ export function LanesView() {
                 <div data-testid="lanes-error" style={{ color: '#f48771', padding: '2px 0' }}>{error}</div>
             )}
             {visible.lanes.map((lane, i) => (
-                <LaneRow key={`${lane.unit}:${i}`} lane={lane} domain={visible.domain} trips={tripRanges} />
+                <LaneRow
+                    key={`${lane.unit}:${i}`}
+                    lane={lane}
+                    domain={visible.domain}
+                    trips={tripRanges}
+                    selectedIndex={selected?.unit === lane.unit ? selected.index : null}
+                    onSelect={(unit, index) => { void select(unit, index); }}
+                />
             ))}
             <ModuleLegend lanes={visible.lanes} />
         </div>

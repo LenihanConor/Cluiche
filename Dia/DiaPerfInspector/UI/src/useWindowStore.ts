@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { queryWindow } from './bridge';
 import { applyViewState, buildLanes, newestTime, unwrapWindowReply } from './model/laneModel';
 import type { Lane, PerfWindowReply, TripRange, ViewResult, ViewState } from './model/laneModel';
+import { tripRangesFromRecords } from './model/trips';
+import type { Marker, TripRecord } from './types';
 
 /** Always fetch the full retained window; the 10/30/60 choice slices client-side. */
 export const kFetchSeconds = 60;
@@ -12,8 +14,12 @@ interface WindowState {
     view: ViewState;
     /** Trip ranges for shading. Empty until the trip wire format lands (plan row 3b). */
     tripRanges: TripRange[];
+    /** Trip records and markers: empty until the game has topics for them (plan row 3b). */
+    trips: TripRecord[];
+    markers: Marker[];
     loading: boolean;
     error: string | null;
+    setTrips: (records: TripRecord[]) => void;
     setWindowSeconds: (seconds: ViewState['windowSeconds']) => void;
     togglePause: () => void;
     refresh: () => Promise<void>;
@@ -27,8 +33,12 @@ export const useWindowStore = create<WindowState>((set, get) => ({
     lanes: [],
     view: initialView,
     tripRanges: [],
+    trips: [],
+    markers: [],
     loading: false,
     error: null,
+
+    setTrips: (trips) => set({ trips, tripRanges: tripRangesFromRecords(trips) }),
 
     setWindowSeconds: (windowSeconds) => set((s) => ({ view: { ...s.view, windowSeconds } })),
 
@@ -60,7 +70,7 @@ export const useWindowStore = create<WindowState>((set, get) => ({
         }
     },
 
-    reset: () => set({ reply: null, lanes: [], view: initialView, tripRanges: [], loading: false, error: null }),
+    reset: () => set({ reply: null, lanes: [], view: initialView, tripRanges: [], trips: [], markers: [], loading: false, error: null }),
 }));
 
 /** The visible slice for the current view state. */

@@ -3,15 +3,37 @@ import { bridgeRequest, kConnectionPrefix } from './bridge';
 import { subscribePerfTiming, usePerfTimingStore } from './usePerfTimingStore';
 import { useLiveConnection } from './useLiveConnection';
 import { useWindowPolling } from './useWindowPolling';
+import { useWindowStore } from './useWindowStore';
+import { useSelectionStore } from './useSelectionStore';
+import { usePauseStore } from './usePauseStore';
 import { LanesView } from './components/LanesView';
+import { ModuleTable } from './components/ModuleTable';
+import { FrameDetail } from './components/FrameDetail';
+import { TripsList } from './components/TripsList';
+import { EventsRow } from './components/EventsRow';
+
+const panel: React.CSSProperties = { background: '#252525', border: '1px solid #333', padding: '6px 8px', minWidth: 0 };
+const heading: React.CSSProperties = { margin: '0 0 4px', fontSize: 12, color: '#9cdcfe', fontWeight: 600 };
 
 export default function App() {
     const connection = useLiveConnection(kConnectionPrefix, bridgeRequest);
     const setConnectionState = usePerfTimingStore((s) => s.setConnectionState);
+    const unavailable = usePerfTimingStore((s) => s.timing?.unavailable);
+    const lanes = useWindowStore((s) => s.lanes);
+    const trips = useWindowStore((s) => s.trips);
+    const markers = useWindowStore((s) => s.markers);
+    const select = useSelectionStore((s) => s.select);
 
     useEffect(() => { setConnectionState(connection); }, [connection, setConnectionState]);
     useEffect(() => subscribePerfTiming(), []);
     useWindowPolling(connection);
+    useEffect(() => { useSelectionStore.getState().reconcile(lanes); }, [lanes]);
+    useEffect(() => {
+        if (connection !== 'connected') {
+            usePauseStore.getState().reset(); // the game releases this client's pauses on disconnect
+            useSelectionStore.getState().clear();
+        }
+    }, [connection]);
 
     return (
         <div className="perf-inspector">
@@ -19,6 +41,23 @@ export default function App() {
                 {connection === 'connected' ? 'Connected to game' : 'Disconnected: waiting for a game connection'}
             </div>
             <section data-testid="lanes"><LanesView /></section>
+            <section data-testid="events" style={{ padding: '0 8px 4px 92px' }}>
+                <EventsRow markers={markers} unavailable={unavailable} />
+            </section>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, padding: '4px 8px 8px' }}>
+                <section data-testid="modules" style={panel}>
+                    <h4 style={heading}>Modules</h4>
+                    <ModuleTable />
+                </section>
+                <section data-testid="frame" style={panel}>
+                    <h4 style={heading}>Selected frame</h4>
+                    <FrameDetail />
+                </section>
+                <section data-testid="trips" style={panel}>
+                    <h4 style={heading}>Trips</h4>
+                    <TripsList records={trips} unavailable={unavailable} onSelect={(u, f) => { void select(u, f); }} />
+                </section>
+            </div>
         </div>
     );
 }
