@@ -167,6 +167,24 @@ namespace Dia::DeferredStep
 		mLastTickKey = currentKey;
 		mHasTicked = true;
 
+		// Poll pass: for in-flight, not-yet-due channels, call IsComplete exactly once per Tick until completion is first
+		// seen. Slack and run time are written to ChannelStats at observation (not at apply) so they are readable early.
+		if (mStats.inFlight > 0)
+		{
+			for (unsigned int i = 0; i < mChannels.Size(); ++i)
+			{
+				ChannelEntry& e = mChannels[i];
+				if (e.hasToken && e.state == StepState::kRunning && e.applyKey > currentKey && !e.completionSeen
+					&& mLauncher.IsComplete(e.token))
+				{
+					e.completionSeen = true;
+					e.completionSeenKey = currentKey;
+					e.stats.lastRunMicros = NowMicros() - e.kickTimeMicros;
+					e.stats.lastSlackKeys = static_cast<int64_t>(e.applyKey - currentKey); // currentKey < applyKey, no underflow
+				}
+			}
+		}
+
 		// Collect due entries (no heap), then order them by kick sequence.
 		unsigned int due[kMaxChannels];
 		unsigned int dueCount = 0;
@@ -212,12 +230,20 @@ namespace Dia::DeferredStep
 			const StepKey applyKey = entry.applyKey;
 			bool stalled = false;
 			uint64_t stallMicros = 0;
+			const bool alreadySeen = entry.completionSeen;
+			uint64_t runMicros = 0;
 			if (!mLauncher.IsComplete(token))
 			{
 				const uint64_t waitStart = NowMicros();
 				mLauncher.Wait(token);
-				stallMicros = NowMicros() - waitStart;
+				const uint64_t waitEnd = NowMicros();
+				stallMicros = waitEnd - waitStart;
+				runMicros = waitEnd - entry.kickTimeMicros;   // upper bound: Kick -> after Wait returns
 				stalled = true;
+			}
+			else if (!alreadySeen)
+			{
+				runMicros = NowMicros() - entry.kickTimeMicros;   // first observed on the apply key itself
 			}
 			step->Apply();
 			mLauncher.Release(token);
@@ -233,6 +259,13 @@ namespace Dia::DeferredStep
 			if (after >= 0)
 			{
 				ChannelEntry& done = mChannels[after];
+				if (!alreadySeen)
+				{
+					// First seen at apply (or stalled): slack is 0, never negative.
+					done.stats.lastRunMicros = runMicros;
+					done.stats.lastSlackKeys = 0;
+				}
+				done.completionSeen = true;
 				if (stalled)
 				{
 					++done.stats.stalls;

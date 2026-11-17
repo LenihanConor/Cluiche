@@ -663,3 +663,174 @@ TEST_F(DeferredStepSchedulerTest, ApplyKeyUnchangedAfterStallAndNextKickWorks)
 	EXPECT_EQ(mScheduler.GetStats().stalls, 2u);
 	mScheduler.Unregister(StringCRC("A"));
 }
+
+// ---- Poll pass: completion observation, slack and run time (AC 23, 24) ----
+
+namespace
+{
+	uint32_t CountIsComplete(const Testing::ManualStepLauncher& launcher, uint64_t tokenValue)
+	{
+		uint32_t n = 0;
+		for (uint32_t i = 0; i < launcher.GetCallCount(); ++i)
+		{
+			const auto& c = launcher.GetCall(i);
+			if (c.kind == Testing::ManualStepLauncher::Call::kIsComplete && c.token.value == tokenValue) { ++n; }
+		}
+		return n;
+	}
+}
+
+TEST_F(DeferredStepSchedulerTest, PollEarlyCompletionRecordsSlackAndPollsOnce)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.Tick(12);
+	EXPECT_EQ(mStep.GetApplyCount(), 0u);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 3);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(13);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 0u);
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 3);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, CompletionFirstSeenOnApplyKeyHasZeroSlackNoStall)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(15);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 0);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, CompletionSeenOneKeyEarlyHasSlackOne)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mScheduler.Tick(13);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(14);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 1);
+	mScheduler.Tick(15);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 1);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, LateStepHasZeroSlackAndStalls)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mScheduler.Tick(15);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 1u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 0);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, IncompleteStepIsPolledEachTickUntilComplete)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 20), KickResult::kLaunched);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(12);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(13);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.Tick(14);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.lastSlackKeys, 6);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(15);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, LastRunMicrosSpansKickToFirstObservationAndDoesNotGrow)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 20), KickResult::kLaunched);
+	std::this_thread::sleep_for(std::chrono::milliseconds(2));
+	mLauncher.CompleteAll();
+	mScheduler.Tick(12);
+	ChannelStats first;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), first));
+	EXPECT_GE(first.lastRunMicros, 1000u);
+	std::this_thread::sleep_for(std::chrono::milliseconds(2));
+	mScheduler.Tick(13);
+	ChannelStats second;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), second));
+	EXPECT_EQ(second.lastRunMicros, first.lastRunMicros);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, StalledStepRecordsLastRunMicrosAfterWait)
+{
+	mStep.SetOnRun([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mScheduler.Tick(15);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_GE(cs.lastRunMicros, 1000u);
+	EXPECT_EQ(cs.lastSlackKeys, 0);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TwoChannelsPolledIndependently)
+{
+	Testing::RecordingStep other;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), other));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 20), KickResult::kLaunched);   // token 1
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 10, 20), KickResult::kLaunched);   // token 2
+	ASSERT_TRUE(mLauncher.CompleteNext());   // A completes
+	mLauncher.ClearCalls();
+	mScheduler.Tick(12);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	EXPECT_EQ(CountIsComplete(mLauncher, 2), 1u);
+	ChannelStats a, b;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), a));
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("B"), b));
+	EXPECT_EQ(a.lastSlackKeys, 8);
+	EXPECT_EQ(b.lastSlackKeys, 0);
+	mLauncher.ClearCalls();
+	mScheduler.Tick(13);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 0u);
+	EXPECT_EQ(CountIsComplete(mLauncher, 2), 1u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, DueChannelIsCheckedOncePerTickNotDoublePolled)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 10, 15), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.Tick(15);
+	EXPECT_EQ(CountIsComplete(mLauncher, 1), 1u);
+	mScheduler.Unregister(StringCRC("A"));
+}
