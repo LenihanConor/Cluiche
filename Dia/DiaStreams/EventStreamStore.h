@@ -20,6 +20,7 @@
 #include <DiaStreams/Event.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Trace/Tracer.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Counter.h>
@@ -289,6 +290,14 @@ inline int EventStreamStore<T>::RegisterReader()
 template<typename T>
 inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
 {
+    // Capture trace link FIRST, before DIA_TRACE_ZONE (which opens its own span).
+    // We want the CALLER's span, not Send()'s own span.
+    Dia::Observation::Trace::TraceLink link = Dia::Observation::Trace::Tracer::GetCurrentLink();
+    const_cast<Event<T>&>(event).traceId       = link.traceId;
+    const_cast<Event<T>&>(event).spanId        = link.spanId;
+    const_cast<Event<T>&>(event).writeSteadyNs = static_cast<uint64_t>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
     DIA_PROFILE_SCOPE("stream.send", Dia::Observation::Profile::Category::kDiaStream);
     DIA_TRACE_ZONE("stream.send", Dia::Observation::Trace::Category::kDiaStream);
     if (mPolicy == OverflowPolicy::kBlock)
@@ -338,6 +347,7 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
         "EventStreamStore::Send called re-entrantly from a TapCallback — forbidden");
 
     // Stamp the per-store sequence number now (inside the lock).
+    // Note: trace link is stamped in Send() before the lock, to capture the CALLER's span.
     const_cast<Event<T>&>(event).sequence = mNextSequence.fetch_add(1, std::memory_order_relaxed);
 
     SendResult result = SendResult::kDelivered;
