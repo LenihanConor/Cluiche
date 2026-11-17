@@ -137,7 +137,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode on series and mini-map (value minus the typical value for that week); baseline is this run or a reference file; weather default view | Approved | [seasons.md](seasons.md) |
 | 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across archived reports, check → run history link, performance/edge-case/live-smoke/baseline blocks, read-only live progress | Approved | [s25-checks-panel.md](s25-checks-panel.md) |
 | 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks; region-level fallback outside the per-cell window | Approved | [space-over-time.md](space-over-time.md) |
-| 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time; each schema-described | Draft | TBD |
+| 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time, drift; weather health; fixed coupling pairs; bands cite the GDD or are provisional; rolling sparklines, region table, A vs B | Approved | [world-health.md](world-health.md) |
 | 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; preset pairs; automatic lead/lag scan | Draft | TBD |
 
 - **Build order:** 1 → 2 → 6 → 3 → 8 → 9 → 4 → 5 → 7 → 10 → 11 → 12 (amended 2026-11-16: 8 and 9 move ahead because S-2.5 has no other viewer).
@@ -250,7 +250,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - **Settle time:** the time until rolling variance falls under a threshold.
 
 Each measure is defined in a data file with DiaValueSchema descriptions, so tooltips work like every other number. Thresholds are Inspector config, not simulation tuning.
-- *Open:* where the definitions live, and which measures need A1 to emit data rather than be derived.
+- *Resolved 2026-11-16 (world-health.md):* definitions live in a plugin JSON file whose bands cite the GDD or are marked provisional. No measure needs new A1 data (`ecology.state` already exists). Near-extinction covers groups, and covers species where they are recorded.
 
 **Feature 12, Cross-system causes.**
 - **Chains:** a weather event in region R at week w, an ecology change in R at w+k, then succession transitions in R. They are linked by region overlap and a lag window, built from existing events, A1's `cow.ecology.cause` (its causes already name weather inputs, since A1 reads rainfall, temperature and snow through `IEcologyWeatherInput`) and per-region aggregates.
@@ -267,4 +267,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 10 `Approved`; Feature 7 has a plan. Features 11 and 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 11 `Approved`; Feature 7 has a plan. Feature 12 is `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
