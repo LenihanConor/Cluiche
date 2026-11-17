@@ -10,6 +10,15 @@
 
 namespace Dia::DeferredStep
 {
+	namespace
+	{
+		uint64_t NowMicros()
+		{
+			return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+				std::chrono::steady_clock::now().time_since_epoch()).count());
+		}
+	}
+
 	DeferredStepScheduler::DeferredStepScheduler(IStepLauncher& launcher)
 		: mLauncher(launcher)
 	{
@@ -131,8 +140,7 @@ namespace Dia::DeferredStep
 		entry.keyFloor = kickKey;
 		entry.hasKeyFloor = true;
 		entry.completionSeen = false;
-		entry.kickTimeMicros = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
-			std::chrono::steady_clock::now().time_since_epoch()).count());
+		entry.kickTimeMicros = NowMicros();
 		entry.state = StepState::kRunning;
 
 		LaunchInfo info;
@@ -201,18 +209,36 @@ namespace Dia::DeferredStep
 			}
 			const LaunchToken token = entry.token;
 			IDeferredStep* step = entry.step;
+			const StepKey applyKey = entry.applyKey;
+			bool stalled = false;
+			uint64_t stallMicros = 0;
 			if (!mLauncher.IsComplete(token))
 			{
-				// TODO(task6): stall counters, timing and log
+				const uint64_t waitStart = NowMicros();
 				mLauncher.Wait(token);
+				stallMicros = NowMicros() - waitStart;
+				stalled = true;
 			}
 			step->Apply();
 			mLauncher.Release(token);
 
 			const int after = FindIndex(dueIds[i]);
+			if (stalled)
+			{
+				++mStats.stalls;
+				mStats.totalStallMicros += stallMicros;
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Channel '%s' stalled at apply key %llu for %llu us",
+					dueIds[i].AsChar(), static_cast<unsigned long long>(applyKey), static_cast<unsigned long long>(stallMicros));
+			}
 			if (after >= 0)
 			{
 				ChannelEntry& done = mChannels[after];
+				if (stalled)
+				{
+					++done.stats.stalls;
+					done.stats.lastStallMicros = stallMicros;
+					done.stats.totalStallMicros += stallMicros;
+				}
 				done.token = LaunchToken();
 				done.hasToken = false;
 				done.state = StepState::kIdle;

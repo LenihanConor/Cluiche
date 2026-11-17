@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <chrono>
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
@@ -543,7 +544,122 @@ TEST_F(DeferredStepSchedulerTest, TickIncompleteAtApplyKeyWaitsBeforeApply)
 	EXPECT_EQ(probe.mApplyCount, 1u);
 	EXPECT_EQ(probe.mWaitsAtApply, 1u);
 	EXPECT_EQ(probe.mReleasesAtApply, 0u);   // Release only after Apply
+	EXPECT_EQ(mScheduler.GetStats().stalls, 1u);
 	EXPECT_EQ(mLauncher.GetReleaseCount(), 1u);
 	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, StallCountersOnSchedulerAndChannelWithMeasuredDuration)
+{
+	mStep.SetOnRun([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 1u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.stalls, 1u);
+	EXPECT_GE(cs.lastStallMicros, 1000u);
+	EXPECT_GE(cs.totalStallMicros, cs.lastStallMicros);
+	EXPECT_EQ(cs.totalStallMicros, cs.lastStallMicros);
+	EXPECT_EQ(mScheduler.GetStats().totalStallMicros, cs.totalStallMicros);
+	// TODO(task9): assert exactly one Warning naming channel "A" (no reusable log capture outside DiaCellLayers).
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, TwoStallsAccumulate)
+{
+	mStep.SetOnRun([] { std::this_thread::sleep_for(std::chrono::milliseconds(2)); });
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.Tick(5);
+	ChannelStats first;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), first));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 6, 9), KickResult::kLaunched);
+	mScheduler.Tick(9);
+	ChannelStats second;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), second));
+	EXPECT_EQ(second.stalls, 2u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 2u);
+	EXPECT_GE(second.lastStallMicros, 1000u);
+	EXPECT_EQ(second.totalStallMicros, first.lastStallMicros + second.lastStallMicros);
+	EXPECT_EQ(mScheduler.GetStats().totalStallMicros, second.totalStallMicros);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, CompleteBeforeTickNoStallAndNoWait)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mLauncher.ClearCalls();
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	EXPECT_EQ(mScheduler.GetStats().totalStallMicros, 0u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.stalls, 0u);
+	EXPECT_EQ(cs.lastStallMicros, 0u);
+	EXPECT_EQ(cs.totalStallMicros, 0u);
+	for (uint32_t i = 0; i < mLauncher.GetCallCount(); ++i)
+	{
+		EXPECT_NE(mLauncher.GetCall(i).kind, Testing::ManualStepLauncher::Call::kWait);
+	}
+	// TODO(task9): assert zero log records for a non-stall.
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, CompletedAtKeyBeforeApplyKeyNoStall)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.Tick(4);
+	mLauncher.CompleteAll();   // completes just before the apply key
+	mScheduler.Tick(5);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 0u);
+	ChannelStats cs;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), cs));
+	EXPECT_EQ(cs.stalls, 0u);
+	mScheduler.Unregister(StringCRC("A"));
+}
+
+TEST_F(DeferredStepSchedulerTest, StallOnOneChannelDoesNotAffectAnother)
+{
+	Testing::RecordingStep other;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_TRUE(mScheduler.Register(StringCRC("B"), other));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("B"), 1, 5), KickResult::kLaunched);
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	ASSERT_TRUE(mLauncher.CompleteNext());   // oldest launch is B; A stays incomplete
+	mScheduler.Tick(5);
+	ChannelStats a, b;
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("A"), a));
+	ASSERT_TRUE(mScheduler.GetChannelStats(StringCRC("B"), b));
+	EXPECT_EQ(a.stalls, 1u);
+	EXPECT_EQ(b.stalls, 0u);
+	EXPECT_EQ(b.totalStallMicros, 0u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 1u);
+	mScheduler.Unregister(StringCRC("A"));
+	mScheduler.Unregister(StringCRC("B"));
+}
+
+TEST_F(DeferredStepSchedulerTest, ApplyKeyUnchangedAfterStallAndNextKickWorks)
+{
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 1, 5), KickResult::kLaunched);
+	mScheduler.Tick(7);   // late tick: stalls, applies once
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 1u);
+	EXPECT_EQ(mScheduler.GetState(StringCRC("A")), StepState::kIdle);
+	EXPECT_EQ(mScheduler.Kick(StringCRC("A"), 8, 10), KickResult::kLaunched);
+	mScheduler.Tick(9);
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	mScheduler.Tick(10);
+	EXPECT_EQ(mStep.GetApplyCount(), 2u);
+	EXPECT_EQ(mScheduler.GetStats().stalls, 2u);
 	mScheduler.Unregister(StringCRC("A"));
 }
