@@ -62,7 +62,11 @@ SimPU (S3Ecology stage; amended 2026-10-19, DiaCellLayers/DiaCellHistory)
   └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
                              hosts viewer and timeline cards; default tracked layers in .diastage:
                              ecology.producers_total, ecology.group.herbivore, weather.precipitation
+                             (amended 2026-11-16, T-1: also every functional group and every species
+                              aggregate, and the weather layers incl. wind_east/wind_north, see below)
 ```
+
+**T-1 recording amendment (2026-11-16).** T-1's health and species views (World health Feature 11, species view) only cover what DiaCellHistory records. S-3's `.diastage` therefore lists, as **aggregate-recorded** layers (not per-cell tracked, so the per-cell budget is unchanged): `ecology.state`, `ecology.health`, `ecology.producers_total`, every `ecology.group.<tag>`, every `ecology.species.<id>` in the roster, and the nine `weather.*` layers. Per-cell tracking stays the three defaults above plus whatever the user opts into. If the roster plus these layers would pass DiaCellHistory's 64-layer cap, species are dropped first (groups are always kept) and the panel shows "N of M species recorded". Acceptance: with the shipped roster all species aggregates are present in `cells.history.aggregates`.
 
 ### Modes
 

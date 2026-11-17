@@ -260,6 +260,16 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 - Meaningful only once A4, A1 and A3 are built. Fixtures are enough to build it.
 - *Resolved 2026-11-16 (cross-system-causes.md):* links are recorded (A1 cause events naming weather, and A3 transitions naming their `source` via a small A3 amendment) or candidate, each badged. A4 needs no cause events. The preset pairs became Feature 11's coupling measures.
 
+**Derived metrics and wind (2026-11-16, user decision).** Wind cannot be a vector layer without a Dia engine change, so A4 records `weather.wind_east` and `weather.wind_north` (see A4 `weather-debug.md`, "Wind component layers") and T-1 derives wind itself. A shared pure module `model/derived.ts` (built in Feature 2, used by Features 3, 5, 8, 10, 11, 12) defines derived metrics:
+- `weather.wind_speed = hypot(east, north)` and `weather.wind_direction = atan2(north, east)` in degrees. They appear in every metric and layer picker, marked "derived".
+- **Per-cell** (mini-map, strip rows from per-cell data): exact, computed per cell then aggregated.
+- **Group or world level from aggregates:** computed from the mean components, so the value is the **resultant** wind and is labelled "resultant speed" (it is lower than the mean speed when directions disagree). Direction aggregates are the resultant direction. Min and max of a derived metric are not available from aggregates (shown as "n/a").
+- Direction is circular: charts show it on a 0 to 360 axis with wrap-aware lines, correlations use the components (not the angle), and the anomaly mode (Feature 8) applies to the components.
+- Feature 10's mini-map draws **wind arrows** from per-cell components as an overlay when a wind layer is chosen.
+- **Species and groups:** every `ecology.species.<id>` and `ecology.group.<tag>` the source records appears in the grouped layer picker. S-3 records them all as aggregates (S-3 amendment). Unrecorded species are listed greyed as "not recorded".
+
+**Plan impact:** `time-series-and-events.plan.md` (add `derived.ts`), `breakdown-distribution-minimap.plan.md` (derived layers in the mini-map), and later the Feature 8, 10 and 11 plans.
+
 **Not taken (2026-11-16):** seed ensembles (N-file bands and outlier seeds). Kept as an idea.
 
 **Mockup:** retitled World Sim (2026-11-16). **New mockup drawn 2026-11-16, approved by the user 2026-11-16 (visual gate passed for Features 8 to 12 and the shared shell): [mockups/world-sim-inspector-v2.html](mockups/world-sim-inspector-v2.html)** (six workspaces: Overview, Trends, Space, Causes, Compare, Checks; lens toggle; per-workspace state bar; Feature 7's full state set stays in the v1 tab). Original request (user, 2026-11-16): the current one is an ecology-era single screen with the Feature 7 tab bolted on, so it cannot hold Features 8 to 12. Draw a new world-sim mockup (layout and navigation for weather and ecology, plus every new view) once Features 8 to 12 are specced, and get it approved before any of their UI is built. Until then each feature spec says what its views must show.

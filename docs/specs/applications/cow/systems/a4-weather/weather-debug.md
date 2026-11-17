@@ -50,7 +50,7 @@ Registered on SimPU through `CellLayerRegistry::Register(CellLayerDesc)` after `
 - Each is a **base layer** with a pull callback `read(float* dest, uint32_t count)` that copies the committed array, and a `version()` that is the commit counter, so DiaCellLayers re-reads only after a commit. `count` must equal the active cell count; a mismatch writes zeros and logs once.
 - Before the first world is ready the callbacks report zero cells and nothing is drawn.
 - Labels, ramps, `min`/`max` and hotkeys come from DiaValueSchema entries `weather/<key>` (the schema file ships with this feature). Float layers need `min`/`max` or history tracking is refused. Hotkeys follow the S-2.5 GDD table (Snow = **K**); a clash logs a Warning and the later layer gets none. The exact key table is read from the GDD in the first plan task, not restated here.
-- Wind speed and direction are **not** scalar layers (no vector layer kind exists); they are the overlay below.
+- Wind speed and direction are **not** scalar layers (no vector layer kind exists); they are the overlay below. **Superseded 2026-11-16:** wind is also recorded as two component layers, `weather.wind_east` and `weather.wind_north`, see "Wind component layers" at the end.
 - Layers unregister in `DoStop`; re-entry re-registers.
 
 ### Wind overlay (`CellOverlayDesc`, `DIA_DEBUG`)
@@ -215,6 +215,29 @@ Added criteria:
 31. Both new event types have schema entries; payloads are under 1 KB.
 
 **Plan impact:** the plan (written, not started) needs these folded into its events task before it starts.
+
+## Wind component layers (2026-11-16, user decision, T-1)
+
+Supersedes "Wind speed and direction are **not** scalar layers" above. The user needs wind to be derivable in T-1 (charts, maps, per-region aggregates, correlations). Without a vector layer kind (a Dia engine change, deferred), wind is recorded as two scalar layers:
+
+| Layer id | Field | Range |
+|---|---|---|
+| `weather.wind_east` | `windSpeed × cos(windDirection)` | −1–1 (fraction of full speed, east positive) |
+| `weather.wind_north` | `windSpeed × sin(windDirection)` | −1–1 (north positive) |
+
+- `windDirection` is the A4 on-screen counter-clockwise angle used by `cow.weather.wind` (0° = east). The components are computed at `Commit` from the committed `windSpeed` and `windDirection`, so they match the overlay exactly.
+- Same registration rules as the other seven layers (base layers, pull callback, `version()` is the commit counter, schema entries `weather/wind_east` and `weather/wind_north` with `min -1`, `max 1`, a diverging ramp). Nine weather layers in total.
+- **Derivation is done by consumers, not A4.** T-1 derives `speed = hypot(east, north)` and `direction = atan2(north, east)` (see T-1 Feature 2 "Derived metrics"). A4 registers no speed or direction layer.
+- **Aggregate caveat (documented in T-1):** DiaCellHistory aggregates are min/mean/max of each component, so a group's derived value from its **mean** components is the *resultant* wind (speed shrinks when directions disagree). Exact mean speed needs per-cell data (tracked layers), where `hypot` is applied per cell first.
+- Cost: two more recorded layers, and 26 KB per sample per cell tracking both at Large. S-2.5 tracks both by default (its recorder budget is unchanged: the S-2.5 tracked-layer list is nine weather layers).
+
+Added criteria:
+
+32. `weather.wind_east` and `weather.wind_north` register with ranges −1 to 1; for any cell, `hypot(east, north)` equals the committed `windSpeed` and `atan2(north, east)` equals `windDirection` (mod 360), within float tolerance.
+33. After `cow.weather.wind set {degrees: 90, speed: 0.5}` on a cell, that cell reads `east ≈ 0`, `north ≈ 0.5`.
+34. The two layers have schema entries, are recorded in DiaCellHistory aggregates when tracked, and unregister in `DoStop`.
+
+**Plan impact:** `weather-debug.plan.md` and S-2.5 Feature 5's tracked-layer config need these folded in before they start.
 
 ## Status
 

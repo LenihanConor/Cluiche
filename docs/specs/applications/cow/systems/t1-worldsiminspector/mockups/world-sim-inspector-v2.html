@@ -273,12 +273,28 @@ function field(q, r, t) { // precipitation-like field with a drifting dry front
   return 0.6 - 0.35 * Math.exp(-Math.pow((q - front) / 5, 2)) * (r > 6 ? 1 : 0.5) + 0.06 * Math.sin(q * 0.7 + r * 0.4);
 }
 
+// ---------- layer catalogue (grouped picker, every real layer) ----------
+var LAYERS = [
+  ['Weather', [['weather.precipitation',''],['weather.temperature',''],['weather.snow_pack',''],['weather.moisture',''],['weather.pressure',''],['weather.cloud_cover',''],['weather.ground_water',''],['weather.wind_east','component'],['weather.wind_north','component']]],
+  ['Weather · derived', [['weather.wind_speed','derived: hypot(east, north)'],['weather.wind_direction','derived: atan2(north, east)']]],
+  ['Ecology · totals', [['ecology.producers_total',''],['ecology.state',''],['ecology.health','']]],
+  ['Ecology · groups', [['ecology.group.herbivore',''],['ecology.group.predator',''],['ecology.group.scavenger','']]],
+  ['Ecology · species (9 of 15 recorded)', [['ecology.species.deer',''],['ecology.species.elk',''],['ecology.species.rabbit',''],['ecology.species.bison',''],['ecology.species.wolf',''],['ecology.species.cougar',''],['ecology.species.bear',''],['ecology.species.fox',''],['ecology.species.eagle',''],['ecology.species.moose','not recorded'],['ecology.species.boar','not recorded'],['ecology.species.lynx','not recorded'],['ecology.species.beaver','not recorded'],['ecology.species.otter','not recorded'],['ecology.species.heron','not recorded']]],
+  ['Terrain', [['world.elevation',''],['world.latitude_band','grouping layer'],['world.region','grouping layer']]]
+];
+function layerSelect(sel, extra) {
+  var h = '<select' + (extra || '') + '>';
+  LAYERS.forEach(function(g){ h += '<optgroup label="' + g[0] + '">' + g[1].map(function(l){ var off = l[1] == 'not recorded'; return '<option' + (l[0] == sel ? ' selected' : '') + (off ? ' disabled' : '') + '>' + l[0] + (l[1] ? '  (' + l[1] + ')' : '') + '</option>'; }).join('') + '</optgroup>'; });
+  return h + '</select>';
+}
+var SPECIES = [['deer','#6cc070'],['elk','#9ad6a0'],['rabbit','#b9d86a'],['bison','#d6c26a'],['wolf','#c586c0'],['cougar','#e08a3c'],['bear','#b07050'],['fox','#d68a8a'],['eagle','#6fb6e0']];
+
 // ---------- state ----------
 var ST = { ws: 'overview', st: {}, lens: 'all', compareB: false, playing: false, frame: 0 };
 var STATES = {
   overview: [['normal','Healthy run'],['problems','Watch + bad'],['compare','A vs B'],['noA3','A3 not built'],['regions','Region table']],
-  trends: [['raw','Raw series'],['typical','Typical year'],['anomaly','Anomaly'],['few','Fewer than 5 years'],['reference','Reference file baseline']],
-  space: [['strip','Strip: latitude bands'],['regions','Strip: regions'],['tracks','Tracks on map'],['playing','Playback'],['buffering','Buffering'],['periods','Maps per period']],
+  trends: [['raw','Raw series'],['typical','Typical year'],['anomaly','Anomaly'],['few','Fewer than 5 years'],['reference','Reference file baseline'],['species','Species + groups'],['wind','Wind (derived)']],
+  space: [['strip','Strip: latitude bands'],['wind','Wind map + arrows'],['regions','Strip: regions'],['tracks','Tracks on map'],['playing','Playback'],['buffering','Buffering'],['periods','Maps per period']],
   causes: [['chains','Chains'],['scan','Lag scan running'],['scandone','Lag scan done + drill'],['noA3','A3 missing'],['why','Why panel']],
   compare: [['corr','Correlation'],['runs','Run compare'],['snap','Snapshots + cell compare']],
   checks: [['mm','MagnitudeMisses'],['pass','Pass'],['hard','HardFail'],['invalid','InvalidWorld'],['live','Live run in progress'],['old','Report predates run links']]
@@ -339,8 +355,46 @@ function overview() {
   return h;
 }
 
+function trendsExtra(s) {
+  var W = 960, H = 250, h = '';
+  if (s == 'species') {
+    h += '<div class="panel"><div class="ph">Species + functional groups <span class="feat">F2</span><span class="r">' + layerSelect('ecology.species.deer', ' style="width:230px"') + '<div class="seg"><span>Raw</span><span class="on">Index to Y10 = 1</span></div></span></div><div class="pb">';
+    h += '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">';
+    for (var g = 0; g <= 4; g++) h += '<line x1="40" x2="' + (W - 10) + '" y1="' + (10 + g * 50) + '" y2="' + (10 + g * 50) + '" stroke="#2c2c2c"/>';
+    SPECIES.forEach(function(sp, k){
+      var r = rng(100 + k), v = [], x = 1;
+      for (var i = 0; i < 160; i++) { x += noise(r, 0.05) + (k > 3 ? -0.002 * (i > 70 ? 1 : 0) : 0.001) - (i > 66 && i < 76 ? 0.05 * (k < 4 ? 1.4 : 0.6) : 0); v.push(Math.max(0.05, x)); }
+      h += '<path d="' + path(v, 40, 10, W - 50, 200, 0, 2.2) + '" stroke="' + sp[1] + '" fill="none" stroke-width="1.5"/>';
+    });
+    h += '<rect x="' + (40 + (66 / 160) * (W - 50)) + '" y="10" width="' + (10 / 160 * (W - 50)) + '" height="200" fill="rgba(244,135,113,.08)"/><text x="' + (40 + (66 / 160) * (W - 50) + 3) + '" y="22" fill="var(--red)" font-size="10">▲ drought R3</text>';
+    for (var y = 10; y <= 17; y++) h += '<text class="axis" x="' + (40 + ((y - 10) / 8) * (W - 50)) + '" y="232">Y' + y + '</text>';
+    h += '</svg><div class="legend">' + SPECIES.map(function(sp){ return '<span><i style="background:' + sp[1] + '"></i>' + sp[0] + '</span>'; }).join('') + '</div>';
+    h += '<div class="banner warn" style="margin-top:8px">9 of 15 species recorded. Not recorded (greyed in the picker): moose, boar, lynx, beaver, otter, heron. S-3 records all species aggregates; a stage that does not will show this.</div></div></div>';
+    h += '<div class="panel"><div class="ph">Functional groups · world mean</div><table><tr><th>Group</th><th class="num">Y10 mean</th><th class="num">Y17 mean</th><th class="num">Δ</th><th>Recorded species in group</th></tr>' +
+      [['herbivore', 0.61, 0.52, 'deer, elk, rabbit, bison (moose, boar not recorded)'], ['predator', 0.18, 0.14, 'wolf, cougar, bear, fox (lynx not recorded)'], ['scavenger', 0.09, 0.09, 'eagle (heron not recorded)']].map(function(r){ return '<tr class="click"><td class="mono">ecology.group.' + r[0] + '</td><td class="num">' + r[1] + '</td><td class="num">' + r[2] + '</td><td class="num" style="color:' + (r[2] < r[1] ? 'var(--red)' : 'var(--text-dim)') + '">' + (r[2] - r[1]).toFixed(2) + '</td><td class="dim">' + r[3] + '</td></tr>'; }).join('') + '</table></div>';
+    return h;
+  }
+  if (s == 'wind') {
+    var sp = [], dr = [], r = rng(9);
+    for (var i = 0; i < 416; i++) { var w = i % 52; var e = 0.25 + 0.2 * Math.cos(2 * Math.PI * w / 52) + noise(r, 0.05), n = 0.1 + 0.25 * Math.sin(2 * Math.PI * (w - 8) / 52) + noise(r, 0.05); sp.push(Math.hypot(e, n)); dr.push((Math.atan2(n, e) * 180 / Math.PI + 360) % 360); }
+    h += '<div class="panel"><div class="ph">Wind · derived from weather.wind_east + weather.wind_north <span class="feat">F2</span><span class="r">' + layerSelect('weather.wind_speed', ' style="width:250px"') + '<span class="chip">group: world</span></span></div><div class="pb">';
+    h += '<svg viewBox="0 0 ' + W + ' 300" width="100%" height="300"><text class="axis" x="4" y="14">resultant speed 0–1</text><line x1="40" x2="' + (W - 10) + '" y1="110" y2="110" stroke="#2c2c2c"/>';
+    h += '<path d="' + path(sp, 40, 10, W - 50, 110, 0, 0.8) + '" stroke="var(--wx)" fill="none" stroke-width="1.6"/>';
+    h += '<text class="axis" x="4" y="150">direction 0–360° (wraps)</text>';
+    [0, 90, 180, 270, 360].forEach(function(d){ var y = 280 - d / 360 * 120; h += '<line x1="40" x2="' + (W - 10) + '" y1="' + y + '" y2="' + y + '" stroke="#262626"/><text class="axis" x="14" y="' + (y + 3) + '">' + d + '°</text>'; });
+    var segs = '', prev = null;
+    dr.forEach(function(d, i){ var x = 40 + i / 415 * (W - 50), y = 280 - d / 360 * 120; segs += (prev === null || Math.abs(d - prev) > 180 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1); prev = d; });
+    h += '<path d="' + segs + '" stroke="var(--yellow)" fill="none" stroke-width="1.4"/>';
+    for (var y2 = 10; y2 <= 17; y2++) h += '<text class="axis" x="' + (40 + ((y2 - 10) / 8) * (W - 50)) + '" y="296">Y' + y2 + '</text>';
+    h += '</svg><div class="legend"><span><i style="background:var(--wx)"></i>resultant speed = hypot(mean east, mean north)</span><span><i style="background:var(--yellow)"></i>resultant direction = atan2(mean north, mean east), wrap-aware</span></div>';
+    h += '<div class="banner info" style="margin-top:8px">Group and world values come from mean components, so speed is the <b>resultant</b> (lower than the mean speed when directions disagree). Per-cell maps are exact. Min and max of a derived metric are n/a from aggregates. Correlations use the components, not the angle.</div></div></div>';
+    return h;
+  }
+  return null;
+}
 function trends() {
-  var s = cur(), W = 960, H = 250, h = '';
+  var s = cur(); var ex = trendsExtra(s); if (ex !== null) return ex;
+  var W = 960, H = 250, h = '';
   var mode = (s == 'typical' || s == 'few' || s == 'reference') ? 'typical' : (s == 'anomaly' ? 'anomaly' : 'raw');
   var wx = ST.lens != 'eco', eco = ST.lens != 'wx';
   h += '<div class="panel"><div class="ph">Time series <span class="feat">F2</span><span class="feat">F8</span><span class="r">' +
@@ -349,7 +403,7 @@ function trends() {
        '<div class="ctrl"><div class="seg"><span class="' + (mode == 'raw' ? 'on' : '') + '">Raw</span><span class="' + (mode == 'typical' ? 'on' : '') + '">Typical year</span><span class="' + (mode == 'anomaly' ? 'on' : '') + '">Anomaly</span></div>' +
        (mode == 'typical' ? '<label>Spread</label><div class="seg"><span class="' + (s == 'few' ? '' : 'on') + '">p10–p90</span><span class="' + (s == 'few' ? 'on' : '') + '">min–max</span></div><label>Overlay</label><select><option>Y12 (brush end)</option><option>Y27</option></select>' : '') +
        '<span class="chip">' + (s == 'few' ? 'years <b>2-4</b> (3 full) · year 1 skipped (spin-up)' : s == 'reference' ? 'baseline <b>s3/longrun_42.history.json</b> · years 2-40' : 'years <b>2-40</b> · year 1 skipped (spin-up) · 0 partial') + '</span>' +
-       '<label style="margin-left:auto">Metrics</label><span class="chip" style="border-color:var(--wx)">weather.precipitation · mean · world</span>' + (eco ? '<span class="chip" style="border-color:var(--eco)">ecology.producers_total · mean · world</span>' : '') + '<span class="pill">+ metric</span></div>';
+       '<label style="margin-left:auto">Metrics</label><span class="chip" style="border-color:var(--wx)">weather.precipitation · mean · world</span>' + (eco ? '<span class="chip" style="border-color:var(--eco)">ecology.producers_total · mean · world</span>' : '') + layerSelect('', ' style="width:150px" title="add metric"') + '</div>';
   h += '<div class="pb"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">';
   for (var g = 0; g <= 4; g++) h += '<line x1="40" x2="' + (W - 10) + '" y1="' + (10 + g * 50) + '" y2="' + (10 + g * 50) + '" stroke="#2c2c2c"/>';
   if (mode == 'typical') {
@@ -394,13 +448,13 @@ function trends() {
 function space() {
   var s = cur(), h = '';
   h += '<div class="space-grid">';
-  h += '<div class="panel"><div class="ph">Mini-map <span class="feat">F3</span><span class="feat">F10</span><span class="r"><select><option>weather.precipitation</option><option>ecology.producers_total</option></select><label class="note"><input type="checkbox" ' + (s == 'tracks' ? 'checked' : '') + '> tracks</label><label class="note"><input type="checkbox"> anomaly</label></span></div>' +
+  h += '<div class="panel"><div class="ph">Mini-map <span class="feat">F3</span><span class="feat">F10</span><span class="r">' + layerSelect(s == 'wind' ? 'weather.wind_speed' : 'weather.precipitation', ' style="width:220px"') + '<label class="note"><input type="checkbox" ' + (s == 'tracks' ? 'checked' : '') + '> tracks</label><label class="note"><input type="checkbox" ' + (s == 'wind' ? 'checked' : '') + '> wind arrows</label><label class="note"><input type="checkbox"> anomaly</label></span></div>' +
        '<div class="pb mapwrap"><canvas id="mainMap" style="width:100%"></canvas>' + (s == 'buffering' ? '<div class="overlay"><span>buffering… holding Y14 W22</span></div>' : '') + '</div>' +
        '<div class="playbar"><button class="btn primary" id="playBtn">' + (s == 'playing' ? '❚❚' : '▶') + '</button><button class="btn">◀ step</button><button class="btn">step ▶</button><label class="note">speed</label><select><option>8 / s</option><option>1 / s</option><option>52 / s</option></select><label class="note"><input type="checkbox" checked> loop</label>' +
        '<span class="mono" id="frameLbl" style="margin-left:auto">' + (s == 'buffering' ? 'Y14 W22' : 'Y12 W30') + '</span>' + (s == 'periods' ? '' : '<span class="badge ' + (s == 'buffering' ? '' : 'cell') + '">' + (s == 'buffering' ? 'region level after Y14' : 'per-cell') + '</span>') + '</div>' +
-       (s == 'tracks' ? '<div class="pb note"><b style="color:var(--wx)">Storm #118</b> Y11 W40–Y11 W47 · 8 weekly points · peak size 22 · min pressure 0.17 · click a point to jump the game there. <b style="color:var(--red)">Drought R3</b> Y12 W12–W40 (end may lag up to 4 weeks).</div>' : '') + '</div>';
+       (s == 'wind' ? '<div class="pb note"><b style="color:var(--wx)">weather.wind_speed (derived)</b> per cell = hypot(wind_east, wind_north); arrows = atan2(north, east), drawn every 3rd cell. Hover shows speed, direction and the two components.</div>' : '') + (s == 'tracks' ? '<div class="pb note"><b style="color:var(--wx)">Storm #118</b> Y11 W40–Y11 W47 · 8 weekly points · peak size 22 · min pressure 0.17 · click a point to jump the game there. <b style="color:var(--red)">Drought R3</b> Y12 W12–W40 (end may lag up to 4 weeks).</div>' : '') + '</div>';
   var rows = s == 'regions' ? ['R1 Coast', 'R2 Highlands', 'R3 Lowlands', 'R5 Delta', 'R4 Desert Edge', 'R6 North', 'R7 Fells', 'R8 Marsh'] : ['band_0 76–68°N', 'band_1 68–60°N', 'band_2 60–52°N', 'band_3 52–44°N', 'band_4 44–36°N', 'band_5 36–28°N', 'band_6 28–20°N', 'band_7 20–12°N'];
-  h += '<div class="panel"><div class="ph">Strip chart · time × ' + (s == 'regions' ? 'regions' : 'latitude bands') + ' <span class="feat">F10</span><span class="r"><select><option>weather.snow_pack</option><option>weather.precipitation</option><option>ecology.producers_total</option></select><div class="seg"><span class="' + (s == 'regions' ? '' : 'on') + '">Latitude bands</span><span class="' + (s == 'regions' ? 'on' : '') + '">Regions</span></div><select><option>mean</option><option>min</option><option>max</option></select></span></div>' +
+  h += '<div class="panel"><div class="ph">Strip chart · time × ' + (s == 'regions' ? 'regions' : 'latitude bands') + ' <span class="feat">F10</span><span class="r">' + layerSelect('weather.snow_pack', ' style="width:200px"') + '<div class="seg"><span class="' + (s == 'regions' ? '' : 'on') + '">Latitude bands</span><span class="' + (s == 'regions' ? 'on' : '') + '">Regions</span></div><select><option>mean</option><option>min</option><option>max</option></select></span></div>' +
        '<div class="pb" style="display:flex;gap:6px"><div style="display:flex;flex-direction:column;justify-content:space-around;font-size:10px;color:var(--text-dim);width:96px">' + rows.map(function(r){ return '<div>' + r + '</div>'; }).join('') + '</div><canvas id="strip" style="flex:1;height:200px;width:100%"></canvas></div>' +
        '<div class="pb note" style="padding-top:0">Whole run (Y1–Y40) from aggregates; brush shaded. 2,080 samples binned to the pixel width (≈3.4 samples per pixel). ' + (s == 'regions' ? 'Regions ordered by mean latitude.' : 'Snow line creeps south in the Y20s, then recovers: the diagonal edge.') + ' ▲ markers are drought events on their rows.</div></div>';
   h += '</div>';
@@ -413,6 +467,16 @@ function drawSpace() {
   var s = cur(), t = s == 'buffering' ? 220 : (ST.frame || 150);
   var mm = document.getElementById('mainMap');
   if (mm) hexMap(mm, MW, MH, function(q, r){ return field(q, r, t); }, function(v){ return isNaN(v) ? '#1b2a3a' : seqBlue(v); }, { size: 7, after: function(c, pos){
+    if (s == 'wind') {
+      for (var q = 1; q < MW; q += 3) for (var r = 1; r < MH; r += 3) {
+        if (isWater(q, r)) continue;
+        var ang = 0.6 + 0.9 * Math.sin(q * 0.15) + 0.4 * Math.cos(r * 0.2) + (r > 14 ? 1.8 : 0), len = 5 + 4 * (0.5 + 0.5 * Math.sin(q * 0.2 + r * 0.1)), xy = pos(q, r);
+        c.strokeStyle = '#ffe9a8'; c.lineWidth = 1.2; c.beginPath();
+        c.moveTo(xy[0] - Math.cos(ang) * len * 0.5, xy[1] + Math.sin(ang) * len * 0.5); c.lineTo(xy[0] + Math.cos(ang) * len * 0.5, xy[1] - Math.sin(ang) * len * 0.5); c.stroke();
+        c.fillStyle = '#ffe9a8'; c.beginPath(); c.arc(xy[0] + Math.cos(ang) * len * 0.5, xy[1] - Math.sin(ang) * len * 0.5, 1.6, 0, Math.PI * 2); c.fill();
+      }
+      return;
+    }
     if (s != 'tracks') return;
     var pts = [[6, 6], [9, 7], [12, 9], [15, 10], [18, 10], [21, 12], [24, 13], [26, 15]];
     c.strokeStyle = '#4fa3e0'; c.lineWidth = 2; c.beginPath(); pts.forEach(function(p, i){ var xy = pos(p[0], p[1]); i ? c.lineTo(xy[0], xy[1]) : c.moveTo(xy[0], xy[1]); }); c.stroke();

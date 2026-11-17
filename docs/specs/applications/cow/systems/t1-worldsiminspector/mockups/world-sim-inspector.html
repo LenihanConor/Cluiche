@@ -704,7 +704,7 @@ console.log('World Sim Inspector mockup loaded. Data: vegetation, herbivores, pr
     ['ecology.producers_total', 'ecology.group.herbivore', 'weather.precipitation', 'weather.temperature'].forEach(function(l) {
       h += '<span class="chip">' + l + '<button' + dis + ' title="cells.history.untrack ' + l + '">✕</button></span>';
     });
-    h += '<span class="chip untracked">weather.wind_speed<button' + dis + ' style="color:var(--accent)" title="cells.history.track weather.wind_speed">+ Track</button></span></div>';
+    h += '<span class="chip untracked">weather.cloud_cover<button' + dis + ' style="color:var(--accent)" title="cells.history.track weather.cloud_cover">+ Track</button></span></div>';
     h += '<div><h4>Gaps</h4><div class="gap">events: oldest 3 evicted (budget at 94%)</div><div class="gap">cells: evicted S0–S39 (budget)</div><div class="gap" style="color:var(--text-dim)">aggregates: none</div></div>';
     h += '<div><h4>Event legend</h4><div class="legend-row"><span style="color:var(--red)">▲ drought</span><span style="color:var(--purple)">● transition</span><span style="color:var(--warn)">✕ crash</span><span style="color:#5a9fd4">◆ snapshot</span></div></div>';
     $('strip').innerHTML = h;
