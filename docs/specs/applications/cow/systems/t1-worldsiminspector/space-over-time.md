@@ -166,6 +166,25 @@ Build against fixtures first. Latitude rows and tracks light up when S-1 amendme
 2. **Eight latitude bands, equal width.** Equal-width bands put few land cells in polar bands on some presets. Bands by equal cell count would read better but have uneven, world-dependent edges. Revisit after looking at real worlds.
 3. **Storm continuity in A4 vs in the editor.** A4 owning the ids keeps tracks exact and the editor simple, but it puts tracking rules into the simulation's debug path. If the rules need tuning often, tuning means rebuilding the game. Accepted for v1; revisit if the track rules change more than once.
 
+## Change-over-time additions (2026-11-16, user request, approved with the v2 mockup)
+
+### Composition over time
+
+- A **stacked area chart** of how a whole is made up, across the full run: x is time, y is the share (0 to 100%) or the absolute total.
+- Three compositions:
+  - **Biome mix**: share of cells per biome, from the biome category layer's aggregate counts.
+  - **Ecology state**: share of cells Thriving / Stable / Stressed / Collapsed, from `ecology.state` counts.
+  - **Species share**: each recorded species' share of total density, from its aggregate mean (functional-group toggle).
+- Category counts come from DiaCellHistory category aggregates (last sample per window when binned, labelled "end-of-window state", as Feature 1's catch-up notes). Hover shows the exact shares at that sample; events overlay as markers; clicking moves the brush.
+- A group picker restricts the composition to one region or latitude band (Feature 10's grouping layers), and "Absolute" switches from share to totals.
+
+### Added criteria
+
+C1. Biome mix, ecology state and species share render as stacked areas over the whole run from aggregates, summing to 100% (share mode) at every sample, matching a fixture.
+C2. A region or latitude band can be chosen as the group, and absolute mode shows totals.
+C3. Hover shows exact shares at the sample; clicking moves the brush; events appear as markers.
+C4. Species not recorded are listed as "not covered" and the share is over the recorded species only, with a note.
+
 ## Status
 
 `Approved` (2026-11-16). S-1 amendment 7 (`consumer-amendments.md`) and the A4 Feature 5 T-1 consumer amendment (`weather-debug.md`, criteria 27-31) applied the same day. No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

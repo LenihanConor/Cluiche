@@ -268,7 +268,9 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 - Feature 10's mini-map draws **wind arrows** from per-cell components as an overlay when a wind layer is chosen.
 - **Species and groups:** every `ecology.species.<id>` and `ecology.group.<tag>` the source records appears in the grouped layer picker. S-3 records them all as aggregates (S-3 amendment). Unrecorded species are listed greyed as "not recorded".
 
-**Plan impact:** `time-series-and-events.plan.md` (add `derived.ts`), `breakdown-distribution-minimap.plan.md` (derived layers in the mini-map), and later the Feature 8, 10 and 11 plans.
+**Change-over-time additions (2026-11-16, user request: "all").** Seven views that show *change*, each written as a "Change-over-time additions" section with its own criteria in the feature that owns it: change hot-spot map, cell trail and slope chart (Feature 3, `breakdown-distribution-minimap.md`); event density strip on the brush (Feature 2); calendar heatmap (Feature 8); composition over time (Feature 10); change badges on the health cards (Feature 11). All are drawn in the v2 mockup.
+
+**Plan impact:** `time-series-and-events.plan.md` (add `derived.ts` and the event density strip), `breakdown-distribution-minimap.plan.md` (derived layers, hot-spot map, cell trail, slope view), `breakdown-distribution-minimap.plan.md` (derived layers in the mini-map), and later the Feature 8, 10 and 11 plans.
 
 **Not taken (2026-11-16):** seed ensembles (N-file bands and outlier seeds). Kept as an idea.
 

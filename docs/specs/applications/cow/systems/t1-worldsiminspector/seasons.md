@@ -153,6 +153,22 @@ No conflicts.
 2. **Reference runs need a shared calendar.** Week-of-year alignment assumes both runs use 52-week years starting at W1. If a preset or world ever changes the calendar, `weeksPerYear` differs and the baseline must refuse. That is not specified beyond "refuse". Confirm when A4 is built.
 3. **Is p10-p90 the right default for precipitation?** Rain is skewed, with many dry weeks. A median line might read better than the mean. It's cheap to add as a toggle once real A4 data exists. Left out of v1 until someone looks at real curves.
 
+## Change-over-time additions (2026-11-16, user request, approved with the v2 mockup)
+
+### Calendar heatmap
+
+- A second view beside the typical-year chart: **weeks of the year across, years down**, colour is a metric's value (or its anomaly, Feature 8's baseline). Droughts, wet years and slow drift show as visible bands and tilts.
+- Rows are the years in the chosen baseline set plus the partial years (greyed). Hover shows year, week and value; clicking a cell moves the brush to that week and raises a navigation intent (Feature 6 `event`-style history view).
+- Built from the same aggregates and `typicalYear` baseline as the typical-year chart, no new data. Colour: the layer's ramp for raw values, a symmetric diverging ramp for anomalies, with a fixed or auto scale as in Feature 7.
+- Up to 40 years × 52 weeks; weeks without a sample are hatched.
+
+### Added criteria
+
+C1. The calendar heatmap shows one row per year and one column per week of the year, for any metric, raw or as an anomaly against the chosen baseline, matching a fixture.
+C2. Partial years are greyed, and missing weeks are hatched.
+C3. Clicking a cell sets the brush to that week and sends the navigation intent; hover shows year, week and value with the schema unit.
+C4. Perf: 40 years × 52 weeks renders in under 100 ms.
+
 ## Status
 
 `Approved` (2026-11-16). No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

@@ -159,6 +159,21 @@ Built against fixtures first. Each measure lights up as its system lands.
 2. **`wx.dry_weeks` from aggregates is approximate.** A region whose *mean* precipitation is under the threshold isn't the same as its cells being dry. The exact version needs per-cell data and only exists inside the per-cell window. Accept the approximation (labelled), or offer an exact mode inside the window.
 3. **Feeding S-3.5 regression.** These measures look like natural gates (no drift, no collapse) for S-3.5 R-tests and S-4's Live-mode gate. Pulling them into the runners would need the measures in C++ or a shared definition. Not in v1. Decide when S-3.5 Regression mode is planned.
 
+## Change-over-time additions (2026-11-16, user request, approved with the v2 mockup)
+
+### Change badges on the cards
+
+- Each measure card also shows **how it changed**: the value now (brush end window) against the **previous window of equal length** (default), with an arrow and the size of the change, for example "▲ +2.1 pts vs previous 8 y".
+- The arrow shows direction; its **colour shows whether that is good or bad**, using the measure's band direction (`higher_is_better`, `lower_is_better`, `in_range`) and whether the change moves it towards or away from good. A change that crosses a band boundary says so ("watch → bad").
+- A selector switches the comparison: previous window (default), a decade ago, or the brush start. With Source B set, the badge compares A to B instead (the existing A/B/Δ line).
+- Not available when there is no earlier window (the brush starts at the start of the run), which shows "no earlier window".
+
+### Added criteria
+
+C1. Each card shows the change against the chosen comparison window with an arrow, the delta and its unit, matching a fixture.
+C2. The arrow colour reflects better or worse from the measure's band direction, not up or down, and a band crossing is named.
+C3. With no earlier window the badge says so and shows no value; with Source B set it shows A vs B.
+
 ## Status
 
 `Approved` (2026-11-16). No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

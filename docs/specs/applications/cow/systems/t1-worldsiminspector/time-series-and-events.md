@@ -136,6 +136,21 @@ uPlot is a new npm dependency; adding it is a shared package file change, so it 
 2. **Stat choice.** Min, mean and max are the only stats now. Percentiles would need DiaCellHistory to record them.
 3. **Saved-view paths.** Live sources are stored as `kind: live` with no path; restoring needs the game to be connected. Check that this is the right behaviour when a view is opened offline.
 
+## Change-over-time additions (2026-11-16, user request, approved with the v2 mockup)
+
+### Event density strip (on the shared brush)
+
+- Under the time brush (Feature 1's shared brush, shown in every workspace) a thin strip shows **when things happened**: events binned across the whole run, one stacked tick per event type, coloured like the event timeline. Busy periods (a drought, a burst of transitions) are visible before you brush.
+- Binning: at most 200 bins over the run. Bin height is the count, scaled to the busiest bin (or capped at 5 types stacked). Hover shows the bin's sample range and counts per type.
+- Click or drag selects the brush range, as the brush does. A type filter (the Event timeline's) also filters the strip.
+- Source: the `cells.history.events` topic or the file's `events`; for a live source the strip updates on the topic and re-bins on structure change.
+
+### Added criteria
+
+C1. The strip shows binned event counts per type across the whole run on every workspace's brush, matching a fixture; hover shows range and counts per type.
+C2. The strip respects the event type filter and updates with live events; it re-bins when the run grows.
+C3. With no events, or a source without events, the strip is empty with no error.
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the uPlot dependency.
