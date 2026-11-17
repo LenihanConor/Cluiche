@@ -102,6 +102,14 @@ export function queryFrame<T = unknown>(unit: string, frame: number): Promise<Pe
 }
 
 /**
+ * Raw per-job records for one unit over a steady-clock ns range (tier 3, perf.jobs). fromNs / toNs go over the wire as JSON
+ * numbers (the game requires integers), so they are exact only below 2^53 ns (about 104 days of steady-clock uptime).
+ */
+export function queryJobs<T = unknown>(unit: string, fromNs: number, toNs: number): Promise<PerfQueryReply<T>> {
+    return relayQuery<T>('perf_inspector.query_jobs', { unit, fromNs, toNs });
+}
+
+/**
  * Sends a whitelisted perf command (perf.pause, perf.resume, perf.resume_all) to the game through the
  * plugin relay. The plugin rejects any other command name.
  */

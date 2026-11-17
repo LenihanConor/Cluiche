@@ -19,7 +19,97 @@ export interface PerfTimingPush {
     windowSec: number;
     units: PerfUnitTiming[];
     selfMs?: number;
+    /** Tier 1 job aggregates (added 2026-11-12); absent when the game does not publish jobs. */
+    jobs?: { units: JobsTier1Unit[] };
     unavailable: string[];
+}
+
+/** Tier 1 per-owner job aggregate on `perf.timing` (PerfTimingPublisher BuildJobs). */
+export interface JobsTier1Owner {
+    name: string;
+    crc: number;
+    count: number;
+    busyMs: number;
+    waitP50Ms: number;
+    waitP95Ms: number;
+    worstWaitMs: number;
+}
+
+/** Tier 1 pool counters. capUse / timeAtCapMs / peakQueueDepth are published as 0 and listed in `unavailable`. */
+export interface JobsTier1Pool {
+    capUse: number;
+    timeAtCapMs: number;
+    peakQueueDepth: number;
+    inlineFallbacks: number;
+    inboxDrops: number;
+}
+
+export interface JobsTier1Unit { unit: string; owners: JobsTier1Owner[]; pool: JobsTier1Pool }
+
+/** `jobs` key of a `perf.window` reply (PackPerfWindowJobs). frameAgg arrays are base64 uint16 LE, owner-major. */
+export interface JobsWindowWireUnit {
+    unit: string;
+    unitCrc: number;
+    perJobRecording: boolean;
+    hz: number;
+    firstFrame: number;
+    framesPerBucket: number;
+    bucketCount: number;
+    owners: { crc: number; name: string }[];
+    frameAgg: { count: string; busyMs: string; worstWaitMs: string };
+}
+
+export interface JobsWindowWire {
+    bucketMs: number;
+    perJobRecording: boolean;
+    units: JobsWindowWireUnit[];
+    steps: unknown[];
+}
+
+/**
+ * Tier 2 deferred-step summary (spec "Jobs and workers", one per step). The game sends none today
+ * (DiaDeferredStep is not built), so the wire names below are the spec field list, camel-cased: a PROVISIONAL shape.
+ * Times are steady-clock ns; the *Ms fields are plain decimals.
+ */
+export interface StepSummary {
+    /** Unit that hosts the channel; optional, the first unit with per-job recording is used when absent. */
+    unit?: string;
+    channel: string;
+    kickKey: number;
+    applyKey: number;
+    kick: number;
+    firstStart: number;
+    ready: number;
+    apply: number;
+    stallMs: number;
+    cpuMs: number;
+    capWaitMs: number;
+    workerWaitMs: number;
+    ranges: number;
+    /** Sim-side capture / apply cost; optional, the critical-path cost is unavailable without both. */
+    captureMs?: number;
+    applyMs?: number;
+}
+
+/** `perf.jobs` reply: packed base64 arrays one per field, little-endian (PackPerfJobsRecords). */
+export interface RawJobsWire {
+    v: number;
+    unit: string;
+    unitCrc: number;
+    fromNs: number;
+    toNs: number;
+    perJobRecording: boolean;
+    truncated: boolean;
+    count: number;
+    startNs: string;
+    durNs: string;
+    owner: string;
+    tag: string;
+    waitUs: string;
+    worker: string;
+    range: string;
+    rangeCount: string;
+    flags: string;
 }
 
 /** Reply envelope for relayed `perf.window` / `perf.frame` queries. */

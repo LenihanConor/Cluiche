@@ -11,6 +11,7 @@ namespace Dia
 	{
 		static const Dia::Core::StringCRC kReqQueryWindow("perf_inspector.query_window");
 		static const Dia::Core::StringCRC kReqQueryFrame("perf_inspector.query_frame");
+		static const Dia::Core::StringCRC kReqQueryJobs("perf_inspector.query_jobs");
 		static const Dia::Core::StringCRC kReqCommand("perf_inspector.command");
 
 		static const Dia::Core::StringCRC kTopicPerfTiming("perf.timing");
@@ -35,6 +36,7 @@ namespace Dia
 
 			RegisterHandler(kReqQueryWindow, [this](const Json::Value& d) { return HandleQueryWindow(d); });
 			RegisterHandler(kReqQueryFrame,  [this](const Json::Value& d) { return HandleQueryFrame(d); });
+			RegisterHandler(kReqQueryJobs,   [this](const Json::Value& d) { return HandleQueryJobs(d); });
 			RegisterHandler(kReqCommand,     [this](const Json::Value& d) { return HandleCommand(d); });
 
 			RegisterGameTopic(kTopicPerfTiming, [this](const Json::Value& d)
@@ -72,6 +74,17 @@ namespace Dia
 			args["unit"] = data.isMember("unit") ? data["unit"] : Json::Value("");
 			args["frame"] = data.isMember("frame") ? data["frame"] : Json::Value(0);
 			return RelayQuery("perf.frame", args);
+		}
+
+		// Relays perf.jobs (raw per-job records, tier 3). The game requires integral fromNs / toNs (HandleJobs checks
+		// isIntegral), so they pass through as JSON numbers; values above 2^53 ns would lose precision in the UI.
+		Json::Value DiaPerfInspectorPlugin::HandleQueryJobs(const Json::Value& data)
+		{
+			Json::Value args;
+			args["unit"] = data.isMember("unit") ? data["unit"] : Json::Value("");
+			args["fromNs"] = data.isMember("fromNs") ? data["fromNs"] : Json::Value(0);
+			args["toNs"] = data.isMember("toNs") ? data["toNs"] : Json::Value(0);
+			return RelayQuery("perf.jobs", args);
 		}
 
 		// Relays the A/B pause commands. Only the perf pause commands are allowed through; the reply (or the

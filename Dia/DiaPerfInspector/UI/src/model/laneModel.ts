@@ -38,6 +38,8 @@ export interface PerfWindowReply {
     markers: unknown[];
     trips: unknown[];
     truncated: boolean;
+    /** Jobs tier 2 (added 2026-11-12); see types.ts JobsWindowWire. */
+    jobs?: unknown;
 }
 
 /**
@@ -117,7 +119,7 @@ const kClampedRaw = 65535;
 const kFlagClamped = 0x01;
 const kFlagGap = 0x02;
 
-function colourOf(crc: number): number {
+export function colourOf(crc: number): number {
     const h = Math.imul(crc >>> 0, 0x9e3779b1) >>> 0;
     return (h >>> 16) % kModuleColourCount;
 }

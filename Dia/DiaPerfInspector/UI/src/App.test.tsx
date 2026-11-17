@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from './App';
 import { subscribePerfTiming, usePerfTimingStore } from './usePerfTimingStore';
 
@@ -39,5 +40,26 @@ describe('App shell', () => {
         await act(async () => { postDia('perf_inspector.connection_state', { connected: true }); });
         expect(screen.getByTestId('connection-banner')).toHaveAttribute('data-state', 'connected');
         expect(usePerfTimingStore.getState().connectionState).toBe('connected');
+    });
+});
+
+describe('App tabs', () => {
+    it('opens on Frames and keeps the Frames content', () => {
+        render(<App />);
+        expect(screen.getByRole('tab', { name: 'Frames' })).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByTestId('lanes')).toBeInTheDocument();
+        expect(screen.queryByTestId('workers-view')).toBeNull();
+    });
+
+    it('switches to Workers and back without losing the connection banner', async () => {
+        render(<App />);
+        await userEvent.click(screen.getByRole('tab', { name: 'Workers' }));
+        expect(screen.getByTestId('workers-view')).toBeInTheDocument();
+        expect(screen.queryByTestId('lanes')).toBeNull();
+        expect(screen.getByTestId('connection-banner')).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: 'Workers' })).toHaveAttribute('aria-selected', 'true');
+        await userEvent.click(screen.getByRole('tab', { name: 'Frames' }));
+        expect(screen.getByTestId('lanes')).toBeInTheDocument();
+        expect(screen.queryByTestId('workers-view')).toBeNull();
     });
 });
