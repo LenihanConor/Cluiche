@@ -53,7 +53,7 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 | # | Feature | Summary | Spec | Status |
 |---|---------|---------|------|--------|
 | 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table), `hydrology_parameters.json` (validated, hot-reload, live override), the `Passability` enum. Pure logic, TDD | TBD | Draft |
-| 2 | Water Pipeline | The weekly passes: infiltration and soil, ground water, runoff, river routing (linear-store cascade in topological order), basin water balance and inundation, floodplain flooding, freeze and glacier, clamping and totals. Serial vs parallel bit-identity. Pure logic, TDD with hand-built grids | TBD | Draft |
+| 2 | Water Pipeline | The weekly passes: freeze, glacier, infiltration, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (same-week crossing and chained lakes), basin levels, floods against each river's running mean, passability, glacier counters, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Draft |
 | 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot`; init from S-1, spin-up, `HoldGeneration`/`WorldGenerationFailed` | TBD | Draft |
 | 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | TBD | Draft |
 | 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | TBD | Draft |
@@ -141,6 +141,13 @@ namespace CoW::Hydrology {
 At Large this is about 60 KB per float field, under 1 MB per working copy.
 
 ### Weekly pipeline (Feature 2)
+
+> **Superseded in detail by @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md (2026-11-17).** Changes from the sketch below:
+> - Routing is one topological cascade with basins inside it, so water can cross a river in one week.
+> - Units are cell-depth.
+> - Consumers inject **water sinks** (an ET multiplier and a draw), so A5 never depends on A1.
+> - Floods are judged against each river's running mean (`meanFlow`).
+> - The pass order is freeze → glacier → infiltration → ET/sinks → runoff → cascade → basins → floods → passability → glacier counters → totals.
 
 All passes are full-grid unless stated. Each reads a stable copy and gathers in a fixed direction order (the A4 rule), so results are independent of range count.
 
@@ -291,7 +298,7 @@ The three interview-time questions are resolved (Decisions 9–11). Open, to rev
 
 1. **Spin-up length with cycles on.** A multi-year coupled spin-up at Large could take seconds on the worker job. If it does, consider caching a spun-up state in F-3 bundles (a start state) rather than shortening the spin-up.
 2. **Topological routing and parallelism.** River trees are serial. If one dominant tree drains most of a continent, the routing pass is effectively single-threaded. Measure it first (performance is report-only); split long trees into chained segments only if the step misses its World Step slack.
-3. **Basin overflow chains.** A filling basin can spill into another basin downstream, and that one into a third. Overflow enters routing **next week**, so a chain of k basins takes k weeks to propagate. Check that this matches the GDD's intent for chained lakes; same-week resolution would need an ordered basin pass.
+3. ~~**Basin overflow chains.**~~ **Resolved 2026-11-17 (Feature 2 interview):** basins are nodes inside the topological cascade, so chained lakes resolve in the same week.
 
 ## Status
 
