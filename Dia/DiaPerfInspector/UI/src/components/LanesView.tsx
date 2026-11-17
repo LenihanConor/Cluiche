@@ -3,6 +3,7 @@ import { selectView, useWindowStore } from '../useWindowStore';
 import { useSelectionStore } from '../useSelectionStore';
 import { LaneRow } from './LaneRow';
 import { ModuleLegend } from './ModuleLegend';
+import { ExportTraceButton } from './ExportTraceButton';
 
 const kWindows = [10, 30, 60] as const;
 
@@ -50,6 +51,7 @@ export function LanesView() {
                 <span data-testid="lanes-window-label" style={{ color: '#808080' }}>
                     last {view.windowSeconds} s
                 </span>
+                <ExportTraceButton />
                 <button type="button" style={buttonStyle(paused)} onClick={togglePause}>
                     {paused ? 'Resume' : 'Pause'}
                 </button>
