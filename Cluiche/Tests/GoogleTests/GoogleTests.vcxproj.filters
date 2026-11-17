@@ -3057,7 +3057,7 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
-    <ClCompile Include="DiaDeferredStep\TestDeferredStepSkeleton.cpp">
+    <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
   </ItemGroup>

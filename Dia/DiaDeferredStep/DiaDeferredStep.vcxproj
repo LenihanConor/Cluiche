@@ -74,10 +74,16 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DiaDeferredStep.h" />
+    <ClInclude Include="DeferredStepTypes.h" />
+    <ClInclude Include="IParallelExecutor.h" />
+    <ClInclude Include="SerialExecutor.h" />
+    <ClInclude Include="IDeferredStep.h" />
+    <ClInclude Include="IStepLauncher.h" />
+    <ClInclude Include="DeferredStepObservation.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DiaDeferredStep.cpp" />
+    <ClCompile Include="SerialExecutor.cpp" />
+    <ClCompile Include="DeferredStepObservation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />

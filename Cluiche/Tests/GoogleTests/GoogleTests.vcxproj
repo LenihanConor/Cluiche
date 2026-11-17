@@ -1303,7 +1303,7 @@
     <ClCompile Include="DiaObservation\Profile\TestChunkEpoch.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestChainBuilder.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp" />
-    <ClCompile Include="DiaDeferredStep\TestDeferredStepSkeleton.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
