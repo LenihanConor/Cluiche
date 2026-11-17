@@ -169,7 +169,14 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/space-ove
 Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Grid and terrain ingest), so A5 Hydrology gets the same data from an imported, `world_file` or F-3 baked world as from a freshly generated one.
 
 - `.wld.json` gains **raw/bed elevation** (the ground under lakes; `Cell::elevation` is the lake surface) and the **basin table**: per basin its cells, spill height and spill cell.
-- The `cow.world` format **version bumps** (1 → 2). Import accepts the new version and reads both back. How version 1 files are handled (refused, or imported with a rebuild and a Warning) is TBD, see Open Design Question 4.
+- The `cow.world` format **version bumps** (1 → 2). Import accepts the new version and reads both back.
+- **Version 1 files still import** (user decision 2026-11-17). They hold no raw heights, so nothing can be rebuilt. Import accepts them with:
+  - a basin table made only of S-1's lakes: each lake's cells, with spill height equal to the lake surface and spill cell equal to its outflow cell;
+  - bed elevation equal to `Cell::elevation`;
+  - a flag `basinsFromLakesOnly = true`, so A5 knows those lakes cannot fall or grow and no other basin can fill;
+  - one Warning naming the file.
+
+  Re-exporting writes version 2 with that same lake-only table. A re-bake from the seed restores full basins. Refusing version 1 files was rejected because it would break existing authored worlds and F-3 bakes.
 - Flow direction is **already rebuilt on import**, so it is not persisted. A5 needs full-grid flow direction and corridor/crossing sites, which S-1 already provides.
 - A drainage-rule change in S-1 never silently changes an old world's basins, because the basins are read, not recomputed.
 - Rejected: rebuilding the basin table on import, and A5 running its own priority-flood.
@@ -182,6 +189,13 @@ Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (
 34. An imported world, a `world_file` world and a freshly generated world with the same seed give identical bed elevation and basin tables.
 35. A malformed basin table (a cell index out of range, a spill cell not in the basin, a basin with no cells) fails import cleanly with the field named.
 36. The S-1 layer goldens are unchanged, and `reachability-validator` results on an imported world are unchanged.
+37. A version 1 file imports:
+    - it produces one Warning;
+    - its basin table holds exactly S-1's lakes (spill height = lake surface);
+    - bed elevation equals `Cell::elevation`;
+    - `basinsFromLakesOnly` is true.
+
+    Re-exporting it writes version 2 with the same lake-only table, and `basinsFromLakesOnly` survives the round trip.
 
 ## Public Interfaces
 
@@ -250,7 +264,7 @@ Scoped filter for iteration: `*Biome*:*WorldGen*:*Terrain*`.
 
 1. ~~**Does S-1's system spec stay `Done`?**~~ **Resolved 2026-11-13 (approved):** S-1 keeps `Done`, because its original scope genuinely is complete and this new scope is held in a child feature rather than reopening the system. S-1's Status carries an "Outstanding after close" paragraph naming this spec, and the World assets participant section carries a NOT BUILT banner, so nothing reads as implemented that is not.
 2. ~~**Should amendments 4 and 5 be deferred into F-3's plan instead?**~~ **Resolved 2026-11-16 (user): yes, moved into F-3 Feature 6.** They have no consumer until F-3 is built, and consolidating them here was justified by "one build, one test run". If F-3 slips a long way, they are speculative work in S-1's tree. The alternative is shipping amendments 1–3 now and moving 4–5 into F-3 Feature 6. Amendment 1 is urgent either way.
-4. **Version 1 files after the bump** (added 2026-11-17, A5 Hydrology). Do old `.wld.json` files import with a rebuild of the basin table and a Warning, or get refused? Rebuilding on import was rejected as the *normal* path, but it may be the only way to keep existing authored worlds and F-3 baked worlds loadable. TBD with the user.
+4. ~~**Version 1 files after the bump.**~~ **Resolved 2026-11-17 (user):** version 1 files import with a lake-only basin table, bed elevation equal to the surface, `basinsFromLakesOnly = true` and a Warning (Amendment 8, AC 37). Refusing them was rejected.
 3. **Does the `biomeIndex` palette need designed colours?** AC 6 requires 13 distinct colours. The three succession biomes are visually meaningful — burned, scrubbed, desertified — so the palette may want deliberate hues rather than the next three from the categorical list. Cheap to change later; worth asking whoever owns the layer palettes.
 
 ## Status

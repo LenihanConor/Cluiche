@@ -44,7 +44,7 @@ With export/import:
 
 ### JSON Schema (v1)
 
-> **Forward pointer (2026-11-17, A5 Hydrology):** the world file will also carry raw/bed elevation and the basin table, with `version` 2. See consumer-amendments.md, amendment 8 (Proposed). This spec's schema below is version 1 until that is built.
+> **Forward pointer (2026-11-17, A5 Hydrology):** the world file will also carry raw/bed elevation and the basin table, with `version` 2. See consumer-amendments.md, amendment 8 (Proposed). This spec's schema below is version 1 until that is built. Version 1 files keep importing after the bump (lake-only basins, a Warning; amendment 8 AC 37), so the `version != 1` gate below becomes `version` 1 or 2.
 
 > **Amended 2026-10-19 (product review):** schema updated to match actual enums (Biome, TerrainType, RegionId), add missing terrain fields (`depthZone`, `landmass`, `terrainFlags`, `downstream`, `mainLandmass`), replace fixed site arrays with generic `sites` registry per Feature 9, add `provenance` per SD-S1-009, and use `format` + `version` convention (not `schema_version`) to match preset files and F-3 World Assets envelope. Full text updated when this feature is built.
 
