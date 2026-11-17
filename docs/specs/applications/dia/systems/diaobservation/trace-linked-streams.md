@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/dia/systems/diaobservation/diaobservation.md
 **Depends on:** @trace-spans.md (Tracer, `SpanRecord`), @perf-live-control.md (Open Question 1 spike, 2026-11-16). Consumed by @perf-inspector.md (AC5 live half, tasks 4 and 6)
-**Status:** `Approved` — 2026-11-16. **Plan:** @trace-linked-streams.plan.md
+**Status:** `Done` — 2026-11-17. **Plan:** @trace-linked-streams.plan.md (Done)
 
 ## Summary
 
