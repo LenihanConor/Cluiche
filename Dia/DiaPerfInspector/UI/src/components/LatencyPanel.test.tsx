@@ -6,17 +6,21 @@ import fixture from '../model/__fixtures__/latency.fixture.json';
 import type { LatencyAction } from '../types';
 
 describe('LatencyPanel', () => {
-    it('shows the honest message with null data', () => {
-        render(<LatencyPanel actions={null} unavailable={[]} />);
+    it('shows the honest message with null data and no reason', () => {
+        render(<LatencyPanel actions={null} reason={null} />);
         expect(screen.getByTestId('latency-panel')).toHaveTextContent('latency unavailable: no latency data from the game yet');
     });
-    it('shows the honest message when latency is listed unavailable, even with data', () => {
-        render(<LatencyPanel actions={fixture as LatencyAction[]} unavailable={['latency']} />);
-        expect(screen.getByTestId('latency-panel')).toHaveTextContent('latency unavailable');
-        expect(screen.queryAllByTestId('latency-row')).toHaveLength(0);
+    it('shows the specific reason when the game could not answer', () => {
+        render(<LatencyPanel actions={null} reason="latency probe needs a Debug build" />);
+        expect(screen.getByTestId('latency-panel')).toHaveTextContent('latency unavailable: latency probe needs a Debug build');
+    });
+    it('shows the no-samples hint for an empty action list', () => {
+        render(<LatencyPanel actions={[]} reason={null} />);
+        expect(screen.getByTestId('latency-panel')).toHaveTextContent('no latency samples yet: drag a slider or run a panel command in the game');
+        expect(screen.getByTestId('latency-panel')).not.toHaveTextContent('unavailable');
     });
     it('renders fixture rows with status', () => {
-        render(<LatencyPanel actions={fixture as LatencyAction[]} unavailable={[]} />);
+        render(<LatencyPanel actions={fixture as LatencyAction[]} reason={null} />);
         const rows = screen.getAllByTestId('latency-row');
         expect(rows).toHaveLength(4);
         expect(rows[0]).toHaveAttribute('data-status', 'over');

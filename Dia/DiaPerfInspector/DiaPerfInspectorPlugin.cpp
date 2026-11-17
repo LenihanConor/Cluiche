@@ -13,6 +13,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqQueryFrame("perf_inspector.query_frame");
 		static const Dia::Core::StringCRC kReqQueryJobs("perf_inspector.query_jobs");
 		static const Dia::Core::StringCRC kReqQueryChain("perf_inspector.query_chain");
+		static const Dia::Core::StringCRC kReqQueryLatency("perf_inspector.query_latency");
 		static const Dia::Core::StringCRC kReqCommand("perf_inspector.command");
 
 		static const Dia::Core::StringCRC kTopicPerfTiming("perf.timing");
@@ -40,6 +41,7 @@ namespace Dia
 			RegisterHandler(kReqQueryFrame,  [this](const Json::Value& d) { return HandleQueryFrame(d); });
 			RegisterHandler(kReqQueryJobs,   [this](const Json::Value& d) { return HandleQueryJobs(d); });
 			RegisterHandler(kReqQueryChain,  [this](const Json::Value& d) { return HandleQueryChain(d); });
+			RegisterHandler(kReqQueryLatency, [this](const Json::Value& d) { return HandleQueryLatency(d); });
 			RegisterHandler(kReqCommand,     [this](const Json::Value& d) { return HandleCommand(d); });
 
 			RegisterGameTopic(kTopicPerfTiming, [this](const Json::Value& d)
@@ -101,6 +103,12 @@ namespace Dia
 		Json::Value DiaPerfInspectorPlugin::HandleQueryChain(const Json::Value& /*data*/)
 		{
 			return RelayQuery("perf.chain", Json::Value(Json::objectValue));
+		}
+
+		// Relays perf.latency (Sim-hosted via SimQueryHost, Debug builds only; Release replies with an unknown-command error).
+		Json::Value DiaPerfInspectorPlugin::HandleQueryLatency(const Json::Value& /*data*/)
+		{
+			return RelayQuery("perf.latency", Json::Value(Json::objectValue));
 		}
 
 		// Relays the A/B pause commands. Only the perf pause commands are allowed through; the reply (or the

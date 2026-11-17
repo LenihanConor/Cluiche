@@ -75,7 +75,17 @@ TEST_F(PerfChainRig, NoSpansIsUnavailableWithReason)
     const Json::Value r = cmds.HandleChain(Json::Value(Json::objectValue));
     EXPECT_FALSE(r["available"].asBool());
     EXPECT_FALSE(r["reason"].asString().empty());
+    EXPECT_NE(std::string::npos, r["reason"].asString().find("trace.enabled"));
     EXPECT_EQ(0, statsCalls);
+}
+
+TEST_F(PerfChainRig, UnlinkedSpansExplainWhereTheChainComesFrom)
+{
+    Send({ Span("Filler", 9, 1000, 0, 1, 1, 2) });
+    cmds.Drain();
+    const Json::Value r = cmds.HandleChain(Json::Value(Json::objectValue));
+    EXPECT_FALSE(r["available"].asBool());
+    EXPECT_NE(std::string::npos, r["reason"].asString().find("debug panel"));
 }
 
 TEST_F(PerfChainRig, DrainThenChainReturnsRealStagesAndEdge)

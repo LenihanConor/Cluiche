@@ -115,6 +115,11 @@ export function queryChain<T = unknown>(): Promise<PerfQueryReply<T>> {
     return relayQuery<T>('perf_inspector.query_chain', {});
 }
 
+/** Per-action latency percentiles (perf.latency, Sim-hosted, Debug builds only; a Release game replies with an error). */
+export function queryLatency<T = unknown>(): Promise<PerfQueryReply<T>> {
+    return relayQuery<T>('perf_inspector.query_latency', {});
+}
+
 /**
  * Sends a whitelisted perf command (perf.pause, perf.resume, perf.resume_all) to the game through the
  * plugin relay. The plugin rejects any other command name.

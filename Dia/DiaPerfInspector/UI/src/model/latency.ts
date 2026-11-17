@@ -1,4 +1,5 @@
 import type { LatencyAction } from '../types';
+import { readReply } from './reply';
 
 /** The only target perf-live-control.md names: slider drag to visible change, 100 ms. The game carries no targets. */
 export const kDefaultLatencyTargetMs = 100;
@@ -23,11 +24,6 @@ export function latencyStatus(a: LatencyAction): LatencyStatus {
 /** One decimal under 100 ms, whole ms from 100 up. */
 export function formatMs(ms: number): string {
     return `${ms >= 100 ? ms.toFixed(0) : ms.toFixed(1)} ms`;
-}
-
-/** False before the first perf.timing push and while the game lists `latency` as unavailable. */
-export function latencyAvailable(unavailable: string[] | undefined): boolean {
-    return unavailable !== undefined && !unavailable.includes('latency');
 }
 
 const kRank: Record<LatencyStatus, number> = { over: 0, ok: 1, 'no-samples': 2 };
@@ -56,4 +52,25 @@ export function latencyActionsFromReply(reply: unknown, targetMs: number = kDefa
     return Object.entries(actions as Record<string, { count?: number; p50Ms?: number; p95Ms?: number }>).map(([action, s]) => ({
         action, targetMs, p50Ms: s?.p50Ms ?? 0, p95Ms: s?.p95Ms ?? 0, samples: s?.count ?? 0,
     }));
+}
+
+export const kLatencyDebugOnlyReason = 'latency probe needs a Debug build';
+
+export interface LatencyReplyResult {
+    /** null when the game gave no usable latency data; [] when the probe is live but has no samples yet. */
+    actions: LatencyAction[] | null;
+    /** Why there is no data; null when actions is non-null. */
+    reason: string | null;
+}
+
+/**
+ * Reads a relayed perf.latency reply. The panel state comes from this reply, never from the perf.timing `unavailable`
+ * list. An error reply (Release game: the command is not registered) maps to the Debug-build reason.
+ */
+export function parseLatencyReply(raw: unknown): LatencyReplyResult {
+    const reply = readReply(raw);
+    if (!reply) return { actions: null, reason: 'no reply from the game' };
+    if (!reply.success || typeof reply.body.error === 'string') return { actions: null, reason: kLatencyDebugOnlyReason };
+    const actions = latencyActionsFromReply(reply.body);
+    return actions ? { actions, reason: null } : { actions: null, reason: 'malformed latency reply' };
 }

@@ -4,6 +4,7 @@ import { subscribePerfTiming, usePerfTimingStore } from './usePerfTimingStore';
 import { useLiveConnection } from './useLiveConnection';
 import { useWindowPolling } from './useWindowPolling';
 import { useChainPolling } from './useChainPolling';
+import { useLatencyPolling } from './useLatencyPolling';
 import { useTripsFeed } from './useTripsFeed';
 import { useWindowStore } from './useWindowStore';
 import { useSelectionStore } from './useSelectionStore';
@@ -38,6 +39,7 @@ export default function App() {
     const unavailable = usePerfTimingStore((s) => s.timing?.unavailable);
     const selfMs = usePerfTimingStore((s) => s.timing?.selfMs);
     const latency = useLatencyStore((s) => s.actions);
+    const latencyReason = useLatencyStore((s) => s.reason);
     const lanes = useWindowStore((s) => s.lanes);
     const trips = useWindowStore((s) => s.trips);
     const markers = useWindowStore((s) => s.markers);
@@ -51,6 +53,7 @@ export default function App() {
     useEffect(() => subscribePerfTiming(), []);
     useWindowPolling(connection);
     useChainPolling(connection, tab === 'frames');
+    useLatencyPolling(connection, tab === 'frames');
     useJobsFeeds();
     useTripsFeed(connection);
     useEffect(() => { useSelectionStore.getState().reconcile(lanes); }, [lanes]);
@@ -95,7 +98,7 @@ export default function App() {
                 </section>
                 <section data-testid="latency" style={{ ...panel, gridColumn: '1 / span 2' }}>
                     <h4 style={heading}>Latency (end to end)</h4>
-                    <LatencyPanel actions={latency} unavailable={unavailable} />
+                    <LatencyPanel actions={latency} reason={latencyReason} />
                 </section>
                 <section data-testid="selfcost" style={panel}>
                     <h4 style={heading}>Telemetry self-cost</h4>

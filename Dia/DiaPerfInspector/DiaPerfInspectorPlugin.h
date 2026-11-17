@@ -26,6 +26,7 @@ namespace Dia
 			Json::Value HandleQueryFrame(const Json::Value& data);
 			Json::Value HandleQueryJobs(const Json::Value& data);
 			Json::Value HandleQueryChain(const Json::Value& data);
+			Json::Value HandleQueryLatency(const Json::Value& data);
 			Json::Value HandleCommand(const Json::Value& data);
 			Json::Value RelayQuery(const char* command, const Json::Value& args);
 

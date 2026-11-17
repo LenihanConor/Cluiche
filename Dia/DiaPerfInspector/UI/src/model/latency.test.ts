@@ -1,7 +1,7 @@
 // latency.fixture.json is SYNTHETIC (not recorded from a game). Action names follow the game's
 // "<domain>.<command>" form; the 100 ms target is the only target perf-live-control.md names.
 import fixture from './__fixtures__/latency.fixture.json';
-import { buildLatencyRows, formatMs, latencyStatus, latencyAvailable, latencyActionsFromReply, kDefaultLatencyTargetMs } from './latency';
+import { buildLatencyRows, formatMs, latencyStatus, latencyActionsFromReply, parseLatencyReply, kDefaultLatencyTargetMs } from './latency';
 import type { LatencyAction } from '../types';
 
 const a = (over: Partial<LatencyAction> = {}): LatencyAction =>
@@ -43,16 +43,39 @@ describe('buildLatencyRows', () => {
     });
 });
 
-describe('formatMs / latencyAvailable', () => {
+describe('parseLatencyReply', () => {
+    const ok = (data: unknown) => ({ success: true, result: { success: true, data } });
+    it('maps actions from a successful reply', () => {
+        const r = parseLatencyReply(ok({ actions: { 'D.c': { count: 3, p50Ms: 1, p95Ms: 2 } } }));
+        expect(r.reason).toBeNull();
+        expect(r.actions).toHaveLength(1);
+    });
+    it('gives an empty list (not null) when the probe has no samples yet', () => {
+        const r = parseLatencyReply(ok({ actions: {} }));
+        expect(r.actions).toEqual([]);
+        expect(r.reason).toBeNull();
+    });
+    it('gives the Debug-build reason for an error or unknown-command reply', () => {
+        for (const raw of [{ success: false, result: { error: 'unknown command' } }, { success: true, result: { success: false, error: 'Unknown command: perf.latency' } }]) {
+            const r = parseLatencyReply(raw);
+            expect(r.actions).toBeNull();
+            expect(r.reason).toBe('latency probe needs a Debug build');
+        }
+    });
+    it('gives a reason for garbage and for a reply with no actions object', () => {
+        for (const raw of [null, undefined, 'x', 5, {}, ok({})]) {
+            const r = parseLatencyReply(raw);
+            expect(r.actions).toBeNull();
+            expect(r.reason).toBeTruthy();
+        }
+    });
+});
+
+describe('formatMs', () => {
     it('formats with one decimal under 100 and none above', () => {
         expect(formatMs(4.26)).toBe('4.3 ms');
         expect(formatMs(100)).toBe('100 ms');
         expect(formatMs(163.4)).toBe('163 ms');
-    });
-    it('is unavailable before the first push or while listed', () => {
-        expect(latencyAvailable(undefined)).toBe(false);
-        expect(latencyAvailable(['latency'])).toBe(false);
-        expect(latencyAvailable(['trips'])).toBe(true);
     });
 });
 

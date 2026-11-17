@@ -171,7 +171,7 @@ bool PerfChainCommands::MetricEdgeStats(const char* stream, ChainEdgeStats& out)
 Json::Value PerfChainCommands::HandleChain(const Json::Value& /*args*/)
 {
     if (mCount == 0)
-        return Unavailable("no spans recorded (is tracing on?)");
+        return Unavailable("tracing is off or no spans recorded yet: enable tracing in the observation config (cow.diaobservation: trace.enabled = true and trace.categories.diaapplicationflow = true; sinks.trace_file must stay true)");
 
     // Linearise the ring, oldest first.
     std::vector<ChainSpan> ordered(mCount);
@@ -190,6 +190,12 @@ Json::Value PerfChainCommands::HandleChain(const Json::Value& /*args*/)
     Json::Reader reader;
     if (!reader.parse(text, root))
         return Unavailable("internal error: chain reply did not parse");
+    if (root.isMember("available") && !root["available"].asBool() && root["reason"].isString()
+        && root["reason"].asString() == "no linked chain recorded yet")
+    {
+        // Tracing is on (spans exist) but the S-1 card path has not produced a linked writer/reader pair.
+        root["reason"] = "no linked chain recorded yet: the chain exists only while a CoW stage runs the debug panel with a domain publishing snapshots";
+    }
     return root;
 }
 
