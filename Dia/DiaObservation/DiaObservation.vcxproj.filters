@@ -150,6 +150,9 @@
     <ClCompile Include="Perf\LatencyProbe.cpp">
       <Filter>Perf</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\CoarseRing.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -339,6 +342,9 @@
     </ClInclude>
     <ClInclude Include="Perf\LatencyProbe.h">
       <Filter>Perf</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseRing.h">
+      <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

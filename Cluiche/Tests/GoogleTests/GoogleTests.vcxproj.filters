@@ -2985,5 +2985,8 @@
     <ClCompile Include="DiaObservation\Perf\TestLatencyProbe.cpp">
       <Filter>DiaObservation\Perf</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestCoarseRing.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
