@@ -262,6 +262,9 @@
     <Filter Include="DiaCellHistory">
       <UniqueIdentifier>{89118f48-3ea6-4469-8179-8d412b2da638}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaDeferredStep">
+      <UniqueIdentifier>{f3a9c7e1-b2d3-4e5f-a6c7-d8e9f0a1b2c3}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Cluiche">
       <UniqueIdentifier>{a5ec8eea-2c04-45d8-ae59-64971402a3c3}</UniqueIdentifier>
     </Filter>
@@ -3053,6 +3056,9 @@
     </ClCompile>
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp">
       <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepSkeleton.cpp">
+      <Filter>DiaDeferredStep</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
