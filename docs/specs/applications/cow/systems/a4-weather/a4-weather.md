@@ -7,9 +7,18 @@
 
 > **Revised 2026-11-13 (dependency audit).** The simulation design is unchanged. What changed around it: DiaDeferredStep (Approved 2026-11-12) now owns `IParallelExecutor` and makes the weekly step **deferred** rather than in-frame; DiaCellLayers, DiaCellHistory and CellField are all **built**; S-1 is **built** and its `Cell` carries a biome **enum**, not a `StringCRC`; SimPU commands must be **sim-hosted with mandatory help**. Sections that merely re-specified built Dia capability (cell inspector, selection commands, the history ring, the executor implementations, a snapshot store, season arithmetic) have been deleted in favour of pointers. Every claim here was checked against code on 2026-11-13.
 
+> **Amended 2026-11-17 (A5 Hydrology; user decisions).** A new system, A5 Hydrology (`../a5-hydrology/a5-hydrology.md`), owns all water on the ground. A4 now stops at "water reaching the ground":
+> - `groundWater` leaves `WeatherFields`. A4 outputs `waterToGround` (rain + snowmelt) instead, and the ground-water drain step (§12) moves to A5.
+> - A4 reads A5's previous committed week (`surfaceWetness`, `openWater`, `glacierEligible`), latched at `Capture`. With no A5 present A4 falls back to S-1's static `waterSource`.
+> - Snow above the 1.0 cap becomes `glacierInput` on A5-flagged cells.
+> - Spin-up runs A4 + A5 together when A5 is present. World Step order is `["weather", "hydrology", "ecology"]`.
+> - Three new features are added (7 Weather Influence API, 8 Climate Cycles, 9 Smoothing). Not yet specced.
+>
+> Features 1–6 keep their specs; each is amended in place and marked "(amended 2026-11-17, A5 Hydrology)".
+
 ## Summary
 
-A4 simulates CoW's weather as a weekly **cellular automaton** over the world's hex grid. Each cell carries moisture, temperature, pressure, wind, precipitation, cloud cover, ground water and snow pack. Once per game week every cell updates from local rules: solar heating, pressure, wind, evaporation, transport, orographic lift, precipitation, snow and drainage. Coastal rain, rain shadows, moving storms, spring floods and droughts emerge from those rules rather than being scripted.
+A4 simulates CoW's weather as a weekly **cellular automaton** over the world's hex grid. Each cell carries moisture, temperature, pressure, wind, precipitation, cloud cover, snow pack and a per-week `waterToGround` output. Once per game week every cell updates from local rules: solar heating, pressure, wind, evaporation, transport, orographic lift, precipitation and snow. Water that reaches the ground is handed to A5 Hydrology (amended 2026-11-17, A5 Hydrology). Coastal rain, rain shadows, moving storms, spring floods and droughts emerge from those rules rather than being scripted.
 
 A4 owns the **A1 ↔ A4 contract**. It publishes one `WeatherUpdated{week}` notification per week and exposes a read-only per-cell snapshot that A1 (ecology) and V-1 (tile rendering) read. It defines the `IBiomeSeasonalBaseline` query that A1 implements.
 
@@ -20,9 +29,9 @@ A4 also ships the tools for tuning weather on its own: a debug domain with eight
 1. **Weekly CA update.** On every `SimulationTick` with `band >= TimeBand::Week`, run the GDD's 10-step pipeline (TechnicalSpec §2) over all cells, then commit atomically.
 2. **Deterministic.** No RNG. Same world + same parameters + same tick count gives bit-identical state, whatever the game speed, however the grid is iterated, and whether the step ran synchronously or deferred.
 3. **The A1/V-1 contract.** `WeatherUpdated{week}` plus a const `WeatherSnapshot` view carrying every field the GDD's §13 payload lists.
-4. **Data-driven tuning.** All 20 constants load from `weather_parameters.json`, are validated, hot-reload, and can be overridden live.
+4. **Data-driven tuning.** All 20 constants (19 GDD constants plus `cloud_decay`; the ground-water drain moved to A5, amended 2026-11-17) load from `weather_parameters.json`, are validated, hot-reload, and can be overridden live.
 5. **Save/load.** Committed weather state round-trips through E1. A reload continues bit-identically, including a step that was in flight when the save was taken.
-6. **Observable.** A debug domain with seven scalar base layers plus a wind overlay (nine floats per cell, because wind has two components), per-cell detail rows, console commands, and per-step profiling.
+6. **Observable.** A debug domain with seven scalar base layers plus a wind overlay (nine saved floats per cell, because wind has two components; amended 2026-11-17, A5 Hydrology: `weather.water_to_ground` replaces `weather.ground_water`, and a tenth transient array `glacierInput` is not saved or layered), per-cell detail rows, console commands, and per-step profiling.
 7. **Tunable in isolation.**
    - The five presets and the four regression scenarios (AuthoringDebug §5–§6) ship with A4.
    - The S-2.5 testbed hosts the stage that proves the GDD success criteria (`A4_WeatherSystem.md` §Success Criteria).
@@ -33,9 +42,10 @@ A4 also ships the tools for tuning weather on its own: a debug domain with eight
 - **Player-facing weather visuals.** Rain/snow particles, cloud shading and snow overlay belong to V-1, which reads the snapshot. The A4 overlays are debug-only.
 - **Ecology response.** A1 consumes `WeatherUpdated`. A4 never writes A1 state.
 - **Terrain data.** Elevation, latitude, water source and biome come from S-1 (see Dependencies). A4 doesn't derive or generate them.
-- **Dragon climate manipulation** (GDD "fire dragons → warming"). This can be added later as an external forcing input. The forcing mechanism used by `spawn_storm` is the hook for it.
+- **Water after it reaches the ground** (added 2026-11-17, A5 Hydrology). Soil moisture, ground water, runoff, rivers, lakes, floods and ice belong to A5. A4 stops at `waterToGround` and `glacierInput`.
+- **Dragon climate manipulation content** (GDD "fire dragons → warming") (amended 2026-11-17, A5 Hydrology). Supported through the influence API (Feature 7); no dragon content now (there is a backlog review row).
 - **Step scheduling, the job pool and the worker cap.** DiaDeferredStep owns all of it (amended 2026-11-13). A4 supplies `Capture` / `Run` / `Apply` and nothing more.
-- **The `world` channel and stage ordering.** `WorldStepModule` owns the channel and sequences A4 → A1 → A3 (amended 2026-11-13).
+- **The `world` channel and stage ordering.** `WorldStepModule` owns the channel and sequences A4 → A5 → A1 → A3 (amended 2026-11-13; A5 added 2026-11-17, A5 Hydrology). Order is `["weather", "hydrology", "ecology"]`; S-2.5 alone stays `["weather"]`.
 - **Cell selection, the cell inspector and layer query commands.** DiaCellLayers owns these (amended 2026-11-13).
 - **History storage, scrubbing and snapshots.** DiaCellHistory owns these (amended 2026-11-13).
 
@@ -49,7 +59,8 @@ A4 also ships the tools for tuning weather on its own: a debug domain with eight
 SimPU
   └─ WorldStepModule (SimModule, CoW-Shared, own system spec)
   |    owns the `world` DiaDeferredStep channel; orders stages inside Run
-  |    stage 0 → WeatherModule    stage 1 → EcologyModule (A1, with A3 inline)
+  |    stage 0 → WeatherModule    stage 1 → HydrologyModule (A5, optional; amended 2026-11-17)
+  |    stage 2 → EcologyModule (A1, with A3 inline)
   |
   └─ WeatherModule (SimModule)
        on WorldGenerationComplete → WeatherSimulation::Initialise(terrain) → spin-up N weeks
@@ -83,7 +94,24 @@ namespace CoW::Weather {
     struct WeatherFields {
         DynamicArrayC<float> moisture, temperature, pressure;
         DynamicArrayC<float> windDirection, windSpeed;     // radians [0, 2π), [0, 1]
-        DynamicArrayC<float> precipitation, cloudCover, groundWater, snowPack;
+        DynamicArrayC<float> precipitation, cloudCover, waterToGround, snowPack;
+        // Amended 2026-11-17 (A5 Hydrology): groundWater is gone. waterToGround is a per-week
+        // output (rain + snowmelt reaching the ground this week), zeroed at the start of each step.
+    };
+
+    // Amended 2026-11-17 (A5 Hydrology). Per-week hand-off to A5, held with the working copy.
+    // Not part of WeatherFields: not saved, recomputed every step.
+    struct WeatherHandoff {
+        DynamicArrayC<float> glacierInput;    // snow above the 1.0 cap, on glacierEligible cells only
+    };
+
+    // Amended 2026-11-17 (A5 Hydrology). A5's previous committed week, latched in Capture.
+    // Absent when no A5 is registered (S-2.5 alone): A4 then uses waterSource and zero ground evaporation.
+    struct HydrologyInputs {
+        DynamicArrayC<float>   surfaceWetness;   // [0,1] feeds §6.2 secondary evaporation
+        DynamicArrayC<float>   openWater;        // [0,1] open-water fraction, feeds §6.1 primary evaporation
+        DynamicArrayC<uint8_t> glacierEligible;  // 1 = snow above the cap becomes glacierInput
+        bool                   present = false;
     };
 
     // Read-only inputs, captured at Initialise from S-1's Cell array.
@@ -97,7 +125,7 @@ namespace CoW::Weather {
 }
 ```
 
-At Large (6,656 cells) this is 9 floats (36 B) of dynamic state per cell, about 240 KB per copy, plus 14 B/cell of terrain. The GDD's 64 B/cell estimate (at 200 × 200) assumed an array-of-structs layout.
+At Large (6,656 cells) this is 9 floats (36 B) of dynamic state per cell, about 240 KB per copy, plus 14 B/cell of terrain. Amended 2026-11-17 (A5 Hydrology): the working copy also holds `glacierInput` (4 B) and the latched `HydrologyInputs` (9 B) per cell, about 90 KB more; none of it is saved. The GDD's 64 B/cell estimate (at 200 × 200) assumed an array-of-structs layout.
 
 **Terrain ingest (amended 2026-11-13, verified against S-1 code).** All four inputs are plain fields on `WorldGeneration::Cell`, read through `WorldGenerationModule::GetCurrentWorld()` → `WorldStructure::Cells()`, row-major. A4 copies them once at `Initialise` and never holds the pointer. Notes:
 
@@ -130,6 +158,8 @@ A4's committed/working split maps onto the contract directly, which is why the p
 
 **Spin-up** (52 weeks) runs through `WeatherRunner` as a cancellable **worker job** on the capped executor (amended 2026-11-16, Feature 3): the stage reports not-ready until it finishes, and a newer world cancels it. SimPU never hitches on regeneration.
 
+**Coupled spin-up (amended 2026-11-17, A5 Hydrology).** When A5 is present, the spin-up job runs A4 and A5 **together**, week by week in World Step order (`WeatherRunner` + `HydrologyRunner`), so the first live year is consistent (evaporation feedback, lake levels and baseflow settled). Length is 52 weeks, extended to the longest active climate cycle's settling period when climate cycles are on (Feature 8 sets it). With no A5, A4 spins up alone as before. See `../a5-hydrology/a5-hydrology.md` "Initial state and spin-up".
+
 ### Update pipeline
 
 `WeatherSimulation::Step()` runs the TechnicalSpec §3–§12 steps in GDD order. Each step is a **full-grid pass**.
@@ -138,7 +168,8 @@ A4's committed/working split maps onto the contract directly, which is why the p
 - **Transport is a gather.** Pass A computes each cell's outflow and downwind direction. Pass B sets each cell's inflow to the sum of the outflows aimed at it, summed in direction order 0..5. The result is independent of iteration order, which is what makes parallel execution deterministic. Outflow toward `kNoCell` is skipped, so the moisture or heat stays in the cell (EC-16, CH-10).
 - **Upwind edge inflow.** When a cell's upwind neighbour is `kNoCell`, the cell receives an inflow equal to its own outflow, as if the world past the edge had the same weather (a zero-gradient boundary). Without this, upwind edge cells would lose moisture and heat every week and get nothing back. With steady prevailing winds that leaves fake cold, dry strips along the map edges. The `boundary.edge_inflow` parameter (default `true`) switches it off so S-2.5 can show the GDD-literal behaviour side by side.
 - **Precomputed directions.** The unit vector for each hex direction is a constant table. The wind step's pressure gradient (§5.2) uses it instead of computing `cos`/`sin` per neighbour.
-- **Clamping.** Precipitation amounts are clamped non-negative (CH-09). Snow pack and ground water are capped at 1.0 (CH-04, EC-12). Temperature after transport is clamped non-negative (CH-07). After the last step every field is clamped to its range (EC-20).
+- **Water hand-off to A5 (amended 2026-11-17, A5 Hydrology).** Precipitation (§10) and snow melt (§11.2) add into `waterToGround`, not `groundWater`. The ground-water drain step (§12) is deleted from A4; the `ground_water_drain_rate` / `ground_water.drain_rate` parameter moves to A5. Evaporation (§6) reads A5's latched values: `openWater` for primary evaporation (lake extent now varies) and `surfaceWetness` for secondary evaporation (was ground water). With no A5 present, §6.1 uses S-1's static `waterSource` and §6.2 is zero. `waterToGround` is a per-week amount, not a store: it is clamped to [0, 2] (rain up to 1 plus melt up to 1).
+- **Clamping.** Precipitation amounts are clamped non-negative (CH-09). Snow pack is capped at 1.0 (CH-04). **Amended 2026-11-17 (A5 Hydrology):** snow above the cap is no longer discarded everywhere. On cells A5 flags `glacierEligible` it is output as `glacierInput`; elsewhere it is still discarded. A4 still owns `snowPack` and A5 never writes it. The EC-12 ground-water cap is deleted with the store. Temperature after transport is clamped non-negative (CH-07). After the last step every field is clamped to its range (EC-20).
 - **Season.** A4 owns the named-season enum (there is none in the engine or in CoW today). The week and season come from GameSpeedController's existing helpers (amended 2026-11-13): `WeekOf(day)`, `SeasonOf(day)`, `kWeeksPerSeason = 13`, `kSeasonsPerYear = 4` in `CoW/Shared/GameSpeedController.h`. A4 does **not** re-derive the 13-week arithmetic. There is no `SeasonAdvanced` message.
 
 ### Biome seasonal baseline (A4-owned contract, A1 implements)
@@ -200,7 +231,8 @@ namespace CoW::Weather {
         uint64_t GetWeek() const;
 
         // A1 fields (GDD §13)
-        float Rainfall(uint32_t cell) const;        // precipitation + groundWater × kGroundWaterRainfallFactor (0.1)
+        float Rainfall(uint32_t cell) const;        // precipitation only (amended 2026-11-17, A5 Hydrology: the groundWater·0.1 term is dropped; A1 reads soil moisture from A5)
+        float WaterToGround(uint32_t cell) const;   // added 2026-11-17: rain + snowmelt reaching the ground this week (A5 reads the working copy; this is the committed view)
         float Temperature(uint32_t cell) const;
         bool  SnowCover(uint32_t cell) const;       // snowPack > kSnowCoverThreshold (0.1)
 
@@ -228,7 +260,7 @@ On `WorldGenerationComplete`:
    - moisture: `initial_moisture_water` on water-source cells, `initial_moisture_land` elsewhere
    - pressure: 0.5
    - all other fields: 0
-3. **Spin up.** Run `spinup_weeks` steps silently, off SimPU as a cancellable job (Feature 3), (default 52, set in the module config). No `WeatherUpdated` is sent, and the week counter resets to 0 afterwards. The first published week has settled winds and moisture.
+3. **Spin up.** Run `spinup_weeks` steps silently, off SimPU as a cancellable job (Feature 3), (default 52, set in the module config). No `WeatherUpdated` is sent, and the week counter resets to 0 afterwards. The first published week has settled winds and moisture. Amended 2026-11-17 (A5 Hydrology): with A5 present this is the coupled A4 + A5 spin-up described above, and `waterToGround` starts at 0 like every other output.
 
 Spin-up is deterministic, so a save does not need to know about it. A new game rerunning it gives the same result.
 
@@ -263,7 +295,7 @@ A4 has **no history buffer of its own** (amended 2026-11-13; the interim `Weathe
 - **A4 does not sample** (amended 2026-11-13, World Step Approved). CoW-Shared `HistoryDriverModule` owns `Sample()` and is signalled by `WorldStepModule` once after every stage has committed, so a world week produces exactly one sample at the correct apply key with a consistent layer set. A4 only registers its layers and emits its events.
 - **Declare tracked layers in the module's `.diaapp` `config`**, not a `.diastage` — the `history` block is read by `CellHistoryModule::OnConfigure` and is capped at **255 characters**, so the list must stay short. S-2.5 declares:
   ```json
-  "config": { "history": { "bands": ["Week"], "track": ["weather.precipitation", "weather.temperature", "weather.ground_water"], "cellBudgetMB": 16 } }
+  "config": { "history": { "bands": ["Week"], "track": ["weather.precipitation", "weather.temperature", "weather.water_to_ground"], "cellBudgetMB": 16 } }
   ```
 - **Give every tracked float layer a schema `min`/`max`**, or tracking is refused with an Error. Values are quantised to Float16 over `[min, max]`.
 - **Budget awareness.** The scrub window is `budgetBytes / bytesPerSample`, so every extra tracked layer shortens the window for all of them. Ring cap is 64 layers; budget defaults are 64/64/16 MB.
@@ -309,7 +341,7 @@ E1 saves at the sim-frame boundary and `Apply()` runs on SimPU, so a save can ne
 **Cell layers (DiaCellLayers, built).** Registration is `CellLayerRegistry::Register(CellLayerDesc)` → `CellRegisterResult{Ok, Duplicate, CapacityReached, WrongProcessingUnit, NullGrid}`. A4 reaches the registry through a `ServiceStreamReader<CellLayerRegistry>` on `"CellLayerRegistryService"`, resolved with `FindCellLayerRegistry()` in `DoUpdate` or later. **Registration must happen on the owning PU (SimPU) or it is rejected** and flips the module's health to Degraded.
 
 - Seven scalar fields are **base layers** (one at a time), supplied by a **pull callback**: `read(float* dest, uint32_t count)` plus a `version()` change counter that gates re-reads. A4 does *not* implement `IViewValueSource` — that is DiaCellHistory's replay seam.
-- **Canonical layer ids:** `weather.moisture`, `weather.pressure`, `weather.temperature`, `weather.precipitation`, `weather.snow_pack`, `weather.cloud_cover`, `weather.ground_water`. Shared with S-2.5's scenario loader, which rejects unknown names.
+- **Canonical layer ids:** `weather.moisture`, `weather.pressure`, `weather.temperature`, `weather.precipitation`, `weather.snow_pack`, `weather.cloud_cover`, `weather.water_to_ground`. Shared with S-2.5's scenario loader, which rejects unknown names. **Amended 2026-11-17 (A5 Hydrology):** `weather.ground_water` is removed; ground water is A5's `hydro.ground`. `weather.water_to_ground` takes its place, so the count stays seven. `glacierInput` has no layer.
 - Labels, ramps and hotkeys come from DiaValueSchema via `schemaKey = StringCRC("<for>/<key>")`. A4 owns its layers' `ui.hotkey` values and follows the S-2.5 GDD hotkey table (Snow = **K**); a clash logs a warning and the later layer gets none. Float layers need `min`/`max` for both the legend and history tracking.
 - **Wind overlay (amended 2026-11-13).** There is **no vector layer kind** — `CellValueKind` is `{Float, Category}` and `read` is `float*`, one scalar per cell. Wind is registered as a `CellOverlayDesc` whose `draw(IDebugDraw&, const void* selection)` callback composes each arrow by hand, because **`IDebugDraw` has no 2D arrow primitive** (`RequestDrawArrow3D` is 3D-only): a line or ray plus an explicit head. One arrow per cell at Large is ~20k primitives per frame, so the overlay **decimates by default** (every Nth cell, exposed as a panel control) and respects `DroppedCount()`.
 - **Per-cell detail rows** are registered with `CellLayerRegistry::Details()` (a `CellDetailBuilder` provider, 64 rows max, invoked only when exactly one cell is selected), plus a hover-extra fn for tooltip lines. A4 shows its fields and the derived values: seasonal baseline, prevailing direction, pressure perturbation, upwind elevation. **A4 does not build a cell inspector or any selection commands** — DiaCellLayers owns `cells.select.*`, `cells.query.*` and `cells.inspect`.
@@ -437,6 +469,11 @@ Messages (`WeatherUpdated`, `BiomeTransitionComplete`) are hand-written structs 
 | 4 | Weather Save/Load | `WeatherSaveParticipant`: JSON array serialize/deserialize of committed `WeatherFields` (9 float arrays) + `uint8_t` biome array; `SerializePending`/`DeserializePending` for an unapplied step (DFS-005); size-checking `Validate`; save/continue/load/continue round-trip test including a save taken mid-step | @docs/specs/applications/cow/systems/a4-weather/weather-save.md | Approved |
 | 5 | Weather Debug | `WeatherDebugDomain` panel card, 7 base cell layers + the decimated wind overlay, `CellDetailRegistry` rows + hover extras, 7 sim-hosted `cow.weather.*` names (consolidated 2026-11-16) with help metadata, DiaCellHistory events, profiling, metrics, health | @docs/specs/applications/cow/systems/a4-weather/weather-debug.md | Approved |
 | 6 | Presets & Regression | The 5 preset data files + `load_preset`, and the 4 AuthoringDebug §6 scenarios as GoogleTests over hand-built hex terrains (GDD ratios), with layer goldens | @docs/specs/applications/cow/systems/a4-weather/presets-and-regression.md | Approved |
+| 7 | Weather Influence API | Public, deterministic way for any CoW system to influence weather: storm, warmer, cooler, wetter, drier. Each has a source, a region (cell set or centre + radius), strength, lifetime and falloff, and is saved with the game. Generalises the CA forcing hooks the debug `spawn_storm` uses. A5 applies the ground-water part of wetter/drier. A1's GDD `water_dragon_emission` moves onto this path. Dragon abilities are enabled but there is no content now (backlog review row). Added 2026-11-17 | TBD | Draft |
+| 8 | Climate Cycles | Data-driven layered cycles: period, per-field amplitude, optional regional pattern, phase. Deterministic functions of the game day. Targets a ~4-year El Niño-style oscillation and a ~4-decade ice-age cycle. Phases are saved. Presets can switch cycles off or pin a phase. Extends spin-up length. Added 2026-11-17 | TBD | Draft |
+| 9 | Smoothing | The CA stays weekly. A presentation layer interpolates across the week for V-1 and gameplay reads, plus an immediate visual-only preview of a new influence (the deferred step applies at N+7). It never feeds back into the CA. No forecasting. Added 2026-11-17 | TBD | Draft |
+
+**Features 1–6 are amended (2026-11-17, A5 Hydrology)** for the ground-water hand-off, the A5 inputs, the snow-cap hand-off and coupled spin-up. Features 7–9 are new and not yet specced; they build after Features 1–3 and 6.
 
 **Routed elsewhere:** the stage, panels, click-to-inspect and success-criteria walkthrough go to the S-2.5 Weather Patterns testbed. The `world` channel, stage ordering and the choice of k go to `WorldStepModule`.
 
@@ -498,10 +535,11 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
 - DiaMessageBus via `MessageBusHostModule`; DiaCore (Json, StringCRC, containers, logging).
 
 **Soft dependencies (fallbacks until they exist):**
+- **A5 Hydrology** (Draft; added 2026-11-17). A4 runs without it: primary evaporation uses S-1's static `waterSource`, secondary evaporation is zero, `glacierInput` is zero, and spin-up runs A4 alone. With A5, A4 latches `surfaceWetness`, `openWater` and `glacierEligible` from A5's previous committed week in `Capture`, and spin-up is coupled. A5 reads `waterToGround`, `temperature`, `snowPack` and `glacierInput` from A4's working copy inside the same `Run`.
 - A1 implements `IBiomeSeasonalBaseline`. Until then A4 uses the table fallback and reports Degraded.
 - A3 publishes `BiomeTransitionComplete`. Until then biomes are fixed after world generation.
 
-**Required by:** A1 (§13 weather integration), V-1 (weather rendering), S-2.5 (A4-isolated testbed), S-3 (A4 overlays and emergence), D4 later. **A1 inherits this spec's executor change** — its own `IParallelExecutor` seam (`a1-ecology.md`) must move to `Dia::DeferredStep` too.
+**Required by:** A5 Hydrology (soft; added 2026-11-17: reads `waterToGround`, `glacierInput`, temperature and snow pack), A1 (§13 weather integration; amended 2026-11-17: no `groundWater·0.1` in `rainfall`, soil moisture comes from A5), V-1 (weather rendering), S-2.5 (A4-isolated testbed), S-3 (A4 overlays and emergence), D4 later. **A1 inherits this spec's executor change** — its own `IParallelExecutor` seam (`a1-ecology.md`) must move to `Dia::DeferredStep` too.
 
 ## Test Strategy
 
@@ -516,7 +554,7 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
   - orographic: windward rain and dry leeward
   - precipitation: rain vs snow split
   - melt: thresholds
-  - drainage: about 0.33 after 5 weeks
+  - hand-off (amended 2026-11-17, A5 Hydrology; replaces the drainage test, which moves to A5): rain and snowmelt route into `waterToGround`; snow above the cap becomes `glacierInput` on `glacierEligible` cells only and is discarded elsewhere; with no A5 present, primary evaporation uses `waterSource` and secondary evaporation is zero
 - Edge cases EC-03 to EC-13, EC-16 and EC-20.
 - Upwind edge inflow: on, a uniform field under steady wind stays uniform at the edges. Off, the upwind edge loses moisture each week (the GDD-literal behaviour).
 - Determinism:
@@ -570,12 +608,15 @@ These are for the DesignDocs owner to fold back into A4. Numbering is stable; 13
 2. ~~**How much does the wind overlay decimate, and is per-cell wind worth it?**~~ **Resolved 2026-11-16 (Feature 5): adaptive 4 × 4 block plan.** Original question: One arrow per cell at Large is ~20k debug-draw primitives per frame against a budget that was raised to 8,192 geometry entries. Every Nth cell is the cheap answer, but a coarse flow-field style overlay (one arrow per 3×3 block, averaged) may read better and cost less. Affects Feature 5 only; decide against the mockup.
 3. **The sim-hosted name cap must be raised before S-3.5 is wired** (measured 2026-11-13; not an A4 blocker). The cap is per-stage in practice, so today's worst stage is 45/64 (CluicheTest CellLayersViewer) and CoW's S-1 stage is 38/64. But S-3.5's **built** components alone are 58/64, so it crosses 64 with just its own 10 names — before A4's 16, A1's ≥9, A3's 6 or F-3's ≥11 exist. Projected total **≥99**, over by ≥35. Release is not safe either (~59/64 if the new modules follow S-1's unguarded pattern). Recommended fix: raise all three tables 64 → 192 (there is precedent — commit `6b3a7f80` did 32 → 64; the SimPU table is a `std::vector` so costs nothing, and only `DebugServer::mSimHelp` has real cost at ~7 KB/slot, 450 KB → 1.35 MB Debug heap), plus raise the `SimQueryReply` stream capacity from 48. Needs AD-001 sign-off. Owned by S-3.5, not A4.
 
+4. **Gameplay read API (A4 + A5): derived per-cell flight wind cost, visibility, fire risk, footing — undecided** (raised 2026-11-17). Who owns the derived values, and whether they are computed per cell each week or on demand, is open.
+5. **Coupled spin-up length at Large** (added 2026-11-17). With climate cycles on, a multi-year A4 + A5 spin-up could take seconds on the worker job. See A5 Open Design Question 1.
+
 ## Gap-pass amendments (2026-11-16)
 
 Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
 
 1. The Features table's Feature 1 description reads "13-biome enum" (the shared `Biome` list was widened from 10 to 13); the "10-biome enum" wording is superseded.
-2. The parameter count is **21** (the 20 GDD constants plus `solar.cloud_decay`, owned by Feature 1).
+2. The parameter count is **21** (the 20 GDD constants plus `solar.cloud_decay`, owned by Feature 1). **Superseded 2026-11-17 (A5 Hydrology):** it is now **20** (19 GDD constants plus `solar.cloud_decay`); the `ground_water` group moves to A5.
 3. The sim-hosted name cap is 192 per PU in code (`SimQueryHost::kMaxHandlers`); the earlier 64 is stale.
 4. `WeatherRunner::Start` takes a `startWeekOffset` (S-2.5 Feature 3); `WeatherSimulation` gains `SetCommittedWeek`, `ClearForcings`, `Reseed`, `RegisterCellSet`/`ClearCellSets` (Features 2, 3, 6).
 
@@ -586,5 +627,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 **Blocked on:** nothing in spec work. DiaDeferredStep's five features are Approved with plans (2026-11-13) and World Step is drafted, so A4 Features 2, 3 and 4 are gated only on those builds — Feature 2 can start as soon as DeferredStep Feature 1 Task 1 ships the headers. Features 1, 5 and 6 are startable now. The one real prerequisite is the **S-1 biome widening** (10 → 13), which gates Feature 1.
 
 **Ripple edits owed elsewhere:** `a1-ecology.md` (its `IParallelExecutor` seam and 16 ms band gate) and `s25-weatherpatterns.md` (its weekly tick budget and step-back controls). Both deliberately left until this spec is re-approved, so they are touched once.
+
+**Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9).** Status stays `Approved`. Features 7–9 are `Draft` with no spec yet. The A1 and GDD fold-backs for the hand-off go through the GDD session.
 
 **Plan:** [a4-weather.plan.md](a4-weather.plan.md) (written 2026-11-16, not started).

@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 3)
 **Status:** Approved (2026-11-16)
-**Depends on:** World Step Features 1 and 2; DiaDeferredStep Feature 3 (`DeferredStepSaveParticipant`, `RestorePending`, drain on `OnSaveStarted`, discard on `OnLoadStarted`); A4 Feature 4 and A1 Feature 8 for the stages' own `SerializePending`.
+**Depends on:** World Step Features 1 and 2; DiaDeferredStep Feature 3 (`DeferredStepSaveParticipant`, `RestorePending`, drain on `OnSaveStarted`, discard on `OnLoadStarted`); A4 Feature 4, A5 Feature 4 and A1 Feature 8 for the stages' own `SerializePending` (A5 added 2026-11-17, A5 Hydrology).
 **Dia amendment (AD-001, signed off 2026-11-16):** `IDeferredStep::ValidatePending(LoadContext&) const` (see Design, Validate).
 **Consumed by:** S-3.5 Feature 1 (`HistoryDriverModule` is the first listener), A4 Feature 4, A1 Feature 8.
 
@@ -24,7 +24,7 @@ Two small, load-bearing seams on the module from Feature 2:
 ## Non-Goals
 
 - The scheduler's drain, the `ISaveable`, the pending-result record (DiaDeferredStep Feature 3).
-- Stage serialization (A4 Feature 4 `SerializePending` of the working set; A1 Feature 8).
+- Stage serialization (A4 Feature 4 `SerializePending` of the working set; A5 Feature 4; A1 Feature 8). A5's `hydrology` blob follows the same stage-id tagging and the same absent-from-`order` and missing-blob rules (amended 2026-11-17, A5 Hydrology).
 - `HistoryDriverModule`'s sampling, label arithmetic and reset on bundle load (S-3.5 Feature 1).
 - Any change to E1 (`SaveLoadModule`).
 
@@ -72,7 +72,7 @@ A blob for a stage that is **not** in the current `order` is not a validation fa
 
 **Apply tolerance (amended 2026-11-16).** If `chain.RestoreRan` failed (a stage could not restore, or was not ready), the scheduler's restored channel still reaches its apply key and `Apply()` calls `chain.Commit()`, which returns false from `Idle`. `Apply` treats that as a no-op: Warning, no signal, no metric update.
 
-**Ordering requirement.** The pending result applies on top of committed stage state, so each stage's own committed-state participant (A4 `WeatherSaveParticipant`, A1's) must deserialize **before** the DeferredStep participant. Participants deserialize in registration order, so `DeferredStepModule` attaches its participant after `SaveLoadModule` and after the stage modules. A test asserts it (a deliberately wrong order fails on a fake stage that checks its committed state exists).
+**Ordering requirement.** The pending result applies on top of committed stage state, so each stage's own committed-state participant (A4 `WeatherSaveParticipant`, A5's, A1's; A5 added 2026-11-17, A5 Hydrology) must deserialize **before** the DeferredStep participant. Participants deserialize in registration order, so `DeferredStepModule` attaches its participant after `SaveLoadModule` and after the stage modules. A test asserts it (a deliberately wrong order fails on a fake stage that checks its committed state exists).
 
 If `Validate` passes but a stage's `DeserializePending` still reports failure (a corrupt body the module could not pre-check), the stage returns false through its own health and the module logs an Error and marks Failing. The load is not rolled back at that point (it cannot be, past Validate); the stage's `IsReady()` goes false so no further kicks occur.
 
@@ -183,4 +183,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Amended 2026-11-17 (A5 Hydrology): a third stage blob (`hydrology`); the rules are unchanged. Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).

@@ -53,7 +53,7 @@ The S-3 success criteria ask whether booms, crashes and recovery emerge, and whe
 | `wx.rain_variability` | Weather health | Coefficient of variation of yearly precipitation totals | `weather.precipitation` aggregates | Yes | Provisional |
 | `cpl.rain_producers` | Coupling | Lag (weeks) and r of the strongest correlation from precipitation to producers | `weather.precipitation`, `ecology.producers_total` | Yes | Provisional |
 | `cpl.prey_predator` | Coupling | Lag and r from herbivore group to predator group | `ecology.group.herbivore`, `ecology.group.predator` | Yes | A1 testbed: "predator starvation follows prey collapse with ~1 year lag" |
-| `cpl.snow_groundwater` | Coupling | Lag and r from snow pack to ground water | `weather.snow_pack`, `weather.ground_water` | Yes | A4 melt-flood behaviour; provisional |
+| `cpl.snow_groundwater` | Coupling | Lag and r from snow pack to ground water (amended 2026-11-17, A5 Hydrology): the id keeps its name; with A5 built the measure reads `hydro.ground`, and until then it uses the weekly water reaching the ground) | `weather.snow_pack`, `hydro.ground` (A5; fallback `weather.water_to_ground`, name TBD) | Yes | A4 melt behaviour, ground water now A5; provisional |
 
 The coupling measures use Feature 5's lagged Pearson (lags 0 to 104 weeks). They score fixed pairs only; Feature 12 explores.
 
@@ -150,6 +150,7 @@ No conflicts.
 | A1 (`ecology.state`, groups, species, producers) | Ecology measures | Approved, not built |
 | A3 (`cow.succession.transition`) | Turnover (falls back without it) | Approved, not built |
 | A4 Feature 5 (`weather.*`, `weather.storm`) | Weather measures | Approved, not built |
+| A5 Hydrology (`hydro.*` layers, flood/dry-river/lake-record/freeze-up events) (amended 2026-11-17, A5 Hydrology) | `cpl.snow_groundwater`; candidate water measures | Draft, not built |
 
 Built against fixtures first. Each measure lights up as its system lands.
 
@@ -176,4 +177,4 @@ C3. With no earlier window the badge says so and shows no value; with Source B s
 
 ## Status
 
-`Approved` (2026-11-16). No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.
+`Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** `cpl.snow_groundwater` reads A5's `hydro.ground`. **Candidate measures, not designed (TBD):** river flow (mean and low-flow weeks), lake level against record, flood extent (cells flooded per week) and flood count, from `hydro.river_flow`, `hydro.flooded`, basin levels and A5's flood start/end, river-runs-dry, lake-level-record and freeze-up events. No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

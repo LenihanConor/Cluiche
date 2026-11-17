@@ -187,4 +187,4 @@ C4. Species not recorded are listed as "not covered" and the share is over the r
 
 ## Status
 
-`Approved` (2026-11-16). S-1 amendment 7 (`consumer-amendments.md`) and the A4 Feature 5 T-1 consumer amendment (`weather-debug.md`, criteria 27-31) applied the same day. No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.
+`Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** no water content today. Candidates once A5 is built, TBD: flood episodes (A5 flood start/end events) and river-runs-dry episodes as tracks beside storms and droughts, and `hydro.*` layers in the layer picker. Not designed here. S-1 amendment 7 (`consumer-amendments.md`) and the A4 Feature 5 T-1 consumer amendment (`weather-debug.md`, criteria 27-31) applied the same day. No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

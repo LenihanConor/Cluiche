@@ -73,6 +73,8 @@ The runner steps the game clock one day per simulation frame through GameSpeedCo
 
 ### R1: reproducible world
 
+**A5 Hydrology (amended 2026-11-17, A5 Hydrology):** once A5 is built, the combined hash includes A5's participant state, and R1 sets A5's executor range count with A4's. A5 determinism is proven here, across the same range counts and repeat. R2 includes A5's save participant in the same save/load comparison.
+
 For each size, for each range count in `ranges`, load the size's bundle (`cow.world.bundle.load`), set A4's job range count, run to the end of `years`, and capture the end hash. The first configuration of a size is run a second time as the repeat. Pass: all end hashes for the size are identical. If A4's `JobSystemService` is not built (serial executor, dia-needs #12), every range count runs serially, the cross-range part cannot differ, and the check reports `pass` with the note "ranges not exercised (serial executor)", never a false claim.
 
 ### R2: save and load
@@ -96,6 +98,8 @@ All phases run against a **scratch copy** of the CoW assets in `out/CoW/s35/scra
 Pass: both B runs have identical resolved parameters and identical hashes, and C refuses and loads as described.
 
 ### R5: performance at Large
+
+**A5 Hydrology (amended 2026-11-17, A5 Hydrology):** once A5 is built, R5 also records `cow.hydro.step_ms` (median and worst) and reports it as `info`. A5's performance is report-only and has no gate or threshold; the worst coinciding tick figure is not re-derived here (TBD).
 
 Release builds only (a Debug build reports `skipped`). During the Large run with the highest range count, the runner records the duration of every A4 weekly step and A1 band step (from the systems' last-step gauges), computes the **median and worst** for each, and the worst **coinciding** tick (the A4 and A1 durations added on the frame where both ran, which is the last week of a Season). Pass thresholds (first-run defaults, tunable in the config): A4 week ≤ 10 ms, A1 season ≤ 16 ms, coinciding ≤ 26 ms. The report records the machine (CPU name, core count, OS, build config). **Only a machine listed in `Stages/S35WorldSim/reference_machine.json` can gate**; elsewhere R5 reports `info` with the numbers and does not pass or fail.
 
@@ -187,11 +191,12 @@ No conflicts.
 | E1 (`CaptureState()`), A2 manual step | State capture and clock | Done; E1 amended |
 | dia-needs #16 (`source` alias) with the `--source` override | R4 scratch root | Approved; amended; needs sign-off |
 | A4 and A1 last-step gauges | R5 timings | Consumer requirement (below) |
+| A5 Hydrology (`cow.hydro.step_ms`) (amended 2026-11-17, A5 Hydrology) | R1/R2 hash and R5 report line, once built | Draft, not built |
 | CoW `ISnapshotStore` adapter | R3 | Backlog task, not built |
 | S-1 Features 1 and 8, A4 Features 1 to 3, A1 Features 1 to 7 | The world under test | Specced, not built |
 | A3 | Adds its state to the hash and its layers to R6 when built | Specced, not built |
 
-**Consumer requirements:** A4 and A1 each expose a gauge holding the duration of their most recent step (A4 `cow.weather.step_ms`, A1 `cow.ecology.band_ms`), registered with `MetricInfo`, so R5 and the S-2.5 live smoke read one source.
+**Consumer requirements (amended 2026-11-17, A5 Hydrology): A5 also exposes `cow.hydro.step_ms` with `MetricInfo`, and R5 reports it per system with no gate):** A4 and A1 each expose a gauge holding the duration of their most recent step (A4 `cow.weather.step_ms`, A1 `cow.ecology.band_ms`), registered with `MetricInfo`, so R5 and the S-2.5 live smoke read one source.
 
 ## Resolved Decisions
 
@@ -208,4 +213,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Needs AD-001 sign-off for the `dia launch|run --source` override; E1 `CaptureState()` is a CoW-side amendment.
+`Approved` (2026-10-20). **Amended 2026-11-17 (A5 Hydrology):** R1, R2 and R5 cover A5 (determinism, save/load, `cow.hydro.step_ms` report). Plan not yet created. Needs AD-001 sign-off for the `dia launch|run --source` override; E1 `CaptureState()` is a CoW-side amendment.

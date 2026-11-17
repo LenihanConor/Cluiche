@@ -1,7 +1,7 @@
 # Feature Spec: A4 WeatherModule & Deferred Step
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 3)
-**Status:** Approved (2026-11-16)
+**Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): optional A5 provider latched at `Capture`, coupled spin-up job, World Step order.
 **Depends on:** A4 Features 1, 2 and 6 (`WeatherSimulation`, `WeatherRunner`, parameters, `ApplyPreset`); World Step Features 1 and 2 (`IWorldStepStage`, `WorldStepModule::RegisterStage`); DiaDeferredStep Features 1, 2 and 4 (`IParallelExecutor`, the capped executor, `DeferredStepModule`); S-1 (built): `WorldGenerationModule::GetCurrentWorld`, `IsReady(revision)`, `HoldGeneration()`/`ReleaseGeneration()`, `WorldGenerationComplete`/`WorldGenerationFailed`.
 **Consumed by:** A4 Features 4 and 5, A1 (`WeatherUpdated`, `IBiomeSeasonalBaseline` provider seam, `WeatherSnapshot`), V-1, S-2.5.
 
@@ -58,7 +58,7 @@ MutationQueue       mQueue;                  // forcings, biome edits, parameter
 | Method | Behaviour |
 |---|---|
 | `IsReady()` | `(mPending != null && mPendingRevision == mTargetRevision) \|\| (mActive != null && mActiveRevision == mTargetRevision)`, and no Unhealthy cause. False during a spin-up job and after `WorldGenerationFailed` |
-| `Capture(stepDay)` | 1. **Promote** `mPending` to `mActive` if present (the chain is Idle at this call, so no `Run` holds the old sim; the old sim is destroyed). 2. Drain `mQueue` in arrival order: parameter changes (`SetParameters`), forcings, biome edits (`SetBiome`), preset (`ApplyPreset`), reload. 3. `mCaptureRevision = mActiveRevision`. 4. `sim.Capture(Season(SeasonOf(stepDay) % 4), baseline)` |
+| `Capture(stepDay)` | 1. **Promote** `mPending` to `mActive` if present (the chain is Idle at this call, so no `Run` holds the old sim; the old sim is destroyed). 2. Drain `mQueue` in arrival order: parameter changes (`SetParameters`), forcings, biome edits (`SetBiome`), preset (`ApplyPreset`), reload. 3. `mCaptureRevision = mActiveRevision`. 4. Latch A5's previous committed week into a `HydrologyInputs` (SimPU-side, from the provider below; `present == false` when none is set; amended 2026-11-17, A5 Hydrology). 5. `sim.Capture(Season(SeasonOf(stepDay) % 4), baseline, hydro)` |
 | `Run(exec)` | `mActive->Run(exec)`; reads nothing SimPU-owned (DFS-002) |
 | `Commit()` | If `mCaptureRevision != mTargetRevision` the step belongs to a regenerated world: **discard** (no `sim.Commit`, no message, one Info log, counted). Otherwise `sim.Commit()`, set the committed week to `WeekOf(capturedDay)`, publish `WeatherUpdated{week, season}` |
 | `SerializePending` / `DeserializePending` | Feature 4 |
@@ -66,6 +66,8 @@ MutationQueue       mQueue;                  // forcings, biome edits, parameter
 `WeatherSimulation::Commit` (Feature 2) increments its own week; this feature adds `SetCommittedWeek(uint64_t)` so the module can overwrite it with `WeekOf(stepDay)` immediately after `Commit`, and the snapshot's `GetWeek()` is that value. (Small amendment to Feature 2's `WeatherSimulation`.) A retried or restored step therefore reports the week it represents.
 
 **Baseline provider.** `SetBaselineProvider(IBiomeSeasonalBaseline*)` is called by A1's `EcologyModule` in its `DoStart` (no compile dependency on A1; same shape as `RegisterStage`). With none, the module uses its `TableBiomeSeasonalBaseline` built from the parameters file and reports Degraded with an Info log naming the source. The provider is called only inside `sim.Capture`, never from a worker.
+
+**Hydrology provider (amended 2026-11-17, A5 Hydrology).** `SetHydrologyProvider(IHydrologyInputsProvider*)` is called by A5's `HydrologyModule` in its `DoStart` (same shape as the baseline provider: no compile dependency on A5, raw non-owning pointer, null means no A5). The interface returns copies of `surfaceWetness`, `openWater` and `glacierEligible` from A5's last **committed** week. It is called only inside `Capture` on SimPU, never from a worker. With none set, A4 runs weather alone (S-2.5 stays `["weather"]`) and nothing is Degraded.
 
 **Season.** `SeasonOf(day)` is a season **count** (`day / kDaysPerSeason`), not the `Season` enum; the enum is `SeasonOf(day) % 4` with Spring first. Day 0 is Spring.
 
@@ -75,7 +77,7 @@ On `WorldGenerationComplete{worldRevision}`:
 
 1. `mTargetRevision = worldRevision`. This immediately makes `IsReady()` false and cancels any running spin-up job (it checks the revision between weeks).
 2. Read terrain from `GetCurrentWorld()` into a `WeatherTerrain` copy (the module never holds the pointer). If there is no water-source cell (EC-01), log an Error, report Unhealthy and start no job.
-3. Build a fresh `WeatherSimulation` and launch a job that runs `WeatherRunner::Start(…, spinup_weeks, executor)` using the DeferredStep capped executor (a participating coordinator, strict worker cap). Spin-up is silent: no `WeatherUpdated`, no history signal.
+3. Build a fresh `WeatherSimulation` and launch a job that runs `WeatherRunner::Start(…, spinup_weeks, executor)` using the DeferredStep capped executor (a participating coordinator, strict worker cap). Spin-up is silent: no `WeatherUpdated`, no history signal. **Coupled spin-up (amended 2026-11-17, A5 Hydrology):** when an `IHydrologyInputsProvider` is set, the job runs `WeatherRunner` and A5's `HydrologyRunner` together, week by week in World Step order, so A5's state is settled with A4's; the job's result carries both simulations and hands A5's to `HydrologyModule` at the same promotion boundary. Length is `spinup_weeks`, extended to the longest active climate cycle's settling period when climate cycles are on (A4 Feature 8 sets it; the `<= 520` validation applies to the base value). With no provider the job runs A4 alone, exactly as before. The detailed hand-over of A5's simulation is specced with A5 Feature 3.
 4. When the job finishes and its revision still equals `mTargetRevision`, it posts completion to SimPU; the module sets `mPending`, `mPendingRevision`. `IsReady()` becomes true and the coordinator's next `Capture` promotes it. A job whose revision is stale discards its sim.
 
 The job runs on a worker through `JobSystemService` `TrySubmit(fn, tag)` with the `world` tag. With no job system (headless unit tests) a **synchronous launcher** seam runs the same code inline, so tests are deterministic. The spun-up state is bit-identical either way (it is the `WeatherRunner` oracle).
@@ -212,6 +214,9 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 5. **Season arithmetic** uses the real `kDaysPerSeason` and `kDaysPerWeek` constants from `GameSpeedController.h`, never a literal 91 or 7.
 6. **`WeatherSimulation::ClearWindOverrides()`** (remove every wind override, keep other forcings) is added by **this feature** alongside `QueueClearWindOverrides`; Feature 5's `wind clear` uses it through the queue.
 
+7. (amended 2026-11-17, A5 Hydrology) **Optional A5 provider and coupled spin-up.** `SetHydrologyProvider`, the `HydrologyInputs` latch in `Capture` and the coupled spin-up job are described in the stage table and the ingest section above. World Step order is `["weather", "hydrology", "ecology"]`; this module still registers only by id `weather` and knows nothing of other stages.
+8. (amended 2026-11-17, A5 Hydrology) **New acceptance criteria.** 31. `Capture` latches the provider's `surfaceWetness`, `openWater` and `glacierEligible` once; poisoning the provider after `Capture` does not change `Run` (DFS-002); the provider is called only on the capturing thread. 32. With no provider set, `Capture` passes `present == false`, health is not Degraded, and the run equals a run built before A5 existed. 33. With a provider, the spin-up job runs A4 and A5 together and a synchronous coupled run (`WeatherRunner` + `HydrologyRunner`) gives bit-identical committed fields for both. 34. A cancelled coupled spin-up discards both simulations.
+
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).

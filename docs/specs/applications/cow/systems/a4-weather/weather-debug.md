@@ -1,7 +1,7 @@
 # Feature Spec: A4 Weather Debug
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 5)
-**Status:** Approved (2026-11-16)
+**Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): the `weather.ground_water` layer becomes `weather.water_to_ground`; ground water is A5's `hydro.ground`.
 **Depends on:** A4 Features 1, 2, 3, 4, 6 (fields, pipeline helpers, `WeatherModule` and its mutation queue, state codec, `ApplyPreset`); DiaCellLayers (`CellLayerRegistry`, `CellOverlayDesc`, `Details()`), DiaCellHistory (`CellHistoryRecorder`, events), DiaValueSchema, `SimQueryHostModule` with `SimHelpInfo`, `DiaDebugDomainRegistry`/`DiaDebugPanel`, DiaObservation (all built).
 **Consumed by:** S-2.5 (hosts everything here), S-3 and S-3.5 (host the layers), V-1 (reads nothing from here).
 
@@ -45,7 +45,7 @@ Registered on SimPU through `CellLayerRegistry::Register(CellLayerDesc)` after `
 | `weather.precipitation` | `precipitation` | 0–1 |
 | `weather.snow_pack` | `snowPack` | 0–1 |
 | `weather.cloud_cover` | `cloudCover` | 0–1 |
-| `weather.ground_water` | `groundWater` | 0–1 |
+| `weather.water_to_ground` | `waterToGround` | 0–2 (rain up to 1 plus melt up to 1; replaces `weather.ground_water`, amended 2026-11-17, A5 Hydrology) |
 
 - Each is a **base layer** with a pull callback `read(float* dest, uint32_t count)` that copies the committed array, and a `version()` that is the commit counter, so DiaCellLayers re-reads only after a commit. `count` must equal the active cell count; a mismatch writes zeros and logs once.
 - Before the first world is ready the callbacks report zero cells and nothing is drawn.
@@ -71,7 +71,7 @@ The four defaults are overlay config in the `.diaapp` `config` block (`wind_over
 
 ### Per-cell detail rows
 
-Registered with `CellLayerRegistry::Details()` (64 rows max, called only when exactly one cell is selected) and a hover extra. `ExplainCell(sim, cell)` (pure) returns the committed nine fields and the derived values the pipeline would use: biome, seasonal baseline temperature for the current season, prevailing wind angle for the cell's latitude band, the pressure-perturbation vector magnitude, the upwind neighbour's elevation difference and whether orographic lift applies, the snapped direction index, and distance to the nearest water cell. It calls Feature 2's pure helpers rather than re-deriving them (Feature 2 exports `PrevailingDirection`, `PressureGradient`, `SnapWindDirection` unchanged; no behaviour change).
+Registered with `CellLayerRegistry::Details()` (64 rows max, called only when exactly one cell is selected) and a hover extra. `ExplainCell(sim, cell)` (pure) returns the committed nine fields and the derived values the pipeline would use (amended 2026-11-17, A5 Hydrology: `waterToGround` replaces `groundWater`; ground-water and soil rows are A5's), plus the latched A5 inputs for the cell (`surfaceWetness`, `openWater`, `glacierEligible`, or "no A5"): biome, seasonal baseline temperature for the current season, prevailing wind angle for the cell's latitude band, the pressure-perturbation vector magnitude, the upwind neighbour's elevation difference and whether orographic lift applies, the snapped direction index, and distance to the nearest water cell. It calls Feature 2's pure helpers rather than re-deriving them (Feature 2 exports `PrevailingDirection`, `PressureGradient`, `SnapWindDirection` unchanged; no behaviour change).
 
 ### Commands (7 sim-hosted names)
 
@@ -79,7 +79,7 @@ All registered through `SimQueryHostModule` with mandatory `SimHelpInfo` (non-em
 
 | Name | Kind | Actions and arguments |
 |---|---|---|
-| `cow.weather.force` | command | `action`: `storm` / `high_pressure` / `rain`; `cell`, `intensity` (0–1), `weeks` (1–52) for the holds; `cell`, `amount` (0–1) for rain. Queues a forcing (storm = pressure hold low + moisture hold high; high pressure = pressure hold high + moisture hold low; rain = one-week `Rain`) |
+| `cow.weather.force` | command | `action`: `storm` / `high_pressure` / `rain`; `cell`, `intensity` (0–1), `weeks` (1–52) for the holds; `cell`, `amount` (0–1) for rain. Queues a forcing (amended 2026-11-17: when Feature 7 (Weather Influence API) is built, `storm` routes through it as a debug-sourced influence, so the debug command and gameplay use one path; until then it uses the Feature 2 hooks directly) (storm = pressure hold low + moisture hold high; high pressure = pressure hold high + moisture hold low; rain = one-week `Rain`) |
 | `cow.weather.wind` | command | `action`: `set` (`cell`, `degrees` 0–360 on-screen counter-clockwise, `speed` 0–1) / `set_region` (`region` id from S-1's `RegionTable`, same angle and speed) / `clear`. Region forms resolve the region's cells into a cell set and queue **one** region forcing |
 | `cow.weather.params` | command | `action`: `reload` / `set` (`key` dotted, `value`). Both route through Feature 3's `QueueReload` / `QueueParameterSet` |
 | `cow.weather.state` | command | `action`: `export` (`file`) writes the committed state as a `cow.weather_state` envelope using Feature 4's codec, to `out/CoW/weather_states/<file>.json`; `import` (`file`) validates it fully, requires matching dimensions, then queues a replacement applied at the next `Capture` |
@@ -241,4 +241,4 @@ Added criteria:
 
 ## Status
 
-**Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).
+**Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Amended 2026-11-17 (A5 hand-off; Features 7–9 add commands and layers later, not specced here). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).

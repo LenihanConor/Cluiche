@@ -58,7 +58,7 @@ S25WeatherModule
 
 `DeferredStepModule` is present even though the stage starts synchronous, because the live switch needs it. No `EcologyModule`, `SuccessionModule` or `SaveLoadModule`. A4 therefore uses its table baseline and reports **Degraded**; that is expected here, the card says "table baseline (no ecology), expected", and a Degraded health never fails a smoke run.
 
-`WeatherModule`'s `history` block (read by `CellHistoryModule`, capped at 255 characters) is `{"bands":["Week"],"track":["weather.precipitation","weather.temperature","weather.ground_water"],"cellBudgetMB":16}`. The system spec's `history_weeks: 13` no longer exists (A4 removed it); 13 weeks of step-back is what the 16 MB budget gives at the tracked layers, verified by a test rather than assumed.
+`WeatherModule`'s `history` block (amended 2026-11-17, A5 Hydrology): `weather.ground_water` becomes the `waterToGround` layer; the exact layer name comes from the A4 amendment, TBD) (read by `CellHistoryModule`, capped at 255 characters) is `{"bands":["Week"],"track":["weather.precipitation","weather.temperature","weather.water_to_ground"],"cellBudgetMB":16}`. The system spec's `history_weeks: 13` no longer exists (A4 removed it); 13 weeks of step-back is what the 16 MB budget gives at the tracked layers, verified by a test rather than assumed.
 
 ### Worlds
 
@@ -227,4 +227,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [stage-and-world.plan.md](stage-and-world.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the HTML mockup.**
+**Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** the tracked history layer `weather.ground_water` becomes `weather.water_to_ground` (name TBD, A4 amendment). Plan: [stage-and-world.plan.md](stage-and-world.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the HTML mockup.**

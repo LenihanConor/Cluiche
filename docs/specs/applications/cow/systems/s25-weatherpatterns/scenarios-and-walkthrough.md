@@ -53,7 +53,7 @@ As the system spec and T-2: envelope `{"format":"cow.scenario","version":1}`, ex
   "walkthrough": [
       { "overlays": ["wind"],          "text": "Find the prevailing wind and the range across it." },
       { "overlays": ["precipitation"], "text": "Compare the two sides.", "check": "s25.t2.windward_gt_leeward" },
-      { "overlays": ["ground_water"],  "text": "The shadow persists in ground water." } ] }
+      { "overlays": ["water_to_ground"], "text": "The shadow persists in the weekly water reaching the ground." } ] }
 ```
 
 `id` must equal the file name without `.scenario.json`. `mode` (S-3) and `walkthrough` (S-2.5) are optional. Unknown keys are invalid (the repo-wide strict rule).
@@ -134,7 +134,7 @@ All use `s25_coast_range` unless noted. Checks are Feature 2's ids with the `s25
 | `s25_t2_rain_shadow` | Test 2 | `cow.weather.load_preset name=rain_shadow` | `t2.shadow_present`, `t2.windward_gt_leeward`, `t2.shadow_repeatable` (headless only) |
 | `s25_t3_storm_movement` | Test 3 | `cow.weather.force action=storm cell=<chosen> intensity=1 weeks=3` | `t3.*` (5) |
 | `s25_t4_seasons` | Test 4 | none | `t4.*` (5) |
-| `s25_t5_spring_flood` | Test 5 | none (natural 65 weeks) | `t5.*` (4) |
+| `s25_t5_spring_flood` | Test 5 | none (natural 65 weeks) | `t5.*` (4) (amended 2026-11-17, A5 Hydrology): the lowland measure is `waterToGround`; the downstream flood itself moves to S-2.6 Rivers & Floods. The id keeps its GDD number) |
 | `s25_t6_droughts` (`s25_dry_interior`) | Test 6 | `cow.weather.load_preset name=drought` | `t6.*` (3) |
 | `s25_t7_variability` (`s25_dry_interior`) | Test 7 | none | `t7.*` (2) |
 | `s25_t8_boundary` | Test 8 | `cow.weather.params action=set key=boundary.edge_inflow value=0` | `t8.*` (3; headless only) |
@@ -228,4 +228,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [scenarios-and-walkthrough.plan.md](scenarios-and-walkthrough.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the panel mockup.**
+**Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** the example walkthrough's last step uses a `water_to_ground` overlay instead of `ground_water` (A4 has no ground water now; the overlay id is set by the A4 amendment, TBD); Test 5's scenario note above. Plan: [scenarios-and-walkthrough.plan.md](scenarios-and-walkthrough.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the panel mockup.**

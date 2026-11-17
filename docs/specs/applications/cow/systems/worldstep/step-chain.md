@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 1)
 **Status:** Approved (2026-11-16)
 **Depends on:** DiaDeferredStep Feature 1 Task 1 (`StepKey`, `IParallelExecutor` headers). `Dia::SaveGame::SaveContext` / `LoadContext` (built) are only forward-declared. No other Dia code.
-**Consumed by:** World Step Feature 2 (`WorldStepModule` wraps the chain), Feature 3 (save delegation uses `StageAt` and the stage-id tags). A4 Feature 3 and A1 Feature 7 implement `IWorldStepStage`.
+**Consumed by:** World Step Feature 2 (`WorldStepModule` wraps the chain), Feature 3 (save delegation uses `StageAt` and the stage-id tags). A4 Feature 3, A5 Feature 3 and A1 Feature 7 implement `IWorldStepStage`. (amended 2026-11-17, A5 Hydrology)
 
 ## Summary
 
@@ -70,7 +70,7 @@ The system spec's `historyBand` field is **removed** (2026-11-16): `history_band
 - `deferred` not a bool.
 - An unknown key at the top level (typos are invalid, as for A4's parameter file).
 
-Ids are matched case-sensitively and are not validated against a fixed vocabulary here: `"weather"` and `"ecology"` are conventions of the stages that register them, and a wrong id surfaces as a missing stage.
+Ids are matched case-sensitively and are not validated against a fixed vocabulary here: `"weather"`, `"hydrology"` and `"ecology"` are conventions of the stages that register them, and a wrong id surfaces as a missing stage.
 
 ### The chain (`WorldStepChain`)
 
@@ -179,7 +179,7 @@ GoogleTests only, no engine or SimPU needed. TDD in the order: config load, regi
 
 ## Open Design Questions
 
-1. **Is `kMaxStages = 8` the right bound?** Two stages exist today and A3 is explicitly not one. The bound only sizes fixed arrays, so it is cheap to raise, but a config with more is rejected, so a future layer (a tectonic or hydrology stage) would need a spec touch. Chosen small to keep `StageIdList` on the stack.
+1. **Is `kMaxStages = 8` the right bound?** Three stages exist since A5 Hydrology (amended 2026-11-17, A5 Hydrology) and A3 is explicitly not one. The bound only sizes fixed arrays, so it is cheap to raise, but a config with more is rejected, so a future layer (a tectonic stage) would need a spec touch. Chosen small to keep `StageIdList` on the stack.
 2. **Should the chain, not the module, own the `Idle`-only restriction on `Configure`?** It does here, because a mid-step reconfigure would change which stages `Commit` walks. The module may prefer to refuse reconfiguration earlier and louder (an Error log); decide in Feature 2 whether the chain's silent `false` is enough.
 3. **Does criterion 14's "no stage called" hold for a half-built chain?** `Capture` walks stages in order; if stage 2's `Capture` could fail, stage 1 would already have captured. Stages cannot fail `Capture` today (void), so it holds, but it is a reason to keep `Capture` infallible in the contract.
 
@@ -195,4 +195,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 Hydrology): the stage id list gains `hydrology`; no change to the chain's logic or `kMaxStages`. Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).

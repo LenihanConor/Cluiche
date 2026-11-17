@@ -12,7 +12,7 @@ Weather is a strong yearly cycle with weekly noise, so a 40-year raw line shows 
 - a **typical-year chart**: x is week of year, the line is the mean across years, the band is the spread (p10-p90 by default, min-max on a toggle);
 - an **anomaly mode**: any series, breakdown, correlation or mini-map can show *value minus the typical value for that week of year*;
 - a **reference baseline**: by default the run's own typical year, or the typical year of another history file;
-- a built-in **weather view** (precipitation, temperature, snow pack, ground water).
+- a built-in **weather view** (precipitation, temperature, snow pack, water to ground (amended 2026-11-17, A5 Hydrology): A4 has no ground water now; A5's `hydro.ground`, `hydro.soil` and `hydro.river_flow` are candidates for a water view when A5 is built, TBD).
 
 Everything is computed in the editor from data DiaCellHistory already records. No game or engine change.
 
@@ -90,7 +90,7 @@ views/      TypicalYearChart (uPlot), AnomalyToggle, BaselinePicker, YearsChip
 
 ### Weather view
 
-A built-in saved view (Feature 2 format, read-only, can be copied): `weather.precipitation`, `weather.temperature`, `weather.snow_pack`, `weather.ground_water`, world group, typical-year mode on. An ecology view sits beside it (`ecology.producers_total`, `ecology.group.herbivore`). Shipped as JSON under the plugin's `views/builtin/`.
+A built-in saved view (Feature 2 format, read-only, can be copied): `weather.precipitation`, `weather.temperature`, `weather.snow_pack`, `weather.water_to_ground` (amended 2026-11-17, A5 Hydrology): layer name set by the A4 amendment, TBD), world group, typical-year mode on. A water view (`hydro.soil`, `hydro.ground`, `hydro.river_flow`, `hydro.ice`; candidate, TBD, needs A5) may sit beside it (amended 2026-11-17, A5 Hydrology)). An ecology view sits beside it (`ecology.producers_total`, `ecology.group.herbivore`). Shipped as JSON under the plugin's `views/builtin/`.
 
 ### Logging and observation
 
@@ -145,6 +145,7 @@ No conflicts.
 | T-1 Features 1, 2, 3, 5 | Source model, time series and saved views, mini-map, correlation | Approved, not built |
 | DiaCellHistory (aggregates, `cells.history.cells`, export with `--cells`) | Series and per-cell data | Done |
 | A4 Feature 5 `weather.*` layers | Content for the weather view | Approved, not built. Fixtures are enough to build |
+| A5 Hydrology `hydro.*` layers (optional, candidate water view) | Water series and seasons | Draft, not built |
 | S-2.5 Feature 5 history files | Real weather runs to open | Approved, not built |
 
 ## Open Design Questions
@@ -171,4 +172,4 @@ C4. Perf: 40 years × 52 weeks renders in under 100 ms.
 
 ## Status
 
-`Approved` (2026-11-16). No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.
+`Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** ground water leaves the weather view (`water_to_ground` replaces it); a water view from A5 layers is a candidate. No plan. The views are drawn in the new world-sim mockup (owed, see the parent amendment) before UI work.

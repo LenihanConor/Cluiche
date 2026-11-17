@@ -99,8 +99,8 @@ Bands use Small-map thresholds (data in the checks file, defaults below). Weeks 
 | 4 | `t4.winter_summer_ratio` | Default | Winter ÷ Summer precipitation ≥ 1.5 | |
 | 5 | `t5.snow_builds_winter` | Hard | mountain mean `snowPack` at week 52 > at week 40 | A4 §7 |
 | 5 | `t5.snow_falls_spring` | Hard | mountain mean `snowPack` at week 65 (end of the following Spring) < at week 52 | A4 §7 |
-| 5 | `t5.flood_follows_melt` | Hard | the lowland (elevation < 0.4, downstream set from Feature 1's precheck) `groundWater` peak week in 53–65 has mean snow below week 52's, and the peak value exceeds week 52's | A4 §7 |
-| 5 | `t5.gw_peak_week` | Default | the peak week lies in Spring (53–65); the measured value is the week number | |
+| 5 | `t5.flood_follows_melt` | Hard | the lowland (elevation < 0.4, downstream set from Feature 1's precheck) `waterToGround` peak week in 53–65 has mean snow below week 52's, and the peak value exceeds week 52's (amended 2026-11-17, A5 Hydrology): was `groundWater`; A4 has no ground water now. Water travelling downstream is no longer checked here and moves to S-2.6 Rivers & Floods; the id keeps its GDD Test 5 number) | A4 §7 |
+| 5 | `t5.gw_peak_week` | Default | the peak week lies in Spring (53–65); the measured value is the week number (amended 2026-11-17, A5 Hydrology): the peak is now of lowland `waterToGround`; the id `gw_peak_week` is kept, a rename is TBD) | |
 | 6 | `t6.droughts_found` | Hard | `DroughtDetector` at 2 weeks finds at least one region | A4 §4–§6 |
 | 6 | `t6.inland_drier` | Hard | mean precipitation of the most distant cells (within 2 of the maximum distance from water) < mean of cells within 2 of water | A4 §4–§6 |
 | 6 | `t6.dry_spell_4w` | Default | at least one region has ≥ 4 consecutive dry weeks starting in weeks 14–39 | |
@@ -158,7 +158,7 @@ New in `Cluiche/CoW/Shared/Weather/S25/`: `CheckTypes.h` (results), `WeatherTrac
 8. `t1.moisture_monotonic` fails when coast ≥ ocean, and when inland ≥ coast; each failing order is reported in `detail`.
 9. `t3.*` ignore every week up to release (a scripted trace whose held centre is stationary before release and moves after passes `centre_moves`); a storm that never leaves a 1-cell radius for 10 weeks fails `not_stationary`.
 10. `t4.temp_smooth` ignores a direction change below 1e-4 and counts one above it; a saw-tooth curve fails.
-11. `t5.*` use weeks 40, 52 and 65 exactly as defined; a lowland peak outside 53–65 fails `flood_follows_melt` and records the actual week in `gw_peak_week`.
+11. `t5.*` use weeks 40, 52 and 65 exactly as defined; a lowland peak outside 53–65 fails `flood_follows_melt` and records the actual week in `gw_peak_week` (amended 2026-11-17, A5 Hydrology): the peak is of `waterToGround`).
 12. `t7.years_differ` fails four bit-identical years and passes years differing by 0.6%; `t7.seasonal_shape` fails a year whose seasonal pattern is inverted.
 13. `t8.edge_on_gt_off` fails when off is higher than on; `t8.toggle_effective` fails when the two runs are identical; the upwind-edge set is computed from the on run and reused for both.
 14. `t9.determinism` passes identical traces and fails a trace differing in one ULP of one cell, reporting the first week, field and cell.
@@ -212,4 +212,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [weather-checks.plan.md](weather-checks.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** Test 5's lowland measure is `waterToGround`, not `groundWater` (A4 amendment); the flood-travel half of the GDD test moves to S-2.6. Plan: [weather-checks.plan.md](weather-checks.plan.md) (written 2026-11-16, not started).

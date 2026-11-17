@@ -18,6 +18,8 @@ Only the **first** is urgent: the shared biome list gates A4 Feature 1 and A1 Fe
 | 4 | A path-accepting export seam for `ITerrainBaker::Bake` | **Moved to F-3 Feature 6 (2026-11-16)** |
 | 5 | `cow.worldgen.validate` takes a file | **Moved to F-3 Feature 6 (2026-11-16)** |
 | 6 | Mark the F-3 participant section "Not built" | Spec text only, no code |
+| 7 | Latitude band grouping layer | T-1 Feature 10 (added 2026-11-16) |
+| 8 | Persist bed elevation and the basin table in `.wld.json` (format version 2) | A5 Hydrology (added 2026-11-17, Proposed) |
 
 ## Problem
 
@@ -160,6 +162,27 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/space-ove
 30. The S-1 golden file gains `world.latitude_band` (updated with `DIA_UPDATE_GOLDEN=1`); every other layer's hash is unchanged, and a test checks that.
 31. After import and after regenerate the layer matches a freshly generated one.
 
+## Amendment 8 — persist bed elevation and the basin table (2026-11-17, A5 Hydrology)
+
+**Status:** `Proposed` (decided by the user 2026-11-17; not built, no AD-001 sign-off needed).
+
+Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Grid and terrain ingest), so A5 Hydrology gets the same data from an imported, `world_file` or F-3 baked world as from a freshly generated one.
+
+- `.wld.json` gains **raw/bed elevation** (the ground under lakes; `Cell::elevation` is the lake surface) and the **basin table**: per basin its cells, spill height and spill cell.
+- The `cow.world` format **version bumps** (1 → 2). Import accepts the new version and reads both back. How version 1 files are handled (refused, or imported with a rebuild and a Warning) is TBD, see Open Design Question 4.
+- Flow direction is **already rebuilt on import**, so it is not persisted. A5 needs full-grid flow direction and corridor/crossing sites, which S-1 already provides.
+- A drainage-rule change in S-1 never silently changes an old world's basins, because the basins are read, not recomputed.
+- Rejected: rebuilding the basin table on import, and A5 running its own priority-flood.
+- CoW code only (`Cluiche/CoW/`), so no AD-001 sign-off.
+
+**Acceptance criteria**
+
+32. A generated world's export contains bed elevation for every cell and a basin table (cells, spill height, spill cell) for every basin, and the format version is 2.
+33. Import of a version 2 file reproduces bed elevation and the basin table exactly; export, import, export is byte-identical.
+34. An imported world, a `world_file` world and a freshly generated world with the same seed give identical bed elevation and basin tables.
+35. A malformed basin table (a cell index out of range, a spill cell not in the basin, a basin with no cells) fails import cleanly with the field named.
+36. The S-1 layer goldens are unchanged, and `reachability-validator` results on an imported world are unchanged.
+
 ## Public Interfaces
 
 ```cpp
@@ -177,6 +200,8 @@ namespace CoW {
     };
 }
 ```
+
+Amendment 8 (amended 2026-11-17, A5 Hydrology) adds fields to the world export record and bumps `cow.world` to version 2; no new public type is expected beyond the basin table record, whose shape is settled in the plan.
 
 Amendments 4 and 5 extend existing entry points rather than adding public types; their exact shapes are settled in the plan, because both must preserve the built name-only surface unchanged.
 
@@ -200,6 +225,7 @@ Amendments 4 and 5 extend existing entry points rather than adding public types;
 - **T-2 Feature 4**, **S-3.5 Author mode** — amendment 5.
 - **A3** — amendment 1 (`ApplyBiomeTransition` needs the three values to exist).
 - **T-1 Feature 10** — amendment 7.
+- **A5 Hydrology** (Draft) — amendment 8. A5 cannot be built for imported worlds without it.
 
 ## Test Strategy
 
@@ -224,11 +250,14 @@ Scoped filter for iteration: `*Biome*:*WorldGen*:*Terrain*`.
 
 1. ~~**Does S-1's system spec stay `Done`?**~~ **Resolved 2026-11-13 (approved):** S-1 keeps `Done`, because its original scope genuinely is complete and this new scope is held in a child feature rather than reopening the system. S-1's Status carries an "Outstanding after close" paragraph naming this spec, and the World assets participant section carries a NOT BUILT banner, so nothing reads as implemented that is not.
 2. ~~**Should amendments 4 and 5 be deferred into F-3's plan instead?**~~ **Resolved 2026-11-16 (user): yes, moved into F-3 Feature 6.** They have no consumer until F-3 is built, and consolidating them here was justified by "one build, one test run". If F-3 slips a long way, they are speculative work in S-1's tree. The alternative is shipping amendments 1–3 now and moving 4–5 into F-3 Feature 6. Amendment 1 is urgent either way.
+4. **Version 1 files after the bump** (added 2026-11-17, A5 Hydrology). Do old `.wld.json` files import with a rebuild of the basin table and a Warning, or get refused? Rebuilding on import was rejected as the *normal* path, but it may be the only way to keep existing authored worlds and F-3 baked worlds loadable. TBD with the user.
 3. **Does the `biomeIndex` palette need designed colours?** AC 6 requires 13 distinct colours. The three succession biomes are visually meaningful — burned, scrubbed, desertified — so the palette may want deliberate hues rather than the next three from the categorical list. Cheap to change later; worth asking whoever owns the layer palettes.
 
 ## Status
 
-**Status:** `Approved` (2026-11-13). Found by the A4 Weather dependency audit and the F-3 audit, both the same day, after S-1 closed `Done`. No plan yet — create `consumer-amendments.plan.md` when implementation starts.
+**Status:** `Approved` (2026-11-13). **Amended 2026-11-17 (A5 Hydrology):** amendment 8 added, `Proposed`.
+
+**Status (original):** `Approved` (2026-11-13). Found by the A4 Weather dependency audit and the F-3 audit, both the same day, after S-1 closed `Done`. No plan yet — create `consumer-amendments.plan.md` when implementation starts.
 
 **Update 2026-11-16:** amendments 1–3 are built (plan rows 1–9 Done). Amendments 4 and 5 moved to F-3 Feature 6, and AC 26 (the two `GetWorldContentHash` open items) is met there. Amendment 6 was applied 2026-11-13. This feature is complete for S-1's purposes; ACs 17–24 are tracked in F-3.
 

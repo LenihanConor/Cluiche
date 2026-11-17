@@ -35,7 +35,7 @@ No Dia files are added or edited. `World Step Feature 3` is CoW code, so the `Ap
 ### Tasks 15 to 19: Pending result
 - `WeatherSimulation` additions: `RestoreCommitted(uint64_t week, const WeatherFields&, const DynamicArrayC<uint8_t>& biomes)`, `RestoreCompleted(const WeatherFields&, const DynamicArrayC<uint8_t>&)`, `GetWorkingFields()`, `GetWorkingBiomes()`. All validate sizes and return false without changing state.
 - The coordinator wraps each stage in `BeginObject("stage_N")` (amendment 5); this stage writes into the current node.
-- `WeatherStage::SerializePending(SaveContext&)` writes `{pending_version, cell_count, 9 arrays, biome}` from `GetWorkingFields()`; `DeserializePending`/`ValidatePending` share the codec's consistency checks (no live-state comparison in Validate).
+- `WeatherStage::SerializePending(SaveContext&)` writes `{pending_version, cell_count, 9 arrays, biome}` from `GetWorkingFields()` (the ninth array is `waterToGround`, not `groundWater`; `glacierInput` is not saved; amended 2026-11-17 (A5 Hydrology)); `DeserializePending`/`ValidatePending` share the codec's consistency checks (no live-state comparison in Validate).
 - Save-time discard guard: if `mCaptureRevision != mTargetRevision`, write no pending (AC 19).
 - `WorldStepModule::Apply` tolerance (World Step Feature 3 amendment): when `chain.Commit()` returns false, log one Warning, raise no signal, update no metric. This edits `WorldStepModule` (CoW) in the same commit as the test.
 

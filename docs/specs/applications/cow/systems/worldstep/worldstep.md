@@ -4,17 +4,19 @@
 
 **Gameplay Domains:** simulation, persistence
 
+**Amended 2026-11-17, A5 Hydrology:** a third stage, `hydrology` (A5, [a5-hydrology.md](../a5-hydrology/a5-hydrology.md)), sits between `weather` and `ecology`. The chain is now A4 → A5 → A1 (A3 inline). Stage ids are `["weather", "hydrology", "ecology"]` in S-3.5. A5 reads A4's working copy inside the same `Run`; A4 reads A5's previous committed state at `Capture`.
+
 ## Summary
 
-World Step is the thin coordinator that runs CoW's world simulation as **one deferred step**. It owns the `world` DiaDeferredStep channel, decides when to kick it, orders the systems inside it (A4 Weather, then A1 Ecology), commits their results in order, and samples the result into DiaCellHistory.
+World Step is the thin coordinator that runs CoW's world simulation as **one deferred step**. It owns the `world` DiaDeferredStep channel, decides when to kick it, orders the systems inside it (A4 Weather, then A5 Hydrology, then A1 Ecology; amended 2026-11-17, A5 Hydrology), commits their results in order, and samples the result into DiaCellHistory.
 
-It is deliberately small. It owns **cadence and ordering** and nothing else: no simulation logic, no world data, no cell layers, no debug surface beyond two status commands. A4 and A1 keep their own modules, parameters, debug domains, commands, layers and save participants, and register with this coordinator as **stages**.
+It is deliberately small. It owns **cadence and ordering** and nothing else: no simulation logic, no world data, no cell layers, no debug surface beyond two status commands. A4, A5 and A1 keep their own modules, parameters, debug domains, commands, layers and save participants, and register with this coordinator as **stages**.
 
-The stage list is declarative, so a testbed composes exactly the layers it needs — weather alone for S-2.5, ecology alone for S-3 Controlled mode, both for S-3.5 — through `.diaapp` config rather than code.
+The stage list is declarative, so a testbed composes exactly the layers it needs — weather alone for S-2.5, ecology alone for S-3 Controlled mode (optionally with hydrology), weather plus hydrology for S-2.6 Rivers & Floods, all three for S-3.5 (amended 2026-11-17, A5 Hydrology) — through `.diaapp` config rather than code.
 
 ## Problem
 
-DiaDeferredStep makes inter-channel ordering an explicit **non**-responsibility: *"A chain whose stages depend on each other (A4 → A1 → A3) runs as one channel, and the consumer orders the stages inside `Run`."* So something on the CoW side must own that channel and that ordering. Nothing does today.
+DiaDeferredStep makes inter-channel ordering an explicit **non**-responsibility: *"A chain whose stages depend on each other (A4 → A1 → A3; now A4 → A5 → A1 → A3, amended 2026-11-17) runs as one channel, and the consumer orders the stages inside `Run`."* So something on the CoW side must own that channel and that ordering. Nothing does today.
 
 Three further gaps fall out of the same hole:
 
@@ -40,7 +42,7 @@ Putting all of that in A4 would make A1's spec depend on an A4 internal. Putting
 2. **World data or the hex grid.** S-1 owns `WorldStructure` and the shared `WorldHexGrid` / `CellGridDesc` (S-1 amendment, 2026-11-13). Stages get the grid from S-1 directly; the coordinator never touches it.
 3. **Cell layers, debug domains, panels, inspectors.** Each system registers its own.
 4. **Scheduling, the job pool, the worker cap, the stall policy.** DiaDeferredStep owns all of it.
-5. **A3 as a stage.** A3 resolves **synchronously inside A1's step 10** via `ISuccessionResolver`, deliberately with no bus lag. The chain is therefore **two** orderable stages, not three.
+5. **A3 as a stage.** A3 resolves **synchronously inside A1's step 10** via `ISuccessionResolver`, deliberately with no bus lag. The chain is therefore orderable stages only, with A3 never one of them: **three** since A5 joined (`weather`, `hydrology`, `ecology`), two before (amended 2026-11-17, A5 Hydrology).
 5b. **History sampling itself** (revised 2026-11-13). CoW-Shared `HistoryDriverModule` owns `Sample()`, label arithmetic, band mapping, reset on bundle load and the world id. The coordinator only tells it when a step applied.
 6. **Choosing `k` per band.** See Resolved Design Decisions 1 — one fixed `k`, measured before revisiting.
 7. **Weather or ecology notifications.** Each stage publishes its own (`WeatherUpdated`, `CellEcologyChanged` …) from its own `Commit`.
@@ -63,6 +65,7 @@ SimPU
        owns: the channel, cadence, k, the stage table, history sampling
 
   ├─ WeatherModule (A4)  → registers stage "weather"
+  ├─ HydrologyModule (A5) → registers stage "hydrology"   (amended 2026-11-17, A5 Hydrology)
   └─ EcologyModule (A1)  → registers stage "ecology"   (A3 resolves inside it)
 ```
 
@@ -95,7 +98,7 @@ namespace CoW::WorldStep {
 
 Stage order is semantically critical — ecology reads the weather this step produced — so it must not depend on module start order. The coordinator reads an ordered id list from config and matches registrations against it:
 
-**The module is stage-scoped, not `stages: ["all"]`.** Its stages (`WeatherModule`, `EcologyModule`) are themselves stage-scoped, and different testbeds need different `order` lists, so each hosting stage declares its own instance with its own config:
+**The module is stage-scoped, not `stages: ["all"]`.** Its stages (`WeatherModule`, `HydrologyModule`, `EcologyModule`) are themselves stage-scoped, and different testbeds need different `order` lists, so each hosting stage declares its own instance with its own config:
 
 ```json
 {
@@ -105,14 +108,14 @@ Stage order is semantically critical — ecology reads the weather this step pro
     "dependencies": ["DeferredStepModule", "MessageBusHostModule", "SimQueryHostModule"],
     "soft_dependencies": ["SaveLoadModule", "HistoryDriverModule"],
     "config": {
-        "order": ["weather", "ecology"],
+        "order": ["weather", "hydrology", "ecology"],
         "apply_after_days": 7,
         "deferred": true
     }
 }
 ```
 
-S-2.5 declares its own instance with `"order": ["weather"]`, S-3 Controlled with `"order": ["ecology"]`. A single `stages: ["all"]` instance could not serve both, and would also keep the coordinator alive on stages that run no world sim.
+S-2.5 declares its own instance with `"order": ["weather"]`, S-2.6 Rivers & Floods with `["weather", "hydrology"]`, S-3 Controlled with `["ecology"]` (optionally `["hydrology", "ecology"]`), S-3.5 with all three (amended 2026-11-17, A5 Hydrology). A single `stages: ["all"]` instance could not serve both, and would also keep the coordinator alive on stages that run no world sim.
 
 Resolution rules, which differ by lifecycle phase — this distinction matters, because stages legitimately come and go:
 
@@ -136,7 +139,7 @@ Resolution rules, which differ by lifecycle phase — this distinction matters, 
 - **No kick unless every enabled stage reports `IsReady()`.** Until then the coordinator idles and logs once.
 - **A kick that finds the channel in flight is retried, not skipped (amended 2026-11-16, Feature 2).** One pending week is remembered and kicked on the next free tick with the *missed* day as the stage key and `applyKey = current day + k`; a second miss while one is pending is an Error and a lost week. A late kick is a reported anomaly (Warning, `late_kicks`, Degraded).
 
-**Slack.** At 30 Hz, `k = 7` days is 7 sim frames (~233 ms) at the Fastest preset and minutes at Slow. Against a combined A4 + A1 Season cost of roughly 26 ms CPU (~13 ms wall on a 2-worker cap) that is more than an order of magnitude of headroom. The exception is the Century tick — see Resolved Design Decisions 1.
+**Slack.** At 30 Hz, `k = 7` days is 7 sim frames (~233 ms) at the Fastest preset and minutes at Slow. Against a combined A4 + A1 Season cost of roughly 26 ms CPU (~13 ms wall on a 2-worker cap) that is more than an order of magnitude of headroom. **A5 adds a third cost (amended 2026-11-17, A5 Hydrology):** `cow.hydro.step_ms` is report-only, with no gate, and is not in the 26 ms figure. Its river routing is serial within a river tree. The slack estimate must be re-measured with A5 in, and a miss stalls SimPU and is reported (DFS-003). The exception is the Century tick — see Resolved Design Decisions 1.
 
 ### Synchronous mode
 
@@ -287,9 +290,9 @@ namespace CoW::WorldStep {
 - **S-1** — built, and **not a direct dependency**. The coordinator reads no world data, owns no grid and does **not** subscribe to `WorldGenerationComplete`: each stage initialises itself from S-1 and reports through `IsReady()`, which is the coordinator's only readiness signal. S-1 appears here only because the stages need it.
 - DiaMessageBus via `MessageBusHostModule`; DiaCore (Json, StringCRC, containers, logging).
 
-**Consumed by (stages):** A4 Weather (`weather`), A1 Ecology (`ecology`, with A3 inline). Both need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
+**Consumed by (stages):** A4 Weather (`weather`), A5 Hydrology (`hydrology`, amended 2026-11-17; registers its own `IWorldStepStage` and publishes `HydrologyUpdated{week}` from its `Commit`), A1 Ecology (`ecology`, with A3 inline). A4 and A1 need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
 
-**Required by:** S-2.5 Weather Patterns, S-3 Ecology, S-3.5 World Sim.
+**Required by:** S-2.5 Weather Patterns, S-2.6 Rivers & Floods (amended 2026-11-17), S-3 Ecology, S-3.5 World Sim.
 
 ## Test Strategy
 
@@ -308,7 +311,9 @@ namespace CoW::WorldStep {
 - **Deferred equals synchronous:** the same stages over 52 weeks in both modes give bit-identical stage state. This is the primary determinism gate.
 - A late step stalls, and the stall is reported through log, metric and health.
 - Save mid-step then load: the pending result applies at its key and matches the uninterrupted run (DiaDeferredStep owns the drain and the participant; this test covers the coordinator's stage delegation).
-- A pending result saved with `["weather","ecology"]` loads on a stage configured `["weather"]`: the ecology blob is discarded with a Warning and the load succeeds.
+- A pending result saved with `["weather","ecology"]` loads on a stage configured `["weather"]`: the ecology blob is discarded with a Warning and the load succeeds. (amended 2026-11-17, A5 Hydrology) The same holds for a saved `hydrology` blob loaded where `hydrology` is not in `order`.
+- (amended 2026-11-17, A5 Hydrology) **Three-stage chain:** with fake stages `weather`, `hydrology`, `ecology`, the order is honoured whatever the registration order; `hydrology` sees the working copy `weather` just wrote inside the same `Run`, and `weather` sees `hydrology`'s committed state from the previous step at `Capture`.
+- (amended 2026-11-17, A5 Hydrology) **Determinism oracle over three stages:** the same three stages over 104 weeks in deferred and synchronous mode give bit-identical state (A5's own test: deferred vs synchronous over 104 weeks with A4).
 - Exactly one `OnWorldStepApplied(key)` signal per applied step, raised after every stage has committed and carrying the apply key; with no `HistoryDriverModule` present it is a no-op and nothing else changes.
 - Both commands register with non-empty descriptions, and a forced partial-registration failure leaves **no** names behind.
 
@@ -339,7 +344,7 @@ namespace CoW::WorldStep {
 3. **Synchronous execution is a supported configuration, not test scaffolding** (user decision 2026-11-13). `"deferred": false` gives single-layer testbeds the simple path and makes the deferred-vs-synchronous oracle runnable on a real stage.
 4. **Stage order is declarative in `.diaapp`, not registration order.** Ordering is semantically load-bearing and module start order is not a contract. A missing configured stage is a hard error rather than a silent half-world.
 5. **S-1 keeps the shared `WorldHexGrid`** (user decision 2026-11-13); the coordinator never touches it. S-1 already builds it from the world dimensions, so only the `DIA_DEBUG`-only encapsulation inside `WorldGenViewHost` has to change — folded into the S-1 post-close amendment set.
-6. **A3 is not a stage.** It resolves synchronously inside A1's step 10 through `ISuccessionResolver`, by A1's and A3's existing design, so the chain has two orderable stages.
+6. **A3 is not a stage.** It resolves synchronously inside A1's step 10 through `ISuccessionResolver`, by A1's and A3's existing design, so the chain has three orderable stages (two before A5 joined; amended 2026-11-17, A5 Hydrology).
 
 ## Open Design Questions
 
@@ -361,14 +366,18 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 **Status:** `Approved` (2026-11-13). Interview completed 2026-11-13: module topology, the coordinator's home, band cadence, shared-grid ownership, history sampling and synchronous mode all decided by the user. Arose from the A4 Weather dependency audit (2026-11-13), which found that DiaDeferredStep leaves the `world` channel unowned.
 
+**Amended 2026-11-17 (A5 Hydrology).** A third stage `hydrology` between `weather` and `ecology`; composition examples, the slack note and the determinism oracle cover three stages. Status stays `Approved`. A5 itself is `Draft`, so until it is built `["weather", "ecology"]` remains valid config.
+
 **Not blocked on spec work.** DiaDeferredStep's five feature specs were all Approved 2026-11-13 with plans written (`Not Started`), so the build path is clear: DeferredStep Feature 1 Task 1 ships the headers, after which World Step Feature 1 can start in parallel with the rest of DeferredStep.
 
 **Amendments owed elsewhere on approval:**
 - **A4 Weather** — register as stage `weather`; drop its own `Sample()` call (its spec currently places it in `Apply()`).
+- **A5 Hydrology** (added 2026-11-17) — registers as stage `hydrology`; publishes `HydrologyUpdated{week}` from `Commit`; owns its own `HydrologyUpdated` message.
 - **A1 Ecology** — register as stage `ecology`; drop its own `Sample()`; drop the hand-rolled `mSeasonPending` next-frame deferral and its Open Design Question 1, both of which `Capture`/`Commit` make unnecessary; add the Century-tick measurement task.
 - **S-1** — expose the shared `WorldHexGrid` (joins the existing post-close amendment set).
 - **E1 Save/Load** — *no amendment needed* (corrected 2026-11-13; DiaDeferredStep Feature 3 drains on `OnSaveStarted`). A4's spec still says "E1's save path calls `DrainAll`" and needs that line removed.
-- **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with both stages and owns the sim-hosted name-cap raise.
+- **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with all three stages (`weather`, `hydrology`, `ecology`; amended 2026-11-17, A5 Hydrology) and owns the sim-hosted name-cap raise.
+- **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17) — declares its own instance with `"order": ["weather", "hydrology"]`.
 - **S-2.5 Weather Patterns** — declares its own `WorldStepModule` instance with `"order": ["weather"]`, and may set `"deferred": false` since weather alone fits in a frame.
 
 **Plan:** [worldstep.plan.md](worldstep.plan.md) (written 2026-11-16, not started).

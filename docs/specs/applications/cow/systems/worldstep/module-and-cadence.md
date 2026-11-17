@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 2)
 **Status:** Approved (2026-11-16)
 **Depends on:** World Step Feature 1 (`WorldStepChain`, `IWorldStepStage`, `LoadWorldStepConfig`); DiaDeferredStep Features 1, 2 and 4 (`DeferredStepScheduler`, `IStepKeySource`, `DeferredStepModule::GetScheduler()`, `SerialExecutor`); GameSpeedController's `SimulationTick` message (built); `SimQueryHostModule` with `SimHelpInfo` (built); DiaObservation pillars.
-**Consumed by:** A4 Feature 3 and A1 Feature 7 (they call `RegisterStage`), S-2.5, S-3 and S-3.5 stages (each declares an instance), Feature 3 (save delegation and history signal sit on this module).
+**Consumed by:** A4 Feature 3, A5 Feature 3 and A1 Feature 7 (they call `RegisterStage`; A5 added 2026-11-17, A5 Hydrology), S-2.5, S-2.6, S-3 and S-3.5 stages (each declares an instance), Feature 3 (save delegation and history signal sit on this module).
 
 ## Summary
 
@@ -35,7 +35,7 @@ Save delegation and the history signal's wiring are Feature 3. This feature prov
 
 ```
 manifest order (the stage .diaapp):   MessageBusHostModule … GameSpeedController
-                                      → DeferredStepModule → WorldStepModule → WeatherModule … EcologyModule
+                                      → DeferredStepModule → WorldStepModule → WeatherModule → HydrologyModule → EcologyModule (HydrologyModule added 2026-11-17, A5 Hydrology; a stage that omits a module just drops it)
 ```
 
 Reverse order on stop is what lets stage modules unregister while the scheduler is alive. `dependencies`: `DeferredStepModule`, `MessageBusHostModule`, `SimQueryHostModule`. `soft_dependencies`: `SaveLoadModule`, `HistoryDriverModule`. `dia validate manifest` must accept the type and reject a stage that lists `WorldStepModule` after the stages that register with it.
@@ -213,4 +213,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 Hydrology): three stage ids in `order`; the k/slack estimate must be re-measured with A5 in (A5's step cost is report-only). The estimate text lives in the system spec's Cadence section. Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).

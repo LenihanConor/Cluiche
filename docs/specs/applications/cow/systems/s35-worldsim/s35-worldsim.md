@@ -4,7 +4,7 @@
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S3.5_WorldSim.md` (DesignDocs), **Locked 2026-10-20** after a Tier 2 Challenge Pass (CH-S35-01…05, §7). It joined the roster as DECISION-128 / CHANGE-045, a recorded exception to Rule 1. `.cowworld` bundles are specified in its §4.  
 **Origin:** 2026-10-19 world-sim product review. Outcomes C ("a testbed to demonstrate and test the work") and D ("a place to author content"). This is the one testbed that runs every world layer together on one world.  
 **Mockup:** [mockups/s35-world-sim.html](mockups/s35-world-sim.html)  
-**Systems under test:** S-1 World Generation, A4 Weather, A1 Ecology, A3 Biome Succession, F-3 World Assets; Dia: DiaCellLayers, DiaCellHistory, DiaValueSchema
+**Systems under test:** S-1 World Generation, A4 Weather, A5 Hydrology (amended 2026-11-17), A1 Ecology, A3 Biome Succession, F-3 World Assets; Dia: DiaCellLayers, DiaCellHistory, DiaValueSchema
 
 **Gameplay Domains:** debug
 
@@ -16,6 +16,7 @@ Each layer already has its own testbed, which is the tool for understanding and 
 Dragons / game   S-4+        later
 World Sim        S-3.5       ← this testbed: every layer together, authoring, whole-world proof
 Ecology          S-3         A1, A3
+Rivers & floods S-2.6       A4 + A5 (own spec, not written yet)
 Weather          S-2.5       A4
 Terrain          S-1         live terrain editor
 ```
@@ -73,6 +74,7 @@ SimPU (S35WorldSim stage)
   ├─ WorldGenerationModule    S-1 (Author: live shaping; Run: loads the bundle's terrain)
   ├─ GameSpeedControllerModule, RandomStreamModule, SaveLoadModule (E1)
   ├─ WeatherModule            A4
+  ├─ HydrologyModule          A5 (when built; amended 2026-11-17, A5 Hydrology). World Step order: ["weather", "hydrology", "ecology"]
   ├─ EcologyModule            A1
   ├─ SuccessionModule         A3 (when built)
   ├─ ValueSchemaModule        DiaValueSchema
@@ -118,11 +120,11 @@ SimPU (S35WorldSim stage)
 
 | Check | Pass (first-run numeric defaults, tunable; CH-S35-03 (amended 2026-10-20, S-3.5 GDD lock)) |
 |---|---|
-| R1 Reproducible world | Run the bundle for **20 years** at each size (Small, Standard, Large) and **1, 4 and max** thread ranges. The combined state hash (E1 participant output) is identical within each size across range counts, and identical between repeat runs |
-| R2 Save/load | In the same 20-year run, save at **year 10, mid-year, mid-season**, then load and continue. The hash at year 20 equals the uninterrupted run |
+| R1 Reproducible world (covers A5 determinism once built (amended 2026-11-17, A5 Hydrology): the combined hash gains A5 state) | Run the bundle for **20 years** at each size (Small, Standard, Large) and **1, 4 and max** thread ranges. The combined state hash (E1 participant output) is identical within each size across range counts, and identical between repeat runs |
+| R2 Save/load (A5's save participant is included once built (amended 2026-11-17, A5 Hydrology)) | In the same 20-year run, save at **year 10, mid-year, mid-season**, then load and continue. The hash at year 20 equals the uninterrupted run |
 | R3 Snapshot restore | In the same run, take a snapshot at year 10 (mid-year, mid-season), run to 20, restore, run to 20 again. The hash equals the first pass |
 | R4 Authoring round trip | `pack.save_as` + `startstate.save_as` + `bundle.save_as` from a tuned state, then **two fresh-process relaunches** each doing `bundle.load`. The resolved parameters and the state hash after `Initialise` + start state are identical across both. **Mismatch case:** a start state whose recorded terrain hash doesn't match is refused, and the bundle loads with no start state (CH-S35-04) |
-| R5 Perf at Large | Headless, Release, over 20 years at Large, on a **recorded reference machine** (CPU and core count written into the report). Reports **median and worst** tick per system: A4 week ≤ 10 ms, A1 season ≤ 16 ms. The worst coinciding tick is ≤ 26 ms, which is A4's 10 ms plus A1's 16 ms on a Season's last week. Render and tooling overhead are excluded |
+| R5 Perf at Large (adds `cow.hydro.step_ms` as a report-only line once A5 is built; A5 has no gate, its budget is TBD (amended 2026-11-17, A5 Hydrology)) | Headless, Release, over 20 years at Large, on a **recorded reference machine** (CPU and core count written into the report). Reports **median and worst** tick per system: A4 week ≤ 10 ms, A1 season ≤ 16 ms. The worst coinciding tick is ≤ 26 ms, which is A4's 10 ms plus A1's 16 ms on a Season's last week. Render and tooling overhead are excluded |
 | R6 Coverage | **Zero** undescribed keys, layers or events: `dia validate schema` is clean for every loaded file, every registered layer has a schema entry, and every emitted event type is described |
 
 - **Gating (CH-S35-05):** R1, R2 and R5 gate S-4 Dragon's Live mode. R3, R4 and R6 report but do not gate. S-4 Isolated mode is not gated.
@@ -165,7 +167,7 @@ SimPU (S35WorldSim stage)
 | Dependency | Use | Status |
 |---|---|---|
 | S-1 (Features 1, 8; validate command) | Terrain shaping, bake, validate | Specced, not built |
-| A4, A1, A3 | Live layers | Specced, not built |
+| A4, A5, A1, A3 | Live layers (A5 Hydrology added 2026-11-17; Draft system spec, not built) | Specced, not built |
 | F-3 World Assets | Bundles, packs, start states, bake, set default | Approved, not built |
 | DiaCellLayers, DiaCellHistory, DiaValueSchema | Shared cards, history, coverage | Approved, not built |
 | E1 SaveLoad, GameSpeedController, RNG streams | Save/load, clock, determinism | Done |
@@ -203,4 +205,4 @@ SimPU (S35WorldSim stage)
 
 ## Status
 
-`Approved` (2026-10-19). All 4 feature specs `Approved` (2026-10-20); no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.
+`Approved` (2026-10-19). **Amended 2026-11-17 (A5 Hydrology):** the stage composes all layers, World Step order `["weather", "hydrology", "ecology"]`; A5 added to the dependency list; R1, R2 and R5 cover A5; author mode may later gain a hydrology pack and start state (note only, TBD). All 4 feature specs `Approved` (2026-10-20); no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.

@@ -22,7 +22,7 @@ before escalating" (feedback_confirm_opus).
 - `Selector { waterSourceMask (bitmask over None/Ocean/Lake/River); optional elevation {min,max};
   optional latitude {min,max}; optional distanceToWater {min,max} }`. Clauses AND. `"all"` is predefined.
   Range clauses inclusive, [0, 1] for elevation and latitude; `min > max` invalid.
-- `PresetFill { field (enum of the nine fields); value; selector index }`, range-checked per field
+- `PresetFill { field (enum of the nine fields; `waterToGround` replaces `groundWater`, amended 2026-11-17 (A5 Hydrology)); value; selector index }`, range-checked per field
   ([0, 1]; `windDirection` [0, 2pi)). `PresetForcing { ForcingKind; selector index; angleRadians; WindDirectionSpec
   (Absolute | Inland | Seaward); speed; weeks }`: a `WindOverride` takes either an absolute `angleDegrees`
   (converted to radians at load) **or** a `direction` of `"inland"` or `"seaward"`, never both and never
@@ -99,13 +99,13 @@ before escalating" (feedback_confirm_opus).
   greater than 1.5); rain shadow (13 weeks, windward over leeward greater than 2.0); snow accumulation
   (`winter_snow`, 13 Winter weeks, more than 70% of elevation > 0.6 cells have `snowPack > 0.1`); spring
   melt (`winter_snow`, 13 Winter weeks to accumulate, then 13 Spring weeks, final snow below 30% of
-  accumulated, lowland `groundWater` sum above 0.5 of accumulated snow sum).
+  accumulated, lowland cumulative `waterToGround` over the Spring weeks above 0.5 of accumulated snow sum; amended 2026-11-17 (A5 Hydrology)).
 - Season for each week is advanced by the test (season-from-week helpers `WeekOf`/`SeasonOf`), because
   `ApplyPreset` does not own the clock.
 
 ### Tuning (Task 18)
 - Only allowed levers, in order: preset data values, the default baseline table, `cloud_decay`; then stop
-  and flag to the GDD owner (any of the 20 GDD constants or a mechanic). Every change is appended to the
+  and flag to the GDD owner (any of the 19 GDD constants or a mechanic). Every change is appended to the
   Tuning log in the spec's Status section with parameter, old, new and the forcing test. A changed default
   is a new GDD deviation (D-6.4). Open Q1: enlarge the fixture before touching any lever.
 
@@ -145,9 +145,9 @@ before escalating" (feedback_confirm_opus).
 | 13 | RED then GREEN: regression scenario 1, coastal rain | AC 15, 16: mean precipitation(coastal) over mean precipitation(inland), each averaged over the set's cells and all 52 weeks, above 1.5 on `MakeCoastRange(40, 24)`, default parameters, Spring start, 52 weeks; ratio printed; under 10% margin warns | Not Started | sonnet | Integration test, serial executor. If it fails, enlarge the fixture first (Open Q1) before the tuning task (Task 18) |
 | 14 | RED then GREEN: regression scenario 2, rain shadow | AC 15, 16: `rain_shadow`, 13 weeks, mean precipitation(windward) over leeward, each averaged over the set's cells and all 13 weeks, above 2.0 | Not Started | sonnet | A wide-margin failure is more likely the orographic pass than `cloud_decay`: a mechanic flag to the GDD owner, not a tuning change |
 | 15 | RED then GREEN: regression scenario 3, snow accumulation | AC 15, 16: `winter_snow`, 13 Winter weeks, more than 70% of cells with elevation above 0.6 have `snowPack` above 0.1 | Not Started | sonnet | Percentage and margin printed |
-| 16 | RED then GREEN: regression scenario 4, spring melt | AC 15, 16: `winter_snow`, 13 Winter weeks to accumulate, then 13 Spring weeks; final snow under 30% of accumulated; lowland (elevation under 0.4) `groundWater` sum over 0.5 of accumulated snow sum | Not Started | sonnet | The accumulation step is deviation D-6.2. Accumulated snow is measured after the Winter weeks, not before. Commit tasks 13 to 16 |
+| 16 | RED then GREEN: regression scenario 4, spring melt | AC 15, 16: `winter_snow`, 13 Winter weeks to accumulate, then 13 Spring weeks; final snow under 30% of accumulated; lowland (elevation under 0.4) cumulative `waterToGround` over the 13 Spring weeks over 0.5 of accumulated snow sum | Not Started | sonnet | Task text amended 2026-11-17 (A5 Hydrology) (was a `groundWater` sum); `spring_melt` and `drought` preset data files drop their `groundWater` fills. The accumulation step is deviation D-6.2. Accumulated snow is measured after the Winter weeks, not before. Commit tasks 13 to 16 |
 | 17 | RED then GREEN: all-presets health run and executor equivalence | AC 17, 18: all five presets run 13 weeks with no NaN or infinity and every field in range; serial executor and a 3-range executor give identical bytes (once, at preset level) | Not Started | sonnet | Reuse Feature 2's `FixedRangeExecutor` |
-| 18 | Tuning pass (conditional): if any of Tasks 13 to 17 fails its ratio, apply allowed levers in order and log each change in the spec Status section Tuning log (parameter, old, new, forcing test); re-run the scoped regression suite after each lever | AC 15 green on all four scenarios | Not Started | sonnet; ask before escalating | One lever per iteration, one change at a time (debug skill); three failed attempts on the same ratio stop and report. Stop and flag for the GDD owner before touching any of the 20 GDD constants or any mechanic. Record "no tuning needed" if nothing fails. Commit |
+| 18 | Tuning pass (conditional): if any of Tasks 13 to 17 fails its ratio, apply allowed levers in order and log each change in the spec Status section Tuning log (parameter, old, new, forcing test); re-run the scoped regression suite after each lever | AC 15 green on all four scenarios | Not Started | sonnet; ask before escalating | One lever per iteration, one change at a time (debug skill); three failed attempts on the same ratio stop and report. Stop and flag for the GDD owner before touching any of the 19 GDD constants or any mechanic. Record "no tuning needed" if nothing fails. Commit |
 | 19 | RED then GREEN: layer goldens, 5 presets x 9 fields on `MakeCoastRange(66, 42)` after 13 weeks | AC 19: 45 hashes match; a deliberately changed constant in a scratch run is reported by preset, layer, changed-cell count and first cell | Not Started | sonnet | Run after Task 18 so the Tuning log is final. First write with `DIA_UPDATE_GOLDEN=1` once, then review the diff summary only. This feature owns the file; Feature 2's `pipeline/` entries may already be there (add, never overwrite them). Debug and Release must agree under `/fp:precise` with no fast-math (Feature 2 Task 0); if they do not, follow its per-configuration decision. Commit |
 | 20 | Performance: `ApplyPreset` at Large (6,656 cells) in Release | AC 20: under 5 ms reported; not gated in Debug | Not Started | sonnet | Reported, not enforced. If the distance-field BFS dominates, note it as a suggestion; cache it only if the user asks |
 | 21 | Exhaustive test pass: gap audit of AC 1 to 20, then edge cases | Gap list in notes. Edge cases: a selector matching every cell; a selector matching one cell; a preset with no fills; a preset with no forcings; a fill naming the same field twice; a forcing selector equal to another's (two sets, same cells); `ApplyPreset` on a 1-cell-wide terrain; preset applied when the sim has 63 or 64 forcings already; distance field on a terrain with water in one corner only; boundary values `min == max` | Not Started | sonnet | No mutation check. Add only the missing tests |

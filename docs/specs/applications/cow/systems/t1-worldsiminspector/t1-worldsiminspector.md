@@ -159,6 +159,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | A4 Feature 5 (`weather.*` layers, `weather.storm` / `weather.drought` events) | Features 8, 10, 12 | Approved, not built |
 | S-2.5 Feature 3 (`cow.s25_report` v1) and Feature 5 (history files per check) | Feature 9 | Approved, not built |
 | A3 transition events | Features 11, 12 | Approved, not built |
+| A5 Hydrology `hydro.*` layers and events (optional; amended 2026-11-17) | Features 8, 10, 12; candidate water measures | Draft, not built |
 
 **Amendments when Approved:**
 - **A1:** emit `cow.ecology.cause` events each band per region (top causes per tracked layer).
@@ -227,7 +228,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 **Feature 8, Seasons.** Weather is a strong yearly cycle plus weekly noise, so a 40-year raw line is unreadable.
 - Typical year: x is week of year (from the `Y<year> W<week>` sample label), the line is the mean across years and the band is the spread (min-max or p10-p90).
 - Anomaly mode for any series: value minus a seasonal baseline.
-- A weather default view (precipitation, temperature, snow pack, ground water) beside the ecology one.
+- A weather default view (precipitation, temperature, snow pack, water to ground (amended 2026-11-17, A5 Hydrology): was ground water; A5 owns ground water as `hydro.ground`) beside the ecology one. A water view from A5 layers is a candidate, TBD.
 - *Resolved 2026-11-16 (seasons.md):* the baseline is the run's own typical year or a reference history file. A4's table isn't in history files and `baseline.json` holds check magnitudes, so neither is used.
 
 **Feature 9, S-2.5 checks panel.** A new file source kind for `out/CoW/s25/report_<world>_<seed>.json` and `report_summary.json` (envelope `cow.s25_report` v1, S-2.5 Feature 3) plus `baseline.json`.
@@ -255,7 +256,7 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 **Feature 12, Cross-system causes.**
 - **Chains:** a weather event in region R at week w, an ecology change in R at w+k, then succession transitions in R. They are linked by region overlap and a lag window, built from existing events, A1's `cow.ecology.cause` (its causes already name weather inputs, since A1 reads rainfall, temperature and snow through `IEcologyWeatherInput`) and per-region aggregates.
-- **Preset pairs:** rain → producers, snow pack → ground water.
+- **Preset pairs:** rain → producers, snow pack → ground water (amended 2026-11-17, A5 Hydrology): ground water is now A5's `hydro.ground`; with no A5, the pair uses `waterToGround`).
 - **Automatic lag scan** across metric pairs, per region, to find leading indicators.
 - v1 is editor-side links, labelled as "candidate" links (correlation, not proof). Only if that proves insufficient does it ask A4 and A3 for recorded cause events, which would be a game-side contract change.
 - Meaningful only once A4, A1 and A3 are built. Fixtures are enough to build it.
@@ -281,4 +282,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 13 feature specs `Approved` (8 to 13 on 2026-11-16); Feature 7 has a plan. The world-sim mockup v2 (approved, re-approved 2026-11-16 after wind, species and change-over-time additions) passes the visual gate for Features 8 to 13; none has a plan yet. Plans written 2026-11-16 for Features 1, 2, 3, 4, 6 and 7 (5 and 8 to 12 are planned when scheduled); nothing is built.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12; **Amended 2026-11-17 (A5 Hydrology):** ground water references in Features 8, 12 (and the world-health coupling) now point to A5 `hydro.*` layers; water measures for world health and tracks for space-over-time are candidates, TBD, not designed). All 13 feature specs `Approved` (8 to 13 on 2026-11-16); Feature 7 has a plan. The world-sim mockup v2 (approved, re-approved 2026-11-16 after wind, species and change-over-time additions) passes the visual gate for Features 8 to 13; none has a plan yet. Plans written 2026-11-16 for Features 1, 2, 3, 4, 6 and 7 (5 and 8 to 12 are planned when scheduled); nothing is built.

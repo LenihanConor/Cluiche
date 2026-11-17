@@ -168,4 +168,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build order is after Feature 3.
+`Approved` (2026-10-20). **Note (2026-11-17, A5 Hydrology):** author mode may later gain a hydrology pack and start state as an extra rail step. Not designed, TBD; the seven steps stand. Plan not yet created. Build order is after Feature 3.

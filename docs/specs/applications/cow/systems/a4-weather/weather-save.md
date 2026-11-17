@@ -47,17 +47,17 @@ Round trip is bit-identical for finite floats. Terrain is never saved: it comes 
   "params_hash": 7712930193384,
   "moisture": [0.41, ...], "temperature": [...], "pressure": [...],
   "wind_direction": [...], "wind_speed": [...], "precipitation": [...],
-  "cloud_cover": [...], "ground_water": [...], "snow_pack": [...],
+  "cloud_cover": [...], "water_to_ground": [...], "snow_pack": [...],   // ground_water renamed: amended 2026-11-17, A5 Hydrology
   "biome": [2, 2, 4, ...]
 }
 ```
 
-- Nine float arrays, one entry per cell, row-major (`index = y * width + x`), written with `BeginArray`/`CurrentNode().append(double)` because `SaveContext` has no array-element writer. `Write(float)` and the `double` form both round-trip a `float` exactly (`StyledWriter` emits 17 significant digits). A test proves the bit-identity.
+- Nine float arrays (`water_to_ground` replaces `ground_water`; `glacierInput` and A5's latched inputs are not saved; amended 2026-11-17, A5 Hydrology), one entry per cell, row-major (`index = y * width + x`), written with `BeginArray`/`CurrentNode().append(double)` because `SaveContext` has no array-element writer. `Write(float)` and the `double` form both round-trip a `float` exactly (`StyledWriter` emits 17 significant digits). A test proves the bit-identity.
 - `biome` is the **A4-cached** biome per cell as `uint8_t`, including A3's succession changes, so it is authoritative for A4 on load (the S-1 `Cell::biome` is only the ingest source).
 - `week` is the last applied week (`WeekOf` of the last committed step day) as `int64_t`.
 - `ready: false` writes only `version` and `ready` (a save taken before the first world is spun up). It restores as a no-op.
 - `params_hash` is a 64-bit FNV-1a over the **bit patterns** of the effective `WeatherParameters` in descriptor-table order (`HashWeatherParameters`, new in this feature, pure).
-- Size at Large: about 2 MB (9 × 6,656 floats at roughly 32 bytes of styled JSON each). Well inside `SaveContext::kBufferSize`.
+- Ground water itself is saved by A5's participant, not here. No migration is needed: A4 is not built yet, so no `ground_water` save exists. Size at Large: about 2 MB (9 × 6,656 floats at roughly 32 bytes of styled JSON each). Well inside `SaveContext::kBufferSize`.
 - Floats are never NaN/Inf (Finish clamps, EC-20), so JSON never has to carry them. `-0.0` is normalised to `+0.0` on write (jsoncpp reads `-0` as the integer 0).
 
 ### `Validate` (all-or-nothing, mutates nothing)
@@ -97,6 +97,7 @@ The stage implements `SerializePending(ctx)` (called after the scheduler's `Drai
   "moisture": [...], ... 9 arrays, "biome": [...] }
 ```
 
+- Amended 2026-11-17 (A5 Hydrology): the pending record holds the nine `WeatherFields` arrays only. `glacierInput` is not saved; A5's own pending record carries its consequence, and both are drained together as one world step.
 - It is the sim's **working** set (`GetWorkingFields()`/`GetWorkingBiomes()`, new read accessors), exactly what `Commit` would swap in. The step day, apply key and ordering are the coordinator's and the scheduler's.
 - `DeserializePending` runs after the weather participant's `Deserialize` (ordering rule above), so `mActive` exists. It validates `cell_count == mActive cell count` and ranges, then calls `sim.RestoreCompleted(fields, biomes)`, which puts the sim in the "Run finished" state so `Commit` works, and sets `mCaptureRevision = mActiveRevision`.
 - `ValidatePending` (World Step Feature 3) delegates here for the same checks as `Validate` (consistency only, no live-state comparison).
@@ -176,5 +177,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 5. **`SaveContext` sub-objects for the pending blob** are the coordinator's (`BeginObject("stage_N")` around each stage); this stage writes into the current node.
 
 ## Status
+
+Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `ground_water` array renamed `water_to_ground`; see above. Feature 7 (influences) and Feature 8 (cycle phases) will add their own saved records, to be specced with those features.
 
 **Status:** `Approved` (2026-11-16). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).

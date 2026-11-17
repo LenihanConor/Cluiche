@@ -32,9 +32,9 @@ It replaces the system spec's S-2.5-private 4 × 52-week aggregate ring, which i
 ### Live: what gets recorded
 
 - **Sampler.** `HistoryDriverModule` (S-3.5 Feature 1) samples once per applied world step (`OnWorldStepApplied`, labelled by `stepDay`). S-2.5 declares it in its manifest as Feature 1 already lists. Without it nothing is sampled and the card says so.
-- **Aggregates.** DiaCellHistory records min, mean and max per layer per group for **every** layer registered with `CellLayerRegistry`, whole run, with no tracking needed (aggregate tier). For S-2.5 that is `weather.moisture`, `.pressure`, `.temperature`, `.precipitation`, `.snow_pack`, `.cloud_cover`, `.ground_water` (A4 Feature 5) plus S-1's layers.
+- **Aggregates.** DiaCellHistory records min, mean and max per layer per group for **every** layer registered with `CellLayerRegistry`, whole run, with no tracking needed (aggregate tier). For S-2.5 that is `weather.moisture`, `.pressure`, `.temperature`, `.precipitation`, `.snow_pack`, `.cloud_cover`, `.water_to_ground` (A4 Feature 5; was `.ground_water` (amended 2026-11-17, A5 Hydrology): ground water moved to A5 as `hydro.ground`, which S-2.5 does not run; the layer name is set by the A4 amendment, TBD) plus S-1's layers.
 - **Groups.** `world` always. Per-region groups need S-1's region category layer to carry `history.group: true` in its schema `ui`. A first-task check confirms S-1's registration does; if it does not, this feature's dependency is an S-1 schema one-liner (flagged, not assumed).
-- **Per-cell tracking** stays Feature 1's three layers (`weather.precipitation`, `.temperature`, `.ground_water`) for the scrub window and step-back. Per-cell is not needed for curves.
+- **Per-cell tracking** stays Feature 1's three layers (`weather.precipitation`, `.temperature`, `.water_to_ground`) for the scrub window and step-back. Per-cell is not needed for curves.
 - **Budget.** Aggregates are about 12 bytes per layer per group per sample: 7 weather layers × (1 + up to 64 regions) groups ≈ 5.5 KB per week, so four years (208 weeks) is about 1.1 MB against a 64 MB aggregate budget. A test asserts the arithmetic from the real group count.
 
 ### Export (card button and command)
@@ -121,4 +121,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [time-series-graphs.plan.md](time-series-graphs.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** the `weather.ground_water` layer becomes `weather.water_to_ground` (name TBD, set by the A4 amendment); water-on-land series live in S-2.6. Plan: [time-series-graphs.plan.md](time-series-graphs.plan.md) (written 2026-11-16, not started).

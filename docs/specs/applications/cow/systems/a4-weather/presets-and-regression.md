@@ -81,8 +81,8 @@ Precondition: the simulation is initialised and **no step is in flight** (`Captu
 | `coastal_storm` | Autumn | moisture 0.8 on ocean and `distanceToWater` ≤ 3; pressure 0.2 on ocean and `distanceToWater` ≤ 3 | `PressureHold` 0.2, 6 weeks, over the ocean selector within `distanceToWater` ≤ 3; `WindOverride` toward land (angle chosen per terrain: see Open Q3), 6 weeks |
 | `rain_shadow` | Autumn | moisture 0.8 everywhere | `WindOverride` 270°, 0.7, until cleared, over the `elevation ≥ 0.6` selector widened by 4 hex steps (see Open Q3) |
 | `winter_snow` | Winter | temperature from the seasonal baseline (reseed does this); moisture 0.7 on `elevation ≥ 0.4` | none |
-| `spring_melt` | Spring | snowPack 0.8 on `elevation ≥ 0.6`; snowPack 0.0 elsewhere; groundWater 0.1 on `elevation < 0.4` | none |
-| `drought` | Summer | moisture 0.05 on `distanceToWater ≥ 6`; groundWater 0.0 on `distanceToWater ≥ 6` | `PressureHold` 0.8, 8 weeks, over `distanceToWater ≥ 6`; `WindOverride` away from the nearest coast, 8 weeks (Open Q3) |
+| `spring_melt` | Spring | snowPack 0.8 on `elevation ≥ 0.6`; snowPack 0.0 elsewhere (the `groundWater 0.1` lowland fill is deleted: ground water is A5's; amended 2026-11-17, A5 Hydrology) | none |
+| `drought` | Summer | moisture 0.05 on `distanceToWater ≥ 6` (the `groundWater 0.0` fill is deleted, amended 2026-11-17, A5 Hydrology) | `PressureHold` 0.8, 8 weeks, over `distanceToWater ≥ 6`; `WindOverride` away from the nearest coast, 8 weeks (Open Q3) |
 
 The numbers are starting points, tuned by the regression tests. They live in the data files, so tuning needs no code change.
 
@@ -99,17 +99,17 @@ Test helpers ship with the library (project rule), so they are under `Shared/Wea
 | Coastal rain | Default parameters, no preset, Spring start, 52 weeks, `coastal` (≤ 2 hex steps from ocean) versus `inland` (≥ 6) | mean precipitation(coastal) > 1.5 × mean precipitation(inland) |
 | Rain shadow | `rain_shadow` preset, 13 weeks | mean precipitation(windward) > 2.0 × mean precipitation(leeward) |
 | Snow accumulation | `winter_snow` preset, 13 weeks of Winter | more than 70% of cells with elevation > 0.6 have `snowPack > 0.1` |
-| Spring melt | `winter_snow`, 13 Winter weeks to accumulate (**this accumulation step is added; the GDD pseudocode reads the snow before any has fallen**), then 13 Spring weeks | final snow < 30% of the accumulated snow; lowland (elevation < 0.4) groundWater sum > 0.5 × the accumulated snow sum |
+| Spring melt | `winter_snow`, 13 Winter weeks to accumulate (**this accumulation step is added; the GDD pseudocode reads the snow before any has fallen**), then 13 Spring weeks | final snow < 30% of the accumulated snow; lowland (elevation < 0.4) cumulative `waterToGround` over the 13 Spring weeks > 0.5 × the accumulated snow sum (amended 2026-11-17, A5 Hydrology: `waterToGround` is a per-week output, so the test sums it over the weeks; was a `groundWater` sum) |
 
 Additionally: every preset loads and runs 13 weeks on the terrain without a non-finite value and without a range violation (Finish pass clamps).
 
 ### Allowed tuning levers if a ratio fails
 
-In order: the preset data values; the default baseline table; `cloud_decay`; then **stop and flag** for the GDD owner (any of the 20 GDD constants, a mechanic). Every change is appended to a **Tuning log** in this spec's Status section (parameter, old, new, test that forced it), and a changed default is a new GDD deviation.
+In order: the preset data values; the default baseline table; `cloud_decay`; then **stop and flag** for the GDD owner (any of the 19 GDD constants A4 still owns, a mechanic). Every change is appended to a **Tuning log** in this spec's Status section (parameter, old, new, test that forced it), and a changed default is a new GDD deviation.
 
 ### Goldens
 
-`Tests/GoogleTests/CoW/Golden/weather_layers.golden.json`, using `CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`): all 9 fields of `MakeCoastRange(66, 42)` after 13 weeks for each of the 5 presets (45 hashes), serial executor. Golden diffs follow the repo's summary-only report.
+`Tests/GoogleTests/CoW/Golden/weather_layers.golden.json`, using `CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`): all 9 fields (`waterToGround` replaces `groundWater`; amended 2026-11-17, A5 Hydrology) of `MakeCoastRange(66, 42)` after 13 weeks for each of the 5 presets (45 hashes), serial executor. Golden diffs follow the repo's summary-only report.
 
 ## Public API
 
@@ -194,6 +194,8 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 5. **`ClearForcings()` is added by this feature** to `WeatherSimulation` (Feature 2's class), as Feature 2's amendment 3 says; it is not part of Feature 2's own delivery. `ApplyPreset` step 2 calls it. The earlier wording "Feature 2's API" is superseded.
 6. **The `direction` zero-vector check (item 1) is made in `ApplyPreset`'s validate-first step**, not at preset load, because the gradient needs the terrain. A preset with an unresolvable direction returns `ok = false` and changes nothing.
 
+7. (amended 2026-11-17, A5 Hydrology) **No preset or fill touches ground water.** A fill on `waterToGround` is legal but has no lasting effect, because the field is zeroed at the start of each step. Scenario tests run with no A5 (`HydrologyInputs.present == false`): primary evaporation uses `waterSource` and secondary evaporation is zero, so A4's regression ratios hold without A5. A preset that needs ground water, soil moisture or floods belongs to A5's presets (A5 Feature 6).
+
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.

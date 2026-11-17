@@ -1,13 +1,13 @@
 # Feature Spec: A4 CA Pipeline
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 2)
-**Status:** Approved (2026-11-16); region-forcing amendment re-approved 2026-11-16 with Feature 6
+**Status:** Approved (2026-11-16); region-forcing amendment re-approved 2026-11-16 with Feature 6. Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): ground-water drain removed, `waterToGround` and `glacierInput` outputs, A5 inputs latched at `Capture`. Pass numbers are unchanged; pass 10 is retired.
 **Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TechnicalSpec.md` §2–§12, `A4_EdgeCaseMatrix.md`
 **Depends on:** A4 Feature 1 (`WeatherFields`, `WeatherTerrain`, `WeatherParameters`, `IBiomeSeasonalBaseline`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers)
 
 ## Summary
 
-The weekly step of the weather cellular automaton, as pure logic. It runs the GDD's 10 pipeline steps over every cell of the hex grid as full-grid passes on a working copy of the weather state. It is deterministic and bit-identical at any `ParallelFor` range count and in any range order. It does not know about threads, the scheduler, the bus or the save system.
+The weekly step of the weather cellular automaton, as pure logic. It runs the GDD's pipeline steps over every cell of the hex grid as full-grid passes on a working copy of the weather state. The GDD's 10 steps become 9 passes: the §12 ground-water drain is deleted and moves to A5 Hydrology (amended 2026-11-17, A5 Hydrology). It is deterministic and bit-identical at any `ParallelFor` range count and in any range order. It does not know about threads, the scheduler, the bus or the save system.
 
 The feature adds three things to `WeatherSimulation` (Feature 1 creates the class):
 
@@ -17,7 +17,7 @@ The feature adds three things to `WeatherSimulation` (Feature 1 creates the clas
 
 ## Goals
 
-1. The 10 GDD steps run in GDD order, one `ParallelFor` pass per step (transport is two passes), over a working set. Readers see only committed state.
+1. The GDD steps run in GDD order (9 passes; §12 drain removed (amended 2026-11-17, A5 Hydrology)), one `ParallelFor` pass per step (transport is two passes), over a working set. Readers see only committed state.
 2. **Bit-identical results** for the same inputs and tick count at any range count (1, 3, 17, one range per cell) and with ranges executed in reverse order. No RNG, no atomics in anything that feeds the simulation, no dependence on iteration order.
 3. Transport is a **gather** with a defined upwind-edge inflow (`boundary.edge_inflow`, default on).
 4. `Run` is a pure function of what `Capture` latched. It reads no SimPU-owned state (DFS-002).
@@ -39,7 +39,9 @@ The feature adds three things to `WeatherSimulation` (Feature 1 creates the clas
 ```
 Capture(season, baselineProvider)   SimPU      copy committed → working; latch season, parameters,
                                                forcings, biome edits, and the 13-entry seasonal
-                                               baseline table (provider is called here and never in Run)
+                                               baseline table (provider is called here and never in Run);
+                                               latch A5's HydrologyInputs (surfaceWetness, openWater,
+                                               glacierEligible; amended 2026-11-17, A5 Hydrology)
 Run(executor)                       workers    the pipeline over the working set only
 Commit()                            SimPU      swap working → committed; week++; decrement forcing timers
 Step(season, baseline, executor)               Capture; Run; Commit — the synchronous path (WeatherRunner)
@@ -47,7 +49,7 @@ Step(season, baseline, executor)               Capture; Run; Commit — the sync
 
 The system spec's Public Interfaces lists only `Step(Season, IParallelExecutor&)`. It needs the three methods, and `Step` needs the baseline provider, because a virtual call into A1's provider from a worker would break DFS-002. This is a spec-sync amendment (see Files Touched).
 
-`Run` reads: the working fields, the working biome array, the immutable terrain (elevation, latitude, water source: owned by `WeatherSimulation`, never mutated after `Initialise`), the latched parameters, season, baseline table, forcings and the precomputed neighbour table. Nothing else.
+`Run` reads: the working fields, the working biome array, the immutable terrain (elevation, latitude, water source: owned by `WeatherSimulation`, never mutated after `Initialise`), the latched parameters, season, baseline table, forcings, the latched `HydrologyInputs` (amended 2026-11-17, A5 Hydrology) and the precomputed neighbour table. Nothing else.
 
 ### Grid tables (built once at `Initialise`)
 
@@ -78,19 +80,19 @@ Each row is one pass (`DIA_PROFILE_SCOPE` per pass; backs the `profile` command)
 
 | Pass | GDD | Behaviour (parameter names as in A4_TuningParameters §14) |
 |---|---|---|
-| 1 Solar | §3 | **Weekly reset first:** `precipitation = 0`; `cloudCover *= (1 − cloud_decay)`. Then `seasonTemp = baseline[biome[c]]`, latitude modifier, cloud albedo, heat capacity by water source, relax `temperature` toward `seasonTemp`, clamp [0,1]. Local |
+| 1 Solar | §3 | **Weekly reset first:** `precipitation = 0`; `waterToGround = 0`; `glacierInput = 0` (amended 2026-11-17, A5 Hydrology); `cloudCover *= (1 − cloud_decay)`. Then `seasonTemp = baseline[biome[c]]`, latitude modifier, cloud albedo, heat capacity by water source, relax `temperature` toward `seasonTemp`, clamp [0,1]. Local |
 | 2 Pressure | §4 | `pressure = clamp(0.5 − (temperature − 0.5)·pressure_sensitivity)`. Local. **Forcing hook A:** pressure holds |
 | 3 Wind | §5 | Prevailing direction by latitude band (with CH-02 transition lerp) + pressure gradient over the 6 neighbours (precomputed unit vectors; `kNoCell` neighbours contribute nothing but still count in the ÷6). Writes continuous `windDirection`, clamped `windSpeed`, and the snapped `dirIndex`. **Forcing hook B:** wind overrides replace the result for their cells, and `dirIndex` is re-snapped from the override |
-| 4 Evaporation | §6 | Water-source evaporation (self-limiting at saturation) and ground-water evaporation. Local. **Forcing hook C:** moisture holds |
+| 4 Evaporation | §6 | Primary evaporation (§6.1, self-limiting at saturation) scaled by A5's `openWater` fraction, and secondary evaporation (§6.2) from A5's `surfaceWetness` (was ground water). With no A5 present, §6.1 uses S-1's static `waterSource` and §6.2 is zero (amended 2026-11-17, A5 Hydrology). Local. **Forcing hook C:** moisture holds |
 | 5a/5b Moisture transport | §7 | 5a: `moistureOut[c] = moisture·windSpeed·moisture_transport_rate`, 0 if the downwind neighbour is `kNoCell` (EC-16: it stays in the cell). 5b: gather (below) |
 | 6a/6b Heat transport | §8 | Same shape on `temperature` with `heat_transport_rate`. 6b: `temperature = max(temperature − out, 0) + inflow` (CH-07), so the clamp is order-free |
 | 7 Orographic | §9 | Upwind neighbour = `neighbours[c·6 + (dirIndex+3) % 6]`. If it is `kNoCell`: **no lift** (nothing to compare against). If `elevation[up] < elevation[c]`: cool the cell, and if `temperature < condensation_temp` condense `moisture·gain·orographic_precip_rate` (capped at `moisture`). The condensate is **routed as in pass 8**, and `cloudCover = min(moisture, 1)` is taken after the subtraction |
-| 8 Precipitation | §10 | As GDD, with `max(…, 0)` (CH-09). Snow below `snow_threshold` into `snowPack` (capped 1.0, CH-04), else into `groundWater`. `cloudCover = moisture·0.8` after the subtraction. **Forcing hook D:** one-week rain adds to `precipitation` and routes the same way; it does not consume moisture |
-| 9 Snow melt | §11 | As GDD; melt adds to `groundWater` and cools the cell by `melt·melt_cooling` (clamped ≥ 0) |
-| 10 Ground water | §12 | Drain `groundWater·ground_water_drain_rate`, floor 0 |
-| Finish | §14, EC-20 | Clamp every field to its range (snow and ground water cap 1.0). Then the **serial totals pass** |
+| 8 Precipitation | §10 | As GDD, with `max(…, 0)` (CH-09). Snow below `snow_threshold` into `snowPack` (capped 1.0, CH-04), else into `waterToGround` (amended 2026-11-17, A5 Hydrology). Snow above the cap goes to `glacierInput` on `glacierEligible` cells and is discarded elsewhere. `cloudCover = moisture·0.8` after the subtraction. **Forcing hook D:** one-week rain adds to `precipitation` and routes the same way; it does not consume moisture |
+| 9 Snow melt | §11 | As GDD; melt adds to `waterToGround` (amended 2026-11-17, A5 Hydrology) and cools the cell by `melt·melt_cooling` (clamped ≥ 0) |
+| ~~10 Ground water~~ | §12 | **Deleted (amended 2026-11-17, A5 Hydrology).** The drain and its `ground_water_drain_rate` parameter move to A5. The pass number is retired, not reused |
+| Finish | §14, EC-20 | Clamp every field to its range (snow caps 1.0; `waterToGround` clamps to [0, 2] (rain up to 1 plus melt up to 1) and `glacierInput` to [0, 1]; amended 2026-11-17, A5 Hydrology). Then the **serial totals pass** |
 
-Evaporation (§6.2) belongs to pass 4. Pass 10 is only the drain.
+Evaporation (§6.2) belongs to pass 4. Pass 10 is retired.
 
 ### Wind snap and the prevailing-direction tie
 
@@ -166,7 +168,7 @@ namespace CoW::Weather {
     struct WeatherGridTotals { double meanMoisture = 0; double totalSnowPack = 0; uint32_t rainingCellCount = 0; };
 
     struct WeatherStepProfile {
-        static constexpr uint32_t kPassCount = 13;     // 1,2,3,4,5a,5b,6a,6b,7,8,9,10,finish
+        static constexpr uint32_t kPassCount = 12;     // 1,2,3,4,5a,5b,6a,6b,7,8,9,finish (10 retired 2026-11-17, A5 Hydrology)
         uint64_t wallMicros[kPassCount];
         uint64_t cpuMicros[kPassCount];
         uint64_t totalCpuMicros;
@@ -178,11 +180,14 @@ namespace CoW::Weather {
 
     class WeatherSimulation {                           // additions to Feature 1's class
     public:
-        void Capture(Season season, const IBiomeSeasonalBaseline& baseline);   // SimPU
+        void Capture(Season season, const IBiomeSeasonalBaseline& baseline,
+                     const HydrologyInputs& hydro);                             // SimPU; hydro.present == false when no A5 (amended 2026-11-17, A5 Hydrology)
         void Run(Dia::DeferredStep::IParallelExecutor& executor);               // any thread; working set only
         void Commit();                                                          // SimPU
         void Step(Season season, const IBiomeSeasonalBaseline& baseline,
+                  const HydrologyInputs& hydro,
                   Dia::DeferredStep::IParallelExecutor& executor);              // Capture + Run + Commit
+        const WeatherHandoff& GetHandoff() const;                               // glacierInput of the last step (A5 reads the working copy in Run; amended 2026-11-17, A5 Hydrology)
         bool AddForcing(const WeatherForcing& forcing);                         // false when full
         CellSetHandle RegisterCellSet(const DynamicArrayC<uint32_t>& sortedCells);   // false-equivalent: kNoCellSet when 16 sets exist
         void ClearCellSets();                                                   // also drops forcings that reference them
@@ -214,14 +219,14 @@ namespace CoW::Weather {
 8. **Weekly reset:** `precipitation` is 0 at the end of pass 1 whatever it was before. `cloudCover` is multiplied by `(1 − cloud_decay)` before pass 1 uses it; with `cloud_decay = 0` it is unchanged.
 9. **Pressure:** temperature 1.0 → pressure 0.2; 0.0 → 0.8; 0.5 → 0.5 (at default sensitivity). The result is clamped to [0,1] (EC-07).
 10. **Wind:** uniform pressure gives the prevailing wind only. A high-pressure cell pushes neighbours' wind away from it, and a low-pressure cell pulls it in. The prevailing direction matches the latitude band, with a continuous lerp across the two transition zones (CH-02). Speed is clamped to [0,1].
-11. **Evaporation:** water cells add `temperature·ocean_evap_rate·(1 − moisture)`, so a saturated cell gains nothing (EC-04). Ground water moves into moisture and is not negative afterward.
+11. **Evaporation:** water cells add `temperature·ocean_evap_rate·(1 − moisture)`, so a saturated cell gains nothing (EC-04). Secondary evaporation draws on `surfaceWetness`, never moves more than the cell holds and is not negative afterward. Primary evaporation scales with `openWater`; with `hydro.present == false` it uses `waterSource` and secondary evaporation is 0 (amended 2026-11-17, A5 Hydrology).
 12. **Moisture transport:** moisture moves one cell downwind per step at the stated rate. Total moisture is conserved by the transport passes (excluding edge-inflow and forcing cells; test with `edge_inflow` off on a closed interior). A cell whose downwind neighbour is off-map keeps its moisture (EC-16).
 13. **Heat transport:** same, with `heat_transport_rate`. Temperature never goes negative (CH-07), and a 1.0 cell receiving inflow ends at 1.0 after the finish clamp.
 14. **Orographic:** with wind blowing upslope, the windward cell cools, condenses and rains (EC-09: a ring of mountains rains on the windward faces and leaves the interior dry). The leeward cell receives less rain than the windward cell. Downslope wind never triggers lift. A cell whose upwind neighbour is off-map never triggers lift.
-15. **Orographic routing:** condensate below `snow_threshold` goes to `snowPack` and above goes to `groundWater`, with the same caps as pass 8. A cell never condenses more than its `moisture` (user decision 2026-11-16).
-16. **Precipitation:** rain and snow split at `snow_threshold`. Zero moisture produces no precipitation and no negative amount (EC-11, CH-09). Snow pack caps at 1.0 and the excess is discarded (EC-12 for ground water).
-17. **Melt:** no melt below `melt_threshold`. Melt with zero snow pack is a no-op (EC-13). Melt moves snow to ground water and cools the cell. A cell that stays below `melt_threshold` all year keeps its snow capped at 1.0 (EC-06).
-18. **Ground water:** drain is 20%/week; ground water is about 0.33 of its start after 5 dry weeks; never negative.
+15. **Orographic routing:** condensate below `snow_threshold` goes to `snowPack` and above goes to `waterToGround`, with the same cap and glacier rules as pass 8 (amended 2026-11-17, A5 Hydrology). A cell never condenses more than its `moisture` (user decision 2026-11-16).
+16. **Precipitation:** rain and snow split at `snow_threshold`. Zero moisture produces no precipitation and no negative amount (EC-11, CH-09). Snow pack caps at 1.0. The excess becomes `glacierInput` on `glacierEligible` cells and is discarded elsewhere (amended 2026-11-17, A5 Hydrology; EC-12 is deleted with the ground-water store). Rain lands in `waterToGround`, never above its input.
+17. **Melt:** no melt below `melt_threshold`. Melt with zero snow pack is a no-op (EC-13). Melt moves snow to `waterToGround` and cools the cell (amended 2026-11-17, A5 Hydrology). A cell that stays below `melt_threshold` all year keeps its snow capped at 1.0 (EC-06).
+18. **Hand-off (replaces the ground-water drain test, which moves to A5; amended 2026-11-17, A5 Hydrology):** `waterToGround` equals rain plus snowmelt each week and is 0 on a dry, melt-free cell. `glacierInput` equals the snow above the cap on `glacierEligible` cells and is 0 on every other cell. With `hydro.present == false`, `glacierInput` is 0 everywhere, primary evaporation matches the `waterSource` behaviour and secondary evaporation is 0. A cell's `glacierEligible` flag is the previous committed A5 week's, latched at `Capture` and unchanged by a mid-run poisoning.
 19. **Finish:** every field is clamped to its range after the last pass (EC-20). Temperature extremes 0.0 and 1.0 for 52 consecutive weeks stay in range (EC-03).
 20. **Zero wind:** at wind speed 0, nothing is transported and orographic lift does not fire on stale directions (EC-05).
 
@@ -249,7 +254,7 @@ namespace CoW::Weather {
 ### Forcings
 
 34. `PressureHold` survives the pressure recomputation in pass 2 and shapes the wind in pass 3. `MoistureHold` is visible to the transport passes. `WindOverride` replaces pass 3's output for its cells and changes `dirIndex`.
-35. `Rain` adds exactly `value` to `precipitation` for one week, routes to snow or ground water by temperature, and consumes no moisture.
+35. `Rain` adds exactly `value` to `precipitation` for one week, routes to snow or `waterToGround` by temperature, and consumes no moisture (amended 2026-11-17, A5 Hydrology).
 36. Forcings expire after `weeksRemaining`. `AddForcing` returns false at 64 active forcings and nothing is dropped silently. The same forcings applied in any order give identical results.
 36a. A region forcing (`PressureHold` or `WindOverride` over a registered cell set) applies to every cell in the set and to no other. A set with 0 cells is rejected. A 17th set returns `kNoCellSet`. Two records of the same kind overlapping on a cell resolve to the lower record index. Region and per-cell forms give identical output for the same cells.
 
@@ -298,7 +303,7 @@ No Dia files are added or edited (AD-001). `IParallelExecutor` and `SerialExecut
 
 ## GDD Deviations Introduced (for the system spec's list, #15–#19)
 
-15. **Orographic precipitation is routed like §10** (snow or ground water by temperature). The GDD adds it to `precipitation` only.
+15. **Orographic precipitation is routed like §10** (snow or `waterToGround` by temperature). The GDD adds it to `precipitation` only.
 16. **`precipitation` is reset each week** and **`cloud_cover` decays** by a new `cloud_decay` constant. The GDD never clears either.
 17. **Wind snap ties break by column parity.** Both prevailing directions fall exactly on a hex tie.
 18. **Grid totals are a serial reduction**, so they are range-count independent.
@@ -328,8 +333,10 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 5. **Criterion 6 (no heap allocation in `Run`).** Mechanism: every scratch array, grid table and the cell-set storage is sized at `Initialise`; the test records each array's data pointer and capacity before and after `Run` and asserts they are unchanged, and a code rule forbids `new`, growing containers and `std::` allocation in the `Run` call tree. No global `operator new` hook is added (an engine concern).
 6. **Goldens.** `Tests/GoogleTests/CoW/Golden/weather_layers.golden.json` is **owned by Feature 6** (hand-built `MakeCoastRange(66, 42)`). This feature's golden entries use the key prefix `pipeline/`, and whichever feature lands first creates the file. Hashes are compared bit for bit, so Debug and Release must agree: the build must use `/fp:precise` with no fast-math in both configurations. Plan Task 0 verifies this and, if the two configurations still differ, stores one hash set per configuration (closes Open Question 3).
 
+7. (amended 2026-11-17, A5 Hydrology) **The §12 ground-water drain is not in A4.** `groundWater` becomes the per-week `waterToGround` output and the store moves to A5. Snow above the cap becomes `glacierInput` on A5-flagged cells. §6.1/§6.2 read A5's latched values.
+
 ## Status
 
-**Status:** `Approved` (2026-11-16).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9).
 
 **Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).

@@ -107,7 +107,7 @@ namespace CoW::S25 {
 | 2 Rain Shadow | `check_rain_shadow` reports a leeward shadow; windward precipitation > leeward; same shadow cells in two runs of the same seed | — |
 | 3 Storm Movement | a spawned storm's centre moves between weeks; wind around the centre points toward it; the storm dissipates or intensifies by moisture | centre moves ≥ 5 cells in 5 weeks |
 | 4 Seasonal Variation | global mean temperature peaks in Summer and bottoms in Winter, smoothly; Winter precipitation > Summer; temperature crosses the melt threshold in Spring | Winter precipitation ≥ 1.5× Summer |
-| 5 Spring Floods | mountain `snow_pack` rises through Winter and falls through Spring; lowland ground water rises while snow pack falls | lowland ground-water peak lands in Spring (first run records the week) |
+| 5 Spring Floods | mountain `snow_pack` rises through Winter and falls through Spring; lowland `waterToGround` (weekly rain + melt reaching the ground) peaks while snow pack falls (amended 2026-11-17, A5 Hydrology): was lowland ground water. A4 no longer has ground water; A5 Hydrology owns it. The flood itself (water travelling downstream over weeks, rivers rising) moves to the new testbed S-2.6 Rivers & Floods (A4 + A5, spec not written yet). Test 5 keeps its GDD number here as the weather-side half) | lowland `waterToGround` peak lands in Spring (first run records the week) |
 | 6 Droughts | `DroughtDetector` reports at least one region; inland cells are drier than coastal | ≥ 4 consecutive dry weeks in Summer or Autumn |
 | 7 Variability | annual global rainfall differs across 4 years; each year keeps the seasonal shape | — |
 | 8 Boundary | with `boundary.edge_inflow` on vs off, edge weather differs in the expected direction; interior cells differ by no more than a tolerance | interior tolerance |
@@ -145,7 +145,7 @@ The scenario format S-3 designed becomes CoW-Shared, with one addition: walkthro
   "walkthrough": [
       { "overlays": ["wind"],          "text": "Find the prevailing wind and the range across it." },
       { "overlays": ["precipitation"], "text": "Compare the two sides.", "check": "s25.t2.windward_gt_leeward" },
-      { "overlays": ["ground_water"],  "text": "The shadow persists in ground water." } ] }
+      { "overlays": ["water_to_ground"], "text": "The shadow persists in the weekly water reaching the ground." } ] }
 ```
 
 - **Setup** is a list of DiaAPI commands, so a scenario does nothing the panel can't (feedback: editor actions are DiaAPI commands).
@@ -304,4 +304,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-10-18). Interview done the same day (check runner, test worlds, Test 7 risk, shared scenarios, 52-week budget, baseline tolerance, graphs). Sibling amendments applied to A4 and S-3; GDD deviations sent to the GDD session (`cow-29`). No open system-level questions. No plan yet; create `s25-weatherpatterns.plan.md` when implementation starts (Feature 2 first, once A4 Feature 1 exists).
+**Status:** `Approved` (2026-10-18). **Amended 2026-11-17 (A5 Hydrology):** A4 no longer has `groundWater`; it outputs `waterToGround`, and ground water moves to A5 (`hydro.ground`). Test 5's lowland measure becomes `waterToGround`; the true flood moves to S-2.6 Rivers & Floods (A4 + A5, own spec, not written yet). S-2.5 stays A4-only (World Step `["weather"]`). The `weather.ground_water` debug layer is replaced by a `waterToGround` layer (name set by the A4 amendment, TBD). Interview done the same day (check runner, test worlds, Test 7 risk, shared scenarios, 52-week budget, baseline tolerance, graphs). Sibling amendments applied to A4 and S-3; GDD deviations sent to the GDD session (`cow-29`). No open system-level questions. No plan yet; create `s25-weatherpatterns.plan.md` when implementation starts (Feature 2 first, once A4 Feature 1 exists).

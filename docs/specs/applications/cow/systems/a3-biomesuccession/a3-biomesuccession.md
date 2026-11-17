@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A3_BiomeSuccession/` (DesignDocs repo; `A3_BiomeSuccession.md`, `A3_TechnicalSpec.md`, `A3_TuningParameters.md`, `A3_EdgeCaseMatrix.md`, `A3_PrototypeTestbed.md`, `A3_ProductionBacklog.md`, Locked; amended by CHANGE-036, pending fold-back by the GDD session)  
 **Works with:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 evaluates the counters; A3 decides the transitions)
+**Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. Thresholds are TBD.
 
 **Gameplay Domains:** debug
 
@@ -33,6 +34,7 @@ Degradation is always staged and recovery is always slower. Near-floor biomes (D
 - **Stress tracking and counter evaluation.** These belong to A1, which evaluates every rule.
 - **Dragon behaviour.** The acceleration interface is declared (`SetAcceleration`). B1/B2 drive it from S-4, and the multiplier is 1.0 until then.
 - **Post-v1 transitions:** Grassland→Forest, Scrub→Forest, and the restoration of a dried Wetland.
+- **Water simulation** (amended 2026-11-17, A5 Hydrology)**.** A5 owns floods, lake levels, river flow and glaciers. A3 only reads them through A1.
 - **Event display.** That belongs to D4. A3 publishes the events.
 - **Ecology-state collapse in near-floor biomes.** That's A1's ecology state.
 - **A stage.** S-3 Ecology hosts A3.
@@ -121,6 +123,23 @@ These numbers are starting values. They are tuned live in S-3's Controlled mode,
 
 **Tundra condition** (amended 2026-10-19, product review): the GDD's "migration routes severed" isn't measurable. It becomes `years_low_herbivore_inflow`, a new A1 history field: the number of consecutive years in which herbivore migration into the cell was below `low_inflow_threshold`. This is a saved state field tracked per cell by A1, not read from the ledger.
 
+### Water and ice rules from A5 (amended 2026-11-17, A5 Hydrology)
+
+A5 exposes four signals through `HydrologySnapshot`. A1 reads them and presents them to the rule table as cell fields (see A1, Hydrology input), so A3 authors them as ordinary rules and A1 evaluates them. A5 never writes biome.
+
+| Signal (from A5) | Rule field | Rule | Notes |
+|---|---|---|---|
+| `inundatedWeeks` | `inundated_weeks` | Land → Lake when sustained over `inundated_weeks_to_lake` | Source `FLOOD` (new). Needs a staging row per land biome that can flood |
+| `exposedWeeks` | `exposed_weeks` | Lake → Wetland or Grassland when sustained over `exposed_weeks_to_land` | Wetland if the cell is still wet (soil moisture high), else Grassland. The split is TBD (GDD A3/A5) |
+| sustained low `riverFlow` | `dry_river_weeks` | Drives the existing `DryRiverbed` legacy on river cells when over `dry_riverbed_weeks` | The legacy marker is presentation only. No biome change unless a rule says so; `river_overlay` is unchanged (DECISION-064/065) |
+| `glacier` mass | `glacier` | Glaciated cells → TundraBoreal or AlpineMountain; retreat when it melts | Source `COLD`. The retreat direction (back to the prior cold biome or Scrub) is TBD |
+
+- **Thresholds are TBD.** `inundated_weeks_to_lake`, `exposed_weeks_to_land`, `dry_riverbed_weeks` and the glacier mass thresholds are A3 and GDD content to author in the shipped rule file and in `succession_parameters`. This spec invents no numbers.
+- **Bands.** Flooding and exposure are weekly counters in A5, so these rules can run at the Year band on the saved week counts (and may need a Season band; TBD).
+- **New rule sources:** `FLOOD` and `THAW` (exposure and glacier retreat) join `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` and `COLD`. The T-1 `source` enum grows to match.
+- **Staging table changes** are listed under the table below.
+- **Without A5** (S-3 Controlled mode, tests) these fields read 0, so none of these rules fire. Existing rules are unchanged.
+
 ### Resolution (A1 step 10)
 
 `Resolve(triggers, sim)` handles the band's triggers in cell-index order:
@@ -149,7 +168,12 @@ Recovery transitions are resolved the same way. They arrive as triggers from rec
 | Rainforest | Scrub |
 | BurnedAshland | Grassland (recovery) |
 | DesertifiedPlain | Scrub (recovery) |
-| Desert, Alpine, Volcanic, Ocean, Lake | none (near-floor or water) |
+| Lake (amended 2026-11-17, A5 Hydrology) | Wetland, Grassland (exposed lakebed) |
+| Land biomes that can flood (amended 2026-11-17, A5 Hydrology) | Lake (sustained inundation). Which biomes qualify is TBD |
+| Tundra, Alpine (amended 2026-11-17, A5 Hydrology) | glaciated: TundraBoreal, AlpineMountain targets for glaciated cells; retreat target TBD |
+| Desert, Volcanic, Ocean | none (near-floor or water) |
+
+Alpine was in the "none" row. Glaciation and retreat now make it a possible target and source; Alpine otherwise stays near-floor. The exact staging entries are TBD (GDD A3).
 
 ### Legacy: one-shot deltas plus a timed marker
 
@@ -166,6 +190,8 @@ The legacy **marker** (type and years) is presentation and history only. It driv
 | Scrub → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `soil_fertility +0.15` |
 | Scrub → DesertifiedPlain | DryRiverbed | 20–100 | `water_gradient -0.2`, `seed_bank = 0` |
 | Wetland → Grassland | DryRiverbed | 10–30 | `aquatic = 0` (`river_overlay` unchanged) |
+| Lake → Wetland / Grassland (amended 2026-11-17, A5 Hydrology) | none | — | TBD (aquatic species cleared, soil values from the new biome's start values) |
+| Land → Lake (amended 2026-11-17, A5 Hydrology) | none | — | TBD (land producers cleared) |
 | BurnedAshland → Grassland | Scorch (fading) | 5–15 | none (ash and fertility already decaying in A1) |
 | Scrub → Grassland, DesertifiedPlain → Scrub | none | — | none |
 
@@ -268,7 +294,7 @@ namespace CoW::Succession {
 | 4 | SuccessionModule & Save | SimModule wiring, resolver registration via `ModuleRef`, message structs, save participant and round-trip, `cow_main.diaapp` entry | TBD | Draft |
 | 5 | Succession Debug | `SuccessionDebugDomain`: commands, overlays, inspector, metrics, health. Included in the A1/S-3 HTML mockup | TBD | Draft |
 
-**Build order:** 1 → 2 → 3 → 4 → 5. Features 2 and 3 need A1 Features 1–5 plus amendments 1 and 2. A1 amendment 3 (ignition) belongs with A1 Feature 4. Amendment 4 (inflow history) belongs with A1 Feature 4.
+**Build order:** 1 → 2 → 3 → 4 → 5. Features 2 and 3 need A1 Features 1–5 plus amendments 1 and 2. A1 amendment 3 (ignition) belongs with A1 Feature 4. The A5 rules (amended 2026-11-17) need A5's `HydrologySnapshot` through A1's hydrology input, so they land after A1 Feature 7 and A5 Feature 3; the existing 12 rules do not wait for A5. Amendment 4 (inflow history) belongs with A1 Feature 4.
 
 ## Binding Decisions
 
@@ -292,13 +318,15 @@ For the GDD session to fold back, on top of CHANGE-036:
 5. **Added legacy row:** Scrub → BurnedAshland (Scorch, 5–15 years), which the table had left out.
 6. **Tundra's "migration routes severed"** becomes `years_low_herbivore_inflow > 5`.
 7. **Natural ignition is added to A1.** Fire can now emerge without dragons.
-8. **Ocean and Lake have no transitions.** They are added to the near-floor row.
+8. **Ocean and Lake have no transitions.** They are added to the near-floor row. **Amended 2026-11-17 (A5 Hydrology): Ocean keeps no transitions. Lake now transitions both ways with land** (land → Lake on sustained inundation, Lake → Wetland/Grassland on sustained exposure), because A5 lets lakes grow and shrink. To fold back into GDD A3.
+10. **A5 water and ice rules** (amended 2026-11-17, A5 Hydrology): inundation, exposed lakebed, dry riverbed (sustained low river flow) and glacier rules, new sources `FLOOD` and `THAW`. Thresholds are TBD for the GDD. River courses stay static (DECISION-064/065).
 9. **GeographyAndRegions Part 6 lists Grassland → Forest Edge and Forest → Grassland.** A3 v1 excludes both: Forest Edge isn't a biome id, and Forest → Grassland isn't in the staging table. GeographyAndRegions should note them as post-v1.
 
 ## Dependencies
 
 **Requires:**
 - **A1 Ecology**, Features 1–5, plus amendments 1–4.
+- **A5 Hydrology** (amended 2026-11-17; Draft, unbuilt), soft: `inundatedWeeks`, `exposedWeeks`, `riverFlow` and `glacier`, read through A1. Without it the water and ice rules never fire.
 - GameSpeedController (bands, via A1), E1, DiaMessageBus, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, Dia CellField (dia-needs #14) for overlays. DiaCellLayers, DiaCellHistory and DiaValueSchema (layers, events, tooltips), all Approved, not built (amended 2026-10-19, consistency pass).
 
 **Required by:** A1 (resolver, optional), A4 (`BiomeTransitionComplete`), S-3 Ecology (Living mode transitions, the A3 scenario, the succession long-run check), and later V-1, D4, C3, B1 and B2.
@@ -312,6 +340,7 @@ For the GDD session to fold back, on top of CHANGE-036:
 - Duplicate triggers in one band are discarded. Rejected triggers keep their counter.
 - A transition resets every counter for the cell, and a pending recovery is cancelled by a forward transition (EdgeCase 2.1, 3.1, 3.2).
 - Stressed at 50% progress.
+- (amended 2026-11-17, A5 Hydrology) With a stub hydrology input: sustained `inundated_weeks` turns land into Lake; sustained `exposed_weeks` turns Lake into Wetland or Grassland; low river flow sets the `DryRiverbed` marker without moving `river_overlay`; glaciated cells go cold and retreat when the mass melts; with no A5 none of these fire.
 - Seeding at 0.3, Establishing at 0.7, transition at 1.0.
 - Stalled recovery keeps its progress.
 - The acceleration multiplier applies only while the conditions hold, and lapses after a year without refresh.
@@ -331,6 +360,10 @@ For the GDD session to fold back, on top of CHANGE-036:
 1. **Will natural ignition give a believable fire regime at default tuning?** Neither "fire every few decades in dry grassland" nor "never" is guaranteed. S-3 Controlled mode tunes it first, and the GDD may want to set the target fire return intervals per biome.
 2. **Is the tundra inflow proxy right?** `years_low_herbivore_inflow` stands in for "migration routes severed". If it fires too easily in naturally sparse tundra, it may need to compare against the cell's own historical inflow instead of a fixed threshold.
 
+## Open question added 2026-11-17 (A5 Hydrology)
+
+3. **Aquatic to land and back.** A1 runs an aquatic-only ecology on Lake cells and land ecology elsewhere. `ApplyBiomeTransition` for Lake ↔ land must reinitialise the cell's producers and species from the new biome's starting values, and A1 must accept a land cell that becomes aquatic mid-run. That is an A1 change (Feature 5) to settle before the Lake rules are built.
+
 ## T-1 consumer amendment (2026-11-16, approved with T-1 Feature 12)
 
 Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/cross-system-causes.md, so a succession transition can be linked to the pressure that caused it.
@@ -344,4 +377,4 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/cross-sys
 
 ## Status
 
-**Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.
+**Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. **Amended 2026-11-17 (A5 Hydrology):** new water and ice rules, Lake ↔ land transitions, new sources `FLOOD` and `THAW`; status stays `Approved`, thresholds TBD. Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.

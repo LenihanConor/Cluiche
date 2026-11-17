@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A1_Ecology/` (DesignDocs repo; `A1_EcologySystem.md`, `A1_TechnicalSpec.md`, `A1_TuningParameters.md`, `A1_AuthoringDebug.md`, `A1_EdgeCaseMatrix.md`, `A1_PrototypeTestbed.md`, `A1_ProductionBacklog.md`, all Locked 2026-10-12)  
 **Conflicts resolved here:** [a1-gdd-conflicts.md](a1-gdd-conflicts.md) (C1–C14, interviewed 2026-10-18)
+**Amended 2026-11-17, A5 Hydrology:** water on the ground now belongs to A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)). Feature 4 loses water flow and the water table. A1 reads cell water, river flow, flooding and ice from `HydrologySnapshot`. The `water_dragon_emission` direct write is dropped. A5 is a soft dependency: without it A1 falls back to A4 rainfall or the pinned climate.
 
 **Gameplay Domains:** persistence, debug
 
@@ -10,7 +11,7 @@
 
 A1 is CoW's ecology. Every hex cell carries producer biomass, species populations (juvenile and adult), transients, pressure fields and history. Seasonal, yearly, decadal and century rules run over those values, and booms, crashes, migrations, drought, disease and recovery emerge from them; nothing is spawned on a schedule.
 
-A1 is fed by three systems. S-1 provides the world structure, A4 provides weekly rainfall, temperature and snow, and GameSpeedController provides day ticks. A1 tracks the stress that builds toward biome succession and tells A3 when a threshold is crossed. A3 decides the transition and applies it back through A1's API. A1 also implements A4's `IBiomeSeasonalBaseline`.
+A1 is fed by four systems. S-1 provides the world structure, A4 provides weekly rainfall, temperature and snow, A5 Hydrology provides soil moisture, river flow, floods and ice (amended 2026-11-17, A5 Hydrology), and GameSpeedController provides day ticks. A1 tracks the stress that builds toward biome succession and tells A3 when a threshold is crossed. A3 decides the transition and applies it back through A1's API. A1 also implements A4's `IBiomeSeasonalBaseline`.
 
 This spec builds **Layer 1** of the GDD's three layers: the analytical cell layer, which always runs. Dragon inputs (tick step 9) are defined as an interface only. Population tokens (Layer 2) and local instantiation (Layer 3) are deferred.
 
@@ -34,6 +35,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 - **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. S-3 Ecology sees migration through density overlays and flow arrows.
 - **Succession transition rules, legacy modifiers and recovery counters.** These belong to A3. A1 provides the counters and the apply API.
 - **Weather.** A4 owns rainfall and temperature variation. A1 does not roll `year_quality` (C6).
+- **Water on the ground** (amended 2026-11-17, A5 Hydrology)**.** Soil moisture, ground water, runoff, river flow, lakes, floods and ice belong to A5. A1 no longer runs a water flow pass or a water table, and no longer writes water directly from dragons (the GDD `water_dragon_emission`). Dragon water effects go through A4's weather influence API (A4 Feature 7); there is no dragon content now.
 - **Event display and naming.** These belong to D4. A1 only detects thresholds.
 - **World generation.** A1 derives what it needs from S-1's `WorldStructure` and never writes it.
 - **Player-facing visuals.** These belong to V-1. A1's overlays are debug-only.
@@ -52,6 +54,8 @@ SimPU
        on WorldGenerationComplete → EcologySimulation::Initialise(world, data)
        on WorldGenerationFailed   → do not initialise; report Unhealthy  (added 2026-11-13)
        registers as World Step stage "ecology"; does NOT kick or schedule (amended 2026-11-13)
+       World Step order is ["weather", "hydrology", "ecology"]: A1 runs last and reads A5's committed state
+       (amended 2026-11-17, A5 Hydrology)
        Capture(key) → latch weather accumulator + due bands from the key
        Run(exec)    → StepBands on the working copy
        Commit()     → swap, then publish CellEcologyChanged / EventThresholdCrossed /
@@ -83,7 +87,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 
 `EcologyFields` holds one `DynamicArrayC<float>` per scalar field, indexed by cell, so passes stream, saves are arrays and the parallel split matches A4's.
 
-- **Abiotic:** `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`.
+- **Abiotic** (amended 2026-11-17, A5 Hydrology: `water` is now fed by A5's seasonal mean `soilMoisture`, and `rainfall_accumulator` is only the fallback input when A5 is absent; A1 no longer simulates ground water): `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`.
 - **Producers:** `grass`, `shrub`, `tree`, `aquatic`, `seed_bank`.
 - **Consumers:** dense `[species × cell]` arrays, `juvenile` and `adult`, as fractions of `max_density_per_cell` [0, 1] (C14). A species absent from a cell is 0. Functional-group totals are computed on demand from tags.
 - **Transients:** `carrion`, `waste`, `ash`, `disease_load`, `fire_intensity`, `drought_stress`.
@@ -91,7 +95,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 - **Ecology state:** `ecology_state`, `health`, `state_streak` (signed seasons past a band edge), `recovering` flag.
 - **Succession:** `succession_pressure[rule × cell]` (C7, added to the GDD schema).
 - **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, `years_low_herbivore_inflow` (consecutive years in which herbivore migration in was below `low_inflow_threshold`; read by A3's tundra rule; A3 amendment 4; saved state field tracked per cell, not read from the ledger — amended 2026-10-19), plus the tended fields (declared, unused until step 9).
-- **Static geography (derived at init, never changed by the simulation):** `river_overlay`, `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11).
+- **Static geography (derived at init, never changed by the simulation):** `river_overlay` (the static course; live flow comes from A5), `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11).
 
 `year_quality` and the deprecated `rainfall` field are not stored (C6).
 
@@ -102,7 +106,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 | Field | Source |
 |-------|--------|
 | `slope` | Largest elevation difference to any neighbour, normalised |
-| `river_overlay` | `waterSource == River` |
+| `river_overlay` | `waterSource == River` (the course only; it stays static. The "water floor" a river gives its cells now scales with A5's live `riverFlow` — amended 2026-11-17, A5 Hydrology) |
 | `corridor_node` | `terrainFlags & Pass` |
 | `hearth_site`, `nexus_node`, `world_throne_type` | S-1's `SiteRegistry` / `SiteSet`. **Populated from the start** — amended 2026-11-13: S-1 Feature 9 (Regions and Sites) is built, so the old "all false until Feature 9" caveat is void |
 | `soil_fertility`, `soil_depth` | `BiomeProfile` defaults, varied ± by seeded noise (DiaMaths, `A1` seed) and reduced by slope |
@@ -116,9 +120,9 @@ GameSpeedController publishes one `SimulationTick{day, band}` per day and never 
 
 | Band | Steps |
 |------|-------|
-| Season | 1 weather (consume accumulator), natural ignition and fire spread, 2 water flow, 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
+| Season | 1 weather (consume accumulator), natural ignition and fire spread, ~~2 water flow~~ (moved to A5, amended 2026-11-17), 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
 | Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` + resolver `Resolve` (step 10), resolver `OnYear` |
-| Decade | 2 water table, 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
+| Decade | ~~2 water table~~ (moved to A5, amended 2026-11-17), 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
 | Century | 10 major succession, 11 legacy recolonization |
 
 The Year, Decade and Century boundaries are also Season boundaries (364 = 4 × 91). Bands run smallest first on the same tick. **Each step is a full-grid pass, step-outer** (every cell finishes step N before any cell starts N+1, EcologySystem §6). Steps that read neighbours read the stable copy taken at the start of the pass and **gather** inflow in direction order 0..5, as A4 does, so the result does not depend on iteration order. Every modified field is clamped at the end of each step (TechnicalSpec §3).
@@ -130,6 +134,23 @@ A1 reads weather through `IEcologyWeatherInput` (per-cell `Rainfall`, `Temperatu
 - **Living mode and the game:** `WeatherSnapshotInput` adapts A4's `WeatherSnapshot`. On each `WeatherUpdated{week}`, A1 adds `Rainfall` into `rainfall_accumulator` and takes the latest `Temperature` and `SnowCover`.
 - **Timing (amended 2026-11-13, World Step Approved):** the `mSeasonPending` next-frame deferral is **deleted**, along with deviation 5 and Open Design Question 1. It existed because the 13th week of a season arrives in the bus's Reaction pass, which cannot post. Under World Step, `Capture` and `Commit` are explicit SimPU points outside the bus passes: A1 accumulates on `WeatherUpdated`, and the coordinator's `Capture(key)` tells it which bands are due from the game day. Week 13 counts toward its own season by construction.
 - **Controlled mode and tests:** `StubWeatherInput` (Testing/) supplies slider or scripted values. Its GOOD/AVERAGE/BAD selector scales the stub's rainfall; this is not an A1 field. With the stub, the module steps on `SimulationTick` with `band >= Season`.
+
+### Hydrology input (amended 2026-11-17, A5 Hydrology)
+
+A1 reads water through `IEcologyHydrologyInput`, a seam like `IEcologyWeatherInput`, so A1 still runs without A5.
+
+| Method | Meaning |
+|---|---|
+| `SoilMoisture(cell)` | Seasonal mean of A5's `soilMoisture`. **This is A1's cell `water`**, replacing the A4 `rainfall` accumulator as the water input |
+| `RiverFlow(cell)` | Live flow. Scales the river-overlay water floor on `river_overlay` cells |
+| `Flooded(cell)` | Floodplain flood this week |
+| `Ice(cell)` | Frozen surface water |
+| `PassabilityAt(cell)` | `Dry/Wet/Fordable/Deep/Frozen`. Migration treats `Deep` like impassable water for land species and `Frozen` as land; `Wet` is slower, never blocking |
+
+- **With A5 (`HydrologySnapshotInput`):** on `HydrologyUpdated{week}` A1 adds `SoilMoisture` into a seasonal mean. A4's `rainfall` no longer includes ground water, so there is no double count.
+- **Without A5 (S-3 Controlled mode, tests):** the fallback is today's behaviour: A4 rainfall, or the pinned climate's rainfall, feeds `water`. The `river_overlay` floor stays at its static value. `StubHydrologyInput` (Testing/) supplies scripted values.
+- A5 runs before A1 in the World Step order, so A1's `Capture` latches A5's committed state of the same step.
+- The numeric mapping from soil moisture to `water` and from flow to the water floor is TBD (GDD A1/A5 to set).
 
 ### Ecology state (C4)
 
@@ -368,10 +389,10 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
 | 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
-| 4 | Grid Passes | Steps 2, 8 and 11 plus pressure-field propagation: water flow and table, migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
+| 4 | Grid Passes | Steps 8 and 11 plus pressure-field propagation (**water flow and table removed, A5 owns them — amended 2026-11-17, A5 Hydrology**): migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
 | 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation, forward and recovery, with the recovery multiplier (C7), the `ISuccessionResolver` seam at step 10, `BiomeSuccessionTriggered`, one-shot `ApplyBiomeTransition` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
-| 7 | EcologyModule | SimModule: data load and hot reload, `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, **registration as World Step stage `ecology` with `Capture`/`Run`/`Commit` and `SerializePending`/`DeserializePending`** (amended 2026-11-13; replaces `mSeasonPending` scheduling and the self-driven band gate), due-band resolution from the capture key, stub-input mode, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `cow_main.diaapp` entry | TBD | Draft |
+| 7 | EcologyModule | SimModule: data load and hot reload, `HydrologyUpdated` accumulation via `HydrologySnapshotInput` with the no-A5 fallback (amended 2026-11-17), `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, **registration as World Step stage `ecology` with `Capture`/`Run`/`Commit` and `SerializePending`/`DeserializePending`** (amended 2026-11-13; replaces `mSeasonPending` scheduling and the self-driven band gate), due-band resolution from the capture key, stub-input mode, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `cow_main.diaapp` entry | TBD | Draft |
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
 | 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first (14 sim-hosted `cow.ecology.*` with mandatory help and rollback), then panel card, `CellDetailRegistry` rows with the change ledger + hover extras, DiaCellLayers layers, the decimated migration-arrow draw overlay, live tuning sliders + `tuning.save` write-back, cell edit/paint over the `cells.select.*` selection, `isolate_cell`, DiaCellHistory events, profiling, `cow.ecology.band_ms` with `MetricInfo`, health. **No cell inspector and no time-series panel** — DiaCellLayers owns the first, and DiaCellHistory's in-game panel was never built. Needs an HTML mockup before build | TBD | Draft |
 
@@ -416,6 +437,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 16. **A1 owns its tools, and S-2 and S-3 merge into S-3 Ecology** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
 17. **Natural ignition** (from the A3 spec): seeded lightning fires at the Season band, so fire and BurnedAshland emerge without dragons. This is new GDD content.
 18. **`years_low_herbivore_inflow`** (from the A3 spec) stands in for tundra's "migration routes severed".
+19. **Water is A5's** (amended 2026-11-17, A5 Hydrology). GDD step 2 "Water flow" and the Decade "water table drift" leave A1. A1 reads soil moisture, river flow, flooding and ice from A5. The GDD `water_dragon_emission` direct write is dropped; dragon water effects go through A4's influence API. To fold back into GDD A1 and A5.
 
 ## Dependencies
 
@@ -437,8 +459,11 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaCore (Json, StringCRC, containers, logging).
 
 **Soft dependencies (fallbacks until they exist):**
+- **A5 Hydrology** (amended 2026-11-17; Draft, unbuilt, @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md). Without it, A1 uses A4 rainfall or the pinned climate as its water input, and the river-overlay floor stays static. With it, A5 is stage `hydrology` ahead of `ecology` in the World Step order.
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
 - **A3.** Without it, triggers are published and counted but no biome changes. A debug `cow.ecology.apply_transition` command can apply one by hand.
+
+**Requires nothing more from A4 for water:** A4's `rainfall` output no longer carries ground water (A5 amendment owed to A4).
 
 **Required by:** A3 (triggers, apply API), A4 (`IBiomeSeasonalBaseline`), S-3 Ecology, and later S-4, V-1, B1, B2, C3 and D4.
 
@@ -460,6 +485,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - The season pipeline runs once per season, after week 13 is accumulated (accumulator = sum of 13 stub weeks).
 - No step runs between boundaries. Stub mode steps on `SimulationTick`.
 - A4 receives baseline values for all 13 biome ids.
+- (amended 2026-11-17, A5 Hydrology) With a stub A5, `water` follows the seasonal mean of `SoilMoisture`; with no A5 it follows the A4 rainfall fallback; the river-overlay floor rises and falls with `RiverFlow`.
 - Save at year 5, continue to 10, load year 5, continue to 10: identical.
 
 **Performance (Feature 4 gate):** one Season and one Year band at Large in Release with the job executor and 15 species, reported against 16 ms, with a per-step profile. Amended 2026-10-19, product review: also report Small and Standard against their scaled budgets (6.7 ms / 10.0 ms).
@@ -477,5 +503,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 ## Status
 
 **Status:** `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.
+
+**Amended 2026-11-17 (A5 Hydrology).** Water moves to A5: Feature 4 loses water flow and the water table, A1 gains a hydrology input with a no-A5 fallback, World Step order is `["weather", "hydrology", "ecology"]`, `water_dragon_emission` is dropped. Status stays `Approved`; Features 4 and 7 text changed, and the unbuilt A5 spec is `Draft`.
 
 Conflicts C1–C14 resolved in the interview on 2026-10-18. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). Amended again on A3's approval (2026-10-18): the `ISuccessionResolver` seam, recovery rules, `RemoveLegacy` removed, natural ignition, and `years_low_herbivore_inflow` (deviations 17–18). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).
