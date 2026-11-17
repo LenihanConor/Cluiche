@@ -2991,5 +2991,11 @@
     <ClCompile Include="DiaObservation\Profile\TestCoarseChunk.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestStreamWriteBenchmark.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTraceLink.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

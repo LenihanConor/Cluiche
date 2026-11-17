@@ -39,23 +39,53 @@ namespace Dia
 			const char* stepStr = record.scenarioStep.AsChar();
 
 			char line[2048];
-			int len = snprintf(line, sizeof(line),
-				"{\"trace_id\":\"%016llx\","
-				"\"span_id\":\"%016llx\","
-				"\"parent_span_id\":\"%016llx\","
-				"\"name\":\"%s\","
-				"\"start_unix_nano\":%lld,"
-				"\"end_unix_nano\":%lld,"
-				"\"thread_id\":%u,"
-				"\"scenario_step\":\"%s\"}\n",
-				static_cast<unsigned long long>(record.traceId),
-				static_cast<unsigned long long>(record.spanId),
-				static_cast<unsigned long long>(record.parentSpanId),
-				nameStr ? nameStr : "",
-				static_cast<long long>(startUnixNano),
-				static_cast<long long>(endUnixNano),
-				record.threadId,
-				stepStr ? stepStr : "");
+			int len;
+
+			// Conditionally write link fields when non-zero (flow link present)
+			if (record.linkTraceId != 0 && record.linkSpanId != 0)
+			{
+				len = snprintf(line, sizeof(line),
+					"{\"trace_id\":\"%016llx\","
+					"\"span_id\":\"%016llx\","
+					"\"parent_span_id\":\"%016llx\","
+					"\"name\":\"%s\","
+					"\"start_unix_nano\":%lld,"
+					"\"end_unix_nano\":%lld,"
+					"\"thread_id\":%u,"
+					"\"scenario_step\":\"%s\","
+					"\"link_trace_id\":\"%016llx\","
+					"\"link_span_id\":\"%016llx\"}\n",
+					static_cast<unsigned long long>(record.traceId),
+					static_cast<unsigned long long>(record.spanId),
+					static_cast<unsigned long long>(record.parentSpanId),
+					nameStr ? nameStr : "",
+					static_cast<long long>(startUnixNano),
+					static_cast<long long>(endUnixNano),
+					record.threadId,
+					stepStr ? stepStr : "",
+					static_cast<unsigned long long>(record.linkTraceId),
+					static_cast<unsigned long long>(record.linkSpanId));
+			}
+			else
+			{
+				len = snprintf(line, sizeof(line),
+					"{\"trace_id\":\"%016llx\","
+					"\"span_id\":\"%016llx\","
+					"\"parent_span_id\":\"%016llx\","
+					"\"name\":\"%s\","
+					"\"start_unix_nano\":%lld,"
+					"\"end_unix_nano\":%lld,"
+					"\"thread_id\":%u,"
+					"\"scenario_step\":\"%s\"}\n",
+					static_cast<unsigned long long>(record.traceId),
+					static_cast<unsigned long long>(record.spanId),
+					static_cast<unsigned long long>(record.parentSpanId),
+					nameStr ? nameStr : "",
+					static_cast<long long>(startUnixNano),
+					static_cast<long long>(endUnixNano),
+					record.threadId,
+					stepStr ? stepStr : "");
+			}
 
 			if (len > 0)
 				fwrite(line, 1, static_cast<size_t>(len), mFile);
