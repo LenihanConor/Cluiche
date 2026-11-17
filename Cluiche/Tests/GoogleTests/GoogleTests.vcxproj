@@ -1305,6 +1305,7 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp" />
     <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepScheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

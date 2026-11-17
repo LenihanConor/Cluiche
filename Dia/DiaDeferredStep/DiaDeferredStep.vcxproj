@@ -83,10 +83,12 @@
     <ClInclude Include="Testing\ManualStepLauncher.h" />
     <ClInclude Include="Testing\RecordingStep.h" />
     <ClInclude Include="Testing\ScriptedKeyDriver.h" />
+    <ClInclude Include="DeferredStepScheduler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
+    <ClCompile Include="DeferredStepScheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />

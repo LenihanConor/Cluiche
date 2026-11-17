@@ -21,8 +21,10 @@
     <ClInclude Include="Testing\ScriptedKeyDriver.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="DeferredStepScheduler.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
+    <ClCompile Include="DeferredStepScheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
