@@ -27,9 +27,9 @@ export function parseFrameReply(raw: unknown): FrameParse {
     const s = (b.sections ?? {}) as { available?: unknown; reason?: unknown; sections?: unknown };
     const available = s.available === true;
     const sections = available && Array.isArray(s.sections)
-        ? (s.sections as { name?: unknown; ms?: unknown }[]).map((x) => ({
-            name: typeof x.name === 'string' ? x.name : '?',
-            ms: typeof x.ms === 'number' ? x.ms : 0,
+        ? (s.sections as ({ name?: unknown; ms?: unknown } | null)[]).map((x) => ({
+            name: typeof x?.name === 'string' ? x.name : '?',
+            ms: typeof x?.ms === 'number' ? x.ms : 0,
         }))
         : [];
 

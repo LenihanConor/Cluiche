@@ -326,9 +326,9 @@ Json::Value PerfWindowCommands::HandleJobs(const Json::Value& args)
 {
     if (!args.isObject() || !args["unit"].isString() || args["unit"].asString().empty())
         return Fail("missing or empty 'unit'");
-    if (!args["fromNs"].isIntegral() || args["fromNs"].asInt64() < 0)
+    if (!args["fromNs"].isInt64() || args["fromNs"].asInt64() < 0)
         return Fail("missing or invalid 'fromNs' (expected non-negative integer)");
-    if (!args["toNs"].isIntegral() || args["toNs"].asInt64() < 0)
+    if (!args["toNs"].isInt64() || args["toNs"].asInt64() < 0)
         return Fail("missing or invalid 'toNs' (expected non-negative integer)");
     const uint64_t fromNs = static_cast<uint64_t>(args["fromNs"].asInt64());
     const uint64_t toNs   = static_cast<uint64_t>(args["toNs"].asInt64());
@@ -364,7 +364,7 @@ Json::Value PerfWindowCommands::HandleFrame(const Json::Value& args)
 {
     if (!args.isObject() || !args["unit"].isString() || args["unit"].asString().empty())
         return Fail("missing or empty 'unit'");
-    if (!args["frame"].isIntegral() || args["frame"].asInt64() < 0)
+    if (!args["frame"].isInt64() || args["frame"].asInt64() < 0)
         return Fail("missing or invalid 'frame' (expected non-negative integer)");
 
     NameTable unitNames, moduleNames;

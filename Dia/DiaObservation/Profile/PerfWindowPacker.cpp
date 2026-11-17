@@ -212,7 +212,7 @@ namespace Dia
 				out += ",\"unitCrc\":";
 				AppendUnsigned(out, unit.unitCrc);
 				out += ",\"hz\":";
-				AppendNumber(out, "%g", unit.unitHz);
+				AppendNumber(out, "%g", std::isfinite(unit.unitHz) ? unit.unitHz : 0.0f);   // nan/inf are not JSON
 				out += ",\"firstEntry\":";
 				AppendUnsigned(out, first);
 				out += ",\"count\":";

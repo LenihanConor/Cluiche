@@ -39,7 +39,7 @@ interface JobsState {
 
 function collectNames(into: Map<number, string>, window: JobsWindow | null, tier1: JobsTier1Unit[]): Map<number, string> {
     const m = new Map(into);
-    for (const u of tier1) for (const o of u.owners) m.set(o.crc, o.name);
+    for (const u of tier1) for (const o of u.owners) if (o && typeof o === 'object') m.set(o.crc, o.name);
     if (window) for (const u of window.units) for (const o of u.owners) m.set(o.crc, o.name);
     return m;
 }
@@ -65,7 +65,9 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     ownerNames: new Map<number, string>(),
 
     applyTiming: (push) => {
-        const tier1 = push?.jobs?.units ?? [];
+        const units = push?.jobs?.units;
+        // Junk from the wire (not an array, null units, owners not an array) is dropped rather than thrown on.
+        const tier1 = Array.isArray(units) ? units.filter((u) => !!u && typeof u === 'object' && Array.isArray(u.owners)) : [];
         set((s) => ({ tier1, unavailable: push?.unavailable ?? [], ownerNames: collectNames(s.ownerNames, s.window, tier1) }));
     },
 

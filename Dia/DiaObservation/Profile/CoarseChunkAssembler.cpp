@@ -1,5 +1,6 @@
 #include "CoarseChunkAssembler.h"
 #include <algorithm>
+#include <cmath>
 
 namespace Dia
 {
@@ -36,6 +37,11 @@ namespace Dia
 				entry->ring.ResetAt(chunk.firstEntry);
 				entry->nextExpectedSeq = chunk.seq;
 			}
+
+			// A duplicate or late chunk (seq already passed) must not count as a gap nor move the cursor back,
+			// or the next in-order chunk would be counted as lost. Its entries are older than the ring anyway.
+			if (chunk.seq < entry->nextExpectedSeq)
+				return;
 
 			// Check for seq gap
 			if (chunk.seq != entry->nextExpectedSeq)
@@ -133,14 +139,14 @@ namespace Dia
 			++mUnitCount;
 
 			entry->unitCrc = unitCrc;
-		entry->unitHz = unitHz;
+			entry->unitHz = std::isfinite(unitHz) ? unitHz : 0.0f;   // inf/NaN would poison the packed JSON
 			entry->active = true;
 			entry->nextExpectedSeq = 0;
 			entry->gapCount = 0;
 
 			// Init ring with 60s capacity
 			float hz = unitHz;
-			if (!(hz > 0.0f))
+			if (!(hz > 0.0f) || !std::isfinite(hz))
 				hz = 60.0f;  // fallback
 			const uint32_t capacity = CoarseRing::CapacityFor(hz, 60.0f);
 			entry->ring.Init(capacity, CoarseRing::kMaxModules);

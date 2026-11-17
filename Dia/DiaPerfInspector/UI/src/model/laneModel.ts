@@ -141,7 +141,7 @@ function maxTick(tick: Float32Array, gap: Uint8Array): number {
 
 function buildLane(u: PerfWindowUnit, options: BuildOptions): Lane {
     const hz = Number(u.hz);
-    const mods = Array.isArray(u.modules) ? u.modules : [];
+    const mods = Array.isArray(u.modules) ? u.modules.filter((m) => !!m && typeof m === 'object') : [];
     const modules: LaneModule[] = mods.map((m) => ({ crc: m.crc, name: m.name, colourIndex: colourOf(m.crc) }));
     const validHz = Number.isFinite(hz) && hz > 0;
     const override = options.budgets?.[u.unit];
@@ -208,7 +208,7 @@ export function unwrapWindowReply(reply: unknown): PerfWindowReply | null {
 /** One lane per unit, in reply order. */
 export function buildLanes(window: PerfWindowReply, options: BuildOptions = {}): Lane[] {
     if (!window || !Array.isArray(window.units)) return [];
-    return window.units.map((u) => buildLane(u, options));
+    return window.units.filter((u) => !!u && typeof u === 'object').map((u) => buildLane(u, options));
 }
 
 // ---------- windowing ----------

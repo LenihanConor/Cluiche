@@ -40,12 +40,12 @@ const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v)
 export function buildModuleTable(timing: PerfTimingPush | null, budgets: Record<string, number>): UnitGroup[] {
     if (!timing || !Array.isArray(timing.units)) return [];
     const scale = Number.isFinite(timing.scale) && timing.scale > 0 ? timing.scale : 0.01;
-    return timing.units.map((u) => {
+    return timing.units.filter((u) => !!u && typeof u === 'object').map((u) => {
         const tickEwmaMs = num(u.tick?.[0]) * scale;
         const tickP95Ms = num(u.tick?.[1]) * scale;
         const override = budgets[u.unit];
         const budgetMs = override !== undefined ? override : u.hz > 0 ? 1000 / u.hz : 0;
-        const names = Array.isArray(u.modules) ? u.modules : [];
+        const names = Array.isArray(u.modules) ? u.modules.filter((m) => typeof m === 'string') : [];
         const rows: ModuleRow[] = names.map((module, i) => {
             const ewmaMs = num(u.ewma?.[i]) * scale;
             const p95Ms = num(u.p95?.[i]) * scale;
