@@ -12,6 +12,7 @@ dependencies:
   required:
     - dia.core
     - dia.observation
+    - dia.threading
   forbidden: []
 public_api:
   headers: []
