@@ -128,8 +128,9 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 4 | Why panel | Cause aggregation from `cow.ecology.cause` events, "show cells" | Approved | [why-panel.md](why-panel.md) |
 | 5 | Correlation and run compare | Scatter with r and lag, Source B, alignment, overlay and Δ | Approved | [correlation-and-run-compare.md](correlation-and-run-compare.md) |
 | 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Approved | [navigation.md](navigation.md) |
+| 7 | Snapshots, cell compare and history status | Snapshot panel (list, take, delete, restore), delta compare on the mini-map, history status strip with Track/Untrack | Approved | [snapshots-and-compare.md](snapshots-and-compare.md) |
 
-- **Build order:** 1 → 2 → 6 → 3 → 4 → 5.
+- **Build order:** 1 → 2 → 6 → 3 → 4 → 5 → 7.
 - Feature 1 can start against a hand-written `dia.cell_history` fixture before any simulation is built.
 - An HTML mockup already exists. The visual gate for each view is checked against it.
 
@@ -189,7 +190,9 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 2. **CSV export in v1, PNG later** (2026-10-19). "Export CSV" writes the current chart's series.
 3. **Cause events only for tracked layers** (2026-10-19). A1 emits `cow.ecology.cause` per region per band, top 3 causes, only for layers tracked in DiaCellHistory.
 
-## Proposed Amendment (2026-11-04, pending user approval): Feature 7, Snapshots and cell compare
+## Amendment (2026-11-04; approved by the user 2026-11-16): Feature 7, Snapshots and cell compare
+
+**Feature spec: [snapshots-and-compare.md](snapshots-and-compare.md) (Approved 2026-11-16).** On approval the scope also gained the history status strip (event legend, tier memory against budget, Track/Untrack), decided 2026-11-16.
 
 **Origin:** DiaCellHistory was closed with its in-game panel work deferred (snapshot list and controls, delta banner/legend/group table; Dia features 3 and 4 tasks 3.10b and 4.10). The user decided these belong in the CluicheEditor Inspector, not in the in-game debug panel. The engine side is built and tested (commands, queries, topics, export); this amendment re-homes the UI here. **This section changes nothing until approved; T-1 stays `Approved` as written.**
 
