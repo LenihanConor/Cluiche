@@ -179,17 +179,18 @@ export interface ChainEdgeData {
     stream: string;
     fromId: string;
     toId: string;
+    /** Each statistic is absent when the game could not read its metric (e.g. no rate on the first perf.chain call). */
     /** Bytes of one write (edge.bytes / edge.writes). */
-    bytes: number;
-    /** Writes per second (rate of edge.writes). */
-    ratePerSec: number;
+    bytes?: number;
+    /** Writes per second (rate of edge.writes between two perf.chain calls). */
+    ratePerSec?: number;
     /** edge.data_age_ns in ms. */
-    dataAgeMs: number;
+    dataAgeMs?: number;
     /** edge.write_cost_ns in ms. */
-    writeCostMs: number;
+    writeCostMs?: number;
 }
 
-/** Shape a future perf.chain reply or topic would deliver. Stages may arrive in any order. */
+/** The perf.chain reply body (when available). Stages may arrive in any order. */
 export interface ChainData {
     name: string;
     stages: ChainStageData[];

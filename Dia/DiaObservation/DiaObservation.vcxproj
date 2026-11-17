@@ -65,6 +65,8 @@
     <ClCompile Include="Profile\JobTimingTable.cpp" />
     <ClCompile Include="Profile\JobChunkBuilder.cpp" />
     <ClCompile Include="Profile\JobChunkAssembler.cpp" />
+    <ClCompile Include="Trace\SpanChunkSink.cpp" />
+    <ClCompile Include="Trace\ChainBuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -141,6 +143,9 @@
     <ClInclude Include="Profile\JobChunkBuilder.h" />
     <ClInclude Include="Profile\JobChunkAssembler.h" />
     <ClInclude Include="Profile\TripChunk.h" />
+    <ClInclude Include="Trace\SpanChunk.h" />
+    <ClInclude Include="Trace\SpanChunkSink.h" />
+    <ClInclude Include="Trace\ChainBuilder.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

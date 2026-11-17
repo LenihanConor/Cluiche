@@ -3048,5 +3048,11 @@
     <ClCompile Include="DiaObservation\Profile\TestChunkEpoch.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestChainBuilder.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

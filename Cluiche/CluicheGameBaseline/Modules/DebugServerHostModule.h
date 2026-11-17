@@ -35,6 +35,7 @@
 #include "Types/DebugServerPushEvent.h"
 #include "Types/SimAnnounceTracker.h"
 #include "Types/PerfPauseCommands.h"
+#include "Types/PerfChainCommands.h"
 #include "Types/PerfWindowCommands.h"
 #include "Types/PerfTimingPublisher.h"
 #include "Types/PerfTripPublisher.h"
@@ -196,6 +197,8 @@ private:
     // perf.window / perf.frame (all builds).  Created once and kept across stop/start: it owns a reader on
     // $perfcoarse, which has no unregister, and the store only has 2 reader slots.
     std::unique_ptr<PerfWindowCommands> mPerfWindowCommands;
+    // perf.chain (all builds): reader on $perfspans plus a bounded span history; kept across stop/start like the above.
+    std::unique_ptr<PerfChainCommands> mPerfChainCommands;
     // perf.timing push (all builds, 10 Hz, only while a client is subscribed).  Reads the assembler above.
     std::unique_ptr<DebugServerPerfTimingSink> mPerfTimingSink;
     std::unique_ptr<PerfTimingPublisher>       mPerfTimingPublisher;

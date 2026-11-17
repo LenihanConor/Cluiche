@@ -127,6 +127,24 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     }
     if (mPerfWindowCommands)
         mPerfWindowCommands->Register();
+
+    // Perf Inspector row 6b perf.chain: all builds; spans only flow while tracing is on.
+    if (!mPerfChainCommands)
+    {
+        auto* appImpl = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());
+        if (appImpl && appImpl->GetPerfSpansStore())
+            mPerfChainCommands = std::make_unique<PerfChainCommands>(
+                appImpl->GetPerfSpansStore(),
+                [appImpl](uint32_t threadId, char* buf, size_t size)
+                {
+                    Dia::Core::StringCRC unit;
+                    if (!appImpl->ResolveUnitForThread(threadId, unit)) return false;
+                    snprintf(buf, size, "%s", unit.AsChar());
+                    return true;
+                });
+    }
+    if (mPerfChainCommands)
+        mPerfChainCommands->Register();
     if (mPerfWindowCommands && !mPerfTimingPublisher)
     {
         mPerfTimingSink      = std::make_unique<DebugServerPerfTimingSink>(mServer);
@@ -229,6 +247,8 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 
     if (mPerfWindowCommands)
         mPerfWindowCommands->Drain();   // keeps the long coarse rings current for late attach
+    if (mPerfChainCommands)
+        mPerfChainCommands->Drain();   // keeps the recent span history current (empty unless tracing is on)
     if (mPerfTripPublisher)
         mPerfTripPublisher->Drain();   // one drain per tick; publishes perf.trip only when subscribed
     if (mPerfTimingPublisher)
@@ -489,6 +509,8 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
     mPerfTripSink.reset();
     if (mPerfWindowCommands)
         mPerfWindowCommands->Unregister();   // object (and its reader) is kept for the next start
+    if (mPerfChainCommands)
+        mPerfChainCommands->Unregister();
 
 #ifdef _DEBUG
     mPerfPauseCommands.reset();   // unregisters the perf.* commands and the disconnect observer

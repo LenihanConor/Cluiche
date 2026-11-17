@@ -6,7 +6,7 @@ import fixture from '../model/__fixtures__/chain.fixture.json';
 import type { ChainData } from '../types';
 
 describe('ChainPanel', () => {
-    beforeEach(() => useChainStore.setState({ chain: null }));
+    beforeEach(() => useChainStore.setState({ chain: null, reason: null }));
 
     it('says the chain is unavailable when no data has arrived', () => {
         render(<ChainPanel budgetMs={33.3} />);
@@ -22,7 +22,7 @@ describe('ChainPanel', () => {
         expect(names[0]).toContain('4.2');
         expect(names[2]).toContain('Main');
         const edge = screen.getByTestId('chain-edge');
-        expect(edge).toHaveTextContent('DomainStateSnapshot1');
+        expect(edge).toHaveTextContent('stream DomainStateSnapshot');
         expect(edge).toHaveTextContent('6.5 KB');
         expect(edge).toHaveTextContent('30/s');
         expect(edge).toHaveTextContent('write 0.2 ms');
@@ -42,5 +42,23 @@ describe('ChainPanel', () => {
         useChainStore.setState({ chain: { name: 'x', stages: [], edges: [] } });
         render(<ChainPanel budgetMs={33.3} />);
         expect(screen.getByTestId('chain-panel')).toHaveTextContent('chain has no stages');
+    });
+
+    it('shows the games reason when it gave one', () => {
+        useChainStore.setState({ chain: null, reason: 'no spans recorded (is tracing on?)' });
+        render(<ChainPanel budgetMs={33.3} />);
+        expect(screen.getByTestId('chain-panel')).toHaveTextContent('chain unavailable: no spans recorded (is tracing on?)');
+    });
+
+    it('renders an edge with only the statistics the game could read', () => {
+        useChainStore.setState({
+            chain: { ...(fixture as ChainData), edges: [{ stream: 'DomainStateSnapshot', fromId: '1002', toId: '2001', dataAgeMs: 12 }] },
+        });
+        render(<ChainPanel budgetMs={33.3} />);
+        const edge = screen.getByTestId('chain-edge');
+        expect(edge).toHaveTextContent('data age 12 ms');
+        expect(edge).not.toHaveTextContent('KB');
+        expect(edge).not.toHaveTextContent('/s');
+        expect(edge).not.toHaveTextContent('write');
     });
 });

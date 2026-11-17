@@ -19,12 +19,15 @@ namespace Json { class Value; }
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/JobChunk.h>
 #include <DiaObservation/Profile/TripChunk.h>
+#include <DiaObservation/Trace/SpanChunk.h>
+#include <DiaObservation/Trace/SpanChunkSink.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <thread>
 #ifdef _DEBUG
@@ -150,6 +153,12 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::JobChunk>* GetPerfJobsStore() { return mPerfJobsStore; }
         // Perf Inspector task 3b: the "$perftrips" store (TripChunk, one per emitted trip), for a Main-side reader.
         EventStreamStore<Dia::Observation::Profile::TripChunk>* GetPerfTripsStore() { return mPerfTripsStore; }
+        // Perf Inspector row 6b: the "$perfspans" store (SpanChunk, closed trace spans batched by a sink on the
+        // tracer's drain thread), for a Main-side reader. Null until Start(). Empty unless tracing is on.
+        EventStreamStore<Dia::Observation::Trace::SpanChunk>* GetPerfSpansStore() { return mPerfSpansStore; }
+        // Maps an OS thread id seen in trace spans to the processing unit that runs on it (the main PU is the
+        // thread that called Start()). False for any other thread. Main thread only, valid after Start().
+        bool ResolveUnitForThread(uint32_t threadId, Dia::Core::StringCRC& outUnitId) const;
 
 #ifdef _DEBUG
         // Perf live control (task 3, Debug only). Main-thread only. Null until Start().
@@ -281,6 +290,11 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::JobChunk>* mPerfJobsStore = nullptr;
         // Perf Inspector task 3b: framework-owned "$perftrips" EventStream (all builds): per-PU TripChunk.
         EventStreamStore<Dia::Observation::Profile::TripChunk>* mPerfTripsStore = nullptr;
+        // Perf Inspector row 6b: framework-owned "$perfspans" EventStream (all builds) fed by mSpanSink.
+        EventStreamStore<Dia::Observation::Trace::SpanChunk>* mPerfSpansStore = nullptr;
+        std::unique_ptr<Dia::Observation::Trace::SpanChunkSink> mSpanSink;
+        // OS thread id of each processing unit's thread, by PU index (0 = thread that called Start()); 0 = unknown.
+        uint32_t mUnitThreadIds[kMaxProcessingUnits] = {};
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.

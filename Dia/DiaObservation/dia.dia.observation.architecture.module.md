@@ -45,6 +45,10 @@ public_api:
     - DiaObservation/Profile/JobChunk.h
     - DiaObservation/Profile/JobChunkBuilder.h
     - DiaObservation/Profile/JobChunkAssembler.h
+    - DiaObservation/Profile/TripChunk.h
+    - DiaObservation/Trace/SpanChunk.h
+    - DiaObservation/Trace/SpanChunkSink.h
+    - DiaObservation/Trace/ChainBuilder.h
     - DiaObservation/Perf/PerfMarkers.h
     - DiaObservation/Perf/LatencyProbe.h
     - DiaObservation/Profile/ScopeRecord.h

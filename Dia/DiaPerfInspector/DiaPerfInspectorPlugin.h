@@ -9,7 +9,7 @@ namespace Dia
 	namespace Editor
 	{
 		// Inspector-tier plugin: live performance view of a running game over DiaDebugServer.
-		// Shell only: forwards the perf.timing and perf.trip pushes to the UI and relays perf.window / perf.frame / perf.jobs queries.
+		// Shell only: forwards the perf.timing and perf.trip pushes to the UI and relays perf.window / perf.frame / perf.jobs / perf.chain queries.
 		class DiaPerfInspectorPlugin : public LiveConnectionPluginBase
 		{
 		public:
@@ -25,6 +25,7 @@ namespace Dia
 			Json::Value HandleQueryWindow(const Json::Value& data);
 			Json::Value HandleQueryFrame(const Json::Value& data);
 			Json::Value HandleQueryJobs(const Json::Value& data);
+			Json::Value HandleQueryChain(const Json::Value& data);
 			Json::Value HandleCommand(const Json::Value& data);
 			Json::Value RelayQuery(const char* command, const Json::Value& args);
 

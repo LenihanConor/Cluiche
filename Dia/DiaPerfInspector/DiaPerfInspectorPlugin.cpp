@@ -12,6 +12,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqQueryWindow("perf_inspector.query_window");
 		static const Dia::Core::StringCRC kReqQueryFrame("perf_inspector.query_frame");
 		static const Dia::Core::StringCRC kReqQueryJobs("perf_inspector.query_jobs");
+		static const Dia::Core::StringCRC kReqQueryChain("perf_inspector.query_chain");
 		static const Dia::Core::StringCRC kReqCommand("perf_inspector.command");
 
 		static const Dia::Core::StringCRC kTopicPerfTiming("perf.timing");
@@ -38,6 +39,7 @@ namespace Dia
 			RegisterHandler(kReqQueryWindow, [this](const Json::Value& d) { return HandleQueryWindow(d); });
 			RegisterHandler(kReqQueryFrame,  [this](const Json::Value& d) { return HandleQueryFrame(d); });
 			RegisterHandler(kReqQueryJobs,   [this](const Json::Value& d) { return HandleQueryJobs(d); });
+			RegisterHandler(kReqQueryChain,  [this](const Json::Value& d) { return HandleQueryChain(d); });
 			RegisterHandler(kReqCommand,     [this](const Json::Value& d) { return HandleCommand(d); });
 
 			RegisterGameTopic(kTopicPerfTiming, [this](const Json::Value& d)
@@ -93,6 +95,12 @@ namespace Dia
 			args["fromNs"] = data.isMember("fromNs") ? data["fromNs"] : Json::Value(0);
 			args["toNs"] = data.isMember("toNs") ? data["toNs"] : Json::Value(0);
 			return RelayQuery("perf.jobs", args);
+		}
+
+		// Relays perf.chain (the most recent cross-thread trace chain; the game replies available:false when tracing is off).
+		Json::Value DiaPerfInspectorPlugin::HandleQueryChain(const Json::Value& /*data*/)
+		{
+			return RelayQuery("perf.chain", Json::Value(Json::objectValue));
 		}
 
 		// Relays the A/B pause commands. Only the perf pause commands are allowed through; the reply (or the

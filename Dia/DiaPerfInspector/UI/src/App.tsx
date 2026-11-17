@@ -3,6 +3,7 @@ import { bridgeRequest, kConnectionPrefix } from './bridge';
 import { subscribePerfTiming, usePerfTimingStore } from './usePerfTimingStore';
 import { useLiveConnection } from './useLiveConnection';
 import { useWindowPolling } from './useWindowPolling';
+import { useChainPolling } from './useChainPolling';
 import { useTripsFeed } from './useTripsFeed';
 import { useWindowStore } from './useWindowStore';
 import { useSelectionStore } from './useSelectionStore';
@@ -49,6 +50,7 @@ export default function App() {
     useEffect(() => { setConnectionState(connection); }, [connection, setConnectionState]);
     useEffect(() => subscribePerfTiming(), []);
     useWindowPolling(connection);
+    useChainPolling(connection, tab === 'frames');
     useJobsFeeds();
     useTripsFeed(connection);
     useEffect(() => { useSelectionStore.getState().reconcile(lanes); }, [lanes]);

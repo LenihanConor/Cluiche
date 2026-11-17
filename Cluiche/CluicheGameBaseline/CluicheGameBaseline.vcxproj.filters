@@ -165,6 +165,9 @@
     <ClCompile Include="Types\PerfTripPublisher.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\PerfChainCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -348,6 +351,9 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\PerfTripPublisher.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfChainCommands.h">
       <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>

@@ -110,6 +110,11 @@ export function queryJobs<T = unknown>(unit: string, fromNs: number, toNs: numbe
     return relayQuery<T>('perf_inspector.query_jobs', { unit, fromNs, toNs });
 }
 
+/** The most recent cross-thread trace chain (perf.chain). The game replies {available:false, reason} when tracing is off. */
+export function queryChain<T = unknown>(): Promise<PerfQueryReply<T>> {
+    return relayQuery<T>('perf_inspector.query_chain', {});
+}
+
 /**
  * Sends a whitelisted perf command (perf.pause, perf.resume, perf.resume_all) to the game through the
  * plugin relay. The plugin rejects any other command name.

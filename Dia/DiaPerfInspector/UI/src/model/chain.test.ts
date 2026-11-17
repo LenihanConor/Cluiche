@@ -17,7 +17,7 @@ describe('buildChain (S-1 card fixture)', () => {
     });
     it('attaches the stream edge after its source stage', () => {
         expect(v.stages[1].edgesOut).toHaveLength(1);
-        expect(v.stages[1].edgesOut[0]).toMatchObject({ stream: 'DomainStateSnapshot1', bytes: 6656, ratePerSec: 30, dataAgeMs: 12, writeCostMs: 0.2 });
+        expect(v.stages[1].edgesOut[0]).toMatchObject({ stream: 'DomainStateSnapshot', bytes: 6656, ratePerSec: 30, dataAgeMs: 12, writeCostMs: 0.2 });
         expect(v.stages[0].edgesOut).toHaveLength(0);
     });
     it('groups by unit and marks unit changes', () => {

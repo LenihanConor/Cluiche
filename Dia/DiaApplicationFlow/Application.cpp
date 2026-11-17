@@ -21,6 +21,12 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#ifdef _WIN32
+// Declared here (not via windows.h) to keep that header out of this file; identical to the SDK declarations.
+extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
+extern "C" __declspec(dllimport) unsigned long __stdcall GetThreadId(void* thread);
+#endif
+
 namespace Dia { namespace ApplicationFlow {
 
     //--------------------------------------------------------------------------
@@ -50,6 +56,13 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     Application::~Application()
     {
+        // Stop the span sink first: it runs on the tracer's drain thread and sends to mPerfSpansStore.
+        if (mSpanSink)
+        {
+            Dia::Observation::Trace::Tracer::Instance().UnregisterTraceSink(mSpanSink.get());
+            mSpanSink.reset();
+        }
+
         // If threads are still running, stop them now (safety net — callers
         // should call RequestShutdown() and drain Update() before destroying).
         if (mStarted && !mShuttingDown.load())
@@ -184,6 +197,31 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b5. Create $perfspans stream (framework-owned, all builds; Perf Inspector row 6b) ---
+        // Closed trace spans, batched (<= 64 per chunk, flushed when full or 50 ms old) by a sink on the tracer's
+        // drain thread. Only produced while tracing is on; drop-oldest so a missing Main reader never blocks it.
+        {
+            auto* spansStore = new EventStreamStore<Dia::Observation::Trace::SpanChunk>(
+                Dia::Core::StringCRC("$perfspans"),
+                Dia::Core::StringCRC("SpanChunk"),
+                /*capacity=*/32,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfSpansStore = spansStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(spansStore);
+            ++mStreamStoreCount;
+
+            mSpanSink = std::make_unique<Dia::Observation::Trace::SpanChunkSink>(
+                [spansStore](const Dia::Observation::Trace::SpanChunk& chunk)
+                {
+                    auto ev = std::make_unique<Event<Dia::Observation::Trace::SpanChunk>>();
+                    ev->payload = chunk;
+                    spansStore->Send(*ev);
+                });
+            Dia::Observation::Trace::Tracer::Instance().RegisterTraceSink(mSpanSink.get());
+        }
+
 #ifdef _DEBUG
         // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
         {
@@ -267,6 +305,9 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- 3. Start dedicated threads (non-main PUs) -----------------------
+#ifdef _WIN32
+        mUnitThreadIds[0] = static_cast<uint32_t>(GetCurrentThreadId());   // main PU runs inline on this thread
+#endif
         // PU index 0 is the main PU — it runs inline in Update().
         for (unsigned int p = 1; p < mProcessingUnitCount; ++p)
         {
@@ -276,6 +317,9 @@ namespace Dia { namespace ApplicationFlow {
                 DIA_ASSERT(mDedicatedThreadCount < kMaxDedicatedThreads,
                            "Application::Start() — dedicated thread capacity exceeded");
                 mDedicatedThreads[mDedicatedThreadCount] = std::thread(std::ref(*pu));
+#ifdef _WIN32
+                mUnitThreadIds[p] = static_cast<uint32_t>(GetThreadId(mDedicatedThreads[mDedicatedThreadCount].native_handle()));
+#endif
                 ++mDedicatedThreadCount;
             }
         }
@@ -699,6 +743,21 @@ namespace Dia { namespace ApplicationFlow {
     }
 
 #ifdef _DEBUG
+    bool Application::ResolveUnitForThread(uint32_t threadId, Dia::Core::StringCRC& outUnitId) const
+    {
+        if (threadId == 0)
+            return false;
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            if (mUnitThreadIds[p] == threadId)
+            {
+                outUnitId = mProcessingUnits[p]->GetInstanceId();
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool Application::ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId)
     {
         const Application* self = static_cast<const Application*>(ctx);

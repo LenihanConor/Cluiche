@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { buildChain } from '../model/chain';
+import type { ChainEdgeRow } from '../model/chain';
 import { useChainStore } from '../useChainStore';
 
 const hot = '#f48771';
@@ -9,12 +10,22 @@ function formatBytes(b: number): string {
     return b >= 1024 ? `${(b / 1024).toFixed(1)} KB` : `${Math.round(b)} B`;
 }
 
+function edgeText(e: ChainEdgeRow): string {
+    const parts = [`stream ${e.stream}`];
+    if (e.bytes !== undefined) parts.push(formatBytes(e.bytes));
+    if (e.ratePerSec !== undefined) parts.push(`${Math.round(e.ratePerSec * 10) / 10}/s`);
+    if (e.writeCostMs !== undefined) parts.push(`write ${e.writeCostMs.toFixed(1)} ms`);
+    if (e.dataAgeMs !== undefined) parts.push(`data age ${e.dataAgeMs.toFixed(0)} ms`);
+    return `↓ ${parts.join(' · ')} ↓`;
+}
+
 export function ChainPanel({ budgetMs }: { budgetMs: number }) {
     const chain = useChainStore((s) => s.chain);
+    const reason = useChainStore((s) => s.reason);
     const view = useMemo(() => (chain ? buildChain(chain, budgetMs) : null), [chain, budgetMs]);
 
     if (!view) {
-        return <div data-testid="chain-panel" style={{ color: '#808080' }}>chain unavailable: no chain data from the game yet</div>;
+        return <div data-testid="chain-panel" style={{ color: '#808080' }}>{`chain unavailable: ${reason ?? 'no chain data from the game yet'}`}</div>;
     }
     if (view.stages.length === 0) {
         return <div data-testid="chain-panel" style={{ color: '#808080' }}>chain has no stages</div>;
@@ -39,7 +50,7 @@ export function ChainPanel({ budgetMs }: { budgetMs: number }) {
                     </div>
                     {s.edgesOut.map((e) => (
                         <div key={`${e.stream}:${e.toId}`} data-testid="chain-edge" style={{ color: edgeColour, padding: '2px 0 2px 48px', fontSize: 11 }}>
-                            {`↓ stream ${e.stream} · ${formatBytes(e.bytes)} · ${e.ratePerSec}/s · write ${e.writeCostMs.toFixed(1)} ms · data age ${e.dataAgeMs.toFixed(0)} ms ↓`}
+                            {edgeText(e)}
                         </div>
                     ))}
                 </div>
