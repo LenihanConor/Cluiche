@@ -10,6 +10,7 @@ namespace Dia
 			: mCapacity(0)
 			, mModuleCount(0)
 			, mEntryCount(0)
+			, mBaseEntry(0)
 			, mWriteIndex(0)
 			, mStagingFlags(0)
 		{
@@ -20,6 +21,7 @@ namespace Dia
 			mCapacity = entryCapacity;
 			mModuleCount = std::min(moduleCount, kMaxModules);
 			mEntryCount = 0;
+			mBaseEntry = 0;
 			mWriteIndex = 0;
 			mStagingFlags = 0;
 
@@ -102,8 +104,8 @@ namespace Dia
 
 		uint64_t CoarseRing::GetOldestAvailable() const
 		{
-			if (mEntryCount <= mCapacity)
-				return 0;
+			if (mEntryCount - mBaseEntry <= mCapacity)
+				return mBaseEntry;
 			return mEntryCount - mCapacity;
 		}
 
@@ -146,6 +148,33 @@ namespace Dia
 			for (uint32_t i = 0; i < actualCount; ++i)
 				out[i] = mFlags[static_cast<uint32_t>((firstEntry + i) % mCapacity)];
 			return actualCount;
+		}
+
+		bool CoarseRing::RecordModuleFixed(uint32_t slot, uint32_t moduleCrc, uint16_t fixed)
+		{
+			if (slot >= mModuleCount)
+				return false;
+			mStagingMs[slot] = fixed;
+			mModuleCrcs[slot] = moduleCrc;
+			return true;
+		}
+
+		void CoarseRing::RecordUnitTickFixed(uint16_t fixed)
+		{
+			if (mStagingMs.empty())
+				return;
+			mStagingMs[mModuleCount] = fixed;
+		}
+
+		void CoarseRing::ResetAt(uint64_t firstEntry)
+		{
+			mEntryCount = firstEntry;
+			mBaseEntry = firstEntry;
+			mWriteIndex = (mCapacity > 0) ? static_cast<uint32_t>(firstEntry % mCapacity) : 0;
+			std::fill(mValues.begin(), mValues.end(), static_cast<uint16_t>(0));
+			std::fill(mFlags.begin(), mFlags.end(), static_cast<uint8_t>(0));
+			std::fill(mStagingMs.begin(), mStagingMs.end(), static_cast<uint16_t>(0));
+			mStagingFlags = 0;
 		}
 	}}
 }

@@ -17,6 +17,7 @@ namespace Dia
 			static constexpr uint32_t kUnitSlot   = kMaxModules;
 			static constexpr uint16_t kClampedValue = 65535;	// stored for values over 655.35 ms
 			static constexpr uint8_t  kFlagClamped  = 0x01;	// entry flag: some value was clamped
+			static constexpr uint8_t  kFlagGap     = 0x02;	// entry flag: gap filler (chunk assembler only)
 
 			CoarseRing();
 
@@ -40,6 +41,15 @@ namespace Dia
 			void RecordUnitTick(float ms);
 			void CommitEntry();
 
+			// Raw fixed-point variants (chunk assembler): store the value as is, no float round trip.
+			bool RecordModuleFixed(uint32_t slot, uint32_t moduleCrc, uint16_t fixed);
+			void RecordUnitTickFixed(uint16_t fixed);
+
+			// OR extra flags into the entry being staged (kFlagClamped from a chunk, kFlagGap filler).
+			void SetStagingFlags(uint8_t flags) { mStagingFlags |= flags; }
+
+			uint32_t GetCapacity() const { return mCapacity; }
+
 			// Read side.
 			uint64_t GetEntryCount() const { return mEntryCount; }
 			uint64_t GetOldestAvailable() const;
@@ -52,6 +62,10 @@ namespace Dia
 			uint32_t CopyRange(uint32_t series, uint64_t firstEntry, uint32_t count, uint16_t* out) const;
 			uint32_t CopyFlags(uint64_t firstEntry, uint32_t count, uint8_t* out) const;
 
+			// Reset the ring to start at a new absolute entry index (used by assembler when
+			// a gap exceeds capacity). Clears all data and sets the base to firstEntry.
+			void ResetAt(uint64_t firstEntry);
+
 		private:
 			uint32_t SeriesCount() const { return mModuleCount + 1; }	// modules + unit tick
 			uint32_t ClipRange(uint64_t firstEntry, uint32_t count) const;
@@ -62,6 +76,7 @@ namespace Dia
 			std::vector<uint8_t>  mFlags;       // capacity
 			std::vector<uint32_t> mModuleCrcs;  // length = moduleCount
 			uint64_t mEntryCount;
+			uint64_t mBaseEntry;   // first entry index since Init/ResetAt (nothing older is held)
 			uint32_t mWriteIndex;
 			std::vector<uint16_t> mStagingMs;   // moduleCount + 1
 			uint8_t mStagingFlags;

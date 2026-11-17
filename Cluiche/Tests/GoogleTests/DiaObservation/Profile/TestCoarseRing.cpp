@@ -273,3 +273,21 @@ TEST(CoarseRing, ModuleCountCappedAtMax)
 	EXPECT_TRUE(ring.RecordModule(CoarseRing::kMaxModules - 1, 1u, 1.0f));
 	EXPECT_FALSE(ring.RecordModule(CoarseRing::kMaxModules, 1u, 1.0f));
 }
+
+TEST(CoarseRing, ResetAtStartsAtNewBase)
+{
+	CoarseRing ring;
+	ring.Init(4, 1);
+	ring.ResetAt(100);
+	EXPECT_EQ(100u, ring.GetEntryCount());
+	EXPECT_EQ(100u, ring.GetOldestAvailable());
+	ring.RecordModule(0, 1u, 2.0f);
+	ring.CommitEntry();
+	uint16_t value = 0;
+	EXPECT_EQ(0u, ring.CopyRange(0, 99, 1, &value));
+	ASSERT_EQ(1u, ring.CopyRange(0, 100, 1, &value));
+	EXPECT_EQ(200u, value);
+	for (int i = 0; i < 5; ++i)
+		ring.CommitEntry();
+	EXPECT_EQ(102u, ring.GetOldestAvailable());	// 106 committed, capacity 4
+}

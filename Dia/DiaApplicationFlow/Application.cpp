@@ -138,6 +138,22 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b2. Create $perfcoarse stream (framework-owned, all builds; Perf Inspector task 1b) ---
+        // Every PU sends CoarseChunk timing chunks (~8.5 KB, ~10 Hz per PU); a Main-side reader
+        // rebuilds the long coarse ring. Drop-oldest: a slow or absent reader never blocks a PU.
+        {
+            auto* coarseStore = new EventStreamStore<Dia::Observation::Profile::CoarseChunk>(
+                Dia::Core::StringCRC("$perfcoarse"),
+                Dia::Core::StringCRC("CoarseChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfCoarseStore = coarseStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(coarseStore);
+            ++mStreamStoreCount;
+        }
+
 #ifdef _DEBUG
         // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
         {
@@ -156,6 +172,9 @@ namespace Dia { namespace ApplicationFlow {
         {
             return false;
         }
+
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfCoarseSink(mPerfCoarseStore);
 
 #ifdef _DEBUG
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)

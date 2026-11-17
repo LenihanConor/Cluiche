@@ -1281,6 +1281,7 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfPauseCommands.cpp" />
     <ClCompile Include="DiaObservation\Perf\TestLatencyProbe.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestCoarseRing.cpp" />
+    <ClCompile Include="DiaObservation\Profile\TestCoarseChunk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -16,6 +16,7 @@ namespace Json { class Value; }
 #include <DiaStreams/IStreamConnector.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
+#include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -140,6 +141,10 @@ namespace Dia { namespace ApplicationFlow {
         // Called internally by Application and Module; not part of the public module API.
         void EmitLifecycleEvent(const LifecycleEvent& ev);
 
+        // Perf Inspector task 1b: the "$perfcoarse" store, for a Main-side reader to RegisterReader()
+        // and consume. Null until Start().
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* GetPerfCoarseStore() { return mPerfCoarseStore; }
+
 #ifdef _DEBUG
         // Perf live control (task 3, Debug only). Main-thread only. Null until Start().
         PerfPauseController* GetPerfPauseController() { return mPerfPause.Get(); }
@@ -262,6 +267,10 @@ namespace Dia { namespace ApplicationFlow {
         // Created in Start() before module stream connection; capacity 1024.
         // EmitLifecycleEvent() stamps the Event<T> envelope and calls Send directly.
         EventStreamStore<LifecycleEvent>* mLifecycleStore = nullptr;
+
+        // Perf Inspector task 1b: framework-owned "$perfcoarse" EventStream (all builds). Every PU
+        // sends CoarseChunk timing chunks here; a Main-side reader rebuilds the long coarse ring.
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mPerfCoarseStore = nullptr;
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.

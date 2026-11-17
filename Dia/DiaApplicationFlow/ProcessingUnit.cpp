@@ -15,6 +15,10 @@
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Profile/TripReporter.h>
+#include <DiaObservation/Profile/CoarseChunk.h>
+#include <DiaObservation/Profile/CoarseChunkBuilder.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/Event.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
@@ -47,6 +51,9 @@ namespace Dia { namespace ApplicationFlow {
 
         // Profile subject name (one-time; hot path only passes the CRC value).
         Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
+        
+        // Perf Inspector A1b: initialize chunk builder
+        mCoarseChunk.Begin(mInstanceId.Value(), mFrequencyHz);
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
@@ -260,6 +267,35 @@ namespace Dia { namespace ApplicationFlow {
         const float unitTickMs = std::chrono::duration<float, std::milli>(prev - passStart).count();
         mTimingTable.RecordUnitTick(unitTickMs);
         mTimingTable.CommitEntry();
+
+        
+        // Perf Inspector A1b: record into chunk builder and send when ready
+        {
+            const double nowMs = std::chrono::duration<double, std::milli>(Clock::now().time_since_epoch()).count();
+            
+            // Record per-module ms
+            for (unsigned int i = 0; i < mModuleCount; ++i)
+            {
+                if (!ran[i]) continue;
+                mCoarseChunk.RecordModule(i, mModules[i].module->GetInstanceId().Value(), ms[i]);
+            }
+            mCoarseChunk.RecordUnitTick(unitTickMs);
+            mCoarseChunk.CommitEntry(nowMs);
+            
+            // Send chunk if ready
+            if (mCoarseSink && mCoarseChunk.ShouldFlush(nowMs))
+            {
+                using namespace Dia::Observation::Profile;
+                static const Dia::Core::StringCRC kFrameworkId("$framework");
+                
+                Event<CoarseChunk> wrapped;
+                wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                wrapped.senderCrc   = kFrameworkId.Value();
+                wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                wrapped.payload     = mCoarseChunk.Take(nowMs);
+                mCoarseSink->Send(wrapped);
+            }
+        }
 
         // Perf Inspector A3c: one detector observation per committed entry. The budget is the
         // per-pass target (on Sim a pass is one fixed step, mFrequencyHz is the step rate).

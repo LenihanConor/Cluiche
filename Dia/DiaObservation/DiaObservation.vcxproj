@@ -58,6 +58,8 @@
     <ClCompile Include="Perf\PerfMarkers.cpp" />
     <ClCompile Include="Perf\LatencyProbe.cpp" />
     <ClCompile Include="Profile\CoarseRing.cpp" />
+    <ClCompile Include="Profile\CoarseChunkBuilder.cpp" />
+    <ClCompile Include="Profile\CoarseChunkAssembler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -124,6 +126,9 @@
     <ClInclude Include="Perf\PerfMarkers.h" />
     <ClInclude Include="Perf\LatencyProbe.h" />
     <ClInclude Include="Profile\CoarseRing.h" />
+    <ClInclude Include="Profile\CoarseChunk.h" />
+    <ClInclude Include="Profile\CoarseChunkBuilder.h" />
+    <ClInclude Include="Profile\CoarseChunkAssembler.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -200,3 +205,4 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+

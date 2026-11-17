@@ -10,6 +10,7 @@
 #include <DiaObservation/Profile/TripDetector.h>
 #include <DiaObservation/Profile/TripRecord.h>
 #include <DiaObservation/Profile/UnitTimingTable.h>
+#include <DiaObservation/Profile/CoarseChunkBuilder.h>
 #include <atomic>
 #include <thread>
 #ifdef _DEBUG
@@ -18,6 +19,8 @@
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
 namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
+namespace Dia { namespace ApplicationFlow { template<typename T> class EventStreamStore; } }
+namespace Dia { namespace Observation { namespace Profile { struct CoarseChunk; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -108,6 +111,10 @@ namespace Dia { namespace ApplicationFlow {
         // Perf Inspector A4b (AA9): per-module summary rows that outlive the module. A row is banked when a
         // module leaves kStopping; capacity kCapacity rows (overflow is dropped and counted).
         [[nodiscard]] const Dia::Observation::Profile::PerfSummaryAccumulator& GetPerfSummaryAccumulator() const { return mPerfAccumulator; }
+        // Perf Inspector task 1b: framework-owned "$perfcoarse" sink. Each forward pass is added to
+        // a chunk; a chunk is sent at 64 entries or every 100 ms. Null sink = no sends. Set before Start.
+        void SetPerfCoarseSink(EventStreamStore<Dia::Observation::Profile::CoarseChunk>* sink) { mCoarseSink = sink; }
+
         // Appends this unit's summary to `out`: banked rows (stopped modules) merged with the live
         // modules' current stats. Intended for shutdown; reads the table from the caller's thread.
         void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const;
@@ -171,6 +178,8 @@ namespace Dia { namespace ApplicationFlow {
 
         // Perf Inspector A2b
         Dia::Observation::Profile::UnitTimingTable mTimingTable;
+        Dia::Observation::Profile::CoarseChunkBuilder mCoarseChunk;   // A1b: chunk builder
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mCoarseSink = nullptr;  // A1b: chunk sink
         Dia::Observation::Profile::PerfSummaryAccumulator mPerfAccumulator;   // A4b: rows of stopped modules
         unsigned int                      mLastUpdateStepCount = 0;
         float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes

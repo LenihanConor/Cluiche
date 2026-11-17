@@ -153,6 +153,12 @@
     <ClCompile Include="Profile\CoarseRing.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\CoarseChunkBuilder.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\CoarseChunkAssembler.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -344,6 +350,15 @@
       <Filter>Perf</Filter>
     </ClInclude>
     <ClInclude Include="Profile\CoarseRing.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunkBuilder.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunkAssembler.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

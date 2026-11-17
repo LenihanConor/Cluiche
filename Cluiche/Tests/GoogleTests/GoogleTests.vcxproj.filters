@@ -2988,5 +2988,8 @@
     <ClCompile Include="DiaObservation\Profile\TestCoarseRing.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestCoarseChunk.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
