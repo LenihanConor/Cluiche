@@ -83,8 +83,8 @@ interface CellGridCanvasProps {
   topology: 'hex-flat-odd-q' | 'square';
   width: number; height: number;                 // cells
   values: Float32Array | Uint16Array;            // one per cell
-  colouring: { ramp: Ramp } | { palette: Palette };
-  hover?: (cell: {q:number,r:number}|null) => void;
+  colouring: CellColouring;                      // ResolvedRamp | PaletteData (real code, 2026-11-16)
+  onHover?: (cell: {q:number,r:number}|null) => void;
   onCellClick?: (cell: {q:number,r:number}) => void;
   highlight?: Set<number>;                       // optional highlight set
 }
@@ -149,9 +149,9 @@ No conflicts.
 | Dependency | Use | Status |
 |---|---|---|
 | Features 1 and 6 | Source, brush, navigation intents | Approved |
-| **`CellGridCanvas` in `@dia/editor-ui`** | Mini-map | Dia feature spec drafted ([cell-grid-canvas.md](../../../dia/systems/diaeditorui/cell-grid-canvas.md)); needs approval and AD-001 sign-off before build |
-| DiaCellHistory Feature 2 | Tracked-layer per-cell queries | Approved, not built |
-| DiaValueSchema Features 1, 3, 5 | Labels, tooltips, ramps and palettes | Approved, not built |
+| **`CellGridCanvas` in `@dia/editor-ui`** | Mini-map | Built (`Dia/DiaEditorUI/src/CellGridCanvas.tsx`, exported and tested; extra props selection, outline, footprint, view, onBox, onStroke). Sign-off only needed if the 16 ms fallback edits Dia |
+| DiaCellHistory Feature 2 | Tracked-layer per-cell queries | Done |
+| DiaValueSchema Features 1, 3, 5 | Labels, tooltips, ramps and palettes | Built |
 
 ## Resolved Decisions
 

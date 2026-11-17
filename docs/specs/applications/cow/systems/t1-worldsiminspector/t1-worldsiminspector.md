@@ -51,7 +51,7 @@ This is the **Inspector** tier (feedback rule: Editor = offline files, Inspector
 ### Placement
 
 **CoW editor code** (AD-002, CoW tier): `Cluiche/CoW/Editor/WorldSimInspector/`, in the `CoWEditor` static library.
-- `CluicheEditor.vcxproj` references `CoWEditor`. That is a shared build file, so it needs AD-001 sign-off when built.
+- `CluicheEditor.vcxproj` references `CoWEditor`. That is a shared build file; AD-001 sign-off was given 2026-11-05, and the reference and `RegisterCoWEditorPlugins()` call already exist in the repo (checked 2026-11-16).
 - The plugin is listed in `Cluiche/Assets/CoW/cow_editor.diaapp`, named from `cow.diagame` `editor.manifests` (Game-Scoped Plugins).
 
 ```
@@ -80,7 +80,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | Events | `cells.history.events` topic; file `events` | Typed; described in DiaValueSchema (`kind: event`) |
 | Per-cell values at a sample | `cells.history.cells` query (chunked); file with `--cells` | Only for tracked layers. Otherwise the view says "track this layer" and offers `cells.history.track` |
 | Labels, units, ramps | `valueschema.get` (live); a schema block in the file | File exports must embed the schema so offline files explain themselves |
-| Causes for the why panel | Events of type `cow.ecology.cause {group, layer, cause, delta}` | **A1 contract:** each band, for each region, A1 emits its top causes per tracked layer (from DiaCellHistory's resolution of A1 Open Q4) |
+| Causes for the why panel | Events of type `cow.ecology.cause {group, layer, cause, delta, cells}` (`cells` = top 8 contributing cells, A1 amendment 2026-10-20) | **A1 contract:** each band, for each region, A1 emits its top causes per tracked layer (from DiaCellHistory's resolution of A1 Open Q4) |
 | Live view state | `cells.view.state` | Shows the game's current base layer and selection; drives "in sync" status |
 
 ### Views (v1, all in the mockup)
@@ -148,10 +148,10 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 
 | Dependency | Use | Status |
 |---|---|---|
-| Game-Scoped Editor Plugins (CluicheEditor) | Exists only with `cow.diagame` | Approved, not built (AD-001 sign-off needed) |
-| DiaCellHistory Features 1, 2, 5 | Aggregates, events, cell queries, export format | Approved, not built |
-| DiaCellLayers Features 2, 5 | Selection commands, view-state topic | Approved, not built |
-| DiaValueSchema Features 1, 3, 6 | Schema query, `ValueLabel` / `ValueTooltip`, embedded schema in exports | Approved, not built |
+| Game-Scoped Editor Plugins (CluicheEditor) | Exists only with `cow.diagame` | Approved; sign-off given 2026-11-05, `CoWEditor` reference already wired |
+| DiaCellHistory Features 1, 2, 5 | Aggregates, events, cell queries, export format | Done (2026-11-04) |
+| DiaCellLayers Features 2, 5 | Selection commands, view-state topic | Built (`cells.select.cells`, `cells.view.state`; AD-001 sign-off for `cells.select.cells` not recorded, see navigation plan) |
+| DiaValueSchema Features 1, 3, 6 | Schema query, `ValueLabel` / `ValueTooltip`, embedded schema in exports | Built (DiaValueSchema Done) |
 | DiaDebugServer, `LiveConnectionPluginBase` | Transport, plugin base | Done |
 | A1 cause events (`cow.ecology.cause`) | Why panel | Amend A1 (see below) |
 | uPlot (npm) | Time series | New dependency |
@@ -268,4 +268,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 12 feature specs `Approved` (8 to 12 on 2026-11-16); Feature 7 has a plan. The new world-sim mockup (v2) is approved, so the visual gate is passed for Features 8 to 12; none has a plan yet. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). All 12 feature specs `Approved` (8 to 12 on 2026-11-16); Feature 7 has a plan. The new world-sim mockup (v2) is approved, so the visual gate is passed for Features 8 to 12; none has a plan yet. Plans written 2026-11-16 for Features 1, 2, 3, 4, 6 and 7 (5 and 8 to 12 are planned when scheduled); nothing is built.

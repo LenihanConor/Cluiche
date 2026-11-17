@@ -38,7 +38,7 @@ T-1's views all need the same things: a plugin that exists only while `cow.diaga
 
 CoW editor code (AD-002): `Cluiche/CoW/Editor/WorldSimInspector/`, built into the `CoWEditor` static library.
 
-- `CluicheEditor.vcxproj` gains a reference to `CoWEditor`. Shared build file, so it needs AD-001 sign-off at build time.
+- `CluicheEditor.vcxproj` gains a reference to `CoWEditor`. Shared build file; sign-off given 2026-11-05 and the reference already exists in the repo.
 - The plugin is listed in `Cluiche/Assets/CoW/cow_editor.diaapp` and named from `cow.diagame` `editor.manifests`.
 
 ```
@@ -142,4 +142,4 @@ No conflicts.
 
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-20). Plan: [plugin-shell-and-sources.plan.md](plugin-shell-and-sources.plan.md) (written 2026-11-16, not started). Note: the base class hooks are `OnGameConnected` / `OnGameDisconnected`, and `LiveConnectionPluginBase` has no bridge request path, which this feature provides.

@@ -128,10 +128,10 @@ No conflicts.
 
 | Dependency | Use | Status |
 |---|---|---|
-| DiaCellLayers Feature 2 (Selection) | `cells.select.cell`, `.category`, `.cells` | Approved, not built |
+| DiaCellLayers Feature 2 (Selection) | `cells.select.cell`, `.category`, `.cells` | Built (`.cells` caps at 2,048 cells per call) |
 | **DiaCellLayers Feature 2: new `cells.select.cells <q,r…>`** | Select an explicit list of cells (used by "show cells"). Replaces the earlier idea of building it from `cells.select.query`, whose expression language cannot name cells. The game enforces its own size limit and reports the accepted set in the result | **Requested; needs Dia spec change and AD-001 sign-off** |
-| DiaCellHistory Feature 5 | `cells.history.view`, `.live` | Approved, not built |
-| DiaCellLayers Feature 5 | `cells.view.state` topic (selection `count`/`version`/`hash`), `cells.select.get`, and the shared hash test vectors | Approved, not built |
+| DiaCellHistory Feature 5 | `cells.history.view`, `.live` | Built |
+| DiaCellLayers Feature 5 | `cells.view.state` topic (selection `count`/`version`/`hash`), `cells.select.get`, and the shared hash test vectors | Built (`cells.select.get` returns 1,000 indices per call) |
 
 ## Resolved Decisions
 
@@ -159,4 +159,4 @@ AC 11 now reads: nothing outside this table can be sent through the bridge, and 
 
 ## Status
 
-`Approved` (2026-10-20; allow-list amended 2026-11-16 for Features 7 and 9). Plan not yet created. Build needs `cells.select.cells` in DiaCellLayers Feature 2 (spec amended 2026-10-20; Dia change needs AD-001 sign-off at build time).
+`Approved` (2026-10-20; allow-list amended 2026-11-16 for Features 7 and 9). Plan: [navigation.plan.md](navigation.plan.md) (written 2026-11-16, not started). `cells.select.cells` is already built; no AD-001 sign-off for it is recorded, so the plan asks.

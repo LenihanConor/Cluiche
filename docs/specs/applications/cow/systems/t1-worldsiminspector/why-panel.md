@@ -56,6 +56,7 @@ Under `Cluiche/CoW/Editor/WorldSimInspector/UI/`:
 
 ```
 model/
+  causeEvents.ts  parse and validate `cow.ecology.cause` events (also used by Feature 12)
   causes.ts       sumCauses(source, group, layer, brush) → { bars[], other, unattributed, net }
                   topCells(source, group, layer, cause, brush, limit) → Cell[]
   (uses events.ts and series.ts from Feature 2 for net change)
@@ -145,7 +146,7 @@ No conflicts.
 | Features 1, 2, 6 | Source, series, navigation | Approved |
 | A1 cause events with `cells` | All of this feature | **Amended 2026-10-20 (a1-ecology.md); A1 not built** |
 | DiaCellLayers `cells.select.cells` | Show cells | Requested (Feature 6 dependency) |
-| DiaValueSchema | Cause vocabulary, labels, units | Approved, not built |
+| DiaValueSchema | Cause vocabulary, labels, units | Built |
 
 ## Resolved Decisions
 
