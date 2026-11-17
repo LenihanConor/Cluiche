@@ -119,4 +119,4 @@ Built against fixtures first.
 
 ## Status
 
-`Draft` (2026-11-16). No plan. The page is drawn in the v2 mockup ("Species" workspace) for approval before UI work.
+`Approved` (2026-11-16, with the v2 mockup's Species workspace). No plan. The A1 roster-link and age-structure follow-ups are requests only; A1 specs are not yet changed.
