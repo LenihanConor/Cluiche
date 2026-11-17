@@ -20,7 +20,7 @@ Feature 7 builds on pieces that do not exist yet. As of 2026-11-16 `Cluiche/CoW/
 
 ## Sign-offs (AD-001)
 
-None new. All code is CoW editor code (`Cluiche/CoW/Editor/WorldSimInspector/`). The Feature 6 allow-list change is inside the same plugin. The `CluicheEditor.vcxproj` reference and uPlot were signed off 2026-11-05 for the parent system.
+None new. All code is CoW editor code (`Cluiche/CoW/Editor/WorldSimInspector/`). The Feature 6 allow-list change is inside the same plugin and is now recorded in `navigation.md` ("Allow-list amendment 2026-11-16"). The `CluicheEditor.vcxproj` reference and uPlot were signed off 2026-11-05 for the parent system.
 
 ## Implementation Patterns
 

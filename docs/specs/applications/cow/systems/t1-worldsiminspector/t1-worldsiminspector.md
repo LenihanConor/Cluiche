@@ -135,7 +135,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 6 | Navigation | Commands back to the game, live/world-match gating, "back to live" | Approved | [navigation.md](navigation.md) |
 | 7 | Snapshots, cell compare and history status | Snapshot panel (list, take, delete, restore), delta compare on the mini-map, history status strip with Track/Untrack | Approved | [snapshots-and-compare.md](snapshots-and-compare.md) |
 | 8 | Seasons: typical year and anomaly | Mean by week of year with the spread across years; anomaly mode on series and mini-map (value minus the typical value for that week); baseline is this run or a reference file; weather default view | Approved | [seasons.md](seasons.md) |
-| 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across reports | Draft | TBD |
+| 9 | S-2.5 checks panel | Opens `cow.s25_report` v1 files and `baseline.json`: verdict, per-check state, measured value against its ±10% band, trend across archived reports, check → run history link, performance/edge-case/live-smoke/baseline blocks, read-only live progress | Approved | [s25-checks-panel.md](s25-checks-panel.md) |
 | 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks | Draft | TBD |
 | 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time; each schema-described | Draft | TBD |
 | 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; preset pairs; automatic lead/lag scan | Draft | TBD |
@@ -233,7 +233,7 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 - Shows the verdict with its precedence reason, prechecks, each check's state and measured value against its band, and the performance block (report-only).
 - Opening several reports shows each check's trend across them.
 - A check links to its `dia.cell_history` file (S-2.5 Feature 5 writes one per check run), so a failing check opens straight into its curve.
-- *Open:* whether DiaAutomation runs (`livesmoke.json`) are shown too.
+- *Resolved 2026-11-16 (s25-checks-panel.md):* live smoke is shown, together with performance, edge-case coverage and baseline state. Live status is read-only. Needs S-2.5 amendments: runs per check, a report archive, and a live-smoke envelope.
 
 **Feature 10, Space over time.** The mini-map shows one frame only.
 - **Strip chart:** time on x, space on y, with rows = latitude bands or regions and colour = a layer's mean. It shows drought fronts and seasonal belts moving. Built from per-cell history, or from aggregates when the rows are groups (no per-cell budget needed).
@@ -267,4 +267,4 @@ Each measure is defined in a data file with DiaValueSchema descriptions, so tool
 
 ## Status
 
-`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 8 `Approved`; Feature 7 has a plan. Features 9 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.
+`Approved` (2026-10-19; amended 2026-11-16 for Features 7 to 12). Features 1 to 9 `Approved`; Feature 7 has a plan. Features 10 to 12 are `Draft` with no feature spec yet, so the system cannot be marked Done until they are specced and Approved. Build needs AD-001 sign-off for the `CluicheEditor.vcxproj` reference.

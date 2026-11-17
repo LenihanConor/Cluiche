@@ -220,6 +220,22 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 6. **Command names** are this feature's: `cow.s25.run` (`start`/`cancel`), `cow.s25.report`, `cow.s25.baseline` (`record`), `cow.s25.livesmoke`. The system spec's `cow.s25.run.cancel` and `cow.s25.baseline.record` are superseded.
 7. **Readiness after a size change** uses `WeatherModule::IsReady(revision)` for the new revision (A4 Feature 3).
 
+## T-1 consumer amendments (2026-11-16, approved with T-1 Feature 9)
+
+Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/s25-checks-panel.md. All are additive; the report stays `cow.s25_report` version 1.
+
+- **A. Runs per check.** Each `checks[]` entry gains `runs: ["R1", ...]`, the ids of the runs that fed it, taken from the plan table (T1, T4, T5 → R1; T2 → R5a, R5b; T3 → R4; T6 → R6; T7 → R7; T8 → R1, R3; T9 → R1, R2). The registry-versus-plan test (criterion 1) checks that the lists match the table.
+- **B. Report archive.** Every completed run (verdict other than `Cancelled`) also writes `out/CoW/s25/archive/report_<world>_<seed>_<utcCompact>_<gitrev7>.json`, atomically like the main report, and deletes the oldest files so that at most 50 remain per world and seed. The `SLOW_` test writes there too. `gitrev7` is `environment.gitRevision` cut to 7 characters, or `nogit`.
+- **C. Live smoke envelope.** `livesmoke.json` carries `format: "cow.s25_livesmoke"`, `version: 1`.
+
+Added criteria:
+
+25. Every report check carries a non-empty `runs[]` whose ids exist in the plan table and match it.
+26. A completed run writes one archive file with the stated name; a `Cancelled` run writes none; the 51st file for a world and seed removes the oldest.
+27. `livesmoke.json` validates against `cow.s25_livesmoke` v1.
+
+**Plan impact:** the plan (written, not started) needs these three folded into its report task before it starts.
+
 ## Status
 
-**Status:** `Approved` (2026-11-16). Plan: [headless-runner.plan.md](headless-runner.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16; T-1 consumer amendments A-C added the same day). Plan: [headless-runner.plan.md](headless-runner.plan.md) (written 2026-11-16, not started; fold in amendments A-C).

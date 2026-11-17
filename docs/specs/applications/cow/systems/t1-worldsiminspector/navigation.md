@@ -145,6 +145,18 @@ No conflicts.
 1. **Batch apply.** Whether DiaCellLayers can apply a navigation plan in one frame so the game never renders a half-navigated state. Request only; not a blocker.
 2. **Cap value.** The accepted-cell limit is DiaCellLayers' to set; T-1 needs only to show "Selected N of M". Check the number once Feature 2 is specced.
 
+## Allow-list amendment (2026-11-16)
+
+The bridge allow-list (AC 11) is one shared list, and the features that use it are:
+
+| Names | Kind | Added by |
+|---|---|---|
+| The navigation table above, plus `cells.history.track` / `untrack` | commands | this feature |
+| `cells.snapshot.list`, `cells.snapshot.take`, `cells.snapshot.delete`, `cells.snapshot.restore`, `cells.history.snapshot`, `cells.history.status` | commands and queries | Feature 7 (`snapshots-and-compare.md`) |
+| `cow.s25.report` | query only | Feature 9 (`s25-checks-panel.md`) |
+
+AC 11 now reads: nothing outside this table can be sent through the bridge, and unlisted names are rejected by the C++ handler. Take, delete, restore, track and untrack are gated like navigation (live and world match). `cow.s25.run`, `cow.s25.baseline` and `cow.s25.livesmoke` are explicitly **not** on the list (the Inspector tier rules out sim control).
+
 ## Status
 
-`Approved` (2026-10-20). Plan not yet created. Build needs `cells.select.cells` in DiaCellLayers Feature 2 (spec amended 2026-10-20; Dia change needs AD-001 sign-off at build time).
+`Approved` (2026-10-20; allow-list amended 2026-11-16 for Features 7 and 9). Plan not yet created. Build needs `cells.select.cells` in DiaCellLayers Feature 2 (spec amended 2026-10-20; Dia change needs AD-001 sign-off at build time).
