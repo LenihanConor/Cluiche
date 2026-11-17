@@ -49,6 +49,7 @@ namespace Dia
 			void SetStagingFlags(uint8_t flags) { mStagingFlags |= flags; }
 
 			uint32_t GetCapacity() const { return mCapacity; }
+			uint32_t GetModuleCount() const { return mModuleCount; }
 
 			// Read side.
 			uint64_t GetEntryCount() const { return mEntryCount; }

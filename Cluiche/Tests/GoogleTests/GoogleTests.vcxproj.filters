@@ -3009,5 +3009,8 @@
     <ClCompile Include="ApplicationFlow\TestStreamLinkEdgeCases.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestPerfWindowPacker.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

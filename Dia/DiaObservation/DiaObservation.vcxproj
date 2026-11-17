@@ -60,6 +60,7 @@
     <ClCompile Include="Profile\CoarseRing.cpp" />
     <ClCompile Include="Profile\CoarseChunkBuilder.cpp" />
     <ClCompile Include="Profile\CoarseChunkAssembler.cpp" />
+    <ClCompile Include="Profile\PerfWindowPacker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -129,6 +130,7 @@
     <ClInclude Include="Profile\CoarseChunk.h" />
     <ClInclude Include="Profile\CoarseChunkBuilder.h" />
     <ClInclude Include="Profile\CoarseChunkAssembler.h" />
+    <ClInclude Include="Profile\PerfWindowPacker.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

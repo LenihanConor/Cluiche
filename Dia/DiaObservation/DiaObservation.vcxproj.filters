@@ -159,6 +159,9 @@
     <ClCompile Include="Profile\CoarseChunkAssembler.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\PerfWindowPacker.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -359,6 +362,9 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Profile\CoarseChunkAssembler.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfWindowPacker.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
