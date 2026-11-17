@@ -85,6 +85,8 @@
     <ClInclude Include="Testing\RecordingStep.h" />
     <ClInclude Include="Testing\ScriptedKeyDriver.h" />
     <ClInclude Include="DeferredStepScheduler.h" />
+    <ClInclude Include="CapConfig.h" />
+    <ClInclude Include="RangeTiming.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />

@@ -25,6 +25,8 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="DeferredStepScheduler.h" />
+    <ClInclude Include="CapConfig.h" />
+    <ClInclude Include="RangeTiming.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />

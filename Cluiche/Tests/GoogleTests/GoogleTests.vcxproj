@@ -1304,6 +1304,7 @@
     <ClCompile Include="DiaObservation\Trace\TestChainBuilder.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp" />
     <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestCapGate.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepScheduler.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepSchedulerEdges.cpp" />

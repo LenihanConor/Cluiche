@@ -3060,6 +3060,9 @@
     <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapGate.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
     <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
