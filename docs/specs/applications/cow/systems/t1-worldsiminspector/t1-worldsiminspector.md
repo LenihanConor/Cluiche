@@ -139,8 +139,9 @@ The UI is kept separate from the analysis code (feedback rule): views call only 
 | 10 | Space over time | Strip chart (time × latitude band or region), one map per period, map playback, storm and drought tracks; region-level fallback outside the per-cell window | Approved | [space-over-time.md](space-over-time.md) |
 | 11 | World health dashboard | Derived measures: biome diversity, biome turnover, near-extinction warnings, boom-bust period, settle time, drift; weather health; fixed coupling pairs; bands cite the GDD or are provisional; rolling sparklines, region table, A vs B | Approved | [world-health.md](world-health.md) |
 | 12 | Cross-system causes | Cause chains weather → ecology → succession built from events, A1 causes and per-region lag scans; automatic lead/lag scan (preset pairs moved to Feature 11's coupling measures); recorded links (A1 causes, A3 source) vs candidate links; swimlanes + ranked chains | Approved | [cross-system-causes.md](cross-system-causes.md) |
+| 13 | Species view | A page for one animal: population with typical year, density map, region table, why panel, related layers, health; gap panels for food web and age structure (A1 follow-ups) | Draft | [species-view.md](species-view.md) |
 
-- **Build order:** 1 → 2 → 6 → 3 → 8 → 9 → 4 → 5 → 7 → 10 → 11 → 12 (amended 2026-11-16: 8 and 9 move ahead because S-2.5 has no other viewer).
+- **Build order:** 1 → 2 → 6 → 3 → 8 → 9 → 4 → 5 → 7 → 10 → 11 → 12 → 13 (amended 2026-11-16: 8 and 9 move ahead because S-2.5 has no other viewer).
 - Feature 1 can start against a hand-written `dia.cell_history` fixture before any simulation is built.
 - An HTML mockup already exists. The visual gate for each view is checked against it.
 

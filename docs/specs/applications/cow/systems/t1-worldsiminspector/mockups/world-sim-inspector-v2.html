@@ -173,6 +173,7 @@
     <div class="it" data-ws="overview"><div class="t">Overview</div><div class="s">World health · F11</div></div>
     <div class="it" data-ws="trends"><div class="t">Trends</div><div class="s">Series, seasons · F2 F8</div></div>
     <div class="it" data-ws="space"><div class="t">Space</div><div class="s">Maps, strip, tracks · F3 F10</div></div>
+    <div class="it" data-ws="species"><div class="t">Species</div><div class="s">One animal · F13</div></div>
     <div class="it" data-ws="causes"><div class="t">Causes</div><div class="s">Why, chains, lag scan · F4 F12</div></div>
     <div class="it" data-ws="compare"><div class="t">Compare</div><div class="s">Correlation, runs, snapshots · F5 F7</div></div>
     <div class="it" data-ws="checks"><div class="t">Checks</div><div class="s">S-2.5 verdict · F9</div></div>
@@ -295,6 +296,7 @@ var STATES = {
   overview: [['normal','Healthy run'],['problems','Watch + bad'],['compare','A vs B'],['noA3','A3 not built'],['regions','Region table']],
   trends: [['raw','Raw series'],['typical','Typical year'],['anomaly','Anomaly'],['few','Fewer than 5 years'],['reference','Reference file baseline'],['species','Species + groups'],['wind','Wind (derived)'],['composition','Composition over time'],['calendar','Calendar heatmap']],
   space: [['strip','Strip: latitude bands'],['hotspot','Change hot-spots'],['cell','Cell trail'],['wind','Wind map + arrows'],['regions','Strip: regions'],['tracks','Tracks on map'],['playing','Playback'],['buffering','Buffering'],['periods','Maps per period']],
+  species: [['deer','Deer (herbivore)'],['wolf','Wolf (predator)'],['cougar','Cougar (near-extinct)'],['eagle','Eagle (aggregate only)'],['moose','Moose (not recorded)']],
   causes: [['chains','Chains'],['scan','Lag scan running'],['scandone','Lag scan done + drill'],['noA3','A3 missing'],['why','Why panel']],
   compare: [['corr','Correlation'],['runs','Run compare'],['snap','Snapshots + cell compare'],['slope','Slope: start → end']],
   checks: [['mm','MagnitudeMisses'],['pass','Pass'],['hard','HardFail'],['invalid','InvalidWorld'],['live','Live run in progress'],['old','Report predates run links']]
@@ -705,9 +707,81 @@ function checks() {
   return h;
 }
 
+// ---------- species workspace (F13) ----------
+var SP = {
+  deer:   { grp: 'herbivore', c: '#6cc070', cells: true,  band: 'good',  mean: 0.31, d: -0.07, sens: 0.9, ext: false, foodMsg: 'eats: producers (candidate)',
+            why: [['starvation (drought)', 62, 'var(--red)', '−0.22'], ['predation (wolf, cougar)', 38, 'var(--warn)', '−0.13'], ['competition (elk, bison)', 16, 'var(--yellow)', '−0.05'], ['births', 30, 'var(--eco)', '+0.09']],
+            rel: [['ecology.producers_total', '+4 w', '0.66', 'food? producers'], ['weather.precipitation', '+9 w', '0.52', 'weather'], ['ecology.species.wolf', '+31 w', '−0.44', 'predator? lags the prey'], ['ecology.species.elk', '0 w', '0.58', 'shares food']] },
+  wolf:   { grp: 'predator', c: '#c586c0', cells: true, band: 'watch', mean: 0.05, d: -0.02, sens: 0.6, ext: false,
+            why: [['prey scarcity (deer, elk)', 70, 'var(--red)', '−0.04'], ['starvation', 40, 'var(--warn)', '−0.02'], ['births', 22, 'var(--eco)', '+0.02']],
+            rel: [['ecology.species.deer', '+50 w', '0.58', 'prey? prey leads by about a year'], ['ecology.species.elk', '+46 w', '0.49', 'prey?'], ['ecology.producers_total', '+60 w', '0.31', 'indirect']] },
+  cougar: { grp: 'predator', c: '#e08a3c', cells: true, band: 'bad', mean: 0.012, d: -0.011, sens: 0.8, ext: true,
+            why: [['prey scarcity (deer)', 80, 'var(--red)', '−0.009'], ['competition (wolf)', 30, 'var(--yellow)', '−0.003']],
+            rel: [['ecology.species.deer', '+44 w', '0.61', 'prey?'], ['weather.snow_pack', '+12 w', '−0.34', 'weather']] },
+  eagle:  { grp: 'scavenger', c: '#6fb6e0', cells: false, band: 'good', mean: 0.04, d: 0.00, sens: 0.2, ext: false,
+            why: [['carrion supply', 50, 'var(--eco)', '+0.01'], ['births', 20, 'var(--eco)', '+0.01']],
+            rel: [['ecology.group.predator', '+6 w', '0.47', 'carrion from predator kills?']] }
+};
+function species() {
+  var s = cur(), h = '';
+  var picker = '<select style="width:210px" id="spPick">' + [['herbivore', ['deer', 'elk', 'rabbit', 'bison', 'moose*']], ['predator', ['wolf', 'cougar', 'bear', 'fox', 'lynx*']], ['scavenger', ['eagle', 'heron*']]].map(function(g){ return '<optgroup label="' + g[0] + '">' + g[1].map(function(n){ var off = n.charAt(n.length - 1) == '*'; var nm = off ? n.slice(0, -1) : n; return '<option value="' + nm + '"' + (nm == s ? ' selected' : '') + (off && nm != 'moose' ? ' disabled' : '') + '>' + nm + (off ? ' (not recorded)' : '') + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select>';
+  if (s == 'moose') {
+    return '<div class="panel"><div class="ph">Species <span class="feat">F13</span><span class="r">' + picker + '</span></div><div class="pb"><div class="banner warn"><b>ecology.species.moose</b> is not recorded in this source. S-3 records every species aggregate, so a stage config that omits it will show this. Pick another animal, or add it to the stage\'s recorded layers.</div></div></div>';
+  }
+  var d = SP[s];
+  var r = rng(s.length * 17 + 3), pop = [], x = d.mean;
+  for (var i = 0; i < 416; i++) { var yr = 10 + i / 52, dip = (yr > 12.2 && yr < 13.1) ? -d.sens * 0.45 * d.mean * Math.sin((yr - 12.2) / 0.9 * Math.PI) : 0; x += noise(r, d.mean * 0.012); x += (d.mean - x) * 0.02; pop.push(Math.max(d.mean * 0.1, x + dip)); }
+  var band = d.band;
+  h += '<div class="panel"><div class="ph"><span class="dot" style="background:' + d.c + '"></span>Species <span class="feat">F13</span><span class="r">' + picker + '<span class="chip">group <b>' + d.grp + '</b></span><span class="band b-' + band + '">' + (d.ext ? 'near-extinct' : band) + '</span><span class="chip">' + (d.cells ? 'aggregate + per-cell' : 'aggregate only') + '</span></span></div>';
+  if (d.ext) h += '<div class="pb" style="padding-bottom:0"><div class="banner warn">Near-extinct in R3 Lowlands and R5 Delta since Y13 W9 (below 0.005 for 12 weeks). 3 of 8 regions still hold the species.</div></div>';
+  h += '<div class="pb"><div class="mono dim" style="margin-bottom:4px">ecology.species.' + s + ' · world mean density · Y10–Y17</div><svg viewBox="0 0 960 190" width="100%" height="190">';
+  for (var g = 0; g <= 3; g++) h += '<line x1="40" x2="950" y1="' + (10 + g * 50) + '" y2="' + (10 + g * 50) + '" stroke="#2c2c2c"/>';
+  var mx = d.mean * 1.6;
+  var grp = pop.map(function(v, i){ return d.mean * 1.05 + (v - d.mean) * 0.4; });
+  h += '<path d="' + path(grp, 40, 10, 910, 150, 0, mx) + '" stroke="#555" fill="none" stroke-width="1" stroke-dasharray="3 3"/>';
+  var up = '', lo = '';
+  for (var w = 0; w < 52; w++) { var xx = 40 + w / 51 * 910; up += (w ? 'L' : 'M') + xx + ',' + (160 - (d.mean * 1.18 + 0.2 * d.mean * Math.sin(w / 52 * 6.28)) / mx * 150); }
+  for (var w2 = 51; w2 >= 0; w2--) { var x2 = 40 + w2 / 51 * 910; lo += 'L' + x2 + ',' + (160 - (d.mean * 0.82 + 0.2 * d.mean * Math.sin(w2 / 52 * 6.28)) / mx * 150); }
+  h += '<path d="' + path(pop, 40, 10, 910, 150, 0, mx) + '" stroke="' + d.c + '" fill="none" stroke-width="2"/>';
+  var dx = 40 + ((2.2 * 52) / 416) * 910, dw = (0.9 * 52 / 416) * 910;
+  h += '<rect x="' + dx + '" y="10" width="' + dw + '" height="150" fill="rgba(244,135,113,.1)"/><text x="' + (dx + 3) + '" y="22" fill="var(--red)" font-size="10">▲ drought R3</text>';
+  if (d.ext) h += '<text x="' + (40 + 0.40 * 910) + '" y="40" fill="var(--red)" font-size="10">✕ extinct R3, R5 (Y13 W9)</text>';
+  for (var y = 10; y <= 17; y++) h += '<text class="axis" x="' + (40 + ((y - 10) / 8) * 910) + '" y="180">Y' + y + '</text>';
+  h += '</svg><div class="legend"><span><i style="background:' + d.c + '"></i>' + s + '</span><span><i style="background:#555"></i>' + d.grp + ' group mean (context)</span><span class="dim">typical-year overlay available (F8)</span></div></div></div>';
+
+  h += '<div class="space-grid"><div class="panel"><div class="ph">Where it lives <span class="feat">F3</span><span class="r">' + (d.cells ? '<div class="seg"><span class="on">Density</span><span>Hot-spots</span></div><span class="badge cell">per-cell</span>' : '<span class="badge">region level</span>') + '</span></div><div class="pb mapwrap"><canvas id="spMap" style="width:100%"></canvas></div>' +
+       (d.cells ? '<div class="playbar"><button class="btn primary">▶</button><span class="note">playback · Y12 W30 · click a cell for its trail</span></div>' : '<div class="pb"><div class="banner info">Per-cell history is not tracked for ' + s + '. The map is region level. <span class="link">Track ecology.species.' + s + '</span> (sends cells.history.track)</div></div>') + '</div>';
+  var regs = [['R3 Lowlands', 1.0], ['R5 Delta', 0.8], ['R2 Highlands', 0.5], ['R1 Coast', 0.3], ['R4 Desert Edge', 0.05], ['R6 North', 0.4]];
+  h += '<div class="panel"><div class="ph">By region <span class="r note">click a row to select the region in-game</span></div><table><tr><th>Region</th><th class="num">Mean</th><th class="num">Change</th><th>Status</th></tr>' +
+       regs.map(function(g, i){ var m = d.mean * (0.4 + g[1] * 1.2), c = -(0.05 + 0.2 * g[1]) * (d.ext ? 1.4 : d.sens), low = d.ext && i < 2; return '<tr class="click"><td>' + g[0] + '</td><td class="num">' + m.toFixed(3) + '</td><td class="num" style="color:' + (c < 0 ? 'var(--red)' : 'var(--text-dim)') + '">' + (c * 100).toFixed(0) + '%</td><td>' + (low ? '<span class="band b-bad">near-extinct</span>' : g[1] < 0.1 ? '<span class="band b-watch">sparse</span>' : '<span class="band b-good">present</span>') + '</td></tr>'; }).join('') + '</table></div></div>';
+
+  h += '<div class="causes-grid"><div class="panel"><div class="ph">Why it changed <span class="feat">F4</span><span class="r"><select><option>R3 Lowlands</option><option>world</option></select><span class="chip">Y12 W12 – Y12 W40</span></span></div><div class="pb">' +
+       d.why.map(function(x){ return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:180px" class="dim">' + x[0] + '</span><div style="flex:1;height:16px;background:var(--bg4);border-radius:3px"><div style="width:' + x[1] + '%;height:100%;background:' + x[2] + ';opacity:.75;border-radius:3px"></div></div><span class="mono" style="width:56px">' + x[3] + '</span></div>'; }).join('') +
+       '<div class="note">From A1 cow.ecology.cause events on this species\' layer.' + (d.cells ? ' <span class="link">Show cells</span>' : '') + '</div></div></div>' +
+       '<div class="panel"><div class="ph">Related to <span class="feat">F5</span><span class="r note">candidate (correlation)</span></div><table><tr><th>Layer</th><th class="num">Lag</th><th class="num">r</th><th>Reading</th></tr>' +
+       d.rel.map(function(x){ return '<tr class="click"><td class="mono">' + x[0] + '</td><td class="num">' + x[1] + '</td><td class="num">' + x[2] + '</td><td class="dim">' + x[3] + '</td></tr>'; }).join('') + '</table></div></div>';
+
+  h += '<div class="groups"><div class="panel" style="opacity:.8"><div class="ph">Food web <span class="feat">F13</span><span class="r"><span class="badge">needs A1 roster links</span></span></div><div class="pb note">Roster links (who eats whom, diet weights) are not in the history file yet, so this panel shows only the correlation candidates above. <b>A1 follow-up:</b> embed each species\' diet and predators in the export\'s schema block. Nothing is invented here.</div></div>' +
+       '<div class="panel" style="opacity:.8"><div class="ph">Age structure <span class="feat">F13</span><span class="r"><span class="badge">needs adult / juvenile layers</span></span></div><div class="pb note">Needs <span class="mono">ecology.species.' + s + '.adult</span> and <span class="mono">.juvenile</span> recorded as layers. <b>A1 follow-up:</b> opt-in per species in the stage config (up to 2 layers each, against the 64-layer cap).</div></div></div>';
+  h += '<div class="panel"><div class="ph">Health <span class="feat">F11</span></div><div class="pb" style="display:flex;gap:18px;flex-wrap:wrap"><span>Near-extinction <span class="band b-' + (d.ext ? 'bad' : 'good') + '">' + (d.ext ? 'bad' : 'good') + '</span></span><span>Boom-bust period <span class="mono">' + (s == 'wolf' ? '8.2 y' : s == 'deer' ? '6.9 y' : '—') + '</span> <span class="band b-good">good</span></span><span>Drift <span class="mono">' + (d.d < 0 ? '−' : '+') + (Math.abs(d.d) * 100).toFixed(0) + '% / decade</span> <span class="band b-' + (d.d < -0.05 ? 'watch' : 'good') + '">' + (d.d < -0.05 ? 'watch' : 'good') + '</span></span></div></div>';
+  return h;
+}
+function drawSpecies() {
+  var cv = document.getElementById('spMap'); if (!cv) return;
+  var s = cur(), d = SP[s]; if (!d) return;
+  var cx = s == 'deer' ? 12 : s == 'wolf' ? 20 : s == 'cougar' ? 31 : 9, cy = s == 'deer' ? 16 : s == 'wolf' ? 10 : s == 'cougar' ? 6 : 18;
+  hexMap(cv, MW, MH, function(q, r){
+    if (isWater(q, r)) return NaN;
+    var v = Math.exp(-(Math.pow(q - cx, 2) + Math.pow(r - cy, 2)) / 60) + 0.5 * Math.exp(-(Math.pow(q - 30, 2) + Math.pow(r - 20, 2)) / 40);
+    if (!d.cells) { var g = regionOf(q, r); v = 0.2 + ((g * 37) % 10) / 14; }
+    if (d.ext) v *= (q < 18 ? 0.1 : 1);
+    return v;
+  }, function(v){ return isNaN(v) ? '#1b2a3a' : ramp(v, [38, 40, 34], [d.c == '#e08a3c' ? 224 : 108, d.c == '#e08a3c' ? 138 : 192, d.c == '#e08a3c' ? 60 : 112]); }, { size: 7 });
+}
+
 // ---------- shell ----------
-var RENDER = { overview: overview, trends: trends, space: space, causes: causes, compare: compare, checks: checks };
-var AFTER = { space: drawSpace, causes: drawCauses, compare: drawCompare };
+var RENDER = { overview: overview, trends: trends, space: space, species: species, causes: causes, compare: compare, checks: checks };
+var AFTER = { species: drawSpecies, space: drawSpace, causes: drawCauses, compare: drawCompare };
 var timer = null;
 function render() {
   document.querySelectorAll('.rail .it').forEach(function(e){ e.classList.toggle('on', e.getAttribute('data-ws') == ST.ws); });
@@ -734,6 +808,7 @@ function drawBrush() {
   }
   svg.innerHTML = h;
 }
+document.getElementById('content').onchange = function(e){ if (e.target.id == 'spPick') { ST.st.species = e.target.value; render(); } };
 document.getElementById('rail').onclick = function(e){ var it = e.target.closest('.it'); if (!it) return; ST.ws = it.getAttribute('data-ws'); render(); };
 document.getElementById('mockbar').onclick = function(e){ var b = e.target.closest('button'); if (!b) return; ST.st[ST.ws] = b.getAttribute('data-st'); render(); };
 document.getElementById('lens').onclick = function(e){ var sp = e.target.closest('span'); if (!sp) return; ST.lens = sp.getAttribute('data-l'); document.querySelectorAll('#lens span').forEach(function(x){ x.classList.toggle('on', x == sp); }); render(); };
