@@ -260,9 +260,15 @@ namespace Dia::DeferredStep
 				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kNone);
 				step->Apply();
 			}
-			mLauncher.Release(token);
 
+			// Apply may have unregistered this channel (Unregister already drained and released its token), so only
+			// release and settle the entry if it still holds the token this Tick launched the apply for.
 			const int after = FindIndex(dueIds[i]);
+			const bool owned = after >= 0 && mChannels[after].hasToken && mChannels[after].token.value == token.value;
+			if (owned)
+			{
+				mLauncher.Release(token);
+			}
 			if (stalled)
 			{
 				++mStats.stalls;
@@ -270,7 +276,7 @@ namespace Dia::DeferredStep
 				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Channel '%s' stalled at apply key %llu for %llu us",
 					dueIds[i].AsChar(), static_cast<unsigned long long>(applyKey), static_cast<unsigned long long>(stallMicros));
 			}
-			if (after >= 0)
+			if (owned)
 			{
 				ChannelEntry& done = mChannels[after];
 				if (!alreadySeen)
@@ -292,7 +298,7 @@ namespace Dia::DeferredStep
 				++done.stats.applies;
 			}
 			++mStats.applies;
-			if (mStats.inFlight > 0)
+			if (owned && mStats.inFlight > 0)
 			{
 				--mStats.inFlight;
 			}
