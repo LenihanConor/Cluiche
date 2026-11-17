@@ -4,7 +4,7 @@
 **Amends / depends on:** @profiling-frame-instrumentation.md (Amendment 2026-11-09, A1-A4); @perf-live-control.md (switches, markers, latency)
 **Mockup:** @docs/mockups/perf-inspector-mockup.html (approved 2026-11-09); Workers view: @docs/mockups/perf-inspector-workers-mockup.html (approved 2026-11-12)
 **Depends on (Revision 2026-11-12):** @docs/specs/applications/dia/systems/diathreading/job-observation.md (job context and timing records); @profiling-frame-instrumentation.md Amendment 2026-11-12 (worker scopes, `dia perf convert`)
-**Status:** `Approved` — 2026-11-09. **Revised 2026-11-10** after the plan audit: long coarse ring adopted (Open Question 1), `perf.timing` carries latency and self-cost, AC5's live chain deferred with trace-linked streams, `perf.window` size fallback. **Revision 2026-11-12 (Approved 2026-11-12):** Workers view (jobs and deferred steps), three wire tiers, telemetry cost budgets SD-PERF-7 (tightens AC6), no perf Editor for now.
+**Status:** `Done` — 2026-11-17 (Approved 2026-11-09). Built per [perf-inspector.plan.md](perf-inspector.plan.md); visual sign-off given by the user 2026-11-17. **Accepted follow-ups at close (not built or not verified):** AC6 telemetry cost NOT measured (ballpark-only decision, no Release benchmarking); AC3, AC5 live and AC12 E2E not run; deferred-step summaries are empty until DiaDeferredStep exists (Workers step view runs on fixtures only); the `observation.perf.jobs` kill switch has no config seam (`SetPerJobRecording` only); pool counters `capUse`, `peakQueueDepth`, `timeAtCapMs` read 0 (no sampler); `marker_drops`, `suppressed_trips`, `suppressed_logs` unavailable; manual Perfetto load of an export not done; live chain needs tracing enabled in the observation config. Original status notes follow: **Revised 2026-11-10** after the plan audit: long coarse ring adopted (Open Question 1), `perf.timing` carries latency and self-cost, AC5's live chain deferred with trace-linked streams, `perf.window` size fallback. **Revision 2026-11-12 (Approved 2026-11-12):** Workers view (jobs and deferred steps), three wire tiers, telemetry cost budgets SD-PERF-7 (tightens AC6), no perf Editor for now.
 
 ## Summary
 
@@ -75,15 +75,15 @@ Diagnosing the S-1 panel over-budget problem took a subagent about 20 minutes of
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Bridge: `perf.window`, `perf.frame`, `perf.timing` push, `perf.trip` push in DiaDebugServer | AC6, AC7 | Planned | sonnet | Dia; needs profiling amendment A1-A3 |
-| 2 | Plugin shell + lane model (pure TS) + timeline lanes | AC1, AC2 | Planned | sonnet | Follow DiaApplicationFlowInspector |
-| 3 | Module table, selected-frame detail, trips list | AC3, AC4 | Planned | sonnet | |
-| 4 | Cross-thread chain + stream edges | AC5 | Planned | sonnet | Needs trace-linked stream writes from @perf-live-control.md |
-| 5 | Latency + self-cost panels | - | Planned | sonnet | Needs live-control latency probes |
-| 6 | Chrome-trace export | AC8 | Planned | haiku | |
-| 8 | `JobTimingTable` (inbox drain, per-owner per-frame aggregates, deferred-step summaries, raw ring) + tier 1 on `perf.timing` + tier 2 on `perf.window` + `perf.jobs` query; encoding on the DebugServer thread | AC11 (table), AC13, AC14 | Planned | sonnet | Dia; needs job-observation tasks 2-4. Revision 2026-11-12 |
-| 9 | Workers view UI: worker heat strip and slices, cap row, deferred-step rows, step detail, owner share, pool health, late results | AC10, AC11, AC12 | Planned | sonnet | Mockup check gate against perf-inspector-workers-mockup.html first |
-| 7 | E2E + gap audit + attach/detach cost | AC9, AC6 (revised budgets), AC12 | Planned | sonnet | Final verification task; runs after 8 and 9 |
+| 1 | Bridge: `perf.window`, `perf.frame`, `perf.timing` push, `perf.trip` push in DiaDebugServer | AC6, AC7 | Done | sonnet | Dia; needs profiling amendment A1-A3 |
+| 2 | Plugin shell + lane model (pure TS) + timeline lanes | AC1, AC2 | Done | sonnet | Follow DiaApplicationFlowInspector |
+| 3 | Module table, selected-frame detail, trips list | AC3, AC4 | Done | sonnet | |
+| 4 | Cross-thread chain + stream edges | AC5 | Done | sonnet | Needs trace-linked stream writes from @perf-live-control.md |
+| 5 | Latency + self-cost panels | - | Done | sonnet | Needs live-control latency probes |
+| 6 | Chrome-trace export | AC8 | Done | haiku | |
+| 8 | `JobTimingTable` (inbox drain, per-owner per-frame aggregates, deferred-step summaries, raw ring) + tier 1 on `perf.timing` + tier 2 on `perf.window` + `perf.jobs` query; encoding on the DebugServer thread | AC11 (table), AC13, AC14 | Done | sonnet | Dia; needs job-observation tasks 2-4. Revision 2026-11-12 |
+| 9 | Workers view UI: worker heat strip and slices, cap row, deferred-step rows, step detail, owner share, pool health, late results | AC10, AC11, AC12 | Done | sonnet | Mockup check gate against perf-inspector-workers-mockup.html first |
+| 7 | E2E + gap audit + attach/detach cost | AC9, AC6 (revised budgets), AC12 | Done | sonnet | Final verification task; runs after 8 and 9 |
 
 ## Binding Decisions
 

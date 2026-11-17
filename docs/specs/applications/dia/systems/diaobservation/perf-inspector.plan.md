@@ -1,7 +1,7 @@
 # Plan: Perf Inspector
 
 **Spec:** @docs/specs/applications/dia/systems/diaobservation/perf-inspector.md
-**Status:** In Progress
+**Status:** Done (2026-11-17; see the spec Status for accepted follow-ups)
 **Depends on:** `profiling-frame-instrumentation.plan.md` (timing table, trips, `--perf`) and `perf-live-control.plan.md` (markers, switches, latency probes). Trace-linked streams are deferred, so the live chain panel ships as "chain unavailable".
 **Mockup:** `docs/mockups/perf-inspector-mockup.html` (approved 2026-11-09, the visual acceptance gate). Workers view: `docs/mockups/perf-inspector-workers-mockup.html` (approved 2026-11-12).
 **Revision 2026-11-12:** spec revision (Workers view, wire tiers, SD-PERF-7 budgets) Approved 2026-11-12. Workers mockup approved 2026-11-12.
