@@ -35,6 +35,16 @@ public_api:
     - DiaObservation/Profile/PerfSummary.h
     - DiaObservation/Profile/PerfSummaryAccumulator.h
     - DiaObservation/Profile/PerfExitTimer.h
+    - DiaObservation/Profile/CoarseRing.h
+    - DiaObservation/Profile/CoarseChunk.h
+    - DiaObservation/Profile/CoarseChunkBuilder.h
+    - DiaObservation/Profile/CoarseChunkAssembler.h
+    - DiaObservation/Profile/PerfWindowPacker.h
+    - DiaObservation/Profile/PerfTimingStats.h
+    - DiaObservation/Profile/JobTimingTable.h
+    - DiaObservation/Profile/JobChunk.h
+    - DiaObservation/Profile/JobChunkBuilder.h
+    - DiaObservation/Profile/JobChunkAssembler.h
     - DiaObservation/Perf/PerfMarkers.h
     - DiaObservation/Perf/LatencyProbe.h
     - DiaObservation/Profile/ScopeRecord.h
