@@ -165,6 +165,15 @@
     <ClCompile Include="Profile\PerfTimingStats.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\JobTimingTable.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\JobChunkBuilder.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\JobChunkAssembler.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -371,6 +380,18 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Profile\PerfTimingStats.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobTimingTable.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunkBuilder.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunkAssembler.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

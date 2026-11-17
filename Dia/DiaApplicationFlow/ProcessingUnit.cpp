@@ -17,6 +17,8 @@
 #include <DiaObservation/Profile/TripReporter.h>
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/CoarseChunkBuilder.h>
+#include <DiaObservation/Profile/JobChunk.h>
+#include <DiaObservation/Job/JobObserver.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaStreams/Event.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -54,6 +56,10 @@ namespace Dia { namespace ApplicationFlow {
         
         // Perf Inspector A1b: initialize chunk builder
         mCoarseChunk.Begin(mInstanceId.Value(), mFrequencyHz);
+
+        // Perf Inspector task 13: job timing table (storage allocated here, never on the hot path)
+        mJobTable.Init();
+        mJobChunk.Begin(mInstanceId.Value());
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
@@ -432,6 +438,11 @@ namespace Dia { namespace ApplicationFlow {
         mSelfMsAccum = 0.0f;
         mLastUpdateStepCount = 1;
 
+        // Jobs submitted from this thread during this Update() report to this PU's inbox. Installed for
+        // the duration of Update() only (two thread_local stores), so no thread ever keeps a pointer to an
+        // inbox that outlives the call; this also covers non-dedicated PUs ticked on the Main thread.
+        Dia::Observation::Job::JobObserver::InstallThreadInbox(&mJobInbox);
+
 #ifdef _DEBUG
         RefreshPauseTable();   // one FrameStream read per Update(); table rebuilt only on a new generation
 #endif
@@ -508,8 +519,30 @@ namespace Dia { namespace ApplicationFlow {
         // drained above — shutdown sequencing must not stall just because 0 steps drained.
         RunReversePass(deltaTime);
 
+        // Perf Inspector task 13: drain this PU's job inbox once per Update() (bracketed for perf.self_ms).
+        {
+            using Clock = std::chrono::steady_clock;
+            const Clock::time_point jobStart = Clock::now();
+            mJobTable.Drain(mJobInbox, mTickCount);
+            const double nowMs = std::chrono::duration<double, std::milli>(jobStart.time_since_epoch()).count();
+            if (mJobSink && mJobChunk.ShouldFlush(mJobTable, nowMs))
+            {
+                using namespace Dia::Observation::Profile;
+                static const Dia::Core::StringCRC kFrameworkId("$framework");
+                Event<JobChunk> wrapped;
+                wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                wrapped.senderCrc   = kFrameworkId.Value();
+                wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                wrapped.payload     = mJobChunk.Take(mJobTable, nowMs);
+                mJobSink->Send(wrapped);
+            }
+            mSelfMsAccum += std::chrono::duration<float, std::milli>(Clock::now() - jobStart).count();
+        }
+
         if (mPostTickFn)
             mPostTickFn();
+
+        Dia::Observation::Job::JobObserver::ClearThreadInbox();
 
         // Task 34 — record elapsed tick time and update gauge
         const auto tickEnd = std::chrono::steady_clock::now();

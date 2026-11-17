@@ -62,6 +62,9 @@
     <ClCompile Include="Profile\CoarseChunkAssembler.cpp" />
     <ClCompile Include="Profile\PerfWindowPacker.cpp" />
     <ClCompile Include="Profile\PerfTimingStats.cpp" />
+    <ClCompile Include="Profile\JobTimingTable.cpp" />
+    <ClCompile Include="Profile\JobChunkBuilder.cpp" />
+    <ClCompile Include="Profile\JobChunkAssembler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -133,6 +136,10 @@
     <ClInclude Include="Profile\CoarseChunkAssembler.h" />
     <ClInclude Include="Profile\PerfWindowPacker.h" />
     <ClInclude Include="Profile\PerfTimingStats.h" />
+    <ClInclude Include="Profile\JobTimingTable.h" />
+    <ClInclude Include="Profile\JobChunk.h" />
+    <ClInclude Include="Profile\JobChunkBuilder.h" />
+    <ClInclude Include="Profile\JobChunkAssembler.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

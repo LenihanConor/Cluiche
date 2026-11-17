@@ -3021,5 +3021,8 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfTimingPublisher.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestJobTimingTable.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

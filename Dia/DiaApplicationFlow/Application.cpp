@@ -154,6 +154,21 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b3. Create $perfjobs stream (framework-owned, all builds; Perf Inspector task 13) ---
+        // Every PU sends JobChunk job timing chunks (<= ~8.7 KB, <= 10 Hz, only when jobs ran).
+        {
+            auto* jobsStore = new EventStreamStore<Dia::Observation::Profile::JobChunk>(
+                Dia::Core::StringCRC("$perfjobs"),
+                Dia::Core::StringCRC("JobChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfJobsStore = jobsStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(jobsStore);
+            ++mStreamStoreCount;
+        }
+
 #ifdef _DEBUG
         // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
         {
@@ -175,6 +190,8 @@ namespace Dia { namespace ApplicationFlow {
 
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
             mProcessingUnits[p]->SetPerfCoarseSink(mPerfCoarseStore);
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfJobsSink(mPerfJobsStore);
 
 #ifdef _DEBUG
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
