@@ -162,6 +162,9 @@
     <ClCompile Include="Profile\PerfWindowPacker.cpp">
       <Filter>Profile</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\PerfTimingStats.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -365,6 +368,9 @@
       <Filter>Profile</Filter>
     </ClInclude>
     <ClInclude Include="Profile\PerfWindowPacker.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfTimingStats.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

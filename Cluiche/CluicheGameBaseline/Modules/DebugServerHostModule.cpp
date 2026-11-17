@@ -126,6 +126,14 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     }
     if (mPerfWindowCommands)
         mPerfWindowCommands->Register();
+    if (mPerfWindowCommands && !mPerfTimingPublisher)
+    {
+        mPerfTimingSink      = std::make_unique<DebugServerPerfTimingSink>(mServer);
+        mPerfTimingPublisher = std::make_unique<PerfTimingPublisher>(
+            mPerfWindowCommands->GetAssembler(),
+            dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication()),
+            *mPerfTimingSink);
+    }
 
 #ifdef _DEBUG
     // Perf live control: Debug only (AC5). Gate is _DEBUG, not DIA_DEBUG (DiaVisualDebugger defines that in Release).
@@ -207,6 +215,8 @@ void DebugServerHostModule::DoUpdate(const Dia::SimTime::MainTimeContext& ctx)
 
     if (mPerfWindowCommands)
         mPerfWindowCommands->Drain();   // keeps the long coarse rings current for late attach
+    if (mPerfTimingPublisher)
+        mPerfTimingPublisher->Tick(mUptimeSecs);   // gated on subscribers, 10 Hz
 
     QueryMemory();
     DrainSimReplies();
@@ -456,6 +466,8 @@ Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
         src.reset();
     }
 
+    mPerfTimingPublisher.reset();
+    mPerfTimingSink.reset();
     if (mPerfWindowCommands)
         mPerfWindowCommands->Unregister();   // object (and its reader) is kept for the next start
 

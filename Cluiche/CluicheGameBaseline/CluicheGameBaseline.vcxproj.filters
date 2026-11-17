@@ -159,6 +159,9 @@
     <ClCompile Include="Types\PerfWindowCommands.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\PerfTimingPublisher.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -336,6 +339,9 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\PerfWindowCommands.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfTimingPublisher.h">
       <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>

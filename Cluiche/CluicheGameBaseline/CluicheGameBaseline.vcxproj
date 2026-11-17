@@ -77,6 +77,7 @@
     <ClCompile Include="Modules\DomainRootDelta.cpp" />
     <ClCompile Include="Types\PerfPauseCommands.cpp" />
     <ClCompile Include="Types\PerfWindowCommands.cpp" />
+    <ClCompile Include="Types\PerfTimingPublisher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -146,6 +147,7 @@
     <ClInclude Include="Modules\DomainRootDelta.h" />
     <ClInclude Include="Types\PerfPauseCommands.h" />
     <ClInclude Include="Types\PerfWindowCommands.h" />
+    <ClInclude Include="Types\PerfTimingPublisher.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

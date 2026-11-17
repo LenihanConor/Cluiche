@@ -36,6 +36,7 @@
 #include "Types/SimAnnounceTracker.h"
 #include "Types/PerfPauseCommands.h"
 #include "Types/PerfWindowCommands.h"
+#include "Types/PerfTimingPublisher.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -194,6 +195,9 @@ private:
     // perf.window / perf.frame (all builds).  Created once and kept across stop/start: it owns a reader on
     // $perfcoarse, which has no unregister, and the store only has 2 reader slots.
     std::unique_ptr<PerfWindowCommands> mPerfWindowCommands;
+    // perf.timing push (all builds, 10 Hz, only while a client is subscribed).  Reads the assembler above.
+    std::unique_ptr<DebugServerPerfTimingSink> mPerfTimingSink;
+    std::unique_ptr<PerfTimingPublisher>       mPerfTimingPublisher;
 #ifdef _DEBUG
     // perf.pause / perf.resume / perf.resume_all (Debug only; declared last so it is destroyed before mServer).
     std::unique_ptr<PerfPauseCommands> mPerfPauseCommands;
