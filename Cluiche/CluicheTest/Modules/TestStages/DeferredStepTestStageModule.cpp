@@ -105,6 +105,13 @@ void DeferredStepTestStageModule::OnConfigure(const char* configJson)
     if (root.isMember("spin_ms") && root["spin_ms"].isUInt()) { mSpinMs = root["spin_ms"].asUInt(); }
     if (root.isMember("steps") && root["steps"].isUInt())     { mSteps = std::max(1u, root["steps"].asUInt()); }
     if (root.isMember("cells") && root["cells"].isUInt())     { mCells = std::max(1u, root["cells"].asUInt()); }
+    // step_budget_ms: AC 30 ceiling on the longest SimPU step (enforced at k >= 7 only).
+    // Default 100 ms, from the Debug baseline (this stage, 150 steps): an idle sim step is ~30 ms (mean 33, ~26-36),
+    // and ~1 step in 5 shows a 60-72 ms / ~10 ms pair (scheduler jitter: two frames' worth split unevenly), max 72.
+    // 50 ms would fail on that jitter alone. If Run (spin_ms=50) executed on SimPU, every in-flight step would
+    // cost >= ~80 ms (30 + 50) and jitter pairs would reach ~110 ms, so 100 ms (28 ms over the observed max, 70 ms
+    // over idle) is the tightest ceiling that stays clear of jitter; the stage mean is logged as extra evidence.
+    if (root.isMember("step_budget_ms") && root["step_budget_ms"].isNumeric()) { mStepBudgetMs = root["step_budget_ms"].asDouble(); }
     if (root.isMember("worker_cap")) { mWorkerCapCfg = root["worker_cap"].asString(); }
 }
 
@@ -147,6 +154,10 @@ void DeferredStepTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mFinalized = false;
     mHoldUntilFrame = 0;
     mCapUtilisationPeak = 0.0;
+    mHaveLastUpdate = false;
+    mMaxStepMs = 0.0;
+    mSumStepMs = 0.0;
+    mStepSamples = 0;
     mSummary = "pending";
     mPassed = false;
 
@@ -170,6 +181,21 @@ void DeferredStepTestStageModule::OnUpdate(float /*deltaTime*/)
     {
         if (GetFrameCount() >= mHoldUntilFrame) { if (mPassed) { ReportPassed(); } else { ReportFailed(); } }
         return;
+    }
+
+    // AC 30 frame-time evidence: wall time between consecutive stage updates == one SimPU step.
+    // The first update has no predecessor and is skipped; the post-verdict hold returned above.
+    {
+        const auto now = std::chrono::steady_clock::now();
+        if (mHaveLastUpdate)
+        {
+            const double ms = std::chrono::duration<double, std::milli>(now - mLastUpdateTime).count();
+            mMaxStepMs = std::max(mMaxStepMs, ms);
+            mSumStepMs += ms;
+            ++mStepSamples;
+        }
+        mLastUpdateTime = now;
+        mHaveLastUpdate = true;
     }
 
     auto& scheduler = mDeferred->GetScheduler();
@@ -271,16 +297,18 @@ void DeferredStepTestStageModule::Finalize()
     // Stall expectations are enforced only at the two spec'd operating points: k >= 7 never stalls (AC 30),
     // k == 1 always stalls and reads Degraded (AC 31). Other k values are reported without a stall verdict.
     bool stallOk = true;
-    if (mK >= 7)      { stallOk = (stalls == 0); }
+    const double meanStepMs = (mStepSamples > 0) ? (mSumStepMs / static_cast<double>(mStepSamples)) : 0.0;
+    if (mK >= 7)      { stallOk = (stalls == 0) && (mMaxStepMs <= mStepBudgetMs); }
     else if (mK == 1) { stallOk = (stalls > 0) && (stallMs > 0) && (degraded || std::string(health) == "missing"); }
 
     mPassed = keysOk && checksumOk && stallOk && allApplied;
     mSummary = mPassed ? "ok" : "failed";
 
     DIA_LOG_INFO("DeferredStepTest",
-        "DEFERREDSTEP_RESULT k=%u spinMs=%u steps=%u applies=%llu stalls=%llu stallMs=%llu expectedApplyKeysOk=%d checksumOk=%d health=%s workerCapCfg=%s capUtilisationPeak=%.3f stallOk=%d passed=%d",
+        "DEFERREDSTEP_RESULT k=%u spinMs=%u steps=%u applies=%llu stalls=%llu stallMs=%llu expectedApplyKeysOk=%d checksumOk=%d health=%s workerCapCfg=%s capUtilisationPeak=%.3f maxStepMs=%.3f meanStepMs=%.3f budgetMs=%.3f stallOk=%d passed=%d",
         mK, mSpinMs, mSteps, (unsigned long long)applies, (unsigned long long)stalls, (unsigned long long)stallMs,
-        keysOk ? 1 : 0, checksumOk ? 1 : 0, health, mWorkerCapCfg.c_str(), mCapUtilisationPeak, stallOk ? 1 : 0, mPassed ? 1 : 0);
+        keysOk ? 1 : 0, checksumOk ? 1 : 0, health, mWorkerCapCfg.c_str(), mCapUtilisationPeak,
+        mMaxStepMs, meanStepMs, mStepBudgetMs, stallOk ? 1 : 0, mPassed ? 1 : 0);
 
     mHoldUntilFrame = GetFrameCount() + kHoldFrames;
 }

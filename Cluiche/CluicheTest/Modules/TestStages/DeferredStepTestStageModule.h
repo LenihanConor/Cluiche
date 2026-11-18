@@ -7,6 +7,7 @@
 #include <DiaDeferredStep/DeferredStepModule.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IParallelExecutor.h>
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -106,6 +107,14 @@ private:
     uint32_t mSteps = 20;
     uint32_t mCells = 4096;
     std::string mWorkerCapCfg = "auto";
+    double mStepBudgetMs = 100.0;   // see OnConfigure for the reasoning behind the default
+
+    // SimPU step wall time: steady_clock delta between consecutive OnUpdate calls (pre-verdict only)
+    bool mHaveLastUpdate = false;
+    std::chrono::steady_clock::time_point mLastUpdateTime;
+    double mMaxStepMs = 0.0;
+    double mSumStepMs = 0.0;
+    uint64_t mStepSamples = 0;
 
     // Run state
     std::vector<StepRecord> mRecords;

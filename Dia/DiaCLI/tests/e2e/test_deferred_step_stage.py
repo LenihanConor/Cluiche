@@ -67,6 +67,9 @@ def test_result_and_steps(session_records):
     assert res["expectedApplyKeysOk"] == "1"
     assert res["checksumOk"] == "1"
     assert res["passed"] == "1"
+    # AC 30: SimPU frame time stays inside the stage budget (Run is on workers, not SimPU).
+    assert float(res["maxStepMs"]) <= float(res["budgetMs"]), res
+    assert float(res["meanStepMs"]) <= float(res["maxStepMs"]), res
     for s in steps:
         assert int(s["appliedAt"]) == int(s["apply"]) == int(s["kick"]) + _K, s
         assert s["checksum"] == s["expected"], s
