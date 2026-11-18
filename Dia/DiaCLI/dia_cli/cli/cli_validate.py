@@ -165,6 +165,8 @@ def _validate_diaapp(data: dict) -> List[str]:
                     errors += _check_key(mod, "stages", list, mprefix)
                     errors += _check_key(mod, "dependencies", list, mprefix)
                     errors += _check_key(mod, "channels", list, mprefix)
+            if isinstance(pu.get("modules"), list):
+                errors += _check_requires_tick_after(pu)
 
     # Optional: stages array
     if "stages" in data:
@@ -193,6 +195,36 @@ def _validate_diaapp(data: dict) -> List[str]:
                 errors += _check_key(stream, "kind", str, prefix)
                 errors += _check_key(stream, "payload_type", str, prefix)
 
+    return errors
+
+
+def _check_requires_tick_after(pu: dict) -> List[str]:
+    """Enforce the optional module field `requires_tick_after`: instance ids of modules in the SAME
+    processing unit that must be listed earlier (ProcessingUnit ticks in list order, stops in reverse)."""
+    errors: List[str] = []
+    pu_id = pu.get("instance_id", "?")
+    modules = [m for m in pu["modules"] if isinstance(m, dict)]
+    index_of: dict = {}
+    for idx, m in enumerate(modules):
+        if isinstance(m.get("instance_id"), str):
+            index_of.setdefault(m["instance_id"], idx)
+
+    for idx, mod in enumerate(modules):
+        if "requires_tick_after" not in mod:
+            continue
+        name = mod.get("instance_id", "?")
+        refs = mod["requires_tick_after"]
+        where = f"PU '{pu_id}' module '{name}'"
+        if not isinstance(refs, list) or not all(isinstance(r, str) for r in refs):
+            errors.append(f"{where}: requires_tick_after must be an array of module instance id strings")
+            continue
+        for ref in refs:
+            if ref not in index_of:
+                errors.append(f"{where} (index {idx}): requires_tick_after '{ref}' not found in PU '{pu_id}' "
+                              f"module list [REQUIRES_TICK_AFTER_MISSING]")
+            elif index_of[ref] >= idx:
+                errors.append(f"{where} (index {idx}): requires_tick_after '{ref}' is at index {index_of[ref]}; "
+                              f"it must be listed earlier [REQUIRES_TICK_AFTER_ORDER]")
     return errors
 
 

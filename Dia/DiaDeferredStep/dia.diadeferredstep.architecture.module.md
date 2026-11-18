@@ -50,4 +50,15 @@ Two ordering rules govern DeferredStepModule's placement in the application mani
 
 2. **Consumer channels must unregister before DeferredStepModule stops.** Modules that register channels on the scheduler must be listed AFTER DeferredStepModule so that when phases stop (in reverse manifest order), consumers stop first and have a chance to unregister their channels while the scheduler is still alive.
 
-**Conflict resolution:** A module that is both the IStepKeySource and a channel consumer must be listed BEFORE DeferredStepModule (satisfying rule 1). Because stop runs in reverse manifest order, such a module stops after DeferredStepModule, so it must tolerate its channels having already been discarded by DeferredStepModule::DoStop. Nothing enforces either rule today; see F4 Open Design Question 1.
+**Conflict resolution:** A module that is both the IStepKeySource and a channel consumer must be listed BEFORE DeferredStepModule (satisfying rule 1). Because stop runs in reverse manifest order, such a module stops after DeferredStepModule, so it must tolerate its channels having already been discarded by DeferredStepModule::DoStop.
+
+**Enforcement:** Both rules are enforced by `dia validate manifest` through the optional module-declaration field `requires_tick_after`: an array of module `instance_id`s that must appear EARLIER in the same processing unit's module list. The validator errors if a referenced instance is missing from that PU, is listed at or after the declaring module, or the value is not an array of strings. Absent field means no constraint; the C++ manifest loader ignores the key.
+
+```json
+{ "instance_id": "DeferredStepModule", "type_id": "DeferredStepModule",
+  "requires_tick_after": ["DeferredStepClockModule"], ... },
+{ "instance_id": "MyConsumerModule", "type_id": "MyConsumerModule",
+  "requires_tick_after": ["DeferredStepModule"], ... }
+```
+
+Declare the constraint on `DeferredStepModule` (after its key source) and on every module that registers a channel on it (after `DeferredStepModule`). See F4 Open Design Question 1.

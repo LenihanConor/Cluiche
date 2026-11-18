@@ -28,6 +28,7 @@
                         "DeferredStepTestStage"
                     ],
                     "dependencies": [],
+                    "requires_tick_after": ["DeferredStepClockModule"],
                     "config": {
                         "worker_cap": "auto",
                         "ranges_per_worker": 4
@@ -46,6 +47,7 @@
                         "DeferredStepTestStage"
                     ],
                     "dependencies": [],
+                    "requires_tick_after": ["DeferredStepModule"],
                     "channels": [
                         {
                             "id": "AutomationService",
