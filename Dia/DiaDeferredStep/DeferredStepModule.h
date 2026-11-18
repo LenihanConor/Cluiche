@@ -15,6 +15,7 @@
 #include <DiaDeferredStep/DeferredStepHealth.h>
 #include <DiaDeferredStep/DeferredStepMetrics.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
+#include <DiaDeferredStep/IStepSummarySink.h>
 
 namespace Dia::SaveGame
 {
@@ -22,11 +23,16 @@ namespace Dia::SaveGame
 	class SaveManager;
 }
 
+namespace Dia::Observation::Profile
+{
+	class JobTimingTable;
+}
+
 namespace Dia::DeferredStep
 {
 	// SimPU module that hosts the deferred-step scheduler. Consumes the JobSystem
 	// published on "JobSystemService" (MainPU). Consumers reach it via ModuleRef<DeferredStepModule>.
-	class DeferredStepModule : public Dia::ApplicationFlow::SimModule
+	class DeferredStepModule : public Dia::ApplicationFlow::SimModule, private IStepSummarySink
 	{
 	public:
 		static const Dia::Core::StringCRC kTypeId;
@@ -50,6 +56,16 @@ namespace Dia::DeferredStep
 			// DoUpdate (so it registers after every other module's participants and deserializes last).
 			// Never calling this is fine: the module logs one Info and has no save participation.
 			void SetSaveServices(Dia::SaveGame::SaveRegistry& registry, Dia::SaveGame::SaveManager& manager);
+
+			// Non-owning, optional (null = none, the default). Step summaries are forwarded to it when set; the ring
+			// below is filled either way. The caller keeps the table alive while set.
+			void SetJobTimingTable(Dia::Observation::Profile::JobTimingTable* table) { mJobTimingTable = table; }
+
+			// Last kSummaryRingCapacity step summaries, oldest first. The ring is cleared on every DoStart, so a restart
+			// starts empty (it is not cleared by DoStop, so it can be inspected after stop).
+			static constexpr uint32_t kSummaryRingCapacity = 16;
+			uint32_t GetSummaryCount() const { return mSummaryCount; }
+			bool GetSummary(uint32_t indexFromOldest, Dia::Observation::Profile::StepSummaryRecord& out) const;
 
 	protected:
 		void OnConfigure(const char* configJson) override;
@@ -82,5 +98,15 @@ namespace Dia::DeferredStep
 			Dia::SaveGame::SaveManager*  mSaveManager  = nullptr;   // non-owning, injected
 			bool            mSaveAttached = false;
 			bool            mSaveResolved = false;   // first-DoUpdate attach decision made (attached or logged no-services)
+
+			// Fixed ring: no allocation on the sink path. mSummaryHead is the oldest slot once the ring is full.
+			Dia::Observation::Profile::StepSummaryRecord mSummaryRing[kSummaryRingCapacity];
+			uint32_t mSummaryHead = 0;
+			uint32_t mSummaryCount = 0;
+			Dia::Observation::Profile::JobTimingTable* mJobTimingTable = nullptr;   // non-owning, optional
+
+		private:
+			void OnStepSummary(const Dia::Observation::Profile::StepSummaryRecord& record) override;
+			void ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& record);
 	};
 }

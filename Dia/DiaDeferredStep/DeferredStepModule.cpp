@@ -112,6 +112,38 @@ namespace Dia::DeferredStep
 		mJobSystemReader.Connect(app);
 	}
 
+	bool DeferredStepModule::GetSummary(uint32_t indexFromOldest, Dia::Observation::Profile::StepSummaryRecord& out) const
+	{
+		if (indexFromOldest >= mSummaryCount) { return false; }
+		out = mSummaryRing[(mSummaryHead + indexFromOldest) % kSummaryRingCapacity];
+		return true;
+	}
+
+	// SimPU only (called from inside the scheduler Tick). No allocation: overwrites a slot of the fixed ring.
+	void DeferredStepModule::OnStepSummary(const Dia::Observation::Profile::StepSummaryRecord& record)
+	{
+		if (mSummaryCount < kSummaryRingCapacity)
+		{
+			mSummaryRing[(mSummaryHead + mSummaryCount) % kSummaryRingCapacity] = record;
+			++mSummaryCount;
+		}
+		else
+		{
+			mSummaryRing[mSummaryHead] = record;   // full: overwrite the oldest
+			mSummaryHead = (mSummaryHead + 1) % kSummaryRingCapacity;
+		}
+
+		if (mJobTimingTable != nullptr)
+		{
+			ForwardToTable(record);
+		}
+	}
+
+	void DeferredStepModule::ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& /*record*/)
+	{
+		// TASK 7: JobTimingTable::AddStepSummary(record)
+	}
+
 	DeferredStepScheduler& DeferredStepModule::GetScheduler()
 	{
 		DIA_ASSERT(mScheduler.Get() != nullptr, "DeferredStepModule::GetScheduler called outside DoStart..DoStop");
@@ -148,6 +180,11 @@ namespace Dia::DeferredStep
 
 		mScheduler.Reset(new DeferredStepScheduler(*mLauncher.Get()));
 		mSaveParticipant.Reset(new DeferredStepSaveParticipant(*mScheduler.Get()));   // Attach happens in a later task
+
+		// Restart starts with an empty ring. The sink is this module, which outlives the scheduler; DoStop detaches it first.
+		mSummaryHead = 0;
+		mSummaryCount = 0;
+		mScheduler->SetSummarySink(this);
 
 		mLastSeenStalls = 0;
 		mMetrics.Register();
@@ -214,6 +251,7 @@ namespace Dia::DeferredStep
 	{
 		if (mScheduler.Get() != nullptr)
 		{
+			mScheduler->SetSummarySink(nullptr);   // discarded steps never summarize anyway; detach before teardown
 			mScheduler->DrainAndDiscardAll();
 			DIA_ASSERT(mScheduler->GetChannelCount() == 0, "DeferredStepModule stopping with channels still registered; consumers must unregister in their own DoStop");
 
