@@ -437,3 +437,5 @@ The "no cycles equals no climate" test (AC 17) is written first against the Feat
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked. User decisions encoded: data-driven layered cycles in a versioned file; temperature, ocean evaporation and prevailing-wind latitude shift as the three fields; `SINE` (cosine, peaks at `u = 0`) or `KEYFRAME` shape; optional latitude, coast/inland or region pattern; deterministic pure function of the day; summed per field with clamps; per-world `phase_days` with a warm default of 0; presets can switch off or pin (`pinned_phase_days`); **frozen-phase 52-week spin-up with A5 seeding its slow stores from a coldness value**; applied as forcings at `Capture`/`Run`; debug via existing commands, a layer and a scrub hook; `enabled`, `phase_days` and `pinned_phase_days` saved. Approval waits on Features 2 and 3 being built and on A5 agreeing the coldness hand-off.
+
+Plan: [climate-cycles.plan.md](climate-cycles.plan.md) (written 2026-11-17, not started).

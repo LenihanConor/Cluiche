@@ -305,3 +305,5 @@ Scoped `--filter="*Smooth*:*InfluencePreview*"` while iterating and one full `--
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked. User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on Features 3 and 7.
+
+Plan: [weather-smoothing.plan.md](weather-smoothing.plan.md) (written 2026-11-17, not started).

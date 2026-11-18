@@ -286,4 +286,6 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 - observability: profile per pass, trace zone, `cow.hydro.step_ms`, balance and tree gauges, health Degraded/Failing, `HYD` logs;
 - performance report-only.
 
-Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
+
+Plan: [hydrology-debug.plan.md](hydrology-debug.plan.md) (written 2026-11-17, not started).

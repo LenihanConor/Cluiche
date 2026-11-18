@@ -313,4 +313,6 @@ In order: the preset data values; the default parameter file values (Feature 1's
 - layer goldens via `CellLayerGolden.h` for the presets × seeds 1–3 at Small, 52 weeks;
 - the water balance holding over every scenario.
 
-Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan. **Tuning log:** empty.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step. **Tuning log:** empty.
+
+Plan: [hydrology-presets-and-regression.plan.md](hydrology-presets-and-regression.plan.md) (written 2026-11-17, not started).

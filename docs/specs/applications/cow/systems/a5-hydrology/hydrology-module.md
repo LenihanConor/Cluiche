@@ -558,4 +558,6 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 - A4 Feature 3 owes `IWaterInputSource`, the spin-up host calls (now with `SpinUpStart`: coldness and a snow-survival mask) and `IsReadyForRevision`. A4 owes `ClimateCycles::Coldness`, `WeatherRunner::StartColdness`, the firn hand-off (A4 TechSpec §11.3) and the mask rule.
 - Open Design Questions 1, 2 and 4.
 
-Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan yet.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
+
+Plan: [hydrology-module.plan.md](hydrology-module.plan.md) (written 2026-11-17, not started).

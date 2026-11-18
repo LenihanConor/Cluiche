@@ -370,3 +370,5 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 - soil and ground water can be seeded from capacities (default 0, as the GDD).
 
 Aligned to the locked GDD on 2026-11-17: constants, the three-column biome table, protected fixed-site cells, tiny-depression filter, in-basin directions, phase-scaled seed. Approval is a separate step.
+
+Plan: [hydrology-data.plan.md](hydrology-data.plan.md) (written 2026-11-17, not started).

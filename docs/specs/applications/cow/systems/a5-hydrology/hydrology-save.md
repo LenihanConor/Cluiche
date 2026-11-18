@@ -299,4 +299,6 @@ Layer goldens are not used here; state identity is asserted bitwise. Scoped `--f
 - `world_hash` depends on an unbuilt F-3 seam. Dimensions and `basin_count` carry the check until then.
 - ~~`low_flow_weeks` and `glacier_weeks` are not in Features 1–2.~~ **Resolved:** both are Feature 1 fields now, and `glacier_free_weeks` (A3's glacial retreat counter, GDD §12.1) joins them. All three are in the saved list.
 
-Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan yet.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
+
+Plan: [hydrology-save.plan.md](hydrology-save.plan.md) (written 2026-11-17, not started).

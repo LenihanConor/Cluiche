@@ -288,3 +288,5 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day: topological cascade, basins inside the cascade, cell-depth units, local ground water with baseflow, injected water sinks (multiplier + draw), floods judged against each river's running mean, and double totals with a tight check. Aligned to the locked GDD on 2026-11-17: slope-based release (0.3–0.85, hillslope 0.9), in-basin directions, tiny-depression filter, freeze hysteresis and basin ice, springs, flood recharge, firn hand-off check, passability order and the protected-cell cap, frozen low-flow weeks. Approval is a separate step.
+
+Plan: [water-pipeline.plan.md](water-pipeline.plan.md) (written 2026-11-17, not started).

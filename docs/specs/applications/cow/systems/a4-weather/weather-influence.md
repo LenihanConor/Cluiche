@@ -492,4 +492,4 @@ User decisions of 2026-11-17 encoded here:
 - No RNG. Ascending id order. Bit-identical at any range count and deferred vs synchronous.
 - No dragon content. See the backlog review row.
 
-**Plan:** none yet. Not written until the spec is Approved.
+Plan: [weather-influence.plan.md](weather-influence.plan.md) (written 2026-11-17, not started).

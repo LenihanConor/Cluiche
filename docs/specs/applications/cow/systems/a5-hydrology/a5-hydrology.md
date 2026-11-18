@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/cow.md
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17; DECISION-129..134, CHANGE-047/048, PARK-029, PARK-030). The GDD owns design intent and constants (AD-003). The interview answers are in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md` (Part 2). Aligned to the locked GDD (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
-**Status:** `Approved` (2026-11-17, user; GDD A5 locked)
+**Status:** `Approved` (2026-11-17, user; GDD A5 locked). Plan: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md
 
 **Gameplay Domains:** simulation, debug
 
@@ -334,4 +334,4 @@ The three interview-time questions are resolved (Decisions 9–11). Open, to rev
 
 ## Status
 
-**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step. No plan.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step.
