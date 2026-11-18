@@ -87,7 +87,7 @@ namespace Dia::DeferredStep
 		if (!forceFail)
 		{
 			GateItem* itemPtr = &item;
-			handle = mJobs.TrySubmit([this, itemPtr]
+			auto job = [this, itemPtr]
 			{
 				// Release the slot even if the work throws (JobSystem records the exception).
 				struct Epilogue
@@ -97,7 +97,8 @@ namespace Dia::DeferredStep
 					~Epilogue() { gate.Finish(item); }
 				} epilogue{ *this, *itemPtr };
 				itemPtr->mWork();
-			});
+			};
+			handle = item.mHasTag ? mJobs.TrySubmit(std::move(job), item.mTag) : mJobs.TrySubmit(std::move(job));
 		}
 
 		if (!handle.IsValid())

@@ -136,6 +136,9 @@ namespace Dia::DeferredStep
 			slotPtr->complete.store(true);   // before the gate epilogue; Release waits for the item to finish
 		});
 
+		// Coordinator job: same owner/tag as its ranges, range = kCoordinatorRange, rangeCount = 0.
+		slot.item.SetJobTag(MakeJobTag(info, kCoordinatorRange, 0));
+
 		const AdmitResult result = mGate.Admit(slot.item);
 		slot.viaGate = true;
 		if (result == AdmitResult::kSubmitFailed)

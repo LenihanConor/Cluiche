@@ -108,11 +108,12 @@ namespace Dia::DeferredStep
 		const uint32_t helperCount = rangeCount - 1;
 		std::unique_ptr<GateItem[]> items(helperCount > 0 ? new GateItem[helperCount] : nullptr);
 
-		// The ONLY admission call site (Feature 5 attaches a JobTag here).
+		// The ONLY range admission call site; each range job carries its JobTag (range i of rangeCount).
 		for (uint32_t i = 1; i < rangeCount; ++i)
 		{
 			GateItem& item = items[i - 1];
 			item.Prepare(GateItem::Kind::kRange, [&runRange, &item, i] { runRange(i, &item); });
+			item.SetJobTag(MakeJobTag(mInfo, static_cast<uint16_t>(i), static_cast<uint16_t>(rangeCount)));
 			mGate.Admit(item);
 		}
 

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <vector>
 #include <DiaDeferredStep/CapConfig.h>
+#include <DiaThreading/JobContext.h>
 
 namespace Dia::Threading { class JobSystem; }
 
@@ -58,8 +59,12 @@ namespace Dia::DeferredStep
 			mWork = std::move(work);
 			mEnqueueNs = 0;
 			mAdmitNs = 0;
+			mHasTag = false;
 			mState.store(State::kIdle);
 		}
+
+		// Optional attribution used for the TrySubmit; set after Prepare (Prepare clears it).
+		void SetJobTag(const Dia::Threading::JobTag& tag) { mTag = tag; mHasTag = true; }
 
 		State    GetState()     const { return mState.load(); }
 		Kind     GetKind()      const { return mKind; }
@@ -78,6 +83,8 @@ namespace Dia::DeferredStep
 		Kind                  mKind = Kind::kRange;
 		uint64_t              mEnqueueNs = 0;
 		uint64_t              mAdmitNs = 0;
+		Dia::Threading::JobTag mTag;
+		bool                  mHasTag = false;
 		std::atomic<State>    mState{ State::kIdle };
 	};
 
