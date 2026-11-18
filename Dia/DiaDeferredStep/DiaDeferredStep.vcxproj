@@ -94,6 +94,7 @@
     <ClInclude Include="JobStepLauncher.h" />
     <ClInclude Include="Testing\ReorderingExecutor.h" />
     <ClInclude Include="Testing\ReferenceGatherStep.h" />
+    <ClInclude Include="DeferredStepSaveParticipant.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />
@@ -102,6 +103,7 @@
     <ClCompile Include="CapGate.cpp" />
     <ClCompile Include="CappedParallelExecutor.cpp" />
     <ClCompile Include="JobStepLauncher.cpp" />
+    <ClCompile Include="DeferredStepSaveParticipant.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
