@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/cow.md
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17; DECISION-129..134, CHANGE-047/048, PARK-029, PARK-030). The GDD owns design intent and constants (AD-003). The interview answers are in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md` (Part 2). Aligned to the locked GDD (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
-**Status:** `Draft`
+**Status:** `Approved` (2026-11-17, user; GDD A5 locked)
 
 **Gameplay Domains:** simulation, debug
 
@@ -52,12 +52,12 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 
 | # | Feature | Summary | Spec | Status |
 |---|---------|---------|------|--------|
-| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing` = protected cells), 43 scalar descriptors (GDD names and values) + a 13-biome × 3-column `biome_table`, versioned file, atomic overrides, `Initialise` (validation, tiny-depression filter, in-basin directions, full lakes, static tables) and `ApplyPhaseSeed`. Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Draft |
-| 2 | Water Pipeline | The weekly passes: inputs, freeze (cells and basin ice), glacier, infiltration and springs, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (slope-based release, same-week crossing and chained lakes), basin levels and inundation, floods with soil recharge against each river's running mean, counters, passability, glacier eligibility, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Draft |
-| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot` (incl. `RiverState`); init from S-1, frozen-phase spin-up with a phase-scaled seed, `HoldGeneration`/`WorldGenerationFailed` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md | Draft |
-| 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-save.md | Draft |
-| 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-debug.md | Draft |
-| 6 | Presets & Regression | Scenarios (forced wet year, drought decade, melt pulse, ice-age phase), layer goldens via `CellLayerGolden.h`, the reachability long-run test | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md | Draft |
+| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing` = protected cells), 43 scalar descriptors (GDD names and values) + a 13-biome × 3-column `biome_table`, versioned file, atomic overrides, `Initialise` (validation, tiny-depression filter, in-basin directions, full lakes, static tables) and `ApplyPhaseSeed`. Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Approved |
+| 2 | Water Pipeline | The weekly passes: inputs, freeze (cells and basin ice), glacier, infiltration and springs, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (slope-based release, same-week crossing and chained lakes), basin levels and inundation, floods with soil recharge against each river's running mean, counters, passability, glacier eligibility, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Approved |
+| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot` (incl. `RiverState`); init from S-1, frozen-phase spin-up with a phase-scaled seed, `HoldGeneration`/`WorldGenerationFailed` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md | Approved |
+| 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-save.md | Approved |
+| 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-debug.md | Approved |
+| 6 | Presets & Regression | Scenarios (forced wet year, drought decade, melt pulse, ice-age phase), layer goldens via `CellLayerGolden.h`, the reachability long-run test | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md | Approved |
 
 **Build order:** 1 → 2 → 6 (pure logic, provable by GoogleTests on hand-built grids) → 3 → 4 → 5. 3 needs `WorldStepModule` and A4 Feature 3. The S-2.6 testbed is its own spec (GDD A5 is now locked, so it can be written).
 
@@ -334,4 +334,4 @@ The three interview-time questions are resolved (Decisions 9–11). Open, to rev
 
 ## Status
 
-**Status:** `Draft` (2026-11-17). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step. No plan.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step. No plan.

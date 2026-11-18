@@ -1,7 +1,7 @@
 # Feature Spec: A4 Smoothing
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 9)
-**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `INFLUENCE_PREVIEW_FADE_DAYS` as a parameter, the Feature 7 preview source, three-buffer notes with the ten-array `WeatherFields`.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `INFLUENCE_PREVIEW_FADE_DAYS` as a parameter, the Feature 7 preview source, three-buffer notes with the ten-array `WeatherFields`.
 **Design source:** GDD `A4_TechnicalSpec.md` §20, `A4_WeatherSystem.md` decision 9, `A4_TuningParameters.md` §10a (`INFLUENCE_PREVIEW_FADE_DAYS`). A4 was **re-locked 2026-11-17 (CHANGE-047)**. User decisions of 2026-11-17 win where the locked GDD differs (see "GDD differences").
 **Depends on:** A4 Feature 3 (`Commit`, `WeatherSnapshot`, committed buffers); A4 Feature 7 (Weather Influence API: its active and pending influence list, by name only). Touches V-1 (reader).
 
@@ -304,4 +304,4 @@ Scoped `--filter="*Smooth*:*InfluencePreview*"` while iterating and one full `--
 
 ## Status
 
-**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked, so Approval is a separate step. User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on Features 3 and 7.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked. User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on Features 3 and 7.

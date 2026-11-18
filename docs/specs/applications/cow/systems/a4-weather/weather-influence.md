@@ -1,7 +1,7 @@
 # Feature Spec: A4 Weather Influence API
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 7)
-**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): carried `pressureAnomaly`, GDD §10a constant names and values, `IInfluencePreviewSource` and the A5 ground-water array.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): carried `pressureAnomaly`, GDD §10a constant names and values, `IInfluencePreviewSource` and the A5 ground-water array.
 **Design source:** GDD A4 TechnicalSpec §4.1 (pressure anomaly) and §18 (Influence API, DECISION-131), TuningParameters §10a, WeatherSystem decision 7. A4 was **re-locked 2026-11-17 (CHANGE-047)**. User decisions of 2026-11-17 win where the locked GDD differs (see "GDD differences").
 **Depends on:** A4 Feature 2 (pipeline passes, forcing hooks A–D, `Capture`/`Run`/`Commit`); A4 Feature 3 (`WeatherModule`, `WeatherStage`, mutation queue, sim-hosted commands, `SetHydrologyProvider`); A4 Feature 4 (save record, pending blob). Soft: A5 Feature 3 (translates the ground-water part).
 **Consumed by:** A4 Feature 5 (`force storm` routes here), A4 Feature 9 (Smoothing: reads the active/pending list for its preview), A5 Feature 3 (`extraWater` and sink translation), A1 (`water_dragon_emission` moves onto this path), future dragon abilities (not designed; see the backlog review row).
@@ -479,7 +479,7 @@ Scoped `--filter="*WeatherInfluence*"` while iterating, one full `--shards 2` ru
 
 ## Status
 
-**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked, so Approval is a separate step.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked.
 
 User decisions of 2026-11-17 encoded here:
 - Public, deterministic, CoW-only influence API with five kinds and the six fields (source, region as cell set or centre + radius, strength, lifetime, falloff).

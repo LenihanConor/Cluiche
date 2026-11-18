@@ -1,7 +1,7 @@
 # Feature Spec: A5 Water Pipeline
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 2)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §2–§12, DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Amended to match it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:** A5 Feature 1 (`HydrologyFields`, `HydrologyTerrain`, `HydrologyParameters`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers, built `c83a94ed`).
 
@@ -287,4 +287,4 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 
 ## Status
 
-**Status:** Draft (2026-11-17). Interview done with the user the same day: topological cascade, basins inside the cascade, cell-depth units, local ground water with baseflow, injected water sinks (multiplier + draw), floods judged against each river's running mean, and double totals with a tight check. Aligned to the locked GDD on 2026-11-17: slope-based release (0.3–0.85, hillslope 0.9), in-basin directions, tiny-depression filter, freeze hysteresis and basin ice, springs, flood recharge, firn hand-off check, passability order and the protected-cell cap, frozen low-flow weeks. Approval is a separate step.
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day: topological cascade, basins inside the cascade, cell-depth units, local ground water with baseflow, injected water sinks (multiplier + draw), floods judged against each river's running mean, and double totals with a tight check. Aligned to the locked GDD on 2026-11-17: slope-based release (0.3–0.85, hillslope 0.9), in-basin directions, tiny-depression filter, freeze hysteresis and basin ice, springs, flood recharge, firn hand-off check, passability order and the protected-cell cap, frozen low-flow weeks. Approval is a separate step.

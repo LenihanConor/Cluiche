@@ -1,7 +1,7 @@
 # Feature Spec: A5 Hydrology Data & Parameters
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 1)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §1, §13 and `A5_TuningParameters.md`; DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Amended to match it (aligned to locked GDD 2026-11-17).
 **Depends on:** S-1 consumer amendment 8 (basin table and bed elevation in the world record). Unit tests use hand-built terrain, so the amendment is needed only once Feature 3 reads real worlds.
 
@@ -365,7 +365,7 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 
 ## Status
 
-**Status:** Draft (2026-11-17). Interview done with the user the same day:
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day:
 - the biome table is its own block;
 - soil and ground water can be seeded from capacities (default 0, as the GDD).
 

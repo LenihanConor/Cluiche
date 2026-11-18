@@ -1,7 +1,7 @@
 # Feature Spec: A5 Hydrology Save/Load
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 4)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §1, §16; `A5_EdgeCaseMatrix.md` EC-21, EC-22; DECISION-129..134, CHANGE-047/048). The GDD owns design intent (AD-003). Aligned to it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:**
 - A5 Features 1, 2 and 3 (`HydrologyFields`, `BasinState`, `HydrologySimulation`, `HydrologyModule`, the stage).
@@ -284,7 +284,7 @@ Layer goldens are not used here; state identity is asserted bitwise. Scoped `--f
 
 ## Status
 
-**Status:** Draft (2026-11-17). Decisions encoded from the user session the same day:
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:
 - E1 `ISaveable` participant `cow.hydrology`; JSON text arrays (floats as 17-digit doubles, as A4).
 - It saves Feature 1's saved list, basin volumes and the counters, plus the three additions above.
 - The pending working set goes through `SerializePending`/`DeserializePending`, with the scheduler's apply key (DFS-005), so a reload continues bit-identically including a step in flight.

@@ -1,7 +1,7 @@
 # Feature Spec: A5 HydrologyModule & World Step Stage
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 3)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §13, §14, §16, `A5_EdgeCaseMatrix.md` EC-10, EC-14, EC-15, EC-23; DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Aligned to it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:**
 - A5 Features 1 and 2 (`HydrologySimulation`, `HydrologyParameters`, `HydrologyTerrain`, `WaterInput`, `FixedWaterInput`).
@@ -546,7 +546,7 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 
 ## Status
 
-**Status:** Draft (2026-11-17). Decisions encoded from the user session the same day:
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:
 - `HydrologyModule` is a CoW-Shared-backed SimModule and the `hydrology` World Step stage. It never kicks.
 - Wiring is by interfaces through `ModuleRef` (no singletons, no ServiceStreams): sink providers (capacity 8, ascending id), `SetWaterSource`, A4's `IHydrologyInputsProvider`.
 - A5's `Run` reads A4's working copy from the same `Run` (order weather → hydrology → ecology).

@@ -1,7 +1,7 @@
 # Feature Spec: A5 Hydrology Debug & History
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 5)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_AuthoringDebug.md` §1–§5a, `A5_TuningParameters.md`; DECISION-129..134), the A5 brief in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md`, and the user decisions of 2026-11-17. The GDD owns design intent (AD-003). Aligned to it (aligned to locked GDD 2026-11-17). Where the GDD differs from the user decisions, the decisions win (see "GDD differences").
 **Depends on:**
 - A5 Features 1–2 (fields, parameters, `WaterTotals`, `Passability`, `SetParam`).
@@ -279,7 +279,7 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 
 ## Status
 
-**Status:** Draft (2026-11-17). Written from the user's decisions of the same day:
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:
 - eight DiaCellLayers base layers with inundation shown through the basin mask;
 - DiaCellHistory defaults "totals + key layers" (weekly totals and per-region soil means; per-cell `river_flow`, `soil`, `flooded`, `glacier`; five event types; other layers opt-in), sampled by World Step's `HistoryDriverModule`;
 - six consolidated sim-hosted commands with mandatory help (`state`, `basins`, `find`, `set_param`, `preset`, `balance`);

@@ -1,7 +1,7 @@
 # Feature Spec: A5 Hydrology Presets & Regression
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 6)
-**Status:** Draft (2026-11-17)
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_AuthoringDebug.md` §5 presets and §6 regression, `A5_EdgeCaseMatrix.md` EC-15 to EC-19 reachability, `A5_TuningParameters.md` §11 pattern targets). The GDD owns design intent (AD-003). Aligned to it (aligned to locked GDD 2026-11-17). The user decisions of 2026-11-17 win where they differ (see "GDD differences").
 **Depends on:**
 - A5 Feature 1 (`HydrologyFields`, `HydrologyTerrain`, parameters, `Initialise`).
@@ -306,7 +306,7 @@ In order: the preset data values; the default parameter file values (Feature 1's
 
 ## Status
 
-**Status:** Draft (2026-11-17). Written from the user's decisions of the same day:
+**Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:
 - four shipped scenarios, all on the fixed-input driver, with S-2.6 able to run them with real A4;
 - per-scenario numeric checks with thresholds provisional where no number exists;
 - the default R-Reach GoogleTest (100 years, wet/dry/cold cycles including a 4-decade cold phase, every S-1 Small preset, `Deep` as water, reachability re-run every year, corridors and crossings never `Deep`) and the `SLOW_` coupled A4+A5 test, blocked until A4 is built;
