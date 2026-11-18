@@ -9,6 +9,8 @@
 #include <DiaDeferredStep/SerialExecutor.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaSaveGame/SaveManager.h>
 #include <DiaSaveGame/SaveRegistry.h>
 
@@ -160,6 +162,9 @@ namespace Dia::DeferredStep
 	void DeferredStepModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 	{
 		if (mScheduler.Get() == nullptr) { return; }
+
+		DIA_TRACE_ZONE("DeferredStep.Update", Dia::Observation::Trace::Category::kNone);
+		DIA_PROFILE_SCOPE("DeferredStep.Update", Dia::Observation::Profile::Category::kNone);
 
 		// Lazy attach on the first update so this participant registers after every other module's.
 		if (!mSaveResolved)
