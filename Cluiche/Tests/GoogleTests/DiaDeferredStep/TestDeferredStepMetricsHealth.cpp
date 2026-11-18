@@ -354,3 +354,151 @@ TEST(DeferredStepModuleHealth, ReportIsSafeFromASecondThreadDuringStalls)
 	EXPECT_EQ(failing.load(), 0u);
 	g_probe->GetScheduler().Unregister(kMhChannel);
 }
+
+// ---- Exhaustive pass: per-metric value tracking ----
+TEST(DeferredStepModuleMetrics, KicksRejectedCountsEveryNonLaunchedResult)
+{
+	MH_KeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	auto& sched = g_probe->GetScheduler();
+	using Dia::DeferredStep::KickResult;
+	std::atomic<bool> release{ false };
+	Dia::DeferredStep::Testing::RecordingStep step;
+	step.SetOnRun([&release]() { while (!release.load()) { std::this_thread::yield(); } });
+	ASSERT_TRUE(sched.Register(kMhChannel, step));
+
+	const uint64_t rejected0 = CounterValue("dia.deferredstep.kicks_rejected");
+	const uint64_t kicks0 = CounterValue("dia.deferredstep.kicks");
+	const uint64_t applies0 = CounterValue("dia.deferredstep.applies");
+
+	EXPECT_EQ(sched.Kick(StringCRC("MH_NoSuchChannel"), 1, 2), KickResult::kUnknownChannel);
+	EXPECT_EQ(sched.Kick(kMhChannel, 5, 3), KickResult::kApplyBeforeKick);
+	EXPECT_EQ(sched.Kick(kMhChannel, 10, 12), KickResult::kLaunched);
+	EXPECT_EQ(sched.Kick(kMhChannel, 11, 13), KickResult::kAlreadyInFlight);
+	g_probe->CallUpdate();    // publishes
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected") - rejected0, 3u);
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, 1u);
+
+	release.store(true);
+	source.mKey = 12;
+	g_probe->CallUpdate();    // applies
+	EXPECT_EQ(sched.Kick(kMhChannel, 5, 20), KickResult::kKeyNotMonotonic);
+	g_probe->CallUpdate();
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected") - rejected0, 4u);   // one per non-launched result, none for the accepted kick
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, 1u);
+	EXPECT_EQ(CounterValue("dia.deferredstep.applies") - applies0, 1u);
+	sched.Unregister(kMhChannel);
+}
+
+TEST(DeferredStepModuleMetrics, CapUtilisationIsSlotsHeldOverWorkerCapWhileStepInFlight)
+{
+	const struct { const char* json; double expected; } cases[] =
+	{
+		{ "{\"worker_cap\":1}", 1.0 },
+		{ "{\"worker_cap\":2}", 0.5 },
+		{ "{\"worker_cap\":4}", 0.25 },
+	};
+	for (const auto& c : cases)
+	{
+		SCOPED_TRACE(c.json);
+		MH_KeySource source;
+		Harness h(true, c.json, 8);
+		ASSERT_TRUE(h.Start());
+		g_probe->SetKeySource(source);
+		std::atomic<bool> release{ false };
+		Dia::DeferredStep::Testing::RecordingStep step;
+		step.SetOnRun([&release]() { while (!release.load()) { std::this_thread::yield(); } });
+		ASSERT_TRUE(g_probe->GetScheduler().Register(kMhChannel, step));
+		ASSERT_EQ(g_probe->GetScheduler().Kick(kMhChannel, 1, 100), Dia::DeferredStep::KickResult::kLaunched);
+		source.mKey = 2;
+		g_probe->CallUpdate();
+		EXPECT_EQ(GaugeValue("dia.deferredstep.cap_utilisation"), c.expected);
+		release.store(true);
+		g_probe->GetScheduler().Unregister(kMhChannel);
+	}
+}
+
+TEST(DeferredStepModuleMetrics, InlineFallbacksCounterTracksFailedSubmits)
+{
+	MH_KeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(g_probe->GetScheduler().Register(kMhChannel, step));
+	const uint64_t inline0 = CounterValue("dia.deferredstep.inline_fallbacks");
+
+	g_probe->Gate().SetSubmitFailureHookForTest([]() { return true; });
+	for (StepKey k = 1; k <= 3; ++k)
+	{
+		ASSERT_EQ(g_probe->GetScheduler().Kick(kMhChannel, k, k + 1), Dia::DeferredStep::KickResult::kLaunched);
+		EXPECT_EQ(step.GetRunThread(), std::this_thread::get_id());   // ran inline on SimPU
+		source.mKey = k + 1;
+		g_probe->CallUpdate();
+		EXPECT_EQ(CounterValue("dia.deferredstep.inline_fallbacks") - inline0, k);
+	}
+	g_probe->Gate().SetSubmitFailureHookForTest(nullptr);
+	for (int i = 0; i < 3; ++i) { g_probe->CallUpdate(); }
+	EXPECT_EQ(CounterValue("dia.deferredstep.inline_fallbacks") - inline0, 3u);   // idle ticks add nothing
+	g_probe->GetScheduler().Unregister(kMhChannel);
+}
+
+TEST(DeferredStepModuleMetrics, InlineLauncherStillTracksKicksAppliesAndNeverFallsBack)
+{
+	MH_KeySource source;
+	Harness h(false);
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(g_probe->GetScheduler().Register(kMhChannel, step));
+	const uint64_t kicks0 = CounterValue("dia.deferredstep.kicks");
+	const uint64_t applies0 = CounterValue("dia.deferredstep.applies");
+	const uint64_t inline0 = CounterValue("dia.deferredstep.inline_fallbacks");
+	const uint64_t stalls0 = CounterValue("dia.deferredstep.stalls");
+	ASSERT_EQ(g_probe->GetScheduler().Kick(kMhChannel, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+	source.mKey = 2;
+	g_probe->CallUpdate();
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, 1u);
+	EXPECT_EQ(CounterValue("dia.deferredstep.applies") - applies0, 1u);
+	EXPECT_EQ(CounterValue("dia.deferredstep.inline_fallbacks") - inline0, 0u);
+	EXPECT_EQ(CounterValue("dia.deferredstep.stalls") - stalls0, 0u);
+	g_probe->GetScheduler().Unregister(kMhChannel);
+}
+
+TEST(DeferredStepModuleMetrics, CountersDoNotDoubleCountAcrossRestarts)
+{
+	MH_KeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	const uint64_t kicks0 = CounterValue("dia.deferredstep.kicks");
+	const uint64_t applies0 = CounterValue("dia.deferredstep.applies");
+	const uint64_t rejected0 = CounterValue("dia.deferredstep.kicks_rejected");
+	const uint64_t stalls0 = CounterValue("dia.deferredstep.stalls");
+	uint64_t stallsSoFar = 0;
+
+	for (unsigned cycle = 0; cycle < 3; ++cycle)
+	{
+		Dia::DeferredStep::Testing::RecordingStep step;
+		step.SetOnRun([]() { std::this_thread::sleep_for(std::chrono::milliseconds(5)); });
+		ASSERT_TRUE(g_probe->GetScheduler().Register(kMhChannel, step));
+		ASSERT_EQ(g_probe->GetScheduler().Kick(kMhChannel, 1, 1), Dia::DeferredStep::KickResult::kLaunched);
+		EXPECT_EQ(g_probe->GetScheduler().Kick(StringCRC("MH_NoSuchChannel"), 1, 1), Dia::DeferredStep::KickResult::kUnknownChannel);
+		source.mKey = 1;
+		g_probe->CallUpdate();
+		g_probe->GetScheduler().Unregister(kMhChannel);
+
+		stallsSoFar += g_probe->GetScheduler().GetStats().stalls;
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, cycle + 1);
+		EXPECT_EQ(CounterValue("dia.deferredstep.applies") - applies0, cycle + 1);
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected") - rejected0, cycle + 1);
+		EXPECT_EQ(CounterValue("dia.deferredstep.stalls") - stalls0, stallsSoFar);
+
+		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+		g_probe->CallUpdate();     // fresh stats after restart add nothing
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, cycle + 1);
+	}
+}

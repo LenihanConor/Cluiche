@@ -51,6 +51,7 @@ namespace
 		// Config parsed by OnConfigure and the cap the launcher resolved in DoStart.
 		Dia::DeferredStep::DeferredStepHealth& HealthReporter() { return mHealth; }
 		const Dia::DeferredStep::CapConfig& ParsedConfig() const { return mConfig; }
+		Dia::DeferredStep::CapGate& Gate() { return static_cast<Dia::DeferredStep::JobStepLauncher*>(mLauncher.Get())->GetCapGate(); }
 		uint32_t ResolvedCap() { return static_cast<Dia::DeferredStep::JobStepLauncher*>(mLauncher.Get())->GetCapGate().GetWorkerCap(); }
 	};
 

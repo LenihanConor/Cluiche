@@ -27,7 +27,9 @@
 #include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaThreading/JobSystem.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <chrono>
 #include <cstring>
+#include <thread>
 #include <memory>
 #include <string>
 
@@ -490,3 +492,305 @@ TEST(DeferredStepModule, NoSaveServicesLogsOneInfoAndDoesNotParticipate)
 	EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);   // nothing attached, nothing to detach
 	EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
 }
+
+// ---- Exhaustive pass: config branches not covered by ConfigTable ----
+TEST(DeferredStepModule, ConfigTableRemainingBranches)
+{
+	const ConfigCase cases[] =
+	{
+		{ "empty object",           "{}",                                  8, 2, 4, 0 },
+		{ "unknown keys ignored",   "{\"foo\":1,\"bar\":\"x\"}",           8, 2, 4, 0 },
+		{ "cap one",                "{\"worker_cap\":1}",                  8, 1, 4, 0 },
+		{ "cap equals workers",     "{\"worker_cap\":8}",                  8, 8, 4, 0 },
+		{ "cap one above workers",  "{\"worker_cap\":9}",                  8, 8, 4, 1 },
+		{ "auto on one worker",     "{\"worker_cap\":\"auto\"}",           1, 1, 4, 0 },
+		{ "auto on three workers",  "{\"worker_cap\":\"auto\"}",           3, 1, 4, 0 },
+		{ "auto on sixteen",        "{}",                                  16, 4, 4, 0 },
+		{ "ranges one",             "{\"ranges_per_worker\":1}",           8, 2, 1, 0 },
+		{ "ranges string",          "{\"ranges_per_worker\":\"banana\"}",  8, 2, 4, 1 },
+		{ "ranges float",           "{\"ranges_per_worker\":2.5}",         8, 2, 4, 1 },
+		{ "ranges bool",            "{\"ranges_per_worker\":true}",        8, 2, 4, 1 },
+		{ "ranges object",          "{\"ranges_per_worker\":{}}",          8, 2, 4, 1 },
+		{ "root is array",          "[1,2]",                               8, 2, 4, 1 },
+		{ "root is string",         "\"hello\"",                           8, 2, 4, 1 },
+		{ "root is number",         "7",                                   8, 2, 4, 1 },
+		{ "bad cap, good ranges",   "{\"worker_cap\":\"x\",\"ranges_per_worker\":2}", 8, 2, 2, 1 },
+	};
+
+	for (const ConfigCase& c : cases)
+	{
+		SCOPED_TRACE(c.name);
+		Dia::DeferredStep::Testing::LogCapture logs;
+		Harness h(true, c.json, c.workers);
+		ASSERT_TRUE(h.Start());
+		EXPECT_EQ(g_probe->ResolvedCap(), c.expectedCap);
+		EXPECT_EQ(g_probe->ParsedConfig().rangesPerWorker, c.expectedRanges);
+		EXPECT_EQ(logs.Warnings() - logs.Warnings("key source"), c.expectedWarnings);
+		EXPECT_EQ(logs.Count(Dia::DeferredStep::Testing::LogCapture::Level::kError), 0u);
+	}
+}
+
+TEST(DeferredStepModule, WorkerCapAboveWorkerCountOnSingleWorkerPoolClampsToOneAndStepsComplete)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	CountingKeySource source;
+	Harness h(true, "{\"worker_cap\":4}", 1);
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(g_probe->ResolvedCap(), 1u);
+	EXPECT_EQ(logs.Warnings("exceeds worker count"), 1u);
+	EXPECT_EQ(logs.Warnings() - logs.Warnings("key source"), 1u);
+
+	g_probe->SetKeySource(source);
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	const StringCRC chA("DSM_OneWorkerA"), chB("DSM_OneWorkerB");
+	Dia::DeferredStep::Testing::RecordingStep stepA, stepB;
+	ASSERT_TRUE(sched.Register(chA, stepA));
+	ASSERT_TRUE(sched.Register(chB, stepB));
+	EXPECT_EQ(sched.Kick(chA, 1, 3), Dia::DeferredStep::KickResult::kLaunched);
+	EXPECT_EQ(sched.Kick(chB, 1, 3), Dia::DeferredStep::KickResult::kLaunched);   // second one queues behind the cap of 1
+	for (StepKey k = 1; k <= 3; ++k) { source.mKey = k; g_probe->CallUpdate(); }
+	EXPECT_EQ(stepA.GetRunCount(), 1u);
+	EXPECT_EQ(stepB.GetRunCount(), 1u);
+	EXPECT_EQ(stepA.GetApplyCount(), 1u);
+	EXPECT_EQ(stepB.GetApplyCount(), 1u);
+	sched.Unregister(chA);
+	sched.Unregister(chB);
+	EXPECT_EQ(logs.Warnings("exceeds worker count"), 1u);   // not repeated per kick
+}
+
+// ---- AC 34: start Info values, nothing per frame, stop Info values ----
+TEST(DeferredStepModule, StartInfoCarriesResolvedCapRangesAndWorkerCount)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h(true, "{\"worker_cap\":3,\"ranges_per_worker\":6}", 8);
+	ASSERT_TRUE(h.Start());
+	EXPECT_EQ(logs.Infos("cap=3, rangesPerWorker=6, workers=8"), 1u);
+}
+
+TEST(DeferredStepModule, NothingLoggedPerFrameInSteadyState)
+{
+	CountingKeySource source;
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	source.mKey = 1;
+	g_probe->CallUpdate();     // first update logs the one-time "no save services" Info
+	logs.Clear();
+	for (int i = 0; i < 100; ++i) { ++source.mKey; g_probe->CallUpdate(); }
+	EXPECT_EQ(logs.Total(), 0u);
+}
+
+TEST(DeferredStepModule, StopInfoReportsLifetimeCountValues)
+{
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+	source.mKey = 2;
+	g_probe->CallUpdate();
+	sched.Unregister(kChannelA);
+
+	Dia::DeferredStep::Testing::LogCapture logs;
+	g_probe->CallStop();
+	EXPECT_EQ(logs.Infos("kicks=1, applies=1"), 1u);
+	g_probe->CallStart();
+}
+
+// ---- Lifecycle paths ----
+TEST(DeferredStepModule, InlineModeKeySourceTicksAndRestartsCleanly)
+{
+	CountingKeySource source;
+	Harness h(false);
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	for (int cycle = 0; cycle < 2; ++cycle)
+	{
+		Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+		Dia::DeferredStep::Testing::RecordingStep step;
+		ASSERT_TRUE(sched.Register(kChannelA, step));
+		EXPECT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+		source.mKey = 2;
+		g_probe->CallUpdate();
+		EXPECT_EQ(step.GetApplyCount(), 1u);
+		EXPECT_EQ(step.GetRunThread(), std::this_thread::get_id());
+		sched.Unregister(kChannelA);
+		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+	}
+}
+
+TEST(DeferredStepModule, UpdateAfterStopIsANoOpAndDoesNotReadKeySource)
+{
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	g_probe->CallUpdate();
+	EXPECT_EQ(source.mReads, 1u);
+	g_probe->CallStop();
+	for (int i = 0; i < 5; ++i) { g_probe->CallUpdate(); }
+	EXPECT_EQ(source.mReads, 1u);
+	g_probe->CallStart();
+}
+
+TEST(DeferredStepModule, UnregisterWaitsForRunningStepThenStopIsCleanAndNothingApplies)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	std::atomic<bool> release{ false };
+	Dia::DeferredStep::Testing::RecordingStep step;
+	step.SetOnRun([&release]() { while (!release.load()) { std::this_thread::yield(); } });
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 100), Dia::DeferredStep::KickResult::kLaunched);
+
+	std::thread releaser([&release]() { std::this_thread::sleep_for(std::chrono::milliseconds(30)); release.store(true); });
+	sched.Unregister(kChannelA);    // drain path: blocks until the worker finishes, never applies
+	releaser.join();
+	EXPECT_EQ(step.GetRunCount(), 1u);
+	EXPECT_EQ(step.GetApplyCount(), 0u);
+	EXPECT_EQ(sched.GetChannelCount(), 0u);
+
+	EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+	EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+}
+
+TEST(DeferredStepModule, RestartWithChannelsBetweenCyclesStartsFromFreshKeyState)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+
+	// Keys go DOWN across cycles (1000, 600, 200): a retained key floor or last-tick key would reject the kick or
+	// treat the tick as backwards (assert in Debug). Cycle 1 leaves its step unapplied and unregisters it (discard).
+	const StepKey bases[] = { 1000, 600, 200 };
+	for (int cycle = 0; cycle < 3; ++cycle)
+	{
+		Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+		EXPECT_EQ(sched.GetChannelCount(), 0u);
+		Dia::DeferredStep::Testing::RecordingStep step;
+		ASSERT_TRUE(sched.Register(kChannelA, step));
+		EXPECT_EQ(sched.Kick(kChannelA, bases[cycle], bases[cycle] + 2), Dia::DeferredStep::KickResult::kLaunched);
+		if (cycle != 1)
+		{
+			source.mKey = bases[cycle] + 2;
+			g_probe->CallUpdate();
+			EXPECT_EQ(step.GetApplyCount(), 1u);
+		}
+		sched.Unregister(kChannelA);
+		if (cycle == 1) { EXPECT_EQ(step.GetApplyCount(), 0u); }
+		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+	}
+	EXPECT_EQ(logs.Warnings("backwards"), 0u);
+	EXPECT_EQ(logs.Warnings("Kick rejected"), 0u);
+}
+
+TEST(DeferredStepModule, KeySourceSurvivesRestartAndNoSourceWarningIsOncePerModuleLifetime)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	for (int i = 0; i < 3; ++i) { g_probe->CallUpdate(); }
+	EXPECT_EQ(logs.Warnings("key source"), 1u);
+	g_probe->CallStop();
+	g_probe->CallStart();
+	for (int i = 0; i < 3; ++i) { g_probe->CallUpdate(); }
+	EXPECT_EQ(logs.Warnings("key source"), 1u);        // pinned: the one-shot latch is not reset by a restart
+
+	g_probe->SetKeySource(source);
+	g_probe->CallStop();
+	g_probe->CallStart();
+	source.mReads = 0;
+	g_probe->CallUpdate();
+	EXPECT_EQ(source.mReads, 1u);                       // the injected source is kept across a restart
+}
+
+TEST(DeferredStepModule, KeySourceReplacedMidRunReadsOnlyTheNewSourceAndKeepsKeyOrder)
+{
+	CountingKeySource a, b;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(a);
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 0, 8), Dia::DeferredStep::KickResult::kLaunched);
+
+	a.mKey = 3;
+	g_probe->CallUpdate();
+	EXPECT_EQ(a.mReads, 1u);
+	EXPECT_EQ(step.GetApplyCount(), 0u);
+
+	b.mKey = 10;                         // replacement is ahead of the old source: applies the due step at once
+	g_probe->SetKeySource(b);
+	g_probe->CallUpdate();
+	EXPECT_EQ(a.mReads, 1u);             // old source never read again
+	EXPECT_EQ(b.mReads, 1u);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+
+	a.mKey = 99;                         // changing the dropped source has no effect
+	g_probe->CallUpdate();
+	EXPECT_EQ(a.mReads, 1u);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	sched.Unregister(kChannelA);
+}
+
+#ifdef _DEBUG
+// The scheduler asserts (after logging its Warning) on a key lower than the previous Tick; a replacement source
+// that reports a lower key is the same condition.
+TEST(DeferredStepModule, BackwardsKeyAssertsInDebug)
+{
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	source.mKey = 5;
+	g_probe->CallUpdate();
+	source.mKey = 3;
+	EXPECT_DEATH(g_probe->CallUpdate(), "");
+}
+
+TEST(DeferredStepModule, GetSchedulerOutsideStartStopAsserts)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->CallStop();
+	EXPECT_DEATH(g_probe->GetScheduler(), "");
+	g_probe->CallStart();
+}
+#else
+// Release: a backwards key logs a Warning on every occurrence, applies nothing and does not disturb later ticks.
+TEST(DeferredStepModule, BackwardsKeyIsIgnoredWithWarningAndNeverDoubleApplies)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	CountingKeySource source;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	g_probe->SetKeySource(source);
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 0, 6), Dia::DeferredStep::KickResult::kLaunched);
+
+	source.mKey = 5; g_probe->CallUpdate();
+	source.mKey = 3; g_probe->CallUpdate();
+	EXPECT_EQ(step.GetApplyCount(), 0u);
+	EXPECT_EQ(logs.Warnings("backwards"), 1u);
+	source.mKey = 6; g_probe->CallUpdate();
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	source.mKey = 2; g_probe->CallUpdate();
+	source.mKey = 6; g_probe->CallUpdate();
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	EXPECT_EQ(logs.Warnings("backwards"), 2u);
+	sched.Unregister(kChannelA);
+}
+#endif
