@@ -1,6 +1,9 @@
 #include <DiaDeferredStep/DeferredStepSaveParticipant.h>
 
+#include <stdio.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaDeferredStep/IDeferredStep.h>
+#include <DiaSaveGame/SaveContext.h>
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -53,8 +56,28 @@ namespace Dia::DeferredStep
 		mManager = nullptr;
 	}
 
-	void DeferredStepSaveParticipant::Serialize(Dia::SaveGame::SaveContext&) const
+	void DeferredStepSaveParticipant::Serialize(Dia::SaveGame::SaveContext& ctx) const
 	{
+		const uint32_t count = mScheduler.GetPendingCount();
+		ctx.Write(Dia::Core::StringCRC("version"), static_cast<int32_t>(kFormatVersion));
+		ctx.Write(Dia::Core::StringCRC("pending_count"), static_cast<int32_t>(count));
+		for (uint32_t i = 0; i < count; ++i)
+		{
+			PendingStepInfo info;
+			if (!mScheduler.GetPendingAt(i, info) || info.step == nullptr)
+			{
+				continue;
+			}
+			char name[16];
+			snprintf(name, sizeof(name), "channel_%u", i);
+			ctx.BeginObject(Dia::Core::StringCRC(name));
+			ctx.Write(Dia::Core::StringCRC("channel_id"), static_cast<int64_t>(info.channelId.Value()));
+			ctx.Write(Dia::Core::StringCRC("kick_key"), static_cast<int64_t>(info.kickKey));
+			ctx.Write(Dia::Core::StringCRC("apply_key"), static_cast<int64_t>(info.applyKey));
+			ctx.Write(Dia::Core::StringCRC("step_version"), static_cast<int32_t>(info.step->GetPendingVersion()));
+			info.step->SerializePending(ctx);
+			ctx.EndObject();
+		}
 	}
 
 	void DeferredStepSaveParticipant::Deserialize(Dia::SaveGame::LoadContext&)
