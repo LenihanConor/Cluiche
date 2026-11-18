@@ -1,7 +1,7 @@
 # Feature Spec: Save and Load
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 3)
-**Status:** Approved (2026-11-13)
+**Status:** Done (2026-11-18)
 **Plan:** @docs/specs/applications/dia/systems/diadeferredstep/save-load.plan.md
 **Depends on:** Feature 1 (scheduler, `IDeferredStep::SerializePending`). Independent of Feature 2 —
 tests use the manual launcher.
