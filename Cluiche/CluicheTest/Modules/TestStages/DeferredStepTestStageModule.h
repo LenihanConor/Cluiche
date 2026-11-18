@@ -7,6 +7,9 @@
 #include <DiaDeferredStep/DeferredStepModule.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IParallelExecutor.h>
+#include <DiaSaveGame/SaveConfig.h>
+#include <DiaSaveGame/SaveManager.h>
+#include <DiaSaveGame/SaveRegistry.h>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -34,8 +37,15 @@ public:
     void Apply() override;
 
     uint32_t GetPendingVersion() const override { return 1; }
-    void SerializePending(Dia::SaveGame::SaveContext&) const override {}
-    void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+    // The pending result is the checksum Run computed (mWorkChecksum), stored as a 16-digit hex string so the full
+    // 64 bits survive the JSON number type. Apply commits it, so a restored step reproduces the identical checksum.
+    bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override;
+    void SerializePending(Dia::SaveGame::SaveContext& ctx) const override;
+    void DeserializePending(Dia::SaveGame::LoadContext& ctx) override;
+
+    // Test hook: overwrite the pending result with a sentinel so a load that fails to restore it is visible.
+    void PoisonPending() { mWorkChecksum = 0xBADBADBADBADBADBull; }
+    uint64_t GetPendingChecksum() const { return mWorkChecksum; }
 
     uint32_t GetApplyCount() const { return mApplyCount; }
     uint64_t GetCommittedChecksum() const { return mCommitted; }
@@ -58,6 +68,11 @@ private:
 //
 // Kick cadence: kick on every key where no step is in flight, so steps pipeline back-to-back. Step n is kicked at
 // key K and applies at K+k; the next step is kicked in the same sim step the previous one applied.
+// save_at_step (8; 0 disables): right after step N is kicked (in flight, apply key not reached) the stage does
+// SaveManager::Save then Load in the SAME sim step (both are synchronous on the calling thread; no gap needed).
+// Save drains the step (completes it without applying) and stores its pending checksum; Load discards the drained
+// step and restores it as complete with the stored kick/apply keys, so it applies once at kick+k without a stall.
+// The clock is never rewound; the stage's own bookkeeping (mInFlight, record apply key) is already consistent.
 // Stage config keys: k (7), spin_ms (50), steps (20), cells (4096), worker_cap (report only; the cap itself is
 // set by the DeferredStepModule config in deferred_step_test_stage.diaapp).
 // Verification is by DEFERREDSTEP_RESULT / DEFERREDSTEP_STEP lines in the session log.
@@ -89,7 +104,11 @@ private:
         uint64_t expected = 0;
     };
 
+    enum class SaveLoadState { kSkipped, kOk, kFail };
+
     void Finalize();
+    // SimPU, right after Kick of step `stepIndex` (the step is in flight, apply key not reached): Save then Load.
+    void SaveThenLoadMidStep(uint32_t stepIndex, const StepRecord& rec);
 
     Dia::ApplicationFlow::ModuleRef<Dia::DeferredStep::DeferredStepModule> mDeferredRef{this};
     Dia::ApplicationFlow::ModuleRef<DeferredStepClockModule>               mClockRef{this};
@@ -108,6 +127,19 @@ private:
     uint32_t mCells = 4096;
     std::string mWorkerCapCfg = "auto";
     double mStepBudgetMs = 100.0;   // see OnConfigure for the reasoning behind the default
+    uint32_t mSaveAtStep = 8;       // step index whose in-flight window gets a Save+Load; 0 disables
+
+    // Save services, owned by this SimPU module and handed to DeferredStepModule::SetSaveServices in OnStart.
+    // They stay alive until the module is destroyed: DeferredStepModule detaches its participant in its own DoStop,
+    // which runs after this module's OnStop.
+    Dia::SaveGame::SaveConfig   mSaveConfig{};
+    Dia::SaveGame::SaveRegistry mSaveRegistry;
+    Dia::SaveGame::SaveManager  mSaveManager;
+    bool mSaveReady = false;
+    SaveLoadState mSaveLoad = SaveLoadState::kSkipped;
+    bool mSaveLoadAttempted = false;
+    int  mSaveLoadStep = -1;
+    bool mSkipNextSample = false;   // the blocking save drain is spec'd behaviour; keep it out of the step-time budget
 
     // SimPU step wall time: steady_clock delta between consecutive OnUpdate calls (pre-verdict only)
     bool mHaveLastUpdate = false;

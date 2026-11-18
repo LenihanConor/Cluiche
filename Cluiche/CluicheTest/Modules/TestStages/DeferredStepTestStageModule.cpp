@@ -6,14 +6,41 @@
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaSaveGame/LoadContext.h>
+#include <DiaSaveGame/SaveContext.h>
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <direct.h>
 
 namespace CluicheTest {
 
 namespace {
     const Dia::Core::StringCRC kChannel("DeferredStepSynthetic");
+    const Dia::Core::StringCRC kSaveSlot("deferredstep_stage");
+    const Dia::Core::StringCRC kChecksumKey("checksum");
     constexpr uint32_t kMinRange = 256;
+    constexpr const char* kSaveDir = "out/saves/cluichetest/";
+
+    // Reads the 16-hex-digit checksum written by SerializePending.
+    bool ReadChecksum(Dia::SaveGame::LoadContext& ctx, uint64_t& out)
+    {
+        char text[32] = {};
+        if (!ctx.Read(kChecksumKey, text, sizeof(text))) { return false; }
+        if (std::strlen(text) != 16) { return false; }
+        char* end = nullptr;
+        out = std::strtoull(text, &end, 16);
+        return end != nullptr && *end == '\0';
+    }
+
+    void EnsureSaveDirectory()
+    {
+        // SaveManager does not create its base directory. Relative to the working directory, like CoW's out/saves/cow/.
+        _mkdir("out");
+        _mkdir("out/saves");
+        _mkdir("out/saves/cluichetest");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +102,25 @@ void SyntheticDeferredStep::Run(Dia::DeferredStep::IParallelExecutor& executor)
     mWorkChecksum = sum;
 }
 
+void SyntheticDeferredStep::SerializePending(Dia::SaveGame::SaveContext& ctx) const
+{
+    char text[32];
+    std::snprintf(text, sizeof(text), "%016llx", static_cast<unsigned long long>(mWorkChecksum));
+    ctx.Write(kChecksumKey, static_cast<const char*>(text));
+}
+
+bool SyntheticDeferredStep::ValidatePending(Dia::SaveGame::LoadContext& ctx) const
+{
+    uint64_t checksum = 0;
+    return ReadChecksum(ctx, checksum);   // read-only: nothing on the step is touched
+}
+
+void SyntheticDeferredStep::DeserializePending(Dia::SaveGame::LoadContext& ctx)
+{
+    uint64_t checksum = 0;
+    if (ReadChecksum(ctx, checksum)) { mWorkChecksum = checksum; }
+}
+
 void SyntheticDeferredStep::Apply()
 {
     mCommitted = mWorkChecksum;
@@ -112,6 +158,7 @@ void DeferredStepTestStageModule::OnConfigure(const char* configJson)
     // cost >= ~80 ms (30 + 50) and jitter pairs would reach ~110 ms, so 100 ms (28 ms over the observed max, 70 ms
     // over idle) is the tightest ceiling that stays clear of jitter; the stage mean is logged as extra evidence.
     if (root.isMember("step_budget_ms") && root["step_budget_ms"].isNumeric()) { mStepBudgetMs = root["step_budget_ms"].asDouble(); }
+    if (root.isMember("save_at_step") && root["save_at_step"].isUInt()) { mSaveAtStep = root["save_at_step"].asUInt(); }
     if (root.isMember("worker_cap")) { mWorkerCapCfg = root["worker_cap"].asString(); }
 }
 
@@ -160,6 +207,20 @@ void DeferredStepTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mStepSamples = 0;
     mSummary = "pending";
     mPassed = false;
+    mSaveLoad = SaveLoadState::kSkipped;
+    mSaveLoadAttempted = false;
+    mSaveLoadStep = -1;
+    mSkipNextSample = false;
+
+    // Save services must be injected before DeferredStepModule's first DoUpdate (it attaches lazily there).
+    EnsureSaveDirectory();
+    mSaveConfig.baseDirectory = kSaveDir;
+    mSaveConfig.slotPattern = "slot_{id}.sav";
+    mSaveConfig.maxSlots = 0;
+    mSaveConfig.format = Dia::SaveGame::SaveFormat::Json;
+    mSaveManager.Init(mSaveConfig, mSaveRegistry);
+    mSaveReady = true;
+    mDeferred->SetSaveServices(mSaveRegistry, mSaveManager);
 
     mDeferred->SetKeySource(*mClock);
     mRegistered = mDeferred->GetScheduler().Register(kChannel, mStep);
@@ -187,7 +248,12 @@ void DeferredStepTestStageModule::OnUpdate(float /*deltaTime*/)
     // The first update has no predecessor and is skipped; the post-verdict hold returned above.
     {
         const auto now = std::chrono::steady_clock::now();
-        if (mHaveLastUpdate)
+        if (mSkipNextSample)
+        {
+            // The previous update ran the save drain + disk IO + load: spec'd blocking work, not a deferred-step cost.
+            mSkipNextSample = false;
+        }
+        else if (mHaveLastUpdate)
         {
             const double ms = std::chrono::duration<double, std::milli>(now - mLastUpdateTime).count();
             mMaxStepMs = std::max(mMaxStepMs, ms);
@@ -243,6 +309,11 @@ void DeferredStepTestStageModule::OnUpdate(float /*deltaTime*/)
         mRecords.push_back(rec);
         ++mKicked;
         mInFlight = true;
+
+        if (mSaveAtStep > 0 && stepIndex == mSaveAtStep && !mSaveLoadAttempted)
+        {
+            SaveThenLoadMidStep(stepIndex, mRecords.back());
+        }
         return;
     }
 
@@ -252,9 +323,63 @@ void DeferredStepTestStageModule::OnUpdate(float /*deltaTime*/)
     }
 }
 
+void DeferredStepTestStageModule::SaveThenLoadMidStep(uint32_t stepIndex, const StepRecord& rec)
+{
+    mSaveLoadAttempted = true;
+    mSaveLoadStep = static_cast<int>(stepIndex);
+    mSkipNextSample = true;
+    mSaveLoad = SaveLoadState::kFail;
+    auto& scheduler = mDeferred->GetScheduler();
+
+    if (scheduler.GetState(kChannel) != Dia::DeferredStep::StepState::kRunning)
+    {
+        DIA_LOG_ERROR("DeferredStepTest", "save/load: step %u is not in flight before the save", stepIndex);
+        return;
+    }
+    const uint32_t appliesBefore = mStep.GetApplyCount();
+
+    // Save: DeferredStepSaveParticipant drains the in-flight step on SaveStarted (completes it, no apply) and stores
+    // its pending checksum. Synchronous: Run has finished and the file is written when this returns.
+    const auto saveResult = mSaveManager.Save(kSaveSlot);
+    DIA_LOG_INFO("DeferredStepTest", "save slot=%s key=%llu step=%u ok=%d", kSaveSlot.AsChar(),
+        (unsigned long long)mClock->GetCurrentKey(), stepIndex, saveResult.Ok() ? 1 : 0);
+    if (!saveResult.Ok()) { return; }
+
+    // Make a failed restore visible: Load must bring the real result back from the file.
+    mStep.PoisonPending();
+
+    // Load (same sim step): LoadStarted discards the drained step; Deserialize restores it as complete with the
+    // stored kick/apply keys. The clock is not touched, so the key stays monotonic and the key floor is respected.
+    const auto loadResult = mSaveManager.Load(kSaveSlot);
+    DIA_LOG_INFO("DeferredStepTest", "load slot=%s key=%llu step=%u ok=%d", kSaveSlot.AsChar(),
+        (unsigned long long)mClock->GetCurrentKey(), stepIndex, loadResult.Ok() ? 1 : 0);
+    if (!loadResult.Ok()) { return; }
+
+    Dia::DeferredStep::StepKey restoredApplyKey = 0;
+    const bool stateOk = scheduler.GetState(kChannel) == Dia::DeferredStep::StepState::kComplete
+        && scheduler.GetPendingCount() == 1
+        && scheduler.GetApplyKey(kChannel, restoredApplyKey) && restoredApplyKey == rec.applyKey;
+    const bool checksumOk = mStep.GetPendingChecksum() == rec.expected;
+    const bool noApplyOk = mStep.GetApplyCount() == appliesBefore;   // restore must not apply early
+    if (!stateOk || !checksumOk || !noApplyOk)
+    {
+        DIA_LOG_ERROR("DeferredStepTest", "save/load: restored state wrong stateOk=%d checksumOk=%d noApplyOk=%d applyKey=%llu expected=%llu",
+            stateOk ? 1 : 0, checksumOk ? 1 : 0, noApplyOk ? 1 : 0,
+            (unsigned long long)restoredApplyKey, (unsigned long long)rec.applyKey);
+        return;
+    }
+    mSaveLoad = SaveLoadState::kOk;
+}
+
 void DeferredStepTestStageModule::Finalize()
 {
     mFinalized = true;
+
+    // save_at_step > 0 but never reached (e.g. >= steps) is a configuration the stage cannot prove: fail it.
+    const bool saveLoadExpected = mSaveAtStep > 0;
+    if (saveLoadExpected && !mSaveLoadAttempted) { mSaveLoad = SaveLoadState::kFail; }
+    const bool saveLoadOk = !saveLoadExpected || mSaveLoad == SaveLoadState::kOk;
+    const char* saveLoadText = !saveLoadExpected ? "skipped" : (mSaveLoad == SaveLoadState::kOk ? "ok" : "fail");
 
     bool keysOk = true;
     bool checksumOk = true;
@@ -301,14 +426,17 @@ void DeferredStepTestStageModule::Finalize()
     if (mK >= 7)      { stallOk = (stalls == 0) && (mMaxStepMs <= mStepBudgetMs); }
     else if (mK == 1) { stallOk = (stalls > 0) && (stallMs > 0) && (degraded || std::string(health) == "missing"); }
 
-    mPassed = keysOk && checksumOk && stallOk && allApplied;
+    // Exactly one Apply per step: a restored step that also re-applied (or was applied before the save) shows here.
+    const bool applyOnceOk = (mStep.GetApplyCount() == mSteps);
+    mPassed = keysOk && checksumOk && stallOk && allApplied && saveLoadOk && applyOnceOk;
     mSummary = mPassed ? "ok" : "failed";
 
     DIA_LOG_INFO("DeferredStepTest",
-        "DEFERREDSTEP_RESULT k=%u spinMs=%u steps=%u applies=%llu stalls=%llu stallMs=%llu expectedApplyKeysOk=%d checksumOk=%d health=%s workerCapCfg=%s capUtilisationPeak=%.3f maxStepMs=%.3f meanStepMs=%.3f budgetMs=%.3f stallOk=%d passed=%d",
+        "DEFERREDSTEP_RESULT k=%u spinMs=%u steps=%u applies=%llu stalls=%llu stallMs=%llu expectedApplyKeysOk=%d checksumOk=%d health=%s workerCapCfg=%s capUtilisationPeak=%.3f maxStepMs=%.3f meanStepMs=%.3f budgetMs=%.3f stallOk=%d saveLoad=%s saveLoadStep=%d applyOnceOk=%d passed=%d",
         mK, mSpinMs, mSteps, (unsigned long long)applies, (unsigned long long)stalls, (unsigned long long)stallMs,
         keysOk ? 1 : 0, checksumOk ? 1 : 0, health, mWorkerCapCfg.c_str(), mCapUtilisationPeak,
-        mMaxStepMs, meanStepMs, mStepBudgetMs, stallOk ? 1 : 0, mPassed ? 1 : 0);
+        mMaxStepMs, meanStepMs, mStepBudgetMs, stallOk ? 1 : 0, saveLoadText, mSaveLoadStep, applyOnceOk ? 1 : 0,
+        mPassed ? 1 : 0);
 
     mHoldUntilFrame = GetFrameCount() + kHoldFrames;
 }
@@ -320,6 +448,12 @@ void DeferredStepTestStageModule::OnStop()
     {
         mDeferred->GetScheduler().Unregister(kChannel);
         mRegistered = false;
+    }
+    // Remove the temp slot (no-op if it was never written). Registry/manager stay alive for DeferredStepModule's detach.
+    if (mSaveReady)
+    {
+        mSaveManager.DeleteSlot(kSaveSlot);
+        mSaveReady = false;
     }
     mDeferred = nullptr;
     mClock = nullptr;

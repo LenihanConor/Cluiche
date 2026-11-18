@@ -73,3 +73,17 @@ def test_result_and_steps(session_records):
     for s in steps:
         assert int(s["appliedAt"]) == int(s["apply"]) == int(s["kick"]) + _K, s
         assert s["checksum"] == s["expected"], s
+
+    # Mid-step save + load (Feature 3, cross-feature E2E): the run must be indistinguishable from an uninterrupted one.
+    assert res["saveLoad"] == "ok", res
+    saved_step = int(res["saveLoadStep"])
+    assert saved_step > 0, res
+    assert res["applyOnceOk"] == "1", res
+    by_index = [int(s["step"]) for s in steps]
+    assert sorted(by_index) == list(range(int(res["steps"]))), f"one STEP line per step index expected: {by_index}"
+    saved = next(s for s in steps if int(s["step"]) == saved_step)
+    assert int(saved["appliedAt"]) == int(saved["kick"]) + _K, saved
+    assert saved["checksum"] == saved["expected"], saved
+    # One save and one load INFO line, both on the saved step.
+    assert sum(1 for m in msgs if m.startswith("save slot=") and f"step={saved_step} " in m and "ok=1" in m) == 1
+    assert sum(1 for m in msgs if m.startswith("load slot=") and f"step={saved_step} " in m and "ok=1" in m) == 1
