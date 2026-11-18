@@ -47,7 +47,7 @@ namespace CoW::Hydrology {
         DynamicArrayC<float>    soilMoisture;        // saved
         DynamicArrayC<float>    groundWater;         // saved
         DynamicArrayC<float>    riverStore;          // saved (non-river cells hold 0)
-        DynamicArrayC<float>    riverFlow;           // derived each week, not saved
+        DynamicArrayC<float>    riverFlow;           // saved: readers between kicks need it (Feature 4)
         DynamicArrayC<float>    meanFlow;            // saved, river cells (Feature 2 flood rule)
         DynamicArrayC<float>    ice;                 // saved
         DynamicArrayC<float>    glacier;             // saved
@@ -57,7 +57,9 @@ namespace CoW::Hydrology {
         DynamicArrayC<uint16_t> exposedWeeks;        // saved
         DynamicArrayC<uint16_t> snowYears;           // saved
         DynamicArrayC<uint8_t>  glacierEligible;     // saved
-        DynamicArrayC<uint8_t>  flooded;             // derived
+        DynamicArrayC<uint16_t> lowFlowWeeks;        // saved, river cells: consecutive low-flow weeks (A3 DryRiverbed)
+        DynamicArrayC<uint16_t> glacierWeeks;        // saved: consecutive weeks with glacier mass > 0 (A3 glaciation)
+        DynamicArrayC<uint8_t>  flooded;             // saved: readers between kicks need it (Feature 4)
         DynamicArrayC<uint8_t>  passability;         // derived, Passability values
     };
 
@@ -79,7 +81,7 @@ namespace CoW::Hydrology {
         DynamicArrayC<float>    bedElevation;        // amendment 8 (== elevation off-lake)
         DynamicArrayC<uint8_t>  flowDirection;       // 0..5, kFlowSink = 6, every cell
         DynamicArrayC<uint8_t>  waterSource;         // WorldGeneration::WaterSource
-        DynamicArrayC<uint8_t>  biome;               // WorldGeneration::Biome; updated by A3 through Feature 3
+        DynamicArrayC<uint8_t>  biome;               // WorldGeneration::Biome; updated by A3 through Feature 3; saved by Feature 4 (S-1's cells keep the old biome)
         DynamicArrayC<uint8_t>  isRiver;             // waterSource == River
         DynamicArrayC<uint8_t>  isCrossing;          // corridor sites + Pass flag + RiverCrossesBarrier
         DynamicArrayC<uint32_t> basinCells;          // concatenated, per BasinRecord
@@ -102,7 +104,7 @@ Feature 2 never makes these `Deep`.
 
 ### Scalar descriptor table (`HydrologyParameters.h`)
 
-`ParamDescriptor { group, key, member, min, max, default, kind }`, the same shape as A4's. **20 rows**, every default provisional:
+`ParamDescriptor { group, key, member, min, max, default, kind }`, the same shape as A4's. **23 rows**, every default provisional (three added 2026-11-17 after the Feature 3–4 specs):
 
 | Key | Default | Range | Used by (Feature 2 pass) |
 |---|---|---|---|
@@ -126,6 +128,9 @@ Feature 2 never makes these `Deep`.
 | `flood.floodplain_rise` | 0.01 | 0–1 | 8 (in elevation units) |
 | `init.soil_fraction` | 0.5 | 0–1 | Initialise |
 | `init.ground_fraction` | 0.3 | 0–1 | Initialise |
+| `wetness.surface_scale` | 0.1 | 0–10 | Feature 3 `SurfaceWetness` (GDD value) |
+| `wetness.soil_weight` | 0.25 | 0–1 | Feature 3 `SurfaceWetness` (GDD SOIL_WETNESS_WEIGHT) |
+| `river.low_flow_fraction` | 0.2 | 0–1 | Feature 2 pass 8 (`lowFlowWeeks`: flow below this share of `meanFlow`) |
 
 The cross-row rule is `r_min ≤ r_max`. A load or override that breaks it fails with both keys named.
 
@@ -225,7 +230,7 @@ Files under `Cluiche/CoW/Shared/Hydrology/`:
 2. The "saved" set listed above is exposed as a constant list Feature 4 can iterate. Derived fields are not in it.
 
 ### Parameters
-3. The descriptor table has 20 rows with unique dotted keys. Every default lies inside its own range.
+3. The descriptor table has 23 rows with unique dotted keys. Every default lies inside its own range.
 4. The biome table has 13 rows (one per `Biome`, enum order) × 6 columns. Every default lies inside its column range. The Ocean and Lake rows are zero.
 5. **Loading the shipped defaults:**
    - loading the shipped `hydrology_parameters.json` equals `DefaultHydrologyParameters()`;

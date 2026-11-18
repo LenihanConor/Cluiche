@@ -89,8 +89,8 @@ Local passes run in parallel over cell ranges. The cascade runs in parallel over
 | 5 | Runoff and baseflow | `runoff = max(0, surfaceWater − retention[biome])` leaves the cell. `baseflow = baseflow_rate · groundWater` leaves too. `localOut = runoff + baseflow` |
 | 6 | Cascade | Per tree, in topological order:<br>• **Cell node:** `store += inflow + localOut`; `release = r · store`; `store −= release`; `riverFlow = release`; add `release` to the downstream node's `inflow`.<br>• **Basin node:** `volume += inflow + Σ localOut of its cells`; open-water evaporation `basin_evap_rate · mean temperature over open cells · openArea` leaves to `basinEvapOut`; `overflow = max(0, volume − spillVolume)` goes to the spill cell's downstream.<br>• **Terminal:** ocean gives `seaOut`; a `kFlowSink` land terminal keeps its water as `surfaceWater`, which is lost through ET |
 | 7 | Basin level | Per basin (parallel), the level comes from the volume and the capacity curve. A cell is inundated when its bed is below the level. Then `inundatedWeeks` / `exposedWeeks` update (a counter resets when its state flips) and `openWater` is set per cell. With `basinsFromLakesOnly`, each lake's volume is pinned at its spill volume. Inflow passes straight through, and any evaporation shortfall is a named source `fixedLakeMakeup` |
-| 8 | Floodplain | River cells first update `meanFlow = meanFlow + α · (riverFlow − meanFlow)`, with α from `flood_mean_weeks` (~104). A river cell is in flood when `riverFlow > bankfull_factor · meanFlow` and `meanFlow > min_flood_flow`. A non-river cell is flooded when any neighbour is a river cell in flood whose elevation is ≥ its own minus `floodplain_rise`. This is a gather in direction order, so the result is order-independent |
-| 9 | Passability | `Deep` where inundation depth > `ford_depth`, except corridor and crossing cells, which are capped at `Fordable`. Otherwise `Fordable` where inundated, `Wet` where flooded, `Frozen` where `ice` > `ice_crossable`, `Dry` elsewhere |
+| 8 | Floodplain and counters | River cells update `lowFlowWeeks`: it increments when `riverFlow < low_flow_fraction · meanFlow`, resets otherwise, and a frozen week (river `ice` above `ice_crossable`) neither counts nor resets (GDD). Every cell updates `glacierWeeks` (glacier mass > 0). Then river cells update `meanFlow = meanFlow + α · (riverFlow − meanFlow)`, with α from `flood_mean_weeks` (~104). A river cell is in flood when `riverFlow > bankfull_factor · meanFlow` and `meanFlow > min_flood_flow`. A non-river cell is flooded when any neighbour is a river cell in flood whose elevation is ≥ its own minus `floodplain_rise`. This is a gather in direction order, so the result is order-independent |
+| 9 | Passability | On `basinsFromLakesOnly` worlds, S-1 lake cells are always `Deep` (bed equals surface there, so a depth can't be computed; S-1 already treats them as water). Otherwise `Deep` where inundation depth > `ford_depth`, except corridor and crossing cells, which are capped at `Fordable`. Otherwise `Fordable` where inundated, `Wet` where flooded, `Frozen` where `ice` > `ice_crossable`, `Dry` elsewhere |
 | 10 | Glacier counters | On the last week of Summer only: `snowYears++` where the season's minimum snow pack ≥ `glacier_snow_floor`, else it resets to 0. `glacierEligible = snowYears ≥ glacier_onset_years`. The season minimum is tracked weekly in `seasonMinSnow` |
 | 11 | Totals | Clamp every field (non-negative, with excess pushed into the next store, never dropped). Then sum every store and every named flow in **double**, per range, combined in range order |
 
@@ -149,7 +149,10 @@ namespace CoW::Hydrology {
     //   void              Step(const WaterInput&, Dia::DeferredStep::IParallelExecutor&);
     //   const WaterTotals& LastTotals() const;
 
-    // Fixed-input driver for tests and A4-less stages
+    //   void              RebaselineStorage();   // after a preset or state edit, so the edit isn't counted as balance error (Feature 6)
+
+    // Fixed-input driver for tests and A4-less stages (uniform per week). Feature 6 adds
+    // ScriptedWaterInput for per-cell scripted inputs, including snowPack and glacierInput.
     class FixedWaterInput {
     public:
         void SetConstant(float waterToGround, float temperature);
@@ -199,7 +202,7 @@ Feature 1 owes three fields for this feature: `meanFlow` (float, saved), `season
 26. **Sinks are additive:** two providers' draws summed into `sinks.draw` give the same result as one provider supplying the sum. Two multipliers likewise give the same result as their product.
 
 ### Golden
-27. Layer hashes (via `CellLayerGolden.h`) for the fixed-input driver on S-1 presets × seeds 1–3 at Small after 52 weeks. Stored in `Tests/GoogleTests/CoW/Golden/hydrology_layers.golden.json`.
+27. Layer hashes (via `CellLayerGolden.h`) for the fixed-input driver on S-1 presets × seeds 1–3 at Small after 52 weeks. Stored in `Tests/GoogleTests/CoW/Golden/hydrology_layers.golden.json` under keys prefixed `pipeline/`. Feature 6 uses `scenario/`.
 
 ## Files Touched
 

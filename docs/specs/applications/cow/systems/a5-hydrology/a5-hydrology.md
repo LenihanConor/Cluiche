@@ -52,12 +52,12 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 
 | # | Feature | Summary | Spec | Status |
 |---|---------|---------|------|--------|
-| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing`), 20 scalar descriptors + a 13-biome × 6-column `biome_table` (provisional defaults), versioned file, atomic overrides, `Initialise` (validation, biome-seeded soil/ground, full lakes, static tables). Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Draft |
+| 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing`), 23 scalar descriptors + a 13-biome × 6-column `biome_table` (provisional defaults), versioned file, atomic overrides, `Initialise` (validation, biome-seeded soil/ground, full lakes, static tables). Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Draft |
 | 2 | Water Pipeline | The weekly passes: freeze, glacier, infiltration, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (same-week crossing and chained lakes), basin levels, floods against each river's running mean, passability, glacier counters, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Draft |
-| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot`; init from S-1, spin-up, `HoldGeneration`/`WorldGenerationFailed` | TBD | Draft |
-| 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | TBD | Draft |
-| 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | TBD | Draft |
-| 6 | Presets & Regression | Scenarios (forced wet year, drought decade, melt pulse, ice-age phase), layer goldens via `CellLayerGolden.h`, the reachability long-run test | TBD | Draft |
+| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot`; init from S-1, spin-up, `HoldGeneration`/`WorldGenerationFailed` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md | Draft |
+| 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-save.md | Draft |
+| 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-debug.md | Draft |
+| 6 | Presets & Regression | Scenarios (forced wet year, drought decade, melt pulse, ice-age phase), layer goldens via `CellLayerGolden.h`, the reachability long-run test | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md | Draft |
 
 **Build order:** 1 → 2 → 6 (pure logic, provable by GoogleTests on hand-built grids) → 3 → 4 → 5. 3 needs `WorldStepModule` and A4 Feature 3. The S-2.6 testbed is its own spec, written once GDD A5 is locked.
 
@@ -116,13 +116,13 @@ The grid is the same `Dia::Pathfinding::HexTopology` (flat-top odd-q) that A4 us
 namespace CoW::Hydrology {
 
     struct HydrologyFields {                    // per cell, N each
-        DynamicArrayC<float> surfaceWater;      // [0,1] standing water this week (feeds A4 §6.2)
-        DynamicArrayC<float> soilMoisture;      // [0,1] what A1 reads as cell water
-        DynamicArrayC<float> groundWater;       // [0,1] slow store; baseflow into rivers
+        DynamicArrayC<float> surfaceWater;      // cell-depth, [0, retention] standing water this week (feeds A4 §6.2)
+        DynamicArrayC<float> soilMoisture;      // cell-depth, [0, soil_capacity] what A1 reads as cell water
+        DynamicArrayC<float> groundWater;       // cell-depth, [0, ground_capacity] slow store; baseflow into rivers
         DynamicArrayC<float> riverStore;        // >= 0 water in transit (river cells, unbounded, normalised by flow scale)
         DynamicArrayC<float> riverFlow;         // >= 0 outflow this week, the river's "size"
-        DynamicArrayC<float> ice;               // [0,1] frozen surface water / river / lake ice
-        DynamicArrayC<float> glacier;           // [0,1] glacier ice mass
+        DynamicArrayC<float> ice;               // cell-depth >= 0, frozen surface water / river / lake ice
+        DynamicArrayC<float> glacier;           // cell-depth >= 0, glacier ice mass
         DynamicArrayC<uint16_t> inundatedWeeks; // consecutive weeks under basin water (A3 reads)
         DynamicArrayC<uint16_t> exposedWeeks;   // consecutive weeks a lake cell has been above water (A3 reads)
         DynamicArrayC<uint16_t> snowYears;      // consecutive years snow pack survived summer (glacier onset)
