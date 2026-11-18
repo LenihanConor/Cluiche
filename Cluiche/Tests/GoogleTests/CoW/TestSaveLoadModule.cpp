@@ -1080,9 +1080,9 @@ TEST(SaveLoadHealth, DestroyedWithoutStopUnregistersHealthReporter)
     }
     // Walking the live reporters dereferences every registered pointer: a dangling one crashes here.
     // (Snapshot also lists retired entries by name, so absence of the name is not the property.)
-    Dia::Observation::Health::HealthRegistry::ReporterSnapshot snap[64];
+    Dia::Observation::Health::HealthRegistry::ReporterSnapshot snap[128];
     unsigned int n = 0;
-    Dia::Observation::Health::HealthRegistry::Instance().Snapshot(snap, 64, n);
+    Dia::Observation::Health::HealthRegistry::Instance().Snapshot(snap, 128, n);
     Dia::Observation::Health::HealthRegistry::Transition trans[64];
     unsigned int t = 0;
     Dia::Observation::Health::HealthRegistry::Instance().PollTransitions(trans, 64, t);

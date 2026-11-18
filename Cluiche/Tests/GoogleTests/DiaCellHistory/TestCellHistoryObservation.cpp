@@ -224,9 +224,9 @@ TEST(CellHistoryObservation, HealthReporterExists)
 	auto& health = Dia::Observation::Health::HealthRegistry::Instance();
 
 	// Snapshot should include our health reporter
-	Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[32];
+	Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[128];
 	unsigned int count = 0;
-	health.Snapshot(snapshots, 32, count);
+	health.Snapshot(snapshots, 128, count);
 
 	// Should have at least the one we just registered
 	EXPECT_GT(count, 0u);
@@ -310,9 +310,9 @@ TEST(CellHistoryObservation, HealthReporterReportsOKWhenWellUnderBudget)
 	}
 
 	auto& health = Dia::Observation::Health::HealthRegistry::Instance();
-	Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[32];
+	Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[128];
 	unsigned int count = 0;
-	health.Snapshot(snapshots, 32, count);
+	health.Snapshot(snapshots, 128, count);
 
 	bool found = false;
 	for (unsigned int i = 0; i < count; ++i)
@@ -342,9 +342,9 @@ TEST(CellHistoryObservation, RestartMetricsAndHealth)
 		r.obs->OnRecorderUpdate();
 
 		// Health reporter should be registered
-		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[32];
+		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[128];
 		unsigned int count = 0;
-		health.Snapshot(snapshots, 32, count);
+		health.Snapshot(snapshots, 128, count);
 		bool foundHealth = false;
 		for (unsigned int i = 0; i < count; ++i)
 		{
@@ -356,9 +356,9 @@ TEST(CellHistoryObservation, RestartMetricsAndHealth)
 	// After destruction, health reporter should be unregistered
 	health.Reset();	// Clear the snapshot
 	{
-		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[32];
+		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[128];
 		unsigned int count = 0;
-		health.Snapshot(snapshots, 32, count);
+		health.Snapshot(snapshots, 128, count);
 		bool foundHealth = false;
 		for (unsigned int i = 0; i < count; ++i)
 		{
@@ -373,9 +373,9 @@ TEST(CellHistoryObservation, RestartMetricsAndHealth)
 		ASSERT_TRUE(r.schema.Load({ FloatEntry("test_f", 0.0, 1.0) }));
 		r.Start();
 
-		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[32];
+		Dia::Observation::Health::HealthRegistry::ReporterSnapshot snapshots[128];
 		unsigned int count = 0;
-		health.Snapshot(snapshots, 32, count);
+		health.Snapshot(snapshots, 128, count);
 		bool foundHealth = false;
 		for (unsigned int i = 0; i < count; ++i)
 		{

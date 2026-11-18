@@ -5,6 +5,8 @@
 
 #include <thread>
 #include <atomic>
+#include <cstdio>
+#include <deque>
 
 using namespace Dia::Observation::Health;
 using namespace Dia::Observation::Testing;
@@ -147,51 +149,32 @@ TEST_F(HealthRegistryTest, UnregisterTransitionSink_StopsCallbacks)
     EXPECT_EQ(sink.count, 0u);
 }
 
-TEST_F(HealthRegistryTest, MaxCapacity_SilentlyIgnores33rd)
+TEST_F(HealthRegistryTest, MaxCapacity_Accepts64AndDrops65th)
 {
-    MockHealthReporter reporters[33] = {
-        MockHealthReporter(Dia::Core::StringCRC("r00")),
-        MockHealthReporter(Dia::Core::StringCRC("r01")),
-        MockHealthReporter(Dia::Core::StringCRC("r02")),
-        MockHealthReporter(Dia::Core::StringCRC("r03")),
-        MockHealthReporter(Dia::Core::StringCRC("r04")),
-        MockHealthReporter(Dia::Core::StringCRC("r05")),
-        MockHealthReporter(Dia::Core::StringCRC("r06")),
-        MockHealthReporter(Dia::Core::StringCRC("r07")),
-        MockHealthReporter(Dia::Core::StringCRC("r08")),
-        MockHealthReporter(Dia::Core::StringCRC("r09")),
-        MockHealthReporter(Dia::Core::StringCRC("r10")),
-        MockHealthReporter(Dia::Core::StringCRC("r11")),
-        MockHealthReporter(Dia::Core::StringCRC("r12")),
-        MockHealthReporter(Dia::Core::StringCRC("r13")),
-        MockHealthReporter(Dia::Core::StringCRC("r14")),
-        MockHealthReporter(Dia::Core::StringCRC("r15")),
-        MockHealthReporter(Dia::Core::StringCRC("r16")),
-        MockHealthReporter(Dia::Core::StringCRC("r17")),
-        MockHealthReporter(Dia::Core::StringCRC("r18")),
-        MockHealthReporter(Dia::Core::StringCRC("r19")),
-        MockHealthReporter(Dia::Core::StringCRC("r20")),
-        MockHealthReporter(Dia::Core::StringCRC("r21")),
-        MockHealthReporter(Dia::Core::StringCRC("r22")),
-        MockHealthReporter(Dia::Core::StringCRC("r23")),
-        MockHealthReporter(Dia::Core::StringCRC("r24")),
-        MockHealthReporter(Dia::Core::StringCRC("r25")),
-        MockHealthReporter(Dia::Core::StringCRC("r26")),
-        MockHealthReporter(Dia::Core::StringCRC("r27")),
-        MockHealthReporter(Dia::Core::StringCRC("r28")),
-        MockHealthReporter(Dia::Core::StringCRC("r29")),
-        MockHealthReporter(Dia::Core::StringCRC("r30")),
-        MockHealthReporter(Dia::Core::StringCRC("r31")),
-        MockHealthReporter(Dia::Core::StringCRC("r32"))
-    };
+    const unsigned int kCount = 65;
+    std::deque<MockHealthReporter> reporters;
+    for (unsigned int i = 0; i < kCount; ++i)
+    {
+        char name[16];
+        std::snprintf(name, sizeof(name), "cap.r%02u", i);
+        reporters.emplace_back(Dia::Core::StringCRC(name));
+    }
 
-    for (int i = 0; i < 33; ++i)
+    for (unsigned int i = 0; i < 64; ++i)
         HealthRegistry::Instance().Register(&reporters[i]);
 
-    HealthRegistry::ReporterSnapshot snaps[33];
+    EXPECT_EQ(HealthRegistry::Instance().GetDroppedCount(), 0u);
+
+    // 65th is dropped without crashing and is counted (a Warning is also logged).
+    HealthRegistry::Instance().Register(&reporters[64]);
+    EXPECT_EQ(HealthRegistry::Instance().GetDroppedCount(), 1u);
+
+    HealthRegistry::ReporterSnapshot snaps[80];
     unsigned int count = 0;
-    HealthRegistry::Instance().Snapshot(snaps, 33, count);
-    EXPECT_EQ(count, 32u);
+    HealthRegistry::Instance().Snapshot(snaps, 80, count);
+    EXPECT_EQ(count, 64u);
+    for (unsigned int i = 0; i < count; ++i)
+        EXPECT_NE(snaps[i].name.Value(), Dia::Core::StringCRC("cap.r64").Value());
 }
 
 TEST_F(HealthRegistryTest, DuplicateRegister_Ignored)

@@ -247,7 +247,7 @@ void DeferredStepTestStageModule::Finalize()
     // so the registration is silently dropped). Degraded is then unverifiable and is not enforced.
     const char* health = "missing";
     using Dia::Observation::Health::HealthRegistry;
-    constexpr unsigned int kSnapMax = 32;   // HealthRegistry::kMaxReporters is private
+    constexpr unsigned int kSnapMax = HealthRegistry::kMaxReporters * 2;   // live + retired
     HealthRegistry::ReporterSnapshot snaps[kSnapMax];
     unsigned int count = 0;
     HealthRegistry::Instance().Snapshot(snaps, kSnapMax, count);

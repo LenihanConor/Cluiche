@@ -331,9 +331,9 @@ namespace
 
 	bool FindRegistryHealth(HealthStatus& status)
 	{
-		HealthRegistry::ReporterSnapshot snaps[64];
+		HealthRegistry::ReporterSnapshot snaps[128];
 		unsigned int n = 0;
-		HealthRegistry::Instance().Snapshot(snaps, 64, n);
+		HealthRegistry::Instance().Snapshot(snaps, 128, n);
 		for (unsigned int i = 0; i < n; ++i)
 		{
 			if (snaps[i].name == StringCRC("dia.celllayers.registry")) { status = snaps[i].health.status; return true; }
@@ -406,9 +406,9 @@ TEST(CellLayersModule, RegistryHealthReporterRetiredAfterStopKeepingFinalStatus)
 		Tick(h);
 		h.Shutdown();
 	}
-	HealthRegistry::ReporterSnapshot snaps[64];
+	HealthRegistry::ReporterSnapshot snaps[128];
 	unsigned int n = 0;
-	HealthRegistry::Instance().Snapshot(snaps, 64, n);
+	HealthRegistry::Instance().Snapshot(snaps, 128, n);
 	unsigned int matches = 0;
 	for (unsigned int i = 0; i < n; ++i)
 	{

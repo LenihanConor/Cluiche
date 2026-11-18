@@ -34,9 +34,9 @@ using CluicheEditor::ChatPanelBridgeHealth;
 
 static bool RegistryContainsReporter(const Dia::Core::StringCRC& name)
 {
-    HealthRegistry::ReporterSnapshot snapshots[32];
+    HealthRegistry::ReporterSnapshot snapshots[64];
     unsigned int count = 0;
-    HealthRegistry::Instance().Snapshot(snapshots, 32, count);
+    HealthRegistry::Instance().Snapshot(snapshots, 64, count);
     for (unsigned int i = 0; i < count; ++i)
         if (snapshots[i].name.Value() == name.Value()) return true;
     return false;
@@ -44,9 +44,9 @@ static bool RegistryContainsReporter(const Dia::Core::StringCRC& name)
 
 static Health SnapshotReporterHealth(const Dia::Core::StringCRC& name)
 {
-    HealthRegistry::ReporterSnapshot snapshots[32];
+    HealthRegistry::ReporterSnapshot snapshots[64];
     unsigned int count = 0;
-    HealthRegistry::Instance().Snapshot(snapshots, 32, count);
+    HealthRegistry::Instance().Snapshot(snapshots, 64, count);
     for (unsigned int i = 0; i < count; ++i)
         if (snapshots[i].name.Value() == name.Value()) return snapshots[i].health;
     Health h;

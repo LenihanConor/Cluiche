@@ -62,9 +62,9 @@ namespace
 	// registration is distinguishable from a retired copy by whether it follows a clock change.
 	bool FindHealth(HealthStatus& status)
 	{
-		HealthRegistry::ReporterSnapshot out[32];
+		HealthRegistry::ReporterSnapshot out[64];
 		unsigned count = 0;
-		HealthRegistry::Instance().Snapshot(out, 32, count);
+		HealthRegistry::Instance().Snapshot(out, 64, count);
 		for (unsigned i = 0; i < count; ++i)
 		{
 			if (out[i].name == StringCRC("DeferredStep")) { status = out[i].health.status; return true; }
@@ -77,27 +77,27 @@ TEST(DeferredStepModuleMetrics, AllNineRegisteredWithInfoAfterStart)
 {
 	Harness h;
 	ASSERT_TRUE(h.Start());
-	MetricSnapshot snap;
-	MetricRegistry::Instance().Snapshot(snap);
+	// Lookup by name, not via MetricSnapshot: the snapshot is capped at kMaxMetricEntries and other suites in the
+	// same process may have filled the global registry.
+	auto& reg = MetricRegistry::Instance();
 	for (const char* name : kAllMetricNames)
 	{
 		SCOPED_TRACE(name);
-		EXPECT_NE(FindEntry(snap, name), nullptr);
-		const auto* info = MetricRegistry::Instance().GetInfo(StringCRC(name));
+		EXPECT_TRUE(reg.FindCounter(StringCRC(name)) != nullptr || reg.FindGauge(StringCRC(name)) != nullptr);
+		const auto* info = reg.GetInfo(StringCRC(name));
 		ASSERT_NE(info, nullptr);
 		EXPECT_NE(info->description, nullptr);
 		EXPECT_NE(info->unit, nullptr);
 	}
-	using Kind = MetricEntry::Kind;
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.in_flight")->kind, Kind::kGauge);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.slack_keys")->kind, Kind::kGauge);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.cap_utilisation")->kind, Kind::kGauge);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.kicks")->kind, Kind::kCounter);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.kicks_rejected")->kind, Kind::kCounter);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.applies")->kind, Kind::kCounter);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.stalls")->kind, Kind::kCounter);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.stall_ms")->kind, Kind::kCounter);
-	EXPECT_EQ(FindEntry(snap, "dia.deferredstep.inline_fallbacks")->kind, Kind::kCounter);
+	for (const char* name : { "dia.deferredstep.in_flight", "dia.deferredstep.slack_keys", "dia.deferredstep.cap_utilisation" })
+	{
+		EXPECT_NE(reg.FindGauge(StringCRC(name)), nullptr) << name;
+	}
+	for (const char* name : { "dia.deferredstep.kicks", "dia.deferredstep.kicks_rejected", "dia.deferredstep.applies",
+		"dia.deferredstep.stalls", "dia.deferredstep.stall_ms", "dia.deferredstep.inline_fallbacks" })
+	{
+		EXPECT_NE(reg.FindCounter(StringCRC(name)), nullptr) << name;
+	}
 }
 
 TEST(DeferredStepModuleMetrics, RestartCyclesReRegisterWithoutDuplicateWarnings)
@@ -109,9 +109,11 @@ TEST(DeferredStepModuleMetrics, RestartCyclesReRegisterWithoutDuplicateWarnings)
 	{
 		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
 		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
-		MetricSnapshot snap;
-		MetricRegistry::Instance().Snapshot(snap);
-		for (const char* name : kAllMetricNames) { EXPECT_NE(FindEntry(snap, name), nullptr) << name; }
+		auto& reg = MetricRegistry::Instance();
+		for (const char* name : kAllMetricNames)
+		{
+			EXPECT_TRUE(reg.FindCounter(StringCRC(name)) != nullptr || reg.FindGauge(StringCRC(name)) != nullptr) << name;
+		}
 	}
 	EXPECT_EQ(vscLogs.Warnings(), 0u);
 }

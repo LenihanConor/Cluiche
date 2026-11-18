@@ -436,9 +436,9 @@ namespace Dia
 
 		void SessionManager::PollAndEmitHealthTransitions()
 		{
-			Health::HealthRegistry::Transition transitions[32];
+			Health::HealthRegistry::Transition transitions[Health::HealthRegistry::kMaxReporters];
 			unsigned int transitionCount = 0;
-			Health::HealthRegistry::Instance().PollTransitions(transitions, 32, transitionCount);
+			Health::HealthRegistry::Instance().PollTransitions(transitions, Health::HealthRegistry::kMaxReporters, transitionCount);
 
 			for (unsigned int i = 0; i < transitionCount; ++i)
 			{
@@ -453,9 +453,9 @@ namespace Dia
 
 		void SessionManager::WriteHealthJson()
 		{
-			Health::HealthRegistry::ReporterSnapshot reporters[32];
+			Health::HealthRegistry::ReporterSnapshot reporters[Health::HealthRegistry::kMaxReporters * 2];
 			unsigned int reporterCount = 0;
-			Health::HealthRegistry::Instance().Snapshot(reporters, 32, reporterCount);
+			Health::HealthRegistry::Instance().Snapshot(reporters, Health::HealthRegistry::kMaxReporters * 2, reporterCount);
 
 			// Determine overall status
 			Health::HealthStatus overall = Health::HealthStatus::kOK;
