@@ -5,6 +5,7 @@
 #include <DiaDeferredStep/DeferredStepModule.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IStepKeySource.h>
+#include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 #include <atomic>
@@ -18,6 +19,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstring>
 #include <memory>
+#include <string>
 
 using namespace Dia::ApplicationFlow;
 using Dia::Core::StringCRC;
@@ -35,9 +37,15 @@ namespace
 		// Direct lifecycle access for restart / drain tests (bypasses the framework state machine).
 		StartResult CallStart() { return DoStart(); }
 		StopResult  CallStop()  { return DoStop(); }
+		// Config parsed by OnConfigure and the cap the launcher resolved in DoStart.
+		const Dia::DeferredStep::CapConfig& ParsedConfig() const { return mConfig; }
+		uint32_t ResolvedCap() { return static_cast<Dia::DeferredStep::JobStepLauncher*>(mLauncher.Get())->GetCapGate().GetWorkerCap(); }
 	};
 
 	// Stands in for JobSystemModule on MainPU: publishes a JobSystem on "JobSystemService".
+	unsigned g_providerWorkers = 4;
+	std::string g_consumerConfig;
+
 	struct DSM_ProviderModule : Module
 	{
 		static const StringCRC kTypeId;
@@ -45,7 +53,7 @@ namespace
 		Dia::Threading::JobSystem mJobSystem;
 		ServiceStreamWriter<Dia::Threading::JobSystem> mWriter{ this, "JobSystemService" };
 		void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
-		StartResult DoStart() override { mJobSystem.Initialize(4); mWriter.Register(mJobSystem); return StartResult::kReady; }
+		StartResult DoStart() override { mJobSystem.Initialize(g_providerWorkers); mWriter.Register(mJobSystem); return StartResult::kReady; }
 		void DoUpdate(float) override {}
 		StopResult DoStop() override { mWriter.Deregister(); mJobSystem.Shutdown(); return StopResult::kDone; }
 	};
@@ -69,6 +77,7 @@ namespace
 		ch.id = StringCRC("JobSystemService");
 		ch.role = StringCRC(role);
 		mod.channels.Add(ch);
+			if (std::strcmp(role, "consumes") == 0) { mod.configJson = g_consumerConfig.c_str(); }
 		return mod;
 	}
 
@@ -134,8 +143,10 @@ namespace
 		std::unique_ptr<Application>	mApp;
 		bool							mWithProvider = true;
 
-		explicit Harness(bool withProvider = true)
+		explicit Harness(bool withProvider = true, const char* configJson = "", unsigned workers = 4)
 		{
+			g_providerWorkers = workers;
+			g_consumerConfig = configJson;
 			g_probe = nullptr;
 			g_provider = nullptr;
 			mWithProvider = withProvider;
@@ -312,3 +323,52 @@ TEST(DeferredStepModule, StopWithChannelStillRegisteredAsserts)
 		}, "");
 }
 #endif
+
+namespace
+{
+	struct ConfigCase
+	{
+		const char* name;
+		const char* json;
+		unsigned    workers;
+		uint32_t    expectedCap;
+		uint32_t    expectedRanges;
+		unsigned    expectedWarnings;
+	};
+}
+
+TEST(DeferredStepModule, ConfigTable)
+{
+	const ConfigCase cases[] =
+	{
+		{ "absent",              "",                                                  8, 2, 4, 0 },
+		{ "auto",                "{\"worker_cap\":\"auto\"}",                          8, 2, 4, 0 },
+		{ "three on eight",      "{\"worker_cap\":3}",                                8, 3, 4, 0 },
+		{ "clamped",             "{\"worker_cap\":64}",                               8, 8, 4, 1 },
+		{ "zero",                "{\"worker_cap\":0}",                                8, 2, 4, 1 },
+		{ "negative",            "{\"worker_cap\":-2}",                               8, 2, 4, 1 },
+		{ "banana",              "{\"worker_cap\":\"banana\"}",                        8, 2, 4, 1 },
+		{ "float",               "{\"worker_cap\":2.5}",                              8, 2, 4, 1 },
+		{ "bool",                "{\"worker_cap\":true}",                             8, 2, 4, 1 },
+		{ "object",              "{\"worker_cap\":{}}",                               8, 2, 4, 1 },
+		{ "array",               "{\"worker_cap\":[1]}",                              8, 2, 4, 1 },
+		{ "ranges absent",       "{\"worker_cap\":3}",                                8, 3, 4, 0 },
+		{ "ranges zero",         "{\"ranges_per_worker\":0}",                         8, 2, 1, 1 },
+		{ "ranges negative",     "{\"ranges_per_worker\":-5}",                        8, 2, 1, 1 },
+		{ "ranges eight",        "{\"ranges_per_worker\":8}",                         8, 2, 8, 0 },
+		{ "both bad",            "{\"worker_cap\":\"banana\",\"ranges_per_worker\":0}", 8, 2, 1, 2 },
+		{ "malformed json",      "{not json",                                         8, 2, 4, 1 },
+	};
+
+	for (const ConfigCase& c : cases)
+	{
+		SCOPED_TRACE(c.name);
+		Dia::DeferredStep::Testing::LogCapture logs;
+		Harness h(true, c.json, c.workers);
+		ASSERT_TRUE(h.Start());
+		EXPECT_EQ(g_probe->ResolvedCap(), c.expectedCap);
+		EXPECT_EQ(g_probe->ParsedConfig().rangesPerWorker, c.expectedRanges);
+		EXPECT_EQ(logs.Warnings(), c.expectedWarnings);
+		EXPECT_EQ(logs.Count(Dia::DeferredStep::Testing::LogCapture::Level::kError), 0u);
+	}
+}

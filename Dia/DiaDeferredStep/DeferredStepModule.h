@@ -7,6 +7,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaThreading/JobSystem.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <DiaDeferredStep/CapConfig.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/DeferredStepSaveParticipant.h>
 #include <DiaDeferredStep/IStepLauncher.h>
@@ -31,10 +32,14 @@ namespace Dia::DeferredStep
 			DeferredStepScheduler& GetScheduler();
 
 	protected:
+		void OnConfigure(const char* configJson) override;
 		void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 		Dia::ApplicationFlow::StartResult DoStart() override;
 		void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
 		Dia::ApplicationFlow::StopResult DoStop() override;
+
+		// Parsed by OnConfigure: workerCap 0 = auto; resolved against the worker count in DoStart.
+		CapConfig mConfig;
 
 		Dia::ApplicationFlow::ServiceStreamReader<Dia::Threading::JobSystem> mJobSystemReader{ this, "JobSystemService" };
 

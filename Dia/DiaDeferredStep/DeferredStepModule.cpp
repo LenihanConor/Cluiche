@@ -9,6 +9,8 @@
 #include <DiaDeferredStep/SerialExecutor.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <json/json.h>
+
 namespace Dia::DeferredStep
 {
 	namespace
@@ -40,6 +42,59 @@ namespace Dia::DeferredStep
 	{
 	}
 
+	// Decides "auto or N" (workerCap 0 = auto) and ranges_per_worker. The clamp against the worker count happens in DoStart.
+	// Every rejected shape logs one Warning and falls back to the default; nothing here logs above Warning.
+	void DeferredStepModule::OnConfigure(const char* configJson)
+	{
+		mConfig = CapConfig();
+		if (configJson == nullptr || configJson[0] == '\0') { return; }
+
+		Json::Value root;
+		Json::Reader reader;
+		if (!reader.parse(configJson, root) || !root.isObject())
+		{
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStepModule config is not a JSON object; using defaults");
+			return;
+		}
+
+		if (root.isMember("worker_cap"))
+		{
+			const Json::Value& v = root["worker_cap"];
+			if (v.isString() && v.asString() == "auto")
+			{
+				mConfig.workerCap = 0;
+			}
+			else if (v.isUInt() && v.asUInt() >= 1)
+			{
+				mConfig.workerCap = v.asUInt();
+			}
+			else
+			{
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "worker_cap must be \"auto\" or an integer >= 1; falling back to auto");
+				mConfig.workerCap = 0;
+			}
+		}
+
+		if (root.isMember("ranges_per_worker"))
+		{
+			const Json::Value& v = root["ranges_per_worker"];
+			if (v.isUInt() && v.asUInt() >= 1)
+			{
+				mConfig.rangesPerWorker = v.asUInt();
+			}
+			else if (v.isInt() && v.asInt() < 1)
+			{
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "ranges_per_worker below 1; clamped to 1");
+				mConfig.rangesPerWorker = 1;
+			}
+			else
+			{
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "ranges_per_worker must be an integer >= 1; using default 4");
+				mConfig.rangesPerWorker = CapConfig().rangesPerWorker;
+			}
+		}
+	}
+
 	void DeferredStepModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 	{
 		mJobSystemReader.Connect(app);
@@ -58,8 +113,7 @@ namespace Dia::DeferredStep
 		mScheduler.Reset();
 		mLauncher.Reset();
 
-		// TODO(task 3): resolve the cap from configuration. For now "auto" (workerCap 0) and 4 ranges per worker.
-		const CapConfig config;
+		const CapConfig& config = mConfig;
 
 		if (mJobSystemReader.IsConnected() && mJobSystemReader.IsAvailable())
 		{
