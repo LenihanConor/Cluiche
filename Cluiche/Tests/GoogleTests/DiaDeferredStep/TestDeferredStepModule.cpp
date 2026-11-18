@@ -8,6 +8,11 @@
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
+#include <DiaSaveGame/ISaveable.h>
+#include <DiaSaveGame/SaveConfig.h>
+#include <DiaSaveGame/SaveFormat.h>
+#include <DiaSaveGame/SaveManager.h>
+#include <DiaSaveGame/SaveRegistry.h>
 #include <atomic>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
@@ -574,4 +579,113 @@ TEST(DeferredStepModule, SiblingModuleUsesSchedulerViaModuleRef)
 	EXPECT_EQ(g_siblingResult.kick, Dia::DeferredStep::KickResult::kLaunched);
 	EXPECT_EQ(g_siblingResult.applyCount, 1u);
 	EXPECT_EQ(g_probe->GetScheduler().GetChannelCount(), 0u);
+}
+
+// ---- Save services injection and lazy attach (AC 17, 18, 5) ----
+namespace
+{
+	using Dia::SaveGame::SaveRegistry;
+	using Dia::SaveGame::SaveManager;
+	using Dia::SaveGame::SaveConfig;
+	using Dia::SaveGame::SaveFormat;
+
+	// Registry and manager must outlive the Harness: its teardown runs DoStop, which detaches from them.
+	struct SaveServices
+	{
+		SaveRegistry mRegistry;
+		SaveManager  mManager;
+		SaveConfig   mConfig{ "temp/deferredstep_module_tests/", "slot_{id}.sav", 0, SaveFormat::Json };
+		SaveServices() { mManager.Init(mConfig, mRegistry); }
+	};
+
+	struct NullSaveable : Dia::SaveGame::ISaveable
+	{
+		void Serialize(Dia::SaveGame::SaveContext&) const override {}
+		void Deserialize(Dia::SaveGame::LoadContext&) override {}
+		uint32_t GetVersion() const override { return 1; }
+	};
+
+	bool HasSection(const SaveRegistry& reg)
+	{
+		for (uint32_t i = 0; i < reg.GetParticipantCount(); ++i)
+		{
+			if (reg.GetIdAt(i) == StringCRC("DeferredStep")) { return true; }
+		}
+		return false;
+	}
+
+	// Restarts the (already running) probe with save services injected, so the first-update latch is fresh.
+	void RestartWithServices(SaveServices& s)
+	{
+		g_probe->CallStop();
+		g_probe->SetSaveServices(s.mRegistry, s.mManager);
+		g_probe->CallStart();
+	}
+}
+
+TEST(DeferredStepModule, SaveServicesAttachOnFirstUpdateOnly)
+{
+	SaveServices s;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartWithServices(s);
+
+	EXPECT_FALSE(HasSection(s.mRegistry));          // DoStart does not attach
+	g_probe->CallUpdate();
+	EXPECT_TRUE(HasSection(s.mRegistry));
+	EXPECT_EQ(s.mRegistry.GetParticipantCount(), 1u);
+	g_probe->CallUpdate();                          // second update must not attach again (would assert in Debug)
+	g_probe->CallUpdate();
+	EXPECT_EQ(s.mRegistry.GetParticipantCount(), 1u);
+}
+
+TEST(DeferredStepModule, SaveServicesDetachOnStopAndReattachOnRestart)
+{
+	SaveServices s;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartWithServices(s);
+	g_probe->CallUpdate();
+	ASSERT_TRUE(HasSection(s.mRegistry));
+
+	EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+	EXPECT_FALSE(HasSection(s.mRegistry));
+
+	EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+	EXPECT_FALSE(HasSection(s.mRegistry));
+	g_probe->CallUpdate();
+	EXPECT_TRUE(HasSection(s.mRegistry));
+	EXPECT_EQ(s.mRegistry.GetParticipantCount(), 1u);
+}
+
+TEST(DeferredStepModule, SaveParticipantRegistersAfterOtherModulesParticipants)
+{
+	SaveServices s;
+	NullSaveable other;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartWithServices(s);
+
+	s.mRegistry.Register(StringCRC("DSM_OtherParticipant"), &other);   // another module's DoStart-time registration
+	g_probe->CallUpdate();
+	ASSERT_EQ(s.mRegistry.GetParticipantCount(), 2u);
+	EXPECT_EQ(s.mRegistry.GetIdAt(0), StringCRC("DSM_OtherParticipant"));
+	EXPECT_EQ(s.mRegistry.GetIdAt(1), StringCRC("DeferredStep"));
+	g_probe->CallStop();
+	s.mRegistry.Unregister(StringCRC("DSM_OtherParticipant"));
+	g_probe->CallStart();
+}
+
+TEST(DeferredStepModule, NoSaveServicesLogsOneInfoAndDoesNotParticipate)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	SaveServices s;   // exists but is never injected
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	for (int i = 0; i < 10; ++i) g_probe->CallUpdate();
+
+	EXPECT_EQ(logs.Infos("save"), 1u);
+	EXPECT_FALSE(HasSection(s.mRegistry));
+	EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);   // nothing attached, nothing to detach
+	EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
 }

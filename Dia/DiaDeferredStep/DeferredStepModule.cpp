@@ -8,6 +8,8 @@
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/SerialExecutor.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaSaveGame/SaveManager.h>
+#include <DiaSaveGame/SaveRegistry.h>
 
 #include <json/json.h>
 
@@ -109,7 +111,9 @@ namespace Dia::DeferredStep
 	Dia::ApplicationFlow::StartResult DeferredStepModule::DoStart()
 	{
 		// Restart safety: tear down any previous instance in reverse construction order.
-		mSaveParticipant.Reset();
+		mSaveParticipant.Reset();   // destructor detaches if still attached
+		mSaveAttached = false;
+		mSaveResolved = false;
 		mScheduler.Reset();
 		mLauncher.Reset();
 
@@ -142,9 +146,30 @@ namespace Dia::DeferredStep
 		mKeySource = &source;
 	}
 
+	void DeferredStepModule::SetSaveServices(Dia::SaveGame::SaveRegistry& registry, Dia::SaveGame::SaveManager& manager)
+	{
+		mSaveRegistry = &registry;
+		mSaveManager = &manager;
+	}
+
 	void DeferredStepModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 	{
 		if (mScheduler.Get() == nullptr) { return; }
+
+		// Lazy attach on the first update so this participant registers after every other module's.
+		if (!mSaveResolved)
+		{
+			mSaveResolved = true;
+			if (mSaveRegistry != nullptr && mSaveManager != nullptr && mSaveParticipant.Get() != nullptr)
+			{
+				mSaveParticipant->Attach(*mSaveRegistry, *mSaveManager);
+				mSaveAttached = true;
+			}
+			else
+			{
+				DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "No save services injected; DeferredStep does not participate in save/load");
+			}
+		}
 
 		if (mKeySource == nullptr)
 		{
@@ -173,7 +198,13 @@ namespace Dia::DeferredStep
 				static_cast<unsigned long long>(stats.stalls));
 		}
 
-		// SEAM(save attach task): Detach the save participant here if attached.
+		if (mSaveAttached && mSaveParticipant.Get() != nullptr)
+		{
+			mSaveParticipant->Detach();
+		}
+		mSaveAttached = false;
+		mSaveResolved = false;
+
 		// SEAM(metrics/health task): unregister metrics and the health reporter here.
 		mSaveParticipant.Reset();
 		mScheduler.Reset();

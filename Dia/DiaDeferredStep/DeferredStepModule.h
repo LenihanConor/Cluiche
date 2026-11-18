@@ -13,6 +13,12 @@
 #include <DiaDeferredStep/IStepLauncher.h>
 #include <DiaDeferredStep/IStepKeySource.h>
 
+namespace Dia::SaveGame
+{
+	class SaveRegistry;
+	class SaveManager;
+}
+
 namespace Dia::DeferredStep
 {
 	// SimPU module that hosts the deferred-step scheduler. Consumes the JobSystem
@@ -37,6 +43,11 @@ namespace Dia::DeferredStep
 			// DoUpdate reads the source once per sim step and calls scheduler.Tick(source.GetCurrentKey()).
 			void SetKeySource(IStepKeySource& source);
 
+			// Non-owning; call before Application::Start. The save participant attaches lazily on the first
+			// DoUpdate (so it registers after every other module's participants and deserializes last).
+			// Never calling this is fine: the module logs one Info and has no save participation.
+			void SetSaveServices(Dia::SaveGame::SaveRegistry& registry, Dia::SaveGame::SaveManager& manager);
+
 	protected:
 		void OnConfigure(const char* configJson) override;
 		void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
@@ -58,5 +69,10 @@ namespace Dia::DeferredStep
 
 			IStepKeySource* mKeySource = nullptr;     // non-owning
 			bool            mWarnedNoKeySource = false;
+
+			Dia::SaveGame::SaveRegistry* mSaveRegistry = nullptr;   // non-owning, injected
+			Dia::SaveGame::SaveManager*  mSaveManager  = nullptr;   // non-owning, injected
+			bool            mSaveAttached = false;
+			bool            mSaveResolved = false;   // first-DoUpdate attach decision made (attached or logged no-services)
 	};
 }
