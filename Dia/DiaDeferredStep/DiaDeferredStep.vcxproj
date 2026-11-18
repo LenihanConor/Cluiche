@@ -91,6 +91,7 @@
     <ClInclude Include="Testing\ConcurrencyProbe.h" />
     <ClInclude Include="CapGate.h" />
     <ClInclude Include="CappedParallelExecutor.h" />
+    <ClInclude Include="JobStepLauncher.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />
@@ -98,6 +99,7 @@
     <ClCompile Include="DeferredStepScheduler.cpp" />
     <ClCompile Include="CapGate.cpp" />
     <ClCompile Include="CappedParallelExecutor.cpp" />
+    <ClCompile Include="JobStepLauncher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
