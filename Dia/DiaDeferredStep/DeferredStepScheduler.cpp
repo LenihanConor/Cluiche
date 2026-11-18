@@ -82,6 +82,12 @@ namespace Dia::DeferredStep
 	{
 		if (!entry.hasToken)
 		{
+			if (entry.state == StepState::kComplete)
+			{
+				// Restored pending step: no token, no launcher calls.
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Channel '%s': discarding restored unapplied result", entry.channelId.AsChar());
+				entry.state = StepState::kIdle;
+			}
 			return;
 		}
 		const bool wasComplete = mLauncher.IsComplete(entry.token);
@@ -197,7 +203,8 @@ namespace Dia::DeferredStep
 		for (unsigned int i = 0; i < mChannels.Size(); ++i)
 		{
 			const ChannelEntry& e = mChannels[i];
-			if (e.hasToken && (e.state == StepState::kRunning || e.state == StepState::kComplete) && e.applyKey <= currentKey)
+			if ((e.state == StepState::kRunning || e.state == StepState::kComplete) && (e.hasToken || e.state == StepState::kComplete)
+				&& e.applyKey <= currentKey)
 			{
 				unsigned int pos = dueCount++;
 				while (pos > 0 && mChannels[due[pos - 1]].kickSequence > e.kickSequence)
@@ -227,8 +234,13 @@ namespace Dia::DeferredStep
 				continue;
 			}
 			ChannelEntry& entry = mChannels[index];
-			if (!entry.hasToken || (entry.state != StepState::kRunning && entry.state != StepState::kComplete))
+			if (entry.state != StepState::kRunning && entry.state != StepState::kComplete)
 			{
+				continue;
+			}
+			if (!entry.hasToken)
+			{
+				ApplyRestored(entry, dueIds[i]);
 				continue;
 			}
 			const LaunchToken token = entry.token;
@@ -305,6 +317,127 @@ namespace Dia::DeferredStep
 		}
 	}
 
+	void DeferredStepScheduler::ApplyRestored(ChannelEntry& entry, Dia::Core::StringCRC channelId)
+	{
+		// A restored channel has no launch token: complete by construction, so no IsComplete/Wait/Release and no stall.
+		IDeferredStep* step = entry.step;
+		const uint64_t sequence = entry.kickSequence;
+		{
+			DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kNone);
+			DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kNone);
+			step->Apply();
+		}
+		// Apply may have unregistered or reset the channel; only settle it if it is still the same restored step.
+		const int after = FindIndex(channelId);
+		if (after >= 0)
+		{
+			ChannelEntry& done = mChannels[after];
+			if (done.state == StepState::kComplete && !done.hasToken && done.kickSequence == sequence)
+			{
+				done.state = StepState::kIdle;
+				++done.stats.applies;
+			}
+		}
+		++mStats.applies;
+	}
+
+	uint32_t DeferredStepScheduler::GetPendingCount() const
+	{
+		uint32_t count = 0;
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			if (mChannels[i].state == StepState::kComplete)
+			{
+				++count;
+			}
+		}
+		return count;
+	}
+
+	bool DeferredStepScheduler::GetPendingAt(uint32_t index, PendingStepInfo& out) const
+	{
+		// Select the index-th complete channel in kick-sequence order (rank by counting smaller sequences).
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			const ChannelEntry& e = mChannels[i];
+			if (e.state != StepState::kComplete)
+			{
+				continue;
+			}
+			uint32_t rank = 0;
+			for (unsigned int j = 0; j < mChannels.Size(); ++j)
+			{
+				if (mChannels[j].state == StepState::kComplete && mChannels[j].kickSequence < e.kickSequence)
+				{
+					++rank;
+				}
+			}
+			if (rank == index)
+			{
+				out.channelId = e.channelId;
+				out.kickKey = e.kickKey;
+				out.applyKey = e.applyKey;
+				out.step = e.step;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void DeferredStepScheduler::DrainAndDiscardAll()
+	{
+		DIA_TRACE_ZONE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Trace::Category::kNone);
+		DIA_PROFILE_SCOPE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Profile::Category::kNone);
+		uint32_t discarded = 0;
+		uint32_t inFlightDiscarded = 0;
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			ChannelEntry& e = mChannels[i];
+			if (e.state == StepState::kIdle && !e.hasToken)
+			{
+				continue;
+			}
+			if (e.state == StepState::kRunning)
+			{
+				++inFlightDiscarded;
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Channel '%s': discarding in-flight step", e.channelId.AsChar());
+			}
+			DrainEntry(e);
+			++discarded;
+		}
+		if (discarded == 0)
+		{
+			return;
+		}
+		DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "DrainAndDiscardAll discarded %u step(s), %u were still in flight", discarded, inFlightDiscarded);
+	}
+
+	bool DeferredStepScheduler::RestorePending(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey)
+	{
+		const int index = FindIndex(channelId);
+		if (index < 0)
+		{
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "RestorePending rejected: channel '%s' not registered", channelId.AsChar());
+			return false;
+		}
+		ChannelEntry& e = mChannels[index];
+		if (e.state != StepState::kIdle)
+		{
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "RestorePending rejected: channel '%s' is not idle", channelId.AsChar());
+			return false;
+		}
+		e.state = StepState::kComplete;
+		e.token = LaunchToken();
+		e.hasToken = false;
+		e.kickKey = kickKey;
+		e.applyKey = applyKey;
+		e.keyFloor = kickKey;
+		e.hasKeyFloor = true;
+		e.kickSequence = ++mKickSequence;
+		e.completionSeen = true;
+		return true;
+	}
+
 	void DeferredStepScheduler::DrainAll()
 	{
 		DIA_TRACE_ZONE("DeferredStep.DrainAll", Dia::Observation::Trace::Category::kNone);
@@ -345,7 +478,7 @@ namespace Dia::DeferredStep
 			return false;
 		}
 		const ChannelEntry& e = mChannels[index];
-		if (!e.hasToken || (e.state != StepState::kRunning && e.state != StepState::kComplete))
+		if (e.state != StepState::kRunning && e.state != StepState::kComplete)
 		{
 			return false;
 		}

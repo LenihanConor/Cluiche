@@ -34,6 +34,15 @@ namespace Dia::DeferredStep
 		uint64_t drainedSteps = 0;
 	};
 
+	// A completed-but-unapplied step, as reported by GetPendingAt.
+	struct PendingStepInfo
+	{
+		Dia::Core::StringCRC channelId;
+		StepKey              kickKey  = 0;
+		StepKey              applyKey = 0;
+		IDeferredStep*       step     = nullptr;
+	};
+
 	// Lifecycle owner for deferred steps: one in-flight step per registered channel. SimPU only.
 	class DeferredStepScheduler
 	{
@@ -63,6 +72,18 @@ namespace Dia::DeferredStep
 		// and a later Tick applies it normally. No-op (no Wait, no log, drains unchanged) when nothing is in flight.
 		void DrainAll();
 
+		// Completed-but-unapplied steps (kComplete), in kick order. Valid after DrainAll.
+		uint32_t GetPendingCount() const;
+		bool     GetPendingAt(uint32_t index, PendingStepInfo& out) const;
+
+		// Waits for every in-flight step and discards it without applying; restored (token-less) complete channels are
+		// discarded too. All channels end kIdle; key floors are kept. Load, and shutdown.
+		void DrainAndDiscardAll();
+
+		// Puts a registered idle channel into kComplete with no launch token, so the next Tick at or past applyKey applies it
+		// without consulting the launcher. The channel's monotonic key floor becomes kickKey. False (Warning) otherwise.
+		bool RestorePending(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey);
+
 		// True with the channel's applyKey while kRunning or kComplete; false for unknown or idle channels.
 		bool GetApplyKey(Dia::Core::StringCRC channelId, StepKey& out) const;
 
@@ -91,7 +112,8 @@ namespace Dia::DeferredStep
 		};
 
 		int  FindIndex(Dia::Core::StringCRC channelId) const;
-		void DrainEntry(ChannelEntry& entry);   // Wait if in flight, Release, no Apply
+		void ApplyRestored(ChannelEntry& entry, Dia::Core::StringCRC channelId);   // Tick: apply a token-less kComplete channel
+		void DrainEntry(ChannelEntry& entry);   // Wait if in flight, Release, no Apply; also resets a restored token-less kComplete channel
 
 		IStepLauncher& mLauncher;
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
