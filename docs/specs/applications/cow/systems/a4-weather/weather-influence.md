@@ -6,6 +6,8 @@
 **Depends on:** A4 Feature 2 (pipeline passes, forcing hooks A–D, `Capture`/`Run`/`Commit`); A4 Feature 3 (`WeatherModule`, `WeatherStage`, mutation queue, sim-hosted commands, `SetHydrologyProvider`); A4 Feature 4 (save record, pending blob). Soft: A5 Feature 3 (translates the ground-water part).
 **Consumed by:** A4 Feature 5 (`force storm` routes here), A4 Feature 9 (Smoothing: reads the active/pending list for its preview), A5 Feature 3 (`extraWater` and sink translation), A1 (`water_dragon_emission` moves onto this path), future dragon abilities (not designed; see the backlog review row).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 A public, deterministic way for **any CoW system** to push the weather. Five kinds: **storm, warmer, cooler, wetter, drier**. Each request names its source, a region, a strength, a lifetime in weeks and a falloff.
@@ -477,6 +479,15 @@ Scoped `--filter="*WeatherInfluence*"` while iterating, one full `--shards 2` ru
 3. **Who may do what, later?** The API has no ownership rules: any caller can remove any id, and one system could fill the 64 slots. The record carries `source`, so per-source quotas, owner-only removal, or a cooldown can be added without changing the record. Dragon ability design should decide which. Deliberately not decided now (no dragon content).
 4. **Should a regenerated world drop the influences?** This spec clears the book on a new world revision, because the cell indices belong to the old grid. A same-dimension regeneration (S-1 live editing) arguably should keep them, but they would then point at different terrain. Clearing is the safe choice. Revisit if S-1 editing and influences are ever used together.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Kind catalogue (system item 14).** Supersedes the hard-coded kinds in Influence record, Storm impulse, Sustained kinds and Record validation, the `influence` parameter block table (per-kind rows; generic caps `max_active`, `max_strength` and friends stay parameters), the kind enum in the Public API, and the `weather_parameters.json` / `weather_schema.json` lines in Files Touched. Each kind (storm, drought, cold snap, heat wave, ...) is a data row: pressure, moisture and temperature deltas, falloff, lifetime, strength cap. It lives in the weather params sidecar or a record file, so a new kind is data only. The `cow.weather.influence` command validates the kind against the catalogue and lists it.
+2. **Modifiers.** Where an influence alters a parameter (rather than a per-cell field) it applies as a DiaAttribute modifier on the `ParameterFile`, removed when the influence expires.
+3. **Save.** The saved influence array refers to a kind by catalogue id (Feature 4).
+4. **Naming and I/O (items 9, 11).** Catalogued file, `PathStore`, `FileWatcher` reload in dev builds.
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked.
@@ -493,3 +504,5 @@ User decisions of 2026-11-17 encoded here:
 - No dragon content. See the backlog review row.
 
 Plan: [weather-influence.plan.md](weather-influence.plan.md) (written 2026-11-17, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

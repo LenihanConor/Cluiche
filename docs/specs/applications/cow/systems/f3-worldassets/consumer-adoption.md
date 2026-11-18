@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md
 **Builds on:** @docs/specs/applications/cow/systems/f3-worldassets/world-assets-module-and-bundle-load.md (Feature 2, the `IWorldAssetParticipant` interface), @docs/specs/applications/cow/systems/f3-worldassets/save-as.md (Feature 3)
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, simulation
 
@@ -200,6 +201,18 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | **`HydrologyPackParticipant` (kind `hydro`)** is added. It binds A5's `ParameterFile`: `Apply(pack)` calls `ApplyPack` through A5's mutation queue (effective at the next `Capture`); `Capture()` returns `ToJson(Diff)`; `IsReady(rev)` is true after A5's `InitialiseSim` and spin-up for `rev`. Sidecar `Global/Hydrology/hydro_parameters.schema.json` (format `cow.hydro_params`); packs `Global/Hydrology/Packs/<id>.hydro.json` | New. Fills the gap behind A5's reference to "F-3 hydrology packs" |
+| 2 | `WeatherPackParticipant` and `EcologyPackParticipant` lose their defaults file (`weather_parameters.json`, `ecology_parameters.json`). `Apply` uses `ApplyPack` (lenient, atomic) instead of "A4's own parameter rules ... swaps `mParams`"; `Capture()` returns `ToJson(Diff)` instead of "`mParams` in the defaults file's shape" | "A4: `WeatherPackParticipant`" bullets 1-2; "A1: two adapters" first bullet |
+| 3 | `BuildPack` for parameter-file kinds writes `ParameterFile::ToJson(Diff)` (envelope plus the values that differ from their defaults, maps nested) | `BuildPack` key order `format`, `version`, `base`, `displayName`, `overrides` and "overrides sorted by dotted path" (for parameter-file kinds) |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Each adoption is a task in its consumer's plan.
+
+Amended 2026-11-18 (world-sim review decisions).

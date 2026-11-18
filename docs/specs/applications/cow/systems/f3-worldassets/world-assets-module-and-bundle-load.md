@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md
 **Builds on:** @docs/specs/applications/cow/systems/f3-worldassets/envelope-and-override-merge.md (Feature 1)
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -198,6 +199,17 @@ No conflicts. Two parent statements are amended by this spec and updated in the 
 
 _None remaining._ Resolved: the load-order amendment (parameters before terrain, readiness polling), the partial-result rule, and the missing-participant rule are decided above.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | On `IWorldAssetParticipant`, `HasDefaults()`, `DefaultsSpec()` and `Defaults()` are superseded for parameter-file kinds (no defaults file). The sidecar carries defaults, and packs apply through `ApplyPack` instead of "`Apply(resolved)`" | Participant interface declaration; Design resolve step ("defaults plus overrides become resolved") for parameter-file kinds |
+| 2 | Live pack apply covers the `hydro` kind as well as weather and ecology | Goals 5 ("a single weather or ecology pack") |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Needs Feature 1; the `world` alias comes from Feature 4.
+
+Amended 2026-11-18 (world-sim review decisions).

@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17; DECISION-129..134, CHANGE-047/048, PARK-029, PARK-030). The GDD owns design intent and constants (AD-003). The interview answers are in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md` (Part 2). Aligned to the locked GDD (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Status:** `Approved` (2026-11-17, user; GDD A5 locked). Plan: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** simulation, debug
 
@@ -54,7 +55,7 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 |---|---------|---------|------|--------|
 | 1 | Data & Parameters | `HydrologyFields`, `HydrologyTerrain` (incl. basin table, `isCrossing` = protected cells), 43 scalar descriptors (GDD names and values) + a 13-biome × 3-column `biome_table`, versioned file, atomic overrides, `Initialise` (validation, tiny-depression filter, in-basin directions, full lakes, static tables) and `ApplyPhaseSeed`. Pure logic, TDD | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md | Approved |
 | 2 | Water Pipeline | The weekly passes: inputs, freeze (cells and basin ice), glacier, infiltration and springs, ET and injected water sinks, runoff and baseflow, a topological cascade with basins inside it (slope-based release, same-week crossing and chained lakes), basin levels and inundation, floods with soil recharge against each river's running mean, counters, passability, glacier eligibility, double totals. Pure logic, TDD with hand-built grids | @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md | Approved |
-| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydrology`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot` (incl. `RiverState`); init from S-1, frozen-phase spin-up with a phase-scaled seed, `HoldGeneration`/`WorldGenerationFailed` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md | Approved |
+| 3 | `HydrologyModule` & World Step Stage | Registers as stage `hydro`; Capture/Run/Commit; reads A4's in-run result; `HydrologyUpdated{week}` + `HydrologySnapshot` (incl. `RiverState`); init from S-1, frozen-phase spin-up with a phase-scaled seed, `HoldGeneration`/`WorldGenerationFailed` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md | Approved |
 | 4 | Save/Load | E1 participant; pending working set through DiaDeferredStep (DFS-005); JSON arrays | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-save.md | Approved |
 | 5 | Debug & History | DiaCellLayers base layers, DiaCellHistory groups and events, sim-hosted `cow.hydro.*` commands with help, `cow.hydro.step_ms` | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-debug.md | Approved |
 | 6 | Presets & Regression | Scenarios (forced wet year, drought decade, melt pulse, ice-age phase), layer goldens via `CellLayerGolden.h`, the reachability long-run test | @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md | Approved |
@@ -69,18 +70,18 @@ The GDD promises spring floods that "flow from high elevation to low" (A4 Techni
 
 ```
 SimPU
-  └─ WorldStepModule ("order": ["weather", "hydrology", "ecology"])
+  └─ WorldStepModule ("order": ["weather", "hydro", "ecology"])
   |    one `world` channel: Capture all → Run in order → Commit in order
   |
   └─ HydrologyModule (SimModule)
        on WorldGenerationComplete → HydrologySimulation::Initialise(terrain, basins) → spin-up
-       registers as world-step stage "hydrology"; does NOT kick or schedule
+       registers as world-step stage "hydro"; does NOT kick or schedule
        on Commit → publish HydrologyUpdated{week}
        on BiomeTransitionComplete → update cached biome (applies next week)
        owns: HydrologySimulation, HydrologyParameters, save participant, debug domain, cell layers
 ```
 
-A5 can run without A1 (S-2.6: `["weather", "hydrology"]`). It cannot run without a water source: when A4 is absent, a **fixed-input driver** (a constant or scripted `waterToGround` per week) stands in, so tests and Controlled modes work without weather.
+A5 can run without A1 (S-2.6: `["weather", "hydro"]`). It cannot run without a water source: when A4 is absent, a **fixed-input driver** (a constant or scripted `waterToGround` per week) stands in, so tests and Controlled modes work without weather.
 
 ### Coupling with A4 (one week each way, no cycle inside a step)
 
@@ -290,7 +291,7 @@ namespace CoW::Hydrology {
 - **World Step (Approved, unbuilt):** stage registration and `order`.
 - **DiaDeferredStep (Approved, building):** `IParallelExecutor`, pending save.
 - **E1 SaveLoad (Done), DiaCellLayers, DiaCellHistory, DiaValueSchema (Done), GameSpeedController (Done).**
-- **Required by:** A1 (amend: Feature 4 water flow/table removed; reads A5; keeps `water_gradient`, built from A5 in a thin step 2; treats inundated cells as aquatic habitat), A3 (amend: inundation, dry-riverbed and glacier rules), V-1, S-2.6, S-3 (Living mode), S-3.5 (order gains `hydrology`; R1/R2/R5 cover it), F-3 (a hydrology start state and pack).
+- **Required by:** A1 (amend: Feature 4 water flow/table removed; reads A5; keeps `water_gradient`, built from A5 in a thin step 2; treats inundated cells as aquatic habitat), A3 (amend: inundation, dry-riverbed and glacier rules), V-1, S-2.6, S-3 (Living mode), S-3.5 (order gains `hydro`; R1/R2/R5 cover it), F-3 (a hydrology start state and pack).
 
 ## Test Strategy
 
@@ -332,6 +333,64 @@ The three interview-time questions are resolved (Decisions 9–11). Open, to rev
 2. **Topological routing and parallelism.** River trees are serial. If one dominant tree drains most of a continent, the routing pass is effectively single-threaded. Measure it first (performance is report-only; the GDD lists the same question); split long trees into chained segments only if the step misses its World Step slack.
 3. ~~**Basin overflow chains.**~~ **Resolved 2026-11-17 (Feature 2 interview):** basins are nodes inside the topological cascade, so chained lakes resolve in the same week. The GDD agrees.
 
+## World-sim review amendment (2026-11-18)
+
+Source: @docs/research/worldsim_data_driven/summary.md §0 and §0.1; kit: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; parameters: @docs/specs/applications/dia/systems/diaattribute/parameter-files.md; biomes: @docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md; search helpers: @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.md.
+
+**Each item below supersedes any contradicting text in this spec and its features.** The feature specs list what they supersede, section by section.
+
+1. **Parameters are schema-first.** Replaced: `hydrology_parameters.json`, the 43-row C++ `ParamDescriptor` table, the `biome_table` block's row descriptors, `LoadHydrologyParameters` / `ApplyOverrides` / `SetParam` / `ToJson` / `DefaultHydrologyParameters`, and the params hash.
+   - The sidecar `Global/Hydrology/hydro_parameters.schema.json` (format `cow.hydro_params`) is the single source of each parameter's kind, range, default and description. The 43 GDD keys, names, values and ranges move into it unchanged.
+   - Cross-row rules become sidecar `constraints`: `routing.release_floor <= routing.release_ceil` and `freeze.threshold <= freeze.thaw_temp`. The whole-number rules (`basin.min_cells`, `glacier.onset_years`, `glacier.check_week`) are `int` kinds.
+   - "Hard range vs GDD tuning range": the hard range is the sidecar `min`/`max`; the GDD tuning range may be recorded as sidecar `bands`.
+   - **Loading is strict** through `Dia::Attribute::ParameterFile`. A fault fails loudly: Failing health, no compiled fallback. **Packs** are `Global/Hydrology/Packs/<id>.hydro.json`, applied with `ApplyPack` (lenient, atomic). `ParamBinding<HydrologyParameters>` gives the per-step snapshot. `Hash()` replaces the params hash.
+2. **The biome table becomes three maps**, each keyed `keyRef cow.biomes` and complete (`data.incomplete-map` in the CLI, a load failure in C++):
+
+   | Map | Column it replaces |
+   |---|---|
+   | `hydro.biome.soil_capacity` | `soil_capacity` |
+   | `hydro.biome.infil_rate` | `infil_rate` |
+   | `hydro.biome.veg_factor` | `veg_factor` |
+
+   The unknown-biome fallback is the registry's `fallback` role (`ResolveOrFallback`), not a hard-coded `GrasslandSteppe` row.
+3. **Stage.** `HydrologyStage` derives `WorldStepStageBase`. A5's differences map to hooks: `ExtraReady` (a water input exists); `LatchInputs` returns false for an invalid input view (replaces `mStepValid`); `InitialiseSim` fails with a cause code; `ApplyEntry` handles A5's mutation kinds; `PublishCommit` publishes `HydrologyUpdated`; `OnStartExtra` / `OnStopExtra` wire `SetHydrologyProvider` and `SetWaterSource`. The coupled spin-up and `IHydrologySpinUpHost` stay system code on top of `SpinUpSlot`.
+   - Health is DiaObservation `kOK` / `kDegraded` / `kFailing`; "Unhealthy" becomes Failing, with a cause code.
+   - **The stage id is `hydro`.** The World Step order is `["weather", "hydro", "ecology"]` (S-2.6: `["weather", "hydro"]`).
+   - `IWorldStepStage` gains `ValidatePending`. The base registers `cow.hydro.step_ms` and `cow.hydro.discarded_steps`.
+4. **Save** uses the kit codec helpers. No in-record `"version"`: `GetVersion` (`kFormatVersion` stays) plus `RegisterMigration`. Participant id `cow.hydro`. `params_hash = ParameterFile::Hash()`, which now covers the biome maps. `Validate` ranges come from the layer sidecar entry (`cow.hydro.layers/<field>`); a field with no layer gives its range in a hydro state sidecar. Restore uses the shared sequence, the event-order fallback and the pending blob. A5-only extras stay: `basin_count`, `world_hash`, the mixed A4/A5 table.
+5. **Commands.** One `cow.hydro.params {action: set|get|list|reload|save_defaults}` with the kit's reply shapes. This gives A5 a `reload` it lacked. The map key form is `hydro.biome.<column>.<BiomeId>` (was `biome_table.<BiomeId>.<column>`). `cow.hydro.set_param` is gone. Registration goes through `SimCommandSet`. The six-name count is unchanged (`state`, `basins`, `find`, `params`, `preset`, `balance`).
+6. **Naming.** Layer ids `hydro.<snake_case>`. Schema keys `cow.hydro.layers/<field>` (was `hydro/<key>`). Formats `cow.hydro_params` and `cow.hydro_state`. Save id `cow.hydro`.
+7. **Events.** `HydrologyUpdated` and the other A5 messages are declared in `cow_worldsim.diagamemessages` and generated with `dia codegen messages`.
+8. **Data I/O.** Every A5 file and sidecar is catalogued, paths resolve through `PathStore`, and `FileWatcher` reloads the sidecar and packs in dev builds (the same path as `params {action: reload}`).
+9. **Presets and selectors** use `CellSelectorSet`: DiaCondition `ConditionExpr` over `WorldCellFields` plus `derived` fields. A5 contributes its committed fields to `WorldCellFields` under slot `hydro`, including `hydro.basin_kind`. The clause mapping is in @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md.
+10. **Biomes.** `BiomeIndex` comes from the registry and the `Biome` enum is deleted. A5's cached per-cell biome array is `BiomeIndex`; the biome count is the registry's `Count()`, not 13.
+11. **Terrain profile; Open Design Question 2 (soil by terrain, in Feature 1) is resolved.** S-1's param maps keyed by `TerrainType`, `terrain.soil_depth_mult` and `terrain.runoff` (both provisional), are available. A5 multiplies soil capacity by `terrain.soil_depth_mult`, with the values tuned in S-2.6.
+12. **Search helpers.** Basin and depression searches may use DiaPathfinding's `PriorityFlood` and `ConnectedComponents` instead of A5-local copies.
+13. **F-3 and T-2.** Hydrology is an F-3 pack kind (`hydro`) with a `HydrologyPackParticipant`, and gets a T-2 form route for `cow.hydro_params`. This fixes this spec's reference to "F-3 hydrology packs", which F-3 did not support. See @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md and @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| Superseded text in this spec | By item |
+|---|---|
+| Features row 1 ("43 scalar descriptors ... `biome_table`, versioned file, atomic overrides") | 1, 2 |
+| Features row 3 ("Registers as stage `hydrology`"); Architecture stage tree (`"order"`, `registers as world-step stage "hydrology"`); the S-2.6 order | 3 |
+| Features row 5 and Architecture "Sim-hosted commands" (`cow.hydro.set_param`) | 5 |
+| Architecture "Instrumentation" (`cow.hydro.step_ms` registered by A5) | 3 |
+| Public Interfaces `HydrologyStage : IWorldStepStage` | 3 |
+| GDD differences "Init failure ... A5 goes Unhealthy" | 3 |
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Layer ids are renamed to field names:** `hydro.soil` -> `hydro.soil_moisture`, `hydro.ground` -> `hydro.ground_water`, `hydro.surface` -> `hydro.surface_water` (and the same `<sys>.<field>` rule for the rest). The schema keys follow (`cow.hydro.layers/<field>`).
+2. **Presets** use format `cow.hydro_preset`, at `Global/Hydrology/Presets/<id>.hydro_preset.json` (it was `cow.hydrology_preset` / `.hydropreset.json`).
+3. **Saves** store biomes through the kit's biome palette.
+4. **Selector clauses:** `crossing` -> `terrain.is_protected`. `basin` -> `hydro.basin_kind` (`none`/`lake`/`dry`; `any` = `!= none`).
+5. **Packs** have no separate format id: a hydro pack is a sparse `cow.hydro_params` document under `Packs/`, carrying `basedOn` (Parameter Files resolution).
+6. **`terrain.runoff`** is not consumed until a later amendment.
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step.
+
+Amended 2026-11-18 (world-sim review decisions).

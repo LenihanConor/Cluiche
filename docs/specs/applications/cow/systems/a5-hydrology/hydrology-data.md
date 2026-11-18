@@ -4,6 +4,7 @@
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §1, §13 and `A5_TuningParameters.md`; DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Amended to match it (aligned to locked GDD 2026-11-17).
 **Depends on:** S-1 consumer amendment 8 (basin table and bed elevation in the world record). Unit tests use hand-built terrain, so the amendment is needed only once Feature 3 reads real worlds.
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 ## Summary
 
@@ -363,6 +364,23 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 4. **Should a tiny S-1 lake be an A5 basin?** The GDD filter is about priority-flood depressions. A lake that S-1 already placed on the map must hold water, so it is kept. If S-1 never generates lakes below the minimum, the question does not arise.
 5. **Exact in-basin tie rule.** "Steepest descent toward the pit" has dead ends on a rough bed. The flood-fill fallback above is this spec's choice. The GDD gives the intent only.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | The sidecar `Global/Hydrology/hydro_parameters.schema.json` (format `cow.hydro_params`) is the single source of kind, range, default and description. The 43 rows' keys, GDD names, defaults and ranges move into it as data. The C++ `ParamDescriptor` table is deleted | Summary "Parameters" bullet; Goals 2-3; Design "Scalar descriptor table" (`ParamDescriptor { group, key, member, min, max, default, kind }`, 43 rows); Files Touched `HydrologyParameters.h/.cpp` row |
+| 2 | **No base file.** `hydrology_parameters.json` is not shipped. Runtime value = sidecar default, then packs in order, then `set`. "Save as defaults" is `cow.hydro.params {action: save_defaults}` (dev only) | Design "Parameter file" (envelope, "Defaults live at ..."); Files Touched `hydrology_parameters.json`; AC 5 (shipped file equals `DefaultHydrologyParameters()`, byte-for-byte `ToJson`) |
+| 3 | Load is strict through `ParameterFile`: Failing health, no compiled fallback, no `DefaultHydrologyParameters()`. `ApplyOverrides` becomes `ApplyPack` (lenient: unknown key dropped with a Warning, out-of-range clamped with a Warning; atomic; constraints reject the whole pack). `SetParam` becomes `ParameterFile::Set` (strict). `ToJson` becomes `ParameterFile::ToJson(Full/Diff)`. The params hash becomes `Hash()` | Design "Parameter file" Load, `ApplyOverrides`, `SetParam` and `ToJson` bullets; Public API "Parameters"; ACs 6-9 (the "unknown key is an error" rule holds for the sidecar and `Set`, not for packs) |
+| 4 | Cross-row rules are sidecar `constraints` (`routing.release_floor <= routing.release_ceil`, `freeze.threshold <= freeze.thaw_temp`), checked by C++, the CLI and T-2 with both keys named. The whole-number rules (`basin.min_cells`, `glacier.onset_years`, `glacier.check_week`) are `int` kinds. A GDD tuning range that differs from the hard range may be sidecar `bands` | Design "Cross-row rules" bullets; AC 6 constraint clause; ODQ 1 wording ("first tuning pass") |
+| 5 | `biome_table` becomes **one map per column**, each `keyRef cow.biomes` and complete: `hydro.biome.soil_capacity`, `hydro.biome.infil_rate`, `hydro.biome.veg_factor`. Keys are registry ids; the GDD-to-enum name mapping (`Grassland` = `GrasslandSteppe` ...) is replaced by the registry ids. Ocean and Lake values stay zero. Set key form: `hydro.biome.<column>.<BiomeId>`. **An unknown biome uses the registry `fallback` role**, not `GrasslandSteppe` | Design "Biome table (`biome_table` block)", including the row keys and the unknown-id sentence; AC 4 (13 rows, enum order); AC 9 key form |
+| 6 | `ParamBinding<HydrologyParameters>` provides the per-step snapshot; `Resolve` reports no unbound parameter and no unbound binding | Public API "Parameters" (struct as descriptor-driven target) |
+| 7 | **Open Design Question 2 (soil by terrain) is resolved:** soil capacity is multiplied by S-1's `terrain.soil_depth_mult[TerrainType]` (provisional; tuned in S-2.6). No terrain column is added to the biome maps | Open Design Question 2 |
+| 8 | `BiomeIndex` from the registry replaces the `Biome` enum; arrays are sized by `Count()` | Types and AC 4 mentions of 13 biomes in enum order |
+| 9 | Basin and depression searches in `Initialise` (tiny-depression filter, in-basin flood-fill fallback) may use `PriorityFlood` / `ConnectedComponents` | "`HydrologySimulation::Initialise`" helper steps |
+| 10 | Replacement ACs for 3-9: the sidecar loads strictly and its defaults equal the GDD values (a test lists them); constraints and `int` kinds reject bad values naming both keys; each biome map is complete or the load fails; a pack with one bad entry among good ones is lenient and atomic as above; `Hash()` changes when any scalar or any map value changes by one ULP | ACs 3-9; Test Plan item 5 ("Overrides and `SetParam`") |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day:
@@ -372,3 +390,5 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 Aligned to the locked GDD on 2026-11-17: constants, the three-column biome table, protected fixed-site cells, tiny-depression filter, in-basin directions, phase-scaled seed. Approval is a separate step.
 
 Plan: [hydrology-data.plan.md](hydrology-data.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

@@ -1,5 +1,7 @@
 # Plan: A4 Weather (system)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in a4-weather.md and are stale where they touch parameters (descriptor table, load, hash), stage state, health, save id and version, command names, schema keys, selectors, biomes, event registration, data I/O. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md
 **Status:** Not Started
 

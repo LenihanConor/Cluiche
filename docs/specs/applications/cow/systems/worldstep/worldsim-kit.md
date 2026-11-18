@@ -332,6 +332,26 @@ All three are decided as recommended:
 
 Applied on approval: `IWorldStepStage::ValidatePending` was added to `step-chain.md`. `save-and-history.md` now has the module call each stage's `ValidatePending`. The stage id is `hydro` in `step-chain.md` and `worldstep.md`. The `"hydrology"` stage-id mentions in A1, A4, A5 and S-3 are left for the spec-6 amendments.
 
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Biome palette in saves (R2).**
+   - Every save record that holds per-cell biomes writes the registry id list once (`biome_palette: [ids...]`), with each cell storing an index into that palette.
+   - On load, palette ids are remapped to the current registry through `ResolveOrFallback`, with one warning per unknown id.
+   - The registry hash is also recorded. A mismatch with a successful remap is one Info.
+   - This is part of the save codec, so A4, A5 and A1 get it. It adds to AC 5.
+2. **Records command.** Next to `params`, the kit provides `cow.<sys>.records {action: reload|list}` for record files (species, flow graph, succession rules, tokens).
+   - Reload is queued and strict. A bad record fails loudly (R1): health Failing, naming the file, record and field.
+   - Registered through `SimCommandSet`.
+3. **Selector limits and fields.**
+   - `CellSelectorSet` caps a set at 32 selectors and 16 derived fields.
+   - Today's `elevation`, `latitude` and `waterSource` clauses map as in the coverage table.
+   - The protected-cell field is `terrain.is_protected`, the GDD name, covering corridor sites, Pass, RiverCrossesBarrier, Hearth, Nexus and world-throne cells. It replaces `terrain.is_crossing` in the coverage table.
+   - `hydro.basin_kind` takes `none`, `lake` or `dry`; A5's `any` is `!= none`.
+4. **Preset naming.** Preset files use format `cow.<sys>_preset` at `Global/<System>/Presets/<id>.<sys>_preset.json`. This replaces `.weatherpreset.json`, `.hydropreset.json` and `cow.hydrology_preset`. S-1's `cow.worldshape` presets are a different concept and are unchanged.
+
 ## Status
 
 **Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`, after specs 1, 2 and 4. Interview done with the user on 2026-11-18 (decisions: all four kit pieces including `WorldStepStageBase`; DiaCondition selectors with derived spatial fields over a shared `WorldCellFields` context; `save_defaults` as a dev-only params action; 15 acceptance criteria accepted).

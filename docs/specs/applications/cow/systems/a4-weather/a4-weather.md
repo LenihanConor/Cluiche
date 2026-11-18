@@ -11,7 +11,7 @@
 > - `groundWater` leaves `WeatherFields`. A4 outputs `waterToGround` (rain + snowmelt) instead, and the ground-water drain step (§12) moves to A5.
 > - A4 reads A5's previous committed week (`surfaceWetness`, `openWater`, `glacierEligible`), latched at `Capture`. With no A5 present A4 falls back to S-1's static `waterSource`.
 > - Snow above the 1.0 cap becomes `glacierInput` on A5-flagged cells.
-> - Spin-up runs A4 + A5 together when A5 is present. World Step order is `["weather", "hydrology", "ecology"]`.
+> - Spin-up runs A4 + A5 together when A5 is present. World Step order is `["weather", "hydro", "ecology"]`.
 > - Three new features are added (7 Weather Influence API, 8 Climate Cycles, 9 Smoothing); their `Draft` specs are written (see the Features table).
 >
 > Features 1–6 keep their specs; each is amended in place and marked "(amended 2026-11-17, A5 Hydrology)".
@@ -25,6 +25,32 @@
 > - **Save.** The pending record carries `step_day`; a stage with no valid completed step writes `{"valid":false}`.
 >
 > Statuses are unchanged: Features 1–6 stay `Approved` ("Amended 2026-11-17 (aligned to locked GDD, CHANGE-047)"), Features 7–9 stay `Draft`.
+
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec and in Features 1-9. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Parameters are a sidecar plus `ParameterFile`.** `Global/Weather/weather_parameters.schema.json` (format and `for` `cow.weather_params`) is the single source of every parameter's kind (float, int, bool, enum), range, default and description. There is **no base `weather_parameters.json`** and **no C++ `ParamDescriptor` table (41 rows)**. Superseded: Goal 4's table, the Parameters section (file, envelope, `.diaapp` `parameters` path), and `WeatherParameters` / `LoadWeatherParameters` in Public Interfaces. `Dia::Attribute::ParameterFile` loads the sidecar strictly: any fault fails loudly, module health goes Failing, and there is **no compiled fallback** (the "fall back to `DefaultWeatherParameters()`" behaviour is gone). `DefaultWeatherParameters`, `ApplyOverrides` and `SetParam` are replaced by `ParameterFile::Load`, `ApplyPack`, `Set`, `Reload`. `ParamBinding<WeatherParameters>::Snapshot` fills the C++ struct once per step at `Capture`. `ParameterFile::Hash()` replaces the params hash. Cross-field rules (`precipitation.snow_threshold <= snow.melt_threshold`) become sidecar `constraints`.
+2. **Packs.** `Global/Weather/Packs/<id>.weather.json` are lenient (unknown keys dropped with a warning, values clamped) and atomic through `ParameterFile::ApplyPack`. Preset parameter overrides use packs.
+3. **`baseline_table` is a fallback only.** The 13 x 4 table becomes one map per season column, keyed `keyRef cow.biomes` and complete over the registry. **A1 owns seasonal temperature** through `IBiomeSeasonalBaseline`; the table is used only when A1 is absent. The GDD range-column question (Feature 1 Open Q1) is resolved: ranges live in the sidecar.
+4. **The stage derives `WorldStepStageBase`** ([worldsim-kit](../worldstep/worldsim-kit.md) section 1). The base owns active/pending, the revision trio, `MutationQueue(128)`, `SpinUpSlot`, `HoldGeneration`, the discard rule and the visit generation. A4 supplies hooks: `InitialiseSim` (with the EC-01 cause), `LatchInputs`, `ApplyEntry` (its 9 mutation kinds), `RunStep`, `PublishCommit` (ages the influence book, publishes `WeatherUpdated`). Supersedes the hand-written stage state in Architecture and Feature 3's stage table.
+5. **Health uses DiaObservation levels** `kOK` / `kDegraded` / `kFailing`. Every "Unhealthy" in this spec and its features reads **Failing**. Metrics `cow.weather.step_ms` and `cow.weather.discarded_steps` are registered by the base.
+6. **Ids.** Stage id `weather`; World Step order `["weather", "hydro", "ecology"]`; save participant id `cow.weather`. `IWorldStepStage` gains `ValidatePending(LoadContext&) const`.
+7. **Save.** Kit save codec helpers. **No in-record `"version"`**: use `ISaveable::GetVersion` and `SaveRegistry::RegisterMigration`. `params_hash` is `ParameterFile::Hash()`. `Validate` field ranges come from each field's layer sidecar entry `cow.weather.layers/<field>`. Restore is the shared 7-step sequence with the event-order fallback; a discarded step writes the `{pending_version, valid:false}` blob. The export file `cow.weather_state` keeps the F-3 file envelope.
+8. **Commands.** One sim-hosted `cow.weather.params {action}` built with `ParamCommandHelper`: `set | get | list | reload | save_defaults`, plus A4's own `cycle` action under the same name. `save_defaults` is dev-only and writes the sidecar `default` fields in place. `set` replies `{queued, key, value, effectiveDay, visibleDay}`. A separate `cow.weather.reload` is retired (it is `params reload`). Registration goes through `SimCommandSet` (all-or-nothing). Feature 5 re-counts the names.
+9. **Naming.** Layer ids stay `weather.<snake_case>`. Layer schema keys become `cow.weather.layers/<field>` (were `weather/<key>`); param schema keys `cow.weather.params/<key>`; formats `cow.weather_params` and `cow.weather_state`. Names are built by `WorldSimNames.h`; no string literals in A4 code.
+10. **Events.** `WeatherUpdated` and A4's other messages are declared in the single `cow_worldsim.diagamemessages` and generated by `dia codegen messages`. No hand registration.
+11. **Data I/O.** Every A4 file and sidecar (params sidecar, packs, presets, `climate_cycles.json`, the influence kind data) is catalogued in `assets.catalogue.json`. Paths resolve through `PathStore`. In dev builds `FileWatcher` triggers the queued reload (params and packs only); the reload is still applied at `Capture`.
+12. **Presets and selectors.** Selectors use `CellSelectorSet`: DiaCondition `ConditionExpr` over `WorldCellFields`, with `derived` fields. `distanceToWater` becomes derived `distance {from: water}`. A4 contributes its committed fields to `WorldCellFields` (slot `weather`).
+13. **Biomes.** `Cell::biome` is a `BiomeIndex` from the S-1 `BiomeRegistry`; the 13-entry enum is deleted. Code asks for tags and roles. An unknown biome resolves to the registry `fallback` biome (logged once). Supersedes the one-enum decision (Architecture, biome list), the 10-to-13 widening prerequisite in Status, and every "13-biome" / `BiomeFromId` mention.
+14. **Influence kind catalogue.** Each influence kind (storm, drought, cold snap, heat wave, ...) is a data row: pressure, moisture and temperature deltas, falloff, lifetime, strength cap. Rows live in the weather params sidecar or a record file, so a new kind is data only. Supersedes the hard-coded kinds in Feature 7. Influences may apply as DiaAttribute modifiers where they alter parameters.
+15. **Climate cycles are data.** Definitions (period, amplitude, phase, which parameters or fields they modulate) are data. A cycle's effect on a parameter is a DiaAttribute Multiply/Add modifier on the `ParameterFile`.
+16. **Westerly band latitudes** (30 and 60 degrees, hard-coded at S-1 `BiomeClimate.cpp:33`) become parameters **owned by S-1 and read by A4**, so S-1 stage 13 and A4 cannot disagree.
+17. **Orographic factor.** `terrain.orographic_factor` (S-1 param map keyed by `TerrainType`, provisional) is available to A4's orographic pass.
+18. **World summaries.** A4 writes season, climate phase and drought flags to the World Step-owned world blackboard with `Blackboard::Set` ([blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md)). Gameplay reads through `ModuleRef` / `Lookup`. Off-SimPU readers use a FrameStream snapshot.
+19. **Feature map.** F1: 1, 2, 3, 13, 16, 17. F2: 1, 13, 15, 16, 17. F3: 1, 4, 5, 6, 8, 10, 11, 18. F4: 5, 6, 7, 13. F5: 5, 8, 9, 12. F6: 2, 11, 12. F7: 14. F8: 15, 16. F9: 14, 18.
 
 ## Summary
 
@@ -55,7 +81,7 @@ A4 also ships the tools for tuning weather on its own: a debug domain with ten c
 - **Water after it reaches the ground** (added 2026-11-17, A5 Hydrology). Soil moisture, ground water, runoff, rivers, lakes, floods and ice belong to A5. A4 stops at `waterToGround` and `glacierInput`.
 - **Dragon climate manipulation content** (GDD "fire dragons → warming") (amended 2026-11-17, A5 Hydrology). Supported through the influence API (Feature 7); no dragon content now (there is a backlog review row).
 - **Step scheduling, the job pool and the worker cap.** DiaDeferredStep owns all of it (amended 2026-11-13). A4 supplies `Capture` / `Run` / `Apply` and nothing more.
-- **The `world` channel and stage ordering.** `WorldStepModule` owns the channel and sequences A4 → A5 → A1 → A3 (amended 2026-11-13; A5 added 2026-11-17, A5 Hydrology). Order is `["weather", "hydrology", "ecology"]`; S-2.5 alone stays `["weather"]`.
+- **The `world` channel and stage ordering.** `WorldStepModule` owns the channel and sequences A4 → A5 → A1 → A3 (amended 2026-11-13; A5 added 2026-11-17, A5 Hydrology). Order is `["weather", "hydro", "ecology"]`; S-2.5 alone stays `["weather"]`.
 - **Cell selection, the cell inspector and layer query commands.** DiaCellLayers owns these (amended 2026-11-13).
 - **History storage, scrubbing and snapshots.** DiaCellHistory owns these (amended 2026-11-13).
 
@@ -329,7 +355,7 @@ A4 has **no history buffer of its own** (amended 2026-11-13; the interim `Weathe
 
 ### Save/load (E1)
 
-`WeatherSaveParticipant` (`Dia::SaveGame::ISaveable`, version 1) follows the `GameSpeedSaveParticipant` pattern. It is registered with `SaveLoadModule::RegisterParticipant(StringCRC("weather"), &participant)` — the id is a **registration argument, not a member of `ISaveable`** (amended 2026-11-13), and registration order is serialization order.
+`WeatherSaveParticipant` (`Dia::SaveGame::ISaveable`, version 1) follows the `GameSpeedSaveParticipant` pattern. It is registered with `SaveLoadModule::RegisterParticipant(StringCRC("cow.weather"), &participant)` — the id is a **registration argument, not a member of `ISaveable`** (amended 2026-11-13), and registration order is serialization order.
 
 The real interface (verified 2026-11-13):
 
@@ -662,6 +688,21 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 5. (amended 2026-11-17, row 6d) `WeatherRunner::Start` also takes `climateFreezeDay` (Feature 8); `WeatherSimulation` gains `LatchClimate`, `GetWorkingFields`; `Capture` takes `weekOfYear` and an `InfluenceSnapshot`.
 6. (amended 2026-11-17, row 6d) **Counts:** 10 saved float arrays; 14 profile entries; 8 sim-hosted names; 8 scalar base layers plus 2 wind component layers (10); 41 parameter rows. Any earlier "seven/eight layers", "16 names", "9 fields" or "13 pass entries" wording in this file is superseded by these.
 
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Cycles and influences stay per-cell field forcings (R4).** They are applied in A4's pipeline at `Capture`/`Run` as today. What becomes data is their **definitions**:
+   - a **cycle catalogue**: period, amplitude, phase, and the target field or forcing (temperature offset, ocean-evaporation multiplier, wind-latitude shift);
+   - an **influence-kind catalogue** with `mode: impulse|sustained`. A storm is `impulse` (it seeds `pressureAnomaly`, decayed by `pressure_anomaly_decay`); warmer, cooler, wetter and drier are `sustained`. The GDD section 10a values are its rows.
+
+   DiaAttribute modifiers are used **only** where a cycle or influence changes a scalar parameter. This supersedes amendment items J1/J2 wherever they imply modifiers for field effects.
+2. **Saved cycle state** (`enabled`, `phase_days`, `pinned_phase_days`) stays in A4's save record. It is not modifier state.
+3. **Saves** store biomes through the kit's biome palette (World-Sim Kit, spec-6 resolution 1). EC-19's 0.5 applies only to `kNoBiome`.
+4. **Presets** use format `cow.weather_preset`, at `Global/Weather/Presets/<id>.weather_preset.json`.
+5. **Stale counts** (the 41-row table, the 8 command names, golden counts) are recounted at re-plan.
+
 ## Status
 
 **Status:** `Approved` (2026-10-14). **Revised 2026-11-13** by a dependency audit: the execution model moved to DiaDeferredStep, three "not built" dependencies turned out to be built, duplicated engine surfaces were removed, and the biome type, command hosting and history ownership were corrected. **Revision re-approved 2026-11-16** (user, during the Feature 2 interview).
@@ -675,3 +716,5 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 **Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d).** Status stays `Approved`. The amendment, and Features 7–9, were approved by the user on 2026-11-17 after the GDD re-locked.
 
 **Plan:** [a4-weather.plan.md](a4-weather.plan.md) (written 2026-11-16, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

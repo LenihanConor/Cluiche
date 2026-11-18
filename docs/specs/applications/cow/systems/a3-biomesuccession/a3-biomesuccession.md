@@ -5,6 +5,7 @@
 **Works with:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 evaluates the counters; A3 decides the transitions)
 **Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. First-run thresholds come from the locked GDD A5 (aligned to locked GDD 2026-11-17, CHANGE-048; the GDD A3 documents do not yet carry these rules, the source is GDD A5 TechnicalSpec 14.4).
 **Amended 2026-11-18, A1 ecology expansion:** A1's producers, detritus and nutrients are now flow-graph nodes, so rule conditions and legacy deltas name **node ids**: `grass` → `producer.grass`, `tree` → `producer.tree`, `aquatic` → `producer.aquatic`, `soil_fertility` → `nutrient.soil`. The shipped `succession_rules.json` is rewritten to match, and A1's loader rejects an unknown field id. **Tuning note:** the fire legacy's `nutrient.soil +` delta and A1's new ash release (N1, `ash_nutrient_fraction`) both add fertility after a fire; tune one down, or drop the direct delta, during S-3 Living-mode tuning. Rules may now also read `nutrient.soil` in conditions (for example desertification).
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -386,7 +387,33 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/cross-sys
 - Forced transitions (`cow.succession.transition`, the debug command) emit `rule: "forced"` and `source: "FORCED"`.
 
 **Added criterion:** every transition event carries a `rule` that exists in the loaded rules file (or `forced`) and the matching `source`; the schema entry validates.
+## World-sim review amendment (2026-11-18)
+
+User decisions from @docs/research/worldsim_data_driven/summary.md (§0, §0.1), applied with the A1 amendment ([a1-ecology.md](../a1-ecology/a1-ecology.md), "World-sim review amendment"). Each item supersedes any contradicting text in this spec. Bodies are not rewritten. No plan exists; write it at `/implement` against this amendment.
+
+1. **`conditions[]` are DiaCondition `ConditionExpr` (A5a, A5b).** In "Succession rule table" (the JSON example and the rule table's Conditions column), conditions are an AND/OR/NOT tree over the shared `WorldCellFields` per-cell context with a cell cursor. Leaves are `{op, slot, field, value}` and fields are `slot.field`: `ecology.producer.grass`, `ecology.seed_bank`, `hydro.inundated_weeks`, `terrain.elevation`, `terrain.is_crossing`, `ecology.pre_glacial_biome`, `biome.tag.land`. The flat `{field, op, value}` AND-list is superseded. Load validation uses `ConditionExpr::Validate(const IConditionContext&)` (so Feature 1's "rule-table validation against A1's biome ids and fields" becomes a context validate). Bare names in the table (`drought_years`, `grass`, `tree`, `water`, `inundated_weeks`, `glacier_weeks`, …) read as the slot-qualified field.
+2. **Special cases become plain conditions.** Supersedes the rows in "Succession rule table" and "Water and ice rules from A5":
+   - "any land biome" `from` (`lake_inundation`) becomes a `from` **tag** `land` (rules may use `fromTag`, not only `from`).
+   - "not protected" becomes `NOT terrain.is_crossing` (with the other protection flags exposed as fields the same way: corridor, Hearth, Nexus, world-throne), and "`pre_glacial_biome` unset" / "set" become `ecology.pre_glacial_biome == kNoBiome` / `!= kNoBiome` with `NOT` and `==`. "not Ocean or Lake" and "not Lake" are `NOT` over biome roles or tags.
+   - **Glaciation's elevation-dependent `to`** (AlpineMountain if `elevation >= ALPINE_ELEVATION`, else TundraBoreal) becomes **two rules with elevation conditions** (preferred), `glaciation_alpine` and `glaciation_tundra`. The alternative, one rule whose `to` is chosen by the first matching branch, is not taken. The rule count in the table, Feature 1 and the shipped file ("17") becomes 18; the "already at its target" bookkeeping and once-per-ice-age guard stay in the resolver.
+3. **Rule envelope stays A3's.** `id, from, to, source, direction, band, increment, decay` are unchanged and A3 still owns the contents of `succession_rules.json`. **DiaRules is NOT adopted**: it has no per-rule parameters and no pass/fail. Rules load through DiaData `JsonDefinitionLoader` validated by a sidecar, and reload through `cow.ecology.records {action: reload}` (A1 amendment item 4; the shipped file is hot-reloaded in dev through `FileWatcher`).
+4. **Biome ids come from the registry.** `from`, `to`, `pre_glacial_biome` and every biome name in the table (Grassland, Scrub, BurnedAshland, DesertifiedPlain, Lake, Wetland, AlpineMountain, TundraBoreal, …) are registry ids / roles resolved to `BiomeIndex`; the enum is deleted (A1 amendment item 9 and the Superseded note at a1-ecology.md "Biomes (C1, C2)"). The `Biome.` string-prefix and `IsGeneratedBiome` text is superseded.
+5. **Layer schema keys.** `succession.*` layer schema keys become `cow.succession.layers/<field>`. Layer ids stay `succession.<snake>`; save participant `cow.succession` (kit codec, `GetVersion` + `RegisterMigration`, no in-record version), formats `cow.succession_state`. Supersedes "Save/load (E1)" where it conflicts.
+6. **Events.** `BiomeSuccessionTriggered`, the transition and cause events and any cluster events are declared in `cow_worldsim.diagamemessages` (`dia codegen messages`). Supersedes Public Interfaces event declarations and the A1-published trigger event shape in "Resolution (A1 step 10)".
+7. **Tuning write-back.** "Saved through A1's tuning write-back" (rule table note) now means `cow.ecology.params {action: save_defaults}` (dev-only) for A1 parameters; rule records are edited in the file and reloaded.
+
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Glaciation is two rules** (`glaciation_alpine`, `glaciation_tundra`), so the table has **18** rules. The ids are provisional; A3 authors them.
+2. **"Not protected"** reads `terrain.is_protected`, a single field covering all protected cells (corridor sites, Pass, RiverCrossesBarrier, Hearth, Nexus, world-throne). There are no separate per-flag fields.
+3. **`succession_rules.json`** loads strictly and fails loudly (R1).
 
 ## Status
 
 **Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. **Amended 2026-11-17 (A5 Hydrology; aligned to locked GDD 2026-11-17, CHANGE-048):** new water and ice rules, Lake ↔ land transitions, new source `INUNDATION`, marker-only `to: none` rules, `pre_glacial_biome`, 17 rules; status stays `Approved`; thresholds now set (104 / 52 / 26 / 260 weeks, Decade band). Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.
+
+Amended 2026-11-18 (world-sim review decisions).

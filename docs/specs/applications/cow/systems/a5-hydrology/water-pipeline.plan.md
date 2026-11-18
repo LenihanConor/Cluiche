@@ -1,5 +1,7 @@
 # Plan: A5 Water Pipeline (A5 Hydrology Feature 2)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in water-pipeline.md and are stale where they touch the biome-table lookups, soil capacity (terrain multiplier) and the parameter snapshot. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 2)

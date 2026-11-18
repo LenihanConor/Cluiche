@@ -6,6 +6,8 @@
 **Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TechnicalSpec.md` §2–§12 incl. §4.1 and §11.3 (locked 2026-11-17, CHANGE-047), `A4_EdgeCaseMatrix.md`
 **Depends on:** A4 Feature 1 (`WeatherFields`, `WeatherTerrain`, `WeatherParameters`, `IBiomeSeasonalBaseline`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers)
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The weekly step of the weather cellular automaton, as pure logic. It runs the GDD's pipeline steps over every cell of the hex grid as full-grid passes on a working copy of the weather state. The GDD's §2 steps 0–11 become passes 0–9 plus a finish: the §12 ground-water drain is deleted and moves to A5 Hydrology (amended 2026-11-17, A5 Hydrology); GDD step 0 (forcing) is pass 0 plus the `Capture`-latched cycle offsets; GDD steps 10–11 (hand water to A5, output to A1) are outputs and `Commit`, not passes. With the carried `pressureAnomaly` the profile has **14 entries** (amended 2026-11-17, row 6d). It is deterministic and bit-identical at any `ParallelFor` range count and in any range order. It does not know about threads, the scheduler, the bus or the save system.
@@ -353,8 +355,20 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 7. (amended 2026-11-17, A5 Hydrology) **The §12 ground-water drain is not in A4.** `groundWater` becomes the per-week `waterToGround` output and the store moves to A5. Snow above the cap becomes `glacierInput` on A5-flagged cells. §6.1/§6.2 read A5's latched values.
 8. (amended 2026-11-17, aligned to locked GDD, CHANGE-047; row 6d) **Pass list and the anomaly.** Pass 0 (Influence) and pass 5c (anomaly decay) are new; `pressureAnomaly` is a saved field; passes 5a/5b carry it with the moisture gather; the pressure pass adds it. `kPassCount` is 14. The Feature 5 `info profile` count and the Open Design Question 2 "one-shot set value" (superseded by the carried storm anomaly) follow this. `Capture` takes `weekOfYear` and the `InfluenceSnapshot`; Feature 8's `LatchClimate` follows `Capture`. The firn hand-off (GDD §11.3) is in pass 9.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Parameters (system item 1).** `Capture` takes the `WeatherParameters` struct produced by `ParamBinding::Snapshot`, once per step; cycle modifiers are already resolved in it (item 15). No pass reads `ParameterFile` directly.
+2. **Biomes (item 13).** Passes that read `biome` use `BiomeIndex` and registry tags/roles, never enum values.
+3. **Wind (item 16).** Pass 3 (wind) reads the westerly band latitudes from S-1's parameters, not a local constant. The wind-latitude cycle shift is applied relative to them.
+4. **Orographic pass (item 17).** Pass 4 may scale lift by `terrain.orographic_factor` for the cell's `TerrainType`. Provisional; defaults to 1.0 where unset, so goldens do not move until it is tuned.
+5. **Profile and metrics.** `cow.weather.step_ms` is registered by the stage base (item 5); the pass profile entries are unchanged.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d).
 
 **Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

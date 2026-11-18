@@ -5,6 +5,8 @@
 **Design source:** GDD `A4_TechnicalSpec.md` §20, `A4_WeatherSystem.md` decision 9, `A4_TuningParameters.md` §10a (`INFLUENCE_PREVIEW_FADE_DAYS`). A4 was **re-locked 2026-11-17 (CHANGE-047)**. User decisions of 2026-11-17 win where the locked GDD differs (see "GDD differences").
 **Depends on:** A4 Feature 3 (`Commit`, `WeatherSnapshot`, committed buffers); A4 Feature 7 (Weather Influence API: its active and pending influence list, by name only). Touches V-1 (reader).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The weather CA runs once a week. Anything that reads it every frame would see a state that jumps once a week. Feature 9 is a **presentation layer** that hides the jump.
@@ -302,8 +304,19 @@ Scoped `--filter="*Smooth*:*InfluencePreview*"` while iterating and one full `--
 2. **Shortest arc or vector blend for wind reversals?** Shortest arc swings the direction through 90° while the speed stays high, which can look like a sudden gale turning on the spot. Blending the wind vectors instead gives a natural calm at the reversal, but the direction and speed then no longer match the CA's two states in between. The GDD says slerp, so this spec keeps it. Decide against the first V-1 render.
 3. **Are the preview strengths honest?** Previews use fixed visual constants, not the real effect size. A storm preview of +0.5 cloud may be much more or less than what the CA delivers a week later, so the hand-over can feel like a surprise. The alternative is to scale the preview from Feature 7's own strength and falloff. That needs Feature 7 to expose the expected size per kind; unsettled until Feature 7 is written.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Preview kinds (system item 14).** The visual-only influence preview reads the influence kind catalogue (Feature 7), so a new kind previews with no code change. Supersedes any hard-coded preview kinds.
+2. **World summaries (item 18).** Smoothing never alters the world-blackboard summaries; they carry committed-week values. Gameplay Open Q (Open Design Question 4 of the system spec) is unchanged except that these summaries are the only gameplay-facing A4 values published.
+3. **Parameters (item 1).** `INFLUENCE_PREVIEW_FADE_DAYS` is a sidecar row; the Parameters text about the descriptor table is superseded.
+4. **Naming (item 9).** Any schema key referenced here is `cow.weather.layers/<field>`.
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked. User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on Features 3 and 7.
 
 Plan: [weather-smoothing.plan.md](weather-smoothing.plan.md) (written 2026-11-17, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

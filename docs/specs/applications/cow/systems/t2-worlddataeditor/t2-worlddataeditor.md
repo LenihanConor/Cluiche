@@ -5,6 +5,7 @@
 **Mockup:** [mockups/world-data-editor.html](mockups/world-data-editor.html)  
 **Built on:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md, @docs/specs/applications/dia/systems/diavalueschema/diavalueschema.md, @docs/specs/applications/cluicheeditor/systems/pluginbrowser/game-scoped-plugins.md, DiaAssetCatalogueEditor (`AssetTypeEditorRegistry`, `open_asset`)  
 **Sibling:** @docs/specs/applications/cow/systems/t1-worldsiminspector/t1-worldsiminspector.md
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -215,6 +216,42 @@ Tables need two generic additions to DiaValueSchema. They belong in Dia because 
 2. **Unvalidated world edits: warn, block only the default world** (2026-10-19). An "unvalidated edit" baked world shows a warning everywhere. The composer refuses "set as `default_world`" for a bundle that uses it until `cow.worldgen.validate` passes.
 3. **Baked worlds and start states are fully editable** (user decision 2026-10-19), with the hash and stale propagation described in Save, validate and game link.
 
+## World-sim review amendment (2026-11-18)
+
+Source: @docs/research/worldsim_data_driven/summary.md §0 and §0.1; kit: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; parameters: @docs/specs/applications/dia/systems/diaattribute/parameter-files.md; biomes: @docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md; search helpers: @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.md.
+
+**Each item below supersedes any contradicting text in this spec and its features.**
+
+1. **Form route for `cow.hydro_params`** (alongside `cow.weather_params` and `cow.ecology_params`). The per-biome maps are shown as one table by grouping maps that share a `keyRef` (`hydro.biome.soil_capacity`, `.infil_rate`, `.veg_factor`: one row per biome, one column per map).
+2. **Form editors read, and share with the CLI through the conformance fixtures:**
+   - sidecar `constraints`, checked and shown with both keys named;
+   - `bands`;
+   - `valuesFrom` enum entries, with values resolved from the named data file (the biome palette from `cow.biomes`);
+   - map `default` objects;
+   - the `data.incomplete-map` rule.
+3. **No base parameter files.** Editing a parameter default writes the sidecar's `default` fields with the shared in-place writer, which preserves every other byte.
+4. **Biome-keyed tables use `keyRef cow.biomes`.** The Biome table editor is the `cow.biomes` record file (S-1 owned).
+5. **Game link.** `cow.weather.reload` becomes `cow.weather.params {action: reload}`. Hydro reloads through `cow.hydro.params {action: reload}`.
+6. **Selector and scenario editing.** Preset selectors are DiaCondition `ConditionExpr` plus `derived`, so the scenario editor validates them with the same field vocabulary (`WorldCellFields`).
+
+| Superseded text | By |
+|---|---|
+| Summary "defaults files: terrain rules, weather and ecology parameters" | 1, 3 |
+| Architecture `open_asset` format-id list (`cow.weather_params, cow.ecology_params, ...`) | 1 |
+| Game link item 5 (`cow.weather.reload`) and the Dependencies row `cow.weather.reload` | 5 |
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Pack routing.** T-2 opens a pack by its parameter format plus the `Packs/` flag; there are no separate pack format ids.
+2. **Stale banner.** It compares the pack's `basedOn` with the sidecar's schema hash ("based on an older schema"), not a defaults version.
+3. **Bundles** have a `hydro` pack part in the composer.
+4. **Preset formats** are `cow.<sys>_preset`.
+
 ## Status
 
 `Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Build needs AD-001 sign-off (`@dia/editor-ui` canvas, DiaValueSchema extension, `.vcxproj` reference).
+
+Amended 2026-11-18 (world-sim review decisions).

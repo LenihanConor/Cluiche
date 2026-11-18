@@ -285,6 +285,20 @@ The three Open Design Questions above are decided as recommended:
 
 The interim S-1 "wire `terrain_rules.json` now" fix is dropped: AC 18 replaces it.
 
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **What a pack is (R3).**
+   - A pack is a sparse document **of the parameter format itself**: `format` = the sidecar's `for`, e.g. `cow.weather_params`. It is identified as a pack by living under `Packs/`, exactly as `dia validate schema` already does.
+   - There are no separate pack format ids (`cow.weather_pack` etc.) and no `base` + `overrides` shape.
+2. **`basedOn`.** A pack carries `"basedOn": <hex>`, the schema hash of the sidecar's parameter entries (keys, kinds, ranges and defaults) when the pack was saved.
+   - `ParameterFile` exposes `SchemaHash()`.
+   - A pack whose `basedOn` differs from the current `SchemaHash()` is **stale**. It still applies leniently, with one Warning, following F-3's load-and-warn rule.
+   - `ToJson(Diff)` writes `basedOn`.
+   - This adds to ACs 9 and 12.
+
 ## Status
 
 **Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`. Interview done with the user on 2026-11-18. Design choices: the sidecar is the only format and owns defaults; packs go into base values and runtime effects are modifiers; parameters versus records; constraints live in the sidecar; maps are one per column; a load failure fails loudly with no fallback.

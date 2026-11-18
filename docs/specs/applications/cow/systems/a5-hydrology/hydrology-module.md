@@ -9,6 +9,7 @@
 - DiaDeferredStep Features 1, 2 and 4 (`IParallelExecutor`, the capped executor).
 - S-1 (built): `WorldGenerationModule::GetCurrentWorld`, `IsReady(revision)`, `HoldGeneration`/`ReleaseGeneration`, `WorldGenerationComplete`/`WorldGenerationFailed`.
 - S-1 consumer amendment 8 (basin table, bed elevation) for real worlds. Unit tests use hand-built sources.
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Coordinates with (amendments owed, not Dia):**
 - A4 Feature 3 (`WeatherModule` implements `IWaterInputSource`, calls the spin-up host).
@@ -20,7 +21,7 @@
 
 `HydrologyModule` is the SimModule that turns the pure A5 simulation into a live World Step stage.
 
-- It loads parameters, ingests S-1's terrain on `WorldGenerationComplete`, spins the world up **off SimPU**, and registers a `hydrology` stage with `WorldStepModule`.
+- It loads parameters, ingests S-1's terrain on `WorldGenerationComplete`, spins the world up **off SimPU**, and registers a `hydro` stage with `WorldStepModule`.
 - After that it only does what the coordinator asks: `Capture(stepDay)`, `Run`, `Commit`.
 - It owns no cadence, never kicks, and never subscribes to `SimulationTick`.
 - On commit it publishes `HydrologyUpdated{week}`.
@@ -35,7 +36,7 @@ The module has **no save or history code** (Feature 4 and the coordinator), and 
 
 ## Goals
 
-1. `HydrologyModule` is a `WorldStepModule` stage with id `hydrology`. It never kicks itself and never subscribes to `SimulationTick`.
+1. `HydrologyModule` is a `WorldStepModule` stage with id `hydro`. It never kicks itself and never subscribes to `SimulationTick`.
 2. The week of every step comes from the **step day**: `week = WeekOf(stepDay)`, week-of-year `= week % 52`. There is no second week counter.
 3. World regeneration never stalls SimPU and never lets an old world's step touch a new world.
 4. Every mutation (parameters, biome edits, sinks, influences, the input source) is latched at `Capture`, never applied while a step is in flight.
@@ -125,7 +126,7 @@ namespace CoW::Hydrology {
 A4 owns `IHydrologyInputsProvider` and `HydrologyInputs` (weather-module.md). `HydrologyModule` implements the provider; its one method returns copies of `surfaceWetness`, `openWater` and `glacierEligible` from the **committed** state.
 
 **What `HydrologyModule` does in `DoStart`:**
-- Registers stage id `hydrology` with `WorldStepModule`.
+- Registers stage id `hydro` with `WorldStepModule`.
 - If a `WeatherModule` resolves, calls `weather.SetHydrologyProvider(this, this)` (this module is both the `IHydrologyInputsProvider` and the `IHydrologySpinUpHost`; A4 F3 signature, aligned 2026-11-17) and `SetWaterSource(&weather)` on itself. If not, neither is set.
 - Calls `HoldGeneration()`, released once its subscriptions are in place, so the first world is never missed.
 
@@ -264,7 +265,7 @@ For either path, a job whose revision is stale discards its sim. While `IsReady(
 
 Week arithmetic uses `WeekOf` and the real `kWeeksPerSeason`/`kSeasonsPerYear` constants from `GameSpeedController.h`, never a literal 52. A retried step publishes the week of the **represented** day. `SetCommittedWeek` is used so the snapshot's `GetWeek()` is `WeekOf(stepDay)`, as in A4.
 
-**Order inside a step.** With `["weather", "hydrology", "ecology"]` the coordinator runs Capture(weather), Capture(hydrology), …, Run(weather), Run(hydrology), …, Commit(weather), Commit(hydrology), …. So A5's `Run` sees A4's finished working copy of this week, and A4's `Capture` of the **next** step sees A5's committed state from this one. That is the one-week lag in the parent spec.
+**Order inside a step.** With `["weather", "hydro", "ecology"]` the coordinator runs Capture(weather), Capture(hydro), …, Run(weather), Run(hydro), …, Commit(weather), Commit(hydro), …. So A5's `Run` sees A4's finished working copy of this week, and A4's `Capture` of the **next** step sees A5's committed state from this one. That is the one-week lag in the parent spec.
 
 ### Biome edits and parameters
 
@@ -385,7 +386,7 @@ namespace CoW::Hydrology {
 ### Module and manifest
 1. `dia validate manifest` accepts the instance, requires `WorldGenerationModule` and `WorldStepModule`, and rejects a manifest listing `HydrologyModule` before `WorldStepModule`.
 2. `spinup_weeks` outside `[0, 520]` or non-integer is a config error naming the key. A bad `fixed_input` block (unknown `mode`, unequal script arrays, an out-of-range value) is a config error naming the key.
-3. The module registers stage id `hydrology` in `DoStart` and unregisters in `DoStop`. It registers no timer and no `SimulationTick` subscription.
+3. The module registers stage id `hydro` in `DoStart` and unregisters in `DoStop`. It registers no timer and no `SimulationTick` subscription.
 4. With a `WeatherModule` present, `DoStart` calls `SetHydrologyProvider(this, this)` and sets the water source. The provider also returns `glacierCheckWeek` and `glacierSnowFloor` from A5's parameters (`GLACIER_CHECK_WEEK` 26, `GLACIER_SNOW_FLOOR` 0.2), so A4's firn hand-off uses A5's constants. With none, neither is set and the module is not Degraded.
 
 ### Ingest and terrain
@@ -499,7 +500,7 @@ namespace CoW::Hydrology {
 | DFS-002 | `Run` reads only the captured working copy | `Capture` latches everything. Promotion and mutation drain happen only inside `Capture`. A5 reads A4's working buffers, never SimPU-owned state; ACs 23–25, 27 |
 | DFS-003 | A late step stalls; the key never slips | The stage never re-times anything. A discarded step is a loss, counted and logged, never a retime |
 | SD-PERF-7 | Telemetry cost budgets | Only SimPU writes health and logs. One step-time value per applied step. No per-cell telemetry |
-| World Step Resolved Decision 4 | Order is declarative | The module registers by id `hydrology` and knows nothing of other stages' order; it reaches A4 only through the injected source |
+| World Step Resolved Decision 4 | Order is declarative | The module registers by id `hydro` and knows nothing of other stages' order; it reaches A4 only through the injected source |
 | DFS-005 | Saves store pending results | Feature 4 |
 
 ## GDD differences
@@ -545,10 +546,30 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 3. ~~**Does a river have open water for A4's primary evaporation?**~~ **Resolved by GDD §14.2:** `openWater` of a river cell is `RIVER_OPEN_WATER · min(1, flow / max(mean, MIN_MEAN_FLOW))`. Feature 2 pass 7 sets it, and Feature 1 holds `wetness.river_open_water` (0.3).
 4. **Who applies `INFLUENCE_GROUND_WATER`?** The GDD has A4 return a weight and A5 multiply it by 0.05. This spec has A4 Feature 7 hand A5 a depth. A4 Feature 7 is not written. Settle it there, and move the constant into Feature 1 if A5 should own it.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+Kit: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | `HydrologyStage` derives `WorldStepStageBase`. Hooks: `ExtraReady` (a water input exists), `LatchInputs` (false = invalid input view; replaces `mStepValid`), `InitialiseSim` (fails with a cause code), `ApplyEntry` (A5's mutation kinds), `PublishCommit` (`HydrologyUpdated`), `OnStartExtra` / `OnStopExtra` (`SetHydrologyProvider`, `SetWaterSource`). The base owns revisions, `mQueue`, `SpinUpSlot`, the hold token, the discard rule and the promotion rule | "Module state" (`mStepValid`, revision and queue members); "The stage" table (`IsReady`, `Capture`, `Run`, `Commit` rows, which keep their behaviour but become base code); "Order inside a step" |
+| 2 | The coupled spin-up and `IHydrologySpinUpHost` stay system code on top of `SpinUpSlot` | "Spin-up (decided 2026-11-17)": slot state the base now owns |
+| 3 | **Stage id `hydro`; order `["weather", "hydro", "ecology"]`.** `IWorldStepStage` gains `ValidatePending` (a member of the interface, not only a Feature 4 row) | Goals 1; "Placement and manifest"; "Order inside a step"; AC 3 (stage id text renamed inline) |
+| 4 | **Health** is DiaObservation `kOK` / `kDegraded` / `kFailing`; "Unhealthy" becomes Failing with a cause code (a failed `InitialiseSim`, `WorldGenerationFailed`, no water input, a parameter load failure) | "Observability" Health bullet; "Water source and the fixed driver" ("the module is Unhealthy"); "World ingest"/"Lifecycle" Unhealthy text; ACs 7, 13, 31 |
+| 5 | **Parameter load is strict, no fallback.** `config.parameters` (base file path) is replaced by the sidecar path plus a `packs` list. A failed load goes Failing; there is no fallback to `DefaultHydrologyParameters()`. Parameters bind once at init (`ParamBinding` snapshot) and change through the queue | "Placement and manifest" `config` block; "Biome edits and parameters" bullet "A failed load falls back to ... Degraded"; Files Touched `hydrology_parameters.json` row |
+| 6 | `QueueParameterSet(key, value)` takes the key form `hydro.biome.<column>.<BiomeId>`. `QueueParameterOverrides` becomes `ApplyPack` (lenient, atomic). A **`reload`** mutation entry is added (`cow.hydro.params {action: reload}`, and the dev `FileWatcher` path), re-reading sidecar and packs at the next `Capture` | "Biome edits and parameters" (`biome_table.<BiomeId>.<column>` key comment); Public API `QueueParameterSet` / `QueueParameterOverrides`; AC 48 |
+| 7 | `QueueBiomeChange` takes `BiomeIndex`, not `WorldGeneration::Biome` | "Biome edits and parameters" signature; Public API; AC 51 |
+| 8 | The base registers `cow.hydro.step_ms` and `cow.hydro.discarded_steps`; the module keeps its other gauges | "Observability" metrics |
+| 9 | `HydrologyUpdated` and the related messages are declared in `cow_worldsim.diagamemessages` (`dia codegen messages`) | "Messages" (`HydrologyMessages.h`); Public API `HydrologyUpdated` struct |
+| 10 | Data I/O: files catalogued, `PathStore` for paths, `FileWatcher` reload of sidecar and packs in dev builds. Commands register through `SimCommandSet` | "Lifecycle" `DoStart` registration text |
+| 11 | `HydrologyPackParticipant` (F-3 kind `hydro`) delivers packs to the module through `ApplyPack` on the mutation queue | New |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:
-- `HydrologyModule` is a CoW-Shared-backed SimModule and the `hydrology` World Step stage. It never kicks.
+- `HydrologyModule` is a CoW-Shared-backed SimModule and the `hydro` World Step stage. It never kicks.
 - Wiring is by interfaces through `ModuleRef` (no singletons, no ServiceStreams): sink providers (capacity 8, ascending id), `SetWaterSource`, A4's `IHydrologyInputsProvider`.
 - A5's `Run` reads A4's working copy from the same `Run` (order weather → hydrology → ecology).
 - A fixed-input driver covers the no-A4 case.
@@ -562,3 +583,5 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
 
 Plan: [hydrology-module.plan.md](hydrology-module.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

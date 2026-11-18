@@ -4,6 +4,7 @@
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment)
 **Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §2–§12, DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Amended to match it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:** A5 Feature 1 (`HydrologyFields`, `HydrologyTerrain`, `HydrologyParameters`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers, built `c83a94ed`).
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 ## Summary
 
@@ -285,8 +286,20 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 4. **Where does the glacier melt belong in the pass order?** The GDD lists glacier at pass 8 but says the melt joins the surface and then runs off. Pass 2 does that within one week. If S-2.6 wants the GDD's one-week delay, move the melt after the cascade. Not decided.
 5. **Inundated cells and sinks.** A draw on an inundated cell is unmet today. If a consumer should draw from the lake, a basin draw is a small addition. Revisit with A1's provider.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | The pass 3 and 4 biome lookups (`soil_capacity[biome]`, `infil_rate[biome]`, `veg_factor[biome]`) read the three maps `hydro.biome.soil_capacity`, `.infil_rate`, `.veg_factor`, snapshotted per step by `ParamBinding<HydrologyParameters>` into `BiomeIndex`-indexed arrays | "The pipeline" table passes 3 (Infiltration) and 4 (ET and sinks); Units/Grid text "`soilMoisture` is bounded by the biome's `soil_capacity`" |
+| 2 | **Soil capacity is multiplied by `terrain.soil_depth_mult[TerrainType]`** (S-1 terrain profile, provisional, tuned in S-2.6): `cap = soil_capacity[biome] * soil_depth_mult[terrain]`. `terrain.runoff` is available; A5 does not consume it until a later amendment. Resolves Feature 1 ODQ 2 | Pass 3 `cap`; the soil bound named above; `SoilMoisture` ratios elsewhere in this spec that divide by `soil_capacity[biome]` |
+| 3 | Parameters come from the bound snapshot. `routing.release_floor <= routing.release_ceil` and `freeze.threshold <= freeze.thaw_temp` are sidecar `constraints`, so the pipeline may assume them | Grid tables/"The pipeline" notes that assume C++-validated rows (pass 1 freeze, release `k`) |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day: topological cascade, basins inside the cascade, cell-depth units, local ground water with baseflow, injected water sinks (multiplier + draw), floods judged against each river's running mean, and double totals with a tight check. Aligned to the locked GDD on 2026-11-17: slope-based release (0.3–0.85, hillslope 0.9), in-basin directions, tiny-depression filter, freeze hysteresis and basin ice, springs, flood recharge, firn hand-off check, passability order and the protected-cell cap, frozen low-flow weeks. Approval is a separate step.
 
 Plan: [water-pipeline.plan.md](water-pipeline.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

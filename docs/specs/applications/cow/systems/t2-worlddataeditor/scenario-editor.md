@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Builds on:** @docs/specs/applications/cow/systems/t2-worlddataeditor/plugin-shell-files-and-schema.md (Feature 1), @docs/specs/applications/cow/systems/t2-worlddataeditor/table-and-form-editors.md (Feature 2, cell editors and checks), @docs/specs/applications/cow/systems/t2-worlddataeditor/validation-and-game-link.md (Feature 4, save flow)
 **Mockup:** @docs/specs/applications/cow/systems/t2-worlddataeditor/mockups/world-data-editor.html (to be extended, see Mockup gate)
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -198,6 +199,16 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Preset selectors (e.g. A5's `*.hydropreset.json`) are DiaCondition `ConditionExpr` plus `derived` fields. The scenario editor validates them with the same vocabulary as the game (`WorldCellFields`, `CellSelectorSet` validation) | "The shared validator" (no selector validation); "Vocabulary" |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. A scenario-editor mockup must be approved before it is built (Mockup gate); the DiaValueSchema `command` entries and `--stage` export need AD-001 sign-off.
+
+Amended 2026-11-18 (world-sim review decisions).

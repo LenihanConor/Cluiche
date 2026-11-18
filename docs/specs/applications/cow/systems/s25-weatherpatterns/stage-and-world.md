@@ -5,6 +5,8 @@
 **Depends on:** A4 Features 1–6 built (the module, the debug surface, `ComputeWaterDistance` from Feature 6, `PrevailingDirection` from Feature 5's exports); World Step Features 1–3 and its `SetDeferred` amendment below; S-1 Features 1 and 8 (built); DiaCellLayers, DiaCellHistory, GameSpeedController, F-1 (debug menu and debug host), DiaAutomation (all built). **Soft:** CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1; the history, timeline and step-back parts are gated on it) and F-3's session hint (Feature 2 of F-3; the launch-out part is gated on it).
 **Consumed by:** S-2.5 Features 2–5 (the checks, runner, scenarios and graphs all attach to this stage), S-3.5's launch-outs.
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The S-2.5 stage: a `.diastage` and `.diaapp` that run A4 **alone** on a hand-chosen S-1 world, a minimal `S25WeatherModule` and its panel card, the two curated worlds with prechecks, a world and size picker, time controls including a single-week step, the A4 tools wired in (layer picker, timeline, step-back, click-to-inspect, boundary switch), and the F-1 menu entry. It contains no checks, no headless runner, no scenarios and no graphs: those are Features 2 to 5, which plug into the module this feature creates.
@@ -225,6 +227,16 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 4. **Criterion 26 (CPU report)** goes to the log and `cow.s25.status` (see Feature 3's amendment 4).
 5. **Command registration** uses Feature 3's `S25CommandRegistrar` (Feature 3 amendment 2).
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. The boundary switch uses `cow.weather.params {"action":"set",...}`; reply shape `{queued, key, value, effectiveDay, visibleDay}`.
+2. Health: "no Unhealthy cause" reads "no Failing cause"; Degraded for the table baseline only is unchanged.
+3. A4 layers, commands and schema keys follow A4 items 8 and 9 (`cow.weather.layers/<field>`, one `cow.weather.params`).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** the tracked history layer `weather.ground_water` becomes `weather.water_to_ground` (name TBD, A4 amendment). Plan: [stage-and-world.plan.md](stage-and-world.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the HTML mockup.**
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

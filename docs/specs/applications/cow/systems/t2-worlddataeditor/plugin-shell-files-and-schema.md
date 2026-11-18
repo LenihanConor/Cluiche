@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Mockup:** @docs/specs/applications/cow/systems/t2-worlddataeditor/mockups/world-data-editor.html
 **Built on:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md, @docs/specs/applications/dia/systems/diavalueschema/format-loader-and-service.md, @docs/specs/applications/cluicheeditor/systems/pluginbrowser/game-scoped-plugins.md
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -195,6 +196,18 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | `open_asset` routes gain `cow.hydro_params` (14 format ids, not 13) | "`open_asset` routes" list; AC 2 ("each of the 13 format ids") |
+| 2 | Parameter files are sidecars (`<sys>_parameters.schema.json`): the schema loader reads `constraints`, `bands`, `valuesFrom` and map `default` objects, and the in-place default writer preserves every other byte | Schema loading text for parameter-file formats |
+| 3 | The Asset tree gains a Hydrology group | Asset tree group list (WorldGen, Weather, Ecology, Succession, Worlds, Scenarios) |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off (`CluicheEditor.vcxproj` reference, DiaValueSchema loader link) and Game-Scoped Editor Plugins.
+
+Amended 2026-11-18 (world-sim review decisions).

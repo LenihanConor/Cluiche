@@ -5,6 +5,8 @@
 **Depends on:** A4 Features 1, 2, 3 (`WeatherFields`, `WeatherSimulation`, `WeatherModule`, the stage); World Step Feature 3 (the coordinator delegates `SerializePending`/`DeserializePending` to this stage and calls `ValidatePending`); DiaDeferredStep Feature 3; E1 `SaveLoadModule::RegisterParticipant` and `CaptureState()` (built).
 **Consumed by:** S-3.5 R2/R3 (save/load determinism, snapshot restore), every stage that saves with weather running.
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 Two things, both pure data with no new mechanics:
@@ -34,7 +36,7 @@ Round trip is bit-identical for finite floats. Terrain is never saved: it comes 
 
 ### Participant registration
 
-`SaveLoadModule::RegisterParticipant(StringCRC("weather"), &mParticipant)`, with `WeatherModule` holding `SaveLoadModule` as a **soft** dependency: absent (S-2.5), A4 runs and does not participate. Registration order is serialization order: the participant registers **after** S-1's (the world must be restored before weather is rebuilt) and **before** DiaDeferredStep's participant (the pending result applies on top of committed state; see World Step Feature 3). `WeatherModule` registers in `DoStart` and unregisters in `DoStop`.
+`SaveLoadModule::RegisterParticipant(StringCRC("cow.weather"), &mParticipant)`, with `WeatherModule` holding `SaveLoadModule` as a **soft** dependency: absent (S-2.5), A4 runs and does not participate. Registration order is serialization order: the participant registers **after** S-1's (the world must be restored before weather is rebuilt) and **before** DiaDeferredStep's participant (the pending result applies on top of committed state; see World Step Feature 3). `WeatherModule` registers in `DoStart` and unregisters in `DoStop`.
 
 ### Record (version 1)
 
@@ -191,8 +193,21 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 4. **Participant order.** The weather participant registers in `WeatherModule::DoStart`. The DeferredStep participant attaches on `DeferredStepModule`'s first `DoUpdate` (World Step Feature 3 amendment 5), so it always follows every stage participant regardless of manifest order. Criterion 13 asserts the resulting order.
 5. **`SaveContext` sub-objects for the pending blob** are the coordinator's (`BeginObject("stage_N")` around each stage); this stage writes into the current node.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Participant (system item 6).** Supersedes Participant registration: id `cow.weather`. Implemented with the kit save codec helpers.
+2. **No in-record version (item 7).** Supersedes Record (version 1): remove the `"version": 1` field; the version is `ISaveable::GetVersion` and format changes use `SaveRegistry::RegisterMigration`. `pending_version` stays in the pending blob (kit shape). The `cow.weather_state` export file keeps its F-3 file envelope with `version`.
+3. **`params_hash`** is `ParameterFile::Hash()`.
+4. **Validate (item 7).** Supersedes the Validate section's per-field range table: each field's range is read from its layer sidecar entry `cow.weather.layers/<field>`. Biome bytes are checked against the registry `BiomeIndex` count.
+5. **Restore and pending.** Supersedes Deserialize and Pending result where they hand-order restore: the shared 7-step restore with event-order fallback; `ValidatePending` runs the same checks; a discarded or invalid step writes `{pending_version:1, valid:false}`. ACs 18-19 are met by the kit; A4 tests only its own fields.
+6. **Climate and influence blocks.** `enabled`, `phase_days`, `pinned_phase_days` and the influence array remain saved; influence kinds are saved by catalogue id (Feature 7).
+
 ## Status
 
 Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `ground_water` array renamed `water_to_ground`; see above. Feature 7 (influences) and Feature 8 (cycle phases) saved records are now part of this feature (amended 2026-11-17, row 6d): the `influences` and `climate` blocks above, with their consistency rules defined in `weather-influence.md` and `climate-cycles.md`.
 
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

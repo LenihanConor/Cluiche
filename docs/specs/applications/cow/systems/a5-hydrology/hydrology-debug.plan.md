@@ -1,5 +1,7 @@
 # Plan: A5 Hydrology Debug & History (A5 Hydrology Feature 5)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in hydrology-debug.md and are stale where they touch the command set (`set_param` becomes `params`), layer sidecar keys, metrics and `SimCommandSet` registration. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-debug.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 5)

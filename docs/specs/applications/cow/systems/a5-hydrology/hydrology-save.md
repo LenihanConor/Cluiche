@@ -8,6 +8,7 @@
 - World Step Feature 3 (the coordinator delegates `SerializePending`/`DeserializePending` to this stage and calls `ValidatePending`).
 - DiaDeferredStep Feature 3 (`DeferredStepSaveParticipant`).
 - E1 `SaveLoadModule::RegisterParticipant` and `CaptureState()` (built).
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Mirrors:** A4 Feature 4 (@docs/specs/applications/cow/systems/a4-weather/weather-save.md). Same encoding, same checks, same ordering rules.
 **Consumed by:** S-3.5 R2/R3 (save/load determinism), every stage that saves with hydrology running.
@@ -16,7 +17,7 @@
 
 Two things, both data with no new mechanics:
 
-1. **`HydrologySaveParticipant`**, an E1 `ISaveable` (`cow.hydrology`) that writes the committed state as JSON text arrays and restores it into a fresh simulation on load **without re-running the spin-up**.
+1. **`HydrologySaveParticipant`**, an E1 `ISaveable` (`cow.hydro`) that writes the committed state as JSON text arrays and restores it into a fresh simulation on load **without re-running the spin-up**.
 2. The stage's **`SerializePending` / `DeserializePending` / `ValidatePending`**, which write and restore a completed-but-unapplied working set. A save taken mid-step then reloads identically to the uninterrupted run (DFS-005).
 
 The round trip is bit-identical for finite floats. Terrain is never saved. It comes back from S-1.
@@ -44,7 +45,7 @@ The round trip is bit-identical for finite floats. Terrain is never saved. It co
 
 ### Participant registration
 
-`SaveLoadModule::RegisterParticipant(StringCRC("cow.hydrology"), &mParticipant)` in `HydrologyModule::DoStart`, unregistered in `DoStop`. `SaveLoadModule` is a **soft** dependency. Absent (S-2.6 without saves), A5 runs and does not participate.
+`SaveLoadModule::RegisterParticipant(StringCRC("cow.hydro"), &mParticipant)` in `HydrologyModule::DoStart`, unregistered in `DoStop`. `SaveLoadModule` is a **soft** dependency. Absent (S-2.6 without saves), A5 runs and does not participate.
 
 Registration order is serialization order:
 - **After S-1's participant.** The world must be restored before hydrology is rebuilt.
@@ -54,7 +55,7 @@ Registration order is serialization order:
 ### Record (version 1)
 
 ```json
-"cow.hydrology": {
+"cow.hydro": {
   "version": 1,
   "ready": true,
   "width": 104, "height": 64, "cell_count": 6656, "basin_count": 9,
@@ -258,7 +259,7 @@ The JSON dependency stays at the codec boundary. The record uses `DynamicArrayC`
 | Topic | GDD draft | This spec |
 |---|---|---|
 | Save contents | `serialize_state()` of cells, basins, counters and the pending working set | The Feature 1 saved list plus `biome`, `riverFlow`, `flooded`, basin volumes and basin `iceFraction`. The GDD's `channel_store` is `riverStore`. There is no `pending_spill`: spill leaves in the same pass |
-| Entry points | `serialize_state()` / `restore_state()`, `GameLoaded` | An E1 `ISaveable` participant `cow.hydrology`; the pending blob through DiaDeferredStep |
+| Entry points | `serialize_state()` / `restore_state()`, `GameLoaded` | An E1 `ISaveable` participant `cow.hydro`; the pending blob through DiaDeferredStep |
 | Changed parameters (EC-22) | State loads as saved; a changed `BASIN_DEPTH_SCALE` recomputes level; volume above capacity is handled | `params_hash` mismatch warns and Degrades. Volume above a changed capacity is Feature 2's concern at the next step (it spills at the spill height). No rescale |
 | Latched state | The pending working set | The same. No latched inputs are saved (they are not needed once the step has run) |
 
@@ -282,10 +283,27 @@ Layer goldens are not used here; state identity is asserted bitwise. Scoped `--f
 2. **Is a parameter-hash warning enough for S-3.5 R2?** The same question as A4. R2 loads under whatever tuning the bundle supplies, so its bit-identity claim holds only under matching tuning. A `strict` load option that refuses on a mismatch is the upgrade. Not built now.
 3. **Discard versus refuse on a world mismatch.** The request said "refuse". A4's rule is to discard the saved state, spin up fresh and let the load succeed, and this spec follows A4. The cost is a silent-looking reset of water (a Warning is logged). The alternative is to abort the whole load, which also throws away S-1's and A4's matching state. If you want the stricter behaviour, it is a one-line change in step 3 plus AC 10.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+Codec: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md section 2.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Use the kit codec helpers (`WorldSimSaveCodec`): a `SavedField[]` list, the shared `Validate`, the shared restore sequence, the event-order fallback (stash the record until the matching `WorldGenerationComplete`) and the shared pending blob | Design "`Validate`", "`Deserialize`", "Pending result"; the Codec and participant ACs that re-test the shared sequence |
+| 2 | **No in-record `"version"`.** The version is `GetVersion()` (`kFormatVersion` stays); upgrades use `RegisterMigration`. The export file `cow.hydro_state` keeps the F-3 envelope | "Record (version 1)" heading and the `"version": 1` line in the record example |
+| 3 | **Participant id `cow.hydro`** | Goals 1; "Participant registration"; the record key; the GDD differences table (renamed inline) |
+| 4 | `params_hash = ParameterFile::Hash()`, which now includes the three biome maps. `HashHydrologyParameters` is deleted | The `params_hash` bullet ("FNV-1a ... descriptor-table order, then the biome table in enum order"); AC 3; AC 12 |
+| 5 | `Validate` ranges come from the layer sidecar entry `cow.hydro.layers/<field>` (min/max). A field with no layer gives its range in a hydro state sidecar. `biome` validates against the registry `Count()`, not 13 | "`Validate`" bullets (`biome >= 13`, per-field ranges); AC 2 range cases; AC 23 (bad biome) |
+| 6 | The pending blob is the kit's `{pending_version: 1, valid, step_day, cell_count, ...}`; `ValidatePending` runs the same checks as `Validate`; a discarded step writes `{pending_version: 1, valid: false}` | "Pending result" design; ACs 21-24 shape text |
+| 7 | **A5-only extras stay:** `basin_count`, `world_hash` (optional, checked only when the world exposes one) and the mixed A4/A5 table | Unchanged |
+| 8 | `BiomeIndex` replaces `uint8_t`/`Biome` for the saved biome array | Record `"biome": [...]` bullet; "New simulation surface" struct (`DynamicArrayC<uint8_t> biome`) |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:
-- E1 `ISaveable` participant `cow.hydrology`; JSON text arrays (floats as 17-digit doubles, as A4).
+- E1 `ISaveable` participant `cow.hydro`; JSON text arrays (floats as 17-digit doubles, as A4).
 - It saves Feature 1's saved list, basin volumes and the counters, plus the three additions above.
 - The pending working set goes through `SerializePending`/`DeserializePending`, with the scheduler's apply key (DFS-005), so a reload continues bit-identically including a step in flight.
 - A world identity check on dimensions, basin count and content hash (when available).
@@ -302,3 +320,5 @@ Layer goldens are not used here; state identity is asserted bitwise. Scoped `--f
 Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
 
 Plan: [hydrology-save.plan.md](hydrology-save.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

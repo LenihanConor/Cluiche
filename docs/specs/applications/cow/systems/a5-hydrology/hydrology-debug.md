@@ -9,6 +9,7 @@
 - A5 Feature 6 (preset files and `cow.hydro.preset`'s loader).
 - World Step's `HistoryDriverModule` (S-3.5 Feature 1).
 - Built Dia: DiaCellLayers (`CellLayerRegistry`, `CellOverlayDesc`, `Details()`), DiaCellHistory (`CellHistoryRecorder`, events, aggregates), DiaValueSchema, `SimQueryHostModule` with `SimHelpInfo`, `DiaDebugDomainRegistry`/`DiaDebugPanel`, DiaObservation.
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Consumed by:** S-2.6 Rivers & Floods (hosts everything here; not specced), S-3 and S-3.5 (host the layers), T-1 (reads the history), V-1 (reads nothing from here).
 
@@ -277,6 +278,20 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 3. **How does `cow.hydro.balance weeks=N` run without hitching SimPU?** A headless copy stepped N times on SimPU costs N full steps at once, which could miss the World Step slack at Large. Options: cap `weeks` low (the 1–52 here is a placeholder), run it as a DiaDeferredStep job and reply when done (needs the sim-hosted reply to be asynchronous, which this spec has not confirmed), or run it in the headless runner only (not live). The first plan task checks what `SimQueryHost` allows.
 4. **Are the event thresholds (`river.low_flow_fraction`, `dry_min_cells`, `record_margin`, `freeze_up_fraction`) meaningful before S-2.6 tunes the water numbers?** They are config so tuning needs no code, but a bad first guess floods the stream (capped at 4 per type per week) or stays silent. Treat the first S-2.6 session as their tuning pass.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | One command **`cow.hydro.params {action: set\|get\|list\|reload\|save_defaults}`** with the kit's reply shapes replaces `cow.hydro.set_param`. The map key form is `hydro.biome.<column>.<BiomeId>`. `reload` is now available | Commands table row `cow.hydro.set_param`; GDD differences rows "`cow.hydro.reload` and `cow.hydro.set` ... Not shipped" and "`cow.hydro.set_param` as a temporary override cleared by reload"; ACs 19 and 21; the Status command list |
+| 2 | The command set is six names: `state`, `basins`, `find`, `params`, `preset`, `balance`, registered through `SimCommandSet` (all-or-nothing, own-kind rollback) | "Commands (6 sim-hosted names)"; AC 18 forced-failure rule |
+| 3 | Layer legend entries live in the layer sidecar under **`cow.hydro.layers/<field>`**; layer ids are `hydro.<snake_case>`. The same entry's `min`/`max` is the save range (Feature 4) | "Cell layers" bullet "DiaValueSchema entries `hydro/<key>`" |
+| 4 | Per-cell static rows read the three biome maps and `terrain.soil_depth_mult`; the biome name and colour come from the registry | "Per-cell detail rows" Static bullet ("its three biome-table values") |
+| 5 | The base registers `cow.hydro.step_ms` and `cow.hydro.discarded_steps`; this feature adds the water-balance gauge only | "Instrumentation" metric list |
+| 6 | `HydrologyUpdated` is generated from `cow_worldsim.diagamemessages` | Public API "New messages: none" paragraph |
+| 7 | Data I/O: the `FileWatcher` dev reload shares the `params {action: reload}` path | GDD differences reload row |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:
@@ -289,3 +304,5 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 Aligned to the locked GDD on 2026-11-17. Approval is a separate step.
 
 Plan: [hydrology-debug.plan.md](hydrology-debug.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

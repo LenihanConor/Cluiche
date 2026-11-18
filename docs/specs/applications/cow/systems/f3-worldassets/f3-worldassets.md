@@ -4,6 +4,7 @@
 **Origin:** 2026-10-19 product review of the world-sim stack. Outcomes B7 (clear assets: how they load and save) and D (author content in the testbeds) had no owner.  
 **Consumers:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md, @docs/specs/applications/cow/systems/a4-weather/a4-weather.md, @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md, @docs/specs/applications/cow/systems/a3-biomesuccession/a3-biomesuccession.md, the S-1, S-2.5, S-3 and S-3.5 World Sim testbeds
 **Amended 2026-11-18 (A1 ecology expansion):** new defaults asset `flow_graph.json` (`cow.flow_graph`); start-state cell keys use A1 node ids (`producer.grass`, `nutrient.soil`, `species.<id>.adult`); A1 saves and start states also carry the seasonal reservoirs (save only, not start states).
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -295,5 +296,41 @@ Build order: 1 → 2 → 4 → 3 → 5. Feature 6 runs per consumer as each syst
 
 1. **A4's 5 named presets** (coastal_storm, rain_shadow, winter_snow, spring_melt, drought). Are they parameter sets (weather packs → `Global/Weather/Packs/`) or forced weather states (scenarios → `Stages/S25WeatherPatterns/scenarios/`)? The names suggest scenarios. **A4 Feature 6 decides** from what each preset actually changes; F-3 supports either.
 
+## World-sim review amendment (2026-11-18)
+
+Source: @docs/research/worldsim_data_driven/summary.md §0 and §0.1; kit: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; parameters: @docs/specs/applications/dia/systems/diaattribute/parameter-files.md; biomes: @docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md; search helpers: @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.md.
+
+**Each item below supersedes any contradicting text in this spec and its features.**
+
+1. **`hydro` is a pack kind** with a `HydrologyPackParticipant` (see consumer-adoption.md). Asset Table rows added: hydrology parameter sidecar `Global/Hydrology/hydro_parameters.schema.json` (format `cow.hydro_params`, owner A5, hand-written; defaults edited by `cow.hydro.params {action: save_defaults}`), and hydrology pack `Global/Hydrology/Packs/<id>.hydro.json` (written by `cow.world.pack.save_as hydro`).
+2. **Parameter-file packs follow the `dia validate schema` envelope and pack rules.** Envelope keys are `format` and `version` (`data_rules.py` `ENVELOPE_KEYS`); a file is a pack when a directory segment named `Packs` (any case) is above it (`schema_discovery.py` `_is_pack`). F-3's `AssetEnvelope` must match both. The pack's `format` equals the sidecar's `for` (@docs/specs/applications/dia/systems/diaattribute/parameter-files.md).
+3. **Pack merge for parameter files is `ParameterFile::ApplyPack`:** lenient (unknown key dropped with a Warning, out-of-range clamped with a Warning), atomic, and a failing constraint rejects the whole pack. F-3's generic `OverrideMerge` remains for **non-parameter assets only**. The `IValueRanges` adapter is superseded: ranges come from the sidecar.
+4. **No base parameter files.** `Global/<System>/` holds `<sys>_parameters.schema.json` (the sidecar, with defaults) and `Packs/`. This applies to every `cow.<sys>_params` row in the Asset Table (weather, ecology, hydro). "Save as defaults" is `cow.<sys>.params {action: save_defaults}` (dev only, in-place writer). **Pack `save_as` remains F-3's.**
+5. **Naming per §0.1:** format ids `cow.<sys>_params`; packs at `Global/<System>/Packs/<id>.<sys>.json`; save ids `cow.<sys>`.
+6. **Biome-keyed content uses registry ids.** The start states' biome data uses `BiomeIndex` / registry ids.
+
+| Superseded text | By |
+|---|---|
+| Asset Table rows "Weather parameters (defaults)" (`weather_parameters.json`) and "Species, biomes, ecology parameters (defaults)" (`ecology_parameters.json`) | 4 |
+| Architecture `OverrideMerge  defaults + pack overrides -> resolved Json` for parameter files | 3 |
+| Asset Table pack rows' separate pack format ids (`cow.weather_pack`, `cow.ecology_pack`) for parameter-file packs | 2 (see report: open) |
+| Features rows 1 (envelope and override merge) and consumer adoption | 2, 3, 1 |
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Packs (R3).**
+   - A parameter pack is a sparse document of the parameter format itself (`format` = the sidecar's `for`, e.g. `cow.weather_params`, `cow.hydro_params`, `cow.ecology_params`), identified as a pack by its `Packs/` location, which matches `dia validate schema`.
+   - The separate pack format ids (`cow.weather_pack`, `cow.ecology_pack`) and the `base` + `overrides` shape are superseded.
+   - **Staleness:** `EvaluateStale` compares the pack's `basedOn` with the sidecar's `SchemaHash()` (Parameter Files resolution), not a defaults-file version. Load-and-warn is unchanged.
+2. **Participants for parameter kinds** apply through `ParameterFile::Reload(sidecar, packs in order)`. `Defaults()`/`DefaultsSpec()` come from the sidecar.
+3. **Bundles** gain a `hydro` pack part, like weather and ecology.
+4. **Correction:** `terrain_rules.json` is **not** a kept defaults file. DiaAttribute Parameter Files AC 18 replaces it with `Global/WorldGen/terrain_rules.schema.json`, so S-1 follows the same no-base-file rule.
+5. **Saves and start states** that hold biomes use registry ids (a biome palette).
+
 ## Status
 `Approved` (2026-10-19). All 6 feature specs `Approved` (2026-10-20); no plan yet. Feature 1 can start now (pure logic).
+
+Amended 2026-11-18 (world-sim review decisions).

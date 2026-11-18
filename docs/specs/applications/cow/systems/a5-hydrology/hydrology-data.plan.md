@@ -1,5 +1,7 @@
 # Plan: A5 Hydrology Data & Parameters (A5 Hydrology Feature 1)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in hydrology-data.md and are stale where they touch the parameter descriptor table, parameter file and loader, biome table, `ApplyOverrides`/`SetParam`/`ToJson`, the params hash and the `Biome` enum. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 1)

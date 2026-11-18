@@ -5,6 +5,8 @@
 **Depends on:** A4 Features 1, 2, 3, 4, 6 (fields, pipeline helpers, `WeatherModule` and its mutation queue, state codec, `ApplyPreset`); DiaCellLayers (`CellLayerRegistry`, `CellOverlayDesc`, `Details()`), DiaCellHistory (`CellHistoryRecorder`, events), DiaValueSchema, `SimQueryHostModule` with `SimHelpInfo`, `DiaDebugDomainRegistry`/`DiaDebugPanel`, DiaObservation (all built).
 **Consumed by:** S-2.5 (hosts everything here), S-3 and S-3.5 (host the layers), V-1 (reads nothing from here).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 Everything a developer uses to look at and poke the weather: eight scalar cell layers (the seven field layers plus `weather.climate_offset`; ten with the two wind component layers), a wind overlay that is dense only where it needs to be, per-cell detail rows, a panel card, **eight** sim-hosted `cow.weather.*` names (consolidated from the system spec's sixteen, decided 2026-11-16; Feature 7 adds `cow.weather.influence`, amended 2026-11-17), history events for storms and droughts, metrics, and health. It reads committed state only and changes state only by queuing mutations through Feature 3's queue.
@@ -245,6 +247,18 @@ Added criteria:
 
 **Plan impact:** `weather-debug.plan.md` and S-2.5 Feature 5's tracked-layer config need these folded in before they start.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Commands (system items 8, 9).** Supersedes the eight-name list, the params, `reload` and `cycle` command descriptions and the name budget: one `cow.weather.params {action}` via `ParamCommandHelper` with `set | get | list | reload | save_defaults` and A4's `cycle` action; `set` replies `{queued, key, value, effectiveDay, visibleDay}`; `save_defaults` is dev-only. `cow.weather.reload` is retired. Registration through `SimCommandSet` (all-or-nothing). Recount the names against the 192 cap.
+2. **Schema keys.** Supersedes `weather/<key>` and `weather/wind_east`, `weather/wind_north`: layer entries are `cow.weather.layers/<field>` (built by `WorldSimNames.h`). Layer ids stay `weather.<snake_case>`.
+3. **Health and metrics (item 5).** "Unhealthy" reads Failing; `cow.weather.step_ms` and `cow.weather.discarded_steps` come from the stage base.
+4. **Selectors (item 12).** Any command argument or panel filter that selects cells uses `CellSelectorSet` / `WorldCellFields`.
+5. **Cell details.** Weather values appear in `WorldCellFields` under slot `weather`; detail rows read from that, not a private list.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): Features 7–9 now add one command name, one layer, the `cycles` info action and the `cycle` params action, specced in their own files and folded in above. Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

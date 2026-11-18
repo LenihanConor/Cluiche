@@ -1,5 +1,7 @@
 # Plan: A5 Hydrology Presets & Regression (A5 Hydrology Feature 6)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in hydrology-presets-and-regression.md and are stale where they touch the selector grammar, loader and `ResolveSelector`. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 6)

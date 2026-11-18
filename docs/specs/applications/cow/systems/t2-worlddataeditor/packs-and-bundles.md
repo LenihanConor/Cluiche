@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Builds on:** @docs/specs/applications/cow/systems/t2-worlddataeditor/plugin-shell-files-and-schema.md (Feature 1), @docs/specs/applications/cow/systems/t2-worlddataeditor/table-and-form-editors.md (Feature 2), @docs/specs/applications/cow/systems/f3-worldassets/envelope-and-override-merge.md (F-3 Feature 1), @docs/specs/applications/cow/systems/f3-worldassets/save-as.md (F-3 Feature 3)
 **Mockup:** @docs/specs/applications/cow/systems/t2-worlddataeditor/mockups/world-data-editor.html
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -187,6 +188,29 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Pack diffs compare against the **sidecar defaults** (there is no defaults file). Pack validity follows `ParameterFile::ApplyPack` (lenient, atomic) and the CLI's pack rules | Summary "overrides against a defaults file"; pack diff table Default column ("the defaults file's value") |
+| 2 | **New pack** kinds: weather, ecology and hydro | "New pack" kind prompt ("weather or ecology") |
+| 3 | The stale banner ("Pack based on `v3`, defaults are `v4`") has no defaults-file version for parameter-file packs | "Stale banner" and `upgradePack` (see report: open) |
+| 4 | `PackOverrideIndex.overridesOf(defaultsFormat, key)` keys by the sidecar `for` | `PackOverrideIndex` text |
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Pack routing.** T-2 opens a pack by its parameter format plus the `Packs/` flag; there are no separate pack format ids.
+2. **Stale banner.** It compares the pack's `basedOn` with the sidecar's schema hash ("based on an older schema"), not a defaults version.
+3. **Bundles** have a `hydro` pack part in the composer.
+4. **Preset formats** are `cow.<sys>_preset`.
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. The bundle composer needs the extended mockup approved first (Mockup gate).
+
+Amended 2026-11-18 (world-sim review decisions).

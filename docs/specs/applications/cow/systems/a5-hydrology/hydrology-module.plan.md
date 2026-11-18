@@ -1,5 +1,7 @@
 # Plan: A5 HydrologyModule & World Step Stage (A5 Hydrology Feature 3)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in hydrology-module.md and are stale where they touch the stage implementation (now `WorldStepStageBase`), health, parameter load and queue, the stage id, messages and data I/O. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 3)

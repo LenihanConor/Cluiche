@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Builds on:** @docs/specs/applications/cow/systems/t2-worlddataeditor/plugin-shell-files-and-schema.md (Feature 1)
 **Mockup:** @docs/specs/applications/cow/systems/t2-worlddataeditor/mockups/world-data-editor.html
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -210,6 +211,22 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | The form editor opens for `cow.hydro_params` too | "Which editor opens"; AC 1 |
+| 2 | **Maps sharing a `keyRef` are shown as one table** (rows = keys, columns = maps). A map entry's `default` object feeds the default tick and the per-cell reset | "Cell editors" `map` row (summary cell plus Properties sub-form only); AC 3 map summary; AC 12 default tick |
+| 3 | `valuesFrom` enum entries resolve their values from the named data file (e.g. the biome palette from `cow.biomes`), as the CLI does | "Cell editors" enum row (values from the schema entry only) |
+| 4 | Sidecar `constraints` are checked live and shown with both keys named; `bands` are shown on the range hint. Both are shared with the CLI through the conformance fixtures | "Live checks" table (no cross-field check); "Column model" header range hint |
+| 5 | `data.incomplete-map` is a live finding: a `keyRef` map missing keys is flagged, naming the missing keys | "Live checks" Map row |
+| 6 | **Editing a parameter default writes the sidecar `default` fields** with the shared in-place writer, preserving every other byte. There is no base parameter file | Goals 5 ("Defaults files are understandable") where it implies a defaults file is the edited document |
+| 7 | The Biome table editor is the `cow.biomes` record file (S-1 owned). Biome-keyed parameter tables use `keyRef cow.biomes` | Table editor scope: unchanged for `cow.biomes` |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the DiaValueSchema `map` type and the data conformance fixtures.
+
+Amended 2026-11-18 (world-sim review decisions).

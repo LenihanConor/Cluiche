@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md
 **Builds on:** @docs/specs/applications/cow/systems/f3-worldassets/world-assets-module-and-bundle-load.md (Feature 2), @docs/specs/applications/cow/systems/f3-worldassets/save-as.md (Feature 3), @docs/specs/applications/dia/systems/diacli/preserve-subfolder-deploy.md (dia-needs #17), @docs/specs/applications/dia/systems/diacli/dev-source-alias.md (dia-needs #16)
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -179,6 +180,18 @@ No conflicts. This feature amends one parent statement: the parent says `world` 
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | The alias table gains hydrology rows: parameter sidecar `Hydrology/` `hydro_parameters.schema.json` `cow.hydro_params` (A5), and packs `Hydrology/Packs/` `.hydro.json` (A5) | Alias table (rows for weather and ecology) |
+| 2 | **No base parameter files.** The `weather_parameters.json` and `ecology_parameters.json` rows become their sidecars (`weather_parameters.schema.json`, `ecology_parameters.schema.json`); the record files (`species.json`, `biomes.json`, ...) are unchanged | Alias table rows "weather parameters" and "species, biomes, ecology parameters" (the parameter-file part); the hand-authored defaults-files line |
+| 3 | Pack paths follow §0.1: `Global/<System>/Packs/<id>.<sys>.json` | Pack row extensions for any kind that differs |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. The Dia side is dia-needs #16 and #17 (both Done 2026-10-20).
+
+Amended 2026-11-18 (world-sim review decisions).

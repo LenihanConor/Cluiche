@@ -1,5 +1,7 @@
 # Plan: A5 Hydrology Save/Load (A5 Hydrology Feature 4)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in hydrology-save.md and are stale where they touch the codec, `Validate`/restore sequence, pending blob, `params_hash`, participant id and record version. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-save.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 4)

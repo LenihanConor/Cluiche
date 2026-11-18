@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Builds on:** @docs/specs/applications/cow/systems/t2-worlddataeditor/plugin-shell-files-and-schema.md (Feature 1), @docs/specs/applications/cow/systems/t2-worlddataeditor/table-and-form-editors.md (Feature 2), @docs/specs/applications/cow/systems/t2-worlddataeditor/packs-and-bundles.md (Feature 3), @docs/specs/applications/dia/systems/diavalueschema/validate-schema.md
 **Mockup:** @docs/specs/applications/cow/systems/t2-worlddataeditor/mockups/world-data-editor.html
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug, tools
 
@@ -183,6 +184,17 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Reload map: the `weather_parameters.json` / `cow.weather.reload` row becomes the weather sidecar and packs / `cow.weather.params {action: reload}`. A new row: hydro sidecar and packs / `cow.hydro.params {action: reload}` | Game link reload table; Dependencies row `cow.weather.reload (A4)` |
+| 2 | `ValidateService` runs the shared sidecar rules (`constraints`, `bands`, `valuesFrom`, `data.incomplete-map`) with the CLI's conformance fixtures | "ValidateService" rule list |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Needs the CoW commands registered as JSON commands (F-3 amended) and `dia validate schema --json` with `path` and `record`.
+
+Amended 2026-11-18 (world-sim review decisions).

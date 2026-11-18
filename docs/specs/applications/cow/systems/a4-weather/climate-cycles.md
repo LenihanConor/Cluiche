@@ -5,6 +5,8 @@
 **Design source:** GDD `A4_TechnicalSpec.md` §19, `A4_TuningParameters.md` §10b, `A4_WeatherSystem.md` decision 8. A4 was **re-locked 2026-11-17 (CHANGE-047)**. User decisions of 2026-11-17 win where the locked GDD differs (see "GDD differences").
 **Depends on:** A4 Feature 1 (`WeatherParameters`, `ParamError`, file envelope conventions, `WeatherTerrain`); A4 Feature 2 (forcing points: solar heating, §6.1 evaporation, §5.1 prevailing wind); A4 Feature 3 (`Capture`, spin-up job, `WeatherRunner`); A4 Feature 4 (save); A4 Feature 6 (preset files). Touched by A5 (reads the start coldness).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 A4 gets slow climate. Long cycles push three things up and down over years and decades: **air temperature**, **ocean evaporation** and the **latitude of the prevailing winds** (so storm tracks drift toward or away from the equator). The first target is a ~4-year El Niño-style oscillation. The second is a ~40-year ice-age cycle. During the cold phase snow persists, glaciers grow and lakes fall (A5 does the water part).
@@ -441,8 +443,20 @@ The "no cycles equals no climate" test (AC 17) is written first against the Feat
 3. ~~**Where do named region sets come from?**~~ **Resolved by GDD §19 (locked): `REGIONS { ids, weight }` uses region ids**, here S-1 `RegionTable` / `Cell::region` ids (world-specific). Needed only if a cycle really wants one; the two default cycles do not.
 4. **Linear keyframes have corners.** A piecewise-linear curve has a visible kink in the offset at each point, and the CA responds to the rate of change. Smooth interpolation (cubic or smoothstep) is possible but costs the exact-at-points, easy-to-test property. The GDD's default ice age has only three points, so the kink at the `u = 0.6` apex is the sharpest one. Linear is the default (the GDD says "linear between points"); revisit if S-2.5 shows kinks in the debug layers.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Cycles are data (system item 15).** Supersedes any text treating the cycle's effect as fixed code: period, amplitude, phase and which parameters or fields a cycle modulates are data in the cycle file (The cycle file section). A cycle's effect on a **parameter** is a DiaAttribute Multiply/Add modifier on the `ParameterFile`; the three field forcings (temperature offset, ocean-evaporation multiplier, wind-latitude shift) remain applied at `Capture` / `Run`.
+2. **Westerly band (item 16).** The wind-latitude shift is relative to S-1's band-latitude parameters (read by A4, owned by S-1). Supersedes any 30/60 degree constant.
+3. **Command (item 8).** `cycle` is an action of `cow.weather.params`, not a separate name.
+4. **Save (item 7).** `enabled`, `phase_days`, `pinned_phase_days` are saved with no in-record version.
+5. **Catalogue and reload (item 11).** `climate_cycles.json` is catalogued and `PathStore`-resolved; `FileWatcher` reload is dev-only.
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked. User decisions encoded: data-driven layered cycles in a versioned file; temperature, ocean evaporation and prevailing-wind latitude shift as the three fields; `SINE` (cosine, peaks at `u = 0`) or `KEYFRAME` shape; optional latitude, coast/inland or region pattern; deterministic pure function of the day; summed per field with clamps; per-world `phase_days` with a warm default of 0; presets can switch off or pin (`pinned_phase_days`); **frozen-phase 52-week spin-up with A5 seeding its slow stores from a coldness value**; applied as forcings at `Capture`/`Run`; debug via existing commands, a layer and a scrub hook; `enabled`, `phase_days` and `pinned_phase_days` saved. Approval waits on Features 2 and 3 being built and on A5 agreeing the coldness hand-off.
 
 Plan: [climate-cycles.plan.md](climate-cycles.plan.md) (written 2026-11-17, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

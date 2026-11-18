@@ -1,5 +1,7 @@
 # Plan: S-2.5 Headless Runner & Report (S-2.5 Feature 3)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in headless-runner.md and are stale where they touch the parameter source (`DefaultWeatherParameters`). Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/s25-weatherpatterns/s25-weatherpatterns.plan.md (row 3)

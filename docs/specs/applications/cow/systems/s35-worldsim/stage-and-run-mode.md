@@ -192,7 +192,7 @@ No conflicts.
 |---|---|---|
 | F-3 Features 1 to 5 | Bundle load, World Assets card, session hint | Approved, not built |
 | S-1 Features 1 and 8, A4 Features 1 to 3, A1 Features 1 to 7 | Layers and participants | Specced, not built |
-| A5 Hydrology (Draft, features TBD) (amended 2026-11-17, A5 Hydrology) | Water layers (`hydro.*`) and participant; World Step order `["weather", "hydrology", "ecology"]` | Specced (Draft), not built |
+| A5 Hydrology (Draft, features TBD) (amended 2026-11-17, A5 Hydrology) | Water layers (`hydro.*`) and participant; World Step order `["weather", "hydro", "ecology"]` | Specced (Draft), not built |
 | DiaCellLayers Features 1 to 4 | Layers and Selection cards | Approved, not built |
 | DiaCellHistory Features 1 to 4 | Recorder, Timeline, snapshots | Approved, not built |
 | DiaValueSchema | Described values | Approved, not built |
@@ -215,4 +215,4 @@ _None remaining._
 
 ## Status
 
-`Approved` (2026-10-20). **Amended 2026-11-17 (A5 Hydrology):** `HydrologyModule` joins the module list (when built) and the World Step `order` becomes `["weather", "hydrology", "ecology"]`; the history recorder picks up `hydro.*` layers and events through the registry with no stage change. Plan not yet created. Can start once S-1 Features 1 and 8, A4 Features 1 to 3, A1 Features 1 to 7, F-3 Features 1 and 2 and DiaCellLayers Feature 1 exist.
+`Approved` (2026-10-20). **Amended 2026-11-17 (A5 Hydrology):** `HydrologyModule` joins the module list (when built) and the World Step `order` becomes `["weather", "hydro", "ecology"]`; the history recorder picks up `hydro.*` layers and events through the registry with no stage change. Plan not yet created. Can start once S-1 Features 1 and 8, A4 Features 1 to 3, A1 Features 1 to 7, F-3 Features 1 and 2 and DiaCellLayers Feature 1 exist.

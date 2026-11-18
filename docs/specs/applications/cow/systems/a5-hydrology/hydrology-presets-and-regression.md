@@ -10,8 +10,9 @@
 - S-1 consumer amendment 8 (basin table and bed elevation in the world record) for the S-1-world tests (R-Reach, goldens).
 - Dia `Testing/CellLayerGolden.h` (built).
 - The coupled test also needs A4 Features 1–3 and 8 and A5 Feature 3, and is `SLOW_` and blocked until they are built.
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
-**Consumed by:** A5 Feature 5 (`cow.hydro.preset`), S-2.6 Rivers & Floods (scenario files reference presets by name; not specced), S-3.5 (R-Reach also runs there when the order includes `hydrology`).
+**Consumed by:** A5 Feature 5 (`cow.hydro.preset`), S-2.6 Rivers & Floods (scenario files reference presets by name; not specced), S-3.5 (R-Reach also runs there when the order includes `hydro`).
 
 ## Summary
 
@@ -304,6 +305,27 @@ In order: the preset data values; the default parameter file values (Feature 1's
 2. **Does every S-1 Small preset × seed 1–3 have a river with a crossing for `flash_flood_fords`?** The preset needs one, and S-1 does not promise it for every seed. If a seed lacks one, options are: choose the nearest river-crossing site as a fallback, change the golden seed set for this preset (user decision, since seeds 1–3 are fixed), or accept "not applicable" for that cell of the golden grid. Task 1 reads the seeds before anything is built.
 3. **How long does R-Reach take, and can the validator treat `Deep` as water?** 5,200 weekly steps on a Small world for each S-1 preset is a lot for the default suite and its time is unmeasured (report-only per the parent, but a slow default test hurts every run). If it is too slow, the user decides: fewer simulated years, fewer presets in the default run, or `SLOW_`. Separately, the validator takes an `INavigationProfile`: if it cannot express a per-cell block, a CoW-side S-1 change is needed. Both are checked in Task 1.
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Full list: @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md.
+
+Selectors: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md section 4.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Preset `selectors` use **`CellSelectorSet`**: DiaCondition `ConditionExpr` over `WorldCellFields`, plus a `derived` block of computed spatial fields. The bespoke clause set and its AND-combiner are deleted | Goals 1 ("selector-based format"); Design "Selectors" bullet ("Allowed clauses ..."); the `selectors` block in the format example; `ResolveSelector` and `Build(...)` "resolves selectors once"; "Selectors and world independence" |
+| 2 | Clause mapping below. A5 contributes its committed fields to `WorldCellFields` under slot `hydro`, including `hydro.basin_kind` | See table |
+| 3 | `derived` fields use the DiaPathfinding helpers (`MultiSourceDistance`, `FloodRegion`); basin classification may use `PriorityFlood` / `ConnectedComponents` | Any local `distanceToRiver` / `upstreamOfCrossing` computation |
+| 4 | Selector validation (unknown field, unknown selector, cycle) comes from `CellSelectorSet`. A selector that resolves to zero cells still fails apply with the selector named and the sim byte-identical | ACs "Loader and selectors" 1, 3, 4 and 8 (re-expressed in the new vocabulary) |
+| 5 | T-2's scenario editor validates presets with the same `WorldCellFields` vocabulary | New |
+
+| Old clause | New expression |
+|---|---|
+| `river` / `crossing` | `terrain.is_river` / `terrain.is_crossing` |
+| `basin` | `hydro.basin_kind` (A5 contributes it) |
+| `distanceToRiver {min, max}` | `derived` `distance {from: river}` with `>=` / `<=` |
+| `upstreamOfCrossing {maxSteps}` | `derived` `upstream {of: crossing, maxSteps}` `== 1` |
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:
@@ -316,3 +338,5 @@ In order: the preset data values; the default parameter file values (Feature 1's
 Aligned to the locked GDD on 2026-11-17. Approval is a separate step. **Tuning log:** empty.
 
 Plan: [hydrology-presets-and-regression.plan.md](hydrology-presets-and-regression.plan.md) (written 2026-11-17, not started).
+
+Amended 2026-11-18 (world-sim review decisions).

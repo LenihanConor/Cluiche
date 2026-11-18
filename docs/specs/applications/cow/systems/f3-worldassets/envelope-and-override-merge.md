@@ -1,6 +1,7 @@
 # Feature Spec: F-3 Envelope and Override Merge
 
 **Parent:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -185,6 +186,34 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | `AssetEnvelope` must match `dia validate schema`: envelope keys `format` and `version` (`data_rules.py` `ENVELOPE_KEYS`); a pack is a file under a `Packs` directory segment, any case (`schema_discovery.py` `_is_pack`). A parameter-file pack carries the sidecar's `for` as its `format` | "`AssetEnvelope`" classification rules; `PackFile` key order `format`, `version`, `base`, `displayName`, `overrides` for parameter-file packs |
+| 2 | For parameter files, pack merge is `ParameterFile::ApplyPack`: lenient (unknown key dropped with a Warning, out-of-range clamped with a Warning), atomic, constraints reject the whole pack. `OverrideMerge::Resolve` / `Diff` remain for **non-parameter assets only** | "`OverrideMerge`" `Resolve` rules (`UnknownKey`, `TypeMismatch`, clamp) and "Defaults rule" (`ValidateDefaults`) as applied to parameter files; ACs 4-6 for parameter files |
+| 3 | **The `IValueRanges` adapter is superseded:** ranges come from the sidecar (`min`/`max`, `bands`). The interface stays for non-parameter assets only | `IValueRanges` declaration; AC 6; Binding Decisions VS-004 row ("the adapter over the schema is Feature 2") |
+| 4 | Packs cover the parameter files of weather, ecology and **hydro** | Non-Goals "packs cover only `cow.weather_params` and `cow.ecology_params`"; Resolved Decision 1 |
+| 5 | There is no defaults file, so `EvaluateStale(baseVersion, defaultsVersion)` has no `defaultsVersion` for parameter-file packs | Stale rules and `MergeReport` stale fields as applied to parameter-file packs (see report: open) |
+
+
+## Spec-6 resolutions (2026-11-18, user)
+
+These settle open points raised while amending. Each item supersedes contradicting text above, including the world-sim review amendment.
+
+1. **Packs (R3).**
+   - A parameter pack is a sparse document of the parameter format itself (`format` = the sidecar's `for`, e.g. `cow.weather_params`, `cow.hydro_params`, `cow.ecology_params`), identified as a pack by its `Packs/` location, which matches `dia validate schema`.
+   - The separate pack format ids (`cow.weather_pack`, `cow.ecology_pack`) and the `base` + `overrides` shape are superseded.
+   - **Staleness:** `EvaluateStale` compares the pack's `basedOn` with the sidecar's `SchemaHash()` (Parameter Files resolution), not a defaults-file version. Load-and-warn is unchanged.
+2. **Participants for parameter kinds** apply through `ParameterFile::Reload(sidecar, packs in order)`. `Defaults()`/`DefaultsSpec()` come from the sidecar.
+3. **Bundles** gain a `hydro` pack part, like weather and ecology.
+4. **Correction:** `terrain_rules.json` is **not** a kept defaults file. DiaAttribute Parameter Files AC 18 replaces it with `Global/WorldGen/terrain_rules.schema.json`, so S-1 follows the same no-base-file rule.
+5. **Saves and start states** that hold biomes use registry ids (a biome palette).
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Can start now: pure logic, no dependencies.
+
+Amended 2026-11-18 (world-sim review decisions).

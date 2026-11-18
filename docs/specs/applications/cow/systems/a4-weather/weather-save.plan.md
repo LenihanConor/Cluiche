@@ -1,5 +1,7 @@
 # Plan: A4 Weather Save/Load (A4 Weather Feature 4)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-save.md and are stale where they touch the in-record version, participant id, `params_hash`, Validate ranges and the hand-ordered restore. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-save.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 4)

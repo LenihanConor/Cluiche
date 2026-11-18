@@ -6,6 +6,8 @@
 **Depends on:** S-2.5 Features 1 (stage, module, `LoadWorld`), 2 (`ICheck`, `IWeatherTrace`, `RecordedTrace`) and 3 (the run table the scenarios are tested against); A4 Feature 5 (typed `WeatherCommand`, the commands, the overlay and layer toggles) and Feature 6 (presets); DiaValueSchema command catalogue export; `SimQueryHostModule`; DiaCellLayers.
 **Consumed by:** S-3 Feature 3 (its ten Controlled and four Living scenarios), T-2 Feature 5 (calls the same validator over the bridge).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The shared guided-scenario system, built first for S-2.5 and reused by S-3: the `cow.scenario` file format and loader, the shared `ScenarioValidator`, a `CheckRegistry`, a scenario runner that loads a world, runs setup commands and shows the watch text, a **live check-line panel**, the **walkthrough** (steps that switch overlays, show text and pin a check), the three `cow.scenario.*` commands, and S-2.5's fourteen scenario files (nine tests plus five presets) with their vocabulary.
@@ -226,6 +228,16 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 6. **`RegisterAll` and check lifetime** follow Feature 2's amendment 6.
 7. **Live value of headless-only scenarios.** `s25_t8_boundary` and `s25_t9_determinism` are mostly `HeadlessOnly` live; their `watch` text says so and names `cow.s25.run`. They exist for the walkthrough text, the setup lines and agreement with the plan runs.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. Scenario setup and check commands naming A4: `cow.weather.params action=set key=... value=...` is unchanged in form; `cow.weather.reload` (if used) is `cow.weather.params action=reload`.
+2. Any preset or cell selector in a scenario uses `CellSelectorSet` conditions per A4 item 12 (`distanceToWater` is derived `distance {from: water}`).
+3. `WeatherUpdated` is generated from `cow_worldsim.diagamemessages` (A4 item 10); the event shape is unchanged.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). **Amended 2026-11-17 (A5 Hydrology):** the example walkthrough's last step uses a `water_to_ground` overlay instead of `ground_water` (A4 has no ground water now; the overlay id is set by the A4 amendment, TBD); Test 5's scenario note above. Plan: [scenarios-and-walkthrough.plan.md](scenarios-and-walkthrough.plan.md) (written 2026-11-16, not started). **Plan Task 1 is the panel mockup.**
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

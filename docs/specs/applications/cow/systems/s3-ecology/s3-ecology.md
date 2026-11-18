@@ -24,7 +24,7 @@ Terrain          S-1          live terrain editor
 S-3 loads an S-1 world and runs A1 on it in one of two modes, chosen from a panel inside the stage (AD-005):
 
 - **Controlled:** the weather is pinned to a climate you set, and A3 is optional. This mode is for understanding and tuning: inspect why values changed, edit cells, tune constants live and save them, isolate a cell. The GDD's S-2 tests run here as guided scenarios.
-- **Living:** A4 weather is live, A5 hydrology joins once it is built (amended 2026-11-17, A5 Hydrology): World Step `["weather", "hydrology", "ecology"]`, a soft dependency like A4 and A3), and A3 joins when it exists. This mode is for emergence and long-run stability. The GDD's S-3 tests run here, as guided scenarios plus a headless long-run report.
+- **Living:** A4 weather is live, A5 hydrology joins once it is built (amended 2026-11-17, A5 Hydrology): World Step `["weather", "hydro", "ecology"]`, a soft dependency like A4 and A3), and A3 joins when it exists. This mode is for emergence and long-run stability. The GDD's S-3 tests run here, as guided scenarios plus a headless long-run report.
 
 The inspector, change ledger, overlays, graphs, tuning, painting and `isolate_cell` all belong to A1 (A1 Feature 9). S-3 adds the stage, the modes, the pinned climate, the scenarios and the long-run runner.
 
@@ -59,7 +59,7 @@ SimPU (S3Ecology stage; amended 2026-10-19, DiaCellLayers/DiaCellHistory)
   ├─ GameSpeedControllerModule, RandomStreamModule, SaveLoadModule
   ├─ EcologyModule          A1, with EcologyDebugDomain (all tools)
   ├─ WeatherModule          A4, Living mode only
-  ├─ (HydrologyModule)      A5, Living mode, once built; World Step order ["weather", "hydrology", "ecology"] (amended 2026-11-17, A5 Hydrology; Controlled mode may optionally run it)
+  ├─ (HydrologyModule)      A5, Living mode, once built; World Step order ["weather", "hydro", "ecology"] (amended 2026-11-17, A5 Hydrology; Controlled mode may optionally run it)
   ├─ (SuccessionModule)     A3, when it exists
   ├─ SuccessionDebugDomain  A3's debug tools (hosted by S-3; amended 2026-10-19, product review)
   └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
@@ -239,7 +239,7 @@ For the DesignDocs owner to fold back into `TestbedRoster.md`, `S2_SingleCellEco
 
 **Soft (modes and checks light up as they arrive):**
 - **A4 Weather:** Living mode, Feature 4 (runner) and Feature 5 (climatology). S-2.5 should pass before Living-mode results are trusted.
-- **A5 Hydrology (amended 2026-11-17, A5 Hydrology)):** Living mode's water input (`["weather", "hydrology", "ecology"]`). Without A5, Living mode runs on A4 alone as today. A5's S-2.6 testbed should pass before Living-mode water results are trusted. The long-run runner gains `HydrologySimulation` in band order when A5 exists (its time cost is TBD; the 5-minute budget is re-measured then).
+- **A5 Hydrology (amended 2026-11-17, A5 Hydrology)):** Living mode's water input (`["weather", "hydro", "ecology"]`). Without A5, Living mode runs on A4 alone as today. A5's S-2.6 testbed should pass before Living-mode water results are trusted. The long-run runner gains `HydrologySimulation` in band order when A5 exists (its time cost is TBD; the 5-minute budget is re-measured then).
 - **A3 Biome Succession:** transitions in Living mode, the A3 scenario, and the succession long-run check. A3's `SuccessionDebugDomain` is hosted by S-3 (amended 2026-10-19, product review).
 - **S-2.5 Feature 4** (CoW-Shared scenario format, loader and check-line panel): hard dependency for Feature 3 (amended 2026-10-19, product review).
 
@@ -265,4 +265,4 @@ None at system level. Feature-level questions go in each feature spec.
 
 ## Status
 
-**Status:** `Approved` (2026-10-18). **Amended 2026-11-17 (A5 Hydrology):** Living mode composes `["weather", "hydrology", "ecology"]` once A5 is built (soft dependency); Controlled mode is unchanged (hydrology optional). Interview done the same day (name, pinned climate, proof style, Living-mode growth, 5-minute long-run budget). No open system-level questions. No plan yet; create `s3-ecology.plan.md` when implementation starts (Controlled mode, Features 1–3, needs A1 Features 1–7 and 9 plus S-1 Features 1 and 8).
+**Status:** `Approved` (2026-10-18). **Amended 2026-11-17 (A5 Hydrology):** Living mode composes `["weather", "hydro", "ecology"]` once A5 is built (soft dependency); Controlled mode is unchanged (hydrology optional). Interview done the same day (name, pinned climate, proof style, Living-mode growth, 5-minute long-run budget). No open system-level questions. No plan yet; create `s3-ecology.plan.md` when implementation starts (Controlled mode, Features 1–3, needs A1 Features 1–7 and 9 plus S-1 Features 1 and 8).

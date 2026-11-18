@@ -6,6 +6,8 @@
 **Depends on:** A4 Feature 1 (types, parameters, `Initialise`, seeding); A4 Feature 2 (`Step`, forcings, `RegisterCellSet`). Both must be **built**, not only specced: the loader, predicates and fills need only Feature 1, but forcings and every regression test need Feature 2's `Step`.
 **Consumed by:** A4 Feature 5 (`cow.weather.load_preset`), S-2.5 Feature 4 (scenarios reference presets by name), S-2.5 Feature 1 (curated worlds).
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The five GDD scenario presets as data files, a pure `ApplyPreset` that puts a `WeatherSimulation` into the preset's state, and the four GDD regression scenarios as GoogleTests over hand-built hex terrains with the GDD's success ratios. It also owns the shared hand-built test terrains and the A4 layer goldens.
@@ -201,6 +203,18 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 7. (amended 2026-11-17, A5 Hydrology) **No preset or fill touches ground water.** A fill on `waterToGround` is legal but has no lasting effect, because the field is zeroed at the start of each step. Scenario tests run with no A5 (`HydrologyInputs.present == false`): primary evaporation uses `waterSource` and secondary evaporation is zero, so A4's regression ratios hold without A5. A preset that needs ground water, soil moisture or floods belongs to A5's presets (A5 Feature 6).
 8. (amended 2026-11-17, row 6d) **Storm presets.** `coastal_storm` keeps using `PressureHold` (a debug hold, applied through the Feature 2 hooks) and is otherwise unaffected by the carried anomaly: the hold overrides pass 2's pressure, and the anomaly is 0 after the reseed. The regression scenarios run with no cycles and no influences, so the GDD ratios do not depend on Features 7–9.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Selectors (system item 12).** Supersedes the Selectors bullet in Design, the Loader and Selectors and distance ACs (including the `distanceToWater` AC 4) and the preset file's `selectors` clauses (`waterSource`, `elevation`, `latitude`, `distanceToWater {min,max}`). Selectors are `CellSelectorSet`: DiaCondition `ConditionExpr` over `WorldCellFields`, with `derived` fields. `distanceToWater` is derived `distance {from: water}` plus `>=` / `<=`. The hand-built hex distance helper and its test are deleted.
+2. **Parameter overrides (items 1, 2).** A preset's parameter block is a pack: applied lenient and atomic through `ParameterFile::ApplyPack`. `ApplyPreset` still clears the influence book and disables cycles first.
+3. **Presets in the catalogue (item 11).** Preset files are catalogued; paths through `PathStore`.
+4. **Biomes (item 13).** Preset content that names a biome uses registry ids; an unknown id resolves to the fallback biome with a warning.
+5. **Goldens.** Re-record only if the selector rewrite changes a selected set; otherwise the 50 hashes hold.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

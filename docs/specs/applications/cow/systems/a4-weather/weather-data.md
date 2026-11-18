@@ -7,6 +7,8 @@
 **Depends on:** S-1 Biome widening (10 → 13; built) and `WorldGeneration::BiomeFromId`. No Dia code beyond `DynamicArrayC` and `Json::Value`.
 **Consumed by:** A4 Feature 2 (creates the step on top of this feature's `WeatherSimulation`), Features 3 to 6.
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The data layer of the weather system, as pure logic with no module, bus or thread. It defines the weather state and terrain arrays, the 20 tuning constants (21 before the ground-water drain moved to A5; amended 2026-11-17, A5 Hydrology) plus the 18-row `influence` block (GDD §10a; amended 2026-11-17, row 6d) with their file format and validation, the seasonal temperature baseline contract with its default table, and `WeatherSimulation::Initialise`, which ingests terrain and seeds week-0 state. It is provable by GoogleTests on hand-built hex terrain.
@@ -203,6 +205,20 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 6. (amended 2026-11-17, row 6d) **Ten field arrays and the influence block.** `pressureAnomaly` is the tenth `WeatherFields` array; the table has 41 rows (the 23 above plus the 18-row `influence` block); `ParamKind` is `Float`, `Bool`, `Int` or `Enum`. The "20 constants" count refers to the §1–§10 constants only.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Parameters (system item 1).** Supersedes the Parameter descriptor table and Parameter file sections, the `ParamDescriptor` / `GetParamDescriptors` / `FindParam` / `SetParam` / `LoadWeatherParameters` / `ApplyOverrides` / `DefaultWeatherParameters` signatures in Public API, and ACs 3-9 (plus 4a). Gap-pass item 2 (`ParamKind` and the extension rows) and D-3 move to the sidecar. Replacement: `weather_parameters.schema.json` declares all keys (kind, range, default, description) and the `constraints`; `WeatherParameters` is a plain struct filled by `ParamBinding<WeatherParameters>::Snapshot`. Tests cover A4's sidecar (every row complete, defaults equal the GDD values, constraint fixtures, `Snapshot` fills every member, `Hash()` stable); load, pack and set machinery is tested by DiaAttribute Feature 8.
+2. **Baseline (system items 3, 13).** Supersedes the Baseline section and ACs 10-12. The table is one map per season column keyed `keyRef cow.biomes`, complete over the registry (checked by `dia validate schema`), and is a fallback only: A1's `IBiomeSeasonalBaseline` wins. An unknown or out-of-range biome returns the registry `fallback` biome's value (replaces the EC-19 constant 0.5, which stays only for `kNoBiome`).
+3. **Biomes.** `WeatherTerrain` carries `BiomeIndex` (uint8). Prerequisite Task 0 (13-entry enum, `BiomeFromId`) is superseded by the registry.
+4. **Naming.** Param keys are `cow.weather.params/<key>`; dotted keys in text are unchanged.
+5. **Open questions.** Open Q1 (GDD range column) is resolved: ranges live in the sidecar. Open Q3 (`SetParam` and the cross-field rule) is resolved by sidecar `constraints`: a `set` that breaks one is rejected with both keys named.
+6. **Influence block (system item 14).** The 18-row `influence` block splits: generic caps stay parameters; per-kind values move to the kind catalogue (Feature 7). **Westerly band and orographic factor (items 16, 17):** read from S-1's parameters, not owned here.
+7. **Files Touched.** `weather_parameters.json` is replaced by the sidecar (catalogued, resolved through `PathStore`).
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

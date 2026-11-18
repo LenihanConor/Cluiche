@@ -1,5 +1,7 @@
 # Plan: A4 Weather Data & Parameters (A4 Weather Feature 1)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-data.md and are stale where they touch the descriptor table, `LoadWeatherParameters`/`ApplyOverrides`/`SetParam`/defaults, `weather_parameters.json`, the 13-biome baseline table and biome enum prerequisite. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-data.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 1)

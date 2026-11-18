@@ -74,7 +74,7 @@ SimPU (S35WorldSim stage)
   ├─ WorldGenerationModule    S-1 (Author: live shaping; Run: loads the bundle's terrain)
   ├─ GameSpeedControllerModule, RandomStreamModule, SaveLoadModule (E1)
   ├─ WeatherModule            A4
-  ├─ HydrologyModule          A5 (when built; amended 2026-11-17, A5 Hydrology). World Step order: ["weather", "hydrology", "ecology"]
+  ├─ HydrologyModule          A5 (when built; amended 2026-11-17, A5 Hydrology). World Step order: ["weather", "hydro", "ecology"]
   ├─ EcologyModule            A1
   ├─ SuccessionModule         A3 (when built)
   ├─ ValueSchemaModule        DiaValueSchema
@@ -205,4 +205,4 @@ SimPU (S35WorldSim stage)
 
 ## Status
 
-`Approved` (2026-10-19). **Amended 2026-11-17 (A5 Hydrology):** the stage composes all layers, World Step order `["weather", "hydrology", "ecology"]`; A5 added to the dependency list; R1, R2 and R5 cover A5; author mode may later gain a hydrology pack and start state (note only, TBD). All 4 feature specs `Approved` (2026-10-20); no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.
+`Approved` (2026-10-19). **Amended 2026-11-17 (A5 Hydrology):** the stage composes all layers, World Step order `["weather", "hydro", "ecology"]`; A5 added to the dependency list; R1, R2 and R5 cover A5; author mode may later gain a hydrology pack and start state (note only, TBD). All 4 feature specs `Approved` (2026-10-20); no plan yet. GDD `S3.5_WorldSim.md` Locked 2026-10-20; this spec mirrors CH-S35-01…05.

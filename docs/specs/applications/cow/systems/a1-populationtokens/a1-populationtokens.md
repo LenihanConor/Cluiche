@@ -3,7 +3,8 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Extends:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (Layer 1)  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A1_Ecology/` (DesignDocs repo): `A1_EcologySystem.md` §2.2 (Population Token Layer), the migration section ("When prey outflow from a cell exceeds a threshold…"), the event table (Herd migration, Predator wave); `A1_ProductionBacklog.md` A1-29..A1-32  
-**Status:** `Approved` (created and approved 2026-11-18, ecology expansion interview; all 6 features Draft, no plan)
+**Status:** `Approved` (created and approved 2026-11-18, ecology expansion interview; all 6 features Draft, no plan) Amended 2026-11-18 (world-sim review decisions).
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** persistence, debug
 
@@ -163,3 +164,13 @@ The commands and their execution model come first; the panel calls the same comm
 1. **Does a footprint average lose too much?** Projection spreads a herd by biome affinity, so a herd on a river edge grazes the dry side as much as the wet side. If S-3 shows herds starving next to food, weight the projection by food available to the species too (a cheap change inside T1).
 2. **What happens at the token cap?** At `max_tokens` a split is refused and the herd grows past `herd_max`. That keeps conservation but gives giant herds on big worlds. The alternative is raising `herd_max` per world size; decide after a Large long run.
 3. **Should fish runs become tokens later?** A run as one token per river would give "the Greywater run" identity and a better dragon target, but runs fork by flow, which a single token doesn't do. Revisit when S-4 needs river hunting.
+
+## World-sim review amendment (2026-11-18)
+
+User decisions from @docs/research/worldsim_data_driven/summary.md (§0, §0.1), applied through the A1 amendment ([a1-ecology.md](../a1-ecology/a1-ecology.md), "World-sim review amendment"). Each item supersedes any contradicting text in this spec. Bodies are not rewritten. No plan exists; write it at `/implement` against this amendment.
+
+1. **T3 Move scoring uses `ResponseCurve` per term (A12).** The linear `weights` block in Data and the T3 row in "Band order inside the `ecology` stage" (food, water, memory, predator, dragon, crowding) is superseded: each term is a DiaUtilityAI `ResponseCurve` JSON (linear, quadratic, exponential, logistic, sine, step) plus a weight. Curves only, not `UtilitySet`. Supersedes the `weights` shape in Feature 1 and the scoring in Feature 3. Open Design Question 1's "weight the projection by food" stays a T1 change.
+2. **Token records go through `JsonDefinitionLoader` plus a sidecar (D6).** The `tokenised` block in `species.json` and any token record files are validated by their sidecars (ranges from DiaValueSchema, not code).
+3. **Token parameters go through the DiaAttribute `ParameterFile` (D6, D5).** `max_tokens`, `max_tokens_per_species`, `front_outflow_threshold`, `front_min_route`, `front_dissolve_seasons` and `trample_rate` live in A1's `ecology_parameters.schema.json` (format `cow.ecology_params`), not in `ecology_parameters.json`; that base file no longer exists. Strict load, pack-overridable, set through `cow.ecology.params {action: set}`. Supersedes Data ("`ecology_parameters.json` gains the token caps…") and Feature 1.
+4. **Herd perception fields come from `WorldCellFields` (H).** T3 reads food, `water_gradient`, `predator_scent`, `dragon_scent` and crowding through the shared per-cell context (slot `ecology` for A1's committed fields), not by direct array access. Supersedes the T3 row's "over Layer 1 fields" and Feature 3.
+5. **Tokens inherit A1's stage and naming.** Layer 2 runs inside A1's `WorldStepStageBase` `ecology` stage (hooks, Failing health, mutation queue; A1 amendment item 2). Token events (`HerdFormed`, `HerdSplit`, `HerdMerged`, `HerdLost`, `HerdMigration`, `FrontFormed`, `FrontDissolved`, `PredatorWave`) are declared in `cow_worldsim.diagamemessages` (supersedes Events, Feature 6). Token save rides A1's kit codec: no in-record version, `GetVersion` + `RegisterMigration`, participant `cow.ecology` (supersedes Save/load). Commands reached through `cow.ecology.params` for parameters (the "five commands" in Feature 6 are recounted at re-plan). Biome affinity uses registry `BiomeIndex` and tags (A1 amendment item 9).

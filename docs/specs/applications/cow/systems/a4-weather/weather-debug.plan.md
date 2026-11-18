@@ -1,5 +1,7 @@
 # Plan: A4 Weather Debug (A4 Weather Feature 5)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-debug.md and are stale where they touch command names and count, schema keys, health levels, selector arguments. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-debug.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 5)

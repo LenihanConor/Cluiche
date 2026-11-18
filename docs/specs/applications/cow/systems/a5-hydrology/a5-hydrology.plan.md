@@ -1,5 +1,7 @@
 # Plan: A5 Hydrology (system)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in a5-hydrology.md and are stale where they touch parameters, the stage, save, commands, naming, selectors and biomes (rows 1-6 are all touched). Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md
 **Status:** Not Started
 

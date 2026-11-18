@@ -6,6 +6,8 @@
 **Depends on:** S-2.5 Feature 1 (stage, worlds, prechecks, module) and Feature 2 (checks, trace, baseline store); A4 Features 2, 3, 5, 6 (`WeatherRunner`, the direct command sink, presets); S-1 blocking `GenerateWorld` with a cancel flag (built); DiaAutomation (built); `JobSystemService` `TrySubmit` (built).
 **Consumed by:** S-3 (trusts Living mode only after this passes), S-3.5 (uses the report's world and weather evidence), the SLOW test suite.
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 The weather testbed's verdict machine. `S25HeadlessRunner` generates the curated worlds itself, drives A4's **pure** `WeatherSimulation` through `WeatherRunner` and A4's direct command sink on a worker job, records every committed week into a trace, runs Feature 2's checks over it, measures performance, and writes a report. It needs no stage, no rendering and no bus, so it runs three ways: from the stage (`cow.s25.run`, with progress and cancel), from DiaAutomation, and from a `SLOW_` GoogleTest so a plain test run gives a weather verdict on every A4 change.
@@ -236,6 +238,16 @@ Added criteria:
 
 **Plan impact:** the plan (written, not started) needs these three folded into its report task before it starts.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. `WeatherRunner::Start(terrain, params, baseline, ...)` takes parameters produced from the A4 sidecar (`ParameterFile` + `ParamBinding::Snapshot`); the `DefaultWeatherParameters()` source is superseded. A sidecar fault fails the run (no compiled fallback).
+2. The baseline is the registry-keyed fallback table (A1 absent), per A4 item 3; biomes are `BiomeIndex`.
+3. Metric `cow.weather.step_ms` is registered by the stage base; the headless runner records its own timing as before.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16; T-1 consumer amendments A-C added the same day). Plan: [headless-runner.plan.md](headless-runner.plan.md) (written 2026-11-16, not started; fold in amendments A-C).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

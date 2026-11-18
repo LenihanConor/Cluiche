@@ -6,6 +6,8 @@
 
 **Gameplay Domains:** debug
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 S-2.5 is the testbed for CoW's **weather layer**. It loads an S-1 world and runs A4 alone on it: no ecology, no succession, no dragons. It proves that A4's patterns emerge (coastal rain, rain shadows, moving storms, seasons, spring floods, droughts, year-to-year variation) before A1 depends on them. S-3's Living mode isn't trusted until S-2.5 passes.
@@ -302,6 +304,18 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 3. Mockups live in `s25-weatherpatterns/mockups/`.
 4. The check-engine inputs, `WorldInfo` and the headless-only flag are defined in Feature 2's amendments.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+Applies A4's system amendment ([a4-weather](../a4-weather/a4-weather.md), World-sim review amendment) to this spec's A4 references.
+1. Command names: `cow.weather.reload` is `cow.weather.params {action: reload}`; the boundary switch and every parameter edit use `cow.weather.params` (`set` reply `{queued, key, value, effectiveDay, visibleDay}`). Supersedes the Binding Decision listing `cow.weather.reload`.
+2. Health: "Unhealthy" reads Failing.
+3. Schema keys for A4 layers are `cow.weather.layers/<field>`; layer ids unchanged.
+4. Stage id is `weather`; World Step order `["weather", "hydro", "ecology"]`.
+
 ## Status
 
 **Status:** `Approved` (2026-10-18). **Aligned to locked GDD 2026-11-17 (CHANGE-048):** the GDD S-2.5 re-locked with A5 (A5 owns ground water; Test 5 split with S-2.6, now in the GDD roster as testbed 17). **Every first-run baseline must be re-recorded once, deliberately, under the new A4** (see Baseline and Open Design Questions below). **Amended 2026-11-17 (A5 Hydrology):** A4 no longer has `groundWater`; it outputs `waterToGround`, and ground water moves to A5 (`hydro.ground`). Test 5's measure becomes mountain `waterToGround`; the true flood moves to S-2.6 Rivers & Floods (A4 + A5, own spec, not written yet). S-2.5 stays A4-only (World Step `["weather"]`). **Open (aligned to locked GDD 2026-11-17, CHANGE-048):** the GDD S-2.5 Test 5 now measures the **mountain** `waterToGround` melt pulse, matching the GDD (resolved 2026-11-17). 
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

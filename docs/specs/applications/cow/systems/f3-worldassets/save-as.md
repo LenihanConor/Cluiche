@@ -2,6 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md
 **Builds on:** @docs/specs/applications/cow/systems/f3-worldassets/envelope-and-override-merge.md (Feature 1), @docs/specs/applications/cow/systems/f3-worldassets/world-assets-module-and-bundle-load.md (Feature 2), @docs/specs/applications/dia/systems/diacli/dev-source-alias.md (dia-needs #16)
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
 
 **Gameplay Domains:** debug
 
@@ -216,6 +217,17 @@ No conflicts.
 
 _None remaining._
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** System list: @docs/specs/applications/cow/systems/f3-worldassets/f3-worldassets.md.
+
+| # | Item | Supersedes |
+|---|---|---|
+| 1 | Pack kind **`hydro`** is added: `Hydrology/Packs/`, `.hydro.json`, `cow.world.pack.save_as hydro` | Asset kinds table (rows "weather pack", "ecology pack") |
+| 2 | For parameter-file kinds `save_as` writes `ParameterFile::ToJson(Diff)`. Saving defaults is not `save_as`: it is `cow.<sys>.params {action: save_defaults}` (the sidecar's `default` fields). `Defaults()` / `DefaultsSpec()` no longer come from a defaults file | Save step 1 ("the participant supplies `Capture()` and `Defaults()` and `DefaultsSpec()"); Non-Goals "writes to defaults files" |
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Needs Features 1 and 2 and dia-needs #16 (Done 2026-10-20).
+
+Amended 2026-11-18 (world-sim review decisions).

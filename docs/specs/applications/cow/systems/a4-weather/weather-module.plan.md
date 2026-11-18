@@ -1,5 +1,7 @@
 # Plan: A4 WeatherModule & Deferred Step (A4 Weather Feature 3)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-module.md and are stale where they touch stage state (now `WorldStepStageBase`), parameter load and fallback, health levels, messages, hand-rolled mutation queue and spin-up slot. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-module.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 3)

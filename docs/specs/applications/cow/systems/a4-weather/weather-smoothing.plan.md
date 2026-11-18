@@ -1,5 +1,7 @@
 # Plan: A4 Smoothing (A4 Weather Feature 9)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-smoothing.md and are stale where they touch preview kinds and the parameter source. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-smoothing.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 6c)

@@ -1,5 +1,7 @@
 # Plan: A4 Presets & Regression (A4 Weather Feature 6)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in presets-and-regression.md and are stale where they touch selector resolution, `distanceToWater`, preset parameter blocks. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/presets-and-regression.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 6)

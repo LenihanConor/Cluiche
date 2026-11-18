@@ -5,6 +5,8 @@
 **Depends on:** A4 Features 1, 2 and 6 (`WeatherSimulation`, `WeatherRunner`, parameters, `ApplyPreset`); World Step Features 1 and 2 (`IWorldStepStage`, `WorldStepModule::RegisterStage`); DiaDeferredStep Features 1, 2 and 4 (`IParallelExecutor`, the capped executor, `DeferredStepModule`); S-1 (built): `WorldGenerationModule::GetCurrentWorld`, `IsReady(revision)`, `HoldGeneration()`/`ReleaseGeneration()`, `WorldGenerationComplete`/`WorldGenerationFailed`.
 **Consumed by:** A4 Features 4 and 5, A1 (`WeatherUpdated`, `IBiomeSeasonalBaseline` provider seam, `WeatherSnapshot`), V-1, S-2.5.
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Summary
 
 `WeatherModule`: the SimModule that makes the pure simulation a live world-step stage. It loads parameters, ingests S-1's terrain on `WorldGenerationComplete`, spins the world up **off SimPU** (decided 2026-11-16), registers a `weather` stage with `WorldStepModule`, and from then on only does what the coordinator asks: `Capture(stepDay)`, `Run`, `Commit`. On commit it publishes `WeatherUpdated`. It owns no cadence, no gating on `SimulationTick`, and no save or history code.
@@ -252,6 +254,19 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 9. (amended 2026-11-17, aligned to locked GDD, CHANGE-047; row 6d) **Spin-up is 52 frozen-phase weeks.** Any text above saying the spin-up is "extended" by climate cycles is superseded. `SetHydrologyProvider` takes the spin-up host as a second argument. `IWaterInputSource`, `IsReadyForRevision`, the allocate-once working buffers and the header placement are in the Design section and criteria 35–40.
 8. (amended 2026-11-17, A5 Hydrology) **New acceptance criteria.** 31. `Capture` latches the provider's `surfaceWetness`, `openWater`, `glacierEligible`, `glacierCheckWeek` and `glacierSnowFloor` once; poisoning the provider after `Capture` does not change `Run` (DFS-002); the provider is called only on the capturing thread. 32. With no provider set, `Capture` passes `present == false`, health is not Degraded, and the run equals a run built before A5 existed. 33. With a provider, the spin-up job runs A4 and A5 together and a synchronous coupled run (`WeatherRunner` + `HydrologyRunner`) gives bit-identical committed fields for both. 34. A cancelled coupled spin-up discards both simulations.
 
+## World-sim review amendment (2026-11-18)
+
+User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
+
+1. **Stage (system items 4, 6).** Supersedes The stage (`WeatherStage : IWorldStepStage`) table, Module state and Stage exit and re-entry where they hand-roll active/pending, revisions, queue, spin-up slot, hold and discard. `WeatherStage` derives `WorldStepStageBase`; A4 implements `InitialiseSim`, `LatchInputs`, `ApplyEntry` (the 9 kinds of Open Q1 item 1), `RunStep`, `PublishCommit`. Stage id `weather`; order `["weather", "hydro", "ecology"]`; `ValidatePending` is on the interface.
+2. **Parameters (item 1).** Supersedes the Parameters section, the manifest `parameters` path, and the Parameters and queue ACs about fallback. `DoStart` loads the sidecar through `ParameterFile`; failure sets health Failing and the stage is never ready (no `DefaultWeatherParameters` fallback). `QueueParameterSet` / `ParamOverrides` entries call `ParameterFile::Set` / `ApplyPack` when drained. `FileWatcher` (dev builds) queues `Reload` (item 11).
+3. **Health and metrics (item 5).** Supersedes the Observability section: Degraded causes stay (fallback baseline, discarded step, queue full); the Unhealthy causes become Failing (no water source, generation failed, parameter sidecar fault). Metrics come from the base.
+4. **Messages (item 10).** Supersedes the Messages section: `WeatherUpdated` is declared in `cow_worldsim.diagamemessages` and generated.
+5. **`PublishCommit` (items 4, 18).** After `sim.Commit` it ages the influence book, publishes `WeatherUpdated`, and writes season, climate phase and drought flags to the world blackboard with `Blackboard::Set`.
+6. **Save id (item 6).** Participant registers as `cow.weather`.
+
 ## Status
 
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).
+
+**Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).

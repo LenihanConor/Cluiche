@@ -1,5 +1,7 @@
 # Plan: A4 Weather Influence API (A4 Weather Feature 7)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in weather-influence.md and are stale where they touch hard-coded kinds, the `influence` parameter rows, `weather_parameters.json`. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-influence.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 6a)

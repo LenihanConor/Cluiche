@@ -1,5 +1,7 @@
 # Plan: Scenarios & Walkthrough (S-2.5 Feature 4, CoW-Shared)
 
+> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in scenarios-and-walkthrough.md and are stale where they touch A4 command names and selectors. Re-plan before /implement.
+
 **Spec:** @docs/specs/applications/cow/systems/s25-weatherpatterns/scenarios-and-walkthrough.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/s25-weatherpatterns/s25-weatherpatterns.plan.md (row 4)

@@ -449,3 +449,27 @@ Ordered. **D** = decision for you; **S** = spec work; **C** = code.
 - Code: `Cluiche/CoW/Shared/WorldGeneration/` (`TerrainRules.h/.cpp`, `BiomeTypes.cpp`, `BiomeClimate.cpp`, `WorldGenSession.cpp:319`), `Cluiche/Assets/CoW/Global/WorldGen/`
 - Specs: `docs/specs/applications/cow/systems/{s1-worldgeneration,a4-weather,a5-hydrology,a1-ecology,a1-populationtokens,a3-biomesuccession,s3-ecology,f3-worldassets,t1-worldsiminspector,t2-worlddataeditor,s35-worldsim,worldstep}/`
 - Dia (§5b audit): DiaValueSchema, DiaCondition, DiaRules, DiaUtilityAI, DiaAttribute, DiaEconomy, DiaStateMachine, DiaBlackboard, DiaAIBudget, DiaObjective, DiaOrder, DiaHTN, DiaBehaviourTree, DiaTriggerScript, DiaSensor, DiaScalarField (+Inspector/VisualDebugger), DiaCellLayers, DiaCellHistory, CellField, DiaGridVisibility, DiaFlowField, DiaPathfinding, DiaGeometry2D, DiaEntitySpatial, DiaSteering, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaJson, DiaSerializer, DiaSaveGame, DiaFileIO, DiaMessageBus, DiaSchemaBrowser, DiaStreams, DiaDeferredStep, DiaSimTime, DiaThreading, DiaObservation, DiaAutomation, DiaDebugServer, DiaCLI `validate` and `codegen`; `docs/specs/applications/dia/systems/diadata/`
+
+## 10. Spec-6 resolutions (2026-11-18, user)
+
+These came up while amending the existing specs. They are recorded in each spec's "Spec-6 resolutions" section.
+
+| # | Point | Choice |
+|---|---|---|
+| R1 | A record file fails to load | **Fail loudly**, the same as parameters (health Failing, naming the file, record and field). No fallback. |
+| R2 | Biomes in saves | **A palette of registry ids plus per-cell indices**, remapped on load through `ResolveOrFallback`. Lives in the kit save codec. |
+| R3 | What a pack is | **A sparse document of the parameter format itself**, identified by `Packs/`. Its `basedOn` holds the sidecar schema hash, and a mismatch means stale (load-and-warn). No pack format ids. Bundles gain a hydro part. |
+| R4 | Cycles and influences | **They stay per-cell field forcings.** Their definitions become data catalogues: cycles, and influence kinds with `mode: impulse` or `sustained`. Modifiers are used only for scalar parameter effects. |
+
+**Minor rulings** (same principle):
+- **Records command:** `cow.<sys>.records {reload|list}`.
+- **A5 layer ids:** become field names.
+- **Presets:** `cow.<sys>_preset` at `Global/<System>/Presets/<id>.<sys>_preset.json`.
+- **Protected cells:** `terrain.is_protected`.
+- **Basin kinds:** `hydro.basin_kind` none, lake or dry.
+- **Selector limits:** at most 32 selectors and 16 derived fields.
+- **Parameter participants:** apply through `ParameterFile::Reload`.
+- **A3 glaciation:** two rules (18 in total).
+- **F-3 correction:** `terrain_rules.json` is not a kept file.
+
+**Spec 6 is done.** The A1, A3, A4, A5, Population Tokens, F-3, T-2, DiaData, S-2.5, S-3 and S-3.5 specs carry dated amendment sections, and every affected plan is marked "Re-plan required".
