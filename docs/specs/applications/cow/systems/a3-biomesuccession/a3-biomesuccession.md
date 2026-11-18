@@ -4,6 +4,7 @@
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A3_BiomeSuccession/` (DesignDocs repo; `A3_BiomeSuccession.md`, `A3_TechnicalSpec.md`, `A3_TuningParameters.md`, `A3_EdgeCaseMatrix.md`, `A3_PrototypeTestbed.md`, `A3_ProductionBacklog.md`, Locked; amended by CHANGE-036, pending fold-back by the GDD session; the A5 rules are in GDD A5 TechnicalSpec 14.4, CHANGE-048, and the GDD A3 files have not yet been edited)  
 **Works with:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 evaluates the counters; A3 decides the transitions)
 **Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. First-run thresholds come from the locked GDD A5 (aligned to locked GDD 2026-11-17, CHANGE-048; the GDD A3 documents do not yet carry these rules, the source is GDD A5 TechnicalSpec 14.4).
+**Amended 2026-11-18, A1 ecology expansion:** A1's producers, detritus and nutrients are now flow-graph nodes, so rule conditions and legacy deltas name **node ids**: `grass` → `producer.grass`, `tree` → `producer.tree`, `aquatic` → `producer.aquatic`, `soil_fertility` → `nutrient.soil`. The shipped `succession_rules.json` is rewritten to match, and A1's loader rejects an unknown field id. **Tuning note:** the fire legacy's `nutrient.soil +` delta and A1's new ash release (N1, `ash_nutrient_fraction`) both add fertility after a fire; tune one down, or drop the direct delta, during S-3 Living-mode tuning. Rules may now also read `nutrient.soil` in conditions (for example desertification).
 
 **Gameplay Domains:** debug
 
@@ -95,7 +96,7 @@ There's no recovery counter here: it is a rule counter in A1's `succession_press
 { "id": "grassland_drought_scrub", "from": "Grassland", "to": "Scrub", "source": "DROUGHT",
   "direction": "forward", "band": "Year",
   "conditions": [ {"field": "drought_years", "op": ">", "value": 8},
-                  {"field": "grass", "op": "<", "value": 0.2},
+                  {"field": "producer.grass", "op": "<", "value": 0.2},
                   {"field": "seed_bank", "op": "<", "value": 0.3} ],
   "increment": 0.08, "decay": 0.04 }
 ```
@@ -195,12 +196,12 @@ The legacy **marker** (type and years) is presentation and history only. It driv
 | From → To | Marker | Years (range) | Deltas |
 |-----------|--------|---------------|--------|
 | Grassland → Scrub | BareRoots | 5–10 | `soil_depth -0.10`, `seed_bank -0.10` |
-| TemperateForest → Scrub | BareRoots | 10–20 | `soil_depth -0.15`, `tree = 0` |
-| TemperateForest → BurnedAshland | Scorch | 20–50 | `ash +0.6`, `soil_fertility +0.2` |
-| Grassland → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `soil_fertility +0.15` |
-| Scrub → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `soil_fertility +0.15` |
+| TemperateForest → Scrub | BareRoots | 10–20 | `soil_depth -0.15`, `producer.tree = 0` |
+| TemperateForest → BurnedAshland | Scorch | 20–50 | `ash +0.6`, `nutrient.soil +0.2` |
+| Grassland → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `nutrient.soil +0.15` |
+| Scrub → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `nutrient.soil +0.15` |
 | Scrub → DesertifiedPlain | DryRiverbed | 20–100 | `water_gradient -0.2`, `seed_bank = 0` |
-| Wetland → Grassland | DryRiverbed | 10–30 | `aquatic = 0` (`river_overlay` unchanged) |
+| Wetland → Grassland | DryRiverbed | 10–30 | `producer.aquatic = 0` (`river_overlay` unchanged) |
 | Lake → Wetland (amended 2026-11-17, A5 Hydrology) | none | — | TBD (aquatic species cleared, soil values from the new biome's start values) |
 | Land → Lake (amended 2026-11-17, A5 Hydrology) | none | — | TBD (land producers cleared) |
 | BurnedAshland → Grassland | Scorch (fading) | 5–15 | none (ash and fertility already decaying in A1) |

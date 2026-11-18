@@ -92,7 +92,7 @@ Both show severity, rule, message and suggestion; filters for severity and text;
 |---|---|---|
 | weather pack, ecology pack | `cow.world.pack.load <kind> <id>` | Applies live; the game's status becomes `custom` |
 | `weather_parameters.json` | `cow.weather.reload` | Re-reads between steps |
-| `ecology_parameters.json`, `species.json`, `biomes.json`, `succession_rules.json` | `cow.ecology.reload_data` | |
+| `ecology_parameters.json`, `species.json`, `biomes.json`, `flow_graph.json` (added 2026-11-18), `succession_rules.json` | `cow.ecology.reload_data` | A1 recompiles the flow graph; a graph that fails validation is refused and the game keeps the old one |
 | world bundle | `cow.world.bundle.load <id>` | Resets the world; confirm first |
 | baked world | `cow.world.terrain.load <id>` | Resets the world; a start state with a different hash is cleared; confirm first |
 | ecology start state | `cow.world.startstate.load <id>` | A live edit; refused by the game until it is ready |

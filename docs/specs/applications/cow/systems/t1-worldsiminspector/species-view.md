@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/t1-worldsiminspector/t1-worldsiminspector.md (Feature 13, amendment 2026-11-16)
 **Builds on:** @docs/specs/applications/cow/systems/t1-worldsiminspector/time-series-and-events.md (Feature 2, series, `derived.ts` and event strip), @docs/specs/applications/cow/systems/t1-worldsiminspector/breakdown-distribution-minimap.md (Feature 3, mini-map and `groupCells`), @docs/specs/applications/cow/systems/t1-worldsiminspector/why-panel.md (Feature 4, cause parsing), @docs/specs/applications/cow/systems/t1-worldsiminspector/correlation-and-run-compare.md (Feature 5, lagged Pearson), @docs/specs/applications/cow/systems/t1-worldsiminspector/seasons.md (Feature 8, typical year)
-**Requests (follow-ups, not blockers):** A1 roster links in the history schema; A1 adult and juvenile layers
+**Requests (follow-ups, not blockers):** A1 roster links in the history schema; A1 adult and juvenile layers; *(added 2026-11-18, A1 ecology expansion)* for seasonal species, show present/away and the off-map reservoir (`cow.ecology.seasonal`), and for tokenised species link to their herds
 
 **Gameplay Domains:** debug
 

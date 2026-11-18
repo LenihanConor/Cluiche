@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S2_SingleCellEcology.md` and `S3_LivingEcology.md` (DesignDocs repo, both Locked 2026-10-11). **Merged here 2026-10-18** (see Deviations).  
 **System under test:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 owns the tools; this testbed hosts them)
+**Amended 2026-11-18 (A1 ecology expansion):** three new guided scenarios (Nutrient flow, Seasonal visitors, Fish run) and a Herds scenario set once A1 Population Tokens is built; `ecology.nutrient.soil` joins the default tracked layers. Without A5 (Controlled mode) river transport runs at base rate and no run is blocked.
 
 **Gameplay Domains:** debug
 
@@ -63,7 +64,7 @@ SimPU (S3Ecology stage; amended 2026-10-19, DiaCellLayers/DiaCellHistory)
   ├─ SuccessionDebugDomain  A3's debug tools (hosted by S-3; amended 2026-10-19, product review)
   └─ S3EcologyModule        mode switch, climate input, scenarios, long-run runner, S3 panel card, size picker
                              hosts viewer and timeline cards; default tracked layers in .diastage:
-                             ecology.producers_total, ecology.group.herbivore, weather.precipitation
+                             ecology.producers_total, ecology.group.herbivore, weather.precipitation, ecology.nutrient.soil (added 2026-11-18)
                              (amended 2026-11-16, T-1: also every functional group and every species
                               aggregate, and the weather layers incl. wind_east/wind_north, see below)
 ```
@@ -128,6 +129,10 @@ The panel shows which layers are present: World (preset and seed, or file), Weat
 | A3 across biomes | S-3 Test 3 | Living | A3 transitions follow staging (needs A3) |
 | Visual tracking | S-3 Test 4 | Living | by eye with species/group overlays and arrows |
 | Weather response | S-3 Test 6 | Living | accumulator = sum of 13 weeks; wet cells grow more grass; spring melt boom |
+| Nutrient flow (added 2026-11-18) | A1 Feature 10 | Controlled | nutrient books close every band; overgrazed cells lose `nutrient.soil`; floodplain cells gain silt; a burn leaves a fertility pulse |
+| Seasonal visitors (added 2026-11-18) | A1 Feature 11 | Controlled | arrival only on listed edges; departure returns to the reservoir; a hunted year gives a smaller arrival after `cohort_years` |
+| Fish run (added 2026-11-18) | A1 Feature 11 | Living | run splits at forks by flow; stops at ice or low flow; die-off raises upstream `nutrient.soil`; river predators' births rise that Season |
+| Herds (added 2026-11-18, needs A1 Population Tokens) | Tokens spec | Living | a route becomes a tradition over three years; a drought splits and loses a herd; a wolf wave follows a deer herd |
 
 ### Long-run runner (Living mode)
 

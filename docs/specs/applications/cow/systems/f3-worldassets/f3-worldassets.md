@@ -3,6 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Origin:** 2026-10-19 product review of the world-sim stack. Outcomes B7 (clear assets: how they load and save) and D (author content in the testbeds) had no owner.  
 **Consumers:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md, @docs/specs/applications/cow/systems/a4-weather/a4-weather.md, @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md, @docs/specs/applications/cow/systems/a3-biomesuccession/a3-biomesuccession.md, the S-1, S-2.5, S-3 and S-3.5 World Sim testbeds
+**Amended 2026-11-18 (A1 ecology expansion):** new defaults asset `flow_graph.json` (`cow.flow_graph`); start-state cell keys use A1 node ids (`producer.grass`, `nutrient.soil`, `species.<id>.adult`); A1 saves and start states also carry the seasonal reservoirs (save only, not start states).
 
 **Gameplay Domains:** debug
 
@@ -65,6 +66,7 @@ Paths are relative to `Cluiche/Assets/CoW/`. Every file has `"format": "<format 
 | Weather parameters (defaults) | `.json` | `Global/Weather/weather_parameters.json` (moved from `CoW/weather_parameters.json`) | `cow.weather_params` | A4 | hand |
 | Weather pack | `.weather.json` | `Global/Weather/Packs/<id>.weather.json` | `cow.weather_pack` | A4 | `cow.world.pack.save_as weather` |
 | Species, biomes, ecology parameters (defaults) | `.json` | `Global/Ecology/species.json`, `biomes.json`, `ecology_parameters.json` | `cow.species`, `cow.biomes`, `cow.ecology_params` | A1 | hand |
+| Ecology flow graph (defaults; added 2026-11-18, A1 ecology expansion) | `.json` | `Global/Ecology/flow_graph.json` | `cow.flow_graph` | A1 | hand. Not overridable by ecology packs: a pack tunes parameters, it does not change who eats whom |
 | Ecology pack | `.ecology.json` | `Global/Ecology/Packs/<id>.ecology.json` | `cow.ecology_pack` | A1 | `cow.world.pack.save_as ecology` |
 | Ecology start state | `.ecostate.json` | `Global/Ecology/StartStates/<id>.ecostate.json` | `cow.ecology_start` | A1 | `cow.world.startstate.save_as` |
 | Succession rules (defaults) | `.json` | `Global/Succession/succession_rules.json` | `cow.succession_rules` | A3 | hand |
@@ -97,7 +99,7 @@ Keys are dotted paths into the defaults file. Weather packs have the same shape 
   "format": "cow.ecology_start", "version": 1,
   "world": { "baked": "archipelago_s42", "hash": "9f3c…" },
   "cells": [
-    { "q": 12, "r": 7, "grass": 0.9, "species.red_deer.adult": 0.4 },
+    { "q": 12, "r": 7, "producer.grass": 0.9, "species.red_deer.adult": 0.4 },
     { "q": 13, "r": 7, "biome": "BurnedAshland" }
   ]
 }
