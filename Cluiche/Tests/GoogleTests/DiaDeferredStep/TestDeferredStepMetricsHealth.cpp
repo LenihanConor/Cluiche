@@ -60,9 +60,18 @@ namespace
 
 	bool SnapshotHas(const char* name)
 	{
-		MetricSnapshot snap;
-		MetricRegistry::Instance().Snapshot(snap);
-		return FindEntry(snap, name) != nullptr;
+		// ForEachMetric enumerates every live (non-retired) metric. MetricRegistry::Snapshot is capped at
+		// kMaxMetricEntries, so under a full-suite run (many suites sharing the global registry) it can
+		// truncate and hide a registered metric.
+		struct Probe { Dia::Core::StringCRC wanted; bool found; } probe{ Dia::Core::StringCRC(name), false };
+		MetricRegistry::Instance().ForEachMetric(
+			[](const Dia::Core::StringCRC& n, Dia::Observation::Metric::MetricKind, const Dia::Observation::Metric::MetricInfo*, void* user)
+			{
+				Probe* p = static_cast<Probe*>(user);
+				if (n == p->wanted) { p->found = true; }
+			},
+			&probe);
+		return probe.found;
 	}
 
 	// First snapshot entry named DeferredStep. Live reporters are listed before retired (frozen) ones, so a live
