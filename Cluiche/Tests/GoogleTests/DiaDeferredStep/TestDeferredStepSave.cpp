@@ -789,3 +789,477 @@ TEST_F(DeferredStepSaveValidate, SchedulerGetStepReturnsRegisteredStepOrNull)
 	EXPECT_EQ(mScheduler.GetStep(mChannelB), &mStepB);
 	EXPECT_EQ(mScheduler.GetStep(mUnregistered), nullptr);
 }
+
+// ---------------------------------------------------------------------------
+// Deserialize / full load path (Save and Load task 5)
+// ---------------------------------------------------------------------------
+
+namespace
+{
+	// Round-trips a payload: SerializePending writes it, DeserializePending reads it back and records what it saw.
+	class LoadStep final : public IDeferredStep
+	{
+	public:
+		LoadStep(int32_t id, int32_t payload, std::vector<int>* callLog, std::vector<int>* applyLog)
+			: mId(id), mPayload(payload), mCallLog(callLog), mApplyLog(applyLog) {}
+
+		void Capture() override {}
+		void Run(IParallelExecutor&) override {}
+		void Apply() override
+		{
+			++mApplyCount;
+			if (mApplyLog != nullptr) { mApplyLog->push_back(mId); }
+		}
+		uint32_t GetPendingVersion() const override { return 1; }
+		void SerializePending(Dia::SaveGame::SaveContext& ctx) const override { ctx.Write(StringCRC("payload"), mPayload); }
+		void DeserializePending(Dia::SaveGame::LoadContext& ctx) override
+		{
+			++mDeserializeCount;
+			mPayloadReadOk = ctx.Read(StringCRC("payload"), mPayloadRead);
+			if (mScheduler != nullptr) { mStateAtDeserialize = mScheduler->GetState(mChannel); }
+			if (mCallLog != nullptr) { mCallLog->push_back(mId); }
+		}
+
+		const DeferredStepScheduler* mScheduler = nullptr;
+		StringCRC mChannel;
+		uint32_t mApplyCount = 0;
+		uint32_t mDeserializeCount = 0;
+		bool mPayloadReadOk = false;
+		int32_t mPayloadRead = 0;
+		StepState mStateAtDeserialize = StepState::kRunning;
+
+	private:
+		int32_t mId;
+		int32_t mPayload;
+		std::vector<int>* mCallLog;
+		std::vector<int>* mApplyLog;
+	};
+
+	// Records what the world looks like when the SaveManager reaches its Validate and Deserialize passes.
+	class LoadProbe final : public ISaveable
+	{
+	public:
+		LoadProbe(const DeferredStepScheduler& scheduler, const Testing::RecordingStep& step, StringCRC channel)
+			: mScheduler(scheduler), mStep(step), mChannel(channel) {}
+
+		void Serialize(Dia::SaveGame::SaveContext& ctx) const override { ctx.Write(StringCRC("probe"), static_cast<int32_t>(1)); }
+		void Deserialize(Dia::SaveGame::LoadContext&) override
+		{
+			++mDeserializeCalls;
+			mStateAtDeserialize = mScheduler.GetState(mChannel);
+			mAppliesAtDeserialize = mStep.GetApplyCount();
+		}
+		uint32_t GetVersion() const override { return 1; }
+		bool Validate(Dia::SaveGame::LoadContext&) const override
+		{
+			++mValidateCalls;
+			mStateAtValidate = mScheduler.GetState(mChannel);
+			return true;
+		}
+
+		mutable uint32_t mValidateCalls = 0;
+		uint32_t mDeserializeCalls = 0;
+		mutable StepState mStateAtValidate = StepState::kRunning;
+		StepState mStateAtDeserialize = StepState::kRunning;
+		uint32_t mAppliesAtDeserialize = 99;
+
+	private:
+		const DeferredStepScheduler& mScheduler;
+		const Testing::RecordingStep& mStep;
+		StringCRC mChannel;
+	};
+
+	// A complete little game world: scheduler, three payload channels, one plain channel, save plumbing.
+	struct LoadWorld
+	{
+		LoadWorld(std::vector<int>* callLog, std::vector<int>* applyLog)
+			: scheduler(launcher)
+			, config{ "temp/deferredstep_save_tests/", "slot_{id}.sav", 0, SaveFormat::Json }
+			, channelA("LoadA"), channelB("LoadB"), channelC("LoadC"), channelD("LoadD")
+			, stepA(1, 111, callLog, applyLog), stepB(2, 222, callLog, applyLog), stepC(3, 333, callLog, applyLog)
+			, probe(scheduler, stepD, channelD)
+			, participant(scheduler)
+		{
+			_mkdir("temp");
+			_mkdir("temp/deferredstep_save_tests");
+			LoadStep* steps[3] = { &stepA, &stepB, &stepC };
+			const StringCRC ids[3] = { channelA, channelB, channelC };
+			for (int i = 0; i < 3; ++i)
+			{
+				steps[i]->mScheduler = &scheduler;
+				steps[i]->mChannel = ids[i];
+				scheduler.Register(ids[i], *steps[i]);
+			}
+			scheduler.Register(channelD, stepD);
+			participant.Attach(registry, manager);
+			registry.Register(StringCRC("ZProbe"), &probe);
+			manager.Init(config, registry);
+		}
+
+		~LoadWorld()
+		{
+			participant.Detach();
+			registry.Unregister(StringCRC("ZProbe"));
+			scheduler.Unregister(channelA);
+			scheduler.Unregister(channelB);
+			scheduler.Unregister(channelC);
+			scheduler.Unregister(channelD);
+		}
+
+		ChannelStats Stats(StringCRC channel) const
+		{
+			ChannelStats s;
+			scheduler.GetChannelStats(channel, s);
+			return s;
+		}
+
+		Testing::ManualStepLauncher launcher;
+		DeferredStepScheduler scheduler;
+		SaveConfig config;
+		SaveRegistry registry;
+		SaveManager manager;
+		StringCRC channelA, channelB, channelC, channelD;
+		LoadStep stepA, stepB, stepC;
+		Testing::RecordingStep stepD;
+		LoadProbe probe;
+		DeferredStepSaveParticipant participant;
+	};
+}
+
+class DeferredStepSaveLoad : public ::testing::Test
+{
+protected:
+	// Slot names are unique per test: gtest shards run as parallel processes sharing the temp directory.
+	static std::string SlotName(const char* prefix)
+	{
+		return std::string(prefix) + "_" + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	}
+
+	DeferredStepSaveLoad()
+		: mFullName(SlotName("full")), mEmptyName(SlotName("empty"))
+		, mFullSlot(mFullName.c_str()), mEmptySlot(mEmptyName.c_str())
+		, mSaved(&mCallLog, &mApplyLog), mLoaded(&mCallLog, &mApplyLog) {}
+
+	~DeferredStepSaveLoad() override
+	{
+		remove(("temp/deferredstep_save_tests/slot_" + mFullName + ".sav").c_str());
+		remove(("temp/deferredstep_save_tests/slot_" + mEmptyName + ".sav").c_str());
+	}
+
+	// Kick A (1->10), B (2->12), C (3->14) in the saving world and write them to the full slot.
+	void SaveThree()
+	{
+		ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelA, 1, 10), KickResult::kLaunched);
+		ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelB, 2, 12), KickResult::kLaunched);
+		ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelC, 3, 14), KickResult::kLaunched);
+		ASSERT_TRUE(mSaved.manager.Save(mFullSlot).Ok());
+		mCallLog.clear();
+	}
+
+	std::string mFullName, mEmptyName;
+	StringCRC mFullSlot, mEmptySlot;
+	std::vector<int> mCallLog;
+	std::vector<int> mApplyLog;
+	LoadWorld mSaved;
+	LoadWorld mLoaded;
+};
+
+TEST_F(DeferredStepSaveLoad, LoadDiscardsInFlightStepBeforeValidateAndDeserialize)
+{
+	SaveThree();
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelD, 1, 10), KickResult::kLaunched);
+	ASSERT_EQ(mLoaded.scheduler.GetState(mLoaded.channelD), StepState::kRunning);
+
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+
+	EXPECT_EQ(mLoaded.probe.mValidateCalls, 1u);
+	EXPECT_EQ(mLoaded.probe.mDeserializeCalls, 1u);
+	EXPECT_EQ(mLoaded.probe.mStateAtValidate, StepState::kIdle);
+	EXPECT_EQ(mLoaded.probe.mStateAtDeserialize, StepState::kIdle);
+	EXPECT_EQ(mLoaded.probe.mAppliesAtDeserialize, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelD), StepState::kIdle);
+	EXPECT_EQ(mLoaded.stepD.GetApplyCount(), 0u);
+	mLoaded.scheduler.Tick(1000);
+	EXPECT_EQ(mLoaded.stepD.GetApplyCount(), 0u);
+}
+
+TEST_F(DeferredStepSaveLoad, LoadReplacesOldWorldInFlightStepOnRestoredChannel)
+{
+	SaveThree();
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelA, 50, 60), KickResult::kLaunched);
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kComplete);
+	StepKey applyKey = 0;
+	ASSERT_TRUE(mLoaded.scheduler.GetApplyKey(mLoaded.channelA, applyKey));
+	EXPECT_EQ(applyKey, 10);
+	mLoaded.scheduler.Tick(10);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 1u);
+}
+
+TEST_F(DeferredStepSaveLoad, DeserializeCallsDeserializePendingThenRestoreInWrittenOrder)
+{
+	// Kick order C, A, B so the written order differs from registration order.
+	ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelC, 1, 14), KickResult::kLaunched);
+	ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelA, 2, 10), KickResult::kLaunched);
+	ASSERT_EQ(mSaved.scheduler.Kick(mSaved.channelB, 3, 12), KickResult::kLaunched);
+	ASSERT_TRUE(mSaved.manager.Save(mFullSlot).Ok());
+	mCallLog.clear();
+
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+
+	ASSERT_EQ(mCallLog.size(), 3u);
+	EXPECT_EQ(mCallLog[0], 3);
+	EXPECT_EQ(mCallLog[1], 1);
+	EXPECT_EQ(mCallLog[2], 2);
+	// DeserializePending ran before RestorePending: the channel was still idle when the step was handed its data.
+	EXPECT_EQ(mLoaded.stepA.mStateAtDeserialize, StepState::kIdle);
+	EXPECT_EQ(mLoaded.stepB.mStateAtDeserialize, StepState::kIdle);
+	EXPECT_EQ(mLoaded.stepC.mStateAtDeserialize, StepState::kIdle);
+	// ...and each saw its own channel object.
+	EXPECT_TRUE(mLoaded.stepA.mPayloadReadOk);
+	EXPECT_EQ(mLoaded.stepA.mPayloadRead, 111);
+	EXPECT_EQ(mLoaded.stepB.mPayloadRead, 222);
+	EXPECT_EQ(mLoaded.stepC.mPayloadRead, 333);
+	EXPECT_EQ(mLoaded.stepA.mDeserializeCount, 1u);
+	EXPECT_EQ(mLoaded.stepB.mDeserializeCount, 1u);
+	EXPECT_EQ(mLoaded.stepC.mDeserializeCount, 1u);
+	// Restored in the same order: kick order, so pending enumeration is C, A, B.
+	ASSERT_EQ(mLoaded.scheduler.GetPendingCount(), 3u);
+	PendingStepInfo info;
+	ASSERT_TRUE(mLoaded.scheduler.GetPendingAt(0, info));
+	EXPECT_EQ(info.channelId, mLoaded.channelC);
+	ASSERT_TRUE(mLoaded.scheduler.GetPendingAt(1, info));
+	EXPECT_EQ(info.channelId, mLoaded.channelA);
+	ASSERT_TRUE(mLoaded.scheduler.GetPendingAt(2, info));
+	EXPECT_EQ(info.channelId, mLoaded.channelB);
+}
+
+TEST_F(DeferredStepSaveLoad, RestoredChannelIsCompleteWithStoredKeysAndAppliesOnceWithoutStall)
+{
+	SaveThree();
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	mLoaded.launcher.ClearCalls();
+
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kComplete);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelB), StepState::kComplete);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelC), StepState::kComplete);
+	StepKey key = 0;
+	ASSERT_TRUE(mLoaded.scheduler.GetApplyKey(mLoaded.channelA, key));
+	EXPECT_EQ(key, 10);
+	ASSERT_TRUE(mLoaded.scheduler.GetApplyKey(mLoaded.channelB, key));
+	EXPECT_EQ(key, 12);
+	ASSERT_TRUE(mLoaded.scheduler.GetApplyKey(mLoaded.channelC, key));
+	EXPECT_EQ(key, 14);
+
+	mLoaded.scheduler.Tick(9);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kComplete);
+
+	mLoaded.scheduler.Tick(10);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.stepB.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kIdle);
+
+	mLoaded.scheduler.Tick(100);
+	mLoaded.scheduler.Tick(200);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.stepB.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.stepC.mApplyCount, 1u);
+
+	EXPECT_EQ(mLoaded.scheduler.GetStats().stalls, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().totalStallMicros, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 3u);
+	EXPECT_EQ(mLoaded.Stats(mLoaded.channelA).stalls, 0u);
+	EXPECT_EQ(mLoaded.Stats(mLoaded.channelB).stalls, 0u);
+	EXPECT_EQ(mLoaded.Stats(mLoaded.channelC).stalls, 0u);
+	EXPECT_EQ(mLoaded.Stats(mLoaded.channelA).applies, 1u);
+
+	// The launcher was never consulted for a restored channel: no IsComplete, Wait or Release (nor a Launch).
+	EXPECT_EQ(mLoaded.launcher.GetCallCount(), 0u);
+	EXPECT_EQ(mLoaded.launcher.GetBadReleaseCount(), 0u);
+	// Apply order follows the apply keys.
+	ASSERT_EQ(mApplyLog.size(), 3u);
+	EXPECT_EQ(mApplyLog[0], 1);
+	EXPECT_EQ(mApplyLog[1], 2);
+	EXPECT_EQ(mApplyLog[2], 3);
+}
+
+TEST_F(DeferredStepSaveLoad, LoadDoesNotRunOrApplyAnythingItself)
+{
+	SaveThree();
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().kicks, 0u);
+	EXPECT_EQ(mLoaded.launcher.GetLaunchCount(), 0u);
+}
+
+TEST_F(DeferredStepSaveLoad, RestoredKeyFloorRejectsLowerKickAfterApply)
+{
+	SaveThree();
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+
+	// While restored and unapplied the channel is occupied.
+	EXPECT_EQ(mLoaded.scheduler.Kick(mLoaded.channelC, 10, 20), KickResult::kAlreadyInFlight);
+
+	mLoaded.scheduler.Tick(100);
+	ASSERT_EQ(mLoaded.scheduler.GetState(mLoaded.channelC), StepState::kIdle);
+
+	// Stored kick_key of C is 3.
+	EXPECT_EQ(mLoaded.scheduler.Kick(mLoaded.channelC, 2, 200), KickResult::kKeyNotMonotonic);
+	EXPECT_EQ(mLoaded.scheduler.Kick(mLoaded.channelC, 0, 200), KickResult::kKeyNotMonotonic);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelC), StepState::kIdle);
+	// At or above the floor is accepted.
+	EXPECT_EQ(mLoaded.scheduler.Kick(mLoaded.channelC, 3, 200), KickResult::kLaunched);
+}
+
+TEST_F(DeferredStepSaveLoad, EmptySaveLeavesEveryChannelIdle)
+{
+	ASSERT_TRUE(mSaved.manager.Save(mEmptySlot).Ok());
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelA, 1, 10), KickResult::kLaunched);
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelD, 1, 10), KickResult::kLaunched);
+
+	ASSERT_TRUE(mLoaded.manager.Load(mEmptySlot).Ok());
+
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kIdle);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelB), StepState::kIdle);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelC), StepState::kIdle);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelD), StepState::kIdle);
+	EXPECT_EQ(mLoaded.scheduler.GetPendingCount(), 0u);
+	EXPECT_EQ(mLoaded.stepA.mDeserializeCount, 0u);
+	mLoaded.scheduler.Tick(1000);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 0u);
+}
+
+TEST_F(DeferredStepSaveLoad, LoadingTwiceAppliesEachRestoredStepExactlyOnce)
+{
+	SaveThree();
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+
+	EXPECT_EQ(mLoaded.scheduler.GetPendingCount(), 3u);
+	EXPECT_EQ(mLoaded.stepA.mDeserializeCount, 2u);
+	mLoaded.scheduler.Tick(100);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.stepB.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.stepC.mApplyCount, 1u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 3u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().stalls, 0u);
+	mLoaded.scheduler.Tick(200);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 3u);
+}
+
+TEST_F(DeferredStepSaveLoad, SecondLoadClearsFirstLoadsRestoredChannels)
+{
+	SaveThree();
+	mSaved.scheduler.DrainAndDiscardAll();
+	ASSERT_TRUE(mSaved.manager.Save(mEmptySlot).Ok());
+
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	ASSERT_EQ(mLoaded.scheduler.GetPendingCount(), 3u);
+	ASSERT_TRUE(mLoaded.manager.Load(mEmptySlot).Ok());
+
+	EXPECT_EQ(mLoaded.scheduler.GetPendingCount(), 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kIdle);
+	mLoaded.scheduler.Tick(1000);
+	EXPECT_EQ(mLoaded.stepA.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.stepB.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.stepC.mApplyCount, 0u);
+	EXPECT_EQ(mLoaded.scheduler.GetStats().applies, 0u);
+}
+
+TEST_F(DeferredStepSaveLoad, LoadLogsInfoWithPendingCount)
+{
+	SaveThree();
+	Dia::DeferredStep::Testing::LogCapture log;
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	EXPECT_EQ(log.Infos("Load restore: 3 pending"), 1u);
+	EXPECT_EQ(log.Warnings(), 0u);
+	EXPECT_EQ(log.Count(LogLevel::kError), 0u);
+}
+
+TEST_F(DeferredStepSaveLoad, LoadDiscardingInFlightStepWarns)
+{
+	SaveThree();
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelD, 1, 10), KickResult::kLaunched);
+	Dia::DeferredStep::Testing::LogCapture log;
+	ASSERT_TRUE(mLoaded.manager.Load(mFullSlot).Ok());
+	EXPECT_GE(log.Warnings(), 1u);
+}
+
+namespace
+{
+	Json::Value LoadChannelJson(StringCRC id, int payload)
+	{
+		Json::Value c(Json::objectValue);
+		c["channel_id"] = static_cast<Json::Int64>(id.Value());
+		c["kick_key"] = 4;
+		c["apply_key"] = 9;
+		c["step_version"] = 1;
+		c["payload"] = payload;
+		return c;
+	}
+}
+
+TEST_F(DeferredStepSaveLoad, DeserializeSkipsUnregisteredChannelAndStaysBalanced)
+{
+	Json::Value section(Json::objectValue);
+	section["version"] = 1;
+	section["pending_count"] = 2;
+	section["channel_0"] = LoadChannelJson(StringCRC("LoadNotRegistered"), 5);
+	section["channel_1"] = LoadChannelJson(mLoaded.channelA, 777);
+
+	LoadContext ctx(section);
+	Dia::DeferredStep::Testing::LogCapture log;
+	mLoaded.participant.Deserialize(ctx);
+
+	EXPECT_GE(log.Warnings(), 1u);
+	EXPECT_EQ(mLoaded.scheduler.GetPendingCount(), 1u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kComplete);
+	EXPECT_EQ(mLoaded.stepA.mPayloadRead, 777);
+	// Balanced: the context is back at the section root.
+	int32_t version = 0;
+	EXPECT_TRUE(ctx.Read(StringCRC("version"), version));
+	EXPECT_EQ(version, 1);
+}
+
+TEST_F(DeferredStepSaveLoad, DeserializeSkipsChannelWhoseRestoreIsRejected)
+{
+	// Channel A is running, so RestorePending refuses it; B behind it still restores.
+	ASSERT_EQ(mLoaded.scheduler.Kick(mLoaded.channelA, 1, 10), KickResult::kLaunched);
+	Json::Value section(Json::objectValue);
+	section["version"] = 1;
+	section["pending_count"] = 2;
+	section["channel_0"] = LoadChannelJson(mLoaded.channelA, 1);
+	section["channel_1"] = LoadChannelJson(mLoaded.channelB, 2);
+
+	LoadContext ctx(section);
+	Dia::DeferredStep::Testing::LogCapture log;
+	mLoaded.participant.Deserialize(ctx);
+
+	EXPECT_GE(log.Warnings(), 1u);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kRunning);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelB), StepState::kComplete);
+	int32_t count = 0;
+	EXPECT_TRUE(ctx.Read(StringCRC("pending_count"), count));
+}
+
+TEST_F(DeferredStepSaveLoad, DeserializeToleratesMissingChannelObjectAndId)
+{
+	Json::Value section(Json::objectValue);
+	section["version"] = 1;
+	section["pending_count"] = 3;
+	// channel_0 missing entirely; channel_1 has no channel_id; channel_2 is fine.
+	Json::Value noId = LoadChannelJson(mLoaded.channelA, 1);
+	noId.removeMember("channel_id");
+	section["channel_1"] = noId;
+	section["channel_2"] = LoadChannelJson(mLoaded.channelC, 3);
+
+	LoadContext ctx(section);
+	mLoaded.participant.Deserialize(ctx);
+
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelA), StepState::kIdle);
+	EXPECT_EQ(mLoaded.scheduler.GetState(mLoaded.channelC), StepState::kComplete);
+	int32_t version = 0;
+	EXPECT_TRUE(ctx.Read(StringCRC("version"), version));
+}

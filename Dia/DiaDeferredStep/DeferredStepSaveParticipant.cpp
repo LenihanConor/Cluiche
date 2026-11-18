@@ -16,6 +16,17 @@ namespace Dia::DeferredStep
 {
 	const Dia::Core::StringCRC DeferredStepSaveParticipant::kParticipantId("DeferredStep");
 
+	namespace
+	{
+		// The file stores only the CRC value; comparison is by value, so rebuild an id from it.
+		Dia::Core::StringCRC ChannelIdFromValue(int64_t value)
+		{
+			Dia::Core::StringCRC channelId;
+			static_cast<Dia::Core::CRC&>(channelId) = static_cast<unsigned int>(value);
+			return channelId;
+		}
+	}
+
 	DeferredStepSaveParticipant::DeferredStepSaveParticipant(DeferredStepScheduler& scheduler)
 		: mScheduler(scheduler)
 	{
@@ -81,8 +92,60 @@ namespace Dia::DeferredStep
 		}
 	}
 
-	void DeferredStepSaveParticipant::Deserialize(Dia::SaveGame::LoadContext&)
+	void DeferredStepSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
 	{
+		DIA_TRACE_ZONE("DeferredStep.Restore", Dia::Observation::Trace::Category::kNone);
+		int32_t pendingCount = 0;
+		if (!ctx.Read(Dia::Core::StringCRC("pending_count"), pendingCount) || pendingCount < 0)
+		{
+			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStep load: save section has no valid 'pending_count'; nothing restored");
+			return;
+		}
+		uint32_t restored = 0;
+		for (int32_t i = 0; i < pendingCount; ++i)
+		{
+			char name[16];
+			snprintf(name, sizeof(name), "channel_%d", i);
+			if (!ctx.BeginObject(Dia::Core::StringCRC(name)))
+			{
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStep load: save section is missing '%s'; skipped", name);
+				continue;
+			}
+			int64_t channelValue = 0;
+			int64_t kickKey = 0;
+			int64_t applyKey = 0;
+			if (!ctx.Read(Dia::Core::StringCRC("channel_id"), channelValue)
+				|| !ctx.Read(Dia::Core::StringCRC("kick_key"), kickKey)
+				|| !ctx.Read(Dia::Core::StringCRC("apply_key"), applyKey))
+			{
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStep load: '%s' is missing channel_id, kick_key or apply_key; skipped", name);
+			}
+			else
+			{
+				const Dia::Core::StringCRC channelId = ChannelIdFromValue(channelValue);
+				IDeferredStep* step = mScheduler.GetStep(channelId);
+				if (step == nullptr)
+				{
+					DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStep load: saved channel %u is not registered (%s); skipped",
+						static_cast<uint32_t>(channelValue), name);
+				}
+				else
+				{
+					step->DeserializePending(ctx);
+					if (mScheduler.RestorePending(channelId, static_cast<StepKey>(kickKey), static_cast<StepKey>(applyKey)))
+					{
+						++restored;
+					}
+					else
+					{
+						DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStep load: channel %u could not be restored (%s); skipped",
+							static_cast<uint32_t>(channelValue), name);
+					}
+				}
+			}
+			ctx.EndObject();
+		}
+		DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "Load restore: %u pending steps restored", restored);
 	}
 
 	uint32_t DeferredStepSaveParticipant::GetVersion() const
