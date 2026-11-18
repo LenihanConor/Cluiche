@@ -197,6 +197,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | CoW | **14 missing feature specs block the weather effort** (found 2026-11-13) | 2026-11-16 | Moved by `dia docs backlog move` |
 | Dia | Trace-linked streams | 2026-11-17 | Moved by `dia docs backlog move` |
 | Dia | Perf Inspector stack | 2026-11-17 | Moved by `dia docs backlog move` |
+| Dia | Manifest ordering validator | 2026-11-18 | Moved by `dia docs backlog move` |
 
 ---
 

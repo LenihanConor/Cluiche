@@ -52,7 +52,7 @@ Two ordering rules govern DeferredStepModule's placement in the application mani
 
 **Conflict resolution:** A module that is both the IStepKeySource and a channel consumer must be listed BEFORE DeferredStepModule (satisfying rule 1). Because stop runs in reverse manifest order, such a module stops after DeferredStepModule, so it must tolerate its channels having already been discarded by DeferredStepModule::DoStop.
 
-**Enforcement:** Both rules are enforced by `dia validate manifest` through the optional module-declaration field `requires_tick_after`: an array of module `instance_id`s that must appear EARLIER in the same processing unit's module list. The validator errors if a referenced instance is missing from that PU, is listed at or after the declaring module, or the value is not an array of strings. Absent field means no constraint; the C++ manifest loader ignores the key.
+**Enforcement:** Both rules are checked by `dia validate manifest` for every module that declares the optional module-declaration field `requires_tick_after` (a module that omits it is not checked): an array of module `instance_id`s that must appear EARLIER in the same processing unit's module list. The validator errors if a referenced instance is missing from that PU, is listed at or after the declaring module, or the value is not an array of strings. Absent field means no constraint; the C++ manifest loader ignores the key.
 
 ```json
 { "instance_id": "DeferredStepModule", "type_id": "DeferredStepModule",
