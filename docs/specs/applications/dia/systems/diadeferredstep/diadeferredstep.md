@@ -214,8 +214,9 @@ above; and the CluicheTest integration stage ships inside Feature 4.
 
 ## Status
 
-`Approved` (2026-11-12), amended 2026-11-13. Interview complete 2026-11-10: home, late policy, save rule and worker cap decided by the user; Feature 4 observability added 2026-11-12. AD-001 sign-off for moving `IParallelExecutor` into Dia given 2026-11-12, and for `JobSystem::TrySubmit(fn, tag)` plus `Dia::Observation::Profile::StepSummaryRecord` given 2026-11-13.
+`Done` (2026-11-18); was `Approved` 2026-11-12, amended 2026-11-13. Interview complete 2026-11-10: home, late policy, save rule and worker cap decided by the user; Feature 4 observability added 2026-11-12. AD-001 sign-off for moving `IParallelExecutor` into Dia given 2026-11-12, and for `JobSystem::TrySubmit(fn, tag)` plus `Dia::Observation::Profile::StepSummaryRecord` given 2026-11-13.
 
 All five feature specs written and `Approved` 2026-11-13. Plans written 2026-11-13; see
 [diadeferredstep.plan.md](diadeferredstep.plan.md) for the system tracker and one plan per feature.
-Next: `/implement` Feature 1 (scheduler core).
+All five features Done 2026-11-18 and the system close-out run (Debug full suite green; Release checks and the cross-feature E2E in the system plan notes). 
+Known gaps are tracked in BACKLOG.md ('DiaDeferredStep F4 follow-ups', 'DiaDeferredStep F5 follow-ups').
