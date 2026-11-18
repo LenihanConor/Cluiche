@@ -21,6 +21,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaApplicationFlow (v1) | Application framework (ProcessingUnit/Phase/Module) — SUPERSEDED | [diaapplication.md](systems/diaapplication/diaapplication.md) |
 | DiaApplicationFlow | Config-driven application framework (PU/Stage/Module with unified streams) | [diaapplicationflow.md](systems/diaapplicationflow/diaapplicationflow.md) |
 | DiaGame | Game project system — owns .diagame/.diastage file formats, serializers, GameFileComposer, GameLoader | [diagame.md](systems/diagame/diagame.md) |
+| Stage Catalogue | Typed stage model in DiaGame shared by the boot menu, CLI, DiaAPI and docs: `.diastage` tags/description/presets/proves, kind vocabulary (showcase/tool/test), persisted last result per stage, `stages.*` commands, launch presets via an `OnStageLaunch` hook, `dia check stage-proves`. Approved 2026-11-18 | [stagecatalogue.md](systems/stagecatalogue/stagecatalogue.md) |
 | DiaApplicationEditor (v1) | Editor plugin for .diaapp manifests — SUPERSEDED | [diaapplicationeditor.md](systems/diaapplicationeditor/diaapplicationeditor.md) |
 | DiaApplicationFlowEditor | Visual .diaapp v2 editor with live runtime inspection (PU graph, presence grid, streams) | [diaapplicationfloweditor.md](systems/diaapplicationfloweditor/diaapplicationfloweditor.md) |
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](systems/diadebugprotocol/diadebugprotocol.md) |
