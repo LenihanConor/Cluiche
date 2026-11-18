@@ -22,6 +22,7 @@
 //       "diastream":          false,
 //       "diaassetruntime":    false,
 //       "diaanimation":       false,
+//       "diadeferredstep":   false,
 //       "all":                false  // shorthand to enable every category
 //     }
 //   },
@@ -33,6 +34,7 @@
 //       "diastream":          false,
 //       "diaassetruntime":    false,
 //       "diaanimation":       false,
+//       "diadeferredstep":   false,
 //       "all":                false  // shorthand to enable every category
 //     }
 //   },
@@ -183,6 +185,7 @@ namespace Dia
 					checkCategory("diastream",          1u << 2);
 					checkCategory("diaassetruntime",    1u << 3);
 					checkCategory("diaanimation",       1u << 4);
+					checkCategory("diadeferredstep",   1u << 7);
 
 					if (categories.isMember("all") && categories["all"].isBool()
 						&& categories["all"].asBool())
@@ -224,6 +227,7 @@ namespace Dia
 					checkCategory("diastream",          1u << 2);
 					checkCategory("diaassetruntime",    1u << 3);
 					checkCategory("diaanimation",       1u << 4);
+					checkCategory("diadeferredstep",   1u << 7);
 
 					if (categories.isMember("all") && categories["all"].isBool()
 						&& categories["all"].asBool())

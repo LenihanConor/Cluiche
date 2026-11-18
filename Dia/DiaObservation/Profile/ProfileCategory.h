@@ -18,6 +18,7 @@ namespace Dia
 			constexpr ProfileCategory kDiaAnimation       = 1 << 4;
 			constexpr ProfileCategory kdiaentitytemplate          = 1 << 5;
 			constexpr ProfileCategory kDiaScene           = 1 << 6;
+			constexpr ProfileCategory kDiaDeferredStep   = 1 << 7;
 			constexpr ProfileCategory kAll                = ~0u;
 		}
 	}

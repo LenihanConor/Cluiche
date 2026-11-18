@@ -30,8 +30,8 @@ namespace Dia::DeferredStep
 
 	void CappedParallelExecutor::ParallelFor(uint32_t count, uint32_t minRange, const RangeFn& fn)
 	{
-		DIA_TRACE_ZONE("CappedParallelExecutor::ParallelFor", Dia::Observation::Trace::Category::kNone);
-		DIA_PROFILE_SCOPE("CappedParallelExecutor::ParallelFor", Dia::Observation::Trace::Category::kNone);
+		DIA_TRACE_ZONE("CappedParallelExecutor::ParallelFor", Dia::Observation::Trace::Category::kDiaDeferredStep);
+		DIA_PROFILE_SCOPE("CappedParallelExecutor::ParallelFor", Dia::Observation::Profile::Category::kDiaDeferredStep);
 
 		if (count == 0)
 		{
@@ -58,8 +58,8 @@ namespace Dia::DeferredStep
 		// the coordinator (before RunInline) for stolen / failed-submit ranges; otherwise it is 0.
 		auto runRange = [&](uint32_t index, const GateItem* item)
 		{
-			DIA_TRACE_ZONE("CappedParallelExecutor::Range", Dia::Observation::Trace::Category::kNone);
-			DIA_PROFILE_SCOPE("CappedParallelExecutor::Range", Dia::Observation::Trace::Category::kNone);
+			DIA_TRACE_ZONE("CappedParallelExecutor::Range", Dia::Observation::Trace::Category::kDiaDeferredStep);
+			DIA_PROFILE_SCOPE("CappedParallelExecutor::Range", Dia::Observation::Profile::Category::kDiaDeferredStep);
 
 			RangeTiming& t = mTimings[index];
 			const uint64_t start = NowNs();

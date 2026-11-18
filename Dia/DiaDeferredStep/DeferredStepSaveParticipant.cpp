@@ -94,7 +94,7 @@ namespace Dia::DeferredStep
 
 	void DeferredStepSaveParticipant::Deserialize(Dia::SaveGame::LoadContext& ctx)
 	{
-		DIA_TRACE_ZONE("DeferredStep.Restore", Dia::Observation::Trace::Category::kNone);
+		DIA_TRACE_ZONE("DeferredStep.Restore", Dia::Observation::Trace::Category::kDiaDeferredStep);
 		int32_t pendingCount = 0;
 		if (!ctx.Read(Dia::Core::StringCRC("pending_count"), pendingCount) || pendingCount < 0)
 		{
@@ -224,7 +224,7 @@ namespace Dia::DeferredStep
 		{
 		case Dia::SaveGame::SaveEvent::SaveStarted:
 		{
-			DIA_TRACE_ZONE("DeferredStep.SaveDrain", Dia::Observation::Trace::Category::kNone);
+			DIA_TRACE_ZONE("DeferredStep.SaveDrain", Dia::Observation::Trace::Category::kDiaDeferredStep);
 			const uint64_t drainedBefore = mScheduler.GetStats().drainedSteps;
 			mScheduler.DrainAll();
 			DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "Save drain: %u steps drained, %u pending",

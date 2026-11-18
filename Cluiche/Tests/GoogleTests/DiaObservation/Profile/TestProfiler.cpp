@@ -696,3 +696,38 @@ TEST_F(ProfilerTest, B1_ChangedNameIsReannounced)
     EXPECT_NE(content.find("\"name\":\"After\""), std::string::npos);
     Profiler::ClearThreadNames();
 }
+
+// ---------------------------------------------------------------------------
+// DeferredStep category — scope records under the dedicated bit (kNone never records)
+// ---------------------------------------------------------------------------
+
+TEST_F(ProfilerTest, DeferredStepCategory_ScopeAppearsInJsonl)
+{
+    static_assert(Category::kDiaDeferredStep != 0, "kDiaDeferredStep must be a real bit");
+    static_assert((Category::kDiaDeferredStep & (Category::kDiaScene | Category::kdiaentitytemplate | Category::kDiaAnimation)) == 0,
+        "kDiaDeferredStep must not collide with existing categories");
+    {
+        DIA_PROFILE_SCOPE("DSCatZone", Category::kDiaDeferredStep);
+    }
+
+    FlushAndWait();
+    Profiler::Instance().Stop();
+
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    uint32_t crc = Dia::Core::StringCRC("DSCatZone").Value();
+    EXPECT_NE(content.find(std::to_string(crc)), std::string::npos);
+}
+
+TEST_F(ProfilerTest, NoneCategory_ScopeNeverRecords)
+{
+    {
+        DIA_PROFILE_SCOPE("NoneCatZone", Category::kNone);
+    }
+
+    FlushAndWait();
+    Profiler::Instance().Stop();
+
+    std::string content = ReadFile(mFixture->mJsonlPath);
+    uint32_t crc = Dia::Core::StringCRC("NoneCatZone").Value();
+    EXPECT_EQ(content.find(std::to_string(crc)), std::string::npos);
+}

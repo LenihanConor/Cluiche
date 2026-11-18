@@ -239,3 +239,16 @@ TEST(ObservationConfigLoader, DefaultIntervals)
     EXPECT_EQ(config.metricSnapshotIntervalMs, 100u);
     EXPECT_EQ(config.healthPollIntervalMs, 500u);
 }
+
+TEST(ObservationConfigLoader, ParseProfileConfig_DeferredStepCategory)
+{
+    const char* json = R"({
+        "profile": { "enabled": true, "categories": { "diadeferredstep": true } },
+        "trace":   { "enabled": true, "categories": { "diadeferredstep": true, "diastream": true } }
+    })";
+
+    ObservationConfig config;
+    ASSERT_TRUE(ObservationConfigLoader::LoadFromString(json, config));
+    EXPECT_EQ(config.profileCategoryMask, 1u << 7);
+    EXPECT_EQ(config.traceCategoryMask, (1u << 7) | (1u << 2));
+}

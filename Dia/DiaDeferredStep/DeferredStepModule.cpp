@@ -169,8 +169,8 @@ namespace Dia::DeferredStep
 	{
 		if (mScheduler.Get() == nullptr) { return; }
 
-		DIA_TRACE_ZONE("DeferredStep.Update", Dia::Observation::Trace::Category::kNone);
-		DIA_PROFILE_SCOPE("DeferredStep.Update", Dia::Observation::Profile::Category::kNone);
+		DIA_TRACE_ZONE("DeferredStep.Update", Dia::Observation::Trace::Category::kDiaDeferredStep);
+		DIA_PROFILE_SCOPE("DeferredStep.Update", Dia::Observation::Profile::Category::kDiaDeferredStep);
 
 		// Lazy attach on the first update so this participant registers after every other module's.
 		if (!mSaveResolved)

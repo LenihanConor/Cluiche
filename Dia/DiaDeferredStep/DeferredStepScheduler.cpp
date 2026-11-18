@@ -141,8 +141,8 @@ namespace Dia::DeferredStep
 		}
 
 		{
-			DIA_TRACE_ZONE("DeferredStep.Capture", Dia::Observation::Trace::Category::kNone);
-			DIA_PROFILE_SCOPE("DeferredStep.Capture", Dia::Observation::Profile::Category::kNone);
+			DIA_TRACE_ZONE("DeferredStep.Capture", Dia::Observation::Trace::Category::kDiaDeferredStep);
+			DIA_PROFILE_SCOPE("DeferredStep.Capture", Dia::Observation::Profile::Category::kDiaDeferredStep);
 			entry.step->Capture();
 		}
 
@@ -260,8 +260,8 @@ namespace Dia::DeferredStep
 			{
 				const uint64_t waitStart = NowMicros();
 				{
-					DIA_TRACE_ZONE("DeferredStep.StallWait", Dia::Observation::Trace::Category::kNone);
-					DIA_PROFILE_SCOPE("DeferredStep.StallWait", Dia::Observation::Profile::Category::kNone);
+					DIA_TRACE_ZONE("DeferredStep.StallWait", Dia::Observation::Trace::Category::kDiaDeferredStep);
+					DIA_PROFILE_SCOPE("DeferredStep.StallWait", Dia::Observation::Profile::Category::kDiaDeferredStep);
 					mLauncher.Wait(token);
 				}
 				const uint64_t waitEnd = NowMicros();
@@ -274,8 +274,8 @@ namespace Dia::DeferredStep
 				runMicros = NowMicros() - entry.kickTimeMicros;   // first observed on the apply key itself
 			}
 			{
-				DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kNone);
-				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kNone);
+				DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
+				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);
 				step->Apply();
 			}
 
@@ -330,8 +330,8 @@ namespace Dia::DeferredStep
 		IDeferredStep* step = entry.step;
 		const uint64_t sequence = entry.kickSequence;
 		{
-			DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kNone);
-			DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kNone);
+			DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
+			DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);
 			step->Apply();
 		}
 		// Apply may have unregistered or reset the channel; only settle it if it is still the same restored step.
@@ -394,8 +394,8 @@ namespace Dia::DeferredStep
 
 	void DeferredStepScheduler::DrainAndDiscardAll()
 	{
-		DIA_TRACE_ZONE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Trace::Category::kNone);
-		DIA_PROFILE_SCOPE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Profile::Category::kNone);
+		DIA_TRACE_ZONE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Trace::Category::kDiaDeferredStep);
+		DIA_PROFILE_SCOPE("DeferredStep.DrainAndDiscardAll", Dia::Observation::Profile::Category::kDiaDeferredStep);
 		uint32_t discarded = 0;
 		uint32_t inFlightDiscarded = 0;
 		for (unsigned int i = 0; i < mChannels.Size(); ++i)
@@ -448,8 +448,8 @@ namespace Dia::DeferredStep
 
 	void DeferredStepScheduler::DrainAll()
 	{
-		DIA_TRACE_ZONE("DeferredStep.DrainAll", Dia::Observation::Trace::Category::kNone);
-		DIA_PROFILE_SCOPE("DeferredStep.DrainAll", Dia::Observation::Profile::Category::kNone);
+		DIA_TRACE_ZONE("DeferredStep.DrainAll", Dia::Observation::Trace::Category::kDiaDeferredStep);
+		DIA_PROFILE_SCOPE("DeferredStep.DrainAll", Dia::Observation::Profile::Category::kDiaDeferredStep);
 		uint32_t drained = 0;
 		for (unsigned int i = 0; i < mChannels.Size(); ++i)
 		{
