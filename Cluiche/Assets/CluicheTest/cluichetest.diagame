@@ -134,6 +134,10 @@
         {
             "path": "Stages/CellLayersViewerTestStage/cell_layers_viewer_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "Stages/DeferredStepTestStage/deferred_step_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

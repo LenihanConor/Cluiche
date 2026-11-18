@@ -241,6 +241,11 @@
     },
     {
       "allowed_pus": "sim",
+      "description": "Integration stage for DiaDeferredStep: synthetic step on one channel with apply-key, stall, metric and health checks from committed data",
+      "type_id": "DeferredStepTestStageModule"
+    },
+    {
+      "allowed_pus": "sim",
       "description": "Hosts the DiaCellLayers viewer over synthetic layers on two hex grids.",
       "type_id": "CellLayersViewerTestStageModule"
     },
@@ -383,6 +388,11 @@
       "allowed_pus": "sim",
       "description": "Registers the sim.echo sim-hosted debug query used by the Sim-Hosted Queries E2E.",
       "type_id": "SimEchoTestModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Test key source: advances the deferred-step key once per sim step",
+      "type_id": "DeferredStepClockModule"
     },
     {
       "allowed_pus": "sim",
@@ -570,6 +580,11 @@
       "type_id": "CellHistoryModule"
     },
     {
+      "allowed_pus": "sim",
+      "description": "SimPU host for deferred world-step jobs: schedules steps by key, runs them on the JobSystem, applies results at a later key.",
+      "type_id": "DeferredStepModule"
+    },
+    {
       "allowed_pus": "any",
       "description": "Loads *.schema.json sidecars from the configured schema_roots aliases and publishes the read-only ValueSchemaService.",
       "type_id": "ValueSchemaModule"
@@ -583,6 +598,6 @@
   "processing_units": [],
   "version": {
     "major": 2,
-    "minor": 0
+    "minor": 1
   }
 }

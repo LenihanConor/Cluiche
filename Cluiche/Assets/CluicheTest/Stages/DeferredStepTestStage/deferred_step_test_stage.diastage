@@ -1,0 +1,9 @@
+{
+    "name": "DeferredStepTestStage",
+    "manifest": "Stages/DeferredStepTestStage/misc/ApplicationFlow/deferred_step_test_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

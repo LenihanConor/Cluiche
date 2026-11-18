@@ -29,6 +29,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\DeferredStepTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\CellLayersViewerTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\CellFieldRenderTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\MessageBusTestStageModule.cpp" />
@@ -79,6 +80,7 @@
     <ClCompile Include="Modules\TestStatusBridgeModule.cpp" />
     <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp" />
     <ClCompile Include="Modules\SimEchoTestModule.cpp" />
+    <ClCompile Include="Modules\TestStages\DeferredStepClockModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -89,6 +91,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\DeferredStepTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersViewerTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\CellFieldRenderTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\MessageBusTestStageModule.h" />
@@ -144,6 +147,7 @@
     <ClInclude Include="Modules\SimEchoTestModule.h" />
     <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h" />
     <ClInclude Include="Modules\TestStages\CellLayersSnapshotStore.h" />
+    <ClInclude Include="Modules\TestStages\DeferredStepClockModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
@@ -340,6 +344,9 @@
     <ProjectReference Include="..\..\Dia\DiaCellLayers\DiaCellLayers.vcxproj">
       <Project>{F0B823EA-731E-5CE5-AC88-4DF3B45C6977}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaDeferredStep\DiaDeferredStep.vcxproj">
+      <Project>{7D4C2E91-8B2A-4C5F-B8D3-F9E6C5A4B9D2}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEconomy\DiaEconomy.vcxproj">
       <Project>{6E2AFB11-772C-4552-B065-D50083E5787D}</Project>
     </ProjectReference>
@@ -437,9 +444,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaCellLayers.lib;$(LibOutDir)DiaCellHistory.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaCellLayers.lib;$(LibOutDir)DiaCellHistory.lib;$(LibOutDir)DiaDeferredStep.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaCellHistory.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaCellHistory.lib /WHOLEARCHIVE:DiaDeferredStep.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -460,9 +467,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaCellLayers.lib;$(LibOutDir)DiaCellHistory.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaLighting3D.lib;$(LibOutDir)DiaLighting3DVisualDebugger.lib;$(LibOutDir)DiaCaptureTest.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaFlowField.lib;$(LibOutDir)DiaSteering.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaEntitySpawner.lib;$(LibOutDir)DiaCellLayers.lib;$(LibOutDir)DiaCellHistory.lib;$(LibOutDir)DiaDeferredStep.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Release\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaCellHistory.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaCellHistory.lib /WHOLEARCHIVE:DiaDeferredStep.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>

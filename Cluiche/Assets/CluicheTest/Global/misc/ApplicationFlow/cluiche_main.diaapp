@@ -32,7 +32,8 @@
                 "MessageBusStressTestStage",
                 "JobSystemServiceTestStage",
                 "CellFieldRenderTestStage",
-                "CellLayersViewerTestStage"
+                "CellLayersViewerTestStage",
+                "DeferredStepTestStage"
             ],
             "auto_advance": false
         },
@@ -228,6 +229,13 @@
         },
         {
             "name": "CellLayersViewerTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "DeferredStepTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -588,7 +596,8 @@
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
                         "CellFieldRenderTestStage",
-                        "CellLayersViewerTestStage"
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -693,8 +702,12 @@
                         "DebugServerHostModule"
                     ],
                     "config": {
-                        "schema_roots": ["root"],
-                        "ramp_roots": ["dia_data"]
+                        "schema_roots": [
+                            "root"
+                        ],
+                        "ramp_roots": [
+                            "dia_data"
+                        ]
                     },
                     "channels": [
                         {
@@ -736,7 +749,8 @@
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
                         "CellFieldRenderTestStage",
-                        "CellLayersViewerTestStage"
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -919,7 +933,8 @@
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
                         "CellFieldRenderTestStage",
-                        "CellLayersViewerTestStage"
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -1088,7 +1103,7 @@
                         "TestStatusBridge"
                     ],
                     "config": {
-                        "title": "CluicheTest — Bootstrap",
+                        "title": "CluicheTest \u2014 Bootstrap",
                         "project": "Project: CluicheTest v0.1"
                     },
                     "channels": [
@@ -1129,7 +1144,8 @@
                         "MessageBusTestStage",
                         "MessageBusStressTestStage",
                         "CellFieldRenderTestStage",
-                        "CellLayersViewerTestStage"
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

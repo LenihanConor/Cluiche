@@ -1127,6 +1127,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.deferred_step_test_stage",
+            "type": "stage",
+            "source_path": "Stages/DeferredStepTestStage/deferred_step_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.deferred_step_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.deferred_step_test_stage",
+            "type": "manifest",
+            "source_path": "Stages/DeferredStepTestStage/misc/ApplicationFlow/deferred_step_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "DeferredStepTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ],
     "rules_path": "assets.rules.json"
