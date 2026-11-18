@@ -13,6 +13,7 @@ dependencies:
     - dia.core
     - dia.observation
     - dia.threading
+    - dia.savegame
   forbidden: []
 public_api:
   headers: []
