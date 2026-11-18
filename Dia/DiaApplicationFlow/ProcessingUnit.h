@@ -124,6 +124,8 @@ namespace Dia { namespace ApplicationFlow {
         void SetPerfTripsSink(EventStreamStore<Dia::Observation::Profile::TripChunk>* sink) { mTripSink = sink; }
         // Per-PU job timing (drained from this PU's JobInbox once per Update()).
         [[nodiscard]] const Dia::Observation::Profile::JobTimingTable& GetJobTimingTable() const { return mJobTable; }
+        // Mutable access for modules on this PU's thread (e.g. DeferredStepModule writes step summaries). Not for other threads.
+        [[nodiscard]] Dia::Observation::Profile::JobTimingTable& GetJobTimingTable() { return mJobTable; }
         // Kill switch (observation.perf.jobs): false = tier 1 counters only. Set before the unit starts ticking.
         void SetPerJobRecording(bool on) { mJobTable.SetPerJobRecording(on); }
         // The inbox JobObserver delivers this PU's finished job records to (installed on the ticking thread for the duration of each Update()).

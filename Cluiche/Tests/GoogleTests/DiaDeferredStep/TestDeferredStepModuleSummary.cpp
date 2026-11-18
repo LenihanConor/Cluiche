@@ -2,6 +2,7 @@
 // The no-allocation claim (AC 22) is structural: the ring is a fixed array member (no container, no new on the
 // sink path); the sink only copies a trivially-copyable record. There is no allocation-counting hook in the repo.
 #include "DeferredStepModuleHarness.h"
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaObservation/Profile/JobTimingTable.h>
 #include <type_traits>
 
@@ -142,4 +143,80 @@ TEST(DeferredStepModuleSummary, RestartClearsRingAndRewires)
 	StepSummaryRecord r;
 	ASSERT_TRUE(g_probe->GetSummary(0, r));
 	EXPECT_EQ(r.kickKeyLow, 100u);
+}
+
+TEST(DeferredStepModuleSummary, ForwardsEachAppliedStepToTableWithConvertedFields)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::Observation::Profile::JobTimingTable table;
+	table.Init(64);
+	g_probe->SetJobTimingTable(&table);
+	auto& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kSummaryChannel, step));
+	RunSteps(sched, step, 10, 3);
+	sched.Unregister(kSummaryChannel);
+	g_probe->SetJobTimingTable(nullptr);
+
+	ASSERT_EQ(table.GetStepSummaryTotal(), 3u);
+	ASSERT_EQ(g_probe->GetSummaryCount(), 3u);
+	for (uint32_t i = 0; i < 3; ++i)
+	{
+		StepSummaryRecord r;
+		Dia::Observation::Profile::StepSummary t;
+		ASSERT_TRUE(g_probe->GetSummary(i, r));
+		ASSERT_TRUE(table.GetStepSummary(i, t));
+		EXPECT_EQ(t.channel, r.owner);
+		EXPECT_EQ(t.kickKey, static_cast<uint32_t>(r.kickKeyLow));
+		EXPECT_EQ(t.applyKey, static_cast<uint32_t>(r.applyKey & 0xFFFFFFFFull));
+		EXPECT_EQ(t.ranges, static_cast<uint16_t>(r.rangeCount));
+		EXPECT_EQ(t.kickNs, r.kickNs);
+		EXPECT_EQ(t.firstStartNs, r.firstRangeStartNs);
+		EXPECT_EQ(t.readyNs, r.readyNs);
+		EXPECT_EQ(t.applyNs, r.applyNs);
+		EXPECT_NEAR(t.stallMs, static_cast<double>(r.stallNs) / 1.0e6, 1e-3);
+		EXPECT_NEAR(t.cpuMs, static_cast<double>(r.cpuNs) / 1.0e6, 1e-3);
+		EXPECT_NEAR(t.capWaitMs, static_cast<double>(r.capWaitNs) / 1.0e6, 1e-3);
+		EXPECT_NEAR(t.workerWaitMs, static_cast<double>(r.workerWaitNs) / 1.0e6, 1e-3);
+	}
+}
+
+TEST(DeferredStepModuleSummary, ResolvesOwnProcessingUnitTableAutomatically)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());   // DoStart already ran with no explicit table
+	ProcessingUnit* pu = g_probe->GetProcessingUnit();
+	ASSERT_NE(pu, nullptr);
+	const uint64_t before = pu->GetJobTimingTable().GetStepSummaryTotal();
+	auto& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kSummaryChannel, step));
+	RunSteps(sched, step, 1, 2);
+	sched.Unregister(kSummaryChannel);
+	EXPECT_EQ(pu->GetJobTimingTable().GetStepSummaryTotal(), before + 2);
+}
+
+TEST(DeferredStepModuleSummary, TableWrittenOnCallingThreadInsideTickNeverFromRun)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::Observation::Profile::JobTimingTable table;
+	table.Init(64);
+	g_probe->SetJobTimingTable(&table);
+	auto& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	std::atomic<uint64_t> totalSeenInRun{ 0 };
+	std::atomic<bool> ranOnWorker{ false };
+	const std::thread::id self = std::this_thread::get_id();
+	step.SetOnRun([&]() { totalSeenInRun = table.GetStepSummaryTotal(); if (std::this_thread::get_id() != self) ranOnWorker = true; });
+	ASSERT_TRUE(sched.Register(kSummaryChannel, step));
+	ASSERT_EQ(sched.Kick(kSummaryChannel, 5, 6), Dia::DeferredStep::KickResult::kLaunched);
+	EXPECT_EQ(table.GetStepSummaryTotal(), 0u);   // kick (and any worker Run) wrote nothing
+	sched.Tick(6);
+	EXPECT_EQ(table.GetStepSummaryTotal(), 1u);   // written synchronously by Tick on this thread
+	EXPECT_EQ(totalSeenInRun.load(), 0u);
+	EXPECT_EQ(step.GetApplyThread(), self);
+	sched.Unregister(kSummaryChannel);
+	g_probe->SetJobTimingTable(nullptr);
 }

@@ -1,5 +1,6 @@
 #include <DiaDeferredStep/DeferredStepModule.h>
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/CapConfig.h>
@@ -10,6 +11,7 @@
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/JobTimingTable.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaSaveGame/SaveManager.h>
 #include <DiaSaveGame/SaveRegistry.h>
@@ -139,9 +141,27 @@ namespace Dia::DeferredStep
 		}
 	}
 
-	void DeferredStepModule::ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& /*record*/)
+	// SimPU only, synchronous in the apply path (never from a worker). One call per step instance.
+	// The table's StepSummary hook is narrower than the record: kickKey/applyKey are truncated to its 32 bits
+	// (the full 64-bit applyKey stays in the module ring), and inlineFallbacks, stolenRanges and flags have
+	// no slot there, so they live only in the ring.
+	void DeferredStepModule::ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& record)
 	{
-		// TASK 7: JobTimingTable::AddStepSummary(record)
+		constexpr float kNsToMs = 1.0f / 1.0e6f;
+		Dia::Observation::Profile::StepSummary s = {};
+		s.channel      = record.owner;
+		s.kickKey      = static_cast<uint32_t>(record.kickKeyLow);
+		s.applyKey     = static_cast<uint32_t>(record.applyKey & 0xFFFFFFFFull);
+		s.ranges       = static_cast<uint16_t>(record.rangeCount);
+		s.kickNs       = record.kickNs;
+		s.firstStartNs = record.firstRangeStartNs;
+		s.readyNs      = record.readyNs;
+		s.applyNs      = record.applyNs;
+		s.stallMs      = static_cast<float>(record.stallNs) * kNsToMs;
+		s.cpuMs        = static_cast<float>(record.cpuNs) * kNsToMs;
+		s.capWaitMs    = static_cast<float>(record.capWaitNs) * kNsToMs;
+		s.workerWaitMs = static_cast<float>(record.workerWaitNs) * kNsToMs;
+		mJobTimingTable->AddStepSummary(s);
 	}
 
 	DeferredStepScheduler& DeferredStepModule::GetScheduler()
@@ -185,6 +205,12 @@ namespace Dia::DeferredStep
 		mSummaryHead = 0;
 		mSummaryCount = 0;
 		mScheduler->SetSummarySink(this);
+
+		// Default to this PU's own table (written only on SimPU, which owns it); an explicit SetJobTimingTable wins.
+		if (mJobTimingTable == nullptr && GetProcessingUnit() != nullptr)
+		{
+			mJobTimingTable = &GetProcessingUnit()->GetJobTimingTable();
+		}
 
 		mLastSeenStalls = 0;
 		mMetrics.Register();
