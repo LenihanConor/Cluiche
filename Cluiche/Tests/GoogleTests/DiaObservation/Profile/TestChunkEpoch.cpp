@@ -183,6 +183,35 @@ TEST(ChunkEpoch, JobRestartedBuilderIsAccepted)
 	EXPECT_EQ(0u, a.GetGapCount(kUnit));
 }
 
+TEST(ChunkEpoch, JobStepSummariesResetWithTheEpoch)
+{
+	StepSummary s{};
+	JobChunkAssembler a;
+	JobTimingTable table;
+	table.Init(64);
+	JobChunkBuilder old;
+	old.Begin(kUnit, 5u);
+	for (uint32_t i = 0; i < 4; ++i) { s.kickKey = i; table.AddStepSummary(s); }
+	a.Apply(JobTake(old, table, 1, 100.0));
+	a.Apply(JobTake(old, table, 2, 200.0));
+	ASSERT_EQ(4u, a.GetStepCount(kUnit));
+
+	// The PU restarts: a fresh table and builder under a new epoch; nothing of the old run is lost or kept.
+	JobTimingTable table2;
+	table2.Init(64);
+	s.kickKey = 77;
+	table2.AddStepSummary(s);
+	JobChunkBuilder fresh;
+	fresh.Begin(kUnit, 6u);
+	a.Apply(JobTake(fresh, table2, 1, 100.0));
+	EXPECT_EQ(1u, a.GetEpochResets(kUnit));
+	ASSERT_EQ(1u, a.GetStepCount(kUnit));
+	StepSummary out[4];
+	ASSERT_EQ(1u, a.CopySteps(kUnit, out, 4));
+	EXPECT_EQ(77u, out[0].kickKey);
+	EXPECT_EQ(0ull, a.GetStepsLost(kUnit));
+}
+
 TEST(ChunkEpoch, JobSameEpochStaleStillIgnoredAndNoEpochUnchanged)
 {
 	JobChunkAssembler a;

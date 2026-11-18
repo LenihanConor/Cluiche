@@ -18,7 +18,8 @@ namespace Dia
 
 			void Begin(uint32_t unitCrc, uint32_t epoch = JobChunk::kNoEpoch);
 
-			// True when >= 100 ms since the last Take and the table saw new jobs or inbox drops.
+			// True when >= 100 ms since the last Take and the table saw new jobs, inbox drops, or has step
+			// summaries not yet shipped.
 			bool ShouldFlush(const JobTimingTable& table, double nowMs) const;
 
 			// Packs tier 1 + the not-yet-sent aggregates/raw records (newest kept if more than fit).
@@ -32,6 +33,8 @@ namespace Dia
 			uint32_t mSeq;
 			uint64_t mNextAgg;
 			uint64_t mNextRaw;
+			uint64_t mNextStep;
+			uint64_t mStepsDropped;
 			uint64_t mLastSeen;
 			uint32_t mLastDrops;
 			double   mLastFlushMs;

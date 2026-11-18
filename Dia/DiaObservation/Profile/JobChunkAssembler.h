@@ -18,6 +18,7 @@ namespace Dia
 		public:
 			static constexpr uint32_t kMaxUnits         = 8;
 			static constexpr uint32_t kRawRingCapacity  = 8192;
+			static constexpr uint32_t kStepHistoryCapacity = 64;
 			static constexpr uint32_t kAggHistoryCapacity = 16384;   // 60 s at 30 Hz with ~9 busy owners (tier 2 window)
 
 			JobChunkAssembler();
@@ -42,6 +43,11 @@ namespace Dia
 			// Newest min(max, count) aggregates, oldest first.
 			uint32_t CopyAggregates(uint32_t unitCrc, JobFrameAggregate* out, uint32_t max) const;
 
+			uint64_t GetStepsLost(uint32_t unitCrc) const;               // step summaries known lost (stream gap or PU ring wrap)
+			uint32_t GetStepCount(uint32_t unitCrc) const;
+			// Newest min(max, count) step summaries, oldest first.
+			uint32_t CopySteps(uint32_t unitCrc, StepSummary* out, uint32_t max) const;
+
 		private:
 			struct UnitEntry
 			{
@@ -61,6 +67,10 @@ namespace Dia
 				uint64_t rawTotal = 0;
 				std::vector<JobFrameAggregate> agg;
 				uint64_t aggTotal = 0;
+				uint64_t nextStep = 0;
+				uint64_t stepsLost = 0;
+				std::vector<StepSummary> steps;
+				uint64_t stepTotal = 0;
 			};
 
 			UnitEntry*       FindUnit(uint32_t unitCrc);

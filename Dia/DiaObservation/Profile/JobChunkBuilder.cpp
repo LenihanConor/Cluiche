@@ -6,7 +6,7 @@ namespace Dia
 	namespace Observation { namespace Profile
 	{
 		JobChunkBuilder::JobChunkBuilder()
-			: mUnitCrc(0), mEpoch(JobChunk::kNoEpoch), mSeq(0), mNextAgg(0), mNextRaw(0), mLastSeen(0), mLastDrops(0), mLastFlushMs(0.0)
+			: mUnitCrc(0), mEpoch(JobChunk::kNoEpoch), mSeq(0), mNextAgg(0), mNextRaw(0), mNextStep(0), mStepsDropped(0), mLastSeen(0), mLastDrops(0), mLastFlushMs(0.0)
 		{
 			std::memset(&mOut, 0, sizeof(mOut));
 		}
@@ -18,6 +18,8 @@ namespace Dia
 			mSeq = 0;
 			mNextAgg = 0;
 			mNextRaw = 0;
+			mNextStep = 0;
+			mStepsDropped = 0;
 			mLastSeen = 0;
 			mLastDrops = 0;
 			mLastFlushMs = 0.0;
@@ -27,7 +29,8 @@ namespace Dia
 		{
 			if (nowMs - mLastFlushMs < kFlushIntervalMs)
 				return false;
-			return table.GetRecordsSeen() != mLastSeen || table.GetPool().inboxDrops != mLastDrops;
+			return table.GetRecordsSeen() != mLastSeen || table.GetPool().inboxDrops != mLastDrops
+				|| table.GetStepSummaryTotal() > mNextStep;
 		}
 
 		const JobChunk& JobChunkBuilder::Take(const JobTimingTable& table, double nowMs)
@@ -68,6 +71,25 @@ namespace Dia
 				table.GetRaw(i, c.raw[c.rawCount++]);
 			mNextRaw = rawTotal;
 			c.rawOverwritten = table.GetRawOverwritten();
+
+			// Step summaries: oldest first, each shipped once. More than kMaxSteps pending carries the rest to the
+			// next chunk; only summaries the table's ring already overwrote are lost (counted in stepsDropped).
+			const uint64_t stepTotal = table.GetStepSummaryTotal();
+			const uint64_t stepOldest = stepTotal - table.GetStepSummaryCount();
+			if (mNextStep < stepOldest)
+			{
+				mStepsDropped += stepOldest - mNextStep;
+				mNextStep = stepOldest;
+			}
+			c.stepFirst = mNextStep;
+			c.stepCount = 0;
+			while (mNextStep < stepTotal && c.stepCount < JobChunk::kMaxSteps)
+			{
+				table.GetStepSummary(static_cast<uint32_t>(mNextStep - stepOldest), c.steps[c.stepCount]);
+				++c.stepCount;
+				++mNextStep;
+			}
+			c.stepsDropped = mStepsDropped;
 
 			mLastSeen = c.recordsSeen;
 			mLastDrops = c.pool.inboxDrops;

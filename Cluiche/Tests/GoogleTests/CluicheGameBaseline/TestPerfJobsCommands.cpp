@@ -239,6 +239,68 @@ TEST_F(PerfJobsRig, WindowCarriesJobsSectionWithOwnersAndEmptySteps)
     EXPECT_TRUE(w["units"].isArray());
 }
 
+TEST_F(PerfJobsRig, WindowStepsCarryDeferredStepSummariesInTheInspectorShape)
+{
+    SendChunk(0x11u, 5);
+    cmds.Drain();
+    // A chunk from the same unit carrying two step summaries.
+    auto chunk = std::make_unique<JobChunk>();
+    std::memset(chunk.get(), 0, sizeof(JobChunk));
+    chunk->unitCrc = 0x11u;
+    chunk->seq = seq++;
+    chunk->flags = JobChunk::kFlagPerJob;
+    chunk->rawFirst = nextRaw;
+    chunk->aggFirst = nextAgg;
+    chunk->stepCount = 2;
+    chunk->steps[0].channel = 0xABCDu;
+    chunk->steps[0].kickKey = 3;
+    chunk->steps[0].applyKey = 5;
+    chunk->steps[0].ranges = 4;
+    chunk->steps[0].kickNs = 5000000000000ull;
+    chunk->steps[0].firstStartNs = 5000000001000ull;
+    chunk->steps[0].readyNs = 5000000002000ull;
+    chunk->steps[0].applyNs = 5000000003000ull;
+    chunk->steps[0].stallMs = 1.25f;
+    chunk->steps[0].cpuMs = 2.5f;
+    chunk->steps[0].capWaitMs = 0.5f;
+    chunk->steps[0].workerWaitMs = 0.75f;
+    chunk->steps[1].channel = 0xABCDu;
+    chunk->steps[1].kickKey = 4;
+    Event<JobChunk> ev;
+    ev.payload = *chunk;
+    jobs.Send(ev);
+    cmds.Drain();
+
+    const Json::Value w = cmds.HandleWindow(Json::Value(Json::objectValue));
+    const Json::Value& steps = w["jobs"]["steps"];
+    ASSERT_TRUE(steps.isArray());
+    ASSERT_EQ(2u, steps.size());
+    const Json::Value& s = steps[0u];
+    EXPECT_EQ("0x00000011", s["unit"].asString());
+    EXPECT_EQ("0x0000abcd", s["channel"].asString());   // unresolved channel falls back to hex
+    EXPECT_EQ(3u, s["kickKey"].asUInt());
+    EXPECT_EQ(5u, s["applyKey"].asUInt());
+    EXPECT_EQ(5000000000000ull, s["kick"].asUInt64());
+    EXPECT_EQ(5000000001000ull, s["firstStart"].asUInt64());
+    EXPECT_EQ(5000000002000ull, s["ready"].asUInt64());
+    EXPECT_EQ(5000000003000ull, s["apply"].asUInt64());
+    EXPECT_DOUBLE_EQ(1.25, s["stallMs"].asDouble());
+    EXPECT_DOUBLE_EQ(2.5, s["cpuMs"].asDouble());
+    EXPECT_DOUBLE_EQ(0.5, s["capWaitMs"].asDouble());
+    EXPECT_DOUBLE_EQ(0.75, s["workerWaitMs"].asDouble());
+    EXPECT_EQ(4u, s["ranges"].asUInt());
+    EXPECT_EQ(4u, steps[1u]["kickKey"].asUInt());
+}
+
+TEST_F(PerfJobsRig, WindowStepsAreStillEmptyWhenNoSummariesWereShipped)
+{
+    SendChunk(0x11u, 5);
+    cmds.Drain();
+    const Json::Value w = cmds.HandleWindow(Json::Value(Json::objectValue));
+    EXPECT_TRUE(w["jobs"]["steps"].isArray());
+    EXPECT_EQ(0u, w["jobs"]["steps"].size());
+}
+
 TEST_F(PerfJobsRig, WindowWithoutJobsStoreStillHasEmptyJobsSection)
 {
     PerfWindowCommands none(&coarse, nullptr);

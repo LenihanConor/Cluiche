@@ -34,7 +34,7 @@ public:
     // app:   optional, used only to map unit/module crcs to display names (null: hex names).
     // jobsStore: the "$perfjobs" store (may be null: no jobs data).  A reader is registered on it.
     // Task 13 part B: the same Drain() also feeds a JobChunkAssembler; perf.window gains an added
-    // "jobs" section (tier 2 aggregates + empty "steps") and perf.jobs {unit, fromNs, toNs} serves
+    // "jobs" section (tier 2 aggregates + deferred-step "steps") and perf.jobs {unit, fromNs, toNs} serves
     // raw job records (tier 3, at most kMaxJobRecords per reply).
     PerfWindowCommands(Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::CoarseChunk>* store,
                        Dia::ApplicationFlow::IApplicationInspectable* app,

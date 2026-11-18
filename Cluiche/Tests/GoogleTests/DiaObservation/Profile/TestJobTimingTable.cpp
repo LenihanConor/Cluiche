@@ -384,6 +384,174 @@ TEST(JobChunkBuilder, KillSwitchOffSendsTier1Only)
 }
 
 // ---------------------------------------------------------------------------
+// Deferred-step summaries through the chunk
+// ---------------------------------------------------------------------------
+namespace
+{
+	StepSummary Step(uint32_t channel, uint32_t kickKey)
+	{
+		StepSummary s{};
+		s.channel = channel;
+		s.kickKey = kickKey;
+		s.applyKey = kickKey + 2;
+		s.ranges = 4;
+		s.kickNs = 1000ull * kickKey;
+		s.applyNs = 2000ull * kickKey;
+		s.stallMs = 1.5f;
+		return s;
+	}
+}
+
+TEST(JobChunkBuilder, NoStepsGivesEmptySection)
+{
+	JobTimingTable t; t.Init(64);
+	t.Record(Rec(0xA, 0, 1));
+	JobChunkBuilder b; b.Begin(1);
+	const JobChunk& c = b.Take(t, 100.0);
+	EXPECT_EQ(0u, c.stepCount);
+	EXPECT_EQ(0ull, c.stepFirst);
+	EXPECT_EQ(0ull, c.stepsDropped);
+}
+
+TEST(JobChunkBuilder, StepSummariesShipExactlyOnce)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(1);
+	t.AddStepSummary(Step(0xC1, 10));
+	t.AddStepSummary(Step(0xC2, 11));
+	const JobChunk c0 = b.Take(t, 100.0);
+	ASSERT_EQ(2u, c0.stepCount);
+	EXPECT_EQ(0ull, c0.stepFirst);
+	EXPECT_EQ(0xC1u, c0.steps[0].channel);
+	EXPECT_EQ(10u, c0.steps[0].kickKey);
+	EXPECT_EQ(12u, c0.steps[0].applyKey);
+	EXPECT_EQ(4u, c0.steps[0].ranges);
+	EXPECT_FLOAT_EQ(1.5f, c0.steps[0].stallMs);
+	EXPECT_EQ(11u, c0.steps[1].kickKey);
+
+	const JobChunk c1 = b.Take(t, 200.0);   // nothing new
+	EXPECT_EQ(0u, c1.stepCount);
+	EXPECT_EQ(2ull, c1.stepFirst);
+
+	t.AddStepSummary(Step(0xC1, 12));
+	const JobChunk c2 = b.Take(t, 300.0);
+	ASSERT_EQ(1u, c2.stepCount);
+	EXPECT_EQ(2ull, c2.stepFirst);
+	EXPECT_EQ(12u, c2.steps[0].kickKey);
+	EXPECT_EQ(0ull, c2.stepsDropped);
+}
+
+TEST(JobChunkBuilder, PendingStepSummariesTriggerFlush)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(1);
+	EXPECT_FALSE(b.ShouldFlush(t, 500.0));
+	t.AddStepSummary(Step(1, 1));
+	EXPECT_TRUE(b.ShouldFlush(t, 500.0));          // no job records at all, a step alone is enough
+	b.Take(t, 500.0);
+	EXPECT_FALSE(b.ShouldFlush(t, 700.0));
+}
+
+TEST(JobChunkBuilder, StepBurstOverChunkLimitIsCarriedNotLost)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(1);
+	const uint32_t n = JobChunk::kMaxSteps * 2 + 1;
+	for (uint32_t i = 0; i < n; ++i) t.AddStepSummary(Step(1, 100 + i));
+
+	uint32_t next = 100;
+	double now = 100.0;
+	uint32_t chunks = 0;
+	while (b.ShouldFlush(t, now))
+	{
+		const JobChunk& c = b.Take(t, now);
+		EXPECT_LE(c.stepCount, JobChunk::kMaxSteps);
+		EXPECT_EQ(next - 100, static_cast<uint32_t>(c.stepFirst));
+		for (uint32_t i = 0; i < c.stepCount; ++i)
+			EXPECT_EQ(next++, c.steps[i].kickKey);
+		EXPECT_EQ(0ull, c.stepsDropped);
+		now += 100.0;
+		ASSERT_LT(++chunks, 10u);
+	}
+	EXPECT_EQ(100 + n, next);
+	EXPECT_EQ(3u, chunks);
+}
+
+TEST(JobChunkBuilder, StepRingWrapPastCursorCountsDropped)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(1);
+	t.AddStepSummary(Step(1, 0));
+	b.Take(t, 100.0);                                   // cursor at 1
+	const uint32_t extra = JobTimingTable::kStepCapacity + 5;
+	for (uint32_t i = 0; i < extra; ++i) t.AddStepSummary(Step(1, 1 + i));
+	// ring now holds absolute indexes [6, 70); the cursor (1) wrapped out by 5
+	const JobChunk c = b.Take(t, 200.0);
+	EXPECT_EQ(5ull, c.stepsDropped);
+	EXPECT_EQ(6ull, c.stepFirst);
+	ASSERT_EQ(JobChunk::kMaxSteps, c.stepCount);
+	EXPECT_EQ(6u, c.steps[0].kickKey);   // absolute index i carries kickKey i
+}
+
+TEST(JobChunkBuilder, BeginRestartsStepCursorAndDropCount)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(1, 1u);
+	for (uint32_t i = 0; i < JobTimingTable::kStepCapacity + 2; ++i) t.AddStepSummary(Step(1, i));
+	b.Take(t, 100.0);
+	b.Begin(1, 2u);
+	const JobChunk& c = b.Take(t, 200.0);
+	EXPECT_EQ(2ull, c.stepFirst);                      // same rule as raw records: restart re-ships what the ring holds
+	EXPECT_EQ(2ull, c.stepsDropped);
+	EXPECT_EQ(3u, c.stepCount);
+}
+
+TEST(JobChunkAssembler, StepsMergeInOrderAndStreamGapCountsLost)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(0x42);
+	JobChunkAssembler a;
+	t.AddStepSummary(Step(1, 0)); t.AddStepSummary(Step(1, 1));
+	a.Apply(b.Take(t, 100.0));
+	t.AddStepSummary(Step(1, 2));
+	a.Apply(b.Take(t, 200.0));
+	EXPECT_EQ(3u, a.GetStepCount(0x42));
+	EXPECT_EQ(0ull, a.GetStepsLost(0x42));
+
+	t.AddStepSummary(Step(1, 3)); t.AddStepSummary(Step(1, 4));
+	(void)b.Take(t, 300.0);                            // lost on the stream
+	t.AddStepSummary(Step(1, 5));
+	a.Apply(b.Take(t, 400.0));
+	EXPECT_EQ(2ull, a.GetStepsLost(0x42));
+	StepSummary out[8];
+	ASSERT_EQ(4u, a.CopySteps(0x42, out, 8));
+	EXPECT_EQ(0u, out[0].kickKey);
+	EXPECT_EQ(5u, out[3].kickKey);
+	ASSERT_EQ(1u, a.CopySteps(0x42, out, 1));          // newest only
+	EXPECT_EQ(5u, out[0].kickKey);
+	EXPECT_EQ(0u, a.GetStepCount(0xBAD));
+}
+
+TEST(JobChunkAssembler, StepHistoryKeepsNewestWhenFull)
+{
+	JobTimingTable t; t.Init(64);
+	JobChunkBuilder b; b.Begin(0x42);
+	JobChunkAssembler a;
+	const uint32_t total = JobChunkAssembler::kStepHistoryCapacity + 10;
+	for (uint32_t i = 0; i < total; ++i)
+	{
+		t.AddStepSummary(Step(1, i));
+		a.Apply(b.Take(t, 100.0 * (i + 1)));
+	}
+	EXPECT_EQ(JobChunkAssembler::kStepHistoryCapacity, a.GetStepCount(0x42));
+	StepSummary out[JobChunkAssembler::kStepHistoryCapacity];
+	ASSERT_EQ(JobChunkAssembler::kStepHistoryCapacity, a.CopySteps(0x42, out, JobChunkAssembler::kStepHistoryCapacity));
+	EXPECT_EQ(10u, out[0].kickKey);
+	EXPECT_EQ(total - 1, out[JobChunkAssembler::kStepHistoryCapacity - 1].kickKey);
+	EXPECT_EQ(0ull, a.GetStepsLost(0x42));
+}
+
+// ---------------------------------------------------------------------------
 // JobChunkAssembler
 // ---------------------------------------------------------------------------
 namespace

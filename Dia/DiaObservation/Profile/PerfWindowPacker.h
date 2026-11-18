@@ -59,6 +59,8 @@ namespace Dia
 			bool                     perJobRecording;   // false: aggregates are not produced (kill switch)
 			const JobFrameAggregate* aggs;
 			uint32_t                 aggCount;
+			const StepSummary*       steps = nullptr;   // deferred-step summaries, oldest first (optional)
+			uint32_t                 stepCount = 0;
 		};
 
 		// Aggregates are bucketed so 60 s of 5 owners fits the AC13 budget: kJobsBucketMs wide buckets
@@ -72,7 +74,10 @@ namespace Dia
 		// frameAgg arrays are base64 little-endian uint16, owner-major (owner * bucketCount + bucket):
 		// count saturates at 65535, busyMs and worstWaitMs are 0.01 ms fixed point saturating at 655.35.
 		// A unit with perJobRecording false (or no aggregates) packs no owners and empty arrays.
-		// "steps" is always empty: deferred-step summaries have no producer yet.
+		// "steps": every unit's step summaries (unit order, oldest first), each
+		//   {"unit","channel","kickKey","applyKey","kick","firstStart","ready","apply" (ns, steady clock),
+		//    "stallMs","cpuMs","capWaitMs","workerWaitMs","ranges"}; channel is the resolver name or 0x%08x.
+		//   Empty when no unit supplied summaries.
 		void PackPerfWindowJobs(const PerfJobsUnitInput* units, uint32_t unitCount, float seconds,
 			PerfNameResolver resolver, std::string& outJson);
 

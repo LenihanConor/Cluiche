@@ -409,7 +409,42 @@ namespace Dia
 					outJson.push_back(',');
 				PackJobsUnit(units[i], seconds, resolver, outJson);
 			}
-			outJson += "],\"steps\":[]}";
+			outJson += "],\"steps\":[";
+			bool firstStep = true;
+			for (uint32_t i = 0; i < unitCount; ++i)
+			{
+				for (uint32_t s = 0; s < units[i].stepCount && units[i].steps; ++s)
+				{
+					const StepSummary& st = units[i].steps[s];
+					char nameBuf[128];
+					const char* channel = resolver ? resolver(st.channel, nameBuf, sizeof(nameBuf)) : nullptr;
+					if (!channel)
+					{
+						snprintf(nameBuf, sizeof(nameBuf), "0x%08x", st.channel);
+						channel = nameBuf;
+					}
+					if (!firstStep)
+						outJson.push_back(',');
+					firstStep = false;
+					outJson += "{\"unit\":";
+					AppendEscaped(outJson, units[i].name);
+					outJson += ",\"channel\":";
+					AppendEscaped(outJson, channel);
+					outJson += ",\"kickKey\":";      AppendUnsigned(outJson, st.kickKey);
+					outJson += ",\"applyKey\":";     AppendUnsigned(outJson, st.applyKey);
+					outJson += ",\"kick\":";         AppendUnsigned(outJson, st.kickNs);
+					outJson += ",\"firstStart\":";   AppendUnsigned(outJson, st.firstStartNs);
+					outJson += ",\"ready\":";        AppendUnsigned(outJson, st.readyNs);
+					outJson += ",\"apply\":";        AppendUnsigned(outJson, st.applyNs);
+					outJson += ",\"stallMs\":";      AppendNumber(outJson, "%.3f", st.stallMs);
+					outJson += ",\"cpuMs\":";        AppendNumber(outJson, "%.3f", st.cpuMs);
+					outJson += ",\"capWaitMs\":";    AppendNumber(outJson, "%.3f", st.capWaitMs);
+					outJson += ",\"workerWaitMs\":"; AppendNumber(outJson, "%.3f", st.workerWaitMs);
+					outJson += ",\"ranges\":";       AppendUnsigned(outJson, st.ranges);
+					outJson.push_back('}');
+				}
+			}
+			outJson += "]}";
 		}
 
 		void PackPerfJobsRecords(const char* unit, uint32_t unitCrc, uint64_t fromNs, uint64_t toNs,

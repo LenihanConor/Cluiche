@@ -35,6 +35,8 @@ namespace Dia
 				e->active = true;
 				e->raw.assign(kRawRingCapacity, JobRecordPacked{});
 				e->agg.assign(kAggHistoryCapacity, JobFrameAggregate{});
+				e->steps.assign(kStepHistoryCapacity, StepSummary{});
+				e->nextStep = chunk.stepFirst;
 				// Late attach: start at this chunk's seq and indexes; nothing before it counts as lost.
 				e->nextSeq = chunk.seq;
 				e->nextRaw = chunk.rawFirst;
@@ -54,6 +56,8 @@ namespace Dia
 					++e->epochResets;
 					e->rawTotal = 0;
 					e->aggTotal = 0;
+					e->stepTotal = 0;
+					e->nextStep = chunk.stepFirst;
 					e->hasLatest = false;
 					e->nextSeq = chunk.seq;
 					e->nextRaw = chunk.rawFirst;
@@ -101,6 +105,48 @@ namespace Dia
 				++e->aggTotal;
 				e->nextAgg = idx + 1;
 			}
+
+			const uint32_t stepCount = chunk.stepCount < JobChunk::kMaxSteps ? chunk.stepCount : JobChunk::kMaxSteps;
+			if (chunk.stepFirst > e->nextStep)
+			{
+				e->stepsLost += chunk.stepFirst - e->nextStep;
+				e->nextStep = chunk.stepFirst;
+			}
+			for (uint32_t i = 0; i < stepCount; ++i)
+			{
+				const uint64_t idx = chunk.stepFirst + i;
+				if (idx < e->nextStep)
+					continue;
+				e->steps[e->stepTotal % e->steps.size()] = chunk.steps[i];
+				++e->stepTotal;
+				e->nextStep = idx + 1;
+			}
+		}
+
+		uint64_t JobChunkAssembler::GetStepsLost(uint32_t unitCrc) const
+		{
+			const UnitEntry* e = FindUnit(unitCrc);
+			return e ? e->stepsLost : 0;
+		}
+
+		uint32_t JobChunkAssembler::GetStepCount(uint32_t unitCrc) const
+		{
+			const UnitEntry* e = FindUnit(unitCrc);
+			if (!e) return 0;
+			return e->stepTotal < e->steps.size() ? static_cast<uint32_t>(e->stepTotal) : static_cast<uint32_t>(e->steps.size());
+		}
+
+		uint32_t JobChunkAssembler::CopySteps(uint32_t unitCrc, StepSummary* out, uint32_t max) const
+		{
+			const UnitEntry* e = FindUnit(unitCrc);
+			if (!e) return 0;
+			const uint64_t cap = e->steps.size();
+			uint64_t start = e->stepTotal > cap ? e->stepTotal - cap : 0;
+			if (e->stepTotal - start > max) start = e->stepTotal - max;
+			uint32_t n = 0;
+			for (uint64_t i = start; i < e->stepTotal; ++i)
+				out[n++] = e->steps[i % cap];
+			return n;
 		}
 
 		uint32_t JobChunkAssembler::GetUnitCrcAt(uint32_t index) const

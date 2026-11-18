@@ -291,9 +291,10 @@ Json::Value PerfWindowCommands::HandleWindow(const Json::Value& args)
     if (reply.isMember("error"))
         return reply;
 
-    // Tier 2 jobs section (an added key on the v1 reply; bucketed aggregates, empty "steps").
+    // Tier 2 jobs section (an added key on the v1 reply; bucketed aggregates + the units' deferred-step summaries in "steps").
     const uint32_t jobUnitCount = mJobsAssembler.GetUnitCount();
     std::vector<std::vector<JobFrameAggregate>> aggStore(jobUnitCount);
+    std::vector<std::vector<StepSummary>> stepStore(jobUnitCount);
     std::vector<std::string> jobNames(jobUnitCount);
     std::vector<PerfJobsUnitInput> jobInputs(jobUnitCount);
     for (uint32_t i = 0; i < jobUnitCount; ++i)
@@ -307,8 +308,11 @@ Json::Value PerfWindowCommands::HandleWindow(const Json::Value& args)
             aggStore[i].resize(mJobsAssembler.GetAggCount(crc));
             aggStore[i].resize(mJobsAssembler.CopyAggregates(crc, aggStore[i].data(), static_cast<uint32_t>(aggStore[i].size())));
         }
+        stepStore[i].resize(mJobsAssembler.GetStepCount(crc));
+        stepStore[i].resize(mJobsAssembler.CopySteps(crc, stepStore[i].data(), static_cast<uint32_t>(stepStore[i].size())));
         jobInputs[i] = { crc, jobNames[i].c_str(), UnitHzOrDefault(mAssembler, crc), on,
-                         aggStore[i].data(), static_cast<uint32_t>(aggStore[i].size()) };
+                         aggStore[i].data(), static_cast<uint32_t>(aggStore[i].size()),
+                         stepStore[i].data(), static_cast<uint32_t>(stepStore[i].size()) };
     }
     std::string jobsText;
     {
