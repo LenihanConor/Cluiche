@@ -1,7 +1,13 @@
-// DeferredStepModule skeleton: registration metadata (AC 1) and JobSystemService reader connection (AC 2).
+// DeferredStepModule: registration metadata (AC 1), JobSystemService reader connection (AC 2),
+// start/stop lifecycle and scheduler ownership (AC 3-6, 16, 34).
+// AC 7 (code-review check): DeferredStepModule.cpp/.h add no singleton and no file static beyond kTypeId.
 #include <gtest/gtest.h>
 #include <DiaDeferredStep/DeferredStepModule.h>
+#include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IStepKeySource.h>
+#include <DiaDeferredStep/Testing/LogCapture.h>
+#include <DiaDeferredStep/Testing/RecordingStep.h>
+#include <atomic>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
@@ -26,6 +32,9 @@ namespace
 	{
 		explicit DSM_Probe(const StringCRC& id) : DeferredStepModule(id) {}
 		bool ReaderAvailable() const { return mJobSystemReader.IsAvailable(); }
+		// Direct lifecycle access for restart / drain tests (bypasses the framework state machine).
+		StartResult CallStart() { return DoStart(); }
+		StopResult  CallStop()  { return DoStop(); }
 	};
 
 	// Stands in for JobSystemModule on MainPU: publishes a JobSystem on "JobSystemService".
@@ -36,15 +45,16 @@ namespace
 		Dia::Threading::JobSystem mJobSystem;
 		ServiceStreamWriter<Dia::Threading::JobSystem> mWriter{ this, "JobSystemService" };
 		void OnConnectStreams(Application& app) override { mWriter.Connect(app); }
-		StartResult DoStart() override { mWriter.Register(mJobSystem); return StartResult::kReady; }
+		StartResult DoStart() override { mJobSystem.Initialize(4); mWriter.Register(mJobSystem); return StartResult::kReady; }
 		void DoUpdate(float) override {}
-		StopResult DoStop() override { mWriter.Deregister(); return StopResult::kDone; }
+		StopResult DoStop() override { mWriter.Deregister(); mJobSystem.Shutdown(); return StopResult::kDone; }
 	};
 	const StringCRC DSM_ProviderModule::kTypeId("DSM_ProviderModule");
 
 	DSM_Probe* g_probe = nullptr;
+	DSM_ProviderModule* g_provider = nullptr;
 	Module* CreateProbe(const StringCRC& id) { auto* m = new DSM_Probe(id); g_probe = m; return m; }
-	Module* CreateProvider(const StringCRC& id) { return new DSM_ProviderModule(id); }
+	Module* CreateProvider(const StringCRC& id) { auto* m = new DSM_ProviderModule(id); g_provider = m; return m; }
 
 	ModuleDeclaration MakeModule(const StringCRC& typeId, const char* instanceId, const char* role)
 	{
@@ -54,6 +64,7 @@ namespace
 		mod.startTimeoutMs = 10000.0f;
 		mod.stopTimeoutMs = 5000.0f;
 		mod.stages.Add(StringCRC("Boot"));
+		mod.stages.Add(StringCRC("Run"));
 		ChannelBinding ch;
 		ch.id = StringCRC("JobSystemService");
 		ch.role = StringCRC(role);
@@ -61,13 +72,16 @@ namespace
 		return mod;
 	}
 
-	ApplicationManifestV3 BuildManifest()
+	ApplicationManifestV3 BuildManifest(bool withProvider)
 	{
 		ApplicationManifestV3 m;
 		m.version = 3;
 		StageDeclaration boot;
 		boot.name = StringCRC("Boot");
 		m.stages.Add(boot);
+		StageDeclaration run;
+		run.name = StringCRC("Run");
+		m.stages.Add(run);
 		m.initialStage = StringCRC("Boot");
 
 		StreamDeclaration svc;
@@ -80,14 +94,35 @@ namespace
 		mainPu.instanceId = StringCRC("MainPU");
 		mainPu.frequencyHz = 60.0f;
 		mainPu.dedicatedThread = false;
-		mainPu.modules.Add(MakeModule(DSM_ProviderModule::kTypeId, "provider", "provides"));
+		ModuleDeclaration provider = MakeModule(DSM_ProviderModule::kTypeId, "provider", "provides");
+		if (!withProvider)
+		{
+			// Declared (so the manifest validates) but only active in Run, which the harness never enters:
+			// the consumer starts in Boot and finds no JobSystemService.
+			provider.stages.RemoveAll();
+			provider.stages.Add(StringCRC("Run"));
+		}
+		mainPu.modules.Add(provider);
 		m.processingUnits.Add(mainPu);
 
 		ProcessingUnitDeclaration simPu;
 		simPu.instanceId = StringCRC("SimPU");
 		simPu.frequencyHz = 60.0f;
 		simPu.dedicatedThread = false;
-		simPu.modules.Add(MakeModule(DeferredStepModule::kTypeId, "deferredStep", "consumes"));
+		ModuleDeclaration consumer = MakeModule(DeferredStepModule::kTypeId, "deferredStep", "consumes");
+		if (withProvider)
+		{
+			// Cross-PU dependencies are not allowed; order via stages instead: provider is up in Boot, the consumer
+			// only starts once the harness transitions to Run.
+			consumer.stages.RemoveAll();
+			consumer.stages.Add(StringCRC("Run"));
+		}
+		else
+		{
+			consumer.stages.RemoveAll();
+			consumer.stages.Add(StringCRC("Boot"));
+		}
+		simPu.modules.Add(consumer);
 		m.processingUnits.Add(simPu);
 		return m;
 	}
@@ -97,19 +132,27 @@ namespace
 		TypeRegistry					mReg;
 		ApplicationManifestV3			mManifest;
 		std::unique_ptr<Application>	mApp;
+		bool							mWithProvider = true;
 
-		Harness()
+		explicit Harness(bool withProvider = true)
 		{
 			g_probe = nullptr;
+			g_provider = nullptr;
+			mWithProvider = withProvider;
 			mReg.Register(DeferredStepModule::kTypeId, CreateProbe);
 			mReg.Register(DSM_ProviderModule::kTypeId, CreateProvider);
-			mManifest = BuildManifest();
+			mManifest = BuildManifest(withProvider);
 			mApp.reset(new Application(mManifest, mReg));
 		}
 		bool Start()
 		{
 			if (!mApp->Start()) return false;
 			for (int i = 0; i < 10; ++i) mApp->Update(kDt);
+			if (mWithProvider)
+			{
+				mApp->TransitionTo(StringCRC("Run"));
+				for (int i = 0; i < 20; ++i) mApp->Update(kDt);
+			}
 			return g_probe != nullptr;
 		}
 		~Harness()
@@ -156,3 +199,116 @@ TEST(DeferredStepModule, ConnectsJobSystemServiceReader)
 	ASSERT_TRUE(h.Start());
 	EXPECT_TRUE(g_probe->ReaderAvailable());
 }
+
+namespace
+{
+	const StringCRC kChannelA("DSM_ChannelA");
+}
+
+TEST(DeferredStepModule, StartWithJobSystemExposesUsableScheduler)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	ASSERT_TRUE(g_probe->ReaderAvailable());
+
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+	sched.Tick(2);
+	EXPECT_EQ(step.GetCaptureCount(), 1u);
+	EXPECT_EQ(step.GetRunCount(), 1u);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	sched.Unregister(kChannelA);
+
+	EXPECT_EQ(logs.Warnings("JobSystemService"), 0u);
+	EXPECT_GE(logs.Infos("cap"), 1u);   // start Info carries the resolved cap
+}
+
+TEST(DeferredStepModule, StartWithoutJobSystemWarnsOnceAndRunsInline)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h(false);
+	ASSERT_TRUE(h.Start());
+	EXPECT_FALSE(g_probe->ReaderAvailable());
+	EXPECT_EQ(logs.Warnings("JobSystemService"), 1u);
+
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+	EXPECT_EQ(step.GetRunCount(), 1u);                       // ran synchronously inside Kick
+	EXPECT_EQ(step.GetRunThread(), std::this_thread::get_id());
+	sched.Tick(2);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	sched.Unregister(kChannelA);
+	EXPECT_EQ(logs.Warnings(), 1u);                          // nothing further per step (no stall: inline is already complete)
+}
+
+TEST(DeferredStepModule, StopDrainsInFlightAndSubmitsNothingAfterwards)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+
+	std::atomic<bool> release{ false };
+	Dia::DeferredStep::Testing::RecordingStep step;
+	step.SetOnRun([&release]() { while (!release.load()) { std::this_thread::yield(); } });
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 100), Dia::DeferredStep::KickResult::kLaunched);
+	release.store(true);
+	sched.Unregister(kChannelA);   // consumers unregister (drain + discard) before the module stops
+	EXPECT_EQ(step.GetApplyCount(), 0u);
+
+	EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+	const uint64_t submittedAtStop = g_provider->mJobSystem.GetSubmittedCount();
+	for (int i = 0; i < 5; ++i) h.mApp->Update(kDt);
+	EXPECT_EQ(g_provider->mJobSystem.GetSubmittedCount(), submittedAtStop);
+	EXPECT_EQ(step.GetRunCount(), 1u);
+	EXPECT_EQ(step.GetApplyCount(), 0u);
+	EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);   // leave started for harness teardown
+}
+
+TEST(DeferredStepModule, StopLogsLifetimeCounts)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::DeferredStep::Testing::LogCapture logs;
+	g_probe->CallStop();
+	EXPECT_GE(logs.Infos("kicks"), 1u);
+	g_probe->CallStart();
+}
+
+TEST(DeferredStepModule, DoubleStartStopCycleWorks)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	for (int cycle = 0; cycle < 3; ++cycle)
+	{
+		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
+		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+		Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+		EXPECT_EQ(sched.GetChannelCount(), 0u);
+		Dia::DeferredStep::Testing::RecordingStep step;
+		ASSERT_TRUE(sched.Register(kChannelA, step));
+		EXPECT_EQ(sched.Kick(kChannelA, 1, 1), Dia::DeferredStep::KickResult::kLaunched);
+		sched.Tick(1);
+		EXPECT_EQ(step.GetApplyCount(), 1u);
+		sched.Unregister(kChannelA);
+	}
+}
+
+#ifdef _DEBUG
+TEST(DeferredStepModule, StopWithChannelStillRegisteredAsserts)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	Dia::DeferredStep::Testing::RecordingStep step;
+	EXPECT_DEATH(
+		{
+			g_probe->GetScheduler().Register(kChannelA, step);
+			g_probe->CallStop();
+		}, "");
+}
+#endif

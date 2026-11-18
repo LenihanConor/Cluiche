@@ -6,6 +6,10 @@
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaThreading/JobSystem.h>
+#include <DiaCore/Memory/UniquePtr.h>
+#include <DiaDeferredStep/DeferredStepScheduler.h>
+#include <DiaDeferredStep/DeferredStepSaveParticipant.h>
+#include <DiaDeferredStep/IStepLauncher.h>
 
 namespace Dia::DeferredStep
 {
@@ -23,6 +27,9 @@ namespace Dia::DeferredStep
 		// Re-expose the inherited no-arg overload so ModuleRef<T>::Get() resolves.
 		using Dia::ApplicationFlow::Module::GetState;
 
+			// Valid from a successful DoStart until DoStop. Consumers register channels in their own DoStart.
+			DeferredStepScheduler& GetScheduler();
+
 	protected:
 		void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 		Dia::ApplicationFlow::StartResult DoStart() override;
@@ -30,5 +37,12 @@ namespace Dia::DeferredStep
 		Dia::ApplicationFlow::StopResult DoStop() override;
 
 		Dia::ApplicationFlow::ServiceStreamReader<Dia::Threading::JobSystem> mJobSystemReader{ this, "JobSystemService" };
+
+			// Built in DoStart (the job system is not available at construction). Declaration order is
+			// construction order; members destroy in reverse, so the participant goes first, then the
+			// scheduler, then the launcher (which owns the CapGate).
+			Dia::Core::UniquePtr<IStepLauncher>                  mLauncher;
+			Dia::Core::UniquePtr<DeferredStepScheduler>          mScheduler;
+			Dia::Core::UniquePtr<DeferredStepSaveParticipant>    mSaveParticipant;   // constructed only; attach is a later task
 	};
 }
