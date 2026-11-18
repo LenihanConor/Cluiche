@@ -4,7 +4,7 @@
 
 **Gameplay Domains:** simulation, persistence
 
-**Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** a third stage, `hydrology` (A5, [a5-hydrology.md](../a5-hydrology/a5-hydrology.md)), sits between `weather` and `ecology`. The chain is now A4 → A5 → A1 (A3 inline). Stage ids are `["weather", "hydrology", "ecology"]` in S-3.5. A5 reads A4's working copy inside the same `Run`; A4 reads A5's previous committed state at `Capture`.
+**Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** a third stage, `hydro` (A5; id renamed from `hydrology` 2026-11-18, World-Sim Kit; [a5-hydrology.md](../a5-hydrology/a5-hydrology.md)), sits between `weather` and `ecology`. The chain is now A4 → A5 → A1 (A3 inline). Stage ids are `["weather", "hydro", "ecology"]` in S-3.5. A5 reads A4's working copy inside the same `Run`; A4 reads A5's previous committed state at `Capture`.
 
 ## Summary
 
@@ -65,7 +65,7 @@ SimPU
        owns: the channel, cadence, k, the stage table, history sampling
 
   ├─ WeatherModule (A4)  → registers stage "weather"
-  ├─ HydrologyModule (A5) → registers stage "hydrology"   (amended 2026-11-17, A5 Hydrology)
+  ├─ HydrologyModule (A5) → registers stage "hydro"   (amended 2026-11-17, A5 Hydrology)
   └─ EcologyModule (A1)  → registers stage "ecology"   (A3 resolves inside it)
 ```
 
@@ -108,14 +108,14 @@ Stage order is semantically critical — ecology reads the weather this step pro
     "dependencies": ["DeferredStepModule", "MessageBusHostModule", "SimQueryHostModule"],
     "soft_dependencies": ["SaveLoadModule", "HistoryDriverModule"],
     "config": {
-        "order": ["weather", "hydrology", "ecology"],
+        "order": ["weather", "hydro", "ecology"],
         "apply_after_days": 7,
         "deferred": true
     }
 }
 ```
 
-S-2.5 declares its own instance with `"order": ["weather"]`, S-2.6 Rivers & Floods with `["weather", "hydrology"]`, S-3 Controlled with `["ecology"]` (optionally `["hydrology", "ecology"]`), S-3.5 with all three (amended 2026-11-17, A5 Hydrology). A single `stages: ["all"]` instance could not serve both, and would also keep the coordinator alive on stages that run no world sim.
+S-2.5 declares its own instance with `"order": ["weather"]`, S-2.6 Rivers & Floods with `["weather", "hydro"]`, S-3 Controlled with `["ecology"]` (optionally `["hydro", "ecology"]`), S-3.5 with all three (amended 2026-11-17, A5 Hydrology). A single `stages: ["all"]` instance could not serve both, and would also keep the coordinator alive on stages that run no world sim.
 
 Resolution rules, which differ by lifecycle phase — this distinction matters, because stages legitimately come and go:
 
@@ -257,6 +257,7 @@ namespace CoW::WorldStep {
 | 1 | Step Chain | `IWorldStepStage`, `WorldStepChain`, `WorldStepConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | @docs/specs/applications/cow/systems/worldstep/step-chain.md | Approved |
 | 2 | Module & Cadence | `WorldStepModule`: `.diaapp` config, DiaDeferredStep channel registration, `SimulationTick` week gate with `>=`, `k`, kick gating on readiness and in-flight, synchronous mode, the two sim-hosted commands with rollback, metrics, health, logs, trace | @docs/specs/applications/cow/systems/worldstep/module-and-cadence.md | Approved |
 | 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, and the single synchronous `HistoryDriverModule::OnWorldStepApplied(key)` signal per applied step (no sampling logic here) | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
+| 4 | World-Sim Kit *(added 2026-11-18, world-sim review)* | Shared CoW-Shared plumbing for every stage: `WorldStepStageBase` (skeleton + 5 hooks), save codec helpers (DiaSaveGame versioning, sidecar-ranged validate, shared restore), `SimCommandSet` + `ParamCommandHelper` (`cow.<sys>.params`), `WorldCellFields` + DiaCondition `CellSelectorSet` with derived spatial fields, world-sim naming conventions and the S-1 layer-id rename. Adds `ValidatePending` to `IWorldStepStage`; stage ids become `weather`/`hydro`/`ecology` | @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md | Approved 2026-11-18 |
 
 **Build order:** 1 → 2 → 3. Feature 1 needs no Dia code beyond the `IParallelExecutor` declaration and can start as soon as DiaDeferredStep Feature 2 exists.
 
@@ -377,7 +378,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 - **S-1** — expose the shared `WorldHexGrid` (joins the existing post-close amendment set).
 - **E1 Save/Load** — *no amendment needed* (corrected 2026-11-13; DiaDeferredStep Feature 3 drains on `OnSaveStarted`). A4's spec still says "E1's save path calls `DrainAll`" and needs that line removed.
 - **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with all three stages (`weather`, `hydrology`, `ecology`; amended 2026-11-17, A5 Hydrology) and owns the sim-hosted name-cap raise.
-- **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17; now row 17 of the GDD TestbedRoster, CHANGE-048, aligned to locked GDD 2026-11-17) — declares its own instance with `"order": ["weather", "hydrology"]`. Its GDD spec is not yet written and needs its own interview, so nothing here depends on its content beyond the stage list. The order weather → hydrology → ecology is unchanged by the GDD lock.
+- **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17; now row 17 of the GDD TestbedRoster, CHANGE-048, aligned to locked GDD 2026-11-17) — declares its own instance with `"order": ["weather", "hydro"]`. Its GDD spec is not yet written and needs its own interview, so nothing here depends on its content beyond the stage list. The order weather → hydrology → ecology is unchanged by the GDD lock.
 - **S-2.5 Weather Patterns** — declares its own `WorldStepModule` instance with `"order": ["weather"]`, and may set `"deferred": false` since weather alone fits in a frame.
 
 **Plan:** [worldstep.plan.md](worldstep.plan.md) (written 2026-11-16, not started).

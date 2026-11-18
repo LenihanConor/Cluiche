@@ -59,7 +59,8 @@ Two small, load-bearing seams on the module from Feature 2:
 - `world_version` is greater than 1, or a field is missing or the wrong type;
 - `stage_count` does not match the number of `stage_N` objects;
 - an id appears twice;
-- **a stage currently in `order` has no blob** (refuse the load; a step restored for only some stages would commit a half-world).
+- **a stage currently in `order` has no blob** (refuse the load; a step restored for only some stages would commit a half-world);
+- **a present stage blob fails that stage's `IWorldStepStage::ValidatePending`** (amended 2026-11-18, World-Sim Kit: the module calls it, read-only, on each in-`order` stage's sub-object, so a corrupt stage body is refused before any Deserialize instead of being found after Validate).
 
 A blob for a stage that is **not** in the current `order` is not a validation failure.
 

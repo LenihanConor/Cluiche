@@ -43,6 +43,7 @@ namespace CoW::WorldStep {
         virtual void Commit() = 0;                                     // SimPU
         virtual void SerializePending(Dia::SaveGame::SaveContext&) const = 0;
         virtual void DeserializePending(Dia::SaveGame::LoadContext&) = 0;
+        virtual bool ValidatePending(Dia::SaveGame::LoadContext&) const = 0;   // amended 2026-11-18 (World-Sim Kit): read-only pre-check of this stage's pending blob
     };
 }
 ```
@@ -70,7 +71,7 @@ The system spec's `historyBand` field is **removed** (2026-11-16): `history_band
 - `deferred` not a bool.
 - An unknown key at the top level (typos are invalid, as for A4's parameter file).
 
-Ids are matched case-sensitively and are not validated against a fixed vocabulary here: `"weather"`, `"hydrology"` and `"ecology"` are conventions of the stages that register them, and a wrong id surfaces as a missing stage.
+Ids are matched case-sensitively and are not validated against a fixed vocabulary here: `"weather"`, `"hydro"` and `"ecology"` (the world-sim system tokens; amended 2026-11-18, World-Sim Kit, was `"hydrology"`) are conventions of the stages that register them, and a wrong id surfaces as a missing stage.
 
 ### The chain (`WorldStepChain`)
 
