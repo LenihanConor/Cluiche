@@ -1,8 +1,8 @@
 # Feature Spec: A4 Smoothing
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 9)
-**Status:** Draft (2026-11-17)
-**Design source:** GDD `A4_TechnicalSpec.md` §20, `A4_WeatherSystem.md` decision 9 (drafts, **not locked**). A4 was reopened `[~]` under CHANGE-047, so this spec cannot be Approved until the GDD re-locks A4 (AD-003). User decisions of 2026-11-17 override the GDD draft where they differ (see "GDD differences").
+**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `INFLUENCE_PREVIEW_FADE_DAYS` as a parameter, the Feature 7 preview source, three-buffer notes with the ten-array `WeatherFields`.
+**Design source:** GDD `A4_TechnicalSpec.md` §20, `A4_WeatherSystem.md` decision 9, `A4_TuningParameters.md` §10a (`INFLUENCE_PREVIEW_FADE_DAYS`). A4 was **re-locked 2026-11-17 (CHANGE-047)**. User decisions of 2026-11-17 win where the locked GDD differs (see "GDD differences").
 **Depends on:** A4 Feature 3 (`Commit`, `WeatherSnapshot`, committed buffers); A4 Feature 7 (Weather Influence API: its active and pending influence list, by name only). Touches V-1 (reader).
 
 ## Summary
@@ -46,7 +46,7 @@ committed <- working
 working   <- (old previous buffer, scratch; overwritten by the next Capture)
 ```
 
-This is a rotation of three buffers: **no copy**. It costs one extra `WeatherFields` buffer (about 240 KB at Large; only the fields below are ever read from `previous`). `WeatherSnapshot` views of `previous` and `committed` both stay valid until the next `Commit`, the same lifetime rule as today.
+This is a rotation of three buffers: **no copy**. It costs one extra `WeatherFields` buffer (about 266 KB at Large with the ten-array `WeatherFields`; only the fields below are ever read from `previous`). The commit day is the apply day the module passes to `Commit` (Feature 3, amended 2026-11-17). `WeatherSnapshot` views of `previous` and `committed` both stay valid until the next `Commit`, the same lifetime rule as today.
 
 `Commit` also records `commitDay`, the game day it applied (the apply key). `previous` is **not saved**. After a load, or at the very first commit, `previous` is a copy of `committed`, so every blend is a constant until the next commit.
 
@@ -68,7 +68,7 @@ Readers pass `t` (one float) to `Sample`. They do not need to know about days.
 | `windDirection` | Shortest arc on the circle (below) |
 | `PrecipitationType` | Discrete rule (below) |
 | `SnowCover` (bool) | `smoothed snowPack > kSnowCoverThreshold` (0.1). Derived, never blended |
-| `moisture`, `pressure` | Not smoothed. They are internal CA state, not reader fields |
+| `moisture`, `pressure`, `pressureAnomaly` | Not smoothed. They are internal CA state, not reader fields |
 
 **Wind direction.** Angles are radians in [0, 2π). With `a = prev`, `b = curr`:
 1. If `windSpeed` of one end is below `kCalmSpeed` (0.02, provisional), its direction means nothing. Use the other end's direction for the whole week.
@@ -100,7 +100,7 @@ pending (landedDay == kNotLanded):   s = clamp((today - requestDay + dayFraction
 landed:                              s = (1 - t)                                                             // t = the smoothing week fraction since landedDay
 ```
 
-While the effect is pending, the preview grows to full strength in about one game day (`kFadeInDays` = 1, provisional) and stays there. When the effect lands, the real change starts to arrive through the smoothing blend (`t` rising from 0 to 1 over the next 7 days). The preview fades out at the same rate, so the sum is continuous and nothing is counted twice. After 7 days it is gone. If the influence expires while pending, its preview is dropped at once.
+While the effect is pending, the preview grows to full strength in about one game day (`kFadeInDays` is the parameter `influence.preview_fade_days`, GDD `INFLUENCE_PREVIEW_FADE_DAYS` = 1, range 0.25–3; Feature 1 table row, latched at `Capture` and read by the preview through `Update`) and stays there. When the effect lands, the real change starts to arrive through the smoothing blend (`t` rising from 0 to 1 over the next 7 days). The preview fades out at the same rate, so the sum is continuous and nothing is counted twice. After 7 days it is gone. If the influence expires while pending, its preview is dropped at once.
 
 **Look.** Each influence adds a small visual delta, scaled by `s × weight(cell)`, to the **read-out** of a sample, never to the simulation. The constants are visual only and **provisional**:
 
@@ -164,6 +164,8 @@ namespace CoW::Weather {
     };
 
     // Read-only view of Feature 7's active and pending influence list.
+    // Implemented by WeatherModule over Feature 7's InfluenceBook (amended 2026-11-17, row 6d):
+    // requestDay = InfluenceInfo::addedDay, landedDay = InfluenceInfo::landedDay (kNotLanded until the Commit that first includes it).
     class IInfluencePreviewSource {
     public:
         virtual ~IInfluencePreviewSource() = default;
@@ -254,7 +256,7 @@ No Dia files expected, so no AD-001 sign-off.
 | PD-002 | ProcessingUnit/Phase/Module architecture; no singletons | Pure classes bound to views by the module. No globals |
 | PD-004 | No STL containers in public APIs | Raw pointer plus count for bulk reads, `DynamicArrayC` inside the preview |
 | AD-002 | Four-tier dependency model | CoW-Shared pure logic |
-| AD-003 | GDD owns design intent | Draft until A4 re-locks. Preview constants are provisional |
+| AD-003 | GDD owns design intent | The GDD is locked (CHANGE-047). Preview strengths are provisional; the fade-in time is the GDD's |
 | DFS-002 | `Run` reads only the captured working copy | Smoothing never runs inside `Run` and `Run` never reads `previous` (AC 21) |
 | SD-PERF-7 | Telemetry cost budgets | One gauge, written on SimPU. No per-read or per-cell telemetry |
 
@@ -263,22 +265,21 @@ No Dia files expected, so no AD-001 sign-off.
 1. **Blend.** The GDD's `lerp(previous_committed, current_committed, days_since_last_commit / 7)` is kept. Here the blend is computed on demand per read, not as a standing presentation pass, and a sub-day fraction is allowed.
 2. **Wind.** The GDD says shortest-arc slerp. Here the tie at an exact reversal and the calm-end rule are defined.
 3. **Precipitation type, snow cover and the field list** are not specified by the GDD. The discrete-type rule and the derived snow-cover rule are new.
-4. **Preview hand-over.** The GDD says the preview "fades into the real state when the step that applies the influence commits". Here the preview fades **in** over about a day, holds while pending, and fades **out over the 7 days after landing** while the real effect blends in, so there is no jump at the commit and no double count.
-5. **Preview strengths** (cloud, rain and tint amounts) are new, provisional and visual only.
+4. **Preview hand-over (nearly resolved).** The locked GDD §20 says the preview "fades in over about a day, then hands over to the real CA effect once that reaches the blended state". Here the preview fades **in** over `preview_fade_days` (1), holds while pending, and fades **out over the 7 days after landing** while the real effect blends in, so there is no jump at the commit and no double count. That is the GDD's hand-over made exact.
+5. **Preview strengths** (cloud, rain and tint amounts) are new, provisional and visual only. The GDD gives only the fade-in time.
 6. **Saves.** The GDD says the preview is visual only. Here it is also explicitly not saved, with a defined restart after load.
 
 ## Amendments owed elsewhere
 
-List only; none are made here.
+**A4 items applied 2026-11-17 (row 6d of `a4-weather.plan.md`):**
 
-- **A4 system spec:**
-  - Features table row 9 gets a link;
-  - the Architecture "State" section notes the third (`previous`) buffer;
-  - the "Output to A1 and V-1" section gains `GetSmoothed()`;
-  - the memory line "about 240 KB per copy" becomes three copies.
-- **A4 Feature 3:** `Commit` rotates three buffers and records `commitDay`; `WeatherSnapshot` views of both stay valid until the next commit; `previous` is rebuilt from `committed` on load (Feature 4 saves nothing new).
-- **A4 Feature 7:** the active and pending influence list must expose, per influence, `kind`, `requestDay`, `landedDay` (stamped at the `Commit` that first includes it) and a way to read its per-cell weight. It must implement `IInfluencePreviewSource`, and should save `requestDay` for pending influences (optional; AC 29 covers its absence).
-- **A4 Feature 5:** panel rows and the raw/smoothed wind toggle.
+- **A4 system spec:** done. The Features table row 9 links this spec; the State section notes the third (`previous`) buffer and three copies of the ten-array `WeatherFields`; the output section gains `GetSmoothed()`.
+- **A4 Feature 3:** done. `Commit` rotates three buffers and records `commitDay`; `WeatherSnapshot` views of both stay valid until the next commit; `previous` is rebuilt from `committed` on load (Feature 4 saves nothing new).
+- **A4 Feature 7:** done. `InfluenceInfo` carries `addedDay` (= `requestDay`) and `landedDay`; the module implements `IInfluencePreviewSource`; `addedDay` is already saved (AC 29 covers a missing one).
+- **A4 Feature 5:** done. Panel rows and the raw/smoothed wind toggle.
+
+**Still owed outside the A4 files:**
+
 - **V-1:** consumes `previous` and `committed` (as two textures or two snapshot views), uses the same blend rules and constants, and gets `t` from the game clock. Needs its own spec amendment and a shader reference test against `BlendAngle` and `BlendPrecipType`.
 - **A4/A5 gameplay read API (A4 Open Design Question 4, PARK-030):** when decided, it can build on `Sample`.
 - **GDD:** the fold-back list above.
@@ -303,4 +304,4 @@ Scoped `--filter="*Smooth*:*InfluencePreview*"` while iterating and one full `--
 
 ## Status
 
-**Status:** Draft (2026-11-17). User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on the GDD re-lock of A4 (AD-003) and on Features 3 and 7.
+**Status:** Draft (2026-11-17). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). The GDD is locked, so Approval is a separate step. User decisions encoded: the CA stays weekly; readers see a blend of the last two committed weekly states by day of the week; never extrapolates, never shows a state the CA did not produce, accepts a one-week lag; computed on demand per read by a pure `Sample` (and range variant), no per-frame or per-day grid pass, V-1 may blend from two textures; fields, wind direction and discrete precipitation type rules defined; a visual-only influence preview that fades in over about a day and hands over at N+k, never feeding back and never saved; smoothing never affects simulation determinism or saves; the gameplay read API is not built here. Approval waits on Features 3 and 7.

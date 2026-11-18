@@ -1,8 +1,8 @@
 # Feature Spec: A4 Presets & Regression
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 6)
-**Status:** Approved (2026-11-16)
-**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_AuthoringDebug.md` §5 (presets), §6.1–6.4 (regression), `A4_TuningParameters.md` §12 (emergent pattern targets)
+**Status:** Approved (2026-11-16). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `ApplyPreset` also clears the influence book and disables every climate cycle before applying the optional `climate` block; ten-field fills and goldens (50 hashes).
+**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_AuthoringDebug.md` §5 (presets), §6.1–6.4 (regression), `A4_TuningParameters.md` §12 (emergent pattern targets), `A4_TechnicalSpec.md` §19 (cycles can be switched off or pinned; locked 2026-11-17)
 **Depends on:** A4 Feature 1 (types, parameters, `Initialise`, seeding); A4 Feature 2 (`Step`, forcings, `RegisterCellSet`). Both must be **built**, not only specced: the loader, predicates and fills need only Feature 1, but forcings and every regression test need Feature 2's `Step`.
 **Consumed by:** A4 Feature 5 (`cow.weather.load_preset`), S-2.5 Feature 4 (scenarios reference presets by name), S-2.5 Feature 1 (curated worlds).
 
@@ -53,23 +53,25 @@ The presets are **scenarios** (forced state), not weather packs (decided 2026-11
 ```
 
 - **Selectors** are named predicates over the immutable terrain. Allowed clauses, AND-combined: `waterSource` (list of `None|Ocean|Lake|River`), `elevation` / `latitude` `{min, max}` (inclusive, [0, 1]), `distanceToWater` `{min, max}` in hex steps (multi-source breadth-first over the hex topology from every water-source cell; water cells are 0). `"all"` is predefined. An unknown clause, an unknown selector name, an empty-result selector used by a fill or forcing, or `min > max` is invalid.
-- **Fills** set one `WeatherFields` field to a value on a selector's cells. Values are range-checked per field ([0, 1]; `windDirection` [0, 2π)). Fills apply in file order, so a later fill overwrites an earlier one.
+- **Fills** set one `WeatherFields` field to a value on a selector's cells. Values are range-checked per field ([0, 1]; `windDirection` [0, 2π); `pressureAnomaly` [−0.5, 0.5], amended 2026-11-17, row 6d). Fills apply in file order, so a later fill overwrites an earlier one.
 - **Forcings** name a Feature 2 `ForcingKind` and a selector. The selector's cells are registered as one **cell set** and the forcing is one record (this is the Feature 2 amendment of 2026-11-16). `WindOverride` takes `angleDegrees` as an **on-screen counter-clockwise angle in y-down world space**, the same convention as the system spec's wind snap, and `speed` in [0, 1]; the loader converts to radians. `weeks` is 0 for "until cleared" on wind overrides, and required > 0 for the other kinds.
 - **`season`** is returned to the caller. `ApplyPreset` does not own the clock (Feature 3 and the runner pass the season to `Step`).
+- **`climate`** (optional; amended 2026-11-17, row 6d; Feature 8): `"climate": { "cycles": { "<id>": { "enabled": true, "pinned_phase_days": 364 } } }`. Every cycle is **disabled first**, so a preset without the block is cycle-free whatever ran before. A listed id is then set as written: `enabled` (default true) and an optional `pinned_phase_days` (the GDD's way to freeze a cycle at one point). An id the loaded cycle file does not define makes the preset invalid at apply (validate-first step), naming the id.
 
 ### `ApplyPreset`
 
 ```cpp
 struct PresetResult { bool ok; Season season; PresetError error; };   // error: key/path + reason, no STL types
 PresetResult ApplyPreset(WeatherSimulation& sim, const WeatherPreset& preset,
-                         const WeatherParameters& params, const IBiomeSeasonalBaseline& baseline);
+                         const WeatherParameters& params, const IBiomeSeasonalBaseline& baseline,
+                         InfluenceBook* book = nullptr, ClimateCycles* climate = nullptr);   // amended 2026-11-17, row 6d: null in pure tests
 ```
 
 Precondition: the simulation is initialised and **no step is in flight** (`Capture` called without `Commit` is an assertion failure in debug and a returned error in release).
 
 1. **Validate** against the simulation's terrain: every selector resolves to at least one cell where used; forcing count after the call is ≤ 64; cell sets ≤ 16. Any failure returns `ok = false` and changes nothing.
-2. **Reset** to a clean base: clear forcings and cell sets, then reseed fields exactly as `Initialise` does (Feature 1's seeding function, called with the **preset's season** instead of Spring), and reset the week counter to 0. Result: a preset reaches the same state whatever ran before it.
-3. Apply fills in order, then register cell sets and add forcings in order.
+2. **Reset** to a clean base: clear forcings and cell sets, then reseed fields exactly as `Initialise` does (Feature 1's seeding function, called with the **preset's season** instead of Spring; `pressureAnomaly` reseeds to 0), and reset the week counter to 0. **Amended 2026-11-17 (row 6d):** also `book->Clear()` (Feature 7: the influence book; one Info log) and `climate->DisableAll()` (Feature 8), when those are passed. Result: a preset reaches the same state whatever ran before it, including earlier influences and cycle flags.
+3. Apply fills in order, then register cell sets and add forcings in order, then the `climate` block.
 4. Return the season.
 
 `Reseed` is a new public method on `WeatherSimulation` that Feature 1's `Initialise` also calls internally.
@@ -109,7 +111,7 @@ In order: the preset data values; the default baseline table; `cloud_decay`; the
 
 ### Goldens
 
-`Tests/GoogleTests/CoW/Golden/weather_layers.golden.json`, using `CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`): all 9 fields (`waterToGround` replaces `groundWater`; amended 2026-11-17, A5 Hydrology) of `MakeCoastRange(66, 42)` after 13 weeks for each of the 5 presets (45 hashes), serial executor. Golden diffs follow the repo's summary-only report.
+`Tests/GoogleTests/CoW/Golden/weather_layers.golden.json`, using `CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`): all 10 fields (`waterToGround` replaces `groundWater`, amended 2026-11-17, A5 Hydrology; `pressureAnomaly` is the tenth, amended 2026-11-17, row 6d) of `MakeCoastRange(66, 42)` after 13 weeks for each of the 5 presets (50 hashes), serial executor, with no cycles and no influences. Golden diffs follow the repo's summary-only report.
 
 ## Public API
 
@@ -129,6 +131,8 @@ New in `Cluiche/CoW/Shared/Weather/`: `WeatherPreset.h/.cpp` (struct, `LoadWeath
 
 ### `ApplyPreset`
 7. After `ApplyPreset(P)` the state is bit-identical whether the simulation was fresh, ran 20 weeks first, or had earlier forcings (a test per case).
+7a. (amended 2026-11-17, row 6d) The same holds with earlier influences in the book (the book is empty after the call, one Info log) and with cycles enabled or pinned beforehand (every cycle is disabled after the call unless the preset's `climate` block enables it). With a null `book` and `climate` the pure call behaves as before.
+7b. A `climate` block enables and pins as written (`pinned_phase_days` gives the pinned wave on every day); an unknown cycle id fails in the validate-first step naming the id and changes nothing; a malformed block (non-object, unknown key, negative or non-integer `pinned_phase_days`) is rejected at load naming the key.
 8. Fills apply in file order (a later fill overwrites). Fields not named hold the seed values for the preset's season.
 9. Each preset leaves the week counter at 0, returns its season, and leaves no forcing from a prior preset.
 10. A preset that would exceed 64 forcings or 16 cell sets fails and leaves the simulation byte-identical (atomicity).
@@ -146,7 +150,7 @@ New in `Cluiche/CoW/Shared/Weather/`: `WeatherPreset.h/.cpp` (struct, `LoadWeath
 18. Results are identical with a serial executor and a 3-range executor (the F2 determinism guarantee, re-asserted at preset level once).
 
 ### Goldens
-19. The 45 layer hashes match the committed golden file. Changing a pipeline constant makes the failure name the preset, the layer, the changed-cell count and the first cell.
+19. The 50 layer hashes (5 presets × 10 fields; was 45) match the committed golden file. Changing a pipeline constant makes the failure name the preset, the layer, the changed-cell count and the first cell.
 
 ### Performance
 20. `ApplyPreset` at Large (6,656 cells) takes under 5 ms in Release (reported, not gated in Debug).
@@ -195,7 +199,8 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 6. **The `direction` zero-vector check (item 1) is made in `ApplyPreset`'s validate-first step**, not at preset load, because the gradient needs the terrain. A preset with an unresolvable direction returns `ok = false` and changes nothing.
 
 7. (amended 2026-11-17, A5 Hydrology) **No preset or fill touches ground water.** A fill on `waterToGround` is legal but has no lasting effect, because the field is zeroed at the start of each step. Scenario tests run with no A5 (`HydrologyInputs.present == false`): primary evaporation uses `waterSource` and secondary evaporation is zero, so A4's regression ratios hold without A5. A preset that needs ground water, soil moisture or floods belongs to A5's presets (A5 Feature 6).
+8. (amended 2026-11-17, row 6d) **Storm presets.** `coastal_storm` keeps using `PressureHold` (a debug hold, applied through the Feature 2 hooks) and is otherwise unaffected by the carried anomaly: the hold overrides pass 2's pressure, and the anomaly is 0 after the reseed. The regression scenarios run with no cycles and no influences, so the GDD ratios do not depend on Features 7–9.
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.

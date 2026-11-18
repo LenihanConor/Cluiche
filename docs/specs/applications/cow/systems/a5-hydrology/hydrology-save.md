@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 4)
 **Status:** Draft (2026-11-17)
-**Design source:** GDD `08_SystemsDeepDive/A5_Hydrology/` (drafted 2026-11-17, **not locked**; the GDD session `cow-68` has it). This spec cannot be Approved before the GDD is locked or accepts the differences listed below (AD-003).
+**Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §1, §16; `A5_EdgeCaseMatrix.md` EC-21, EC-22; DECISION-129..134, CHANGE-047/048). The GDD owns design intent (AD-003). Aligned to it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:**
 - A5 Features 1, 2 and 3 (`HydrologyFields`, `BasinState`, `HydrologySimulation`, `HydrologyModule`, the stage).
 - World Step Feature 3 (the coordinator delegates `SerializePending`/`DeserializePending` to this stage and calls `ValidatePending`).
@@ -62,16 +62,17 @@ Registration order is serialization order:
   "world_hash": "9f3c...",                  // present only when the world exposes a content hash
   "params_hash": 7712930193384,
   "surface_water": [...], "soil_moisture": [...], "ground_water": [...], "river_store": [...],
-  "mean_flow": [...], "ice": [...], "glacier": [...], "season_min_snow": [...],
+  "mean_flow": [...], "ice": [...], "glacier": [...],
   "river_flow": [...],
-  "inundated_weeks": [...], "exposed_weeks": [...], "snow_years": [...],
+  "inundated_weeks": [...], "exposed_weeks": [...], "low_flow_weeks": [...],
+  "glacier_weeks": [...], "glacier_free_weeks": [...], "snow_years": [...],
   "glacier_eligible": [...], "flooded": [...],
   "biome": [2, 2, 4, ...],
-  "basin_volume": [...]
+  "basin_volume": [...], "basin_ice_fraction": [...]
 }
 ```
 
-- **Saved fields:** exactly Feature 1's "saved" list: `surfaceWater`, `soilMoisture`, `groundWater`, `riverStore`, `meanFlow`, `ice`, `glacier`, `seasonMinSnow`, `inundatedWeeks`, `exposedWeeks`, `snowYears`, `glacierEligible`; plus per-basin `volume`.
+- **Saved fields:** exactly Feature 1's "saved" list: `surfaceWater`, `soilMoisture`, `groundWater`, `riverStore` (the GDD's `channel_store`, on every land cell), `meanFlow`, `ice`, `glacier`, `inundatedWeeks`, `exposedWeeks`, `lowFlowWeeks`, `glacierWeeks`, `glacierFreeWeeks`, `snowYears`, `glacierEligible`; plus per-basin `volume` and `iceFraction` (aligned to locked GDD 2026-11-17: the GDD's cells, basins and counters are all saved). `seasonMinSnow` no longer exists.
 - **Three additions to that list, each needed for the round trip:**
   - **`biome`**, the A5-cached biome per cell as `uint8_t`. A3's succession changes reach A5 through `BiomeTransitionComplete`. S-1's `Cell::biome` is only the ingest source, so without this array a load would use pre-succession capacities. It is authoritative on load, the same rule as A4.
   - **`riverFlow`** and **`flooded`**. They are derived every week from the cascade, but no later pass can rebuild them from the saved stores, and readers use them between a commit and the next step (A1's seasonal reads, A3's counters, V-1). Without them a save taken between two kicks would read zero flow and no floods until the next commit. Open Design Question 1.
@@ -93,7 +94,7 @@ Runs before any participant deserializes, so it checks **internal consistency on
 - `cell_count != width * height`, `width` or `height` is 0, or `cell_count` exceeds 65,536 (a corrupt-count guard);
 - `basin_count` exceeds 4,096 (a corrupt-count guard);
 - a per-cell array's length is not `cell_count`, or `basin_volume`'s is not `basin_count`;
-- a float is non-finite or negative, or `season_min_snow` is outside `[0,1]`;
+- a float is non-finite or negative, or `basin_ice_fraction` is outside `[0,1]`;
 - a counter is outside `0..65535`, `flooded` or `glacier_eligible` is not 0 or 1, or `biome >= 13`;
 - `week < 0`.
 
@@ -186,7 +187,7 @@ The JSON dependency stays at the codec boundary. The record uses `DynamicArrayC`
 
 ### Codec (pure)
 1. A `HydrologyStateRecord` encodes and decodes **bit-identically** for random finite floats, for `0`, for denormals, for values at each range bound, and for `float::max()`-scale values. `-0.0` encodes as `+0.0`. `uint8_t` and `uint16_t` arrays round-trip at their limits.
-2. Decoding rejects (false, nothing written), naming the key: wrong array length, a missing array, a non-number element, a NaN/Inf literal, a negative float, `season_min_snow` outside `[0,1]`, a counter outside `0..65535`, a flag not 0 or 1, a biome ≥ 13, `cell_count != width*height`, `cell_count` > 65,536, `basin_count` > 4,096, `basin_volume` length mismatch, `week` < 0, `version` 0 and 2.
+2. Decoding rejects (false, nothing written), naming the key: wrong array length, a missing array, a non-number element, a NaN/Inf literal, a negative float, `basin_ice_fraction` outside `[0,1]`, a counter outside `0..65535`, a flag not 0 or 1, a biome ≥ 13, `cell_count != width*height`, `cell_count` > 65,536, `basin_count` > 4,096, `basin_volume` length mismatch, `week` < 0, `version` 0 and 2.
 3. `HashHydrologyParameters` is deterministic, changes when any one scalar or any one biome-table value changes by one ULP, and is identical for two equal sets.
 4. `EncodePending`/`DecodePending` round-trip the working set, the `WaterTotals` (all doubles bit-exact, counters exact) and `step_day`. A `valid: false` blob decodes with `valid == false` and nothing else required.
 
@@ -246,7 +247,7 @@ The JSON dependency stays at the codec boundary. The record uses `DynamicArrayC`
 | PD-004 | No STL containers in public APIs | The record and codec use `DynamicArrayC`. jsoncpp is behind the codec boundary and `SaveContext` |
 | PD-005 | x64 is the only target | Saves are JSON text with 17-digit floats, independent of byte order |
 | AD-001 | Ask permission before Dia edits | None. `ISaveable`, `SaveContext` array writes through `CurrentNode`, `RegisterParticipant` and `CaptureState` are used as built |
-| AD-003 | GDD owns design intent | Draft until GDD A5 is locked. The save format is an engineering consequence, with the differences below |
+| AD-003 | GDD owns design intent | The saved contents follow the locked GDD (2026-11-17). The save format is an engineering consequence, with the differences below |
 | DFS-005 | Saves drain, then store pending results with apply keys; steps are not re-run on load | The stage's blob is the completed working set; the scheduler stores the keys; ACs 20–26 prove no re-run and no dependence on latched inputs |
 | DFS-002 | `Run` reads only the captured working set | `DeserializePending` restores a finished set. No source or provider is touched at load |
 | E1 | Participant order is serialization order | Registered after S-1's and before DiaDeferredStep's; AC 14 |
@@ -256,10 +257,9 @@ The JSON dependency stays at the codec boundary. The record uses `DynamicArrayC`
 
 | Topic | GDD draft | This spec |
 |---|---|---|
-| Save contents | `serialize_state()` of cells, basins, counters and the pending working set | The Feature 1 saved list plus `biome`, `riverFlow`, `flooded` and basin volumes. No `channel_store`, `pending_spill` or basin `ice_fraction` exist in this design. `low_flow_weeks` and `glacier_weeks` are not in Features 1–2 (see Status) |
+| Save contents | `serialize_state()` of cells, basins, counters and the pending working set | The Feature 1 saved list plus `biome`, `riverFlow`, `flooded`, basin volumes and basin `iceFraction`. The GDD's `channel_store` is `riverStore`. There is no `pending_spill`: spill leaves in the same pass |
 | Entry points | `serialize_state()` / `restore_state()`, `GameLoaded` | An E1 `ISaveable` participant `cow.hydrology`; the pending blob through DiaDeferredStep |
 | Changed parameters (EC-22) | State loads as saved; a changed `BASIN_DEPTH_SCALE` recomputes level; volume above capacity is handled | `params_hash` mismatch warns and Degrades. Volume above a changed capacity is Feature 2's concern at the next step (it spills at the spill height). No rescale |
-| Old world files (EC-15) | Rejected | A save is matched to the loaded world. A world file of version 1 works with `basinsFromLakesOnly` (parent decision) |
 | Latched state | The pending working set | The same. No latched inputs are saved (they are not needed once the step has run) |
 
 ## Test Plan
@@ -297,6 +297,6 @@ Layer goldens are not used here; state identity is asserted bitwise. Scoped `--f
 - A pending blob needs `step_day` so `Commit` can set the week. A4's `weather-save.md` pending record has no such field, and its `Commit()` has the same need.
 - A4 Feature 4 AC 19 ("a step whose revision no longer matches is not written as pending") conflicts with World Step's missing-blob refusal. This spec writes a `valid: false` blob instead.
 - `world_hash` depends on an unbuilt F-3 seam. Dimensions and `basin_count` carry the check until then.
-- `low_flow_weeks` and `glacier_weeks` (the GDD's counters for the dry-riverbed and glaciation rules) are in neither Feature 1 nor Feature 2. If A3 needs them from A5, they must join the saved list.
+- ~~`low_flow_weeks` and `glacier_weeks` are not in Features 1–2.~~ **Resolved:** both are Feature 1 fields now, and `glacier_free_weeks` (A3's glacial retreat counter, GDD §12.1) joins them. All three are in the saved list.
 
-Approval waits on GDD A5's lock. No plan yet.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan yet.

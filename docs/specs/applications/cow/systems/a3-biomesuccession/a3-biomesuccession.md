@@ -1,9 +1,9 @@
 # System Spec: A3 Biome Succession
 
 **Parent:** @docs/specs/applications/cow/cow.md  
-**Design source:** `Output Docs/GDD/08_SystemsDeepDive/A3_BiomeSuccession/` (DesignDocs repo; `A3_BiomeSuccession.md`, `A3_TechnicalSpec.md`, `A3_TuningParameters.md`, `A3_EdgeCaseMatrix.md`, `A3_PrototypeTestbed.md`, `A3_ProductionBacklog.md`, Locked; amended by CHANGE-036, pending fold-back by the GDD session)  
+**Design source:** `Output Docs/GDD/08_SystemsDeepDive/A3_BiomeSuccession/` (DesignDocs repo; `A3_BiomeSuccession.md`, `A3_TechnicalSpec.md`, `A3_TuningParameters.md`, `A3_EdgeCaseMatrix.md`, `A3_PrototypeTestbed.md`, `A3_ProductionBacklog.md`, Locked; amended by CHANGE-036, pending fold-back by the GDD session; the A5 rules are in GDD A5 TechnicalSpec 14.4, CHANGE-048, and the GDD A3 files have not yet been edited)  
 **Works with:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 evaluates the counters; A3 decides the transitions)
-**Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. Thresholds are TBD.
+**Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. First-run thresholds come from the locked GDD A5 (aligned to locked GDD 2026-11-17, CHANGE-048; the GDD A3 documents do not yet carry these rules, the source is GDD A5 TechnicalSpec 14.4).
 
 **Gameplay Domains:** debug
 
@@ -118,6 +118,13 @@ There's no recovery counter here: it is a rule counter in A1's `succession_press
 | scrub_recovery | Scrub → Grassland | (recovery) | `water >= 0.4`, `seed_bank >= 0.2`; increment 0.04 |
 | ash_recovery | BurnedAshland → Grassland | (recovery) | `water >= 0.35`, `years_since_fire >= 5`; increment 0.05 |
 | desert_recovery | DesertifiedPlain → Scrub | (recovery) | `seed_bank >= 0.1`, `water >= 0.5`; increment 0.005 |
+| lake_inundation | any land biome → Lake | INUNDATION | `inundated_weeks >= 104`, not protected. Clears `pre_glacial_biome` (Decade, hydrology; aligned to locked GDD 2026-11-17, CHANGE-048) |
+| lakebed_to_wetland | Lake → Wetland | DRYING | `exposed_weeks >= 52` (Decade, hydrology) |
+| dry_riverbed_marker | (no biome change, `to: none`) | DRYING | river cell, `low_flow_weeks >= 26`; sets the `DRY_RIVERBED` marker only (Decade, hydrology) |
+| glaciation | land → AlpineMountain or TundraBoreal | COLD | `glacier_weeks >= 260`, not Ocean or Lake, `pre_glacial_biome` unset (Decade, hydrology) |
+| glacial_retreat | glaciated cell → `pre_glacial_biome` | COLD | `glacier_free_weeks >= 260`, `pre_glacial_biome` set, not Lake (Decade, hydrology) |
+
+The table is 17 rules: 12 above plus the five hydrology rules (rule ids for the last five are Cluiche's).
 
 These numbers are starting values. They are tuned live in S-3's Controlled mode, and saved through A1's tuning write-back.
 
@@ -127,16 +134,20 @@ These numbers are starting values. They are tuned live in S-3's Controlled mode,
 
 A5 exposes four signals through `HydrologySnapshot`. A1 reads them and presents them to the rule table as cell fields (see A1, Hydrology input), so A3 authors them as ordinary rules and A1 evaluates them. A5 never writes biome.
 
-| Signal (from A5) | Rule field | Rule | Notes |
+| Signal (from A5) | Rule field | Rule (first-run default) | Notes |
 |---|---|---|---|
-| `inundatedWeeks` | `inundated_weeks` | Land → Lake when sustained over `inundated_weeks_to_lake` | Source `FLOOD` (new). Needs a staging row per land biome that can flood |
-| `exposedWeeks` | `exposed_weeks` | Lake → Wetland or Grassland when sustained over `exposed_weeks_to_land` | Wetland if the cell is still wet (soil moisture high), else Grassland. The split is TBD (GDD A3/A5) |
-| sustained low `riverFlow` | `dry_river_weeks` | Drives the existing `DryRiverbed` legacy on river cells when over `dry_riverbed_weeks` | The legacy marker is presentation only. No biome change unless a rule says so; `river_overlay` is unchanged (DECISION-064/065) |
-| `glacier` mass | `glacier` | Glaciated cells → TundraBoreal or AlpineMountain; retreat when it melts | Source `COLD`. The retreat direction (back to the prior cold biome or Scrub) is TBD |
+| `inundatedWeeks` | `inundated_weeks` | Any land biome → Lake at `inundated_weeks >= 104` (2 years). Protected cells (corridor, crossing, Hearth, Nexus, world-throne) are skipped. **Clears `pre_glacial_biome`** | Source `INUNDATION` (new) |
+| `exposedWeeks` | `exposed_weeks` | Lake → Wetland at `exposed_weeks >= 52` (1 year) | A5 counts only on cells A3 has as Lake. The existing wetland-drying rule can then take the cell to Grassland. Source `DRYING` |
+| sustained low `riverFlow` | `low_flow_weeks` | River cell with `low_flow_weeks >= 26` sets the `DryRiverbed` legacy marker | **Marker-only rule: `to: none`.** A3 sets the marker and does not call `ApplyBiomeTransition`, so A1's other counters are not reset. No biome change; `river_overlay` is unchanged (DECISION-064/065). Source `DRYING`. **Frozen weeks neither count nor reset** `low_flow_weeks` (a frozen river is not a dry one) |
+| `glacierWeeks` (glacier mass) | `glacier_weeks` | Glaciation at `glacier_weeks >= 260` (5 years), biome not Ocean or Lake, and not already glaciated (`pre_glacial_biome` unset, so it fires **once per ice age**): → AlpineMountain if `elevation >= ALPINE_ELEVATION` (0.7), else TundraBoreal. **No new biome.** A3 saves `pre_glacial_biome` per cell. **A cell already at its target** (an Alpine cell at elevation >= 0.7, or a Tundra cell below it) only records `pre_glacial_biome` and has no biome change | Source `COLD` |
+| `glacierWeeks` (retreat) | `glacier_weeks` | Glaciated cell (`pre_glacial_biome` set), biome not Lake, with `glacier_free_weeks >= 260` (5 years) → the saved `pre_glacial_biome`, with a `BARE_ROOTS` legacy marker. Retreat bypasses staging and clears `pre_glacial_biome`. A5 counter: `glacierFreeWeeks` (`glacier_free_weeks`), which counts while glacier mass is below `GLACIER_BIOME_MIN` | Source `COLD`. Ocean and Lake never glaciate, so they never get `pre_glacial_biome` |
 
-- **Thresholds are TBD.** `inundated_weeks_to_lake`, `exposed_weeks_to_land`, `dry_riverbed_weeks` and the glacier mass thresholds are A3 and GDD content to author in the shipped rule file and in `succession_parameters`. This spec invents no numbers.
-- **Bands.** Flooding and exposure are weekly counters in A5, so these rules can run at the Year band on the saved week counts (and may need a Season band; TBD).
-- **New rule sources:** `FLOOD` and `THAW` (exposure and glacier retreat) join `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` and `COLD`. The T-1 `source` enum grows to match.
+- **Thresholds (aligned to locked GDD 2026-11-17, CHANGE-048).** The numbers above are GDD A5's first-run defaults (A5 TechnicalSpec 14.4 and A5 TuningParameters: `lake_inundation_weeks` 104, `lakebed_exposed_weeks` 52, `glaciation_weeks` / `glacial_retreat_weeks` 260 / 260 (retreat compares with `glacier_free_weeks`), `ALPINE_ELEVATION` 0.7; the 26-week dry riverbed is from 14.4). They go in the shipped rule file and `succession_parameters`. The glacier-mass floor that starts `glacier_weeks` is A5's (`GLACIER_BIOME_MIN`), not A3's. A5's counter names in Cluiche are `inundatedWeeks`, `exposedWeeks`, `lowFlowWeeks`, `glacierWeeks`.
+- **`pre_glacial_biome`** is a new saved A3 field per cell (written at glaciation, read at retreat). It rides in `SuccessionSaveParticipant`'s arrays.
+- **Bands.** All five rules are checked at the **Decade band** (GDD CH-A5-07: a cell can sit under water for up to about 10 years before it officially becomes Lake; V-1 shows inundation live, so only the biome lags). They read A5's weekly counters at the band.
+- **New rule source:** `INUNDATION` joins `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` and `COLD` (aligned to locked GDD 2026-11-17, CHANGE-048; the earlier `FLOOD` and `THAW` are dropped). Exposed lakebed and dry riverbed use `DRYING`; glaciation and retreat use `COLD`. The T-1 `source` enum grows by `INUNDATION` only.
+- **Guards (GDD A3 TechnicalSpec 10b, EdgeCaseMatrix):** inundation → Lake clears `pre_glacial_biome`, so a retreat can never turn a lake back into land. Any other transition keeps the record. Glaciation fires once per ice age because it requires `pre_glacial_biome` unset. A cell already at its glaciation target only records its old biome.
+- **Open item (known GDD item):** the `DRY_RIVERBED` marker duration reuses `legacy_dry_riverbed_years` (20-100 years), which is likely too long for a river that dries for half a year. The marker is refreshed at each Decade check where low flow still holds. Revisit the duration in S-2.6 Rivers & Floods.
 - **Staging table changes** are listed under the table below.
 - **Without A5** (S-3 Controlled mode, tests) these fields read 0, so none of these rules fire. Existing rules are unchanged.
 
@@ -168,12 +179,12 @@ Recovery transitions are resolved the same way. They arrive as triggers from rec
 | Rainforest | Scrub |
 | BurnedAshland | Grassland (recovery) |
 | DesertifiedPlain | Scrub (recovery) |
-| Lake (amended 2026-11-17, A5 Hydrology) | Wetland, Grassland (exposed lakebed) |
-| Land biomes that can flood (amended 2026-11-17, A5 Hydrology) | Lake (sustained inundation). Which biomes qualify is TBD |
-| Tundra, Alpine (amended 2026-11-17, A5 Hydrology) | glaciated: TundraBoreal, AlpineMountain targets for glaciated cells; retreat target TBD |
+| Lake (amended 2026-11-17, A5 Hydrology) | Wetland (exposed lakebed); the existing wetland-drying rule can then take it to Grassland |
+| Land biomes that can flood (amended 2026-11-17, A5 Hydrology) | Lake (sustained inundation). Every land biome qualifies except protected cells (GDD A5 14.4) |
+| Tundra, Alpine (amended 2026-11-17, A5 Hydrology) | glaciated: AlpineMountain (elevation >= 0.7) or TundraBoreal for glaciated cells; retreat returns to `pre_glacial_biome` |
 | Desert, Volcanic, Ocean | none (near-floor or water) |
 
-Alpine was in the "none" row. Glaciation and retreat now make it a possible target and source; Alpine otherwise stays near-floor. The exact staging entries are TBD (GDD A3).
+Alpine was in the "none" row. Glaciation and retreat now make it a possible target and source; Alpine otherwise stays near-floor. The per-biome staging rows are still to be written; the GDD A3 documents do not carry them yet.
 
 ### Legacy: one-shot deltas plus a timed marker
 
@@ -190,7 +201,7 @@ The legacy **marker** (type and years) is presentation and history only. It driv
 | Scrub → BurnedAshland | Scorch | 5–15 | `ash +0.4`, `soil_fertility +0.15` |
 | Scrub → DesertifiedPlain | DryRiverbed | 20–100 | `water_gradient -0.2`, `seed_bank = 0` |
 | Wetland → Grassland | DryRiverbed | 10–30 | `aquatic = 0` (`river_overlay` unchanged) |
-| Lake → Wetland / Grassland (amended 2026-11-17, A5 Hydrology) | none | — | TBD (aquatic species cleared, soil values from the new biome's start values) |
+| Lake → Wetland (amended 2026-11-17, A5 Hydrology) | none | — | TBD (aquatic species cleared, soil values from the new biome's start values) |
 | Land → Lake (amended 2026-11-17, A5 Hydrology) | none | — | TBD (land producers cleared) |
 | BurnedAshland → Grassland | Scorch (fading) | 5–15 | none (ash and fertility already decaying in A1) |
 | Scrub → Grassland, DesertifiedPlain → Scrub | none | — | none |
@@ -288,13 +299,13 @@ namespace CoW::Succession {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Succession Data & Rules | `SuccessionData` (staging, legacy, visual/recovery params, bonuses) load and validate; the shipped `succession_rules.json` (12 rules); rule-table validation against A1's biome ids and fields. Pure logic, TDD | TBD | Draft |
+| 1 | Succession Data & Rules | `SuccessionData` (staging, legacy, visual/recovery params, bonuses) load and validate; the shipped `succession_rules.json` (17 rules: the 12 stress and recovery rules plus the five hydrology rules `lake_inundation`, `lakebed_to_wetland`, `dry_riverbed_marker`, `glaciation`, `glacial_retreat`; ids are Cluiche's); rule-table validation against A1's biome ids and fields. Pure logic, TDD | TBD | Draft |
 | 2 | Resolver | `SuccessionSimulation::Resolve`: duplicates, staging, `ApplyBiomeTransition`, legacy deltas, marker years by hash, output records; EdgeCase 1.1–4.2 as tests. Needs the A1 seam (amendment 1). Pure logic, TDD | TBD | Draft |
 | 3 | Year/Season Ticks & Recovery | `OnYear` (visual state, recovery stages, marker countdown, acceleration lapse), `OnSeason`, `GetRecoveryMultiplier`, `SetAcceleration`; asymmetry test (degrade about 35 years vs recover 200–400 years at default tuning, A3 §2.3). Pure logic, TDD | TBD | Draft |
 | 4 | SuccessionModule & Save | SimModule wiring, resolver registration via `ModuleRef`, message structs, save participant and round-trip, `cow_main.diaapp` entry | TBD | Draft |
 | 5 | Succession Debug | `SuccessionDebugDomain`: commands, overlays, inspector, metrics, health. Included in the A1/S-3 HTML mockup | TBD | Draft |
 
-**Build order:** 1 → 2 → 3 → 4 → 5. Features 2 and 3 need A1 Features 1–5 plus amendments 1 and 2. A1 amendment 3 (ignition) belongs with A1 Feature 4. The A5 rules (amended 2026-11-17) need A5's `HydrologySnapshot` through A1's hydrology input, so they land after A1 Feature 7 and A5 Feature 3; the existing 12 rules do not wait for A5. Amendment 4 (inflow history) belongs with A1 Feature 4.
+**Build order:** 1 → 2 → 3 → 4 → 5. Features 2 and 3 need A1 Features 1–5 plus amendments 1 and 2. A1 amendment 3 (ignition) belongs with A1 Feature 4. The A5 rules (amended 2026-11-17, aligned to locked GDD 2026-11-17, CHANGE-048) need A5's `HydrologySnapshot` through A1's hydrology input, so they land after A1 Feature 7 and A5 Feature 3; the existing 12 rules do not wait for A5. Amendment 4 (inflow history) belongs with A1 Feature 4.
 
 ## Binding Decisions
 
@@ -318,15 +329,15 @@ For the GDD session to fold back, on top of CHANGE-036:
 5. **Added legacy row:** Scrub → BurnedAshland (Scorch, 5–15 years), which the table had left out.
 6. **Tundra's "migration routes severed"** becomes `years_low_herbivore_inflow > 5`.
 7. **Natural ignition is added to A1.** Fire can now emerge without dragons.
-8. **Ocean and Lake have no transitions.** They are added to the near-floor row. **Amended 2026-11-17 (A5 Hydrology): Ocean keeps no transitions. Lake now transitions both ways with land** (land → Lake on sustained inundation, Lake → Wetland/Grassland on sustained exposure), because A5 lets lakes grow and shrink. To fold back into GDD A3.
-10. **A5 water and ice rules** (amended 2026-11-17, A5 Hydrology): inundation, exposed lakebed, dry riverbed (sustained low river flow) and glacier rules, new sources `FLOOD` and `THAW`. Thresholds are TBD for the GDD. River courses stay static (DECISION-064/065).
+8. **Ocean and Lake have no transitions.** They are added to the near-floor row. **Amended 2026-11-17 (A5 Hydrology): Ocean keeps no transitions. Lake now transitions both ways with land** (land → Lake on sustained inundation, Lake → Wetland on sustained exposure), because A5 lets lakes grow and shrink. Matches GDD A5 14.4 (CHANGE-048: "This adds Lake's first transitions"); the GDD A3 documents still say none.
+10. **A5 water and ice rules** (amended 2026-11-17, A5 Hydrology): inundation, exposed lakebed, dry riverbed (sustained low river flow) and glacier rules, new source `INUNDATION`. First-run thresholds are fixed (104 / 52 / 26 / 260 weeks, all at the Decade band; aligned to locked GDD 2026-11-17, CHANGE-048). Glaciated cells use existing biomes and `pre_glacial_biome` is saved. River courses stay static (DECISION-064/065).
 9. **GeographyAndRegions Part 6 lists Grassland → Forest Edge and Forest → Grassland.** A3 v1 excludes both: Forest Edge isn't a biome id, and Forest → Grassland isn't in the staging table. GeographyAndRegions should note them as post-v1.
 
 ## Dependencies
 
 **Requires:**
 - **A1 Ecology**, Features 1–5, plus amendments 1–4.
-- **A5 Hydrology** (amended 2026-11-17; Draft, unbuilt), soft: `inundatedWeeks`, `exposedWeeks`, `riverFlow` and `glacier`, read through A1. Without it the water and ice rules never fire.
+- **A5 Hydrology** (amended 2026-11-17; GDD locked 2026-11-17, CHANGE-048; Cluiche spec Draft, unbuilt), soft: `inundatedWeeks`, `exposedWeeks`, `lowFlowWeeks` and `glacierWeeks`, read through A1. Without it the water and ice rules never fire.
 - GameSpeedController (bands, via A1), E1, DiaMessageBus, `VisualDebuggerModule`, DiaAPI `CommandRegistry`, Dia CellField (dia-needs #14) for overlays. DiaCellLayers, DiaCellHistory and DiaValueSchema (layers, events, tooltips), all Approved, not built (amended 2026-10-19, consistency pass).
 
 **Required by:** A1 (resolver, optional), A4 (`BiomeTransitionComplete`), S-3 Ecology (Living mode transitions, the A3 scenario, the succession long-run check), and later V-1, D4, C3, B1 and B2.
@@ -340,7 +351,7 @@ For the GDD session to fold back, on top of CHANGE-036:
 - Duplicate triggers in one band are discarded. Rejected triggers keep their counter.
 - A transition resets every counter for the cell, and a pending recovery is cancelled by a forward transition (EdgeCase 2.1, 3.1, 3.2).
 - Stressed at 50% progress.
-- (amended 2026-11-17, A5 Hydrology) With a stub hydrology input: sustained `inundated_weeks` turns land into Lake; sustained `exposed_weeks` turns Lake into Wetland or Grassland; low river flow sets the `DryRiverbed` marker without moving `river_overlay`; glaciated cells go cold and retreat when the mass melts; with no A5 none of these fire.
+- (amended 2026-11-17, A5 Hydrology) With a stub hydrology input: sustained `inundated_weeks` turns land into Lake; sustained `exposed_weeks` turns Lake into Wetland; low river flow sets the `DryRiverbed` marker without moving `river_overlay`; glaciated cells go to AlpineMountain or TundraBoreal and return to `pre_glacial_biome` on retreat; frozen river weeks neither count nor reset `low_flow_weeks`; Ocean and Lake never glaciate; with no A5 none of these fire.
 - Seeding at 0.3, Establishing at 0.7, transition at 1.0.
 - Stalled recovery keeps its progress.
 - The acceleration multiplier applies only while the conditions hold, and lapses after a year without refresh.
@@ -362,7 +373,7 @@ For the GDD session to fold back, on top of CHANGE-036:
 
 ## Open question added 2026-11-17 (A5 Hydrology)
 
-3. **Aquatic to land and back.** A1 runs an aquatic-only ecology on Lake cells and land ecology elsewhere. `ApplyBiomeTransition` for Lake ↔ land must reinitialise the cell's producers and species from the new biome's starting values, and A1 must accept a land cell that becomes aquatic mid-run. That is an A1 change (Feature 5) to settle before the Lake rules are built.
+3. **Aquatic to land and back.** A1 runs an aquatic-only ecology on Lake cells and land ecology elsewhere. `ApplyBiomeTransition` for Lake ↔ land must reinitialise the cell's producers and species from the new biome's starting values, and A1 must accept a land cell that becomes aquatic mid-run. That is an A1 change (Feature 5) to settle before the Lake rules are built. **Partly answered by the locked GDD (2026-11-17, CHANGE-048):** for land → Lake, land populations leave through the migration solver and any that can't move are lost (A5 14.3, using A1's existing rule that land species can't enter Lake). A5 EC-16 also covers a hand-edited Lake that A5 never inundated. Still open: the producer and soil re-initialisation values for Lake → Wetland and for land → Lake, and A1 accepting a mid-run aquatic switch. The question stays open.
 
 ## T-1 consumer amendment (2026-11-16, approved with T-1 Feature 12)
 
@@ -377,4 +388,4 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/cross-sys
 
 ## Status
 
-**Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. **Amended 2026-11-17 (A5 Hydrology):** new water and ice rules, Lake ↔ land transitions, new sources `FLOOD` and `THAW`; status stays `Approved`, thresholds TBD. Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.
+**Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. **Amended 2026-11-17 (A5 Hydrology; aligned to locked GDD 2026-11-17, CHANGE-048):** new water and ice rules, Lake ↔ land transitions, new source `INUNDATION`, marker-only `to: none` rules, `pre_glacial_biome`, 17 rules; status stays `Approved`; thresholds now set (104 / 52 / 26 / 260 weeks, Decade band). Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.

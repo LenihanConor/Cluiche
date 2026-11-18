@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 5)
 **Status:** Draft (2026-11-17)
-**Design source:** A5 GDD draft `08_SystemsDeepDive/A5_Hydrology/A5_AuthoringDebug.md` (§1–§4, drafted 2026-11-17, **not locked**), the A5 brief in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md`, and the user decisions of 2026-11-17. The GDD session `cow-68` has A5, so this spec cannot be Approved before it locks (AD-003). Where the GDD draft differs from the user decisions, the decisions win (see "GDD differences").
+**Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_AuthoringDebug.md` §1–§5a, `A5_TuningParameters.md`; DECISION-129..134), the A5 brief in `Cluiche/out/CoW/gdd-foldback-hydrology-weather-2026-11-17.md`, and the user decisions of 2026-11-17. The GDD owns design intent (AD-003). Aligned to it (aligned to locked GDD 2026-11-17). Where the GDD differs from the user decisions, the decisions win (see "GDD differences").
 **Depends on:**
 - A5 Features 1–2 (fields, parameters, `WaterTotals`, `Passability`, `SetParam`).
 - A5 Features 3–4 (`HydrologyModule`, `HydrologySnapshot`, `HydrologyUpdated{week}`, the parameter and preset latch path). Referred to by name only; their specs are being written in parallel.
@@ -77,10 +77,10 @@ User decision: "inundation shown via the basin mask". There is no `hydro.inundat
 
 Registered with `CellLayerRegistry::Details()` (64 rows max, called only when exactly one cell is selected) plus a hover extra. `ExplainHydroCell(snapshot, terrain, params, cell)` (pure) returns:
 
-- **Committed fields:** the eight layer values plus `meanFlow`, `openWater`, `glacierEligible`.
-- **Latched counters:** `inundatedWeeks`, `exposedWeeks`, `snowYears`.
-- **Static:** biome and its six biome-table values for this cell, `isRiver`, `isCrossing`, flow direction and the downstream cell, the release rate `r` for this cell (Feature 2's formula applied to the cell's drop), bed elevation, elevation.
-- **Basin (if any):** basin id, level, volume, percent of spill volume, spill cell, depth at this cell (`level − bed`), `isLake`.
+- **Committed fields:** the eight layer values plus `meanFlow`, `openWater`, `glacierEligible` and `RiverState` (Dry / Low / Normal / Flood / Frozen, from Feature 3's snapshot).
+- **Latched counters:** `inundatedWeeks`, `exposedWeeks`, `lowFlowWeeks`, `glacierWeeks`, `glacierFreeWeeks`, `snowYears`.
+- **Static:** biome and its three biome-table values (`soil_capacity`, `infil_rate`, `veg_factor`) for this cell, `isRiver`, `isCrossing`, flow direction and the downstream cell, the release rate `k` for this cell (Feature 2's rule: a river cell is `clamp(release_min + release_slope · drop, release_floor, release_ceil)`, any other land cell is `hillslope_release`), bed elevation, elevation.
+- **Basin (if any):** basin id, level, volume, percent of spill volume, spill cell, depth at this cell (`level − bed`), `iceFraction`, `isLake`.
 - **Derived:** the flood threshold (`bankfull_factor · meanFlow`) and the ratio of this week's `riverFlow` to it; the passability reason ("Deep: depth 0.07 > ford_depth", "Fordable: crossing cap").
 
 It calls Feature 2's pure helpers (release rate, basin curve, passability rule) rather than re-deriving them. It adds no behaviour to Feature 2.
@@ -109,9 +109,9 @@ T-1 reads the series from the event stream. A scalar-series capability in DiaCel
 |---|---|---|
 | `hydro.flood_start` | A connected set of flooded cells (neighbour-connected) appears with no cell in common with last week's flooded set | `id`, `size`, `anchor` (cell with the highest `riverFlow / (bankfull · meanFlow)`), `peakRatio` |
 | `hydro.flood_end` | A flood set from `flood_start` has no flooded cell left this week | `id`, `weeks`, `peakSize` |
-| `hydro.river_dry` | A connected set of at least `dry_min_cells` river cells (TBD) with `riverFlow < dry_fraction · meanFlow` (`dry_fraction` TBD) and `meanFlow > min_flood_flow` appears, once per episode; an episode ends after one non-dry week | `id`, `size`, `anchor`, `region` |
+| `hydro.river_dry` | A connected set of at least `dry_min_cells` river cells (TBD) with `riverFlow < dry_fraction · meanFlow` (`river.low_flow_fraction`, 0.1 in Feature 1) and `meanFlow > flood.min_flow` appears, once per episode; an episode ends after one non-dry week | `id`, `size`, `anchor`, `region` |
 | `hydro.lake_record` | A basin's level exceeds its highest level since the world loaded, or falls below its lowest, by at least `record_margin` (TBD). The first `record_warmup_weeks` (TBD) after load or spin-up record only, no event | `basin`, `level`, `kind` (`high`/`low`), `previous` |
-| `hydro.freeze_up` | In a cold spell (`freeze_up_fraction` of river cells, TBD, hold `ice > ice_crossable`), the first week the fraction is crossed upward; re-armed when it falls back below half | `riverFraction`, `week` |
+| `hydro.freeze_up` | In a cold spell (`freeze_up_fraction` of river cells, TBD, hold `ice ≥ freeze.ice_crossing_min`), the first week the fraction is crossed upward; re-armed when it falls back below half | `riverFraction`, `week` |
 | `hydro.totals` | Every applied week | as above |
 
 - Floods, dry rivers and records are capped at **4 events per type per week**, largest first. Excess goes to the counter `cow.hydro.events_dropped`.
@@ -242,7 +242,7 @@ New messages: none (a stats struct reaches the card through the existing debug s
 |----|----------|---------------------------|
 | PD-004 | No STL in public APIs | Detectors, plans, commands and explanations use Dia containers and fixed-capacity arrays |
 | AD-001 | Ask permission before Dia edits | None. The DiaCellLayers, DiaCellHistory, DiaValueSchema, sim-hosted and debug-domain APIs are built and used as-is |
-| AD-003 | GDD owns design intent | Draft until GDD A5 is locked. Thresholds, ranges and hotkeys are provisional and listed for fold-back |
+| AD-003 | GDD owns design intent | The layers, commands and history follow the locked GDD (2026-11-17). Event thresholds, display ranges and hotkeys are provisional and listed for fold-back |
 | SD-PERF-7 | Telemetry cost budgets | Four metrics, written once per applied step on SimPU. No per-cell telemetry leaves SimPU. The overlay is capped |
 | Sim-hosted name cap (192/PU in code) | Per-PU budget | 6 names, registered all-or-nothing |
 | Editor-actions rule | Every tool action is a command; the panel calls the same commands | The panel posts JSON commands only. AC 26 proves one execution path |
@@ -252,11 +252,11 @@ New messages: none (a stats struct reaches the card through the existing debug s
 
 ## GDD differences
 
-Where the GDD draft (`A5_AuthoringDebug.md`) differs, the user decisions of 2026-11-17 win. For the GDD session's fold-back:
+Only real remaining differences (aligned to locked GDD 2026-11-17). The user decisions of 2026-11-17 win:
 
-| GDD draft | This spec |
+| GDD | This spec |
 |---|---|
-| Layers `hydro.river_state` (Dry/Low/Normal/Flood), `hydro.basins` (footprints, % full), `hydro.flow_dir` (arrows) | Not shipped. Eight layers only. Inundation is an overlay mask. Basin fullness is in `cow.hydro.basins`. River state is derivable (`find dry_rivers`, `flooded`). Flow-direction arrows deferred |
+| Layers `hydro.river_state` (Dry/Low/Normal/Flood), `hydro.basins` (footprints, % full), `hydro.flow_dir` (arrows) | Not shipped. Eight layers only. Inundation is an overlay mask. Basin fullness is in `cow.hydro.basins`. `RiverState` (the GDD's `river_state`, including `Frozen`) is in Feature 3's snapshot and the cell detail rows, but has no layer. Flow-direction arrows deferred |
 | Cell inspector shows this week's per-pass deltas | Not shown. Feature 2 keeps no per-cell per-pass records. Adding them costs about six float arrays and a pass-by-pass write. Revisit if "where did this water go?" is needed in S-2.6 |
 | Panel shows "water totals" as a gauge only | Also recorded each week as a `hydro.totals` event, so T-1 can chart it |
 | `cow.hydro.reload` and `cow.hydro.set` (dev store override) | Not shipped. `set_param` covers temporary parameter overrides. A store override (EC-27) would need an external-source ledger entry in Feature 2's totals and is not decided |
@@ -272,10 +272,10 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 
 ## Open Design Questions
 
-1. **What are the display ranges?** `soilMoisture` is documented as [0, 1] in the system spec, but Feature 1's `soil_capacity` goes up to 5 and the provisional defaults reach 1.2. `riverFlow`, `glacier` and `ice` are unbounded sums. A fixed range clips big rivers and glaciers. A per-world observed range (DiaCellLayers also shows the observed min/max) is honest but moves the colours week to week. Pick in the first plan task: schema range = the largest provisional capacity, and let the legend show the observed max. Revisit after S-2.6 tunes the numbers.
+1. **What are the display ranges?** `soilMoisture` is documented as [0, 1] in the system spec, but Feature 1's `soil_capacity` goes up to 5 and the GDD defaults reach 1.0. `riverFlow`, `glacier` and `ice` are unbounded sums. A fixed range clips big rivers and glaciers. A per-world observed range (DiaCellLayers also shows the observed min/max) is honest but moves the colours week to week. Pick in the first plan task: schema range = the largest provisional capacity, and let the legend show the observed max. Revisit after S-2.6 tunes the numbers.
 2. **Is an event the right home for the weekly totals?** It works with no Dia change and T-1 can read it, but events are not a numeric series: charting means parsing JSON payloads, and the recorder's event budget must hold 52 extra events a year per world. If T-1 wants totals as first-class series, a small scalar-series API in DiaCellHistory (AD-001, needs sign-off) is cleaner. Decide when T-1's water panel is specced. Related: the per-store split of `storage` needs Feature 2's `WaterTotals` to expose it (today it has one `storage` double). Feature 2 would add a per-store array to its totals.
 3. **How does `cow.hydro.balance weeks=N` run without hitching SimPU?** A headless copy stepped N times on SimPU costs N full steps at once, which could miss the World Step slack at Large. Options: cap `weeks` low (the 1–52 here is a placeholder), run it as a DiaDeferredStep job and reply when done (needs the sim-hosted reply to be asynchronous, which this spec has not confirmed), or run it in the headless runner only (not live). The first plan task checks what `SimQueryHost` allows.
-4. **Are the event thresholds (`dry_fraction`, `dry_min_cells`, `record_margin`, `freeze_up_fraction`) meaningful before S-2.6 tunes the water numbers?** They are config so tuning needs no code, but a bad first guess floods the stream (capped at 4 per type per week) or stays silent. Treat the first S-2.6 session as their tuning pass.
+4. **Are the event thresholds (`river.low_flow_fraction`, `dry_min_cells`, `record_margin`, `freeze_up_fraction`) meaningful before S-2.6 tunes the water numbers?** They are config so tuning needs no code, but a bad first guess floods the stream (capped at 4 per type per week) or stays silent. Treat the first S-2.6 session as their tuning pass.
 
 ## Status
 
@@ -286,4 +286,4 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 - observability: profile per pass, trace zone, `cow.hydro.step_ms`, balance and tree gauges, health Degraded/Failing, `HYD` logs;
 - performance report-only.
 
-Approval waits on GDD A5's lock and on Features 3–4 being written (this spec names `HydrologyModule`, `HydrologySnapshot` and `HydrologyUpdated{week}` only). No plan.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan.

@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A1_Ecology/` (DesignDocs repo; `A1_EcologySystem.md`, `A1_TechnicalSpec.md`, `A1_TuningParameters.md`, `A1_AuthoringDebug.md`, `A1_EdgeCaseMatrix.md`, `A1_PrototypeTestbed.md`, `A1_ProductionBacklog.md`, all Locked 2026-10-12)  
 **Conflicts resolved here:** [a1-gdd-conflicts.md](a1-gdd-conflicts.md) (C1–C14, interviewed 2026-10-18)
-**Amended 2026-11-17, A5 Hydrology:** water on the ground now belongs to A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)). Feature 4 loses water flow and the water table. A1 reads cell water, river flow, flooding and ice from `HydrologySnapshot`. The `water_dragon_emission` direct write is dropped. A5 is a soft dependency: without it A1 falls back to A4 rainfall or the pinned climate.
+**Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** water on the ground now belongs to A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)). Feature 4 loses the water flow pass and the Decade water table, but keeps a thin step 2 that builds `water_gradient` from A5's snapshot. A1 reads cell water, river flow, flooding and ice from `HydrologySnapshot`. The `water_dragon_emission` direct write is dropped. A5 is a soft dependency: without it A1 falls back to A4 rainfall or the pinned climate.
 
 **Gameplay Domains:** persistence, debug
 
@@ -35,7 +35,7 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 - **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. S-3 Ecology sees migration through density overlays and flow arrows.
 - **Succession transition rules, legacy modifiers and recovery counters.** These belong to A3. A1 provides the counters and the apply API.
 - **Weather.** A4 owns rainfall and temperature variation. A1 does not roll `year_quality` (C6).
-- **Water on the ground** (amended 2026-11-17, A5 Hydrology)**.** Soil moisture, ground water, runoff, river flow, lakes, floods and ice belong to A5. A1 no longer runs a water flow pass or a water table, and no longer writes water directly from dragons (the GDD `water_dragon_emission`). Dragon water effects go through A4's weather influence API (A4 Feature 7); there is no dragon content now.
+- **Water on the ground** (amended 2026-11-17, A5 Hydrology)**.** Soil moisture, ground water, runoff, river flow, lakes, floods and ice belong to A5. A1 no longer moves water or runs a water table (it keeps only a thin step 2 that builds the `water_gradient` pressure field from A5's values, aligned to locked GDD 2026-11-17, CHANGE-048), and no longer writes water directly from dragons (the GDD `water_dragon_emission`). Dragon water effects go through A4's weather influence API (A4 Feature 7); there is no dragon content now.
 - **Event display and naming.** These belong to D4. A1 only detects thresholds.
 - **World generation.** A1 derives what it needs from S-1's `WorldStructure` and never writes it.
 - **Player-facing visuals.** These belong to V-1. A1's overlays are debug-only.
@@ -87,7 +87,7 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 
 `EcologyFields` holds one `DynamicArrayC<float>` per scalar field, indexed by cell, so passes stream, saves are arrays and the parallel split matches A4's.
 
-- **Abiotic** (amended 2026-11-17, A5 Hydrology: `water` is now fed by A5's seasonal mean `soilMoisture`, and `rainfall_accumulator` is only the fallback input when A5 is absent; A1 no longer simulates ground water): `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`.
+- **Abiotic** (amended 2026-11-17, A5 Hydrology: `water` is now fed by A5's seasonal mean `soilMoisture`, and `rainfall_accumulator` is only the fallback input when A5 is absent; A1 no longer simulates ground water): `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`. **New saved fields (aligned to locked GDD 2026-11-17, CHANGE-048, A1 TechnicalSpec 2 and 13.4):** `soil_wetness_accumulator` (sum of weekly A5 soil wetness, reset each Season), `river_flow_ratio_accumulator` (sum of weekly river-flow ratios, river cells only, reset each Season) and `inundated` (bool, copied from A5 each week). All three go in A1's save participant. A saved mid-Season state restores both accumulators.
 - **Producers:** `grass`, `shrub`, `tree`, `aquatic`, `seed_bank`.
 - **Consumers:** dense `[species × cell]` arrays, `juvenile` and `adult`, as fractions of `max_density_per_cell` [0, 1] (C14). A species absent from a cell is 0. Functional-group totals are computed on demand from tags.
 - **Transients:** `carrion`, `waste`, `ash`, `disease_load`, `fire_intensity`, `drought_stress`.
@@ -120,9 +120,9 @@ GameSpeedController publishes one `SimulationTick{day, band}` per day and never 
 
 | Band | Steps |
 |------|-------|
-| Season | 1 weather (consume accumulator), natural ignition and fire spread, ~~2 water flow~~ (moved to A5, amended 2026-11-17), 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
+| Season | 1 weather (consume accumulator), natural ignition and fire spread, 2 thin `water_gradient` build from A5's snapshot (soil moisture, river flow, inundation); A1 no longer moves water (amended 2026-11-17, aligned to locked GDD 2026-11-17, CHANGE-048), 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
 | Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` + resolver `Resolve` (step 10), resolver `OnYear` |
-| Decade | ~~2 water table~~ (moved to A5, amended 2026-11-17), 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
+| Decade | ~~2 water table~~ (deleted, A5 owns ground water; amended 2026-11-17), 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
 | Century | 10 major succession, 11 legacy recolonization |
 
 The Year, Decade and Century boundaries are also Season boundaries (364 = 4 × 91). Bands run smallest first on the same tick. **Each step is a full-grid pass, step-outer** (every cell finishes step N before any cell starts N+1, EcologySystem §6). Steps that read neighbours read the stable copy taken at the start of the pass and **gather** inflow in direction order 0..5, as A4 does, so the result does not depend on iteration order. Every modified field is clamped at the end of each step (TechnicalSpec §3).
@@ -145,12 +145,23 @@ A1 reads water through `IEcologyHydrologyInput`, a seam like `IEcologyWeatherInp
 | `RiverFlow(cell)` | Live flow. Scales the river-overlay water floor on `river_overlay` cells |
 | `Flooded(cell)` | Floodplain flood this week |
 | `Ice(cell)` | Frozen surface water |
+| `Inundated(cell)` | Cell is under basin water this week. A1 treats an inundated cell as **aquatic habitat** (aquatic species can live there before A3 turns it into Lake). It also suppresses grass growth and caps land-species capacity at the GDD's `INUNDATED_LAND_CAPACITY` |
+| `InundatedWeeks`, `ExposedWeeks`, `LowFlowWeeks`, `GlacierWeeks` (cell) | A5's consecutive-week counters (`inundatedWeeks`, `exposedWeeks`, `lowFlowWeeks`, `glacierWeeks`). A1 exposes them to A3's rule conditions as `inundated_weeks`, `exposed_weeks`, `low_flow_weeks`, `glacier_weeks`, and the new `glacier_free_weeks` (A5 `glacierFreeWeeks`, counts while glacier mass is below `GLACIER_BIOME_MIN`; used by glacial retreat). Also `is_protected` for the inundation rule A1 copies, never writes them |
 | `PassabilityAt(cell)` | `Dry/Wet/Fordable/Deep/Frozen`. Migration treats `Deep` like impassable water for land species and `Frozen` as land; `Wet` is slower, never blocking |
 
 - **With A5 (`HydrologySnapshotInput`):** on `HydrologyUpdated{week}` A1 adds `SoilMoisture` into a seasonal mean. A4's `rainfall` no longer includes ground water, so there is no double count.
-- **Without A5 (S-3 Controlled mode, tests):** the fallback is today's behaviour: A4 rainfall, or the pinned climate's rainfall, feeds `water`. The `river_overlay` floor stays at its static value. `StubHydrologyInput` (Testing/) supplies scripted values.
+- **Without A5 (S-3 Controlled mode, tests):** the fallback is today's behaviour: the old A4 `rainfall_accumulator` (or the pinned climate's rainfall) feeds `water`, with no inundation. The `river_overlay` floor stays at its static value. `StubHydrologyInput` (Testing/) supplies scripted values.
 - A5 runs before A1 in the World Step order, so A1's `Capture` latches A5's committed state of the same step.
-- The numeric mapping from soil moisture to `water` and from flow to the water floor is TBD (GDD A1/A5 to set).
+- **Mapping (aligned to locked GDD 2026-11-17, CHANGE-048):** `water` is the mean of the 13 weekly soil wetness values per Season. The river-overlay floor is `RIVER_FLOOR_MIN + (RIVER_FLOOR_MAX - RIVER_FLOOR_MIN) x ratio`, where `ratio` is the **Season mean of the weekly `min(1, river_flow / max(mean_flow, MIN_MEAN_FLOW))`** (`river_flow_ratio_accumulator / 13`). `MIN_MEAN_FLOW` is read from A5. `cell.water = max(cell.water, floor)` on river cells, and 1.0 on inundated cells. The floor never reaches 0 (DECISION-065). `RIVER_FLOOR_MIN/MAX` are A1 tuning values, still TBD.
+- **Step 2 (thin):** at the Season band `water_gradient` sources are set from A5's soil wetness, the river floor and inundation. Wetland edges follow inundation. Spread and decay of the field are unchanged. Without A5 the sources fall back to the static `water_source` flags (water cells and the river overlay), as today.
+- **Step 2 source formula (Cluiche-specified; the GDD gives this in words only, A1 TechnicalSpec 13.4).** For each cell, after step 1 has set `water`:
+  ```
+  source(cell) = 1.0                                  if cell.inundated or the cell is an Ocean/Lake (water) cell
+               = clamp(cell.water, 0, 1)              otherwise
+  water_gradient(cell) = max(water_gradient_after_spread_and_decay(cell), source(cell))
+  ```
+  `cell.water` already holds the Season mean of soil wetness, raised to the river floor on river cells (`max(mean wetness, floor)`), so one clamp covers "soil wetness and the river floor". `max` means a source never lowers a value the existing spread already gave, and the field's spread and decay code is untouched. If the first playtests show dry cells with high wetness swamping the gradient, a source scale is the first tuning knob (TBD).
+- **Frozen rivers** read as `Frozen` (A5 `river_state`), not dry. A1 never turns a frozen river into a low-water cell.
 
 ### Ecology state (C4)
 
@@ -180,7 +191,9 @@ So a single bad season never drops a cell, and recovering is slower than degradi
 - A recovery rule's increment is multiplied by the resolver's `GetRecoveryMultiplier(cell)` (dragon acceleration, 1.0 until S-4).
 - **Content ownership** (amended 2026-10-19, product review): A3 owns the rule-table contents. A1 ships an initial file translated from A3 TechnicalSpec §4 so A1 can be exercised before A3 exists. A1 evaluates every rule and provides the file schema; A3 authors the conditions and increments.
 
-- `source` is one of `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING` or `COLD`.
+- `source` is one of `DROUGHT`, `FIRE`, `OVERGRAZE`, `DISEASE`, `DRYING`, `COLD` or `INUNDATION` (new, aligned to locked GDD 2026-11-17, CHANGE-048).
+- `to` may be `none` for a **marker-only rule** (the `DRY_RIVERBED` marker). A1 still raises the trigger when the counter reaches 1.0. A3 sets the marker and does not call `ApplyBiomeTransition`, so A1's other counters on the cell are not reset (GDD A1 TechnicalSpec 15.3).
+- **Rule count is now 17** (12 stress and recovery rules plus five hydrology rules). The five hydrology rules are in A3's table and are evaluated at the Decade band; A1 evaluates them like any rule. Sources: inundation uses `INUNDATION`; exposed lakebed and dry riverbed use `DRYING`; glaciation and glacial retreat use `COLD`. They read A5 counters directly with `increment: 1.0`, `decay: 1.0`, so they fire at the first Decade check where the condition holds.
 - `conditions` are `{field, op, value}` tests over cell fields and history (for example `drought_years > 3`, `seed_bank < 0.2`).
 
 At each rule's band, for every cell whose biome matches `from`:
@@ -212,7 +225,7 @@ Without dragons, nothing would start a fire, so BurnedAshland could never emerge
 
 ### Aquatic ecology and coastal feeding (C3)
 
-Ocean and Lake cells run an **aquatic-only** ecology: `aquatic` biomass plus species with `"habitat": "aquatic"` (same `species.json` schema). Aquatic species also live in river and wetland land cells. Land species treat Ocean and Lake as impassable, and aquatic species can't move onto dry land cells.
+Ocean and Lake cells run an **aquatic-only** ecology: `aquatic` biomass plus species with `"habitat": "aquatic"` (same `species.json` schema). Aquatic species also live in river and wetland land cells. **Inundated land cells (A5) count as aquatic habitat too** (aligned to locked GDD 2026-11-17, CHANGE-048), so a flooded valley gets fish before A3 turns it into Lake. When A3 does flip it to Lake, land populations leave through the migration solver and any that can't move are lost. Land species treat Ocean and Lake as impassable, and aquatic species can't move onto dry land cells.
 
 **Coastal cross-feeding:** a land predator or scavenger whose diet lists an aquatic group can hunt aquatic populations in **adjacent** water cells, scaled by `coastal_reach`. Each side gathers from the stable copy: the water cell computes its losses from neighbouring land predators, and the land cell computes its food gain from neighbouring aquatic prey. This keeps the result deterministic. Water cells compute `H` from aquatic biomass and aquatic consumers only.
 
@@ -389,7 +402,7 @@ Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTrigger
 | 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
 | 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
-| 4 | Grid Passes | Steps 8 and 11 plus pressure-field propagation (**water flow and table removed, A5 owns them — amended 2026-11-17, A5 Hydrology**): migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
+| 4 | Grid Passes | Steps 8 and 11 plus pressure-field propagation (**water flow and the water table removed, A5 owns them; a thin step 2 builds `water_gradient` from A5's snapshot — amended 2026-11-17, aligned to locked GDD 2026-11-17, CHANGE-048**): migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
 | 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation, forward and recovery, with the recovery multiplier (C7), the `ISuccessionResolver` seam at step 10, `BiomeSuccessionTriggered`, one-shot `ApplyBiomeTransition` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
 | 7 | EcologyModule | SimModule: data load and hot reload, `HydrologyUpdated` accumulation via `HydrologySnapshotInput` with the no-A5 fallback (amended 2026-11-17), `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, **registration as World Step stage `ecology` with `Capture`/`Run`/`Commit` and `SerializePending`/`DeserializePending`** (amended 2026-11-13; replaces `mSeasonPending` scheduling and the self-driven band gate), due-band resolution from the capture key, stub-input mode, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `cow_main.diaapp` entry | TBD | Draft |
@@ -437,7 +450,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 16. **A1 owns its tools, and S-2 and S-3 merge into S-3 Ecology** (2026-10-18). Tuning, editing, graphs and the change ledger are part of A1 (A4's pattern). One stage hosts them, with a Controlled mode (pinned weather, for understanding and tuning) and a Living mode (A4 and A3 live, long-run emergence). This changes the GDD's testbed roster.
 17. **Natural ignition** (from the A3 spec): seeded lightning fires at the Season band, so fire and BurnedAshland emerge without dragons. This is new GDD content.
 18. **`years_low_herbivore_inflow`** (from the A3 spec) stands in for tundra's "migration routes severed".
-19. **Water is A5's** (amended 2026-11-17, A5 Hydrology). GDD step 2 "Water flow" and the Decade "water table drift" leave A1. A1 reads soil moisture, river flow, flooding and ice from A5. The GDD `water_dragon_emission` direct write is dropped; dragon water effects go through A4's influence API. To fold back into GDD A1 and A5.
+19. **Water is A5's** (amended 2026-11-17, A5 Hydrology). GDD step 2 "Water flow" and the Decade "water table drift" leave A1. The Decade water table stays deleted. Step 2 survives as a thin `water_gradient` build from A5 (aligned to locked GDD 2026-11-17, CHANGE-048). A1 reads soil moisture, river flow, flooding, inundation and ice from A5, and treats inundated cells as aquatic habitat. The GDD `water_dragon_emission` direct write is dropped; dragon water effects go through A4's influence API. Folded back: GDD A1 and A5 locked 2026-11-17 (CHANGE-048). The thin step 2 source formula is Cluiche-specified.
 
 ## Dependencies
 
@@ -459,7 +472,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaCore (Json, StringCRC, containers, logging).
 
 **Soft dependencies (fallbacks until they exist):**
-- **A5 Hydrology** (amended 2026-11-17; Draft, unbuilt, @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md). Without it, A1 uses A4 rainfall or the pinned climate as its water input, and the river-overlay floor stays static. With it, A5 is stage `hydrology` ahead of `ecology` in the World Step order.
+- **A5 Hydrology** (amended 2026-11-17; GDD locked 2026-11-17, CHANGE-048; Cluiche spec Draft, unbuilt, @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md). Without it, A1 uses A4 rainfall or the pinned climate as its water input, and the river-overlay floor stays static. With it, A5 is stage `hydrology` ahead of `ecology` in the World Step order.
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
 - **A3.** Without it, triggers are published and counted but no biome changes. A debug `cow.ecology.apply_transition` command can apply one by hand.
 
@@ -504,6 +517,6 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 
 **Status:** `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.
 
-**Amended 2026-11-17 (A5 Hydrology).** Water moves to A5: Feature 4 loses water flow and the water table, A1 gains a hydrology input with a no-A5 fallback, World Step order is `["weather", "hydrology", "ecology"]`, `water_dragon_emission` is dropped. Status stays `Approved`; Features 4 and 7 text changed, and the unbuilt A5 spec is `Draft`.
+**Amended 2026-11-17 (A5 Hydrology).** Water moves to A5: Feature 4 loses water flow and the water table, A1 gains a hydrology input with a no-A5 fallback, World Step order is `["weather", "hydrology", "ecology"]`, `water_dragon_emission` is dropped. Status stays `Approved`; Features 4 and 7 text changed, and the unbuilt A5 spec is `Draft`. **Aligned to locked GDD 2026-11-17 (CHANGE-048):** thin step 2 `water_gradient` restored, inundated cells count as aquatic habitat, A5 counters exposed to A3. GDD A1 TechnicalSpec 13.4 is now written; it supplies the accumulators and the river-floor mean ratio, and the step 2 formula is Cluiche's. The rule schema gains `INUNDATION` and `to: none`; the shipped rule file has 17 rules.
 
 Conflicts C1–C14 resolved in the interview on 2026-10-18. Amended the same day: change ledger (Feature 3), tools moved into A1 (Feature 9), and S-2/S-3 merged into one Ecology testbed (deviation 16). Amended again on A3's approval (2026-10-18): the `ISuccessionResolver` seam, recovery rules, `RemoveLegacy` removed, natural ignition, and `years_low_herbivore_inflow` (deviations 17–18). No plan yet; create `a1-ecology.plan.md` when implementation starts (Features 1–6 need no S-1, A3 or A4 code).

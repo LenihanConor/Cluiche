@@ -1,22 +1,22 @@
 # Feature Spec: A4 Weather Debug
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 5)
-**Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): the `weather.ground_water` layer becomes `weather.water_to_ground`; ground water is A5's `hydro.ground`.
+**Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): the `weather.ground_water` layer becomes `weather.water_to_ground`; ground water is A5's `hydro.ground`. Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): eighth scalar layer `weather.climate_offset` (ten layers with the wind components), **eight** names (`cow.weather.influence`), 14-entry profile, `info cycles`, `params cycle`, `force storm` through the influence API, ten-field cell details.
 **Depends on:** A4 Features 1, 2, 3, 4, 6 (fields, pipeline helpers, `WeatherModule` and its mutation queue, state codec, `ApplyPreset`); DiaCellLayers (`CellLayerRegistry`, `CellOverlayDesc`, `Details()`), DiaCellHistory (`CellHistoryRecorder`, events), DiaValueSchema, `SimQueryHostModule` with `SimHelpInfo`, `DiaDebugDomainRegistry`/`DiaDebugPanel`, DiaObservation (all built).
 **Consumed by:** S-2.5 (hosts everything here), S-3 and S-3.5 (host the layers), V-1 (reads nothing from here).
 
 ## Summary
 
-Everything a developer uses to look at and poke the weather: seven cell layers, a wind overlay that is dense only where it needs to be, per-cell detail rows, a panel card, **seven** sim-hosted `cow.weather.*` names (consolidated from the system spec's sixteen, decided 2026-11-16), history events for storms and droughts, metrics, and health. It reads committed state only and changes state only by queuing mutations through Feature 3's queue.
+Everything a developer uses to look at and poke the weather: eight scalar cell layers (the seven field layers plus `weather.climate_offset`; ten with the two wind component layers), a wind overlay that is dense only where it needs to be, per-cell detail rows, a panel card, **eight** sim-hosted `cow.weather.*` names (consolidated from the system spec's sixteen, decided 2026-11-16; Feature 7 adds `cow.weather.influence`, amended 2026-11-17), history events for storms and droughts, metrics, and health. It reads committed state only and changes state only by queuing mutations through Feature 3's queue.
 
 The panel's *layout* is S-2.5 Feature 1's mockup. This feature defines the data the card shows and the commands it posts.
 
 ## Goals
 
-1. Each of A4's seven scalar fields is a base cell layer with a schema range, a label and a hotkey, readable on SimPU and re-read only when a step commits.
+1. Each of A4's seven scalar fields, and the cycle temperature offset (`weather.climate_offset`, Feature 8), is a base cell layer with a schema range, a label and a hotkey, readable on SimPU and re-read only when a step commits.
 2. The wind overlay shows every large-scale pattern at a bounded cost and refines where wind changes fast or a storm sits (decided 2026-11-16).
 3. Every action the panel offers is a registered command; the panel posts the same commands (UI/business separation, editor-actions rule).
-4. The command set takes **7 names** of the per-PU sim-hosted budget, with registration all-or-nothing. (Checked 2026-11-16: `SimQueryHost::kMaxHandlers` is **192** in code today, so the 64 quoted earlier in the A4 and World Step specs is stale. The consolidation is kept because it still maps one name to one GDD verb and leaves headroom; it is no longer a blocker.)
+4. The command set takes **8 names** of the per-PU sim-hosted budget (7 here plus Feature 7's `cow.weather.influence`; amended 2026-11-17, row 6d), with registration all-or-nothing. (Checked 2026-11-16: `SimQueryHost::kMaxHandlers` is **192** in code today, so the 64 quoted earlier in the A4 and World Step specs is stale. The consolidation is kept because it still maps one name to one GDD verb and leaves headroom; it is no longer a blocker.)
 5. The same typed command model drives the headless runner, so a scenario's setup means the same thing live and offline.
 6. Nothing here adds state to the Approved save format.
 
@@ -46,6 +46,9 @@ Registered on SimPU through `CellLayerRegistry::Register(CellLayerDesc)` after `
 | `weather.snow_pack` | `snowPack` | 0–1 |
 | `weather.cloud_cover` | `cloudCover` | 0–1 |
 | `weather.water_to_ground` | `waterToGround` | 0–2 (rain up to 1 plus melt up to 1; replaces `weather.ground_water`, amended 2026-11-17, A5 Hydrology) |
+| `weather.climate_offset` | the latched climate-cycle `tempOffset` (Feature 8) | −0.3–0.3 (the eighth scalar base layer; amended 2026-11-17, row 6d; all-zero with no active cycle) |
+
+`pressureAnomaly` has **no layer**: it is shown by the cell details and is visible through `weather.pressure` (pass 2 adds it) and `find storms`. `climate_offset` is not tracked by default (the `history` config is capped at 255 characters; adding it to a `track` list is a per-stage choice).
 
 - Each is a **base layer** with a pull callback `read(float* dest, uint32_t count)` that copies the committed array, and a `version()` that is the commit counter, so DiaCellLayers re-reads only after a commit. `count` must equal the active cell count; a mismatch writes zeros and logs once.
 - Before the first world is ready the callbacks report zero cells and nothing is drawn.
@@ -71,26 +74,27 @@ The four defaults are overlay config in the `.diaapp` `config` block (`wind_over
 
 ### Per-cell detail rows
 
-Registered with `CellLayerRegistry::Details()` (64 rows max, called only when exactly one cell is selected) and a hover extra. `ExplainCell(sim, cell)` (pure) returns the committed nine fields and the derived values the pipeline would use (amended 2026-11-17, A5 Hydrology: `waterToGround` replaces `groundWater`; ground-water and soil rows are A5's), plus the latched A5 inputs for the cell (`surfaceWetness`, `openWater`, `glacierEligible`, or "no A5"): biome, seasonal baseline temperature for the current season, prevailing wind angle for the cell's latitude band, the pressure-perturbation vector magnitude, the upwind neighbour's elevation difference and whether orographic lift applies, the snapped direction index, and distance to the nearest water cell. It calls Feature 2's pure helpers rather than re-deriving them (Feature 2 exports `PrevailingDirection`, `PressureGradient`, `SnapWindDirection` unchanged; no behaviour change).
+Registered with `CellLayerRegistry::Details()` (64 rows max, called only when exactly one cell is selected) and a hover extra. `ExplainCell(sim, cell)` (pure) returns the committed ten fields (amended 2026-11-17, row 6d: `pressureAnomaly` is the tenth) and the derived values the pipeline would use (amended 2026-11-17, A5 Hydrology: `waterToGround` replaces `groundWater`; ground-water and soil rows are A5's), plus the cell's current climate offsets (temperature, evaporation multiplier, wind shift) and the ids of the influences covering it, plus the latched A5 inputs for the cell (`surfaceWetness`, `openWater`, `glacierEligible`, or "no A5"): biome, seasonal baseline temperature for the current season, prevailing wind angle for the cell's latitude band, the pressure-perturbation vector magnitude, the upwind neighbour's elevation difference and whether orographic lift applies, the snapped direction index, and distance to the nearest water cell. It calls Feature 2's pure helpers rather than re-deriving them (Feature 2 exports `PrevailingDirection`, `PressureGradient`, `SnapWindDirection` unchanged; no behaviour change).
 
-### Commands (7 sim-hosted names)
+### Commands (8 sim-hosted names)
 
-All registered through `SimQueryHostModule` with mandatory `SimHelpInfo` (non-empty description ≤ 256 chars, category `weather`, owner `WeatherModule`, arguments as `ValueParam`s ≤ 16). **Arguments are JSON objects** with an `action` field where one name has several. A bad or unknown `action`, a missing required field, an out-of-range value or an unknown cell index returns an error naming the field and **queues nothing**.
+(Amended 2026-11-17, row 6d: the 8th, `cow.weather.influence`, is Feature 7's and is registered here with the other seven, all-or-nothing.) All registered through `SimQueryHostModule` with mandatory `SimHelpInfo` (non-empty description ≤ 256 chars, category `weather`, owner `WeatherModule`, arguments as `ValueParam`s ≤ 16). **Arguments are JSON objects** with an `action` field where one name has several. A bad or unknown `action`, a missing required field, an out-of-range value or an unknown cell index returns an error naming the field and **queues nothing**.
 
 | Name | Kind | Actions and arguments |
 |---|---|---|
-| `cow.weather.force` | command | `action`: `storm` / `high_pressure` / `rain`; `cell`, `intensity` (0–1), `weeks` (1–52) for the holds; `cell`, `amount` (0–1) for rain. Queues a forcing (amended 2026-11-17: when Feature 7 (Weather Influence API) is built, `storm` routes through it as a debug-sourced influence, so the debug command and gameplay use one path; until then it uses the Feature 2 hooks directly) (storm = pressure hold low + moisture hold high; high pressure = pressure hold high + moisture hold low; rain = one-week `Rain`) |
+| `cow.weather.force` | command | `action`: `storm` / `high_pressure` / `rain`. `storm` **creates a STORM influence through Feature 7's `AddInfluence`** with source `"debug.force"` (amended 2026-11-17, row 6d; the debug command and gameplay use one path): `cell` is the centre, `intensity` (0–1) maps to `strength`, optional `radius` (default 3), `weeks` (1–`max_lifetime_weeks`, 13) is the lifetime; the storm seeds a carried `pressureAnomaly` and moisture once, then the CA moves it. It queues no hold. `high_pressure` (`cell`, `intensity`, `weeks` 1–52) is a pressure hold high + moisture hold low through the Feature 2 hooks, and `rain` (`cell`, `amount` 0–1) a one-week `Rain`. A rejected storm returns Feature 7's rejection reason |
 | `cow.weather.wind` | command | `action`: `set` (`cell`, `degrees` 0–360 on-screen counter-clockwise, `speed` 0–1) / `set_region` (`region` id from S-1's `RegionTable`, same angle and speed) / `clear`. Region forms resolve the region's cells into a cell set and queue **one** region forcing |
-| `cow.weather.params` | command | `action`: `reload` / `set` (`key` dotted, `value`). Both route through Feature 3's `QueueReload` / `QueueParameterSet` |
+| `cow.weather.params` | command | `action`: `reload` (optional `target`: `params` (default) or `cycles`, re-reading the cycle file; Feature 8) / `set` (`key` dotted, `value`) / `cycle` (`id`, and one of `enabled`, `pin` (a `pinned_phase_days`), `unpin`, `start` (a `phase_days`); Feature 8). All route through Feature 3's `QueueReload` / `QueueParameterSet` / the cycle queue entries |
 | `cow.weather.state` | command | `action`: `export` (`file`) writes the committed state as a `cow.weather_state` envelope using Feature 4's codec, to `out/CoW/weather_states/<file>.json`; `import` (`file`) validates it fully, requires matching dimensions, then queues a replacement applied at the next `Capture` |
 | `cow.weather.load_preset` | command | `name`. Loads and validates the preset (Feature 6), then queues it. Unknown name lists the available names |
-| `cow.weather.find` | query | `what`: `storms` (pressure below `storm_pressure`; connected regions, size, anchor cell) / `droughts` (`weeks`; see below) / `rain_shadow` (`cell`; windward vs leeward mean precipitation over the cell's upwind and downwind neighbours within 3 steps) |
-| `cow.weather.info` | query | `what`: `profile` (per-pass wall and CPU microseconds of the last step, range count) / `memory` (buffer sizes, queue depth, parameter source, baseline provider, week, season) |
+| `cow.weather.influence` | command | Feature 7's `action`: `add` / `remove` / `list` / `clear`, over `AddInfluence`/`RemoveInfluence`/`ListInfluences`; defined in `weather-influence.md` (amended 2026-11-17, row 6d) |
+| `cow.weather.find` | query | `what`: `storms` (pressure below `storm_pressure`; connected regions, size, anchor cell; a planted storm now stays below the threshold for several weeks because the carried anomaly keeps the low, aligned to locked GDD §4.1) / `droughts` (`weeks`; see below) / `rain_shadow` (`cell`; windward vs leeward mean precipitation over the cell's upwind and downwind neighbours within 3 steps) |
+| `cow.weather.info` | query | `what`: `profile` (per-pass wall and CPU microseconds of the last step, range count; **14 entries**, amended 2026-11-17, row 6d) / `memory` (buffer sizes, queue depth, parameter source, baseline provider, week, season, influence count) / `cycles` (Feature 8: per cycle id, enabled, pinned, `u`, `wave`, contributions, and `coldness` for a chosen cell; optional `day` scrubs) |
 
 - All mutations are **queued and latched at the next `Capture`**. The reply says so and names the week they will first affect when known.
 - A **typed command model** (`WeatherCommand`, parsed once) is the single execution path. `IWeatherCommandSink` has two implementations: the **queued sink** (module, live) and the **direct sink** bound to a `WeatherSimulation&` (the headless runner and S-2.5's scenario setup, which applies immediately between steps). The panel posts the same JSON commands through the console path; it never calls the module.
-- **Registration is all-or-nothing:** if registering any of the seven fails, the ones already registered in that call are removed and the module reports Degraded with the failing name. A test forces the failure and asserts zero names left. Names unregister in `DoStop`.
-- The system spec's 16 names map as: `spawn_storm`/`spawn_high_pressure`/`force_rain` → `force`; `set_wind`/`set_wind_region`/`clear_wind_overrides` → `wind`; `reload`/`set_param` → `params`; `export_state`/`import_state` → `state`; `find_storms`/`find_droughts`/`check_rain_shadow` → `find`; `profile`/`report_memory` → `info`; `load_preset` unchanged.
+- **Registration is all-or-nothing:** if registering any of the eight fails, the ones already registered in that call are removed and the module reports Degraded with the failing name. A test forces the failure and asserts zero names left. Names unregister in `DoStop`.
+- The system spec's 16 names map as: `spawn_storm`/`spawn_high_pressure`/`force_rain` → `force`; `set_wind`/`set_wind_region`/`clear_wind_overrides` → `wind`; `reload`/`set_param` → `params`; `export_state`/`import_state` → `state`; `find_storms`/`find_droughts`/`check_rain_shadow` → `find`; `profile`/`report_memory` → `info`; `load_preset` unchanged. The eighth name, `influence`, is new (Feature 7).
 
 ### Droughts (decided 2026-11-16: read DiaCellHistory)
 
@@ -106,7 +110,7 @@ Emitted from the stage's `Commit` with `CellHistoryRecorder::Emit(HistoryEvent{t
 
 ### Panel card (`DIA_DEBUG`)
 
-`WeatherDebugDomain : IDebugDomain` registered with `VisualDebuggerModule::RegisterDomain`; `GetDescription()` ≤ 80 characters; accent from `DebugGroupAccents`. The card **shows**: week, season, cell count, grid totals (mean moisture, total snow pack, raining cells), parameter source (file, fallback or pack), baseline provider (A1 or table), the last step's CPU ms, and the coordinator's slack (read from `WorldStepModule`'s status, not recomputed); **toggles** the wind overlay; and **posts commands only**. The SimPU-owned values reach the card the way other domains get them (a published stats message, not a cross-thread read; see Open Design Question 3).
+`WeatherDebugDomain : IDebugDomain` registered with `VisualDebuggerModule::RegisterDomain`; `GetDescription()` ≤ 80 characters; accent from `DebugGroupAccents`. The card **shows**: week, season, cell count, grid totals (mean moisture, total snow pack, raining cells), parameter source (file, fallback or pack), baseline provider (A1 or table), the last step's CPU ms, and the coordinator's slack (read from `WorldStepModule`'s status, not recomputed); and, once Features 7–9 are built (amended 2026-11-17, row 6d), the live influence count, one row per climate cycle (id, `u` as a percentage, wave, on/off/pinned) and `commitDay`, the smoothing fraction `t` and the live preview count, with a raw/smoothed wind toggle; **toggles** the wind overlay; and **posts commands only**. The SimPU-owned values reach the card the way other domains get them (a published stats message, not a cross-thread read; see Open Design Question 3).
 
 ### Instrumentation
 
@@ -122,7 +126,8 @@ As Placement. New messages: none (a stats struct reaches the card through the ex
 ## Acceptance Criteria
 
 ### Layers
-1. All seven layers register with `Ok` after the first world is ready, with schema `min`/`max` and a label; a duplicate or capacity result logs an Error and sets Degraded.
+1. All eight scalar base layers (the seven field layers and `weather.climate_offset`) register with `Ok` after the first world is ready, with schema `min`/`max` and a label; a duplicate or capacity result logs an Error and sets Degraded. (Amended 2026-11-17, row 6d; the two wind component layers are AC 32–34.)
+1a. `weather.climate_offset` equals the latched `tempOffset` of the committed week (Feature 8 AC 39), is all zero with no active cycle, and has `min` −0.3 / `max` 0.3 in its schema.
 2. `read` returns exactly the committed array; `version()` changes on `Commit` and not otherwise; a `count` mismatch writes zeros and logs once.
 3. Before a world is ready the callbacks report zero cells and nothing is drawn; after stage re-entry the layers are registered again and none is duplicated.
 
@@ -139,13 +144,14 @@ As Placement. New messages: none (a stats struct reaches the card through the ex
 11. Detail rows appear only for a single selected cell and stay within 64 rows.
 
 ### Commands
-12. Exactly **7** names register, each with non-empty help; a forced failure of the Nth registration leaves **no** names behind and reports Degraded.
-13. For each action: a valid request queues the expected forcing, parameter change, state replacement or preset, takes effect at the next `Capture` and not before, and the reply says so.
+12. Exactly **8** names register (amended 2026-11-17, row 6d: seven here plus `cow.weather.influence`), each with non-empty help; a forced failure of the Nth registration leaves **no** names behind and reports Degraded.
+13. For each action: a valid request queues the expected forcing, parameter change, state replacement or preset, takes effect at the next `Capture` and not before, and the reply says so. `force` `storm` instead calls `AddInfluence` (source `"debug.force"`), replies with the id and the "next weekly step" wording, and queues no hold; a Feature 7 rejection comes back as an error naming the reason (amended 2026-11-17, row 6d).
+13a. `force` `storm` seeds a carried `pressureAnomaly` (−0.3 × weight at full strength) and moisture once; a later `find storms` still reports the low for more than one week. `params` `cycle` and `reload target:cycles` latch at the next `Capture`; `info cycles` equals `PhaseAt`/`WaveAt` for the chosen day (Feature 8 AC 37, 38).
 14. Each of these returns an error naming the field and queues nothing: unknown `action`, missing required field, `cell` out of range, `degrees` outside 0–360, `speed`, `intensity` or `amount` outside 0–1, `weeks` outside 1–52, unknown `region`, unknown preset (the reply lists names), unknown parameter key, an out-of-range parameter.
 15. `wind` `set_region` queues one region forcing covering exactly the region's cells; `clear` removes every wind override at the next `Capture`.
 16. `state export` then `state import` of the same file reproduces the committed state bit-identically at the next `Capture`; `import` of a file with other dimensions, a bad envelope or a non-finite value is rejected before anything is queued.
 17. The direct sink and the queued sink produce **identical** simulation state after the same command list and the same steps (the live-vs-headless equivalence, tested once).
-18. `find` `storms` returns connected low-pressure regions on a hand-built terrain with a planted storm; `rain_shadow` returns windward and leeward means for a planted ridge; `info profile` returns 13 pass entries; `info memory` returns the documented keys.
+18. `find` `storms` returns connected low-pressure regions on a hand-built terrain with a planted storm; `rain_shadow` returns windward and leeward means for a planted ridge; `info profile` returns **14** pass entries (`WeatherStepProfile::kPassCount`: 0, 1, 2, 3, 4, 5a, 5b, 5c, 6a, 6b, 7, 8, 9, finish; amended 2026-11-17, row 6d); `info memory` returns the documented keys, including the influence count.
 19. A full mutation queue (Feature 3) turns a command into a clear error, not a drop.
 
 ### Droughts and events
@@ -161,7 +167,7 @@ As Placement. New messages: none (a stats struct reaches the card through the ex
 
 ## Files Touched
 
-New: the placement files; schema file `Assets/CoW/Global/Weather/weather_schema.json` (layer labels, ranges, hotkeys, event types); tests `Tests/GoogleTests/CoW/Weather/{TestWindOverlayPlan,TestWeatherCommands,TestWeatherDetectors,TestWeatherCellDetails,TestWeatherLayers}.cpp`. Edited: `WeatherModule`, `WeatherStage`, Feature 3's queue, Feature 2 (export three helpers), vcxproj via `dia docs vcxproj-add`. **Spec edits on approval:** the system spec's debug section (7 names, overlay plan, droughts via history, closed Open Q2), Feature 3's queue (`QueueRegionForcing`), Feature 2's helper exports. No Dia files are added or edited.
+New: the placement files; schema file `Assets/CoW/Global/Weather/weather_schema.json` (layer labels, ranges, hotkeys, event types); tests `Tests/GoogleTests/CoW/Weather/{TestWindOverlayPlan,TestWeatherCommands,TestWeatherDetectors,TestWeatherCellDetails,TestWeatherLayers}.cpp`. Edited: `WeatherModule`, `WeatherStage`, Feature 3's queue, Feature 2 (export three helpers), vcxproj via `dia docs vcxproj-add`. **Spec edits on approval:** the system spec's debug section (8 names, overlay plan, droughts via history, closed Open Q2), Feature 3's queue (`QueueRegionForcing`), Feature 2's helper exports. No Dia files are added or edited.
 
 ## Binding Decisions
 
@@ -170,7 +176,7 @@ New: the placement files; schema file `Assets/CoW/Global/Weather/weather_schema.
 | PD-004 | No STL in public APIs | Plans, commands and detector results use Dia containers and fixed-capacity arrays |
 | AD-001 | Ask permission before Dia edits | None. All the DiaCellLayers, DiaCellHistory, DiaValueSchema and debug-domain APIs are built and used as-is |
 | SD-PERF-7 | Telemetry cost budgets | Three gauges, written once per applied step on SimPU; no per-cell telemetry; overlay capped at 6,000 primitives |
-| Sim-hosted name cap (192/PU in code; the 64 in earlier specs is stale) | Per-PU budget | 7 names, registered all-or-nothing |
+| Sim-hosted name cap (192/PU in code; the 64 in earlier specs is stale) | Per-PU budget | 8 names (7 here plus `cow.weather.influence`), registered all-or-nothing |
 | Editor-actions rule | Every tool action is a command; the panel calls the same commands | The panel posts JSON commands only; criterion 17 proves one execution path |
 | PU boundaries are streams | No mutex-guarded cross-PU reads | The card reads a stats struct published from SimPU (criterion 24) |
 | DFS-002 | `Run` reads only the captured copy | Nothing here touches the working copy; all reads are of committed state on SimPU |
@@ -192,7 +198,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 1. **Dependencies.** This feature also depends on Feature 4's codec (`EncodeState`/`DecodeState`, the `cow.weather_state` envelope defined in Feature 4's amendment 2) for `state export`/`import`.
 2. **Queue.** `QueueRegionForcing` already exists in Feature 3; this feature adds nothing to it. The two entries this feature needs, `StateReplace` and `ClearWindOverrides`, are in Feature 3's amendment 1.
-3. **`info profile`** returns Feature 2's 13 pass entries (1, 2, 3, 4, 5a, 5b, 6a, 6b, 7, 8, 9, 10, finish: `WeatherStepProfile::kPassCount`).
+3. **`info profile`** returns Feature 2's pass entries (**14**, amended 2026-11-17, row 6d: 0, 1, 2, 3, 4, 5a, 5b, 5c, 6a, 6b, 7, 8, 9, finish; `WeatherStepProfile::kPassCount`; was 13 with the retired pass 10 still counted).
 4. **Drought at commit.** `DroughtDetector` at `Commit` cannot see the week being committed in DiaCellHistory (the driver samples afterwards). The history adapter therefore appends the **just-committed** `precipitation` as the newest week before evaluating; the same adapter is used by `find droughts`, which reads only committed, sampled weeks.
 
 ## T-1 consumer amendment (2026-11-16, approved with T-1 Feature 10)
@@ -226,10 +232,10 @@ Supersedes "Wind speed and direction are **not** scalar layers" above. The user 
 | `weather.wind_north` | `windSpeed × sin(windDirection)` | −1–1 (north positive) |
 
 - `windDirection` is the A4 on-screen counter-clockwise angle used by `cow.weather.wind` (0° = east). The components are computed at `Commit` from the committed `windSpeed` and `windDirection`, so they match the overlay exactly.
-- Same registration rules as the other seven layers (base layers, pull callback, `version()` is the commit counter, schema entries `weather/wind_east` and `weather/wind_north` with `min -1`, `max 1`, a diverging ramp). Nine weather layers in total.
+- Same registration rules as the other scalar layers (base layers, pull callback, `version()` is the commit counter, schema entries `weather/wind_east` and `weather/wind_north` with `min -1`, `max 1`, a diverging ramp). **Ten weather layers in total** (eight scalar base layers plus these two; amended 2026-11-17, row 6d).
 - **Derivation is done by consumers, not A4.** T-1 derives `speed = hypot(east, north)` and `direction = atan2(north, east)` (see T-1 Feature 2 "Derived metrics"). A4 registers no speed or direction layer.
 - **Aggregate caveat (documented in T-1):** DiaCellHistory aggregates are min/mean/max of each component, so a group's derived value from its **mean** components is the *resultant* wind (speed shrinks when directions disagree). Exact mean speed needs per-cell data (tracked layers), where `hypot` is applied per cell first.
-- Cost: two more recorded layers, and 26 KB per sample per cell tracking both at Large. S-2.5 tracks both by default (its recorder budget is unchanged: the S-2.5 tracked-layer list is nine weather layers).
+- Cost: two more recorded layers, and 26 KB per sample per cell tracking both at Large. S-2.5 tracks both by default (its recorder budget is unchanged: the S-2.5 tracked-layer list is nine weather layers; `weather.climate_offset` is not tracked by default).
 
 Added criteria:
 
@@ -241,4 +247,4 @@ Added criteria:
 
 ## Status
 
-**Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Amended 2026-11-17 (A5 hand-off; Features 7–9 add commands and layers later, not specced here). Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).
+**Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): Features 7–9 now add one command name, one layer, the `cycles` info action and the `cycle` params action, specced in their own files and folded in above. Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).

@@ -2,12 +2,13 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 2)
 **Status:** Approved (2026-11-16); region-forcing amendment re-approved 2026-11-16 with Feature 6. Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): ground-water drain removed, `waterToGround` and `glacierInput` outputs, A5 inputs latched at `Capture`. Pass numbers are unchanged; pass 10 is retired.
-**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TechnicalSpec.md` §2–§12, `A4_EdgeCaseMatrix.md`
+**Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d):** new pass 0 (Influence), `pressureAnomaly` in pass 2 with transport in 5a/5b and decay in new pass 5c, cycle offsets in passes 1, 3 and 4, firn hand-off in pass 9, `Capture` takes `weekOfYear` and an `InfluenceSnapshot`, `kPassCount` 14.
+**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TechnicalSpec.md` §2–§12 incl. §4.1 and §11.3 (locked 2026-11-17, CHANGE-047), `A4_EdgeCaseMatrix.md`
 **Depends on:** A4 Feature 1 (`WeatherFields`, `WeatherTerrain`, `WeatherParameters`, `IBiomeSeasonalBaseline`, `Initialise`); DiaDeferredStep Feature 1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers)
 
 ## Summary
 
-The weekly step of the weather cellular automaton, as pure logic. It runs the GDD's pipeline steps over every cell of the hex grid as full-grid passes on a working copy of the weather state. The GDD's 10 steps become 9 passes: the §12 ground-water drain is deleted and moves to A5 Hydrology (amended 2026-11-17, A5 Hydrology). It is deterministic and bit-identical at any `ParallelFor` range count and in any range order. It does not know about threads, the scheduler, the bus or the save system.
+The weekly step of the weather cellular automaton, as pure logic. It runs the GDD's pipeline steps over every cell of the hex grid as full-grid passes on a working copy of the weather state. The GDD's §2 steps 0–11 become passes 0–9 plus a finish: the §12 ground-water drain is deleted and moves to A5 Hydrology (amended 2026-11-17, A5 Hydrology); GDD step 0 (forcing) is pass 0 plus the `Capture`-latched cycle offsets; GDD steps 10–11 (hand water to A5, output to A1) are outputs and `Commit`, not passes. With the carried `pressureAnomaly` the profile has **14 entries** (amended 2026-11-17, row 6d). It is deterministic and bit-identical at any `ParallelFor` range count and in any range order. It does not know about threads, the scheduler, the bus or the save system.
 
 The feature adds three things to `WeatherSimulation` (Feature 1 creates the class):
 
@@ -17,7 +18,7 @@ The feature adds three things to `WeatherSimulation` (Feature 1 creates the clas
 
 ## Goals
 
-1. The GDD steps run in GDD order (9 passes; §12 drain removed (amended 2026-11-17, A5 Hydrology)), one `ParallelFor` pass per step (transport is two passes), over a working set. Readers see only committed state.
+1. The GDD steps run in GDD order (passes 0–9 and a finish; §12 drain removed (amended 2026-11-17, A5 Hydrology)), one `ParallelFor` pass per step (transport is two passes, and the anomaly decay is its own pass 5c), over a working set. Readers see only committed state.
 2. **Bit-identical results** for the same inputs and tick count at any range count (1, 3, 17, one range per cell) and with ranges executed in reverse order. No RNG, no atomics in anything that feeds the simulation, no dependence on iteration order.
 3. Transport is a **gather** with a defined upwind-edge inflow (`boundary.edge_inflow`, default on).
 4. `Run` is a pure function of what `Capture` latched. It reads no SimPU-owned state (DFS-002).
@@ -37,25 +38,29 @@ The feature adds three things to `WeatherSimulation` (Feature 1 creates the clas
 ### Lifecycle on `WeatherSimulation`
 
 ```
-Capture(season, baselineProvider)   SimPU      copy committed → working; latch season, parameters,
+Capture(season, weekOfYear, baselineProvider, hydro, influences)
+                                    SimPU      copy committed → working; latch season, week of year, parameters,
                                                forcings, biome edits, and the 13-entry seasonal
                                                baseline table (provider is called here and never in Run);
                                                latch A5's HydrologyInputs (surfaceWetness, openWater,
-                                               glacierEligible; amended 2026-11-17, A5 Hydrology)
+                                               glacierEligible, glacierCheckWeek, glacierSnowFloor; amended 2026-11-17, A5 Hydrology and row 6d)
+                                               and the InfluenceSnapshot (Feature 7; empty = pass 0 skipped)
+LatchClimate(evalDay)               SimPU      Feature 8: evaluates the cycles for the step day into the working ClimateOffsets
 Run(executor)                       workers    the pipeline over the working set only
 Commit()                            SimPU      swap working → committed; week++; decrement forcing timers
+                                               (Feature 9 turns this swap into a three-buffer rotation and records commitDay)
 Step(season, baseline, executor)               Capture; Run; Commit — the synchronous path (WeatherRunner)
 ```
 
 The system spec's Public Interfaces lists only `Step(Season, IParallelExecutor&)`. It needs the three methods, and `Step` needs the baseline provider, because a virtual call into A1's provider from a worker would break DFS-002. This is a spec-sync amendment (see Files Touched).
 
-`Run` reads: the working fields, the working biome array, the immutable terrain (elevation, latitude, water source: owned by `WeatherSimulation`, never mutated after `Initialise`), the latched parameters, season, baseline table, forcings, the latched `HydrologyInputs` (amended 2026-11-17, A5 Hydrology) and the precomputed neighbour table. Nothing else.
+`Run` reads: the working fields, the working biome array, the immutable terrain (elevation, latitude, water source: owned by `WeatherSimulation`, never mutated after `Initialise`), the latched parameters, season, week of year, baseline table, forcings, the latched `HydrologyInputs` (amended 2026-11-17, A5 Hydrology), the latched `InfluenceSnapshot` and `ClimateOffsets` (amended 2026-11-17, row 6d) and the precomputed neighbour table. Nothing else.
 
 ### Grid tables (built once at `Initialise`)
 
 - `uint32_t neighbours[N * 6]`, from `Dia::Pathfinding::HexTopology::NeighbourAt`, `kNoCell` past the edge. Passes index this table; they never call the topology.
 - `static constexpr` unit vectors for directions `d = 0..5`, at on-screen angle `30° + 60°·d`, counter-clockwise, y-down world space. This is the angle convention for every wind angle in the system, including the `wind_direction` V-1 reads.
-- Scratch arrays, allocated at `Initialise` and reused: `moistureOut`, `heatOut` (float), `dirIndex` (`uint8_t`, the snapped downwind direction). **`Run` does no heap allocation.**
+- Scratch arrays, allocated at `Initialise` and reused: `moistureOut`, `heatOut`, `anomalyOut` (float; `anomalyOut` added 2026-11-17, row 6d), `dirIndex` (`uint8_t`, the snapped downwind direction), and pass 0's per-cell influence deltas (temperature, moisture; Feature 7). **`Run` does no heap allocation.**
 
 ### Stable reads, by construction
 
@@ -68,8 +73,9 @@ SoA lets every neighbour-reading pass satisfy this without copying whole fields:
 | Pass | Reads from neighbours | Writes | Why it is safe |
 |---|---|---|---|
 | 3 Wind | `pressure` | `windDirection`, `windSpeed`, `dirIndex` | pressure is not written in pass 3 |
-| 5a / 6a Outflow | nothing | `moistureOut` / `heatOut` | local |
-| 5b / 6b Gather | `*Out`, `dirIndex` | own `moisture` / `temperature` | the `*Out` scratch isn't written in pass b |
+| 5a / 6a Outflow | nothing | `moistureOut` + `anomalyOut` / `heatOut` | local |
+| 5b / 6b Gather | `*Out`, `dirIndex` | own `moisture` + `pressureAnomaly` / `temperature` | the `*Out` scratch isn't written in pass b |
+| 5c Anomaly decay | nothing | own `pressureAnomaly` | local |
 | 7 Orographic | `elevation` (immutable terrain) | own `temperature`, `moisture`, … | elevation never changes |
 
 This replaces the system spec's "stable copy" wording, which implied snapshotting fields. It gives the same guarantee for two scratch arrays instead of nine copies. A reverse-order test (AC 31) is what proves the rule holds.
@@ -80,19 +86,21 @@ Each row is one pass (`DIA_PROFILE_SCOPE` per pass; backs the `profile` command)
 
 | Pass | GDD | Behaviour (parameter names as in A4_TuningParameters §14) |
 |---|---|---|
-| 1 Solar | §3 | **Weekly reset first:** `precipitation = 0`; `waterToGround = 0`; `glacierInput = 0` (amended 2026-11-17, A5 Hydrology); `cloudCover *= (1 − cloud_decay)`. Then `seasonTemp = baseline[biome[c]]`, latitude modifier, cloud albedo, heat capacity by water source, relax `temperature` toward `seasonTemp`, clamp [0,1]. Local |
-| 2 Pressure | §4 | `pressure = clamp(0.5 − (temperature − 0.5)·pressure_sensitivity)`. Local. **Forcing hook A:** pressure holds |
-| 3 Wind | §5 | Prevailing direction by latitude band (with CH-02 transition lerp) + pressure gradient over the 6 neighbours (precomputed unit vectors; `kNoCell` neighbours contribute nothing but still count in the ÷6). Writes continuous `windDirection`, clamped `windSpeed`, and the snapped `dirIndex`. **Forcing hook B:** wind overrides replace the result for their cells, and `dirIndex` is re-snapped from the override |
-| 4 Evaporation | §6 | Primary evaporation (§6.1, self-limiting at saturation) scaled by A5's `openWater` fraction, and secondary evaporation (§6.2) from A5's `surfaceWetness` (was ground water). With no A5 present, §6.1 uses S-1's static `waterSource` and §6.2 is zero (amended 2026-11-17, A5 Hydrology). Local. **Forcing hook C:** moisture holds |
-| 5a/5b Moisture transport | §7 | 5a: `moistureOut[c] = moisture·windSpeed·moisture_transport_rate`, 0 if the downwind neighbour is `kNoCell` (EC-16: it stays in the cell). 5b: gather (below) |
+| 0 Influence | §2 step 0, §18 | (amended 2026-11-17, row 6d) Skipped when the latched `InfluenceSnapshot` is empty. Otherwise per cell, in ascending influence id order (Feature 7): resets `influenceWater`, builds `dPressure`, `dTemperature`, `dMoisture` and `waterWeight`, caps them (`max_delta_*`, `cap_water`), adds `dPressure` into `pressureAnomaly` (clamped ±`pressure_anomaly_max`) and stores `dTemperature`, `dMoisture` and `influenceWater` for the points below. The cycle offsets (Feature 8) are not computed here: `LatchClimate` fills them at `Capture` |
+| 1 Solar | §3 | **Weekly reset first:** `precipitation = 0`; `waterToGround = 0`; `glacierInput = 0` (amended 2026-11-17, A5 Hydrology); `cloudCover *= (1 − cloud_decay)`. Then `seasonTemp = clamp(baseline[biome[c]] + tempOffset[c])` (the climate-cycle offset, §19; 0 with no cycles), latitude modifier, cloud albedo, heat capacity by water source, relax `temperature` toward `seasonTemp`, clamp [0,1]. Local. **Influence point:** `dTemperature` is added right after this pass (Feature 7), clamped [0,1] |
+| 2 Pressure | §4 | `pressure = clamp(0.5 − (temperature − 0.5)·pressure_sensitivity + pressureAnomaly, 0, 1)` (aligned to locked GDD §4, CHANGE-047; the anomaly is 0 on a world that never had a storm, so the result is then the pre-anomaly formula). Local. **Forcing hook A:** pressure holds (a hold overrides the anomaly's effect on its cell) |
+| 3 Wind | §5 | Prevailing direction by latitude band (with CH-02 transition lerp, evaluated at the cell's effective latitude `clamp(latitude − windShift[c], 0, 1)`: the GDD's "shift added to every band edge", §19; shift 0 with no cycles) + pressure gradient over the 6 neighbours (precomputed unit vectors; `kNoCell` neighbours contribute nothing but still count in the ÷6). Writes continuous `windDirection`, clamped `windSpeed`, and the snapped `dirIndex`. **Forcing hook B:** wind overrides replace the result for their cells, and `dirIndex` is re-snapped from the override |
+| 4 Evaporation | §6 | Primary evaporation (§6.1, self-limiting at saturation) scaled by A5's `openWater` fraction and by the cycle multiplier `evapMultiplier[c]` (the GDD's `(1 + cycle_offsets.evaporation)`; 1 with no cycles), and secondary evaporation (§6.2) from A5's `surfaceWetness` (was ground water). With no A5 present, §6.1 uses S-1's static `waterSource` and §6.2 is zero (amended 2026-11-17, A5 Hydrology). Local. **Influence point:** `dMoisture` is added right after this pass, clamped [0,1]. **Forcing hook C:** moisture holds (after the influence delta, so a hold wins) |
+| 5a/5b Moisture transport | §7, §4.1 | 5a: `moistureOut[c] = moisture·windSpeed·moisture_transport_rate`, 0 if the downwind neighbour is `kNoCell` (EC-16: it stays in the cell); **and, with the same fraction, `anomalyOut[c] = pressureAnomaly·windSpeed·moisture_transport_rate`** (signed; the GDD's "same gather as §7 moisture"). 5b: gather (below), for moisture and for `pressureAnomaly` |
+| 5c Anomaly decay | §4.1 | `pressureAnomaly = clamp(pressureAnomaly × pressure_anomaly_decay, −pressure_anomaly_max, +pressure_anomaly_max)`. Local. New 2026-11-17 (row 6d) |
 | 6a/6b Heat transport | §8 | Same shape on `temperature` with `heat_transport_rate`. 6b: `temperature = max(temperature − out, 0) + inflow` (CH-07), so the clamp is order-free |
 | 7 Orographic | §9 | Upwind neighbour = `neighbours[c·6 + (dirIndex+3) % 6]`. If it is `kNoCell`: **no lift** (nothing to compare against). If `elevation[up] < elevation[c]`: cool the cell, and if `temperature < condensation_temp` condense `moisture·gain·orographic_precip_rate` (capped at `moisture`). The condensate is **routed as in pass 8**, and `cloudCover = min(moisture, 1)` is taken after the subtraction |
 | 8 Precipitation | §10 | As GDD, with `max(…, 0)` (CH-09). Snow below `snow_threshold` into `snowPack` (capped 1.0, CH-04), else into `waterToGround` (amended 2026-11-17, A5 Hydrology). Snow above the cap goes to `glacierInput` on `glacierEligible` cells and is discarded elsewhere. `cloudCover = moisture·0.8` after the subtraction. **Forcing hook D:** one-week rain adds to `precipitation` and routes the same way; it does not consume moisture |
-| 9 Snow melt | §11 | As GDD; melt adds to `waterToGround` (amended 2026-11-17, A5 Hydrology) and cools the cell by `melt·melt_cooling` (clamped ≥ 0) |
+| 9 Snow melt and firn | §11.2, §11.3 | As GDD; melt adds to `waterToGround` (amended 2026-11-17, A5 Hydrology) and cools the cell by `melt·melt_cooling` (clamped ≥ 0). **Firn hand-off (amended 2026-11-17, aligned to locked GDD §11.3):** when `weekOfYear == hydro.glacierCheckWeek` (A5's `GLACIER_CHECK_WEEK`, 26) and the cell is `glacierEligible`, `firn = max(snowPack − hydro.glacierSnowFloor, 0)` (A5's `GLACIER_SNOW_FLOOR`, 0.2) is subtracted from `snowPack` and added to `glacierInput`. It runs after the melt of the same week, never fires with no A5 (`hydro.present == false`), and is the other half of `glacierInput` beside the above-cap snow of pass 8. A4 still owns and writes `snowPack`; A5 never does |
 | ~~10 Ground water~~ | §12 | **Deleted (amended 2026-11-17, A5 Hydrology).** The drain and its `ground_water_drain_rate` parameter move to A5. The pass number is retired, not reused |
-| Finish | §14, EC-20 | Clamp every field to its range (snow caps 1.0; `waterToGround` clamps to [0, 2] (rain up to 1 plus melt up to 1) and `glacierInput` to [0, 1]; amended 2026-11-17, A5 Hydrology). Then the **serial totals pass** |
+| Finish | §14, EC-20 | Clamp every field to its range (snow caps 1.0; `waterToGround` clamps to [0, 2] (rain up to 1 plus melt up to 1); `glacierInput` to [0, 2] (above-cap snow up to 1 plus firn up to 0.8; was [0, 1] before the firn; amended 2026-11-17, A5 Hydrology and row 6d); `pressureAnomaly` to ±0.5). Then the **serial totals pass** |
 
-Evaporation (§6.2) belongs to pass 4. Pass 10 is retired.
+Evaporation (§6.2) belongs to pass 4. Pass 10 is retired. Pass 0 and pass 5c are new (2026-11-17, row 6d). The profile entries are: 0, 1, 2, 3, 4, 5a, 5b, 5c, 6a, 6b, 7, 8, 9, finish = **14**.
 
 ### Wind snap and the prevailing-direction tie
 
@@ -168,7 +176,7 @@ namespace CoW::Weather {
     struct WeatherGridTotals { double meanMoisture = 0; double totalSnowPack = 0; uint32_t rainingCellCount = 0; };
 
     struct WeatherStepProfile {
-        static constexpr uint32_t kPassCount = 12;     // 1,2,3,4,5a,5b,6a,6b,7,8,9,finish (10 retired 2026-11-17, A5 Hydrology)
+        static constexpr uint32_t kPassCount = 14;     // 0,1,2,3,4,5a,5b,5c,6a,6b,7,8,9,finish (10 retired 2026-11-17, A5 Hydrology; 0 and 5c added 2026-11-17, row 6d; was 12)
         uint64_t wallMicros[kPassCount];
         uint64_t cpuMicros[kPassCount];
         uint64_t totalCpuMicros;
@@ -180,14 +188,17 @@ namespace CoW::Weather {
 
     class WeatherSimulation {                           // additions to Feature 1's class
     public:
-        void Capture(Season season, const IBiomeSeasonalBaseline& baseline,
-                     const HydrologyInputs& hydro);                             // SimPU; hydro.present == false when no A5 (amended 2026-11-17, A5 Hydrology)
+        void Capture(Season season, uint32_t weekOfYear, const IBiomeSeasonalBaseline& baseline,
+                     const HydrologyInputs& hydro,                              // SimPU; hydro.present == false when no A5 (amended 2026-11-17, A5 Hydrology)
+                     const InfluenceSnapshot& influences);                      // Feature 7; an empty snapshot skips pass 0 (amended 2026-11-17, row 6d)
+        void LatchClimate(uint64_t evalDay);                                    // Feature 8; call after Capture. No cycles = nothing latched
         void Run(Dia::DeferredStep::IParallelExecutor& executor);               // any thread; working set only
         void Commit();                                                          // SimPU
-        void Step(Season season, const IBiomeSeasonalBaseline& baseline,
-                  const HydrologyInputs& hydro,
-                  Dia::DeferredStep::IParallelExecutor& executor);              // Capture + Run + Commit
-        const WeatherHandoff& GetHandoff() const;                               // glacierInput of the last step (A5 reads the working copy in Run; amended 2026-11-17, A5 Hydrology)
+        void Step(Season season, uint32_t weekOfYear, const IBiomeSeasonalBaseline& baseline,
+                  const HydrologyInputs& hydro, const InfluenceSnapshot& influences,
+                  Dia::DeferredStep::IParallelExecutor& executor);              // Capture + Run + Commit (Feature 8's runner also calls LatchClimate)
+        const WeatherHandoff& GetHandoff() const;                               // glacierInput and influenceWater of the last step (A5 reads the working copy; amended 2026-11-17, A5 Hydrology and row 6d)
+        const WeatherFields& GetWorkingFields() const;                          // A5's IWaterInputSource view: valid from Capture to Commit, buffers allocated once at promotion (Feature 3)
         bool AddForcing(const WeatherForcing& forcing);                         // false when full
         CellSetHandle RegisterCellSet(const DynamicArrayC<uint32_t>& sortedCells);   // false-equivalent: kNoCellSet when 16 sets exist
         void ClearCellSets();                                                   // also drops forcings that reference them
@@ -218,14 +229,20 @@ namespace CoW::Weather {
 7. **Solar:** an equator land cell converges toward its seasonal baseline at `land_heat_capacity`; a water cell converges more slowly. Cloud albedo reduces the delta. Latitude 1.0 cools by `latitude_cooling_factor`.
 8. **Weekly reset:** `precipitation` is 0 at the end of pass 1 whatever it was before. `cloudCover` is multiplied by `(1 − cloud_decay)` before pass 1 uses it; with `cloud_decay = 0` it is unchanged.
 9. **Pressure:** temperature 1.0 → pressure 0.2; 0.0 → 0.8; 0.5 → 0.5 (at default sensitivity). The result is clamped to [0,1] (EC-07).
+9a. (amended 2026-11-17, row 6d) **Pressure anomaly:** with `pressureAnomaly` −0.3 on a cell at temperature 0.5, pass 2 gives pressure 0.2; the sum is clamped to [0, 1]; with every anomaly 0 the output equals the pre-anomaly formula bit for bit.
+9b. **Pass 0:** with an empty snapshot pass 0 is skipped and fields, totals and profile are bit-identical to a run without Feature 7 (Feature 7 AC 24). With influences, `dPressure` lands in `pressureAnomaly` before pass 2, `dTemperature` after pass 1 and `dMoisture` after pass 4 (Feature 7 ACs 12, 18).
 10. **Wind:** uniform pressure gives the prevailing wind only. A high-pressure cell pushes neighbours' wind away from it, and a low-pressure cell pulls it in. The prevailing direction matches the latitude band, with a continuous lerp across the two transition zones (CH-02). Speed is clamped to [0,1].
-11. **Evaporation:** water cells add `temperature·ocean_evap_rate·(1 − moisture)`, so a saturated cell gains nothing (EC-04). Secondary evaporation draws on `surfaceWetness`, never moves more than the cell holds and is not negative afterward. Primary evaporation scales with `openWater`; with `hydro.present == false` it uses `waterSource` and secondary evaporation is 0 (amended 2026-11-17, A5 Hydrology).
+10a. (amended 2026-11-17, row 6d) **Wind latitude shift:** with a per-cell `windShift` of +0.1 the band boundaries move poleward by 0.1, including the transition lerp; with shift 0 (no cycles) directions equal the unshifted function exactly (Feature 8 AC 24).
+11. **Evaporation:** water cells add `temperature·ocean_evap_rate·evapMultiplier·(1 − moisture)` (the multiplier is 1 with no cycles; Feature 8 AC 23), so a saturated cell gains nothing (EC-04). Secondary evaporation draws on `surfaceWetness`, never moves more than the cell holds and is not negative afterward. Primary evaporation scales with `openWater`; with `hydro.present == false` it uses `waterSource` and secondary evaporation is 0 (amended 2026-11-17, A5 Hydrology).
 12. **Moisture transport:** moisture moves one cell downwind per step at the stated rate. Total moisture is conserved by the transport passes (excluding edge-inflow and forcing cells; test with `edge_inflow` off on a closed interior). A cell whose downwind neighbour is off-map keeps its moisture (EC-16).
+12a. (amended 2026-11-17, row 6d) **Anomaly transport:** on uniform terrain under steady wind, a `pressureAnomaly` pulse moves one cell downwind per step at `moisture_transport_rate` (the same gather, direction order and edge rule as moisture, signed values); an off-map downwind neighbour keeps its anomaly; with `edge_inflow` on a uniform anomaly stays uniform (before decay).
+12b. **Anomaly decay (pass 5c):** each week the anomaly is multiplied by exactly `pressure_anomaly_decay` and clamped to ±`pressure_anomaly_max`; a 0.7 decay halves a seeded −0.3 low in about two weeks with no transport; a world whose anomaly is 0 everywhere stays 0.
 13. **Heat transport:** same, with `heat_transport_rate`. Temperature never goes negative (CH-07), and a 1.0 cell receiving inflow ends at 1.0 after the finish clamp.
 14. **Orographic:** with wind blowing upslope, the windward cell cools, condenses and rains (EC-09: a ring of mountains rains on the windward faces and leaves the interior dry). The leeward cell receives less rain than the windward cell. Downslope wind never triggers lift. A cell whose upwind neighbour is off-map never triggers lift.
 15. **Orographic routing:** condensate below `snow_threshold` goes to `snowPack` and above goes to `waterToGround`, with the same cap and glacier rules as pass 8 (amended 2026-11-17, A5 Hydrology). A cell never condenses more than its `moisture` (user decision 2026-11-16).
 16. **Precipitation:** rain and snow split at `snow_threshold`. Zero moisture produces no precipitation and no negative amount (EC-11, CH-09). Snow pack caps at 1.0. The excess becomes `glacierInput` on `glacierEligible` cells and is discarded elsewhere (amended 2026-11-17, A5 Hydrology; EC-12 is deleted with the ground-water store). Rain lands in `waterToGround`, never above its input.
 17. **Melt:** no melt below `melt_threshold`. Melt with zero snow pack is a no-op (EC-13). Melt moves snow to `waterToGround` and cools the cell (amended 2026-11-17, A5 Hydrology). A cell that stays below `melt_threshold` all year keeps its snow capped at 1.0 (EC-06).
+18a. (amended 2026-11-17, aligned to locked GDD §11.3) **Firn:** at `weekOfYear == glacierCheckWeek` (26) on a `glacierEligible` cell, `snowPack` above `glacierSnowFloor` (0.2) moves into `glacierInput` and `snowPack` is lowered by the same amount (a cell at 0.9 gives 0.7 firn and ends at 0.2; a cell at 0.15 gives none); in any other week, on a non-eligible cell, and with `hydro.present == false`, nothing moves. The constants come from `HydrologyInputs`, not from A4's parameters. The firn amount is added to the week's above-cap `glacierInput`, and the sum stays within [0, 2]. The week of year is the one latched at `Capture`.
 18. **Hand-off (replaces the ground-water drain test, which moves to A5; amended 2026-11-17, A5 Hydrology):** `waterToGround` equals rain plus snowmelt each week and is 0 on a dry, melt-free cell. `glacierInput` equals the snow above the cap on `glacierEligible` cells and is 0 on every other cell. With `hydro.present == false`, `glacierInput` is 0 everywhere, primary evaporation matches the `waterSource` behaviour and secondary evaporation is 0. A cell's `glacierEligible` flag is the previous committed A5 week's, latched at `Capture` and unchanged by a mid-run poisoning.
 19. **Finish:** every field is clamped to its range after the last pass (EC-20). Temperature extremes 0.0 and 1.0 for 52 consecutive weeks stay in range (EC-03).
 20. **Zero wind:** at wind speed 0, nothing is transported and orographic lift does not fire on stale directions (EC-05).
@@ -264,7 +281,7 @@ namespace CoW::Weather {
 
 ### Layer goldens
 
-38. All 9 fields for the hand-built terrain after a fixed week count are checked against `Tests/GoogleTests/CoW/Golden/weather_layers.golden.json` through `CellLayerGolden`. The five-preset goldens belong to Feature 6; this feature registers the golden file and the first entry. See Open Design Question 3.
+38. All 10 fields (nine plus `pressureAnomaly`; amended 2026-11-17, row 6d) for the hand-built terrain after a fixed week count are checked against `Tests/GoogleTests/CoW/Golden/weather_layers.golden.json` through `CellLayerGolden`. The five-preset goldens belong to Feature 6; this feature registers the golden file and the first entry. See Open Design Question 3.
 
 ## Files Touched
 
@@ -319,7 +336,7 @@ No Dia files are added or edited (AD-001). `IParallelExecutor` and `SerialExecut
 ## Open Design Questions
 
 1. **Is `cloud_decay` = 0.5 a sensible default, and does the GDD's precipitation-gating still hold?** With decay, a cell that rained last week has half its clouds this week, which raises its solar heating relative to the GDD's persistent-cloud behaviour. Higher heating means less precipitation in wet regions. Feature 6's coastal-rain and rain-shadow ratios are the test; if they fail, `cloud_decay` is the first knob to turn before touching GDD constants.
-2. **Are forcing hook points A–D in the right places?** Pressure after pass 2, wind after pass 3, moisture after pass 4, rain after pass 8 are the earliest points where each held value is visible to every later pass. A `spawn_storm` that holds pressure low *and* moisture high touches two hooks. If Feature 5's scenarios need a storm to *start* in a cell rather than hold it, a one-shot "set value" forcing kind will be needed. It would be cheap to add here.
+2. ~~**Are forcing hook points A–D in the right places?**~~ **Resolved 2026-11-17 (GDD §4.1 and §18, locked): a storm is an impulse that seeds the carried `pressureAnomaly` (Feature 7), so no one-shot "set value" forcing kind is needed.** Pressure after pass 2, wind after pass 3, moisture after pass 4, rain after pass 8 stay the hook points for the debug holds.
 3. **Bit-identity is per binary. Do the layer goldens hold across Debug and Release?** Range count and order do not change the instruction sequence per cell, so AC 30/31 hold in every configuration. But `sinf`/`cosf`/`atan2f` and any compiler contraction or vectorisation can differ between Debug and Release, so a golden hash over exact float bits may fail in the other configuration. Task 1 of the plan should check the CoW and DiaCore projects' floating-point settings (bgfx builds `Fast`; the CoW and DiaCore projects were not checked here) and whether `CellLayerGolden::HashLayer` hashes exact bits or quantised values. If exact, the golden is Debug-only or per-config.
 
 ## Gap-pass amendments (2026-11-16)
@@ -334,9 +351,10 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 6. **Goldens.** `Tests/GoogleTests/CoW/Golden/weather_layers.golden.json` is **owned by Feature 6** (hand-built `MakeCoastRange(66, 42)`). This feature's golden entries use the key prefix `pipeline/`, and whichever feature lands first creates the file. Hashes are compared bit for bit, so Debug and Release must agree: the build must use `/fp:precise` with no fast-math in both configurations. Plan Task 0 verifies this and, if the two configurations still differ, stores one hash set per configuration (closes Open Question 3).
 
 7. (amended 2026-11-17, A5 Hydrology) **The §12 ground-water drain is not in A4.** `groundWater` becomes the per-week `waterToGround` output and the store moves to A5. Snow above the cap becomes `glacierInput` on A5-flagged cells. §6.1/§6.2 read A5's latched values.
+8. (amended 2026-11-17, aligned to locked GDD, CHANGE-047; row 6d) **Pass list and the anomaly.** Pass 0 (Influence) and pass 5c (anomaly decay) are new; `pressureAnomaly` is a saved field; passes 5a/5b carry it with the moisture gather; the pressure pass adds it. `kPassCount` is 14. The Feature 5 `info profile` count and the Open Design Question 2 "one-shot set value" (superseded by the carried storm anomaly) follow this. `Capture` takes `weekOfYear` and the `InfluenceSnapshot`; Feature 8's `LatchClimate` follows `Capture`. The firn hand-off (GDD §11.3) is in pass 9.
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d).
 
 **Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).

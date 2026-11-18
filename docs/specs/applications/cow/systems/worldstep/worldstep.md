@@ -4,7 +4,7 @@
 
 **Gameplay Domains:** simulation, persistence
 
-**Amended 2026-11-17, A5 Hydrology:** a third stage, `hydrology` (A5, [a5-hydrology.md](../a5-hydrology/a5-hydrology.md)), sits between `weather` and `ecology`. The chain is now A4 → A5 → A1 (A3 inline). Stage ids are `["weather", "hydrology", "ecology"]` in S-3.5. A5 reads A4's working copy inside the same `Run`; A4 reads A5's previous committed state at `Capture`.
+**Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** a third stage, `hydrology` (A5, [a5-hydrology.md](../a5-hydrology/a5-hydrology.md)), sits between `weather` and `ecology`. The chain is now A4 → A5 → A1 (A3 inline). Stage ids are `["weather", "hydrology", "ecology"]` in S-3.5. A5 reads A4's working copy inside the same `Run`; A4 reads A5's previous committed state at `Capture`.
 
 ## Summary
 
@@ -366,7 +366,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 **Status:** `Approved` (2026-11-13). Interview completed 2026-11-13: module topology, the coordinator's home, band cadence, shared-grid ownership, history sampling and synchronous mode all decided by the user. Arose from the A4 Weather dependency audit (2026-11-13), which found that DiaDeferredStep leaves the `world` channel unowned.
 
-**Amended 2026-11-17 (A5 Hydrology).** A third stage `hydrology` between `weather` and `ecology`; composition examples, the slack note and the determinism oracle cover three stages. Status stays `Approved`. A5 itself is `Draft`, so until it is built `["weather", "ecology"]` remains valid config.
+**Amended 2026-11-17 (A5 Hydrology).** A third stage `hydrology` between `weather` and `ecology`; composition examples, the slack note and the determinism oracle cover three stages. Status stays `Approved`. A5 itself is `Draft` (GDD A5 is locked, 2026-11-17; the Cluiche spec is unbuilt), so until it is built `["weather", "ecology"]` remains valid config. Aligned to locked GDD 2026-11-17 (CHANGE-048): no change to the order or the stage count.
 
 **Not blocked on spec work.** DiaDeferredStep's five feature specs were all Approved 2026-11-13 with plans written (`Not Started`), so the build path is clear: DeferredStep Feature 1 Task 1 ships the headers, after which World Step Feature 1 can start in parallel with the rest of DeferredStep.
 
@@ -377,7 +377,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 - **S-1** — expose the shared `WorldHexGrid` (joins the existing post-close amendment set).
 - **E1 Save/Load** — *no amendment needed* (corrected 2026-11-13; DiaDeferredStep Feature 3 drains on `OnSaveStarted`). A4's spec still says "E1's save path calls `DrainAll`" and needs that line removed.
 - **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with all three stages (`weather`, `hydrology`, `ecology`; amended 2026-11-17, A5 Hydrology) and owns the sim-hosted name-cap raise.
-- **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17) — declares its own instance with `"order": ["weather", "hydrology"]`.
+- **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17; now row 17 of the GDD TestbedRoster, CHANGE-048, aligned to locked GDD 2026-11-17) — declares its own instance with `"order": ["weather", "hydrology"]`. Its GDD spec is not yet written and needs its own interview, so nothing here depends on its content beyond the stage list. The order weather → hydrology → ecology is unchanged by the GDD lock.
 - **S-2.5 Weather Patterns** — declares its own `WorldStepModule` instance with `"order": ["weather"]`, and may set `"deferred": false` since weather alone fits in a frame.
 
 **Plan:** [worldstep.plan.md](worldstep.plan.md) (written 2026-11-16, not started).

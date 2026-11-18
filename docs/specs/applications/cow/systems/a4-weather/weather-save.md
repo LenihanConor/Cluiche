@@ -1,7 +1,7 @@
 # Feature Spec: A4 Weather Save/Load
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 4)
-**Status:** Approved (2026-11-16)
+**Status:** Approved (2026-11-16). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `pressure_anomaly` array, `influences` and `climate` blocks, `step_day` and the `valid` flag in the pending record, `{"valid":false}` blob for a discarded step.
 **Depends on:** A4 Features 1, 2, 3 (`WeatherFields`, `WeatherSimulation`, `WeatherModule`, the stage); World Step Feature 3 (the coordinator delegates `SerializePending`/`DeserializePending` to this stage and calls `ValidatePending`); DiaDeferredStep Feature 3; E1 `SaveLoadModule::RegisterParticipant` and `CaptureState()` (built).
 **Consumed by:** S-3.5 R2/R3 (save/load determinism, snapshot restore), every stage that saves with weather running.
 
@@ -48,16 +48,21 @@ Round trip is bit-identical for finite floats. Terrain is never saved: it comes 
   "moisture": [0.41, ...], "temperature": [...], "pressure": [...],
   "wind_direction": [...], "wind_speed": [...], "precipitation": [...],
   "cloud_cover": [...], "water_to_ground": [...], "snow_pack": [...],   // ground_water renamed: amended 2026-11-17, A5 Hydrology
-  "biome": [2, 2, 4, ...]
+  "pressure_anomaly": [...],                                              // amended 2026-11-17, row 6d (GDD §4.1)
+  "biome": [2, 2, 4, ...],
+  "influences": { "next_id": 17, "items": [ ... ] },                      // Feature 7 (shape in weather-influence.md "Save and load")
+  "climate": { "cycles_hash": 1234, "cycles": [ { "id": "ice_age_40y", "enabled": true, "phase_days": 0 } ] }   // Feature 8; optional keys per cycle: pinned_phase_days
 }
 ```
 
-- Nine float arrays (`water_to_ground` replaces `ground_water`; `glacierInput` and A5's latched inputs are not saved; amended 2026-11-17, A5 Hydrology), one entry per cell, row-major (`index = y * width + x`), written with `BeginArray`/`CurrentNode().append(double)` because `SaveContext` has no array-element writer. `Write(float)` and the `double` form both round-trip a `float` exactly (`StyledWriter` emits 17 significant digits). A test proves the bit-identity.
+- Ten float arrays (`water_to_ground` replaces `ground_water`; `glacierInput`, `influenceWater` and A5's latched inputs are not saved; amended 2026-11-17, A5 Hydrology; `pressure_anomaly` is the tenth, row 6d), one entry per cell, row-major (`index = y * width + x`), written with `BeginArray`/`CurrentNode().append(double)` because `SaveContext` has no array-element writer. `Write(float)` and the `double` form both round-trip a `float` exactly (`StyledWriter` emits 17 significant digits). A test proves the bit-identity.
 - `biome` is the **A4-cached** biome per cell as `uint8_t`, including A3's succession changes, so it is authoritative for A4 on load (the S-1 `Cell::biome` is only the ingest source).
 - `week` is the last applied week (`WeekOf` of the last committed step day) as `int64_t`.
 - `ready: false` writes only `version` and `ready` (a save taken before the first world is spun up). It restores as a no-op.
 - `params_hash` is a 64-bit FNV-1a over the **bit patterns** of the effective `WeatherParameters` in descriptor-table order (`HashWeatherParameters`, new in this feature, pure).
-- Ground water itself is saved by A5's participant, not here. No migration is needed: A4 is not built yet, so no `ground_water` save exists. Size at Large: about 2 MB (9 × 6,656 floats at roughly 32 bytes of styled JSON each). Well inside `SaveContext::kBufferSize`.
+- Ground water itself is saved by A5's participant, not here. No migration is needed: A4 is not built yet, so no `ground_water` or earlier-version save exists (version stays 1). Size at Large: about 2.1 MB (10 × 6,656 floats at roughly 32 bytes of styled JSON each) plus up to about 0.1 MB for the influence book at its caps (Feature 7). Well inside `SaveContext::kBufferSize`.
+- **`influences` (Feature 7; amended 2026-11-17, row 6d).** The book: `next_id` and the items, exactly as `weather-influence.md` "Save and load" defines them (ids, kind, source, `added_day`, region, strength, lifetime, `weeks_applied`, `in_flight`). `landed_day` is not saved. An absent block loads as an empty book with no warning. `Validate` applies Feature 7's list of consistency rules (over `max_active`, ids not strictly ascending or `>= next_id`, unknown kind or falloff, `weeks_applied >= lifetime_weeks`, bad strength or lifetime, a cell list unsorted, duplicated or out of range, total set cells over `max_set_cells`), using the `influence` parameter defaults (the live parameters are not read).
+- **`climate` (Feature 8; amended 2026-11-17, row 6d).** `cycles_hash` plus, per cycle, `id`, `enabled`, `phase_days` and optional `pinned_phase_days` (the GDD's saved set, locked §19). An absent block loads as "no active cycles" with no warning. `Validate` checks: at most 16 cycles, unique ids of 1–31 characters, non-negative integers. A `phase_days` at or past the current definition's period is reduced modulo the period at restore, with one Warning. Matching is by `id` (Feature 8 AC 34–36).
 - Floats are never NaN/Inf (Finish clamps, EC-20), so JSON never has to carry them. `-0.0` is normalised to `+0.0` on write (jsoncpp reads `-0` as the integer 0).
 
 ### `Validate` (all-or-nothing, mutates nothing)
@@ -67,8 +72,8 @@ Runs before any participant deserializes, so it checks **internal consistency on
 - `version` is missing or greater than 1;
 - `ready` is true and any of `width`, `height`, `cell_count`, `week`, `params_hash`, or an array is missing or the wrong type;
 - `cell_count != width * height`, `width` or `height` is 0, or `cell_count` exceeds 65,536 (a corrupt-count guard);
-- any of the ten arrays has a length other than `cell_count`;
-- a float is non-finite or outside its field range (`[0,1]`, `windDirection` in `[0, 2π)`);
+- any of the eleven arrays (ten floats plus `biome`) has a length other than `cell_count`;
+- a float is non-finite or outside its field range (`[0,1]`, `windDirection` in `[0, 2π)`, `pressure_anomaly` in `[-0.5, 0.5]`);
 - a `biome` value is `>= 13`;
 - `week < 0`.
 
@@ -81,7 +86,7 @@ SimPU, after every participant validated, in this order:
 1. **Cancel** any running spin-up job and drop `mPending` (the module state from before the load is dead).
 2. If `ready` is false, or the loaded world is missing (`GetCurrentWorld() == nullptr`), do nothing more: the ordinary `WorldGenerationComplete` path spins up.
 3. Build a `WeatherTerrain` from the loaded world. If its `width`/`height` differ from the save's, **discard the saved state** (decided 2026-11-16): log a Warning naming both sizes, and start the ordinary spin-up for the current revision. The load succeeds.
-4. `sim.Initialise(terrain, params, baseline)` then `sim.RestoreCommitted(week, fields, biomes)` (this feature adds the biome argument). If `Initialise` fails (EC-01), treat as step 3's discard.
+4. `sim.Initialise(terrain, params, baseline)` then `sim.RestoreCommitted(week, fields, biomes)` (this feature adds the biome argument). If `Initialise` fails (EC-01), treat as step 3's discard. The influence book is restored from `influences` and the cycle phases from `climate` (amended 2026-11-17, row 6d); a dimension mismatch (step 3) discards them with the rest of the weather state.
 5. `mActive = sim`, `mActiveRevision = mTargetRevision = current world revision`, `mRestoredRevision = that revision`. `IsReady(revision)` is true at once, with no spin-up.
 6. Compare `params_hash` with the current effective parameters. A mismatch logs one Warning ("saved under different weather parameters") and sets Degraded until the next `QueueParameterOverrides`/reload is applied; the run continues under the **current** tuning (decided 2026-11-16).
 7. **Idempotent re-announce.** A later `WorldGenerationComplete` whose revision equals `mRestoredRevision` is ignored (the load itself caused it). A greater revision is a real regeneration and spins up as usual. The first plan task proves the real E1 + S-1 event order (Open Design Question 1).
@@ -93,15 +98,21 @@ After a restore the committed state is exactly what was saved, `GetSnapshot().Ge
 The stage implements `SerializePending(ctx)` (called after the scheduler's `DrainAll`, so the step has completed and `Run` has finished) and `DeserializePending(ctx)`:
 
 ```json
-{ "pending_version": 1, "cell_count": 6656,
-  "moisture": [...], ... 9 arrays, "biome": [...] }
+{ "pending_version": 1, "valid": true, "step_day": 412, "cell_count": 6656,
+  "moisture": [...], ... 10 arrays, "biome": [...] }
 ```
 
-- Amended 2026-11-17 (A5 Hydrology): the pending record holds the nine `WeatherFields` arrays only. `glacierInput` is not saved; A5's own pending record carries its consequence, and both are drained together as one world step.
-- It is the sim's **working** set (`GetWorkingFields()`/`GetWorkingBiomes()`, new read accessors), exactly what `Commit` would swap in. The step day, apply key and ordering are the coordinator's and the scheduler's.
+```json
+{ "pending_version": 1, "valid": false }
+```
+
+- Amended 2026-11-17 (A5 Hydrology): the pending record holds the `WeatherFields` arrays only (ten with `pressure_anomaly`, row 6d). `glacierInput` and `influenceWater` are not saved; A5's own pending record carries its consequence, and both are drained together as one world step.
+- **`step_day` (amended 2026-11-17, row 6d; found by A5 `hydrology-save.md`).** The day the step represents. The stage's `Commit()` takes no argument and needs it to set `WeekOf(step_day)` and the `Season` of `WeatherUpdated`; the coordinator keeps its own copy, but the stage cannot read it, so the stage saves its own. On `DeserializePending` it restores `mCapturedDay = step_day` (the week and season at commit come from it, never from live state). A blob without `step_day` fails `ValidatePending`.
+- **`valid: false` (amended 2026-11-17, row 6d).** A stage with no valid completed step (the step's revision no longer matches the active one, or nothing was captured) writes `{"pending_version":1,"valid":false}` instead of nothing, because World Step's `Validate` refuses a save that is missing a blob for a stage in `order`. After a load the stage has nothing to apply: `Commit()` is a logged no-op with no `WeatherUpdated`, and the next kick works. This replaces the earlier rule that such a step is "not written as pending".
+- It is the sim's **working** set (`GetWorkingFields()`/`GetWorkingBiomes()`, new read accessors), exactly what `Commit` would swap in. The apply key and ordering are the coordinator's and the scheduler's. In-flight influences need nothing in the blob: the working set already includes their effect, and the restored book has them in flight, so the apply-time `Commit` ages them (Feature 7 AC 40).
 - `DeserializePending` runs after the weather participant's `Deserialize` (ordering rule above), so `mActive` exists. It validates `cell_count == mActive cell count` and ranges, then calls `sim.RestoreCompleted(fields, biomes)`, which puts the sim in the "Run finished" state so `Commit` works, and sets `mCaptureRevision = mActiveRevision`.
 - `ValidatePending` (World Step Feature 3) delegates here for the same checks as `Validate` (consistency only, no live-state comparison).
-- **If the pending result cannot be restored** (no `mActive` because step 3 discarded the save, or a cell-count mismatch): the stage returns not-ready, logs an Error, and the coordinator's `RestoreRan` fails. The scheduler's restored channel still reaches its apply key, and `WorldStepModule::Apply` must tolerate `chain.Commit() == false` (log once, no signal, no message). **Amendment to World Step Feature 3.**
+- **If the pending result cannot be restored** (`valid` is true, but there is no `mActive` because step 3 discarded the save, or a cell-count mismatch): the stage returns not-ready, logs an Error, and the coordinator's `RestoreRan` fails. The scheduler's restored channel still reaches its apply key, and `WorldStepModule::Apply` must tolerate `chain.Commit() == false` (log once, no signal, no message). **Amendment to World Step Feature 3.**
 - Forcings latched into the captured step were already applied inside `Run`; the committed forcing timers are not saved, so after load no forcing remains (Non-Goals).
 
 ### New simulation surface
@@ -137,9 +148,13 @@ New: `Cluiche/CoW/Shared/Weather/WeatherStateCodec.h/.cpp` (pure: fields and bio
 16. `SerializePending` writes the working set after `DrainAll` and the committed set is unchanged by it.
 17. A pending blob with a wrong `cell_count`, a non-finite value or a bad biome fails `ValidatePending` and nothing changes.
 18. With no `mActive` (the discard path), `DeserializePending` returns not-ready with an Error and the later `Apply()` of the restored channel is a logged no-op: no `WeatherUpdated`, no crash, and the next kick works.
-19. A save with a step in flight whose revision no longer matches the active revision is not written as pending (the discard guard from Feature 3 applies at save time too).
+19. A save with a step in flight whose revision no longer matches the active revision writes `{"pending_version":1,"valid":false}` (the discard guard from Feature 3 applies at save time too; amended 2026-11-17, row 6d: it is written, not omitted, so World Step's missing-blob refusal passes). `ValidatePending` accepts it, `DeserializePending` records "nothing pending", and the later `Apply()` is a logged no-op: no `WeatherUpdated`, no crash, and the next kick works.
+19a. (amended 2026-11-17, row 6d) **`step_day`.** The pending record carries `step_day`; after a restore the applied step publishes `WeekOf(step_day)` and the season of `step_day`, with no live state read, and `mCapturedDay == step_day`. A blob with `valid: true` and no `step_day`, a negative or non-integer one, fails `ValidatePending` and nothing changes.
 
 ### Size and budget
+21. (amended 2026-11-17, row 6d) **`pressure_anomaly`.** The array round-trips bit-identically (including `-0.0` → `+0.0`, values at ±0.5) in the save record and in the pending blob; a value outside ±0.5, a missing array or the wrong length is rejected by `Validate`/`ValidatePending`.
+22. **`influences`.** Save, load and continue gives the book bit-identical to a run that never saved, at N = 1, 13 and 52 weeks, with pending, in-flight and active entries all present; a save mid-step restores in-flight entries as in flight; each Feature 7 `Validate` defect is rejected and mutates nothing; a dimension mismatch discards the book (Feature 7 ACs 39–43).
+23. **`climate`.** Each cycle's `enabled`, `phase_days` and `pinned_phase_days` round-trip and the continued run is bit-identical, with a seeded start and a pin both set; a `cycles_hash` mismatch warns and keeps the saved phases for matching ids; a save without the block loads with no cycles and no warning (Feature 8 ACs 34–36).
 20. At Large (6,656 cells) the weather record plus a pending blob is under 5 MB of JSON, and a full `CaptureState()` of weather runs in under 150 ms in Release (reported, not gated in Debug).
 
 ## Files Touched
@@ -171,13 +186,13 @@ Pure codec tests first (no Dia save machinery), then the participant against a r
 Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
 
 1. **`Validate` and `version`.** `version` missing, `0` or greater than 1 fails. `week` is `int64_t` in the record and is range-checked (`>= 0`) in the codec; the codec casts to `uint64_t` only after that check, and passes the unsigned value to `SetCommittedWeek`.
-2. **`cow.weather_state` envelope (also used by Feature 5's `state export`/`import`).** `{"format":"cow.weather_state","version":1, ...}` followed by the **same fields as the save record** (`ready` is always true; `width`, `height`, `cell_count`, `week`, `params_hash`, the nine arrays, `biome`). The codec exposes `EncodeState(sim, out)` and `DecodeState(json, record)` for both the participant and the commands. Import additionally requires matching dimensions against the live world.
+2. **`cow.weather_state` envelope (also used by Feature 5's `state export`/`import`).** `{"format":"cow.weather_state","version":1, ...}` followed by the **same fields as the save record** (`ready` is always true; `width`, `height`, `cell_count`, `week`, `params_hash`, the ten float arrays including `pressure_anomaly`, `biome`; the `influences` and `climate` blocks are **not** part of the state envelope, so a `state import` never replaces the book or the cycle phases, amended 2026-11-17, row 6d). The codec exposes `EncodeState(sim, out)` and `DecodeState(json, record)` for both the participant and the commands. Import additionally requires matching dimensions against the live world.
 3. **Event-order fallback is the committed design if the first-task spike finds the bad order.** The participant stashes the parsed, validated record and applies it on the **next** `WorldGenerationComplete` after the load (instead of spinning up) provided its dimensions match; a mismatching completion discards the stash with a Warning and spins up. The stash is dropped on `DoStop` and on any later regeneration.
 4. **Participant order.** The weather participant registers in `WeatherModule::DoStart`. The DeferredStep participant attaches on `DeferredStepModule`'s first `DoUpdate` (World Step Feature 3 amendment 5), so it always follows every stage participant regardless of manifest order. Criterion 13 asserts the resulting order.
 5. **`SaveContext` sub-objects for the pending blob** are the coordinator's (`BeginObject("stage_N")` around each stage); this stage writes into the current node.
 
 ## Status
 
-Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `ground_water` array renamed `water_to_ground`; see above. Feature 7 (influences) and Feature 8 (cycle phases) will add their own saved records, to be specced with those features.
+Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `ground_water` array renamed `water_to_ground`; see above. Feature 7 (influences) and Feature 8 (cycle phases) saved records are now part of this feature (amended 2026-11-17, row 6d): the `influences` and `climate` blocks above, with their consistency rules defined in `weather-influence.md` and `climate-cycles.md`.
 
-**Status:** `Approved` (2026-11-16). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).

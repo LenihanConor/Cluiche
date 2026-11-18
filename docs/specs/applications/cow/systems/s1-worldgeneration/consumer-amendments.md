@@ -19,7 +19,7 @@ Only the **first** is urgent: the shared biome list gates A4 Feature 1 and A1 Fe
 | 5 | `cow.worldgen.validate` takes a file | **Moved to F-3 Feature 6 (2026-11-16)** |
 | 6 | Mark the F-3 participant section "Not built" | Spec text only, no code |
 | 7 | Latitude band grouping layer | T-1 Feature 10 (added 2026-11-16) |
-| 8 | Persist bed elevation and the basin table in `.wld.json` (format version 2) | A5 Hydrology (added 2026-11-17, Proposed) |
+| 8 | Persist bed elevation and the basin table in `.wld.json` (format version 2), and keep fixed sites out of real basins | A5 Hydrology (added 2026-11-17, Proposed; aligned to locked GDD 2026-11-17, CHANGE-048) |
 
 ## Problem
 
@@ -162,11 +162,11 @@ Requested by @docs/specs/applications/cow/systems/t1-worldsiminspector/space-ove
 30. The S-1 golden file gains `world.latitude_band` (updated with `DIA_UPDATE_GOLDEN=1`); every other layer's hash is unchanged, and a test checks that.
 31. After import and after regenerate the layer matches a freshly generated one.
 
-## Amendment 8 — persist bed elevation and the basin table (2026-11-17, A5 Hydrology)
+## Amendment 8 — persist bed elevation and the basin table, and keep fixed sites out of real basins (2026-11-17, A5 Hydrology; aligned to locked GDD 2026-11-17, CHANGE-048)
 
 **Status:** `Proposed` (decided by the user 2026-11-17; not built, no AD-001 sign-off needed).
 
-Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Grid and terrain ingest), so A5 Hydrology gets the same data from an imported, `world_file` or F-3 baked world as from a freshly generated one.
+Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Grid and terrain ingest). The GDD S-1 locked the same two items on 2026-11-17 (CHANGE-048, S-1 decisions 11 and 12). The goal is that A5 Hydrology gets the same data from an imported, `world_file` or F-3 baked world as from a freshly generated one.
 
 - `.wld.json` gains **raw/bed elevation** (the ground under lakes; `Cell::elevation` is the lake surface) and the **basin table**: per basin its cells, spill height and spill cell.
 - The `cow.world` format **version bumps** (1 → 2). Import accepts the new version and reads both back.
@@ -180,6 +180,8 @@ Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (
 - Flow direction is **already rebuilt on import**, so it is not persisted. A5 needs full-grid flow direction and corridor/crossing sites, which S-1 already provides.
 - A drainage-rule change in S-1 never silently changes an old world's basins, because the basins are read, not recomputed.
 - Rejected: rebuilding the basin table on import, and A5 running its own priority-flood.
+- **S-1 writes every basin.** S-1 does not filter. Tiny depressions (fewer than 3 cells, or capacity below 1.0 wu) are in the table like any other. **A5 decides which are real basins** (A5 `MIN_BASIN_CELLS` 3, `MIN_BASIN_CAPACITY` 1.0 wu, GDD A5 TechnicalSpec 1.2); the rest route through and never flood. Note only, no S-1 work.
+- **Fixed sites stay out of real basins (new).** S-1 never places a Hearth Site, Nexus Node or world-throne cell below a real basin's spill height, so no lake A5 grows can drown one. Only **real** basins constrain placement, so tiny depressions do not. Corridors and crossings may lie in basins: A5 protects them and keeps them at worst `Fordable`. The site-placement code (S-1 Feature 9, built) needs a placement filter. The "real basin" test uses A5's two thresholds. Where those two numbers live for S-1 (a shared constant or a `world_parameters` value) is TBD.
 - CoW code only (`Cluiche/CoW/`), so no AD-001 sign-off.
 
 **Acceptance criteria**
@@ -196,6 +198,7 @@ Requested by @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (
     - `basinsFromLakesOnly` is true.
 
     Re-exporting it writes version 2 with the same lake-only table, and `basinsFromLakesOnly` survives the round trip.
+38. Over successfully generated worlds, no Hearth Site, Nexus Node or world-throne cell lies below a real basin's spill height (target 100%, zero violations, like the S-1 hard guarantees). A depression under 3 cells or under 1.0 wu capacity is not a real basin and does not exclude a site. The reachability validator still passes with the filter on.
 
 ## Public Interfaces
 
@@ -239,7 +242,7 @@ Amendments 4 and 5 extend existing entry points rather than adding public types;
 - **T-2 Feature 4**, **S-3.5 Author mode** — amendment 5.
 - **A3** — amendment 1 (`ApplyBiomeTransition` needs the three values to exist).
 - **T-1 Feature 10** — amendment 7.
-- **A5 Hydrology** (Draft) — amendment 8. A5 cannot be built for imported worlds without it.
+- **A5 Hydrology** (Draft; GDD locked 2026-11-17, CHANGE-048) — amendment 8. A5 cannot be built for imported worlds without it, and fixed sites could be drowned by growing lakes without the placement rule.
 
 ## Test Strategy
 
@@ -269,7 +272,7 @@ Scoped filter for iteration: `*Biome*:*WorldGen*:*Terrain*`.
 
 ## Status
 
-**Status:** `Approved` (2026-11-13). **Amended 2026-11-17 (A5 Hydrology):** amendment 8 added, `Proposed`.
+**Status:** `Approved` (2026-11-13). **Amended 2026-11-17 (A5 Hydrology):** amendment 8 added, `Proposed`. **Aligned to locked GDD 2026-11-17 (CHANGE-048):** amendment 8 gains the fixed-site placement rule (AC 38) and the note that S-1 writes all basins while A5 filters. No conflict on version 1 import: the GDD (CHANGE-048 note, S-1 decision 11, A5 EC-15) now matches the user's accept-in-lakes-only-mode decision (AC 37).
 
 **Status (original):** `Approved` (2026-11-13). Found by the A4 Weather dependency audit and the F-3 audit, both the same day, after S-1 closed `Done`. No plan yet — create `consumer-amendments.plan.md` when implementation starts.
 

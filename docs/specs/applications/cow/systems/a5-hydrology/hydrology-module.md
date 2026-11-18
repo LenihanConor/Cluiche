@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md (Feature 3)
 **Status:** Draft (2026-11-17)
-**Design source:** GDD `08_SystemsDeepDive/A5_Hydrology/` (drafted 2026-11-17, **not locked**; the GDD session `cow-68` has it). This spec cannot be Approved before the GDD is locked or accepts the differences listed below (AD-003).
+**Design source:** the locked GDD `C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A5_Hydrology\` (locked 2026-11-17: `A5_TechnicalSpec.md` §13, §14, §16, `A5_EdgeCaseMatrix.md` EC-10, EC-14, EC-15, EC-23; DECISION-129..134, CHANGE-047/048). The GDD owns design intent and constants (AD-003). Aligned to it (aligned to locked GDD 2026-11-17); the differences that remain are listed under "GDD differences".
 **Depends on:**
 - A5 Features 1 and 2 (`HydrologySimulation`, `HydrologyParameters`, `HydrologyTerrain`, `WaterInput`, `FixedWaterInput`).
 - World Step Features 1 and 2 (`IWorldStepStage`, `WorldStepModule::RegisterStage`).
@@ -69,13 +69,14 @@ The module has **no save or history code** (Feature 4 and the coordinator), and 
   "stages": ["S26RiversFloodsStage"],
   "dependencies": ["MessageBusHostModule", "WorldStepModule", "WorldGenerationModule", "SimQueryHostModule"],
   "soft_dependencies": ["WeatherModule", "SaveLoadModule", "CellLayersModule", "CellHistoryModule"],
-  "config": { "parameters": "Global/Hydrology/hydrology_parameters.json", "spinup_weeks": 52,
+  "config": { "parameters": "Global/Hydrology/hydrology_parameters.json", "spinup_weeks": 52, "start_coldness": 0.0,
               "fixed_input": { "mode": "constant", "water_to_ground": 0.05, "temperature": 0.5 } } }
 ```
 
 (The stage name is illustrative; S-2.6 and S-3.5 own their manifests.)
 
-- `spinup_weeks` is validated `0..520` as A4's is; 0 means no spin-up (tests).
+- `spinup_weeks` is validated `0..520` as A4's is; 0 means no spin-up (tests). The GDD's `SPINUP_WEEKS` is 52.
+- `start_coldness` (0..1, default 0) is the start phase's coldness for the **alone** path only. With A4, A4 supplies it (see Spin-up).
 - `fixed_input` is optional. `mode` is `constant` (two numbers) or `script` (two equal-length weekly arrays, played in a loop). Values are validated against `FixedWaterInput`'s ranges, and a bad block is a config error naming the key.
 - A `WeatherModule` found through the soft dependency is wired in `DoStart` (next section). If one is not present, A5 runs on the fixed driver.
 
@@ -125,7 +126,7 @@ A4 owns `IHydrologyInputsProvider` and `HydrologyInputs` (weather-module.md). `H
 
 **What `HydrologyModule` does in `DoStart`:**
 - Registers stage id `hydrology` with `WorldStepModule`.
-- If a `WeatherModule` resolves, calls `weather.SetHydrologyProvider(this)` and `SetWaterSource(&weather)` on itself. If not, neither is set.
+- If a `WeatherModule` resolves, calls `weather.SetHydrologyProvider(this, this)` (this module is both the `IHydrologyInputsProvider` and the `IHydrologySpinUpHost`; A4 F3 signature, aligned 2026-11-17) and `SetWaterSource(&weather)` on itself. If not, neither is set.
 - Calls `HoldGeneration()`, released once its subscriptions are in place, so the first world is never missed.
 
 `DoStop` undoes all of it (see Lifecycle).
@@ -203,9 +204,9 @@ const HydrologyFields& WorkingFields() const;
 On `WorldGenerationComplete{worldRevision}`:
 
 1. `mTargetRevision = worldRevision`. `IsReady()` is false at once, and any running A5-only spin-up is cancelled (it checks the revision between weeks).
-2. `HydrologyTerrainSource` is read from `GetCurrentWorld()`: dimensions, `Cell::elevation`, bed elevation, full-grid flow direction, `waterSource`, `biome`, terrain flags, corridor-site cells, and the amendment 8 basin table. The module never holds the world pointer.
-3. The pure `BuildHydrologyTerrain(source, terrain, err)` makes `HydrologyTerrain`, including `isCrossing` (corridor sites ∪ `Pass` ∪ `RiverCrossesBarrier`) and `basinCells`. A **version-1** world has no basin table. Then the builder makes a lake-only table from lake membership, sets `basinsFromLakesOnly = true`, and logs one Info.
-4. `HydrologySimulation::Initialise(terrain, params, err)` runs on SimPU. A failure logs an Error with the named reason, reports Unhealthy, and starts nothing. A5 does **not** publish `WorldGenerationFailed`; that is S-1's.
+2. `HydrologyTerrainSource` is read from `GetCurrentWorld()`: dimensions, `Cell::elevation`, bed elevation, full-grid flow direction, `waterSource`, `biome`, terrain flags, corridor-site cells, **Hearth, Nexus and world-throne site cells**, and the amendment 8 basin table. The module never holds the world pointer.
+3. The pure `BuildHydrologyTerrain(source, terrain, err)` makes `HydrologyTerrain`, including `isCrossing` (corridor sites ∪ `Pass` ∪ `RiverCrossesBarrier` ∪ fixed-site cells) and `basinCells`. A **version-1** world has no basin table. Then the builder makes a lake-only table from lake membership, sets `basinsFromLakesOnly = true`, and logs one Info.
+4. `HydrologySimulation::Initialise(terrain, params, err)` runs on SimPU. A failure logs an Error with the named reason, reports Unhealthy, and starts nothing. A5 does **not** publish `WorldGenerationFailed`; that is S-1's. (The GDD's EC-14 sends an inconsistent world down `WorldGenerationFailed`. See "GDD differences".)
 5. Spin-up starts (next section).
 
 `WorldGenerationFailed{reason, …}`: Unhealthy with the reason, `IsReady()` false, any running A5-only spin-up cancelled. The last good world is **not** kept active, as in A4.
@@ -220,11 +221,16 @@ Two paths, chosen by whether an `IWaterInputSource` is set.
 
 ```cpp
 class HydrologySpinUpTicket;                  // self-contained: owns an initialised sim and a parameter copy
+struct SpinUpStart {                          // from A4: ClimateCycles::Coldness / WeatherRunner::StartColdness
+    float          coldness = 0.0f;           // 0 at the warm point (the default start), 1 at the coldest
+    const uint8_t* snowSurvivesSummer = nullptr;   // per cell, valid for the call only; null = no glacier seed
+};
 class IHydrologySpinUpHost {
 public:
     // SimPU. A4 calls it when it launches its job. Ingests the world for `revision` if A5 has not yet.
+    // Applies the phase-scaled seed (Feature 1 ApplyPhaseSeed) from `start` before returning the ticket.
     // Null = A5 is not joining (init failed, or A5 already holds restored state for this revision).
-    virtual HydrologySpinUpTicket* BeginSpinUp(uint32_t revision) = 0;
+    virtual HydrologySpinUpTicket* BeginSpinUp(uint32_t revision, const SpinUpStart& start) = 0;
     // SimPU. The job finished and its revision is still current. Takes the ticket's sim as mPending.
     virtual void CompleteSpinUp(HydrologySpinUpTicket* ticket, uint32_t revision) = 0;
     // A stale or cancelled job just destroys the ticket (it references no module). Any thread.
@@ -234,13 +240,14 @@ public:
 
 - The ticket's `StepWeek(weekIndex, const WaterSourceView&, exec)` is `HydrologyRunner`'s week. It also implements A4's `IHydrologyInputsProvider`, so the A4 job feeds A4's spin-up weeks from A5's spin-up state exactly as a live `Capture` does.
 - The A4 job calls `weatherRunner.StepWeek`, then `ticket->StepWeek` with A4's working view, in World Step order.
-- Length is A4's: 52 weeks, extended to the longest active climate cycle's settling period when cycles are on. With cycles on, A4 runs the spin-up in the **frozen phase** (cycles held at the start phase; A4 Feature 8), and A5 sees only the resulting inputs.
+- Length is `SPINUP_WEEKS`: **52 weeks**, with climate cycles **held at the world's start phase** for the whole spin-up (the GDD's frozen-phase spin-up, A4 Feature 8). There is no longer spin-up "extended when cycles are on" (aligned to locked GDD 2026-11-17). A5 sees only the resulting inputs.
+- **Phase-scaled seed (GDD §13).** One year cannot build lakes or glaciers, so slow stores start seeded for the start phase: S-1 lakes `capacity · lerp(1, spinup.lake_seed_cold, coldness)`, and glaciers `spinup.glacier_seed_max · coldness` on the cells A4 flags in `snowSurvivesSummer`, with `snowYears = onset_years`. The default start is the warm point (`coldness` 0), so the seed is a no-op: full lakes, no glaciers. A preset can pin another start phase. A5 applies it in `BeginSpinUp` through Feature 1's `ApplyPhaseSeed`. The mask rule (which cells keep snow through the summer at the start phase) is A4's. The GDD gives the intent only.
 - On completion A4 calls `CompleteSpinUp`. A5 sets `mPending` and `mPendingRevision` at the same `DoUpdate` poll where A4 sets its own pending sim, so the coordinator's next `Capture` promotes **both** together.
 - Spin-up is silent: no `HydrologyUpdated`, no history signal.
 - A4 cancels by destroying the ticket. A5 holds nothing of it.
 - If A4 never calls `BeginSpinUp` (see the "A4 restored" case in Feature 4), A5 notices: it polls `source->IsReadyForRevision(target)` in `DoUpdate`. When A4 is ready for the target revision, A5 has no pending sim, and `BeginSpinUp` was never called for it, A5 concludes A4 skipped the coupled job. It then **seeds only** (Initialise's state, no spin-up) and goes Degraded with a Warning naming the reason. Open Design Question 2.
 
-**Alone (no source).** A5 launches its own job with `JobSystemService::TrySubmit(fn, tag)` and the `world` tag. The job runs `HydrologyRunner::RunFixed(sim, driver, spinup_weeks, executor, cancel)` on the DeferredStep capped executor. Its result goes into a SimPU-owned `SpinUpSlot` (`Idle/Running/Done/Cancelled`, the revision, the sim pointer). `DoUpdate` polls it and sets `mPending` on `Done` for the target revision. This is A4's gap-pass amendment 2: no bus message, no callback onto SimPU. With no job system (headless tests), a **synchronous launcher** seam runs the same code inline. The spun-up state is bit-identical either way, and equals `HydrologyRunner` run synchronously.
+**Alone (no source).** A5 seeds with `start_coldness` and no glacier mask (lakes only), then launches its own job with `JobSystemService::TrySubmit(fn, tag)` and the `world` tag. The job runs `HydrologyRunner::RunFixed(sim, driver, spinup_weeks, executor, cancel)` on the DeferredStep capped executor. Its result goes into a SimPU-owned `SpinUpSlot` (`Idle/Running/Done/Cancelled`, the revision, the sim pointer). `DoUpdate` polls it and sets `mPending` on `Done` for the target revision. This is A4's gap-pass amendment 2: no bus message, no callback onto SimPU. With no job system (headless tests), a **synchronous launcher** seam runs the same code inline. The spun-up state is bit-identical either way, and equals `HydrologyRunner` run synchronously.
 
 For either path, a job whose revision is stale discards its sim. While `IsReady()` is false, `AllReady()` is false, so the coordinator kicks nothing and the executor is not shared concurrently.
 
@@ -285,14 +292,22 @@ A const view over the **committed** state. It is valid until the next `Commit` o
 | `SoilMoisture(cell)` | Soil wetness `[0,1]`: `soilMoisture / soil_capacity[biome]`, 0 where capacity is 0, 1 on inundated cells. What A1 reads as cell water |
 | `SoilStore(cell)` | The raw soil store in cell-depth units |
 | `RiverFlow(cell)`, `MeanFlow(cell)` | `riverFlow`, `meanFlow` |
+| `RiverState(cell)` | `RiverState` (GDD §14.2): `Frozen` if `ice ≥ freeze.ice_crossing_min`; otherwise `Dry` below `river.low_flow_fraction · meanFlow`, `Low` below `0.7 · meanFlow` (the GDD's fixed 0.7), `Normal` up to bankfull (`flood.bankfull_factor · max(meanFlow, flood.min_flow)`), `Flood` above. Non-river cells report `Normal`. For V-1 (river width by flow) and A1 |
 | `Flooded(cell)`, `Ice(cell)`, `Glacier(cell)` | Flags and stores |
+| `BasinIceFraction(basin)` | The basin's frozen surface share |
+| `LowFlowWeeks(cell)`, `GlacierWeeks(cell)`, `GlacierFreeWeeks(cell)` | A3's other counters (dry riverbed, glaciation, glacial retreat) |
 | `InundatedWeeks(cell)`, `ExposedWeeks(cell)` | A3's counters |
 | `PassabilityAt(cell)` | `Passability` |
 | `SurfaceWetness(cell)`, `OpenWater(cell)` | A4's inputs: `OpenWater` is the committed field; `SurfaceWetness` is defined below |
 | `GlacierEligible(cell)` | The committed flag |
 | `Level(basin)`, `Volume(basin)` | Per basin |
 
-**`SurfaceWetness(cell)`** = `clamp01(surfaceWater / wetness.surface_scale + wetness.soil_weight · SoilMoisture(cell))`, the GDD's formula. Feature 1 has no such constants today, so this feature **owes Feature 1 two scalar rows**, `wetness.surface_scale` (provisional 0.1, range 0.02–0.5) and `wetness.soil_weight` (provisional 0.25, range 0–1), taking the descriptor table from 20 to 22 rows. The values are the GDD's (CH-A5-04: low weight so A4's land evaporation stays near its S-2.5 tuning). This is flagged in Status.
+**`SurfaceWetness(cell)`** = `clamp01(surfaceWater / wetness.surface_scale + wetness.soil_weight · SoilMoisture(cell))`, the GDD's formula. Feature 1 holds the constants (`wetness.surface_scale` 0.1, `wetness.soil_weight` 0.25, CH-A5-04: low weight so A4's land evaporation stays near its S-2.5 tuning). `OpenWater(cell)` includes the river term (Feature 2 pass 7).
+
+**What the readers do with it (the GDD's ripples, noted here, their specs are their owners'):**
+- **A1** keeps `water_gradient` and builds it from A5 in a thin step 2. It treats inundated cells as aquatic habitat.
+- **A3** reads the counters at the Decade band. First-run thresholds: Lake after 104 inundated weeks, Lake to Wetland after 52 exposed weeks, `DRY_RIVERBED` after 26 low-flow weeks, glaciation and retreat after 260 weeks. Glaciated cells become Alpine (`elevation ≥ 0.7`) or Tundra, with no new biome, and A3 saves `pre_glacial_biome`. Ocean and Lake are never glaciated.
+- **V-1** shows lake extent, floods, ice and river width by flow. Soil and ground water are debug-only.
 
 ### Messages
 
@@ -302,7 +317,7 @@ A const view over the **committed** state. It is valid until the next `Commit` o
 
 `DoStop`:
 - unregister the stage from `WorldStepModule`;
-- `weather.SetHydrologyProvider(nullptr)` if the weather module is still there;
+- `weather.SetHydrologyProvider(nullptr, nullptr)` if the weather module is still there;
 - clear the water source and the sink table;
 - cancel and join the own spin-up job, discard its result;
 - destroy both sims and clear `mQueue`;
@@ -370,11 +385,11 @@ namespace CoW::Hydrology {
 1. `dia validate manifest` accepts the instance, requires `WorldGenerationModule` and `WorldStepModule`, and rejects a manifest listing `HydrologyModule` before `WorldStepModule`.
 2. `spinup_weeks` outside `[0, 520]` or non-integer is a config error naming the key. A bad `fixed_input` block (unknown `mode`, unequal script arrays, an out-of-range value) is a config error naming the key.
 3. The module registers stage id `hydrology` in `DoStart` and unregisters in `DoStop`. It registers no timer and no `SimulationTick` subscription.
-4. With a `WeatherModule` present, `DoStart` calls `SetHydrologyProvider(this)` and sets the water source. With none, neither is set and the module is not Degraded.
+4. With a `WeatherModule` present, `DoStart` calls `SetHydrologyProvider(this, this)` and sets the water source. The provider also returns `glacierCheckWeek` and `glacierSnowFloor` from A5's parameters (`GLACIER_CHECK_WEEK` 26, `GLACIER_SNOW_FLOOR` 0.2), so A4's firn hand-off uses A5's constants. With none, neither is set and the module is not Degraded.
 
 ### Ingest and terrain
-5. `BuildHydrologyTerrain` on a hand-built source produces a valid `HydrologyTerrain`. `isCrossing` is exactly corridor sites ∪ `Pass` ∪ `RiverCrossesBarrier`.
-6. A version-1 source (no basin table) gives a lake-only table with `basinsFromLakesOnly = true` and one Info log. Initialisation succeeds.
+5. `BuildHydrologyTerrain` on a hand-built source produces a valid `HydrologyTerrain`. `isCrossing` is exactly corridor sites ∪ `Pass` ∪ `RiverCrossesBarrier` ∪ Hearth, Nexus and world-throne site cells.
+6. A version-1 source (no basin table) gives a lake-only table with `basinsFromLakesOnly = true` and one Info log. Initialisation succeeds. Through the stepped simulation, its lake cells are `Deep` and its protected cells (corridor, crossing and fixed-site cells) are `Fordable`.
 7. A source that Feature 1's `Initialise` rejects leaves `IsReady()` false, logs an Error with the reason, reports Unhealthy and starts no job. The module publishes no `WorldGenerationFailed`.
 8. `WorldGenerationComplete` makes `IsReady(rev)` false until the spin-up for `rev` completes, then true for `rev` and false for `rev + 1`.
 9. A second call to ingest for the same revision (from `BeginSpinUp` and from the event handler, in either order) does nothing the second time.
@@ -384,10 +399,13 @@ namespace CoW::Hydrology {
 11. With a **synchronous launcher** the module behaves identically, and the job completes before `WorldGenerationComplete` returns.
 12. A second `WorldGenerationComplete` during a running spin-up cancels it. Its result is discarded and never becomes active. Only the newest revision becomes ready.
 13. `WorldGenerationFailed` makes the module Unhealthy and `IsReady()` false until the next success, and cancels a running own job.
-14. **Coupled:** with a source set, the module launches no job of its own. `BeginSpinUp(rev)` returns a ticket; after the (fake) A4 job steps it for N weeks and calls `CompleteSpinUp`, the module's pending state equals a synchronous coupled run (fake A4 runner + `HydrologyRunner`), bit-identical for both simulations.
+13a. **Phase seed, alone:** with `start_coldness` 0 the spun-up state equals a run with no seed. With `start_coldness` 1 the lakes start at `capacity · lake_seed_cold` and no glacier is seeded. `start_coldness` outside 0..1 is a config error naming the key.
+13b. **Spin-up length:** spin-up lasts `spinup_weeks` (52 by default) whatever the cycle state. No test or code path lengthens it.
+14. **Coupled:** with a source set, the module launches no job of its own. `BeginSpinUp(rev, start)` returns a ticket; after the (fake) A4 job steps it for N weeks and calls `CompleteSpinUp`, the module's pending state equals a synchronous coupled run (fake A4 runner + `HydrologyRunner`), bit-identical for both simulations.
 15. A cancelled coupled job (the ticket destroyed) leaves no state in the module and no pending sim.
 16. A4's fake handler and A5's handler can run in either order for the same `WorldGenerationComplete`; the result is the same.
-17. `BeginSpinUp(rev)` returns null if `Initialise` failed for `rev`.
+17. `BeginSpinUp(rev, start)` returns null if `Initialise` failed for `rev`.
+17a. **Phase seed, coupled:** `BeginSpinUp` with `coldness` 1 and a mask applies Feature 1's seed before the first spun-up week (lakes scaled, masked cells glaciated and eligible). With `coldness` 0 the ticket's state equals a fresh `Initialise`.
 18. A source that reports ready for the target revision while `BeginSpinUp` was never called makes A5 take the seed-only path: state equals a fresh `Initialise`, health Degraded, one Warning, `IsReady()` true.
 19. `HoldGeneration()` in `DoStart` guarantees the first `WorldGenerationComplete` is received.
 
@@ -427,13 +445,14 @@ namespace CoW::Hydrology {
 44. `GetSnapshot().GetCellCount() == 0` before the first world is ready, and equals the world's cell count afterwards. `GetWeek()` equals the last published week.
 45. A reader inside a `HydrologyUpdated` handler sees the committed state of that step. A reader between `Capture` and `Commit` still sees the previous committed state, **including the previous biome**.
 46. `SoilMoisture` is `[0,1]`, is 0 on a zero-capacity biome and is 1 on an inundated cell. `SoilStore` is the raw store.
+46a. **`RiverState`:** `Frozen` when `ice ≥ ice_crossing_min`; `Dry` below 0.1 of the mean; `Low` below 0.7; `Normal` up to bankfull; `Flood` above. `Frozen` wins over `Dry`, so a frozen river is never reported as dry. A river with `meanFlow` below `min_flow` is judged against `min_flow`.
 
 ### Parameters, queue, biome edits
 47. A missing file, a bad value or an unknown key falls back to defaults, logs an Error naming the dotted key, reports Degraded, and the module still steps.
 48. `QueueParameterSet` with a valid value takes effect at the next `Capture` and not before. An invalid value returns false at once with the error and queues nothing. A `biome_table.<BiomeId>.<column>` key works.
 49. `QueueParameterOverrides` is atomic. A queued reload re-reads the file at the next `Capture`; a failing reload keeps the previous parameters and logs.
 50. Queued mutations drain in arrival order inside `Capture`, before `sim.Capture`. A 129th entry returns false with one Warning and degrades health.
-51. A biome edit queued during a step takes effect at the **next** `Capture` and changes the next step's `soil_capacity`/`et_rate` choice. The step in flight is unchanged.
+51. A biome edit queued during a step takes effect at the **next** `Capture` and changes the next step's `soil_capacity`/`infil_rate`/`veg_factor` choice. The step in flight is unchanged.
 52. The module never re-reads the parameter file after init except through a queued reload.
 
 ### Timing and determinism
@@ -475,7 +494,7 @@ namespace CoW::Hydrology {
 | PD-004 | No STL containers in public APIs | `DynamicArrayC`, raw pointer views, `String256` errors. The provider table and queue are fixed-capacity Dia arrays |
 | AD-001 | Ask permission before Dia edits | None needed (see Files Touched) |
 | AD-002 | Four-tier model | Pure logic in CoW-Shared; module, stage and messages in CoW `Modules/` |
-| AD-003 | GDD owns design intent | Draft until GDD A5 is locked. Differences are listed below |
+| AD-003 | GDD owns design intent | Follows the locked GDD (2026-11-17). Remaining differences are listed below |
 | DFS-002 | `Run` reads only the captured working copy | `Capture` latches everything. Promotion and mutation drain happen only inside `Capture`. A5 reads A4's working buffers, never SimPU-owned state; ACs 23–25, 27 |
 | DFS-003 | A late step stalls; the key never slips | The stage never re-times anything. A discarded step is a loss, counted and logged, never a retime |
 | SD-PERF-7 | Telemetry cost budgets | Only SimPU writes health and logs. One step-time value per applied step. No per-cell telemetry |
@@ -484,21 +503,20 @@ namespace CoW::Hydrology {
 
 ## GDD differences
 
-The GDD draft has A4 → A5 → A1 and a coupled spin-up. These points differ; the user's 2026-11-17 decisions win.
+Only real remaining differences (aligned to locked GDD 2026-11-17). The user's 2026-11-17 decisions win where they differ.
 
-| Topic | GDD draft | This spec |
+| Topic | GDD | This spec |
 |---|---|---|
-| Spin-up length | `SPINUP_YEARS` 1 (cycles off) / `SPINUP_YEARS_WITH_CYCLES` 3 | 52 weeks, extended to the longest active cycle's settling period, in the frozen phase (A4 Feature 8) |
-| Spin-up with no A4 | Not stated | A5 spins up alone on the fixed driver, in its own job |
-| Wetter influence | Added to `surface_water` with `INFLUENCE_GROUND_WATER` (0.05) | Added as `extraWater`. A5 holds no influence constant; A4 Feature 7 hands the amount in cell-depth units |
-| Drier influence | Taken from `soil` only, clipped to soil | A draw, taken from surface, then soil, then river store (Feature 2 pass 4) |
+| Spin-up with no A4 | Not stated | A5 spins up alone on the fixed driver, in its own job, seeded with `start_coldness` and no glacier mask |
+| Wetter influence | Added to `surface_water` with `INFLUENCE_GROUND_WATER` (0.05) times A4's weight | Added as `extraWater`. A5 holds no influence constant; A4 Feature 7 hands the amount in as depth. If A4 hands a weight instead, the 0.05 moves into A5 (Open Design Question 4) |
+| Drier influence | Taken from `soil` only, clipped to soil, counted as `influence_out` | A draw, taken from surface, then soil, then channel store (Feature 2 pass 4), counted as `drawOut` (user decision: injected sinks) |
 | Fixed-input driver | Supplies W, T and G | Supplies `waterToGround` and `temperature`. `snowPack` and `glacierInput` are zero |
-| Sink providers | None (A1 reads soil wetness only) | Up to 8 `IWaterSinkProvider`s fill an ET multiplier and a draw |
+| Sink providers | None (A1 reads soil wetness only) | Up to 8 `IWaterSinkProvider`s fill an ET multiplier and a draw (user decision) |
 | Init failure | EC-14: the world goes down `WorldGenerationFailed` | A5 goes Unhealthy and not ready. It does not publish S-1's message |
-| Old world files | EC-15: rejected, "world format too old for A5" | Version-1 worlds work with `basinsFromLakesOnly` (user decision) |
 | Load entry point | `GameLoaded` and `restore_state()` | An E1 participant (Feature 4) |
 | Terrain read | `WLD.get_hydrology_terrain()` | `HydrologyTerrainSource` read from `WorldGenerationModule` |
-| Surface wetness constants | `SURFACE_WETNESS_SCALE`, `SOIL_WETNESS_WEIGHT`, `RIVER_OPEN_WATER`, `MIN_MEAN_FLOW` | The first two are added to Feature 1 as `wetness.*`. A river's open-water share is not in Feature 2, so `openWater` here is the basin value only (see Open Design Question 3) |
+
+No longer differences, now aligned: spin-up length and the phase-scaled seed (GDD §13), version-1 worlds (EC-15: a lake-only table, lakes `Deep` except protected cells), and the wetness constants (all in Feature 1).
 
 ## Test Plan
 
@@ -523,7 +541,8 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 
 1. **Ingest and `Initialise` run on SimPU.** The static tables (topological trees, capacity curves) are cheap at Small, but at Large with many basins they may cost milliseconds on the event handler. Measure it in the first S-2.6 run. If it shows, move the ingest into the spin-up job and keep only the world copy on SimPU.
 2. **A4 restored from a save, A5 not (or the reverse).** A4's coupled job is skipped when A4 restores, so A5 has no partner and only seeds (Degraded). That is honest but leaves the first year drifting. Alternatives: refuse the load, or run A5 alone for 52 weeks on A4's committed temperature and a mean rain. Not chosen because a mean rain is an invented input. The reverse (A5 restored, A4 absent from the save) is handled: `BeginSpinUp` returns null and A4 spins alone.
-3. **Does a river have open water for A4's primary evaporation?** The GDD gives rivers `RIVER_OPEN_WATER × min(1, flow/mean)`. Feature 2 sets `openWater` per cell for basins only. With basins alone, A4's evaporation sees lakes but no rivers. If S-2.6 shows rivers need it, add the river term to Feature 2 pass 7 and a `wetness.river_open_water` row. Revisit then.
+3. ~~**Does a river have open water for A4's primary evaporation?**~~ **Resolved by GDD §14.2:** `openWater` of a river cell is `RIVER_OPEN_WATER · min(1, flow / max(mean, MIN_MEAN_FLOW))`. Feature 2 pass 7 sets it, and Feature 1 holds `wetness.river_open_water` (0.3).
+4. **Who applies `INFLUENCE_GROUND_WATER`?** The GDD has A4 return a weight and A5 multiply it by 0.05. This spec has A4 Feature 7 hand A5 a depth. A4 Feature 7 is not written. Settle it there, and move the constant into Feature 1 if A5 should own it.
 
 ## Status
 
@@ -532,12 +551,11 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 - Wiring is by interfaces through `ModuleRef` (no singletons, no ServiceStreams): sink providers (capacity 8, ascending id), `SetWaterSource`, A4's `IHydrologyInputsProvider`.
 - A5's `Run` reads A4's working copy from the same `Run` (order weather → hydrology → ecology).
 - A fixed-input driver covers the no-A4 case.
-- Spin-up is coupled with A4 in A4's job (52 weeks, frozen phase when cycles are on). A5 spins up alone without A4. Not-ready until done; a newer world cancels.
+- Spin-up is coupled with A4 in A4's job (52 weeks, cycles held at the start phase, slow stores seeded for that phase). A5 spins up alone without A4. Not-ready until done; a newer world cancels.
 - Synchronous mode is the determinism oracle. Step timing is Feature 3's, the metric is Feature 5's.
 
 **Needs the user's attention before approval:**
-- Feature 1 owes `wetness.surface_scale` and `wetness.soil_weight`.
-- A4 Feature 3 owes `IWaterInputSource`, the spin-up host calls and `IsReadyForRevision`.
-- Open Design Questions 1–3.
+- A4 Feature 3 owes `IWaterInputSource`, the spin-up host calls (now with `SpinUpStart`: coldness and a snow-survival mask) and `IsReadyForRevision`. A4 owes `ClimateCycles::Coldness`, `WeatherRunner::StartColdness`, the firn hand-off (A4 TechSpec §11.3) and the mask rule.
+- Open Design Questions 1, 2 and 4.
 
-Approval waits on GDD A5's lock. No plan yet.
+Aligned to the locked GDD on 2026-11-17. Approval is a separate step. No plan yet.

@@ -2,13 +2,14 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 1)
 **Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `groundWater` becomes `waterToGround`, the `ground_water` parameter group moves to A5 (20 constants, 23 table rows), `HydrologyInputs` and `WeatherHandoff` types added.
-**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TuningParameters.md` §1–§10, §14; `A4_EdgeCaseMatrix.md` (EC-01, EC-19)
+**Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d):** `pressureAnomaly` joins `WeatherFields` (ten arrays); `WeatherHandoff` gains `influenceWater`; `HydrologyInputs` carries A5's firn constants; the descriptor table gains the `influence` block (GDD §10a) with `Int` and `Enum` kinds (41 rows).
+**Design source:** `DesignDocs/COW/Output Docs/GDD/08_SystemsDeepDive/A4_Weather/A4_TuningParameters.md` §1–§10, §10a, §14 and `A4_TechnicalSpec.md` §1, §4.1 (all locked 2026-11-17, CHANGE-047); `A4_EdgeCaseMatrix.md` (EC-01, EC-19)
 **Depends on:** S-1 Biome widening (10 → 13; built) and `WorldGeneration::BiomeFromId`. No Dia code beyond `DynamicArrayC` and `Json::Value`.
 **Consumed by:** A4 Feature 2 (creates the step on top of this feature's `WeatherSimulation`), Features 3 to 6.
 
 ## Summary
 
-The data layer of the weather system, as pure logic with no module, bus or thread. It defines the weather state and terrain arrays, the 20 tuning constants (21 before the ground-water drain moved to A5; amended 2026-11-17, A5 Hydrology) with their file format and validation, the seasonal temperature baseline contract with its default table, and `WeatherSimulation::Initialise`, which ingests terrain and seeds week-0 state. It is provable by GoogleTests on hand-built hex terrain.
+The data layer of the weather system, as pure logic with no module, bus or thread. It defines the weather state and terrain arrays, the 20 tuning constants (21 before the ground-water drain moved to A5; amended 2026-11-17, A5 Hydrology) plus the 18-row `influence` block (GDD §10a; amended 2026-11-17, row 6d) with their file format and validation, the seasonal temperature baseline contract with its default table, and `WeatherSimulation::Initialise`, which ingests terrain and seeds week-0 state. It is provable by GoogleTests on hand-built hex terrain.
 
 ## Goals
 
@@ -37,13 +38,18 @@ namespace CoW::Weather {
 
     struct WeatherFields {                    // N cells each; radians [0, 2π) and [0, 1] as the system spec
         DynamicArrayC<float> moisture, temperature, pressure, windDirection, windSpeed,
-                             precipitation, cloudCover, waterToGround, snowPack;   // waterToGround replaces groundWater (amended 2026-11-17, A5 Hydrology)
+                             precipitation, cloudCover, waterToGround, snowPack,   // waterToGround replaces groundWater (amended 2026-11-17, A5 Hydrology)
+                             pressureAnomaly;                                      // [-0.5, 0.5], 0 = none; signed, carried by the wind and decayed (GDD §4.1; amended 2026-11-17, row 6d)
         void Resize(uint32_t n);              // zero-filled
     };
 
     // Added 2026-11-17 (A5 Hydrology). Types only; Feature 2 fills them.
-    struct WeatherHandoff   { DynamicArrayC<float> glacierInput; void Resize(uint32_t n); };   // per-week, not saved
+    struct WeatherHandoff   { DynamicArrayC<float> glacierInput;      // glacier-eligible cells: snow above the cap + yearly firn (GDD §10, §11.3), [0, 2]
+                              DynamicArrayC<float> influenceWater;    // Feature 7's signed water weight; amended 2026-11-17, row 6d
+                              void Resize(uint32_t n); };             // per-week, not saved
     struct HydrologyInputs  { DynamicArrayC<float> surfaceWetness, openWater; DynamicArrayC<uint8_t> glacierEligible;
+                              uint32_t glacierCheckWeek = 26;         // A5's GLACIER_CHECK_WEEK and GLACIER_SNOW_FLOOR, supplied by the provider so A4 and A5 cannot disagree (GDD §11.3)
+                              float    glacierSnowFloor = 0.2f;       //   (amended 2026-11-17, row 6d; the defaults are test values, A5's file is the source)
                               bool present = false; void Resize(uint32_t n); };              // A5's previous committed week; present == false when no A5
 
     struct WeatherTerrain {                   // read-only after Initialise
@@ -62,10 +68,12 @@ namespace CoW::Weather {
 ```cpp
 struct ParamDescriptor { const char* group; const char* key; float WeatherParameters::* member;
                          float minValue; float maxValue; float defaultValue; };
-span<const ParamDescriptor> GetParamDescriptors();      // 20 rows + init + boundary rows below (amended 2026-11-17, A5 Hydrology; was 21)
+span<const ParamDescriptor> GetParamDescriptors();      // 23 rows + 18 influence rows = 41 (amended 2026-11-17, A5 Hydrology and row 6d)
 ```
 
 The row set is the 19 GDD constants in the §14 groups (`solar`, `pressure`, `wind`, `evaporation`, `transport`, `orographic`, `precipitation`, `snow`; the `ground_water` group and its `drain_rate` move to A5, amended 2026-11-17, A5 Hydrology) plus `solar.cloud_decay` (0.5, [0, 1], added by Feature 2), plus the A4 extension blocks: `init.initial_moisture_water`, `init.initial_moisture_land`, and `boundary.edge_inflow`. All are `float` members, so one table type covers them.
+
+**Influence block (amended 2026-11-17, row 6d; GDD §10a, locked).** 18 more rows in group `influence`, owned by Feature 7 and Feature 9 but loaded by this table so there is one load path. `ParamKind` gains `Int` (a `float` member that must be a whole number) and `Enum` (a JSON string mapped to an ordinal). The 13 GDD rows: `max_strength` 1.0 [0.5, 2.0]; `max_delta_pressure` 0.3, `max_delta_moisture` 0.3, `max_delta_temperature` 0.15 [0.05, 0.5]; `max_lifetime_weeks` 13 [1, 52] `Int`; `max_active` 64 [8, 256] `Int`; `preview_fade_days` 1 [0.25, 3]; `storm_pressure_seed` −0.3 [−0.5, −0.1]; `pressure_anomaly_decay` 0.7 [0.5, 0.9]; `pressure_anomaly_max` 0.5 [0.2, 0.5]; `storm_moisture` 0.2 [0.05, 0.4]; `temp` 0.1 [0.02, 0.2]; `moisture` 0.15 [0.05, 0.3]; `default_falloff` `Smooth` (`none`/`linear`/`smooth`, `Enum`). Four Cluiche additions (provisional, Feature 7): `cap_water` 1.0 [0, 2]; `max_radius` 32 [0, 64] `Int`; `max_set_cells` 8192 [64, 65536] `Int`; `ground_water_factor` 0.05 [0, 1]. `pressure_anomaly_decay` and `pressure_anomaly_max` are used by Feature 2's passes 2 and 5c whether or not Feature 7 is built. The 20-constant count of the §1–§10 groups is unchanged.
 
 - **Ranges** are the GDD's range column (e.g. `latitude_cooling_factor` 0.0–0.5). A value outside its row's range is invalid. This is stricter than the system spec's "every rate in [0, 1]" and replaces it.
 - **Cross-field rule:** `precipitation.snow_threshold <= snow.melt_threshold`. The GDD does not state it; the system spec adds it. Violation is invalid.
@@ -75,7 +83,7 @@ The row set is the 19 GDD constants in the §14 groups (`solar`, `pressure`, `wi
 
 Envelope `{"format": "cow.weather_params", "version": 1, "weather_parameters": { <groups> }, "baseline_table": {...}}`.
 
-- `LoadWeatherParameters(const Json::Value& root, WeatherParameters& out, ParamError& err)`, where `ParamError` is a small struct (dotted key, reason) with no STL types: returns **false** and sets `out = DefaultWeatherParameters()` on **any** of: wrong `format` or `version`, a key not in the table (typo), a missing group is allowed (defaults), a missing key within a present group is allowed (default), a non-number, a non-finite number, a range violation, the cross-field rule, or a `baseline_table` fault. The error names the first offending dotted key.
+- `LoadWeatherParameters(const Json::Value& root, WeatherParameters& out, ParamError& err)` (the `influence` group is part of `weather_parameters`, like the others), where `ParamError` is a small struct (dotted key, reason) with no STL types: returns **false** and sets `out = DefaultWeatherParameters()` on **any** of: wrong `format` or `version`, a key not in the table (typo), a missing group is allowed (defaults), a missing key within a present group is allowed (default), a non-number, a non-finite number, a range violation, the cross-field rule, or a `baseline_table` fault. The error names the first offending dotted key.
 - **Unknown keys are invalid**, at group and key level (decided 2026-11-16).
 - **Overrides merge.** `ApplyOverrides(const Json::Value& overrides, WeatherParameters& inOut, err)` applies a sparse object over an existing set under the same validation, atomically (on failure `inOut` is untouched). Packs and `cow.weather.reload` use it. A full file load is `ApplyOverrides` over defaults plus the envelope check.
 - `DefaultWeatherParameters()` returns the table defaults. A test asserts it equals the GDD §14 JSON values.
@@ -116,7 +124,7 @@ bool Initialise(const WeatherTerrain& terrain, const WeatherParameters& params,
 1. Reject (return false, log nothing here: the module logs) if `!terrain.IsConsistent()`, or the cell count is 0.
 2. **EC-01:** return false if no cell has `waterSource != None`. State is unchanged.
 3. Copy terrain into `WeatherSimulation`-owned arrays. The caller's terrain is not retained.
-4. Seed each cell: `temperature = SeasonalTargetTemperature(baseline(biome, Spring), latitude, params.latitude_cooling_factor)`; `moisture = initial_moisture_water` on water-source cells, `initial_moisture_land` elsewhere; `pressure = 0.5`; every other field 0.
+4. Seed each cell: `temperature = SeasonalTargetTemperature(baseline(biome, Spring), latitude, params.latitude_cooling_factor)`; `moisture = initial_moisture_water` on water-source cells, `initial_moisture_land` elsewhere; `pressure = 0.5`; every other field 0 (including `pressureAnomaly`).
 5. A second `Initialise` fully replaces the first (the S-1 regeneration case): no leaked state from the previous world.
 
 Feature 2 extends `Initialise` with the grid tables and scratch arrays; this feature leaves a named seam (`BuildGridTables()` called last, empty here).
@@ -128,14 +136,15 @@ Files under `Cluiche/CoW/Shared/Weather/`: `WeatherTypes.h/.cpp` (`Season`, `Wea
 ## Acceptance Criteria
 
 ### Types
-1. `WeatherFields::Resize(n)` sizes all nine arrays (`waterToGround` is the ninth; amended 2026-11-17, A5 Hydrology) to `n`, zero-filled; a second `Resize` with a smaller `n` leaves no stale values.
+1. `WeatherFields::Resize(n)` sizes all ten arrays (`waterToGround` is the ninth, amended 2026-11-17, A5 Hydrology; `pressureAnomaly` the tenth, amended 2026-11-17, row 6d) to `n`, zero-filled; a second `Resize` with a smaller `n` leaves no stale values. `WeatherHandoff::Resize` sizes `glacierInput` and `influenceWater` the same way.
 2. `WeatherTerrain::IsConsistent()` is false when any array differs in length from `width*height`, and when the cell count is 0.
 
 ### Parameters
-3. The descriptor table has 23 rows (20 constants, 2 `init`, 1 `boundary`; amended 2026-11-17, A5 Hydrology, was 24), unique dotted keys, and every default lies inside its own range.
+3. The descriptor table has 41 rows (20 constants, 2 `init`, 1 `boundary`, 18 `influence`; amended 2026-11-17, A5 Hydrology and row 6d; was 24), unique dotted keys, and every default lies inside its own range.
 4. `DefaultWeatherParameters()` equals the GDD §14 values for all 19 remaining GDD constants, plus `cloud_decay` 0.5. There is no `ground_water.drain_rate` row; loading a file that has one is an unknown-key error (it now belongs to `hydrology_parameters.json`; amended 2026-11-17, A5 Hydrology).
+4a. (amended 2026-11-17, row 6d) The `influence` defaults equal the GDD §10a values (aligned to locked GDD): `max_strength` 1.0, `max_delta_*` 0.3 / 0.3 / 0.15, `max_lifetime_weeks` 13, `max_active` 64, `preview_fade_days` 1, `storm_pressure_seed` −0.3, `pressure_anomaly_decay` 0.7, `pressure_anomaly_max` 0.5, `storm_moisture` 0.2, `temp` 0.1, `moisture` 0.15, `default_falloff` Smooth. A file carrying the removed `INFLUENCE_STORM_PRESSURE` (any spelling) is an unknown-key error.
 5. Valid full file → true, values as written. Empty `weather_parameters` object → true, all defaults. A missing group, and a missing key inside a present group, take defaults.
-6. Each of these returns false, sets `out` to defaults and names the key: a value below its range, a value above its range, a string where a number is expected, a NaN/Inf, `snow_threshold > melt_threshold`, an unknown key in a known group, an unknown group, wrong `format`, wrong `version`.
+6. Each of these returns false, sets `out` to defaults and names the key: a value below its range, a value above its range, a string where a number is expected, a NaN/Inf, `snow_threshold > melt_threshold`, an unknown key in a known group, an unknown group, wrong `format`, wrong `version`, a non-whole value on an `Int` row, an unknown string on an `Enum` row (amended 2026-11-17, row 6d).
 7. A range boundary value (min and max) is **valid**.
 8. `ApplyOverrides` with a sparse object changes only the named keys; with one bad key among good ones it changes **none** and leaves `inOut` byte-identical.
 9. `SetParam` applies one valid value; an out-of-range value, an unknown key, or a value that would break `snow_threshold <= melt_threshold` returns false and changes nothing.
@@ -147,7 +156,7 @@ Files under `Cluiche/CoW/Shared/Weather/`: `WeatherTypes.h/.cpp` (`Season`, `Wea
 
 ### Initialise
 13. No water-source cell → false and the simulation is uninitialised (EC-01). Inconsistent terrain → false. Neither throws or asserts in a test build.
-14. Seeding: spring baseline × latitude modifier; water-source cells hold `initial_moisture_water`; land cells `initial_moisture_land`; pressure 0.5; the other six fields (including `waterToGround`) 0. Verified for a hand-built 6×4 terrain with known answers.
+14. Seeding: spring baseline × latitude modifier; water-source cells hold `initial_moisture_water`; land cells `initial_moisture_land`; pressure 0.5; the other seven fields (including `waterToGround` and `pressureAnomaly`) 0. Verified for a hand-built 6×4 terrain with known answers.
 15. Latitude 0 gives the unmodified baseline; latitude 1 gives `baseline × (1 − latitude_cooling_factor)`. The same helper is what Feature 2 calls (asserted by a Feature 2 test; the helper is exported).
 16. Seeding ignores S-1 climate: there is no input for it, and a test builds a world with `waterSource`/`biome` only and gets valid state.
 17. Re-`Initialise` on a different-sized terrain gives state identical to a fresh simulation on that terrain.
@@ -192,6 +201,8 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 4. **Types.** Error text uses `Dia::Core::Containers::String256` and dotted keys `String64`; `GetParamDescriptors()` returns a `(const ParamDescriptor*, uint32_t count)` pair, not a span. Plan Task 0 confirms these exist under those names and records any rename.
 5. **Seeding is one function.** `WeatherSimulation` holds a private `SeedFields(Season, params, baseline)`. `Initialise` calls it with `Season::Spring`; Feature 6's `Reseed` calls it with the preset's season. No other behaviour changes.
 
+6. (amended 2026-11-17, row 6d) **Ten field arrays and the influence block.** `pressureAnomaly` is the tenth `WeatherFields` array; the table has 41 rows (the 23 above plus the 18-row `influence` block); `ParamKind` is `Float`, `Bool`, `Int` or `Enum`. The "20 constants" count refers to the §1–§10 constants only.
+
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
+**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
