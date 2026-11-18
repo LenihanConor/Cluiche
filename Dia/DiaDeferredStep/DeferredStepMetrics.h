@@ -10,7 +10,7 @@ namespace Dia::DeferredStep
 {
 	// Owns the nine global dia.deferredstep.* registrations. SimPU only.
 	// Counters are advanced by the delta between the stats' running totals and the last published value, so nothing
-	// is counted twice. MetricRegistry has no unregister: Unregister() releases the handles (as DiaSimTimeModule does).
+	// is counted twice. Unregister() retires the nine metrics in MetricRegistry (absent from snapshots); Register() revives them zeroed.
 	class DeferredStepMetrics
 	{
 	public:

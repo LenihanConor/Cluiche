@@ -39,6 +39,16 @@ namespace Dia::DeferredStep
 
 	void DeferredStepMetrics::Unregister()
 	{
+		if (IsRegistered())
+		{
+			auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+			for (const char* name : { "dia.deferredstep.in_flight", "dia.deferredstep.kicks", "dia.deferredstep.kicks_rejected",
+				"dia.deferredstep.applies", "dia.deferredstep.stalls", "dia.deferredstep.stall_ms",
+				"dia.deferredstep.slack_keys", "dia.deferredstep.cap_utilisation", "dia.deferredstep.inline_fallbacks" })
+			{
+				reg.Unregister(Dia::Core::StringCRC(name));   // retired: absent from snapshots until the next Register()
+			}
+		}
 		mInFlight = nullptr;
 		mKicks = nullptr;
 		mKicksRejected = nullptr;

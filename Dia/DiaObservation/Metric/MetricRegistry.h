@@ -74,12 +74,20 @@ namespace Dia
                 // existing metric with the same, no, or a conflicting (ignored) info.
                 unsigned int Generation() const;
 
+                // Retires a metric: its object stays alive (outstanding pointers remain safe to use) but it
+                // disappears from Snapshot / Find* / ForEachMetric / GetInfo and does not count toward the
+                // Snapshot cap. Re-registering the same name revives the SAME object with its value zeroed
+                // and bumps Generation(). Returns false (silently) for an unknown or already-retired name.
+                // Reset() still deletes everything.
+                bool Unregister(const Dia::Core::StringCRC& name);
+
                 // Number of info-conflict warnings emitted so far (for tests / diagnostics).
                 unsigned int ConflictWarningCount() const;
 
             private:
                 // Applies info under the lock; returns true when a conflict warning should be logged.
                 bool ApplyInfoLocked(const Dia::Core::StringCRC& name, const MetricInfo& info);
+                bool IsRetiredLocked(const Dia::Core::StringCRC& name) const;
                 void WarnConflict(const Dia::Core::StringCRC& name);
 
                 struct InfoEntry { Dia::Core::StringCRC name; MetricInfo info; bool warned; };
@@ -93,9 +101,9 @@ namespace Dia
                 MetricRegistry(const MetricRegistry&)            = delete;
                 MetricRegistry& operator=(const MetricRegistry&) = delete;
 
-                struct CounterEntry  { Dia::Core::StringCRC name; Counter*   primitive; };
-                struct GaugeEntry    { Dia::Core::StringCRC name; Gauge*     primitive; };
-                struct HistogramEntry{ Dia::Core::StringCRC name; Histogram* primitive; };
+                struct CounterEntry  { Dia::Core::StringCRC name; Counter*   primitive; bool retired = false; };
+                struct GaugeEntry    { Dia::Core::StringCRC name; Gauge*     primitive; bool retired = false; };
+                struct HistogramEntry{ Dia::Core::StringCRC name; Histogram* primitive; bool retired = false; };
 
                 mutable std::mutex           mMutex;
                 std::vector<CounterEntry>    mCounters;

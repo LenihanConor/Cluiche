@@ -15,6 +15,7 @@ namespace Dia
 
                 void   Set(double value);
                 double Value() const;
+                void   Reset() { Set(0.0); }
 
             private:
                 std::atomic<double> mValue;

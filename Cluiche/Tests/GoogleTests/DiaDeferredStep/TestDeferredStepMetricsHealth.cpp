@@ -58,6 +58,13 @@ namespace
 		probe.CallUpdate();
 	}
 
+	bool SnapshotHas(const char* name)
+	{
+		MetricSnapshot snap;
+		MetricRegistry::Instance().Snapshot(snap);
+		return FindEntry(snap, name) != nullptr;
+	}
+
 	// First snapshot entry named DeferredStep. Live reporters are listed before retired (frozen) ones, so a live
 	// registration is distinguishable from a retired copy by whether it follows a clock change.
 	bool FindHealth(HealthStatus& status)
@@ -108,17 +115,25 @@ TEST(DeferredStepModuleMetrics, RestartCyclesReRegisterWithoutDuplicateWarnings)
 	for (int cycle = 0; cycle < 3; ++cycle)
 	{
 		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
-		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
 		auto& reg = MetricRegistry::Instance();
 		for (const char* name : kAllMetricNames)
 		{
+			EXPECT_TRUE(reg.FindCounter(StringCRC(name)) == nullptr && reg.FindGauge(StringCRC(name)) == nullptr) << name;
+			EXPECT_FALSE(SnapshotHas(name)) << name;
+		}
+		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
+		for (const char* name : kAllMetricNames)
+		{
 			EXPECT_TRUE(reg.FindCounter(StringCRC(name)) != nullptr || reg.FindGauge(StringCRC(name)) != nullptr) << name;
+			EXPECT_TRUE(SnapshotHas(name)) << name;
+			EXPECT_EQ(CounterValue(name), 0u) << name;
+			EXPECT_GE(GaugeValue(name), -1.0) << name;
 		}
 	}
 	EXPECT_EQ(vscLogs.Warnings(), 0u);
 }
 
-TEST(DeferredStepModuleMetrics, CountersFrozenAfterStopAndResumeFromFreshStatsOnRestart)
+TEST(DeferredStepModuleMetrics, AbsentAfterStopAndResumeFromFreshStatsOnRestart)
 {
 	MH_KeySource source;
 	Harness h;
@@ -135,11 +150,13 @@ TEST(DeferredStepModuleMetrics, CountersFrozenAfterStopAndResumeFromFreshStatsOn
 
 	g_probe->CallStop();
 	g_probe->CallUpdate();   // no scheduler: no-op
-	EXPECT_EQ(CounterValue("dia.deferredstep.kicks"), kicks0 + 1);
+	EXPECT_EQ(MetricRegistry::Instance().FindCounter(StringCRC("dia.deferredstep.kicks")), nullptr);
+	EXPECT_FALSE(SnapshotHas("dia.deferredstep.kicks"));
 
-	g_probe->CallStart();    // fresh scheduler stats; baselines reset, so no negative delta / double count
+	g_probe->CallStart();    // revived zeroed; fresh scheduler stats, baselines reset, so no negative delta / double count
 	g_probe->CallUpdate();
-	EXPECT_EQ(CounterValue("dia.deferredstep.kicks"), kicks0 + 1);
+	ASSERT_NE(MetricRegistry::Instance().FindCounter(StringCRC("dia.deferredstep.kicks")), nullptr);
+	EXPECT_EQ(CounterValue("dia.deferredstep.kicks"), 0u);
 }
 
 TEST(DeferredStepModuleMetrics, ValuesTrackForcedStallWithoutDoubleCounting)
@@ -469,15 +486,11 @@ TEST(DeferredStepModuleMetrics, InlineLauncherStillTracksKicksAppliesAndNeverFal
 
 TEST(DeferredStepModuleMetrics, CountersDoNotDoubleCountAcrossRestarts)
 {
+	// Restart retires then revives the metrics zeroed, so each run counts exactly its own scheduler's totals.
 	MH_KeySource source;
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	g_probe->SetKeySource(source);
-	const uint64_t kicks0 = CounterValue("dia.deferredstep.kicks");
-	const uint64_t applies0 = CounterValue("dia.deferredstep.applies");
-	const uint64_t rejected0 = CounterValue("dia.deferredstep.kicks_rejected");
-	const uint64_t stalls0 = CounterValue("dia.deferredstep.stalls");
-	uint64_t stallsSoFar = 0;
 
 	for (unsigned cycle = 0; cycle < 3; ++cycle)
 	{
@@ -490,15 +503,18 @@ TEST(DeferredStepModuleMetrics, CountersDoNotDoubleCountAcrossRestarts)
 		g_probe->CallUpdate();
 		g_probe->GetScheduler().Unregister(kMhChannel);
 
-		stallsSoFar += g_probe->GetScheduler().GetStats().stalls;
-		EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, cycle + 1);
-		EXPECT_EQ(CounterValue("dia.deferredstep.applies") - applies0, cycle + 1);
-		EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected") - rejected0, cycle + 1);
-		EXPECT_EQ(CounterValue("dia.deferredstep.stalls") - stalls0, stallsSoFar);
+		const uint64_t stalls = g_probe->GetScheduler().GetStats().stalls;
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks"), 1u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.applies"), 1u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected"), 1u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.stalls"), stalls);
 
 		EXPECT_EQ(g_probe->CallStop(), StopResult::kDone);
 		EXPECT_EQ(g_probe->CallStart(), StartResult::kReady);
 		g_probe->CallUpdate();     // fresh stats after restart add nothing
-		EXPECT_EQ(CounterValue("dia.deferredstep.kicks") - kicks0, cycle + 1);
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks"), 0u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.applies"), 0u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.kicks_rejected"), 0u);
+		EXPECT_EQ(CounterValue("dia.deferredstep.stalls"), 0u);
 	}
 }

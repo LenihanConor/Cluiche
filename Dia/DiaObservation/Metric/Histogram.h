@@ -28,6 +28,7 @@ namespace Dia
                     double   sum;
                 };
                 void ReadData(Data& out) const;
+                void Reset(); // zeroes counts/total/sum, keeps bounds
 
             private:
                 float        mBounds[kHistogramMaxBounds];

@@ -58,6 +58,13 @@ namespace Dia
                 GetOrCreateShard()->value.fetch_add(delta, std::memory_order_relaxed);
             }
 
+            void Counter::Reset()
+            {
+                std::lock_guard<std::mutex> lock(mShardsMutex);
+                for (CounterShard* s : mShards)
+                    s->value.store(0, std::memory_order_relaxed);
+            }
+
             uint64_t Counter::Value() const
             {
                 uint64_t total = 0;
