@@ -62,7 +62,7 @@
 | 4 | RED then GREEN: tags, zones, forbidden, climate, pins and `Hash`: `HasTag`/`TagMask`/`FindTag`, `IsValidInZone`, `AreForbidden` (symmetric), `Climate`, `ClimateBiomes`, `Pin`, `PinsByPriority` (highest priority first), `Hash` | AC 3 (rest): the same value for two loads of the same text; a changed value (including the last row's last field) changes it; a 254-row fixture proves the bit matrix and masks hold at the cap | Not Started | sonnet | O(1) is structural (mask and matrix); the 254-row case guards the boundary. Commit tasks 3 and 4 together if they share a header |
 | 5 | RED then GREEN: strict load faults, table-driven: wrong format, wrong version, duplicate id, unknown tag, unknown zone, forbidden pair with an unknown id, a pair listed twice (both orders), a self pair, a role with 0 rows and with 2 rows (each of the three roles), two pins with one priority, an unknown pin rule, climate width 0 and negative, two rows with the same plateau, 255 rows, and a sidecar validation failure | AC 2 (registry half): each row returns false, `err` names row index, id and field, and the registry is unchanged (a previously loaded registry still answers) | Not Started | sonnet | Use the route chosen in Task 1. The rows are tests of the validator, so each must be RED against an empty `Load` first |
 | 6 | RED then GREEN: `ResolveOrFallback` and the once-per-id warning | AC 4: an unknown id returns `Role(Fallback)`; the warning count after 3 unknown ids, one repeated 5 times, is 3; a known id logs nothing; a second registry instance warns again | Not Started | sonnet | Capture warnings through the DiaLog test sink if one exists (Task 0f); otherwise a counter seam in the registry that the test reads |
-| 7 | Author `Global/World/biomes.json` and `biomes.schema.json` (`for: cow.biomes`): the 13 rows in today's enum order with today's ids, names, colours, tags, zones, 5 climate envelopes, 5 pins and priorities, plateau wet and dry, roles (ocean, lake, fallback = Grassland), the 7 forbidden pairs. The sidecar description states that row order is significant. RED first: `TestBiomeRegistryData` loads the shipped file and asserts every value as a literal copied from Task 0b | AC 1: shipped data loads; 13 rows in enum order; each field as in today's code; `dia validate schema` passes on both files (run it in the task) | Blocked | sonnet | Values are copied from the code and the stage sidecar, never invented. **Blocked: awaiting GDD confirmation of the tag assignment (fold-back sent 2026-11-18).** Do not author the `tags` of `biomes.json` until the CoW/GDD session confirms. The proposal below is the proposal text only (Open items 2). Everything else in the task (ids, names, colours, zones, envelopes, pins, forbidden pairs) could be authored, but the task stays whole and Blocked so tags are not guessed |
+| 7 | Author `Global/World/biomes.json` and `biomes.schema.json` (`for: cow.biomes`): the 13 rows in today's enum order with today's ids, names, colours, tags, zones, 5 climate envelopes, 5 pins and priorities, plateau wet and dry, roles (ocean, lake, fallback = Grassland), the 7 forbidden pairs. The sidecar description states that row order is significant. RED first: `TestBiomeRegistryData` loads the shipped file and asserts every value as a literal copied from Task 0b | AC 1: shipped data loads; 13 rows in enum order; each field as in today's code; `dia validate schema` passes on both files (run it in the task) | Not Started | sonnet | Values are copied from the code and the stage sidecar, never invented. **Unblocked 2026-11-18:** tags are the GDD-confirmed table under "Confirmed biome tag assignment". Do not author the `tags` of `biomes.json` until the CoW/GDD session confirms. The proposal below is the proposal text only (Open items 2). Everything else in the task (ids, names, colours, zones, envelopes, pins, forbidden pairs) could be authored, but the task stays whole and Blocked so tags are not guessed |
 | 8 | Register the file: `assets.catalogue.json` alias `json.biomes`, and the CoW `pipeline.toml` deploys `Global/World/` | The shipped-data test resolves the file through the catalogue alias | Not Started | haiku | Mechanical, TDD-exempt. Follow the existing alias form for `Global/WorldGen` files |
 | 9 | RED then GREEN: `BiomeTestRegistry.h` (`ShippedBiomeRegistry`, `B()`, `ExtraBiomeRegistry`), the temporary `RowOrderMatchesLegacyEnum` test, and the `Idx` helper | AC 1 (order); `B("Biome.Grassland")` returns the `Biome::GrasslandSteppe` ordinal; `B` of an unknown id asserts; the extra fixture loads and has 14 rows | Not Started | sonnet | Author `Fixtures/biomes_extra.json` here (the shipped rows plus one appended climate biome whose envelope lies between two others; Task 29 uses it). Test utilities ship with the library |
 | 10 | RED then GREEN: `WorldGenerationModule` owns and loads the registry at module start through `json.biomes`, exposes `const BiomeRegistry& GetBiomeRegistry() const`, reports health Error naming the field on a load failure, and refuses to generate (ODQ 1 resolved: no reload, no `FileWatcher` hook) | AC 2 (module half): module start with a broken `biomes.json` gives health Error naming row and field and a Regenerate command is refused; with the shipped file health is OK and `GetBiomeRegistry().Count()` is 13 | Not Started | sonnet | Additive only: the enum is still in use. Use the module test harness already in `TestWorldGenerationModule.cpp`. Log Info on load, Error on failure |
@@ -110,9 +110,9 @@ Spec gaps and tensions found while planning, recorded and not resolved here.
 8. **Module start order.** `ValueSchemaModule` resolves `valuesFrom` from a data file by format, while `WorldGenerationModule` loads `biomes.json` itself. Whether the schema module may read it before the world module starts is Task 12's check; the spec does not say.
 9. **Test count.** The spec says about 290 test references; Task 0c records the real count, and the haiku tasks 17 to 20 are sized by file group, not count.
 
-### Proposed biome tag assignment (proposal text, awaiting GDD confirmation)
+### Confirmed biome tag assignment (GDD-confirmed 2026-11-18, CoW/GDD session)
 
-Drafted 2026-11-18 from the tag vocabulary, the spec's example rows (Ocean, Grassland, Scrub) and each biome's role. Not confirmed; not authored into `biomes.json` until the CoW/GDD session confirms. Ids are the enum names; the shipped ids are fixed in Task 7.
+These are confirmed against the locked GDD. Two rows changed from the draft: Wetland gains `aquatic`, and Volcanic loses `mountain` and gains `hot`. The 12-tag vocabulary is unchanged. Volcanic `hot` is the GDD session's inference ("opposite temperature extremes", GeographyAndRegions), and the user may override it.
 
 | Biome | Tags |
 |---|---|
@@ -120,12 +120,20 @@ Drafted 2026-11-18 from the tag vocabulary, the spec's example rows (Ocean, Gras
 | Lake | water, aquatic |
 | GrasslandSteppe | land, open, fuel |
 | TemperateForest | land, forest, fuel |
-| WetlandDelta | land, wet |
+| WetlandDelta | land, wet, aquatic |
 | DesertBasin | land, open, hot |
 | AlpineMountain | land, mountain, cold |
 | TundraBoreal | land, open, cold |
 | Rainforest | land, forest, wet, hot |
-| VolcanicAshland | land, mountain, volcanic |
+| VolcanicAshland | land, volcanic, hot |
 | Scrub | land, open, fuel, succession |
 | BurnedAshland | land, succession |
 | DesertifiedPlain | land, open, hot, succession |
+
+**Tag meanings** (GDD-derived; these go into the sidecar's tag vocabulary descriptions):
+- `water`: aquatic-only cells that land species cannot enter (Ocean, Lake).
+- `aquatic`: aquatic species can live here (water biomes, and Wetland per A1 TechSpec section 15.1).
+- `fuel`: **this biome has a fire-succession rule to BurnedAshland** (A3 sections 4.1/4.2: Grassland, TemperateForest, Scrub). It does **not** gate ignition or spread. A1 natural ignition is per land cell with fuel = grass + shrub + tree biomass (A1 TechSpec section 15.9). "Can this cell burn?" is answered by `land` plus biomass, so Rainforest and Wetland can still burn rarely.
+- `mountain` and `volcanic` are distinct (B2 hard-block matrix keeps them separate).
+- `coastal` is not a tag (it comes from neighbouring cells, `coastal_reach`). `fertile` is not a tag (it is the per-cell `nutrient.soil` pool, DECISION-137).
+

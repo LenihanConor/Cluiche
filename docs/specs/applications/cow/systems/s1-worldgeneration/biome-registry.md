@@ -286,6 +286,17 @@ Each item supersedes contradicting text above.
    - ACs 13-15. This resolves the plan's CLI-completeness question for `TerrainType` maps.
 2. **Biome tag assignment is GDD design data.** Which biome gets which tag must be confirmed by the CoW/GDD session before the registry's data task (authoring `biomes.json`) runs. Fold-back sent 2026-11-18. The plan's proposed assignment stands as the proposal text only.
 
+
+## GDD-confirmed tags (2026-11-18)
+
+The CoW/GDD session confirmed the biome→tag assignment against the locked GDD. The table and the tag meanings are in [biome-registry.plan.md](biome-registry.plan.md) under "Confirmed biome tag assignment". Shipped rows must match it. Key meanings:
+- `fuel` means "has a fire-succession rule". It is never an ignition gate.
+- `water` means land species cannot enter.
+- `aquatic` means aquatic species can live here (it includes Wetland).
+- `mountain` and `volcanic` are distinct.
+
+The example rows in Design → Registry file are illustrative only.
+
 ## Status
 
 **Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`, after DiaAttribute Parameter Files. Interview done with the user on 2026-11-18 (decisions: delete the enum; `valuesFrom` palette; terrain profile included; row order is significant; AD-001 sign-off for `valuesFrom` and `data.incomplete-map`).
