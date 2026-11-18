@@ -198,6 +198,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | Trace-linked streams | 2026-11-17 | Moved by `dia docs backlog move` |
 | Dia | Perf Inspector stack | 2026-11-17 | Moved by `dia docs backlog move` |
 | Dia | Manifest ordering validator | 2026-11-18 | Moved by `dia docs backlog move` |
+| CoW | World-sim spec amendments (world-sim review 2026-11-18, step 6 of 6) | 2026-11-18 | Done 2026-11-18: amendment + Spec-6 resolution sections across A1/A3/A4/A5/F-3/T-2/DiaData + testbeds (9214a615); plans rebuilt (c0a02556); GDD tag confirmation (363d5317) |
 
 ---
 
