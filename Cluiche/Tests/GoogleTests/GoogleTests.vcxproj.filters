@@ -3099,5 +3099,8 @@
     <ClCompile Include="DiaDeferredStep\TestDeferredStepSaveEdge.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepModule.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

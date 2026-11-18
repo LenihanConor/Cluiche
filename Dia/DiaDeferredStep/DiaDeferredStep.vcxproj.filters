@@ -44,6 +44,8 @@
     <ClInclude Include="Testing\PendingStateStep.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="IStepKeySource.h" />
+    <ClInclude Include="DeferredStepModule.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
@@ -51,6 +53,7 @@
     <ClCompile Include="CappedParallelExecutor.cpp" />
     <ClCompile Include="JobStepLauncher.cpp" />
     <ClCompile Include="DeferredStepSaveParticipant.cpp" />
+    <ClCompile Include="DeferredStepModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
