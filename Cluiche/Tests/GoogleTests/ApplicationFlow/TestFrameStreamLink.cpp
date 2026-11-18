@@ -3,6 +3,7 @@
 // GoogleTest suite — Trace-Linked Streams Task 3: FrameStream link capture
 // and FetchLatestLinked (AC2)
 ////////////////////////////////////////////////////////////////////////////////
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaStreams/FrameStreamStore.h>
 #include <DiaObservation/Trace/Tracer.h>
@@ -18,11 +19,12 @@ using namespace Dia::Observation::Trace;
 using namespace Dia::Core;
 
 namespace {
-    const char* kTestTraceFile = "test_framestream_link.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTraceFile("test_framestream_link.jsonl");
 
     void CleanupTestFile()
     {
         std::remove(kTestTraceFile);
+        Tracer::Instance().UnregisterThreadSpanBuffer();   // do not leave this thread's ring registered for later tests
     }
 
     struct TestPayload
@@ -147,6 +149,7 @@ TEST(FrameStreamLink, LinkSurvivesAcrossThreads)
     // Worker thread: read the link
     std::thread worker([&]() {
         tracer.RegisterThreadSpanBuffer();
+        struct Unregister { ~Unregister() { Tracer::Instance().UnregisterThreadSpanBuffer(); } } unregisterOnExit;
 
         StreamLink link;
         const TestPayload* data = store.FetchLatestLinked(link);

@@ -22,6 +22,7 @@
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaStreams/Event.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Trace/Tracer.h>
 
 #include <chrono>
 #include <string>
@@ -605,6 +606,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
         Dia::Observation::Perf::PerfMarkers::RegisterThread();
         Dia::Observation::Profile::Profiler::Instance().RegisterNamedThreadScopeBuffer(mInstanceId.AsChar());
+        Dia::Observation::Trace::Tracer::Instance().RegisterThreadSpanBuffer();
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread starting (%.0fHz)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz));
@@ -643,6 +645,7 @@ namespace Dia { namespace ApplicationFlow {
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread exiting",
                      mInstanceId.AsChar());
 
+        Dia::Observation::Trace::Tracer::Instance().UnregisterThreadSpanBuffer();
         Dia::Observation::Profile::Profiler::Instance().UnregisterThreadScopeBuffer();
         Dia::Observation::Perf::PerfMarkers::UnregisterThread();
         Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();

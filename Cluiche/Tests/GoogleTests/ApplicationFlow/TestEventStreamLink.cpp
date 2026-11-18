@@ -3,6 +3,7 @@
 // GoogleTest suite — Trace-Linked Streams Task 4: EventStream link capture
 // and Event<T> envelope (AC3)
 ////////////////////////////////////////////////////////////////////////////////
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaStreams/EventStreamStore.h>
 #include <DiaStreams/Event.h>
@@ -19,11 +20,12 @@ using namespace Dia::Core;
 using namespace Dia::Core::Containers;
 
 namespace {
-    const char* kTestTraceFile = "test_eventstream_link.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTraceFile("test_eventstream_link.jsonl");
 
     void CleanupTestFile()
     {
         std::remove(kTestTraceFile);
+        Tracer::Instance().UnregisterThreadSpanBuffer();   // do not leave this thread's ring registered for later tests
     }
 
     struct TestPayload
@@ -141,6 +143,7 @@ TEST(EventStreamLink, LinkSurvivesAcrossThreads)
     // Worker thread: consume events
     std::thread worker([&]() {
         tracer.RegisterThreadSpanBuffer();
+        struct Unregister { ~Unregister() { Tracer::Instance().UnregisterThreadSpanBuffer(); } } unregisterOnExit;
 
         DynamicArrayC<Event<TestPayload>, 32> events;
         store.Consume(rIdx, events);

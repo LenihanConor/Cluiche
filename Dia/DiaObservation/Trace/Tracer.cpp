@@ -180,6 +180,11 @@ namespace Dia
 			tCurrentTraceId = 0;
 		}
 
+		bool Tracer::IsThreadSpanBufferRegistered() const
+		{
+			return tRegistered;
+		}
+
 		void Tracer::RegisterTraceSink(ITraceSink* sink)
 		{
 			if (sink == nullptr)

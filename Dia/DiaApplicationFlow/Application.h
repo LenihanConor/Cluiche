@@ -263,6 +263,7 @@ namespace Dia { namespace ApplicationFlow {
 
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;
+        bool                 mRegisteredMainTraceBuffer = false;     // this Application registered the Main thread's tracer span buffer
         bool                 mRegisteredMainProfileBuffer = false;   // this Application registered the Main thread's profiler buffer
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
         // Registry-owned stream metrics, resolved once in the constructor.

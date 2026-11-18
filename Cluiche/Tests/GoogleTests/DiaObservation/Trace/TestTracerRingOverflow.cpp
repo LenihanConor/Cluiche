@@ -1,3 +1,4 @@
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaObservation/Trace/Tracer.h>
 #include <DiaObservation/Trace/ITraceSink.h>
@@ -12,7 +13,7 @@ using namespace Dia::Observation::Trace;
 
 namespace
 {
-    const char* kTestTracePath = "test_ring_overflow.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTracePath("test_ring_overflow.jsonl");
 
     struct CountingSink : public ITraceSink
     {

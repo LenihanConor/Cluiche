@@ -3111,5 +3111,8 @@
     <ClCompile Include="DiaObservation\Profile\TestProcessingUnitProfile.cpp">
       <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestProcessingUnitTrace.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -34,6 +34,7 @@ namespace Dia
 
 			void RegisterThreadSpanBuffer();
 			void UnregisterThreadSpanBuffer();
+			bool IsThreadSpanBufferRegistered() const;   // calling thread
 
 			void            SetActiveMask(TraceCategory mask);
 			TraceCategory   ActiveMask() const;

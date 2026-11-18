@@ -412,5 +412,8 @@
     <ClInclude Include="Trace\ChainBuilder.h">
       <Filter>Trace</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\UniqueTestPath.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -75,6 +75,8 @@ namespace Dia { namespace ApplicationFlow {
         // expected behaviour (Update() wasn't drained).
         JoinDedicatedThreads();
 
+        if (mRegisteredMainTraceBuffer)
+            Dia::Observation::Trace::Tracer::Instance().UnregisterThreadSpanBuffer();
         if (mRegisteredMainProfileBuffer)
             Dia::Observation::Profile::Profiler::Instance().UnregisterThreadScopeBuffer();
     }
@@ -319,6 +321,13 @@ namespace Dia { namespace ApplicationFlow {
             {
                 profiler.RegisterNamedThreadScopeBuffer(mProcessingUnits[0]->GetInstanceId().AsChar());
                 mRegisteredMainProfileBuffer = true;
+            }
+
+            auto& tracer = Dia::Observation::Trace::Tracer::Instance();
+            if (!tracer.IsThreadSpanBufferRegistered())
+            {
+                tracer.RegisterThreadSpanBuffer();
+                mRegisteredMainTraceBuffer = true;
             }
         }
         // PU index 0 is the main PU — it runs inline in Update().

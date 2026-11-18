@@ -3,6 +3,7 @@
 // GoogleTest suite — Trace-Linked Streams Task 2: TraceLink, ScopedZone with
 // link, and TraceFileSink link output (AC4 unit tests)
 ////////////////////////////////////////////////////////////////////////////////
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaObservation/Trace/Tracer.h>
 #include <DiaObservation/Trace/ScopedZone.h>
@@ -17,7 +18,7 @@ using namespace Dia::Observation::Trace;
 using namespace Dia::Core;
 
 namespace {
-    const char* kTestTraceFile = "test_trace_link.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTraceFile("test_trace_link.jsonl");
 
     void CleanupTestFile()
     {

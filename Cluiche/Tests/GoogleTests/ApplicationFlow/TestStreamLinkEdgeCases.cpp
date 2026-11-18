@@ -3,6 +3,7 @@
 // GoogleTest suite — Trace-Linked Streams Task 8: Edge cases and gap audit
 // (ring wrap, no-open-span, multi-writer, tracer start/stop, deep stack)
 ////////////////////////////////////////////////////////////////////////////////
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaStreams/FrameStreamStore.h>
 #include <DiaStreams/EventStreamStore.h>
@@ -20,7 +21,7 @@ using namespace Dia::Core;
 using namespace Dia::Core::Containers;
 
 namespace {
-    const char* const kTestTraceFile = "test_edge_cases_trace.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTraceFile("test_edge_cases_trace.jsonl");
 
     struct TestPayload
     {
