@@ -93,6 +93,9 @@ namespace Dia::DeferredStep
 		const SchedulerStats& GetStats() const;
 		bool      GetChannelStats(Dia::Core::StringCRC channelId, ChannelStats& out) const;
 
+		// Timestamps of the most recently applied step; false until one has applied. Discarded steps never update it.
+		bool      GetLastStepTimes(StepTimes& out) const;
+
 		// The step registered on a channel, or nullptr when the channel is not registered.
 		IDeferredStep* GetStep(Dia::Core::StringCRC channelId) const;
 
@@ -112,6 +115,8 @@ namespace Dia::DeferredStep
 			StepKey completionSeenKey = 0;
 			bool completionSeen = false;
 			uint64_t kickTimeMicros = 0;
+			uint64_t kickNs = 0;
+			uint64_t readyNs = 0;          // when completion was first observed (0 until then)
 			ChannelStats stats;
 		};
 
@@ -123,6 +128,8 @@ namespace Dia::DeferredStep
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
 		SchedulerStats mStats;
 		uint64_t mKickSequence = 0;
+		StepTimes mLastTimes;
+		bool mHasLastTimes = false;
 		StepKey mLastTickKey = 0;
 		bool mHasTicked = false;
 		bool mInBackwardsEpisode = false;   // latched on the first backwards Tick; cleared when the key reaches mLastTickKey again

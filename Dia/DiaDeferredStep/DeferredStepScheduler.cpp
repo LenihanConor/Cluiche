@@ -19,6 +19,12 @@ namespace Dia::DeferredStep
 			return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
 				std::chrono::steady_clock::now().time_since_epoch()).count());
 		}
+
+		uint64_t NowNs()
+		{
+			return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now().time_since_epoch()).count());
+		}
 	}
 
 	DeferredStepScheduler::DeferredStepScheduler(IStepLauncher& launcher)
@@ -152,6 +158,8 @@ namespace Dia::DeferredStep
 		entry.keyFloor = kickKey;
 		entry.hasKeyFloor = true;
 		entry.completionSeen = false;
+		entry.readyNs = 0;
+		entry.kickNs = NowNs();
 		entry.kickTimeMicros = NowMicros();
 		entry.state = StepState::kRunning;
 
@@ -197,6 +205,8 @@ namespace Dia::DeferredStep
 				{
 					e.completionSeen = true;
 					e.completionSeenKey = currentKey;
+					e.readyNs = NowNs();
+					e.readyNs = NowNs();
 					e.stats.lastRunMicros = NowMicros() - e.kickTimeMicros;
 					e.stats.lastSlackKeys = static_cast<int64_t>(e.applyKey - currentKey); // currentKey < applyKey, no underflow
 				}
@@ -256,8 +266,12 @@ namespace Dia::DeferredStep
 			uint64_t stallMicros = 0;
 			const bool alreadySeen = entry.completionSeen;
 			uint64_t runMicros = 0;
+			uint64_t readyNs = entry.readyNs;
+			uint64_t stallNs = 0;
+			const uint64_t kickNs = entry.kickNs;
 			if (!mLauncher.IsComplete(token))
 			{
+				const uint64_t waitStartNs = NowNs();
 				const uint64_t waitStart = NowMicros();
 				{
 					DIA_TRACE_ZONE("DeferredStep.StallWait", Dia::Observation::Trace::Category::kDiaDeferredStep);
@@ -265,6 +279,8 @@ namespace Dia::DeferredStep
 					mLauncher.Wait(token);
 				}
 				const uint64_t waitEnd = NowMicros();
+				readyNs = NowNs();
+				stallNs = readyNs - waitStartNs;
 				stallMicros = waitEnd - waitStart;
 				runMicros = waitEnd - entry.kickTimeMicros;   // upper bound: Kick -> after Wait returns
 				stalled = true;
@@ -272,7 +288,13 @@ namespace Dia::DeferredStep
 			else if (!alreadySeen)
 			{
 				runMicros = NowMicros() - entry.kickTimeMicros;   // first observed on the apply key itself
+				readyNs = NowNs();
 			}
+			mLastTimes.kickNs = kickNs;
+			mLastTimes.readyNs = readyNs;
+			mLastTimes.stallNs = stallNs;
+			mLastTimes.applyNs = NowNs();
+			mHasLastTimes = true;
 			{
 				DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
 				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);
@@ -329,6 +351,9 @@ namespace Dia::DeferredStep
 		// A restored channel has no launch token: complete by construction, so no IsComplete/Wait/Release and no stall.
 		IDeferredStep* step = entry.step;
 		const uint64_t sequence = entry.kickSequence;
+		mLastTimes = StepTimes();
+		mLastTimes.applyNs = NowNs();
+		mHasLastTimes = true;
 		{
 			DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
 			DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);
@@ -518,6 +543,16 @@ namespace Dia::DeferredStep
 			return false;
 		}
 		out = mChannels[index].stats;
+		return true;
+	}
+
+	bool DeferredStepScheduler::GetLastStepTimes(StepTimes& out) const
+	{
+		if (!mHasLastTimes)
+		{
+			return false;
+		}
+		out = mLastTimes;
 		return true;
 	}
 

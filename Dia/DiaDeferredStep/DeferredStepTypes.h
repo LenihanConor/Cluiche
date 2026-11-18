@@ -37,6 +37,16 @@ namespace Dia::DeferredStep
 		return t;
 	}
 
+	// Raw timestamps of one applied step (steady_clock nanoseconds since epoch, the clock RangeTiming uses).
+	// kickNs/readyNs are 0 for a restored step (no real launch). readyNs is when completion was first observed.
+	struct StepTimes
+	{
+		uint64_t kickNs  = 0;
+		uint64_t readyNs = 0;
+		uint64_t applyNs = 0;
+		uint64_t stallNs = 0;
+	};
+
 	enum class StepState : uint8_t
 	{
 		kIdle,
