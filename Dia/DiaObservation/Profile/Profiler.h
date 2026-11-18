@@ -32,6 +32,10 @@ namespace Dia
 
 			void RegisterThreadScopeBuffer();
 			void UnregisterThreadScopeBuffer();
+			// Registers the calling thread's scope buffer and names it in the thread_name table (e.g. a
+			// ProcessingUnit's name). Cheap and harmless when profiling is off. Idempotent.
+			void RegisterNamedThreadScopeBuffer(const char* threadName);
+			bool IsThreadScopeBufferRegistered() const;   // calling thread
 
 			// Called by ScopedZone only
 			uint64_t OnScopeOpen(const Dia::Core::StringCRC& name, ProfileCategory category,

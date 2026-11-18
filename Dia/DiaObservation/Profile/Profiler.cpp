@@ -206,6 +206,18 @@ namespace Dia
 			tRegistered = true;
 		}
 
+		void Profiler::RegisterNamedThreadScopeBuffer(const char* threadName)
+		{
+			RegisterThreadScopeBuffer();
+			if (threadName && threadName[0] != '\0')
+				RegisterThreadName(CurrentThreadId(), threadName);
+		}
+
+		bool Profiler::IsThreadScopeBufferRegistered() const
+		{
+			return tRegistered;
+		}
+
 		void Profiler::UnregisterThreadScopeBuffer()
 		{
 			if (!tRegistered)

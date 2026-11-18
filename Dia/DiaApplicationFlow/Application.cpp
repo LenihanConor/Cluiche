@@ -13,6 +13,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -73,6 +74,9 @@ namespace Dia { namespace ApplicationFlow {
         // Destructor is the last chance to join — blocking here is the
         // expected behaviour (Update() wasn't drained).
         JoinDedicatedThreads();
+
+        if (mRegisteredMainProfileBuffer)
+            Dia::Observation::Profile::Profiler::Instance().UnregisterThreadScopeBuffer();
     }
 
     //--------------------------------------------------------------------------
@@ -308,6 +312,15 @@ namespace Dia { namespace ApplicationFlow {
 #ifdef _WIN32
         mUnitThreadIds[0] = static_cast<uint32_t>(GetCurrentThreadId());   // main PU runs inline on this thread
 #endif
+        {
+            // Main PU runs inline on this thread: give it a profiler scope buffer named after the PU.
+            auto& profiler = Dia::Observation::Profile::Profiler::Instance();
+            if (!profiler.IsThreadScopeBufferRegistered())
+            {
+                profiler.RegisterNamedThreadScopeBuffer(mProcessingUnits[0]->GetInstanceId().AsChar());
+                mRegisteredMainProfileBuffer = true;
+            }
+        }
         // PU index 0 is the main PU — it runs inline in Update().
         for (unsigned int p = 1; p < mProcessingUnitCount; ++p)
         {

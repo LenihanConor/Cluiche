@@ -3108,5 +3108,8 @@
     <ClCompile Include="DiaDeferredStep\TestDeferredStepMetricsHealth.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestProcessingUnitProfile.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
