@@ -218,7 +218,13 @@ TEST(DeferredStepModule, ConfigTable)
 		{ "ranges zero",         "{\"ranges_per_worker\":0}",                         8, 2, 1, 1 },
 		{ "ranges negative",     "{\"ranges_per_worker\":-5}",                        8, 2, 1, 1 },
 		{ "ranges eight",        "{\"ranges_per_worker\":8}",                         8, 2, 8, 0 },
-		{ "both bad",            "{\"worker_cap\":\"banana\",\"ranges_per_worker\":0}", 8, 2, 1, 2 },
+		{ "ranges max",          "{\"ranges_per_worker\":64}",                        8, 2, 64, 0 },
+		{ "ranges over max",     "{\"ranges_per_worker\":65}",                        8, 2, 64, 1 },
+		{ "ranges int max",      "{\"ranges_per_worker\":2147483647}",                8, 2, 64, 1 },
+		{ "ranges uint32 max",   "{\"ranges_per_worker\":4294967295}",                8, 2, 64, 1 },
+		{ "ranges beyond int",   "{\"ranges_per_worker\":4000000000}",                8, 2, 64, 1 },
+		{ "ranges beyond uint",  "{\"ranges_per_worker\":99999999999}",               8, 2, 4, 1 },
+		{ "both bad",           "{\"worker_cap\":\"banana\",\"ranges_per_worker\":0}", 8, 2, 1, 2 },
 		{ "malformed json",      "{not json",                                         8, 2, 4, 1 },
 	};
 
@@ -768,7 +774,7 @@ TEST(DeferredStepModule, GetSchedulerOutsideStartStopAsserts)
 	g_probe->CallStart();
 }
 #else
-// Release: a backwards key logs a Warning on every occurrence, applies nothing and does not disturb later ticks.
+// Release: a backwards key logs one Warning per regression episode, applies nothing and does not disturb later ticks.
 TEST(DeferredStepModule, BackwardsKeyIsIgnoredWithWarningAndNeverDoubleApplies)
 {
 	Dia::DeferredStep::Testing::LogCapture logs;

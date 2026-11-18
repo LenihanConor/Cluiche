@@ -1189,6 +1189,35 @@ TEST_F(DeferredStepSchedulerTest, UnregisterInFlightIncompleteLogsNothing)
 	EXPECT_EQ(log.Total(), 0u);
 }
 
+// One Warning (and one Debug assert) per regression episode; the latch resets when the key catches back up to the high-water mark.
+TEST_F(DeferredStepSchedulerTest, BackwardsTickWarnsOncePerEpisode)
+{
+#ifdef DEBUG
+	auto* prev = Dia::Core::g_pAssertFunc;
+	Dia::Core::g_pAssertFunc = CountingAssertHandler;
+	gTickAssertCount = 0;
+#endif
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	mScheduler.Tick(10);
+	mScheduler.Tick(8);
+	mScheduler.Tick(7);
+	mScheduler.Tick(9);    // still below the high-water mark 10: same episode
+	EXPECT_EQ(log.Warnings("went backwards"), 1u);
+#ifdef DEBUG
+	EXPECT_EQ(gTickAssertCount, 1);
+#endif
+	mScheduler.Tick(10);   // caught up: episode over
+	mScheduler.Tick(5);    // new episode
+	mScheduler.Tick(4);
+	EXPECT_EQ(log.Warnings("went backwards"), 2u);
+#ifdef DEBUG
+	EXPECT_EQ(gTickAssertCount, 2);
+	Dia::Core::g_pAssertFunc = prev;
+#endif
+	mScheduler.Unregister(StringCRC("A"));
+}
+
 TEST_F(DeferredStepSchedulerTest, BackwardsTickLogsOneWarning)
 {
 #ifdef DEBUG

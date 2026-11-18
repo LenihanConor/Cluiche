@@ -171,11 +171,17 @@ namespace Dia::DeferredStep
 	{
 		if (mHasTicked && currentKey < mLastTickKey)
 		{
-			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Tick key went backwards: %llu < previous %llu; nothing applied",
-				static_cast<unsigned long long>(currentKey), static_cast<unsigned long long>(mLastTickKey));
-			DIA_ASSERT(false, "DeferredStepScheduler::Tick called with a key lower than the previous call");
+			// One Warning (and one Debug assert) per regression episode, not per call.
+			if (!mInBackwardsEpisode)
+			{
+				mInBackwardsEpisode = true;
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Tick key went backwards: %llu < previous %llu; nothing applied",
+					static_cast<unsigned long long>(currentKey), static_cast<unsigned long long>(mLastTickKey));
+				DIA_ASSERT(false, "DeferredStepScheduler::Tick called with a key lower than the previous call");
+			}
 			return;
 		}
+		mInBackwardsEpisode = false;
 		mLastTickKey = currentKey;
 		mHasTicked = true;
 

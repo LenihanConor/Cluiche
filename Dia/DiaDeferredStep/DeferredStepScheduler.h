@@ -125,5 +125,6 @@ namespace Dia::DeferredStep
 		uint64_t mKickSequence = 0;
 		StepKey mLastTickKey = 0;
 		bool mHasTicked = false;
+		bool mInBackwardsEpisode = false;   // latched on the first backwards Tick; cleared when the key reaches mLastTickKey again
 	};
 }

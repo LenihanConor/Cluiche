@@ -86,6 +86,12 @@ namespace Dia::DeferredStep
 			if (v.isUInt() && v.asUInt() >= 1)
 			{
 				mConfig.rangesPerWorker = v.asUInt();
+				if (mConfig.rangesPerWorker > kMaxRangesPerWorker)
+				{
+					DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "ranges_per_worker above %u; clamped to %u",
+						static_cast<unsigned>(kMaxRangesPerWorker), static_cast<unsigned>(kMaxRangesPerWorker));
+					mConfig.rangesPerWorker = kMaxRangesPerWorker;
+				}
 			}
 			else if (v.isInt() && v.asInt() < 1)
 			{

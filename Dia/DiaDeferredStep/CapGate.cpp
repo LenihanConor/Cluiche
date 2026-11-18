@@ -35,7 +35,9 @@ namespace Dia::DeferredStep
 			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel,
 				"Worker cap %u exceeds worker count %zu; clamped to %u", config.workerCap, workers, mWorkerCap);
 		}
-		const uint32_t perWorker = config.rangesPerWorker == 0 ? 1u : config.rangesPerWorker;
+		// Silent backstop for callers that bypass DeferredStepModule::OnConfigure (which warns); bounds the queue allocation.
+		uint32_t perWorker = config.rangesPerWorker == 0 ? 1u : config.rangesPerWorker;
+		if (perWorker > kMaxRangesPerWorker) { perWorker = kMaxRangesPerWorker; }
 		mRangesPerWorker = perWorker;
 		mQueue.assign(static_cast<size_t>(kMaxChannelsHint) * (static_cast<size_t>(mWorkerCap) * perWorker + 1), nullptr);
 	}

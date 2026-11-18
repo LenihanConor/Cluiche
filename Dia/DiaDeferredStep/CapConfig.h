@@ -13,6 +13,9 @@ namespace Dia::DeferredStep
 		uint32_t rangesPerWorker = 4;
 	};
 
+	// Upper bound for ranges_per_worker: CapGate sizes its queue as ~8 * (cap * ranges + 1) pointers.
+	constexpr uint32_t kMaxRangesPerWorker = 64;
+
 	// Pure arithmetic. workerCount 0 is treated as 1. An explicit cap above workerCount is clamped to
 	// workerCount and *outClamped is set (the Warning log is the caller's job). outClamped may be null.
 	inline uint32_t ResolveWorkerCap(const CapConfig& config, size_t workerCount, bool* outClamped)
