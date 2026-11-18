@@ -1,7 +1,7 @@
 # Feature Spec: DeferredStepModule and Observability
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 4)
-**Status:** Approved (2026-11-13)
+**Status:** Done (2026-11-18)
 **Plan:** @docs/specs/applications/dia/systems/diadeferredstep/module-and-observability.plan.md
 **Depends on:** Features 1, 2 and 3 (scheduler, job launcher, save participant)
 
