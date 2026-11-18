@@ -1316,6 +1316,7 @@
     <ClCompile Include="DiaDeferredStep\TestDeferredStepPending.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepSave.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepRoundTrip.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepSaveEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -25,6 +25,20 @@ using namespace Dia::DeferredStep;
 using namespace Dia::SaveGame;
 using Dia::Core::StringCRC;
 
+namespace
+{
+	// Slot names are unique per test: gtest shards run as parallel processes sharing the temp directory.
+	std::string UniqueSlotName(const char* prefix)
+	{
+		return std::string(prefix) + "_" + ::testing::UnitTest::GetInstance()->current_test_info()->name();
+	}
+
+	std::string SlotPathFor(const std::string& slotName)
+	{
+		return "temp/deferredstep_save_tests/slot_" + slotName + ".sav";
+	}
+}
+
 class DeferredStepSaveLifetime : public ::testing::Test
 {
 protected:
@@ -44,7 +58,7 @@ protected:
 	{
 		mParticipant.reset();
 		mScheduler.Unregister(mChannel);
-		remove("temp/deferredstep_save_tests/slot_lifetime.sav");
+		remove(SlotPath().c_str());
 	}
 
 	void KickOne()
@@ -52,6 +66,11 @@ protected:
 		ASSERT_EQ(mScheduler.Kick(mChannel, 1, 10), KickResult::kLaunched);
 		ASSERT_EQ(mScheduler.GetState(mChannel), StepState::kRunning);
 	}
+
+	std::string SlotPath() const { return SlotPathFor(mSlotName); }
+
+	std::string mSlotName{ UniqueSlotName("lifetime") };
+	StringCRC mSlot{ mSlotName.c_str() };
 
 	Testing::ManualStepLauncher mLauncher;
 	DeferredStepScheduler mScheduler;
@@ -84,7 +103,7 @@ TEST_F(DeferredStepSaveLifetime, SaveStartedDrainsWithoutApplying)
 {
 	mParticipant->Attach(mRegistry, mManager);
 	KickOne();
-	ASSERT_TRUE(mManager.Save(StringCRC("lifetime")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	EXPECT_EQ(mScheduler.GetState(mChannel), StepState::kComplete);
 	EXPECT_EQ(mStep.GetApplyCount(), 0u);
 }
@@ -129,7 +148,7 @@ TEST_F(DeferredStepSaveLifetime, DetachUnregistersAndStopsReacting)
 	mParticipant->Detach();
 	EXPECT_EQ(mRegistry.GetParticipantCount(), 0u);
 	KickOne();
-	ASSERT_TRUE(mManager.Save(StringCRC("lifetime")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	EXPECT_EQ(mScheduler.GetState(mChannel), StepState::kRunning);
 	mManager.OnLoadStarted().NotifyObservers(static_cast<int>(SaveEvent::LoadStarted));
 	EXPECT_EQ(mScheduler.GetState(mChannel), StepState::kRunning);
@@ -149,7 +168,7 @@ TEST_F(DeferredStepSaveLifetime, DestructorDetaches)
 	mParticipant.reset();
 	EXPECT_EQ(mRegistry.GetParticipantCount(), 0u);
 	KickOne();
-	ASSERT_TRUE(mManager.Save(StringCRC("lifetime")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	EXPECT_EQ(mScheduler.GetState(mChannel), StepState::kRunning);
 	mManager.OnLoadStarted().NotifyObservers(static_cast<int>(SaveEvent::LoadStarted));
 	EXPECT_EQ(mScheduler.GetState(mChannel), StepState::kRunning);
@@ -277,7 +296,7 @@ protected:
 		mScheduler.Unregister(mChannelA);
 		mScheduler.Unregister(mChannelB);
 		mScheduler.Unregister(mChannelC);
-		remove("temp/deferredstep_save_tests/slot_write.sav");
+		remove(SlotPath().c_str());
 	}
 
 	// Serializes the participant straight into a root SaveContext and parses the result.
@@ -305,6 +324,11 @@ protected:
 
 	static int64_t CrcOf(const StringCRC& id) { return static_cast<int64_t>(id.Value()); }
 
+	std::string SlotPath() const { return SlotPathFor(mSlotName); }
+
+	std::string mSlotName{ UniqueSlotName("write") };
+	StringCRC mSlot{ mSlotName.c_str() };
+
 	Testing::ManualStepLauncher mLauncher;
 	DeferredStepScheduler mScheduler;
 	SaveConfig mConfig;
@@ -330,7 +354,7 @@ TEST_F(DeferredStepSaveWrite, NothingInFlightWritesZeroPendingAndNoChannels)
 TEST_F(DeferredStepSaveWrite, SaveWithNothingInFlightDoesNotDrain)
 {
 	const uint64_t drainsBefore = mScheduler.GetStats().drains;
-	ASSERT_TRUE(mManager.Save(StringCRC("write")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	EXPECT_EQ(mScheduler.GetStats().drains, drainsBefore);
 	EXPECT_EQ(mScheduler.GetStats().drainedSteps, 0u);
 }
@@ -346,7 +370,7 @@ TEST_F(DeferredStepSaveWrite, SaveDrainsBeforeAnyParticipantSerializes)
 	ASSERT_EQ(mScheduler.Kick(probeChannel, 1, 10), KickResult::kLaunched);
 	// Manual launcher: Run has not executed yet; Save's drain (Wait) is what runs it.
 	ASSERT_EQ(probeStep.GetRunCount(), 0u);
-	ASSERT_TRUE(mManager.Save(StringCRC("write")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 
 	EXPECT_EQ(probe.mSerializeCalls, 1u);
 	EXPECT_EQ(probe.mRunCountSeen, 1u);
@@ -360,7 +384,7 @@ TEST_F(DeferredStepSaveWrite, SaveDrainsBeforeAnyParticipantSerializes)
 TEST_F(DeferredStepSaveWrite, SaveDoesNotApplyAndKeepsApplyKey)
 {
 	KickDrained(mChannelA, 12, 17);
-	ASSERT_TRUE(mManager.Save(StringCRC("write")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	EXPECT_EQ(mStepA.mApplyCount, 0u);
 	EXPECT_EQ(mScheduler.GetState(mChannelA), StepState::kComplete);
 	StepKey applyKey = 0;
@@ -372,9 +396,9 @@ TEST_F(DeferredStepSaveWrite, SaveDoesNotApplyAndKeepsApplyKey)
 TEST_F(DeferredStepSaveWrite, SavedSlotFileContainsDeferredStepSection)
 {
 	KickDrained(mChannelA, 12, 17);
-	ASSERT_TRUE(mManager.Save(StringCRC("write")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 
-	FILE* f = fopen("temp/deferredstep_save_tests/slot_write.sav", "rb");
+	FILE* f = fopen(SlotPath().c_str(), "rb");
 	ASSERT_NE(f, nullptr);
 	std::string text;
 	char chunk[4096];
@@ -574,7 +598,7 @@ protected:
 	{
 		mScheduler.Unregister(mChannelA);
 		mScheduler.Unregister(mChannelB);
-		remove("temp/deferredstep_save_tests/slot_validate.sav");
+		remove(SlotPath().c_str());
 	}
 
 	static Json::Value Channel(StringCRC id, int payload)
@@ -627,6 +651,11 @@ protected:
 		EXPECT_EQ(mStepA.mDeserializeCount, 0u);
 		EXPECT_EQ(mStepB.mDeserializeCount, 0u);
 	}
+
+	std::string SlotPath() const { return SlotPathFor(mSlotName); }
+
+	std::string mSlotName{ UniqueSlotName("validate") };
+	StringCRC mSlot{ mSlotName.c_str() };
 
 	Testing::ManualStepLauncher mLauncher;
 	DeferredStepScheduler mScheduler;
@@ -766,13 +795,13 @@ TEST_F(DeferredStepSaveValidate, LoadWithUnregisteredChannelFailsWithDeserialize
 	mManager.Init(mConfig, mRegistry);
 
 	ASSERT_EQ(mScheduler.Kick(extraChannel, 1, 10), KickResult::kLaunched);
-	ASSERT_TRUE(mManager.Save(StringCRC("validate")).Ok());
+	ASSERT_TRUE(mManager.Save(mSlot).Ok());
 	mScheduler.Unregister(extraChannel);
 	ASSERT_EQ(mScheduler.GetChannelCount(), 2u);
 
 	const Snapshot before = Take();
 	Dia::DeferredStep::Testing::LogCapture log;
-	const LoadResult result = mManager.Load(StringCRC("validate"));
+	const LoadResult result = mManager.Load(mSlot);
 	EXPECT_FALSE(result.Ok());
 	EXPECT_EQ(result.code, LoadResultCode::DeserializeError);
 	EXPECT_EQ(probe.mDeserializeCount, 0u);
