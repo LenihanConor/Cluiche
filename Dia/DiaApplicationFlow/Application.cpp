@@ -764,7 +764,6 @@ namespace Dia { namespace ApplicationFlow {
             out.Add(mManifest.processingUnits[p].instanceId);
     }
 
-#ifdef _DEBUG
     bool Application::ResolveUnitForThread(uint32_t threadId, Dia::Core::StringCRC& outUnitId) const
     {
         if (threadId == 0)
@@ -780,6 +779,7 @@ namespace Dia { namespace ApplicationFlow {
         return false;
     }
 
+#ifdef _DEBUG
     bool Application::ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId)
     {
         const Application* self = static_cast<const Application*>(ctx);
