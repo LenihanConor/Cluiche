@@ -78,6 +78,8 @@ Dia's `HexTopology` / `HexPathGrid(width, height)`: flat-top, odd-q offset, cell
 
 ### Biomes (C1, C2)
 
+> **Superseded 2026-11-18 (user, world-sim review):** the enum is replaced by the S-1 data registry `Global/World/biomes.json` with runtime `BiomeIndex`, roles and tags (@docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md). The reasons below (one list, one palette, one name table) still hold, and the list now lives in data. A1's text is aligned in the world-sim amendments (spec 6); until then, read "enum value" as "registry index" and "enum order" as "registry row order".
+
 **One shared 13-value `Biome` enum** (amended 2026-11-13, user decision), declared in `CoW/Shared/WorldGeneration/TerrainEnums.h` and used by S-1, A1, A3, A4 and `species.json`. It is an enum, not a `StringCRC` set: one list means one palette, one name table and no mapping at any system boundary. S-1's enum is widened 10 → 13 by appending A3's outputs — see @docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md amendment 1, which **gates A1 Feature 2**.
 
 | Group | Enum values | `BiomeId` strings |
