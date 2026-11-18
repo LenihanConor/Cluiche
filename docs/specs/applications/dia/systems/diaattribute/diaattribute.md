@@ -192,6 +192,7 @@ namespace Dia::Attribute {
 | 5 | DiaAttributeVisualDebugger | Separate module; `IDebugDomain` overlay for live per-entity attribute + modifier-stack inspection | [visual-debugger.md](visual-debugger.md) | Approved |
 | 6 | Save/Serialization Support | `Dia::SaveGame::ISaveable` integration persisting base values + active modifier state | [save-serialization.md](save-serialization.md) | Approved |
 | 7 | Band-Based Initialization | Schema-defined named band ranges (NONE/LOW/BASELINE/etc.), `InitializeFromBands()` one-time resolution to base values, versioning support | [band-based-initialization.md](band-based-initialization.md) | Approved |
+| 8 | Parameter Files | DiaValueSchema sidecar becomes the only schema format and owns defaults; adds bands, map defaults and constraints to the sidecar; adds int/bool/enum kinds; `ParameterFile` (strict load, lenient atomic packs, `Set`, `Reload`, `ToJson`, `Hash`) and `ParamBinding<T>` (struct snapshot). Old attribute JSON format removed. S-1 `TerrainRules` is the proof migration (added 2026-11-18, world-sim review) | [parameter-files.md](parameter-files.md) | Approved |
 
 > **Note:** Features 2, 3, and 4 are independent increments on top of Feature 1 (Core) — order between them is flexible. Features 5 and 6 build on top of 2/3 (the debugger wants change events and the modifier stack visible; serialization wants a stable modifier-state shape) and should ship after the Core cluster lands. Feature 7 is independent of 2-6 (band init only touches base values, not modifiers or observers).
 
@@ -217,5 +218,5 @@ namespace Dia::Attribute {
 
 ## Status
 
-**Status:** `Done`
+**Status:** `In Progress` (Features 1–7 Done; Feature 8 Parameter Files added and Approved 2026-11-18, not built. Was `Done`.)
 **Plan:** [diaattribute.plan.md](diaattribute.plan.md)

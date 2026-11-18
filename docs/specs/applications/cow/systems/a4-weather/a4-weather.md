@@ -305,7 +305,7 @@ The optional `climate` block (Feature 8; amended 2026-11-17, row 6d) names the c
 `weather_job_ranges` and `history_weeks` are **removed** (amended 2026-11-13): range count and the worker cap belong to DiaDeferredStep's `.diaapp` config, and history belongs to DiaCellHistory's. `SaveLoadModule` is a soft dependency: when present, weather state is saved; without it, A4 still runs but doesn't participate in saves (this is the S-2.5 case).
 
 - **Validation on load.** Every constant must be inside its GDD range (Feature 1; the earlier "every rate in `[0, 1]`" is superseded) and `snow_threshold <= melt_threshold`. The `influence` block (GDD §10a values) is validated the same way. A missing or invalid file logs an error, falls back to the compiled defaults (the GDD values), and reports Degraded health. This is the same rule as GameSpeedController.
-- **Hot reload.** `cow.weather.reload` re-reads the file between steps. `cow.weather.set_param <dotted.key> <value>` overrides one value until the next reload. Both are latched at `Capture()`, never applied mid-`Run`.
+- **Hot reload.** `cow.weather.params {action: reload}` re-reads the file between steps. `cow.weather.params {action: set, key, value}` overrides one value until the next reload. Both are latched at `Capture()`, never applied mid-`Run`. (Names corrected 2026-11-18 to match Feature 5's merged `cow.weather.params` command; the world-sim conventions spec may change the verb shape.)
 - **Tuned parameters are saved as weather packs** (F-3 World Assets). `cow.world.pack.save_as weather <id>` writes overrides-only to `Assets/CoW/Global/Weather/Packs/<id>.weather.json` via the `source` alias. Parameters in the defaults file are not saved; packs are the normal tuning path.
 
 ### History (DiaCellHistory)

@@ -23,7 +23,7 @@ The data layer of the weather system, as pure logic with no module, bus or threa
 ## Non-Goals
 
 - The weekly step, grid tables, forcings and `Capture`/`Run`/`Commit` (Feature 2).
-- Reading the world from S-1, the `.diaapp` config, hot reload commands, `cow.weather.set_param` registration (Feature 3, Feature 5). This feature supplies the primitives they call.
+- Reading the world from S-1, the `.diaapp` config, hot reload commands, `cow.weather.params` registration (Feature 3, Feature 5; name corrected 2026-11-18). This feature supplies the primitives they call.
 - Spin-up (Feature 3; it needs the step).
 - Saving fields (Feature 4).
 - F-3 pack files. This feature supplies the overrides-only merge primitive; the pack participant is Feature 3 and F-3 Feature 6.
@@ -85,7 +85,7 @@ Envelope `{"format": "cow.weather_params", "version": 1, "weather_parameters": {
 
 - `LoadWeatherParameters(const Json::Value& root, WeatherParameters& out, ParamError& err)` (the `influence` group is part of `weather_parameters`, like the others), where `ParamError` is a small struct (dotted key, reason) with no STL types: returns **false** and sets `out = DefaultWeatherParameters()` on **any** of: wrong `format` or `version`, a key not in the table (typo), a missing group is allowed (defaults), a missing key within a present group is allowed (default), a non-number, a non-finite number, a range violation, the cross-field rule, or a `baseline_table` fault. The error names the first offending dotted key.
 - **Unknown keys are invalid**, at group and key level (decided 2026-11-16).
-- **Overrides merge.** `ApplyOverrides(const Json::Value& overrides, WeatherParameters& inOut, err)` applies a sparse object over an existing set under the same validation, atomically (on failure `inOut` is untouched). Packs and `cow.weather.reload` use it. A full file load is `ApplyOverrides` over defaults plus the envelope check.
+- **Overrides merge.** `ApplyOverrides(const Json::Value& overrides, WeatherParameters& inOut, err)` applies a sparse object over an existing set under the same validation, atomically (on failure `inOut` is untouched). Packs and `cow.weather.params {action: reload}` use it. A full file load is `ApplyOverrides` over defaults plus the envelope check.
 - `DefaultWeatherParameters()` returns the table defaults. A test asserts it equals the GDD §14 JSON values.
 
 ### Baseline
