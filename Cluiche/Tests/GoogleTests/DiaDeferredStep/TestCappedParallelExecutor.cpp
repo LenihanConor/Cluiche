@@ -250,21 +250,30 @@ TEST(DeferredStepCapExecutorTest, ConcurrencyNeverExceedsCapIncludingCoordinator
 	std::atomic<int> ran{ 0 };
 	RunAsCoordinator(gate, [&]
 	{
+		// The coordinator body is one slot; ranges it runs itself nest inside that slot, so only ranges
+		// on other threads are counted separately. Peak <= M literally.
 		ConcurrencyProbe::Scope coordinatorScope(probe);
+		const std::thread::id coordinatorThread = std::this_thread::get_id();
 		CappedParallelExecutor exec(gate, Info());
 		exec.ParallelFor(16, 1, [&](uint32_t, uint32_t)
 		{
-			ConcurrencyProbe::Scope scope(probe);
-			for (int s = 0; s < 20; ++s) { std::this_thread::yield(); }
+			if (std::this_thread::get_id() == coordinatorThread)
+			{
+				for (int s = 0; s < 20; ++s) { std::this_thread::yield(); }
+			}
+			else
+			{
+				ConcurrencyProbe::Scope scope(probe);
+				for (int s = 0; s < 20; ++s) { std::this_thread::yield(); }
+			}
 			ran.fetch_add(1);
 		});
 	});
 	EXPECT_EQ(ran.load(), 16);
-	// Coordinator body and range bodies overlap, since the coordinator runs ranges itself; the probe
-	// counts the coordinator scope once plus one per concurrently running range on *other* threads
-	// plus nested inline ranges. Slot accounting is the strict check:
 	EXPECT_LE(gate.GetStats().peakSlotsHeld, 2u);
-	EXPECT_LE(probe.Peak(), 3);   // coordinator + its own inline range nest = 2 on one thread, +1 worker range
+	EXPECT_GE(probe.Peak(), 1);
+	EXPECT_LE(probe.Peak(), 2);
+	EXPECT_EQ(probe.Current(), 0);
 	jobs.Shutdown();
 }
 

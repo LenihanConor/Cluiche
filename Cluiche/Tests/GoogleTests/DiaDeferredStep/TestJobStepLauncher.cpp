@@ -5,9 +5,11 @@
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaDeferredStep/Testing/ConcurrencyProbe.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaThreading/JobSystem.h>
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <set>
@@ -502,6 +504,343 @@ TEST(DeferredStepLauncherTest, RepeatedLaunchReleaseCyclesReuseSlots)
 			launcher.Release(t);
 		}
 		EXPECT_EQ(launcher.GetCapGate().GetStats().slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+//------------------------------------------------------------------------------------------
+// Gap-audit additions (Capped Executor task 8)
+//------------------------------------------------------------------------------------------
+
+namespace
+{
+	using Dia::DeferredStep::Testing::ConcurrencyProbe;
+
+	void SpinFor(std::chrono::microseconds d)
+	{
+		const auto end = std::chrono::steady_clock::now() + d;
+		while (std::chrono::steady_clock::now() < end) {}
+	}
+
+	// Step body that counts exactly one probe slot for the coordinator and one per range running on
+	// another thread; ranges the coordinator runs itself nest inside its slot and are not counted.
+	std::function<void(IParallelExecutor&)> ProbedBody(ConcurrencyProbe& probe, std::atomic<int>& ranCount)
+	{
+		return [&probe, &ranCount](IParallelExecutor& exec)
+		{
+			ConcurrencyProbe::Scope coordinatorScope(probe);
+			const std::thread::id coordinatorThread = std::this_thread::get_id();
+			exec.ParallelFor(16, 1, [&probe, &ranCount, coordinatorThread](uint32_t, uint32_t)
+			{
+				if (std::this_thread::get_id() == coordinatorThread)
+				{
+					for (int s = 0; s < 20; ++s) { std::this_thread::yield(); }
+				}
+				else
+				{
+					ConcurrencyProbe::Scope scope(probe);
+					for (int s = 0; s < 20; ++s) { std::this_thread::yield(); }
+				}
+				ranCount.fetch_add(1);
+			});
+		};
+	}
+}
+
+// AC 7: the cap is global across channels. M = 2, three channels launched together, 8 workers.
+TEST(DeferredStepLauncherTest, ThreeChannelsAtCapTwoNeverExceedTwoConcurrent)
+{
+	JobSystem jobs;
+	jobs.Initialize(8);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2, 8));
+		ConcurrencyProbe probe;
+		std::atomic<int> ran{ 0 };
+		FnStep s0(ProbedBody(probe, ran)), s1(ProbedBody(probe, ran)), s2(ProbedBody(probe, ran));
+		const LaunchToken t0 = launcher.Launch(s0, LaunchInfo());
+		const LaunchToken t1 = launcher.Launch(s1, LaunchInfo());
+		const LaunchToken t2 = launcher.Launch(s2, LaunchInfo());
+		launcher.Wait(t0);
+		launcher.Wait(t1);
+		launcher.Wait(t2);
+		launcher.Release(t0);
+		launcher.Release(t1);
+		launcher.Release(t2);
+		EXPECT_EQ(ran.load(), 48);
+		EXPECT_GE(probe.Peak(), 1);
+		EXPECT_LE(probe.Peak(), 2);
+		EXPECT_EQ(probe.Current(), 0);
+		const CapStats stats = launcher.GetCapGate().GetStats();
+		EXPECT_LE(stats.peakSlotsHeld, 2u);
+		EXPECT_EQ(stats.slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+// AC 6 at launcher level: one channel, 16 ranges, M = 2 on 8 workers.
+TEST(DeferredStepLauncherTest, OneChannelSixteenRangesAtCapTwoNeverExceedsTwo)
+{
+	JobSystem jobs;
+	jobs.Initialize(8);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2, 8));
+		ConcurrencyProbe probe;
+		std::atomic<int> ran{ 0 };
+		FnStep step(ProbedBody(probe, ran));
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		launcher.Release(t);
+		EXPECT_EQ(ran.load(), 16);
+		EXPECT_LE(probe.Peak(), 2);
+		EXPECT_LE(launcher.GetCapGate().GetStats().peakSlotsHeld, 2u);
+		EXPECT_EQ(launcher.GetCapGate().GetStats().slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+// AC 11 at launcher level: M = 1 on a one-worker pool completes a 16-range step; the coordinator runs
+// every range. Range 0 runs directly (not through the gate), so stolen is 15, not 16 as the spec text says.
+TEST(DeferredStepLauncherTest, CapOneOnOneWorkerPoolCompletesSixteenRangeStep)
+{
+	JobSystem jobs;
+	jobs.Initialize(1);
+	{
+		JobStepLauncher launcher(jobs, CapOf(1, 16));
+		std::atomic<int> ran{ 0 };
+		std::atomic<int> offThread{ 0 };
+		const std::thread::id testThread = std::this_thread::get_id();
+		FnStep step([&](IParallelExecutor& exec)
+		{
+			exec.ParallelFor(16, 1, [&](uint32_t, uint32_t)
+			{
+				ran.fetch_add(1);
+				if (std::this_thread::get_id() != testThread) { offThread.fetch_add(1); }
+			});
+			EXPECT_EQ(exec.GetLastRangeCount(), 16u);
+		});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		launcher.Release(t);
+		EXPECT_EQ(ran.load(), 16);
+		EXPECT_EQ(offThread.load(), 16);
+		const CapStats s = launcher.GetCapGate().GetStats();
+		EXPECT_EQ(s.stolen, 15u);
+		EXPECT_EQ(s.admitted, 1u);   // only the coordinator
+		EXPECT_EQ(s.slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+// AC 12: M = 1, two channels launched together; the second waits in the gate queue and both complete.
+TEST(DeferredStepLauncherTest, CapOneTwoChannelsBothCompleteSecondQueues)
+{
+	JobSystem jobs;
+	jobs.Initialize(4);
+	{
+		JobStepLauncher launcher(jobs, CapOf(1, 8));
+		Latch started, release;
+		std::vector<uint32_t> o1(200, 0), o2(200, 0);
+		FnStep first([&](IParallelExecutor& e) { started.Open(); release.Wait(); FillBody(o1)(e); });
+		FnStep second(FillBody(o2));
+		const LaunchToken t1 = launcher.Launch(first, LaunchInfo());
+		started.Wait();
+		const LaunchToken t2 = launcher.Launch(second, LaunchInfo());   // deterministic: gate is full
+		EXPECT_GE(launcher.GetCapGate().GetStats().queuedAtLeastOnce, 1u);
+		EXPECT_FALSE(launcher.IsComplete(t2));
+		release.Open();
+		launcher.Wait(t1);
+		launcher.Wait(t2);
+		launcher.Release(t1);
+		launcher.Release(t2);
+		for (uint32_t i = 0; i < 200; ++i)
+		{
+			ASSERT_EQ(o1[i], i * 3 + 1);
+			ASSERT_EQ(o2[i], i * 3 + 1);
+		}
+		const CapStats s = launcher.GetCapGate().GetStats();
+		EXPECT_EQ(s.peakSlotsHeld, 1u);
+		EXPECT_EQ(s.slotsHeld, 0u);
+		EXPECT_GE(s.peakQueueDepth, 1u);
+	}
+	jobs.Shutdown();
+}
+
+TEST(DeferredStepLauncherTest, StepThatNeverCallsParallelForCompletesAndHoldsNoSlot)
+{
+	JobSystem jobs;
+	jobs.Initialize(4);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2));
+		FnStep step([](IParallelExecutor&) {});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		EXPECT_TRUE(launcher.IsComplete(t));
+		launcher.Release(t);
+		EXPECT_EQ(step.GetRunCount(), 1u);
+		const CapStats s = launcher.GetCapGate().GetStats();
+		EXPECT_EQ(s.admitted, 1u);
+		EXPECT_EQ(s.stolen, 0u);
+		EXPECT_EQ(s.trySubmitFailed, 0u);
+		EXPECT_EQ(s.slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+TEST(DeferredStepLauncherTest, StepCallingParallelForTwiceInOneRun)
+{
+	JobSystem jobs;
+	jobs.Initialize(4);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2));
+		std::vector<uint32_t> a(300, 0), b(77, 0);
+		FnStep step([&](IParallelExecutor& e)
+		{
+			e.ParallelFor(static_cast<uint32_t>(a.size()), 4, [&](uint32_t s, uint32_t en) { for (uint32_t i = s; i < en; ++i) { a[i] = i + 1; } });
+			EXPECT_EQ(e.GetLastRangeCount(), 8u);   // clamp(ceil(300/4), 1, 2 * 4)
+			e.ParallelFor(static_cast<uint32_t>(b.size()), 4, [&](uint32_t s, uint32_t en) { for (uint32_t i = s; i < en; ++i) { b[i] = a[i] * 2; } });
+			EXPECT_EQ(e.GetLastRangeCount(), 8u);   // clamp(ceil(77/4)=20, 1, 8)
+		});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		launcher.Release(t);
+		for (uint32_t i = 0; i < a.size(); ++i) { ASSERT_EQ(a[i], i + 1); }
+		for (uint32_t i = 0; i < b.size(); ++i) { ASSERT_EQ(b[i], (i + 1) * 2); }
+		EXPECT_EQ(launcher.GetCapGate().GetStats().slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+TEST(DeferredStepLauncherTest, SingleElementStepWithCapEightUsesOneRange)
+{
+	JobSystem jobs;
+	jobs.Initialize(8);
+	{
+		JobStepLauncher launcher(jobs, CapOf(8));
+		uint32_t ranges = 0;
+		int calls = 0;
+		FnStep step([&](IParallelExecutor& e)
+		{
+			e.ParallelFor(1, 1, [&](uint32_t, uint32_t) { ++calls; });
+			ranges = e.GetLastRangeCount();
+		});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		launcher.Release(t);
+		EXPECT_EQ(ranges, 1u);
+		EXPECT_EQ(calls, 1);
+		EXPECT_EQ(launcher.GetCapGate().GetStats().admitted, 1u);   // coordinator only
+	}
+	jobs.Shutdown();
+}
+
+// AC 15 at launcher level: coordinator submit succeeds, every range submit fails -> ranges run inline
+// on the coordinator, are counted, and the result is unchanged.
+TEST(DeferredStepLauncherTest, RangeSubmitFailuresRunInlineAndAreCounted)
+{
+	JobSystem jobs;
+	jobs.Initialize(4);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2, 4));
+		std::atomic<uint32_t> calls{ 0 };
+		launcher.GetCapGate().SetSubmitFailureHookForTest([&calls] { return calls.fetch_add(1) >= 1; });
+		std::vector<uint32_t> out(500, 0);
+		FnStep step(FillBody(out));
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		launcher.Wait(t);
+		launcher.Release(t);
+		for (uint32_t i = 0; i < out.size(); ++i) { ASSERT_EQ(out[i], i * 3 + 1) << i; }
+		const CapStats s = launcher.GetCapGate().GetStats();
+		EXPECT_EQ(s.trySubmitFailed, 7u);   // 8 ranges, range 0 is direct
+		EXPECT_EQ(s.admitted, 1u);
+		EXPECT_EQ(s.stolen, 0u);
+		EXPECT_EQ(s.slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+// The pool dies after the coordinator is already running: every range submit then fails. The step must
+// still finish (inline) without hanging. Modelled with the failure hook because JobSystem::Shutdown from
+// another thread races the pool pointer that TrySubmit reads.
+TEST(DeferredStepLauncherTest, PoolFailingMidStepCompletesInline)
+{
+	JobSystem jobs;
+	jobs.Initialize(4);
+	{
+		JobStepLauncher launcher(jobs, CapOf(2, 4));
+		std::atomic<bool> poolDead{ false };
+		launcher.GetCapGate().SetSubmitFailureHookForTest([&poolDead] { return poolDead.load(); });
+		Latch started, go;
+		std::vector<uint32_t> out(640, 0);
+		FnStep step([&](IParallelExecutor& e)
+		{
+			started.Open();
+			go.Wait();
+			FillBody(out)(e);
+		});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		started.Wait();
+		poolDead.store(true);
+		go.Open();
+		launcher.Wait(t);
+		EXPECT_TRUE(launcher.IsComplete(t));
+		launcher.Release(t);
+		for (uint32_t i = 0; i < out.size(); ++i) { ASSERT_EQ(out[i], i * 3 + 1) << i; }
+		const CapStats s = launcher.GetCapGate().GetStats();
+		EXPECT_EQ(s.trySubmitFailed, 7u);
+		EXPECT_EQ(s.slotsHeld, 0u);
+	}
+	jobs.Shutdown();
+}
+
+// AC 16 / 28: exactly one Warning for the failed coordinator submit.
+TEST(DeferredStepLauncherTest, CoordinatorSubmitFailureLogsExactlyOneWarning)
+{
+	JobSystem jobs;   // never initialised
+	Testing::LogCapture log;
+	JobStepLauncher launcher(jobs, CapOf(1));
+	FnStep step;
+	const LaunchToken t = launcher.Launch(step, LaunchInfo());
+	EXPECT_EQ(log.Warnings("Coordinator submit failed"), 1u);
+	EXPECT_EQ(log.Warnings(), 1u);
+	EXPECT_EQ(launcher.GetCapGate().GetStats().trySubmitFailed, 1u);
+	launcher.Release(t);
+}
+
+// AC 10: gameplay jobs are not starved. M = 1 on an 8-worker pool; a 16-range step of ~20 ms ranges
+// runs serially on the coordinator (>= 300 ms). A job submitted straight to the JobSystem must finish
+// while the step is still running. The one duration-based test; bounds are generous.
+TEST(DeferredStepCapStarvationTest, SLOW_GameplayJobNotStarvedByStep)
+{
+	JobSystem jobs;
+	jobs.Initialize(8);
+	{
+		JobStepLauncher launcher(jobs, CapOf(1, 16));
+		Latch started;
+		std::atomic<int> rangesRun{ 0 };
+		FnStep step([&](IParallelExecutor& e)
+		{
+			e.ParallelFor(16, 1, [&](uint32_t, uint32_t)
+			{
+				started.Open();
+				SpinFor(std::chrono::milliseconds(20));
+				rangesRun.fetch_add(1);
+			});
+		});
+		const LaunchToken t = launcher.Launch(step, LaunchInfo());
+		started.Wait();
+
+		std::atomic<bool> gameplayDone{ false };
+		jobs.Submit([&gameplayDone] { gameplayDone.store(true); });
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+		while (!gameplayDone.load() && std::chrono::steady_clock::now() < deadline) { std::this_thread::yield(); }
+
+		EXPECT_TRUE(gameplayDone.load()) << "gameplay job did not run within 5 s";
+		EXPECT_FALSE(launcher.IsComplete(t)) << "gameplay job only finished after the whole step";
+		EXPECT_LT(rangesRun.load(), 16);
+
+		launcher.Wait(t);
+		launcher.Release(t);
+		EXPECT_EQ(rangesRun.load(), 16);
 	}
 	jobs.Shutdown();
 }

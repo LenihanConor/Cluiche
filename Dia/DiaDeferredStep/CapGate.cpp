@@ -207,6 +207,7 @@ namespace Dia::DeferredStep
 		--mCount;
 		item.mState.store(GateItem::State::kStolen);
 		mStolen.fetch_add(1);
+		mDoneCv.notify_all();   // WaitItem treats kStolen as terminal; wake any other waiter
 		return true;
 	}
 
