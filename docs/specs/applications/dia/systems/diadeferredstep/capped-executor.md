@@ -1,7 +1,7 @@
 # Feature Spec: Capped Executor and Job Launcher
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 2)
-**Status:** Approved (2026-11-13)
+**Status:** Done
 **Plan:** @docs/specs/applications/dia/systems/diadeferredstep/capped-executor.plan.md
 **Depends on:** Feature 1 (`IStepLauncher`, `IParallelExecutor`, `SerialExecutor`, `LaunchToken`)
 
