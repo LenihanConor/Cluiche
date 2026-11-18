@@ -12,6 +12,7 @@
 #include <DiaObservation/Profile/StepSummaryRecord.h>
 #include <DiaThreading/JobSystem.h>
 #include <atomic>
+#include <cstdio>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -469,4 +470,197 @@ TEST(DeferredStepSummaryScheduler, NoSinkMeansSchedulerStillAppliesNormally)
 	rig.sched->Tick(1);
 	EXPECT_EQ(step.applies, 1);
 	EXPECT_TRUE(rig.sink.records.empty());
+}
+
+// ---- Final gap-audit additions (Feature 5 close-out) ----
+
+namespace
+{
+	// Step whose Apply runs a caller-supplied hook (e.g. Unregister itself).
+	class HookApplyStep final : public IDeferredStep
+	{
+	public:
+		void Capture() override {}
+		void Run(IParallelExecutor& ex) override { ex.ParallelFor(4, 1, [](uint32_t, uint32_t) { SpinMicros(50); }); }
+		void Apply() override { ++applies; if (onApply) { onApply(); } }
+		uint32_t GetPendingVersion() const override { return 1; }
+		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
+		void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+		int applies = 0;
+		std::function<void()> onApply;
+	};
+}
+
+// AC 9: the one KickResult not covered by RejectedKicksWriteNoRecord
+TEST(DeferredStepSummaryScheduler, KeyNotMonotonicKickWritesNoRecord)
+{
+	Rig rig(4, 4);
+	FnStep step(SpinBody(100));
+	const auto id = rig.Reg("sumMono", step);
+	ASSERT_EQ(rig.sched->Kick(id, 10, 10), KickResult::kLaunched);
+	rig.sched->Tick(10);
+	ASSERT_EQ(rig.sink.records.size(), 1u);
+	EXPECT_EQ(rig.sched->Kick(id, 9, 20), KickResult::kKeyNotMonotonic);
+	rig.sched->Tick(30);
+	EXPECT_EQ(rig.sink.records.size(), 1u);   // only the first step's record
+	EXPECT_EQ(step.applies, 1);
+}
+
+// AC 9: Unregister of a step that already completed (DrainAll -> kComplete) discards without a record
+TEST(DeferredStepSummaryScheduler, UnregisterOfCompleteStepWritesNoRecord)
+{
+	Rig rig(4, 4);
+	FnStep step(SpinBody(100));
+	const auto id = rig.Reg("sumUnregDone", step);
+	ASSERT_EQ(rig.sched->Kick(id, 1, 100), KickResult::kLaunched);
+	rig.sched->DrainAll();
+	ASSERT_EQ(rig.sched->GetState(id), StepState::kComplete);
+	rig.sched->Unregister(id);
+	rig.sched->Tick(200);
+	EXPECT_TRUE(rig.sink.records.empty());
+	EXPECT_EQ(step.applies, 0);
+}
+
+// AC 9: load discard of a step that already completed
+TEST(DeferredStepSummaryScheduler, DrainAndDiscardAllOfCompleteStepWritesNoRecord)
+{
+	Rig rig(4, 4);
+	FnStep step(SpinBody(100));
+	const auto id = rig.Reg("sumDiscDone", step);
+	ASSERT_EQ(rig.sched->Kick(id, 1, 100), KickResult::kLaunched);
+	rig.sched->DrainAll();
+	rig.sched->DrainAndDiscardAll();
+	EXPECT_EQ(rig.sched->GetState(id), StepState::kIdle);
+	rig.sched->Tick(200);
+	EXPECT_TRUE(rig.sink.records.empty());
+	EXPECT_EQ(step.applies, 0);
+}
+
+// The summary is built before Apply, so an Apply that unregisters its own channel (releasing the token) still
+// yields exactly one correct record.
+TEST(DeferredStepSummaryScheduler, ApplyThatUnregistersStillEmitsOneRecordWithRangeData)
+{
+	Rig rig(4, 4);
+	HookApplyStep step;
+	const Dia::Core::StringCRC id("sumSelfUnreg");
+	ASSERT_TRUE(rig.sched->Register(id, step));   // not tracked by rig.channels: the step unregisters itself
+	step.onApply = [&] { rig.sched->Unregister(id); };
+	ASSERT_EQ(rig.sched->Kick(id, 2, 3), KickResult::kLaunched);
+	SleepMs(50);
+	rig.sched->Tick(3);
+	EXPECT_EQ(step.applies, 1);
+	ASSERT_EQ(rig.sink.records.size(), 1u);
+	const P::StepSummaryRecord& r = rig.sink.records[0];
+	EXPECT_EQ(r.owner, id.Value());
+	EXPECT_EQ(r.applyKey, 3u);
+	EXPECT_EQ(r.kickKeyLow, 2u);
+	EXPECT_GT(r.rangeCount, 0);
+	EXPECT_GT(r.cpuNs, 0u);
+	EXPECT_EQ(rig.sched->GetChannelCount(), 0u);
+}
+
+// Two channels due on the same Tick emit in kick order (not registration order).
+TEST(DeferredStepSummaryScheduler, TwoChannelsAppliedInOneTickEmitInKickOrder)
+{
+	Rig rig(4, 4);
+	FnStep stepA(SpinBody(100, 8));
+	FnStep stepB(SpinBody(100, 8));
+	const auto a = rig.Reg("sumOrdA", stepA);   // registered first
+	const auto b = rig.Reg("sumOrdB", stepB);
+	ASSERT_EQ(rig.sched->Kick(b, 1, 5), KickResult::kLaunched);   // kicked first
+	ASSERT_EQ(rig.sched->Kick(a, 1, 4), KickResult::kLaunched);
+	SleepMs(50);
+	rig.sched->Tick(5);
+	ASSERT_EQ(rig.sink.records.size(), 2u);
+	EXPECT_EQ(rig.sink.records[0].owner, b.Value());
+	EXPECT_EQ(rig.sink.records[1].owner, a.Value());
+	EXPECT_LE(rig.sink.records[0].kickNs, rig.sink.records[1].kickNs);
+}
+
+// An empty ParallelFor (count 0) still yields one well-formed record and does not crash.
+TEST(DeferredStepSummaryScheduler, EmptyParallelForStepEmitsRecordWithoutCrashing)
+{
+	Rig rig(4, 4);
+	FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(0, 1, [](uint32_t, uint32_t) {}); });
+	const auto id = rig.Reg("sumEmpty", step);
+	ASSERT_EQ(rig.sched->Kick(id, 1, 1), KickResult::kLaunched);
+	rig.sched->Tick(1);
+	EXPECT_EQ(step.applies, 1);
+	ASSERT_EQ(rig.sink.records.size(), 1u);
+	const P::StepSummaryRecord& r = rig.sink.records[0];
+	EXPECT_EQ(r.owner, id.Value());
+	EXPECT_EQ(r.stolenRanges, 0);
+	EXPECT_EQ(r.inlineFallbacks, 0);
+	EXPECT_LE(r.kickNs, r.readyNs);
+	EXPECT_LE(r.readyNs, r.applyNs);
+}
+
+// With no sink the same flows (normal, stalled, restored, unregister-discard) apply and count exactly as with one.
+TEST(DeferredStepSummaryScheduler, NoSinkSchedulerStatsMatchSinkRunForTheSameFlows)
+{
+	auto flow = [](bool withSink, SchedulerStats& stats, int& applies)
+	{
+		Rig rig(4, 4);
+		if (!withSink) { rig.sched->SetSummarySink(nullptr); }
+		FnStep normal(SpinBody(100, 8));
+		FnStep slow([](IParallelExecutor& ex) { ex.ParallelFor(1, 1, [](uint32_t, uint32_t) { SleepMs(30); }); });
+		FnStep restored([](IParallelExecutor&) {});
+		FnStep dropped(SpinBody(100, 8));
+		const auto n = rig.Reg("nsN", normal);
+		const auto s = rig.Reg("nsS", slow);
+		const auto r = rig.Reg("nsR", restored);
+		const auto d = rig.Reg("nsD", dropped);
+		rig.sched->Kick(n, 1, 2);
+		rig.sched->Kick(s, 1, 1);      // stalls at Tick(1)
+		rig.sched->Kick(d, 1, 50);
+		rig.sched->RestorePending(r, 1, 2);
+		rig.sched->Tick(1);
+		rig.sched->Tick(2);
+		rig.sched->Unregister(d);
+		stats = rig.sched->GetStats();
+		applies = normal.applies + slow.applies + restored.applies + dropped.applies;
+		EXPECT_EQ(rig.sink.records.size(), withSink ? 3u : 0u);
+	};
+	SchedulerStats on, off; int appliesOn = 0, appliesOff = 0;
+	flow(true, on, appliesOn);
+	flow(false, off, appliesOff);
+	EXPECT_EQ(appliesOn, 3);
+	EXPECT_EQ(appliesOff, appliesOn);
+	EXPECT_EQ(off.applies, on.applies);
+	EXPECT_EQ(off.kicks, on.kicks);
+	EXPECT_EQ(off.stalls, on.stalls);
+	EXPECT_EQ(off.inFlight, on.inFlight);
+}
+
+// AC 23 soak, Debug ballpark. Prints figures; asserts functional correctness only (never timing).
+TEST(DeferredStepSummaryScheduler, SoakThousandStepsSinkOnVersusOffPrintsBallpark)
+{
+	constexpr int kSteps = 1000;
+	constexpr int kRuns = 3;
+	auto runOnce = [&](bool sinkOn, size_t& recordCount) -> double
+	{
+		Rig rig(4, 4);
+		if (!sinkOn) { rig.sched->SetSummarySink(nullptr); }
+		FnStep step([](IParallelExecutor& ex) { ex.ParallelFor(64, 8, [](uint32_t, uint32_t) { SpinMicros(5); }); });
+		const auto id = rig.Reg("sumSoak", step);
+		const auto t0 = std::chrono::steady_clock::now();
+		for (int k = 1; k <= kSteps; ++k)
+		{
+			rig.sched->Kick(id, static_cast<StepKey>(k), static_cast<StepKey>(k));
+			rig.sched->Tick(static_cast<StepKey>(k));
+		}
+		const auto t1 = std::chrono::steady_clock::now();
+		EXPECT_EQ(step.applies, kSteps);
+		recordCount = rig.sink.records.size();
+		return std::chrono::duration<double, std::micro>(t1 - t0).count();
+	};
+	for (int run = 0; run < kRuns; ++run)
+	{
+		size_t onCount = 0, offCount = 0;
+		const double on = runOnce(true, onCount);
+		const double off = runOnce(false, offCount);
+		EXPECT_EQ(onCount, static_cast<size_t>(kSteps));
+		EXPECT_EQ(offCount, 0u);
+		std::printf("[----------] soak run %d on=%.2f off=%.2f us per step (Debug, ballpark)\n", run, on / kSteps, off / kSteps);
+	}
 }

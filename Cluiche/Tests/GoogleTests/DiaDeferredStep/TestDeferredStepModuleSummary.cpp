@@ -220,3 +220,28 @@ TEST(DeferredStepModuleSummary, TableWrittenOnCallingThreadInsideTickNeverFromRu
 	sched.Unregister(kSummaryChannel);
 	g_probe->SetJobTimingTable(nullptr);
 }
+
+TEST(DeferredStepModuleSummary, OutOfRangeIndexReturnsFalseAndLeavesOutUntouchedOnFullAndPartialRing)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	auto& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kSummaryChannel, step));
+
+	StepSummaryRecord sentinel;
+	sentinel.owner = 0xABCD;
+	StepSummaryRecord out = sentinel;
+	RunSteps(sched, step, 1, 3);
+	EXPECT_FALSE(g_probe->GetSummary(3, out));
+	EXPECT_FALSE(g_probe->GetSummary(16, out));
+	EXPECT_FALSE(g_probe->GetSummary(0xFFFFFFFFu, out));
+	EXPECT_EQ(out.owner, 0xABCDu);
+
+	RunSteps(sched, step, 100, 20);   // wraps the ring
+	ASSERT_EQ(g_probe->GetSummaryCount(), 16u);
+	EXPECT_TRUE(g_probe->GetSummary(15, out));
+	EXPECT_FALSE(g_probe->GetSummary(16, out));
+	EXPECT_FALSE(g_probe->GetSummary(0xFFFFFFFFu, out));
+	sched.Unregister(kSummaryChannel);
+}
