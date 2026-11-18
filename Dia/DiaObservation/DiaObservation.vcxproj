@@ -147,6 +147,7 @@
     <ClInclude Include="Trace\SpanChunkSink.h" />
     <ClInclude Include="Trace\ChainBuilder.h" />
     <ClInclude Include="Testing\UniqueTestPath.h" />
+    <ClInclude Include="Profile\StepSummaryRecord.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

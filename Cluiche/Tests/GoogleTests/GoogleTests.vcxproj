@@ -1324,6 +1324,7 @@
     <ClCompile Include="DiaObservation\Trace\TestProcessingUnitTrace.cpp" />
     <ClCompile Include="DiaDeferredStep\TestJobAttribution.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepTimes.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepSummary.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -3120,5 +3120,8 @@
     <ClCompile Include="DiaDeferredStep\TestStepTimes.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepSummary.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

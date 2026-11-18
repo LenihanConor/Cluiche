@@ -415,5 +415,8 @@
     <ClInclude Include="Testing\UniqueTestPath.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Profile\StepSummaryRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

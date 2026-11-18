@@ -48,6 +48,7 @@
     <ClInclude Include="DeferredStepModule.h" />
     <ClInclude Include="DeferredStepMetrics.h" />
     <ClInclude Include="DeferredStepHealth.h" />
+    <ClInclude Include="StepSummary.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
@@ -58,6 +59,7 @@
     <ClCompile Include="DeferredStepModule.cpp" />
     <ClCompile Include="DeferredStepMetrics.cpp" />
     <ClCompile Include="DeferredStepHealth.cpp" />
+    <ClCompile Include="StepSummary.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />
