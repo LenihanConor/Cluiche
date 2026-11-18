@@ -116,7 +116,7 @@ Dia::Core::StringCRC DeferredStepTestStageModule::GetStageName() const
 unsigned int DeferredStepTestStageModule::GetBudgetFrames() const
 {
     // Each step takes k sim steps; allow one extra per step for a late apply, plus startup margin.
-    return mSteps * (mK + 1) + 60;
+    return mSteps * (mK + 1) + 60 + kHoldFrames;
 }
 
 const Dia::Core::StringCRC* DeferredStepTestStageModule::GetCheckpointNames(unsigned int& outCount) const
@@ -145,6 +145,7 @@ void DeferredStepTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mObservedApplies = 0;
     mInFlight = false;
     mFinalized = false;
+    mHoldUntilFrame = 0;
     mCapUtilisationPeak = 0.0;
     mSummary = "pending";
     mPassed = false;
@@ -162,7 +163,14 @@ void DeferredStepTestStageModule::OnStart(Dia::Automation::AutomationService* se
 
 void DeferredStepTestStageModule::OnUpdate(float /*deltaTime*/)
 {
-    if (IsResolved() || mFinalized || !mRegistered) { return; }
+    if (IsResolved() || !mRegistered) { return; }
+
+    // Hold after the verdict so the harness can observe the checkpoint before the stage auto-returns to Boot.
+    if (mFinalized)
+    {
+        if (GetFrameCount() >= mHoldUntilFrame) { if (mPassed) { ReportPassed(); } else { ReportFailed(); } }
+        return;
+    }
 
     auto& scheduler = mDeferred->GetScheduler();
     const uint64_t key = mClock->GetCurrentKey();
@@ -274,7 +282,7 @@ void DeferredStepTestStageModule::Finalize()
         mK, mSpinMs, mSteps, (unsigned long long)applies, (unsigned long long)stalls, (unsigned long long)stallMs,
         keysOk ? 1 : 0, checksumOk ? 1 : 0, health, mWorkerCapCfg.c_str(), mCapUtilisationPeak, stallOk ? 1 : 0, mPassed ? 1 : 0);
 
-    if (mPassed) { ReportPassed(); } else { ReportFailed(); }
+    mHoldUntilFrame = GetFrameCount() + kHoldFrames;
 }
 
 void DeferredStepTestStageModule::OnStop()

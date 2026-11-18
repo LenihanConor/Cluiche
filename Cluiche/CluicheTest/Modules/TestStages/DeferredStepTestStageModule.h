@@ -113,6 +113,8 @@ private:
     uint32_t mObservedApplies = 0;
     bool mInFlight = false;
     bool mFinalized = false;
+    unsigned int mHoldUntilFrame = 0;
+    static constexpr unsigned int kHoldFrames = 120; // keep the stage (and checkpoint) observable before auto-return to Boot
     double mCapUtilisationPeak = 0.0;
     std::string mSummary = "pending";
     bool mPassed = false;
