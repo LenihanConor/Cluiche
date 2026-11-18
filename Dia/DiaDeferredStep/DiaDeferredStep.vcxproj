@@ -95,6 +95,7 @@
     <ClInclude Include="Testing\ReorderingExecutor.h" />
     <ClInclude Include="Testing\ReferenceGatherStep.h" />
     <ClInclude Include="DeferredStepSaveParticipant.h" />
+    <ClInclude Include="Testing\PendingStateStep.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />

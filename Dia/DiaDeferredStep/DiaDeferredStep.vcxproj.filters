@@ -41,6 +41,9 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="DeferredStepSaveParticipant.h" />
+    <ClInclude Include="Testing\PendingStateStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
