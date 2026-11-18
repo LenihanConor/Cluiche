@@ -137,8 +137,26 @@ namespace Dia::DeferredStep
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
 
+	void DeferredStepModule::SetKeySource(IStepKeySource& source)
+	{
+		mKeySource = &source;
+	}
+
 	void DeferredStepModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 	{
+		if (mScheduler.Get() == nullptr) { return; }
+
+		if (mKeySource == nullptr)
+		{
+			if (!mWarnedNoKeySource)
+			{
+				mWarnedNoKeySource = true;
+				DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "DeferredStepModule has no key source; steps will not be ticked until SetKeySource is called");
+			}
+			return;
+		}
+
+		mScheduler->Tick(mKeySource->GetCurrentKey());
 	}
 
 	Dia::ApplicationFlow::StopResult DeferredStepModule::DoStop()

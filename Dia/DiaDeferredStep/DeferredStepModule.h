@@ -11,6 +11,7 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/DeferredStepSaveParticipant.h>
 #include <DiaDeferredStep/IStepLauncher.h>
+#include <DiaDeferredStep/IStepKeySource.h>
 
 namespace Dia::DeferredStep
 {
@@ -31,6 +32,11 @@ namespace Dia::DeferredStep
 			// Valid from a successful DoStart until DoStop. Consumers register channels in their own DoStart.
 			DeferredStepScheduler& GetScheduler();
 
+			// Non-owning: the caller keeps the source alive from module start to stop. May be called any time
+			// before the first DoUpdate (a later call is still accepted; the module warns once until it arrives).
+			// DoUpdate reads the source once per sim step and calls scheduler.Tick(source.GetCurrentKey()).
+			void SetKeySource(IStepKeySource& source);
+
 	protected:
 		void OnConfigure(const char* configJson) override;
 		void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
@@ -49,5 +55,8 @@ namespace Dia::DeferredStep
 			Dia::Core::UniquePtr<IStepLauncher>                  mLauncher;
 			Dia::Core::UniquePtr<DeferredStepScheduler>          mScheduler;
 			Dia::Core::UniquePtr<DeferredStepSaveParticipant>    mSaveParticipant;   // constructed only; attach is a later task
+
+			IStepKeySource* mKeySource = nullptr;     // non-owning
+			bool            mWarnedNoKeySource = false;
 	};
 }
