@@ -92,6 +92,9 @@ namespace Dia::DeferredStep
 		const SchedulerStats& GetStats() const;
 		bool      GetChannelStats(Dia::Core::StringCRC channelId, ChannelStats& out) const;
 
+		// The step registered on a channel, or nullptr when the channel is not registered.
+		IDeferredStep* GetStep(Dia::Core::StringCRC channelId) const;
+
 	private:
 		struct ChannelEntry
 		{

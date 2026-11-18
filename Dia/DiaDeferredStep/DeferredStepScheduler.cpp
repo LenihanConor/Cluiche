@@ -512,4 +512,10 @@ namespace Dia::DeferredStep
 		out = mChannels[index].stats;
 		return true;
 	}
+
+	IDeferredStep* DeferredStepScheduler::GetStep(Dia::Core::StringCRC channelId) const
+	{
+		const int index = FindIndex(channelId);
+		return index < 0 ? nullptr : mChannels[index].step;
+	}
 }

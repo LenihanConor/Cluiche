@@ -9,9 +9,11 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaSaveGame/ISaveable.h>
+#include <DiaSaveGame/LoadContext.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaDeferredStep/DeferredStepSaveParticipant.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
+#include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/ManualStepLauncher.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 #include <DiaSaveGame/SaveConfig.h>
@@ -508,4 +510,282 @@ TEST_F(DeferredStepSaveWrite, SerializeDoesNotDrainRunningStep)
 	EXPECT_EQ(root["pending_count"].asInt(), 0);
 	EXPECT_EQ(mScheduler.GetState(mChannelA), StepState::kRunning);
 	EXPECT_EQ(mScheduler.GetStats().drains, 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Validate (Save and Load task 4)
+// ---------------------------------------------------------------------------
+
+namespace
+{
+	typedef Dia::DeferredStep::Testing::LogCapture::Level LogLevel;
+
+	// Step whose ValidatePending reads its own "payload" key from the channel object it is handed.
+	class ValidatingStep final : public IDeferredStep
+	{
+	public:
+		void Capture() override {}
+		void Run(IParallelExecutor&) override {}
+		void Apply() override {}
+		uint32_t GetPendingVersion() const override { return 1; }
+		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
+		void DeserializePending(Dia::SaveGame::LoadContext&) override { ++mDeserializeCount; }
+		bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override
+		{
+			++mValidateCount;
+			mPayloadReadOk = ctx.Read(StringCRC("payload"), mPayloadSeen);
+			return mResult;
+		}
+
+		bool mResult = true;
+		mutable uint32_t mValidateCount = 0;
+		mutable bool mPayloadReadOk = false;
+		mutable int32_t mPayloadSeen = 0;
+		uint32_t mDeserializeCount = 0;
+	};
+
+	class CountingSaveable final : public ISaveable
+	{
+	public:
+		void Serialize(Dia::SaveGame::SaveContext& ctx) const override { ctx.Write(StringCRC("probe"), static_cast<int32_t>(1)); }
+		void Deserialize(Dia::SaveGame::LoadContext&) override { ++mDeserializeCount; }
+		uint32_t GetVersion() const override { return 1; }
+		uint32_t mDeserializeCount = 0;
+	};
+}
+
+class DeferredStepSaveValidate : public ::testing::Test
+{
+protected:
+	DeferredStepSaveValidate()
+		: mScheduler(mLauncher)
+		, mConfig{ "temp/deferredstep_save_tests/", "slot_{id}.sav", 0, SaveFormat::Json }
+		, mChannelA("ValidateA")
+		, mChannelB("ValidateB")
+		, mUnregistered("ValidateNotRegistered")
+	{
+		_mkdir("temp");
+		_mkdir("temp/deferredstep_save_tests");
+		mScheduler.Register(mChannelA, mStepA);
+		mScheduler.Register(mChannelB, mStepB);
+	}
+
+	~DeferredStepSaveValidate() override
+	{
+		mScheduler.Unregister(mChannelA);
+		mScheduler.Unregister(mChannelB);
+		remove("temp/deferredstep_save_tests/slot_validate.sav");
+	}
+
+	static Json::Value Channel(StringCRC id, int payload)
+	{
+		Json::Value c(Json::objectValue);
+		c["channel_id"] = static_cast<Json::Int64>(id.Value());
+		c["kick_key"] = 1;
+		c["apply_key"] = 10;
+		c["step_version"] = 1;
+		c["payload"] = payload;
+		return c;
+	}
+
+	static Json::Value Section(int version, int pendingCount)
+	{
+		Json::Value s(Json::objectValue);
+		s["version"] = version;
+		s["pending_count"] = pendingCount;
+		return s;
+	}
+
+	bool Validate(const Json::Value& section)
+	{
+		LoadContext ctx(section);
+		return mParticipant.Validate(ctx);
+	}
+
+	// Observable scheduler state, to prove Validate mutates nothing.
+	struct Snapshot
+	{
+		SchedulerStats stats;
+		uint32_t pending;
+		StepState a, b;
+	};
+	Snapshot Take() const
+	{
+		return { mScheduler.GetStats(), mScheduler.GetPendingCount(), mScheduler.GetState(mChannelA), mScheduler.GetState(mChannelB) };
+	}
+	void ExpectUnchanged(const Snapshot& s) const
+	{
+		const Snapshot now = Take();
+		EXPECT_EQ(now.stats.kicks, s.stats.kicks);
+		EXPECT_EQ(now.stats.applies, s.stats.applies);
+		EXPECT_EQ(now.stats.drains, s.stats.drains);
+		EXPECT_EQ(now.stats.drainedSteps, s.stats.drainedSteps);
+		EXPECT_EQ(now.stats.inFlight, s.stats.inFlight);
+		EXPECT_EQ(now.pending, s.pending);
+		EXPECT_EQ(now.a, s.a);
+		EXPECT_EQ(now.b, s.b);
+		EXPECT_EQ(mStepA.mDeserializeCount, 0u);
+		EXPECT_EQ(mStepB.mDeserializeCount, 0u);
+	}
+
+	Testing::ManualStepLauncher mLauncher;
+	DeferredStepScheduler mScheduler;
+	SaveConfig mConfig;
+	SaveRegistry mRegistry;
+	SaveManager mManager;
+	DeferredStepSaveParticipant mParticipant{ mScheduler };
+	StringCRC mChannelA, mChannelB, mUnregistered;
+	ValidatingStep mStepA, mStepB;
+};
+
+TEST_F(DeferredStepSaveValidate, ZeroPendingIsValid)
+{
+	const Snapshot before = Take();
+	EXPECT_TRUE(Validate(Section(1, 0)));
+	ExpectUnchanged(before);
+}
+
+TEST_F(DeferredStepSaveValidate, AllChannelsRegisteredIsValid)
+{
+	Json::Value s = Section(1, 2);
+	s["channel_0"] = Channel(mChannelA, 11);
+	s["channel_1"] = Channel(mChannelB, 22);
+	const Snapshot before = Take();
+	EXPECT_TRUE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 1u);
+	EXPECT_EQ(mStepB.mValidateCount, 1u);
+	ExpectUnchanged(before);
+}
+
+TEST_F(DeferredStepSaveValidate, UnregisteredChannelFailsAndLogsErrorNamingIt)
+{
+	Json::Value s = Section(1, 1);
+	s["channel_0"] = Channel(mUnregistered, 5);
+	Dia::DeferredStep::Testing::LogCapture log;
+	const Snapshot before = Take();
+	EXPECT_FALSE(Validate(s));
+	char idText[32];
+	snprintf(idText, sizeof(idText), "%u", static_cast<uint32_t>(mUnregistered.Value()));
+	EXPECT_EQ(log.Count(LogLevel::kError, idText), 1u);
+	ExpectUnchanged(before);
+}
+
+TEST_F(DeferredStepSaveValidate, FutureVersionFailsAndLogsError)
+{
+	Dia::DeferredStep::Testing::LogCapture log;
+	EXPECT_FALSE(Validate(Section(2, 0)));
+	EXPECT_EQ(log.Count(LogLevel::kError), 1u);
+}
+
+TEST_F(DeferredStepSaveValidate, FutureVersionFailsEvenWithRegisteredChannels)
+{
+	Json::Value s = Section(2, 1);
+	s["channel_0"] = Channel(mChannelA, 1);
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 0u);
+}
+
+TEST_F(DeferredStepSaveValidate, StepValidatePendingFalseFailsAndSeesChannelObject)
+{
+	mStepA.mResult = false;
+	Json::Value s = Section(1, 1);
+	s["channel_0"] = Channel(mChannelA, 77);
+	const Snapshot before = Take();
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 1u);
+	EXPECT_TRUE(mStepA.mPayloadReadOk);
+	EXPECT_EQ(mStepA.mPayloadSeen, 77);
+	ExpectUnchanged(before);
+}
+
+TEST_F(DeferredStepSaveValidate, ValidatePendingNotCalledForUnregisteredChannel)
+{
+	Json::Value s = Section(1, 2);
+	s["channel_0"] = Channel(mUnregistered, 1);
+	s["channel_1"] = Channel(mChannelA, 2);
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 0u);
+	EXPECT_EQ(mStepB.mValidateCount, 0u);
+}
+
+TEST_F(DeferredStepSaveValidate, OnlySecondChannelFailing)
+{
+	mStepB.mResult = false;
+	Json::Value s = Section(1, 2);
+	s["channel_0"] = Channel(mChannelA, 100);
+	s["channel_1"] = Channel(mChannelB, 200);
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 1u);
+	EXPECT_EQ(mStepA.mPayloadSeen, 100);
+	EXPECT_EQ(mStepB.mValidateCount, 1u);
+	EXPECT_EQ(mStepB.mPayloadSeen, 200);
+}
+
+TEST_F(DeferredStepSaveValidate, MissingPendingCountIsMalformed)
+{
+	Json::Value s(Json::objectValue);
+	s["version"] = 1;
+	Dia::DeferredStep::Testing::LogCapture log;
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(log.Count(LogLevel::kError), 1u);
+}
+
+TEST_F(DeferredStepSaveValidate, MissingVersionIsMalformed)
+{
+	Json::Value s(Json::objectValue);
+	s["pending_count"] = 0;
+	EXPECT_FALSE(Validate(s));
+}
+
+TEST_F(DeferredStepSaveValidate, MissingChannelObjectIsMalformed)
+{
+	Json::Value s = Section(1, 2);
+	s["channel_0"] = Channel(mChannelA, 1);
+	EXPECT_FALSE(Validate(s));
+}
+
+TEST_F(DeferredStepSaveValidate, MissingChannelIdIsMalformed)
+{
+	Json::Value s = Section(1, 1);
+	Json::Value c = Channel(mChannelA, 1);
+	c.removeMember("channel_id");
+	s["channel_0"] = c;
+	EXPECT_FALSE(Validate(s));
+	EXPECT_EQ(mStepA.mValidateCount, 0u);
+}
+
+TEST_F(DeferredStepSaveValidate, LoadWithUnregisteredChannelFailsWithDeserializeErrorAndRestoresNothing)
+{
+	// Save with an extra channel registered, then unregister it so the file references an unknown channel.
+	ValidatingStep extra;
+	const StringCRC extraChannel("ValidateExtra");
+	ASSERT_TRUE(mScheduler.Register(extraChannel, extra));
+	CountingSaveable probe;
+	mParticipant.Attach(mRegistry, mManager);
+	mRegistry.Register(StringCRC("ZProbe"), &probe);
+	mManager.Init(mConfig, mRegistry);
+
+	ASSERT_EQ(mScheduler.Kick(extraChannel, 1, 10), KickResult::kLaunched);
+	ASSERT_TRUE(mManager.Save(StringCRC("validate")).Ok());
+	mScheduler.Unregister(extraChannel);
+	ASSERT_EQ(mScheduler.GetChannelCount(), 2u);
+
+	const Snapshot before = Take();
+	Dia::DeferredStep::Testing::LogCapture log;
+	const LoadResult result = mManager.Load(StringCRC("validate"));
+	EXPECT_FALSE(result.Ok());
+	EXPECT_EQ(result.code, LoadResultCode::DeserializeError);
+	EXPECT_EQ(probe.mDeserializeCount, 0u);
+	EXPECT_EQ(log.Count(LogLevel::kError), 1u);
+	ExpectUnchanged(before);
+
+	mRegistry.Unregister(StringCRC("ZProbe"));
+	mParticipant.Detach();
+}
+
+TEST_F(DeferredStepSaveValidate, SchedulerGetStepReturnsRegisteredStepOrNull)
+{
+	EXPECT_EQ(mScheduler.GetStep(mChannelA), &mStepA);
+	EXPECT_EQ(mScheduler.GetStep(mChannelB), &mStepB);
+	EXPECT_EQ(mScheduler.GetStep(mUnregistered), nullptr);
 }

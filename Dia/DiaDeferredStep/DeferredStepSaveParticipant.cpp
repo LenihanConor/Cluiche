@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaDeferredStep/IDeferredStep.h>
+#include <DiaSaveGame/LoadContext.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
@@ -89,8 +90,68 @@ namespace Dia::DeferredStep
 		return kFormatVersion;
 	}
 
-	bool DeferredStepSaveParticipant::Validate(Dia::SaveGame::LoadContext&) const
+	bool DeferredStepSaveParticipant::Validate(Dia::SaveGame::LoadContext& ctx) const
 	{
+		// Read-only: nothing here touches the scheduler's state or any step's pending data.
+		int32_t version = 0;
+		if (!ctx.Read(Dia::Core::StringCRC("version"), version))
+		{
+			DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: save section has no 'version'");
+			return false;
+		}
+		if (version < 0 || static_cast<uint32_t>(version) > kFormatVersion)
+		{
+			DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: save format version %d is newer than supported version %u",
+				version, kFormatVersion);
+			return false;
+		}
+		int32_t pendingCount = 0;
+		if (!ctx.Read(Dia::Core::StringCRC("pending_count"), pendingCount) || pendingCount < 0)
+		{
+			DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: save section has no valid 'pending_count'");
+			return false;
+		}
+		for (int32_t i = 0; i < pendingCount; ++i)
+		{
+			char name[16];
+			snprintf(name, sizeof(name), "channel_%d", i);
+			if (!ctx.BeginObject(Dia::Core::StringCRC(name)))
+			{
+				DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: save section is missing '%s'", name);
+				return false;
+			}
+			bool ok = true;
+			int64_t channelValue = 0;
+			if (!ctx.Read(Dia::Core::StringCRC("channel_id"), channelValue))
+			{
+				DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: '%s' has no 'channel_id'", name);
+				ok = false;
+			}
+			else
+			{
+				// The file stores only the CRC value; comparison is by value, so rebuild an id from it.
+				Dia::Core::StringCRC channelId;
+				static_cast<Dia::Core::CRC&>(channelId) = static_cast<unsigned int>(channelValue);
+				IDeferredStep* step = mScheduler.GetStep(channelId);
+				if (step == nullptr)
+				{
+					DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: saved channel %u is not registered (%s)",
+						static_cast<uint32_t>(channelValue), name);
+					ok = false;
+				}
+				else if (!step->ValidatePending(ctx))
+				{
+					DIA_LOG_ERROR(DeferredStepObservation::kLogChannel, "DeferredStep load: step on channel %u rejected its pending data",
+						static_cast<uint32_t>(channelValue));
+					ok = false;
+				}
+			}
+			ctx.EndObject();
+			if (!ok)
+			{
+				return false;
+			}
+		}
 		return true;
 	}
 
