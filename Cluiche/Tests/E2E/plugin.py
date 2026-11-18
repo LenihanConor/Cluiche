@@ -3,6 +3,7 @@ import json
 import shutil
 import subprocess
 import time
+import warnings
 from pathlib import Path
 
 import pytest
@@ -145,29 +146,42 @@ def _count_log_lines(config, plan: dict) -> int:
     if log_path is None:
         return 0
     try:
-        return len(log_path.read_text(encoding="utf-8").splitlines())
-    except Exception:
+        return len(log_path.read_text(encoding="utf-8", errors="replace").splitlines())
+    except Exception as e:
+        warnings.warn(f"Could not read session log {log_path} for line count: {e}", RuntimeWarning)
         return 0
 
 
 def _collect_log_errors(config, plan: dict, skip_lines: int = 0) -> list:
-    """Return ERROR-level messages from the most-recent session log after skip_lines."""
+    """Return ERROR-level messages from the most-recent session log after skip_lines.
+
+    Non-UTF-8 bytes are replaced, not fatal. Malformed JSON lines are skipped
+    with a warning. If the log cannot be read at all, a failure message is
+    returned so the check fails instead of being silently skipped.
+    """
     log_path = _find_log_path(config, plan)
     if log_path is None:
         return []
 
     errors = []
     try:
-        lines = log_path.read_text(encoding="utf-8").splitlines()
-        for line in lines[skip_lines:]:
-            try:
-                entry = json.loads(line)
-                if entry.get("level", "").lower() == "error":
-                    errors.append(entry.get("msg", line))
-            except json.JSONDecodeError:
-                pass
-    except Exception:
-        pass
+        lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except Exception as e:
+        return [f"Could not read session log {log_path}: {e}"]
+
+    malformed = 0
+    for line in lines[skip_lines:]:
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            malformed += 1
+            continue
+        if isinstance(entry, dict) and str(entry.get("level", "")).lower() == "error":
+            errors.append(entry.get("msg", line))
+    if malformed:
+        warnings.warn(f"{malformed} malformed JSON line(s) skipped in {log_path}", RuntimeWarning)
     return errors
 
 
