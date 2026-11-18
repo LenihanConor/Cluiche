@@ -150,6 +150,8 @@ The commands and their execution model come first; the panel calls the same comm
 3. **Footprint contract** is Cluiche's mechanism for "tokens modify local cell values as they move".
 4. **Disease and drought fronts** reuse A1's existing cluster detection (`EventThresholdCrossed`) rather than becoming new token kinds.
 
+**Folded back 2026-11-18:** DECISION-139 (persistent herd tokens), CHANGE-051; GDD A1 re-locked with user sign-off. GDD backlog A1-29..32 are superseded by this spec, and A1-80 covers herds.
+
 ## Dependencies
 
 **Requires:** A1 Ecology Features 1–11 (flow graph, equations, grid passes, ecology state, events, module, save, debug, nutrients, seasonal presence) and S-3 Controlled-mode tuning of Layer 1, so tokens are tuned on a stable base. World Step (the `ecology` stage). DiaCellLayers, DiaCellHistory, DiaValueSchema, `SimQueryHostModule`, `RandomStreamModule`, E1 (all built).
