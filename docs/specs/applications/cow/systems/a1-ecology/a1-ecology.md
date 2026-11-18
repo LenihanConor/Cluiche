@@ -4,6 +4,7 @@
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A1_Ecology/` (DesignDocs repo; `A1_EcologySystem.md`, `A1_TechnicalSpec.md`, `A1_TuningParameters.md`, `A1_AuthoringDebug.md`, `A1_EdgeCaseMatrix.md`, `A1_PrototypeTestbed.md`, `A1_ProductionBacklog.md`, all Locked 2026-10-12)  
 **Conflicts resolved here:** [a1-gdd-conflicts.md](a1-gdd-conflicts.md) (C1–C14, interviewed 2026-10-18)
 **Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** water on the ground now belongs to A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)). Feature 4 loses the water flow pass and the Decade water table, but keeps a thin step 2 that builds `water_gradient` from A5's snapshot. A1 reads cell water, river flow, flooding and ice from `HydrologySnapshot`. The `water_dragon_emission` direct write is dropped. A5 is a soft dependency: without it A1 falls back to A4 rainfall or the pinned climate.
+**Amended 2026-11-18, ecology expansion (interviewed and re-approved 2026-11-18):** the food web becomes a **data-driven flow graph** (every pool, producer, consumer, detritus and decomposer is a data node, diets are weighted edges, and the equations no longer name roles). A **nutrient cycle** is added: A1 owns the nutrient pools and moves them downstream using S-1's river network and A5's flow and flood data. **Seasonal presence** is added: seasonal visitors arrive from the map edges and fish runs come up from river mouths, both drawn from off-map reservoirs with year-to-year feedback. Population tokens (Layer 2) move to their own spec, [a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md). Breadth ideas not taken now are listed under Future Extensions. New sections: Ecology flow graph, Nutrient cycle, Seasonal presence. New Features 10 and 11; Features 1 and 3 rewritten. GDD fold-back owed (deviations 20–23).
 
 **Gameplay Domains:** persistence, debug
 
@@ -13,13 +14,15 @@ A1 is CoW's ecology. Every hex cell carries producer biomass, species population
 
 A1 is fed by four systems. S-1 provides the world structure, A4 provides weekly rainfall, temperature and snow, A5 Hydrology provides soil moisture, river flow, floods and ice (amended 2026-11-17, A5 Hydrology), and GameSpeedController provides day ticks. A1 tracks the stress that builds toward biome succession and tells A3 when a threshold is crossed. A3 decides the transition and applies it back through A1's API. A1 also implements A4's `IBiomeSeasonalBaseline`.
 
-This spec builds **Layer 1** of the GDD's three layers: the analytical cell layer, which always runs. Dragon inputs (tick step 9) are defined as an interface only. Population tokens (Layer 2) and local instantiation (Layer 3) are deferred.
+*Amended 2026-11-18.* What lives in a cell, and who eats whom, is a data-driven **flow graph**: nutrient pools feed producers, producers feed consumers, deaths and waste become detritus, and decomposers return detritus to the pools. Nutrients also move downstream along rivers and settle where floods spread them. The year has a rhythm that comes from data: **seasonal visitors** arrive from the map edges in spring, graze and breed, and leave in autumn, and **fish runs** come up rivers from their mouths, spawn and die, which carries an upstream nutrient pulse and gives river predators a seasonal feast. Both are drawn from off-map reservoirs, so a bad year on the map shrinks the next year's arrivals.
+
+This spec builds **Layer 1** of the GDD's three layers: the analytical cell layer, which always runs. Dragon inputs (tick step 9) are defined as an interface only. Population tokens (Layer 2) are specced separately in [a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md) (amended 2026-11-18). Local instantiation (Layer 3) is deferred.
 
 **Map sizes** (amended 2026-10-19, product review): Small 66×42 (2,772 cells), Standard 80×52 (4,160 cells), Large 104×64 (6,656 cells, release performance gate for S-1, A4, A1). S-1 now builds and tests all three sizes.
 
 ## Goals
 
-1. **Species-driven, data-only roster.** Species, biomes and succession rules load from JSON. Code never names a species or functional group (TechnicalSpec §1a).
+1. **Species-driven, data-only roster and food web** (amended 2026-11-18). Species, producers, nutrient pools, detritus, biomes and succession rules load from JSON, and so does who eats whom (the flow graph). Code never names a species, functional group, producer, pool or trophic role (TechnicalSpec §1a, extended). A more complex web later is a data change, not a code change.
 2. **Band-gated tick pipeline.** The GDD steps run at the Season, Year, Decade and Century boundaries of GameSpeedController's day ticks, each as a full-grid pass, with no `delta_scale`.
 3. **Pure cell logic, testable alone.** The per-cell equations run on one cell with no neighbours, no module and no weather events (GoogleTests, `isolate_cell`). The same code runs grid-wide when fed by A4 (S-3 Ecology, Living mode).
 4. **Defined ecology state.** Thriving, Stable, Stressed and Collapsed come from a hysteretic health index (C4).
@@ -27,12 +30,16 @@ This spec builds **Layer 1** of the GDD's three layers: the analytical cell laye
 6. **Deterministic.** Same world, data, weather and tick count give bit-identical state at any thread count. Randomness comes only from the `A1` stream of `RandomStreamModule`.
 7. **Save/load.** Ecology state round-trips through E1, and a reload continues bit-identically.
 8. **Observable.** A debug domain with per-cell DiaCellLayers layers, per-cell detail rows, sim-hosted `cow.ecology.*` commands, and profiling, metrics and health.
-9. **Performance** (amended 2026-10-19, product review). Season band ≤ 16 ms in Release at Large (6,656 cells) with about 15 species. Small and Standard budgets scaled by cell count: Small (2,772 cells) ≤ 6.7 ms, Standard (4,160 cells) ≤ 10.0 ms. Reported gate.
+9. **Performance** (amended 2026-10-19, product review). Season band ≤ 16 ms in Release at Large (6,656 cells) with about 15 species. Small and Standard budgets scaled by cell count: Small (2,772 cells) ≤ 6.7 ms, Standard (4,160 cells) ≤ 10.0 ms. Reported gate. *Amended 2026-11-18:* the gate covers the shipped default graph (about 24 nodes: 4 producers, ~15 consumers, 2 detritus, 1 nutrient pool, plus 2 seasonal species), the nutrient pass and the seasonal-presence pass.
+10. **Closed nutrient books** (added 2026-11-18). Nutrient mass changes only through declared sources and sinks (bedrock weathering, ash, run die-off brought in from off-map, river-mouth outflow, leaching). A conservation test checks the books every band.
+11. **A year with a rhythm** (added 2026-11-18). Seasonal visitors and fish runs change cell values over the year from data alone, and off-map reservoirs carry the effect of one year into the next.
 
 ## Non-Goals
 
 - **Dragon pressure (step 9), hunts, Full Fight and Cultivated Ground.** Interfaces are declared (see Public Interfaces); they are built when S-4 needs them.
-- **Population tokens (Layer 2) and local instantiation (Layer 3).** Deferred. S-3 Ecology sees migration through density overlays and flow arrows.
+- **Population tokens (Layer 2) and local instantiation (Layer 3).** Layer 2 is its own system spec, [a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md) (amended 2026-11-18), built on top of this one. Layer 3 is deferred. Until Layer 2 exists, S-3 Ecology sees migration through density overlays and flow arrows.
+- **The breadth extensions under Future Extensions** (pathogens as nodes, pollinators, plant structure, regional adaptation, invasives). The flow graph is designed so most of them become data, but none of them is built here (added 2026-11-18).
+- **An off-map world.** The only off-map state is one reservoir per seasonal species (Seasonal presence). Lifeboats and hard edges (C10) are unchanged (added 2026-11-18).
 - **Succession transition rules, legacy modifiers and recovery counters.** These belong to A3. A1 provides the counters and the apply API.
 - **Weather.** A4 owns rainfall and temperature variation. A1 does not roll `year_quality` (C6).
 - **Water on the ground** (amended 2026-11-17, A5 Hydrology)**.** Soil moisture, ground water, runoff, river flow, lakes, floods and ice belong to A5. A1 no longer moves water or runs a water table (it keeps only a thin step 2 that builds the `water_gradient` pressure field from A5's values, aligned to locked GDD 2026-11-17, CHANGE-048), and no longer writes water directly from dragons (the GDD `water_dragon_emission`). Dragon water effects go through A4's weather influence API (A4 Feature 7); there is no dragon content now.
@@ -87,15 +94,20 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 
 `EcologyFields` holds one `DynamicArrayC<float>` per scalar field, indexed by cell, so passes stream, saves are arrays and the parallel split matches A4's.
 
-- **Abiotic** (amended 2026-11-17, A5 Hydrology: `water` is now fed by A5's seasonal mean `soilMoisture`, and `rainfall_accumulator` is only the fallback input when A5 is absent; A1 no longer simulates ground water): `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_fertility`, `soil_depth`. **New saved fields (aligned to locked GDD 2026-11-17, CHANGE-048, A1 TechnicalSpec 2 and 13.4):** `soil_wetness_accumulator` (sum of weekly A5 soil wetness, reset each Season), `river_flow_ratio_accumulator` (sum of weekly river-flow ratios, river cells only, reset each Season) and `inundated` (bool, copied from A5 each week). All three go in A1's save participant. A saved mid-Season state restores both accumulators.
-- **Producers:** `grass`, `shrub`, `tree`, `aquatic`, `seed_bank`.
-- **Consumers:** dense `[species × cell]` arrays, `juvenile` and `adult`, as fractions of `max_density_per_cell` [0, 1] (C14). A species absent from a cell is 0. Functional-group totals are computed on demand from tags.
-- **Transients:** `carrion`, `waste`, `ash`, `disease_load`, `fire_intensity`, `drought_stress`.
+- **Abiotic** (amended 2026-11-17, A5 Hydrology: `water` is now fed by A5's seasonal mean `soilMoisture`, and `rainfall_accumulator` is only the fallback input when A5 is absent; A1 no longer simulates ground water): `biome` (the `Biome` enum stored directly as `uint8_t`; the palette-index indirection is dropped — amended 2026-11-13, one shared enum), `elevation`, `slope`, `water`, `rainfall_accumulator`, `temperature`, `snow_covered`, `soil_depth` (`soil_fertility` became the `nutrient.soil` pool, amended 2026-11-18). **New saved fields (aligned to locked GDD 2026-11-17, CHANGE-048, A1 TechnicalSpec 2 and 13.4):** `soil_wetness_accumulator` (sum of weekly A5 soil wetness, reset each Season), `river_flow_ratio_accumulator` (sum of weekly river-flow ratios, river cells only, reset each Season) and `inundated` (bool, copied from A5 each week). All three go in A1's save participant. A saved mid-Season state restores both accumulators.
+- **Flow-graph nodes (amended 2026-11-18).** Each node kind gets dense `[node × cell]` arrays, indexed by the compiled node index, not by a named field:
+  - **Producers:** one biomass array per producer node. The shipped graph has `producer.grass`, `producer.shrub`, `producer.tree` and `producer.aquatic`, so the old fields exist as data. `seed_bank` stays one per-cell field shared by land producers.
+  - **Consumers:** `juvenile` and `adult` per consumer node (species), as fractions of `max_density_per_cell` [0, 1] (C14). A species absent from a cell is 0. Functional-group totals are computed on demand from tags.
+  - **Detritus:** one array per detritus node. The shipped graph has `detritus.carrion` and `detritus.waste` (dung and plant litter), which replace the old `carrion` and `waste` transients.
+  - **Nutrient pools:** one array per pool node. The shipped graph has one pool, `nutrient.soil`, which replaces the static `soil_fertility` field (see Nutrient cycle).
+- **Transients:** `ash`, `disease_load`, `fire_intensity`, `drought_stress`.
+- **Seasonal accumulators (added 2026-11-18, saved):** `flood_weeks_accumulator` (weeks this Season with A5 `Flooded` or `Inundated`, reset each Season).
+- **Off-map reservoirs (added 2026-11-18, saved, not per cell):** for each seasonal species, a short cohort ring `reservoir[species][cohort]` of off-map adults and maturing young (see Seasonal presence).
 - **Pressure fields:** `prey_scent`, `predator_scent`, `dragon_scent`, `carrion_scent`, `water_gradient`.
 - **Ecology state:** `ecology_state`, `health`, `state_streak` (signed seasons past a band edge), `recovering` flag.
 - **Succession:** `succession_pressure[rule × cell]` (C7, added to the GDD schema).
 - **History:** `years_since_fire`, `drought_years`, `last_dragon_visit`, `local_extinction_flags`, `years_low_herbivore_inflow` (consecutive years in which herbivore migration in was below `low_inflow_threshold`; read by A3's tundra rule; A3 amendment 4; saved state field tracked per cell, not read from the ledger — amended 2026-10-19), plus the tended fields (declared, unused until step 9).
-- **Static geography (derived at init, never changed by the simulation):** `river_overlay` (the static course; live flow comes from A5), `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11).
+- **Static geography (derived at init, never changed by the simulation):** `river_overlay` (the static course; live flow comes from A5), `corridor_node`, `hearth_site`, `nexus_node`, `world_throne_type`, `route_memory` (C11). *Added 2026-11-18:* `downstream` (copied from S-1's `Cell::downstream`, 0..5 on river cells, `kNoCell` elsewhere), `river_mouth` (a river cell whose downstream neighbour is Ocean or Lake, with which one), `upstream_order` (river cells sorted mouth-first for the run and transport passes) and `edge_distance` (hex steps to the nearest map-edge land cell, for visitor arrival and departure).
 
 `year_quality` and the deprecated `rainfall` field are not stored (C6).
 
@@ -109,7 +121,9 @@ Lore names (Verdant Lowlands, Stormridge, Ancient Interiors) are regions or dept
 | `river_overlay` | `waterSource == River` (the course only; it stays static. The "water floor" a river gives its cells now scales with A5's live `riverFlow` — amended 2026-11-17, A5 Hydrology) |
 | `corridor_node` | `terrainFlags & Pass` |
 | `hearth_site`, `nexus_node`, `world_throne_type` | S-1's `SiteRegistry` / `SiteSet`. **Populated from the start** — amended 2026-11-13: S-1 Feature 9 (Regions and Sites) is built, so the old "all false until Feature 9" caveat is void |
-| `soil_fertility`, `soil_depth` | `BiomeProfile` defaults, varied ± by seeded noise (DiaMaths, `A1` seed) and reduced by slope |
+| `nutrient.<pool>` (was `soil_fertility`), `soil_depth` | `BiomeProfile` defaults (one starting value per pool), varied ± by seeded noise (DiaMaths, `A1` seed) and reduced by slope |
+| `downstream`, `river_mouth`, `upstream_order`, `edge_distance` (added 2026-11-18) | S-1 `Cell::downstream` and biome; `edge_distance` by breadth-first search from map-edge land cells |
+| Off-map reservoirs (added 2026-11-18) | Each seasonal species' `reservoir.initial` from `species.json` |
 | `route_memory` | Base value, raised on river and corridor cells (EcologySystem §5.1, §5.3) |
 | Producers, populations | `BiomeProfile` starting values. Species are seeded where biome affinity is above zero, at affinity × the biome's starting density |
 | Ecology state | `Stable`, streak 0 |
@@ -121,11 +135,54 @@ GameSpeedController publishes one `SimulationTick{day, band}` per day and never 
 | Band | Steps |
 |------|-------|
 | Season | 1 weather (consume accumulator), natural ignition and fire spread, 2 thin `water_gradient` build from A5's snapshot (soil moisture, river flow, inundation); A1 no longer moves water (amended 2026-11-17, aligned to locked GDD 2026-11-17, CHANGE-048), 3 grass and aquatic, 4 foraging, 8 migration intent, 9 scent (no-op until S-4), ecology state, resolver `OnSeason`, 12 evidence |
-| Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` + resolver `Resolve` (step 10), resolver `OnYear` |
+| Season, added 2026-11-18 | **S1 seasonal presence** after step 4 (visitor arrival, departure and stragglers; run advance, spawning and die-off; see Seasonal presence), **N1 nutrients** after step 4 and S1 (decomposition, uptake, leaching, river transport, flood deposition; see Nutrient cycle) |
+| Year | 5 predation and carrion, 6 starvation and disease, 7 reproduction, 8 full move, 9 full (no-op), 11 guardrails, succession rules with `band: Year` + resolver `Resolve` (step 10), resolver `OnYear`; *added 2026-11-18:* **S2 reservoir year** (off-map survival, breeding and cohort ageing for each seasonal species) |
 | Decade | ~~2 water table~~ (deleted, A5 owns ground water; amended 2026-11-17), 3 shrubs and trees, 10 succession rules with `band: Decade`, seed drift |
 | Century | 10 major succession, 11 legacy recolonization |
 
 The Year, Decade and Century boundaries are also Season boundaries (364 = 4 × 91). Bands run smallest first on the same tick. **Each step is a full-grid pass, step-outer** (every cell finishes step N before any cell starts N+1, EcologySystem §6). Steps that read neighbours read the stable copy taken at the start of the pass and **gather** inflow in direction order 0..5, as A4 does, so the result does not depend on iteration order. Every modified field is clamped at the end of each step (TechnicalSpec §3).
+
+*Amended 2026-11-18.* Steps 3–7 no longer have hard-coded roles. "Grass and aquatic" (step 3) means *every producer node whose `band` is Season*; "shrubs and trees" (Decade) means *every producer node whose `band` is Decade*. Steps 4–7 run over consumer nodes and their diet edges in the compiled evaluation order. Detritus decay (carrion rotting and waste breaking down) moves into N1, so carrion is still made in step 5 and eaten by scavengers through ordinary diet edges.
+
+### Ecology flow graph (added 2026-11-18)
+
+The flow graph is the food web as data. It is loaded from `flow_graph.json` (envelope `cow.flow_graph`) next to `species.json`, which still holds the per-species parameters. Node ids are `StringCRC`.
+
+**Node kinds**
+
+| Kind | What it is | Per-cell state | Shipped nodes |
+|---|---|---|---|
+| `pool` | An abiotic nutrient store | amount | `nutrient.soil` |
+| `producer` | Plant biomass that grows from water, temperature, light and a pool | biomass | `producer.grass`, `producer.shrub`, `producer.tree`, `producer.aquatic` |
+| `consumer` | A species (from `species.json`, joined by id) | juvenile, adult | the roster |
+| `detritus` | Dead matter waiting to break down | amount | `detritus.carrion`, `detritus.waste` |
+
+Decomposers are not a kind of their own. A decomposer is a consumer whose diet edges point at detritus nodes, or, in the simple case, a detritus node's own `decay` edge to a pool (the shipped graph uses the decay edge; a data author can add worm or fungus consumers later).
+
+**Edge kinds**
+
+| Edge | From → to | Parameters |
+|---|---|---|
+| `eats` | consumer → producer, consumer or detritus | `preference` (relative weight in the diet), `efficiency` (fraction turned into the eater's growth), `life_stage` (`adult`, `juvenile` or both), `reach` (`cell` or `coastal`, which replaces the old `coastal_reach` diet rule) |
+| `uptake` | producer → pool | `rate`, `half_saturation` (Michaelis-Menten) |
+| `returns` | producer or consumer → detritus | which detritus a death or waste goes to, `fraction` |
+| `decay` | detritus → pool | `rate` per Season, scaled by water and temperature fit |
+
+Functional-group tags stay on consumers, and the debug layers, A3 conditions and DiaCellHistory groups keep using them.
+
+**Compile at load.** `CompileFlowGraph` turns the JSON into flat, index-based tables: node arrays by kind, edges in compressed-sparse-row form (per eater, its food list; per food, its eater list) and an evaluation order by derived trophic level. The per-cell equations read only these tables, so the generic graph costs no lookups in the hot loop. Compilation is deterministic: the same file gives the same indices and order.
+
+**Validation** (load fails, falls back to the shipped graph and reports Degraded):
+
+- every edge names an existing node of an allowed kind
+- every consumer has at least one `eats` edge, and every producer has an `uptake` edge
+- every node that can die has a `returns` edge, and every detritus has a `decay` edge (so the nutrient books close)
+- `eats` cycles between consumers are allowed (omnivory, cannibalism); trophic level is computed with cycles broken at the lowest-preference edge, and the order is reported in the panel
+- warnings (not failures): a node nothing eats, a pool nothing takes up, a consumer whose only food never shares a biome with it
+
+**Equations stay the GDD's.** Producer growth, foraging, predation (age-weighted), starvation, carrion and scavenging are the GDD's TechnicalSpec §4–§5 equations, rewritten over edges: "herbivores graze grass" becomes "for each `eats` edge from a consumer to a producer". The shipped `flow_graph.json` encodes today's roles exactly, and a **role-equivalence golden** proves the generic code with the shipped graph gives the same fields as the GDD's role-based equations on the reference grid (Feature 3).
+
+**What other systems see.** A3's rule conditions name fields by id, and producer, detritus and pool fields resolve by node id (`producer.grass`, `nutrient.soil`). `GetView()` exposes values by node index plus an id lookup. The A3 rule file's `grass` or `soil_fertility` references are rewritten to node ids (A3 amendment owed, deviation 20).
 
 ### Weather input (C5, C6)
 
@@ -231,6 +288,70 @@ Ocean and Lake cells run an **aquatic-only** ecology: `aquatic` biomass plus spe
 
 Water cells are permanent `water_gradient` sources and answer `IBiomeSeasonalBaseline` like every other biome.
 
+*Amended 2026-11-18:* "whose diet lists an aquatic group" is now an `eats` edge with `reach: coastal`. The `coastal_reach` parameter scales those edges. In river and wetland land cells a land predator eats aquatic species through ordinary `reach: cell` edges, which is how bears eat a fish run.
+
+### Nutrient cycle (added 2026-11-18)
+
+A1 owns the nutrients. A5 stays water-only and is read, never extended. Nutrient pools are flow-graph nodes, so a later graph can add more pools (for example a separate nitrogen and phosphorus) without code changes. The shipped graph has one pool, `nutrient.soil`.
+
+**N1, every Season, in this order (step-outer, gather from the stable copy):**
+
+| Sub-step | Effect | Source of rates |
+|---|---|---|
+| Decay | each detritus node moves `decay.rate × water_fit × temperature_fit` of itself into its pool | `decay` edges |
+| Ash | ash left by fire releases `ash_nutrient_fraction` into `nutrient.soil`, then clears | `ecology_parameters.json` |
+| Weathering | each land cell gains `BiomeProfile.weathering` (bedrock input, small) | `biomes.json` |
+| Uptake | producers took their uptake during step 3 (Michaelis-Menten on the pool); N1 books it | `uptake` edges |
+| Leaching | a fraction of each pool, `leach_rate × water`, is lost from land cells; wetter soil leaches more | `ecology_parameters.json` |
+| River transport | on river cells, a fraction `transport_rate × flow_ratio` of the pool moves to the `downstream` cell. Cells are processed in reverse `upstream_order` with gather, so the result is order-independent. At a `river_mouth` the moved amount leaves the map (a sink to Ocean) or enters the Lake cell | `ecology_parameters.json`; `flow_ratio` is the Season mean already in `river_flow_ratio_accumulator` |
+| Flood deposition | cells with `flood_weeks_accumulator > 0` receive silt: `flood_silt_rate × flood_weeks / 13` of the upstream river cell's pool, taken from that river cell | `ecology_parameters.json` |
+
+**Without A5:** `flow_ratio` is 1.0 on the static river course and there is no flooding, so transport runs at its base rate and nothing is deposited.
+
+**Books.** Every sub-step writes its amount to the ledger under its cause (`nutrient.decay`, `nutrient.uptake`, `nutrient.leach`, `nutrient.transport_in/out`, `nutrient.flood_silt`, `nutrient.weathering`, `nutrient.run_import`). The conservation test checks, for every band, `Δ total = weathering + ash + run import − leaching − mouth outflow` to float tolerance.
+
+**What it changes.** The health index and the growth equations read `nutrient.soil` where they read `soil_fertility` before, so overgrazed or burned land changes fertility over time instead of keeping a fixed value. Floodplains and deltas get richer, and steep wet slopes get poorer. A3 rules can read `nutrient.soil` in conditions (desertification, for example).
+
+### Seasonal presence (added 2026-11-18)
+
+Any species in `species.json` may carry a `seasonal` block. Seasonal species are ordinary consumer nodes with ordinary diet edges. What's special is where they come from and when they leave.
+
+```json
+"seasonal": {
+  "kind": "visitor",                         // "visitor" (map edge) or "run" (river mouth)
+  "arrive": { "season": "Spring" },          // or { "temperature_above": 8.0 }, checked each Season
+  "depart": { "season": "Autumn" },          // or { "temperature_below": 4.0 }
+  "entry":  { "edges": ["N", "S"] },         // visitor: which map edges; run: { "water": "Ocean" | "Lake" | "any" }
+  "reservoir": { "initial": 0.6, "cap": 1.0, "offmap_survival": 0.85, "offmap_growth": 1.1, "cohort_years": 2 },
+  "stragglers": "die",                       // "die" or "stay" (visitors only)
+  "spawn": { "conditions": [ { "field": "elevation", "op": ">", "value": 0.3 } ], "die_after": true }  // runs only
+}
+```
+
+**Off-map reservoirs.** Each seasonal species has one reservoir, a cohort ring of `cohort_years + 1` scalars (in units of map-wide population mass): adults ready to come, plus young maturing off-map. It is the only off-map state in A1 (an extension to C10, deviation 22).
+
+- **S2, every Year:** the ready cohort is multiplied by `offmap_survival`, young move up one cohort, and young that reach the front join the ready cohort. `offmap_growth` (default 1.0) is for species that also breed somewhere off the map; a species that breeds only on the map keeps 1.0. The ready cohort is clamped to `cap`.
+- **Feedback:** what returns to the reservoir is what *left the map healthy*: visitors that reached an edge before departure, and run young that drifted out of a river mouth. A drought year, a dragon-hunted valley or a dammed river shows up as smaller arrivals one or more years later.
+
+**Visitors (S1).**
+
+- **Arrival:** on the arrival Season, the ready cohort enters map-edge land cells on the listed edges. It is split across those cells by the species' biome affinity × producer food available, with a seeded jitter from the `A1` stream in cell-index order. The cohort empties.
+- **While present:** visitors are normal consumers. They forage, breed (young are born on the map), are hunted and die like residents, and they make detritus and waste that feed the nutrient cycle.
+- **Migration bias:** during the arrival Season the migration solver adds an inland pull (`−∇edge_distance`); from one Season before departure it adds a homeward push (`+∇edge_distance` toward the listed edges). These are extra terms in step 8's softmax, scaled by `seasonal_bias` (a parameter).
+- **Departure:** on the departure Season, adults and juveniles in map-edge cells on the listed edges leave into the reservoir (young into the youngest cohort). What is still inland is handled by `stragglers`: `die` turns it into carrion (a late autumn feast for scavengers), and `stay` keeps it as a resident population for the year.
+
+**Fish runs (S1).**
+
+- **Arrival:** the ready cohort enters at `river_mouth` cells matching `entry.water`. It is split across mouths by the Season mean flow ratio of the mouth cell, then moves up the river tree in `upstream_order`. At each fork the run splits by the branches' flow ratios. A run moves up to `run_reach` cells per Season (a species parameter).
+- **Blocked:** a cell whose A5 passability is `Frozen` or whose `low_flow_weeks` passes `run_low_flow_block` stops the run there. Without A5, nothing blocks.
+- **Spawning:** run mass that reaches cells meeting `spawn.conditions` spawns there. Young are born as the species' juveniles in that cell and drift downstream at `run_reach` cells per Season. Young reaching a mouth join the reservoir's youngest cohort.
+- **Die-off:** with `die_after: true`, spawned adults die in the spawning cells and become `detritus.carrion`. That is the nutrient import from off-map (`nutrient.run_import` in the books): mass from the ocean is left upstream. Adults stopped short (blocked or out of reach) die where they stop.
+- **Feast:** land predators and scavengers with `eats` edges to the run species feed in the river cells it passes through, so bears and later dragons get a seasonal feast along the rivers.
+
+**Granularity.** A1 steps once per Season, so presence changes four times a year: arrival, a full Season of presence, departure. Runs move up to `run_reach` cells per Season pass. See Open Design Question 5.
+
+**Events.** `SeasonalArrival{species, mass, entry_cells}`, `SeasonalDeparture{species, mass_out, stragglers}`, `RunSpawned{species, cells, mass}` and `RunBlocked{species, cell, mass}`, published at the end of the band and emitted to DiaCellHistory (`kind: event` schema entries).
+
 ### Guardrails (C10)
 
 There is no off-map world. **Lifeboat sources** replace it:
@@ -247,8 +368,9 @@ At the end of each band, A1 publishes:
 - **`CellEcologyChanged{cell, ecology_state, biome}`:** once per cell whose ecology state or biome changed.
 - **`EventThresholdCrossed{type, anchor_cell, cell_count}`:** for TechnicalSpec §10's connected-cell clusters (drought front, predator wave, disease bloom), found by flood fill over cells past the threshold.
 - **Recolonization** (C13): a new type, raised when a lifeboat founding takes. The GDD lists it but never defines it.
+- **Seasonal presence events** (added 2026-11-18): `SeasonalArrival`, `SeasonalDeparture`, `RunSpawned`, `RunBlocked` (see Seasonal presence).
 
-The herd-migration token event and the dragon kill field wait for Layer 2 and step 9. Payloads are small POD. The cluster cell lists are read through `GetLastEvents()`.
+The herd-migration token event waits for Layer 2 ([a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md)) and the dragon kill field for step 9. Payloads are small POD. The cluster cell lists are read through `GetLastEvents()`.
 
 ### Parallel execution and performance
 
@@ -258,7 +380,7 @@ The season band is gated at ≤ 16 ms in Release at Large (6,656 cells) with abo
 
 ### Save/load (E1)
 
-`EcologySaveParticipant` writes every non-static `EcologyFields` array as a JSON array, plus the **species** palette (a CRC list). The **biome palette is gone** (amended 2026-11-13): `biome` is the shared enum stored as a byte, so it serializes as a plain `uint8_t` array. Floats are stored as doubles (`%.17g`) so they round-trip bit-exactly. Static geography is re-derived from the world on load. The estimated size is about 35 fields × 6,656 cells, inside the 100 MB buffer (`SaveContext::kBufferSize`, verified 2026-11-13).
+`EcologySaveParticipant` writes every non-static `EcologyFields` array as a JSON array, plus the **species** palette (a CRC list). The **biome palette is gone** (amended 2026-11-13): `biome` is the shared enum stored as a byte, so it serializes as a plain `uint8_t` array. Floats are stored as doubles (`%.17g`) so they round-trip bit-exactly. Static geography is re-derived from the world on load. *Amended 2026-11-18:* node arrays are saved with a **node palette** (CRC list in compiled order), so a reload under an edited graph maps by id and fails validation on a missing node; the seasonal reservoirs and `flood_weeks_accumulator` are saved. The estimated size is about 40 fields × 6,656 cells, inside the 100 MB buffer (`SaveContext::kBufferSize`, verified 2026-11-13).
 
 The real `ISaveable` interface (verified 2026-11-13) is `Serialize(SaveContext&) const`, `Deserialize(LoadContext&)`, **`GetVersion()`** (not `version`), and an optional `Validate(LoadContext&) const` that defaults to `true` and runs on *every* participant before *any* `Deserialize`, so a load is all-or-nothing. The participant **id is a registration argument**, not a member: `SaveLoadModule::RegisterParticipant(StringCRC("ecology"), &participant)`, and registration order is serialization order.
 
@@ -270,6 +392,7 @@ The real `ISaveable` interface (verified 2026-11-13) is `Serialize(SaveContext&)
 
 - **Populations:** births, maturation, deaths by starvation, predation (by predator species), disease, Allee and base mortality, migration in and out (by direction), lifeboat founding.
 - **Producers:** growth, grazing (by species), wilt, fire.
+- **Nutrients and seasonal presence (added 2026-11-18):** the N1 causes (Nutrient cycle) and arrivals, departures, stragglers, run spawning and die-off by species.
 - **State:** the health index terms, and which succession rule conditions passed or failed.
 
 The ledger covers the last band only, is overwritten each band, is never saved, and doesn't feed back into the simulation. The equations write their terms to it as they compute them, so it can't drift from what actually ran. A build flag can turn it off if the 16 ms gate needs the time. Aggregate calculations (e.g., A3's yearly inflow checks) use saved state fields, not the ledger (amended 2026-10-19, product review).
@@ -283,11 +406,11 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **A description is mandatory** (non-empty, ≤ 256 chars) or registration fails with an Error. `category` is `"ecology"`, `owner` is `"EcologyModule"`, arguments are declared as `Dia::API::ValueParam`s (≤ 16).
 - **Arguments are JSON objects.** No positional forms.
 - **A partial registration must roll back** every name registered in that call — the failure mode that permanently leaks names in `WorldGenerationModule` today.
-- **Name budget.** A1 registers **14** names. The cap is 64 per SimPU, enforced per-stage in practice, and S-3.5's *built* components already occupy 58/64 — so S-3.5 needs the cap raised to 192 before it is wired (tracked in BACKLOG; owned by S-3.5, not A1). A1's own stage, S-3, is well under.
+- **Name budget.** A1 registers **16** names (14, plus `flow_graph` and `seasonal`, amended 2026-11-18; the cap is now 192, so the count below is history). The cap is 64 per SimPU, enforced per-stage in practice, and S-3.5's *built* components already occupy 58/64 — so S-3.5 needs the cap raised to 192 before it is wired (tracked in BACKLOG; owned by S-3.5, not A1). A1's own stage, S-3, is well under.
 
 `EcologyDebugDomain` (SimPU) provides:
 
-- **Panel:** season, year, cell count, state distribution, functional-group totals, last band profile, data source (file or fallback roster), weather input (A4 or stub), A3 present or not.
+- **Panel:** season, year, cell count, state distribution, functional-group totals, last band profile, data source (file or fallback roster), weather input (A4 or stub), A3 present or not. *Added 2026-11-18:* flow-graph summary (node counts by kind, trophic order, validation warnings, shipped or file graph), map-wide nutrient total with this band's books (sources, sinks, residual), and per seasonal species its reservoir cohorts, present/away state and next arrival estimate.
 - **Layers and overlays (amended 2026-10-19; corrected 2026-11-13).** Ecology fields become registered DiaCellLayers layers (ecology state, health, biome, each producer, species or functional-group density, each pressure field, succession progress) — see the layer table below. Registration is `CellLayerRegistry::Register(CellLayerDesc)` with a **pull** `read(float*, uint32_t)` plus a `version()` change counter, reached through a `ServiceStreamReader<CellLayerRegistry>` on `"CellLayerRegistryService"` and resolved in `DoUpdate` or later. **Registration must happen on the owning PU (SimPU)** or it is rejected with `WrongProcessingUnit` and flips health to Degraded. A1 does **not** implement `IViewValueSource` — that is DiaCellHistory's replay seam.
   - **Migration arrows are a draw-callback overlay, not a layer.** `CellValueKind` is `{Float, Category}` only — there is no vector kind — and `IDebugDraw` has **no 2D arrow primitive** (`RequestDrawArrow3D` is 3D-only). Each arrow is composed from a line or ray plus an explicit head, so the top-3 overlay **decimates by default** (every Nth cell, a panel control) and respects `DroppedCount()`. At Large, three arrows per cell is ~60k primitives, far past the 8,192 geometry budget.
   - Paint applies to the current selection, which comes from DiaCellLayers' `cells.select.*`; A1 reads the selection, it does not implement one. Event clusters are a second draw-callback overlay.
@@ -295,7 +418,7 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
 - **Graphs (amended 2026-10-19; corrected 2026-11-13):** map-wide functional-group totals and the state distribution read DiaCellHistory aggregates, so they cover the whole run and are recorded whether or not any panel is open; per-cell series need that layer tracked (`cells.history.track`). **But DiaCellHistory's in-game panel was deliberately not built** (Feature 3 task 3.10b and Feature 4 task 4.10 were dropped at its close on 2026-11-04 and re-homed to the CluicheEditor Inspector as the proposed T-1 Feature 7). So A1 has **no in-game host for a rolling time-series panel**: the live card shows current-band values, and time series are reached through `cells.history.*` or T-1. Long-run analysis lives in the World Sim Inspector by design, not as a fallback.
 - **Tuning:** live sliders over `ecology_parameters.json` and the selected species' and biome's entries, applied at the next band. `cow.ecology.tuning.save` writes changes to the defaults files themselves via the `source` alias (dia-needs #16, F-3 World Assets; amended 2026-10-19). `cow.world.pack.save_as ecology <id>` is the normal tuning path, writing overrides-only ecology packs to `Assets/CoW/Global/Ecology/Packs/<id>.ecology.json`. Hot reload picks up hand edits.
 - **Editing:** set a cell's fields or a species' population, and paint species, producers, water or biome over a brush of cells. Painting a biome reinitialises the painted cells from the biome's starting values. Painted/edited cells can be saved as an ecology start state via `cow.world.startstate.save_as` (baked terrain only; F-3 World Assets, amended 2026-10-19), written to `Assets/CoW/Global/Ecology/StartStates/<id>.ecostate.json`. `isolate_cell` turns off migration and propagation into and out of the selected cell, which gives the old single-cell S-2 behaviour.
-- **Commands (14):** `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data` (full name `cow.ecology.reload_data`: re-reads species, biomes, ecology parameters and succession rules from disk; used by T-2 "Reload in game"), `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3), `cause` (the T-1 feed below). **Dropped 2026-11-13:** `inspect` — DiaCellLayers owns `cells.inspect` and the whole `cells.select.*` / `cells.query.*` surface; A1 must not re-spec selection or inspection.
+- **Commands (16):** `ledger`, `set_field`, `set_species`, `paint`, `isolate_cell`, `set_ecology_state`, `step_band`, `reload_data` (full name `cow.ecology.reload_data`: re-reads species, biomes, ecology parameters and succession rules from disk; used by T-2 "Reload in game"), `tuning.set`, `tuning.save`, `find_events`, `ignite`, `apply_transition` (until A3), `cause` (the T-1 feed below). *Added 2026-11-18:* `flow_graph` (read-only: the compiled nodes, edges and trophic order as JSON; T-2 and T-1 can draw it) and `seasonal` (read the reservoirs, or set a species' ready cohort or force an arrival or departure this band, for testing feedback). **Dropped 2026-11-13:** `inspect` — DiaCellLayers owns `cells.inspect` and the whole `cells.select.*` / `cells.query.*` surface; A1 must not re-spec selection or inspection.
 - **Instrumentation (amended 2026-10-19; extended 2026-11-13):** `DIA_PROFILE_SCOPE` per step and `DIA_TRACE_ZONE` per band; `MetricRegistry` counters (cells per state, events per band) plus **`cow.ecology.band_ms` registered with `MetricInfo`** — required by S-3.5 R5 and not optional; an `IHealthReporter` (Degraded on the fallback roster, a failed data validation, or rejected layer registrations). Ecology state changes and crashes are emitted as DiaCellHistory events — event types need `kind: "event"` DiaValueSchema entries with their payload field lists, or the recorder warns per type. **A1 does not call `Sample()`** (see the module diagram): CoW-Shared `HistoryDriverModule` owns sampling and is signalled by `WorldStepModule` once per applied step, and A1's emitted events are committed by that sample.
 - **Cause events for T-1 (amended 2026-10-19, T-1 World Sim Inspector):** each band, for each region and each layer tracked in DiaCellHistory, A1 emits its top 3 ledger causes as `cow.ecology.cause {group, layer, cause, delta, cells}` events. **Amended 2026-10-20 (T-1 Why Panel):** `cells` is the top 8 contributing cells by absolute delta, `[{q, r, delta}]`, taken from the ledger terms for that cause (their deltas never exceed the event's `delta`); it lets T-1's "Show cells" work for past bands and from files, since the ledger itself keeps only the last band. The event type is described in DiaValueSchema (`kind: event`). The counts are A1 parameters: `cause_events_per_region` (default 3) and `cause_cells_per_event` (default 8), so they can change as data without a spec amendment. This feeds T-1's why panel.
 
@@ -306,12 +429,16 @@ The ledger covers the last band only, is overwritten each band, is never saved, 
   | `ecology.state` | Category | `ecology_state` | Palette from the state enum |
   | `ecology.health` | Float | `health` | |
   | `ecology.producers_total` | Float | `grass + shrub + tree + aquatic` (derived) | Default tracked layer |
-  | `ecology.producer.<grass/shrub/tree/aquatic>` | Float | producer fields | |
-  | `ecology.seed_bank`, `ecology.soil_fertility`, `ecology.water` | Float | fields of the same name | |
+  | `ecology.producer.<id>` | Float | one per producer node (amended 2026-11-18; the shipped graph gives `grass/shrub/tree/aquatic`) | |
+  | `ecology.seed_bank`, `ecology.water` | Float | fields of the same name | |
+  | `ecology.soil_fertility` | Float | alias of the first pool, `nutrient.soil` (kept 2026-11-18 so S-3 and T-1 references hold) | |
+  | `ecology.nutrient.<pool>` | Float | one per pool node (added 2026-11-18) | |
+  | `ecology.detritus.<id>` | Float | one per detritus node (added 2026-11-18; replaces `ecology.transient.carrion` and `waste`) | |
+  | Overlay `ecology.runs` | — | run fronts and spawning cells along rivers, draw callback (added 2026-11-18) | |
   | `ecology.group.<tag>` | Float | functional-group density (sum of tagged species, adult + juvenile) | e.g. `ecology.group.herbivore` (default tracked) |
   | `ecology.species.<id>` | Float | one species' density | Registered per species in the roster |
   | `ecology.pressure.<field>` | Float | pressure fields (`prey_scent` …) | |
-  | `ecology.transient.<field>` | Float | `carrion`, `ash`, `fire_intensity`, `drought_stress` … | |
+  | `ecology.transient.<field>` | Float | `ash`, `fire_intensity`, `drought_stress` … | |
   | `ecology.succession_progress` | Float | highest forward `succession_pressure` | Shared with A3's `GetSuccessionProgress` |
   | Overlay `ecology.migration` | — | top-3 migration arrows | |
 
@@ -371,10 +498,25 @@ namespace CoW::Ecology {
         virtual float GetRecoveryMultiplier(uint32_t cell) const = 0;
     };
 
-    struct EcologyData { /* species roster, biome profiles, succession rules, parameters */ };
-    bool LoadEcologyData(const Json::Value& species, const Json::Value& biomes,
+    struct EcologyData { /* species roster, biome profiles, succession rules, parameters, compiled flow graph */ };
+    bool LoadEcologyData(const Json::Value& species, const Json::Value& biomes, const Json::Value& flowGraph,
                          const Json::Value& rules, const Json::Value& params, EcologyData& out);
-    EcologyData FallbackEcologyData();      // 3 land species (deer, elk, wolf) + 1 aquatic (fish), S-2 GDD decision 4
+    EcologyData FallbackEcologyData();      // 3 land species (deer, elk, wolf) + 1 aquatic (fish), S-2 GDD decision 4, plus the shipped graph
+
+    // Flow graph (added 2026-11-18). Index-based, built once at load; the hot loop reads only these tables.
+    struct CompiledFlowGraph {
+        uint32_t NodeCount(NodeKind kind) const;
+        NodeIndex Find(Dia::Core::StringCRC id) const;                       // kNoNode if absent
+        EdgeSpan  FoodOf(NodeIndex eater) const;                             // eats edges, CSR
+        EdgeSpan  EatersOf(NodeIndex food) const;
+        const NodeIndex* EvaluationOrder() const;                            // by derived trophic level
+    };
+    bool CompileFlowGraph(const Json::Value& flowGraph, const SpeciesRoster& species,
+                          CompiledFlowGraph& out, FlowGraphReport& report);  // validation errors and warnings
+
+    // Seasonal presence (added 2026-11-18), on EcologySimulation:
+    //   const SeasonalReservoir& GetReservoir(NodeIndex species) const;
+    //   void SetReservoirReady(NodeIndex species, float mass);             // debug, `cow.ecology.seasonal`
 
     class EcologyModule : public Dia::ApplicationFlow::SimModule,
                           public CoW::Weather::IBiomeSeasonalBaseline {
@@ -393,25 +535,27 @@ namespace CoW::Ecology {
 }
 ```
 
-Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTriggered`) are hand-written structs following the `GameSpeedMessages.h` pattern, in `Cluiche/CoW/Modules/EcologyMessages.h`.
+Messages (`CellEcologyChanged`, `EventThresholdCrossed`, `BiomeSuccessionTriggered`, and from 2026-11-18 `SeasonalArrival`, `SeasonalDeparture`, `RunSpawned`, `RunBlocked`) are hand-written structs following the `GameSpeedMessages.h` pattern, in `Cluiche/CoW/Modules/EcologyMessages.h`.
 
 ## Features
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Ecology Data | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature and `rainfall_baseline`), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster. Pure logic, TDD | TBD | Draft |
+| 1 | Ecology Data & Flow Graph | `species.json` (incl. `habitat`, aquatic groups, `coastal_reach`, the optional `seasonal` block), `biomes.json` (13 ids, `BiomeProfile`, seasonal temperature, `rainfall_baseline`, starting pool values, `weathering`), **`flow_graph.json` (envelope `cow.flow_graph`): node and edge schema, validation, `CompileFlowGraph` to CSR tables and trophic order, the shipped graph encoding today's roles** (amended 2026-11-18), `succession_rules.json`, `ecology_parameters.json`: load from `Assets/CoW/Global/Ecology/` with envelopes `cow.species`, `cow.biomes`, `cow.ecology_params` (amended 2026-10-19, F-3 World Assets), validate, defaults, fallback roster and graph. Pure logic, TDD | TBD | Draft |
 | 2 | Cell State & Initialise | `EcologyFields` SoA, palettes, `EcologyWorldInput` from `WorldStructure`, derived geography (C11), seeded soil, starting populations, `IBiomeSeasonalBaseline` implementation. Pure logic, TDD | TBD | Draft |
-| 3 | Cell Equations | Per-cell steps 1, 3–7 and 12: producers, per-species births, maturation, Allee, competition, starvation, predation (age-weighted), disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5. Pure logic, TDD | TBD | Draft |
+| 3 | Cell Equations | Per-cell steps 1, 3–7 and 12 **over the compiled flow graph** (amended 2026-11-18): producer growth with pool uptake, per-species births, maturation, Allee, competition, starvation, predation (age-weighted) and scavenging along `eats` edges, deaths and waste along `returns` edges, disease, clamping; `StepCell`; `EcologyLedger` deltas by cause, written as each term is computed (ledger sums equal the actual change). One test group per equation from TechnicalSpec §4–§5, plus the **role-equivalence golden** (shipped graph = GDD role equations) and graphs the GDD never had (omnivore, a scavenger that also hunts, a two-pool producer). Pure logic, TDD | TBD | Draft |
 | 4 | Grid Passes | Steps 8 and 11 plus pressure-field propagation (**water flow and the water table removed, A5 owns them; a thin step 2 builds `water_gradient` from A5's snapshot — amended 2026-11-17, aligned to locked GDD 2026-11-17, CHANGE-048**): migration solver (group and softmax, river and corridor modifiers), coastal cross-feeding, lifeboat guardrails, seed drift, natural ignition and fire spread, `years_low_herbivore_inflow`; step-outer passes, gather, `Dia::DeferredStep::IParallelExecutor`, bit-identity, 16 ms Season gate **plus the combined Season+Year+Decade+Century measurement** (Open Design Question 1). Pure logic, TDD | TBD | Draft |
 | 5 | Ecology State & Succession | Health index plus hysteresis (C4), succession rule evaluation, forward and recovery, with the recovery multiplier (C7), the `ISuccessionResolver` seam at step 10, `BiomeSuccessionTriggered`, one-shot `ApplyBiomeTransition` (C9). Pure logic, TDD | TBD | Draft |
 | 6 | Event Detection | Connected-cell clustering for drought front, predator wave, disease bloom; recolonization; `CellEcologyChanged` change set. Pure logic, TDD | TBD | Draft |
 | 7 | EcologyModule | SimModule: data load and hot reload, `HydrologyUpdated` accumulation via `HydrologySnapshotInput` with the no-A5 fallback (amended 2026-11-17), `WorldGenerationComplete` init, `WeatherUpdated` accumulation via `WeatherSnapshotInput`, **registration as World Step stage `ecology` with `Capture`/`Run`/`Commit` and `SerializePending`/`DeserializePending`** (amended 2026-11-13; replaces `mSeasonPending` scheduling and the self-driven band gate), due-band resolution from the capture key, stub-input mode, publishing, `IBiomeSeasonalBaseline` via `ModuleRef`, `cow_main.diaapp` entry | TBD | Draft |
 | 8 | Ecology Save/Load | `EcologySaveParticipant`: JSON arrays plus palettes, validate, save/continue/load/continue round-trip | TBD | Draft |
-| 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first (14 sim-hosted `cow.ecology.*` with mandatory help and rollback), then panel card, `CellDetailRegistry` rows with the change ledger + hover extras, DiaCellLayers layers, the decimated migration-arrow draw overlay, live tuning sliders + `tuning.save` write-back, cell edit/paint over the `cells.select.*` selection, `isolate_cell`, DiaCellHistory events, profiling, `cow.ecology.band_ms` with `MetricInfo`, health. **No cell inspector and no time-series panel** — DiaCellLayers owns the first, and DiaCellHistory's in-game panel was never built. Needs an HTML mockup before build | TBD | Draft |
+| 9 | Ecology Debug & Tools | `EcologyDebugDomain`: command model first (16 sim-hosted `cow.ecology.*` with mandatory help and rollback), then panel card, `CellDetailRegistry` rows with the change ledger + hover extras, DiaCellLayers layers, the decimated migration-arrow draw overlay, live tuning sliders + `tuning.save` write-back, cell edit/paint over the `cells.select.*` selection, `isolate_cell`, DiaCellHistory events, profiling, `cow.ecology.band_ms` with `MetricInfo`, health. **No cell inspector and no time-series panel** — DiaCellLayers owns the first, and DiaCellHistory's in-game panel was never built. Needs an HTML mockup before build | TBD | Draft |
+| 10 | Nutrient Cycle | N1 (added 2026-11-18): detritus decay, ash release, weathering, uptake books, leaching, river transport along `downstream` in `upstream_order` with gather, river-mouth outflow, flood deposition from `flood_weeks_accumulator`; derived `downstream`/`river_mouth`/`upstream_order` at init; no-A5 fallback; nutrient ledger causes; conservation test every band; `ecology.nutrient.*` and `ecology.detritus.*` layers, save fields and panel books when Features 7–9 exist. Pure logic, TDD | TBD | Draft |
+| 11 | Seasonal Presence | S1 and S2 (added 2026-11-18): the `seasonal` block, off-map cohort reservoirs, visitor arrival/bias/departure/stragglers, `edge_distance`, fish-run entry at mouths, flow-weighted forks, `run_reach`, blocking by ice and low flow, spawning, die-off to carrion (`nutrient.run_import`), young drifting out to the reservoir, the four events, `cow.ecology.seasonal`, `ecology.runs` overlay, reservoir save. Ships one visitor and one run species in the default roster. Pure logic first, TDD | TBD | Draft |
 
 **Routed elsewhere:** the stage, its Controlled and Living modes, the guided proof scenarios (the old S-2 tests) and the long-run checks (the old S-3 tests) go to **S-3 Ecology** (S-2 and S-3 merged, 2026-10-18). Transition rules, legacy and recovery go to **A3**.
 
-**Build order:** 1 → 2 → 3 → 5. Feature 4 follows 3. Feature 6 follows 4 and 5. Feature 7 follows 6. Features 8 and 9 follow 7 and can run in parallel.
+**Build order:** 1 → 2 → 3 → 5. Feature 4 follows 3. Feature 6 follows 4 and 5. Feature 7 follows 6. Features 8 and 9 follow 7 and can run in parallel. *Amended 2026-11-18:* Feature 10 follows 3 and 4 (it needs uptake and the gather pattern); Feature 11 follows 4 and 10 (migration bias, and die-off feeds the books). Both are pure logic and can land before or after 7; if after, their module, save and debug wiring are tasks in their own plans. Layer 2 ([a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md)) follows Features 1–11 and S-3 Controlled-mode tuning.
 
 - Features 1–6 need no S-1, A3 or A4 code: their tests use hand-built hex grids and `StubWeatherInput`.
 - S-3 Ecology needs Features 1–7 and 9, plus S-1 Features 1 and 8 (its worlds come from S-1).
@@ -451,6 +595,10 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 17. **Natural ignition** (from the A3 spec): seeded lightning fires at the Season band, so fire and BurnedAshland emerge without dragons. This is new GDD content.
 18. **`years_low_herbivore_inflow`** (from the A3 spec) stands in for tundra's "migration routes severed".
 19. **Water is A5's** (amended 2026-11-17, A5 Hydrology). GDD step 2 "Water flow" and the Decade "water table drift" leave A1. The Decade water table stays deleted. Step 2 survives as a thin `water_gradient` build from A5 (aligned to locked GDD 2026-11-17, CHANGE-048). A1 reads soil moisture, river flow, flooding, inundation and ice from A5, and treats inundated cells as aquatic habitat. The GDD `water_dragon_emission` direct write is dropped; dragon water effects go through A4's influence API. Folded back: GDD A1 and A5 locked 2026-11-17 (CHANGE-048). The thin step 2 source formula is Cluiche-specified.
+20. **The food web is a data flow graph** (2026-11-18). TechnicalSpec §1a's rule that code never names a species extends to producers, pools, detritus and roles. The fixed producer fields (`grass`, `shrub`, `tree`, `aquatic`) and transients (`carrion`, `waste`) become shipped nodes, and diets become weighted `eats` edges. The GDD's equations are unchanged in meaning (the role-equivalence golden proves it). **A3 amendment owed:** rule conditions that read `grass`, `soil_fertility` etc. use node ids.
+21. **Nutrient cycle** (2026-11-18, new GDD content). `soil_fertility` stops being static: it is the `nutrient.soil` pool, fed by decay, ash, weathering and run die-off, drained by uptake, leaching and river-mouth outflow, moved downstream along rivers and spread by floods. A1 owns it and only reads A5, so **no A5 change**.
+22. **Seasonal presence and off-map reservoirs** (2026-11-18, new GDD content; extends C10). Seasonal visitors enter from listed map edges, fish runs enter at river mouths, and each draws on an off-map cohort reservoir whose next arrivals depend on what left the map healthy. This is the only off-map state; lifeboats and hard edges are unchanged.
+23. **Layer 2 is its own system spec, and herds can be persistent** (2026-11-18). See [a1-populationtokens.md](../a1-populationtokens/a1-populationtokens.md): the GDD's transient fronts (form on outflow, dissolve back into cells) are kept, and persistent herd tokens that own a flagged species' population are new GDD content.
 
 ## Dependencies
 
@@ -458,6 +606,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 *Statuses re-verified against code 2026-11-13; every "not built" below was stale.*
 
 - **S-1 World Generation — fully built** (system `Done` 2026-11-13), including Feature 9 Regions and Sites (`SiteRegistry`, `SiteSet`, `RegionTable`), so `hearth_site`, `nexus_node` and `world_throne_type` **can be populated at init** — the "all false until Feature 9" caveat in Initial state is obsolete. A1 reads the world through `GetCurrentWorld()` (null until `GetWorldRevision() >= 1`) and `IsReady(revision)`; note `IsReady` takes a revision and there is no zero-arg form. A1 Features 1–6 still need no S-1 code.
+- **S-1 `Cell::downstream`** (built) — the river network for nutrient transport and fish runs (added 2026-11-18). A1 reads it at init and needs no S-1 change.
 - **S-1 Consumer Amendments, amendment 1** (@docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md, Draft) — the shared `Biome` enum widened 10 → 13. **Gates A1 Feature 2.**
 - **World Step** (@docs/specs/applications/cow/systems/worldstep/worldstep.md, Approved 2026-11-13) — A1 registers as stage `ecology`; the coordinator owns the cadence, the channel and history sampling. **Gates Feature 7.**
 - **DiaDeferredStep** — system Approved 2026-11-12, all five feature specs Approved 2026-11-13 with plans. Supplies `IParallelExecutor::ParallelFor(count, minRange, fn)`, `SerialExecutor` and the capped executor. **Gates Feature 4's executor work**; A1 implements none of them.
@@ -472,7 +621,7 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - DiaMessageBus via `MessageBusHostModule`, `VisualDebuggerModule`, DiaCore (Json, StringCRC, containers, logging).
 
 **Soft dependencies (fallbacks until they exist):**
-- **A5 Hydrology** (amended 2026-11-17; GDD locked 2026-11-17, CHANGE-048; Cluiche spec Draft, unbuilt, @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md). Without it, A1 uses A4 rainfall or the pinned climate as its water input, and the river-overlay floor stays static. With it, A5 is stage `hydrology` ahead of `ecology` in the World Step order.
+- **A5 Hydrology** (amended 2026-11-17; GDD locked 2026-11-17, CHANGE-048; Cluiche spec Draft, unbuilt, @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md). Without it, A1 uses A4 rainfall or the pinned climate as its water input, and the river-overlay floor stays static. With it, A5 is stage `hydrology` ahead of `ecology` in the World Step order. *Added 2026-11-18:* Features 10 and 11 also read `RiverFlow`, `Flooded`, `Inundated`, `PassabilityAt` and `LowFlowWeeks`, all already in the A1 hydrology seam; without A5, transport runs at base rate, nothing floods and nothing blocks a run.
 - **A4.** Without it, `StubWeatherInput` is used and the panel reports the stub as the source.
 - **A3.** Without it, triggers are published and counted but no biome changes. A debug `cow.ecology.apply_transition` command can apply one by hand.
 
@@ -490,6 +639,9 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 - Succession: counters rise and decay per rule; the trigger fires at 1.0 with the right `to` and `source`; every counter resets after `ApplyBiomeTransition`; legacy deltas apply once and clamp; recovery rules keep progress when their conditions fail, and multiply by the resolver's factor; triggers reach the resolver in cell-index order, and the biome changes before step 12; natural ignition is deterministic and scales with drought and fuel.
 - Grid passes: migration conserves population (out = in plus edge loss of 0); pressure fields decay faster than they spread with distance; Ocean and Lake are impassable to land species; coastal feeding is symmetric; lifeboats only seed Collapsed neighbours.
 - Events: cluster detection at and below the minimum size.
+- Flow graph (added 2026-11-18): each validation rule rejects or warns as listed; compilation is deterministic (same file, same indices, order and CSR); cycles get a stable trophic order; the role-equivalence golden; an edited graph with an omnivore runs and stays bounded.
+- Nutrients (added 2026-11-18): conservation every band to tolerance; transport is order-independent (gather) and moves mass only along `downstream`; mouth outflow leaves the map; floods enrich only flooded cells; leaching rises with water; no-A5 fallback.
+- Seasonal presence (added 2026-11-18): arrival empties the ready cohort into the listed edges only; departure returns edge populations to the reservoir; `die` stragglers become carrion, `stay` stragglers remain; a run splits at forks by flow, stops at `run_reach`, at ice and at low flow; die-off moves mass into carrion and books `run_import`; a bad map year gives smaller arrivals after `cohort_years`; a save mid-presence and mid-run reloads bit-identically.
 - Determinism: same inputs give bit-identical fields. `SerialExecutor` vs 1, 3 and 17 ranges, and reversed range order, all give bit-identical fields after 40 years. **Added 2026-11-13:** a deferred run through World Step matches a synchronous run of the same bands bit-for-bit, and a capture-isolation test poisons the weather/world source after `Capture` to prove `Run` never reads Sim-owned state (DFS-002).
 
 **Layer goldens (added 2026-11-13, "cell data over pixels").** Verification is by cell data and stats, not screenshots. Features 3–5 use `Dia/DiaCellLayers/Testing/CellLayerGolden.h` (`HashLayer`, `GoldenStore::Check`, update with `DIA_UPDATE_GOLDEN=1`) against `Tests/GoogleTests/CoW/Golden/ecology_layers.golden.json`: the default tracked layers plus `ecology.state` and `ecology.health`, over a fixed hand-built grid and roster after a fixed band count. Screenshots stay as a per-feature taste check for the user.
@@ -512,10 +664,27 @@ These are for the DesignDocs owner to fold back into A1, A3, S-2 and S-3:
 2. **Starting constants.** The health-index weights and bands, the streak lengths, `coastal_reach` and the aquatic roster are new numbers with no GDD values. S-3 Ecology's Controlled mode tunes them first. If they move a lot, should the GDD lock them, or should they stay as tuning-file values?
 3. **Memory at scale.** Dense `[species × cell]` arrays cost 15 species × 2 × 6,656 floats (about 0.8 MB), which is fine. If the roster grows past about 40 species, a sparse per-biome species set may be needed. This is revisited in Feature 4's benchmark.
 4. **Same-tick Season+Year ledger loss (resolved 2026-10-19, DiaCellLayers/DiaCellHistory).** When the Season and Year bands run on the same tick (every 364 days), the last-band-only ledger is overwritten by the Year band, so the Season band's deltas are lost. **Resolved:** Recording the ledger's top causes per band as DiaCellHistory events preserves the Season delta information.
+5. **Is one step per Season fine-grained enough for runs and visitors?** (opened 2026-11-18.) Presence changes four times a year, and a run moves `run_reach` cells per Season pass, so a run on a long river can take several Seasons to arrive. If S-3 shows it reads as jumps rather than a wave, the option is a light weekly presence pass on `WeatherUpdated` (runs advance and spawn weekly, everything else stays seasonal). That costs a weekly A1 hook World Step doesn't have today.
+6. **What does the generic graph cost?** (opened 2026-11-18.) The CSR tables keep the hot loop index-only, but a richer web multiplies edges per cell. Feature 3 measures the shipped graph against the role-based reference; Feature 4's gate covers it at Large. If a large web misses 16 ms, the options are a per-biome active node set (Open Q3) or skipping zero-density food in the edge loop.
+7. **How is a dynamic food web kept stable?** (opened 2026-11-18.) Data authors can now make webs the GDD never tuned: an apex omnivore, or two predators eating each other. Validation catches broken books, not boom-bust collapse. The fallback is S-3 Controlled mode plus the guardrails (lifeboats, extinction floor); a "web health" check in the panel (any node trending to zero over N years) may be worth adding during tuning.
+
+## Future Extensions (breadth, not built here)
+
+*Added 2026-11-18.* Ideas raised with the ecology expansion and deliberately not taken now. Most are data on the flow graph; the rest need new state.
+
+| Idea | Fits the graph? | Shape |
+|---|---|---|
+| Pathogens as nodes | Mostly data | A `pathogen` node kind with `infects` edges to species and reservoirs in detritus or water; spreads with herd tokens (Layer 2). Replaces the per-species `disease_load` |
+| Pollinators and insects | Data | Seasonal consumer nodes plus a `pollinates` edge that boosts a producer's growth; food for birds |
+| Plant structure | New state | Grass, shrub and canopy as layered producers with shading, plus seed dispersal by animals and wind; changes A3's inputs, so A3 is part of it |
+| Regional adaptation | New state | Per-region trait drift (cold or drought tolerance) per species; echoes CoW's dragon breeding theme |
+| Invasive species | Data + events | Introductions that outcompete natives, possibly carried by dragons or herds |
+
+Each becomes a spec amendment or its own spec when picked up. Their names are also in BACKLOG.
 
 ## Status
 
-**Status:** `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.
+**Status:** `Approved` (amended and re-approved 2026-11-18, ecology expansion: flow graph, nutrient cycle, seasonal presence, Layer 2 split out). Previously `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.
 
 **Amended 2026-11-17 (A5 Hydrology).** Water moves to A5: Feature 4 loses water flow and the water table, A1 gains a hydrology input with a no-A5 fallback, World Step order is `["weather", "hydrology", "ecology"]`, `water_dragon_emission` is dropped. Status stays `Approved`; Features 4 and 7 text changed, and the unbuilt A5 spec is `Draft`. **Aligned to locked GDD 2026-11-17 (CHANGE-048):** thin step 2 `water_gradient` restored, inundated cells count as aquatic habitat, A5 counters exposed to A3. GDD A1 TechnicalSpec 13.4 is now written; it supplies the accumulators and the river-floor mean ratio, and the step 2 formula is Cluiche's. The rule schema gains `INUNDATION` and `to: none`; the shipped rule file has 17 rules.
 
