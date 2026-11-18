@@ -7,6 +7,7 @@
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaSaveGame/SaveManager.h>
 #include <DiaSaveGame/SaveRegistry.h>
@@ -116,13 +117,15 @@ namespace Dia::DeferredStep
 		mSaveResolved = false;
 		mScheduler.Reset();
 		mLauncher.Reset();
+		mJobLauncher = nullptr;
 
 		const CapConfig& config = mConfig;
 
 		if (mJobSystemReader.IsConnected() && mJobSystemReader.IsAvailable())
 		{
 			Dia::Threading::JobSystem& jobs = mJobSystemReader.Get();
-			mLauncher.Reset(new JobStepLauncher(jobs, config));
+			mJobLauncher = new JobStepLauncher(jobs, config);
+			mLauncher.Reset(mJobLauncher);
 			DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "DeferredStep started: cap=%u, rangesPerWorker=%u, workers=%u",
 				static_cast<unsigned>(static_cast<JobStepLauncher*>(mLauncher.Get())->GetCapGate().GetWorkerCap()),
 				static_cast<unsigned>(config.rangesPerWorker),
@@ -137,7 +140,9 @@ namespace Dia::DeferredStep
 		mScheduler.Reset(new DeferredStepScheduler(*mLauncher.Get()));
 		mSaveParticipant.Reset(new DeferredStepSaveParticipant(*mScheduler.Get()));   // Attach happens in a later task
 
-		// SEAM(metrics/health task): register metrics and the IHealthReporter here; unregister in DoStop.
+		mLastSeenStalls = 0;
+		mMetrics.Register();
+		Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
 
@@ -182,6 +187,15 @@ namespace Dia::DeferredStep
 		}
 
 		mScheduler->Tick(mKeySource->GetCurrentKey());
+
+		const SchedulerStats& stats = mScheduler->GetStats();
+		if (stats.stalls > mLastSeenStalls)
+		{
+			mHealth.NoteStall();
+		}
+		mLastSeenStalls = stats.stalls;
+		const bool hasCap = mJobLauncher != nullptr;
+		mMetrics.Update(stats, hasCap ? mJobLauncher->GetCapGate().GetStats() : CapStats(), hasCap);
 	}
 
 	Dia::ApplicationFlow::StopResult DeferredStepModule::DoStop()
@@ -205,10 +219,12 @@ namespace Dia::DeferredStep
 		mSaveAttached = false;
 		mSaveResolved = false;
 
-		// SEAM(metrics/health task): unregister metrics and the health reporter here.
+		Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+		mMetrics.Unregister();
 		mSaveParticipant.Reset();
 		mScheduler.Reset();
 		mLauncher.Reset();
+		mJobLauncher = nullptr;
 		return Dia::ApplicationFlow::StopResult::kDone;
 	}
 }

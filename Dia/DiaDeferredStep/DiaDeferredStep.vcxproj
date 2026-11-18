@@ -98,6 +98,8 @@
     <ClInclude Include="Testing\PendingStateStep.h" />
     <ClInclude Include="IStepKeySource.h" />
     <ClInclude Include="DeferredStepModule.h" />
+    <ClInclude Include="DeferredStepMetrics.h" />
+    <ClInclude Include="DeferredStepHealth.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />
@@ -108,6 +110,8 @@
     <ClCompile Include="JobStepLauncher.cpp" />
     <ClCompile Include="DeferredStepSaveParticipant.cpp" />
     <ClCompile Include="DeferredStepModule.cpp" />
+    <ClCompile Include="DeferredStepMetrics.cpp" />
+    <ClCompile Include="DeferredStepHealth.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />

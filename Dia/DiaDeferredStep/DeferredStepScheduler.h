@@ -32,6 +32,7 @@ namespace Dia::DeferredStep
 		uint64_t totalStallMicros = 0;
 		uint64_t drains = 0;
 		uint64_t drainedSteps = 0;
+		int64_t  lastApplySlackKeys = 0;   // slack of the most recently applied step (0 if none yet)
 	};
 
 	// A completed-but-unapplied step, as reported by GetPendingAt.

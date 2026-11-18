@@ -309,6 +309,7 @@ namespace Dia::DeferredStep
 				done.state = StepState::kIdle;
 				++done.stats.applies;
 			}
+			mStats.lastApplySlackKeys = owned ? mChannels[after].stats.lastSlackKeys : 0;
 			++mStats.applies;
 			if (owned && mStats.inFlight > 0)
 			{
@@ -338,6 +339,7 @@ namespace Dia::DeferredStep
 				++done.stats.applies;
 			}
 		}
+		mStats.lastApplySlackKeys = 0;
 		++mStats.applies;
 	}
 

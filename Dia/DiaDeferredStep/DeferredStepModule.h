@@ -12,6 +12,9 @@
 #include <DiaDeferredStep/DeferredStepSaveParticipant.h>
 #include <DiaDeferredStep/IStepLauncher.h>
 #include <DiaDeferredStep/IStepKeySource.h>
+#include <DiaDeferredStep/DeferredStepHealth.h>
+#include <DiaDeferredStep/DeferredStepMetrics.h>
+#include <DiaDeferredStep/JobStepLauncher.h>
 
 namespace Dia::SaveGame
 {
@@ -66,6 +69,11 @@ namespace Dia::DeferredStep
 			Dia::Core::UniquePtr<IStepLauncher>                  mLauncher;
 			Dia::Core::UniquePtr<DeferredStepScheduler>          mScheduler;
 			Dia::Core::UniquePtr<DeferredStepSaveParticipant>    mSaveParticipant;   // constructed only; attach is a later task
+
+			JobStepLauncher*            mJobLauncher = nullptr;   // non-owning view of mLauncher when it is the job launcher (gate access)
+			DeferredStepMetrics         mMetrics;
+			DeferredStepHealth          mHealth;                   // registered with HealthRegistry between DoStart and DoStop
+			uint64_t                    mLastSeenStalls = 0;
 
 			IStepKeySource* mKeySource = nullptr;     // non-owning
 			bool            mWarnedNoKeySource = false;
