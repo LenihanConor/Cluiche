@@ -24,6 +24,7 @@
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
 #include <DiaObservation/Profile/CoarseChunkAssembler.h>
 #include <DiaObservation/Profile/JobChunkAssembler.h>
 #include <DiaObservation/Profile/PerfTimingStats.h>
@@ -81,12 +82,15 @@ public:
     // Task 3b: true once the "$perftrips" reader is attached.  Then "trips" leaves the unavailable list and
     // every unit carries "trips" (its cumulative trip count, from the coarse chunks).
     void SetTripsAttached(bool attached) { mTripsAttached = attached; }
+    // Optional, non-owning: announced crc -> name pairs (deferred-step channels) folded into the module name table.
+    void SetChannelNames(const Dia::Observation::Profile::ChannelNameTable* names) { mChannelNames = names; }
 
 private:
     const Dia::Observation::Profile::CoarseChunkAssembler& mAssembler;
     Dia::ApplicationFlow::IApplicationInspectable*         mApp;
     IPerfTimingSink&                                       mSink;
     const Dia::Observation::Profile::JobChunkAssembler*    mJobs;
+    const Dia::Observation::Profile::ChannelNameTable*     mChannelNames = nullptr;
     double                                                 mLastPublishSec;
     bool                                                   mHasPublished;
     uint32_t                                               mPublishCount;

@@ -188,6 +188,22 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b3b. Create $perfnames stream (framework-owned, all builds) ---
+        // crc -> name announcements for ids Main cannot derive from module instance ids (deferred-step channels).
+        // Tiny and rare; announcers resend periodically because late-registering readers get no replay.
+        {
+            auto* namesStore = new EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>(
+                Dia::Core::StringCRC("$perfnames"),
+                Dia::Core::StringCRC("ChannelNameAnnounce"),
+                /*capacity=*/64,
+                /*maxReaders=*/4,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfNamesStore = namesStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(namesStore);
+            ++mStreamStoreCount;
+        }
+
         // --- 1b4. Create $perftrips stream (framework-owned, all builds; Perf Inspector task 3b) ---
         // One TripChunk per emitted over-budget trip (rate limited per unit), so tiny traffic.
         {

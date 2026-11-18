@@ -45,6 +45,13 @@ namespace
             if (!Find(id.Value()))
                 entries.emplace_back(id.Value(), std::string(id.AsChar()));
         }
+        // Announced names fill gaps only: a module instance id keeps its own name.
+        void Merge(const ChannelNameTable& announced)
+        {
+            for (uint32_t i = 0; i < announced.Count(); ++i)
+                if (!Find(announced.CrcAt(i)))
+                    entries.emplace_back(announced.CrcAt(i), std::string(announced.NameAt(i)));
+        }
     };
 
     // The packer takes a plain function pointer, so the table in use is passed via a pointer that is
@@ -151,14 +158,25 @@ namespace
 
 PerfWindowCommands::PerfWindowCommands(Dia::ApplicationFlow::EventStreamStore<CoarseChunk>* store,
                                        Dia::ApplicationFlow::IApplicationInspectable* app,
-                                       Dia::ApplicationFlow::EventStreamStore<JobChunk>* jobsStore)
+                                       Dia::ApplicationFlow::EventStreamStore<JobChunk>* jobsStore,
+                       Dia::ApplicationFlow::EventStreamStore<ChannelNameAnnounce>* namesStore)
     : mStore(store)
     , mApp(app)
     , mReader(-1)
     , mJobsStore(jobsStore)
     , mJobsReader(-1)
+    , mNamesStore(namesStore)
+    , mNamesReader(-1)
     , mRegistered(false)
 {
+    if (mNamesStore)
+    {
+        mNamesReader = mNamesStore->RegisterReader();
+        if (mNamesReader < 0)
+            DIA_LOG_WARNING("PerfWindow", "No free reader on $perfnames; deferred-step channels will show as hex");
+        else
+            mNamesScratch = std::make_unique<NameDrainBuffer>();
+    }
     if (mJobsStore)
     {
         mJobsReader = mJobsStore->RegisterReader();
@@ -235,6 +253,17 @@ void PerfWindowCommands::Unregister()
 
 void PerfWindowCommands::Drain()
 {
+    if (mNamesStore && mNamesReader >= 0 && mNamesScratch)
+    {
+        for (int pass = 0; pass < 8; ++pass)
+        {
+            mNamesScratch->RemoveAll();
+            mNamesStore->Consume(mNamesReader, *mNamesScratch);
+            if (mNamesScratch->Size() == 0) break;
+            for (unsigned int i = 0; i < mNamesScratch->Size(); ++i)
+                mChannelNames.Apply((*mNamesScratch)[i].payload);
+        }
+    }
     if (mJobsStore && mJobsReader >= 0 && mJobsScratch)
     {
         for (int pass = 0; pass < 32; ++pass)
@@ -266,6 +295,7 @@ Json::Value PerfWindowCommands::HandleWindow(const Json::Value& args)
 
     NameTable unitNames, moduleNames;
     BuildNames(mApp, unitNames, moduleNames);
+    moduleNames.Merge(mChannelNames);
 
     const uint32_t unitCount = mAssembler.GetUnitCount();
     std::vector<PerfWindowUnitInput> inputs(unitCount);
@@ -341,6 +371,7 @@ Json::Value PerfWindowCommands::HandleJobs(const Json::Value& args)
 
     NameTable unitNames, moduleNames;
     BuildNames(mApp, unitNames, moduleNames);
+    moduleNames.Merge(mChannelNames);
 
     uint32_t crc = 0;
     if (!FindUnitCrc(mJobsAssembler, unitNames, args["unit"].asString(), crc))
@@ -373,6 +404,7 @@ Json::Value PerfWindowCommands::HandleFrame(const Json::Value& args)
 
     NameTable unitNames, moduleNames;
     BuildNames(mApp, unitNames, moduleNames);
+    moduleNames.Merge(mChannelNames);
 
     uint32_t crc = 0;
     if (!FindUnitCrc(mAssembler, unitNames, args["unit"].asString(), crc))

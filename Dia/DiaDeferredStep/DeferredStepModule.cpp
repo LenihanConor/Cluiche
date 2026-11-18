@@ -112,6 +112,7 @@ namespace Dia::DeferredStep
 	void DeferredStepModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 	{
 		mJobSystemReader.Connect(app);
+		if (mNameSink == nullptr) { mNameSink = app.GetPerfNamesStore(); }
 	}
 
 	bool DeferredStepModule::GetSummary(uint32_t indexFromOldest, Dia::Observation::Profile::StepSummaryRecord& out) const
@@ -206,6 +207,10 @@ namespace Dia::DeferredStep
 		mSummaryCount = 0;
 		mScheduler->SetSummarySink(this);
 
+		// A (re)start announces afresh once its channels register.
+		mHasAnnounced = false;
+		mAnnouncedCount = 0;
+
 		// Default to this PU's own table (written only on SimPU, which owns it); an explicit SetJobTimingTable wins.
 		if (mJobTimingTable == nullptr && GetProcessingUnit() != nullptr)
 		{
@@ -216,6 +221,42 @@ namespace Dia::DeferredStep
 		mMetrics.Register();
 		Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
 		return Dia::ApplicationFlow::StartResult::kReady;
+	}
+
+	// SimPU only. Sends every registered channel's name when the channel set changed or the resend interval elapsed.
+	// Fixed-size events, no allocation; a missing sink or reader costs nothing.
+	void DeferredStepModule::AnnounceChannelNames()
+	{
+		if (mNameSink == nullptr || mScheduler.Get() == nullptr) { return; }
+		const uint32_t count = mScheduler->GetChannelCount();
+		if (count == 0) { return; }
+
+		Dia::Core::StringCRC ids[DeferredStepScheduler::kMaxChannels];
+		bool changed = !mHasAnnounced || count != mAnnouncedCount;
+		for (uint32_t i = 0; i < count && i < DeferredStepScheduler::kMaxChannels; ++i)
+		{
+			mScheduler->GetChannelIdAt(i, ids[i]);
+			if (!changed && ids[i].Value() != mAnnouncedCrc[i]) { changed = true; }
+		}
+
+		const auto now = std::chrono::steady_clock::now();
+		if (!changed && std::chrono::duration_cast<std::chrono::milliseconds>(now - mLastAnnounce).count() < static_cast<long long>(mNameResendMs))
+		{
+			return;
+		}
+
+		for (uint32_t i = 0; i < count && i < DeferredStepScheduler::kMaxChannels; ++i)
+		{
+			Dia::ApplicationFlow::Event<Dia::Observation::Profile::ChannelNameAnnounce> ev;
+			ev.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+			ev.senderCrc = GetInstanceId().Value();
+			ev.payload = Dia::Observation::Profile::MakeChannelNameAnnounce(ids[i].Value(), ids[i].AsChar());
+			mNameSink->Send(ev);
+			mAnnouncedCrc[i] = ids[i].Value();
+		}
+		mAnnouncedCount = count < DeferredStepScheduler::kMaxChannels ? count : DeferredStepScheduler::kMaxChannels;
+		mHasAnnounced = true;
+		mLastAnnounce = now;
 	}
 
 	void DeferredStepModule::SetKeySource(IStepKeySource& source)
@@ -250,6 +291,8 @@ namespace Dia::DeferredStep
 				DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "No save services injected; DeferredStep does not participate in save/load");
 			}
 		}
+
+		AnnounceChannelNames();
 
 		if (mKeySource == nullptr)
 		{

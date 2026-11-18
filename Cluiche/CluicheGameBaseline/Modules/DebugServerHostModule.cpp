@@ -123,7 +123,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
         if (appImpl && appImpl->GetPerfCoarseStore())
             mPerfWindowCommands = std::make_unique<PerfWindowCommands>(
                 appImpl->GetPerfCoarseStore(), dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(appImpl),
-                appImpl->GetPerfJobsStore());
+                appImpl->GetPerfJobsStore(), appImpl->GetPerfNamesStore());
     }
     if (mPerfWindowCommands)
         mPerfWindowCommands->Register();
@@ -153,6 +153,7 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
             dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(GetApplication()),
             *mPerfTimingSink,
             &mPerfWindowCommands->GetJobsAssembler());
+        mPerfTimingPublisher->SetChannelNames(&mPerfWindowCommands->GetChannelNames());
     }
     {
         auto* appImpl2 = dynamic_cast<Dia::ApplicationFlow::Application*>(GetApplication());

@@ -45,6 +45,12 @@ namespace
             if (!Find(id.Value()))
                 entries.emplace_back(id.Value(), std::string(id.AsChar()));
         }
+        void Merge(const ChannelNameTable& announced)
+        {
+            for (uint32_t i = 0; i < announced.Count(); ++i)
+                if (!Find(announced.CrcAt(i)))
+                    entries.emplace_back(announced.CrcAt(i), std::string(announced.NameAt(i)));
+        }
     };
 
     void BuildNames(Dia::ApplicationFlow::IApplicationInspectable* app, NameTable& units, NameTable& modules)
@@ -178,6 +184,7 @@ void PerfTimingPublisher::Tick(double nowSec)
 
     NameTable unitNames, moduleNames;
     BuildNames(mApp, unitNames, moduleNames);
+    if (mChannelNames) moduleNames.Merge(*mChannelNames);
 
     Json::Value root(Json::objectValue);
     root["scale"]     = 0.01;

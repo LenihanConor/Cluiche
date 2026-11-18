@@ -18,6 +18,7 @@ namespace Json { class Value; }
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/JobChunk.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
 #include <DiaObservation/Profile/TripChunk.h>
 #include <DiaObservation/Trace/SpanChunk.h>
 #include <DiaObservation/Trace/SpanChunkSink.h>
@@ -151,6 +152,9 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::CoarseChunk>* GetPerfCoarseStore() { return mPerfCoarseStore; }
         // Perf Inspector task 13: the "$perfjobs" store (JobChunk, jobs and workers), for a Main-side reader.
         EventStreamStore<Dia::Observation::Profile::JobChunk>* GetPerfJobsStore() { return mPerfJobsStore; }
+        // The "$perfnames" store (ChannelNameAnnounce: crc -> name for non-module ids such as deferred-step channels).
+        // Any PU may Send; a Main-side reader folds the pairs into its name table. No replay: announcers resend.
+        EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* GetPerfNamesStore() { return mPerfNamesStore; }
         // Perf Inspector task 3b: the "$perftrips" store (TripChunk, one per emitted trip), for a Main-side reader.
         EventStreamStore<Dia::Observation::Profile::TripChunk>* GetPerfTripsStore() { return mPerfTripsStore; }
         // Perf Inspector row 6b: the "$perfspans" store (SpanChunk, closed trace spans batched by a sink on the
@@ -290,6 +294,8 @@ namespace Dia { namespace ApplicationFlow {
         EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mPerfCoarseStore = nullptr;
         // Perf Inspector task 13: framework-owned "$perfjobs" EventStream (all builds): per-PU JobChunk.
         EventStreamStore<Dia::Observation::Profile::JobChunk>* mPerfJobsStore = nullptr;
+        // Framework-owned "$perfnames" EventStream (all builds): ChannelNameAnnounce from any PU.
+        EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* mPerfNamesStore = nullptr;
         // Perf Inspector task 3b: framework-owned "$perftrips" EventStream (all builds): per-PU TripChunk.
         EventStreamStore<Dia::Observation::Profile::TripChunk>* mPerfTripsStore = nullptr;
         // Perf Inspector row 6b: framework-owned "$perfspans" EventStream (all builds) fed by mSpanSink.

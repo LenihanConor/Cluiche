@@ -16,6 +16,7 @@
 
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/CoarseChunkAssembler.h>
 #include <DiaObservation/Profile/JobChunk.h>
@@ -38,7 +39,8 @@ public:
     // raw job records (tier 3, at most kMaxJobRecords per reply).
     PerfWindowCommands(Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::CoarseChunk>* store,
                        Dia::ApplicationFlow::IApplicationInspectable* app,
-                       Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::JobChunk>* jobsStore = nullptr);
+                       Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::JobChunk>* jobsStore = nullptr,
+                       Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* namesStore = nullptr);
 
     static constexpr uint32_t kMaxJobRecords = 2000;   // perf.jobs reply cap (AC13)
     ~PerfWindowCommands();
@@ -53,6 +55,10 @@ public:
 
     // Reads every pending chunk from the stream and applies it to the assembler.
     void Drain();
+
+    // Names announced on the "$perfnames" store (deferred-step channels etc.), kept across ticks. Drain() fills it;
+    // the commands and PerfTimingPublisher fold it into their crc -> name tables, so hex ids resolve.
+    const Dia::Observation::Profile::ChannelNameTable& GetChannelNames() const { return mChannelNames; }
 
     // perf.window {seconds?}: packed window of every known unit.  Never fails (no units -> empty list).
     Json::Value HandleWindow(const Json::Value& args);
@@ -72,12 +78,17 @@ private:
     Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::JobChunk>*    mJobsStore;
     int                                                                             mJobsReader;
     Dia::Observation::Profile::JobChunkAssembler                                    mJobsAssembler;
+    Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* mNamesStore;
+    int                                                                             mNamesReader;
+    Dia::Observation::Profile::ChannelNameTable                                     mChannelNames;
     bool                                                                            mRegistered;
     // Drain scratch (4 x ~8.6 KB events): heap, so Drain never puts it on the stack.
     typedef Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<Dia::Observation::Profile::CoarseChunk>, 4> DrainBuffer;
     std::unique_ptr<DrainBuffer>                                                    mScratch;
     typedef Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<Dia::Observation::Profile::JobChunk>, 4> JobDrainBuffer;
     std::unique_ptr<JobDrainBuffer>                                                 mJobsScratch;
+    typedef Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<Dia::Observation::Profile::ChannelNameAnnounce>, 16> NameDrainBuffer;
+    std::unique_ptr<NameDrainBuffer>                                                mNamesScratch;
 };
 
 }} // namespace Cluiche::AppFlow

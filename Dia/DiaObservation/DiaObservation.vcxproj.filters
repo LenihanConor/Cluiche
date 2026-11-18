@@ -180,6 +180,9 @@
     <ClCompile Include="Trace\ChainBuilder.cpp">
       <Filter>Trace</Filter>
     </ClCompile>
+    <ClCompile Include="Profile\ChannelNameAnnounce.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h">
@@ -416,6 +419,9 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="Profile\StepSummaryRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ChannelNameAnnounce.h">
       <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>

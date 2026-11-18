@@ -551,6 +551,13 @@ namespace Dia::DeferredStep
 		return index < 0 ? StepState::kIdle : mChannels[index].state;
 	}
 
+	bool DeferredStepScheduler::GetChannelIdAt(uint32_t index, Dia::Core::StringCRC& out) const
+	{
+		if (index >= mChannels.Size()) { return false; }
+		out = mChannels[index].channelId;
+		return true;
+	}
+
 	uint32_t DeferredStepScheduler::GetChannelCount() const
 	{
 		return mChannels.Size();

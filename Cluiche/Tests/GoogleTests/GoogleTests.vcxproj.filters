@@ -3129,5 +3129,11 @@
     <ClCompile Include="DiaDeferredStep\TestDeferredStepModuleSummary.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestDeferredStepNameAnnounce.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestChannelNameAnnounce.cpp">
+      <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

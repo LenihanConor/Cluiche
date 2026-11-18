@@ -8,6 +8,7 @@
 #include <Types/PerfWindowCommands.h>
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
 #include <DiaObservation/Profile/CoarseChunk.h>
 #include <DiaObservation/Profile/JobChunk.h>
 #include <DiaObservation/Profile/JobChunkBuilder.h>
@@ -363,4 +364,49 @@ TEST_F(PerfJobsRig, RegisterDispatchesPerfJobsWithDescriptionAndParams)
     cmds.Unregister();
     resp = Dia::API::ExecuteCommandJson(StringCRC("perf.jobs"), Args("0x00000011", 0, 10));
     EXPECT_FALSE(resp["success"].asBool());
+}
+
+// ---- "$perfnames": announced channel names resolve hex channel ids in jobs.steps -----------------------------------
+
+TEST_F(PerfJobsRig, AnnouncedChannelNameResolvesStepChannelInWindow)
+{
+    EventStreamStore<ChannelNameAnnounce> names{ StringCRC("test_perfjobs_names"), StringCRC("ChannelNameAnnounce"), 16, 1 };
+    EventStreamStore<CoarseChunk> coarse2{ StringCRC("test_perfjobs_coarse2"), StringCRC("CoarseChunk"), 16, 1 };
+    EventStreamStore<JobChunk>    jobs2{ StringCRC("test_perfjobs_jobs2"), StringCRC("JobChunk"), 16, 1 };
+    PerfWindowCommands named(&coarse2, nullptr, &jobs2, &names);
+
+    const StringCRC channel("DeferredStepSynthetic");
+    auto chunk = std::make_unique<JobChunk>();
+    std::memset(chunk.get(), 0, sizeof(JobChunk));
+    chunk->unitCrc = 0x11u;
+    chunk->flags = JobChunk::kFlagPerJob;
+    chunk->stepCount = 1;
+    chunk->steps[0].channel = channel.Value();
+    chunk->steps[0].kickKey = 3;
+    Event<JobChunk> jev;
+    jev.payload = *chunk;
+    jobs2.Send(jev);
+
+    // Before the announce: hex.
+    named.Drain();
+    Json::Value w = named.HandleWindow(Json::Value(Json::objectValue));
+    ASSERT_EQ(1u, w["jobs"]["steps"].size());
+    EXPECT_NE("DeferredStepSynthetic", w["jobs"]["steps"][0u]["channel"].asString());
+
+    Event<ChannelNameAnnounce> nev;
+    nev.payload = MakeChannelNameAnnounce(channel.Value(), channel.AsChar());
+    names.Send(nev);
+    named.Drain();
+    w = named.HandleWindow(Json::Value(Json::objectValue));
+    ASSERT_EQ(1u, w["jobs"]["steps"].size());
+    EXPECT_EQ("DeferredStepSynthetic", w["jobs"]["steps"][0u]["channel"].asString());
+    ASSERT_NE(nullptr, named.GetChannelNames().Find(channel.Value()));
+}
+
+TEST_F(PerfJobsRig, NoNamesStoreStillDrainsAndWorks)
+{
+    // The default rig has no names store: Drain and HandleWindow are unaffected and the table stays empty.
+    cmds.Drain();
+    EXPECT_EQ(0u, cmds.GetChannelNames().Count());
+    EXPECT_TRUE(cmds.HandleWindow(Json::Value(Json::objectValue)).isMember("jobs"));
 }

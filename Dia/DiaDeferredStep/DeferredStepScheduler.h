@@ -91,6 +91,8 @@ namespace Dia::DeferredStep
 
 		StepState GetState       (Dia::Core::StringCRC channelId) const;
 		uint32_t  GetChannelCount() const;
+		// Id of the channel at registration index (0..GetChannelCount()-1); false when out of range.
+		bool      GetChannelIdAt(uint32_t index, Dia::Core::StringCRC& out) const;
 		const SchedulerStats& GetStats() const;
 		bool      GetChannelStats(Dia::Core::StringCRC channelId, ChannelStats& out) const;
 

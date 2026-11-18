@@ -16,6 +16,9 @@
 #include <DiaDeferredStep/DeferredStepMetrics.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
 #include <DiaDeferredStep/IStepSummarySink.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaObservation/Profile/ChannelNameAnnounce.h>
+#include <chrono>
 
 namespace Dia::SaveGame
 {
@@ -61,6 +64,13 @@ namespace Dia::DeferredStep
 			// below is filled either way. The caller keeps the table alive while set.
 			void SetJobTimingTable(Dia::Observation::Profile::JobTimingTable* table) { mJobTimingTable = table; }
 
+			// Optional "$perfnames" sink (non-owning; OnConnectStreams defaults it to the Application's store, null = none).
+			// Registered channel names are announced (crc + name, truncated to 63 chars) from DoUpdate whenever the set of
+			// channels changed since the last announce, and again every interval, because EventStream readers get no replay
+			// and Main's reader may attach after SimPU started. The default interval is 2000 ms (wall clock).
+			void SetChannelNameSink(Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* sink) { mNameSink = sink; }
+			void SetChannelNameResendIntervalMs(uint32_t ms) { mNameResendMs = ms; }
+
 			// Last kSummaryRingCapacity step summaries, oldest first. The ring is cleared on every DoStart, so a restart
 			// starts empty (it is not cleared by DoStop, so it can be inspected after stop).
 			static constexpr uint32_t kSummaryRingCapacity = 16;
@@ -105,7 +115,15 @@ namespace Dia::DeferredStep
 			uint32_t mSummaryCount = 0;
 			Dia::Observation::Profile::JobTimingTable* mJobTimingTable = nullptr;   // non-owning, optional
 
+			Dia::ApplicationFlow::EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>* mNameSink = nullptr;   // non-owning, optional
+			uint32_t mNameResendMs = 2000;
+			uint32_t mAnnouncedCount = 0;                              // channels covered by the last announce
+			uint32_t mAnnouncedCrc[DeferredStepScheduler::kMaxChannels] = {};
+			bool     mHasAnnounced = false;
+			std::chrono::steady_clock::time_point mLastAnnounce;
+
 		private:
+			void AnnounceChannelNames();
 			void OnStepSummary(const Dia::Observation::Profile::StepSummaryRecord& record) override;
 			void ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& record);
 	};
