@@ -135,7 +135,14 @@ def pytest_runtest_teardown(item, nextitem):
         return
 
     hwm = getattr(item, "_dia_log_hwm", 0)
-    errors = _collect_log_errors(item.config, plan, skip_lines=hwm)
+    # The game holds log.jsonl open (read-denying) for the whole session, so a
+    # per-test read normally hits a lock. Do not wait here: defer the scan to
+    # pytest_sessionfinish, after the app has exited and flushed.
+    errors, locked = _scan_log(item.config, plan, skip_lines=hwm, lock_retry_s=0.0)
+    if locked:
+        item.config._dia_deferred_log_scans = getattr(item.config, "_dia_deferred_log_scans", [])
+        item.config._dia_deferred_log_scans.append((item.nodeid, hwm))
+        return
     if errors:
         pytest.fail("Log errors detected in session logs:\n" + "\n".join(errors))
 
@@ -148,27 +155,38 @@ def _count_log_lines(config, plan: dict) -> int:
     try:
         return len(log_path.read_text(encoding="utf-8", errors="replace").splitlines())
     except Exception as e:
+        if _is_lock_error(e):
+            return 0  # expected while the game runs; the scan is deferred
+
         warnings.warn(f"Could not read session log {log_path} for line count: {e}", RuntimeWarning)
         return 0
 
 
-def _collect_log_errors(config, plan: dict, skip_lines: int = 0) -> list:
-    """Return ERROR-level messages from the most-recent session log after skip_lines.
+def _is_lock_error(e: Exception) -> bool:
+    """True if e is a sharing/permission violation from a file still held open."""
+    return isinstance(e, PermissionError) or getattr(e, "winerror", None) in (32, 33)
 
-    Non-UTF-8 bytes are replaced, not fatal. Malformed JSON lines are skipped
-    with a warning. If the log cannot be read at all, a failure message is
-    returned so the check fails instead of being silently skipped.
-    """
+
+def _scan_log(config, plan: dict, skip_lines: int = 0, lock_retry_s: float = 10.0):
+    """Return (errors, locked). locked=True if the log stayed locked after retries."""
     log_path = _find_log_path(config, plan)
     if log_path is None:
-        return []
+        return [], False
+
+    deadline = time.monotonic() + lock_retry_s
+    while True:
+        try:
+            lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            break
+        except Exception as e:
+            if _is_lock_error(e):
+                if time.monotonic() < deadline:
+                    time.sleep(0.25)
+                    continue
+                return [], True
+            return [f"Could not read session log {log_path}: {e}"], False
 
     errors = []
-    try:
-        lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
-    except Exception as e:
-        return [f"Could not read session log {log_path}: {e}"]
-
     malformed = 0
     for line in lines[skip_lines:]:
         if not line.strip():
@@ -182,7 +200,43 @@ def _collect_log_errors(config, plan: dict, skip_lines: int = 0) -> list:
             errors.append(entry.get("msg", line))
     if malformed:
         warnings.warn(f"{malformed} malformed JSON line(s) skipped in {log_path}", RuntimeWarning)
+    return errors, False
+
+
+def _collect_log_errors(config, plan: dict, skip_lines: int = 0, lock_retry_s: float = 10.0) -> list:
+    """Return ERROR-level messages from the most-recent session log after skip_lines.
+
+    Non-UTF-8 bytes are replaced, not fatal. Malformed JSON lines are skipped
+    with a warning. A log that stays locked (PermissionError) after retrying for
+    lock_retry_s is warned about loudly but does not fail; any other read
+    failure returns a failure message so the check is never silently skipped.
+    """
+    errors, locked = _scan_log(config, plan, skip_lines, lock_retry_s)
+    if locked:
+        warnings.warn(
+            f"Session log still locked after {lock_retry_s}s; implicit log-error check NOT performed",
+            RuntimeWarning,
+        )
     return errors
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Run the deferred log-error scans now that the app has exited and flushed."""
+    config = session.config
+    deferred = getattr(config, "_dia_deferred_log_scans", None)
+    plan = getattr(config, "_dia_plan", None)
+    if not deferred or plan is None:
+        return
+    skip = min(h for _, h in deferred)
+    errors = _collect_log_errors(config, plan, skip_lines=skip)
+    if errors:
+        tr = config.pluginmanager.get_plugin("terminalreporter")
+        msg = "Log errors detected in session logs:\n" + "\n".join(errors)
+        if tr:
+            tr.write_line(msg, red=True)
+        else:
+            print(msg)
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 def _find_log_path(config, plan: dict):

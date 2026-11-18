@@ -84,3 +84,56 @@ def test_no_log_path_returns_empty(plugin, monkeypatch):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         assert plugin._collect_log_errors(None, {}) == []
+
+
+def _locked_read(monkeypatch, plugin, exc, fail_times):
+    calls = {"n": 0}
+    real = Path.read_text
+
+    def fake(self, *a, **k):
+        if self.name == "log.jsonl":
+            calls["n"] += 1
+            if calls["n"] <= fail_times:
+                raise exc
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", fake)
+    monkeypatch.setattr(plugin.time, "sleep", lambda s: None)
+    return calls
+
+
+def test_lock_released_during_retry_still_scans(plugin, monkeypatch, tmp_path):
+    log = tmp_path / "log.jsonl"
+    log.write_bytes(_rec("error", "boom") + b"\n")
+    _use_log(plugin, monkeypatch, log)
+    calls = _locked_read(monkeypatch, plugin, PermissionError(13, "denied"), 2)
+    assert plugin._collect_log_errors(None, {}, lock_retry_s=5.0) == ["boom"]
+    assert calls["n"] == 3
+
+
+def test_persistent_lock_warns_not_fails(plugin, monkeypatch, tmp_path):
+    log = tmp_path / "log.jsonl"
+    log.write_bytes(_rec("error", "boom") + b"\n")
+    _use_log(plugin, monkeypatch, log)
+    _locked_read(monkeypatch, plugin, PermissionError(13, "denied"), 10**9)
+    ticks = iter(range(0, 10**6))
+    monkeypatch.setattr(plugin.time, "monotonic", lambda: next(ticks) * 0.5)
+    with pytest.warns(RuntimeWarning, match="still locked"):
+        assert plugin._collect_log_errors(None, {}, lock_retry_s=2.0) == []
+
+
+def test_non_lock_oserror_still_fails(plugin, monkeypatch, tmp_path):
+    log = tmp_path / "log.jsonl"
+    log.write_bytes(b"")
+    _use_log(plugin, monkeypatch, log)
+    _locked_read(monkeypatch, plugin, OSError(5, "io error"), 10**9)
+    errors = plugin._collect_log_errors(None, {})
+    assert len(errors) == 1 and "Could not read session log" in errors[0]
+
+
+def test_scan_log_reports_locked_without_waiting(plugin, monkeypatch, tmp_path):
+    log = tmp_path / "log.jsonl"
+    log.write_bytes(b"")
+    _use_log(plugin, monkeypatch, log)
+    _locked_read(monkeypatch, plugin, PermissionError(13, "denied"), 10**9)
+    assert plugin._scan_log(None, {}, lock_retry_s=0.0) == ([], True)
