@@ -3066,6 +3066,9 @@
     <ClCompile Include="DiaDeferredStep\TestJobStepLauncher.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestCapTimingAndFallback.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
     <ClCompile Include="DiaDeferredStep\TestCappedParallelExecutor.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
