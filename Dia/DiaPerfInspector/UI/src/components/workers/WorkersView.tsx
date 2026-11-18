@@ -199,7 +199,7 @@ export function WorkersView() {
                     <section data-testid="workers-steps" style={{ ...panel, marginTop: 6 }}>
                         <h4 style={heading}>Deferred steps</h4>
                         {steps.length === 0 && (
-                            <div data-testid="steps-empty" style={note}>no deferred-step data from the game yet (DiaDeferredStep not built)</div>
+                            <div data-testid="steps-empty" style={note}>No deferred steps in this window</div>
                         )}
                         {stepRows.channels.map((c) => (
                             <StepChannelRow key={c.channel} channel={c} domain={stepRows.domain} selected={selectedKey} onSelect={onSelectStep} />

@@ -1,4 +1,4 @@
-// jobs.fixture.json is SYNTHETIC; its step summaries exist only in the fixture (the live game sends steps: []).
+// jobs.fixture.json is SYNTHETIC; its step summaries exist only in the fixture (a live game sends steps: [] when no deferred step ran in the window).
 import fixture from '../../model/__fixtures__/jobs.fixture.json';
 import { render, screen, within, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -151,10 +151,10 @@ describe('WorkersView with the synthetic fixture', () => {
 });
 
 describe('WorkersView honest states', () => {
-    it('with the live shape (steps: []) says the game has no deferred-step data yet', () => {
+    it('with the live shape (steps: []) says there are no deferred steps in this window', () => {
         load({ ...fixture.window, steps: [] });
         render(<WorkersView />);
-        expect(screen.getByTestId('steps-empty')).toHaveTextContent('no deferred-step data from the game yet (DiaDeferredStep not built)');
+        expect(screen.getByTestId('steps-empty')).toHaveTextContent('No deferred steps in this window');
         expect(screen.queryAllByTestId('step-row')).toHaveLength(0);
         expect(screen.getByTestId('late-empty')).toBeInTheDocument();
         // aggregates still draw

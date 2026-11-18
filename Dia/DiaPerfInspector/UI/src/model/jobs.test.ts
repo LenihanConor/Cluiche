@@ -1,5 +1,5 @@
 // NOTE: __fixtures__/jobs.fixture.json is SYNTHETIC (see makeJobsFixture.ts). Its step summaries and raw records are
-// fixture-only: the live game sends `steps: []` today because DiaDeferredStep is not built.
+// fixture-only: a live game sends `steps: []` when no deferred step ran in the window.
 import fixture from './__fixtures__/jobs.fixture.json';
 import { encodeU16LE, encodeU64LE, encodeU32LE } from './__fixtures__/makeJobsFixture';
 import { decodeU32, decodeU64 } from './decode';
