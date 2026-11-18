@@ -72,7 +72,7 @@ is still in flight, serialise against it rather than dispatching both at once.
 - Use `Dia/DiaSaveGame/Testing/SaveTestHelpers.h` for slot setup and temp directories.
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="DeferredStepSave*:DeferredStepRoundTrip*" --shards 2`.
+- Per task: narrow `--filter` on the suite under work (e.g. `DeferredStepSave*`) with `--shards 2`; the feature-wide `DeferredStepSave*:DeferredStepRoundTrip*` runs in task 8 only. Sanitizer: on request only (user, 2026-11-17). The AC 26 Release no-op check moved to the system close-out, Task 6 (2026-11-17, speed-ups).
 
 ## Tasks
 
@@ -86,4 +86,4 @@ is still in flight, serialise against it rather than dispatching both at once.
 | 5 | RED → GREEN: load path — abandon on `OnLoadStarted`, `Deserialize` + `RestorePending`, apply at the stored key with no stall, key floor, load twice | AC 14–19 | Not Started | sonnet | A restored step must record **no** stall (AC 16) — easy to get wrong if `Tick` treats "no token" as incomplete |
 | 6 | RED → GREEN: the round-trip equivalence test, with `Testing/PendingStateStep.h` | AC 20–23: byte-identical committed state, `Apply` order and keys; `Run` called once; save after apply == no save; save while incomplete still round-trips | Not Started | sonnet | The headline AC. If it fails, the bug is real — do not relax the comparison |
 | 7 | Exhaustive test pass: gap audit of every AC, both `Validate` branches, every `RestorePending` rejection; edge cases — save with 8 pending channels, a channel registered in a different order on load, a step whose `SerializePending` writes nothing, `pending_count` disagreeing with the objects present, a save taken between `DrainAll` and `Tick`; size the worst realistic pending blob and record it against system ODQ 1 | Gap list + the size figure in notes | Not Started | sonnet | No mutation check. The size figure feeds system ODQ 1 |
-| 8 | Feature close-out: `dia run googletest --filter="DeferredStepSave*:DeferredStepRoundTrip*" --shards 2`; `dia check sanitizer` over the same filter (observer attach/detach and the tokenless-channel path are the use-after-free risks); `dia check deps`; observation scan in notes; update the system spec features table | All ACs, quoted | Not Started | sonnet | Note in the plan that the CoW "E1 calls `DrainAll`" follow-up is now unnecessary |
+| 8 | Feature close-out: `dia run googletest --filter="DeferredStepSave*:DeferredStepRoundTrip*" --shards 2`; (sanitizer removed 2026-11-17: on request only); `dia check deps`; observation scan in notes; update the system spec features table | All ACs, quoted | Not Started | sonnet | Note in the plan that the CoW "E1 calls `DrainAll`" follow-up is now unnecessary |

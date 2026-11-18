@@ -137,7 +137,7 @@ pointers valid for the process lifetime (amendment 6); a test compares the regis
 ### Verification cadence
 - Per task: `dia run googletest --filter="S25Helpers*:S25Checks*:S25Baseline*" --shards 2`; narrow to
   one suite while iterating.
-- One full run in task 24. No mutation checks. Pure code, so no sanitizer pass unless a task finds UB.
+- Feature-wide filter in task 24 only; full suite runs once, in the Weather-stack close-out (worldstep.plan.md row 6). No mutation checks. Sanitizer: on request only (user, 2026-11-17). Long tests are tagged `SLOW_` (2026-11-17, speed-ups).
 
 ## Tasks
 
@@ -167,7 +167,7 @@ pointers valid for the process lifetime (amendment 6); a test compares the regis
 | 21 | RED -> GREEN: `S25WeatherChecks::RegisterAll` and the id-list-vs-spec test; wire registry harness (task 2) to the real list; each id registered once with kind, requirements and reopen section | AC 20 | Not Started | sonnet | Check objects are function-local statics owned by `S25WeatherChecks`; registry stores non-owning pointers valid for the process lifetime (amendment 6); test that a registered pointer is stable across two `RegisterAll` calls into different registries. If Feature 4's `CheckRegistry` does not exist yet, use the local minimal registry and record the follow-up in the Feature 4 plan; do not block |
 | 22 | Exhaustive test pass: gap audit of every AC (1-20) and every check id against the table; edge pass (0-week trace, 1-week trace, single-cell bands, all-NaN layer, NaN in one cell, regions absent, maximum distance sentinel cases, week index at the boundaries 13/14/26/27/39/40/52/53/65) | Gap list in notes; every id has both traces | Not Started | sonnet | No mutation checks. Scoped filter `S25Helpers*:S25Checks*:S25Baseline*` |
 | 23 | Observation Opportunity Scan over all touched files | Suggestions in notes (expected: nothing, code is pure) | Not Started | sonnet | Suggestions do not block Done |
-| 24 | One full verification run: `dia run googletest --shards 2` (full suite), `dia check deps`, `dia check cppcheck`, `dia check sln-sync` | All green, failures named | Not Started | sonnet | Single full run; report pass/fail and failing test names only. Also confirm A4's distance tests still pass after task 4 |
+| 24 | Feature verification run: `dia run googletest --filter="S25Helpers*:S25Checks*:S25Baseline*:WeatherDistance*" --shards 2` (any `SLOW_` test once), `dia check deps`, `dia check cppcheck`, `dia check sln-sync` | All green, failures named | Not Started | sonnet | Full suite moved to the Weather-stack close-out (2026-11-17, speed-ups); report pass/fail and failing test names only. Also confirm A4's distance tests still pass after task 4 |
 | 25 | Close-out: `dia docs plan docs/specs/applications/cow/systems/s25-weatherpatterns/weather-checks.plan.md <#> --status Done` per row; `dia docs spec-done docs/specs/applications/cow/systems/s25-weatherpatterns/weather-checks.md`; update system plan row 2 | Spec status Done | Not Started | haiku | **Do not run until all prior rows are Done.** The system spec's edits (`CheckResult`, Checks section) are applied per the spec's "Spec edits on approval" line by whoever owns that doc |
 
 ## Open items

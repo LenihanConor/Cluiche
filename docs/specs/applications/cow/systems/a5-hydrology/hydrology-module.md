@@ -221,9 +221,10 @@ Two paths, chosen by whether an `IWaterInputSource` is set.
 
 ```cpp
 class HydrologySpinUpTicket;                  // self-contained: owns an initialised sim and a parameter copy
-struct SpinUpStart {                          // from A4: ClimateCycles::Coldness / WeatherRunner::StartColdness
-    float          coldness = 0.0f;           // 0 at the warm point (the default start), 1 at the coldest
-    const uint8_t* snowSurvivesSummer = nullptr;   // per cell, valid for the call only; null = no glacier seed
+struct SpinUpStart {                          // from A4 Feature 8 (seam fix 2026-11-17, user): both per cell, N entries,
+                                              // valid for the call only
+    const float*   coldness = nullptr;            // WeatherRunner::StartColdness(cell), [0,1]; null = all 0 (warm start)
+    const uint8_t* snowSurvivesSummer = nullptr;  // WeatherRunner::StartSnowSurvivesSummer(cell); null = no glacier seed
 };
 class IHydrologySpinUpHost {
 public:
@@ -241,13 +242,13 @@ public:
 - The ticket's `StepWeek(weekIndex, const WaterSourceView&, exec)` is `HydrologyRunner`'s week. It also implements A4's `IHydrologyInputsProvider`, so the A4 job feeds A4's spin-up weeks from A5's spin-up state exactly as a live `Capture` does.
 - The A4 job calls `weatherRunner.StepWeek`, then `ticket->StepWeek` with A4's working view, in World Step order.
 - Length is `SPINUP_WEEKS`: **52 weeks**, with climate cycles **held at the world's start phase** for the whole spin-up (the GDD's frozen-phase spin-up, A4 Feature 8). There is no longer spin-up "extended when cycles are on" (aligned to locked GDD 2026-11-17). A5 sees only the resulting inputs.
-- **Phase-scaled seed (GDD §13).** One year cannot build lakes or glaciers, so slow stores start seeded for the start phase: S-1 lakes `capacity · lerp(1, spinup.lake_seed_cold, coldness)`, and glaciers `spinup.glacier_seed_max · coldness` on the cells A4 flags in `snowSurvivesSummer`, with `snowYears = onset_years`. The default start is the warm point (`coldness` 0), so the seed is a no-op: full lakes, no glaciers. A preset can pin another start phase. A5 applies it in `BeginSpinUp` through Feature 1's `ApplyPhaseSeed`. The mask rule (which cells keep snow through the summer at the start phase) is A4's. The GDD gives the intent only.
+- **Phase-scaled seed (GDD §13).** One year cannot build lakes or glaciers, so slow stores start seeded for the start phase: S-1 lakes `capacity · lerp(1, spinup.lake_seed_cold, basinColdness)`, where `basinColdness` is the mean of `coldness[cell]` over the basin's cells (in ascending cell order). Glaciers are `spinup.glacier_seed_max · coldness[cell]` on the cells A4 flags in `snowSurvivesSummer`, with `snowYears = onset_years`. The default start is the warm point (`coldness` 0 everywhere), so the seed is a no-op: full lakes, no glaciers. A preset can pin another start phase. A5 applies it in `BeginSpinUp` through Feature 1's `ApplyPhaseSeed`. Both arrays, and the mask rule, are A4 Feature 8's `(seam fix 2026-11-17, user)`.
 - On completion A4 calls `CompleteSpinUp`. A5 sets `mPending` and `mPendingRevision` at the same `DoUpdate` poll where A4 sets its own pending sim, so the coordinator's next `Capture` promotes **both** together.
 - Spin-up is silent: no `HydrologyUpdated`, no history signal.
 - A4 cancels by destroying the ticket. A5 holds nothing of it.
 - If A4 never calls `BeginSpinUp` (see the "A4 restored" case in Feature 4), A5 notices: it polls `source->IsReadyForRevision(target)` in `DoUpdate`. When A4 is ready for the target revision, A5 has no pending sim, and `BeginSpinUp` was never called for it, A5 concludes A4 skipped the coupled job. It then **seeds only** (Initialise's state, no spin-up) and goes Degraded with a Warning naming the reason. Open Design Question 2.
 
-**Alone (no source).** A5 seeds with `start_coldness` and no glacier mask (lakes only), then launches its own job with `JobSystemService::TrySubmit(fn, tag)` and the `world` tag. The job runs `HydrologyRunner::RunFixed(sim, driver, spinup_weeks, executor, cancel)` on the DeferredStep capped executor. Its result goes into a SimPU-owned `SpinUpSlot` (`Idle/Running/Done/Cancelled`, the revision, the sim pointer). `DoUpdate` polls it and sets `mPending` on `Done` for the target revision. This is A4's gap-pass amendment 2: no bus message, no callback onto SimPU. With no job system (headless tests), a **synchronous launcher** seam runs the same code inline. The spun-up state is bit-identical either way, and equals `HydrologyRunner` run synchronously.
+**Alone (no source).** A5 seeds with a uniform coldness array filled from `start_coldness` and no glacier mask (lakes only) (seam fix 2026-11-17, user), then launches its own job with `JobSystemService::TrySubmit(fn, tag)` and the `world` tag. The job runs `HydrologyRunner::RunFixed(sim, driver, spinup_weeks, executor, cancel)` on the DeferredStep capped executor. Its result goes into a SimPU-owned `SpinUpSlot` (`Idle/Running/Done/Cancelled`, the revision, the sim pointer). `DoUpdate` polls it and sets `mPending` on `Done` for the target revision. This is A4's gap-pass amendment 2: no bus message, no callback onto SimPU. With no job system (headless tests), a **synchronous launcher** seam runs the same code inline. The spun-up state is bit-identical either way, and equals `HydrologyRunner` run synchronously.
 
 For either path, a job whose revision is stale discards its sim. While `IsReady()` is false, `AllReady()` is false, so the coordinator kicks nothing and the executor is not shared concurrently.
 
@@ -405,7 +406,7 @@ namespace CoW::Hydrology {
 15. A cancelled coupled job (the ticket destroyed) leaves no state in the module and no pending sim.
 16. A4's fake handler and A5's handler can run in either order for the same `WorldGenerationComplete`; the result is the same.
 17. `BeginSpinUp(rev, start)` returns null if `Initialise` failed for `rev`.
-17a. **Phase seed, coupled:** `BeginSpinUp` with `coldness` 1 and a mask applies Feature 1's seed before the first spun-up week (lakes scaled, masked cells glaciated and eligible). With `coldness` 0 the ticket's state equals a fresh `Initialise`.
+17a. **Phase seed, coupled:** `BeginSpinUp` with a `coldness` array of 1 and a mask applies Feature 1's seed. A non-uniform array seeds each basin from its cells' mean coldness and each masked cell from its own value (seam fix 2026-11-17, user) before the first spun-up week (lakes scaled, masked cells glaciated and eligible). With `coldness` 0 the ticket's state equals a fresh `Initialise`.
 18. A source that reports ready for the target revision while `BeginSpinUp` was never called makes A5 take the seed-only path: state equals a fresh `Initialise`, health Degraded, one Warning, `IsReady()` true.
 19. `HoldGeneration()` in `DoStart` guarantees the first `WorldGenerationComplete` is received.
 
@@ -555,7 +556,7 @@ Scoped `--filter=*Hydrology*` while iterating; one full `--shards 2` run at the 
 - Synchronous mode is the determinism oracle. Step timing is Feature 3's, the metric is Feature 5's.
 
 **Needs the user's attention before approval:**
-- A4 Feature 3 owes `IWaterInputSource`, the spin-up host calls (now with `SpinUpStart`: coldness and a snow-survival mask) and `IsReadyForRevision`. A4 owes `ClimateCycles::Coldness`, `WeatherRunner::StartColdness`, the firn hand-off (A4 TechSpec §11.3) and the mask rule.
+- A4 Feature 3 owes `IWaterInputSource`, the spin-up host calls (now with `SpinUpStart`: per-cell coldness and a per-cell snow-survival mask, both from A4 Feature 8; seam fix 2026-11-17) and `IsReadyForRevision`. A4 owes `ClimateCycles::Coldness`, `WeatherRunner::StartColdness`, the firn hand-off (A4 TechSpec §11.3) and the mask rule.
 - Open Design Questions 1, 2 and 4.
 
 Aligned to the locked GDD on 2026-11-17. Approval is a separate step.

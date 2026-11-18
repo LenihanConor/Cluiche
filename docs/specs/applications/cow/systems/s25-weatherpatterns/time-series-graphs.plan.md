@@ -6,7 +6,7 @@
 
 Starts once S-2.5 Feature 1 (stage, card, tracked-layer `history` block, `S25WeatherModule`) and Feature 3 (the runner, `RecordedTrace`, the run table, the report) are Done, and A4 Feature 5 (the seven weather layers and their schema entries, plus `WeatherCommand`) is Done. S-3.5 Feature 1's `HistoryDriverModule` is **soft**: the live tasks (6-9) need it for end-to-end behaviour, but they are written against a scripted `OnWorldStepApplied` driver and a real `CellHistoryRecorder`, so they can proceed without it; the stage-level proof (task 13) waits for it. The headless tasks (3, 10-12) need Feature 3 and the spike in task 1, not the driver.
 
-This is a small feature with **no Dia edits** and no new command names. No in-game graph is built (decided 2026-11-16). The one Dia-adjacent risk is the standalone recorder (task 1); if it fails, the headless half is dropped and recorded as a deviation, never solved with a recorder change (AD-001). All implementation tasks are **sonnet**; if one needs more, **ask before escalating**. No mutation checks. Release figures are reported, not enforced. Scoped `--filter` while iterating, one full run at the end with `--shards 2` or more.
+This is a small feature with **no Dia edits** and no new command names. No in-game graph is built (decided 2026-11-16). The one Dia-adjacent risk is the standalone recorder (task 1); if it fails, the headless half is dropped and recorded as a deviation, never solved with a recorder change (AD-001). All implementation tasks are **sonnet**; if one needs more, **ask before escalating**. No mutation checks. Perf figures are Debug ballpark only, reported, not enforced; sanitizer on request only (user, 2026-11-17). Narrow scoped `--filter` while iterating with `--shards 2`; the full suite runs once, in the Weather-stack close-out (worldstep.plan.md row 6) (2026-11-17, speed-ups).
 
 ## Implementation Patterns
 
@@ -41,7 +41,7 @@ This is a small feature with **no Dia edits** and no new command names. No in-ga
 
 ### Verification cadence
 - Per task: `dia run googletest --filter="S25HistoryAggregates*:TraceHistoryWriter*" --shards 2`.
-- One full `dia run googletest --shards 2` in the final verification task only.
+- The feature-wide filter above runs only in the final verification task (19); full suite moved to the Weather-stack close-out (2026-11-17, speed-ups).
 
 ## Tasks
 
@@ -66,7 +66,7 @@ This is a small feature with **no Dia edits** and no new command names. No in-ga
 | 16 | Stage-level proof with the real `HistoryDriverModule`: in the S-2.5 stage run 52 weeks, call `cells.history.aggregates`, export from the card, open the file with the loader. Needs `HistoryDriverModule` built | AC 1, AC 5 (with driver), AC 6 on the live stage | Not Started | sonnet | **Blocked until S-3.5 Feature 1's driver exists** (soft dependency). Run through `dia run cluichetest` / automation, never the exe; kill leftover CluicheTest.exe first |
 | 17 | Exhaustive test pass: gap audit of AC 1-12; AC 12 is the sweep for any S-2.5 type owning an aggregate ring or series store (search the S25 sources and record "none found"); edge cases: zero-week trace, one-week trace, 208-week trace, world with no region layer, region count at the recorder's group cap (127, not S-1's 64; amendment 2), export path directory missing, two exports in one tick, cancelled run (no partial file), week label across a year boundary | Gap list in notes; every AC has at least one test; AC 12 search result quoted | Not Started | sonnet | No mutation check. Add RED then GREEN rows if gaps need code |
 | 18 | Observation Opportunity Scan over every file touched across the five pillars | Suggestions in notes; they do not block Done | Not Started | sonnet | Report only |
-| 19 | Verification: one full `dia run googletest --shards 2` (report pass/fail and failing names only), `dia check deps`, `dia check sln-sync` | Zero failures; all ACs mapped to green tests | Not Started | haiku | DiaCLI run-and-report. Budget and Release figures are reported, not enforced |
+| 19 | Verification: `dia run googletest --filter="S25HistoryAggregates*:TraceHistoryWriter*" --shards 2` (report pass/fail and failing names only; any `SLOW_` test once), `dia check deps`, `dia check sln-sync` | Zero failures; all ACs mapped to green tests | Not Started | haiku | DiaCLI run-and-report. Budget figures are Debug ballpark only, reported, not enforced. Full suite and Release check moved to the Weather-stack close-out (2026-11-17, speed-ups) |
 | 20 | Close-out (not to be run until all rows are Done or Dropped): `dia docs plan <this plan> <#> --status Done --notes "..."` per row; `dia docs spec-done docs/specs/applications/cow/systems/s25-weatherpatterns/time-series-graphs.md`; the spec-edit list (system spec's Time-series section and Feature 5 row, backlog row) goes to the user for sign-off; commit | Rows Done; spec Done; plan header updated | Not Started | haiku | Commands listed here, **not run now** |
 
 ## Open items

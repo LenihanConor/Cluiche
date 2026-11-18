@@ -219,7 +219,7 @@ The envelope is `{"format": "cow.hydrology_params", "version": 1, "hydrology_par
 ```cpp
 bool Initialise(const HydrologyTerrain& terrain, const HydrologyParameters& params,
                 Dia::Core::Containers::String256& err);
-void ApplyPhaseSeed(float coldness, const uint8_t* snowSurvivesSummer);   // after Initialise, before spin-up
+void ApplyPhaseSeed(const float* coldness, const uint8_t* snowSurvivesSummer);   // per cell, N each; null coldness = 0; after Initialise, before spin-up (seam fix 2026-11-17)
 ```
 
 **Validation** (fails with `err` naming the first problem, and leaves the simulation un-initialised):
@@ -245,9 +245,9 @@ void ApplyPhaseSeed(float coldness, const uint8_t* snowSurvivesSummer);   // aft
 - `meanFlow` starts at 0, and Feature 2's flood rule needs `meanFlow > flood.min_flow`, so nothing floods in the first weeks.
 - `level`, `openWater` and `passability` are derived once, so a reader sees a consistent state before the first `Step`.
 
-**`ApplyPhaseSeed(float coldness, const uint8_t* snowSurvivesSummer)`** (GDD §13, aligned to locked GDD 2026-11-17). Called once, after `Initialise` and before spin-up. `coldness` is the ice-age cycle's normalised coldness at the world's start phase: 0 at the warm point, 1 at the coldest. A4 exposes it as `ClimateCycles::Coldness` and `WeatherRunner::StartColdness`; Feature 3 passes it in. It overwrites only the slow stores:
-- every lake basin: `volume = capacity · lerp(1.0, spinup.lake_seed_cold, coldness)`;
-- every cell flagged in `snowSurvivesSummer` (cells whose start-phase temperature keeps snow through the summer, supplied by the caller, null = none): `glacier = spinup.glacier_seed_max · coldness`, `snowYears = glacier.onset_years`, `glacierEligible = 1`;
+**`ApplyPhaseSeed(const float* coldness, const uint8_t* snowSurvivesSummer)`** (GDD §13, aligned to locked GDD 2026-11-17; per-cell (seam fix 2026-11-17, user)). Called once, after `Initialise` and before spin-up. `coldness[cell]` is the cycles' normalised coldness at the world's start phase: 0 at the warm point, 1 at the coldest (A4 `WeatherRunner::StartColdness`). Null means 0 everywhere. Feature 3 passes both arrays in. It overwrites only the slow stores:
+- every lake basin: `volume = capacity · lerp(1.0, spinup.lake_seed_cold, basinColdness)`, where `basinColdness` is the mean of `coldness` over the basin's cells, summed in ascending cell order;
+- every cell flagged in `snowSurvivesSummer` (A4 `WeatherRunner::StartSnowSurvivesSummer`, null = none): `glacier = spinup.glacier_seed_max · coldness[cell]`, `snowYears = glacier.onset_years`, `glacierEligible = 1`;
 - it re-derives `level`, `openWater` and `passability`.
 
 At `coldness = 0` (the default start at the warm point) it changes nothing: full lakes, no glaciers. Soil, ground water, channel stores and ice are not seeded.

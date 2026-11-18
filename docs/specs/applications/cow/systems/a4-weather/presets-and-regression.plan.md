@@ -120,11 +120,10 @@ before escalating" (feedback_confirm_opus).
   `DIA_UPDATE_GOLDEN=1`, and only after the Tuning log is final.
 
 ### Verification cadence
-- Per task: scoped `dia run googletest --filter="WeatherPreset*:WeatherTestTerrain*" --shards 2` (or the
+- Per task: narrow `dia run googletest --filter="WeatherPreset*:WeatherTestTerrain*" --shards 2` (always `--shards 2`; or the
   task's suite). Regression and golden suites run serial and slower: `WeatherRegression*`,
   `WeatherPresetGolden*`.
-- One full `dia run googletest --shards 2` in the verification task. No mutation checks. Release gates
-  (AC 20) are reported only.
+- The feature-wide `--filter="Weather*"` runs only in the verification task (task 23); the full suite runs once in worldstep.plan.md, Weather-stack close-out. No `SLOW_` suites (longest run is 52 weeks). Sanitizer: on request only (user, 2026-11-17). No mutation checks. The AC 20 timing is a Debug ballpark only; a bad ballpark queues a perf pass. Release check moved to worldstep.plan.md Weather-stack close-out (2026-11-17, speed-ups).
 
 ## Tasks
 
@@ -151,10 +150,10 @@ before escalating" (feedback_confirm_opus).
 | 17 | RED then GREEN: all-presets health run and executor equivalence | AC 17, 18: all five presets run 13 weeks with no NaN or infinity and every field in range; serial executor and a 3-range executor give identical bytes (once, at preset level) | Not Started | sonnet | Reuse Feature 2's `FixedRangeExecutor` |
 | 18 | Tuning pass (conditional): if any of Tasks 13 to 17 fails its ratio, apply allowed levers in order and log each change in the spec Status section Tuning log (parameter, old, new, forcing test); re-run the scoped regression suite after each lever | AC 15 green on all four scenarios | Not Started | sonnet; ask before escalating | One lever per iteration, one change at a time (debug skill); three failed attempts on the same ratio stop and report. Stop and flag for the GDD owner before touching any of the 19 GDD constants or any mechanic. Record "no tuning needed" if nothing fails. Commit |
 | 19 | RED then GREEN: layer goldens, 5 presets x 10 fields on `MakeCoastRange(66, 42)` after 13 weeks (amended 2026-11-17 (row 6d): was 9 fields) | AC 19: 50 hashes match; a deliberately changed constant in a scratch run is reported by preset, layer, changed-cell count and first cell | Not Started | sonnet | Run after Task 18 so the Tuning log is final. First write with `DIA_UPDATE_GOLDEN=1` once, then review the diff summary only. This feature owns the file; Feature 2's `pipeline/` entries may already be there (add, never overwrite them). Debug and Release must agree under `/fp:precise` with no fast-math (Feature 2 Task 0); if they do not, follow its per-configuration decision. Commit |
-| 20 | Performance: `ApplyPreset` at Large (6,656 cells) in Release | AC 20: under 5 ms reported; not gated in Debug | Not Started | sonnet | Reported, not enforced. If the distance-field BFS dominates, note it as a suggestion; cache it only if the user asks |
+| 20 | Performance: `ApplyPreset` at Large (6,656 cells), Debug ballpark | AC 20: under 5 ms target reported as a Debug ballpark; never gated | Not Started | sonnet | Reported, not enforced. Release check moved to worldstep.plan.md Weather-stack close-out (2026-11-17). If the distance-field BFS dominates, note it as a suggestion; cache it only if the user asks |
 | 21 | Exhaustive test pass: gap audit of AC 1 to 20, then edge cases | Gap list in notes. Edge cases: a selector matching every cell; a selector matching one cell; a preset with no fills; a preset with no forcings; a fill naming the same field twice; a forcing selector equal to another's (two sets, same cells); `ApplyPreset` on a 1-cell-wide terrain; preset applied when the sim has 63 or 64 forcings already; distance field on a terrain with water in one corner only; boundary values `min == max` | Not Started | sonnet | No mutation check. Add only the missing tests |
 | 22 | Observation Opportunity Scan over every file touched across logs (preset load failure and apply), traces, profiling (`ApplyPreset`), metrics, health | Suggestions in notes | Not Started | haiku | Non-blocking. Feeds Feature 5 (`cow.weather.load_preset`) |
-| 23 | One full verification: `dia run googletest --shards 2`; `dia check deps`; `dia docs precommit`; Release `ApplyPreset` timing reported | All AC 1 to 20 quoted; pass/fail and failing names only | Not Started | haiku | One full run. Report the printed margins for the four scenarios |
+| 23 | Scoped verification: `dia run googletest --filter="Weather*" --shards 2`; `dia check deps`; `dia docs precommit`; Debug `ApplyPreset` timing reported | All AC 1 to 20 quoted; pass/fail and failing names only | Not Started | haiku | Feature-wide scoped run; full suite and Release are in the worldstep.plan.md Weather-stack close-out (2026-11-17, speed-ups). Report the printed margins for the four scenarios |
 | 24 | Close-out: `dia docs plan` rows to Done with notes, then `dia docs spec-done docs/specs/applications/cow/systems/a4-weather/presets-and-regression.md` | Spec status Done, plan header updated, Tuning log recorded in the spec | Not Started | haiku | **Do not run until every row above is Done.** Not to be run when this plan is written |
 
 ## Open items

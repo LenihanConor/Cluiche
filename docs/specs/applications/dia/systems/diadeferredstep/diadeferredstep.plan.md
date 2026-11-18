@@ -35,9 +35,7 @@ CluicheTest stage and one `.diaapp` entry.
 ## Cross-feature rules
 
 - **Verification cadence** (feedback_verification_cadence): each feature plan runs scoped
-  `dia run googletest --filter=... --shards 2` per task and closes with its own scoped sanitizer run.
-  The **full** suite, Release build and cross-feature E2E run once, in Task 6 of this plan — not per
-  feature.
+  `dia run googletest --filter=... --shards 2` per task (narrow filter on the suite under work) and closes with a feature-wide scoped run. Sanitizer: on request only (user, 2026-11-17). Long tests are tagged `SLOW_` and run once in the feature close-out and once in Task 6. Perf is Debug ballpark only; a bad ballpark queues a perf pass. The **full** suite, one Release build and cross-feature E2E run once, in Task 6 of this plan — not per feature. This system lands first and the CoW stack depends on it, so it keeps its own full-suite and Release build (2026-11-17, speed-ups).
 - **TDD** (`.claude/skills/tdd.md`) applies to every feature: all five are new public API. RED proven
   with quoted output before GREEN. Mechanical tasks (vcxproj, module doc, registry) are exempt.
 - **No mutation checks** (feedback_no_mutation_checks, 2026-11-12).
@@ -55,7 +53,7 @@ CluicheTest stage and one `.diaapp` entry.
 | 3 | **Feature 3 — Save / load.** @save-load.plan.md | Its Task 8 | Not Started | — | Tasks 0–8. Can run in parallel with F2 — different files, no shared headers beyond F1's |
 | 4 | **Feature 4 — Module + observability.** @module-and-observability.plan.md | Its Task 11 | Not Started | — | Tasks 0–11, including the CluicheTest `DeferredStep` stage and its E2E |
 | 5 | **Feature 5 — Job attribution + step summaries.** @job-attribution.plan.md | Its Task 8 | Not Started | — | Tasks 1–8. Task 7 (JobTimingTable wiring) is blocked on perf-inspector Task 8; everything before it is not |
-| 6 | **System close-out.** Full `dia run googletest --shards 2`; `dia check sanitizer`; Release build of GoogleTests and CluicheTest; the cross-feature E2E (stage at k = 7 and k = 1, with a save/load mid-step); `dia check deps`; `dia check spec-sync`; `dia docs registry`; observation scan across all five pillars reported in notes; `dia docs spec-done` on the system spec + each feature spec; BACKLOG row updated | Everything, quoted | Not Started | sonnet | Kill leftover `CluicheTest.exe` first (feedback_dia_run_gotchas). The E2E harness does not build — build before running |
+| 6 | **System close-out.** Full `dia run googletest --shards 2`; the `SLOW_` tests once (AC 10 starvation test and any other `SLOW_`); **one Release build** of GoogleTests and CluicheTest covering the Release checks moved from feature plans (save-load AC 26 double attach/detach no-op, job-attribution AC 23 summaries on vs off soak of 1000 steps, reported for information only, and any Release-only asserts); no sanitizer (on request only, user, 2026-11-17); the cross-feature E2E (stage at k = 7 and k = 1, with a save/load mid-step); `dia check deps`; `dia check spec-sync`; `dia docs registry`; observation scan across all five pillars reported in notes; `dia docs spec-done` on the system spec + each feature spec; BACKLOG row updated | Everything, quoted | Not Started | sonnet | Kill leftover `CluicheTest.exe` first (feedback_dia_run_gotchas). The E2E harness does not build — build before running |
 | 7 | **Hand off the CoW follow-ups.** Write the backlog rows / spec amendment notes for: A4+A1+A3 as one `world` channel, the game clock implementing `IStepKeySource`, retiring `JobSystemPlaceholderConsumerModule`, S-3.5's spike check becoming a SimPU-frame gate, and choosing k per speed preset. Also the two gaps this system found: `SaveContext` array-element + `uint64_t` writers, and `JobObserver` dropping worker-submitted records | — | Not Started | haiku | Docs only. No CoW code in this system (engine/application boundary) |
 
 ## Open items carried from the specs

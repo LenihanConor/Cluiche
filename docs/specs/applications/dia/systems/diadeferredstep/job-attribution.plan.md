@@ -66,10 +66,10 @@ this plan sequences them so only the last wiring step waits.
   real `JobSystem` via `Initialize(n, nullptr, &observer)` and read back the tags.
 - AC 12's reconciliation is asserted **with a tolerance**, not exactly: `steady_clock` resolution and
   scheduler jitter make an exact identity false. State the tolerance in the test name.
-- AC 23's soak is the only performance claim in the feature, so it runs in **Release**.
+- AC 23's soak is the only performance claim in the feature. Release run moved to the system close-out (diadeferredstep.plan.md Task 6), reported for information only; the feature task reports a Debug ballpark (2026-11-17, speed-ups).
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="DeferredStepSummary*:DeferredStepAttribution*:JobSystem*" --shards 2`.
+- Per task: narrow `--filter` on the suite under work (e.g. `DeferredStepSummary*`) with `--shards 2`; the feature-wide `DeferredStepSummary*:DeferredStepAttribution*:JobSystem*` runs in task 8 only. Sanitizer: on request only (user, 2026-11-17) (2026-11-17, speed-ups).
 - `JobSystem*` stays in the filter because Task 1 touches DiaThreading.
 
 ## Tasks
@@ -83,4 +83,4 @@ this plan sequences them so only the last wiring step waits.
 | 5 | RED → GREEN: the summary variants | AC 9, 13–18: one record per apply and none for rejected kicks, `Unregister` or a load discard; stalled (`kStalled`, `stallNs > 0`, apply on the same Sim entry); early (`readyNs < applyNs` by the slack); wholly inline; restored from save; AC 12's reconciliation with a stated tolerance | Not Started | sonnet | AC 12 is a tolerance test by nature — say so in the test name |
 | 6 | RED → GREEN: module wiring — the last-16 ring, the no-table path | AC 21–22, 24: one record per step instance and no per-range record published; with no table the summary is still built, nothing allocates, the step applies; the ring is readable and wraps at 16 | Not Started | sonnet | Keep the table forwarding behind a single `if` so task 7 is a one-line change |
 | 7 | **Blocked on perf-inspector Task 8.** Wire `JobTimingTable::AddStepSummary`; confirm the record reaches Main through the PU's existing snapshot | AC 20 end-to-end: a record written on SimPU appears in the table; nothing is written from a worker thread | Not Started | sonnet | Do **not** fork `JobTimingTable` — if it is still unbuilt when the rest is Done, leave this row Blocked and close the feature without it |
-| 8 | Exhaustive test pass + close-out: gap audit of every AC, every flag, every "no record written" path; the Perfetto check (AC 8 — run the stage with profiling, `dia perf convert`, confirm the channel as subject on worker `job.run` scopes; manual, recorded in notes); AC 23's Release soak (1000 steps, summaries on vs off); `dia check sanitizer` over the filter; `dia check deps`; observation scan; update the system spec features table | All ACs, quoted; the soak figures in notes | Not Started | sonnet | AC 8 is manual inspection, not an automated test. AC 23 must be Release |
+| 8 | Exhaustive test pass + close-out: gap audit of every AC, every flag, every "no record written" path; the Perfetto check (AC 8 — run the stage with profiling, `dia perf convert`, confirm the channel as subject on worker `job.run` scopes; manual, recorded in notes); AC 23's soak (1000 steps, summaries on vs off) as a Debug ballpark only (Release soak moved to the system close-out, 2026-11-17; sanitizer removed, on request only); `dia check deps`; observation scan; update the system spec features table | All ACs, quoted; the soak figures in notes | Not Started | sonnet | AC 8 is manual inspection, not an automated test. AC 23 Release soak moved to the system close-out, Task 6 (2026-11-17, speed-ups) |

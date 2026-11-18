@@ -166,7 +166,12 @@ Tmin(c), Tmax(c) = the same sum with each cycle at its own extreme wave (curve m
 coldness = (Tmax − T) / (Tmax − Tmin)        0 = warmest possible, 1 = coldest possible; 0 when Tmax == Tmin
 ```
 
-`WeatherRunner` exposes `StartColdness(cell)` (coldness at `freezeDay`). A5 maps it to a glacier and lake seed. No coupling beyond this one accessor.
+`WeatherRunner` exposes two per-cell accessors for A5's seed (`(seam fix 2026-11-17, user)`). Both are evaluated at `freezeDay`, before the spin-up's first week:
+
+- `StartColdness(cell)`: coldness at `freezeDay`.
+- `StartSnowSurvivesSummer(cell)`: 1 when the cell's frozen-phase target temperature at the warmest week of the year stays below `snow.melt_threshold`, else 0. That temperature is `SeasonalTargetTemperature` for the summer peak week, plus the latched cycle temperature offset. It is computed before spin-up and is deterministic, so snow there would never melt and the cell can start glaciated.
+
+A5 maps the two to its glacier and lake seed. `WeatherModule` passes both as arrays in `SpinUpStart` (A5 `hydrology-module.md`). There is no other coupling.
 
 ### Save/load (Feature 4 amendment)
 
@@ -276,7 +281,8 @@ namespace CoW::Weather {
     //   void LatchClimate(uint64_t evalDay);                    // Capture and the runner call this; fills the working ClimateOffsets
     // WeatherRunner additions
     //   Start(..., uint64_t climateFreezeDay = 0);              // spin-up evaluates once at this day
-    //   float StartColdness(uint32_t cell) const;
+    //   float   StartColdness(uint32_t cell) const;
+    //   uint8_t StartSnowSurvivesSummer(uint32_t cell) const;   // seam fix 2026-11-17
 }
 ```
 
@@ -328,7 +334,8 @@ namespace CoW::Weather {
 29. Continuity: the offsets of the last spin-up week equal those of the first live week, for `warm`, `fraction` and `seeded` starts.
 30. `StartColdness`: 0 on the default `warm` start; 1 for a cell when every cycle is pinned at its coldest wave; always in [0, 1]; 0 when `Tmax == Tmin`. It is deterministic.
 31. Spin-up length stays `spinup_weeks` (`SPINUP_WEEKS`, 52). Enabling cycles does not change it, and nothing extends it ("spin-up extended by cycles" is gone).
-31a. (amended 2026-11-17) `StartColdness` is the only value the cycles hand to A5 for its phase-scaled slow-store seed; A5 owns the seed.
+31a. (amended 2026-11-17; (seam fix 2026-11-17, user)) `StartColdness` and `StartSnowSurvivesSummer` are the only values the cycles hand to A5 for its phase-scaled slow-store seed; A5 owns the seed.
+31b. (seam fix 2026-11-17, user) `StartSnowSurvivesSummer`: 0 everywhere on the default warm start for a temperate test terrain. 1 on a high, cold cell whose summer-peak target plus the pinned ice-age offset is below `snow.melt_threshold`, and 0 on a cell just above it. It doesn't change across the 52 spin-up weeks and is deterministic.
 
 ### Presets
 32. `ApplyPreset` disables every cycle before applying its `climate` block, so a preset without the block is cycle-free whatever ran before.
@@ -353,7 +360,7 @@ namespace CoW::Weather {
 | `Cluiche/CoW/Shared/Weather/ClimateCycleFile.h/.cpp` | New: load, validate, overrides, hash |
 | `Cluiche/CoW/Shared/Weather/WeatherSimulation.h/.cpp` | `SetClimate`, `LatchClimate`, working `ClimateOffsets` (Feature 2's file) |
 | `Cluiche/CoW/Shared/Weather/WeatherPipeline*.cpp` | Read `ClimateOffsets` in passes 1, 3 and 4 (§6.1) (Feature 2's files) |
-| `Cluiche/CoW/Shared/Weather/WeatherRunner.h/.cpp` | `climateFreezeDay`, `StartColdness` (Feature 3's file) |
+| `Cluiche/CoW/Shared/Weather/WeatherRunner.h/.cpp` | `climateFreezeDay`, `StartColdness`, `StartSnowSurvivesSummer` (Feature 3's file) |
 | `Cluiche/CoW/Modules/WeatherModule.cpp`, `WeatherSaveParticipant.cpp` | Load/reload the file, `LatchClimate` in `Capture`, `climate` save block |
 | `Cluiche/CoW/Modules/WeatherDebugDomain.cpp`, command executor | `cycles` info action, `cycle` and `reload` params actions, panel rows, the `weather.climate_offset` layer, gauges |
 | `Cluiche/CoW/Shared/Weather/WeatherPreset*.cpp` | `climate` block and the reset rule (Feature 6's file) |

@@ -86,7 +86,7 @@ sequential (same module files); Tasks 7–8 (the stage) can start as soon as Tas
 - Spin duration and k come from stage config, so k = 7 and k = 1 are the same binary (AC 30, 31).
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="DeferredStepModule*" --shards 2`.
+- Per task: `dia run googletest --filter="DeferredStepModule*" --shards 2` (narrow further to the suite under work; feature-wide filter in task 11 only). Sanitizer: on request only (user, 2026-11-17) (2026-11-17, speed-ups).
 - `dia run cluichetest --stage DeferredStep` for Tasks 8–9. Kill leftover `CluicheTest.exe` first;
   the summary line is unreliable, so read the session log (feedback_dia_run_gotchas).
 - The full suite, Release and the system-wide E2E are the **system** plan's Task 6.
@@ -106,4 +106,4 @@ sequential (same module files); Tasks 7–8 (the stage) can start as soon as Tas
 | 8 | Stage verification: k = 7 (applies on kick + 7, zero stalls, SimPU inside budget), k = 1 (stalls, Degraded health, still correct and still on the expected key), `worker_cap` = 1 (completes, cap utilisation 1.0). Plus the profiling check | AC 27, 29–32: committed-state dump + metrics snapshot per run, quoted. `Run` scopes on worker thread ids, `Capture`/`Apply` on Sim | Not Started | sonnet | Cell/stat dumps, not screenshots. Read the session log, not the summary line |
 | 9 | `Dia/DiaCLI/tests/e2e/test_deferred_step_stage.py` — headless run, assert no error-level log records, `applies` as expected, `stalls == 0` at k = 7 | AC 33 | Not Started | sonnet | E2E does not build — build first. Kill leftover `CluicheTest.exe` |
 | 10 | Exhaustive test pass: gap audit of every AC, every config fallback branch, every lifecycle path, every metric; edge cases — key source removed after start, key source returning a decreasing key, `DoStop` with a step in flight, start/stop/start with channels registered between, `worker_cap` above the worker count on a 1-worker machine | Gap list in notes; new tests green | Not Started | sonnet | No mutation check |
-| 11 | Feature close-out: `dia run googletest --filter="DeferredStepModule*" --shards 2`; `dia check sanitizer` over the same filter; `dia validate manifest`; `dia check deps`; `dia docs registry`; observation scan across the five pillars in notes; update the system spec features table | All ACs, quoted | Not Started | sonnet | Full suite / Release / cross-feature E2E are the system plan's Task 6 |
+| 11 | Feature close-out: `dia run googletest --filter="DeferredStepModule*" --shards 2`; `dia validate manifest`; `dia check deps`; `dia docs registry`; observation scan across the five pillars in notes; update the system spec features table | All ACs, quoted | Not Started | sonnet | Full suite / Release / cross-feature E2E are the system plan's Task 6 |

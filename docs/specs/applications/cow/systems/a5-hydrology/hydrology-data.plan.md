@@ -143,9 +143,10 @@ creates `BasinCurve`**; Feature 2 consumes it and adds its own edge tests. See O
 - **Determinism:** no hash-order iteration, no pointer-keyed containers; Task 16 compares with `memcmp`.
 
 ### ApplyPhaseSeed (Task 17)
-- `void ApplyPhaseSeed(float coldness, const uint8_t* snowSurvivesSummer)`; `coldness` clamped to [0, 1].
-  Lake basin `volume = capacity * lerp(1.0f, spinup.lake_seed_cold, coldness)`. Masked cells:
-  `glacier = spinup.glacier_seed_max * coldness`, `snowYears = onset_years` (rounded to whole), `glacierEligible = 1`.
+- `void ApplyPhaseSeed(const float* coldness, const uint8_t* snowSurvivesSummer)` (seam fix 2026-11-17): per cell, N
+  each; null `coldness` = 0 everywhere; each value clamped to [0, 1]. Lake basin
+  `volume = capacity * lerp(1.0f, spinup.lake_seed_cold, basinColdness)`, where `basinColdness` = mean of `coldness` over
+  the basin's cells, summed in ascending cell order. Masked cells: `glacier = spinup.glacier_seed_max * coldness[cell]`, `snowYears = onset_years` (rounded to whole), `glacierEligible = 1`.
   Null mask seeds none. Ends with `RederiveCommitted()`. At `coldness == 0` the state is bit-identical to a
   fresh `Initialise` (tested with `memcmp`). No-op before `Initialise` (asserts in Debug).
 
@@ -164,9 +165,9 @@ creates `BasinCurve`**; Feature 2 consumes it and adds its own edge tests. See O
   second loop does the same for the biome columns.
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="<suite prefixes for the task>" --shards 2` (report pass/fail only).
-- Scoped verification task near the end: `*Hydrology*`. **No full-suite run in this feature** (the one full
-  run is the A5 system close-out). No mutation checks. No sanitizer.
+- Per task: narrow `dia run googletest --filter="<suite prefixes for the task>" --shards 2` (always `--shards 2`; report pass/fail only).
+- Scoped verification task near the end: `*Hydrology*` (the feature-wide filter runs only there). **No full-suite run in this feature** (the one full
+  run is the worldstep.plan.md Weather-stack close-out). No `SLOW_` suites. No mutation checks. Sanitizer: on request only (user, 2026-11-17). (2026-11-17, speed-ups)
 - One commit per task (code, tests and the plan row in the same commit).
 
 ## Tasks
@@ -193,10 +194,10 @@ Update rows with `dia docs plan docs/specs/applications/cow/systems/a5-hydrology
 | 14 | RED then GREEN: in-basin flow directions | AC 17: on a dry basin whose S-1 directions cross it toward the spill, every footprint cell's downstream path reaches the pit; each step goes to a lower bed elevation or follows the flood-fill fallback; cells outside the footprint are unchanged; a rough bed with a local pit exercises the fallback; ties resolve by lowest direction index; a `basinsFromLakesOnly` terrain has no override | Not Started | sonnet | Fixes the tie rule (Open Design Question 5) as written in Implementation Patterns; record any change in notes and in the spec's Open Design Questions via the user. If the rule proves insufficient, ask before escalating |
 | 15 | RED then GREEN: downstream index, topological order and EC-14 failures | AC 18, 11 (EC-14 half): every cell comes after all its upstream cells; a basin node comes after every footprint cell and every cell upstream of the basin and before its spill cell; ties by ascending index (two equal orders on two inputs); a flow cycle, a spill cell above its spill height, and a river leaving a footprint each fail with the cause named in `err` and leave the simulation un-initialised | Not Started | sonnet | Kahn with a min-heap ready set. The cycle message names the first cell index in the cycle. Do not give the cascade (Feature 2) any behaviour here. Commit |
 | 16 | RED then GREEN: lake-only worlds, re-initialise and determinism | AC 12, 13, 15: a `basinsFromLakesOnly` terrain of lakes initialises, one with a non-lake basin is rejected, no basin is dropped by the filter and lake cells keep their S-1 directions; re-`Initialise` with a different terrain size equals a fresh simulation on that terrain (`memcmp` of every field, table and terrain copy); the same inputs twice give byte-identical fields and tables; the caller's terrain is not retained (mutate after the call, state unchanged) | Not Started | sonnet | Commit tasks 14 to 16 as one logical group |
-| 17 | RED then GREEN: `ApplyPhaseSeed` | AC 19: `coldness` 0 changes nothing (`memcmp` against a fresh `Initialise`); `coldness` 1 gives lake volume `capacity * lake_seed_cold` and, on masked cells only, `glacier = glacier_seed_max`, `snowYears = onset_years`, `glacierEligible = 1`; 0.5 gives the midpoint; a null mask seeds no glacier; `level`, `openWater` and `passability` are re-derived; `coldness` outside [0, 1] is clamped; non-lake basins unchanged | Not Started | sonnet | Soil, ground water, channel stores and ice are untouched (test asserts it). Commit |
+| 17 | RED then GREEN: `ApplyPhaseSeed` (per-cell arrays, seam fix 2026-11-17) | AC 19: a non-uniform coldness array seeds each basin from its cells' mean and each masked cell from its own value; `coldness` 0 changes nothing (`memcmp` against a fresh `Initialise`); `coldness` 1 gives lake volume `capacity * lake_seed_cold` and, on masked cells only, `glacier = glacier_seed_max`, `snowYears = onset_years`, `glacierEligible = 1`; 0.5 gives the midpoint; a null mask seeds no glacier; `level`, `openWater` and `passability` are re-derived; `coldness` outside [0, 1] is clamped; non-lake basins unchanged | Not Started | sonnet | Soil, ground water, channel stores and ice are untouched (test asserts it). Commit |
 | 18 | Exhaustive test pass: gap audit of AC 1 to 19 against the written tests, then edge cases the spec implies but does not number | Gap list in notes. Edge cases: 1 x 1 terrain; a terrain with every cell a river; zero basins; a basin of one cell; a basin spanning the map edge; overrides naming a biome and a scalar of the same name; a `biome_table` that is not an object; a `Json::Value` integer where a float is expected; `Initialise` after a failed `Initialise`; `basin.min_cells` 1 and `min_capacity` 0 (nothing dropped); `ApplyPhaseSeed` before `Initialise`; the largest `Initialise` at Large size (6,656 cells) for a timing note (report only) | Not Started | sonnet | No mutation check (project rule 2026-11-12). Add only the tests the audit shows missing. The Large timing is a note for A5 Open Question 1, not a gate |
 | 19 | Observation Opportunity Scan over every file touched, across logs, traces, profiling, metrics, health | Suggestions in notes | Not Started | haiku | Non-blocking. The only expected code instrumentation is the tiny-depression Info log and the EC-09 once-per-id log; note a `cow.hydro.basins_dropped` metric and an `Initialise` trace zone as Feature 3 suggestions |
-| 20 | Scoped verification: `dia run googletest --filter="*Hydrology*" --shards 2`; `dia check deps`; `dia docs precommit` | All AC 1 to 19 quoted; pass/fail and failing names only | Not Started | haiku | **No full-suite run here**; the single full `dia run googletest --shards 2` is the A5 system close-out |
+| 20 | Scoped verification: `dia run googletest --filter="*Hydrology*" --shards 2`; `dia check deps`; `dia docs precommit` | All AC 1 to 19 quoted; pass/fail and failing names only | Not Started | haiku | **No full-suite run here**; the single full `dia run googletest --shards 2` is the worldstep.plan.md Weather-stack close-out (2026-11-17, speed-ups) |
 | 21 | Close-out: `dia docs plan` rows to Done with notes, then `dia docs spec-done docs/specs/applications/cow/systems/a5-hydrology/hydrology-data.md` | Spec status Done, plan header updated | Not Started | haiku | **Do not run until every row above is Done.** Not to be run when this plan is written |
 
 ## Open items

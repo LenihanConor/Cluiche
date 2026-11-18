@@ -171,7 +171,7 @@ Detail and acceptance criteria are in @docs/specs/applications/cow/systems/a5-hy
 ### Initial state and spin-up (decided 2026-11-17, aligned to locked GDD 2026-11-17)
 
 - **Frozen-phase spin-up:** A4's spin-up worker job runs A4 and A5 **together**, week by week in World Step order, through `WeatherRunner` + `HydrologyRunner`, for `SPINUP_WEEKS` = **52**. Climate cycles are **held at the world's start phase** for the whole spin-up, so the first live year is consistent with that phase and no long multi-year spin-up is needed. There is no longer a spin-up "extended when cycles are on".
-- **Phase-scaled seed.** One year cannot build slow stores, so they start seeded for the start phase. `cold(phase)` is the ice-age cycle's normalised coldness at the start: 0 at the warm point, 1 at the coldest. A4 exposes it (`ClimateCycles::Coldness`, `WeatherRunner::StartColdness`).
+- **Phase-scaled seed.** One year cannot build slow stores, so they start seeded for the start phase. `cold(phase)` is the ice-age cycle's normalised coldness at the start: 0 at the warm point, 1 at the coldest. A4 exposes it per cell (`WeatherRunner::StartColdness`), with a per-cell `StartSnowSurvivesSummer` mask for the glacier seed. Lakes use their basin's mean coldness (seam fix 2026-11-17).
   - S-1 lakes: `volume = capacity · lerp(1.0, LAKE_SEED_COLD (0.6), cold(phase))`.
   - Glaciers, on cells whose start-phase temperature keeps snow through the summer: `glacier = GLACIER_SEED_MAX (1.0) · cold(phase)`, with `snowYears` at the onset count (eligible).
   - Every other basin, and every soil, ground-water, channel and ice store, starts at 0. (The earlier "soil and ground water start at a fraction of capacity" knob stays in Feature 1 with a default of 0.)

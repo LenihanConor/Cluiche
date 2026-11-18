@@ -82,7 +82,7 @@ do not dispatch them in parallel.
   in this system.
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="DeferredStep*" --shards 2` (feedback_scoped_gtest_runs).
+- Per task: `dia run googletest --filter="DeferredStep*" --shards 2` (feedback_scoped_gtest_runs); narrow to the suite under work where possible. Sanitizer: on request only (user, 2026-11-17) (2026-11-17, speed-ups).
 - This plan's own close-out is Task 11; the full suite, Release and E2E are the **system** plan's
   Task 6, not here (feedback_verification_cadence).
 

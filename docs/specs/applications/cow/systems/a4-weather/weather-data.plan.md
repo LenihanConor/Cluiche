@@ -101,8 +101,8 @@ All code is CoW (application) code under `Cluiche/CoW/Shared/Weather/`. No Dia f
 - Byte-identity checks use `memcmp` over the field arrays, not `==` on floats.
 
 ### Verification cadence
-- Per task: `dia run googletest --filter="WeatherTypes*:WeatherParameters*:BiomeSeasonalBaseline*:WeatherInitialise*" --shards 2`.
-- One full `dia run googletest --shards 2` in the verification task only. No mutation checks.
+- Per task: narrow `dia run googletest --filter="WeatherTypes*:WeatherParameters*:BiomeSeasonalBaseline*:WeatherInitialise*" --shards 2` (always `--shards 2`).
+- The feature-wide `--filter="Weather*:BiomeSeasonalBaseline*"` runs only in the verification task; the full suite runs once in worldstep.plan.md, Weather-stack close-out. No `SLOW_` suites. Sanitizer: on request only (user, 2026-11-17). No mutation checks. (2026-11-17, speed-ups)
 
 ## Tasks
 
@@ -124,7 +124,7 @@ All code is CoW (application) code under `Cluiche/CoW/Shared/Weather/`. No Dia f
 | 13 | Author `Assets/CoW/Global/Weather/weather_parameters.json` with the envelope, all 41 values (the 23 plus the `influence` group; amended 2026-11-17 (row 6d)) and the 13 x 4 `baseline_table` keyed by `BiomeId`; add a test that loads the shipped file and compares it to `DefaultWeatherParameters()` and the compiled baseline | AC 4, 5, 11 against the real file | Not Started | sonnet | The compiled defaults and the file must not drift: the test is the guard. Register the asset via the usual asset path, not by hand. Commit |
 | 14 | Exhaustive test pass: gap audit of AC 1 to 18 against the written tests, then edge cases the spec implies but does not number | Gap list in notes. Edge cases: overrides that name a key twice in different groups; an override of a non-object `weather_parameters`; `baseline_table` fault inside an otherwise valid file leaving `out` at defaults; a `Json::Value` integer where a float is expected; `Initialise` after a failed `Initialise` keeping the earlier world; 1 x 1 terrain with a water source; a terrain with every cell a water source | Not Started | sonnet | No mutation check (project rule 2026-11-12). Add only the tests the audit shows missing |
 | 15 | Observation Opportunity Scan over every file touched, across the five DiaObservation pillars (logs, traces, profiling, metrics, health) | Suggestions listed in notes | Not Started | haiku | Non-blocking; feeds Feature 5. The spec says the module logs, so this feature adds no `DIA_LOG_*`. Record that as the finding rather than adding code |
-| 16 | One full verification: `dia run googletest --shards 2`; `dia check deps`; `dia docs precommit` | All AC 1 to 18 quoted; pass/fail and failing names only | Not Started | haiku | Report pass/fail, failing names and errors only. One full run, not per task |
+| 16 | Scoped verification: `dia run googletest --filter="Weather*:BiomeSeasonalBaseline*" --shards 2`; `dia check deps`; `dia docs precommit` | All AC 1 to 18 quoted; pass/fail and failing names only | Not Started | haiku | Report pass/fail, failing names and errors only. Feature-wide scoped run only; the full suite is in worldstep.plan.md Weather-stack close-out (2026-11-17, speed-ups) |
 | 17 | Close-out: `dia docs plan` rows to Done with notes, then `dia docs spec-done docs/specs/applications/cow/systems/a4-weather/weather-data.md` | Spec status Done, plan header updated | Not Started | haiku | **Do not run until all rows above are Done.** Not to be run when this plan is written |
 
 ## Open items
