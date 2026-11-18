@@ -32,10 +32,12 @@
       <Filter>Testing</Filter>
     </ClInclude>
     <ClInclude Include="CapGate.h" />
+    <ClInclude Include="CappedParallelExecutor.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />
     <ClCompile Include="CapGate.cpp" />
+    <ClCompile Include="CappedParallelExecutor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.diadeferredstep.architecture.module.md" />

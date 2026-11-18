@@ -113,6 +113,7 @@ namespace Dia::DeferredStep
 		CapGate& operator=(const CapGate&) = delete;
 
 		uint32_t GetWorkerCap() const { return mWorkerCap; }   // resolved M
+		uint32_t GetRangesPerWorker() const { return mRangesPerWorker; }   // config value, min 1
 		CapStats GetStats() const;                              // snapshot by value (atomics inside)
 		void     ResetStats();                                  // keeps workerCap; peaks restart from current
 
@@ -138,6 +139,7 @@ namespace Dia::DeferredStep
 
 		Dia::Threading::JobSystem& mJobs;
 		uint32_t                   mWorkerCap = 1;
+		uint32_t                   mRangesPerWorker = 1;
 
 		mutable std::mutex         mMutex;
 		std::condition_variable    mDoneCv;

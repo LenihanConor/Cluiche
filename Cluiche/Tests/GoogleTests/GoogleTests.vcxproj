@@ -1305,6 +1305,7 @@
     <ClCompile Include="CluicheGameBaseline\TestPerfChainCommands.cpp" />
     <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp" />
     <ClCompile Include="DiaDeferredStep\TestCapGate.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestCappedParallelExecutor.cpp" />
     <ClCompile Include="DiaDeferredStep\TestCapRangeSplit.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepScheduler.cpp" />

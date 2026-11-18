@@ -36,6 +36,7 @@ namespace Dia::DeferredStep
 				"Worker cap %u exceeds worker count %zu; clamped to %u", config.workerCap, workers, mWorkerCap);
 		}
 		const uint32_t perWorker = config.rangesPerWorker == 0 ? 1u : config.rangesPerWorker;
+		mRangesPerWorker = perWorker;
 		mQueue.assign(static_cast<size_t>(kMaxChannelsHint) * (static_cast<size_t>(mWorkerCap) * perWorker + 1), nullptr);
 	}
 
