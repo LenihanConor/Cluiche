@@ -88,6 +88,10 @@ namespace Dia
 			// Callers should check IsValid() and fall back to serial execution if needed.
 			JobHandle  TrySubmit(JobFn fn);
 
+			// Non-asserting tagged variant: same attribution as Submit(fn, tag); returns an invalid
+			// JobHandle before Initialize or after Shutdown instead of asserting.
+			JobHandle  TrySubmit(JobFn fn, const JobTag& tag);
+
 			// Blocks until the job behind h has finished. Safe from any thread.
 			void       Wait(const JobHandle& h);
 

@@ -119,6 +119,14 @@ namespace Dia
 			return SubmitImpl(std::move(fn), nullptr);
 		}
 
+		JobHandle JobSystem::TrySubmit(JobFn fn, const JobTag& tag)
+		{
+			// Non-asserting tagged variant: invalid handle if pool is null.
+			if (!mThreadPool)
+				return JobHandle();
+			return SubmitImpl(std::move(fn), &tag);
+		}
+
 		JobHandle JobSystem::SubmitImpl(JobFn fn, const JobTag* tag)
 		{
 			auto jobPtr = std::make_shared<Job>();

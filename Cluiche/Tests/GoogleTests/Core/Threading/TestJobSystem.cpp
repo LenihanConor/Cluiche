@@ -636,3 +636,61 @@ TEST(JobSystemInstance, ThrowingJobNullObserver_StillCompletes)
     if (completed) { waiter.join(); js->Shutdown(); }
     else           { waiter.detach(); } // spinning waiter keeps js alive; leak rather than hang
 }
+
+// ---------------------------------------------------------------------------
+// TrySubmit(fn, tag) - non-asserting tagged variant
+// ---------------------------------------------------------------------------
+
+TEST(JobSystemObserver, TrySubmitTagged_AttributionMatchesSubmitTagged)
+{
+    RecordingJobObserver obs;
+    JobSystem js;
+    js.Initialize(1, nullptr, &obs);
+
+    JobTag tag; tag.owner = 100; tag.tag = 200; tag.range = 3; tag.rangeCount = 5;
+    JobHandle a = js.Submit([] {}, tag);
+    js.Wait(a);
+    JobHandle b = js.TrySubmit([] {}, tag);
+    js.Wait(b);
+    js.Shutdown();
+
+    ASSERT_EQ(obs.seen.size(), 2u);
+    const auto& x = obs.seen[0].endCtx;
+    const auto& y = obs.seen[1].endCtx;
+    EXPECT_EQ(y.attribution.owner, x.attribution.owner);
+    EXPECT_EQ(y.attribution.tag, x.attribution.tag);
+    EXPECT_EQ(y.attribution.range, x.attribution.range);
+    EXPECT_EQ(y.attribution.rangeCount, x.attribution.rangeCount);
+    EXPECT_EQ(y.traceParent, x.traceParent);
+    EXPECT_EQ(y.attribution.owner, 100u);
+    EXPECT_EQ(y.attribution.tag, 200u);
+}
+
+TEST(JobSystemInstance, TrySubmitTagged_BeforeInitialize_ReturnsInvalidHandle)
+{
+    JobSystem js;
+    JobHandle h = js.TrySubmit([]() {}, JobTag{1, 2, 0, 0});
+    EXPECT_FALSE(h.IsValid());
+}
+
+TEST(JobSystemInstance, TrySubmitTagged_AfterShutdown_ReturnsInvalidHandle)
+{
+    JobSystem js;
+    js.Initialize(1);
+    js.Shutdown();
+    JobHandle h = js.TrySubmit([]() {}, JobTag{1, 2, 0, 0});
+    EXPECT_FALSE(h.IsValid());
+}
+
+TEST(JobSystemInstance, TrySubmitTagged_NormalCase_ExecutesAndWaits)
+{
+    JobSystem js;
+    js.Initialize(2);
+    std::atomic<int> ran{0};
+    JobHandle h = js.TrySubmit([&]() { ran.fetch_add(1); }, JobTag{1, 2, 0, 0});
+    EXPECT_TRUE(h.IsValid());
+    js.Wait(h);
+    EXPECT_EQ(ran.load(), 1);
+    EXPECT_TRUE(js.IsComplete(h));
+    js.Shutdown();
+}

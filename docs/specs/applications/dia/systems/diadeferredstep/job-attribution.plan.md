@@ -1,7 +1,7 @@
 # Plan: Job Attribution and Step Summaries (DiaDeferredStep Feature 5)
 
 **Spec:** @docs/specs/applications/dia/systems/diadeferredstep/job-attribution.md
-**Status:** Not Started
+**Status:** In Progress
 **System plan:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.plan.md (row 5)
 
 Starts once Feature 4 is Done. **Task 7 is the only task blocked on another system**
@@ -76,7 +76,7 @@ this plan sequences them so only the last wiring step waits.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | RED → GREEN: `JobSystem::TrySubmit(JobFn, const JobTag&)` + module doc. Run the **existing** DiaThreading suite unchanged | AC 1–3: tagged attribution matches `Submit(fn, tag)`; invalid handle before `Initialize` and after `Shutdown` with no assert; existing suite green with no test edits | Not Started | sonnet | AD-001 sign-off given 2026-11-13. Additive only — do not refactor `SubmitImpl` |
+| 1 | RED → GREEN: `JobSystem::TrySubmit(JobFn, const JobTag&)` + module doc. Run the **existing** DiaThreading suite unchanged | AC 1–3: tagged attribution matches `Submit(fn, tag)`; invalid handle before `Initialize` and after `Shutdown` with no assert; existing suite green with no test edits | Done | sonnet | AD-001 sign-off given 2026-11-13. Additive only — do not refactor `SubmitImpl`; RED (no 2-arg overload) -> GREEN 15 JobSystem tests; wider *Job*:*Thread* 128 pass; additions only |
 | 2 | RED → GREEN: `kCoordinatorRange`; tag every range and the coordinator; stolen/inline ranges untagged | AC 4–7: owner/tag/range/rangeCount per range via a capturing `IJobObserver`; coordinator sentinel; no record for stolen ranges; two concurrent channels distinguishable | Not Started | sonnet | Two-line change if Feature 2 kept the submits centralised; if not, centralise them first |
 | 3 | RED → GREEN: `StepTimes` on the scheduler — `kickNs`, `readyNs` (from the existing poll pass), `applyNs`, reusing the stall figure | Ordering `kickNs <= readyNs <= applyNs` on a normal step; `readyNs` equals the first completion observation; a restored step has no `readyNs` | Not Started | sonnet | Small, but it is the data every later task consumes |
 | 4 | `Dia/DiaObservation/Profile/StepSummaryRecord.h` + `static_assert` on size. RED → GREEN: `BuildStepSummary` as a pure function — sums, min, flags | AC 10–11, 19: field ordering; `cpuNs`/`capWaitNs`/`workerWaitNs` as sums; `rangeCount` matches the split; `inlineFallbacks` vs `stolenRanges` kept distinct | Not Started | sonnet | AD-001 sign-off given. Pure function — no table, no module, no job system needed |
