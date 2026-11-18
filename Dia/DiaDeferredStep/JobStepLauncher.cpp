@@ -85,6 +85,7 @@ namespace Dia::DeferredStep
 
 	void JobStepLauncher::RunInline(Slot& slot) const
 	{
+		slot.ranInline = true;
 		SerialExecutor serial;
 		RunStepGuarded(*slot.step, serial);
 		slot.complete.store(true);
@@ -124,6 +125,7 @@ namespace Dia::DeferredStep
 		slot.inUse = true;
 		slot.step = &step;
 		slot.complete.store(false);
+		slot.ranInline = false;
 		slot.executor.emplace(mGate, info);
 
 		// The step lives until the scheduler has Wait()ed and Release()d this token (it drains before
@@ -178,6 +180,31 @@ namespace Dia::DeferredStep
 		{
 			CompleteIfSubmitFailed(*slot);
 		}
+	}
+
+	uint32_t JobStepLauncher::GetRangeTimings(LaunchToken token, const RangeTiming*& outTimings) const
+	{
+		outTimings = nullptr;
+		bool isOverflow = false;
+		Slot* slot = Resolve(token, isOverflow);
+		if (slot == nullptr || !slot->executor.has_value() || !slot->complete.load())
+		{
+			return 0;
+		}
+		const uint32_t count = slot->executor->GetRangeTimingCount();
+		outTimings = count > 0 ? &slot->executor->GetRangeTimingAt(0) : nullptr;
+		return count;
+	}
+
+	bool JobStepLauncher::RanInlineWholly(LaunchToken token) const
+	{
+		bool isOverflow = false;
+		Slot* slot = Resolve(token, isOverflow);
+		if (isOverflow)
+		{
+			return true;   // overflow token: step ran synchronously through a SerialExecutor
+		}
+		return slot != nullptr && slot->ranInline;
 	}
 
 	void JobStepLauncher::Release(LaunchToken token)

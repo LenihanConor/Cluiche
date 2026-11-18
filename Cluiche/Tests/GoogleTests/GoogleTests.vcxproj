@@ -1325,6 +1325,7 @@
     <ClCompile Include="DiaDeferredStep\TestJobAttribution.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepTimes.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepSummary.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepSummaryScheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

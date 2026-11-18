@@ -49,6 +49,7 @@
     <ClInclude Include="DeferredStepMetrics.h" />
     <ClInclude Include="DeferredStepHealth.h" />
     <ClInclude Include="StepSummary.h" />
+    <ClInclude Include="IStepSummarySink.h" />
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />

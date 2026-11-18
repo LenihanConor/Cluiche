@@ -6,6 +6,8 @@
 #include <DiaDeferredStep/DeferredStepObservation.h>
 #include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/IStepLauncher.h>
+#include <DiaDeferredStep/IStepSummarySink.h>
+#include <DiaDeferredStep/StepSummary.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -295,6 +297,20 @@ namespace Dia::DeferredStep
 			mLastTimes.stallNs = stallNs;
 			mLastTimes.applyNs = NowNs();
 			mHasLastTimes = true;
+			if (mSummarySink != nullptr)
+			{
+				// Built before Apply (which may Unregister and release the token) and before Release, so the launcher's
+				// per-range timings are still valid. SimPU, synchronous.
+				const RangeTiming* timings = nullptr;
+				const uint32_t timingCount = mLauncher.GetRangeTimings(token, timings);
+				LaunchInfo info;
+				info.channelId = dueIds[i];
+				info.kickKey = entry.kickKey;
+				StepSummaryInputs inputs;
+				inputs.ranInlineWholly = mLauncher.RanInlineWholly(token);
+				inputs.applyKey = applyKey;
+				mSummarySink->OnStepSummary(BuildStepSummary(info, timings, timingCount, mLastTimes, inputs));
+			}
 			{
 				DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
 				DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);
@@ -354,6 +370,16 @@ namespace Dia::DeferredStep
 		mLastTimes = StepTimes();
 		mLastTimes.applyNs = NowNs();
 		mHasLastTimes = true;
+		if (mSummarySink != nullptr)
+		{
+			LaunchInfo info;
+			info.channelId = channelId;
+			info.kickKey = entry.kickKey;
+			StepSummaryInputs inputs;
+			inputs.restoredFromSave = true;
+			inputs.applyKey = entry.applyKey;
+			mSummarySink->OnStepSummary(BuildStepSummary(info, nullptr, 0, mLastTimes, inputs));
+		}
 		{
 			DIA_TRACE_ZONE("DeferredStep.Apply", Dia::Observation::Trace::Category::kDiaDeferredStep);
 			DIA_PROFILE_SCOPE("DeferredStep.Apply", Dia::Observation::Profile::Category::kDiaDeferredStep);

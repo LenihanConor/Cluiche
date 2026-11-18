@@ -34,6 +34,7 @@ namespace Dia::DeferredStep
 			bool IsComplete(LaunchToken /*token*/) const override { return true; }
 			void Wait(LaunchToken /*token*/) override {}
 			void Release(LaunchToken /*token*/) override {}
+			bool RanInlineWholly(LaunchToken /*token*/) const override { return true; }
 
 		private:
 			SerialExecutor mExecutor;

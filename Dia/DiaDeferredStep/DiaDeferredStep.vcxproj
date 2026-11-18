@@ -101,6 +101,7 @@
     <ClInclude Include="DeferredStepMetrics.h" />
     <ClInclude Include="DeferredStepHealth.h" />
     <ClInclude Include="StepSummary.h" />
+    <ClInclude Include="IStepSummarySink.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />

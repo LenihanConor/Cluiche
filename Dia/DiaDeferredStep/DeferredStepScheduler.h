@@ -9,6 +9,7 @@ namespace Dia::DeferredStep
 {
 	class IDeferredStep;
 	class IStepLauncher;
+	class IStepSummarySink;
 
 	struct ChannelStats
 	{
@@ -96,6 +97,10 @@ namespace Dia::DeferredStep
 		// Timestamps of the most recently applied step; false until one has applied. Discarded steps never update it.
 		bool      GetLastStepTimes(StepTimes& out) const;
 
+		// Optional sink for per-step summary records (null = none; nothing is built or allocated without one).
+		// One record per applied step (normal, stalled or restored), emitted on SimPU before the token is released.
+		void SetSummarySink(IStepSummarySink* sink) { mSummarySink = sink; }
+
 		// The step registered on a channel, or nullptr when the channel is not registered.
 		IDeferredStep* GetStep(Dia::Core::StringCRC channelId) const;
 
@@ -125,6 +130,7 @@ namespace Dia::DeferredStep
 		void DrainEntry(ChannelEntry& entry);   // Wait if in flight, Release, no Apply; also resets a restored token-less kComplete channel
 
 		IStepLauncher& mLauncher;
+		IStepSummarySink* mSummarySink = nullptr;
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
 		SchedulerStats mStats;
 		uint64_t mKickSequence = 0;

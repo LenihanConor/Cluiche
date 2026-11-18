@@ -49,6 +49,8 @@ namespace Dia::DeferredStep
 		bool        IsComplete(LaunchToken token) const override;
 		void        Wait(LaunchToken token) override;
 		void        Release(LaunchToken token) override;
+		uint32_t    GetRangeTimings(LaunchToken token, const RangeTiming*& outTimings) const override;
+		bool        RanInlineWholly(LaunchToken token) const override;
 
 		CapGate&       GetCapGate()       { return mGate; }
 		const CapGate& GetCapGate() const { return mGate; }
@@ -58,6 +60,7 @@ namespace Dia::DeferredStep
 		{
 			bool                                    inUse = false;
 			bool                                    viaGate = false;    // item was admitted through the gate
+			bool                                    ranInline = false;  // ran wholly on SimPU via SerialExecutor (submit failed)
 			uint8_t                                 generation = 0;
 			IDeferredStep*                          step = nullptr;
 			GateItem                                item;
