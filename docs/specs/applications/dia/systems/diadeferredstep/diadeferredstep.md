@@ -117,7 +117,7 @@ The capped executor counts deferred-step ranges in flight across all channels. W
 | 2 | Capped executor | `JobStepLauncher`, `CapGate` (strict M, coordinator participates), `CappedParallelExecutor`, `TrySubmit` inline fallback, per-range cap/worker timing, serial-vs-parallel bit-identity tests | Done | [capped-executor.md](capped-executor.md) |
 | 3 | Save / load | Automatic drain on `OnSaveStarted`; one `ISaveable` participant holding every channel's pending result + apply key; abandon on `OnLoadStarted`; restore applies at the key; load mid-run equals the uninterrupted run | Done | [save-load.md](save-load.md) |
 | 4 | DeferredStepModule + observability | SimModule on SimPU, `JobSystemService` reader, `.diaapp` worker cap, injected `IStepKeySource`, shutdown drain, logs, 9 global metrics, Degraded-only health, trace/profile zones; CluicheTest `DeferredStep` stage | Done | [module-and-observability.md](module-and-observability.md) |
-| 5 | Job attribution + step summaries | Part A: `JobTag` per range and coordinator, `JobSystem::TrySubmit(fn, tag)`. Part B: one `StepSummaryRecord` per step instance into SimPU's `JobTimingTable`, with cap wait and worker wait measured inside DiaDeferredStep | Approved | [job-attribution.md](job-attribution.md) |
+| 5 | Job attribution + step summaries | Part A: `JobTag` per range and coordinator, `JobSystem::TrySubmit(fn, tag)`. Part B: one `StepSummaryRecord` per step instance into SimPU's `JobTimingTable`, with cap wait and worker wait measured inside DiaDeferredStep | Done | [job-attribution.md](job-attribution.md) |
 
 **Build order:** 1 → 2 → 3 → 4 → 5. Features 1 and 2 are independent and can run in parallel if
 needed. Feature 5 Part B's final wiring task is the only work blocked on another system

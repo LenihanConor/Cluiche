@@ -1,7 +1,7 @@
 # Feature Spec: Job Attribution and Step Summaries
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 5)
-**Status:** Approved (2026-11-13)
+**Status:** Done (2026-11-18)
 **Plan:** @docs/specs/applications/dia/systems/diadeferredstep/job-attribution.plan.md
 **Depends on:** Features 1–4. Part B needs @docs/specs/applications/dia/systems/diaobservation/perf-inspector.md
 Task 8 (`JobTimingTable`), which is `Planned`, not built.
