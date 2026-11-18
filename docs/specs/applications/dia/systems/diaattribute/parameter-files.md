@@ -217,12 +217,25 @@ public:
 18. **Sidecar replaces the table.** `TERRAIN_RULES_TABLE`'s values, ranges and kinds move into `Global/WorldGen/terrain_rules.schema.json`, and `terrain_rules.json` is deleted. `TerrainRules` becomes a struct filled by `ParamBinding<TerrainRules>::Snapshot`. `WorldGenerationModule` loads the sidecar through its catalogue alias (this replaces the earlier "wire `terrain_rules.json` now" loose end).
 19. **No behaviour change.** S-1 layer goldens are bit-identical and every S-1 test passes. A broken sidecar edit puts `WorldGenerationModule` in health Error, naming the key, and generation refuses to run.
 
+### Plan-gap additions (added 2026-11-18, plan-gap resolution)
+20. **BindMap snapshot.** (added 2026-11-18, plan-gap resolution) `ParamBinding<T>::BindMap` snapshots a two-column biome map into per-key arrays, in key-source order, with no allocation and no hash lookup. Int, bool and enum maps use the typed overloads.
+21. **Map coverage.** (added 2026-11-18, plan-gap resolution) `Resolve` treats a bound map as covering every `<key>.<mapKey>` attribute; an unbound map column reports every one of its keys, and a `count` that differs from the key source's count is reported.
+22. **In-place writer round trip.** (added 2026-11-18, plan-gap resolution) `WriteDefaultsInPlace` over a sidecar with the unchanged `default` values returns text byte-identical to the input (key order, whitespace, labels).
+23. **Only `default` tokens change.** (added 2026-11-18, plan-gap resolution) After writing new values, a byte diff against the input touches only `default` value tokens of the named entries.
+24. **Map defaults per key.** (added 2026-11-18, plan-gap resolution) A map entry's default object is rewritten per key, with every other byte preserved.
+25. **Clean failure.** (added 2026-11-18, plan-gap resolution) An entry with no `default`, or an unknown entry key, makes the writer fail with `Error` naming the key; `out` is left empty and the input is unchanged.
+26. **SchemaHash ignores presentation.** (added 2026-11-18, plan-gap resolution) Changing a label, description, hint, unit, ui or colour does not change `SchemaHash()`.
+27. **SchemaHash tracks meaning.** (added 2026-11-18, plan-gap resolution) Changing a key, kind, `min`/`max`, `default`, an enum value (id or order), a band, a constraint, or a map `keyRef`/`keyEnum` changes `SchemaHash()`.
+28. **Missing `basedOn` is stale.** (added 2026-11-18, plan-gap resolution) A pack with no `basedOn` gives exactly one stale Warning (key `basedOn`) and still applies leniently.
+
 ## Files Touched
 
 | File | Change |
 |---|---|
 | `Dia/DiaValueSchema/ValueInfo.h`, `ValueSchemaLoader.cpp` | Bands, object map defaults, `constraints` |
 | `Dia/DiaValueSchema/Testing/Conformance/` | New fixtures |
+| `Dia/DiaValueSchema/ValueSchemaWriter.h/.cpp` (or the existing loader's files) | **New** `WriteDefaultsInPlace` (plan-gap resolution) |
+| `Dia/DiaAttribute/ParamBinding.h` | `BindMap` overloads (listed below as new) |
 | `Dia/DiaCLI/dia_cli/commands/validate/{schema_rules,data_rules}.py` + tests | Bands, constraints, map defaults; `default-mismatch` scoped off parameters |
 | `Dia/DiaAttribute/AttributeSchema.h/.cpp` | `FromValueSchema`; old loader deleted; kinds |
 | `Dia/DiaAttribute/AttributeSet.h/.cpp` | Kind-aware modifiers; O(1) index access |
@@ -248,7 +261,7 @@ public:
 | PD-001 | StringCRC for identifiers | Attribute names, map keys and binding keys are `StringCRC`. Key strings are kept only for diagnostics and `ToJson`. |
 | PD-004 / AD-002 | No STL containers in public APIs | `MapKeys` is a pointer and count; warnings are a `DynamicArrayC` with a dropped count; errors are `String128` and `String256`. `Json::Value` is already used in DiaAttribute's public headers. |
 | AD-001 (Dia) | Module YAML frontmatter | DiaAttribute's module doc gains the DiaValueSchema dependency (domain → foundation, allowed). `dia check deps` passes. |
-| AD-001 (CoW) | Ask before Dia edits | Sign-off given in principle by the user on 2026-11-18 (research §0, D2). This spec's approval confirms it. |
+| AD-001 (CoW) | Ask before Dia edits | Sign-off given in principle by the user on 2026-11-18 (research §0, D2). This spec's approval confirms it. The Plan-gap resolutions below (`BindMap`, `WriteDefaultsInPlace` in DiaValueSchema, `SchemaHash` inputs) were each signed off by the user on 2026-11-18. |
 | D1 / D3 (research) | Strict base, lenient packs; sidecars own ranges | Designed in directly: policy flag; sidecar-only definitions and defaults. |
 
 ## Test Plan
@@ -298,6 +311,26 @@ These settle open points raised while amending. Each item supersedes contradicti
    - A pack whose `basedOn` differs from the current `SchemaHash()` is **stale**. It still applies leniently, with one Warning, following F-3's load-and-warn rule.
    - `ToJson(Diff)` writes `basedOn`.
    - This adds to ACs 9 and 12.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above (including Open Design Question 1's "decide before the first consumer" and the Spec-6 `SchemaHash` wording).
+
+1. **`ParamBinding<T>::BindMap(key, float T::* firstElement | float* array, uint32_t count)`.**
+   - Binds a map entry (one value per map key, in key-source order) to a per-key array, so maps snapshot like scalars.
+   - Int, bool and enum maps use typed overloads.
+   - `Resolve` treats a bound map as covering every `<key>.<mapKey>` attribute.
+   - ACs 20, 21.
+2. **In-place default writer.** `Dia::ValueSchema::WriteDefaultsInPlace(const char* sidecarText, const DefaultValue* values, uint32_t count, String& out, Error&)` (or an equivalent shared helper).
+   - Replaces only the `default` values of the named entries; every other byte is preserved (key order, whitespace, labels).
+   - Used by `cow.<sys>.params {action: save_defaults}` and by T-2.
+   - Map defaults are rewritten per key; an entry with no `default` fails cleanly.
+   - ACs 22-25. The helper is built in this feature (not deferred to the first consumer).
+3. **`SchemaHash()` inputs.**
+   - Hashed: keys, kinds (`type`), `min`/`max`, `default`, enum values (ids and order), bands, `constraints`, map `keyRef`/`keyEnum`.
+   - Excluded (presentation): label, description, hint, unit, ui, colour.
+   - A pack with no `basedOn` is **stale**: one Warning, then it applies leniently (supersedes "accept silently").
+   - ACs 26-28.
 
 ## Status
 

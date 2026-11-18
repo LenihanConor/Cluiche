@@ -270,6 +270,16 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
     - `worldgen_layers.golden.json` keys are renamed, and **every hash is unchanged** (the golden test passes without `DIA_UPDATE_GOLDEN`).
     - The S-1 stage sidecar and tests are updated, and T-1/T-2 spec mentions of S-1 layer ids are aligned.
 
+### Plan-gap additions (added 2026-11-18, plan-gap resolution)
+16. **`IConditionContext::Has`.** (added 2026-11-18, plan-gap resolution) `IConditionContext` has `virtual bool Has(StringCRC slot, StringCRC field) const { return true; }`. `ConditionExpr::Validate(const IConditionContext&)` rejects unknown slot/field pairs through `Has`, naming them. A context that doesn't override `Has` behaves as before, and `WorldCellFields` overrides it.
+17. **`cow.worldgen.params` and `.status`.** (added 2026-11-18, plan-gap resolution) `cow.worldgen.params` is S-1's ParameterFile command (terrain rules plus terrain profile), the same shape as every other system. The world-shape sliders, seed and size it returned move to `cow.worldgen.status` (query) and the existing `cow.worldgen.set` (command). Every S-1 test and E2E that read shape params from `cow.worldgen.params` reads `cow.worldgen.status` instead.
+18. **S-1 log channel.** (added 2026-11-18, plan-gap resolution) S-1 logs use channel `WGEN`, not `"CoW"`.
+19. **State sidecar.** (added 2026-11-18, plan-gap resolution) A state field with no layer entry takes its Validate range from `Global/<System>/<sys>_state.schema.json` (format `cow.<sys>_state`). Changing a `max` there changes the verdict with no code change.
+20. **Angular fields.** (added 2026-11-18, plan-gap resolution) Angular fields (wind direction and similar) are declared `[0, 2π]` inclusive; Validate accepts `2π` and code normalises into `[0, 2π)`.
+21. **Palette once per record.** (added 2026-11-18, plan-gap resolution) `biome_palette` is written once per save record. The pending blob does not repeat it, and is decoded against its committed record's palette.
+22. **Preset pack layer.** (added 2026-11-18, plan-gap resolution) A preset's parameter values form their own pack layer, applied last. The next `ApplyPreset` replaces that layer; user packs are kept.
+23. **Region selection.** (added 2026-11-18, plan-gap resolution) `set_region`-style region selection reads the S-1 field `terrain.region` registered in `WorldCellFields`.
+
 ## Files Touched
 
 | File | Change |
@@ -279,6 +289,8 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 | `Cluiche/CoW/Shared/Debug/SimCommandSet.h/.cpp`, `ParamCommandHelper.h/.cpp` | **New** |
 | `Cluiche/CoW/Shared/World/WorldCellFields.h/.cpp`, `CellSelector.h/.cpp`, `WorldSimNames.h` | **New** |
 | `Dia/DiaCondition/ConditionExpr.h/.cpp` | `Validate(const IConditionContext&)` overload |
+| `Dia/DiaCondition/IConditionContext.h` | Defaulted `virtual bool Has(StringCRC, StringCRC) const` (plan-gap resolution) |
+| `Cluiche/Assets/CoW/Global/<System>/<sys>_state.schema.json` | **New** per system, state-field ranges |
 | `Cluiche/CoW/Modules/WorldGenerationModule.h/.cpp` | `SimCommandSet`, params command, `WorldCellFields` contribution |
 | `Cluiche/CoW/Shared/WorldGeneration/WorldLayerSource.h/.cpp` | Ids renamed |
 | `Cluiche/Assets/CoW/Stages/S1WorldGenerationTestbedStage/worldgen.schema.json` | Keys renamed |
@@ -297,7 +309,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 | PU boundaries are streams (project rule) | No mutex-guarded cross-PU reads | All kit state is SimPU. Off-SimPU readers use the existing snapshots and streams. |
 | SD-S1-002 | Every editor action is a DiaAPI command | Params and S-1 commands stay sim-hosted DiaAPI commands. The panel calls the same commands. |
 | Sim-hosted commands need mandatory help; 192-handler cap | — | One `cow.<sys>.params` per system, with `SimHelpInfo`. System actions share that name instead of adding handlers. |
-| AD-001 (CoW) | Ask before Dia edits | The one Dia change, `ConditionExpr::Validate(const IConditionContext&)`, was signed off 2026-11-18. |
+| AD-001 (CoW) | Ask before Dia edits | `ConditionExpr::Validate(const IConditionContext&)` was signed off 2026-11-18. The defaulted `IConditionContext::Has` virtual (Plan-gap resolutions) was also signed off by the user on 2026-11-18. |
 | PD-004 | No STL in public APIs | Pointer and count lists, `DynamicArrayC` queues, fixed-size strings. |
 | D1, D5 (research) | Strict `set`; the sidecar owns defaults | `set` is strict; `save_defaults` writes the sidecar in place. |
 
@@ -351,6 +363,20 @@ These settle open points raised while amending. Each item supersedes contradicti
    - The protected-cell field is `terrain.is_protected`, the GDD name, covering corridor sites, Pass, RiverCrossesBarrier, Hearth, Nexus and world-throne cells. It replaces `terrain.is_crossing` in the coverage table.
    - `hydro.basin_kind` takes `none`, `lake` or `dry`; A5's `any` is `!= none`.
 4. **Preset naming.** Preset files use format `cow.<sys>_preset` at `Global/<System>/Presets/<id>.<sys>_preset.json`. This replaces `.weatherpreset.json`, `.hydropreset.json` and `cow.hydrology_preset`. S-1's `cow.worldshape` presets are a different concept and are unchanged.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above.
+
+1. **`IConditionContext::Has`.** DiaCondition's `IConditionContext` gains `virtual bool Has(StringCRC slot, StringCRC field) const { return true; }`; it is defaulted, so existing implementers compile unchanged. `ConditionExpr::Validate(const IConditionContext&)` uses `Has` to reject unknown slot/field pairs, naming them; `WorldCellFields` overrides it. AC 16. This unblocks the plan's Validate task and its dependents.
+2. **`cow.worldgen.params`** is S-1's ParameterFile command (terrain rules plus terrain profile, from the Parameter Files migration), the same shape as every other system. The world-shape sliders, seed and size it returned move to `cow.worldgen.status` (query) and `cow.worldgen.set` (command). The S-1 migration in AC 9 and any S-1 test or E2E that read shape params from `cow.worldgen.params` move to `cow.worldgen.status`. AC 17.
+3. **Minor rulings:**
+   - S-1 logs move from channel `"CoW"` to `WGEN`, per the conventions doc (AC 18).
+   - State fields with no layer entry take their Validate range from a per-system **state sidecar**, format `cow.<sys>_state`, at `Global/<System>/<sys>_state.schema.json` (AC 19).
+   - Angular fields such as wind direction are declared `[0, 2π]` inclusive and normalised into `[0, 2π)` in code (AC 20).
+   - The `biome_palette` is written once per save record. The pending blob doesn't repeat it, and a blob is decoded against its committed record's palette (AC 21).
+   - A preset's parameter values form their own pack layer, applied last and replaced by the next `ApplyPreset`; user packs are kept (AC 22).
+   - `set_region`-style region selection reads the S-1 field `terrain.region` in `WorldCellFields` (AC 23).
 
 ## Status
 

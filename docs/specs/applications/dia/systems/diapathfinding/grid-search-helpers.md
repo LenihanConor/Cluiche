@@ -111,7 +111,7 @@ namespace Dia::Pathfinding {
 | `TerrainLandmass.cpp:497` coast distance, both passes | `MultiSourceSteps` ×2 |
 | `TerrainLandmass.cpp:410` `Flood` and landmass labelling | `FloodRegion` / `ConnectedComponents` |
 | `TerrainMountains.cpp:210` ridge groups | `ConnectedComponents` (sizes) |
-| `NodesRiver.cpp:61` longest upstream path | `MultiSourceSteps` over a `TreeGraph` of `children` (deepest, lowest index) |
+| `NodesRiver.cpp:61` longest upstream path | `MultiSourceSteps` over an `AdjacencyGraph` of `children` (deepest, lowest index) |
 | `TerrainDepthZones.cpp:63` zone cost | `MultiSourceDijkstra<double>` |
 | `NavigationQuery.cpp:86` reachability | `MultiSourceDijkstra<float>` with `stopAt` + `outPrev`; cost from `IPathCostProvider` through an adapter |
 | `RegionPartition.cpp:276` capped, floored region growth | `MultiSourceDijkstra<float>` with `outSeedId` and an `onSettle` that skips claimed or capped cells and parks satisfied regions in phase 0, then `ResumeParked` for phase 1 |
@@ -136,12 +136,17 @@ namespace Dia::Pathfinding {
 7. **S-1 migration.** All nine call sites in the table use the helpers, and their local search code is deleted. S-1 layer goldens (4 presets × seeds 1–3, Small, every layer) are **bit-identical**. Reachability, validation, region and S-1 tests pass unchanged. The `SLOW_` region test is no worse than before (its existing failure is tracked separately).
 8. **Perf.** A Large-map (104×64) `MultiSourceSteps` and `MultiSourceDijkstra<float>` each run in under 1 ms in Debug, as a ballpark check (quick-and-dirty perf rule, no Release benchmark).
 
+9. **`AdjacencyGraph` build and order.** (added 2026-11-18, plan-gap resolution) `Build(cellCount, edges, edgeCount)` produces CSR offsets plus neighbour indices; edges are sorted by `(from, to)`, so neighbour order is deterministic whatever the input order. Isolated cells and cells with no edges have empty ranges; duplicate edges are kept.
+10. **`AdjacencyGraph` conformance.** (added 2026-11-18, plan-gap resolution) A static assert shows `AdjacencyGraph` satisfies `CIndexGraph`, and `MultiSourceSteps` over one gives exact step counts on a hand-built tree and a forest.
+11. **`NodesRiver` migration.** (added 2026-11-18, plan-gap resolution) The `NodesRiver.cpp` longest-upstream-path site builds an `AdjacencyGraph` from the river tree and runs `MultiSourceSteps` over it; no CoW-local adapter remains, and S-1 goldens stay bit-identical.
+
 ## Files Touched
 
 | File | Change |
 |---|---|
 | `Dia/DiaPathfinding/GridSearch.h` (+ `.inl`), `GridSearchScratch.h/.cpp`, `HexNeighbours.h` | **New** |
-| `Dia/DiaPathfinding/Testing/GridSearchTestGrids.h` | **New** |
+| `Dia/DiaPathfinding/AdjacencyGraph.h` (+ `.cpp` if needed) | **New**, production type (plan-gap resolution) |
+| `Dia/DiaPathfinding/Testing/GridSearchTestGrids.h` | **New**; `TreeGraph` is a thin test fixture over `AdjacencyGraph` |
 | `Dia/DiaPathfinding/Docs/*.module.md` | Responsibilities |
 | `diapathfinding.md` | Feature row |
 | `Cluiche/CoW/Shared/WorldGeneration/{BiomeClimate,TerrainLandmass,TerrainMountains,NodesRiver,TerrainDepthZones,NavigationQuery,RegionPartition,TerrainDrainage}.cpp` | Migrated |
@@ -157,7 +162,7 @@ namespace Dia::Pathfinding {
 | PD-005 (DiaPathfinding) | Single-threaded on SimPU | The helpers are synchronous on the calling thread (SimPU or a deferred-step worker, each with its own scratch). |
 | PD-009 (DiaPathfinding) | Test utilities in `Testing/` | `GridSearchTestGrids.h`. |
 | PD-004 (Platform) | No STL in public APIs | Pointer and count arguments; Dia containers in the scratch. |
-| AD-001 (CoW) | Ask before Dia edits | Signed off 2026-11-18 (research D4). |
+| AD-001 (CoW) | Ask before Dia edits | Signed off 2026-11-18 (research D4). The production `AdjacencyGraph` header (Plan-gap resolutions) was signed off by the user on 2026-11-18. |
 
 ## Test Plan
 
@@ -174,6 +179,21 @@ Scoped runs use `--filter="*GridSearch*:*Pathfinding*:*WorldGen*:*Region*:*Reach
 ## Open Design Questions
 
 1. **Hidden float order in S-1.** Some S-1 searches may depend on accumulation order in ways a shared helper changes subtly, for example DepthZones adds a source cost of 1.0 regardless of the cell's terms. **Recommended:** migrate one call site at a time with a golden check after each. If one can't be made bit-identical, stop and report rather than re-baseline.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above.
+
+1. **`AdjacencyGraph` is a production type** in `Dia/DiaPathfinding/AdjacencyGraph.h`, not a test helper.
+   - CSR storage: offsets plus neighbour indices, in Dia containers.
+   - `Build(cellCount, edges (from, to) pointer + count)`, with deterministic neighbour order (edges sorted by `(from, to)`).
+   - It satisfies `CIndexGraph`.
+2. **Consumers:**
+   - the S-1 `NodesRiver` river tree (replacing the plan's CoW-local adapter);
+   - the World-Sim Kit's derived `upstream` field;
+   - A5's downstream graph.
+3. `TreeGraph` in `Testing/` may stay as a thin test fixture over `AdjacencyGraph`; `ChainGraph` is unchanged.
+4. New ACs 9-11 (above).
 
 ## Status
 

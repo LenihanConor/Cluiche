@@ -1,6 +1,6 @@
 # Plan: A4 Weather (system)
 
-> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in a4-weather.md and are stale where they touch parameters (descriptor table, load, hash), stage state, health, save id and version, command names, schema keys, selectors, biomes, event registration, data I/O. Re-plan before /implement.
+> **Rebuilt 2026-11-18 (world-sim review):** feature plans re-planned against the amended specs; build order below is foundation-first. Rows 1–9 are unchanged trackers (row 6d stays Done).
 
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md
 **Status:** Not Started
@@ -9,20 +9,25 @@ System-level tracker. Each row is a feature spec with its own plan; the detailed
 
 ## Build order and parallelism
 
+**Foundation first (world-sim review, 2026-11-18):**
+
 ```
-F1 data & parameters ──┬──► F2 CA pipeline ──┬──► F6 presets & regression
-                       │                      │
-                       │                      └──► F3 module & deferred step ──┬──► F4 save / load
-                       │                              (needs World Step F1-F2    └──► F5 debug
-                       └─────────────────────────────  and DiaDeferredStep F1-F4)       (F5 layers/commands need F3)
+Parameter Files (Dia) ─► Biome Registry (S-1) ─► Grid Search Helpers (Dia) ─► World-Sim Kit (World Step) ─► Blackboard Scopes (Dia)
+                                                                                 (also needs World Step step-chain,
+                                                                                  module-and-cadence, save-and-history)
+then A4:  F1 ─► F2 ─► F6 ─► F3 ─► F4 ─► F5,   with F7, F8, F9 after F2 and F3
 ```
 
-- **F1 is the root** and needs nothing unbuilt (the S-1 biome widening to 13 is built). Start here.
-- **F2** needs F1 and DiaDeferredStep F1 Task 1 (`IParallelExecutor`, `SerialExecutor` headers).
-- **F6**'s loader, selector, fill and fixture tasks need only F1; its forcing and regression tasks need F2 built. Its tests are what judge A4's default baseline numbers.
-- **F3** needs F1, F2 and F6, World Step F1 and F2, and DiaDeferredStep F1 to F4. Parts testable with fakes (spin-up job, queue, stage derivation) can start earlier.
-- **F4** needs F3, World Step F3 and DiaDeferredStep F3. **F5** needs F3 (layers, commands, queue) and F6 (presets); its pure parts (overlay plan, command model, detectors) can start after F2.
-- **No A4 task blocks on S-1 code.** Everything runs on hand-built hex terrain until F3.
+Plans: @docs/specs/applications/dia/systems/diaattribute/parameter-files.plan.md, @docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.plan.md, @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.plan.md, @docs/specs/applications/cow/systems/worldstep/worldsim-kit.plan.md, @docs/specs/applications/dia/systems/diablackboard/blackboard-scopes.plan.md.
+
+**What can start early on fakes:**
+- **F1:** its types and sidecar can start once Parameter Files and Biome Registry are Done.
+- **F2 (ca-pipeline):** pure logic on hand-built terrain once F1's types, sidecar and `Initialise` exist. It doesn't need the kit, the grid search or the blackboard.
+- **F6:** its loader and `MakeCoastRange` need only F1 plus the kit's `CellSelectorSet`. Its forcing and regression tasks need F2 built. Its tests decide A4's default baseline numbers.
+- **F7, F8, F9:** their pure tasks need only F1.
+- **F3, F5:** their pure tasks run on the kit's `FakeWorldStage`. F3 also needs World Step F1–F2 and DiaDeferredStep F1–F4 (built).
+- **F4:** its field-codec tasks run on a fixture sidecar. It also needs World Step F3.
+- **S-1 code:** no A4 task blocks on it beyond the foundation plans. Everything runs on hand-built hex terrain until F3.
 
 ## Sign-offs (AD-001)
 

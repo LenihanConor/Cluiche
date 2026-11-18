@@ -1,29 +1,23 @@
 # Plan: S-2.5 Headless Runner & Report (S-2.5 Feature 3)
 
-> **Re-plan required (2026-11-18, world-sim review):** tasks below were written before the amendment in headless-runner.md and are stale where they touch the parameter source (`DefaultWeatherParameters`). Re-plan before /implement.
+Rebuilt 2026-11-18 against the world-sim review amendment, the T-1 consumer amendments (A-C, now folded into the report tasks) and the foundation specs. The runner no longer owns a parameter source, a start-week offset, a command-rollback helper or a distance routine: it consumes `ParameterFile` + `ParamBinding`, A4's `WeatherRunner`, `SimCommandSet` and the DiaPathfinding grid searches.
 
 **Spec:** @docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.md
 **Status:** Not Started
 **System plan:** @docs/specs/applications/cow/systems/s25-weatherpatterns/s25-weatherpatterns.plan.md (row 3)
 
-**Start conditions.** Needs **Feature 1 (stage-and-world)** built (the prechecks, `S25WeatherModule`,
-`S25WorldTable`, the stage for the DiaAutomation task) and **Feature 2 (weather-checks)** built (the
-checks, `IWeatherTrace`, `BaselineStore`, `ScriptedTrace`), plus A4 Features 2, 3, 5 and 6
-(`WeatherSimulation`, `WeatherRunner`, the direct command sink, presets, `ApplyPreset`). Also built:
-S-1's blocking `GenerateWorld` with a cancel flag, DiaAutomation, `JobSystemService` `TrySubmit`. The
-mechanics tasks (1-13) need only Feature 2 and A4 pure code and use stubs for the world source, so they
-can start before Feature 1's stage exists; tasks that use `S25WeatherModule` (16-18, 20) need Feature 1.
+**Start conditions.** Needs these plans Done (named capabilities, not task numbers):
+- `weather-checks.plan.md` (S-2.5 Feature 2): the checks, `IWeatherTrace`, `RecordedTrace`, `BaselineStore`, `ScriptedTrace`.
+- `stage-and-world.plan.md` (S-2.5 Feature 1): `S25WorldPrechecks`, `S25WeatherModule`, `S25WorldTable`, the stage. Only the module-hosted tasks (commands, live smoke, live-vs-runner, DiaAutomation, `SLOW_` proof) need it; the mechanics tasks use stubs and can start earlier.
+- A4 plans (`weather-data.plan.md`, `weather-module.plan.md`, `weather-debug.plan.md`, `presets-and-regression.plan.md`): the sidecar and `WeatherParameters` binding, `WeatherRunner` with its start-week offset and climate-freeze parameters, the typed `WeatherCommand` and direct sink, `cow.weather_preset` files and `ApplyPreset`.
+- `parameter-files.plan.md` (`ParameterFile`, `ParamBinding`, `Hash`), `biome-registry.plan.md` (`BiomeRegistry`, map keys for the sidecar), `grid-search-helpers.plan.md` (multi-source step distance), `worldsim-kit.plan.md` (`SimCommandSet`, `WorldCellFields`, `CellSelectorSet`).
+- Already built: S-1 blocking `GenerateWorld` with a cancel flag, DiaAutomation, `JobSystemService` `TrySubmit(fn, tag)`.
 
 **Cross-plan dependencies.**
-- Task 2 edits A4 Feature 3's `WeatherRunner` (additive start-week offset on `Start`). That is an **A4
-  Feature 3 file change**; coordinate with that feature's plan and record the signature change there.
-  CoW-only, no Dia edit (AD-001 N/A).
-- Tasks 16 and 17 edit `S25WeatherModule` (Feature 1's file) to add the runner handle and commands.
-- The system spec edits listed in the spec's Files Touched (Headless runner and Performance sections,
-  A4 Feature 3's `WeatherRunner` signature, Feature 2's check-to-run mapping note) are made by the
-  owner of those docs; task 25 lists them for the close-out, nothing here edits a spec.
-
-No Dia files are added or edited.
+- Needs A4's `WeatherRunner` start-week offset (the preset-season start) from the A4 plans. This plan only **tests** it through a preset run; it does not edit `WeatherRunner` (the old task that added the offset is dropped: A4's gap-pass amendment 4 owns it).
+- Needs the sidecar load path from the A4 plans plus `parameter-files.plan.md`. The runner loads the sidecar itself (its own `ParameterFile`), with **no compiled fallback**; a sidecar fault fails the run.
+- Adds four names to the `cow.s25.*` command list that `S25WeatherModule` owns (needs the command-list capability from `stage-and-world.plan.md`), registered through `SimCommandSet`.
+- No Dia files are edited (AD-001 N/A). Doc edits owed by this feature are listed in the "doc edits owed" task.
 
 ## Implementation Patterns
 
@@ -31,129 +25,101 @@ No Dia files are added or edited.
 ```
 Cluiche/CoW/Modules/S25HeadlessRunner.h/.cpp
 Cluiche/CoW/Modules/S25TestPlan.h/.cpp
-Cluiche/CoW/Modules/S25Report.h/.cpp          (build, verdict, serialize; atomic write)
+Cluiche/CoW/Modules/S25Report.h/.cpp          (build, verdict, serialize, atomic write, archive)
 Cluiche/CoW/Modules/S25LiveSmoke.h/.cpp
 Cluiche/CoW/Shared/Weather/S25/Testing/{StubWorldSource,ScriptedCheckSet,InterruptingWriter}.h
 Cluiche/Assets/CoW/Stages/S25WeatherPatterns/edge_cases.json        (cow.s25_edge_cases v1)
 Cluiche/Tests/GoogleTests/CoW/S25/TestS25{Plan,Runner,Report,EdgeCases}.cpp, SLOW_S25Verdict suite
 a DiaAutomation scenario (follow the F-2 pattern, location per that feature)
 ```
-Register each file with `dia docs vcxproj-add CoW "<path>" --filter S25` when created. Test helpers
-ship under `S25/Testing/` (feedback_testing_utilities).
+Register each file with `dia docs vcxproj-add CoW "<path>" --filter S25` when created. Test helpers ship under `S25/Testing/` (feedback_testing_utilities).
 
 ### Conventions
 - Public APIs use Dia containers and fixed strings; jsoncpp only at serialization edges (PD-004).
-- The runner **shares no state with the live stage**: its own `WeatherSimulation`, its own world, no
-  `ModuleRef`, no bus, no `GetCurrentWorld()`. Collaborators are seams: `IS25WorldSource`
-  (blocking `GenerateWorld(seed, params, cancelFlag)` returning a `WeatherTerrain`+prechecks input),
-  `IS25Launcher` (`JobSystemService::TrySubmit(fn, tag)` with tag `s25`, versus a **synchronous
-  launcher** that runs the same function inline), and `IS25Clock`/`IS25Writer` for timing and file IO.
-- Progress is a set of `std::atomic` fields in `S25RunHandle` (phase, run id, week, total, elapsed ms);
-  `GetProgress` assembles a struct by atomic loads. This is an existing job-to-caller pattern (state
-  private to one handle), not a cross-PU mutex read.
-- Cancel is a `std::atomic<bool>` polled between weeks and between generation steps; cancelled runs
-  never write the baseline and never write a report that claims a verdict other than `Cancelled`.
-- Determinism: report fields other than timings and the `environment` block are reproducible;
-  doubles are written at 17 digits with stable key order.
+- The runner **shares no state with the live stage**: its own `WeatherSimulation`, its own `ParameterFile`, its own world, no `ModuleRef`, no bus, no `GetCurrentWorld()`. Collaborators are seams: `IS25WorldSource` (blocking `GenerateWorld(seed, params, cancelFlag)` returning a `WeatherTerrain` plus prechecks input), `IS25ParamSource` (sidecar text, packs, `IMapKeySource` over the `BiomeRegistry`), `IS25Launcher` (`JobSystemService::TrySubmit(fn, tag)` with tag `s25`, versus a **synchronous launcher** that runs the same function inline), `IS25Clock` and `IS25Writer` for timing and file IO.
+- Progress is a set of `std::atomic` fields in `S25RunHandle` (phase, run id, week, total, elapsed ms); `GetProgress` assembles a struct by atomic loads. This is job-to-caller state private to one handle, not a cross-PU mutex read.
+- Cancel is a `std::atomic<bool>` polled between weeks and between generation steps; cancelled runs never write the baseline and never write a report claiming a verdict other than `Cancelled`.
+- Determinism: report fields other than timings and the `environment` block are reproducible; doubles are written at 17 digits with stable key order.
+- Health words are DiaObservation's (`kOK`, `kDegraded`, `kFailing`); the runner has no health of its own, a sidecar fault is reported in the run (see parameters below).
 
-### Test plan table (tasks 1, 11-12)
-`S25TestPlan` is a code table of ten `S25PlanRun { id, world, spinupWeeks, runWeeks, holdWeeks,
-presetOrSetup, executorKind, feedsTests[], recordTrace, exclusive }` rows R1-R7, P1, P2 exactly as in
-the spec (R5a/R5b, R4's 3 hold weeks, R3's `edge_inflow = 0` applied from the start including spin-up,
-R7 52 + 208, P1/P2 exclusive and last with trace recording off). A test (AC 1) loads Feature 2's
-registered ids and asserts every id is fed by at least one run. Setup commands are strings applied
-through A4's direct command sink between weeks; the table also exposes each run's setup list so
-Feature 4 can assert scenario setups equal plan setups (that assertion is Feature 4's).
+### Test plan table (tasks 2, 15)
+`S25TestPlan` is a code table of ten `S25PlanRun { id, world, spinupWeeks, runWeeks, holdWeeks, presetOrSetup, executorKind, feedsTests[], recordTrace, exclusive }` rows R1-R7, P1, P2 exactly as in the spec (R5a/R5b, R4's 3 hold weeks, R3's `boundary.edge_inflow = 0` applied from the start including spin-up, R7 52 + 208, P1/P2 exclusive and last with trace recording off). A test (AC 1) loads Feature 2's registered ids and asserts every id is fed by at least one run, and (AC 25) that each check's `runs[]` equals the table (T1, T4, T5 to R1; T2 to R5a, R5b; T3 to R4; T6 to R6; T7 to R7; T8 to R1, R3; T9 to R1, R2). Setup commands are typed `WeatherCommand`s applied through A4's direct sink between weeks; the table exposes each run's setup list so Feature 4 can assert scenario setups equal plan setups (that assertion is Feature 4's).
 
-### Runner (tasks 7-11)
+### Parameters, baseline and presets (amendment items 1, 2)
+- Each run builds its **own** `ParameterFile` from the A4 sidecar through `IS25ParamSource` (path resolved through the catalogue alias and `PathStore`, map keys from `BiomeRegistry`), then `ParamBinding<WeatherParameters>::Snapshot` fills the struct handed to `WeatherRunner::Start(terrain, params, baseline, spinupWeeks, executor, startWeekOffset, ...)`. There is no `DefaultWeatherParameters()` and no fallback: a sidecar load fault ends the run as an error report naming the key (see Open items for the verdict word).
+- The baseline handed to `WeatherRunner` is A4's registry-keyed fallback table (A1 absent), per A4 item 3.
+- A run's parameter edit (R3's `boundary.edge_inflow = 0`) goes through the direct sink's set-param entry onto the run's own `ParameterFile`; the live module's file is never touched.
+- Preset runs (R5a, R5b, R6) load `cow.weather_preset` files through A4's `ApplyPreset` (its parameter block is a pack, applied through `ParameterFile::ApplyPack`; its selectors are `CellSelectorSet`); this plan only drives it.
+- `S25RunReport` records `ParameterFile::Hash()` only if the spec gains the field (see Open items); not added by this plan.
+
+### Runner (tasks 7-14)
 - `Start(params)` returns an `S25RunHandle` and launches `RunPlan` through the launcher seam.
 - Phases: Generating, Prechecks, Running(R#), Evaluating, Performance, WritingReport, Done|Cancelled.
-- Worlds are generated once per `(world, seed, size)` and reused; runs execute sequentially; P1/P2 run
-  last and exclusively.
-- Simulation per run: `WeatherRunner::Start(terrain, params, baseline, spinupWeeks, executor, startWeek)`
-  with `DefaultWeatherParameters()` plus the run's override, then `StepWeek` per week; setup commands
-  applied through the direct sink; every committed week copied into a `RecordedTrace` (Feature 2) for
-  runs with `recordTrace`.
-- Executors: capped default, and the deterministic reverse-order 7-range executor for R2/R5b. Per amendment 3, reuse A4 Feature 2's
-  test-local reverse-order and fixed-range executors; DiaDeferredStep's `Testing/` equivalents are used instead when they exist
-  (consuming a Dia test helper is not a Dia edit). No new CoW-side executor adapter is written.
-- Failure handling: generation failure/timeout -> `InvalidWorld` with the S-1 reason; a failed
-  precheck -> dependent checks `InvalidWorld`, their runs skipped, verdict `InvalidWorld`.
-- P2 (Large) runs **no prechecks and no checks** (amendment 5); it is performance only.
-- Storm cell chooser: pure function over terrain: ocean cell nearest the map centre at least 6 steps
-  from the edge, lowest index on ties, `InvalidWorld` if none.
+- Worlds are generated once per `(world, seed, size)` and reused; runs execute sequentially; P1/P2 run last and exclusively.
+- Every committed week is copied into a `RecordedTrace` (Feature 2) for runs with `recordTrace`.
+- Executors: capped default, and the deterministic reverse-order 7-range executor for R2/R5b. Reuse A4's test-local reverse-order and fixed-range executors, or DiaDeferredStep's `Testing/` equivalents when they exist (consuming a Dia test helper is not a Dia edit); no new executor adapter is written.
+- Failure handling: generation failure or timeout is `InvalidWorld` with the S-1 reason; a failed precheck makes dependent checks `InvalidWorld`, skips their runs, verdict `InvalidWorld`.
+- P2 (Large) runs **no prechecks and no checks** (gap-pass amendment 5).
+- Storm cell chooser: pure function over terrain, ocean cell nearest the map centre at least 6 steps from the edge, lowest index on ties, `InvalidWorld` if none. Edge distance uses DiaPathfinding's multi-source step distance over `HexNeighbours` (needs `grid-search-helpers.plan.md` Done); no private BFS.
 
-### Verdict and report (tasks 3-6, 12-13)
-- `DeriveVerdict(const DynamicArrayC<CheckResult>&, bool cancelled, bool invalidWorld)` with the exact
-  precedence: Cancelled, InvalidWorld, HardFail, Incomplete, MagnitudeMisses, Pass. Performance is never
-  an input. `Pass` (amendment 1): every Hard check is `Pass` and none is `InvalidWorld` or `Pending`; a Default check with no baseline
-  entry is judged against the GDD default, and unrecorded entries are listed under `baseline.unrecorded[]` in the report without
-  preventing `Pass`. Table-driven tests: one row per verdict plus precedence pairs (AC 14, 15).
-- `S25RunReport` plus `BuildReportJson` produce the `cow.s25_report` v1 envelope with all spec sections;
-  `WriteReportAtomically(path, json, IS25Writer&)` writes a temp file then renames. Output under
-  `out/CoW/s25/` (PD-009), `report_<world>_<seed>.json` and `report_summary.json`.
-- Performance block: `S25PerfBlock` with `Within|Over|NotMeasured (Debug)` labels, build config, core
-  count and worker cap alongside; the CPU report goes to the report's `performance` section and the `INFO` log, and `cow.s25.status`
-  shows the last reported values (amendment 4); budgets 5 s at Small for 52 weeks incl. spin-up, 4.2 ms Small and
-  10 ms Large step CPU (A4's gate). Reported first, never a check.
-- Edge cases: `S25EdgeCaseTable::Load` validates the 20 EC-01..EC-20 entries (missing, extra,
-  duplicate, reason-less, `covered` naming an unknown run id all rejected) and the report embeds it.
+### Verdict and report (tasks 3-6)
+- `DeriveVerdict(const DynamicArrayC<CheckResult>&, bool cancelled, bool invalidWorld)` with precedence Cancelled, InvalidWorld, HardFail, Incomplete, MagnitudeMisses, Pass. Performance is never an input. `Pass`: every Hard check `Pass`, none `InvalidWorld` or `Pending`; a Default check with no baseline entry is judged against the GDD default and listed under `baseline.unrecorded[]` without preventing `Pass`.
+- `S25RunReport` plus `BuildReportJson` produce the `cow.s25_report` v1 envelope with all spec sections; each `checks[]` entry carries `runs[]` (T-1 amendment A). `WriteReportAtomically(path, json, IS25Writer&)` writes a temp file then renames. Output under `out/CoW/s25/` (PD-009): `report_<world>_<seed>.json`, `report_summary.json`.
+- Archive (T-1 amendment B): a completed (non-`Cancelled`) run also writes `out/CoW/s25/archive/report_<world>_<seed>_<utcCompact>_<gitrev7>.json` atomically, then deletes the oldest so at most 50 remain per world and seed; `gitrev7` is `environment.gitRevision` cut to 7 characters or `nogit`. The `SLOW_` test writes there too.
+- Performance block: `S25PerfBlock` with `Within|Over|NotMeasured (Debug)` labels, build config, core count and worker cap alongside; goes to the report's `performance` section and the `INFO` log, and `cow.s25.status` shows the last values; budgets 5 s at Small for 52 weeks incl. spin-up, 4.2 ms Small and 10 ms Large step CPU (A4's gate). Reported first, never a check. Timings come from A4's `GetLastProfile()`; the metric `cow.weather.step_ms` itself is registered by A4's stage base and is not the runner's concern (amendment item 3).
+- Edge cases: `S25EdgeCaseTable::Load` validates the 20 EC-01..EC-20 entries (missing, extra, duplicate, reason-less, `covered` naming an unknown run id all rejected) and the report embeds it.
 
-### Commands (task 16)
-Four sim-hosted names with help, category `s25`: `cow.s25.run` (`action` `start`/`cancel`), `cow.s25.report`, `cow.s25.baseline` (`record`),
-`cow.s25.livesmoke` (amendment 6; the system spec's `cow.s25.run.cancel` and `cow.s25.baseline.record` are superseded); registered
-**all-or-nothing together with Feature 1's two names** (AC 20) through `S25CommandRegistrar` (amendment 2), which `S25WeatherModule` owns
-and Feature 1 task 17 creates: a forced failure of any removes all six. Feature 4's three `cow.scenario.*` names belong to `ScenarioModule`
-and roll back separately. Each command
-parses a JSON object, validates and names the offending field, and starts nothing on error.
+### Commands (task 17)
+Four sim-hosted names with help, category `s25`: `cow.s25.run` (`action` `start`/`cancel`), `cow.s25.report`, `cow.s25.baseline` (`record`), `cow.s25.livesmoke`. They join Feature 1's two in one command list owned by `S25WeatherModule` and are registered **all-or-nothing through the kit's `SimCommandSet`** (each rollback uses its own kind's unregister; no private rollback code). Feature 4's three `cow.scenario.*` names belong to `ScenarioModule` and roll back separately. Each command parses a JSON object, validates and names the offending field, and starts nothing on error.
 
-### Live smoke (task 17)
-`S25LiveSmoke` state machine on SimPU: Fastest speed, 52 weeks in the current mode, sample
-`cow.weather.step_ms` per applied step and the `cow.worldstep.stalls` delta in Deferred, write
-`out/CoW/s25/livesmoke.json`; assert only a sanity range for wall time (expected ~12.1 s, speed-capped);
-Debug labels the budget `NotMeasured`.
+### Live smoke (task 18)
+`S25LiveSmoke` state machine on SimPU: Fastest speed, 52 weeks in the current step mode, sample `cow.weather.step_ms` per applied step and the `cow.worldstep.stalls` delta in Deferred, write `out/CoW/s25/livesmoke.json` with envelope `cow.s25_livesmoke` v1; assert only a sanity range for wall time (about 12.1 s, speed-capped); Debug labels the budget `NotMeasured`.
 
 ### Verification cadence
-- Per task: narrow `--filter` on the suite under work (e.g. `S25Runner*`) with `--shards 2`. The feature-wide filter `S25Plan*:S25Runner*:S25Report*:S25EdgeCases*` runs only in task 24 (2026-11-17, speed-ups).
-- `SLOW_S25Verdict*` runs only in tasks 19, 21, 24 and once in the Weather-stack close-out (it generates real worlds). Any other long test (>= 10 simulated years, all-presets x all-seeds, multi-minute) is tagged `SLOW_` the same way (2026-11-17, speed-ups).
-- Full suite runs once, in the Weather-stack close-out (worldstep.plan.md row 6). No mutation checks. Sanitizer: on request only (user, 2026-11-17). Perf is Debug ballpark only; no Release benchmarking (2026-11-17, speed-ups).
+- Per task: narrow `--filter` on the suite under work (e.g. `S25Runner*`) with `--shards 2`. The feature-wide filter runs only in the scoped verification task.
+- `SLOW_S25Verdict*` runs only in the `SLOW_` task, the proof task, the scoped verification task and once in the Weather-stack close-out (it generates real worlds). Any other long test (>= 10 simulated years, all-presets x all-seeds, multi-minute) is tagged `SLOW_` the same way.
+- No full suite per feature (the World Step weather-stack close-out owns it). No sanitizer, no mutation checks. Perf is Debug ballpark only; no Release benchmarking.
+- World-sim results are verified from the report's cell-derived numbers, never screenshots (feedback_cell_data_over_pixels).
 - Always `dia run` / `dia launch`; kill leftover `CluicheTest.exe` before any automation run.
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 0 | Create the module and test files and `Testing/` helper stubs; `dia docs vcxproj-add` each; confirm Feature 1/2 headers (`S25WorldPrechecks`, `IWeatherTrace`, `RecordedTrace` interface, `BaselineStore`) and A4 `WeatherRunner`, direct sink, presets exist | Project compiles | Not Started | haiku | Mechanical, TDD-exempt. Mark blocked in the system plan if a prerequisite is absent |
-| 1 | RED -> GREEN: `S25TestPlan` code table (ten runs R1-R7, P1, P2) with per-run setup lists, and the registry-versus-plan test that every Feature 2 check id is fed by a run | AC 1 | Not Started | sonnet | Table values copied exactly from the spec; Test 5 runs on R1's natural 65 weeks (deviation D-3.3) |
-| 2 | RED -> GREEN: **`WeatherRunner` start-week offset** (additive `Start` parameter defaulting to 0): the offset test, a `winter_snow` preset run's first week is Winter and the calendar advances from it | AC 9 (offset half) | Not Started | sonnet | **Cross-plan: A4 Feature 3 file change.** Existing A4 runner tests must stay green (run `WeatherRunner*` too). Update the A4 Feature 3 plan notes |
-| 3 | RED -> GREEN: `DeriveVerdict` with the six verdict rows and the precedence order via `ScriptedCheckSet` | AC 14 | Not Started | sonnet | Pure. One test per row plus every adjacent precedence pair. `Pass` follows amendment 1: all Hard checks `Pass`, none `InvalidWorld`/`Pending`; a Default check with no baseline entry does not prevent `Pass` (add a row: unrecorded Default met against the GDD default gives `Pass`) |
-| 4 | RED -> GREEN: `S25RunReport` model and `BuildReportJson` (`cow.s25_report` v1, all sections), `reopenSection` on Hard fails and the Test 7 "goes to the user" text, performance block labels | AC 17 (envelope), AC 19, AC 15 (over-budget run keeps verdict) | Not Started | sonnet | Report lists unrecorded Default checks under `baseline.unrecorded[]` as informational (amendment 1). Reports 17-digit doubles, stable key order; perf block listed first. An artificially over-budget perf block must not change the verdict |
-| 5 | RED -> GREEN: atomic report writer (temp file then rename) and the interrupted-write test via `InterruptingWriter` finding no partial file | AC 17 (atomic) | Not Started | sonnet | IO behind `IS25Writer` so the test needs no real disk fault |
-| 6 | RED -> GREEN: `S25EdgeCaseTable` loader/validator (missing, extra, duplicate, reason-less entry; `covered` naming an unknown plan run id) and the report reproducing the table | AC 18 | Not Started | sonnet | Validator tests use inline JSON for 20-entry fixtures; the real file is task 14 |
-| 7 | RED -> GREEN: runner mechanics with `StubWorldSource` and the synchronous launcher: a full plan on hand-built terrain completes and the report has every section | AC 2 | Not Started | sonnet | First end-to-end slice; fake clock and stub `WeatherRunner` setup commands as needed. World generated once per `(world, seed, size)` |
-| 8 | RED -> GREEN: progress and cancel: `GetProgress` readable from another thread, phases advance, cancel during Generating, Running and Evaluating stops within one week or one generation step, verdict `Cancelled`, no baseline write | AC 4, AC 5 | Not Started | sonnet | (Sanitizer check dropped 2026-11-17: on request only.) Use a counter-gated stub world source, never sleeps |
-| 9 | RED -> GREEN: world failure paths: generation failure or timeout -> `InvalidWorld` with the S-1 reason; failed precheck -> dependent checks `InvalidWorld` and their runs not executed | AC 6, AC 7 | Not Started | sonnet | Uses Feature 1's prechecks on terrain that fails. Verify run list in the report shows skipped runs |
-| 10 | RED -> GREEN: deterministic storm-cell chooser (nearest centre, >= 6 from edge, lowest index tie, `InvalidWorld` when none) | AC 8 | Not Started | sonnet | Pure function on hand-built terrain; include an exact-tie fixture |
-| 11 | RED -> GREEN: preset runs skip spin-up and start the calendar at the preset season (using the task 2 offset); R3 applies `edge_inflow = 0` from the start including spin-up | AC 9, AC 10 | Not Started | sonnet | R3 state after spin-up must differ from R1's on a hand-built terrain with an upwind edge |
-| 12 | RED -> GREEN: performance runs P1/P2: exclusive and last, trace recording off, timings and per-step CPU statistics (max/mean/p95) from `GetLastProfile()`, budgets labelled `Within`/`Over`/`NotMeasured (Debug)` with environment block | AC 15, AC 2 (performance section) | Not Started | sonnet | P2 (Large) runs no prechecks and no checks (amendment 5): test that no precheck/check result is produced for P2. Figures go to the `performance` section and the `INFO` log; `cow.s25.status` shows the last values (amendment 4). Report-only (deviation D-3.1). Large uses the same preset+seed at `Large`; unmeasured in Debug |
-| 13 | RED -> GREEN: baseline handling in the runner: `record_baseline` writes absent entries only, a second run compares within +-10%, cancelled run writes none, `cow.s25.baseline record` semantics (no force leaves existing byte-identical; refused while a run is active) | AC 16, AC 4 (no baseline on cancel) | Not Started | sonnet | Uses Feature 2's `BaselineStore::Record`; command wiring is task 16 |
-| 14 | **Author `edge_cases.json`** (`cow.s25_edge_cases` v1) from `A4_EdgeCaseMatrix.md` (`C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A4_Weather\`): all 20 cases EC-01..EC-20 exactly once, each `covered` (run ids from the plan table plus the setup that exercises it) or `untested` with a reason | AC 18 (the shipped file passes the task 6 validator) | Not Started | sonnet | Content task: needs the matrix's 20 sections read, then mapped to R1-R7/P1/P2. Do not claim coverage a run does not provide; unclear mappings go in the notes for the user. Register the asset |
-| 15 | RED -> GREEN: real determinism on hand-built terrain with real A4: R1 vs R2 byte-identical committed fields at weeks 13, 26, 39, 52 (capped vs reverse 7-range), and the same plan twice gives identical `measured` and report apart from timings/environment | AC 11, AC 13 | Not Started | sonnet | Uses A4 Feature 2's test-local reverse-order and fixed-range executors (or DiaDeferredStep's `Testing/` equivalents when they exist; amendment 3). One real-A4 run, small terrain. Any difference is an A4 or executor bug: stop and report, never widen a tolerance |
-| 16 | RED -> GREEN: the four commands (`cow.s25.run` with `action` `start`/`cancel`, `cow.s25.report`, `cow.s25.baseline` with `record`, `cow.s25.livesmoke`) added to `S25WeatherModule`'s `S25CommandRegistrar`, all-or-nothing together with Feature 1's two names, argument validation naming the field, start-while-active and cancel-with-no-run errors | AC 20, AC 21 | Not Started | sonnet | **Edits Feature 1's `S25WeatherModule`.** Forced failure of any of the six leaves none registered (amendment 2). Extend Feature 1 task 17's `S25CommandRegistrar`; no second helper. The superseded dotted names are not registered |
-| 17 | RED -> GREEN: `S25LiveSmoke` and `cow.s25.livesmoke` writing `out/CoW/s25/livesmoke.json` (52 weeks of step times, wall time, stall delta in Deferred, Debug label `NotMeasured`) | AC 23 | Not Started | sonnet | Needs Feature 1's step modes. Wall-time assertion is a sanity range only |
-| 18 | RED -> GREEN: live-vs-runner agreement and isolation: the stage's Sync module and the runner on the same world and parameters give byte-identical committed fields for weeks 1-13; a run started while the stage steps leaves the stage's committed fields bit-identical to a stage-only run | AC 12, AC 3 | Not Started | sonnet | Needs Feature 1's module. Where the live side changes size, it waits on `WeatherModule::IsReady(revision)` for the new revision (amendment 7). Open Design Question 2 (blocking vs stepped generation agreement) is exercised here: record the outcome |
-| 19 | RED -> GREEN: `SLOW_S25Verdict.CuratedWorldsSmall`: runs the whole plan (synchronous launcher, serial and reverse executors, no performance runs) on both curated worlds, fails on `HardFail`/`InvalidWorld`/`Incomplete` naming checks, `reopenSection` and the failing precheck, warns on `MagnitudeMisses`, writes reports under `out/`; scripted fail/warn variants prove the behaviour | AC 24 | Not Started | sonnet | Green means `Pass`, or `MagnitudeMisses` reported as warnings (amendment 1); an unrecorded-baseline `Pass` is green, so the test needs no `record_baseline`. The scripted variants run in the fast suite; only the real-world run is `SLOW_`. Strict (no known-failures list) per Open Design Question 1 |
-| 20 | RED -> GREEN: DiaAutomation scenario: enter the stage, `cow.s25.run`, poll `cow.s25.report` to completion, read the verdict from the report file and compare with the expected verdict | AC 22 | Not Started | sonnet | Follow F-2's pattern; kill leftover `CluicheTest.exe`; E2E does not build, so build with `dia run` first. Needs the curated picks from Feature 1 task 23 |
-| 21 | **PROOF: first real run on the curated worlds**: `dia run googletest --filter="SLOW_S25Verdict*" --shards 2`, then `cow.s25.run` with `record_baseline: true` on both worlds and the P1/P2 performance runs (Debug, labelled `NotMeasured (Debug)` as the spec requires; no Release run, 2026-11-17); record in this plan: verdict per world, every check state with `measured` and `detail`, every Hard `Fail` with its `reopenSection`, `MagnitudeMisses`, `InvalidWorld`, perf numbers and the baseline written | Results recorded below under "Proof results"; AC 24 on real worlds, AC 16 baseline recorded | Not Started | sonnet | **Hard fails here are findings, not task failures**: do not tune A4, the thresholds or the checks to make them pass. A Test 7 `years_differ` Fail "goes to the user". Record raw numbers so the user can tell definition vs A4. Verify weather content by report data, not screenshots (feedback_cell_data_over_pixels). Ask before escalating |
-| 22 | Exhaustive test pass: gap audit of every AC (1-24); edge pass (empty plan filter, unknown world/size, run started twice, cancel at week 0 and at the last week, report path unwritable, a world with no ocean, zero hold weeks, edge_cases entry referencing a skipped run, resumed-after-cancel handle reuse) | Gap list in notes; every AC mapped to a test or a stated deferral | Not Started | sonnet | No mutation checks. Scoped filter `S25*` |
-| 23 | Observation Opportunity Scan over all touched files (logs for phase changes and failures, `DIA_TRACE_ZONE` per run, profile scopes, metrics for run duration, health for failed runs) | Suggestions in notes | Not Started | sonnet | Suggestions do not block Done |
-| 24 | Feature verification run: `dia run googletest --filter="S25Plan*:S25Runner*:S25Report*:S25EdgeCases*:SLOW_S25Verdict*" --shards 2`, `dia check deps`, `dia check cppcheck`, `dia validate manifest`. No sanitizer (on request only, user, 2026-11-17) | All green or failures named | Not Started | sonnet | Full suite and Release check moved to the Weather-stack close-out (2026-11-17, speed-ups). Report pass/fail and failing names only |
-| 25 | List the doc edits owed by this feature (system spec Headless runner and Performance sections, A4 Feature 3 `WeatherRunner` signature, Feature 2 check-to-run mapping note) in the system plan | Entries present in the system plan notes | Not Started | haiku | Docs edit only; specs are edited by their owners, not this task |
-| 26 | Close-out: `dia docs plan docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.plan.md <#> --status Done` per row; `dia docs spec-done docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.md`; update system plan row 3 | Spec status Done | Not Started | haiku | **Do not run until all prior rows are Done.** |
+| 0 | Read-only check that the foundation APIs exist: `ParameterFile`/`ParamBinding`/`Hash`; `BiomeRegistry` as an `IMapKeySource`; A4 `WeatherRunner::Start` (start-week offset, climate-freeze parameters), typed `WeatherCommand`, direct sink, `ApplyPreset` and the `cow.weather_preset` loader; A4 sidecar path via catalogue alias and `PathStore`; `CellSelectorSet`/`WorldCellFields`; `SimCommandSet`; DiaPathfinding multi-source step distance; `JobSystemService::TrySubmit(fn, tag)`; S-1 blocking `GenerateWorld` with cancel flag; Feature 1 and 2 headers (`S25WorldPrechecks`, `IWeatherTrace`, `RecordedTrace`, `BaselineStore`); direct sink's set-param entry | Findings listed in notes: present or absent, with file | Not Started | haiku | Read-only, no code. Absent capability: mark blocked and name the plan that owes it; do not build a private substitute. Also record how a headless world gets `WorldCellFields` for `ApplyPreset` (Open items) |
+| 1 | Create the module and test files and `Testing/` helper stubs; `dia docs vcxproj-add` each | Project compiles | Not Started | haiku | Mechanical, TDD-exempt |
+| 2 | RED then GREEN: `S25TestPlan` code table (ten runs R1-R7, P1, P2) with per-run typed setup lists, the registry-versus-plan test that every Feature 2 check id is fed by a run, and the `runs[]` per check mapping | AC 1, AC 25 (the mapping half) | Not Started | sonnet | Table values copied exactly from the spec; Test 5 runs on R1's natural 65 weeks (deviation D-3.3). The report-side `runs[]` assertion is task 5 |
+| 3 | RED then GREEN: `DeriveVerdict` with the six verdict rows and the precedence order via `ScriptedCheckSet` | AC 14 | Not Started | sonnet | Pure. One test per row plus every adjacent precedence pair. `Pass` follows gap-pass amendment 1: add a row where an unrecorded Default check met against the GDD default gives `Pass` |
+| 4 | RED then GREEN: `IS25ParamSource` and the per-run parameter build: sidecar through `ParameterFile::Load`, `ParamBinding::Snapshot` into `WeatherParameters`, a run owns its own `ParameterFile`, a broken sidecar (bad key, out-of-range default, violated constraint) fails the run with the key named and **no compiled fallback**, a parameter edit on one run's file leaves another run's file untouched | Amendment item 1 (no AC number): sidecar-fault test, no-fallback test, isolation test; supports AC 3 | Not Started | sonnet | Use a fixture sidecar for the fault cases, not the shipped file. The test asserts the run reports the fault and runs no week. Do not choose the verdict word for a sidecar fault (Open items) |
+| 5 | RED then GREEN: `S25RunReport` model and `BuildReportJson` (`cow.s25_report` v1, all sections), `runs[]` on every check, `reopenSection` on Hard fails and the Test 7 "goes to the user" text, `baseline.unrecorded[]`, performance block labels listed first | AC 17 (envelope), AC 19, AC 15 (over-budget run keeps verdict), AC 25 | Not Started | sonnet | 17-digit doubles, stable key order. An artificially over-budget perf block must not change the verdict. `runs[]` ids must exist in the plan table and match it |
+| 6 | RED then GREEN: atomic report writer (temp file then rename), the interrupted-write test via `InterruptingWriter`, and the archive file (name pattern, 50-file prune per world and seed, none for a `Cancelled` run) | AC 17 (atomic), AC 26 | Not Started | sonnet | IO behind `IS25Writer` so no real disk fault is needed. The 51st file removes the oldest; `gitrev7` is 7 characters or `nogit` |
+| 7 | RED then GREEN: `S25EdgeCaseTable` loader/validator (missing, extra, duplicate, reason-less entry; `covered` naming an unknown plan run id) and the report reproducing the table | AC 18 | Not Started | sonnet | Validator tests use inline JSON for 20-entry fixtures; the real file is the authoring task |
+| 8 | RED then GREEN: runner mechanics with `StubWorldSource`, `IS25ParamSource` stub and the synchronous launcher: a full plan on hand-built terrain completes and the report has every section | AC 2 | Not Started | sonnet | First end-to-end slice; fake clock. World generated once per `(world, seed, size)`. Real A4 `WeatherRunner` on hand-built terrain only for the determinism task |
+| 9 | RED then GREEN: progress and cancel: `GetProgress` readable from another thread, phases advance, cancel during Generating, Running and Evaluating stops within one week or one generation step, verdict `Cancelled`, no baseline write, no archive file | AC 4, AC 5 | Not Started | sonnet | Counter-gated stub world source, never sleeps. No sanitizer (on request only); the race-freedom is by design (atomics) and covered by a two-thread read test |
+| 10 | RED then GREEN: world failure paths: generation failure or timeout is `InvalidWorld` with the S-1 reason; failed precheck makes dependent checks `InvalidWorld` and their runs not executed | AC 6, AC 7 | Not Started | sonnet | Uses Feature 1's prechecks on terrain that fails. The run list in the report shows skipped runs |
+| 11 | RED then GREEN: deterministic storm-cell chooser (nearest centre, at least 6 steps from the edge via the DiaPathfinding step distance, lowest index tie, `InvalidWorld` when none) | AC 8 | Not Started | sonnet | Pure function on hand-built terrain; include an exact-tie fixture. Needs `grid-search-helpers.plan.md` Done |
+| 12 | RED then GREEN: preset runs skip spin-up and start the calendar at the preset's season through A4's offset (a `winter_snow` run's first week is Winter and the calendar advances from it); R3 applies `boundary.edge_inflow = 0` from the start including spin-up | AC 9, AC 10 | Not Started | sonnet | Existing A4 runner tests are not touched. R3 state after spin-up must differ from R1's on a hand-built terrain with an upwind edge. Preset runs go through `ApplyPreset` and `cow.weather_preset` files only |
+| 13 | RED then GREEN: performance runs P1/P2: exclusive and last, trace recording off, timings and per-step CPU statistics (max/mean/p95) from `GetLastProfile()`, budgets labelled `Within`/`Over`/`NotMeasured (Debug)` with the environment block | AC 15, AC 2 (performance section) | Not Started | sonnet | P2 (Large) produces no precheck or check result (test it). Figures go to `performance` and the `INFO` log; `cow.s25.status` shows the last values. Report-only (D-3.1). Debug is `NotMeasured`; no Release run |
+| 14 | RED then GREEN: baseline handling: `record_baseline` writes absent entries only, a second run compares within +-10%, a cancelled run writes none, `cow.s25.baseline record` semantics (no `force` leaves existing entries byte-identical; refused while a run is active) | AC 16, AC 4 (no baseline on cancel) | Not Started | sonnet | Uses Feature 2's `BaselineStore::Record`; command wiring is task 17 |
+| 15 | Author `edge_cases.json` (`cow.s25_edge_cases` v1) from `A4_EdgeCaseMatrix.md` (`C:\GitHub\DesignDocs\COW\Output Docs\GDD\08_SystemsDeepDive\A4_Weather\`): all 20 cases EC-01..EC-20 exactly once, each `covered` (plan run ids plus the setup) or `untested` with a reason; register the asset in `assets.catalogue.json` | AC 18 (the shipped file passes the validator from the edge-case task) | Not Started | sonnet | Content task: read the matrix's 20 sections, map to R1-R7/P1/P2. Do not claim coverage a run does not provide; unclear mappings go in the notes for the user. Note that A4's amendments change some EC wording (EC-19 and EC-01); read the current A4 specs |
+| 16 | RED then GREEN: real determinism on hand-built terrain with real A4: R1 vs R2 byte-identical committed fields at weeks 13, 26, 39, 52 (capped vs reverse 7-range), and the same plan twice gives identical `measured` and report apart from timings and environment | AC 11, AC 13 | Not Started | sonnet | One real-A4 run, small terrain. Any difference is an A4 or executor bug: stop and report, never widen a tolerance |
+| 17 | RED then GREEN: the four commands added to the `cow.s25.*` command list and registered all-or-nothing together with Feature 1's two through `SimCommandSet`; argument validation naming the field; start-while-active and cancel-with-no-run errors | AC 20, AC 21 | Not Started | sonnet | Edits `S25WeatherModule` (hosting only). A forced failure at any of the six positions leaves none registered. The superseded dotted names are not registered. Needs the command-list capability from `stage-and-world.plan.md` |
+| 18 | RED then GREEN: `S25LiveSmoke` and `cow.s25.livesmoke` writing `out/CoW/s25/livesmoke.json` (envelope `cow.s25_livesmoke` v1; 52 weeks of step times, wall time, stall delta in Deferred, Debug label `NotMeasured`) | AC 23, AC 27 | Not Started | sonnet | Needs Feature 1's step modes. Wall time asserted as a sanity range only |
+| 19 | RED then GREEN: live-vs-runner agreement and isolation: the stage's Sync module and the runner on the same world and parameters give byte-identical committed fields for weeks 1-13; a run started while the stage steps leaves the stage's committed fields bit-identical to a stage-only run | AC 12, AC 3 | Not Started | sonnet | Needs Feature 1's module. After a size change the live side waits on `WeatherModule::IsReady(revision)` for the new revision. Open Design Question 2 (blocking vs stepped generation agreement) is exercised here: record the outcome |
+| 20 | RED then GREEN: `SLOW_S25Verdict.CuratedWorldsSmall`: whole plan (synchronous launcher, serial and reverse executors, no performance runs) on both curated worlds; fails on `HardFail`/`InvalidWorld`/`Incomplete` naming checks, `reopenSection` and the failing precheck; warns on `MagnitudeMisses`; writes reports and the archive file under `out/`; scripted fail/warn variants prove the behaviour | AC 24 | Not Started | sonnet | Green means `Pass`, or `MagnitudeMisses` as warnings. An unrecorded-baseline `Pass` is green, so no `record_baseline` is needed. Scripted variants run in the fast suite; only the real-world run is `SLOW_`. Strict (no known-failures list). The test loads the A4 sidecar from the shipped catalogue path; a working-directory problem is a fix in the path resolution, not a copy of the file |
+| 21 | RED then GREEN: DiaAutomation scenario: enter the stage, `cow.s25.run`, poll `cow.s25.report` to completion, read the verdict from the report file and compare with the expected verdict | AC 22 | Not Started | sonnet | Follow F-2's pattern; kill leftover `CluicheTest.exe`; E2E does not build, so `dia run` first. Needs the curated picks from Feature 1 |
+| 22 | PROOF: first real run on the curated worlds: `dia run googletest --filter="SLOW_S25Verdict*" --shards 2`, then `cow.s25.run` with `record_baseline: true` on both worlds and the P1/P2 performance runs (Debug, labelled `NotMeasured (Debug)`); record verdict per world, every check state with `measured` and `detail`, every Hard `Fail` with its `reopenSection`, `MagnitudeMisses`, `InvalidWorld`, perf numbers and the baseline written | Results recorded in "Proof results"; AC 24 on real worlds, AC 16 baseline recorded | Not Started | sonnet | **Hard fails here are findings, not task failures**: do not tune A4, the thresholds or the checks. A Test 7 `years_differ` Fail "goes to the user". All baselines are recorded fresh under the current A4 sidecar (parent spec: every earlier baseline is stale). Verify from the report data, not screenshots. Ask before escalating |
+| 23 | List the doc edits owed by this feature (system spec Headless runner and Performance sections, Feature 2's check-to-run mapping note) and which are already applied; record in the system plan notes | Entries present in the system plan notes | Not Started | haiku | Docs edit only; specs are edited by their owners. Several items (WeatherRunner offset, `SetDeferred`) may already be applied by the A4 and World Step specs |
+| 24 | Exhaustive gap audit and edge tests: every AC (1-27) mapped to a test or stated deferral; edge pass (empty plan filter, unknown world/size, run started twice, cancel at week 0 and at the last week, report path unwritable, a world with no ocean, zero hold weeks, an edge_cases entry referencing a skipped run, a sidecar that fails mid-plan, archive prune with 50 and 51 files, cancelled-handle reuse) | Gap list in notes; every AC mapped | Not Started | sonnet | No mutation checks. Scoped filter `S25*` |
+| 25 | Observation Opportunity Scan over all touched files across the five pillars: logs for phase changes and failures, `DIA_TRACE_ZONE` per run, profile scopes, metrics for run duration, health for failed runs | Suggestions in notes | Not Started | haiku | Suggestions do not block Done |
+| 26 | Scoped verification: `dia run googletest --filter="S25Plan*:S25Runner*:S25Report*:S25EdgeCases*:SLOW_S25Verdict*" --shards 2`, `dia check deps`, `dia docs precommit` | Pass or fail, failing names only | Not Started | sonnet | No full suite (the weather-stack close-out owns it), no sanitizer. Report pass/fail and failing names only |
+| 27 | Close-out: `dia docs plan docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.plan.md <#> --status Done` per row, then `dia docs spec-done docs/specs/applications/cow/systems/s25-weatherpatterns/headless-runner.md`; update system plan row 3 | Spec status Done | Not Started | haiku | **Do not run until all rows above are Done.** |
+
+**AC coverage:** 1 (task 2), 2 (8, 13), 3 (4, 19), 4 (9, 14), 5 (9), 6 (10), 7 (10), 8 (11), 9 (12), 10 (12), 11 (16), 12 (19), 13 (16), 14 (3), 15 (5, 13), 16 (14, 22), 17 (5, 6), 18 (7, 15), 19 (5), 20 (17), 21 (17), 22 (21), 23 (18), 24 (20, 22), 25 (2, 5), 26 (6), 27 (18). Amendment item 1 (sidecar source, no fallback): task 4. Amendment item 2 (registry-keyed baseline): task 8 (stubbed) and task 16 (real). Amendment item 3 (metric registered by the stage base): nothing to build; task 25 scans.
 
 ## Proof results
 
-Filled in at task 21; empty until then.
+Filled in at the proof task; empty until then.
 
 | World | Verdict | Hard fails (check, measured, reopen) | Magnitude misses | Invalid / pending | Perf (P1, P2) | Baseline written |
 |---|---|---|---|---|---|---|
@@ -162,15 +128,17 @@ Filled in at task 21; empty until then.
 
 ## Open items
 
-Resolved items are kept for traceability.
-- **First-run `Pass`**: **Resolved by amendment 1 (2026-11-16)**: a Default check with no baseline entry is judged against the GDD default; `baseline.unrecorded[]` is informational. Task 21 still records the baseline with `record_baseline: true` as part of the proof.
-- **Cross-feature all-or-nothing registration**: **Resolved by amendment 2 (2026-11-16)**: `S25CommandRegistrar` owned by `S25WeatherModule`.
-- **Two-run checks**: **Resolved by Feature 2 amendment 1 (2026-11-16)**: `CheckInputs.comparison`; the runner pairs R1/R2, R5a/R5b and R1/R3 into `CheckInputs`.
-- **Test 3 release week and `WorldInfo`**: **Resolved by Feature 2 amendment 2 (2026-11-16)**: R4's `holdWeeks`, release week and spawn cell fill `WorldInfo`.
-- **Command naming**: **Resolved by amendment 6 (2026-11-16)**.
-- **P2 prechecks**: **Resolved by amendment 5 (2026-11-16)**: none.
-- **Where the reordering executor lives**: **Resolved by amendment 3 (2026-11-16)**: reuse A4 Feature 2's, or DiaDeferredStep's `Testing/` when it exists.
-- **Where the CPU report goes**: **Resolved by amendment 4 (2026-11-16)**.
-- **DiaAutomation scenario file location and format** are "follow F-2's pattern" only (still open).
+Spec gaps found while rebuilding this plan. None are resolved here.
+- **Verdict for a sidecar fault.** The amendment says a sidecar fault "fails the run", but the verdict table (`Pass`, `HardFail`, `MagnitudeMisses`, `InvalidWorld`, `Incomplete`, `Cancelled`) has no value for a run that could not start for a non-world reason. Task 4 reports the fault and runs no week; the verdict word is undecided (headless-runner.md).
+- **`WorldCellFields` for a headless world.** Presets use `CellSelectorSet` (A4 item 12) over `WorldCellFields`, which the kit describes as a per-world registry built by S-1 inside `WorldGenerationModule`. The runner generates its own world with no module; the specs do not say who builds the cell-field context for it (headless-runner.md, worldsim-kit.md, presets-and-regression.md).
+- **Climate cycles in the plan runs.** The parent spec says Tests 1-9 match the re-recorded baselines "with all climate cycles off", and A4 takes `climateFreezeDay` at `Start`, but the run table does not say whether cycles are on or off for R1-R7 (headless-runner.md, s25-weatherpatterns.md, a4-weather.md).
+- **`params_hash` in the report.** A4's `ParameterFile::Hash()` is now the tuning identity, and the parent says every pre-change baseline is stale, but the report envelope and `BaselineStore` carry no params hash, so a stale baseline cannot be detected mechanically (headless-runner.md, weather-checks.md).
+- **Headless biome registry and sidecar path.** The sidecar's maps are keyed `keyRef cow.biomes`; a `SLOW_` GoogleTest with no stage has to load the registry and resolve the catalogue alias itself. The spec says only that the runner "loads the sidecar path" (headless-runner.md, biome-registry.md).
+- **Stale check counts and names.** The scenario spec and system spec say about 34 checks; the Feature 2 table sums to 31 (5+3+5+5+4+3+2+3+1). `t5.gw_peak_week` keeps a ground-water name though A4 has no ground water (weather-checks.md, scenarios-and-walkthrough.md). Recount at build.
+- **Trace field count.** The report and trace talk about "the nine fields"; A4's amendments add `pressureAnomaly` as a tenth saved field and replace `groundWater` with `waterToGround` (headless-runner.md, a4-weather.md). Read the field list from A4 at build.
+- **Ocean definition for the storm cell and prechecks.** "Ocean cell" is not defined against `waterSource` versus `BiomeRole::Ocean` now that `Cell::biome` is a `BiomeIndex` (headless-runner.md, biome-registry.md).
+- **`cow.s25.*` names versus `WorldSimNames`.** The kit's naming test covers world-sim system tokens (`worldgen`, `weather`, `hydro`, `ecology`, `succession`); `s25` is not one, so whether `cow.s25.*` and `cow.s25_report` fall under the pattern test is unstated (worldsim-kit.md).
+- **Command-list ownership.** The gap-pass amendment names `S25CommandRegistrar` for all-or-nothing registration; the kit's `SimCommandSet` now does the rollback. This plan treats the registrar as a name-list aggregator over `SimCommandSet`; the spec text still says registrar (headless-runner.md, stage-and-world.md).
+- **Doc edits owed may be stale.** `WeatherRunner`'s start-week offset is now in A4's gap-pass amendment 4, and `SetDeferred` is in World Step's module-and-cadence spec, yet "Files Touched" here and in stage-and-world.md still list them as edits this feature makes (headless-runner.md).
 - **Open Design Questions 1, 3 and 4** (known-failures list, exclusive perf runs, trace export) stay open; the plan builds the strict behaviour.
-- **Review 2026-11-16:** `SLOW_S25Verdict` stays strict, no known-failures list; the DiaAutomation scenario follows F-2 (decisions 2, 18).
+- **DiaAutomation scenario file location and format** are "follow F-2's pattern" only.

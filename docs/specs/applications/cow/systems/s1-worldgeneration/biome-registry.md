@@ -207,6 +207,11 @@ S-1's parameter sidecar (from Parameter Files; today's `terrain_rules.json` succ
     - `terrain_navigation.json` is deleted and the navigation table reads the bound values.
     - The reachability and navigation tests pass unchanged, and layer goldens are bit-identical.
 
+### Plan-gap additions (added 2026-11-18, plan-gap resolution)
+13. **`keyEnum` completeness, CLI.** (added 2026-11-18, plan-gap resolution) A `map` entry with `keyEnum` whose schema `default` omits a key of the named sidecar enum entry is reported as `data.incomplete-map` by `dia validate schema`, naming the missing keys. A sparse pack over the same map is valid. An unknown `keyEnum` target is a schema error naming the entry.
+14. **`keyEnum` completeness, C++.** (added 2026-11-18, plan-gap resolution) `ValueSchemaLoader` and `ParameterFile` apply the same rule, and agree with the CLI on every shared conformance fixture. The map's keys come from the sidecar enum entry, in its value order.
+15. **Enum parity.** (added 2026-11-18, plan-gap resolution) A C++ test asserts the code `TerrainType` enum matches the sidecar's `terrain_type` enum entry: same ids, same order.
+
 ## Files Touched
 
 | File | Change |
@@ -220,7 +225,7 @@ S-1's parameter sidecar (from Parameter Files; today's `terrain_rules.json` succ
 | `Cluiche/Assets/CoW/Global/WorldGen/terrain_navigation.json` | Deleted |
 | `Cluiche/Assets/CoW/Stages/S1WorldGenerationTestbedStage/worldgen.schema.json` | `biomeIndex` uses `valuesFrom` |
 | `WorldGenerationModule.h/.cpp` | Owns and loads the registry; `GetBiomeRegistry()`; health |
-| `Dia/DiaValueSchema/ValueInfo.h`, `ValueSchemaLoader.cpp`, `ValueSchemaModule.cpp` | `valuesFrom` |
+| `Dia/DiaValueSchema/ValueInfo.h`, `ValueSchemaLoader.cpp`, `ValueSchemaModule.cpp` | `valuesFrom`; `keyEnum` on map entries (plan-gap resolution) |
 | `Dia/DiaCLI/dia_cli/commands/validate/{schema_rules,data_rules}.py` + tests; `Dia/DiaValueSchema/Testing/Conformance/` | `valuesFrom`, `data.incomplete-map` |
 | `Cluiche/Tests/GoogleTests/CoW/*Biome*`, `*WorldJson*`, `*Region*`, `*NodesRiver*`, `*SiteGuarantees*`, `*Validation*`, `*Navigation*` and the `Testing/*TestWorlds.h` helpers | Id lookup through the fixture registry; new `TestBiomeRegistry.cpp` |
 | `assets.catalogue.json`, CoW `pipeline.toml` | `json.biomes`; deploy `Global/World/` |
@@ -238,7 +243,7 @@ S-1's parameter sidecar (from Parameter Files; today's `terrain_rules.json` succ
 | SD-S1-002 | Every editor action is a DiaAPI command | No new action. Registry contents show through existing `cow.worldgen` state queries and the layer legend. |
 | AD-002 (CoW) | Four-tier dependency model | The registry is CoW-Shared (`Shared/World/`): S-1 owns it, and A1, A3, A4, A5, T-1 and T-2 read it. |
 | AD-003 (CoW) | GDD owns design intent | The rows carry today's GDD-derived values unchanged. Biome additions and value changes are folded back to the GDD as before. |
-| AD-001 (CoW) | Ask before Dia edits | DiaValueSchema `valuesFrom` and the CLI and conformance `data.incomplete-map` rule: **signed off by the user 2026-11-18.** |
+| AD-001 (CoW) | Ask before Dia edits | DiaValueSchema `valuesFrom` and the CLI and conformance `data.incomplete-map` rule: **signed off by the user 2026-11-18.** DiaValueSchema `keyEnum` (and extending `data.incomplete-map` to it), under Plan-gap resolutions: **also signed off by the user 2026-11-18.** |
 | PD-004 | No STL in public APIs | Registry lists are pointer and count; strings are fixed-size; masks are `uint64_t`. |
 | D5, D6 (research) | Fail loudly; records versus parameters | The registry is a record file loaded strictly with no fallback. The terrain profile is parameters (maps over `TerrainType`). |
 | Superseded: a1-ecology.md:81 | "One shared 13-value `Biome` enum, not a StringCRC set" | **Superseded** (user, 2026-11-18): one data registry with runtime indices, which keeps the original reasons (one list, one palette, one name table). |
@@ -269,6 +274,17 @@ All three are decided as recommended:
 1. **Reload.** The registry loads at `WorldGenerationModule` start only. There is no live hot-swap; `FileWatcher` does not reload it.
 2. **Loader.** Plan Task 0 spikes `JsonDefinitionLoader` on `biomes.json`. If it can't express the shape, use a small hand parser validated by the same sidecar, and log the gap against DiaData.
 3. **Provenance.** World export provenance records `BiomeRegistry::Hash()` (an additive field). Import warns on a mismatch but does not fail. **This adds to AC 8:** export writes the hash, and importing a world with a different hash logs one warning.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above.
+
+1. **`keyEnum` (DiaValueSchema).** A map entry may be keyed by a sidecar enum entry (`"keyEnum": "<schema key of an enum entry>"`) instead of a data file (`keyRef`).
+   - The S-1 parameter sidecar declares a `terrain_type` enum entry whose values mirror `TerrainType`.
+   - The terrain-profile maps (`terrain.passable`, `terrain.cost`, `terrain.soil_depth_mult`, `terrain.orographic_factor`, `terrain.runoff`) use `keyEnum`, so `dia validate schema` and `ParameterFile` both check completeness: the `data.incomplete-map` rule extends to `keyEnum`.
+   - A C++ test asserts that the code enum matches the sidecar enum: same ids, same order.
+   - ACs 13-15. This resolves the plan's CLI-completeness question for `TerrainType` maps.
+2. **Biome tag assignment is GDD design data.** Which biome gets which tag must be confirmed by the CoW/GDD session before the registry's data task (authoring `biomes.json`) runs. Fold-back sent 2026-11-18. The plan's proposed assignment stands as the proposal text only.
 
 ## Status
 

@@ -354,6 +354,8 @@ namespace CoW::Weather {
 39. `weather.climate_offset` (the eighth scalar base layer) equals the latched `tempOffset` for the committed week. The layer has min and max in its schema.
 40. Gauges: at most one per cycle, written on SimPU once per `Capture`. An invalid file leaves health Degraded with no active cycles.
 
+41. (added 2026-11-18, plan-gap resolution) A bad cycle catalogue fails loudly (R1): health Failing, naming the file, record and field, with no active cycles and the previous set kept on a reload. This supersedes "Degraded" in AC 40 and the Design's health bullet. A missing file still means no cycles and one Info log.
+
 ## Files Touched
 
 | File | Change |
@@ -452,6 +454,13 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 3. **Command (item 8).** `cycle` is an action of `cow.weather.params`, not a separate name.
 4. **Save (item 7).** `enabled`, `phase_days`, `pinned_phase_days` are saved with no in-record version.
 5. **Catalogue and reload (item 11).** `climate_cycles.json` is catalogued and `PathStore`-resolved; `FileWatcher` reload is dev-only.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above.
+
+- **Bad cycle catalogue fails loudly (R1).** This supersedes "Degraded" (Design health bullet, AC 40). New AC 41.
+- **Catalogue files.** Cycles are loaded and reloaded through `cow.weather.records {action: list|reload}`. The influence-kind catalogue is a separate record file (see weather-influence.md).
 
 ## Status
 

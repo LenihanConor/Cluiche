@@ -397,6 +397,10 @@ A Dia dependency is not needed. `HexGridTables` is Feature 2's precomputed grid.
 52. `cow.weather.influences_active` and `cow.weather.influences_rejected` register with `MetricInfo` and are written only on SimPU, once per applied step.
 53. Each rejection logs one Warning naming the reason and the source. Add, remove and expiry log Info.
 
+54. (added 2026-11-18, plan-gap resolution) The kind catalogue is the record file `Global/Weather/influence_kinds.json` (format `cow.weather_influence_kinds`) with its own sidecar. Each kind has a signed `water` column (the A5 hand-off weight) and a `default_falloff` column. The global caps (`max_strength`, `max_lifetime_weeks`, `max_active` and so on) are parameters in the weather params sidecar, not catalogue columns.
+55. (added 2026-11-18, plan-gap resolution) `cow.weather.records {action: list|reload}` lists the kinds and reloads the file. A reload is queued and strict (R1).
+56. (added 2026-11-18, plan-gap resolution) A reload that removes a kind still used by a live influence fails strictly (R1), names the kind and the influence ids, and leaves the catalogue unchanged.
+
 ## Files Touched
 
 | File | Change |
@@ -487,6 +491,16 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 2. **Modifiers.** Where an influence alters a parameter (rather than a per-cell field) it applies as a DiaAttribute modifier on the `ParameterFile`, removed when the influence expires.
 3. **Save.** The saved influence array refers to a kind by catalogue id (Feature 4).
 4. **Naming and I/O (items 9, 11).** Catalogued file, `PathStore`, `FileWatcher` reload in dev builds.
+
+## Plan-gap resolutions (2026-11-18, user)
+
+Each item supersedes contradicting text above.
+
+- **Catalogue file.** The influence-kind catalogue is a **record file**, `Global/Weather/influence_kinds.json` (format `cow.weather_influence_kinds`), with its own sidecar.
+  - It has a signed `water` column (the A5 hand-off weight) and a per-kind `default_falloff` column.
+  - The global caps (`max_strength`, `max_lifetime_weeks`, `max_active` and so on) stay parameters in the weather params sidecar.
+- **Command.** `cow.weather.records {action: list|reload}` lists and reloads kinds. A reload that removes a kind still used by a live influence fails strictly (R1) and leaves the catalogue unchanged.
+- New ACs 54-56.
 
 ## Status
 
