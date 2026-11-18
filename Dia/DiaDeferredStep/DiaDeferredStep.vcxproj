@@ -92,6 +92,8 @@
     <ClInclude Include="CapGate.h" />
     <ClInclude Include="CappedParallelExecutor.h" />
     <ClInclude Include="JobStepLauncher.h" />
+    <ClInclude Include="Testing\ReorderingExecutor.h" />
+    <ClInclude Include="Testing\ReferenceGatherStep.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />

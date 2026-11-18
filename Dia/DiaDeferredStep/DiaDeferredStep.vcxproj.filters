@@ -34,6 +34,12 @@
     <ClInclude Include="CapGate.h" />
     <ClInclude Include="CappedParallelExecutor.h" />
     <ClInclude Include="JobStepLauncher.h" />
+    <ClInclude Include="Testing\ReorderingExecutor.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ReferenceGatherStep.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
     <ClCompile Include="SerialExecutor.cpp" />
     <ClCompile Include="DeferredStepObservation.cpp" />
     <ClCompile Include="DeferredStepScheduler.cpp" />

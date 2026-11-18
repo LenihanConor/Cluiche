@@ -1306,6 +1306,7 @@
     <ClCompile Include="DiaDeferredStep\TestSerialExecutor.cpp" />
     <ClCompile Include="DiaDeferredStep\TestCapGate.cpp" />
     <ClCompile Include="DiaDeferredStep\TestCappedParallelExecutor.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestCapDeterminism.cpp" />
     <ClCompile Include="DiaDeferredStep\TestJobStepLauncher.cpp" />
     <ClCompile Include="DiaDeferredStep\TestCapRangeSplit.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepHelpers.cpp" />
