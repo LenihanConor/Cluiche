@@ -397,32 +397,6 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
 // ---------------------------------------------------------------------------
 // Grid helpers (free functions so they can be tested on hand-built masks)
 // ---------------------------------------------------------------------------
-namespace {
-
-// Flood fill over cells whose mask value equals 'value', starting at 'start'; appends visited
-// cells to 'cells' and marks them in 'seen'.
-void Flood(const Dia::Pathfinding::HexTopology& topo, const std::vector<uint8_t>& mask, uint8_t value, int start,
-           std::vector<uint8_t>& seen, std::vector<int>& cells)
-{
-    const size_t first = cells.size();
-    cells.push_back(start);
-    seen[static_cast<size_t>(start)] = 1;
-    for (size_t head = first; head < cells.size(); ++head)
-    {
-        const int c = cells[head];
-        for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
-        {
-            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb != Dia::Pathfinding::kNoCell && !seen[nb] && mask[nb] == value)
-            {
-                seen[nb] = 1;
-                cells.push_back(static_cast<int>(nb));
-            }
-        }
-    }
-}
-
-} // namespace
 
 void CleanUpLand(std::vector<uint8_t>& land, GridDimensions dims, int minLandmass, int protectedCell)
 {
@@ -431,18 +405,24 @@ void CleanUpLand(std::vector<uint8_t>& land, GridDimensions dims, int minLandmas
     const Dia::Pathfinding::HexTopology topo(w, h);
     const int n = w * h;
 
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
+
     // Small land components become ocean (the protected cell's component is kept).
     {
-        std::vector<uint8_t> seen(static_cast<size_t>(n), 0);
-        std::vector<int> cells;
+        std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+        std::vector<uint32_t> sizes(static_cast<size_t>(n), 0u);
+        Dia::Pathfinding::ConnectedComponents(graph, [&land](uint32_t c) { return land[c] == 1; },
+                                              label.data(), sizes.data(), scratch);
+        const uint32_t protectedLabel = (protectedCell >= 0 && protectedCell < n)
+            ? label[static_cast<size_t>(protectedCell)] : Dia::Pathfinding::kUnreached;
         for (int i = 0; i < n; ++i)
         {
-            if (!land[static_cast<size_t>(i)] || seen[static_cast<size_t>(i)]) { continue; }
-            cells.clear();
-            Flood(topo, land, 1, i, seen, cells);
-            if (static_cast<int>(cells.size()) < minLandmass && std::find(cells.begin(), cells.end(), protectedCell) == cells.end())
+            const uint32_t l = label[static_cast<size_t>(i)];
+            if (l == Dia::Pathfinding::kUnreached) { continue; }
+            if (static_cast<int>(sizes[l]) < minLandmass && l != protectedLabel)
             {
-                for (int c : cells) { land[static_cast<size_t>(c)] = 0; }
+                land[static_cast<size_t>(i)] = 0;
             }
         }
     }
@@ -450,14 +430,15 @@ void CleanUpLand(std::vector<uint8_t>& land, GridDimensions dims, int minLandmas
     // Ocean not connected to the map-edge ocean becomes land.
     {
         std::vector<uint8_t> seen(static_cast<size_t>(n), 0);
-        std::vector<int> cells;
+        std::vector<uint32_t> cells(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i)
         {
             const int x = i % w, y = i / w;
             const bool onEdge = x == 0 || y == 0 || x == w - 1 || y == h - 1;
             if (onEdge && !land[static_cast<size_t>(i)] && !seen[static_cast<size_t>(i)])
             {
-                Flood(topo, land, 0, i, seen, cells);
+                Dia::Pathfinding::FloodRegion(graph, static_cast<uint32_t>(i), [&land](uint32_t c) { return land[c] == 0; },
+                                              seen.data(), cells.data(), scratch);
             }
         }
         for (int i = 0; i < n; ++i)
@@ -473,19 +454,18 @@ int LabelLandmasses(const std::vector<uint8_t>& land, GridDimensions dims, uint3
     if (w <= 0 || h <= 0 || out == nullptr) { return 0; }
     const Dia::Pathfinding::HexTopology topo(w, h);
     const int n = w * h;
-    std::fill(out, out + n, 0u);
-    std::vector<uint8_t> seen(static_cast<size_t>(n), 0);
-    std::vector<int> cells;
-    uint32_t id = 0;
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+    const uint32_t count = Dia::Pathfinding::ConnectedComponents(
+        graph, [&land](uint32_t c) { return land[c] == 1; }, label.data(), nullptr, scratch);
+    // Labels are 0-based ascending by lowest cell; output is 1-based with 0 = ocean.
     for (int i = 0; i < n; ++i)
     {
-        if (!land[static_cast<size_t>(i)] || seen[static_cast<size_t>(i)]) { continue; }
-        ++id;
-        cells.clear();
-        Flood(topo, land, 1, i, seen, cells);
-        for (int c : cells) { out[c] = id; }
+        const uint32_t l = label[static_cast<size_t>(i)];
+        out[i] = l == Dia::Pathfinding::kUnreached ? 0u : l + 1u;
     }
-    return static_cast<int>(id);
+    return static_cast<int>(count);
 }
 
 void ComputeCoastDistance(const std::vector<uint8_t>& land, GridDimensions dims, uint32_t* out)
