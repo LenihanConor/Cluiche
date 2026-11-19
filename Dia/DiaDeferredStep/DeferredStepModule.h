@@ -124,6 +124,7 @@ namespace Dia::DeferredStep
 
 		private:
 			void AnnounceChannelNames();
+			void TryAttachJobLauncher();   // late JobSystemService: swap the inline launcher for the job launcher when idle
 			void OnStepSummary(const Dia::Observation::Profile::StepSummaryRecord& record) override;
 			void ForwardToTable(const Dia::Observation::Profile::StepSummaryRecord& record);
 	};

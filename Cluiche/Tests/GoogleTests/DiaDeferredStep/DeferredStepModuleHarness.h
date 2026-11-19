@@ -43,6 +43,7 @@ namespace
 	{
 		explicit DSM_Probe(const StringCRC& id) : DeferredStepModule(id) {}
 		bool ReaderAvailable() const { return mJobSystemReader.IsAvailable(); }
+		bool IsJobLauncher() const { return mJobLauncher != nullptr; }
 		// Direct lifecycle access for restart / drain tests (bypasses the framework state machine).
 		StartResult CallStart() { return DoStart(); }
 		StopResult  CallStop()  { return DoStop(); }

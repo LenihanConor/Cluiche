@@ -223,6 +223,28 @@ namespace Dia::DeferredStep
 		return Dia::ApplicationFlow::StartResult::kReady;
 	}
 
+	// SimPU. The service can be committed after this module starts (CoW: JobSystemModule is on MainPU). Until it shows up
+	// steps run inline; once it does, swap to the job launcher at the first moment no step holds an inline token.
+	void DeferredStepModule::TryAttachJobLauncher()
+	{
+		if (mJobLauncher != nullptr || !mJobSystemReader.IsConnected() || !mJobSystemReader.IsAvailable()) { return; }
+		if (!mScheduler->CanSwapLauncher()) { return; }
+
+		Dia::Threading::JobSystem& jobs = mJobSystemReader.Get();
+		JobStepLauncher* launcher = new JobStepLauncher(jobs, mConfig);
+		if (!mScheduler->SetLauncher(*launcher))
+		{
+			delete launcher;
+			return;
+		}
+		mJobLauncher = launcher;
+		mLauncher.Reset(launcher);   // destroys the inline launcher, which no token refers to any more
+		DIA_LOG_INFO(DeferredStepObservation::kLogChannel, "JobSystemService became available; switched to job launcher: cap=%u, rangesPerWorker=%u, workers=%u",
+			static_cast<unsigned>(launcher->GetCapGate().GetWorkerCap()),
+			static_cast<unsigned>(mConfig.rangesPerWorker),
+			static_cast<unsigned>(jobs.GetWorkerCount()));
+	}
+
 	// SimPU only. Sends every registered channel's name when the channel set changed or the resend interval elapsed.
 	// Fixed-size events, no allocation; a missing sink or reader costs nothing.
 	void DeferredStepModule::AnnounceChannelNames()
@@ -292,6 +314,7 @@ namespace Dia::DeferredStep
 			}
 		}
 
+		TryAttachJobLauncher();
 		AnnounceChannelNames();
 
 		if (mKeySource == nullptr)

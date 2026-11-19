@@ -99,6 +99,11 @@ namespace Dia::DeferredStep
 		// Timestamps of the most recently applied step; false until one has applied. Discarded steps never update it.
 		bool      GetLastStepTimes(StepTimes& out) const;
 
+		// Replaces the launcher. Only while no channel has a step in flight or complete-but-unapplied (every token belongs
+		// to the old launcher): false and no change otherwise. The caller keeps the old launcher alive until this returns true.
+		bool SetLauncher(IStepLauncher& launcher);
+		bool CanSwapLauncher() const;
+
 		// Optional sink for per-step summary records (null = none; nothing is built or allocated without one).
 		// One record per applied step (normal, stalled or restored), emitted on SimPU before the token is released.
 		void SetSummarySink(IStepSummarySink* sink) { mSummarySink = sink; }
@@ -131,7 +136,7 @@ namespace Dia::DeferredStep
 		void ApplyRestored(ChannelEntry& entry, Dia::Core::StringCRC channelId);   // Tick: apply a token-less kComplete channel
 		void DrainEntry(ChannelEntry& entry);   // Wait if in flight, Release, no Apply; also resets a restored token-less kComplete channel
 
-		IStepLauncher& mLauncher;
+		IStepLauncher* mLauncher;
 		IStepSummarySink* mSummarySink = nullptr;
 		Dia::Core::Containers::DynamicArrayC<ChannelEntry, kMaxChannels> mChannels;
 		SchedulerStats mStats;

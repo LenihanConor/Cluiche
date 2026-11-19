@@ -30,7 +30,7 @@ namespace Dia::DeferredStep
 	}
 
 	DeferredStepScheduler::DeferredStepScheduler(IStepLauncher& launcher)
-		: mLauncher(launcher)
+		: mLauncher(&launcher)
 	{
 	}
 
@@ -54,6 +54,23 @@ namespace Dia::DeferredStep
 		}
 		return -1;
 	}
+
+	bool DeferredStepScheduler::CanSwapLauncher() const
+	{
+		for (unsigned int i = 0; i < mChannels.Size(); ++i)
+		{
+			if (mChannels[i].state != StepState::kIdle || mChannels[i].hasToken) { return false; }
+		}
+		return true;
+	}
+
+	bool DeferredStepScheduler::SetLauncher(IStepLauncher& launcher)
+	{
+		if (!CanSwapLauncher()) { return false; }
+		mLauncher = &launcher;
+		return true;
+	}
+
 
 	bool DeferredStepScheduler::Register(Dia::Core::StringCRC channelId, IDeferredStep& step)
 	{
@@ -98,13 +115,13 @@ namespace Dia::DeferredStep
 			}
 			return;
 		}
-		const bool wasComplete = mLauncher.IsComplete(entry.token);
+		const bool wasComplete = mLauncher->IsComplete(entry.token);
 		if (wasComplete)
 		{
 			DIA_LOG_WARNING(DeferredStepObservation::kLogChannel, "Channel '%s': discarding completed unapplied result", entry.channelId.AsChar());
 		}
-		mLauncher.Wait(entry.token);
-		mLauncher.Release(entry.token);
+		mLauncher->Wait(entry.token);
+		mLauncher->Release(entry.token);
 		entry.token = LaunchToken();
 		entry.hasToken = false;
 		entry.state = StepState::kIdle;
@@ -168,7 +185,7 @@ namespace Dia::DeferredStep
 		LaunchInfo info;
 		info.channelId = channelId;
 		info.kickKey = kickKey;
-		entry.token = mLauncher.Launch(*entry.step, info);
+		entry.token = mLauncher->Launch(*entry.step, info);
 		entry.hasToken = true;
 
 		++entry.stats.kicks;
@@ -203,7 +220,7 @@ namespace Dia::DeferredStep
 			{
 				ChannelEntry& e = mChannels[i];
 				if (e.hasToken && e.state == StepState::kRunning && e.applyKey > currentKey && !e.completionSeen
-					&& mLauncher.IsComplete(e.token))
+					&& mLauncher->IsComplete(e.token))
 				{
 					e.completionSeen = true;
 					e.completionSeenKey = currentKey;
@@ -271,14 +288,14 @@ namespace Dia::DeferredStep
 			uint64_t readyNs = entry.readyNs;
 			uint64_t stallNs = 0;
 			const uint64_t kickNs = entry.kickNs;
-			if (!mLauncher.IsComplete(token))
+			if (!mLauncher->IsComplete(token))
 			{
 				const uint64_t waitStartNs = NowNs();
 				const uint64_t waitStart = NowMicros();
 				{
 					DIA_TRACE_ZONE("DeferredStep.StallWait", Dia::Observation::Trace::Category::kDiaDeferredStep);
 					DIA_PROFILE_SCOPE("DeferredStep.StallWait", Dia::Observation::Profile::Category::kDiaDeferredStep);
-					mLauncher.Wait(token);
+					mLauncher->Wait(token);
 				}
 				const uint64_t waitEnd = NowMicros();
 				readyNs = NowNs();
@@ -302,12 +319,12 @@ namespace Dia::DeferredStep
 				// Built before Apply (which may Unregister and release the token) and before Release, so the launcher's
 				// per-range timings are still valid. SimPU, synchronous.
 				const RangeTiming* timings = nullptr;
-				const uint32_t timingCount = mLauncher.GetRangeTimings(token, timings);
+				const uint32_t timingCount = mLauncher->GetRangeTimings(token, timings);
 				LaunchInfo info;
 				info.channelId = dueIds[i];
 				info.kickKey = entry.kickKey;
 				StepSummaryInputs inputs;
-				inputs.ranInlineWholly = mLauncher.RanInlineWholly(token);
+				inputs.ranInlineWholly = mLauncher->RanInlineWholly(token);
 				inputs.applyKey = applyKey;
 				mSummarySink->OnStepSummary(BuildStepSummary(info, timings, timingCount, mLastTimes, inputs));
 			}
@@ -323,7 +340,7 @@ namespace Dia::DeferredStep
 			const bool owned = after >= 0 && mChannels[after].hasToken && mChannels[after].token.value == token.value;
 			if (owned)
 			{
-				mLauncher.Release(token);
+				mLauncher->Release(token);
 			}
 			if (stalled)
 			{
@@ -509,7 +526,7 @@ namespace Dia::DeferredStep
 			{
 				continue;
 			}
-			mLauncher.Wait(e.token);
+			mLauncher->Wait(e.token);
 			e.state = StepState::kComplete;   // token, hasToken and applyKey kept: Tick still applies and releases it
 			if (!e.completionSeen)
 			{

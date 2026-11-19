@@ -800,3 +800,87 @@ TEST(DeferredStepModule, BackwardsKeyIsIgnoredWithWarningAndNeverDoubleApplies)
 	sched.Unregister(kChannelA);
 }
 #endif
+
+
+// ---- Late JobSystemService (cleanup bundle 2026-11-19): CoW's module starts before the service is committed ----
+
+namespace
+{
+	// Restarts the module with the provider's service withdrawn, so DoStart takes the inline fallback.
+	// A service stream commits at a frame boundary: let the app run until the reader sees it, without calling the
+	// probe's own update (the app's frames already do that, which is the real late-attach path).
+	void CommitService(Harness& h)
+	{
+		for (int i = 0; i < 5 && !g_probe->ReaderAvailable(); ++i) { h.mApp->Update(kDt); }
+	}
+
+	void RestartInline(Harness& h)
+	{
+		g_provider->mWriter.Deregister();
+		g_probe->CallStop();
+		g_probe->CallStart();
+	}
+}
+
+TEST(DeferredStepModule, LateJobSystemSwapsInlineLauncherForTheJobLauncher)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartInline(h);
+	ASSERT_FALSE(g_probe->IsJobLauncher());
+
+	g_provider->mWriter.Register(g_provider->mJobSystem);
+	CommitService(h);
+	ASSERT_TRUE(g_probe->ReaderAvailable());
+	g_probe->CallUpdate();
+
+	EXPECT_TRUE(g_probe->IsJobLauncher());
+	EXPECT_GE(logs.Infos("became available"), 1u);
+
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	EXPECT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);
+	sched.Tick(2);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	EXPECT_EQ(step.GetRunCount(), 1u);
+	EXPECT_NE(step.GetRunThread(), std::this_thread::get_id());   // ran on a worker, not inline
+	sched.Unregister(kChannelA);
+}
+
+TEST(DeferredStepModule, LateJobSystemWaitsUntilNoStepIsPending)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartInline(h);
+
+	Dia::DeferredStep::DeferredStepScheduler& sched = g_probe->GetScheduler();
+	Dia::DeferredStep::Testing::RecordingStep step;
+	ASSERT_TRUE(sched.Register(kChannelA, step));
+	ASSERT_EQ(sched.Kick(kChannelA, 1, 2), Dia::DeferredStep::KickResult::kLaunched);   // inline: complete, not yet applied
+
+	g_provider->mWriter.Register(g_provider->mJobSystem);
+	CommitService(h);
+	g_probe->CallUpdate();
+	EXPECT_FALSE(g_probe->IsJobLauncher());   // a pending token belongs to the inline launcher: no swap yet
+
+	sched.Tick(2);
+	EXPECT_EQ(step.GetApplyCount(), 1u);
+	g_probe->CallUpdate();
+	EXPECT_TRUE(g_probe->IsJobLauncher());
+	sched.Unregister(kChannelA);
+}
+
+TEST(DeferredStepModule, NoSwapAttemptWhileTheServiceIsStillMissing)
+{
+	Dia::DeferredStep::Testing::LogCapture logs;
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	RestartInline(h);
+	const unsigned before = logs.Warnings();
+	for (int i = 0; i < 5; ++i) g_probe->CallUpdate();
+	EXPECT_FALSE(g_probe->IsJobLauncher());
+	EXPECT_EQ(logs.Warnings() - before, 0u);   // nothing per frame about the service
+	EXPECT_EQ(logs.Infos("became available"), 0u);
+}
