@@ -37,11 +37,11 @@ public:
                                     Dia::Automation::AutomationService* automation,
                                     const StageLaunchRequest& request);
 
-    enum class InitialLaunchResult { kNone, kIssued, kSkippedHold, kUnknownStage };
+    enum class InitialLaunchResult { kNone, kIssued, kUnknownStage };
 
     // Once Boot is the running stage, takes the --stage/--preset launch (if any) and issues it.
-    // Skipped (but consumed) while an automation hold is active; an unknown stage logs an Error and
-    // stays at Boot.  kNone when nothing was pending or the app is not at Boot yet (nothing consumed).
+    // An active automation hold is released toward the stage (the command line wins); an unknown stage
+    // logs an Error and stays at Boot (consumed).  kNone when nothing was pending or the app is not at Boot yet (nothing consumed).
     static InitialLaunchResult IssueInitialLaunch(Dia::ApplicationFlow::IApplicationControl& app,
                                                   Dia::Automation::AutomationService* automation);
 
@@ -61,7 +61,9 @@ private:
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mHUDNavInput{this,  "HUDNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<StageLaunchRequest>    mLaunchInput{this, "StageLaunchRequest"};
 
-    bool mInitialLaunchDone = false; // set once the --stage/--preset launch has been taken (issued, skipped or refused)
+    static constexpr unsigned int kInitialLaunchWaitFrames = 90; // ~3 s at 30 Hz: how long to wait for the automation service
+    bool mInitialLaunchDone = false; // set once the --stage/--preset launch has been taken (issued or refused)
+    unsigned int mInitialLaunchFrames = 0;
 
     // Heap-allocated to avoid pulling AutomationService.h into every TU.
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationService = nullptr;

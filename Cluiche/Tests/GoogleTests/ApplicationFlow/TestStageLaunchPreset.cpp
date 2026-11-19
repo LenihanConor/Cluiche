@@ -372,3 +372,44 @@ TEST(InitialLaunch, EmptyStageIsNotALaunch)
     StringCRC stage, preset;
     EXPECT_FALSE(app.TakeInitialLaunch(stage, preset));
 }
+
+// ---- Transition requested while the current stage's modules are still starting ----
+// (--stage launch queues the transition on the first sim frame, before Boot's slower modules finished starting.)
+
+namespace
+{
+    struct SlowStartModule : SimModule
+    {
+        using SimModule::SimModule;
+        static const StringCRC kTypeId;
+        int framesToStart = 5;
+        StartResult DoStart() override
+        {
+            return (--framesToStart > 0) ? StartResult::kLoading : StartResult::kReady;
+        }
+        void       DoUpdate(const Dia::SimTime::SimTimeContext&) override {}
+        StopResult DoStop() override { return StopResult::kDone; }
+    };
+    const StringCRC SlowStartModule::kTypeId("SlowStartModule");
+}
+
+TEST(StageTransitionDuringStart, TransitionRequestedWhileBootModuleStillStartingCompletes)
+{
+    Fixture f;
+    f.reg.Register(SlowStartModule::kTypeId, [](const StringCRC& id) -> Module* { return new SlowStartModule(id); });
+    ModuleDeclaration slow;
+    slow.instanceId     = StringCRC("modSlow");
+    slow.typeId         = SlowStartModule::kTypeId;
+    slow.startTimeoutMs = 10000.0f;
+    slow.stopTimeoutMs  = 5000.0f;
+    slow.stages.Add(StringCRC("Boot"));
+    f.manifest.processingUnits[0].modules.Add(slow);
+
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    app.TransitionTo(StringCRC("Game"));   // modSlow is still kStarting
+    Pump(app, 120);
+
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_FALSE(app.IsTransitioning());
+}

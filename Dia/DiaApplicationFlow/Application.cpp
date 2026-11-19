@@ -1146,6 +1146,15 @@ namespace Dia { namespace ApplicationFlow {
                     if (module)
                     {
                         ModuleState s = module->GetState();
+                        // A module that was still kStarting when the stop phase began finishes starting
+                        // later; stop it as soon as it is kActive or the drain would wait on it forever.
+                        if (s == ModuleState::kActive)
+                        {
+                            DIA_LOG_INFO("Application", "Module '%s' finished starting during a transition, stopping it",
+                                         modDecl.instanceId.AsChar());
+                            const_cast<Module*>(module)->BeginStop();
+                            s = module->GetState();
+                        }
                         if (s != ModuleState::kInactive && s != ModuleState::kFailed)
                             return; // Still draining — outgoing modules not yet down.
                     }

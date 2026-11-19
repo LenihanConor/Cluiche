@@ -33,9 +33,16 @@ void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*
     static constexpr unsigned int kMaxPerFrame = 4;
     if (!mInitialLaunchDone)
     {
-        if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
-            mInitialLaunchDone = IssueInitialLaunch(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr)
-                                 != InitialLaunchResult::kNone;
+        // Wait for the automation service (AutomationModule registers it, and its hold, while Boot starts): issuing before
+        // that would queue a transition the hold then pins forever.  A game without AutomationModule never gets the
+        // service, so give up waiting after kInitialLaunchWaitFrames.
+        ++mInitialLaunchFrames;
+        if (mAutomationService->IsAvailable() || mInitialLaunchFrames >= kInitialLaunchWaitFrames)
+        {
+            if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
+                mInitialLaunchDone = IssueInitialLaunch(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr)
+                                     != InitialLaunchResult::kNone;
+        }
     }
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<RenderToSimNavRequest>, kMaxPerFrame> events;
 
@@ -128,12 +135,6 @@ SimNavigationHandlerModule::InitialLaunchResult SimNavigationHandlerModule::Issu
     if (!app.TakeInitialLaunch(stage, preset))
         return InitialLaunchResult::kNone;
 
-    if (automation && automation->IsHolding())
-    {
-        DIA_LOG_INFO("Application", "initial launch skipped: navigation hold active (stage='%s')", stage.AsChar());
-        return InitialLaunchResult::kSkippedHold;
-    }
-
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> targets;
     app.GetStageTransitions(Dia::Core::StringCRC("Boot"), targets);
     bool known = false;
@@ -144,7 +145,10 @@ SimNavigationHandlerModule::InitialLaunchResult SimNavigationHandlerModule::Issu
         return InitialLaunchResult::kUnknownStage;
     }
 
-    DIA_LOG_INFO("Application", "initial launch issued: stage='%s' preset='%s'", stage.AsChar(), preset.AsChar());
+    // An active navigation hold (AutomationModule holds Boot) is released toward the stage by RouteNavigation:
+    // the command line is an explicit request, so it wins over the hold.
+    DIA_LOG_INFO("Application", "initial launch issued: stage='%s' preset='%s'%s", stage.AsChar(), preset.AsChar(),
+                 (automation && automation->IsHolding()) ? " (releasing navigation hold)" : "");
     RouteNavigation(app, automation, stage, preset);
     return InitialLaunchResult::kIssued;
 }

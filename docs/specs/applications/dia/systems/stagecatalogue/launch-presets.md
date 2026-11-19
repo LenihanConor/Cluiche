@@ -72,7 +72,7 @@ Modules get their config only once, at boot, so DiaApplicationFlow gains an opt-
     4. `--preset` without `--stage` is an error.
     5. The flag is `--preset` on `run`/`launch` only. `dia preset`, the existing DiaConsole command-preset command, is unrelated and unchanged.
 13. **Game entry:** the exe parses `--stage`/`--preset` into `Application::SetInitialLaunch(stage, preset)`.
-    - When Boot is ready, `SimNavigationHandlerModule` issues that transition once, unless an automation navigation hold is active, in which case the hold wins.
+    - When Boot is ready, `SimNavigationHandlerModule` issues that transition once. An active automation navigation hold is released toward the stage (amended during build: `AutomationModule` holds Boot in every app, so "the hold wins" would make the flag a no-op). "Ready" means the automation service is available (or ~3 s have passed in a game without one), so the hold exists before the request is issued.
     - An unknown stage at runtime logs an Error and stays at Boot.
 
 ### First adopter
@@ -87,7 +87,7 @@ Modules get their config only once, at boot, so DiaApplicationFlow gains an opt-
     - preset launch requested, with source menu, command or CLI;
     - `OnStageLaunch` delivered (module, bytes);
     - unknown preset refused;
-    - initial launch issued or skipped because of a hold.
+    - initial launch issued (noting a released hold) or refused for an unknown stage.
 
 ## Files Touched
 
@@ -131,7 +131,7 @@ Modules get their config only once, at boot, so DiaApplicationFlow gains an opt-
   - `GetCurrentPreset`.
   - Nav request preset passthrough, including through an automation hold.
   - `stages.launch`: refused outside Boot, unknown stage or preset refused, request queued.
-  - Initial launch issued once and skipped under a hold.
+  - Initial launch issued once; unknown stage refused; not consumed before Boot.
   - `BootMenuLogic` preset rows.
 - **pytest:**
   - Validator: an `all`-scoped instance is an error, an undeclared instance is an error, duplicate names, 2 KB cap.
