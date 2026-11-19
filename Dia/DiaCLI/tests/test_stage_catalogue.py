@@ -60,3 +60,19 @@ def test_group_by_kind_two_kinds_and_other():
     assert [r for r in rows if r["entry"] == 2] == [
         {"group": "showcase", "entry": 2}, {"group": "test", "entry": 2}]
     assert {"group": "other", "entry": 4} in rows  # free-form only
+
+
+def test_manifest_found_by_name_when_source_layout_differs(tmp_path):
+    """Source trees may keep the root manifest flat while the .diagame names the deployed path (CoW)."""
+    import json, shutil
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[3] / "Cluiche" / "Tests" / "Fixtures" / "StageCatalogue" / "basic"
+    shutil.copytree(src, tmp_path / "g")
+    g = tmp_path / "g" / "game.diagame"
+    data = json.loads(g.read_text(encoding="utf-8"))
+    for imp in data["imports"]:
+        if imp["type"] == "manifest":
+            imp["path"] = "global/misc/ApplicationFlow/" + imp["path"].split("/")[-1]
+    g.write_text(json.dumps(data), encoding="utf-8")
+    result, cat = sc.load(g)
+    assert result == sc.OK and len(cat.entries) == 7

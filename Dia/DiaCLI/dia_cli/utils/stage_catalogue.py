@@ -68,6 +68,16 @@ def _read_json(path):
         return json.load(f)
 
 
+def _resolve(base, rel):
+    """Import paths are written for the deployed layout. In a source tree the file may sit elsewhere
+    (CoW's cow_main.diaapp is flat), so fall back to a unique file-name match, like `dia validate manifest`."""
+    direct = base / rel
+    if direct.exists():
+        return direct
+    matches = list(base.rglob(Path(rel).name))
+    return matches[0] if len(matches) == 1 else direct
+
+
 def load(diagame_path):
     """Return (result, catalogue); catalogue is None unless result is OK."""
     diagame_path = Path(diagame_path)
@@ -80,7 +90,7 @@ def load(diagame_path):
         manifest = next((i for i in imports if i.get("type") == "manifest"), None)
         if manifest is None:
             return NO_ROOT_MANIFEST, None
-        app = _read_json(base / manifest["path"])
+        app = _read_json(_resolve(base, manifest["path"]))
         boot = next((s for s in app.get("stages", []) if s.get("name") == BOOT_STAGE), None)
         transitions = list(boot.get("transitions", [])) if boot else []
 
@@ -89,7 +99,7 @@ def load(diagame_path):
         for imp in imports:
             if imp.get("type") != "stage":
                 continue
-            path = base / imp["path"]
+            path = _resolve(base, imp["path"])
             data = _read_json(path)
             tags = [str(t) for t in data.get("tags", [])]
             by_name[data["name"]] = StageEntry(
