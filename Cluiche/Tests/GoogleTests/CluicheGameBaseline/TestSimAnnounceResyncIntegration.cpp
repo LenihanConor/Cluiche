@@ -536,7 +536,7 @@ namespace
 }
 
 // Edge: a full 192-name set (the per-module cap) replays across twelve Updates and installs.
-TEST(SimAnnounceResyncIntegration, ReplayOfOneHundredNinetyTwoNamesCompletes)
+TEST(SLOW_SimAnnounceResyncIntegration, ReplayOfOneHundredNinetyTwoNamesCompletes)
 {
 	Rig r;
 	SyncedStart(r, 191);
@@ -846,7 +846,7 @@ namespace
 
 // Cap check through the whole pipeline: 192 names x 16 params each reach Main, a lost register is repaired by the replay of
 // all 192 with their params intact, and a 193rd name is refused on the Sim side before Main hears of it.
-TEST(SimAnnounceResyncIntegration, OneHundredNinetyTwoNamesWithSixteenParamsEachSurviveRegisterAndResync)
+TEST(SLOW_SimAnnounceResyncIntegration, OneHundredNinetyTwoNamesWithSixteenParamsEachSurviveRegisterAndResync)
 {
 	Rig r;
 	const std::string pdesc(150, 'p');

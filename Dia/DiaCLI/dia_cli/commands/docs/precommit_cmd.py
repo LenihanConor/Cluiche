@@ -109,7 +109,7 @@ def _check_manifests(repo_root: Path, files: List[Path]) -> List[str]:
             import json
             text = mf.read_text(encoding="utf-8")
             json.loads(text)
-        except (json.JSONDecodeError, OSError) as e:
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
             errors.append(f"{mf.name}: {e}")
 
     return errors

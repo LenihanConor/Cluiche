@@ -97,6 +97,30 @@ TEST(SquarePathGrid_Boundary, AllCellsBlocked_PathFails)
     EXPECT_FALSE(result.success);
 }
 
+TEST(SquarePathGrid_Boundary, RouteLongerThanPathResultCapacity_FailsInsteadOfOverflowing)
+{
+    // A straight 4-connected corridor of kMaxCells + 10 cells: the route is longer than
+    // PathResult can hold, so FindPath must report failure rather than write past the array.
+    const int length = static_cast<int>(PathResult::kMaxCells) + 10;
+    SquarePathGrid grid(length, 1, SquareConnectivity::k4Connected);
+
+    FlatCostProvider flat;
+    PathResult result = FindPath(grid, {0, 0}, {length - 1, 0}, flat);
+    EXPECT_FALSE(result.success);
+    EXPECT_EQ(result.cells.Size(), 0u);
+}
+
+TEST(SquarePathGrid_Boundary, RouteExactlyAtPathResultCapacity_Succeeds)
+{
+    const int length = static_cast<int>(PathResult::kMaxCells);
+    SquarePathGrid grid(length, 1, SquareConnectivity::k4Connected);
+
+    FlatCostProvider flat;
+    PathResult result = FindPath(grid, {0, 0}, {length - 1, 0}, flat);
+    EXPECT_TRUE(result.success);
+    EXPECT_EQ(result.cells.Size(), PathResult::kMaxCells);
+}
+
 TEST(SquarePathGrid_Boundary, CornerToCorner4Connected_FindsPath)
 {
     // 4-connected 3×3 — corners are reachable via cardinal movement.

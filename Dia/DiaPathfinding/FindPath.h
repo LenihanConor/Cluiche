@@ -118,6 +118,13 @@ namespace Dia::Pathfinding {
                 }
                 reversed.push_back(from);
 
+                // PathResult holds a fixed number of cells; a longer route would write
+                // past the array in Release, so report "no path" instead.
+                if (reversed.size() > PathResult::kMaxCells)
+                {
+                    return PathResult{};
+                }
+
                 std::reverse(reversed.begin(), reversed.end());
 
                 PathResult result;
