@@ -1,15 +1,27 @@
 #pragma once
-#include <Modules/StageStatusModule.h>
+#include <Types/StageCatalogueSnapshot.h>
 #include <DiaCore/CRC/StringCRC.h>
+
+#include <cstdint>
 
 namespace Cluiche { namespace AppFlow {
 
-// Pure (no ImGui, no module machinery) logic behind BootMenuModule: stage list, visited
-// bookkeeping, status lookup and severity counts. The provider may be null.
+// Pure (no ImGui, no module machinery) view-model behind BootMenuModule, built over a StageCatalogueSnapshot.
+// Groups (Showcase, Tools, Tests, Other) -> rows; a stage with N kinds has N rows. Selection, visited and result
+// belong to the stage, not the row. Filter, collapse, selection and visited state survive SetSnapshot.
+// Pointers returned by accessors (names, labels, descriptions) are valid until the next SetSnapshot/SetFallbackStages.
 class BootMenuLogic {
 public:
-    static constexpr unsigned int kMaxStages = 64;
+    static constexpr unsigned int kMaxStages = StageCatalogueSnapshot::kMaxEntries;
+    static constexpr unsigned int kMaxRows = 3 * kMaxStages;
+    static constexpr unsigned int kGroupCount = kStageGroupCount;
+    static constexpr unsigned int kMaxChips = 128;
+    static constexpr unsigned int kMaxActiveChips = 8;
+    static constexpr unsigned int kChipChars = StageCatalogueSnapshotEntry::kTagChars;
+    static constexpr unsigned int kMaxSearch = 64;
+    static constexpr unsigned int kMaxTitle = 64;
     static constexpr const char* kDefaultTitle = "Boot Menu";
+    static constexpr const char* kFallbackHeading = "Stages";
 
     struct Counts {
         unsigned int passed = 0;
@@ -17,65 +29,128 @@ public:
         unsigned int pending = 0;
     };
 
+    enum class BadgeColour : uint8_t { kGrey, kGreen, kAmber, kRed };
+
     struct Badge {
         const char* label = nullptr;
-        StageStatusModule::Severity severity = StageStatusModule::Severity::kNone;
+        StageResultSeverity severity = StageResultSeverity::kNone;
+        BadgeColour colour = BadgeColour::kGrey;
     };
 
-    static constexpr unsigned int kMaxPresetsPerStage = 16;   // matches the .diastage limit
-    static constexpr unsigned int kMaxPresets = 128;          // pool shared by all stages
-    static constexpr unsigned int kMaxDescription = 121;      // 120 chars + NUL
-
-    struct PresetInfo {
-        Dia::Core::StringCRC name;
-        char description[kMaxDescription] = {};
+    // Header of a visible group (one with at least one row after filtering).
+    struct GroupInfo {
+        StageGroup group = StageGroup::kOther;
+        char title[kMaxTitle] = {};       // "Showcase (3)"; Tests: "Tests (P passed, F failed, X pending)"
+        unsigned int stageCount = 0;      // rows in the group after filtering (the number shown in the header)
+        bool collapsed = false;
     };
 
-    // One menu row: a stage row (isPreset false, preset empty = launch with no preset) or a preset
-    // sub-row under its stage (description is the tooltip).  Click: launch row.stage with row.preset.
+    // One menu row: a stage row (isPreset false, preset empty = launch with no preset) or a preset sub-row under it.
+    // Click: launch row.stage with row.preset.
     struct Row {
         Dia::Core::StringCRC stage;
         Dia::Core::StringCRC preset;
         bool isPreset = false;
-        char description[kMaxDescription] = {};
+        const char* name = "";            // stage name (preset name on a sub-row)
+        const char* description = "";     // stage description (preset description on a sub-row)
+        Dia::Game::StageKindMask kinds = 0;
     };
 
-    // Replaces the stage list and clears visited markers and presets.
-    void SetStages(const Dia::Core::StringCRC* stages, unsigned int count);
-    // Replaces the presets shown under `stage` (a stage not in the list is ignored).  Over the
-    // per-stage or pool cap the extras are dropped.
-    void SetStagePresets(const Dia::Core::StringCRC& stage, const PresetInfo* presets, unsigned int count);
-    // Stage rows in list order, each followed by its preset sub-rows.
-    unsigned int RowCount() const;
-    bool GetRow(unsigned int index, Row& outRow) const;
+    // ---- Data ----
+    // Rebuilds rows from the snapshot. Keeps selection, visited, collapse and filter state. Leaves fallback mode.
+    void SetSnapshot(const StageCatalogueSnapshot& snapshot);
+    // Fallback (no catalogue): a flat list under one "Stages" heading; no chips, search, badges or presets.
+    void SetFallbackStages(const Dia::Core::StringCRC* stages, unsigned int count);
+    bool IsFallback() const { return mFallback; }
+    bool HasSnapshot() const { return mHasSnapshot && !mFallback; }
+    uint32_t Revision() const { return mRevision; }
 
-    // Provider is optional; null means no badges and no counts.
-    void SetProvider(const StageStatusModule* provider);
+    // ---- Groups and rows ----
+    unsigned int GroupCount() const { return mVisibleGroupCount; }
+    bool GetGroup(unsigned int groupIndex, GroupInfo& outGroup) const;
+    // Rows of a visible group, each stage row followed by its preset sub-rows (the UI skips them when collapsed).
+    unsigned int RowCount(unsigned int groupIndex) const;
+    bool GetRow(unsigned int groupIndex, unsigned int rowIndex, Row& outRow) const;
 
-    bool HasStatus() const;
-    // Fills badge and returns true only if a provider exists and has an entry for the stage.
+    // ---- Counts ----
+    // Unique stages in the catalogue ("N stages available").
+    unsigned int StageCount() const { return mCount; }
+    unsigned int VisitedCount() const;
+    // Unique test-kind stages: passed = ok/warn, failed = fail, pending = none, missing or visited with no result.
+    Counts TestRollup() const;
+
+    // ---- Badges (test stages only) ----
+    bool HasBadges() const { return !mFallback && mHasSnapshot; }
+    // False (outBadge untouched) for a stage without the test kind, an unknown stage, or in fallback mode.
     bool GetBadge(const Dia::Core::StringCRC& stage, Badge& outBadge) const;
-    // Passed = kOk, Failed = kFail, Pending = everything else (incl. no entry). Zeros if no provider.
-    Counts CountBySeverity() const;
+    static unsigned int BadgeColourRgba(BadgeColour colour);   // 0xRRGGBBAA
 
-    // Marks every listed stage visited whose provider entry has visited == true.
-    void RestoreVisited();
-    // Marks a listed stage visited (called when the nav request is sent).
+    // ---- Filters ----
+    // Every tag in the catalogue: kinds first (showcase, tool, test), then the rest alphabetical.
+    unsigned int ChipCount() const { return mFallback ? 0 : mChipCount; }
+    const char* ChipName(unsigned int index) const;
+    bool IsChipActive(unsigned int index) const;
+    void SetChipActive(unsigned int index, bool active);
+    void ToggleChip(unsigned int index) { SetChipActive(index, !IsChipActive(index)); }
+    void ClearFilters();
+    // Case-insensitive substring over stage name and description. Empty = no search. Truncated to kMaxSearch-1.
+    void SetSearch(const char* text);
+    const char* Search() const { return mSearch; }
+    bool HasActiveFilters() const;
+
+    // ---- Collapse (session-only; Tests starts collapsed) ----
+    bool IsCollapsed(StageGroup group) const { return mCollapsed[static_cast<unsigned int>(group)]; }
+    void SetCollapsed(StageGroup group, bool collapsed) { mCollapsed[static_cast<unsigned int>(group)] = collapsed; }
+    void ToggleCollapsed(StageGroup group) { SetCollapsed(group, !IsCollapsed(group)); }
+
+    // ---- Selection and visited (by stage) ----
+    static constexpr unsigned int kMaxVisited = kMaxStages;
+    void Select(const Dia::Core::StringCRC& stage) { mSelected = stage; mHasSelection = true; }
+    void ClearSelection() { mSelected = Dia::Core::StringCRC(); mHasSelection = false; }
+    bool HasSelection() const { return mHasSelection; }
+    const Dia::Core::StringCRC& Selected() const { return mSelected; }
+    bool IsSelected(const Dia::Core::StringCRC& stage) const { return mHasSelection && mSelected == stage; }
+    // Marks a stage visited (called when the nav request is sent). Works for any stage name.
     void MarkVisited(const Dia::Core::StringCRC& stage);
     bool IsVisited(const Dia::Core::StringCRC& stage) const;
+    // Select + MarkVisited in one call (launch from any row).
+    void Launch(const Dia::Core::StringCRC& stage) { Select(stage); MarkVisited(stage); }
 
     // Null or empty config value -> default title / empty project line.
     static const char* ResolveTitle(const char* configValue);
     static const char* ResolveProject(const char* configValue);
 
 private:
-    Dia::Core::StringCRC mStages[kMaxStages];
-    bool mVisited[kMaxStages] = {};
+    static bool EntryInGroup(const StageCatalogueSnapshotEntry& e, StageGroup g);
+    bool Matches(const StageCatalogueSnapshotEntry& e) const;
+    void Rebuild();
+    void BuildChips();
+    int FindEntry(const Dia::Core::StringCRC& stage) const;
+
+    StageCatalogueSnapshotEntry mEntries[kMaxStages];
     unsigned int mCount = 0;
-    struct PresetEntry { Dia::Core::StringCRC stage; PresetInfo info; };
-    PresetEntry mPresets[kMaxPresets];
-    unsigned int mPresetCount = 0;
-    const StageStatusModule* mProvider = nullptr;
+    uint32_t mRevision = 0;
+    bool mHasSnapshot = false;
+    bool mFallback = false;
+
+    // Rows per group (entry indices), filtered. mGroupRows[g][0..mGroupRowCount[g]).
+    unsigned int mGroupRows[kGroupCount][kMaxStages];
+    unsigned int mGroupRowCount[kGroupCount] = {};
+    unsigned int mVisibleGroups[kGroupCount] = {};
+    unsigned int mVisibleGroupCount = 0;
+
+    char mChips[kMaxChips][kChipChars] = {};
+    unsigned int mChipCount = 0;
+    char mActiveChips[kMaxActiveChips][kChipChars] = {};
+    unsigned int mActiveChipCount = 0;
+    char mSearch[kMaxSearch] = {};
+
+    bool mCollapsed[kGroupCount] = { false, false, true, false };   // Showcase, Tool, Test, Other
+
+    Dia::Core::StringCRC mSelected;
+    bool mHasSelection = false;
+    Dia::Core::StringCRC mVisited[kMaxVisited];
+    unsigned int mVisitedCount = 0;
 };
 
 } } // namespace Cluiche::AppFlow
