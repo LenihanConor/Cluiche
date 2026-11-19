@@ -3,6 +3,8 @@
 #include <DiaApplicationFlow/Manifest/TypedImport.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
+#include <DiaCore/Strings/String128.h>
+#include <DiaCore/Strings/String64.h>
 
 namespace Json { class Value; }
 
@@ -40,6 +42,8 @@ namespace Dia
 			Dia::Core::Containers::String256 name;
 			Dia::Core::Containers::String256 manifestPath;
 			Dia::Core::Containers::String256 scenePath;  // optional; empty if absent
+			Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, 16> tags;  // optional; empty if absent
+			Dia::Core::Containers::String128 description;                                       // optional; empty if absent
 		};
 	}
 }

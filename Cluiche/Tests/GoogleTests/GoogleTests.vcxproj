@@ -1331,6 +1331,8 @@
     <ClCompile Include="DiaObservation\Profile\TestChannelNameAnnounce.cpp" />
     <ClCompile Include="DiaBlackboard\TestBlackboardScopes.cpp" />
     <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp" />
+    <ClCompile Include="DiaGame\TestJsonDiaStageSerializer.cpp" />
+    <ClCompile Include="DiaGame\TestStageKinds.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

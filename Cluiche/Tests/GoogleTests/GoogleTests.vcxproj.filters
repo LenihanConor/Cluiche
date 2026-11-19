@@ -3144,5 +3144,11 @@
     <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp">
       <Filter>DiaBlackboard</Filter>
     </ClCompile>
+    <ClCompile Include="DiaGame\TestJsonDiaStageSerializer.cpp">
+      <Filter>DiaGame</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaGame\TestStageKinds.cpp">
+      <Filter>DiaGame</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

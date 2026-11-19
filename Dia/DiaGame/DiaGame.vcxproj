@@ -80,6 +80,7 @@
     <ClInclude Include="DiaGameManifestLoader.h" />
     <ClInclude Include="JsonDiaGameSerializer.h" />
     <ClInclude Include="JsonDiaStageSerializer.h" />
+    <ClInclude Include="StageKinds.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaGameManifest.cpp" />

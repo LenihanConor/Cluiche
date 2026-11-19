@@ -35,6 +35,36 @@ namespace Dia
 			if (root.isMember("scene") && root["scene"].isString())
 				outManifest.scenePath = root["scene"].asCString();
 
+			outManifest.tags.RemoveAll();
+			outManifest.description = Dia::Core::Containers::String128();
+
+			if (root.isMember("tags"))
+			{
+				const Json::Value& tags = root["tags"];
+				if (!tags.isArray())
+					return Dia::Serializer::SerializeResult::Failure("field 'tags' must be an array of strings");
+				if (tags.size() > outManifest.tags.Capacity())
+					return Dia::Serializer::SerializeResult::Failure("field 'tags' has too many entries (max 16)");
+				for (Json::ArrayIndex i = 0; i < tags.size(); ++i)
+				{
+					if (!tags[i].isString())
+						return Dia::Serializer::SerializeResult::Failure("field 'tags' must contain only strings");
+					if (strlen(tags[i].asCString()) >= Dia::Core::Containers::String64::Capacity())
+						return Dia::Serializer::SerializeResult::Failure("field 'tags' has an entry that is too long (max 63 chars)");
+					Dia::Core::Containers::String64 tag("%s", tags[i].asCString());
+					outManifest.tags.Add(tag);
+				}
+			}
+
+			if (root.isMember("description"))
+			{
+				if (!root["description"].isString())
+					return Dia::Serializer::SerializeResult::Failure("field 'description' must be a string");
+				if (strlen(root["description"].asCString()) > 120)
+					return Dia::Serializer::SerializeResult::Failure("field 'description' is too long (max 120 chars)");
+				outManifest.description = Dia::Core::Containers::String128("%s", root["description"].asCString());
+			}
+
 			return Dia::Serializer::SerializeResult::Success();
 		}
 
@@ -45,6 +75,16 @@ namespace Dia
 			root["manifest"] = manifest.manifestPath.AsCStr();
 			if (manifest.scenePath.Length() > 0)
 				root["scene"] = manifest.scenePath.AsCStr();
+
+			if (manifest.tags.Size() > 0)
+			{
+				Json::Value tags(Json::arrayValue);
+				for (unsigned int i = 0; i < manifest.tags.Size(); ++i)
+					tags.append(manifest.tags[i].AsCStr());
+				root["tags"] = tags;
+			}
+			if (manifest.description.Length() > 0)
+				root["description"] = manifest.description.AsCStr();
 
 			Json::StyledWriter writer;
 			std::string output = writer.write(root);
