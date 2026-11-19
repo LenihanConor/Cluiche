@@ -903,6 +903,10 @@
                         {
                             "id": "BootMenuNavRequest",
                             "role": "writes"
+                        },
+                        {
+                            "id": "StageCatalogueSnapshot",
+                            "role": "reads"
                         }
                     ]
                 },

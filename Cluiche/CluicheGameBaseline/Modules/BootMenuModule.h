@@ -6,19 +6,25 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/StreamReader.h>
 #include "Modules/DebugUIModule.h"
 #include "Modules/DebugServerHostModule.h"
-#include "Modules/StageStatusModule.h"
 #include "Modules/BootMenuLogic.h"
 #include "Types/RenderToSimNavRequest.h"
+#include "Types/StageCatalogueSnapshot.h"
+
+#include <memory>
 
 namespace Cluiche { namespace AppFlow {
 
+// ImGui view over BootMenuLogic. Reads the StageCatalogueSnapshot FrameStream (MainPU -> RenderPU); falls back to the
+// Boot transitions list when no snapshot arrives within kFallbackSeconds.
 class BootMenuModule : public Dia::ApplicationFlow::RenderModule {
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
-    static constexpr const char* kDescription = "Boot stage navigation menu with optional per-stage status badges";
+    static constexpr const char* kDescription = "Boot stage navigation menu over the stage catalogue (groups, filters, search, presets, result badges)";
+    static constexpr float kFallbackSeconds = 2.0f;
     explicit BootMenuModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
@@ -29,22 +35,34 @@ protected:
     void OnConfigure(const char* configJson) override;
 
 private:
-    void CacheNavigableStages();
+    void PollSnapshot(float frameDt);
+    void UseFallback();
+    void OnRebuilt(const char* why);
     void DrawMenu();
-    void RefreshProvider();
+    void DrawFilterBar();
+    void DrawGroup(unsigned int groupIndex);
+    void Launch(const Dia::Core::StringCRC& stage, const Dia::Core::StringCRC& preset, StageGroup fromGroup);
 
     Dia::ApplicationFlow::ModuleRef<DebugUIModule> mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
     Dia::ApplicationFlow::ModuleRef<DebugServerHostModule> mDebugServer{this, Dia::Core::StringCRC("DebugServerHostModule")};
-    // Optional: absent or inactive means no badge column and no counts footer.
-    Dia::ApplicationFlow::ModuleRef<StageStatusModule> mStageStatus{this, Dia::Core::StringCRC("StageStatus")};
     Dia::ApplicationFlow::EventStreamWriter<Cluiche::AppFlow::RenderToSimNavRequest> mNavRequest{this, "BootMenuNavRequest"};
+    Dia::ApplicationFlow::StreamReader<StageCatalogueSnapshot> mSnapshotIn{this, Dia::Core::StringCRC("StageCatalogueSnapshot")};
 
     static constexpr unsigned int kMaxStages = 32;
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxStages> mNavigableStages;
-    BootMenuLogic mLogic;
+
+    BootMenuLogic mLogic;   // ~90 KB: lives in the (heap-allocated) module, never on the stack
     char mTitle[128] = {};
     char mProject[128] = {};
-    int mSelectedIndex = -1;
+    char mSearchBuf[BootMenuLogic::kMaxSearch] = {};
+
+    Dia::Core::StringCRC mSelectedPreset;     // preset of the clicked row (empty for a stage row)
+    StageGroup mSelectedGroup = StageGroup::kOther;
+
+    float mWaitedSeconds = 0.0f;
+    uint32_t mLastRevision = 0;
+    bool mHaveRevision = false;
+    bool mFallbackLogged = false;
     bool mFirstDraw = true;
     bool mFrameWasActive = false;
 
