@@ -6,44 +6,44 @@
 
 ## CluicheTest
 
-| Stage | Kinds | Tags | Description |
-|-------|-------|------|-------------|
-| DummyStage | test | test, e2e | Minimal end-to-end stage test |
-| RigidBody2DTestStage | test | test, physics | Rigid body solver, contacts and sleeping |
-| AssetRuntimeTestStage | test | test, assets | Asset loading and cache management |
-| Geometry2DTestStage | test | test, geometry | 2D polygon and shape operations |
-| UIUltralightTestStage | test | test, ui | UI rendering and event handling |
-| EntityTestStage | test | test, entity | Entity lifecycle and component registry |
-| SoftBody2DTestStage | test | test, physics | Soft body dynamics and constraints |
-| Animation2DTestStage | test | test, animation | 2D skeletal animation and playback |
-| Scene2DTestStage | test | test, scene | Scene graph and spatial composition |
-| IK2DTestStage | test | test, animation | 2D inverse kinematics solver |
-| Mesh3DTestStage | test | test, mesh3d | 3D mesh loading and data structures |
-| Mesh3DRenderSystemTestStage | test | test, mesh3d | 3D mesh rendering pipeline |
-| AIDecisionTestStage | test | test, ai | AI decision layer with conditions and budgets |
-| AIHTNTestStage | test | test, ai | Hierarchical task network planner |
-| PathfindingTestStage | test | test, pathfinding | Pathfinding algorithms and queries |
-| ScalarFieldTestStage | test | test, fields | Scalar field generation and sampling |
-| EntitySpatialTestStage | test | test, entity | Entity spatial queries and partitioning |
-| EconomyTestStage | test | test, economy | Trade, resources and value systems |
-| SpawnerTestStage | test | test, entity | Entity spawning and prefab instantiation |
-| ArenaTestStage | test | test, ai | Multi-system E2E test with 6 AI systems |
-| DebugGalleryTestStage | test | test, debug | Debug UI and visualization components |
-| BehaviourTreeTestStage | test | test, ai | Behaviour tree execution and states |
-| AICalloutTestStage | test | test, ai | AI exclusive-claim coordination system |
-| GridVisibilityTestStage | test | test, grid | Grid-based visibility calculations |
-| MessageBusTestStage | test | test, messaging | Message routing and delivery |
-| MessageBusStressTestStage | test | test, messaging | High-throughput messaging stress tests |
-| JobSystemServiceTestStage | - | - |  |
-| CellFieldRenderTestStage | test | test, cells | Cell field rendering and visualization |
-| CellLayersViewerTestStage | test | test, cells | Cell layer management and inspection |
-| DeferredStepTestStage | test | test, threading | Deferred step scheduler and execution |
+| Stage | Kinds | Tags | Description | Proves |
+|-------|-------|------|-------------|--------|
+| DummyStage | test | test, e2e | Minimal end-to-end stage test | — |
+| RigidBody2DTestStage | test | test, physics | Rigid body solver, contacts and sleeping | — |
+| AssetRuntimeTestStage | test | test, assets | Asset loading and cache management | — |
+| Geometry2DTestStage | test | test, geometry | 2D polygon and shape operations | — |
+| UIUltralightTestStage | test | test, ui | UI rendering and event handling | — |
+| EntityTestStage | test | test, entity | Entity lifecycle and component registry | — |
+| SoftBody2DTestStage | test | test, physics | Soft body dynamics and constraints | — |
+| Animation2DTestStage | test | test, animation | 2D skeletal animation and playback | — |
+| Scene2DTestStage | test | test, scene | Scene graph and spatial composition | — |
+| IK2DTestStage | test | test, animation | 2D inverse kinematics solver | — |
+| Mesh3DTestStage | test | test, mesh3d | 3D mesh loading and data structures | — |
+| Mesh3DRenderSystemTestStage | test | test, mesh3d | 3D mesh rendering pipeline | — |
+| AIDecisionTestStage | test | test, ai | AI decision layer with conditions and budgets | — |
+| AIHTNTestStage | test | test, ai | Hierarchical task network planner | — |
+| PathfindingTestStage | test | test, pathfinding | Pathfinding algorithms and queries | — |
+| ScalarFieldTestStage | test | test, fields | Scalar field generation and sampling | — |
+| EntitySpatialTestStage | test | test, entity | Entity spatial queries and partitioning | — |
+| EconomyTestStage | test | test, economy | Trade, resources and value systems | — |
+| SpawnerTestStage | test | test, entity | Entity spawning and prefab instantiation | — |
+| ArenaTestStage | test | test, ai | Multi-system E2E test with 6 AI systems | — |
+| DebugGalleryTestStage | test | test, debug | Debug UI and visualization components | — |
+| BehaviourTreeTestStage | test | test, ai | Behaviour tree execution and states | — |
+| AICalloutTestStage | test | test, ai | AI exclusive-claim coordination system | — |
+| GridVisibilityTestStage | test | test, grid | Grid-based visibility calculations | — |
+| MessageBusTestStage | test | test, messaging | Message routing and delivery | — |
+| MessageBusStressTestStage | test | test, messaging | High-throughput messaging stress tests | — |
+| JobSystemServiceTestStage | - | - |  | — |
+| CellFieldRenderTestStage | test | test, cells | Cell field rendering and visualization | — |
+| CellLayersViewerTestStage | test | test, cells | Cell layer management and inspection | — |
+| DeferredStepTestStage | test | test, threading | Deferred step scheduler and execution | — |
 
 ## CoW
 
-| Stage | Kinds | Tags | Description |
-|-------|-------|------|-------------|
-| FrontEnd | showcase | showcase | Front end and title screen stub |
-| F2CoreRuntime | test | test | F-2 core runtime checks |
-| S1WorldGenerationTestbedStage | tool | tool, worldgen | Live terrain, biome and region editor with sliders |
+| Stage | Kinds | Tags | Description | Proves |
+|-------|-------|------|-------------|--------|
+| FrontEnd | showcase | showcase | Front end and title screen stub | — |
+| F2CoreRuntime | test | test | F-2 core runtime checks | [f2-core-runtime](docs\specs\applications\cow\systems\f2-core-runtime\f2-core-runtime.md) |
+| S1WorldGenerationTestbedStage | tool | tool, worldgen | Live terrain, biome and region editor with sliders | [worldgenerationpipeline](docs\specs\applications\cow\systems\s1-worldgeneration\worldgenerationpipeline.md) |
 
