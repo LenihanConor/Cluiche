@@ -37,7 +37,8 @@ void DiaBlackboardInspectorPlugin::OnGameDisconnected()
 
 void DiaBlackboardInspectorPlugin::OnBlackboardStateUpdate(const Json::Value& payload)
 {
-    GetBridge()->NotifyUIDataChanged("blackboard_inspector.state", payload);
+    if (auto* bridge = GetBridge())
+        bridge->NotifyUIDataChanged("blackboard_inspector.state", payload);
 }
 
 } // namespace Dia::Editor

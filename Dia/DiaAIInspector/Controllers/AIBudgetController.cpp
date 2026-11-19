@@ -11,7 +11,7 @@ void AIBudgetController::Init(Dia::Editor::WebUIBridge* bridge)
 
 void AIBudgetController::OnPayload(const Json::Value& payload)
 {
-    mBridge->NotifyUIDataChanged("ai_inspector.budget", payload);
+    if (mBridge) mBridge->NotifyUIDataChanged("ai_inspector.budget", payload);
 }
 
 } // namespace Dia::AIInspector
