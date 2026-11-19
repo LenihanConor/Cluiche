@@ -29,6 +29,7 @@ class StageEntry:
     kinds: list = field(default_factory=list)
     description: str = ""
     diastage_path: Path = None
+    proves: list = field(default_factory=list)
 
 
 @dataclass
@@ -36,6 +37,7 @@ class StageCatalogue:
     entries: list = field(default_factory=list)
     omitted_count: int = 0
     dropped_count: int = 0
+    imported: list = field(default_factory=list)  # every imported stage, listed in Boot or not
 
     def find(self, name):
         """Index of the entry with this name, or -1."""
@@ -105,11 +107,12 @@ def load(diagame_path):
             by_name[data["name"]] = StageEntry(
                 name=data["name"], tags=tags,
                 kinds=[k for k in vocab if k in tags],
-                description=data.get("description", ""), diastage_path=path)
+                description=data.get("description", ""), diastage_path=path,
+                proves=[str(p) for p in data.get("proves", [])])
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return MALFORMED, None
 
-    cat = StageCatalogue()
+    cat = StageCatalogue(imported=list(by_name.values()))
     for name in transitions:
         entry = by_name.get(name, StageEntry(name=name))
         if len(cat.entries) >= MAX_STAGES:
