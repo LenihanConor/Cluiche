@@ -71,34 +71,39 @@ namespace Dia::Pathfinding {
         {
             GrowAdd(mData, entry);
             uint32_t i = mData.Size() - 1;
+            // Hole sift-up: one move per level; same comparisons as the swap form.
             while (i > 0)
             {
                 const uint32_t parent = (i - 1) / 2;
-                if (!(mData[i] < mData[parent])) break;
-                Swap(i, parent);
+                if (!(entry < mData[parent])) break;
+                mData[i] = mData[parent];
                 i = parent;
             }
+            mData[i] = entry;
         }
         const Entry& Top() const { return mData[0u]; }
         Entry Pop()
         {
             const Entry top = mData[0u];
             const uint32_t last = mData.Size() - 1;
-            if (last > 0) { mData[0u] = mData[last]; }
+            const Entry item = mData[last];
             mData.Remove();
-            const uint32_t n = mData.Size();
+            const uint32_t n = last;
+            if (n == 0) { return top; }
+            // Hole sift-down: pick the smaller child (right only if strictly smaller), move it up while it
+            // is strictly smaller than the displaced item. Same decisions as the swap form.
             uint32_t i = 0;
             while (true)
             {
                 const uint32_t l = 2 * i + 1;
-                const uint32_t r = l + 1;
-                uint32_t best = i;
-                if (l < n && mData[l] < mData[best]) best = l;
-                if (r < n && mData[r] < mData[best]) best = r;
-                if (best == i) break;
-                Swap(i, best);
-                i = best;
+                if (l >= n) break;
+                uint32_t c = l;
+                if (l + 1 < n && mData[l + 1] < mData[l]) c = l + 1;
+                if (!(mData[c] < item)) break;
+                mData[i] = mData[c];
+                i = c;
             }
+            mData[i] = item;
             return top;
         }
         bool Empty() const { return mData.Size() == 0; }

@@ -4,7 +4,10 @@
 #include <chrono>
 #include <cstdint>
 #include <iostream>
+#include <functional>
 #include <limits>
+#include <queue>
+#include <utility>
 #include <vector>
 
 #include "DiaPathfinding/GridSearch.h"
@@ -18,12 +21,13 @@ using namespace Dia::Pathfinding;
 namespace {
     constexpr int kWidth = 104;
     constexpr int kHeight = 64;
-    // AC 8 target is 1 ms in Debug (ballpark). Measured 2026-11-19: Steps ~0.93 ms, Dijkstra<float> ~5.35 ms.
-    // The target is logged, not enforced; the hard limits below are regression guards (~5x headroom) so the
+    // AC 8 target is 1 ms in Debug (ballpark). Measured 2026-11-19: Steps ~0.93 ms, Dijkstra<float> ~3.65 ms (was ~5.1 ms before hole-based heap sifts;
+    // a std::priority_queue reference Dijkstra measures ~7.3 ms, i.e. helper ~0.5x of reference).
+    // The target is logged, not enforced; the hard limits below are regression guards (Steps ~5x, Dijkstra ~3x headroom) so the
     // suite does not flake. Dijkstra is above the AC 8 target: tracked for a dedicated perf pass.
     constexpr double kTargetMs = 1.0;
     constexpr double kStepsGuardMs = 5.0;
-    constexpr double kDijkstraGuardMs = 25.0;
+    constexpr double kDijkstraGuardMs = 11.0;
 
     template<class F>
     double BestOfThreeMs(F&& fn)
@@ -86,6 +90,33 @@ TEST(GridSearchPerf, MultiSourceDijkstraLargeMap)
     const double ms = BestOfThreeMs(run);
     std::cout << "[GridSearchPerf] MultiSourceDijkstra<float> 104x64: " << ms << " ms\n";
     RecordProperty("MultiSourceDijkstraMs", std::to_string(ms));
+
+    // Reference: plain std::priority_queue Dijkstra over the same graph and step cost (what the helper replaced).
+    std::vector<float> refCost(n);
+    auto refRun = [&]() {
+        using Item = std::pair<float, uint32_t>;
+        std::priority_queue<Item, std::vector<Item>, std::greater<Item>> pq;
+        std::fill(refCost.begin(), refCost.end(), std::numeric_limits<float>::infinity());
+        for (const auto& s : seeds) { refCost[s.cell] = s.startCost; pq.push({ s.startCost, s.cell }); }
+        std::vector<uint8_t> done(n, 0);
+        while (!pq.empty()) {
+            const Item it = pq.top();
+            pq.pop();
+            if (done[it.second]) continue;
+            done[it.second] = 1;
+            g.ForEachNeighbour(it.second, [&](uint32_t nb) {
+                if (done[nb]) return;
+                const float cand = it.first + (1.0f + float(nb % 3u));
+                if (cand < refCost[nb]) { refCost[nb] = cand; pq.push({ cand, nb }); }
+            });
+        }
+    };
+    refRun(); // warm
+    const double refMs = BestOfThreeMs(refRun);
+    std::cout << "[GridSearchPerf] std::priority_queue reference Dijkstra 104x64: " << refMs
+              << " ms (helper/reference = " << (ms / refMs) << "x)\n";
+    RecordProperty("ReferenceDijkstraMs", std::to_string(refMs));
+    EXPECT_EQ(refCost, cost);
 
     EXPECT_EQ(std::count(cost.begin(), cost.end(), std::numeric_limits<float>::infinity()), 0);
     EXPECT_EQ(std::count(seedId.begin(), seedId.end(), kUnreached), 0);
