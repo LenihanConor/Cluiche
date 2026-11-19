@@ -73,6 +73,17 @@ namespace Dia { namespace Blackboard {
     }
 
     template<typename T>
+    void Blackboard::Set(Dia::Core::StringCRC key, const T& value)
+    {
+        int index = FindSlotIndex(key);
+        DIA_ASSERT(index != -1, "Blackboard slot not found");
+        SlotEntry* entry = mSlots[static_cast<unsigned int>(index)];
+        DIA_ASSERT(entry->typeTag == Detail::TypeTag<T>(), "Blackboard slot type mismatch");
+        *static_cast<T*>(entry->data) = value;
+        NotifyChanged(key);
+    }
+
+    template<typename T>
     T* Blackboard::TryGet(Dia::Core::StringCRC key)
     {
         int index = FindSlotIndex(key);

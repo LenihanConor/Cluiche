@@ -158,6 +158,15 @@ namespace Dia { namespace Blackboard {
         }
     }
 
+    void Blackboard::NotifyChanged(Dia::Core::StringCRC key)
+    {
+        // Index loop re-checking Size(): tolerates observer removal during callback.
+        for (unsigned int i = 0; i < mObservers.Size(); ++i)
+        {
+            mObservers[i]->OnSlotChanged(key);
+        }
+    }
+
     void Blackboard::NotifyUnregistered(Dia::Core::StringCRC key)
     {
         for (unsigned int i = 0; i < mObservers.Size(); ++i)

@@ -27,6 +27,8 @@ namespace Dia { namespace Blackboard {
 
         void Unregister(Dia::Core::StringCRC key);
 
+        // NOTE: writes through the mutable Get/TryGet reference do NOT notify observers.
+        // Use Set to write and notify.
         template<typename T>
         T& Get(Dia::Core::StringCRC key);
 
@@ -38,6 +40,11 @@ namespace Dia { namespace Blackboard {
 
         template<typename T>
         const T* TryGet(Dia::Core::StringCRC key) const;
+
+        // Local slot only (asserts if not registered locally or on type mismatch).
+        // Assigns value, then calls OnSlotChanged once on this board's observers.
+        template<typename T>
+        void Set(Dia::Core::StringCRC key, const T& value);
 
         bool Has(Dia::Core::StringCRC key) const;
 
@@ -66,6 +73,7 @@ namespace Dia { namespace Blackboard {
         int FindSlotIndex(Dia::Core::StringCRC key) const;
         void NotifyRegistered(Dia::Core::StringCRC key);
         void NotifyUnregistered(Dia::Core::StringCRC key);
+        void NotifyChanged(Dia::Core::StringCRC key);
 
         static const unsigned int kMaxObservers = 8;
         static const uint32_t kMaxParentDepth = 8;
