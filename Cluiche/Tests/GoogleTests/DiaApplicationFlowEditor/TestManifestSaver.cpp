@@ -256,3 +256,56 @@ TEST(ManifestSaver, RoundTrip_PreservesOverflowAndMultiWriter)
 
     CleanupTestFiles();
 }
+
+
+// ==============================================================================
+// RoundTrip_PreservesRequiresTickAfterAndModuleConfig
+// The saver used to drop `requires_tick_after` and wrote the module config under
+// "config_json" (a string) where every loader reads "config" (an object).
+// ==============================================================================
+
+TEST(ManifestSaver, RoundTrip_PreservesRequiresTickAfterAndModuleConfig)
+{
+    EnsureTempDir();
+    CleanupTestFiles();
+
+    static const char* kJson =
+        "{"
+        "  \"version\": 3,"
+        "  \"stages\": [{\"name\": \"Boot\", \"transitions\": [], \"auto_advance\": false}],"
+        "  \"initial_stage\": \"Boot\","
+        "  \"streams\": [],"
+        "  \"processing_units\": ["
+        "    {"
+        "      \"instance_id\": \"SimPU\","
+        "      \"frequency_hz\": 30.0,"
+        "      \"dedicated_thread\": false,"
+        "      \"modules\": ["
+        "        {\"instance_id\": \"Clock\", \"type_id\": \"Clock\", \"stages\": [\"all\"], \"dependencies\": [], \"channels\": []},"
+        "        {\"instance_id\": \"Step\", \"type_id\": \"Step\", \"stages\": [\"all\"], \"dependencies\": [], \"channels\": [],"
+        "         \"requires_tick_after\": [\"Clock\"], \"config\": {\"worker_cap\": \"auto\", \"ranges_per_worker\": 4}}"
+        "      ]"
+        "    }"
+        "  ]"
+        "}";
+    WriteFile(kTestFilePath, kJson);
+
+    ManifestEditorState* state    = new ManifestEditorState();
+    ManifestEditorState* reloaded = new ManifestEditorState();
+    ASSERT_EQ(ManifestLoader::Load(kTestFilePath, *state).status, LoadStatus::Ok);
+    ASSERT_EQ(ManifestSaver::Save(*state).status, SaveStatus::Ok);
+    ASSERT_EQ(ManifestLoader::Load(kTestFilePath, *reloaded).status, LoadStatus::Ok);
+
+    ASSERT_EQ(reloaded->manifest.processingUnits.Size(), 1u);
+    const ProcessingUnitDeclaration& pu = reloaded->manifest.processingUnits[0];
+    ASSERT_EQ(pu.modules.Size(), 2u);
+    EXPECT_EQ(pu.modules[0].requiresTickAfter.Size(), 0u);
+    ASSERT_EQ(pu.modules[1].requiresTickAfter.Size(), 1u);
+    EXPECT_EQ(pu.modules[1].requiresTickAfter[0], StringCRC("Clock"));
+    EXPECT_NE(std::strstr(pu.modules[1].configJson.AsCStr(), "worker_cap"), nullptr) << pu.modules[1].configJson.AsCStr();
+    EXPECT_NE(std::strstr(pu.modules[1].configJson.AsCStr(), "ranges_per_worker"), nullptr) << pu.modules[1].configJson.AsCStr();
+
+    delete state;
+    delete reloaded;
+    CleanupTestFiles();
+}

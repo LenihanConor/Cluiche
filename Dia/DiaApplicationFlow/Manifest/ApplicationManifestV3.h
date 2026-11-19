@@ -50,6 +50,10 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  dependencies;
         Dia::Core::Containers::DynamicArrayC<ChannelBinding, 16>       channels;
 
+        // Optional tick-order declaration: instance ids of modules in the same PU that must be listed earlier.
+        // Enforced by `dia validate manifest` only; the runtime ignores it. Carried so the editor round-trips it.
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  requiresTickAfter;
+
         // Raw JSON config blob for this module (avoids Json::Value dependency in the header)
         Dia::Core::Containers::String256 configJson;
 

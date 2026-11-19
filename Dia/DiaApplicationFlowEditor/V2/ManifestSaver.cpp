@@ -81,8 +81,23 @@ static void SerializeModuleDeclaration(const ModuleDeclaration& module, Json::Va
         }
     }
 
+    if (module.requiresTickAfter.Size() > 0)
+    {
+        Json::Value& refsJson = outJson["requires_tick_after"] = Json::Value(Json::arrayValue);
+        for (unsigned int i = 0; i < module.requiresTickAfter.Size(); ++i)
+            refsJson.append(module.requiresTickAfter[i].AsChar());
+    }
+
+    // The loaders read the module config under "config" as an object (the editor stores it as JSON text).
     if (module.configJson.Length() > 0)
-        outJson["config_json"] = module.configJson.AsCStr();
+    {
+        Json::Value config;
+        Json::Reader reader;
+        if (reader.parse(module.configJson.AsCStr(), config))
+            outJson["config"] = config;
+        else
+            outJson["config"] = module.configJson.AsCStr();   // not valid JSON: keep the text rather than lose it
+    }
 }
 
 static void SerializeProcessingUnitDeclaration(const ProcessingUnitDeclaration& pu, Json::Value& outJson)
