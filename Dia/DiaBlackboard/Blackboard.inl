@@ -37,7 +37,7 @@ namespace Dia { namespace Blackboard {
     T& Blackboard::Register(Dia::Core::StringCRC key)
     {
         DIA_ASSERT(FindSlotIndex(key) == -1, "Blackboard slot already registered");
-        DIA_ASSERT(!mSlots.IsFull(), "Blackboard slot capacity exceeded");
+        DIA_ASSERT(mSlots.Size() < mMaxSlots, "Blackboard slot capacity exceeded");
 
         SlotEntry* entry  = new SlotEntry();
         entry->key        = key;

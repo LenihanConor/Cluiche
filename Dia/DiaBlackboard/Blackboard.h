@@ -1,6 +1,8 @@
 #pragma once
 
 #include "DiaCore/CRC/StringCRC.h"
+#include <stdint.h>
+#include "DiaCore/Containers/Arrays/DynamicArray.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 #include "DiaBlackboard/IBlackboardObserver.h"
 
@@ -9,8 +11,10 @@ namespace Dia { namespace Blackboard {
     class Blackboard
     {
     public:
-        Blackboard();
+        explicit Blackboard(uint32_t maxSlots = 32, Dia::Core::StringCRC name = Dia::Core::StringCRC());
         ~Blackboard();
+
+        Dia::Core::StringCRC GetName() const;
 
         template<typename T>
         T& Register(Dia::Core::StringCRC key);
@@ -50,10 +54,11 @@ namespace Dia { namespace Blackboard {
         void NotifyRegistered(Dia::Core::StringCRC key);
         void NotifyUnregistered(Dia::Core::StringCRC key);
 
-        static const unsigned int kMaxSlots     = 32;
         static const unsigned int kMaxObservers = 8;
 
-        Dia::Core::Containers::DynamicArrayC<SlotEntry*, kMaxSlots>      mSlots;
+        uint32_t                                              mMaxSlots;
+        Dia::Core::StringCRC                                  mName;
+        Dia::Core::Containers::DynamicArray<SlotEntry*>       mSlots;
         Dia::Core::Containers::DynamicArrayC<IBlackboardObserver*, kMaxObservers> mObservers;
     };
 

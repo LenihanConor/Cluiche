@@ -4,8 +4,19 @@
 
 namespace Dia { namespace Blackboard {
 
-    Blackboard::Blackboard()
+    Blackboard::Blackboard(uint32_t maxSlots, Dia::Core::StringCRC name)
+        : mMaxSlots(maxSlots)
+        , mName(name)
     {
+        if (maxSlots > 0)
+        {
+            mSlots.Reserve(maxSlots);
+        }
+    }
+
+    Dia::Core::StringCRC Blackboard::GetName() const
+    {
+        return mName;
     }
 
     Blackboard::~Blackboard()
