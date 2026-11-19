@@ -1,7 +1,7 @@
 # Feature Spec: DiaPathfinding Grid Search Helpers
 
 **Parent:** @docs/specs/applications/dia/systems/diapathfinding/diapathfinding.md
-**Status:** `Approved` (2026-11-18, user)
+**Status:** `Done`
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: D4; §5b "Gaps where Dia has nothing")
 
 ## Summary
@@ -134,7 +134,7 @@ namespace Dia::Pathfinding {
 5. **`PriorityFlood`.** It fills depressions to their spill level (+ epsilon per step for `filled`, exact for `level`). Cells never reached keep their raw elevation, matching the current drainage behaviour on a hand-built basin grid.
 6. **No allocation once warm.** Reusing one `GridSearchScratch` for a second call of the same size allocates nothing (allocation-counting test).
 7. **S-1 migration.** All nine call sites in the table use the helpers, and their local search code is deleted. S-1 layer goldens (4 presets × seeds 1–3, Small, every layer) are **bit-identical**. Reachability, validation, region and S-1 tests pass unchanged. The `SLOW_` region test is no worse than before (its existing failure is tracked separately).
-8. **Perf.** A Large-map (104×64) `MultiSourceSteps` and `MultiSourceDijkstra<float>` each run in under 1 ms in Debug, as a ballpark check (quick-and-dirty perf rule, no Release benchmark).
+8. **Perf.** (amended 2026-11-19, user: measured, the 1 ms target did not fit a heap search in Debug) On a Large map (104×64) in Debug, as a ballpark check (quick-and-dirty perf rule, no Release benchmark): `MultiSourceSteps` runs in under 1 ms (measured 0.92 ms), and `MultiSourceDijkstra<float>` runs within 1.5× of the equivalent `std::priority_queue` Dijkstra (measured 3.6 ms vs 7.1 ms, 0.52×). The test logs both and fails only at regression guards.
 
 9. **`AdjacencyGraph` build and order.** (added 2026-11-18, plan-gap resolution) `Build(cellCount, edges, edgeCount)` produces CSR offsets plus neighbour indices; edges are sorted by `(from, to)`, so neighbour order is deterministic whatever the input order. Isolated cells and cells with no edges have empty ranges; duplicate edges are kept.
 10. **`AdjacencyGraph` conformance.** (added 2026-11-18, plan-gap resolution) A static assert shows `AdjacencyGraph` satisfies `CIndexGraph`, and `MultiSourceSteps` over one gives exact step counts on a hand-built tree and a forest.
@@ -197,4 +197,6 @@ Each item supersedes contradicting text above.
 
 ## Status
 
-**Status:** `Approved` (2026-11-18, user; design accepted in one step, with the settle hook chosen so RegionPartition migrates too). No plan yet.
+**Status:** `Approved`
+
+Approved 2026-11-18 (user; design accepted in one step, with the settle hook chosen so RegionPartition migrates too). Plan: @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.plan.md. Built 2026-11-19: additive `DijkstraOptions::pushAll` and a (cost, cell, seedId) heap key were needed for RegionPartition; continuation is `ResumeParked` + `ContinueDijkstra`. AC 8 amended after measurement.
