@@ -143,7 +143,9 @@ ui_builds = [
   { cwd = "Dia/DiaPythonConsoleEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Cluiche/CluicheEditor/Plugins/DiaChatPlugin/UI", cmd = "node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaBlackboardInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaSchemaBrowser/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaSchemaBrowser/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaEconomyInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaAssetRuntimeInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
 files = [
   { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },
@@ -158,7 +160,11 @@ files = [
   { src = "Dia/DiaApplicationFlowEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
   { src = "Dia/DiaApplicationFlowEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationfloweditor/assets/" },
   { src = "Dia/DiaApplicationFlowEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationfloweditor/" },
-  { src = "Dia/DiaAssetRuntimeInspector/UI/*",               dest = "$(OutDir)plugins/assetruntimeinspector/" },
+  { src = "Dia/DiaAssetRuntimeInspector/UI/dist/*",          dest = "$(OutDir)plugins/assetruntimeinspector/dist/" },
+  { src = "Dia/DiaAssetRuntimeInspector/UI/dist/assets/*",   dest = "$(OutDir)plugins/assetruntimeinspector/dist/assets/" },
+  { src = "Dia/DiaEconomyInspector/UI/dist/*",               dest = "$(OutDir)plugins/economyinspector/" },
+  { src = "Dia/DiaEconomyInspector/UI/dist/assets/*",        dest = "$(OutDir)plugins/economyinspector/assets/" },
+  { src = "Dia/DiaScalarFieldInspector/UI/index.html",       dest = "$(OutDir)plugins/scalarfieldinspector/" },
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
   { src = "Dia/DiaEntityInspector/UI/dist/*",           dest = "$(OutDir)plugins/entityinspector/" },
   { src = "Dia/DiaEntityInspector/UI/dist/assets/*",    dest = "$(OutDir)plugins/entityinspector/assets/" },
