@@ -1,7 +1,7 @@
 # Feature Spec: Boot Menu View
 
 **Parent:** @docs/specs/applications/dia/systems/stagecatalogue/stagecatalogue.md (Feature 4)
-**Status:** Approved (2026-11-18)
+**Status:** Done (2026-11-19; manual visual sign-off pending)
 
 ## Summary
 

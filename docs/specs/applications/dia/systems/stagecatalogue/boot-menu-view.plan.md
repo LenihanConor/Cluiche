@@ -1,7 +1,7 @@
 # Plan: Boot Menu View (Stage Catalogue Feature 4)
 
 **Spec:** @docs/specs/applications/dia/systems/stagecatalogue/boot-menu-view.md
-**Status:** In Progress
+**Status:** Done
 **Prereq:** Features 1, 2, 3 Done. Mockup gate (AC 1) cleared; `mockups/boot-menu.html` is the visual reference.
 
 ## Findings (Task 1 audit, 2026-11-19)
