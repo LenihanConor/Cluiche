@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import List, Tuple
 
@@ -40,6 +41,88 @@ def _check_reserved_aliases(cfg: dict) -> List[str]:
     return []
 
 
+_STAGE_KINDS_REL = "Dia/DiaGame/stage_kinds.json"
+_MAX_STAGE_TAGS = 16
+_MAX_TAG_LEN = 63
+_MAX_DESCRIPTION_LEN = 120
+_KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+
+def _stage_kinds() -> List[str]:
+    """Load the stage kind vocabulary from Dia/DiaGame/stage_kinds.json."""
+    path = find_repo_root(__file__) / _STAGE_KINDS_REL
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        raise ValueError(f"cannot read stage kind vocabulary {_STAGE_KINDS_REL}: {e}") from e
+    kinds = data.get("kinds") if isinstance(data, dict) else None
+    if not isinstance(kinds, list) or not all(isinstance(k, str) for k in kinds):
+        raise ValueError(f"{_STAGE_KINDS_REL} must be an object with a 'kinds' array of strings")
+    return kinds
+
+
+def _edit_distance(a: str, b: str) -> int:
+    """Damerau-Levenshtein (optimal string alignment) distance."""
+    prev2: List[int] = []
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+            if i > 1 and j > 1 and ca == b[j - 2] and a[i - 2] == cb:
+                cur[j] = min(cur[j], prev2[j - 2] + 1)  # adjacent transposition
+        prev2, prev = prev, cur
+    return prev[-1]
+
+
+def _near_kind(tag: str, kinds: List[str]) -> str | None:
+    """Return the kind a non-kind tag is a case/plural/edit-distance-1 variant of, else None."""
+    if tag in kinds:
+        return None
+    low = tag.lower()
+    for kind in kinds:
+        if low == kind or low == kind + "s" or _edit_distance(low, kind) <= 1:
+            return kind
+    return None
+
+
+def _validate_stage_tags(data: dict) -> List[str]:
+    errors: List[str] = []
+    if "tags" in data:
+        tags = data["tags"]
+        if not isinstance(tags, list):
+            errors.append(f"tags should be list, got {type(tags).__name__}")
+        else:
+            try:
+                kinds = _stage_kinds()
+            except ValueError as e:
+                kinds = []
+                errors.append(f"tags: {e}")
+            if len(tags) > _MAX_STAGE_TAGS:
+                errors.append(f"tags has {len(tags)} entries, at most {_MAX_STAGE_TAGS} allowed")
+            seen = set()
+            for i, tag in enumerate(tags):
+                if not isinstance(tag, str):
+                    errors.append(f"tags[{i}] should be str, got {type(tag).__name__}")
+                    continue
+                if tag in seen:
+                    errors.append(f"tags[{i}]: duplicate tag '{tag}'")
+                seen.add(tag)
+                near = _near_kind(tag, kinds)
+                if near is not None:
+                    errors.append(f"tags[{i}]: tag '{tag}' looks like the kind '{near}'; use '{near}' exactly")
+                elif not (1 <= len(tag) <= _MAX_TAG_LEN) or not _KEBAB_RE.match(tag):
+                    errors.append(
+                        f"tags[{i}]: tag '{tag}' must be 1-{_MAX_TAG_LEN} characters of lowercase kebab-case")
+    if "description" in data:
+        desc = data["description"]
+        if not isinstance(desc, str):
+            errors.append(f"description should be str, got {type(desc).__name__}")
+        elif len(desc) > _MAX_DESCRIPTION_LEN:
+            errors.append(f"description is {len(desc)} characters, at most {_MAX_DESCRIPTION_LEN} allowed")
+    return errors
+
+
 def _validate_diastage(data: dict) -> List[str]:
     """Validate a .diastage file."""
     errors = []
@@ -49,6 +132,7 @@ def _validate_diastage(data: dict) -> List[str]:
     if isinstance(data.get("config"), dict):
         errors += _check_key(data["config"], "path_aliases", dict, "config")
         errors += _check_reserved_aliases(data["config"])
+    errors += _validate_stage_tags(data)
     return errors
 
 
@@ -426,6 +510,9 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
     # Exclude worktree and build artifacts
     _EXCLUDE_DIRS = {".claude", "node_modules", "build", "out", "bin"}
     files = [f for f in files if not any(part in _EXCLUDE_DIRS for part in f.relative_to(repo_root).parts)]
+    # Test fixtures hold deliberately invalid manifests; skip them in repo-wide scans only.
+    if not target_path:
+        files = [f for f in files if "Fixtures" not in f.relative_to(repo_root).parts]
 
     if not files:
         click.echo("No manifest files found.")
