@@ -1,7 +1,7 @@
 # Feature Spec: `proves` Traceability
 
 **Parent:** @docs/specs/applications/dia/systems/stagecatalogue/stagecatalogue.md (Feature 3)
-**Status:** Approved (2026-11-18)
+**Status:** Done (2026-11-18)
 
 ## Summary
 

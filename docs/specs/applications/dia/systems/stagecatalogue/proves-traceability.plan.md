@@ -1,7 +1,7 @@
 # Plan: `proves` Traceability (Stage Catalogue Feature 3)
 
 **Spec:** @docs/specs/applications/dia/systems/stagecatalogue/proves-traceability.md
-**Status:** In Progress
+**Status:** Done
 **Prereq:** Feature 1 plan (`catalogue-and-results.plan.md`) is Done. Reuses its Python loader (`utils/stage_catalogue.py`), `stage_registry_cmd.py` and the `.diastage` validator.
 
 ## Sign-offs
