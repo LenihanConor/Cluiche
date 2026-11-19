@@ -63,3 +63,7 @@ dependencies:
     - dia.core.type
   forbidden: []
 ---
+
+## Text construction and assignment (decision, AD-001)
+
+`String<N>` and the sized types (`String8`..`String1024`) treat `const char*` as plain text: `operator=(const char*)`, `SetText` and the single-argument `String64(cstr)` constructor copy and truncate to N-1 and never interpret `%`, so paths, keys and user input are safe. The printf-style constructor is kept but only exists with at least one extra argument (`String64("%s-%d", a, b)`, constrained template); use `Format`/`FormatArgs` to format into an existing string. `FormatArgs(fmt, ...)` exists because `Format(fmt, x)` with a single `char*` argument binds to the `va_list` overload.

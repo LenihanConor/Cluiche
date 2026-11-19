@@ -191,6 +191,39 @@ TEST(String, AssignFromCString_ExactlyCapacity_TruncatesAndTerminates)
 	EXPECT_STREQ(str.AsCStr(), "0123456");
 }
 
+TEST(String, ConstructFromCString_PercentIsLiteral_NotFormatted)
+{
+	String64 a("C:\a%s%d\b");
+	EXPECT_STREQ(a.AsCStr(), "C:\a%s%d\b");
+
+	String64 b("%n");
+	EXPECT_STREQ(b.AsCStr(), "%n");
+
+	String<32> c("100%s%s%s");
+	EXPECT_STREQ(c.AsCStr(), "100%s%s%s");
+}
+
+TEST(String, AssignFromCString_PercentIsLiteral_NotFormatted)
+{
+	String64 a;
+	a = "C:\a%s%d\b";
+	EXPECT_STREQ(a.AsCStr(), "C:\a%s%d\b");
+	a = "%n";
+	EXPECT_STREQ(a.AsCStr(), "%n");
+}
+
+TEST(String, ConstructFromCString_WithFormatArgs_StillFormats)
+{
+	String64 s("%s-%d", "ab", 5);
+	EXPECT_STREQ(s.AsCStr(), "ab-5");
+}
+
+TEST(String, ConstructFromCString_Truncates)
+{
+	String8 s("0123456789");
+	EXPECT_STREQ(s.AsCStr(), "0123456");
+}
+
 TEST(String, SetText_PercentIsLiteral_NotFormatted)
 {
 	String64 str;

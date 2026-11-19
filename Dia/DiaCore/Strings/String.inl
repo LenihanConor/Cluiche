@@ -123,18 +123,6 @@ namespace Dia
 				DIA_ASSERT(IsNullTerminating(), "Is not null terminating");
 			}
 
-			//-----------------------------------------------------------------------------
-			template <unsigned int size> inline
-			String<size>::String (const char* pRawString, ...)
-				: mData()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> inline
@@ -625,6 +613,19 @@ namespace Dia
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> inline
 			String<size>& String<size>::Format(const char* pFormatString, ...)
+			{
+				DIA_ASSERT(pFormatString != NULL, "Invalid Data");
+
+				va_list args;
+				va_start(args, pFormatString);
+				Format(pFormatString, args);
+				va_end(args);
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			String<size>& String<size>::FormatArgs(const char* pFormatString, ...)
 			{
 				DIA_ASSERT(pFormatString != NULL, "Invalid Data");
 

@@ -19,7 +19,9 @@ namespace Dia
 				template<class Evaluator> explicit String128 ( ConstIterator& iter, const Evaluator& filter);
 				template<unsigned int _size> explicit String128 (const String<_size>& rhs, unsigned int startIndex, unsigned int numberElements ); 
 
-				String128(const char* pRawString, ...);
+				// Single-argument form is NON-formatting (a '%' in paths/keys is literal); pass format args to use the printf-style overload below.
+				String128(const char* pRawString) : String<128>() { SetText(pRawString); }
+				template<class... Args> requires (sizeof...(Args) > 0) String128(const char* pRawString, Args... args) : String<128>() { DIA_ASSERT(pRawString != NULL, "Invalid Data"); FormatArgs(pRawString, args...); }
 				String128(const char* pRawString, va_list argList);
 			};
 		}
