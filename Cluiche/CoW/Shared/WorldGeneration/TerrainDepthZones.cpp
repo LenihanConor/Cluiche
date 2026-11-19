@@ -4,12 +4,12 @@
 
 #include <Shared/WorldGeneration/TerrainDepthZones.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
-#include <functional>
-#include <queue>
 #include <utility>
 #include <vector>
 
@@ -17,7 +17,6 @@ namespace CoW {
 namespace WorldGeneration {
 
 using Dia::Pathfinding::HexTopology;
-using Dia::Pathfinding::kNoCell;
 
 void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barrier, const uint32_t* landmass,
                      const uint32_t* coastDistance, const float* ridgeMask, const float* barrierMask,
@@ -57,42 +56,25 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
         return river ? 1.0 + corridor * terms : 1.0 + terms;
     };
 
-    constexpr double kInf = 1e30;
-    std::vector<double> dist(static_cast<size_t>(n), kInf);
-    using Entry = std::pair<double, int>;   // (cost, cell index): a strict total order, so pops are deterministic
-    std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> heap;
+    constexpr double kInf = 1e30;   // unreached cells hold infinity(), which is >= kInf
+    std::vector<Dia::Pathfinding::CostSeed<double>> seeds;
     for (int i = 0; i < n; ++i)
     {
         if (landmass[i] != 0u && coastDistance[i] == 1u)
         {
-            dist[i] = 1.0;   // source cost 1 regardless of the cell's own ridge/barrier terms
-            heap.emplace(1.0, i);
+            // source cost 1 regardless of the cell's own ridge/barrier terms
+            seeds.push_back({static_cast<uint32_t>(i), 1.0, static_cast<uint32_t>(i)});
         }
     }
-    while (!heap.empty())
-    {
-        const Entry top = heap.top();
-        heap.pop();
-        const int c = top.second;
-        if (top.first > dist[c])
-        {
-            continue;
-        }
-        for (uint32_t d = 0; d < 6u; ++d)
-        {
-            const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb == kNoCell || landmass[nb] == 0u)
-            {
-                continue;
-            }
-            const double nd = top.first + entryCost(static_cast<int>(nb));
-            if (nd < dist[nb])
-            {
-                dist[nb] = nd;
-                heap.emplace(nd, static_cast<int>(nb));
-            }
-        }
-    }
+    std::vector<double> dist(static_cast<size_t>(n));
+    Dia::Pathfinding::DijkstraOptions<double> opts;
+    opts.outCost = dist.data();
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    Dia::Pathfinding::MultiSourceDijkstra<double>(
+        graph, seeds.data(), static_cast<uint32_t>(seeds.size()),
+        [&](uint32_t, uint32_t to) -> double { return landmass[to] == 0u ? -1.0 : entryCost(static_cast<int>(to)); },
+        opts, scratch);
     for (int i = 0; i < n; ++i)
     {
         if (landmass[i] != 0u)
