@@ -80,6 +80,8 @@
     <ClCompile Include="Types\PerfTimingPublisher.cpp" />
     <ClCompile Include="Types\PerfTripPublisher.cpp" />
     <ClCompile Include="Types\PerfChainCommands.cpp" />
+    <ClCompile Include="Types\StageCatalogue.cpp" />
+    <ClCompile Include="Modules\StageCatalogueLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -152,10 +154,16 @@
     <ClInclude Include="Types\PerfTimingPublisher.h" />
     <ClInclude Include="Types\PerfTripPublisher.h" />
     <ClInclude Include="Types\PerfChainCommands.h" />
+    <ClInclude Include="Types\StageCatalogue.h" />
+    <ClInclude Include="Modules\StageCatalogueLoader.h" />
+    <ClInclude Include="Testing\StageCatalogueFixture.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGame\DiaGame.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaStreams\DiaStreams.vcxproj">
       <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>

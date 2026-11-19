@@ -3150,5 +3150,8 @@
     <ClCompile Include="DiaGame\TestStageKinds.cpp">
       <Filter>DiaGame</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogue.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

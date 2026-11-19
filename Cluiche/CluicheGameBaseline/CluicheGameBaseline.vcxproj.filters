@@ -7,6 +7,9 @@
     <Filter Include="Types">
       <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678902}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{e3fc2e7b-917c-4977-bcaa-743299937f7b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Modules\EntityModule.cpp">
@@ -167,6 +170,12 @@
     </ClCompile>
     <ClCompile Include="Types\PerfChainCommands.cpp">
       <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\StageCatalogue.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueLoader.cpp">
+      <Filter>Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -355,6 +364,15 @@
     </ClInclude>
     <ClInclude Include="Types\PerfChainCommands.h">
       <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageCatalogue.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueLoader.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\StageCatalogueFixture.h">
+      <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

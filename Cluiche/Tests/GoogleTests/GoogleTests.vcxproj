@@ -1333,6 +1333,7 @@
     <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp" />
     <ClCompile Include="DiaGame\TestJsonDiaStageSerializer.cpp" />
     <ClCompile Include="DiaGame\TestStageKinds.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
