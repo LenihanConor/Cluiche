@@ -61,7 +61,7 @@ namespace Dia
 			static uint32_t CurrentSubject();
 
 			// Subject name table (fixed capacity). Registration is off the hot path.
-			static const unsigned int kMaxSubjectNames = 256;
+			static const unsigned int kMaxSubjectNames = 1024;
 			static const unsigned int kSubjectNameLen  = 64;
 			static bool RegisterSubjectName(uint32_t subject, const char* name);   // false if table full / invalid
 			// Writes the registered name, or "0x%08x" when unknown. Returns buf (NUL-terminated).
