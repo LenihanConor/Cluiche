@@ -56,3 +56,8 @@ Anything found during a task ends as: fix now (small), promote to a backlog row 
 | 8 | SchemaReader moved to `DiaEditor/Schema/` (namespace `Dia::Editor`), SceneEditor no longer references DiaBlueprintEditor; describes on the 3 CluicheTest components (5 fields; CoW has no components). |
 | 9 | Full `dia run googletest --shards 2`: 8311 passed, 0 failed. `dia check deps`, `dia validate manifest`, `dia docs precommit` pass. Observation scan: Low only (ManifestSaver silent fallback when config text is invalid JSON). |
 | 10 | 7 rows moved to history; 2 Task rows promoted (inline fallback, shared temp-file races). |
+
+## Follow-ups closed (2026-11-19)
+
+- **Inline fallback:** `DeferredStepModule` swaps to the job launcher when `JobSystemService` arrives late (`DeferredStepScheduler::SetLauncher`/`CanSwapLauncher`); three tests; verified in a CoW launch.
+- **Shard races:** per-process temp files in the ManifestSaver, SchemaReader, blueprint property and PropertyInspector tests; `DeferredStepSaveEdge` blanks the save timestamp before comparing.

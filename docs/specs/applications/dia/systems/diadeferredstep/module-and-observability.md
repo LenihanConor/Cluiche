@@ -122,6 +122,10 @@ keys, CPU ms, cap wait and worker wait per step instance, and two sources would 
    the metrics and the health reporter, and returns success.
 4. `DoStart` with no `JobSystemService` available logs one Warning and starts anyway with a launcher
    that runs every step inline on SimPU (Feature 2 AC 17). The module is usable, serially.
+   *Amended 2026-11-19:* the service can be committed after the module starts (CoW: JobSystemModule is on MainPU), so
+   `DoUpdate` keeps checking. The first update where the reader is available and no channel holds a step
+   (`DeferredStepScheduler::CanSwapLauncher`) swaps the inline launcher for the job launcher
+   (`SetLauncher`) and logs one Info; steps never change launcher mid-flight.
 5. `DoStop` calls `DrainAndDiscardAll`, detaches the save participant, unregisters the metrics and the
    health reporter, and asserts in Debug that no channel is still registered — consumers unregister
    in their own `DoStop`, which manifest ordering guarantees runs first.
