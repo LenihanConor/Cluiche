@@ -38,7 +38,6 @@
     <ClCompile Include="Modules\F2DragonStub.cpp" />
     <ClCompile Include="Modules\F2PanelModel.cpp" />
     <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp" />
-    <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp" />
     <ClCompile Include="Modules\SnapshotStoreAdapter.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp" />
@@ -105,7 +104,6 @@
     <ClInclude Include="Modules\F2PanelModel.h" />
     <ClInclude Include="Modules\F2TestRunnerDebugDomain.h" />
     <ClInclude Include="Modules\WorldGenerationMessages.h" />
-    <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h" />
     <ClInclude Include="Modules\SnapshotStoreAdapter.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainRules.h" />
@@ -315,6 +313,9 @@
     <ProjectReference Include="..\..\Dia\DiaCellLayers\DiaCellLayers.vcxproj">
       <Project>{F0B823EA-731E-5CE5-AC88-4DF3B45C6977}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaDeferredStep\DiaDeferredStep.vcxproj">
+      <Project>{7D4C2E91-8B2A-4C5F-B8D3-F9E6C5A4B9D2}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2D30FBC3-28AE-54DF-910F-2F8404FA551F}</ProjectGuid>
@@ -371,7 +372,7 @@
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
       <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaThreading.lib;$(LibOutDir)DiaObservation.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaMessageBus.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaBgfx.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaAutomation.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaAssetRuntimeVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaScene2D.lib;$(LibOutDir)DiaCamera2D.lib;$(LibOutDir)DiaLighting2D.lib;$(LibOutDir)DiaEntityVisualDebugger.lib;$(LibOutDir)DiaAttribute.lib;$(LibOutDir)DiaAttributeVisualDebugger.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaSaveGame.lib;$(LibOutDir)DiaSimTime.lib;$(LibOutDir)DiaAIBudget.lib;$(LibOutDir)DiaUtilityAI.lib;$(LibOutDir)DiaRules.lib;$(LibOutDir)DiaHTN.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaCellLayers.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaDeferredStep.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -394,7 +395,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaThreading.lib;$(LibOutDir)DiaObservation.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaPicking.lib;$(LibOutDir)DiaGeometry2DPicking.lib;$(LibOutDir)DiaMailbox.lib;$(LibOutDir)DiaMessageBus.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaSDL.lib;$(LibOutDir)DiaBgfx.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaMesh3D.lib;$(LibOutDir)DiaBgfx3D.lib;$(LibOutDir)DiaGraphics3D.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaAutomation.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaAssetRuntimeVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaScene2D.lib;$(LibOutDir)DiaCamera2D.lib;$(LibOutDir)DiaLighting2D.lib;$(LibOutDir)DiaEntityVisualDebugger.lib;$(LibOutDir)DiaAttribute.lib;$(LibOutDir)DiaAttributeVisualDebugger.lib;$(LibOutDir)DiaEntityInspector.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaSaveGame.lib;$(LibOutDir)DiaSimTime.lib;$(LibOutDir)DiaAIBudget.lib;$(LibOutDir)DiaUtilityAI.lib;$(LibOutDir)DiaRules.lib;$(LibOutDir)DiaHTN.lib;$(LibOutDir)DiaEconomy.lib;$(LibOutDir)DiaBlackboard.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaPathfinding.lib;$(LibOutDir)DiaCellLayers.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;SDL3-static.lib;setupapi.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Release\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:DiaValueSchema.lib /WHOLEARCHIVE:DiaCellLayers.lib /WHOLEARCHIVE:DiaDeferredStep.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cow --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>

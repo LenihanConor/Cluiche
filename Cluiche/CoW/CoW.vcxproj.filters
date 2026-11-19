@@ -55,9 +55,6 @@
     <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\JobSystemPlaceholderConsumerModule.cpp">
-      <Filter>Modules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\SnapshotStoreAdapter.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -250,9 +247,6 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\WorldGenerationMessages.h">
-      <Filter>Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\JobSystemPlaceholderConsumerModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\SnapshotStoreAdapter.h">

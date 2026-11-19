@@ -712,12 +712,16 @@
                     "channels": []
                 },
                 {
-                    "instance_id": "JobSystemPlaceholderConsumerModule",
-                    "type_id": "JobSystemPlaceholderConsumerModule",
+                    "instance_id": "DeferredStepModule",
+                    "type_id": "DeferredStepModule",
                     "stages": [
                         "all"
                     ],
                     "dependencies": [],
+                    "config": {
+                        "worker_cap": "auto",
+                        "ranges_per_worker": 4
+                    },
                     "channels": [
                         {
                             "id": "JobSystemService",
