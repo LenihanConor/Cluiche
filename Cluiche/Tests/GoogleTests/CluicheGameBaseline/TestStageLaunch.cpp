@@ -253,6 +253,30 @@ TEST(StageLaunchModule, SendFailureRepliesError)
     EXPECT_TRUE(m.Launch(Args("{\"stage\":\"NoPresets\"}")).isMember("error"));
 }
 
+TEST(StageLaunchModule, SecondLaunchWhileFirstPendingRefused)
+{
+    LaunchModule m;
+    m.Configure(DiagamePath("presets"));
+    ASSERT_TRUE(m.Start());
+    EXPECT_TRUE(m.Launch(Args("{\"stage\":\"NoPresets\"}"))["ok"].asBool());
+    const Json::Value second = m.Launch(Args("{\"stage\":\"WithPresets\"}"));
+    EXPECT_TRUE(second.isMember("error"));
+    EXPECT_EQ(m.sent, 1u);
+}
+
+TEST(StageLaunchModule, LaunchAllowedAgainAfterLeavingBoot)
+{
+    LaunchModule m;
+    m.Configure(DiagamePath("presets"));
+    ASSERT_TRUE(m.Start());
+    EXPECT_TRUE(m.Launch(Args("{\"stage\":\"NoPresets\"}"))["ok"].asBool());
+    m.atBoot = false;
+    EXPECT_TRUE(m.Launch(Args("{\"stage\":\"NoPresets\"}")).isMember("error"));
+    m.atBoot = true;
+    EXPECT_TRUE(m.Launch(Args("{\"stage\":\"NoPresets\"}"))["ok"].asBool());
+    EXPECT_EQ(m.sent, 2u);
+}
+
 // ---- AC 9: SimPU handler seam ----
 
 TEST(StageLaunchHandler, RequestRoutesToTransitionWithPreset)

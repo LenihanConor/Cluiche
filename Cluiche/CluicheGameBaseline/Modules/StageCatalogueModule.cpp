@@ -145,7 +145,17 @@ Json::Value StageCatalogueModule::HandleLaunch(const Json::Value& args)
 {
     StageLaunchRequest request;
     std::string error;
-    if (!StageCatalogueQueries::ValidateLaunch(mState, args, IsAtBoot(), request, error))
+    const bool atBoot = IsAtBoot();
+    // A queued launch has not left Boot yet: refuse a second one until the app leaves Boot (then re-arm).
+    if (!atBoot) { mLaunchPending = false; }
+    if (atBoot && mLaunchPending)
+    {
+        DIA_LOG_WARNING("STAGES", "stages.launch refused: a launch is already pending");
+        Json::Value reply(Json::objectValue);
+        reply["error"] = "a launch is already pending";
+        return reply;
+    }
+    if (!StageCatalogueQueries::ValidateLaunch(mState, args, atBoot, request, error))
     {
         DIA_LOG_WARNING("STAGES", "stages.launch refused: %s", error.c_str());
         Json::Value reply(Json::objectValue);
@@ -159,6 +169,7 @@ Json::Value StageCatalogueModule::HandleLaunch(const Json::Value& args)
         reply["error"] = "launch request could not be queued";
         return reply;
     }
+    mLaunchPending = true;
     DIA_LOG_INFO("STAGES", "preset launch requested (source=command) stage='%s' preset='%s'", request.stage.AsChar(), request.preset.AsChar());
     Json::Value reply(Json::objectValue);
     reply["ok"] = true;

@@ -85,3 +85,29 @@ def test_presets_carry_names_and_descriptions_only():
     assert with_presets.presets == [{"name": "alpine42", "description": "Alpine, seed 42"},
                                     {"name": "bare", "description": ""}]
     assert cat.entries[cat.find("NoPresets")].presets == []
+
+
+def test_malformed_preset_is_skipped_and_stage_still_loads(tmp_path):
+    import shutil
+    dst = tmp_path / "presets"
+    shutil.copytree(FIXTURES / "presets", dst)
+    stage = dst / "WithPresets.diastage"
+    data = json.loads(stage.read_text(encoding="utf-8"))
+    data["presets"] = [{"description": "no name"}, "not-an-object", {"name": "good", "description": "ok"}]
+    stage.write_text(json.dumps(data), encoding="utf-8")
+    result, cat = sc.load(dst / "game.diagame")
+    assert result == sc.OK
+    assert cat.entries[cat.find("WithPresets")].presets == [{"name": "good", "description": "ok"}]
+
+
+def test_non_list_presets_ignored(tmp_path):
+    import shutil
+    dst = tmp_path / "presets"
+    shutil.copytree(FIXTURES / "presets", dst)
+    stage = dst / "WithPresets.diastage"
+    data = json.loads(stage.read_text(encoding="utf-8"))
+    data["presets"] = "oops"
+    stage.write_text(json.dumps(data), encoding="utf-8")
+    result, cat = sc.load(dst / "game.diagame")
+    assert result == sc.OK
+    assert cat.entries[cat.find("WithPresets")].presets == []

@@ -81,6 +81,17 @@ def _resolve(base, rel):
     return matches[0] if len(matches) == 1 else direct
 
 
+def _read_presets(raw):
+    """Names and descriptions only. Malformed entries are skipped, like the C++ composer (the stage still loads)."""
+    if not isinstance(raw, list):
+        return []
+    out = []
+    for p in raw:
+        if isinstance(p, dict) and isinstance(p.get("name"), str) and p["name"]:
+            out.append({"name": p["name"], "description": str(p.get("description", ""))})
+    return out
+
+
 def load(diagame_path):
     """Return (result, catalogue); catalogue is None unless result is OK."""
     diagame_path = Path(diagame_path)
@@ -110,8 +121,7 @@ def load(diagame_path):
                 kinds=[k for k in vocab if k in tags],
                 description=data.get("description", ""), diastage_path=path,
                 proves=[str(p) for p in data.get("proves", [])],
-                presets=[{"name": str(p["name"]), "description": str(p.get("description", ""))}
-                         for p in data.get("presets", [])])
+                presets=_read_presets(data.get("presets")))
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return MALFORMED, None
 

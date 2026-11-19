@@ -94,6 +94,7 @@ private:
     HealthReporter mHealth;
     bool mHealthRegistered = false;
     uint32_t mPublishCount = 0;
+    bool mLaunchPending = false; // set when a stages.launch is queued; cleared once the app is seen outside Boot
     Dia::ApplicationFlow::IApplicationInspectable* mAppInspect = nullptr;
     Dia::DebugServer::QueryRegistry* mQueryRegistryOverride = nullptr;
     Dia::DebugServer::QueryRegistry* mQueriesOn = nullptr;
