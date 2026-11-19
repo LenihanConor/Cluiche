@@ -505,3 +505,38 @@ TEST(DiaBlackboardInspectorSource, Scopes_HashChanges_WhenParentSet)
     unsigned int h3 = src.CallCollectAndHash(p3);
     EXPECT_NE(h2, h3);
 }
+
+TEST(DiaBlackboardInspectorSource, Scopes_UnnamedBoard_EmitsStringNameAndEmptyParent)
+{
+    BlackboardRegistry registry;
+    Blackboard board; // default name
+    registry.Register(Dia::Core::StringCRC{"anon_id"}, "Anon", board);
+
+    TestableBlackboardInspectorSource src(registry);
+    Json::Value payload;
+    src.CallCollectAndHash(payload);
+
+    const Json::Value& entry = payload["boards"][0];
+    ASSERT_TRUE(entry.isMember("name"));
+    EXPECT_TRUE(entry["name"].isString());
+    EXPECT_STREQ(entry["parent"].asCString(), "");
+    EXPECT_EQ(entry["inherited"].size(), 0u);
+}
+
+TEST(DiaBlackboardInspectorSource, Scopes_UnnamedParent_StillListsInheritedSlots)
+{
+    BlackboardRegistry registry;
+    Blackboard parent;
+    Blackboard child(32, Dia::Core::StringCRC{"c"});
+    ASSERT_TRUE(child.SetParent(&parent));
+    parent.Register<ThreatBoard>(Dia::Core::StringCRC{"k"});
+    registry.Register(Dia::Core::StringCRC{"c_id"}, "C", child);
+
+    TestableBlackboardInspectorSource src(registry);
+    Json::Value payload;
+    src.CallCollectAndHash(payload);
+
+    const Json::Value& inherited = payload["boards"][0]["inherited"];
+    ASSERT_EQ(inherited.size(), 1u);
+    EXPECT_NE(FindSlot(inherited[0]["slots"], "k"), nullptr);
+}

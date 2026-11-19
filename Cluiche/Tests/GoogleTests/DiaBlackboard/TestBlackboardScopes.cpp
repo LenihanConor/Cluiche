@@ -340,4 +340,120 @@ TEST(BlackboardScopes, Lookup_TypeMismatch_Asserts)
     EXPECT_DEATH(f.child.Lookup<float>(Dia::Core::StringCRC("K")), "");
 }
 
+TEST(BlackboardScopes, Lookup_TypeMatchesParentButNotLocalShadow_Asserts)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K"));
+    f.child.Register<float>(Dia::Core::StringCRC("K"));
+    EXPECT_DEATH(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K")), "");
+}
+
 #endif // _DEBUG
+
+// -------------------------------------------------------------------------
+// Edge tests (gap audit, task 10)
+// -------------------------------------------------------------------------
+
+TEST(BlackboardScopes, OneCap_HoldsExactlyOne)
+{
+    Blackboard board(1);
+    board.Register<ScopeSlot>(Dia::Core::StringCRC("Only"));
+    EXPECT_TRUE(board.Has(Dia::Core::StringCRC("Only")));
+}
+
+TEST(BlackboardScopes, Lookup_AfterParentUnregister_ReturnsNull)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_NE(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K")), nullptr);
+    f.parent.Unregister(Dia::Core::StringCRC("K"));
+    EXPECT_EQ(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K")), nullptr);
+    EXPECT_FALSE(f.child.HasInChain(Dia::Core::StringCRC("K")));
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("K")), nullptr);
+}
+
+TEST(BlackboardScopes, LocalRegisterAfterInherit_ShadowsImmediately)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 2;
+    ASSERT_EQ(f.child.FindOwner(Dia::Core::StringCRC("K")), &f.parent);
+    f.child.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 1;
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("K")), &f.child);
+    EXPECT_EQ(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"))->mValue, 1);
+    f.child.Unregister(Dia::Core::StringCRC("K"));
+    EXPECT_EQ(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"))->mValue, 2);
+}
+
+TEST(BlackboardScopes, SetParent_ParentAtDepth7_Accepted)
+{
+    Blackboard* boards[9];
+    for (int i = 0; i < 9; ++i) boards[i] = new Blackboard();
+    for (int i = 1; i < 7; ++i) ASSERT_TRUE(boards[i]->SetParent(boards[i - 1]));
+    EXPECT_TRUE(boards[7]->SetParent(boards[6]));
+    EXPECT_FALSE(boards[8]->SetParent(boards[7]));
+    for (int i = 8; i >= 0; --i) delete boards[i];
+}
+
+TEST(BlackboardScopes, SetParent_ReparentWithOwnChildren_ChainStillValid)
+{
+    Blackboard a, b, mid, leaf;
+    ASSERT_TRUE(leaf.SetParent(&mid));
+    ASSERT_TRUE(mid.SetParent(&a));
+    ASSERT_TRUE(mid.SetParent(&b));
+    EXPECT_EQ(mid.GetParent(), &b);
+    EXPECT_EQ(leaf.GetParent(), &mid);
+    b.Register<ScopeSlot>(Dia::Core::StringCRC("K"));
+    EXPECT_EQ(leaf.FindOwner(Dia::Core::StringCRC("K")), &b);
+    leaf.SetParent(nullptr);
+    mid.SetParent(nullptr);
+}
+
+TEST(BlackboardScopes, SetParent_ReparentUnderOwnDescendant_Refused)
+{
+    Blackboard a, b;
+    ASSERT_TRUE(b.SetParent(&a));
+    EXPECT_FALSE(a.SetParent(&b));
+    EXPECT_EQ(b.GetParent(), &a);
+    EXPECT_EQ(a.GetParent(), nullptr);
+    b.SetParent(nullptr);
+}
+
+TEST(BlackboardScopes, TwoChildren_OneParent_BothSeeParentAndDetachIndependently)
+{
+    Blackboard parent;
+    Blackboard c1, c2;
+    parent.Register<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_TRUE(c1.SetParent(&parent));
+    ASSERT_TRUE(c2.SetParent(&parent));
+    EXPECT_EQ(c1.FindOwner(Dia::Core::StringCRC("K")), &parent);
+    EXPECT_EQ(c2.FindOwner(Dia::Core::StringCRC("K")), &parent);
+    c1.SetParent(nullptr);
+    EXPECT_EQ(c2.FindOwner(Dia::Core::StringCRC("K")), &parent);
+    c2.SetParent(nullptr);
+}
+
+TEST(BlackboardScopes, ParentCounter_AfterChildrenDestroyed_ParentDestroysCleanly)
+{
+    Blackboard* parent = new Blackboard();
+    {
+        Blackboard c1;
+        Blackboard c2;
+        ASSERT_TRUE(c1.SetParent(parent));
+        ASSERT_TRUE(c2.SetParent(parent));
+    }
+    delete parent;
+}
+
+TEST(BlackboardScopes, SetParent_RefusedDepth_LeavesExistingParent)
+{
+    Blackboard* boards[8];
+    for (int i = 0; i < 8; ++i) boards[i] = new Blackboard();
+    for (int i = 1; i < 8; ++i) ASSERT_TRUE(boards[i]->SetParent(boards[i - 1]));
+    Blackboard other;
+    Blackboard extra;
+    ASSERT_TRUE(extra.SetParent(&other));
+    EXPECT_FALSE(extra.SetParent(boards[7]));
+    EXPECT_EQ(extra.GetParent(), &other);
+    EXPECT_TRUE(extra.SetParent(nullptr));
+    for (int i = 7; i >= 0; --i) delete boards[i];
+}
