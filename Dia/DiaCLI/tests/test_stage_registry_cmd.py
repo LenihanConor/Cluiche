@@ -1,6 +1,7 @@
 """Tests for ``dia docs stage-registry`` generator."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -152,3 +153,88 @@ def test_generated_file_header():
 
     # Should have a game section header (render_stage_registry renders one game's table, not the whole doc)
     assert "## Test" in output
+
+
+def test_render_stage_registry_proves_column_header(basic_fixture):
+    """Test that the table includes a 'Proves' column header."""
+    output = render_stage_registry(basic_fixture / "game.diagame", "Fixture")
+
+    # Table header should include 'Proves' column
+    assert "| Stage | Kinds | Tags | Description | Proves |" in output
+
+
+def test_render_stage_registry_proves_column_with_paths(basic_fixture, tmp_path):
+    """Test that stages with proves render links and empty stages show dash."""
+    # Create a stage with proves in a temp directory
+    fixture_dir = basic_fixture
+
+    # Create a modified stage entry with proves for testing
+    test_stage_path = tmp_path / "WithProvesStage.diastage"
+    test_stage_path.write_text(
+        """{
+    "name": "WithProvesStage",
+    "manifest": "WithProvesStage.stage.json",
+    "tags": ["test"],
+    "description": "Stage with proves",
+    "proves": [
+        "docs/specs/applications/dia/systems/stagecatalogue/proves-traceability.md",
+        "docs/specs/applications/dia/systems/stagecatalogue/catalogue-and-results.md"
+    ]
+}""",
+        encoding="utf-8"
+    )
+
+    # Create a temp diagame that includes this stage in Boot
+    diagame_path = tmp_path / "game.diagame"
+    game_data = {
+        "imports": [
+            {
+                "type": "manifest",
+                "path": "main.diaapp"
+            },
+            {
+                "type": "stage",
+                "path": "WithProvesStage.diastage"
+            }
+        ]
+    }
+    diagame_path.write_text(json.dumps(game_data), encoding="utf-8")
+
+    # Create a temp app with Boot transitions
+    app_path = tmp_path / "main.diaapp"
+    app_data = {
+        "stages": [
+            {
+                "name": "Boot",
+                "transitions": ["WithProvesStage"]
+            }
+        ]
+    }
+    app_path.write_text(json.dumps(app_data), encoding="utf-8")
+
+    output = render_stage_registry(diagame_path, "Fixture")
+
+    # Should have the Proves column
+    assert "| Stage | Kinds | Tags | Description | Proves |" in output
+
+    # WithProvesStage should have links rendered
+    assert "WithProvesStage" in output
+    # Links should be relative paths from docs/reference/registry/ to specs
+    assert "proves-traceability" in output or "catalogue-and-results" in output
+
+
+def test_render_stage_registry_proves_empty_marker(basic_fixture):
+    """Test that stages without proves show the empty marker (dash)."""
+    output = render_stage_registry(basic_fixture / "game.diagame", "Fixture")
+
+    # Table header should include 'Proves' column
+    assert "| Stage | Kinds | Tags | Description | Proves |" in output
+
+    # One of the basic fixture stages (like "Plain") has no proves
+    # It should show "—" for the Proves column (the last column before |)
+    lines = output.split("\n")
+    for line in lines:
+        if "| Plain" in line:
+            # Should end with "| — |"
+            assert line.rstrip().endswith("| — |"), f"Plain stage should have empty proves marker: {line}"
+            break

@@ -15,12 +15,48 @@ def _escape_pipe(text: str) -> str:
     return text.replace("|", "\\|")
 
 
-def render_stage_registry(diagame_path: Path, game_name: str) -> str:
+def _render_proves_links(proves: list[str], registry_file_path: Path) -> str:
+    """Render proves paths as markdown links relative to the registry file.
+
+    Args:
+        proves: List of repo-relative spec paths (e.g., "docs/specs/.../spec.md")
+        registry_file_path: Path to the registry file (docs/reference/registry/stage-registry.md)
+
+    Returns:
+        Markdown link(s) or "—" if empty.
+    """
+    if not proves:
+        return "—"
+
+    # docs/reference/registry/stage-registry.md -> docs/specs/... relative path
+    registry_dir = registry_file_path.parent  # docs/reference/registry/
+    repo_root = registry_dir.parent.parent.parent  # Back to repo root
+
+    links = []
+    for path in proves:
+        spec_path = repo_root / path
+        # Compute relative path from registry_dir to spec_path
+        try:
+            rel_path = spec_path.relative_to(registry_dir)
+        except ValueError:
+            # Fallback if paths don't share a common base
+            rel_path = Path(path)
+
+        # Use spec file name stem (without .md) as link text
+        link_text = spec_path.stem
+        # Format as markdown link
+        links.append(f"[{link_text}]({rel_path})")
+
+    return "<br>".join(links)
+
+
+def render_stage_registry(diagame_path: Path, game_name: str, registry_file_path: Optional[Path] = None) -> str:
     """Render a single game's stage registry as a markdown table.
 
     Args:
         diagame_path: Path to the .diagame file
         game_name: Display name for the game
+        registry_file_path: Path to the output registry file (for relative link generation)
 
     Returns:
         Markdown text with a table for this game, or error note if load failed
@@ -41,16 +77,21 @@ def render_stage_registry(diagame_path: Path, game_name: str) -> str:
         lines.append("")
         return "\n".join(lines)
 
+    # Default registry file path if not provided
+    if registry_file_path is None:
+        registry_file_path = Path("docs/reference/registry/stage-registry.md")
+
     # Build table
-    lines.append("| Stage | Kinds | Tags | Description |")
-    lines.append("|-------|-------|------|-------------|")
+    lines.append("| Stage | Kinds | Tags | Description | Proves |")
+    lines.append("|-------|-------|------|-------------|--------|")
 
     for entry in catalogue.entries:
         kinds_str = ", ".join(entry.kinds) if entry.kinds else "-"
         tags_str = ", ".join(entry.tags) if entry.tags else "-"
         desc_str = _escape_pipe(entry.description)
+        proves_str = _render_proves_links(entry.proves, registry_file_path)
 
-        line = f"| {entry.name} | {kinds_str} | {tags_str} | {desc_str} |"
+        line = f"| {entry.name} | {kinds_str} | {tags_str} | {desc_str} | {proves_str} |"
         lines.append(line)
 
     lines.append("")
@@ -80,12 +121,15 @@ def generate_stage_registry(repo_root: Path) -> str:
 
     diagame_files = sorted(assets_dir.rglob("*.diagame"))
 
+    # Registry file path for relative link generation
+    registry_file_path = repo_root / "docs" / "reference" / "registry" / "stage-registry.md"
+
     for diagame_path in diagame_files:
         # Extract game name from parent directory
         game_dir = diagame_path.parent.name
         game_name = game_dir
 
-        table_text = render_stage_registry(diagame_path, game_name)
+        table_text = render_stage_registry(diagame_path, game_name, registry_file_path)
         output_lines.append(table_text)
 
     if not diagame_files:
