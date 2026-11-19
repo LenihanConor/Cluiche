@@ -80,6 +80,9 @@
     <ClInclude Include="IAttributeObserver.h" />
     <ClInclude Include="AttributeObserverSubject.h" />
     <ClInclude Include="AttributeAccessorBridge.h" />
+    <ClInclude Include="ParameterFile.h" />
+    <ClInclude Include="ParamBinding.h" />
+    <ClInclude Include="IMapKeySource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />
@@ -87,6 +90,7 @@
     <ClCompile Include="AttributeSetComponent.cpp" />
     <ClCompile Include="AttributeObserverSubject.cpp" />
     <ClCompile Include="AttributeAccessorBridge.cpp" />
+    <ClCompile Include="ParameterFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.attribute.architecture.module.md" />
@@ -110,6 +114,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaSaveGame\DiaSaveGame.vcxproj">
       <Project>{10CADE58-BBF3-4114-9D8B-5C8F71C56417}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaValueSchema\DiaValueSchema.vcxproj">
+      <Project>{21E6E786-B115-550E-A32A-88E43C7D77F9}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

@@ -12,6 +12,9 @@
     <ClInclude Include="IAttributeObserver.h" />
     <ClInclude Include="AttributeObserverSubject.h" />
     <ClInclude Include="AttributeAccessorBridge.h" />
+    <ClInclude Include="ParameterFile.h" />
+    <ClInclude Include="ParamBinding.h" />
+    <ClInclude Include="IMapKeySource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />
@@ -19,6 +22,7 @@
     <ClCompile Include="AttributeSetComponent.cpp" />
     <ClCompile Include="AttributeObserverSubject.cpp" />
     <ClCompile Include="AttributeAccessorBridge.cpp" />
+    <ClCompile Include="ParameterFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.attribute.architecture.module.md">

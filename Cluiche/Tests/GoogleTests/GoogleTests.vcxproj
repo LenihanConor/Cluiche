@@ -1353,6 +1353,11 @@
     <ClCompile Include="DiaPathfinding\TestGridSearchScratch.cpp" />
     <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp" />
     <ClCompile Include="DiaPathfinding\GridSearchAllocCounter.cpp" />
+    <ClCompile Include="DiaAttribute/TestDiaAttributeSchemaFromValueSchema.cpp" />
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParameterFile.cpp" />
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParamBinding.cpp" />
+    <ClCompile Include="DiaAttribute/TestDiaAttributeModifierKinds.cpp" />
+    <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

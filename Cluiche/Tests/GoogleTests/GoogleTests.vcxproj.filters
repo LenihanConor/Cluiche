@@ -3210,5 +3210,20 @@
     <ClCompile Include="DiaPathfinding\GridSearchAllocCounter.cpp">
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeSchemaFromValueSchema.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParameterFile.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeParamBinding.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAttribute/TestDiaAttributeModifierKinds.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
