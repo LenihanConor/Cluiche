@@ -5,7 +5,7 @@
 
 **Gameplay Domains:** debug, tools
 
-**Code home:** `Dia/DiaGame` (user decision 2026-11-18: extend DiaGame, no new module). DiaGame already owns the `.diastage` format and serializer; this system grows it from a manifest library into the stage catalogue that tools and the runtime share.
+**Code home (amended 2026-11-18):** `Cluiche/CluicheGameBaseline` by default, and `Dia/DiaGame` only for what must be engine. DiaGame keeps the `.diastage` format: the new manifest fields, the serializer and the kind vocabulary (`StageKinds`, `stage_kinds.json`), because DiaGame owns the format and Dia tooling (the Python validator) reads the vocabulary. The catalogue model, loader, results store, `StageCatalogueModule`, snapshot and commands live in the Baseline, which CluicheTest and CoW already share and which already hosts `BootMenuModule`, `StageStatusModule` and `DebugServerHostModule`. Feature 2's `Module::OnStageLaunch` and `StageLaunchContext` stay in DiaApplicationFlow (the `Module` base class is engine). Supersedes the 2026-11-18 decision to extend DiaGame (SC-001).
 
 **Related:** @docs/specs/applications/dia/systems/diaviewlaunch/diaviewlaunch.md (Feature 4 plans `dia launch` argument passthrough, which Feature 2 here reuses).
 
@@ -49,7 +49,7 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 ```
 .diagame ─imports─► *.diastage  (name, manifest, tags, description, presets, proves)
      │                    │
-     │   DiaGame::StageCatalogueLoader (pure, any thread)
+     │   StageCatalogueLoader (Baseline, pure, any thread)
      ▼                    ▼
  StageCatalogue (immutable after load) ── order from Boot transitions
      │
@@ -102,7 +102,7 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 - A stage may carry several kinds. The menu lists it **under every kind it has** (user decision 2026-11-18).
 - The vocabulary is a constant in DiaGame (`StageKinds`) and is mirrored in the Python validator from one exported list, so the two cannot drift.
 
-### Catalogue model (DiaGame, pure)
+### Catalogue model (Baseline, pure)
 
 - `StageCatalogueLoader::Load(diagamePath, outCatalogue)` reads the `.diagame`, each stage import and Boot's `transitions` from the root manifest. It has no module machinery and is safe on any thread. Its tests use fixture files.
 - `StageCatalogue` holds up to `kMaxStages = 64` entries. This matches today's `BootMenuLogic` and `StageStatusModule` caps; going over the cap is a logged error, and the extra stages are dropped and counted.
@@ -139,7 +139,7 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 
 - Registered by `StageCatalogueModule` on MainPU, with mandatory help text.
 - `stages.launch` sends the same `StageLaunchRequest` as the menu. There is one launch path.
-- `dia stages list|get|results` reads the files directly when no game is running (the pure loader also exists in Python), and goes through `dia query` when one is.
+- `dia stages list|get|results` always reads the files: the catalogue sources and `stage_results.json`, which the game writes on every result. They give the same answer as the live commands. Live data is `dia query stages.list` (simplified 2026-11-18 while writing Feature 1).
 
 ### Launch with a preset (engine hook)
 
@@ -181,17 +181,19 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 
 | # | Feature | Notes | Status | Spec |
 |---|---|---|---|---|
-| 1 | Catalogue, tags and results | `.diastage` `tags`/`description` + serializer + schema; `StageKinds`; pure `StageCatalogue` + loader (C++ and Python); `StageCatalogueModule` (MainPU), results store + `stage_results.json`; `StageResult` EventStream + snapshot FrameStream; `stages.list/get/results`; `dia stages list/get/results`; CluicheTest bridge → events, CoW F2 runner → events; Baseline menu rebuilt on the snapshot (groups, multi-group rows, chips, search, badges, rollup); `StageStatusModule` retired; tag CluicheTest + CoW stages; `dia docs stage-registry`. **Mockup first.** AD-001 sign-off (DiaGame grows a module) | Draft (not written) | — |
-| 2 | Launch presets | `presets` field + validation against the stage's module instance ids; DiaApplicationFlow `StageLaunchContext` + `OnStageLaunch` hook (AD-001 sign-off); `StageLaunchRequest` used by menu and `stages.launch`; menu preset sub-rows; `dia run/launch --stage --preset` (needs `dia launch` passthrough from DiaViewLaunch F4, or builds it here if F4 hasn't); S-1 worldgen adopts first | Draft (not written) | — |
-| 3 | `proves` traceability | `proves` field + validation; `**Testbed:** required` spec header opt-in; `dia check stage-proves` + report; registry doc gains a proves column; tag existing CoW testbeds and S-1/S-2.5/S-3 specs | Draft (not written) | — |
+| 1 | Catalogue, tags and results | `.diastage` `tags`/`description` + serializer + validator; `StageKinds` + `stage_kinds.json`; pure `StageCatalogue` + loader (C++ and Python, shared fixtures); `StageCatalogueModule` (MainPU): results store, `stage_results.json` (merge-before-write), `StageResult` EventStream in, snapshot FrameStream out, `stages.list/get/results`; CluicheTest `TestResultReporterModule` (SimPU) + CoW F2 runner send results; tag all stages; `dia stages`; `dia docs stage-registry`. Menu unchanged. AD-001 sign-off | Approved | [catalogue-and-results.md](catalogue-and-results.md) |
+| 2 | Launch presets | `presets` (stage-scoped module instances only); `ManifestComposerV2` reads them; `Module::OnStageLaunch` + `TransitionTo(stage, preset)` + `SetInitialLaunch` (AD-001 sign-off); nav request and automation hold carry a preset; `stages.launch` over a MainPU → SimPU stream; menu preset sub-rows; `dia run/launch --stage --preset`; S-1 `WorldGenerationModule` adopts first | Approved | [launch-presets.md](launch-presets.md) |
+| 3 | `proves` traceability | `proves` (spec paths) + validation; `**Testbed:** required` opt-in; `dia check stage-proves` (broken links exit 1, `--strict` for unproven) + report; registry column; precommit hook; CoW adoption baseline | Approved | [proves-traceability.md](proves-traceability.md) |
+| 4 | Boot menu view | **Mockup gate first.** `BootMenuModule` rebuilt on the snapshot: kind groups, multi-group rows, chips (AND), search, descriptions, badges on `test` only, Tests collapsed with rollup, fallback flat list; `StageStatusModule` + `TestStatusBridgeModule` retired (split out of Feature 1, user decision 2026-11-18) | Approved | [boot-menu-view.md](boot-menu-view.md) |
 
-**Build order:** 1 → 2 → 3. Feature 3 depends only on Feature 1's format work, so it can run in parallel with Feature 2.
+**Build order:** 1 first. Then 3 and 4 can be built in parallel (3 needs only 1's format work and loader; 4 needs 1's snapshot and its mockup). 2 comes last, because its menu sub-rows need 4. Its runtime and CLI parts need only 1, so they can start earlier if wanted.
 
 ## Dependencies
 
 | Dependency | Use | Status |
 |---|---|---|
-| DiaGame | `.diastage` format, serializer, `DiaGameManifestLoader` (extended here) | Done (extended) |
+| DiaGame | `.diastage` format, serializer, `StageKinds`, `DiaGameManifestLoader` (extended here) | Done (extended) |
+| CluicheGameBaseline | Catalogue, loader, results, `StageCatalogueModule`, snapshot | Gains new code (app layer) |
 | DiaApplicationFlow | `GetStageTransitions`, `QueueStageTransition`, module lifecycle; gains `StageLaunchContext` + `OnStageLaunch` in Feature 2 | Done (extended in F2) |
 | DiaStreams | `StageResult` EventStream, `StageCatalogueSnapshot` FrameStream, `StageLaunchRequest` EventStream | Done |
 | DiaAPI / DiaDebugServer | `stages.*` commands, reachable through `dia query` | Done |
@@ -204,7 +206,7 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 
 | ID | Decision | Status | Binding |
 |---|---|---|---|
-| SC-001 | The catalogue lives in DiaGame; no new module (user decision 2026-11-18) | Accepted | Yes |
+| SC-001 | Baseline by default, DiaGame only where it must be engine: the `.diastage` format fields, serializer and kind vocabulary stay in DiaGame; catalogue, loader, results, module and snapshot live in CluicheGameBaseline (user decision 2026-11-18, amended the same day) | Accepted | Yes |
 | SC-002 | Stage metadata is tags plus named fields (`description`, `presets`, `proves`); no key-value store. A new field needs a named consumer (user decision 2026-11-18) | Accepted | Yes |
 | SC-003 | Kind tags are a fixed, validated vocabulary (`showcase`, `tool`, `test`); other tags are free-form. One exported list feeds C++ and Python | Accepted | Yes |
 | SC-004 | A stage appears under every kind group it has; selection, visited, counts and results key on the stage, never the row (user decision 2026-11-18) | Accepted | Yes |
@@ -223,9 +225,9 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
 | PD-002 / AD-004 | ProcessingUnit/Phase/Module | `StageCatalogueModule` is a MainPU module; results arrive and leave by streams (`StageResult` in, snapshot out, `StageLaunchRequest` to SimPU). No cross-PU reads, including of the immutable catalogue: the menu gets it in the snapshot |
 | PD-004 / AD-002 | No STL in public APIs | `StageCatalogue`, `StageResult`, `StageLaunchContext` use Dia containers; Json values cross the API as `const char*` like `OnConfigure` |
 | PD-009 | Output under `Cluiche/out/<AppName>/` | `stage_results.json` in `out/<App>/`; check report in `out/check/` |
-| PD-010 | `.diagame` is root; `.diastage` is metadata for tooling, not construction instructions | Tags, description and `proves` are pure metadata. **Presets bend this**: they change module config at stage entry. They do this through an opt-in hook and never change which modules are built. See Open Design Question 1 |
-| AD-001 | Module docs; sign-off for engine API changes | DiaGame module doc updated (new module, streams, commands). Sign-off needed before building F1 (DiaGame runtime module) and F2 (DiaApplicationFlow `OnStageLaunch` + `StageLaunchContext`) |
-| AD-003 | `Dia::<Module>::` namespaces | `Dia::Game::` for catalogue, loader, module and event types |
+| PD-010 (amended 2026-11-18) | `.diagame` is root; `.diastage` is tooling metadata, and may also carry launch parameters applied through the opt-in `OnStageLaunch` hook | Tags, description and `proves` are pure metadata. Presets are launch parameters: they change stage-scoped module config at stage entry and never change which modules are built |
+| AD-001 | Module docs; sign-off for engine API changes | F1 engine edits are the DiaGame format fields, serializer and `StageKinds` (sign-off given 2026-11-18); the runtime module now lives in the Baseline and needs none. F2 needs DiaApplicationFlow `OnStageLaunch` + `StageLaunchContext` (sign-off given 2026-11-18) |
+| AD-003 | `Dia::<Module>::` namespaces | `Dia::Game::` for the format and `StageKinds` only; the Baseline types use the Baseline's `Cluiche::AppFlow::` namespace |
 | DDS-004 | DebugServer is Debug-only | `stages.*` via `dia query` works on Debug builds; the in-game menu and the file-based `dia stages` work in Release too |
 
 ## Test Strategy
@@ -265,19 +267,17 @@ Each stage carries **tags**, a **description**, named **launch presets** and the
   3. A tag chip filters the list.
   4. A test stage run from the menu shows its badge after returning to Boot and after restarting the game.
 
+## Resolved Decisions
+
+1. **Presets and PD-010** (user decision 2026-11-18): PD-010 is amended in `Cluiche.md`. A `.diastage` may carry launch parameters applied through the opt-in `Module::OnStageLaunch` hook, and these never change which modules are built. Presets stay inline (SC-007).
+2. **Module declaration** (user decision 2026-11-18): `StageCatalogueModule` is declared per app in its `.diaapp` (CoW, CluicheTest). Nothing is added automatically.
+3. **Results-file contention** (user decision 2026-11-18): last write wins. Each write first merges with the file on disk, keeping the newer result per stage, then writes through a temp file and a rename. Only two writes for the same stage race.
+4. **Menu split out** (user decision 2026-11-18): the menu rebuild is Feature 4, gated on its mockup, so Feature 1 can be built while the mockup is reviewed.
+
 ## Open Design Questions
 
-1. **Presets and PD-010.**
-   - Presets make `.diastage` carry something close to a construction instruction, namely config overrides.
-   - The hook is opt-in and never changes which modules exist. That is why this spec treats presets as "launch parameters", not construction.
-   - Should PD-010 be amended to say so explicitly, or should presets move to a sibling `<stage>.presets.json` so `.diastage` stays pure metadata?
-   - Decide before writing the Feature 2 spec.
-2. **Where `StageCatalogueModule` runs in apps without a MainPU module slot for it.** Both CoW and CluicheTest have a MainPU. Editor-hosted or headless apps (DiaPluginHost) do not need the catalogue, so this spec does not handle them.
-   - Confirm that the module is declared per app in `.diaapp`, not added automatically.
-3. **Results-file contention.** Two instances of the same game, for example with `port: auto` from DiaViewLaunch, would both write `out/<App>/stage_results.json`.
-   - Last write wins is acceptable for "last result" as long as the writes are atomic.
-   - Confirm, or key the file by machine and process if parallel E2E becomes a goal.
+_None open at system level._ Feature-level questions are in each feature spec.
 
 ## Status
 
-`Approved` (2026-11-18, user sign-off). Open Design Questions 1-3 stay open. Q1 (presets and PD-010) must be settled before the Feature 2 spec. Feature specs are not written. Next: `/spec-feature` for Feature 1, then the grouped-menu HTML mockup. AD-001 sign-offs are asked when F1 and F2 are built.
+`Approved` (2026-11-18, user sign-off). All four feature specs Approved 2026-11-18. Next: `/implement` Feature 1, and the Feature 4 mockup in parallel. System questions resolved. AD-001 sign-offs are asked when Features 1 and 2 are built.
