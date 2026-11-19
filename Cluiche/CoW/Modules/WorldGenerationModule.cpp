@@ -107,27 +107,7 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                 else
                     DIA_LOG_WARNING("CoW", "WorldGenerationModule: timeout_seconds must be a non-negative number, ignored");
             }
-            if (root.isMember("size"))
-            {
-                Json::Value args(Json::objectValue);
-                args["size"] = root["size"];
-                const Json::Value result = mSession.SetSize(args);
-                if (result.isMember("error"))
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: invalid size in config, keeping default");
-            }
-            if (root.isMember("seed"))
-            {
-                if (root["seed"].isUInt64() || (root["seed"].isIntegral() && root["seed"].asInt64() >= 0))
-                {
-                    Json::Value args(Json::objectValue);
-                    args["seed"] = root["seed"];
-                    mSession.Set(args);
-                }
-                else
-                {
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed must be an unsigned integer, ignored");
-                }
-            }
+            ApplySeedAndSize(root);
 
             // World hand-off (SD-S1-010): the stage names its world. At most one of preset / world_file / world_bundle.
             const char* const sources[] = { "preset", "world_file", "world_bundle" };
@@ -167,6 +147,36 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
     mSession.SetPresetDirectories(mPresetsDir, mOutPresetsDir);
     mSession.SetWorldDirectories(mWorldsDir, mOutWorldsDir);
 
+    ApplyHandoffPreset();
+}
+
+void WorldGenerationModule::ApplySeedAndSize(const Json::Value& root)
+{
+    if (root.isMember("size"))
+    {
+        Json::Value args(Json::objectValue);
+        args["size"] = root["size"];
+        const Json::Value result = mSession.SetSize(args);
+        if (result.isMember("error"))
+            DIA_LOG_WARNING("CoW", "WorldGenerationModule: invalid size in config, keeping default");
+    }
+    if (root.isMember("seed"))
+    {
+        if (root["seed"].isUInt64() || (root["seed"].isIntegral() && root["seed"].asInt64() >= 0))
+        {
+            Json::Value args(Json::objectValue);
+            args["seed"] = root["seed"];
+            mSession.Set(args);
+        }
+        else
+        {
+            DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed must be an unsigned integer, ignored");
+        }
+    }
+}
+
+void WorldGenerationModule::ApplyHandoffPreset()
+{
     // Preset form: the preset's shape with the configured seed and size, then a Regenerate (regions and sites placed).
     // The first generation still waits for the start deferral and any holds, like regenerate_on_start.
     if (mHandoffError.empty() && !mHandoffPreset.empty())
@@ -178,6 +188,34 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
             mSession.Regenerate(Json::Value(Json::objectValue));
         else
             mHandoffError = "preset \"" + mHandoffPreset + "\" could not be loaded: " + loaded["error"].asString();
+    }
+}
+
+void WorldGenerationModule::OnStageLaunch(const char* overridesJson)
+{
+    if (overridesJson == nullptr || overridesJson[0] == '\0')
+        return;
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(overridesJson, root) || !root.isObject())
+    {
+        DIA_LOG_WARNING("CoW", "WorldGenerationModule: launch preset override is not a JSON object, ignored");
+        return;
+    }
+    DIA_LOG_INFO("CoW", "WorldGenerationModule: applying launch preset override (%u bytes)", static_cast<unsigned>(std::strlen(overridesJson)));
+    ApplySeedAndSize(root);
+    if (root.isMember("preset"))
+    {
+        if (root["preset"].isString() && !root["preset"].asString().empty())
+        {
+            mHandoffPreset = root["preset"].asString();
+            ApplyHandoffPreset();
+        }
+        else
+        {
+            mHandoffError = "launch preset override: \"preset\" must be a non-empty preset id string";
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: %s", mHandoffError.c_str());
+        }
     }
 }
 

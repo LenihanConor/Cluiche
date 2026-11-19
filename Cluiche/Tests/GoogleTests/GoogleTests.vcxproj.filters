@@ -3183,5 +3183,8 @@
     <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestWorldGenStageLaunch.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

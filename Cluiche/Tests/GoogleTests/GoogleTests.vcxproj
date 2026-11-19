@@ -1344,6 +1344,7 @@
     <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp" />
     <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp" />
+    <ClCompile Include="CoW\TestWorldGenStageLaunch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -111,11 +111,15 @@ public:
 
 protected:
     void OnConfigure(const char* configJson) override;
+    // Launch preset (Stage Catalogue F2): applies seed, size and preset from the override over the manifest config.
+    void OnStageLaunch(const char* overridesJson) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    void ApplySeedAndSize(const Json::Value& root);
+    void ApplyHandoffPreset();
     void RegisterCommands();
     void UnregisterCommands();
     // World hand-off failure: Error log, Failing health, automatic generation suppressed (mHandoffError holds the reason).
