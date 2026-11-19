@@ -12,9 +12,9 @@
     "metrics_file": true
   },
   "trace": {
-    "enabled": false,
+    "enabled": true,
     "categories": {
-      "diaapplicationflow": false,
+      "diaapplicationflow": true,
       "diagraphics": false,
       "diastream": false,
       "diaassetruntime": false,

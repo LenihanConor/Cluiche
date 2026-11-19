@@ -142,7 +142,6 @@ Triaged 2026-11-19 ([triage](triage/loose-ends-triage-2026-11-19.md)): every row
 | Project | Item | Notes |
 |---------|------|-------|
 | CoW | GDD leftovers from the world-sim fold-back (2026-10-20) | For the GDD session: `A1_PrototypeTestbed.md` still has superseded 100×100 performance rows; V-1 Test 1b's 2–4 px legibility check is now only a stress-scale check at ~18 px tiles. Everything else in the six-item fold-back is applied and locked (DECISION-127/128, CHANGE-044…046) |
-| CoW | `cow.diaobservation` `trace.enabled` edit pending (from Perf Inspector follow-ups) | `Cluiche/Assets/CoW/cow.diaobservation` has an uncommitted `trace.enabled` edit; `perf.chain` needs tracing on. Commit or revert, user's call |
 | Dia | Frame-capture changes outside CellField scope (2026-10-20) | `IFrameCaptureSource::ReleaseFrameCapture` (default no-op; Canvas releases the ring slot; `CaptureManager::RemoveSlot` calls it), added so a process can capture more than 4 frames (`5d9eb191`), and a `DiaWindow/SystemHandle.h` guard fix (`WIN32` → `WIN32 \|\| _WIN32`) so `Canvas.h` compiles in GoogleTests. Not signed off under AD-001 beforehand; revert if unwanted |
 
 ---
