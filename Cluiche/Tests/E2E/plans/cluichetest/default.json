@@ -34,7 +34,8 @@
         "scenarios/cluichetest/celllayers/test_celllayers_export.py",
         "scenarios/cluichetest/celllayers/test_celllayers_delta.py",
         "scenarios/cluichetest/sim_hosted/test_sim_hosted_query.py",
-        "scenarios/cluichetest/stage_catalogue/test_stage_results_e2e.py"
+        "scenarios/cluichetest/stage_catalogue/test_stage_results_e2e.py",
+        "scenarios/cluichetest/stage_catalogue/test_boot_menu_e2e.py"
     ],
     "generic_run_skip": {
         "UIUltralightTestStage": "crashes app on second UIModule init — tracked in docs/research/e2e_testing/uiultralight_crash_notes.md"
