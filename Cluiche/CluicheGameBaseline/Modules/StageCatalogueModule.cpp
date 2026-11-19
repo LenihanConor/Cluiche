@@ -2,6 +2,11 @@
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
+#include <DiaDebugServer/DebugServer.h>
+#include <DiaDebugServer/QueryRegistry.h>
+#include <Modules/DebugServerHostModule.h>
+#include <Modules/StageCatalogueQueries.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Health/HealthRegistry.h>
@@ -32,6 +37,17 @@ std::string ResolvePath(const char* raw)
     if (GetFullPathNameA(raw, sizeof(absPath), absPath, nullptr) > 0) { return std::string(absPath); }
 #endif
     return std::string(raw);
+}
+
+Dia::DebugServer::QueryRegistry* ResolveQueryRegistry(Dia::ApplicationFlow::IApplicationInspectable* app)
+{
+    if (app == nullptr) { return nullptr; }
+    auto* store = app->FindStream(Dia::Core::StringCRC(DebugServerHostModule::kServiceStreamId));
+    // Get() asserts until the framework commits the stream (after every provider's DoStart): DoUpdate retries.
+    if (store == nullptr || !store->IsCommitted()) { return nullptr; }
+    auto* typed = static_cast<Dia::ApplicationFlow::ServiceStreamStore<Dia::DebugServer::DebugServer*>*>(store);
+    Dia::DebugServer::DebugServer* server = typed->Get();
+    return server ? &server->GetQueryRegistry() : nullptr;
 }
 
 } // namespace
@@ -67,6 +83,33 @@ void StageCatalogueModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
 {
     mResultsIn.Connect(app);
     mSnapshotOut.Connect(app);
+    mAppInspect = app.GetInspectable();
+}
+
+void StageCatalogueModule::RegisterQueries()
+{
+    if (mQueriesOn != nullptr) { return; }
+    Dia::DebugServer::QueryRegistry* registry = mQueryRegistryOverride ? mQueryRegistryOverride : ResolveQueryRegistry(mAppInspect);
+    if (registry == nullptr) { return; }
+    // Help text lives in StageCatalogueQueries::k*Help (main-hosted queries have no registry help channel).
+    const StageCatalogueState* state = &mState;
+    registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kListName),
+        [state](const Json::Value& args) { return StageCatalogueQueries::List(*state, args); });
+    registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kGetName),
+        [state](const Json::Value& args) { return StageCatalogueQueries::Get(*state, args); });
+    registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kResultsName),
+        [state](const Json::Value& args) { return StageCatalogueQueries::Results(*state, args); });
+    mQueriesOn = registry;
+    DIA_LOG_INFO("STAGES", "Registered queries stages.list, stages.get, stages.results");
+}
+
+void StageCatalogueModule::UnregisterQueries()
+{
+    if (mQueriesOn == nullptr) { return; }
+    mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kListName));
+    mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kGetName));
+    mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kResultsName));
+    mQueriesOn = nullptr;
 }
 
 bool StageCatalogueModule::GetSessionInfo(std::string&, std::string&) const
@@ -115,11 +158,13 @@ Dia::ApplicationFlow::StartResult StageCatalogueModule::DoStart()
     }
 
     Publish();   // once at start
+    RegisterQueries();   // no-op until the DebugServer stream is committed; DoUpdate retries
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
 void StageCatalogueModule::DoUpdate(const Dia::SimTime::MainTimeContext& /*ctx*/)
 {
+    if (mQueriesOn == nullptr) { RegisterQueries(); }
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<StageResultEvent>, 16> events;
     mResultsIn.Consume(events);
     for (unsigned int i = 0; i < events.Size(); ++i)
@@ -164,6 +209,7 @@ void StageCatalogueModule::Publish()
 
 Dia::ApplicationFlow::StopResult StageCatalogueModule::DoStop()
 {
+    UnregisterQueries();
     if (mHealthRegistered)
     {
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);

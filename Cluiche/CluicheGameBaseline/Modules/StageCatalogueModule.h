@@ -13,6 +13,8 @@
 #include <string>
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
+namespace Dia { namespace DebugServer { class QueryRegistry; } }
+namespace Dia { namespace ApplicationFlow { class IApplicationInspectable; } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -36,6 +38,11 @@ public:
     const StageCatalogueState& State() const { return mState; }
     uint32_t PublishCount() const { return mPublishCount; }
     Dia::Observation::Health::Health HealthNow() const { return mHealth.Report(); }
+
+    // Query registry for stages.list/get/results. Set before start (tests); default null resolves the DebugServer from the
+    // "DebugServerService" ServiceStream (optional: absent in Release, the module then runs without queries). Not owned.
+    void SetQueryRegistry(Dia::DebugServer::QueryRegistry* registry) { mQueryRegistryOverride = registry; }
+    bool QueriesRegistered() const { return mQueriesOn != nullptr; }
 
 protected:
     void OnConfigure(const char* configJson) override;
@@ -65,6 +72,8 @@ private:
     };
 
     void Publish();
+    void RegisterQueries();
+    void UnregisterQueries();
 
     StageCatalogueState mState;
     std::string mDiagamePath;
@@ -73,6 +82,9 @@ private:
     HealthReporter mHealth;
     bool mHealthRegistered = false;
     uint32_t mPublishCount = 0;
+    Dia::ApplicationFlow::IApplicationInspectable* mAppInspect = nullptr;
+    Dia::DebugServer::QueryRegistry* mQueryRegistryOverride = nullptr;
+    Dia::DebugServer::QueryRegistry* mQueriesOn = nullptr;
 
     Dia::ApplicationFlow::EventStreamReader<StageResultEvent> mResultsIn;
     Dia::ApplicationFlow::StreamWriter<StageCatalogueSnapshot> mSnapshotOut;

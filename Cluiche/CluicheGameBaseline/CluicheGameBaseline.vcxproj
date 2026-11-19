@@ -86,6 +86,7 @@
     <ClCompile Include="Modules\StageResultsFile.cpp" />
     <ClCompile Include="Modules\StageCatalogueState.cpp" />
     <ClCompile Include="Modules\StageCatalogueModule.cpp" />
+    <ClCompile Include="Modules\StageCatalogueQueries.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
@@ -166,6 +167,7 @@
     <ClInclude Include="Types\StageCatalogueSnapshot.h" />
     <ClInclude Include="Modules\StageCatalogueState.h" />
     <ClInclude Include="Modules\StageCatalogueModule.h" />
+    <ClInclude Include="Modules\StageCatalogueQueries.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
