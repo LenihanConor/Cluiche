@@ -221,3 +221,131 @@ TEST(JsonDiaStageSerializer, RoundTrip_WithoutNewFields)
     EXPECT_EQ(again.tags.Size(), 0u);
     EXPECT_EQ(again.description.Length(), 0u);
 }
+
+// ---- presets ----
+
+TEST(JsonDiaStageSerializer, Presets_AbsentIsEmptyAndResetsStale)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    m.presets.Add(DiaStagePreset());
+    ASSERT_TRUE(s.Load(MakeStageJson("").c_str(), m).ok);
+    EXPECT_EQ(m.presets.Size(), 0u);
+}
+
+TEST(JsonDiaStageSerializer, Presets_RoundTripNestedOverrides)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    ASSERT_TRUE(s.Load(MakeStageJson(
+        R"("presets":[{"name":"alpine42","description":"Alpine, seed 42","modules":{"WorldGen":{"preset":"alpine","seed":42,"nested":{"a":[1,2,{"b":true}],"f":1.5}}}},{"name":"bare","modules":{}}])").c_str(), m).ok);
+    ASSERT_EQ(m.presets.Size(), 2u);
+    EXPECT_STREQ(m.presets[0].name.AsCStr(), "alpine42");
+    EXPECT_STREQ(m.presets[0].description.AsCStr(), "Alpine, seed 42");
+    ASSERT_EQ(m.presets[0].modules.Size(), 1u);
+    EXPECT_STREQ(m.presets[0].modules[0].instanceId.AsCStr(), "WorldGen");
+    EXPECT_STREQ(m.presets[1].name.AsCStr(), "bare");
+    EXPECT_EQ(m.presets[1].modules.Size(), 0u);
+
+    std::string buf(16384, '\0');
+    ASSERT_TRUE(s.Save(m, &buf[0], static_cast<unsigned int>(buf.size())).ok);
+    EXPECT_NE(std::strstr(buf.c_str(), "presets"), nullptr);
+
+    DiaStageManifest out;
+    ASSERT_TRUE(s.Load(buf.c_str(), out).ok);
+    ASSERT_EQ(out.presets.Size(), 2u);
+    ASSERT_EQ(out.presets[0].modules.Size(), 1u);
+    EXPECT_STREQ(out.presets[0].description.AsCStr(), "Alpine, seed 42");
+    EXPECT_STREQ(out.presets[0].modules[0].overridesJson, m.presets[0].modules[0].overridesJson);
+    EXPECT_NE(std::strstr(out.presets[0].modules[0].overridesJson, "\"seed\":42"), nullptr);
+    EXPECT_NE(std::strstr(out.presets[0].modules[0].overridesJson, "\"b\":true"), nullptr);
+    EXPECT_NE(std::strstr(out.presets[0].modules[0].overridesJson, "1.5"), nullptr);
+}
+
+TEST(JsonDiaStageSerializer, Presets_EmptyOmittedOnSave)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    m.name = Dia::Core::Containers::String256("%s", "S");
+    m.manifestPath = Dia::Core::Containers::String256("%s", "s.diastage.json");
+    char buf[1024];
+    ASSERT_TRUE(s.Save(m, buf, sizeof(buf)).ok);
+    EXPECT_EQ(std::strstr(buf, "presets"), nullptr);
+}
+
+TEST(JsonDiaStageSerializer, Presets_NotArrayFails)
+{
+    ExpectFailNamed(R"("presets":{"name":"a"})", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_EntryNotObjectFails)
+{
+    ExpectFailNamed(R"("presets":["a"])", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_MissingNameFails)
+{
+    ExpectFailNamed(R"("presets":[{"modules":{}}])", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_SeventeenFails)
+{
+    std::string p = "\"presets\":[";
+    for (int i = 0; i < 17; ++i)
+        p += std::string(i ? "," : "") + "{\"name\":\"p" + std::to_string(i) + "\",\"modules\":{}}";
+    p += "]";
+    ExpectFailNamed(p, "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_SixteenAccepted)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    std::string p = "\"presets\":[";
+    for (int i = 0; i < 16; ++i)
+        p += std::string(i ? "," : "") + "{\"name\":\"p" + std::to_string(i) + "\",\"modules\":{}}";
+    p += "]";
+    ASSERT_TRUE(s.Load(MakeStageJson(p).c_str(), m).ok);
+    EXPECT_EQ(m.presets.Size(), 16u);
+}
+
+TEST(JsonDiaStageSerializer, Presets_NameTooLongFails)
+{
+    ExpectFailNamed("\"presets\":[{\"name\":\"" + std::string(32, 'a') + "\",\"modules\":{}}]", "name");
+}
+
+TEST(JsonDiaStageSerializer, Presets_NameAtLimitAccepted)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    ASSERT_TRUE(s.Load(MakeStageJson("\"presets\":[{\"name\":\"" + std::string(31, 'a') + "\",\"modules\":{}}]").c_str(), m).ok);
+    EXPECT_EQ(m.presets.Size(), 1u);
+}
+
+TEST(JsonDiaStageSerializer, Presets_DescriptionTooLongFails)
+{
+    ExpectFailNamed("\"presets\":[{\"name\":\"a\",\"description\":\"" + std::string(121, 'd') + "\",\"modules\":{}}]", "description");
+}
+
+TEST(JsonDiaStageSerializer, Presets_OverrideOver2KbFails)
+{
+    ExpectFailNamed("\"presets\":[{\"name\":\"a\",\"modules\":{\"M\":{\"k\":\"" + std::string(2100, 'x') + "\"}}}]", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_ModuleValueNotObjectFails)
+{
+    ExpectFailNamed(R"("presets":[{"name":"a","modules":{"M":5}}])", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_ModulesNotObjectFails)
+{
+    ExpectFailNamed(R"("presets":[{"name":"a","modules":[1]}])", "presets");
+}
+
+TEST(JsonDiaStageSerializer, Presets_TooManyModulesFails)
+{
+    std::string mods;
+    for (int i = 0; i < 9; ++i)
+        mods += std::string(i ? "," : "") + "\"M" + std::to_string(i) + "\":{}";
+    ExpectFailNamed("\"presets\":[{\"name\":\"a\",\"modules\":{" + mods + "}}]", "presets");
+}
