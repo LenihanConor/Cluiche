@@ -1335,6 +1335,7 @@
     <ClCompile Include="DiaGame\TestStageKinds.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageCatalogue.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageResultsFile.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestStageCatalogueModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

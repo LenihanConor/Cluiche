@@ -183,6 +183,12 @@
     <ClCompile Include="Modules\StageResultsFile.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueState.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -384,6 +390,15 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Modules\StageResultsFile.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageCatalogueSnapshot.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueState.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
