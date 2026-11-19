@@ -28,8 +28,8 @@ DiaBlackboard is the shared typed-slot store for gameplay and AI systems. Each b
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
 | 1 | Core | Typed slot store, observers, `BlackboardComponent`, `GlobalBlackboard` | [diablackboard.plan.md](diablackboard.plan.md) | Done |
-| 2 | Scopes and Change Notifications *(added 2026-11-18, world-sim review)* | Parent chain with explicit `Lookup`/`HasInChain`/`FindOwner` (existing `Get`/`TryGet` stay local), constructor slot cap, board name, `Set<T>` + defaulted `OnSlotChanged`, inspector chain view | [blackboard-scopes.md](blackboard-scopes.md) | Approved |
+| 2 | Scopes and Change Notifications *(added 2026-11-18, world-sim review)* | Parent chain with explicit `Lookup`/`HasInChain`/`FindOwner` (existing `Get`/`TryGet` stay local), constructor slot cap, board name, `Set<T>` + defaulted `OnSlotChanged`, inspector chain view | [blackboard-scopes.md](blackboard-scopes.md) | Done |
 
 ## Status
 
-`In Progress` (Core Done; Feature 2 Approved 2026-11-18, not built)
+`Done` (Core and Scopes Done 2026-11-18)

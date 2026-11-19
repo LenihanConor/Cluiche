@@ -1,7 +1,7 @@
 # Feature Spec: DiaBlackboard Scopes and Change Notifications
 
 **Parent:** @docs/specs/applications/dia/systems/diablackboard/diablackboard.md
-**Status:** `Approved` (2026-11-18, user)
+**Status:** `Done` (2026-11-18)
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A13, A13b)
 
 ## Summary
@@ -123,4 +123,4 @@ Scoped runs use `--filter="*Blackboard*"` with `--shards 2`, plus the AI test st
 
 ## Status
 
-**Status:** `Approved` (2026-11-18, user; explicit chain methods, `Set` + `OnSlotChanged`). No plan yet.
+**Status:** `Done` (2026-11-18). Plan: [blackboard-scopes.plan.md](blackboard-scopes.plan.md).
