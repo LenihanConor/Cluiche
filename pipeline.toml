@@ -145,7 +145,7 @@ ui_builds = [
   { cwd = "Dia/DiaBlackboardInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaSchemaBrowser/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
   { cwd = "Dia/DiaEconomyInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaAssetRuntimeInspector/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaAssetRuntimeInspector/UI", cmd = "node node_modules/typescript/bin/tsc && node node_modules/vite/bin/vite.js build" }
 ]
 files = [
   { src = "External/Python311/python311.dll",             dest = "$(OutDir)" },

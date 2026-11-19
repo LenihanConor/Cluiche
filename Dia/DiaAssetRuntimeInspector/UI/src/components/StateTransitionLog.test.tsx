@@ -285,9 +285,7 @@ describe('StateTransitionLog — combined filter', () => {
         expect(screen.queryByText(/audio\/sfx\.wav/)).toBeNull();
         // tex/hero.png Loading→Loaded matches assetId but not transition filter
         // Both entries share the same assetId text so we check by counting rendered rows
-        const rows = screen.getAllByTestId
-            ? screen.queryAllByText(/tex\/hero\.png/)
-            : [];
+        const rows = screen.queryAllByText(/tex\/hero\.png/);
         // At most one tex/hero.png row should be visible (the Failed one)
         expect(rows.length).toBe(1);
     });
