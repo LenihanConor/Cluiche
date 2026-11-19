@@ -86,35 +86,22 @@ void ComputeStage5(const TerrainRules& rules, GridDimensions dims, const float* 
         rank[i] = 0u;
     }
     const float minBasinDepth = rules.kMinBasinDepth();
-    std::vector<int> label(static_cast<size_t>(n), -1);
-    std::vector<int> stack;
-    for (int i = 0; i < n; ++i)
+    std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
     {
-        if (depth[i] <= 0.0f || label[i] != -1)
+        const Dia::Pathfinding::HexNeighbours graph(topo);
+        Dia::Pathfinding::GridSearchScratch scratch;
+        const uint32_t count = Dia::Pathfinding::ConnectedComponents(graph,
+            [depth](uint32_t c) { return depth[c] > 0.0f; }, label.data(), nullptr, scratch);
+        out.basins.resize(count);
+        // Ascending scan: each basin's cells arrive sorted, its first cell is its smallest index.
+        for (int i = 0; i < n; ++i)
         {
-            continue;
+            const uint32_t l = label[static_cast<size_t>(i)];
+            if (l != Dia::Pathfinding::kUnreached) { out.basins[l].cells.push_back(i); }
         }
-        const int id = static_cast<int>(out.basins.size());
-        out.basins.emplace_back();
-        Basin& b = out.basins.back();
-        label[i] = id;
-        stack.assign(1, i);
-        while (!stack.empty())
-        {
-            const int c = stack.back();
-            stack.pop_back();
-            b.cells.push_back(c);
-            for (uint32_t k = 0; k < 6; ++k)
-            {
-                const uint32_t nb = nbr[static_cast<size_t>(c) * 6u + k];
-                if (nb != kNoCell && depth[nb] > 0.0f && label[nb] == -1)
-                {
-                    label[nb] = id;
-                    stack.push_back(static_cast<int>(nb));
-                }
-            }
-        }
-        std::sort(b.cells.begin(), b.cells.end());
+    }
+    for (Basin& b : out.basins)
+    {
         b.firstCell = b.cells.front();
         for (int c : b.cells)
         {
