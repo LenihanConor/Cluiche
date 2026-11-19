@@ -16,6 +16,12 @@ namespace Dia { namespace Blackboard {
 
         Dia::Core::StringCRC GetName() const;
 
+        // Parent chain. Returns false (board unchanged) on cycle or if chain length
+        // from this upward would exceed kMaxParentDepth. nullptr detaches.
+        // Get/TryGet/Has remain local-only. A parent must outlive its children.
+        bool SetParent(const Blackboard* parent);
+        const Blackboard* GetParent() const;
+
         template<typename T>
         T& Register(Dia::Core::StringCRC key);
 
@@ -55,9 +61,12 @@ namespace Dia { namespace Blackboard {
         void NotifyUnregistered(Dia::Core::StringCRC key);
 
         static const unsigned int kMaxObservers = 8;
+        static const uint32_t kMaxParentDepth = 8;
 
         uint32_t                                              mMaxSlots;
         Dia::Core::StringCRC                                  mName;
+        const Blackboard*                                     mParent = nullptr;
+        mutable uint32_t                                      mChildCount = 0;
         Dia::Core::Containers::DynamicArray<SlotEntry*>       mSlots;
         Dia::Core::Containers::DynamicArrayC<IBlackboardObserver*, kMaxObservers> mObservers;
     };

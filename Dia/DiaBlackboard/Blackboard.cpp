@@ -19,8 +19,51 @@ namespace Dia { namespace Blackboard {
         return mName;
     }
 
+    bool Blackboard::SetParent(const Blackboard* parent)
+    {
+        if (parent == mParent)
+        {
+            return true;
+        }
+        if (parent != nullptr)
+        {
+            uint32_t depth = 1; // this
+            for (const Blackboard* p = parent; p != nullptr; p = p->mParent)
+            {
+                if (p == this)
+                {
+                    return false;
+                }
+                ++depth;
+            }
+            if (depth > kMaxParentDepth)
+            {
+                return false;
+            }
+            ++parent->mChildCount;
+        }
+        if (mParent != nullptr)
+        {
+            --mParent->mChildCount;
+        }
+        mParent = parent;
+        return true;
+    }
+
+    const Blackboard* Blackboard::GetParent() const
+    {
+        return mParent;
+    }
+
     Blackboard::~Blackboard()
     {
+        if (mParent != nullptr)
+        {
+            --mParent->mChildCount;
+            mParent = nullptr;
+        }
+        DIA_ASSERT(mChildCount == 0, "Blackboard destroyed while it still has live child boards; a parent must outlive its children");
+
         // Clean up all slots without notifying observers (they may be destroyed already)
         for (unsigned int i = 0; i < mSlots.Size(); ++i)
         {
