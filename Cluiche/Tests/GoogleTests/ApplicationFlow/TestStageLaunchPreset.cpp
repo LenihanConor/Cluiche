@@ -229,3 +229,115 @@ TEST(StageLaunchPreset, UnknownPresetBehavesAsNoPreset)
 
     EXPECT_GE(IndexOf("launch:modG1:"), 0);
 }
+
+// ---- IApplicationControl preset API (launch-presets AC 5, 7) ----
+
+TEST(StageLaunchPreset, CurrentPresetEmptyAtStart)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    IApplicationControl& ctl = app;
+    EXPECT_EQ(ctl.GetCurrentPreset().Value(), 0u);
+}
+
+TEST(StageLaunchPreset, ControlTransitionWithValidPresetDeliversAndReportsIt)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    CallLog().clear();
+
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Game"), StringCRC("Fast"));
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(ctl.GetCurrentPreset(), StringCRC("Fast"));
+    EXPECT_GE(IndexOf("launch:modG1:{\"a\":1}"), 0);
+}
+
+TEST(StageLaunchPreset, ControlTransitionWithUnknownPresetIsRefused)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    CallLog().clear();
+
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Game"), StringCRC("Nope"));
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Boot"));
+    EXPECT_EQ(ctl.GetCurrentPreset().Value(), 0u);
+    EXPECT_EQ(IndexOf("launch:modG1:"), -1);
+    EXPECT_EQ(IndexOf("start:modG1"), -1);
+}
+
+TEST(StageLaunchPreset, UnknownPresetKeepsPreviousCurrentPreset)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Game"), StringCRC("Fast"));
+    Pump(app);
+    ctl.TransitionTo(StringCRC("Boot"), StringCRC("Nope"));
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(ctl.GetCurrentPreset(), StringCRC("Fast"));
+}
+
+TEST(StageLaunchPreset, PresetOfOtherStageIsRefused)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Boot"), StringCRC("Fast"));   // Fast belongs to Game
+    ctl.TransitionTo(StringCRC("Game"), StringCRC("Fast"));
+    Pump(app);
+    ctl.TransitionTo(StringCRC("Boot"), StringCRC("Fast"));
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Game"));
+}
+
+TEST(StageLaunchPreset, PlainTransitionClearsCurrentPreset)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Game"), StringCRC("Fast"));
+    Pump(app);
+    ASSERT_EQ(ctl.GetCurrentPreset(), StringCRC("Fast"));
+    ctl.TransitionTo(StringCRC("Boot"));
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Boot"));
+    EXPECT_EQ(ctl.GetCurrentPreset().Value(), 0u);
+}
+
+TEST(StageLaunchPreset, EmptyPresetBehavesLikePlainTransition)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    CallLog().clear();
+    IApplicationControl& ctl = app;
+    ctl.TransitionTo(StringCRC("Game"), StringCRC());
+    Pump(app);
+
+    EXPECT_EQ(ctl.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(ctl.GetCurrentPreset().Value(), 0u);
+    EXPECT_GE(IndexOf("launch:modG1:"), 0);
+}

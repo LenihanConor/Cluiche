@@ -60,7 +60,7 @@ responsibilities:
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
   - IApplicationInspectable — read-only runtime introspection for debug tools and tests; FindStream(StringCRC) → IStreamStore*
-  - IApplicationControl — narrow control interface (TransitionTo, RequestShutdown,
+  - IApplicationControl — narrow control interface (TransitionTo(stage), TransitionTo(stage, preset) [unknown non-empty preset is refused with a logged error, nothing queued], GetCurrentPreset [empty at boot / after a preset-less transition], RequestShutdown,
     GetCurrentStage, RegisterTransitionGuard, UnregisterTransitionGuards) exposed to
     runtime module code via Module::GetApplication()
 

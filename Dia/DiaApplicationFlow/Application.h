@@ -76,6 +76,9 @@ namespace Dia { namespace ApplicationFlow {
         // IApplicationControl — thread-safe; queues a stage transition to
         // execute at the top of the next Update() call.
         void TransitionTo(const Dia::Core::StringCRC& stageId) override;
+        void TransitionTo(const Dia::Core::StringCRC& stageId,
+                          const Dia::Core::StringCRC& presetId) override;
+        [[nodiscard]] Dia::Core::StringCRC GetCurrentPreset() const override;
 
         // Internal: TransitionTo with a launch preset (empty StringCRC = none).  The preset's
         // per-module overrides are delivered via Module::OnStageLaunch when modules start.
@@ -265,6 +268,7 @@ namespace Dia { namespace ApplicationFlow {
         unsigned int mDedicatedThreadCount = 0;
 
         Dia::Core::StringCRC mCurrentStage;
+        Dia::Core::StringCRC mCurrentPreset;   // preset the running stage was launched with (empty = none)
 
         // Pending stage transition — written by TransitionTo(), read by Update().
         mutable std::mutex   mTransitionMutex;

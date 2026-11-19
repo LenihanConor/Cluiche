@@ -561,6 +561,23 @@ namespace Dia { namespace ApplicationFlow {
         TransitionToInternal(stageId, Dia::Core::StringCRC());
     }
 
+    void Application::TransitionTo(const Dia::Core::StringCRC& stageId,
+                                   const Dia::Core::StringCRC& presetId)
+    {
+        if (presetId.Value() != 0 && !mManifest.HasPreset(stageId, presetId))
+        {
+            DIA_LOG_ERROR("Application", "Unknown preset '%s' for stage '%s', transition refused",
+                          presetId.AsChar(), stageId.AsChar());
+            return;
+        }
+        TransitionToInternal(stageId, presetId);
+    }
+
+    Dia::Core::StringCRC Application::GetCurrentPreset() const
+    {
+        return mCurrentPreset;
+    }
+
     void Application::DeliverStageLaunch(Module* module, const Dia::Core::StringCRC& stage,
                                          const Dia::Core::StringCRC& preset)
     {
@@ -1118,6 +1135,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // All outgoing modules are down — commit stage and start incoming.
         mCurrentStage       = newStage;
+        mCurrentPreset      = mLaunchPreset;
         mTransitionDraining = false;
 
         // A successful transition into a new stage resets the rollback counter:

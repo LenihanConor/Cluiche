@@ -34,12 +34,23 @@ namespace Dia { namespace ApplicationFlow {
         // top of the next Update().
         virtual void TransitionTo(const Dia::Core::StringCRC& stageId) = 0;
 
+        // Queue a transition to the given stage with a launch preset.  An empty preset
+        // is identical to TransitionTo(stageId).  If the preset is non-empty and not
+        // declared for the stage, the request is refused (error logged, nothing queued).
+        // Thread-safe.
+        virtual void TransitionTo(const Dia::Core::StringCRC& stageId,
+                                  const Dia::Core::StringCRC& presetId) = 0;
+
         // Request orderly shutdown of all dedicated threads and all modules.
         // Thread-safe.  Idempotent.
         virtual void RequestShutdown() = 0;
 
         // Read-only: which stage is the Application currently in.
         [[nodiscard]] virtual Dia::Core::StringCRC GetCurrentStage() const = 0;
+
+        // Read-only: launch preset of the running stage (empty at boot or when the stage
+        // was entered without a preset).  Same threading contract as GetCurrentStage.
+        [[nodiscard]] virtual Dia::Core::StringCRC GetCurrentPreset() const = 0;
 
         // Read-only: what stages can the given stage transition to.
         virtual void GetStageTransitions(const Dia::Core::StringCRC& stage,
