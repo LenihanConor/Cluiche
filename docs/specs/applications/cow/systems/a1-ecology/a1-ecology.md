@@ -1,6 +1,7 @@
 # System Spec: A1 Ecology
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A1_Ecology/` (DesignDocs repo; `A1_EcologySystem.md`, `A1_TechnicalSpec.md`, `A1_TuningParameters.md`, `A1_AuthoringDebug.md`, `A1_EdgeCaseMatrix.md`, `A1_PrototypeTestbed.md`, `A1_ProductionBacklog.md`, all Locked 2026-10-12)  
 **Conflicts resolved here:** [a1-gdd-conflicts.md](a1-gdd-conflicts.md) (C1–C14, interviewed 2026-10-18)
 **Amended 2026-11-17, A5 Hydrology (aligned to locked GDD 2026-11-17, CHANGE-048; GDD A5 locked under DECISION-129..134, CHANGE-047/048):** water on the ground now belongs to A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)). Feature 4 loses the water flow pass and the Decade water table, but keeps a thin step 2 that builds `water_gradient` from A5's snapshot. A1 reads cell water, river flow, flooding and ice from `HydrologySnapshot`. The `water_dragon_emission` direct write is dropped. A5 is a soft dependency: without it A1 falls back to A4 rainfall or the pinned climate.

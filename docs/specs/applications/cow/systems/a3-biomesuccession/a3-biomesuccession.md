@@ -1,6 +1,7 @@
 # System Spec: A3 Biome Succession
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A3_BiomeSuccession/` (DesignDocs repo; `A3_BiomeSuccession.md`, `A3_TechnicalSpec.md`, `A3_TuningParameters.md`, `A3_EdgeCaseMatrix.md`, `A3_PrototypeTestbed.md`, `A3_ProductionBacklog.md`, Locked; amended by CHANGE-036, pending fold-back by the GDD session; the A5 rules are in GDD A5 TechnicalSpec 14.4, CHANGE-048, and the GDD A3 files have not yet been edited)  
 **Works with:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 evaluates the counters; A3 decides the transitions)
 **Amended 2026-11-17, A5 Hydrology:** A5 ([a5-hydrology.md](../a5-hydrology/a5-hydrology.md)) now produces the water signals A3's rules need: sustained flooding, exposed lakebed, sustained low river flow and glacier mass. A3 gains rules over them, and Lake is no longer a "no transitions" biome. A5 never writes biome; A3 flips it. First-run thresholds come from the locked GDD A5 (aligned to locked GDD 2026-11-17, CHANGE-048; the GDD A3 documents do not yet carry these rules, the source is GDD A5 TechnicalSpec 14.4).

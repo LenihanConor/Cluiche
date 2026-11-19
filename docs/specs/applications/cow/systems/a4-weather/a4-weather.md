@@ -1,6 +1,7 @@
 # System Spec: A4 Weather
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/08_SystemsDeepDive/A4_Weather/` (DesignDocs repo; `A4_WeatherSystem.md`, `A4_TechnicalSpec.md`, `A4_TuningParameters.md`, `A4_AuthoringDebug.md`, `A4_EdgeCaseMatrix.md`, `A4_ProductionBacklog.md`; locked 2026-10-11, **re-locked 2026-11-17 after CHANGE-047**)
 
 **Gameplay Domains:** simulation, debug

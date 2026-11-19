@@ -1,6 +1,7 @@
 # System Spec: WorldGenerationPipeline
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S1_WorldGeneration.md` (DesignDocs repo)
 
 **Gameplay Domains:** simulation

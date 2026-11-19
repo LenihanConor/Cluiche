@@ -3,6 +3,7 @@
     "manifest": "Stages/S1WorldGenerationTestbedStage/misc/ApplicationFlow/s1world_generation_testbed_stage.diaapp",
     "tags": ["tool", "worldgen"],
     "description": "Live terrain, biome and region editor with sliders",
+    "proves": ["docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md"],
     "config": {
         "path_aliases": {
             "stage_root": "."

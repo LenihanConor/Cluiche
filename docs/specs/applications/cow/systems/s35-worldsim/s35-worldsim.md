@@ -1,6 +1,7 @@
 # System Spec: S-3.5 World Sim
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S3.5_WorldSim.md` (DesignDocs), **Locked 2026-10-20** after a Tier 2 Challenge Pass (CH-S35-01…05, §7). It joined the roster as DECISION-128 / CHANGE-045, a recorded exception to Rule 1. `.cowworld` bundles are specified in its §4.  
 **Origin:** 2026-10-19 world-sim product review. Outcomes C ("a testbed to demonstrate and test the work") and D ("a place to author content"). This is the one testbed that runs every world layer together on one world.  
 **Mockup:** [mockups/s35-world-sim.html](mockups/s35-world-sim.html)  

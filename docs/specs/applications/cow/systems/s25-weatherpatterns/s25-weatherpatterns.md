@@ -1,6 +1,7 @@
 # System Spec: S-2.5 Weather Patterns
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S2.5_WeatherPatterns.md` (DesignDocs repo, Locked 2026-10-18 after a Tier 2 Challenge Pass)  
 **System under test:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (A4 owns the tools; this testbed hosts them)
 

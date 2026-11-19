@@ -3,6 +3,7 @@
     "manifest": "Stages/F2CoreRuntime/misc/ApplicationFlow/f2_core_runtime.diaapp",
     "tags": ["test"],
     "description": "F-2 core runtime checks",
+    "proves": ["docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md"],
     "config": {
         "path_aliases": {
             "stage_root": "."

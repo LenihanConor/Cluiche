@@ -1,6 +1,7 @@
 # System Spec: S-3 Ecology
 
 **Parent:** @docs/specs/applications/cow/cow.md  
+**Testbed:** required  
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/S2_SingleCellEcology.md` and `S3_LivingEcology.md` (DesignDocs repo, both Locked 2026-10-11). **Merged here 2026-10-18** (see Deviations).  
 **System under test:** @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md (A1 owns the tools; this testbed hosts them)
 **Amended 2026-11-18 (A1 ecology expansion):** three new guided scenarios (Nutrient flow, Seasonal visitors, Fish run) and a Herds scenario set once A1 Population Tokens is built; `ecology.nutrient.soil` joins the default tracked layers. Without A5 (Controlled mode) river transport runs at base rate and no run is blocked.
