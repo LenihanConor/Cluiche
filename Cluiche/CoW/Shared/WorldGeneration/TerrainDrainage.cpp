@@ -4,6 +4,8 @@
 
 #include <Shared/WorldGeneration/TerrainDrainage.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -15,24 +17,6 @@ namespace {
 
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;
-
-struct FloodEntry
-{
-    float level;
-    float filled;
-    int   cell;
-};
-
-// Min-heap order on (level, filled, cell): a strict total order (each cell is pushed once).
-struct FloodLater
-{
-    bool operator()(const FloodEntry& a, const FloodEntry& b) const
-    {
-        if (a.level != b.level) { return a.level > b.level; }
-        if (a.filled != b.filled) { return a.filled > b.filled; }
-        return a.cell > b.cell;
-    }
-};
 
 } // namespace
 
@@ -71,40 +55,26 @@ void ComputeStage5(const TerrainRules& rules, GridDimensions dims, const float* 
 
     // 1. Fill: priority flood seeded from every ocean cell. Unreached land (no ocean anywhere in
     //    its component) keeps filled = level = raw.
-    std::vector<uint8_t> visited(static_cast<size_t>(n), 0);
-    std::vector<FloodEntry> heap;
-    heap.reserve(static_cast<size_t>(n));
-    for (int i = 0; i < n; ++i)
     {
-        filled[i] = elevationRaw[i];
-        level[i] = elevationRaw[i];
-        if (oceanMask[i] != 0)
-        {
-            visited[i] = 1;
-            heap.push_back(FloodEntry{ level[i], filled[i], i });
-        }
+        const Dia::Pathfinding::HexNeighbours graph(topo);
+        Dia::Pathfinding::GridSearchScratch scratch;
+        Dia::Pathfinding::PriorityFlood(graph, elevationRaw, oceanMask, kFillEpsilon, filled, level.data(), scratch);
     }
-    const FloodLater later;
-    std::make_heap(heap.begin(), heap.end(), later);
-    while (!heap.empty())
+
+    // Cells the flood reached (ocean, or connected to ocean): needed by the flow-direction pass.
+    std::vector<uint8_t> visited(static_cast<size_t>(n), 0);
     {
-        std::pop_heap(heap.begin(), heap.end(), later);
-        const FloodEntry e = heap.back();
-        heap.pop_back();
-        for (uint32_t k = 0; k < 6; ++k)
+        const Dia::Pathfinding::HexNeighbours graph(topo);
+        Dia::Pathfinding::GridSearchScratch scratch;
+        std::vector<Dia::Pathfinding::StepSeed> seeds;
+        for (int i = 0; i < n; ++i)
         {
-            const uint32_t nb = nbr[static_cast<size_t>(e.cell) * 6u + k];
-            if (nb == kNoCell || visited[nb] != 0)
-            {
-                continue;
-            }
-            visited[nb] = 1;
-            const float raw = elevationRaw[nb];
-            level[nb] = std::max(raw, e.level);
-            filled[nb] = std::max(raw, e.filled + kFillEpsilon);
-            heap.push_back(FloodEntry{ level[nb], filled[nb], static_cast<int>(nb) });
-            std::push_heap(heap.begin(), heap.end(), later);
+            if (oceanMask[i] != 0) { seeds.push_back({ static_cast<uint32_t>(i), 0u, static_cast<uint32_t>(i) }); }
         }
+        std::vector<uint32_t> steps(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+        Dia::Pathfinding::MultiSourceSteps(graph, seeds.data(), static_cast<uint32_t>(seeds.size()),
+            [](uint32_t) { return true; }, static_cast<uint32_t>(n), steps.data(), nullptr, scratch);
+        for (int i = 0; i < n; ++i) { visited[i] = steps[i] != Dia::Pathfinding::kUnreached ? 1 : 0; }
     }
 
     // 2. Basins: epsilon-free depth, components over the six hex neighbours, discovered in
