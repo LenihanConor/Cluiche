@@ -3,6 +3,8 @@
 // from registeredtypes.diaschema are copied into components[].fields[] only when present.
 
 #include <gtest/gtest.h>
+#include <process.h>
+#include <string>
 #include <DiaSceneEditor/PropertyInspectorController.h>
 #include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -15,8 +17,11 @@ using namespace Dia::Editor;
 
 namespace
 {
-	const char* kPicSchemaPath   = "TestPIC_temp.diaschema";
-	const char* kPicTemplatePath = "pic_hero.diaentitytemplate";
+	const std::string kPicSchemaPathStr = std::string("TestPIC_temp_") + std::to_string(_getpid()) + ".diaschema";  // per process: shards share the cwd
+	const char* kPicSchemaPath = kPicSchemaPathStr.c_str();
+	const std::string kPicIdStr = "pic_hero_" + std::to_string(_getpid());   // the blueprint id is its file name: per process too
+	const std::string kPicTemplatePathStr = kPicIdStr + ".diaentitytemplate";
+	const char* kPicTemplatePath = kPicTemplatePathStr.c_str();
 
 	void WriteText(const char* path, const std::string& content)
 	{
@@ -37,8 +42,8 @@ namespace
 			"  ] } ] }";
 	}
 
-	const char* kTemplateText =
-		"{ \"entity_template\": { \"id\": \"pic_hero\", \"components\": ["
+	const std::string kTemplateText =
+		"{ \"entity_template\": { \"id\": \"" + kPicIdStr + "\", \"components\": ["
 		"  { \"type\": \"t.meta\", \"fields\": { \"speed\": 1, \"plain\": 7 } },"
 		"  { \"type\": \"t.other\", \"fields\": { \"x\": 2 } }"
 		"] } }";
@@ -57,7 +62,7 @@ namespace
 		Json::Value root;
 		Json::Value ent(Json::objectValue);
 		ent["id"] = "e1";
-		ent["blueprint"] = "pic_hero";
+		ent["blueprint"] = kPicIdStr;
 		root["scene2d"]["entities"].append(ent);
 		return root;
 	}
@@ -65,7 +70,7 @@ namespace
 	// Returns the full property JSON; schema may be null (no schema attached).
 	Json::Value BuildProps(const std::string& schemaText, bool attachSchema)
 	{
-		WriteText(kPicTemplatePath, kTemplateText);
+		WriteText(kPicTemplatePath, kTemplateText.c_str());
 		WriteText(kPicSchemaPath, schemaText);
 		SchemaReader schema;
 		schema.LoadFromFile(kPicSchemaPath);
@@ -132,13 +137,13 @@ TEST(PropertyInspectorMetadata, OverlongDescription_TruncatedNotCrash)
 
 TEST(PropertyInspectorMetadata, BlueprintDefaults_IncludesMetadata)
 {
-	WriteText(kPicTemplatePath, kTemplateText);
+	WriteText(kPicTemplatePath, kTemplateText.c_str());
 	WriteText(kPicSchemaPath, SchemaText("fast"));
 	SchemaReader schema;
 	schema.LoadFromFile(kPicSchemaPath);
 	PropertyInspectorController ctrl;
 	ctrl.SetSchema(&schema);
-	Json::Value r = ctrl.BuildBlueprintDefaultsJson("pic_hero", "entity", ".");
+	Json::Value r = ctrl.BuildBlueprintDefaultsJson(kPicIdStr.c_str(), "entity", ".");
 	ctrl.SetSchema(nullptr);
 	remove(kPicSchemaPath);
 	remove(kPicTemplatePath);

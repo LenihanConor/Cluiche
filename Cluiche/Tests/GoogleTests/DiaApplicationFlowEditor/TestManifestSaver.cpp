@@ -2,6 +2,8 @@
 // Suite: ManifestSaver
 
 #include <gtest/gtest.h>
+#include <process.h>
+#include <string>
 #include <DiaApplicationFlowEditor/V2/ManifestSaver.h>
 #include <DiaApplicationFlowEditor/V2/ManifestLoader.h>
 #include <DiaApplicationFlowEditor/V2/ManifestEditorState.h>
@@ -21,9 +23,12 @@ using namespace Dia::Core;
 
 namespace
 {
-    static const char* kTestFilePath = "C:\\Temp\\dia_test_saver.diaapp";
-    static const char* kTestBakPath  = "C:\\Temp\\dia_test_saver.diaapp.bak";
-    static const char* kTestTmpPath  = "C:\\Temp\\dia_test_saver.diaapp.tmp";
+    static const std::string kTestFilePathStr = std::string("C:\\Temp\\dia_test_saver_") + std::to_string(_getpid()) + ".diaapp";  // per process: shards share the cwd
+    static const char* kTestFilePath = kTestFilePathStr.c_str();
+    static const std::string kTestBakPathStr = std::string("C:\\Temp\\dia_test_saver_") + std::to_string(_getpid()) + ".diaapp.bak";  // per process: shards share the cwd
+    static const char* kTestBakPath = kTestBakPathStr.c_str();
+    static const std::string kTestTmpPathStr = std::string("C:\\Temp\\dia_test_saver_") + std::to_string(_getpid()) + ".diaapp.tmp";  // per process: shards share the cwd
+    static const char* kTestTmpPath = kTestTmpPathStr.c_str();
 
     static void EnsureTempDir()
     {

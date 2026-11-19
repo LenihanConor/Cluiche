@@ -2,6 +2,8 @@
 // Unit tests for SchemaReader — loads component schema from .diaschema files.
 
 #include <gtest/gtest.h>
+#include <process.h>
+#include <string>
 #include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -29,7 +31,8 @@ static void DeleteFile(const char* path)
     remove(path);
 }
 
-static const char* kTestSchemaPath = "TestSchemaReader_temp.diaschema";
+static const std::string kTestSchemaPathStr = std::string("TestSchemaReader_temp_") + std::to_string(_getpid()) + ".diaschema";  // per process: shards share the cwd
+static const char* kTestSchemaPath = kTestSchemaPathStr.c_str();
 
 // Valid schema: 2 components; first has 2 fields, second has none.
 static const char* kValidSchema =

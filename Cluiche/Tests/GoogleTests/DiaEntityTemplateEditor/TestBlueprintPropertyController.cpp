@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <process.h>
+#include <string>
 #include <DiaEntityTemplateEditor/BlueprintPropertyController.h>
 #include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -227,7 +229,8 @@ static void WriteSchemaForBPC(const char* path, const char* content)
 	if (f) { fputs(content, f); fclose(f); }
 }
 
-static const char* kBPCTestSchemaPath = "TestBPCSchema_temp.diaschema";
+static const std::string kBPCTestSchemaPathStr = std::string("TestBPCSchema_temp_") + std::to_string(_getpid()) + ".diaschema";  // per process: shards share the cwd
+static const char* kBPCTestSchemaPath = kBPCTestSchemaPathStr.c_str();
 
 static const char* kBPCSingleComponentSchema =
 	"{"
@@ -317,7 +320,8 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_SchemaComponent_Alrea
 // BuildPropertyJson — schema-aware tests (codeDefault injection)
 // ===========================================================================
 
-static const char* kBPCSchemaWithDefaultsPath = "TestBPCSchemaDefaults_temp.diaschema";
+static const std::string kBPCSchemaWithDefaultsPathStr = std::string("TestBPCSchemaDefaults_temp_") + std::to_string(_getpid()) + ".diaschema";  // per process: shards share the cwd
+static const char* kBPCSchemaWithDefaultsPath = kBPCSchemaWithDefaultsPathStr.c_str();
 
 static const char* kBPCSchemaWithDefaults =
 	"{"
@@ -374,7 +378,8 @@ TEST(BlueprintPropertyController, BuildPropertyJson_WithSchema_FieldHasCodeDefau
 // BuildPropertyJson — field metadata passthrough
 // ===========================================================================
 
-static const char* kBPCMetaPath = "TestBPCSchemaMeta_temp.diaschema";
+static const std::string kBPCMetaPathStr = std::string("TestBPCSchemaMeta_temp_") + std::to_string(_getpid()) + ".diaschema";  // per process: shards share the cwd
+static const char* kBPCMetaPath = kBPCMetaPathStr.c_str();
 
 static const char* kBPCSchemaMeta =
 	"{"

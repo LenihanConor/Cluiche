@@ -5,6 +5,7 @@
 #include <cstring>
 #include <direct.h>
 #include <memory>
+#include <regex>
 #include <string>
 #include <vector>
 #include <DiaCore/Json/external/json/json.h>
@@ -389,8 +390,10 @@ TEST_F(DeferredStepSaveEdge, SavingTwiceProducesIdenticalFilesAndStepAppliesOnce
 	ASSERT_TRUE(saved.mManager.Save(slotA).Ok());
 	ASSERT_TRUE(saved.mManager.Save(slotB).Ok());
 
-	const std::string textA = ReadFile(SlotPath(nameA));
-	const std::string textB = ReadFile(SlotPath(nameB));
+	// The manifest carries the save time in whole seconds; two saves straddling a second boundary differ only there.
+	const std::regex stamp(R"("timestamp"\s*:\s*\d+)");
+	const std::string textA = std::regex_replace(ReadFile(SlotPath(nameA)), stamp, "\"timestamp\":0");
+	const std::string textB = std::regex_replace(ReadFile(SlotPath(nameB)), stamp, "\"timestamp\":0");
 	ASSERT_FALSE(textA.empty());
 	EXPECT_EQ(textA, textB);
 	EXPECT_EQ(saved.mScheduler.GetStats().drains, 1u);   // second save found nothing in flight
