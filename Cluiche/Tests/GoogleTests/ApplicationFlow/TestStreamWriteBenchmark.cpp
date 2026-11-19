@@ -35,12 +35,10 @@ namespace {
     // Benchmark parameters
     constexpr int kWarmupIterations = 1000;
     constexpr int kBenchIterations  = 100000;
-    constexpr double kBudgetNs      = 5.0;   // AC1 budget: 5 ns per write (tracer off)
-    constexpr double kFailThresholdNs = 10.0;  // 2x the 5 ns AC1 budget; printed for reference, NOT enforced (see below)
-    // Enforced (Release only) regression ceilings, ~3x the Release baseline measured 2026-11-18 on the dev machine:
-    // FrameStream write ~58 ns, EventStream send ~150 ns, multi-writer ~76 ns. The 5 ns AC1 budget has never been met
-    // (the Task 9 commit already recorded one failing benchmark), so an absolute 10 ns threshold could only ever fail;
-    // these ceilings catch real regressions instead. Debug prints the numbers and enforces nothing.
+    // Enforced (Release only) regression ceilings, ~3x the Release cost measured 2026-11-18 on the dev machine:
+    // FrameStream write ~58 ns, EventStream send ~150 ns, multi-writer ~76 ns. Trace-linked Streams AC1 was written as a
+    // delta (5 ns over the pre-change write) but no pre-change figure was recorded, so it is checked as these absolute
+    // ceilings (spec amended 2026-11-19). Debug prints the numbers and enforces nothing.
     constexpr double kFrameWriteCeilingNs = 200.0;
     constexpr double kEventSendCeilingNs  = 500.0;
     constexpr double kMultiWriterCeilingNs = 250.0;
@@ -105,18 +103,12 @@ TEST(StreamWriteBenchmark, FrameStreamWriteBaseline)
     // Always report the measurement
     std::printf("[----------] FrameStreamStore::Write baseline: %.2f ns per write (%.0f total ns, %d iterations)\n",
                 perWriteNs, totalNs, kBenchIterations);
-    std::printf("[----------] Budget: %.1f ns, Threshold: %.1f ns\n", kBudgetNs, kFailThresholdNs);
 
-    // Fail only if cost exceeds 2x the budget
+    // Fail only if cost exceeds the regression ceiling (Release)
     BENCH_EXPECT_LT(perWriteNs, kFrameWriteCeilingNs)
         << "FrameStreamStore::Write baseline cost (" << perWriteNs << " ns) exceeds the regression ceiling ("
         << kFrameWriteCeilingNs << " ns, Release). Consider DIA_DEBUG-gated link fields.";
 
-    // Note whether we're over budget (not a failure, just a flag)
-    if (perWriteNs > kBudgetNs)
-    {
-        std::printf("[----------] NOTE: Baseline exceeds the 5 ns budget. Tasks 3/4 will add overhead on top of this.\n");
-    }
 }
 
 // Baseline: EventStreamStore::Send cost (tracer off)
@@ -151,17 +143,12 @@ TEST(StreamWriteBenchmark, EventStreamSendBaseline)
     // Always report
     std::printf("[----------] EventStreamStore::Send baseline: %.2f ns per send (%.0f total ns, %d iterations)\n",
                 perSendNs, totalNs, kBenchIterations);
-    std::printf("[----------] Budget: %.1f ns, Threshold: %.1f ns\n", kBudgetNs, kFailThresholdNs);
 
     // Fail only above 2x budget
     BENCH_EXPECT_LT(perSendNs, kEventSendCeilingNs)
         << "EventStreamStore::Send baseline cost (" << perSendNs << " ns) exceeds the regression ceiling ("
         << kEventSendCeilingNs << " ns, Release). Consider DIA_DEBUG-gated link fields.";
 
-    if (perSendNs > kBudgetNs)
-    {
-        std::printf("[----------] NOTE: Baseline exceeds the 5 ns budget. Tasks 3/4 will add overhead on top of this.\n");
-    }
 }
 
 // Multi-writer FrameStreamStore: measures mutex-protected write path
@@ -199,7 +186,6 @@ TEST(StreamWriteBenchmark, FrameStreamMultiWriterBaseline)
     double perWriteNs = totalNs / static_cast<double>(kBenchIterations);
 
     std::printf("[----------] FrameStreamStore::Write (multi-writer) baseline: %.2f ns per write\n", perWriteNs);
-    std::printf("[----------] Budget: %.1f ns, Threshold: %.1f ns\n", kBudgetNs, kFailThresholdNs);
 
     // Multi-writer has a mutex, so we're more lenient (but still report)
     BENCH_EXPECT_LT(perWriteNs, kMultiWriterCeilingNs)

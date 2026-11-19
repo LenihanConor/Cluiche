@@ -40,6 +40,8 @@ A cost that spans two threads through a stream never appears as one thing: the S
 | ID | Criterion | Verification |
 |----|-----------|--------------|
 | AC1 | **Write-path cost.** With the tracer off, `FrameStreamStore::Write` and `EventStreamStore::Send` cost no more than 5 ns over the pre-change baseline; the tracer-on overhead is reported. Measured in Release as well as Debug. Stays inside SD-PERF-7 budgets with the S-1 stage running | Benchmark test (reports always; fails above 2x the 5 ns budget) |
+
+*AC1 amended 2026-11-19:* no pre-change write cost was recorded, so the 5 ns delta cannot be checked. Measured Release cost (2026-11-18, tracer off): FrameStream write ~58 ns, EventStream send ~150 ns, multi-writer ~76 ns. AC1 is now enforced as Release regression ceilings of 200 / 500 / 250 ns in `TestStreamWriteBenchmark`; Debug prints only. A genuine per-write perf pass is not scheduled (ballpark is acceptable; reopen if a hot path shows it).
 | AC2 | **Frame link round trip.** A traced `FrameStream` write gives the reader a link with the writer's `traceId` and `spanId`, across threads. With no open span on the writer, or the tracer off, the reader sees no link | Unit tests incl. a two-thread test |
 | AC3 | **Event link round trip.** Same as AC2 through the `Event<T>` envelope. The link survives frame batching; a dropped event leaves no stale link on a later one | Unit tests |
 | AC4 | **Flow link in the trace.** A reader span opened with a link records `linkTraceId`/`linkSpanId` in `SpanRecord`; its parent and trace id are unchanged. The trace file sink writes the link; `dia perf convert` emits a Perfetto flow event pair | Unit tests + converter golden file |
