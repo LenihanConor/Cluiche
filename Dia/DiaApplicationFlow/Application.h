@@ -79,6 +79,7 @@ namespace Dia { namespace ApplicationFlow {
         void TransitionTo(const Dia::Core::StringCRC& stageId,
                           const Dia::Core::StringCRC& presetId) override;
         [[nodiscard]] Dia::Core::StringCRC GetCurrentPreset() const override;
+        [[nodiscard]] bool IsStageReady() const override { return mStageReady.load(); }
 
         // Internal: TransitionTo with a launch preset (empty StringCRC = none).  The preset's
         // per-module overrides are delivered via Module::OnStageLaunch when modules start.
@@ -339,6 +340,8 @@ namespace Dia { namespace ApplicationFlow {
         static bool ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId);
 #endif
         bool                 mTransitionDraining = false;
+        std::atomic<bool>    mStageReady{false};   // IApplicationControl::IsStageReady; written on Main only
+        void UpdateStageReady();
         Dia::Core::StringCRC mDrainingToStage;
 
         // Rollback retry state: on a non-boot module failure the release-build

@@ -468,6 +468,9 @@ namespace Dia { namespace ApplicationFlow {
         // --- Commit gate: make registered ServiceStreams visible to consumers ---
         CommitReadyServiceStreams();
 
+        // --- Stage readiness: after the commit, so "ready" implies the stage's services are visible ---
+        UpdateStageReady();
+
         // --- Error policy: check for failed modules --------------------------
         if (AnyModuleFailed())
         {
@@ -633,6 +636,31 @@ namespace Dia { namespace ApplicationFlow {
         mPendingStage = stageId;
         mPendingPreset = presetId;
         mHasPendingTransition.store(true);
+        mStageReady.store(false);   // a stale "ready" must not outlive the request
+    }
+
+    //--------------------------------------------------------------------------
+    // UpdateStageReady  (Main, end of Update after the service-stream commit)
+    //--------------------------------------------------------------------------
+
+    void Application::UpdateStageReady()
+    {
+        bool ready = mStarted && !mShuttingDown.load() && !mHasPendingTransition.load() && !mTransitionDraining
+                     && mCurrentStage.Value() != 0;
+        for (unsigned int p = 0; ready && p < mProcessingUnitCount; ++p)
+        {
+            ProcessingUnit* pu = mProcessingUnits[p].Get();
+            const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+            for (unsigned int m = 0; ready && m < puDecl.modules.Size(); ++m)
+            {
+                const ModuleDeclaration& modDecl = puDecl.modules[m];
+                if (!ModuleIsInStage(modDecl, mCurrentStage))
+                    continue;
+                const Module* module = pu->FindModule(modDecl.instanceId);
+                ready = module != nullptr && module->GetState() == ModuleState::kActive;
+            }
+        }
+        mStageReady.store(ready);
     }
 
     //--------------------------------------------------------------------------
@@ -641,6 +669,7 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::RequestShutdown()
     {
+        mStageReady.store(false);   // the shutdown path in Update returns before UpdateStageReady runs
         if (mShuttingDown.exchange(true))
         {
             return; // Already requested.

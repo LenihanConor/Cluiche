@@ -61,9 +61,7 @@ private:
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mHUDNavInput{this,  "HUDNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<StageLaunchRequest>    mLaunchInput{this, "StageLaunchRequest"};
 
-    static constexpr unsigned int kInitialLaunchWaitFrames = 90; // ~3 s at 30 Hz: how long to wait for the automation service
     bool mInitialLaunchDone = false; // set once the --stage/--preset launch has been taken (issued or refused)
-    unsigned int mInitialLaunchFrames = 0;
 
     // Heap-allocated to avoid pulling AutomationService.h into every TU.
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationService = nullptr;

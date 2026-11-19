@@ -413,3 +413,83 @@ TEST(StageTransitionDuringStart, TransitionRequestedWhileBootModuleStillStarting
     EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
     EXPECT_FALSE(app.IsTransitioning());
 }
+
+// ---- IApplicationControl::IsStageReady (all current-stage modules Active, no transition in flight) ----
+
+TEST(StageReady, FalseBeforeFirstUpdateTrueOnceBootModulesAreActive)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    EXPECT_FALSE(app.IsStageReady());   // started, no Update yet
+
+    Pump(app);
+    EXPECT_TRUE(app.IsStageReady());
+}
+
+TEST(StageReady, FalseWhileASlowModuleIsStillStartingThenTrue)
+{
+    Fixture f;
+    f.reg.Register(SlowStartModule::kTypeId, [](const StringCRC& id) -> Module* { return new SlowStartModule(id); });
+    ModuleDeclaration slow;
+    slow.instanceId     = StringCRC("modSlow");
+    slow.typeId         = SlowStartModule::kTypeId;
+    slow.startTimeoutMs = 10000.0f;
+    slow.stopTimeoutMs  = 5000.0f;
+    slow.stages.Add(StringCRC("Boot"));
+    f.manifest.processingUnits[0].modules.Add(slow);
+
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    app.Update(1.0f / 60.0f);
+    EXPECT_FALSE(app.IsStageReady());   // modSlow is still kLoading
+
+    Pump(app, 60);
+    EXPECT_TRUE(app.IsStageReady());
+}
+
+TEST(StageReady, GoesFalseAtTransitionRequestAndTrueInTheNewStage)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    ASSERT_TRUE(app.IsStageReady());
+
+    app.TransitionTo(StringCRC("Game"));
+    EXPECT_FALSE(app.IsStageReady());   // immediately, not at the next Update
+
+    Pump(app);
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_TRUE(app.IsStageReady());
+}
+
+TEST(StageReady, FalseAfterShutdownRequested)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    ASSERT_TRUE(app.Start());
+    Pump(app);
+    ASSERT_TRUE(app.IsStageReady());
+
+    app.RequestShutdown();
+    Pump(app, 5);
+    EXPECT_FALSE(app.IsStageReady());
+}
+
+TEST(StageReady, InterfaceDefaultIsTrueForImplementationsThatDoNotTrack)
+{
+    struct Minimal : IApplicationControl
+    {
+        void TransitionTo(const StringCRC&) override {}
+        void TransitionTo(const StringCRC&, const StringCRC&) override {}
+        void RequestShutdown() override {}
+        StringCRC GetCurrentStage() const override { return StringCRC(); }
+        StringCRC GetCurrentPreset() const override { return StringCRC(); }
+        void GetStageTransitions(const StringCRC&, Dia::Core::Containers::DynamicArrayC<StringCRC, 32>&) const override {}
+        bool RegisterTransitionGuard(Module*, TransitionGuardFn) override { return true; }
+        void UnregisterTransitionGuards(Module*) override {}
+        const Json::Value* GetDiagameConfig() const override { return nullptr; }
+    } m;
+    EXPECT_TRUE(static_cast<const IApplicationControl&>(m).IsStageReady());
+}

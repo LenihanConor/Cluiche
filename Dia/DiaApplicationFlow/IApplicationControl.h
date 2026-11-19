@@ -57,6 +57,13 @@ namespace Dia { namespace ApplicationFlow {
         // false when none was requested or it was already taken.  Thread-safe.
         virtual bool TakeInitialLaunch(Dia::Core::StringCRC& /*stageId*/, Dia::Core::StringCRC& /*presetId*/) { return false; }
 
+        // True once every module declared for the current stage is kActive, no transition is pending or
+        // draining, and the service streams those modules registered have been committed to consumers
+        // (evaluated on Main at the end of each Update, so a consumer on another PU that sees true can
+        // also see every service of the stage).  Goes false as soon as a transition is requested.
+        // Thread-safe.  Default true: implementations that do not track readiness (test fakes) never block.
+        [[nodiscard]] virtual bool IsStageReady() const { return true; }
+
         // Read-only: what stages can the given stage transition to.
         virtual void GetStageTransitions(const Dia::Core::StringCRC& stage,
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const = 0;

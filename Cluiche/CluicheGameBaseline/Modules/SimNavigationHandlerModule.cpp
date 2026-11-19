@@ -33,13 +33,12 @@ void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*
     static constexpr unsigned int kMaxPerFrame = 4;
     if (!mInitialLaunchDone)
     {
-        // Wait for the automation service (AutomationModule registers it, and its hold, while Boot starts): issuing before
-        // that would queue a transition the hold then pins forever.  A game without AutomationModule never gets the
-        // service, so give up waiting after kInitialLaunchWaitFrames.
-        ++mInitialLaunchFrames;
-        if (mAutomationService->IsAvailable() || mInitialLaunchFrames >= kInitialLaunchWaitFrames)
+        // Wait until every Boot module is Active and its services are committed (IsStageReady): AutomationModule registers
+        // the automation service, and its navigation hold, while Boot starts, and issuing before that would queue a
+        // transition the hold then pins forever.  A game without AutomationModule simply has no service to wait for.
+        if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
         {
-            if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
+            if (app->IsStageReady())
                 mInitialLaunchDone = IssueInitialLaunch(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr)
                                      != InitialLaunchResult::kNone;
         }
