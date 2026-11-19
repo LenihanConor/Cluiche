@@ -144,4 +144,5 @@ Every running game that hosts a DebugServer writes a small `discovery.json` into
 ## Resolved Decisions
 
 1. **An undeclared stream is checked first** (user decision 2026-11-10). Plan Task 1 checks what `ServiceStreamWriter` does when `ObservationSessionService` is not declared in the manifest, before the module changes. If it fails or warns, `ObservationModule` publishes only when the stream is declared, so apps without a DebugServer (for example `main.diaapp.j2`) start cleanly (AC 17).
+3. **AD-001 sign-off given 2026-11-16** for all three engine edits: DiaDebugProtocol `Discovery/`, DiaWebSocket/DiaDebugServer `GetBoundPort` + `"port": "auto"`, and DiaApplicationFlow `ObservationSessionService`.
 2. **Clients wait for the record, not the port** (user decision 2026-11-10). The record is written by `DebugServerHostModule` within one frame of listening (AC 9). Clients that need the token (the E2E harness, `dia query`) poll for a live record rather than for the port answering. File I/O stays out of DiaDebugServer.

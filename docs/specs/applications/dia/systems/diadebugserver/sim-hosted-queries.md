@@ -73,7 +73,7 @@ namespace Dia::DebugServer {
 10. Unknown or unregistered sim name falls through to the existing dispatch order (QueryRegistry, then DiaAPI fallback); a name registered in both is rejected at registration with an Error log.
 11. No `std::mutex`, `Core::Mutex`, or atomic is introduced in domain state for this feature; the only synchronisation is inside the framework `EventStream`s. Existing `PublishTopic` is unchanged.
 12. Metrics and logs: `dia.debugserver.sim.requests`, `.replies`, `.timeouts`, `.busy`, `.too_large`, `.handler_failed`; Info log on sink attach, Warning on timeout.
-13. Release builds exclude all of it (`DIA_DEBUG`), like the rest of the DebugServer.
+13. Release builds include all of it, like the rest of the DebugServer (amended 2026-11-16; was "Release builds exclude all of it").
 
 ## Follow-on (separate specs, not this feature)
 
