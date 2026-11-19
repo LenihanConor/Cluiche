@@ -3,9 +3,11 @@
 
 #include <Shared/WorldGeneration/NavigationQuery.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
+
 #include <algorithm>
 #include <limits>
-#include <queue>
 #include <utility>
 
 namespace CoW {
@@ -80,53 +82,34 @@ bool NavigationQuery::Search(size_t profileIndex, uint32_t from, std::span<const
     constexpr float kInf = std::numeric_limits<float>::infinity();
     std::vector<float> dist(n, kInf);
     std::vector<uint32_t> prev(n, kNoCellIndex);
-    std::vector<uint8_t> closed(n, 0);
 
-    using Entry = std::pair<float, uint32_t>;   // (cost, cell): ties pop the lowest cell index
-    std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> open;
-    dist[from] = 0.0f;
-    open.push({ 0.0f, from });
+    const Dia::Pathfinding::CostSeed<float> seed{ from, 0.0f, from };
+    Dia::Pathfinding::DijkstraOptions<float> opts;
+    opts.outCost = dist.data();
+    opts.outPrev = prev.data();
+    opts.stopAt = isTarget.data();
+    uint32_t stoppedAt = Dia::Pathfinding::kNoCell;
+    opts.outStoppedAt = &stoppedAt;
 
-    Dia::Core::Containers::DynamicArrayC<CellCoord, 16> neighbours;
-    while (!open.empty())
-    {
-        const Entry top = open.top();
-        open.pop();
-        const uint32_t cur = top.second;
-        if (closed[cur]) { continue; }
-        closed[cur] = 1;
+    // HexPathGrid (offset layout, all cells passable) yields HexTopology directions 0..5 with off-grid skipped,
+    // which is exactly HexNeighbours.
+    const Dia::Pathfinding::HexNeighbours graph(mTopology);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    Dia::Pathfinding::MultiSourceDijkstra<float>(
+        graph, &seed, 1u,
+        [&](uint32_t a, uint32_t b) -> float { return costs.GetCost(mTopology.ToCoord(a), mTopology.ToCoord(b)); },
+        opts, scratch);
 
-        if (isTarget[cur])
-        {
-            out.from = from;
-            out.to = cur;
-            out.profileCrc = mProfileCrc[profileIndex];
-            out.cells.Clear();
-            std::vector<uint32_t> reversed;
-            for (uint32_t c = cur; c != kNoCellIndex; c = prev[c]) { reversed.push_back(c); }
-            for (auto it = reversed.rbegin(); it != reversed.rend(); ++it) { out.cells.Add(*it); }
-            return true;
-        }
+    if (stoppedAt == Dia::Pathfinding::kNoCell) { return false; }
 
-        const CellCoord curCoord = mTopology.ToCoord(cur);
-        mGrid.GetNeighbours(curCoord, neighbours);
-        for (int i = 0; i < neighbours.Size(); ++i)
-        {
-            const CellCoord nc = neighbours[i];
-            const uint32_t ni = mTopology.ToIndex(nc);
-            if (closed[ni]) { continue; }
-            const float edge = costs.GetCost(curCoord, nc);
-            if (edge < 0.0f) { continue; }   // IPathCostProvider::kImpassableCost
-            const float cand = top.first + edge;
-            if (cand < dist[ni])
-            {
-                dist[ni] = cand;
-                prev[ni] = cur;
-                open.push({ cand, ni });
-            }
-        }
-    }
-    return false;
+    out.from = from;
+    out.to = stoppedAt;
+    out.profileCrc = mProfileCrc[profileIndex];
+    out.cells.Clear();
+    std::vector<uint32_t> reversed;
+    for (uint32_t c = stoppedAt; c != kNoCellIndex; c = prev[c]) { reversed.push_back(c); }
+    for (auto it = reversed.rbegin(); it != reversed.rend(); ++it) { out.cells.Add(*it); }
+    return true;
 }
 
 } // namespace WorldGeneration
