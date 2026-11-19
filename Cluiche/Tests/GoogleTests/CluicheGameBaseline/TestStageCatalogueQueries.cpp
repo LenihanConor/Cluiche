@@ -41,6 +41,13 @@ std::vector<std::string> Names(const Json::Value& list)
     return out;
 }
 
+// stages.list replies {"stages":[...]} (a proto Struct payload drops array roots); unwrap to the entry array.
+Json::Value ListQ(const StageCatalogueState& state, const Json::Value& args)
+{
+    const Json::Value r = Q::List(state, args);
+    return r.isObject() && r.isMember("stages") ? r["stages"] : r;
+}
+
 Json::Value Args(const char* json)
 {
     Json::Value v;
@@ -77,8 +84,10 @@ public:
 TEST(StageCatalogueQueries, ListAll)
 {
     Fixture f;
-    const Json::Value r = Q::List(f.state, Json::Value(Json::objectValue));
-    ASSERT_TRUE(r.isArray());
+    const Json::Value wrapped = Q::List(f.state, Json::Value(Json::objectValue));
+    ASSERT_TRUE(wrapped.isObject());
+    ASSERT_TRUE(wrapped["stages"].isArray());
+    const Json::Value r = wrapped["stages"];
     EXPECT_EQ(r.size(), 7u);
     EXPECT_TRUE(r[0].isMember("name") && r[0].isMember("kinds") && r[0].isMember("tags") && r[0].isMember("description")
         && r[0].isMember("presets") && r[0].isMember("last_result"));
@@ -87,31 +96,31 @@ TEST(StageCatalogueQueries, ListAll)
 TEST(StageCatalogueQueries, ListNullArgsIsAll)
 {
     Fixture f;
-    EXPECT_EQ(Q::List(f.state, Json::Value()).size(), 7u);
+    EXPECT_EQ(ListQ(f.state, Json::Value()).size(), 7u);
 }
 
 TEST(StageCatalogueQueries, ListByTagAndByTags)
 {
     Fixture f;
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"tag\":[\"test\"]}"))), (std::vector<std::string>{ "TestRig", "ShowTest" }));
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"tag\":[\"test\",\"showcase\"]}"))), (std::vector<std::string>{ "ShowTest" }));
-    EXPECT_EQ(Q::List(f.state, Args("{\"tag\":[\"nope\"]}")).size(), 0u);
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"tag\":\"tool\"}"))), (std::vector<std::string>{ "ToolBench" }));
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"tag\":[\"test\"]}"))), (std::vector<std::string>{ "TestRig", "ShowTest" }));
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"tag\":[\"test\",\"showcase\"]}"))), (std::vector<std::string>{ "ShowTest" }));
+    EXPECT_EQ(ListQ(f.state, Args("{\"tag\":[\"nope\"]}")).size(), 0u);
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"tag\":\"tool\"}"))), (std::vector<std::string>{ "ToolBench" }));
 }
 
 TEST(StageCatalogueQueries, ListByKind)
 {
     Fixture f;
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"kind\":\"tool\"}"))), (std::vector<std::string>{ "ToolBench" }));
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"kind\":\"other\"}"))), (std::vector<std::string>{ "NoImport", "Misc", "Plain" }));
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"kind\":\"test\"}"))), (std::vector<std::string>{ "TestRig", "ShowTest" }));
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"kind\":\"tool\"}"))), (std::vector<std::string>{ "ToolBench" }));
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"kind\":\"other\"}"))), (std::vector<std::string>{ "NoImport", "Misc", "Plain" }));
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"kind\":\"test\"}"))), (std::vector<std::string>{ "TestRig", "ShowTest" }));
 }
 
 TEST(StageCatalogueQueries, ListByTagAndKind)
 {
     Fixture f;
-    EXPECT_EQ(Names(Q::List(f.state, Args("{\"tag\":[\"test\"],\"kind\":\"showcase\"}"))), (std::vector<std::string>{ "ShowTest" }));
-    EXPECT_EQ(Q::List(f.state, Args("{\"tag\":[\"tool\"],\"kind\":\"test\"}")).size(), 0u);
+    EXPECT_EQ(Names(ListQ(f.state, Args("{\"tag\":[\"test\"],\"kind\":\"showcase\"}"))), (std::vector<std::string>{ "ShowTest" }));
+    EXPECT_EQ(ListQ(f.state, Args("{\"tag\":[\"tool\"],\"kind\":\"test\"}")).size(), 0u);
 }
 
 TEST(StageCatalogueQueries, ListUnknownKindIsError)
@@ -124,11 +133,11 @@ TEST(StageCatalogueQueries, ListUnknownKindIsError)
 TEST(StageCatalogueQueries, ListCarriesLastResult)
 {
     Fixture f;
-    const Json::Value r = Q::List(f.state, Args("{\"tag\":[\"test\",\"showcase\"]}"));
+    const Json::Value r = ListQ(f.state, Args("{\"tag\":[\"test\",\"showcase\"]}"));
     ASSERT_EQ(r.size(), 1u);
     EXPECT_EQ(r[0]["last_result"]["label"].asString(), "PASS");
     EXPECT_EQ(r[0]["last_result"]["severity"].asString(), "ok");
-    const Json::Value plain = Q::List(f.state, Args("{\"kind\":\"tool\"}"));
+    const Json::Value plain = ListQ(f.state, Args("{\"kind\":\"tool\"}"));
     EXPECT_TRUE(plain[0]["last_result"].isNull());
     EXPECT_EQ(plain[0]["kinds"][0].asString(), "tool");
 }
@@ -187,14 +196,14 @@ TEST(StageCatalogueQueries, ResultsUnknownStageIsError)
 TEST(StageCatalogueQueries, EmptyCatalogueIsEmptyList)
 {
     StageCatalogueState state;
-    EXPECT_EQ(Q::List(state, Json::Value(Json::objectValue)).size(), 0u);
+    EXPECT_EQ(ListQ(state, Json::Value(Json::objectValue)).size(), 0u);
 }
 
 TEST(StageCatalogueQueries, FullCatalogueListFitsSixteenKB)
 {
     Fixture f("over_cap");
     ASSERT_EQ(f.state.Catalogue().Size(), StageCatalogue::kMaxStages);
-    const std::string text = Json::FastWriter().write(Q::List(f.state, Json::Value(Json::objectValue)));
+    const std::string text = Json::FastWriter().write(ListQ(f.state, Json::Value(Json::objectValue)));
     EXPECT_LT(text.size(), 16u * 1024u);
 }
 
@@ -216,7 +225,7 @@ TEST(StageCatalogueModuleQueries, RegistersAndAnswersThroughRegistry)
     EXPECT_TRUE(registry.Has(StringCRC("stages.list")));
     EXPECT_TRUE(registry.Has(StringCRC("stages.get")));
     EXPECT_TRUE(registry.Has(StringCRC("stages.results")));
-    EXPECT_EQ(registry.Execute(StringCRC("stages.list"), Json::Value(Json::objectValue)).size(), 7u);
+    EXPECT_EQ(registry.Execute(StringCRC("stages.list"), Json::Value(Json::objectValue))["stages"].size(), 7u);
     EXPECT_TRUE(registry.Execute(StringCRC("stages.get"), Args("{\"stage\":\"Nope\"}")).isMember("error"));
     module.Stop();
     EXPECT_FALSE(module.QueriesRegistered());

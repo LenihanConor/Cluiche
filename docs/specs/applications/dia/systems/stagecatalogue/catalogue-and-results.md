@@ -83,7 +83,7 @@ This feature does **not** change the menu. That is Feature 4, which is gated on 
 
     It publishes only when the revision changes, plus once at start. A `static_assert` keeps `sizeof(StageCatalogueSnapshot)` ≤ 48 KB.
 15. Consuming `DebugServerService` (precedent: `ValueSchemaModule`), it registers three queries with help text:
-    - `stages.list {tag?: [..], kind?}`
+    - `stages.list {tag?: [..], kind?}` replies `{"stages": [entry, ...]}`: the reply is wrapped because the DebugServer wire payload is a proto Struct, which drops array roots (amended 2026-11-19 after the boot-menu E2E saw `{}`)
     - `stages.get {stage}`
     - `stages.results {stage?}`
 
@@ -116,7 +116,7 @@ This feature does **not** change the menu. That is Feature 4, which is gated on 
 
 ### CLI and docs
 
-21. `dia stages list [--game <name>] [--tag T]... [--kind K] [--json]`, `dia stages get <stage> [--game]` and `dia stages results [--game]` read the files only (the catalogue and `stage_results.json`); live data is `dia query stages.list`. The game resolves like `dia run` targets. The default output is a table; `--json` matches the `stages.*` reply shapes.
+21. `dia stages list [--game <name>] [--tag T]... [--kind K] [--json]`, `dia stages get <stage> [--game]` and `dia stages results [--game]` read the files only (the catalogue and `stage_results.json`); live data is `dia query stages.list`. The game resolves like `dia run` targets. The default output is a table; `--json` matches the `stages.*` reply shapes (so `dia stages list --json` emits `{"stages": [...]}`).
 22. `dia docs stage-registry` writes `docs/reference/registry/stage-registry.md`, one table per game: stage, kinds, tags, description.
 
 ### Compatibility
@@ -158,7 +158,7 @@ This feature does **not** change the menu. That is Feature 4, which is gated on 
   - `Filter` with all-match.
   - Results file: missing, malformed or wrong format starts empty; the merge keeps the newer result per stage; the temp file is renamed.
   - Module with fake streams: event to table to one write per frame (two events in one frame give one write); snapshot published on revision change only; health Degraded on write failure.
-  - Query replies and the unknown-stage error.
+  - Query replies (`stages.list` is the wrapped `{stages: [...]}` object) and the unknown-stage error.
 - **pytest:**
   - Validator: kebab-case, duplicates, near-kind error message, length limits.
   - Python loader equals C++ output on the shared fixtures (a golden JSON produced by both).

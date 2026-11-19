@@ -29,7 +29,8 @@ def test_list_json_shape(tmp_path):
     r = _run(["list", "--json"], tmp_path, _results(tmp_path))
     assert r.exit_code == 0, r.output
     data = json.loads(r.stdout)
-    by = {e["name"]: e for e in data}
+    assert list(data) == ["stages"]
+    by = {e["name"]: e for e in data["stages"]}
     assert set(by["ShowTest"]) >= {"name", "kinds", "tags", "description", "presets", "last_result"}
     assert by["ShowTest"]["last_result"]["label"] == "PASS"
     assert by["Plain"]["last_result"] is None
@@ -37,12 +38,12 @@ def test_list_json_shape(tmp_path):
 
 
 def test_list_kind_filter(tmp_path):
-    names = [e["name"] for e in json.loads(_run(["list", "--json", "--kind", "test"], tmp_path).stdout)]
+    names = [e["name"] for e in json.loads(_run(["list", "--json", "--kind", "test"], tmp_path).stdout)["stages"]]
     assert "ShowTest" in names and "Plain" not in names
 
 
 def test_list_kind_other(tmp_path):
-    names = [e["name"] for e in json.loads(_run(["list", "--json", "--kind", "other"], tmp_path).stdout)]
+    names = [e["name"] for e in json.loads(_run(["list", "--json", "--kind", "other"], tmp_path).stdout)["stages"]]
     assert "Plain" in names and "ShowTest" not in names
 
 
@@ -51,8 +52,8 @@ def test_list_bad_kind(tmp_path):
 
 
 def test_list_tag_and(tmp_path):
-    one = [e["name"] for e in json.loads(_run(["list", "--json", "--tag", "test"], tmp_path).stdout)]
-    two = [e["name"] for e in json.loads(_run(["list", "--json", "--tag", "test", "--tag", "showcase"], tmp_path).stdout)]
+    one = [e["name"] for e in json.loads(_run(["list", "--json", "--tag", "test"], tmp_path).stdout)["stages"]]
+    two = [e["name"] for e in json.loads(_run(["list", "--json", "--tag", "test", "--tag", "showcase"], tmp_path).stdout)["stages"]]
     assert "ShowTest" in one and "ShowTest" in two
     assert len(two) < len(one) or set(two) <= set(one)
     assert "TestRig" not in two or "TestRig" in one
@@ -111,7 +112,7 @@ def test_list_and_get_json_carry_presets_without_overrides(tmp_path):
     res = str(tmp_path / "none.json")
     r = CliRunner(mix_stderr=False).invoke(cli, ["list", "--json", "--diagame", diagame, "--results", res])
     assert r.exit_code == 0, r.output
-    by = {e["name"]: e for e in json.loads(r.stdout)}
+    by = {e["name"]: e for e in json.loads(r.stdout)["stages"]}
     assert by["WithPresets"]["presets"] == [{"name": "alpine42", "description": "Alpine, seed 42"},
                                             {"name": "bare", "description": ""}]
     assert by["NoPresets"]["presets"] == []

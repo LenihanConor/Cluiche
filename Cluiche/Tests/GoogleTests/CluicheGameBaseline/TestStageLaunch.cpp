@@ -135,7 +135,7 @@ TEST(StageLaunchCatalogue, SnapshotCarriesPresets)
 TEST(StageLaunchCatalogue, ListAndGetReturnPresetsWithoutOverrides)
 {
     PresetFixture f;
-    const Json::Value list = Q::List(f.state, Json::Value(Json::objectValue));
+    const Json::Value list = Q::List(f.state, Json::Value(Json::objectValue))["stages"];
     ASSERT_EQ(list.size(), 2u);
     const Json::Value& presets = list[0]["presets"];
     ASSERT_TRUE(presets.isArray());

@@ -20,7 +20,7 @@ static constexpr const char* kResultsName = "stages.results";
 static constexpr const char* kLaunchName = "stages.launch";
 
 static constexpr const char* kListHelp =
-    "List catalogue stages as [{name, kinds, tags, description, presets, last_result}]. "
+    "List catalogue stages as {stages: [{name, kinds, tags, description, presets, last_result}]}. "
     "Args: tag (array of strings or one string; all must match), kind (showcase|tool|test|other).";
 static constexpr const char* kGetHelp =
     "One stage as {name, kinds, tags, description, presets, last_result, proves}. Args: stage (required). Unknown stage returns {error}.";

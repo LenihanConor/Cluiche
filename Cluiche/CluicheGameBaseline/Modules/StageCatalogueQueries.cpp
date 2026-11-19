@@ -121,7 +121,10 @@ Json::Value List(const StageCatalogueState& state, const Json::Value& args)
         if (hasKind && !HasKind(state.Catalogue()[indices[i]], kind)) { continue; }
         out.append(EntryToJson(state, indices[i], false));
     }
-    return out;
+    // Wrapped: the DebugServer wire payload is a proto Struct, which drops array roots.
+    Json::Value reply(Json::objectValue);
+    reply["stages"] = out;
+    return reply;
 }
 
 Json::Value Get(const StageCatalogueState& state, const Json::Value& args)

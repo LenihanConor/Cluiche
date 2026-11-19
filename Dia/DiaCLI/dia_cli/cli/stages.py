@@ -79,7 +79,7 @@ def list_cmd(game, diagame, results, tags, kind, as_json):
     """List stages."""
     cat, res = _load(game, diagame, results)
     entries = view.list_entries(cat, res, tags, kind)
-    click.echo(json.dumps(entries, indent=2) if as_json else view.render_table(entries))
+    click.echo(json.dumps({"stages": entries}, indent=2) if as_json else view.render_table(entries))
 
 
 @cli.command("get")

@@ -91,6 +91,7 @@ Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
     DIA_LOG_INFO("Application", "BootMenuModule DoStart entry");
 
     mStageCountGauge = Dia::Observation::Metric::MetricRegistry::Instance().RegisterGauge(Dia::Core::StringCRC("boot_menu.stage_count"));
+    mRowCountGauge = Dia::Observation::Metric::MetricRegistry::Instance().RegisterGauge(Dia::Core::StringCRC("boot_menu.row_count"));
     mLaunchCounter = Dia::Observation::Metric::MetricRegistry::Instance().RegisterCounter(Dia::Core::StringCRC("boot_menu.launches"));
 
     // Returning to Boot from a stage: re-apply the latest snapshot (visited/collapse/filter state is kept by the logic).
@@ -153,6 +154,8 @@ void BootMenuModule::OnRebuilt(const char* why)
     unsigned int rows = 0;
     for (unsigned int g = 0; g < mLogic.GroupCount(); ++g)
         rows += mLogic.RowCount(g);
+    if (mRowCountGauge != nullptr)
+        mRowCountGauge->Set(static_cast<double>(rows));
     DIA_LOG_INFO("Application", "BootMenuModule: menu built from %s (%u stages, %u rows, %u groups)",
                  why, mLogic.StageCount(), rows, mLogic.GroupCount());
 }

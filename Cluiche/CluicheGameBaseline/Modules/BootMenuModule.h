@@ -67,6 +67,7 @@ private:
     bool mFrameWasActive = false;
 
     Dia::Observation::Metric::Gauge* mStageCountGauge = nullptr;
+    Dia::Observation::Metric::Gauge* mRowCountGauge = nullptr;
     Dia::Observation::Metric::Counter* mLaunchCounter = nullptr;
 };
 
