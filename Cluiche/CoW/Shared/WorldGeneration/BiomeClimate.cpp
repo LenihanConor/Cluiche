@@ -3,6 +3,8 @@
 
 #include <Shared/WorldGeneration/BiomeClimate.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -14,11 +16,11 @@ namespace WorldGeneration {
 
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;
+using Dia::Pathfinding::kUnreached;
+using Dia::Pathfinding::StepSeed;
 
 namespace
 {
-    constexpr uint32_t kUnreached = 0xFFFFFFFFu;
-
     float Clamp01(float v)
     {
         return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
@@ -114,49 +116,28 @@ void ComputeStage13(const TerrainRules& rules, GridDimensions dims, float moistu
 
     const HexTopology topo(w, h);
 
-    // Water distance: unit-step multi-source search, bucketed by start distance (deterministic order).
+    // Water distance: multi-source step search; oceans/lakes start at 0, rivers at the river penalty.
     const uint32_t riverStart = static_cast<uint32_t>(std::max(rules.GetInt(Rule::kRiverPenalty), 0));
-    std::vector<uint32_t> dist(static_cast<size_t>(n), kUnreached);
-    const uint32_t maxD = static_cast<uint32_t>(n) + riverStart + 1u;
-    std::vector<std::vector<uint32_t>> buckets(maxD + 1u);
+    std::vector<StepSeed> seeds;
+    seeds.reserve(static_cast<size_t>(n));
     for (int i = 0; i < n; ++i)
     {
         const uint32_t ws = waterSource[i];
-        uint32_t start = kUnreached;
         if (ws == static_cast<uint32_t>(WaterSource::Ocean) || ws == static_cast<uint32_t>(WaterSource::Lake))
         {
-            start = 0u;
+            seeds.push_back({static_cast<uint32_t>(i), 0u, static_cast<uint32_t>(i)});
         }
         else if (ws == static_cast<uint32_t>(WaterSource::River))
         {
-            start = riverStart;
-        }
-        if (start != kUnreached)
-        {
-            dist[i] = start;
-            buckets[start].push_back(static_cast<uint32_t>(i));
+            seeds.push_back({static_cast<uint32_t>(i), riverStart, static_cast<uint32_t>(i)});
         }
     }
-    for (uint32_t d = 0; d <= maxD; ++d)
-    {
-        for (size_t k = 0; k < buckets[d].size(); ++k)   // bucket may not grow at d (neighbours go to d+1)
-        {
-            const uint32_t c = buckets[d][k];
-            if (dist[c] != d)
-            {
-                continue;   // stale entry
-            }
-            for (uint32_t dir = 0; dir < Dia::Pathfinding::kHexDirections; ++dir)
-            {
-                const uint32_t nb = topo.NeighbourAt(c, dir);
-                if (nb != kNoCell && d + 1u < dist[nb] && d + 1u <= maxD)
-                {
-                    dist[nb] = d + 1u;
-                    buckets[d + 1u].push_back(nb);
-                }
-            }
-        }
-    }
+    std::vector<uint32_t> dist(static_cast<size_t>(n), kUnreached);
+    const uint32_t maxD = static_cast<uint32_t>(n) + riverStart + 1u;
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    Dia::Pathfinding::MultiSourceSteps(graph, seeds.data(), static_cast<uint32_t>(seeds.size()),
+                                       [](uint32_t) { return true; }, maxD, dist.data(), nullptr, scratch);
 
     // Wind sweeps.
     std::vector<float> airW(static_cast<size_t>(n), 0.0f), rainW(static_cast<size_t>(n), 0.0f);
