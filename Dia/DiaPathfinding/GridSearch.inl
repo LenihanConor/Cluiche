@@ -1,6 +1,8 @@
 #pragma once
 // GridSearch.inl - template definitions for GridSearch.h.
 
+#include <algorithm>
+
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia::Pathfinding {
@@ -229,5 +231,38 @@ namespace Dia::Pathfinding {
         DIA_ASSERT(options.outCost != nullptr, "ContinueDijkstra requires options.outCost");
         DIA_ASSERT(scratch.DijkstraRunCostSize() == sizeof(Cost), "ContinueDijkstra: scratch holds no Dijkstra run of this Cost");
         Detail::RunDijkstra<Cost>(graph, stepCost, options, scratch, onSettle);
+    }
+    template<CIndexGraph G>
+    void PriorityFlood(const G& graph, const float* elevation, const uint8_t* isOutlet, float epsilon,
+                       float* outFilled, float* outLevel, GridSearchScratch& scratch)
+    {
+        DIA_ASSERT(elevation != nullptr && isOutlet != nullptr && outFilled != nullptr, "PriorityFlood requires elevation, isOutlet and outFilled");
+        const uint32_t cellCount = graph.CellCount();
+        scratch.Reset();
+        scratch.PrepareSettled(cellCount);
+        auto& visited = scratch.Settled();
+        auto& heap = scratch.FloodHeap();
+        heap.Reserve(cellCount);   // each cell is pushed at most once (Reserve only grows)
+        for (uint32_t i = 0; i < cellCount; ++i) {
+            outFilled[i] = elevation[i];
+            if (outLevel) outLevel[i] = elevation[i];
+            if (isOutlet[i] != 0) {
+                visited[i] = 1;
+                heap.Push(FloodEntry{ elevation[i], elevation[i], i });
+            }
+        }
+        while (!heap.Empty()) {
+            const FloodEntry e = heap.Pop();
+            graph.ForEachNeighbour(e.cell, [&](uint32_t nb) {
+                if (visited[nb] != 0) return;
+                visited[nb] = 1;
+                const float raw = elevation[nb];
+                const float level = std::max(raw, e.level);
+                const float filled = std::max(raw, e.filled + epsilon);
+                if (outLevel) outLevel[nb] = level;
+                outFilled[nb] = filled;
+                heap.Push(FloodEntry{ level, filled, nb });
+            });
+        }
     }
 }

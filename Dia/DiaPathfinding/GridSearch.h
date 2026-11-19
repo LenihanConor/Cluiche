@@ -133,6 +133,22 @@ namespace Dia::Pathfinding {
     template<class Cost, CIndexGraph G, class StepCost, class OnSettle = AcceptAll>
     void ContinueDijkstra(const G& graph, StepCost stepCost, const DijkstraOptions<Cost>& options,
                           GridSearchScratch& scratch, OnSettle onSettle = {});
+
+    // Priority-flood depression fill, reproducing S-1 TerrainDrainage stage 5 exactly. outFilled (required)
+    // and outLevel (optional, may be null) are caller-owned, sized CellCount(); both are first set to the
+    // raw elevation. Every cell with isOutlet[c] != 0 is seeded (marked visited) with level = filled =
+    // elevation and pushed. Heap order is the strict total order (level, filled, cell). Popping an entry e,
+    // the neighbours are visited in ForEachNeighbour order; each neighbour not yet visited is marked visited
+    // WHEN PUSHED (so the first popped discoverer wins and there are no stale entries), then
+    //     level[nb]  = max(elevation[nb], e.level)               (exact spill level)
+    //     filled[nb] = max(elevation[nb], e.filled + epsilon)    (epsilon per step, evaluated in float)
+    // and (level, filled, nb) is pushed. Cells never reached from an outlet keep their raw elevation in both
+    // outputs. Float expression order matches S-1 so results are bit-identical (S-1 builds with
+    // fp_contract off; keep it off in the calling TU). The first call may grow scratch; a warm same-size
+    // call does not allocate.
+    template<CIndexGraph G>
+    void PriorityFlood(const G& graph, const float* elevation, const uint8_t* isOutlet, float epsilon,
+                       float* outFilled, float* outLevel, GridSearchScratch& scratch);
 }
 
 #include "DiaPathfinding/GridSearch.inl"
