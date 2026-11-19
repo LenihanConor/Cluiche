@@ -3183,5 +3183,26 @@
     <ClCompile Include="CoW\TestWorldGenStageLaunch.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchConcept.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchSteps.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchFlood.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchDijkstra.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchPriorityFlood.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchScratch.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

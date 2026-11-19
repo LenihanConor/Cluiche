@@ -1,0 +1,1 @@
+#include "DiaPathfinding/GridSearchScratch.h"

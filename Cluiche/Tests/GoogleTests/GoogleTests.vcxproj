@@ -1344,6 +1344,13 @@
     <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp" />
     <ClCompile Include="CoW\TestWorldGenStageLaunch.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchConcept.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchSteps.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchFlood.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchDijkstra.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchPriorityFlood.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchScratch.cpp" />
+    <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -29,12 +29,20 @@
       <Filter>DiaPathfinding</Filter>
     </ClInclude>
     <ClInclude Include="HexTopology.h" />
+    <ClInclude Include="GridSearch.h" />
+    <ClInclude Include="GridSearch.inl" />
+    <ClInclude Include="GridSearchScratch.h" />
+    <ClInclude Include="HexNeighbours.h" />
+    <ClInclude Include="Testing\GridSearchTestGrids.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SquarePathGrid.cpp" />
     <ClCompile Include="HexPathGrid.cpp" />
     <ClCompile Include="PathResult.cpp" />
     <ClCompile Include="HexTopology.cpp" />
+    <ClCompile Include="GridSearchScratch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.pathfinding.architecture.module.md">
