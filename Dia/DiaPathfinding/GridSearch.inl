@@ -135,17 +135,24 @@ namespace Dia::Pathfinding {
         void RunDijkstra(const G& graph, StepCost& stepCost, const DijkstraOptions<Cost>& options,
                          GridSearchScratch& scratch, OnSettle& onSettle)
         {
-            auto& heap = scratch.Dijkstra<Cost>().heap;
+            auto& state = scratch.Dijkstra<Cost>();
+            auto& heap = state.heap;
             auto& settled = scratch.Settled();
             Cost* const outCost = options.outCost;
+            const bool pushAll = options.pushAll;
             while (!heap.Empty()) {
                 const DijkstraEntry<Cost> e = heap.Pop();
-                if (settled[e.cell] || outCost[e.cell] < e.cost) continue;   // stale entry
-                // Task 7 hook point: Skip drops the entry (not settled); Park moves it to scratch parked list.
+                if (settled[e.cell]) continue;                            // stale: already settled
+                if (!pushAll && outCost[e.cell] < e.cost) continue;       // stale: a cheaper entry exists
                 const Settle verdict = onSettle(e.cell, e.cost, e.seedId);
-                DIA_ASSERT(verdict == Settle::Accept, "Settle::Skip / Park are not implemented yet");
-                (void)verdict;
+                if (verdict == Settle::Skip) continue;                    // dropped; cell stays unsettled
+                if (verdict == Settle::Park) { GrowAdd(state.parked, e); continue; }
                 settled[e.cell] = 1;
+                if (pushAll) {   // outputs are written at settle time, before expansion, so stepCost can read them
+                    outCost[e.cell] = e.cost;
+                    if (options.outPrev) options.outPrev[e.cell] = e.prev;
+                    if (options.outSeedId) options.outSeedId[e.cell] = e.seedId;
+                }
                 if (options.stopAt != nullptr && options.stopAt[e.cell] != 0) {
                     if (options.outStoppedAt) *options.outStoppedAt = e.cell;
                     return;
@@ -155,11 +162,17 @@ namespace Dia::Pathfinding {
                     const Cost step = stepCost(e.cell, nb);
                     if (step < Cost(0)) return;   // negative blocks the edge (PD-008)
                     const Cost cand = e.cost + step;
-                    if (cand < outCost[nb]) {
+                    if (pushAll) {
+                        heap.Push(DijkstraEntry<Cost>{ cand, nb, e.seedId, e.cell });
+                        return;
+                    }
+                    const bool better = cand < outCost[nb]
+                        || (options.outSeedId != nullptr && cand == outCost[nb] && e.seedId < options.outSeedId[nb]);
+                    if (better) {
                         outCost[nb] = cand;
                         if (options.outPrev) options.outPrev[nb] = e.cell;
                         if (options.outSeedId) options.outSeedId[nb] = e.seedId;
-                        heap.Push(DijkstraEntry<Cost>{ cand, nb, e.seedId });
+                        heap.Push(DijkstraEntry<Cost>{ cand, nb, e.seedId, e.cell });
                     }
                 });
             }
@@ -180,15 +193,41 @@ namespace Dia::Pathfinding {
         if (options.outStoppedAt) *options.outStoppedAt = kNoCell;
 
         scratch.Reset();
+        scratch.SetDijkstraRunCostSize(static_cast<uint32_t>(sizeof(Cost)));
         scratch.PrepareSettled(cellCount);
         auto& heap = scratch.Dijkstra<Cost>().heap;
         for (uint32_t i = 0; i < seedCount; ++i) {
             const CostSeed<Cost>& s = seeds[i];
-            if (s.cell >= cellCount || !(s.startCost < options.outCost[s.cell])) continue;
+            if (s.cell >= cellCount) continue;
+            if (options.pushAll) {   // every seed is queued; outputs are written when it settles
+                heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, kNoCell });
+                continue;
+            }
+            if (!(s.startCost < options.outCost[s.cell])) continue;
             options.outCost[s.cell] = s.startCost;
             if (options.outSeedId) options.outSeedId[s.cell] = s.id;
-            heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id });
+            heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id, kNoCell });
         }
+        Detail::RunDijkstra<Cost>(graph, stepCost, options, scratch, onSettle);
+    }
+
+    template<class Cost>
+    uint32_t ResumeParked(GridSearchScratch& scratch)
+    {
+        DIA_ASSERT(scratch.DijkstraRunCostSize() == sizeof(Cost), "ResumeParked: scratch holds no Dijkstra run of this Cost");
+        auto& state = scratch.Dijkstra<Cost>();
+        const uint32_t count = state.parked.Size();
+        for (uint32_t i = 0; i < count; ++i) state.heap.Push(state.parked[i]);
+        state.parked.RemoveAll();
+        return count;
+    }
+
+    template<class Cost, CIndexGraph G, class StepCost, class OnSettle>
+    void ContinueDijkstra(const G& graph, StepCost stepCost, const DijkstraOptions<Cost>& options,
+                          GridSearchScratch& scratch, OnSettle onSettle)
+    {
+        DIA_ASSERT(options.outCost != nullptr, "ContinueDijkstra requires options.outCost");
+        DIA_ASSERT(scratch.DijkstraRunCostSize() == sizeof(Cost), "ContinueDijkstra: scratch holds no Dijkstra run of this Cost");
         Detail::RunDijkstra<Cost>(graph, stepCost, options, scratch, onSettle);
     }
 }

@@ -308,3 +308,244 @@ TEST(GridSearchDijkstra, HexCrossCheckAgainstNaiveDouble)
 {
     CrossCheckHex<double>([](uint32_t a, uint32_t b) { return 0.25 * double(1 + (a * 5 + b) % 6); });
 }
+
+// ---- Task 7: settle hook (Skip / Park), ResumeParked, ContinueDijkstra, PushAll mode ----------------------
+
+namespace {
+    template<class Cost>
+    struct Out {
+        std::vector<Cost> cost;
+        std::vector<uint32_t> prev, id;
+        DijkstraOptions<Cost> o;
+        explicit Out(uint32_t n) : cost(n, Cost(-7)), prev(n, 777u), id(n, 777u)
+        {
+            o.outCost = cost.data(); o.outPrev = prev.data(); o.outSeedId = id.data();
+        }
+    };
+
+    template<class Cost>
+    void CheckParkResumeContinue()
+    {
+        GridSearchScratch s;
+        ChainGraph g(5);
+        Out<Cost> out(5);
+        const CostSeed<Cost> seed{ 2, Cost(0), 0 };
+        std::vector<uint32_t> phase0, phase1;
+        MultiSourceDijkstra<Cost>(g, &seed, 1, Unit<Cost>(), out.o, s,
+            [&](uint32_t c, Cost, uint32_t) {
+                const Settle v = (c == 1 || c == 3) ? Settle::Park : Settle::Accept;
+                if (v == Settle::Accept) phase0.push_back(c);
+                return v;
+            });
+        EXPECT_EQ(phase0, (std::vector<uint32_t>{ 2 }));
+        EXPECT_EQ(ResumeParked<Cost>(s), 2u);
+        EXPECT_EQ(ResumeParked<Cost>(s), 0u);              // nothing left parked
+        ContinueDijkstra<Cost>(g, Unit<Cost>(), out.o, s,
+            [&](uint32_t c, Cost, uint32_t) { phase1.push_back(c); return Settle::Accept; });
+        EXPECT_EQ(phase1, (std::vector<uint32_t>{ 1, 3, 0, 4 }));
+        EXPECT_EQ(out.cost, (std::vector<Cost>{ 2, 1, 0, 1, 2 }));
+    }
+}
+
+TEST(GridSearchDijkstra, ParkHoldsUntilResumeThenContinueFloat) { CheckParkResumeContinue<float>(); }
+TEST(GridSearchDijkstra, ParkHoldsUntilResumeThenContinueDouble) { CheckParkResumeContinue<double>(); }
+
+TEST(GridSearchDijkstra, ParkedCellsAreNotSettledAndStayUnexpanded)
+{
+    GridSearchScratch s;
+    ChainGraph g(5);
+    Out<float> out(5);
+    const CostSeed<float> seed{ 2, 0.0f, 0 };
+    MultiSourceDijkstra<float>(g, &seed, 1, Unit<float>(), out.o, s,
+        [](uint32_t c, float, uint32_t) { return c == 2 ? Settle::Accept : Settle::Park; });
+    EXPECT_EQ(out.cost, (std::vector<float>{ kInfF, 1, 0, 1, kInfF }));   // 0 and 4 never pushed
+}
+
+TEST(GridSearchDijkstra, ContinueWithDifferentHookSkipsCell)
+{
+    GridSearchScratch s;
+    ChainGraph g(5);
+    Out<float> out(5);
+    const CostSeed<float> seed{ 2, 0.0f, 0 };
+    MultiSourceDijkstra<float>(g, &seed, 1, Unit<float>(), out.o, s,
+        [](uint32_t c, float, uint32_t) { return (c == 1 || c == 3) ? Settle::Park : Settle::Accept; });
+    EXPECT_EQ(ResumeParked<float>(s), 2u);
+    ContinueDijkstra<float>(g, Unit<float>(), out.o, s,
+        [](uint32_t c, float, uint32_t) { return c == 3 ? Settle::Skip : Settle::Accept; });
+    // Cell 3 skipped: never settled, cell 4 never reached; cost[3] keeps its push-time value.
+    EXPECT_EQ(out.cost, (std::vector<float>{ 2, 1, 0, 1, kInfF }));
+}
+
+TEST(GridSearchDijkstra, ParkEveryEntryThenResume)
+{
+    GridSearchScratch s;
+    ChainGraph g(4);
+    Out<float> out(4);
+    const CostSeed<float> seed{ 0, 0.0f, 3 };
+    uint32_t calls = 0;
+    MultiSourceDijkstra<float>(g, &seed, 1, Unit<float>(), out.o, s,
+        [&](uint32_t, float, uint32_t) { ++calls; return Settle::Park; });
+    EXPECT_EQ(calls, 1u);
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, kInfF, kInfF, kInfF }));
+    EXPECT_EQ(ResumeParked<float>(s), 1u);
+    ContinueDijkstra<float>(g, Unit<float>(), out.o, s);
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, 1, 2, 3 }));
+    EXPECT_EQ(out.id, (std::vector<uint32_t>{ 3, 3, 3, 3 }));
+    EXPECT_EQ(out.prev, (std::vector<uint32_t>{ kNoCell, 0, 1, 2 }));
+}
+
+TEST(GridSearchDijkstra, ResumeWithNothingParkedIsNoOp)
+{
+    GridSearchScratch s;
+    ChainGraph g(4);
+    Out<float> out(4);
+    const CostSeed<float> seed{ 0, 0.0f, 0 };
+    MultiSourceDijkstra<float>(g, &seed, 1, Unit<float>(), out.o, s);
+    EXPECT_EQ(ResumeParked<float>(s), 0u);
+    ContinueDijkstra<float>(g, Unit<float>(), out.o, s);
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, 1, 2, 3 }));
+}
+
+TEST(GridSearchDijkstra, ParkResumeCycleWarmAllocatesNothing)
+{
+    GridSearchScratch s;
+    HexTopology topo = MakeSmallHexGrid();
+    HexNeighbours g(topo);
+    Out<float> out(16);
+    const CostSeed<float> seeds[2] = { { 0, 0.0f, 1 }, { 15, 0.0f, 2 } };
+    auto step = [](uint32_t a, uint32_t b) { return 1.0f + float((a + b) % 3); };
+    auto cycle = [&] {
+        MultiSourceDijkstra<float>(g, seeds, 2, step, out.o, s,
+            [](uint32_t, float cost, uint32_t) { return cost >= 2.0f ? Settle::Park : Settle::Accept; });
+        const uint32_t n = ResumeParked<float>(s);
+        ContinueDijkstra<float>(g, step, out.o, s);
+        return n;
+    };
+    const uint32_t parkedFirst = cycle();
+    EXPECT_GT(parkedFirst, 0u);
+    GridSearchTest::AllocCounter counter;
+    EXPECT_EQ(cycle(), parkedFirst);
+    EXPECT_EQ(counter.Count(), 0u);
+}
+
+TEST(GridSearchDijkstra, PushAllSkipLeavesCellClaimableByLaterEntry)
+{
+    // Chain 0..4, region 1 seeded at 0, region 2 at 4. Region 2 steps cost 2, region 1 steps cost 1.
+    // Region 1 reaches cell 2 at cost 2 but is Skipped there (a cap); region 2 higher-cost entry (4) must
+    // still claim it. Hand trace: settle 0(1),4(2); push (1,1,1),(2,3,2); settle 1; push (2,2,1);
+    // (2,2,1) Skip; settle 3 (cost 2) push (4,2,2); settle 2 id 2 cost 4.
+    GridSearchScratch s;
+    ChainGraph g(5);
+    Out<float> out(5);
+    out.o.pushAll = true;
+    const CostSeed<float> seeds[2] = { { 0, 0.0f, 1 }, { 4, 0.0f, 2 } };
+    auto step = [&](uint32_t from, uint32_t) { return out.id[from] == 2u ? 2.0f : 1.0f; };
+    MultiSourceDijkstra<float>(g, seeds, 2, step, out.o, s,
+        [](uint32_t c, float, uint32_t id) { return (id == 1 && c >= 2) ? Settle::Skip : Settle::Accept; });
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, 1, 4, 2, 0 }));
+    EXPECT_EQ(out.id, (std::vector<uint32_t>{ 1, 1, 2, 2, 2 }));
+    EXPECT_EQ(out.prev, (std::vector<uint32_t>{ kNoCell, 0, 3, 4, kNoCell }));
+}
+
+TEST(GridSearchDijkstra, PushAllEqualCostCellTieResolvesToLowerSeedId)
+{
+    GridSearchScratch s;
+    ChainGraph g(3);
+    Out<float> out(3);
+    out.o.pushAll = true;
+    const CostSeed<float> seeds[2] = { { 0, 0.0f, 7 }, { 2, 0.0f, 5 } };   // id 7 listed first
+    MultiSourceDijkstra<float>(g, seeds, 2, Unit<float>(), out.o, s);
+    EXPECT_EQ(out.id, (std::vector<uint32_t>{ 7, 5, 5 }));
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, 1, 0 }));
+    EXPECT_EQ(out.prev, (std::vector<uint32_t>{ kNoCell, 2, kNoCell }));
+}
+
+TEST(GridSearchDijkstra, StrictModeTieRuleLowerSeedIdWinsEqualCost)
+{
+    GridSearchScratch s;
+    ChainGraph g(3);
+    Out<float> out(3);
+    const CostSeed<float> seeds[2] = { { 0, 0.0f, 7 }, { 2, 0.0f, 5 } };
+    MultiSourceDijkstra<float>(g, seeds, 2, Unit<float>(), out.o, s);
+    EXPECT_EQ(out.id, (std::vector<uint32_t>{ 7, 5, 5 }));
+    EXPECT_EQ(out.prev, (std::vector<uint32_t>{ kNoCell, 2, kNoCell }));
+    EXPECT_EQ(out.cost, (std::vector<float>{ 0, 1, 0 }));
+}
+
+TEST(GridSearchDijkstra, HeapOrdersEqualCostCellBySeedId)
+{
+    GridSearchScratch s;
+    auto& h = s.Dijkstra<float>().heap;
+    h.Push({ 1.0f, 4, 9 }); h.Push({ 1.0f, 4, 2 }); h.Push({ 1.0f, 4, 5 });
+    EXPECT_EQ(h.Pop().seedId, 2u);
+    EXPECT_EQ(h.Pop().seedId, 5u);
+    EXPECT_EQ(h.Pop().seedId, 9u);
+}
+
+namespace {
+    // Two-phase capped / floored region growth on a chain of 7 cells. Seeds: region 1 at 0, region 2 at 3,
+    // region 3 at 6. Step cost 3 for regions 1 and 3, 1 for region 2 (read from outSeedId[from]).
+    struct RegionFixture {
+        GridSearchScratch s;
+        ChainGraph g{ 7 };
+        Out<float> out{ 7 };
+        std::vector<uint32_t> claimed = std::vector<uint32_t>(4, 0u);
+        std::vector<CostSeed<float>> seeds{ { 0, 0.0f, 1 }, { 3, 0.0f, 2 }, { 6, 0.0f, 3 } };
+        uint32_t capCells = 4, floorCells = 2;
+        RegionFixture() { out.o.pushAll = true; }
+        float Step(uint32_t from) const { return out.id[from] == 2u ? 1.0f : 3.0f; }
+    };
+}
+
+TEST(GridSearchDijkstra, RegionCapOnlyFixture)
+{
+    RegionFixture f;
+    MultiSourceDijkstra<float>(f.g, f.seeds.data(), 3, [&](uint32_t from, uint32_t) { return f.Step(from); }, f.out.o, f.s,
+        [&](uint32_t, float, uint32_t id) {
+            if (f.claimed[id] >= f.capCells) return Settle::Skip;
+            ++f.claimed[id];
+            return Settle::Accept;
+        });
+    EXPECT_EQ(f.out.id, (std::vector<uint32_t>{ 1, 2, 2, 2, 2, 3, 3 }));
+    EXPECT_EQ(f.out.cost, (std::vector<float>{ 0, 2, 1, 0, 1, 3, 0 }));
+    EXPECT_EQ(f.claimed, (std::vector<uint32_t>{ 0, 1, 4, 2 }));
+}
+
+TEST(GridSearchDijkstra, RegionTwoPhaseFloorAndCapFixture)
+{
+    RegionFixture f;
+    auto step = [&](uint32_t from, uint32_t) { return f.Step(from); };
+    std::vector<uint32_t> parkedSeq;
+    MultiSourceDijkstra<float>(f.g, f.seeds.data(), 3, step, f.out.o, f.s,
+        [&](uint32_t c, float, uint32_t id) {
+            if (f.claimed[id] >= f.capCells) return Settle::Skip;
+            if (f.claimed[id] >= f.floorCells) { parkedSeq.push_back(c); return Settle::Park; }
+            ++f.claimed[id];
+            return Settle::Accept;
+        });
+    // Phase 0 parks (1,4,r2), (2,1,r2) and (6,4,r3).
+    EXPECT_EQ(parkedSeq, (std::vector<uint32_t>{ 4, 1, 4 }));
+    EXPECT_EQ(ResumeParked<float>(f.s), 3u);
+    ContinueDijkstra<float>(f.g, step, f.out.o, f.s,
+        [&](uint32_t, float, uint32_t id) {
+            if (f.claimed[id] >= f.capCells) return Settle::Skip;
+            ++f.claimed[id];
+            return Settle::Accept;
+        });
+    EXPECT_EQ(f.out.id, (std::vector<uint32_t>{ 1, 1, 2, 2, 2, 3, 3 }));
+    EXPECT_EQ(f.out.cost, (std::vector<float>{ 0, 3, 1, 0, 1, 3, 0 }));
+    EXPECT_EQ(f.claimed, (std::vector<uint32_t>{ 0, 2, 3, 2 }));
+}
+
+TEST(GridSearchDijkstra, ContinueDijkstraDoubleCompiles)
+{
+    GridSearchScratch s;
+    ChainGraph g(3);
+    Out<double> out(3);
+    const CostSeed<double> seed{ 0, 0.0, 0 };
+    MultiSourceDijkstra<double>(g, &seed, 1, Unit<double>(), out.o, s,
+        [](uint32_t, double, uint32_t) { return Settle::Park; });
+    EXPECT_EQ(ResumeParked<double>(s), 1u);
+    ContinueDijkstra<double>(g, Unit<double>(), out.o, s);
+    EXPECT_EQ(out.cost, (std::vector<double>{ 0, 1, 2 }));
+}

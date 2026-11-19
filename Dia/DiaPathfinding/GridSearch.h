@@ -67,8 +67,10 @@ namespace Dia::Pathfinding {
     uint32_t ConnectedComponents(const G& graph, InRegion inRegion, uint32_t* outLabel,
                                  uint32_t* outSizes, GridSearchScratch& scratch);
 
-    // Settle hook result. Accept settles the popped cell and expands it. Skip and Park are implemented
-    // by the settle-hook task (Task 7); only Accept is handled today.
+    // Settle hook result, returned by onSettle(cell, cost, seedId) for each non-stale popped entry.
+    // Accept: settle the cell and expand it. Skip: drop this entry; the cell is NOT settled and stays
+    // claimable by other entries. Park: move the entry (original cost / cell / seedId) to the scratch
+    // parked list; the cell is NOT settled. ResumeParked re-queues parked entries.
     enum class Settle : uint8_t { Accept, Skip, Park };
 
     // Default hook: accept every cell.
@@ -92,9 +94,18 @@ namespace Dia::Pathfinding {
         uint32_t* outSeedId = nullptr;         // optional; kUnreached for unreached cells
         const uint8_t* stopAt = nullptr;       // optional; stop when the first settled cell has stopAt[c] != 0
         uint32_t* outStoppedAt = nullptr;      // optional; the stopping cell, or kNoCell when nothing stopped
+        // Additive option motivated by the RegionPartition capped growth (site 9). false (default): strict
+        // relaxation. true (PushAll): no relaxation filter; every neighbour that is not yet settled and
+        // whose step cost is >= 0 is pushed at cost + step, every seed is pushed, and outCost / outPrev /
+        // outSeedId are written when a cell SETTLES (an entry is stale only when its cell is already
+        // settled). A Skipped entry therefore never blocks a later, costlier entry from claiming the cell,
+        // and outSeedId[from] is valid inside stepCost(from, to) so a seed-dependent step cost can read it.
+        bool pushAll = false;
     };
 
-    // Multi-source Dijkstra. Heap order is the strict total order (cost, cell index). stepCost(from, to)
+    // Multi-source Dijkstra. Heap order is the strict total order (cost, cell index, seed id). In strict
+    // mode with a non-null outSeedId an equal-cost candidate also relaxes when its seed id is lower than
+    // outSeedId[cell] (tie rule: lowest seed id wins). onSettle may return Skip or Park (see Settle). stepCost(from, to)
     // returns Cost; a NEGATIVE value blocks the edge. Costs accumulate as `cost + step` in Cost (no
     // widening or narrowing). Edges relax with strict `<`; outPrev / outSeedId follow the improving
     // relaxation (seed id is inherited from the settled cell). Seeds are pushed in index order and improve
@@ -109,6 +120,19 @@ namespace Dia::Pathfinding {
     template<class Cost, CIndexGraph G, class StepCost, class OnSettle = AcceptAll>
     void MultiSourceDijkstra(const G& graph, const CostSeed<Cost>* seeds, uint32_t seedCount, StepCost stepCost,
                              const DijkstraOptions<Cost>& options, GridSearchScratch& scratch, OnSettle onSettle = {});
+
+    // Re-pushes every parked entry (original cost / cell / seedId) onto the heap, empties the parked list and
+    // returns how many were re-queued. Requires a prior MultiSourceDijkstra<Cost> on this scratch; do not
+    // call scratch.Reset() between this and ContinueDijkstra.
+    template<class Cost>
+    uint32_t ResumeParked(GridSearchScratch& scratch);
+
+    // Drains the heap WITHOUT re-initialising outputs or settled flags, continuing the run held in the
+    // scratch (same graph, same options arrays). onSettle may differ from the original run's. Does nothing
+    // when the heap is empty. Asserts that the scratch holds a Dijkstra run of the same Cost.
+    template<class Cost, CIndexGraph G, class StepCost, class OnSettle = AcceptAll>
+    void ContinueDijkstra(const G& graph, StepCost stepCost, const DijkstraOptions<Cost>& options,
+                          GridSearchScratch& scratch, OnSettle onSettle = {});
 }
 
 #include "DiaPathfinding/GridSearch.inl"

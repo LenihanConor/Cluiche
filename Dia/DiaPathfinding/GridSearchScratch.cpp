@@ -24,6 +24,7 @@ namespace Dia::Pathfinding {
         mPendingSeeds.RemoveAll();
         mFloodHeap.Clear();
         mSettled.RemoveAll();
+        mDijkstraRunCostSize = 0;
         mDijkstraFloat.heap.Clear();
         mDijkstraFloat.parked.RemoveAll();
         mDijkstraDouble.heap.Clear();

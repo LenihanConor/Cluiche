@@ -110,13 +110,23 @@ namespace Dia::Pathfinding {
         Dia::Core::Containers::DynamicArray<Entry> mData;
     };
 
-    // Dijkstra heap entry; ordering (cost, cell) is a strict total order.
+    // Dijkstra heap entry; ordering (cost, cell, seedId) is a strict total order over distinct entries
+    // (seedId is the third key so equal-(cost, cell) entries from different seeds pop lowest seedId first).
+    // `prev` is the settled cell that pushed the entry (0xFFFFFFFF for seeds); it is not part of the order and
+    // is only consumed by PushAll mode, which writes outPrev at settle time.
     template<class Cost>
     struct DijkstraEntry {
         Cost cost;
         uint32_t cell;
         uint32_t seedId;
-        bool operator<(const DijkstraEntry& o) const { return cost < o.cost || (!(o.cost < cost) && cell < o.cell); }
+        uint32_t prev = 0xFFFFFFFFu;
+        bool operator<(const DijkstraEntry& o) const
+        {
+            if (cost < o.cost) return true;
+            if (o.cost < cost) return false;
+            if (cell != o.cell) return cell < o.cell;
+            return seedId < o.seedId;
+        }
     };
 
     // Priority-flood heap entry; ordering (level, filled, cell).
@@ -166,6 +176,11 @@ namespace Dia::Pathfinding {
         // Dijkstra state for Cost = float or double.
         template<class Cost> DijkstraScratch<Cost>& Dijkstra();
 
+        // sizeof(Cost) of the Dijkstra run whose state this scratch holds (4 float, 8 double), 0 when none.
+        // Set by MultiSourceDijkstra, cleared by Reset(); ContinueDijkstra / ResumeParked assert on it.
+        uint32_t DijkstraRunCostSize() const { return mDijkstraRunCostSize; }
+        void SetDijkstraRunCostSize(uint32_t size) { mDijkstraRunCostSize = size; }
+
         // Total reserved element capacity across all containers (for retained-capacity tests).
         uint64_t TotalCapacity() const;
 
@@ -178,6 +193,7 @@ namespace Dia::Pathfinding {
         Dia::Core::Containers::DynamicArray<uint8_t> mSettled;
         DijkstraScratch<float> mDijkstraFloat;
         DijkstraScratch<double> mDijkstraDouble;
+        uint32_t mDijkstraRunCostSize = 0;
     };
 
     template<> inline DijkstraScratch<float>& GridSearchScratch::Dijkstra<float>() { return mDijkstraFloat; }
