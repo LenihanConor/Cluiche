@@ -144,3 +144,46 @@ TEST(ManifestBootstrap, LoadManifest_MissingFile_ReturnsFalse)
     ApplicationManifestV3 manifest;
     EXPECT_FALSE(LoadManifest("does/not/exist.diagame", manifest, TypeRegistry::Global()));
 }
+
+// ---- Launch presets AC 12/13: --stage / --preset parsing ----
+
+TEST(ManifestBootstrap, ParseLaunchArgs_StageAndPreset)
+{
+    const char* argv[] = { "app.exe", "--stage", "S1Testbed", "--preset", "alpine42" };
+    std::string stage, preset;
+    EXPECT_TRUE(ParseLaunchArgs(5, argv, stage, preset));
+    EXPECT_EQ(stage, "S1Testbed");
+    EXPECT_EQ(preset, "alpine42");
+}
+
+TEST(ManifestBootstrap, ParseLaunchArgs_StageOnly)
+{
+    const char* argv[] = { "app.exe", "--automation", "--stage", "S1Testbed" };
+    std::string stage, preset;
+    EXPECT_TRUE(ParseLaunchArgs(4, argv, stage, preset));
+    EXPECT_EQ(stage, "S1Testbed");
+    EXPECT_TRUE(preset.empty());
+}
+
+TEST(ManifestBootstrap, ParseLaunchArgs_NoStage_ReturnsFalse)
+{
+    const char* argv[] = { "app.exe", "--preset", "alpine42" };
+    std::string stage, preset;
+    EXPECT_FALSE(ParseLaunchArgs(3, argv, stage, preset));
+    EXPECT_TRUE(stage.empty());
+}
+
+TEST(ManifestBootstrap, ParseLaunchArgs_TrailingFlagWithoutValue_Ignored)
+{
+    const char* argv[] = { "app.exe", "--stage" };
+    std::string stage, preset;
+    EXPECT_FALSE(ParseLaunchArgs(2, argv, stage, preset));
+}
+
+TEST(ManifestBootstrap, ParseLaunchArgs_DescribeSchema_SuppressesLaunch)
+{
+    // --stage belongs to describe mode there; it must not also launch the stage.
+    const char* argv[] = { "app.exe", "--describe-schema", "out.json", "--stage", "S1Testbed" };
+    std::string stage, preset;
+    EXPECT_FALSE(ParseLaunchArgs(5, argv, stage, preset));
+}

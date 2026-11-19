@@ -3,6 +3,7 @@
 // Loads assets/cow.diagame via Dia::ApplicationFlow::LoadManifest (compose,
 // path aliases, validate), then runs the application loop at 30 Hz.
 #include <cstdio>
+#include <string>
 #include <memory>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
@@ -36,6 +37,13 @@ int main(int argc, const char* argv[])
         return 1;
 
     Dia::ApplicationFlow::Application app(manifest, registry);
+
+    {
+        // --stage <name> [--preset <name>]: launch that stage from Boot (see SimNavigationHandlerModule).
+        std::string launchStage, launchPreset;
+        if (Dia::ApplicationFlow::ParseLaunchArgs(argc, argv, launchStage, launchPreset))
+            app.SetInitialLaunch(Dia::Core::StringCRC(launchStage.c_str()), Dia::Core::StringCRC(launchPreset.c_str()));
+    }
 
     if (!app.Start())
     {

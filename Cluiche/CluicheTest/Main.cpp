@@ -157,6 +157,13 @@ int main(int argc, const char* argv[])
     // Create and run application
     Dia::ApplicationFlow::Application app(manifest, registry);
 
+    {
+        // --stage <name> [--preset <name>]: launch that stage from Boot (see SimNavigationHandlerModule).
+        std::string launchStage, launchPreset;
+        if (Dia::ApplicationFlow::ParseLaunchArgs(argc, argv, launchStage, launchPreset))
+            app.SetInitialLaunch(Dia::Core::StringCRC(launchStage.c_str()), Dia::Core::StringCRC(launchPreset.c_str()));
+    }
+
     if (!app.Start())
     {
         printf("Application failed to start\n");

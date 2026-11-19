@@ -86,6 +86,12 @@ namespace Dia { namespace ApplicationFlow {
         void TransitionToInternal(const Dia::Core::StringCRC& stageId,
                                   const Dia::Core::StringCRC& presetId);
 
+        // Records the launch requested on the command line.  Call before Start().  The stage is
+        // not entered here: the game's navigation handler takes it once Boot is running
+        // (IApplicationControl::TakeInitialLaunch) and issues the transition.  Empty stage = none.
+        void SetInitialLaunch(const Dia::Core::StringCRC& stageId, const Dia::Core::StringCRC& presetId);
+        bool TakeInitialLaunch(Dia::Core::StringCRC& stageId, Dia::Core::StringCRC& presetId) override;
+
         // IApplicationControl — thread-safe; stops all dedicated threads and
         // begins stopping every active module.
         void RequestShutdown() override;
@@ -275,6 +281,9 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC mPendingStage;
         std::atomic<bool>    mHasPendingTransition{false};
         Dia::Core::StringCRC mPendingPreset;   // guarded by mTransitionMutex; travels with mPendingStage
+        Dia::Core::StringCRC mInitialStage;    // guarded by mTransitionMutex
+        Dia::Core::StringCRC mInitialPreset;   // guarded by mTransitionMutex
+        bool                 mHasInitialLaunch = false; // guarded by mTransitionMutex
         Dia::Core::StringCRC mLaunchPreset;    // main-thread: preset of the transition being drained/committed
 
         // Calls module->OnStageLaunch(json) with the override for `stage`/`preset`

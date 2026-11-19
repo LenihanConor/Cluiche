@@ -75,12 +75,25 @@ struct RecordingControl : Dia::ApplicationFlow::IApplicationControl {
     void TransitionTo(const StringCRC& s) override { ++plainCalls; lastStage = s; lastPreset = StringCRC(); }
     void TransitionTo(const StringCRC& s, const StringCRC& p) override { ++presetCalls; lastStage = s; lastPreset = p; }
     void RequestShutdown() override {}
-    StringCRC GetCurrentStage() const override { return StringCRC(); }
+    StringCRC GetCurrentStage() const override { return current; }
     StringCRC GetCurrentPreset() const override { return StringCRC(); }
-    void GetStageTransitions(const StringCRC&, Dia::Core::Containers::DynamicArrayC<StringCRC, 32>&) const override {}
+    void GetStageTransitions(const StringCRC&, Dia::Core::Containers::DynamicArrayC<StringCRC, 32>& out) const override { if (bootListsStage) { out.Add(initialStage); } }
     bool RegisterTransitionGuard(Dia::ApplicationFlow::Module*, Dia::ApplicationFlow::TransitionGuardFn) override { return true; }
     void UnregisterTransitionGuards(Dia::ApplicationFlow::Module*) override {}
     const Json::Value* GetDiagameConfig() const override { return nullptr; }
+
+    // Initial launch support (Task 8).
+    bool hasInitial = false;
+    StringCRC initialStage, initialPreset;
+    StringCRC current = StringCRC("Boot");
+    bool bootListsStage = true;
+    bool TakeInitialLaunch(StringCRC& stage, StringCRC& preset) override
+    {
+        if (!hasInitial) { return false; }
+        hasInitial = false;
+        stage = initialStage; preset = initialPreset;
+        return true;
+    }
 };
 
 } // namespace
@@ -306,5 +319,53 @@ TEST(StageLaunchHandler, EmptyStageIgnored)
 {
     RecordingControl ctl;
     SimNavigationHandlerModule::HandleLaunchRequest(ctl, nullptr, StageLaunchRequest());
+    EXPECT_EQ(ctl.plainCalls + ctl.presetCalls, 0);
+}
+
+// ---- AC 13: initial launch (--stage/--preset) ----
+
+TEST(StageInitialLaunch, IssuedOnceAtBoot)
+{
+    RecordingControl ctl;
+    ctl.hasInitial = true; ctl.initialStage = StringCRC("WithPresets"); ctl.initialPreset = StringCRC("alpine42");
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kIssued);
+    EXPECT_EQ(ctl.presetCalls, 1);
+    EXPECT_EQ(ctl.lastStage, StringCRC("WithPresets"));
+    EXPECT_EQ(ctl.lastPreset, StringCRC("alpine42"));
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kNone);
+    EXPECT_EQ(ctl.presetCalls, 1);
+}
+
+TEST(StageInitialLaunch, NothingToDoWhenNoneSet)
+{
+    RecordingControl ctl;
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kNone);
+    EXPECT_EQ(ctl.plainCalls + ctl.presetCalls, 0);
+}
+
+TEST(StageInitialLaunch, StageWithoutPresetIsPlainTransition)
+{
+    RecordingControl ctl;
+    ctl.hasInitial = true; ctl.initialStage = StringCRC("NoPresets");
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kIssued);
+    EXPECT_EQ(ctl.plainCalls, 1);
+    EXPECT_EQ(ctl.presetCalls, 0);
+}
+
+TEST(StageInitialLaunch, UnknownStageStaysAtBoot)
+{
+    RecordingControl ctl;
+    ctl.hasInitial = true; ctl.initialStage = StringCRC("Nope"); ctl.bootListsStage = false;
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kUnknownStage);
+    EXPECT_EQ(ctl.plainCalls + ctl.presetCalls, 0);
+}
+
+TEST(StageInitialLaunch, NotAtBootWaits)
+{
+    RecordingControl ctl;
+    ctl.current = StringCRC("Other");
+    ctl.hasInitial = true; ctl.initialStage = StringCRC("WithPresets");
+    EXPECT_EQ(SimNavigationHandlerModule::IssueInitialLaunch(ctl, nullptr), SimNavigationHandlerModule::InitialLaunchResult::kNone);
+    EXPECT_TRUE(ctl.hasInitial); // not consumed
     EXPECT_EQ(ctl.plainCalls + ctl.presetCalls, 0);
 }

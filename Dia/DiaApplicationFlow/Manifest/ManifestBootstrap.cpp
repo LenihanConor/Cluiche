@@ -62,6 +62,20 @@ namespace Dia { namespace ApplicationFlow {
         }
     }
 
+    bool ParseLaunchArgs(int argc, const char* const argv[], std::string& outStage, std::string& outPreset)
+    {
+        outStage.clear();
+        outPreset.clear();
+        for (int i = 1; i < argc; ++i)
+            if (std::strcmp(argv[i], "--describe-schema") == 0) return false;
+        for (int i = 1; i + 1 < argc; ++i)
+        {
+            if (std::strcmp(argv[i], "--stage") == 0)       outStage  = argv[++i];
+            else if (std::strcmp(argv[i], "--preset") == 0) outPreset = argv[++i];
+        }
+        return !outStage.empty();
+    }
+
     void RegisterPathAliases(const ApplicationManifestV3& manifest, const char* diagamePath)
     {
         if (!manifest.diagameConfig) return;

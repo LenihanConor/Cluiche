@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -11,6 +12,11 @@ namespace Dia { namespace ApplicationFlow {
     // the aliases exist before the manifest loads. The reserved alias `source` may
     // only be set this way; RegisterPathAliases ignores a manifest `source`.
     void RegisterDevAliases(int argc, const char* const argv[]);
+
+    // Parses `--stage <name> [--preset <name>]` from the command line.  Returns true when a stage was given
+    // (preset left empty when absent).  A flag without a value is ignored.  Returns false under
+    // `--describe-schema`, where `--stage` selects the describe target and must not also launch it.
+    bool ParseLaunchArgs(int argc, const char* const argv[], std::string& outStage, std::string& outPreset);
 
     // Registers diagameConfig["path_aliases"] into PathStore, resolving each path
     // relative to the directory containing diagamePath. No-op if the manifest has

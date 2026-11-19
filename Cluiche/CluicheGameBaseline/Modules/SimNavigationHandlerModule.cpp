@@ -31,6 +31,12 @@ Dia::ApplicationFlow::StartResult SimNavigationHandlerModule::DoStart()
 void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     static constexpr unsigned int kMaxPerFrame = 4;
+    if (!mInitialLaunchDone)
+    {
+        if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
+            mInitialLaunchDone = IssueInitialLaunch(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr)
+                                 != InitialLaunchResult::kNone;
+    }
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<RenderToSimNavRequest>, kMaxPerFrame> events;
 
     mBootNavInput.Consume(events);
@@ -110,6 +116,37 @@ void SimNavigationHandlerModule::HandleLaunchRequest(Dia::ApplicationFlow::IAppl
     if (request.stage.Value() == 0)
         return;
     RouteNavigation(app, automation, request.stage, request.preset);
+}
+
+SimNavigationHandlerModule::InitialLaunchResult SimNavigationHandlerModule::IssueInitialLaunch(
+    Dia::ApplicationFlow::IApplicationControl& app, Dia::Automation::AutomationService* automation)
+{
+    if (app.GetCurrentStage() != Dia::Core::StringCRC("Boot"))
+        return InitialLaunchResult::kNone;
+
+    Dia::Core::StringCRC stage, preset;
+    if (!app.TakeInitialLaunch(stage, preset))
+        return InitialLaunchResult::kNone;
+
+    if (automation && automation->IsHolding())
+    {
+        DIA_LOG_INFO("Application", "initial launch skipped: navigation hold active (stage='%s')", stage.AsChar());
+        return InitialLaunchResult::kSkippedHold;
+    }
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> targets;
+    app.GetStageTransitions(Dia::Core::StringCRC("Boot"), targets);
+    bool known = false;
+    for (unsigned int i = 0; i < targets.Size() && !known; ++i) { known = targets[i] == stage; }
+    if (!known)
+    {
+        DIA_LOG_ERROR("Application", "initial launch: stage '%s' is not reachable from Boot; staying at Boot", stage.AsChar());
+        return InitialLaunchResult::kUnknownStage;
+    }
+
+    DIA_LOG_INFO("Application", "initial launch issued: stage='%s' preset='%s'", stage.AsChar(), preset.AsChar());
+    RouteNavigation(app, automation, stage, preset);
+    return InitialLaunchResult::kIssued;
 }
 
 void SimNavigationHandlerModule::Navigate(const Dia::Core::StringCRC& target, const Dia::Core::StringCRC& preset)

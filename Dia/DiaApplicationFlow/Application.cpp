@@ -573,6 +573,26 @@ namespace Dia { namespace ApplicationFlow {
         TransitionToInternal(stageId, presetId);
     }
 
+    void Application::SetInitialLaunch(const Dia::Core::StringCRC& stageId, const Dia::Core::StringCRC& presetId)
+    {
+        std::lock_guard<std::mutex> lock(mTransitionMutex);
+        mInitialStage     = stageId;
+        mInitialPreset    = presetId;
+        mHasInitialLaunch = stageId.Value() != 0;
+        if (mHasInitialLaunch)
+            DIA_LOG_INFO("Application", "initial launch recorded: stage='%s' preset='%s'", stageId.AsChar(), presetId.AsChar());
+    }
+
+    bool Application::TakeInitialLaunch(Dia::Core::StringCRC& stageId, Dia::Core::StringCRC& presetId)
+    {
+        std::lock_guard<std::mutex> lock(mTransitionMutex);
+        if (!mHasInitialLaunch) return false;
+        mHasInitialLaunch = false;
+        stageId  = mInitialStage;
+        presetId = mInitialPreset;
+        return true;
+    }
+
     Dia::Core::StringCRC Application::GetCurrentPreset() const
     {
         return mCurrentPreset;

@@ -52,6 +52,11 @@ namespace Dia { namespace ApplicationFlow {
         // was entered without a preset).  Same threading contract as GetCurrentStage.
         [[nodiscard]] virtual Dia::Core::StringCRC GetCurrentPreset() const = 0;
 
+        // One-shot hand-off of the launch requested on the command line (--stage/--preset, see
+        // Application::SetInitialLaunch).  Returns true and fills the out params at most once;
+        // false when none was requested or it was already taken.  Thread-safe.
+        virtual bool TakeInitialLaunch(Dia::Core::StringCRC& /*stageId*/, Dia::Core::StringCRC& /*presetId*/) { return false; }
+
         // Read-only: what stages can the given stage transition to.
         virtual void GetStageTransitions(const Dia::Core::StringCRC& stage,
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const = 0;

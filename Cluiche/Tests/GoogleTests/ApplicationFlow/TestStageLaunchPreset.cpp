@@ -341,3 +341,34 @@ TEST(StageLaunchPreset, EmptyPresetBehavesLikePlainTransition)
     EXPECT_EQ(ctl.GetCurrentPreset().Value(), 0u);
     EXPECT_GE(IndexOf("launch:modG1:"), 0);
 }
+
+// ---- Launch presets AC 13: initial launch hand-off ----
+
+TEST(InitialLaunch, NoneSetByDefault)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    StringCRC stage, preset;
+    EXPECT_FALSE(app.TakeInitialLaunch(stage, preset));
+}
+
+TEST(InitialLaunch, TakenExactlyOnce)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    app.SetInitialLaunch(StringCRC("Game"), StringCRC("Fast"));
+    StringCRC stage, preset;
+    ASSERT_TRUE(app.TakeInitialLaunch(stage, preset));
+    EXPECT_EQ(stage, StringCRC("Game"));
+    EXPECT_EQ(preset, StringCRC("Fast"));
+    EXPECT_FALSE(app.TakeInitialLaunch(stage, preset));
+}
+
+TEST(InitialLaunch, EmptyStageIsNotALaunch)
+{
+    Fixture f;
+    Application app(f.manifest, f.reg);
+    app.SetInitialLaunch(StringCRC(), StringCRC("Fast"));
+    StringCRC stage, preset;
+    EXPECT_FALSE(app.TakeInitialLaunch(stage, preset));
+}

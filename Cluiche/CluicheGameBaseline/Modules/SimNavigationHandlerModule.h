@@ -37,6 +37,14 @@ public:
                                     Dia::Automation::AutomationService* automation,
                                     const StageLaunchRequest& request);
 
+    enum class InitialLaunchResult { kNone, kIssued, kSkippedHold, kUnknownStage };
+
+    // Once Boot is the running stage, takes the --stage/--preset launch (if any) and issues it.
+    // Skipped (but consumed) while an automation hold is active; an unknown stage logs an Error and
+    // stays at Boot.  kNone when nothing was pending or the app is not at Boot yet (nothing consumed).
+    static InitialLaunchResult IssueInitialLaunch(Dia::ApplicationFlow::IApplicationControl& app,
+                                                  Dia::Automation::AutomationService* automation);
+
     explicit SimNavigationHandlerModule(const Dia::Core::StringCRC& instanceId);
     ~SimNavigationHandlerModule() override;
 
@@ -52,6 +60,8 @@ private:
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mBootNavInput{this, "BootMenuNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mHUDNavInput{this,  "HUDNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<StageLaunchRequest>    mLaunchInput{this, "StageLaunchRequest"};
+
+    bool mInitialLaunchDone = false; // set once the --stage/--preset launch has been taken (issued, skipped or refused)
 
     // Heap-allocated to avoid pulling AutomationService.h into every TU.
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationService = nullptr;
