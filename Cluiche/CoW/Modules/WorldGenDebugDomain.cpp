@@ -461,6 +461,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
     }
     view["drawers"] = drawers;
     view["siteKinds"] = siteKinds;
+    view["unavailableLayers"] = status["unavailableLayers"];   // layers the current world has no data for (panel marks them)
 
     // cell inspector
     out["cell"] = Json::Value(Json::nullValue);

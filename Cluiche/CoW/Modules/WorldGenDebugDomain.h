@@ -50,7 +50,7 @@
 //   presets  : [{id, displayName}]
 //   sizes    : [{name, width, height, selected}]
 //   timings  : [{stage, name, ms, ran}]               (per-stage ms of the last generation, ran = re-run last Update)
-//   view     : {colourMode, modes[names], layers[{id,label,group}], drawers:[{name, enabled, available}], legend?}
+//   view     : {colourMode, modes[names], layers[{id,label,group}], drawers:[{name, enabled, available}], unavailableLayers[ids], legend?}
 //              layers = [{id, label, group}] (STATIC, same order as modes, back-compat): the picker entries. "terrain" is
 //              labelled "Relief"; label = humanised id ("terrainType" -> "Terrain type"); group = the WorldLayerSource group
 //              (view: "Terrain", ...; no view: "Terrain" for the Relief entry, "Layers" for the rest).

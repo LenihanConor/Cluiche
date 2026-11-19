@@ -620,3 +620,25 @@ TEST(WorldGenDebugDomainPanel, CompactStateAtLargeWithFailedTwoAttemptReportStay
 }
 
 #endif // DIA_DEBUG
+
+// Panel gap (cleanup bundle 2026-11-19): the picker needs to know which layers the world has no data for.
+TEST(WorldGenDebugDomainPanel, ViewReportsUnavailableLayersBeforeAWorldAndAfterAnImport)
+{
+    PanelFixture f("unavailable");
+    f.Gen();
+    Json::Value before = f.State()["view"]["unavailableLayers"];
+    ASSERT_TRUE(before.isArray());
+    EXPECT_GT(before.size(), 0u);   // no world yet: nothing has data
+
+    f.Regen(5);
+    EXPECT_EQ(f.State()["view"]["unavailableLayers"].size(), 0u);   // a full generation fills every layer
+
+    f.Cmd("export", Obj("name", "u"));
+    f.Cmd("import", Obj("name", "u"));
+    ASSERT_TRUE(f.S().IsImported());
+    const Json::Value imported = f.State()["view"]["unavailableLayers"];
+    bool hasTemperature = false, hasElevation = false;
+    for (const Json::Value& v : imported) { hasTemperature |= v.asString() == "temperature"; hasElevation |= v.asString() == "elevation"; }
+    EXPECT_TRUE(hasTemperature);    // intermediate climate field: not derivable from a file
+    EXPECT_FALSE(hasElevation);     // rebuilt from the cells
+}

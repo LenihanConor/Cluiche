@@ -1894,7 +1894,14 @@ function wgCtlValue(key) {
   for (var i = 0; i < ctl.length; ++i) if (ctl[i] && ctl[i].key === key) return ctl[i].value;
   return undefined;
 }
+// A Regenerate in flight refuses every world-changing command with `busy`: swallow the edit and snap the control back to
+// the value the session holds (the progress section already shows the run).
+function wgGenerating() {
+  var pr = ui.wgSt && ui.wgSt.progress;
+  return !!(pr && pr.state === 'Generating');
+}
 function wgGate(cmdId, cmd, args, restore) {
+  if (wgGenerating()) { if (restore) restore(); return true; }
   if (!ui.wgLocked) return false;
   if (restore) restore();
   if (!ui.wgPending) { ui.wgPending = { id: cmdId, cmd: cmd, args: args }; }
@@ -1955,14 +1962,14 @@ function wgBindSlider(cmdId, key, range, onLocal) {
     if (pending) { pending = false; send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
   }
   range.addEventListener('input', function () {
-    if (ui.wgLocked) { wgGate(cmdId, 'setScale', { key: key, value: parseFloat(range.value) }, restore); return; }
+    if (ui.wgLocked || wgGenerating()) { wgGate(cmdId, 'setScale', { key: key, value: parseFloat(range.value) }, restore); return; }
     ui.activeSlider = range;
     onLocal();
     if (timer === null) { send(); timer = setTimeout(tick, WG_THROTTLE_MS); }
     else pending = true;
   });
   range.addEventListener('change', function () {
-    if (ui.wgLocked) { restore(); return; }
+    if (ui.wgLocked || wgGenerating()) { restore(); return; }
     onLocal();
     pending = false;
     if (timer !== null) { clearTimeout(timer); timer = null; }
@@ -2480,6 +2487,16 @@ function refreshWorldGen(card, st) {
   var view = st.view || {};
   var mode = q('wg-mode');
   if (mode && wgFree(mode) && view.colourMode !== undefined) mode.value = String(view.colourMode);
+  if (mode) {
+    // Layers the current world has no data for (an imported world rebuilds only the derivable ones) read as zero: say so.
+    var unav = Array.isArray(view.unavailableLayers) ? view.unavailableLayers : [];
+    for (var oi = 0; oi < mode.options.length; ++oi) {
+      var opt = mode.options[oi];
+      if (!opt.hasAttribute('data-label')) opt.setAttribute('data-label', opt.textContent);
+      var otext = opt.getAttribute('data-label') + (unav.indexOf(opt.value) >= 0 ? ' (unavailable)' : '');
+      if (opt.textContent !== otext) opt.textContent = otext;
+    }
+  }
   setSr('view', view.colourMode !== undefined ? wgModeLabel(String(view.colourMode)) : '');
   var lgHost = q('wg-legend');
   if (lgHost) wgRenderLegend(lgHost, view.legend);
