@@ -283,6 +283,23 @@
             "id": "SimTimeSchedulerFire",
             "kind": "EventStream",
             "payload_type": "SimTimeSchedulerFire"
+        },
+        {
+            "id": "StageResult",
+            "kind": "EventStream",
+            "payload_type": "StageResultEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
+            "id": "StageCatalogueSnapshot",
+            "kind": "FrameStream",
+            "payload_type": "StageCatalogueSnapshot",
+            "from": "MainPU",
+            "to": "RenderPU",
+            "multi_writer": false
         }
     ],
     "processing_units": [
@@ -536,6 +553,30 @@
                         {
                             "id": "AutomationService",
                             "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "StageCatalogueModule",
+                    "type_id": "StageCatalogueModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "config": {
+                        "diagame_path": "assets/cow.diagame",
+                        "results_path": "out/CoW/stage_results.json"
+                    },
+                    "channels": [
+                        {
+                            "id": "StageResult",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "StageCatalogueSnapshot",
+                            "role": "writes"
                         }
                     ]
                 },
