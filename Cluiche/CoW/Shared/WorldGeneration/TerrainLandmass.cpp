@@ -5,6 +5,8 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 
 #include <DiaMaths/Noise/Noise.h>
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -214,28 +216,20 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     out.refMainland = out.TopMask(out.landTarget);
     CleanUpLand(out.refMainland, dims, minLandmass, out.landTarget > 0 ? peak : -1);
 
-    // Hex distance from M_ref (multi-source BFS); -1 = unreachable / no M_ref.
-    std::vector<int> distRef(static_cast<size_t>(n), -1);
+    // Hex distance from M_ref (multi-source steps); kUnreached = unreachable / no M_ref.
+    std::vector<uint32_t> distRef(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
     {
-        std::vector<int> queue;
-        queue.reserve(static_cast<size_t>(n));
+        std::vector<Dia::Pathfinding::StepSeed> refSeeds;
+        refSeeds.reserve(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i)
         {
-            if (out.refMainland[static_cast<size_t>(i)]) { distRef[static_cast<size_t>(i)] = 0; queue.push_back(i); }
+            if (out.refMainland[static_cast<size_t>(i)]) { refSeeds.push_back({static_cast<uint32_t>(i), 0u, static_cast<uint32_t>(i)}); }
         }
-        for (size_t head = 0; head < queue.size(); ++head)
-        {
-            const int c = queue[head];
-            for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
-            {
-                const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                if (nb != Dia::Pathfinding::kNoCell && distRef[nb] < 0)
-                {
-                    distRef[nb] = distRef[static_cast<size_t>(c)] + 1;
-                    queue.push_back(static_cast<int>(nb));
-                }
-            }
-        }
+        const Dia::Pathfinding::HexNeighbours graph(topo);
+        Dia::Pathfinding::GridSearchScratch scratch;
+        Dia::Pathfinding::MultiSourceSteps(graph, refSeeds.data(), static_cast<uint32_t>(refSeeds.size()),
+                                           [](uint32_t) { return true; }, static_cast<uint32_t>(n),
+                                           distRef.data(), nullptr, scratch);
     }
     auto nextToRef = [&](int c)
     {
@@ -258,8 +252,8 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         const int cx = std::clamp(cc.x, 0, w - 1);
         const int cy = std::clamp(cc.y, 0, h - 1);
         const int cell = cy * w + cx;
-        const int dRef = distRef[static_cast<size_t>(cell)];
-        if (out.refMainland[static_cast<size_t>(cell)] || dRef < 0) { continue; }
+        const uint32_t dRef = distRef[static_cast<size_t>(cell)];
+        if (out.refMainland[static_cast<size_t>(cell)] || dRef == Dia::Pathfinding::kUnreached) { continue; }
         if (static_cast<float>(dRef) < rules.kIslandGapMin() || static_cast<float>(dRef) > rules.kIslandGapMax()) { continue; }
         if (static_cast<float>(edgeSteps(cell)) < minEdge) { continue; }
         bool spaced = true;
