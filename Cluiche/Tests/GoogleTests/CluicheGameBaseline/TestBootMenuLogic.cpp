@@ -5,6 +5,8 @@
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstring>
+#include <initializer_list>
+#include <utility>
 
 using Cluiche::AppFlow::BootMenuLogic;
 using Cluiche::AppFlow::StageStatusModule;
@@ -153,4 +155,127 @@ TEST(BootMenuLogic, ProjectDefaultsAndOverrides)
     EXPECT_STREQ(BootMenuLogic::ResolveProject(nullptr), "");
     EXPECT_STREQ(BootMenuLogic::ResolveProject(""), "");
     EXPECT_STREQ(BootMenuLogic::ResolveProject("CoW v0.1"), "CoW v0.1");
+}
+
+// ---- Launch presets AC 10: preset sub-rows ----
+
+namespace {
+void Presets(BootMenuLogic& logic, const char* stage, std::initializer_list<std::pair<const char*, const char*>> list)
+{
+    BootMenuLogic::PresetInfo infos[8];
+    unsigned int n = 0;
+    for (const auto& p : list)
+    {
+        infos[n].name = StringCRC(p.first);
+        std::strncpy(infos[n].description, p.second, sizeof(infos[n].description) - 1);
+        infos[n].description[sizeof(infos[n].description) - 1] = 0;
+        ++n;
+    }
+    logic.SetStagePresets(StringCRC(stage), infos, n);
+}
+}
+
+TEST(BootMenuLogicPresets, NoPresetsMeansOneRowPerStage)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    EXPECT_EQ(logic.RowCount(), kStageCount);
+    BootMenuLogic::Row row;
+    ASSERT_TRUE(logic.GetRow(2, row));
+    EXPECT_EQ(row.stage, StringCRC("StageC"));
+    EXPECT_FALSE(row.isPreset);
+    EXPECT_EQ(row.preset.Value(), 0u);
+}
+
+TEST(BootMenuLogicPresets, PresetRowsFollowTheirStageRow)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    Presets(logic, "StageB", { {"fast", "Fast run"}, {"slow", ""} });
+    EXPECT_EQ(logic.RowCount(), kStageCount + 2);
+
+    BootMenuLogic::Row row;
+    ASSERT_TRUE(logic.GetRow(1, row));
+    EXPECT_EQ(row.stage, StringCRC("StageB"));
+    EXPECT_FALSE(row.isPreset);
+
+    ASSERT_TRUE(logic.GetRow(2, row));
+    EXPECT_TRUE(row.isPreset);
+    EXPECT_EQ(row.stage, StringCRC("StageB"));
+    EXPECT_EQ(row.preset, StringCRC("fast"));
+    EXPECT_STREQ(row.description, "Fast run");
+
+    ASSERT_TRUE(logic.GetRow(3, row));
+    EXPECT_TRUE(row.isPreset);
+    EXPECT_EQ(row.preset, StringCRC("slow"));
+    EXPECT_STREQ(row.description, "");
+
+    ASSERT_TRUE(logic.GetRow(4, row));
+    EXPECT_EQ(row.stage, StringCRC("StageC"));
+    EXPECT_FALSE(row.isPreset);
+}
+
+TEST(BootMenuLogicPresets, StageRowClickMeansNoPreset)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    Presets(logic, "StageA", { {"fast", "x"} });
+    BootMenuLogic::Row row;
+    ASSERT_TRUE(logic.GetRow(0, row));
+    EXPECT_EQ(row.stage, StringCRC("StageA"));
+    EXPECT_EQ(row.preset.Value(), 0u);
+}
+
+TEST(BootMenuLogicPresets, PresetsForUnlistedStageIgnored)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    Presets(logic, "NotListed", { {"fast", "x"} });
+    EXPECT_EQ(logic.RowCount(), kStageCount);
+}
+
+TEST(BootMenuLogicPresets, SetStagePresetsReplacesPreviousForThatStage)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    Presets(logic, "StageA", { {"a", ""}, {"b", ""} });
+    Presets(logic, "StageA", { {"c", ""} });
+    EXPECT_EQ(logic.RowCount(), kStageCount + 1);
+    BootMenuLogic::Row row;
+    ASSERT_TRUE(logic.GetRow(1, row));
+    EXPECT_EQ(row.preset, StringCRC("c"));
+}
+
+TEST(BootMenuLogicPresets, SetStagesClearsPresets)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    Presets(logic, "StageA", { {"a", ""} });
+    logic.SetStages(kStages, kStageCount);
+    EXPECT_EQ(logic.RowCount(), kStageCount);
+}
+
+TEST(BootMenuLogicPresets, GetRowOutOfRangeFalse)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    BootMenuLogic::Row row;
+    EXPECT_FALSE(logic.GetRow(kStageCount, row));
+}
+
+TEST(BootMenuLogicPresets, PoolFullDropsExtraSilentlyWithoutCorruption)
+{
+    BootMenuLogic logic;
+    logic.SetStages(kStages, kStageCount);
+    BootMenuLogic::PresetInfo info;
+    info.name = StringCRC("p");
+    for (unsigned int i = 0; i < kStageCount; ++i)
+    {
+        BootMenuLogic::PresetInfo many[BootMenuLogic::kMaxPresetsPerStage + 4];
+        for (auto& m : many) { m = info; }
+        logic.SetStagePresets(kStages[i], many, BootMenuLogic::kMaxPresetsPerStage + 4);
+    }
+    EXPECT_LE(logic.RowCount(), kStageCount + BootMenuLogic::kMaxPresets);
+    BootMenuLogic::Row row;
+    EXPECT_TRUE(logic.GetRow(logic.RowCount() - 1, row));
 }

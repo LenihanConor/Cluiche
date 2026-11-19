@@ -1,5 +1,7 @@
 #include "Modules/BootMenuLogic.h"
 
+#include <cstring>
+
 namespace Cluiche { namespace AppFlow {
 
 void BootMenuLogic::SetStages(const Dia::Core::StringCRC* stages, unsigned int count)
@@ -7,8 +9,66 @@ void BootMenuLogic::SetStages(const Dia::Core::StringCRC* stages, unsigned int c
     mCount = (count > kMaxStages) ? kMaxStages : count;
     for (unsigned int i = 0; i < kMaxStages; ++i)
         mVisited[i] = false;
+    mPresetCount = 0;
     for (unsigned int i = 0; i < mCount; ++i)
         mStages[i] = stages[i];
+}
+
+void BootMenuLogic::SetStagePresets(const Dia::Core::StringCRC& stage, const PresetInfo* presets, unsigned int count)
+{
+    bool listed = false;
+    for (unsigned int i = 0; i < mCount && !listed; ++i)
+        listed = mStages[i] == stage;
+    if (!listed)
+        return;
+
+    // Drop the stage's previous presets (compact in place, order kept).
+    unsigned int kept = 0;
+    for (unsigned int i = 0; i < mPresetCount; ++i)
+        if (!(mPresets[i].stage == stage))
+            mPresets[kept++] = mPresets[i];
+    mPresetCount = kept;
+
+    const unsigned int n = (count > kMaxPresetsPerStage) ? kMaxPresetsPerStage : count;
+    for (unsigned int i = 0; i < n && mPresetCount < kMaxPresets; ++i)
+    {
+        mPresets[mPresetCount].stage = stage;
+        mPresets[mPresetCount].info = presets[i];
+        ++mPresetCount;
+    }
+}
+
+unsigned int BootMenuLogic::RowCount() const { return mCount + mPresetCount; }
+
+bool BootMenuLogic::GetRow(unsigned int index, Row& outRow) const
+{
+    unsigned int row = 0;
+    for (unsigned int s = 0; s < mCount; ++s)
+    {
+        if (row == index)
+        {
+            outRow = Row();
+            outRow.stage = mStages[s];
+            return true;
+        }
+        ++row;
+        for (unsigned int p = 0; p < mPresetCount; ++p)
+        {
+            if (!(mPresets[p].stage == mStages[s]))
+                continue;
+            if (row == index)
+            {
+                outRow = Row();
+                outRow.stage = mStages[s];
+                outRow.preset = mPresets[p].info.name;
+                outRow.isPreset = true;
+                std::memcpy(outRow.description, mPresets[p].info.description, sizeof(outRow.description));
+                return true;
+            }
+            ++row;
+        }
+    }
+    return false;
 }
 
 void BootMenuLogic::SetProvider(const StageStatusModule* provider) { mProvider = provider; }

@@ -22,8 +22,33 @@ public:
         StageStatusModule::Severity severity = StageStatusModule::Severity::kNone;
     };
 
-    // Replaces the stage list and clears visited markers.
+    static constexpr unsigned int kMaxPresetsPerStage = 16;   // matches the .diastage limit
+    static constexpr unsigned int kMaxPresets = 128;          // pool shared by all stages
+    static constexpr unsigned int kMaxDescription = 121;      // 120 chars + NUL
+
+    struct PresetInfo {
+        Dia::Core::StringCRC name;
+        char description[kMaxDescription] = {};
+    };
+
+    // One menu row: a stage row (isPreset false, preset empty = launch with no preset) or a preset
+    // sub-row under its stage (description is the tooltip).  Click: launch row.stage with row.preset.
+    struct Row {
+        Dia::Core::StringCRC stage;
+        Dia::Core::StringCRC preset;
+        bool isPreset = false;
+        char description[kMaxDescription] = {};
+    };
+
+    // Replaces the stage list and clears visited markers and presets.
     void SetStages(const Dia::Core::StringCRC* stages, unsigned int count);
+    // Replaces the presets shown under `stage` (a stage not in the list is ignored).  Over the
+    // per-stage or pool cap the extras are dropped.
+    void SetStagePresets(const Dia::Core::StringCRC& stage, const PresetInfo* presets, unsigned int count);
+    // Stage rows in list order, each followed by its preset sub-rows.
+    unsigned int RowCount() const;
+    bool GetRow(unsigned int index, Row& outRow) const;
+
     // Provider is optional; null means no badges and no counts.
     void SetProvider(const StageStatusModule* provider);
 
@@ -47,6 +72,9 @@ private:
     Dia::Core::StringCRC mStages[kMaxStages];
     bool mVisited[kMaxStages] = {};
     unsigned int mCount = 0;
+    struct PresetEntry { Dia::Core::StringCRC stage; PresetInfo info; };
+    PresetEntry mPresets[kMaxPresets];
+    unsigned int mPresetCount = 0;
     const StageStatusModule* mProvider = nullptr;
 };
 
