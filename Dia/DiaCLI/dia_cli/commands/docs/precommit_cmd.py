@@ -218,6 +218,15 @@ def _check_value_reference(repo_root: Path, files: List[Path]) -> List[str]:
     return value_reference.precommit_warnings(repo_root, files)
 
 
+def _check_stage_proves(repo_root: Path) -> Tuple[List[str], int]:
+    """Run the stage-proves check (non-strict); returns (broken-link errors, unproven count)."""
+    from dia_cli.commands.check import stage_proves
+    res = stage_proves.check(repo_root)
+    errors = [f"stage '{b.stage}' (game {b.game}): proves path not found: {b.path}"
+              for b in res.broken_links]
+    return errors, len(res.unproven)
+
+
 @click.command("precommit")
 @click.option("--scope", default=None, help="Limit to files under this path.")
 @click.option("--staged", is_flag=True, default=False, help="Check only git-staged files.")
@@ -308,6 +317,17 @@ def precommit(scope: str, staged: bool) -> None:
         for line in ref_warnings:
             click.echo(f"        {line}")
         warnings += len(ref_warnings)
+
+    # Check 6: stage-proves (broken links fail; unproven specs informational, non-strict)
+    proves_errors, unproven = _check_stage_proves(repo_root)
+    if proves_errors:
+        click.echo("  FAIL  stage-proves:")
+        for line in proves_errors:
+            click.echo(f"        {line}")
+        errors += len(proves_errors)
+    else:
+        suffix = f" ({unproven} unproven spec(s), informational)" if unproven else ""
+        click.echo(f"  OK    stage-proves{suffix}")
 
     # Summary
     click.echo("")
