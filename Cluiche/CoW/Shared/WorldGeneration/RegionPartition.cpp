@@ -29,39 +29,35 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     const int minCells = rules.GetInt(Rule::kMinRegionCells);
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
-    std::vector<uint8_t> seen(static_cast<size_t>(n), 0);
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
 
-    auto eligible = [&](int c) {
-        return cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]) && cells[c].depthZone != DepthZone::None;
-    };
-
-    for (int s = 0; s < n; ++s)
+    // Components never span zones, so label each zone's eligible cells separately.
+    for (const DepthZone zone : { DepthZone::FirstShores, DepthZone::WildReaches, DepthZone::AncientInteriors })
     {
-        if (seen[s] || !eligible(s)) { continue; }
-        RegionComponent comp;
-        comp.zone = cells[s].depthZone;
-        comp.landmass = cells[s].landmass;
-        std::vector<uint32_t> stack{ static_cast<uint32_t>(s) };
-        seen[s] = 1;
-        while (!stack.empty())
+        const uint32_t count = Dia::Pathfinding::ConnectedComponents(graph,
+            [&](uint32_t c) {
+                return cells[c].depthZone == zone && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
+            }, label.data(), nullptr, scratch);
+        const size_t first = out.size();
+        out.resize(first + count);
+        for (size_t k = first; k < out.size(); ++k)
         {
-            const uint32_t c = stack.back();
-            stack.pop_back();
-            comp.cells.push_back(c);
-            for (uint32_t d = 0; d < 6; ++d)
-            {
-                const uint32_t nb = topo.NeighbourAt(c, d);
-                if (nb == kNoCell || seen[nb] || !eligible(static_cast<int>(nb))) { continue; }
-                if (cells[nb].depthZone != comp.zone) { continue; }
-                seen[nb] = 1;
-                stack.push_back(nb);
-            }
+            out[k].zone = zone;
+            out[k].landmass = world.mainLandmass;
         }
-        std::sort(comp.cells.begin(), comp.cells.end());
-        comp.tiny = static_cast<int>(comp.cells.size()) < minCells;
-        out.push_back(std::move(comp));
+        // Ascending scan: each component's cells arrive sorted.
+        for (int i = 0; i < n; ++i)
+        {
+            const uint32_t l = label[static_cast<size_t>(i)];
+            if (l != Dia::Pathfinding::kUnreached) { out[first + l].cells.push_back(static_cast<uint32_t>(i)); }
+        }
     }
-    return out;   // scanned in ascending start index == ascending min cell index
+    for (RegionComponent& comp : out) { comp.tiny = static_cast<int>(comp.cells.size()) < minCells; }
+    // Ascending min cell index across zones, as the single-pass scan produced.
+    std::sort(out.begin(), out.end(), [](const RegionComponent& a, const RegionComponent& b) { return a.cells.front() < b.cells.front(); });
+    return out;
 }
 
 void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], DepthZone& limitedBy)
