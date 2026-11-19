@@ -3,12 +3,12 @@
 
 #include <Shared/WorldGeneration/RegionPartition.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
 #include <cmath>
-#include <queue>
-#include <tuple>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -238,22 +238,9 @@ std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules
 
 namespace
 {
-    struct HeapEntry
-    {
-        float    cost;
-        uint32_t cell;
-        RegionId region;
-    };
-    struct HeapGreater
-    {
-        bool operator()(const HeapEntry& a, const HeapEntry& b) const
-        {
-            return std::tie(a.cost, a.cell, a.region) > std::tie(b.cost, b.cell, b.region);
-        }
-    };
-
     void GrowComponent(const WorldStructure& world, const TerrainRules& rules, const HexTopology& topo, const RegionComponent& comp,
-                       const std::vector<uint32_t>& seedCells, RegionId firstId, RegionGrowth& out, std::vector<float>& dist)
+                       const std::vector<uint32_t>& seedCells, RegionId firstId, RegionGrowth& out, std::vector<float>& dist,
+                       Dia::Pathfinding::GridSearchScratch& scratch, std::vector<float>& tmpCost, std::vector<uint32_t>& tmpId)
     {
         const Cell* cells = world.Cells();
         const int k = static_cast<int>(seedCells.size());
@@ -273,41 +260,49 @@ namespace
         };
 
         std::vector<uint32_t> claimed(static_cast<size_t>(k), 0);
-        std::priority_queue<HeapEntry, std::vector<HeapEntry>, HeapGreater> heap;
+        using namespace Dia::Pathfinding;
+        const HexNeighbours graph(topo);
+        std::vector<CostSeed<float>> costSeeds;
+        costSeeds.reserve(static_cast<size_t>(k));
         for (int i = 0; i < k; ++i)
         {
-            heap.push({ 0.0f, seedCells[i], static_cast<RegionId>(firstId + i) });
+            costSeeds.push_back({ seedCells[i], 0.0f, static_cast<uint32_t>(firstId + i) });
         }
+        DijkstraOptions<float> opts;
+        opts.outCost = tmpCost.data();
+        opts.outSeedId = tmpId.data();
+        opts.pushAll = true;
+        // The step cost is that of the SEED region's biome (read via outSeedId[from], valid at settle time) entering `to`.
+        auto step = [&](uint32_t from, uint32_t to) -> float {
+            if (!inComp(to)) { return -1.0f; }
+            return stepCost(out.seeds[tmpId[from] - 1].biome, to);
+        };
         // Phase 1 (floor): a region that has claimed `floorCells` is satisfied and idles (its entries are parked), so
         // neighbours still under kMinRegionCells can claim before it takes more. Phase 2: parked entries rejoin the heap
         // and the normal capped multi-source Dijkstra resumes.
         const uint32_t floorCells = std::min<uint32_t>(capCells, static_cast<uint32_t>(std::max(1, rules.GetInt(Rule::kMinRegionCells))));
-        std::vector<HeapEntry> parked;
-        for (int phase = 0; phase < 2; ++phase)
-        {
-            if (phase == 1)
-            {
-                for (const HeapEntry& p : parked) { heap.push(p); }
-                parked.clear();
-            }
-            while (!heap.empty())
-            {
-                const HeapEntry e = heap.top();
-                heap.pop();
-                if (out.regionOf[e.cell] != kNoRegion) { continue; }
-                const int ri = e.region - firstId;
-                if (claimed[ri] >= capCells) { continue; }   // capped: no longer a source
-                if (phase == 0 && claimed[ri] >= floorCells) { parked.push_back(e); continue; }   // satisfied: idle
-                out.regionOf[e.cell] = e.region;
-                dist[e.cell] = e.cost;
+        MultiSourceDijkstra<float>(graph, costSeeds.data(), static_cast<uint32_t>(k), step, opts, scratch,
+            [&](uint32_t, float, uint32_t id) {
+                const uint32_t ri = id - static_cast<uint32_t>(firstId);
+                if (claimed[ri] >= capCells) { return Settle::Skip; }   // capped: no longer a source
+                if (claimed[ri] >= floorCells) { return Settle::Park; }   // satisfied: idle
                 ++claimed[ri];
-                const Biome sb = out.seeds[e.region - 1].biome;
-                for (uint32_t d = 0; d < 6; ++d)
-                {
-                    const uint32_t nb = topo.NeighbourAt(e.cell, d);
-                    if (nb == kNoCell || out.regionOf[nb] != kNoRegion || !inComp(nb)) { continue; }
-                    heap.push({ e.cost + stepCost(sb, nb), nb, e.region });
-                }
+                return Settle::Accept;
+            });
+        ResumeParked<float>(scratch);
+        ContinueDijkstra<float>(graph, step, opts, scratch,
+            [&](uint32_t, float, uint32_t id) {
+                const uint32_t ri = id - static_cast<uint32_t>(firstId);
+                if (claimed[ri] >= capCells) { return Settle::Skip; }
+                ++claimed[ri];
+                return Settle::Accept;
+            });
+        for (uint32_t c : comp.cells)
+        {
+            if (tmpId[c] != kUnreached)
+            {
+                out.regionOf[c] = static_cast<RegionId>(tmpId[c]);
+                dist[c] = tmpCost[c];
             }
         }
         for (int i = 0; i < k; ++i) { out.capClaims[firstId - 1 + i] = static_cast<uint16_t>(claimed[i]); }
@@ -357,6 +352,10 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
     out.tinyComponents.clear();
     out.unzonedCells.clear();
     std::vector<float> dist(static_cast<size_t>(n), 0.0f);
+    Dia::Pathfinding::GridSearchScratch scratch;
+    scratch.Reserve(static_cast<uint32_t>(n));
+    std::vector<float> tmpCost(static_cast<size_t>(n), 0.0f);
+    std::vector<uint32_t> tmpId(static_cast<size_t>(n), 0u);
 
     for (size_t ci = 0; ci < out.components.size(); ++ci)
     {
@@ -374,7 +373,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
             out.seeds.push_back(s);
             out.capClaims.push_back(0);
         }
-        GrowComponent(world, rules, topo, comp, sc, firstId, out, dist);
+        GrowComponent(world, rules, topo, comp, sc, firstId, out, dist, scratch, tmpCost, tmpId);
     }
     out.mainlandRegionCount = static_cast<uint8_t>(out.seeds.size());
 
