@@ -5,6 +5,8 @@
 #include <Shared/WorldGeneration/TerrainMountains.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -202,49 +204,32 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
 
     // Connected groups of ridge cells (>= kRidgeCellMin) over the six hex neighbours.
     const HexTopology topo(dims.width, dims.height);
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
     const float cellMin = rules.kRidgeCellMin();
-    auto groupsOf = [&](const std::vector<float>& m, std::vector<int>& label)
+    std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+    std::vector<uint32_t> sizes(static_cast<size_t>(n), 0u);
+    auto groupsOf = [&](const std::vector<float>& m)
     {
-        label.assign(static_cast<size_t>(n), -1);
-        std::vector<int> sizes;
-        std::vector<int> queue;
-        for (int i = 0; i < n; ++i)
-        {
-            if (m[static_cast<size_t>(i)] < cellMin || label[static_cast<size_t>(i)] >= 0) { continue; }
-            const int id = static_cast<int>(sizes.size());
-            sizes.push_back(0);
-            queue.assign(1, i);
-            label[static_cast<size_t>(i)] = id;
-            for (size_t head = 0; head < queue.size(); ++head)
-            {
-                const int c = queue[head];
-                ++sizes[static_cast<size_t>(id)];
-                for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
-                {
-                    const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                    if (nb != Dia::Pathfinding::kNoCell && label[nb] < 0 && m[nb] >= cellMin)
-                    {
-                        label[nb] = id;
-                        queue.push_back(static_cast<int>(nb));
-                    }
-                }
-            }
-        }
-        return sizes;
+        return Dia::Pathfinding::ConnectedComponents(graph, [&m, cellMin](uint32_t c) { return m[c] >= cellMin; },
+                                                     label.data(), sizes.data(), scratch);
     };
 
     // One range: keep only the largest group (ties: the group found first, i.e. lowest cell index).
-    std::vector<int> label;
     {
-        const std::vector<int> sizes = groupsOf(mask, label);
-        int best = -1, bestSize = 0;
-        for (int g = 0; g < static_cast<int>(sizes.size()); ++g)
+        const uint32_t count = groupsOf(mask);
+        uint32_t best = Dia::Pathfinding::kUnreached;
+        uint32_t bestSize = 0;
+        for (uint32_t g = 0; g < count; ++g)
         {
-            if (sizes[static_cast<size_t>(g)] > bestSize) { bestSize = sizes[static_cast<size_t>(g)]; best = g; }
+            if (sizes[g] > bestSize) { bestSize = sizes[g]; best = g; }
         }
-        for (int i = 0; i < n; ++i)
+        if (count > 0)
         {
-            if (label[static_cast<size_t>(i)] != best) { mask[static_cast<size_t>(i)] = 0.0f; }
+            for (int i = 0; i < n; ++i)
+            {
+                if (label[static_cast<size_t>(i)] != best) { mask[static_cast<size_t>(i)] = 0.0f; }
+            }
         }
     }
 
@@ -290,7 +275,7 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
 
     if (ridgeMask != nullptr) { std::copy(mask.begin(), mask.end(), ridgeMask); }
     if (passMask != nullptr)  { std::copy(pass.begin(), pass.end(), passMask); }
-    out.ridgeGroups = static_cast<int>(groupsOf(mask, label).size());
+    out.ridgeGroups = static_cast<int>(groupsOf(mask));
 }
 
 } // namespace WorldGeneration
