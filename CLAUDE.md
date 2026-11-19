@@ -225,7 +225,22 @@ After every feature implementation, at the Verify/Prove step, scan all files tou
 - **Metrics** — quantitative signals (counts, durations, depths) with no `MetricRegistry` registration
 - **Health** — modules or services with observable failure modes and no `IHealthReporter`
 
-Report findings in the task notes as suggestions. They do **not** block the feature being marked Done. They feed future domain instrumentation work.
+Rank each finding **High / Low**:
+
+- **High** — silent failure paths (error/reject/timeout/fallback with no `DIA_LOG_*`), lifecycle or state transitions on a critical path with no log, per-frame work that can plausibly exceed budget with no `DIA_PROFILE_SCOPE`, services with an observable failure mode and no `IHealthReporter`.
+- **Low** — everything else (extra metrics, cosmetic traces, nice-to-have logs).
+
+**Implement every High finding** before marking the feature Done: add the instrumentation (follow existing `DIA_*` usage in the module), run the scoped build/test for the touched module, and commit separately (`chore(<Module>): observation instrumentation`). Keep it minimal — no refactors, no behaviour change. Report Low findings in the task notes as suggestions; they do **not** block Done and feed future domain instrumentation work. If a High finding needs a design decision (new metric schema, new health reporter shape), report it instead of implementing.
+
+### Gaps and Loose Ends
+
+`docs/BACKLOG.md` "Loose Ends" is not a parking lot. When a task, review or close-out finds a gap, it ends in exactly one of three ways:
+
+1. **Fix it now**, in the same task, when it is small.
+2. **Promote it** to a real backlog row (one System, Task or Testbed with a deliverable) when it needs scheduling.
+3. **Drop it.** If it is not worth a row, it is not worth keeping.
+
+Do not add a Loose Ends row for "accepted, noted" gaps, fixed bugs (release notes belong in the commit), or reminders about harmless behaviour. Low observation findings and close-out notes stay in the plan's task notes, not in the backlog. Before closing a feature, say which of the three each remaining gap got.
 
 ### Build and Test Output
 
