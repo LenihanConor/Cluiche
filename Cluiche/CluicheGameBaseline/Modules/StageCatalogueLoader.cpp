@@ -140,6 +140,13 @@ StageCatalogueResult StageCatalogueLoader::Load(const char* diagamePath, StageCa
             if (Dia::Game::KindFromTag(tag, kind)) { entry->kinds |= Dia::Game::KindBit(kind); }
         }
         entry->description.AppendAsMuchAsCan(stage.description.AsCStr());
+        for (unsigned int p = 0; p < stage.presets.Size() && p < StageCatalogueEntry::kMaxPresets; ++p)
+        {
+            StageCatalogueEntryPreset preset;
+            preset.name.AppendAsMuchAsCan(stage.presets[p].name.AsCStr());
+            preset.description.AppendAsMuchAsCan(stage.presets[p].description.AsCStr());
+            entry->presets.Add(preset);
+        }
         entry->diastagePath.AppendAsMuchAsCan(stagePath.generic_string().c_str());
         byName[stage.name.AsCStr()] = std::move(entry);
     }

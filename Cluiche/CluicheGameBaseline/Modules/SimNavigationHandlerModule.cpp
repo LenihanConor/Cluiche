@@ -46,6 +46,21 @@ void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*
         }
     }
 
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<StageLaunchRequest>, kMaxPerFrame> launches;
+        mLaunchInput.Consume(launches);
+        for (unsigned int i = 0; i < launches.Size(); ++i)
+        {
+            const StageLaunchRequest& request = launches[i].payload;
+            if (request.stage.Value() == 0) { continue; }
+            Dia::ApplicationFlow::IApplicationControl* app = GetApplication();
+            if (!app) { return; }
+            DIA_LOG_INFO("Application", "SimNavigationHandlerModule: launch '%s' from stages.launch", request.stage.AsChar());
+            HandleLaunchRequest(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr, request);
+            return;
+        }
+    }
+
     events.RemoveAll();
     mHUDNavInput.Consume(events);
     for (unsigned int i = 0; i < events.Size(); ++i)
@@ -88,6 +103,15 @@ void SimNavigationHandlerModule::RouteNavigation(Dia::ApplicationFlow::IApplicat
     }
 }
 
+void SimNavigationHandlerModule::HandleLaunchRequest(Dia::ApplicationFlow::IApplicationControl& app,
+                                                    Dia::Automation::AutomationService* automation,
+                                                    const StageLaunchRequest& request)
+{
+    if (request.stage.Value() == 0)
+        return;
+    RouteNavigation(app, automation, request.stage, request.preset);
+}
+
 void SimNavigationHandlerModule::Navigate(const Dia::Core::StringCRC& target, const Dia::Core::StringCRC& preset)
 {
     Dia::ApplicationFlow::IApplicationControl* app = GetApplication();
@@ -100,6 +124,7 @@ void SimNavigationHandlerModule::OnConnectStreams(Dia::ApplicationFlow::Applicat
 {
     mBootNavInput.Connect(app);
     mHUDNavInput.Connect(app);
+    mLaunchInput.Connect(app);
     mAutomationService->Connect(app);
 }
 

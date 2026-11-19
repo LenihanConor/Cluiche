@@ -41,7 +41,8 @@ def load_results(path, warn=None):
 
 def entry_dict(entry, results, full=False):
     d = {"name": entry.name, "kinds": list(entry.kinds), "tags": list(entry.tags),
-         "description": entry.description, "presets": [],
+         "description": entry.description,
+         "presets": [dict(p) for p in entry.presets],
          "last_result": results.get(entry.name)}
     if full:
         d["proves"] = []
@@ -91,7 +92,7 @@ def render_detail(e):
              f"Kinds:       {', '.join(e['kinds'])}",
              f"Tags:        {', '.join(e['tags'])}",
              f"Description: {e['description']}",
-             f"Presets:     {', '.join(e['presets'])}",
+             f"Presets:     {', '.join(p['name'] for p in e['presets'])}",
              f"Proves:      {', '.join(e['proves'])}"]
     r = e["last_result"]
     lines.append("Result:      " + (f"{r.get('label', '')} ({r.get('severity', '')})" if r else ""))

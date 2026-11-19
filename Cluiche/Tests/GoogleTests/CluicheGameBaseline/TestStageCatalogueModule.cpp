@@ -120,7 +120,7 @@ TEST(StageCatalogueSnapshot, FitsSizeBudget)
 TEST(StageCatalogueSnapshot, HasNoLogPathField)
 {
     // The entry carries the session id but no log path: the entry must be much smaller than a String256 + the rest.
-    EXPECT_LT(sizeof(StageCatalogueSnapshotEntry), 600u);
+    EXPECT_LT(sizeof(StageCatalogueSnapshotEntry), 600u + StageCatalogueSnapshotEntry::kMaxPresets * sizeof(StageCatalogueSnapshotEntry::Preset));
 }
 
 TEST(StageCatalogueState, DeriveResultsPathFromSessionDir)

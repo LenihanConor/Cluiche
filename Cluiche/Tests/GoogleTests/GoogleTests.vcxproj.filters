@@ -3180,5 +3180,8 @@
     <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

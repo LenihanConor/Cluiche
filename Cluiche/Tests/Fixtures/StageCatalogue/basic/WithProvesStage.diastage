@@ -1,0 +1,10 @@
+{
+    "name": "WithProvesStage",
+    "manifest": "WithProvesStage.stage.json",
+    "tags": ["test"],
+    "description": "Stage with proves",
+    "proves": [
+        "docs/specs/applications/dia/systems/stagecatalogue/proves-traceability.md",
+        "docs/specs/applications/dia/systems/stagecatalogue/catalogue-and-results.md"
+    ]
+}

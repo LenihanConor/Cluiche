@@ -168,6 +168,7 @@
     <ClInclude Include="Modules\StageCatalogueState.h" />
     <ClInclude Include="Modules\StageCatalogueModule.h" />
     <ClInclude Include="Modules\StageCatalogueQueries.h" />
+    <ClInclude Include="Types\StageLaunchRequest.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

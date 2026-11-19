@@ -42,7 +42,15 @@ Json::Value EntryToJson(const StageCatalogueState& state, unsigned int index, bo
     for (unsigned int t = 0; t < e.tags.Size(); ++t) { tags.append(e.tags[t].AsChar()); }
     v["tags"] = tags;
     v["description"] = e.description.AsCStr();
-    v["presets"] = Json::Value(Json::arrayValue);
+    Json::Value presets(Json::arrayValue);
+    for (unsigned int p = 0; p < e.presets.Size(); ++p)
+    {
+        Json::Value preset(Json::objectValue);
+        preset["name"] = e.presets[p].name.AsCStr();
+        preset["description"] = e.presets[p].description.AsCStr();
+        presets.append(preset);
+    }
+    v["presets"] = presets;
     const int r = state.Results().Find(e.name);
     v["last_result"] = r >= 0 ? ResultToJson(state.Results()[static_cast<unsigned int>(r)].result) : Json::Value(Json::nullValue);
     if (full) { v["proves"] = Json::Value(Json::arrayValue); }
@@ -123,6 +131,32 @@ Json::Value Get(const StageCatalogueState& state, const Json::Value& args)
     const int i = state.Catalogue().Find(Dia::Core::StringCRC(stage.c_str()));
     if (i < 0) { return Error("unknown stage '" + stage + "'"); }
     return EntryToJson(state, static_cast<unsigned int>(i), true);
+}
+
+bool ValidateLaunch(const StageCatalogueState& state, const Json::Value& args, bool atBoot, StageLaunchRequest& out, std::string& error)
+{
+    std::string stage;
+    if (!StageArg(args, "stage", stage)) { error = "missing argument 'stage'"; return false; }
+    if (!atBoot) { error = "stages.launch is only available at the Boot stage"; return false; }
+    const int i = state.Catalogue().Find(Dia::Core::StringCRC(stage.c_str()));
+    if (i < 0) { error = "unknown stage '" + stage + "'"; return false; }
+
+    std::string preset;
+    if (args.isMember("preset") && !args["preset"].isNull())
+    {
+        if (!args["preset"].isString()) { error = "preset must be a string"; return false; }
+        preset = args["preset"].asString();
+    }
+    if (!preset.empty())
+    {
+        const StageCatalogueEntry& e = state.Catalogue()[static_cast<unsigned int>(i)];
+        bool found = false;
+        for (unsigned int p = 0; p < e.presets.Size() && !found; ++p) { found = preset == e.presets[p].name.AsCStr(); }
+        if (!found) { error = "unknown preset '" + preset + "' for stage '" + stage + "'"; return false; }
+    }
+    out.stage = Dia::Core::StringCRC(stage.c_str());
+    out.preset = preset.empty() ? Dia::Core::StringCRC() : Dia::Core::StringCRC(preset.c_str());
+    return true;
 }
 
 Json::Value Results(const StageCatalogueState& state, const Json::Value& args)

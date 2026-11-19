@@ -104,3 +104,20 @@ def test_results_wrong_version(tmp_path):
 def test_results_single_stage(tmp_path):
     r = _run(["results", "ShowTest", "--json"], tmp_path, _results(tmp_path))
     assert json.loads(r.stdout)["label"] == "PASS"
+
+
+def test_list_and_get_json_carry_presets_without_overrides(tmp_path):
+    diagame = str(FIXTURES / "presets" / "game.diagame")
+    res = str(tmp_path / "none.json")
+    r = CliRunner(mix_stderr=False).invoke(cli, ["list", "--json", "--diagame", diagame, "--results", res])
+    assert r.exit_code == 0, r.output
+    by = {e["name"]: e for e in json.loads(r.stdout)}
+    assert by["WithPresets"]["presets"] == [{"name": "alpine42", "description": "Alpine, seed 42"},
+                                            {"name": "bare", "description": ""}]
+    assert by["NoPresets"]["presets"] == []
+    r = CliRunner(mix_stderr=False).invoke(cli, ["get", "WithPresets", "--json", "--diagame", diagame, "--results", res])
+    assert r.exit_code == 0, r.output
+    assert "modules" not in r.stdout
+    assert [p["name"] for p in json.loads(r.stdout)["presets"]] == ["alpine42", "bare"]
+    r = CliRunner(mix_stderr=False).invoke(cli, ["get", "WithPresets", "--diagame", diagame, "--results", res])
+    assert "alpine42, bare" in r.stdout

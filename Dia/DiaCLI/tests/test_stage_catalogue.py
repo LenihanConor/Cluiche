@@ -76,3 +76,12 @@ def test_manifest_found_by_name_when_source_layout_differs(tmp_path):
     g.write_text(json.dumps(data), encoding="utf-8")
     result, cat = sc.load(g)
     assert result == sc.OK and len(cat.entries) == 7
+
+
+def test_presets_carry_names_and_descriptions_only():
+    result, cat = _load("presets")
+    assert result == sc.OK
+    with_presets = cat.entries[cat.find("WithPresets")]
+    assert with_presets.presets == [{"name": "alpine42", "description": "Alpine, seed 42"},
+                                    {"name": "bare", "description": ""}]
+    assert cat.entries[cat.find("NoPresets")].presets == []

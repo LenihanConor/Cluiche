@@ -30,6 +30,7 @@ class StageEntry:
     description: str = ""
     diastage_path: Path = None
     proves: list = field(default_factory=list)
+    presets: list = field(default_factory=list)  # [{"name", "description"}]; override JSON is not carried
 
 
 @dataclass
@@ -108,7 +109,9 @@ def load(diagame_path):
                 name=data["name"], tags=tags,
                 kinds=[k for k in vocab if k in tags],
                 description=data.get("description", ""), diastage_path=path,
-                proves=[str(p) for p in data.get("proves", [])])
+                proves=[str(p) for p in data.get("proves", [])],
+                presets=[{"name": str(p["name"]), "description": str(p.get("description", ""))}
+                         for p in data.get("presets", [])])
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return MALFORMED, None
 

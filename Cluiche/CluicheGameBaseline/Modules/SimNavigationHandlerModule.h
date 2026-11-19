@@ -8,6 +8,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaStreams/Event.h>
 #include "Types/RenderToSimNavRequest.h"
+#include "Types/StageLaunchRequest.h"
 
 namespace Dia { namespace Automation { class AutomationService; } }
 namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceStreamReader; } }
@@ -31,6 +32,11 @@ public:
                                 const Dia::Core::StringCRC& target,
                                 const Dia::Core::StringCRC& preset);
 
+    // Routes a stages.launch request (StageCatalogueModule, via the StageLaunchRequest stream). An empty stage is ignored.
+    static void HandleLaunchRequest(Dia::ApplicationFlow::IApplicationControl& app,
+                                    Dia::Automation::AutomationService* automation,
+                                    const StageLaunchRequest& request);
+
     explicit SimNavigationHandlerModule(const Dia::Core::StringCRC& instanceId);
     ~SimNavigationHandlerModule() override;
 
@@ -45,6 +51,7 @@ private:
 
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mBootNavInput{this, "BootMenuNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mHUDNavInput{this,  "HUDNavRequest"};
+    Dia::ApplicationFlow::EventStreamReader<StageLaunchRequest>    mLaunchInput{this, "StageLaunchRequest"};
 
     // Heap-allocated to avoid pulling AutomationService.h into every TU.
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationService = nullptr;

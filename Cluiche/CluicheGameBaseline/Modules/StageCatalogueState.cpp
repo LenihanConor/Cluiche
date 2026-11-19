@@ -85,6 +85,13 @@ void StageCatalogueState::BuildSnapshot(StageCatalogueSnapshot& out) const
             CopyBounded(dst.tags[t], StageCatalogueSnapshotEntry::kTagChars, src.tags[t].AsChar());
         }
         CopyBounded(dst.description, StageCatalogueSnapshotEntry::kDescriptionChars, src.description.AsCStr());
+        const unsigned int presetCount = src.presets.Size() < StageCatalogueSnapshotEntry::kMaxPresets ? src.presets.Size() : StageCatalogueSnapshotEntry::kMaxPresets;
+        dst.presetCount = static_cast<uint8_t>(presetCount);
+        for (unsigned int p = 0; p < presetCount; ++p)
+        {
+            CopyBounded(dst.presets[p].name, StageCatalogueSnapshotEntry::kPresetNameChars, src.presets[p].name.AsCStr());
+            CopyBounded(dst.presets[p].description, StageCatalogueSnapshotEntry::kPresetDescriptionChars, src.presets[p].description.AsCStr());
+        }
 
         const int r = mResults->Find(src.name);
         if (r >= 0)

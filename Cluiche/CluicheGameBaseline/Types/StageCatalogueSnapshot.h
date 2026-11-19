@@ -17,12 +17,23 @@ struct StageCatalogueSnapshotEntry {
     static constexpr unsigned int kDescriptionChars = 128; // matches String128
     static constexpr unsigned int kLabelChars = StageResult::kMaxLabel + 1;
     static constexpr unsigned int kSessionIdChars = 48;
+    // Launch presets (names + descriptions only). Capped to keep the snapshot within budget; stages.get returns all.
+    static constexpr unsigned int kMaxPresets = 4;
+    static constexpr unsigned int kPresetNameChars = 32;          // matches String32
+    static constexpr unsigned int kPresetDescriptionChars = 128;  // matches String128
+
+    struct Preset {
+        char name[kPresetNameChars] = {};
+        char description[kPresetDescriptionChars] = {};
+    };
 
     Dia::Core::StringCRC name;
     Dia::Game::StageKindMask kinds = 0;
     uint8_t tagCount = 0;
     char tags[kMaxTags][kTagChars] = {};
     char description[kDescriptionChars] = {};
+    uint8_t presetCount = 0;
+    Preset presets[kMaxPresets];
 
     StageResultSeverity severity = StageResultSeverity::kNone; // kNone = no result recorded
     char label[kLabelChars] = {};
@@ -40,7 +51,7 @@ struct StageCatalogueSnapshot {
     StageCatalogueSnapshotEntry entries[kMaxEntries];
 };
 
-static constexpr unsigned int kMaxStageCatalogueSnapshotBytes = 48 * 1024;
-static_assert(sizeof(StageCatalogueSnapshot) <= kMaxStageCatalogueSnapshotBytes, "StageCatalogueSnapshot exceeds 48 KB");
+static constexpr unsigned int kMaxStageCatalogueSnapshotBytes = 80 * 1024 /* was 48 KB; raised for launch presets */;
+static_assert(sizeof(StageCatalogueSnapshot) <= kMaxStageCatalogueSnapshotBytes, "StageCatalogueSnapshot exceeds 80 KB");
 
 }} // namespace Cluiche::AppFlow

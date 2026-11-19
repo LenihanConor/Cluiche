@@ -1343,6 +1343,7 @@
     <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp" />
     <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp" />
     <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp" />
+    <ClCompile Include="CluicheGameBaseline\TestStageLaunch.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

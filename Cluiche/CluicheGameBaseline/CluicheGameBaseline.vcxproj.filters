@@ -407,5 +407,8 @@
     <ClInclude Include="Modules\StageCatalogueQueries.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Types\StageLaunchRequest.h">
+      <Filter>Types</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

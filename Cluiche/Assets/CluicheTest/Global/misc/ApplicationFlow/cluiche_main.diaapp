@@ -494,6 +494,15 @@
             "to": "MainPU"
         },
         {
+            "id": "StageLaunchRequest",
+            "kind": "EventStream",
+            "payload_type": "StageLaunchRequest",
+            "overflow": "drop-oldest",
+            "capacity": 4,
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
             "id": "StageCatalogueSnapshot",
             "kind": "FrameStream",
             "payload_type": "StageCatalogueSnapshot",
@@ -830,6 +839,10 @@
                         {
                             "id": "StageCatalogueSnapshot",
                             "role": "writes"
+                        },
+                        {
+                            "id": "StageLaunchRequest",
+                            "role": "writes"
                         }
                     ]
                 },
@@ -1088,6 +1101,10 @@
                         },
                         {
                             "id": "HUDNavRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "StageLaunchRequest",
                             "role": "reads"
                         },
                         {

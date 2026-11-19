@@ -3,10 +3,17 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String128.h>
+#include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaGame/StageKinds.h>
 
 namespace Cluiche { namespace AppFlow {
+
+// A launch preset as the catalogue knows it: name and description only (the override JSON is runtime-only, AC 11).
+struct StageCatalogueEntryPreset {
+    Dia::Core::Containers::String32 name;
+    Dia::Core::Containers::String128 description;
+};
 
 // One stage as listed by the catalogue. Names, tags and kinds are StringCRC (PD-001; StringCRC keeps its text for display).
 struct StageCatalogueEntry {
@@ -19,6 +26,9 @@ struct StageCatalogueEntry {
     Dia::Game::StageKindMask kinds = 0;
     Dia::Core::Containers::String128 description;   // empty when absent
     Dia::Core::Containers::String256 diastagePath;  // empty when the stage has no .diastage import
+    // Launch presets from the .diastage (names + descriptions, manifest order).
+    static constexpr unsigned int kMaxPresets = 16;
+    Dia::Core::Containers::DynamicArrayC<StageCatalogueEntryPreset, kMaxPresets> presets;
 };
 
 // Group order used by GroupByKind.

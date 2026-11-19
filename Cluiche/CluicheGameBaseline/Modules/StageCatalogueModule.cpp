@@ -59,6 +59,7 @@ StageCatalogueModule::StageCatalogueModule(const Dia::Core::StringCRC& instanceI
     , mHealth(*this)
     , mResultsIn(this, Dia::Core::StringCRC(kResultStreamId))
     , mSnapshotOut(this, Dia::Core::StringCRC(kSnapshotStreamId))
+    , mLaunchOut(this, Dia::Core::StringCRC(kLaunchStreamId))
 {
 }
 
@@ -84,6 +85,7 @@ void StageCatalogueModule::OnConnectStreams(Dia::ApplicationFlow::Application& a
 {
     mResultsIn.Connect(app);
     mSnapshotOut.Connect(app);
+    mLaunchOut.Connect(app);
     mAppInspect = app.GetInspectable();
 }
 
@@ -97,7 +99,9 @@ void StageCatalogueModule::RegisterQueries()
     static const Dia::API::ValueParam kKindParam = { "kind", "enum", false, "Kind filter", nullptr, false, 0.0f, 0.0f, "showcase|tool|test|other" };
     static const Dia::API::ValueParam kStageReq = { "stage", "string", true, "Stage name" };
     static const Dia::API::ValueParam kStageOpt = { "stage", "string", false, "Stage name; omit for all stages" };
+    static const Dia::API::ValueParam kPresetOpt = { "preset", "string", false, "Launch preset of the stage; omit for none" };
     static const Dia::API::ValueParam kListParams[] = { kTagParam, kKindParam };
+    static const Dia::API::ValueParam kLaunchParams[] = { kStageReq, kPresetOpt };
 
     auto help = [](const char* description, const Dia::API::ValueParam* params, unsigned int count) {
         Dia::DebugServer::SimHelpInfo info;
@@ -119,8 +123,46 @@ void StageCatalogueModule::RegisterQueries()
     registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kResultsName),
         [state](const Json::Value& args) { return StageCatalogueQueries::Results(*state, args); },
         help(StageCatalogueQueries::kResultsHelp, &kStageOpt, 1));
+    registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kLaunchName),
+        [this](const Json::Value& args) { return HandleLaunch(args); },
+        help(StageCatalogueQueries::kLaunchHelp, kLaunchParams, 2));
     mQueriesOn = registry;
-    DIA_LOG_INFO("STAGES", "Registered queries stages.list, stages.get, stages.results");
+    DIA_LOG_INFO("STAGES", "Registered queries stages.list, stages.get, stages.results, stages.launch");
+}
+
+bool StageCatalogueModule::IsAtBoot() const
+{
+    if (mAppInspect == nullptr) { return false; }
+    return !mAppInspect->IsTransitioning() && mAppInspect->GetCurrentStage() == Dia::Core::StringCRC("Boot");
+}
+
+bool StageCatalogueModule::SendLaunchRequest(const StageLaunchRequest& request)
+{
+    return Dia::ApplicationFlow::IsSuccess(mLaunchOut.Send(request));
+}
+
+Json::Value StageCatalogueModule::HandleLaunch(const Json::Value& args)
+{
+    StageLaunchRequest request;
+    std::string error;
+    if (!StageCatalogueQueries::ValidateLaunch(mState, args, IsAtBoot(), request, error))
+    {
+        DIA_LOG_WARNING("STAGES", "stages.launch refused: %s", error.c_str());
+        Json::Value reply(Json::objectValue);
+        reply["error"] = error;
+        return reply;
+    }
+    if (!SendLaunchRequest(request))
+    {
+        DIA_LOG_WARNING("STAGES", "stages.launch refused: launch stream not connected or full (stage='%s')", request.stage.AsChar());
+        Json::Value reply(Json::objectValue);
+        reply["error"] = "launch request could not be queued";
+        return reply;
+    }
+    DIA_LOG_INFO("STAGES", "preset launch requested (source=command) stage='%s' preset='%s'", request.stage.AsChar(), request.preset.AsChar());
+    Json::Value reply(Json::objectValue);
+    reply["ok"] = true;
+    return reply;
 }
 
 void StageCatalogueModule::UnregisterQueries()
@@ -129,6 +171,7 @@ void StageCatalogueModule::UnregisterQueries()
     mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kListName));
     mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kGetName));
     mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kResultsName));
+    mQueriesOn->Unregister(Dia::Core::StringCRC(StageCatalogueQueries::kLaunchName));
     mQueriesOn = nullptr;
 }
 

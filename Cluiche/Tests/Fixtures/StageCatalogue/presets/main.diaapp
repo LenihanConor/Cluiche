@@ -1,0 +1,27 @@
+{
+    "version": 3,
+    "stages": [
+        {
+            "name": "Boot",
+            "transitions": [
+                "WithPresets",
+                "NoPresets"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "WithPresets",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "NoPresets",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        }
+    ]
+}

@@ -17,3 +17,5 @@ Both must produce output equal to `expected_catalogue.json`.
 file, `kinds`, `description` with "" when absent), `rows` (`group` in order showcase, tool, test, other; within a
 group ascending `entry` index; `entry` indexes into `entries`), `omittedCount`, `droppedCount`. For `over_cap` only
 `entryCount`, `droppedCount`, `omittedCount`.
+- `presets/` - `WithPresets` (presets `alpine42` with a description and an override, `bare` with none) and `NoPresets`.
+  Used by the launch-presets tests (catalogue carries preset names and descriptions, never the override JSON); not in `expected_catalogue.json`.

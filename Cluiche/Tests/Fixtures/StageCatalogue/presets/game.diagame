@@ -1,0 +1,23 @@
+{
+    "config": {
+        "name": "FixturePresets",
+        "build": "dev-0.1",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "WithPresets.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "NoPresets.diastage",
+            "type": "stage"
+        }
+    ]
+}

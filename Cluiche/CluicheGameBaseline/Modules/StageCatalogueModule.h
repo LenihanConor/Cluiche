@@ -3,11 +3,14 @@
 #include <DiaApplicationFlow/MainModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaObservation/Health/IHealthReporter.h>
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/StreamWriter.h>
+#include <DiaStreams/EventStreamWriter.h>
 #include <Modules/StageCatalogueState.h>
+#include <Types/StageLaunchRequest.h>
 
 #include <memory>
 #include <string>
@@ -31,6 +34,7 @@ public:
 
     static constexpr const char* kResultStreamId = "StageResult";
     static constexpr const char* kSnapshotStreamId = "StageCatalogueSnapshot";
+    static constexpr const char* kLaunchStreamId = "StageLaunchRequest";
 
     explicit StageCatalogueModule(const Dia::Core::StringCRC& instanceId);
     ~StageCatalogueModule() override;
@@ -60,6 +64,14 @@ protected:
     // Once per frame: one results write for any number of events, then publish if the revision changed.
     void EndFrame();
 
+    // stages.launch: validates against the catalogue and the current stage, queues a StageLaunchRequest (MainPU -> SimPU).
+    // Replies {ok:true} once queued, {error} otherwise. Split out so tests can drive it without a DebugServer.
+    Json::Value HandleLaunch(const Json::Value& args);
+    // True when the application is at the Boot stage and not transitioning. Seam for tests.
+    virtual bool IsAtBoot() const;
+    // Sends on the StageLaunchRequest stream. False when the stream is not connected or rejects. Seam for tests.
+    virtual bool SendLaunchRequest(const StageLaunchRequest& request);
+
 private:
     class HealthReporter : public Dia::Observation::Health::IHealthReporter
     {
@@ -88,6 +100,7 @@ private:
 
     Dia::ApplicationFlow::EventStreamReader<StageResultEvent> mResultsIn;
     Dia::ApplicationFlow::StreamWriter<StageCatalogueSnapshot> mSnapshotOut;
+    Dia::ApplicationFlow::EventStreamWriter<StageLaunchRequest> mLaunchOut;
 
     Dia::Observation::Metric::Gauge*   mMetricCount = nullptr;
     Dia::Observation::Metric::Counter* mMetricWriteFail = nullptr;
