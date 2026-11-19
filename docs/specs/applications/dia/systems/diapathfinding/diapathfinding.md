@@ -239,7 +239,7 @@ namespace Dia::Pathfinding {
 | Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Done |
 | Rectangular Hex Grid | `HexPathGrid(width, height)` — rectangular flat-top odd-q offset layout sized to the grid (CoW maps up to 104×64), `HexTopology` (neighbours, distance, direction helpers), and the corrected hex heuristic. Radius mode unchanged. | @hex-rectangular-grid.md | Done |
 | Scalable SquarePathGrid storage | `SquarePathGrid` stores passability on the heap, sized to the grid (no 4096-cell cap, no silent overrun). Specified together with FlowField storage. | @docs/specs/applications/dia/systems/diaflowfield/scalable-storage.md | Approved |
-| Grid Search Helpers *(added 2026-11-18, world-sim review)* | `CIndexGraph` concept + `HexNeighbours`; deterministic `MultiSourceSteps`, `FloodRegion`/`ConnectedComponents`, `MultiSourceDijkstra<Cost>` (settle hook: Accept/Skip/Park), `PriorityFlood`; reusable `GridSearchScratch`. S-1 migrates all 9 hand-written searches, goldens bit-identical | @grid-search-helpers.md | Approved |
+| Grid Search Helpers *(added 2026-11-18, world-sim review)* | `CIndexGraph` concept + `HexNeighbours` + `AdjacencyGraph`; deterministic `MultiSourceSteps`, `FloodRegion`/`ConnectedComponents`, `MultiSourceDijkstra<Cost>` (settle hook: Accept/Skip/Park), `PriorityFlood`; reusable `GridSearchScratch`. S-1 migrates 10 call sites (9 searches: water, mainland, coast 2-pass, mountains, rivers, depth, navigation, regions, drainage) | @grid-search-helpers.md | Approved |
 
 ## Dependencies on Other Systems
 

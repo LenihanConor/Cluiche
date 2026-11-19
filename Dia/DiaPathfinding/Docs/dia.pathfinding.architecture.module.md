@@ -36,6 +36,18 @@ responsibilities:
   - PathfindingSystemBudgetAdapter<TGraph> — wraps PathfindingSystem::Update(ms) as ISimTimeBudgetedSystem (DiaSimTime, kBackground priority)
   - DIA_LOG_INFO on request submit, path found, path failed
   - Test utilities under Testing/ subdirectory
+  - GridSearch.h — CIndexGraph concept (dense 0..CellCount()-1 index graphs over ForEachNeighbour), kUnreached sentinel, generic grid search helpers
+  - MultiSourceSteps — deterministic bucketed multi-source BFS with step distance and seed tracking
+  - FloodRegion — BFS flood over region predicate, returns visited cell list
+  - ConnectedComponents — labels connected components over region predicate, returns component count and optional sizes
+  - Settle hook (Accept/Skip/Park) — per-cell decision during Dijkstra settle for conditionals (e.g., early-exit, parking for later) 
+  - MultiSourceDijkstra<Cost> — generic multi-source Dijkstra with settle hook, cost callback, and early-exit options (outCost, outPrev, outSeedId, stopAt); supports PushAll relaxation for additive cost propagation
+  - PriorityFlood — priority-queue fill algorithm seeded from mask, computes filled elevation and flow-connected cells
+  - ResumeParked — re-queues parked entries in Dijkstra continuation
+  - ContinueDijkstra — resumes Dijkstra from a previous state, adding new seeds
+  - GridSearchScratch — reusable queue/heap/visited state for multiple helpers, Reserve/Reset; reduces allocation in tight loops
+  - HexNeighbours — adapter over HexTopology converting dense cell indices to CIndexGraph, used by grid search helpers
+  - AdjacencyGraph — production CSR (compressed sparse row) directed graph builder and accessor, sorts edges by (from, to) for cache locality
 
 non_responsibilities:
   - Terrain cost data storage (IPathCostProvider is injected)
@@ -63,6 +75,10 @@ public_api:
     - Dia/DiaPathfinding/IPathResultObserver.h
     - Dia/DiaPathfinding/PathfindingSystem.h
     - Dia/DiaPathfinding/PathfindingSystemBudgetAdapter.h
+    - Dia/DiaPathfinding/GridSearch.h
+    - Dia/DiaPathfinding/GridSearchScratch.h
+    - Dia/DiaPathfinding/HexNeighbours.h
+    - Dia/DiaPathfinding/AdjacencyGraph.h
   namespaces:
     - Dia::Pathfinding
   entry_points:
@@ -81,6 +97,24 @@ public_api:
     - PathfindingSystem
     - IPathResultObserver
     - PathfindingSystemBudgetAdapter
+    - CIndexGraph
+    - kUnreached
+    - StepSeed
+    - MultiSourceSteps
+    - FloodRegion
+    - ConnectedComponents
+    - Settle
+    - AcceptAll
+    - CostSeed
+    - DijkstraOptions
+    - MultiSourceDijkstra
+    - ResumeParked
+    - ContinueDijkstra
+    - PriorityFlood
+    - GridSearchScratch
+    - HexNeighbours
+    - AdjacencyGraph
+    - AdjacencyEdge
 
 dependencies:
   required:
