@@ -21,6 +21,7 @@
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <cstring>
 
 #ifdef _WIN32
 // Declared here (not via windows.h) to keep that header out of this file; identical to the SDK declarations.
@@ -396,6 +397,7 @@ namespace Dia { namespace ApplicationFlow {
                                    modDecl.instanceId.AsChar(), puDecl.instanceId.AsChar());
                         if (module && module->GetState() == ModuleState::kInactive)
                         {
+                            DeliverStageLaunch(module, stage, Dia::Core::StringCRC());
                             module->BeginStart();
                         }
                     }
@@ -556,6 +558,30 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::TransitionTo(const Dia::Core::StringCRC& stageId)
     {
+        TransitionToInternal(stageId, Dia::Core::StringCRC());
+    }
+
+    void Application::DeliverStageLaunch(Module* module, const Dia::Core::StringCRC& stage,
+                                         const Dia::Core::StringCRC& preset)
+    {
+        const char* json = "";
+        if (preset.Value() != 0)
+        {
+            if (const PresetDeclaration* p = mManifest.FindPreset(stage, preset))
+                json = mManifest.GetPresetOverrideJson(*p, module->GetInstanceId());
+        }
+        if (json[0] != '\0')
+        {
+            DIA_LOG_INFO("Application", "Delivering launch override to module '%s' (%u bytes)",
+                         module->GetInstanceId().AsChar(),
+                         static_cast<unsigned int>(std::strlen(json)));
+        }
+        module->OnStageLaunch(json);
+    }
+
+    void Application::TransitionToInternal(const Dia::Core::StringCRC& stageId,
+                                           const Dia::Core::StringCRC& presetId)
+    {
         {
             LifecycleEvent ev;
             ev.kind      = LifecycleEventKind::kStageTransitionRequested;
@@ -568,6 +594,7 @@ namespace Dia { namespace ApplicationFlow {
         if (mPendingStage != stageId)
             mPendingHeldByGuardEmitted = false;  // new target — re-arm held-by-guard event
         mPendingStage = stageId;
+        mPendingPreset = presetId;
         mHasPendingTransition.store(true);
     }
 
@@ -981,6 +1008,7 @@ namespace Dia { namespace ApplicationFlow {
         {
             std::lock_guard<std::mutex> lock(mTransitionMutex);
             mPendingStage = Dia::Core::StringCRC();
+            mPendingPreset = Dia::Core::StringCRC();
             mHasPendingTransition.store(false);
             mPendingHeldByGuardEmitted = false;
             return;
@@ -1006,7 +1034,9 @@ namespace Dia { namespace ApplicationFlow {
         {
             std::lock_guard<std::mutex> lock(mTransitionMutex);
             newStage = mPendingStage;
+            mLaunchPreset = mPendingPreset;
             mPendingStage = Dia::Core::StringCRC();
+            mPendingPreset = Dia::Core::StringCRC();
             mHasPendingTransition.store(false);
             mPendingHeldByGuardEmitted = false;
         }
@@ -1168,10 +1198,14 @@ namespace Dia { namespace ApplicationFlow {
                 {
                     Module* module = pu->FindModule(modDecl.instanceId);
                     if (module && module->GetState() == ModuleState::kInactive)
+                    {
+                        DeliverStageLaunch(module, newStage, mLaunchPreset);
                         module->BeginStart();
+                    }
                 }
             }
         }
+        mLaunchPreset = Dia::Core::StringCRC();
 
         // Auto-advance: per-stage flag in v3 replaces the old top-level auto_stages array.
         for (unsigned int s = 0; s < mManifest.stages.Size(); ++s)

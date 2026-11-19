@@ -55,6 +55,7 @@ responsibilities:
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
   - Launch presets (ManifestComposerV2::MergeStage reads optional .diastage `presets` into ApplicationManifestV3: compact shared preset table + 32 KB override-text pool, per-stage range on StageDeclaration; caps 16 presets/stage, 64/manifest, 4 modules/preset, 2 KB/preset; malformed presets are logged and ignored, the stage still loads; accessors FindPreset/HasPreset/GetPresetOverrideJson)
+  - Module::OnStageLaunch(const char* overridesJson) — virtual no-op hook called once per stage entry, immediately before BeginStart/DoStart, only for modules that actually start (not already-running `all` modules); argument is that module's override JSON from the chosen launch preset, or "". Application::TransitionToInternal(stage, preset) carries the preset through the drain to the module-start loop (also used for the initial stage, with no preset); logs delivered non-empty overrides on channel "Application"
   - ManifestBootstrap — LoadManifest (compose + path_aliases + validate) and RegisterPathAliases, and RegisterDevAliases (--dev-alias name=path, reserved `source`); app keeps loop/frame rate
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)

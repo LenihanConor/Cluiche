@@ -81,6 +81,14 @@ namespace Dia { namespace ApplicationFlow {
         // no config for this module.  Runs on the main thread.
         virtual void OnConfigure(const char* /*configJson*/) {}
 
+        // Called once per stage entry, immediately before BeginStart() (so before
+        // DoStart), only for modules that actually start for that stage (not for
+        // modules already running, e.g. `all`-scoped ones).  Runs on the thread that
+        // calls BeginStart (main thread).  `overridesJson` is this module's override
+        // JSON from the chosen launch preset, or "" when no preset was chosen or the
+        // preset has no override for this module.  Never null.  Default no-op.
+        virtual void OnStageLaunch(const char* /*overridesJson*/) {}
+
         // Called by Application after all PUs and modules are built, before
         // the initial stage is entered.  Override to call Connect() on any
         // StreamWriter / StreamReader / EventStreamWriter / EventStreamReader

@@ -77,6 +77,12 @@ namespace Dia { namespace ApplicationFlow {
         // execute at the top of the next Update() call.
         void TransitionTo(const Dia::Core::StringCRC& stageId) override;
 
+        // Internal: TransitionTo with a launch preset (empty StringCRC = none).  The preset's
+        // per-module overrides are delivered via Module::OnStageLaunch when modules start.
+        // Thread-safe.  A later request replaces both stage and preset.
+        void TransitionToInternal(const Dia::Core::StringCRC& stageId,
+                                  const Dia::Core::StringCRC& presetId);
+
         // IApplicationControl — thread-safe; stops all dedicated threads and
         // begins stopping every active module.
         void RequestShutdown() override;
@@ -264,6 +270,13 @@ namespace Dia { namespace ApplicationFlow {
         mutable std::mutex   mTransitionMutex;
         Dia::Core::StringCRC mPendingStage;
         std::atomic<bool>    mHasPendingTransition{false};
+        Dia::Core::StringCRC mPendingPreset;   // guarded by mTransitionMutex; travels with mPendingStage
+        Dia::Core::StringCRC mLaunchPreset;    // main-thread: preset of the transition being drained/committed
+
+        // Calls module->OnStageLaunch(json) with the override for `stage`/`preset`
+        // (or "" if none), then the caller does BeginStart().
+        void DeliverStageLaunch(Module* module, const Dia::Core::StringCRC& stage,
+                                const Dia::Core::StringCRC& preset);
 
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;

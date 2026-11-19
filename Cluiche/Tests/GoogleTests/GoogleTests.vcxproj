@@ -1342,6 +1342,7 @@
     <ClCompile Include="CoW\F2\TestF2StageResult.cpp" />
     <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp" />
     <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStageLaunchPreset.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
