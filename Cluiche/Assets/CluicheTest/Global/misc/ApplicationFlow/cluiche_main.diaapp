@@ -1144,35 +1144,13 @@
                     "channels": []
                 },
                 {
-                    "instance_id": "StageStatus",
-                    "type_id": "StageStatusModule",
-                    "stages": [
-                        "Boot"
-                    ],
-                    "dependencies": [],
-                    "channels": []
-                },
-                {
-                    "instance_id": "TestStatusBridge",
-                    "type_id": "TestStatusBridgeModule",
-                    "stages": [
-                        "Boot"
-                    ],
-                    "dependencies": [
-                        "StageStatus"
-                    ],
-                    "channels": []
-                },
-                {
                     "instance_id": "BootMenu",
                     "type_id": "BootMenuModule",
                     "stages": [
                         "Boot"
                     ],
                     "dependencies": [
-                        "DebugUI",
-                        "StageStatus",
-                        "TestStatusBridge"
+                        "DebugUI"
                     ],
                     "config": {
                         "title": "CluicheTest \u2014 Bootstrap",

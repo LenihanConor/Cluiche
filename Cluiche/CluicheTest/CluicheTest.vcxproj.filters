@@ -199,9 +199,6 @@
     <ClCompile Include="Modules\TestStages\Drawers\GridVisibilityDrawer.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\TestStatusBridgeModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp">
       <Filter>Modules\TestStages</Filter>
     </ClCompile>
@@ -389,9 +386,6 @@
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\GridVisibilityDrawer.h">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\TestStatusBridgeModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\JobSystemServiceTestStageModule.h">
       <Filter>Modules\TestStages</Filter>

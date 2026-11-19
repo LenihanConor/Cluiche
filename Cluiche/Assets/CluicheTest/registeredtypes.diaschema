@@ -375,11 +375,6 @@
       "type_id": "EntitySpatialTestStageModule"
     },
     {
-      "allowed_pus": "render",
-      "description": "Publishes TestResultsRegistry results to StageStatusModule for the boot menu.",
-      "type_id": "TestStatusBridgeModule"
-    },
-    {
       "allowed_pus": "sim",
       "description": "Integration test for cross-PU JobSystemService access",
       "type_id": "JobSystemServiceTestStageModule"
@@ -393,6 +388,16 @@
       "allowed_pus": "sim",
       "description": "Test key source: advances the deferred-step key once per sim step",
       "type_id": "DeferredStepClockModule"
+    },
+    {
+      "allowed_pus": "any",
+      "description": "Reports TestResultsRegistry state changes to the StageCatalogue via the StageResult stream.",
+      "type_id": "TestResultReporterModule"
+    },
+    {
+      "allowed_pus": "main",
+      "description": "Owns the stage catalogue and last stage results; persists results and publishes a catalogue snapshot.",
+      "type_id": "StageCatalogueModule"
     },
     {
       "allowed_pus": "sim",
@@ -516,11 +521,6 @@
     },
     {
       "allowed_pus": "render",
-      "description": "Holds per-stage status (label, severity, visited) keyed by stage CRC.",
-      "type_id": "StageStatusModule"
-    },
-    {
-      "allowed_pus": "render",
       "description": "Renders in-game debug UI panels via ImGui for development diagnostics.",
       "type_id": "DebugUIModule"
     },
@@ -598,6 +598,6 @@
   "processing_units": [],
   "version": {
     "major": 2,
-    "minor": 1
+    "minor": 2
   }
 }
