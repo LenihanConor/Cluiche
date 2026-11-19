@@ -41,6 +41,13 @@ namespace Dia { namespace Blackboard {
 
         bool Has(Dia::Core::StringCRC key) const;
 
+        // Chain reads: local first, then up the parent chain (nearest wins). Const only.
+        // Lookup asserts on type mismatch of the found slot.
+        template<typename T>
+        const T* Lookup(Dia::Core::StringCRC key) const;
+        bool HasInChain(Dia::Core::StringCRC key) const;
+        const Blackboard* FindOwner(Dia::Core::StringCRC key) const;
+
         void AddObserver(IBlackboardObserver& observer);
         void RemoveObserver(IBlackboardObserver& observer);
 

@@ -227,3 +227,117 @@ TEST(BlackboardScopes, Destroy_ParentWithLiveChild_Asserts)
 }
 
 #endif // _DEBUG
+
+// -------------------------------------------------------------------------
+// Chain reads (task 5)
+// -------------------------------------------------------------------------
+
+namespace
+{
+    struct ChainFixture
+    {
+        Blackboard grand;
+        Blackboard parent;
+        Blackboard child;
+        ChainFixture()
+        {
+            parent.SetParent(&grand);
+            child.SetParent(&parent);
+        }
+        ~ChainFixture()
+        {
+            child.SetParent(nullptr);
+            parent.SetParent(nullptr);
+        }
+    };
+}
+
+TEST(BlackboardScopes, Lookup_FindsLocal)
+{
+    ChainFixture f;
+    f.child.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 1;
+    const Blackboard& c = f.child;
+    const ScopeSlot* s = c.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_NE(s, nullptr);
+    EXPECT_EQ(s->mValue, 1);
+}
+
+TEST(BlackboardScopes, Lookup_FindsInParent)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 2;
+    const ScopeSlot* s = f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_NE(s, nullptr);
+    EXPECT_EQ(s->mValue, 2);
+}
+
+TEST(BlackboardScopes, Lookup_FindsInGrandparent)
+{
+    ChainFixture f;
+    f.grand.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 3;
+    const ScopeSlot* s = f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_NE(s, nullptr);
+    EXPECT_EQ(s->mValue, 3);
+}
+
+TEST(BlackboardScopes, Lookup_LocalShadowsParent)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 2;
+    f.child.Register<ScopeSlot>(Dia::Core::StringCRC("K")).mValue = 1;
+    const ScopeSlot* s = f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("K"));
+    ASSERT_NE(s, nullptr);
+    EXPECT_EQ(s->mValue, 1);
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("K")), &f.child);
+}
+
+TEST(BlackboardScopes, Lookup_Missing_ReturnsNullFalseNull)
+{
+    ChainFixture f;
+    EXPECT_EQ(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("Nope")), nullptr);
+    EXPECT_FALSE(f.child.HasInChain(Dia::Core::StringCRC("Nope")));
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("Nope")), nullptr);
+}
+
+TEST(BlackboardScopes, HasInChain_LocalParentGrandparent)
+{
+    ChainFixture f;
+    f.child.Register<ScopeSlot>(Dia::Core::StringCRC("L"));
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("P"));
+    f.grand.Register<ScopeSlot>(Dia::Core::StringCRC("G"));
+    EXPECT_TRUE(f.child.HasInChain(Dia::Core::StringCRC("L")));
+    EXPECT_TRUE(f.child.HasInChain(Dia::Core::StringCRC("P")));
+    EXPECT_TRUE(f.child.HasInChain(Dia::Core::StringCRC("G")));
+    EXPECT_FALSE(f.parent.HasInChain(Dia::Core::StringCRC("L")));
+}
+
+TEST(BlackboardScopes, FindOwner_ReturnsCorrectBoard)
+{
+    ChainFixture f;
+    f.child.Register<ScopeSlot>(Dia::Core::StringCRC("L"));
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("P"));
+    f.grand.Register<ScopeSlot>(Dia::Core::StringCRC("G"));
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("L")), &f.child);
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("P")), &f.parent);
+    EXPECT_EQ(f.child.FindOwner(Dia::Core::StringCRC("G")), &f.grand);
+}
+
+TEST(BlackboardScopes, Lookup_ParentOnlyKey_AbsentViaGetHasTryGet)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("P"));
+    EXPECT_FALSE(f.child.Has(Dia::Core::StringCRC("P")));
+    EXPECT_EQ(f.child.TryGet<ScopeSlot>(Dia::Core::StringCRC("P")), nullptr);
+    EXPECT_NE(f.child.Lookup<ScopeSlot>(Dia::Core::StringCRC("P")), nullptr);
+}
+
+#ifdef _DEBUG
+
+TEST(BlackboardScopes, Lookup_TypeMismatch_Asserts)
+{
+    ChainFixture f;
+    f.parent.Register<ScopeSlot>(Dia::Core::StringCRC("K"));
+    EXPECT_DEATH(f.child.Lookup<float>(Dia::Core::StringCRC("K")), "");
+}
+
+#endif // _DEBUG

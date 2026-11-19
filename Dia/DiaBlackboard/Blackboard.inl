@@ -96,6 +96,17 @@ namespace Dia { namespace Blackboard {
         return static_cast<const T*>(entry->data);
     }
 
+    template<typename T>
+    const T* Blackboard::Lookup(Dia::Core::StringCRC key) const
+    {
+        const Blackboard* owner = FindOwner(key);
+        if (owner == nullptr)
+            return nullptr;
+        const SlotEntry* entry = owner->mSlots[static_cast<unsigned int>(owner->FindSlotIndex(key))];
+        DIA_ASSERT(entry->typeTag == Detail::TypeTag<T>(), "Blackboard slot type mismatch");
+        return static_cast<const T*>(entry->data);
+    }
+
     template<typename Fn>
     void Blackboard::VisitSlots(Fn&& fn) const
     {

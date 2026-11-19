@@ -104,6 +104,21 @@ namespace Dia { namespace Blackboard {
         return FindSlotIndex(key) != -1;
     }
 
+    const Blackboard* Blackboard::FindOwner(Dia::Core::StringCRC key) const
+    {
+        for (const Blackboard* board = this; board != nullptr; board = board->mParent)
+        {
+            if (board->FindSlotIndex(key) != -1)
+                return board;
+        }
+        return nullptr;
+    }
+
+    bool Blackboard::HasInChain(Dia::Core::StringCRC key) const
+    {
+        return FindOwner(key) != nullptr;
+    }
+
     void Blackboard::AddObserver(IBlackboardObserver& observer)
     {
         DIA_ASSERT(!mObservers.IsFull(), "Blackboard observer capacity exceeded");
