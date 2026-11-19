@@ -82,7 +82,7 @@ subsystems:
   session:
     status: placeholder
     path: Dia/DiaObservation/Session/
-    description: SessionManager, session directory, output file lifecycle. Lands in Feature #2.
+    description: SessionManager, session directory, output file lifecycle. Lands in Feature #2. Static copy-out accessor SessionManager::GetActiveSessionInfo(id, dir) reports the active started session (false if none); safe while a session runs, do not race with Start/Stop.
   trace:
     status: placeholder
     path: Dia/DiaObservation/Trace/

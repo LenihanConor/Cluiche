@@ -14,6 +14,7 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Session/SessionManager.h>
 #include <DiaStreams/Event.h>
 
 #ifdef _WIN32
@@ -112,9 +113,14 @@ void StageCatalogueModule::UnregisterQueries()
     mQueriesOn = nullptr;
 }
 
-bool StageCatalogueModule::GetSessionInfo(std::string&, std::string&) const
+bool StageCatalogueModule::GetSessionInfo(std::string& sessionId, std::string& sessionDir) const
 {
-    return false;
+    char id[64] = {};
+    char dir[512] = {};
+    if (!Dia::Observation::SessionManager::GetActiveSessionInfo(id, sizeof(id), dir, sizeof(dir))) { return false; }
+    sessionId = id;
+    sessionDir = dir;
+    return true;
 }
 
 Dia::ApplicationFlow::StartResult StageCatalogueModule::DoStart()

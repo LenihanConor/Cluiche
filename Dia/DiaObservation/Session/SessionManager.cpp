@@ -365,6 +365,26 @@ namespace Dia
 			return sActiveInstance ? sActiveInstance->mCaptureManager : nullptr;
 		}
 
+		static void CopyBounded(char* out, uint32_t cap, const char* src)
+		{
+			if (!out || cap == 0)
+				return;
+			uint32_t i = 0;
+			for (; i + 1 < cap && src[i] != '\0'; ++i)
+				out[i] = src[i];
+			out[i] = '\0';
+		}
+
+		bool SessionManager::GetActiveSessionInfo(char* outId, uint32_t idCap, char* outDir, uint32_t dirCap)
+		{
+			const SessionManager* active = sActiveInstance;
+			if (!active || !active->mStarted)
+				return false;
+			CopyBounded(outId, idCap, active->mSessionId);
+			CopyBounded(outDir, dirCap, active->mSessionDir);
+			return true;
+		}
+
 		void SessionManager::SetActiveCaptureSource(Capture::IFrameCaptureSource* source)
 		{
 			if (sActiveInstance)

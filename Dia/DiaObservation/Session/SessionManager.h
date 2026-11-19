@@ -56,6 +56,12 @@ namespace Dia
 			Profile::TripReporter* GetTripReporter();   // never null; counts-only until a session starts
 
 			static Capture::CaptureManager* GetActiveCaptureManager();
+			// Copies the active started session's id and directory (directory ends with '/') into the caller's
+			// buffers, truncated and always NUL-terminated. Either output may be null (cap ignored). Returns false
+			// when no session is started. Thread-safety: id/dir are fully written in Start() before sActiveInstance
+			// is assigned and are never modified afterwards, so concurrent readers are safe while a session is
+			// running; callers must not race this with Start()/Stop() on another thread.
+			static bool GetActiveSessionInfo(char* outId, uint32_t idCap, char* outDir, uint32_t dirCap);
 			static void SetActiveCaptureSource(Capture::IFrameCaptureSource* source);
 
 			void OnRetainableEntry(const Log::LogEntry& entry);

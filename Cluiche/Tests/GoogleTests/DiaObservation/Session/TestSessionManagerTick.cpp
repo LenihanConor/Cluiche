@@ -158,3 +158,54 @@ TEST_F(SessionManagerTickTest, FinalSnapshot_SentToAllSinks)
 
     Metric::MetricRegistry::Instance().UnregisterSink(&sink);
 }
+
+// ---- GetActiveSessionInfo (static copy-out accessor) ----
+
+TEST_F(SessionManagerTickTest, ActiveSessionInfo_NoneActive_ReturnsFalse)
+{
+    char id[32] = "x";
+    char dir[512] = "x";
+    EXPECT_FALSE(SessionManager::GetActiveSessionInfo(id, sizeof(id), dir, sizeof(dir)));
+}
+
+TEST_F(SessionManagerTickTest, ActiveSessionInfo_AfterStart_MatchesAndAfterStopFalse)
+{
+    ObservationConfig obs;
+    std::memset(&obs, 0, sizeof(obs));
+    ASSERT_TRUE(mgr.Start(MakeConfig(), obs));
+
+    char id[32] = {};
+    char dir[512] = {};
+    ASSERT_TRUE(SessionManager::GetActiveSessionInfo(id, sizeof(id), dir, sizeof(dir)));
+    EXPECT_STREQ(id, mgr.GetSessionId());
+    EXPECT_STREQ(dir, mgr.GetSessionDirectory());
+
+    // Null-safe: either output may be omitted.
+    EXPECT_TRUE(SessionManager::GetActiveSessionInfo(nullptr, 0, dir, sizeof(dir)));
+    EXPECT_TRUE(SessionManager::GetActiveSessionInfo(id, sizeof(id), nullptr, 0));
+
+    mgr.Stop();
+    EXPECT_FALSE(SessionManager::GetActiveSessionInfo(id, sizeof(id), dir, sizeof(dir)));
+}
+
+TEST_F(SessionManagerTickTest, ActiveSessionInfo_SmallBuffer_TruncatesNulTerminated)
+{
+    ObservationConfig obs;
+    std::memset(&obs, 0, sizeof(obs));
+    ASSERT_TRUE(mgr.Start(MakeConfig(), obs));
+
+    char id[4];
+    char dir[6];
+    std::memset(id, 'z', sizeof(id));
+    std::memset(dir, 'z', sizeof(dir));
+    ASSERT_TRUE(SessionManager::GetActiveSessionInfo(id, sizeof(id), dir, sizeof(dir)));
+    EXPECT_EQ(std::strlen(id), 3u);
+    EXPECT_EQ(std::strncmp(id, mgr.GetSessionId(), 3), 0);
+    EXPECT_EQ(std::strlen(dir), 5u);
+    EXPECT_EQ(std::strncmp(dir, mgr.GetSessionDirectory(), 5), 0);
+
+    char one[1] = {'z'};
+    EXPECT_TRUE(SessionManager::GetActiveSessionInfo(one, 1, nullptr, 0));
+    EXPECT_EQ(one[0], '\0');
+    mgr.Stop();
+}

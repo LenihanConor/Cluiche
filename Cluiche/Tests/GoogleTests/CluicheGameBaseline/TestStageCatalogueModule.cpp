@@ -6,6 +6,8 @@
 #include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Testing/MockSink.h>
 #include <DiaObservation/Testing/HealthFixture.h>
+#include <DiaObservation/Session/SessionManager.h>
+#include <cstring>
 
 #include <chrono>
 #include <filesystem>
@@ -75,12 +77,14 @@ public:
     void Frame(const StageResultEvent* ev, unsigned int n) { ProcessEvents(ev, n); EndFrame(); }
 
     bool hasSession = false;
+    bool useBaseSession = false;   // call the real (production) GetSessionInfo
     std::string sessionId;
     std::string sessionDir;
 
 protected:
     bool GetSessionInfo(std::string& id, std::string& dir) const override
     {
+        if (useBaseSession) { return StageCatalogueModule::GetSessionInfo(id, dir); }
         if (!hasSession) { return false; }
         id = sessionId;
         dir = sessionDir;
@@ -371,4 +375,46 @@ TEST(StageCatalogueModule, HealthDegradedOnWriteFailureThenRecovers)
     m.Frame(&ev, 1);
     EXPECT_EQ(m.HealthNow().status, Dia::Observation::Health::HealthStatus::kOK);
     m.Stop();
+}
+
+TEST(StageCatalogueModule, RealGetSessionInfo_NoSession_NoPersistence)
+{
+    TestableModule m;
+    m.useBaseSession = true;
+    m.Configure(DiagamePath("basic"), "");
+    ASSERT_TRUE(m.Start());
+    EXPECT_STREQ(m.State().ResultsPath(), "");
+    m.Stop();
+}
+
+TEST(StageCatalogueModule, RealGetSessionInfo_ActiveSession_DerivesPathAndFillsIn)
+{
+    TempDir tmp;
+    Dia::Observation::SessionConfig cfg;
+    std::memset(&cfg, 0, sizeof(cfg));
+    strncpy_s(cfg.appName, "App", sizeof(cfg.appName) - 1);
+    strncpy_s(cfg.buildVersion, "1", sizeof(cfg.buildVersion) - 1);
+    strncpy_s(cfg.buildConfig, "debug", sizeof(cfg.buildConfig) - 1);
+    const std::string root = (tmp.path / "out" / "App").generic_string();
+    strncpy_s(cfg.outRootDir, root.c_str(), sizeof(cfg.outRootDir) - 1);
+    Dia::Observation::ObservationConfig obs;
+    std::memset(&obs, 0, sizeof(obs));
+
+    Dia::Observation::SessionManager session;
+    ASSERT_TRUE(session.Start(cfg, obs));
+
+    TestableModule m;
+    m.useBaseSession = true;
+    m.Configure(DiagamePath("basic"), "");
+    ASSERT_TRUE(m.Start());
+    EXPECT_EQ(fs::path(m.State().ResultsPath()), tmp.path / "out" / "App" / "stage_results.json");
+
+    const StageResultEvent ev = MakeEvent("A", StageResultSeverity::kOk, 1);
+    m.Frame(&ev, 1);
+    const int i = m.State().Results().Find("A");
+    ASSERT_GE(i, 0);
+    EXPECT_STREQ(m.State().Results()[i].result.sessionId.AsCStr(), session.GetSessionId());
+    EXPECT_EQ(std::string(m.State().Results()[i].result.logPath.AsCStr()), std::string(session.GetSessionDirectory()) + "log.jsonl");
+    m.Stop();
+    session.Stop();
 }
