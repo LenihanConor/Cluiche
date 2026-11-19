@@ -4,6 +4,7 @@
 #include <deque>
 #include <vector>
 
+#include "DiaPathfinding/AdjacencyGraph.h"
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/GridSearchScratch.h"
 #include "DiaPathfinding/HexNeighbours.h"
@@ -305,4 +306,26 @@ TEST(GridSearchFlood, ComponentsMatchNaiveReferenceOnHexGrid)
         EXPECT_EQ(n, expectSizes[expect[i]]);
         for (uint32_t k = 0; k < n; ++k) EXPECT_EQ(expect[cells[k]], expect[i]);
     }
+}
+
+// Forest: 0 -> {1,2}; 4 -> 5; cells 3 and 6 isolated.
+TEST(GridSearchFlood, AdjacencyForestFloodAndComponents)
+{
+    AdjacencyEdge edges[] = { { 4, 5 }, { 0, 2 }, { 0, 1 } };
+    AdjacencyGraph g;
+    g.Build(7, edges, 3);
+    GridSearchScratch s;
+    auto all = [](uint32_t) { return true; };
+
+    std::vector<uint8_t> seen(7, 0);
+    uint32_t n = 0;
+    EXPECT_EQ(Flood(g, 3, all, seen, s, n), (std::vector<uint32_t>{ 3 }));
+    EXPECT_EQ(Flood(g, 4, all, seen, s, n), (std::vector<uint32_t>{ 4, 5 }));
+    EXPECT_EQ(Flood(g, 0, all, seen, s, n), (std::vector<uint32_t>{ 0, 1, 2 }));
+    EXPECT_EQ(seen, (std::vector<uint8_t>{ 1, 1, 1, 1, 1, 1, 0 }));
+
+    const Comp r = Components(g, all, s);
+    EXPECT_EQ(r.count, 4u);
+    EXPECT_EQ(r.sizes, (std::vector<uint32_t>{ 3, 1, 2, 1 }));
+    EXPECT_EQ(r.label, (std::vector<uint32_t>{ 0, 0, 0, 1, 2, 2, 3 }));
 }

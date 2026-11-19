@@ -4,6 +4,7 @@
 #include <limits>
 #include <vector>
 
+#include "DiaPathfinding/AdjacencyGraph.h"
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/GridSearchScratch.h"
 #include "DiaPathfinding/HexNeighbours.h"
@@ -548,4 +549,68 @@ TEST(GridSearchDijkstra, ContinueDijkstraDoubleCompiles)
     EXPECT_EQ(ResumeParked<double>(s), 1u);
     ContinueDijkstra<double>(g, Unit<double>(), out.o, s);
     EXPECT_EQ(out.cost, (std::vector<double>{ 0, 1, 2 }));
+}
+
+// ---- Task 24 gap audit ------------------------------------------------------------------------------------
+
+TEST(GridSearchDijkstra, AllEdgesBlockedOnlySeedSettles)
+{
+    GridSearchScratch s;
+    const auto r = RunSearch<float>(ChainGraph(4), { { 1, 0.0f, 3 } }, [](uint32_t, uint32_t) { return -1.0f; }, s);
+    EXPECT_EQ(r.cost, (std::vector<float>{ kInfF, 0, kInfF, kInfF }));
+    EXPECT_EQ(r.order, (std::vector<uint32_t>{ 1 }));
+    EXPECT_EQ(r.prev, (std::vector<uint32_t>{ kNoCell, kNoCell, kNoCell, kNoCell }));
+    EXPECT_EQ(r.seedId, (std::vector<uint32_t>{ kUnreached, 3, kUnreached, kUnreached }));
+}
+
+TEST(GridSearchDijkstra, TyingSeedCostsOnDifferentCells)
+{
+    GridSearchScratch s;
+    const auto r = RunSearch<float>(ChainGraph(5), { { 0, 2.0f, 1 }, { 4, 2.0f, 2 } }, Unit<float>(), s);
+    EXPECT_EQ(r.cost, (std::vector<float>{ 2, 3, 4, 3, 2 }));
+    EXPECT_EQ(r.seedId, (std::vector<uint32_t>{ 1, 1, 1, 2, 2 }));
+    EXPECT_EQ(r.order, (std::vector<uint32_t>{ 0, 4, 1, 3, 2 }));
+}
+
+TEST(GridSearchDijkstra, ThinHexGridsCostEqualsIndexFromCellZero)
+{
+    for (auto dims : { std::pair<uint32_t, uint32_t>{ 1, 6 }, std::pair<uint32_t, uint32_t>{ 6, 1 } }) {
+        GridSearchScratch s;
+        HexTopology topo(dims.first, dims.second);
+        HexNeighbours g(topo);
+        const auto r = RunSearch<float>(g, { { 0, 0.0f, 1 } }, Unit<float>(), s);
+        EXPECT_EQ(r.cost, (std::vector<float>{ 0, 1, 2, 3, 4, 5 }));
+        EXPECT_EQ(r.order, (std::vector<uint32_t>{ 0, 1, 2, 3, 4, 5 }));
+    }
+}
+
+TEST(GridSearchDijkstra, HexTieHeavyPopOrderIsCostThenCellIndex)
+{
+    // Unit costs from interior cell 5; its neighbours (direction order 6,1,4,8,9,10) all tie at cost 1 and
+    // must pop by ascending cell index, whatever order they were pushed in.
+    GridSearchScratch s;
+    HexTopology topo = MakeSmallHexGrid();
+    HexNeighbours g(topo);
+    const auto r = RunSearch<float>(g, { { 5, 0.0f, 0 } }, Unit<float>(), s);
+    ASSERT_EQ(r.order.size(), 16u);
+    EXPECT_EQ(std::vector<uint32_t>(r.order.begin(), r.order.begin() + 7), (std::vector<uint32_t>{ 5, 1, 4, 6, 8, 9, 10 }));
+    for (size_t i = 1; i < r.order.size(); ++i) {
+        const uint32_t a = r.order[i - 1], b = r.order[i];
+        EXPECT_TRUE(r.cost[a] < r.cost[b] || (r.cost[a] == r.cost[b] && a < b)) << "pop " << i;
+    }
+}
+
+TEST(GridSearchDijkstra, AdjacencyForestWithIsolatedCell)
+{
+    // Forest: 0 -> {1,2}, 1 -> 3, 4 -> 5; cell 6 isolated.
+    AdjacencyEdge edges[] = { { 4, 5 }, { 1, 3 }, { 0, 2 }, { 0, 1 } };
+    AdjacencyGraph g;
+    g.Build(7, edges, 4);
+    GridSearchScratch s;
+    const auto r = RunSearch<float>(g, { { 0, 0.0f, 10 }, { 4, 0.0f, 20 } }, Unit<float>(), s);
+    EXPECT_EQ(r.cost, (std::vector<float>{ 0, 1, 1, 2, 0, 1, kInfF }));
+    EXPECT_EQ(r.order, (std::vector<uint32_t>{ 0, 4, 1, 2, 5, 3 }));
+    EXPECT_EQ(r.seedId, (std::vector<uint32_t>{ 10, 10, 10, 10, 20, 20, kUnreached }));
+    const auto iso = RunSearch<double>(g, { { 6, 1.5, 7 } }, Unit<double>(), s);
+    EXPECT_EQ(iso.cost, (std::vector<double>{ kInfD, kInfD, kInfD, kInfD, kInfD, kInfD, 1.5 }));
 }
