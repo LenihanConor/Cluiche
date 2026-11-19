@@ -177,6 +177,12 @@
     <ClCompile Include="Modules\StageCatalogueLoader.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Types\StageResult.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageResultsFile.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\EntityModule.h">
@@ -373,6 +379,12 @@
     </ClInclude>
     <ClInclude Include="Testing\StageCatalogueFixture.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageResult.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageResultsFile.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

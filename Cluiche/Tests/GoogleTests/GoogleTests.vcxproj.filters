@@ -3153,5 +3153,8 @@
     <ClCompile Include="CluicheGameBaseline\TestStageCatalogue.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheGameBaseline\TestStageResultsFile.cpp">
+      <Filter>CluicheGameBaseline</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
