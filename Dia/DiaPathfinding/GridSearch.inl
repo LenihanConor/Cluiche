@@ -127,4 +127,68 @@ namespace Dia::Pathfinding {
         }
         return components;
     }
+
+    namespace Detail {
+        // Drains the heap held in the scratch. Shared by MultiSourceDijkstra and (Task 7) ContinueDijkstra:
+        // it never initialises outputs, so it can continue a search whose state lives in scratch + outputs.
+        template<class Cost, CIndexGraph G, class StepCost, class OnSettle>
+        void RunDijkstra(const G& graph, StepCost& stepCost, const DijkstraOptions<Cost>& options,
+                         GridSearchScratch& scratch, OnSettle& onSettle)
+        {
+            auto& heap = scratch.Dijkstra<Cost>().heap;
+            auto& settled = scratch.Settled();
+            Cost* const outCost = options.outCost;
+            while (!heap.Empty()) {
+                const DijkstraEntry<Cost> e = heap.Pop();
+                if (settled[e.cell] || outCost[e.cell] < e.cost) continue;   // stale entry
+                // Task 7 hook point: Skip drops the entry (not settled); Park moves it to scratch parked list.
+                const Settle verdict = onSettle(e.cell, e.cost, e.seedId);
+                DIA_ASSERT(verdict == Settle::Accept, "Settle::Skip / Park are not implemented yet");
+                (void)verdict;
+                settled[e.cell] = 1;
+                if (options.stopAt != nullptr && options.stopAt[e.cell] != 0) {
+                    if (options.outStoppedAt) *options.outStoppedAt = e.cell;
+                    return;
+                }
+                graph.ForEachNeighbour(e.cell, [&](uint32_t nb) {
+                    if (settled[nb]) return;
+                    const Cost step = stepCost(e.cell, nb);
+                    if (step < Cost(0)) return;   // negative blocks the edge (PD-008)
+                    const Cost cand = e.cost + step;
+                    if (cand < outCost[nb]) {
+                        outCost[nb] = cand;
+                        if (options.outPrev) options.outPrev[nb] = e.cell;
+                        if (options.outSeedId) options.outSeedId[nb] = e.seedId;
+                        heap.Push(DijkstraEntry<Cost>{ cand, nb, e.seedId });
+                    }
+                });
+            }
+        }
+    }
+
+    template<class Cost, CIndexGraph G, class StepCost, class OnSettle>
+    void MultiSourceDijkstra(const G& graph, const CostSeed<Cost>* seeds, uint32_t seedCount, StepCost stepCost,
+                             const DijkstraOptions<Cost>& options, GridSearchScratch& scratch, OnSettle onSettle)
+    {
+        DIA_ASSERT(options.outCost != nullptr, "MultiSourceDijkstra requires options.outCost");
+        const uint32_t cellCount = graph.CellCount();
+        for (uint32_t i = 0; i < cellCount; ++i) {
+            options.outCost[i] = std::numeric_limits<Cost>::infinity();
+            if (options.outPrev) options.outPrev[i] = kNoCell;
+            if (options.outSeedId) options.outSeedId[i] = kUnreached;
+        }
+        if (options.outStoppedAt) *options.outStoppedAt = kNoCell;
+
+        scratch.Reset();
+        scratch.PrepareSettled(cellCount);
+        auto& heap = scratch.Dijkstra<Cost>().heap;
+        for (uint32_t i = 0; i < seedCount; ++i) {
+            const CostSeed<Cost>& s = seeds[i];
+            if (s.cell >= cellCount || !(s.startCost < options.outCost[s.cell])) continue;
+            options.outCost[s.cell] = s.startCost;
+            if (options.outSeedId) options.outSeedId[s.cell] = s.id;
+            heap.Push(DijkstraEntry<Cost>{ s.startCost, s.cell, s.id });
+        }
+        Detail::RunDijkstra<Cost>(graph, stepCost, options, scratch, onSettle);
+    }
 }

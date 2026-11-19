@@ -5,8 +5,10 @@
 
 #include <concepts>
 #include <cstdint>
+#include <limits>
 
 #include "DiaPathfinding/GridSearchScratch.h"
+#include "DiaPathfinding/HexTopology.h"   // kNoCell
 
 namespace Dia::Pathfinding {
     // Distinct from kNoCell (same value, different meaning): "search never reached this cell".
@@ -64,6 +66,49 @@ namespace Dia::Pathfinding {
     template<CIndexGraph G, class InRegion>
     uint32_t ConnectedComponents(const G& graph, InRegion inRegion, uint32_t* outLabel,
                                  uint32_t* outSizes, GridSearchScratch& scratch);
+
+    // Settle hook result. Accept settles the popped cell and expands it. Skip and Park are implemented
+    // by the settle-hook task (Task 7); only Accept is handled today.
+    enum class Settle : uint8_t { Accept, Skip, Park };
+
+    // Default hook: accept every cell.
+    struct AcceptAll {
+        Settle operator()(uint32_t, auto, uint32_t) const { return Settle::Accept; }
+    };
+
+    // A MultiSourceDijkstra seed: `cell` starts at `startCost`; `id` is reported in outSeedId.
+    template<class Cost>
+    struct CostSeed {
+        uint32_t cell;
+        Cost startCost;
+        uint32_t id;
+    };
+
+    // Outputs and early exit for MultiSourceDijkstra. All arrays are caller-owned and sized CellCount().
+    template<class Cost>
+    struct DijkstraOptions {
+        Cost* outCost = nullptr;               // required; infinity() for unreached cells
+        uint32_t* outPrev = nullptr;           // optional; kNoCell for seeds and unreached cells
+        uint32_t* outSeedId = nullptr;         // optional; kUnreached for unreached cells
+        const uint8_t* stopAt = nullptr;       // optional; stop when the first settled cell has stopAt[c] != 0
+        uint32_t* outStoppedAt = nullptr;      // optional; the stopping cell, or kNoCell when nothing stopped
+    };
+
+    // Multi-source Dijkstra. Heap order is the strict total order (cost, cell index). stepCost(from, to)
+    // returns Cost; a NEGATIVE value blocks the edge. Costs accumulate as `cost + step` in Cost (no
+    // widening or narrowing). Edges relax with strict `<`; outPrev / outSeedId follow the improving
+    // relaxation (seed id is inherited from the settled cell). Seeds are pushed in index order and improve
+    // a cell only when startCost < outCost[cell] (strict, so the earlier seed wins ties). A heap entry is
+    // stale (discarded) when its cell is already settled or its cost exceeds outCost[cell]; a cell is
+    // settled when a non-stale entry is popped and onSettle(cell, cost, seedId) returns Accept, and its
+    // cost is final from then on. Neighbours are expanded in ForEachNeighbour order, skipping settled ones.
+    // When the first settled cell has stopAt[c] != 0 the search returns before expanding it and writes
+    // *outStoppedAt = c. The heap and settled flags live in the scratch (not in locals) so the Task 7
+    // continuation entry points can resume them. The first call may grow scratch; a warm same-size call
+    // does not allocate.
+    template<class Cost, CIndexGraph G, class StepCost, class OnSettle = AcceptAll>
+    void MultiSourceDijkstra(const G& graph, const CostSeed<Cost>* seeds, uint32_t seedCount, StepCost stepCost,
+                             const DijkstraOptions<Cost>& options, GridSearchScratch& scratch, OnSettle onSettle = {});
 }
 
 #include "DiaPathfinding/GridSearch.inl"
