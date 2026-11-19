@@ -78,8 +78,16 @@ namespace Dia
 			{
 				DIA_ASSERT(Capacity() >= rhs.Size(), "rhs larger then lhs");
 
-				mData = DIA_NEW_ARRAY(Capacity(), T);//mData = (T*)malloc(mCapacity * sizeof(T));//mData = DIA_NEW(Capacity(), T);
-				MemoryCopy(mData, &rhs.At(0), sizeof(T)*rhs.Size());
+				if (Capacity() > 0)
+				{
+					mData = DIA_NEW_ARRAY(Capacity(), T);
+				}
+
+				// An empty source has nothing to copy (and At(0) would assert on it).
+				if (rhs.Size() > 0)
+				{
+					MemoryCopy(mData, &rhs.At(0), sizeof(T)*rhs.Size());
+				}
 			}
 
 			//-----------------------------------------------------------------------------
