@@ -815,3 +815,148 @@ TEST_F(AutomationServiceTest, CISafety_ResetHeartbeat)
     app.RequestShutdown();
     for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
 }
+
+// ===========================================================================
+// Launch presets (launch-presets AC 8): preset passes through hold release and nav routing
+// ===========================================================================
+
+#include <Modules/SimNavigationHandlerModule.h>
+
+namespace
+{
+    // Two-stage manifest where "Game" declares the launch preset "Fast" (no module overrides).
+    ApplicationManifestV3 AsAddTwoStageManifestWithPreset()
+    {
+        ApplicationManifestV3 manifest = AsAddTwoStageManifest();
+        manifest.stages[1].presetFirst = 0;
+        manifest.stages[1].presetCount = 1;
+        PresetDeclaration preset;
+        preset.name = StringCRC("Fast");
+        manifest.presets.Add(preset);
+        return manifest;
+    }
+
+    void AsPumpToStage(Application& app, const char* stage)
+    {
+        for (int i = 0; i < 50; ++i)
+        {
+            app.Update(1.0f / 60.0f);
+            if (app.GetCurrentStage() == StringCRC(stage) && !app.IsTransitioning())
+                break;
+        }
+    }
+
+    // Records every TransitionTo the nav handler issues.
+    struct RecordingControl : Dia::ApplicationFlow::IApplicationControl
+    {
+        int   plainCalls  = 0;
+        int   presetCalls = 0;
+        StringCRC lastStage;
+        StringCRC lastPreset;
+
+        void TransitionTo(const StringCRC& s) override { ++plainCalls; lastStage = s; lastPreset = StringCRC(); }
+        void TransitionTo(const StringCRC& s, const StringCRC& p) override { ++presetCalls; lastStage = s; lastPreset = p; }
+        void RequestShutdown() override {}
+        StringCRC GetCurrentStage() const override { return StringCRC(); }
+        StringCRC GetCurrentPreset() const override { return StringCRC(); }
+        void GetStageTransitions(const StringCRC&, Dia::Core::Containers::DynamicArrayC<StringCRC, 32>&) const override {}
+        bool RegisterTransitionGuard(Dia::ApplicationFlow::Module*, Dia::ApplicationFlow::TransitionGuardFn) override { return true; }
+        void UnregisterTransitionGuards(Dia::ApplicationFlow::Module*) override {}
+        const Json::Value* GetDiagameConfig() const override { return nullptr; }
+    };
+}
+
+TEST_F(AutomationServiceTest, NavigationHold_ReleaseWithPresetDeliversPreset)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddTwoStageManifestWithPreset();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.EnableNavigationHold();
+
+    bool success = false;
+    const char* errMsg = nullptr;
+    service.ReleaseNavigationHold(StringCRC("Game"), &success, &errMsg, StringCRC("Fast"));
+    EXPECT_TRUE(success);
+    AsPumpToStage(app, "Game");
+
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(app.GetCurrentPreset(), StringCRC("Fast"));
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+TEST_F(AutomationServiceTest, NavigationHold_ReleaseWithoutPresetHasNoPreset)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddTwoStageManifestWithPreset();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.EnableNavigationHold();
+    service.ReleaseNavigationHold(StringCRC("Game"));
+    AsPumpToStage(app, "Game");
+
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(app.GetCurrentPreset().Value(), 0u);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+TEST_F(AutomationServiceTest, SimNavigation_RoutePassesPresetToTransitionTo)
+{
+    RecordingControl ctl;
+    Cluiche::AppFlow::SimNavigationHandlerModule::RouteNavigation(
+        ctl, nullptr, StringCRC("Game"), StringCRC("Fast"));
+    EXPECT_EQ(ctl.lastStage, StringCRC("Game"));
+    EXPECT_EQ(ctl.lastPreset, StringCRC("Fast"));
+    EXPECT_EQ(ctl.presetCalls + ctl.plainCalls, 1);
+}
+
+TEST_F(AutomationServiceTest, SimNavigation_RouteEmptyPresetIsPlainTransition)
+{
+    RecordingControl ctl;
+    Cluiche::AppFlow::SimNavigationHandlerModule::RouteNavigation(
+        ctl, nullptr, StringCRC("Game"), StringCRC());
+    EXPECT_EQ(ctl.lastStage, StringCRC("Game"));
+    EXPECT_EQ(ctl.lastPreset.Value(), 0u);
+    EXPECT_EQ(ctl.presetCalls + ctl.plainCalls, 1);
+}
+
+TEST_F(AutomationServiceTest, SimNavigation_RouteThroughHoldDeliversPreset)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddTwoStageManifestWithPreset();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.EnableNavigationHold();
+
+    Cluiche::AppFlow::SimNavigationHandlerModule::RouteNavigation(
+        app, &service, StringCRC("Game"), StringCRC("Fast"));
+    AsPumpToStage(app, "Game");
+
+    EXPECT_EQ(app.GetCurrentStage(), StringCRC("Game"));
+    EXPECT_EQ(app.GetCurrentPreset(), StringCRC("Fast"));
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+TEST(RenderToSimNavRequestTest, PresetDefaultsEmptyAndSurvivesCopy)
+{
+    Cluiche::AppFlow::RenderToSimNavRequest r;
+    EXPECT_EQ(r.preset.Value(), 0u);
+    r.preset = StringCRC("Fast");
+    Cluiche::AppFlow::RenderToSimNavRequest copy = r;
+    EXPECT_EQ(copy.preset, StringCRC("Fast"));
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaStreams/EventStreamReader.h>
@@ -23,6 +24,13 @@ public:
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Executes navigation requests sent by RenderPU modules";
 
+    // Routes one navigation: releases an active automation hold (carrying the preset), otherwise
+    // calls app.TransitionTo(target[, preset]).  Empty preset behaves as a plain TransitionTo.
+    static void RouteNavigation(Dia::ApplicationFlow::IApplicationControl& app,
+                                Dia::Automation::AutomationService* automation,
+                                const Dia::Core::StringCRC& target,
+                                const Dia::Core::StringCRC& preset);
+
     explicit SimNavigationHandlerModule(const Dia::Core::StringCRC& instanceId);
     ~SimNavigationHandlerModule() override;
 
@@ -33,7 +41,7 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    void Navigate(const Dia::Core::StringCRC& target);
+    void Navigate(const Dia::Core::StringCRC& target, const Dia::Core::StringCRC& preset);
 
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mBootNavInput{this, "BootMenuNavRequest"};
     Dia::ApplicationFlow::EventStreamReader<RenderToSimNavRequest> mHUDNavInput{this,  "HUDNavRequest"};

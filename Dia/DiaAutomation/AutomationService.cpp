@@ -191,7 +191,8 @@ namespace Dia { namespace Automation {
 
     void AutomationService::ReleaseNavigationHold(const Dia::Core::StringCRC& target,
                                                     bool* outSuccess,
-                                                    const char** outError)
+                                                    const char** outError,
+                                                    const Dia::Core::StringCRC& preset)
     {
         if (!mHolding)
         {
@@ -231,7 +232,10 @@ namespace Dia { namespace Automation {
         }
 
         mHolding = false;
-        mApp.TransitionTo(target);
+        if (preset.Value() != 0)
+            mApp.TransitionTo(target, preset);
+        else
+            mApp.TransitionTo(target);
 
         Dia::ApplicationFlow::LifecycleEvent ev;
         ev.kind    = Dia::ApplicationFlow::LifecycleEventKind::kAutomationHoldReleased;
