@@ -839,24 +839,64 @@ TEST_F(PaletteArgsEdgeTest, SearchDoesNotMatchArgumentNames)   // PIN: only name
 	EXPECT_EQ(root["total"].asInt(), 1);
 }
 
-TEST_F(PaletteArgsEdgeTest, ParamsPointerIsReadAtBuildJsonTimeNotCopied)   // PIN: lifetime contract, see below
+TEST_F(PaletteArgsEdgeTest, ParamsAreDeepCopiedAtBuildAndSurviveUnregisterAndSourceChange)   // FIX: no dangling registrant pointers
 {
-	// PaletteIndex::Build stores the caller-owned params POINTER (same contract as CommandInfo).
-	// The array must therefore outlive every BuildPaletteResults call made on that index; freeing it
-	// after Build is a use-after-free. This test only mutates a still-alive array to prove the pointer
-	// (not a copy) is what the JSON is built from.
-	ValueParam params[1] = { MakeParam("before", "int") };
+	// PaletteIndex::Build deep-copies every ValueParam (and its strings) into palette-owned storage, so the
+	// registrant's array and string buffers may change or vanish after Build (module unload, unregister).
+	char nameBuf[16] = "before";
+	char descBuf[16] = "desc-before";
+	ValueParam params[1] = { MakeParam(nameBuf, "int", true, descBuf) };
 	ASSERT_TRUE(Reg("zargs.cmd", params, 1));
 	PaletteIndex idx;
 	idx.Build(mDomains);
+
+	// Destroy every source: change the strings, overwrite the struct, and unregister the command.
+	std::strcpy(nameBuf, "XXXXXX");
+	std::strcpy(descBuf, "XXXXXXXXXXX");
+	params[0] = ValueParam();
+	Dia::API::UnregisterCommand(StringCRC("zargs.cmd"));
+
 	std::vector<char> buf(1u << 14);
 	ASSERT_TRUE(ConsoleJson::BuildPaletteResults(idx, "zargs", 1, buf.data(), static_cast<unsigned>(buf.size())));
-	EXPECT_NE(std::string(buf.data()).find("\"name\":\"before\""), std::string::npos);
-	params[0].name = "after";
-	ASSERT_TRUE(ConsoleJson::BuildPaletteResults(idx, "zargs", 1, buf.data(), static_cast<unsigned>(buf.size())));
-	EXPECT_NE(std::string(buf.data()).find("\"name\":\"after\""), std::string::npos);
-	EXPECT_EQ(idx.GetItem(0).params, params);
+	const std::string json(buf.data());
+	EXPECT_NE(json.find("\"name\":\"before\""), std::string::npos) << json;
+	EXPECT_NE(json.find("desc-before"), std::string::npos) << json;
+	EXPECT_NE(idx.GetItem(0).params, params);
 	EXPECT_EQ(idx.GetItem(0).paramCount, 1u);
+	EXPECT_TRUE(idx.GetItem(0).params[0].required);
+}
+
+TEST_F(PaletteArgsEdgeTest, RebuildReleasesOwnedParamsAndRefreshesFromRegistry)
+{
+	ValueParam first[1] = { MakeParam("one", "int") };
+	ASSERT_TRUE(Reg("zargs.cmd", first, 1));
+	PaletteIndex idx;
+	idx.Build(mDomains);
+
+	Dia::API::UnregisterCommand(StringCRC("zargs.cmd"));
+	ValueParam second[2] = { MakeParam("two", "float"), MakeParam("three", "bool") };
+	ASSERT_TRUE(Reg("zargs.cmd", second, 2));
+	idx.Build(mDomains);
+
+	std::vector<char> buf(1u << 14);
+	ASSERT_TRUE(ConsoleJson::BuildPaletteResults(idx, "zargs", 1, buf.data(), static_cast<unsigned>(buf.size())));
+	const std::string json(buf.data());
+	EXPECT_EQ(json.find("\"name\":\"one\""), std::string::npos) << json;
+	EXPECT_NE(json.find("\"name\":\"two\""), std::string::npos) << json;
+	EXPECT_NE(json.find("\"name\":\"three\""), std::string::npos) << json;
+}
+
+TEST_F(PaletteArgsEdgeTest, NullOptionalParamStringsStayNullAfterCopy)
+{
+	ValueParam params[1] = { MakeParam("plain", "int") };	// description, unit, enumValues all null
+	ASSERT_TRUE(Reg("zargs.cmd", params, 1));
+	PaletteIndex idx;
+	idx.Build(mDomains);
+	const ValueParam& p = idx.GetItem(0).params[0];
+	EXPECT_STREQ(p.name, "plain");
+	EXPECT_EQ(p.description, nullptr);
+	EXPECT_EQ(p.unit, nullptr);
+	EXPECT_EQ(p.enumValues, nullptr);
 }
 
 TEST_F(PaletteArgsEdgeTest, TwoFiftySixCommandsWithParamsRespectMaxResults)   // PIN

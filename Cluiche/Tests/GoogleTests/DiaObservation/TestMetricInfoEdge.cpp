@@ -504,13 +504,50 @@ TEST_F(MetricInfoEdge, NullUserPointerIsPassedThrough)
 	EXPECT_EQ(&token, gSeenUser);
 }
 
-TEST_F(MetricInfoEdge, InfoPointerInVisitorMatchesGetInfo)
+TEST_F(MetricInfoEdge, InfoInVisitorMatchesGetInfoByValue)
 {
+	// The visitor gets a per-call copy (not the registry's own entry), so compare contents.
 	R().RegisterHistogram(StringCRC("mie.visitptr"), kBounds, 3, MetricInfo{ "L", "d", "u" });
 	Collector c;
 	R().ForEachMetric(&CollectAll, &c);
 	ASSERT_EQ(1u, c.visits.size());
-	EXPECT_EQ(R().GetInfo(StringCRC("mie.visitptr")), c.visits[0].info);
+	const MetricInfo* live = R().GetInfo(StringCRC("mie.visitptr"));
+	ASSERT_NE(nullptr, live);
+	EXPECT_NE(live, c.visits[0].info);
+	EXPECT_STREQ(live->label, c.visits[0].infoCopy.label);
+	EXPECT_STREQ(live->description, c.visits[0].infoCopy.description);
+	EXPECT_STREQ(live->unit, c.visits[0].infoCopy.unit);
+}
+
+namespace
+{
+	struct ResetInVisitorCtx
+	{
+		MetricRegistry* reg = nullptr;
+		int visited = 0;
+		bool labelOk = true;
+	};
+
+	void ResetThenReadInfo(const StringCRC&, MetricKind, const MetricInfo* info, void* user)
+	{
+		ResetInVisitorCtx* c = static_cast<ResetInVisitorCtx*>(user);
+		++c->visited;
+		c->reg->Reset(); // clears the registry's own info deque
+		// The info handed to the visitor must still be readable after the registry was cleared.
+		c->labelOk = c->labelOk && info != nullptr && info->label != nullptr && std::strcmp(info->label, "KeepMe") == 0;
+	}
+}
+
+TEST_F(MetricInfoEdge, ResetInsideVisitorLeavesVisitorInfoValid)
+{
+	R().RegisterCounter(StringCRC("mie.reset.a"), MetricInfo{ "KeepMe", "d", "u" });
+	R().RegisterGauge(StringCRC("mie.reset.b"), MetricInfo{ "KeepMe", "d", "u" });
+	ResetInVisitorCtx ctx;
+	ctx.reg = &R();
+	R().ForEachMetric(&ResetThenReadInfo, &ctx);
+	EXPECT_EQ(2, ctx.visited); // the visit was snapshotted before Reset
+	EXPECT_TRUE(ctx.labelOk);
+	EXPECT_EQ(0u, CountVisits(R()));
 }
 
 namespace

@@ -64,7 +64,9 @@ namespace Dia
                 const MetricInfo* GetInfo(const Dia::Core::StringCRC& name) const;
 
                 // Read-only enumeration (counters, then gauges, then histograms). The callback runs
-                // outside the registry lock on a copy of the entries, so it may call back into the registry.
+                // outside the registry lock on a copy of the entries, so it may call back into the registry
+                // (including Reset()). `info` points at a per-call copy: valid for that callback only, do
+                // not store it (copy the struct instead).
                 typedef void (*MetricVisitor)(const Dia::Core::StringCRC& name, MetricKind kind,
                                               const MetricInfo* info, void* user);
                 void ForEachMetric(MetricVisitor visitor, void* user) const;

@@ -71,8 +71,40 @@ namespace Dia
 				mSim = catalogue;
 			}
 
+			const Dia::API::ValueParam* PaletteIndex::OwnParams(const Dia::API::ValueParam* src, unsigned count)
+			{
+				if (src == nullptr || count == 0)
+					return nullptr;
+
+				mOwnedParams.emplace_back();
+				OwnedParams& block = mOwnedParams.back();
+				block.strings.reserve(static_cast<size_t>(count) * 5);	// name, type, description, unit, enumValues
+				block.params.reserve(count);
+
+				auto own = [&block](const char* s) -> const char*
+				{
+					if (s == nullptr)
+						return nullptr;
+					block.strings.emplace_back(s);
+					return block.strings.back().c_str();
+				};
+
+				for (unsigned i = 0; i < count; ++i)
+				{
+					Dia::API::ValueParam p = src[i];	// scalars (required, hasRange, min, max) copy as-is
+					p.name = own(src[i].name);
+					p.type = own(src[i].type);
+					p.description = own(src[i].description);
+					p.unit = own(src[i].unit);
+					p.enumValues = own(src[i].enumValues);
+					block.params.push_back(p);
+				}
+				return block.params.data();
+			}
+
 			void PaletteIndex::AddCommands()
 			{
+				mOwnedParams.clear();	// items from the previous Build are dropped with mCount = 0 by the caller
 				Dia::Core::Containers::DynamicArrayC<Dia::API::CommandInfo, 256> infos;
 				Dia::API::ListCommandInfos(infos);
 				for (int i = 0; i < static_cast<int>(infos.Size()) && mCount < kMaxCommands; ++i)
@@ -84,8 +116,8 @@ namespace Dia
 					CopyStr(it.description, sizeof(it.description), infos[i].description);
 					CopyStr(it.category, sizeof(it.category), infos[i].category.AsChar());
 					CopyStr(it.example, sizeof(it.example), infos[i].example);
-					it.params = infos[i].params;
-					it.paramCount = infos[i].params != nullptr ? infos[i].paramCount : 0;
+					it.params = OwnParams(infos[i].params, infos[i].paramCount);
+					it.paramCount = it.params != nullptr ? infos[i].paramCount : 0;
 				}
 				AddSimHostedCommands(infos);
 			}

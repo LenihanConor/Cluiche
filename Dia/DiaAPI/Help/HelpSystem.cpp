@@ -127,7 +127,10 @@ namespace Dia
 			Internal::FireHelpRequested(commandName, false);
 
 			// Get command from registry
-			const CommandInfo* cmd = GetCommand(commandName);
+			// Value copy: a GetCommand() pointer outlives the registry lock, so a concurrent
+			// Unregister could free the entry while it is printed below.
+			CommandInfo cmdCopy;
+			const CommandInfo* cmd = CopyCommandInfo(commandName, cmdCopy) ? &cmdCopy : nullptr;
 
 			if (!cmd)
 			{

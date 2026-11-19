@@ -238,23 +238,26 @@ namespace Dia
                 if (!visitor)
                     return;
 
-                struct Item { Dia::Core::StringCRC name; MetricKind kind; const MetricInfo* info; };
+                // The visitor runs outside the lock, so it must not be handed pointers into mInfos: a
+                // concurrent (or visitor-triggered) Reset() clears that deque. Each item carries its own
+                // copy of the info; the pointer passed to the visitor is valid for that call only.
+                struct Item { Dia::Core::StringCRC name; MetricKind kind; bool hasInfo; MetricInfo info; };
                 std::vector<Item> items;
                 {
                     std::lock_guard<std::mutex> lock(mMutex);
                     items.reserve(mCounters.size() + mGauges.size() + mHistograms.size());
-                    auto infoFor = [this](const Dia::Core::StringCRC& n) -> const MetricInfo*
+                    auto makeItem = [this](const Dia::Core::StringCRC& n, MetricKind k) -> Item
                     {
                         for (const auto& i : mInfos)
-                            if (i.name == n) return &i.info;
-                        return nullptr;
+                            if (i.name == n) return Item{ n, k, true, i.info };
+                        return Item{ n, k, false, MetricInfo() };
                     };
-                    for (const auto& e : mCounters)   if (!e.retired) items.push_back(Item{ e.name, MetricKind::Counter,   infoFor(e.name) });
-                    for (const auto& e : mGauges)     if (!e.retired) items.push_back(Item{ e.name, MetricKind::Gauge,     infoFor(e.name) });
-                    for (const auto& e : mHistograms) if (!e.retired) items.push_back(Item{ e.name, MetricKind::Histogram, infoFor(e.name) });
+                    for (const auto& e : mCounters)   if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Counter));
+                    for (const auto& e : mGauges)     if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Gauge));
+                    for (const auto& e : mHistograms) if (!e.retired) items.push_back(makeItem(e.name, MetricKind::Histogram));
                 }
                 for (const auto& it : items)
-                    visitor(it.name, it.kind, it.info, user);
+                    visitor(it.name, it.kind, it.hasInfo ? &it.info : nullptr, user);
             }
 
             bool MetricRegistry::IsRetiredLocked(const Dia::Core::StringCRC& name) const

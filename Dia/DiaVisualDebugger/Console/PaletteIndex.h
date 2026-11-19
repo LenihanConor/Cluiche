@@ -16,6 +16,10 @@
 #include <DiaDebugServer/ISimHostedCatalogue.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 
+#include <deque>
+#include <string>
+#include <vector>
+
 namespace Dia
 {
 	namespace VisualDebugger
@@ -32,7 +36,7 @@ namespace Dia
 				char category[32];	// command category, or domain group
 				char example[128];	// commands only, may be empty
 				char domainId[64];	// domains only: GetDomainId(); NOT the panel card key (that is `name`, the display name)
-				const Dia::API::ValueParam* params;	// commands only: caller-owned (see CommandInfo), may be null
+				const Dia::API::ValueParam* params;	// commands only: points into PaletteIndex-owned storage (valid until the next Build), may be null
 				unsigned paramCount;
 			};
 
@@ -79,6 +83,17 @@ namespace Dia
 				void AddDomain(const char* name, const char* description, const char* category, const char* domainId);
 
 				struct SimBlock;	// copy of one sim-hosted help plus ValueParam views over its strings
+
+					// Deep copy of one DiaAPI command's ValueParam array: the palette must not keep the
+					// registrant's pointers (they dangle when the command is unregistered or its module unloads).
+					// Held in a deque so item.params stays valid as blocks are added; cleared on every Build.
+					struct OwnedParams
+					{
+						std::vector<std::string> strings;			// reserved up front, never reallocated
+						std::vector<Dia::API::ValueParam> params;	// views over `strings`
+					};
+					std::deque<OwnedParams> mOwnedParams;
+					const Dia::API::ValueParam* OwnParams(const Dia::API::ValueParam* src, unsigned count);
 
 				PaletteItem* mItems;
 				int mCount;
