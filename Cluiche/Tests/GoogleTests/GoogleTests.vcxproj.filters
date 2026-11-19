@@ -1801,6 +1801,9 @@
     <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h">
       <Filter>DiaDeferredStep</Filter>
     </ClInclude>
+    <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h">
+      <Filter>DiaPathfinding</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3202,6 +3205,9 @@
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
     <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp">
+      <Filter>DiaPathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaPathfinding\GridSearchAllocCounter.cpp">
       <Filter>DiaPathfinding</Filter>
     </ClCompile>
   </ItemGroup>

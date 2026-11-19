@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h" />
     <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h" />
+    <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1351,6 +1352,7 @@
     <ClCompile Include="DiaPathfinding\TestGridSearchPriorityFlood.cpp" />
     <ClCompile Include="DiaPathfinding\TestGridSearchScratch.cpp" />
     <ClCompile Include="DiaPathfinding\TestGridSearchPerf.cpp" />
+    <ClCompile Include="DiaPathfinding\GridSearchAllocCounter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
