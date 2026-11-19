@@ -60,3 +60,13 @@ def test_second_launch_reports_persisted_result(dia_client):
         pytest.skip("no stage_results.json yet; first-launch test creates it")
     res = _results(dia_client)
     assert res.get(_STAGE, {}).get("label") == "PASS", res
+
+
+def test_stage_queries_listed_with_help(dia_client):
+    """AC 15: stages.list/get/results appear in list_commands with source main and a description."""
+    details = {d["name"]: d for d in dia_client.send_command("list_commands")["command_details"]}
+    for name in ("stages.list", "stages.get", "stages.results"):
+        assert name in details, sorted(details)
+        assert details[name]["source"] == "main" and details[name]["kind"] == "query", details[name]
+        assert details[name]["description"], details[name]
+        assert details[name]["category"] == "stages", details[name]

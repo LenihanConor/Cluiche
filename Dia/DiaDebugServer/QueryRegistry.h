@@ -5,8 +5,12 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <DiaDebugServer/SimHelpInfo.h>
+
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <vector>
 
 namespace Dia
 {
@@ -34,6 +38,16 @@ namespace Dia
 
 			// Returns false when refused (veto or wrong thread). Duplicates still assert.
 			bool Register(const Dia::Core::StringCRC& name, QueryHandler handler);
+			// As above, with help text listed by BuildMergedCommandList (source "main"). 'help' is validated and copied
+			// (CopyHelp); invalid help is refused: Error log, nothing registered, returns false.
+			bool Register(const Dia::Core::StringCRC& name, QueryHandler handler, const SimHelpInfo& help);
+
+			// Read access to the help stored by the 3-arg Register (entries in registration order). Pointers stay
+			// valid until the next Register/Unregister. Queries registered without help are not enumerated.
+			uint32_t HelpCount() const { return static_cast<uint32_t>(mHelp.size()); }
+			Dia::Core::StringCRC HelpNameAt(uint32_t index) const { return mHelp[index].name; }
+			const SimHelpStored* HelpAt(uint32_t index) const { return mHelp[index].help.get(); }
+			const SimHelpStored* FindHelp(const Dia::Core::StringCRC& name) const;
 			// Returns true if an entry was removed; false if unknown or refused (wrong thread).
 			bool Unregister(const Dia::Core::StringCRC& name);
 			bool Has(const Dia::Core::StringCRC& name) const;
@@ -45,6 +59,14 @@ namespace Dia
 				Dia::Core::StringCRC name;
 				QueryHandler handler;
 			};
+
+			// SimHelpStored is ~7 KB, so help is heap-allocated per entry instead of inflating Entry.
+			struct HelpEntry
+			{
+				Dia::Core::StringCRC name;
+				std::unique_ptr<SimHelpStored> help;
+			};
+			std::vector<HelpEntry> mHelp;
 
 			static const unsigned int kMaxHandlers = 64;
 			Dia::Core::Containers::DynamicArrayC<Entry, kMaxHandlers> mHandlers;

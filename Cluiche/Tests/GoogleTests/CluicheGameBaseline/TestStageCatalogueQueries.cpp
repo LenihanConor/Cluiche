@@ -4,6 +4,7 @@
 #include <Modules/StageCatalogueQueries.h>
 #include <Modules/StageCatalogueState.h>
 #include <Testing/StageCatalogueFixture.h>
+#include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/QueryRegistry.h>
 
 #include <memory>
@@ -220,6 +221,45 @@ TEST(StageCatalogueModuleQueries, RegistersAndAnswersThroughRegistry)
     module.Stop();
     EXPECT_FALSE(module.QueriesRegistered());
     EXPECT_FALSE(registry.Has(StringCRC("stages.list")));
+}
+
+TEST(StageCatalogueModuleQueries, QueriesAppearInMergedCommandListWithHelp)
+{
+    Dia::DebugServer::QueryRegistry registry;
+    TestableModule module;
+    module.SetQueryRegistry(&registry);
+    module.Configure(DiagamePath("basic"));
+    ASSERT_TRUE(module.Start());
+
+    const Json::Value list = Dia::DebugServer::BuildMergedCommandList(nullptr, &registry);
+    const char* names[] = { Q::kListName, Q::kGetName, Q::kResultsName };
+    for (const char* name : names)
+    {
+        const Json::Value* d = nullptr;
+        for (Json::ArrayIndex i = 0; i < list["command_details"].size(); ++i)
+            if (list["command_details"][i]["name"].asString() == name) { d = &list["command_details"][i]; }
+        ASSERT_NE(nullptr, d) << name;
+        EXPECT_EQ("main", (*d)["source"].asString()) << name;
+        EXPECT_EQ("query", (*d)["kind"].asString()) << name;
+        EXPECT_FALSE((*d)["description"].asString().empty()) << name;
+        EXPECT_EQ("stages", (*d)["category"].asString()) << name;
+        EXPECT_EQ("StageCatalogue", (*d)["owner"].asString()) << name;
+    }
+    // stages.get requires the stage arg.
+    for (Json::ArrayIndex i = 0; i < list["command_details"].size(); ++i)
+    {
+        const Json::Value& d = list["command_details"][i];
+        if (d["name"].asString() == Q::kGetName)
+        {
+            ASSERT_EQ(1u, d["params"].size());
+            EXPECT_EQ("stage", d["params"][0]["name"].asString());
+            EXPECT_TRUE(d["params"][0]["required"].asBool());
+        }
+    }
+    module.Stop();
+    const Json::Value after = Dia::DebugServer::BuildMergedCommandList(nullptr, &registry);
+    for (Json::ArrayIndex i = 0; i < after["command_details"].size(); ++i)
+        EXPECT_NE(Q::kListName, after["command_details"][i]["name"].asString());
 }
 
 TEST(StageCatalogueModuleQueries, AbsentServiceRunsWithoutQueries)

@@ -58,10 +58,49 @@ namespace Dia
 			return true;
 		}
 
+		bool QueryRegistry::Register(const Dia::Core::StringCRC& name, QueryHandler handler, const SimHelpInfo& help)
+		{
+			if (RejectWrongThread("Register", name))
+				return false;
+			auto stored = std::make_unique<SimHelpStored>();
+			const SimHelpResult result = CopyHelp(help, *stored);
+			if (result != SimHelpResult::Ok)
+			{
+				DIA_LOG_ERROR("DebugServer", "QueryRegistry: help for '%s' rejected (%s), query not registered",
+					name.AsChar(), SimHelpResultText(result));
+				return false;
+			}
+			if (!Register(name, std::move(handler)))
+				return false;
+			HelpEntry entry;
+			entry.name = name;
+			entry.help = std::move(stored);
+			mHelp.push_back(std::move(entry));
+			return true;
+		}
+
+		const SimHelpStored* QueryRegistry::FindHelp(const Dia::Core::StringCRC& name) const
+		{
+			for (const HelpEntry& e : mHelp)
+			{
+				if (e.name == name)
+					return e.help.get();
+			}
+			return nullptr;
+		}
+
 		bool QueryRegistry::Unregister(const Dia::Core::StringCRC& name)
 		{
 			if (RejectWrongThread("Unregister", name))
 				return false;
+			for (size_t i = 0; i < mHelp.size(); ++i)
+			{
+				if (mHelp[i].name == name)
+				{
+					mHelp.erase(mHelp.begin() + i);
+					break;
+				}
+			}
 			for (unsigned int i = 0; i < mHandlers.Size(); ++i)
 			{
 				if (mHandlers[i].name == name)

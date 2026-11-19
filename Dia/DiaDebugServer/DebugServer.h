@@ -117,7 +117,8 @@ namespace Dia
 		//                       description, category, owner, noArgs, params[] (name,type,required,description,unit,
 		//                       hasRange,min,max,enum)
 		// A name present in both is reported once, from the DiaAPI (Main-hosted) entry, with a Warning.
-		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim);
+		// 'mainQueries' (optional) adds the Main-hosted queries registered with help: source "main", kind "query".
+		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim, const QueryRegistry* mainQueries = nullptr);
 
 		class DebugServer : public ISimHostedCatalogue
 		{

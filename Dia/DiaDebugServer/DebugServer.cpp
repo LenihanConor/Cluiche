@@ -70,7 +70,7 @@ namespace Dia
 			}
 		}
 
-		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim)
+		Json::Value BuildMergedCommandList(const ISimHostedCatalogue* sim, const QueryRegistry* mainQueries)
 		{
 			Json::Value result(Json::objectValue);
 			Json::Value names(Json::arrayValue);
@@ -122,6 +122,33 @@ namespace Dia
 				d["category"] = view.help->category;
 				d["owner"] = view.help->owner;
 				d["noArgs"] = view.help->noArgs;
+				AppendParams(d, params, count);
+				details.append(d);
+			}
+
+			for (uint32_t i = 0; mainQueries != nullptr && i < mainQueries->HelpCount(); ++i)
+			{
+				const SimHelpStored* help = mainQueries->HelpAt(i);
+				const char* name = mainQueries->HelpNameAt(i).AsChar();
+				if (help == nullptr)
+					continue;
+				if (!seen.insert(name).second)
+				{
+					DIA_LOG_WARNING("DebugServer", "Command list: '%s' is already listed; skipping the Main-hosted query help", name);
+					continue;
+				}
+				names.append(name);
+
+				Dia::API::ValueParam params[kSimHelpMaxParams];
+				const uint32_t count = SimHelpToParams(*help, params);
+				Json::Value d(Json::objectValue);
+				d["name"] = name;
+				d["source"] = "main";
+				d["kind"] = "query";
+				d["description"] = help->description;
+				d["category"] = help->category;
+				d["owner"] = help->owner;
+				d["noArgs"] = help->noArgs;
 				AppendParams(d, params, count);
 				details.append(d);
 			}
@@ -1435,7 +1462,7 @@ namespace Dia
 					queryCmds.append("get_server_stats");
 					result["query_commands"] = queryCmds;
 
-					const Json::Value merged = BuildMergedCommandList(this);
+					const Json::Value merged = BuildMergedCommandList(this, &mQueryRegistry);
 					result["api_commands"] = merged["api_commands"];
 					result["command_details"] = merged["command_details"];
 

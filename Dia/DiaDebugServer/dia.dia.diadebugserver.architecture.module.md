@@ -76,7 +76,7 @@ public_api:
     - Dia/DiaDebugServer/DebugServerModule.h
     - Dia/DiaDebugServer/StateSerializer.h
     - Dia/DiaDebugServer/CommandDispatcher.h
-    - Dia/DiaDebugServer/QueryRegistry.h      # Register/Unregister (return bool)/Has/Execute; SetRegisterVeto (refuses names that are sim-hosted); SetOwnerThread (DebugServer::Start sets, Stop clears) refuses Register/Unregister from other threads
+    - Dia/DiaDebugServer/QueryRegistry.h      # Register (2-arg, or 3-arg with SimHelpInfo: validated via CopyHelp, listed in list_commands as source "main" via HelpCount/HelpAt/FindHelp)/Unregister (return bool; drops help)/Has/Execute; SetRegisterVeto (refuses names that are sim-hosted); SetOwnerThread (DebugServer::Start sets, Stop clears) refuses Register/Unregister from other threads
     - Dia/DiaDebugServer/DebugServer.h        # RegisterSimHosted, UnregisterSimHosted, SetSimRequestSink, CompleteSimReply, SetNowMsFunction, SetSendHook, ReplaceSimHosted, GetSimHostedDigest
     - Dia/DiaDebugServer/SimHostedTypes.h     # SimKind (Query/Command/Resync), SimHostedName, SimReplyStatus, SimRequestEvent, SimReplyEvent, kSimPayloadBytes
     - Dia/DiaDebugServer/ISimRequestSink.h

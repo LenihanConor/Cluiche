@@ -3171,5 +3171,8 @@
     <ClCompile Include="CoW\F2\TestF2StageResult.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

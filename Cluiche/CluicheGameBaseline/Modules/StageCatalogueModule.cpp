@@ -92,14 +92,33 @@ void StageCatalogueModule::RegisterQueries()
     if (mQueriesOn != nullptr) { return; }
     Dia::DebugServer::QueryRegistry* registry = mQueryRegistryOverride ? mQueryRegistryOverride : ResolveQueryRegistry(mAppInspect);
     if (registry == nullptr) { return; }
-    // Help text lives in StageCatalogueQueries::k*Help (main-hosted queries have no registry help channel).
+    // Help text lives in StageCatalogueQueries::k*Help; the registry lists it in the merged command list.
+    static const Dia::API::ValueParam kTagParam = { "tag", "string", false, "Tag filter: one string or an array of strings; all must match" };
+    static const Dia::API::ValueParam kKindParam = { "kind", "enum", false, "Kind filter", nullptr, false, 0.0f, 0.0f, "showcase|tool|test|other" };
+    static const Dia::API::ValueParam kStageReq = { "stage", "string", true, "Stage name" };
+    static const Dia::API::ValueParam kStageOpt = { "stage", "string", false, "Stage name; omit for all stages" };
+    static const Dia::API::ValueParam kListParams[] = { kTagParam, kKindParam };
+
+    auto help = [](const char* description, const Dia::API::ValueParam* params, unsigned int count) {
+        Dia::DebugServer::SimHelpInfo info;
+        info.description = description;
+        info.category = "stages";
+        info.owner = "StageCatalogue";
+        info.params = params;
+        info.paramCount = count;
+        return info;
+    };
+
     const StageCatalogueState* state = &mState;
     registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kListName),
-        [state](const Json::Value& args) { return StageCatalogueQueries::List(*state, args); });
+        [state](const Json::Value& args) { return StageCatalogueQueries::List(*state, args); },
+        help(StageCatalogueQueries::kListHelp, kListParams, 2));
     registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kGetName),
-        [state](const Json::Value& args) { return StageCatalogueQueries::Get(*state, args); });
+        [state](const Json::Value& args) { return StageCatalogueQueries::Get(*state, args); },
+        help(StageCatalogueQueries::kGetHelp, &kStageReq, 1));
     registry->Register(Dia::Core::StringCRC(StageCatalogueQueries::kResultsName),
-        [state](const Json::Value& args) { return StageCatalogueQueries::Results(*state, args); });
+        [state](const Json::Value& args) { return StageCatalogueQueries::Results(*state, args); },
+        help(StageCatalogueQueries::kResultsHelp, &kStageOpt, 1));
     mQueriesOn = registry;
     DIA_LOG_INFO("STAGES", "Registered queries stages.list, stages.get, stages.results");
 }
