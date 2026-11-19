@@ -1,0 +1,43 @@
+{
+    "config": {
+        "name": "Fixture",
+        "build": "dev-0.1",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "ShowcaseDemo.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "ToolBench.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "TestRig.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "ShowTest.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Plain.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Misc.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "NotListed.diastage",
+            "type": "stage"
+        }
+    ]
+}

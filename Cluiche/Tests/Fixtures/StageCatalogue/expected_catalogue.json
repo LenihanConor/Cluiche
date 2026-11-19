@@ -1,0 +1,121 @@
+{
+    "basic": {
+        "result": "Ok",
+        "entries": [
+            {
+                "name": "TestRig",
+                "tags": [
+                    "test"
+                ],
+                "kinds": [
+                    "test"
+                ],
+                "description": "A test-only stage."
+            },
+            {
+                "name": "NoImport",
+                "tags": [],
+                "kinds": [],
+                "description": ""
+            },
+            {
+                "name": "ShowTest",
+                "tags": [
+                    "test",
+                    "showcase"
+                ],
+                "kinds": [
+                    "showcase",
+                    "test"
+                ],
+                "description": "Two kinds, listed out of canonical order."
+            },
+            {
+                "name": "ToolBench",
+                "tags": [
+                    "tool",
+                    "world-gen"
+                ],
+                "kinds": [
+                    "tool"
+                ],
+                "description": "A tool stage with a free-form tag."
+            },
+            {
+                "name": "Misc",
+                "tags": [
+                    "experimental"
+                ],
+                "kinds": [],
+                "description": "Only a free-form tag, so it lands in other."
+            },
+            {
+                "name": "Plain",
+                "tags": [],
+                "kinds": [],
+                "description": ""
+            },
+            {
+                "name": "ShowcaseDemo",
+                "tags": [
+                    "showcase"
+                ],
+                "kinds": [
+                    "showcase"
+                ],
+                "description": "A showcase-only stage."
+            }
+        ],
+        "rows": [
+            {
+                "group": "showcase",
+                "entry": 2
+            },
+            {
+                "group": "showcase",
+                "entry": 6
+            },
+            {
+                "group": "tool",
+                "entry": 3
+            },
+            {
+                "group": "test",
+                "entry": 0
+            },
+            {
+                "group": "test",
+                "entry": 2
+            },
+            {
+                "group": "other",
+                "entry": 1
+            },
+            {
+                "group": "other",
+                "entry": 4
+            },
+            {
+                "group": "other",
+                "entry": 5
+            }
+        ],
+        "omittedCount": 1,
+        "droppedCount": 0
+    },
+    "over_cap": {
+        "result": "Ok",
+        "entryCount": 64,
+        "droppedCount": 1,
+        "omittedCount": 0
+    },
+    "malformed": {
+        "result": "Malformed"
+    },
+    "no_root_manifest": {
+        "result": "NoRootManifest"
+    },
+    "missing": {
+        "result": "MissingDiagame"
+    }
+}

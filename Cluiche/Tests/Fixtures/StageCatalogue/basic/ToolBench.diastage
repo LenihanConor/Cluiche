@@ -1,0 +1,14 @@
+{
+    "name": "ToolBench",
+    "manifest": "ToolBench.stage.json",
+    "tags": [
+        "tool",
+        "world-gen"
+    ],
+    "description": "A tool stage with a free-form tag.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

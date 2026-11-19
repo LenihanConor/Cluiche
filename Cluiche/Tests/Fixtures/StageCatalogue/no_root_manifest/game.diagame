@@ -1,0 +1,15 @@
+{
+    "config": {
+        "name": "Fixture",
+        "build": "dev-0.1",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "Only.diastage",
+            "type": "stage"
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "name": "ShowcaseDemo",
+    "manifest": "ShowcaseDemo.stage.json",
+    "tags": [
+        "showcase"
+    ],
+    "description": "A showcase-only stage.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}
