@@ -1,6 +1,8 @@
 {
     "name": "CellLayersViewerTestStage",
     "manifest": "Stages/CellLayersViewerTestStage/misc/ApplicationFlow/cell_layers_viewer_test_stage.diaapp",
+    "tags": ["test", "cells"],
+    "description": "Cell layer management and inspection",
     "config": {
         "path_aliases": {
             "stage_root": "."

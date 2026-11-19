@@ -1,6 +1,8 @@
 {
     "name": "ScalarFieldTestStage",
     "manifest": "Stages/ScalarFieldTestStage/misc/ApplicationFlow/scalarfield_test_stage.diaapp",
+    "tags": ["test", "fields"],
+    "description": "Scalar field generation and sampling",
     "config": {
         "path_aliases": {
             "stage_root": "."

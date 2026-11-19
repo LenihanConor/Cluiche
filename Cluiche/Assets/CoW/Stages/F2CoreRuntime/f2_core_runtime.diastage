@@ -1,6 +1,8 @@
 {
     "name": "F2CoreRuntime",
     "manifest": "Stages/F2CoreRuntime/misc/ApplicationFlow/f2_core_runtime.diaapp",
+    "tags": ["test"],
+    "description": "F-2 core runtime checks",
     "config": {
         "path_aliases": {
             "stage_root": "."

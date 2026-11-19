@@ -1,6 +1,8 @@
 {
     "name": "PathfindingTestStage",
     "manifest": "Stages/PathfindingTestStage/misc/ApplicationFlow/pathfinding_test_stage.diaapp",
+    "tags": ["test", "pathfinding"],
+    "description": "Pathfinding algorithms and queries",
     "config": {
         "path_aliases": {
             "stage_root": "."

@@ -1,6 +1,8 @@
 {
     "name": "S1WorldGenerationTestbedStage",
     "manifest": "Stages/S1WorldGenerationTestbedStage/misc/ApplicationFlow/s1world_generation_testbed_stage.diaapp",
+    "tags": ["tool", "worldgen"],
+    "description": "Live terrain, biome and region editor with sliders",
     "config": {
         "path_aliases": {
             "stage_root": "."

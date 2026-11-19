@@ -1,6 +1,8 @@
 {
     "name": "Animation2DTestStage",
     "manifest": "Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp",
+    "tags": ["test", "animation"],
+    "description": "2D skeletal animation and playback",
     "config": {
         "path_aliases": {
             "stage_root": "."

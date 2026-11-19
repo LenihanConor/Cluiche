@@ -1,6 +1,8 @@
 {
     "name": "SpawnerTestStage",
     "manifest": "Stages/SpawnerTestStage/misc/ApplicationFlow/spawner_test_stage.diaapp",
+    "tags": ["test", "entity"],
+    "description": "Entity spawning and prefab instantiation",
     "config": {
         "path_aliases": {
             "stage_root": "."
