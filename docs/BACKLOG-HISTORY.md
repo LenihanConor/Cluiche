@@ -211,6 +211,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | Describe existing components (DiaValueSchema) | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
 | Dia | DeferredStepModule falls back to inline when JobSystemService is late | 2026-11-19 | Done 2026-11-19: late attach swaps to the job launcher when idle; verified live in CoW |
 | Dia | GoogleTests shared temp-file races under `--shards` | 2026-11-19 | Done 2026-11-19: per-process temp files; SaveEdge timestamp flake fixed |
+| Dia | DiaPathfinding Grid Search Helpers (world-sim foundation 3) | 2026-11-19 | Done 2026-11-19; spec Done, AC 8 amended; S-1 call sites migrated to ConnectedComponents |
 
 ---
 
