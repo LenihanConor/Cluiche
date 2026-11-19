@@ -495,34 +495,27 @@ void ComputeCoastDistance(const std::vector<uint8_t>& land, GridDimensions dims,
     const Dia::Pathfinding::HexTopology topo(w, h);
     const int n = w * h;
     std::fill(out, out + n, 0u);
+    const Dia::Pathfinding::HexNeighbours graph(topo);
+    Dia::Pathfinding::GridSearchScratch scratch;
     // Pass 0: sources are ocean cells, results written to land cells. Pass 1: the reverse.
     for (uint8_t sourceValue = 0; sourceValue <= 1; ++sourceValue)
     {
-        std::vector<int> dist(static_cast<size_t>(n), -1);
-        std::vector<int> queue;
-        queue.reserve(static_cast<size_t>(n));
+        std::vector<Dia::Pathfinding::StepSeed> seeds;
+        seeds.reserve(static_cast<size_t>(n));
         for (int i = 0; i < n; ++i)
         {
-            if (land[static_cast<size_t>(i)] == sourceValue) { dist[static_cast<size_t>(i)] = 0; queue.push_back(i); }
+            if (land[static_cast<size_t>(i)] == sourceValue) { seeds.push_back({static_cast<uint32_t>(i), 0u, static_cast<uint32_t>(i)}); }
         }
-        for (size_t head = 0; head < queue.size(); ++head)
-        {
-            const int c = queue[head];
-            for (uint32_t d = 0; d < Dia::Pathfinding::kHexDirections; ++d)
-            {
-                const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                if (nb != Dia::Pathfinding::kNoCell && dist[nb] < 0)
-                {
-                    dist[nb] = dist[static_cast<size_t>(c)] + 1;
-                    queue.push_back(static_cast<int>(nb));
-                }
-            }
-        }
+        std::vector<uint32_t> dist(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+        Dia::Pathfinding::MultiSourceSteps(graph, seeds.data(), static_cast<uint32_t>(seeds.size()),
+                                           [](uint32_t) { return true; }, static_cast<uint32_t>(n),
+                                           dist.data(), nullptr, scratch);
         for (int i = 0; i < n; ++i)
         {
-            if (land[static_cast<size_t>(i)] != sourceValue && dist[static_cast<size_t>(i)] > 0)
+            if (land[static_cast<size_t>(i)] != sourceValue && dist[static_cast<size_t>(i)] != Dia::Pathfinding::kUnreached
+                && dist[static_cast<size_t>(i)] > 0)
             {
-                out[i] = static_cast<uint32_t>(dist[static_cast<size_t>(i)]);
+                out[i] = dist[static_cast<size_t>(i)];
             }
         }
     }
