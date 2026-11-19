@@ -77,8 +77,12 @@ def _terminate_tree(proc: "subprocess.Popen") -> None:
               help="Absolute path passed as --dev-alias source=PATH (default: Cluiche/Assets/<app>).")
 @click.option("--perf", "perf", is_flag=False, flag_value="", default=None, metavar="[SECONDS]",
               help=PERF_OPTION_HELP)
+@click.option("--stage", "stage", default=None, metavar="NAME",
+              help="Launch this stage from Boot (validated against the game's stage catalogue).")
+@click.option("--preset", "preset", default=None, metavar="NAME",
+              help="With --stage: launch preset declared by that stage.")
 @click.pass_context
-def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source, perf):
+def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automation, source, perf, stage, preset):
     """Launch an already-built target executable.
 
     TARGET is any launchable target in pipeline.toml (one with `exe` or `app_name`).
@@ -95,8 +99,21 @@ def cli(ctx, target, config, filter_pattern, verbose, run_all, shards, automatio
         automation=automation,
         source_override=source,
         extra_args=perf_args(perf),
+        stage=stage,
+        preset=preset,
     )
     ctx.exit(exit_code)
+
+
+def check_launch_selection(repo_root: Path, pipeline_config, target: str,
+                           stage: str | None, preset: str | None) -> str | None:
+    """Error message for a bad --stage/--preset on `target`, or None. Shared by dia launch and dia run."""
+    if not stage and not preset:
+        return None
+    from dia_cli.utils.launch_selection import validate_launch_selection
+    t = pipeline_config.targets.get(target)
+    app_name = t.app_name if (t is not None and t.launchable and not t.exe) else None
+    return validate_launch_selection(repo_root, app_name, stage, preset)
 
 
 def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
@@ -118,7 +135,8 @@ def _resolve_dev_aliases(target: str, repo_root: Path) -> list[str]:
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False, run_all: bool = False, shards: int = 0,
                   automation: bool = False, source_override: str | None = None,
-                  extra_args: list[str] | None = None, timeout: float | None = None) -> int:
+                  extra_args: list[str] | None = None, timeout: float | None = None,
+                  stage: str | None = None, preset: str | None = None) -> int:
     config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
@@ -134,6 +152,11 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
     if exe_template is None:
         known = ", ".join(sorted(launchable_targets(pipeline_config)))
         click.echo(f"ERROR: unknown target '{target}' (known: {known})", err=True)
+        return 2
+
+    error = check_launch_selection(repo_root, pipeline_config, target, stage, preset)
+    if error:
+        click.echo(f"ERROR: {error}", err=True)
         return 2
 
     if source_override is not None:
@@ -175,6 +198,10 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
         cmd.append("--automation")
     if extra_args:
         cmd += list(extra_args)
+    if stage:
+        cmd += ["--stage", stage]
+        if preset:
+            cmd += ["--preset", preset]
     if target == "googletest":
         from dia_cli.commands.test.slow_suites import DEFAULT_GTEST_FILTER_ARG
         from dia_cli.commands.test.googletest_runner import (
