@@ -820,7 +820,7 @@
                     ],
                     "config": {
                         "diagame_path": "assets/cluichetest.diagame",
-                        "results_path": "out/CluicheTest/stage_results.json"
+                        "results_path": "../../../../out/CluicheTest/stage_results.json"
                     },
                     "channels": [
                         {
