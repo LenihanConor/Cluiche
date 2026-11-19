@@ -1,11 +1,13 @@
 #include "F2TestRunnerModule.h"
 #include "F2StreamIndependence.h"
 #include "F2DragonStub.h"
+#include "F2StageResult.h"
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaInput/EKey.h>
 #include <DiaSaveGame/SlotManager.h>
+#include <chrono>
 #include <fstream>
 #include <iterator>
 #include <cstring>
@@ -73,6 +75,7 @@ void F2TestRunnerModule::NavigateTo(const Dia::Core::StringCRC& target)
 void F2TestRunnerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mAutomation.Connect(app);
+    mResultOut.Connect(app);
 }
 
 //-----------------------------------------------------------------------------
@@ -291,6 +294,14 @@ void F2TestRunnerModule::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
     done.passCount = pass;
     done.failCount = fail;
     Publish(done);
+
+    // Exactly one StageResult per completed run (this branch runs once per run).
+    Cluiche::AppFlow::StageResultEvent resultEvent;
+    BuildF2StageResult(pass, fail, static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count()), resultEvent);
+    if (mResultOut.Send(resultEvent) == Dia::ApplicationFlow::SendResult::kFailLoudRejected)
+        DIA_LOG_WARNING("STAGES", "StageResult send rejected: stage=%s", resultEvent.stage.AsChar());
+
     DIA_LOG_INFO("CoW", "F2TestRunnerModule: scenario complete (%u pass, %u fail)", pass, fail);
 }
 

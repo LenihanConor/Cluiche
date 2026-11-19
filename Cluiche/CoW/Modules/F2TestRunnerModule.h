@@ -7,6 +7,8 @@
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaStreams/ServiceStreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
+#include "Types/StageResult.h"
 #include "Modules/InputStreamModule.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/GameSpeedControllerModule.h"
@@ -164,6 +166,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::InputStreamModule> mInput{this};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService> mAutomation{this, "AutomationService"};
     bool mExitRequested = false;
+    Dia::ApplicationFlow::EventStreamWriter<Cluiche::AppFlow::StageResultEvent> mResultOut{this, "StageResult"};
 
 #ifdef DIA_DEBUG
     void TryRegisterDebugDomain();

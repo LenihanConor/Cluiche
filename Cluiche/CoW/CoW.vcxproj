@@ -159,6 +159,7 @@
     <ClInclude Include="Shared\WorldGeneration\WorldFiles.h" />
     <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h" />
     <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h" />
+    <ClInclude Include="Modules\F2StageResult.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

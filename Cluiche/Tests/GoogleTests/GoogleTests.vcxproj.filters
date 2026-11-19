@@ -3168,5 +3168,8 @@
     <ClCompile Include="..\..\CluicheTest\Modules\TestResultChangeTracker.cpp">
       <Filter>CluicheTest</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\F2\TestF2StageResult.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
