@@ -54,6 +54,7 @@ responsibilities:
   - ApplicationManifestV3 POD structs — in-memory representation of .diaapp v3 + .diastage files; stages are objects {name, transitions[], auto_advance} (SD-019)
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
+  - Launch presets (ManifestComposerV2::MergeStage reads optional .diastage `presets` into ApplicationManifestV3: compact shared preset table + 32 KB override-text pool, per-stage range on StageDeclaration; caps 16 presets/stage, 64/manifest, 4 modules/preset, 2 KB/preset; malformed presets are logged and ignored, the stage still loads; accessors FindPreset/HasPreset/GetPresetOverrideJson)
   - ManifestBootstrap — LoadManifest (compose + path_aliases + validate) and RegisterPathAliases, and RegisterDevAliases (--dev-alias name=path, reserved `source`); app keeps loop/frame rate
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)

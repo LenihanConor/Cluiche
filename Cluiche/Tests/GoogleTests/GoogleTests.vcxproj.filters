@@ -3174,5 +3174,8 @@
     <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

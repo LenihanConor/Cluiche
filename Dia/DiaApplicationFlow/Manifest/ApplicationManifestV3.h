@@ -68,6 +68,32 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::DynamicArrayC<ModuleDeclaration, 64> modules;
     };
 
+    // Launch-preset limits (launch-presets spec AC 1-2)
+    static const unsigned int kMaxPresetsPerStage       = 16;
+    static const unsigned int kMaxPresetNameLength      = 31;
+    static const unsigned int kMaxPresetDescLength      = 120;
+    static const unsigned int kMaxPresetJsonBytes       = 2048;  // per preset (compact JSON of its "modules" object)
+    static const unsigned int kMaxPresetModules         = 4;
+    static const unsigned int kMaxManifestPresets       = 64;    // across all stages of one manifest
+    static const unsigned int kPresetOverridePoolBytes  = 32768; // shared override text pool for the whole manifest
+
+    // One module's override inside a preset. Text lives in ApplicationManifestV3's shared pool.
+    struct PresetModuleOverride
+    {
+        Dia::Core::StringCRC instanceId;
+        unsigned int         offset = 0;  // into the manifest override pool
+        unsigned int         length = 0;  // bytes, excluding terminator
+    };
+
+    // A named launch preset: per-module config overrides applied at stage entry
+    struct PresetDeclaration
+    {
+        Dia::Core::StringCRC name;
+        char                 description[kMaxPresetDescLength + 1] = {};
+        unsigned int         moduleCount = 0;
+        PresetModuleOverride modules[kMaxPresetModules];
+    };
+
     // Describes a stage entry (from .diastage format)
     struct StageDeclaration
     {
@@ -77,6 +103,11 @@ namespace Dia { namespace ApplicationFlow {
         // v3 fields: per-stage transition targets and auto-advance flag
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>  transitions;
         bool                                                            autoAdvance = false;
+
+        // Launch presets: range into ApplicationManifestV3's shared preset table (compact; see
+        // ApplicationManifestV3::FindPreset). Empty when the stage declares none.
+        unsigned int                                                    presetFirst = 0;
+        unsigned int                                                    presetCount = 0;
     };
 
     // Top-level in-memory representation of a v3 .diaapp manifest
@@ -93,6 +124,18 @@ namespace Dia { namespace ApplicationFlow {
         // Full "config" block from the .diagame file — heap-allocated, owned here.
         // Null if no .diagame config was present or Compose was not used.
         Json::Value* diagameConfig = nullptr;
+
+        // Launch presets for all stages (compact shared storage; StageDeclaration holds a range).
+        Dia::Core::Containers::DynamicArrayC<PresetDeclaration, kMaxManifestPresets> presets;
+        char         presetOverridePool[kPresetOverridePoolBytes] = {};
+        unsigned int presetOverridePoolUsed = 0;
+
+        // Preset accessors. FindPreset returns nullptr if the stage or preset does not exist.
+        const PresetDeclaration* FindPreset(const StageDeclaration& stage, const Dia::Core::StringCRC& presetName) const;
+        const PresetDeclaration* FindPreset(const Dia::Core::StringCRC& stageName, const Dia::Core::StringCRC& presetName) const;
+        bool                     HasPreset(const Dia::Core::StringCRC& stageName, const Dia::Core::StringCRC& presetName) const;
+        // Override JSON text for a module in a preset; "" if the module has no override.
+        const char*              GetPresetOverrideJson(const PresetDeclaration& preset, const Dia::Core::StringCRC& instanceId) const;
 
         ApplicationManifestV3() = default;
         ~ApplicationManifestV3();

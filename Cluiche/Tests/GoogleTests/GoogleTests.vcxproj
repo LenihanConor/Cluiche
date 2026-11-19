@@ -1341,6 +1341,7 @@
     <ClCompile Include="..\..\CluicheTest\Modules\TestResultChangeTracker.cpp" />
     <ClCompile Include="CoW\F2\TestF2StageResult.cpp" />
     <ClCompile Include="DebugServer\TestQueryRegistryHelp.cpp" />
+    <ClCompile Include="ApplicationFlow\TestManifestComposerPresets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
