@@ -154,7 +154,14 @@ Dia::ApplicationFlow::StartResult StageCatalogueModule::DoStart()
     else
     {
         const StageResultsReadResult readResult = mState.LoadResults(path.c_str());
-        DIA_LOG_INFO("STAGES", "Results read '%s': %s (%u stages)", path.c_str(), StageResultsReadResultName(readResult), mState.Results().Count());
+        if (readResult == StageResultsReadResult::kOk || readResult == StageResultsReadResult::kMissing)
+        {
+            DIA_LOG_INFO("STAGES", "Results read '%s': %s (%u stages)", path.c_str(), StageResultsReadResultName(readResult), mState.Results().Count());
+        }
+        else
+        {
+            DIA_LOG_WARNING("STAGES", "Results read '%s' failed: %s; starting with an empty table", path.c_str(), StageResultsReadResultName(readResult));
+        }
     }
 
     Publish();   // once at start

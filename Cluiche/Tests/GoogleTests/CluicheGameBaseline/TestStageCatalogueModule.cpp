@@ -336,6 +336,22 @@ TEST(StageCatalogueModule, NoPersistenceLogsExactlyOneWarning)
     m.Stop();
 }
 
+TEST(StageCatalogueModule, MalformedResultsFileLogsWarningAndStartsEmpty)
+{
+    TempDir tmp;
+    {
+        std::ofstream out(tmp.File("bad.json"));
+        out << "{ not json";
+    }
+    StagesLogCapture log;
+    TestableModule m;
+    m.Configure(DiagamePath("basic"), tmp.File("bad.json"));
+    ASSERT_TRUE(m.Start());
+    EXPECT_EQ(m.State().Results().Count(), 0u);
+    EXPECT_EQ(log.Count(Dia::Observation::Log::LogLevel::kWarning), 1u);
+    m.Stop();
+}
+
 TEST(StageCatalogueModule, HealthDegradedOnWriteFailureThenRecovers)
 {
     Dia::Observation::Testing::HealthFixture healthFixture;
