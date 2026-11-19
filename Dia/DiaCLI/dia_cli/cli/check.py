@@ -676,7 +676,20 @@ def sln_sync(ctx, dry_run: bool) -> None:
 # spec-sync helpers
 # ---------------------------------------------------------------------------
 
-_PUBLIC_INTERFACES_RE = re.compile(r'^## Public Interfaces?\s*$', re.MULTILINE)
+# Matches "## Public Interfaces", "### Public Interface", and "### Public interfaces (sketch; ...)".
+# Does not match "## Public Interface Changes".
+_PUBLIC_INTERFACES_RE = re.compile(
+    r'^(#{2,4}) Public [Ii]nterfaces?(?:\s*\(.*\))?\s*$', re.MULTILINE)
+# App folder (under docs/specs/applications/) -> source dirs (relative to repo root) its symbols may live in.
+_APP_SOURCE_DIRS = {
+    "dia": ["Dia"],
+    "cow": ["Cluiche/CoW", "Dia"],
+    "cluichetest": ["Cluiche/CluicheTest", "Dia"],
+    "cluicheeditor": ["Cluiche/CluicheEditor", "Dia"],
+    "cluichegamebaseline": ["Cluiche/CluicheGameBaseline", "Dia"],
+    "googletests": ["Cluiche/Tests", "Dia"],
+}
+_SKIP_DIRS = {"out", "bin", "obj", "External", "node_modules"}
 _CPP_BLOCK_RE = re.compile(r'```cpp\s*.*?```', re.DOTALL)
 _CLASS_STRUCT_RE = re.compile(r'\b(?:class|struct)\s+([A-Z][A-Za-z0-9_]+)')
 _SPEC_STATUS_RE = re.compile(r'\*\*Status:\*\*\s*`?(\w[\w ]*?)`?\s*$', re.MULTILINE)
@@ -689,7 +702,8 @@ def _extract_spec_symbols(spec_text: str) -> List[str]:
         return []
 
     start = m.end()
-    next_sec = re.search(r'^## ', spec_text[start:], re.MULTILINE)
+    level = len(m.group(1))
+    next_sec = re.search(r'^#{1,%d} ' % level, spec_text[start:], re.MULTILINE)
     section = spec_text[start: start + next_sec.start()] if next_sec else spec_text[start:]
 
     symbols: List[str] = []
@@ -701,11 +715,13 @@ def _extract_spec_symbols(spec_text: str) -> List[str]:
     return symbols
 
 
-def _build_header_index(dia_dir: Path) -> Set[str]:
-    """Scan all .h files under dia_dir and return every PascalCase word found."""
+def _build_header_index(root_dir: Path) -> Set[str]:
+    """Scan all .h files under root_dir (skipping build output) and return every PascalCase word found."""
     word_re = re.compile(r'\b([A-Z][A-Za-z0-9_]+)\b')
     found: Set[str] = set()
-    for header in dia_dir.rglob("*.h"):
+    for header in root_dir.rglob("*.h"):
+        if _SKIP_DIRS.intersection(header.relative_to(root_dir).parts):
+            continue
         try:
             text = header.read_text(encoding="utf-8", errors="ignore")
             found.update(word_re.findall(text))
@@ -730,6 +746,10 @@ def _spec_status(spec_text: str) -> str:
     return m.group(1).strip() if m else "Unknown"
 
 
+def _spec_app(spec_path: Path, specs_dir: Path) -> str:
+    return spec_path.relative_to(specs_dir).parts[0]
+
+
 def _render_sync_table(rows: list) -> str:
     lines = [
         "# Spec Sync Status",
@@ -737,17 +757,23 @@ def _render_sync_table(rows: list) -> str:
         "_Refresh by running `dia check spec-sync`. Commit the result to keep it visible in the site._",
         "",
         "Symbols are extracted from each spec's **Public Interfaces** section (class/struct names only).",
-        "A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.",
+        "A symbol is ✅ if it appears in a header under the spec's application source dir (or `Dia/`); ⚠️ if absent.",
+        "Limits: this checks class/struct names only. It cannot see prose drift (stale statuses, changed execution models).",
         "",
-        "| Spec | Spec Status | Sync | Symbols Found | Missing |",
-        "|------|-------------|------|---------------|---------|",
     ]
-    for row in rows:
-        lines.append(
-            f"| {row['spec']} | {row['spec_status']} | {row['sync']} "
-            f"| {row['found']} | {row['missing']} |"
-        )
-    lines.append("")
+    for app in sorted({r["app"] for r in rows}):
+        lines += [
+            f"## {app}",
+            "",
+            "| Spec | Spec Status | Sync | Symbols Found | Missing |",
+            "|------|-------------|------|---------------|---------|",
+        ]
+        for row in (r for r in rows if r["app"] == app):
+            lines.append(
+                f"| {row['spec']} | {row['spec_status']} | {row['sync']} "
+                f"| {row['found']} | {row['missing']} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -756,7 +782,7 @@ def _render_sync_table(rows: list) -> str:
               help="Print each spec being processed.")
 @click.pass_context
 def spec_sync(ctx, verbose: bool) -> None:
-    """Check if spec Public Interfaces symbols exist in Dia headers.
+    """Check if spec Public Interfaces symbols exist in the app's headers (Dia/ and Cluiche/<App>/).
 
     Reads every system spec under docs/specs/applications/, extracts class/struct
     names from the Public Interfaces section, then checks whether each name appears
@@ -767,7 +793,6 @@ def spec_sync(ctx, verbose: bool) -> None:
     """
     repo_root = find_repo_root(__file__)
     specs_dir = repo_root / "docs" / "specs" / "applications"
-    dia_dir = repo_root / "Dia"
     out_path = repo_root / "docs" / "reference" / "registry" / "spec-sync-status.md"
 
     if not specs_dir.exists():
@@ -775,9 +800,19 @@ def spec_sync(ctx, verbose: bool) -> None:
         ctx.exit(1)
         return
 
-    click.echo("[dia check] Indexing Dia/ headers...")
-    header_index = _build_header_index(dia_dir)
-    click.echo(f"[dia check] {len(header_index)} distinct PascalCase symbols indexed.")
+    click.echo("[dia check] Indexing headers...")
+    dir_indexes: Dict[str, Set[str]] = {}
+
+    def _index_for(app: str) -> Set[str]:
+        dirs = _APP_SOURCE_DIRS.get(app, ["Dia", "Cluiche"])
+        merged: Set[str] = set()
+        for d in dirs:
+            if d not in dir_indexes:
+                dir_indexes[d] = _build_header_index(repo_root / d) if (repo_root / d).exists() else set()
+            merged |= dir_indexes[d]
+        return merged
+
+    app_indexes: Dict[str, Set[str]] = {}
 
     specs = _collect_specs(specs_dir)
     click.echo(f"[dia check] Scanning {len(specs)} system specs...")
@@ -795,11 +830,16 @@ def spec_sync(ctx, verbose: bool) -> None:
         except OSError:
             continue
 
+        app = _spec_app(spec_path, specs_dir)
+        if app not in app_indexes:
+            app_indexes[app] = _index_for(app)
+        header_index = app_indexes[app]
         status = _spec_status(text)
         symbols = _extract_spec_symbols(text)
 
         if not symbols:
             rows.append({
+                "app": app,
                 "spec": spec_path.stem,
                 "spec_status": status,
                 "sync": "—",
@@ -821,6 +861,7 @@ def spec_sync(ctx, verbose: bool) -> None:
             sync_icon = "⚠️"
 
         rows.append({
+            "app": app,
             "spec": spec_path.stem,
             "spec_status": status,
             "sync": sync_icon,
