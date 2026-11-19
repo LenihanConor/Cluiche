@@ -1337,6 +1337,8 @@
     <ClCompile Include="CluicheGameBaseline\TestStageResultsFile.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageCatalogueModule.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestStageCatalogueQueries.cpp" />
+    <ClCompile Include="CluicheTest\TestResultChangeTrackerTests.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestResultChangeTracker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

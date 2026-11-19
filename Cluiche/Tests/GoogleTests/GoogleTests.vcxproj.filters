@@ -3162,5 +3162,11 @@
     <ClCompile Include="CluicheGameBaseline\TestStageCatalogueQueries.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
+    <ClCompile Include="CluicheTest\TestResultChangeTrackerTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestResultChangeTracker.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -81,6 +81,8 @@
     <ClCompile Include="Modules\TestStages\JobSystemServiceTestStageModule.cpp" />
     <ClCompile Include="Modules\SimEchoTestModule.cpp" />
     <ClCompile Include="Modules\TestStages\DeferredStepClockModule.cpp" />
+    <ClCompile Include="Modules\TestResultChangeTracker.cpp" />
+    <ClCompile Include="Modules\TestResultReporterModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\TestMainStateProducerModule.h" />
@@ -148,6 +150,8 @@
     <ClInclude Include="Modules\TestStages\CellLayersHoverOverride.h" />
     <ClInclude Include="Modules\TestStages\CellLayersSnapshotStore.h" />
     <ClInclude Include="Modules\TestStages\DeferredStepClockModule.h" />
+    <ClInclude Include="Modules\TestResultChangeTracker.h" />
+    <ClInclude Include="Modules\TestResultReporterModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Messages\order_messages.diagamemessages" />
