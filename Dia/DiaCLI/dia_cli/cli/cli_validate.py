@@ -123,8 +123,48 @@ def _validate_stage_tags(data: dict) -> List[str]:
     return errors
 
 
-def _validate_diastage(data: dict) -> List[str]:
-    """Validate a .diastage file."""
+_MAX_STAGE_PROVES = 16
+_PROVES_PREFIX = "docs/specs/"
+_PROVES_SUFFIX = ".md"
+
+
+def _validate_stage_proves(data: dict, repo_root: Path | None = None) -> ValidationResult:
+    """Validate the optional `proves` spec-path list. Returns (errors, warnings).
+
+    Shape problems are errors; a well-formed path whose file is missing is a warning.
+    """
+    errors: List[str] = []
+    warnings: List[str] = []
+    if "proves" not in data:
+        return errors, warnings
+    proves = data["proves"]
+    if not isinstance(proves, list):
+        return [f"proves should be list, got {type(proves).__name__}"], warnings
+    if len(proves) > _MAX_STAGE_PROVES:
+        errors.append(f"proves has {len(proves)} entries, at most {_MAX_STAGE_PROVES} allowed")
+    if repo_root is None:
+        repo_root = find_repo_root(__file__)
+    seen = set()
+    for i, entry in enumerate(proves):
+        if not isinstance(entry, str):
+            errors.append(f"proves[{i}] should be str, got {type(entry).__name__}")
+            continue
+        if entry in seen:
+            errors.append(f"proves[{i}]: duplicate entry '{entry}'")
+        seen.add(entry)
+        if "\\" in entry:
+            errors.append(f"proves[{i}]: '{entry}' must use forward slashes, not backslashes")
+        elif not entry.startswith(_PROVES_PREFIX) or not entry.endswith(_PROVES_SUFFIX):
+            errors.append(
+                f"proves[{i}]: '{entry}' must be a path starting with '{_PROVES_PREFIX}' "
+                f"and ending with '{_PROVES_SUFFIX}'")
+        elif not (repo_root / entry).is_file():
+            warnings.append(f"proves[{i}]: spec file '{entry}' does not exist")
+    return errors, warnings
+
+
+def _validate_diastage_full(data: dict, repo_root: Path | None = None) -> ValidationResult:
+    """Validate a .diastage file. Returns (errors, warnings)."""
     errors = []
     errors += _check_key(data, "name", str)
     errors += _check_key(data, "manifest", str)
@@ -133,7 +173,14 @@ def _validate_diastage(data: dict) -> List[str]:
         errors += _check_key(data["config"], "path_aliases", dict, "config")
         errors += _check_reserved_aliases(data["config"])
     errors += _validate_stage_tags(data)
-    return errors
+    proves_errors, warnings = _validate_stage_proves(data, repo_root)
+    errors += proves_errors
+    return errors, warnings
+
+
+def _validate_diastage(data: dict) -> List[str]:
+    """Validate a .diastage file (errors only)."""
+    return _validate_diastage_full(data)[0]
 
 
 def _check_world_records(cfg: dict, file_path: Path) -> List[str]:
@@ -539,7 +586,7 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
         warnings = []
 
         if suffix == ".diastage":
-            errors = _validate_diastage(data)
+            errors, warnings = _validate_diastage_full(data, repo_root)
         elif suffix == ".diagame":
             errors, warnings = _validate_diagame(data, f)
         elif suffix == ".diaapp":
