@@ -202,6 +202,13 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaDeferredStep | 2026-11-18 | All five features Done 2026-11-18 and system close-out run; engine follow-ups signed off (HealthRegistry cap, MetricRegistry::Unregister, kDiaDeferredStep category, PU profiler/tracer registration, requires_tick_after validator, $perfjobs steps + $perfnames). Remaining accepted gaps: Loose Ends rows 'DiaDeferredStep F4/F5 follow-ups' and the Release GoogleTests row. |
 | Dia | DiaBlackboard Scopes (world-sim foundation 5) | 2026-11-18 | Done 2026-11-18. Slot cap + name, SetParent chain (cycle/depth 8), Lookup/HasInChain/FindOwner, Set<T> + defaulted OnSlotChanged, inspector chain view; 74 *Blackboard* tests + Arena/AIDecision/AIHTN E2E pass. Observation suggestions (not built): log on refused SetParent, chain-depth/slot-pressure metric, health reporter for cap pressure. Full-suite run deferred to stack close-out. |
 | Dia | Stage Catalogue (boot menu as one view) | 2026-11-19 | All 4 features Done 2026-11-19; visual sign-off given |
+| CoW | Retire `JobSystemPlaceholderConsumerModule` | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| CoW | S-1 region zone shortfall decision | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| CoW | S-1 panel: `busy` and unavailable layers | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| CoW | S-1 review leftovers | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| Dia | DiaDeferredStep leftovers | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| Dia | Profile subject-name table cap | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
+| Dia | Describe existing components (DiaValueSchema) | 2026-11-19 | Cleanup bundle 2026-11-19 (cleanup-bundle-2026-11-19.plan.md) |
 
 ---
 

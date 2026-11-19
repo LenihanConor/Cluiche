@@ -10,13 +10,19 @@
       "fields": [
         {
           "default": 0,
+          "description": "Horizontal world-space position.",
           "kind": "primitive",
-          "name": "x"
+          "label": "X",
+          "name": "x",
+          "unit": "world units"
         },
         {
           "default": 0,
+          "description": "Vertical world-space position.",
           "kind": "primitive",
-          "name": "y"
+          "label": "Y",
+          "name": "y",
+          "unit": "world units"
         }
       ],
       "type_id": "cluichetest.transform"
@@ -31,12 +37,17 @@
       "fields": [
         {
           "default": 12,
+          "description": "Radius of the drawn circle.",
           "kind": "primitive",
-          "name": "radius"
+          "label": "Radius",
+          "name": "radius",
+          "unit": "world units"
         },
         {
           "default": 1338243071,
+          "description": "Fill colour as packed RGBA (0xRRGGBBAA).",
           "kind": "primitive",
+          "label": "Colour",
           "name": "colour"
         }
       ],
@@ -52,7 +63,9 @@
       "fields": [
         {
           "default": 0,
+          "description": "Index of this entity in the test stage's object list.",
           "kind": "primitive",
+          "label": "Object index",
           "name": "objectIdx"
         }
       ],
@@ -421,7 +434,7 @@
     },
     {
       "allowed_pus": "render",
-      "description": "Displays a boot menu for selecting which stage to launch, with optional per-stage status badges.",
+      "description": "Boot menu over the stage catalogue: grouped stages, tag chips, search, launch presets and test result badges; falls back to a flat Boot transitions list when no catalogue arrives.",
       "type_id": "BootMenuModule"
     },
     {
@@ -598,6 +611,6 @@
   "processing_units": [],
   "version": {
     "major": 2,
-    "minor": 2
+    "minor": 3
   }
 }
