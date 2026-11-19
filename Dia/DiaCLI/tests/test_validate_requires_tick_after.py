@@ -103,3 +103,46 @@ def test_cli_fails_swapped_copy_of_real_manifest(tmp_path):
         result = CliRunner().invoke(validate_cli, ["manifest", "--path", str(p)])
     assert result.exit_code == 1
     assert "requires_tick_after" in result.output
+
+
+# ── across manifests composed by a .diagame ─────────────────────────────────────────────────────────────────────────
+
+def _write_game(tmp_path, *apps):
+    """apps: one v3 app dict per import, imported in order."""
+    imports = []
+    for i, app in enumerate(apps):
+        name = f"m{i}.diaapp"
+        (tmp_path / name).write_text(json.dumps(app), encoding="utf-8")
+        imports.append({"path": name, "type": "manifest"})
+    return {"name": "g", "version": 3, "config": {"name": "g", "window": {"title": "g"}}, "imports": imports}
+
+
+def _game_errors(game, tmp_path):
+    from dia_cli.cli.cli_validate import _validate_diagame
+    errors, _ = _validate_diagame(game, tmp_path / "g.diagame")
+    return [e for e in errors if "requires_tick_after" in e]
+
+
+def test_diagame_cross_manifest_order_satisfied_passes(tmp_path):
+    game = _write_game(tmp_path,
+                       _app(("Sim", [_mod("A")])),
+                       _app(("Sim", [_mod("B", requires_tick_after=["A"])])))
+    # Each manifest alone would fail (A is not in the second one); the composed order is what counts, so only
+    # assert the composed check itself raises nothing.
+    from dia_cli.cli.cli_validate import _compose_game_manifest, _check_requires_tick_after
+    composed, _ = _compose_game_manifest(game, tmp_path / "g.diagame")
+    assert [e for pu in composed["processing_units"] for e in _check_requires_tick_after(pu)] == []
+
+
+def test_diagame_cross_manifest_order_violated_is_error(tmp_path):
+    game = _write_game(tmp_path,
+                       _app(("Sim", [_mod("B", requires_tick_after=["A"])])),
+                       _app(("Sim", [_mod("A")])))
+    errs = _game_errors(game, tmp_path)
+    assert any("'B'" in e and "'A'" in e and "REQUIRES_TICK_AFTER_ORDER" in e and "composed g.diagame" in e for e in errs)
+
+
+def test_diagame_cross_manifest_missing_reference_is_error(tmp_path):
+    game = _write_game(tmp_path, _app(("Sim", [_mod("B", requires_tick_after=["Nope"])])))
+    errs = _game_errors(game, tmp_path)
+    assert any("'Nope'" in e and "REQUIRES_TICK_AFTER_MISSING" in e for e in errs)

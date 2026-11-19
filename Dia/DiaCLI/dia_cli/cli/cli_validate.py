@@ -349,6 +349,10 @@ def _validate_diagame(data: dict, file_path: Path | None = None) -> Tuple[List[s
         composed, compose_warnings = _compose_game_manifest(data, file_path)
         warnings += compose_warnings
         errors += _validate_service_streams(composed)
+        # Ordering across the imported manifests: the runtime composes PU modules in import order, so a
+        # requires_tick_after that is satisfied inside one .diaapp can still be broken by the composition.
+        for pu in composed.get("processing_units", []):
+            errors += [f"{e} (composed {file_path.name})" for e in _check_requires_tick_after(pu)]
 
     if file_path and isinstance(data.get("config"), dict):
         warnings += _check_world_records(data["config"], file_path)
