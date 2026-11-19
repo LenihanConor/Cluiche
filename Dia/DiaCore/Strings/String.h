@@ -42,6 +42,8 @@ String();
  				String<size>&			AppendAsMuchAsCan		( const char* s );
 	 		
 				String<size>&									operator	=	(const char* pRawString);
+				// Non-formatting assign (the const char* constructor is printf-style; this is not). Truncates to size-1.
+				String<size>&									SetText					(const char* pRawString);
 				template<unsigned int _size> String<size>&		operator	=	(const String<_size>& other);
 
 				String<size>								operator	+	(const char* pRawString)const;

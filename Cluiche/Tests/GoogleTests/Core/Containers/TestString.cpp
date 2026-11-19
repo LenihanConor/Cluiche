@@ -173,6 +173,58 @@ TEST(String, AssignFromCString_UpdatesContent)
 	EXPECT_STREQ(str1.AsCStr(), "World");
 }
 
+TEST(String, AssignFromCString_LongerThanCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str = "0123456789ABCDEF";
+
+	EXPECT_EQ(str.Length(), 7u);
+	EXPECT_STREQ(str.AsCStr(), "0123456");
+}
+
+TEST(String, AssignFromCString_ExactlyCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str = "01234567"; // 8 chars: one too many for size 8
+
+	EXPECT_EQ(str.Length(), 7u);
+	EXPECT_STREQ(str.AsCStr(), "0123456");
+}
+
+TEST(String, SetText_PercentIsLiteral_NotFormatted)
+{
+	String64 str;
+	str.SetText("C:/assets/100%s/%d/%n.png");
+
+	EXPECT_STREQ(str.AsCStr(), "C:/assets/100%s/%d/%n.png");
+}
+
+TEST(String, SetText_OverwritesPreviousContentAndZeroFillsTail)
+{
+	String32 str("Hello World");
+	str.SetText("Hi");
+
+	EXPECT_STREQ(str.AsCStr(), "Hi");
+	EXPECT_EQ(str.Length(), 2u);
+	EXPECT_EQ(str[5], '\0');
+}
+
+TEST(String, SetText_NullSource_GivesEmptyString)
+{
+	String32 str("Hello");
+	str.SetText(nullptr);
+
+	EXPECT_EQ(str.Length(), 0u);
+}
+
+TEST(String, SetText_LongerThanCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str.SetText("0123456789");
+
+	EXPECT_STREQ(str.AsCStr(), "0123456");
+}
+
 TEST(String, ComparisonOperators_CompareCorrectly)
 {
 	String32 str1("Hello");
