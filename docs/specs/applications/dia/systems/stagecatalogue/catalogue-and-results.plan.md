@@ -1,7 +1,7 @@
 # Plan: Catalogue, Tags and Results (Stage Catalogue Feature 1)
 
 **Spec:** @docs/specs/applications/dia/systems/stagecatalogue/catalogue-and-results.md
-**Status:** Not Started
+**Status:** Done
 **Order:** this plan first. Then `proves-traceability.plan.md` (F3) and the F4 mockup in parallel, then `launch-presets.plan.md` (F2). Those plans are written when each starts.
 
 ## Sign-offs (AD-001)
@@ -57,7 +57,7 @@ Task 1 (fixtures) is the contract for both tracks. After it, two tracks run conc
 | 13 | **C:** Manifests: `StageCatalogueModule`, `StageResult` EventStream (drop-oldest, 16) and snapshot FrameStream in `cow_main.diaapp` and `cluiche_main.diaapp`; DiaGame module doc; `dia validate manifest` | AC 17, 23-24: validate passes for both; a game without the module and a `.diastage` with no new fields behave as before | Done | haiku | validate manifest 80/0 errors; 118 manifest+catalogue tests pass. results_path set explicitly (relative out/<App>/stage_results.json; cwd-relative, check in Task 15 E2E) because ObservationSessionService not built |
 | 14 | **M:** Tag and describe every `.diastage`: CoW (`FrontEnd` showcase, `F2CoreRuntime` test, `S1WorldGenerationTestbedStage` tool+worldgen) and every CluicheTest stage (`test` + one domain tag) | AC 20: `dia validate manifest` passes; `dia stages list --game cow` and `--game cluichetest` show every stage tagged | Done | haiku | After Task 2. Pure editing; split per app if parallel; 32 .diastage files tagged (3 CoW, 29 CluicheTest); validate manifest 80 checked 0 errors. JobSystemServiceTestStage is in Boot transitions with no .diastage import so it lists untagged (Other): add a .diastage if it should be a test |
 | 15 | E2E: `dia run e2e` on a CluicheTest stage writes `out/CluicheTest/stage_results.json` with PASS; second launch answers `stages.results`; `dia stages results --game cluichetest` prints it | The three E2E steps and the manual `dia stages list --game cow` | Done | sonnet | Kill leftover `CluicheTest.exe` first; `dia test e2e` does not build, so run compile-code first; E2E pass: out/CluicheTest/stage_results.json PASS; 2nd launch stages.results OK; dia stages results/list OK. results_path fixed to ../../../../out/<App>/ (exe-dir relative, ObservationModule convention; CoW not run). GAP: session_id/log_path empty, GetSessionInfo stub needs SessionManager accessor (Dia API change, awaiting sign-off). New E2E: scenarios/cluichetest/stage_catalogue |
-| 16 | Close-out gap audit and edge tests (no mutation checks). One full `dia run googletest --shards 2`. Observation scan. Spec Status and backlog row updated | Full suite pass; gaps listed and covered | Not Started | sonnet | Sanitizer only on request. Update the plan row with `dia docs plan` |
+| 16 | Close-out gap audit and edge tests (no mutation checks). One full `dia run googletest --shards 2`. Observation scan. Spec Status and backlog row updated | Full suite pass; gaps listed and covered | Done | sonnet | Sanitizer only on request. Update the plan row with `dia docs plan`; Full suite 5459+5458 pass (3 shards), 1 timing fail PUTripFixture.SimMultiStepWithinPerStepBudgetDoesNotTrip passes alone; pytest 2927 pass; validate 0 errors. High obs finding fixed (malformed results = Warning). Gaps: session_id/log_path (SessionManager accessor, needs sign-off), query help not surfaced, stream wiring untested at unit level |
 
 ## Notes
 

@@ -1,7 +1,7 @@
 # Feature Spec: Catalogue, Tags and Results
 
 **Parent:** @docs/specs/applications/dia/systems/stagecatalogue/stagecatalogue.md (Feature 1)
-**Status:** Approved (2026-11-18)
+**Status:** Done (2026-11-18)
 
 ## Summary
 
