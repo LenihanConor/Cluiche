@@ -347,6 +347,8 @@ Unless stated otherwise: Small (66 × 42), default params and the three presets,
 
 *Amended 2026-11-10 (user decision):* if repair (undersize merges) leaves the mainland with fewer than 10 regions, the world is reported terrain-limited (`limitedBy` names the zone that lost regions) instead of failing; the counts then equal what the repaired partition holds.
 
+*Amended 2026-11-19 (user decision):* the total-only rule stands. A zone ending below its per-zone minimum while the mainland total is 10 or more is accepted and does not set `limitedBy`; the sweep test asserts zone upper bounds and counts shortfalls (`zoneBelowMinAfterRepair`, 10 of 60 sweep worlds, all archipelago) without failing.
+
 ### AC5: Sizes
 **Pass:** every main-landmass region has ≥ `kMinRegionCells` cells, and none has more than `kMaxRegionShare · mean + kMaxRegionSlack` cells (tuning-gated).
 

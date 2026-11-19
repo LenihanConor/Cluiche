@@ -620,17 +620,17 @@ namespace
             const int z = ZoneSlot(r.zone);
             if (!r.isIsland && z >= 0 && z < kRegionZoneCount) { ++zoneCount[z]; }
         }
-        // Undersize merges can take a zone below its minimum while the total stays >= 10; the AC4 amendment only reports
-        // terrain-limited below 10 in total, so those worlds are counted (zoneBelowMinAfterRepair), not failed. Open
-        // decision for the user (plan task 12 notes). Without merges the targets guarantee the ranges: asserted.
+        // Decision (user, 2026-11-19): the AC4 amendment stands, total-only. Terrain-limited is reported only when the
+        // mainland total drops below 10; a single zone ending under its minimum (archipelago, e.g. seed 514 slot 2)
+        // while the total stays >= 10 is accepted. Zone upper bounds are asserted; zone shortfalls are counted and
+        // printed (zoneBelowMinAfterRepair), never failed.
         if (limits && w.regions.limitedBy == DepthZone::None)
         {
             bool below = false;
             for (int z = 0; z < kRegionZoneCount; ++z)
             {
-                const bool inRange = zoneCount[z] >= kZoneCountMin[z] && zoneCount[z] <= kZoneCountMax[z];
-                if (b.undersizedMerged == 0) { EXPECT_TRUE(inRange) << "zone slot " << z << " count " << zoneCount[z]; }
-                else { EXPECT_LE(zoneCount[z], kZoneCountMax[z]) << "zone slot " << z; below |= zoneCount[z] < kZoneCountMin[z]; }
+                EXPECT_LE(zoneCount[z], kZoneCountMax[z]) << "zone slot " << z;
+                below |= zoneCount[z] < kZoneCountMin[z];
             }
             st.zoneBelowMinAfterRepair += below ? 1 : 0;
         }
