@@ -274,6 +274,9 @@
     <Filter Include="DiaObservation\Perf">
       <UniqueIdentifier>{bc2dc8a6-dd38-43f9-857b-80841639deec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaBlackboard">
+      <UniqueIdentifier>{465d7a42-e344-4052-aca8-5c63085c2a76}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -3134,6 +3137,12 @@
     </ClCompile>
     <ClCompile Include="DiaObservation\Profile\TestChannelNameAnnounce.cpp">
       <Filter>DiaObservation\Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlackboard\TestBlackboardScopes.cpp">
+      <Filter>DiaBlackboard</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp">
+      <Filter>DiaBlackboard</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

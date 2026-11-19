@@ -1329,6 +1329,8 @@
     <ClCompile Include="DiaDeferredStep\TestDeferredStepModuleSummary.cpp" />
     <ClCompile Include="DiaDeferredStep\TestDeferredStepNameAnnounce.cpp" />
     <ClCompile Include="DiaObservation\Profile\TestChannelNameAnnounce.cpp" />
+    <ClCompile Include="DiaBlackboard\TestBlackboardScopes.cpp" />
+    <ClCompile Include="DiaBlackboard\TestBlackboardNotifications.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
