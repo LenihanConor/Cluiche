@@ -43,6 +43,27 @@ namespace Dia::Pathfinding {
     template<CIndexGraph G, class Passable>
     void MultiSourceSteps(const G& graph, const StepSeed* seeds, uint32_t seedCount, Passable passable,
                           uint32_t maxSteps, uint32_t* outSteps, uint32_t* outSeedId, GridSearchScratch& scratch);
+
+    // BFS flood from `start` over cells where inRegion(cell) holds (bool(uint32_t)). Writes visited cells
+    // to outCells in FIFO order (start first; outCells needs room for the region size, at most
+    // CellCount()) and sets seen[cell] = 1 for each; returns the number written. Returns 0 when start is
+    // out of range, already seen, or fails inRegion. Cells already seen are never re-entered; neighbours
+    // are visited in ForEachNeighbour order. Uses outCells as its own queue (no scratch allocation).
+    // Note: S-1's Flood does not test start itself (its callers do); this helper does.
+    template<CIndexGraph G, class InRegion>
+    uint32_t FloodRegion(const G& graph, uint32_t start, InRegion inRegion, uint8_t* seen,
+                         uint32_t* outCells, GridSearchScratch& scratch);
+
+    // Connected components of the region {cell : inRegion(cell)} following ForEachNeighbour edges from
+    // cells scanned in ascending index (over a directed graph only forward edges are followed). Returns
+    // the component count. outLabel (sized CellCount(), also used as the visited marker) is set to the
+    // component id, or kUnreached outside the region; ids ascend with each component's lowest-index
+    // cell. outSizes may be null; otherwise it is caller-owned, sized >= the component count (at most
+    // CellCount()), and outSizes[label] = cell count. The first call may grow scratch; a warm
+    // second same-size call does not allocate.
+    template<CIndexGraph G, class InRegion>
+    uint32_t ConnectedComponents(const G& graph, InRegion inRegion, uint32_t* outLabel,
+                                 uint32_t* outSizes, GridSearchScratch& scratch);
 }
 
 #include "DiaPathfinding/GridSearch.inl"

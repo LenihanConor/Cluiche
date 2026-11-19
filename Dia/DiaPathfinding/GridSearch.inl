@@ -74,4 +74,57 @@ namespace Dia::Pathfinding {
             ++level;
         }
     }
+
+    template<CIndexGraph G, class InRegion>
+    uint32_t FloodRegion(const G& graph, uint32_t start, InRegion inRegion, uint8_t* seen,
+                         uint32_t* outCells, GridSearchScratch&)
+    {
+        DIA_ASSERT(seen != nullptr && outCells != nullptr, "FloodRegion requires seen and outCells");
+        if (start >= graph.CellCount() || seen[start] || !inRegion(start)) return 0;
+        uint32_t count = 0;
+        outCells[count++] = start;
+        seen[start] = 1;
+        for (uint32_t head = 0; head < count; ++head) {
+            graph.ForEachNeighbour(outCells[head], [&](uint32_t n) {
+                if (!seen[n] && inRegion(n)) {
+                    seen[n] = 1;
+                    outCells[count++] = n;
+                }
+            });
+        }
+        return count;
+    }
+
+    template<CIndexGraph G, class InRegion>
+    uint32_t ConnectedComponents(const G& graph, InRegion inRegion, uint32_t* outLabel,
+                                 uint32_t* outSizes, GridSearchScratch& scratch)
+    {
+        DIA_ASSERT(outLabel != nullptr, "ConnectedComponents requires outLabel");
+        const uint32_t cellCount = graph.CellCount();
+        for (uint32_t i = 0; i < cellCount; ++i) outLabel[i] = kUnreached;
+
+        scratch.Reset();
+        IndexQueue& queue = scratch.Queue();
+        uint32_t components = 0;
+        for (uint32_t i = 0; i < cellCount; ++i) {
+            if (outLabel[i] != kUnreached || !inRegion(i)) continue;
+            const uint32_t id = components++;
+            uint32_t size = 0;
+            outLabel[i] = id;
+            queue.Clear();
+            queue.Push(i);
+            while (!queue.Empty()) {
+                const uint32_t c = queue.Pop();
+                ++size;
+                graph.ForEachNeighbour(c, [&](uint32_t n) {
+                    if (outLabel[n] == kUnreached && inRegion(n)) {
+                        outLabel[n] = id;
+                        queue.Push(n);
+                    }
+                });
+            }
+            if (outSizes) outSizes[id] = size;
+        }
+        return components;
+    }
 }
