@@ -44,6 +44,7 @@ namespace Dia
 			Dia::Core::Containers::String256 scenePath;  // optional; empty if absent
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String64, 16> tags;  // optional; empty if absent
 			Dia::Core::Containers::String128 description;                                       // optional; empty if absent
+			Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String256, 16> proves;  // optional spec paths (tooling metadata, runtime ignores); empty if absent
 		};
 	}
 }

@@ -56,6 +56,25 @@ namespace Dia
 				}
 			}
 
+			outManifest.proves.RemoveAll();
+			if (root.isMember("proves"))
+			{
+				const Json::Value& proves = root["proves"];
+				if (!proves.isArray())
+					return Dia::Serializer::SerializeResult::Failure("field 'proves' must be an array of strings");
+				if (proves.size() > outManifest.proves.Capacity())
+					return Dia::Serializer::SerializeResult::Failure("field 'proves' has too many entries (max 16)");
+				for (Json::ArrayIndex i = 0; i < proves.size(); ++i)
+				{
+					if (!proves[i].isString())
+						return Dia::Serializer::SerializeResult::Failure("field 'proves' must contain only strings");
+					if (strlen(proves[i].asCString()) >= Dia::Core::Containers::String256::Capacity())
+						return Dia::Serializer::SerializeResult::Failure("field 'proves' has an entry that is too long (max 255 chars)");
+					Dia::Core::Containers::String256 path("%s", proves[i].asCString());
+					outManifest.proves.Add(path);
+				}
+			}
+
 			if (root.isMember("description"))
 			{
 				if (!root["description"].isString())
@@ -82,6 +101,13 @@ namespace Dia
 				for (unsigned int i = 0; i < manifest.tags.Size(); ++i)
 					tags.append(manifest.tags[i].AsCStr());
 				root["tags"] = tags;
+			}
+			if (manifest.proves.Size() > 0)
+			{
+				Json::Value proves(Json::arrayValue);
+				for (unsigned int i = 0; i < manifest.proves.Size(); ++i)
+					proves.append(manifest.proves[i].AsCStr());
+				root["proves"] = proves;
 			}
 			if (manifest.description.Length() > 0)
 				root["description"] = manifest.description.AsCStr();

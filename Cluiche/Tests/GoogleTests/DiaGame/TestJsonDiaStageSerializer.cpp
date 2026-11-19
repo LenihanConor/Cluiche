@@ -126,6 +126,88 @@ TEST(JsonDiaStageSerializer, RoundTrip_WithNewFields)
     EXPECT_STREQ(out.description.AsCStr(), "A description");
 }
 
+TEST(JsonDiaStageSerializer, Proves_AbsentIsEmpty)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    m.proves.Add(Dia::Core::Containers::String256("stale"));
+    ASSERT_TRUE(s.Load(MakeStageJson("").c_str(), m).ok);
+    EXPECT_EQ(m.proves.Size(), 0u);
+}
+
+TEST(JsonDiaStageSerializer, Proves_RoundTrip)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    m.name = Dia::Core::Containers::String256("%s", "S");
+    m.manifestPath = Dia::Core::Containers::String256("%s", "s.diastage.json");
+    m.proves.Add(Dia::Core::Containers::String256("%s", "docs/specs/a/b%s.md"));
+    m.proves.Add(Dia::Core::Containers::String256("%s", "docs/specs/c.md"));
+    char buf[1024];
+    ASSERT_TRUE(s.Save(m, buf, sizeof(buf)).ok);
+    EXPECT_NE(std::strstr(buf, "proves"), nullptr);
+
+    DiaStageManifest out;
+    ASSERT_TRUE(s.Load(buf, out).ok);
+    ASSERT_EQ(out.proves.Size(), 2u);
+    EXPECT_STREQ(out.proves[0].AsCStr(), "docs/specs/a/b%s.md");
+    EXPECT_STREQ(out.proves[1].AsCStr(), "docs/specs/c.md");
+}
+
+TEST(JsonDiaStageSerializer, Proves_EmptyOmittedOnSave)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    m.name = Dia::Core::Containers::String256("%s", "S");
+    m.manifestPath = Dia::Core::Containers::String256("%s", "s.diastage.json");
+    char buf[1024];
+    ASSERT_TRUE(s.Save(m, buf, sizeof(buf)).ok);
+    EXPECT_EQ(std::strstr(buf, "proves"), nullptr);
+}
+
+TEST(JsonDiaStageSerializer, Proves_NotArrayFails)
+{
+    ExpectFailNamed(R"("proves":"docs/specs/a.md")", "proves");
+}
+
+TEST(JsonDiaStageSerializer, Proves_ElementNotStringFails)
+{
+    ExpectFailNamed(R"("proves":["docs/specs/a.md",3])", "proves");
+}
+
+TEST(JsonDiaStageSerializer, Proves_TooManyFails)
+{
+    std::string p = "\"proves\":[";
+    for (int i = 0; i < 17; ++i) p += std::string(i ? "," : "") + "\"docs/specs/a.md\"";
+    p += "]";
+    ExpectFailNamed(p, "proves");
+}
+
+TEST(JsonDiaStageSerializer, Proves_SixteenAccepted)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    std::string p = "\"proves\":[";
+    for (int i = 0; i < 16; ++i) p += std::string(i ? "," : "") + "\"docs/specs/a.md\"";
+    p += "]";
+    ASSERT_TRUE(s.Load(MakeStageJson(p).c_str(), m).ok);
+    EXPECT_EQ(m.proves.Size(), 16u);
+}
+
+TEST(JsonDiaStageSerializer, Proves_TooLongFails)
+{
+    ExpectFailNamed("\"proves\":[\"" + std::string(256, 'a') + "\"]", "proves");
+}
+
+TEST(JsonDiaStageSerializer, Proves_MaxLengthAccepted)
+{
+    JsonDiaStageSerializer s;
+    DiaStageManifest m;
+    ASSERT_TRUE(s.Load(MakeStageJson("\"proves\":[\"" + std::string(255, 'a') + "\"]").c_str(), m).ok);
+    ASSERT_EQ(m.proves.Size(), 1u);
+    EXPECT_EQ(m.proves[0].Length(), 255u);
+}
+
 TEST(JsonDiaStageSerializer, RoundTrip_WithoutNewFields)
 {
     JsonDiaStageSerializer s;
