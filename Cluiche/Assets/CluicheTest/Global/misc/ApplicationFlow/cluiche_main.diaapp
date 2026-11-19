@@ -483,6 +483,23 @@
             "overflow": "drop-oldest",
             "from": "RenderPU",
             "to": "SimPU"
+        },
+        {
+            "id": "StageResult",
+            "kind": "EventStream",
+            "payload_type": "StageResultEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
+            "id": "StageCatalogueSnapshot",
+            "kind": "FrameStream",
+            "payload_type": "StageCatalogueSnapshot",
+            "from": "MainPU",
+            "to": "RenderPU",
+            "multi_writer": false
         }
     ],
     "processing_units": [
@@ -793,6 +810,30 @@
                     ]
                 },
                 {
+                    "instance_id": "StageCatalogueModule",
+                    "type_id": "StageCatalogueModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "config": {
+                        "diagame_path": "assets/cluichetest.diagame",
+                        "results_path": "out/CluicheTest/stage_results.json"
+                    },
+                    "channels": [
+                        {
+                            "id": "StageResult",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "StageCatalogueSnapshot",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
                     "instance_id": "MainStateProducerModule",
                     "type_id": "TestMainStateProducerModule",
                     "stages": [
@@ -1006,6 +1047,20 @@
                         "SimQueryHostModule"
                     ],
                     "channels": []
+                },
+                {
+                    "instance_id": "TestResultReporterModule",
+                    "type_id": "TestResultReporterModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "StageResult",
+                            "role": "writes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "Physics2DModule",
