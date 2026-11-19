@@ -1,6 +1,8 @@
 // S-1 Nodes: built-in river nodes. See NodesRiver.h.
 #include <Shared/WorldGeneration/NodesRiver.h>
 
+#include <DiaPathfinding/AdjacencyGraph.h>
+#include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -42,45 +44,48 @@ RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules
 
     // Mouths (ascending cell index) and the upstream adjacency (children of each river cell).
     std::vector<uint32_t> mouths;
-    std::vector<std::vector<uint32_t>> children(static_cast<size_t>(n));
+    std::vector<Dia::Pathfinding::AdjacencyEdge> edges;   // downstream -> child (the upstream relation)
     for (int i = 0; i < n; ++i)
     {
         if (!IsRiverCell(cells[i])) { continue; }
         const uint32_t ds = downstreamOf(static_cast<uint32_t>(i));
         if (ds == kNoCell) { continue; }
         if (IsOpenWater(cells[ds])) { mouths.push_back(static_cast<uint32_t>(i)); }
-        else if (IsRiverCell(cells[ds])) { children[ds].push_back(static_cast<uint32_t>(i)); }
+        else if (IsRiverCell(cells[ds])) { edges.push_back({ ds, static_cast<uint32_t>(i) }); }
     }
     out.trees = static_cast<uint16_t>(mouths.size());
 
     // Longest upstream path per tree: breadth-first from the mouth, deepest cell wins (ties lowest cell index).
     std::vector<Tree> trees(mouths.size());
-    std::vector<int> depth(static_cast<size_t>(n), -1);
+    std::vector<uint32_t> depth(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+    std::vector<uint32_t> treeOf(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
+    {
+        const Dia::Pathfinding::AdjacencyGraph graph = [&] {
+            Dia::Pathfinding::AdjacencyGraph g;
+            g.Build(static_cast<uint32_t>(n), edges.data(), static_cast<uint32_t>(edges.size()));
+            return g;
+        }();
+        std::vector<Dia::Pathfinding::StepSeed> seeds(mouths.size());
+        for (size_t t = 0; t < mouths.size(); ++t) { seeds[t] = { mouths[t], 0u, static_cast<uint32_t>(t) }; }
+        Dia::Pathfinding::GridSearchScratch scratch;
+        Dia::Pathfinding::MultiSourceSteps(graph, seeds.data(), static_cast<uint32_t>(seeds.size()),
+                                           [](uint32_t) { return true; }, static_cast<uint32_t>(n),
+                                           depth.data(), treeOf.data(), scratch);
+    }
+    // Per tree: deepest cell wins, ties lowest cell index (ascending scan keeps the first).
+    std::vector<uint32_t> deepestCell(mouths.size());
+    std::vector<uint32_t> deepestDepthOf(mouths.size(), 0u);
+    for (size_t t = 0; t < mouths.size(); ++t) { deepestCell[t] = mouths[t]; }
+    for (uint32_t c = 0; c < static_cast<uint32_t>(n); ++c)
+    {
+        if (depth[c] == Dia::Pathfinding::kUnreached) { continue; }
+        const uint32_t t = treeOf[c];
+        if (depth[c] > deepestDepthOf[t]) { deepestDepthOf[t] = depth[c]; deepestCell[t] = c; }
+    }
     for (size_t t = 0; t < mouths.size(); ++t)
     {
-        std::vector<uint32_t> frontier{ mouths[t] };
-        depth[mouths[t]] = 0;
-        uint32_t deepest = mouths[t];
-        int deepestDepth = 0;
-        while (!frontier.empty())
-        {
-            std::vector<uint32_t> next;
-            for (uint32_t c : frontier)
-            {
-                for (uint32_t ch : children[c])
-                {
-                    if (depth[ch] >= 0) { continue; }
-                    depth[ch] = depth[c] + 1;
-                    next.push_back(ch);
-                }
-            }
-            if (!next.empty())
-            {
-                deepestDepth = depth[next.front()];
-                deepest = *std::min_element(next.begin(), next.end());
-            }
-            frontier.swap(next);
-        }
+        const uint32_t deepest = deepestCell[t];
+        const int deepestDepth = static_cast<int>(deepestDepthOf[t]);
         Tree& tree = trees[t];
         tree.mouth = mouths[t];
         tree.path.assign(static_cast<size_t>(deepestDepth) + 1, 0);
