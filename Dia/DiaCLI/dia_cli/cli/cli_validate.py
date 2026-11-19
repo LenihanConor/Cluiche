@@ -163,7 +163,109 @@ def _validate_stage_proves(data: dict, repo_root: Path | None = None) -> Validat
     return errors, warnings
 
 
-def _validate_diastage_full(data: dict, repo_root: Path | None = None) -> ValidationResult:
+_MAX_STAGE_PRESETS = 16
+_MAX_PRESET_NAME_LEN = 31
+_MAX_PRESET_BYTES = 2048
+
+
+def _load_stage_app_modules(data: dict, stage_path: Path | None):
+    """Return ({instance_id: [stages]}, error) for the .diaapp a .diastage points at."""
+    manifest = data.get("manifest")
+    if stage_path is None or not isinstance(manifest, str) or not manifest:
+        return None, "cannot resolve the stage's .diaapp (no stage file path or manifest field)"
+    start = stage_path.resolve().parent
+    app = None
+    for base in [start, *start.parents]:
+        if (base / manifest).is_file():
+            app = base / manifest
+            break
+    if app is None:
+        return None, f"cannot resolve the stage's .diaapp '{manifest}'"
+    try:
+        app_data = json.loads(app.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        return None, f"cannot read the stage's .diaapp '{manifest}': {e}"
+    modules = {}
+    for pu in app_data.get("processing_units", []) if isinstance(app_data, dict) else []:
+        for mod in pu.get("modules", []) if isinstance(pu, dict) else []:
+            if isinstance(mod, dict) and isinstance(mod.get("instance_id"), str):
+                stages = mod.get("stages")
+                modules[mod["instance_id"]] = stages if isinstance(stages, list) else []
+    return modules, None
+
+
+def _validate_stage_presets(data: dict, stage_path: Path | None = None) -> List[str]:
+    """Validate the optional `presets` launch-preset list. Returns errors."""
+    errors: List[str] = []
+    if "presets" not in data:
+        return errors
+    presets = data["presets"]
+    if not isinstance(presets, list):
+        return [f"presets should be list, got {type(presets).__name__}"]
+    if len(presets) > _MAX_STAGE_PRESETS:
+        errors.append(f"presets has {len(presets)} entries, at most {_MAX_STAGE_PRESETS} allowed")
+    app_modules = None
+    app_error = None
+    app_loaded = False
+    stage_name = data.get("name")
+    seen = set()
+    for i, preset in enumerate(presets):
+        prefix = f"presets[{i}]"
+        if not isinstance(preset, dict):
+            errors.append(f"{prefix} should be object, got {type(preset).__name__}")
+            continue
+        name = preset.get("name")
+        if not isinstance(name, str):
+            errors.append(f"{prefix}.name is required and should be str")
+        else:
+            if name in seen:
+                errors.append(f"{prefix}: duplicate preset name '{name}'")
+            seen.add(name)
+            if not (1 <= len(name) <= _MAX_PRESET_NAME_LEN) or not _KEBAB_RE.match(name):
+                errors.append(
+                    f"{prefix}: name '{name}' must be 1-{_MAX_PRESET_NAME_LEN} characters of lowercase kebab-case")
+        if "description" in preset:
+            desc = preset["description"]
+            if not isinstance(desc, str):
+                errors.append(f"{prefix}.description should be str, got {type(desc).__name__}")
+            elif len(desc) > _MAX_DESCRIPTION_LEN:
+                errors.append(
+                    f"{prefix}.description is {len(desc)} characters, at most {_MAX_DESCRIPTION_LEN} allowed")
+        try:
+            size = len(json.dumps(preset, separators=(",", ":")).encode("utf-8"))
+        except (TypeError, ValueError):
+            size = 0
+        if size > _MAX_PRESET_BYTES:
+            errors.append(f"{prefix} is {size} bytes of JSON, at most {_MAX_PRESET_BYTES} allowed")
+        modules = preset.get("modules")
+        if not isinstance(modules, dict):
+            errors.append(f"{prefix}.modules is required and should be object")
+            continue
+        for inst, override in modules.items():
+            if not isinstance(override, dict):
+                errors.append(f"{prefix}.modules.{inst} should be object, got {type(override).__name__}")
+        if not modules:
+            continue
+        if not app_loaded:
+            app_modules, app_error = _load_stage_app_modules(data, stage_path)
+            app_loaded = True
+        if app_modules is None:
+            errors.append(f"{prefix}.modules: {app_error}")
+            continue
+        for inst in modules:
+            if inst not in app_modules:
+                errors.append(f"{prefix}.modules: '{inst}' is not a module instance declared in the stage's .diaapp")
+            elif "all" in app_modules[inst]:
+                errors.append(
+                    f"{prefix}.modules: '{inst}' is an all-scoped module; an all-scoped module is not "
+                    "restarted on stage entry so it can't take an override")
+            elif stage_name not in app_modules[inst]:
+                errors.append(f"{prefix}.modules: '{inst}' is not scoped to stage '{stage_name}'")
+    return errors
+
+
+def _validate_diastage_full(data: dict, repo_root: Path | None = None,
+                            stage_path: Path | None = None) -> ValidationResult:
     """Validate a .diastage file. Returns (errors, warnings)."""
     errors = []
     errors += _check_key(data, "name", str)
@@ -175,6 +277,7 @@ def _validate_diastage_full(data: dict, repo_root: Path | None = None) -> Valida
     errors += _validate_stage_tags(data)
     proves_errors, warnings = _validate_stage_proves(data, repo_root)
     errors += proves_errors
+    errors += _validate_stage_presets(data, stage_path)
     return errors, warnings
 
 
@@ -586,7 +689,7 @@ def manifest(ctx: click.Context, target_path: str | None, verbose: bool) -> None
         warnings = []
 
         if suffix == ".diastage":
-            errors, warnings = _validate_diastage_full(data, repo_root)
+            errors, warnings = _validate_diastage_full(data, repo_root, f)
         elif suffix == ".diagame":
             errors, warnings = _validate_diagame(data, f)
         elif suffix == ".diaapp":
