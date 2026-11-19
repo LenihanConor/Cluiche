@@ -83,6 +83,8 @@ def check(root, game=None):
     specs_dir = root / "docs" / "specs"
     if specs_dir.is_dir():
         for md in sorted(specs_dir.rglob("*.md")):
+            if not md.is_file():
+                continue
             text = md.read_text(encoding="utf-8", errors="replace")
             rel = md.relative_to(root).as_posix()
             if (parse_testbed_required(text) and parse_status(text) in TRACKED_STATUSES
