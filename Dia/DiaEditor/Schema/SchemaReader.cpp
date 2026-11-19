@@ -1,9 +1,9 @@
-#include "DiaEntityTemplateEditor/SchemaReader.h"
+#include "DiaEditor/Schema/SchemaReader.h"
 #include <DiaCore/Json/external/json/json.h>
 #include <stdio.h>
 #include <string.h>
 
-namespace Dia { namespace EntityTemplateEditor {
+namespace Dia { namespace Editor {
 
     namespace {
         // Bounded copy of an optional string member; leaves dst empty if absent / not a string.
@@ -184,4 +184,4 @@ namespace Dia { namespace EntityTemplateEditor {
         return mVersion;
     }
 
-}} // namespace Dia::EntityTemplateEditor
+}} // namespace Dia::Editor

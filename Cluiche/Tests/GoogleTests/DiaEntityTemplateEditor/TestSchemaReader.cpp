@@ -2,7 +2,7 @@
 // Unit tests for SchemaReader — loads component schema from .diaschema files.
 
 #include <gtest/gtest.h>
-#include <DiaEntityTemplateEditor/SchemaReader.h>
+#include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <string>
 
-using namespace Dia::EntityTemplateEditor;
+using namespace Dia::Editor;
 using Dia::Core::StringCRC;
 
 // ==============================================================================

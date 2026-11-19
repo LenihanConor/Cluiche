@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
 #include <DiaEntityTemplateEditor/BlueprintPropertyController.h>
-#include <DiaEntityTemplateEditor/SchemaReader.h>
+#include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <stdio.h>
 
 using namespace Dia::EntityTemplateEditor;
+using namespace Dia::Editor;
 using namespace Dia::Core;
 
 // Helper: build a minimal entity_template JSON root.

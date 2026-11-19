@@ -4,14 +4,14 @@
 
 #include <gtest/gtest.h>
 #include <DiaSceneEditor/PropertyInspectorController.h>
-#include <DiaEntityTemplateEditor/SchemaReader.h>
+#include <DiaEditor/Schema/SchemaReader.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <stdio.h>
 #include <string>
 
 using namespace Dia::SceneEditor;
-using namespace Dia::EntityTemplateEditor;
+using namespace Dia::Editor;
 
 namespace
 {

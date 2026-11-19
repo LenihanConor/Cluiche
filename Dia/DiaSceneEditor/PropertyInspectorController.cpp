@@ -1,5 +1,5 @@
 #include "DiaSceneEditor/PropertyInspectorController.h"
-#include "DiaEntityTemplateEditor/SchemaReader.h"
+#include "DiaEditor/Schema/SchemaReader.h"
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -178,7 +178,7 @@ namespace Dia
 				Json::Value fields(Json::arrayValue);
 
 				// Field metadata from registeredtypes.diaschema, if attached and it knows this type
-				const Dia::EntityTemplateEditor::SchemaComponentEntry* schemaEntry = nullptr;
+				const Dia::Editor::SchemaComponentEntry* schemaEntry = nullptr;
 				if (mSchema)
 				{
 					const Dia::Core::StringCRC typeCrc(typeName);
@@ -229,7 +229,7 @@ namespace Dia
 					{
 						for (unsigned int sf = 0; sf < schemaEntry->fields.Size(); ++sf)
 						{
-							const Dia::EntityTemplateEditor::SchemaFieldEntry& e = schemaEntry->fields[sf];
+							const Dia::Editor::SchemaFieldEntry& e = schemaEntry->fields[sf];
 							if (strcmp(e.name, name) != 0) continue;
 							if (e.label[0] != '\0')       fieldJson["label"]       = e.label;
 							if (e.description[0] != '\0') fieldJson["description"] = e.description;

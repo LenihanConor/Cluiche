@@ -4,7 +4,7 @@
 
 namespace Dia
 {
-	namespace EntityTemplateEditor { class SchemaReader; }
+	namespace Editor { class SchemaReader; }
 
 	namespace SceneEditor
 	{
@@ -38,14 +38,14 @@ namespace Dia
 			// Optional non-owning field-metadata source (registeredtypes.diaschema). When set,
 			// field objects gain label/description/unit/hint/min/max/default where the schema
 			// has them; fields without metadata are unchanged. Caller keeps it alive.
-			void SetSchema(const Dia::EntityTemplateEditor::SchemaReader* schema) { mSchema = schema; }
+			void SetSchema(const Dia::Editor::SchemaReader* schema) { mSchema = schema; }
 
 			Json::Value LoadBlueprintComponents(const char* entityTemplateId,
 			                                    const char* entityTemplateBasePath,
 			                                    const char* itemType) const;
 
 		private:
-			const Dia::EntityTemplateEditor::SchemaReader* mSchema = nullptr;
+			const Dia::Editor::SchemaReader* mSchema = nullptr;
 
 			// Extract the string value from either a plain string or {"value":"..."} wrapper.
 			static const char* ExtractStr(const Json::Value& val, char* buf, int bufSize);

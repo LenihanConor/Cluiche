@@ -45,6 +45,7 @@ public_api:
     - DiaEditor/Plugin/GameConnectionEditorPlugin.h
     - DiaEditor/Project/GameScopeDiscovery.h
     - DiaEditor/Plugin/AssetRoutes.h
+    - DiaEditor/Schema/SchemaReader.h
   namespaces:
     - Dia::Editor
   entry_points:

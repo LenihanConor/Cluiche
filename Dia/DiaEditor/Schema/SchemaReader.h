@@ -4,7 +4,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <memory>
 
-namespace Dia { namespace EntityTemplateEditor {
+namespace Dia { namespace Editor {
 
     // Max description length incl. terminator. Mirrors ValueInfo::kMaxDescriptionLength (1023)
     // in DiaValueSchema; copied (not included) to keep this module independent of it.
@@ -81,4 +81,4 @@ namespace Dia { namespace EntityTemplateEditor {
         bool    mLoaded = false;
     };
 
-}} // namespace Dia::EntityTemplateEditor
+}} // namespace Dia::Editor
