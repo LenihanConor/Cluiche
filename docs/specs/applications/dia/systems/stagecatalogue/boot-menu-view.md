@@ -29,6 +29,8 @@
 
 ### Mockup gate
 
+**Gate cleared: the user approved `mockups/boot-menu.html` (2026-11-19, stated again after repeated approvals). Do not ask for approval again; start from AC 2.**
+
 1. Before any code, `docs/specs/applications/dia/systems/stagecatalogue/mockups/boot-menu.html` shows the following, and the user approves it:
    - the four groups, with Tests collapsed and its rollup;
    - a stage listed under two groups;
