@@ -1433,3 +1433,5 @@ def debugger_contract(ctx, verbose: bool) -> None:
     # Exit non-zero for any failure or pending check
     if fail_count > 0 or pending_count > 0:
         ctx.exit(1)
+from dia_cli.commands.check.stage_proves_cmd import stage_proves_cmd
+cli.add_command(stage_proves_cmd)
