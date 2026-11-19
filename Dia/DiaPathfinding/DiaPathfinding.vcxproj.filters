@@ -36,6 +36,7 @@
     <ClInclude Include="Testing\GridSearchTestGrids.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="AdjacencyGraph.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SquarePathGrid.cpp" />

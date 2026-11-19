@@ -94,6 +94,7 @@
     <ClInclude Include="GridSearchScratch.h" />
     <ClInclude Include="HexNeighbours.h" />
     <ClInclude Include="Testing\GridSearchTestGrids.h" />
+    <ClInclude Include="AdjacencyGraph.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SquarePathGrid.cpp" />

@@ -3,6 +3,7 @@
 #include <deque>
 #include <vector>
 
+#include "DiaPathfinding/AdjacencyGraph.h"
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/GridSearchScratch.h"
 #include "DiaPathfinding/HexNeighbours.h"
@@ -307,4 +308,45 @@ TEST(GridSearchSteps, SecondWarmCallAllocatesNothing)
         MultiSourceSteps(g, seeds.data(), 3, AllPassable(), 100, steps.data(), ids.data(), scratch);
         EXPECT_EQ(counter.Count(), 0u);
     }
+}
+
+// Tree: 0 -> {1,2}; 1 -> {3,4}; 2 -> {5}; 5 -> {6}. Depths: 0,1,1,2,2,2,3.
+TEST(GridSearchSteps, AdjacencyTreeExactSteps) {
+    AdjacencyEdge edges[] = {{2, 5}, {0, 2}, {1, 4}, {5, 6}, {0, 1}, {1, 3}};
+    AdjacencyGraph g;
+    g.Build(7, edges, 6);
+    GridSearchScratch scratch;
+    auto r = RunSteps(g, {{0, 0, 0}}, AllPassable(), 100, scratch);
+    EXPECT_EQ(r.steps, (std::vector<uint32_t>{0, 1, 1, 2, 2, 2, 3}));
+}
+
+// Forest: roots 0 and 4. 0 -> {1,2}; 4 -> {5}; 5 -> {6}; cell 3 isolated.
+TEST(GridSearchSteps, AdjacencyForestTwoSeeds) {
+    AdjacencyEdge edges[] = {{0, 1}, {0, 2}, {4, 5}, {5, 6}};
+    AdjacencyGraph g;
+    g.Build(7, edges, 4);
+    auto both = RunSteps(g, {{0, 0, 10}, {4, 0, 20}}, AllPassable(), 100);
+    EXPECT_EQ(both.steps, (std::vector<uint32_t>{0, 1, 1, U, 0, 1, 2}));
+    EXPECT_EQ(both.ids, (std::vector<uint32_t>{10, 10, 10, U, 20, 20, 20}));
+    auto one = RunSteps(g, {{0, 0, 0}}, AllPassable(), 100);
+    EXPECT_EQ(one.steps, (std::vector<uint32_t>{0, 1, 1, U, U, U, U}));
+}
+
+// NodesRiver-style: children graph from parent array, longest depth from root seeds.
+TEST(GridSearchSteps, AdjacencyLongestDepthFromRoots) {
+    const uint32_t N = kNoCell;
+    const std::vector<uint32_t> parent = {N, 0, 1, 2, 0, N, 5};
+    std::vector<AdjacencyEdge> edges;
+    std::vector<StepSeed> seeds;
+    for (uint32_t i = 0; i < parent.size(); ++i) {
+        if (parent[i] == N) { seeds.push_back({i, 0, i}); } else { edges.push_back({parent[i], i}); }
+    }
+    AdjacencyGraph g;
+    g.Build(static_cast<uint32_t>(parent.size()), edges.data(), static_cast<uint32_t>(edges.size()));
+    auto r = RunSteps(g, seeds, AllPassable(), 100);
+    EXPECT_EQ(r.steps, (std::vector<uint32_t>{0, 1, 2, 3, 1, 0, 1}));
+    uint32_t best = 0;
+    for (uint32_t i = 1; i < r.steps.size(); ++i) { if (r.steps[i] > r.steps[best]) { best = i; } }
+    EXPECT_EQ(best, 3u);
+    EXPECT_EQ(r.steps[best], 3u);
 }

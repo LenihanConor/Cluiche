@@ -1,8 +1,10 @@
 // TestGridSearchConcept.cpp - CIndexGraph concept and HexNeighbours adapter.
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <vector>
 
+#include "DiaPathfinding/AdjacencyGraph.h"
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/HexNeighbours.h"
 #include "DiaPathfinding/Testing/GridSearchTestGrids.h"
@@ -86,4 +88,91 @@ TEST(GridSearchConcept, TreeGraphNeighbourOrder) {
     EXPECT_EQ(Collect(g, 0), (V{ 1, 2 }));
     EXPECT_EQ(Collect(g, 1), (V{ 3, 4 }));
     EXPECT_EQ(Collect(g, 4), (V{}));
+}
+
+static_assert(CIndexGraph<AdjacencyGraph>);
+
+TEST(GridSearchConcept, AdjacencyEmptyEdgeList) {
+    AdjacencyGraph g;
+    g.Build(3, nullptr, 0);
+    EXPECT_EQ(g.CellCount(), 3u);
+    for (uint32_t c = 0; c < 3; ++c) {
+        EXPECT_EQ(g.NeighbourCount(c), 0u);
+        EXPECT_TRUE(Collect(g, c).empty());
+    }
+}
+
+TEST(GridSearchConcept, AdjacencyZeroCells) {
+    AdjacencyGraph g;
+    g.Build(0, nullptr, 0);
+    EXPECT_EQ(g.CellCount(), 0u);
+}
+
+TEST(GridSearchConcept, AdjacencyNeighbourOrderIndependentOfInputOrder) {
+    std::vector<AdjacencyEdge> edges = {{0, 3}, {0, 1}, {2, 5}, {2, 4}, {0, 2}, {5, 0}, {4, 4}};
+    AdjacencyGraph ref;
+    ref.Build(6, edges.data(), static_cast<uint32_t>(edges.size()));
+    EXPECT_EQ(Collect(ref, 0), (V{1, 2, 3}));
+    EXPECT_EQ(Collect(ref, 1), (V{}));
+    EXPECT_EQ(Collect(ref, 2), (V{4, 5}));
+    EXPECT_EQ(Collect(ref, 3), (V{}));
+    EXPECT_EQ(Collect(ref, 4), (V{4}));
+    EXPECT_EQ(Collect(ref, 5), (V{0}));
+    EXPECT_EQ(ref.NeighbourCount(0), 3u);
+
+    for (int round = 0; round < 6; ++round) {
+        std::vector<AdjacencyEdge> shuffled = edges;
+        std::rotate(shuffled.begin(), shuffled.begin() + round, shuffled.end());
+        if (round % 2) { std::reverse(shuffled.begin(), shuffled.end()); }
+        AdjacencyGraph g;
+        g.Build(6, shuffled.data(), static_cast<uint32_t>(shuffled.size()));
+        for (uint32_t c = 0; c < 6; ++c) { EXPECT_EQ(Collect(g, c), Collect(ref, c)) << "round " << round << " cell " << c; }
+    }
+}
+
+TEST(GridSearchConcept, AdjacencyIsolatedCellsHaveEmptyRanges) {
+    AdjacencyEdge edges[] = {{1, 3}};
+    AdjacencyGraph g;
+    g.Build(5, edges, 1);
+    EXPECT_TRUE(Collect(g, 0).empty());
+    EXPECT_EQ(Collect(g, 1), (V{3}));
+    EXPECT_TRUE(Collect(g, 2).empty());
+    EXPECT_TRUE(Collect(g, 3).empty());
+    EXPECT_TRUE(Collect(g, 4).empty());
+}
+
+TEST(GridSearchConcept, AdjacencyDuplicateEdgesKept) {
+    AdjacencyEdge edges[] = {{0, 1}, {0, 1}, {0, 2}, {0, 1}};
+    AdjacencyGraph g;
+    g.Build(3, edges, 4);
+    EXPECT_EQ(Collect(g, 0), (V{1, 1, 1, 2}));
+    EXPECT_EQ(g.NeighbourCount(0), 4u);
+}
+
+TEST(GridSearchConcept, AdjacencyRebuildDifferentSize) {
+    AdjacencyGraph g;
+    AdjacencyEdge big[] = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 0}};
+    g.Build(8, big, 8);
+    EXPECT_EQ(g.CellCount(), 8u);
+    EXPECT_EQ(Collect(g, 7), (V{0}));
+    AdjacencyEdge small[] = {{1, 0}, {1, 2}};
+    g.Build(3, small, 2);
+    EXPECT_EQ(g.CellCount(), 3u);
+    EXPECT_EQ(Collect(g, 0), (V{}));
+    EXPECT_EQ(Collect(g, 1), (V{0, 2}));
+    EXPECT_EQ(Collect(g, 2), (V{}));
+    g.Build(10, big, 8);
+    EXPECT_EQ(g.CellCount(), 10u);
+    EXPECT_EQ(Collect(g, 3), (V{4}));
+    EXPECT_EQ(Collect(g, 9), (V{}));
+}
+
+TEST(GridSearchConcept, TreeGraphIsDirectedAscendingChildren) {
+    const uint32_t N = kNoCell;
+    TreeGraph t({N, 0, 0, 1, 1, N, 5});
+    EXPECT_EQ(t.CellCount(), 7u);
+    EXPECT_EQ(Collect(t, 0), (V{1, 2}));
+    EXPECT_EQ(Collect(t, 1), (V{3, 4}));
+    EXPECT_EQ(Collect(t, 5), (V{6}));
+    EXPECT_EQ(Collect(t, 6), (V{}));
 }

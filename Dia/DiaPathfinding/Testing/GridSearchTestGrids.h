@@ -1,6 +1,7 @@
 #pragma once
 // GridSearchTestGrids.h - hand-built graphs with known answers for the grid search tests.
 
+#include "DiaPathfinding/AdjacencyGraph.h"
 #include "DiaPathfinding/GridSearch.h"
 #include "DiaPathfinding/HexTopology.h"
 #include <cstdint>
@@ -29,21 +30,23 @@ namespace Dia::Pathfinding::Testing {
     };
 
     // Directed child graph from a parent-index array (parent[i] == kNoCell for roots):
-    // neighbours of c are its children in ascending index. A thin fixture; later wraps AdjacencyGraph.
+    // neighbours of c are its children in ascending index. A thin fixture over AdjacencyGraph.
     class TreeGraph {
     public:
-        explicit TreeGraph(std::vector<uint32_t> parent) : mParent(std::move(parent)) {}
-
-        uint32_t CellCount() const { return static_cast<uint32_t>(mParent.size()); }
-
-        template<class Fn>
-        void ForEachNeighbour(uint32_t c, Fn&& fn) const {
-            for (uint32_t i = 0; i < CellCount(); ++i) {
-                if (mParent[i] == c) { fn(i); }
+        explicit TreeGraph(const std::vector<uint32_t>& parent) {
+            std::vector<AdjacencyEdge> edges;
+            for (uint32_t i = 0; i < parent.size(); ++i) {
+                if (parent[i] != kNoCell) { edges.push_back({parent[i], i}); }
             }
+            mGraph.Build(static_cast<uint32_t>(parent.size()), edges.data(), static_cast<uint32_t>(edges.size()));
         }
 
+        uint32_t CellCount() const { return mGraph.CellCount(); }
+
+        template<class Fn>
+        void ForEachNeighbour(uint32_t c, Fn&& fn) const { mGraph.ForEachNeighbour(c, static_cast<Fn&&>(fn)); }
+
     private:
-        std::vector<uint32_t> mParent;
+        AdjacencyGraph mGraph;
     };
 }
