@@ -1,7 +1,7 @@
 # Feature Spec: Launch Presets
 
 **Parent:** @docs/specs/applications/dia/systems/stagecatalogue/stagecatalogue.md (Feature 2)
-**Status:** Approved (2026-11-18)
+**Status:** Done (2026-11-19)
 
 ## Summary
 

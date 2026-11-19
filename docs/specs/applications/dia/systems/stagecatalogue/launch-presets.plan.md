@@ -1,7 +1,7 @@
 # Plan: Launch Presets (Stage Catalogue Feature 2)
 
 **Spec:** @docs/specs/applications/dia/systems/stagecatalogue/launch-presets.md
-**Status:** In Progress
+**Status:** Done
 **Prereq:** Feature 1 and Feature 3 are Done. Feature 4 (boot menu view) is not built; Task 10 only adds preset rows to `BootMenuLogic` (unit-tested), the view wiring follows with F4.
 
 ## Sign-offs (AD-001)
@@ -48,7 +48,7 @@
 | 10 | **C:** RED → GREEN: `BootMenuLogic` exposes preset sub-rows under each stage row (description as tooltip; click stage row = no preset, sub-row = preset) | AC 10: logic unit tests | Done | sonnet | RED-GREEN. View wiring belongs to F4; BootMenuLogic Row/PresetInfo/SetStagePresets/RowCount/GetRow; 8 tests pass x2 shards. RED not run separately (compile-only failure certain). View wiring is F4 |
 | 11 | **C:** RED → GREEN: S-1 `WorldGenerationModule::OnStageLaunch` applies `preset`, `seed`, `size` over its manifest config (shallow); `s1world_generation_testbed_stage.diastage` declares at least two presets | AC 14: module test; `dia validate manifest` passes | Done | sonnet | RED-GREEN; OnStageLaunch applies seed/size/preset (shared helpers with OnConfigure); 6 tests pass; diastage declares highlands42 + archipelago7; validate manifest 80/0. E2E in task 12 |
 | 12 | E2E: `dia run cow --stage S1WorldGenerationTestbedStage --preset <p>` reaches the stage; `cow.worldgen` query shows the preset's seed and size; `dia query stages.launch` from Boot does the same | The three E2E steps | Done | sonnet | Kill leftover exes first; `dia test e2e` does not build, so compile-code first; 4 E2E pass (cow/presetlaunch): CLI --stage/--preset applies seed 42 + Small; --stage alone; stages.launch from Boot applies archipelago7; unknown preset refused. Found 2 bugs by E2E and fixed: (1) initial launch raced AutomationModule's hold (now waits for the service, releases the hold); (2) engine: transition requested while a module of the current stage was still kStarting hung the drain forever (TickTransitionDrain now stops it once Active; test StageTransitionDuringStart). AC 13 amended: hold is released, not skipped |
-| 13 | Close-out gap audit and edge tests (no mutation checks). One full `dia run googletest --shards 2`. Observation scan (AC 15 logs present). Spec and plan Done, backlog updated | Full suite pass; gaps listed and covered | Pending | sonnet | Sanitizer only on request |
+| 13 | Close-out gap audit and edge tests (no mutation checks). One full `dia run googletest --shards 2`. Observation scan (AC 15 logs present). Spec and plan Done, backlog updated | Full suite pass; gaps listed and covered | Done | sonnet | Sanitizer only on request; Full googletest --shards 2: 16501 passed, 0 failed. pytest (launch/stage catalogue/validate presets) 81 pass. Observation scan: AC 15 logs present (preset launch requested nav+command, OnStageLaunch delivery, unknown preset Error, initial launch issued/refused, module finished starting during transition); no High findings. Low: no metric for launch counts; initial launch has no health signal. Gap: BootMenu view wiring of preset rows is Feature 4; hold-release path of IssueInitialLaunch covered by E2E only (no AutomationService fake) |
 
 ## Notes
 
