@@ -8,6 +8,7 @@
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaSaveGame/LoadContext.h>
 
+#include <cmath>
 #include <cstring>
 #include <utility>
 
@@ -100,6 +101,8 @@ namespace Dia::Attribute {
             slot.base_value    = def.default_value;
             slot.minimum_value = def.minimum_value;
             slot.maximum_value = def.maximum_value;
+            slot.kind          = def.kind;
+            slot.enumCount     = def.enumIdCount;
 
             mSlots.Add(slot);
             mSlotIndexByName.Add(def.attribute_name, i);
@@ -219,6 +222,10 @@ namespace Dia::Attribute {
         if (hasOverride)
             resolved = overrideValue;
 
+        // Int attributes: round half away from zero (std::round), then clamp.
+        if (slot.kind == AttributeKind::Int)
+            resolved = std::round(resolved);
+
         if (resolved < slot.minimum_value) resolved = slot.minimum_value;
         if (resolved > slot.maximum_value) resolved = slot.maximum_value;
 
@@ -301,6 +308,40 @@ namespace Dia::Attribute {
             DIA_ASSERT(false, "AttributeSet::AddModifier: unknown attribute '%s'", modifier.attribute_name.AsChar());
             DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: unknown attribute '%s' — modifier dropped", modifier.attribute_name.AsChar());
             return ModifierHandle::Invalid();
+        }
+
+        // Kind-aware legality (parameter-files Task 22).
+        {
+            const char* illegal = nullptr;
+            const float v = modifier.value;
+            if (modifier.operation != ModifierOperation::Override)
+            {
+                if (slot->kind == AttributeKind::Bool || slot->kind == AttributeKind::Enum)
+                    illegal = "Add/Multiply is not valid on a bool or enum attribute";
+            }
+            else
+            {
+                switch (slot->kind)
+                {
+                case AttributeKind::Bool:
+                    if (!(v == 0.0f || v == 1.0f)) illegal = "Override value must be exactly 0 or 1 for a bool attribute";
+                    break;
+                case AttributeKind::Enum:
+                    if (!(v >= 0.0f && v < static_cast<float>(slot->enumCount) && v == std::floor(v)))
+                        illegal = "Override value must be an in-range ordinal for an enum attribute";
+                    break;
+                case AttributeKind::Int:
+                    if (!(v == std::floor(v))) illegal = "Override value must be a whole number for an int attribute";
+                    break;
+                default: break;
+                }
+            }
+            if (illegal != nullptr)
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' rejected: %s",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar(), illegal);
+                return ModifierHandle::Invalid();
+            }
         }
 
         if (modifier.operation == ModifierOperation::Override)
@@ -595,6 +636,8 @@ namespace Dia::Attribute {
             slot.base_value    = values[i];
             slot.minimum_value = def.minimum_value;
             slot.maximum_value = def.maximum_value;
+            slot.kind          = def.kind;
+            slot.enumCount     = def.enumIdCount;
             if (oldIndexOfNew[i] >= 0)
                 slot.modifiers = old[static_cast<uint32_t>(oldIndexOfNew[i])].modifiers;   // ownership moves here
             mSlots.Add(slot);

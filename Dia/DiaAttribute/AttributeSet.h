@@ -124,6 +124,10 @@ namespace Dia::Attribute {
         float GetBaseValue(Dia::Core::StringCRC attribute_name) const;
         void  SetBaseValue(Dia::Core::StringCRC attribute_name, float value);
 
+        // Kind-aware legality: Add and Multiply are valid only on Float and Int attributes (an Int
+        // result is rounded half away from zero, then clamped). Override is valid on every kind but its
+        // value must be valid for the kind (Bool exactly 0 or 1; Enum an in-range ordinal; Int a whole
+        // number). An illegal call returns an invalid handle and logs a DIA_LOG_WARNING naming the attribute.
         [[nodiscard]] ModifierHandle AddModifier(const AttributeModifier& modifier);
         void RemoveModifier(ModifierHandle handle);
 
@@ -253,6 +257,8 @@ namespace Dia::Attribute {
             float base_value    = 0.0f;
             float minimum_value = 0.0f;
             float maximum_value = 0.0f;
+            AttributeKind kind  = AttributeKind::Float;
+            uint32_t      enumCount = 0;   // Enum kind only: number of valid ordinals
             Dia::Core::Containers::DynamicArrayC<ModifierEntry, kMaxModifiersPerAttribute> modifiers;
 
             // Per-SLOT reentrancy guard for ResolveValue (see AttributeSet.cpp). Deliberately
