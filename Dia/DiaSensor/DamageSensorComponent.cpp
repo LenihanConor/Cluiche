@@ -28,8 +28,10 @@ static Dia::Entity::FieldDesc s_DamageSensorComponent_fields[] = {
 #endif
 
 static Dia::Core::StringCRC s_DamageSensorComponent_reqs[] = {
-    DIA_REQ_ENTRY(Dia::Sensor::DamageReceivedComponent)
-    DIA_REQ_ENTRY(Dia::Sensor::SensorResultsComponent)
+    // Literal CRCs, not DIA_REQ_ENTRY: kTypeId of the other components lives in another TU, so reading it
+    // here is a static-init-order race (zero CRC in Release link order => REQUIRES never satisfied).
+    Dia::Core::StringCRC("damage-received-component"),
+    Dia::Core::StringCRC("sensor-results-component"),
 };
 
 DIA_COMPONENT_REGISTER(DamageSensorComponent, "damage-sensor-component", false, true,
