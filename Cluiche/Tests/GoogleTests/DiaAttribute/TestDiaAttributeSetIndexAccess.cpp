@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include <DiaAttribute/AttributeSchema.h>
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/IAttributeObserver.h>
 #include <DiaAttribute/AttributeObserverSubject.h>
@@ -22,18 +23,10 @@ namespace
 {
     AttributeSchema MakeSchema()
     {
-        const char* json =
-            "{ \"schema_name\": \"idx\","
-            "  \"attributes\": ["
-            "    { \"attribute_name\": \"zeta\",  \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 10.0 },"
-            "    { \"attribute_name\": \"alpha\", \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 20.0 },"
-            "    { \"attribute_name\": \"mid\",   \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 30.0 },"
-            "    { \"attribute_name\": \"beta\",  \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 40.0 }"
-            "  ] }";
-        Json::Value root;
-        Json::Reader reader;
-        reader.parse(json, root);
-        return AttributeSchema::LoadFromJsonValue(root);
+        const std::string text = Dia::Attribute::Testing::MakeSidecarText({
+            Dia::Attribute::Testing::SidecarFloat("zeta", 0, 100, 10), Dia::Attribute::Testing::SidecarFloat("alpha", 0, 100, 20),
+            Dia::Attribute::Testing::SidecarFloat("mid", 0, 100, 30), Dia::Attribute::Testing::SidecarFloat("beta", 0, 100, 40) }, nullptr, "idx");
+        return Dia::Attribute::Testing::LoadSchemaOrDie(text.c_str());
     }
 
     const char* const kNames[4] = { "zeta", "alpha", "mid", "beta" };

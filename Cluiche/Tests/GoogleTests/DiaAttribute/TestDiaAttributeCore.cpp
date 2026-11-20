@@ -12,6 +12,7 @@
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/AttributeSetComponent.h>
 #include <DiaAttribute/AttributeAccessorBridge.h>
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 
 #include <DiaCondition/ConditionRegistry.h>
 
@@ -27,50 +28,30 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Json/external/json/json.h>
 
-#include <fstream>
+#include <cfloat>
 #include <string.h>
 #include <stdio.h>
 #include <cmath>
 
 using namespace Dia::Attribute;
 using Dia::Core::StringCRC;
+using namespace Dia::Attribute::Testing;
 
 // ===========================================================================
 // Helpers
 // ===========================================================================
 
-static Json::Value ParseJson(const char* str)
-{
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(str, root);
-    return root;
-}
-
 static AttributeSchema MakeDragonSchema()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = DragonSidecarText();
+    return LoadSchemaOrDie(text.c_str());
 }
 
-static AttributeSchema MakeSingleAttributeSchema(float min_val, float max_val, float default_val)
+// Attempts to build a one-attribute ("health") schema; false (with err naming the key) if it is rejected.
+static bool TryMakeSingleAttributeSchema(float min_val, float max_val, float default_val, AttributeSchema& out, SchemaError& err)
 {
-    char buf[512];
-    snprintf(buf, sizeof(buf),
-        "{ \"schema_name\": \"test_schema\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\","
-        "      \"minimum_value\": %.4f,"
-        "      \"maximum_value\": %.4f,"
-        "      \"default_value\": %.4f }"
-        "  ] }",
-        min_val, max_val, default_val);
-    return AttributeSchema::LoadFromJsonValue(ParseJson(buf));
+    const std::string text = MakeSidecarText({ SidecarFloat("health", min_val, max_val, default_val) }, nullptr, "test_schema");
+    return TryLoadSchema(text.c_str(), out, err);
 }
 
 static AttributeModifier MakeModifier(const char* name, const char* attr, ModifierOperation op, float value)
@@ -95,36 +76,16 @@ static AttributeModifier MakeConditionalModifier(const char* name, const char* a
     return mod;
 }
 
-static void BuildTempFilePath(char* pathOut, unsigned int pathOutSize, const char* filename)
-{
-    char tmpDir[256];
-#if defined(_MSC_VER)
-    GetTempPathA(sizeof(tmpDir), tmpDir);
-#else
-    strncpy(tmpDir, "/tmp/", sizeof(tmpDir) - 1);
-    tmpDir[sizeof(tmpDir) - 1] = '\0';
-#endif
-    snprintf(pathOut, pathOutSize, "%s%s", tmpDir, filename);
-}
-
 // ===========================================================================
 // AC-1 / AC-2 — AttributeSchema load + validation
 // ===========================================================================
 
-TEST(DiaAttribute, SchemaLoad_ValidFile_IsValidAndAttributesMatch)
+TEST(DiaAttribute, SchemaLoad_ValidSidecarText_IsValidAndAttributesMatch)
 {
-    char path[512];
-    BuildTempFilePath(path, sizeof(path), "dia_attribute_test_schema.json");
-
-    {
-        std::ofstream file(path);
-        file << "{ \"schema_name\": \"dragon\","
-                "  \"attributes\": ["
-                "    { \"attribute_name\": \"health\", \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 }"
-                "  ] }";
-    }
-
-    AttributeSchema schema = AttributeSchema::LoadFromJson(path);
+    const std::string text = MakeSidecarText({ SidecarFloat("health", 0, 2000, 1000) }, nullptr, "dragon");
+    AttributeSchema schema;
+    SchemaError err;
+    ASSERT_TRUE(TryLoadSchema(text.c_str(), schema, err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
     EXPECT_TRUE(schema.IsValid());
 
     const AttributeDefinition* def = schema.FindAttribute(StringCRC("health"));
@@ -132,11 +93,9 @@ TEST(DiaAttribute, SchemaLoad_ValidFile_IsValidAndAttributesMatch)
     EXPECT_FLOAT_EQ(def->minimum_value, 0.0f);
     EXPECT_FLOAT_EQ(def->maximum_value, 2000.0f);
     EXPECT_FLOAT_EQ(def->default_value, 1000.0f);
-
-    remove(path);
 }
 
-TEST(DiaAttribute, SchemaLoad_ValidJsonValue_IsValidAndAttributesMatch)
+TEST(DiaAttribute, SchemaLoad_DragonSidecar_IsValidAndAttributesMatch)
 {
     AttributeSchema schema = MakeDragonSchema();
     EXPECT_TRUE(schema.IsValid());
@@ -149,22 +108,44 @@ TEST(DiaAttribute, SchemaLoad_ValidJsonValue_IsValidAndAttributesMatch)
     EXPECT_FLOAT_EQ(health->default_value, 1000.0f);
 }
 
-TEST(DiaAttribute, SchemaLoad_MissingFile_IsInvalid)
+TEST(DiaAttribute, SchemaLoad_MalformedSidecarText_IsInvalid)
 {
-    AttributeSchema schema = AttributeSchema::LoadFromJson("Z:\\this\\path\\does\\not\\exist\\schema.json");
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema("{ this is not json", schema, err));
     EXPECT_FALSE(schema.IsValid());
+    EXPECT_EQ(schema.GetAttributeCount(), 0u);
+}
+
+TEST(DiaAttribute, SchemaLoad_ParameterWithoutDefault_IsInvalidNamingKey)
+{
+    const char* text =
+        "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"test.params\",\"entries\":["
+        "{\"key\":\"mystery\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\",\"min\":0.0,\"max\":10.0}"
+        "]}";
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema(text, schema, err));
+    EXPECT_FALSE(schema.IsValid());
+    EXPECT_STREQ(err.key.AsCStr(), "mystery");
 }
 
 TEST(DiaAttribute, SchemaLoad_DefaultAboveMaximum_IsInvalid)
 {
-    AttributeSchema schema = MakeSingleAttributeSchema(0.0f, 100.0f, 500.0f); // default > max
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryMakeSingleAttributeSchema(0.0f, 100.0f, 500.0f, schema, err)); // default > max
     EXPECT_FALSE(schema.IsValid());
+    EXPECT_STREQ(err.key.AsCStr(), "health");
 }
 
 TEST(DiaAttribute, SchemaLoad_DefaultBelowMinimum_IsInvalid)
 {
-    AttributeSchema schema = MakeSingleAttributeSchema(50.0f, 100.0f, 0.0f); // default < min
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryMakeSingleAttributeSchema(50.0f, 100.0f, 0.0f, schema, err)); // default < min
     EXPECT_FALSE(schema.IsValid());
+    EXPECT_STREQ(err.key.AsCStr(), "health");
 }
 
 TEST(DiaAttribute, FindAttribute_UnknownName_ReturnsNull)
@@ -223,8 +204,8 @@ TEST(DiaAttribute, SchemaCopy_SelfAssignment_DoesNotCorruptState)
 
 TEST(DiaAttribute, SchemaCopy_EmptySchema_NoCrash_ZeroCount)
 {
-    AttributeSchema empty = AttributeSchema::LoadFromJsonValue(
-        ParseJson("{ \"schema_name\": \"empty\", \"attributes\": [] }"));
+    const std::string emptyText = MakeSidecarText({}, nullptr, "empty");
+    AttributeSchema empty = LoadSchemaOrDie(emptyText.c_str());
     ASSERT_EQ(empty.GetAttributeCount(), 0u);
 
     AttributeSchema copy(empty);
@@ -258,62 +239,66 @@ TEST(DiaAttribute, SchemaCopy_OriginalDestroyedAfterCopy_CopyDataStillIntact)
 }
 
 // ===========================================================================
-// AttributeSchema::LoadFromJsonValue — null / non-object guard
+// Sidecar text that is not an object (null / array / string) is rejected
 // ===========================================================================
 
-TEST(DiaAttribute, SchemaLoad_NullJsonValue_IsInvalid)
+TEST(DiaAttribute, SchemaLoad_NullSidecarText_IsInvalid)
 {
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(Json::Value());
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema("null", schema, err));
     EXPECT_FALSE(schema.IsValid());
     EXPECT_EQ(schema.GetAttributeCount(), 0u);
 }
 
-TEST(DiaAttribute, SchemaLoad_NonObjectJsonValue_ArrayIsInvalid)
+TEST(DiaAttribute, SchemaLoad_NonObjectSidecarText_ArrayIsInvalid)
 {
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(Json::Value(Json::arrayValue));
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema("[]", schema, err));
     EXPECT_FALSE(schema.IsValid());
 }
 
-TEST(DiaAttribute, SchemaLoad_NonObjectJsonValue_StringIsInvalid)
+TEST(DiaAttribute, SchemaLoad_NonObjectSidecarText_StringIsInvalid)
 {
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(Json::Value("not an object"));
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema("\"not an object\"", schema, err));
     EXPECT_FALSE(schema.IsValid());
 }
 
 // ===========================================================================
-// AttributeSchema field fallbacks — omitted minimum_value/maximum_value/default_value
-// default to 0.0f (ParseAttributes' isMember(...) ? ... : 0.0f fallback).
+// Omitted fields. The old loader defaulted omitted min/max/default to 0.0f; a sidecar
+// requires a default (rejected, naming the key) and treats an omitted bound as unbounded.
 // ===========================================================================
 
-TEST(DiaAttribute, SchemaLoad_OmittedRangeFields_DefaultToZero)
+TEST(DiaAttribute, SchemaLoad_OmittedRangeFields_NoDefaultIsRejected)
 {
-    const char* json =
-        "{ \"schema_name\": \"gapfill\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"mystery\" }"
-        "  ] }";
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
-
-    const AttributeDefinition* def = schema.FindAttribute(StringCRC("mystery"));
-    ASSERT_NE(def, nullptr);
-    EXPECT_FLOAT_EQ(def->minimum_value, 0.0f);
-    EXPECT_FLOAT_EQ(def->maximum_value, 0.0f);
-    EXPECT_FLOAT_EQ(def->default_value, 0.0f);
+    const char* text =
+        "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"test.params\",\"entries\":["
+        "{\"key\":\"mystery\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\"}"
+        "]}";
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema(text, schema, err));
+    EXPECT_EQ(schema.FindAttribute(StringCRC("mystery")), nullptr);
+    EXPECT_STREQ(err.key.AsCStr(), "mystery");
 }
 
-TEST(DiaAttribute, SchemaLoad_OmittedMaximumOnly_DefaultsToZero_OthersRespected)
+TEST(DiaAttribute, SchemaLoad_OmittedMaximumOnly_IsUnbounded_OthersRespected)
 {
-    const char* json =
-        "{ \"schema_name\": \"gapfill2\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"partial\", \"minimum_value\": -10.0, \"default_value\": -5.0 }"
-        "  ] }";
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const char* text =
+        "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"test.params\",\"entries\":["
+        "{\"key\":\"partial\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\",\"min\":-10.0,\"default\":-5.0}"
+        "]}";
+    AttributeSchema schema;
+    SchemaError err;
+    ASSERT_TRUE(TryLoadSchema(text, schema, err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
 
     const AttributeDefinition* def = schema.FindAttribute(StringCRC("partial"));
     ASSERT_NE(def, nullptr);
     EXPECT_FLOAT_EQ(def->minimum_value, -10.0f);
-    EXPECT_FLOAT_EQ(def->maximum_value, 0.0f); // omitted -> fallback
+    EXPECT_FLOAT_EQ(def->maximum_value, FLT_MAX); // omitted -> unbounded
     EXPECT_FLOAT_EQ(def->default_value, -5.0f);
 }
 
@@ -704,12 +689,16 @@ TEST_F(DiaAttributeLoggingTest, SchemaLoad_LogsInfoExactlyOnce)
     EXPECT_EQ(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kInfo), 1u);
 }
 
-TEST_F(DiaAttributeLoggingTest, SchemaLoad_RangeViolation_LogsWarning)
+// FromValueSchema returns the failure through SchemaError (callers log); a rejected schema must not log the success line.
+TEST_F(DiaAttributeLoggingTest, SchemaLoad_RangeViolation_ReportsErrorAndDoesNotLogSuccess)
 {
-    AttributeSchema schema = MakeSingleAttributeSchema(0.0f, 100.0f, 500.0f);
-    (void)schema;
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryMakeSingleAttributeSchema(0.0f, 100.0f, 500.0f, schema, err));
     FlushLogs();
-    EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
+    EXPECT_EQ(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kInfo), 0u);
+    EXPECT_STREQ(err.key.AsCStr(), "health");
+    EXPECT_GT(strlen(err.reason.AsCStr()), 0u);
 }
 
 TEST_F(DiaAttributeLoggingTest, AddModifier_LogsInfoExactlyOnce)
@@ -788,31 +777,23 @@ TEST_F(DiaAttributeLoggingTest, AddModifier_StackFull_RejectsAndLogsWarning)
 }
 
 // ===========================================================================
-// Coverage gap — AttributeSchema::ParseAttributes skips an array entry missing
-// (or with a non-string) 'attribute_name', logs a warning, and still loads the
-// OTHER valid entries in the same array.
+// Coverage gap — FromValueSchema ignores entries that are not kind: parameter
+// and still loads the parameter entries around them.
 // ===========================================================================
 
-TEST_F(DiaAttributeLoggingTest, SchemaLoad_EntryMissingAttributeName_SkippedWithWarning_OthersStillLoad)
+TEST_F(DiaAttributeLoggingTest, SchemaLoad_NonParameterEntries_Ignored_OthersStillLoad)
 {
-    const char* json =
-        "{ \"schema_name\": \"partial_bad\","
-        "  \"attributes\": ["
-        "    { \"minimum_value\": 0.0, \"maximum_value\": 10.0, \"default_value\": 5.0 },"
-        "    { \"attribute_name\": \"health\", \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": 12345, \"minimum_value\": 0.0, \"maximum_value\": 10.0, \"default_value\": 1.0 }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarMetric("some.metric"), SidecarFloat("health", 0, 2000, 1000), SidecarMetric("other.metric") }, nullptr, "partial_bad");
 
     FlushLogs();
     mSink.Clear();
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
 
     FlushLogs();
 
     EXPECT_TRUE(schema.IsValid());
-    EXPECT_EQ(schema.GetAttributeCount(), 1u); // only the "health" entry loaded
-    EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 2u); // one per skipped entry
+    EXPECT_EQ(schema.GetAttributeCount(), 1u); // only the parameter entry loaded
 
     const AttributeDefinition* health = schema.FindAttribute(StringCRC("health"));
     ASSERT_NE(health, nullptr);

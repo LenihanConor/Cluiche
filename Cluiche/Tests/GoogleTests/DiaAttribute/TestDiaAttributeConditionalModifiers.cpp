@@ -9,6 +9,7 @@
 #include <windows.h>
 #endif
 
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 #include <DiaAttribute/AttributeSchema.h>
 #include <DiaAttribute/AttributeSet.h>
 
@@ -27,28 +28,16 @@
 
 using namespace Dia::Attribute;
 using Dia::Core::StringCRC;
+using namespace Dia::Attribute::Testing;
 
 // ===========================================================================
 // Helpers
 // ===========================================================================
 
-static Json::Value ParseJson(const char* str)
-{
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(str, root);
-    return root;
-}
-
 static AttributeSchema MakeDragonSchema()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = DragonSidecarText();
+    return LoadSchemaOrDie(text.c_str());
 }
 
 static AttributeModifier MakeModifier(const char* name, const char* attr, ModifierOperation op, float value)

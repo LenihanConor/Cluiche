@@ -20,55 +20,32 @@ namespace Dia::Attribute::Testing {
     // Feature 7: Band-based initialization test helpers
     // -----------------------------------------------------------------------
 
-    // Create an AttributeSchema with band definitions from JSON string
-    inline AttributeSchema MakeSchemaWithBands(const char* json_string)
-    {
-        // Parse JSON string into Json::Value
-        Json::Value root;
-        Json::CharReaderBuilder builder;
-        std::istringstream stream(json_string);
-        std::string errors;
-        if (!Json::parseFromStream(builder, stream, &root, &errors))
-        {
-            return AttributeSchema{};
-        }
-        return AttributeSchema::LoadFromJsonValue(root);
-    }
+    // Declared later in this header (sidecar fixtures).
+    inline std::string SidecarNum(double v);
+    inline std::string SidecarFloat(const char* key, double mn, double mx, double def, const char* extra = "");
+    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson = nullptr, const char* forName = "test.params");
+    inline AttributeSchema LoadSchemaOrDie(const char* text, const IMapKeySource* mapKeys = nullptr);
 
-    // Create a simple schema with one attribute and predefined bands
+    // Create a simple schema with one attribute and predefined bands (built from a sidecar).
     // Example: MakeTestSchemaWithBands("power", 0.0, 100.0, {{"LOW", 0.0, 30.0}, {"MEDIUM", 30.0, 70.0}, {"HIGH", 70.0, 100.0}})
+    // The default is the midpoint of [min, max].
     inline AttributeSchema MakeTestSchemaWithBands(
         const char* attribute_name,
         float min_value,
         float max_value,
         const std::initializer_list<std::tuple<const char*, float, float>>& bands)
     {
-        // Build JSON string programmatically
-        Json::Value root;
-        root["schema_name"] = "test_schema";
-        root["band_schema_version"] = 1;
-
-        Json::Value attributes(Json::arrayValue);
-        Json::Value attr;
-        attr["attribute_name"] = attribute_name;
-        attr["minimum_value"] = min_value;
-        attr["maximum_value"] = max_value;
-        attr["default_value"] = (min_value + max_value) * 0.5f;
-
-        Json::Value bandsObj;
+        std::string bandsJson;
         for (const auto& [name, bmin, bmax] : bands)
         {
-            Json::Value bandArray(Json::arrayValue);
-            bandArray.append(bmin);
-            bandArray.append(bmax);
-            bandsObj[name] = bandArray;
+            if (!bandsJson.empty()) bandsJson += ",";
+            bandsJson += std::string("\"") + name + "\":[" + SidecarNum(bmin) + "," + SidecarNum(bmax) + "]";
         }
-        attr["bands"] = bandsObj;
-
-        attributes.append(attr);
-        root["attributes"] = attributes;
-
-        return AttributeSchema::LoadFromJsonValue(root);
+        const std::string extra = bandsJson.empty() ? std::string() : (",\"bands\":{" + bandsJson + "}");
+        const std::string text = MakeSidecarText(
+            { SidecarFloat(attribute_name, min_value, max_value, (min_value + max_value) * 0.5f, extra.c_str()) },
+            nullptr, "test.schema");
+        return LoadSchemaOrDie(text.c_str(), nullptr);
     }
 
     // Assert that a band resolves to the expected value (midpoint)
@@ -115,7 +92,7 @@ namespace Dia::Attribute::Testing {
     }
 
     // `extra` is appended verbatim inside the entry object, e.g. ", \"bands\": {...}".
-    inline std::string SidecarFloat(const char* key, double mn, double mx, double def, const char* extra = "")
+    inline std::string SidecarFloat(const char* key, double mn, double mx, double def, const char* extra)
     {
         return std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\",\"min\":"
             + SidecarNum(mn) + ",\"max\":" + SidecarNum(mx) + ",\"default\":" + SidecarNum(def) + extra + "}";
@@ -162,8 +139,8 @@ namespace Dia::Attribute::Testing {
     }
 
     // constraintsJson: verbatim array, e.g. R"([{"a":"x","op":"<=","b":"y"}])"; null for none.
-    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson = nullptr,
-                                       const char* forName = "test.params")
+    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson,
+                                       const char* forName)
     {
         std::string body;
         for (const std::string& e : entries)
@@ -201,7 +178,7 @@ namespace Dia::Attribute::Testing {
     };
 
     // Parses a sidecar and builds the schema; throws (failing the test) with the key and reason on any failure.
-    inline AttributeSchema LoadSchemaOrDie(const char* text, const IMapKeySource* mapKeys = nullptr)
+    inline AttributeSchema LoadSchemaOrDie(const char* text, const IMapKeySource* mapKeys)
     {
         const Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text, "test.schema.json");
         if (!r.mOk)
@@ -217,5 +194,24 @@ namespace Dia::Attribute::Testing {
         return schema;
     }
 
+
+    // Non-throwing variant: returns false (with err naming the key) if the sidecar fails to load or build.
+    inline bool TryLoadSchema(const char* text, AttributeSchema& out, SchemaError& err, const IMapKeySource* mapKeys = nullptr)
+    {
+        const Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text, "test.schema.json");
+        if (!r.mOk)
+        {
+            Dia::ValueSchema::SetText(err.key, r.mFailure.mEntry.AsCStr());
+            Dia::ValueSchema::SetText(err.reason, r.mFailure.mReason.AsCStr());
+            return false;
+        }
+        return AttributeSchema::FromValueSchema(r, mapKeys, out, err);
+    }
+
+    // The dragon schema shared by most DiaAttribute tests: health [0,2000]=1000 and strength [0,200]=50.
+    inline std::string DragonSidecarText()
+    {
+        return MakeSidecarText({ SidecarFloat("health", 0, 2000, 1000), SidecarFloat("strength", 0, 200, 50) }, nullptr, "dragon");
+    }
 
 } // namespace Dia::Attribute::Testing
