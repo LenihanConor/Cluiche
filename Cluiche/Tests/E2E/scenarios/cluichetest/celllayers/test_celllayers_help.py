@@ -34,7 +34,8 @@ def test_celllayers_command_help(dia_client):
 
         # DiaAPI commands are present alongside the sim-hosted ones.
         sources = {d["source"] for d in details}
-        assert sources == {"api", "sim"}, sources
+        # "main" are commands hosted on the main thread (added after this test was written).
+        assert {"api", "sim"} <= sources <= {"api", "main", "sim"}, sources
 
         # Viewer names are sim-hosted, never DiaAPI-sourced (AC 9 over the wire).
         sim_names = {d["name"] for d in details if d["source"] == "sim"}
