@@ -214,7 +214,7 @@ public:
 17. Save and load of a `ParameterFile`'s `AttributeSet` restore the base values, the modifiers and the same `Hash()`.
 
 ### Proof migration (S-1)
-18. **Sidecar replaces the table.** `TERRAIN_RULES_TABLE`'s values, ranges and kinds move into `Global/WorldGen/terrain_rules.schema.json`, and `terrain_rules.json` is deleted. `TerrainRules` becomes a struct filled by `ParamBinding<TerrainRules>::Snapshot`. `WorldGenerationModule` loads the sidecar through its catalogue alias (this replaces the earlier "wire `terrain_rules.json` now" loose end).
+18. **Sidecar replaces the table.** `TERRAIN_RULES_TABLE`'s values, ranges and kinds move into `Global/WorldGen/Rules/terrain_rules.schema.json`, and `terrain_rules.json` is deleted. `TerrainRules` becomes a struct filled by `ParamBinding<TerrainRules>::Snapshot`. `WorldGenerationModule` loads the sidecar through its catalogue alias (this replaces the earlier "wire `terrain_rules.json` now" loose end).
 19. **No behaviour change.** S-1 layer goldens are bit-identical and every S-1 test passes. A broken sidecar edit puts `WorldGenerationModule` in health Error, naming the key, and generation refuses to run.
 
 ### Plan-gap additions (added 2026-11-18, plan-gap resolution)
@@ -248,7 +248,7 @@ public:
 | `Cluiche/CoW/Modules/F2DragonStub.cpp` + its schema asset | Move to a sidecar |
 | `Cluiche/CoW/Shared/WorldGeneration/TerrainRules.h/.cpp` | Bound struct; X-macro removed |
 | `WorldGenerationModule.cpp`, `WorldGenSession.cpp` | Load the sidecar |
-| `Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.schema.json` | **New** |
+| `Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json` | **New** |
 | `Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.json` | Deleted |
 | `assets.catalogue.json` | Alias update |
 | `docs/specs/applications/cow/systems/t2-worlddataeditor/table-and-form-editors.md` | Amendment |

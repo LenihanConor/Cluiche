@@ -209,7 +209,7 @@ These settle open points raised while amending. Each item supersedes contradicti
    - **Staleness:** `EvaluateStale` compares the pack's `basedOn` with the sidecar's `SchemaHash()` (Parameter Files resolution), not a defaults-file version. Load-and-warn is unchanged.
 2. **Participants for parameter kinds** apply through `ParameterFile::Reload(sidecar, packs in order)`. `Defaults()`/`DefaultsSpec()` come from the sidecar.
 3. **Bundles** gain a `hydro` pack part, like weather and ecology.
-4. **Correction:** `terrain_rules.json` is **not** a kept defaults file. DiaAttribute Parameter Files AC 18 replaces it with `Global/WorldGen/terrain_rules.schema.json`, so S-1 follows the same no-base-file rule.
+4. **Correction:** `terrain_rules.json` is **not** a kept defaults file. DiaAttribute Parameter Files AC 18 replaces it with `Global/WorldGen/Rules/terrain_rules.schema.json`, so S-1 follows the same no-base-file rule.
 5. **Saves and start states** that hold biomes use registry ids (a biome palette).
 
 ## Status
