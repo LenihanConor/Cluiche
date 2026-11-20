@@ -265,3 +265,18 @@ def test_default_mismatch_only_for_field_entries():
     idx = build_schema_index([_sch(_e("p", default=1), _e("f", kind="field", default=1))])
     out = validate_data_document({"format": "f.x", "version": 1, "p": 2, "f": 2}, "d.json", idx, is_pack=False)
     assert [(f.rule, f.key) for f in out] == [("data.default-mismatch", "f")]
+
+
+def test_parameter_file_to_json_diff_fixture_is_a_clean_pack():
+    # Output of the C++ ParameterFile::ToJson(Diff) (compared in TestDiaAttributeParameterFile.cpp): the CLI must accept it.
+    case = json.loads((DATA_DIR / "parameter-file-to-json-diff.case.json").read_text(encoding="utf-8"))
+    packs = [fl for fl in case["files"] if fl["pack"]]
+    assert len(packs) == 1
+    content = packs[0]["content"]
+    assert content["format"] == case["schemas"][0]["for"]
+    assert content["version"] == 1
+    assert isinstance(content["basedOn"], str) and len(content["basedOn"]) == 16
+    index = build_schema_index(case["schemas"])
+    ctx = DataContext.from_files([(fl["name"], fl["content"], fl["pack"]) for fl in case["files"]])
+    findings = validate_data_document(content, packs[0]["name"], index, is_pack=True, context=ctx)
+    assert [(f.severity, f.rule, f.key) for f in findings] == []

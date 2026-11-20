@@ -29,5 +29,6 @@ Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`,
 
 - Schema-level default checks (`data.unresolved-map-key` for object map defaults, `data.constraint-violated` on defaults) go in `schemaExpected`; a violated constraint on a pack is reported on the pack file.
 - The `cow.biomes` file (ids TemperateForest, Desert, Tundra) in the map cases is the shared keyRef key data file; the C++ conformance tests reuse it.
+- A pack may carry a top-level `basedOn` (hex schema hash, written by `ParameterFile::ToJson(Diff)`); it is envelope, not a parameter, so it needs no entry (`parameter-file-to-json-diff.case.json` is the committed `ToJson(Diff)` output).
 - A new data rule must add a fixture here.
 - These are data files: they are not listed in any vcxproj.

@@ -77,6 +77,20 @@ namespace Dia::Attribute
         bool Reload(const char* sidecarText, const Json::Value* const* packs, uint32_t packCount,
                     ParamWarnings& warn, ParamError& err);
 
+        // Full: envelope (format, version, basedOn) plus every parameter: floats and ints as numbers, bools as
+        // true/false, enum ids as strings, a map as a nested object keyed by map key. Diff: the envelope plus only
+        // the values whose bits differ from their sidecar default (empty diff = envelope only), so it is a pack.
+        // Floats are written as the shortest decimal that reads back as the same float, so ApplyPack(ToJson(Diff))
+        // over a fresh Load reproduces every base value bit for bit. A Json::Value object does not keep member
+        // order (jsoncpp sorts keys): schema order is not observable in the result. Unloaded: an empty object.
+        // Caveat: jsoncpp's text writer prints -0.0 as "-0", which its reader parses back as +0, so a -0.0 base
+        // value survives the in-memory Json::Value but not a text round trip.
+        Json::Value ToJson(JsonShape shape) const;
+
+        // FNV-1a 64 over the base values in schema order: each value's IEEE-754 float32 bit pattern as 4
+        // little-endian bytes, -0.0 normalised to +0.0. Modifiers are excluded. Not loaded: the empty-input hash.
+        uint64_t Hash() const;
+
         bool IsLoaded() const { return mLoaded; }
 
         // Hash of the schema meaning (not the values); see ParameterFile.cpp for the exact byte layout.

@@ -236,8 +236,9 @@ class _Walker:
 
     def walk(self, node: dict, key_prefix: str, path_prefix: str, record: Optional[str]) -> None:
         for name, val in node.items():
-            if not key_prefix and not path_prefix and name in ENVELOPE_KEYS:
-                continue
+            if not key_prefix and not path_prefix and (
+                    name in ENVELOPE_KEYS or (name == "basedOn" and self.is_pack and name not in self.entries)):
+                continue   # a pack's `basedOn` (schema hash it was written against) is envelope, not a parameter
             key = f"{key_prefix}{name}"
             path = f"{path_prefix}{name}"
             entry = self.entries.get(key)

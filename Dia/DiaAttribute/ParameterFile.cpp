@@ -107,6 +107,14 @@ namespace Dia::Attribute
                 memcpy(&bits, &d, sizeof(bits));
                 for (int i = 0; i < 8; ++i) Byte(static_cast<uint8_t>(bits >> (8 * i)));
             }
+            // Base-value hashing: the float32 bit pattern as 4 little-endian bytes, -0.0 normalised to +0.0.
+            void F32(float f)
+            {
+                if (f == 0.0f) f = 0.0f;   // -0.0 -> +0.0
+                uint32_t bits;
+                memcpy(&bits, &f, sizeof(bits));
+                U32(bits);
+            }
             void Str(const char* s)
             {
                 const uint32_t n = static_cast<uint32_t>(strlen(s));
@@ -167,6 +175,23 @@ namespace Dia::Attribute
             }
             return h.Value();
         }
+
+        // The double that prints as the shortest decimal reading back as exactly `f` (via the same
+        // float -> double -> float path ApplyPack uses), so pack text stays short ("0.1", not "0.10000000149011612").
+        double FloatToPackDouble(float f)
+        {
+            char buf[40];
+            for (int digits = 1; digits <= 9; ++digits)
+            {
+                snprintf(buf, sizeof(buf), "%.*g", digits, static_cast<double>(f));
+                const double d = strtod(buf, nullptr);
+                const float back = static_cast<float>(d);
+                if (memcmp(&back, &f, sizeof(float)) == 0) return d;
+            }
+            return static_cast<double>(f);   // exact; 9 digits always suffice, so this is not reached for finite values
+        }
+
+        bool SameBits(float a, float b) { return memcmp(&a, &b, sizeof(float)) == 0; }
 
         // basedOn is a hex string; anything else (missing, non-string, unparsable) is stale.
         bool BasedOnMatches(const Json::Value& pack, uint64_t hash)
@@ -530,5 +555,63 @@ namespace Dia::Attribute
         }
         warn.dropped += local.dropped;
         return true;
+    }
+
+    // -----------------------------------------------------------------------
+    // ToJson / Hash
+    // -----------------------------------------------------------------------
+    Json::Value ParameterFile::ToJson(JsonShape shape) const
+    {
+        Json::Value out(Json::objectValue);
+        if (!mLoaded) return out;
+
+        char hex[32];
+        snprintf(hex, sizeof(hex), "%016llx", static_cast<unsigned long long>(mSchemaHash));
+        out["format"] = mFor.AsCStr();
+        out["version"] = 1;
+        out["basedOn"] = hex;
+
+        const unsigned int count = mSchema.GetAttributeCount();
+        for (unsigned int i = 0; i < count; ++i)
+        {
+            const AttributeDefinition& def = mSchema.GetAttributeByIndex(i);
+            const float v = mValues.GetBaseValueByIndex(i);
+            if (shape == JsonShape::Diff && SameBits(v, def.default_value)) continue;
+
+            Json::Value jv;
+            switch (def.kind)
+            {
+            case AttributeKind::Int:  jv = static_cast<int>(std::lround(v)); break;
+            case AttributeKind::Bool: jv = (v != 0.0f); break;
+            case AttributeKind::Enum:
+            {
+                const int ord = static_cast<int>(std::lround(v));
+                jv = (ord >= 0 && static_cast<unsigned int>(ord) < def.enumIdCount)
+                    ? mSchema.GetEnumId(i, static_cast<unsigned int>(ord)).AsCStr() : "";
+                break;
+            }
+            default: jv = FloatToPackDouble(v); break;
+            }
+
+            // A map column nests under its map key; everything else is a flat key.
+            const MapInfo* map = nullptr;
+            for (unsigned int m = 0; m < mMaps.Size(); ++m)
+            {
+                if (i >= mMaps[m].firstIndex && i < mMaps[m].firstIndex + mMaps[m].count) { map = &mMaps[m]; break; }
+            }
+            if (map != nullptr)
+                out[map->key.AsCStr()][def.fullKey.AsCStr() + strlen(map->key.AsCStr()) + 1] = jv;
+            else
+                out[def.fullKey.AsCStr()] = jv;
+        }
+        return out;
+    }
+
+    uint64_t ParameterFile::Hash() const
+    {
+        Fnv64 h;
+        const unsigned int count = mLoaded ? mSchema.GetAttributeCount() : 0;
+        for (unsigned int i = 0; i < count; ++i) h.F32(mValues.GetBaseValueByIndex(i));
+        return h.Value();
     }
 }

@@ -8,7 +8,11 @@
 #include <windows.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -17,6 +21,8 @@
 
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaAttribute/Testing/AttributeTestHelpers.h>
+#include <DiaSaveGame/SaveContext.h>
+#include <DiaSaveGame/LoadContext.h>
 
 using namespace Dia::Attribute;
 using namespace Dia::Attribute::Testing;
@@ -978,4 +984,384 @@ TEST(DiaAttributeParameterFileReloadNotLoaded, BehavesLikeLoadPlusPacks)
     ParameterFile bad;
     EXPECT_FALSE(bad.Reload("{ nope", nullptr, 0, w, e));
     EXPECT_FALSE(bad.IsLoaded());
+}
+
+
+// ===========================================================================
+// ToJson (AC 12)
+// ===========================================================================
+namespace
+{
+    namespace fs = std::filesystem;
+
+    std::string ToText(const Json::Value& v) { Json::FastWriter w; return w.write(v); }
+
+    bool HasExactly(const Json::Value& v, std::vector<std::string> names)
+    {
+        std::vector<std::string> got = v.getMemberNames();
+        std::sort(got.begin(), got.end());
+        std::sort(names.begin(), names.end());
+        return got == names;
+    }
+
+    bool SetOk(ParameterFile& pf, const char* key, const Json::Value& v)
+    {
+        ParamError e;
+        return pf.Set(StringCRC(key), v, e);
+    }
+
+    // Loads `text` into `fresh`, applies `pack`; returns whether the pack applied.
+    bool ApplyToFresh(ParameterFile& fresh, const std::string& text, const Json::Value& pack, ParamWarnings* warnOut = nullptr)
+    {
+        if (!LoadFile(fresh, text)) return false;
+        ParamWarnings w; ParamError e;
+        const bool ok = fresh.ApplyPack(pack, w, e);
+        if (warnOut != nullptr) *warnOut = w;
+        return ok;
+    }
+
+    fs::path FindConformanceDataDir()
+    {
+        std::error_code ec;
+        fs::path dir = fs::absolute(fs::path(__FILE__), ec).parent_path();
+        while (!dir.empty())
+        {
+            const fs::path candidate = dir / "Dia" / "DiaValueSchema" / "Testing" / "Conformance" / "data";
+            if (fs::exists(candidate, ec)) return candidate;
+            const fs::path parent = dir.parent_path();
+            if (parent == dir) break;
+            dir = parent;
+        }
+        return fs::path();
+    }
+
+    std::string ZeroText()
+    {
+        return MakeSidecarText({ SidecarFloat("z", -1, 1, 0.5), SidecarFloat("y", -1, 1, 0) }, nullptr, "test.params");
+    }
+
+    std::string SmallText()
+    {
+        return MakeSidecarText({ SidecarFloat("x", 0, 10, 5), SidecarInt("y", 0, 10, 3) }, nullptr, "test.params");
+    }
+}
+
+TEST(DiaAttributeParameterFileToJson, FullListsEveryParameterWithKinds)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    const Json::Value j = pf.ToJson(JsonShape::Full);
+    ASSERT_TRUE(j.isObject());
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn", "a.speed", "a.count", "a.flag", "a.mode", "lo", "hi", "m.temp" }));
+    EXPECT_EQ(j["format"].asString(), "test.params");
+    EXPECT_EQ(j["version"].asInt(), 1);
+    EXPECT_EQ(j["basedOn"].asString(), HexOf(pf.SchemaHash()));
+    EXPECT_TRUE(j["a.speed"].isDouble());
+    EXPECT_DOUBLE_EQ(j["a.speed"].asDouble(), 5.0);
+    EXPECT_TRUE(j["a.count"].isIntegral());
+    EXPECT_EQ(j["a.count"].asInt(), 3);
+    ASSERT_TRUE(j["a.flag"].isBool());
+    EXPECT_FALSE(j["a.flag"].asBool());
+    ASSERT_TRUE(j["a.mode"].isString());
+    EXPECT_EQ(j["a.mode"].asString(), "Slow");
+    ASSERT_TRUE(j["m.temp"].isObject());
+    EXPECT_TRUE(HasExactly(j["m.temp"], { "TemperateForest", "Desert", "Tundra" }));
+    EXPECT_NEAR(j["m.temp"]["Desert"].asDouble(), 0.8, 1e-6);
+}
+
+TEST(DiaAttributeParameterFileToJson, FullReflectsCurrentValuesAsEnumIdsAndBools)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.mode", Json::Value("Turbo")));
+    ASSERT_TRUE(SetOk(pf, "a.flag", Json::Value(true)));
+    ASSERT_TRUE(SetOk(pf, "m.temp.Tundra", Json::Value(0.25)));
+    const Json::Value j = pf.ToJson(JsonShape::Full);
+    EXPECT_EQ(j["a.mode"].asString(), "Turbo");
+    EXPECT_TRUE(j["a.flag"].isBool());
+    EXPECT_TRUE(j["a.flag"].asBool());
+    EXPECT_DOUBLE_EQ(j["m.temp"]["Tundra"].asDouble(), 0.25);
+}
+
+TEST(DiaAttributeParameterFileToJson, FullThenApplyPackOnFreshLoadIsIdentity)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(7.3)));
+    ASSERT_TRUE(SetOk(pf, "a.count", Json::Value(9)));
+    ASSERT_TRUE(SetOk(pf, "a.mode", Json::Value("Fast")));
+    ASSERT_TRUE(SetOk(pf, "m.temp.Desert", Json::Value(0.123456789)));
+    ParameterFile fresh; ParamWarnings w;
+    ASSERT_TRUE(ApplyToFresh(fresh, FixtureText(), pf.ToJson(JsonShape::Full), &w));
+    EXPECT_EQ(w.items.Size(), 0u);
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffOfDefaultsIsEnvelopeOnlyAndValid)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    const Json::Value j = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn" }));
+    EXPECT_EQ(j["basedOn"].asString(), HexOf(pf.SchemaHash()));
+    ParameterFile fresh; ParamWarnings w;
+    ASSERT_TRUE(ApplyToFresh(fresh, FixtureText(), j, &w));
+    EXPECT_EQ(w.items.Size(), 0u);   // basedOn matches: same hex format ApplyPack parses
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffAfterTwoSetsHoldsExactlyThoseTwoPlusEnvelope)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(7.0)));
+    ASSERT_TRUE(SetOk(pf, "a.count", Json::Value(4)));
+    const Json::Value j = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn", "a.speed", "a.count" }));
+    EXPECT_DOUBLE_EQ(j["a.speed"].asDouble(), 7.0);
+    EXPECT_EQ(j["a.count"].asInt(), 4);
+}
+
+TEST(DiaAttributeParameterFileToJson, SetBackToDefaultLeavesDiff)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(7.0)));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(5.0)));
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffNestsOnlyChangedMapColumns)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "m.temp.Desert", Json::Value(0.3)));
+    const Json::Value j = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn", "m.temp" }));
+    ASSERT_TRUE(j["m.temp"].isObject());
+    EXPECT_TRUE(HasExactly(j["m.temp"], { "Desert" }));
+    EXPECT_NEAR(j["m.temp"]["Desert"].asDouble(), 0.3, 1e-7);
+    ParameterFile fresh;
+    ASSERT_TRUE(ApplyToFresh(fresh, FixtureText(), j));
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffWritesEnumIdAndBool)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.mode", Json::Value("Turbo")));
+    ASSERT_TRUE(SetOk(pf, "a.flag", Json::Value(true)));
+    const Json::Value j = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn", "a.mode", "a.flag" }));
+    ASSERT_TRUE(j["a.mode"].isString());
+    EXPECT_EQ(j["a.mode"].asString(), "Turbo");
+    ASSERT_TRUE(j["a.flag"].isBool());
+    EXPECT_TRUE(j["a.flag"].asBool());
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffRoundTripsFloatsBitForBitThroughText)
+{
+    const float values[] = { 0.1f, 1.00000012f, 3.14159274f, 1e-7f, 9.99999905f, 0.333333343f, 7.0f, 1.23456789f };
+    for (const float v : values)
+    {
+        SCOPED_TRACE(v);
+        ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+        ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(static_cast<double>(v))));
+        ASSERT_EQ(Base(pf, "a.speed"), v);
+        const std::string text = ToText(pf.ToJson(JsonShape::Diff));
+        Json::Value reparsed; Json::Reader reader;
+        ASSERT_TRUE(reader.parse(text, reparsed)) << text;
+        ParameterFile fresh;
+        ASSERT_TRUE(ApplyToFresh(fresh, FixtureText(), reparsed));
+        EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh))) << text;
+    }
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffUsesShortestDecimalForFloats)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(0.1)));   // stored as float 0.1f
+    // The double is the one nearest the shortest decimal "0.1", not the float widened (0.10000000149011612).
+    EXPECT_EQ(pf.ToJson(JsonShape::Diff)["a.speed"].asDouble(), 0.1);
+}
+
+TEST(DiaAttributeParameterFileToJson, NegativeZeroSurvivesInMemoryRoundTrip)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ZeroText()));
+    const float vals[2] = { -0.0f, -0.0f };
+    ASSERT_TRUE(pf.Values().ReplaceBaseValues(vals, 2));
+    ASSERT_TRUE(std::signbit(pf.Values().GetBaseValueByIndex(1)));
+    const Json::Value j = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(j, { "format", "version", "basedOn", "z", "y" }));   // -0.0 differs bitwise from the +0.0 default
+    ParameterFile fresh;
+    ASSERT_TRUE(ApplyToFresh(fresh, ZeroText(), j));
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+TEST(DiaAttributeParameterFileToJson, EmptySidecarGivesEnvelopeOnly)
+{
+    const std::string text = MakeSidecarText({}, nullptr, "test.params");
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, text));
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Full), { "format", "version", "basedOn" }));
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));
+    ParameterFile fresh; ParamWarnings w;
+    ASSERT_TRUE(ApplyToFresh(fresh, text, pf.ToJson(JsonShape::Diff), &w));
+    EXPECT_EQ(w.items.Size(), 0u);
+}
+
+TEST(DiaAttributeParameterFileToJson, NotLoadedGivesEmptyObject)
+{
+    ParameterFile pf;
+    EXPECT_TRUE(pf.ToJson(JsonShape::Full).isObject());
+    EXPECT_EQ(pf.ToJson(JsonShape::Full).size(), 0u);
+    EXPECT_EQ(pf.ToJson(JsonShape::Diff).size(), 0u);
+}
+
+TEST(DiaAttributeParameterFileToJson, DiffMatchesCommittedConformanceFixture)
+{
+    const fs::path dir = FindConformanceDataDir();
+    ASSERT_FALSE(dir.empty());
+    std::ifstream in(dir / "parameter-file-to-json-diff.case.json", std::ios::binary);
+    ASSERT_TRUE(in.good());
+    std::stringstream ss; ss << in.rdbuf();
+    Json::Value c; Json::Reader reader;
+    ASSERT_TRUE(reader.parse(ss.str(), c)) << reader.getFormattedErrorMessages();
+
+    const std::string sidecar = ToText(c["schemas"][0u]);
+    const Json::Value* pack = nullptr;
+    for (Json::ArrayIndex i = 0; i < c["files"].size(); ++i)
+        if (c["files"][i]["pack"].asBool()) pack = &c["files"][i]["content"];
+    ASSERT_NE(pack, nullptr);
+
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, sidecar));
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(7.25)));
+    ASSERT_TRUE(SetOk(pf, "a.count", Json::Value(4)));
+    ASSERT_TRUE(SetOk(pf, "a.flag", Json::Value(true)));
+    ASSERT_TRUE(SetOk(pf, "a.mode", Json::Value("Fast")));
+    ASSERT_TRUE(SetOk(pf, "m.temp.Desert", Json::Value(0.3)));
+    const Json::Value diff = pf.ToJson(JsonShape::Diff);
+    EXPECT_EQ(diff, *pack) << "actual: " << ToText(diff);
+
+    ParameterFile fresh; ParamWarnings w;
+    ASSERT_TRUE(ApplyToFresh(fresh, sidecar, *pack, &w));
+    EXPECT_EQ(w.items.Size(), 0u);
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+// ===========================================================================
+// Hash (AC 13)
+// ===========================================================================
+TEST(DiaAttributeParameterFileHash, SameAcrossTwoLoads)
+{
+    ParameterFile a, b;
+    ASSERT_TRUE(LoadFile(a, FixtureText())); ASSERT_TRUE(LoadFile(b, FixtureText()));
+    EXPECT_EQ(a.Hash(), b.Hash());
+    EXPECT_NE(a.Hash(), 0u);
+}
+
+TEST(DiaAttributeParameterFileHash, PinnedLiteralForSmallFixture)
+{
+    // FNV-1a 64 over the float32 LE bytes of [5.0, 3.0]; cross-checked with an independent Python computation.
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, SmallText()));
+    EXPECT_EQ(pf.Hash(), 0x9e36cdbe1c6a8665ull);
+}
+
+TEST(DiaAttributeParameterFileHash, EmptySidecarIsTheFnvOffsetBasis)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, MakeSidecarText({}, nullptr, "test.params")));
+    EXPECT_EQ(pf.Hash(), 0xcbf29ce484222325ull);
+}
+
+TEST(DiaAttributeParameterFileHash, ChangingAnySingleValueChangesIt)
+{
+    ParameterFile ref; ASSERT_TRUE(LoadFile(ref, FixtureText()));
+    const uint64_t baseline = ref.Hash();
+    const uint32_t n = ref.Values().GetAttributeCount();
+    ASSERT_GE(n, 8u);
+    for (uint32_t i = 0; i < n; ++i)
+    {
+        ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+        const AttributeDefinition& d = pf.Schema().GetAttributeByIndex(i);
+        const float v = pf.Values().GetBaseValueByIndex(i);
+        const float to = (v + 1.0f <= d.maximum_value) ? v + 1.0f : v - 1.0f;
+        std::vector<float> vals = BaseValues(pf);
+        vals[i] = to;
+        ASSERT_TRUE(pf.Values().ReplaceBaseValues(vals.data(), n));
+        EXPECT_NE(pf.Hash(), baseline) << "index " << i << " (" << d.fullKey.AsCStr() << ")";
+    }
+}
+
+TEST(DiaAttributeParameterFileHash, NegativeZeroEqualsPositiveZero)
+{
+    ParameterFile a, b;
+    ASSERT_TRUE(LoadFile(a, ZeroText())); ASSERT_TRUE(LoadFile(b, ZeroText()));
+    const float pos[2] = { 0.0f, 0.0f };
+    const float neg[2] = { -0.0f, -0.0f };
+    ASSERT_TRUE(a.Values().ReplaceBaseValues(pos, 2));
+    ASSERT_TRUE(b.Values().ReplaceBaseValues(neg, 2));
+    ASSERT_TRUE(std::signbit(b.Values().GetBaseValueByIndex(0)));
+    EXPECT_EQ(a.Hash(), b.Hash());
+}
+
+TEST(DiaAttributeParameterFileHash, ModifiersDoNotChangeIt)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    const uint64_t before = pf.Hash();
+    AttributeModifier m{};
+    m.modifier_name = StringCRC("buff"); m.attribute_name = StringCRC("a.speed");
+    m.operation = ModifierOperation::Add; m.value = 2.0f; m.when_condition[0] = '\0';
+    const ModifierHandle h = pf.Values().AddModifier(m);
+    EXPECT_NE(pf.Values().GetValue(StringCRC("a.speed")), 5.0f);
+    EXPECT_EQ(pf.Hash(), before);
+    pf.Values().RemoveModifier(h);
+    EXPECT_EQ(pf.Hash(), before);
+}
+
+TEST(DiaAttributeParameterFileHash, SetThenSetBack)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    const uint64_t before = pf.Hash();
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(6.0)));
+    EXPECT_NE(pf.Hash(), before);
+    ASSERT_TRUE(SetOk(pf, "a.speed", Json::Value(5.0)));
+    EXPECT_EQ(pf.Hash(), before);
+}
+
+TEST(DiaAttributeParameterFileHash, NotLoadedIsTheOffsetBasis)
+{
+    ParameterFile pf;
+    EXPECT_EQ(pf.Hash(), 0xcbf29ce484222325ull);
+}
+
+// ===========================================================================
+// Save round trip (AC 17): the existing AttributeSet ISaveable is enough
+// ===========================================================================
+TEST(DiaAttributeParameterFileSave, RoundTripRestoresBaseValuesModifiersAndHash)
+{
+    ParameterFile src; ASSERT_TRUE(LoadFile(src, FixtureText()));
+    ASSERT_TRUE(SetOk(src, "a.speed", Json::Value(7.3)));
+    ASSERT_TRUE(SetOk(src, "a.mode", Json::Value("Turbo")));
+    ASSERT_TRUE(SetOk(src, "a.flag", Json::Value(true)));
+    ASSERT_TRUE(SetOk(src, "m.temp.Desert", Json::Value(0.123456789)));
+    AttributeModifier add{};
+    add.modifier_name = StringCRC("buff"); add.attribute_name = StringCRC("a.speed");
+    add.operation = ModifierOperation::Add; add.value = 1.5f; add.when_condition[0] = '\0';
+    AttributeModifier mul = add;
+    mul.modifier_name = StringCRC("slow"); mul.attribute_name = StringCRC("m.temp.Desert");
+    mul.operation = ModifierOperation::Multiply; mul.value = 0.5f;
+    (void)src.Values().AddModifier(add);
+    (void)src.Values().AddModifier(mul);
+
+    Dia::SaveGame::SaveContext save;
+    src.Values().Serialize(save);
+    static char buf[Dia::SaveGame::SaveContext::kBufferSize];
+    ASSERT_TRUE(save.Flush(buf, sizeof(buf)));
+    Json::Value root; Json::Reader reader;
+    ASSERT_TRUE(reader.parse(buf, root));
+
+    ParameterFile dst; ASSERT_TRUE(LoadFile(dst, FixtureText()));
+    ASSERT_NE(dst.Hash(), src.Hash());
+    Dia::SaveGame::LoadContext load(root);
+    dst.Values().Deserialize(load);
+
+    EXPECT_TRUE(BitEqual(BaseValues(src), BaseValues(dst)));
+    EXPECT_EQ(dst.Hash(), src.Hash());
+    EXPECT_EQ(dst.Values().GetModifierCountForAttribute(StringCRC("a.speed")), 1u);
+    EXPECT_EQ(dst.Values().GetModifierCountForAttribute(StringCRC("m.temp.Desert")), 1u);
+    EXPECT_EQ(dst.Values().GetModifierCountForAttribute(StringCRC("a.count")), 0u);
+    EXPECT_EQ(dst.Values().GetValue(StringCRC("a.speed")), src.Values().GetValue(StringCRC("a.speed")));
+    EXPECT_EQ(dst.Values().GetValue(StringCRC("m.temp.Desert")), src.Values().GetValue(StringCRC("m.temp.Desert")));
 }
