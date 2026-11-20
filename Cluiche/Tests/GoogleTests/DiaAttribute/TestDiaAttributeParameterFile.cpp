@@ -1879,9 +1879,23 @@ namespace
     }
 }
 
-// Documented divergence (plan row 28 gap): the CLI map-default check only needs the named keys to resolve and fit
-// the range; the C++ build also requires the default object to cover every key (AC 6).
-TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsCliCleanButFailsTheCppBuildNamingTheMap)
+// Close-out gap 4: the CLI now reports an object map default that omits a keyRef key (data.missing-map-key, one
+// finding per missing key), agreeing with the C++ build, which fails naming the first missing key (AC 6).
+TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsFlaggedByTheCliAndFailsTheCppBuildNamingTheSameKey)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-default-missing-key.case.json", c));
+    const Json::Value& first = c["schemaExpected"][0u];
+    EXPECT_EQ(first["rule"].asString(), "data.missing-map-key");
+    EXPECT_EQ(first["path"].asString(), "default.TemperateForest");
+
+    ParameterFile pf; ParamError err;
+    EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
+    EXPECT_STREQ(err.key.AsCStr(), "affinity.TemperateForest");   // the first key the default object lacks
+    EXPECT_NE(std::string(err.reason.AsCStr()).find("missing"), std::string::npos) << err.reason.AsCStr();
+}
+
+TEST(DiaAttributeParameterFileParity, CompleteMapDefaultCasesAreCliCleanAndLoadInCpp)
 {
     const char* cases[] = { "map-default-ok.case.json", "constraint-violated-pack-map-operand.case.json" };
     for (const char* name : cases)
@@ -1889,10 +1903,9 @@ TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsCliCleanButFailsTheC
         SCOPED_TRACE(name);
         Json::Value c;
         ASSERT_TRUE(LoadCase(name, c));
-        ParameterFile pf; ParamError err;
-        EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
-        EXPECT_STREQ(err.key.AsCStr(), "affinity.TemperateForest");   // the first key the default object lacks
-        EXPECT_NE(std::string(err.reason.AsCStr()).find("missing"), std::string::npos) << err.reason.AsCStr();
+        EXPECT_TRUE(c["schemaExpected"].isNull() || c["schemaExpected"].empty());
+        ParameterFile pf;
+        EXPECT_TRUE(LoadFile(pf, ToText(c["schemas"][0u])));
     }
 }
 

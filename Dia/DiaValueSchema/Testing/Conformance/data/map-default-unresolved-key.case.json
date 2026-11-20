@@ -17,8 +17,10 @@
           "min": 0,
           "max": 1,
           "default": {
+            "TemperateForest": 0.9,
             "Desert": 0.2,
-            "Tundr": 0.5
+            "Tundr": 0.5,
+            "Tundra": 0.4
           }
         }
       ]

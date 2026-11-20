@@ -458,7 +458,7 @@ def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping
 def validate_schema_defaults(schema_docs: Iterable[dict], file_by_doc: Mapping[int, str],
                              context: Optional[DataContext] = None) -> List[Finding]:
     """Schema-level checks on defaults: object map default keys resolve through keyRef
-    (data.unresolved-map-key) and the defaults satisfy the constraints (data.constraint-violated).
+    (data.unresolved-map-key), every keyRef key is present (data.missing-map-key) and the defaults satisfy the constraints (data.constraint-violated).
 
     A map default is only checked when its keyRef format has documents in the context.
     """
@@ -482,6 +482,12 @@ def validate_schema_defaults(schema_docs: Iterable[dict], file_by_doc: Mapping[i
                 out.append(Finding("FAIL", "data.unresolved-map-key", file, e["key"],
                                    f"'{e['key']}' default key '{mk}' matches no id in {e.get('keyRef')}"
                                    + format_suggestion(s), s, f"default.{mk}", None))
+            # C++ (FromValueSchema) requires the default object to cover every keyRef key: report each one it omits.
+            for mid in dict.fromkeys(ids):
+                if mid not in e["default"]:
+                    out.append(Finding("FAIL", "data.missing-map-key", file, e["key"],
+                                       f"'{e['key']}' default omits key '{mid}' present in {e.get('keyRef')}",
+                                       None, f"default.{mid}", None))
         values = _default_values(_entries_of(d))
         cs = d.get("constraints")
         for i, c in enumerate(cs if isinstance(cs, list) else []):
