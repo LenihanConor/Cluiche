@@ -9,9 +9,6 @@
 #include <DiaAttribute/IMapKeySource.h>
 #include <cstdint>
 
-// Forward-declare Json::Value so callers don't need json.h via this header
-namespace Json { class Value; }
-
 // Forward declarations so dependents of this header do not need DiaValueSchema / json include paths.
 namespace Dia::ValueSchema {
     struct LoadResult;
@@ -83,12 +80,6 @@ namespace Dia::Attribute {
         AttributeSchema(const AttributeSchema& other);
         AttributeSchema& operator=(const AttributeSchema& other);
 
-        // LEGACY (plan task 13 partial): kept only for the two band-schema-version tests until a sidecar can carry
-        // a version != 1. Everything else uses FromValueSchema.
-        // Load from an already-parsed Json::Value (for tests and in-memory pipelines).
-        // Returns an invalid schema if the value is null or not an object.
-        [[nodiscard]] static AttributeSchema LoadFromJsonValue(const Json::Value& root);
-
         // Builds a schema from a parsed sidecar (ValueSchemaLoader::LoadFromText). Only `kind: parameter`
         // entries produce definitions, in sidecar file order; a map entry expands to one definition per key
         // from mapKeys (key-source order), named "<key>.<mapKey>". mapKeys may be null when there is no map entry.
@@ -129,9 +120,6 @@ namespace Dia::Attribute {
         bool BuildColumn(const Dia::ValueSchema::ValueInfo& e, int valueType, const char* fullKey,
                          bool useNumber, double number, const char* text, SchemaError& err);
         void CopyPools(const AttributeSchema& other);
-        static void ParseAttributes(AttributeSchema& schema, const Json::Value& root);
-        static void ParseBands(AttributeDefinition& def, const Json::Value& attrJson);
-        static bool ValidateBandRange(const AttributeDefinition& def, Dia::Core::StringCRC band_name, const BandRange& range);
 
         Dia::Core::StringCRC                                      mSchemaName;
         Dia::Core::Containers::DynamicArray<AttributeDefinition>  mAttributes;
