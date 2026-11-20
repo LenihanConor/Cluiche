@@ -29,7 +29,7 @@ TEST(TimeServer, DefaultConstruction_TickBeforeCreate_Asserts)
     TimeServer timeServer;
 
     // Ticking before Create() should assert
-    EXPECT_DEATH(timeServer.Tick(), ".*");
+    DIA_EXPECT_DEATH(timeServer.Tick(), ".*");
 }
 
 // ==============================================================================

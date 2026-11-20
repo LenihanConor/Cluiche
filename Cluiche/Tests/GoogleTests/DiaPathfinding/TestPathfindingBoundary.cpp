@@ -586,22 +586,22 @@ TEST(PathfindingSystem_Boundary, FailedRequest_ObserverCalledOnce)
 // ===========================================================================
 
 TEST(SLOW_SquarePathGrid_Boundary, Constructor_Width0_Asserts) {
-    EXPECT_DEATH(SquarePathGrid(0, 10), "");
+    DIA_EXPECT_DEATH(SquarePathGrid(0, 10), "");
 }
 
 TEST(SLOW_SquarePathGrid_Boundary, Constructor_Height0_Asserts) {
-    EXPECT_DEATH(SquarePathGrid(10, 0), "");
+    DIA_EXPECT_DEATH(SquarePathGrid(10, 0), "");
 }
 
 TEST(SLOW_SquarePathGrid_Boundary, Constructor_IntOverflow_Asserts) {
     // 100000 × 100000 overflows int
-    EXPECT_DEATH(SquarePathGrid(100000, 100000), "");
+    DIA_EXPECT_DEATH(SquarePathGrid(100000, 100000), "");
 }
 
 TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeWidth_Asserts) {
-    EXPECT_DEATH(SquarePathGrid(-1, 10), "");
+    DIA_EXPECT_DEATH(SquarePathGrid(-1, 10), "");
 }
 
 TEST(SLOW_SquarePathGrid_Boundary, Constructor_NegativeHeight_Asserts) {
-    EXPECT_DEATH(SquarePathGrid(10, -1), "");
+    DIA_EXPECT_DEATH(SquarePathGrid(10, -1), "");
 }

@@ -408,7 +408,7 @@ TEST(SLOW_DiaAttribute, AddModifier_SecondOverrideOnSameAttribute_Asserts)
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
 
     set.AddModifier(MakeModifier("ovr1", "strength", ModifierOperation::Override, 100.0f));
-    EXPECT_DEATH(set.AddModifier(MakeModifier("ovr2", "strength", ModifierOperation::Override, 50.0f)), "");
+    DIA_EXPECT_DEATH(set.AddModifier(MakeModifier("ovr2", "strength", ModifierOperation::Override, 50.0f)), "");
 }
 
 // Coverage gap: what actually happens on the code path AFTER that DIA_ASSERT(false, ...)
@@ -482,7 +482,7 @@ TEST(SLOW_DiaAttribute, AddModifier_StackFull_AssertsInDebug)
         ASSERT_TRUE(h.IsValid()) << "index " << i;
     }
 
-    EXPECT_DEATH(set.AddModifier(MakeModifier("overflow", "health", ModifierOperation::Add, 1.0f)), "");
+    DIA_EXPECT_DEATH(set.AddModifier(MakeModifier("overflow", "health", ModifierOperation::Add, 1.0f)), "");
 }
 #endif // _DEBUG
 
@@ -514,7 +514,7 @@ TEST(SLOW_DiaAttribute, RemoveModifier_DoubleRemove_Asserts)
 
     ModifierHandle h = set.AddModifier(MakeModifier("buff", "health", ModifierOperation::Add, 50.0f));
     set.RemoveModifier(h);
-    EXPECT_DEATH(set.RemoveModifier(h), "");
+    DIA_EXPECT_DEATH(set.RemoveModifier(h), "");
 }
 #else
 TEST(DiaAttribute, RemoveModifier_InvalidHandle_ReleaseNoOp_DoesNotAffectOtherModifiers)

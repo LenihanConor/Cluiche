@@ -16,7 +16,7 @@ TEST(TimerSystem, Stop_WithoutStart_Asserts)
 {
     TimerSystem timer;
 
-    EXPECT_DEATH({ timer.Stop(); }, "");
+    DIA_EXPECT_DEATH({ timer.Stop(); }, "");
 }
 
 TEST(TimerSystem, Start_ThenStop_IsNotRunning)

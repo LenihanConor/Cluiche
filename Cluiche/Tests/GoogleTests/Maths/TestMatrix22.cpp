@@ -130,17 +130,17 @@ TEST(Matrix22, ArrayAccessor_OutOfBounds_Asserts)
 {
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
-    EXPECT_DEATH({ m[4] = 3.0f; }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] float a = m[4]; }, ".*");
+    DIA_EXPECT_DEATH({ m[4] = 3.0f; }, ".*");
+    DIA_EXPECT_DEATH({ [[maybe_unused]] float a = m[4]; }, ".*");
 }
 
 TEST(Matrix22, Element_OutOfBounds_Asserts)
 {
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
-    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4, 0); }, ".*");
-    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(0, 4); }, ".*");
+    DIA_EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4); }, ".*");
+    DIA_EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4, 0); }, ".*");
+    DIA_EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(0, 4); }, ".*");
 }
 
 TEST(Matrix22, Element_SingleIndex_ReturnsCorrectValue)
@@ -167,9 +167,9 @@ TEST(Matrix22, SetElement_OutOfBounds_Asserts)
 {
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
-    EXPECT_DEATH(m.SetElement(4, 3.0f), ".*");
-    EXPECT_DEATH(m.SetElement(4, 0, 3.0f), ".*");
-    EXPECT_DEATH(m.SetElement(0, 4, 3.0f), ".*");
+    DIA_EXPECT_DEATH(m.SetElement(4, 3.0f), ".*");
+    DIA_EXPECT_DEATH(m.SetElement(4, 0, 3.0f), ".*");
+    DIA_EXPECT_DEATH(m.SetElement(0, 4, 3.0f), ".*");
 }
 
 TEST(Matrix22, SetElement_SetsCorrectValue)
@@ -361,8 +361,8 @@ TEST(Matrix22, Division_DivideByZero_Asserts)
 {
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
-    EXPECT_DEATH({ m /= 0.0f; }, ".*");
-    EXPECT_DEATH({ m = m / 0.0f; }, ".*");
+    DIA_EXPECT_DEATH({ m /= 0.0f; }, ".*");
+    DIA_EXPECT_DEATH({ m = m / 0.0f; }, ".*");
 }
 
 TEST(Matrix22, DivisionScalar_DividesMatrix)
@@ -520,14 +520,14 @@ TEST(Matrix22, AsInverse_SingularMatrix_Asserts)
 {
     Matrix22 m(0.0f, 0.0f, 0.0f, 1.0f);
 
-    EXPECT_DEATH(m.AsInverse(), ".*");
+    DIA_EXPECT_DEATH(m.AsInverse(), ".*");
 }
 
 TEST(Matrix22, Invert_SingularMatrix_Asserts)
 {
     Matrix22 m(0.0f, 0.0f, 0.0f, 1.0f);
 
-    EXPECT_DEATH(m.Invert(), ".*");
+    DIA_EXPECT_DEATH(m.Invert(), ".*");
 }
 
 TEST(Matrix22, Invert_ReturnsInverse)
@@ -564,14 +564,14 @@ TEST(Matrix22, InvertOrthogonal_NonOrthogonal_Asserts)
 {
     Matrix22 m(0.0f, 0.0f, 0.0f, 1.0f);
 
-    EXPECT_DEATH(m.InvertOrthogonal(), ".*");
+    DIA_EXPECT_DEATH(m.InvertOrthogonal(), ".*");
 }
 
 TEST(Matrix22, AsInverseOrthogonal_NonOrthogonal_Asserts)
 {
     Matrix22 m(0.0f, 0.0f, 0.0f, 1.0f);
 
-    EXPECT_DEATH(m.AsInverseOrthogonal(), ".*");
+    DIA_EXPECT_DEATH(m.AsInverseOrthogonal(), ".*");
 }
 
 TEST(Matrix22, InvertOrthogonal_Identity_ReturnsIdentity)

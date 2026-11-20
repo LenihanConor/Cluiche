@@ -25,7 +25,7 @@ TEST(Timer, StopWithoutStart_Asserts)
     Timer timer;
 
     // Stopping a timer that hasn't been started should assert
-    EXPECT_DEATH(timer.Stop(TimeAbsolute::Zero()), ".*");
+    DIA_EXPECT_DEATH(timer.Stop(TimeAbsolute::Zero()), ".*");
 }
 
 TEST(Timer, StartStop_TimerNotRunningAfterStop)

@@ -81,13 +81,13 @@ TEST(DebugLayerManager_Registration, Register_DuplicateNameAsserts)
     TestLayer b("test.dup");
     mgr.Register(&a);
     // Registering a second layer with the same name must fire DIA_ASSERT → death
-    EXPECT_DEATH({ mgr.Register(&b); }, "");
+    DIA_EXPECT_DEATH({ mgr.Register(&b); }, "");
 }
 
 TEST(DebugLayerManager_Registration, Register_NullptrAsserts)
 {
     DebugLayerManager mgr;
-    EXPECT_DEATH({ mgr.Register(nullptr); }, "");
+    DIA_EXPECT_DEATH({ mgr.Register(nullptr); }, "");
 }
 
 TEST(DebugLayerManager_Registration, HasLayer_ReturnsTrueAfterRegister)

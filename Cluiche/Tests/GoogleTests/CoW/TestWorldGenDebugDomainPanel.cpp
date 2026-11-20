@@ -619,7 +619,6 @@ TEST(WorldGenDebugDomainPanel, CompactStateAtLargeWithFailedTwoAttemptReportStay
     EXPECT_LT(bytes, 12u * 1024u);
 }
 
-#endif // DIA_DEBUG
 
 // Panel gap (cleanup bundle 2026-11-19): the picker needs to know which layers the world has no data for.
 TEST(WorldGenDebugDomainPanel, ViewReportsUnavailableLayersBeforeAWorldAndAfterAnImport)
@@ -642,3 +641,5 @@ TEST(WorldGenDebugDomainPanel, ViewReportsUnavailableLayersBeforeAWorldAndAfterA
     EXPECT_TRUE(hasTemperature);    // intermediate climate field: not derivable from a file
     EXPECT_FALSE(hasElevation);     // rebuilt from the cells
 }
+
+#endif // DIA_DEBUG

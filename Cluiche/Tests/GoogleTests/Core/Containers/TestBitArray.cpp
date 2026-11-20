@@ -63,13 +63,13 @@ TEST(BitArray8, ConstructWithAllBitsOn_IsAllOn)
 TEST(BitArray8, ArrayAccessor_NegativeIndex_Asserts)
 {
     BitArray8 bitflag3(0xFF);
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
 }
 
 TEST(BitArray8, ArrayAccessor_OutOfBounds_Asserts)
 {
     BitArray8 bitflag3(0xFF);
-    EXPECT_DEATH({ bool a = bitflag3[8]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[8]; (void)a; }, "");
 }
 
 TEST(BitArray8, CopyConstructor_CopiesAllBits)
@@ -200,8 +200,8 @@ TEST(BitArray8, SetAllBits_OutOfBoundsAccess_Asserts)
     BitArray8 bitflag3(0xFF);
     bitflag3.SetAllBits(0xFF);
 
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
-    EXPECT_DEATH({ bool a = bitflag3[8]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[8]; (void)a; }, "");
 }
 
 TEST(BitArray8, SetBit_TurnsOnAndOff)
@@ -375,13 +375,13 @@ TEST(BitArray16, ConstructWithAllBitsOn_IsAllOn)
 TEST(BitArray16, ArrayAccessor_NegativeIndex_Asserts)
 {
     BitArray16 bitflag3(0xFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
 }
 
 TEST(BitArray16, ArrayAccessor_OutOfBounds_Asserts)
 {
     BitArray16 bitflag3(0xFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[17]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[17]; (void)a; }, "");
 }
 
 TEST(BitArray16, CopyConstructor_CopiesAllBits)
@@ -512,8 +512,8 @@ TEST(BitArray16, SetAllBits_OutOfBoundsAccess_Asserts)
     BitArray16 bitflag3(0xFFFF);
     bitflag3.SetAllBits(0xFFFF);
 
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
-    EXPECT_DEATH({ bool a = bitflag3[16]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[16]; (void)a; }, "");
 }
 
 TEST(BitArray16, SetBit_TurnsOnAndOff)
@@ -699,13 +699,13 @@ TEST(BitArray32, ConstructWithAllBitsOn_IsAllOn)
 TEST(BitArray32, ArrayAccessor_NegativeIndex_Asserts)
 {
     BitArray32 bitflag3(0xFFFFFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
 }
 
 TEST(BitArray32, ArrayAccessor_OutOfBounds_Asserts)
 {
     BitArray32 bitflag3(0xFFFFFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[32]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[32]; (void)a; }, "");
 }
 
 TEST(BitArray32, CopyConstructor_CopiesAllBits)
@@ -836,8 +836,8 @@ TEST(BitArray32, SetAllBits_OutOfBoundsAccess_Asserts)
     BitArray32 bitflag3(0xFFFFFFFF);
     bitflag3.SetAllBits(0xFFFFFFFF);
 
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
-    EXPECT_DEATH({ bool a = bitflag3[32]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[32]; (void)a; }, "");
 }
 
 TEST(BitArray32, SetBit_TurnsOnAndOff)
@@ -1023,13 +1023,13 @@ TEST(BitArray64, ConstructWithAllBitsOn_IsAllOn)
 TEST(BitArray64, ArrayAccessor_NegativeIndex_Asserts)
 {
     BitArray64 bitflag3(0xFFFFFFFFFFFFFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
 }
 
 TEST(BitArray64, ArrayAccessor_OutOfBounds_Asserts)
 {
     BitArray64 bitflag3(0xFFFFFFFFFFFFFFFF);
-    EXPECT_DEATH({ bool a = bitflag3[64]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[64]; (void)a; }, "");
 }
 
 TEST(BitArray64, CopyConstructor_CopiesAllBits)
@@ -1160,8 +1160,8 @@ TEST(BitArray64, SetAllBits_OutOfBoundsAccess_Asserts)
     BitArray64 bitflag3(0xFFFFFFFFFFFFFFFF);
     bitflag3.SetAllBits(0xFFFFFFFFFFFFFFFF);
 
-    EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
-    EXPECT_DEATH({ bool a = bitflag3[64]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[-1]; (void)a; }, "");
+    DIA_EXPECT_DEATH({ bool a = bitflag3[64]; (void)a; }, "");
 }
 
 TEST(BitArray64, SetBit_TurnsOnAndOff)

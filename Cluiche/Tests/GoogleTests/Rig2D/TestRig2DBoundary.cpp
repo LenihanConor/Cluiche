@@ -153,8 +153,8 @@ TEST(DiaRig2D_Boundary, GetLocalTransform_OutOfRange_Dies)
     Skeleton sk(def);
     Pose pose(sk);
 
-    EXPECT_DEATH(pose.GetLocalTransform(-1), "");
-    EXPECT_DEATH(pose.GetLocalTransform(2), "");
+    DIA_EXPECT_DEATH(pose.GetLocalTransform(-1), "");
+    DIA_EXPECT_DEATH(pose.GetLocalTransform(2), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -165,8 +165,8 @@ TEST(DiaRig2D_Boundary, GetBone_OutOfRange_Dies)
     SkeletonDef def = Testing::MakeSimpleChain(3);
     Skeleton sk(def);
 
-    EXPECT_DEATH(sk.GetBone(-1), "");
-    EXPECT_DEATH(sk.GetBone(3), "");
+    DIA_EXPECT_DEATH(sk.GetBone(-1), "");
+    DIA_EXPECT_DEATH(sk.GetBone(3), "");
 }
 
 // ---------------------------------------------------------------------------
@@ -176,5 +176,5 @@ TEST(DiaRig2D_Boundary, GetRequiredBoneIndex_MissingBone_Dies)
 {
     SkeletonDef def = Testing::MakeSimpleChain(2);
     Skeleton sk(def);
-    EXPECT_DEATH(sk.GetRequiredBoneIndex(Dia::Core::StringCRC("nonexistent")), "");
+    DIA_EXPECT_DEATH(sk.GetRequiredBoneIndex(Dia::Core::StringCRC("nonexistent")), "");
 }

@@ -8,7 +8,7 @@ TEST(DynamicArrayC, DefaultConstruction_HasZeroSize)
 	using IntArray3 = DynamicArrayC<int, 3>;
 	IntArray3 array;
 
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array.At(0); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array.At(0); }, "");
 
 	EXPECT_EQ(array.Capacity(), 3);
 	EXPECT_EQ(array.Size(), 0);
@@ -19,8 +19,8 @@ TEST(DynamicArrayC, ConstructionFromPointer_CopiesData)
 	using IntArray3 = DynamicArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 temp(nullptr, 3); }, "");
-	EXPECT_DEATH({ IntArray3 temp(&cArray1[0], 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(nullptr, 3); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(&cArray1[0], 10); }, "");
 
 	IntArray3 array1(&cArray1[0], 3);
 
@@ -50,7 +50,7 @@ TEST(DynamicArrayC, ConstructionFromPointer_CopiesData)
 	EXPECT_EQ(array3.At(0), 1);
 	EXPECT_EQ(array3.At(1), 2);
 
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array3.At(2); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array3.At(2); }, "");
 }
 
 TEST(DynamicArrayC, CopyConstruction_DuplicatesArray)
@@ -58,7 +58,7 @@ TEST(DynamicArrayC, CopyConstruction_DuplicatesArray)
 	using IntArray3 = DynamicArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 temp(cArray1, 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(cArray1, 10); }, "");
 
 	DynamicArrayC<int, 3> tempArray1(cArray1, 3);
 	DynamicArrayC<int, 3> array1(tempArray1);
@@ -178,8 +178,8 @@ TEST(DynamicArrayC, AssignFromPointer_OverwritesData)
 	using IntArray3 = DynamicArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 array0; array0.Assign(nullptr, 3); }, "");
-	EXPECT_DEATH({ IntArray3 array1; array1.Assign(&cArray1[0], 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 array0; array0.Assign(nullptr, 3); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 array1; array1.Assign(&cArray1[0], 10); }, "");
 
 	IntArray3 array1;
 	array1.Assign(&cArray1[0], 3);
@@ -388,10 +388,10 @@ TEST(DynamicArrayC, ElementAccess_WorksCorrectlyWithBoundsChecking)
 
 	IntArray5 array1(cArray1, 5);
 
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
 
 	EXPECT_EQ(array1[0], array1.At(0));
 	EXPECT_EQ(array1[1], array1.At(1));
@@ -457,7 +457,7 @@ TEST(DynamicArrayC, Add_IncreasesSize)
 	EXPECT_TRUE(array1.IsFull());
 	EXPECT_EQ(array1.Size(), 5);
 
-	EXPECT_DEATH(array1.Add(6), "");
+	DIA_EXPECT_DEATH(array1.Add(6), "");
 }
 
 TEST(DynamicArrayC, Remove_DecreasesSize)

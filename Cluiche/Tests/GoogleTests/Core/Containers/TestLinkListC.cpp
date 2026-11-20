@@ -77,7 +77,7 @@ TEST(LinkListC, AddNodeToTail_AddsNodesToEndOfList)
 	EXPECT_EQ(list.Last(), 5);
 	EXPECT_EQ(list.First(), 2);
 
-	EXPECT_DEATH(list.AddNodeToTail(&node1), "");
+	DIA_EXPECT_DEATH(list.AddNodeToTail(&node1), "");
 }
 
 TEST(LinkListC, AddNodeToHead_AddsNodesToStartOfList)
@@ -123,7 +123,7 @@ TEST(LinkListC, AddNodeToHead_AddsNodesToStartOfList)
 	EXPECT_EQ(list.Last(), 2);
 	EXPECT_EQ(list.First(), 4);
 
-	EXPECT_DEATH(list.AddNodeToHead(&node1), "");
+	DIA_EXPECT_DEATH(list.AddNodeToHead(&node1), "");
 }
 
 TEST(LinkListC, InsertAsNextNodeTo_InsertsAfterSpecifiedNode)
@@ -343,8 +343,8 @@ TEST(LinkListC, SwapNodes_SwapsNodePositions)
 	EXPECT_EQ(list1.Last(), 2);
 	EXPECT_EQ(list1.First(), 5);
 
-	EXPECT_DEATH(list1.SwapNodes(nullptr, nullptr), "");
-	EXPECT_DEATH(list1.SwapNodes(&node4, &node3), "");
+	DIA_EXPECT_DEATH(list1.SwapNodes(nullptr, nullptr), "");
+	DIA_EXPECT_DEATH(list1.SwapNodes(&node4, &node3), "");
 }
 
 TEST(LinkListC, MoveNodeForward_MovesNodeTowardHead)
@@ -367,9 +367,9 @@ TEST(LinkListC, MoveNodeForward_MovesNodeTowardHead)
 	EXPECT_EQ(list1.Last(), 5);
 	EXPECT_EQ(list1.First(), 1);
 
-	EXPECT_DEATH(list1.MoveNodeForward(nullptr), "");
-	EXPECT_DEATH(list1.MoveNodeForward(&node4), "");
-	EXPECT_DEATH(list1.MoveNodeForward(&node3), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeForward(nullptr), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeForward(&node4), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeForward(&node3), "");
 }
 
 TEST(LinkListC, MoveNodeBackwards_MovesNodeTowardTail)
@@ -392,9 +392,9 @@ TEST(LinkListC, MoveNodeBackwards_MovesNodeTowardTail)
 	EXPECT_EQ(list1.Last(), 1);
 	EXPECT_EQ(list1.First(), 2);
 
-	EXPECT_DEATH(list1.MoveNodeBackwards(nullptr), "");
-	EXPECT_DEATH(list1.MoveNodeBackwards(&node4), "");
-	EXPECT_DEATH(list1.MoveNodeBackwards(&node1), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeBackwards(nullptr), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeBackwards(&node4), "");
+	DIA_EXPECT_DEATH(list1.MoveNodeBackwards(&node1), "");
 }
 
 TEST(LinkListC, Sort_SortsNodesInAscendingOrder)
