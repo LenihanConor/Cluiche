@@ -145,3 +145,16 @@ def test_e2e_list_and_no_launch_skip_build():
     for flag in ("--list", "--no-launch"):
         _, mock_build, _ = _run_e2e_with_build([flag], 0)
         assert not mock_build.called
+
+
+def test_filter_scenarios_accepts_comma_separated_globs():
+    import importlib.util
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[3] / "Cluiche" / "Tests" / "E2E" / "cli.py"
+    spec = importlib.util.spec_from_file_location("e2e_cli_under_test", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    scenarios = ["scenarios/a/boot.py", "scenarios/b/arena.py", "scenarios/c/other.py"]
+    assert mod.filter_scenarios(scenarios, "*boot*,*arena*") == scenarios[:2]
+    assert mod.filter_scenarios(scenarios, "*other*") == scenarios[2:]
+    assert mod.filter_scenarios(scenarios, None) == scenarios

@@ -129,7 +129,8 @@ def _get_e2e_root(repo_root):
 @click.option("--filter", "filter_expr", default=None, metavar="EXPR",
               help="pytest -k filter expression")
 @click.option("--scenario", "scenario_glob", default=None, metavar="GLOB",
-              help="fnmatch glob to filter scenario paths (e.g. '*boot*')")
+              help="fnmatch glob to filter scenario paths (e.g. '*boot*'); "
+                   "comma-separate several (e.g. '*boot*,*arena*')")
 @click.option("--list", "list_only", is_flag=True, default=False,
               help="Print matched scenario paths and exit (no launch/pytest)")
 @click.option("--port", type=int, default=None,
