@@ -1,0 +1,29 @@
+{
+  "format": "cow.biomes",
+  "version": 1,
+  "biomes": [
+    {"id": "Biome.Ocean", "name": "Ocean", "colour": "#1f4f8f", "description": "Open sea.", "tags": ["water", "aquatic"], "generated": true, "zones": ["None"], "pin": {"rule": "water_ocean", "priority": 5}, "roles": ["ocean"]},
+    {"id": "Biome.Lake", "name": "Lake", "colour": "#4aa3df", "description": "Inland lake.", "tags": ["water", "aquatic"], "generated": true, "zones": ["None"], "pin": {"rule": "water_lake", "priority": 4}, "roles": ["lake"]},
+    {"id": "Biome.Grassland", "name": "Grassland / Steppe", "colour": "#a6c04a", "description": "Dry open plains.", "tags": ["land", "open", "fuel"], "generated": true, "zones": ["FirstShores", "WildReaches"], "climate": {"t0": 0.6, "m0": 0.35, "wt": 0.25, "wm": 0.2}, "roles": ["fallback"]},
+    {"id": "Biome.TemperateForest", "name": "Temperate Forest", "colour": "#2f7d3a", "description": "Mild wooded land.", "tags": ["land", "forest", "fuel"], "generated": true, "zones": ["FirstShores", "WildReaches"], "climate": {"t0": 0.5, "m0": 0.6, "wt": 0.25, "wm": 0.2}},
+    {"id": "Biome.Wetland", "name": "Wetland / Delta", "colour": "#4fb39a", "description": "River mouths and marsh.", "tags": ["land", "wet", "aquatic"], "generated": true, "zones": ["FirstShores", "WildReaches"], "pin": {"rule": "wetland", "priority": 1}},
+    {"id": "Biome.Desert", "name": "Desert Basin", "colour": "#d9b45a", "description": "Hot, dry basin.", "tags": ["land", "open", "hot"], "generated": true, "zones": ["WildReaches", "AncientInteriors"], "climate": {"t0": 0.8, "m0": 0.08, "wt": 0.25, "wm": 0.12}, "plateau": "dry"},
+    {"id": "Biome.Alpine", "name": "Alpine Mountain", "colour": "#c4c9d1", "description": "High mountain.", "tags": ["land", "mountain", "cold"], "generated": true, "zones": ["WildReaches", "AncientInteriors"], "pin": {"rule": "alpine", "priority": 2}},
+    {"id": "Biome.Tundra", "name": "Tundra / Boreal", "colour": "#8aa39a", "description": "Cold land.", "tags": ["land", "open", "cold"], "generated": true, "zones": ["WildReaches", "AncientInteriors"], "climate": {"t0": 0.12, "m0": 0.3, "wt": 0.15, "wm": 0.3}},
+    {"id": "Biome.Rainforest", "name": "Rainforest", "colour": "#0f5a2a", "description": "Hot, wet forest.", "tags": ["land", "forest", "wet", "hot"], "generated": true, "zones": ["WildReaches", "AncientInteriors"], "climate": {"t0": 0.85, "m0": 0.9, "wt": 0.2, "wm": 0.15}, "plateau": "wet"},
+    {"id": "Biome.Volcanic", "name": "Volcanic Ashland", "colour": "#6b3a36", "description": "Land around a vent.", "tags": ["land", "volcanic", "hot"], "generated": true, "zones": ["WildReaches", "AncientInteriors"], "pin": {"rule": "vent", "priority": 3}},
+    {"id": "Biome.Scrub", "name": "Scrub", "colour": "#8f8a3c", "description": "Succession: low shrubland after disturbance. Not generated.", "tags": ["land", "open", "fuel", "succession"], "generated": false, "zones": []},
+    {"id": "Biome.BurnedAshland", "name": "Burned Ashland", "colour": "#2b2523", "description": "Succession: fire-scorched ground. Not generated.", "tags": ["land", "succession"], "generated": false, "zones": []},
+    {"id": "Biome.DesertifiedPlain", "name": "Desertified Plain", "colour": "#c98a4b", "description": "Succession: grassland lost to desert. Not generated.", "tags": ["land", "open", "hot", "succession"], "generated": false, "zones": []},
+    {"id": "Biome.Savanna", "name": "Savanna", "colour": "#c9a24a", "description": "Test fixture: warm semi-arid grass between Grassland and Desert.", "tags": ["land", "open", "fuel"], "generated": true, "zones": ["FirstShores", "WildReaches"], "climate": {"t0": 0.7, "m0": 0.22, "wt": 0.15, "wm": 0.12}}
+  ],
+  "forbidden": [
+    ["Biome.Volcanic", "Biome.Wetland"],
+    ["Biome.Volcanic", "Biome.Rainforest"],
+    ["Biome.Volcanic", "Biome.Tundra"],
+    ["Biome.Rainforest", "Biome.Desert"],
+    ["Biome.Rainforest", "Biome.Tundra"],
+    ["Biome.Tundra", "Biome.Wetland"],
+    ["Biome.Desert", "Biome.TemperateForest"]
+  ]
+}

@@ -258,3 +258,53 @@ TEST(BiomeRegistryData, MatchesLegacyFunctionsForAllBiomes)
         }
     }
 }
+
+// ---- Task 9: BiomeTestRegistry.h ----
+#include <Shared/World/Testing/BiomeTestRegistry.h>
+
+TEST(BiomeTestRegistry, RowOrderMatchesLegacyEnum)
+{
+    using namespace CoW::World::Testing;
+    using namespace CoW::WorldGeneration;
+    const BiomeRegistry& r = ShippedBiomeRegistry();
+    ASSERT_EQ(r.Count(), static_cast<uint32_t>(kBiomeCount));
+    for (int i = 0; i < kBiomeCount; ++i)
+    {
+        const Biome b = static_cast<Biome>(i);
+        EXPECT_EQ(Idx(b), r.Find(BiomeId(b))) << i;
+    }
+}
+
+TEST(BiomeTestRegistry, LookupByIdReturnsLegacyOrdinals)
+{
+    using namespace CoW::World::Testing;
+    EXPECT_EQ(B("Biome.Grassland"), 2);
+    EXPECT_EQ(B("Biome.Grassland"), Idx(CoW::WorldGeneration::Biome::GrasslandSteppe));
+    EXPECT_EQ(B("Biome.Volcanic"), 9);
+    EXPECT_EQ(B(ShippedBiomeRegistry(), "Biome.Rainforest"), 8);
+}
+
+TEST(BiomeTestRegistry, UnknownIdAborts)
+{
+    using namespace CoW::World::Testing;
+    EXPECT_DEATH(B("Biome.DoesNotExist"), "");
+}
+
+TEST(BiomeTestRegistry, ExtraRegistryHasThirteenShippedRowsPlusOneClimateBiome)
+{
+    using namespace CoW::World::Testing;
+    const BiomeRegistry& e = ExtraBiomeRegistry();
+    const BiomeRegistry& s = ShippedBiomeRegistry();
+    ASSERT_EQ(e.Count(), 14u);
+    for (BiomeIndex i = 0; i < 13; ++i)
+    {
+        EXPECT_EQ(e.Id(i), s.Id(i)) << int(i);
+        EXPECT_STREQ(e.Name(i), s.Name(i)) << int(i);
+    }
+    EXPECT_STREQ(e.IdText(13), "Biome.Savanna");
+    ASSERT_NE(e.Climate(13), nullptr);
+    uint32_t n = 0;
+    const BiomeIndex* list = e.ClimateBiomes(n);
+    ASSERT_EQ(n, 6u);
+    EXPECT_EQ(list[5], 13);
+}
