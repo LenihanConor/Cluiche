@@ -212,6 +212,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DeferredStepModule falls back to inline when JobSystemService is late | 2026-11-19 | Done 2026-11-19: late attach swaps to the job launcher when idle; verified live in CoW |
 | Dia | GoogleTests shared temp-file races under `--shards` | 2026-11-19 | Done 2026-11-19: per-process temp files; SaveEdge timestamp flake fixed |
 | Dia | DiaPathfinding Grid Search Helpers (world-sim foundation 3) | 2026-11-19 | Done 2026-11-19; spec Done, AC 8 amended; S-1 call sites migrated to ConnectedComponents |
+| Dia | DiaCore `String<N>` audit | 2026-11-19 | Done 2026-11-19: single-arg String<N>(const char*) ctor non-formatting (20c98397d); DynamicArray empty copy (5eb74a4f3). Decision recorded in strings module doc. |
+| Dia | GoogleTests Release failures | 2026-11-19 | Done 2026-11-19: 145 -> 0 Release failures. DIA_EXPECT_DEATH/DIA_ASSERT_DEATH gating (b0f125122); F2 fixture stream, ICF lambdas, DIA_ASSERT counters, DamageSensor static-init order, timing/perf ceilings (468c137d2..c03b0d1c6). |
+| Dia | AssetRuntime Inspector UI type error | 2026-11-19 | Done 2026-11-19: 171a99926; pipeline entry back to tsc && vite build. |
 
 ---
 
