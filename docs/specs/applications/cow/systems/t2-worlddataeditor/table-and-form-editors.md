@@ -225,6 +225,13 @@ _None remaining._
 | 6 | **Editing a parameter default writes the sidecar `default` fields** with the shared in-place writer, preserving every other byte. There is no base parameter file | Goals 5 ("Defaults files are understandable") where it implies a defaults file is the edited document |
 | 7 | The Biome table editor is the `cow.biomes` record file (S-1 owned). Biome-keyed parameter tables use `keyRef cow.biomes` | Table editor scope: unchanged for `cow.biomes` |
 
+### Bands and check constraints (fixtures)
+
+Amendment item 4 in practice. Both rules are held to the CLI by the shared conformance fixtures in `Dia/DiaValueSchema/Testing/Conformance/`:
+
+- **Bands** (`bands` on a numeric entry: `{"LOW": [0, 0.3], "HIGH": [0.7, 1.0]}`, each `lo <= hi` inside `[min, max]`) shown on the range hint. Accepted: `good-bands`. Rejected: `bad-band-lo-gt-hi`, `bad-band-outside-range`.
+- **Check constraints** (top-level `constraints: [{a, op, b}]`, `op` one of `< <= > >= == !=`; a map column is addressed `<key>.<mapKey>`) checked live, a violation naming both keys (`data.constraint-violated`, cases `data/constraint-violated-*.case.json`; clean: `good-constraints`, `data/constraint-ok-pack`). Rejected shapes: `bad-constraint-op`, `bad-constraint-unknown-key`, `bad-constraint-non-numeric`.
+
 ## Status
 
 `Approved` (2026-10-20). Plan not yet created. Build needs AD-001 sign-off for the DiaValueSchema `map` type and the data conformance fixtures.

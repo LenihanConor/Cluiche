@@ -200,3 +200,68 @@ TEST(DiaValueSchemaConformance, AllConstraintOpsParse)
 		EXPECT_EQ(r.mConstraints[0].mOp, expect[i]) << ops[i];
 	}
 }
+
+// Data cases (Conformance/data/*.case.json). Each case carries full dia.value_schema documents under "schemas".
+// Loader-level verdict shared with the CLI: every such schema must load (the CLI's schema.* shape rules produce no
+// FAIL for them either; pinned in test_validate_schema_parity.py). The data.* findings in `expected` and
+// `schemaExpected` (data.out-of-range, data.constraint-violated, data.unresolved-map-key, ...) are implemented by the
+// CLI only; the C++ side evaluates them later in AttributeSchema::FromValueSchema / ParameterFile, so they are checked
+// on the CLI side only (test_validate_schema_parity.py::test_q1_case_files...). Here the C++ loader must read back
+// exactly the structure the case file declares (entry, band, map-default and constraint counts).
+TEST(DiaValueSchemaConformance, EveryDataCaseSchemaLoadsAndReadsBackItsDeclaredStructure)
+{
+	const fs::path dir = FindConformanceDir();
+	ASSERT_FALSE(dir.empty());
+	const fs::path dataDir = dir / "data";
+	int cases = 0;
+	int schemas = 0;
+	for (const fs::directory_entry& de : fs::directory_iterator(dataDir))
+	{
+		const std::string name = de.path().filename().string();
+		const std::string suffix = ".case.json";
+		if (name.size() <= suffix.size() || name.compare(name.size() - suffix.size(), suffix.size(), suffix) != 0) { continue; }
+		SCOPED_TRACE(name);
+		std::string text;
+		ASSERT_TRUE(ReadFile(de.path(), text));
+		Json::Value c;
+		Json::Reader reader;
+		ASSERT_TRUE(reader.parse(text, c)) << reader.getFormattedErrorMessages();
+		ASSERT_TRUE(c["schemas"].isArray());
+		++cases;
+		for (Json::ArrayIndex i = 0; i < c["schemas"].size(); ++i)
+		{
+			const Json::Value& s = c["schemas"][i];
+			Json::FastWriter w;
+			const std::string schemaText = w.write(s);
+			const LoadResult r = ValueSchemaLoader::LoadFromText(schemaText.c_str(), name.c_str());
+			EXPECT_TRUE(r.mOk) << "schemas[" << i << "] " << r.mFailure.mEntry.AsCStr() << ": " << r.mFailure.mReason.AsCStr();
+			if (!r.mOk) { continue; }
+			++schemas;
+			EXPECT_EQ(r.mEntries.Size(), s["entries"].size());
+			EXPECT_EQ(r.mConstraints.Size(), s.isMember("constraints") ? s["constraints"].size() : 0u);
+			for (Json::ArrayIndex e = 0; e < s["entries"].size(); ++e)
+			{
+				const Json::Value& je = s["entries"][e];
+				const ValueInfo& v = r.mEntries[e];
+				EXPECT_STREQ(v.mKey.AsCStr(), je["key"].asCString());
+				EXPECT_EQ(v.mBands.Size(), je.isMember("bands") ? je["bands"].size() : 0u);
+				const bool objectDefault = je.isMember("default") && je["default"].isObject();
+				EXPECT_EQ(v.mHasMapDefault, objectDefault);
+				EXPECT_EQ(v.mMapDefaults.Size(), objectDefault ? je["default"].size() : 0u);
+			}
+		}
+	}
+	EXPECT_GE(cases, 20);
+	EXPECT_GE(schemas, cases);
+}
+
+// The CLI is intentionally stricter than the C++ loader on `keyRef`: the loader accepts any string (the key source is
+// resolved later), the CLI requires '<format>/<record path>' (schema.ref-malformed). Pinned here and in
+// test_validate_schema_parity.py::test_q3_keyref_...; see Conformance/README.md "CLI stricter than the loader".
+TEST(DiaValueSchemaConformance, LoaderAcceptsAnyKeyRefStringWhereCliRequiresFormatSlashPath)
+{
+	const char* text = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","type":"map","keyRef":"no-slash-here","valueType":"float"}]})";
+	const LoadResult r = ValueSchemaLoader::LoadFromText(text, "keyref.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	EXPECT_STREQ(r.mEntries[0].mMapKeyRef.AsCStr(), "no-slash-here");
+}

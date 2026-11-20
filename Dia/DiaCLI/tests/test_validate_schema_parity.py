@@ -229,3 +229,45 @@ def test_q3_conformance_fixture_with_a_later_bad_entry_agrees_on_the_verdict():
     c = EXPECTED["cases"][name]
     fs = [f for f in validate_schema_text((CONF / name).read_text(encoding="utf-8"), name) if f.severity == "FAIL"]
     assert not c["ok"] and fs and fs[0].key == c["failedEntry"]
+
+
+def test_q3_keyref_without_format_slash_path_fails_in_python_but_loads_in_cpp():
+    """Decision (orchestrator, to confirm): the CLI is intentionally stricter on `keyRef`. The C++ loader accepts
+    any string and resolves the key source later; the CLI requires '<format>/<record path>'. Both sides pinned."""
+    fs = validate_schema_document(
+        _doc(_entry(type="map", keyRef="no-slash-here", valueType="float")), "f.json")
+    assert [(f.severity, f.rule, f.key) for f in fs] == [("FAIL", "schema.ref-malformed", "k")]
+    cpp = CPP_TEST.read_text(encoding="utf-8")
+    assert "LoaderAcceptsAnyKeyRefStringWhereCliRequiresFormatSlashPath" in cpp and '"no-slash-here"' in cpp
+    loader = LOADER_CPP.read_text(encoding="utf-8")
+    assert "AssignRequired(r, ctx, info.mMapKeyRef, e, \"keyRef\")" in loader   # a plain string, no format check
+    readme = (CONF / "README.md").read_text(encoding="utf-8")
+    assert "CLI stricter than the loader" in readme and "keyRef" in readme
+
+
+def test_q3_every_data_case_schema_passes_the_cli_shape_rules_so_cpp_must_load_it():
+    """Shared loader-level verdict for data cases: no schema.* FAIL on the CLI side, hence the C++ test
+    EveryDataCaseSchemaLoadsAndReadsBackItsDeclaredStructure expects mOk for each. data.* findings are CLI-only.
+    One known exception, found by this parity pass: record-table-every-record.case.json declares `"ref": "x"`, which
+    the CLI rejects (schema.ref-malformed, the same CLI-stricter rule as keyRef) while the C++ loader accepts it;
+    the data rules do not run the schema shape rules, so the fixture's expected findings are unaffected."""
+    known = {("record-table-every-record.case.json", 0): ["schema.ref-malformed"]}
+    for name in INDEX["cases"]:
+        case = json.loads((DATA / name).read_text(encoding="utf-8"))
+        for i, s in enumerate(case["schemas"]):
+            fails = [f.rule for f in validate_schema_document(s, f"{name}#{i}") if f.severity == "FAIL"]
+            assert fails == known.get((name, i), []), (name, i, fails)
+    assert "EveryDataCaseSchemaLoadsAndReadsBackItsDeclaredStructure" in CPP_TEST.read_text(encoding="utf-8")
+
+
+def test_q3_structure_counts_in_data_cases_are_those_the_cpp_test_reads_back():
+    """The C++ data-case test compares entry, band, map-default and constraint counts with the case file; make sure
+    at least one case exercises each so the comparison is not vacuous. No data case carries `bands` (the good-bands
+    schema fixture and GoodBandsRoundTripIntoValueInfo cover them), so bands are not required here."""
+    seen = {"constraints": 0, "mapdefault": 0}
+    for name in INDEX["cases"]:
+        for s in json.loads((DATA / name).read_text(encoding="utf-8"))["schemas"]:
+            seen["constraints"] += len(s.get("constraints", []))
+            for e in s["entries"]:
+                seen["mapdefault"] += isinstance(e.get("default"), dict)
+    assert all(v > 0 for v in seen.values()), seen

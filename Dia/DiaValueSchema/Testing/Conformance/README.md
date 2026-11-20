@@ -24,3 +24,14 @@ Keep `reasonContains` short and stable (usually the offending key name) so wordi
 - A new format rule must add a fixture here (a bad file for each rejection, a good file for each new accepted shape) and an `expected.json` entry.
 - Every `*.schema.json` needs an `expected.json` entry and every entry needs a file; the GoogleTest fails on drift.
 - These are data files: they are not listed in any vcxproj.
+
+## CLI stricter than the loader
+
+`dia validate schema` deliberately rejects some inputs the C++ `ValueSchemaLoader` accepts (the loader checks shape, later stages and the CLI check meaning). These are not fixtures here (a fixture has one verdict for both sides); each is pinned on both sides in `Dia/DiaCLI/tests/test_validate_schema_parity.py` (Q3) and, where C++ is the accepting side, in `TestValueSchemaConformance.cpp`:
+
+- Empty or blank `description` (`schema.empty-description`).
+- Duplicate full key in one file (`schema.duplicate-key`; the registry resolves it first-wins).
+- `keyRef` (and `ref`) not shaped `<format>/<record path>` (`schema.ref-malformed`); the loader accepts any `keyRef` string and the key source is resolved later by `FromValueSchema`.
+- Every bad entry is reported, where the loader stops at the first.
+
+Data-side findings (`data.*`, including `data.constraint-violated` and `data.unresolved-map-key`) are implemented by the CLI only until `FromValueSchema` exists; the C++ side checks that the schemas of every `data/*.case.json` load and read back the declared structure.
