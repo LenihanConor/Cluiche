@@ -383,3 +383,39 @@ TEST(TerrainRulesSession, LoadRulesIsRefusedOnceAWorldExists)
     EXPECT_STREQ(err.key.AsCStr(), "state");
     EXPECT_TRUE(s.RulesLoaded());
 }
+
+// AC 18 (part 2): the old file and its alias are gone; the sidecar and its alias are the only rules asset.
+TEST(TerrainRulesSidecar, OldTerrainRulesJsonAndAliasAreGone)
+{
+    std::error_code       ec;
+    std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+    std::filesystem::path root;
+    while (!dir.empty())
+    {
+        if (std::filesystem::exists(dir / "Cluiche/Assets/CoW/assets.catalogue.json", ec)) { root = dir; break; }
+        if (dir == dir.parent_path()) { break; }
+        dir = dir.parent_path();
+    }
+    ASSERT_FALSE(root.empty());
+    EXPECT_FALSE(std::filesystem::exists(root / "Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.json", ec));
+    EXPECT_TRUE(std::filesystem::exists(root / "Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json", ec));
+
+    std::ifstream in(root / "Cluiche/Assets/CoW/assets.catalogue.json", std::ios::binary);
+    Json::Value   catalogue;
+    Json::CharReaderBuilder builder;
+    std::string errs;
+    ASSERT_TRUE(Json::parseFromStream(builder, in, &catalogue, &errs)) << errs;
+    bool oldAlias = false, newAlias = false;
+    for (const Json::Value& a : catalogue["assets"])
+    {
+        const std::string id = a["id"].asString();
+        if (id == "json.terrain_rules") { oldAlias = true; }
+        if (id == "json.terrain_rules_schema")
+        {
+            newAlias = true;
+            EXPECT_EQ(a["source_path"].asString(), "Global/WorldGen/Rules/terrain_rules.schema.json");
+        }
+    }
+    EXPECT_FALSE(oldAlias);
+    EXPECT_TRUE(newAlias);
+}

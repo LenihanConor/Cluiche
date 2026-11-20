@@ -46,7 +46,7 @@ struct WorldJsonContext
     const SiteRegistry* registry = nullptr;
     // Export: written as provenance.preset_id when non-empty, else the world's own provenance.presetId.
     std::string presetId;
-    // Import: this build's terrain_rules version; a file recorded with another one gets a warning. 0 = do not compare.
+    // Import: this build's terrain rules version (TerrainRules::rulesVersion); a file recorded with another one gets a warning. 0 = do not compare.
     uint32_t rulesVersion = 0;
 };
 

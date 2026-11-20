@@ -41,7 +41,7 @@ std::filesystem::path FindShippedRules()
     std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
     while (!dir.empty())
     {
-        const std::filesystem::path candidate = dir / "Cluiche/Assets/CoW/Global/WorldGen/terrain_rules.json";
+        const std::filesystem::path candidate = dir / "Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json";
         if (std::filesystem::exists(candidate, ec))
         {
             return candidate;
@@ -224,14 +224,22 @@ TEST(TerrainRules, EmptyObjectDoesNotOverflowWarnings)
 TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
 {
     const std::filesystem::path path = FindShippedRules();
-    ASSERT_FALSE(path.empty()) << "terrain_rules.json not found above " << __FILE__;
+    ASSERT_FALSE(path.empty()) << "terrain_rules.schema.json not found above " << __FILE__;
 
     std::ifstream in(path, std::ios::binary);
     ASSERT_TRUE(in.good());
-    Json::Value root;
+    // The shipped file is now the parameter sidecar: read its entries as the flat key -> default object the
+    // old terrain_rules.json held (plus rulesVersion), so every check below keeps its meaning.
+    Json::Value sidecar;
     Json::CharReaderBuilder builder;
     std::string errs;
-    ASSERT_TRUE(Json::parseFromStream(builder, in, &root, &errs)) << errs;
+    ASSERT_TRUE(Json::parseFromStream(builder, in, &sidecar, &errs)) << errs;
+    Json::Value root(Json::objectValue);
+    root["rulesVersion"] = 4;
+    for (const Json::Value& entry : sidecar["entries"])
+    {
+        root[entry["key"].asString()] = entry["default"];
+    }
 
     std::set<std::string> fileKeys;
     for (const std::string& k : root.getMemberNames())

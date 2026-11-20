@@ -187,7 +187,7 @@ struct WorldProvenance
     WorldShapeParams shape;
     char             presetId[33];       // empty if modified or none
     uint32_t         generatorVersion;   // kTerrainGeneratorVersion
-    uint32_t         rulesVersion;       // terrain_rules.json
+    uint32_t         rulesVersion;       // terrain_rules sidecar (a code constant, TerrainRules::rulesVersion)
 };
 
 struct GridDimensions
