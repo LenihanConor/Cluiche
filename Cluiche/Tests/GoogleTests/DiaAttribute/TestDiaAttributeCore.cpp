@@ -780,7 +780,9 @@ TEST_F(DiaAttributeLoggingTest, AddModifier_StackFull_RejectsAndLogsWarning)
     Dia::Core::g_pAssertFunc = prevAssertFunc;
 
     EXPECT_FALSE(overflow.IsValid());
+#ifdef DEBUG   // DIA_ASSERT compiles out in Release
     EXPECT_GT(gStackFullAssertCount, 0) << "AddModifier's DIA_ASSERT must fire when the stack is already full";
+#endif
     EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
     EXPECT_EQ(set.GetModifierCountForAttribute(StringCRC("health")), AttributeSet::kMaxModifiersPerAttribute);
 }
@@ -879,7 +881,9 @@ TEST_F(DiaAttributeLoggingTest, ResolveValue_SelfReferencingConditionalModifier_
     Dia::Core::g_pAssertFunc = prevAssertFunc;
 
     EXPECT_TRUE(h.IsValid());
+#ifdef DEBUG   // DIA_ASSERT compiles out in Release
     EXPECT_GT(gReentrancyGuardAssertCount, 0) << "reentrancy guard must assert when the cycle is detected";
+#endif
     EXPECT_GE(mSink.CountByLevel(Dia::Observation::Log::LogLevel::kWarning), 1u);
 
     // No hang, no crash, and the returned value is finite and within the schema's clamp
