@@ -44,6 +44,7 @@ def test_e2e_help_shows_all_options():
     assert "--list" in result.output
     assert "--port" in result.output
     assert "--no-launch" in result.output
+    assert "--no-build" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -103,3 +104,44 @@ def test_e2e_passes_args_to_run_orchestration():
     call_kwargs = mock_run_orch.call_args[1]
     assert call_kwargs["filter_expr"] == "test_foo"
     assert call_kwargs["no_launch"] is True
+
+
+# ---------------------------------------------------------------------------
+# Build step
+# ---------------------------------------------------------------------------
+
+def _run_e2e_with_build(args, build_code):
+    runner = CliRunner()
+    mock_cli_module, _, mock_run_orch = _make_e2e_mock(
+        load_plan_return={"app": "cluichetest", "config": "Debug"},
+        run_orchestration_return=0,
+    )
+    with patch.dict(sys.modules, {"cli": mock_cli_module}),             patch("dia_cli.cli.run._run_pipeline", return_value=build_code) as mock_build:
+        result = runner.invoke(cli, ["test", "e2e", *args])
+    return result, mock_build, mock_run_orch
+
+
+def test_e2e_builds_plan_app_before_running():
+    result, mock_build, mock_run_orch = _run_e2e_with_build([], 0)
+    assert mock_build.call_args[0][2:4] == ("cluichetest", "Debug")
+    assert mock_run_orch.called
+    assert result.exit_code == 0
+
+
+def test_e2e_build_failure_skips_scenarios():
+    result, mock_build, mock_run_orch = _run_e2e_with_build([], 1)
+    assert result.exit_code == 1
+    assert not mock_run_orch.called
+    assert "build" in result.output.lower()
+
+
+def test_e2e_no_build_skips_build():
+    result, mock_build, mock_run_orch = _run_e2e_with_build(["--no-build"], 0)
+    assert not mock_build.called
+    assert mock_run_orch.called
+
+
+def test_e2e_list_and_no_launch_skip_build():
+    for flag in ("--list", "--no-launch"):
+        _, mock_build, _ = _run_e2e_with_build([flag], 0)
+        assert not mock_build.called
