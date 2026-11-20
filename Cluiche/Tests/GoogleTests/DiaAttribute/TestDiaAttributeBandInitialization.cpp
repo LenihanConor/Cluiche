@@ -47,23 +47,9 @@ static Json::Value ParseJson(const char* str)
 // AC-1: Schema with bands field loads correctly; band names and ranges accessible via API
 TEST(DiaAttributeBandInitialization, SchemaLoadsBandsCorrectly)
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"band_schema_version\": 1,"
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0,"
-        "      \"maximum_value\": 200.0,"
-        "      \"default_value\": 50.0,"
-        "      \"bands\": {"
-        "        \"LOW\":    [10.0, 40.0],"
-        "        \"MEDIUM\": [40.0, 110.0],"
-        "        \"HIGH\":   [110.0, 160.0]"
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("strength", 0, 200, 50, R"(,"bands":{"LOW":[10.0,40.0],"MEDIUM":[40.0,110.0],"HIGH":[110.0,160.0]})") }, nullptr, "dragon");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
 
     ASSERT_TRUE(schema.IsValid());
     EXPECT_EQ(schema.GetBandSchemaVersion(), 1u);
@@ -93,18 +79,9 @@ TEST(DiaAttributeBandInitialization, SingleBandResolvesToMidpoint)
 // AC-3: InitializeFromBands() resolves multiple attributes from bands in one call
 TEST(DiaAttributeBandInitialization, MultipleAttributesFromBands)
 {
-    const char* json =
-        "{ \"schema_name\": \"multi\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": { \"LOW\": [0.0, 30.0], \"HIGH\": [70.0, 100.0] } },"
-        "    { \"attribute_name\": \"agility\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": { \"MEDIUM\": [40.0, 60.0] } }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("strength", 0, 100, 50, R"(,"bands":{"LOW":[0.0,30.0],"HIGH":[70.0,100.0]})"), SidecarFloat("agility", 0, 100, 50, R"(,"bands":{"MEDIUM":[40.0,60.0]})") }, nullptr, "multi");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
 
     Dia::Core::Containers::DynamicArrayC<BandValue, AttributeSet::kMaxBandValuesPerCall> bands;
@@ -149,16 +126,9 @@ TEST(DiaAttributeBandInitialization, MissingBandNameFallsBackToDefault)
 // AC-5: Attribute with no bands field falls back to default_value
 TEST(DiaAttributeBandInitialization, AttributeWithoutBandsFallsBackToDefault)
 {
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\","
-        "      \"minimum_value\": 0.0,"
-        "      \"maximum_value\": 100.0,"
-        "      \"default_value\": 75.0 }"
-        "  ] }";  // Note: no bands field
+    const std::string text = MakeSidecarText({ SidecarFloat("health", 0, 100, 75) }, nullptr, "test");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
 
     Dia::Core::Containers::DynamicArrayC<BandValue, AttributeSet::kMaxBandValuesPerCall> bands;
@@ -173,82 +143,37 @@ TEST(DiaAttributeBandInitialization, AttributeWithoutBandsFallsBackToDefault)
     EXPECT_FLOAT_EQ(set.GetBaseValue(StringCRC("health")), 75.0f);
 }
 
-// AC-6: Schema validation rejects band range where min > max
+// AC-6: Schema validation rejects band range where min > max.
+// Behaviour change with sidecars: the whole schema is rejected (error names the attribute) instead of the bad band being skipped.
 TEST(DiaAttributeBandInitialization, ValidationRejectsInvertedRange)
 {
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0,"
-        "      \"maximum_value\": 100.0,"
-        "      \"default_value\": 50.0,"
-        "      \"bands\": {"
-        "        \"VALID\": [10.0, 30.0],"
-        "        \"INVALID\": [60.0, 40.0]"  // min > max - should be rejected
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("strength", 0, 100, 50,
+        R"(,"bands":{"VALID":[10.0,30.0],"INVALID":[60.0,40.0]})") }, nullptr, "test");  // INVALID: min > max
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
-
-    // Schema should still be valid (bands are optional)
-    EXPECT_TRUE(schema.IsValid());
-
-    // The invalid band should NOT have been added (only VALID band exists)
-    // We can verify by trying to use the INVALID band - it should fall back to default
-    AttributeSet set = AttributeSet::CreateFromSchema(schema);
-
-    Dia::Core::Containers::DynamicArrayC<BandValue, AttributeSet::kMaxBandValuesPerCall> bands;
-    BandValue bv;
-    bv.attribute_name = StringCRC("strength");
-    bv.band_name = StringCRC("INVALID");
-    bands.Add(bv);
-
-    set.InitializeFromBands(schema, bands);
-
-    // Should fall back to default (50.0) not resolve to anything from [60, 40]
-    EXPECT_FLOAT_EQ(set.GetBaseValue(StringCRC("strength")), 50.0f);
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema(text.c_str(), schema, err));
+    EXPECT_FALSE(schema.IsValid());
+    EXPECT_EQ(schema.FindAttribute(StringCRC("strength")), nullptr);
 }
 
-// AC-7: Schema validation rejects band range outside attribute's [minimum_value, maximum_value]
+// AC-7: Schema validation rejects band range outside attribute's [minimum_value, maximum_value].
+// Behaviour change with sidecars: the whole schema is rejected instead of the bad band being skipped.
 TEST(DiaAttributeBandInitialization, ValidationRejectsOutOfBoundsRange)
 {
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0,"
-        "      \"maximum_value\": 100.0,"
-        "      \"default_value\": 50.0,"
-        "      \"bands\": {"
-        "        \"VALID\": [20.0, 40.0],"
-        "        \"OUTOFBOUNDS\": [90.0, 150.0]"  // max exceeds maximum_value
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("strength", 0, 100, 50,
+        R"(,"bands":{"VALID":[20.0,40.0],"OUTOFBOUNDS":[90.0,150.0]})") }, nullptr, "test");  // max exceeds maximum_value
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
-
-    EXPECT_TRUE(schema.IsValid());
-
-    // The out-of-bounds band should NOT have been added
-    // Verify by trying to use it - should fall back to default
-    AttributeSet set = AttributeSet::CreateFromSchema(schema);
-
-    Dia::Core::Containers::DynamicArrayC<BandValue, AttributeSet::kMaxBandValuesPerCall> bands;
-    BandValue bv;
-    bv.attribute_name = StringCRC("strength");
-    bv.band_name = StringCRC("OUTOFBOUNDS");
-    bands.Add(bv);
-
-    set.InitializeFromBands(schema, bands);
-
-    // Should fall back to default (50.0), not resolve to 120.0 from [90, 150]
-    EXPECT_FLOAT_EQ(set.GetBaseValue(StringCRC("strength")), 50.0f);
+    AttributeSchema schema;
+    SchemaError err;
+    EXPECT_FALSE(TryLoadSchema(text.c_str(), schema, err));
+    EXPECT_FALSE(schema.IsValid());
+    EXPECT_STREQ(err.key.AsCStr(), "strength");
 }
 
 // AC-8: band_schema_version field in schema is accessible via GetBandSchemaVersion()
+// TEMPORARY (plan task 11 open issue): still on the legacy LoadFromJsonValue loader. A sidecar cannot express a band
+// schema version other than 1 (LoadResult does not expose `version` and the loader only accepts 1).
 TEST(DiaAttributeBandInitialization, BandSchemaVersionAccessible)
 {
     const char* json =
@@ -320,18 +245,9 @@ TEST(DiaAttributeBandInitialization, EmptyBandMapNoOp)
 // Additional test: Attribute not in band map uses default_value (AC-9 variant)
 TEST(DiaAttributeBandInitialization, AttributeNotInBandMapUnchanged)
 {
-    const char* json =
-        "{ \"schema_name\": \"multi\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": { \"LOW\": [0.0, 30.0] } },"
-        "    { \"attribute_name\": \"agility\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 60.0,"
-        "      \"bands\": { \"MEDIUM\": [40.0, 60.0] } }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("strength", 0, 100, 50, R"(,"bands":{"LOW":[0.0,30.0]})"), SidecarFloat("agility", 0, 100, 60, R"(,"bands":{"MEDIUM":[40.0,60.0]})") }, nullptr, "multi");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
 
     // Only initialize strength, leave agility at default
@@ -380,20 +296,9 @@ TEST(DiaAttributeBandInitialization, BandAtExactBoundaries)
 // Edge: Overlapping band ranges (should be allowed per spec)
 TEST(DiaAttributeBandInitialization, OverlappingBandsAllowed)
 {
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"power\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": {"
-        "        \"LOW\":    [0.0, 40.0],"
-        "        \"MEDIUM\": [30.0, 70.0],"
-        "        \"HIGH\":   [60.0, 100.0]"
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("power", 0, 100, 50, R"(,"bands":{"LOW":[0.0,40.0],"MEDIUM":[30.0,70.0],"HIGH":[60.0,100.0]})") }, nullptr, "test");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     EXPECT_TRUE(schema.IsValid());
 
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
@@ -424,25 +329,9 @@ TEST(DiaAttributeBandInitialization, OverlappingBandsAllowed)
 TEST(DiaAttributeBandInitialization, ManyBandsHandledCorrectly)
 {
     // Create schema with 20 bands
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"band_schema_version\": 1,"
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"stat\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 1000.0, \"default_value\": 500.0,"
-        "      \"bands\": {"
-        "        \"B0\":  [0.0, 50.0], \"B1\":  [50.0, 100.0], \"B2\":  [100.0, 150.0],"
-        "        \"B3\":  [150.0, 200.0], \"B4\":  [200.0, 250.0], \"B5\":  [250.0, 300.0],"
-        "        \"B6\":  [300.0, 350.0], \"B7\":  [350.0, 400.0], \"B8\":  [400.0, 450.0],"
-        "        \"B9\":  [450.0, 500.0], \"B10\": [500.0, 550.0], \"B11\": [550.0, 600.0],"
-        "        \"B12\": [600.0, 650.0], \"B13\": [650.0, 700.0], \"B14\": [700.0, 750.0],"
-        "        \"B15\": [750.0, 800.0], \"B16\": [800.0, 850.0], \"B17\": [850.0, 900.0],"
-        "        \"B18\": [900.0, 950.0], \"B19\": [950.0, 1000.0]"
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("stat", 0, 1000, 500, R"(,"bands":{"B0":[0.0,50.0],"B1":[50.0,100.0],"B2":[100.0,150.0],"B3":[150.0,200.0],"B4":[200.0,250.0],"B5":[250.0,300.0],"B6":[300.0,350.0],"B7":[350.0,400.0],"B8":[400.0,450.0],"B9":[450.0,500.0],"B10":[500.0,550.0],"B11":[550.0,600.0],"B12":[600.0,650.0],"B13":[650.0,700.0],"B14":[700.0,750.0],"B15":[750.0,800.0],"B16":[800.0,850.0],"B17":[850.0,900.0],"B18":[900.0,950.0],"B19":[950.0,1000.0]})") }, nullptr, "test");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     EXPECT_TRUE(schema.IsValid());
 
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
@@ -463,6 +352,8 @@ TEST(DiaAttributeBandInitialization, ManyBandsHandledCorrectly)
 }
 
 // Edge: Multiple schemas with different band_schema_version
+// TEMPORARY (plan task 11 open issue): still on the legacy LoadFromJsonValue loader. A sidecar cannot express a band
+// schema version other than 1 (LoadResult does not expose `version` and the loader only accepts 1).
 TEST(DiaAttributeBandInitialization, DifferentSchemaVersionsCoexist)
 {
     const char* json_v1 =
@@ -535,21 +426,9 @@ TEST(DiaAttributeBandInitialization, SmallRangePrecision)
 // Edge: Band name with special characters (StringCRC handling)
 TEST(DiaAttributeBandInitialization, BandNamesWithSpecialCharacters)
 {
-    const char* json =
-        "{ \"schema_name\": \"test\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"stat\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": {"
-        "        \"low-tier\":    [0.0, 30.0],"
-        "        \"mid_tier\":    [30.0, 70.0],"
-        "        \"high.tier\":   [70.0, 100.0],"
-        "        \"tier::ultra\": [90.0, 100.0]"
-        "      }"
-        "    }"
-        "  ] }";
+    const std::string text = MakeSidecarText({ SidecarFloat("stat", 0, 100, 50, R"(,"bands":{"low-tier":[0.0,30.0],"mid_tier":[30.0,70.0],"high.tier":[70.0,100.0],"tier::ultra":[90.0,100.0]})") }, nullptr, "test");
 
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
     EXPECT_TRUE(schema.IsValid());
 
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
