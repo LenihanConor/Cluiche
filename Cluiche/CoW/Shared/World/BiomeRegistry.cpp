@@ -188,6 +188,11 @@ namespace
         const std::string id = jr["id"].asString();
         const char* idc = id.c_str();
 
+        for (uint32_t i = 0; i < d.rows.Size(); ++i)
+        {
+            if (std::strcmp(d.rows.At(i).idText.AsCStr(), idc) == 0) { return Fail(err, "id", idc, rowIndex, "duplicate id"); }
+        }
+
         d.rows.AddDefault();
         Row& r = d.rows.Back();
         r.idText.SetText(idc);
@@ -236,6 +241,7 @@ namespace
             {
                 const int role = IndexOf(kRoleNames, n.c_str());
                 if (role < 0) { return Fail(err, "roles", idc, rowIndex, "unknown role"); }
+                if (d.roles[role] != kNoBiome) { return Fail(err, "roles", idc, rowIndex, "role is held by more than one row"); }
                 d.roles[role] = static_cast<BiomeIndex>(rowIndex);
             }
         }
@@ -248,6 +254,8 @@ namespace
             {
                 return Fail(err, "climate", idc, rowIndex, "climate needs numeric t0, m0, wt, wm");
             }
+            if (!(r.climate.wt > 0.0f)) { return Fail(err, "climate.wt", idc, rowIndex, "climate wt must be > 0"); }
+            if (!(r.climate.wm > 0.0f)) { return Fail(err, "climate.wm", idc, rowIndex, "climate wm must be > 0"); }
             r.hasClimate = true;
         }
 
@@ -257,6 +265,10 @@ namespace
             const int rule = (p.isObject() && p["rule"].isString()) ? IndexOf(kPinNames, p["rule"].asString().c_str()) : -1;
             if (rule < 0) { return Fail(err, "pin", idc, rowIndex, "unknown or missing pin rule"); }
             if (!p["priority"].isInt() || p["priority"].asInt() < 0) { return Fail(err, "pin", idc, rowIndex, "pin priority must be an integer >= 0"); }
+            for (uint32_t i = 0; i < rowIndex; ++i)
+            {
+                if (d.rows.At(i).pinPriority == p["priority"].asInt()) { return Fail(err, "pin.priority", idc, rowIndex, "pin priority already used by another row"); }
+            }
             r.pin = static_cast<PinRule>(rule);
             r.pinPriority = p["priority"].asInt();
         }
@@ -267,6 +279,10 @@ namespace
             if (p == "dry") { r.plateau = 0; }
             else if (p == "wet") { r.plateau = 1; }
             else { return Fail(err, "plateau", idc, rowIndex, "plateau must be 'wet' or 'dry'"); }
+            for (uint32_t i = 0; i < rowIndex; ++i)
+            {
+                if (d.rows.At(i).plateau == r.plateau) { return Fail(err, "plateau", idc, rowIndex, "plateau already held by another row"); }
+            }
         }
         return true;
     }
@@ -316,6 +332,11 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
         ++row;
     }
 
+    for (uint32_t role = 0; role < kRoleCount; ++role)
+    {
+        if (cand->roles[role] == kNoBiome) { return Fail(err, "roles", "", 0, "a role is held by no row (ocean, lake, fallback each need exactly one)"); }
+    }
+
     // Forbidden pairs, stored symmetric.
     const Json::Value& forbidden = root["forbidden"];
     if (!forbidden.isNull())
@@ -340,6 +361,8 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
             {
                 return Fail(err, "forbidden", ia == kNoBiome ? a.c_str() : b.c_str(), pairIndex, "forbidden pair names an unknown id");
             }
+            if (ia == ib) { return Fail(err, "forbidden", a.c_str(), pairIndex, "biome is forbidden with itself"); }
+            if (((cand->forbidden[ia][ib >> 3] >> (ib & 7)) & 1u) != 0) { return Fail(err, "forbidden", a.c_str(), pairIndex, "forbidden pair listed twice"); }
             cand->forbidden[ia][ib >> 3] |= static_cast<uint8_t>(1u << (ib & 7));
             cand->forbidden[ib][ia >> 3] |= static_cast<uint8_t>(1u << (ia & 7));
             ++pairIndex;

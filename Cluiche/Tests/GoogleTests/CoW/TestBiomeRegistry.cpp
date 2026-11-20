@@ -314,9 +314,10 @@ namespace
         {
             if (i) { s += ","; }
             const bool last = (i == rows - 1);
+            const char* role = i == 0 ? ",\"roles\":[\"ocean\"]" : i == 1 ? ",\"roles\":[\"lake\"]" : i == 2 ? ",\"roles\":[\"fallback\"]" : "";
             s += "{\"id\":\"Biome.N" + std::to_string(i) + "\",\"name\":\"N\",\"colour\":\"#000001\",\"description\":\"d\","
                  "\"tags\":[\"land\"" + std::string(last ? ",\"succession\"" : "") + "],\"generated\":true,"
-                 "\"zones\":[\"FirstShores\"" + std::string(last ? ",\"AncientInteriors\"" : "") + "]}";
+                 "\"zones\":[\"FirstShores\"" + std::string(last ? ",\"AncientInteriors\"" : "") + "]" + role + "}";
         }
         s += "],\"forbidden\":[[\"Biome.N" + std::to_string(rows - 1) + "\",\"Biome.N0\"],[\"Biome.N1\",\"Biome.N" +
              std::to_string(rows - 2) + "\"]]}";
