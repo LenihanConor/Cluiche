@@ -38,6 +38,10 @@ namespace Dia::Entity::detail {
 //   - GetStaticTypeId() : static method (used by Domain templates)
 //   - GetDesc()   : static method (defined in DIA_COMPONENT_REGISTER)
 //
+// kTypeName is the same string as a constexpr const char*. DIA_REQ_ENTRY / DIA_WRITES_ENTRY build their
+// CRC from it, so a REQUIRES/WRITES array never reads another TU's dynamically-initialised kTypeId
+// (static-init-order race: zero CRC in some Release link orders).
+//
 // NOTE: StringCRC is not a literal/constexpr type, so kTypeId cannot be
 // constexpr. It is declared `static const` here and defined out-of-class
 // inside DIA_COMPONENT_REGISTER (one .cpp per component).
@@ -45,6 +49,7 @@ namespace Dia::Entity::detail {
 #define DIA_COMPONENT(ClassName, StringName, SchemaVersion)                     \
 public:                                                                          \
     static const Dia::Core::StringCRC     kTypeId;                               \
+    static constexpr const char*          kTypeName = (StringName);              \
     static constexpr uint16_t             kVersion = (SchemaVersion);            \
     Dia::Core::StringCRC GetTypeId() const override { return kTypeId; }          \
     static Dia::Core::StringCRC GetStaticTypeId()   { return kTypeId; }          \
@@ -131,7 +136,7 @@ public: static constexpr bool kIsReadOnly = true; private:
 //   };
 // =============================================================================
 #define DIA_REQ_ENTRY(OtherComponent) \
-    OtherComponent::kTypeId,
+    Dia::Core::StringCRC(OtherComponent::kTypeName),
 
 // =============================================================================
 // DIA_WRITES_ENTRY(TargetComponent)
@@ -145,7 +150,7 @@ public: static constexpr bool kIsReadOnly = true; private:
 //   };
 // =============================================================================
 #define DIA_WRITES_ENTRY(TargetComponent) \
-    TargetComponent::kTypeId,
+    Dia::Core::StringCRC(TargetComponent::kTypeName),
 
 // =============================================================================
 // DIA_ARRAY_COUNT(arr)
