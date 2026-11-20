@@ -165,3 +165,42 @@ TEST(DiaAttributeSetIndexAccess, GetAttributeNameByIndex_ReturnsSchemaOrder_AndN
     }
     EXPECT_FALSE(set.HasAttribute(StringCRC("nope")));
 }
+
+// Out-of-range indices are programmer errors: DIA_ASSERT fires in Debug (DIA_DEBUG); DIA_EXPECT_DEATH compiles to
+// nothing in Release, where the accessors fall back to 0 / an empty name / a no-op (not asserted: the Release
+// fallback is not part of the contract).
+TEST(DiaAttributeSetIndexAccessDeathTest, OutOfRangeIndexAsserts)
+{
+    AttributeSchema schema = MakeSchema();
+    AttributeSet set = AttributeSet::CreateFromSchema(schema);
+    const unsigned int n = set.GetAttributeCount();
+    ASSERT_EQ(n, 4u);
+    DIA_EXPECT_DEATH((void)set.GetValueByIndex(n), "");
+    DIA_EXPECT_DEATH((void)set.GetAttributeNameByIndex(n), "");
+    DIA_EXPECT_DEATH((void)set.GetMinimumValueByIndex(n), "");
+    DIA_EXPECT_DEATH((void)set.GetMaximumValueByIndex(n), "");
+    DIA_EXPECT_DEATH((void)set.GetBaseValueByIndex(n), "");
+    DIA_EXPECT_DEATH(set.SetBaseValueByIndex(n, 1.0f), "");
+    DIA_EXPECT_DEATH((void)set.GetBaseValueByIndex(0xFFFFFFFFu), "");
+}
+
+TEST(DiaAttributeSetIndexAccessDeathTest, EmptySetAnyIndexAsserts)
+{
+    AttributeSet set;
+    DIA_EXPECT_DEATH((void)set.GetBaseValueByIndex(0), "");
+    DIA_EXPECT_DEATH(set.SetBaseValueByIndex(0, 1.0f), "");
+}
+
+// The last valid index is accepted (boundary), in every configuration.
+TEST(DiaAttributeSetIndexAccess, LastValidIndexIsAccepted)
+{
+    AttributeSchema schema = MakeSchema();
+    AttributeSet set = AttributeSet::CreateFromSchema(schema);
+    EXPECT_FLOAT_EQ(set.GetBaseValueByIndex(3), 40.0f);
+    EXPECT_FLOAT_EQ(set.GetValueByIndex(3), 40.0f);
+    EXPECT_EQ(set.GetAttributeNameByIndex(3), StringCRC("beta"));
+    EXPECT_FLOAT_EQ(set.GetMinimumValueByIndex(3), 0.0f);
+    EXPECT_FLOAT_EQ(set.GetMaximumValueByIndex(3), 100.0f);
+    set.SetBaseValueByIndex(3, 55.0f);
+    EXPECT_FLOAT_EQ(set.GetBaseValueByIndex(3), 55.0f);
+}

@@ -12,6 +12,7 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <cstdio>
 #include <cstdlib>
@@ -1364,4 +1365,571 @@ TEST(DiaAttributeParameterFileSave, RoundTripRestoresBaseValuesModifiersAndHash)
     EXPECT_EQ(dst.Values().GetModifierCountForAttribute(StringCRC("a.count")), 0u);
     EXPECT_EQ(dst.Values().GetValue(StringCRC("a.speed")), src.Values().GetValue(StringCRC("a.speed")));
     EXPECT_EQ(dst.Values().GetValue(StringCRC("m.temp.Desert")), src.Values().GetValue(StringCRC("m.temp.Desert")));
+}
+
+
+// ===========================================================================
+// Plan task 28: exhaustive gap audit, edge tests
+// ===========================================================================
+namespace
+{
+    // Accepts two keyRef strings (both resolve to the fixture ids), so a keyRef change can be hashed.
+    class TwoRefKeySource : public IMapKeySource
+    {
+    public:
+        bool GetKeys(const char* keyRef, MapKeys& out) const override
+        {
+            if (keyRef != nullptr && strcmp(keyRef, "cow.alt/biomes[].id") == 0) keyRef = FixtureMapKeySource::kKeyRef;
+            return mInner.GetKeys(keyRef, out);
+        }
+    private:
+        FixtureMapKeySource mInner;
+    };
+
+    uint64_t HashTwoRef(const std::string& text)
+    {
+        static const TwoRefKeySource keys;
+        ParameterFile pf;
+        ParamError err;
+        EXPECT_TRUE(pf.Load(text.c_str(), "t", &keys, err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
+        return pf.SchemaHash();
+    }
+
+    std::string OneFloat(const char* extra = "") { return MakeSidecarText({ SidecarFloat("x", 0, 1, 0.5, extra) }); }
+
+    std::string ChainText()
+    {
+        return MakeSidecarText({ SidecarFloat("lo", 0, 10, 1), SidecarFloat("mid", 0, 10, 5), SidecarFloat("hi", 0, 10, 9) },
+                               R"([{"a":"lo","op":"<=","b":"mid"},{"a":"mid","op":"<=","b":"hi"}])", "test.params");
+    }
+
+    std::string EqText()
+    {
+        return MakeSidecarText({ SidecarFloat("a", 0, 10, 3), SidecarFloat("b", 0, 10, 3), SidecarFloat("c", 0, 10, 1), SidecarFloat("d", 0, 10, 2) },
+                               R"([{"a":"a","op":"==","b":"b"},{"a":"c","op":"!=","b":"d"}])", "test.params");
+    }
+
+    std::string MapConstraintText()
+    {
+        return MakeSidecarText({ SidecarFloat("lo", 0, 1, 0.05),
+                                 SidecarMap("m.temp", 0, 1, R"({"TemperateForest":0.5,"Desert":0.8,"Tundra":0.1})") },
+                               R"([{"a":"lo","op":"<=","b":"m.temp.Tundra"}])", "test.params");
+    }
+}
+
+// ---- SchemaHash, one test per excluded presentation field (AC 26) ----------------------------------------------
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesLabel)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(Replace(OneFloat(), "\"label\":\"l\"", "\"label\":\"Another label\"")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesDescription)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(Replace(OneFloat(), "\"description\":\"d\"", "\"description\":\"Longer words\"")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesHint)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(OneFloat(R"(,"hint":"a hint")")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesUnit)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(OneFloat(R"(,"unit":"m/s")")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesUi)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(OneFloat(R"(,"ui":{"group":"G","step":0.1,"decimals":2})")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesColour)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(OneFloat(R"(,"ui":{"colour":"#ff0000"})")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesEnumValueLabelAndColour)
+{
+    const std::string a = MakeSidecarText({ SidecarEnum("e", { "One", "Two" }, "One") });
+    const std::string b = Replace(a, "{\"id\":\"One\",\"label\":\"One\"}", "{\"id\":\"One\",\"label\":\"Uno\",\"colour\":\"#00ff00\"}");
+    EXPECT_EQ(HashOfText(a), HashOfText(b));
+}
+TEST(DiaAttributeParameterFileSchemaHash, ExcludesNonParameterEntries)
+{
+    EXPECT_EQ(HashOfText(OneFloat()), HashOfText(MakeSidecarText({ SidecarFloat("x", 0, 1, 0.5), SidecarMetric("some.metric") })));
+}
+
+// ---- SchemaHash, one test per included input (AC 27) -----------------------------------------------------------
+TEST(DiaAttributeParameterFileSchemaHash, IncludesKey)
+{
+    EXPECT_NE(HashOfText(OneFloat()), HashOfText(Replace(OneFloat(), "\"key\":\"x\"", "\"key\":\"y\"")));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesKind)
+{
+    EXPECT_NE(HashOfText(MakeSidecarText({ SidecarFloat("x", 0, 1, 0) })), HashOfText(MakeSidecarText({ SidecarInt("x", 0, 1, 0) })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesMin)
+{
+    EXPECT_NE(HashOfText(OneFloat()), HashOfText(MakeSidecarText({ SidecarFloat("x", 0.25, 1, 0.5) })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesMax)
+{
+    EXPECT_NE(HashOfText(OneFloat()), HashOfText(MakeSidecarText({ SidecarFloat("x", 0, 2, 0.5) })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesDefault)
+{
+    EXPECT_NE(HashOfText(OneFloat()), HashOfText(MakeSidecarText({ SidecarFloat("x", 0, 1, 0.75) })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesBoolDefault)
+{
+    EXPECT_NE(HashOfText(MakeSidecarText({ SidecarBool("b", false) })), HashOfText(MakeSidecarText({ SidecarBool("b", true) })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesEnumDefault)
+{
+    EXPECT_NE(HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Two" }, "One") })),
+              HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Two" }, "Two") })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesEnumId)
+{
+    EXPECT_NE(HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Two" }, "One") })),
+              HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Zwei" }, "One") })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesEnumValueCount)
+{
+    EXPECT_NE(HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Two" }, "One") })),
+              HashOfText(MakeSidecarText({ SidecarEnum("e", { "One", "Two", "Three" }, "One") })));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesBandLoHiAndName)
+{
+    const uint64_t base = HashOfText(OneFloat(R"(,"bands":{"LOW":[0.0,0.3]})"));
+    EXPECT_NE(base, HashOfText(OneFloat(R"(,"bands":{"LOW":[0.1,0.3]})")));   // lo
+    EXPECT_NE(base, HashOfText(OneFloat(R"(,"bands":{"LOW":[0.0,0.35]})")));  // hi
+    EXPECT_NE(base, HashOfText(OneFloat(R"(,"bands":{"LOWX":[0.0,0.3]})")));  // name
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesConstraintOperandsAndOp)
+{
+    auto make = [](const char* a, const char* op, const char* b) {
+        const std::string c = std::string("[{\"a\":\"") + a + "\",\"op\":\"" + op + "\",\"b\":\"" + b + "\"}]";
+        return HashOfText(MakeSidecarText({ SidecarFloat("p", 0, 10, 1), SidecarFloat("q", 0, 10, 2), SidecarFloat("r", 0, 10, 3) }, c.c_str()));
+    };
+    const uint64_t base = make("p", "<=", "q");
+    EXPECT_NE(base, make("p", "<=", "r"));   // b operand
+    EXPECT_NE(base, make("q", "<=", "r"));   // a operand
+    EXPECT_NE(base, make("p", "<",  "q"));   // op
+    EXPECT_NE(base, make("p", "!=", "q"));   // op
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesConstraintCount)
+{
+    const std::string p = SidecarFloat("p", 0, 10, 1);
+    const std::string q = SidecarFloat("q", 0, 10, 2);
+    const uint64_t one = HashOfText(MakeSidecarText({ p, q }, R"([{"a":"p","op":"<=","b":"q"}])"));
+    const uint64_t two = HashOfText(MakeSidecarText({ p, q }, R"([{"a":"p","op":"<=","b":"q"},{"a":"p","op":"!=","b":"q"}])"));
+    EXPECT_NE(one, two);
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesMapKeyRef)
+{
+    const std::string a = MakeSidecarText({ SidecarMap("m", 0, 1, "0.5") });
+    const std::string b = Replace(a, "cow.biomes/biomes[].id", "cow.alt/biomes[].id");
+    EXPECT_NE(HashTwoRef(a), HashTwoRef(b));
+}
+TEST(DiaAttributeParameterFileSchemaHash, IncludesMapValueType)
+{
+    const std::string a = MakeSidecarText({ SidecarMap("m", 0, 5, "1") });
+    const std::string b = Replace(a, "\"valueType\":\"float\"", "\"valueType\":\"int\"");
+    EXPECT_NE(HashOfText(a), HashOfText(b));
+}
+TEST(DiaAttributeParameterFileSchemaHash, MapDefaultObjectKeyOrderDoesNotChangeIt)
+{
+    const std::string a = MakeSidecarText({ SidecarMap("m", 0, 1, R"({"TemperateForest":0.5,"Desert":0.8,"Tundra":0.1})") });
+    const std::string b = MakeSidecarText({ SidecarMap("m", 0, 1, R"({"Tundra":0.1,"Desert":0.8,"TemperateForest":0.5})") });
+    EXPECT_EQ(HashOfText(a), HashOfText(b));
+}
+TEST(DiaAttributeParameterFileSchemaHash, EntryOrderIsPartOfIt)
+{
+    const std::string a = MakeSidecarText({ SidecarFloat("p", 0, 1, 0.5), SidecarFloat("q", 0, 1, 0.5) });
+    const std::string b = MakeSidecarText({ SidecarFloat("q", 0, 1, 0.5), SidecarFloat("p", 0, 1, 0.5) });
+    EXPECT_NE(HashOfText(a), HashOfText(b));   // schema order is the ToJson/Hash/binding order
+}
+
+// ---- Strict load (AC 8) -----------------------------------------------------------------------------------------
+TEST(DiaAttributeParameterFileLoad, FirstOfTwoFaultsIsTheOneNamed)
+{
+    ExpectLoadFails(MakeSidecarText({ SidecarFloat("bad1", 0, 1, 5), SidecarFloat("ok", 0, 1, 0.5), SidecarFloat("bad2", 0, 1, -3) }), "bad1");
+}
+
+TEST(DiaAttributeParameterFileLoad, OneParameterSidecarLoadsHashesAndRoundTrips)
+{
+    const std::string text = MakeSidecarText({ SidecarFloat("only", 0, 10, 4) }, nullptr, "test.params");
+    ParameterFile pf;
+    ASSERT_TRUE(LoadFile(pf, text));
+    ASSERT_EQ(pf.Values().GetAttributeCount(), 1u);
+    const uint64_t h = pf.Hash();
+    ASSERT_TRUE(SetOk(pf, "only", Json::Value(5.5)));   // the last (and only) parameter changes the hash
+    EXPECT_NE(pf.Hash(), h);
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Full), { "format", "version", "basedOn", "only" }));
+    const Json::Value diff = pf.ToJson(JsonShape::Diff);
+    EXPECT_TRUE(HasExactly(diff, { "format", "version", "basedOn", "only" }));
+    ParameterFile fresh;
+    ASSERT_TRUE(ApplyToFresh(fresh, text, diff));
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+}
+
+TEST(DiaAttributeParameterFileLoad, NegativeZeroDefaultHashesLikePositiveZeroAndIsNotADiff)
+{
+    ParameterFile neg, pos;
+    ASSERT_TRUE(LoadFile(neg, MakeSidecarText({ SidecarFloat("z", -1, 1, -0.0) }, nullptr, "test.params")));
+    ASSERT_TRUE(LoadFile(pos, MakeSidecarText({ SidecarFloat("z", -1, 1, 0.0) }, nullptr, "test.params")));
+    EXPECT_EQ(neg.Values().GetBaseValueByIndex(0), 0.0f);
+    EXPECT_EQ(neg.Hash(), pos.Hash());                // -0.0 normalised
+    EXPECT_EQ(neg.SchemaHash(), pos.SchemaHash());    // the default is normalised in the schema hash too
+    EXPECT_TRUE(HasExactly(neg.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));   // value equals its default bitwise
+}
+
+TEST(DiaAttributeParameterFileLoad, EnumWithOneValueWorksEndToEnd)
+{
+    const std::string text = MakeSidecarText({ SidecarEnum("e", { "Only" }, "Only") }, nullptr, "test.params");
+    ParameterFile pf;
+    ASSERT_TRUE(LoadFile(pf, text));
+    EXPECT_FLOAT_EQ(Base(pf, "e"), 0.0f);
+    ParamWarnings w; ParamError err;
+    EXPECT_TRUE(pf.ApplyPack(MakePack(R"("e":"Only")", MatchingBasedOn(pf)), w, err));
+    EXPECT_EQ(w.items.Size(), 0u);
+    ParamWarnings w2;
+    EXPECT_TRUE(pf.ApplyPack(MakePack(R"("e":"Other")", MatchingBasedOn(pf)), w2, err));
+    EXPECT_TRUE(HasWarningKey(w2, "e"));
+    EXPECT_FALSE(pf.Set(StringCRC("e"), Json::Value("Other"), err));
+    EXPECT_FALSE(pf.Set(StringCRC("e"), Json::Value(1), err));   // ordinals are not ids
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Full), { "format", "version", "basedOn", "e" }));
+    EXPECT_EQ(pf.ToJson(JsonShape::Full)["e"].asString(), "Only");
+}
+
+// ---- Constraint chains, ==/!=, map-column constraints through Set and packs (AC 3, 9, 10) ----------------------------
+TEST(DiaAttributeParameterFileConstraints, ChainSetNamesTheViolatedPair)
+{
+    ParameterFile pf; ParamError err;
+    ASSERT_TRUE(LoadFile(pf, ChainText()));
+    EXPECT_FALSE(pf.Set(StringCRC("mid"), Json::Value(9.5), err));   // mid <= hi (9) breaks
+    EXPECT_STREQ(err.key.AsCStr(), "mid"); EXPECT_STREQ(err.otherKey.AsCStr(), "hi");
+    EXPECT_FALSE(pf.Set(StringCRC("mid"), Json::Value(0.5), err));   // lo <= mid (1) breaks
+    EXPECT_STREQ(err.key.AsCStr(), "lo"); EXPECT_STREQ(err.otherKey.AsCStr(), "mid");
+    EXPECT_TRUE(pf.Set(StringCRC("mid"), Json::Value(9.0), err));    // equality passes <=
+    EXPECT_TRUE(pf.Set(StringCRC("mid"), Json::Value(1.0), err));
+    EXPECT_FLOAT_EQ(Base(pf, "mid"), 1.0f);
+}
+
+TEST(DiaAttributeParameterFileConstraints, ChainPackMovingAllThreeIsJudgedAsAWhole)
+{
+    ParameterFile pf; ParamError err; ParamWarnings w;
+    ASSERT_TRUE(LoadFile(pf, ChainText()));
+    EXPECT_FALSE(pf.Set(StringCRC("lo"), Json::Value(7.0), err));    // alone, lo=7 breaks lo <= mid (5)
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("lo":7,"mid":8,"hi":9.5)", MatchingBasedOn(pf)), w, err));
+    EXPECT_FLOAT_EQ(Base(pf, "lo"), 7.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "mid"), 8.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "hi"), 9.5f);
+}
+
+TEST(DiaAttributeParameterFileConstraints, ChainPackBreakingOnlyTheSecondPairIsRejectedUntouched)
+{
+    ParameterFile pf; ParamError err; ParamWarnings w;
+    ASSERT_TRUE(LoadFile(pf, ChainText()));
+    const std::vector<float> before = BaseValues(pf);
+    EXPECT_FALSE(pf.ApplyPack(MakePack(R"("lo":2,"mid":10)", MatchingBasedOn(pf)), w, err));   // mid 10 > hi 9
+    EXPECT_STREQ(err.key.AsCStr(), "mid"); EXPECT_STREQ(err.otherKey.AsCStr(), "hi");
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+}
+
+TEST(DiaAttributeParameterFileConstraints, ChainWithTwoViolationsNamesTheFirstInFileOrder)
+{
+    ParameterFile pf; ParamError err; ParamWarnings w;
+    ASSERT_TRUE(LoadFile(pf, ChainText()));
+    EXPECT_FALSE(pf.ApplyPack(MakePack(R"("lo":9.5,"mid":0.5,"hi":0.2)", MatchingBasedOn(pf)), w, err));
+    EXPECT_STREQ(err.key.AsCStr(), "lo"); EXPECT_STREQ(err.otherKey.AsCStr(), "mid");
+}
+
+TEST(DiaAttributeParameterFileConstraints, EqualityAndInequalityOnFloats)
+{
+    ParameterFile pf; ParamError err; ParamWarnings w;
+    ASSERT_TRUE(LoadFile(pf, EqText()));
+    EXPECT_FALSE(pf.Set(StringCRC("a"), Json::Value(4.0), err));     // a == b breaks
+    EXPECT_STREQ(err.key.AsCStr(), "a"); EXPECT_STREQ(err.otherKey.AsCStr(), "b");
+    EXPECT_FALSE(pf.Set(StringCRC("a"), Json::Value(3.0000005), err));   // a hair apart is not equal
+    EXPECT_FALSE(pf.Set(StringCRC("c"), Json::Value(2.0), err));     // c != d breaks
+    EXPECT_STREQ(err.key.AsCStr(), "c"); EXPECT_STREQ(err.otherKey.AsCStr(), "d");
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a":4,"b":4,"c":9,"d":0.5)", MatchingBasedOn(pf)), w, err));   // both move together
+    EXPECT_FLOAT_EQ(Base(pf, "a"), 4.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "b"), 4.0f);
+    EXPECT_FALSE(pf.ApplyPack(MakePack(R"("a":5)", MatchingBasedOn(pf)), w, err));
+}
+
+TEST(DiaAttributeParameterFileConstraints, MapColumnConstraintThroughSetAndPack)
+{
+    ParameterFile pf; ParamError err; ParamWarnings w;
+    ASSERT_TRUE(LoadFile(pf, MapConstraintText()));
+    EXPECT_FALSE(pf.Set(StringCRC("m.temp.Tundra"), Json::Value(0.01), err));   // lo (0.05) <= Tundra breaks
+    EXPECT_STREQ(err.key.AsCStr(), "lo"); EXPECT_STREQ(err.otherKey.AsCStr(), "m.temp.Tundra");
+    EXPECT_FALSE(pf.Set(StringCRC("lo"), Json::Value(0.2), err));                // Tundra is 0.1
+    EXPECT_STREQ(err.key.AsCStr(), "lo"); EXPECT_STREQ(err.otherKey.AsCStr(), "m.temp.Tundra");
+
+    const std::vector<float> before = BaseValues(pf);
+    EXPECT_FALSE(pf.ApplyPack(MakePack(R"("m.temp":{"Tundra":0.0,"Desert":0.9})", MatchingBasedOn(pf)), w, err));
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));                               // Desert did not apply either
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("m.temp":{"Desert":0.9})", MatchingBasedOn(pf)), w, err));
+    EXPECT_FLOAT_EQ(Base(pf, "m.temp.Desert"), 0.9f);
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("lo":0.1,"m.temp":{"Tundra":0.1})", MatchingBasedOn(pf)), w, err));   // equal passes
+    EXPECT_FLOAT_EQ(Base(pf, "lo"), 0.1f);
+}
+
+// ---- Pack and Set edge cases -----------------------------------------------------------------------------------
+TEST_F(DiaAttributeParameterFilePack, TextualDuplicateKeysApplyOneValueWithoutCrashing)
+{
+    const std::string text = "{\"format\":\"test.params\",\"version\":1,\"basedOn\":\"" + HexOf(pf.SchemaHash()) + "\",\"a.speed\":3,\"a.speed\":9}";
+    Json::Value v; Json::Reader reader;
+    ASSERT_TRUE(reader.parse(text, v));
+    const double winner = v["a.speed"].asDouble();
+    EXPECT_TRUE(winner == 3.0 || winner == 9.0);
+    ASSERT_TRUE(pf.ApplyPack(v, warn, err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), static_cast<float>(winner));   // whichever duplicate the parser kept, once
+    EXPECT_EQ(warn.items.Size(), 0u);
+    EXPECT_EQ(obs.names.size(), 1u);
+}
+
+TEST_F(DiaAttributeParameterFilePack, NanDroppedInfinityClamped)
+{
+    Json::Value pack = MakePack("", MatchingBasedOn(pf));
+    pack["a.speed"] = Json::Value(std::numeric_limits<double>::quiet_NaN());
+    pack["a.count"] = Json::Value(std::numeric_limits<double>::infinity());
+    pack["lo"] = Json::Value(-std::numeric_limits<double>::infinity());
+    ASSERT_TRUE(pf.ApplyPack(pack, warn, err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 5.0f);    // NaN dropped
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 10.0f);   // +inf clamps to max
+    EXPECT_FLOAT_EQ(Base(pf, "lo"), 0.0f);         // -inf clamps to min
+    EXPECT_TRUE(HasWarningKey(warn, "a.speed"));
+    EXPECT_TRUE(HasWarningKey(warn, "a.count"));
+    EXPECT_TRUE(HasWarningKey(warn, "lo"));
+    EXPECT_EQ(warn.items.Size(), 3u);
+}
+
+TEST_F(DiaAttributeParameterFilePack, HugeMagnitudesClampWithoutOverflow)
+{
+    ASSERT_TRUE(Apply(R"("a.speed":1e300,"a.count":-1e300)"));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 10.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 0.0f);
+    EXPECT_EQ(warn.items.Size(), 2u);
+}
+
+TEST_F(DiaAttributeParameterFilePack, BasedOnFormsArePinned)
+{
+    const std::string hex = HexOf(pf.SchemaHash());
+    std::string upper = hex;
+    for (char& c : upper) c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+    ParamWarnings w;
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.count":4)", "\"" + upper + "\""), w, err));          // case-insensitive hex
+    EXPECT_EQ(w.items.Size(), 0u);
+    ParamWarnings w2;
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.count":5)", "\"" + hex + "zz\""), w2, err));          // trailing junk is stale
+    EXPECT_EQ(w2.items.Size(), 1u);
+    ParamWarnings w3;
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.count":6)", "\"\""), w3, err));                        // empty is stale
+    EXPECT_EQ(w3.items.Size(), 1u);
+    ParamWarnings w4;
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.count":7)", "null"), w4, err));                        // null is stale
+    EXPECT_EQ(w4.items.Size(), 1u);
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 7.0f);
+}
+
+TEST_F(DiaAttributeParameterFilePack, SamePackTwiceFiresNothingTheSecondTime)
+{
+    ASSERT_TRUE(Apply(R"("a.speed":7,"a.count":8)"));
+    EXPECT_EQ(obs.names.size(), 2u);
+    obs.names.clear();
+    ASSERT_TRUE(Apply(R"("a.speed":7,"a.count":8)"));
+    EXPECT_TRUE(obs.names.empty());
+}
+
+// Pinned current behaviour (gap, see plan row 28): a pack holding a dotted-group object such as
+// {"a":{"speed":7}} is NOT expanded by ApplyPack; the CLI data rules accept that nested form. The flat form
+// ("a.speed") is the one ToJson writes and the spec describes.
+TEST_F(DiaAttributeParameterFilePack, PinnedGap_NestedGroupObjectIsDroppedWithWarning)
+{
+    ASSERT_TRUE(Apply(R"("a":{"speed":7})"));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 5.0f);
+    EXPECT_TRUE(HasWarningKey(warn, "a"));
+    EXPECT_TRUE(obs.names.empty());
+}
+
+TEST_F(DiaAttributeParameterFileSet, MapNameWithObjectValueIsRejectedAsUnknownKey)
+{
+    Json::Value obj(Json::objectValue);
+    obj["Desert"] = Json::Value(0.3);
+    ExpectRejected("m.temp", obj, "m.temp");   // Set addresses one column ("m.temp.Desert"), never the map name
+}
+
+TEST_F(DiaAttributeParameterFileSet, NanAndInfinityRejected)
+{
+    ExpectRejected("a.speed", Json::Value(std::numeric_limits<double>::quiet_NaN()), "a.speed");
+    ExpectRejected("a.speed", Json::Value(std::numeric_limits<double>::infinity()), "a.speed");
+    ExpectRejected("a.count", Json::Value(-std::numeric_limits<double>::infinity()), "a.count");
+}
+
+TEST_F(DiaAttributeParameterFileSet, ThenToJsonFullAndDiffIncludeIt)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.mode"), Json::Value("Fast"), err));
+    EXPECT_EQ(pf.ToJson(JsonShape::Full)["a.mode"].asString(), "Fast");
+    EXPECT_EQ(pf.ToJson(JsonShape::Diff)["a.mode"].asString(), "Fast");
+}
+
+TEST(DiaAttributeParameterFileToJson, ModifiersAreNotWrittenAsBaseValues)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, FixtureText()));
+    AttributeModifier m{};
+    m.modifier_name = StringCRC("buff"); m.attribute_name = StringCRC("a.speed");
+    m.operation = ModifierOperation::Add; m.value = 2.0f; m.when_condition[0] = '\0';
+    const ModifierHandle h = pf.Values().AddModifier(m);
+    ASSERT_TRUE(h.IsValid());
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.speed")), 7.0f);
+    EXPECT_DOUBLE_EQ(pf.ToJson(JsonShape::Full)["a.speed"].asDouble(), 5.0);   // base, not the resolved 7
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));
+}
+
+// ---- Not loaded, Reload arguments -------------------------------------------------------------------------------
+TEST(DiaAttributeParameterFileNotLoaded, ApplyPackFailsCleanly)
+{
+    ParameterFile pf; ParamWarnings w; ParamError err;
+    EXPECT_FALSE(pf.ApplyPack(MakePack(""), w, err));
+    EXPECT_GT(strlen(err.reason.AsCStr()), 0u);
+    EXPECT_FALSE(pf.IsLoaded());
+}
+
+TEST_F(DiaAttributeParameterFileReload, NullPackArrayOrNullPackIsRejectedAndStateKept)
+{
+    const std::vector<float> before = BaseValues(pf);
+    EXPECT_FALSE(pf.Reload(FixtureText().c_str(), nullptr, 2, warn, err));
+    EXPECT_STREQ(err.key.AsCStr(), "packs");
+    const Json::Value* withNull[] = { nullptr };
+    EXPECT_FALSE(pf.Reload(FixtureText().c_str(), withNull, 1, warn, err));
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+    EXPECT_TRUE(obs.names.empty());
+}
+
+TEST_F(DiaAttributeParameterFileReload, UnchangedReloadFiresNothing)
+{
+    ASSERT_TRUE(pf.Reload(FixtureText().c_str(), nullptr, 0, warn, err));
+    EXPECT_TRUE(obs.names.empty());
+}
+
+TEST_F(DiaAttributeParameterFileReload, ReloadWithModifierThenSetValueDiscardedModifierKept)
+{
+    const ModifierHandle h = pf.Values().AddModifier(AddMod("boost", "a.count", 1.0f));
+    ASSERT_TRUE(pf.Set(StringCRC("a.count"), Json::Value(8), err));
+    ASSERT_TRUE(pf.Reload(FixtureText().c_str(), nullptr, 0, warn, err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 3.0f);                                  // Set discarded
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.count")), 4.0f);           // modifier kept
+    pf.Values().RemoveModifier(h);
+}
+
+// ---- AC 4 parity: the same data cases the CLI checks, through ParameterFile -------------------------------------
+namespace
+{
+    bool LoadCase(const char* name, Json::Value& c)
+    {
+        const fs::path dir = FindConformanceDataDir();
+        if (dir.empty()) return false;
+        std::ifstream in(dir / name, std::ios::binary);
+        if (!in.good()) return false;
+        std::stringstream ss; ss << in.rdbuf();
+        Json::Reader reader;
+        return reader.parse(ss.str(), c);
+    }
+
+    const Json::Value* PackOf(const Json::Value& c)
+    {
+        for (Json::ArrayIndex i = 0; i < c["files"].size(); ++i)
+            if (c["files"][i]["pack"].asBool()) return &c["files"][i]["content"];
+        return nullptr;
+    }
+}
+
+TEST(DiaAttributeParameterFileParity, SchemaLevelFindingsFailLoadNamingTheSameKey)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("constraint-violated-defaults.case.json", c));
+    ParameterFile pf; ParamError err;
+    EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
+    EXPECT_STREQ(err.key.AsCStr(), c["schemaExpected"][0u]["key"].asCString());                                       // "lo"
+    const std::string both = std::string(err.otherKey.AsCStr()) + " " + err.reason.AsCStr();
+    EXPECT_NE(both.find(c["schemaExpected"][0u]["messageContains"].asString()), std::string::npos) << both;           // names "hi"
+
+    Json::Value m;
+    ASSERT_TRUE(LoadCase("map-default-unresolved-key.case.json", m));
+    ParameterFile pm; ParamError em;
+    EXPECT_FALSE(LoadFile(pm, ToText(m["schemas"][0u]), &em));
+    EXPECT_NE(std::string(em.key.AsCStr()).find(m["schemaExpected"][0u]["key"].asString()), std::string::npos) << em.key.AsCStr();
+    const std::string mboth = std::string(em.key.AsCStr()) + " " + em.reason.AsCStr();
+    EXPECT_NE(mboth.find("Tundr"), std::string::npos) << mboth;
+}
+
+namespace
+{
+    // The CLI accepts a map default that names only some keys; C++ (AC 6) requires every key of the key source.
+    // This completes such a default so the rest of the case can run through ParameterFile.
+    Json::Value WithCompleteMapDefaults(Json::Value schema)
+    {
+        for (Json::ArrayIndex i = 0; i < schema["entries"].size(); ++i)
+        {
+            Json::Value& e = schema["entries"][i];
+            if (e["type"].asString() != "map" || !e["default"].isObject()) continue;
+            for (const char* id : { "TemperateForest", "Desert", "Tundra" })
+                if (!e["default"].isMember(id)) e["default"][id] = Json::Value(0.9);
+        }
+        return schema;
+    }
+}
+
+// Documented divergence (plan row 28 gap): the CLI map-default check only needs the named keys to resolve and fit
+// the range; the C++ build also requires the default object to cover every key (AC 6).
+TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsCliCleanButFailsTheCppBuildNamingTheMap)
+{
+    const char* cases[] = { "map-default-ok.case.json", "constraint-violated-pack-map-operand.case.json" };
+    for (const char* name : cases)
+    {
+        SCOPED_TRACE(name);
+        Json::Value c;
+        ASSERT_TRUE(LoadCase(name, c));
+        ParameterFile pf; ParamError err;
+        EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
+        EXPECT_STREQ(err.key.AsCStr(), "affinity.TemperateForest");   // the first key the default object lacks
+        EXPECT_NE(std::string(err.reason.AsCStr()).find("missing"), std::string::npos) << err.reason.AsCStr();
+    }
+}
+
+TEST(DiaAttributeParameterFileParity, CleanCasesLoadAndApply)
+{
+    Json::Value ok;
+    ASSERT_TRUE(LoadCase("map-default-ok.case.json", ok));
+    ParameterFile pm;
+    EXPECT_TRUE(LoadFile(pm, ToText(WithCompleteMapDefaults(ok["schemas"][0u]))));
+
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("constraint-ok-pack.case.json", c));
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ToText(c["schemas"][0u])));
+    const Json::Value* pack = PackOf(c);
+    ASSERT_NE(pack, nullptr);
+    ParamWarnings w; ParamError err;
+    EXPECT_TRUE(pf.ApplyPack(*pack, w, err));
+    EXPECT_FLOAT_EQ(Base(pf, "hi"), 2.0f);
+}
+
+TEST(DiaAttributeParameterFileParity, ConstraintViolatingPacksAreRejectedNamingTheCliKeys)
+{
+    const char* cases[] = { "constraint-violated-pack.case.json", "constraint-violated-pack-map-operand.case.json" };
+    for (const char* name : cases)
+    {
+        SCOPED_TRACE(name);
+        Json::Value c;
+        ASSERT_TRUE(LoadCase(name, c));
+        ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ToText(WithCompleteMapDefaults(c["schemas"][0u]))));
+        const Json::Value* pack = PackOf(c);
+        ASSERT_NE(pack, nullptr);
+        const std::vector<float> before = BaseValues(pf);
+        ParamWarnings w; ParamError err;
+        EXPECT_FALSE(pf.ApplyPack(*pack, w, err));
+        const Json::Value& f = c["expected"][0u];
+        EXPECT_STREQ(err.key.AsCStr(), f["key"].asCString());         // the constraint's `a` operand
+        EXPECT_STREQ(err.otherKey.AsCStr(), f["path"].asCString());   // the other operand = the pack key the CLI reports
+        EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+    }
 }

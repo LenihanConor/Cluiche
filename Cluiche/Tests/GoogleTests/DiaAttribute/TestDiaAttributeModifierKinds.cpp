@@ -10,6 +10,7 @@
 
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/Testing/AttributeTestHelpers.h>
+#include <DiaCellLayers/Testing/LogCapture.h>
 
 using namespace Dia::Attribute;
 using namespace Dia::Attribute::Testing;
@@ -204,4 +205,35 @@ TEST(DiaAttributeModifierKinds, FloatStackingOrderUnchanged)
     EXPECT_TRUE(fx.set.AddModifier(Mod("a1", "f", ModifierOperation::Add, 1.0f)).IsValid());
     EXPECT_TRUE(fx.set.AddModifier(Mod("a2", "f", ModifierOperation::Add, 2.0f)).IsValid());
     EXPECT_FLOAT_EQ(fx.set.GetValue(StringCRC("f")), 39.0f);   // (10+1+2)*3
+}
+
+// AC 16: an illegal Add/Multiply "fails and logs a warning naming the attribute".
+TEST(DiaAttributeModifierKinds, IllegalOperationLogsOneWarningNamingTheAttribute)
+{
+    Dia::CellLayers::Testing::LogCapture log("Attribute");
+    KindFixture fx;
+    EXPECT_FALSE(fx.set.AddModifier(Mod("a", "b", ModifierOperation::Add, 1.0f)).IsValid());
+    EXPECT_EQ(log.Warnings("'b'"), 1u);
+    EXPECT_FALSE(fx.set.AddModifier(Mod("m", "e", ModifierOperation::Multiply, 2.0f)).IsValid());
+    EXPECT_EQ(log.Warnings("'e'"), 1u);
+    EXPECT_EQ(log.Warnings(), 2u);
+
+    // A legal modifier logs nothing.
+    log.Clear();
+    EXPECT_TRUE(fx.set.AddModifier(Mod("ok", "f", ModifierOperation::Add, 1.0f)).IsValid());
+    EXPECT_TRUE(fx.set.AddModifier(Mod("ovr", "b", ModifierOperation::Override, 1.0f)).IsValid());
+    EXPECT_EQ(log.Warnings(), 0u);
+}
+
+// An illegal Override value (bool 2, enum ordinal out of range, fractional int) also logs a warning naming the attribute.
+TEST(DiaAttributeModifierKinds, InvalidOverrideValueLogsWarningNamingTheAttribute)
+{
+    Dia::CellLayers::Testing::LogCapture log("Attribute");
+    KindFixture fx;
+    EXPECT_FALSE(fx.set.AddModifier(Mod("o1", "b", ModifierOperation::Override, 2.0f)).IsValid());
+    EXPECT_EQ(log.Warnings("'b'"), 1u);
+    EXPECT_FALSE(fx.set.AddModifier(Mod("o2", "e", ModifierOperation::Override, 3.0f)).IsValid());
+    EXPECT_EQ(log.Warnings("'e'"), 1u);
+    EXPECT_FALSE(fx.set.AddModifier(Mod("o3", "i", ModifierOperation::Override, 2.5f)).IsValid());
+    EXPECT_EQ(log.Warnings("'i'"), 1u);
 }

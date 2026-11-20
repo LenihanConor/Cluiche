@@ -500,3 +500,64 @@ TEST(DiaAttributeParamBindingDeathTest, ExceedingMaxBindingsAsserts)
     }, "");
 }
 #endif
+
+// ---------------------------------------------------------------------------------------------------------------
+// Plan task 28 gap audit: member kind vs attribute kind is NOT checked by Resolve (known gap, pinned as-is).
+// If Resolve ever starts reporting a kind mismatch, these tests must be updated deliberately: the clean report
+// below is today's contract, not an endorsement. See the plan row 28 notes (recommendation: report mismatches in
+// BindingReport).
+// ---------------------------------------------------------------------------------------------------------------
+
+TEST(DiaAttributeParamBinding, PinnedGap_ScalarMemberKindMayDifferFromAttributeKind)
+{
+    Loaded l(RulesSidecar());   // sea.level float 2.5, sea.octaves int 4, sea.enabled bool true, sea.mode enum Windy(1)
+    ParamBinding<Rules> b;
+    b.Bind(StringCRC("sea.level"), &Rules::octaves);     // int32 member on a float attribute
+    b.Bind(StringCRC("sea.octaves"), &Rules::level);     // float member on an int attribute
+    b.Bind(StringCRC("sea.enabled"), &Rules::extra);     // float member on a bool attribute
+    b.BindEnum(StringCRC("sea.mode"), &Rules::wide);     // a different enum type on the enum attribute
+    b.Bind(StringCRC("sea.wide"), &Rules::enabled);      // bool member on an enum attribute (ordinal 2)
+
+    BindingReport report;
+    EXPECT_TRUE(b.Resolve(l.schema, report));            // pinned: no kind check, report is clean
+    EXPECT_TRUE(report.IsClean());
+
+    Rules r;
+    b.Snapshot(l.set, r);
+    EXPECT_EQ(r.octaves, 3);               // 2.5 converted half away from zero
+    EXPECT_FLOAT_EQ(r.level, 4.0f);
+    EXPECT_FLOAT_EQ(r.extra, 1.0f);
+    EXPECT_EQ(r.wide, WideB);              // ordinal 1
+    EXPECT_TRUE(r.enabled);                // ordinal 2 != 0
+}
+
+TEST(DiaAttributeParamBinding, PinnedGap_MapColumnKindMayDifferFromArrayType)
+{
+    Loaded l(MapSidecar());
+    ParamBinding<MapRules> b;
+    b.BindMap(StringCRC("biome.wet"), &MapRules::count);     // int array on a float map (0.25, 0.5, 0.75)
+    b.BindMap(StringCRC("biome.count"), &MapRules::wet);     // float array on an int map (1, 2, 3)
+    b.BindMap(StringCRC("biome.flag"), &MapRules::flag);
+    b.Bind(StringCRC("biome.scalar"), &MapRules::scalar);
+    BindingReport report;
+    EXPECT_TRUE(b.Resolve(l.schema, report));
+    MapRules r;
+    b.Snapshot(l.set, r);
+    EXPECT_EQ(r.count[0], 0);   // 0.25 -> 0
+    EXPECT_EQ(r.count[1], 1);   // 0.5 -> 1 (half away from zero)
+    EXPECT_EQ(r.count[2], 1);   // 0.75 -> 1
+    EXPECT_FLOAT_EQ(r.wet[0], 1.0f);
+    EXPECT_FLOAT_EQ(r.wet[2], 3.0f);
+}
+
+TEST(DiaAttributeParamBinding, ScalarBindToMapKeyAndMapBindToScalarKeyAreReportedWithoutEntry)
+{
+    Loaded l(MapSidecar());
+    ParamBinding<MapRules> b;
+    b.Bind(StringCRC("biome.wet"), &MapRules::scalar);                       // scalar bind on a map column name
+    b.BindMap(StringCRC("biome.scalar"), &MapRules::wet);                    // map bind on a scalar key
+    BindingReport report;
+    EXPECT_FALSE(b.Resolve(l.schema, report));
+    EXPECT_EQ(report.bindingsWithoutEntry.Size(), 2u);
+    EXPECT_GE(report.unboundParameters.Size(), 1u);
+}
