@@ -42,6 +42,21 @@ Dia::ApplicationFlow::StopResult EntityModule::DoStop()
 {
     DIA_LOG_INFO("Application", "EntityModule::DoStop entry");
     mReady = false;
+
+    // The module instance (and its Domain) outlives the stage, so entities a
+    // stage created would leak into the next stage's world. Destroy them all.
+    unsigned int destroyed = 0;
+    for (uint32_t i = 0; i < Dia::Entity::kMaxEntitiesPerDomain; ++i)
+    {
+        const Dia::Entity::Entity e = mDomain.GetAliveEntity(i);
+        if (e.IsValid())
+        {
+            mDomain.QueueDestroy(e);
+            ++destroyed;
+        }
+    }
+    mDomain.EndOfFrame();
+    DIA_LOG_INFO("Application", "EntityModule::DoStop destroyed %u entities", destroyed);
     DIA_LOG_INFO("Application", "EntityModule::DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
