@@ -215,6 +215,9 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaCore `String<N>` audit | 2026-11-19 | Done 2026-11-19: single-arg String<N>(const char*) ctor non-formatting (20c98397d); DynamicArray empty copy (5eb74a4f3). Decision recorded in strings module doc. |
 | Dia | GoogleTests Release failures | 2026-11-19 | Done 2026-11-19: 145 -> 0 Release failures. DIA_EXPECT_DEATH/DIA_ASSERT_DEATH gating (b0f125122); F2 fixture stream, ICF lambdas, DIA_ASSERT counters, DamageSensor static-init order, timing/perf ceilings (468c137d2..c03b0d1c6). |
 | Dia | AssetRuntime Inspector UI type error | 2026-11-19 | Done 2026-11-19: 171a99926; pipeline entry back to tsc && vite build. |
+| Dia | Command and metric registry lifetime hardening | 2026-11-20 | Moved by `dia docs backlog move` |
+| Dia | Sharded file-test isolation | 2026-11-20 | Moved by `dia docs backlog move` |
+| Dia | `DIA_REQ_ENTRY` static-init order audit | 2026-11-20 | Moved by `dia docs backlog move` |
 
 ---
 

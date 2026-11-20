@@ -280,76 +280,83 @@ bool Exists(const char* path) {
     return false;
 }
 
-const char* kSlotA   = "temp/savegame_tests/slot_atom.sav";
-const char* kSlotATmp = "temp/savegame_tests/slot_atom.sav.tmp";
 
 } // namespace
 
 TEST(DiaSaveGame_ManagerAtomic, FailedWriteKeepsPreviousSave)
 {
+    // Own slot per test: sharded runs execute these concurrently.
+    const char* kSlotLocal    = "temp/savegame_tests/slot_atomfail.sav";
+    const char* kSlotLocalTmp = "temp/savegame_tests/slot_atomfail.sav.tmp";
     EnsureTestDir();
-    remove(kSlotA);
+    remove(kSlotLocal);
 
     ValueSaveable s; s.value = 1;
     SaveRegistry reg; reg.Register(StringCRC("v"), &s);
     SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
-    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
-    const std::string before = ReadAll(kSlotA);
+    ASSERT_TRUE(mgr.Save(StringCRC("atomfail")).Ok());
+    const std::string before = ReadAll(kSlotLocal);
     ASSERT_FALSE(before.empty());
 
     // A directory squatting on the tmp path makes the tmp open fail.
-    _mkdir(kSlotATmp);
+    _mkdir(kSlotLocalTmp);
     s.value = 2;
-    SaveResult sr = mgr.Save(StringCRC("atom"));
+    SaveResult sr = mgr.Save(StringCRC("atomfail"));
     EXPECT_EQ(SaveResultCode::FileWriteError, sr.code);
-    EXPECT_EQ(before, ReadAll(kSlotA));
+    EXPECT_EQ(before, ReadAll(kSlotLocal));
 
     s.value = 0;
-    ASSERT_TRUE(mgr.Load(StringCRC("atom")).Ok());
+    ASSERT_TRUE(mgr.Load(StringCRC("atomfail")).Ok());
     EXPECT_EQ(1, s.value);
 
-    _rmdir(kSlotATmp);
-    remove(kSlotA);
+    _rmdir(kSlotLocalTmp);
+    remove(kSlotLocal);
 }
 
 TEST(DiaSaveGame_ManagerAtomic, SuccessfulSaveOverwritesAndLeavesNoTmp)
 {
+    // Own slot per test: sharded runs execute these concurrently.
+    const char* kSlotLocal    = "temp/savegame_tests/slot_atomover.sav";
+    const char* kSlotLocalTmp = "temp/savegame_tests/slot_atomover.sav.tmp";
     EnsureTestDir();
-    remove(kSlotA);
+    remove(kSlotLocal);
 
     ValueSaveable s; s.value = 1;
     SaveRegistry reg; reg.Register(StringCRC("v"), &s);
     SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
-    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    ASSERT_TRUE(mgr.Save(StringCRC("atomover")).Ok());
 
     // Stale tmp from a "crash" is overwritten.
-    FILE* f = fopen(kSlotATmp, "wb"); ASSERT_NE(nullptr, f); fwrite("junk", 1, 4, f); fclose(f);
+    FILE* f = fopen(kSlotLocalTmp, "wb"); ASSERT_NE(nullptr, f); fwrite("junk", 1, 4, f); fclose(f);
 
     s.value = 7;
-    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
-    EXPECT_FALSE(Exists(kSlotATmp));
+    ASSERT_TRUE(mgr.Save(StringCRC("atomover")).Ok());
+    EXPECT_FALSE(Exists(kSlotLocalTmp));
 
     s.value = 0;
-    ASSERT_TRUE(mgr.Load(StringCRC("atom")).Ok());
+    ASSERT_TRUE(mgr.Load(StringCRC("atomover")).Ok());
     EXPECT_EQ(7, s.value);
-    remove(kSlotA);
+    remove(kSlotLocal);
 }
 
 TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
 {
+    // Own slot per test: sharded runs execute these concurrently.
+    const char* kSlotLocal    = "temp/savegame_tests/slot_atomts.sav";
+    const char* kSlotLocalTmp = "temp/savegame_tests/slot_atomts.sav.tmp";
     EnsureTestDir();
-    remove(kSlotA);
+    remove(kSlotLocal);
 
     ValueSaveable s; s.value = 1;
     SaveRegistry reg; reg.Register(StringCRC("v"), &s);
     SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
 
     const uint64_t before = static_cast<uint64_t>(time(nullptr));
-    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
+    ASSERT_TRUE(mgr.Save(StringCRC("atomts")).Ok());
     const uint64_t after = static_cast<uint64_t>(time(nullptr));
 
     // Manifest in the file carries the save time.
-    std::ifstream in(kSlotA, std::ios::binary);
+    std::ifstream in(kSlotLocal, std::ios::binary);
     std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     Json::Value root; Json::Reader reader;
     ASSERT_TRUE(reader.parse(text, root));
@@ -363,7 +370,7 @@ TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
     bool found = false;
     for (uint32_t i = 0; i < slots.Size(); ++i)
     {
-        if (strcmp(slots[i].id.AsChar(), "atom") == 0)
+        if (strcmp(slots[i].id.AsChar(), "atomts") == 0)
         {
             found = true;
             EXPECT_GE(slots[i].timestamp + 2, before);
@@ -371,7 +378,7 @@ TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
         }
     }
     EXPECT_TRUE(found);
-    remove(kSlotA);
+    remove(kSlotLocal);
 }
 
 TEST(DiaSaveGame_ManagerAtomic, SerializeOverflowReturnsErrorAndKeepsExistingSave)

@@ -33,8 +33,10 @@ static Dia::Entity::FieldDesc s_ProximitySensorComponent_fields[] = {
 #endif
 
 static Dia::Core::StringCRC s_ProximitySensorComponent_reqs[] = {
-    DIA_REQ_ENTRY(Dia::EntitySpatial::SpatialComponent)
-    DIA_REQ_ENTRY(Dia::Sensor::SensorResultsComponent)
+    // Literal CRCs, not DIA_REQ_ENTRY: kTypeId lives in another TU, so reading it here is a
+    // static-init-order race (zero CRC => REQUIRES never satisfied). Pinned by SensorRequiresLiteralsTest.
+    Dia::Core::StringCRC("spatial-component"),
+    Dia::Core::StringCRC("sensor-results-component"),
 };
 
 DIA_COMPONENT_REGISTER(ProximitySensorComponent, "proximity-sensor-component", false, true,

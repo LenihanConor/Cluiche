@@ -666,6 +666,8 @@ TEST_F(GenerateDefaultIdTest, DeepNestedPath)
 // ===========================================================================
 // FileDiscoverer (Integration — real FS scan)
 // ===========================================================================
+static unsigned int sScanDirCounter = 0;
+
 class FileDiscovererScanTest : public ::testing::Test
 {
 protected:
@@ -679,7 +681,7 @@ protected:
         RegisterType(typeRegistry, "texture", "Texture", "*.png");
         RegisterType(typeRegistry, "config", "Config", "*.config.json");
 
-        _snprintf_s(tempRoot, sizeof(tempRoot), _TRUNCATE, "Cluiche\\out\\test_discover_%u", GetTickCount());
+        _snprintf_s(tempRoot, sizeof(tempRoot), _TRUNCATE, "Cluiche\\out\\test_discover_%lu_%u", GetCurrentProcessId(), sScanDirCounter++); // pid + counter: GetTickCount collides across shards
         CreateDirectoryA(tempRoot, NULL);
 
         char subDir[512];
