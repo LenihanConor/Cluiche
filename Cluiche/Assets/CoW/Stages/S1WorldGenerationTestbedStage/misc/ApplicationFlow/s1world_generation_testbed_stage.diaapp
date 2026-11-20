@@ -62,7 +62,8 @@
                     ],
                     "config": {
                         "presets_dir": "assets/global/misc",
-                        "out_presets_dir": "Cluiche/out/CoW/presets"
+                        "out_presets_dir": "Cluiche/out/CoW/presets",
+                        "rules_sidecar_alias": "json.terrain_rules_schema"
                     },
                     "channels": []
                 },

@@ -12,7 +12,11 @@
 #include <Modules/RandomStreamModule.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaCore/FilePath/Path.h>
+#include <DiaCore/FilePath/PathStore.h>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -30,10 +34,15 @@ WorldGenerationModule*                  g_wg  = nullptr;
 Module* CreateBus(const StringCRC& id) { g_bus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_bus; }
 Module* CreateRng(const StringCRC& id) { g_rng = new RandomStreamModule(id); return g_rng; }
 std::string g_rulesTextOverride;   // non-empty: the sidecar text the next module is created with (task 26 tests)
+bool        g_noSidecarText = false;      // alias tests: do not inject text, so the module's own load path runs
+std::string g_defaultPathOverride;        // non-empty: the default sidecar path the next module is created with
 Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
-    g_wg->SetRulesSidecarText(g_rulesTextOverride.empty() ? CoW::WorldGeneration::TestSidecarText() : g_rulesTextOverride);
+    if (!g_noSidecarText)
+        g_wg->SetRulesSidecarText(g_rulesTextOverride.empty() ? CoW::WorldGeneration::TestSidecarText() : g_rulesTextOverride);
+    if (!g_defaultPathOverride.empty())
+        g_wg->SetRulesSidecarPath(g_defaultPathOverride);
     return g_wg;
 }
 
@@ -719,4 +728,149 @@ TEST(WorldGenModuleRules, BrokenSidecarPutsHealthInErrorNamingTheKeyAndRefusesGe
     EXPECT_EQ(reply["error"].asString(), "rules_not_loaded");
     f.Pump(5);
     EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+}
+
+// ---- Terrain sidecar through its catalogue alias (config key rules_sidecar_alias, PathStore read, 2026-11-20) ----
+
+namespace {
+
+// A sidecar file in the temp directory plus a PathStore alias for it; both removed on scope exit.
+struct AliasedSidecar
+{
+    std::string alias;
+    std::string path;
+    bool registered = false;
+
+    AliasedSidecar(const char* aliasName, bool writeFile, bool registerAlias)
+        : alias(aliasName)
+    {
+        path = (std::filesystem::temp_directory_path() / (std::string(aliasName) + ".json")).generic_string();
+        if (writeFile)
+        {
+            std::ofstream out(path, std::ios::binary);
+            out << CoW::WorldGeneration::TestSidecarText();
+        }
+        else
+        {
+            std::error_code ec;
+            std::filesystem::remove(path, ec);
+        }
+        if (registerAlias && !Dia::Core::PathStore::IsPathAliasRegistered(Dia::Core::Path::Alias(alias.c_str())))
+        {
+            Dia::Core::PathStore::RegisterToStore(Dia::Core::Path::Alias(alias.c_str()), Dia::Core::Path::String(path.c_str()));
+            registered = true;
+        }
+    }
+    ~AliasedSidecar()
+    {
+        if (registered)
+            Dia::Core::PathStore::UnregisterFromStore(Dia::Core::Path::Alias(alias.c_str()));
+        std::error_code ec;
+        std::filesystem::remove(path, ec);
+    }
+};
+
+// Boots with NO sidecar text injected, so the module's own load path runs.
+struct NoTextScope
+{
+    NoTextScope() { g_noSidecarText = true; }
+    ~NoTextScope() { g_noSidecarText = false; g_defaultPathOverride.clear(); }
+};
+
+} // namespace
+
+TEST(WorldGenModuleRulesAlias, ConfiguredAliasLoadsTheSidecarAndAppliesTheDeferredConfig)
+{
+    NoTextScope noText;
+    AliasedSidecar sidecar("test.wg_rules_ok", true, true);
+    Fixture f("{\"rules_sidecar_alias\":\"test.wg_rules_ok\",\"seed\":4242,\"size\":\"Standard\"}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    ASSERT_NE(f.wg->GetCurrentWorld(), nullptr);
+    EXPECT_EQ(f.wg->GetSession().Seed(), 4242u);
+    EXPECT_EQ(f.wg->GetCurrentWorld()->dimensions.width, 80);
+}
+
+TEST(WorldGenModuleRulesAlias, RegenerateOnStartWaitsForTheAliasLoadedRules)
+{
+    NoTextScope noText;
+    AliasedSidecar sidecar("test.wg_rules_regen", true, true);
+    Fixture f("{\"rules_sidecar_alias\":\"test.wg_rules_regen\",\"regenerate_on_start\":true}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(4);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(f.wg->GetWorldRevision(), 1u);
+}
+
+TEST(WorldGenModuleRulesAlias, UnregisteredAliasFailsHealthNamingItAndRefusesGenerationWithNoFallback)
+{
+    NoTextScope noText;
+    AliasedSidecar good("test.wg_rules_fallback_bait", true, false);
+    g_defaultPathOverride = good.path;
+    Fixture f("{\"rules_sidecar_alias\":\"test.wg_rules_missing_alias\"}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(4);
+    EXPECT_FALSE(f.wg->AreRulesLoaded());
+    const auto health = f.wg->GetHealthReporter().Report();
+    EXPECT_EQ(health.status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_NE(std::string(health.reason.AsChar()).find("test.wg_rules_missing_alias"), std::string::npos) << health.reason.AsChar();
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    const Json::Value reply = f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    EXPECT_FALSE(reply["success"].asBool());
+    EXPECT_EQ(reply["error"].asString(), "rules_not_loaded");
+}
+
+TEST(WorldGenModuleRulesAlias, RegisteredAliasWithMissingFileFailsNamingTheAliasAndThePath)
+{
+    NoTextScope noText;
+    AliasedSidecar sidecar("test.wg_rules_nofile", false, true);
+    ASSERT_TRUE(sidecar.registered);
+    Fixture f("{\"rules_sidecar_alias\":\"test.wg_rules_nofile\"}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(4);
+    EXPECT_FALSE(f.wg->AreRulesLoaded());
+    EXPECT_NE(f.wg->GetRulesErrorReason().find(sidecar.path), std::string::npos) << f.wg->GetRulesErrorReason();
+    EXPECT_NE(f.wg->GetRulesErrorReason().find("test.wg_rules_nofile"), std::string::npos);
+    const auto health = f.wg->GetHealthReporter().Report();
+    EXPECT_EQ(health.status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_NE(std::string(health.reason.AsChar()).find("test.wg_rules_nofile"), std::string::npos) << health.reason.AsChar();
+    EXPECT_EQ(f.wg->GetSession().Regenerate(Json::Value(Json::objectValue))["error"].asString(), "rules_not_loaded");
+}
+
+TEST(WorldGenModuleRulesAlias, NonStringAliasIsIgnoredAndTheDefaultPathIsUsed)
+{
+    NoTextScope noText;
+    AliasedSidecar file("test.wg_rules_default_file", true, false);
+    g_defaultPathOverride = file.path;
+    Fixture f("{\"rules_sidecar_alias\":123}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 1u);
+}
+
+TEST(WorldGenModuleRulesAlias, NoKeyUsesTheDefaultPath)
+{
+    NoTextScope noText;
+    AliasedSidecar file("test.wg_rules_default_nokey", true, false);
+    g_defaultPathOverride = file.path;
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(f.wg->GetRulesSidecarPath(), file.path);
+}
+
+TEST(WorldGenModuleRulesAlias, InjectedTextStillWinsOverAnAlias)
+{
+    g_rulesTextOverride.clear();
+    Fixture f("{\"rules_sidecar_alias\":\"test.wg_rules_never_registered\"}");
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 1u);
 }

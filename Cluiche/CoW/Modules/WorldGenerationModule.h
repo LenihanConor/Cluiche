@@ -88,11 +88,17 @@ public:
     const WorldGeneration::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
     uint32_t GetReportRevision() const { return mSession.ReportRevision(); }
 
-    // Terrain rules sidecar (a Dia parameter file, catalogue alias json.terrain_rules_schema). Read once, at the
-    // start of OnConfigure (so the config's seed / size / preset / regenerate_on_start apply to a session that has
-    // rules): from SetRulesSidecarText when a host supplied the text (tests), else from GetRulesSidecarPath().
-    // A failure logs an Error, puts health in Failing (naming the ParamError key) once DoStart runs, and every
-    // generation entry point of the session refuses with "rules_not_loaded". There is no compiled fallback.
+    // Terrain rules sidecar (a Dia parameter file, catalogue alias json.terrain_rules_schema). Where it comes from:
+    //   - SetRulesSidecarText (a host supplied the text; tests): always wins.
+    //   - config key "rules_sidecar_alias" (production): the PathStore alias the catalogue registers for the asset
+    //     (SimPU read, user-approved exception to the no-statics rule 2026-11-20, precedent Scene2DModule). Aliases are
+    //     registered by AssetServiceModule::DoStart, after OnConfigure, so the load and the rest of the config
+    //     (seed / size / preset / regenerate_on_start) are deferred to this module's DoStart. An unregistered alias or
+    //     unreadable file fails (Error log, health Failing naming the alias, "rules_not_loaded"); there is NO fallback
+    //     to the default path when an alias was configured.
+    //   - neither: kDefaultRulesSidecarPath (the test / dev default), read at the start of OnConfigure.
+    // A failure logs an Error, puts health in Failing once DoStart runs, and every generation entry point of the
+    // session refuses with "rules_not_loaded". There is no compiled fallback.
     static constexpr const char* kDefaultRulesSidecarPath = "assets/global/misc/terrain_rules.schema.json";
     void SetRulesSidecarText(const std::string& text) { mRulesSidecarText = text; mRulesSidecarTextSet = true; }
     void SetRulesSidecarPath(const std::string& path) { mRulesSidecarPath = path; }
@@ -135,6 +141,8 @@ protected:
 
 private:
     void ApplySeedAndSize(const Json::Value& root);
+    // The config body of OnConfigure (loads the rules first); deferred to DoStart when the rules come from an alias.
+    void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
     void ApplyHandoffPreset();
     void RegisterCommands();
@@ -161,6 +169,11 @@ private:
     std::string mRulesSidecarText;
     bool mRulesSidecarTextSet = false;
     bool mRulesAttempted = false;
+    std::string mRulesSidecarAlias;   // "rules_sidecar_alias": resolved through PathStore when given
+    bool mRulesAliasGiven = false;
+    bool mConfigDeferred = false;     // OnConfigure waited for the alias; DoStart applies mConfigPending
+    std::string mConfigPending;
+    std::string mPendingLaunchOverrides;
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";

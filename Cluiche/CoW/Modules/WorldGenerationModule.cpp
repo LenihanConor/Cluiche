@@ -5,6 +5,8 @@
 #include <DiaDebugServer/SimHelpInfo.h>
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaCore/FilePath/Path.h>
+#include <DiaCore/FilePath/PathStore.h>
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -48,11 +50,28 @@ void WorldGenerationModule::LoadRulesSidecar()
     }
     else
     {
-        std::ifstream in(mRulesSidecarPath, std::ios::binary);
+        // The one sanctioned PathStore read in this module (user-approved exception to the no-statics rule, 2026-11-20,
+        // same precedent as Scene2DModule's 'stage_scene'): the catalogue registers every asset id as a PathStore alias.
+        // An alias that was explicitly configured never falls back to the default path.
+        std::string path = mRulesSidecarPath;
+        if (mRulesAliasGiven)
+        {
+            const Dia::Core::Path::Alias alias(mRulesSidecarAlias.c_str());
+            if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
+            {
+                mRulesErrorKey = mRulesSidecarAlias;
+                mRulesErrorReason = "alias '" + mRulesSidecarAlias + "' is not registered";
+                DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar %s; generation is refused", mRulesErrorReason.c_str());
+                return;
+            }
+            path = Dia::Core::PathStore::ResolvePathToCString(alias);
+        }
+        std::ifstream in(path, std::ios::binary);
         if (!in.good())
         {
-            mRulesErrorKey = "sidecar";
-            mRulesErrorReason = "cannot read " + mRulesSidecarPath;
+            // The health reason is capped at 64 characters, so it names the alias; the path is in the log and the reason.
+            mRulesErrorKey = mRulesAliasGiven ? mRulesSidecarAlias : std::string("sidecar");
+            mRulesErrorReason = "cannot read " + path + (mRulesAliasGiven ? " (alias '" + mRulesSidecarAlias + "')" : std::string());
             DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar %s", mRulesErrorReason.c_str());
             return;
         }
@@ -82,6 +101,35 @@ void WorldGenerationModule::ReportRulesFailure()
 }
 
 void WorldGenerationModule::OnConfigure(const char* configJson)
+{
+    // The rules alias is read first. Catalogue aliases are registered by AssetServiceModule::DoStart, after every
+    // OnConfigure, so an alias-configured module defers the rules load and the rest of the config to its own DoStart.
+    // A host that supplied the sidecar text (tests) has no alias to wait for.
+    if (configJson != nullptr && configJson[0] != '\0')
+    {
+        Json::Value root;
+        Json::Reader reader;
+        if (reader.parse(configJson, root) && root.isObject() && root.isMember("rules_sidecar_alias"))
+        {
+            if (root["rules_sidecar_alias"].isString() && !root["rules_sidecar_alias"].asString().empty())
+            {
+                mRulesSidecarAlias = root["rules_sidecar_alias"].asString();
+                mRulesAliasGiven = true;
+            }
+            else
+                DIA_LOG_WARNING("CoW", "WorldGenerationModule: rules_sidecar_alias must be a non-empty string, ignored");
+        }
+    }
+    if (mRulesAliasGiven && !mRulesSidecarTextSet)
+    {
+        mConfigPending = configJson;
+        mConfigDeferred = true;
+        return;
+    }
+    ApplyConfig(configJson);
+}
+
+void WorldGenerationModule::ApplyConfig(const char* configJson)
 {
     LoadRulesSidecar();
     if (configJson != nullptr && configJson[0] != '\0')
@@ -245,6 +293,12 @@ void WorldGenerationModule::OnStageLaunch(const char* overridesJson)
 {
     if (overridesJson == nullptr || overridesJson[0] == '\0')
         return;
+    if (mConfigDeferred)
+    {
+        // The manifest config has not been applied yet (rules load in DoStart): the launch override applies after it.
+        mPendingLaunchOverrides = overridesJson;
+        return;
+    }
     Json::Value root;
     Json::Reader reader;
     if (!reader.parse(overridesJson, root) || !root.isObject())
@@ -307,7 +361,21 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
 
     RegisterCommands();
 
-    LoadRulesSidecar();   // normally done by OnConfigure; a no-op then
+    // Done by OnConfigure unless the rules come from a catalogue alias: then the load and the deferred config
+    // (seed / size / preset / regenerate_on_start) happen here, followed by any launch override held back.
+    LoadRulesSidecar();
+    if (mConfigDeferred)
+    {
+        mConfigDeferred = false;
+        const std::string config = std::move(mConfigPending);
+        ApplyConfig(config.c_str());
+        if (!mPendingLaunchOverrides.empty())
+        {
+            const std::string overrides = std::move(mPendingLaunchOverrides);
+            mPendingLaunchOverrides.clear();
+            OnStageLaunch(overrides.c_str());
+        }
+    }
     if (!mSession.RulesLoaded())
         ReportRulesFailure();
 
