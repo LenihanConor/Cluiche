@@ -565,9 +565,10 @@ namespace Dia::Attribute {
         Dia::Core::Containers::DynamicArray<int32_t> oldIndexOfNew(count > 0 ? count : 1);
         Dia::Core::Containers::DynamicArray<bool> kept(oldCount > 0 ? oldCount : 1);
         for (uint32_t i = 0; i < oldCount; ++i) kept.Add(false);
+        const bool hadMap = mSlotIndexByName.IsSizeSet();   // a never-populated set has no sized name map to query
         for (uint32_t i = 0; i < count; ++i)
         {
-            const uint32_t* idx = mSlotIndexByName.TryGetItemConst(schema.GetAttributeByIndex(i).attribute_name);
+            const uint32_t* idx = !hadMap ? nullptr : mSlotIndexByName.TryGetItemConst(schema.GetAttributeByIndex(i).attribute_name);
             oldIndexOfNew.Add(idx != nullptr ? static_cast<int32_t>(*idx) : -1);
             if (idx != nullptr) kept[*idx] = true;
         }
