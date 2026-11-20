@@ -453,10 +453,12 @@ namespace
 	}
 
 	// Runs n jobs (each tagged), then drains normally (BeginFrame + wait) before shutdown.
-	void RunJobsAndDrain(JobSystem& js, int n, const JobTag& tag, bool beginFrame = true)
+	// jobMs > 0 makes each job take that long so every worker gets a share (a fast Release worker can
+	// otherwise run every empty job itself, leaving the other worker with nothing to announce).
+	void RunJobsAndDrain(JobSystem& js, int n, const JobTag& tag, bool beginFrame = true, int jobMs = 0)
 	{
 		std::vector<Dia::Threading::JobHandle> hs;
-		for (int i = 0; i < n; ++i) hs.push_back(js.Submit([] {}, tag));
+		for (int i = 0; i < n; ++i) hs.push_back(js.Submit([jobMs] { if (jobMs > 0) std::this_thread::sleep_for(std::chrono::milliseconds(jobMs)); }, tag));
 		for (auto& h : hs) js.Wait(h);
 		if (beginFrame)
 		{
@@ -783,7 +785,7 @@ TEST_F(SLOW_JobObserverTest, Edge_StartStopStart_WorkerRegistrationsSurviveResta
 	const std::string path2 = WriteTempPath("restart");
 	std::remove(path2.c_str());
 	ASSERT_TRUE(Profiler::Instance().Start(path2.c_str(), Dia::Observation::Profile::Category::kAll, "restart", 0));
-	RunJobsAndDrain(js, 6, tag);              // same workers, still registered, new sink
+	RunJobsAndDrain(js, 6, tag, true, 5);     // same workers, still registered, new sink
 	js.Shutdown();
 	Profiler::Instance().Stop();
 	const std::string second = ReadJsonl(path2.c_str());
