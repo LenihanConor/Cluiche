@@ -92,8 +92,8 @@ namespace Dia::CellFieldBake {
         uint8_t* river;        // signed distance, half width, flow dir (packed)
         uint64_t Hash() const;
     };
-    bool Bake(const BakeInputs&, const BakeParams&, IParallelExecutor&, BakedFields& out);
-    bool RebakeCells(const uint32_t* cells, uint32_t count, const BakeInputs&, const BakeParams&, BakedFields& inOut);
+    // Feature 1: bool Bake(...) and bool BakeRegion(..., TexelRect, BakedFields&) with packed output (see fields-and-classes.md).
+    // Feature 3: parallel/tiled drivers over IParallelExecutor, and RebakeCells(cells, count, ...).
 }
 ```
 
@@ -101,9 +101,9 @@ namespace Dia::CellFieldBake {
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Fields and Classes | Two-ring Gaussian bake, warp, smooth scalar fields, majority water class and class, owner cell, margin field, `OwnerAt`/`SampleAt`, hashes | TBD | Draft |
-| 2 | Relief and Rivers | Terrain-class relief with ridged noise from data, lake surface height, ocean depth; river segments with wiggle and the distance/width/direction field | TBD | Draft |
-| 3 | Parallel and Incremental Bake | `IParallelExecutor` rows (serial oracle), `RebakeCells` for class changes, timing metrics, goldens on S-1 Small/Standard/Large | TBD | Draft |
+| 1 | Fields and Classes | Two-ring Gaussian bake, warp, smooth scalar fields, majority primary and secondary class, owner cell, margin field, `OwnerAt`/`SampleAt`, hashes; DiaCellLayers adapter | [fields-and-classes.md](fields-and-classes.md) | Approved 2026-11-20 |
+| 2 | Relief and Rivers | Terrain-class relief with ridged noise from data, lake surface height, ocean depth; river segments with wiggle and the distance/width/direction field | [relief-and-rivers.md](relief-and-rivers.md) | Draft |
+| 3 | Parallel, Tiled and Incremental Bake | `IParallelExecutor` over tiles (serial oracle), tile scheduling and visible-tile policy, cache, per-size default resolution, `RebakeCells` for class changes, timing and memory metrics, goldens on S-1 Small/Standard/Large | [parallel-tiled-incremental.md](parallel-tiled-incremental.md) | Draft |
 
 Build order: 1 → 2 → 3.
 

@@ -67,14 +67,16 @@ The look-dev prototype (`docs/research/tile_renderin_art_pipeline/lookdev/index.
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Stage and World | `.diastage` from Boot (AD-005), S-1 world via the hand-off (preset/seed/size or `world_file`), mode selector, camera presets | TBD | Draft |
-| 2 | Stand-in Drivers | Ecology, storm-front weather, living-year water, wildfire CA, herds/birds, year clock and time-lapse; each an `IMapChannelSource` with a Live switch | TBD | Draft |
-| 3 | Look-Dev Panel | Prototype control set (world/camera, season and year, ecology, water, weather, time and life, presentation, style, data views) as `cow.map.*` / `v1.*` commands; style save/load; capture button. Mockup: the lookdev prototype, approved 2026-11-20 | TBD | Draft |
-| 4 | Checks and Captures | GDD Tests 1–9 as checks: channel→parameter assertions on data (Tests 1–6), frame time and bake time (7–9); a fixed capture set (one per channel and preset) rendered headless for the user's taste review | TBD | Draft |
+| 1 | Stage and World | `.diastage` from Boot (AD-005), S-1 world via the hand-off (preset/seed/size or `world_file`), mode selector, camera presets | [stage-and-world.md](stage-and-world.md) | Draft |
+| 2 | Stand-in Drivers | Ecology, storm-front weather, living-year water, wildfire CA, herds/birds, year clock and time-lapse; each an `IMapChannelSource` with a Live switch | [stand-in-drivers.md](stand-in-drivers.md) | Draft |
+| 3 | Look-Dev Panel | Prototype control set (world/camera, season and year, ecology, water, weather, time and life, presentation, style, data views) as `cow.map.*` / `v1.*` commands; style save/load; capture button. Mockup: the lookdev prototype, approved 2026-11-20 | [look-dev-panel.md](look-dev-panel.md) | Draft |
+| 4 | Checks and Captures | GDD Tests 1–9 as checks: channel→parameter assertions on data (Tests 1–6), frame time and bake time (7–9); a fixed capture set (one per channel and preset) rendered headless for the user's taste review | [checks-and-captures.md](checks-and-captures.md) | Draft |
 
 Build order: 1 → 2 → 3 → 4. Feature 1 needs Strategic Map Features 1, 2 and 4.
 
 ## GDD Deviations (fold-back owed)
+
+Paste-ready fold-back text: docs/research/tile_renderin_art_pipeline/gdd-foldback.md.
 
 These depart from the GDD as written. The fold-back text goes to the GDD session.
 

@@ -102,11 +102,11 @@ Every source implements `IMapChannelSource`, so the V-1 stand-ins and the live s
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Map Visual Data | Biome visual table keyed by Biome Registry ids: palette P/S/A, season callouts, ground marks, relief weights, prop sets; depth-zone ink and hatch; GDD season grade tokens; ecology bands. Schema'd files under `Global/Map/` | TBD | Draft |
-| 2 | Channel Binding | `IMapChannelSource`, S-1 binding, year clock, slots for A1/A3/A4/A5 (stand-ins provided by V-1) | TBD | Draft |
-| 3 | Props and Fauna Set | CoW palette-masked SVG props (Claude-authored first; Gemini only if needed through the asset forge) and placement rules; herd and bird sprites; cloud sprites | TBD | Draft |
-| 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | TBD | Draft |
-| 5 | Presentation Presets | Tilt-shift, haze, sky, silhouettes, form lines, contours, boil: tuned defaults and named presets (strategic, cinematic, debug-flat) | TBD | Draft |
+| 1 | Map Visual Data | Biome visual table keyed by Biome Registry ids: palette P/S/A, season callouts, ground marks, relief weights, prop sets; depth-zone ink and hatch; GDD season grade tokens; ecology bands. Schema'd files under `Global/Map/` | [map-visual-data.md](map-visual-data.md) | Draft |
+| 2 | Channel Binding | `IMapChannelSource`, S-1 binding, year clock, slots for A1/A3/A4/A5 (stand-ins provided by V-1) | [channel-binding.md](channel-binding.md) | Draft |
+| 3 | Props and Fauna Set | CoW palette-masked SVG props (Claude-authored first; Gemini only if needed through the asset forge) and placement rules; herd and bird sprites; cloud sprites | [props-and-fauna-set.md](props-and-fauna-set.md) | Draft |
+| 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | [module-and-camera.md](module-and-camera.md) | Draft |
+| 5 | Presentation Presets | Tilt-shift, haze, sky, silhouettes, form lines, contours, boil: tuned defaults and named presets (strategic, cinematic, debug-flat) | [presentation-presets.md](presentation-presets.md) | Draft |
 
 Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature can only start once the DiaTerrainMap3D feature it uses exists.
 

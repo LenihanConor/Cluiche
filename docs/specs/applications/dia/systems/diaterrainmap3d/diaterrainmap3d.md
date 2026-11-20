@@ -132,10 +132,10 @@ namespace Dia::TerrainMap3D {
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Heightfield Terrain | Chunked mesh from baked fields, sea skirt, field/channel textures, terrain material host | TBD | Draft |
-| 2 | Style Shader Library | Terrain material functions (palette, ink-on-fields, hatch, toon, form lines, contours, boil, condition grade, snow, wet, cloud shadow, events, marks, rivers, grain); game-side shader root in `pipeline.toml` | TBD | Draft |
-| 3 | Map Props and Emitters | Deterministic class-rule scatter scaled by condition, dynamic sprite layers, per-cell density into particles, sway rules (no prop boil) | TBD | Draft |
-| 4 | Module, Presentation and Tooling | `TerrainMap3DModule`, map post preset, data views, toggles, style binding, headless capture, observability | TBD | Draft |
+| 1 | Heightfield Terrain | Chunked mesh from baked fields, sea skirt, field/channel textures, terrain material host | [heightfield-terrain.md](heightfield-terrain.md) | Draft |
+| 2 | Style Shader Library | Terrain material functions (palette, ink-on-fields, hatch, toon, form lines, contours, boil, condition grade, snow, wet, cloud shadow, events, marks, rivers, grain); game-side shader root in `pipeline.toml` | [style-shader-library.md](style-shader-library.md) | Draft |
+| 3 | Map Props and Emitters | Deterministic class-rule scatter scaled by condition, dynamic sprite layers, per-cell density into particles, sway rules (no prop boil) | [map-props-and-emitters.md](map-props-and-emitters.md) | Draft |
+| 4 | Module, Presentation and Tooling | `TerrainMap3DModule`, map post preset, data views, toggles, style binding, headless capture, observability | [module-presentation-tooling.md](module-presentation-tooling.md) | Draft |
 
 Build order: DiaCellFieldBake 1 → 1 → 2 → 4 (first visible map). Then 3, once DiaBgfx3D instancing and particles exist. The post preset in 4 needs the DiaBgfx3D post-process stack.
 

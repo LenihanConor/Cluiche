@@ -120,6 +120,8 @@ Each piece is reusable by any game; CoW owns only the data, palettes and rules.
 
 ## GDD Fold-Back (for the GDD session)
 
+**Paste-ready text, by GDD document, with decision and change entries: [gdd-foldback.md](gdd-foldback.md).** The list below is the short version.
+
 - Replace TileRenderingPipeline's artist-authored 180-tile atlas with this field-driven renderer; the look rules are unchanged.
 - V-1: the camera is a tilted 3D heightfield; mountains are terrain, not tiles or sprites; particles and animation are in scope.
 - Settle the inconsistencies:
