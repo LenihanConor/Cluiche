@@ -95,7 +95,7 @@ namespace Dia::Attribute {
   - a band lies outside `[min, max]`;
   - a defaults constraint is violated;
   - a constraint names an unknown or non-numeric key.
-- The old `AttributeSchema::LoadFromJson` and `LoadFromJsonValue` are **deleted**. The CoW dragon stub and the DiaAttribute tests move to sidecars. `InitializeFromBands` behaves as before, reading the sidecar's bands. `band_schema_version` becomes the sidecar's `version` field. The plan's Task 0 confirms nothing else relies on the old field.
+- The old `AttributeSchema::LoadFromJson` and `LoadFromJsonValue` are **deleted**. The CoW dragon stub and the DiaAttribute tests move to sidecars. `InitializeFromBands` behaves as before, reading the sidecar's bands. The old `band_schema_version` becomes the optional sidecar field `bandSchemaVersion` (default 1), not `version` (see Band schema version resolution below). The plan's Task 0 confirms nothing else relies on the old field.
 
 ### `ParameterFile`
 
@@ -335,3 +335,7 @@ Each item supersedes contradicting text above (including Open Design Question 1'
 ## Status
 
 **Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`. Interview done with the user on 2026-11-18. Design choices: the sidecar is the only format and owns defaults; packs go into base values and runtime effects are modifiers; parameters versus records; constraints live in the sidecar; maps are one per column; a load failure fails loudly with no fallback.
+
+## Band schema version resolution (2026-11-20, user)
+
+The sidecar `version` remains the format version (the loader still accepts only `version: 1`). A separate optional file-level field `bandSchemaVersion` (a whole number from 1 to 2147483647, default 1 when absent; anything else fails the load naming `bandSchemaVersion`) feeds `AttributeSchema::GetBandSchemaVersion()`. `LoadResult::mBandSchemaVersion` carries it, and `dia validate schema` mirrors the rule as `schema.bad-band-schema-version`. This supersedes any text above saying `GetBandSchemaVersion()` returns the sidecar `version`.

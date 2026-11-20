@@ -129,6 +129,33 @@ namespace
 	}
 }
 
+TEST(DiaValueSchemaConformance, BandSchemaVersionIsReadFromTheFileAndDefaultsToOne)
+{
+	const LoadResult withField = LoadFixture("good-band-schema-version.schema.json");
+	ASSERT_TRUE(withField.mOk) << withField.mFailure.mReason.AsCStr();
+	EXPECT_EQ(withField.mBandSchemaVersion, 3u);
+
+	const LoadResult absent = LoadFixture("good-bands.schema.json");
+	ASSERT_TRUE(absent.mOk) << absent.mFailure.mReason.AsCStr();
+	EXPECT_EQ(absent.mBandSchemaVersion, 1u);
+}
+
+TEST(DiaValueSchemaConformance, BandSchemaVersionRejectsOutOfRangeAndNonIntegers)
+{
+	const char* const bad[] = { "0", "-1", "1.5", "\"2\"", "true", "null", "[]", "2147483648" };
+	for (const char* v : bad)
+	{
+		const std::string text = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"bandSchemaVersion\":") + v + ",\"for\":\"x\",\"entries\":[]}";
+		const LoadResult r = ValueSchemaLoader::LoadFromText(text.c_str(), "f");
+		EXPECT_FALSE(r.mOk) << v;
+		EXPECT_NE(std::string(r.mFailure.mReason.AsCStr()).find("bandSchemaVersion"), std::string::npos) << v;
+	}
+	const std::string max = "{\"format\":\"dia.value_schema\",\"version\":1,\"bandSchemaVersion\":2147483647,\"for\":\"x\",\"entries\":[]}";
+	const LoadResult ok = ValueSchemaLoader::LoadFromText(max.c_str(), "f");
+	ASSERT_TRUE(ok.mOk);
+	EXPECT_EQ(ok.mBandSchemaVersion, 2147483647u);
+}
+
 TEST(DiaValueSchemaConformance, GoodBandsRoundTripIntoValueInfo)
 {
 	const LoadResult r = LoadFixture("good-bands.schema.json");

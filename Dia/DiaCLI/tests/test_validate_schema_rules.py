@@ -88,6 +88,18 @@ def test_bad_format_and_version():
     assert _fails(_doc(version=2))[0].rule == "schema.bad-version"
 
 
+@pytest.mark.parametrize("v", [0, -1, 1.5, "2", True, None, [], 2147483648])
+def test_bad_band_schema_version(v):
+    f = _fails(_doc(_entry(), bandSchemaVersion=v))
+    assert [x.rule for x in f] == ["schema.bad-band-schema-version"]
+    assert "bandSchemaVersion" in f[0].message and f[0].key == ""
+
+
+@pytest.mark.parametrize("v", [1, 2, 2147483647])
+def test_good_band_schema_version(v):
+    assert _fails(_doc(_entry(), bandSchemaVersion=v)) == []
+
+
 def test_missing_for_and_entries():
     d = _doc(_entry())
     del d["for"]

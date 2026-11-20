@@ -654,6 +654,7 @@ PRODUCING_CASES = [
     D(E(), **{"for": 5}),
     {"format": "x"},
     D(E(), version=2),
+    D(E(), bandSchemaVersion=0),
     [],
 ]
 

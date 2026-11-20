@@ -29,6 +29,7 @@ namespace Dia::ValueSchema
 		bool								mOk = false;
 		LoadFailure							mFailure;	// valid when !mOk
 		Dia::Core::Containers::String64		mFor;
+		uint32_t							mBandSchemaVersion = 1;	// optional file-level `bandSchemaVersion`; 1 when absent
 		ValueList<ValueInfo>				mEntries;	// file order; empty when !mOk
 		ValueList<Constraint>				mConstraints;	// file order; empty when !mOk
 

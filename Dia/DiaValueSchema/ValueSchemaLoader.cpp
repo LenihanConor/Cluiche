@@ -97,7 +97,7 @@ namespace Dia::ValueSchema
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
 			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
 		const char* const kHistoryKeys[] = { "track", "group", "aggregate", nullptr };
-		const char* const kFileKeys[] = { "format", "version", "for", "entries", "constraints", nullptr };
+		const char* const kFileKeys[] = { "format", "version", "bandSchemaVersion", "for", "entries", "constraints", nullptr };
 
 		bool ParseKind(const std::string& s, ValueKind& out)
 		{
@@ -583,6 +583,17 @@ namespace Dia::ValueSchema
 				Fail(r, fileCtx, (std::string("unknown file-level key '") + n + "'").c_str());
 				return r;
 			}
+		}
+
+		if (root.isMember("bandSchemaVersion"))
+		{
+			const Json::Value& b = root["bandSchemaVersion"];
+			if (!b.isNumeric() || b.isBool() || !b.isIntegral() || b.asDouble() < 1.0 || b.asDouble() > 2147483647.0)
+			{
+				Fail(r, fileCtx, "'bandSchemaVersion' must be a whole number from 1 to 2147483647");
+				return r;
+			}
+			r.mBandSchemaVersion = static_cast<uint32_t>(b.asDouble());
 		}
 
 		if (!AssignString(r, fileCtx, r.mFor, root["for"].asCString(), "for")) { return r; }

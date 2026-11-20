@@ -19,7 +19,7 @@ ENTRY_KEYS = ("key", "kind", "label", "description", "hint", "unit", "type", "mi
 UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey",
            "delta_ramp", "default_base", "inset", "backdrop", "elevation_layer", "select_group")
 HISTORY_KEYS = ("track", "group", "aggregate")
-FILE_KEYS = ("format", "version", "for", "entries", "constraints")
+FILE_KEYS = ("format", "version", "bandSchemaVersion", "for", "entries", "constraints")
 KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_field")
 TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map")
 MAP_VALUE_TYPES = ("float", "int", "bool", "string", "enum")
@@ -287,6 +287,12 @@ def validate_schema_document(doc: object, file: str) -> List[Finding]:
     for n in doc:
         if n not in FILE_KEYS:
             return [fail("schema.unknown-file-key", f"unknown file-level key '{n}'")]
+    if "bandSchemaVersion" in doc:
+        b = doc["bandSchemaVersion"]
+        whole = isinstance(b, int) or (isinstance(b, float) and math.isfinite(b) and b == int(b))
+        if isinstance(b, bool) or not whole or b < 1 or b > 2147483647:
+            return [fail("schema.bad-band-schema-version",
+                         "'bandSchemaVersion' must be a whole number from 1 to 2147483647")]
 
     findings: List[Finding] = []
     warned: set = set()

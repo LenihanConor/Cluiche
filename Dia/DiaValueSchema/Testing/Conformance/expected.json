@@ -2,6 +2,7 @@
   "format": "dia.value_schema.conformance",
   "version": 1,
   "cases": {
+    "good-band-schema-version.schema.json": { "ok": true, "entryCount": 0, "for": "conf.test" },
     "good-parameter-file.schema.json": { "ok": true, "entryCount": 3, "for": "conf.params" },
     "good-fields-category.schema.json": { "ok": true, "entryCount": 2, "for": "conf.fields" },
     "good-event.schema.json": { "ok": true, "entryCount": 1, "for": "conf.events" },
@@ -41,6 +42,9 @@
     "bad-version-string.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "version" },
     "bad-missing-for.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "for" },
     "bad-entries-not-array.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "entries" },
+    "bad-band-schema-version-zero.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "bandSchemaVersion" },
+    "bad-band-schema-version-fraction.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "bandSchemaVersion" },
+    "bad-band-schema-version-type.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "bandSchemaVersion" },
     "bad-unknown-file-key.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "extra" },
     "bad-unparsable-json.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "unparsable" },
     "bad-later-entry.schema.json": { "ok": false, "failedEntry": "second", "reasonContains": "label" },
