@@ -276,6 +276,27 @@ def test_map_default_wrong_type_names_map_key():
     assert "map default 'A'" in f[0].message
 
 
+def _enum_map_entry(**over):
+    return _entry(key="k", type="map", keyRef="cow.biomes/biomes[].id", valueType="enum",
+                  values=[{"id": "Calm"}, {"id": "Windy"}], **over)
+
+
+def test_enum_map_default_takes_enum_id_strings():
+    assert validate_schema_document(_doc(_enum_map_entry(default={"A": "Calm", "B": "Windy"})), "f") == []
+
+
+def test_enum_map_default_unknown_id_names_entry_and_map_key():
+    f = _fails(_doc(_enum_map_entry(default={"A": "Calm", "B": "Gale"})))
+    assert [x.rule for x in f] == ["schema.bad-map-default"]
+    assert f[0].key == "k" and "map default 'B'" in f[0].message and "Gale" in f[0].message
+
+
+def test_enum_map_default_number_is_rejected():
+    f = _fails(_doc(_enum_map_entry(default={"A": 1})))
+    assert [x.rule for x in f] == ["schema.bad-map-default"]
+    assert "map default 'A'" in f[0].message
+
+
 def test_good_map_default_accepted():
     assert validate_schema_document(_doc(_map_entry(default={"A": 0.5, "B": 1})), "f") == []
 

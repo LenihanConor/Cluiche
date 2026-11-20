@@ -84,7 +84,7 @@ namespace {
             "\"default\":{\"TemperateForest\":1,\"Desert\":2,\"Tundra\":3}}";
         const char* bools = "{\"key\":\"biome.flag\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"map\","
             "\"keyRef\":\"cow.biomes/biomes[].id\",\"valueType\":\"bool\","
-            "\"default\":{\"TemperateForest\":1,\"Desert\":0,\"Tundra\":1}}";
+            "\"default\":{\"TemperateForest\":true,\"Desert\":false,\"Tundra\":true}}";
         return MakeSidecarText({
             SidecarMap("biome.wet", 0, 1, "{\"TemperateForest\":0.25,\"Desert\":0.5,\"Tundra\":0.75}"),
             ints, bools,
@@ -334,11 +334,9 @@ TEST(DiaAttributeParamBinding, MapSnapshotIncludesModifiersAndAllocatesNothing)
 
 TEST(DiaAttributeParamBinding, MapEnumArrayStoresOrdinals)
 {
-    // The enum overload over an enum-valued map: ordinals land in the enum array.
-    const char* modes = "{\"key\":\"biome.mode\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"map\","
-        "\"keyRef\":\"cow.biomes/biomes[].id\",\"valueType\":\"enum\","
-        "\"values\":[{\"id\":\"Calm\"},{\"id\":\"Windy\"},{\"id\":\"Stormy\"}],"
-        "\"default\":\"Windy\"}";
+    // The enum overload over an enum-valued map with a real per-key object default: ordinals land in the enum array.
+    const std::string modes = SidecarEnumMap("biome.mode", { "Calm", "Windy", "Stormy" },
+        R"({"TemperateForest":"Calm","Desert":"Windy","Tundra":"Stormy"})");
     Loaded l(MakeSidecarText({ modes }));
     ParamBinding<MapRules> b;
     b.BindMap(StringCRC("biome.mode"), &MapRules::mode);
@@ -346,7 +344,26 @@ TEST(DiaAttributeParamBinding, MapEnumArrayStoresOrdinals)
     ASSERT_TRUE(b.Resolve(l.schema, report));
     MapRules r;
     b.Snapshot(l.set, r);
-    EXPECT_EQ(r.mode[0], Mode::Windy);   // scalar enum default on a map: every column is ordinal 1
+    EXPECT_EQ(r.mode[0], Mode::Calm);    // key-source order: TemperateForest, Desert, Tundra
+    EXPECT_EQ(r.mode[1], Mode::Windy);
+    EXPECT_EQ(r.mode[2], Mode::Stormy);
+    EXPECT_TRUE(l.set.AddModifier(Mod("m", "biome.mode.Desert", ModifierOperation::Override, 2.0f)).IsValid());
+    b.Snapshot(l.set, r);
+    EXPECT_EQ(r.mode[1], Mode::Stormy);  // 2
+}
+
+TEST(DiaAttributeParamBinding, MapEnumArrayWithScalarDefaultStoresOrdinals)
+{
+    // A scalar enum default on a map fills every column with the same ordinal.
+    const std::string modes = SidecarEnumMap("biome.mode", { "Calm", "Windy", "Stormy" }, "\"Windy\"");
+    Loaded l(MakeSidecarText({ modes }));
+    ParamBinding<MapRules> b;
+    b.BindMap(StringCRC("biome.mode"), &MapRules::mode);
+    BindingReport report;
+    ASSERT_TRUE(b.Resolve(l.schema, report));
+    MapRules r;
+    b.Snapshot(l.set, r);
+    EXPECT_EQ(r.mode[0], Mode::Windy);
     EXPECT_EQ(r.mode[1], Mode::Windy);
     EXPECT_EQ(r.mode[2], Mode::Windy);
     EXPECT_TRUE(l.set.AddModifier(Mod("m", "biome.mode.Desert", ModifierOperation::Override, 2.0f)).IsValid());

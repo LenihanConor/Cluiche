@@ -278,7 +278,8 @@ namespace Dia::ValueSchema
 			return true;
 		}
 
-		// Object `default` on a map entry: every value checked against valueType, min and max.
+		// Object `default` on a map entry: every value checked against valueType, min and max. An enum-valued map takes
+		// `mapKey -> enum id`, each id checked against the entry's enum values (read before this runs).
 		bool ReadMapDefault(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& d)
 		{
 			info.mHasMapDefault = true;
@@ -303,7 +304,16 @@ namespace Dia::ValueSchema
 					if (!v.isBool()) { return Fail(r, ctx, (what + " must be a boolean (field 'default')").c_str()); }
 					md.mNumber = v.asBool() ? 1.0 : 0.0;
 					break;
-				default:	// string, enum
+				case ValueType::Enum:	// mapKey -> enum id, checked against the entry's values
+				{
+					if (!v.isString()) { return Fail(r, ctx, (what + " must be a string (field 'default')").c_str()); }
+					bool known = false;
+					for (unsigned int i = 0; i < info.mEnumValues.Size() && !known; ++i) { known = strcmp(info.mEnumValues[i].mId.AsCStr(), v.asCString()) == 0; }
+					if (!known) { return Fail(r, ctx, (what + " '" + v.asString() + "' is not a value of the enum (field 'default')").c_str()); }
+					if (!AssignString(r, ctx, md.mString, v.asCString(), "default")) { return false; }
+					break;
+				}
+				default:	// string
 					if (!v.isString()) { return Fail(r, ctx, (what + " must be a string (field 'default')").c_str()); }
 					if (!AssignString(r, ctx, md.mString, v.asCString(), "default")) { return false; }
 					break;
@@ -457,6 +467,18 @@ namespace Dia::ValueSchema
 
 			if (!ReadNumber(r, ctx, e, "min", info.mHasMin, info.mMin)) { return false; }
 			if (!ReadNumber(r, ctx, e, "max", info.mHasMax, info.mMax)) { return false; }
+			if (!ReadBool(r, ctx, e, "unique", info.mUnique)) { return false; }
+			if (!ReadBool(r, ctx, e, "required", info.mRequired)) { return false; }
+			if (!ReadOpenBlock(r, ctx, warned, e, "ui", kUiKeys, info.mUi)) { return false; }
+			if (!ReadOpenBlock(r, ctx, warned, e, "history", kHistoryKeys, info.mHistory)) { return false; }
+
+			if (!ReadBands(r, ctx, info, e)) { return false; }
+			if (!ReadStringList(r, ctx, info.mAffects, e, "affects")) { return false; }
+			if (!ReadStringList(r, ctx, info.mRelated, e, "related")) { return false; }
+			if (!ReadTypeSpecific(r, ctx, info, e)) { return false; }
+			if (!ReadEnumValues(r, ctx, info, e)) { return false; }
+
+			// After the map value type and the enum values are known: an object map default is checked against both.
 			if (e.isMember("default"))
 			{
 				const Json::Value& d = e["default"];
@@ -472,17 +494,6 @@ namespace Dia::ValueSchema
 					if (!AssignString(r, ctx, info.mDefaultString, d.asCString(), "default")) { return false; }
 				}
 			}
-
-			if (!ReadBool(r, ctx, e, "unique", info.mUnique)) { return false; }
-			if (!ReadBool(r, ctx, e, "required", info.mRequired)) { return false; }
-			if (!ReadOpenBlock(r, ctx, warned, e, "ui", kUiKeys, info.mUi)) { return false; }
-			if (!ReadOpenBlock(r, ctx, warned, e, "history", kHistoryKeys, info.mHistory)) { return false; }
-
-			if (!ReadBands(r, ctx, info, e)) { return false; }
-			if (!ReadStringList(r, ctx, info.mAffects, e, "affects")) { return false; }
-			if (!ReadStringList(r, ctx, info.mRelated, e, "related")) { return false; }
-			if (!ReadTypeSpecific(r, ctx, info, e)) { return false; }
-			if (!ReadEnumValues(r, ctx, info, e)) { return false; }
 			if (!ReadPayload(r, ctx, info, e)) { return false; }
 			if (!ReadVocabulary(r, ctx, info, e)) { return false; }
 

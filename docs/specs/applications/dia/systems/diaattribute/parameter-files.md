@@ -48,7 +48,7 @@ That's three different validation policies. Every default is also written twice,
 | Addition | Shape | Rules |
 |---|---|---|
 | `bands` on an entry | `"bands": {"LOW": [0.0, 0.3], "HIGH": [0.7, 1.0]}` | Each band must lie inside `[min, max]` with `lo <= hi`. Replaces the old format's `bands`. |
-| `default` on a `map` entry | an object keyed by map key, e.g. `{"Biome.Grassland": 0.6, ...}` | Values are checked against `valueType`, `min` and `max`. Every key must resolve through `keyRef` (CLI) or the caller's key list (C++). |
+| `default` on a `map` entry | an object keyed by map key, e.g. `{"Biome.Grassland": 0.6, ...}` | Values are checked against `valueType`, `min` and `max`. Every key must resolve through `keyRef` (CLI) or the caller's key list (C++). For an enum-valued map each value is an enum id string, checked against the entry's `values` (2026-11-20). |
 | Top-level `constraints` | `[{"a": "precipitation.snow_threshold", "op": "<=", "b": "snow.melt_threshold"}]` | `op` is one of `< <= > >= == !=`. `a` and `b` are parameter keys of a numeric kind; a map column is addressed as `<key>.<mapKey>`. Checked on defaults, after a pack merge, and on `Set`. |
 
 The CLI adds `schema.bad-band`, `schema.bad-constraint` and `data.constraint-violated`. The conformance fixtures gain cases for each. T-2's `table-and-form-editors.md` is amended to show and check constraints and bands, using the same fixtures.
@@ -63,7 +63,7 @@ Global/<System>/Packs/<id>.<sys>.json            sparse override pack (lenient)
    { "format": "<for>", "version": 1, "<key>": value, ... }
 ```
 
-The pack's `format` equals the sidecar's `for`. Pack keys are parameter keys (`group.key`), and a map is a nested object.
+The pack's `format` equals the sidecar's `for`. Pack keys are parameter keys (`group.key`), and a map is a nested object. (2026-11-20 user decision: flat keys. A pack addresses a parameter by its flat full key, the same key language as `Set` and map columns `<key>.<mapKey>`; a nested group object such as `{"grazing": {"rate": 2.5}}` is not a pack form. `ApplyPack` drops it with a warning and the CLI reports it as `data.nested-group-pack`. Only an object under a map parameter name is accepted.)
 
 ### Kinds and storage
 

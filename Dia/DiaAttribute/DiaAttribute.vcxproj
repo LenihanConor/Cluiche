@@ -83,6 +83,7 @@
     <ClInclude Include="ParameterFile.h" />
     <ClInclude Include="ParamBinding.h" />
     <ClInclude Include="IMapKeySource.h" />
+    <ClInclude Include="Testing\AttributeTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />

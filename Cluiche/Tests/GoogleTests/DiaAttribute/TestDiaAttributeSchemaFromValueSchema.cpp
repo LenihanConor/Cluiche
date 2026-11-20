@@ -440,6 +440,60 @@ TEST(DiaAttributeSchemaFromValueSchema, MapDefaultValueOutOfRangeNamesTheColumn)
     EXPECT_STREQ("affinity.Desert", b.err.key.AsCStr());
 }
 
+// ---- enum-valued map with an object default (close-out gap 5): mapKey -> enum id -> ordinal --------------------------
+TEST(DiaAttributeSchemaFromValueSchema, EnumMapObjectDefaultExpandsInKeySourceOrderWithOrdinals)
+{
+    FixtureMapKeySource src;
+    // Object order differs from the key-source order (TemperateForest, Desert, Tundra): the key source decides.
+    const Built b = BuildText(MakeSidecarText({
+        SidecarFloat("a", 0, 1, 0.5),
+        SidecarEnumMap("mode", { "Calm", "Windy", "Stormy" }, R"({"Tundra":"Calm","TemperateForest":"Stormy","Desert":"Windy"})") }), &src);
+    ASSERT_TRUE(b.ok) << b.err.key.AsCStr() << ": " << b.err.reason.AsCStr();
+    ASSERT_EQ(4u, b.schema.GetAttributeCount());
+    const char* keys[3] = { "mode.TemperateForest", "mode.Desert", "mode.Tundra" };
+    const float ordinals[3] = { 2.0f, 1.0f, 0.0f };
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        const AttributeDefinition& d = b.schema.GetAttributeByIndex(1 + i);
+        EXPECT_STREQ(keys[i], d.fullKey.AsCStr());
+        EXPECT_EQ(AttributeKind::Enum, d.kind);
+        EXPECT_FLOAT_EQ(ordinals[i], d.default_value) << keys[i];
+        EXPECT_FLOAT_EQ(2.0f, d.maximum_value);
+        EXPECT_STREQ("Windy", b.schema.GetEnumId(1 + i, 1).AsCStr());
+    }
+}
+
+TEST(DiaAttributeSchemaFromValueSchema, EnumMapScalarDefaultStillFillsEveryColumn)
+{
+    FixtureMapKeySource src;
+    const Built b = BuildText(MakeSidecarText({ SidecarEnumMap("mode", { "Calm", "Windy", "Stormy" }, "\"Windy\"") }), &src);
+    ASSERT_TRUE(b.ok) << b.err.reason.AsCStr();
+    for (unsigned i = 0; i < 3; ++i) EXPECT_FLOAT_EQ(1.0f, b.schema.GetAttributeByIndex(i).default_value);
+}
+
+TEST(DiaAttributeSchemaFromValueSchema, EnumMapObjectDefaultMissingAKeyNamesTheColumn)
+{
+    FixtureMapKeySource src;
+    const Built b = BuildText(MakeSidecarText({ SidecarEnumMap("mode", { "Calm", "Windy" }, R"({"TemperateForest":"Calm","Tundra":"Windy"})") }), &src);
+    EXPECT_FALSE(b.ok);
+    EXPECT_STREQ("mode.Desert", b.err.key.AsCStr());
+    EXPECT_TRUE(Contains(b.err.reason, "missing"));
+}
+
+TEST(DiaAttributeSchemaFromValueSchema, EnumMapObjectDefaultWithAnIdNotInTheEnumNamesTheColumn)
+{
+    // The loader rejects an unknown id before this point; a hand-edited LoadResult must still fail naming the column.
+    FixtureMapKeySource src;
+    LoadResult r = Parse(MakeSidecarText({ SidecarEnumMap("mode", { "Calm", "Windy" }, R"({"TemperateForest":"Calm","Desert":"Windy","Tundra":"Calm"})") }));
+    for (unsigned i = 0; i < r.mEntries[0].mMapDefaults.Size(); ++i)
+        if (std::strcmp(r.mEntries[0].mMapDefaults[i].mMapKey.AsCStr(), "Desert") == 0)
+            Dia::ValueSchema::SetText(r.mEntries[0].mMapDefaults[i].mString, "Gale");
+    const Built b = Build(r, &src);
+    EXPECT_FALSE(b.ok);
+    EXPECT_STREQ("mode.Desert", b.err.key.AsCStr());
+    EXPECT_TRUE(Contains(b.err.reason, "Gale"));
+}
+
 TEST(DiaAttributeSchemaFromValueSchema, MapWithZeroKeysExpandsToNothing)
 {
     ListKeySource src(nullptr, nullptr, 0);

@@ -152,6 +152,7 @@ def _check_bands(e: dict) -> None:
 
 def _check_map_default(e: dict) -> None:
     """An object `default` on a map entry: each value checked against valueType, min and max (as the C++ loader).
+    An enum-valued map takes `mapKey -> enum id string`; each id must be one of the entry's `values`.
 
     An object default on a non-map entry is ignored, exactly as the loader ignores it."""
     d = e.get("default")
@@ -174,6 +175,10 @@ def _check_map_default(e: dict) -> None:
                 raise _Stop("schema.bad-map-default", f"{what} must be a boolean (field 'default')")
         elif not isinstance(v, str):
             raise _Stop("schema.bad-map-default", f"{what} must be a string (field 'default')")
+        elif vt == "enum":
+            ids = [x.get("id") for x in e.get("values", []) if isinstance(x, dict)] if isinstance(e.get("values"), list) else []
+            if v not in ids:
+                raise _Stop("schema.bad-map-default", f"{what} '{v}' is not a value of the enum (field 'default')")
 
 
 def _numeric_heads(entries: list) -> set:

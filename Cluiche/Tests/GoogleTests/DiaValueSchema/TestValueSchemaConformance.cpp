@@ -192,6 +192,55 @@ TEST(DiaValueSchemaConformance, GoodMapDefaultObjectRoundTripsIntoValueInfo)
 	EXPECT_DOUBLE_EQ(v.mMapDefaults[1].mNumber, 1.0);
 }
 
+TEST(DiaValueSchemaConformance, GoodEnumMapDefaultKeepsEnumIdsInObjectOrder)
+{
+	const LoadResult r = LoadFixture("good-map-default-enum.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	const ValueInfo& v = r.mEntries[0];
+	EXPECT_EQ(v.mMapValueType, ValueType::Enum);
+	EXPECT_TRUE(v.mHasMapDefault);
+	ASSERT_EQ(v.mMapDefaults.Size(), 2u);
+	EXPECT_STREQ(v.mMapDefaults[0].mMapKey.AsCStr(), "A");
+	EXPECT_STREQ(v.mMapDefaults[0].mString.AsCStr(), "Calm");
+	EXPECT_STREQ(v.mMapDefaults[1].mMapKey.AsCStr(), "B");
+	EXPECT_STREQ(v.mMapDefaults[1].mString.AsCStr(), "Stormy");
+}
+
+TEST(DiaValueSchemaConformance, EnumMapDefaultFailuresNameTheEntryAndTheMapKey)
+{
+	const LoadResult unknown = LoadFixture("bad-map-default-enum-unknown-id.schema.json");
+	ASSERT_FALSE(unknown.mOk);
+	EXPECT_STREQ(unknown.mFailure.mEntry.AsCStr(), "k");
+	const std::string reason = unknown.mFailure.mReason.AsCStr();
+	EXPECT_EQ(reason.find("map default 'B'"), 0u) << reason;
+	EXPECT_NE(reason.find("Gale"), std::string::npos) << reason;
+
+	const LoadResult number = LoadFixture("bad-map-default-enum-number.schema.json");
+	ASSERT_FALSE(number.mOk);
+	EXPECT_STREQ(number.mFailure.mEntry.AsCStr(), "k");
+	EXPECT_EQ(std::string(number.mFailure.mReason.AsCStr()).find("map default 'B'"), 0u) << number.mFailure.mReason.AsCStr();
+}
+
+TEST(DiaValueSchemaConformance, MapDefaultsAreCheckedAgainstTheMapValueTypeWhateverTheKeyOrder)
+{
+	// `default` may precede `valueType` in the JSON text; the value type still decides how it is read.
+	const char* boolMap = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","default":{"A":true,"B":false},"type":"map","keyRef":"k","valueType":"bool"}]})";
+	const LoadResult b = ValueSchemaLoader::LoadFromText(boolMap, "bool-map.schema.json");
+	ASSERT_TRUE(b.mOk) << b.mFailure.mReason.AsCStr();
+	EXPECT_DOUBLE_EQ(b.mEntries[0].mMapDefaults[0].mNumber, 1.0);
+	EXPECT_DOUBLE_EQ(b.mEntries[0].mMapDefaults[1].mNumber, 0.0);
+
+	const char* intMap = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","type":"map","keyRef":"k","valueType":"int","default":{"A":2.5}}]})";
+	const LoadResult i = ValueSchemaLoader::LoadFromText(intMap, "int-map.schema.json");
+	ASSERT_FALSE(i.mOk);
+	EXPECT_NE(std::string(i.mFailure.mReason.AsCStr()).find("whole number"), std::string::npos) << i.mFailure.mReason.AsCStr();
+
+	const char* strMap = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","type":"map","keyRef":"k","valueType":"string","default":{"A":"x"}}]})";
+	const LoadResult sm = ValueSchemaLoader::LoadFromText(strMap, "string-map.schema.json");
+	ASSERT_TRUE(sm.mOk) << sm.mFailure.mReason.AsCStr();
+	EXPECT_STREQ(sm.mEntries[0].mMapDefaults[0].mString.AsCStr(), "x");
+}
+
 TEST(DiaValueSchemaConformance, ScalarDefaultOnMapEntryStillLoads)
 {
 	const char* text = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","type":"map","keyRef":"k","valueType":"float","default":0.25}]})";

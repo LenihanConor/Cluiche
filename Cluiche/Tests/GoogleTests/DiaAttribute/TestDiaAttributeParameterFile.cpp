@@ -1740,15 +1740,24 @@ TEST_F(DiaAttributeParameterFilePack, SamePackTwiceFiresNothingTheSecondTime)
     EXPECT_TRUE(obs.names.empty());
 }
 
-// Pinned current behaviour (gap, see plan row 28): a pack holding a dotted-group object such as
-// {"a":{"speed":7}} is NOT expanded by ApplyPack; the CLI data rules accept that nested form. The flat form
-// ("a.speed") is the one ToJson writes and the spec describes.
-TEST_F(DiaAttributeParameterFilePack, PinnedGap_NestedGroupObjectIsDroppedWithWarning)
+// A pack addresses a parameter by its FLAT key "<group>.<key>" (2026-11-20 user decision, close-out gap 3). A nested
+// group object such as {"a":{"speed":7}} is not a pack form: ApplyPack drops it with a warning naming the group, and
+// the CLI flags the same input (data.nested-group-pack; shared case nested-group-pack.case.json, see the parity test).
+TEST_F(DiaAttributeParameterFilePack, NestedGroupObjectIsDroppedWithWarning)
 {
     ASSERT_TRUE(Apply(R"("a":{"speed":7})"));
     EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 5.0f);
     EXPECT_TRUE(HasWarningKey(warn, "a"));
     EXPECT_TRUE(obs.names.empty());
+}
+
+TEST_F(DiaAttributeParameterFilePack, FlatGroupKeyAppliesWhereTheNestedFormIsDropped)
+{
+    ASSERT_TRUE(Apply(R"("a.speed":7,"a":{"count":9})"));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 7.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 3.0f);   // only the nested form named it
+    EXPECT_TRUE(HasWarningKey(warn, "a"));
+    EXPECT_FALSE(HasWarningKey(warn, "a.speed"));
 }
 
 TEST_F(DiaAttributeParameterFileSet, MapNameWithObjectValueIsRejectedAsUnknownKey)
@@ -1783,6 +1792,48 @@ TEST(DiaAttributeParameterFileToJson, ModifiersAreNotWrittenAsBaseValues)
     EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.speed")), 7.0f);
     EXPECT_DOUBLE_EQ(pf.ToJson(JsonShape::Full)["a.speed"].asDouble(), 5.0);   // base, not the resolved 7
     EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));
+}
+
+// ---- enum-valued map columns (close-out gap 5): ids in, ids out ---------------------------------------------------
+namespace
+{
+    std::string EnumMapText()
+    {
+        return MakeSidecarText({ SidecarEnumMap("m.mode", { "Calm", "Windy", "Stormy" },
+            R"({"TemperateForest":"Calm","Desert":"Windy","Tundra":"Stormy"})") }, nullptr, "test.params");
+    }
+}
+
+TEST(DiaAttributeParameterFileEnumMap, LoadsWithPerKeyOrdinalsAndToJsonEmitsIdStrings)
+{
+    ParameterFile pf; ParamError err;
+    ASSERT_TRUE(LoadFile(pf, EnumMapText(), &err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_FLOAT_EQ(Base(pf, "m.mode.TemperateForest"), 0.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "m.mode.Desert"), 1.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "m.mode.Tundra"), 2.0f);
+    const Json::Value full = pf.ToJson(JsonShape::Full);
+    EXPECT_EQ(full["m.mode"]["TemperateForest"].asString(), "Calm");
+    EXPECT_EQ(full["m.mode"]["Desert"].asString(), "Windy");
+    EXPECT_EQ(full["m.mode"]["Tundra"].asString(), "Stormy");
+    EXPECT_TRUE(HasExactly(pf.ToJson(JsonShape::Diff), { "format", "version", "basedOn" }));   // nothing changed from the defaults
+}
+
+TEST(DiaAttributeParameterFileEnumMap, ApplyPackAcceptsIdStringsAndDiffRoundTrips)
+{
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, EnumMapText()));
+    ParamWarnings w; ParamError err;
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("m.mode":{"Desert":"Stormy","Tundra":"Bogus"})", MatchingBasedOn(pf)), w, err));
+    EXPECT_FLOAT_EQ(Base(pf, "m.mode.Desert"), 2.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "m.mode.Tundra"), 2.0f);   // unknown id dropped, default (Stormy) kept
+    EXPECT_TRUE(HasWarningKey(w, "m.mode.Tundra"));
+
+    const Json::Value diff = pf.ToJson(JsonShape::Diff);
+    EXPECT_EQ(diff["m.mode"]["Desert"].asString(), "Stormy");
+    EXPECT_FALSE(diff["m.mode"].isMember("Tundra"));
+    ParameterFile fresh; ASSERT_TRUE(LoadFile(fresh, EnumMapText()));
+    ParamWarnings w2;
+    ASSERT_TRUE(fresh.ApplyPack(diff, w2, err));
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
 }
 
 // ---- Not loaded, Reload arguments -------------------------------------------------------------------------------
@@ -1893,6 +1944,28 @@ TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsFlaggedByTheCliAndFa
     EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
     EXPECT_STREQ(err.key.AsCStr(), "affinity.TemperateForest");   // the first key the default object lacks
     EXPECT_NE(std::string(err.reason.AsCStr()).find("missing"), std::string::npos) << err.reason.AsCStr();
+}
+
+// Close-out gap 3 (user decision 2026-11-20: packs use flat keys): the CLI flags a nested group object in a pack
+// (data.nested-group-pack) and C++ ApplyPack drops it with a warning naming the same key; a map object stays valid on both.
+TEST(DiaAttributeParameterFileParity, NestedGroupPackIsFlaggedByTheCliAndDroppedByApplyPackNamingTheSameKey)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("nested-group-pack.case.json", c));
+    ASSERT_EQ(c["expected"].size(), 1u);
+    EXPECT_EQ(c["expected"][0u]["rule"].asString(), "data.nested-group-pack");
+    const std::string flagged = c["expected"][0u]["key"].asString();   // "grazing"
+
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ToText(c["schemas"][0u])));
+    const Json::Value* pack = PackOf(c);
+    ASSERT_NE(pack, nullptr);
+    ParamWarnings w; ParamError err;
+    ASSERT_TRUE(pf.ApplyPack(*pack, w, err));
+    EXPECT_TRUE(HasWarningKey(w, flagged.c_str()));
+    EXPECT_FLOAT_EQ(Base(pf, "grazing.rate"), 1.0f);     // the nested value was not applied
+    EXPECT_FLOAT_EQ(Base(pf, "grazing.scale"), 2.0f);    // the flat key was
+    EXPECT_FLOAT_EQ(Base(pf, "affinity.Desert"), 0.3f);  // the map object form is valid on both sides
+    EXPECT_EQ(w.items.Size(), 2u);                       // the nested group, and the missing basedOn
 }
 
 TEST(DiaAttributeParameterFileParity, CompleteMapDefaultCasesAreCliCleanAndLoadInCpp)

@@ -802,11 +802,13 @@ def _mapd(vt, default, **over):
     ("bool", {"a": True}, True), ("bool", {"a": 1}, False),
     ("string", {"a": "s"}, True), ("string", {"a": 1}, False),
     ("enum", {"a": "s"}, True), ("enum", {"a": False}, False),
+    ("enum", {"a": "t"}, False), ("enum", {"a": 1}, False), ("enum", {"a": "s", "b": "Gale"}, False),
     ("float", {}, True),
 ])
 def test_map_default_value_types(vt, default, ok):
+    over = {"values": [{"id": "s"}]} if vt == "enum" else {}   # an enum-valued map default is checked against the ids
     out = [f.rule for f in validate_schema_document(
-        {"format": "dia.value_schema", "version": 1, "for": "x", "entries": [_mapd(vt, default)]}, "f")
+        {"format": "dia.value_schema", "version": 1, "for": "x", "entries": [_mapd(vt, default, **over)]}, "f")
         if f.severity == "FAIL"]
     assert out == ([] if ok else ["schema.bad-map-default"])
 

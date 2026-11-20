@@ -133,6 +133,22 @@ namespace Dia::Attribute::Testing {
         return s + "}";
     }
 
+    // Enum-valued map entry keyed by the shared fixture key list; defaultJson is the verbatim `default` value
+    // (an object of mapKey -> enum id, or a scalar id), or null for none.
+    inline std::string SidecarEnumMap(const char* key, std::initializer_list<const char*> ids, const char* defaultJson)
+    {
+        std::string values;
+        for (const char* id : ids)
+        {
+            if (!values.empty()) values += ",";
+            values += std::string("{\"id\":\"") + id + "\"}";
+        }
+        std::string s = std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"map\","
+            "\"keyRef\":\"cow.biomes/biomes[].id\",\"valueType\":\"enum\",\"values\":[" + values + "]";
+        if (defaultJson != nullptr) s += std::string(",\"default\":") + defaultJson;
+        return s + "}";
+    }
+
     // A non-parameter entry (kind: metric) for the "ignored kinds" cases.
     inline std::string SidecarMetric(const char* key)
     {
