@@ -4,6 +4,7 @@
 #include <string>
 #include <cstring>
 #include <set>
+#include <cmath>
 
 namespace Dia::ValueSchema
 {
@@ -26,6 +27,7 @@ namespace Dia::ValueSchema
 			SetText(r.mFailure.mEntry, ctx.mEntry);
 			SetText(r.mFailure.mReason, reason);
 			r.mEntries.RemoveAll();
+				r.mConstraints.RemoveAll();
 			DIA_LOG_ERROR("VSC", "Schema '%s' entry '%s' rejected: %s", ctx.mFile, ctx.mEntry, reason);
 			return false;
 		}
@@ -91,11 +93,11 @@ namespace Dia::ValueSchema
 
 		const char* const kEntryKeys[] = { "key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
 			"values", "affects", "related", "source", "unique", "required", "ref", "ui", "history", "payload", "vocabulary",
-			"keyRef", "valueType", nullptr };
+			"keyRef", "valueType", "bands", nullptr };
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
 			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
 		const char* const kHistoryKeys[] = { "track", "group", "aggregate", nullptr };
-		const char* const kFileKeys[] = { "format", "version", "for", "entries", nullptr };
+		const char* const kFileKeys[] = { "format", "version", "for", "entries", "constraints", nullptr };
 
 		bool ParseKind(const std::string& s, ValueKind& out)
 		{
@@ -267,6 +269,155 @@ namespace Dia::ValueSchema
 			return true;
 		}
 
+		bool IsNumericType(ValueType t) { return t == ValueType::Float || t == ValueType::Int; }
+
+		bool RangeCheck(LoadResult& r, const EntryContext& ctx, const ValueInfo& info, double v, const std::string& what)
+		{
+			if (info.mHasMin && v < info.mMin) { return Fail(r, ctx, (what + " is below 'min'").c_str()); }
+			if (info.mHasMax && v > info.mMax) { return Fail(r, ctx, (what + " is above 'max'").c_str()); }
+			return true;
+		}
+
+		// Object `default` on a map entry: every value checked against valueType, min and max.
+		bool ReadMapDefault(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& d)
+		{
+			info.mHasMapDefault = true;
+			const Json::Value::Members names = d.getMemberNames();
+			if (!names.empty()) { info.mMapDefaults.Reserve(static_cast<unsigned int>(names.size())); }
+			for (const std::string& n : names)
+			{
+				const Json::Value& v = d[n];
+				const std::string what = "map default '" + n + "'";
+				MapDefault md;
+				if (!AssignString(r, ctx, md.mMapKey, n.c_str(), "default")) { return false; }
+				switch (info.mMapValueType)
+				{
+				case ValueType::Float:
+				case ValueType::Int:
+					if (!v.isNumeric()) { return Fail(r, ctx, (what + " must be a number (field 'default')").c_str()); }
+					md.mNumber = v.asDouble();
+					if (info.mMapValueType == ValueType::Int && md.mNumber != std::floor(md.mNumber)) { return Fail(r, ctx, (what + " must be a whole number (field 'default')").c_str()); }
+					if (!RangeCheck(r, ctx, info, md.mNumber, what + " (field 'default')")) { return false; }
+					break;
+				case ValueType::Bool:
+					if (!v.isBool()) { return Fail(r, ctx, (what + " must be a boolean (field 'default')").c_str()); }
+					md.mNumber = v.asBool() ? 1.0 : 0.0;
+					break;
+				default:	// string, enum
+					if (!v.isString()) { return Fail(r, ctx, (what + " must be a string (field 'default')").c_str()); }
+					if (!AssignString(r, ctx, md.mString, v.asCString(), "default")) { return false; }
+					break;
+				}
+				info.mMapDefaults.Add(md);
+			}
+			return true;
+		}
+
+		bool ReadBands(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& e)
+		{
+			if (!e.isMember("bands")) { return true; }
+			if (!IsNumericType(info.mType)) { return Fail(r, ctx, "field 'bands' is only valid on float and int types"); }
+			const Json::Value& b = e["bands"];
+			if (!b.isObject()) { return Fail(r, ctx, "field 'bands' must be an object"); }
+			const Json::Value::Members names = b.getMemberNames();
+			if (!names.empty()) { info.mBands.Reserve(static_cast<unsigned int>(names.size())); }
+			for (const std::string& n : names)
+			{
+				const Json::Value& v = b[n];
+				const std::string what = "band '" + n + "'";
+				if (!v.isArray() || v.size() != 2 || !v[0u].isNumeric() || !v[1u].isNumeric())
+				{
+					return Fail(r, ctx, (what + " must be [lo, hi] with two numbers").c_str());
+				}
+				BandInfo bi;
+				if (!AssignString(r, ctx, bi.mName, n.c_str(), "bands")) { return false; }
+				bi.mLo = v[0u].asDouble();
+				bi.mHi = v[1u].asDouble();
+				if (!std::isfinite(bi.mLo) || !std::isfinite(bi.mHi)) { return Fail(r, ctx, (what + " must be finite").c_str()); }
+				if (bi.mLo > bi.mHi) { return Fail(r, ctx, (what + " has lo > hi").c_str()); }
+				if ((info.mHasMin && bi.mLo < info.mMin) || (info.mHasMax && bi.mHi > info.mMax))
+				{
+					return Fail(r, ctx, (what + " lies outside [min, max]").c_str());
+				}
+				info.mBands.Add(bi);
+			}
+			return true;
+		}
+
+		bool ParseOp(const std::string& s, ConstraintOp& out)
+		{
+			if (s == "<")	{ out = ConstraintOp::Lt; return true; }
+			if (s == "<=")	{ out = ConstraintOp::Le; return true; }
+			if (s == ">")	{ out = ConstraintOp::Gt; return true; }
+			if (s == ">=")	{ out = ConstraintOp::Ge; return true; }
+			if (s == "==")	{ out = ConstraintOp::Eq; return true; }
+			if (s == "!=")	{ out = ConstraintOp::Ne; return true; }
+			return false;
+		}
+
+		// The head of a constraint operand ("<key>" or "<key>.<mapKey>") must name a numeric entry or a numeric map entry.
+		// Only the head is checked here; the map-key part is checked by the consumer.
+		bool OperandIsNumeric(const LoadResult& r, const std::string& operand, bool& found)
+		{
+			found = false;
+			for (unsigned int i = 0; i < r.mEntries.Size(); ++i)
+			{
+				const ValueInfo& v = r.mEntries[i];
+				const std::string key = v.mKey.AsCStr();
+				if (v.mType == ValueType::Map)
+				{
+					if (operand.size() > key.size() + 1 && operand.compare(0, key.size(), key) == 0 && operand[key.size()] == '.')
+					{
+						found = true;
+						return v.mMapValueType == ValueType::Float || v.mMapValueType == ValueType::Int;
+					}
+				}
+				else if (key == operand)
+				{
+					found = true;
+					return v.mType == ValueType::Float || v.mType == ValueType::Int;
+				}
+			}
+			return false;
+		}
+
+		bool ReadConstraints(LoadResult& r, const char* fileName, const Json::Value& arr)
+		{
+			if (!arr.isArray())
+			{
+				EntryContext ctx{ fileName, "" };
+				return Fail(r, ctx, "field 'constraints' must be an array");
+			}
+			if (arr.size() > 0) { r.mConstraints.Reserve(arr.size()); }
+			for (Json::ArrayIndex i = 0; i < arr.size(); ++i)
+			{
+				const std::string name = "constraints[" + std::to_string(i) + "]";
+				EntryContext ctx{ fileName, name.c_str() };
+				const Json::Value& c = arr[i];
+				if (!c.isObject()) { return Fail(r, ctx, "constraint must be an object"); }
+				for (const std::string& n : c.getMemberNames())
+				{
+					if (n != "a" && n != "op" && n != "b") { return Fail(r, ctx, (std::string("unknown key '") + n + "'").c_str()); }
+				}
+				Constraint con;
+				if (!AssignRequired(r, ctx, con.mA, c, "a")) { return false; }
+				const char* op = nullptr;
+				if (!RequireString(r, ctx, c, "op", op)) { return false; }
+				if (!ParseOp(op, con.mOp)) { return Fail(r, ctx, (std::string("unknown op '") + op + "' (field 'op')").c_str()); }
+				if (!AssignRequired(r, ctx, con.mB, c, "b")) { return false; }
+				const std::string operands[2] = { con.mA.AsCStr(), con.mB.AsCStr() };
+				for (const std::string& operand : operands)
+				{
+					bool found = false;
+					const bool numeric = OperandIsNumeric(r, operand, found);
+					if (!found) { return Fail(r, ctx, (std::string("constraint names unknown key '") + operand + "'").c_str()); }
+					if (!numeric) { return Fail(r, ctx, (std::string("constraint key '") + operand + "' is not numeric").c_str()); }
+				}
+				r.mConstraints.Add(con);
+			}
+			return true;
+		}
+
 		bool ReadEntry(LoadResult& r, const char* fileName, const Json::Value& e, ValueInfo& info, std::set<std::string>& warned)
 		{
 			EntryContext ctx{ fileName, "" };
@@ -304,7 +455,11 @@ namespace Dia::ValueSchema
 			if (e.isMember("default"))
 			{
 				const Json::Value& d = e["default"];
-				if (d.isBool())			{ info.mHasDefault = true; info.mDefaultNumber = d.asBool() ? 1.0 : 0.0; }
+				if (d.isObject() && info.mType == ValueType::Map)
+				{
+					if (!ReadMapDefault(r, ctx, info, d)) { return false; }
+				}
+				else if (d.isBool())		{ info.mHasDefault = true; info.mDefaultNumber = d.asBool() ? 1.0 : 0.0; }
 				else if (d.isNumeric())	{ info.mHasDefault = true; info.mDefaultNumber = d.asDouble(); }
 				else if (d.isString())
 				{
@@ -318,6 +473,7 @@ namespace Dia::ValueSchema
 			if (!ReadOpenBlock(r, ctx, warned, e, "ui", kUiKeys, info.mUi)) { return false; }
 			if (!ReadOpenBlock(r, ctx, warned, e, "history", kHistoryKeys, info.mHistory)) { return false; }
 
+			if (!ReadBands(r, ctx, info, e)) { return false; }
 			if (!ReadStringList(r, ctx, info.mAffects, e, "affects")) { return false; }
 			if (!ReadStringList(r, ctx, info.mRelated, e, "related")) { return false; }
 			if (!ReadTypeSpecific(r, ctx, info, e)) { return false; }
@@ -439,6 +595,10 @@ namespace Dia::ValueSchema
 			ValueInfo info;
 			if (!ReadEntry(r, fileName, entries[i], info, warned)) { return r; }
 			r.mEntries.Add(info);
+		}
+		if (root.isMember("constraints"))
+		{
+			if (!ReadConstraints(r, fileName, root["constraints"])) { return r; }
 		}
 		r.mOk = true;
 		return r;

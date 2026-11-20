@@ -22,6 +22,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <json/json.h>
 #include <string.h>
+#include <stdint.h>
 #include <utility>
 
 namespace Dia::ValueSchema
@@ -125,6 +126,31 @@ namespace Dia::ValueSchema
 		Dia::Core::Containers::String32		mUnit;
 	};
 
+	struct BandInfo
+	{
+		Dia::Core::Containers::String64		mName;
+		double								mLo = 0.0;
+		double								mHi = 0.0;
+	};
+
+	// One key of an object `default` on a map entry. Keys are not resolved against a key source by the loader.
+	struct MapDefault
+	{
+		Dia::Core::Containers::String128	mMapKey;
+		double								mNumber = 0.0;	// float/int/bool (0/1)
+		Dia::Core::Containers::String128	mString;		// string/enum
+	};
+
+	enum class ConstraintOp : uint8_t { Lt, Le, Gt, Ge, Eq, Ne };
+
+	// Top-level cross-field rule: a <op> b. A map column is addressed "<key>.<mapKey>".
+	struct Constraint
+	{
+		Dia::Core::Containers::String128	mA;
+		ConstraintOp						mOp = ConstraintOp::Lt;
+		Dia::Core::Containers::String128	mB;
+	};
+
 	struct ValueInfo
 	{
 		static constexpr unsigned int kMaxForLength			= 63;
@@ -167,6 +193,10 @@ namespace Dia::ValueSchema
 		// map type
 		Dia::Core::Containers::String128	mMapKeyRef;
 		ValueType							mMapValueType = ValueType::Float;
+		bool								mHasMapDefault = false;			// `default` was an object
+		ValueList<MapDefault>				mMapDefaults;					// object order
+
+		ValueList<BandInfo>					mBands;							// numeric types only
 
 		// record paths like "species[].growth_rate": stored as written (mKey) and split here.
 		ValueList<Dia::Core::Containers::String64>	mPathSegments;

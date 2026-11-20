@@ -43,6 +43,16 @@
     "bad-entries-not-array.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "entries" },
     "bad-unknown-file-key.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "extra" },
     "bad-unparsable-json.schema.json": { "ok": false, "failedEntry": "", "reasonContains": "unparsable" },
-    "bad-later-entry.schema.json": { "ok": false, "failedEntry": "second", "reasonContains": "label" }
+    "bad-later-entry.schema.json": { "ok": false, "failedEntry": "second", "reasonContains": "label" },
+    "bad-band-outside-range.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "band" },
+    "bad-band-lo-gt-hi.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "band" },
+    "good-bands.schema.json": { "ok": true, "entryCount": 1, "for": "conf.test" },
+    "bad-map-default-wrong-type.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "default" },
+    "bad-map-default-out-of-range.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "default" },
+    "good-map-default-object.schema.json": { "ok": true, "entryCount": 1, "for": "conf.test" },
+    "bad-constraint-op.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "op" },
+    "bad-constraint-unknown-key.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "nope" },
+    "bad-constraint-non-numeric.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "numeric" },
+    "good-constraints.schema.json": { "ok": true, "entryCount": 3, "for": "conf.test" }
   }
 }

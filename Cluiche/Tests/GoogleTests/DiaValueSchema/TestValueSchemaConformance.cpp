@@ -117,3 +117,86 @@ TEST(DiaValueSchemaConformance, EveryFixtureMatchesExpectedVerdict)
 	EXPECT_GE(good, 1) << "need at least one good case";
 	EXPECT_GE(bad, 1) << "need at least one bad case";
 }
+
+namespace
+{
+	LoadResult LoadFixture(const char* name)
+	{
+		const fs::path dir = FindConformanceDir();
+		std::string text;
+		EXPECT_TRUE(ReadFile(dir / name, text)) << name;
+		return ValueSchemaLoader::LoadFromText(text.c_str(), name);
+	}
+}
+
+TEST(DiaValueSchemaConformance, GoodBandsRoundTripIntoValueInfo)
+{
+	const LoadResult r = LoadFixture("good-bands.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	ASSERT_EQ(r.mEntries.Size(), 1u);
+	const ValueInfo& v = r.mEntries[0];
+	ASSERT_EQ(v.mBands.Size(), 2u);
+	// jsoncpp orders object members by name, so band order is alphabetical, not file order: look up by name.
+	const BandInfo* low = nullptr;
+	const BandInfo* high = nullptr;
+	for (unsigned i = 0; i < v.mBands.Size(); ++i)
+	{
+		if (strcmp(v.mBands[i].mName.AsCStr(), "LOW") == 0) { low = &v.mBands[i]; }
+		if (strcmp(v.mBands[i].mName.AsCStr(), "HIGH") == 0) { high = &v.mBands[i]; }
+	}
+	ASSERT_NE(low, nullptr);
+	ASSERT_NE(high, nullptr);
+	EXPECT_DOUBLE_EQ(low->mLo, 0.0);
+	EXPECT_DOUBLE_EQ(low->mHi, 0.3);
+	EXPECT_DOUBLE_EQ(high->mLo, 0.7);
+	EXPECT_DOUBLE_EQ(high->mHi, 1.0);
+}
+
+TEST(DiaValueSchemaConformance, GoodMapDefaultObjectRoundTripsIntoValueInfo)
+{
+	const LoadResult r = LoadFixture("good-map-default-object.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	const ValueInfo& v = r.mEntries[0];
+	EXPECT_TRUE(v.mHasMapDefault);
+	ASSERT_EQ(v.mMapDefaults.Size(), 2u);
+	EXPECT_STREQ(v.mMapDefaults[0].mMapKey.AsCStr(), "A");
+	EXPECT_DOUBLE_EQ(v.mMapDefaults[0].mNumber, 0.5);
+	EXPECT_STREQ(v.mMapDefaults[1].mMapKey.AsCStr(), "B");
+	EXPECT_DOUBLE_EQ(v.mMapDefaults[1].mNumber, 1.0);
+}
+
+TEST(DiaValueSchemaConformance, ScalarDefaultOnMapEntryStillLoads)
+{
+	const char* text = R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":"m","kind":"parameter","label":"L","description":"D","type":"map","keyRef":"k","valueType":"float","default":0.25}]})";
+	const LoadResult r = ValueSchemaLoader::LoadFromText(text, "scalar-map.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	EXPECT_FALSE(r.mEntries[0].mHasMapDefault);
+	EXPECT_TRUE(r.mEntries[0].mHasDefault);
+}
+
+TEST(DiaValueSchemaConformance, GoodConstraintsRoundTripInFileOrder)
+{
+	const LoadResult r = LoadFixture("good-constraints.schema.json");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	ASSERT_EQ(r.mConstraints.Size(), 2u);
+	EXPECT_STREQ(r.mConstraints[0].mA.AsCStr(), "lo");
+	EXPECT_EQ(r.mConstraints[0].mOp, ConstraintOp::Le);
+	EXPECT_STREQ(r.mConstraints[0].mB.AsCStr(), "hi");
+	EXPECT_STREQ(r.mConstraints[1].mA.AsCStr(), "hi");
+	EXPECT_EQ(r.mConstraints[1].mOp, ConstraintOp::Ne);
+	EXPECT_STREQ(r.mConstraints[1].mB.AsCStr(), "cols.A");
+}
+
+TEST(DiaValueSchemaConformance, AllConstraintOpsParse)
+{
+	const char* ops[] = { "<", "<=", ">", ">=", "==", "!=" };
+	const ConstraintOp expect[] = { ConstraintOp::Lt, ConstraintOp::Le, ConstraintOp::Gt, ConstraintOp::Ge, ConstraintOp::Eq, ConstraintOp::Ne };
+	for (int i = 0; i < 6; ++i)
+	{
+		std::string t = std::string(R"({"format":"dia.value_schema","version":1,"for":"t","constraints":[{"a":"x","op":")") + ops[i]
+			+ R"(","b":"x"}],"entries":[{"key":"x","kind":"parameter","label":"L","description":"D","type":"float"}]})";
+		const LoadResult r = ValueSchemaLoader::LoadFromText(t.c_str(), "ops.schema.json");
+		ASSERT_TRUE(r.mOk) << ops[i];
+		EXPECT_EQ(r.mConstraints[0].mOp, expect[i]) << ops[i];
+	}
+}

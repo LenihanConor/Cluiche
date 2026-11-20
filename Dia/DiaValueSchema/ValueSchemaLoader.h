@@ -30,6 +30,7 @@ namespace Dia::ValueSchema
 		LoadFailure							mFailure;	// valid when !mOk
 		Dia::Core::Containers::String64		mFor;
 		ValueList<ValueInfo>				mEntries;	// file order; empty when !mOk
+		ValueList<Constraint>				mConstraints;	// file order; empty when !mOk
 
 		// Non-fatal diagnostics (also logged as Warning on channel VSC). One per unknown key in the
 		// open `ui` / `history` blocks, once per (file, block, key). Observable without parsing logs.
