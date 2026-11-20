@@ -370,6 +370,12 @@ bool WorldGenSession::LoadRules(const char* sidecarText, Dia::Attribute::ParamEr
 
 bool WorldGenSession::RulesRefusal(Json::Value& refusal) const
 {
+    if (!mBlockCode.empty())
+    {
+        refusal = Error(mBlockCode.c_str());
+        refusal["message"] = "generation is blocked: " + mBlockCode;
+        return true;
+    }
     if (mRulesLoaded)
     {
         return false;
@@ -674,9 +680,9 @@ void WorldGenSession::ReleaseRun()
 
 bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
 {
-    if (!mRulesLoaded)
+    if (!mRulesLoaded || !mBlockCode.empty())
     {
-        return false;   // nothing generates without rules
+        return false;   // nothing generates without rules (or while the host has blocked generation)
     }
     if (mRun != nullptr)
     {

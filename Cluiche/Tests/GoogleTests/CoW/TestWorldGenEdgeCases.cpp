@@ -24,6 +24,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::WorldGeneration;
 
@@ -1220,7 +1221,7 @@ CoW::WorldGenerationModule*              g_edgeWg  = nullptr;
 
 Module* CreateEdgeBus(const StringCRC& id) { g_edgeBus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_edgeBus; }
 Module* CreateEdgeRng(const StringCRC& id) { return new CoW::RandomStreamModule(id); }
-Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); g_edgeWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); return g_edgeWg; }
+Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); g_edgeWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); g_edgeWg->SetBiomesPath(CoW::World::Testing::ShippedBiomesPath()); return g_edgeWg; }
 
 constexpr float kEdgeDt = 1.0f / 30.0f;
 

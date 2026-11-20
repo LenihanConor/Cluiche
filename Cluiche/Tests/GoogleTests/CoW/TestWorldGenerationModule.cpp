@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/World/BiomeRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -17,6 +18,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -36,9 +38,31 @@ Module* CreateRng(const StringCRC& id) { g_rng = new RandomStreamModule(id); ret
 std::string g_rulesTextOverride;   // non-empty: the sidecar text the next module is created with (task 26 tests)
 bool        g_noSidecarText = false;      // alias tests: do not inject text, so the module's own load path runs
 std::string g_defaultPathOverride;        // non-empty: the default sidecar path the next module is created with
+std::string g_biomesTextOverride;         // non-empty: the biomes text the next module is created with
+std::string g_biomesPathOverride;         // non-empty: the biomes path the next module is created with (else the shipped file)
+
+std::string FindShippedBiomes()
+{
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+    while (!dir.empty())
+    {
+        const std::filesystem::path candidate = dir / "Cluiche/Assets/CoW/Global/World/biomes.json";
+        if (std::filesystem::is_regular_file(candidate, ec)) return candidate.string();
+        const std::filesystem::path parent = dir.parent_path();
+        if (parent == dir) break;
+        dir = parent;
+    }
+    return {};
+}
+
 Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
+    if (!g_biomesTextOverride.empty())
+        g_wg->SetBiomesText(g_biomesTextOverride);
+    else
+        g_wg->SetBiomesPath(g_biomesPathOverride.empty() ? FindShippedBiomes() : g_biomesPathOverride);
     if (!g_noSidecarText)
         g_wg->SetRulesSidecarText(g_rulesTextOverride.empty() ? CoW::WorldGeneration::TestSidecarText() : g_rulesTextOverride);
     if (!g_defaultPathOverride.empty())
@@ -728,6 +752,76 @@ TEST(WorldGenModuleRules, BrokenSidecarPutsHealthInErrorNamingTheKeyAndRefusesGe
     EXPECT_EQ(reply["error"].asString(), "rules_not_loaded");
     f.Pump(5);
     EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+}
+
+// ---- Biome Registry task 10: the module owns the registry, loads it at start, refuses generation on a bad file ----
+
+namespace {
+std::string DuplicateIdBiomes()
+{
+    // The shipped file with the Lake row's id changed to the Ocean row's: the loader names the "id" field.
+    std::ifstream in(FindShippedBiomes(), std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    const std::string needle = "\"id\": \"Biome.Lake\"";
+    const size_t pos = text.find(needle);
+    if (pos != std::string::npos)
+        text.replace(pos, needle.size(), "\"id\": \"Biome.Ocean\"");
+    return text;
+}
+}
+
+TEST(WorldGenModuleBiomes, ShippedFileLoadsThirteenBiomesAndHealthStaysOk)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreBiomesLoaded());
+    EXPECT_EQ(f.wg->GetBiomeRegistry().Count(), 13u);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 1u);
+}
+
+TEST(WorldGenModuleBiomes, DuplicateIdFailsHealthNamingTheFieldAndRefusesGeneration)
+{
+    g_biomesTextOverride = DuplicateIdBiomes();
+    Fixture f;
+    const bool booted = f.Boot();
+    g_biomesTextOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(5);
+
+    EXPECT_FALSE(f.wg->AreBiomesLoaded());
+    EXPECT_EQ(f.wg->GetBiomeRegistry().Count(), 0u);
+    EXPECT_EQ(f.wg->GetBiomesErrorField(), "id");
+    const auto health = f.wg->GetHealthReporter().Report();
+    EXPECT_EQ(health.status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_NE(std::string(health.reason.AsChar()).find("id"), std::string::npos) << health.reason.AsChar();
+    EXPECT_NE(std::string(health.reason.AsChar()).find("biomes_load_failed"), std::string::npos) << health.reason.AsChar();
+
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    EXPECT_EQ(f.wg->GetCurrentWorld(), nullptr);
+    const Json::Value reply = f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    EXPECT_FALSE(reply["success"].asBool());
+    EXPECT_EQ(reply["error"].asString(), "biomes_not_loaded");
+    f.Pump(5);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    EXPECT_TRUE(f.msgs.empty());
+}
+
+TEST(WorldGenModuleBiomes, MissingFileFailsHealthAndRefusesGeneration)
+{
+    g_biomesPathOverride = "Z:/definitely/not/here/biomes.json";
+    Fixture f;
+    const bool booted = f.Boot();
+    g_biomesPathOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(5);
+
+    EXPECT_FALSE(f.wg->AreBiomesLoaded());
+    EXPECT_NE(f.wg->GetBiomesErrorReason().find("Z:/definitely/not/here/biomes.json"), std::string::npos) << f.wg->GetBiomesErrorReason();
+    EXPECT_EQ(f.wg->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    EXPECT_EQ(f.wg->GetSession().Regenerate(Json::Value(Json::objectValue))["error"].asString(), "biomes_not_loaded");
 }
 
 // ---- Terrain sidecar through its catalogue alias (config key rules_sidecar_alias, PathStore read, 2026-11-20) ----

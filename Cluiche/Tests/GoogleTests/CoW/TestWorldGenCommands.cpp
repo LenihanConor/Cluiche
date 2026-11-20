@@ -36,6 +36,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 namespace Dia
 {
@@ -208,7 +209,7 @@ namespace
 
 	Module* MakeShim(const StringCRC& id) { gShim = new WgMainShim(id); return gShim; }
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
-	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); gWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); return gWg; }
+	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); gWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); gWg->SetBiomesPath(CoW::World::Testing::ShippedBiomesPath()); return gWg; }
 	Module* MakeBus(const StringCRC& id) { gBus = new Cluiche::AppFlow::MessageBusHostModule(id); return gBus; }
 	Module* MakeSquatter(const StringCRC& id) { return new WgSquatter(id); }
 	Module* MakeRegistrar(const StringCRC& id) { gRegistrar = new WgRegistrar(id); return gRegistrar; }

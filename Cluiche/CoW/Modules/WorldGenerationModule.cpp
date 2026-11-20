@@ -1,5 +1,6 @@
 #include "Modules/WorldGenerationModule.h"
 
+#include <Shared/World/BiomeRegistry.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
@@ -26,6 +27,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
     : SimModule(instanceId)
 {
     mSession.SetSiteRegistry(&mSiteRegistry);
+    mBiomes = std::make_unique<World::BiomeRegistry>();
 }
 
 WorldGenerationModule::~WorldGenerationModule()
@@ -96,6 +98,66 @@ void WorldGenerationModule::ReportRulesFailure()
 {
     char reason[Dia::Core::StringCRC::kStringLength];
     std::snprintf(reason, sizeof(reason), "rules_load_failed:%s", mRulesErrorKey.c_str());
+    mHealth.SetFailing(Dia::Core::StringCRC(reason));
+    mHealth.IncrementErrors();
+}
+
+void WorldGenerationModule::LoadBiomes()
+{
+    std::string text;
+    std::string path;
+    if (mBiomesTextSet)
+    {
+        text = mBiomesText;
+    }
+    else
+    {
+        // Same sanctioned PathStore read as the rules sidecar: the catalogue registers json.biomes as an alias.
+        path = mBiomesPath;
+        if (path.empty())
+        {
+            const Dia::Core::Path::Alias alias(kBiomesAlias);
+            if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
+            {
+                mBiomesErrorField = kBiomesAlias;
+                mBiomesErrorReason = std::string("alias '") + kBiomesAlias + "' is not registered";
+                DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
+                return;
+            }
+            path = Dia::Core::PathStore::ResolvePathToCString(alias);
+        }
+        std::ifstream in(path, std::ios::binary);
+        if (!in.good())
+        {
+            mBiomesErrorField = "file";
+            mBiomesErrorReason = "cannot read " + path;
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
+            return;
+        }
+        std::stringstream ss;
+        ss << in.rdbuf();
+        text = ss.str();
+    }
+
+    World::RegistryError err;
+    if (!mBiomes->LoadFromText(text.c_str(), err))
+    {
+        mBiomesErrorField = err.field.AsCStr();
+        if (mBiomesErrorField.empty())
+            mBiomesErrorField = "file";
+        mBiomesErrorReason = err.reason.AsCStr();
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes failed at field '%s', id '%s', row %u: %s; generation is refused",
+                      mBiomesErrorField.c_str(), err.id.AsCStr(), static_cast<unsigned>(err.row), mBiomesErrorReason.c_str());
+        return;
+    }
+    mBiomesLoaded = true;   // BiomeRegistry::Load logs the Info line itself
+}
+
+void WorldGenerationModule::ReportBiomesFailure()
+{
+    mSession.SetGenerationBlocked("biomes_not_loaded");
+    char reason[Dia::Core::StringCRC::kStringLength];
+    std::snprintf(reason, sizeof(reason), "biomes_load_failed:%s", mBiomesErrorField.c_str());
     mHealth.SetFailing(Dia::Core::StringCRC(reason));
     mHealth.IncrementErrors();
 }
@@ -378,6 +440,10 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     }
     if (!mSession.RulesLoaded())
         ReportRulesFailure();
+
+    LoadBiomes();
+    if (!mBiomesLoaded)
+        ReportBiomesFailure();
 
     if (!mHandoffError.empty())
         ReportHandoffFailure();

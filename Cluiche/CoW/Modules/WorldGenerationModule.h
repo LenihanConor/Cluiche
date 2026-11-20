@@ -13,9 +13,12 @@
 #include "Modules/RandomStreamModule.h"
 #include "Modules/SimQueryHostModule.h"
 #include <cstdint>
+#include <memory>
 #include <string>
 
 namespace CoW {
+
+namespace World { class BiomeRegistry; }   // full definition: Shared/World/BiomeRegistry.h (pulls windows.h; kept out of this header)
 
 class WorldGenerationHealthReporter : public Dia::Observation::Health::HealthReporterBase
 {
@@ -110,6 +113,23 @@ public:
     const std::string& GetRulesErrorKey() const { return mRulesErrorKey; }
     const std::string& GetRulesErrorReason() const { return mRulesErrorReason; }
 
+    // Biome registry (spec biome-registry.md, Ownership): owned here, loaded once in DoStart, immutable afterwards (no
+    // reload). Where the JSON comes from (first match wins):
+    //   - SetBiomesText (a host supplied the text; tests),
+    //   - SetBiomesPath (a plain file path; tests / dev),
+    //   - otherwise the catalogue alias kBiomesAlias ("json.biomes") resolved through PathStore (same user-approved
+    //     read as the rules sidecar; aliases are registered before DoStart).
+    // A failure logs an Error, puts health in Failing naming the field ("biomes_load_failed:<field>"), and every
+    // generation entry point of the session refuses with "biomes_not_loaded".
+    static constexpr const char* kBiomesAlias = "json.biomes";
+    void SetBiomesText(const std::string& text) { mBiomesText = text; mBiomesTextSet = true; }
+    void SetBiomesPath(const std::string& path) { mBiomesPath = path; }
+    const World::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
+    bool AreBiomesLoaded() const { return mBiomesLoaded; }
+    // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
+    const std::string& GetBiomesErrorField() const { return mBiomesErrorField; }
+    const std::string& GetBiomesErrorReason() const { return mBiomesErrorReason; }
+
     const WorldGenerationHealthReporter& GetHealthReporter() const { return mHealth; }
     bool IsHealthRegistered() const { return mHealthRegistered; }
 
@@ -144,6 +164,8 @@ private:
     // The config body of OnConfigure (loads the rules first); deferred to DoStart when the rules come from an alias.
     void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
+    void LoadBiomes();
+    void ReportBiomesFailure();
     void ApplyHandoffPreset();
     void RegisterCommands();
     void UnregisterCommands();
@@ -176,6 +198,13 @@ private:
     std::string mPendingLaunchOverrides;
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
+    std::unique_ptr<World::BiomeRegistry> mBiomes;
+    std::string mBiomesText;
+    bool mBiomesTextSet = false;
+    std::string mBiomesPath;
+    bool mBiomesLoaded = false;
+    std::string mBiomesErrorField;
+    std::string mBiomesErrorReason;
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
     std::string mWorldsDir;                                        // read-only deployed worlds (none by default)

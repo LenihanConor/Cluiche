@@ -56,6 +56,10 @@ public:
     // configuration-time call: refused (err.key "state") while a Regenerate runs or once a world exists.
     bool LoadRules(const char* sidecarText, Dia::Attribute::ParamError& err);
     bool RulesLoaded() const { return mRulesLoaded; }
+    // The host blocks generation for a reason outside the session (the biome registry failed to load): every entry
+    // point that refuses without rules refuses with this code instead. Empty code clears the block.
+    void SetGenerationBlocked(const std::string& code) { mBlockCode = code; }
+    bool IsGenerationBlocked() const { return !mBlockCode.empty(); }
     const TerrainRules& Rules() const { return mRules; }
 
     // Actions: mutate pending state, mark dirty when something changed, return the command's JSON result.
@@ -175,6 +179,7 @@ private:
     TerrainRules     mRules;
     std::unique_ptr<Dia::Attribute::ParameterFile> mRulesFile;   // the loaded sidecar (null when rules were supplied directly)
     bool             mRulesLoaded = false;
+    std::string      mBlockCode;
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;

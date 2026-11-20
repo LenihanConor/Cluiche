@@ -53,6 +53,9 @@ namespace Detail
     }
 }
 
+// Absolute path of the shipped Global/World/biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
+inline std::string ShippedBiomesPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/biomes.json", false); }
+
 // The shipped Global/World/biomes.json, loaded once per process. Aborts if it cannot be loaded.
 inline const BiomeRegistry& ShippedBiomeRegistry()
 {
