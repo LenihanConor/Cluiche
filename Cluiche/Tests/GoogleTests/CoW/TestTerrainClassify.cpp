@@ -270,7 +270,7 @@ TEST(TerrainClassify, CoastFlagIsLandNextToOcean)
 TEST(TerrainClassify, RidgeFlagThresholdAtRidgeCellMin)
 {
     CGrid g(12, 12);
-    const float m = g.rules.kRidgeCellMin();
+    const float m = g.rules.kRidgeCellMin;
     g.ridge[g.I(2, 2)] = m;
     g.ridge[g.I(4, 2)] = Above(m);
     g.ridge[g.I(6, 2)] = Below(m);
@@ -351,7 +351,7 @@ TEST(TerrainClassify, VolcanicFlagSkipsOceanAndHandlesGridEdges)
 TEST(TerrainClassify, RiverCrossesBarrierNeedsRiverAndRidgeOrBarrier)
 {
     CGrid g(16, 8);
-    const float m = g.rules.kRidgeCellMin();
+    const float m = g.rules.kRidgeCellMin;
     auto river = [&](int x) { g.river[g.I(x, 2)] = 1u; };
     river(1); g.ridge[g.I(1, 2)] = m;            // river + ridge
     river(3); g.band[g.I(3, 2)] = 0.5f;          // river + barrier

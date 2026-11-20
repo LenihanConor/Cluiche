@@ -31,7 +31,7 @@ namespace
     TerrainRules RulesMin(int minCells)
     {
         TerrainRules r = TerrainRules::Defaults();
-        r.values[static_cast<uint32_t>(Rule::kMinRegionCells)] = static_cast<float>(minCells);
+        r.kMinRegionCells = minCells;
         return r;
     }
 
@@ -595,7 +595,7 @@ namespace
 
         EXPECT_FALSE(b.overflow);
         EXPECT_EQ(b.unassignedLandCells, 0u);
-        const CheckErrors e = CheckAllRegions(w, limits ? rules.kMaxAbsorbedShare() : -1.0f);
+        const CheckErrors e = CheckAllRegions(w, limits ? rules.kMaxAbsorbedShare : -1.0f);
         EXPECT_TRUE(e.empty()) << ChkJoin(e);
 
         // AC4: counts.
@@ -608,7 +608,7 @@ namespace
         else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, DepthZone::None); }
         else { EXPECT_EQ(w.regions.limitedBy, DepthZone::None); }
         // AC3 (amended): tiny-fragment cells have their own bound.
-        if (limits) { EXPECT_LE(static_cast<float>(w.regions.fragmentCells), rules.kMaxFragmentShare() * static_cast<float>(ChkLandCount(w)))
+        if (limits) { EXPECT_LE(static_cast<float>(w.regions.fragmentCells), rules.kMaxFragmentShare * static_cast<float>(ChkLandCount(w)))
             << "fragmentCells " << w.regions.fragmentCells; }
         if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != DepthZone::None)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
@@ -635,9 +635,9 @@ namespace
             st.zoneBelowMinAfterRepair += below ? 1 : 0;
         }
         // AC5: every mainland region reaches kMinRegionCells; the upper bound is tuning-gated (counted, printed).
-        const int minCells = rules.GetInt(Rule::kMinRegionCells);
+        const int minCells = rules.kMinRegionCells;
         const float meanSize = mainland ? static_cast<float>(mainLand) / mainland : 0.0f;
-        const float maxSize = rules.kMaxRegionShare() * meanSize + static_cast<float>(rules.GetInt(Rule::kMaxRegionSlack));
+        const float maxSize = rules.kMaxRegionShare * meanSize + static_cast<float>(rules.kMaxRegionSlack);
         for (unsigned i = 0; i < w.regions.regions.Size(); ++i)
         {
             const RegionRecord& r = w.regions.regions[i];
@@ -648,7 +648,7 @@ namespace
 
         const float land = static_cast<float>(ChkLandCount(w));
         ++st.worlds;
-        st.overAbsorb += w.regions.absorbedCells > rules.kMaxAbsorbedShare() * static_cast<float>(ChkLandCount(w));
+        st.overAbsorb += w.regions.absorbedCells > rules.kMaxAbsorbedShare * static_cast<float>(ChkLandCount(w));
         st.regions += static_cast<int>(w.regions.regions.Size());
         st.mainMin = std::min(st.mainMin, mainland);
         st.mainMax = std::max(st.mainMax, mainland);

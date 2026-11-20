@@ -85,7 +85,7 @@ void ComputeStage5(const TerrainRules& rules, GridDimensions dims, const float* 
         depth[i] = d >= kBasinDepthFloor ? d : 0.0f;
         rank[i] = 0u;
     }
-    const float minBasinDepth = rules.kMinBasinDepth();
+    const float minBasinDepth = rules.kMinBasinDepth;
     std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
     {
         const Dia::Pathfinding::HexNeighbours graph(topo);
@@ -180,7 +180,7 @@ void ComputeStage5(const TerrainRules& rules, GridDimensions dims, const float* 
 
     // 4. Flow accumulation: land cells from the highest filled to the lowest (ties by ascending
     //    index); every downstream cell is strictly lower, so its upstream totals are complete first.
-    const float highlandRain = rules.kHighlandRain();
+    const float highlandRain = rules.kHighlandRain;
     std::vector<int> order;
     order.reserve(static_cast<size_t>(n));
     for (int i = 0; i < n; ++i)

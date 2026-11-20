@@ -51,8 +51,8 @@ void ComputeStage6(const TerrainRules& rules, GridDimensions dims, float rivers,
     }
 
     const HexTopology topo(w, h);
-    const double fMax = rules.kFlowMax();
-    const double fMin = rules.kFlowMin();
+    const double fMax = rules.kFlowMax;
+    const double fMin = rules.kFlowMin;
     const double threshold = fMax * std::pow(fMin / fMax, static_cast<double>(std::min(rivers, 1.0f)));
     out.threshold = static_cast<float>(threshold);
 
@@ -138,8 +138,8 @@ void ComputeStage6(const TerrainRules& rules, GridDimensions dims, float rivers,
             t.highestSource = std::max(t.highestSource, filledElevation[i]);
         }
     }
-    const float minSource = rules.kSourceMinElev();
-    const int   minRun = static_cast<int>(std::ceil(rules.kMinRiverLength()));
+    const float minSource = rules.kSourceMinElev;
+    const int   minRun = static_cast<int>(std::ceil(rules.kMinRiverLength));
     for (auto& kv : trees)
     {
         RiverTree& t = kv.second;

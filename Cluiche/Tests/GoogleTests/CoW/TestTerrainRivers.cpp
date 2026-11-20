@@ -171,8 +171,8 @@ int CheckRivers(const TerrainGenerator& g, GridDimensions dims, const std::strin
     }
     for (const auto& kv : trees)
     {
-        if (!(kv.second.first >= rules.kSourceMinElev())) { fail("kept tree highest source below kSourceMinElev", kv.first); }
-        if (kv.second.second < static_cast<int>(rules.kMinRiverLength())) { fail("kept tree shorter than kMinRiverLength", kv.first); }
+        if (!(kv.second.first >= rules.kSourceMinElev)) { fail("kept tree highest source below kSourceMinElev", kv.first); }
+        if (kv.second.second < static_cast<int>(rules.kMinRiverLength)) { fail("kept tree shorter than kMinRiverLength", kv.first); }
     }
     return fails;
 }
@@ -288,7 +288,7 @@ TEST(TerrainRivers, LowSourceTreeIsDroppedAndSourceAtMinimumIsKept)
     EXPECT_EQ(low.Count(), 0);
 
     RGrid edge(9, 12);
-    edge.Path(edge.Column(3, 8), edge.I(3, 0), TerrainRules::Defaults().kSourceMinElev(), 100.0f);
+    edge.Path(edge.Column(3, 8), edge.I(3, 0), TerrainRules::Defaults().kSourceMinElev, 100.0f);
     edge.Run(0.5f);
     EXPECT_EQ(edge.Count(), 8) << "source == kSourceMinElev is kept (>=)";
 

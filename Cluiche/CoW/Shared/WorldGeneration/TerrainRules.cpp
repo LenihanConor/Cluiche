@@ -13,6 +13,8 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <type_traits>
+#include <cstring>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -33,105 +35,105 @@ constexpr const char* kSidecarRelativePath = "Cluiche/Assets/CoW/Global/WorldGen
 template<class Visitor>
 void ForEachRuleMember(Visitor&& v)
 {
-    v("kCoastElev", &TerrainRuleValues::kCoastElev);
-    v("kBorderWidth", &TerrainRuleValues::kBorderWidth);
-    v("kEdgeFade", &TerrainRuleValues::kEdgeFade);
-    v("kShelfScale", &TerrainRuleValues::kShelfScale);
-    v("kMinLandmass", &TerrainRuleValues::kMinLandmass);
-    v("kMinIslandShare", &TerrainRuleValues::kMinIslandShare);
-    v("kMaxIslandShare", &TerrainRuleValues::kMaxIslandShare);
-    v("kIslandGapMin", &TerrainRuleValues::kIslandGapMin);
-    v("kIslandGapMax", &TerrainRuleValues::kIslandGapMax);
-    v("kIslandSpacing", &TerrainRuleValues::kIslandSpacing);
-    v("kWarpAmp", &TerrainRuleValues::kWarpAmp);
-    v("kCoastAmp", &TerrainRuleValues::kCoastAmp);
-    v("kRidgeCellMin", &TerrainRuleValues::kRidgeCellMin);
-    v("kRidgeWidthMin", &TerrainRuleValues::kRidgeWidthMin);
-    v("kRidgeWidthMax", &TerrainRuleValues::kRidgeWidthMax);
-    v("kSpineReach", &TerrainRuleValues::kSpineReach);
-    v("kRingReach", &TerrainRuleValues::kRingReach);
-    v("kMinPiece", &TerrainRuleValues::kMinPiece);
-    v("kPassFloor", &TerrainRuleValues::kPassFloor);
-    v("kBarrierQuantile", &TerrainRuleValues::kBarrierQuantile);
-    v("kBarrierWobble", &TerrainRuleValues::kBarrierWobble);
-    v("kBarrierHalfWidth", &TerrainRuleValues::kBarrierHalfWidth);
-    v("kPlateauInner", &TerrainRuleValues::kPlateauInner);
-    v("kVentSpacing", &TerrainRuleValues::kVentSpacing);
-    v("kLowlandRise", &TerrainRuleValues::kLowlandRise);
-    v("kInlandScale", &TerrainRuleValues::kInlandScale);
-    v("kMountainHeight", &TerrainRuleValues::kMountainHeight);
-    v("kBarrierHeight", &TerrainRuleValues::kBarrierHeight);
-    v("kVentHeight", &TerrainRuleValues::kVentHeight);
-    v("kVentRadius", &TerrainRuleValues::kVentRadius);
-    v("kRuggedAmp", &TerrainRuleValues::kRuggedAmp);
-    v("kMinBasinDepth", &TerrainRuleValues::kMinBasinDepth);
-    v("kHighlandRain", &TerrainRuleValues::kHighlandRain);
-    v("kFlowMax", &TerrainRuleValues::kFlowMax);
-    v("kFlowMin", &TerrainRuleValues::kFlowMin);
-    v("kSourceMinElev", &TerrainRuleValues::kSourceMinElev);
-    v("kMinRiverLength", &TerrainRuleValues::kMinRiverLength);
-    v("kRidgeCost", &TerrainRuleValues::kRidgeCost);
-    v("kBarrierCost", &TerrainRuleValues::kBarrierCost);
-    v("kFirstShoresShare", &TerrainRuleValues::kFirstShoresShare);
-    v("kAncientShare", &TerrainRuleValues::kAncientShare);
-    v("kRiverCorridor", &TerrainRuleValues::kRiverCorridor);
-    v("kAncientMinDepth", &TerrainRuleValues::kAncientMinDepth);
-    v("kCarveMax", &TerrainRuleValues::kCarveMax);
-    v("kCarveFullAcc", &TerrainRuleValues::kCarveFullAcc);
-    v("kShelfWidth", &TerrainRuleValues::kShelfWidth);
-    v("kCliffSlope", &TerrainRuleValues::kCliffSlope);
-    v("kSteepSlope", &TerrainRuleValues::kSteepSlope);
-    v("kPeakElev", &TerrainRuleValues::kPeakElev);
-    v("kMountainElev", &TerrainRuleValues::kMountainElev);
-    v("kHighlandElev", &TerrainRuleValues::kHighlandElev);
-    v("kHillElev", &TerrainRuleValues::kHillElev);
-    v("kHillSlope", &TerrainRuleValues::kHillSlope);
-    v("kLatCool", &TerrainRuleValues::kLatCool);
-    v("kLapse", &TerrainRuleValues::kLapse);
-    v("kRiverPenalty", &TerrainRuleValues::kRiverPenalty);
-    v("kMoistScale", &TerrainRuleValues::kMoistScale);
-    v("kBandBlend", &TerrainRuleValues::kBandBlend);
-    v("kAirDecay", &TerrainRuleValues::kAirDecay);
-    v("kOrographic", &TerrainRuleValues::kOrographic);
-    v("kProximityMix", &TerrainRuleValues::kProximityMix);
-    v("kRainBonus", &TerrainRuleValues::kRainBonus);
-    v("kWetlandMaxElev", &TerrainRuleValues::kWetlandMaxElev);
-    v("kWetlandMoist", &TerrainRuleValues::kWetlandMoist);
-    v("kPlateauWet", &TerrainRuleValues::kPlateauWet);
-    v("kMaxFixupPasses", &TerrainRuleValues::kMaxFixupPasses);
-    v("kT0_Grass", &TerrainRuleValues::kT0_Grass);
-    v("kM0_Grass", &TerrainRuleValues::kM0_Grass);
-    v("kWT_Grass", &TerrainRuleValues::kWT_Grass);
-    v("kWM_Grass", &TerrainRuleValues::kWM_Grass);
-    v("kT0_Forest", &TerrainRuleValues::kT0_Forest);
-    v("kM0_Forest", &TerrainRuleValues::kM0_Forest);
-    v("kWT_Forest", &TerrainRuleValues::kWT_Forest);
-    v("kWM_Forest", &TerrainRuleValues::kWM_Forest);
-    v("kT0_Desert", &TerrainRuleValues::kT0_Desert);
-    v("kM0_Desert", &TerrainRuleValues::kM0_Desert);
-    v("kWT_Desert", &TerrainRuleValues::kWT_Desert);
-    v("kWM_Desert", &TerrainRuleValues::kWM_Desert);
-    v("kT0_Tundra", &TerrainRuleValues::kT0_Tundra);
-    v("kM0_Tundra", &TerrainRuleValues::kM0_Tundra);
-    v("kWT_Tundra", &TerrainRuleValues::kWT_Tundra);
-    v("kWM_Tundra", &TerrainRuleValues::kWM_Tundra);
-    v("kT0_Rainforest", &TerrainRuleValues::kT0_Rainforest);
-    v("kM0_Rainforest", &TerrainRuleValues::kM0_Rainforest);
-    v("kWT_Rainforest", &TerrainRuleValues::kWT_Rainforest);
-    v("kWM_Rainforest", &TerrainRuleValues::kWM_Rainforest);
-    v("kMinRegionCells", &TerrainRuleValues::kMinRegionCells);
-    v("kSeedBiomeBonus", &TerrainRuleValues::kSeedBiomeBonus);
-    v("kBiomeMismatch", &TerrainRuleValues::kBiomeMismatch);
-    v("kRegionRidgeCost", &TerrainRuleValues::kRegionRidgeCost);
-    v("kMaxRegionShare", &TerrainRuleValues::kMaxRegionShare);
-    v("kMaxRegionSlack", &TerrainRuleValues::kMaxRegionSlack);
-    v("kMaxAbsorbedShare", &TerrainRuleValues::kMaxAbsorbedShare);
-    v("kMaxFragmentShare", &TerrainRuleValues::kMaxFragmentShare);
-    v("kNodeSpacing", &TerrainRuleValues::kNodeSpacing);
-    v("kCorridorSpacing", &TerrainRuleValues::kCorridorSpacing);
-    v("kCoastalGapReach", &TerrainRuleValues::kCoastalGapReach);
-    v("kRiverNodeSpacing", &TerrainRuleValues::kRiverNodeSpacing);
-    v("kCellsPerNode", &TerrainRuleValues::kCellsPerNode);
+    v("kCoastElev", &TerrainRules::kCoastElev);
+    v("kBorderWidth", &TerrainRules::kBorderWidth);
+    v("kEdgeFade", &TerrainRules::kEdgeFade);
+    v("kShelfScale", &TerrainRules::kShelfScale);
+    v("kMinLandmass", &TerrainRules::kMinLandmass);
+    v("kMinIslandShare", &TerrainRules::kMinIslandShare);
+    v("kMaxIslandShare", &TerrainRules::kMaxIslandShare);
+    v("kIslandGapMin", &TerrainRules::kIslandGapMin);
+    v("kIslandGapMax", &TerrainRules::kIslandGapMax);
+    v("kIslandSpacing", &TerrainRules::kIslandSpacing);
+    v("kWarpAmp", &TerrainRules::kWarpAmp);
+    v("kCoastAmp", &TerrainRules::kCoastAmp);
+    v("kRidgeCellMin", &TerrainRules::kRidgeCellMin);
+    v("kRidgeWidthMin", &TerrainRules::kRidgeWidthMin);
+    v("kRidgeWidthMax", &TerrainRules::kRidgeWidthMax);
+    v("kSpineReach", &TerrainRules::kSpineReach);
+    v("kRingReach", &TerrainRules::kRingReach);
+    v("kMinPiece", &TerrainRules::kMinPiece);
+    v("kPassFloor", &TerrainRules::kPassFloor);
+    v("kBarrierQuantile", &TerrainRules::kBarrierQuantile);
+    v("kBarrierWobble", &TerrainRules::kBarrierWobble);
+    v("kBarrierHalfWidth", &TerrainRules::kBarrierHalfWidth);
+    v("kPlateauInner", &TerrainRules::kPlateauInner);
+    v("kVentSpacing", &TerrainRules::kVentSpacing);
+    v("kLowlandRise", &TerrainRules::kLowlandRise);
+    v("kInlandScale", &TerrainRules::kInlandScale);
+    v("kMountainHeight", &TerrainRules::kMountainHeight);
+    v("kBarrierHeight", &TerrainRules::kBarrierHeight);
+    v("kVentHeight", &TerrainRules::kVentHeight);
+    v("kVentRadius", &TerrainRules::kVentRadius);
+    v("kRuggedAmp", &TerrainRules::kRuggedAmp);
+    v("kMinBasinDepth", &TerrainRules::kMinBasinDepth);
+    v("kHighlandRain", &TerrainRules::kHighlandRain);
+    v("kFlowMax", &TerrainRules::kFlowMax);
+    v("kFlowMin", &TerrainRules::kFlowMin);
+    v("kSourceMinElev", &TerrainRules::kSourceMinElev);
+    v("kMinRiverLength", &TerrainRules::kMinRiverLength);
+    v("kRidgeCost", &TerrainRules::kRidgeCost);
+    v("kBarrierCost", &TerrainRules::kBarrierCost);
+    v("kFirstShoresShare", &TerrainRules::kFirstShoresShare);
+    v("kAncientShare", &TerrainRules::kAncientShare);
+    v("kRiverCorridor", &TerrainRules::kRiverCorridor);
+    v("kAncientMinDepth", &TerrainRules::kAncientMinDepth);
+    v("kCarveMax", &TerrainRules::kCarveMax);
+    v("kCarveFullAcc", &TerrainRules::kCarveFullAcc);
+    v("kShelfWidth", &TerrainRules::kShelfWidth);
+    v("kCliffSlope", &TerrainRules::kCliffSlope);
+    v("kSteepSlope", &TerrainRules::kSteepSlope);
+    v("kPeakElev", &TerrainRules::kPeakElev);
+    v("kMountainElev", &TerrainRules::kMountainElev);
+    v("kHighlandElev", &TerrainRules::kHighlandElev);
+    v("kHillElev", &TerrainRules::kHillElev);
+    v("kHillSlope", &TerrainRules::kHillSlope);
+    v("kLatCool", &TerrainRules::kLatCool);
+    v("kLapse", &TerrainRules::kLapse);
+    v("kRiverPenalty", &TerrainRules::kRiverPenalty);
+    v("kMoistScale", &TerrainRules::kMoistScale);
+    v("kBandBlend", &TerrainRules::kBandBlend);
+    v("kAirDecay", &TerrainRules::kAirDecay);
+    v("kOrographic", &TerrainRules::kOrographic);
+    v("kProximityMix", &TerrainRules::kProximityMix);
+    v("kRainBonus", &TerrainRules::kRainBonus);
+    v("kWetlandMaxElev", &TerrainRules::kWetlandMaxElev);
+    v("kWetlandMoist", &TerrainRules::kWetlandMoist);
+    v("kPlateauWet", &TerrainRules::kPlateauWet);
+    v("kMaxFixupPasses", &TerrainRules::kMaxFixupPasses);
+    v("kT0_Grass", &TerrainRules::kT0_Grass);
+    v("kM0_Grass", &TerrainRules::kM0_Grass);
+    v("kWT_Grass", &TerrainRules::kWT_Grass);
+    v("kWM_Grass", &TerrainRules::kWM_Grass);
+    v("kT0_Forest", &TerrainRules::kT0_Forest);
+    v("kM0_Forest", &TerrainRules::kM0_Forest);
+    v("kWT_Forest", &TerrainRules::kWT_Forest);
+    v("kWM_Forest", &TerrainRules::kWM_Forest);
+    v("kT0_Desert", &TerrainRules::kT0_Desert);
+    v("kM0_Desert", &TerrainRules::kM0_Desert);
+    v("kWT_Desert", &TerrainRules::kWT_Desert);
+    v("kWM_Desert", &TerrainRules::kWM_Desert);
+    v("kT0_Tundra", &TerrainRules::kT0_Tundra);
+    v("kM0_Tundra", &TerrainRules::kM0_Tundra);
+    v("kWT_Tundra", &TerrainRules::kWT_Tundra);
+    v("kWM_Tundra", &TerrainRules::kWM_Tundra);
+    v("kT0_Rainforest", &TerrainRules::kT0_Rainforest);
+    v("kM0_Rainforest", &TerrainRules::kM0_Rainforest);
+    v("kWT_Rainforest", &TerrainRules::kWT_Rainforest);
+    v("kWM_Rainforest", &TerrainRules::kWM_Rainforest);
+    v("kMinRegionCells", &TerrainRules::kMinRegionCells);
+    v("kSeedBiomeBonus", &TerrainRules::kSeedBiomeBonus);
+    v("kBiomeMismatch", &TerrainRules::kBiomeMismatch);
+    v("kRegionRidgeCost", &TerrainRules::kRegionRidgeCost);
+    v("kMaxRegionShare", &TerrainRules::kMaxRegionShare);
+    v("kMaxRegionSlack", &TerrainRules::kMaxRegionSlack);
+    v("kMaxAbsorbedShare", &TerrainRules::kMaxAbsorbedShare);
+    v("kMaxFragmentShare", &TerrainRules::kMaxFragmentShare);
+    v("kNodeSpacing", &TerrainRules::kNodeSpacing);
+    v("kCorridorSpacing", &TerrainRules::kCorridorSpacing);
+    v("kCoastalGapReach", &TerrainRules::kCoastalGapReach);
+    v("kRiverNodeSpacing", &TerrainRules::kRiverNodeSpacing);
+    v("kCellsPerNode", &TerrainRules::kCellsPerNode);
 }
 
 void AddWarning(RuleWarnings& warnings, const char* prefix, const char* key)
@@ -219,43 +221,24 @@ const Dia::Attribute::ParameterFile* TerrainRules::SidecarFile()
     return s.ok ? &s.file : nullptr;
 }
 
-const RuleDef& GetRuleDef(uint32_t index)
-{
-    static RuleDef table[kRuleCount];
-    static const bool built = [] {
-        const ParameterFile* file = TerrainRules::SidecarFile();
-        uint32_t i = 0;
-        ForEachRuleMember([&](const char* key, float TerrainRuleValues::*) {
-            const Dia::Attribute::AttributeDefinition* def = file != nullptr ? file->Schema().FindAttribute(StringCRC(key)) : nullptr;
-            table[i] = def != nullptr ? RuleDef{ def->fullKey.AsCStr(), def->default_value, def->minimum_value, def->maximum_value }
-                                      : RuleDef{ key, 0.0f, 0.0f, 0.0f };
-            ++i;
-        });
-        return true;
-    }();
-    (void)built;
-    return table[index];
-}
-const RuleDef& GetRuleDef(Rule r) { return GetRuleDef(static_cast<uint32_t>(r)); }
-
 namespace {
 template<class Binding>
 void BindAll(Binding& binding)
 {
-    ForEachRuleMember([&](const char* key, float TerrainRuleValues::* m) { binding.Bind(StringCRC(key), m); });
+    ForEachRuleMember([&](const char* key, auto m) { binding.Bind(StringCRC(key), m); });
 }
 } // namespace
 
 bool TerrainRules::ResolveBindings(const Dia::Attribute::AttributeSchema& schema, BindingReport& report)
 {
-    ParamBinding<TerrainRuleValues> binding;
+    ParamBinding<TerrainRules> binding;
     BindAll(binding);
     return binding.Resolve(schema, report);
 }
 
 bool TerrainRules::FromParameterFile(const ParameterFile& file, TerrainRules& out)
 {
-    ParamBinding<TerrainRuleValues> binding;
+    ParamBinding<TerrainRules> binding;
     BindAll(binding);
 
     auto report = std::make_unique<BindingReport>();   // large: keep it off the stack
@@ -266,7 +249,7 @@ bool TerrainRules::FromParameterFile(const ParameterFile& file, TerrainRules& ou
         return false;
     }
     TerrainRules r;
-    binding.Snapshot(file.Values(), static_cast<TerrainRuleValues&>(r));
+    binding.Snapshot(file.Values(), r);
     out = r;
     return true;
 }
@@ -380,11 +363,38 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings)
     return true;
 }
 
+float TerrainRules::ValueAt(uint32_t index) const
+{
+    struct MemberRef { uint32_t offset; bool isInt; };
+    static MemberRef table[kRuleCount];
+    static const bool built = [] {
+        const TerrainRules probe;
+        uint32_t i = 0;
+        ForEachRuleMember([&](const char*, auto m) {
+            table[i].offset = static_cast<uint32_t>(reinterpret_cast<const char*>(&(probe.*m)) - reinterpret_cast<const char*>(&probe));
+            table[i].isInt = std::is_same_v<decltype(probe.*m), const int32_t&>;
+            ++i;
+        });
+        return i == kRuleCount;
+    }();
+    (void)built;
+    const char* base = reinterpret_cast<const char*>(this) + table[index].offset;
+    if (table[index].isInt)
+    {
+        int32_t v;
+        std::memcpy(&v, base, sizeof(v));
+        return static_cast<float>(v);
+    }
+    float f;
+    std::memcpy(&f, base, sizeof(f));
+    return f;
+}
+
 Json::Value TerrainRules::ToJson() const
 {
     Json::Value root(Json::objectValue);
     root[kRulesVersionKey] = Json::Value(rulesVersion);
-    ForEachRuleMember([&](const char* key, float TerrainRuleValues::* m) {
+    ForEachRuleMember([&](const char* key, auto m) {
         // Short decimal so 0.02f is written as 0.02, not 0.019999999552965164.
         char text[32];
         std::snprintf(text, sizeof(text), "%.7g", static_cast<double>(this->*m));

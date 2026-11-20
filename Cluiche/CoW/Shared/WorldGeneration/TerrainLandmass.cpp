@@ -95,8 +95,8 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     coastParams.octaves = 4;
     coastParams.frequency = kCoastFrequency;
 
-    const float warpStrength = coastline * rules.kWarpAmp();
-    const float coastAmp = coastline * rules.kCoastAmp();
+    const float warpStrength = coastline * rules.kWarpAmp;
+    const float coastAmp = coastline * rules.kCoastAmp;
     const uint32_t warpSeed = seeds.noiseSeeds[static_cast<int>(NoiseChannel::Warp)];
     const uint32_t coastSeed = seeds.noiseSeeds[static_cast<int>(NoiseChannel::Coast)];
 
@@ -105,8 +105,8 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     const ContinentCandidate& c0 = seeds.continents[0];
     const float R0 = kBlobRadius[0];
 
-    const float borderWidth = rules.kBorderWidth();
-    const float edgeFade = rules.kEdgeFade();
+    const float borderWidth = rules.kBorderWidth;
+    const float edgeFade = rules.kEdgeFade;
 
     for (int y = 0; y < h; ++y)
     {
@@ -196,7 +196,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     }
     else
     {
-        const float share = std::clamp(1.0f - shape.continentIslands, rules.kMinIslandShare(), rules.kMaxIslandShare());
+        const float share = std::clamp(1.0f - shape.continentIslands, rules.kMinIslandShare, rules.kMaxIslandShare);
         out.islandBudget = RoundToInt(static_cast<float>(out.landTarget) * share);
     }
 
@@ -209,7 +209,7 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         const int x = i % w, y = i / w;
         return std::min(std::min(x, w - 1 - x), std::min(y, h - 1 - y));
     };
-    const int minLandmass = rules.GetInt(Rule::kMinLandmass);
+    const int minLandmass = rules.kMinLandmass;
     const int peak = out.rank.empty() ? -1 : out.rank[0];
 
     // Step 5: reference mainland M_ref = top L cells, cleaned up. Independent of ContinentIslands.
@@ -254,13 +254,13 @@ void ComputeStage1(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         const int cell = cy * w + cx;
         const uint32_t dRef = distRef[static_cast<size_t>(cell)];
         if (out.refMainland[static_cast<size_t>(cell)] || dRef == Dia::Pathfinding::kUnreached) { continue; }
-        if (static_cast<float>(dRef) < rules.kIslandGapMin() || static_cast<float>(dRef) > rules.kIslandGapMax()) { continue; }
+        if (static_cast<float>(dRef) < rules.kIslandGapMin || static_cast<float>(dRef) > rules.kIslandGapMax) { continue; }
         if (static_cast<float>(edgeSteps(cell)) < minEdge) { continue; }
         bool spaced = true;
         for (int other : effective.islandCentres)
         {
             if (static_cast<float>(Dia::Pathfinding::HexTopology::Distance(
-                    topo.ToCoord(static_cast<uint32_t>(cell)), topo.ToCoord(static_cast<uint32_t>(other)))) < rules.kIslandSpacing())
+                    topo.ToCoord(static_cast<uint32_t>(cell)), topo.ToCoord(static_cast<uint32_t>(other)))) < rules.kIslandSpacing)
             {
                 spaced = false;
                 break;

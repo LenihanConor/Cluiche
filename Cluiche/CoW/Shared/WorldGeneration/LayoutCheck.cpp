@@ -102,11 +102,11 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
         if (uncovered)   { evU.code = LayoutCode::UncoveredLand;  evU.count = uncovered;   report.violations.push_back(evU); report.ok = false; }
         if (oceanRegion) { evO.code = LayoutCode::OceanHasRegion; evO.count = oceanRegion; report.violations.push_back(evO); report.ok = false; }
 
-        if (static_cast<float>(world.regions.absorbedCells) > rules.kMaxAbsorbedShare() * static_cast<float>(land))
+        if (static_cast<float>(world.regions.absorbedCells) > rules.kMaxAbsorbedShare * static_cast<float>(land))
         {
             Add(report, LayoutCode::AbsorbedOverCap, kNoRegion, world.regions.absorbedCells);
         }
-        if (static_cast<float>(world.regions.fragmentCells) > rules.kMaxFragmentShare() * static_cast<float>(land))
+        if (static_cast<float>(world.regions.fragmentCells) > rules.kMaxFragmentShare * static_cast<float>(land))
         {
             Add(report, LayoutCode::FragmentOverCap, kNoRegion, world.regions.fragmentCells);
         }
@@ -121,7 +121,7 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
             if (r >= 1 && r <= regionCount && IsLand(cells[i])) { cellsOf[r].push_back(static_cast<uint32_t>(i)); }
         }
         int mainland = 0;
-        const int minCells = rules.GetInt(Rule::kMinRegionCells);
+        const int minCells = rules.kMinRegionCells;
         std::vector<int> comp(static_cast<size_t>(n), -1);
         for (unsigned r = 1; r <= regionCount; ++r)
         {
@@ -206,7 +206,7 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
     }
 
     {   // spacing
-        const int spacing = rules.GetInt(Rule::kNodeSpacing);
+        const int spacing = rules.kNodeSpacing;
         const uint32_t corridor = kinds[0], river = kinds[1];
         auto exempt = [&](const Node& a, const Node& c) {
             if (a.kind == corridor && c.kind == corridor && CorridorBarrier(a.flags) == CorridorBarrier(c.flags) && a.variant == c.variant) { return true; }

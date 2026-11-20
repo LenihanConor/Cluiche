@@ -152,7 +152,7 @@ FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia:
 
     std::vector<uint16_t> counts(nReg);
     for (unsigned r = 0; r < nReg; ++r) { counts[r] = world.regions.regions[r].cellCount; }
-    QuotaResult q = ComputeNodeQuotas(counts, rules.GetInt(Rule::kCellsPerNode));
+    QuotaResult q = ComputeNodeQuotas(counts, rules.kCellsPerNode);
     out.quota        = std::move(q.quota);
     out.quotaTotal   = q.total;
     out.quotaLimited = q.nodeLimited;
@@ -163,7 +163,7 @@ FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia:
 
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
-    const int spacing = rules.GetInt(Rule::kNodeSpacing);
+    const int spacing = rules.kNodeSpacing;
     const uint32_t kinds[4] = { SiteKindId(BuiltinNodeKinds::Corridor()), SiteKindId(BuiltinNodeKinds::River()),
                                 SiteKindId(BuiltinNodeKinds::Hunting()),  SiteKindId(BuiltinNodeKinds::Resource()) };
 

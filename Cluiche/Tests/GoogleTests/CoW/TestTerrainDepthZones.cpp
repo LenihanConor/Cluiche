@@ -119,9 +119,9 @@ DGrid Strip3()
 // ---------------------------------------------------------------------------
 double EntryCost(const TerrainRules& r, float barrierSlider, const float* ridge, const float* barrier, const uint32_t* river, int c)
 {
-    const double terms = static_cast<double>(r.kRidgeCost()) * ridge[c] +
-                         static_cast<double>(r.kBarrierCost()) * barrierSlider * barrier[c];
-    return river[c] != 0u ? 1.0 + static_cast<double>(r.kRiverCorridor()) * terms : 1.0 + terms;
+    const double terms = static_cast<double>(r.kRidgeCost) * ridge[c] +
+                         static_cast<double>(r.kBarrierCost) * barrierSlider * barrier[c];
+    return river[c] != 0u ? 1.0 + static_cast<double>(r.kRiverCorridor) * terms : 1.0 + terms;
 }
 
 int CountDistinctAbove(const TerrainGenerator& g, int main, float t1)

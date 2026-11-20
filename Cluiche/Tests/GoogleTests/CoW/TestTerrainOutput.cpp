@@ -47,8 +47,8 @@ void CheckContract(Gen& g, uint64_t seed)
     ASSERT_GT(H, 0);
     ASSERT_EQ(w.CellCount(), W * H);
     HexTopology topo(W, H);
-    const float coast = g.rules.kCoastElev();
-    const int border = g.rules.GetInt(Rule::kBorderWidth);
+    const float coast = g.rules.kCoastElev;
+    const int border = TerrainRules::RoundToInt(g.rules.kBorderWidth);
     const uint32_t* lakeMask = U(g.gen, "lakeMask");
     std::map<uint32_t, float> lakeElev;
     bool anyWater = false, mainSeen = false;

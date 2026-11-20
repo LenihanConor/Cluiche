@@ -131,19 +131,19 @@ TEST(BiomeClassify, BoundaryTiesGoToLowestEnum)
 {
     // Give two biomes identical targets so their scores are bit-equal; the lower enum value must win.
     TerrainRules rules = TerrainRules::Defaults();
-    rules.values[static_cast<uint32_t>(Rule::kT0_Forest)] = rules.kT0_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kM0_Forest)] = rules.kM0_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kWT_Forest)] = rules.kWT_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kWM_Forest)] = rules.kWM_Grass();
+    rules.kT0_Forest = rules.kT0_Grass;
+    rules.kM0_Forest = rules.kM0_Grass;
+    rules.kWT_Forest = rules.kWT_Grass;
+    rules.kWM_Forest = rules.kWM_Grass;
     BiomeGrid g(3, 3);
     EXPECT_EQ(RunBiomes(g, rules).At(g.Index(1, 1)), Biome::GrasslandSteppe);
 
     // Rainforest set equal to Desert: Desert (5) beats Rainforest (8).
     TerrainRules rules2 = TerrainRules::Defaults();
-    rules2.values[static_cast<uint32_t>(Rule::kT0_Rainforest)] = rules2.kT0_Desert();
-    rules2.values[static_cast<uint32_t>(Rule::kM0_Rainforest)] = rules2.kM0_Desert();
-    rules2.values[static_cast<uint32_t>(Rule::kWT_Rainforest)] = rules2.kWT_Desert();
-    rules2.values[static_cast<uint32_t>(Rule::kWM_Rainforest)] = rules2.kWM_Desert();
+    rules2.kT0_Rainforest = rules2.kT0_Desert;
+    rules2.kM0_Rainforest = rules2.kM0_Desert;
+    rules2.kWT_Rainforest = rules2.kWT_Desert;
+    rules2.kWM_Rainforest = rules2.kWM_Desert;
     BiomeGrid g2(3, 3, 0.8f, 0.08f);
     EXPECT_EQ(RunBiomes(g2, rules2).At(g2.Index(1, 1)), Biome::DesertBasin);
 }
@@ -779,7 +779,7 @@ TEST(BiomeClassify, ForbiddenFixupHonoursPassLimit)
     // Chain of conflicts resolves from the left: with a single pass allowed the result must still be valid
     // (never a new violation) and unresolvedPairs must match what is left.
     TerrainRules rules = TerrainRules::Defaults();
-    rules.values[static_cast<uint32_t>(Rule::kMaxFixupPasses)] = 1.0f;
+    rules.kMaxFixupPasses = 1;
     const BiomeGrid   g = MakeNoiseGrid(7, 14, 14);
     const BiomeResult r = RunBiomes(g, rules);
     EXPECT_LE(r.debug.passes, 1);
@@ -798,7 +798,7 @@ TEST(BiomeClassify, FixupNeverCreatesNewViolations)
         EXPECT_TRUE(FindZoneViolations(in, r.biome.data()).empty()) << "seed " << seed;
         EXPECT_EQ(static_cast<size_t>(r.debug.unresolvedPairs), FindForbiddenPairs(g.dims, r.biome.data()).size())
             << "seed " << seed;
-        EXPECT_LE(r.debug.passes, rules.GetInt(Rule::kMaxFixupPasses));
+        EXPECT_LE(r.debug.passes, rules.kMaxFixupPasses);
         EXPECT_TRUE(CheckWetlandRule(rules, in, r.biome.data()).empty()) << "seed " << seed;
         for (size_t c = 0; c < r.fixup.size(); ++c)
         {
@@ -812,7 +812,7 @@ TEST(BiomeClassify, FixupReducesForbiddenPairsComparedToNoFixup)
     // With zero extra passes allowed the classifier still runs one pass (kMaxFixupPasses >= 1); compare against
     // the full default run: more passes never leave more pairs.
     TerrainRules one = TerrainRules::Defaults();
-    one.values[static_cast<uint32_t>(Rule::kMaxFixupPasses)] = 1.0f;
+    one.kMaxFixupPasses = 1;
     for (uint32_t seed = 1; seed <= 6; ++seed)
     {
         const BiomeGrid g = MakeNoiseGrid(seed, 20, 20);

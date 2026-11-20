@@ -480,8 +480,8 @@ TEST(LayoutCheck, FragmentCellsOverCap)
 TEST(LayoutCheck, AbsorbedAndFragmentCapsAreInclusiveAtTheExactLimit)
 {
     TerrainRules rules = TerrainRules::Defaults();
-    rules.values[static_cast<uint32_t>(Rule::kMaxAbsorbedShare)] = 0.5f;
-    rules.values[static_cast<uint32_t>(Rule::kMaxFragmentShare)] = 0.5f;
+    rules.kMaxAbsorbedShare = 0.5f;
+    rules.kMaxFragmentShare = 0.5f;
     WorldStructure w = ValidWorld();
     w.regions.absorbedCells = 720;
     w.regions.fragmentCells = 720;

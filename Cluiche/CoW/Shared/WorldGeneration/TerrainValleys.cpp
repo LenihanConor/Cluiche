@@ -18,7 +18,7 @@ using Dia::Pathfinding::kNoCell;
 
 float ValleyCarveSize(const TerrainRules& rules, float acc, float threshold)
 {
-    const float full = std::max(rules.kCarveFullAcc(), 1.0001f);
+    const float full = std::max(rules.kCarveFullAcc, 1.0001f);
     float t = 0.0f;
     if (threshold > 0.0f && acc > threshold)
     {
@@ -43,8 +43,8 @@ void ComputeStage9(const TerrainRules& rules, GridDimensions dims, float valleyD
     }
 
     const HexTopology topo(w, h);
-    const float coast = rules.kCoastElev();
-    const float maxCarve = valleyDepth * rules.kCarveMax();
+    const float coast = rules.kCoastElev;
+    const float maxCarve = valleyDepth * rules.kCarveMax;
 
     auto isOcean = [&](int c) { return elevationRaw[c] <= 0.0f; };
     auto isLake = [&](int c) { return lakeMask != nullptr && lakeMask[c] != 0u; };

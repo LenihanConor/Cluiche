@@ -239,7 +239,7 @@ TEST(TerrainValleys, NoRiversMeansNoCarve)
         EXPECT_EQ(g.carve[i], 0.0f);
     }
     EXPECT_EQ(g.elev[g.I(5, 4)], 0.5f);
-    EXPECT_EQ(g.elev[g.I(8, 8)], g.rules.kCoastElev());
+    EXPECT_EQ(g.elev[g.I(8, 8)], g.rules.kCoastElev);
     EXPECT_EQ(g.elev[g.I(3, 7)], 0.31f);
     EXPECT_EQ(g.elev[g.I(0, 4)], 0.0f);
 }
@@ -259,7 +259,7 @@ TEST(TerrainValleys, LandElevationClampedToCoast)
     g.River(4, 10, 1, 8.0f * kT, 0.0f);
     g.raw[g.I(5, 4)] = 0.03f;   // carve 0.12 would take it below the coast clamp
     g.Run(1.0f);
-    EXPECT_EQ(g.elev[g.I(5, 4)], g.rules.kCoastElev());
+    EXPECT_EQ(g.elev[g.I(5, 4)], g.rules.kCoastElev);
 }
 
 // ---------------------------------------------------------------------------
@@ -286,7 +286,7 @@ TEST(TerrainValleys, DirectToSeaFloorIsCoastElev)
     g.River(4, 10, 1, 8.0f * kT, 0.0f);
     g.raw[g.I(1, 4)] = 0.03f;
     g.Run(1.0f);
-    EXPECT_GE(g.elev[g.I(1, 4)], g.rules.kCoastElev());
+    EXPECT_GE(g.elev[g.I(1, 4)], g.rules.kCoastElev);
 }
 
 // ---------------------------------------------------------------------------
@@ -462,7 +462,7 @@ int CheckValleySweep(uint64_t seed, float rivers, int lakes)
         const uint32_t* lake = U(r.gen, "lakeMask");
         const uint32_t* dir = U(r.gen, "flowDirection");
         const std::vector<Lake>& lakesDbg = r.gen.GetStage7Debug().lakes;
-        const float coast = TerrainRules::Defaults().kCoastElev();
+        const float coast = TerrainRules::Defaults().kCoastElev;
         const HexTopology topo(kSmall.width, kSmall.height);
         if (step == 0)
         {
@@ -544,7 +544,7 @@ TEST(TerrainValleys, RiversZeroLeavesRawElevationOnLand)
     const float* raw = F(r.gen, "elevationRaw");
     const uint32_t* lake = U(r.gen, "lakeMask");
     const float* carve = F(r.gen, "valleyCarve");
-    const float coast = TerrainRules::Defaults().kCoastElev();
+    const float coast = TerrainRules::Defaults().kCoastElev;
     for (int i = 0; i < kN; ++i)
     {
         EXPECT_EQ(carve[i], 0.0f);

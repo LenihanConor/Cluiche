@@ -119,11 +119,11 @@ float BiomeClimateScore(const TerrainRules& rules, Biome b, float temperature, f
     float t0, m0, wt, wm;
     switch (b)
     {
-    case Biome::GrasslandSteppe: t0 = rules.kT0_Grass();      m0 = rules.kM0_Grass();      wt = rules.kWT_Grass();      wm = rules.kWM_Grass();      break;
-    case Biome::TemperateForest: t0 = rules.kT0_Forest();     m0 = rules.kM0_Forest();     wt = rules.kWT_Forest();     wm = rules.kWM_Forest();     break;
-    case Biome::DesertBasin:     t0 = rules.kT0_Desert();     m0 = rules.kM0_Desert();     wt = rules.kWT_Desert();     wm = rules.kWM_Desert();     break;
-    case Biome::TundraBoreal:    t0 = rules.kT0_Tundra();     m0 = rules.kM0_Tundra();     wt = rules.kWT_Tundra();     wm = rules.kWM_Tundra();     break;
-    case Biome::Rainforest:      t0 = rules.kT0_Rainforest(); m0 = rules.kM0_Rainforest(); wt = rules.kWT_Rainforest(); wm = rules.kWM_Rainforest(); break;
+    case Biome::GrasslandSteppe: t0 = rules.kT0_Grass;      m0 = rules.kM0_Grass;      wt = rules.kWT_Grass;      wm = rules.kWM_Grass;      break;
+    case Biome::TemperateForest: t0 = rules.kT0_Forest;     m0 = rules.kM0_Forest;     wt = rules.kWT_Forest;     wm = rules.kWM_Forest;     break;
+    case Biome::DesertBasin:     t0 = rules.kT0_Desert;     m0 = rules.kM0_Desert;     wt = rules.kWT_Desert;     wm = rules.kWM_Desert;     break;
+    case Biome::TundraBoreal:    t0 = rules.kT0_Tundra;     m0 = rules.kM0_Tundra;     wt = rules.kWT_Tundra;     wm = rules.kWM_Tundra;     break;
+    case Biome::Rainforest:      t0 = rules.kT0_Rainforest; m0 = rules.kM0_Rainforest; wt = rules.kWT_Rainforest; wm = rules.kWM_Rainforest; break;
     default:                     return kLowest;
     }
     const float dt = (temperature - t0) / wt;
@@ -157,7 +157,7 @@ bool IsWetlandEligible(const TerrainRules& rules, const Stage14Inputs& in, int c
     {
         return false;
     }
-    if (!IsLandCell(in, cell) || in.elevation[cell] > rules.kWetlandMaxElev())
+    if (!IsLandCell(in, cell) || in.elevation[cell] > rules.kWetlandMaxElev)
     {
         return false;
     }
@@ -179,7 +179,7 @@ bool IsWetlandEligible(const TerrainRules& rules, const Stage14Inputs& in, int c
         }
     }
     return in.terrainFlags != nullptr && in.moisture != nullptr && (in.terrainFlags[cell] & TerrainFlag::Coast) != 0 &&
-           in.moisture[cell] >= rules.kWetlandMoist();
+           in.moisture[cell] >= rules.kWetlandMoist;
 }
 
 bool IsVentCell(const Stage14Inputs& in, int cell)
@@ -261,7 +261,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         }
 
         out.biomePin[c] = BiomePin::None;
-        if (plateau && in.barrierMask[c] >= rules.kPlateauInner())
+        if (plateau && in.barrierMask[c] >= rules.kPlateauInner)
         {
             interior[c] = 1;   // climate chosen per connected plateau below
             continue;
@@ -314,7 +314,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
                 }
             }
             const float mean = static_cast<float>(sum / static_cast<double>(members.size()));
-            const Biome b = mean >= rules.kPlateauWet() ? Biome::Rainforest : Biome::DesertBasin;
+            const Biome b = mean >= rules.kPlateauWet ? Biome::Rainforest : Biome::DesertBasin;
             for (int c : members)
             {
                 k.Assign(c, b);
@@ -348,7 +348,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
     }
 
     // Step 5: forbidden-neighbour fix-up.
-    const int maxPasses = std::max(rules.GetInt(Rule::kMaxFixupPasses), 1);
+    const int maxPasses = std::max(rules.kMaxFixupPasses, 1);
     for (int pass = 0; pass < maxPasses; ++pass)
     {
         bool changed = false;

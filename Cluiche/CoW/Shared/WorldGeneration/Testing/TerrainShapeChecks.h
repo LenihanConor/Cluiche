@@ -90,8 +90,8 @@ inline void CheckContractAndBorderAndLand(const TerrainGenerator& g, const World
     const int W = w.dimensions.width, H = w.dimensions.height;
     if (W <= 0 || H <= 0 || w.CellCount() != W * H) { f.Add("world has no cells"); return; }
     const Dia::Pathfinding::HexTopology topo(W, H);
-    const float coast = rules.kCoastElev();
-    const int border = rules.GetInt(Rule::kBorderWidth);
+    const float coast = rules.kCoastElev;
+    const int border = TerrainRules::RoundToInt(rules.kBorderWidth);
     const uint32_t* lakeMask = ShapeU(g, "lakeMask");
 
     std::map<uint32_t, float> lakeElev;

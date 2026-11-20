@@ -73,15 +73,15 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
     CorridorResult out;
     const int n = world.CellCount();
     const uint32_t kind = SiteKindId(BuiltinNodeKinds::Corridor());
-    const int spacing   = rules.GetInt(Rule::kCorridorSpacing);
-    const int gapReach  = rules.GetInt(Rule::kCoastalGapReach);
+    const int spacing   = rules.kCorridorSpacing;
+    const int gapReach  = rules.kCoastalGapReach;
 
     int target[2];
     for (int b = 0; b < 2; ++b) { target[b] = 2 + rng.RandomInt() % 3; }
     if (n == 0) { out.corridorLimited[0] = out.corridorLimited[1] = true; return out; }
 
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
-    const uint32_t nodeSpacing = static_cast<uint32_t>(rules.GetInt(Rule::kNodeSpacing));
+    const uint32_t nodeSpacing = static_cast<uint32_t>(rules.kNodeSpacing);
     std::vector<uint32_t> earlierBarriers;   // corridor nodes of earlier barriers: kNodeSpacing applies across barriers
 
     for (int b = 0; b < 2; ++b)

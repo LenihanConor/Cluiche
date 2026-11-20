@@ -228,7 +228,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     for (int c = 0; c < n; ++c) { cells[c].region = kNoRegion; }
     if (n == 0 || growth.regionOf.size() != static_cast<size_t>(n)) { return out; }
 
-    const int minCells = rules.GetInt(Rule::kMinRegionCells);
+    const int minCells = rules.kMinRegionCells;
     Repair R(world);
     R.reg = growth.regionOf;
     R.idCount = static_cast<unsigned>(std::min<size_t>(growth.seeds.size(), kMaxId));

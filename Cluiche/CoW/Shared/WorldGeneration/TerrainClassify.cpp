@@ -52,7 +52,7 @@ void ComputeStage10(const TerrainRules& rules, GridDimensions dims, const uint32
     }
 
     // Volcanic influence: multi-source BFS from every vent out to kVentRadius (hex distance, through any cell).
-    const int ventRadius = std::max(rules.GetInt(Rule::kVentRadius), 0);
+    const int ventRadius = std::max(TerrainRules::RoundToInt(rules.kVentRadius), 0);
     std::vector<uint8_t> nearVent(static_cast<size_t>(n), 0);
     if (volcanic != nullptr)
     {
@@ -87,15 +87,15 @@ void ComputeStage10(const TerrainRules& rules, GridDimensions dims, const uint32
         }
     }
 
-    const uint32_t shelf = static_cast<uint32_t>(std::max(rules.GetInt(Rule::kShelfWidth), 0));
-    const float cliff = rules.kCliffSlope();
-    const float steepSlope = rules.kSteepSlope();
-    const float peak = rules.kPeakElev();
-    const float mountain = rules.kMountainElev();
-    const float highland = rules.kHighlandElev();
-    const float hill = rules.kHillElev();
-    const float hillSlope = rules.kHillSlope();
-    const float ridgeMin = rules.kRidgeCellMin();
+    const uint32_t shelf = static_cast<uint32_t>(std::max(rules.kShelfWidth, 0));
+    const float cliff = rules.kCliffSlope;
+    const float steepSlope = rules.kSteepSlope;
+    const float peak = rules.kPeakElev;
+    const float mountain = rules.kMountainElev;
+    const float highland = rules.kHighlandElev;
+    const float hill = rules.kHillElev;
+    const float hillSlope = rules.kHillSlope;
+    const float ridgeMin = rules.kRidgeCellMin;
 
     for (int c = 0; c < n; ++c)
     {

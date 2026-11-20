@@ -36,9 +36,9 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
     }
 
     const HexTopology topo(w, h);
-    const double ridgeCost = rules.kRidgeCost();
-    const double barrierCost = static_cast<double>(rules.kBarrierCost()) * static_cast<double>(barrier);
-    const double corridor = rules.kRiverCorridor();
+    const double ridgeCost = rules.kRidgeCost;
+    const double barrierCost = static_cast<double>(rules.kBarrierCost) * static_cast<double>(barrier);
+    const double corridor = rules.kRiverCorridor;
 
     // Cost of entering cell c. Terms are non-negative, so a river (corridor <= 1) never costs more.
     auto entryCost = [&](int c) -> double
@@ -123,10 +123,10 @@ void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier
     }
     else
     {
-        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(rules.kFirstShoresShare()) * m)) - 1);
+        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(rules.kFirstShoresShare) * m)) - 1);
         dbg.t1 = sorted[static_cast<size_t>(std::min(idx1, m - 1))];
         dbg.t2 = dbg.t1;
-        const int k = static_cast<int>(std::ceil(static_cast<double>(rules.kAncientShare()) * m));
+        const int k = static_cast<int>(std::ceil(static_cast<double>(rules.kAncientShare) * m));
         if (k > 0)
         {
             const float t2 = sorted[static_cast<size_t>(std::max(0, m - k))];
@@ -147,7 +147,7 @@ void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier
         }
     }
 
-    const uint32_t minDepth = static_cast<uint32_t>(std::max(rules.GetInt(Rule::kAncientMinDepth), 0));
+    const uint32_t minDepth = static_cast<uint32_t>(std::max(rules.kAncientMinDepth, 0));
     for (int i = 0; i < n; ++i)
     {
         if (landmass[i] == 0u)

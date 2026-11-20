@@ -26,7 +26,7 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     std::vector<RegionComponent> out;
     const int n = world.CellCount();
     if (n == 0 || world.mainLandmass == 0) { return out; }
-    const int minCells = rules.GetInt(Rule::kMinRegionCells);
+    const int minCells = rules.kMinRegionCells;
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
     const Dia::Pathfinding::HexNeighbours graph(topo);
@@ -109,7 +109,7 @@ RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRul
 {
     (void)world;
     RegionTargets t;
-    const int minCells = rules.GetInt(Rule::kMinRegionCells);
+    const int minCells = rules.kMinRegionCells;
     bool hasBig[kRegionZoneCount] = {};
     for (const RegionComponent& c : components)
     {
@@ -195,7 +195,7 @@ std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules
     if (comp.cells.empty() || seedCount <= 0) { return seeds; }
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
-    const float bonus = rules.kSeedBiomeBonus();
+    const float bonus = rules.kSeedBiomeBonus;
     const size_t size = comp.cells.size();
     seedCount = std::min<int>(seedCount, static_cast<int>(size));
 
@@ -240,10 +240,10 @@ namespace
     {
         const Cell* cells = world.Cells();
         const int k = static_cast<int>(seedCells.size());
-        const float cap = rules.kMaxRegionShare() * (static_cast<float>(comp.cells.size()) / static_cast<float>(k));
+        const float cap = rules.kMaxRegionShare * (static_cast<float>(comp.cells.size()) / static_cast<float>(k));
         const uint32_t capCells = std::max<uint32_t>(1u, static_cast<uint32_t>(std::floor(cap)));
-        const float mismatch = rules.kBiomeMismatch();
-        const float ridge = rules.kRegionRidgeCost();
+        const float mismatch = rules.kBiomeMismatch;
+        const float ridge = rules.kRegionRidgeCost;
 
         auto inComp = [&](uint32_t c) {
             return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].depthZone == comp.zone;
@@ -276,7 +276,7 @@ namespace
         // Phase 1 (floor): a region that has claimed `floorCells` is satisfied and idles (its entries are parked), so
         // neighbours still under kMinRegionCells can claim before it takes more. Phase 2: parked entries rejoin the heap
         // and the normal capped multi-source Dijkstra resumes.
-        const uint32_t floorCells = std::min<uint32_t>(capCells, static_cast<uint32_t>(std::max(1, rules.GetInt(Rule::kMinRegionCells))));
+        const uint32_t floorCells = std::min<uint32_t>(capCells, static_cast<uint32_t>(std::max(1, rules.kMinRegionCells)));
         MultiSourceDijkstra<float>(graph, costSeeds.data(), static_cast<uint32_t>(k), step, opts, scratch,
             [&](uint32_t, float, uint32_t id) {
                 const uint32_t ri = id - static_cast<uint32_t>(firstId);
@@ -417,7 +417,7 @@ RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainR
     RegionGrowth out;
     out.components = FindZoneComponents(world, rules);
     out.targets = ComputeRegionTargets(world, rules, out.components, rng);
-    const std::vector<int> shares = AllocateSeedShares(out.components, out.targets, rules.GetInt(Rule::kMinRegionCells));
+    const std::vector<int> shares = AllocateSeedShares(out.components, out.targets, rules.kMinRegionCells);
     std::vector<std::vector<uint32_t>> seeds(out.components.size());
     for (size_t i = 0; i < out.components.size(); ++i)
     {

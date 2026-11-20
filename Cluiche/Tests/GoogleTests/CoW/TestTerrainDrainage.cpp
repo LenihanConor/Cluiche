@@ -134,7 +134,7 @@ int CheckInvariants(GridDimensions dims, const float* elev, const uint8_t* ocean
         const uint32_t down = topo.NeighbourAt(static_cast<uint32_t>(i), dir[i]);
         if (!(filled[down] < filled[i])) { fail("flow not strictly descending", i); }
         // Accumulation: downstream land >= upstream, own contribution included.
-        const float own = 1.0f + rules.kHighlandRain() * elev[i];
+        const float own = 1.0f + rules.kHighlandRain * elev[i];
         if (!(acc[i] >= own * (1.0f - 1e-6f))) { fail("acc below own contribution", i); }
         if (ocean[down] == 0 && !(acc[down] >= acc[i])) { fail("acc falls downstream", i); }
     }
@@ -144,7 +144,7 @@ int CheckInvariants(GridDimensions dims, const float* elev, const uint8_t* ocean
     for (int i = 0; i < n; ++i)
     {
         if (ocean[i] != 0) { continue; }
-        rain += 1.0 + static_cast<double>(rules.kHighlandRain()) * elev[i];
+        rain += 1.0 + static_cast<double>(rules.kHighlandRain) * elev[i];
         if (dir[i] < 6u && ocean[topo.NeighbourAt(static_cast<uint32_t>(i), dir[i])] != 0) { mouths += acc[i]; }
     }
     if (std::fabs(rain - mouths) > 1e-4 * std::max(1.0, rain)) { fail("conservation: rain " + std::to_string(rain) + " mouths " + std::to_string(mouths), -1); }
@@ -171,7 +171,7 @@ int CheckInvariants(GridDimensions dims, const float* elev, const uint8_t* ocean
         }
         if (maxDepth != basin.maxDepth) { fail("maxDepth", basin.firstCell); }
         if (volume != basin.volume) { fail("volume", basin.firstCell); }
-        const bool eligible = basin.maxDepth >= rules.kMinBasinDepth() && basin.cells.size() >= 2;
+        const bool eligible = basin.maxDepth >= rules.kMinBasinDepth && basin.cells.size() >= 2;
         if (eligible != basin.eligible) { fail("eligibility", basin.firstCell); }
         if (basin.spillCell < 0 || basin.spillCell >= n) { fail("spill cell range", basin.firstCell); }
         else if (std::find(basin.cells.begin(), basin.cells.end(), basin.spillCell) != basin.cells.end())
@@ -291,7 +291,7 @@ TEST(TerrainDrainage, LineDrainsWestWithDirectionEncodingAndExactAccumulation)
     EXPECT_EQ(g.dir[3], 2u);
     EXPECT_EQ(g.dir[4], 3u);
     for (int i = 0; i < 5; ++i) { EXPECT_EQ(g.filled[i], g.elev[i]) << i; EXPECT_EQ(g.depth[i], 0.0f) << i; }
-    const float k = TerrainRules::Defaults().kHighlandRain();
+    const float k = TerrainRules::Defaults().kHighlandRain;
     const float a4 = 1.0f + k * 0.4f;
     const float a3 = (1.0f + k * 0.3f) + a4;
     const float a2 = (1.0f + k * 0.2f) + a3;
@@ -417,7 +417,7 @@ TEST(TerrainDrainage, FlatPlateauDrainsAndTiesTakeLowestDirection)
     island.elev[c] = 0.4f;
     island.Run();
     EXPECT_EQ(island.dir[c], 0u);
-    EXPECT_FLOAT_EQ(island.acc[c], 1.0f + TerrainRules::Defaults().kHighlandRain() * 0.4f);
+    EXPECT_FLOAT_EQ(island.acc[c], 1.0f + TerrainRules::Defaults().kHighlandRain * 0.4f);
     EXPECT_EQ(0, CheckGrid(island, "island"));
 
     // Flat land with ocean at directions 3 and 5 of the centre: the tie goes to 3.

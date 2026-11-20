@@ -95,8 +95,8 @@ void ComputeStage12(const TerrainRules& rules, GridDimensions dims, float temper
     {
         return;
     }
-    const float latCool = rules.kLatCool();
-    const float lapse = rules.kLapse();
+    const float latCool = rules.kLatCool;
+    const float lapse = rules.kLapse;
     for (int i = 0; i < n; ++i)
     {
         temperatureOut[i] = Clamp01(1.0f - latCool * latitude[i] - lapse * elevation[i] + temperatureOffset);
@@ -117,7 +117,7 @@ void ComputeStage13(const TerrainRules& rules, GridDimensions dims, float moistu
     const HexTopology topo(w, h);
 
     // Water distance: multi-source step search; oceans/lakes start at 0, rivers at the river penalty.
-    const uint32_t riverStart = static_cast<uint32_t>(std::max(rules.GetInt(Rule::kRiverPenalty), 0));
+    const uint32_t riverStart = static_cast<uint32_t>(std::max(TerrainRules::RoundToInt(rules.kRiverPenalty), 0));
     std::vector<StepSeed> seeds;
     seeds.reserve(static_cast<size_t>(n));
     for (int i = 0; i < n; ++i)
@@ -142,15 +142,15 @@ void ComputeStage13(const TerrainRules& rules, GridDimensions dims, float moistu
     // Wind sweeps.
     std::vector<float> airW(static_cast<size_t>(n), 0.0f), rainW(static_cast<size_t>(n), 0.0f);
     std::vector<float> airE(static_cast<size_t>(n), 0.0f), rainE(static_cast<size_t>(n), 0.0f);
-    const float decay = rules.kAirDecay();
-    const float oro = rules.kOrographic();
+    const float decay = rules.kAirDecay;
+    const float oro = rules.kOrographic;
     Sweep(topo, w, h, true, elevation, waterSource, decay, oro, airW.data(), rainW.data());
     Sweep(topo, w, h, false, elevation, waterSource, decay, oro, airE.data(), rainE.data());
 
-    const float scale = rules.kMoistScale();
-    const float mix = rules.kProximityMix();
-    const float bonus = rules.kRainBonus();
-    const float blend = rules.kBandBlend();
+    const float scale = rules.kMoistScale;
+    const float mix = rules.kProximityMix;
+    const float bonus = rules.kRainBonus;
+    const float blend = rules.kBandBlend;
     for (int i = 0; i < n; ++i)
     {
         const float ww = WesterlyWeight(latitude[i], blend);

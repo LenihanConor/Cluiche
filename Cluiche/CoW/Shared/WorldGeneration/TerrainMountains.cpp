@@ -156,8 +156,8 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     if (deg < 0.0f) { deg += 360.0f; }
     out.theta = deg * kPi / 180.0f;
     out.spineToRing = std::clamp(shape.spineToRing, 0.0f, 1.0f);
-    out.spineReach = rules.kSpineReach();
-    out.ringReach = rules.kRingReach();
+    out.spineReach = rules.kSpineReach;
+    out.ringReach = rules.kRingReach;
 
     out.inradius = std::numeric_limits<float>::max();
     for (int k = 0; k < kInradiusDirections; ++k)
@@ -169,7 +169,7 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     out.reachBack = out.Reach(out.theta + kPi);
 
     const float mt = std::clamp(shape.mountainousness, 0.0f, 1.0f);
-    out.width = rules.kRidgeWidthMin() + (rules.kRidgeWidthMax() - rules.kRidgeWidthMin()) * mt;
+    out.width = rules.kRidgeWidthMin + (rules.kRidgeWidthMax - rules.kRidgeWidthMin) * mt;
     out.gap = 0.7f * out.width + 0.5f;
 
     // Polyline and cumulative arc length.
@@ -206,7 +206,7 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     const HexTopology topo(dims.width, dims.height);
     const Dia::Pathfinding::HexNeighbours graph(topo);
     Dia::Pathfinding::GridSearchScratch scratch;
-    const float cellMin = rules.kRidgeCellMin();
+    const float cellMin = rules.kRidgeCellMin;
     std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
     std::vector<uint32_t> sizes(static_cast<size_t>(n), 0u);
     auto groupsOf = [&](const std::vector<float>& m)
@@ -235,7 +235,7 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
 
     // Passes: walk the candidates in rank order, accept when far enough (arc length) from all accepted.
     const int wanted = std::min(static_cast<int>(shape.passes), kPassCandidates);
-    const float minArc = 2.0f * out.gap + rules.kMinPiece();
+    const float minArc = 2.0f * out.gap + rules.kMinPiece;
     std::vector<float> acceptedArc;
     for (int j = 0; j < kPassCandidates && static_cast<int>(out.passT.size()) < wanted; ++j)
     {
@@ -270,7 +270,7 @@ void ComputeStage2(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     }
     for (int i = 0; i < n; ++i)
     {
-        if (pass[static_cast<size_t>(i)]) { mask[static_cast<size_t>(i)] *= rules.kPassFloor(); }
+        if (pass[static_cast<size_t>(i)]) { mask[static_cast<size_t>(i)] *= rules.kPassFloor; }
     }
 
     if (ridgeMask != nullptr) { std::copy(mask.begin(), mask.end(), ridgeMask); }

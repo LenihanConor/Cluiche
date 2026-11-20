@@ -361,7 +361,7 @@ TEST(RegionPartition, FloorPhaseLetsASatisfiedRegionYieldSoNeighbourReachesMinim
     WorldStructure w = MakeBlankWorld(40, 6);
     FillLand(w, 0, 0, 10, 6, FS, G);
     FillLand(w, 10, 2, 40, 3, FS, G);
-    const int minCells = Rules().GetInt(Rule::kMinRegionCells);
+    const int minCells = Rules().kMinRegionCells;
     const RegionGrowth g = GrowWith(w, { 2u * 40u + 5u, 2u * 40u + 14u });
     ASSERT_EQ(g.seeds.size(), 2u);
     EXPECT_GE(Count(g, 1), minCells);

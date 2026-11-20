@@ -99,7 +99,7 @@ void ComputeStage3(const TerrainRules& rules, const WorldShapeParams& shape, Gri
         return;
     }
     std::sort(depths.begin(), depths.end());
-    const float q = std::clamp(rules.kBarrierQuantile(), 0.0f, 1.0f);
+    const float q = std::clamp(rules.kBarrierQuantile, 0.0f, 1.0f);
     const size_t qi = std::min(depths.size() - 1, static_cast<size_t>(q * static_cast<float>(depths.size() - 1)));
     const float bStar = static_cast<float>(depths[qi]);
     out.bStar = bStar;
@@ -112,8 +112,8 @@ void ComputeStage3(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     const MapSpace space(dims);
     const Dia::Maths::FractalParams wobbleParams = MakeFractal(3, kBarrierWobbleFrequency);
     const uint32_t wobbleSeed = seeds.noiseSeeds[static_cast<int>(NoiseChannel::BarrierWobble)];
-    const float wobble = rules.kBarrierWobble();
-    const float halfWidth = rules.kBarrierHalfWidth();
+    const float wobble = rules.kBarrierWobble;
+    const float halfWidth = rules.kBarrierHalfWidth;
     const bool chain = shape.barrierForm == BarrierForm::VolcanicChain;
 
     for (int y = 0; y < h; ++y)
@@ -137,7 +137,7 @@ void ComputeStage3(const TerrainRules& rules, const WorldShapeParams& shape, Gri
             }
             else
             {
-                layers.barrierMask[i] = std::max(band, d > bStar ? rules.kPlateauInner() : 0.0f);
+                layers.barrierMask[i] = std::max(band, d > bStar ? rules.kPlateauInner : 0.0f);
             }
         }
     }
@@ -193,7 +193,7 @@ void ComputeStage3(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     std::stable_sort(candidates.begin(), candidates.end(),
                      [&](int a, int b) { return ventNoise[a] > ventNoise[b]; });
 
-    const uint32_t spacing = static_cast<uint32_t>(rules.GetInt(Rule::kVentSpacing));
+    const uint32_t spacing = static_cast<uint32_t>(rules.kVentSpacing);
     for (int c : candidates)
     {
         bool ok = true;
@@ -255,15 +255,15 @@ void ComputeStage4(const TerrainRules& rules, const WorldShapeParams& shape, Gri
     const uint32_t ridgedSeed = seeds.noiseSeeds[static_cast<int>(NoiseChannel::Ridged)];
     const uint32_t ruggedSeed = seeds.noiseSeeds[static_cast<int>(NoiseChannel::Rugged)];
 
-    const float coastElev = rules.kCoastElev();
-    const float lowlandRise = rules.kLowlandRise();
-    const float inlandScale = rules.kInlandScale();
-    const float mountainHeight = rules.kMountainHeight();
-    const float barrierHeight = rules.kBarrierHeight();
-    const float ventHeight = rules.kVentHeight();
-    const float ventRadius = rules.kVentRadius();
-    const float ruggedAmp = rules.kRuggedAmp();
-    const float shelfScale = rules.kShelfScale();
+    const float coastElev = rules.kCoastElev;
+    const float lowlandRise = rules.kLowlandRise;
+    const float inlandScale = rules.kInlandScale;
+    const float mountainHeight = rules.kMountainHeight;
+    const float barrierHeight = rules.kBarrierHeight;
+    const float ventHeight = rules.kVentHeight;
+    const float ventRadius = rules.kVentRadius;
+    const float ruggedAmp = rules.kRuggedAmp;
+    const float shelfScale = rules.kShelfScale;
 
     for (int y = 0; y < h; ++y)
     {

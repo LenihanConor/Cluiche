@@ -247,7 +247,7 @@ TEST(TerrainBarrier, ChainVentsAreSpacedOnBandAndKeepIslandVent)
     const uint32_t* volc = U(r.gen, "volcanic");
     const uint32_t* lm = U(r.gen, "landmass");
     ASSERT_FALSE(dbg.chainVents.empty());
-    const int spacing = TerrainRules::Defaults().GetInt(Rule::kVentSpacing);
+    const int spacing = TerrainRules::Defaults().kVentSpacing;
     for (size_t a = 0; a < dbg.chainVents.size(); ++a)
     {
         const int c = dbg.chainVents[a];
@@ -365,7 +365,7 @@ TEST(TerrainBarrier, DirtyBitsForBarrierRuggednessAndMountainousness)
 // ---------------------------------------------------------------------------
 TEST(TerrainElevation, BoundedOnLandAndZeroInOcean)
 {
-    const float coastElev = TerrainRules::Defaults().kCoastElev();
+    const float coastElev = TerrainRules::Defaults().kCoastElev;
     for (BarrierForm form : { BarrierForm::Plateau, BarrierForm::VolcanicChain })
     {
         Gen r;
@@ -395,7 +395,7 @@ TEST(TerrainElevation, OceanDepthIsShelfRampOnOceanOnly)
     const float* od = F(r.gen, "oceanDepth");
     const uint32_t* lm = U(r.gen, "landmass");
     const uint32_t* coast = U(r.gen, "coastDistance");
-    const float shelf = TerrainRules::Defaults().kShelfScale();
+    const float shelf = TerrainRules::Defaults().kShelfScale;
     float maxDepth = 0.0f;
     for (int i = 0; i < kN; ++i)
     {
@@ -425,7 +425,7 @@ TEST(TerrainElevation, PlainLowlandMatchesBaseFormulaExactly)
     {
         if (lm[i] == 0u || NearVent(volc, i, 3, kSmall.width, kN)) { continue; }
         const float d = static_cast<float>(coast[i]);
-        const float expect = rules.kCoastElev() + rules.kLowlandRise() * (1.0f - std::exp(-(d - 1.0f) / rules.kInlandScale()));
+        const float expect = rules.kCoastElev + rules.kLowlandRise * (1.0f - std::exp(-(d - 1.0f) / rules.kInlandScale));
         EXPECT_NEAR(e[i], expect, 1e-5f) << i;
         ++checked;
     }
@@ -445,7 +445,7 @@ TEST(TerrainElevation, VentRaisesTerrainAroundIslandAndChainVents)
         if (volc[i] != 0u)
         {
             ++vents;
-            EXPECT_GE(e[i], std::min(1.0f, rules.kCoastElev() + rules.kVentHeight())) << i;
+            EXPECT_GE(e[i], std::min(1.0f, rules.kCoastElev + rules.kVentHeight)) << i;
         }
     }
     EXPECT_GT(vents, 1);
@@ -466,7 +466,7 @@ TEST(TerrainElevation, BarrierTermIsHeightTimesMask)
     for (int i = 0; i < kN; ++i)
     {
         if (lm[i] == 0u || NearVent(volc, i, 3, kSmall.width, kN)) { continue; }
-        EXPECT_NEAR(ehi[i], std::min(1.0f, elo[i] + rules.kBarrierHeight() * mask[i]), 1e-5f) << i;
+        EXPECT_NEAR(ehi[i], std::min(1.0f, elo[i] + rules.kBarrierHeight * mask[i]), 1e-5f) << i;
         raised += ehi[i] > elo[i] ? 1 : 0;
     }
     EXPECT_GT(raised, 0);
@@ -514,7 +514,7 @@ TEST(TerrainElevation, MonotoneInMountainousnessAndBarrier)
 
 TEST(TerrainElevation, RuggednessIsBoundedAndTouchesNothingElse)
 {
-    const float amp = TerrainRules::Defaults().kRuggedAmp();
+    const float amp = TerrainRules::Defaults().kRuggedAmp;
     Gen a, b;
     a.Go(9, Shape(0.6f, BarrierForm::Plateau, 0.55f, 0.2f));
     b.Go(9, Shape(0.6f, BarrierForm::Plateau, 0.55f, 1.0f));
@@ -559,8 +559,8 @@ TEST(TerrainElevation, TinyAndEmptyInputsAreSafe)
     coast[12] = 1u;
     ComputeStage4(TerrainRules::Defaults(), WorldShapeParams{}, d, seeds, landmass.data(), coast.data(),
                   nullptr, nullptr, nullptr, layers);
-    EXPECT_NEAR(elev[12], TerrainRules::Defaults().kCoastElev() + 0.0f, 0.2f);
-    EXPECT_GE(elev[12], TerrainRules::Defaults().kCoastElev());
+    EXPECT_NEAR(elev[12], TerrainRules::Defaults().kCoastElev + 0.0f, 0.2f);
+    EXPECT_GE(elev[12], TerrainRules::Defaults().kCoastElev);
 
     ComputeStage4(TerrainRules::Defaults(), WorldShapeParams{}, GridDimensions{ 0, 0 }, seeds, nullptr, nullptr,
                   nullptr, nullptr, nullptr, layers);
@@ -587,8 +587,8 @@ TEST(TerrainElevation, SmallAndOddGridsDoNotCrash)
 // ---------------------------------------------------------------------------
 TEST(SLOW_TerrainElevation, StabilityRulesSweep20Seeds)
 {
-    const float amp = TerrainRules::Defaults().kRuggedAmp();
-    const int spacing = TerrainRules::Defaults().GetInt(Rule::kVentSpacing);
+    const float amp = TerrainRules::Defaults().kRuggedAmp;
+    const int spacing = TerrainRules::Defaults().kVentSpacing;
     for (uint64_t seed = 1; seed <= 20; ++seed)
     {
         for (BarrierForm form : { BarrierForm::Plateau, BarrierForm::VolcanicChain })

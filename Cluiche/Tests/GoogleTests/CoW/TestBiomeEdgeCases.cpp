@@ -195,7 +195,7 @@ namespace
             int                                 comps = 0;
             for (int s = 0; s < n; ++s)
             {
-                const bool inner = mask[s] >= rules.kPlateauInner() && pin[s] == BiomePin::None;
+                const bool inner = mask[s] >= rules.kPlateauInner && pin[s] == BiomePin::None;
                 if (!inner || comp[s] >= 0) { continue; }
                 std::vector<int> stack{ s };
                 comp[s] = comps;
@@ -214,7 +214,7 @@ namespace
                     for (uint32_t d = 0; d < 6u; ++d)
                     {
                         const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                        if (nb != Dia::Pathfinding::kNoCell && comp[nb] < 0 && mask[nb] >= rules.kPlateauInner() && pin[nb] == BiomePin::None)
+                        if (nb != Dia::Pathfinding::kNoCell && comp[nb] < 0 && mask[nb] >= rules.kPlateauInner && pin[nb] == BiomePin::None)
                         {
                             comp[nb] = comps;
                             stack.push_back(static_cast<int>(nb));
@@ -486,7 +486,7 @@ TEST(BiomeEdge, WetlandCellsAreLowAndMoistOrNextToWater)
         {
             if (biome[c] == static_cast<uint32_t>(Biome::WetlandDelta))
             {
-                EXPECT_LE(elev[c], rules.kWetlandMaxElev()) << seed << " cell " << c;
+                EXPECT_LE(elev[c], rules.kWetlandMaxElev) << seed << " cell " << c;
             }
         }
     }
@@ -621,10 +621,10 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestEnumCandidate)
     // Pinned Alpine on First Shores re-picks among Grassland / Forest; identical targets tie bit-exactly and the
     // lower enum value (Grassland) must win.
     TerrainRules rules = TerrainRules::Defaults();
-    rules.values[static_cast<uint32_t>(Rule::kT0_Forest)] = rules.kT0_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kM0_Forest)] = rules.kM0_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kWT_Forest)] = rules.kWT_Grass();
-    rules.values[static_cast<uint32_t>(Rule::kWM_Forest)] = rules.kWM_Grass();
+    rules.kT0_Forest = rules.kT0_Grass;
+    rules.kM0_Forest = rules.kM0_Grass;
+    rules.kWT_Forest = rules.kWT_Grass;
+    rules.kWM_Forest = rules.kWM_Grass;
     BiomeGrid g(5, 5);
     const int c = g.Index(2, 2);
     g.SetTerrain(c, TerrainType::Mountain);

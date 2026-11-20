@@ -222,9 +222,13 @@ TEST(TerrainRulesSidecar, FromParameterFileEqualsOldTableDefaults)
     EXPECT_EQ(rules.rulesVersion, 4u);
     EXPECT_FALSE(rules.degraded);
     ASSERT_EQ(CoW::WorldGeneration::kRuleCount, kOldTableCount);
+    // Int members hold the rounded default (half away from zero).
+    EXPECT_EQ(rules.kMinRegionCells, 36);
+    EXPECT_EQ(rules.kNodeSpacing, 3);
+    EXPECT_EQ(rules.kMaxFixupPasses, 8);
     for (uint32_t i = 0; i < CoW::WorldGeneration::kRuleCount; ++i)
     {
-        EXPECT_EQ(rules.Get(static_cast<CoW::WorldGeneration::Rule>(i)), kOldTable[i].def) << kOldTable[i].key;
+        EXPECT_EQ(rules.ValueAt(i), kOldTable[i].def) << kOldTable[i].key;
     }
 }
 

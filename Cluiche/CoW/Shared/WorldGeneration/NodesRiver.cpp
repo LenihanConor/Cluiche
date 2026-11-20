@@ -34,8 +34,8 @@ RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules
 
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
-    const uint32_t spacing      = static_cast<uint32_t>(rules.GetInt(Rule::kNodeSpacing));
-    const uint32_t riverSpacing = static_cast<uint32_t>(std::max(1, rules.GetInt(Rule::kRiverNodeSpacing)));
+    const uint32_t spacing      = static_cast<uint32_t>(rules.kNodeSpacing);
+    const uint32_t riverSpacing = static_cast<uint32_t>(std::max(1, rules.kRiverNodeSpacing));
 
     auto downstreamOf = [&](uint32_t cell) -> uint32_t {
         const uint8_t dir = cells[cell].downstream;
