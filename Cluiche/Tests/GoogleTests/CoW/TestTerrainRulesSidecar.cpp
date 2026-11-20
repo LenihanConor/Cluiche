@@ -4,10 +4,13 @@
 
 #include <gtest/gtest.h>
 
+#include <DiaAttribute/ParamBinding.h>
 #include <DiaAttribute/ParameterFile.h>
+#include <Shared/WorldGeneration/TerrainRules.h>
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
@@ -179,4 +182,68 @@ TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)
         const std::string k = file.Schema().GetAttributeByIndex(i).fullKey.AsCStr();
         EXPECT_EQ(tableKeys.count(k), 1u) << "sidecar has extra key " << k;
     }
+}
+
+namespace
+{
+    // The conversion every integer-valued rule has always used (copied from the old TerrainRules::GetInt).
+    int OldGetInt(float v) { return static_cast<int>(v + (v >= 0.0f ? 0.5f : -0.5f)); }
+
+    bool LoadSidecar(ParameterFile& file)
+    {
+        const std::string text = ReadSidecar();
+        ParamError err;
+        return !text.empty() && file.Load(text.c_str(), "terrain_rules.schema.json", nullptr, err);
+    }
+}
+
+// AC 15: the binding covers the sidecar exactly, both ways.
+TEST(TerrainRulesSidecar, BindingCoversSidecarExactly)
+{
+    ParameterFile file;
+    ASSERT_TRUE(LoadSidecar(file));
+
+    auto report = std::make_unique<Dia::Attribute::BindingReport>();
+    EXPECT_TRUE(CoW::WorldGeneration::TerrainRules::ResolveBindings(file.Schema(), *report));
+    EXPECT_EQ(report->unboundParameters.Size(), 0u);
+    EXPECT_EQ(report->bindingsWithoutEntry.Size(), 0u);
+    EXPECT_EQ(report->countMismatches.Size(), 0u);
+    EXPECT_TRUE(report->IsClean());
+}
+
+// Snapshot of the freshly loaded sidecar reproduces every old table default.
+TEST(TerrainRulesSidecar, FromParameterFileEqualsOldTableDefaults)
+{
+    ParameterFile file;
+    ASSERT_TRUE(LoadSidecar(file));
+
+    CoW::WorldGeneration::TerrainRules rules;
+    ASSERT_TRUE(CoW::WorldGeneration::TerrainRules::FromParameterFile(file, rules));
+    EXPECT_EQ(rules.rulesVersion, 4u);
+    EXPECT_FALSE(rules.degraded);
+    ASSERT_EQ(CoW::WorldGeneration::kRuleCount, kOldTableCount);
+    for (uint32_t i = 0; i < CoW::WorldGeneration::kRuleCount; ++i)
+    {
+        EXPECT_EQ(rules.Get(static_cast<CoW::WorldGeneration::Rule>(i)), kOldTable[i].def) << kOldTable[i].key;
+    }
+}
+
+// Integer rounding: half away from zero, identical to the old GetInt for every default and for probe values.
+TEST(TerrainRulesSidecar, IntConversionMatchesOldGetInt)
+{
+    using CoW::WorldGeneration::TerrainRules;
+    for (const TableRow& row : kOldTable)
+    {
+        EXPECT_EQ(TerrainRules::RoundToInt(row.def), OldGetInt(row.def)) << row.key;
+    }
+    const float probes[] = { 0.0f, 0.4f, 0.5f, 0.6f, 1.5f, 2.5f, 2.49f, 7.99f, -0.4f, -0.5f, -0.6f, -1.5f, -2.5f, -0.0f };
+    for (float p : probes)
+    {
+        EXPECT_EQ(TerrainRules::RoundToInt(p), OldGetInt(p)) << p;
+    }
+    EXPECT_EQ(TerrainRules::RoundToInt(2.5f), 3);
+    EXPECT_EQ(TerrainRules::RoundToInt(-2.5f), -3);
+    EXPECT_EQ(TerrainRules::RoundToInt(0.5f), 1);
+    EXPECT_EQ(TerrainRules::RoundToInt(-0.5f), -1);
+    EXPECT_EQ(TerrainRules::RoundToInt(2.49f), 2);
 }
