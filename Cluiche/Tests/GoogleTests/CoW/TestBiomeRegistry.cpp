@@ -2,6 +2,9 @@
 #include <gtest/gtest.h>
 #include <Shared/World/BiomeRegistry.h>
 
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/Logger.h>
+
 #include <string>
 #include <utility>
 
@@ -350,4 +353,108 @@ TEST(BiomeRegistry, MoreThan254RowsFails)
     BiomeRegistry r;
     EXPECT_FALSE(LoadText(r, BigFixture(255)));
     EXPECT_EQ(r.Count(), 0u);
+}
+
+namespace
+{
+    // Counts log entries whose text contains the ResolveOrFallback warning marker.
+    class UnknownIdSink : public Dia::Observation::Log::ISink
+    {
+    public:
+        void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override
+        {
+            if (std::string(e.message).find("BiomeRegistry unknown id") != std::string::npos) { ++mCount; }
+        }
+        const char* GetName() const override { return "BiomeRegistryUnknownIdSink"; }
+        unsigned int mCount = 0;
+    };
+
+    class BiomeRegistryResolve : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.RegisterThreadBuffer();
+            l.RegisterSink(&mSink);
+        }
+        void TearDown() override
+        {
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.FlushSync();
+            l.UnregisterSink(&mSink);
+            l.UnregisterThreadBuffer();
+        }
+        unsigned int Warnings()
+        {
+            Dia::Observation::Log::Logger::Instance().FlushSync();
+            return mSink.mCount;
+        }
+        UnknownIdSink mSink;
+    };
+}
+
+TEST_F(BiomeRegistryResolve, UnknownIdReturnsFallbackIndex)
+{
+    BiomeRegistry r;
+    ASSERT_TRUE(LoadText(r, kFixture));
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.Nope")), 2);
+    EXPECT_EQ(Warnings(), 1u);
+}
+
+TEST_F(BiomeRegistryResolve, WarnsOncePerDistinctUnknownId)
+{
+    BiomeRegistry r;
+    ASSERT_TRUE(LoadText(r, kFixture));
+    for (int i = 0; i < 5; ++i) { EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.A")), 2); }
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.B")), 2);
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.C")), 2);
+    EXPECT_EQ(Warnings(), 3u);
+}
+
+TEST_F(BiomeRegistryResolve, KnownIdLeavesCountUnchanged)
+{
+    BiomeRegistry r;
+    ASSERT_TRUE(LoadText(r, kFixture));
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.Ocean")), 0);
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.Scrub")), 3);
+    EXPECT_EQ(Warnings(), 0u);
+}
+
+TEST_F(BiomeRegistryResolve, SecondInstanceWarnsAgain)
+{
+    BiomeRegistry a, b;
+    ASSERT_TRUE(LoadText(a, kFixture));
+    ASSERT_TRUE(LoadText(b, kFixture));
+    a.ResolveOrFallback(StringCRC("Biome.Nope"));
+    b.ResolveOrFallback(StringCRC("Biome.Nope"));
+    EXPECT_EQ(Warnings(), 2u);
+}
+
+TEST_F(BiomeRegistryResolve, ReloadResetsWarnedList)
+{
+    BiomeRegistry r;
+    ASSERT_TRUE(LoadText(r, kFixture));
+    r.ResolveOrFallback(StringCRC("Biome.Nope"));
+    r.ResolveOrFallback(StringCRC("Biome.Nope"));
+    EXPECT_EQ(Warnings(), 1u);
+    ASSERT_TRUE(LoadText(r, kFixture));
+    r.ResolveOrFallback(StringCRC("Biome.Nope"));
+    EXPECT_EQ(Warnings(), 2u);
+}
+
+TEST_F(BiomeRegistryResolve, EmptyRegistryReturnsNoBiome)
+{
+    BiomeRegistry r;
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.Nope")), kNoBiome);
+}
+
+TEST_F(BiomeRegistryResolve, ZeroCrcIsDistinctUnknownId)
+{
+    BiomeRegistry r;
+    ASSERT_TRUE(LoadText(r, kFixture));
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC()), 2);
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC()), 2);
+    EXPECT_EQ(r.ResolveOrFallback(StringCRC("Biome.Nope")), 2);
+    EXPECT_EQ(Warnings(), 2u);
 }

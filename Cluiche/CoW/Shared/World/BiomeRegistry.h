@@ -64,6 +64,11 @@ public:
     uint64_t    TagMask(BiomeIndex b) const;
     TagId       FindTag(Dia::Core::StringCRC tag) const;
 
+    // Known id -> its index. Unknown id -> Role(Fallback), with one DIA_LOG_WARNING per
+    // distinct unknown id per registry instance (up to 64 distinct ids are tracked; once
+    // that cap is reached further new ids fall back silently). Empty registry -> kNoBiome.
+    BiomeIndex  ResolveOrFallback(Dia::Core::StringCRC id) const;
+
     BiomeIndex  Role(BiomeRole role) const;
     bool        IsGenerated(BiomeIndex b) const;
     bool        IsValidInZone(BiomeIndex b, WorldGeneration::DepthZone zone) const;

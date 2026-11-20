@@ -90,6 +90,10 @@ struct BiomeRegistry::Data
     BiomeIndex roles[kRoleCount] = { kNoBiome, kNoBiome, kNoBiome };
     uint64_t   hash = 0;
 
+    // Unknown ids already warned about by ResolveOrFallback (mutable: that method is const).
+    static constexpr uint32_t kMaxWarnedIds = 64;
+    mutable DynamicArrayC<Dia::Core::StringCRC, kMaxWarnedIds> warnedIds;
+
     const Row* At(BiomeIndex b) const { return b < rows.Size() ? &rows.At(b) : nullptr; }
     void ComputeHash();
 };
@@ -459,6 +463,29 @@ TagId BiomeRegistry::FindTag(Dia::Core::StringCRC tag) const
         if (Dia::Core::StringCRC(kTagNames[i]) == tag) { return static_cast<TagId>(i); }
     }
     return kNoTag;
+}
+
+BiomeIndex BiomeRegistry::ResolveOrFallback(Dia::Core::StringCRC id) const
+{
+    if (!mData) { return kNoBiome; }
+
+    const BiomeIndex found = Find(id);
+    if (found != kNoBiome) { return found; }
+
+    // Warn once per distinct unknown id. The list is capped (kMaxWarnedIds); past the cap new
+    // ids fall back silently rather than warning on every call.
+    bool warned = false;
+    for (uint32_t i = 0; i < mData->warnedIds.Size(); ++i)
+    {
+        if (mData->warnedIds.At(i) == id) { warned = true; break; }
+    }
+    if (!warned && !mData->warnedIds.IsFull())
+    {
+        mData->warnedIds.Add(id);
+        DIA_LOG_WARNING("CoW", "BiomeRegistry unknown id '%s' (crc 0x%08X), using fallback biome",
+                        id.AsChar(), static_cast<unsigned int>(id.Value()));
+    }
+    return mData->roles[static_cast<uint32_t>(BiomeRole::Fallback)];
 }
 
 BiomeIndex BiomeRegistry::Role(BiomeRole role) const
