@@ -3,6 +3,7 @@
 // check AC13 (zone ordering) and AC13b (river monotonicity) on real terrain. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -31,7 +32,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -61,7 +62,7 @@ struct DGrid
     std::vector<uint32_t> land, coast, river, zone;
     std::vector<float>    ridge, barrier, base, cost;
     Stage8Debug           dbg;
-    TerrainRules          rules = TerrainRules::Defaults();
+    TerrainRules          rules = TestRules();
 
     DGrid(int w, int h) : dims{ w, h }, topo(w, h), n(w * h), land(static_cast<size_t>(n), 0u),
         coast(static_cast<size_t>(n), 0u), river(static_cast<size_t>(n), 0u), zone(static_cast<size_t>(n), 99u),
@@ -236,7 +237,7 @@ int CheckRiverSweep(uint64_t seed)
     int fails = 0;
     Gen r;
     WorldShapeParams s;
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     std::vector<float> prevCost, firstBase;
     std::vector<uint32_t> prevZone;
     float t1 = 0.0f, t2 = 0.0f;

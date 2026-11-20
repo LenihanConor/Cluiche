@@ -24,6 +24,8 @@
 #include <memory>
 #include <string>
 
+namespace Dia::Attribute { class ParameterFile; struct ParamError; }
+
 namespace CoW {
 namespace WorldGeneration {
 
@@ -39,8 +41,22 @@ GridDimensions WorldSizeDimensions(WorldSize size);
 class WorldGenSession
 {
 public:
+    // A default-constructed session has NO rules: Set, SetSize, Regenerate, PresetLoad, ImportWorld and Validate
+    // refuse with {success:false, error:"rules_not_loaded"} and Tick generates nothing until LoadRules succeeds
+    // (there is no compiled fallback; the rules come from the terrain_rules sidecar).
     WorldGenSession();
+    // A session with caller-supplied rules (already loaded; tests that vary one rule use this).
     explicit WorldGenSession(const TerrainRules& rules);
+    ~WorldGenSession();
+    WorldGenSession(WorldGenSession&&) noexcept;
+    WorldGenSession& operator=(WorldGenSession&&) noexcept;
+
+    // Loads the terrain_rules sidecar text (a Dia parameter file) and binds the session's rules to it. On failure
+    // returns false with `err` naming the key and leaves the session (rules, loaded flag, world) unchanged. A
+    // configuration-time call: refused (err.key "state") while a Regenerate runs or once a world exists.
+    bool LoadRules(const char* sidecarText, Dia::Attribute::ParamError& err);
+    bool RulesLoaded() const { return mRulesLoaded; }
+    const TerrainRules& Rules() const { return mRules; }
 
     // Actions: mutate pending state, mark dirty when something changed, return the command's JSON result.
     Json::Value Set(const Json::Value& args);          // any shape param key, "seed", "unlock" (ignored)
@@ -157,6 +173,8 @@ public:
 
 private:
     TerrainRules     mRules;
+    std::unique_ptr<Dia::Attribute::ParameterFile> mRulesFile;   // the loaded sidecar (null when rules were supplied directly)
+    bool             mRulesLoaded = false;
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;
@@ -228,6 +246,8 @@ private:
     Accepted             mAccepted;
 
     bool BusyRefusal(Json::Value& refusal) const;
+    // Refusal for every generation entry point until the rules are loaded: {success:false, error:"rules_not_loaded"}.
+    bool RulesRefusal(Json::Value& refusal) const;
     // Ids of the map layers (WorldLayerSource) that hold no data for the current world: all of them before the first
     // world, "regions" until regions are fresh, and the generator-only layers of an imported world.
     Json::Value UnavailableLayers() const;

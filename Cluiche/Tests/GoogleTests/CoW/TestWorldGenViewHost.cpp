@@ -16,6 +16,7 @@
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cmath>
 #include <filesystem>
@@ -53,7 +54,7 @@ Dia::SimTime::SimTimeContext Ctx()
 
 struct Rig
 {
-    WorldGenSession session;
+    TestSession session;
     Dia::Maths::RandomStream rng{ 12345 };
     Dia::Graphics::CellFieldRegistry cellField;
     Dia::CellLayers::CellLayerRegistry registry{ nullptr, &Dia::CellLayers::Testing::FakePuIdFn };
@@ -508,7 +509,7 @@ TEST(WorldGenViewHost, DestructorAloneUnregistersEverything)
 
 TEST(WorldGenViewHost, BuildFailsCleanlyWithoutRegistry)
 {
-    WorldGenSession session;
+    TestSession session;
     WorldGenViewHost::Deps d;
     WorldGenViewHost host(session, d);
     EXPECT_FALSE(host.Build());
@@ -1478,6 +1479,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 {
     DragonSites sites;
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;
@@ -1560,6 +1562,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder12Kb)
 {
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;

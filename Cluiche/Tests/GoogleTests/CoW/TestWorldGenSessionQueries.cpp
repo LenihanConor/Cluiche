@@ -4,6 +4,7 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -124,7 +125,7 @@ TEST(WorldGenSessionQueries, PresetLoadShippedHighlandsReplacesAllParamsKeepsSee
     const std::string shipped = FindShippedPresetDir();
     ASSERT_FALSE(shipped.empty());
 
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(shipped, "");
     Generate(s);
     s.Set(Obj("seed", 777));
@@ -159,7 +160,7 @@ TEST(WorldGenSessionQueries, PresetLoadThenSetClearsPresetAndMarksModified)
 {
     const std::string shipped = FindShippedPresetDir();
     ASSERT_FALSE(shipped.empty());
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(shipped, "");
     ASSERT_TRUE(Ok(s.PresetLoad(Args("highlands"))));
     s.Set(Obj("lakes", 11));
@@ -172,7 +173,7 @@ TEST(WorldGenSessionQueries, PresetLoadUnknownIdFailsAndLeavesStateUnchanged)
 {
     TempDir deployed;
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), out.Str());
     Generate(s);
     const WorldShapeParams shape = s.Shape();
@@ -188,7 +189,7 @@ TEST(WorldGenSessionQueries, PresetLoadUnknownIdFailsAndLeavesStateUnchanged)
 
 TEST(WorldGenSessionQueries, PresetLoadMissingIdArgFails)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_FALSE(Ok(s.PresetLoad(Json::Value(Json::objectValue))));
     EXPECT_FALSE(Ok(s.PresetLoad(Obj("id", 5))));
 }
@@ -197,7 +198,7 @@ TEST(WorldGenSessionQueries, PresetLoadCorruptFileFailsAndLeavesStateUnchanged)
 {
     TempDir deployed;
     WriteFile(deployed.Path() / "broken.worldshape.json", "{ not json");
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), "");
     Generate(s);
     const WorldShapeParams shape = s.Shape();
@@ -216,7 +217,7 @@ TEST(WorldGenSessionQueries, PresetLoadOutDirCopyWinsOverDeployed)
     TempDir out;
     WritePreset(deployed.Str(), "dup", "Deployed", 0.30f);
     WritePreset(out.Str(), "dup", "Out", 0.55f);
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), out.Str());
     ASSERT_TRUE(Ok(s.PresetLoad(Args("dup"))));
     EXPECT_FLOAT_EQ(s.Shape().landFraction, 0.55f);
@@ -227,7 +228,7 @@ TEST(WorldGenSessionQueries, PresetLoadFallsBackToDeployedWhenNotInOut)
     TempDir deployed;
     TempDir out;
     WritePreset(deployed.Str(), "only_dep", "Deployed", 0.31f);
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), out.Str());
     ASSERT_TRUE(Ok(s.PresetLoad(Args("only_dep"))));
     EXPECT_FLOAT_EQ(s.Shape().landFraction, 0.31f);
@@ -236,7 +237,7 @@ TEST(WorldGenSessionQueries, PresetLoadFallsBackToDeployedWhenNotInOut)
 TEST(WorldGenSessionQueries, PresetLoadSameParamsDoesNotDirtyButSetsPresetId)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     WritePreset(out.Str(), "same", "Same", WorldShapeParams{}.landFraction);
     Generate(s);
@@ -256,7 +257,7 @@ TEST(WorldGenSessionQueries, PresetLoadReportsWarnings)
     Json::Value doc = PresetToJson(base);
     doc["params"]["landFraction"] = 5.0;   // out of range -> clamped + "range:" warning
     WriteFile(out.Path() / "warn.worldshape.json", doc.toStyledString());
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     const Json::Value r = s.PresetLoad(Args("warn"));
     ASSERT_TRUE(Ok(r)) << r.toStyledString();
@@ -268,7 +269,7 @@ TEST(WorldGenSessionQueries, PresetLoadReportsWarnings)
 TEST(WorldGenSessionQueries, PresetSaveRefusesExistingWithoutOverwrite)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     const Json::Value first = s.PresetSave(SaveArgs("mine", "Mine"));
     ASSERT_TRUE(Ok(first)) << first.toStyledString();
@@ -288,7 +289,7 @@ TEST(WorldGenSessionQueries, PresetSaveRefusesExistingWithoutOverwrite)
 TEST(WorldGenSessionQueries, PresetSaveBadIdRejected)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     const Json::Value r = s.PresetSave(SaveArgs("Bad Id!", "x"));
     EXPECT_FALSE(Ok(r));
@@ -299,7 +300,7 @@ TEST(WorldGenSessionQueries, PresetSaveBadIdRejected)
 TEST(WorldGenSessionQueries, PresetSaveUnconfiguredOutDirErrors)
 {
     TempDir deployed;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), "");
     const Json::Value r = s.PresetSave(SaveArgs("mine", "Mine"));
     EXPECT_FALSE(Ok(r));
@@ -311,7 +312,7 @@ TEST(WorldGenSessionQueries, PresetSaveNeverWritesDeployedDir)
 {
     TempDir deployed;
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), out.Str());
     ASSERT_TRUE(Ok(s.PresetSave(SaveArgs("mine", "Mine"))));
     EXPECT_TRUE(std::filesystem::is_empty(deployed.Path()));
@@ -320,7 +321,7 @@ TEST(WorldGenSessionQueries, PresetSaveNeverWritesDeployedDir)
 TEST(WorldGenSessionQueries, PresetSaveThenLoadRoundTripsShapeAndSetsPresetId)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     s.Set(Obj("landFraction", 0.4321));
     s.Set(Obj("islands", 5));
@@ -347,7 +348,7 @@ TEST(WorldGenSessionQueries, PresetsListsUnionSortedOutWinsNoDuplicates)
     WritePreset(deployed.Str(), "dup", "Deployed Dup", 0.3f);
     WritePreset(out.Str(), "alpha", "Alpha", 0.3f);
     WritePreset(out.Str(), "dup", "Out Dup", 0.3f);
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.Str(), out.Str());
 
     const Json::Value list = s.Presets();
@@ -365,7 +366,7 @@ TEST(WorldGenSessionQueries, PresetsListsUnionSortedOutWinsNoDuplicates)
 
 TEST(WorldGenSessionQueries, PresetsEmptyWhenUnconfigured)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_TRUE(s.Presets().isArray());
     EXPECT_EQ(s.Presets().size(), 0u);
 }
@@ -374,7 +375,7 @@ TEST(WorldGenSessionQueries, PresetsIncludesShippedHighlands)
 {
     const std::string shipped = FindShippedPresetDir();
     ASSERT_FALSE(shipped.empty());
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(shipped, "");
     bool found = false;
     for (const Json::Value& e : s.Presets())
@@ -386,7 +387,7 @@ TEST(WorldGenSessionQueries, PresetsIncludesShippedHighlands)
 
 TEST(WorldGenSessionQueries, LayersSummaryHasOneEntryPerImplementedStage)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r.isMember("stages")) << r.toStyledString();
@@ -408,7 +409,7 @@ TEST(WorldGenSessionQueries, LayersSummaryHasOneEntryPerImplementedStage)
 
 TEST(WorldGenSessionQueries, LayersSummaryElevationRangeWithinUnit)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     bool found = false;
@@ -435,7 +436,7 @@ TEST(WorldGenSessionQueries, LayersSummaryElevationRangeWithinUnit)
 
 TEST(WorldGenSessionQueries, LayersSummaryTimingsReflectLastUpdate)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     s.Set(Obj("rivers", 0.9));
     Generate(s);
@@ -449,7 +450,7 @@ TEST(WorldGenSessionQueries, LayersSummaryTimingsReflectLastUpdate)
 
 TEST(WorldGenSessionQueries, LayersSummaryBeforeGenerationHasEmptyLayers)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r.isMember("stages")) << r.toStyledString();
     ASSERT_EQ(static_cast<int>(r["stages"].size()), kImplementedStageCount);
@@ -494,7 +495,7 @@ std::string SummaryHash(const Json::Value& summary, const char* layer)
 
 TEST(WorldGenSessionQueries, LayersFirstPageUsesDefaults)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
     const Json::Value e = s.Layers(Obj("layer", "elevation"));
@@ -511,7 +512,7 @@ TEST(WorldGenSessionQueries, LayersFirstPageUsesDefaults)
 
 void ExpectReassembles(const char* layer, bool isFloat)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
     const TerrainLayers& tl = s.Generator().GetLayers();
@@ -568,7 +569,7 @@ TEST(WorldGenSessionQueries, LayersPagesReassembleUIntLayerExactly)
 
 TEST(WorldGenSessionQueries, LayersCustomCountAndClamp)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value a = s.Layers(PageArgs("landmass", 10, 7));
     ASSERT_TRUE(Ok(a)) << a.toStyledString();
@@ -591,7 +592,7 @@ TEST(WorldGenSessionQueries, LayersCustomCountAndClamp)
 
 TEST(WorldGenSessionQueries, LayersLastPageHasNullNextOffset)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(PageArgs("landmass", 2700, Json::Value()));
     ASSERT_TRUE(Ok(r)) << r.toStyledString();
@@ -602,7 +603,7 @@ TEST(WorldGenSessionQueries, LayersLastPageHasNullNextOffset)
 
 TEST(WorldGenSessionQueries, LayersOffsetAtTotalIsEmptySuccessBeyondIsError)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(PageArgs("landmass", 2772, Json::Value()));
     ASSERT_TRUE(Ok(r)) << r.toStyledString();
@@ -614,7 +615,7 @@ TEST(WorldGenSessionQueries, LayersOffsetAtTotalIsEmptySuccessBeyondIsError)
 
 TEST(WorldGenSessionQueries, LayersBadOffsetOrCountIsError)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", -1, Json::Value()))));
     EXPECT_FALSE(Ok(s.Layers(PageArgs("landmass", Json::Value(), -5))));
@@ -628,7 +629,7 @@ TEST(WorldGenSessionQueries, LayersBadOffsetOrCountIsError)
 
 TEST(WorldGenSessionQueries, LayersCountZeroIsEmptySuccessWithSameNextOffset)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(PageArgs("landmass", 40, 0));
     ASSERT_TRUE(Ok(r)) << r.toStyledString();
@@ -639,7 +640,7 @@ TEST(WorldGenSessionQueries, LayersCountZeroIsEmptySuccessWithSameNextOffset)
 
 TEST(WorldGenSessionQueries, LayersPagingValidationComesAfterLayerResolution)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_EQ(s.Layers(PageArgs("elevation", -1, Json::Value()))["error"].asString(), "no world generated yet");
     Generate(s);
     const std::string err = s.Layers(PageArgs("nonsense", -1, Json::Value()))["error"].asString();
@@ -648,7 +649,7 @@ TEST(WorldGenSessionQueries, LayersPagingValidationComesAfterLayerResolution)
 
 TEST(WorldGenSessionQueries, LayersWorstPageFitsInSimReply)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     // Hard max count (1000) of every layer must serialise well under the 16 KB sim payload.
     for (int i = 0; i < TerrainLayers::GetLayerCount(); ++i)
@@ -664,7 +665,7 @@ TEST(WorldGenSessionQueries, LayersWorstPageFitsInSimReply)
 
 TEST(WorldGenSessionQueries, LayersSummaryHashMatchesIndependentFnv)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     EXPECT_EQ(r["revision"].asUInt(), s.Revision());
@@ -682,7 +683,7 @@ TEST(WorldGenSessionQueries, LayersSummaryHashMatchesIndependentFnv)
 
 TEST(WorldGenSessionQueries, LayersSummaryHashChangesOnlyForAffectedLayers)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value before = s.Layers(Json::Value(Json::objectValue));
     s.Set(Obj("rivers", 0.9));
@@ -695,7 +696,7 @@ TEST(WorldGenSessionQueries, LayersSummaryHashChangesOnlyForAffectedLayers)
 
 TEST(WorldGenSessionQueries, LayersUnknownLayerAndPreGenerationErrors)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value pre = s.Layers(Obj("layer", "elevation"));
     EXPECT_FALSE(Ok(pre));
     EXPECT_EQ(pre["error"].asString(), "no world generated yet");
@@ -707,7 +708,7 @@ TEST(WorldGenSessionQueries, LayersUnknownLayerAndPreGenerationErrors)
 
 TEST(WorldGenSessionQueries, CellByXYAndIndexAgree)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int w = s.Dimensions().width;
     Json::Value xy(Json::objectValue);
@@ -731,7 +732,7 @@ TEST(WorldGenSessionQueries, CellByXYAndIndexAgree)
 
 TEST(WorldGenSessionQueries, CellFieldsMatchWorldCells)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int count = s.World().CellCount();
     for (int i = 0; i < count; i += 37)
@@ -759,7 +760,7 @@ TEST(WorldGenSessionQueries, CellFieldsMatchWorldCells)
 
 TEST(WorldGenSessionQueries, CellDownstreamNumericOnRiverCell)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     bool sawRiver = false;
     for (int i = 0; i < s.World().CellCount() && !sawRiver; ++i)
@@ -775,7 +776,7 @@ TEST(WorldGenSessionQueries, CellDownstreamNumericOnRiverCell)
 
 TEST(WorldGenSessionQueries, CellLayersContainEveryRegisteredLayer)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Cell(Obj("index", 100));
     ASSERT_TRUE(Ok(r));
@@ -800,7 +801,7 @@ TEST(WorldGenSessionQueries, CellLayersContainEveryRegisteredLayer)
 
 TEST(WorldGenSessionQueries, CellNeighboursEdgeAndSymmetric)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int w = s.Dimensions().width;
     const int h = s.Dimensions().height;
@@ -833,7 +834,7 @@ TEST(WorldGenSessionQueries, CellNeighboursEdgeAndSymmetric)
 
 TEST(WorldGenSessionQueries, CellBadArgsFail)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value pre = s.Cell(Obj("index", 0));
     EXPECT_FALSE(Ok(pre));
 
@@ -865,7 +866,7 @@ TEST(WorldGenSessionQueries, CellBadArgsFail)
 
 TEST(WorldGenSessionQueries, EffectiveReportsUnresolvedPairs)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value p = s.Params();
     ASSERT_TRUE(p["effective"].isMember("unresolvedPairs")) << p["effective"].toStyledString();
@@ -876,7 +877,7 @@ TEST(WorldGenSessionQueries, EffectiveReportsUnresolvedPairs)
 
 TEST(WorldGenSessionQueries, LayersSummaryListsBiomeStagesAndLayers)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     for (TerrainStage st : { TerrainStage::Temperature, TerrainStage::Moisture, TerrainStage::Biomes })
@@ -891,7 +892,7 @@ TEST(WorldGenSessionQueries, LayersSummaryListsBiomeStagesAndLayers)
 
 TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r["biomeCounts"].isArray()) << r.toStyledString();
@@ -913,7 +914,7 @@ TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
 
 TEST(WorldGenSessionQueries, BiomeCountsAreZeroBeforeGeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r["biomeCounts"].isArray());
     for (const Json::Value& e : r["biomeCounts"])
@@ -922,7 +923,7 @@ TEST(WorldGenSessionQueries, BiomeCountsAreZeroBeforeGeneration)
 
 TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const TerrainLayers& layers = s.Generator().GetLayers();
     const uint32_t* pin = layers.GetUInt(layers.FindLayer("biomePin"));
@@ -973,7 +974,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
 
 TEST(WorldGenSessionQueries, CellFixupReasonMatchesFixupLayer)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const TerrainLayers& layers = s.Generator().GetLayers();
     const uint32_t* fix = layers.GetUInt(layers.FindLayer("fixupChanges"));

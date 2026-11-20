@@ -8,6 +8,7 @@
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -95,7 +96,7 @@ namespace
     // Session + registry + switchable guarantee, first generated with a successful Regenerate (regions and sites present).
     struct Gen
     {
-        WorldGenSession s;
+        TestSession s;
         Dia::Maths::RandomStream rng{ 1 };
         SiteRegistry registry;
         SwitchGuarantee sw;
@@ -308,7 +309,7 @@ TEST(WorldGenSessionTimeout, TheSessionRecoversAfterAFailureAndLivePreviewStillW
 
 TEST(WorldGenSessionTimeout, WithNoPreviousWorldAFailedFirstRegenerateAdoptsTheCandidateTerrain)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng{ 1 };
     SiteRegistry registry;
     SwitchGuarantee sw;
@@ -399,7 +400,7 @@ TEST(WorldGenSessionTimeout, CancelAfterTheRunCompletedIsANoOp)
 
 TEST(WorldGenSessionTimeout, CancelBeforeTheFirstGenerationStillGeneratesTerrainOnly)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng{ 1 };
     ASSERT_TRUE(s.Regenerate(Obj())["success"].asBool());
     EXPECT_TRUE(s.Cancel(Obj())["cancelled"].asBool());
@@ -463,7 +464,7 @@ TEST(WorldGenSessionTimeout, ActionsAreRefusedWhileARunIsActiveAndQueriesStillWo
 
 TEST(WorldGenSessionTimeout, RegenerateAcceptsAndClampsTimeoutSecondsAndItSticks)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_FLOAT_EQ(s.TimeoutSeconds(), kDefaultTimeoutSeconds);
     Json::Value a = Obj(); a["timeoutSeconds"] = 12.5;
     Json::Value r = s.Regenerate(a);
@@ -599,7 +600,7 @@ TEST(WorldGenSessionTimeoutEdge, ATimeoutExactlyAtTheBudgetDoesNotFireUntilItIsE
 
 TEST(WorldGenSessionTimeoutEdge, AZeroBudgetOnTheRealClockTimesOutBeforeTheFirstAttemptAndKeepsTheWorld)
 {
-    WorldGenSession s;                                  // no injected clock: the steady clock
+    TestSession s;                                  // no injected clock: the steady clock
     Dia::Maths::RandomStream rng{ 1 };
     ASSERT_TRUE(s.Regenerate(Obj())["success"].asBool());
     ASSERT_TRUE(TickUntilIdle(s, rng));
@@ -671,7 +672,7 @@ TEST(WorldGenSessionTimeoutEdge, ExportAfterAFailedRegenerateWritesThePreviousWo
     const Json::Value r = g.s.ExportWorld(ex);
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
     Json::Value im = Obj(); im["name"] = "afterfail";
-    WorldGenSession other;
+    TestSession other;
     other.SetWorldDirectories("", dir.path.string());
     ASSERT_TRUE(other.ImportWorld(im)["success"].asBool());
     EXPECT_EQ(other.Seed(), 1u);                        // the provenance names the seed that produced the world on show

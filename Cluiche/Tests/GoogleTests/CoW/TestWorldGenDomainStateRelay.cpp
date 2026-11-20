@@ -13,6 +13,7 @@
 #include <Modules/WorldGenDebugDomain.h>
 
 #include <memory>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 using namespace Dia::ApplicationFlow;
 using Cluiche::AppFlow::DomainStateBridgeModule;
@@ -143,6 +144,7 @@ TEST(WorldGenDomainStateRelay, AdapterShowsCardStateAndForwardsCommands)
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
 	Dia::Maths::RandomStream rng{ 1 };
 	module.GetSession().Tick(rng);
 	CoW::WorldGenDebugDomain domain{ module };
@@ -161,7 +163,7 @@ TEST(WorldGenDomainStateRelay, AdapterShowsCardStateAndForwardsCommands)
 	args["value"] = 0.5;
 	adapter->OnCommand(StringCRC("setScale"), args);
 	h.Pump(5);
-	CoW::WorldGeneration::WorldGenSession ref;
+	CoW::WorldGeneration::TestSession ref;
 	Json::Value refArgs(Json::objectValue);
 	refArgs["landFraction"] = 0.5;
 	ref.Set(refArgs);
@@ -178,6 +180,7 @@ TEST(WorldGenDomainStateRelay, TenAttachDetachRoundTripsAtLargeFitTheSnapshotSlo
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
 	Dia::Maths::RandomStream rng{ 1 };
 	Json::Value size(Json::objectValue);
 	size["size"] = "Large";

@@ -88,6 +88,22 @@ public:
     const WorldGeneration::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
     uint32_t GetReportRevision() const { return mSession.ReportRevision(); }
 
+    // Terrain rules sidecar (a Dia parameter file, catalogue alias json.terrain_rules_schema). Read once, at the
+    // start of OnConfigure (so the config's seed / size / preset / regenerate_on_start apply to a session that has
+    // rules): from SetRulesSidecarText when a host supplied the text (tests), else from GetRulesSidecarPath().
+    // A failure logs an Error, puts health in Failing (naming the ParamError key) once DoStart runs, and every
+    // generation entry point of the session refuses with "rules_not_loaded". There is no compiled fallback.
+    static constexpr const char* kDefaultRulesSidecarPath = "assets/global/misc/terrain_rules.schema.json";
+    void SetRulesSidecarText(const std::string& text) { mRulesSidecarText = text; mRulesSidecarTextSet = true; }
+    void SetRulesSidecarPath(const std::string& path) { mRulesSidecarPath = path; }
+    const std::string& GetRulesSidecarPath() const { return mRulesSidecarPath; }
+    // Loads the sidecar into the session now, once (OnConfigure and DoStart call it too; later calls are no-ops).
+    void LoadRulesSidecar();
+    bool AreRulesLoaded() const { return mSession.RulesLoaded(); }
+    // The first load failure (empty when the rules loaded): ParamError key and reason.
+    const std::string& GetRulesErrorKey() const { return mRulesErrorKey; }
+    const std::string& GetRulesErrorReason() const { return mRulesErrorReason; }
+
     const WorldGenerationHealthReporter& GetHealthReporter() const { return mHealth; }
     bool IsHealthRegistered() const { return mHealthRegistered; }
 
@@ -119,6 +135,7 @@ protected:
 
 private:
     void ApplySeedAndSize(const Json::Value& root);
+    void ReportRulesFailure();
     void ApplyHandoffPreset();
     void RegisterCommands();
     void UnregisterCommands();
@@ -140,6 +157,12 @@ private:
 #endif
     int  mGenerationHolds = 0;
     bool mStartDeferral = true;      // skip the first DoUpdate: dependants started in the same pass have registered by then
+    std::string mRulesSidecarPath = kDefaultRulesSidecarPath;
+    std::string mRulesSidecarText;
+    bool mRulesSidecarTextSet = false;
+    bool mRulesAttempted = false;
+    std::string mRulesErrorKey;
+    std::string mRulesErrorReason;
     std::string mPresetsDir = "Cluiche/Assets/CoW/Global/WorldGen/Presets";
     std::string mOutPresetsDir = "Cluiche/out/CoW/presets";
     std::string mWorldsDir;                                        // read-only deployed worlds (none by default)

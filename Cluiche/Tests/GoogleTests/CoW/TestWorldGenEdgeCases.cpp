@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
@@ -74,7 +75,7 @@ bool SameCells(const WorldStructure& a, const WorldStructure& b)
 // Session generated once and left clean, for tests that only inspect Set() replies.
 struct Clean
 {
-    WorldGenSession s;
+    TestSession s;
     Clean() { Generate(s); }
 };
 
@@ -655,7 +656,7 @@ TEST(WorldGenEdgeSize, PresetLoadThenSetSizeKeepsPresetIdAndNotModified)
     p.params.landFraction = 0.5f;
     ASSERT_TRUE(SavePreset(out.Str(), p, true).Ok());
 
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     ASSERT_TRUE(Ok(s.PresetLoad(Obj("id", "keepme"))));
     s.SetSize(Obj("size", "Large"));
@@ -678,7 +679,7 @@ TEST(WorldGenEdgeSize, PresetLoadThenSetSizeKeepsPresetIdAndNotModified)
 TEST(WorldGenEdgeSize, ModifiedFlagSurvivesFurtherSetsUntilNextLoadOrSave)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     ASSERT_TRUE(Ok(s.PresetSave(Json::Value([] { Json::Value a(Json::objectValue); a["id"] = "base"; a["displayName"] = "B"; return a; }()))));
     s.Set(Obj("rivers", 0.1));
@@ -697,7 +698,7 @@ TEST(WorldGenEdgeSize, ModifiedFlagSurvivesFurtherSetsUntilNextLoadOrSave)
 TEST(WorldGenEdgePreset, SaveWithOptionalFieldsOmitted)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     const Json::Value r = s.PresetSave(Obj("id", "minimal"));   // no displayName, no description, no overwrite
     ASSERT_TRUE(Ok(r)) << r.toStyledString();
@@ -711,7 +712,7 @@ TEST(WorldGenEdgePreset, SaveWithOptionalFieldsOmitted)
 TEST(WorldGenEdgeSave, OverwriteMustBeARealBool)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     ASSERT_TRUE(Ok(s.PresetSave(Obj("id", "ow"))));
     for (const Json::Value& v : { Json::Value("true"), Json::Value(1), Json::Value(), Json::Value("yes"), Json::Value(false) })
@@ -732,7 +733,7 @@ TEST(WorldGenEdgeSave, OverwriteMustBeARealBool)
 TEST(WorldGenEdgeSave, IdLengthBoundary)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     EXPECT_TRUE(Ok(s.PresetSave(Obj("id", std::string(32, 'a')))));
     const Json::Value r = s.PresetSave(Obj("id", std::string(33, 'a')));
@@ -749,7 +750,7 @@ TEST(WorldGenEdgeSave, TraversalAndSeparatorIdsNeverWriteOutsideOutDir)
     std::filesystem::create_directories(outPath);
     const size_t before = CountEntries(root.Path());
 
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", outPath.string());
     const char* ids[] = { "../evil", "..\\evil", "a/b", "a\\b", "a.b", ".", "..", "evil/../../x", "C:evil", "/abs", "UPPER", "sp ace",
                           "tab\t", "evil.worldshape.json", "~", "a b", "é" };
@@ -783,7 +784,7 @@ TEST(WorldGenEdgePreset, LoadRejectsTraversalIds)
     p.displayName = "S";
     ASSERT_TRUE(SavePreset(root.Str(), p, true).Ok());
 
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories(deployed.string(), "");
     for (const char* id : { "../secret", "..\\secret", "a/../../secret", "secret.worldshape", "SECRET", "", "x y" })
     {
@@ -799,7 +800,7 @@ TEST(WorldGenEdgePreset, LoadRejectsTraversalIds)
 TEST(WorldGenEdgePreset, SaveDisplayNameVariantsDoNotCrashAndReturnWellFormedResult)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     int n = 0;
     for (const Json::Value& name : { Json::Value(""), Json::Value(std::string(5000, 'x')), Json::Value("quote\"back\\slash\nnl"),
@@ -831,7 +832,7 @@ TEST(WorldGenEdgePreset, SaveDisplayNameVariantsDoNotCrashAndReturnWellFormedRes
 
 TEST(WorldGenEdgePreset, BothDirsUnsetCommandsFailCleanly)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_EQ(s.Presets().size(), 0u);
     const Json::Value l = s.PresetLoad(Obj("id", "highlands"));
     EXPECT_FALSE(Ok(l));
@@ -842,7 +843,7 @@ TEST(WorldGenEdgePreset, BothDirsUnsetCommandsFailCleanly)
 TEST(WorldGenEdgePreset, NonexistentConfiguredDirsAreEmptyNotCrash)
 {
     TempDir root;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories((root.Path() / "nope1").string(), (root.Path() / "nope2").string());
     EXPECT_EQ(s.Presets().size(), 0u);
     EXPECT_FALSE(Ok(s.PresetLoad(Obj("id", "x"))));
@@ -855,7 +856,7 @@ TEST(WorldGenEdgePreset, NonexistentConfiguredDirsAreEmptyNotCrash)
 TEST(WorldGenEdgePreset, SaveFailureLeavesPresetStateUnchanged)
 {
     TempDir out;
-    WorldGenSession s;
+    TestSession s;
     s.SetPresetDirectories("", out.Str());
     ASSERT_TRUE(Ok(s.PresetSave(Obj("id", "first"))));
     s.Set(Obj("rivers", 0.4));
@@ -872,7 +873,7 @@ TEST(WorldGenEdgePreset, SaveFailureLeavesPresetStateUnchanged)
 
 TEST(WorldGenEdgeLayers, EveryLayerReassemblesFromDefaultPagesWithMatchingHash)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const size_t total = static_cast<size_t>(s.Dimensions().width) * s.Dimensions().height;
     ASSERT_EQ(total, 2772u);
@@ -931,7 +932,7 @@ TEST(WorldGenEdgeLayers, EveryLayerReassemblesFromDefaultPagesWithMatchingHash)
 
 TEST(WorldGenEdgeLayers, PageBoundariesAndCrossingTheEnd)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     // Float layer: pages of the 500 cap land on exact multiples.
     Json::Value r = s.Layers(Page("elevation", 500, Json::Value()));
@@ -967,7 +968,7 @@ TEST(WorldGenEdgeLayers, PageBoundariesAndCrossingTheEnd)
 
 TEST(WorldGenEdgeLayers, HugeCountOffsetAndArgumentTypes)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     Json::Value r = s.Layers(Page("landmass", Json::Value(), Json::Value(static_cast<Json::UInt64>(1000000000))));
     ASSERT_TRUE(Ok(r));
@@ -999,7 +1000,7 @@ TEST(WorldGenEdgeLayers, HugeCountOffsetAndArgumentTypes)
 
 TEST(WorldGenEdgeLayers, LayerArgumentVariants)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     EXPECT_FALSE(Ok(s.Layers(Obj("layer", ""))));
     EXPECT_FALSE(Ok(s.Layers(Obj("layer", "Elevation"))));   // case sensitive
@@ -1017,7 +1018,7 @@ TEST(WorldGenEdgeLayers, LayerArgumentVariants)
 
 TEST(WorldGenEdgeLayers, PagesTrackTheGeneratedWorldAfterResizeAndRegeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const uint32_t rev1 = s.Layers(Page("landmass", 0, 1))["revision"].asUInt();
     s.SetSize(Obj("size", "Large"));
@@ -1033,7 +1034,7 @@ TEST(WorldGenEdgeLayers, PagesTrackTheGeneratedWorldAfterResizeAndRegeneration)
 TEST(WorldGenEdgeLayers, QueriesBetweenSetSizeAndTickDescribeTheGeneratedWorld)
 {
     // SetSize only changes pending state; queries before the next Tick must stay inside the generated buffers.
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     s.SetSize(Obj("size", "Large"));
     ASSERT_TRUE(s.IsDirty());
@@ -1063,7 +1064,7 @@ TEST(WorldGenEdgeLayers, QueriesBetweenSetSizeAndTickDescribeTheGeneratedWorld)
 
 TEST(WorldGenEdgeLayers, RevisionAndHashStableAcrossIdenticalRegeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const Json::Value a = s.Layers(Json::Value(Json::objectValue));
     s.Regenerate(Json::Value());
@@ -1080,7 +1081,7 @@ TEST(WorldGenEdgeLayers, RevisionAndHashStableAcrossIdenticalRegeneration)
 
 TEST(WorldGenEdgeCell, CornersAndCentre)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int w = s.Dimensions().width;
     const int h = s.Dimensions().height;
@@ -1107,7 +1108,7 @@ TEST(WorldGenEdgeCell, CornersAndCentre)
 
 TEST(WorldGenEdgeCell, EveryCellHasSymmetricNeighbours)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int w = s.Dimensions().width;
     const int count = s.World().CellCount();
@@ -1155,7 +1156,7 @@ TEST(WorldGenEdgeCell, EveryCellHasSymmetricNeighbours)
 
 TEST(WorldGenEdgeCell, NumericArgumentVariants)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s);
     const int w = s.Dimensions().width;
     const int h = s.Dimensions().height;
@@ -1219,7 +1220,7 @@ CoW::WorldGenerationModule*              g_edgeWg  = nullptr;
 
 Module* CreateEdgeBus(const StringCRC& id) { g_edgeBus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_edgeBus; }
 Module* CreateEdgeRng(const StringCRC& id) { return new CoW::RandomStreamModule(id); }
-Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); return g_edgeWg; }
+Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); g_edgeWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); return g_edgeWg; }
 
 constexpr float kEdgeDt = 1.0f / 30.0f;
 

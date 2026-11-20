@@ -5,6 +5,7 @@
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 
@@ -135,7 +136,7 @@ TEST(WorldJsonImport, AC2_GeneratedWorldsRoundTripExactly_TwentyWorldsAcrossShap
 
 TEST(WorldJsonImport, WorldWithoutRegionsOrSitesRoundTrips)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng{ 1 };
     ASSERT_TRUE(s.Tick(rng));   // first generation: terrain only, regions stay empty
     const WorldStructure& original = s.World();

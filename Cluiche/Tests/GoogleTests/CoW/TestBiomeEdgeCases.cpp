@@ -10,6 +10,7 @@
 #include <Shared/WorldGeneration/Testing/BiomeChecks.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cmath>
 #include <cstring>
@@ -29,7 +30,7 @@ namespace
 
     ClimateOut RunClimate(const ClimateGrid& g, float tOff, float mOff)
     {
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         const size_t       n = static_cast<size_t>(g.dims.width) * g.dims.height;
         ClimateOut         o;
         o.dist.assign(n, 7u);
@@ -148,7 +149,7 @@ namespace
         {
             EXPECT_TRUE(pairs.empty()) << label << " forbidden pairs " << pairs.size();
         }
-        EXPECT_TRUE(CheckWetlandRule(TerrainRules::Defaults(), in, biome).empty()) << label << " wetland rule";
+        EXPECT_TRUE(CheckWetlandRule(TestRules(), in, biome).empty()) << label << " wetland rule";
     }
 
     // AC6 on a generated world: only cells with fixupChanges == 0 are held to the pin rules.
@@ -163,7 +164,7 @@ namespace
         const uint32_t*      flags = L.GetUInt(L.FindLayer("terrainFlags"));
         const uint32_t*      water = L.GetUInt(L.FindLayer("waterSource"));
         const float*         mask = L.GetFloat(L.FindLayer("barrierMask"));
-        const TerrainRules   rules = TerrainRules::Defaults();
+        const TerrainRules   rules = TestRules();
 
         for (int c = 0; c < n; ++c)
         {
@@ -462,7 +463,7 @@ TEST(BiomeEdge, WetlandRuleAndSpecialRulesHoldOnGeneratedWorlds)
             const TerrainGenerator& g = r.Gen();
             const uint32_t*         biome = g.GetLayers().GetUInt(g.GetLayers().FindLayer("biomeIndex"));
             const Stage14Inputs     in = InputsOf(g, p, dims);
-            EXPECT_TRUE(CheckWetlandRule(TerrainRules::Defaults(), in, biome).empty()) << "seed " << seed;
+            EXPECT_TRUE(CheckWetlandRule(TestRules(), in, biome).empty()) << "seed " << seed;
             for (int c = 0; c < dims.width * dims.height; ++c) { wetlandCells += biome[c] == static_cast<uint32_t>(Biome::WetlandDelta) ? 1 : 0; }
             CheckSpecialRules("special", g, p, dims);
         }
@@ -474,7 +475,7 @@ TEST(BiomeEdge, WetlandCellsAreLowAndMoistOrNextToWater)
 {
     // Directly re-derives AC5's elevation clause from the layers (independent of IsWetlandEligible).
     const GridDimensions dims{ 66, 42 };
-    const TerrainRules   rules = TerrainRules::Defaults();
+    const TerrainRules   rules = TestRules();
     for (uint64_t seed = 1; seed <= 4; ++seed)
     {
         TerrainRunner r;
@@ -510,7 +511,7 @@ TEST(BiomeEdge, BiomeIndexLayerEqualsCellBiomeAfterWriteTerrain)
 
 TEST(BiomeEdge, WriteTerrainBeforeUpdateLeavesBiomeUntouched)
 {
-    TerrainRules     rules = TerrainRules::Defaults();
+    TerrainRules     rules = TestRules();
     TerrainGenerator g(rules);
     WorldStructure   w;
     w.Resize(GridDimensions{ 4, 3 });
@@ -558,7 +559,7 @@ namespace
 
 TEST(BiomeEdge, SessionStagesRanListsBiomeStages)
 {
-    WorldGenSession          s;
+    TestSession          s;
     Dia::Maths::RandomStream rng(1);
     ASSERT_TRUE(s.Tick(rng));
     Json::Value ran = s.Status()["stagesRan"];
@@ -620,7 +621,7 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestEnumCandidate)
 {
     // Pinned Alpine on First Shores re-picks among Grassland / Forest; identical targets tie bit-exactly and the
     // lower enum value (Grassland) must win.
-    TerrainRules rules = TerrainRules::Defaults();
+    TerrainRules rules = TestRules();
     rules.kT0_Forest = rules.kT0_Grass;
     rules.kM0_Forest = rules.kM0_Grass;
     rules.kWT_Forest = rules.kWT_Grass;

@@ -3,6 +3,7 @@
 // Wide sweeps are SLOW_; TerrainPerf reports the Release time of WriteTerrain at Small.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -26,7 +27,7 @@ const uint32_t* U(const TerrainGenerator& g, const char* name) { return g.GetLay
 
 struct Gen
 {
-    TerrainRules rules = TerrainRules::Defaults();
+    TerrainRules rules = TestRules();
     TerrainGenerator gen;
     RandomStream rng{ 1 };
     WorldStructure world;
@@ -153,7 +154,7 @@ TEST(TerrainOutput, Provenance)
 
 TEST(TerrainOutput, RulesVersionPropagates)
 {
-    TerrainRules r = TerrainRules::Defaults();
+    TerrainRules r = TestRules();
     r.rulesVersion = 77;
     TerrainGenerator gen(r);
     RandomStream rng{ 1 };
@@ -206,7 +207,7 @@ TEST(TerrainOutput, LivePreviewReflectsSliderChange)
 
 TEST(TerrainOutput, NeverUpdatedLeavesWorldUntouched)
 {
-    TerrainGenerator gen(TerrainRules::Defaults());
+    TerrainGenerator gen(TestRules());
     WorldStructure w;
     w.Resize({ 3, 3 });
     w.mainLandmass = 9;

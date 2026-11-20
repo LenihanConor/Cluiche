@@ -2,6 +2,7 @@
 // (elevationRaw, oceanDepth), plus the stages 0-4 timing checkpoint (TerrainPerf, Release only).
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -48,7 +49,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -110,7 +111,7 @@ TEST(TerrainBarrier, BStarIsLowerQuantileOverMainLandmassOnly)
     layers.barrierMask = mask.data();
     layers.volcanic = volc.data();
     WorldShapeParams s = Shape(1.0f, BarrierForm::Plateau);
-    ComputeStage3(TerrainRules::Defaults(), s, d, seeds, landmass.data(), coast.data(), 1, layers, dbg);
+    ComputeStage3(TestRules(), s, d, seeds, landmass.data(), coast.data(), 1, layers, dbg);
     EXPECT_EQ(dbg.mainCells, 28);
     // 28 values sorted; floor(0.75 * 27) = 20 -> the 21st value.
     std::vector<uint32_t> main;
@@ -134,7 +135,7 @@ TEST(TerrainBarrier, NoMainLandmassOrEmptyGridIsEmptyAndSafe)
     Stage3Layers layers;
     layers.barrierMask = mask.data();
     layers.volcanic = volc.data();
-    ComputeStage3(TerrainRules::Defaults(), Shape(1.0f, BarrierForm::VolcanicChain), d, seeds,
+    ComputeStage3(TestRules(), Shape(1.0f, BarrierForm::VolcanicChain), d, seeds,
                   landmass.data(), coast.data(), 0, layers, dbg);
     for (float m : mask) { EXPECT_EQ(m, 0.0f); }
     EXPECT_TRUE(dbg.chainVents.empty());
@@ -142,7 +143,7 @@ TEST(TerrainBarrier, NoMainLandmassOrEmptyGridIsEmptyAndSafe)
 
     // Zero-size grid and null layers must not crash.
     Stage3Layers none;
-    ComputeStage3(TerrainRules::Defaults(), Shape(1.0f, BarrierForm::Plateau), GridDimensions{ 0, 0 }, seeds,
+    ComputeStage3(TestRules(), Shape(1.0f, BarrierForm::Plateau), GridDimensions{ 0, 0 }, seeds,
                   nullptr, nullptr, 1, none, dbg);
     EXPECT_TRUE(dbg.chainVents.empty());
 }
@@ -162,7 +163,7 @@ TEST(TerrainBarrier, TinyMainLandmassIsSafe)
     layers.volcanic = volc.data();
     for (BarrierForm f : { BarrierForm::Plateau, BarrierForm::VolcanicChain })
     {
-        ComputeStage3(TerrainRules::Defaults(), Shape(1.0f, f), d, seeds, landmass.data(), coast.data(), 1, layers, dbg);
+        ComputeStage3(TestRules(), Shape(1.0f, f), d, seeds, landmass.data(), coast.data(), 1, layers, dbg);
         EXPECT_EQ(dbg.mainCells, 1);
         for (float m : mask) { EXPECT_GE(m, 0.0f); EXPECT_LE(m, 1.0f); }
         EXPECT_LE(dbg.chainVents.size(), 1u);
@@ -247,7 +248,7 @@ TEST(TerrainBarrier, ChainVentsAreSpacedOnBandAndKeepIslandVent)
     const uint32_t* volc = U(r.gen, "volcanic");
     const uint32_t* lm = U(r.gen, "landmass");
     ASSERT_FALSE(dbg.chainVents.empty());
-    const int spacing = TerrainRules::Defaults().kVentSpacing;
+    const int spacing = TestRules().kVentSpacing;
     for (size_t a = 0; a < dbg.chainVents.size(); ++a)
     {
         const int c = dbg.chainVents[a];
@@ -365,7 +366,7 @@ TEST(TerrainBarrier, DirtyBitsForBarrierRuggednessAndMountainousness)
 // ---------------------------------------------------------------------------
 TEST(TerrainElevation, BoundedOnLandAndZeroInOcean)
 {
-    const float coastElev = TerrainRules::Defaults().kCoastElev;
+    const float coastElev = TestRules().kCoastElev;
     for (BarrierForm form : { BarrierForm::Plateau, BarrierForm::VolcanicChain })
     {
         Gen r;
@@ -395,7 +396,7 @@ TEST(TerrainElevation, OceanDepthIsShelfRampOnOceanOnly)
     const float* od = F(r.gen, "oceanDepth");
     const uint32_t* lm = U(r.gen, "landmass");
     const uint32_t* coast = U(r.gen, "coastDistance");
-    const float shelf = TerrainRules::Defaults().kShelfScale;
+    const float shelf = TestRules().kShelfScale;
     float maxDepth = 0.0f;
     for (int i = 0; i < kN; ++i)
     {
@@ -415,7 +416,7 @@ TEST(TerrainElevation, PlainLowlandMatchesBaseFormulaExactly)
     // Mountainousness 0, ruggedness 0, barrier 0: land far from vents is coastElev + lowland rise.
     Gen r;
     r.Go(3, Shape(0.0f, BarrierForm::Plateau, 0.0f, 0.0f));
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const float* e = F(r.gen, "elevationRaw");
     const uint32_t* lm = U(r.gen, "landmass");
     const uint32_t* coast = U(r.gen, "coastDistance");
@@ -436,7 +437,7 @@ TEST(TerrainElevation, VentRaisesTerrainAroundIslandAndChainVents)
 {
     Gen r;
     r.Go(3, Shape(0.8f, BarrierForm::VolcanicChain, 0.0f, 0.0f));
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const float* e = F(r.gen, "elevationRaw");
     const uint32_t* volc = U(r.gen, "volcanic");
     int vents = 0;
@@ -453,7 +454,7 @@ TEST(TerrainElevation, VentRaisesTerrainAroundIslandAndChainVents)
 
 TEST(TerrainElevation, BarrierTermIsHeightTimesMask)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     Gen lo, hi;
     lo.Go(3, Shape(0.0f, BarrierForm::Plateau, 0.0f, 0.0f));
     hi.Go(3, Shape(1.0f, BarrierForm::Plateau, 0.0f, 0.0f));
@@ -514,7 +515,7 @@ TEST(TerrainElevation, MonotoneInMountainousnessAndBarrier)
 
 TEST(TerrainElevation, RuggednessIsBoundedAndTouchesNothingElse)
 {
-    const float amp = TerrainRules::Defaults().kRuggedAmp;
+    const float amp = TestRules().kRuggedAmp;
     Gen a, b;
     a.Go(9, Shape(0.6f, BarrierForm::Plateau, 0.55f, 0.2f));
     b.Go(9, Shape(0.6f, BarrierForm::Plateau, 0.55f, 1.0f));
@@ -550,19 +551,19 @@ TEST(TerrainElevation, TinyAndEmptyInputsAreSafe)
     Stage4Layers layers;
     layers.elevationRaw = elev.data();
     layers.oceanDepth = depth.data();
-    ComputeStage4(TerrainRules::Defaults(), WorldShapeParams{}, d, seeds, landmass.data(), coast.data(),
+    ComputeStage4(TestRules(), WorldShapeParams{}, d, seeds, landmass.data(), coast.data(),
                   nullptr, nullptr, nullptr, layers);
     for (int i = 0; i < 25; ++i) { EXPECT_EQ(elev[i], 0.0f); EXPECT_EQ(depth[i], 0.0f); }
 
     // One land cell, no ridge/barrier layers, no ocean (coast 0 elsewhere).
     landmass[12] = 1u;
     coast[12] = 1u;
-    ComputeStage4(TerrainRules::Defaults(), WorldShapeParams{}, d, seeds, landmass.data(), coast.data(),
+    ComputeStage4(TestRules(), WorldShapeParams{}, d, seeds, landmass.data(), coast.data(),
                   nullptr, nullptr, nullptr, layers);
-    EXPECT_NEAR(elev[12], TerrainRules::Defaults().kCoastElev + 0.0f, 0.2f);
-    EXPECT_GE(elev[12], TerrainRules::Defaults().kCoastElev);
+    EXPECT_NEAR(elev[12], TestRules().kCoastElev + 0.0f, 0.2f);
+    EXPECT_GE(elev[12], TestRules().kCoastElev);
 
-    ComputeStage4(TerrainRules::Defaults(), WorldShapeParams{}, GridDimensions{ 0, 0 }, seeds, nullptr, nullptr,
+    ComputeStage4(TestRules(), WorldShapeParams{}, GridDimensions{ 0, 0 }, seeds, nullptr, nullptr,
                   nullptr, nullptr, nullptr, layers);
 }
 
@@ -587,8 +588,8 @@ TEST(TerrainElevation, SmallAndOddGridsDoNotCrash)
 // ---------------------------------------------------------------------------
 TEST(SLOW_TerrainElevation, StabilityRulesSweep20Seeds)
 {
-    const float amp = TerrainRules::Defaults().kRuggedAmp;
-    const int spacing = TerrainRules::Defaults().kVentSpacing;
+    const float amp = TestRules().kRuggedAmp;
+    const int spacing = TestRules().kVentSpacing;
     for (uint64_t seed = 1; seed <= 20; ++seed)
     {
         for (BarrierForm form : { BarrierForm::Plateau, BarrierForm::VolcanicChain })

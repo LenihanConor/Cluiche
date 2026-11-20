@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <cstring>
@@ -54,7 +55,7 @@ bool SameCells(const WorldStructure& a, const WorldStructure& b)
 
 TEST(WorldGenSession, InitialState)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_EQ(s.State(), WorldGenState::Idle);
     EXPECT_EQ(s.Revision(), 0u);
     EXPECT_EQ(s.Seed(), 1u);
@@ -68,7 +69,7 @@ TEST(WorldGenSession, InitialState)
 
 TEST(WorldGenSession, FirstTickGenerates)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     EXPECT_TRUE(s.Tick(rng));
     EXPECT_EQ(s.Revision(), 1u);
@@ -80,7 +81,7 @@ TEST(WorldGenSession, FirstTickGenerates)
 
 TEST(WorldGenSession, TickWhenCleanDoesNothing)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     EXPECT_FALSE(s.Tick(rng));
@@ -89,7 +90,7 @@ TEST(WorldGenSession, TickWhenCleanDoesNothing)
 
 TEST(WorldGenSession, SetAppliesKnownKeys)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value r = s.Set(Obj("rivers", 0.9));
     EXPECT_TRUE(r["success"].asBool());
     EXPECT_TRUE(Contains(r["applied"], "rivers"));
@@ -100,7 +101,7 @@ TEST(WorldGenSession, SetAppliesKnownKeys)
 
 TEST(WorldGenSession, SetClampsOutOfRange)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value a(Json::objectValue);
     a["rivers"] = 1.5;
     a["lakes"] = 99;
@@ -117,7 +118,7 @@ TEST(WorldGenSession, SetClampsOutOfRange)
 
 TEST(WorldGenSession, SetBoundsAreNotClampedButJustOutsideIs)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value a(Json::objectValue);
     a["landFraction"] = 0.20;      // exact min, not clamped in float terms
     a["barrier"] = 0.0;
@@ -141,7 +142,7 @@ TEST(WorldGenSession, SetBoundsAreNotClampedButJustOutsideIs)
 
 TEST(WorldGenSession, OrientationWrapCountsAsClampedOnlyOutsideRange)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value r = s.Set(Obj("orientationDeg", 359.5));
     EXPECT_EQ(r["clamped"].size(), 0u);
     r = s.Set(Obj("orientationDeg", 360.0));
@@ -154,7 +155,7 @@ TEST(WorldGenSession, OrientationWrapCountsAsClampedOnlyOutsideRange)
 
 TEST(WorldGenSession, SetRejectsUnknownAndBadTypes)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value a(Json::objectValue);
     a["bogus"] = 1;
     a["rivers"] = "high";
@@ -173,7 +174,7 @@ TEST(WorldGenSession, SetRejectsUnknownAndBadTypes)
 
 TEST(WorldGenSession, SetNonObjectFails)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value r = s.Set(Json::Value(5));
     EXPECT_FALSE(r["success"].asBool());
     EXPECT_TRUE(r.isMember("error"));
@@ -182,7 +183,7 @@ TEST(WorldGenSession, SetNonObjectFails)
 
 TEST(WorldGenSession, SetBarrierFormAndUnlockAndSeed)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value a(Json::objectValue);
     a["barrierForm"] = "VolcanicChain";
     a["unlock"] = true;
@@ -197,7 +198,7 @@ TEST(WorldGenSession, SetBarrierFormAndUnlockAndSeed)
 
 TEST(WorldGenSession, IntegerParamsRound)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value r = s.Set(Obj("lakes", 5.6));
     EXPECT_EQ(s.Shape().lakes, 6);
     EXPECT_EQ(r["clamped"].size(), 0u);
@@ -207,7 +208,7 @@ TEST(WorldGenSession, IntegerParamsRound)
 
 TEST(WorldGenSession, SetOfSameValueDoesNotDirty)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     s.Set(Obj("rivers", 0.5));
@@ -218,7 +219,7 @@ TEST(WorldGenSession, SetOfSameValueDoesNotDirty)
 
 TEST(WorldGenSession, LastValueWinsAndOneGeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     s.Set(Obj("rivers", 0.2));
@@ -231,7 +232,7 @@ TEST(WorldGenSession, LastValueWinsAndOneGeneration)
 
 TEST(WorldGenSession, LivePreviewRunsOnlyDependentStages)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     s.Set(Obj("rivers", 0.9));
@@ -246,7 +247,7 @@ TEST(WorldGenSession, LivePreviewRunsOnlyDependentStages)
 
 TEST(WorldGenSession, LiveResultEqualsFreshSession)
 {
-    WorldGenSession live;
+    TestSession live;
     Dia::Maths::RandomStream rngA(1);
     live.Tick(rngA);
     Json::Value a(Json::objectValue);
@@ -258,7 +259,7 @@ TEST(WorldGenSession, LiveResultEqualsFreshSession)
     live.Set(Obj("passes", 4));
     live.Tick(rngA);
 
-    WorldGenSession fresh;
+    TestSession fresh;
     Json::Value b = a;
     b["passes"] = 4;
     fresh.Set(b);
@@ -271,7 +272,7 @@ TEST(WorldGenSession, LiveResultEqualsFreshSession)
 
 TEST(WorldGenSession, RegenerateRunsAllStagesEvenWhenNothingChanged)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     const WorldStructure before = s.World();
@@ -287,7 +288,7 @@ TEST(WorldGenSession, RegenerateRunsAllStagesEvenWhenNothingChanged)
 
 TEST(WorldGenSession, RegenerateWithNewSeed)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     const WorldStructure before = s.World();
@@ -303,7 +304,7 @@ TEST(WorldGenSession, RegenerateWithNewSeed)
 
 TEST(WorldGenSession, SeedChangeRerunsEverything)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     s.Set(Obj("seed", 9));
@@ -313,7 +314,7 @@ TEST(WorldGenSession, SeedChangeRerunsEverything)
 
 TEST(WorldGenSession, SetSizeChangesDimensionsAndRegenerates)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
 
@@ -333,7 +334,7 @@ TEST(WorldGenSession, SetSizeChangesDimensionsAndRegenerates)
 
 TEST(WorldGenSession, SetSizeInvalidFails)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_FALSE(s.SetSize(Obj("size", "Huge"))["success"].asBool());
     EXPECT_FALSE(s.SetSize(Obj("size", "small"))["success"].asBool());
     EXPECT_FALSE(s.SetSize(Obj("size", 3))["success"].asBool());
@@ -343,7 +344,7 @@ TEST(WorldGenSession, SetSizeInvalidFails)
 
 TEST(WorldGenSession, SetSizeSameIsNoOp)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     EXPECT_TRUE(s.SetSize(Obj("size", "Small"))["success"].asBool());
@@ -353,7 +354,7 @@ TEST(WorldGenSession, SetSizeSameIsNoOp)
 
 TEST(WorldGenSession, ParamsShape)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value p = s.Params();
     EXPECT_EQ(p["params"].size(), 20u);
     EXPECT_EQ(p["ranges"].size(), 20u);
@@ -379,7 +380,7 @@ TEST(WorldGenSession, ParamsShape)
 
 TEST(WorldGenSession, ParamsEffectiveAfterGeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Tick(rng);
     const Json::Value e = s.Params()["effective"];
@@ -390,7 +391,7 @@ TEST(WorldGenSession, ParamsEffectiveAfterGeneration)
 
 TEST(WorldGenSession, StatusFields)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     s.Set(Obj("seed", 5));
     s.Tick(rng);
@@ -408,7 +409,7 @@ TEST(WorldGenSession, StatusFields)
 
 TEST(WorldGenSession, ParamsRoundTripThroughSet)
 {
-    WorldGenSession a;
+    TestSession a;
     Json::Value change(Json::objectValue);
     change["landFraction"] = 0.37;
     change["continents"] = 2;
@@ -418,7 +419,7 @@ TEST(WorldGenSession, ParamsRoundTripThroughSet)
     change["latitudeSouthDeg"] = -12.5;
     a.Set(change);
 
-    WorldGenSession b;
+    TestSession b;
     const Json::Value r = b.Set(a.Params()["params"]);
     EXPECT_EQ(r["rejected"].size(), 0u);
     EXPECT_EQ(r["clamped"].size(), 0u);

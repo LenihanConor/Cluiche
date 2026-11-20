@@ -4,6 +4,7 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <chrono>
@@ -48,7 +49,7 @@ WorldShapeParams LoadParams(const char* id)
 
 struct World
 {
-    TerrainRules             rules = TerrainRules::Defaults();
+    TerrainRules             rules = TestRules();
     TerrainGenerator         gen;
     Dia::Maths::RandomStream rng{ 1 };
     WorldStructure           world;

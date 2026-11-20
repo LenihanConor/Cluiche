@@ -7,11 +7,7 @@
 
 #include <cmath>
 #include <cstdio>
-#include <cstdlib>
-#include <filesystem>
-#include <fstream>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <type_traits>
 #include <cstring>
@@ -29,7 +25,6 @@ using Dia::Attribute::ParamWarnings;
 using Dia::Core::StringCRC;
 
 constexpr const char* kRulesVersionKey = "rulesVersion";
-constexpr const char* kSidecarRelativePath = "Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json";
 
 // The single member list: sidecar key and bound member, in Rule order.
 template<class Visitor>
@@ -152,74 +147,7 @@ void AddWarning(RuleWarnings& warnings, const char* prefix, const char* key)
     warnings.Add(Dia::Core::StringCRC(text));
 }
 
-std::string ReadFile(const std::filesystem::path& path)
-{
-    std::ifstream in(path, std::ios::binary);
-    std::stringstream ss;
-    ss << in.rdbuf();
-    return ss.str();
-}
-
-std::string FindSidecarText()
-{
-    std::error_code ec;
-    const std::filesystem::path starts[] = { std::filesystem::current_path(ec), std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path() };
-    for (std::filesystem::path dir : starts)
-    {
-        while (!dir.empty())
-        {
-            const std::filesystem::path candidate = dir / kSidecarRelativePath;
-            if (std::filesystem::exists(candidate, ec))
-            {
-                return ReadFile(candidate);
-            }
-            if (dir == dir.parent_path())
-            {
-                break;
-            }
-            dir = dir.parent_path();
-        }
-    }
-    return {};
-}
-
-// Interim value source (until plan task 26 wires the catalogue alias): the sidecar text and a loaded file.
-struct SidecarHolder
-{
-    std::string   text;
-    ParameterFile file;
-    bool          ok = false;
-
-    SidecarHolder()
-    {
-        text = FindSidecarText();
-        if (text.empty())
-        {
-            DIA_LOG_ERROR("CoW", "TerrainRules: sidecar %s not found; no compiled fallback exists", kSidecarRelativePath);
-            return;
-        }
-        ParamError err;
-        ok = file.Load(text.c_str(), "terrain_rules.schema.json", nullptr, err);
-        if (!ok)
-        {
-            DIA_LOG_ERROR("CoW", "TerrainRules: sidecar load failed at key '%s': %s", err.key.AsCStr(), err.reason.AsCStr());
-        }
-    }
-};
-
-SidecarHolder& Sidecar()
-{
-    static SidecarHolder holder;
-    return holder;
-}
-
 } // namespace
-
-const Dia::Attribute::ParameterFile* TerrainRules::SidecarFile()
-{
-    SidecarHolder& s = Sidecar();
-    return s.ok ? &s.file : nullptr;
-}
 
 namespace {
 template<class Binding>
@@ -254,24 +182,21 @@ bool TerrainRules::FromParameterFile(const ParameterFile& file, TerrainRules& ou
     return true;
 }
 
-TerrainRules TerrainRules::Defaults()
+bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, const char* sidecarText)
 {
-    static const TerrainRules defaults = [] {
-        TerrainRules r;
-        const ParameterFile* file = SidecarFile();
-        if (file == nullptr || !FromParameterFile(*file, r))
-        {
-            r = TerrainRules();
-            r.degraded = true;
-        }
-        return r;
-    }();
-    return defaults;
-}
-
-bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings)
-{
-    *this = Defaults();
+    ParameterFile file;
+    ParamError err;
+    TerrainRules base;
+    if (sidecarText == nullptr || !file.Load(sidecarText, "terrain_rules.schema.json", nullptr, err) || !FromParameterFile(file, base))
+    {
+        // No compiled fallback: without a loadable sidecar there are no defaults to start from.
+        DIA_LOG_ERROR("CoW", "TerrainRules::LoadFromJson: sidecar not usable (key '%s')", err.key.AsCStr());
+        *this = TerrainRules();
+        degraded = true;
+        AddWarning(warnings, "invalid", "sidecar");
+        return false;
+    }
+    *this = base;
     if (!v.isObject())
     {
         degraded = true;
@@ -286,20 +211,6 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings)
     else
     {
         AddWarning(warnings, v.isMember(kRulesVersionKey) ? "invalid" : "missing", kRulesVersionKey);
-    }
-
-    SidecarHolder& s = Sidecar();
-    if (!s.ok)
-    {
-        degraded = true;
-        return true;
-    }
-    ParameterFile file;
-    ParamError err;
-    if (!file.Load(s.text.c_str(), "terrain_rules.schema.json", nullptr, err))
-    {
-        degraded = true;
-        return true;
     }
 
     // Build a pack out of the usable numeric entries; the file clamps. Classification warnings keep the old texts.

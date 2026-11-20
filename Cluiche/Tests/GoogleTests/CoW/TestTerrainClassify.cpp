@@ -3,6 +3,7 @@
 // generator runs check invariants on real terrain, dirty propagation and AC16. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -31,7 +32,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -61,7 +62,7 @@ struct CGrid
     int                   n;
     std::vector<uint32_t> land, coast, vent, pass, river, lake, type, water, flags;
     std::vector<float>    ridge, band, elev, slope;
-    TerrainRules          rules = TerrainRules::Defaults();
+    TerrainRules          rules = TestRules();
 
     CGrid(int w, int h) : dims{ w, h }, topo(w, h), n(w * h), land(static_cast<size_t>(n), 1u),
         coast(static_cast<size_t>(n), 5u), vent(static_cast<size_t>(n), 0u), pass(static_cast<size_t>(n), 0u),

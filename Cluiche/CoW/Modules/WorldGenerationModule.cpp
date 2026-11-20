@@ -3,8 +3,11 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
+#include <DiaAttribute/ParameterFile.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -32,8 +35,55 @@ WorldGenerationModule::~WorldGenerationModule()
     }
 }
 
+void WorldGenerationModule::LoadRulesSidecar()
+{
+    if (mRulesAttempted)
+        return;
+    mRulesAttempted = true;
+
+    std::string text;
+    if (mRulesSidecarTextSet)
+    {
+        text = mRulesSidecarText;
+    }
+    else
+    {
+        std::ifstream in(mRulesSidecarPath, std::ios::binary);
+        if (!in.good())
+        {
+            mRulesErrorKey = "sidecar";
+            mRulesErrorReason = "cannot read " + mRulesSidecarPath;
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar %s", mRulesErrorReason.c_str());
+            return;
+        }
+        std::stringstream ss;
+        ss << in.rdbuf();
+        text = ss.str();
+    }
+
+    Dia::Attribute::ParamError err;
+    if (!mSession.LoadRules(text.c_str(), err))
+    {
+        mRulesErrorKey = err.key.AsCStr();
+        if (mRulesErrorKey.empty())
+            mRulesErrorKey = "sidecar";
+        mRulesErrorReason = err.reason.AsCStr();
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar failed at key '%s': %s; generation is refused",
+                      mRulesErrorKey.c_str(), mRulesErrorReason.c_str());
+    }
+}
+
+void WorldGenerationModule::ReportRulesFailure()
+{
+    char reason[Dia::Core::StringCRC::kStringLength];
+    std::snprintf(reason, sizeof(reason), "rules_load_failed:%s", mRulesErrorKey.c_str());
+    mHealth.SetFailing(Dia::Core::StringCRC(reason));
+    mHealth.IncrementErrors();
+}
+
 void WorldGenerationModule::OnConfigure(const char* configJson)
 {
+    LoadRulesSidecar();
     if (configJson != nullptr && configJson[0] != '\0')
     {
         Json::Value root;
@@ -256,6 +306,10 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     mHealth.SetOK();
 
     RegisterCommands();
+
+    LoadRulesSidecar();   // normally done by OnConfigure; a no-op then
+    if (!mSession.RulesLoaded())
+        ReportRulesFailure();
 
     if (!mHandoffError.empty())
         ReportHandoffFailure();

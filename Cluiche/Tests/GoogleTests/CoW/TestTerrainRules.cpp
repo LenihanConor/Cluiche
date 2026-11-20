@@ -1,6 +1,7 @@
 // S-1 Terrain Generator task 2: table-driven TerrainRules.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <DiaAttribute/ParameterFile.h>
 
 #include <filesystem>
@@ -15,13 +16,11 @@ namespace {
 // Rule metadata (name, range, default) comes from the sidecar schema.
 const Dia::Attribute::AttributeDefinition& RuleMeta(uint32_t index)
 {
-    const Dia::Attribute::ParameterFile* file = TerrainRules::SidecarFile();
-    return file->Schema().GetAttributeByIndex(index);
+    return TestSidecarFile().Schema().GetAttributeByIndex(index);
 }
 const Dia::Attribute::AttributeDefinition& RuleMeta(const char* key)
 {
-    const Dia::Attribute::ParameterFile* file = TerrainRules::SidecarFile();
-    return *file->Schema().FindAttribute(Dia::Core::StringCRC(key));
+    return *TestSidecarFile().Schema().FindAttribute(Dia::Core::StringCRC(key));
 }
 
 bool HasWarning(const RuleWarnings& w, const char* text)
@@ -61,7 +60,7 @@ std::filesystem::path FindShippedRules()
 
 TEST(TerrainRules, DefaultsMatchTable)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
     EXPECT_EQ(r.rulesVersion, 4u);
     EXPECT_FALSE(r.degraded);
     for (uint32_t i = 0; i < kRuleCount; ++i)
@@ -99,13 +98,13 @@ TEST(TerrainRules, KeysAreUniqueAndNonEmpty)
 
 TEST(TerrainRules, DefaultsRoundTripThroughJson)
 {
-    const TerrainRules a = TerrainRules::Defaults();
+    const TerrainRules a = TestRules();
     const Json::Value json = a.ToJson();
     EXPECT_EQ(json.getMemberNames().size(), static_cast<size_t>(kRuleCount) + 1);
 
     TerrainRules b;
     RuleWarnings warnings;
-    EXPECT_TRUE(b.LoadFromJson(json, warnings));
+    EXPECT_TRUE(b.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(b.degraded);
     EXPECT_EQ(b.rulesVersion, a.rulesVersion);
@@ -117,13 +116,13 @@ TEST(TerrainRules, DefaultsRoundTripThroughJson)
 
 TEST(TerrainRules, MissingKeyUsesDefaultWithWarning)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["kEdgeFade"] = 0.9;
     json.removeMember("kCoastElev");
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_FLOAT_EQ(r.kCoastElev, 0.02f);
     EXPECT_FLOAT_EQ(r.kEdgeFade, 0.9f);
     EXPECT_TRUE(HasWarning(warnings, "missing:kCoastElev"));
@@ -133,13 +132,13 @@ TEST(TerrainRules, MissingKeyUsesDefaultWithWarning)
 
 TEST(TerrainRules, OutOfRangeIsClampedWithWarningAndDegraded)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["kEdgeFade"] = 5.0;     // max 1
     json["kMinPiece"] = -3.0;    // min 1
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_FLOAT_EQ(r.kEdgeFade, RuleMeta("kEdgeFade").maximum_value);
     EXPECT_FLOAT_EQ(r.kMinPiece, RuleMeta("kMinPiece").minimum_value);
     EXPECT_TRUE(HasWarning(warnings, "range:kEdgeFade"));
@@ -149,12 +148,12 @@ TEST(TerrainRules, OutOfRangeIsClampedWithWarningAndDegraded)
 
 TEST(TerrainRules, NonNumericValueFallsBackToDefaultAndDegrades)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["kEdgeFade"] = "high";
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_FLOAT_EQ(r.kEdgeFade, 0.5f);
     EXPECT_TRUE(HasWarning(warnings, "invalid:kEdgeFade"));
     EXPECT_TRUE(r.degraded);
@@ -162,12 +161,12 @@ TEST(TerrainRules, NonNumericValueFallsBackToDefaultAndDegrades)
 
 TEST(TerrainRules, UnknownKeyIgnoredWithWarning)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["kNotARule"] = 1.0;
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_TRUE(HasWarning(warnings, "unknown:kNotARule"));
     EXPECT_EQ(warnings.Size(), 1u);
     EXPECT_FALSE(r.degraded);
@@ -175,24 +174,24 @@ TEST(TerrainRules, UnknownKeyIgnoredWithWarning)
 
 TEST(TerrainRules, RulesVersionReadFromFile)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["rulesVersion"] = 7;
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(r.rulesVersion, 7u);
     EXPECT_EQ(warnings.Size(), 0u);
 }
 
 TEST(TerrainRules, MissingRulesVersionWarnsAndDefaults)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json.removeMember("rulesVersion");
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(r.rulesVersion, kDefaultRulesVersion);
     EXPECT_TRUE(HasWarning(warnings, "missing:rulesVersion"));
 }
@@ -201,7 +200,7 @@ TEST(TerrainRules, NonObjectRootKeepsDefaultsAndDegrades)
 {
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_FALSE(r.LoadFromJson(Json::Value(3), warnings));
+    EXPECT_FALSE(r.LoadFromJson(Json::Value(3), warnings, TestSidecarText().c_str()));
     EXPECT_TRUE(r.degraded);
     EXPECT_FLOAT_EQ(r.kCoastElev, 0.02f);
 }
@@ -216,7 +215,7 @@ TEST(TerrainRules, EmptyObjectDoesNotOverflowWarnings)
     }
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(warnings.Size(), warnings.Capacity());
     EXPECT_TRUE(HasWarning(warnings, "warnings:truncated"));
     EXPECT_FLOAT_EQ(r.kCoastElev, 0.02f);
@@ -248,7 +247,7 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(root, warnings));
+    EXPECT_TRUE(r.LoadFromJson(root, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(r.degraded);
     EXPECT_EQ(r.rulesVersion, 4u);
@@ -260,7 +259,7 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
 
 TEST(TerrainRules, NewBiomeRulesDefaultsMatch)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
 
     // Global biome tuning
     EXPECT_FLOAT_EQ(r.kLatCool, 0.85f);
@@ -310,12 +309,12 @@ TEST(TerrainRules, NewBiomeRulesDefaultsMatch)
 
 TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
 {
-    const TerrainRules a = TerrainRules::Defaults();
+    const TerrainRules a = TestRules();
     const Json::Value json = a.ToJson();
 
     TerrainRules b;
     RuleWarnings warnings;
-    EXPECT_TRUE(b.LoadFromJson(json, warnings));
+    EXPECT_TRUE(b.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(b.degraded);
 
@@ -328,7 +327,7 @@ TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
 
 TEST(TerrainRules, RegionRulesDefaults)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
 
     // Region partition and node placement constants
     EXPECT_EQ(r.kMinRegionCells, 36);
@@ -348,7 +347,7 @@ TEST(TerrainRules, RegionRulesDefaults)
 
 TEST(TerrainRules, RegionRulesOutOfRangeClamp)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json["kMinRegionCells"] = 0.5;     // min 1
     json["kSeedBiomeBonus"] = 100.0;   // max 32
     json["kBiomeMismatch"] = 2.0;      // max 1.0
@@ -357,7 +356,7 @@ TEST(TerrainRules, RegionRulesOutOfRangeClamp)
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
 
     EXPECT_EQ(r.kMinRegionCells, 1);
     EXPECT_EQ(TerrainRules::RoundToInt(r.kSeedBiomeBonus), 32);
@@ -375,13 +374,13 @@ TEST(TerrainRules, RegionRulesOutOfRangeClamp)
 
 TEST(TerrainRules, RegionRulesMissingWithWarning)
 {
-    Json::Value json = TerrainRules::Defaults().ToJson();
+    Json::Value json = TestRules().ToJson();
     json.removeMember("kNodeSpacing");
     json.removeMember("kCoastalGapReach");
 
     TerrainRules r;
     RuleWarnings warnings;
-    EXPECT_TRUE(r.LoadFromJson(json, warnings));
+    EXPECT_TRUE(r.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(r.kNodeSpacing, 3);      // falls back to default
     EXPECT_EQ(r.kCoastalGapReach, 4);   // falls back to default
     EXPECT_TRUE(HasWarning(warnings, "missing:kNodeSpacing"));
@@ -391,12 +390,12 @@ TEST(TerrainRules, RegionRulesMissingWithWarning)
 
 TEST(TerrainRules, RegionRulesRoundTripThroughJson)
 {
-    const TerrainRules a = TerrainRules::Defaults();
+    const TerrainRules a = TestRules();
     const Json::Value json = a.ToJson();
 
     TerrainRules b;
     RuleWarnings warnings;
-    EXPECT_TRUE(b.LoadFromJson(json, warnings));
+    EXPECT_TRUE(b.LoadFromJson(json, warnings, TestSidecarText().c_str()));
     EXPECT_EQ(warnings.Size(), 0u);
     EXPECT_FALSE(b.degraded);
 

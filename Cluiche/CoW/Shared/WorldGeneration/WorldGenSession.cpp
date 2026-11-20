@@ -12,6 +12,7 @@
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
 
+#include <DiaAttribute/ParameterFile.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaPathfinding/HexTopology.h>
 
@@ -316,16 +317,67 @@ GridDimensions WorldSizeDimensions(WorldSize size)
 }
 
 WorldGenSession::WorldGenSession()
-    : WorldGenSession(TerrainRules::Defaults())
+    : mGen(mRules)
+    , mDims(WorldSizeDimensions(WorldSize::Small))
 {
+    CaptureAccepted();
 }
 
 WorldGenSession::WorldGenSession(const TerrainRules& rules)
     : mRules(rules)
+    , mRulesLoaded(true)
     , mGen(rules)
     , mDims(WorldSizeDimensions(WorldSize::Small))
 {
     CaptureAccepted();
+}
+
+WorldGenSession::~WorldGenSession() = default;
+WorldGenSession::WorldGenSession(WorldGenSession&&) noexcept = default;
+WorldGenSession& WorldGenSession::operator=(WorldGenSession&&) noexcept = default;
+
+bool WorldGenSession::LoadRules(const char* sidecarText, Dia::Attribute::ParamError& err)
+{
+    if (mRun != nullptr || mHasGenerated)
+    {
+        err.key.SetText("state");
+        err.reason.SetText("rules can only be loaded before the first generation");
+        return false;
+    }
+    auto file = std::make_unique<Dia::Attribute::ParameterFile>();
+    if (sidecarText == nullptr || !file->Load(sidecarText, "terrain_rules.schema.json", nullptr, err))
+    {
+        if (sidecarText == nullptr)
+        {
+            err.key.SetText("sidecar");
+            err.reason.SetText("no sidecar text");
+        }
+        return false;
+    }
+    TerrainRules rules;
+    if (!TerrainRules::FromParameterFile(*file, rules))
+    {
+        err.key.SetText("binding");
+        err.reason.SetText("sidecar does not match the bound TerrainRules members");
+        return false;
+    }
+    mRules = rules;
+    mRulesFile = std::move(file);
+    mRulesLoaded = true;
+    mGen = TerrainGenerator(mRules);
+    return true;
+}
+
+bool WorldGenSession::RulesRefusal(Json::Value& refusal) const
+{
+    if (mRulesLoaded)
+    {
+        return false;
+    }
+    refusal = Error("rules_not_loaded");
+    refusal["rulesLoaded"] = false;
+    refusal["message"] = "the terrain rules sidecar is not loaded; generation is refused";
+    return true;
 }
 
 bool WorldGenSession::BusyRefusal(Json::Value& refusal) const
@@ -351,6 +403,11 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
     if (BusyRefusal(busy))
     {
         return busy;
+    }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
     }
     Json::Value lockRefusal;
     bool unlocking = false;
@@ -481,6 +538,11 @@ Json::Value WorldGenSession::SetSize(const Json::Value& args)
     {
         return busy;
     }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
+    }
     if (!args.isObject() || !args.isMember("size") || !args["size"].isString())
     {
         return Error("\"size\" must be one of Small, Standard, Large");
@@ -522,6 +584,11 @@ Json::Value WorldGenSession::Regenerate(const Json::Value& args)
     if (BusyRefusal(busy))
     {
         return busy;
+    }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
     }
     // Validate everything before changing anything.
     uint64_t seed = mSeed;
@@ -607,6 +674,10 @@ void WorldGenSession::ReleaseRun()
 
 bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
 {
+    if (!mRulesLoaded)
+    {
+        return false;   // nothing generates without rules
+    }
     if (mRun != nullptr)
     {
         return AdvanceRun();   // one attempt per Tick
@@ -1136,6 +1207,11 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
     {
         return busy;
     }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
+    }
     if (!args.isObject() || !args.isMember("name") || !args["name"].isString())
     {
         return Error("\"name\" must be a world name string");
@@ -1228,6 +1304,11 @@ Json::Value WorldGenSession::PresetLoad(const Json::Value& args)
     if (BusyRefusal(busy))
     {
         return busy;
+    }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
     }
     if (!args.isObject() || !args.isMember("id") || !args["id"].isString())
     {
@@ -2074,6 +2155,11 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     if (BusyRefusal(busy))
     {
         return busy;
+    }
+    Json::Value noRules;
+    if (RulesRefusal(noRules))
+    {
+        return noRules;
     }
     if (!mHasGenerated)
     {

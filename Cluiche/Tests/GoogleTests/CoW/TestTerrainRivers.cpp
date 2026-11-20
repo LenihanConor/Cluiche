@@ -3,6 +3,7 @@
 // check AC10 (rivers) and AC11 (lakes) on real terrain. Wide sweeps live in SLOW_ suites.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -32,7 +33,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -103,7 +104,7 @@ struct RGrid
         for (int y = length; y >= 1; --y) { p.push_back(I(x, y)); }
         return p;
     }
-    void Run(float rivers, const TerrainRules& rules = TerrainRules::Defaults())
+    void Run(float rivers, const TerrainRules& rules = TestRules())
     {
         ComputeStage6(rules, dims, rivers, filled.data(), dir.data(), acc.data(), ocean.data(), mask.data(), dbg);
     }
@@ -117,7 +118,7 @@ int CheckRivers(const TerrainGenerator& g, GridDimensions dims, const std::strin
 {
     const int n = dims.width * dims.height;
     const HexTopology topo(dims.width, dims.height);
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const uint32_t* river = U(g, "riverMask");
     const uint32_t* lake = U(g, "lakeMask");
     const uint32_t* dir = U(g, "flowDirection");
@@ -288,7 +289,7 @@ TEST(TerrainRivers, LowSourceTreeIsDroppedAndSourceAtMinimumIsKept)
     EXPECT_EQ(low.Count(), 0);
 
     RGrid edge(9, 12);
-    edge.Path(edge.Column(3, 8), edge.I(3, 0), TerrainRules::Defaults().kSourceMinElev, 100.0f);
+    edge.Path(edge.Column(3, 8), edge.I(3, 0), TestRules().kSourceMinElev, 100.0f);
     edge.Run(0.5f);
     EXPECT_EQ(edge.Count(), 8) << "source == kSourceMinElev is kept (>=)";
 
@@ -315,7 +316,7 @@ TEST(TerrainRivers, AccumulationEqualToThresholdIsACandidate)
 
 TEST(TerrainRivers, ThresholdFollowsTheFormula)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     RGrid g(9, 12);
     g.Path(g.Column(3, 6), g.I(3, 0), 0.9f, 500.0f);
     for (float r : { 0.1f, 0.25f, 0.5f, 0.75f, 1.0f })
@@ -389,7 +390,7 @@ TEST(TerrainRivers, NullInputsWriteAnEmptyMask)
 {
     RGrid g(9, 12);
     Stage6Debug d;
-    ComputeStage6(TerrainRules::Defaults(), g.dims, 0.5f, nullptr, g.dir.data(), g.acc.data(), g.ocean.data(), g.mask.data(), d);
+    ComputeStage6(TestRules(), g.dims, 0.5f, nullptr, g.dir.data(), g.acc.data(), g.ocean.data(), g.mask.data(), d);
     EXPECT_EQ(g.Count(), 0);
 }
 

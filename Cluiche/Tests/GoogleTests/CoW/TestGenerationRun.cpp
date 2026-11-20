@@ -7,6 +7,7 @@
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -64,7 +65,7 @@ namespace
 
     struct Fixture
     {
-        TerrainRules rules = TerrainRules::Defaults();
+        TerrainRules rules = TestRules();
         RandomStream rng{ 1 };
         SiteRegistry registry;
         WorldStructure terrain;
@@ -493,7 +494,7 @@ TEST(GenerationRun, AnIndependentExtraPlacerNeverChangesTheAttemptSequenceOrTheR
 
 TEST(GenerationRun, TinyAndDegenerateGridsFinishWithAConsistentReport)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     SiteRegistry registry;
     RandomStream rng(1);
     for (GridDimensions dims : { GridDimensions{ 1, 1 }, GridDimensions{ 3, 3 }, GridDimensions{ 8, 6 }, GridDimensions{ 20, 14 } })

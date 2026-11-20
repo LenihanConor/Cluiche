@@ -8,6 +8,7 @@
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -59,7 +60,7 @@ protected:
     // Two neighbouring Lowland cells of a world generated from `seed` (same seed -> same terrain in later sessions).
     bool FindLowlandPair(uint64_t seed, uint32_t& a, uint32_t& b)
     {
-        WorldGenSession probe;
+        TestSession probe;
         Generate(probe, seed);
         const WorldStructure& w = probe.World();
         const Dia::Pathfinding::HexTopology topo(w.dimensions.width, w.dimensions.height);
@@ -101,7 +102,7 @@ protected:
 
 TEST_F(WorldGenSessionValidateTest, ValidateOnAPassingWorldIsOkAndKeepsTheRevision)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 11);
     const uint32_t revision = s.Revision();
     const Json::Value r = s.Validate(Obj());
@@ -126,7 +127,7 @@ TEST_F(WorldGenSessionValidateTest, ValidateOnAViolatingWorldFailsWithoutChangin
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);   // a Hearth and no Nexus: HearthNexus cannot hold
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 12, &registry);
     const uint32_t revision = s.Revision();
     const SiteSet sitesBefore = s.World().sites;
@@ -149,12 +150,12 @@ TEST_F(WorldGenSessionValidateTest, AC13_ValidateAfterImportOfAHandEditedWorldFi
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     {
-        WorldGenSession a;
+        TestSession a;
         Generate(a, 13, &registry);
         Json::Value e = Obj(); e["name"] = "edited";
         ASSERT_TRUE(a.ExportWorld(e)["success"].asBool());
     }
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories(mDeployed, mOut);
     Json::Value i = Obj(); i["name"] = "edited";
     ASSERT_TRUE(b.ImportWorld(i)["success"].asBool());
@@ -172,13 +173,13 @@ TEST_F(WorldGenSessionValidateTest, AC13_ValidateAfterImportOfAHandEditedWorldFi
 
 TEST_F(WorldGenSessionValidateTest, ValidateBeforeAnyWorldIsAnErrorAndRefusedDuringARun)
 {
-    WorldGenSession none;
+    TestSession none;
     EXPECT_FALSE(none.Validate(Obj())["success"].asBool());
 
     AttemptGatedPlacer gated("Test.Gated", 3);
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&gated));
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 14);
     s.SetSiteRegistry(&registry);
     ASSERT_TRUE(s.Regenerate(Obj())["success"].asBool());
@@ -202,7 +203,7 @@ TEST_F(WorldGenSessionValidateTest, ReportEvidenceCountsEqualTheArraySizesAndNam
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     ASSERT_TRUE(registry.Register(&nexus));
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 15, &registry);
     ASSERT_TRUE(s.Validate(Obj())["ok"].asBool());
 
@@ -233,7 +234,7 @@ TEST_F(WorldGenSessionValidateTest, ReportWithoutValidateStillCarriesTheGenerati
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 16, &registry);
     const Json::Value r = s.Report(Obj());
     const Json::Value& fin = r["finalValidation"];
@@ -256,7 +257,7 @@ TEST_F(WorldGenSessionValidateTest, ValidateEvidenceGoesStaleWhenTheRevisionMove
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 17, &registry);
     ASSERT_FALSE(s.Validate(Obj())["ok"].asBool());
     Json::Value regen = Obj(); regen["seed"] = 18;
@@ -280,7 +281,7 @@ TEST_F(WorldGenSessionValidateTest, WorldsMergesOutAndDeployedAndOutWinsOnAClash
     fs::create_directories(mOut, ec);
     { std::ofstream junk((fs::path(mOut) / "not a world.txt").string()); junk << "x"; }
 
-    WorldGenSession s;
+    TestSession s;
     s.SetWorldDirectories(mDeployed, mOut);
     const Json::Value r = s.Worlds();
     ASSERT_TRUE(r["success"].asBool());
@@ -296,7 +297,7 @@ TEST_F(WorldGenSessionValidateTest, WorldsMergesOutAndDeployedAndOutWinsOnAClash
 
 TEST_F(WorldGenSessionValidateTest, WorldsWithNoDirectoriesIsEmpty)
 {
-    WorldGenSession s;
+    TestSession s;
     const Json::Value r = s.Worlds();
     EXPECT_TRUE(r["success"].asBool());
     EXPECT_EQ(r["worlds"].size(), 0u);
@@ -307,7 +308,7 @@ TEST_F(WorldGenSessionValidateTest, WorldsWithNoDirectoriesIsEmpty)
 TEST_F(WorldGenSessionValidateTest, ImportOfBadJsonReportsLineAndColumn)
 {
     ASSERT_TRUE(WriteWorldFile(mOut, "broken", "{\n  \"format\": \"cow.world\",\n  \"version\": ,\n}\n", false).Ok());
-    WorldGenSession s;
+    TestSession s;
     s.SetWorldDirectories(mDeployed, mOut);
     Json::Value a = Obj(); a["name"] = "broken";
     const Json::Value r = s.ImportWorld(a);
@@ -320,7 +321,7 @@ TEST_F(WorldGenSessionValidateTest, ImportOfBadJsonReportsLineAndColumn)
 TEST_F(WorldGenSessionValidateTest, ImportOfAStructuralErrorHasNoLineAndColumn)
 {
     ASSERT_TRUE(WriteWorldFile(mOut, "wrongformat", "{\"format\":\"nope\"}", false).Ok());
-    WorldGenSession s;
+    TestSession s;
     s.SetWorldDirectories(mDeployed, mOut);
     Json::Value a = Obj(); a["name"] = "wrongformat";
     const Json::Value r = s.ImportWorld(a);
@@ -341,7 +342,7 @@ bool Contains(const Json::Value& list, const char* id)
 
 TEST_F(WorldGenSessionValidateTest, StatusUnavailableLayersTracksWhatTheWorldHasData)
 {
-    WorldGenSession s;
+    TestSession s;
     // Nothing generated yet: every layer is unavailable.
     const Json::Value before = s.Status();
     ASSERT_TRUE(before["unavailableLayers"].isArray());
@@ -362,7 +363,7 @@ TEST_F(WorldGenSessionValidateTest, StatusUnavailableLayersTracksWhatTheWorldHas
     // Imported world: only what the file can reproduce.
     Json::Value e = Obj(); e["name"] = "imp";
     ASSERT_TRUE(s.ExportWorld(e)["success"].asBool());
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories(mDeployed, mOut);
     Json::Value i = Obj(); i["name"] = "imp";
     ASSERT_TRUE(b.ImportWorld(i)["success"].asBool());

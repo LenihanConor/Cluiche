@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -25,7 +26,7 @@ namespace
     // Session wired to a registry, driven with one Regenerate.
     struct Gen
     {
-        WorldGenSession s;
+        TestSession s;
         Dia::Maths::RandomStream rng{ 1 };
         explicit Gen(const SiteRegistry* reg = nullptr) { if (reg) { s.SetSiteRegistry(reg); } }
         bool Regenerate(const Json::Value& args = Json::Value(Json::objectValue))

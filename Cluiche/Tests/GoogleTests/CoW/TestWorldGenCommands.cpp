@@ -26,6 +26,7 @@
 #include <Modules/SimQueryHostModule.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Types/SimRegistrationMessage.h>
 
 #include <cstring>
@@ -207,7 +208,7 @@ namespace
 
 	Module* MakeShim(const StringCRC& id) { gShim = new WgMainShim(id); return gShim; }
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
-	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); return gWg; }
+	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); gWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); return gWg; }
 	Module* MakeBus(const StringCRC& id) { gBus = new Cluiche::AppFlow::MessageBusHostModule(id); return gBus; }
 	Module* MakeSquatter(const StringCRC& id) { return new WgSquatter(id); }
 	Module* MakeRegistrar(const StringCRC& id) { gRegistrar = new WgRegistrar(id); return gRegistrar; }
@@ -1251,7 +1252,7 @@ namespace
 	// The world a pure session builds for the preset form: preset, seed and size, then one Regenerate.
 	CoW::WorldGeneration::WorldGenSession PresetWorld(const std::string& presets, const char* id, uint64_t seed, const char* size = nullptr)
 	{
-		CoW::WorldGeneration::WorldGenSession s;
+		CoW::WorldGeneration::TestSession s;
 		s.SetPresetDirectories(presets, std::string());
 		if (size != nullptr) { Json::Value a = Obj(); a["size"] = size; s.SetSize(a); }
 		Json::Value sd = Obj(); sd["seed"] = static_cast<Json::UInt64>(seed);
@@ -1399,7 +1400,7 @@ namespace
 	// Returns that world so a test can compare the module's world with it.
 	CoW::WorldGeneration::WorldStructure WriteWorldFile(const std::filesystem::path& dir, const char* name, uint64_t seed)
 	{
-		CoW::WorldGeneration::WorldGenSession s;
+		CoW::WorldGeneration::TestSession s;
 		s.SetWorldDirectories(std::string(), dir.generic_string());
 		Json::Value sd = Obj(); sd["seed"] = static_cast<Json::UInt64>(seed);
 		s.Set(sd);

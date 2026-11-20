@@ -11,6 +11,7 @@
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -71,7 +72,7 @@ namespace
         p.world = runner.World();
         SiteRegistry reg;
         RandomStream rng(1);
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         p.result = RegionsAndSites::Place(p.world, reg, rules, DeriveSubSeed(seed, uint64_t{ 0 }), 0, rng, &p.report);
         p.layout = CheckLayout(p.world, rules, p.report.limits);
         return p;
@@ -225,7 +226,7 @@ TEST(RegionsAndSitesEdge, TinyGridsPlaceWithoutFailing)
 // AC13: regions layer paging edges match the generator layers' contract.
 TEST(RegionsAndSitesEdge, RegionsLayerPagingEdges)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value a(Json::objectValue);
     a["layer"] = "regions";
     EXPECT_FALSE(s.Layers(a)["success"].asBool());   // nothing generated yet

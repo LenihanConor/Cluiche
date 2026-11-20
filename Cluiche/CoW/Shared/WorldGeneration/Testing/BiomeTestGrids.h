@@ -4,6 +4,7 @@
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cstdint>
 #include <vector>
@@ -148,7 +149,7 @@ inline BiomeResult RunBiomes(const BiomeGrid& g, const TerrainRules& rules)
 
 inline BiomeResult RunBiomes(const BiomeGrid& g)
 {
-    return RunBiomes(g, TerrainRules::Defaults());
+    return RunBiomes(g, TestRules());
 }
 
 } // namespace Testing

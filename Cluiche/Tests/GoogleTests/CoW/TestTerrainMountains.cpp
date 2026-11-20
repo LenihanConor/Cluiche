@@ -1,6 +1,7 @@
 // S-1 Terrain Generator task 6: Stage 2 Mountains (ridgeMask, passMask, passes).
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -27,7 +28,7 @@ struct Harness
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Harness() : gen(TerrainRules::Defaults()) {}
+    Harness() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 
     const float* Ridge() const { return gen.GetLayers().GetFloat(gen.GetLayers().FindLayer("ridgeMask")); }
@@ -229,7 +230,7 @@ TEST(TerrainMountains, EmptyMainLandmassGivesEmptyOutput)
     Effective eff;
     eff.passes = 3;
     SeedFields sf{};
-    ComputeStage2(TerrainRules::Defaults(), WorldShapeParams{}, kSmall, sf, mask, ridge.data(), pass.data(), dbg, eff);
+    ComputeStage2(TestRules(), WorldShapeParams{}, kSmall, sf, mask, ridge.data(), pass.data(), dbg, eff);
     EXPECT_FALSE(dbg.valid);
     EXPECT_EQ(eff.passes, 0);
     EXPECT_EQ(*std::max_element(ridge.begin(), ridge.end()), 0.0f);
@@ -554,7 +555,7 @@ std::set<int> Ran(const TerrainGenerator& g)
 
 TEST(TerrainMountains, DirtyBitsRerunMountainsAndDownstreamOnly)
 {
-    TerrainGenerator g(TerrainRules::Defaults());
+    TerrainGenerator g(TestRules());
     RandomStream rng(1);
     WorldShapeParams s;
     g.Update(5, s, kSmall, rng);
@@ -582,7 +583,7 @@ TEST(TerrainMountains, DirtyBitsRerunMountainsAndDownstreamOnly)
 
 TEST(TerrainMountains, MountainousnessChangeKeepsLandUntouched)
 {
-    TerrainGenerator g(TerrainRules::Defaults());
+    TerrainGenerator g(TestRules());
     RandomStream rng(1);
     WorldShapeParams s;
     g.Update(5, s, kSmall, rng);

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <chrono>
@@ -28,7 +29,7 @@ namespace
     {
         TerrainGenerator          gen;
         Dia::Maths::RandomStream  rng{ 1 };
-        Gen() : gen(TerrainRules::Defaults()) {}
+        Gen() : gen(TestRules()) {}
     };
 
     double Median(std::vector<double> v)

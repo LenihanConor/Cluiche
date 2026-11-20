@@ -4,6 +4,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -201,7 +202,7 @@ inline std::vector<std::string> DiffSnapshots(const TerrainSnapshot& a, const Te
 class TerrainRunner
 {
 public:
-    TerrainRunner() : mRules(TerrainRules::Defaults()), mGen(mRules), mRng(1) {}
+    TerrainRunner() : mRules(TestRules()), mGen(mRules), mRng(1) {}
 
     TerrainSnapshot Run(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims)
     {

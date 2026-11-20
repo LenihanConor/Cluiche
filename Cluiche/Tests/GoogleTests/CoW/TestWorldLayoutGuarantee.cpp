@@ -11,6 +11,7 @@
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -37,13 +38,13 @@ Placed MakePlaced(uint64_t seed)
     p.world = runner.World();
     SiteRegistry registry;
     Dia::Maths::RandomStream rng(1);
-    RegionsAndSites::Place(p.world, registry, TerrainRules::Defaults(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
+    RegionsAndSites::Place(p.world, registry, TestRules(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
     return p;
 }
 
 GuaranteeResult RunLayout(const Placed& p)
 {
-    WorldLayoutGuarantee g(TerrainRules::Defaults(), p.report.limits);
+    WorldLayoutGuarantee g(TestRules(), p.report.limits);
     class NoNav : public INavigationQuery
     {
     public:
@@ -73,7 +74,7 @@ uint32_t FirstLandCell(const WorldStructure& w)
 
 TEST(WorldLayoutGuarantee, IdIsStable)
 {
-    WorldLayoutGuarantee g(TerrainRules::Defaults(), LayoutLimits{});
+    WorldLayoutGuarantee g(TestRules(), LayoutLimits{});
     EXPECT_EQ(g.GetId(), StringCRC("CoW.Guarantee.WorldLayout"));
 }
 
@@ -82,7 +83,7 @@ TEST(WorldLayoutGuarantee, GeneratedWorldsSatisfyItWithNoEvidenceOfViolations)
     for (uint64_t seed : { 1ull, 2ull, 3ull })
     {
         const Placed p = MakePlaced(seed);
-        ASSERT_TRUE(CheckLayout(p.world, TerrainRules::Defaults(), p.report.limits).ok) << "seed " << seed;   // precondition
+        ASSERT_TRUE(CheckLayout(p.world, TestRules(), p.report.limits).ok) << "seed " << seed;   // precondition
         const GuaranteeResult r = RunLayout(p);
         EXPECT_TRUE(r.satisfied) << "seed " << seed;
         EXPECT_TRUE(r.diagnostics.IsEmpty());
@@ -125,7 +126,7 @@ TEST(WorldLayoutGuarantee, EveryCheckViolationBecomesOneDiagnosticAndMatchesTheR
     {
         if (p.world.Cells()[i].landmass == 0) { p.world.Cells()[i].region = 1; break; }
     }
-    const LayoutReport report = CheckLayout(p.world, TerrainRules::Defaults(), p.report.limits);
+    const LayoutReport report = CheckLayout(p.world, TestRules(), p.report.limits);
     ASSERT_FALSE(report.ok);
     const GuaranteeResult r = RunLayout(p);
     EXPECT_FALSE(r.satisfied);
@@ -140,7 +141,7 @@ TEST(WorldLayoutGuarantee, TerrainLimitedWorldsAnnotateRegionCountViolationsAsTe
     p.world.regions.absorbedCells = 60000;   // forces AbsorbedOverCap
     LayoutLimits limited = p.report.limits;
     limited.regionLimitedBy = DepthZone::WildReaches;
-    WorldLayoutGuarantee g(TerrainRules::Defaults(), limited);
+    WorldLayoutGuarantee g(TestRules(), limited);
     class NoNav : public INavigationQuery
     {
     public:
@@ -168,7 +169,7 @@ TEST(WorldLayoutGuarantee, DeterministicAcrossCalls)
 TEST(WorldLayoutGuarantee, RunsAsAGuaranteeOfTheValidator)
 {
     Placed p = MakePlaced(1);
-    WorldLayoutGuarantee layout(TerrainRules::Defaults(), p.report.limits);
+    WorldLayoutGuarantee layout(TestRules(), p.report.limits);
     FixedGuarantee other("Other", true);
     ValidationParams params;
     params.AddGuarantee(&layout);
@@ -186,8 +187,8 @@ TEST(WorldLayoutGuarantee, RunsAsAGuaranteeOfTheValidator)
 TEST(SiteRegistryGuarantees, StoresWorldGuaranteesAndRejectsDuplicateIds)
 {
     SiteRegistry registry;
-    WorldLayoutGuarantee layout(TerrainRules::Defaults(), LayoutLimits{});
-    WorldLayoutGuarantee layoutAgain(TerrainRules::Defaults(), LayoutLimits{});
+    WorldLayoutGuarantee layout(TestRules(), LayoutLimits{});
+    WorldLayoutGuarantee layoutAgain(TestRules(), LayoutLimits{});
     FixedGuarantee other("Other", true);
     EXPECT_TRUE(registry.RegisterGuarantee(&layout));
     EXPECT_FALSE(registry.RegisterGuarantee(&layout));        // same pointer

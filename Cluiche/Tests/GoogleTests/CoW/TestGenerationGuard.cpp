@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -78,7 +79,7 @@ namespace
 
     struct Fixture
     {
-        TerrainRules rules = TerrainRules::Defaults();
+        TerrainRules rules = TestRules();
         RandomStream rng{ 1 };
         SiteRegistry registry;
         WorldStructure terrain;

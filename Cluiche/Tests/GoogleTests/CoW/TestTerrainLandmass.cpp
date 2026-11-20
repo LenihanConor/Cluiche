@@ -1,6 +1,7 @@
 // S-1 Terrain Generator task 4: Stage 1 Landmass part A (potential M, land/island budgets, reference mainland).
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -29,7 +30,7 @@ struct Harness
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Harness() : gen(TerrainRules::Defaults()) {}
+    Harness() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 

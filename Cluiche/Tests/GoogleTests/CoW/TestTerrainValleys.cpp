@@ -3,6 +3,7 @@
 // runs check AC12 (valleyDepth monotonicity, locality, downhill rivers) on real terrain. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -31,7 +32,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -58,7 +59,7 @@ struct VGrid
     std::vector<float>    raw, acc, surfaces, carve, elev;
     std::vector<uint32_t> dir, river, lake;
     Stage9Debug           dbg;
-    TerrainRules          rules = TerrainRules::Defaults();
+    TerrainRules          rules = TestRules();
 
     VGrid() : raw(static_cast<size_t>(n), 0.5f), acc(static_cast<size_t>(n), 1.0f), carve(static_cast<size_t>(n), -1.0f),
         elev(static_cast<size_t>(n), -1.0f), dir(static_cast<size_t>(n), 6u), river(static_cast<size_t>(n), 0u),
@@ -121,28 +122,28 @@ constexpr float kEps = 1e-6f;
 // ---------------------------------------------------------------------------
 TEST(TerrainValleys, CarveSizeAtThresholdIsPointFour)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
     EXPECT_NEAR(ValleyCarveSize(r, kT, kT), 0.4f, kEps);
     EXPECT_NEAR(ValleyCarveSize(r, kT * 0.5f, kT), 0.4f, kEps);
 }
 
 TEST(TerrainValleys, CarveSizeReachesOneAtEightT)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
     EXPECT_NEAR(ValleyCarveSize(r, 8.0f * kT, kT), 1.0f, 1e-5f);
     EXPECT_NEAR(ValleyCarveSize(r, 100.0f * kT, kT), 1.0f, kEps);
 }
 
 TEST(TerrainValleys, CarveSizeIsLogarithmicAtMidpoint)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
     // acc = T * sqrt(8) is half way on the log scale: 0.4 + 0.6 * 0.5.
     EXPECT_NEAR(ValleyCarveSize(r, kT * std::sqrt(8.0f), kT), 0.7f, 1e-4f);
 }
 
 TEST(TerrainValleys, CarveSizeIsMonotone)
 {
-    const TerrainRules r = TerrainRules::Defaults();
+    const TerrainRules r = TestRules();
     float prev = 0.0f;
     for (float a = kT; a <= 12.0f * kT; a += 3.0f)
     {
@@ -462,7 +463,7 @@ int CheckValleySweep(uint64_t seed, float rivers, int lakes)
         const uint32_t* lake = U(r.gen, "lakeMask");
         const uint32_t* dir = U(r.gen, "flowDirection");
         const std::vector<Lake>& lakesDbg = r.gen.GetStage7Debug().lakes;
-        const float coast = TerrainRules::Defaults().kCoastElev;
+        const float coast = TestRules().kCoastElev;
         const HexTopology topo(kSmall.width, kSmall.height);
         if (step == 0)
         {
@@ -544,7 +545,7 @@ TEST(TerrainValleys, RiversZeroLeavesRawElevationOnLand)
     const float* raw = F(r.gen, "elevationRaw");
     const uint32_t* lake = U(r.gen, "lakeMask");
     const float* carve = F(r.gen, "valleyCarve");
-    const float coast = TerrainRules::Defaults().kCoastElev;
+    const float coast = TestRules().kCoastElev;
     for (int i = 0; i < kN; ++i)
     {
         EXPECT_EQ(carve[i], 0.0f);

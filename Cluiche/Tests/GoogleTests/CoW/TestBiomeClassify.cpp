@@ -4,6 +4,7 @@
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/Testing/BiomeChecks.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -78,7 +79,7 @@ namespace
 // ---------------------------------------------------------------------------
 TEST(BiomeClassify, ClimateScoreFormula)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     EXPECT_NEAR(BiomeClimateScore(rules, Biome::GrasslandSteppe, 0.60f, 0.35f), 0.0f, kEps);
     // One wT away in temperature: -1.
     EXPECT_NEAR(BiomeClimateScore(rules, Biome::GrasslandSteppe, 0.85f, 0.35f), -1.0f, kEps);
@@ -91,7 +92,7 @@ TEST(BiomeClassify, ClimateScoreFormula)
 
 TEST(BiomeClassify, ClimateScoreOfNonClimateBiomeIsLowest)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const float        lowest = std::numeric_limits<float>::lowest();
     EXPECT_EQ(BiomeClimateScore(rules, Biome::Ocean, 0.5f, 0.5f), lowest);
     EXPECT_EQ(BiomeClimateScore(rules, Biome::WetlandDelta, 0.5f, 0.5f), lowest);
@@ -116,7 +117,7 @@ TEST(BiomeClassify, ClimateTableWinners)
     BiomeGrid g(12, 8);
     for (const Case& k : cases) { g.SetClimate(g.Index(k.x, k.y), k.t, k.m); }
     const BiomeResult r = RunBiomes(g);
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     for (const Case& k : cases)
     {
         const int c = g.Index(k.x, k.y);
@@ -130,7 +131,7 @@ TEST(BiomeClassify, ClimateTableWinners)
 TEST(BiomeClassify, BoundaryTiesGoToLowestEnum)
 {
     // Give two biomes identical targets so their scores are bit-equal; the lower enum value must win.
-    TerrainRules rules = TerrainRules::Defaults();
+    TerrainRules rules = TestRules();
     rules.kT0_Forest = rules.kT0_Grass;
     rules.kM0_Forest = rules.kM0_Grass;
     rules.kWT_Forest = rules.kWT_Grass;
@@ -139,7 +140,7 @@ TEST(BiomeClassify, BoundaryTiesGoToLowestEnum)
     EXPECT_EQ(RunBiomes(g, rules).At(g.Index(1, 1)), Biome::GrasslandSteppe);
 
     // Rainforest set equal to Desert: Desert (5) beats Rainforest (8).
-    TerrainRules rules2 = TerrainRules::Defaults();
+    TerrainRules rules2 = TestRules();
     rules2.kT0_Rainforest = rules2.kT0_Desert;
     rules2.kM0_Rainforest = rules2.kM0_Desert;
     rules2.kWT_Rainforest = rules2.kWT_Desert;
@@ -417,7 +418,7 @@ namespace
 
 TEST(BiomeClassify, WetlandEligibleAtRiverMouthAndOneStepFromIt)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     MouthCase          m = MakeMouthCase();
     ASSERT_NE(m.step, 0);
     const Stage14Inputs in = m.g.Inputs();
@@ -438,7 +439,7 @@ TEST(BiomeClassify, WetlandEligibleAtRiverMouthAndOneStepFromIt)
 
 TEST(BiomeClassify, WetlandElevationCap)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     MouthCase          m = MakeMouthCase();
     m.g.elevation[m.step] = 0.12f;
     EXPECT_TRUE(IsWetlandEligible(rules, m.g.Inputs(), m.step));
@@ -449,7 +450,7 @@ TEST(BiomeClassify, WetlandElevationCap)
 
 TEST(BiomeClassify, WetlandNextToLake)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     BiomeGrid          g(9, 9);
     const int          lake = g.Index(kCentreX, kCentreY);
     g.SetWater(lake, WaterSource::Lake);
@@ -466,7 +467,7 @@ TEST(BiomeClassify, WetlandNextToLake)
 
 TEST(BiomeClassify, WetlandWetCoast)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     BiomeGrid          g(9, 9);
     const int          c = g.Index(2, 2);
     g.AddFlag(c, TerrainFlag::Coast);
@@ -778,7 +779,7 @@ TEST(BiomeClassify, ForbiddenFixupHonoursPassLimit)
 {
     // Chain of conflicts resolves from the left: with a single pass allowed the result must still be valid
     // (never a new violation) and unresolvedPairs must match what is left.
-    TerrainRules rules = TerrainRules::Defaults();
+    TerrainRules rules = TestRules();
     rules.kMaxFixupPasses = 1;
     const BiomeGrid   g = MakeNoiseGrid(7, 14, 14);
     const BiomeResult r = RunBiomes(g, rules);
@@ -788,7 +789,7 @@ TEST(BiomeClassify, ForbiddenFixupHonoursPassLimit)
 
 TEST(BiomeClassify, FixupNeverCreatesNewViolations)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     for (uint32_t seed = 1; seed <= 12; ++seed)
     {
         const BiomeGrid     g = MakeNoiseGrid(seed, 20, 20);
@@ -811,7 +812,7 @@ TEST(BiomeClassify, FixupReducesForbiddenPairsComparedToNoFixup)
 {
     // With zero extra passes allowed the classifier still runs one pass (kMaxFixupPasses >= 1); compare against
     // the full default run: more passes never leave more pairs.
-    TerrainRules one = TerrainRules::Defaults();
+    TerrainRules one = TestRules();
     one.kMaxFixupPasses = 1;
     for (uint32_t seed = 1; seed <= 6; ++seed)
     {

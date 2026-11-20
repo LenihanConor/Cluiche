@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <chrono>
@@ -82,7 +83,7 @@ TEST(WorldLayerSource, ExactlyOneDefaultBaseIsRelief)
 
 TEST(WorldLayerSource, EveryReaderMatchesGeneratedData)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 12345);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
     ASSERT_EQ(n, 66u * 42u);
@@ -97,7 +98,7 @@ TEST(WorldLayerSource, EveryReaderMatchesGeneratedData)
 
 TEST(WorldLayerSource, CategoryValuesStayInsideCategoryCount)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 777);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
     for (uint32_t li = 0; li < WorldLayerSource::Count(); ++li)
@@ -111,7 +112,7 @@ TEST(WorldLayerSource, CategoryValuesStayInsideCategoryCount)
 
 TEST(WorldLayerSource, VersionBumpsOnlyWhenTickChangesWorld)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     EXPECT_EQ(WorldLayerSource::Version(s), 0u);
     ASSERT_TRUE(s.Tick(rng));
@@ -129,7 +130,7 @@ TEST(WorldLayerSource, VersionBumpsOnlyWhenTickChangesWorld)
 
 TEST(WorldLayerSource, ZeroFillBeforeFirstGeneration)
 {
-    WorldGenSession s;
+    TestSession s;
     ASSERT_EQ(s.Revision(), 0u);
     for (uint32_t li = 0; li < WorldLayerSource::Count(); ++li)
     {
@@ -141,7 +142,7 @@ TEST(WorldLayerSource, ZeroFillBeforeFirstGeneration)
 
 TEST(WorldLayerSource, BufferLargerThanWorldIsZeroPadded)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 5);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
     const WorldLayerDesc* d = WorldLayerSource::Find("elevation");
@@ -153,7 +154,7 @@ TEST(WorldLayerSource, BufferLargerThanWorldIsZeroPadded)
 
 TEST(WorldLayerSource, LargeReadAllLayersTiming)
 {
-    WorldGenSession s;
+    TestSession s;
     s.SetSize(Obj("size", Json::Value("Large")));
     Generate(s, 99);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
@@ -192,7 +193,7 @@ TEST(WorldLayerSource, RegionPaletteSlotKeepsZeroAndWrapsPastSlot63)
 
 TEST(WorldLayerSource, RegionLayerReadsFreshRegionsAndIsZeroAfterLivePreview)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 4321);
     ASSERT_TRUE(s.RegionsFresh());
     const WorldLayerDesc* d = WorldLayerSource::Find("regions");

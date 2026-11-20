@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <string>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -120,7 +121,7 @@ inline WorldStructure MakeTinyWorldWithUnknownKind(const char* kindName = "Drago
 inline WorldStructure GenerateWorld(uint64_t seed, const Json::Value& shapeArgs = Json::Value(Json::objectValue),
                                     const SiteRegistry* registry = nullptr)
 {
-    WorldGenSession s;
+    TestSession s;
     if (registry != nullptr) { s.SetSiteRegistry(registry); }
     Dia::Maths::RandomStream rng{ 1 };
     if (shapeArgs.isObject() && !shapeArgs.getMemberNames().empty()) { s.Set(shapeArgs); }

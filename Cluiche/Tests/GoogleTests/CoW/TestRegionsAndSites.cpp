@@ -9,6 +9,7 @@
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -89,7 +90,7 @@ namespace
     PlaceResult PlaceWorld(WorldStructure& w, const SiteRegistry& reg, uint64_t outer, int attempt, RegionsAndSites::PlaceReport* rep = nullptr)
     {
         RandomStream rng(1);
-        return RegionsAndSites::Place(w, reg, TerrainRules::Defaults(), AttemptSeed(outer, attempt), attempt, rng, rep);
+        return RegionsAndSites::Place(w, reg, TestRules(), AttemptSeed(outer, attempt), attempt, rng, rep);
     }
 
     // Records what it was given; its site cell depends on its stream.
@@ -364,7 +365,7 @@ namespace
 TEST(LayoutCheck, ValidHandBuiltWorldPasses)
 {
     const WorldStructure w = ValidWorld();
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     EXPECT_TRUE(r.ok) << Codes(r);
     EXPECT_TRUE(r.violations.empty());
 }
@@ -374,7 +375,7 @@ TEST(LayoutCheck, UncoveredLandCell)
     WorldStructure w = ValidWorld();
     const int cell = CellIndex(w, 1, 1);
     w.Cells()[cell].region = 0;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     EXPECT_FALSE(r.ok);
     const LayoutViolation* v = Find(r, LayoutCode::UncoveredLand);
     ASSERT_NE(v, nullptr) << Codes(r);
@@ -388,7 +389,7 @@ TEST(LayoutCheck, OceanCellWithARegion)
     const int cell = CellIndex(w, 1, 1);
     SetOcean(w, 1, 1);
     w.Cells()[cell].region = 2;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::OceanHasRegion);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_TRUE(HasCell(*v, cell));
@@ -398,7 +399,7 @@ TEST(LayoutCheck, DisconnectedRegion)
 {
     WorldStructure w = ValidWorld();
     w.At(13, 1).region = 1;   // a cell of region 2 relabelled as region 1
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::RegionDisconnected, 1);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_TRUE(HasCell(*v, CellIndex(w, 13, 1)));
@@ -409,7 +410,7 @@ TEST(LayoutCheck, TwoZoneRegion)
     WorldStructure w = ValidWorld();
     for (int y = 0; y < kBlk; ++y)
         for (int x = 3 * kBlk; x < 4 * kBlk; ++x) { w.At(x, y).depthZone = DepthZone::WildReaches; }   // region 4
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::RegionTwoZones, 4);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_GT(v->count, 0u);
@@ -421,7 +422,7 @@ TEST(LayoutCheck, RegionUnderMinimumCells)
     // region 10 (bx 4, by 1) keeps its right two columns; the rest goes to region 9
     for (int y = kBlk; y < 2 * kBlk; ++y)
         for (int x = 4 * kBlk; x < 4 * kBlk + 10; ++x) { w.At(x, y).region = 9; }
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::RegionTooSmall, 10);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 24u);
@@ -433,16 +434,16 @@ TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
     WorldStructure w = MakeRegionBlocksWorld(3, 3, kBlk, kBlk, Biome::GrasslandSteppe);   // 9 regions
     LayoutLimits lim = NoBarriers();
     lim.nodeLimited = true;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), lim);
+    const LayoutReport r = CheckLayout(w, TestRules(), lim);
     const LayoutViolation* v = Find(r, LayoutCode::RegionCountRange);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 9u);
     lim.regionLimitedBy = DepthZone::AncientInteriors;
-    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), lim), LayoutCode::RegionCountRange), nullptr);
+    EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::RegionCountRange), nullptr);
 
     WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, Biome::GrasslandSteppe);   // 17 regions
     lim.regionLimitedBy = DepthZone::None;
-    const LayoutReport r2 = CheckLayout(many, TerrainRules::Defaults(), lim);
+    const LayoutReport r2 = CheckLayout(many, TestRules(), lim);
     const LayoutViolation* v2 = Find(r2, LayoutCode::RegionCountRange);
     ASSERT_NE(v2, nullptr);
     EXPECT_EQ(v2->count, 17u);
@@ -452,9 +453,9 @@ TEST(LayoutCheck, AbsorbedCellsOverCap)
 {
     WorldStructure w = ValidWorld();   // 1440 land cells, cap 43
     w.regions.absorbedCells = 43;
-    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), NoBarriers()), LayoutCode::AbsorbedOverCap), nullptr);
+    EXPECT_EQ(Find(CheckLayout(w, TestRules(), NoBarriers()), LayoutCode::AbsorbedOverCap), nullptr);
     w.regions.absorbedCells = 44;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::AbsorbedOverCap);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 44u);
@@ -465,9 +466,9 @@ TEST(LayoutCheck, FragmentCellsOverCap)
     WorldStructure w = ValidWorld();   // 1440 land cells, cap 0.06 * 1440 = 86.4
     w.regions.fragmentCells = 86;
     w.regions.absorbedCells = 0;
-    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), NoBarriers()), LayoutCode::FragmentOverCap), nullptr);
+    EXPECT_EQ(Find(CheckLayout(w, TestRules(), NoBarriers()), LayoutCode::FragmentOverCap), nullptr);
     w.regions.fragmentCells = 87;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::FragmentOverCap);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 87u);
@@ -479,7 +480,7 @@ TEST(LayoutCheck, FragmentCellsOverCap)
 // Caps compare with strict greater-than at an exactly representable limit (share 0.5 of 1440 land = 720.0).
 TEST(LayoutCheck, AbsorbedAndFragmentCapsAreInclusiveAtTheExactLimit)
 {
-    TerrainRules rules = TerrainRules::Defaults();
+    TerrainRules rules = TestRules();
     rules.kMaxAbsorbedShare = 0.5f;
     rules.kMaxFragmentShare = 0.5f;
     WorldStructure w = ValidWorld();
@@ -503,7 +504,7 @@ TEST(LayoutCheck, NodeOnWater)
     SetLake(w, 6, 2);
     w.At(6, 2).region = 1;
     AddNode(w, SiteKindId(BuiltinNodeKinds::Resource()), 6, 2);
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::NodeOnWater);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_TRUE(HasCell(*v, CellIndex(w, 2, 2)));
@@ -514,7 +515,7 @@ TEST(LayoutCheck, NodesCloserThanSpacing)
 {
     WorldStructure w = ValidWorld();
     AddNode(w, SiteKindId(BuiltinNodeKinds::Resource()), 1, 0);   // next to the node at (0,0)
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::NodeSpacing);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_TRUE(HasCell(*v, CellIndex(w, 1, 0)));
@@ -532,10 +533,10 @@ TEST(LayoutCheck, SameCorridorNodesAreExemptFromSpacingAgainstEachOther)
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 11, 10, 0, MakeCorridorFlags(1, 1, 2));
     LayoutLimits lim = NoBarriers();
     lim.nodeLimited = true;
-    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), lim), LayoutCode::NodeSpacing), nullptr);
+    EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::NodeSpacing), nullptr);
     // A second corridor right next to them is a violation.
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 12, 11, 1, MakeCorridorFlags(1, 0, 1));
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), lim);
+    const LayoutReport r = CheckLayout(w, TestRules(), lim);
     const LayoutViolation* v = Find(r, LayoutCode::NodeSpacing);
     ASSERT_NE(v, nullptr);
     EXPECT_TRUE(HasCell(*v, CellIndex(w, 12, 11)));
@@ -548,7 +549,7 @@ TEST(LayoutCheck, FiveCorridorsOnABarrier)
     for (int i = 0; i < 5; ++i) { AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), xs[i], ys[i], static_cast<uint16_t>(i), MakeCorridorFlags(1, 0, 1)); }
     LayoutLimits lim = NoBarriers();
     lim.corridorLimited[0] = false;
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), lim);
+    const LayoutReport r = CheckLayout(w, TestRules(), lim);
     const LayoutViolation* v = Find(r, LayoutCode::CorridorCount);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 5u);
@@ -560,16 +561,16 @@ TEST(LayoutCheck, TooFewCorridorsUnlessLimited)
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 2, 2, 0, MakeCorridorFlags(1, 0, 1));
     LayoutLimits lim = NoBarriers();
     lim.corridorLimited[0] = false;
-    EXPECT_NE(Find(CheckLayout(w, TerrainRules::Defaults(), lim), LayoutCode::CorridorCount), nullptr);
+    EXPECT_NE(Find(CheckLayout(w, TestRules(), lim), LayoutCode::CorridorCount), nullptr);
     lim.corridorLimited[0] = true;
-    EXPECT_EQ(Find(CheckLayout(w, TerrainRules::Defaults(), lim), LayoutCode::CorridorCount), nullptr);
+    EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::CorridorCount), nullptr);
 }
 
 TEST(LayoutCheck, RegionWithSixteenNodes)
 {
     WorldStructure w = ValidWorld();
     for (int i = 0; i < 7; ++i) { AddNode(w, SiteKindId(BuiltinNodeKinds::Resource()), 1 + i, 1); }   // spacing noise ignored
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::RegionNodeCount, 1);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 16u);
@@ -583,12 +584,12 @@ TEST(LayoutCheck, NodeTotalsAndRegionQuotasSkippedWhenNodeLimited)
         for (int bx = 0; bx < 5; ++bx)
             for (int nx = 0; nx < 3; ++nx) { AddNode(thin, SiteKindId(BuiltinNodeKinds::Hunting()), bx * kBlk + nx * 4, by * kBlk); }
     LayoutLimits lim = NoBarriers();
-    const LayoutReport r = CheckLayout(thin, TerrainRules::Defaults(), lim);
+    const LayoutReport r = CheckLayout(thin, TestRules(), lim);
     ASSERT_NE(Find(r, LayoutCode::TotalNodeCount), nullptr) << Codes(r);
     EXPECT_EQ(Find(r, LayoutCode::TotalNodeCount)->count, 30u);
     EXPECT_NE(Find(r, LayoutCode::RegionNodeCount), nullptr);
     lim.nodeLimited = true;
-    const LayoutReport r2 = CheckLayout(thin, TerrainRules::Defaults(), lim);
+    const LayoutReport r2 = CheckLayout(thin, TestRules(), lim);
     EXPECT_TRUE(r2.ok) << Codes(r2);
 }
 
@@ -596,7 +597,7 @@ TEST(LayoutCheck, ViolationEvidenceIsCappedAtSixteenCells)
 {
     WorldStructure w = ValidWorld();
     for (int i = 0; i < 30; ++i) { w.At(i % kBlk, 1 + i / kBlk).region = 0; }
-    const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), NoBarriers());
+    const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::UncoveredLand);
     ASSERT_NE(v, nullptr);
     EXPECT_EQ(v->count, 30u);
@@ -612,7 +613,7 @@ TEST(RegionsAndSites, GeneratedDefaultWorldsPassLayoutCheckThreeSeeds)
         WorldStructure w = MakeTerrain(seed, WorldShapeParams{});
         RegionsAndSites::PlaceReport rep;
         ASSERT_TRUE(PlaceWorld(w, reg, seed, 0, &rep).IsOk());
-        const LayoutReport r = CheckLayout(w, TerrainRules::Defaults(), rep.limits);
+        const LayoutReport r = CheckLayout(w, TestRules(), rep.limits);
         EXPECT_TRUE(r.ok) << "seed " << seed << ": " << Codes(r);
     }
 }
@@ -639,7 +640,7 @@ namespace
             ++s.worlds;
             if (!PlaceWorld(w0, reg, seed, 0, &rep).IsOk()) { continue; }
             ++s.placeOk;
-            const LayoutReport r = CheckLayout(w0, TerrainRules::Defaults(), rep.limits);
+            const LayoutReport r = CheckLayout(w0, TestRules(), rep.limits);
             if (r.ok) { ++s.layoutPass; }
             for (const LayoutViolation& v : r.violations) { ++s.failing[LayoutCodeName(v.code)]; }
             if (variation)
@@ -707,7 +708,7 @@ namespace
         {
             RandomStream rng(1);
             const auto t0 = std::chrono::steady_clock::now();
-            RegionsAndSites::Place(w, reg, TerrainRules::Defaults(), AttemptSeed(7, 0), 0, rng);
+            RegionsAndSites::Place(w, reg, TestRules(), AttemptSeed(7, 0), 0, rng);
             const auto t1 = std::chrono::steady_clock::now();
             ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
         }

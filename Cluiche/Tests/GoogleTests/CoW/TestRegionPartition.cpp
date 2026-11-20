@@ -4,6 +4,7 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -22,7 +23,7 @@ namespace
     constexpr Biome     G  = Biome::GrasslandSteppe;
     constexpr Biome     F  = Biome::TemperateForest;
 
-    TerrainRules Rules() { return TerrainRules::Defaults(); }
+    TerrainRules Rules() { return TestRules(); }
 
     // First seed draw for a component of `size` cells, as PlaceSeeds does it.
     uint32_t FirstDraw(unsigned seed, size_t size) { RandomStream r(seed); return static_cast<uint32_t>(r.RandomInt()) % size; }
@@ -449,7 +450,7 @@ TEST(RegionPartition, SmokeGeneratedSmallWorld)
     runner.Run(123, WorldShapeParams{}, GridDimensions{ 66, 42 });
     const WorldStructure& w = runner.World();
     RandomStream rng(7);
-    const RegionGrowth g = BuildProvisionalRegions(w, TerrainRules::Defaults(), rng);
+    const RegionGrowth g = BuildProvisionalRegions(w, TestRules(), rng);
     EXPECT_FALSE(g.overflow);
     EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != DepthZone::None)
         << "total " << int(g.targets.total);

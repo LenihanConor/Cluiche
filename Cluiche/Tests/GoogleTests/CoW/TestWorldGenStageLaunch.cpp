@@ -2,6 +2,7 @@
 // from a launch preset's override on top of the manifest config.
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 using Dia::Core::StringCRC;
 
@@ -9,7 +10,7 @@ namespace {
 
 struct Probe : CoW::WorldGenerationModule
 {
-    Probe() : CoW::WorldGenerationModule(StringCRC("WorldGenerationModule")) {}
+    Probe() : CoW::WorldGenerationModule(StringCRC("WorldGenerationModule")) { SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); LoadRulesSidecar(); }
     using CoW::WorldGenerationModule::OnConfigure;
     using CoW::WorldGenerationModule::OnStageLaunch;
 };

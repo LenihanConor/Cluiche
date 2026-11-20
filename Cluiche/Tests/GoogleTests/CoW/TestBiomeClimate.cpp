@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <cmath>
@@ -21,7 +22,7 @@ namespace
 
     Stage13Result RunStage13(const ClimateGrid& g, float moistureOffset = 0.0f)
     {
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         const size_t       n = g.elevation.size();
         Stage13Result      r;
         r.dist.assign(n, 0u);
@@ -45,7 +46,7 @@ namespace
 
     std::vector<float> RunStage12(const ClimateGrid& g, float offset)
     {
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         std::vector<float> t(g.elevation.size(), -1.0f);
         ComputeStage12(rules, g.dims, offset, g.elevation.data(), g.latitude.data(), t.data());
         return t;
@@ -252,7 +253,7 @@ TEST(BiomeClimateStage13, EmptyAndSingleCellGrids)
 TEST(BiomeClimateStage13, NullOutputsSkipped)
 {
     const ClimateGrid g = MakeRidgeGrid(5, 5, 2, 0.5f, 0.5f, true, false);
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     Stage13Layers out;   // all null
     ComputeStage13(rules, g.dims, 0.0f, g.elevation.data(), g.latitude.data(), g.waterSource.data(), out);
     SUCCEED();

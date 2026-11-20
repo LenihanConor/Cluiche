@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -24,7 +25,7 @@ using Dia::Maths::RandomStream;
 
 namespace
 {
-    TerrainRules Rules() { return TerrainRules::Defaults(); }
+    TerrainRules Rules() { return TestRules(); }
 
     // Independent odd-q hex distance (cube coordinates).
     int Dist(const WorldStructure& w, int a, int b)

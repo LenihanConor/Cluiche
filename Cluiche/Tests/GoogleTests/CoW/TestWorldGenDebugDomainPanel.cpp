@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
@@ -41,6 +42,7 @@ namespace
     struct PanelFixture
     {
         WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); return true; }();
         WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream rng{ 1 };
         fs::path dir;

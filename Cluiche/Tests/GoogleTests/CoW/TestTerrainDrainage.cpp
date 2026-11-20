@@ -4,6 +4,7 @@
 // reports the stage 5 time at Small.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -33,7 +34,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TerrainRules::Defaults()) {}
+    Gen() : gen(TestRules()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 
@@ -73,7 +74,7 @@ struct Grid
             }
         }
     }
-    void Run(const TerrainRules& rules = TerrainRules::Defaults())
+    void Run(const TerrainRules& rules = TestRules())
     {
         const size_t n = static_cast<size_t>(N());
         filled.assign(n, -1.0f); depth.assign(n, -1.0f); acc.assign(n, -1.0f);
@@ -93,7 +94,7 @@ int CheckInvariants(GridDimensions dims, const float* elev, const uint8_t* ocean
                     const float* depth, const uint32_t* rank, const uint32_t* dir, const float* acc,
                     const Stage5Debug& dbg, const std::string& ctx)
 {
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const int n = dims.width * dims.height;
     const HexTopology topo(dims.width, dims.height);
     int fails = 0;
@@ -291,7 +292,7 @@ TEST(TerrainDrainage, LineDrainsWestWithDirectionEncodingAndExactAccumulation)
     EXPECT_EQ(g.dir[3], 2u);
     EXPECT_EQ(g.dir[4], 3u);
     for (int i = 0; i < 5; ++i) { EXPECT_EQ(g.filled[i], g.elev[i]) << i; EXPECT_EQ(g.depth[i], 0.0f) << i; }
-    const float k = TerrainRules::Defaults().kHighlandRain;
+    const float k = TestRules().kHighlandRain;
     const float a4 = 1.0f + k * 0.4f;
     const float a3 = (1.0f + k * 0.3f) + a4;
     const float a2 = (1.0f + k * 0.2f) + a3;
@@ -417,7 +418,7 @@ TEST(TerrainDrainage, FlatPlateauDrainsAndTiesTakeLowestDirection)
     island.elev[c] = 0.4f;
     island.Run();
     EXPECT_EQ(island.dir[c], 0u);
-    EXPECT_FLOAT_EQ(island.acc[c], 1.0f + TerrainRules::Defaults().kHighlandRain * 0.4f);
+    EXPECT_FLOAT_EQ(island.acc[c], 1.0f + TestRules().kHighlandRain * 0.4f);
     EXPECT_EQ(0, CheckGrid(island, "island"));
 
     // Flat land with ocean at directions 3 and 5 of the centre: the tie goes to 3.
@@ -524,15 +525,15 @@ TEST(TerrainDrainage, EmptyAndNullInputsAreSafe)
 {
     Stage5Debug dbg;
     Stage5Layers none;
-    ComputeStage5(TerrainRules::Defaults(), GridDimensions{ 0, 0 }, nullptr, nullptr, none, dbg);
+    ComputeStage5(TestRules(), GridDimensions{ 0, 0 }, nullptr, nullptr, none, dbg);
     EXPECT_TRUE(dbg.basins.empty());
     EXPECT_EQ(dbg.eligibleBasins, 0);
     Grid g(3, 3, 0.2f);
     Stage5Layers partial;
     std::vector<float> filled(9, 7.0f);
     partial.filledElevation = filled.data();
-    ComputeStage5(TerrainRules::Defaults(), g.dims, g.elev.data(), g.ocean.data(), partial, dbg);
-    ComputeStage5(TerrainRules::Defaults(), g.dims, nullptr, nullptr, partial, dbg);
+    ComputeStage5(TestRules(), g.dims, g.elev.data(), g.ocean.data(), partial, dbg);
+    ComputeStage5(TestRules(), g.dims, nullptr, nullptr, partial, dbg);
     for (GridDimensions d : { GridDimensions{ 1, 1 }, GridDimensions{ 2, 1 }, GridDimensions{ 1, 5 } })
     {
         Grid t(d.width, d.height, 0.3f);

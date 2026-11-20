@@ -5,6 +5,7 @@
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <chrono>
 #include <filesystem>
@@ -76,7 +77,7 @@ WorldImportResult RoundTrip(const WorldStructure& original, WorldStructure& impo
 
 TEST(WorldJsonPerf, AC6_SmallWorldExportAndImportTakeWellUnderThreeSeconds)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "", 1);
     const WorldStructure& w = s.World();
     ASSERT_EQ(w.CellCount(), 66 * 42);
@@ -102,7 +103,7 @@ TEST(WorldJsonPerf, AC6_SmallWorldExportAndImportTakeWellUnderThreeSeconds)
 
 TEST(WorldJsonPerf, FileRoundTripOfASmallWorldIsFast)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "", 2);
     const fs::path dir = fs::temp_directory_path() / "cow_json_perf_test";
     std::error_code ec;
@@ -110,7 +111,7 @@ TEST(WorldJsonPerf, FileRoundTripOfASmallWorldIsFast)
     s.SetWorldDirectories("", dir.string());
     const auto t0 = Clock::now();
     ASSERT_TRUE(s.ExportWorld(Obj())["success"].asBool());
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", dir.string());
     Json::Value im = Obj(); im["name"] = DefaultWorldName(2);
     ASSERT_TRUE(b.ImportWorld(im)["success"].asBool());
@@ -128,6 +129,7 @@ TEST(WorldJsonLimits, AC7_TheDefaultOutDirectoryIsUnderCluicheOutCoW)
 {
     EXPECT_STREQ(CoW::WorldGenerationModule::kDefaultOutWorldsDir, "Cluiche/out/CoW/worlds");
     CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
     EXPECT_EQ(module.GetOutWorldsDirectory(), "Cluiche/out/CoW/worlds");
     EXPECT_EQ(fs::path(WorldFilePath(module.GetOutWorldsDirectory(), DefaultWorldName(12345))).generic_string(),
               "Cluiche/out/CoW/worlds/12345.wld.json");
@@ -309,7 +311,7 @@ TEST(WorldJsonEdge, ZeroVariantAndMaximumVariantAndFlagsSurvive)
 
 TEST(WorldJsonEdge, ImportedWorldCanBeImportedAgainAndAgain)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "", 4);
     WorldStructure current = s.World();
     std::string firstText;
@@ -337,7 +339,7 @@ TEST(SLOW_WorldJsonSweep, EveryShippedPresetTwentySeedsRoundTripsByteForByte)
     {
         for (uint64_t seed = 1; seed <= 20; ++seed)
         {
-            WorldGenSession s;
+            TestSession s;
             Generate(s, preset, seed);
             const WorldStructure& original = s.World();
             std::string text;
@@ -367,13 +369,13 @@ TEST(SLOW_WorldJsonSweep, ProvenanceRegeneratesTheExactWorldForEveryPreset)
     {
         for (uint64_t seed : { 3ull, 11ull, 17ull })
         {
-            WorldGenSession a;
+            TestSession a;
             a.SetWorldDirectories("", dir.string());
             Generate(a, preset, seed);
             Json::Value ex = Obj(); ex["name"] = "w"; ex["overwrite"] = true;
             ASSERT_TRUE(a.ExportWorld(ex)["success"].asBool());
 
-            WorldGenSession b;
+            TestSession b;
             b.SetWorldDirectories("", dir.string());
             Json::Value im = Obj(); im["name"] = "w";
             ASSERT_TRUE(b.ImportWorld(im)["success"].asBool());
@@ -392,7 +394,7 @@ TEST(SLOW_WorldJsonSweep, LargeWorldsRoundTripWithinTheBudget)
 {
     for (uint64_t seed : { 1ull, 2ull })
     {
-        WorldGenSession s;
+        TestSession s;
         Generate(s, "", seed, "Large");
         const WorldStructure& original = s.World();
         ASSERT_EQ(original.dimensions.width, 104);

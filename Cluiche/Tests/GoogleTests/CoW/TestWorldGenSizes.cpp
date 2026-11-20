@@ -16,6 +16,7 @@
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #ifdef DIA_DEBUG
 #include <Modules/WorldGenDebugDomain.h>
@@ -64,7 +65,7 @@ namespace
     // A session configured for (size, preset), not yet generated.
     struct Sess
     {
-        WorldGenSession          s;
+        TestSession          s;
         Dia::Maths::RandomStream rng{ 1 };
 
         Sess(const SizeCase& size, const char* preset)
@@ -137,7 +138,7 @@ namespace
     void CheckAcceptance(const std::string& label, WorldGenSession& s)
     {
         const WorldStructure& w = s.World();
-        const ShapeFailures   f = CheckWorldShape(s.Generator(), w, TerrainRules::Defaults());
+        const ShapeFailures   f = CheckWorldShape(s.Generator(), w, TestRules());
         EXPECT_TRUE(f.Empty()) << label << " terrain shape: " << f.Text();
 
         const TerrainLayers& L = s.Generator().GetLayers();
@@ -162,7 +163,7 @@ namespace
         const fs::path dir = fs::temp_directory_path() / ("WorldGenSizesRoundTrip_" + name);   // unique per case: shards run concurrently
         std::error_code ec;
         fs::create_directories(dir, ec);
-        WorldGenSession out;
+        TestSession out;
         out.SetPresetDirectories(FindShippedPresetDir(), "");
         WorldGenSession& src = a;
         src.SetWorldDirectories("", dir.string());
@@ -269,6 +270,7 @@ namespace
     void RunDomainState(const SizeCase& size, const char* preset)
     {
         CoW::WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+        module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
         CoW::WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream   rng{ 1 };
         module.GetSession().SetPresetDirectories(FindShippedPresetDir(), "");

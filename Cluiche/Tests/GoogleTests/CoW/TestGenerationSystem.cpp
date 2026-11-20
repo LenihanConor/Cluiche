@@ -2,6 +2,7 @@
 // retry-mechanism.md (AC1, AC3). System-level checks of the retry loop through the real session and over many seeds.
 // The 100-seed sweeps are SLOW_ (run with --all); thresholds are tuning-gated: a miss is reported with numbers, not tuned.
 #include <gtest/gtest.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
@@ -77,7 +78,7 @@ namespace
     Sweep RunSweep(const char* preset, int seeds)
     {
         const WorldShapeParams shape = LoadParams(preset);
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         const SiteRegistry registry;
         RandomStream rng(1);
         Sweep out;
@@ -131,7 +132,7 @@ namespace
 
     struct Gen
     {
-        WorldGenSession s;
+        TestSession s;
         RandomStream rng{ 1 };
         explicit Gen(const SiteRegistry* reg = nullptr) { if (reg) { s.SetSiteRegistry(reg); } }
         bool Regenerate(uint64_t seed, uint32_t maxRetry = kDefaultMaxRetryAttempts)
@@ -232,7 +233,7 @@ TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemp
 
     // The kept world is exactly what Place produces on the same terrain with the attempt-1 sub-seed.
     WorldStructure expected = MakeTerrain(21, g.s.Shape());
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     const SiteRegistry empty;
     RandomStream rng(99);
     RegionsAndSites::Place(expected, empty, rules, DeriveSubSeed(21ull, 1ull), 1, rng, nullptr);
@@ -332,7 +333,7 @@ bool SameShownWorld(const WorldGenSession& a, const WorldStructure& b)
 
 struct SysGen
 {
-    WorldGenSession s;
+    TestSession s;
     RandomStream rng{ 1 };
     SiteRegistry registry;
     SysSwitchGuarantee sw;

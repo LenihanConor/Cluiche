@@ -8,6 +8,7 @@
 #include <Modules/WorldGenDebugDomain.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <Shared/WorldGeneration/WorldJson.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <climits>
 #include <cmath>
@@ -41,6 +42,7 @@ namespace
     struct Fixture
     {
         WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
+        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); return true; }();
         WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream rng{ 1 };
 
@@ -209,7 +211,7 @@ TEST(WorldGenDebugDomain, StateStaysSmallAtLarge)
 TEST(WorldGenDebugDomain, SetScaleMatchesDirectSet)
 {
     Fixture f;
-    WorldGenSession ref;
+    TestSession ref;
     Json::Value a; a["key"] = "landFraction"; a["value"] = 0.5;
     f.Cmd("setScale", a);
     ref.Set(Obj("landFraction", 0.5));
@@ -225,7 +227,7 @@ TEST(WorldGenDebugDomain, SetScaleMatchesDirectSet)
 TEST(WorldGenDebugDomain, RegenerateSeedAndSizeMatchDirect)
 {
     Fixture f;
-    WorldGenSession ref;
+    TestSession ref;
     f.Gen();
     ref.Tick(f.rng);   // both clean now (rng state irrelevant for flags)
     EXPECT_FALSE(f.module.GetSession().IsDirty());
@@ -286,7 +288,7 @@ TEST(WorldGenDebugDomain, PresetLoadAndSaveRoundTrip)
     // Change then load restores
     f.Cmd("setScale", [] { Json::Value a; a["key"] = "landFraction"; a["value"] = 0.6; return a; }());
     EXPECT_TRUE(f.State()["stats"]["presetModified"].asBool());
-    WorldGenSession ref;
+    TestSession ref;
     ref.SetPresetDirectories("", dir.string());
     ref.Set(Obj("landFraction", 0.6));
     ref.PresetLoad(Obj("id", "dd_test"));
@@ -354,7 +356,7 @@ TEST(WorldGenDebugDomain, UnknownCommandAndBadArgsAreNoOps)
 {
     Fixture f;
     f.Gen();
-    WorldGenSession ref;
+    TestSession ref;
     ref.Tick(f.rng);
     const Json::Value before = f.State();
 

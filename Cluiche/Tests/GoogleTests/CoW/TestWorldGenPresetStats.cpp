@@ -5,6 +5,7 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldHexGrid.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 
@@ -94,7 +95,7 @@ TEST(WorldGenPresetStats, PresetIntentOrderings)
         const int seeds = 8;
         for (uint64_t seed = 1; seed <= seeds; ++seed)
         {
-            WorldGenSession s;
+            TestSession s;
             Dia::Maths::RandomStream rng{ 1 };
             s.SetPresetDirectories(FindShippedPresetDir(), "");
             Json::Value sz(Json::objectValue); sz["size"] = "Small";
@@ -144,7 +145,7 @@ TEST(WorldGenPresetStats, EveryGeneratedCellHoldsAGeneratedBiome)
     {
         for (uint64_t seed = 1; seed <= 3; ++seed)
         {
-            WorldGenSession s;
+            TestSession s;
             Dia::Maths::RandomStream rng{ 1 };
             s.SetPresetDirectories(FindShippedPresetDir(), "");
             Json::Value sz(Json::objectValue); sz["size"] = "Small";

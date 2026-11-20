@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -30,7 +31,7 @@ namespace
 
     TerrainRules RulesMin(int minCells)
     {
-        TerrainRules r = TerrainRules::Defaults();
+        TerrainRules r = TestRules();
         r.kMinRegionCells = minCells;
         return r;
     }
@@ -588,7 +589,7 @@ namespace
         TerrainRunner runner;
         runner.Run(seed, shape, kSmall);
         WorldStructure w = runner.World();
-        const TerrainRules rules = TerrainRules::Defaults();
+        const TerrainRules rules = TestRules();
         RandomStream rng(7);
         const RegionGrowth g = BuildProvisionalRegions(w, rules, rng);
         const RegionBuild b = FinishRegions(w, rules, g);
@@ -693,7 +694,7 @@ TEST(RegionRepair, BuildRegionsEqualsProvisionalPlusFinish)
     runner.Run(123, WorldShapeParams{}, kSmall);
     WorldStructure a = runner.World();
     WorldStructure b = runner.World();
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     RandomStream ra(7), rb(7);
     BuildRegions(a, rules, ra);
     const RegionGrowth g = BuildProvisionalRegions(b, rules, rb);
@@ -708,7 +709,7 @@ TEST(RegionRepair, GeneratedWorldOtherCellFieldsUntouchedAndRebuildIsIdentical)
     runner.Run(123, WorldShapeParams{}, kSmall);
     WorldStructure w = runner.World();
     const std::vector<Cell> before(w.Cells(), w.Cells() + w.CellCount());
-    const TerrainRules rules = TerrainRules::Defaults();
+    const TerrainRules rules = TestRules();
     RandomStream r1(7);
     BuildRegions(w, rules, r1);
     for (int i = 0; i < w.CellCount(); ++i)

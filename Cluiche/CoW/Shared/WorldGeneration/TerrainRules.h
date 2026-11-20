@@ -5,6 +5,7 @@
 // key, filled by ParamBinding<TerrainRules>::Snapshot from a ParameterFile. Integer-valued rules are int32_t
 // members (rounded half away from zero at Snapshot); everything else is float. Read them directly: rules.kFoo.
 // To add a rule: add the sidecar entry, the member, and its ForEachRuleMember line (coverage test fails otherwise).
+// There is no compiled default set: the session loads the sidecar (WorldGenSession::LoadRules).
 // Spec: docs/specs/applications/dia/systems/diaattribute/parameter-files.md
 #pragma once
 
@@ -136,11 +137,7 @@ struct TerrainRules
     uint32_t rulesVersion = kDefaultRulesVersion;
     bool     degraded = false;   // set when any value was out of range or invalid
 
-    // The sidecar defaults (loaded once from the sidecar file; see SidecarFile). If the sidecar cannot be
-    // loaded there is no fallback: an error is logged and the result is all zeros with degraded set.
-    static TerrainRules Defaults();
-
-    // Seam for the module/session wiring (plan task 26): fills `out` (rulesVersion default, degraded false)
+    // Used by WorldGenSession::LoadRules (plan task 26): fills `out` (rulesVersion default, degraded false)
     // from a loaded ParameterFile via ParamBinding::Snapshot. Returns false (and logs) if the binding does
     // not cover the file's schema exactly; `out` is then left unchanged.
     static bool FromParameterFile(const Dia::Attribute::ParameterFile& file, TerrainRules& out);
@@ -149,23 +146,19 @@ struct TerrainRules
     // parameter is unbound and no binding lacks an entry.
     static bool ResolveBindings(const Dia::Attribute::AttributeSchema& schema, Dia::Attribute::BindingReport& report);
 
-    // The interim value source until task 26: the sidecar read from disk (searched upward from the working
-    // directory and from this source file), loaded once. nullptr if it could not be found or loaded.
-    // Its Schema() is the rule metadata (names, ranges, defaults).
-    static const Dia::Attribute::ParameterFile* SidecarFile();
-
     // Value of the member at sidecar schema index `index` (int members as float). Generic consumers only.
     float ValueAt(uint32_t index) const;
 
     // Rounds half away from zero (the conversion integer-valued rules use).
     static int RoundToInt(float v) { return static_cast<int>(v + (v >= 0.0f ? 0.5f : -0.5f)); }
 
-    // Starts from Defaults(), then applies the file. Missing key -> default + warning;
+    // Starts from the defaults of the sidecar given as text (no compiled fallback: if it does not load, `*this` is
+    // zeroed with degraded set and false is returned), then applies the file. Missing key -> default + warning;
     // out-of-range -> clamped + warning + degraded; unknown key -> ignored + warning.
     // Returns false (defaults kept, degraded set) only if v is not a JSON object.
     // Warnings beyond kMaxRuleWarnings are dropped (the last slot becomes "warnings:truncated").
     // Implemented as an adapter over ParameterFile::ApplyPack.
-    bool LoadFromJson(const Json::Value& v, RuleWarnings& warnings);
+    bool LoadFromJson(const Json::Value& v, RuleWarnings& warnings, const char* sidecarText);
 
     // Flat key -> value object including "rulesVersion".
     Json::Value ToJson() const;

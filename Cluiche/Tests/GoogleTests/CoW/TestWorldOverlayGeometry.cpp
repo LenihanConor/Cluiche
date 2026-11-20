@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -29,7 +30,7 @@ bool Same(Dia::Maths::Vector2D a, Dia::Maths::Vector2D b) { return std::abs(a.x 
 
 TEST(WorldOverlayGeometry, RiverSegmentsEqualDownstreamLinesSmall)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "Small");
     const WorldStructure& w = s.World();
     WorldHexGrid grid(w.dimensions);
@@ -119,7 +120,7 @@ TEST(WorldOverlayGeometry, InvalidCellIsEmpty)
 
 TEST(WorldOverlayGeometry, LargeWorldSegmentCountUnderDebugDrawBudget)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "Large");
     WorldHexGrid grid(s.World().dimensions);
     const size_t rivers = BuildRiverSegments(s.World(), grid).size();
@@ -200,7 +201,7 @@ TEST(WorldOverlayGeometry, RegionEdgesEmptyWhenNoRegionsOrDimensionMismatch)
 
 TEST(WorldOverlayGeometry, GeneratedRegionEdgesMatchTheIndependentScan)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "Small");
     ASSERT_TRUE(s.RegionsFresh());
     WorldHexGrid grid(s.World().dimensions);
@@ -265,7 +266,7 @@ TEST(WorldOverlayGeometry, SiteMarkersOnlyForTheRequestedKindCentredOnTheirCells
 
 TEST(WorldOverlayGeometry, LargeRegionEdgesAndSitesUnderDebugDrawBudget)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, "Large");
     WorldHexGrid grid(s.World().dimensions);
     size_t lines = BuildRiverSegments(s.World(), grid).size() + BuildRegionEdges(s.World(), grid).size();

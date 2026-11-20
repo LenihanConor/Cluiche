@@ -2,6 +2,7 @@
 // MessageBusHostModule + RandomStreamModule + WorldGenerationModule on a 30 Hz SimPU.
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -28,7 +29,13 @@ WorldGenerationModule*                  g_wg  = nullptr;
 
 Module* CreateBus(const StringCRC& id) { g_bus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_bus; }
 Module* CreateRng(const StringCRC& id) { g_rng = new RandomStreamModule(id); return g_rng; }
-Module* CreateWg(const StringCRC& id)  { g_wg  = new WorldGenerationModule(id); return g_wg; }
+std::string g_rulesTextOverride;   // non-empty: the sidecar text the next module is created with (task 26 tests)
+Module* CreateWg(const StringCRC& id)
+{
+    g_wg = new WorldGenerationModule(id);
+    g_wg->SetRulesSidecarText(g_rulesTextOverride.empty() ? CoW::WorldGeneration::TestSidecarText() : g_rulesTextOverride);
+    return g_wg;
+}
 
 constexpr float kDt = 1.0f / 30.0f;
 
@@ -667,4 +674,49 @@ TEST(WorldGenModuleTimeout, ConfigSetsTheTimeoutAndBadValuesKeepTheDefault)
     ASSERT_TRUE(h.Boot());
     h.Pump(3);
     EXPECT_FLOAT_EQ(h.wg->GetSession().TimeoutSeconds(), WorldGeneration::kDefaultTimeoutSeconds);
+}
+
+// ---- Parameter Files task 26 (AC 18, AC 19): the module loads the terrain sidecar; a bad one refuses generation ----
+
+TEST(WorldGenModuleRules, GoodSidecarGeneratesAndHealthStaysOk)
+{
+    g_rulesTextOverride.clear();
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreRulesLoaded());
+    EXPECT_TRUE(f.wg->GetRulesErrorKey().empty());
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 1u);
+}
+
+TEST(WorldGenModuleRules, BrokenSidecarPutsHealthInErrorNamingTheKeyAndRefusesGeneration)
+{
+    std::string text = CoW::WorldGeneration::TestSidecarText();
+    const std::string needle = "\"default\": 0.02";
+    const size_t pos = text.find(needle);
+    ASSERT_NE(pos, std::string::npos);
+    text.replace(pos, needle.size(), "\"default\": 99.0");   // kCoastElev default out of range
+    g_rulesTextOverride = text;
+
+    Fixture f;
+    const bool booted = f.Boot();
+    g_rulesTextOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(5);
+
+    EXPECT_FALSE(f.wg->AreRulesLoaded());
+    EXPECT_EQ(f.wg->GetRulesErrorKey(), "kCoastElev");
+    const Dia::Observation::Health::Health health = f.wg->GetHealthReporter().Report();
+    EXPECT_EQ(health.status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_NE(std::string(health.reason.AsChar()).find("kCoastElev"), std::string::npos) << health.reason.AsChar();
+
+    // Generation is refused: no world, and the commands' shared entry point answers rules_not_loaded.
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    EXPECT_EQ(f.wg->GetCurrentWorld(), nullptr);
+    const Json::Value reply = f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
+    EXPECT_FALSE(reply["success"].asBool());
+    EXPECT_EQ(reply["error"].asString(), "rules_not_loaded");
+    f.Pump(5);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
 }

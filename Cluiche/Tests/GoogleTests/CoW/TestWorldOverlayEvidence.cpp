@@ -5,6 +5,7 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cmath>
 
@@ -213,7 +214,7 @@ TEST(WorldOverlayEvidence, StaleImportedOrFailedEvidenceDrawsNothing)
 
 TEST(WorldOverlayEvidence, LargeWorldCountsWithinBudgets)
 {
-    WorldGenSession s;
+    TestSession s;
     Json::Value sz(Json::objectValue);
     sz["size"] = "Large";
     s.SetSize(sz);

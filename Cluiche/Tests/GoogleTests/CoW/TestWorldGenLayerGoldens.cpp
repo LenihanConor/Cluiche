@@ -9,6 +9,7 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 
@@ -41,7 +42,7 @@ namespace
     bool GenerateAndCollect(const fs::path& root, const char* preset, uint64_t seed, std::vector<std::vector<float>>& storage,
                             std::vector<Golden::GoldenLayerInput>& inputs, std::string& error)
     {
-        WorldGenSession s;
+        TestSession s;
         Dia::Maths::RandomStream rng{ 1 };
         s.SetPresetDirectories((root / "Cluiche/Assets/CoW/Global/WorldGen/Presets").string(), "");
         Json::Value sz(Json::objectValue); sz["size"] = "Small";

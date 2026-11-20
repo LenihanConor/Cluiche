@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -30,7 +31,7 @@ size_t ReplySize(const Json::Value& v) { return Json::FastWriter().write(v).size
 // Fresh session that has run one Regenerate.
 struct Gen
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng{ 1 };
 
     explicit Gen(const SiteRegistry* reg = nullptr)
@@ -56,7 +57,7 @@ int LandCells(const WorldStructure& w)
 
 TEST(WorldGenSessionRegions, NothingGeneratedYetIsNotFresh)
 {
-    WorldGenSession s;
+    TestSession s;
     EXPECT_FALSE(s.Status()["regionsFresh"].asBool());
     EXPECT_TRUE(s.Status()["layout"].isNull());
     EXPECT_EQ(s.Regions()["regions"].size(), 0u);
@@ -65,7 +66,7 @@ TEST(WorldGenSessionRegions, NothingGeneratedYetIsNotFresh)
 
 TEST(WorldGenSessionRegions, FirstGenerationWithoutRegenerateLeavesRegionsEmpty)
 {
-    WorldGenSession s;
+    TestSession s;
     Dia::Maths::RandomStream rng(1);
     ASSERT_TRUE(s.Tick(rng));
     EXPECT_EQ(s.World().regions.regions.Size(), 0u);
@@ -154,7 +155,7 @@ TEST(WorldGenSessionRegions, SameSeedGivesIdenticalRegionsAndSites)
 TEST(WorldGenSessionRegions, DifferentSeedGivesDifferentSites)
 {
     Gen a;
-    WorldGenSession s2;
+    TestSession s2;
     Dia::Maths::RandomStream rng(1);
     Json::Value r = Obj(); r["seed"] = 777;
     s2.Regenerate(r);
@@ -286,7 +287,7 @@ TEST(WorldGenSessionRegions, SitesQueryRejectsBadArguments)
 
 TEST(WorldGenSessionRegions, ParamsEffectiveReportsLimits)
 {
-    WorldGenSession fresh;
+    TestSession fresh;
     const Json::Value before = fresh.Params()["effective"];
     EXPECT_TRUE(before["corridorLimited"].isArray());
     EXPECT_EQ(before["corridorLimited"].size(), 2u);

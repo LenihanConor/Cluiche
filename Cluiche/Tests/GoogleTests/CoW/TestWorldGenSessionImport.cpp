@@ -6,6 +6,7 @@
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <atomic>
 #include <cstring>
@@ -102,7 +103,7 @@ protected:
 
 TEST_F(SessionImportTest, AC7_ExportDefaultsToTheSeedAsTheFileName)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 424242);
     const Json::Value r = s.ExportWorld(Obj());
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
@@ -117,7 +118,7 @@ TEST_F(SessionImportTest, AC7_ExportDefaultsToTheSeedAsTheFileName)
 
 TEST_F(SessionImportTest, ExportAcceptsNullArgsAndANamedFile)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 5);
     const Json::Value nullArgs = s.ExportWorld(Json::Value());   // null args = all defaults
     EXPECT_TRUE(nullArgs["success"].asBool()) << nullArgs.toStyledString();
@@ -128,7 +129,7 @@ TEST_F(SessionImportTest, ExportAcceptsNullArgsAndANamedFile)
 
 TEST_F(SessionImportTest, ExportRefusesBadArgumentsAndExistingFilesUnlessOverwrite)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 5);
     EXPECT_FALSE(s.ExportWorld(Json::Value(7))["success"].asBool());
     Json::Value a = Obj(); a["name"] = 12;
@@ -153,11 +154,11 @@ TEST_F(SessionImportTest, ExportRefusesBadArgumentsAndExistingFilesUnlessOverwri
 
 TEST_F(SessionImportTest, ExportNeedsAGeneratedWorldAndAConfiguredDirectory)
 {
-    WorldGenSession fresh;
+    TestSession fresh;
     fresh.SetWorldDirectories("", mOut);
     EXPECT_FALSE(fresh.ExportWorld(Obj())["success"].asBool());   // nothing generated yet
 
-    WorldGenSession s;
+    TestSession s;
     ASSERT_TRUE(s.Tick(mRng));   // generated, but no directory configured
     const Json::Value r = s.ExportWorld(Obj());
     EXPECT_FALSE(r["success"].asBool());
@@ -166,7 +167,7 @@ TEST_F(SessionImportTest, ExportNeedsAGeneratedWorldAndAConfiguredDirectory)
 
 TEST_F(SessionImportTest, ExportOfATerrainOnlyWorldWarnsAboutMissingRegions)
 {
-    WorldGenSession s;
+    TestSession s;
     s.SetWorldDirectories("", mOut);
     ASSERT_TRUE(s.Tick(mRng));   // first generation: no regions
     const Json::Value r = s.ExportWorld(Obj());
@@ -177,7 +178,7 @@ TEST_F(SessionImportTest, ExportOfATerrainOnlyWorldWarnsAboutMissingRegions)
 
 TEST_F(SessionImportTest, ExportRecordsTheSessionsPresetIdInProvenance)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 9);
     // The session's preset id is session state; a session whose params were set from a preset exports that id.
     const fs::path presets = mRoot / "presets";
@@ -196,11 +197,11 @@ TEST_F(SessionImportTest, ExportRecordsTheSessionsPresetIdInProvenance)
 
 TEST_F(SessionImportTest, Test3_ExportThenImportIntoAnotherSessionIsExact)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 77, "{\"islands\":5,\"rivers\":0.8}");
     ExportOk(a, "w");
 
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     const uint32_t before = b.Revision();
     const Json::Value r = ImportName(b, "w");
@@ -226,10 +227,10 @@ TEST_F(SessionImportTest, Test3_ExportThenImportIntoAnotherSessionIsExact)
 
 TEST_F(SessionImportTest, ImportReportsStatusParamsAndALayoutCheck)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 3);
     ExportOk(a, "w");
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(b, "w")["success"].asBool());
 
@@ -252,7 +253,7 @@ TEST_F(SessionImportTest, ImportReportsStatusParamsAndALayoutCheck)
 
 TEST_F(SessionImportTest, ImportAdoptsThePresetIdFromTheFile)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 9);
     a.SetPresetDirectories("", (mRoot / "presets").string());
     Json::Value save = Obj(); save["id"] = "mypreset"; save["displayName"] = "My";
@@ -260,7 +261,7 @@ TEST_F(SessionImportTest, ImportAdoptsThePresetIdFromTheFile)
     Json::Value load = Obj(); load["id"] = "mypreset";
     a.PresetLoad(load);
     ExportOk(a, "p");
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(b, "p")["success"].asBool());
     EXPECT_EQ(b.PresetId(), "mypreset");
@@ -270,7 +271,7 @@ TEST_F(SessionImportTest, ImportAdoptsThePresetIdFromTheFile)
 
 TEST_F(SessionImportTest, FailedImportsChangeNothing)
 {
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 11);
     const WorldStructure before = s.World();
     const Json::Value statusBefore = s.Status();
@@ -314,10 +315,10 @@ TEST_F(SessionImportTest, FailedImportsChangeNothing)
 
 TEST_F(SessionImportTest, ImportReplacesAPendingChangeAndTickDoesNotRegenerate)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 21);
     ExportOk(a, "w");
-    WorldGenSession b;
+    TestSession b;
     Generate(b, 22);
     Json::Value pending = Obj(); pending["rivers"] = 0.9;
     b.Set(pending);   // dirty: a live-preview regeneration is waiting
@@ -332,10 +333,10 @@ TEST_F(SessionImportTest, ImportReplacesAPendingChangeAndTickDoesNotRegenerate)
 
 TEST_F(SessionImportTest, SD_S1_009_EveryActionIsRefusedWhileLockedUnlessItCarriesUnlock)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 31);
     ExportOk(a, "w");
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     b.SetPresetDirectories("", (mRoot / "presets").string());
     Json::Value save = Obj(); save["id"] = "other"; save["displayName"] = "Other";
@@ -380,13 +381,13 @@ TEST_F(SessionImportTest, SD_S1_009_EveryActionIsRefusedWhileLockedUnlessItCarri
 
 TEST_F(SessionImportTest, UnlockingAppliesTheActionDropsTheEditsAndRegenerates)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 41);
     ExportOk(a, "w");
 
     // Set with unlock.
     {
-        WorldGenSession b; b.SetWorldDirectories("", mOut);
+        TestSession b; b.SetWorldDirectories("", mOut);
         ASSERT_TRUE(ImportName(b, "w")["success"].asBool());
         const Json::Value r = b.Set(Args("{\"unlock\":true,\"rivers\":0.2}"));
         ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
@@ -401,7 +402,7 @@ TEST_F(SessionImportTest, UnlockingAppliesTheActionDropsTheEditsAndRegenerates)
     }
     // Set with only unlock: the world is regenerated from the recorded recipe even though no slider changed.
     {
-        WorldGenSession b; b.SetWorldDirectories("", mOut);
+        TestSession b; b.SetWorldDirectories("", mOut);
         ASSERT_TRUE(ImportName(b, "w")["success"].asBool());
         ASSERT_TRUE(b.Set(Args("{\"unlock\":true}"))["success"].asBool());
         EXPECT_TRUE(b.IsDirty());
@@ -419,7 +420,7 @@ TEST_F(SessionImportTest, UnlockingAppliesTheActionDropsTheEditsAndRegenerates)
     }
     // SetSize with unlock.
     {
-        WorldGenSession b; b.SetWorldDirectories("", mOut);
+        TestSession b; b.SetWorldDirectories("", mOut);
         ASSERT_TRUE(ImportName(b, "w")["success"].asBool());
         ASSERT_TRUE(b.SetSize(Args("{\"size\":\"Standard\",\"unlock\":true}"))["success"].asBool());
         EXPECT_FALSE(b.IsLocked());
@@ -428,7 +429,7 @@ TEST_F(SessionImportTest, UnlockingAppliesTheActionDropsTheEditsAndRegenerates)
     }
     // PresetLoad with unlock.
     {
-        WorldGenSession b; b.SetWorldDirectories("", mOut);
+        TestSession b; b.SetWorldDirectories("", mOut);
         b.SetPresetDirectories("", (mRoot / "presets").string());
         Json::Value save = Obj(); save["id"] = "other"; save["displayName"] = "Other";
         ASSERT_TRUE(b.PresetSave(save)["success"].asBool());
@@ -441,10 +442,10 @@ TEST_F(SessionImportTest, UnlockingAppliesTheActionDropsTheEditsAndRegenerates)
 
 TEST_F(SessionImportTest, AnActionThatFailsValidationDoesNotUnlock)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 51);
     ExportOk(a, "w");
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(b, "w")["success"].asBool());
 
@@ -461,7 +462,7 @@ TEST_F(SessionImportTest, AnActionThatFailsValidationDoesNotUnlock)
 
 TEST_F(SessionImportTest, Biome_AC14_ImportedBiomesAreNeverReclassifiedAndProvenanceReproducesThem)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 61, "{\"temperatureOffset\":0.2,\"moistureOffset\":-0.15,\"mountainousness\":0.8}");
     ExportOk(a, "w");
 
@@ -472,7 +473,7 @@ TEST_F(SessionImportTest, Biome_AC14_ImportedBiomesAreNeverReclassifiedAndProven
     text.replace(at, std::string("\"biome\": \"Biome.Grassland\"").size(), "\"biome\": \"Biome.Desert\"");
     WriteFile("edited", text);
 
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(b, "edited")["success"].asBool());
     int changed = 0;
@@ -490,7 +491,7 @@ TEST_F(SessionImportTest, Biome_AC14_ImportedBiomesAreNeverReclassifiedAndProven
     EXPECT_EQ(refused["error"].asString(), "locked");
 
     // Regenerating from the exported provenance reproduces the original biome array byte for byte, climate offsets included.
-    WorldGenSession c;
+    TestSession c;
     c.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(c, "w")["success"].asBool());
     EXPECT_FLOAT_EQ(c.Shape().temperatureOffset, 0.2f);
@@ -507,12 +508,12 @@ TEST_F(SessionImportTest, Biome_AC14_ImportedBiomesAreNeverReclassifiedAndProven
 
 TEST_F(SessionImportTest, Regions_AC14_ImportedRegionsAndSitesAreKeptAndProvenanceReproducesThem)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 71);
     ExportOk(a, "w");
 
     // Hand-edit: drop one Hunting site; nothing recomputes the rest.
-    WorldGenSession probe;
+    TestSession probe;
     probe.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(probe, "w")["success"].asBool());
     const auto huntingBefore = probe.World().sites.Of(BuiltinNodeKinds::Hunting());
@@ -532,7 +533,7 @@ TEST_F(SessionImportTest, Regions_AC14_ImportedRegionsAndSitesAreKeptAndProvenan
     ASSERT_TRUE(ExportWorldText(edited, ctx, editedText, issue));
     WriteFile("edited", editedText);
 
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(b, "edited")["success"].asBool());
     EXPECT_TRUE(b.World().regions == a.World().regions) << "stored regions kept";
@@ -541,7 +542,7 @@ TEST_F(SessionImportTest, Regions_AC14_ImportedRegionsAndSitesAreKeptAndProvenan
     EXPECT_EQ(b.Sites(Obj())["total"].asInt(), edited.sites.Count());
 
     // Regenerating from the exported provenance reproduces the original regions and sites byte for byte.
-    WorldGenSession c;
+    TestSession c;
     c.SetWorldDirectories("", mOut);
     ASSERT_TRUE(ImportName(c, "w")["success"].asBool());
     ASSERT_TRUE(c.Regenerate(Args("{\"unlock\":true}"))["success"].asBool());
@@ -554,7 +555,7 @@ TEST_F(SessionImportTest, Regions_AC14_ImportedRegionsAndSitesAreKeptAndProvenan
 
 TEST_F(SessionImportTest, AC4_HandEditedSiteImportsAtItsNewCellThroughTheSession)
 {
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 81);
     ExportOk(a, "w");
     const auto hunting = a.World().sites.Of(BuiltinNodeKinds::Hunting());
@@ -573,7 +574,7 @@ TEST_F(SessionImportTest, AC4_HandEditedSiteImportsAtItsNewCellThroughTheSession
     text.replace(text.find(from), from.size(), "{ \"cell\": " + std::to_string(target) + ", \"region\": " + std::to_string(moved.region));
     WriteFile("moved", text);
 
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     const Json::Value r = ImportName(b, "moved");
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
@@ -591,7 +592,7 @@ TEST_F(SessionImportTest, AC4_HandEditedSiteImportsAtItsNewCellThroughTheSession
 TEST_F(SessionImportTest, ImportedWorldOfAnotherSizeKeepsTheQueriesWorking)
 {
     WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c; ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 91);   // a Small world first, so stale buffers of the wrong size could be read
     const Json::Value r = ImportName(s, "tiny");
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
@@ -630,7 +631,7 @@ TEST_F(SessionImportTest, ImportedWorldOfAnotherSizeKeepsTheQueriesWorking)
 TEST_F(SessionImportTest, UnlockingAfterImportingADifferentSizeRegeneratesAtTheFilesSize)
 {
     WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c; ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
-    WorldGenSession s;
+    TestSession s;
     Generate(s, 92);
     ASSERT_TRUE(ImportName(s, "tiny")["success"].asBool());
     ASSERT_TRUE(s.Regenerate(Args("{\"unlock\":true}"))["success"].asBool());
@@ -641,11 +642,11 @@ TEST_F(SessionImportTest, UnlockingAfterImportingADifferentSizeRegeneratesAtTheF
 
 TEST_F(SessionImportTest, WorldWithoutRegionsImportsAsNotFresh)
 {
-    WorldGenSession a;
+    TestSession a;
     a.SetWorldDirectories("", mOut);
     ASSERT_TRUE(a.Tick(mRng));   // terrain only
     ExportOk(a, "terrain");
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories("", mOut);
     const Json::Value r = ImportName(b, "terrain");
     ASSERT_TRUE(r["success"].asBool());
@@ -666,7 +667,7 @@ TEST_F(SessionImportTest, AC11_RegisteredKindRoundTripsThroughTheSessionAndAnUnk
     SiteRegistry registry;
     ASSERT_TRUE(registry.Register(&placer));
 
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 101, "{}", &registry);
     ASSERT_NE(a.World().sites.Find(StringCRC("Test.Session"), 5), nullptr);
     ExportOk(a, "withkind");
@@ -674,7 +675,7 @@ TEST_F(SessionImportTest, AC11_RegisteredKindRoundTripsThroughTheSessionAndAnUnk
 
     // Same registry: imported exactly, no warning.
     {
-        WorldGenSession b;
+        TestSession b;
         b.SetWorldDirectories("", mOut);
         b.SetSiteRegistry(&registry);
         const Json::Value r = ImportName(b, "withkind");
@@ -685,7 +686,7 @@ TEST_F(SessionImportTest, AC11_RegisteredKindRoundTripsThroughTheSessionAndAnUnk
     }
     // No registry: the kind is kept, warned about, and re-exports unchanged.
     {
-        WorldGenSession c;
+        TestSession c;
         c.SetWorldDirectories("", mOut);
         const Json::Value r = ImportName(c, "withkind");
         ASSERT_TRUE(r["success"].asBool());
@@ -703,14 +704,14 @@ TEST_F(SessionImportTest, AC11_RegisteredKindRoundTripsThroughTheSessionAndAnUnk
 TEST_F(SessionImportTest, DeployedDirectoryIsSearchedWhenTheOutDirectoryHasNoSuchWorld)
 {
     const std::string deployed = (mRoot / "deployed").string();
-    WorldGenSession a;
+    TestSession a;
     Generate(a, 111);
     ExportOk(a, "shipped");
     fs::create_directories(deployed);
     fs::copy_file(WorldFilePath(mOut, "shipped"), WorldFilePath(deployed, "shipped"));
     fs::remove(WorldFilePath(mOut, "shipped"));
 
-    WorldGenSession b;
+    TestSession b;
     b.SetWorldDirectories(deployed, mOut);
     ASSERT_TRUE(ImportName(b, "shipped")["success"].asBool());
     EXPECT_TRUE(SameWorld(a.World(), b.World()));

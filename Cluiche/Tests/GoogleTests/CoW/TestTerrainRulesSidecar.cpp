@@ -7,6 +7,9 @@
 #include <DiaAttribute/ParamBinding.h>
 #include <DiaAttribute/ParameterFile.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
+#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <DiaMaths/Core/RandomStream.h>
 
 #include <filesystem>
 #include <fstream>
@@ -250,4 +253,133 @@ TEST(TerrainRulesSidecar, IntConversionMatchesOldGetInt)
     EXPECT_EQ(TerrainRules::RoundToInt(0.5f), 1);
     EXPECT_EQ(TerrainRules::RoundToInt(-0.5f), -1);
     EXPECT_EQ(TerrainRules::RoundToInt(2.49f), 2);
+}
+
+// ---- Task 26 (AC 18, AC 19): the session owns its rules file; no rules, no generation. ----
+
+namespace
+{
+    // The shipped sidecar with kCoastElev's default pushed out of its range: Load must fail naming kCoastElev.
+    std::string BrokenSidecarText()
+    {
+        std::string text = CoW::WorldGeneration::TestSidecarText();
+        const std::string needle = "\"default\": 0.02";
+        const size_t pos = text.find(needle);
+        if (pos != std::string::npos)
+        {
+            text.replace(pos, needle.size(), "\"default\": 99.0");
+        }
+        return text;
+    }
+
+    bool IsRulesNotLoaded(const Json::Value& reply)
+    {
+        return reply.isObject() && reply.isMember("success") && !reply["success"].asBool()
+            && reply.isMember("error") && reply["error"].asString() == "rules_not_loaded";
+    }
+}
+
+TEST(TerrainRulesSession, BrokenSidecarTextTestFixtureReallyBreaksTheLoad)
+{
+    const std::string text = BrokenSidecarText();
+    ASSERT_NE(text, CoW::WorldGeneration::TestSidecarText());
+    ParameterFile file;
+    ParamError    err;
+    EXPECT_FALSE(file.Load(text.c_str(), "terrain_rules.schema.json", nullptr, err));
+    EXPECT_STREQ(err.key.AsCStr(), "kCoastElev");
+}
+
+TEST(TerrainRulesSession, DefaultConstructedSessionRefusesEveryGenerationEntryPoint)
+{
+    CoW::WorldGeneration::WorldGenSession s;
+    EXPECT_FALSE(s.RulesLoaded());
+
+    Json::Value seed(Json::objectValue);
+    seed["seed"] = 7;
+    EXPECT_TRUE(IsRulesNotLoaded(s.Set(seed)));
+    Json::Value size(Json::objectValue);
+    size["size"] = "Small";
+    EXPECT_TRUE(IsRulesNotLoaded(s.SetSize(size)));
+    EXPECT_TRUE(IsRulesNotLoaded(s.Regenerate(Json::Value(Json::objectValue))));
+    Json::Value preset(Json::objectValue);
+    preset["id"] = "continental";
+    EXPECT_TRUE(IsRulesNotLoaded(s.PresetLoad(preset)));
+    Json::Value import(Json::objectValue);
+    import["name"] = "anything";
+    EXPECT_TRUE(IsRulesNotLoaded(s.ImportWorld(import)));
+    EXPECT_TRUE(IsRulesNotLoaded(s.Validate(Json::Value(Json::objectValue))));
+
+    Dia::Maths::RandomStream rng(1);
+    EXPECT_FALSE(s.Tick(rng));
+    EXPECT_EQ(s.Revision(), 0u);
+    EXPECT_FALSE(s.IsGenerating());
+}
+
+TEST(TerrainRulesSession, LoadRulesFromGoodSidecarBindsRulesAndGenerates)
+{
+    CoW::WorldGeneration::WorldGenSession s;
+    ParamError err;
+    ASSERT_TRUE(s.LoadRules(CoW::WorldGeneration::TestSidecarText().c_str(), err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_TRUE(s.RulesLoaded());
+    EXPECT_EQ(s.Rules().kCoastElev, CoW::WorldGeneration::TestRules().kCoastElev);
+
+    Dia::Maths::RandomStream rng(1);
+    EXPECT_TRUE(s.Tick(rng));
+    EXPECT_EQ(s.Revision(), 1u);
+}
+
+TEST(TerrainRulesSession, FailedLoadRulesOnAFreshSessionNamesTheKeyAndLeavesItUnloaded)
+{
+    CoW::WorldGeneration::WorldGenSession s;
+    const std::string broken = BrokenSidecarText();
+    ParamError err;
+    EXPECT_FALSE(s.LoadRules(broken.c_str(), err));
+    EXPECT_STREQ(err.key.AsCStr(), "kCoastElev");
+    EXPECT_FALSE(s.RulesLoaded());
+    EXPECT_TRUE(IsRulesNotLoaded(s.Regenerate(Json::Value(Json::objectValue))));
+    EXPECT_FALSE(s.LoadRules(nullptr, err));
+    EXPECT_FALSE(s.RulesLoaded());
+}
+
+TEST(TerrainRulesSession, FailedLoadRulesLeavesAPreviouslyLoadedSessionIntact)
+{
+    CoW::WorldGeneration::TestSession s;
+    const float before = s.Rules().kCoastElev;
+    const std::string broken = BrokenSidecarText();
+    ParamError err;
+    EXPECT_FALSE(s.LoadRules(broken.c_str(), err));
+    EXPECT_STREQ(err.key.AsCStr(), "kCoastElev");
+    EXPECT_TRUE(s.RulesLoaded());
+    EXPECT_EQ(s.Rules().kCoastElev, before);
+
+    Json::Value seed(Json::objectValue);
+    seed["seed"] = 9;
+    const Json::Value reply = s.Set(seed);
+    EXPECT_TRUE(reply["success"].asBool());
+    Dia::Maths::RandomStream rng(1);
+    EXPECT_TRUE(s.Tick(rng));
+}
+
+TEST(TerrainRulesSession, LoadRulesWithAChangedDefaultReplacesTheRulesBeforeAnyWorldExists)
+{
+    std::string text = CoW::WorldGeneration::TestSidecarText();
+    const size_t pos = text.find("\"default\": 0.02");
+    ASSERT_NE(pos, std::string::npos);
+    text.replace(pos, std::string("\"default\": 0.02").size(), "\"default\": 0.03");
+
+    CoW::WorldGeneration::TestSession s;
+    ParamError err;
+    ASSERT_TRUE(s.LoadRules(text.c_str(), err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_FLOAT_EQ(s.Rules().kCoastElev, 0.03f);
+}
+
+TEST(TerrainRulesSession, LoadRulesIsRefusedOnceAWorldExists)
+{
+    CoW::WorldGeneration::TestSession s;
+    Dia::Maths::RandomStream rng(1);
+    ASSERT_TRUE(s.Tick(rng));
+    ParamError err;
+    EXPECT_FALSE(s.LoadRules(CoW::WorldGeneration::TestSidecarText().c_str(), err));
+    EXPECT_STREQ(err.key.AsCStr(), "state");
+    EXPECT_TRUE(s.RulesLoaded());
 }
