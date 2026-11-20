@@ -224,6 +224,8 @@ def _type_ok(t: str, v: object) -> bool:
         return isinstance(v, str)
     if t == "ref[]":
         return isinstance(v, list) and all(isinstance(x, str) for x in v)
+    if t in ("enum[]", "ref[2][]"):   # members / pair shape are checked per item in check_value
+        return isinstance(v, list)
     return True
 
 
@@ -353,11 +355,16 @@ class _Walker:
             return
         if not self.check_value(key, path, record, val, entry, f"'{key}'"):
             return
-        if t in ("ref", "ref[]"):
+        if t in ("ref", "ref[]", "ref[2][]"):
             ids = self._ref_values(key, path, record, entry.get("ref"))
             if ids is not None:
                 id_strs = [x for x in ids if isinstance(x, str)]
-                items = [(path, val)] if t == "ref" else [(f"{path}[{i}]", x) for i, x in enumerate(val)]
+                if t == "ref":
+                    items = [(path, val)]
+                elif t == "ref[]":
+                    items = [(f"{path}[{i}]", x) for i, x in enumerate(val)]
+                else:
+                    items = [(f"{path}[{i}][{j}]", x) for i, pair in enumerate(val) for j, x in enumerate(pair)]
                 bad = False
                 for ipath, item in items:
                     if item not in id_strs:
@@ -390,6 +397,30 @@ class _Walker:
                 hi_s = _fmt(hi) if hi is not None else "inf"
                 self._add("data.out-of-range", key, path, record, f"{label} = {_fmt(val)} outside [{lo_s}, {hi_s}]")
                 return False
+        elif t == "ref[2][]":
+            ok = True
+            for i, pair in enumerate(val):
+                if not (isinstance(pair, list) and len(pair) == 2 and all(isinstance(x, str) for x in pair)):
+                    ok = False
+                    shown = pair if isinstance(pair, (list, dict)) else _fmt(pair)
+                    self._add("data.wrong-type", key, f"{path}[{i}]", record,
+                              f"{label} pair {i} = {shown} must be an array of exactly 2 ref strings")
+            return ok
+        elif t == "enum[]":
+            vals = entry.get("values", [])
+            ids = [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]                 if isinstance(vals, list) else []
+            ok = True
+            for i, m in enumerate(val):
+                if not isinstance(m, str):
+                    ok = False
+                    self._add("data.wrong-type", key, f"{path}[{i}]", record,
+                              f"{label} member {i} = {m} must be a string enum id")
+                elif m not in ids:
+                    ok = False
+                    s = suggest(m, ids)
+                    self._add("data.bad-enum", key, f"{path}[{i}]", record,
+                              f"{label} member {i} = {_fmt(m)} is not one of {', '.join(ids)}" + format_suggestion(s), s)
+            return ok
         elif t == "enum":
             vals = entry.get("values", [])
             ids = [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]                 if isinstance(vals, list) else []

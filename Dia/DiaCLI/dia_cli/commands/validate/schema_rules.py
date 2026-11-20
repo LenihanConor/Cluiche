@@ -21,7 +21,9 @@ UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "co
 HISTORY_KEYS = ("track", "group", "aggregate")
 FILE_KEYS = ("format", "version", "bandSchemaVersion", "for", "entries", "constraints")
 KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_field")
-TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map")
+TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map", "enum[]", "ref[2][]")
+REF_TYPES = ("ref", "ref[]", "ref[2][]")
+ENUM_TYPES = ("enum", "enum[]")
 MAP_VALUE_TYPES = ("float", "int", "bool", "string", "enum")
 NUMERIC_TYPES = ("float", "int")
 # Pack envelope keys: a kind-parameter entry with one of these could never be set by a pack.
@@ -110,10 +112,10 @@ def _check_event_list(e: dict, field: str, item_name: str, required: tuple, opti
 
 def _check_type_specific(e: dict) -> None:
     t = e["type"]
-    if t in ("ref", "ref[]"):
+    if t in REF_TYPES:
         _check_ref_format("ref", _require_string(e, "ref"))
     elif "ref" in e:
-        raise _Stop("schema.ref-misuse", "field 'ref' is only valid on ref and ref[] types")
+        raise _Stop("schema.ref-misuse", "field 'ref' is only valid on ref, ref[] and ref[2][] types")
     if t == "map":
         _check_ref_format("keyRef", _require_string(e, "keyRef"))
         vt = _require_string(e, "valueType")
@@ -124,8 +126,8 @@ def _check_type_specific(e: dict) -> None:
             raise _Stop("schema.map-misuse", "field 'keyRef' is only valid on map types")
         if "valueType" in e:
             raise _Stop("schema.map-misuse", "field 'valueType' is only valid on map types")
-    if t == "enum" and "values" not in e:
-        raise _Stop("schema.enum-no-values", "enum type requires a 'values' array")
+    if t in ENUM_TYPES and "values" not in e:
+        raise _Stop("schema.enum-no-values", f"{t} type requires a 'values' array")
 
 
 def _check_bands(e: dict) -> None:

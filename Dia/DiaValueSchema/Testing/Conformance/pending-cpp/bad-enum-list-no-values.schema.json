@@ -1,0 +1,14 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.enumlist",
+  "entries": [
+    {
+      "key": "k",
+      "kind": "parameter",
+      "label": "k",
+      "description": "d",
+      "type": "enum[]"
+    }
+  ]
+}

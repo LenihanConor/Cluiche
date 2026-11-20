@@ -1,0 +1,22 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.enumlist",
+  "entries": [
+    {
+      "key": "tags",
+      "kind": "parameter",
+      "label": "tags",
+      "description": "d",
+      "type": "enum[]",
+      "values": [
+        {
+          "id": "land"
+        },
+        {
+          "id": "water"
+        }
+      ]
+    }
+  ]
+}

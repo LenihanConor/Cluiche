@@ -1,0 +1,82 @@
+{
+  "description": "An enum[] member outside the enum is reported with its index and a suggestion.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.biomes",
+      "entries": [
+        {
+          "key": "biomes[].id",
+          "kind": "parameter",
+          "label": "biomes[].id",
+          "description": "d",
+          "type": "string",
+          "unique": true,
+          "required": true
+        },
+        {
+          "key": "biomes[].tags",
+          "kind": "parameter",
+          "label": "biomes[].tags",
+          "description": "d",
+          "type": "enum[]",
+          "values": [
+            {
+              "id": "land"
+            },
+            {
+              "id": "water"
+            }
+          ]
+        },
+        {
+          "key": "forbidden",
+          "kind": "parameter",
+          "label": "forbidden",
+          "description": "d",
+          "type": "ref[2][]",
+          "ref": "cow.biomes/biomes[].id"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "Forest",
+            "tags": [
+              "land",
+              "watr"
+            ]
+          },
+          {
+            "id": "Desert",
+            "tags": []
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.bad-enum",
+      "file": "Global/World/biomes.json",
+      "key": "biomes[].tags",
+      "path": "biomes[0].tags[1]",
+      "record": "Forest",
+      "messageContains": "watr",
+      "suggestion": "water"
+    }
+  ]
+}

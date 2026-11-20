@@ -41,7 +41,7 @@
       "kind": "parameter",
       "label": "Tags",
       "description": "List of tags drawn from this vocabulary.",
-      "type": "enum",
+      "type": "enum[]",
       "values": [
         {
           "id": "land",
@@ -119,7 +119,7 @@
       "kind": "parameter",
       "label": "Zones",
       "description": "List of DepthZone ids where the biome is valid; empty means no zone admits it.",
-      "type": "enum",
+      "type": "enum[]",
       "values": [
         {
           "id": "None",
@@ -149,7 +149,7 @@
       "kind": "parameter",
       "label": "Roles",
       "description": "List of structural roles this row holds. Each role is held by exactly one row.",
-      "type": "enum",
+      "type": "enum[]",
       "values": [
         {
           "id": "ocean",
@@ -270,8 +270,8 @@
       "key": "forbidden",
       "kind": "parameter",
       "label": "Forbidden pairs",
-      "description": "Flat list of biome ids; consecutive entries form unordered forbidden neighbour pairs ([a,b] pairs in the file).",
-      "type": "ref[]",
+      "description": "List of unordered forbidden neighbour pairs; each element is a 2-element array of biome ids.",
+      "type": "ref[2][]",
       "ref": "cow.biomes/biomes[].id"
     }
   ]
