@@ -63,6 +63,10 @@
     "bad-constraint-op.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "op" },
     "bad-constraint-unknown-key.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "nope" },
     "bad-constraint-non-numeric.schema.json": { "ok": false, "failedEntry": "constraints[0]", "reasonContains": "numeric" },
-    "good-constraints.schema.json": { "ok": true, "entryCount": 3, "for": "conf.test" }
+    "good-constraints.schema.json": { "ok": true, "entryCount": 3, "for": "conf.test" },
+    "good-enum-list.schema.json": { "ok": true, "entryCount": 1, "for": "conf.enumlist" },
+    "good-ref-pair-list.schema.json": { "ok": true, "entryCount": 1, "for": "conf.pairs" },
+    "bad-enum-list-no-values.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "values" },
+    "bad-ref-pair-list-no-ref.schema.json": { "ok": false, "failedEntry": "k", "reasonContains": "ref" }
   }
 }

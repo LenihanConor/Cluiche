@@ -66,7 +66,7 @@ def evaluate_case(case: dict) -> list:
 # ---------------------------------------------------------------------------
 
 def test_q1_folder_contains_only_known_kinds_of_file():
-    assert INDEX["top_other"] == ["README.md", "data", "expected.json", "pending-cpp", "ramps"]
+    assert INDEX["top_other"] == ["README.md", "data", "expected.json", "ramps"]
     assert INDEX["data_other"] == ["README.md"]
 
 

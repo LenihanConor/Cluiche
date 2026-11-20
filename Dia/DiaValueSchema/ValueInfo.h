@@ -98,7 +98,9 @@ namespace Dia::ValueSchema
 
 	enum class ValueType
 	{
-		Float, Int, Bool, Enum, String, Ref, RefList, Map
+		Float, Int, Bool, Enum, String, Ref, RefList, Map,
+		EnumList,	// "enum[]": array of enum ids; needs `values` like enum. Appended so stored numeric values of earlier types do not move.
+		RefPairList	// "ref[2][]": array of [id, id] pairs, each id resolving as a ref
 	};
 
 	struct EnumValue

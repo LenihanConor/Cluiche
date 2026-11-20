@@ -42,6 +42,8 @@ namespace Dia::ValueSchema
 			case ValueType::Ref:		return "ref";
 			case ValueType::RefList:	return "ref[]";
 			case ValueType::Map:		return "map";
+			case ValueType::EnumList:	return "enum[]";
+			case ValueType::RefPairList:	return "ref[2][]";
 			}
 			return "float";
 		}

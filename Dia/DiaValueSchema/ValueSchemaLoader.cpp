@@ -121,6 +121,8 @@ namespace Dia::ValueSchema
 			if (s == "ref")		{ out = ValueType::Ref; return true; }
 			if (s == "ref[]")	{ out = ValueType::RefList; return true; }
 			if (s == "map")		{ out = ValueType::Map; return true; }
+			if (s == "enum[]")	{ out = ValueType::EnumList; return true; }
+			if (s == "ref[2][]")	{ out = ValueType::RefPairList; return true; }
 			return false;
 		}
 
@@ -240,12 +242,12 @@ namespace Dia::ValueSchema
 
 		bool ReadTypeSpecific(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& e)
 		{
-			const bool isRef = info.mType == ValueType::Ref || info.mType == ValueType::RefList;
+			const bool isRef = info.mType == ValueType::Ref || info.mType == ValueType::RefList || info.mType == ValueType::RefPairList;
 			if (isRef)
 			{
 				if (!AssignRequired(r, ctx, info.mRef, e, "ref")) { return false; }
 			}
-			else if (e.isMember("ref")) { return Fail(r, ctx, "field 'ref' is only valid on ref and ref[] types"); }
+			else if (e.isMember("ref")) { return Fail(r, ctx, "field 'ref' is only valid on ref, ref[] and ref[2][] types"); }
 
 			if (info.mType == ValueType::Map)
 			{
@@ -253,7 +255,7 @@ namespace Dia::ValueSchema
 				const char* vt = nullptr;
 				if (!RequireString(r, ctx, e, "valueType", vt)) { return false; }
 				ValueType t;
-				if (!ParseType(vt, t) || t == ValueType::Ref || t == ValueType::RefList || t == ValueType::Map)
+				if (!ParseType(vt, t) || t == ValueType::Ref || t == ValueType::RefList || t == ValueType::RefPairList || t == ValueType::EnumList || t == ValueType::Map)
 				{
 					return Fail(r, ctx, "field 'valueType' must be one of float, int, bool, string, enum");
 				}
@@ -265,7 +267,7 @@ namespace Dia::ValueSchema
 				if (e.isMember("valueType")) { return Fail(r, ctx, "field 'valueType' is only valid on map types"); }
 			}
 
-			if (info.mType == ValueType::Enum && !e.isMember("values")) { return Fail(r, ctx, "enum type requires a 'values' array"); }
+			if ((info.mType == ValueType::Enum || info.mType == ValueType::EnumList) && !e.isMember("values")) { return Fail(r, ctx, "enum and enum[] types require a 'values' array"); }
 			return true;
 		}
 

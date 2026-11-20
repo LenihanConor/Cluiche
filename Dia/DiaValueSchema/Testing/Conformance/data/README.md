@@ -18,7 +18,7 @@ Self-contained scenarios for the data-file rules of `dia validate schema`. Consu
 - `files[].pack`: true for a pack (partial override; defaults are not checked), false for a defaults file.
 - `expected`: every finding of every file, in any order. `[]` means all files are clean. Findings are matched on severity, rule, file, key, path, record, `suggestion` (null = none) and `messageContains` (a substring of the message). Extra or missing findings fail the case.
 - `schemaExpected` (optional, default `[]`): findings of the schema-level checks (`affects`/`related` resolution, `ui.ramp`) over `schemas`, same shape as `expected`. The `file` of such a finding is `schemas[<index>]`.
-- Cross-format rules (`ref`, `ref[]`, `map` keys) resolve against ALL `files` of the case, grouped by `format` (defaults and packs together). A file whose format has no schema is still a source of ids. A ref to a format with no files in the case gives one WARN (`data.ref-format-missing`) per file and format.
+- Cross-format rules (`ref`, `ref[]`, `ref[2][]`, `map` keys) resolve against ALL `files` of the case, grouped by `format` (defaults and packs together). A file whose format has no schema is still a source of ids. A ref to a format with no files in the case gives one WARN (`data.ref-format-missing`) per file and format.
 - Keys are dotted paths; record-table columns use `species[].growth_rate`; `path` is the location with record indexes (`species[2].growth_rate`); `record` is the enclosing record's `id`, else null.
 
 ## Rule ids
