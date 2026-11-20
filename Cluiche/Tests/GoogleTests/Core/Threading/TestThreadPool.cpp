@@ -281,6 +281,8 @@ TEST(ThreadPool, LoadBalancing_DistributesWorkAcrossThreads)
     Atomic<int> nextIndex{0};
 
     auto task = [&]() {
+        // Without a little work a single fast Release worker drains the whole queue before the others wake.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         std::thread::id tid = ThisThread::GetId();
 
         int index;
