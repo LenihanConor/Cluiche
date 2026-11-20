@@ -1,7 +1,7 @@
 # Feature Spec: DiaAttribute Parameter Files
 
 **Parent:** @docs/specs/applications/dia/systems/diaattribute/diaattribute.md (Feature 8)
-**Status:** `Approved` (2026-11-18, user)
+**Status:** `Done`
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: decisions D1, D2, D3)
 
 ## Summary
@@ -334,7 +334,7 @@ Each item supersedes contradicting text above (including Open Design Question 1'
 
 ## Status
 
-**Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`. Interview done with the user on 2026-11-18. Design choices: the sidecar is the only format and owns defaults; packs go into base values and runtime effects are modifiers; parameters versus records; constraints live in the sidecar; maps are one per column; a load failure fails loudly with no fallback.
+**Status:** `Done` (approved 2026-11-18, user; built and closed 2026-11-20). Plan: @docs/specs/applications/dia/systems/diaattribute/parameter-files.plan.md. Interview done with the user on 2026-11-18. Design choices: the sidecar is the only format and owns defaults; packs go into base values and runtime effects are modifiers; parameters versus records; constraints live in the sidecar; maps are one per column; a load failure fails loudly with no fallback.
 
 ## Band schema version resolution (2026-11-20, user)
 
