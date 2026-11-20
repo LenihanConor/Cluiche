@@ -35,10 +35,13 @@ def app_launcher(request):
     if dia_exe is None:
         raise RuntimeError("'dia' not found on PATH — run 'dia env setup' to configure the CLI")
 
+    stdout_path = _new_stdout_path(request.config)
+    stdout_file = open(stdout_path, "wb") if stdout_path else None
+    request.config._dia_game_stdout = stdout_path
     proc = subprocess.Popen(
         [dia_exe, "launch", app, "--config", config, "--automation"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=stdout_file if stdout_file else subprocess.DEVNULL,
+        stderr=subprocess.STDOUT if stdout_file else subprocess.DEVNULL,
     )
 
     yield proc
@@ -60,6 +63,8 @@ def app_launcher(request):
         if proc.poll() is None:
             proc.kill()
             proc.wait()
+        if stdout_file:
+            stdout_file.close()
 
 
 @pytest.fixture
@@ -118,6 +123,61 @@ def assert_metric(dia_client):
         return value
 
     return _assert
+
+
+# ---------------------------------------------------------------------------
+# Failure context: game stdout + session log path in failure output
+# ---------------------------------------------------------------------------
+
+_TAIL_LINES = 40
+
+
+def _new_stdout_path(config):
+    """Path for this session's captured game stdout, or None without a repo root."""
+    repo_root = getattr(config, "_dia_repo_root", None)
+    if repo_root is None:
+        return None
+    report_dir = Path(repo_root) / "Cluiche" / "out" / "e2e_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    return report_dir / f"game_stdout_{time.strftime('%Y%m%d_%H%M%S')}.log"
+
+
+def _tail(path, n=_TAIL_LINES):
+    try:
+        lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError as e:
+        return [f"<unreadable: {e}>"]
+    return lines[-n:]
+
+
+def _failure_context(config, plan: dict) -> str:
+    """Text appended to a failing test: game stdout tail, stdout path, session log path."""
+    out = []
+    stdout_path = getattr(config, "_dia_game_stdout", None)
+    if stdout_path:
+        out.append(f"game stdout: {stdout_path}")
+        tail = _tail(stdout_path)
+        if tail:
+            out.append(f"--- last {len(tail)} lines of game stdout ---")
+            out.extend(tail)
+    log_path = _find_log_path(config, plan)
+    out.append(f"session log: {log_path if log_path else '<not found>'}")
+    return "\n".join(out)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    rep = outcome.get_result()
+    if rep.when != "call" or not rep.failed:
+        return
+    plan = getattr(item.config, "_dia_plan", None)
+    if plan is None:
+        return
+    try:
+        rep.sections.append(("Game output / logs", _failure_context(item.config, plan)))
+    except Exception as e:  # never mask the real failure
+        rep.sections.append(("Game output / logs", f"<context capture failed: {e}>"))
 
 
 # ---------------------------------------------------------------------------

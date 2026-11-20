@@ -137,3 +137,24 @@ def test_scan_log_reports_locked_without_waiting(plugin, monkeypatch, tmp_path):
     _use_log(plugin, monkeypatch, log)
     _locked_read(monkeypatch, plugin, PermissionError(13, "denied"), 10**9)
     assert plugin._scan_log(None, {}, lock_retry_s=0.0) == ([], True)
+
+
+def test_failure_context_includes_stdout_tail_and_log_path(plugin, monkeypatch, tmp_path):
+    out = tmp_path / "game_stdout.log"
+    out.write_text("\n".join(f"line{i}" for i in range(100)), encoding="utf-8")
+    log = tmp_path / "log.jsonl"
+    log.write_text("", encoding="utf-8")
+    _use_log(plugin, monkeypatch, log)
+
+    class Cfg:
+        _dia_game_stdout = out
+
+    text = plugin._failure_context(Cfg(), {})
+    assert str(out) in text and str(log) in text
+    assert "line99" in text and "line0\n" not in text
+
+
+def test_failure_context_without_capture_reports_missing_log(plugin, monkeypatch):
+    monkeypatch.setattr(plugin, "_find_log_path", lambda config, plan: None)
+    text = plugin._failure_context(object(), {})
+    assert "<not found>" in text
