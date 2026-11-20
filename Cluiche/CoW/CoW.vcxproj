@@ -85,6 +85,7 @@
     <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp" />
     <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp" />
+    <ClCompile Include="Shared\World\BiomeRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -158,6 +159,8 @@
     <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h" />
     <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h" />
     <ClInclude Include="Modules\F2StageResult.h" />
+    <ClInclude Include="Shared\World\BiomeRegistry.h" />
+    <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

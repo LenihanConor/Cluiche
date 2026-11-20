@@ -10,6 +10,12 @@
     <Filter Include="Shared\WorldGeneration">
       <UniqueIdentifier>{a9b3affa-4bc7-4de6-a86a-68efa9c62b15}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shared\World">
+      <UniqueIdentifier>{25fba8c1-a150-4234-99ab-0606111edc45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\World\Testing">
+      <UniqueIdentifier>{b1feb5c0-4cb1-404e-b152-c4988238591c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -195,6 +201,9 @@
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp">
       <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\World\BiomeRegistry.cpp">
+      <Filter>Shared\World</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -410,6 +419,12 @@
     </ClInclude>
     <ClInclude Include="Modules\F2StageResult.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\BiomeRegistry.h">
+      <Filter>Shared\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h">
+      <Filter>Shared\World\Testing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

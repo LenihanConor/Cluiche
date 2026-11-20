@@ -3231,5 +3231,23 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestBiomeRegistry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeRegistryLoad.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeRegistryData.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeDataOnly.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestBiomeLiterals.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestTerrainProfile.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
