@@ -1,7 +1,504 @@
 #include <Shared/World/BiomeRegistry.h>
 
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Log/DiaLog.h>
+
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
+
 namespace CoW {
 namespace World {
+
+namespace
+{
+    using Dia::Core::Containers::DynamicArrayC;
+    using Dia::Core::Containers::String64;
+    using Dia::Core::Containers::String256;
+    using WorldGeneration::DepthZone;
+
+    // Tag vocabulary: TagId is the index in this list (at most 64).
+    const char* const kTagNames[] = { "land", "water", "aquatic", "wet", "cold", "hot",
+                                      "forest", "open", "fuel", "mountain", "volcanic", "succession" };
+    constexpr uint32_t kTagCount = sizeof(kTagNames) / sizeof(kTagNames[0]);
+    static_assert(kTagCount <= 64, "TagMask is 64 bits");
+
+    const char* const kZoneNames[] = { "None", "FirstShores", "WildReaches", "AncientInteriors" };
+    constexpr uint32_t kZoneCount = sizeof(kZoneNames) / sizeof(kZoneNames[0]);
+
+    const char* const kRoleNames[] = { "ocean", "lake", "fallback" };
+    constexpr uint32_t kRoleCount = sizeof(kRoleNames) / sizeof(kRoleNames[0]);
+
+    const char* const kPinNames[] = { "water_ocean", "water_lake", "vent", "alpine", "wetland" };
+
+    constexpr uint32_t kMatrixBytes = (BiomeRegistry::kMaxBiomes + 7) / 8;   // 32
+
+    template<size_t N>
+    int IndexOf(const char* const (&names)[N], const char* text)
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            if (std::strcmp(names[i], text) == 0) { return static_cast<int>(i); }
+        }
+        return -1;
+    }
+
+    struct Fnv
+    {
+        uint64_t h = 14695981039346656037ull;
+        void Bytes(const void* p, size_t n)
+        {
+            const uint8_t* b = static_cast<const uint8_t*>(p);
+            for (size_t i = 0; i < n; ++i) { h ^= b[i]; h *= 1099511628211ull; }
+        }
+        template<class T> void Value(const T& v) { Bytes(&v, sizeof(T)); }
+        void Float(float f) { if (f == 0.0f) { f = 0.0f; } Value(f); }   // -0.0 == 0.0, so it is rewritten as +0.0
+    };
+}
+
+struct BiomeRegistry::Data
+{
+    struct Row
+    {
+        Dia::Core::StringCRC id;
+        String64  idText;
+        String64  name;
+        String256 description;
+        uint32_t  colour = 0;
+        uint64_t  tagMask = 0;
+        uint8_t   zoneMask = 0;
+        bool      generated = false;
+        bool      hasClimate = false;
+        ClimateEnvelope climate = { 0.0f, 0.0f, 0.0f, 0.0f };
+        PinRule   pin = PinRule::WaterOcean;
+        int       pinPriority = -1;
+        int8_t    plateau = -1;
+    };
+
+    DynamicArrayC<Row, kMaxBiomes> rows;
+    uint8_t    forbidden[kMaxBiomes][kMatrixBytes] = {};
+    BiomeIndex climateList[kMaxBiomes] = {};
+    uint32_t   climateCount = 0;
+    BiomeIndex pinList[kMaxBiomes] = {};
+    uint32_t   pinCount = 0;
+    BiomeIndex roles[kRoleCount] = { kNoBiome, kNoBiome, kNoBiome };
+    uint64_t   hash = 0;
+
+    const Row* At(BiomeIndex b) const { return b < rows.Size() ? &rows.At(b) : nullptr; }
+    void ComputeHash();
+};
+
+void BiomeRegistry::Data::ComputeHash()
+{
+    Fnv f;
+    const uint32_t count = rows.Size();
+    f.Value(count);
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        const Row& r = rows.At(i);
+        f.Value(r.id.Value());
+        f.Value(r.tagMask);
+        f.Value(r.zoneMask);
+        f.Value(r.generated);
+        f.Value(r.hasClimate);
+        if (r.hasClimate)
+        {
+            f.Float(r.climate.t0); f.Float(r.climate.m0); f.Float(r.climate.wt); f.Float(r.climate.wm);
+        }
+        f.Value(static_cast<uint8_t>(r.pin));
+        f.Value(r.pinPriority);
+        f.Value(r.plateau);
+    }
+    f.Bytes(roles, sizeof(roles));
+    for (uint32_t i = 0; i < count; ++i) { f.Bytes(forbidden[i], kMatrixBytes); }
+    hash = f.h;
+}
+
+BiomeRegistry::BiomeRegistry() = default;
+BiomeRegistry::~BiomeRegistry() = default;
+BiomeRegistry::BiomeRegistry(BiomeRegistry&&) noexcept = default;
+BiomeRegistry& BiomeRegistry::operator=(BiomeRegistry&&) noexcept = default;
+void BiomeRegistry::Swap(BiomeRegistry& other) noexcept { mData.swap(other.mData); }
+
+namespace
+{
+    bool Fail(RegistryError& err, const char* field, const char* id, uint32_t row, const char* reason)
+    {
+        err.field.SetText(field);
+        err.id.SetText(id);
+        err.row = row;
+        err.reason.SetText(reason);
+        DIA_LOG_ERROR("CoW", "BiomeRegistry: load failed at row %u (%s, id '%s'): %s", row, field, id, reason);
+        return false;
+    }
+
+    bool ParseColour(const std::string& text, uint32_t& out)
+    {
+        if (text.size() != 7 || text[0] != '#') { return false; }
+        uint32_t v = 0;
+        for (size_t i = 1; i < 7; ++i)
+        {
+            const char c = text[i];
+            uint32_t d;
+            if (c >= '0' && c <= '9') { d = c - '0'; }
+            else if (c >= 'a' && c <= 'f') { d = 10 + c - 'a'; }
+            else if (c >= 'A' && c <= 'F') { d = 10 + c - 'A'; }
+            else { return false; }
+            v = (v << 4) | d;
+        }
+        out = v;
+        return true;
+    }
+
+    bool ReadFloat(const Json::Value& obj, const char* key, float& out)
+    {
+        const Json::Value& v = obj[key];
+        if (!v.isNumeric()) { return false; }
+        out = static_cast<float>(v.asDouble());
+        return std::isfinite(out);
+    }
+
+    // Reads an array of strings into `out` (cleared first). Returns false if not an array of strings.
+    bool ReadStrings(const Json::Value& v, std::vector<std::string>& out)
+    {
+        out.clear();
+        if (!v.isArray()) { return false; }
+        for (const Json::Value& e : v)
+        {
+            if (!e.isString()) { return false; }
+            out.push_back(e.asString());
+        }
+        return true;
+    }
+
+    bool ParseRow(const Json::Value& jr, uint32_t rowIndex, BiomeRegistry::Data& d, RegistryError& err)
+    {
+        using Row = BiomeRegistry::Data::Row;
+        if (!jr.isObject()) { return Fail(err, "biomes", "", rowIndex, "row is not an object"); }
+        if (!jr["id"].isString() || jr["id"].asString().empty() || jr["id"].asString().size() >= String64::Capacity())
+        {
+            return Fail(err, "id", "", rowIndex, "id missing, empty or too long");
+        }
+        const std::string id = jr["id"].asString();
+        const char* idc = id.c_str();
+
+        d.rows.AddDefault();
+        Row& r = d.rows.Back();
+        r.idText.SetText(idc);
+        r.id = Dia::Core::StringCRC(idc);
+
+        if (!jr["name"].isString() || jr["name"].asString().size() >= String64::Capacity())
+        {
+            return Fail(err, "name", idc, rowIndex, "name missing or too long");
+        }
+        r.name.SetText(jr["name"].asString().c_str());
+
+        if (!jr["description"].isString() || jr["description"].asString().size() >= String256::Capacity())
+        {
+            return Fail(err, "description", idc, rowIndex, "description missing or too long");
+        }
+        r.description.SetText(jr["description"].asString().c_str());
+
+        if (!jr["colour"].isString() || !ParseColour(jr["colour"].asString(), r.colour))
+        {
+            return Fail(err, "colour", idc, rowIndex, "colour must be '#rrggbb'");
+        }
+        if (!jr["generated"].isBool()) { return Fail(err, "generated", idc, rowIndex, "generated must be a bool"); }
+        r.generated = jr["generated"].asBool();
+
+        std::vector<std::string> names;
+        if (!ReadStrings(jr["tags"], names)) { return Fail(err, "tags", idc, rowIndex, "tags must be an array of strings"); }
+        for (const std::string& t : names)
+        {
+            const int tag = IndexOf(kTagNames, t.c_str());
+            if (tag < 0) { return Fail(err, "tags", idc, rowIndex, "unknown tag"); }
+            r.tagMask |= 1ull << tag;
+        }
+
+        if (!ReadStrings(jr["zones"], names)) { return Fail(err, "zones", idc, rowIndex, "zones must be an array of strings"); }
+        for (const std::string& z : names)
+        {
+            const int zone = IndexOf(kZoneNames, z.c_str());
+            if (zone < 0) { return Fail(err, "zones", idc, rowIndex, "unknown zone"); }
+            r.zoneMask |= static_cast<uint8_t>(1u << zone);
+        }
+
+        if (jr.isMember("roles"))
+        {
+            if (!ReadStrings(jr["roles"], names)) { return Fail(err, "roles", idc, rowIndex, "roles must be an array of strings"); }
+            for (const std::string& n : names)
+            {
+                const int role = IndexOf(kRoleNames, n.c_str());
+                if (role < 0) { return Fail(err, "roles", idc, rowIndex, "unknown role"); }
+                d.roles[role] = static_cast<BiomeIndex>(rowIndex);
+            }
+        }
+
+        if (jr.isMember("climate"))
+        {
+            const Json::Value& c = jr["climate"];
+            if (!c.isObject() || !ReadFloat(c, "t0", r.climate.t0) || !ReadFloat(c, "m0", r.climate.m0) ||
+                !ReadFloat(c, "wt", r.climate.wt) || !ReadFloat(c, "wm", r.climate.wm))
+            {
+                return Fail(err, "climate", idc, rowIndex, "climate needs numeric t0, m0, wt, wm");
+            }
+            r.hasClimate = true;
+        }
+
+        if (jr.isMember("pin"))
+        {
+            const Json::Value& p = jr["pin"];
+            const int rule = (p.isObject() && p["rule"].isString()) ? IndexOf(kPinNames, p["rule"].asString().c_str()) : -1;
+            if (rule < 0) { return Fail(err, "pin", idc, rowIndex, "unknown or missing pin rule"); }
+            if (!p["priority"].isInt() || p["priority"].asInt() < 0) { return Fail(err, "pin", idc, rowIndex, "pin priority must be an integer >= 0"); }
+            r.pin = static_cast<PinRule>(rule);
+            r.pinPriority = p["priority"].asInt();
+        }
+
+        if (jr.isMember("plateau"))
+        {
+            const std::string p = jr["plateau"].isString() ? jr["plateau"].asString() : std::string();
+            if (p == "dry") { r.plateau = 0; }
+            else if (p == "wet") { r.plateau = 1; }
+            else { return Fail(err, "plateau", idc, rowIndex, "plateau must be 'wet' or 'dry'"); }
+        }
+        return true;
+    }
+}
+
+bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
+{
+    if (json == nullptr) { return Fail(err, "document", "", 0, "no text"); }
+
+    Json::Value root;
+    {
+        Json::CharReaderBuilder builder;
+        Json::CharReaderBuilder::strictMode(&builder.settings_);
+        builder["rejectDupKeys"] = true;
+        std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+        std::string errors;
+        try
+        {
+            if (!reader->parse(json, json + std::strlen(json), &root, &errors))
+            {
+                return Fail(err, "document", "", 0, "not valid JSON");
+            }
+        }
+        catch (const std::exception&)
+        {
+            return Fail(err, "document", "", 0, "not valid JSON");
+        }
+    }
+
+    if (!root.isObject() || !root["format"].isString() || root["format"].asString() != "cow.biomes")
+    {
+        return Fail(err, "format", "", 0, "format must be 'cow.biomes'");
+    }
+    if (!root["version"].isInt() || root["version"].asInt() != 1)
+    {
+        return Fail(err, "version", "", 0, "version must be 1");
+    }
+    const Json::Value& biomes = root["biomes"];
+    if (!biomes.isArray()) { return Fail(err, "biomes", "", 0, "biomes must be an array"); }
+    if (biomes.size() > kMaxBiomes) { return Fail(err, "biomes", "", 0, "more than 254 biomes"); }
+
+    std::unique_ptr<Data> cand(new Data());   // heap: about 120 KB
+    uint32_t row = 0;
+    for (const Json::Value& jr : biomes)
+    {
+        if (!ParseRow(jr, row, *cand, err)) { return false; }
+        ++row;
+    }
+
+    // Forbidden pairs, stored symmetric.
+    const Json::Value& forbidden = root["forbidden"];
+    if (!forbidden.isNull())
+    {
+        if (!forbidden.isArray()) { return Fail(err, "forbidden", "", 0, "forbidden must be an array of pairs"); }
+        uint32_t pairIndex = 0;
+        for (const Json::Value& pair : forbidden)
+        {
+            if (!pair.isArray() || pair.size() != 2 || !pair[0].isString() || !pair[1].isString())
+            {
+                return Fail(err, "forbidden", "", pairIndex, "each forbidden entry must be a pair of ids");
+            }
+            const std::string a = pair[0].asString();
+            const std::string b = pair[1].asString();
+            uint32_t ia = kNoBiome, ib = kNoBiome;
+            for (uint32_t i = 0; i < cand->rows.Size(); ++i)
+            {
+                if (std::strcmp(cand->rows.At(i).idText.AsCStr(), a.c_str()) == 0) { ia = i; }
+                if (std::strcmp(cand->rows.At(i).idText.AsCStr(), b.c_str()) == 0) { ib = i; }
+            }
+            if (ia == kNoBiome || ib == kNoBiome)
+            {
+                return Fail(err, "forbidden", ia == kNoBiome ? a.c_str() : b.c_str(), pairIndex, "forbidden pair names an unknown id");
+            }
+            cand->forbidden[ia][ib >> 3] |= static_cast<uint8_t>(1u << (ib & 7));
+            cand->forbidden[ib][ia >> 3] |= static_cast<uint8_t>(1u << (ia & 7));
+            ++pairIndex;
+        }
+    }
+
+    // Derived tables.
+    const uint32_t count = cand->rows.Size();
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (cand->rows.At(i).hasClimate) { cand->climateList[cand->climateCount++] = static_cast<BiomeIndex>(i); }
+        if (cand->rows.At(i).pinPriority >= 0) { cand->pinList[cand->pinCount++] = static_cast<BiomeIndex>(i); }
+    }
+    for (uint32_t i = 1; i < cand->pinCount; ++i)   // insertion sort, stable, priority descending
+    {
+        const BiomeIndex key = cand->pinList[i];
+        uint32_t j = i;
+        while (j > 0 && cand->rows.At(cand->pinList[j - 1]).pinPriority < cand->rows.At(key).pinPriority)
+        {
+            cand->pinList[j] = cand->pinList[j - 1];
+            --j;
+        }
+        cand->pinList[j] = key;
+    }
+    cand->ComputeHash();
+
+    DIA_LOG_INFO("CoW", "BiomeRegistry: loaded %u biomes, hash %016llx", count, static_cast<unsigned long long>(cand->hash));
+    mData = std::move(cand);
+    return true;
+}
+
+bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err)
+{
+    Dia::Core::FilePath::ResoledFilePath resolved;
+    path.Resolve(resolved);
+    std::ifstream in(resolved.AsCStr(), std::ios::binary);
+    if (!in.good()) { return Fail(err, "file", resolved.AsCStr(), 0, "cannot read file"); }
+    std::stringstream ss;
+    ss << in.rdbuf();
+    return LoadFromText(ss.str().c_str(), err);
+}
+
+uint32_t BiomeRegistry::Count() const { return mData ? mData->rows.Size() : 0; }
+
+BiomeIndex BiomeRegistry::Find(Dia::Core::StringCRC id) const
+{
+    if (!mData) { return kNoBiome; }
+    for (uint32_t i = 0; i < mData->rows.Size(); ++i)
+    {
+        if (mData->rows.At(i).id == id) { return static_cast<BiomeIndex>(i); }
+    }
+    return kNoBiome;
+}
+
+Dia::Core::StringCRC BiomeRegistry::Id(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->id : Dia::Core::StringCRC();
+}
+
+const char* BiomeRegistry::IdText(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->idText.AsCStr() : "";
+}
+
+const char* BiomeRegistry::Name(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->name.AsCStr() : "";
+}
+
+uint32_t BiomeRegistry::Colour(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->colour : 0u;
+}
+
+bool BiomeRegistry::HasTag(BiomeIndex b, TagId tag) const
+{
+    return tag < 64 && ((TagMask(b) >> tag) & 1ull) != 0;
+}
+
+uint64_t BiomeRegistry::TagMask(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->tagMask : 0ull;
+}
+
+TagId BiomeRegistry::FindTag(Dia::Core::StringCRC tag) const
+{
+    for (uint32_t i = 0; i < kTagCount; ++i)
+    {
+        if (Dia::Core::StringCRC(kTagNames[i]) == tag) { return static_cast<TagId>(i); }
+    }
+    return kNoTag;
+}
+
+BiomeIndex BiomeRegistry::Role(BiomeRole role) const
+{
+    const uint32_t i = static_cast<uint32_t>(role);
+    return (mData && i < kRoleCount) ? mData->roles[i] : kNoBiome;
+}
+
+bool BiomeRegistry::IsGenerated(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r && r->generated;
+}
+
+bool BiomeRegistry::IsValidInZone(BiomeIndex b, DepthZone zone) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    const uint32_t z = static_cast<uint32_t>(zone);
+    return r && z < kZoneCount && ((r->zoneMask >> z) & 1u) != 0;
+}
+
+bool BiomeRegistry::AreForbidden(BiomeIndex a, BiomeIndex b) const
+{
+    if (!mData || !mData->At(a) || !mData->At(b)) { return false; }
+    return ((mData->forbidden[a][b >> 3] >> (b & 7)) & 1u) != 0;
+}
+
+const ClimateEnvelope* BiomeRegistry::Climate(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return (r && r->hasClimate) ? &r->climate : nullptr;
+}
+
+const BiomeIndex* BiomeRegistry::ClimateBiomes(uint32_t& count) const
+{
+    count = mData ? mData->climateCount : 0;
+    return (mData && count > 0) ? mData->climateList : nullptr;
+}
+
+const BiomeIndex* BiomeRegistry::PinsByPriority(uint32_t& count) const
+{
+    count = mData ? mData->pinCount : 0;
+    return (mData && count > 0) ? mData->pinList : nullptr;
+}
+
+PinRule BiomeRegistry::Pin(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->pin : PinRule::WaterOcean;
+}
+
+BiomeIndex BiomeRegistry::Plateau(bool wet) const
+{
+    if (!mData) { return kNoBiome; }
+    const int8_t want = wet ? 1 : 0;
+    for (uint32_t i = 0; i < mData->rows.Size(); ++i)
+    {
+        if (mData->rows.At(i).plateau == want) { return static_cast<BiomeIndex>(i); }
+    }
+    return kNoBiome;
+}
+
+uint64_t BiomeRegistry::Hash() const { return mData ? mData->hash : 0ull; }
 
 } // namespace World
 } // namespace CoW

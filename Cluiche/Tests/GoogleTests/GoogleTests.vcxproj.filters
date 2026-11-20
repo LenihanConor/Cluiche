@@ -2757,6 +2757,9 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\World\BiomeRegistry.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
     <ClCompile Include="CoW\TestBiomeTypes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
