@@ -376,22 +376,25 @@ TEST(DiaSaveGame_ManagerTimestamp, SaveStampsManifestAndSlotInfoWithCurrentTime)
 
 TEST(DiaSaveGame_ManagerAtomic, SerializeOverflowReturnsErrorAndKeepsExistingSave)
 {
+    // Own slot: other atomic tests share slot_atom.sav and sharded runs execute them concurrently.
+    const char* kSlotOv    = "temp/savegame_tests/slot_atomov.sav";
+    const char* kSlotOvTmp = "temp/savegame_tests/slot_atomov.sav.tmp";
     EnsureTestDir();
-    remove(kSlotA);
+    remove(kSlotOv);
 
     ValueSaveable good; good.value = 1;
     SaveRegistry reg; reg.Register(StringCRC("v"), &good);
     SaveManager mgr; SaveConfig cfg = MakeConfig(); mgr.Init(cfg, reg);
-    ASSERT_TRUE(mgr.Save(StringCRC("atom")).Ok());
-    const std::string before = ReadAll(kSlotA);
+    ASSERT_TRUE(mgr.Save(StringCRC("atomov")).Ok());
+    const std::string before = ReadAll(kSlotOv);
 
     HugeSaveable huge;
     SaveRegistry reg2; reg2.Register(StringCRC("h"), &huge);
     SaveManager mgr2; mgr2.Init(cfg, reg2);
-    EXPECT_EQ(SaveResultCode::SerializeError, mgr2.Save(StringCRC("atom")).code);
-    EXPECT_EQ(before, ReadAll(kSlotA));
-    EXPECT_FALSE(Exists(kSlotATmp));
-    remove(kSlotA);
+    EXPECT_EQ(SaveResultCode::SerializeError, mgr2.Save(StringCRC("atomov")).code);
+    EXPECT_EQ(before, ReadAll(kSlotOv));
+    EXPECT_FALSE(Exists(kSlotOvTmp));
+    remove(kSlotOv);
 }
 
 TEST(DiaSaveGame_ManagerAtomic, LoadOfOversizedFileFailsCleanly)
