@@ -3225,5 +3225,8 @@
     <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAttribute\TestDiaAttributeSetIndexAccess.cpp">
+      <Filter>DiaAttribute</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

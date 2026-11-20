@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Handle.h>
 #include <DiaCore/Containers/HandlePool.h>
+#include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 
@@ -163,14 +164,29 @@ namespace Dia::Attribute {
         float GetValueByIndex(unsigned int index) const;
 
         // Name of the attribute at `index`. Returns a default (zero) StringCRC and asserts
-        // if index is out of range. O(index) — intended for one-off registration-time
-        // iteration, not per-frame use.
+        // if index is out of range. O(1).
         Dia::Core::StringCRC GetAttributeNameByIndex(unsigned int index) const;
 
         // Schema-invariant clamp range of the attribute at `index`. Returns 0.0f and asserts
         // if index is out of range. Same index-stability contract as GetValueByIndex.
         float GetMinimumValueByIndex(unsigned int index) const;
         float GetMaximumValueByIndex(unsigned int index) const;
+
+        // Raw base value (modifiers excluded) of the attribute at `index`. O(1). Returns 0.0f
+        // and asserts if index is out of range.
+        float GetBaseValueByIndex(uint32_t index) const;
+
+        // SILENT O(1) base-value write: no observer notifications. Asserts and does nothing
+        // if index is out of range. Resolved values are computed on demand, so nothing
+        // cached needs invalidating.
+        void SetBaseValueByIndex(uint32_t index, float value);
+
+        // Atomic bulk base-value commit. `values` holds one float per attribute in schema
+        // order. Returns false and changes nothing if `count` != GetAttributeCount() (or
+        // values is null). Otherwise commits ALL values first, then fires OnAttributeChanged
+        // (and the reached-max/min edges) only for attributes whose resolved value actually
+        // changed, in index order, so observers see the fully committed state.
+        bool ReplaceBaseValues(const float* values, uint32_t count);
 
         // -------------------------------------------------------------------
         // Modifier-stack inspection
@@ -223,6 +239,7 @@ namespace Dia::Attribute {
 
         struct AttributeSlot
         {
+            Dia::Core::StringCRC name;
             float base_value    = 0.0f;
             float minimum_value = 0.0f;
             float maximum_value = 0.0f;
@@ -248,7 +265,14 @@ namespace Dia::Attribute {
         void NotifyIfChanged(Dia::Core::StringCRC attribute_name, const AttributeSlot& slot, float before, float after);
 
         Dia::Core::StringCRC mSchemaName;
-        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, AttributeSlot> mSlots;
+        // Schema-ordered slot storage (index i == schema attribute i) plus name -> index map.
+        // Capacity is the runtime schema size, hence DynamicArray rather than DynamicArrayC.
+        // Slots are never added/removed after InitializeFromSchema, so storage never relocates.
+        Dia::Core::Containers::DynamicArray<AttributeSlot> mSlots;
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, uint32_t> mSlotIndexByName;
+
+        AttributeSlot*       FindSlot(Dia::Core::StringCRC attribute_name);
+        const AttributeSlot* FindSlot(Dia::Core::StringCRC attribute_name) const;
 
         // Non-owning — caller (SetConditionRegistry) retains lifetime.
         Dia::Condition::ConditionRegistry* mConditionRegistry = nullptr;
