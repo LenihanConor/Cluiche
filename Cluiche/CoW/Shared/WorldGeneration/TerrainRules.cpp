@@ -205,6 +205,7 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     *this = base;
     if (!v.isObject())
     {
+        DIA_LOG_WARNING("CoW", "TerrainRules::LoadFromJson: rules root is not a JSON object; keeping sidecar defaults");
         degraded = true;
         AddWarning(warnings, "invalid", "root");
         return false;
@@ -264,6 +265,8 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     ParamWarnings packWarnings;
     if (!file.ApplyPack(pack, packWarnings, err))
     {
+        DIA_LOG_WARNING("CoW", "TerrainRules::LoadFromJson: rules pack rejected (key '%s': %s); keeping sidecar defaults",
+                        err.key.AsCStr(), err.reason.AsCStr());
         degraded = true;
         AddWarning(warnings, "invalid", "pack");
         return true;
