@@ -292,3 +292,42 @@ TEST(DiaValueSchemaConformance, LoaderAcceptsAnyKeyRefStringWhereCliRequiresForm
 	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
 	EXPECT_STREQ(r.mEntries[0].mMapKeyRef.AsCStr(), "no-slash-here");
 }
+
+// Close-out gap 2: a `kind: parameter` entry keyed format, version or basedOn can never be set by a pack (the pack
+// envelope owns those keys), so the loader rejects it naming the entry. Other kinds are unaffected. Mirrored by
+// schema.reserved-key in the CLI and the bad-reserved-key-* fixtures.
+TEST(DiaValueSchemaConformance, ReservedParameterKeysAreRejectedNamingTheEntry)
+{
+	for (const char* key : { "format", "version", "basedOn" })
+	{
+		SCOPED_TRACE(key);
+		const std::string text = std::string(R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":")") + key
+			+ R"(","kind":"parameter","label":"L","description":"D","type":"float"}]})";
+		const LoadResult r = ValueSchemaLoader::LoadFromText(text.c_str(), "reserved.schema.json");
+		EXPECT_FALSE(r.mOk);
+		EXPECT_STREQ(r.mFailure.mEntry.AsCStr(), key);
+		EXPECT_NE(std::string(r.mFailure.mReason.AsCStr()).find(key), std::string::npos) << r.mFailure.mReason.AsCStr();
+		EXPECT_EQ(r.mEntries.Size(), 0u);
+	}
+}
+
+TEST(DiaValueSchemaConformance, ReservedKeyIsOnlyReservedForParameterKindAndExactMatch)
+{
+	for (const char* kind : { "field", "metric", "arg", "command", "component_field" })
+	{
+		for (const char* key : { "format", "version", "basedOn" })
+		{
+			SCOPED_TRACE(std::string(kind) + "/" + key);
+			const std::string text = std::string(R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":")") + key
+				+ R"(","kind":")" + kind + R"(","label":"L","description":"D","type":"float"}]})";
+			EXPECT_TRUE(ValueSchemaLoader::LoadFromText(text.c_str(), "reserved-ok.schema.json").mOk);
+		}
+	}
+	for (const char* key : { "Format", "versions", "basedon", "format.x", "x.version", "basedOn2" })
+	{
+		SCOPED_TRACE(key);
+		const std::string text = std::string(R"({"format":"dia.value_schema","version":1,"for":"t","entries":[{"key":")") + key
+			+ R"(","kind":"parameter","label":"L","description":"D","type":"float"}]})";
+		EXPECT_TRUE(ValueSchemaLoader::LoadFromText(text.c_str(), "near-reserved.schema.json").mOk);
+	}
+}

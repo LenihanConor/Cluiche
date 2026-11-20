@@ -24,6 +24,8 @@ KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_f
 TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map")
 MAP_VALUE_TYPES = ("float", "int", "bool", "string", "enum")
 NUMERIC_TYPES = ("float", "int")
+# Pack envelope keys: a kind-parameter entry with one of these could never be set by a pack.
+RESERVED_PARAMETER_KEYS = ("format", "version", "basedOn")
 CONSTRAINT_OPS = ("<", "<=", ">", ">=", "==", "!=")
 
 
@@ -228,6 +230,9 @@ def _check_entry(e: object, file: str, warned: set, warnings: List[Finding]) -> 
         kind = _require_string(e, "kind")
         if kind not in KINDS:
             raise _Stop("schema.unknown-kind", "unknown 'kind'")
+        if kind == "parameter" and key in RESERVED_PARAMETER_KEYS:
+            raise _Stop("schema.reserved-key",
+                        f"parameter key '{key}' is reserved for the pack envelope (format, version, basedOn)")
         _require_string(e, "label")
         desc = _require_string(e, "description")
         if not desc.strip():

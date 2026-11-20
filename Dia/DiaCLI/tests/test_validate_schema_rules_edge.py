@@ -634,6 +634,7 @@ PRODUCING_CASES = [
     D(E(kind="zzz")),
     D(E(description=" ")),
     D(E(zzz=1)),
+    D(E(key="format")),
     D(E(ref="a/b")),
     D(E(keyRef="a/b")),
     D(E(type="ref")),
@@ -821,3 +822,23 @@ def test_map_default_reports_first_bad_entry_only_and_continues_to_next_entry():
          "entries": [_mapd("float", {"a": 5, "b": 6}, max=1), E(key="n", label=None)]}
     out = validate_schema_document(d, "f")
     assert [(f.rule, f.key) for f in out] == [("schema.bad-map-default", "m"), ("schema.wrong-type", "n")]
+
+
+# ---- reserved parameter keys (close-out gap 2) -------------------------------
+
+@pytest.mark.parametrize("key", ["format", "version", "basedOn"])
+def test_reserved_parameter_key_is_rejected(key):
+    out = [f for f in validate_schema_document(D(E(key=key)), "f.json") if f.severity == "FAIL"]
+    assert [f.rule for f in out] == ["schema.reserved-key"]
+    assert out[0].key == key and key in out[0].message
+
+
+@pytest.mark.parametrize("key", ["Format", "versions", "basedon", "format.x", "x.format", "base"])
+def test_near_reserved_parameter_keys_are_accepted(key):
+    assert fail_rules(D(E(key=key))) == []
+
+
+@pytest.mark.parametrize("kind", ["field", "metric", "arg", "command", "event", "component_field"])
+@pytest.mark.parametrize("key", ["format", "version", "basedOn"])
+def test_reserved_key_only_applies_to_parameter_kind(kind, key):
+    assert "schema.reserved-key" not in fail_rules(D(E(key=key, kind=kind)))

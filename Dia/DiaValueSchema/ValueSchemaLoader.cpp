@@ -441,6 +441,11 @@ namespace Dia::ValueSchema
 			const char* s = nullptr;
 			if (!RequireString(r, ctx, e, "kind", s)) { return false; }
 			if (!ParseKind(s, info.mKind)) { return Fail(r, ctx, "unknown 'kind'"); }
+			// The pack envelope owns these top-level keys, so a parameter with one of them could never be set by a pack.
+			if (info.mKind == ValueKind::Parameter && (strcmp(key, "format") == 0 || strcmp(key, "version") == 0 || strcmp(key, "basedOn") == 0))
+			{
+				return Fail(r, ctx, (std::string("parameter key '") + key + "' is reserved for the pack envelope (format, version, basedOn)").c_str());
+			}
 			if (!AssignRequired(r, ctx, info.mLabel, e, "label")) { return false; }
 			if (!AssignRequired(r, ctx, info.mDescription, e, "description")) { return false; }
 			if (!RequireString(r, ctx, e, "type", s)) { return false; }
