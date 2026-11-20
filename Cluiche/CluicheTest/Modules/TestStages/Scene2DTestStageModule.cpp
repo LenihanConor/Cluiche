@@ -192,11 +192,17 @@ bool Scene2DTestStageModule::ValidateCameras() const
     if (!scene || !scene->IsLoaded()) return false;
 
     const auto& reg = cameras->GetRegistry();
-    // Registry contains Camera2DModule's default camera plus test_camera loaded from scene.
-    if (reg.GetCount() != 2)
+    // Registry contains Camera2DModule's default camera plus test_camera and
+    // mycamera loaded from test_scene.diascene.
+    constexpr unsigned int kExpectedCameras = 3;
+    if (reg.GetCount() != kExpectedCameras ||
+        !reg.Has(Dia::Core::StringCRC("test_camera")) ||
+        !reg.Has(Dia::Core::StringCRC("mycamera")))
+    {
+        DIA_LOG_WARNING("CluicheTest", "Scene2D cameras invalid: count=%u (want %u)",
+            static_cast<unsigned int>(reg.GetCount()), kExpectedCameras);
         return false;
-    if (!reg.Has(Dia::Core::StringCRC("test_camera")))
-        return false;
+    }
     return true;
 }
 
@@ -208,11 +214,19 @@ bool Scene2DTestStageModule::ValidateLights() const
     if (!scene || !scene->IsLoaded()) return false;
 
     const auto& reg = lights->GetRegistry();
-    if (reg.GetCount() != 2)
+    // light_a, light_b and mylight from test_scene.diascene.
+    constexpr unsigned int kExpectedLights = 3;
+    if (reg.GetCount() != kExpectedLights)
+    {
+        DIA_LOG_WARNING("CluicheTest", "Scene2D lights invalid: count=%u (want %u)",
+            static_cast<unsigned int>(reg.GetCount()), kExpectedLights);
         return false;
+    }
     if (!reg.Has(Dia::Core::StringCRC("light_a")))
         return false;
     if (!reg.Has(Dia::Core::StringCRC("light_b")))
+        return false;
+    if (!reg.Has(Dia::Core::StringCRC("mylight")))
         return false;
     return true;
 }
@@ -225,8 +239,15 @@ bool Scene2DTestStageModule::ValidateEntities() const
     if (!scene || !scene->IsLoaded()) return false;
 
     const auto& domain = entities->GetDomain();
-    if (domain.GetEntityCount() != 3)
+    // entity_a..c and ConorPlayer from test_scene.diascene (entity_d is disabled).
+    // Only the first kPositionedEntities get the fixed positions below.
+    constexpr unsigned int kExpectedEntities = 4;
+    if (domain.GetEntityCount() != kExpectedEntities)
+    {
+        DIA_LOG_WARNING("CluicheTest", "Scene2D entities invalid: count=%u (want %u)",
+            static_cast<unsigned int>(domain.GetEntityCount()), kExpectedEntities);
         return false;
+    }
 
     static const struct { float x; float y; } kExpected[] = {
         { 200.0f, 300.0f },
@@ -243,7 +264,7 @@ bool Scene2DTestStageModule::ValidateEntities() const
         if (tc->x != kExpected[idx].x || tc->y != kExpected[idx].y) return false;
         ++idx;
     }
-    return idx == 3;
+    return idx == 3;   // kPositionedEntities
 }
 
 bool Scene2DTestStageModule::ValidateLayers() const
@@ -252,8 +273,15 @@ bool Scene2DTestStageModule::ValidateLayers() const
     if (!scene || !scene->IsLoaded())
         return false;
     const auto& layers = scene->GetLayerTable();
-    if (layers.GetCount() != 3)
+    // background, midground, foreground, the editor-added layer_1780669152421
+    // and one table-implicit layer (measured: LayerTable reports 5).
+    constexpr unsigned int kExpectedLayers = 5;
+    if (layers.GetCount() != kExpectedLayers)
+    {
+        DIA_LOG_WARNING("CluicheTest", "Scene2D layers invalid: count=%u (want %u)",
+            static_cast<unsigned int>(layers.GetCount()), kExpectedLayers);
         return false;
+    }
     if (!layers.Has(Dia::Core::StringCRC("background")))
         return false;
     if (!layers.Has(Dia::Core::StringCRC("midground")))
