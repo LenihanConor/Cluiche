@@ -1359,6 +1359,7 @@
     <ClCompile Include="DiaAttribute/TestDiaAttributeModifierKinds.cpp" />
     <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp" />
     <ClCompile Include="DiaAttribute\TestDiaAttributeSetIndexAccess.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

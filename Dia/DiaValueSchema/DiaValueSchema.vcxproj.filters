@@ -49,6 +49,7 @@
     <ClInclude Include="ValueSchemaExporter.h" />
     <ClInclude Include="DescribeMode.h" />
     <ClInclude Include="DescribeSession.h" />
+    <ClInclude Include="ValueSchemaWriter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -75,6 +76,7 @@
     <ClCompile Include="ValueSchemaExporter.cpp" />
     <ClCompile Include="ValueSchemaSubset.cpp" />
     <ClCompile Include="DescribeMode.cpp" />
+    <ClCompile Include="ValueSchemaWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md">

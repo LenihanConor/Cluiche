@@ -3228,5 +3228,8 @@
     <ClCompile Include="DiaAttribute\TestDiaAttributeSetIndexAccess.cpp">
       <Filter>DiaAttribute</Filter>
     </ClCompile>
+    <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp">
+      <Filter>DiaValueSchema</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
