@@ -72,9 +72,7 @@
       "content": {
         "format": "cow.ecology_parameters",
         "version": 1,
-        "grazing": {
-          "rate": "fast"
-        },
+        "grazing.rate": "fast",
         "count": 2.5,
         "enabled": 1,
         "name": 5
@@ -86,9 +84,7 @@
       "content": {
         "format": "cow.ecology_parameters",
         "version": 1,
-        "grazing": {
-          "juvenile_rate_scale": true
-        }
+        "grazing.juvenile_rate_scale": true
       }
     }
   ],

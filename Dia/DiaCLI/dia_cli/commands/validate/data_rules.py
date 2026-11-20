@@ -118,17 +118,21 @@ def _default_values(entries: Iterable[dict]) -> Dict[str, float]:
     return out
 
 
-def _flatten(node: dict, prefix: str = "") -> Dict[str, float]:
-    """Numeric leaves of a data document by dotted key (map columns come out as '<key>.<mapKey>')."""
+def _flatten(node: dict, entries: Mapping[str, dict]) -> Dict[str, float]:
+    """Numeric values of a pack by flat key (map columns come out as '<key>.<mapKey>').
+
+    Only an object under a map parameter name is columns; any other nested object is not a pack form
+    (data.nested-group-pack) and ApplyPack drops it, so it takes no part in constraints."""
     out: Dict[str, float] = {}
     for name, v in node.items():
-        if not prefix and name in ENVELOPE_KEYS + ("basedOn",):
+        if name in ENVELOPE_KEYS + ("basedOn",):
             continue
-        key = f"{prefix}{name}"
+        entry = entries.get(name)
         if isinstance(v, dict):
-            out.update(_flatten(v, key + "."))
+            if entry is not None and entry.get("type") == "map":
+                out.update({f"{name}.{mk}": mv for mk, mv in v.items() if _numeric(mv)})
         elif _numeric(v):
-            out[key] = v
+            out[name] = v
     return out
 
 
@@ -140,6 +144,15 @@ def _violated(c: dict, values: Mapping[str, float]) -> bool:
 def _constraint_message(c: dict, values: Mapping[str, float]) -> str:
     return (f"constraint '{c['a']} {c['op']} {c['b']}' violated: "
             f"'{c['a']}' = {_fmt(values[c['a']])}, '{c['b']}' = {_fmt(values[c['b']])}")
+
+
+def _flat_leaf_keys(node: dict, prefix: str) -> List[str]:
+    """Dotted keys of the non-object leaves below node, in document order."""
+    out: List[str] = []
+    for name, v in node.items():
+        key = f"{prefix}.{name}"
+        out.extend(_flat_leaf_keys(v, key) if isinstance(v, dict) else [key])
+    return out
 
 
 class SchemaIndex:
@@ -247,6 +260,9 @@ class _Walker:
                     self._add("data.wrong-type", key, path, record,
                               f"'{key}' must be {entry['type']}, found an object")
                     continue
+                if self.is_pack and "[]" not in key_prefix:
+                    self._nested_group(key, path, record, val)
+                    continue
                 self.walk(val, key + ".", path + ".", record)
             elif isinstance(val, dict):
                 self.check_map(key, path, record, val, entry)
@@ -259,6 +275,14 @@ class _Walker:
                 continue
             else:
                 self.leaf(key, path, record, val, entry)
+
+    def _nested_group(self, key: str, path: str, record: Optional[str], val: dict) -> None:
+        """A pack addresses a parameter by its flat key '<group>.<key>'; a nested group object is dropped by ApplyPack."""
+        flat = _flat_leaf_keys(val, key)
+        shown = ", ".join(f"'{k}'" for k in flat[:3]) + (", ..." if len(flat) > 3 else "")
+        use = f"use the flat key{'s' if len(flat) > 1 else ''} {shown}" if flat else f"use flat '{key}.<key>' entries"
+        self._add("data.nested-group-pack", key, path, record,
+                  f"pack key '{key}' is a nested group object, which a pack does not accept; {use}")
 
     def _ref_values(self, key: str, path: str, record: Optional[str], ref: object) -> Optional[List[object]]:
         """Referenced values, or None (one WARN per format) when they cannot be known."""
@@ -395,7 +419,7 @@ def validate_data_document(doc: object, file: str, schemas: SchemaIndex, *, is_p
 def _pack_constraint_findings(doc: dict, file: str, entries: Dict[str, dict],
                               constraints: List[dict]) -> List[Finding]:
     """Constraints on the pack merged over the schema defaults; only those a pack value takes part in."""
-    pack = _flatten(doc)
+    pack = _flatten(doc, entries)
     merged = {**_default_values(entries.values()), **pack}
     out: List[Finding] = []
     for c in constraints:

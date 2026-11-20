@@ -232,12 +232,43 @@ def test_pack_both_operands_from_pack_without_defaults():
     assert _pack(s, {"a": 2}) == []
 
 
-def test_pack_nested_dotted_keys_and_map_columns():
+def test_pack_flat_dotted_keys_and_map_columns():
+    # Packs use flat keys (2026-11-20 user decision); a map is an object keyed by map key.
     s = _sch(_e("g.lo", default=1), _e("m", "map", keyRef="f.k/ids", valueType="float", default={"X": 5}),
              constraints=[("g.lo", "<", "m.X")])
-    assert _pack(s, {"g": {"lo": 2}}) == []
-    assert [f.rule for f in _pack(s, {"g": {"lo": 9}})] == ["data.constraint-violated"]
+    assert _pack(s, {"g.lo": 2}) == []
+    assert [f.rule for f in _pack(s, {"g.lo": 9})] == ["data.constraint-violated"]
     assert [f.rule for f in _pack(s, {"m": {"X": 0}})] == ["data.constraint-violated"]
+
+
+def test_pack_nested_group_object_is_rejected_naming_the_flat_keys():
+    s = _sch(_e("g.lo", default=1), _e("g.hi", default=3), _e("m", "map", keyRef="f.k/ids", valueType="float", default={"X": 5}),
+             constraints=[("g.lo", "<", "m.X")])
+    out = _pack(s, {"g": {"lo": 2, "hi": 4}, "m": {"X": 6}})
+    assert [(f.rule, f.severity, f.key, f.path, f.record) for f in out] == [("data.nested-group-pack", "FAIL", "g", "g", None)]
+    assert "'g.lo'" in out[0].message and "'g.hi'" in out[0].message
+
+
+def test_pack_nested_group_depth_reports_once_and_a_single_leaf_names_the_key():
+    s = _sch(_e("a.b.c"))
+    out = _pack(s, {"a": {"b": {"c": 1}}})
+    assert [(f.rule, f.key) for f in out] == [("data.nested-group-pack", "a")]
+    assert "'a.b.c'" in out[0].message
+    assert [f.rule for f in _pack(s, {"a": {}})] == ["data.nested-group-pack"]
+
+
+def test_pack_nested_group_values_do_not_take_part_in_constraints():
+    # ApplyPack drops the nested form, so it must not violate a constraint either.
+    s = _sch(_e("g.lo", default=1), _e("g.hi", default=3), constraints=[("g.lo", "<", "g.hi")])
+    assert [f.rule for f in _pack(s, {"g": {"lo": 9}})] == ["data.nested-group-pack"]
+
+
+def test_nested_group_object_stays_valid_in_a_defaults_file_and_inside_pack_records():
+    s = _sch(_e("g.lo", default=1), _e("sp[].id", "string"), _e("sp[].growth.rate"))
+    idx = build_schema_index([s])
+    assert validate_data_document({"format": "f.x", "version": 1, "g": {"lo": 1}}, "d.json", idx, is_pack=False) == []
+    doc = {"format": "f.x", "version": 1, "sp": [{"id": "a", "growth": {"rate": 1}}]}
+    assert validate_data_document(doc, "p.json", idx, is_pack=True) == []
 
 
 def test_pack_non_numeric_values_are_ignored_by_constraints():

@@ -72,9 +72,7 @@
       "content": {
         "format": "cow.ecology_parameters",
         "version": 1,
-        "grazing": {
-          "rate": 1.5
-        },
+        "grazing.rate": 1.5,
         "mode": "slow"
       }
     }

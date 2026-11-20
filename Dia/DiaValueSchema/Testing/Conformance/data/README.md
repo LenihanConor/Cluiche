@@ -23,12 +23,13 @@ Self-contained scenarios for the data-file rules of `dia validate schema`. Consu
 
 ## Rule ids
 
-Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`, `data.missing-map-key`, `data.constraint-violated`. `data.default-mismatch` applies to `kind: field` entries only. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`.
+Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`, `data.missing-map-key`, `data.constraint-violated`, `data.nested-group-pack`. `data.default-mismatch` applies to `kind: field` entries only. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`.
 
 ## Rules
 
 - Schema-level default checks (`data.unresolved-map-key` and `data.missing-map-key` for object map defaults (one `data.missing-map-key` per keyRef id the default omits, path `default.<id>`; the C++ build fails naming the first),  `data.constraint-violated` on defaults) go in `schemaExpected`; a violated constraint on a pack is reported on the pack file.
 - The `cow.biomes` file (ids TemperateForest, Desert, Tundra) in the map cases is the shared keyRef key data file; the C++ conformance tests reuse it.
+- Packs use FLAT keys (2026-11-20 user decision): a parameter is addressed by its full key `<group>.<key>`, the same key language as `ParameterFile::Set` and map columns `<key>.<mapKey>`. A nested group object in a pack (`{"grazing": {"rate": 2.5}}`) is `data.nested-group-pack` (key and path are the group name, the message names the flat key); `ApplyPack` drops it with a warning (`nested-group-pack.case.json`). An object under a MAP parameter name is the map-columns form and stays valid; nesting in a defaults file and inside record tables is unchanged.
 - A pack may carry a top-level `basedOn` (hex schema hash, written by `ParameterFile::ToJson(Diff)`); it is envelope, not a parameter, so it needs no entry (`parameter-file-to-json-diff.case.json` is the committed `ToJson(Diff)` output).
 - A new data rule must add a fixture here.
 - These are data files: they are not listed in any vcxproj.

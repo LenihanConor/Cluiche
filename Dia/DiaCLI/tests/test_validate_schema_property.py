@@ -273,7 +273,7 @@ def _default_for(rng, t):
 def test_f6_defaults_document_validates_clean(seed):
     rng = random.Random(seed)
     for _ in range(30):
-        entries, doc, n = [], {"format": "x", "version": 1}, 0
+        entries, doc, pack, n = [], {"format": "x", "version": 1}, {"format": "x", "version": 1}, 0
         for i in range(rng.randint(1, 8)):
             t = rng.choice(["float", "int", "bool", "string", "enum"])
             key = rng.choice([f"k{i}", f"g{i}.k", f"g{i}.h.k"])
@@ -290,11 +290,12 @@ def test_f6_defaults_document_validates_clean(seed):
             for p in parts[:-1]:
                 node = node.setdefault(p, {})
             node[parts[-1]] = d
+            pack[key] = d   # a pack addresses a parameter by its flat key (2026-11-20 user decision)
         schema = {"format": "dia.value_schema", "version": 1, "for": "x", "entries": entries}
         assert [f for f in validate_schema_document(schema, "s") if f.severity == "FAIL"] == []
         idx = build_schema_index([schema])
         assert validate_data_document(doc, "d", idx, is_pack=False) == []
-        assert validate_data_document(doc, "d", idx, is_pack=True) == []
+        assert validate_data_document(pack, "d", idx, is_pack=True) == []
         assert validate_schema_references([schema], {}) == []
 
 
