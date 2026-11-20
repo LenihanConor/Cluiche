@@ -153,7 +153,13 @@ namespace {
 template<class Binding>
 void BindAll(Binding& binding)
 {
-    ForEachRuleMember([&](const char* key, auto m) { binding.Bind(StringCRC(key), m); });
+    // The sidecar stores every rule as a float; the 12 int32_t members opt in to the float->int conversion.
+    ForEachRuleMember([&](const char* key, auto m) {
+        if constexpr (std::is_same_v<decltype(m), int32_t TerrainRules::*>)
+            binding.BindIntFromFloat(StringCRC(key), m);
+        else
+            binding.Bind(StringCRC(key), m);
+    });
 }
 } // namespace
 

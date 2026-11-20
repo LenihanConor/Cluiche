@@ -7,7 +7,8 @@
 //
 //   ParamBinding<TerrainRules> b;
 //   b.Bind(StringCRC("sea.level"), &TerrainRules::seaLevel);          // float
-//   b.Bind(StringCRC("sea.octaves"), &TerrainRules::octaves);         // int32_t
+//   b.Bind(StringCRC("sea.octaves"), &TerrainRules::octaves);         // int32_t (Int attribute)
+//   b.BindIntFromFloat(StringCRC("sea.depth"), &TerrainRules::depth); // int32_t member on a FLOAT attribute (opt-in)
 //   b.Bind(StringCRC("sea.enabled"), &TerrainRules::enabled);         // bool (0/1)
 //   b.BindEnum(StringCRC("sea.mode"), &TerrainRules::mode);           // enum ordinal
 //   b.BindMap(StringCRC("biome.wetness"), &TerrainRules::wetness);    // float[N] / int32_t[N] / bool[N] / E[N]
@@ -21,6 +22,11 @@
 //    map covers all of them and element i of the destination array receives the i-th one. A bound count that
 //    differs from the schema's expansion is reported in BindingReport::countMismatches and the map is skipped by
 //    Snapshot. Maps are matched through the attribute's fullKey: a map key may itself contain dots.
+//  * Kind check: Resolve reports (BindingReport::kindMismatches) a binding whose member kind does not match the
+//    attribute kind: float<->Float, int32_t<->Int, bool<->Bool, BindEnum<->Enum, and the same per map column kind.
+//    A mismatched binding is skipped by Snapshot. The one deliberate cross-kind form is BindIntFromFloat, which
+//    binds an int32_t member to a FLOAT attribute: the value is rounded half away from zero and SATURATES to the
+//    int32 range (NaN -> 0). Plain Bind(int32_t) against a Float attribute is a kind mismatch.
 //  * Binding the same key twice is a programming error (DIA_ASSERT; the second binding is dropped).
 //  * More than kMaxBindings bindings is a programming error (DIA_ASSERT; the extra binding is dropped).
 //  * Snapshot skips bindings that Resolve could not resolve, and Snapshot before Resolve does nothing.
@@ -57,11 +63,15 @@ namespace Dia::Attribute {
         uint32_t droppedUnbound = 0;
         uint32_t droppedWithoutEntry = 0;
         uint32_t droppedMismatches = 0;
+        // Bindings (maps: "<key>") whose member kind does not match the attribute kind.
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::Containers::String128, kCapacity> kindMismatches;
+        uint32_t droppedKindMismatches = 0;
 
         bool IsClean() const
         {
             return unboundParameters.Size() == 0 && bindingsWithoutEntry.Size() == 0 && countMismatches.Size() == 0
-                && droppedUnbound == 0 && droppedWithoutEntry == 0 && droppedMismatches == 0;
+                && kindMismatches.Size() == 0
+                && droppedUnbound == 0 && droppedWithoutEntry == 0 && droppedMismatches == 0 && droppedKindMismatches == 0;
         }
     };
 
@@ -78,6 +88,11 @@ namespace Dia::Attribute {
         void Bind(Dia::Core::StringCRC key, float T::* m)   { Add(key, Kind::Float, OffsetOf(m), 1, 0); }
         void Bind(Dia::Core::StringCRC key, int32_t T::* m) { Add(key, Kind::Int,   OffsetOf(m), 1, 0); }
         void Bind(Dia::Core::StringCRC key, bool T::* m)    { Add(key, Kind::Bool,  OffsetOf(m), 1, 0); }
+
+        // Explicit opt-in: an int32_t member fed from a FLOAT attribute (e.g. a rule stored as a float in the sidecar
+        // but read as a count). Rounds half away from zero, saturates to the int32 range, NaN -> 0. Against any
+        // other attribute kind it is a kind mismatch. Plain Bind(int32_t) requires an Int attribute.
+        void BindIntFromFloat(Dia::Core::StringCRC key, int32_t T::* m) { Add(key, Kind::IntFromFloat, OffsetOf(m), 1, 0); }
 
         // Stores the ordinal (the attribute's value) into an enum member of any underlying size (1, 2, 4, 8 bytes).
         template<class E>
@@ -128,6 +143,11 @@ namespace Dia::Attribute {
                             e.resolved = true;
                             covered[i] = 1;
                             found = true;
+                            if (schema.GetAttributeByIndex(i).kind != ExpectedAttributeKind(e.kind))
+                            {
+                                e.resolved = false;
+                                Push(report.kindMismatches, report.droppedKindMismatches, e.key.AsChar());
+                            }
                         }
                     }
                     if (!found) Push(report.bindingsWithoutEntry, report.droppedWithoutEntry, e.key.AsChar());
@@ -153,6 +173,11 @@ namespace Dia::Attribute {
                 if (matches != e.count || !contiguous)
                 {
                     Push(report.countMismatches, report.droppedMismatches, e.key.AsChar());
+                    continue;
+                }
+                if (schema.GetAttributeByIndex(first).kind != ExpectedAttributeKind(e.kind))
+                {
+                    Push(report.kindMismatches, report.droppedKindMismatches, e.key.AsChar());
                     continue;
                 }
                 e.index = first;
@@ -182,7 +207,7 @@ namespace Dia::Attribute {
                     switch (e.kind)
                     {
                     case Kind::Float: case Kind::FloatMap: { const float x = v; std::memcpy(dst + k * sizeof(float), &x, sizeof(float)); break; }
-                    case Kind::Int:   case Kind::IntMap:   { const int32_t x = ToInt(v); std::memcpy(dst + k * sizeof(int32_t), &x, sizeof(int32_t)); break; }
+                    case Kind::Int:   case Kind::IntMap:   case Kind::IntFromFloat: { const int32_t x = ToInt(v); std::memcpy(dst + k * sizeof(int32_t), &x, sizeof(int32_t)); break; }
                     case Kind::Bool:  case Kind::BoolMap:  { const bool x = (v != 0.0f); std::memcpy(dst + k * sizeof(bool), &x, sizeof(bool)); break; }
                     case Kind::Enum:  case Kind::EnumMap:  WriteOrdinal(dst + k * e.enumSize, e.enumSize, ToInt(v)); break;
                     }
@@ -193,7 +218,7 @@ namespace Dia::Attribute {
         uint32_t BindingCount() const { return mEntries.Size(); }
 
     private:
-        enum class Kind : uint8_t { Float, Int, Bool, Enum, FloatMap, IntMap, BoolMap, EnumMap };
+        enum class Kind : uint8_t { Float, Int, Bool, Enum, IntFromFloat, FloatMap, IntMap, BoolMap, EnumMap };
 
         struct Entry
         {
@@ -207,6 +232,17 @@ namespace Dia::Attribute {
         };
 
         static bool IsMap(Kind k) { return k >= Kind::FloatMap; }
+
+        static AttributeKind ExpectedAttributeKind(Kind k)
+        {
+            switch (k)
+            {
+            case Kind::Float: case Kind::IntFromFloat: case Kind::FloatMap: return AttributeKind::Float;
+            case Kind::Int:   case Kind::IntMap:                            return AttributeKind::Int;
+            case Kind::Bool:  case Kind::BoolMap:                           return AttributeKind::Bool;
+            default:                                                        return AttributeKind::Enum;
+            }
+        }
 
         // Byte offset of a data member (or array member) inside T, computed against scratch storage so no T
         // is ever constructed and no null pointer is dereferenced.
@@ -261,7 +297,15 @@ namespace Dia::Attribute {
             return false;
         }
 
-        static int32_t ToInt(float v) { return static_cast<int32_t>(v < 0.0f ? v - 0.5f : v + 0.5f); }
+        // Half away from zero, saturating to the int32 range; NaN -> 0 (a bare cast would be undefined behaviour).
+        static int32_t ToInt(float v)
+        {
+            const float r = v < 0.0f ? v - 0.5f : v + 0.5f;
+            if (r != r) return 0;
+            if (r >= 2147483648.0f) return INT32_MAX;
+            if (r <= -2147483648.0f) return INT32_MIN;
+            return static_cast<int32_t>(r);
+        }
 
         static void WriteOrdinal(char* dst, uint8_t size, int32_t ordinal)
         {
