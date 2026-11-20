@@ -121,6 +121,13 @@ struct Fixture
         automation.fromPU = StringCRC("SimPU");
         manifest.streams.Add(automation);
 
+        // F2TestRunnerModule connects the StageResult event stream (written on Sim, no reader in tests).
+        StreamDeclaration stageResult;
+        stageResult.id = StringCRC("StageResult");
+        stageResult.kind = StringCRC("EventStream");
+        stageResult.fromPU = StringCRC("SimPU");
+        manifest.streams.Add(stageResult);
+
         ProcessingUnitDeclaration pu;
         pu.instanceId = StringCRC("SimPU");
         pu.frequencyHz = 30.0f;
