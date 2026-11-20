@@ -220,34 +220,6 @@ namespace Dia::Attribute {
     }
 
     // -----------------------------------------------------------------------
-    // LoadFromJson
-    // -----------------------------------------------------------------------
-    AttributeSchema AttributeSchema::LoadFromJson(const char* json_path)
-    {
-        DIA_ASSERT(json_path != nullptr, "AttributeSchema::LoadFromJson: json_path must not be null");
-        if (json_path == nullptr)
-            return AttributeSchema{};
-
-        std::ifstream file(json_path);
-        if (!file.is_open())
-        {
-            DIA_LOG_WARNING("Attribute", "AttributeSchema::LoadFromJson: could not open '%s'", json_path);
-            return AttributeSchema{};
-        }
-
-        Json::Value root;
-        Json::CharReaderBuilder builder;
-        std::string errors;
-        if (!Json::parseFromStream(builder, file, &root, &errors))
-        {
-            DIA_LOG_WARNING("Attribute", "AttributeSchema::LoadFromJson: JSON parse error in '%s'", json_path);
-            return AttributeSchema{};
-        }
-
-        return LoadFromJsonValue(root);
-    }
-
-    // -----------------------------------------------------------------------
     // LoadFromJsonValue
     // -----------------------------------------------------------------------
     AttributeSchema AttributeSchema::LoadFromJsonValue(const Json::Value& root)

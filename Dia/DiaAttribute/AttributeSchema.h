@@ -83,10 +83,8 @@ namespace Dia::Attribute {
         AttributeSchema(const AttributeSchema& other);
         AttributeSchema& operator=(const AttributeSchema& other);
 
-        // Load from a JSON file on disk. Returns an invalid schema if the file
-        // cannot be opened or parsed.
-        [[nodiscard]] static AttributeSchema LoadFromJson(const char* json_path);
-
+        // LEGACY (plan task 13 partial): kept only for the two band-schema-version tests until a sidecar can carry
+        // a version != 1. Everything else uses FromValueSchema.
         // Load from an already-parsed Json::Value (for tests and in-memory pipelines).
         // Returns an invalid schema if the value is null or not an object.
         [[nodiscard]] static AttributeSchema LoadFromJsonValue(const Json::Value& root);
