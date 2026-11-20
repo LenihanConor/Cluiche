@@ -13,7 +13,8 @@ include: conditional
 
 ## Frameworks
 
-**Graphics & Multimedia**: SFML (Simple and Fast Multimedia Library)  
+**Window & Input**: SDL3  
+**Rendering**: bgfx (D3D11 default; 2D via DiaBgfx, 3D via DiaBgfx3D)  
 **JSON Parsing**: jsoncpp (wrapped in `DiaCore/Json/`)  
 **Web UI/Visualization**: VisJS (for debugging/visualization tools)  
 **Testing**: Google Test (C++ testing framework)  

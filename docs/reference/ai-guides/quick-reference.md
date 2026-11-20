@@ -22,7 +22,8 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 | **Graphics** | `Dia/DiaGraphics/Interface/ICanvas.h` |
 | **Input** | `Dia/DiaInput/DiaInputEvent.h` |
 | **UI** | `Dia/DiaUI/DiaUIIUISystem.h` |
-| **SFML backend** | `Dia/DiaSFML/` |
+| **SDL3 window/input backend** | `Dia/DiaSDL/` |
+| **bgfx rendering backend** | `Dia/DiaBgfx/`, `Dia/DiaBgfx3D/` |
 | **Type system** | `Dia/DiaCore/Type/` + `Dia/DiaCore/CRC/` |
 | **Patterns** | `Dia/DiaCore/Architecture/` |
 | **Tests** | `Cluiche/Levels/UnitTestLevel/` |
@@ -42,7 +43,9 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 | `Dia::Window` | Window abstraction | `Dia::Window::IWindow` |
 | `Dia::Input` | Input abstraction | `Dia::Input::InputEvent` |
 | `Dia::UI` | UI abstraction | `Dia::UI::IUISystem` |
-| `Dia::SFML` | SFML backend | `Dia::SFML::DiaSFMLRenderWindow` |
+| `Dia::SDL` | SDL3 window/input backend | `Dia::SDL::Window` |
+| `Dia::Bgfx` | bgfx 2D rendering backend | `Dia::Bgfx::Canvas` |
+| `Dia::Bgfx3D` | bgfx 3D rendering backend | `Dia::Bgfx3D::Canvas3D` |
 | `Dia::IO` | File I/O | `Dia::IO::FilePath` |
 
 ---
@@ -194,7 +197,7 @@ static const StringCRC kSimUIProxyModuleId = StringCRC("SimUIProxyModule");
 | What | Thread | Notes |
 |------|--------|-------|
 | **UI** | Main | UI system runs on main thread |
-| **Input capture** | Main | SFML input events |
+| **Input capture** | Main | SDL3 input events |
 | **Rendering** | Render | 60 FPS |
 | **Game logic** | Sim | Variable rate |
 | **Physics** | Sim | (Stub) |
@@ -360,7 +363,8 @@ python Tools/dia_modules.py --list dia.core.containers
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| **SFML** | 2.5.1 | Graphics, audio, input |
+| **SDL3** | 3.x-main | Window, input |
+| **bgfx** | pinned commit | Rendering |
 | **JsonCpp** | Master | JSON parsing |
 | **VisJS** | - | Graph visualization |
 

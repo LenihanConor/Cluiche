@@ -122,7 +122,7 @@ This document tracks functional and non-functional requirements with status, pri
 
 **Verification:**
 - Core framework has no platform-specific code
-- Backends pluggable (DiaSFML can be swapped)
+- Backends pluggable (DiaSDL and DiaBgfx can be swapped)
 
 ---
 
@@ -163,11 +163,11 @@ This document tracks functional and non-functional requirements with status, pri
 
 → Implementation:
 - `Dia/DiaGraphics/Interface/ICanvas.h`
-- `Dia/DiaSFML/DiaSFMLRenderWindow.h` (SFML backend)
+- `Dia/DiaBgfx/Canvas.h` (bgfx backend)
 
 **Verification:**
 - ICanvas abstracts rendering
-- Backend can be swapped (SFML → SDL/Direct3D)
+- Backend can be swapped (renderer: DiaBgfx; window/input: DiaSDL)
 
 ---
 
@@ -216,7 +216,7 @@ This document tracks functional and non-functional requirements with status, pri
 → Implementation:
 - `Dia/DiaInput/DiaInputEvent.h`
 - `Dia/DiaInput/DiaInputInputSourceManager.h`
-- `Dia/DiaSFML/DiaSFMLInputSource.h` (SFML backend)
+- `Dia/DiaSDL/InputSource.h` (SDL3 backend)
 
 **Verification:**
 - Events for keyboard, mouse, gamepad
@@ -506,7 +506,7 @@ CF-004 (Phases) → 5 phase implementations
 DE-001 (Framework) → DiaApplicationFlow subsystem
 DE-002 (Containers) → DiaCore/Containers/*
 DE-003 (Type System) → StringCRC + TypeRegistry
-DE-004 (Graphics) → DiaGraphics + DiaSFML
+DE-004 (Graphics) → DiaGraphics + DiaBgfx
 DE-005 (Math) → DiaMaths subsystem
 ```
 

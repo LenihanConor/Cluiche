@@ -3,8 +3,8 @@
 Runs against the real repo's pipeline.toml -- the repo has exactly one real
 project (no CoW sibling, no discovery mechanism), so there is nothing to fake
 here that the real file doesn't already exercise deterministically:
-diasfml/diauiultralight are real, permanently-hidden internal build-dependency
-targets, and googletest/cluichetest/cluicheeditor are real, permanently
+diauiultralight is a real, permanently-hidden internal build-dependency
+target, and googletest/cluichetest/cluicheeditor are real, permanently
 user-facing targets. Golden-list style (asserts membership, not a count) so
 adding a new target later doesn't break this test.
 """
@@ -20,7 +20,6 @@ def _repo_root():
 
 def test_list_targets_excludes_hidden_targets():
     names = {t.name for t in list_targets(_repo_root())}
-    assert "diasfml" not in names
     assert "diauiultralight" not in names
 
 

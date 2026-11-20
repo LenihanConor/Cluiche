@@ -34,7 +34,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 - [DiaIO API](dia/io-api.md) - File I/O
 
 **Backend Implementations:**
-- [DiaSFML API](dia/sfml-api.md) - SFML backend
+- [DiaSDL API](dia/sdl-api.md) - SDL3 window and input backend
 
 **Specialized (Stubs):**
 - [DiaPhysics API](dia/physics-api.md) - Physics simulation (stub)
@@ -128,12 +128,12 @@ This section documents the public API surface of Cluiche (application) and Dia (
 
 ### Backend Implementation APIs (Layer 3)
 
-**DiaSFML - SFML Integration**
-- `DiaSFMLRenderWindow` - Window + Canvas
-- `DiaSFMLInputSource` - Input handling
-- `DiaSFMLSoundManager` - Audio
+**DiaSDL - SDL3 Window and Input**
+- `Dia::SDL::Window` - Window + input source
+- `Dia::SDL::WindowFactory` - Window creation
+- `Dia::SDL::InputSource` - Input handling
 
-**[→ DiaSFML API Details](dia/sfml-api.md)**
+**[→ DiaSDL API Details](dia/sdl-api.md)**
 
 ---
 
@@ -418,7 +418,8 @@ APIs from third-party libraries (used via abstractions):
 
 | Library | Purpose | Direct Usage |
 |---------|---------|--------------|
-| **SFML** | Graphics/Audio/Input | Via DiaSFML only |
+| **SDL3** | Window/Input | Via DiaSDL only |
+| **bgfx** | Rendering | Via DiaBgfx and DiaBgfx3D only |
 | **JsonCpp** | JSON parsing | Via DiaCore/Json only |
 
 **Principle:** External dependencies accessed via Dia abstractions, not directly.
@@ -446,7 +447,7 @@ Comprehensive examples available:
 **API Layers:**
 1. Foundation (DiaCore)
 2. Framework (DiaApplicationFlow) + Platform (DiaMaths, DiaGraphics, etc.)
-3. Backend (DiaSFML)
+3. Backend (DiaSDL, DiaBgfx, DiaBgfx3D)
 4. Application (Cluiche)
 
 **Design Principles:**

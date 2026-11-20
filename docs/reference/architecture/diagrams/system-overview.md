@@ -9,7 +9,8 @@ This diagram shows the three-layer architecture of the Cluiche game engine:
 ```mermaid
 graph TB
     subgraph External["External Dependencies"]
-        SFML["SFML 2.x<br/>Graphics/Audio/Input"]
+        SDL3["SDL3<br/>Window/Input"]
+        bgfxLib["bgfx<br/>Rendering"]
         JsonCpp["JsonCpp<br/>Configuration"]
         VisJS["VisJS<br/>Visualization"]
     end
@@ -22,7 +23,8 @@ graph TB
         DiaInput["DiaInput<br/>Input Events"]
         DiaUI["DiaUI<br/>UI System"]
         DiaWindow["DiaWindow<br/>Window Management"]
-        DiaSFML["DiaSFML<br/>SFML Backend"]
+        DiaSDL["DiaSDL<br/>SDL3 Window/Input Backend"]
+        DiaBgfx["DiaBgfx / DiaBgfx3D<br/>bgfx Rendering Backend"]
         DiaIO["DiaIO<br/>File I/O"]
         DiaPhysics["DiaPhysics<br/>Physics"]
         DiaAI["DiaAI<br/>AI Systems"]
@@ -55,7 +57,9 @@ graph TB
 
     %% Dia internal dependencies
     DiaApp --> DiaCore
-    DiaGraphics --> DiaSFML
+    DiaBgfx --> DiaGraphics
+    DiaSDL --> DiaWindow
+    DiaSDL --> DiaInput
     DiaGraphics --> DiaCore
     DiaMaths --> DiaCore
     DiaInput --> DiaCore
@@ -64,7 +68,8 @@ graph TB
     DiaArch --> DiaCore
 
     %% Dia depends on External
-    DiaSFML --> SFML
+    DiaSDL --> SDL3
+    DiaBgfx --> bgfxLib
     DiaCore --> JsonCpp
 
     %% Styling
@@ -73,8 +78,8 @@ graph TB
     classDef externalLayer fill:#50C878,stroke:#2F7D4E,stroke-width:2px,color:#fff
 
     class Main,MainPU,RenderPU,SimPU,Levels,Modules appLayer
-    class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSFML,DiaIO,DiaPhysics,DiaAI,DiaArch engineLayer
-    class SFML,JsonCpp,VisJS externalLayer
+    class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSDL,DiaBgfx,DiaIO,DiaPhysics,DiaAI,DiaArch engineLayer
+    class SDL3,bgfxLib,JsonCpp,VisJS externalLayer
 ```
 
 [← Back to Architecture Overview](../architecture.md)

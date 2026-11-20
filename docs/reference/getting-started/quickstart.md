@@ -88,11 +88,12 @@ C:\GitHub\Cluiche\
 │   ├── DiaGraphics/             ← ICanvas rendering abstraction
 │   ├── DiaInput/                ← Input events
 │   ├── DiaUI/                   ← UI integration
-│   ├── DiaSFML/                 ← SFML backend (graphics)
+│   ├── DiaSDL/                  ← SDL3 backend (window, input)
+│   ├── DiaBgfx/ DiaBgfx3D/      ← bgfx backends (rendering)
 │   └── [6 more subsystems]      ← Physics, AI, IO, Window, etc.
 │
 ├── External/                     ← THIRD-PARTY LIBRARIES
-│   ├── SFML/                    ← Graphics/Audio/Input library
+│   ├── SDL3/ bgfx/              ← Window/input and rendering libraries
 │   ├── jsoncpp-master/          ← JSON configuration
 │   └── [2 more libraries]
 │
@@ -130,7 +131,7 @@ int main() {
 2. **RenderProcessingUnit (separate thread)**
    - Starts `RenderRunningPhase`
    - Reads graphics commands from `SimToRenderFrameStream`
-   - Renders to SFML canvas at 60 FPS
+   - Renders to the bgfx canvas at 60 FPS
 
 3. **SimProcessingUnit (separate thread)**
    - Starts `SimBootPhase` → `SimBootStrapPhase`
@@ -264,4 +265,4 @@ See [Common Tasks](common-tasks.md) for step-by-step guides.
 
 ---
 
-You're now oriented! Dive deeper with the [full documentation](../README.md).
+You're now oriented! Dive deeper with the [full documentation](../README.md).

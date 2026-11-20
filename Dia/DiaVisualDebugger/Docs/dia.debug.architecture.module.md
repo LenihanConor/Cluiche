@@ -38,7 +38,7 @@ responsibilities:
   - BuildDomainState replaces NaN/Infinity with null and treats a non-object domain state as {}.
 
 non_responsibilities:
-  - Rendering — layers submit to FrameData; DiaSFML owns rendering
+  - Rendering — layers submit to FrameData; DiaBgfx owns rendering
   - Frame budget enforcement — DebugFrameData (DiaGraphics) owns capacity limits
   - Editor WebSocket broadcast — removed 2026-11-02 (debug-editor-panel retired; see debug-layer-broadcast-removal)
 
@@ -81,5 +81,5 @@ dependencies:
   optional:
     - dia.debug.server  # DebugServerModule* forward-declared; caller passes nullptr if absent
   forbidden:
-    - dia.sfml          # No rendering allowed in debug layer manager
+    - dia.bgfx          # No rendering allowed in debug layer manager
 ---

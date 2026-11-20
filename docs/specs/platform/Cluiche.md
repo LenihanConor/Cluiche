@@ -30,7 +30,8 @@ The Dia engine is a modular C++ framework organized into subsystems:
 **Rendering & Graphics:**
 - **DiaGraphics** - Graphics abstraction layer (ICanvas, Frame)
 - **DiaWindow** - Window management
-- **DiaSFML** - SFML integration layer
+- **DiaSDL** - SDL3 window and input backend
+- **DiaBgfx / DiaBgfx3D** - bgfx 2D and 3D renderer
 
 **Input & UI:**
 - **DiaInput** - Input handling (keyboard, mouse, events)

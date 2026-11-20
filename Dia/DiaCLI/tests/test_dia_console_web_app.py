@@ -142,8 +142,8 @@ _CONTEXT_TOML = textwrap.dedent("""\
     project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
     app_name = "CluicheTest"
 
-    [targets.diasfml]
-    project = "Dia/DiaSFML/DiaSFML.vcxproj"
+    [targets.diahiddenlib]
+    project = "Dia/DiaHiddenLib/DiaHiddenLib.vcxproj"
     hidden = true
 """)
 

@@ -128,7 +128,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mInputSourceManager.AddInputSource(static_cast<Dia::SDL::Window*>(mWindow));
     mInputSourceManager.AddInputSource(&mGamepadManager);
 
-    // Construct bgfx Canvas unconditionally — SFML render path is removed.
+    // Construct the bgfx Canvas unconditionally; it is the only render path.
     Dia::Bgfx::CanvasSettings bgfxSettings;
     bgfxSettings.initialSize = Dia::Maths::Vector2D(
         static_cast<float>(mWindowWidth), static_cast<float>(mWindowHeight));

@@ -188,22 +188,23 @@ Core framework must not depend on platform-specific APIs.
 
 **Rationale:**
 - Cross-platform support (Windows, Linux, macOS)
-- Backend can be swapped (SFML → SDL → custom)
+- Backend can be swapped (window/input: DiaSDL; renderer: DiaBgfx)
 - Core logic independent of platform
 
 **Acceptance Criteria:**
 - [ ] No Windows.h or platform headers in Dia core
-- [ ] All platform-specific code in backends (DiaSFML)
+- [ ] All platform-specific code in backends (DiaSDL, DiaBgfx)
 - [ ] Core APIs work with any backend
 - [ ] Can build without backend (core only)
 
 **Implementation:**
 - `DiaApplicationFlow`, `DiaCore`, `DiaMaths` - Platform-agnostic
 - `DiaGraphics::ICanvas` - Abstract interface
-- `DiaSFML` - SFML backend (Windows/Linux/macOS)
+- `DiaSDL` - SDL3 window and input backend
+- `DiaBgfx` - bgfx renderer backend
 
 **Test Cases:**
-- Build DiaCore without SFML
+- Build DiaCore without SDL3 or bgfx
 - Swap backends at compile time
 - Run on multiple platforms
 
@@ -285,20 +286,20 @@ Provide compile-time type IDs and runtime type metadata without RTTI.
 Provide abstract graphics interface independent of rendering backend.
 
 **Rationale:**
-- Support multiple backends (SFML, SDL, Direct3D, OpenGL)
+- Support pluggable backends (bgfx renderer, SDL3 window and input)
 - Core game logic independent of rendering
 - Easy to test (mock canvas)
 
 **Acceptance Criteria:**
 - [ ] ICanvas abstract interface
-- [ ] DrawLine, DrawCircle, DrawRectangle, DrawSprite, DrawText
-- [ ] Clear and Present for frame control
+- [ ] FrameData records sprite, debug primitive, UI and CellField draw requests
+- [ ] StartFrame, ProcessFrame and EndFrame (or RenderFrame) for frame control
 - [ ] Backend implements ICanvas
 - [ ] Can swap backends at compile time
 
 **Implementation:**
 - `DiaGraphics::ICanvas` - Abstract interface
-- `DiaSFML::DiaSFMLRenderWindow` - SFML implementation
+- `Dia::Bgfx::Canvas` - bgfx implementation
 
 **Test Cases:**
 - Draw all primitive types
@@ -400,7 +401,7 @@ Platform-agnostic input handling (keyboard, mouse, gamepad).
 **Implementation:**
 - `DiaInput::InputEvent` - Event structure
 - `DiaInput::InputSourceManager` - Source management
-- `DiaSFML::DiaSFMLInputSource` - SFML backend
+- `Dia::SDL::InputSource` - SDL3 backend
 
 **Test Cases:**
 - Keyboard event conversion
@@ -461,7 +462,7 @@ Abstract window management (creation, fullscreen, VSync).
 
 **Implementation:**
 - `DiaWindow::IWindow` - Abstract interface
-- `DiaSFML::DiaSFMLRenderWindow` - SFML backend (implements IWindow + ICanvas)
+- `Dia::SDL::Window` - SDL3 backend (implements IWindow + IInputSource)
 
 **Test Cases:**
 - Window creation/destruction

@@ -104,7 +104,7 @@ protobuf = true
 [targets.cluichetest.deploy]
 files = [
   { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
-  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
+  { src = "External/Python311/*.dll", dest = "$(OutDir)" },
   { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
 ]
 

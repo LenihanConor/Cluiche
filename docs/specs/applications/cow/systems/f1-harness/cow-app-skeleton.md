@@ -53,7 +53,7 @@ Mirror CluicheTest's structure, trimmed to what a Boot menu and stub stage need.
 - The F-1 catalogue is minimal: the main manifest, the `FrontEnd` stage, and only the shaders and UI assets the Boot menu needs. Task 3 builds it by trimming CluicheTest's catalogue and confirming the Boot menu draws.
 - Cooked content (textures, meshes, rigs, tiles) is not part of F-1. Each later testbed adds its own catalogue entries and uses the existing asset rules.
 
-**Pipeline.** `dia run cow` goes through `pipeline.toml`. CluicheTest's target has stages `compile-code, reflect, build-assets, deploy`, `build_deps` (protobuf, bgfx shaders), `catalogue_manifest`, and a `deploy.files` list of SFML DLLs, manifests, the schema, and one entry per stage file. Deploy entries accept `*` patterns, so CoW can use one glob for its stage assets instead of per-file entries.
+**Pipeline.** `dia run cow` goes through `pipeline.toml`. CluicheTest's target has stages `compile-code, reflect, build-assets, deploy`, `build_deps` (protobuf, bgfx shaders), `catalogue_manifest`, and a `deploy.files` list of runtime DLLs, manifests, the schema, and one entry per stage file. Deploy entries accept `*` patterns, so CoW can use one glob for its stage assets instead of per-file entries.
 
 ## Existing DiaCLI tooling (surveyed)
 

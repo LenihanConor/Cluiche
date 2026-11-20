@@ -42,7 +42,7 @@ namespace Dia
 		///
 		/// If you want to use a single specific render state,
 		/// for example a shader, you can pass it directly to the Draw
-		/// function: SFML will construct a RenderStates on the fly.
+		/// function: a RenderStates is constructed on the fly.
 		/// \code
 		/// window.Draw(sprite, shader);
 		/// \endcode

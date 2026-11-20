@@ -91,7 +91,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaAnimation2D | Animation playback and blending — damped spring chains, keyframe clip player, pose blend stack, procedural locomotion oscillator (deferred) | [diaanimation2d.md](systems/diaanimation2d/diaanimation2d.md) |
 | DiaVisualDebugger | Visual debug rendering system — `DebugLayerManager`, stack of focused draw classes, `DebugColourPalette`, `DiaVisualDebuggerConsole` (ImGui), editor layer panel, extensions to DiaGraphics (budget, TextPrimitive) | [diavisualdebugger.md](systems/diavisualdebugger/diavisualdebugger.md) |
 | DiaDebugDomain | Visual debug domain architecture — `IDebugDomain` interface, `DiaDebugDomainRegistry` (grouped, replaces flat 64-entry list), `DiaDebugPanel` (Ultralight HTML console, left side), JS command bridge, `DiaXxxVisualDebugger` contract + `dia check`, migration of 14 existing domains, retirement of ImGui console | [diadebugdomain.md](systems/diadebugdomain/diadebugdomain.md) |
-| RenderBackend | Concrete renderer behind `Graphics::ICanvas` — replaces SFML render path with bgfx in two phases (parity, then light 3D); new `DiaBgfx` module + Phase 2 3D module family (Mesh3D/Rig3D/Animation3D/Skinning3D/Scene3D) | [render-backend.md](systems/render-backend/render-backend.md) |
+| RenderBackend | Concrete renderer behind `Graphics::ICanvas` — the bgfx renderer, built in two phases (parity, then light 3D); new `DiaBgfx` module + Phase 2 3D module family (Mesh3D/Rig3D/Animation3D/Skinning3D/Scene3D) | [render-backend.md](systems/render-backend/render-backend.md) |
 | DiaBgfx3D | Phase 2 3D rendering layer — `Canvas3D`, `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`, `MaterialRegistry`, `MeshGpuCache`, 3D shaders; separate module so 2D-only games never pull in the DiaScene3D chain **Amended 2026-11-20:** planned features render targets + dynamic textures, instanced sprites, particles, post-process stack (for DiaTerrainMap3D). | [diabgfx3d.md](systems/diabgfx3d/diabgfx3d.md) |
 | DiaMesh3D | 3D mesh asset library — `Vertex3D`, `Submesh`, `Mesh3DAsset`, `Mesh3DAssetHandler` (IAssetTypeHandler for cooked `.mesh3d` binaries); pure geometry, no skinning attributes or glTF dependency at runtime | [diamesh3d.md](systems/diamesh3d/diamesh3d.md) |
 | DiaThreading | Task-based parallelism — `JobSystem`, `JobHandle`; extracted from DiaCore to allow DiaObservation dependency; `dia.jobs.*` metrics via JobSystemModule | [diathreading.md](systems/diathreading/diathreading.md) |
@@ -112,7 +112,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaGraphics3D | 3D rendering type layer — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; separate module so 2D-only consumers never pull in Matrix44 | [diagraphics3d.md](systems/diagraphics3d/diagraphics3d.md) |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |
-| DiaSDL | SDL3-backed window + input backend — implements `IWindow` + `IInputSource` for Windows, Linux, Android, iOS; replaces DiaSFML | [replace-diasfml-with-sdl3.md](systems/diasdl/replace-diasfml-with-sdl3.md) |
+| DiaSDL | SDL3-backed window + input backend — implements `IWindow` + `IInputSource` for Windows, Linux, Android, iOS | [replace-diasfml-with-sdl3.md](systems/diasdl/replace-diasfml-with-sdl3.md) |
 | DiaUI | UI system abstraction | TBD |
 
 ## Application-Specific Architecture
@@ -139,7 +139,7 @@ DiaAPI provides extensible command-line tools for asset pipelines and build auto
 
 Dia is the engine - it provides dependencies for other applications rather than consuming them. External dependencies:
 
-- **SDL3** (External/SDL3) - Window management and input (replaces SFML window/input path; git submodule, built via `dia env setup`)
+- **SDL3** (External/SDL3) - Window management and input (git submodule, built via `dia env setup`)
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
 - **VisJS** (External/) - Visualization for debugging
 - **GoogleTest** (External/googletest) - Unit testing framework

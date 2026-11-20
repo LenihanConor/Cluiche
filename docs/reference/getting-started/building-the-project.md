@@ -150,7 +150,8 @@ Cluiche.sln
 │   ├── DiaWindow (window management)
 │   ├── DiaInput (input handling)
 │   ├── DiaUI (UI abstraction)
-│   └── DiaSFML (SFML backend)
+│   ├── DiaSDL (SDL3 window/input backend)
+│   └── DiaBgfx / DiaBgfx3D (bgfx rendering backends)
 └── Tests
     └── UnitTests (unit test project)
 ```
@@ -189,17 +190,11 @@ msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=x
 
 ## External Dependencies
 
-### SFML 2.5.1
+### SDL3 and bgfx
 
-**Location:** `External/SFML-2.5.1/`
+**Location:** `External/SDL3/`, `External/bgfx/`, `External/bx/`, `External/bimg/`
 
-**Required Libraries:**
-- sfml-graphics
-- sfml-window
-- sfml-audio
-- sfml-system
-
-**Pre-built:** Included in repository (no build needed)
+**Restore:** Run `dia env setup` (see `deps.json`). It builds SDL3 as a static library and stages bgfx, bx and bimg.
 
 **Linking:** Automatically configured in `.vcxproj` files
 
@@ -217,16 +212,13 @@ msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=x
 
 ## Common Build Issues
 
-### Issue 1: "Cannot open file 'sfml-xxx.lib'"
+### Issue 1: "Cannot open file 'SDL3-static.lib'" (or missing bgfx headers/libs)
 
-**Cause:** SFML libraries not found
+**Cause:** External dependencies not restored
 
 **Solution:**
-1. Check `External/SFML-2.5.1/` exists
-2. Verify library path in project properties:
-   - Right-click project → Properties
-   - Linker → General → Additional Library Directories
-   - Should include: `$(SolutionDir)../External/SFML-2.5.1/lib/`
+1. Run `dia env setup` (and `dia env verify` to diagnose)
+2. Check `External/SDL3/lib/` and `External/bgfx/` exist
 
 ---
 
@@ -426,7 +418,7 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 - Release|x64 (distribution)
 
 **Common Issues:**
-- Missing SFML → Check External/SFML-2.5.1/
+- Missing SDL3/bgfx → Run `dia env setup`
 - Unresolved symbols → Rebuild all
 - Missing SDK → Install Windows 10 SDK
 

@@ -183,7 +183,6 @@ Valid `layer:` values and their permitted dependencies:
 
 | Module | Notes |
 |--------|-------|
-| DiaSFML | Being replaced by DiaSDL — no layer assignment |
 
 ---
 

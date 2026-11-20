@@ -15,7 +15,7 @@ This is a **multi-threaded game framework** with explicit thread boundaries and 
 
 1. **Cluiche (Application)** - Game framework using Dia (Main/Render/Sim threads)
 2. **Dia (Engine)** - 13 subsystems providing platform abstraction
-3. **External** - Third-party libraries (SFML, JsonCpp, etc.)
+3. **External** - Third-party libraries (SDL3, bgfx, JsonCpp, etc.)
 
 **Entry Point:** `Cluiche/CluicheTest/Main.cpp` → `MainProcessingUnit::Start()` → spawns Render + Sim threads
 
@@ -262,7 +262,8 @@ Cluiche/CluicheTest/
 
 ```
 External/
-├── SFML/                                # Graphics/Audio/Input library
+├── SDL3/                                # Window/Input library
+├── bgfx/ (+ bx/, bimg/)                 # Rendering library
 ├── jsoncpp-master/                      # JSON configuration
 └── VisJS/                               # Visualization library
 ```
@@ -440,7 +441,7 @@ CluicheTest Application
     ↓ depends on
 Dia Engine
     ↓ depends on
-External Libraries (SFML, JsonCpp, etc.)
+External Libraries (SDL3, bgfx, JsonCpp, etc.)
     ↓ depends on
 C++ Standard Library (std::chrono, std::mutex, std::thread)
 ```
@@ -453,10 +454,16 @@ DiaApplicationFlow (Module/Phase/PU framework)
 DiaCore (Containers, Type, Time, Memory)
 
 DiaGraphics (ICanvas abstraction)
+    ↑ implemented by
+DiaBgfx / DiaBgfx3D (bgfx rendering backend)
     ↓ depends on
-DiaSFML (SFML backend)
+External/bgfx
+
+DiaWindow (IWindow abstraction)
+    ↑ implemented by
+DiaSDL (SDL3 window + input backend)
     ↓ depends on
-External/SFML
+External/SDL3
 
 DiaMaths ← (independent, minimal dependencies)
     └─ depends on → DiaCore (minimal: assertions, functors)
@@ -583,4 +590,4 @@ After reading this guide:
 4. **Parse module files** → See [module-registry.md](../registry/module-registry.md)
 5. **Start working** → Use entry points for your specific task
 
-**For complex tasks:** Combine codebase map, patterns, and entry points to navigate efficiently.
+**For complex tasks:** Combine codebase map, patterns, and entry points to navigate efficiently.

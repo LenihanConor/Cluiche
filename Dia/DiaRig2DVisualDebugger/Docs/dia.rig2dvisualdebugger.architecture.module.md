@@ -29,7 +29,7 @@ responsibilities:
 non_responsibilities:
   - Running forward kinematics — caller provides pre-computed world transforms
   - Skeleton or pose management — DiaRig2D concern
-  - Actual rendering — DiaGraphics/DiaSFML handles that via FrameData visitors
+  - Actual rendering — DiaGraphics/DiaBgfx handles that via FrameData visitors
 
 dependent_modules: []
 

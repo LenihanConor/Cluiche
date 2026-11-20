@@ -9,14 +9,14 @@ This diagram shows the module dependencies within each processing unit and the c
 ```mermaid
 graph TD
     subgraph MainThread["Main Thread (MainProcessingUnit)"]
-        MainKernel["MainKernelModule<br/>• TimeServer @ 30Hz<br/>• InputSourceManager<br/>• SFML Window<br/>• Canvas"]
+        MainKernel["MainKernelModule<br/>• TimeServer @ 30Hz<br/>• InputSourceManager<br/>• SDL Window<br/>• Canvas"]
         LevelFactory["LevelFactoryModule<br/>• Level Registry<br/>• Level Creation"]
         MainUI["MainUIModule<br/>• UI System<br/>• Observer Subject<br/>• UI Pages"]
     end
 
     subgraph RenderThread["Render Thread (RenderProcessingUnit)"]
         RenderKernel["RenderKernel<br/>• Frame Management"]
-        RenderCanvas["RenderCanvas<br/>• SFML Rendering<br/>• Display @ 60 FPS"]
+        RenderCanvas["RenderCanvas<br/>• bgfx Rendering<br/>• Display @ 60 FPS"]
     end
 
     subgraph SimThread["Sim Thread (SimProcessingUnit)"]

@@ -116,7 +116,7 @@ namespace CoW::V1 {
 
 ## Open Design Questions
 
-1. **Should the fire CA graduate?** The fire stand-in is the only fire model in the project. If a fire system is specced (A1 natural ignition and A3 `BurnedAshland` already imply one), this CA is a good starting point. Park the question until A1/A3 are built.
+1. **Fire stand-in vs A1's real fire.** A1 resolves natural fire inside one Season-band step (`ecology.transient.fire_intensity`, `years_since_fire`), so the real data has no continuous daily front. The CA here is therefore the *prototype of the map's cosmetic front playback* (Strategic Map Channel Binding ODQ 2), plus a way to test scars and smoke before A1 exists. When A1 is built, the fire driver switches Live and the playback is seeded from `fire_intensity`; the CA's spread model is then not used.
 2. **Weather smoothing.** A4's real output is a blend of two weekly snapshots. The stand-in is continuous, so V-1 cannot test the snapshot blend path. A small "weekly steps" mode (quantised updates with the blend) would. Add when A4 Feature 9 is built.
 3. **Season offset sign.** The prototype's seasonal temperature offsets are in "temperature" units where lower is colder; confirm against A4's temperature scale when wiring the real source.
 

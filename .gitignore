@@ -258,8 +258,6 @@ External/googletest/
 # Ultralight SDK binaries (large; download via ultralight-sdk-latest-win-x64.7z)
 External/Ultralight/
 
-# SFML binaries (restored via DiaEnv deps)
-External/SFML/
 
 # ImGui source (restored via DiaEnv deps)
 External/imgui/

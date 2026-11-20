@@ -21,7 +21,7 @@ namespace Dia
 		/// by this rotation transform will be rotated the same way, according
 		/// to its initial position.
 		///
-		/// Transforms are typically used for drawing. SFML provides a simple
+		/// Transforms are typically used for drawing. The renderer provides a simple
 		/// interface for applying transforms to drawable objects through the
 		/// RenderStates structure.
 		///

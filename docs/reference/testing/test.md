@@ -32,7 +32,7 @@ This document defines the testing strategy for the Cluiche/Dia codebase.
 
 **Not Everything Needs Tests:**
 - Trivial getters/setters
-- Third-party libraries (trust SFML, JsonCpp)
+- Third-party libraries (trust SDL3, bgfx, JsonCpp)
 - Obvious code (return true;)
 
 **Focus Testing Effort On:**
@@ -602,7 +602,7 @@ TEST(Random, NoRaceCondition) {
 | **DiaGraphics** | 60% | ~10% | ❌ Minimal |
 | **DiaApplicationFlow** | 80% | <20% | ❌ Minimal |
 | **DiaInput** | 60% | ~20% | 🚧 Needs Work |
-| **DiaSFML** | 50% | 0% | ❌ None |
+| **DiaSDL** | 50% | Key and event translation only | 🚧 Partial |
 | **Cluiche App** | 70% | ~25% | 🚧 Needs Work |
 
 ### Priority Areas (By Impact)

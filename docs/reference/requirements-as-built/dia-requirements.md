@@ -546,7 +546,7 @@ Thread-safe random number generation.
 Platform-agnostic rendering interface.
 
 **Rationale:**
-- Backend can be swapped (SFML, SDL, Direct3D)
+- Backend can be swapped (window/input: DiaSDL; renderer: DiaBgfx)
 - Core game logic independent of rendering
 - Easy to test (mock canvas)
 
@@ -623,7 +623,7 @@ Platform-agnostic input event system.
 **Test Cases:**
 - Event structure
 - Enum completeness
-- Backend conversion (SFML → DiaInput)
+- Backend conversion (SDL → DiaInput)
 
 **Status:** ✅ Complete
 
@@ -727,36 +727,36 @@ Platform-agnostic window management.
 
 ---
 
-## Backend Implementation (DiaSFML)
+## Backend Implementation (DiaSDL, DiaBgfx)
 
-### DR-023: SFML Backend ✅ P0
+### DR-023: SDL3 and bgfx Backends ✅ P0
 
 **Requirement:**
-SFML implementation of graphics, window, input, and audio.
+SDL3 implementation of window and input, and bgfx implementation of graphics. Audio is not part of these backends.
 
 **Rationale:**
-- Cross-platform (Windows, Linux, macOS)
-- Mature library (2.5.1)
+- Cross-platform window and input (SDL3)
+- Multi-API renderer (Direct3D11, Direct3D12, Vulkan via bgfx)
 - Comprehensive features
 
 **Acceptance Criteria:**
-- [ ] DiaSFMLRenderWindow (ICanvas + IWindow)
-- [ ] DiaSFMLInputSource (IInputSource)
-- [ ] DiaSFMLSoundManager (audio)
+- [ ] Dia::SDL::Window (IWindow) and Dia::SDL::WindowFactory
+- [ ] Dia::SDL::InputSource (IInputSource)
+- [ ] Dia::Bgfx::Canvas (ICanvas)
 
 **Implementation:**
-- `DiaSFML/DiaSFMLRenderWindow.h`
-- `DiaSFML/DiaSFMLInputSource.h`
-- `DiaSFML/DiaSFMLSoundManager.h`
+- `DiaSDL/Window.h`, `DiaSDL/WindowFactory.h`
+- `DiaSDL/InputSource.h`
+- `DiaBgfx/Canvas.h`
 
 **Test Cases:**
 - All backend operations
-- SFML → Dia conversions
-- Cross-platform build (Windows, Linux)
+- SDL → Dia conversions (TestDiaSDL.cpp)
+- Cross-platform build
 
 **Status:** ✅ Complete
 
-**[→ DiaSFML API](../api/dia/sfml-api.md)**
+**[→ DiaSDL API](../api/dia/sdl-api.md)**
 
 ---
 

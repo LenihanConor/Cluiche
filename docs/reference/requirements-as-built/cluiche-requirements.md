@@ -280,12 +280,12 @@ Provide example levels demonstrating framework capabilities.
 Input flow: Main (poll) → Sim (process) pipeline.
 
 **Rationale:**
-- Input polled on Main thread (SFML requirement)
+- Input polled on Main thread (the window and input backend, SDL3, runs there)
 - Game logic processes input on Sim thread
 - Decouples input source from processing
 
 **Acceptance Criteria:**
-- [ ] MainInputModule polls input from SFML
+- [ ] MainInputModule polls input from SDL3 (DiaSDL)
 - [ ] Input forwarded to Sim via FrameStream
 - [ ] SimInputFrameStreamModule reads input
 - [ ] Game logic processes input events
@@ -357,7 +357,7 @@ Render thread runs independent loop at 60 FPS.
 **Implementation:**
 - `RenderProcessingUnit` - Render loop
 - `RenderCanvasModule` - Drawing logic
-- `DiaSFMLRenderWindow` - Backend
+- `Dia::Bgfx::Canvas` - Backend (window from `Dia::SDL::Window`)
 
 **Test Cases:**
 - Frame rate measurement

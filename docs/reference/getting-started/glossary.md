@@ -238,7 +238,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 ### ICanvas
 - **Definition:** Abstract rendering interface
 - **Methods:** DrawLine, DrawCircle, DrawRectangle, DrawSprite, DrawText, Clear, Present
-- **Implementation:** DiaSFMLRenderWindow (SFML backend)
+- **Implementation:** Dia::Bgfx::Canvas (bgfx backend), extended by Dia::Bgfx3D::Canvas3D for 3D
 - **Thread:** Render thread only
 
 ---
@@ -303,11 +303,15 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 
 ## Backend
 
-### SFML (Simple and Fast Multimedia Library)
-- **Version:** 2.5.1
-- **Purpose:** Graphics, window, input, audio backend
-- **Location:** `External/SFML-2.5.1/`
-- **Wrapper:** DiaSFML
+### SDL3
+- **Purpose:** Window and input backend
+- **Location:** `External/SDL3/`
+- **Wrapper:** DiaSDL (`Dia::SDL::Window`)
+
+### bgfx
+- **Purpose:** Rendering backend (2D and 3D)
+- **Location:** `External/bgfx/` (with `External/bx/`, `External/bimg/`)
+- **Wrapper:** DiaBgfx (`Dia::Bgfx::Canvas`), DiaBgfx3D (`Dia::Bgfx3D::Canvas3D`)
 
 ---
 
@@ -392,7 +396,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 | **FSM** | Finite State Machine | State-based logic system |
 | **CRC** | Cyclic Redundancy Check | Hash algorithm (used for StringCRC) |
 | **RTTI** | Run-Time Type Information | C++ runtime type system (not used in Cluiche) |
-| **SFML** | Simple and Fast Multimedia Library | Graphics/audio/input library |
+| **SDL3** | Simple DirectMedia Layer 3 | Window/input library |
 | **CEF** | Chromium Embedded Framework | Web browser backend |
 | **AABB** | Axis-Aligned Bounding Box | Collision shape |
 | **FPS** | Frames Per Second | Frame rate metric |

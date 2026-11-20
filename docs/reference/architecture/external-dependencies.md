@@ -8,11 +8,12 @@ Overview of third-party libraries used by Cluiche and the Dia engine.
 
 ## Overview
 
-Cluiche uses **4 external dependencies** for graphics, audio, input, JSON, and UI:
+Cluiche uses these external dependencies for windowing, input, rendering, JSON, and UI:
 
 | Library | Version | Purpose | Used By |
 |---------|---------|---------|---------|
-| **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML (primary backend) |
+| **SDL3** | 3.x (main) | Windowing and input | DiaSDL (window and input backend) |
+| **bgfx** (with bx, bimg) | - | Rendering | DiaBgfx (2D), DiaBgfx3D (3D) |
 | **JsonCpp** | master | JSON parsing and serialization | DiaCore (configuration) |
 | **VisJS** | - | Data visualization library | Debugging visualizations |
 
@@ -24,93 +25,47 @@ Cluiche uses **4 external dependencies** for graphics, audio, input, JSON, and U
 
 ## Primary Dependencies
 
-### SFML (Simple and Fast Multimedia Library)
+### SDL3
 
-**Location:** `External/SFML/Current/`
+**Location:** `External/SDL3/`
 
-**Version:** 2.x
+**Version:** 3.x (built as a static library, `SDL3-static.lib`)
 
-**Purpose:** Primary backend for graphics, audio, input, and windowing
-
-**Website:** https://www.sfml-dev.org/
-
-#### What Dia Uses
-
-**Graphics:**
-- `sf::RenderWindow` - Window + rendering target
-- `sf::Texture`, `sf::Sprite` - Texture and sprite rendering
-- `sf::Shape`, `sf::CircleShape`, `sf::RectangleShape` - Shape rendering
-- `sf::Text`, `sf::Font` - Text rendering
-- `sf::Color` - Color representation
-
-**Window:**
-- `sf::Window` - Window creation and management
-- `sf::VideoMode` - Screen resolution and settings
-- `sf::Event` - Window events
-
-**Input:**
-- `sf::Keyboard` - Keyboard input
-- `sf::Mouse` - Mouse input
-- `sf::Joystick` - Joystick/gamepad input
-
-**Audio (future):**
-- `sf::Sound`, `sf::SoundBuffer` - Sound effects
-- `sf::Music` - Streaming music
+**Purpose:** Window creation and input for all game targets
 
 #### Integration
 
-**DiaSFML wraps SFML:**
-```cpp
-// Dia/DiaSFML/RenderWindow.h
-class RenderWindow : public IWindow, public IRenderTarget {
-public:
-    RenderWindow(const WindowSettings& settings);
-    
-private:
-    sf::RenderWindow mWindow;  // Wrapped SFML window
-};
+`Dia::SDL::WindowFactory::Create` calls `SDL_Init(SDL_INIT_VIDEO)` and returns a `Dia::SDL::Window`, which implements both `IWindow` and `IInputSource`. `WindowFactory::Destroy` calls `SDL_Quit`. SDL keycodes are translated to `Dia::Input::EKey` inside DiaSDL.
 
-// Dia/DiaSFML/InputSource.h
-class InputSource : public IInputSource {
+```cpp
+// Dia/DiaSDL/WindowFactory.h
+class WindowFactory : public Dia::Window::IWindowFactory {
 public:
-    void Poll(DynamicArray<Event>& events) override;
-    
-private:
-    sf::Window* mSFMLWindow;  // Access to SFML events
+    virtual Dia::Window::IWindow* Create(const Dia::Window::IWindow::Settings& windowSetting) override;
+    virtual void Destroy(Dia::Window::IWindow* window) override;
 };
 ```
 
-**Type Conversion:**
-```cpp
-// SFML ↔ Dia conversion utilities
-sf::Vector2f ToSFML(const Vector2D& vec);
-Vector2D FromSFML(const sf::Vector2f& vec);
-
-sf::Color ToSFML(const Color& color);
-Color FromSFML(const sf::Color& color);
-```
+SDL3 is built from the local source tree via the `sdl3` entry in `deps.json`.
 
 #### Licensing
 
-**License:** zlib/png license (permissive)
+**License:** zlib
 
-**Commercial Use:** ✅ Allowed
+---
 
-**Source:** https://github.com/SFML/SFML
+### bgfx
 
-#### Alternatives
+**Location:** `External/bgfx/` (with `External/bx/` and `External/bimg/`)
 
-SFML could be replaced with:
-- **SDL2** - Similar abstraction level, widely used
-- **Raylib** - Simple, modern, C-based
-- **Custom OpenGL** - Direct API access, more control
-- **Platform-specific** - Win32, Cocoa, X11 (no abstraction)
+**Purpose:** The only renderer. Rendering is implemented by `Dia::Bgfx::Canvas` (2D) and `Dia::Bgfx3D::Canvas3D` (3D, extends the 2D canvas).
 
-**Why SFML?**
-- Simple API (easy to learn)
-- Cross-platform (Windows, Linux, macOS)
-- Active development
-- Good documentation
+#### Integration
+
+- `DiaBgfx` implements `Dia::Graphics::ICanvas` and renders sprites, debug primitives, UI overlays, CellField layers and the ImGui debug overlay.
+- `DiaBgfx3D` adds 3D mesh rendering on top of `DiaBgfx`.
+- Shaders are compiled with `External/bgfx/tools/shaderc.exe` (the `bgfx_shaders` pipeline step, sources under `Dia/DiaBgfx/Shaders` and `Dia/DiaBgfx3D/Shaders`).
+- bgfx, bx and bimg are fetched and built through `deps.json`.
 
 ---
 
@@ -255,30 +210,22 @@ JsonCpp could be replaced with:
 
 ## Build Integration
 
-### Linking SFML
+### Linking SDL3 and bgfx
 
-**Visual Studio:**
+**Visual Studio:** DiaSDL and DiaBgfx add the include directories in their `.vcxproj` files:
+
 ```xml
-<!-- Cluiche.vcxproj -->
-<AdditionalIncludeDirectories>
-    $(SolutionDir)..\External\SFML\Current\include;
-</AdditionalIncludeDirectories>
+<!-- Dia/DiaSDL/DiaSDL.vcxproj -->
+$(ProjectDir)..\..\External\SDL3\include;
 
-<AdditionalLibraryDirectories>
-    $(SolutionDir)..\External\SFML\Current\lib;
-</AdditionalLibraryDirectories>
-
-<AdditionalDependencies>
-    sfml-system.lib;
-    sfml-window.lib;
-    sfml-graphics.lib;
-    sfml-audio.lib;
-</AdditionalDependencies>
+<!-- Dia/DiaBgfx/DiaBgfx.vcxproj -->
+$(ProjectDir)../../External/bgfx/include/;
+$(ProjectDir)../../External/bx/include/;
+$(ProjectDir)../../External/bimg/include/;
 ```
 
 **Runtime:**
-- SFML DLLs must be in same directory as executable
-- Debug builds use `-d` suffix (e.g., `sfml-system-d.dll`)
+- SDL3 is linked statically (`External/SDL3/lib/<Config>/SDL3-static.lib`), so no SDL DLL is deployed.
 
 ---
 
@@ -341,7 +288,7 @@ cmake --build . --config Release
 **Example (vcpkg):**
 ```bash
 # Install dependencies
-vcpkg install sfml jsoncpp
+vcpkg install jsoncpp
 
 # Integrate with Visual Studio
 vcpkg integrate install
@@ -356,7 +303,7 @@ vcpkg integrate install
 **Primary Platform:** ✅ Fully supported
 
 **Dependencies:**
-- SFML: Pre-built binaries for Visual Studio
+- SDL3 and bgfx: Built from the sources under `External/` (see `deps.json`)
 - JsonCpp: Build from source or use pre-built
 
 ---
@@ -366,7 +313,6 @@ vcpkg integrate install
 **Potential Support:** 🚧 Possible but untested
 
 **Dependencies:**
-- SFML: Available via package managers (`apt install libsfml-dev`)
 - JsonCpp: Available via package managers (`apt install libjsoncpp-dev`)
 
 **Blockers:**
@@ -379,7 +325,6 @@ vcpkg integrate install
 **Potential Support:** 🚧 Possible but untested
 
 **Dependencies:**
-- SFML: Available via Homebrew (`brew install sfml`)
 - JsonCpp: Available via Homebrew (`brew install jsoncpp`)
 
 **Blockers:**
@@ -391,7 +336,7 @@ vcpkg integrate install
 
 | Library | License | Commercial Use | Attribution Required |
 |---------|---------|----------------|----------------------|
-| **SFML** | zlib/png | ✅ Yes | ❌ No |
+| **SDL3** | zlib | ✅ Yes | ❌ No |
 | **JsonCpp** | MIT / Public Domain | ✅ Yes | ⚠️ Recommended |
 | **VisJS** | Apache 2.0 / MIT | ✅ Yes | ✅ Yes (Apache) |
 
@@ -403,10 +348,11 @@ vcpkg integrate install
 
 ## Summary
 
-Cluiche uses **3 external dependencies**:
+Cluiche's main external dependencies are:
 
 **Core:**
-- ✅ SFML (graphics/audio/input) - Primary backend, permissive license
+- ✅ SDL3 (window/input) - DiaSDL backend
+- ✅ bgfx (rendering) - DiaBgfx / DiaBgfx3D
 - ✅ JsonCpp (JSON parsing) - Simple, permissive license
 
 **UI:**

@@ -53,7 +53,7 @@ The Strategic Map is a view of the simulation. This feature defines **how each s
 | Condition | `health`, `succession fade` (0 = old class, 1 = new), `successionTarget` (class id) | 0..1 | A1 + A3 |
 | Weather | `cloud`, `precip`, `snowFraction`, `gust` | 0..1 | A4 smoothed |
 | Water state | `lakeLevel`, `flow state` (0..4), `flood`, `ice` | 0..1 / enum | A5 (year clock until built) |
-| Events | `burn`, `scar` | 0..1 | A1/A3 fire (stand-in until built) |
+| Events | `burn`, `scar` | 0..1 | A1 natural fire: `burn` = `ecology.transient.fire_intensity`; `scar` = healing curve of `years_since_fire` (and the A3 `BurnedAshland` class); V-1 stand-in until A1 is built |
 | Season | `weights[4]`, `day of year` (global, not per cell) | 0..1 | GameSpeedController + year clock |
 
 ### Interface
@@ -117,8 +117,8 @@ namespace CoW::Map {
 ## Open Design Questions
 
 1. **Succession fade.** A3 changes a cell's biome. The map wants a cross-fade over several weeks, which needs both the old and new class for the fade. The channel carries `successionTarget` and `fade`; the *old* class stays in the world snapshot until the fade ends. A3 must publish the transition events with a duration, or the publisher computes the fade from the change time. Decide when A3's plan is written.
-2. **Event source for fire.** Neither A1 nor A3 specifies a continuous `burn` and `scar` field (A1's natural ignition and A3's `BurnedAshland` are state changes). The map needs a per-cell burn intensity and scar age. Either A1 adds it (a small amendment) or fire stays a V-1 stand-in until a fire system is specced. Raise with A1.
-3. **Herds.** A1 Population Tokens will publish herd positions. The map's herd sprites need a `Fauna` channel (positions, headings) separate from per-cell channels. Specced with Features 3 and 4; v1 uses ambient birds and stand-in herds.
+2. **Fire (resolved 2026-11-20; was "no owner").** A1 owns fire: natural ignition and spread at the Season band (A3 amendment 3), the per-cell transient `fire_intensity` (layer `ecology.transient.fire_intensity`), `ash`, and the history field `years_since_fire`; A3 turns repeated fire into `BurnedAshland`. So the Events channel needs **no new A1 field**: `burn` comes from `fire_intensity`, and the `scar` is a healing curve of `years_since_fire` (default exp(−years / 3), a style parameter) plus the `BurnedAshland` class itself once A3 fires. **Caveat:** A1 resolves a whole fire inside one Season step, so no continuous daily front exists in the data. The map therefore plays the front as a **cosmetic playback**: when the Events channel version changes, cells with `burn > 0` ignite in order of distance from the highest-intensity cell over a few render seconds. The V-1 fire CA is the prototype of that playback, not a model of what A1 does. **Optional A1 ask** (small, not blocking): publish the spread order or ignition cell per fire (`ecology.transient.fire_order`) so the playback can follow the real spread; without it the playback uses distance from the intensity peak.
+3. **Fauna (resolved 2026-11-20; was "needs a Fauna channel").** v1 needs **no new channel**. A1 already publishes per-cell group and species densities (`ecology.group.<tag>`, `ecology.species.<id>`, e.g. `ecology.group.herbivore`). The map scatters herd sprites from those densities exactly as it scatters props (deterministic per cell, count proportional to density), and lets them wander slowly, steered by `ecology.migration` where present; birds stay ambient and visual-only. When A1 Population Tokens (Layer 2) is built, its herd tokens publish real positions and replace this source through the Live switch (a `Fauna` sprite-list source, specced with the Tokens feature specs). The V-1 herd driver is the prototype of this density-driven scatter.
 
 ## Tasks
 

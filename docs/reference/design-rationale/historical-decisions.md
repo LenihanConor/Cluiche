@@ -210,7 +210,9 @@ int main() {
 **Considered:**
 1. **Web-based UI** (Awesomium, then removed)
 2. **ImGui** (immediate-mode GUI)
-3. **Custom UI** (SFML primitives)
+3. **Custom UI** (renderer primitives)
+
+The original SFML backend was replaced by SDL3 (window/input) and bgfx (rendering) in 2026.
 
 **History:** Awesomium was initially chosen for web-based UI but has since been removed from the project.
 
@@ -561,4 +563,4 @@ class GameObject {
 **Philosophy:** Learn from mistakes, evolve gradually
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Future Directions](future-directions.md)**
+**[→ Future Directions](future-directions.md)**

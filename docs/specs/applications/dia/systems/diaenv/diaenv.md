@@ -202,7 +202,7 @@ This is the definitive "did DiaEnv work on a clean machine?" test.
 | SD-ENV-005 | MSBuild RestoreExternals uses sentinel files to guard against re-download | Build time must not regress when deps are already present | msbuild-restore | Accepted | Yes |
 | SD-ENV-006 | `settings.local.json` is never committed; a template is committed instead | Machine-specific settings (paths, hooks) must not be shared verbatim across machines | claude-context | Accepted | Yes |
 | SD-ENV-007 | Source-only deps migrated to git submodules; binary SDKs use deps.json | Clean split: git handles source deps automatically; manifest handles binary SDKs | submodule-migration | Accepted | Yes |
-| SD-ENV-008 | Docker container scope is headless build + test only; no GPU/GUI | SFML and CluicheEditor require a windowing system; containerised rendering requires Hyper-V VM (future); Windows WARP software renderer deferred | docker-build-env | Accepted | Yes |
+| SD-ENV-008 | Docker container scope is headless build + test only; no GPU/GUI | The game and CluicheEditor require a windowing system; containerised rendering requires Hyper-V VM (future); Windows WARP software renderer deferred | docker-build-env | Accepted | Yes |
 | SD-ENV-009 | Docker files live under `build-env/` at repo root | Keeps all environment provisioning artefacts co-located; consistent with research decision | docker-build-env | Accepted | Yes |
 | SD-ENV-010 | Python 3.11 is the single Python version for all contexts | Unifies host tooling (DiaCLI) and embedded runtime (`External/Python311`); eliminates version drift between development and runtime; `.python-version` updated to 3.11 | All features | Accepted | Yes |
 

@@ -34,7 +34,8 @@ Detailed architecture of the Dia game engine, the shared engine infrastructure f
 | **DiaInput** | ✅ Stable | Input event system |
 | **DiaUI** | ✅ Stable | UI integration (abstract) |
 | **DiaWindow** | ✅ Stable | Window management (abstract) |
-| **DiaSFML** | ✅ Stable | SFML backend (graphics/input/window) |
+| **DiaSDL** | ✅ Stable | SDL3 backend (window/input) |
+| **DiaBgfx** / **DiaBgfx3D** | ✅ Stable | bgfx rendering backend (2D / 3D) |
 | **DiaArchitecture** | ✅ Stable | Component system, Observer, Singleton |
 | **DiaAPI** | 📝 Spec | Plugin-based CLI framework for build tools |
 | **DiaIO** | 🚧 Stub | File I/O |
@@ -579,7 +580,7 @@ public:
 };
 ```
 
-**Backend:** DiaSFML provides SFML implementation
+**Backend:** DiaBgfx provides the bgfx implementation (`Dia::Bgfx::Canvas`, `Dia::Bgfx3D::Canvas3D`)
 
 ---
 
@@ -677,7 +678,7 @@ public:
 };
 ```
 
-**Backend:** DiaSFML provides SFML input source
+**Backend:** DiaSDL provides the SDL3 input source (`Dia::SDL::InputSource`)
 
 **[→ DiaInput API Documentation](../api/dia/input-api.md)**
 
@@ -748,66 +749,38 @@ private:
 
 ## Backend Subsystems
 
-### DiaSFML
+### DiaSDL
 
-**Location:** `Dia/DiaSFML/`
+**Location:** `Dia/DiaSDL/`
 
-**Purpose:** SFML backend for graphics, input, and windowing
+**Purpose:** SDL3 backend for windowing and input
 
 **Key Classes:**
+- `Dia::SDL::Window` - implements `IWindow` and `IInputSource` via `SDL_Window` and `SDL_PollEvent`
+- `Dia::SDL::WindowFactory` - `Create` calls `SDL_Init(SDL_INIT_VIDEO)`, `Destroy` calls `SDL_Quit`
+- `Dia::SDL::InputSource` - SDL keycode to `Dia::Input::EKey` translation
 
-#### RenderWindow
-```cpp
-class RenderWindow : public IWindow, public IRenderTarget {
-public:
-    RenderWindow(const WindowSettings& settings);
-    
-    // IWindow
-    void Show() override;
-    void Hide() override;
-    void SetTitle(const char* title) override;
-    
-    // IRenderTarget
-    void Clear(const Color& color) override;
-    void Display() override;
-    void Draw(const Drawable& drawable) override;
+### DiaBgfx
 
-private:
-    sf::RenderWindow mWindow;
-};
-```
+**Location:** `Dia/DiaBgfx/`
 
-#### InputSource
-```cpp
-class InputSource : public IInputSource {
-public:
-    InputSource(IWindow* window);
-    
-    void Poll(DynamicArray<Event>& events) override;
+**Purpose:** bgfx rendering backend (the only renderer)
 
-private:
-    sf::Window* mSFMLWindow;
-};
-```
+**Key Classes:**
+- `Dia::Bgfx::Canvas` - implements `Dia::Graphics::ICanvas`
+- `SpriteRenderer`, `DebugRenderer`, `UIOverlayRenderer`, `CellFieldRenderer` - per-pass renderers
+- `BgfxTextureHandle` - implements `Dia::Graphics::ITexture`
+- `ShaderProgram` - cooked bgfx shader programs
 
-#### RenderWindowFactory
-```cpp
-class RenderWindowFactory {
-public:
-    static IWindow* Create(const WindowSettings& settings = WindowSettings::Default());
-};
-```
+### DiaBgfx3D
 
-**Conversion Utilities:**
-```cpp
-sf::Vector2f ToSFML(const Vector2D& vec);
-Vector2D FromSFML(const sf::Vector2f& vec);
+**Location:** `Dia/DiaBgfx3D/`
 
-sf::Color ToSFML(const Color& color);
-Color FromSFML(const sf::Color& color);
-```
+**Purpose:** 3D rendering layered on DiaBgfx
 
-**[→ DiaSFML API Documentation](../api/dia/sfml-api.md)**
+**Key Classes:**
+- `Dia::Bgfx3D::Canvas3D` - extends `Dia::Bgfx::Canvas`, dispatching 3D passes before the inherited 2D passes
+- `MaterialRegistry` - material to shader program mapping
 
 ---
 
@@ -939,10 +912,10 @@ DiaApplicationFlow (Module/Phase/PU framework)
     ↓
 DiaCore (Containers, Type, Time)
     ↑
-    ├─ DiaGraphics → DiaSFML → External/SFML
+    ├─ DiaGraphics ← DiaBgfx / DiaBgfx3D → External/bgfx
     ├─ DiaMaths (independent, minimal DiaCore deps)
-    ├─ DiaInput → DiaSFML → External/SFML
-    └─ DiaWindow → DiaSFML → External/SFML
+    ├─ DiaInput ← DiaSDL → External/SDL3
+    └─ DiaWindow ← DiaSDL → External/SDL3
 ```
 
 **[→ Complete dependency graph](../ai-guides/dependency-graph.md)**
@@ -994,7 +967,7 @@ public_api:
 **Windows:** ✅ Primary platform
 - Visual Studio 2015+
 - .sln/.vcxproj build system
-- SFML 2.x for graphics/input
+- SDL3 for window/input, bgfx for rendering
 - Tested and stable
 
 ### Portability
@@ -1002,12 +975,11 @@ public_api:
 **Design:** Cross-platform by design
 - DiaCore has no platform-specific code
 - DiaMaths is pure math (portable)
-- Backends are pluggable (DiaSFML can be replaced)
+- Backends are pluggable (DiaSDL and DiaBgfx implement the abstract window, input and canvas interfaces)
 
 **Potential Platforms:**
-- Linux: SFML supports Linux, but untested
-- macOS: SFML supports macOS, but untested
-- Consoles: Would require custom backends (no SFML)
+- Linux and macOS: SDL3 and bgfx support them, but untested
+- Consoles: Would require custom backends
 
 ---
 
@@ -1027,7 +999,8 @@ Dia is a **modular game engine** with 13 subsystems providing:
 - ✅ DiaWindow - Window management
 
 **Backends:**
-- ✅ DiaSFML - SFML backend (primary)
+- ✅ DiaSDL - SDL3 window/input backend
+- ✅ DiaBgfx / DiaBgfx3D - bgfx rendering backend
 
 **Architecture:**
 - ✅ DiaArchitecture - Component system, Observer, Singleton

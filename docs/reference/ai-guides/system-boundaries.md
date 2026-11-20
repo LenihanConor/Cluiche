@@ -157,7 +157,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Reading from input FrameStream
 
 **❌ Doesn't Own:**
-- Input event generation (Main thread / SFML)
+- Input event generation (Main thread / DiaSDL)
 - Input processing (game logic in Sim thread)
 
 ---
@@ -189,7 +189,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 **❌ Doesn't Own:**
 - Specific application logic (Cluiche)
-- Platform-specific code (DiaSFML)
+- Platform-specific code (DiaSDL, DiaBgfx)
 - Containers (DiaCore)
 - Math (DiaMaths)
 
@@ -214,7 +214,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Application framework (DiaApplicationFlow)
 - Math operations (DiaMaths)
 - Graphics (DiaGraphics)
-- Platform-specific code (DiaSFML)
+- Platform-specific code (DiaSDL, DiaBgfx)
 
 **Dependencies:**
 - jsoncpp (external, wrapped)
@@ -255,7 +255,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Drawing primitives (lines, circles, sprites)
 
 **❌ Doesn't Own:**
-- Platform-specific rendering (DiaSFML)
+- Platform-specific rendering (DiaBgfx)
 - Window management (DiaWindow)
 - Math (DiaMaths)
 
@@ -272,7 +272,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Window creation, resizing, closing
 
 **❌ Doesn't Own:**
-- Platform-specific windowing (DiaSFML)
+- Platform-specific windowing (DiaSDL)
 - Rendering (DiaGraphics)
 - Input handling (DiaInput)
 
@@ -289,7 +289,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - InputSourceManager
 
 **❌ Doesn't Own:**
-- Platform-specific input capture (DiaSFML)
+- Platform-specific input capture (DiaSDL)
 - Input processing (game logic)
 - UI input (DiaUI)
 
@@ -311,26 +311,48 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ---
 
-### DiaSFML
+### DiaSDL
 
 **✅ Owns:**
-- SFML integration
-- ICanvas implementation (DiaSFMLRenderWindow)
-- IWindow implementation
-- Input event translation (SFML → DiaInput)
-- Audio playback (DiaSFMLSoundManager)
+- SDL3 window creation and lifecycle
+- IWindow implementation (Dia::SDL::Window)
+- IInputSource implementation (SDL events → DiaInput)
+- Native window handle extraction
 
 **❌ Doesn't Own:**
+- Rendering (DiaBgfx)
+- Audio
 - Application framework (DiaApplicationFlow)
 - Game logic (Cluiche)
-- UI (DiaUI)
 
 **Dependencies:**
-- SFML (external)
-- DiaGraphics (implements ICanvas)
+- SDL3 (external)
 - DiaWindow (implements IWindow)
 - DiaInput (translates to InputEvent)
 - DiaCore
+
+**Forbidden:** DiaBgfx, DiaGraphics
+
+---
+
+### DiaBgfx / DiaBgfx3D
+
+**✅ Owns:**
+- ICanvas implementation (Dia::Bgfx::Canvas, extended by Dia::Bgfx3D::Canvas3D for 3D)
+- Sprite, debug, UI overlay and CellField rendering
+- Shader program loading
+
+**❌ Doesn't Own:**
+- Window creation or input handling (DiaSDL)
+- Application framework (DiaApplicationFlow)
+- Game logic (Cluiche)
+
+**Dependencies:**
+- bgfx (external)
+- DiaGraphics (implements ICanvas)
+- DiaWindow (interface only)
+- DiaUI
+- DiaCore, DiaMaths
 
 ---
 
@@ -393,22 +415,34 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ## External Dependencies
 
-### SFML
+### SDL3
 
 **✅ Owns:**
 - Window creation
-- OpenGL context
-- Input capture (keyboard, mouse, joystick)
-- Audio playback
-- Image loading
-- Basic 2D rendering
+- Input capture (keyboard, mouse)
+- Native window handles
 
 **❌ Doesn't Own:**
+- Rendering (bgfx)
 - Application architecture (DiaApplicationFlow)
-- Custom containers (DiaCore)
 - Game logic (Cluiche)
 
-**Used By:** DiaSFML
+**Used By:** DiaSDL
+
+---
+
+### bgfx
+
+**✅ Owns:**
+- GPU rendering across graphics APIs (Direct3D 11/12, Vulkan)
+- Shader compilation tooling (shaderc)
+
+**❌ Doesn't Own:**
+- Window creation or input (SDL3)
+- Application architecture (DiaApplicationFlow)
+- Game logic (Cluiche)
+
+**Used By:** DiaBgfx, DiaBgfx3D
 
 ---
 
@@ -493,7 +527,8 @@ This document defines clear boundaries between subsystems to help AI agents:
 Cluiche → Dia (any subsystem)
 Dia subsystems → DiaCore
 Dia subsystems → DiaMaths
-DiaSFML → DiaGraphics, DiaWindow, DiaInput
+DiaSDL → DiaWindow, DiaInput
+DiaBgfx → DiaGraphics, DiaWindow, DiaUI
 DiaApplicationFlow → DiaCore
 ```
 
@@ -503,7 +538,8 @@ DiaApplicationFlow → DiaCore
 ❌ DiaCore → DiaApplicationFlow (layer violation)
 ❌ DiaCore → DiaMaths (layer violation)
 ❌ DiaMaths → DiaGraphics (separation of concerns)
-❌ DiaGraphics → DiaSFML (abstraction violation)
+❌ DiaGraphics → DiaBgfx (abstraction violation)
+❌ DiaSDL → DiaBgfx (window/input backend must stay renderer-agnostic)
 ❌ DiaApplicationFlow → Cluiche (engine shouldn't know app)
 ```
 
@@ -521,7 +557,8 @@ DiaApplicationFlow → DiaCore
 | **DiaWindow** | Window abstraction |
 | **DiaInput** | Input abstraction |
 | **DiaUI** | UI abstraction |
-| **DiaSFML** | SFML backend implementation |
+| **DiaSDL** | SDL3 window/input backend |
+| **DiaBgfx / DiaBgfx3D** | bgfx rendering backends |
 | **DiaIO** | File I/O |
 | **DiaPhysics** | Physics simulation (stub) |
 | **DiaAI** | AI systems (stub) |
@@ -574,13 +611,13 @@ class GameManager {  // YES! App-specific
 
 ---
 
-### Mistake 3: Direct SFML Usage in Cluiche
+### Mistake 3: Direct SDL3/bgfx Usage in Cluiche
 
 **❌ Wrong:**
 ```cpp
 // Cluiche/MyModule.cpp
-#include <SFML/Graphics.hpp>  // NO!
-sf::RenderWindow window;
+#include <bgfx/bgfx.h>  // NO!
+bgfx::init(...);
 ```
 
 **✅ Correct:**
@@ -590,7 +627,7 @@ sf::RenderWindow window;
 Dia::Graphics::ICanvas* canvas = GetCanvas();
 ```
 
-**Why:** Use abstraction layer (DiaGraphics), not SFML directly.
+**Why:** Use abstraction layer (DiaGraphics), not SDL3/bgfx directly.
 
 ---
 
@@ -607,7 +644,7 @@ Dia::Graphics::ICanvas* canvas = GetCanvas();
 | Threading logic | DiaApplicationFlow/ (ProcessingUnit/Phase) |
 | Application module | Cluiche/CluicheKernel/ApplicationFlow/Modules/ |
 | Game level | Cluiche/Levels/ |
-| Platform implementation | DiaSFML/ |
+| Platform implementation | DiaSDL/, DiaBgfx/ |
 
 **[→ Entry Points](entry-points.md)**  
 **[→ Code Patterns](patterns-reference.md)**  

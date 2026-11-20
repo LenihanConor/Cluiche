@@ -29,7 +29,8 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 - **DiaWindow**: Window management (depends on DiaGraphics)
 - **DiaInput**: Input handling
 - **DiaUI**: Base UI system (depends on DiaCore, DiaInput)
-- **DiaSFML**: SFML integration (depends on DiaCore, DiaMaths, DiaGraphics, DiaWindow)
+- **DiaSDL**: SDL3 window and input backend (depends on DiaCore, DiaMaths, DiaGraphics, DiaWindow)
+- **DiaBgfx / DiaBgfx3D**: bgfx 2D and 3D renderer
 - **DiaAPI**: Plugin-based CLI (depends on DiaCore)
 
 ## Options

@@ -43,7 +43,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 
 - Launchable targets are those with an executable: `exe` key if set, else `Cluiche/bin/{app_name}/{config}/x64/{app_name}.exe`.
 - Deploy targets are every `[targets.*]` block.
-- Existing targets (`googletest`, `cluichetest`, `cluicheeditor`, `diasfml`, `diauiultralight`) behave exactly as before; any that differ from the default path pattern set `exe` explicitly.
+- Existing targets (`googletest`, `cluichetest`, `cluicheeditor`, `diauiultralight`) behave exactly as before; any that differ from the default path pattern set `exe` explicitly.
 - Unknown-target errors list the targets from the toml.
 
 ---
@@ -52,7 +52,7 @@ Today `launch.py` (`_TARGET_EXE_MAP`), `deploy_runner.py` (`_DEPLOY_TARGETS`) an
 
 | ID | Criterion | Verification Method |
 |----|-----------|---------------------|
-| AC1 | Every existing target (`googletest`, `cluichetest`, `cluicheeditor`, `diasfml`, `diauiultralight`) resolves the same executable path and deploy behaviour after the registry refactor | pytest comparing old and new resolution; `dia launch cluichetest` still works |
+| AC1 | Every existing target (`googletest`, `cluichetest`, `cluicheeditor`, `diauiultralight`) resolves the same executable path and deploy behaviour after the registry refactor | pytest comparing old and new resolution; `dia launch cluichetest` still works |
 | AC2 | Adding a `[targets.x]` block to `pipeline.toml` makes `dia launch x`, `dia run x` and `dia pipeline deploy x` recognise it with no Python edit | pytest with a temporary toml |
 | AC3 | An unknown target error lists the targets found in `pipeline.toml` | pytest |
 | AC4 | `dia scaffold app ScratchApp` writes every file in the table above and nothing outside those paths | pytest on a temp repo tree |

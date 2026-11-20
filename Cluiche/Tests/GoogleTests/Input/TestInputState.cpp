@@ -373,7 +373,7 @@ TEST(InputState, JoystickAxisValues)
 	axisEvent.type = Event::EType::kJoystickMoved;
 	axisEvent.joystickMove.joystickId = 0;
 	axisEvent.joystickMove.axis = static_cast<int>(EJoystickAxis::X);
-	axisEvent.joystickMove.position = 75.0f;  // SFML uses -100 to 100
+	axisEvent.joystickMove.position = 75.0f;  // Dia joystick range is -100 to 100
 	events.Add(axisEvent);
 
 	state.ProcessEvents(events);

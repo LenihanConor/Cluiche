@@ -118,13 +118,13 @@ def test_load_config_parses_build_deps(tmp_path):
 def test_load_config_parses_hidden_true(tmp_path):
     with_hidden = _MINIMAL_TOML + textwrap.dedent("""\
 
-        [targets.diasfml]
-        project = "Dia/DiaSFML/DiaSFML.vcxproj"
+        [targets.diahiddenlib]
+        project = "Dia/DiaHiddenLib/DiaHiddenLib.vcxproj"
         hidden = true
         """)
     _write_toml(tmp_path, with_hidden)
     cfg = load_pipeline_config(tmp_path)
-    assert cfg.targets["diasfml"].hidden is True
+    assert cfg.targets["diahiddenlib"].hidden is True
 
 
 def test_load_config_hidden_defaults_false_when_key_absent(tmp_path):

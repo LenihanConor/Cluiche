@@ -89,7 +89,7 @@ namespace Dia
 			// Text2D — world-space text label.
 			// position: world-space top-left origin.
 			// text:     null-terminated ASCII; strings > 63 chars are silently truncated.
-			// fontSize: pixel size (SFML setCharacterSize); 0 or negative is a no-op.
+			// fontSize: pixel size; 0 or negative is a no-op.
 			// colour:   RGBA text colour.
 			void RequestDrawText(const Maths::Vector2D& position,
 				const char* text,

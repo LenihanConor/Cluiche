@@ -120,7 +120,7 @@ Markdown documentation follows YAML frontmatter.
   - `platform` - Foundation layer (DiaCore, DiaMaths)
   - `framework` - Application framework (DiaApplicationFlow)
   - `application` - Application code (Cluiche)
-  - `backend` - Backend implementations (DiaSFML)
+  - `backend` - Backend implementations (DiaSDL)
 - **Purpose:** Architectural layer classification
 - **Example:** `layer: platform`
 
@@ -421,23 +421,22 @@ dependencies:
 ```yaml
 ---
 schema: dia.module.v1
-module_id: dia.sfml
-name: DiaSFML
+module_id: dia.sdl
+name: DiaSDL
 layer: backend
 status: active
 
-path: Dia/DiaSFML
+path: Dia/DiaSDL
 language: cpp
 
 dependencies:
   required:
     - dia.core
-    - dia.maths
-    - dia.graphics
     - dia.window
     - dia.input
   forbidden:
-    - dia.application  # Backend shouldn't know app
+    - dia.bgfx       # Window/input backend stays renderer-agnostic
+    - dia.graphics
 ---
 ```
 

@@ -83,13 +83,26 @@ DiaApplicationFlow
 ### Layer 4: Backend Implementations
 
 ```
-DiaSFML
+DiaSDL
+├── DiaCore
+├── DiaWindow (implements IWindow)
+├── DiaInput (translates to InputEvent)
+├── Forbidden: DiaBgfx, DiaGraphics
+└── External: SDL3
+
+DiaBgfx
 ├── DiaCore
 ├── DiaMaths
 ├── DiaGraphics (implements ICanvas)
-├── DiaWindow (implements IWindow)
-├── DiaInput (translates to InputEvent)
-└── External: SFML
+├── DiaWindow (interface only)
+├── DiaUI
+└── External: bgfx
+
+DiaBgfx3D
+├── DiaBgfx (extended by Canvas3D)
+├── DiaGraphics / DiaGraphics3D (frame data)
+├── DiaMesh3D
+└── DiaCore, DiaMaths
 
 ```
 
@@ -136,9 +149,10 @@ Cluiche
 │   └── InputEvent
 ├── DiaUI
 │   └── IUISystem
-└── DiaSFML
-    ├── DiaSFMLRenderWindow
-    └── DiaSFMLInputSource
+├── DiaSDL
+│   └── Window (IWindow + IInputSource)
+└── DiaBgfx / DiaBgfx3D
+    └── Canvas / Canvas3D (ICanvas)
 ```
 
 ---
@@ -165,14 +179,17 @@ graph TD
     DiaIO[DiaIO]
     
     %% Dia Backend
-    DiaSFML[DiaSFML]
+    DiaSDL[DiaSDL]
+    DiaBgfx[DiaBgfx]
+    DiaBgfx3D[DiaBgfx3D]
     
     %% Dia Specialized (Stubs)
     DiaPhysics[DiaPhysics<br/><i>stub</i>]
     DiaAI[DiaAI<br/><i>stub</i>]
     
     %% External
-    SFML[SFML<br/><i>external</i>]
+    SDL3[SDL3<br/><i>external</i>]
+    bgfxlib[bgfx<br/><i>external</i>]
     JsonCpp[jsoncpp<br/><i>external</i>]
     
     %% Application dependencies
@@ -183,7 +200,9 @@ graph TD
     Cluiche --> DiaWindow
     Cluiche --> DiaInput
     Cluiche --> DiaUI
-    Cluiche --> DiaSFML
+    Cluiche --> DiaSDL
+    Cluiche --> DiaBgfx
+    Cluiche --> DiaBgfx3D
     
     %% Framework dependencies
     DiaApp --> DiaCore
@@ -198,12 +217,17 @@ graph TD
     DiaIO --> DiaCore
     
     %% Backend dependencies
-    DiaSFML --> SFML
-    DiaSFML --> DiaCore
-    DiaSFML --> DiaMaths
-    DiaSFML --> DiaGraphics
-    DiaSFML --> DiaWindow
-    DiaSFML --> DiaInput
+    DiaSDL --> SDL3
+    DiaSDL --> DiaCore
+    DiaSDL --> DiaWindow
+    DiaSDL --> DiaInput
+    DiaBgfx --> bgfxlib
+    DiaBgfx --> DiaCore
+    DiaBgfx --> DiaMaths
+    DiaBgfx --> DiaGraphics
+    DiaBgfx --> DiaWindow
+    DiaBgfx --> DiaUI
+    DiaBgfx3D --> DiaBgfx
     
     %% Specialized dependencies
     DiaPhysics --> DiaCore
@@ -318,23 +342,24 @@ Random::RandomFloat()
 **❌ DiaMaths cannot depend on:**
 - DiaGraphics (separation of concerns)
 - DiaApplicationFlow (layer violation)
-- DiaSFML (backend dependency)
+- DiaSDL, DiaBgfx (backend dependency)
 
 **❌ DiaGraphics cannot depend on:**
-- DiaSFML (abstraction must not depend on implementation)
+- DiaSDL, DiaBgfx, DiaBgfx3D (abstraction must not depend on implementation)
 - DiaApplicationFlow (layer violation)
 
 **❌ DiaApplicationFlow cannot depend on:**
 - Cluiche (engine must not know application)
-- DiaSFML (backend dependency)
+- DiaSDL, DiaBgfx (backend dependency)
 - DiaGraphics (optional subsystem)
 
 ### Abstraction Violations
 
 **❌ Cluiche cannot depend on:**
-- SFML directly (must use DiaSFML)
+- SDL3 or bgfx directly (must use DiaSDL / DiaBgfx)
 
-**❌ DiaSFML cannot depend on:**
+**❌ DiaSDL cannot depend on:**
+- DiaBgfx, DiaGraphics (window/input backend is renderer-agnostic)
 - Cluiche (backend doesn't know application)
 
 ---
@@ -392,8 +417,8 @@ Abstraction → Implementation (FORBIDDEN)
 ```
 
 **Example:**
-- ✅ DiaSFML → DiaGraphics (OK, implementation → abstraction)
-- ❌ DiaGraphics → DiaSFML (FORBIDDEN, abstraction → implementation)
+- ✅ DiaBgfx → DiaGraphics (OK, implementation → abstraction)
+- ❌ DiaGraphics → DiaBgfx (FORBIDDEN, abstraction → implementation)
 
 ---
 
@@ -456,12 +481,12 @@ dependent_modules:
 
 ### Pattern 3: Backend depends on Abstraction
 
-**Valid:** DiaSFML depends on DiaGraphics.
+**Valid:** DiaBgfx depends on DiaGraphics.
 
 ```cpp
 #include "DiaGraphics/Interface/ICanvas.h"
 
-class DiaSFMLRenderWindow : public Dia::Graphics::ICanvas {
+class Canvas : public Dia::Graphics::ICanvas {
     // Implementation
 };
 ```
@@ -490,14 +515,17 @@ void ICanvas::DrawLine(Vector2D start, Vector2D end);
 - Cluiche → Any Dia subsystem
 - Dia subsystems → DiaCore
 - DiaGraphics → DiaMaths
-- DiaSFML → DiaGraphics, DiaWindow, DiaInput, DiaMaths, DiaCore
+- DiaSDL → DiaWindow, DiaInput, DiaCore
+- DiaBgfx → DiaGraphics, DiaWindow, DiaUI, DiaMaths, DiaCore
+- DiaBgfx3D → DiaBgfx
 - DiaPhysics/DiaAI → DiaMaths, DiaCore
 
 **Forbidden:**
 - DiaCore → Any Dia subsystem (except external)
 - DiaMaths → DiaGraphics
-- DiaGraphics → DiaSFML
-- DiaApplicationFlow → DiaGraphics, DiaMaths, DiaSFML
+- DiaGraphics → DiaBgfx / DiaSDL
+- DiaSDL → DiaBgfx, DiaGraphics
+- DiaApplicationFlow → DiaGraphics, DiaMaths, DiaSDL, DiaBgfx
 - Any backend → Cluiche
 - Circular dependencies
 

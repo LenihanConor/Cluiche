@@ -115,7 +115,8 @@ The codebase extensively uses `StringCRC` for efficient string comparison via co
 ## External Dependencies
 
 Located in `External/`:
-- **SFML** - Graphics, window, and multimedia library
+- **SDL3** - Window and input
+- **bgfx** - Rendering (2D and 3D)
 - **jsoncpp-master** - JSON parsing (used via `DiaCore/Json/`)
 - **VisJS** - Visualization framework for debugging
 

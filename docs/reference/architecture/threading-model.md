@@ -63,7 +63,7 @@ The threading model separates concerns across three independent threads:
 2. **MainBootStrapPhase** - Show launch UI, spawn threads, wait for user input
 
 **Key Modules:**
-- `MainKernelModule` - Time server @ 30Hz, input source manager, SFML window, canvas
+- `MainKernelModule` - Time server @ 30Hz, input source manager, SDL window, bgfx canvas
 - `MainUIModule` - UI system (observer subject)
 - `LevelFactoryModule` - Level registry and factory access
 
@@ -71,7 +71,7 @@ The threading model separates concerns across three independent threads:
 ```cpp
 void MainProcessingUnit::Update() {
     while (mRunning) {
-        // Collect input from SFML
+        // Collect input from SDL
         inputSourceManager->Update();
         
         // Write input to Sim thread
@@ -116,7 +116,7 @@ simThread.join();
 
 **Key Modules:**
 - `RenderKernel` - Frame management
-- `RenderCanvas` - SFML rendering, display
+- `RenderCanvas` - bgfx rendering, display
 
 **Update Loop:**
 ```cpp
@@ -130,7 +130,7 @@ void RenderProcessingUnit::Update() {
         FrameData* frameData = simToRenderFrameStream->PeekFrame();
         
         if (frameData) {
-            // Render to SFML canvas
+            // Render to bgfx canvas
             canvas->Clear();
             frameData->Render(canvas);
             canvas->Display();

@@ -12,7 +12,7 @@ namespace Dia
 	{
 		/// @brief Interface for input sources (keyboard, mouse, gamepad, etc.)
 		///
-		/// Implementations poll platform-specific APIs (SFML, XInput, etc.) and
+		/// Implementations poll platform-specific APIs (SDL, XInput, etc.) and
 		/// convert raw input into unified Event format.
 		///
 		/// **Lifecycle:** StartFrame() → Poll() → EndFrame()

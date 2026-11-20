@@ -241,42 +241,11 @@ void SimProcessingUnit::Update() {
 
 ### 6. Better Graphics Backend
 
+**Status:** Superseded. The original SFML backend was replaced by SDL3 (window/input) and bgfx (rendering) in 2026.
+
 **Current:**
-- SFML (OpenGL 2.x)
-- 2D only
-- Limited features
-
-**Future Options:**
-
-**Option A: Vulkan**
-- ✅ Modern API
-- ✅ Multi-threaded
-- ✅ Cross-platform
-- ❌ Complex (verbose)
-- ❌ Large learning curve
-
-**Option B: Direct3D 12 (Windows)**
-- ✅ Modern API
-- ✅ Good tooling (PIX)
-- ✅ Microsoft-supported
-- ❌ Windows-only
-
-**Option C: SDL2 + OpenGL ES 3.0**
-- ✅ Simple upgrade from SFML
-- ✅ Cross-platform
-- ✅ Sufficient for 2D/simple 3D
-- ❌ Still old API
-
-**Recommendation:** Stick with SFML for now (good enough for 2D)
-
-**Benefits:**
-- ✅ Better performance
-- ✅ Modern features (compute shaders, etc.)
-- ✅ 3D support
-
-**Effort:** Very High (months)
-
-**Priority:** **P3** (low, 2D sufficient)
+- bgfx rendering (Direct3D 11/12, Vulkan) via DiaBgfx (2D) and DiaBgfx3D (3D)
+- SDL3 window and input via DiaSDL
 
 ---
 
@@ -550,19 +519,9 @@ struct Entities {
 
 ---
 
-### Question 3: Keep SFML or Switch?
+### Question 3: Graphics Backend
 
-**Pros of Switching:**
-- Modern API (Vulkan)
-- Better performance
-- More features
-
-**Cons of Switching:**
-- Huge effort
-- SFML works well for 2D
-- Not needed currently
-
-**Need:** 3D requirement or performance issues
+**Resolved:** The backend question was settled by the move to SDL3 + bgfx (see Section 6).
 
 ---
 
@@ -598,4 +557,4 @@ struct Entities {
 4. Research ECS benefits
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Historical Decisions](historical-decisions.md)**
+**[→ Historical Decisions](historical-decisions.md)**

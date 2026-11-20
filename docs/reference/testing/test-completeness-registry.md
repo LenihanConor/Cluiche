@@ -657,7 +657,6 @@ Known bugs held as DISABLED tests: `UploaderEdgeTest.DISABLED_BaseValuesAvailabl
 | Module | Headers | Reason | Priority |
 |--------|---------|--------|----------|
 | DiaWindow | 6 .h, 3 .cpp | Platform abstraction — testable Settings/Style subset | P2 |
-| DiaSFML | 7 .h, 7 .cpp | SFML backend — skipped per user decision | Deferred |
 | DiaUIUltralight | 1 .h, 1 .cpp | Minimal UI backend alternative | P3 |
 
 ---

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: IImGuiBackend.h
 // Description: Pure virtual interface for ImGui backend lifecycle management.
-//              Each renderer (SFML, SDL, DX12) implements this interface.
+//              Each renderer (bgfx, SDL, DX12) implements this interface.
 //              ProcessEvent is deliberately NOT on the interface -- event types
 //              are renderer-specific.
 // Feature spec: docs/specs/features/dia/diavisualdebugger/debug-console.md

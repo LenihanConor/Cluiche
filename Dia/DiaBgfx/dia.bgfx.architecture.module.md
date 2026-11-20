@@ -18,8 +18,7 @@ summary: >
   ShaderProgram, and BgfxImGuiBackend (DIA_DEBUG only).
 
 intent: >
-  Provide a renderer-agnostic GPU abstraction built on bgfx, replacing DiaSFML's
-  render path with a multi-backend (D3D11/D3D12/Vulkan) implementation.
+  Provide a renderer-agnostic GPU abstraction built on bgfx, with a multi-backend (D3D11/D3D12/Vulkan) implementation.
 
 responsibilities:
   - Implement Dia::Graphics::ICanvas via Bgfx::Canvas

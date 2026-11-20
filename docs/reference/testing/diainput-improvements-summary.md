@@ -173,7 +173,7 @@ else if (result != ERROR_SUCCESS)
 ```cpp
 /// @brief Interface for input sources (keyboard, mouse, gamepad, etc.)
 ///
-/// Implementations poll platform-specific APIs (SFML, XInput, etc.) and
+/// Implementations poll platform-specific APIs (SDL, XInput, etc.) and
 /// convert raw input into unified Event format.
 ///
 /// **Lifecycle:** StartFrame() → Poll() → EndFrame()
@@ -279,7 +279,7 @@ void InputSourceManager::UpdateModern(Core::Events::EventDispatcher& dispatcher)
 
 **Migration Path:**
 1. ✅ Phase 3: Modern system exists alongside legacy (no breaking changes)
-2. Future: Update DiaSFML to optionally emit modern events
+2. Future: Update DiaSDL to optionally emit modern events
 3. Future: Update MainKernelModule to opt-in to modern events
 4. Future: Deprecate legacy with warnings
 5. Future: Remove in major version bump
@@ -631,7 +631,7 @@ actionMap.ProcessEvents(events);
 
 ### Short Term (Next Sprint)
 1. Add unit tests for new functionality (InputState, ActionMap, InputRecorder)
-2. Update DiaSFML to optionally use modern events
+2. Update DiaSDL to optionally use modern events
 3. Add configuration file support for ActionMap bindings
 
 ### Medium Term (Next Release)
