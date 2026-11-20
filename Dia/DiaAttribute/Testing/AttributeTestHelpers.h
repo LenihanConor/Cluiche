@@ -5,7 +5,11 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <DiaAttribute/IMapKeySource.h>
+#include <DiaValueSchema/ValueSchemaLoader.h>
+
 #include <initializer_list>
+#include <string>
 #include <tuple>
 #include <sstream>
 #include <stdexcept>
@@ -95,5 +99,123 @@ namespace Dia::Attribute::Testing {
         // capture in the test framework, not at runtime via this helper.
         // Left as a no-op for now; tests will verify warnings via log output inspection.
     }
+
+    // -----------------------------------------------------------------------
+    // Sidecar (dia.value_schema v1) fixtures. Entries are JSON fragments; wrap them with MakeSidecarText.
+    // -----------------------------------------------------------------------
+    inline std::string SidecarNum(double v)
+    {
+        std::ostringstream o;
+        o.precision(17);
+        o << v;
+        std::string s = o.str();
+        // keep "-0" a real literal ("-0.0"): an integer literal would lose the sign
+        if (s.find_first_of(".eE") == std::string::npos) s += ".0";
+        return s;
+    }
+
+    // `extra` is appended verbatim inside the entry object, e.g. ", \"bands\": {...}".
+    inline std::string SidecarFloat(const char* key, double mn, double mx, double def, const char* extra = "")
+    {
+        return std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\",\"min\":"
+            + SidecarNum(mn) + ",\"max\":" + SidecarNum(mx) + ",\"default\":" + SidecarNum(def) + extra + "}";
+    }
+
+    inline std::string SidecarInt(const char* key, int mn, int mx, int def, const char* extra = "")
+    {
+        return std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"int\",\"min\":"
+            + std::to_string(mn) + ",\"max\":" + std::to_string(mx) + ",\"default\":" + std::to_string(def) + extra + "}";
+    }
+
+    inline std::string SidecarBool(const char* key, bool def)
+    {
+        return std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"bool\",\"default\":"
+            + (def ? "true" : "false") + "}";
+    }
+
+    inline std::string SidecarEnum(const char* key, std::initializer_list<const char*> ids, const char* defaultId)
+    {
+        std::string values;
+        for (const char* id : ids)
+        {
+            if (!values.empty()) values += ",";
+            values += std::string("{\"id\":\"") + id + "\",\"label\":\"" + id + "\"}";
+        }
+        return std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"enum\",\"values\":["
+            + values + "],\"default\":\"" + defaultId + "\"}";
+    }
+
+    // Map entry keyed by the shared fixture key list; defaultJson is the verbatim `default` value
+    // (a number or an object), or null for none.
+    inline std::string SidecarMap(const char* key, double mn, double mx, const char* defaultJson)
+    {
+        std::string s = std::string("{\"key\":\"") + key + "\",\"kind\":\"parameter\",\"label\":\"l\",\"description\":\"d\",\"type\":\"map\","
+            "\"keyRef\":\"cow.biomes/biomes[].id\",\"valueType\":\"float\",\"min\":" + SidecarNum(mn) + ",\"max\":" + SidecarNum(mx);
+        if (defaultJson != nullptr) s += std::string(",\"default\":") + defaultJson;
+        return s + "}";
+    }
+
+    // A non-parameter entry (kind: metric) for the "ignored kinds" cases.
+    inline std::string SidecarMetric(const char* key)
+    {
+        return std::string("{\"key\":\"") + key + "\",\"kind\":\"metric\",\"label\":\"l\",\"description\":\"d\",\"type\":\"float\"}";
+    }
+
+    // constraintsJson: verbatim array, e.g. R"([{"a":"x","op":"<=","b":"y"}])"; null for none.
+    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson = nullptr,
+                                       const char* forName = "test.params")
+    {
+        std::string body;
+        for (const std::string& e : entries)
+        {
+            if (!body.empty()) body += ",";
+            body += e;
+        }
+        std::string s = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"") + forName + "\",\"entries\":[" + body + "]";
+        if (constraintsJson != nullptr) s += std::string(",\"constraints\":") + constraintsJson;
+        return s + "}";
+    }
+
+    // Mirrors the cow.biomes key data file of the conformance fixtures (ids TemperateForest, Desert, Tundra).
+    class FixtureMapKeySource : public IMapKeySource
+    {
+    public:
+        static constexpr const char* kKeyRef = "cow.biomes/biomes[].id";
+
+        FixtureMapKeySource()
+            : mIds{ Dia::Core::StringCRC("TemperateForest"), Dia::Core::StringCRC("Desert"), Dia::Core::StringCRC("Tundra") }
+        {}
+
+        bool GetKeys(const char* keyRef, MapKeys& out) const override
+        {
+            if (keyRef == nullptr || std::string(keyRef) != kKeyRef) return false;
+            out.ids = mIds;
+            out.names = kNames;
+            out.count = 3;
+            return true;
+        }
+
+    private:
+        static constexpr const char* kNames[3] = { "TemperateForest", "Desert", "Tundra" };
+        Dia::Core::StringCRC mIds[3];
+    };
+
+    // Parses a sidecar and builds the schema; throws (failing the test) with the key and reason on any failure.
+    inline AttributeSchema LoadSchemaOrDie(const char* text, const IMapKeySource* mapKeys = nullptr)
+    {
+        const Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text, "test.schema.json");
+        if (!r.mOk)
+        {
+            throw std::runtime_error(std::string("LoadSchemaOrDie: sidecar failed to load: ") + r.mFailure.mReason.AsCStr());
+        }
+        AttributeSchema schema;
+        SchemaError err;
+        if (!AttributeSchema::FromValueSchema(r, mapKeys, schema, err))
+        {
+            throw std::runtime_error(std::string("LoadSchemaOrDie: key '") + err.key.AsCStr() + "': " + err.reason.AsCStr());
+        }
+        return schema;
+    }
+
 
 } // namespace Dia::Attribute::Testing
