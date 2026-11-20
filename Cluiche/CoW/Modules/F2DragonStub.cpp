@@ -2,6 +2,8 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace CoW {
 
@@ -17,19 +19,26 @@ constexpr BandSpec kBandRanges[] = {
     { F2Band::Apex,     170.0f, 200.0f },
 };
 
+// Builds the dragon-stub sidecar (dia.value_schema v1, kind: parameter entries with bands) as JSON text and loads it
+// through the sidecar path. There is no schema asset file for this stub.
 Dia::Attribute::AttributeSchema BuildSchema()
 {
     Json::Value root;
-    root["schema_name"] = "f2_dragon_stub";
-    root["band_schema_version"] = 1;
-    Json::Value attributes(Json::arrayValue);
+    root["format"] = "dia.value_schema";
+    root["version"] = 1;
+    root["for"] = "f2_dragon_stub";
+    Json::Value entries(Json::arrayValue);
     for (int a = 0; a < kF2DragonAttrCount; ++a)
     {
         Json::Value attr;
-        attr["attribute_name"] = F2DragonStub::AttrName(static_cast<F2DragonAttr>(a));
-        attr["minimum_value"] = 0.0;
-        attr["maximum_value"] = 200.0;
-        attr["default_value"] = 100.0;
+        attr["key"] = F2DragonStub::AttrName(static_cast<F2DragonAttr>(a));
+        attr["kind"] = "parameter";
+        attr["label"] = F2DragonStub::AttrName(static_cast<F2DragonAttr>(a));
+        attr["description"] = "F2 dragon stub attribute";
+        attr["type"] = "float";
+        attr["min"] = 0.0;
+        attr["max"] = 200.0;
+        attr["default"] = 100.0;
         Json::Value bands;
         for (const BandSpec& b : kBandRanges)
         {
@@ -39,10 +48,27 @@ Dia::Attribute::AttributeSchema BuildSchema()
             bands[F2DragonStub::BandName(b.band)] = range;
         }
         attr["bands"] = bands;
-        attributes.append(attr);
+        entries.append(attr);
     }
-    root["attributes"] = attributes;
-    return Dia::Attribute::AttributeSchema::LoadFromJsonValue(root);
+    root["entries"] = entries;
+
+    Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
+    const std::string text = Json::writeString(writer, root);
+
+    const Dia::ValueSchema::LoadResult loaded = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text.c_str(), "f2_dragon_stub.schema.json");
+    Dia::Attribute::AttributeSchema schema;
+    Dia::Attribute::SchemaError err;
+    if (!loaded.mOk)
+    {
+        DIA_LOG_ERROR("CoW", "F2DragonStub: sidecar failed to load: %s", loaded.mFailure.mReason.AsCStr());
+        return schema;
+    }
+    if (!Dia::Attribute::AttributeSchema::FromValueSchema(loaded, nullptr, schema, err))
+    {
+        DIA_LOG_ERROR("CoW", "F2DragonStub: schema build failed at '%s': %s", err.key.AsCStr(), err.reason.AsCStr());
+    }
+    return schema;
 }
 
 } // namespace

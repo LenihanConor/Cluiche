@@ -19,6 +19,7 @@
 
 #include <DiaAttribute/AttributeAccessorBridge.h>
 #include <DiaAttribute/AttributeSchema.h>
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 #include <DiaAttribute/AttributeSet.h>
 #include <DiaAttribute/AttributeSetComponent.h>
 
@@ -57,24 +58,11 @@ using Dia::Core::StringCRC;
 namespace
 {
 
-Json::Value ParseJson(const char* str)
-{
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(str, root);
-    return root;
-}
-
 // health: 0..2000 (default 1000), strength: 0..200 (default 50)
 AttributeSchema MakeDragonSchema()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = Dia::Attribute::Testing::DragonSidecarText();
+    return Dia::Attribute::Testing::LoadSchemaOrDie(text.c_str());
 }
 
 // AttributeSet::AddModifier is [[nodiscard]]; none of these tests remove a modifier
@@ -712,17 +700,16 @@ TEST(AttributeVisualDebugger, Coverage_ConditionCacheCap_ExceedsMaxTrackedCondit
 
     const unsigned int kAttrCount = 70; // > kMaxTrackedConditionalModifiers (64)
 
-    std::string json = "{ \"schema_name\": \"wide\", \"attributes\": [";
+    std::string entries;
     for (unsigned int i = 0; i < kAttrCount; ++i)
     {
-        char entry[192];
-        snprintf(entry, sizeof(entry),
-            "%s{ \"attribute_name\": \"attr_%02u\", \"minimum_value\": 0.0, \"maximum_value\": 10000.0, \"default_value\": %u.0 }",
-            (i == 0) ? "" : ",", i, i);
-        json += entry;
+        char key[32];
+        snprintf(key, sizeof(key), "attr_%02u", i);
+        if (i != 0) entries += ",";
+        entries += Dia::Attribute::Testing::SidecarFloat(key, 0, 10000, static_cast<double>(i));
     }
-    json += "] }";
-    AttributeSchema wideSchema = AttributeSchema::LoadFromJsonValue(ParseJson(json.c_str()));
+    const std::string wideText = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"wide\",\"entries\":[") + entries + "]}";
+    AttributeSchema wideSchema = Dia::Attribute::Testing::LoadSchemaOrDie(wideText.c_str());
 
     Dia::Entity::Entity entity = h.mDomain.CreateEntity();
     h.mDomain.QueueAddComponent<AttributeSetComponent>(entity, Json::Value());
