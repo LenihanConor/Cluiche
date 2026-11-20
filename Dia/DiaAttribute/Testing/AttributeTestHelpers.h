@@ -23,7 +23,8 @@ namespace Dia::Attribute::Testing {
     // Declared later in this header (sidecar fixtures).
     inline std::string SidecarNum(double v);
     inline std::string SidecarFloat(const char* key, double mn, double mx, double def, const char* extra = "");
-    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson = nullptr, const char* forName = "test.params");
+    inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson = nullptr, const char* forName = "test.params",
+                                       unsigned bandSchemaVersion = 0);
     inline AttributeSchema LoadSchemaOrDie(const char* text, const IMapKeySource* mapKeys = nullptr);
 
     // Create a simple schema with one attribute and predefined bands (built from a sidecar).
@@ -140,7 +141,7 @@ namespace Dia::Attribute::Testing {
 
     // constraintsJson: verbatim array, e.g. R"([{"a":"x","op":"<=","b":"y"}])"; null for none.
     inline std::string MakeSidecarText(std::initializer_list<std::string> entries, const char* constraintsJson,
-                                       const char* forName)
+                                       const char* forName, unsigned bandSchemaVersion)
     {
         std::string body;
         for (const std::string& e : entries)
@@ -148,7 +149,9 @@ namespace Dia::Attribute::Testing {
             if (!body.empty()) body += ",";
             body += e;
         }
-        std::string s = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"") + forName + "\",\"entries\":[" + body + "]";
+        std::string s = std::string("{\"format\":\"dia.value_schema\",\"version\":1,");
+        if (bandSchemaVersion != 0) s += "\"bandSchemaVersion\":" + std::to_string(bandSchemaVersion) + ",";
+        s += std::string("\"for\":\"") + forName + "\",\"entries\":[" + body + "]";
         if (constraintsJson != nullptr) s += std::string(",\"constraints\":") + constraintsJson;
         return s + "}";
     }

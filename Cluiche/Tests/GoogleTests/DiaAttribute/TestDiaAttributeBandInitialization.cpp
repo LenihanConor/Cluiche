@@ -32,14 +32,6 @@ using Dia::Core::StringCRC;
 // Helpers
 // ===========================================================================
 
-static Json::Value ParseJson(const char* str)
-{
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(str, root);
-    return root;
-}
-
 // ===========================================================================
 // Tests
 // ===========================================================================
@@ -171,22 +163,11 @@ TEST(DiaAttributeBandInitialization, ValidationRejectsOutOfBoundsRange)
     EXPECT_STREQ(err.key.AsCStr(), "strength");
 }
 
-// AC-8: band_schema_version field in schema is accessible via GetBandSchemaVersion()
-// TEMPORARY (plan task 11 open issue): still on the legacy LoadFromJsonValue loader. A sidecar cannot express a band
-// schema version other than 1 (LoadResult does not expose `version` and the loader only accepts 1).
+// AC-8: bandSchemaVersion field in schema is accessible via GetBandSchemaVersion()
 TEST(DiaAttributeBandInitialization, BandSchemaVersionAccessible)
 {
-    const char* json =
-        "{ \"schema_name\": \"versioned\","
-        "  \"band_schema_version\": 42,"
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\","
-        "      \"minimum_value\": 0.0,"
-        "      \"maximum_value\": 100.0,"
-        "      \"default_value\": 50.0 }"
-        "  ] }";
-
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = MakeSidecarText({ SidecarFloat("health", 0.0, 100.0, 50.0, "") }, nullptr, "versioned", 42);
+    AttributeSchema schema = LoadSchemaOrDie(text.c_str());
 
     EXPECT_EQ(schema.GetBandSchemaVersion(), 42u);
 }
@@ -351,33 +332,16 @@ TEST(DiaAttributeBandInitialization, ManyBandsHandledCorrectly)
     EXPECT_FLOAT_EQ(set.GetBaseValue(StringCRC("stat")), 975.0f);  // [950, 1000] -> 975
 }
 
-// Edge: Multiple schemas with different band_schema_version
-// TEMPORARY (plan task 11 open issue): still on the legacy LoadFromJsonValue loader. A sidecar cannot express a band
-// schema version other than 1 (LoadResult does not expose `version` and the loader only accepts 1).
+// Edge: Multiple schemas with different bandSchemaVersion
 TEST(DiaAttributeBandInitialization, DifferentSchemaVersionsCoexist)
 {
-    const char* json_v1 =
-        "{ \"schema_name\": \"dragon\","
-        "  \"band_schema_version\": 1,"
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": { \"MEDIUM\": [40.0, 60.0] }"
-        "    }"
-        "  ] }";
+    const std::string text_v1 = MakeSidecarText(
+        { SidecarFloat("strength", 0.0, 100.0, 50.0, ",\"bands\":{\"MEDIUM\":[40.0,60.0]}") }, nullptr, "dragon", 1);
+    const std::string text_v2 = MakeSidecarText(
+        { SidecarFloat("strength", 0.0, 100.0, 50.0, ",\"bands\":{\"MEDIUM\":[30.0,70.0]}") }, nullptr, "dragon", 2);
 
-    const char* json_v2 =
-        "{ \"schema_name\": \"dragon\","
-        "  \"band_schema_version\": 2,"
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"strength\","
-        "      \"minimum_value\": 0.0, \"maximum_value\": 100.0, \"default_value\": 50.0,"
-        "      \"bands\": { \"MEDIUM\": [30.0, 70.0] }"
-        "    }"
-        "  ] }";
-
-    AttributeSchema schema_v1 = AttributeSchema::LoadFromJsonValue(ParseJson(json_v1));
-    AttributeSchema schema_v2 = AttributeSchema::LoadFromJsonValue(ParseJson(json_v2));
+    AttributeSchema schema_v1 = LoadSchemaOrDie(text_v1.c_str());
+    AttributeSchema schema_v2 = LoadSchemaOrDie(text_v2.c_str());
 
     EXPECT_EQ(schema_v1.GetBandSchemaVersion(), 1u);
     EXPECT_EQ(schema_v2.GetBandSchemaVersion(), 2u);
