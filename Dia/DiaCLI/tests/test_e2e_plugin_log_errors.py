@@ -158,3 +158,30 @@ def test_failure_context_without_capture_reports_missing_log(plugin, monkeypatch
     monkeypatch.setattr(plugin, "_find_log_path", lambda config, plan: None)
     text = plugin._failure_context(object(), {})
     assert "<not found>" in text
+
+
+def test_exit_reason_none_while_running_and_hex_code_after_crash(plugin):
+    class Proc:
+        def __init__(self, rc):
+            self.returncode = rc
+        def poll(self):
+            return self.returncode
+
+    assert plugin._exit_reason(None) is None
+    assert plugin._exit_reason(Proc(None)) is None
+    assert "0xc0000005" in plugin._exit_reason(Proc(3221225477))
+
+
+def test_connect_abort_if_fails_fast(monkeypatch):
+    e2e = Path(__file__).resolve().parents[3] / "Cluiche" / "Tests" / "E2E"
+    spec = importlib.util.spec_from_file_location("e2e_client_under_test", e2e / "client.py")
+    client_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(client_mod)
+
+    def refuse(*a, **k):
+        raise OSError("refused")
+
+    monkeypatch.setattr(client_mod, "ws_connect", refuse)
+    c = client_mod.DiaClient(port=1)
+    with pytest.raises(ConnectionError, match="crashed"):
+        c.connect(timeout=30.0, abort_if=lambda: "crashed")

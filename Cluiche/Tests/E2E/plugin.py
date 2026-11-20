@@ -79,7 +79,7 @@ def dia_client(app_launcher, request):
         pytest.skip(f"app process exited (returncode={app_launcher.returncode}) — skipping remaining tests")
 
     client = DiaClient(port=port)
-    client.connect(timeout=60.0)
+    client.connect(timeout=60.0, abort_if=lambda: _exit_reason(app_launcher))
     # Reset to known state before each test so prior test failures don't cascade
     try:
         current = client.report().get("stage")
@@ -142,6 +142,13 @@ def _new_stdout_path(config):
     return report_dir / f"game_stdout_{time.strftime('%Y%m%d_%H%M%S')}.log"
 
 
+def _exit_reason(proc):
+    """Return 'app process exited (returncode=0x...)' if proc has exited, else None."""
+    if proc is None or proc.poll() is None:
+        return None
+    return f"app process exited (returncode={proc.returncode & 0xFFFFFFFF:#x}) - see game stdout below"
+
+
 def _tail(path, n=_TAIL_LINES):
     try:
         lines = Path(path).read_text(encoding="utf-8", errors="replace").splitlines()
@@ -169,7 +176,7 @@ def _failure_context(config, plan: dict) -> str:
 def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
-    if rep.when != "call" or not rep.failed:
+    if rep.when not in ("setup", "call") or not rep.failed:
         return
     plan = getattr(item.config, "_dia_plan", None)
     if plan is None:
