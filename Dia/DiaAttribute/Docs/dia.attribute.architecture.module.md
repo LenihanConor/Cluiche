@@ -27,11 +27,16 @@ responsibilities:
   - Band-based initialization — AttributeSchema.bands (StringCRC→BandRange map per attribute), 
     AttributeSet::InitializeFromBands(DynamicArrayC<BandValue>) resolves band names to midpoint of [min, max],
     stores as base value; schema-versioned (band_schema_version); fallback to default_value on missing band
-  - AttributeSet runtime state — CreateFromSchema, GetValue/GetBaseValue/SetBaseValue
+  - AttributeSet runtime state — CreateFromSchema, GetValue/GetBaseValue/SetBaseValue, O(1) index-based access
+    (GetBaseValueByIndex, SetBaseValueByIndex, GetAttributeNameByIndex)
   - Modifier stack — Add (sum), Multiply (product), Override (exclusive slot) resolution pipeline
+  - Kind-aware modifiers — Add and Multiply only on float and int (int result rounded half away from zero then clamped);
+    Override on all kinds with value validated per kind (bool 0 or 1, enum in-range ordinal, int whole number);
+    illegal calls return invalid handle and log DIA_LOG_WARNING naming the attribute
   - ModifierHandle-based AddModifier/RemoveModifier with generational-handle safety
   - AttributeSetComponent — single component wrapping one AttributeSet per entity
-  - DIA_LOG_INFO on schema load and AddModifier/RemoveModifier; DIA_LOG_WARNING on schema validation failure
+  - DIA_LOG_INFO on schema load and AddModifier/RemoveModifier; DIA_LOG_WARNING on schema validation failure and
+    illegal modifier operations
   - Conditional modifier gating — when_condition (DiaCondition ConditionExpr JSON) evaluated per-resolve
     via a per-AttributeSet ConditionRegistry (SetConditionRegistry), without RemoveModifier churn
   - Change notifications — AttributeObserverSubject/IAttributeObserver push OnAttributeChanged and
@@ -49,6 +54,23 @@ responsibilities:
     every attribute's base value and its full active modifier list; a saved modifier whose
     attribute no longer exists in the current schema is dropped with a DIA_LOG_WARNING rather than
     a crash; deserialized modifiers always receive freshly-issued ModifierHandle values
+  - ParameterFile — strict/lenient schema loading from DiaValueSchema sidecars (with bands, map defaults,
+    and cross-field constraints); applies override packs atomically; single value setting; reload from sidecar
+    plus pack list; JSON export (full or diff pack format); deterministic FNV-1a-64 hash (schema-aware, excludes
+    modifiers); non-copyable, non-movable lifetime (Load remembers non-owning IMapKeySource*, Reload reuses it)
+  - ParamBinding<T> — template to bind C++ struct members to parameter file entries by name once per step;
+    Resolve reports unbound parameters and entries with no binding; Snapshot copies resolved values (modifiers
+    included) by index with zero allocations; template specializations for float, int32_t, bool; BindEnum and
+    BindMap for enum ordinals and multi-value maps; max 256 bindings per instance
+  - AttributeSchema::FromValueSchema — builds a schema from a DiaValueSchema sidecar (kind: parameter entries);
+    expands map entries to one definition per key from an IMapKeySource; resolves constraints to indices;
+    checks defaults and constraints on the sidecar; reports all failures by key
+  - AttributeSchema::CheckConstraints — validates numeric-field constraints (a op b, op ∈ {<,<=,>,>=,==,!=});
+    names both keys on violation; used by FromValueSchema, ParameterFile strict load/Set, and ApplyPack (atomic)
+  - AttributeSchema additions — GetBandSchemaVersion() returning the optional sidecar field bandSchemaVersion
+    (default 1); AttributeKind enum (Float, Int, Bool, Enum) in kind-aware modifiers and ParameterFile snapshot
+  - IMapKeySource / MapKeys — registry interface for resolving parameter map entries (keyRef) to numeric IDs
+    and string names; null source allowed when there are no maps
 
 lifetime_hazards:
   - A bridged AttributeSet MUST outlive every ConditionRegistry it was registered into.
@@ -69,7 +91,8 @@ non_responsibilities:
   - Schema-asset registry / lookup-by-name (AttributeSetComponent::OnAttach is a no-op stub until this exists)
   - UI and rendering
 
-dependent_modules: []
+dependent_modules:
+  - dia.value_schema
 
 public_api:
   headers:
@@ -79,6 +102,9 @@ public_api:
     - Dia/DiaAttribute/IAttributeObserver.h
     - Dia/DiaAttribute/AttributeObserverSubject.h
     - Dia/DiaAttribute/AttributeAccessorBridge.h
+    - Dia/DiaAttribute/ParameterFile.h
+    - Dia/DiaAttribute/ParamBinding.h
+    - Dia/DiaAttribute/IMapKeySource.h
   namespaces:
     - Dia::Attribute
   entry_points:
@@ -86,10 +112,14 @@ public_api:
     - AttributeSet
     - AttributeSetComponent
     - AttributeAccessorBridge
+    - ParameterFile
+    - ParamBinding<T>
+    - IMapKeySource
 
 dependencies:
   required:
     - dia.core
+    - dia.value_schema
     - dia.observation
     - dia.entity
     - dia.condition
@@ -101,3 +131,26 @@ dependencies:
     - dia.graphics
     - dia.application
 ---
+
+## Removed API (Feature 8, 2026-11-18)
+
+The old AttributeSchema JSON format has been removed in favor of DiaValueSchema sidecars (dia.value_schema v1):
+
+- `AttributeSchema::LoadFromJson(const char* path)` — removed; use `ValueSchemaLoader::LoadFromText()` then `AttributeSchema::FromValueSchema()`
+- `AttributeSchema::LoadFromJsonValue(const Json::Value&)` — removed; same replacement path
+- `band_schema_version` JSON key in the old format — replaced by the optional sidecar field `bandSchemaVersion` (whole number, default 1 when absent)
+
+The old format was understood by the loader and three public methods (`ParseAttributes`, `ParseBands`, `ValidateBandRange`); those are also deleted. Callers must migrate to sidecars.
+
+## Usage Notes (Feature 8, 2026-11-18)
+
+- **ParameterFile lifetime:** Not copyable or movable (owns an `AttributeSet`). `Load` remembers a NON-OWNING `IMapKeySource*` pointer; the source must outlive the file because `Reload` reuses that pointer. Pass the source once to `Load` and it is stored for all future `Reload` calls.
+- **JSON shape:** `ToJson()` returns `Json::Value` with members in alphabetical order (jsoncpp default), not schema order. Only the C++ base-value layout (`Hash`, `Snapshot`) respects schema order. Floats are serialized as shortest decimal round-trip form. `-0.0` is exact in memory only; jsoncpp text serializes it as `-0` and reads it back as `+0.0`.
+- **Lenient pack atomicity:** `ApplyPack` validates a candidate copy of the base values first (against type, range, and constraints). If any constraint fails after the merge, the whole pack is rejected and base values remain byte-identical. A missing or mismatching `basedOn` is treated as a stale pack: one warning (key `basedOn`) and the pack applies leniently.
+- **Modifier survival across Reload:** Modifiers survive `Reload` by matching the attribute name (`AttributeDefinition::fullKey`). Modifiers on attributes that disappear from the new schema are dropped with a warning. Modifiers on new attributes in the reloaded schema do not exist (they were not active before).
+- **Modifier legality by kind:** `AddModifier` checks the attribute's `AttributeKind`: Add and Multiply are illegal on bool and enum (return invalid handle and log DIA_LOG_WARNING naming the attribute). Override is legal on all kinds if the value is valid for that kind (bool: 0 or 1; enum: ordinal in range; int: whole number).
+- **ParamBinding non-coverage:** `ParamBinding<T>::Resolve` does NOT check whether a bound member's C++ type matches the corresponding attribute's `AttributeKind`. This is a documented gap (all TerrainRules attributes are float and int members are converted via `RoundToInt`; int members receive float values rounded half away from zero).
+- **Hash stability:** `Hash()` (base values) and `SchemaHash()` (schema definition) are both FNV-1a 64. Base-value `Hash()` uses float32 bit patterns with `-0.0` normalized to `+0.0`. `SchemaHash()` hashes the sidecar's parameter entry keys, kinds, min/max, defaults, enum value lists (ids and order), bands, and constraints; it excludes presentation fields (label, description, hint, unit, ui, color). The exact byte layout is documented in `ParameterFile.cpp`.
+- **Map defaults:** A map entry's `default` can be an object keyed by map key (e.g., `{"Biome.Grassland": 0.6}`). Every key in the object must resolve through the `IMapKeySource`; a missing or unknown key fails `FromValueSchema`. In a pack, map values are a nested object.
+
+
