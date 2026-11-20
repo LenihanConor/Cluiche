@@ -260,6 +260,8 @@ namespace Dia::Attribute
         }
 
         mSchemaHash = ComputeSchemaHash(r);
+        mMapKeys = mapKeys;
+        SetText(mSidecarName, sidecarName != nullptr ? sidecarName : "");
         mLoaded = true;
         return true;
     }
@@ -441,5 +443,92 @@ namespace Dia::Attribute
             return false;
 
         return mValues.ReplaceBaseValues(candidate.data(), count);
+    }
+
+    // -----------------------------------------------------------------------
+    // Set (strict, atomic)
+    // -----------------------------------------------------------------------
+    bool ParameterFile::Set(Dia::Core::StringCRC key, const Json::Value& value, ParamError& err)
+    {
+        SetText(err.key, "");
+        SetText(err.otherKey, "");
+        SetText(err.reason, "");
+
+        if (!mLoaded) return FailErr(err, key.AsChar(), "ParameterFile is not loaded");
+        const AttributeDefinition* def = mSchema.FindAttribute(key);
+        if (def == nullptr) return FailErr(err, key.AsChar(), "unknown parameter key");
+
+        const unsigned int count = mSchema.GetAttributeCount();
+        std::vector<float> candidate(count > 0 ? count : 1, 0.0f);
+        for (unsigned int i = 0; i < count; ++i) candidate[i] = mValues.GetBaseValueByIndex(i);
+
+        Json::Value obj(Json::objectValue);
+        obj[def->fullKey.AsCStr()] = value;
+        if (!Merge(obj, LoadPolicy::Strict, candidate.data(), nullptr, err))
+            return false;
+
+        return mValues.ReplaceBaseValues(candidate.data(), count);
+    }
+
+    // -----------------------------------------------------------------------
+    // Reload (atomic): build the complete new state aside, then swap in place
+    // -----------------------------------------------------------------------
+    bool ParameterFile::Reload(const char* sidecarText, const Json::Value* const* packs, uint32_t packCount,
+                               ParamWarnings& warn, ParamError& err)
+    {
+        SetText(err.key, "");
+        SetText(err.otherKey, "");
+        SetText(err.reason, "");
+
+        if (packCount > 0 && packs == nullptr) return FailErr(err, "packs", "pack list is null");
+
+        // 1. Build the whole new state in a local ParameterFile (fresh Load, then the packs in order).
+        ParameterFile next;
+        ParamWarnings local;
+        if (!next.Load(sidecarText, mSidecarName.AsCStr()[0] != '\0' ? mSidecarName.AsCStr() : "sidecar", mMapKeys, err))
+            return false;
+        for (uint32_t i = 0; i < packCount; ++i)
+        {
+            if (packs[i] == nullptr) return FailErr(err, "packs", "pack %u is null", i);
+            if (!next.ApplyPack(*packs[i], local, err)) return false;
+        }
+
+        // 2. Nothing below can fail. Warn about modifiers that lose their attribute (old schema still in place).
+        if (mLoaded)
+        {
+            for (unsigned int i = 0; i < mSchema.GetAttributeCount(); ++i)
+            {
+                const AttributeDefinition& d = mSchema.GetAttributeByIndex(i);
+                if (next.mSchema.FindAttribute(d.attribute_name) != nullptr) continue;
+                const unsigned int n = mValues.GetModifierCountForAttribute(d.attribute_name);
+                if (n > 0) AddWarning(&local, d.fullKey.AsCStr(), "attribute no longer exists; %u modifier(s) dropped", n);
+            }
+        }
+
+        // 3. Swap. Everything an observer might read is in place before the values (and notifications) commit.
+        const unsigned int count = next.mSchema.GetAttributeCount();
+        std::vector<float> values(count > 0 ? count : 1, 0.0f);
+        for (unsigned int i = 0; i < count; ++i) values[i] = next.mValues.GetBaseValueByIndex(i);
+
+        SetText(mFor, next.mFor.AsCStr());
+        mSchema = next.mSchema;
+        mMaps.RemoveAll();
+        if (next.mMaps.Size() > 0) mMaps.Reserve(next.mMaps.Size());
+        for (unsigned int m = 0; m < next.mMaps.Size(); ++m) mMaps.Add(next.mMaps[m]);
+        mSchemaHash = next.mSchemaHash;
+        mMapKeys = next.mMapKeys;
+        SetText(mSidecarName, next.mSidecarName.AsCStr());
+        mLoaded = true;
+        const bool swapped = mValues.ReplaceSchemaAndValues(mSchema, values.data(), count);
+        DIA_ASSERT(swapped, "ParameterFile::Reload: value swap rejected a matching schema");
+        (void)swapped;
+
+        for (unsigned int i = 0; i < local.items.Size(); ++i)
+        {
+            if (warn.items.Size() >= kMaxWarnings) ++warn.dropped;
+            else warn.items.Add(local.items[i]);
+        }
+        warn.dropped += local.dropped;
+        return true;
     }
 }

@@ -60,6 +60,23 @@ namespace Dia::Attribute
         // adds exactly one warning (key `basedOn`) and the pack still applies.
         bool ApplyPack(const Json::Value& pack, ParamWarnings& warn, ParamError& err);
 
+        // Strict and atomic: sets one parameter (a scalar key or a map column `<key>.<mapKey>`). Unknown key,
+        // out-of-range value, wrong kind (non-whole int, unknown enum id, non-0/1 bool) or a value that breaks a
+        // constraint returns false, changes and fires nothing, and names the key (constraints also name otherKey).
+        // Fires OnAttributeChanged once for the changed attribute (not at all if the value is unchanged).
+        bool Set(Dia::Core::StringCRC key, const Json::Value& value, ParamError& err);
+
+        // Defaults plus `packs` in order (ApplyPack semantics), atomic: the whole new state is built aside and swapped
+        // in only on success; on failure nothing changes (state, schema, hash, values, observers) and `warn` is
+        // untouched. The result equals a fresh Load plus the same ApplyPack calls. Values from Set are discarded.
+        // Modifiers (and their handles) are kept for attributes that still exist; modifiers on attributes the new
+        // sidecar removes are dropped with one warning (key = the attribute). Observers fire once per surviving
+        // attribute whose resolved value changed, after the swap; added or removed attributes fire nothing.
+        // Map keys come from the IMapKeySource given to Load (non-owning; it must outlive this object). Called on
+        // a file that is not loaded, it behaves like Load (with no map key source) followed by the packs.
+        bool Reload(const char* sidecarText, const Json::Value* const* packs, uint32_t packCount,
+                    ParamWarnings& warn, ParamError& err);
+
         bool IsLoaded() const { return mLoaded; }
 
         // Hash of the schema meaning (not the values); see ParameterFile.cpp for the exact byte layout.
@@ -90,6 +107,8 @@ namespace Dia::Attribute
         AttributeSet    mValues;
         Dia::Core::Containers::DynamicArray<MapInfo> mMaps;
         uint64_t        mSchemaHash = 0;
+        const IMapKeySource* mMapKeys = nullptr;   // non-owning; remembered from Load for Reload
+        Dia::Core::Containers::String128 mSidecarName;
         bool            mLoaded = false;
     };
 }

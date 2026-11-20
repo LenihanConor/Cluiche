@@ -188,6 +188,16 @@ namespace Dia::Attribute {
         // changed, in index order, so observers see the fully committed state.
         bool ReplaceBaseValues(const float* values, uint32_t count);
 
+        // Re-initialises this set in place for `schema` (slots in schema order, name map rebuilt) with `values`
+        // as the base values (one per attribute, schema order). Returns false and changes nothing if `count`
+        // != schema.GetAttributeCount() (or values is null while count > 0).
+        // Modifiers: those on an attribute present (by name) in both the old and new schema are kept, with their
+        // ModifierHandles still valid (handles carry the attribute name, not an index). Modifiers on an attribute
+        // absent from the new schema are dropped and their handles freed.
+        // Observers: after the swap, OnAttributeChanged (and the reached-max/min edges) fire for each kept
+        // attribute whose resolved value changed; added or removed attributes fire nothing.
+        bool ReplaceSchemaAndValues(const AttributeSchema& schema, const float* values, uint32_t count);
+
         // -------------------------------------------------------------------
         // Modifier-stack inspection
         //

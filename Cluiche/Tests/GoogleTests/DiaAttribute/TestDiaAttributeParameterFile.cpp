@@ -66,7 +66,7 @@ namespace
 
     bool LoadFile(ParameterFile& pf, const std::string& text, ParamError* errOut = nullptr)
     {
-        FixtureMapKeySource keys;
+        static const FixtureMapKeySource keys;   // ParameterFile keeps this pointer for Reload, so it must outlive the file
         ParamError err;
         const bool ok = pf.Load(text.c_str(), "test.schema.json", &keys, err);
         if (errOut != nullptr) *errOut = err;
@@ -629,4 +629,353 @@ TEST(DiaAttributeParameterFileSchemaHash, ValuesDoNotAffectSchemaHash)
     ParamError err;
     ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.speed":9)", MatchingBasedOn(pf)), w, err));
     EXPECT_EQ(before, pf.SchemaHash());
+}
+
+// ---------------------------------------------------------------------------
+// Set (AC 10)
+// ---------------------------------------------------------------------------
+class DiaAttributeParameterFileSet : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ASSERT_TRUE(LoadFile(pf, FixtureText()));
+        pf.Values().GetObserverSubject().Subscribe(&obs);
+    }
+    void TearDown() override { pf.Values().GetObserverSubject().Unsubscribe(&obs); }
+
+    void ExpectRejected(const char* key, const Json::Value& v, const char* errKey, const char* errOtherKey = "")
+    {
+        const std::vector<float> before = BaseValues(pf);
+        EXPECT_FALSE(pf.Set(StringCRC(key), v, err)) << key;
+        EXPECT_TRUE(BitEqual(before, BaseValues(pf))) << key;
+        EXPECT_TRUE(obs.names.empty()) << key;
+        EXPECT_STREQ(err.key.AsCStr(), errKey);
+        EXPECT_STREQ(err.otherKey.AsCStr(), errOtherKey);
+        EXPECT_NE(std::string(err.reason.AsCStr()), "");
+    }
+
+    ParameterFile pf;
+    CountingObserver obs;
+    ParamError err;
+};
+
+TEST_F(DiaAttributeParameterFileSet, SuccessFiresOnceWithOldAndNew)
+{
+    struct EvObserver : IAttributeObserver
+    {
+        int calls = 0; float oldV = -1, newV = -1;
+        void OnAttributeChanged(const AttributeChangedEvent& e) override { ++calls; oldV = e.old_value; newV = e.new_value; }
+    } ev;
+    pf.Values().GetObserverSubject().Subscribe(&ev);
+    ASSERT_TRUE(pf.Set(StringCRC("a.speed"), Json::Value(7.5), err));
+    pf.Values().GetObserverSubject().Unsubscribe(&ev);
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 7.5f);
+    EXPECT_EQ(ev.calls, 1);
+    EXPECT_FLOAT_EQ(ev.oldV, 5.0f);
+    EXPECT_FLOAT_EQ(ev.newV, 7.5f);
+    EXPECT_EQ(obs.names.size(), 1u);
+}
+
+TEST_F(DiaAttributeParameterFileSet, SameValueFiresNothing)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.speed"), Json::Value(5.0), err));
+    EXPECT_TRUE(obs.names.empty());
+}
+
+TEST_F(DiaAttributeParameterFileSet, OnlyTheKeyChanges)
+{
+    const std::vector<float> before = BaseValues(pf);
+    ASSERT_TRUE(pf.Set(StringCRC("a.count"), Json::Value(9), err));
+    const std::vector<float> after = BaseValues(pf);
+    int diff = 0;
+    for (size_t i = 0; i < before.size(); ++i) if (memcmp(&before[i], &after[i], sizeof(float)) != 0) ++diff;
+    EXPECT_EQ(diff, 1);
+    EXPECT_FLOAT_EQ(Base(pf, "a.count"), 9.0f);
+}
+
+TEST_F(DiaAttributeParameterFileSet, EnumAndBoolAccepted)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.mode"), Json::Value("Turbo"), err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.mode"), 2.0f);
+    ASSERT_TRUE(pf.Set(StringCRC("a.flag"), Json::Value(true), err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.flag"), 1.0f);
+    ASSERT_TRUE(pf.Set(StringCRC("a.flag"), Json::Value(0), err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.flag"), 0.0f);
+}
+
+TEST_F(DiaAttributeParameterFileSet, MapColumn)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("m.temp.Desert"), Json::Value(0.25), err));
+    EXPECT_FLOAT_EQ(Base(pf, "m.temp.Desert"), 0.25f);
+    EXPECT_FLOAT_EQ(Base(pf, "m.temp.Tundra"), 0.1f);
+    ASSERT_EQ(obs.names.size(), 1u);
+    EXPECT_TRUE(obs.Saw("m.temp.Desert"));
+    obs.names.clear();
+    ExpectRejected("m.temp.Desert", Json::Value(5.0), "m.temp.Desert");   // map range is [0,1]
+}
+
+TEST_F(DiaAttributeParameterFileSet, UnknownKeyRejected)
+{
+    ExpectRejected("a.nothing", Json::Value(1), "a.nothing");
+    ExpectRejected("m.temp.Mars", Json::Value(0.5), "m.temp.Mars");
+}
+
+TEST_F(DiaAttributeParameterFileSet, OutOfRangeRejected)
+{
+    ExpectRejected("a.speed", Json::Value(11.0), "a.speed");
+    ExpectRejected("a.speed", Json::Value(-0.5), "a.speed");
+}
+
+TEST_F(DiaAttributeParameterFileSet, WrongKindRejected)
+{
+    ExpectRejected("a.count", Json::Value(2.5), "a.count");
+    ExpectRejected("a.mode", Json::Value("Warp"), "a.mode");
+    ExpectRejected("a.mode", Json::Value(1), "a.mode");
+    ExpectRejected("a.flag", Json::Value(2), "a.flag");
+    ExpectRejected("a.speed", Json::Value("fast"), "a.speed");
+    ExpectRejected("a.speed", Json::Value(Json::nullValue), "a.speed");
+}
+
+TEST_F(DiaAttributeParameterFileSet, ConstraintBreakingValueRejectedNamingBothKeys)
+{
+    // lo <= hi; hi is 8, so lo=9 breaks it.
+    ASSERT_FALSE(pf.Set(StringCRC("lo"), Json::Value(9.0), err));
+    EXPECT_STREQ(err.key.AsCStr(), "lo");
+    EXPECT_STREQ(err.otherKey.AsCStr(), "hi");
+    EXPECT_FLOAT_EQ(Base(pf, "lo"), 2.0f);
+    EXPECT_TRUE(obs.names.empty());
+    ASSERT_FALSE(pf.Set(StringCRC("hi"), Json::Value(1.0), err));
+    EXPECT_STREQ(err.key.AsCStr(), "lo");
+    EXPECT_STREQ(err.otherKey.AsCStr(), "hi");
+    EXPECT_FLOAT_EQ(Base(pf, "hi"), 8.0f);
+    EXPECT_TRUE(obs.names.empty());
+}
+
+TEST(DiaAttributeParameterFileSetNotLoaded, FailsCleanly)
+{
+    ParameterFile pf;
+    ParamError err;
+    EXPECT_FALSE(pf.Set(StringCRC("x"), Json::Value(1), err));
+    EXPECT_FALSE(pf.IsLoaded());
+}
+
+// ---------------------------------------------------------------------------
+// Reload (AC 11)
+// ---------------------------------------------------------------------------
+class DiaAttributeParameterFileReload : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ASSERT_TRUE(LoadFile(pf, FixtureText()));
+        pf.Values().GetObserverSubject().Subscribe(&obs);
+    }
+    void TearDown() override { pf.Values().GetObserverSubject().Unsubscribe(&obs); }
+
+    bool DoReload(const std::string& text, std::initializer_list<const Json::Value*> packs)
+    {
+        std::vector<const Json::Value*> v(packs);
+        return pf.Reload(text.c_str(), v.data(), static_cast<uint32_t>(v.size()), warn, err);
+    }
+
+    ParameterFile pf;
+    CountingObserver obs;
+    ParamWarnings warn;
+    ParamError err;
+};
+
+TEST_F(DiaAttributeParameterFileReload, ZeroPacksGivesDefaults)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.speed"), Json::Value(9.0), err));
+    obs.names.clear();
+    ASSERT_TRUE(pf.Reload(FixtureText().c_str(), nullptr, 0, warn, err));
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 5.0f);   // Set value discarded
+    ASSERT_EQ(obs.names.size(), 1u);              // only the changed one fires
+    EXPECT_TRUE(obs.Saw("a.speed"));
+    EXPECT_EQ(warn.items.Size(), 0u);
+}
+
+TEST_F(DiaAttributeParameterFileReload, TwoPacksEqualFreshLoadPlusApply)
+{
+    const Json::Value p1 = MakePack(R"("a.speed":7,"a.count":4,"m.temp":{"Desert":0.3})", MatchingBasedOn(pf));
+    const Json::Value p2 = MakePack(R"("a.speed":8,"a.mode":"Fast")", MatchingBasedOn(pf));
+    ASSERT_TRUE(pf.Set(StringCRC("lo"), Json::Value(1.0), err));   // discarded by the reload
+
+    ASSERT_TRUE(DoReload(FixtureText(), { &p1, &p2 }));
+
+    ParameterFile fresh;
+    ASSERT_TRUE(LoadFile(fresh, FixtureText()));
+    ParamWarnings w2; ParamError e2;
+    ASSERT_TRUE(fresh.ApplyPack(p1, w2, e2));
+    ASSERT_TRUE(fresh.ApplyPack(p2, w2, e2));
+    EXPECT_TRUE(BitEqual(BaseValues(pf), BaseValues(fresh)));
+    EXPECT_EQ(pf.SchemaHash(), fresh.SchemaHash());
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 8.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "lo"), 2.0f);
+}
+
+TEST_F(DiaAttributeParameterFileReload, WarningsFromPacksAreReported)
+{
+    const Json::Value p1 = MakePack(R"("nope":1)", MatchingBasedOn(pf));
+    ASSERT_TRUE(DoReload(FixtureText(), { &p1 }));
+    EXPECT_TRUE(HasWarningKey(warn, "nope"));
+}
+
+TEST_F(DiaAttributeParameterFileReload, FailingSecondPackLeavesStateIntact)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.speed"), Json::Value(9.0), err));
+    obs.names.clear();
+    const std::vector<float> before = BaseValues(pf);
+    const uint64_t hashBefore = pf.SchemaHash();
+    const unsigned int countBefore = pf.Schema().GetAttributeCount();
+
+    const std::string newText = Replace(FixtureText(), "\"a.count\"", "\"a.other\"");
+    const Json::Value ok = MakePack(R"("a.speed":7)");
+    const Json::Value bad = MakePack(R"("lo":9,"hi":1)");   // breaks lo <= hi
+    EXPECT_FALSE(DoReload(newText, { &ok, &bad }));
+
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+    EXPECT_EQ(hashBefore, pf.SchemaHash());
+    EXPECT_EQ(countBefore, pf.Schema().GetAttributeCount());
+    EXPECT_NE(pf.Schema().FindAttribute(StringCRC("a.count")), nullptr);
+    EXPECT_EQ(pf.Schema().FindAttribute(StringCRC("a.other")), nullptr);
+    EXPECT_TRUE(obs.names.empty());
+    EXPECT_EQ(warn.items.Size(), 0u);
+    EXPECT_NE(std::string(err.key.AsCStr()), "");
+    ASSERT_TRUE(pf.Set(StringCRC("a.count"), Json::Value(6), err));   // still usable
+}
+
+TEST_F(DiaAttributeParameterFileReload, MalformedSidecarLeavesStateIntact)
+{
+    ASSERT_TRUE(pf.Set(StringCRC("a.speed"), Json::Value(9.0), err));
+    obs.names.clear();
+    const std::vector<float> before = BaseValues(pf);
+    const uint64_t hashBefore = pf.SchemaHash();
+    EXPECT_FALSE(pf.Reload("{ not json", nullptr, 0, warn, err));
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+    EXPECT_EQ(hashBefore, pf.SchemaHash());
+    EXPECT_TRUE(obs.names.empty());
+    EXPECT_TRUE(pf.IsLoaded());
+}
+
+TEST_F(DiaAttributeParameterFileReload, ConstraintViolatingDefaultsLeaveStateIntact)
+{
+    const std::vector<float> before = BaseValues(pf);
+    const std::string text = MakeSidecarText({ SidecarFloat("lo", 0, 10, 9), SidecarFloat("hi", 0, 10, 1) },
+                                             R"([{"a":"lo","op":"<=","b":"hi"}])", "test.params");
+    EXPECT_FALSE(pf.Reload(text.c_str(), nullptr, 0, warn, err));
+    EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
+}
+
+TEST_F(DiaAttributeParameterFileReload, SchemaHashChangesWhenSidecarChanges)
+{
+    const uint64_t before = pf.SchemaHash();
+    const std::string text = Replace(FixtureText(), "\"a.count\"", "\"a.other\"");
+    ASSERT_TRUE(DoReload(text, {}));
+    EXPECT_NE(before, pf.SchemaHash());
+    ParameterFile fresh;
+    ASSERT_TRUE(LoadFile(fresh, text));
+    EXPECT_EQ(fresh.SchemaHash(), pf.SchemaHash());
+    EXPECT_NE(pf.Schema().FindAttribute(StringCRC("a.other")), nullptr);
+    EXPECT_EQ(pf.Schema().FindAttribute(StringCRC("a.count")), nullptr);
+    EXPECT_EQ(pf.Values().GetAttributeCount(), pf.Schema().GetAttributeCount());
+    ASSERT_TRUE(pf.ApplyPack(MakePack(R"("a.other":4)", MatchingBasedOn(pf)), warn, err));   // new schema is live
+    EXPECT_FLOAT_EQ(Base(pf, "a.other"), 4.0f);
+}
+
+namespace
+{
+    AttributeModifier AddMod(const char* name, const char* attr, float v)
+    {
+        AttributeModifier m{};
+        m.modifier_name = StringCRC(name);
+        m.attribute_name = StringCRC(attr);
+        m.operation = ModifierOperation::Add;
+        m.value = v;
+        return m;
+    }
+}
+
+TEST_F(DiaAttributeParameterFileReload, ModifierKeptAndHandleStaysValid)
+{
+    const ModifierHandle h = pf.Values().AddModifier(AddMod("boost", "a.speed", 2.0f));
+    const Json::Value p = MakePack(R"("a.speed":6)", MatchingBasedOn(pf));
+    obs.names.clear();
+    ASSERT_TRUE(DoReload(FixtureText(), { &p }));
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.speed")), 8.0f);   // 6 + 2
+    EXPECT_FLOAT_EQ(Base(pf, "a.speed"), 6.0f);
+    EXPECT_EQ(pf.Values().GetModifierCountForAttribute(StringCRC("a.speed")), 1u);
+    EXPECT_EQ(warn.items.Size(), 0u);
+    ASSERT_EQ(obs.names.size(), 1u);   // resolved 7 -> 8
+
+    pf.Values().RemoveModifier(h);
+    EXPECT_EQ(pf.Values().GetModifierCountForAttribute(StringCRC("a.speed")), 0u);
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.speed")), 6.0f);
+}
+
+TEST_F(DiaAttributeParameterFileReload, ModifierKeptWhenAttributeIndexMoves)
+{
+    const ModifierHandle h = pf.Values().AddModifier(AddMod("boost", "lo", 1.0f));
+    const std::string text = MakeSidecarText({   // a.speed gone, so every later attribute shifts index
+        SidecarInt("a.count", 0, 10, 3),
+        SidecarFloat("lo", 0, 10, 2),
+        SidecarFloat("hi", 0, 10, 8)
+    }, R"([{"a":"lo","op":"<=","b":"hi"}])", "test.params");
+    ASSERT_TRUE(DoReload(text, {}));
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("lo")), 3.0f);
+    pf.Values().RemoveModifier(h);
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("lo")), 2.0f);
+}
+
+TEST_F(DiaAttributeParameterFileReload, SchemaGrowsAndShrinks)
+{
+    const ModifierHandle h = pf.Values().AddModifier(AddMod("boost", "hi", 1.0f));
+    std::vector<std::string> entries;
+    for (int i = 0; i < 20; ++i) entries.push_back(SidecarFloat(("extra" + std::to_string(i)).c_str(), 0, 10, 1));
+    entries.push_back(SidecarFloat("lo", 0, 10, 2));
+    entries.push_back(SidecarFloat("hi", 0, 10, 8));
+    std::string body;
+    for (const std::string& e : entries) { if (!body.empty()) body += ","; body += e; }
+    const std::string big = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"test.params\",\"entries\":[") + body + "]}";
+    ASSERT_TRUE(DoReload(big, {}));
+    EXPECT_EQ(pf.Values().GetAttributeCount(), 22u);
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("hi")), 9.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "extra19"), 1.0f);
+    ASSERT_TRUE(pf.Set(StringCRC("extra19"), Json::Value(4), err));
+    EXPECT_FLOAT_EQ(Base(pf, "extra19"), 4.0f);
+
+    ASSERT_TRUE(DoReload(FixtureText(), {}));   // shrink back
+    EXPECT_EQ(pf.Values().GetAttributeCount(), pf.Schema().GetAttributeCount());
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("hi")), 9.0f);
+    pf.Values().RemoveModifier(h);
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("hi")), 8.0f);
+}
+
+TEST_F(DiaAttributeParameterFileReload, ModifierOnRemovedAttributeDroppedWithWarning)
+{
+    const ModifierHandle keep = pf.Values().AddModifier(AddMod("keep", "a.speed", 1.0f));
+    pf.Values().AddModifier(AddMod("gone", "a.count", 1.0f));
+    const std::string text = Replace(FixtureText(), "\"a.count\"", "\"a.other\"");
+    ASSERT_TRUE(DoReload(text, {}));
+    EXPECT_TRUE(HasWarningKey(warn, "a.count"));
+    EXPECT_EQ(pf.Values().GetModifierCountForAttribute(StringCRC("a.speed")), 1u);
+    EXPECT_EQ(pf.Values().GetModifierCountForAttribute(StringCRC("a.other")), 0u);
+    pf.Values().RemoveModifier(keep);
+    EXPECT_FLOAT_EQ(pf.Values().GetValue(StringCRC("a.speed")), 5.0f);
+}
+
+TEST(DiaAttributeParameterFileReloadNotLoaded, BehavesLikeLoadPlusPacks)
+{
+    ParameterFile pf;
+    const std::string text = MakeSidecarText({ SidecarFloat("x", 0, 10, 3) }, nullptr, "test.params");
+    const Json::Value p = MakePack(R"("x":7)");
+    const Json::Value* packs[] = { &p };
+    ParamWarnings w; ParamError e;
+    ASSERT_TRUE(pf.Reload(text.c_str(), packs, 1, w, e));
+    EXPECT_TRUE(pf.IsLoaded());
+    EXPECT_FLOAT_EQ(Base(pf, "x"), 7.0f);
+    ParameterFile bad;
+    EXPECT_FALSE(bad.Reload("{ nope", nullptr, 0, w, e));
+    EXPECT_FALSE(bad.IsLoaded());
 }

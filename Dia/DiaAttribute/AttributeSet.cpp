@@ -546,6 +546,90 @@ namespace Dia::Attribute {
         return true;
     }
 
+    bool AttributeSet::ReplaceSchemaAndValues(const AttributeSchema& schema, const float* values, uint32_t count)
+    {
+        if (count != schema.GetAttributeCount() || (values == nullptr && count > 0))
+            return false;
+
+        const uint32_t oldCount = mSlots.Size();
+
+        // Capture resolved values and a shallow copy of the old slots (they own the modifier entries) before
+        // anything changes. oldIndexOfNew[i] is the old slot index of new attribute i, or -1.
+        Dia::Core::Containers::DynamicArray<AttributeSlot> old(oldCount > 0 ? oldCount : 1);
+        Dia::Core::Containers::DynamicArray<float> before(oldCount > 0 ? oldCount : 1);
+        for (uint32_t i = 0; i < oldCount; ++i)
+        {
+            before.Add(ResolveValue(mSlots[i]));
+            old.Add(mSlots[i]);
+        }
+        Dia::Core::Containers::DynamicArray<int32_t> oldIndexOfNew(count > 0 ? count : 1);
+        Dia::Core::Containers::DynamicArray<bool> kept(oldCount > 0 ? oldCount : 1);
+        for (uint32_t i = 0; i < oldCount; ++i) kept.Add(false);
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const uint32_t* idx = mSlotIndexByName.TryGetItemConst(schema.GetAttributeByIndex(i).attribute_name);
+            oldIndexOfNew.Add(idx != nullptr ? static_cast<int32_t>(*idx) : -1);
+            if (idx != nullptr) kept[*idx] = true;
+        }
+
+        mSchemaName = schema.GetSchemaName();
+        mSlots.RemoveAll();
+        mSlotIndexByName.RemoveAll();
+        if (count > 0)
+        {
+            mSlots.Reserve(count);
+            if (!mSlotIndexByName.IsSizeSet())
+                mSlotIndexByName.SetSize(count, count);
+        }
+        // HashTable::SetSize is one-shot: reuse the (emptied) name map when it is big enough, else build a larger one.
+        const bool growMap = count > 0 && mSlotIndexByName.Capacity() < count;
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, uint32_t> grown;
+        if (growMap)
+            grown.SetSize(count, count);
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const AttributeDefinition& def = schema.GetAttributeByIndex(i);
+            AttributeSlot slot;
+            slot.name          = def.attribute_name;
+            slot.base_value    = values[i];
+            slot.minimum_value = def.minimum_value;
+            slot.maximum_value = def.maximum_value;
+            if (oldIndexOfNew[i] >= 0)
+                slot.modifiers = old[static_cast<uint32_t>(oldIndexOfNew[i])].modifiers;   // ownership moves here
+            mSlots.Add(slot);
+            if (growMap) grown.Add(def.attribute_name, i);
+            else         mSlotIndexByName.Add(def.attribute_name, i);
+        }
+        if (growMap)
+            mSlotIndexByName = grown;
+
+        // Modifiers whose attribute is gone: release their conditions and handles.
+        for (uint32_t s = 0; s < oldCount; ++s)
+        {
+            if (kept[s]) continue;
+            AttributeSlot& gone = old[s];
+            for (unsigned int m = 0; m < gone.modifiers.Size(); ++m)
+            {
+                delete gone.modifiers[m].parsed_condition;
+                gone.modifiers[m].parsed_condition = nullptr;
+                const ModifierHandle h = gone.modifiers[m].handle;
+                mModifierHandlePool.Free(Dia::Core::Handle<Dia::Core::StringCRC>(h.GetIndex(), h.GetGeneration()));
+            }
+            if (gone.modifiers.Size() > 0)
+                DIA_LOG_WARNING("Attribute", "AttributeSet::ReplaceSchemaAndValues: attribute '%s' no longer exists - %u modifier(s) dropped",
+                    gone.name.AsChar(), gone.modifiers.Size());
+        }
+
+        // Everything is committed; now notify, in index order, for kept attributes whose resolved value changed.
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (oldIndexOfNew[i] < 0) continue;
+            const AttributeSlot& slot = mSlots[i];
+            NotifyIfChanged(slot.name, slot, before[static_cast<uint32_t>(oldIndexOfNew[i])], ResolveValue(slot));
+        }
+        return true;
+    }
+
     bool AttributeSet::HasAttribute(Dia::Core::StringCRC attribute_name) const
     {
         return mSlotIndexByName.ContainsKey(attribute_name);
