@@ -644,6 +644,8 @@ PRODUCING_CASES = [
     D(E(min=NAN)),
     D(E(ui={"zzz": 1})),
     D(E(), E()),
+    D(E(bands={"p": [2, 1]})),
+    D(E(), constraints=[{"a": "k", "op": "=", "b": "k"}]),
     D(5),
     D(E(key=5)),
     D(E(), zzz=1),
@@ -682,3 +684,104 @@ def test_conformance_schema_fixtures_still_agree():
             continue
         out = [f for f in validate_schema_text((conf / name).read_text(encoding="utf-8"), name) if f.severity == "FAIL"]
         assert bool(out) == (not exp["ok"]), (name, [f.rule for f in out])
+
+
+# ---- bands / constraints edge cases (plan task 5) ----------------------------
+
+def _band_rules(**over):
+    return fail_rules(D(E(**over)))
+
+
+def test_band_lo_equals_hi_ok():
+    assert _band_rules(bands={"p": [2, 2]}) == []
+
+
+def test_band_empty_object_ok():
+    assert _band_rules(bands={}) == []
+
+
+def test_band_int_type_ok():
+    assert _band_rules(type="int", bands={"p": [1, 2]}) == []
+
+
+@pytest.mark.parametrize("val", [[NAN, 1], [0, INF], [-INF, 0]])
+def test_band_non_finite_rejected(val):
+    assert _band_rules(bands={"p": val}) == ["schema.bad-band"]
+
+
+@pytest.mark.parametrize("bands", [[1, 2], {"p": 1}, {"p": [1]}, {"p": [1, 2, 3]}, {"p": ["a", 1]},
+                                   {"p": [True, 1]}, {"p": None}])
+def test_band_wrong_shape_rejected(bands):
+    assert _band_rules(bands=bands) == ["schema.bad-band"]
+
+
+def test_band_lo_greater_than_hi_rejected():
+    assert _band_rules(bands={"p": [3, 2]}) == ["schema.bad-band"]
+
+
+@pytest.mark.parametrize("t", ["string", "bool"])
+def test_band_on_non_numeric_type_rejected(t):
+    assert _band_rules(type=t, bands={"p": [0, 1]}) == ["schema.bad-band"]
+
+
+def test_band_outside_min_or_max_rejected():
+    assert _band_rules(min=0, max=10, bands={"p": [-1, 5]}) == ["schema.bad-band"]
+    assert _band_rules(min=0, max=10, bands={"p": [5, 11]}) == ["schema.bad-band"]
+    assert _band_rules(min=0, max=10, bands={"p": [0, 10]}) == []
+
+
+def _cons(*entries, constraints):
+    return fail_rules(D(*entries, constraints=constraints))
+
+
+def test_constraint_all_ops_ok():
+    for op in ("<", "<=", ">", ">=", "==", "!="):
+        assert _cons(E(key="a"), E(key="b"), constraints=[{"a": "a", "op": op, "b": "b"}]) == []
+
+
+def test_constraints_empty_array_ok():
+    assert _cons(E(), constraints=[]) == []
+
+
+@pytest.mark.parametrize("c", [
+    {"a": "a", "op": "=", "b": "b"},
+    {"a": "a", "op": "<"},
+    {"op": "<", "b": "b"},
+    {"a": 1, "op": "<", "b": "b"},
+    {"a": "a", "op": "<", "b": None},
+    {"a": "a", "op": 3, "b": "b"},
+    {"a": "nope", "op": "<", "b": "b"},
+    {"a": "a", "op": "<", "b": "nope"},
+    "a<b",
+    None,
+])
+def test_constraint_bad_shapes_rejected(c):
+    assert _cons(E(key="a"), E(key="b"), constraints=[c]) == ["schema.bad-constraint"]
+
+
+def test_constraint_on_non_numeric_entry_rejected():
+    assert _cons(E(key="a"), E(key="s", type="string"), constraints=[{"a": "a", "op": "<", "b": "s"}]) == \
+        ["schema.bad-constraint"]
+    assert _cons(E(key="a"), E(key="f", type="bool"), constraints=[{"a": "f", "op": "==", "b": "a"}]) == \
+        ["schema.bad-constraint"]
+
+
+def _map(key, vt):
+    return E(key=key, type="map", keyRef="f/x", valueType=vt)
+
+
+def test_constraint_map_head_numeric_ok_and_non_numeric_rejected():
+    ok = {"a": "m.grass", "op": "<", "b": "m.tree"}
+    assert _cons(_map("m", "float"), constraints=[ok]) == []
+    assert _cons(_map("m", "int"), E(key="a"), constraints=[{"a": "m.x", "op": "<", "b": "a"}]) == []
+    assert _cons(_map("m", "string"), constraints=[ok]) == ["schema.bad-constraint"]
+    assert _cons(_map("m", "bool"), constraints=[ok]) == ["schema.bad-constraint"]
+
+
+def test_constraint_map_head_unknown_rejected():
+    assert _cons(_map("m", "float"), constraints=[{"a": "z.x", "op": "<", "b": "m.y"}]) == ["schema.bad-constraint"]
+
+
+@pytest.mark.parametrize("cs", [{"a": "a", "op": "<", "b": "b"}, "x", 3, None])
+def test_constraints_not_array_rejected(cs):
+    assert _cons(E(key="a"), E(key="b"), constraints=cs) == ["schema.bad-constraint"]

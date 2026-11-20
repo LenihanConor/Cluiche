@@ -15,14 +15,16 @@ from dia_cli.commands.validate.schema_cmd import Finding
 
 ENTRY_KEYS = ("key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
               "values", "affects", "related", "source", "unique", "required", "ref", "ui", "history",
-              "payload", "vocabulary", "keyRef", "valueType")
+              "payload", "vocabulary", "keyRef", "valueType", "bands")
 UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey",
            "delta_ramp", "default_base", "inset", "backdrop", "elevation_layer", "select_group")
 HISTORY_KEYS = ("track", "group", "aggregate")
-FILE_KEYS = ("format", "version", "for", "entries")
+FILE_KEYS = ("format", "version", "for", "entries", "constraints")
 KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_field")
 TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map")
 MAP_VALUE_TYPES = ("float", "int", "bool", "string", "enum")
+NUMERIC_TYPES = ("float", "int")
+CONSTRAINT_OPS = ("<", "<=", ">", ">=", "==", "!=")
 
 
 class _Stop(Exception):
@@ -124,6 +126,68 @@ def _check_type_specific(e: dict) -> None:
         raise _Stop("schema.enum-no-values", "enum type requires a 'values' array")
 
 
+def _check_bands(e: dict) -> None:
+    if "bands" not in e:
+        return
+    bands = e["bands"]
+    if not isinstance(bands, dict):
+        raise _Stop("schema.bad-band", "field 'bands' must be an object")
+    if e["type"] not in NUMERIC_TYPES:
+        raise _Stop("schema.bad-band", "field 'bands' is only valid on numeric (float, int) types")
+    for name, b in bands.items():
+        if not isinstance(b, list) or len(b) != 2:
+            raise _Stop("schema.bad-band", f"band '{name}' must be a [lo, hi] array")
+        lo, hi = b
+        if not _is_finite_number(lo) or not _is_finite_number(hi):
+            raise _Stop("schema.bad-band", f"band '{name}' bounds must be finite numbers")
+        if lo > hi:
+            raise _Stop("schema.bad-band", f"band '{name}' has lo greater than hi")
+        if "min" in e and lo < e["min"]:
+            raise _Stop("schema.bad-band", f"band '{name}' lies below 'min'")
+        if "max" in e and hi > e["max"]:
+            raise _Stop("schema.bad-band", f"band '{name}' lies above 'max'")
+
+
+def _numeric_heads(entries: list) -> set:
+    heads = set()
+    for e in entries:
+        if not isinstance(e, dict) or not isinstance(e.get("key"), str):
+            continue
+        t = e.get("type")
+        if t in NUMERIC_TYPES or (t == "map" and e.get("valueType") in NUMERIC_TYPES):
+            heads.add(e["key"])
+    return heads
+
+
+def _check_constraints(constraints: object, entries: list, fail) -> List[Finding]:
+    if not isinstance(constraints, list):
+        return [fail("schema.bad-constraint", "'constraints' must be an array")]
+    heads = _numeric_heads(entries)
+    out: List[Finding] = []
+    for i, c in enumerate(constraints):
+        name = f"constraints[{i}]"
+        label = "constraint"
+        problem = None
+        if not isinstance(c, dict):
+            problem = "must be an object {a, op, b}"
+        else:
+            a, b = c.get("a"), c.get("b")
+            op = c.get("op")
+            label = f"constraint '{a if isinstance(a, str) else '?'} {op if isinstance(op, str) else '?'} {b if isinstance(b, str) else '?'}'"
+            if not isinstance(a, str) or not isinstance(b, str):
+                problem = "'a' and 'b' must be strings"
+            elif not isinstance(c.get("op"), str) or c["op"] not in CONSTRAINT_OPS:
+                problem = "'op' must be one of <, <=, >, >=, ==, !="
+            else:
+                for side in (a, b):
+                    if side.partition(".")[0] not in heads:
+                        problem = f"'{side}' does not name a numeric entry"
+                        break
+        if problem:
+            out.append(fail("schema.bad-constraint", f"{label}: {problem}", name))
+    return out
+
+
 def _check_entry(e: object, file: str, warned: set, warnings: List[Finding]) -> str:
     """Validate one entry. Returns its key (or '') ; raises _Stop with the entry key attached."""
     if not isinstance(e, dict):
@@ -171,6 +235,7 @@ def _check_entry(e: object, file: str, warned: set, warnings: List[Finding]) -> 
         _check_enum_values(e)
         _check_event_list(e, "payload", "payload", ("name", "type", "description"), ("unit",), True)
         _check_event_list(e, "vocabulary", "vocabulary", ("id", "description"), ("label", "unit"), False)
+        _check_bands(e)
     except _Stop as s:
         s.key = key  # type: ignore[attr-defined]
         raise
@@ -209,6 +274,8 @@ def validate_schema_document(doc: object, file: str) -> List[Finding]:
         if full in seen:
             findings.append(fail("schema.duplicate-key", f"duplicate key '{full}' in this file", key))
         seen.add(full)
+    if "constraints" in doc:
+        findings.extend(_check_constraints(doc["constraints"], doc["entries"], fail))
     return findings
 
 

@@ -218,3 +218,29 @@ def test_does_not_mutate_input():
     before = copy.deepcopy(d)
     validate_schema_document(d, "f")
     assert d == before
+
+
+# ---- bands and constraints (parameter files, plan task 5) --------------------
+
+def test_bad_band_names_entry():
+    d = _doc(_entry(key="speed", min=0, max=10, bands={"slow": [5, 2]}))
+    f = _fails(d)
+    assert [x.rule for x in f] == ["schema.bad-band"]
+    assert f[0].key == "speed"
+
+
+def test_good_bands_accepted():
+    d = _doc(_entry(min=0, max=10, bands={"low": [0, 3], "high": [3, 10]}))
+    assert validate_schema_document(d, "f") == []
+
+
+def test_bad_constraint_names_constraint():
+    d = _doc(_entry(key="a"), _entry(key="b"), constraints=[{"a": "a", "op": "=", "b": "b"}])
+    f = _fails(d)
+    assert [x.rule for x in f] == ["schema.bad-constraint"]
+    assert "a" in f[0].message and "b" in f[0].message
+
+
+def test_good_constraint_accepted():
+    d = _doc(_entry(key="a"), _entry(key="b"), constraints=[{"a": "a", "op": "<=", "b": "b"}])
+    assert validate_schema_document(d, "f") == []
