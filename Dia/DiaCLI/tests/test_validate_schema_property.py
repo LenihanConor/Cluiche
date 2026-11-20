@@ -302,7 +302,7 @@ def test_f6_defaults_document_validates_clean(seed):
 def test_f6_perturbed_default_is_mismatch(seed):
     rng = random.Random(seed)
     for _ in range(20):
-        e = {"key": "k", "kind": "parameter", "label": "k", "description": "d", "type": "int", "default": 3,
+        e = {"key": "k", "kind": "field", "label": "k", "description": "d", "type": "int", "default": 3,
              "min": 0, "max": 10}
         idx = build_schema_index([{"format": "dia.value_schema", "version": 1, "for": "x", "entries": [e]}])
         v = rng.choice([v for v in range(0, 11) if v != 3])

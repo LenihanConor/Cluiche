@@ -645,6 +645,7 @@ PRODUCING_CASES = [
     D(E(ui={"zzz": 1})),
     D(E(), E()),
     D(E(bands={"p": [2, 1]})),
+    D(E(type="map", keyRef="a/b", valueType="float", default={"x": "s"})),
     D(E(), constraints=[{"a": "k", "op": "=", "b": "k"}]),
     D(5),
     D(E(key=5)),
@@ -785,3 +786,37 @@ def test_constraint_map_head_unknown_rejected():
 @pytest.mark.parametrize("cs", [{"a": "a", "op": "<", "b": "b"}, "x", 3, None])
 def test_constraints_not_array_rejected(cs):
     assert _cons(E(key="a"), E(key="b"), constraints=cs) == ["schema.bad-constraint"]
+
+
+# ---- map object defaults (plan task 6) ----------------------------------------
+
+def _mapd(vt, default, **over):
+    return E(key="m", type="map", keyRef="f/x", valueType=vt, default=default, **over)
+
+
+@pytest.mark.parametrize("vt,default,ok", [
+    ("float", {"a": 0.5}, True), ("float", {"a": True}, False), ("float", {"a": None}, False),
+    ("int", {"a": 2}, True), ("int", {"a": 2.0}, True), ("int", {"a": 2.5}, False),
+    ("bool", {"a": True}, True), ("bool", {"a": 1}, False),
+    ("string", {"a": "s"}, True), ("string", {"a": 1}, False),
+    ("enum", {"a": "s"}, True), ("enum", {"a": False}, False),
+    ("float", {}, True),
+])
+def test_map_default_value_types(vt, default, ok):
+    out = [f.rule for f in validate_schema_document(
+        {"format": "dia.value_schema", "version": 1, "for": "x", "entries": [_mapd(vt, default)]}, "f")
+        if f.severity == "FAIL"]
+    assert out == ([] if ok else ["schema.bad-map-default"])
+
+
+@pytest.mark.parametrize("v,ok", [(0, True), (1, True), (-0.1, False), (1.1, False)])
+def test_map_default_bounds_inclusive(v, ok):
+    d = {"format": "dia.value_schema", "version": 1, "for": "x", "entries": [_mapd("float", {"a": v}, min=0, max=1)]}
+    assert [f.rule for f in validate_schema_document(d, "f")] == ([] if ok else ["schema.bad-map-default"])
+
+
+def test_map_default_reports_first_bad_entry_only_and_continues_to_next_entry():
+    d = {"format": "dia.value_schema", "version": 1, "for": "x",
+         "entries": [_mapd("float", {"a": 5, "b": 6}, max=1), E(key="n", label=None)]}
+    out = validate_schema_document(d, "f")
+    assert [(f.rule, f.key) for f in out] == [("schema.bad-map-default", "m"), ("schema.wrong-type", "n")]

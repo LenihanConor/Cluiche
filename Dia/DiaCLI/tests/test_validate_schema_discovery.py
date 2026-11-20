@@ -30,7 +30,7 @@ def run(args, *, json_out=False):
 
 
 def basic_tree(root: Path, rate=0.5, default=0.5):
-    put(root, "Eco/eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=default)))
+    put(root, "Eco/eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=default)))
     put(root, "Eco/eco.json", {"format": "eco.params", "version": 1, "rate": rate})
 
 
@@ -212,3 +212,13 @@ def test_smoke_real_repo_no_args():
     assert r.exception is None or isinstance(r.exception, SystemExit)
     assert "Traceback" not in r.output
     assert "files checked" in r.output
+
+
+def test_schema_defaults_checks_run_in_discovery(tmp_path):
+    s = schema("eco.params", entry("lo", default=5), entry("hi", default=3), entry(
+        "aff", type="map", keyRef="eco.ids/ids[]", valueType="float", default={"Tundr": 1}))
+    s["constraints"] = [{"a": "lo", "op": "<=", "b": "hi"}]
+    put(tmp_path, "Eco/eco.schema.json", s)
+    put(tmp_path, "Eco/ids.json", {"format": "eco.ids", "version": 1, "ids": ["Tundra"]})
+    rules = sorted(f["rule"] for f in json.loads(run([str(tmp_path)], json_out=True).output))
+    assert "data.constraint-violated" in rules and "data.unresolved-map-key" in rules

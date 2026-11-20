@@ -1,0 +1,61 @@
+{
+  "description": "An object map default naming a key that is no id in its keyRef format is reported with a suggestion. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "affinity",
+          "kind": "parameter",
+          "label": "affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1,
+          "default": {
+            "Desert": 0.2,
+            "Tundr": 0.5
+          }
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.unresolved-map-key",
+      "file": "schemas[0]",
+      "key": "affinity",
+      "path": "default.Tundr",
+      "record": null,
+      "messageContains": "Tundr",
+      "suggestion": "Tundra"
+    }
+  ]
+}

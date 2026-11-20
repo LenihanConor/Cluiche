@@ -1,0 +1,34 @@
+{
+  "description": "A defaults-file value that differs from the schema default is NOT flagged for kind parameter entries (only field entries).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "rate",
+          "kind": "parameter",
+          "label": "rate",
+          "description": "d",
+          "type": "float",
+          "default": 1,
+          "min": 0,
+          "max": 2
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Params/params.json",
+      "pack": false,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "rate": 1.5
+      }
+    }
+  ],
+  "expected": []
+}

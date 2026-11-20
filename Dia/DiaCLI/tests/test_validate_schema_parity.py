@@ -14,7 +14,8 @@ from pathlib import Path
 import pytest
 
 from dia_cli.commands.validate.data_rules import (
-    DataContext, build_schema_index, validate_data_document, validate_schema_references)
+    DataContext, build_schema_index, validate_data_document, validate_schema_defaults,
+    validate_schema_references)
 from dia_cli.commands.validate.schema_rules import validate_schema_document, validate_schema_text
 from dia_cli.utils.repo_root import find_repo_root
 
@@ -56,6 +57,7 @@ def evaluate_case(case: dict) -> list:
         actual += validate_data_document(f["content"], f["name"], index, is_pack=f["pack"], context=ctx)
     names = {id(s): f"schemas[{i}]" for i, s in enumerate(case["schemas"])}
     actual += validate_schema_references(case["schemas"], names)
+    actual += validate_schema_defaults(case["schemas"], names, ctx)
     return actual
 
 

@@ -148,6 +148,32 @@ def _check_bands(e: dict) -> None:
             raise _Stop("schema.bad-band", f"band '{name}' lies above 'max'")
 
 
+def _check_map_default(e: dict) -> None:
+    """An object `default` on a map entry: each value checked against valueType, min and max (as the C++ loader).
+
+    An object default on a non-map entry is ignored, exactly as the loader ignores it."""
+    d = e.get("default")
+    if e["type"] != "map" or not isinstance(d, dict):
+        return
+    vt = e["valueType"]
+    for name, v in d.items():
+        what = f"map default '{name}'"
+        if vt in NUMERIC_TYPES:
+            if not _is_finite_number(v):
+                raise _Stop("schema.bad-map-default", f"{what} must be a number (field 'default')")
+            if vt == "int" and v != math.floor(v):
+                raise _Stop("schema.bad-map-default", f"{what} must be a whole number (field 'default')")
+            if "min" in e and v < e["min"]:
+                raise _Stop("schema.bad-map-default", f"{what} (field 'default') is below 'min'")
+            if "max" in e and v > e["max"]:
+                raise _Stop("schema.bad-map-default", f"{what} (field 'default') is above 'max'")
+        elif vt == "bool":
+            if not isinstance(v, bool):
+                raise _Stop("schema.bad-map-default", f"{what} must be a boolean (field 'default')")
+        elif not isinstance(v, str):
+            raise _Stop("schema.bad-map-default", f"{what} must be a string (field 'default')")
+
+
 def _numeric_heads(entries: list) -> set:
     heads = set()
     for e in entries:
@@ -236,6 +262,7 @@ def _check_entry(e: object, file: str, warned: set, warnings: List[Finding]) -> 
         _check_event_list(e, "payload", "payload", ("name", "type", "description"), ("unit",), True)
         _check_event_list(e, "vocabulary", "vocabulary", ("id", "description"), ("label", "unit"), False)
         _check_bands(e)
+        _check_map_default(e)
     except _Stop as s:
         s.key = key  # type: ignore[attr-defined]
         raise

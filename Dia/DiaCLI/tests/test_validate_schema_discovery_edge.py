@@ -11,7 +11,7 @@ import pytest
 from dia_cli.commands.validate import schema_discovery
 from tests.vs_helpers import basic_tree, entry, findings, invoke, put, repo, rules_by_file, schema
 
-ECO = schema("eco.params", entry("rate", min=0, max=1, default=0.5))
+ECO = schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5))
 DATA = {"format": "eco.params", "version": 1, "rate": 0.5}
 
 
@@ -144,7 +144,7 @@ def _mismatch_files(args):
 
 @pytest.mark.parametrize("seg", ["Packs", "packs", "PACKS", "PaCkS"])
 def test_x5_packs_segment_case_insensitive(tmp_path, seg):
-    put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     put(tmp_path, f"Eco/{seg}/p.json", PACK_DATA)
     put(tmp_path, f"Eco/{seg}/deep/er/q.json", PACK_DATA)
     put(tmp_path, "Eco/plain.json", PACK_DATA)
@@ -153,7 +153,7 @@ def test_x5_packs_segment_case_insensitive(tmp_path, seg):
 
 @pytest.mark.parametrize("seg", ["Packs.json", "NotPacks", "Packs2", "MyPacks", "Pack", "packs.d"])
 def test_x5_only_a_whole_segment_named_packs_is_a_pack(tmp_path, seg):
-    put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     if seg.endswith(".json"):
         put(tmp_path, f"Eco/{seg}", PACK_DATA)
     else:
@@ -164,7 +164,7 @@ def test_x5_only_a_whole_segment_named_packs_is_a_pack(tmp_path, seg):
 @pytest.mark.parametrize("name", ["Packs", "packs", "PACKS"])
 def test_b4_folder_path_that_is_itself_packs(tmp_path, name):
     folder = tmp_path / name
-    put(folder, "eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    put(folder, "eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     put(folder, "p.json", PACK_DATA)
     put(folder, "sub/q.json", PACK_DATA)
     assert _mismatch_files([str(folder)]) == []
@@ -172,13 +172,13 @@ def test_b4_folder_path_that_is_itself_packs(tmp_path, name):
 
 def test_b4_folder_not_named_packs_still_checks_defaults(tmp_path):
     folder = tmp_path / "Data"
-    put(folder, "eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    put(folder, "eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     put(folder, "p.json", PACK_DATA)
     assert _mismatch_files([str(folder)]) == ["p.json"]
 
 
 def test_b4_explicit_file_under_packs_subfolder_matches_folder_mode(tmp_path):
-    sch = put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    sch = put(tmp_path, "Eco/eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     f = put(tmp_path, "Eco/Packs/sub/x.json", PACK_DATA)
     g = put(tmp_path, "Eco/Other/y.json", PACK_DATA)
     assert _mismatch_files([str(tmp_path)]) == ["Eco/Other/y.json"]
@@ -187,7 +187,7 @@ def test_b4_explicit_file_under_packs_subfolder_matches_folder_mode(tmp_path):
 
 
 def test_b4_explicit_file_directly_in_packs(tmp_path):
-    sch = put(tmp_path, "eco.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
+    sch = put(tmp_path, "eco.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
     f = put(tmp_path, "Packs/x.json", PACK_DATA)
     assert _mismatch_files([str(sch), str(f)]) == []
 
@@ -232,8 +232,8 @@ def test_b5_no_data_at_all_gives_ref_format_missing_warn(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_x7_same_for_merges_first_by_sorted_name_wins_and_cross_file_duplicate_fails(tmp_path):
-    put(tmp_path, "A/a.schema.json", schema("eco.params", entry("rate", min=0, max=1, default=0.5)))
-    put(tmp_path, "B/b.schema.json", schema("eco.params", entry("rate", min=0, max=5, default=0.5),
+    put(tmp_path, "A/a.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=1, default=0.5)))
+    put(tmp_path, "B/b.schema.json", schema("eco.params", entry("rate", kind="field", min=0, max=5, default=0.5),
                                             entry("extra", min=0, max=1, default=0.5)))
     put(tmp_path, "C/d.json", {"format": "eco.params", "version": 1, "rate": 3, "extra": 0.5})
     data = findings([str(tmp_path)])

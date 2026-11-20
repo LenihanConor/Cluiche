@@ -1,0 +1,47 @@
+{
+  "description": "A pack that keeps every constraint satisfied is clean.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "constraints": [
+        {
+          "a": "lo",
+          "op": "<=",
+          "b": "hi"
+        }
+      ],
+      "entries": [
+        {
+          "key": "lo",
+          "kind": "parameter",
+          "label": "lo",
+          "description": "d",
+          "type": "float",
+          "default": 1
+        },
+        {
+          "key": "hi",
+          "kind": "parameter",
+          "label": "hi",
+          "description": "d",
+          "type": "float",
+          "default": 3
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Params/Packs/pack.json",
+      "pack": true,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "hi": 2
+      }
+    }
+  ],
+  "expected": []
+}

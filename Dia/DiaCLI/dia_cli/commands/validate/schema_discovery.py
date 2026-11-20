@@ -12,6 +12,7 @@ from dia_cli.commands.validate.data_rules import (
     DataContext,
     build_schema_index,
     validate_data_document,
+    validate_schema_defaults,
     validate_schema_references,
 )
 from dia_cli.commands.validate.schema_cmd import CheckedFiles, Finding
@@ -289,6 +290,7 @@ def run_scan(units: List[_Unit], exclude: Optional[Path] = None) -> Tuple[List[F
         data_docs.append((s, doc))
 
     context = DataContext.from_files((s.name, d, s.is_pack) for s, d in id_sources)
+    findings.extend(validate_schema_defaults((d for _, d in usable), file_by_doc, context))
     for s, doc in data_docs:
         try:
             findings.extend(validate_data_document(doc, s.name, index, is_pack=s.is_pack, context=context))

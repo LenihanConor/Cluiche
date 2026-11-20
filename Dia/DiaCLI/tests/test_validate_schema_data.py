@@ -6,7 +6,8 @@ import json
 import pytest
 
 from dia_cli.commands.validate.data_rules import (
-    KNOWN_RAMPS, DataContext, build_schema_index, validate_data_document, validate_schema_references)
+    KNOWN_RAMPS, DataContext, build_schema_index, validate_data_document, validate_schema_defaults,
+    validate_schema_references)
 from dia_cli.utils.repo_root import find_repo_root
 
 DATA_DIR = find_repo_root(__file__) / "Dia" / "DiaValueSchema" / "Testing" / "Conformance" / "data"
@@ -22,7 +23,7 @@ def _norm_actual(f) -> tuple:
 
 
 def test_fixture_cases_exist():
-    assert len(CASES) >= 24
+    assert len(CASES) >= 30
 
 
 @pytest.mark.parametrize("case_file", CASES, ids=[c.name for c in CASES])
@@ -35,6 +36,7 @@ def test_case(case_file):
         actual += validate_data_document(fl["content"], fl["name"], index, is_pack=fl["pack"], context=ctx)
     names = {id(s): f"schemas[{i}]" for i, s in enumerate(case["schemas"])}
     actual += validate_schema_references(case["schemas"], names)
+    actual += validate_schema_defaults(case["schemas"], names, ctx)
     expected = case["expected"] + case.get("schemaExpected", [])
     assert len(actual) == len(expected), [(_norm_actual(a), a.message) for a in actual]
     remaining = list(actual)
@@ -167,3 +169,99 @@ def test_schema_unknown_ramp_and_custom_known_set():
     assert [f.rule for f in validate_schema_references(docs, {})] == ["schema.unknown-ramp"]
     assert validate_schema_references(docs, {}, known_ramps={"mine"}) == []
     assert "categorical.12" in KNOWN_RAMPS
+
+
+# ---- constraints and map defaults (parameter files, plan task 6) -------------
+
+def _cons(*cs):
+    return [{"a": a, "op": op, "b": b} for a, op, b in cs]
+
+
+def _sch(*entries, constraints=None):
+    d = _schema(*entries, for_="f.x")
+    if constraints is not None:
+        d["constraints"] = _cons(*constraints)
+    return d
+
+
+def _pack(schema, content):
+    idx = build_schema_index([schema])
+    return validate_data_document(dict({"format": "f.x", "version": 1}, **content), "p.json", idx, is_pack=True)
+
+
+def _defaults(schema, files=()):
+    ctx = DataContext.from_files(files)
+    return validate_schema_defaults([schema], {id(schema): "s.json"}, ctx)
+
+
+@pytest.mark.parametrize("op,a,b,violated", [
+    ("<", 1, 2, False), ("<", 2, 2, True), ("<=", 2, 2, False), ("<=", 3, 2, True),
+    (">", 2, 1, False), (">", 2, 2, True), (">=", 2, 2, False), (">=", 1, 2, True),
+    ("==", 2, 2, False), ("==", 1, 2, True), ("!=", 1, 2, False), ("!=", 2, 2, True),
+])
+def test_constraint_ops_on_defaults(op, a, b, violated):
+    s = _sch(_e("a", default=a), _e("b", default=b), constraints=[("a", op, "b")])
+    out = _defaults(s)
+    assert [f.rule for f in out] == (["data.constraint-violated"] if violated else [])
+    if violated:
+        assert out[0].key == "a" and "'a'" in out[0].message and "'b'" in out[0].message
+
+
+def test_constraint_with_missing_default_operand_is_not_checked():
+    assert _defaults(_sch(_e("a", default=5), _e("b"), constraints=[("a", "<", "b")])) == []
+
+
+def test_pack_checks_merge_of_defaults_and_pack():
+    s = _sch(_e("a", default=1), _e("b", default=3), constraints=[("a", "<=", "b")])
+    assert _pack(s, {"b": 2}) == []
+    out = _pack(s, {"b": 0.5})
+    assert [(f.rule, f.key) for f in out] == [("data.constraint-violated", "a")]
+    assert "'b'" in out[0].message
+    out = _pack(s, {"a": 9})
+    assert [f.rule for f in out] == ["data.constraint-violated"]
+
+
+def test_pack_without_either_operand_is_not_blamed_for_default_breakage():
+    s = _sch(_e("a", default=5), _e("b", default=3), _e("c", default=1), constraints=[("a", "<=", "b")])
+    assert _pack(s, {"c": 2}) == []
+
+
+def test_pack_both_operands_from_pack_without_defaults():
+    s = _sch(_e("a"), _e("b"), constraints=[("a", "<", "b")])
+    assert [f.rule for f in _pack(s, {"a": 2, "b": 1})] == ["data.constraint-violated"]
+    assert _pack(s, {"a": 2}) == []
+
+
+def test_pack_nested_dotted_keys_and_map_columns():
+    s = _sch(_e("g.lo", default=1), _e("m", "map", keyRef="f.k/ids", valueType="float", default={"X": 5}),
+             constraints=[("g.lo", "<", "m.X")])
+    assert _pack(s, {"g": {"lo": 2}}) == []
+    assert [f.rule for f in _pack(s, {"g": {"lo": 9}})] == ["data.constraint-violated"]
+    assert [f.rule for f in _pack(s, {"m": {"X": 0}})] == ["data.constraint-violated"]
+
+
+def test_pack_non_numeric_values_are_ignored_by_constraints():
+    s = _sch(_e("a", default=1), _e("b", default=3), constraints=[("a", "<=", "b")])
+    assert [f.rule for f in _pack(s, {"b": "x"})] == ["data.wrong-type"]
+    assert [f.rule for f in _pack(s, {"b": True})] == ["data.wrong-type"]
+
+
+def test_map_default_unresolved_key_with_suggestion_and_resolved_ok():
+    s = _sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default={"Desert": 1, "Tundr": 2}))
+    files = [("k.json", {"format": "f.k", "ids": ["Desert", "Tundra"]}, False)]
+    out = _defaults(s, files)
+    assert [(f.rule, f.file, f.key, f.path, f.suggestion) for f in out] ==         [("data.unresolved-map-key", "s.json", "m", "default.Tundr", "Tundra")]
+    assert _defaults(_sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default={"Desert": 1})), files) == []
+
+
+def test_map_default_keys_not_checked_without_key_data_and_scalar_defaults_ignored():
+    s = _sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default={"Z": 1}))
+    assert _defaults(s) == []
+    assert _defaults(_sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default=1)),
+                     [("k.json", {"format": "f.k", "ids": ["A"]}, False)]) == []
+
+
+def test_default_mismatch_only_for_field_entries():
+    idx = build_schema_index([_sch(_e("p", default=1), _e("f", kind="field", default=1))])
+    out = validate_data_document({"format": "f.x", "version": 1, "p": 2, "f": 2}, "d.json", idx, is_pack=False)
+    assert [(f.rule, f.key) for f in out] == [("data.default-mismatch", "f")]

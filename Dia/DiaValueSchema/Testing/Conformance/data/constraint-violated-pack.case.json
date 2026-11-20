@@ -1,0 +1,58 @@
+{
+  "description": "A pack value that breaks a constraint against the (default or pack) other operand names both keys.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "constraints": [
+        {
+          "a": "lo",
+          "op": "<=",
+          "b": "hi"
+        }
+      ],
+      "entries": [
+        {
+          "key": "lo",
+          "kind": "parameter",
+          "label": "lo",
+          "description": "d",
+          "type": "float",
+          "default": 1
+        },
+        {
+          "key": "hi",
+          "kind": "parameter",
+          "label": "hi",
+          "description": "d",
+          "type": "float",
+          "default": 3
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Params/Packs/pack.json",
+      "pack": true,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "hi": 0.5
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.constraint-violated",
+      "file": "Global/Params/Packs/pack.json",
+      "key": "lo",
+      "path": "hi",
+      "record": null,
+      "messageContains": "hi",
+      "suggestion": null
+    }
+  ]
+}

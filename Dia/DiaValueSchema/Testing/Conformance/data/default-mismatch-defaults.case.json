@@ -8,7 +8,7 @@
       "entries": [
         {
           "key": "grazing.rate",
-          "kind": "parameter",
+          "kind": "field",
           "label": "grazing.rate",
           "description": "d",
           "type": "float",
@@ -18,14 +18,14 @@
         },
         {
           "key": "grazing.juvenile_rate_scale",
-          "kind": "parameter",
+          "kind": "field",
           "label": "grazing.juvenile_rate_scale",
           "description": "d",
           "type": "float"
         },
         {
           "key": "mode",
-          "kind": "parameter",
+          "kind": "field",
           "label": "mode",
           "description": "d",
           "type": "enum",
@@ -41,7 +41,7 @@
         },
         {
           "key": "count",
-          "kind": "parameter",
+          "kind": "field",
           "label": "count",
           "description": "d",
           "type": "int",
@@ -49,7 +49,7 @@
         },
         {
           "key": "enabled",
-          "kind": "parameter",
+          "kind": "field",
           "label": "enabled",
           "description": "d",
           "type": "bool",
@@ -57,7 +57,7 @@
         },
         {
           "key": "name",
-          "kind": "parameter",
+          "kind": "field",
           "label": "name",
           "description": "d",
           "type": "string"

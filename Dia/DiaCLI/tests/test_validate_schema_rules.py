@@ -244,3 +244,30 @@ def test_bad_constraint_names_constraint():
 def test_good_constraint_accepted():
     d = _doc(_entry(key="a"), _entry(key="b"), constraints=[{"a": "a", "op": "<=", "b": "b"}])
     assert validate_schema_document(d, "f") == []
+
+
+# ---- map object defaults (parameter files, plan task 6) -----------------------
+
+def _map_entry(**over):
+    return _entry(key="k", type="map", keyRef="cow.biomes/biomes[].id", valueType="float", min=0, max=1, **over)
+
+
+def test_map_default_out_of_range_names_entry_and_map_key():
+    f = _fails(_doc(_map_entry(default={"A": 0.5, "B": 2})))
+    assert [x.rule for x in f] == ["schema.bad-map-default"]
+    assert f[0].key == "k" and "map default 'B'" in f[0].message
+
+
+def test_map_default_wrong_type_names_map_key():
+    f = _fails(_doc(_map_entry(default={"A": "x"})))
+    assert [x.rule for x in f] == ["schema.bad-map-default"]
+    assert "map default 'A'" in f[0].message
+
+
+def test_good_map_default_accepted():
+    assert validate_schema_document(_doc(_map_entry(default={"A": 0.5, "B": 1})), "f") == []
+
+
+def test_object_default_on_non_map_is_ignored_and_scalar_default_on_map_is_accepted():
+    assert validate_schema_document(_doc(_entry(default={"A": 99})), "f") == []
+    assert validate_schema_document(_doc(_map_entry(default=0.5)), "f") == []

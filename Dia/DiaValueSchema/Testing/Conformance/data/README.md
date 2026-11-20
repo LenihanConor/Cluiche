@@ -23,9 +23,11 @@ Self-contained scenarios for the data-file rules of `dia validate schema`. Consu
 
 ## Rule ids
 
-Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`.
+Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`, `data.constraint-violated`. `data.default-mismatch` applies to `kind: field` entries only. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`.
 
 ## Rules
 
+- Schema-level default checks (`data.unresolved-map-key` for object map defaults, `data.constraint-violated` on defaults) go in `schemaExpected`; a violated constraint on a pack is reported on the pack file.
+- The `cow.biomes` file (ids TemperateForest, Desert, Tundra) in the map cases is the shared keyRef key data file; the C++ conformance tests reuse it.
 - A new data rule must add a fixture here.
 - These are data files: they are not listed in any vcxproj.

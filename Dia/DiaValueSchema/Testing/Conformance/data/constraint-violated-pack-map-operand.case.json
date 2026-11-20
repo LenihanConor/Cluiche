@@ -1,0 +1,85 @@
+{
+  "description": "A constraint operand '<key>.<mapKey>' addresses a map column; a pack value for that map key breaks it. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "constraints": [
+        {
+          "a": "lo",
+          "op": "<=",
+          "b": "affinity.Desert"
+        }
+      ],
+      "entries": [
+        {
+          "key": "lo",
+          "kind": "parameter",
+          "label": "lo",
+          "description": "d",
+          "type": "float",
+          "default": 0.5
+        },
+        {
+          "key": "affinity",
+          "kind": "parameter",
+          "label": "affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1,
+          "default": {
+            "Desert": 0.8
+          }
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Global/Params/Packs/pack.json",
+      "pack": true,
+      "content": {
+        "format": "cow.params",
+        "version": 1,
+        "affinity": {
+          "Desert": 0.1
+        }
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.constraint-violated",
+      "file": "Global/Params/Packs/pack.json",
+      "key": "lo",
+      "path": "affinity.Desert",
+      "record": null,
+      "messageContains": "affinity.Desert",
+      "suggestion": null
+    }
+  ]
+}

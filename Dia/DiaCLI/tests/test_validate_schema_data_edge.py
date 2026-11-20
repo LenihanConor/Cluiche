@@ -671,19 +671,19 @@ def test_default_comparison(default, val, mismatch):
         t = "string"
     if isinstance(default, bool) != isinstance(val, bool):
         t = "bool" if isinstance(val, bool) else "float"
-    out = run([E("a", t, default=default)], {"a": val})
+    out = run([E("a", t, kind="field", default=default)], {"a": val})
     if t == "bool" and not isinstance(default, bool) or (t == "float" and isinstance(val, bool)):
         return  # type error path covered elsewhere
     assert [f.rule for f in out] == (["data.default-mismatch"] if mismatch else [])
 
 
 def test_default_true_vs_one_mismatch_for_bool_entry():
-    out = run([E("a", "bool", default=True)], {"a": False})
+    out = run([E("a", "bool", kind="field", default=True)], {"a": False})
     one(out, "data.default-mismatch")
 
 
 def test_default_list():
-    e = E("a", "ref[]", ref="f/p", default=["x"])
+    e = E("a", "ref[]", kind="field", ref="f/p", default=["x"])
     assert run([e], {"a": ["x"]}) == []
     one(run([e], {"a": ["y"]}), "data.default-mismatch")
     one(run([e], {"a": []}), "data.default-mismatch")
@@ -704,7 +704,7 @@ def test_default_not_compared_when_ref_unresolved():
 
 
 def test_default_mismatch_on_record_table_column_pin():  # PIN (B10)
-    out = run([E("a[].v", default=1)], {"a": [{"v": 1}, {"v": 2}]})
+    out = run([E("a[].v", kind="field", default=1)], {"a": [{"v": 1}, {"v": 2}]})
     assert rp(out) == [("data.default-mismatch", "a[].v", "a[1].v")]
 
 

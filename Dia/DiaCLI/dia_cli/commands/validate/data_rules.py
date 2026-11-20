@@ -85,14 +85,73 @@ class DataContext:
         return out
 
 
+CONSTRAINT_OPS = {
+    "<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a > b,
+    ">=": lambda a, b: a >= b, "==": lambda a, b: a == b, "!=": lambda a, b: a != b,
+}
+
+
+def _well_formed_constraints(doc: dict) -> List[dict]:
+    """Constraints with string a/b and a known op; malformed ones are schema.bad-constraint's concern."""
+    cs = doc.get("constraints")
+    if not isinstance(cs, list):
+        return []
+    return [c for c in cs if isinstance(c, dict) and isinstance(c.get("a"), str) and isinstance(c.get("b"), str)
+            and c.get("op") in CONSTRAINT_OPS]
+
+
+def _numeric(v: object) -> bool:
+    return _is_number(v) and _is_finite(v)
+
+
+def _default_values(entries: Iterable[dict]) -> Dict[str, float]:
+    """Numeric defaults by operand key: '<key>' for scalars, '<key>.<mapKey>' for object map defaults."""
+    out: Dict[str, float] = {}
+    for e in entries:
+        if not isinstance(e, dict) or not isinstance(e.get("key"), str) or e.get("kind") not in DATA_KINDS:
+            continue
+        d = e.get("default")
+        if isinstance(d, dict) and e.get("type") == "map":
+            out.update({f"{e['key']}.{k}": v for k, v in d.items() if _numeric(v)})
+        elif not isinstance(d, dict) and _numeric(d):
+            out[e["key"]] = d
+    return out
+
+
+def _flatten(node: dict, prefix: str = "") -> Dict[str, float]:
+    """Numeric leaves of a data document by dotted key (map columns come out as '<key>.<mapKey>')."""
+    out: Dict[str, float] = {}
+    for name, v in node.items():
+        if not prefix and name in ENVELOPE_KEYS + ("basedOn",):
+            continue
+        key = f"{prefix}{name}"
+        if isinstance(v, dict):
+            out.update(_flatten(v, key + "."))
+        elif _numeric(v):
+            out[key] = v
+    return out
+
+
+def _violated(c: dict, values: Mapping[str, float]) -> bool:
+    a, b = values.get(c["a"]), values.get(c["b"])
+    return a is not None and b is not None and not CONSTRAINT_OPS[c["op"]](a, b)
+
+
+def _constraint_message(c: dict, values: Mapping[str, float]) -> str:
+    return (f"constraint '{c['a']} {c['op']} {c['b']}' violated: "
+            f"'{c['a']}' = {_fmt(values[c['a']])}, '{c['b']}' = {_fmt(values[c['b']])}")
+
+
 class SchemaIndex:
     """Parameter/field entries per data-file format, keyed by full (record-path) key."""
 
     def __init__(self) -> None:
         self._by_format: Dict[str, Dict[str, dict]] = {}
+        self._constraints: Dict[str, List[dict]] = {}
 
     def add(self, doc: dict) -> None:
         table = self._by_format.setdefault(doc["for"], {})
+        self._constraints.setdefault(doc["for"], []).extend(_well_formed_constraints(doc))
         entries = doc.get("entries")
         for e in entries if isinstance(entries, list) else []:
             if isinstance(e, dict) and e.get("kind") in DATA_KINDS and isinstance(e.get("key"), str)                     and isinstance(e.get("type"), str):
@@ -100,6 +159,9 @@ class SchemaIndex:
 
     def has_format(self, fmt: object) -> bool:
         return isinstance(fmt, str) and fmt in self._by_format
+
+    def constraints_for(self, fmt: object) -> List[dict]:
+        return self._constraints.get(fmt, []) if isinstance(fmt, str) else []
 
     def entries_for(self, fmt: object) -> Dict[str, dict]:
         return self._by_format.get(fmt, {}) if isinstance(fmt, str) else {}
@@ -281,7 +343,8 @@ class _Walker:
                                   + format_suggestion(s), s)
                 if bad:
                     return
-        if not self.is_pack and "default" in entry and not _same(entry["default"], val):
+        if not self.is_pack and entry.get("kind") != "parameter" and "default" in entry \
+                and not _same(entry["default"], val):
             self._add("data.default-mismatch", key, path, record,
                       f"'{key}' = {_fmt(val)} differs from schema default {_fmt(entry['default'])}")
 
@@ -323,7 +386,22 @@ def validate_data_document(doc: object, file: str, schemas: SchemaIndex, *, is_p
         return []
     w = _Walker(file, entries, is_pack, context)
     w.walk(doc, "", "", None)
+    if is_pack:
+        w.out.extend(_pack_constraint_findings(doc, file, entries, schemas.constraints_for(doc.get("format"))))
     return w.out
+
+
+def _pack_constraint_findings(doc: dict, file: str, entries: Dict[str, dict],
+                              constraints: List[dict]) -> List[Finding]:
+    """Constraints on the pack merged over the schema defaults; only those a pack value takes part in."""
+    pack = _flatten(doc)
+    merged = {**_default_values(entries.values()), **pack}
+    out: List[Finding] = []
+    for c in constraints:
+        if (c["a"] in pack or c["b"] in pack) and _violated(c, merged):
+            out.append(Finding("FAIL", "data.constraint-violated", file, c["a"], _constraint_message(c, merged),
+                               None, c["a"] if c["a"] in pack else c["b"], None))
+    return out
 
 
 def _entries_of(doc: dict) -> list:
@@ -373,4 +451,41 @@ def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping
                 out.append(Finding("FAIL", "schema.unknown-ramp", file, e["key"],
                                    f"'{e['key']}' ui.ramp '{ramp}' is not a known ramp ({', '.join(sorted(ramps))})",
                                    None, "ui.ramp", None))
+    return out
+
+
+def validate_schema_defaults(schema_docs: Iterable[dict], file_by_doc: Mapping[int, str],
+                             context: Optional[DataContext] = None) -> List[Finding]:
+    """Schema-level checks on defaults: object map default keys resolve through keyRef
+    (data.unresolved-map-key) and the defaults satisfy the constraints (data.constraint-violated).
+
+    A map default is only checked when its keyRef format has documents in the context.
+    """
+    out: List[Finding] = []
+    for d in schema_docs:
+        if not isinstance(d, dict) or not isinstance(d.get("for"), str):
+            continue
+        file = file_by_doc.get(id(d), "")
+        for e in _entries_of(d):
+            if not isinstance(e, dict) or e.get("type") != "map" or not isinstance(e.get("default"), dict) \
+                    or not isinstance(e.get("key"), str) or context is None:
+                continue
+            values = context.values_at(e.get("keyRef"))
+            if values is None:
+                continue
+            ids = [x for x in values if isinstance(x, str)]
+            for mk in e["default"]:
+                if mk in ids:
+                    continue
+                s = suggest(mk, ids)
+                out.append(Finding("FAIL", "data.unresolved-map-key", file, e["key"],
+                                   f"'{e['key']}' default key '{mk}' matches no id in {e.get('keyRef')}"
+                                   + format_suggestion(s), s, f"default.{mk}", None))
+        values = _default_values(_entries_of(d))
+        cs = d.get("constraints")
+        for i, c in enumerate(cs if isinstance(cs, list) else []):
+            if isinstance(c, dict) and isinstance(c.get("a"), str) and isinstance(c.get("b"), str) \
+                    and c.get("op") in CONSTRAINT_OPS and _violated(c, values):
+                out.append(Finding("FAIL", "data.constraint-violated", file, c["a"], _constraint_message(c, values),
+                                   None, f"constraints[{i}]", None))
     return out
