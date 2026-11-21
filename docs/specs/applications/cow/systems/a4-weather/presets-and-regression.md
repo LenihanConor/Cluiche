@@ -218,3 +218,7 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [presets-and-regression.plan.md](presets-and-regression.plan.md) (written 2026-11-16, not started). **Tuning log:** empty.
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+## Draoi layer amendment (2026-11-21)
+
+The pure-simulation part of this feature moves into `DraoiHexWorldWeather` with the rest of the A4 sim; the stage adapter, commands, save participant, debug wiring and content data stay in CoW. The split follows the "Draoi layer amendment" in @docs/specs/applications/cow/systems/a4-weather/a4-weather.md. The detailed section-by-section split is written when this feature is planned (#6 in the build order), not now.

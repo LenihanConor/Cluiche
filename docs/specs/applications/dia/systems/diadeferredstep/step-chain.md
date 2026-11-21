@@ -1,7 +1,7 @@
 # Feature Spec: Step Chain (generic ordered stages on one channel)
 
 **Parent:** @docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md (Feature 6)
-**Status:** `Draft` (interview answered 2026-11-21; needs approval and an AD-001 sign-off before build)
+**Status:** `Approved` (2026-11-21; AD-001 sign-off for the new `DiaDeferredStep` headers given the same day)
 **Origin:** Draoi layer audit (@docs/specs/applications/draoi/draoi.md). CoW's `Shared/WorldStep/` was audited as pure mechanism with no world knowledge.
 **Depends on:** Features 1 and 3 (scheduler, `IParallelExecutor`, save participant). Reopens a system whose Features 1 to 5 are Done: this adds Feature 6 and does not change Features 1 to 5.
 
