@@ -168,6 +168,7 @@
     <ClInclude Include="Shared\WorldStep\WorldStepChain.h" />
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h" />
     <ClInclude Include="Shared\WorldStep\IWorldStepListener.h" />
+    <ClInclude Include="Shared\World\CellVocabulary.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

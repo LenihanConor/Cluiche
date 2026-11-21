@@ -7,7 +7,7 @@
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/Strings/String256.h>
-#include <Shared/WorldGeneration/TerrainEnums.h>
+#include <Shared/World/CellVocabulary.h>
 
 #include <cstdint>
 #include <memory>
@@ -15,7 +15,7 @@
 namespace CoW {
 namespace World {
 
-// BiomeIndex / kNoBiome are declared in WorldGeneration/TerrainEnums.h (Cell stores a BiomeIndex; avoids a circular include).
+// BiomeIndex / kNoBiome are declared in World/CellVocabulary.h (Cell stores a BiomeIndex; avoids a circular include).
 
 using TagId = uint8_t;
 constexpr TagId kNoTag = 0xFF;
