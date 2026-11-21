@@ -45,6 +45,8 @@ Tests moving: `TestBiomeRegistry`, `TestBiomeRegistryData`, `TestBiomeRegistryEd
 ### Namespace
 Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unchanged). Decision (user, 2026-11-21): rename to `Draoi::HexWorld` as part of task 5, a separate commit.
 
+**Placement rule (user, 2026-11-21: core is the shared base, not an "uber" package).** `DraoiHexWorld` holds only what **two or more sibling packages read** and that is **vocabulary or data, not an algorithm**: cell vocabulary, hex grid types, `StratumTable`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, the codec data half. Anything one package owns stays in that package (the generator in `DraoiHexWorldTerrain`; weather, hydrology and ecology logic in their packages). Siblings depend on the core and never on each other, except the kit's one-way chain Weather, then Hydrology, then Ecology. Sims read cells through `WorldCellFields`, not through the generator's world structure, so they never depend on the generator. CoW content (`biomes.json`, `strata.json`, `guarantees.json`, dragon-layer placers, module wiring) stays in CoW.
+
 ## Binding Decisions
 - PD-011/PD-012: no include up into CoW, no modules in the package.
 - Parent spec package split (agreed 2026-11-21): core holds grid/world types, `BiomeIndex`/`StratumIndex`, `StratumTable`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, codec data half; nothing from the generator.
@@ -73,3 +75,5 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 1. **Admission.** No second game exists; Weather/Hydrology/Ecology are the credible second consumers. Proceed on that basis, or hold extraction until the first sim package is built so core is shaped by two real clients?
 2. **Resolved 2026-11-21:** layout, namespace and test location (see Binding Decisions).
 3. **Split of mixed test files.** Some biome-registry tests load shipped CoW data; decide per file whether to port them to a Draoi fixture or leave them in GoogleTests.
+
+4. **Where do `Cell` and `WorldStructure` live?** Today they are in the generator's `TerrainTypes.h` (with the region table and site set). Sims read `WorldCellFields`, so they should not need them. If any sim or the codec needs the `Cell` struct itself, `Cell` must move to the core (and `WorldStructure` with it, or be split), otherwise the no-generator-dependency rule breaks. Settle during task 1 by grepping what the kit's Draoi half includes; recommended: `Cell` and the grid-shaped world data go to the core only if a sibling genuinely reads them, otherwise they stay with terrain.
