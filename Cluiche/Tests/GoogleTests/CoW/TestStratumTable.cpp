@@ -328,6 +328,7 @@ std::vector<float> EqualishShares(int n)
     case 1: return { 1.0f };
     case 2: return { 0.5f, 0.5f };
     case 5: return { 0.25f, 0.25f, 0.25f, 0.125f, 0.125f };
+    case 8: return { 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f, 0.125f };
     default: return { 0.25f, 0.25f, 0.25f, 0.25f };
     }
 }
@@ -379,7 +380,7 @@ void BuildStrataWorld(int n, uint64_t seed, StrataWorld& out)
 
 TEST(StratumTable, NStrataGenerateEveryLandCellInRangeAndOceanNone)
 {
-    for (int n : { 1, 2, 5 })
+    for (int n : { 1, 2, 5, 8 })
     {
         SCOPED_TRACE("strata " + std::to_string(n));
         StrataWorld sw;
@@ -401,7 +402,7 @@ TEST(StratumTable, NStrataGenerateEveryLandCellInRangeAndOceanNone)
 
 TEST(StratumTable, NStrataRegionTargetsRespectEachStratumsRange)
 {
-    for (int n : { 1, 2, 5 })
+    for (int n : { 1, 2, 5, 8 })
     {
         SCOPED_TRACE("strata " + std::to_string(n));
         StrataWorld sw;
@@ -437,7 +438,7 @@ TEST(StratumTable, NStrataRegionTargetsRespectEachStratumsRange)
 
 TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
 {
-    for (int n : { 1, 2, 5 })
+    for (int n : { 1, 2, 5, 8 })
     {
         SCOPED_TRACE("strata " + std::to_string(n));
         StrataWorld sw;
