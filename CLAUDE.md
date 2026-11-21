@@ -22,8 +22,11 @@ Applications (CluicheTest, CluicheEditor, CoW, future games) live as siblings un
 
 ### Layer boundary rule
 
-- **Reusable capability any game could consume → belongs in Dia**
-- **Specific to one game's content, logic, or characters → belongs in the Application**
+Three layers, dependencies pointing down only: **Application → Draoi → Dia** (see PD-011 to PD-014 in the platform spec and `docs/specs/applications/draoi/draoi.md`).
+
+- **Reusable engine capability any game could consume, with no gameplay or game-world vocabulary → belongs in Dia**
+- **Reusable gameplay library with no one game's content (world generation, world sims, game speed) → belongs in Draoi.** Plain libraries only: no modules or wiring, and sims are scheduler-agnostic (state in, state out). Needs two consumers or a credible second one; do not extract speculatively.
+- **Specific to one game's content, logic, or characters → belongs in the Application**, together with all module wiring and execution ordering
 
 This applies to systems, libraries, and data equally. `Animation2D` is engine — any game could use it. CoW's dragon animation system is application — only CoW needs it. The wiring (calling engine APIs from a game module) always stays in the application; the implementation, once it's generically useful, belongs in Dia.
 
@@ -31,7 +34,7 @@ This applies to systems, libraries, and data equally. `Animation2D` is engine �
 
 ### Escalation rule
 
-If a task would add a new header or implementation to a Dia project while working in a game project, **stop and flag it** — do not place it in the game. Describe what the Dia API should look like and ask the user to confirm the placement before proceeding.
+If a task would add a new header or implementation to a Dia or Draoi project while working in a game project, **stop and flag it** — do not place it in the game. Describe what the Dia API should look like and ask the user to confirm the placement before proceeding.
 
 ## Build System
 
