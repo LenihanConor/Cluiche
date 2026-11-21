@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 2)
 **Status:** `Draft`
 **Origin:** Draoi layer audit, 2026-11-21 (WorldGeneration coupling audit and placement list).
-**Prerequisites:** @docs/specs/features/draoi/guarantee-set-injection.md (Approved, in build) must land first; @docs/specs/features/draoi/extract-hexworld-core.md must be Done.
+**Prerequisites:** @docs/specs/features/draoi/guarantee-set-injection.md (Approved, in build) must land first; **Strata feature lands first** (@docs/specs/features/draoi/generic-strata.md, Approved 2026-11-21, not yet built; `TerrainDepthZones` becomes `TerrainStrata` with the `IStrataAssigner` seam, stays in this package); @docs/specs/features/draoi/extract-hexworld-core.md must be Done.
 
 ## Summary
 Move the S-1 world generator (terrain, biome classification, regions, sites, session, JSON/files) into a Draoi package `DraoiHexWorldTerrain` that depends only on `DraoiHexWorld` core and Dia. CoW keeps content and view code. Behaviour-preserving; goldens byte-identical.
@@ -13,7 +13,7 @@ Move the S-1 world generator (terrain, biome classification, regions, sites, ses
 ## Goals
 - `DraoiHexWorldTerrain` builds with includes of Dia and core only; no `CoW`, no `Modules/`.
 - CoW's world-gen module, viewer host and tests link it with unchanged behaviour.
-- Everything CoW-specific is data (`guarantees.json`, `biomes.json`, `zones.json`, terrain rules sidecar) or injected code (`ISitePlacer`s registered by CoW).
+- Everything CoW-specific is data (`guarantees.json`, `biomes.json`, `strata.json`, terrain rules sidecar) or injected code (`ISitePlacer`s registered by CoW).
 
 ## Non-goals
 - Changing generation output, JSON, or the registry plug-in path.
@@ -23,7 +23,7 @@ Move the S-1 world generator (terrain, biome classification, regions, sites, ses
 ## Design
 
 ### Moves to `DraoiHexWorldTerrain/` (from `Cluiche/CoW/Shared/WorldGeneration/`)
-- Terrain: `TerrainGenerator`, `TerrainLandmass`, `TerrainMountains`, `TerrainRelief`, `TerrainValleys`, `TerrainRivers`, `TerrainDrainage`, `TerrainClassify`, `TerrainDepthZones`, `TerrainTypes`, `TerrainRules`, `TerrainTableNavigationProfile`, and the generator-only remainder of `TerrainEnums.h` (`BarrierForm`; core owns the cell enums).
+- Terrain: `TerrainGenerator`, `TerrainLandmass`, `TerrainMountains`, `TerrainRelief`, `TerrainValleys`, `TerrainRivers`, `TerrainDrainage`, `TerrainClassify`, `TerrainStrata` (was `TerrainDepthZones`; Strata feature, with `IStrataAssigner`), `TerrainTypes`, `TerrainRules`, `TerrainTableNavigationProfile`, and the generator-only remainder of `TerrainEnums.h` (`BarrierForm`; core owns the cell enums).
 - Biomes: `BiomeClassify`, `BiomeClimate` (including the pin-rule table with its five built-ins `water_ocean`, `water_lake`, `vent`, `alpine`, `wetland`).
 - Regions and sites: `RegionPartition`, `RegionRepair`, `Regions.h`, `RegionsAndSites`, `Sites`, `SiteRegistry`, `NodesCorridor`, `NodesFill`, `NodesRiver`, `PlaceResult.h`.
 - Validation: `ValidationTypes`, `ReachabilityValidator`, `LayoutCheck`, `NavigationQuery`, `WorldLayoutGuarantee`, `GuaranteeSpec` (the generic data-declared rules from guarantee-set-injection).
@@ -34,7 +34,7 @@ Move the S-1 world generator (terrain, biome classification, regions, sites, ses
 
 ### Stays in CoW
 - View code: `WorldCameraController` (single consumer, fails admission), `WorldOverlayGeometry`, and `Modules/WorldGen*` (module, view host, debug domain, commands).
-- Content: `SiteGuarantees.h/.cpp` (whatever remains after injection), CoW `guarantees.json` + schema, `biomes.json`, `zones.json`, terrain parameter files.
+- Content: `SiteGuarantees.h/.cpp` (whatever remains after injection), CoW `guarantees.json` + schema, `biomes.json`, `strata.json`, terrain parameter files.
 - Dragon-layer site placers (`ISitePlacer` implementations registered by CoW in code).
 
 ### Project and naming

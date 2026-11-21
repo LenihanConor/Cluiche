@@ -1,7 +1,7 @@
 # Feature Spec: DraoiHexWorld Generic Special Sites / POIs (kinds, guarantees and overlay in data; placement injected)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md (step 2 of the Draoi backlog row)
-**Status:** `Approved` (2026-11-21; full generic system, placement stays an injected hook)
+**Status:** `Done` (2026-11-21; full generic system, placement stays an injected hook)
 **Origin:** Draoi layer audit, 2026-11-21. Code audit of the hard-coded CoW guarantees.
 
 ## Summary
@@ -21,7 +21,7 @@
 - Data-described placement rules. The `ISitePlacer` hook stays the placement seam; CoW registers its dragon-layer placers in code. A data placer can be added later behind the same hook.
 
 ## Design
-**The three CoW guarantees as generic rules** (all read from data; `kind` = site-kind name, `zone` = zone name from `zones.json`):
+**The three CoW guarantees as generic rules** (all read from data; `kind` = site-kind name, `zone` = zone name from `zones.json`; **Strata:** becomes `stratum` from `strata.json` and `to_zone` becomes `to_stratum` per @docs/specs/features/draoi/generic-strata.md, not yet built):
 
 | Rule type | Meaning | CoW instance (id kept) |
 |---|---|---|

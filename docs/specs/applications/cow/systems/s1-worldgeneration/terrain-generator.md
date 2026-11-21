@@ -1,5 +1,7 @@
 # Feature Spec: Terrain Generator
 
+> **Strata (2026-11-21, not yet built):** Depth zones are being replaced by data-defined strata per @docs/specs/features/draoi/generic-strata.md (Approved; 7 tasks; lands before the Draoi extraction). Renames: `DepthZone` -> `StratumIndex`, `kNoZone` -> `kNoStratum`, `Cell::depthZone` -> `Cell::stratum`, `TerrainDepthZones` -> `TerrainStrata`, `zones.json` -> `strata.json`. CoW's three strata are the ordered set `depth` and keep the names FirstShores, WildReaches, AncientInteriors. Stage 8 'Depth zones' becomes the built-in coast-cost banding assigner behind an injectable `IStrataAssigner` (terrain package); stratum count, per-stratum shares (`kFirstShoresShare` becomes a per-stratum share in `strata.json`), banding metric and the innermost rule are data. Regions stay geographic and unchanged. This spec's text below stays valid for the CoW `depth` set until the feature lands.
+
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 **Design source:** GDD `02_WorldLore/GeographyAndRegions.md` (Locked 2026-07-17), Parts 1, 2 and 11; GDD `10_PrototypeStrategy/S1_WorldGeneration.md` (DesignDocs repo)
 

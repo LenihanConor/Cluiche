@@ -6,7 +6,7 @@
 **Plan:** @docs/specs/features/draoi/worldsim-kit-draoi.plan.md
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A3, A4, A8)
 **Depends on:**
-- DraoiHexWorld core extracted (grid and world types, `CellVocabulary.h`, `BiomeRegistry` with open pin-rule ids, `ZoneTable`; prerequisites @docs/specs/features/draoi/hexworld-core-prerequisites.md are Done). The extraction itself is its own task and **must land before this half's tasks start**.
+- DraoiHexWorld core extracted (grid and world types, `CellVocabulary.h`, `BiomeRegistry` with open pin-rule ids, `ZoneTable` (becomes `StratumTable` via the Strata feature, @docs/specs/features/draoi/generic-strata.md, lands before the extraction); prerequisites @docs/specs/features/draoi/hexworld-core-prerequisites.md are Done). The extraction itself is its own task and **must land before this half's tasks start**.
 - DiaPathfinding hex search helpers (`MultiSourceSteps`, `HexNeighbours`, `TreeGraph`), DiaCondition, and the one DiaCondition change below.
 
 ## Summary

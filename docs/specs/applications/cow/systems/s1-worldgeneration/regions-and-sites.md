@@ -1,5 +1,7 @@
 # Feature Spec: Regions, Nodes and Site Hook
 
+> **Strata (2026-11-21, not yet built):** Depth zones are being replaced by data-defined strata per @docs/specs/features/draoi/generic-strata.md (Approved; 7 tasks; lands before the Draoi extraction). Renames: `DepthZone` -> `StratumIndex`, `kNoZone` -> `kNoStratum`, `Cell::depthZone` -> `Cell::stratum`, `TerrainDepthZones` -> `TerrainStrata`, `zones.json` -> `strata.json`. CoW's three strata are the ordered set `depth` and keep the names FirstShores, WildReaches, AncientInteriors. Region slots per zone, region counts per zone, corridor barriers (barrier k separates stratum k from k+1) and `limitedBy` become per-stratum data (`RegionPartition`, `NodesCorridor` generalise from 3 slots to N). Regions themselves stay geographic.
+
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 **Design source:** GDD `02_WorldLore/GeographyAndRegions.md` (Locked 2026-07-17), Parts 1–2 (regions, depth-zone distribution), Part 3 (primary biomes); GDD `10_PrototypeStrategy/S1_WorldGeneration.md` (DesignDocs repo)
 

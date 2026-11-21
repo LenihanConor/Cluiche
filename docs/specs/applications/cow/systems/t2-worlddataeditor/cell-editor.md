@@ -1,5 +1,7 @@
 # Feature Spec: T-2 Cell Editor
 
+> **Strata (2026-11-21, not yet built):** `depth_zone` becomes `stratum` in the world JSON (@docs/specs/features/draoi/generic-strata.md, Approved, not yet built).
+
 **Parent:** @docs/specs/applications/cow/systems/t2-worlddataeditor/t2-worlddataeditor.md
 **Builds on:** @docs/specs/applications/cow/systems/t2-worlddataeditor/plugin-shell-files-and-schema.md (Feature 1), @docs/specs/applications/cow/systems/t2-worlddataeditor/table-and-form-editors.md (Feature 2, cell editors and checks), @docs/specs/applications/cow/systems/t2-worlddataeditor/packs-and-bundles.md (Feature 3, used-by and bundle checks), @docs/specs/applications/cow/systems/t2-worlddataeditor/validation-and-game-link.md (Feature 4, save flow and validate in game), @docs/specs/applications/dia/systems/diaeditorui/cell-grid-canvas.md
 **Mockup:** none yet; a cell-editor mockup is required before this feature is built (see Mockup gate)

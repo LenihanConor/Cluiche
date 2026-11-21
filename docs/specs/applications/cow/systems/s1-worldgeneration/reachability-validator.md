@@ -1,5 +1,7 @@
 # Feature Spec: Reachability Validator
 
+> **Strata (2026-11-21, not yet built):** Depth zones are being replaced by data-defined strata per @docs/specs/features/draoi/generic-strata.md (Approved; 7 tasks; lands before the Draoi extraction). Renames: `DepthZone` -> `StratumIndex`, `kNoZone` -> `kNoStratum`, `Cell::depthZone` -> `Cell::stratum`, `TerrainDepthZones` -> `TerrainStrata`, `zones.json` -> `strata.json`. CoW's three strata are the ordered set `depth` and keep the names FirstShores, WildReaches, AncientInteriors. `WorldThroneGuarantee`'s `depthZone == AncientInteriors` target is already a data rule (see guarantee-set-injection.md): `to_zone` becomes `to_stratum` (innermost stratum of the `depth` set).
+
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 > **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): the framework (`IWorldGuarantee`, `INavigationProfile`, evidence) stays. The three site-based built-ins (Hearth↔Nexus, dynasty spacing, world-throne) are built with the dragon layer, which registers its sites and these guarantees through the site hook; their ACs run on hand-authored worlds. Adds `WorldLayoutGuarantee`. Where this spec says "Hearth/Nexus/throne/start lists", read "sites of those kinds in `SiteSet`". Full text updated when this feature is built.*
 

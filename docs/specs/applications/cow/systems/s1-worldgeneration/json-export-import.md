@@ -1,5 +1,7 @@
 # Feature Spec: JSON Export/Import
 
+> **Strata (2026-11-21, not yet built):** Depth zones are being replaced by data-defined strata per @docs/specs/features/draoi/generic-strata.md (Approved; 7 tasks; lands before the Draoi extraction). Renames: `DepthZone` -> `StratumIndex`, `kNoZone` -> `kNoStratum`, `Cell::depthZone` -> `Cell::stratum`, `TerrainDepthZones` -> `TerrainStrata`, `zones.json` -> `strata.json`. CoW's three strata are the ordered set `depth` and keep the names FirstShores, WildReaches, AncientInteriors. World JSON key `depth_zone` becomes `stratum` (names resolve against the `StratumTable`); the schema and import refusal path follow.
+
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 > **Amended 2026-10-18 (Feature 9 re-scope, @regions-and-sites.md): schema v1 stores `regions` and `sites.<kind>` generically (cell, region, variant, flags). Unknown kinds round-trip unchanged. The fixed hearth/nexus/throne/start arrays are replaced by this. Full text updated when this feature is built.*
 

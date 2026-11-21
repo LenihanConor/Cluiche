@@ -6,7 +6,7 @@
 **Origin:** split out of `worldsim-kit.plan.md` (2026-11-21). Source tasks keep their old numbers in the Notes column so history still resolves. None of the source rows had been built, so no row is Done.
 
 **Dependencies.**
-- **Core extraction gate.** DraoiHexWorld core must be extracted (grid and world types, `CellVocabulary.h`, `BiomeRegistry`, `ZoneTable`) **before** Tasks D4 to D10 start. The prerequisites (`hexworld-core-prerequisites.plan.md`) are Done; the extraction spec and plan are still to be written (backlog: "extract DraoiHexWorld core"). Tasks D2 and D3 are Dia-only and **can start now**.
+- **Core extraction gate.** DraoiHexWorld core must be extracted (grid and world types, `CellVocabulary.h`, `BiomeRegistry`, `ZoneTable`; Strata: becomes `StratumTable`, @docs/specs/features/draoi/generic-strata.md lands first) **before** Tasks D4 to D10 start. The prerequisites (`hexworld-core-prerequisites.plan.md`) are Done; the extraction spec and plan are still to be written (backlog: "extract DraoiHexWorld core"). Tasks D2 and D3 are Dia-only and **can start now**.
 - `guarantee-set-injection.plan.md` (In Progress): D4's `terrain.is_protected` source reads data-declared site kinds, so this should be Done or at least Task 1 (`GuaranteeSpec`, `SiteRegistry` data kinds) landed.
 - `grid-search-helpers.plan.md` Done (`MultiSourceSteps`, `HexNeighbours`, `TreeGraph`) before D9.
 - `biome-registry.plan.md` Done before the palette task D6 and the `biome.*` fixtures in D4.

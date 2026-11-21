@@ -1,5 +1,7 @@
 # Feature Spec: Strategic Map Visual Data
 
+> **Strata (2026-11-21, not yet built):** Depth zones become data-defined strata (@docs/specs/features/draoi/generic-strata.md, Approved, not yet built). The `zones` table in `map_style.json` stays keyed by CoW's stratum names (FirstShores, WildReaches, AncientInteriors) from `strata.json`; it follows the rename when the feature lands.
+
 ## Parent System
 @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (Feature 1)
 

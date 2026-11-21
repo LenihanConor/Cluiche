@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 1)
 **Status:** `Approved` (2026-11-21; proceeds on the credible-second-consumer basis; layout and namespace decided, tests in GoogleTests)
 **Origin:** Draoi layer audit, 2026-11-21 (package split and WorldGeneration coupling audit in the parent spec).
-**Prerequisite:** @docs/specs/features/draoi/hexworld-core-prerequisites.md (Done). The world-sim kit's Draoi half (`WorldCellFields`, `CellSelectorSet`, codec data half) is owned by @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; this spec only reserves the destination.
+**Prerequisite:** @docs/specs/features/draoi/hexworld-core-prerequisites.md (Done). **Depends on / ordering:** Strata feature lands first (@docs/specs/features/draoi/generic-strata.md, Approved 2026-11-21, not yet built): the zone model becomes strata, so this spec's file list uses the Strata names. The world-sim kit's Draoi half (`WorldCellFields`, `CellSelectorSet`, codec data half) is owned by @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; this spec only reserves the destination.
 
 ## Summary
 Move the content-free world foundation out of CoW into a new Draoi project `DraoiHexWorld` (core). It is mechanical and behaviour-preserving: every golden stays byte-identical, and nothing is rewritten beyond include paths and (if decided) namespace.
@@ -19,22 +19,22 @@ Move the content-free world foundation out of CoW into a new Draoi project `Drao
 - The generator, session, JSON and view code (see @docs/specs/features/draoi/extract-hexworld-terrain.md).
 - Writing `WorldCellFields`, `CellSelectorSet` or the codec data half: they land in this project when the kit builds them (the kit plan owns the code); this spec only fixes the project and folder.
 - Changing any type, field, enum value, JSON key or save format.
-- Moving `biomes.json`, `zones.json` or any species/parameter data (content stays in CoW).
+- Moving `biomes.json`, `strata.json` or any species/parameter data (content stays in CoW).
 
 ## Design
 
 ### Files that move (from `Cluiche/CoW/Shared/`)
 | From | To (`DraoiHexWorld/`) | Note |
 |---|---|---|
-| `World/CellVocabulary.h` | `CellVocabulary.h` | `BiomeIndex`, `DepthZone` (index), `WaterSource`, `TerrainType`, `RegionId`, `TerrainFlag` |
+| `World/CellVocabulary.h` | `CellVocabulary.h` | `BiomeIndex`, `StratumIndex` (was `DepthZone`; Strata feature), `WaterSource`, `TerrainType`, `RegionId`, `TerrainFlag` |
 | `World/BiomeRegistry.h/.cpp` | `BiomeRegistry.h/.cpp` | mechanism only; `biomes.json` stays in CoW |
-| `World/ZoneTable.h/.cpp` | `ZoneTable.h/.cpp` | `zones.json` stays in CoW |
+| `World/StratumTable.h/.cpp` (was `ZoneTable`; Strata feature) | `StratumTable.h/.cpp` | `strata.json` stays in CoW |
 | `WorldGeneration/WorldHexGrid.h/.cpp` | `WorldHexGrid.h/.cpp` | grid type |
 | `WorldGeneration/SharedWorldHexGrid.h` | `SharedWorldHexGrid.h` | |
 | `World/Testing/BiomeTestRegistry.h`, `ZoneTestIndices.h` | `Testing/` | helper rule below |
 | (future) `WorldCellFields`, `CellSelectorSet`, codec data half | `WorldCellFields.h`, `CellSelectorSet.h`, `WorldCodecData.h` | built by the world-sim kit; names indicative |
 
-Tests moving: `TestBiomeRegistry`, `TestBiomeRegistryData`, `TestBiomeRegistryEdge`, `TestBiomeRegistryLoad`, plus any `ZoneTable`/`WorldHexGrid` tests, from `Cluiche/Tests/GoogleTests/CoW/` to a Draoi test folder (Question 2). Tests that exercise the generator through the registry (`TestBiome*` classify/climate/generator, `TestTerrain*`) stay for the terrain spec.
+Tests moving: `TestBiomeRegistry`, `TestBiomeRegistryData`, `TestBiomeRegistryEdge`, `TestBiomeRegistryLoad`, plus any `StratumTable`/`WorldHexGrid` tests, from `Cluiche/Tests/GoogleTests/CoW/` to a Draoi test folder (Question 2). Tests that exercise the generator through the registry (`TestBiome*` classify/climate/generator, `TestTerrain*`) stay for the terrain spec.
 
 ### Project, include root, naming
 - New static-library project `DraoiHexWorld.vcxproj` (+ `.filters`) in a Draoi folder, solution folder `Draoi` in `Cluiche.sln` (`dia check sln-sync` must pass). Files are flat in the package; include root `#include <DraoiHexWorld/BiomeRegistry.h>`.
@@ -47,7 +47,7 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 
 ## Binding Decisions
 - PD-011/PD-012: no include up into CoW, no modules in the package.
-- Parent spec package split (agreed 2026-11-21): core holds grid/world types, `BiomeIndex`/`DepthZone`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, codec data half; nothing from the generator.
+- Parent spec package split (agreed 2026-11-21): core holds grid/world types, `BiomeIndex`/`StratumIndex`, `StratumTable`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, codec data half; nothing from the generator.
 - **Layout (user, 2026-11-21):** a top-level `Draoi/` folder beside `Dia/`, one project per package, namespaces `Draoi::HexWorld` (etc.).
 - **Tests (user, 2026-11-21):** Draoi tests stay in the GoogleTests project for now, under a `Draoi/` subfolder, run with `dia run googletest --filter=...`. Splitting GoogleTests into several test projects is a separate backlog item (a Draoi test project would be one of the splits); this feature does not block on it.
 - Escalation rule: a new Draoi project needs user confirmation of placement before Task 1 starts.
@@ -63,7 +63,7 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 | # | Task | Test | Notes |
 |---|------|------|-------|
 | 1 | Create project, vcxproj/filters, sln folder, module doc; CoW reference | Empty lib builds; `dia check deps` | Needs user sign-off on the new Draoi project |
-| 2 | Move `CellVocabulary`, `ZoneTable`, `WorldHexGrid`, `SharedWorldHexGrid`; update includes | Scoped filters for Zone/Grid/Terrain; goldens | Mechanical |
+| 2 | Move `CellVocabulary`, `StratumTable`, `WorldHexGrid`, `SharedWorldHexGrid`; update includes | Scoped filters for Stratum/Grid/Terrain; goldens | Mechanical |
 | 3 | Move `BiomeRegistry` + `Testing/` helpers; update includes | `TestBiomeRegistry*` | Registry must not include generator (true after prerequisites) |
 | 4 | Move tests that need no CoW data to `Tests/GoogleTests/Draoi/`; split mixed files | Filtered runs | |
 | 5 | Namespace change to `Draoi::HexWorld` | Full suite, goldens | Separate commit |

@@ -1,5 +1,7 @@
 # Feature Spec: Biome Classification
 
+> **Strata (2026-11-21, not yet built):** Depth zones are being replaced by data-defined strata per @docs/specs/features/draoi/generic-strata.md (Approved; 7 tasks; lands before the Draoi extraction). Renames: `DepthZone` -> `StratumIndex`, `kNoZone` -> `kNoStratum`, `Cell::depthZone` -> `Cell::stratum`, `TerrainDepthZones` -> `TerrainStrata`, `zones.json` -> `strata.json`. CoW's three strata are the ordered set `depth` and keep the names FirstShores, WildReaches, AncientInteriors. `IsBiomeValidInZone(Biome, DepthZone)` becomes a `StratumIndex` check against the registry's per-biome strata list.
+
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md
 **Design source:** GDD `02_WorldLore/GeographyAndRegions.md` (Locked 2026-07-17), Part 3 (Biome Rules, Adjacency Rules, Edge Biomes); GDD `10_PrototypeStrategy/S1_WorldGeneration.md` (DesignDocs repo)
 

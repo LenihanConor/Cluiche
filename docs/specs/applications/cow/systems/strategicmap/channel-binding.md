@@ -1,5 +1,7 @@
 # Feature Spec: Strategic Map Channel Binding
 
+> **Strata (2026-11-21, not yet built):** `depthZone` in the S-1 source becomes `stratum` (@docs/specs/features/draoi/generic-strata.md, Approved, not yet built).
+
 ## Parent System
 @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (Feature 2)
 

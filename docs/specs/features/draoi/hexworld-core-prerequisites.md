@@ -1,5 +1,7 @@
 # Feature Spec: DraoiHexWorld Core Prerequisites (data-driven pin rules, generic zones, enum split)
 
+> **Follow-up (2026-11-21):** @docs/specs/features/draoi/generic-strata.md supersedes this spec's 'names only, count deferred' resolution (Resolved Q2): zones become data-defined strata with a data-driven count.
+
 **Parent:** @docs/specs/applications/draoi/draoi.md
 **Status:** `Done` (2026-11-21)
 **Plan:** @docs/specs/features/draoi/hexworld-core-prerequisites.plan.md
