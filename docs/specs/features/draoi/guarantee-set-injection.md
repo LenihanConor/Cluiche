@@ -1,7 +1,7 @@
 # Feature Spec: DraoiHexWorld Generic Special Sites / POIs (kinds, guarantees and overlay in data; placement injected)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md (step 2 of the Draoi backlog row)
-**Status:** `Draft` (2026-11-21; full generic system chosen by the user, awaiting approval)
+**Status:** `Approved` (2026-11-21; full generic system, placement stays an injected hook)
 **Origin:** Draoi layer audit, 2026-11-21. Code audit of the hard-coded CoW guarantees.
 
 ## Summary
