@@ -286,14 +286,13 @@ def test_map_default_unresolved_key_with_suggestion_and_resolved_ok():
     assert _defaults(full, files) == []
 
 
-def test_map_default_omitting_a_keyref_key_is_reported_per_missing_key():
+def test_map_default_omitting_a_keyref_key_is_reported_once_naming_every_missing_key():
     s = _sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default={"Desert": 1}))
     files = [("k.json", {"format": "f.k", "ids": ["Desert", "Tundra", "Forest"]}, False)]
     out = _defaults(s, files)
     assert [(f.rule, f.severity, f.file, f.key, f.path, f.suggestion) for f in out] == [
-        ("data.missing-map-key", "FAIL", "s.json", "m", "default.Tundra", None),
-        ("data.missing-map-key", "FAIL", "s.json", "m", "default.Forest", None)]
-    assert "m" in out[0].message and "Tundra" in out[0].message
+        ("data.incomplete-map", "FAIL", "s.json", "m", "default", None)]
+    assert "m" in out[0].message and "Tundra, Forest" in out[0].message
 
 
 def test_map_default_missing_key_is_silent_without_keyref_data():
@@ -312,7 +311,7 @@ def test_map_default_reports_both_unresolved_and_missing_keys():
     s = _sch(_e("m", "map", keyRef="f.k/ids[]", valueType="float", default={"Desert": 1, "Tundr": 2}))
     files = [("k.json", {"format": "f.k", "ids": ["Desert", "Tundra"]}, False)]
     assert sorted((f.rule, f.path) for f in _defaults(s, files)) == [
-        ("data.missing-map-key", "default.Tundra"), ("data.unresolved-map-key", "default.Tundr")]
+        ("data.incomplete-map", "default"), ("data.unresolved-map-key", "default.Tundr")]
 
 
 def test_map_default_keys_not_checked_without_key_data_and_scalar_defaults_ignored():

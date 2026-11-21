@@ -1930,15 +1930,17 @@ namespace
     }
 }
 
-// Close-out gap 4: the CLI now reports an object map default that omits a keyRef key (data.missing-map-key, one
-// finding per missing key), agreeing with the C++ build, which fails naming the first missing key (AC 6).
+// Biome Registry AC 11 (data.incomplete-map): the CLI reports an object map default that omits a keyRef key (one
+// finding per entry naming every missing key), agreeing with ParameterFile::Load, which fails naming the first missing key (AC 6).
 TEST(DiaAttributeParameterFileParity, IncompleteMapDefaultIsFlaggedByTheCliAndFailsTheCppBuildNamingTheSameKey)
 {
     Json::Value c;
     ASSERT_TRUE(LoadCase("map-default-missing-key.case.json", c));
+    ASSERT_EQ(c["schemaExpected"].size(), 1u);
     const Json::Value& first = c["schemaExpected"][0u];
-    EXPECT_EQ(first["rule"].asString(), "data.missing-map-key");
-    EXPECT_EQ(first["path"].asString(), "default.TemperateForest");
+    EXPECT_EQ(first["rule"].asString(), "data.incomplete-map");
+    EXPECT_EQ(first["path"].asString(), "default");
+    EXPECT_EQ(first["messageContains"].asString(), "TemperateForest, Tundra");   // every missing key, in key-source order
 
     ParameterFile pf; ParamError err;
     EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
@@ -1966,6 +1968,21 @@ TEST(DiaAttributeParameterFileParity, NestedGroupPackIsFlaggedByTheCliAndDropped
     EXPECT_FLOAT_EQ(Base(pf, "grazing.scale"), 2.0f);    // the flat key was
     EXPECT_FLOAT_EQ(Base(pf, "affinity.Desert"), 0.3f);  // the map object form is valid on both sides
     EXPECT_EQ(w.items.Size(), 2u);                       // the nested group, and the missing basedOn
+}
+
+// Biome Registry AC 11: packs stay sparse. A pack overriding one key of a complete map is CLI-clean and applies in C++.
+TEST(DiaAttributeParameterFileParity, SparsePackOverCompleteMapIsCliCleanAndApplies)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-sparse-pack-ok.case.json", c));
+    EXPECT_TRUE(c["expected"].empty());
+    EXPECT_TRUE(c["schemaExpected"].isNull() || c["schemaExpected"].empty());
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ToText(c["schemas"][0u])));
+    const Json::Value* pack = PackOf(c);
+    ASSERT_NE(pack, nullptr);
+    ParamWarnings w; ParamError err;
+    EXPECT_TRUE(pf.ApplyPack(*pack, w, err)) << err.reason.AsCStr();
+    EXPECT_FLOAT_EQ(Base(pf, "affinity.TemperateForest"), 0.9f);   // untouched keys keep the default
 }
 
 TEST(DiaAttributeParameterFileParity, CompleteMapDefaultCasesAreCliCleanAndLoadInCpp)

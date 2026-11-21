@@ -1,5 +1,5 @@
 {
-  "description": "An object map default that omits a key present in its keyRef data is reported once per missing key (the C++ build fails naming the first one). Silent when the keyRef data is unavailable. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
+  "description": "An object map default that omits a key present in its keyRef data is reported once per entry as data.incomplete-map naming every missing key (the C++ load fails naming the first one). Silent when the keyRef data is unavailable. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
   "schemas": [
     {
       "format": "dia.value_schema",
@@ -48,22 +48,12 @@
   "schemaExpected": [
     {
       "severity": "FAIL",
-      "rule": "data.missing-map-key",
+      "rule": "data.incomplete-map",
       "file": "schemas[0]",
       "key": "affinity",
-      "path": "default.TemperateForest",
+      "path": "default",
       "record": null,
-      "messageContains": "TemperateForest",
-      "suggestion": null
-    },
-    {
-      "severity": "FAIL",
-      "rule": "data.missing-map-key",
-      "file": "schemas[0]",
-      "key": "affinity",
-      "path": "default.Tundra",
-      "record": null,
-      "messageContains": "Tundra",
+      "messageContains": "TemperateForest, Tundra",
       "suggestion": null
     }
   ]
