@@ -3,6 +3,7 @@
 // AC1's 200-change sequence is SLOW_BiomeGenerator.LiveSliderSequenceEqualsFreshGenerationLong (TestBiomeGenerator.cpp).
 // AC14 (imported worlds) is deferred until export/import exists (system plan task 16).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
@@ -16,6 +17,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace CoW::World::Testing;
 
 namespace
 {
@@ -57,17 +59,17 @@ namespace
             {
                 const uint32_t b = biome[c];
                 ASSERT_LT(b, static_cast<uint32_t>(kBiomeCount));
-                if (b == static_cast<uint32_t>(Biome::Ocean) || b == static_cast<uint32_t>(Biome::Lake)) { continue; }
+                if (b == static_cast<uint32_t>(B("Biome.Ocean")) || b == static_cast<uint32_t>(B("Biome.Lake"))) { continue; }
                 ++counts[b];
                 ++land;
             }
             int    distinct = 0;
             int    maxCount = 0;
-            Biome  maxBiome = Biome::Ocean;
+            Biome  maxBiome = LegacyB("Biome.Ocean");
             std::string line;
             for (int b = 0; b < kBiomeCount; ++b)
             {
-                if (b == static_cast<int>(Biome::Ocean) || b == static_cast<int>(Biome::Lake)) { continue; }
+                if (b == static_cast<int>(B("Biome.Ocean")) || b == static_cast<int>(B("Biome.Lake"))) { continue; }
                 if (counts[b] > 0) { ++distinct; }
                 if (counts[b] > maxCount) { maxCount = counts[b]; maxBiome = static_cast<Biome>(b); }
                 char buf[64];

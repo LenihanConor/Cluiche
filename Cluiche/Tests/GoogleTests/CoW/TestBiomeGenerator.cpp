@@ -1,6 +1,7 @@
 // S-1 Biome Classification task 5: stages 12-14 wired into TerrainGenerator.
 // AC1 (live == fresh), AC2 (biome validity), AC3 (zone rule), AC4 (no forbidden pairs), AC9 (slider isolation).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
@@ -19,6 +20,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 
 namespace
 {
@@ -147,8 +149,8 @@ namespace
             ASSERT_EQ(static_cast<uint32_t>(r.World().Cells()[c].biome), b);
             const bool oceanWater = water[c] == static_cast<uint32_t>(WaterSource::Ocean);
             const bool lakeWater  = water[c] == static_cast<uint32_t>(WaterSource::Lake);
-            ASSERT_EQ(b == static_cast<uint32_t>(Biome::Ocean), oceanWater) << label << " seed " << seed << " cell " << c;
-            ASSERT_EQ(b == static_cast<uint32_t>(Biome::Lake), lakeWater) << label << " seed " << seed << " cell " << c;
+            ASSERT_EQ(b == static_cast<uint32_t>(B("Biome.Ocean")), oceanWater) << label << " seed " << seed << " cell " << c;
+            ASSERT_EQ(b == static_cast<uint32_t>(B("Biome.Lake")), lakeWater) << label << " seed " << seed << " cell " << c;
         }
 
         // Lakes sit in whatever depth zone their cell has, but IsBiomeValidInZone(Lake) demands None, so water
