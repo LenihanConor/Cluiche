@@ -124,6 +124,9 @@ def resolve_values_from(vf: object, context: Optional[DataContext]):
                 problems.append(("schema.values-from-missing-field",
                                  f"valuesFrom record {vf['records']}[{i}] is missing field '{f}'"))
         if isinstance(rec, dict) and isinstance(rec.get(vf["id"]), str):
+            if rec[vf["id"]] == "":
+                problems.append(("schema.values-from-missing-field",
+                                 f"valuesFrom record {vf['records']}[{i}] has an empty id in field '{vf['id']}'"))
             ids.append(rec[vf["id"]])
     return ids, problems
 
