@@ -1819,6 +1819,9 @@
     <ClInclude Include="..\..\CoW\Shared\WorldStep\Testing\FakeWorldStepStage.h">
       <Filter>CoW\Shared\WorldStep\Testing</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepChain.h">
+      <Filter>CoW\Shared\WorldStep</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3275,6 +3278,12 @@
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepFake.cpp">
       <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepChain.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepChain.cpp">
+      <Filter>CoW\Shared\WorldStep</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

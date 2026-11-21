@@ -157,6 +157,7 @@
     <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepStage.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldStep\Testing\FakeWorldStepStage.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepChain.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1372,6 +1373,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepConfig.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepFake.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepChain.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepChain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

@@ -211,6 +211,9 @@
     <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp">
       <Filter>Shared\WorldStep</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp">
+      <Filter>Shared\WorldStep</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -437,6 +440,9 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h">
       <Filter>Shared\WorldStep\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepChain.h">
+      <Filter>Shared\WorldStep</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
