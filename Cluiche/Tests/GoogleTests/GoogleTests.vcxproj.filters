@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Draoi">
+      <UniqueIdentifier>{7d2b1c40-3a5e-4f68-9b21-6c8e0a4d5f17}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
     </Filter>
@@ -2739,7 +2742,7 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestWorldHexGrid.cpp">
+    <ClCompile Include="Draoi\TestWorldHexGrid.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldLayerSource.cpp">
@@ -3237,13 +3240,13 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestBiomeRegistry.cpp">
+    <ClCompile Include="Draoi\TestBiomeRegistry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestBiomeRegistryLoad.cpp">
+    <ClCompile Include="Draoi\TestBiomeRegistryLoad.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestBiomeRegistryData.cpp">
+    <ClCompile Include="Draoi\TestBiomeRegistryData.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestBiomeDataOnly.cpp">

@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorld/WorldStructure.h>
 
 #include <filesystem>
 #include <fstream>

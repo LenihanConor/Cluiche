@@ -1191,7 +1191,7 @@
     <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp" />
-    <ClCompile Include="CoW\TestWorldHexGrid.cpp" />
+    <ClCompile Include="Draoi\TestWorldHexGrid.cpp" />
     <ClCompile Include="CoW\TestWorldLayerSource.cpp" />
     <ClCompile Include="CoW\TestWorldGenSchema.cpp" />
     <ClCompile Include="CoW\TestWorldOverlayGeometry.cpp" />
@@ -1357,9 +1357,9 @@
     <ClCompile Include="CoW/TestTerrainRulesSidecar.cpp" />
     <ClCompile Include="DiaAttribute\TestDiaAttributeSetIndexAccess.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp" />
-    <ClCompile Include="CoW\TestBiomeRegistry.cpp" />
-    <ClCompile Include="CoW\TestBiomeRegistryLoad.cpp" />
-    <ClCompile Include="CoW\TestBiomeRegistryData.cpp" />
+    <ClCompile Include="Draoi\TestBiomeRegistry.cpp" />
+    <ClCompile Include="Draoi\TestBiomeRegistryLoad.cpp" />
+    <ClCompile Include="Draoi\TestBiomeRegistryData.cpp" />
     <ClCompile Include="CoW\TestBiomeDataOnly.cpp" />
     <ClCompile Include="CoW\TestBiomeLiterals.cpp" />
     <ClCompile Include="CoW\TestTerrainProfile.cpp" />
