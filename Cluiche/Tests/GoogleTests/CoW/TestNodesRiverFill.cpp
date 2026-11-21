@@ -697,7 +697,7 @@ namespace
     {
         const TerrainRules rules = Rules();
         RandomStream rr(static_cast<unsigned>(seed) ^ 0x5151u);
-        BuildRegions(w, rules, rr);
+        BuildRegions(w, rules, rr, ::CoW::World::Testing::ShippedBiomeRegistry());
         RandomStream rc(static_cast<unsigned>(seed) + 1);
         PlaceCorridorNodes(w, rules, rc);
         const RiverNodeResult river = PlaceRiverNodes(w, rules);

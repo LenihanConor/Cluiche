@@ -248,7 +248,7 @@ TEST_F(WorldFilesTest, AWorldSurvivesExportWriteReadImportThroughARealFile)
     ASSERT_TRUE(ReadWorldFile(dir, "", DefaultWorldName(original.provenance.seed), loaded).Ok());
     EXPECT_EQ(loaded, text) << "no CRLF translation either way";
     WorldStructure imported;
-    const WorldImportResult r = ImportWorldText(loaded, {}, imported);
+    const WorldImportResult r = ImportWorldText(loaded, TestImportContext(), imported);
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
     EXPECT_TRUE(SameCells(original, imported));
     EXPECT_TRUE(original.sites == imported.sites);

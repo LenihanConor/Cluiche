@@ -1,5 +1,6 @@
 // S-1 Regions, Nodes and Site Hook: RegionsAndSites::Place. See RegionsAndSites.h.
 #include <Shared/WorldGeneration/RegionsAndSites.h>
+#include <Shared/World/BiomeRegistry.h>
 
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/NodesRiver.h>
@@ -20,7 +21,8 @@ namespace
     }
 }
 
-PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, uint64_t attemptSeed,
+PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+                  uint64_t attemptSeed,
                   int attempt, Dia::Maths::RandomStream& wldStream, PlaceReport* report)
 {
     PlaceReport local;
@@ -33,7 +35,7 @@ PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const Ter
 
     // Regions
     Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Regions"));
-    rep.regionBuild = BuildRegions(world, rules, wldStream);
+    rep.regionBuild = BuildRegions(world, rules, wldStream, biomes);
 
     // Built-in nodes
     Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Node.Corridor"));

@@ -30,6 +30,8 @@
 #include <chrono>
 #include <cstdint>
 
+namespace CoW { namespace World { class BiomeRegistry; } }
+
 namespace CoW {
 namespace WorldGeneration {
 
@@ -50,8 +52,8 @@ public:
 class GenerationRun
 {
 public:
-    // 'terrain', 'registry' and 'rules' must outlive the run. params.maxRetryAttempts is clamped (ClampMaxRetryAttempts).
-    GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, uint64_t outerSeed,
+    // 'terrain', 'registry', 'rules' and 'biomes' must outlive the run. params.maxRetryAttempts is clamped (ClampMaxRetryAttempts).
+    GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes, uint64_t outerSeed,
                   const GenParams& params, Dia::Maths::RandomStream& rng, IGenerationObserver* observer = nullptr);
 
     // Runs one attempt (or ends the run on an observer abort). Returns true while the run is not finished.
@@ -80,6 +82,7 @@ private:
     const WorldStructure&     mTerrain;
     const SiteRegistry&       mRegistry;
     const TerrainRules&       mRules;
+    const World::BiomeRegistry& mBiomes;
     uint64_t                  mOuterSeed;
     uint32_t                  mMaxAttempts;
     Dia::Maths::RandomStream& mRng;
@@ -95,7 +98,7 @@ private:
 // Blocking convenience: terrain in, report out. On Success 'outWorld' (if non-null) receives the accepted world.
 // Enforces params.timeoutSeconds on the steady clock (a GenerationGuard); the overload in GenerationGuard.h takes the
 // guard so tests can inject a clock and a cancel.
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld = nullptr);
 

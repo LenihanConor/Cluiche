@@ -47,7 +47,8 @@ struct PlaceReport
 };
 
 // attemptSeed = DeriveSubSeed(outerSeed, attempt); attempt is passed on to placers via PlacementContext.
-PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, uint64_t attemptSeed,
+PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+                  uint64_t attemptSeed,
                   int attempt, Dia::Maths::RandomStream& wldStream, PlaceReport* report = nullptr);
 
 } // namespace RegionsAndSites

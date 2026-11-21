@@ -215,7 +215,7 @@ TEST(RegionPartition, ComponentsSplitDisconnectedPiecesAndFlagTinyOnes)
     EXPECT_EQ(comps[1].cells.size(), 4u);
 
     RandomStream rng(1);
-    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng);
+    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng, ShippedBiomeRegistry());
     ASSERT_EQ(g.tinyComponents.size(), 1u);
     EXPECT_EQ(g.tinyComponents[0], 1u);
     for (uint32_t c : g.components[1].cells) { EXPECT_EQ(g.regionOf[c], kNoRegion); }
@@ -278,7 +278,7 @@ TEST(RegionPartition, SeedsFarthestPointWithLowestIndexTie)
     const unsigned seed = SeedWithFirstDraw(21, 10);   // middle: both ends at distance 10
     RandomStream rng(seed);
     const auto comps = FindZoneComponents(w, Rules());
-    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng);
+    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 2u);
     EXPECT_EQ(seeds[0], comps[0].cells[10]);
     EXPECT_EQ(seeds[1], comps[0].cells[0]);
@@ -289,7 +289,7 @@ TEST(RegionPartition, SeedsPickFarthestEnd)
     const WorldStructure w = Strip(20);
     RandomStream rng(SeedWithFirstDraw(20, 4));
     const auto comps = FindZoneComponents(w, Rules());
-    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 3, rng);
+    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 3, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 3u);
     EXPECT_EQ(seeds[1], comps[0].cells[19]);
     EXPECT_EQ(seeds[2], comps[0].cells[11]);   // midpoint of 4..19 (lowest index of the tie 11/12)
@@ -301,7 +301,7 @@ TEST(RegionPartition, SeedsBiomeBonusOutweighsShorterDistance)
     SetBiome(w, 0, 0, F);   // cell 0: distance 9 + bonus 3 beats cell 19: distance 10
     RandomStream rng(SeedWithFirstDraw(20, 9));
     const auto comps = FindZoneComponents(w, Rules());
-    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng);
+    const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 2u);
     EXPECT_EQ(seeds[1], comps[0].cells[0]);
 }
@@ -312,9 +312,9 @@ TEST(RegionPartition, SeedsDeterministicAndStreamDependent)
     FillLand(w, 0, 0, 40, 40, FS, G);
     const auto comps = FindZoneComponents(w, Rules());
     RandomStream a(11), b(11);
-    EXPECT_EQ(PlaceSeeds(w, Rules(), comps[0], 4, a), PlaceSeeds(w, Rules(), comps[0], 4, b));
+    EXPECT_EQ(PlaceSeeds(w, Rules(), comps[0], 4, a, ShippedBiomeRegistry()), PlaceSeeds(w, Rules(), comps[0], 4, b, ShippedBiomeRegistry()));
     std::set<std::vector<uint32_t>> variants;
-    for (unsigned s = 1; s <= 8; ++s) { RandomStream r(s); variants.insert(PlaceSeeds(w, Rules(), comps[0], 4, r)); }
+    for (unsigned s = 1; s <= 8; ++s) { RandomStream r(s); variants.insert(PlaceSeeds(w, Rules(), comps[0], 4, r, ShippedBiomeRegistry())); }
     EXPECT_GT(variants.size(), 1u);
 }
 
@@ -329,7 +329,7 @@ TEST(RegionPartition, GrowthStaysInsideZoneAndClaimsEverything)
     for (unsigned seed = 1; seed <= 10; ++seed)
     {
         RandomStream rng(seed);
-        const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng);
+        const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng, ShippedBiomeRegistry());
         for (int c = 0; c < w.CellCount(); ++c)
         {
             const Cell& cell = w.Cells()[c];
@@ -402,7 +402,7 @@ TEST(RegionPartition, IslandsAreOneRegionEach)
     FillLand(w, 20, 0, 36, 10, AI, G, 3);     // 160 cells, mixed zones below
     FillLand(w, 20, 0, 24, 10, WR, G, 3);     // 40 WR cells: AI stays majority (120)
     RandomStream rng(2);
-    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng);
+    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng, ShippedBiomeRegistry());
     std::set<RegionId> lm2, lm3;
     for (int c = 0; c < w.CellCount(); ++c)
     {
@@ -425,7 +425,7 @@ TEST(RegionPartition, OverflowFlagInsteadOfCrash)
     w.mainLandmass = 1;
     for (int i = 0; i < 70; ++i) { SetLand(w, 2 * i, 1, FS, G, static_cast<uint8_t>(i + 2)); }
     RandomStream rng(1);
-    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng);
+    const RegionGrowth g = BuildProvisionalRegions(w, Rules(), rng, ShippedBiomeRegistry());
     EXPECT_TRUE(g.overflow);
     EXPECT_EQ(g.seeds.size(), static_cast<size_t>(RegionTable::kMaxRegions));
 }
@@ -435,13 +435,13 @@ TEST(RegionPartition, GrowthDeterministicAndSeedDependent)
     WorldStructure w = MakeBlankWorld(40, 40);
     FillLand(w, 0, 0, 40, 40, FS, G);
     RandomStream a(4), b(4), c(5);
-    const RegionGrowth ga = BuildProvisionalRegions(w, Rules(), a), gb = BuildProvisionalRegions(w, Rules(), b);
+    const RegionGrowth ga = BuildProvisionalRegions(w, Rules(), a, ShippedBiomeRegistry()), gb = BuildProvisionalRegions(w, Rules(), b, ShippedBiomeRegistry());
     EXPECT_EQ(ga.regionOf, gb.regionOf);
     bool anyDifferent = false;
     for (unsigned s = 5; s < 12 && !anyDifferent; ++s)
     {
         RandomStream r(s);
-        anyDifferent = BuildProvisionalRegions(w, Rules(), r).regionOf != ga.regionOf;
+        anyDifferent = BuildProvisionalRegions(w, Rules(), r, ShippedBiomeRegistry()).regionOf != ga.regionOf;
     }
     EXPECT_TRUE(anyDifferent);
 }
@@ -452,7 +452,7 @@ TEST(RegionPartition, SmokeGeneratedSmallWorld)
     runner.Run(123, WorldShapeParams{}, GridDimensions{ 66, 42 });
     const WorldStructure& w = runner.World();
     RandomStream rng(7);
-    const RegionGrowth g = BuildProvisionalRegions(w, TestRules(), rng);
+    const RegionGrowth g = BuildProvisionalRegions(w, TestRules(), rng, ShippedBiomeRegistry());
     EXPECT_FALSE(g.overflow);
     EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != DepthZone::None)
         << "total " << int(g.targets.total);

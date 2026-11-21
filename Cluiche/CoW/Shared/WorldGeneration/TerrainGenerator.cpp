@@ -4,6 +4,8 @@
 
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 
+#include <Shared/World/BiomeRegistry.h>
+
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -664,6 +666,9 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
     const uint32_t* flow      = mLayers.GetUInt(mLayers.FindLayer("flowDirection"));
     const uint32_t* biome     = mLayers.GetUInt(mLayers.FindLayer("biomeIndex"));
 
+    // Biome rows the generator may emit; anything else (and an unclassified layer) is written as the registry's ocean row.
+    const World::BiomeRegistry* biomes = mBiomes;
+    const uint32_t              oceanRow = (biomes != nullptr && biomes->Count() > 0) ? static_cast<uint32_t>(biomes->Role(World::BiomeRole::Ocean)) : 0u;
     Cell* cells = world.Cells();
     for (int i = 0; i < n; ++i)
     {
@@ -674,7 +679,8 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
         c.waterSource  = static_cast<WaterSource>(water[i]);
         c.terrain      = static_cast<TerrainType>(type[i]);
         c.depthZone    = static_cast<DepthZone>(zone[i]);
-        c.biome        = biome[i] < static_cast<uint32_t>(kGeneratedBiomeCount) ? static_cast<Biome>(biome[i]) : Biome::Ocean;
+        const bool emitted = biomes != nullptr && biome[i] < biomes->Count() && biomes->IsGenerated(static_cast<World::BiomeIndex>(biome[i]));
+        c.biome        = static_cast<Biome>(emitted ? biome[i] : oceanRow);   // interim bridge: Task 23 makes Cell::biome a BiomeIndex
         c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255
         c.terrainFlags = static_cast<uint8_t>(flags[i]);
         c.downstream   = (c.waterSource == WaterSource::River && flow[i] < 6u) ? static_cast<uint8_t>(flow[i]) : kNoDirection;

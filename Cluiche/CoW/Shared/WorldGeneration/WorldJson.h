@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+namespace CoW { namespace World { class BiomeRegistry; } }
+
 namespace CoW {
 namespace WorldGeneration {
 
@@ -44,6 +46,9 @@ struct WorldJsonContext
     // Export: names for registered site kinds. Import: used to warn about kinds this build does not register.
     // nullptr = only the four built-in node kinds are known.
     const SiteRegistry* registry = nullptr;
+    // Import: the biome registry the region summaries are recomputed against (required; import fails without it).
+    // Task 25 also uses it for biome ids and the registry hash.
+    const World::BiomeRegistry* biomes = nullptr;
     // Export: written as provenance.preset_id when non-empty, else the world's own provenance.presetId.
     std::string presetId;
     // Import: this build's terrain rules version (TerrainRules::rulesVersion); a file recorded with another one gets a warning. 0 = do not compare.

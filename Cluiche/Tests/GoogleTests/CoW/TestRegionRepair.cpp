@@ -89,7 +89,7 @@ namespace
         h.g.components.push_back(comp);
     }
 
-    RegionBuild Finish(Hand& h, int minCells = 1) { return FinishRegions(h.w, RulesMin(minCells), h.g); }
+    RegionBuild Finish(Hand& h, int minCells = 1) { return FinishRegions(h.w, RulesMin(minCells), h.g, ShippedBiomeRegistry()); }
 
     RegionId At(const Hand& h, int x, int y) { return h.w.At(x, y).region; }
 
@@ -593,8 +593,8 @@ namespace
         WorldStructure w = runner.World();
         const TerrainRules rules = TestRules();
         RandomStream rng(7);
-        const RegionGrowth g = BuildProvisionalRegions(w, rules, rng);
-        const RegionBuild b = FinishRegions(w, rules, g);
+        const RegionGrowth g = BuildProvisionalRegions(w, rules, rng, ShippedBiomeRegistry());
+        const RegionBuild b = FinishRegions(w, rules, g, ShippedBiomeRegistry());
 
         EXPECT_FALSE(b.overflow);
         EXPECT_EQ(b.unassignedLandCells, 0u);
@@ -698,9 +698,9 @@ TEST(RegionRepair, BuildRegionsEqualsProvisionalPlusFinish)
     WorldStructure b = runner.World();
     const TerrainRules rules = TestRules();
     RandomStream ra(7), rb(7);
-    BuildRegions(a, rules, ra);
-    const RegionGrowth g = BuildProvisionalRegions(b, rules, rb);
-    FinishRegions(b, rules, g);
+    BuildRegions(a, rules, ra, ShippedBiomeRegistry());
+    const RegionGrowth g = BuildProvisionalRegions(b, rules, rb, ShippedBiomeRegistry());
+    FinishRegions(b, rules, g, ShippedBiomeRegistry());
     EXPECT_TRUE(a.regions == b.regions);
     for (int i = 0; i < a.CellCount(); ++i) { ASSERT_EQ(a.Cells()[i].region, b.Cells()[i].region); }
 }
@@ -713,7 +713,7 @@ TEST(RegionRepair, GeneratedWorldOtherCellFieldsUntouchedAndRebuildIsIdentical)
     const std::vector<Cell> before(w.Cells(), w.Cells() + w.CellCount());
     const TerrainRules rules = TestRules();
     RandomStream r1(7);
-    BuildRegions(w, rules, r1);
+    BuildRegions(w, rules, r1, ShippedBiomeRegistry());
     for (int i = 0; i < w.CellCount(); ++i)
     {
         const Cell& a = before[i];
@@ -725,7 +725,7 @@ TEST(RegionRepair, GeneratedWorldOtherCellFieldsUntouchedAndRebuildIsIdentical)
     }
     const RegionTable first = w.regions;
     RandomStream r2(7);
-    BuildRegions(w, rules, r2);   // rebuild over existing regions
+    BuildRegions(w, rules, r2, ShippedBiomeRegistry());   // rebuild over existing regions
     EXPECT_TRUE(first == w.regions);
 }
 
@@ -752,4 +752,71 @@ TEST(SLOW_RegionRepair, GeneratedWorldsThreePresetsTwentySeedsStructure)
 TEST(SLOW_RegionRepair, GeneratedWorldsThreePresetsTwentySeedsCountsAndAbsorbLimits)
 {
     SweepPresets(true);
+}
+
+// ---------------------------------------------------------------------------
+// Biome registry (plan Task 22, AC 6 region-repair bullet): ocean and lake come from the registry roles, not from
+// fixed enum values. The fixture swaps the roles: row 0 (Biome.Ocean) becomes the lake-role row and row 1 (Biome.Lake)
+// becomes the ocean-role row, so neither role sits on its legacy row.
+// ---------------------------------------------------------------------------
+namespace
+{
+    const CoW::World::BiomeRegistry& RolesSwappedRegistry()
+    {
+        static const CoW::World::BiomeRegistry reg = LoadShippedVariant({
+            { "\"roles\": [\"ocean\"]", "\"roles\": [\"lakeTmp\"]" },
+            { "\"roles\": [\"lake\"]",  "\"roles\": [\"ocean\"]" },
+            { "\"roles\": [\"lakeTmp\"]", "\"roles\": [\"lake\"]" } });
+        return reg;
+    }
+}
+
+TEST(RegionRepair, RegistryRoleFixtureHasOceanAndLakeOffTheirLegacyRows)
+{
+    const auto& reg = RolesSwappedRegistry();
+    EXPECT_EQ(reg.Role(CoW::World::BiomeRole::Lake), 0);
+    EXPECT_EQ(reg.Role(CoW::World::BiomeRole::Ocean), 1);
+}
+
+TEST(RegionRepair, MajorityIgnoresTheRegistrysLakeRoleRow)
+{
+    // 3 cells of row 0 (the lake-role row here) and 1 grassland cell: the lake-role cells never win the majority.
+    Hand h = Make({ "1111" }, { FS }, FS, Legacy(RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake)));
+    SetBiome(h.w, 3, 0, LegacyB("Biome.Grassland"));
+    const RegionBuild b = FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
+    ASSERT_EQ(b.regionCount, 1u);
+    const RegionRecord& rec = h.w.regions.regions[0];
+    EXPECT_EQ(Idx(rec.primaryBiome), B("Biome.Grassland"));
+    EXPECT_FLOAT_EQ(rec.purity, 0.25f);
+}
+
+TEST(RegionRepair, AllLakeRoleRegionReportsTheRegistrysLakeRow)
+{
+    Hand h = Make({ "111" }, { FS }, FS, Legacy(RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake)));
+    FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
+    const RegionRecord& rec = h.w.regions.regions[0];
+    EXPECT_EQ(Idx(rec.primaryBiome), RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    EXPECT_FLOAT_EQ(rec.purity, 1.0f);
+}
+
+TEST(RegionRepair, RegionWithNoCellsReportsTheRegistrysOceanRow)
+{
+    WorldStructure w = MakeBlankWorld(2, 2);
+    RegionRecord rec;
+    rec.id = 1; rec.zone = FS; rec.landmass = 1;
+    w.regions.AddRegion(rec);
+    RecomputeRegionRecords(w, RolesSwappedRegistry());
+    EXPECT_EQ(Idx(w.regions.regions[0].primaryBiome), RolesSwappedRegistry().Role(CoW::World::BiomeRole::Ocean));
+    EXPECT_EQ(w.regions.regions[0].cellCount, 0u);
+    EXPECT_FLOAT_EQ(w.regions.regions[0].purity, 0.0f);
+}
+
+TEST(RegionRepair, ShippedRegistryKeepsOceanAtRowZeroAndLakeAtRowOne)
+{
+    WorldStructure w = MakeBlankWorld(2, 2);
+    RegionRecord rec;
+    rec.id = 1; rec.zone = FS; rec.landmass = 1;
+    w.regions.AddRegion(rec);
+    RecomputeRegionRecords(w, ShippedBiomeRegistry());
+    EXPECT_EQ(Idx(w.regions.regions[0].primaryBiome), B("Biome.Ocean"));
 }

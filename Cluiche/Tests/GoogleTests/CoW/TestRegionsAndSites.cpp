@@ -92,7 +92,7 @@ namespace
     PlaceResult PlaceWorld(WorldStructure& w, const SiteRegistry& reg, uint64_t outer, int attempt, RegionsAndSites::PlaceReport* rep = nullptr)
     {
         RandomStream rng(1);
-        return RegionsAndSites::Place(w, reg, TestRules(), AttemptSeed(outer, attempt), attempt, rng, rep);
+        return RegionsAndSites::Place(w, reg, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), AttemptSeed(outer, attempt), attempt, rng, rep);
     }
 
     // Records what it was given; its site cell depends on its stream.
@@ -710,7 +710,7 @@ namespace
         {
             RandomStream rng(1);
             const auto t0 = std::chrono::steady_clock::now();
-            RegionsAndSites::Place(w, reg, TestRules(), AttemptSeed(7, 0), 0, rng);
+            RegionsAndSites::Place(w, reg, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), AttemptSeed(7, 0), 0, rng);
             const auto t1 = std::chrono::steady_clock::now();
             ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
         }

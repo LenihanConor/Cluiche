@@ -38,7 +38,7 @@ Placed MakePlaced(uint64_t seed)
     p.world = runner.World();
     SiteRegistry registry;
     Dia::Maths::RandomStream rng(1);
-    RegionsAndSites::Place(p.world, registry, TestRules(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
+    RegionsAndSites::Place(p.world, registry, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
     return p;
 }
 

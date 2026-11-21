@@ -3,6 +3,7 @@
 // Every command must change the session exactly as the matching cow.worldgen.* command does (SD-S1-002).
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 
@@ -42,7 +43,7 @@ namespace
     struct PanelFixture
     {
         WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); return true; }();
+        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry()); return true; }();
         WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream rng{ 1 };
         fs::path dir;

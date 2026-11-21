@@ -1,5 +1,6 @@
 // S-1 World Generation: JSON import of a WorldStructure. See WorldJson.h.
 #include <Shared/WorldGeneration/WorldJson.h>
+#include <Shared/World/BiomeRegistry.h>
 
 #include <Shared/WorldGeneration/RegionRepair.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
@@ -304,6 +305,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         return result;
     };
 
+    if (context.biomes == nullptr || context.biomes->Count() == 0) { im.Fail("", "no biome registry is loaded"); return finish(false); }
     if (text.empty()) { im.Fail("", "file is empty"); return finish(false); }
     if (text.size() > kMaxWorldJsonBytes) { im.Fail("", "file is larger than " + std::to_string(kMaxWorldJsonBytes) + " bytes"); return finish(false); }
 
@@ -505,7 +507,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
     }
 
     // Derived summaries: recompute with the generator's arithmetic; the recomputed value wins.
-    RecomputeRegionRecords(world);
+    RecomputeRegionRecords(world, *context.biomes);
     for (unsigned r = 0; r < regionCount; ++r)
     {
         const std::string path = Index("world.regions", r);

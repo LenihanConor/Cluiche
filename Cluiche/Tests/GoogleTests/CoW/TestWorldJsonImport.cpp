@@ -58,7 +58,9 @@ std::string Edited(const WorldStructure& w, const std::function<void(Json::Value
 
 WorldImportResult Import(const std::string& text, WorldStructure& out, const WorldJsonContext& ctx = {})
 {
-    return ImportWorldText(text, ctx, out);
+    WorldJsonContext c = ctx;
+    if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    return ImportWorldText(text, c, out);
 }
 
 bool HasWarning(const WorldImportResult& r, const std::string& needle)
@@ -167,7 +169,7 @@ TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
     original.Cells()[2].biome  = LegacyB("Biome.Scrub");
     original.Cells()[3].biome  = LegacyB("Biome.BurnedAshland");
     original.Cells()[7].biome  = LegacyB("Biome.DesertifiedPlain");
-    RecomputeRegionRecords(original);
+    RecomputeRegionRecords(original, ShippedBiomeRegistry());
     const std::string text = Export(original);
     EXPECT_NE(text.find("Biome.Scrub"), std::string::npos);
     EXPECT_NE(text.find("Biome.BurnedAshland"), std::string::npos);

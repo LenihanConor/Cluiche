@@ -9,6 +9,7 @@
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <filesystem>
@@ -318,6 +319,7 @@ TEST(TerrainRulesSession, DefaultConstructedSessionRefusesEveryGenerationEntryPo
 TEST(TerrainRulesSession, LoadRulesFromGoodSidecarBindsRulesAndGenerates)
 {
     CoW::WorldGeneration::WorldGenSession s;
+    s.SetBiomeRegistry(&CoW::World::Testing::ShippedBiomeRegistry());   // generation needs the registry
     ParamError err;
     ASSERT_TRUE(s.LoadRules(CoW::WorldGeneration::TestSidecarText().c_str(), err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
     EXPECT_TRUE(s.RulesLoaded());

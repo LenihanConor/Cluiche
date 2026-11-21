@@ -683,9 +683,9 @@ void WorldGenSession::ReleaseRun()
 
 bool WorldGenSession::Tick(Dia::Maths::RandomStream& wldStream)
 {
-    if (!mRulesLoaded || !mBlockCode.empty())
+    if (!mRulesLoaded || !mBlockCode.empty() || mBiomes == nullptr)
     {
-        return false;   // nothing generates without rules (or while the host has blocked generation)
+        return false;   // nothing generates without rules or a biome registry (or while the host has blocked generation)
     }
     if (mRun != nullptr)
     {
@@ -749,7 +749,7 @@ bool WorldGenSession::StartRegenerate(Dia::Maths::RandomStream& wldStream)
     }
 
     mGuard = std::make_unique<GenerationGuard>(ClampTimeoutSeconds(mGenParams.timeoutSeconds), mClock);
-    mRun = std::make_unique<GenerationRun>(mCandTerrain, Registry(), mRules, mSeed, mGenParams, wldStream, mGuard.get());
+    mRun = std::make_unique<GenerationRun>(mCandTerrain, Registry(), mRules, *mBiomes, mSeed, mGenParams, wldStream, mGuard.get());
     mState = WorldGenState::Generating;
     return AdvanceRun();
 }
@@ -1244,6 +1244,7 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
 
     WorldJsonContext context;
     context.registry = &Registry();
+    context.biomes = mBiomes;
     context.rulesVersion = mRules.rulesVersion;
     WorldStructure imported;
     const WorldImportResult result = ImportWorldText(text, context, imported);

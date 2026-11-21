@@ -5,6 +5,7 @@
 #ifdef DIA_DEBUG
 
 #include <Modules/WorldGenerationModule.h>   // before windows.h users (RandomStream min/max)
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include "Modules/WorldGenViewHost.h"
 #include "Modules/WorldGenDebugDomain.h"
 
@@ -1479,7 +1480,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 {
     DragonSites sites;
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;
@@ -1562,7 +1563,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder12Kb)
 {
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;

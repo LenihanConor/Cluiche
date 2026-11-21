@@ -1,5 +1,6 @@
 // S-1 Retry Mechanism: the attempt loop. See GenerationRun.h.
 #include <Shared/WorldGeneration/GenerationRun.h>
+#include <Shared/World/BiomeRegistry.h>
 
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationGuard.h>
@@ -64,10 +65,10 @@ namespace
     }
 }
 
-GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
+GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
                              uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                              IGenerationObserver* observer)
-    : mTerrain(terrain), mRegistry(registry), mRules(rules), mOuterSeed(outerSeed)
+    : mTerrain(terrain), mRegistry(registry), mRules(rules), mBiomes(biomes), mOuterSeed(outerSeed)
     , mMaxAttempts(ClampMaxRetryAttempts(params.maxRetryAttempts)), mRng(rng), mObserver(observer)
 {
     mReport.outerSeed = outerSeed;
@@ -120,7 +121,7 @@ bool GenerationRun::Step()
     try
     {
         mWorld = mTerrain;   // terrain and biomes are identical on every attempt
-        const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, rec.subSeed, static_cast<int>(attempt), mRng, &mPlaceReport);
+        const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, mBiomes, rec.subSeed, static_cast<int>(attempt), mRng, &mPlaceReport);
 
         if (!placed.IsOk())
         {
@@ -224,19 +225,19 @@ void GenerationRun::Run()
     while (Step()) {}
 }
 
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld)
 {
     GenerationGuard guard(ClampTimeoutSeconds(params.timeoutSeconds));
-    return GenerateWorld(terrain, registry, rules, outerSeed, params, rng, guard, outWorld);
+    return GenerateWorld(terrain, registry, rules, biomes, outerSeed, params, rng, guard, outWorld);
 }
 
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                GenerationGuard& guard, WorldStructure* outWorld)
 {
-    GenerationRun run(terrain, registry, rules, outerSeed, params, rng, &guard);
+    GenerationRun run(terrain, registry, rules, biomes, outerSeed, params, rng, &guard);
     run.Run();
     if (outWorld != nullptr && run.HasAcceptedWorld()) { *outWorld = run.AcceptedWorld(); }
     return run.Report();

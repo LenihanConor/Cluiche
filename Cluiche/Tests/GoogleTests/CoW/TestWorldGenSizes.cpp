@@ -272,7 +272,7 @@ namespace
     void RunDomainState(const SizeCase& size, const char* preset)
     {
         CoW::WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
-        module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+        module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
         CoW::WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream   rng{ 1 };
         module.GetSession().SetPresetDirectories(FindShippedPresetDir(), "");

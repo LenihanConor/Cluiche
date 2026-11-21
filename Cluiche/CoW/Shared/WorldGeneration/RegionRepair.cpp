@@ -3,6 +3,8 @@
 
 #include <Shared/WorldGeneration/RegionRepair.h>
 
+#include <Shared/World/BiomeRegistry.h>
+
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
@@ -112,7 +114,7 @@ namespace
     };
 }
 
-bool RecomputeRegionRecords(WorldStructure& world)
+bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& biomes)
 {
     const int n = world.CellCount();
     const unsigned count = world.regions.regions.Size();
@@ -120,13 +122,16 @@ bool RecomputeRegionRecords(WorldStructure& world)
     HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
 
+    const unsigned biomeCount = biomes.Count();
+    const World::BiomeIndex oceanRow = biomes.Role(World::BiomeRole::Ocean);
+    const World::BiomeIndex lakeRow  = biomes.Role(World::BiomeRole::Lake);
     struct Stats
     {
         uint32_t count = 0;
-        uint32_t biome[kBiomeCount] = {};
         double   sx = 0.0, sy = 0.0;
     };
     std::vector<Stats> stats(count + 1);
+    std::vector<uint32_t> biomeHist(static_cast<size_t>(count + 1) * biomeCount, 0u);   // [region][biome row]
     auto centre = [&](int c) {
         const auto p = HexTopology::CellCenter(topo.ToCoord(static_cast<uint32_t>(c)), 1.0f);
         return std::pair<double, double>(static_cast<double>(p.x), static_cast<double>(p.y));
@@ -137,7 +142,8 @@ bool RecomputeRegionRecords(WorldStructure& world)
         if (r == kNoRegion || r > count) { continue; }
         Stats& s = stats[r];
         ++s.count;
-        ++s.biome[static_cast<int>(cells[c].biome)];
+        const size_t row = static_cast<size_t>(cells[c].biome);
+        if (row < biomeCount) { ++biomeHist[static_cast<size_t>(r) * biomeCount + row]; }
         const auto p = centre(c);
         s.sx += p.first; s.sy += p.second;
     }
@@ -185,22 +191,23 @@ bool RecomputeRegionRecords(WorldStructure& world)
         RegionRecord& rec = world.regions.regions[id - 1];
         if (s.count == 0)
         {
-            rec.primaryBiome = Biome::Ocean;
+            rec.primaryBiome = static_cast<Biome>(oceanRow);   // interim bridge: Task 23 makes this a BiomeIndex
             rec.purity = 0.0f;
             rec.cellCount = 0;
             rec.centreCell = 0;
         }
         else
         {
+            const uint32_t* hist = &biomeHist[static_cast<size_t>(id) * biomeCount];
             int best = -1;
-            for (int b = 0; b < kBiomeCount; ++b)
+            for (int b = 0; b < static_cast<int>(biomeCount); ++b)
             {
-                if (b == static_cast<int>(Biome::Lake) || s.biome[b] == 0) { continue; }
-                if (best < 0 || s.biome[b] > s.biome[best]) { best = b; }
+                if (b == static_cast<int>(lakeRow) || hist[b] == 0) { continue; }
+                if (best < 0 || hist[b] > hist[best]) { best = b; }
             }
-            if (best < 0) { best = static_cast<int>(Biome::Lake); }   // all-Lake region
-            rec.primaryBiome = static_cast<Biome>(best);
-            rec.purity = static_cast<float>(s.biome[best]) / static_cast<float>(s.count);
+            if (best < 0) { best = static_cast<int>(lakeRow); }   // all-Lake region
+            rec.primaryBiome = static_cast<Biome>(best);   // interim bridge: Task 23 makes this a BiomeIndex
+            rec.purity = static_cast<float>(hist[best]) / static_cast<float>(s.count);
             rec.cellCount = static_cast<uint16_t>(std::min<uint32_t>(s.count, 0xFFFFu));   // saturates
             rec.centreCell = centreCell[id];
         }
@@ -219,7 +226,7 @@ bool RecomputeRegionRecords(WorldStructure& world)
     return neighbourOverflow;
 }
 
-RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth)
+RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const World::BiomeRegistry& biomes)
 {
     RegionBuild out;
     const int n = world.CellCount();
@@ -370,7 +377,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         rec.isIsland = inf.island;
         world.regions.AddRegion(rec);
     }
-    out.neighbourOverflow = RecomputeRegionRecords(world);
+    out.neighbourOverflow = RecomputeRegionRecords(world, biomes);
     const unsigned mainland = world.regions.mainlandRegionCount;
 
     // AC4 amendment: repair (undersize merges) leaving the mainland below 10 regions reports terrain-limited, naming
@@ -395,10 +402,10 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     return out;
 }
 
-RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng)
+RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes)
 {
-    const RegionGrowth g = BuildProvisionalRegions(world, rules, rng);
-    return FinishRegions(world, rules, g);
+    const RegionGrowth g = BuildProvisionalRegions(world, rules, rng, biomes);
+    return FinishRegions(world, rules, g, biomes);
 }
 
 } // namespace WorldGeneration

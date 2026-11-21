@@ -68,7 +68,7 @@ WorldImportResult RoundTrip(const WorldStructure& original, WorldStructure& impo
     JsonIssue issue;
     EXPECT_TRUE(ExportWorldText(original, {}, text, issue)) << issue.field << ": " << issue.message;
     if (textOut) { *textOut = text; }
-    return ImportWorldText(text, {}, imported);
+    return ImportWorldText(text, TestImportContext(), imported);
 }
 
 } // namespace
@@ -92,7 +92,7 @@ TEST(WorldJsonPerf, AC6_SmallWorldExportAndImportTakeWellUnderThreeSeconds)
     const double exportMs = MsSince(t0);
     WorldStructure imported;
     const auto t1 = Clock::now();
-    const WorldImportResult r = ImportWorldText(text, {}, imported);
+    const WorldImportResult r = ImportWorldText(text, TestImportContext(), imported);
     const double importMs = MsSince(t1);
     ASSERT_TRUE(r.ok);
     std::cout << "[perf] Small " << w.CellCount() << " cells, " << w.sites.Count() << " sites, " << text.size()
@@ -131,7 +131,7 @@ TEST(WorldJsonLimits, AC7_TheDefaultOutDirectoryIsUnderCluicheOutCoW)
 {
     EXPECT_STREQ(CoW::WorldGenerationModule::kDefaultOutWorldsDir, "Cluiche/out/CoW/worlds");
     CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
     EXPECT_EQ(module.GetOutWorldsDirectory(), "Cluiche/out/CoW/worlds");
     EXPECT_EQ(fs::path(WorldFilePath(module.GetOutWorldsDirectory(), DefaultWorldName(12345))).generic_string(),
               "Cluiche/out/CoW/worlds/12345.wld.json");
@@ -197,7 +197,7 @@ TEST(WorldJsonLimits, KindNamesUpToSixtyThreeCharactersWork_SixtyFourDoNot)
     ASSERT_TRUE(ExportWorldText(w, {}, text, issue));
     const std::string longName(64, 'k');
     text.replace(text.find(ok), ok.size(), longName);
-    EXPECT_FALSE(ImportWorldText(text, {}, imported).ok);
+    EXPECT_FALSE(ImportWorldText(text, TestImportContext(), imported).ok);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ TEST(WorldJsonEdge, OneByOneWorldRoundTrips)
     w.Cells()[0] = MakeCell(LegacyB("Biome.Grassland"), TerrainType::Lowland, DepthZone::FirstShores, WaterSource::None, 0.4f, 0.3f, 1, 1);
     RegionRecord r; r.id = 1; r.zone = DepthZone::FirstShores; r.landmass = 1;
     w.regions.AddRegion(r);
-    RecomputeRegionRecords(w);
+    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
     Site s; s.kindCrc = SiteKindId(BuiltinNodeKinds::Hunting()); s.cell = 0; s.region = 1;
     w.sites.Add(s);
     WorldStructure imported;
@@ -231,7 +231,7 @@ TEST(WorldJsonEdge, ExactlyThePermittedRegionCountRoundTripsAndOneMoreIsRefused)
         RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.zone = DepthZone::WildReaches; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
-    RecomputeRegionRecords(w);
+    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
     EXPECT_FALSE(w.regions.AddRegion(RegionRecord{})) << "the table itself is full at 64";
     WorldStructure imported;
     const WorldImportResult res = RoundTrip(w, imported);
@@ -259,7 +259,7 @@ TEST(WorldJsonEdge, RegionWithMoreThanSixteenNeighboursRoundTripsStably)
         RegionRecord r; r.id = static_cast<RegionId>(id); r.zone = DepthZone::WildReaches; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
-    const bool overflow = RecomputeRegionRecords(w);
+    const bool overflow = RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
     EXPECT_TRUE(overflow);
     EXPECT_EQ(w.regions.regions[0].neighbours.Size(), static_cast<unsigned>(RegionRecord::kMaxNeighbours));
     WorldStructure imported;
@@ -407,7 +407,7 @@ TEST(SLOW_WorldJsonSweep, LargeWorldsRoundTripWithinTheBudget)
         const double exportMs = MsSince(t0);
         WorldStructure imported;
         const auto t1 = Clock::now();
-        const WorldImportResult r = ImportWorldText(text, {}, imported);
+        const WorldImportResult r = ImportWorldText(text, TestImportContext(), imported);
         const double importMs = MsSince(t1);
         ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
         std::cout << "[perf] Large " << original.CellCount() << " cells, " << text.size() << " bytes: export " << exportMs

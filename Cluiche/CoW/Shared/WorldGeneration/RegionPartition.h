@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <vector>
 
+namespace CoW { namespace World { class BiomeRegistry; } }
+
 namespace CoW {
 namespace WorldGeneration {
 
@@ -105,7 +107,7 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
 // Farthest-point sampling inside one component. First seed: cells[rng.RandomInt() % size]; each next seed
 // maximises minHexDistance(seeds) + kSeedBiomeBonus * [biome differs from every seed's biome], ties lowest cell.
 std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules& rules, const RegionComponent& comp,
-                                 int seedCount, Dia::Maths::RandomStream& rng);
+                                 int seedCount, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes);
 
 // Multi-source Dijkstra growth for every non-tiny component (seeds[i] belongs out.components[i]; empty = skipped),
 // then one provisional region per island landmass. Needs out.components; fills the rest of `out`.
@@ -113,7 +115,8 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
                  RegionGrowth& out);
 
 // Targets + components + shares + seeds + growth in one call.
-RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng);
+RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
+                                     const World::BiomeRegistry& biomes);
 
 } // namespace WorldGeneration
 } // namespace CoW

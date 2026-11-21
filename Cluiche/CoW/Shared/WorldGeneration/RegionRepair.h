@@ -52,17 +52,18 @@ struct RegionBuild
 // Recomputes every record's derived fields from the world's cells: cellCount, primaryBiome, purity, centreCell and
 // neighbours (and mainlandRegionCount). Identity (id, zone, landmass, isIsland) and the table's absorbedCells,
 // fragmentCells and limitedBy are left alone. Cells whose region id is 0 or beyond the table are ignored; a record
-// with no cells gets cellCount 0, purity 0, Ocean, centre 0. Returns true if some region had more than
+// with no cells gets cellCount 0, purity 0, the registry's Ocean-role biome, centre 0 ("Lake" in the purity rule is the
+// Lake-role biome). Returns true if some region had more than
 // kMaxNeighbours neighbours (lists then keep the lowest 16). This is the exact arithmetic FinishRegions uses, shared
 // so world import (WorldJson) reproduces a generated world's summaries bit for bit.
-bool RecomputeRegionRecords(WorldStructure& world);
+bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& biomes);
 
 // Clears previous region data, repairs `growth`, writes Cell::region for every cell and fills world.regions.
 // No other Cell field is touched.
-RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth);
+RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const World::BiomeRegistry& biomes);
 
 // BuildProvisionalRegions + FinishRegions.
-RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng);
+RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes);
 
 } // namespace WorldGeneration
 } // namespace CoW

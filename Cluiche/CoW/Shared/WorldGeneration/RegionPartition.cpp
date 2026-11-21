@@ -2,6 +2,7 @@
 #pragma fp_contract(off)
 
 #include <Shared/WorldGeneration/RegionPartition.h>
+#include <Shared/World/BiomeRegistry.h>
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
@@ -189,7 +190,7 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
 }
 
 std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules& rules, const RegionComponent& comp,
-                                 int seedCount, Dia::Maths::RandomStream& rng)
+                                 int seedCount, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes)
 {
     std::vector<uint32_t> seeds;
     if (comp.cells.empty() || seedCount <= 0) { return seeds; }
@@ -201,13 +202,13 @@ std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules
 
     std::vector<uint32_t> minDist(size, 0xFFFFFFFFu);
     std::vector<uint8_t>  isSeed(size, 0);
-    bool seedBiome[kBiomeCount] = {};
+    std::vector<uint8_t> seedBiome(biomes.Count(), 0);   // per registry row: already used by a seed
 
     auto addSeed = [&](size_t k) {
         const uint32_t cell = comp.cells[k];
         seeds.push_back(cell);
         isSeed[k] = 1;
-        seedBiome[static_cast<int>(cells[cell].biome)] = true;
+        seedBiome[static_cast<size_t>(cells[cell].biome)] = 1;
         const auto cc = topo.ToCoord(cell);
         for (size_t j = 0; j < size; ++j)
         {
@@ -224,7 +225,7 @@ std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules
         {
             if (isSeed[j]) { continue; }
             const float score = static_cast<float>(minDist[j]) +
-                                (seedBiome[static_cast<int>(cells[comp.cells[j]].biome)] ? 0.0f : bonus);
+                                (seedBiome[static_cast<size_t>(cells[comp.cells[j]].biome)] ? 0.0f : bonus);
             if (best == size || score > bestScore) { best = j; bestScore = score; }   // strict: ties keep lowest index
         }
         addSeed(best);
@@ -412,7 +413,8 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
     }
 }
 
-RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng)
+RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
+                                     const World::BiomeRegistry& biomes)
 {
     RegionGrowth out;
     out.components = FindZoneComponents(world, rules);
@@ -421,7 +423,7 @@ RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainR
     std::vector<std::vector<uint32_t>> seeds(out.components.size());
     for (size_t i = 0; i < out.components.size(); ++i)
     {
-        if (!out.components[i].tiny) { seeds[i] = PlaceSeeds(world, rules, out.components[i], shares[i], rng); }
+        if (!out.components[i].tiny) { seeds[i] = PlaceSeeds(world, rules, out.components[i], shares[i], rng, biomes); }
     }
     GrowRegions(world, rules, seeds, out);
     return out;

@@ -20,6 +20,14 @@ namespace WorldGeneration {
 namespace Testing {
 
 // Legacy-enum value of a registry biome id (Cell::biome is still the enum; Task 27 removes the bridge).
+// An import context that carries the shipped biome registry (import requires one).
+inline WorldJsonContext TestImportContext()
+{
+    WorldJsonContext c;
+    c.biomes = &::CoW::World::Testing::ShippedBiomeRegistry();
+    return c;
+}
+
 inline Biome BL(const char* id) { return ::CoW::World::Testing::LegacyB(id); }
 
 inline Cell MakeCell(Biome biome, TerrainType terrain, DepthZone zone, WaterSource water, float elevation, float latitude,
@@ -94,7 +102,7 @@ inline WorldStructure MakeTinyWorld()
     w.regions.absorbedCells = 2;
     w.regions.fragmentCells = 1;
     w.regions.limitedBy = DepthZone::WildReaches;
-    RecomputeRegionRecords(w);   // summaries consistent with the cells: import recomputes them with the same code
+    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());   // summaries consistent with the cells: import recomputes them with the same code
 
     auto add = [&](const Dia::Core::StringCRC& kind, uint32_t cell, RegionId region, uint16_t variant, uint16_t flags)
     {

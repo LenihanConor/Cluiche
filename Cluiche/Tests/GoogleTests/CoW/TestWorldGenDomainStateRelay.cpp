@@ -1,6 +1,7 @@
 // WorldGenDebugDomain attached through DomainStateRelayModule: Main-side adapter shows the card state and forwards commands.
 #include <gtest/gtest.h>
 #include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 
@@ -144,7 +145,7 @@ TEST(WorldGenDomainStateRelay, AdapterShowsCardStateAndForwardsCommands)
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
 	Dia::Maths::RandomStream rng{ 1 };
 	module.GetSession().Tick(rng);
 	CoW::WorldGenDebugDomain domain{ module };
@@ -180,7 +181,7 @@ TEST(WorldGenDomainStateRelay, TenAttachDetachRoundTripsAtLargeFitTheSnapshotSlo
 	Harness h;
 	ASSERT_TRUE(h.Start());
 	CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar();
+	module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
 	Dia::Maths::RandomStream rng{ 1 };
 	Json::Value size(Json::objectValue);
 	size["size"] = "Large";
