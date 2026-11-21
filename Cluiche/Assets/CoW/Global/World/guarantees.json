@@ -1,0 +1,54 @@
+{
+  "format": "cow.guarantees",
+  "version": 1,
+  "site_kinds": [
+    { "id": "CoW.Site.Hearth",       "display_name": "Hearth",       "colour": "#E8602C", "shape": "Triangle" },
+    { "id": "CoW.Site.Nexus",        "display_name": "Nexus Node",   "colour": "#5B8DEF", "shape": "Diamond" },
+    { "id": "CoW.Site.DynastyStart", "display_name": "Dynasty Start", "colour": "#F2C94C", "shape": "Ring" },
+    { "id": "CoW.Site.WorldThrone",  "display_name": "World Throne", "colour": "#B07CD8", "shape": "Star", "variant_label": "Apotheosis", "variant_count": 6 }
+  ],
+  "guarantees": [
+    {
+      "id": "CoW.Guarantee.HearthNexus",
+      "label": "Hearth-Nexus reachability",
+      "type": "reach_any",
+      "from": "CoW.Site.Hearth",
+      "to": "CoW.Site.Nexus",
+      "noun": "Hearth",
+      "to_noun": "Nexus",
+      "to_noun_plural": "Nexus Nodes"
+    },
+    {
+      "id": "CoW.Guarantee.DynastySpacing",
+      "label": "Dynasty spacing",
+      "type": "min_spacing",
+      "kind": "CoW.Site.DynastyStart",
+      "minimum_param": "kDynastySpacingMinimum",
+      "noun": "Dynasty start",
+      "noun_plural": "Dynasty starts",
+      "minimum_key": "minimumSpacing",
+      "distance_key": "pairDistance"
+    },
+    {
+      "id": "CoW.Guarantee.WorldThrone",
+      "label": "World thrones",
+      "type": "variant_cover",
+      "kind": "CoW.Site.WorldThrone",
+      "variant_count": 6,
+      "to_zone": "AncientInteriors",
+      "noun": "world-throne",
+      "noun_plural": "world-thrones",
+      "variant_noun": "Apotheosis type",
+      "target_noun": "Ancient Interiors",
+      "count_key": "thronesOfType",
+      "target_count_key": "ancientInteriorsCells"
+    }
+  ],
+  "marker_overlay": {
+    "overlay_id": "dynasty.starts",
+    "label": "Dynasty starts",
+    "kind": "CoW.Site.DynastyStart",
+    "spacing_guarantee": "CoW.Guarantee.DynastySpacing",
+    "fallback_ring": 10
+  }
+}

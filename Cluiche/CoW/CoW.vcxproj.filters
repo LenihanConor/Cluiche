@@ -238,6 +238,9 @@
     <ClCompile Include="Shared\World\ZoneTable.cpp">
       <Filter>Shared\World</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -467,6 +470,12 @@
     </ClInclude>
     <ClInclude Include="Shared\World\Testing\ZoneTestIndices.h">
       <Filter>Shared\World\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h">
+      <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

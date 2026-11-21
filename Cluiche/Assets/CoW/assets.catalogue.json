@@ -164,6 +164,32 @@
         },
         {
             "content_hash": 0,
+            "id": "json.guarantees",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/World/guarantees.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
+            "id": "json.guarantees_schema",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/World/guarantees.schema.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
             "id": "json.terrain_rules_schema",
             "references": [],
             "scope": "global",

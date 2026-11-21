@@ -53,7 +53,29 @@ bool SiteRegistry::Register(ISitePlacer* placer)
         mPlacers.pop_back();
         return false;
     }
+    // A declared kind with this id is superseded by the placer's info.
+    for (size_t i = 0; i < mDeclared.size(); ++i)
+    {
+        if (mDeclared[i].kindCrc == KindOf(placer))
+        {
+            mDeclared.erase(mDeclared.begin() + i);
+            break;
+        }
+    }
     mOrderValid = false;
+    return true;
+}
+
+bool SiteRegistry::RegisterDeclaredKind(const SiteKindInfo& info)
+{
+    if (info.id[0] == '\0') return false;
+    if (IndexOf(info.kindCrc) >= 0) return false;
+    for (const SiteKindInfo& d : mDeclared)
+        if (d.kindCrc == info.kindCrc) return false;
+    for (const Dia::Core::StringCRC& b : { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(),
+                                           BuiltinNodeKinds::Resource() })
+        if (b.Value() == info.kindCrc) return false;
+    mDeclared.push_back(info);
     return true;
 }
 
@@ -109,7 +131,10 @@ std::span<ISitePlacer* const> SiteRegistry::Order() const
 const SiteKindInfo* SiteRegistry::FindInfo(Dia::Core::StringCRC kind) const
 {
     const int i = IndexOf(kind.Value());
-    return i < 0 ? nullptr : &mPlacers[i]->Info();
+    if (i >= 0) return &mPlacers[i]->Info();
+    for (const SiteKindInfo& d : mDeclared)
+        if (d.kindCrc == kind.Value()) return &d;
+    return nullptr;
 }
 
 std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry)
@@ -119,6 +144,10 @@ std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry)
                                            BuiltinNodeKinds::Resource() })
     {
         out.push_back(BuiltinNodeKindInfo(k));
+    }
+    for (const SiteKindInfo& d : registry.Declared())
+    {
+        out.push_back(d);
     }
     for (ISitePlacer* p : registry.Order())
     {

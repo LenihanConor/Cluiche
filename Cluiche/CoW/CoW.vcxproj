@@ -87,6 +87,7 @@
     <ClCompile Include="Shared\World\BiomeRegistry.cpp" />
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp" />
     <ClCompile Include="Shared\World\ZoneTable.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h" />
@@ -165,6 +166,8 @@
     <ClInclude Include="Shared\World\CellVocabulary.h" />
     <ClInclude Include="Shared\World\ZoneTable.h" />
     <ClInclude Include="Shared\World\Testing\ZoneTestIndices.h" />
+    <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h" />
+    <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

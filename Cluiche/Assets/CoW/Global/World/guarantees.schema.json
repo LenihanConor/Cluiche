@@ -1,0 +1,17 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.guarantees",
+  "entries": [
+    {
+      "key": "kDynastySpacingMinimum",
+      "kind": "parameter",
+      "label": "kDynastySpacingMinimum",
+      "description": "Minimum hex distance between any two dynasty starts.",
+      "type": "float",
+      "min": 1.0,
+      "max": 100.0,
+      "default": 10.0
+    }
+  ]
+}

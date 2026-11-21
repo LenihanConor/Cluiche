@@ -3315,5 +3315,11 @@
     <ClCompile Include="DiaDeferredStep\TestStepChainCapacity.cpp">
       <Filter>DiaDeferredStep</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestGuaranteeSpec.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GuaranteeSpec.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

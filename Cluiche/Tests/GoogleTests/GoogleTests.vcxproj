@@ -1384,6 +1384,8 @@
     <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepFake.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChainCapacity.cpp" />
+    <ClCompile Include="CoW\TestGuaranteeSpec.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GuaranteeSpec.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
