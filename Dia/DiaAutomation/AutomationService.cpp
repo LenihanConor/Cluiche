@@ -191,7 +191,8 @@ namespace Dia { namespace Automation {
 
     void AutomationService::ReleaseNavigationHold(const Dia::Core::StringCRC& target,
                                                     bool* outSuccess,
-                                                    const char** outError)
+                                                    const char** outError,
+                                                    const Dia::Core::StringCRC& preset)
     {
         if (!mHolding)
         {
@@ -220,8 +221,21 @@ namespace Dia { namespace Automation {
             return;
         }
 
+        // Already at the target with nothing in flight: there is nothing to release the hold for. Releasing here would
+        // consume a hold a stage just re-armed on its own return to this stage (a client's trailing navigate_to(current)
+        // arriving after the commit), and the client's next real navigation would then be swallowed.
+        if (mApp.GetCurrentStage() == target && !mApp.IsTransitioning())
+        {
+            DIA_LOG_INFO("Automation", "ReleaseNavigationHold: already at '%s', hold kept", target.AsChar());
+            if (outSuccess) *outSuccess = true;
+            return;
+        }
+
         mHolding = false;
-        mApp.TransitionTo(target);
+        if (preset.Value() != 0)
+            mApp.TransitionTo(target, preset);
+        else
+            mApp.TransitionTo(target);
 
         Dia::ApplicationFlow::LifecycleEvent ev;
         ev.kind    = Dia::ApplicationFlow::LifecycleEventKind::kAutomationHoldReleased;

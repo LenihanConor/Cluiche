@@ -1,6 +1,8 @@
 {
     "name": "Scene2DTestStage",
     "manifest": "Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp",
+    "tags": ["test", "scene"],
+    "description": "Scene graph and spatial composition",
     "scene": "misc/test_scene.diascene",
     "config": {
         "path_aliases": {

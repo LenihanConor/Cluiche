@@ -1,6 +1,6 @@
 Show the current project backlog in a consistent four-section format.
 
-Step 1 — Read `docs/BACKLOG.md` in full.
+Step 1 — Read `docs/BACKLOG.md` in full. Every table has a Project column. If an argument is given (e.g. `cow`, `dia`), keep only rows whose Project contains it, case-insensitive; otherwise keep all. Show Project as the first column of each table. With `cow`, also add a "Still to be designed" table from the "CoW: Features to Be Designed (GDD)" section after Blocked, omitting crossed-out pieces.
 
 Step 2 — Render four sections derived from the file:
 

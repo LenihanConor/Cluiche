@@ -12,7 +12,7 @@ namespace Dia
 {
 	namespace Graphics
 	{
-		// Arc angles follow SFML convention: clockwise from positive X axis (degrees)
+		// Arc angles are clockwise from the positive X axis (degrees)
 
 		enum class DebugPrimitiveType : unsigned char
 		{
@@ -128,7 +128,7 @@ namespace Dia
 		};
 
 		// Text2D primitive — world-space text label
-		// fontSize is in pixels (SFML setCharacterSize units); 0 or negative = no draw.
+		// fontSize is in pixels; 0 or negative = no draw.
 		// text[64] is null-terminated; strings longer than 63 chars are silently truncated.
 		// Top-left origin: text reads left-to-right from the labelled world position.
 		struct DebugPrimitiveText2D

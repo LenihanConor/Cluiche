@@ -62,7 +62,7 @@ dispatcher.Subscribe<JoystickAxisMovedEvent>([](auto* evt) {
 - `kJoystickConnected` → `JoystickConnectedEvent`
 - `kJoystickDisconnected` → `JoystickDisconnectedEvent`
 
-Now legacy joystick events from SFML are converted to modern typed events.
+Now legacy joystick events are converted to modern typed events.
 
 ---
 

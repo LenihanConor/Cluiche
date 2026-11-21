@@ -1,13 +1,21 @@
-"""dia scaffold stage — create all boilerplate for a new CluicheTest test stage."""
+"""dia scaffold stage — create all boilerplate for a new CluicheTest test stage.
+
+With ``--app <App>`` it instead adds a stage to an existing ``dia scaffold app``
+application (e.g. CoW), using that app's layout.
+"""
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import List, Optional
 
 import click
 
 from dia_cli.utils.repo_root import find_repo_root
+
+from .app_cmd import check_stage_type_clash
+from .app_templates import render_context, render_stage_files, render_template
 
 
 # ---------------------------------------------------------------------------
@@ -318,6 +326,169 @@ def _update_vcxproj_filters(path: Path, module_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# --app mode: add a stage to an existing generated application
+# ---------------------------------------------------------------------------
+
+_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _read_text_nl(path: Path):
+    """Read a file as LF-normalised text and return it with its original newline."""
+    data = path.read_bytes().decode("utf-8")
+    nl = "\r\n" if "\r\n" in data else "\n"
+    return data.replace("\r\n", "\n"), nl
+
+
+def _write_text_nl(path: Path, text: str, nl: str) -> None:
+    path.write_bytes(text.replace("\n", nl).encode("utf-8"))
+
+
+def _insert_after_last(text: str, pattern: str, insertion: str) -> str:
+    """Insert ``insertion`` (a line block) after the last line matching regex ``pattern``."""
+    lines = text.split("\n")
+    idx = None
+    for i, line in enumerate(lines):
+        if re.search(pattern, line):
+            idx = i
+    if idx is None:
+        raise click.ClickException(f"Could not find anchor /{pattern}/ in project file.")
+    lines[idx + 1:idx + 1] = insertion.split("\n")
+    return "\n".join(lines)
+
+
+def _app_vcxproj_text(text: str, module: str) -> str:
+    cpp = f'    <ClCompile Include="Modules\\{module}.cpp" />'
+    h = f'    <ClInclude Include="Modules\\{module}.h" />'
+    text = _insert_after_last(text, r'<ClCompile Include="[^"]+" />', cpp)
+    return _insert_after_last(text, r'<ClInclude Include="[^"]+" />', h)
+
+
+def _app_filters_text(text: str, module: str) -> str:
+    cpp = (f'    <ClCompile Include="Modules\\{module}.cpp">\n'
+           f'      <Filter>Modules</Filter>\n'
+           f'    </ClCompile>')
+    h = (f'    <ClInclude Include="Modules\\{module}.h">\n'
+         f'      <Filter>Modules</Filter>\n'
+         f'    </ClInclude>')
+    text = _insert_after_last(text, r'</ClCompile>|<ClCompile Include="[^"]+" />', cpp)
+    return _insert_after_last(text, r'</ClInclude>|<ClInclude Include="[^"]+" />', h)
+
+
+def _scaffold_app_stage(
+    repo_root: Path, app: str, name: str, extra_modules: List[str], dry_run: bool, note_budget: bool
+) -> None:
+    """Add stage ``name`` to the generated application ``app`` (all touch points)."""
+    if not _IDENT.match(app):
+        raise click.ClickException(f"Invalid application name '{app}'.")
+    if not _IDENT.match(name):
+        raise click.ClickException(f"Invalid stage name '{name}': use a PascalCase C++ identifier, e.g. Combat.")
+    if name == "Boot":
+        raise click.ClickException("Stage name 'Boot' is reserved for the baseline boot stage.")
+
+    ctx = render_context(app, [], stage=name)
+    snake = ctx["stage_snake"]
+    module = f"{name}Module"
+
+    project_dir = repo_root / "Cluiche" / app
+    assets_dir = repo_root / "Cluiche" / "Assets" / app
+    vcxproj_path = project_dir / f"{app}.vcxproj"
+    filters_path = project_dir / f"{app}.vcxproj.filters"
+    main_path = assets_dir / f"{ctx['lower']}_main.diaapp"
+    diagame_path = assets_dir / f"{ctx['lower']}.diagame"
+    catalogue_path = assets_dir / "assets.catalogue.json"
+    rel = lambda p: p.relative_to(repo_root).as_posix()
+
+    if not vcxproj_path.is_file() or not assets_dir.is_dir():
+        raise click.ClickException(
+            f"Application '{app}' not found: expected {rel(vcxproj_path)} and {rel(assets_dir)}/. "
+            f"Create it with 'dia scaffold app {app}'."
+        )
+    for p in (filters_path, main_path, diagame_path, catalogue_path):
+        if not p.is_file():
+            raise click.ClickException(f"Application '{app}' is missing {rel(p)}.")
+
+    check_stage_type_clash(repo_root, name, hint="stage NAME")
+
+    # New files come from the same templates `dia scaffold app` uses for its initial stage.
+    files = render_stage_files(ctx)
+    diaapp_rel = f"Cluiche/Assets/{app}/Stages/{name}/misc/ApplicationFlow/{snake}.diaapp"
+    if extra_modules:
+        data = json.loads(files[diaapp_rel])
+        deps = data["processing_units"][1]["modules"][0]["dependencies"]
+        deps.extend(m for m in extra_modules if m not in deps)
+        files[diaapp_rel] = json.dumps(data, indent=4)
+    for r in files:
+        if (repo_root / r).exists():
+            raise click.ClickException(f"Stage '{name}' already exists: {r}")
+
+    # Compute every edit in memory first so a failure leaves the tree untouched.
+    main_text, main_nl = _read_text_nl(main_path)
+    main = json.loads(main_text)
+    stages = main.setdefault("stages", [])
+    if any(s.get("name") == name for s in stages):
+        raise click.ClickException(f"Stage '{name}' already exists in {rel(main_path)}.")
+    boot = next((s for s in stages if s.get("name") == "Boot"), None)
+    if boot is None:
+        raise click.ClickException(f"{rel(main_path)} has no 'Boot' stage to wire the new stage into.")
+    stages.append({"name": name, "transitions": ["Boot"], "auto_advance": False})
+    boot.setdefault("transitions", []).append(name)
+
+    game_text, game_nl = _read_text_nl(diagame_path)
+    game = json.loads(game_text)
+    new_import = next(i for i in json.loads(render_template("app.diagame.j2", ctx))["imports"] if i["type"] == "stage")
+    if new_import in game.get("imports", []):
+        raise click.ClickException(f"Stage '{name}' already exists in {rel(diagame_path)}.")
+    game.setdefault("imports", []).append(new_import)
+
+    cat_text, cat_nl = _read_text_nl(catalogue_path)
+    cat = json.loads(cat_text)
+    existing_ids = {a.get("id") for a in cat.get("assets", [])}
+    new_assets = [a for a in json.loads(render_template("assets.catalogue.json.j2", ctx))["assets"]
+                  if a["id"] in (f"stage.{snake}", f"manifest.{snake}")]
+    clash = [a["id"] for a in new_assets if a["id"] in existing_ids]
+    if clash:
+        raise click.ClickException(f"Stage '{name}' already exists in catalogue ({', '.join(clash)}).")
+    cat["assets"].extend(new_assets)
+
+    proj_text, proj_nl = _read_text_nl(vcxproj_path)
+    if f"Modules\\{module}." in proj_text:
+        raise click.ClickException(f"Stage '{name}' already exists in {rel(vcxproj_path)}.")
+    flt_text, flt_nl = _read_text_nl(filters_path)
+    edits = [
+        (main_path, json.dumps(main, indent=4), main_nl),
+        (diagame_path, json.dumps(game, indent=4), game_nl),
+        (catalogue_path, json.dumps(cat, indent=4), cat_nl),
+        (vcxproj_path, _app_vcxproj_text(proj_text, module), proj_nl),
+        (filters_path, _app_filters_text(flt_text, module), flt_nl),
+    ]
+    ordered = sorted(files, key=lambda r: (not r.endswith((".h", ".cpp")), r))
+
+    if dry_run:
+        click.echo(f"[dry-run] Would create/modify the following files for stage '{name}' of app '{app}':\n")
+        for r in ordered:
+            click.echo(f"  Create  {r}")
+        for p, _, _ in edits:
+            click.echo(f"  Update  {rel(p)}")
+        return
+
+    for r in ordered:
+        path = repo_root / r
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(files[r], encoding="utf-8")
+    for p, text, nl in edits:
+        _write_text_nl(p, text, nl)
+
+    click.echo("")
+    for r in ordered:
+        click.echo(f"✓ Created  {r}")
+    for p, _, _ in edits:
+        click.echo(f"✓ Updated  {rel(p)}")
+    if note_budget:
+        click.echo("\nNote: --budget is ignored with --app (app stages have no frame budget).")
+    click.echo(f"\nNext: fill in DoUpdate() logic in {module}.cpp")
+
+
+# ---------------------------------------------------------------------------
 # Click command
 # ---------------------------------------------------------------------------
 
@@ -343,15 +514,36 @@ def _update_vcxproj_filters(path: Path, module_name: str) -> None:
     metavar="FRAMES",
     help="Frame budget for the stage (default: 300).",
 )
-def stage(name: str, modules: Optional[str], dry_run: bool, budget: int) -> None:
+@click.option(
+    "--app",
+    "app_name",
+    default=None,
+    metavar="APP",
+    help=(
+        "Add the stage to an existing application made by 'dia scaffold app' (e.g. CoW) "
+        "instead of CluicheTest. NAME is then the stage name as-is (no 'TestStage' suffix): "
+        "creates Cluiche/APP/Modules/NAMEModule.{h,cpp} and Cluiche/Assets/APP/Stages/NAME/, and "
+        "updates the app's main .diaapp (stage + Boot transition), .diagame, catalogue and vcxproj."
+    ),
+)
+@click.pass_context
+def stage(ctx: click.Context, name: str, modules: Optional[str], dry_run: bool, budget: int,
+          app_name: Optional[str]) -> None:
     """Scaffold all boilerplate for a new CluicheTest test stage.
 
-    NAME is a PascalCase domain name, e.g. RigidBody2D.
+    NAME is a PascalCase domain name, e.g. RigidBody2D. With --app, NAME is the
+    stage name of an application stage, e.g. `dia scaffold stage Combat --app CoW`.
     """
-    n = _derive_names(name)
     extra_modules: List[str] = [m.strip() for m in modules.split(",")] if modules else []
 
     repo_root = find_repo_root(__file__)
+
+    if app_name is not None:
+        budget_given = ctx.get_parameter_source("budget") != click.core.ParameterSource.DEFAULT
+        _scaffold_app_stage(repo_root, app_name, name, extra_modules, dry_run, budget_given)
+        return
+
+    n = _derive_names(name)
 
     # Define all paths
     stage_dir = repo_root / "Cluiche" / "Assets" / "CluicheTest" / "Stages" / n["stage_name"]

@@ -27,12 +27,15 @@ ScalarFieldTestStageModule::ScalarFieldTestStageModule(const Dia::Core::StringCR
     : TestStageModuleBase(instanceId)
     // Initialise all modifier values to 1.0 before mRedRulesField captures pointers.
     , mModifierGrid{}     // zero-init the array (will be overwritten in SetupGrid)
+    // Diffusion is 0.1 (~0.8 / 8 neighbours): with k8Connected the neighbour SUM is
+    // not normalised, so 0.8 saturated every cell at the clamp and left no strict
+    // local maxima (local_maxima_found could never pass).
     , mBlueField(
         Dia::ScalarField::SquareFieldTopology(kGridW, kGridH, Dia::ScalarField::SquareConnectivity::k8Connected),
-        Dia::ScalarField::UniformDecayPolicy(Dia::ScalarField::UniformDecayParams{0.8f, 0.05f}))
+        Dia::ScalarField::UniformDecayPolicy(Dia::ScalarField::UniformDecayParams{0.1f, 0.05f}))
     , mRedField(
         Dia::ScalarField::SquareFieldTopology(kGridW, kGridH, Dia::ScalarField::SquareConnectivity::k8Connected),
-        Dia::ScalarField::UniformDecayPolicy(Dia::ScalarField::UniformDecayParams{0.8f, 0.05f}))
+        Dia::ScalarField::UniformDecayPolicy(Dia::ScalarField::UniformDecayParams{0.1f, 0.05f}))
     , mRedRulesField(
         Dia::ScalarField::SquareFieldTopology(kGridW, kGridH, Dia::ScalarField::SquareConnectivity::k8Connected),
         Dia::ScalarField::Adaptors::RulesPropagationPolicy<ScalarModifierFn>(
@@ -378,6 +381,11 @@ void ScalarFieldTestStageModule::RunSpatialQueries()
             Dia::ScalarField::CellIndex{0, 0}, kGridW, kGridH, mCellQueryBuffer);
         if (mCellQueryBuffer.Size() == 2)
             mLocalMaximaFound = true;
+        else if (GetFrameCount() % 60u == 0u || GetFrameCount() <= 8u)
+        {
+            DIA_LOG_WARNING("CluicheTest", "ScalarField local maxima: %u found (want 2) at frame %u (strict-max search: a saturated plateau reports 0)",
+                static_cast<unsigned int>(mCellQueryBuffer.Size()), GetFrameCount());
+        }
     }
 
     // contested_zone_stable: FindCellsAboveThreshold(0.4) on Combined returns >= 10 cells

@@ -45,7 +45,7 @@ TEST_F(SingletonTest, IsCreated_BeforeCreate_ReturnsFalse)
 
 TEST_F(SingletonTest, GetInstanceConst_BeforeCreate_Asserts)
 {
-    EXPECT_DEATH(MySingleton::GetInstanceConst(), ".*");
+    DIA_EXPECT_DEATH(MySingleton::GetInstanceConst(), ".*");
 }
 
 TEST_F(SingletonTest, Create_CreatesInstance)
@@ -60,7 +60,7 @@ TEST_F(SingletonTest, Create_CalledTwice_Asserts)
     MySingleton::Create();
 
     // Creating again should assert
-    EXPECT_DEATH(MySingleton::Create(), ".*");
+    DIA_EXPECT_DEATH(MySingleton::Create(), ".*");
 }
 
 // ==============================================================================
@@ -80,12 +80,12 @@ TEST_F(SingletonTest, GetInstanceConst_AfterDestroy_Asserts)
     MySingleton::Create();
     MySingleton::Destroy();
 
-    EXPECT_DEATH(MySingleton::GetInstanceConst(), ".*");
+    DIA_EXPECT_DEATH(MySingleton::GetInstanceConst(), ".*");
 }
 
 TEST_F(SingletonTest, Destroy_WithoutCreate_Asserts)
 {
-    EXPECT_DEATH(MySingleton::Destroy(), ".*");
+    DIA_EXPECT_DEATH(MySingleton::Destroy(), ".*");
 }
 
 // ==============================================================================

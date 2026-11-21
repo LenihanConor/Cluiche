@@ -265,7 +265,7 @@ namespace Dia
 					{
 						unsigned int joystickIdx = evt.joystickMove.joystickId;
 						EJoystickAxis axis = evt.joystickMove.AsJoystickAxis();
-						float value = evt.joystickMove.position / 100.0f;  // SFML returns -100 to 100, normalize to -1 to 1
+						float value = evt.joystickMove.position / 100.0f;  // Dia joystick events use -100 to 100, normalize to -1 to 1
 						UpdateActionsForJoystickAxis(joystickIdx, axis, value);
 						break;
 					}

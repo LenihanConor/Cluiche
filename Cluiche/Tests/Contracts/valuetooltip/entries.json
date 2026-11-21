@@ -1,0 +1,154 @@
+{
+  "format": "dia.value_tooltip_fixture",
+  "version": 1,
+  "entries": [
+    {
+      "id": "parameter_full",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "grazing.rate",
+        "kind": "parameter",
+        "label": "Grazing rate",
+        "description": "How much vegetation herbivores eat each season, relative to normal.",
+        "hint": "Above 1.5 the herbivores usually outrun their food supply.",
+        "unit": "× per season",
+        "type": "float",
+        "min": 0,
+        "max": 2,
+        "default": 1.0,
+        "affects": ["producers_total", "group.herbivore"],
+        "related": ["regrowth.forest"],
+        "source": "A1 step 6",
+        "ui": { "group": "Herbivory", "step": 0.05, "decimals": 2 }
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": ["regrowth.forest"] }
+    },
+    {
+      "id": "parameter_inspector",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "grazing.rate",
+        "kind": "parameter",
+        "label": "Grazing rate",
+        "description": "How much vegetation herbivores eat each season, relative to normal.",
+        "hint": "Above 1.5 the herbivores usually outrun their food supply.",
+        "unit": "× per season",
+        "type": "float",
+        "min": 0,
+        "max": 2,
+        "default": 1.0,
+        "affects": ["producers_total", "group.herbivore"],
+        "related": ["regrowth.forest"],
+        "source": "A1 step 6",
+        "ui": { "group": "Herbivory", "step": 0.05, "decimals": 2 }
+      },
+      "options": { "inspector": true, "packId": null, "resolvable": [] }
+    },
+    {
+      "id": "parameter_pack",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "grazing.rate",
+        "kind": "parameter",
+        "label": "Grazing rate",
+        "description": "How much vegetation herbivores eat each season, relative to normal.",
+        "hint": "Above 1.5 the herbivores usually outrun their food supply.",
+        "unit": "× per season",
+        "type": "float",
+        "min": 0,
+        "max": 2,
+        "default": 1.0,
+        "affects": ["producers_total", "group.herbivore"],
+        "related": ["regrowth.forest"],
+        "source": "A1 step 6",
+        "ui": { "group": "Herbivory", "step": 0.05, "decimals": 2 }
+      },
+      "options": { "inspector": false, "packId": "lush", "resolvable": ["regrowth.forest"] }
+    },
+    {
+      "id": "enum_values",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "season.start",
+        "kind": "parameter",
+        "label": "Starting season",
+        "description": "Which season the simulation begins in.",
+        "type": "enum",
+        "values": [
+          { "id": "spring", "label": "Spring", "description": "Vegetation is regrowing." },
+          { "id": "summer", "label": "Summer", "description": "Peak growth and peak grazing." },
+          { "id": "winter", "label": "Winter", "description": "Growth stops; herbivores live off reserves." }
+        ],
+        "ui": { "group": "Calendar" }
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": [] }
+    },
+    {
+      "id": "bare",
+      "for": "cow.field_schema",
+      "entry": {
+        "key": "marker",
+        "kind": "field",
+        "label": "Marker",
+        "description": "An opaque marker value.",
+        "type": "string"
+      },
+      "options": { "inspector": true, "packId": null, "resolvable": [] }
+    },
+    {
+      "id": "numeric_no_default",
+      "for": "cow.field_schema",
+      "entry": {
+        "key": "vegetation",
+        "kind": "field",
+        "label": "Vegetation",
+        "description": "Total producer biomass in this cell.",
+        "unit": "biomass",
+        "type": "float",
+        "min": 0,
+        "max": 1
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": [] }
+    },
+    {
+      "id": "default_zero",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "seed.spread",
+        "kind": "parameter",
+        "label": "Seed spread",
+        "description": "Extra cells a seed can travel; zero disables spreading.",
+        "type": "int",
+        "min": 0,
+        "max": 10,
+        "default": 0
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": [] }
+    },
+    {
+      "id": "related_resolvable",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "starvation.threshold",
+        "kind": "parameter",
+        "label": "Starvation threshold",
+        "description": "Food level below which herbivores start to die.",
+        "type": "float",
+        "related": ["regrowth.forest", "grazing.rate"]
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": ["regrowth.forest"] }
+    },
+    {
+      "id": "long_text",
+      "for": "cow.ecology_params",
+      "entry": {
+        "key": "overgraze.pressure",
+        "kind": "parameter",
+        "label": "Overgraze pressure",
+        "description": "Controls how aggressively herbivore populations strip standing vegetation from a cell during each seasonal update. Values below one let the vegetation recover between seasons; values above one cause overgrazing, which depresses soil fertility, starves the herbivores in the following season, and can collapse the local food chain entirely.",
+        "type": "float"
+      },
+      "options": { "inspector": false, "packId": null, "resolvable": [] }
+    }
+  ]
+}

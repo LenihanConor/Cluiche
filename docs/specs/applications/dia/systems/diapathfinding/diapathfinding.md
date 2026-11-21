@@ -20,7 +20,7 @@ The design follows the pattern established by Godot's `AStarGrid2D`: pathfinding
 
 - Define `CPathGraph` concept — requires `GetNeighbours(CellCoord, DynamicArrayC<CellCoord>&)` and `IsPassable(CellCoord)` on the graph type
 - Provide `SquarePathGrid` — rectangular grid, configurable 4-connected or 8-connected neighbour mode, passability per cell
-- Provide `HexPathGrid` — hexagonal grid using axial coordinates, 6-connected neighbours, passability per cell
+- Provide `HexPathGrid` — 6-connected hex grid with per-cell passability, in two layouts: axial hexagon (`HexPathGrid(radius)`) and rectangular flat-top odd-q offset (`HexPathGrid(width, height)`, see hex-rectangular-grid.md); plus `HexTopology` (neighbours, distance, direction helpers) for the rectangular layout
 - Provide `IPathCostProvider` — virtual interface with `GetCost(CellCoord from, CellCoord to)` returning `float`; default `FlatCostProvider` returns `1.0f` (ships with DiaPathfinding, no external dependency)
 - Provide `FindPath<TGraph>(graph, from, to, costProvider)` — synchronous A* returning `PathResult`; blocks until complete
 - Provide `PathResult` — `bool success`, `float totalCost`, `DynamicArrayC<CellCoord> cells`, `ToWorldPositions(float cellSize, DynamicArrayC<Vector2>&)` helper
@@ -237,6 +237,9 @@ namespace Dia::Pathfinding {
 | Asynchronous PathfindingSystem | `RequestPath()` queues request; `Update(budgetMs)` time-slices work; `IPathResultObserver` delivers result. `CancelRequest()` drops pending work. | inline | Done |
 | Lifecycle Logging | `DIA_LOG_INFO` on request submit, path found, and path failed. | inline | Done |
 | Test Utilities | `DiaPathfinding/Testing/` — `AssertPathFound`, `AssertPathCells`, `MockCostProvider`. Ships with library; consumer opt-in via include. | inline | Done |
+| Rectangular Hex Grid | `HexPathGrid(width, height)` — rectangular flat-top odd-q offset layout sized to the grid (CoW maps up to 104×64), `HexTopology` (neighbours, distance, direction helpers), and the corrected hex heuristic. Radius mode unchanged. | @hex-rectangular-grid.md | Done |
+| Scalable SquarePathGrid storage | `SquarePathGrid` stores passability on the heap, sized to the grid (no 4096-cell cap, no silent overrun). Specified together with FlowField storage. | @docs/specs/applications/dia/systems/diaflowfield/scalable-storage.md | Approved |
+| Grid Search Helpers *(added 2026-11-18, world-sim review)* | `CIndexGraph` concept + `HexNeighbours` + `AdjacencyGraph`; deterministic `MultiSourceSteps`, `FloodRegion`/`ConnectedComponents`, `MultiSourceDijkstra<Cost>` (settle hook: Accept/Skip/Park), `PriorityFlood`; reusable `GridSearchScratch`. S-1 migrates 10 call sites (9 searches: water, mainland, coast 2-pass, mountains, rivers, depth, navigation, regions, drainage) | @grid-search-helpers.md | Approved |
 
 ## Dependencies on Other Systems
 
@@ -309,6 +312,6 @@ namespace Dia::Pathfinding {
 
 ## Status
 
-`Done`
+`In Progress` (all earlier features Done; Grid Search Helpers added and Approved 2026-11-18, not built. Was `Done`.)
 
 **Plan:** @docs/specs/applications/dia/systems/diapathfinding/diapathfinding.plan.md

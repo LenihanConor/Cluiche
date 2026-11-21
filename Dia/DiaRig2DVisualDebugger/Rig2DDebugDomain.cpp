@@ -8,8 +8,8 @@
 #include "BoneLabelsDrawer.h"
 #include "RestPoseDrawer.h"
 
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 
 namespace Dia::Rig2D
 {

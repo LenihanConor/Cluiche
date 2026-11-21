@@ -1,0 +1,50 @@
+{
+  "description": "An object map default whose keys all resolve through keyRef is clean. The cow.biomes file is the shared keyRef key data file: ids TemperateForest, Desert, Tundra (also used by the C++ conformance tests).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "affinity",
+          "kind": "parameter",
+          "label": "affinity",
+          "description": "d",
+          "type": "map",
+          "keyRef": "cow.biomes/biomes[].id",
+          "valueType": "float",
+          "min": 0,
+          "max": 1,
+          "default": {
+            "TemperateForest": 0.9,
+            "Desert": 0.2,
+            "Tundra": 1
+          }
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Biomes/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "TemperateForest"
+          },
+          {
+            "id": "Desert"
+          },
+          {
+            "id": "Tundra"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": []
+}

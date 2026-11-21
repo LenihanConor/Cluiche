@@ -1,0 +1,11 @@
+{
+    "name": "MessageBusStressTestStage",
+    "manifest": "Stages/MessageBusStressTestStage/misc/ApplicationFlow/message_bus_stress_test_stage.diaapp",
+    "tags": ["test", "messaging"],
+    "description": "High-throughput messaging stress tests",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

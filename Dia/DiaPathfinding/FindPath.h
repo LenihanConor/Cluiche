@@ -57,8 +57,14 @@ namespace Dia::Pathfinding {
             }
             else if constexpr (std::is_same_v<TGraph, HexPathGrid>)
             {
-                // Axial hex cube distance: (|dq| + |dr| + |dq+dr|) / 2
-                return static_cast<float>((dx + dy + std::abs(dx - dy)) / 2);
+                if (graph.GetLayout() == HexLayout::kOffsetRectangle)
+                {
+                    return static_cast<float>(HexTopology::Distance(a, b));
+                }
+                // Axial hex cube distance: (|dq| + |dr| + |dq+dr|) / 2 (signed dq, dr)
+                const int dq = a.x - b.x;
+                const int dr = a.y - b.y;
+                return static_cast<float>((std::abs(dq) + std::abs(dr) + std::abs(dq + dr)) / 2);
             }
             else
             {
@@ -111,6 +117,13 @@ namespace Dia::Pathfinding {
                     step = cameFrom[step];
                 }
                 reversed.push_back(from);
+
+                // PathResult holds a fixed number of cells; a longer route would write
+                // past the array in Release, so report "no path" instead.
+                if (reversed.size() > PathResult::kMaxCells)
+                {
+                    return PathResult{};
+                }
 
                 std::reverse(reversed.begin(), reversed.end());
 

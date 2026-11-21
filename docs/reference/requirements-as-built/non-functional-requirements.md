@@ -504,7 +504,7 @@ Support Windows platform, designed for cross-platform.
 
 **Implementation:**
 - Platform-agnostic core (Dia)
-- Platform-specific backends (DiaSFML)
+- Platform-specific backends (DiaSDL, DiaBgfx)
 
 **Status:** ✅ Complete (Windows supported, architecture platform-agnostic)
 
@@ -531,7 +531,7 @@ Minimize external dependencies, document all.
 
 **Implementation:**
 - External dependencies documented
-- SFML (zlib license), JsonCpp (MIT)
+- SDL3 (zlib license), bgfx, JsonCpp (MIT)
 
 **Status:** ✅ Complete (dependencies documented)
 

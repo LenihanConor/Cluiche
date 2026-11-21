@@ -1,0 +1,26 @@
+{
+  "format": "dia.ramps.conformance.legend_ticks", "version": 1,
+  "comment": "BuildLegend ticks for a float entry with min/max (and optional unit). Tick values compare with a tight float tolerance.",
+  "cases": [
+    { "min": 0, "max": 1, "expectedUnit": "", "expectedTicks": [0, 0.5, 1] },
+    { "min": 0, "max": 100, "expectedUnit": "", "expectedTicks": [0, 50, 100] },
+    { "min": -1, "max": 1, "expectedUnit": "", "expectedTicks": [-1, -0.5, 0, 0.5, 1] },
+    { "min": -50, "max": 50, "expectedUnit": "", "expectedTicks": [-50, 0, 50] },
+    { "min": 0, "max": 0.001, "expectedUnit": "", "expectedTicks": [0, 0.0005, 0.001] },
+    { "min": 0, "max": 1000000.0, "expectedUnit": "", "expectedTicks": [0, 500000, 1000000] },
+    { "min": 0, "max": 7, "expectedUnit": "", "expectedTicks": [0, 2, 4, 6, 7] },
+    { "min": 3, "max": 17, "expectedUnit": "", "expectedTicks": [3, 5, 10, 15, 17] },
+    { "min": -0.3, "max": 0.3, "expectedUnit": "", "expectedTicks": [-0.3, -0.2, 0, 0.2, 0.3] },
+    { "min": 5, "max": 5, "expectedUnit": "", "expectedTicks": [5] },
+    { "min": 0.1, "max": 0.7, "expectedUnit": "", "expectedTicks": [0.1, 0.2, 0.4, 0.6, 0.7] },
+    { "min": -10, "max": -2, "expectedUnit": "", "expectedTicks": [-10, -8, -6, -4, -2] },
+    { "min": 7, "max": 3, "expectedUnit": "", "expectedTicks": [7] },
+    { "min": 0, "max": 1e-06, "expectedUnit": "", "expectedTicks": [0, 5e-07, 1e-06] },
+    { "min": 0, "max": 10, "expectedUnit": "", "expectedTicks": [0, 5, 10] },
+    { "min": 0, "max": 3, "expectedUnit": "", "expectedTicks": [0, 1, 2, 3] },
+    { "min": 0, "max": 4, "expectedUnit": "", "expectedTicks": [0, 1, 2, 3, 4] },
+    { "min": 0, "max": 5, "expectedUnit": "", "expectedTicks": [0, 2, 4, 5] },
+    { "min": 0, "max": 100, "unit": "%", "expectedUnit": "%", "expectedTicks": [0, 50, 100] },
+    { "min": 0, "max": 40, "unit": "m/s", "expectedUnit": "m/s", "expectedTicks": [0, 10, 20, 30, 40] }
+  ]
+}

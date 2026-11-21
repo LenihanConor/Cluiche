@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback, CSSProperties } from 'react';
-import { theme, ConnectionStatus, TabBar, useResizableDivider } from '@dia/editor-ui';
+import { useEffect, useRef, useState, useCallback, CSSProperties } from 'react';
+import { theme, ConnectionStatus, TabBar, useResizableDivider, newFrameReqId } from '@dia/editor-ui';
 import type { Tab } from '@dia/editor-ui';
 import { useInspectorStore } from './store';
+import { SchemaCache } from './schemaCache';
 import { EntityList } from './components/EntityList';
 import { ContextStrip } from './components/ContextStrip';
 import { FieldsTab } from './components/FieldsTab';
@@ -9,6 +10,9 @@ import { QueriesTab } from './components/QueriesTab';
 import { MailboxTab } from './components/MailboxTab';
 import { WatchTab } from './components/WatchTab';
 import { StatusBar } from './components/StatusBar';
+
+// Fixed id for the priming get_connection_state request so its reply can be recognised.
+const kStateReqId = 'init_connection_state';
 
 export default function App() {
     const [searchText, setSearchText] = useState('');
@@ -37,13 +41,35 @@ export default function App() {
 
     const { leftWidth, dividerProps } = useResizableDivider(180, 400);
 
+    // Component field descriptions (valueschema.get), fetched once per component type id.
+    const schemaCacheRef = useRef<SchemaCache | null>(null);
+    if (schemaCacheRef.current === null) {
+        schemaCacheRef.current = new SchemaCache((prefix) => {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    __diaFromFrame: true,
+                    payload: { type: 'entity_inspector.schema_get', reqId: newFrameReqId(), data: { prefix } },
+                }, '*');
+            }
+        });
+    }
+    const schemaCache = schemaCacheRef.current;
+
     // Bridge wiring — EIRM-003
     useEffect(() => {
         const dispatch = (topic: string, data: unknown) => {
             const d = data as any;
             switch (topic) {
                 case 'entity_inspector.connection_state':
-                    if (d?.connected !== undefined) setConnected(d.connected);
+                    if (d?.connected !== undefined) {
+                        setConnected(d.connected);
+                        schemaCache.reset();
+                    }
+                    break;
+                case 'entity_inspector.schema_data':
+                    if (typeof d?.prefix === 'string') {
+                        schemaCache.receive(d.prefix, d.success === true, Array.isArray(d.entries) ? d.entries : []);
+                    }
                     break;
                 case 'entity_inspector.inspect_data':
                     if (d?.entities) setEntities(d.entities);
@@ -69,13 +95,17 @@ export default function App() {
 
         const onMessage = (e: MessageEvent) => {
             const env = e.data;
+            if (env && env.__diaResponse === true && env.reqId === kStateReqId) {
+                // get_connection_state is a request handler; its reply carries { connected }.
+                dispatch('entity_inspector.connection_state', env.result);
+            }
             if (env && env.__dia === true && typeof env.topic === 'string') {
                 dispatch(env.topic, env.data);
             }
         };
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
-    }, [setConnected, setEntities, setFrame, setEntityCount, setQueries, setMailbox, setWatchItems]);
+    }, [schemaCache, setConnected, setEntities, setFrame, setEntityCount, setQueries, setMailbox, setWatchItems]);
 
     // Init request for connection state
     useEffect(() => {
@@ -83,7 +113,7 @@ export default function App() {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     __diaFromFrame: true,
-                    payload: { type, reqId: null, data: data || {} },
+                    payload: { type, reqId: kStateReqId, data: data || {} },
                 }, '*');
             }
         };
@@ -94,7 +124,7 @@ export default function App() {
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 __diaFromFrame: true,
-                payload: { type, reqId: null, data: data || {} },
+                payload: { type, reqId: newFrameReqId(), data: data || {} },
             }, '*');
         }
     }, []);
@@ -214,6 +244,7 @@ export default function App() {
                                         allEntities={entities}
                                         onNavigate={setSelectedIdx}
                                         onWriteField={handleWriteField}
+                                        schemaCache={schemaCache}
                                     />
                                 )}
                                 {activeTab === 'queries' && (

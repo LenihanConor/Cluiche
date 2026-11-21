@@ -1,0 +1,96 @@
+{
+  "count" : 1,
+  "from" : 0,
+  "groupSizes" : 
+  {
+    "region=centre" : "BAA=",
+    "region=north" : "BAA=",
+    "region=south" : "BAA=",
+    "world" : "DAA="
+  },
+  "layerCount" : 2,
+  "layerOffset" : 0,
+  "layerTotal" : 4,
+  "next" : 
+  {
+    "from" : 0,
+    "layerOffset" : 2,
+    "structure" : "1528ad42e9c03ffc"
+  },
+  "rows" : 
+  {
+    "rain" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : 
+        {
+          "max" : "AAANQg==",
+          "mean" : "AADeQQ==",
+          "min" : "AACiQQ=="
+        },
+        "region=north" : 
+        {
+          "max" : "AAB0QQ==",
+          "mean" : "AAD4QA==",
+          "min" : "AACAPg=="
+        },
+        "region=south" : 
+        {
+          "max" : "AAA1Qg==",
+          "mean" : "AAC2QQ==",
+          "min" : "AACAPg=="
+        },
+        "world" : 
+        {
+          "max" : "AAA1Qg==",
+          "mean" : "VVWbQQ==",
+          "min" : "AACAPg=="
+        }
+      },
+      "kind" : "float"
+    },
+    "temp" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : 
+        {
+          "max" : "w/WqQQ==",
+          "mean" : "w/WGQQ==",
+          "min" : "hetFQQ=="
+        },
+        "region=north" : 
+        {
+          "max" : "hesVQQ==",
+          "mean" : "CtebQA==",
+          "min" : "pHC9Pg=="
+        },
+        "region=south" : 
+        {
+          "max" : "4XoFQg==",
+          "mean" : "w/XmQQ==",
+          "min" : "w/XCQQ=="
+        },
+        "world" : 
+        {
+          "max" : "4XoFQg==",
+          "mean" : "w/WGQQ==",
+          "min" : "pHC9Pg=="
+        }
+      },
+      "kind" : "float"
+    }
+  },
+  "samples" : 
+  [
+    {
+      "band" : 1,
+      "label" : "Y1 W1",
+      "tick" : 0
+    }
+  ],
+  "structure" : "1528ad42e9c03ffc"
+}

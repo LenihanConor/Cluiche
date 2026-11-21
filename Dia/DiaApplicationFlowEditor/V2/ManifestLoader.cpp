@@ -204,6 +204,16 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
                             }
                         }
 
+                        if (modJson.isMember("requires_tick_after") && modJson["requires_tick_after"].isArray())
+                        {
+                            const Json::Value& refs = modJson["requires_tick_after"];
+                            for (Json::ArrayIndex k = 0; k < refs.size(); ++k)
+                            {
+                                if (refs[k].isString() && !mod.requiresTickAfter.IsFull())
+                                    mod.requiresTickAfter.Add(Dia::Core::StringCRC(refs[k].asCString()));
+                            }
+                        }
+
                         mod.startTimeoutMs = modJson.get("start_timeout_ms", 10000.0f).asFloat();
                         mod.stopTimeoutMs  = modJson.get("stop_timeout_ms",  5000.0f).asFloat();
 

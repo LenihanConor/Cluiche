@@ -178,7 +178,9 @@ Tests/
 | **DiaWindow** | Window management | `Interface/IWindow.h` |
 | **DiaInput** | Input handling | `DiaInputEvent.h` |
 | **DiaUI** | UI abstraction | `DiaUIIUISystem.h` |
-| **DiaSFML** | SFML backend | `DiaSFMLRenderWindow.h` |
+| **DiaSDL** | SDL3 window + input backend | `Window.h`, `InputSource.h` |
+| **DiaBgfx** | bgfx 2D rendering backend | `Canvas.h` |
+| **DiaBgfx3D** | bgfx 3D rendering backend | `Canvas3D.h` |
 | **DiaArchitecture** | Patterns | (deprecated, merged into DiaCore) |
 | **DiaIO** | File I/O | `FilePath.h` |
 | **DiaPhysics** | Physics (stub) | Minimal implementation |
@@ -367,14 +369,14 @@ DiaGraphics/
 ```
 
 **Key Classes:**
-- `ICanvas` - Abstract rendering interface (implemented by DiaSFML)
+- `ICanvas` - Abstract rendering interface (implemented by DiaBgfx / DiaBgfx3D)
 - `Frame` - Frame data (color, transform)
 
 **When to Use:**
 - Rendering shapes (lines, circles, sprites)
 - Platform-agnostic graphics code
 
-**Implementation:** `DiaSFML/DiaSFMLRenderWindow.h`
+**Implementation:** `DiaBgfx/Canvas.h`, `DiaBgfx3D/Canvas3D.h`
 
 **Namespaces:** `Dia::Graphics::`
 
@@ -402,7 +404,7 @@ DiaInput/
 - Handling keyboard/mouse/gamepad input
 - Platform-agnostic input code
 
-**Implementation:** `DiaSFML/DiaSFMLInputSource.h`
+**Implementation:** `DiaSDL/InputSource.h`
 
 **Namespaces:** `Dia::Input::`
 
@@ -428,30 +430,48 @@ DiaUI/
 
 ---
 
-### DiaSFML/ - SFML Backend
+### DiaSDL/ - SDL3 Window and Input Backend
 
-**Location:** `Dia/DiaSFML/`
+**Location:** `Dia/DiaSDL/`
 
-**Purpose:** SFML integration for graphics/audio/input
+**Purpose:** SDL3 integration for window creation and input
 
 **Structure:**
 ```
-DiaSFML/
-├── DiaSFMLRenderWindow.h              # SFML window + canvas
-├── DiaSFMLInputSource.h               # SFML input handling
-└── dia.sfml.architecture.module.md
+DiaSDL/
+├── Window.h                           # SDL3 window (IWindow + IInputSource)
+├── WindowFactory.h                    # Window creation / SDL init and shutdown
+├── InputSource.h                      # SDL input event translation
+├── DisplayInfo.h                      # Primary display queries
+└── dia.sdl.architecture.module.md
 ```
 
 **Key Classes:**
-- `DiaSFMLRenderWindow` - Implements `ICanvas` using SFML
-- `DiaSFMLInputSource` - Implements input via SFML events
+- `Dia::SDL::Window` - Implements `IWindow` and `IInputSource` using SDL3
+- `Dia::SDL::WindowFactory` - Creates and destroys the window
 
 **When to Use:**
 - Creating a window
-- Rendering graphics
 - Capturing input
 
-**Namespaces:** `Dia::SFML::`
+**Namespaces:** `Dia::SDL::`
+
+---
+
+### DiaBgfx/ and DiaBgfx3D/ - bgfx Rendering Backends
+
+**Location:** `Dia/DiaBgfx/`, `Dia/DiaBgfx3D/`
+
+**Purpose:** bgfx-based rendering. DiaBgfx implements `ICanvas` for 2D (sprites, debug primitives, UI overlay, CellField layers); DiaBgfx3D extends it with 3D mesh rendering.
+
+**Key Classes:**
+- `Dia::Bgfx::Canvas` - Implements `ICanvas` using bgfx
+- `Dia::Bgfx3D::Canvas3D` - Extends `Canvas` with 3D passes
+
+**When to Use:**
+- Rendering graphics
+
+**Namespaces:** `Dia::Bgfx::`, `Dia::Bgfx3D::`
 
 ---
 
@@ -473,9 +493,9 @@ DiaSFML/
 **Structure:**
 ```
 External/
-├── SFML-2.5.1/                        # SFML graphics library
+├── SDL3/                              # Window/input library
+├── bgfx/ (+ bx/, bimg/)               # Rendering library
 ├── jsoncpp-master/                    # JSON parsing
-├── Webix/                             # Web UI components
 └── VisJS/                             # Visualization library
 ```
 
@@ -567,7 +587,7 @@ dependencies:
 **Examples:**
 - `DiaCore/Containers/Arrays/DynamicArray.h`
 - `DiaMaths/Vector/Vector2D.h`
-- `DiaSFML/DiaSFMLRenderWindow.h`
+- `DiaSDL/Window.h`
 
 ### Namespaces
 

@@ -1,0 +1,36 @@
+{
+    "name": "S1WorldGenerationTestbedStage",
+    "manifest": "Stages/S1WorldGenerationTestbedStage/misc/ApplicationFlow/s1world_generation_testbed_stage.diaapp",
+    "tags": ["tool", "worldgen"],
+    "description": "Live terrain, biome and region editor with sliders",
+    "proves": ["docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md"],
+    "presets": [
+        {
+            "name": "highlands42",
+            "description": "Highlands world, seed 42, Small",
+            "modules": {
+                "WorldGenerationModule": {
+                    "preset": "highlands",
+                    "seed": 42,
+                    "size": "Small"
+                }
+            }
+        },
+        {
+            "name": "archipelago7",
+            "description": "Archipelago world, seed 7, Small",
+            "modules": {
+                "WorldGenerationModule": {
+                    "preset": "archipelago",
+                    "seed": 7,
+                    "size": "Small"
+                }
+            }
+        }
+    ],
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

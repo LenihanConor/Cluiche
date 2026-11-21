@@ -1,0 +1,16 @@
+{
+  "format": "cow.worldshape",
+  "version": 1,
+  "id": "highlands",
+  "displayName": "Highlands",
+  "description": "A rugged, ring-like mountain mass on one broad continent, deep valleys and many lakes.",
+  "params": {
+    "landFraction": 0.55, "continents": 1, "islands": 3, "continentIslands": 0.85,
+    "peninsulas": 1, "coastline": 0.35,
+    "mountainousness": 0.85, "spineToRing": 0.75, "orientationDeg": 120, "passes": 2,
+    "barrier": 0.8, "barrierForm": "Plateau", "ruggedness": 0.7,
+    "rivers": 0.65, "valleyDepth": 0.75, "lakes": 8,
+    "latitudeNorthDeg": 65, "latitudeSouthDeg": 35,
+    "temperatureOffset": 0, "moistureOffset": 0
+  }
+}

@@ -9,6 +9,7 @@
 #include <windows.h>
 #endif
 
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 #include <DiaAttribute/AttributeSchema.h>
 #include <DiaAttribute/AttributeSet.h>
 
@@ -32,6 +33,7 @@
 
 using namespace Dia::Attribute;
 using Dia::Core::StringCRC;
+using namespace Dia::Attribute::Testing;
 using Dia::SaveGame::SaveContext;
 using Dia::SaveGame::LoadContext;
 
@@ -39,48 +41,24 @@ using Dia::SaveGame::LoadContext;
 // Helpers (matching the style already used in the other DiaAttribute test files)
 // ===========================================================================
 
-static Json::Value ParseJson(const char* str)
-{
-    Json::Value root;
-    Json::Reader reader;
-    reader.parse(str, root);
-    return root;
-}
-
 static AttributeSchema MakeDragonSchema()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = DragonSidecarText();
+    return LoadSchemaOrDie(text.c_str());
 }
 
 // Same three attributes as the "full" schema below, minus "mana" — used as the
 // AC-2 "current schema has since dropped an attribute" target.
 static AttributeSchema MakeDragonSchemaNoMana()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = DragonSidecarText();
+    return LoadSchemaOrDie(text.c_str());
 }
 
 static AttributeSchema MakeDragonSchemaWithMana()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 },"
-        "    { \"attribute_name\": \"mana\",     \"minimum_value\": 0.0, \"maximum_value\": 500.0,  \"default_value\": 100.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = MakeSidecarText({ SidecarFloat("health", 0, 2000, 1000), SidecarFloat("strength", 0, 200, 50), SidecarFloat("mana", 0, 500, 100) }, nullptr, "dragon");
+    return LoadSchemaOrDie(text.c_str());
 }
 
 static AttributeModifier MakeModifier(const char* name, const char* attr, ModifierOperation op, float value)

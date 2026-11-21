@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.flowfieldvisualdebugger
 name: DiaFlowFieldVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaFlowFieldVisualDebugger
 status: active
 maturity: dev

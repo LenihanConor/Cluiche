@@ -180,6 +180,11 @@ namespace Dia
 			tCurrentTraceId = 0;
 		}
 
+		bool Tracer::IsThreadSpanBufferRegistered() const
+		{
+			return tRegistered;
+		}
+
 		void Tracer::RegisterTraceSink(ITraceSink* sink)
 		{
 			if (sink == nullptr)
@@ -314,6 +319,24 @@ namespace Dia
 
 				ref.tail->store(tail, std::memory_order_release);
 			}
+		}
+
+		TraceLink Tracer::GetCurrentLink()
+		{
+			TraceLink link = { 0, 0 };
+
+			// No link when tracer not started or thread not registered
+			if (!Tracer::Instance().IsStarted() || !tRegistered)
+				return link;
+
+			// No link when no span is open
+			if (tOpenCount == 0)
+				return link;
+
+			// Return current trace and top-of-stack span
+			link.traceId = tCurrentTraceId;
+			link.spanId = tOpenStack[tOpenCount - 1].spanId;
+			return link;
 		}
 	}
 } // namespace Observation

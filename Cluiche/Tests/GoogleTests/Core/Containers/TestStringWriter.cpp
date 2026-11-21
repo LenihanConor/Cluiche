@@ -8,11 +8,11 @@ TEST(StringWriter, DefaultConstruction_MethodsAssert)
 {
     StringWriter buffer;
 
-    EXPECT_DEATH({ buffer.AsCStr(); }, "");
-    EXPECT_DEATH({ buffer.Capacity(); }, "");
-    EXPECT_DEATH({ buffer.CurrentLength(); }, "");
-    EXPECT_DEATH({ buffer << "BLAH"; }, "");
-    EXPECT_DEATH({ buffer << 'b'; }, "");
+    DIA_EXPECT_DEATH({ buffer.AsCStr(); }, "");
+    DIA_EXPECT_DEATH({ buffer.Capacity(); }, "");
+    DIA_EXPECT_DEATH({ buffer.CurrentLength(); }, "");
+    DIA_EXPECT_DEATH({ buffer << "BLAH"; }, "");
+    DIA_EXPECT_DEATH({ buffer << 'b'; }, "");
 }
 
 TEST(StringWriter, ConstructWithBuffer_InitializesCorrectly)
@@ -56,7 +56,7 @@ TEST(StringWriter, WriteOverflow_Asserts)
 
     buffer << "cats";
 
-    EXPECT_DEATH({ buffer << "are crap animals"; }, "");
+    DIA_EXPECT_DEATH({ buffer << "are crap animals"; }, "");
 }
 
 TEST(StringWriter, AssignBuffer_AfterConstruction_Asserts)
@@ -64,7 +64,7 @@ TEST(StringWriter, AssignBuffer_AfterConstruction_Asserts)
     char bufferMemory[8];
     StringWriter buffer(&bufferMemory[0], 8);
 
-    EXPECT_DEATH({ buffer.AssignBuffer(&bufferMemory[0], 8); }, "");
+    DIA_EXPECT_DEATH({ buffer.AssignBuffer(&bufferMemory[0], 8); }, "");
 }
 
 TEST(StringWriter, AssignBuffer_AfterDefaultConstruction_Works)
@@ -106,7 +106,7 @@ TEST(StringWriter, AssignBuffer_WriteOverflow_Asserts)
     buffer.AssignBuffer(&bufferMemory[0], 8);
     buffer << "cats";
 
-    EXPECT_DEATH({ buffer << "are crap animals"; }, "");
+    DIA_EXPECT_DEATH({ buffer << "are crap animals"; }, "");
 }
 
 TEST(StringWriter, AssignBuffer_CalledTwice_Asserts)
@@ -116,5 +116,5 @@ TEST(StringWriter, AssignBuffer_CalledTwice_Asserts)
 
     buffer.AssignBuffer(&bufferMemory[0], 8);
 
-    EXPECT_DEATH({ buffer.AssignBuffer(&bufferMemory[0], 8); }, "");
+    DIA_EXPECT_DEATH({ buffer.AssignBuffer(&bufferMemory[0], 8); }, "");
 }

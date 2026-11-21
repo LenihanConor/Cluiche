@@ -16,6 +16,7 @@
 #endif
 
 #include <DiaAttribute/AttributeAccessorBridge.h>
+#include <DiaAttribute/Testing/AttributeTestHelpers.h>
 #include <DiaAttribute/AttributeSchema.h>
 #include <DiaAttribute/AttributeSet.h>
 
@@ -37,6 +38,7 @@
 
 using namespace Dia::Attribute;
 using Dia::Core::StringCRC;
+using namespace Dia::Attribute::Testing;
 
 // ===========================================================================
 // Helpers
@@ -52,13 +54,8 @@ static Json::Value ParseJson(const char* str)
 
 static AttributeSchema MakeDragonSchema()
 {
-    const char* json =
-        "{ \"schema_name\": \"dragon\","
-        "  \"attributes\": ["
-        "    { \"attribute_name\": \"health\",   \"minimum_value\": 0.0, \"maximum_value\": 2000.0, \"default_value\": 1000.0 },"
-        "    { \"attribute_name\": \"strength\", \"minimum_value\": 0.0, \"maximum_value\": 200.0,  \"default_value\": 50.0 }"
-        "  ] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json));
+    const std::string text = DragonSidecarText();
+    return LoadSchemaOrDie(text.c_str());
 }
 
 static AttributeModifier MakeModifier(const char* name, const char* attr, ModifierOperation op, float value)
@@ -91,17 +88,16 @@ static AttributeModifier MakeConditionalModifier(const char* name, const char* a
 // rather than hand-written so the >kMaxBridgedAttributesPerSet cap can be exercised (AC-3).
 static AttributeSchema MakeWideSchema(unsigned int count)
 {
-    std::string json = "{ \"schema_name\": \"wide\", \"attributes\": [";
+    std::string entries;
     for (unsigned int i = 0; i < count; ++i)
     {
-        char entry[192];
-        snprintf(entry, sizeof(entry),
-            "%s{ \"attribute_name\": \"attr_%02u\", \"minimum_value\": 0.0, \"maximum_value\": 10000.0, \"default_value\": %u.0 }",
-            (i == 0) ? "" : ",", i, i * 10u);
-        json += entry;
+        char key[32];
+        snprintf(key, sizeof(key), "attr_%02u", i);
+        if (i != 0) entries += ",";
+        entries += SidecarFloat(key, 0, 10000, static_cast<double>(i * 10u));
     }
-    json += "] }";
-    return AttributeSchema::LoadFromJsonValue(ParseJson(json.c_str()));
+    const std::string text = std::string("{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"wide\",\"entries\":[") + entries + "]}";
+    return LoadSchemaOrDie(text.c_str());
 }
 
 static void MakeWideAttributeName(unsigned int index, char* outBuffer, size_t bufferSize)
@@ -537,8 +533,8 @@ TEST(DiaAttributeAccessorBridge, AC5_DistinctSlotNames_NotTreatedAsReRegistratio
 
 TEST(DiaAttributeAccessorBridge, EmptySchema_RegistersNothing_NoAssert)
 {
-    AttributeSchema schema = AttributeSchema::LoadFromJsonValue(
-        ParseJson("{ \"schema_name\": \"empty\", \"attributes\": [] }"));
+    const std::string emptyText = MakeSidecarText({}, nullptr, "empty");
+    AttributeSchema schema = LoadSchemaOrDie(emptyText.c_str());
     AttributeSet set = AttributeSet::CreateFromSchema(schema);
     ASSERT_EQ(set.GetAttributeCount(), 0u);
 

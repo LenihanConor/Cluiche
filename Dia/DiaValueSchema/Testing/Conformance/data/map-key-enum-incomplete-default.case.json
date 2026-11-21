@@ -1,0 +1,62 @@
+{
+  "description": "A keyEnum map default that omits enum values is reported once as data.incomplete-map naming every missing value in enum value order (the C++ load fails naming the first).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "terrain_type",
+          "kind": "field",
+          "label": "Terrain",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "Water"
+            },
+            {
+              "id": "Grass"
+            },
+            {
+              "id": "Sand"
+            },
+            {
+              "id": "Rock"
+            }
+          ],
+          "default": "Water"
+        },
+        {
+          "key": "terrain.cost",
+          "kind": "parameter",
+          "label": "cost",
+          "description": "d",
+          "type": "map",
+          "keyEnum": "terrain_type",
+          "valueType": "float",
+          "min": 0,
+          "max": 10,
+          "default": {
+            "Grass": 1
+          }
+        }
+      ]
+    }
+  ],
+  "files": [],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.incomplete-map",
+      "file": "schemas[0]",
+      "key": "terrain.cost",
+      "path": "default",
+      "record": null,
+      "messageContains": "Water, Sand, Rock",
+      "suggestion": null
+    }
+  ]
+}

@@ -4,6 +4,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{DIAAT001-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{1342df42-b6d8-46e5-85fd-052f27fdc6e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AttributeSchema.h" />
@@ -12,6 +15,12 @@
     <ClInclude Include="IAttributeObserver.h" />
     <ClInclude Include="AttributeObserverSubject.h" />
     <ClInclude Include="AttributeAccessorBridge.h" />
+    <ClInclude Include="ParameterFile.h" />
+    <ClInclude Include="ParamBinding.h" />
+    <ClInclude Include="IMapKeySource.h" />
+    <ClInclude Include="Testing\AttributeTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />
@@ -19,6 +28,7 @@
     <ClCompile Include="AttributeSetComponent.cpp" />
     <ClCompile Include="AttributeObserverSubject.cpp" />
     <ClCompile Include="AttributeAccessorBridge.cpp" />
+    <ClCompile Include="ParameterFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.attribute.architecture.module.md">

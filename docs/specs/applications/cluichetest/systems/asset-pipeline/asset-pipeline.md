@@ -51,13 +51,11 @@ Assets/CluicheTest/
 │   ├── Presentation/
 │   │   ├── ui.frag
 │   │   └── UI/
-│   │       ├── BootStrap/
-│   │       │   ├── bootscreen.html
-│   │       │   ├── launchMenuData.json
-│   │       │   ├── launchMenuData.csv
-│   │       │   └── testdata.js
-│   │       └── Webix/
-│   │           └── 5.2.1/              ← kept until ImGui replacement (backlog)
+│   │       └── BootStrap/
+│   │           ├── bootscreen.html
+│   │           ├── launchMenuData.json
+│   │           ├── launchMenuData.csv
+│   │           └── testdata.js
 │   └── Misc/
 │       └── Resources/
 │           ├── cacert.pem
@@ -89,8 +87,7 @@ bin/CluicheTest/Debug/x64/assets/
 │   ├── Presentation/
 │   │   ├── ui.frag
 │   │   └── UI/
-│   │       ├── BootStrap/
-│   │       └── Webix/5.2.1/
+│   │       └── BootStrap/
 │   └── Misc/Resources/
 └── stages/
     └── DummyStage/
@@ -105,7 +102,7 @@ bin/CluicheTest/Debug/x64/assets/
 |-----------|---------|
 | `Manifests/` | `.diaapp` files |
 | `Presentation/` | Shaders, presentation config |
-| `Presentation/UI/` | HTML UI, Webix (→ ImGui later) |
+| `Presentation/UI/` | HTML UI (→ ImGui later) |
 | `World/` | Textures, environments, level geometry |
 | `Gameplay/` | Game logic data (future) |
 | `Character/` | Character data (future) |
@@ -299,7 +296,7 @@ For V1, all handlers are copy-as-is (no-op transform). The pipeline:
 - **Deploy mirrors raw.** No structural transformation. Future binary conversion may change this (DiaAssetPipeline handles it, not this system).
 - **Global assets are permanent.** Loaded once at boot, never unloaded during application lifetime.
 - **Stage assets are transient.** Exactly one stage loaded at a time. Unload-then-load, no overlap.
-- **Webix retained until ImGui replacement.** Kept under `Presentation/UI/Webix/5.2.1/` — replacement is a separate backlog item.
+- **Webix removed (2026-10-13).** Originally retained until ImGui replacement; `Presentation/UI/Webix/5.2.1/` and its catalogue entries were deleted and `dummyStage.html` rewritten as plain HTML. See `docs/research/webix_removal/`.
 
 ## Decisions
 
@@ -341,7 +338,7 @@ For V1, all handlers are copy-as-is (no-op transform). The pipeline:
 | 4 | Manifest paths | `.diagame` uses relative paths to `.diaapp` imports. After deploy, these paths change (assets are under `assets/global/Manifests/`). How is this resolved? | The `.diagame` and `.diastage` are deployment configuration — they tell AssetServiceModule what to load. The actual file resolution uses DiaAssetRuntime's path resolution (asset ID → absolute deploy path). Manifest imports in `.diagame` are for the DiaApplicationFlow loader (existing system), not for asset resolution. |
 | 5 | DiaAssetCatalogue | When enumerating from `.diagame` at tool-time, how does DiaAssetCatalogue discover assets if there's no `assets.catalogue.json` yet? | Feature 1 creates the directory structure. DiaAssetCatalogueEditor's file discovery (existing feature) scans the raw directory tree to discover assets and create/update `assets.catalogue.json`. The `.diagame` provides the root; the editor walks `Global/` and `Stages/`. |
 | 6 | pathStoreConfig removal | Other applications (CluicheEditor, GoogleTests) may also use pathStoreConfig.json — does removing it break them? | Each application gets its own asset tree and manifest. CluicheEditor and GoogleTests would need their own `.diagame` with path aliases. This migration is scoped to CluicheTest only. |
-| 7 | Webix retention | Webix 5.2.1 is ~30MB of library files. Does it deploy as a folder asset or individual files? | Folder asset (`folder.webix_5_2_1`). DiaAssetPipeline's folder handler deploys the entire directory tree recursively (SD-CAT-013). A single asset ID resolves to the folder root. |
+| 7 | Webix retention | Webix 5.2.1 is ~30MB of library files. Does it deploy as a folder asset or individual files? | Folder asset (`folder.webix_5_2_1`; removed 2026-10-13 along with Webix). DiaAssetPipeline's folder handler deploys the entire directory tree recursively (SD-CAT-013). A single asset ID resolves to the folder root. |
 | 8 | Async readiness | The API is "async-ready" — what specifically needs to change when async loading is added? | Only DiaAssetRuntime internals: add a load thread, make `RequestStageLoad` non-blocking (post to queue), fire `OnAssetReady` from load thread. AssetServiceModule's phase gating already polls `IsLoadComplete()` — no change. Consumer code unchanged. |
 
 ## Status

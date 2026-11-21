@@ -128,13 +128,13 @@ def _build_fake_repo(tmp_path: Path) -> Path:
 class TestDeriveNames:
     def test_simple_name(self):
         n = _derive_names("RigidBody2D")
-        assert n["snake"] == "rigidbody2d"
+        assert n["snake"] == "rigid_body2d"
         assert n["stage_name"] == "RigidBody2DTestStage"
-        assert n["snake_stage"] == "rigidbody2d_test_stage"
-        assert n["stage_id"] == "stage.rigidbody2d_test_stage"
+        assert n["snake_stage"] == "rigid_body2d_test_stage"
+        assert n["stage_id"] == "stage.rigid_body2d_test_stage"
         assert n["module_name"] == "RigidBody2DTestStageModule"
-        assert n["diastage_file"] == "rigidbody2d_test_stage.diastage"
-        assert n["diaapp_file"] == "rigidbody2d_test_stage.diaapp"
+        assert n["diastage_file"] == "rigid_body2d_test_stage.diastage"
+        assert n["diaapp_file"] == "rigid_body2d_test_stage.diaapp"
 
     def test_entity_name(self):
         n = _derive_names("Entity")
@@ -188,11 +188,11 @@ class TestDryRun:
 
     def test_dry_run_prints_diastage_path(self):
         result = self._invoke_dry_run()
-        assert "testentity_test_stage.diastage" in result.output
+        assert "test_entity_test_stage.diastage" in result.output
 
     def test_dry_run_prints_diaapp_path(self):
         result = self._invoke_dry_run()
-        assert "testentity_test_stage.diaapp" in result.output
+        assert "test_entity_test_stage.diaapp" in result.output
 
     def test_dry_run_prints_header_path(self):
         result = self._invoke_dry_run()
@@ -253,7 +253,7 @@ class TestFullRun:
 
     def test_diastage_created(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/test_entity_test_stage.diastage"
         assert p.exists()
 
     def test_diaapp_created(self, tmp_path):
@@ -261,7 +261,7 @@ class TestFullRun:
         p = (
             repo
             / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
-            / "testentity_test_stage.diaapp"
+            / "test_entity_test_stage.diaapp"
         )
         assert p.exists()
 
@@ -279,15 +279,15 @@ class TestFullRun:
 
     def test_diastage_name_field(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/test_entity_test_stage.diastage"
         data = json.loads(p.read_text(encoding="utf-8"))
         assert data["name"] == "TestEntityTestStage"
 
     def test_diastage_manifest_field(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/test_entity_test_stage.diastage"
         data = json.loads(p.read_text(encoding="utf-8"))
-        assert "testentity_test_stage.diaapp" in data["manifest"]
+        assert "test_entity_test_stage.diaapp" in data["manifest"]
 
     # --- diaapp content ---
 
@@ -296,7 +296,7 @@ class TestFullRun:
         p = (
             repo
             / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
-            / "testentity_test_stage.diaapp"
+            / "test_entity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
         assert data["version"] == 3
@@ -306,23 +306,24 @@ class TestFullRun:
         p = (
             repo
             / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
-            / "testentity_test_stage.diaapp"
+            / "test_entity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
-        main_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "MainPU")
-        mod = main_pu["modules"][0]
-        assert "AutomationModule" in mod["dependencies"]
+        sim_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "SimPU")
+        mod = sim_pu["modules"][0]
+        channel_ids = [c["id"] for c in mod["channels"]]
+        assert "AutomationService" in channel_ids
 
     def test_diaapp_module_type_id(self, tmp_path):
         _, repo = self._invoke(tmp_path)
         p = (
             repo
             / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
-            / "testentity_test_stage.diaapp"
+            / "test_entity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
-        main_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "MainPU")
-        mod = main_pu["modules"][0]
+        sim_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "SimPU")
+        mod = sim_pu["modules"][0]
         assert mod["type_id"] == "TestEntityTestStageModule"
 
     def test_diaapp_has_sim_pu(self, tmp_path):
@@ -330,7 +331,7 @@ class TestFullRun:
         p = (
             repo
             / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
-            / "testentity_test_stage.diaapp"
+            / "test_entity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
         sim_pu = next(
@@ -383,7 +384,7 @@ class TestFullRun:
         _, repo = self._invoke(tmp_path)
         p = repo / "Cluiche/CluicheTest/Modules/TestStages/TestEntityTestStageModule.cpp"
         text = p.read_text(encoding="utf-8")
-        assert '"test.testentity.passed"' in text
+        assert '"test.test_entity.passed"' in text
 
     def test_impl_dia_module_macro(self, tmp_path):
         _, repo = self._invoke(tmp_path)
@@ -441,14 +442,14 @@ class TestFullRun:
         p = repo / "Cluiche/Assets/CluicheTest/cluichetest.diagame"
         data = json.loads(p.read_text(encoding="utf-8"))
         import_paths = [i["path"] for i in data["imports"]]
-        assert any("testentity_test_stage.diastage" in path for path in import_paths)
+        assert any("test_entity_test_stage.diastage" in path for path in import_paths)
 
     def test_diagame_import_type_is_stage(self, tmp_path):
         _, repo = self._invoke(tmp_path)
         p = repo / "Cluiche/Assets/CluicheTest/cluichetest.diagame"
         data = json.loads(p.read_text(encoding="utf-8"))
         new_import = next(
-            i for i in data["imports"] if "testentity_test_stage.diastage" in i["path"]
+            i for i in data["imports"] if "test_entity_test_stage.diastage" in i["path"]
         )
         assert new_import["type"] == "stage"
 
@@ -459,22 +460,22 @@ class TestFullRun:
         p = repo / "Cluiche/Assets/CluicheTest/assets.catalogue.json"
         data = json.loads(p.read_text(encoding="utf-8"))
         ids = [a["id"] for a in data["assets"]]
-        assert "stage.testentity_test_stage" in ids
+        assert "stage.test_entity_test_stage" in ids
 
     def test_catalogue_manifest_entry_added(self, tmp_path):
         _, repo = self._invoke(tmp_path)
         p = repo / "Cluiche/Assets/CluicheTest/assets.catalogue.json"
         data = json.loads(p.read_text(encoding="utf-8"))
         ids = [a["id"] for a in data["assets"]]
-        assert "manifest.testentity_test_stage" in ids
+        assert "manifest.test_entity_test_stage" in ids
 
     def test_catalogue_stage_references_manifest(self, tmp_path):
         _, repo = self._invoke(tmp_path)
         p = repo / "Cluiche/Assets/CluicheTest/assets.catalogue.json"
         data = json.loads(p.read_text(encoding="utf-8"))
-        stage_entry = next(a for a in data["assets"] if a["id"] == "stage.testentity_test_stage")
+        stage_entry = next(a for a in data["assets"] if a["id"] == "stage.test_entity_test_stage")
         ref_targets = [r["target"] for r in stage_entry["references"]]
-        assert "manifest.testentity_test_stage" in ref_targets
+        assert "manifest.test_entity_test_stage" in ref_targets
 
     # --- vcxproj updates ---
 
@@ -514,15 +515,15 @@ class TestFullRun:
 # ---------------------------------------------------------------------------
 
 class TestModulesFlag:
-    def _get_main_pu_module(self, repo: Path, stage_name: str, diaapp_file: str) -> dict:
+    def _get_sim_pu_module(self, repo: Path, stage_name: str, diaapp_file: str) -> dict:
         p = (
             repo
             / f"Cluiche/Assets/CluicheTest/Stages/{stage_name}/misc/ApplicationFlow"
             / diaapp_file
         )
         data = json.loads(p.read_text(encoding="utf-8"))
-        main_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "MainPU")
-        return main_pu["modules"][0]
+        sim_pu = next(pu for pu in data["processing_units"] if pu["instance_id"] == "SimPU")
+        return sim_pu["modules"][0]
 
     def test_single_extra_module(self, tmp_path):
         repo = _build_fake_repo(tmp_path)
@@ -532,11 +533,12 @@ class TestModulesFlag:
                 cli, ["scaffold", "stage", "TestEntity", "--modules", "Physics2DModule"]
             )
         assert result.exit_code == 0, result.output
-        mod = self._get_main_pu_module(
-            repo, "TestEntityTestStage", "testentity_test_stage.diaapp"
+        mod = self._get_sim_pu_module(
+            repo, "TestEntityTestStage", "test_entity_test_stage.diaapp"
         )
         assert "Physics2DModule" in mod["dependencies"]
-        assert "AutomationModule" in mod["dependencies"]
+        channel_ids = [c["id"] for c in mod["channels"]]
+        assert "AutomationService" in channel_ids
 
     def test_multiple_extra_modules(self, tmp_path):
         repo = _build_fake_repo(tmp_path)
@@ -547,12 +549,13 @@ class TestModulesFlag:
                 ["scaffold", "stage", "TestEntity", "--modules", "Physics2DModule,EntityModule"],
             )
         assert result.exit_code == 0, result.output
-        mod = self._get_main_pu_module(
-            repo, "TestEntityTestStage", "testentity_test_stage.diaapp"
+        mod = self._get_sim_pu_module(
+            repo, "TestEntityTestStage", "test_entity_test_stage.diaapp"
         )
         assert "Physics2DModule" in mod["dependencies"]
         assert "EntityModule" in mod["dependencies"]
-        assert "AutomationModule" in mod["dependencies"]
+        channel_ids = [c["id"] for c in mod["channels"]]
+        assert "AutomationService" in channel_ids
 
     def test_no_modules_only_automation(self, tmp_path):
         repo = _build_fake_repo(tmp_path)
@@ -560,7 +563,9 @@ class TestModulesFlag:
             runner = CliRunner()
             result = runner.invoke(cli, ["scaffold", "stage", "TestEntity"])
         assert result.exit_code == 0, result.output
-        mod = self._get_main_pu_module(
-            repo, "TestEntityTestStage", "testentity_test_stage.diaapp"
+        mod = self._get_sim_pu_module(
+            repo, "TestEntityTestStage", "test_entity_test_stage.diaapp"
         )
-        assert mod["dependencies"] == ["AutomationModule"]
+        assert mod["dependencies"] == []
+        channel_ids = [c["id"] for c in mod["channels"]]
+        assert "AutomationService" in channel_ids

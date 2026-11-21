@@ -7,6 +7,7 @@
 
 #include <map>
 #include <cstring>
+#include <string>
 
 namespace Dia
 {
@@ -141,18 +142,10 @@ namespace Dia
 				evt.message.type = msgType;
 				evt.message.connectionId = connId;
 
-				if (msgType == MessageType::kText)
-				{
-					evt.dataBuffer.Assign(payload.c_str(), static_cast<unsigned int>(payload.size() + 1));
-					evt.message.length = payload.size();
-				}
-				else
-				{
-					evt.dataBuffer.Assign(payload.data(), static_cast<unsigned int>(payload.size()));
-					evt.message.length = payload.size();
-				}
+				evt.dataBuffer.Assign(payload.data(), payload.size(), msgType == MessageType::kText);
+				evt.message.length = payload.size();
 
-				evt.message.data = &evt.dataBuffer.At(0);
+				evt.message.data = evt.dataBuffer.Data();
 				mIncomingQueue.Add(evt);
 			}
 
@@ -209,7 +202,7 @@ namespace Dia
 							try
 							{
 								mServer.send(pair.second,
-									&msg.dataBuffer.At(0),
+									msg.dataBuffer.Data(),
 									msg.dataLength,
 									opcode);
 							}
@@ -230,7 +223,7 @@ namespace Dia
 							try
 							{
 								mServer.send(it->second,
-									&msg.dataBuffer.At(0),
+									msg.dataBuffer.Data(),
 									msg.dataLength,
 									opcode);
 							}
@@ -332,7 +325,37 @@ namespace Dia
 					mImpl->OnFail(hdl);
 				});
 
-				mImpl->mServer.listen(mImpl->mPort);
+				// Reject browser pages from other origins (cross-site WebSocket hijacking).
+				// Clients without an Origin header (native tools, Python) are allowed.
+				mImpl->mServer.set_validate_handler([this](Internal::ConnectionHdl hdl) -> bool {
+					auto con = mImpl->mServer.get_con_from_hdl(hdl);
+					std::string origin = con->get_origin();
+					if (origin.empty()) return true;
+
+					std::string host = origin;
+					size_t scheme = host.find("://");
+					if (scheme != std::string::npos) host = host.substr(scheme + 3);
+					size_t slash = host.find('/');
+					if (slash != std::string::npos) host = host.substr(0, slash);
+					if (!host.empty() && host[0] == '[')
+					{
+						size_t close = host.find(']');
+						if (close != std::string::npos) host = host.substr(0, close + 1);
+					}
+					else
+					{
+						size_t colon = host.find(':');
+						if (colon != std::string::npos) host = host.substr(0, colon);
+					}
+
+					if (host == "localhost" || host == "127.0.0.1" || host == "[::1]") return true;
+
+					DIA_LOG_WARNING("WebSocket", "Server: Rejected connection from origin '%s'", origin.c_str());
+					return false;
+				});
+
+				// Loopback only: the debug server must not be reachable from the network.
+				mImpl->mServer.listen("127.0.0.1", std::to_string(mImpl->mPort));
 				mImpl->mServer.start_accept();
 			}
 			catch (const std::exception& e)
@@ -423,7 +446,7 @@ namespace Dia
 				switch (evt.eventType)
 				{
 				case Internal::QueuedEvent::Type::kMessage:
-					evt.message.data = &evt.dataBuffer.At(0);
+					evt.message.data = evt.dataBuffer.Data();
 					if (mImpl->mOnMessage)
 					{
 						mImpl->mOnMessage(evt.connectionId, evt.message);
@@ -460,7 +483,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				DIA_LOG_WARNING("WebSocket", "Server: Broadcast message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Broadcast message too large (%zu > %zu bytes)", length, mImpl->mMaxMessageSize);
 				return;
 			}
 
@@ -468,17 +491,8 @@ namespace Dia
 			msg.connectionId = -1;
 			msg.type = type;
 
-			if (type == MessageType::kText)
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length + 1));
-				msg.dataBuffer.At(static_cast<unsigned int>(length)) = '\0';
+				msg.dataBuffer.Assign(data, length, type == MessageType::kText);
 				msg.dataLength = length;
-			}
-			else
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length));
-				msg.dataLength = length;
-			}
 
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 
@@ -495,7 +509,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				DIA_LOG_WARNING("WebSocket", "Server: Send message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Send message too large (%zu > %zu bytes)", length, mImpl->mMaxMessageSize);
 				return false;
 			}
 
@@ -503,17 +517,8 @@ namespace Dia
 			msg.connectionId = connectionId;
 			msg.type = type;
 
-			if (type == MessageType::kText)
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length + 1));
-				msg.dataBuffer.At(static_cast<unsigned int>(length)) = '\0';
+				msg.dataBuffer.Assign(data, length, type == MessageType::kText);
 				msg.dataLength = length;
-			}
-			else
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length));
-				msg.dataLength = length;
-			}
 
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 

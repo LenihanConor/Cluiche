@@ -8,6 +8,7 @@
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaSaveGame/LoadContext.h>
 
+#include <cmath>
 #include <cstring>
 #include <utility>
 
@@ -32,6 +33,7 @@ namespace Dia::Attribute {
     AttributeSet::AttributeSet()
         : mSchemaName()
         , mSlots()
+        , mSlotIndexByName()
         , mOwningEntity()
         , mObserverSubject()
         , mModifierHandlePool()
@@ -48,9 +50,9 @@ namespace Dia::Attribute {
         // Release any heap-owned ConditionExpr instances still attached to outstanding
         // conditional modifiers. AttributeSet is non-copyable/non-movable (see header),
         // so there is no risk of a slot/entry being copied and later double-freed here.
-        for (auto it = mSlots.Begin(); it != mSlots.End(); ++it)
+        for (unsigned int s = 0; s < mSlots.Size(); ++s)
         {
-            AttributeSlot& slot = it.Value();
+            AttributeSlot& slot = mSlots[s];
             for (unsigned int i = 0; i < slot.modifiers.Size(); ++i)
             {
                 delete slot.modifiers[i].parsed_condition;
@@ -79,21 +81,63 @@ namespace Dia::Attribute {
 
         const unsigned int count = schema.GetAttributeCount();
 
+        mSlots.RemoveAll();
+        mSlotIndexByName.RemoveAll();
+
         // HashTable::GetHashIndex divides by table size — SetSize(0, 0) would
-        // divide by zero, so only size the table when there's at least one attribute.
+        // divide by zero, so only size containers when there's at least one attribute.
         if (count > 0)
-            mSlots.SetSize(count, count);
+        {
+            mSlots.Reserve(count);
+            mSlotIndexByName.SetSize(count, count);
+        }
 
         for (unsigned int i = 0; i < count; ++i)
         {
             const AttributeDefinition& def = schema.GetAttributeByIndex(i);
 
             AttributeSlot slot;
+            slot.name          = def.attribute_name;
             slot.base_value    = def.default_value;
             slot.minimum_value = def.minimum_value;
             slot.maximum_value = def.maximum_value;
+            slot.kind          = def.kind;
+            slot.enumCount     = def.enumIdCount;
 
-            mSlots.Add(def.attribute_name, slot);
+            mSlots.Add(slot);
+            mSlotIndexByName.Add(def.attribute_name, i);
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // InitializeFromBands — Feature 7 band-based initialization
+    // -----------------------------------------------------------------------
+    void AttributeSet::InitializeFromBands(const AttributeSchema& schema,
+                                            const Dia::Core::Containers::DynamicArrayC<BandValue, kMaxBandValuesPerCall>& band_values)
+    {
+        // AC-10: Empty band map leaves all attributes at their current base value (no-op)
+        if (band_values.Size() == 0)
+            return;
+
+        // AC-3: Resolve multiple attributes from bands in one call
+        for (unsigned int i = 0; i < band_values.Size(); ++i)
+        {
+            const BandValue& bv = band_values.At(i);
+
+            // Resolve band to float via schema
+            const float resolved = schema.ResolveBand(bv.attribute_name, bv.band_name);
+
+            // AC-9: Attributes not in band map are left unchanged
+            AttributeSlot* slot = FindSlot(bv.attribute_name);
+            if (slot != nullptr)
+            {
+                const float before = ResolveValue(*slot);
+                slot->base_value = resolved;
+                const float after = ResolveValue(*slot);
+
+                // Fire change notifications if value changed
+                NotifyIfChanged(bv.attribute_name, *slot, before, after);
+            }
         }
     }
 
@@ -178,6 +222,10 @@ namespace Dia::Attribute {
         if (hasOverride)
             resolved = overrideValue;
 
+        // Int attributes: round half away from zero (std::round), then clamp.
+        if (slot.kind == AttributeKind::Int)
+            resolved = std::round(resolved);
+
         if (resolved < slot.minimum_value) resolved = slot.minimum_value;
         if (resolved > slot.maximum_value) resolved = slot.maximum_value;
 
@@ -203,9 +251,21 @@ namespace Dia::Attribute {
             mObserverSubject.NotifyAttributeReachedMinimum(mOwningEntity, attribute_name);
     }
 
+    AttributeSet::AttributeSlot* AttributeSet::FindSlot(Dia::Core::StringCRC attribute_name)
+    {
+        const uint32_t* index = mSlotIndexByName.TryGetItemConst(attribute_name);
+        return index != nullptr ? &mSlots[*index] : nullptr;
+    }
+
+    const AttributeSet::AttributeSlot* AttributeSet::FindSlot(Dia::Core::StringCRC attribute_name) const
+    {
+        const uint32_t* index = mSlotIndexByName.TryGetItemConst(attribute_name);
+        return index != nullptr ? &mSlots[*index] : nullptr;
+    }
+
     float AttributeSet::GetValue(Dia::Core::StringCRC attribute_name) const
     {
-        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        const AttributeSlot* slot = FindSlot(attribute_name);
         DIA_ASSERT(slot != nullptr, "AttributeSet::GetValue: unknown attribute '%s'", attribute_name.AsChar());
         if (slot == nullptr)
             return 0.0f;
@@ -215,7 +275,7 @@ namespace Dia::Attribute {
 
     float AttributeSet::GetBaseValue(Dia::Core::StringCRC attribute_name) const
     {
-        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        const AttributeSlot* slot = FindSlot(attribute_name);
         DIA_ASSERT(slot != nullptr, "AttributeSet::GetBaseValue: unknown attribute '%s'", attribute_name.AsChar());
         if (slot == nullptr)
             return 0.0f;
@@ -225,7 +285,7 @@ namespace Dia::Attribute {
 
     void AttributeSet::SetBaseValue(Dia::Core::StringCRC attribute_name, float value)
     {
-        AttributeSlot* slot = mSlots.TryGetItem(attribute_name);
+        AttributeSlot* slot = FindSlot(attribute_name);
         DIA_ASSERT(slot != nullptr, "AttributeSet::SetBaseValue: unknown attribute '%s'", attribute_name.AsChar());
         if (slot == nullptr)
             return;
@@ -242,12 +302,46 @@ namespace Dia::Attribute {
     // -----------------------------------------------------------------------
     ModifierHandle AttributeSet::AddModifier(const AttributeModifier& modifier)
     {
-        AttributeSlot* slot = mSlots.TryGetItem(modifier.attribute_name);
+        AttributeSlot* slot = FindSlot(modifier.attribute_name);
         if (slot == nullptr)
         {
             DIA_ASSERT(false, "AttributeSet::AddModifier: unknown attribute '%s'", modifier.attribute_name.AsChar());
             DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: unknown attribute '%s' — modifier dropped", modifier.attribute_name.AsChar());
             return ModifierHandle::Invalid();
+        }
+
+        // Kind-aware legality (parameter-files Task 22).
+        {
+            const char* illegal = nullptr;
+            const float v = modifier.value;
+            if (modifier.operation != ModifierOperation::Override)
+            {
+                if (slot->kind == AttributeKind::Bool || slot->kind == AttributeKind::Enum)
+                    illegal = "Add/Multiply is not valid on a bool or enum attribute";
+            }
+            else
+            {
+                switch (slot->kind)
+                {
+                case AttributeKind::Bool:
+                    if (!(v == 0.0f || v == 1.0f)) illegal = "Override value must be exactly 0 or 1 for a bool attribute";
+                    break;
+                case AttributeKind::Enum:
+                    if (!(v >= 0.0f && v < static_cast<float>(slot->enumCount) && v == std::floor(v)))
+                        illegal = "Override value must be an in-range ordinal for an enum attribute";
+                    break;
+                case AttributeKind::Int:
+                    if (!(v == std::floor(v))) illegal = "Override value must be a whole number for an int attribute";
+                    break;
+                default: break;
+                }
+            }
+            if (illegal != nullptr)
+            {
+                DIA_LOG_WARNING("Attribute", "AttributeSet::AddModifier: attribute '%s' modifier '%s' rejected: %s",
+                    modifier.attribute_name.AsChar(), modifier.modifier_name.AsChar(), illegal);
+                return ModifierHandle::Invalid();
+            }
         }
 
         if (modifier.operation == ModifierOperation::Override)
@@ -349,7 +443,7 @@ namespace Dia::Attribute {
         if (ownerAttr == nullptr)
             return;
 
-        AttributeSlot* slot = mSlots.TryGetItem(*ownerAttr);
+        AttributeSlot* slot = FindSlot(*ownerAttr);
         DIA_ASSERT(slot != nullptr, "AttributeSet::RemoveModifier: owning attribute slot not found");
         if (slot == nullptr)
             return;
@@ -416,9 +510,7 @@ namespace Dia::Attribute {
         if (index >= mSlots.Size())
             return 0.0f;
 
-        // HashTable's payload array is append-order, so GetItemByIndexConst(index) is the
-        // slot added by InitializeFromSchema for schema attribute `index`.
-        return ResolveValue(mSlots.GetItemByIndexConst(index));
+        return ResolveValue(mSlots[index]);
     }
 
     Dia::Core::StringCRC AttributeSet::GetAttributeNameByIndex(unsigned int index) const
@@ -428,14 +520,7 @@ namespace Dia::Attribute {
         if (index >= mSlots.Size())
             return Dia::Core::StringCRC();
 
-        // HashTable exposes GetItemByIndexConst for payloads but no GetKeyByIndex, so walk
-        // the const iterator (which does expose GetKey) `index` steps. O(index) — acceptable
-        // because callers iterate once at registration time over a small schema.
-        auto it = mSlots.Begin();
-        for (unsigned int i = 0; i < index; ++i)
-            ++it;
-
-        return it.GetKey();
+        return mSlots[index].name;
     }
 
     float AttributeSet::GetMinimumValueByIndex(unsigned int index) const
@@ -445,7 +530,7 @@ namespace Dia::Attribute {
         if (index >= mSlots.Size())
             return 0.0f;
 
-        return mSlots.GetItemByIndexConst(index).minimum_value;
+        return mSlots[index].minimum_value;
     }
 
     float AttributeSet::GetMaximumValueByIndex(unsigned int index) const
@@ -455,12 +540,143 @@ namespace Dia::Attribute {
         if (index >= mSlots.Size())
             return 0.0f;
 
-        return mSlots.GetItemByIndexConst(index).maximum_value;
+        return mSlots[index].maximum_value;
+    }
+
+    float AttributeSet::GetBaseValueByIndex(uint32_t index) const
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::GetBaseValueByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return 0.0f;
+
+        return mSlots[index].base_value;
+    }
+
+    void AttributeSet::SetBaseValueByIndex(uint32_t index, float value)
+    {
+        DIA_ASSERT(index < mSlots.Size(),
+            "AttributeSet::SetBaseValueByIndex: index %u out of range (attribute count %u)", index, mSlots.Size());
+        if (index >= mSlots.Size())
+            return;
+
+        mSlots[index].base_value = value;
+    }
+
+    bool AttributeSet::ReplaceBaseValues(const float* values, uint32_t count)
+    {
+        if (values == nullptr || count != mSlots.Size())
+            return false;
+
+        // Phase 1: capture each resolved value before anything changes (conditional modifiers
+        // may read other attributes), then commit every base value. No observer runs yet.
+        Dia::Core::Containers::DynamicArray<float> before(count > 0 ? count : 1);
+        for (uint32_t i = 0; i < count; ++i)
+            before.Add(ResolveValue(mSlots[i]));
+
+        for (uint32_t i = 0; i < count; ++i)
+            mSlots[i].base_value = values[i];
+
+        // Phase 2: notify, in index order, only where the resolved value actually changed.
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const AttributeSlot& slot = mSlots[i];
+            NotifyIfChanged(slot.name, slot, before[i], ResolveValue(slot));
+        }
+
+        return true;
+    }
+
+    bool AttributeSet::ReplaceSchemaAndValues(const AttributeSchema& schema, const float* values, uint32_t count)
+    {
+        if (count != schema.GetAttributeCount() || (values == nullptr && count > 0))
+            return false;
+
+        const uint32_t oldCount = mSlots.Size();
+
+        // Capture resolved values and a shallow copy of the old slots (they own the modifier entries) before
+        // anything changes. oldIndexOfNew[i] is the old slot index of new attribute i, or -1.
+        Dia::Core::Containers::DynamicArray<AttributeSlot> old(oldCount > 0 ? oldCount : 1);
+        Dia::Core::Containers::DynamicArray<float> before(oldCount > 0 ? oldCount : 1);
+        for (uint32_t i = 0; i < oldCount; ++i)
+        {
+            before.Add(ResolveValue(mSlots[i]));
+            old.Add(mSlots[i]);
+        }
+        Dia::Core::Containers::DynamicArray<int32_t> oldIndexOfNew(count > 0 ? count : 1);
+        Dia::Core::Containers::DynamicArray<bool> kept(oldCount > 0 ? oldCount : 1);
+        for (uint32_t i = 0; i < oldCount; ++i) kept.Add(false);
+        const bool hadMap = mSlotIndexByName.IsSizeSet();   // a never-populated set has no sized name map to query
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const uint32_t* idx = !hadMap ? nullptr : mSlotIndexByName.TryGetItemConst(schema.GetAttributeByIndex(i).attribute_name);
+            oldIndexOfNew.Add(idx != nullptr ? static_cast<int32_t>(*idx) : -1);
+            if (idx != nullptr) kept[*idx] = true;
+        }
+
+        mSchemaName = schema.GetSchemaName();
+        mSlots.RemoveAll();
+        mSlotIndexByName.RemoveAll();
+        if (count > 0)
+        {
+            mSlots.Reserve(count);
+            if (!mSlotIndexByName.IsSizeSet())
+                mSlotIndexByName.SetSize(count, count);
+        }
+        // HashTable::SetSize is one-shot: reuse the (emptied) name map when it is big enough, else build a larger one.
+        const bool growMap = count > 0 && mSlotIndexByName.Capacity() < count;
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, uint32_t> grown;
+        if (growMap)
+            grown.SetSize(count, count);
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const AttributeDefinition& def = schema.GetAttributeByIndex(i);
+            AttributeSlot slot;
+            slot.name          = def.attribute_name;
+            slot.base_value    = values[i];
+            slot.minimum_value = def.minimum_value;
+            slot.maximum_value = def.maximum_value;
+            slot.kind          = def.kind;
+            slot.enumCount     = def.enumIdCount;
+            if (oldIndexOfNew[i] >= 0)
+                slot.modifiers = old[static_cast<uint32_t>(oldIndexOfNew[i])].modifiers;   // ownership moves here
+            mSlots.Add(slot);
+            if (growMap) grown.Add(def.attribute_name, i);
+            else         mSlotIndexByName.Add(def.attribute_name, i);
+        }
+        if (growMap)
+            mSlotIndexByName = grown;
+
+        // Modifiers whose attribute is gone: release their conditions and handles.
+        for (uint32_t s = 0; s < oldCount; ++s)
+        {
+            if (kept[s]) continue;
+            AttributeSlot& gone = old[s];
+            for (unsigned int m = 0; m < gone.modifiers.Size(); ++m)
+            {
+                delete gone.modifiers[m].parsed_condition;
+                gone.modifiers[m].parsed_condition = nullptr;
+                const ModifierHandle h = gone.modifiers[m].handle;
+                mModifierHandlePool.Free(Dia::Core::Handle<Dia::Core::StringCRC>(h.GetIndex(), h.GetGeneration()));
+            }
+            if (gone.modifiers.Size() > 0)
+                DIA_LOG_WARNING("Attribute", "AttributeSet::ReplaceSchemaAndValues: attribute '%s' no longer exists - %u modifier(s) dropped",
+                    gone.name.AsChar(), gone.modifiers.Size());
+        }
+
+        // Everything is committed; now notify, in index order, for kept attributes whose resolved value changed.
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (oldIndexOfNew[i] < 0) continue;
+            const AttributeSlot& slot = mSlots[i];
+            NotifyIfChanged(slot.name, slot, before[static_cast<uint32_t>(oldIndexOfNew[i])], ResolveValue(slot));
+        }
+        return true;
     }
 
     bool AttributeSet::HasAttribute(Dia::Core::StringCRC attribute_name) const
     {
-        return mSlots.ContainsKey(attribute_name);
+        return mSlotIndexByName.ContainsKey(attribute_name);
     }
 
     // -----------------------------------------------------------------------
@@ -468,7 +684,7 @@ namespace Dia::Attribute {
     // -----------------------------------------------------------------------
     unsigned int AttributeSet::GetModifierCountForAttribute(Dia::Core::StringCRC attribute_name) const
     {
-        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        const AttributeSlot* slot = FindSlot(attribute_name);
         DIA_ASSERT(slot != nullptr,
             "AttributeSet::GetModifierCountForAttribute: unknown attribute '%s'", attribute_name.AsChar());
         if (slot == nullptr)
@@ -481,7 +697,7 @@ namespace Dia::Attribute {
     {
         ModifierSnapshot snap{};
 
-        const AttributeSlot* slot = mSlots.TryGetItemConst(attribute_name);
+        const AttributeSlot* slot = FindSlot(attribute_name);
         DIA_ASSERT(slot != nullptr,
             "AttributeSet::GetModifierSnapshotForAttribute: unknown attribute '%s'", attribute_name.AsChar());
         if (slot == nullptr)
@@ -525,9 +741,9 @@ namespace Dia::Attribute {
 
         // 2. Full active modifier list, across every attribute slot.
         ctx.BeginArray(kKeyModifiers);
-        for (auto it = mSlots.Begin(); it != mSlots.End(); ++it)
+        for (unsigned int s = 0; s < mSlots.Size(); ++s)
         {
-            const AttributeSlot& slot = it.Value();
+            const AttributeSlot& slot = mSlots[s];
             for (unsigned int i = 0; i < slot.modifiers.Size(); ++i)
             {
                 const AttributeModifier& modifier = slot.modifiers[i].modifier;

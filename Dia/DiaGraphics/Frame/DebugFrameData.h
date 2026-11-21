@@ -27,7 +27,8 @@ namespace Dia
 		{
 		public:
 			// Compile-time budget knobs — increase if primitives are dropped (SD-DBG).
-			static constexpr uint32_t kGeometryCapacity = 2048u;
+			// 8,192 (was 2,048): raised for S-1's overlay drawers. DebugPrimitive is 44 bytes, so this buffer is ~360 KB per FrameData.
+			static constexpr uint32_t kGeometryCapacity = 8192u;
 			static constexpr uint32_t kTextCapacity     = 256u;
 
 			// Legacy alias so call-sites that reference kCapacity still compile.
@@ -88,7 +89,7 @@ namespace Dia
 			// Text2D — world-space text label.
 			// position: world-space top-left origin.
 			// text:     null-terminated ASCII; strings > 63 chars are silently truncated.
-			// fontSize: pixel size (SFML setCharacterSize); 0 or negative is a no-op.
+			// fontSize: pixel size; 0 or negative is a no-op.
 			// colour:   RGBA text colour.
 			void RequestDrawText(const Maths::Vector2D& position,
 				const char* text,

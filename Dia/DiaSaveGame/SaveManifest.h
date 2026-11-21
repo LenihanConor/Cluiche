@@ -53,16 +53,16 @@ public:
     // Accessors used by SaveManager during load.
     uint32_t       GetEngineVersion   () const { return mEngineVersion; }
     SaveFormat     GetFormat          () const { return mFormat; }
-    uint32_t       GetTimestamp       () const { return mTimestamp; }
+    uint64_t       GetTimestamp       () const { return mTimestamp; }
     uint32_t       GetParticipantCount() const;
     const ManifestParticipant& GetParticipantAt(uint32_t index) const;
 
-    void SetTimestamp(uint32_t ts) { mTimestamp = ts; }
+    void SetTimestamp(uint64_t ts) { mTimestamp = ts; }
 
 private:
     uint32_t    mEngineVersion;
     SaveFormat  mFormat;
-    uint32_t    mTimestamp;   // Unix seconds; set by caller (SaveManager)
+    uint64_t    mTimestamp;   // Unix seconds (UTC); set by caller (SaveManager). 64-bit: 32-bit overflows in 2038
     Dia::Core::Containers::DynamicArrayC<ManifestParticipant, kMaxParticipants> mParticipants;
 };
 

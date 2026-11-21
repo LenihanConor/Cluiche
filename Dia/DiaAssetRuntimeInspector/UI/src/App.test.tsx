@@ -4,6 +4,7 @@ import App from './App';
 import { useAssetRuntimeStore } from './store';
 
 vi.mock('@dia/editor-ui', () => ({
+    newFrameReqId: () => 'req_test',
     theme: {
         bg: '#1e1e1e', bgPanel: '#252526', bgInput: '#2d2d2d', border: '#3c3c3c',
         borderMuted: '#555', text: '#d4d4d4', textMuted: '#888', accent: '#0e639c',
@@ -275,5 +276,43 @@ describe('App — tab switching', () => {
         render(<App />);
         act(() => { useAssetRuntimeStore.setState({ activeTab: 'inspector' }); });
         expect(screen.getByTestId('tab-inspector')).toBeInTheDocument();
+    });
+});
+
+describe('App — priming connection_state request', () => {
+    it('posts get_connection_state with a non-empty reqId', () => {
+        const post = vi.fn();
+        const parentSpy = vi.spyOn(window, 'parent', 'get').mockReturnValue({ postMessage: post } as any);
+        render(<App />);
+        const call = post.mock.calls.map((c) => c[0] as any)
+            .find((m) => m?.payload?.type === 'asset_runtime_inspector.get_connection_state');
+        expect(call).toBeTruthy();
+        expect(call.payload.reqId).toBeTruthy();
+        parentSpy.mockRestore();
+    });
+
+    it('the shell reply for that reqId sets connected=true', () => {
+        const post = vi.fn();
+        const parentSpy = vi.spyOn(window, 'parent', 'get').mockReturnValue({ postMessage: post } as any);
+        render(<App />);
+        const sent = post.mock.calls.map((c) => c[0] as any)
+            .find((m) => m?.payload?.type === 'asset_runtime_inspector.get_connection_state');
+        act(() => {
+            window.dispatchEvent(new MessageEvent('message', {
+                data: { __diaResponse: true, reqId: sent.payload.reqId, result: { connected: true } },
+            }));
+        });
+        expect(useAssetRuntimeStore.getState().connected).toBe(true);
+        parentSpy.mockRestore();
+    });
+
+    it('a reply for another reqId is ignored', () => {
+        render(<App />);
+        act(() => {
+            window.dispatchEvent(new MessageEvent('message', {
+                data: { __diaResponse: true, reqId: 'other', result: { connected: true } },
+            }));
+        });
+        expect(useAssetRuntimeStore.getState().connected).toBe(false);
     });
 });

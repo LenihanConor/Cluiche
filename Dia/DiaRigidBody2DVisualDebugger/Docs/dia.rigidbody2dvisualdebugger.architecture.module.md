@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.rigidbody2dvisualdebugger
 name: DiaRigidBody2DVisualDebugger
 owner_team: TBD
-layer: domain/physics/tools
+layer: 4.1-Physics
 status: active
 maturity: dev
 

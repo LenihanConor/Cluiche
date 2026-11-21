@@ -110,7 +110,7 @@ TEST(ActionMap, BindJoystickAxisToAction)
 	evt.type = Event::EType::kJoystickMoved;
 	evt.joystickMove.joystickId = 0;
 	evt.joystickMove.axis = static_cast<int>(EJoystickAxis::X);
-	evt.joystickMove.position = 75.0f;  // SFML uses -100 to 100
+	evt.joystickMove.position = 75.0f;  // Dia joystick range is -100 to 100
 	events.Add(evt);
 
 	actionMap.ProcessEvents(events);
@@ -291,7 +291,7 @@ TEST(ActionMap, AnalogInputsReturnNormalizedValue)
 	evt.type = Event::EType::kJoystickMoved;
 	evt.joystickMove.joystickId = 0;
 	evt.joystickMove.axis = static_cast<int>(EJoystickAxis::X);
-	evt.joystickMove.position = 50.0f;  // SFML uses -100 to 100
+	evt.joystickMove.position = 50.0f;  // Dia joystick range is -100 to 100
 	events.Add(evt);
 
 	actionMap.ProcessEvents(events);

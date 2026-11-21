@@ -1,0 +1,168 @@
+{
+  "count" : 10,
+  "fromSample" : 30,
+  "groupSizes" : 
+  {
+    "region=centre" : "BAAEAAQABAAEAAQABAAEAAQABAA=",
+    "region=north" : "BAAEAAQABAAEAAQABAAEAAQABAA=",
+    "region=south" : "BAAEAAQABAAEAAQABAAEAAQABAA=",
+    "world" : "DAAMAAwADAAMAAwADAAMAAwADAA="
+  },
+  "rows" : 
+  {
+    "biome" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : "AQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEAAQACAAEA",
+        "region=north" : "AgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEAAgABAAEA",
+        "region=south" : "AQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIAAQABAAIA",
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "forest",
+        "plain",
+        "desert"
+      ]
+    },
+    "rain" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : 
+        {
+          "max" : "AADKQQAAQUIAADlCAAAJQgAAikEAADVCAAAtQgAA0kEAAJpBAAA9Qg==",
+          "mean" : "AACOQQAAzkEAAPpBAADWQQAAHEEAAHRBAAAPQgAAlkEAADxBAAABQg==",
+          "min" : "AAAkQQAAUEAAAKA/AACaQQAAEEAAAIA+AADiQQAANEEAAIhAAAAQQA=="
+        },
+        "region=north" : 
+        {
+          "max" : "AAA1QgAAQUIAAPpBAABFQgAAPUIAACFCAAC6QQAAgkEAAEVCAAABQg==",
+          "mean" : "AAC2QQAAI0IAAL5BAACaQQAAxkEAAANCAAB8QQAADEEAACdCAADGQQ==",
+          "min" : "AACAPgAABUIAAIJBAACIQAAAEEAAAMpBAAAEQQAAoD8AAAlCAACKQQ=="
+        },
+        "region=south" : 
+        {
+          "max" : "AAA1QgAA4kEAADlCAABFQgAAFUIAAKJBAABBQgAAOUIAAOpBAACyQQ==",
+          "mean" : "AAAXQgAApkEAAIJBAAAJQgAA7kEAAExBAACSQQAAG0IAAK5BAABsQQ==",
+          "min" : "AADyQQAAVEEAAKA/AACIQAAAskEAAKhAAABQQAAA+kEAAGRBAADoQA=="
+        },
+        "world" : 
+        {
+          "max" : "AAA1QgAAQUIAADlCAABFQgAAPUIAADVCAABBQgAAOUIAAEVCAAA9Qg==",
+          "mean" : "q6rQQauq6EEAAL5BAADWQVVVq0EAAKJBAAC6QauqsEGrqshBVVW/QQ==",
+          "min" : "AACAPgAAUEAAAKA/AACIQAAAEEAAAIA+AABQQAAAoD8AAIhAAAAQQA=="
+        }
+      },
+      "kind" : "float"
+    },
+    "region" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : "AAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAAAAAEAAAA",
+        "region=north" : "BAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAABAAAAAAA",
+        "region=south" : "AAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQAAAAAAAQA",
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "north",
+        "centre",
+        "south"
+      ]
+    },
+    "temp" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : 
+        {
+          "max" : "w/XqQcP1wkHhel1C4XpJQuF6NUJxvZhCcb2OQnG9hEJxvcJCcb24Qg==",
+          "mean" : "w/XGQcP1nkHhektC4Xo3QuF6I0JxvY9Ccb2FQuF6d0JxvblCcb2vQg==",
+          "min" : "w/WiQYXrdUHhejlC4XolQuF6EUJxvYZC4Xp5QuF6ZUJxvbBCcb2mQg=="
+        },
+        "region=north" : 
+        {
+          "max" : "w/WKQeF6QULhei1C4XoZQnG9ikJxvYBC4XptQnG9tEJxvapCcb2gQg==",
+          "mean" : "hetNQeF6L0LhehtC4XoHQnG9gULhem9C4XpbQnG9q0JxvaFCcb2XQg==",
+          "min" : "hesFQeF6HULheglCw/XqQeF6cULhel1C4XpJQnG9okJxvZhCcb2OQg=="
+        },
+        "region=south" : 
+        {
+          "max" : "4XolQuF6EULD9fpB4Xp5QuF6ZULhelFCcb2mQnG9nEJxvZJCcb3EQg==",
+          "mean" : "4XoTQsL1/kHD9dZB4XpnQuF6U0Lhej9Ccb2dQnG9k0JxvYlC4npFQg==",
+          "min" : "4XoBQsP12kHD9bJB4XpVQuF6QULhei1Ccb2UQnG9ikJxvYBCpHC9Pg=="
+        },
+        "world" : 
+        {
+          "max" : "4XolQuF6QULhel1C4Xp5QnG9ikJxvZhCcb2mQnG9tEJxvcJCcb3EQg==",
+          "mean" : "w/XGQcL1/kHhehtC4Xo3QuF6U0Lhem9Ccb2FQnG9k0JxvaFCxhKOQg==",
+          "min" : "hesFQYXrdUHD9bJBw/XqQeF6EULhei1C4XpJQuF6ZUJxvYBCpHC9Pg=="
+        }
+      },
+      "kind" : "float"
+    }
+  },
+  "samples" : 
+  [
+    {
+      "band" : 0,
+      "label" : "Y1 W31",
+      "tick" : 210
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W32",
+      "tick" : 217
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W33",
+      "tick" : 224
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W34",
+      "tick" : 231
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W35",
+      "tick" : 238
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W36",
+      "tick" : 245
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W37",
+      "tick" : 252
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W38",
+      "tick" : 259
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W39",
+      "tick" : 266
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W40",
+      "tick" : 273
+    }
+  ],
+  "structure" : "1528ad42e9c03ffc"
+}

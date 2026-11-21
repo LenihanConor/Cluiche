@@ -20,6 +20,7 @@ This is an **in-game Visual Debugger** (not the Editor tier and not the Inspecto
 | AC-5 | `OnCommand("selectTab", {tab:"history"})` switches the active tab; subsequent `GetJSONState()` reflects `activeTab:"history"` | Unit test |
 | AC-6 | `OnCommand("setHistoryWindow", {ticks:30})` changes the history window; `GetJSONState()` reflects `historyWindowTicks:30` | Unit test |
 | AC-7 | Entire domain class is compiled only when `DIA_DEBUG` is defined; `#include` of the header in a Release-mode TU must not require `IDebugDomain` | Compiler test: `#ifdef DIA_DEBUG` guard on header |
+| AC-9 | **Recorder section** (added 2026-10-13): the Live tab carries a `recorder` object. With no recorder installed it is `{attached:false}`. With one installed it adds `state` (`open`, `closed`, `disabled`, or `unknown` when the recorder cannot report), and, for recorders that report, `path`, `recordsWritten`, `bytesWritten`, `recordsDropped` | GoogleTest: no recorder, open `FileBusRecorder` (counts match), disabled recorder, recorder without status |
 | AC-8 | `GetDomainId()` returns `StringCRC{"MessageBus"}`; `GetGroup()` returns `StringCRC{"Systems"}`; `HasWorldDrawers()` returns `false` | Unit test |
 
 ## Design
@@ -81,6 +82,7 @@ namespace Dia::MessageBus {
     "tickIndex": 1234,
     "totalMessages": 7,
     "totalDeliveries": 14,
+    "recorder": { "attached": true, "state": "open", "path": "cow_bus_traffic.dbtr", "recordsWritten": 110, "bytesWritten": 3088, "recordsDropped": 0 },
     "entries": [
       { "typeId": "HitEvent", "routerId": "entity", "count": 4, "deliveries": 4, "pass": "Primary" },
       { "typeId": "DeathEvent", "routerId": "broadcast", "count": 3, "deliveries": 10, "pass": "Reaction" }

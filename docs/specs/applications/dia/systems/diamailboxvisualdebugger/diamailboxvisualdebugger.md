@@ -56,7 +56,7 @@ This accessor is not `DIA_DEBUG`-gated — it is a general-purpose diagnostic ac
 // DiaMailboxVisualDebugger/MailboxVisualDebugger.h
 #ifdef DIA_DEBUG
 
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 
 namespace Dia::Mailbox { class Mailbox; }
 

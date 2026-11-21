@@ -2,7 +2,7 @@
 schema: dia.module.v1
 module_id: dia.htnvisualdebugger
 name: DiaHTNVisualDebugger
-layer: domain/gameplay/tools
+layer: 4.1-Gameplay
 path: Dia/DiaHTNVisualDebugger
 status: active
 maturity: dev

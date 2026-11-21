@@ -14,6 +14,15 @@ namespace Dia
 		class TraceFileSink;
 		class ITraceSink;
 
+		// Flow link: writer's current trace and span id for cross-thread chaining.
+		// Both zero when the tracer is not started, no span is open, or the thread
+		// is not registered.
+		struct TraceLink
+		{
+			uint64_t traceId;
+			uint64_t spanId;
+		};
+
 		class Tracer
 		{
 		public:
@@ -25,6 +34,7 @@ namespace Dia
 
 			void RegisterThreadSpanBuffer();
 			void UnregisterThreadSpanBuffer();
+			bool IsThreadSpanBufferRegistered() const;   // calling thread
 
 			void            SetActiveMask(TraceCategory mask);
 			TraceCategory   ActiveMask() const;
@@ -36,6 +46,11 @@ namespace Dia
 			void UnregisterTraceSink(ITraceSink* sink);
 
 			bool IsStarted() const { return mStarted.load(std::memory_order_acquire); }
+
+			// Returns the current thread's trace and open span id. Both zero when
+			// the tracer is not started, the thread is not registered, or no span
+			// is open. Used by stream stores to record flow links.
+			static TraceLink GetCurrentLink();
 
 		private:
 			Tracer();

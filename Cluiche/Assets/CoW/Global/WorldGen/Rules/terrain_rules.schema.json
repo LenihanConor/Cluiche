@@ -1,0 +1,966 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.terrain_rules",
+  "entries": [
+    {
+      "key": "kCoastElev",
+      "kind": "parameter",
+      "label": "kCoastElev",
+      "description": "Elevation threshold separating sea from land (coastline level).",
+      "type": "float",
+      "min": 0.005,
+      "max": 0.1,
+      "default": 0.02
+    },
+    {
+      "key": "kBorderWidth",
+      "kind": "parameter",
+      "label": "kBorderWidth",
+      "description": "Width in cells of the forced-sea border around the map edge.",
+      "type": "float",
+      "min": 0.0,
+      "max": 8.0,
+      "default": 2.0
+    },
+    {
+      "key": "kEdgeFade",
+      "kind": "parameter",
+      "label": "kEdgeFade",
+      "description": "Strength of the fade towards sea at the map edge.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "key": "kShelfScale",
+      "kind": "parameter",
+      "label": "kShelfScale",
+      "description": "Spatial scale of the continental shelf noise.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 6.0
+    },
+    {
+      "key": "kMinLandmass",
+      "kind": "parameter",
+      "label": "kMinLandmass",
+      "description": "Minimum size of a landmass; smaller ones are removed.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 6.0
+    },
+    {
+      "key": "kMinIslandShare",
+      "kind": "parameter",
+      "label": "kMinIslandShare",
+      "description": "Minimum share of total land an island may hold.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.2,
+      "default": 0.02
+    },
+    {
+      "key": "kMaxIslandShare",
+      "kind": "parameter",
+      "label": "kMaxIslandShare",
+      "description": "Maximum share of total land an island may hold.",
+      "type": "float",
+      "min": 0.3,
+      "max": 1.0,
+      "default": 0.95
+    },
+    {
+      "key": "kIslandGapMin",
+      "kind": "parameter",
+      "label": "kIslandGapMin",
+      "description": "Minimum sea gap in cells between islands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 2.0
+    },
+    {
+      "key": "kIslandGapMax",
+      "kind": "parameter",
+      "label": "kIslandGapMax",
+      "description": "Maximum sea gap in cells between islands.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 7.0
+    },
+    {
+      "key": "kIslandSpacing",
+      "kind": "parameter",
+      "label": "kIslandSpacing",
+      "description": "Target spacing between island centres.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 6.0
+    },
+    {
+      "key": "kWarpAmp",
+      "kind": "parameter",
+      "label": "kWarpAmp",
+      "description": "Amplitude of the domain warp applied to the landmass shape (default is a guess).",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    },
+    {
+      "key": "kCoastAmp",
+      "kind": "parameter",
+      "label": "kCoastAmp",
+      "description": "Amplitude of coastline noise (default is a guess).",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.12
+    },
+    {
+      "key": "kRidgeCellMin",
+      "kind": "parameter",
+      "label": "kRidgeCellMin",
+      "description": "Minimum ridge strength for a cell to count as part of a ridge.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.35
+    },
+    {
+      "key": "kRidgeWidthMin",
+      "kind": "parameter",
+      "label": "kRidgeWidthMin",
+      "description": "Minimum ridge width in cells.",
+      "type": "float",
+      "min": 0.5,
+      "max": 8.0,
+      "default": 1.2
+    },
+    {
+      "key": "kRidgeWidthMax",
+      "kind": "parameter",
+      "label": "kRidgeWidthMax",
+      "description": "Maximum ridge width in cells.",
+      "type": "float",
+      "min": 0.5,
+      "max": 16.0,
+      "default": 2.8
+    },
+    {
+      "key": "kSpineReach",
+      "kind": "parameter",
+      "label": "kSpineReach",
+      "description": "How far the main ridge spine reaches across the landmass.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "key": "kRingReach",
+      "kind": "parameter",
+      "label": "kRingReach",
+      "description": "How far the ring ridges reach from the landmass centre.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6
+    },
+    {
+      "key": "kMinPiece",
+      "kind": "parameter",
+      "label": "kMinPiece",
+      "description": "Minimum size of a ridge piece; smaller pieces are dropped.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 2.0
+    },
+    {
+      "key": "kPassFloor",
+      "kind": "parameter",
+      "label": "kPassFloor",
+      "description": "Minimum elevation floor kept in mountain passes.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.2
+    },
+    {
+      "key": "kBarrierQuantile",
+      "kind": "parameter",
+      "label": "kBarrierQuantile",
+      "description": "Elevation quantile above which barrier ridges are placed.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.75
+    },
+    {
+      "key": "kBarrierWobble",
+      "kind": "parameter",
+      "label": "kBarrierWobble",
+      "description": "Lateral wobble of barrier ridges in cells.",
+      "type": "float",
+      "min": 0.0,
+      "max": 8.0,
+      "default": 1.5
+    },
+    {
+      "key": "kBarrierHalfWidth",
+      "kind": "parameter",
+      "label": "kBarrierHalfWidth",
+      "description": "Half width of barrier ridges in cells.",
+      "type": "float",
+      "min": 0.5,
+      "max": 8.0,
+      "default": 1.5
+    },
+    {
+      "key": "kPlateauInner",
+      "kind": "parameter",
+      "label": "kPlateauInner",
+      "description": "Inner fraction of a plateau that is held flat.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "key": "kVentSpacing",
+      "kind": "parameter",
+      "label": "kVentSpacing",
+      "description": "Spacing between volcanic vents in cells.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 4.0
+    },
+    {
+      "key": "kLowlandRise",
+      "kind": "parameter",
+      "label": "kLowlandRise",
+      "description": "Gentle elevation rise applied to lowlands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.25
+    },
+    {
+      "key": "kInlandScale",
+      "kind": "parameter",
+      "label": "kInlandScale",
+      "description": "Spatial scale of the inland elevation noise.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 6.0
+    },
+    {
+      "key": "kMountainHeight",
+      "kind": "parameter",
+      "label": "kMountainHeight",
+      "description": "Elevation contributed by mountain ridges.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6
+    },
+    {
+      "key": "kBarrierHeight",
+      "kind": "parameter",
+      "label": "kBarrierHeight",
+      "description": "Elevation contributed by barrier ridges.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.35
+    },
+    {
+      "key": "kVentHeight",
+      "kind": "parameter",
+      "label": "kVentHeight",
+      "description": "Elevation contributed by volcanic vents.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "key": "kVentRadius",
+      "kind": "parameter",
+      "label": "kVentRadius",
+      "description": "Radius of a volcanic vent in cells.",
+      "type": "float",
+      "min": 0.0,
+      "max": 8.0,
+      "default": 2.0
+    },
+    {
+      "key": "kRuggedAmp",
+      "kind": "parameter",
+      "label": "kRuggedAmp",
+      "description": "Amplitude of the ruggedness noise added to terrain.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.5,
+      "default": 0.12
+    },
+    {
+      "key": "kMinBasinDepth",
+      "kind": "parameter",
+      "label": "kMinBasinDepth",
+      "description": "Minimum depth for a depression to count as a basin.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.2,
+      "default": 0.01
+    },
+    {
+      "key": "kHighlandRain",
+      "kind": "parameter",
+      "label": "kHighlandRain",
+      "description": "Extra rainfall weight applied on highlands for river flow.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 2.0
+    },
+    {
+      "key": "kFlowMax",
+      "kind": "parameter",
+      "label": "kFlowMax",
+      "description": "Maximum flow accumulation value.",
+      "type": "float",
+      "min": 1.0,
+      "max": 100000.0,
+      "default": 400.0
+    },
+    {
+      "key": "kFlowMin",
+      "kind": "parameter",
+      "label": "kFlowMin",
+      "description": "Minimum flow accumulation for a cell to be part of a river.",
+      "type": "float",
+      "min": 1.0,
+      "max": 10000.0,
+      "default": 12.0
+    },
+    {
+      "key": "kSourceMinElev",
+      "kind": "parameter",
+      "label": "kSourceMinElev",
+      "description": "Minimum elevation for a river source.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.3
+    },
+    {
+      "key": "kMinRiverLength",
+      "kind": "parameter",
+      "label": "kMinRiverLength",
+      "description": "Minimum river length in cells.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 4.0
+    },
+    {
+      "key": "kRidgeCost",
+      "kind": "parameter",
+      "label": "kRidgeCost",
+      "description": "Path cost added when a river crosses a ridge.",
+      "type": "float",
+      "min": 0.0,
+      "max": 32.0,
+      "default": 4.0
+    },
+    {
+      "key": "kBarrierCost",
+      "kind": "parameter",
+      "label": "kBarrierCost",
+      "description": "Path cost added when a river crosses a barrier.",
+      "type": "float",
+      "min": 0.0,
+      "max": 32.0,
+      "default": 4.0
+    },
+    {
+      "key": "kFirstShoresShare",
+      "kind": "parameter",
+      "label": "kFirstShoresShare",
+      "description": "Share of land assigned to the First Shores area.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.45
+    },
+    {
+      "key": "kAncientShare",
+      "kind": "parameter",
+      "label": "kAncientShare",
+      "description": "Share of land assigned to the Ancient area.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    },
+    {
+      "key": "kRiverCorridor",
+      "kind": "parameter",
+      "label": "kRiverCorridor",
+      "description": "Width fraction of the river corridor.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.25
+    },
+    {
+      "key": "kAncientMinDepth",
+      "kind": "parameter",
+      "label": "kAncientMinDepth",
+      "description": "Minimum depth in cells of the Ancient area from the coast.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 3.0
+    },
+    {
+      "key": "kCarveMax",
+      "kind": "parameter",
+      "label": "kCarveMax",
+      "description": "Maximum elevation a river carves from terrain.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.5,
+      "default": 0.12
+    },
+    {
+      "key": "kCarveFullAcc",
+      "kind": "parameter",
+      "label": "kCarveFullAcc",
+      "description": "Flow accumulation at which river carving reaches its maximum.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 8.0
+    },
+    {
+      "key": "kShelfWidth",
+      "kind": "parameter",
+      "label": "kShelfWidth",
+      "description": "Width in cells of the coastal shelf.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 3.0
+    },
+    {
+      "key": "kCliffSlope",
+      "kind": "parameter",
+      "label": "kCliffSlope",
+      "description": "Slope threshold above which terrain is a cliff.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.18
+    },
+    {
+      "key": "kSteepSlope",
+      "kind": "parameter",
+      "label": "kSteepSlope",
+      "description": "Slope threshold above which terrain is steep.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.1
+    },
+    {
+      "key": "kPeakElev",
+      "kind": "parameter",
+      "label": "kPeakElev",
+      "description": "Elevation threshold for peaks.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "key": "kMountainElev",
+      "kind": "parameter",
+      "label": "kMountainElev",
+      "description": "Elevation threshold for mountains.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.55
+    },
+    {
+      "key": "kHighlandElev",
+      "kind": "parameter",
+      "label": "kHighlandElev",
+      "description": "Elevation threshold for highlands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.35
+    },
+    {
+      "key": "kHillElev",
+      "kind": "parameter",
+      "label": "kHillElev",
+      "description": "Elevation threshold for hills.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    },
+    {
+      "key": "kHillSlope",
+      "kind": "parameter",
+      "label": "kHillSlope",
+      "description": "Slope threshold for hills.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.05
+    },
+    {
+      "key": "kLatCool",
+      "kind": "parameter",
+      "label": "kLatCool",
+      "description": "Temperature drop from the equator towards the poles.",
+      "type": "float",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.85
+    },
+    {
+      "key": "kLapse",
+      "kind": "parameter",
+      "label": "kLapse",
+      "description": "Temperature drop with elevation (lapse rate).",
+      "type": "float",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.6
+    },
+    {
+      "key": "kRiverPenalty",
+      "kind": "parameter",
+      "label": "kRiverPenalty",
+      "description": "Penalty applied to river-adjacent cells in the temperature or moisture model.",
+      "type": "float",
+      "min": 0.0,
+      "max": 16.0,
+      "default": 2.0
+    },
+    {
+      "key": "kMoistScale",
+      "kind": "parameter",
+      "label": "kMoistScale",
+      "description": "Spatial scale of the moisture noise.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 8.0
+    },
+    {
+      "key": "kBandBlend",
+      "kind": "parameter",
+      "label": "kBandBlend",
+      "description": "Width of the blend between climate bands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 15.0,
+      "default": 5.0
+    },
+    {
+      "key": "kAirDecay",
+      "kind": "parameter",
+      "label": "kAirDecay",
+      "description": "Per-cell decay of airborne moisture.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.5,
+      "default": 0.04
+    },
+    {
+      "key": "kOrographic",
+      "kind": "parameter",
+      "label": "kOrographic",
+      "description": "Strength of the orographic rainfall effect.",
+      "type": "float",
+      "min": 0.0,
+      "max": 32.0,
+      "default": 4.0
+    },
+    {
+      "key": "kProximityMix",
+      "kind": "parameter",
+      "label": "kProximityMix",
+      "description": "Mix weight of water proximity into moisture.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4
+    },
+    {
+      "key": "kRainBonus",
+      "kind": "parameter",
+      "label": "kRainBonus",
+      "description": "Moisture bonus from rainfall.",
+      "type": "float",
+      "min": 0.0,
+      "max": 4.0,
+      "default": 1.0
+    },
+    {
+      "key": "kWetlandMaxElev",
+      "kind": "parameter",
+      "label": "kWetlandMaxElev",
+      "description": "Maximum elevation for wetlands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.12
+    },
+    {
+      "key": "kWetlandMoist",
+      "kind": "parameter",
+      "label": "kWetlandMoist",
+      "description": "Minimum moisture for wetlands.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.7
+    },
+    {
+      "key": "kPlateauWet",
+      "kind": "parameter",
+      "label": "kPlateauWet",
+      "description": "Moisture adjustment applied on plateaus.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.5
+    },
+    {
+      "key": "kMaxFixupPasses",
+      "kind": "parameter",
+      "label": "kMaxFixupPasses",
+      "description": "Maximum number of biome fix-up passes.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 8.0
+    },
+    {
+      "key": "kMinRegionCells",
+      "kind": "parameter",
+      "label": "kMinRegionCells",
+      "description": "Minimum number of cells in a region.",
+      "type": "float",
+      "min": 1.0,
+      "max": 256.0,
+      "default": 36.0
+    },
+    {
+      "key": "kSeedBiomeBonus",
+      "kind": "parameter",
+      "label": "kSeedBiomeBonus",
+      "description": "Seeding bonus for same-biome cells when growing regions.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 3.0
+    },
+    {
+      "key": "kBiomeMismatch",
+      "kind": "parameter",
+      "label": "kBiomeMismatch",
+      "description": "Cost for growing a region across a biome mismatch.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.8
+    },
+    {
+      "key": "kRegionRidgeCost",
+      "kind": "parameter",
+      "label": "kRegionRidgeCost",
+      "description": "Cost for growing a region across a ridge.",
+      "type": "float",
+      "min": 0.0,
+      "max": 32.0,
+      "default": 1.0
+    },
+    {
+      "key": "kMaxRegionShare",
+      "kind": "parameter",
+      "label": "kMaxRegionShare",
+      "description": "Maximum region size as a multiple of the average region size.",
+      "type": "float",
+      "min": 1.0,
+      "max": 8.0,
+      "default": 1.7
+    },
+    {
+      "key": "kMaxRegionSlack",
+      "kind": "parameter",
+      "label": "kMaxRegionSlack",
+      "description": "Extra cells of slack allowed over the maximum region size.",
+      "type": "float",
+      "min": 1.0,
+      "max": 64.0,
+      "default": 8.0
+    },
+    {
+      "key": "kMaxAbsorbedShare",
+      "kind": "parameter",
+      "label": "kMaxAbsorbedShare",
+      "description": "Maximum share of cells a region may absorb from a neighbour.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.2,
+      "default": 0.03
+    },
+    {
+      "key": "kMaxFragmentShare",
+      "kind": "parameter",
+      "label": "kMaxFragmentShare",
+      "description": "Maximum share of a region that may be fragmented.",
+      "type": "float",
+      "min": 0.0,
+      "max": 0.3,
+      "default": 0.06
+    },
+    {
+      "key": "kNodeSpacing",
+      "kind": "parameter",
+      "label": "kNodeSpacing",
+      "description": "Spacing between geography nodes in cells.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 3.0
+    },
+    {
+      "key": "kCorridorSpacing",
+      "kind": "parameter",
+      "label": "kCorridorSpacing",
+      "description": "Spacing between corridor nodes in cells.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 6.0
+    },
+    {
+      "key": "kCoastalGapReach",
+      "kind": "parameter",
+      "label": "kCoastalGapReach",
+      "description": "Reach in cells for coastal gap nodes.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 4.0
+    },
+    {
+      "key": "kRiverNodeSpacing",
+      "kind": "parameter",
+      "label": "kRiverNodeSpacing",
+      "description": "Spacing between river nodes in cells.",
+      "type": "float",
+      "min": 1.0,
+      "max": 32.0,
+      "default": 7.0
+    },
+    {
+      "key": "kCellsPerNode",
+      "kind": "parameter",
+      "label": "kCellsPerNode",
+      "description": "Number of cells represented by one node.",
+      "type": "float",
+      "min": 1.0,
+      "max": 256.0,
+      "default": 10.0
+    },
+    {
+      "key": "terrain_type",
+      "kind": "field",
+      "label": "Terrain type",
+      "description": "The S-1 TerrainType ids, in code enum order (a C++ parity test pins this list to the enum).",
+      "type": "enum",
+      "values": [
+        {
+          "id": "DeepWater"
+        },
+        {
+          "id": "ShallowWater"
+        },
+        {
+          "id": "Lake"
+        },
+        {
+          "id": "River"
+        },
+        {
+          "id": "Lowland"
+        },
+        {
+          "id": "Hills"
+        },
+        {
+          "id": "Highland"
+        },
+        {
+          "id": "Mountain"
+        },
+        {
+          "id": "Peak"
+        },
+        {
+          "id": "Cliff"
+        },
+        {
+          "id": "Pass"
+        },
+        {
+          "id": "Volcano"
+        }
+      ],
+      "default": "DeepWater"
+    },
+    {
+      "key": "terrain.passable",
+      "kind": "parameter",
+      "label": "Terrain passable",
+      "description": "Whether the placeholder navigation profile lets a unit enter this terrain.",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "bool",
+      "default": {
+        "DeepWater": false,
+        "ShallowWater": false,
+        "Lake": false,
+        "River": true,
+        "Lowland": true,
+        "Hills": true,
+        "Highland": true,
+        "Mountain": true,
+        "Peak": false,
+        "Cliff": false,
+        "Pass": true,
+        "Volcano": false
+      }
+    },
+    {
+      "key": "terrain.cost",
+      "kind": "parameter",
+      "label": "Terrain cost",
+      "description": "Placeholder navigation path cost of entering this terrain.",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 1.0,
+      "max": 16.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.5,
+        "Lowland": 1.0,
+        "Hills": 1.5,
+        "Highland": 2.0,
+        "Mountain": 4.0,
+        "Peak": 1.0,
+        "Cliff": 1.0,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.soil_depth_mult",
+      "kind": "parameter",
+      "label": "Soil depth multiplier",
+      "description": "Provisional: soil depth multiplier per terrain type (A5 consumes it; S-2.6 tunes it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 4.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.0,
+        "Lowland": 1.0,
+        "Hills": 0.85,
+        "Highland": 0.7,
+        "Mountain": 0.4,
+        "Peak": 0.2,
+        "Cliff": 0.2,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.orographic_factor",
+      "kind": "parameter",
+      "label": "Orographic factor",
+      "description": "Provisional: per-terrain orographic rainfall factor (A4 and S-1 Stage 13 may consume it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 4.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.0,
+        "Lowland": 1.0,
+        "Hills": 1.0,
+        "Highland": 1.0,
+        "Mountain": 1.0,
+        "Peak": 1.0,
+        "Cliff": 1.0,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.runoff",
+      "kind": "parameter",
+      "label": "Terrain runoff",
+      "description": "Provisional: fraction of rainfall that runs off this terrain (A5 consumes it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "DeepWater": 0.5,
+        "ShallowWater": 0.5,
+        "Lake": 0.5,
+        "River": 0.5,
+        "Lowland": 0.4,
+        "Hills": 0.5,
+        "Highland": 0.5,
+        "Mountain": 0.5,
+        "Peak": 0.9,
+        "Cliff": 0.9,
+        "Pass": 0.5,
+        "Volcano": 0.5
+      }
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Session/SessionManager.h>
+#include <DiaObservation/Profile/PerfExitTimer.h>
 
 namespace Dia { namespace Observation { namespace Log { class ISink; } } }
 
@@ -40,6 +41,8 @@ private:
     Dia::Observation::Log::ISink* mOwnedSinks[kMaxSinks];
     unsigned int mOwnedSinkCount = 0;
     Dia::Observation::SessionManager mSessionManager;
+    bool mPerfEnabled = false;   // --perf: write perf-summary.json at DoStop (A4b)
+    Dia::Observation::Profile::PerfExitTimer mPerfExitTimer;   // --perf=<seconds>: auto-quit (A4c)
 
     const char* mAppName;
     const char* mConfigAssetRelPath;

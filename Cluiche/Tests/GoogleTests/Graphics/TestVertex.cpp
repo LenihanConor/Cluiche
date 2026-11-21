@@ -78,7 +78,7 @@ TEST(Vertex, FullConstructor_SetsAllFields)
 }
 
 // ==============================================================================
-// Vertex Memory Layout Tests (Critical for SFML compatibility)
+// Vertex Memory Layout Tests (Critical for GPU vertex layout compatibility)
 // ==============================================================================
 
 TEST(Vertex, MemoryLayout_PositionFirst)

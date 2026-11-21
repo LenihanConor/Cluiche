@@ -1,0 +1,124 @@
+{
+  "count" : 10,
+  "from" : 0,
+  "groupSizes" : 
+  {
+    "world" : "DAAMAAwADAAMAAwADAAMAAwADAA="
+  },
+  "rows" : 
+  {
+    "biome" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "forest",
+        "plain",
+        "desert"
+      ]
+    },
+    "rain" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : 
+        {
+          "max" : "AABFQgAAQUIAAEVCAABFQgAARUIAAEVCAABBQgAARUIAAEVCAABFQg==",
+          "mean" : "qqquQVVVu0FVVdBBq6rUQaqqt0EAALxBq6rIQauq3UFVVbhBq6q8QQ==",
+          "min" : "AACAPgAAgD4AAIA+AACAPgAAoD8AAIA+AACAPgAAgD4AAIA+AACgPw=="
+        }
+      },
+      "kind" : "float"
+    },
+    "region" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "north",
+        "centre",
+        "south"
+      ]
+    },
+    "temp" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : 
+        {
+          "max" : "4XpZQnG9pEJxvchCcb3IQnG9gkJxvbpCcb3IQnG9xEJxvZhCcb3EQg==",
+          "mean" : "wvXaQeF6XULGspFCNxAGQuF6GUJxvYRC4jp7Qm6gzEHhekVCxlKSQg==",
+          "min" : "pHC9PsP14kGkcL0+pHC9PoXrNUHheh1CpHC9PqRwvT7D9bJBpHC9Pg=="
+        }
+      },
+      "kind" : "float"
+    }
+  },
+  "samples" : 
+  [
+    {
+      "band" : 0,
+      "label" : "Y1 W4",
+      "tick" : 21
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W8",
+      "tick" : 49
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W12",
+      "tick" : 77
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W16",
+      "tick" : 105
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W20",
+      "tick" : 133
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W24",
+      "tick" : 161
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W28",
+      "tick" : 189
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W32",
+      "tick" : 217
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W36",
+      "tick" : 245
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W40",
+      "tick" : 273
+    }
+  ],
+  "stride" : 4,
+  "structure" : "1528ad42e9c03ffc"
+}

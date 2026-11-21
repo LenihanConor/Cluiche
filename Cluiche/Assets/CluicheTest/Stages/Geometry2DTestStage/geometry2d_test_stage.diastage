@@ -1,6 +1,8 @@
 {
     "name": "Geometry2DTestStage",
     "manifest": "Stages/Geometry2DTestStage/misc/ApplicationFlow/geometry2d_test_stage.diaapp",
+    "tags": ["test", "geometry"],
+    "description": "2D polygon and shape operations",
     "config": {
         "path_aliases": {
             "stage_root": "."

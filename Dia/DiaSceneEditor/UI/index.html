@@ -227,6 +227,39 @@
   .prop-link:hover { text-decoration: underline; color: var(--pico-primary-hover, #1177bb); }
   .prop-link.disabled-link { color: var(--pico-muted-color, #808080); cursor: default; pointer-events: none; }
   .prop-error { color: var(--pico-del-color, #f44747); font-size: 11px; }
+  .prop-unit { font-size: 10px; color: var(--pico-muted-color, #808080); margin-left: 6px; flex-shrink: 0; }
+
+  /* ── Value info icon + tooltip (DiaValueSchema F3/F7; mockup f3-worldassets/mockups/field-schema-tooltips.html) ── */
+  .info-icon {
+    width: 12px; height: 12px; flex-shrink: 0; margin-left: 4px;
+    border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 8px; color: var(--pico-muted-color, #808080); cursor: help; outline: none; vertical-align: middle;
+  }
+  .info-icon:hover, .info-icon:focus { border-color: var(--pico-primary, #0e639c); color: var(--pico-primary, #0e639c); }
+  .vt {
+    position: fixed; z-index: 100; box-sizing: border-box; width: 320px; max-width: 320px;
+    background: #2a2a2a; border: 1px solid #4a4a4a; border-radius: 3px; padding: 10px 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+    font-size: 10px; color: #ccc; text-align: left; font-weight: normal; user-select: none;
+  }
+  .vt [data-vt-section] { margin-top: 6px; }
+  .vt .vt-title { margin-top: 0; font-size: 11px; color: #5a9fd4; font-weight: 600; }
+  .vt .vt-desc { color: #aaa; line-height: 1.4; }
+  .vt .vt-enum-label { color: #ccc; font-weight: 600; }
+  .vt .vt-enum-desc { color: #777; }
+  .vt .vt-hint { color: #f5a623; font-style: italic; }
+  .vt .vt-meta { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+  .vt .vt-meta-item { display: flex; gap: 4px; }
+  .vt .vt-meta-label { color: #555; }
+  .vt .vt-meta-value { color: #999; }
+  .vt .vt-affects { display: flex; flex-wrap: wrap; gap: 4px; }
+  .vt .vt-chip { font-size: 8px; padding: 2px 6px; background: #1a2530; border: 1px solid #2a3a50; color: #5a9fd4; border-radius: 2px; }
+  .vt .vt-related { padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777; }
+  .vt .vt-related-label { color: #666; font-weight: 700; margin-right: 4px; }
+  .vt .vt-plain { margin-right: 8px; }
+  .vt .vt-source { font-size: 9px; color: #555; font-style: italic; }
+  .vt .vt-pack { display: inline-block; font-size: 8px; padding: 2px 5px; background: #2a2510; border: 1px solid #4a4520; color: #f5a623; border-radius: 2px; }
 
   /* ── Component group ── */
   .comp-group { margin-bottom: 6px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 4px; overflow: hidden; }
@@ -1343,6 +1376,7 @@ function renderInstanceTab(type, data) {
   const props = document.getElementById('props');
   if (!data) { props.innerHTML = ''; return; }
 
+  setFieldInfo(collectFieldInfo(data));
   let html = '';
   if (type === 'layer')  html = renderLayerInstance(data);
   else if (type === 'camera') html = renderCameraInstance(data);
@@ -1513,13 +1547,15 @@ function renderFieldsGrouped(fields, overrides, bpFields, readonly) {
       else if (isNonOvr) rowClass += ' non-override';
 
       html += `<div class="${rowClass}" data-field-key="${escHtml(f.key)}" data-is-override="${isOvr}">`;
-      html += `<span class="prop-label">${escHtml(f.field)}</span>`;
+      const info = _fieldInfo[f.key];
+      html += info ? labelHtml(f.field, info) : `<span class="prop-label">${escHtml(f.field)}</span>`;
       html += `<span class="prop-type">${type}</span>`;
       if (type === 'bool') {
         html += `<input type="checkbox" class="prop-check" ${f.value ? 'checked' : ''} ${(readonly || isNonOvr) ? 'disabled' : ''}>`;
       } else {
         html += `<input class="prop-input" value="${escAttr(display)}" ${(readonly || isNonOvr) ? 'disabled' : ''}>`;
       }
+      if (info && info.unit) html += `<span class="prop-unit">${escHtml(info.unit)}</span>`;
       html += `</div>`;
     });
     html += `</div></div>`;
@@ -1541,15 +1577,223 @@ function formatValue(val) {
   return String(val);
 }
 
-function propRow(label, type, value, isOverride, readonly) {
+// info (optional): a described value entry from fieldEntry(). Without a description the row is
+// byte-identical to the pre-DiaValueSchema output (raw name, no icon, no unit).
+function propRow(label, type, value, isOverride, readonly, info) {
   const display = formatValue(value);
   const cls = isOverride ? ' override' : '';
+  if (info && vtIsSet(info.description) && info.description !== '') {
+    return `<div class="prop-row${cls}">
+    ${labelHtml(label, info)}
+    <span class="prop-type">${type}</span>
+    <input class="prop-input" value="${escAttr(display)}" ${readonly ? 'disabled' : ''}>${info.unit ? `<span class="prop-unit">${escHtml(info.unit)}</span>` : ''}
+  </div>`;
+  }
   return `<div class="prop-row${cls}">
     <span class="prop-label">${escHtml(label)}</span>
     <span class="prop-type">${type}</span>
     <input class="prop-input" value="${escAttr(display)}" ${readonly ? 'disabled' : ''}>
   </div>`;
 }
+
+// ============================================================
+// VALUE LABELS + TOOLTIPS (DiaValueSchema Feature 3 / Feature 7)
+// Plain-JS twin of @dia/editor-ui ValueLabel/ValueTooltip and the debug panel's renderValueTooltip.
+// DOM contract + formatting rules: Cluiche/Tests/Contracts/valuetooltip/README.md (golden fixture).
+// Field data: components[].fields[] entries MAY carry label, description, unit, hint, min, max,
+// default (registeredtypes.diaschema keys). A field is "described" only if it has a description.
+// ============================================================
+var _fieldInfo = {};            // "Component.field" -> entry (described fields only)
+function setFieldInfo(map) { _fieldInfo = map || {}; vtClose(); }
+
+function vtIsSet(v) { return v !== undefined && v !== null; }
+
+// Build a ValueInfo-shaped entry for one component field; null when the field has no description.
+function fieldEntry(compType, f) {
+  if (!f || !vtIsSet(f.description) || f.description === '') return null;
+  const name = f.name || f.key || '';
+  const entry = { for: compType, key: name, label: vtIsSet(f.label) && f.label !== '' ? f.label : name, description: f.description };
+  ['unit', 'hint', 'min', 'max', 'default'].forEach(k => { if (vtIsSet(f[k])) entry[k] = f[k]; });
+  return entry;
+}
+
+function collectFieldInfo(data) {
+  const map = {};
+  ((data && data.components) || []).forEach(comp => {
+    const typeName = comp.type || comp.name || '';
+    if (!Array.isArray(comp.fields)) return;
+    comp.fields.forEach(f => {
+      const e = fieldEntry(typeName, f);
+      if (e) map[typeName + '.' + e.key] = e;
+    });
+  });
+  return map;
+}
+
+function labelHtml(fallbackLabel, info) {
+  const text = info.label || fallbackLabel;
+  return `<span class="prop-label"><span class="prop-label-text">${escHtml(text)}</span>` +
+    `<span class="info-icon" tabindex="0" role="button" data-role="info" data-vt-for="${escAttr(info.for)}" data-vt-field="${escAttr(info.key)}" aria-label="About ${escAttr(text)}">i</span></span>`;
+}
+
+function vtEl(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function vtFormatRange(min, max) {
+  if (vtIsSet(min) && vtIsSet(max)) return String(min) + ' \u2013 ' + String(max);
+  if (vtIsSet(min)) return '\u2265 ' + String(min);
+  if (vtIsSet(max)) return '\u2264 ' + String(max);
+  return null;
+}
+
+function vtFormatDefault(value, decimals) {
+  if (typeof value === 'number' && vtIsSet(decimals)) return value.toFixed(decimals);
+  return String(value);
+}
+
+function vtSection(root, name, cls, text) {
+  const n = vtEl('div', cls);
+  n.setAttribute('data-vt-section', name);
+  if (text !== undefined) n.textContent = vtIsSet(text) ? String(text) : '';
+  root.appendChild(n);
+  return n;
+}
+
+// Root has data-vt-tooltip; each present section is a direct child with data-vt-section="<name>".
+function renderValueTooltip(entry, options) {
+  entry = entry || {};
+  options = options || {};
+  const forId = vtIsSet(options.forId) ? options.forId : entry.for;
+  const resolvable = Array.isArray(options.resolvable) ? options.resolvable : [];
+
+  const root = vtEl('div', 'vt');
+  root.setAttribute('role', 'tooltip');
+  root.setAttribute('data-vt-tooltip', '');
+
+  vtSection(root, 'title', 'vt-title', entry.label);
+  vtSection(root, 'description', 'vt-desc', entry.description);
+
+  if (Array.isArray(entry.values) && entry.values.length) {
+    const ev = vtSection(root, 'enum_values', 'vt-enum');
+    entry.values.forEach(v => {
+      v = v || {};
+      const row = vtEl('div');
+      row.setAttribute('data-vt-enum-id', vtIsSet(v.id) ? String(v.id) : '');
+      const l = vtEl('span', 'vt-enum-label', vtIsSet(v.label) ? String(v.label) : '');
+      l.setAttribute('data-vt-enum-label', '');
+      const ds = vtEl('span', 'vt-enum-desc', vtIsSet(v.description) ? String(v.description) : '');
+      ds.setAttribute('data-vt-enum-desc', '');
+      row.appendChild(l);
+      row.appendChild(document.createTextNode(' '));
+      row.appendChild(ds);
+      ev.appendChild(row);
+    });
+  }
+
+  if (options.inspector && entry.hint) vtSection(root, 'hint', 'vt-hint', entry.hint);
+
+  const meta = [];
+  if (entry.unit) meta.push(['unit', String(entry.unit)]);
+  const range = vtFormatRange(entry.min, entry.max);
+  if (range !== null) meta.push(['range', range]);
+  if (vtIsSet(entry.default)) meta.push(['default', vtFormatDefault(entry.default, entry.ui ? entry.ui.decimals : undefined)]);
+  if (meta.length) {
+    const mn = vtSection(root, 'meta', 'vt-meta');
+    meta.forEach(m => {
+      const item = vtEl('span', 'vt-meta-item');
+      item.setAttribute('data-vt-kind', m[0]);
+      item.appendChild(vtEl('span', 'vt-meta-label', m[0]));
+      const val = vtEl('span', 'vt-meta-value', m[1]);
+      val.setAttribute('data-vt-value', '');
+      item.appendChild(val);
+      mn.appendChild(item);
+    });
+  }
+
+  if (Array.isArray(entry.affects) && entry.affects.length) {
+    const af = vtSection(root, 'affects', 'vt-affects');
+    entry.affects.forEach(a => {
+      const chip = vtEl('span', 'vt-chip', String(a));
+      chip.setAttribute('data-vt-chip', String(a));
+      af.appendChild(chip);
+    });
+  }
+
+  if (Array.isArray(entry.related) && entry.related.length) {
+    const rl = vtSection(root, 'related', 'vt-related');
+    rl.appendChild(vtEl('span', 'vt-related-label', 'Related:'));
+    entry.related.forEach(k => {
+      const key = String(k);
+      const isLink = resolvable.indexOf(key) >= 0;
+      const node = vtEl(isLink ? 'button' : 'span', isLink ? 'vt-link' : 'vt-plain', key);
+      node.setAttribute('data-vt-key', key);
+      node.setAttribute('data-vt-link', isLink ? 'true' : 'false');
+      if (isLink) {
+        node.setAttribute('type', 'button');
+        node.addEventListener('click', e => { e.stopPropagation(); if (typeof options.onFocusKey === 'function') options.onFocusKey(key); });
+      }
+      rl.appendChild(node);
+    });
+  }
+
+  if (entry.source) {
+    const sn = vtSection(root, 'source', 'vt-source');
+    const s1 = vtEl('span', '', String(entry.source));
+    s1.setAttribute('data-vt-source', '');
+    const s2 = vtEl('span', '', String(forId) + ' \u00b7 ' + String(entry.key));
+    s2.setAttribute('data-vt-defined-in', '');
+    sn.appendChild(s1);
+    sn.appendChild(document.createTextNode(' \u00b7 Defined in '));
+    sn.appendChild(s2);
+  }
+
+  if (options.packId) vtSection(root, 'pack_badge', 'vt-pack', 'overridden by pack ' + options.packId);
+  return root;
+}
+
+// (i) icon wiring: hover / focus opens, blur / leave / Esc closes. Delegated (capture phase, since
+// mouseenter/focus do not bubble) so it survives props.innerHTML rebuilds.
+var vt = { el: null, timer: null };
+function vtCancelHide() { if (vt.timer) { clearTimeout(vt.timer); vt.timer = null; } }
+function vtScheduleHide() { vtCancelHide(); vt.timer = setTimeout(vtClose, 150); }
+function vtClose() {
+  vtCancelHide();
+  if (vt.el && vt.el.parentNode) vt.el.parentNode.removeChild(vt.el);
+  vt.el = null;
+}
+
+function vtShow(icon) {
+  vtClose();
+  const entry = _fieldInfo[icon.getAttribute('data-vt-for') + '.' + icon.getAttribute('data-vt-field')];
+  if (!entry) return;
+  const tip = renderValueTooltip(entry, { inspector: true, resolvable: [], forId: entry.for });
+  tip.addEventListener('mouseenter', vtCancelHide);
+  tip.addEventListener('mouseleave', vtScheduleHide);
+  const vw = window.innerWidth || document.documentElement.clientWidth || 520;
+  const vh = window.innerHeight || document.documentElement.clientHeight || 600;
+  tip.style.maxWidth = Math.min(320, vw - 16) + 'px';
+  tip.style.width = tip.style.maxWidth;
+  tip.style.left = '0px';
+  tip.style.top = '0px';
+  document.body.appendChild(tip);
+  vt.el = tip;
+  const rect = icon.getBoundingClientRect();
+  const tw = tip.offsetWidth || 320, th = tip.offsetHeight || 0;
+  const left = Math.max(8, Math.min(rect.left, vw - tw - 8));
+  let top = rect.bottom + 6;
+  if (top + th > vh - 8 && rect.top - th - 6 >= 8) top = rect.top - th - 6;   // flip above
+  tip.style.left = left + 'px';
+  tip.style.top = Math.max(8, top) + 'px';
+}
+
+function vtIconOf(e) { return e.target && e.target.closest ? e.target.closest('.info-icon') : null; }
+['mouseenter', 'focus'].forEach(t => document.addEventListener(t, e => { const i = vtIconOf(e); if (i) { vtCancelHide(); vtShow(i); } }, true));
+['mouseleave', 'blur'].forEach(t => document.addEventListener(t, e => { if (vtIconOf(e)) vtScheduleHide(); }, true));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && vt.el) vtClose(); });
 
 function propRowCheck(label, checked) {
   return `<div class="prop-row">

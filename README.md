@@ -48,7 +48,8 @@ Cluiche/                        [Platform Root]
 │   └── reference/             - Reference docs (architecture, API, design, testing)
 │
 └── External/                   Third-party dependencies
-    ├── SFML/                  - Graphics/Audio/Input backend
+    ├── SDL3/                  - Window and input backend
+    ├── bgfx/                  - Rendering (2D and 3D)
     ├── jsoncpp/               - JSON configuration
     └── [3 more libraries]
 ```

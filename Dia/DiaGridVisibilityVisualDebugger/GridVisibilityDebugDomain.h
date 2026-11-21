@@ -12,9 +12,9 @@
 #include <DiaGridVisibility/GridVisibilitySystem.h>
 #include <DiaGridVisibility/VisibilityGroupId.h>
 #include <DiaEntitySpatial/EntitySpatialModule.h>
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaCore/DebugDraw/IVisualDebugger.h>

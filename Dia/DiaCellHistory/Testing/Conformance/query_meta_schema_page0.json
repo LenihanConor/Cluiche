@@ -1,0 +1,61 @@
+{
+  "entries" : 
+  [
+    {
+      "description" : "D",
+      "for" : "cells",
+      "key" : "temp",
+      "kind" : "parameter",
+      "label" : "L",
+      "max" : 100,
+      "min" : 0,
+      "origin" : "sidecar:rig.json",
+      "type" : "float"
+    },
+    {
+      "description" : "D",
+      "for" : "cells",
+      "key" : "rain",
+      "kind" : "parameter",
+      "label" : "L",
+      "max" : 50,
+      "min" : 0,
+      "origin" : "sidecar:rig.json",
+      "type" : "float"
+    },
+    {
+      "description" : "D",
+      "for" : "cells",
+      "key" : "biome",
+      "kind" : "parameter",
+      "label" : "biome",
+      "origin" : "sidecar:rig.json",
+      "type" : "enum",
+      "values" : 
+      [
+        {
+          "description" : "",
+          "id" : "forest",
+          "label" : "Forest"
+        },
+        {
+          "description" : "",
+          "id" : "plain",
+          "label" : "Plain"
+        },
+        {
+          "description" : "",
+          "id" : "desert",
+          "label" : "Desert"
+        }
+      ]
+    }
+  ],
+  "next" : 
+  {
+    "offset" : 3,
+    "part" : "schema"
+  },
+  "part" : "schema",
+  "ramps" : []
+}

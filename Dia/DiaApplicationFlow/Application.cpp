@@ -13,28 +13,23 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <cstring>
+
+#ifdef _WIN32
+// Declared here (not via windows.h) to keep that header out of this file; identical to the SDK declarations.
+extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
+extern "C" __declspec(dllimport) unsigned long __stdcall GetThreadId(void* thread);
+#endif
 
 namespace Dia { namespace ApplicationFlow {
-
-    // File-static stream metrics — lazily initialized on first use.
-    static Observation::Metric::Counter* sServiceStreamCommitCount  = nullptr;
-    static Observation::Metric::Counter* sServiceStreamResetCount   = nullptr;
-    static Observation::Metric::Gauge*   sServiceStreamCommittedGauge = nullptr;
-
-    static void EnsureStreamMetrics()
-    {
-        if (sServiceStreamCommitCount) return;
-        auto& reg = Observation::Metric::MetricRegistry::Instance();
-        sServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
-        sServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
-        sServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
-    }
 
     //--------------------------------------------------------------------------
     // Constructor / Destructor
@@ -53,11 +48,23 @@ namespace Dia { namespace ApplicationFlow {
         , mStarted(false)
         , mShutdownInitiated(false)
     {
+        // Resolve registry-owned stream metrics per instance (registry Reset() frees them).
+        auto& reg = Observation::Metric::MetricRegistry::Instance();
+        mServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
+        mServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
+        mServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
     }
 
     //--------------------------------------------------------------------------
     Application::~Application()
     {
+        // Stop the span sink first: it runs on the tracer's drain thread and sends to mPerfSpansStore.
+        if (mSpanSink)
+        {
+            Dia::Observation::Trace::Tracer::Instance().UnregisterTraceSink(mSpanSink.get());
+            mSpanSink.reset();
+        }
+
         // If threads are still running, stop them now (safety net — callers
         // should call RequestShutdown() and drain Update() before destroying).
         if (mStarted && !mShuttingDown.load())
@@ -68,6 +75,11 @@ namespace Dia { namespace ApplicationFlow {
         // Destructor is the last chance to join — blocking here is the
         // expected behaviour (Update() wasn't drained).
         JoinDedicatedThreads();
+
+        if (mRegisteredMainTraceBuffer)
+            Dia::Observation::Trace::Tracer::Instance().UnregisterThreadSpanBuffer();
+        if (mRegisteredMainProfileBuffer)
+            Dia::Observation::Profile::Profiler::Instance().UnregisterThreadScopeBuffer();
     }
 
     //--------------------------------------------------------------------------
@@ -146,11 +158,123 @@ namespace Dia { namespace ApplicationFlow {
             ++mStreamStoreCount;
         }
 
+        // --- 1b2. Create $perfcoarse stream (framework-owned, all builds; Perf Inspector task 1b) ---
+        // Every PU sends CoarseChunk timing chunks (~8.5 KB, ~10 Hz per PU); a Main-side reader
+        // rebuilds the long coarse ring. Drop-oldest: a slow or absent reader never blocks a PU.
+        {
+            auto* coarseStore = new EventStreamStore<Dia::Observation::Profile::CoarseChunk>(
+                Dia::Core::StringCRC("$perfcoarse"),
+                Dia::Core::StringCRC("CoarseChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfCoarseStore = coarseStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(coarseStore);
+            ++mStreamStoreCount;
+        }
+
+        // --- 1b3. Create $perfjobs stream (framework-owned, all builds; Perf Inspector task 13) ---
+        // Every PU sends JobChunk job timing chunks (<= ~8.7 KB, <= 10 Hz, only when jobs ran).
+        {
+            auto* jobsStore = new EventStreamStore<Dia::Observation::Profile::JobChunk>(
+                Dia::Core::StringCRC("$perfjobs"),
+                Dia::Core::StringCRC("JobChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfJobsStore = jobsStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(jobsStore);
+            ++mStreamStoreCount;
+        }
+
+        // --- 1b3b. Create $perfnames stream (framework-owned, all builds) ---
+        // crc -> name announcements for ids Main cannot derive from module instance ids (deferred-step channels).
+        // Tiny and rare; announcers resend periodically because late-registering readers get no replay.
+        {
+            auto* namesStore = new EventStreamStore<Dia::Observation::Profile::ChannelNameAnnounce>(
+                Dia::Core::StringCRC("$perfnames"),
+                Dia::Core::StringCRC("ChannelNameAnnounce"),
+                /*capacity=*/64,
+                /*maxReaders=*/4,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfNamesStore = namesStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(namesStore);
+            ++mStreamStoreCount;
+        }
+
+        // --- 1b4. Create $perftrips stream (framework-owned, all builds; Perf Inspector task 3b) ---
+        // One TripChunk per emitted over-budget trip (rate limited per unit), so tiny traffic.
+        {
+            auto* tripsStore = new EventStreamStore<Dia::Observation::Profile::TripChunk>(
+                Dia::Core::StringCRC("$perftrips"),
+                Dia::Core::StringCRC("TripChunk"),
+                /*capacity=*/64,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfTripsStore = tripsStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(tripsStore);
+            ++mStreamStoreCount;
+        }
+
+        // --- 1b5. Create $perfspans stream (framework-owned, all builds; Perf Inspector row 6b) ---
+        // Closed trace spans, batched (<= 64 per chunk, flushed when full or 50 ms old) by a sink on the tracer's
+        // drain thread. Only produced while tracing is on; drop-oldest so a missing Main reader never blocks it.
+        {
+            auto* spansStore = new EventStreamStore<Dia::Observation::Trace::SpanChunk>(
+                Dia::Core::StringCRC("$perfspans"),
+                Dia::Core::StringCRC("SpanChunk"),
+                /*capacity=*/32,
+                /*maxReaders=*/2,
+                OverflowPolicy::kDropOldest);
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfSpansStore = spansStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(spansStore);
+            ++mStreamStoreCount;
+
+            mSpanSink = std::make_unique<Dia::Observation::Trace::SpanChunkSink>(
+                [spansStore](const Dia::Observation::Trace::SpanChunk& chunk)
+                {
+                    auto ev = std::make_unique<Event<Dia::Observation::Trace::SpanChunk>>();
+                    ev->payload = chunk;
+                    spansStore->Send(*ev);
+                });
+            Dia::Observation::Trace::Tracer::Instance().RegisterTraceSink(mSpanSink.get());
+        }
+
+#ifdef _DEBUG
+        // --- 1c. Create $perfpause stream (Debug only, framework-owned) ---
+        {
+            auto* pauseStore = new FrameStreamStore<PerfPauseSet>(Dia::Core::StringCRC("$perfpause"));
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mPerfPauseStore = pauseStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(pauseStore);
+            ++mStreamStoreCount;
+            mPerfPause = Dia::Core::UniquePtr<PerfPauseController>(new PerfPauseController(pauseStore));
+            mPerfPause->SetModuleResolver(&Application::ResolveModuleType, this);
+        }
+#endif
+
         // --- 2. Build PUs and modules from manifest --------------------------
         if (!BuildFromManifest())
         {
             return false;
         }
+
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfCoarseSink(mPerfCoarseStore);
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfJobsSink(mPerfJobsStore);
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfTripsSink(mPerfTripsStore);
+
+#ifdef _DEBUG
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetPerfPauseSource(mPerfPauseStore);
+#endif
 
         // --- 2b. Connect stream handles across all modules -------------------
         ConnectModuleStreams();
@@ -175,7 +299,7 @@ namespace Dia { namespace ApplicationFlow {
             // Build a fixed-capacity list of EventStreamStore pointers for this PU.
             // We capture raw pointers — stores are owned by mStreamStores[] which
             // outlives the PU; the lambda is destroyed when the PU is destroyed.
-            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 16> ownedStores;
+            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 64> ownedStores;
             for (unsigned int si = 0; si < mManifest.streams.Size(); ++si)
             {
                 const StreamDeclaration& sd = mManifest.streams[si];
@@ -184,8 +308,12 @@ namespace Dia { namespace ApplicationFlow {
                 if (sd.fromPU != puId)
                     continue;
                 IStreamStore* store = FindStreamStore(sd.id);
-                if (store && !ownedStores.IsFull())
-                    ownedStores.Add(store);
+                if (store)
+                {
+                    DIA_ASSERT(!ownedStores.IsFull(), "Application: PU owns more EventStreams than the flush list capacity; raise ownedStores size");
+                    if (!ownedStores.IsFull())
+                        ownedStores.Add(store);
+                }
             }
 
             if (ownedStores.IsEmpty())
@@ -200,6 +328,25 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- 3. Start dedicated threads (non-main PUs) -----------------------
+#ifdef _WIN32
+        mUnitThreadIds[0] = static_cast<uint32_t>(GetCurrentThreadId());   // main PU runs inline on this thread
+#endif
+        {
+            // Main PU runs inline on this thread: give it a profiler scope buffer named after the PU.
+            auto& profiler = Dia::Observation::Profile::Profiler::Instance();
+            if (!profiler.IsThreadScopeBufferRegistered())
+            {
+                profiler.RegisterNamedThreadScopeBuffer(mProcessingUnits[0]->GetInstanceId().AsChar());
+                mRegisteredMainProfileBuffer = true;
+            }
+
+            auto& tracer = Dia::Observation::Trace::Tracer::Instance();
+            if (!tracer.IsThreadSpanBufferRegistered())
+            {
+                tracer.RegisterThreadSpanBuffer();
+                mRegisteredMainTraceBuffer = true;
+            }
+        }
         // PU index 0 is the main PU — it runs inline in Update().
         for (unsigned int p = 1; p < mProcessingUnitCount; ++p)
         {
@@ -209,6 +356,9 @@ namespace Dia { namespace ApplicationFlow {
                 DIA_ASSERT(mDedicatedThreadCount < kMaxDedicatedThreads,
                            "Application::Start() — dedicated thread capacity exceeded");
                 mDedicatedThreads[mDedicatedThreadCount] = std::thread(std::ref(*pu));
+#ifdef _WIN32
+                mUnitThreadIds[p] = static_cast<uint32_t>(GetThreadId(mDedicatedThreads[mDedicatedThreadCount].native_handle()));
+#endif
                 ++mDedicatedThreadCount;
             }
         }
@@ -247,6 +397,7 @@ namespace Dia { namespace ApplicationFlow {
                                    modDecl.instanceId.AsChar(), puDecl.instanceId.AsChar());
                         if (module && module->GetState() == ModuleState::kInactive)
                         {
+                            DeliverStageLaunch(module, stage, Dia::Core::StringCRC());
                             module->BeginStart();
                         }
                     }
@@ -274,14 +425,14 @@ namespace Dia { namespace ApplicationFlow {
             if (!mShutdownInitiated)
             {
                 mShutdownInitiated = true;
+#ifdef _DEBUG
+                if (mPerfPause) mPerfPause->ReleaseOwner(PerfPauseController::kLocalOwner);
+#endif
                 BeginStopAllActive();
             }
 
             // Tick the main PU so stopping modules can wind down.
-            if (mProcessingUnitCount > 0)
-            {
-                mProcessingUnits[0]->Update(deltaTime);
-            }
+            UpdateInlineProcessingUnits(deltaTime);
 
             // Return false once everything has settled.
             if (AllModulesInactive())
@@ -312,13 +463,13 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- Tick the main PU ------------------------------------------------
-        if (mProcessingUnitCount > 0)
-        {
-            mProcessingUnits[0]->Update(deltaTime);
-        }
+        UpdateInlineProcessingUnits(deltaTime);
 
         // --- Commit gate: make registered ServiceStreams visible to consumers ---
         CommitReadyServiceStreams();
+
+        // --- Stage readiness: after the commit, so "ready" implies the stage's services are visible ---
+        UpdateStageReady();
 
         // --- Error policy: check for failed modules --------------------------
         if (AnyModuleFailed())
@@ -410,6 +561,67 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::TransitionTo(const Dia::Core::StringCRC& stageId)
     {
+        TransitionToInternal(stageId, Dia::Core::StringCRC());
+    }
+
+    void Application::TransitionTo(const Dia::Core::StringCRC& stageId,
+                                   const Dia::Core::StringCRC& presetId)
+    {
+        if (presetId.Value() != 0 && !mManifest.HasPreset(stageId, presetId))
+        {
+            DIA_LOG_ERROR("Application", "Unknown preset '%s' for stage '%s', transition refused",
+                          presetId.AsChar(), stageId.AsChar());
+            return;
+        }
+        TransitionToInternal(stageId, presetId);
+    }
+
+    void Application::SetInitialLaunch(const Dia::Core::StringCRC& stageId, const Dia::Core::StringCRC& presetId)
+    {
+        std::lock_guard<std::mutex> lock(mTransitionMutex);
+        mInitialStage     = stageId;
+        mInitialPreset    = presetId;
+        mHasInitialLaunch = stageId.Value() != 0;
+        if (mHasInitialLaunch)
+            DIA_LOG_INFO("Application", "initial launch recorded: stage='%s' preset='%s'", stageId.AsChar(), presetId.AsChar());
+    }
+
+    bool Application::TakeInitialLaunch(Dia::Core::StringCRC& stageId, Dia::Core::StringCRC& presetId)
+    {
+        std::lock_guard<std::mutex> lock(mTransitionMutex);
+        if (!mHasInitialLaunch) return false;
+        mHasInitialLaunch = false;
+        stageId  = mInitialStage;
+        presetId = mInitialPreset;
+        return true;
+    }
+
+    Dia::Core::StringCRC Application::GetCurrentPreset() const
+    {
+        return mCurrentPreset;
+    }
+
+    void Application::DeliverStageLaunch(Module* module, const Dia::Core::StringCRC& stage,
+                                         const Dia::Core::StringCRC& preset)
+    {
+        const char* json = "";
+        if (preset.Value() != 0)
+        {
+            if (const PresetDeclaration* p = mManifest.FindPreset(stage, preset))
+                json = mManifest.GetPresetOverrideJson(*p, module->GetInstanceId());
+        }
+        if (json[0] != '\0')
+        {
+            DIA_LOG_INFO("Application", "Delivering launch override to module '%s' (%u bytes)",
+                         module->GetInstanceId().AsChar(),
+                         static_cast<unsigned int>(std::strlen(json)));
+        }
+        module->OnStageLaunch(json);
+    }
+
+    void Application::TransitionToInternal(const Dia::Core::StringCRC& stageId,
+                                           const Dia::Core::StringCRC& presetId)
+    {
         {
             LifecycleEvent ev;
             ev.kind      = LifecycleEventKind::kStageTransitionRequested;
@@ -422,7 +634,33 @@ namespace Dia { namespace ApplicationFlow {
         if (mPendingStage != stageId)
             mPendingHeldByGuardEmitted = false;  // new target — re-arm held-by-guard event
         mPendingStage = stageId;
+        mPendingPreset = presetId;
         mHasPendingTransition.store(true);
+        mStageReady.store(false);   // a stale "ready" must not outlive the request
+    }
+
+    //--------------------------------------------------------------------------
+    // UpdateStageReady  (Main, end of Update after the service-stream commit)
+    //--------------------------------------------------------------------------
+
+    void Application::UpdateStageReady()
+    {
+        bool ready = mStarted && !mShuttingDown.load() && !mHasPendingTransition.load() && !mTransitionDraining
+                     && mCurrentStage.Value() != 0;
+        for (unsigned int p = 0; ready && p < mProcessingUnitCount; ++p)
+        {
+            ProcessingUnit* pu = mProcessingUnits[p].Get();
+            const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+            for (unsigned int m = 0; ready && m < puDecl.modules.Size(); ++m)
+            {
+                const ModuleDeclaration& modDecl = puDecl.modules[m];
+                if (!ModuleIsInStage(modDecl, mCurrentStage))
+                    continue;
+                const Module* module = pu->FindModule(modDecl.instanceId);
+                ready = module != nullptr && module->GetState() == ModuleState::kActive;
+            }
+        }
+        mStageReady.store(ready);
     }
 
     //--------------------------------------------------------------------------
@@ -431,6 +669,7 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::RequestShutdown()
     {
+        mStageReady.store(false);   // the shutdown path in Update returns before UpdateStageReady runs
         if (mShuttingDown.exchange(true))
         {
             return; // Already requested.
@@ -634,6 +873,34 @@ namespace Dia { namespace ApplicationFlow {
             out.Add(mManifest.processingUnits[p].instanceId);
     }
 
+    bool Application::ResolveUnitForThread(uint32_t threadId, Dia::Core::StringCRC& outUnitId) const
+    {
+        if (threadId == 0)
+            return false;
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            if (mUnitThreadIds[p] == threadId)
+            {
+                outUnitId = mProcessingUnits[p]->GetInstanceId();
+                return true;
+            }
+        }
+        return false;
+    }
+
+#ifdef _DEBUG
+    bool Application::ResolveModuleType(void* ctx, const Dia::Core::StringCRC& instanceId, Dia::Core::StringCRC& outTypeId)
+    {
+        const Application* self = static_cast<const Application*>(ctx);
+        for (unsigned int p = 0; p < self->mProcessingUnitCount; ++p)
+        {
+            const Module* m = self->mProcessingUnits[p]->FindModule(instanceId);
+            if (m) { outTypeId = m->GetTypeId(); return true; }
+        }
+        return false;
+    }
+#endif
+
     //--------------------------------------------------------------------------
     // GetActiveModules
     //--------------------------------------------------------------------------
@@ -708,6 +975,25 @@ namespace Dia { namespace ApplicationFlow {
     // BuildFromManifest  (private)
     //--------------------------------------------------------------------------
 
+    void Application::SetTripReporter(Dia::Observation::Profile::TripReporter* reporter)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetTripReporter(reporter);
+    }
+
+    void Application::SetTripConfig(const Dia::Observation::Profile::TripConfig& config)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->SetTripConfig(config);
+    }
+
+    void Application::CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+            mProcessingUnits[p]->CollectPerfSummary(out);
+    }
+
+    //--------------------------------------------------------------------------
     bool Application::BuildFromManifest()
     {
         DIA_ASSERT(mManifest.processingUnits.Size() <= kMaxProcessingUnits,
@@ -788,6 +1074,7 @@ namespace Dia { namespace ApplicationFlow {
         {
             std::lock_guard<std::mutex> lock(mTransitionMutex);
             mPendingStage = Dia::Core::StringCRC();
+            mPendingPreset = Dia::Core::StringCRC();
             mHasPendingTransition.store(false);
             mPendingHeldByGuardEmitted = false;
             return;
@@ -813,13 +1100,20 @@ namespace Dia { namespace ApplicationFlow {
         {
             std::lock_guard<std::mutex> lock(mTransitionMutex);
             newStage = mPendingStage;
+            mLaunchPreset = mPendingPreset;
             mPendingStage = Dia::Core::StringCRC();
+            mPendingPreset = Dia::Core::StringCRC();
             mHasPendingTransition.store(false);
             mPendingHeldByGuardEmitted = false;
         }
 
         DIA_LOG_INFO("Application", "Stage transition: '%s' -> '%s'",
                      mCurrentStage.AsChar(), newStage.AsChar());
+
+#ifdef _DEBUG
+        // Local (in-game/test) pauses never survive a stage exit.
+        if (mPerfPause) mPerfPause->ReleaseOwner(PerfPauseController::kLocalOwner);
+#endif
 
         {
             LifecycleEvent ev;
@@ -881,6 +1175,15 @@ namespace Dia { namespace ApplicationFlow {
                     if (module)
                     {
                         ModuleState s = module->GetState();
+                        // A module that was still kStarting when the stop phase began finishes starting
+                        // later; stop it as soon as it is kActive or the drain would wait on it forever.
+                        if (s == ModuleState::kActive)
+                        {
+                            DIA_LOG_INFO("Application", "Module '%s' finished starting during a transition, stopping it",
+                                         modDecl.instanceId.AsChar());
+                            const_cast<Module*>(module)->BeginStop();
+                            s = module->GetState();
+                        }
                         if (s != ModuleState::kInactive && s != ModuleState::kFailed)
                             return; // Still draining — outgoing modules not yet down.
                     }
@@ -890,6 +1193,7 @@ namespace Dia { namespace ApplicationFlow {
 
         // All outgoing modules are down — commit stage and start incoming.
         mCurrentStage       = newStage;
+        mCurrentPreset      = mLaunchPreset;
         mTransitionDraining = false;
 
         // A successful transition into a new stage resets the rollback counter:
@@ -915,7 +1219,6 @@ namespace Dia { namespace ApplicationFlow {
         {
             DIA_PROFILE_SCOPE("app.service_stream_reset", Observation::Profile::Category::kDiaApplicationFlow);
             DIA_TRACE_ZONE("app.service_stream_reset", Observation::Trace::Category::kDiaApplicationFlow);
-            EnsureStreamMetrics();
 
             static const Dia::Core::StringCRC kProvides("provides");
             static const Dia::Core::StringCRC kServiceStream("ServiceStream");
@@ -951,7 +1254,8 @@ namespace Dia { namespace ApplicationFlow {
                     DIA_LOG_INFO("Application", "Resetting ServiceStream '%s' — provider leaving stage",
                                  streamId.AsChar());
                     store->Reset();
-                    sServiceStreamResetCount->Inc();
+                    if (mServiceStreamResetCount)
+                        mServiceStreamResetCount->Inc();
                 }
             }
         }
@@ -970,10 +1274,14 @@ namespace Dia { namespace ApplicationFlow {
                 {
                     Module* module = pu->FindModule(modDecl.instanceId);
                     if (module && module->GetState() == ModuleState::kInactive)
+                    {
+                        DeliverStageLaunch(module, newStage, mLaunchPreset);
                         module->BeginStart();
+                    }
                 }
             }
         }
+        mLaunchPreset = Dia::Core::StringCRC();
 
         // Auto-advance: per-stage flag in v3 replaces the old top-level auto_stages array.
         for (unsigned int s = 0; s < mManifest.stages.Size(); ++s)
@@ -1021,6 +1329,23 @@ namespace Dia { namespace ApplicationFlow {
                     module->BeginStop();
                 }
             }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // UpdateInlineProcessingUnits  (private)
+    //
+    // PU 0 always runs inline. A secondary PU declared dedicatedThread=false also
+    // runs inline (it has no thread), so it is ticked here after PU 0, in manifest
+    // order. Dedicated-thread PUs are driven by their own thread.
+    //--------------------------------------------------------------------------
+
+    void Application::UpdateInlineProcessingUnits(float deltaTime)
+    {
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            if (p == 0 || !mProcessingUnits[p]->IsDedicatedThread())
+                mProcessingUnits[p]->Update(deltaTime);
         }
     }
 
@@ -1141,6 +1466,39 @@ namespace Dia { namespace ApplicationFlow {
                 transition["heldByGuards"] = ti.heldByGuards;
                 result["transition"] = transition;
 
+#ifdef _DEBUG
+                // Perf live control: active module/domain pauses (Debug only). owner 0 = local, else connId + 1.
+                {
+                    Json::Value pausesArr(Json::arrayValue);
+                    if (mPerfPause)
+                    {
+                        PerfPauseEntry entries[PerfPauseController::kMaxEntries];
+                        const unsigned int n = mPerfPause->ActivePauses(entries, PerfPauseController::kMaxEntries);
+                        for (unsigned int i = 0; i < n; ++i)
+                        {
+                            Json::Value e;
+                            const bool isModule = entries[i].kind == PerfPauseKind::kModule;
+                            e["kind"]  = isModule ? "module" : "domain";
+                            e["crc"]   = entries[i].crc;
+                            e["owner"] = entries[i].owner;
+                            if (isModule)
+                            {
+                                // Names are not stored in the controller; recover them from the manifest.
+                                for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+                                {
+                                    const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+                                    for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
+                                        if (puDecl.modules[m].instanceId.Value() == entries[i].crc)
+                                            e["id"] = puDecl.modules[m].instanceId.AsChar();
+                                }
+                            }
+                            pausesArr.append(e);
+                        }
+                    }
+                    result["activePauses"] = pausesArr;
+                }
+#endif
+
                 return result;
             };
             Dia::API::RegisterCommandJson(reportCmd);
@@ -1185,7 +1543,6 @@ namespace Dia { namespace ApplicationFlow {
         DIA_PROFILE_SCOPE("app.service_commit_gate", Observation::Profile::Category::kDiaApplicationFlow);
         DIA_TRACE_ZONE("app.service_commit_gate", Observation::Trace::Category::kDiaApplicationFlow);
 
-        EnsureStreamMetrics();
         unsigned int committedTotal = 0;
 
         for (unsigned int i = 0; i < mStreamStoreCount; ++i)
@@ -1197,7 +1554,8 @@ namespace Dia { namespace ApplicationFlow {
             if (store->IsRegistered() && !store->IsCommitted())
             {
                 store->Commit();
-                sServiceStreamCommitCount->Inc();
+                if (mServiceStreamCommitCount)
+                    mServiceStreamCommitCount->Inc();
                 DIA_LOG_INFO("Application", "ServiceStream '%s' committed", store->GetId().AsChar());
             }
 
@@ -1205,8 +1563,8 @@ namespace Dia { namespace ApplicationFlow {
                 ++committedTotal;
         }
 
-        if (sServiceStreamCommittedGauge)
-            sServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
+        if (mServiceStreamCommittedGauge)
+            mServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
     }
 
     // ModuleIsInStage  (private, static)
@@ -1386,11 +1744,59 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    // GetDeclaredEventStreamConfig  (IStreamConnector override)
+    //--------------------------------------------------------------------------
+
+    bool Application::GetDeclaredEventStreamConfig(const Dia::Core::StringCRC& streamId,
+                                                   unsigned int& outCapacity,
+                                                   OverflowPolicy& outPolicy,
+                                                   unsigned int& outBlockTimeoutMs) const
+    {
+        for (unsigned int i = 0; i < mManifest.streams.Size(); ++i)
+        {
+            const StreamDeclaration& sd = mManifest.streams[i];
+            if (sd.id == streamId)
+            {
+                outCapacity       = sd.capacity;
+                outPolicy         = sd.overflowPolicy;
+                outBlockTimeoutMs = sd.blockTimeoutMs;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //--------------------------------------------------------------------------
     // EmitLifecycleEvent  (public)
     //--------------------------------------------------------------------------
 
     void Application::EmitLifecycleEvent(const LifecycleEvent& ev)
     {
+        // Perf markers (perf-live-control AC7). Runs on whichever thread emits; a thread that has not
+        // registered with PerfMarkers drops the mark silently.
+        switch (ev.kind)
+        {
+            case LifecycleEventKind::kStageTransitionRequested:
+                DIA_PERF_MARK_VALUE("stage.requested", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kStageTransitionStarted:
+                DIA_PERF_MARK_VALUE("stage.started", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kStageTransitionCommitted:
+                DIA_PERF_MARK_VALUE("stage.committed", ev.toStage.Value());
+                break;
+            case LifecycleEventKind::kModuleStateChanged:
+                if (ev.newState == ModuleState::kActive)
+                    DIA_PERF_MARK_VALUE("module.started", ev.moduleInstanceId.Value());
+                else if (ev.newState == ModuleState::kInactive && ev.previousState == ModuleState::kStopping)
+                    DIA_PERF_MARK_VALUE("module.stopped", ev.moduleInstanceId.Value());
+                else if (ev.newState == ModuleState::kFailed)
+                    DIA_PERF_MARK_VALUE("module.failed", ev.moduleInstanceId.Value());
+                break;
+            default:
+                break;
+        }
+
         if (!mLifecycleStore)
             return;
 

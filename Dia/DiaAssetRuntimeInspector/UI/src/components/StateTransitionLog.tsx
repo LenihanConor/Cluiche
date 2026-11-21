@@ -1,5 +1,5 @@
 import { useState, CSSProperties } from 'react';
-import { theme } from '@dia/editor-ui';
+import { theme, newFrameReqId } from '@dia/editor-ui';
 import { useAssetRuntimeStore } from '../store';
 import type { LogEntry } from '../types';
 
@@ -8,7 +8,7 @@ import type { LogEntry } from '../types';
 function sendBridgeRequest(type: string, data: unknown) {
     if (window.parent && window.parent !== window) {
         window.parent.postMessage(
-            { __diaFromFrame: true, payload: { type, reqId: null, data } },
+            { __diaFromFrame: true, payload: { type, reqId: newFrameReqId(), data } },
             '*'
         );
     }

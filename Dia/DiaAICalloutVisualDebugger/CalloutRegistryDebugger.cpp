@@ -2,8 +2,8 @@
 #ifdef DIA_DEBUG
 
 #include "CalloutRadiiDrawer.h"
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
 #include <DiaAICallout/CalloutRegistry.h>
 #include <stdio.h>
 

@@ -167,6 +167,11 @@ def _extract_fields_per_type(schema: dict[str, Any]) -> dict[str, frozenset[str]
     return result
 
 
+def _content_without_version(schema: dict[str, Any]) -> dict[str, Any]:
+    """The whole schema minus its `version` stamp, for full-content comparison."""
+    return {k: v for k, v in schema.items() if k != "version"}
+
+
 def _compute_version(
     schema_path: Path,
     new_schema: dict[str, Any],
@@ -180,6 +185,7 @@ def _compute_version(
       - No change detected        → return None (caller skips write)
       - Any type removed          → warn; if --breaking: major += 1, minor = 0
       - Types/fields added        → minor += 1
+      - Any other content change  → minor += 1 (defaults, labels, units, ...)
       - --breaking without removal→ major += 1, minor = 0
     """
     if not schema_path.exists():
@@ -225,9 +231,13 @@ def _compute_version(
         for t in prev_ids & new_ids
     )
 
+    # Any other content difference (field label/unit/min/max/default,
+    # default_values, allowed_pus, ...) is a non-breaking change.
+    content_changed = _content_without_version(prev_schema) != _content_without_version(new_schema)
+
     # Determine change category
     has_removals = bool(removed_ids) or fields_removed
-    has_additions = bool(added_ids) or fields_added or desc_changed
+    has_additions = bool(added_ids) or fields_added or desc_changed or content_changed
     no_change = not has_removals and not has_additions and not is_breaking
 
     if no_change:

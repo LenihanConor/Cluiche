@@ -1,0 +1,13 @@
+{
+    "name": "Misc",
+    "manifest": "Misc.stage.json",
+    "tags": [
+        "experimental"
+    ],
+    "description": "Only a free-form tag, so it lands in other.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

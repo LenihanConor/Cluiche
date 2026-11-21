@@ -1,0 +1,275 @@
+{
+    "config": {
+        "name": "Fixture",
+        "build": "dev-0.1",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "Stage65.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage64.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage63.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage62.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage61.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage60.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage59.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage58.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage57.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage56.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage55.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage54.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage53.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage52.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage51.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage50.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage49.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage48.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage47.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage46.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage45.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage44.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage43.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage42.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage41.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage40.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage39.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage38.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage37.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage36.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage35.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage34.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage33.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage32.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage31.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage30.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage29.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage28.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage27.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage26.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage25.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage24.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage23.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage22.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage21.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage20.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage19.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage18.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage17.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage16.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage15.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage14.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage13.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage12.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage11.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage10.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage09.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage08.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage07.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage06.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage05.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage04.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage03.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage02.diastage",
+            "type": "stage"
+        },
+        {
+            "path": "Stage01.diastage",
+            "type": "stage"
+        }
+    ]
+}

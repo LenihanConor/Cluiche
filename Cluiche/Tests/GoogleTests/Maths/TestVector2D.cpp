@@ -122,8 +122,8 @@ TEST(Vector2D, ArrayAccessor_OutOfBounds_Asserts)
 {
     Vector2D vector;
 
-    EXPECT_DEATH(vector[-1] = 3.0f, ".*");
-    EXPECT_DEATH(vector[2] = 3.0f, ".*");
+    DIA_EXPECT_DEATH(vector[-1] = 3.0f, ".*");
+    DIA_EXPECT_DEATH(vector[2] = 3.0f, ".*");
 }
 
 TEST(Vector2D, XYAccessors_SetAndGet)

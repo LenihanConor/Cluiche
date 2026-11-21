@@ -1,6 +1,7 @@
 #include "Modules/TestStages/Entity/TransformComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
 #include <DiaEntity/Domain.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
 
 DIA_SERIALIZE(CluicheTest::TransformComponent, CluicheTest::TransformComponent::kVersion)
     DIA_FIELD(x)
@@ -19,5 +20,8 @@ DIA_COMPONENT_REGISTER(TransformComponent, "cluichetest.transform", false, false
     nullptr, 0,
     nullptr, 0)
 DIA_COMPONENT_DESCRIBE(CluicheTest::TransformComponent, "Holds 2D world-space position (x, y) for an entity.")
+
+DIA_ATTR_DESCRIBE(TransformComponent, x, "X", "world units", "Horizontal world-space position.")
+DIA_ATTR_DESCRIBE(TransformComponent, y, "Y", "world units", "Vertical world-space position.")
 
 } // namespace CluicheTest

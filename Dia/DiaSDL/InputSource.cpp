@@ -223,6 +223,23 @@ namespace Dia
 		}
 
 		//------------------------------------------------------
+		// SDL3 reports wheel movement as a float (smooth/precision scrolling). Dia's event carries whole ticks:
+		// round to nearest, but a non-zero movement never collapses to zero.
+		static int RoundWheelDelta(float wheelY)
+		{
+			if (wheelY == 0.0f)
+			{
+				return 0;
+			}
+			const int rounded = static_cast<int>(wheelY < 0.0f ? wheelY - 0.5f : wheelY + 0.5f);
+			if (rounded == 0)
+			{
+				return wheelY < 0.0f ? -1 : 1;
+			}
+			return rounded;
+		}
+
+		//------------------------------------------------------
 		// Translates an SDL_Event into a Dia::Input::Event.
 		// Returns false if the event type is not handled (caller should skip it).
 		bool InputSource::TranslateSDLEvent(const SDL_Event& sdlEvent, Dia::Input::Event& outEvent)
@@ -314,6 +331,20 @@ namespace Dia
 				return true;
 			}
 
+			case SDL_EVENT_MOUSE_WHEEL:
+			{
+				outEvent.type = Dia::Input::Event::EType::kMouseWheelMoved;
+				float wheelY = sdlEvent.wheel.y;
+				if (sdlEvent.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+				{
+					wheelY = -wheelY;
+				}
+				outEvent.mouseWheel.delta = RoundWheelDelta(wheelY);
+				outEvent.mouseWheel.x     = static_cast<int>(sdlEvent.wheel.mouse_x);
+				outEvent.mouseWheel.y     = static_cast<int>(sdlEvent.wheel.mouse_y);
+				return true;
+			}
+
 			case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
 			{
 				outEvent.type                     = Dia::Input::Event::EType::kJoystickButtonPressed;
@@ -382,6 +413,7 @@ namespace Dia
 			case Dia::Input::Event::EType::kMouseMoved:
 			case Dia::Input::Event::EType::kMouseButtonPressed:
 			case Dia::Input::Event::EType::kMouseButtonReleased:
+			case Dia::Input::Event::EType::kMouseWheelMoved:
 				isListening = mListeningToSource[ESourceIndex::kMouse];
 				break;
 			case Dia::Input::Event::EType::kJoystickConnected:

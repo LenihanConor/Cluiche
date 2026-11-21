@@ -168,7 +168,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 2. Frame data structure (view transforms, background color)
 
 **Known Gaps:**
-- Backend-specific implementations (DiaSFML) not unit tested
+- Backend-specific implementations (DiaSDL, DiaBgfx) not fully unit tested
 - Rendering pipeline integration untested
 
 ---
@@ -191,7 +191,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 
 **Known Gaps:**
 - InputSourceManager untested
-- Backend-specific implementations (DiaSFML) not unit tested
+- Backend-specific implementations (DiaSDL, DiaBgfx) not fully unit tested
 
 ---
 
@@ -210,7 +210,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 3. VSync control
 
 **Known Gaps:**
-- Backend implementations (DiaSFML) not unit tested
+- Backend implementations (DiaSDL, DiaBgfx) not fully unit tested
 - Window lifecycle integration untested
 
 ---
@@ -233,24 +233,23 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 
 ---
 
-### DiaSFML (Priority: P2)
+### DiaSDL (Priority: P2)
 
 **Target:** 40%+ line coverage
 
 | Component | Target | Current | Priority | Status |
 |-----------|--------|---------|----------|--------|
-| **DiaSFMLRenderWindow** | 50% | TBD | P1 | ❌ No tests |
-| **DiaSFMLInputSource** | 50% | TBD | P1 | ❌ No tests |
-| **DiaSFMLSoundManager** | 30% | TBD | P2 | ❌ No tests |
+| **Window** | 50% | TBD | P1 | ❌ No tests |
+| **InputSource** | 50% | TBD | P1 | 🚧 Key and event translation tested (TestDiaSDL.cpp) |
 
 **Priority Test Areas:**
-1. SFML → Dia type conversions
+1. SDL → Dia type conversions
 2. Event polling
-3. Rendering integration
+3. Window lifecycle
 
 **Known Gaps:**
-- Backend implementations require SFML initialization (integration tests)
-- No unit tests for backend-specific code
+- Backend implementations require SDL initialization (integration tests)
+- Window lifecycle has no unit tests; only key and event translation is covered
 
 ---
 
@@ -393,7 +392,7 @@ add_custom_target(coverage
 2. DiaMaths/Vector4D, Matrix22
 3. DiaMaths/Line, Polygon shapes
 4. DiaGraphics/Frame
-5. DiaSFML backend implementations
+5. DiaSDL Window lifecycle
 
 **Inadequate Coverage:**
 1. DiaCore/TypeDefinition serialization
@@ -408,8 +407,7 @@ add_custom_target(coverage
 1. DiaCore/Memory allocators
 2. DiaMaths/Transform3D
 3. DiaGraphics rendering pipeline
-4. DiaSFML/SoundManager
-5. Cluiche/RenderCanvasModule
+4. Cluiche/RenderCanvasModule
 
 ---
 
@@ -471,7 +469,7 @@ add_custom_target(coverage
 
 1. DiaCore memory and file I/O
 2. DiaMaths Transform3D
-3. DiaSFML backend implementations
+3. DiaSDL Window lifecycle
 4. Cluiche modules and levels
 5. Integration test expansion
 
@@ -559,7 +557,7 @@ fi
 - No coverage measurement infrastructure
 - Graph, BitFlag containers untested
 - Observer pattern untested
-- DiaSFML backend untested
+- DiaSDL Window lifecycle untested
 - Cluiche modules minimally tested
 
 **Next Steps:**

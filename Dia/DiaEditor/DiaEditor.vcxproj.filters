@@ -31,6 +31,9 @@
     <Filter Include="Notification">
       <UniqueIdentifier>{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEE0001}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Schema">
+      <UniqueIdentifier>{04415db6-5dd4-4dd6-ac7a-342f85a0dfdc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h">
@@ -108,6 +111,24 @@
     <ClInclude Include="EditorAPI\EditorActionQueueService.h">
       <Filter>EditorAPI</Filter>
     </ClInclude>
+    <ClInclude Include="Project\GamePath.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\GameSwitchGate.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\GameSwitchController.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Project\GameScopeDiscovery.h">
+      <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\AssetRoutes.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Schema\SchemaReader.h">
+      <Filter>Schema</Filter>
+    </ClInclude>
       <Filter>EditorAPI</Filter>
     </ClInclude>
       <Filter>EditorAPI</Filter>
@@ -159,6 +180,21 @@
     <ClCompile Include="EditorAPI\EditorAPIHealthReporter.cpp">
     <ClCompile Include="EditorAPI\EditorActionQueueService.cpp">
       <Filter>EditorAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GamePath.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GameSwitchGate.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GameSwitchController.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Project\GameScopeDiscovery.cpp">
+      <Filter>Project</Filter>
+    </ClCompile>
+    <ClCompile Include="Schema\SchemaReader.cpp">
+      <Filter>Schema</Filter>
     </ClCompile>
       <Filter>EditorAPI</Filter>
     </ClCompile>

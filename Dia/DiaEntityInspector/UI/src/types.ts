@@ -7,6 +7,7 @@ export interface FieldEntry {
 
 export interface ComponentEntry {
     name: string;
+    id?: string; // component type id string (the valueschema `for`)
     tier?: string;
     fields: FieldEntry[];
 }

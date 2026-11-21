@@ -13,8 +13,14 @@
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaMessageBus/IFlushAdapter.h>
 #include <DiaMessageBus/BroadcastRouter.h>
+#include <type_traits>
+#ifdef DIA_DEBUG
+#include <DiaMessageBus/IBusRecorder.h>
+#endif
 
 namespace Dia::MessageBus {
+
+    class IBusRecorder;
 
     // ======================================================================
     // Type-erased handler storage.
@@ -192,6 +198,13 @@ namespace Dia::MessageBus {
         // type whose display id is typeId.
         template <class Fn>
         void ForEachSubscriberForType(Dia::Core::StringCRC typeId, Fn&& fn) const;
+
+        // Set a recorder for all dispatched messages. Non-owning pointer;
+        // caller keeps the recorder alive. Pass nullptr to clear.
+        void SetRecorder(IBusRecorder* recorder);
+
+        // The installed recorder, or nullptr. Read-only view for tooling.
+        const IBusRecorder* GetRecorder() const { return mRecorder; }
 #endif // DIA_DEBUG
 
     private:
@@ -269,6 +282,12 @@ namespace Dia::MessageBus {
         // StringCRC a type registered itself under (T::kTypeId).
         const TypeRecord* FindTypeRecordByDisplayId(Dia::Core::StringCRC typeId) const;
 #endif
+
+        // Recorder hook target (SetRecorder/hook are Debug-only). Non-owning;
+        // nullptr if none set. Declared unconditionally so sizeof/offsets of Bus
+        // are identical across translation units that differ on DIA_DEBUG
+        // (e.g. DiaEconomy compiles without it but includes Bus.h).
+        IBusRecorder* mRecorder = nullptr;
 
         Dia::Mailbox::Mailbox mMailbox;
         BroadcastRouter        mBroadcastRouter;
@@ -437,6 +456,12 @@ namespace Dia::MessageBus {
 
     template <class T>
     void Bus::DispatchOne(const Dia::Mailbox::Address& addr, const T& msg, Pass currentPass) {
+#ifdef DIA_DEBUG
+        if (mRecorder) {
+            DIA_ASSERT(std::is_trivially_copyable_v<T>, "Bus recorder requires trivially copyable message types");
+            mRecorder->OnDispatch(T::kTypeId, addr.routerId, currentPass, &msg, sizeof(T));
+        }
+#endif
         const uint32_t key = TypeKey<T>();
 
         LedgerMessageEntry& entry = FindOrCreateLedgerEntry(T::kTypeId, addr.routerId, currentPass);

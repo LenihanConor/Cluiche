@@ -16,8 +16,8 @@ TEST(ArrayC, ConstructionFromPointer_CopiesData)
 	using IntArray3 = ArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 temp(nullptr, 3); }, "");
-	EXPECT_DEATH({ IntArray3 temp(&cArray1[0], 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(nullptr, 3); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(&cArray1[0], 10); }, "");
 
 	IntArray3 array1(&cArray1[0], 3);
 
@@ -48,7 +48,7 @@ TEST(ArrayC, CopyConstruction_DuplicatesArray)
 	using IntArray3 = ArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 temp(cArray1, 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 temp(cArray1, 10); }, "");
 
 	IntArray3 tempArray1(cArray1, 3);
 	IntArray3 array1(tempArray1);
@@ -171,8 +171,8 @@ TEST(ArrayC, AssignFromPointer_OverwritesData)
 	using IntArray3 = ArrayC<int, 3>;
 	int cArray1[3] = {1, 2, 3};
 
-	EXPECT_DEATH({ IntArray3 array0; array0.Assign(nullptr, 3); }, "");
-	EXPECT_DEATH({ IntArray3 array1; array1.Assign(&cArray1[0], 10); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 array0; array0.Assign(nullptr, 3); }, "");
+	DIA_EXPECT_DEATH({ IntArray3 array1; array1.Assign(&cArray1[0], 10); }, "");
 
 	IntArray3 array1;
 	array1.Assign(&cArray1[0], 3);
@@ -359,10 +359,10 @@ TEST(ArrayC, ElementAccess_WorksCorrectlyWithBoundsChecking)
 
 	ArrayC<int, 5> array1(cArray1, 5);
 
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
-	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
 
 	EXPECT_EQ(array1[0], array1.At(0));
 	EXPECT_EQ(array1[1], array1.At(1));

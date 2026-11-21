@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{42432990-3b7b-433d-80d7-8c14f5f50009}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dia">
+      <UniqueIdentifier>{bf6304fd-201c-4f7a-bc8e-d0be8b9acbef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ScrubObservation">
+      <UniqueIdentifier>{6597dd55-1887-4697-b762-94bb1e493177}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaCellHistory">
+      <UniqueIdentifier>{8b322efa-387f-4a34-9f38-de07ebe8b40d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaCellHistory.h" />
+    <ClInclude Include="HistoryConfig.h" />
+    <ClInclude Include="Testing\StubGrid.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\FakeClock.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\BudgetSizing.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\FixtureEventSchemas.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="CellRing.h" />
+    <ClInclude Include="AggregateStore.h" />
+    <ClInclude Include="EventLog.h" />
+    <ClInclude Include="CellHistoryRecorder.h" />
+    <ClInclude Include="CellHistoryCommands.h" />
+    <ClInclude Include="CellHistoryModule.h" />
+    <ClInclude Include="Dia\DiaCellHistory\CellHistoryObservation.h">
+      <Filter>Dia</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoryViewState.h" />
+    <ClInclude Include="HistoryValueSource.h" />
+    <ClInclude Include="HistoryViewCommands.h" />
+    <ClInclude Include="HistoryViewStatus.h" />
+    <ClInclude Include="TimelineModel.h" />
+    <ClInclude Include="ScrubObservation\ScrubObservation.h">
+      <Filter>ScrubObservation</Filter>
+    </ClInclude>
+    <ClInclude Include="TimelineCardState.h" />
+    <ClInclude Include="CellHistoryDomain.h" />
+    <ClInclude Include="ViewHistorySourceAdapter.h" />
+    <ClInclude Include="SideReader.h" />
+    <ClInclude Include="DeltaValueSource.h" />
+    <ClInclude Include="DeltaScale.h" />
+    <ClInclude Include="GroupDeltaTable.h" />
+    <ClInclude Include="DeltaCellInfo.h" />
+    <ClInclude Include="DeltaCardState.h" />
+    <ClInclude Include="HistoryEncoding.h" />
+    <ClInclude Include="ISnapshotStore.h" />
+    <ClInclude Include="SnapshotCellFile.h" />
+    <ClInclude Include="SnapshotNaming.h" />
+    <ClInclude Include="Testing\FakeSnapshotStore.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="SnapshotManager.h" />
+    <ClInclude Include="SnapshotCommands.h" />
+    <ClInclude Include="SnapshotObservation.h" />
+    <ClInclude Include="SnapshotCellCache.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoryExporter.h" />
+    <ClInclude Include="Testing\ExportDecoder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="ExportObservation.h" />
+    <ClInclude Include="HistoryExportCommands.h" />
+    <ClInclude Include="AtomicFile.h" />
+    <ClInclude Include="HistoryQueries.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
+    <ClInclude Include="QueryObservation.h">
+      <Filter>DiaCellHistory</Filter>
+    </ClInclude>
+    <ClInclude Include="HistoryRows.h" />
+    <ClInclude Include="TopicObservation.h" />
+    <ClInclude Include="HistoryTopics.h" />
+    <ClInclude Include="Utf8.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaCellHistory.cpp" />
+    <ClCompile Include="HistoryConfig.cpp" />
+    <ClCompile Include="CellRing.cpp" />
+    <ClCompile Include="AggregateStore.cpp" />
+    <ClCompile Include="EventLog.cpp" />
+    <ClCompile Include="CellHistoryRecorder.cpp" />
+    <ClCompile Include="CellHistoryCommands.cpp" />
+    <ClCompile Include="CellHistoryModule.cpp" />
+    <ClCompile Include="Dia\DiaCellHistory\CellHistoryObservation.cpp">
+      <Filter>Dia</Filter>
+    </ClCompile>
+    <ClCompile Include="HistoryViewState.cpp" />
+    <ClCompile Include="HistoryValueSource.cpp" />
+    <ClCompile Include="HistoryViewCommands.cpp" />
+    <ClCompile Include="HistoryViewStatus.cpp" />
+    <ClCompile Include="TimelineModel.cpp" />
+    <ClCompile Include="ScrubObservation\ScrubObservation.cpp">
+      <Filter>ScrubObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="TimelineCardState.cpp" />
+    <ClCompile Include="CellHistoryDomain.cpp" />
+    <ClCompile Include="ViewHistorySourceAdapter.cpp" />
+    <ClCompile Include="SideReader.cpp" />
+    <ClCompile Include="DeltaValueSource.cpp" />
+    <ClCompile Include="DeltaScale.cpp" />
+    <ClCompile Include="GroupDeltaTable.cpp" />
+    <ClCompile Include="DeltaCellInfo.cpp" />
+    <ClCompile Include="DeltaCardState.cpp" />
+    <ClCompile Include="HistoryEncoding.cpp" />
+    <ClCompile Include="SnapshotCellFile.cpp" />
+    <ClCompile Include="SnapshotNaming.cpp" />
+    <ClCompile Include="SnapshotManager.cpp" />
+    <ClCompile Include="SnapshotCommands.cpp" />
+    <ClCompile Include="SnapshotObservation.cpp" />
+    <ClCompile Include="SnapshotCellCache.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="HistoryExporter.cpp" />
+    <ClCompile Include="ExportObservation.cpp" />
+    <ClCompile Include="HistoryExportCommands.cpp" />
+    <ClCompile Include="AtomicFile.cpp" />
+    <ClCompile Include="HistoryQueries.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="QueryObservation.cpp">
+      <Filter>DiaCellHistory</Filter>
+    </ClCompile>
+    <ClCompile Include="HistoryRows.cpp" />
+    <ClCompile Include="TopicObservation.cpp" />
+    <ClCompile Include="HistoryTopics.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.cellhistory.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

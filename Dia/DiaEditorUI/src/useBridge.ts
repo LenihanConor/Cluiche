@@ -78,6 +78,17 @@ export function useBridgeSubscribe(subscriptions: BridgeSubscription[]): void {
 
 const REQUEST_TIMEOUT_MS = 5000;
 
+let sNextFrameReqId = 0;
+
+/**
+ * A non-empty request id for iframe -> C++ bridge posts. The C++ side
+ * (WebUIBridge::HandleEditorCall) routes an empty/null reqId to the event
+ * path, so request handlers never run; always send a real id.
+ */
+export function newFrameReqId(): string {
+    return `req_${Date.now()}_${sNextFrameReqId++}`;
+}
+
 /**
  * Returns a stable async function that sends a request to the C++ bridge and
  * resolves with a typed response.

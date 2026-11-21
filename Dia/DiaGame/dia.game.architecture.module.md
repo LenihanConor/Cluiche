@@ -16,6 +16,9 @@ responsibilities:
   - GameProject, StageDescriptor, SceneDescriptor value types
   - .diagame / .diastage / .diascene JSON load and save
   - Game project validation
+  - DiaStageManifest optional .diastage fields: tags (up to 16 strings, 63 chars each) description (up to 120 chars), proves (up to 16 spec paths, 255 chars each; tooling metadata, ignored by ManifestComposerV2 and the runtime), and presets (up to 16 launch presets {name <=31 chars, description <=120, modules: up to 4 {instanceId, override object kept as compact JSON text <=2048 bytes}}; deserialized as DiaStagePreset/DiaStagePresetModule); absent loads empty, save omits when empty, wrong type or over-limit fails naming the field
+  - StageKinds.h - StageKind enum (showcase, tool, test), name table, KindFromTag and StageKindMask helpers; must match stage_kinds.json
+  - DiaGameManifest::editorManifests - optional .diagame "editor.manifests" list (paths relative to the .diagame) naming editor manifests whose plugins exist only while the game is loaded
 
 non_responsibilities:
   - Application lifecycle (DiaApplicationFlow)

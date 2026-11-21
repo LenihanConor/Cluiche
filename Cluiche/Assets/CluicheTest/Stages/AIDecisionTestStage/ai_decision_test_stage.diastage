@@ -1,6 +1,8 @@
 {
     "name": "AIDecisionTestStage",
     "manifest": "Stages/AIDecisionTestStage/misc/ApplicationFlow/ai_decision_test_stage.diaapp",
+    "tags": ["test", "ai"],
+    "description": "AI decision layer with conditions and budgets",
     "config": {
         "path_aliases": {
             "stage_root": "."

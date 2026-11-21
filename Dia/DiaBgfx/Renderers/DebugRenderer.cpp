@@ -2,6 +2,7 @@
 // Filename: DebugRenderer.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaBgfx/Renderers/DebugRenderer.h"
+#include "DiaBgfx/Renderers/Ortho2D.h"
 #include "DiaBgfx/Resources/ShaderProgram.h"
 
 #include <DiaGraphics/Frame/DebugFrameData.h>
@@ -323,15 +324,12 @@ namespace Dia
             const uint16_t w = static_cast<uint16_t>(cw);
             const uint16_t h = static_cast<uint16_t>(ch);
 
-            const float zoom  = mCamera.GetZoom() > 0.0f ? mCamera.GetZoom() : 1.0f;
-            const float halfW = (cw * 0.5f) / zoom;
-            const float halfH = (ch * 0.5f) / zoom;
-            const float cx    = mCamera.GetPosition().X();
-            const float cy    = mCamera.GetPosition().Y();
+            const float zoom = mCamera.GetZoom() > 0.0f ? mCamera.GetZoom() : 1.0f;   // text placement
+            const float cx   = mCamera.GetPosition().X();
+            const float cy   = mCamera.GetPosition().Y();
 
             float ortho[16];
-            bx::mtxOrtho(ortho, cx - halfW, cx + halfW, cy + halfH, cy - halfH,
-                         0.0f, 1000.0f, 0.0f, bgfx::getCaps()->homogeneousDepth);
+            BuildOrtho2D(mCamera, mCanvasSize, ortho, bgfx::getCaps()->homogeneousDepth);
             bgfx::setViewTransform(mViewId, nullptr, ortho);
             bgfx::setViewRect(mViewId, 0, 0, w, h);
 

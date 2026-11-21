@@ -9,6 +9,7 @@ from typing import List
 
 import click
 
+from dia_cli.commands.docs.backlog_cmd import find_entry_lines, strike_row
 from dia_cli.utils.repo_root import find_repo_root
 
 
@@ -80,23 +81,11 @@ def _move_backlog_entry(repo_root: Path, spec_name: str) -> bool:
     backlog_text = backlog_path.read_text(encoding="utf-8")
     lines = backlog_text.splitlines()
 
-    moved_lines: List[str] = []
-    remaining_lines: List[str] = []
-    found = False
-
-    for line in lines:
-        if spec_name.lower() in line.lower() and "|" in line and "~~" not in line:
-            struck = re.sub(
-                r"\|\s*([^|]+?)\s*\|",
-                lambda m: f"| ~~{m.group(1).strip()}~~ |",
-                line,
-                count=1,
-            )
-            remaining_lines.append(struck)
-            moved_lines.append(line)
-            found = True
-        else:
-            remaining_lines.append(line)
+    # Whole-name match on the Project/Item cell (spec stem `diacamera3d` matches
+    # `DiaCamera3D`); never a substring of another row's notes.
+    matches = set(find_entry_lines(lines, spec_name))
+    remaining_lines: List[str] = [strike_row(l, spec_name) if i in matches else l for i, l in enumerate(lines)]
+    found = bool(matches)
 
     if not found:
         return False

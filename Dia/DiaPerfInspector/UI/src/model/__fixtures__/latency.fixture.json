@@ -1,0 +1,6 @@
+[
+    { "action": "TerrainDomain.setSlider", "targetMs": 100, "p50Ms": 41.5, "p95Ms": 78.2, "samples": 40 },
+    { "action": "TerrainDomain.loadPreset", "targetMs": 100, "p50Ms": 90.0, "p95Ms": 163.4, "samples": 12 },
+    { "action": "TerrainDomain.regenerate", "targetMs": 100, "p50Ms": 0, "p95Ms": 0, "samples": 0 },
+    { "action": "WeatherDomain.setSeason", "targetMs": 100, "p50Ms": 12.0, "p95Ms": 33.0, "samples": 5 }
+]

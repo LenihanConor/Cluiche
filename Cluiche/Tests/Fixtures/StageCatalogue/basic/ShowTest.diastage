@@ -1,0 +1,14 @@
+{
+    "name": "ShowTest",
+    "manifest": "ShowTest.stage.json",
+    "tags": [
+        "test",
+        "showcase"
+    ],
+    "description": "Two kinds, listed out of canonical order.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

@@ -1,5 +1,7 @@
 # Feature Spec: Asset Type Framework
 
+**Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
+
 ## Traceability
 
 | Level | Spec | Link |
@@ -177,6 +179,21 @@ The TypeDefinitions for these built-in types define the base schema (what fields
 | 5 | Registry | Should AssetTypeRegistry have a fixed capacity (like TypeRegistry's 128 limit) or grow dynamically? | Fixed capacity. 64 asset types is generous for any game on this engine. Use HashTableC with a compile-time size. Matches the pattern set by TypeRegistry. |
 | 6 | Scope | The 9 built-in TypeDefinition structs (TextureAsset, etc.) are non-trivial to design — their fields determine what the pipeline validates and what the runtime expects. Should their exact field definitions be deferred to the pipeline/loader specs? | Yes — Feature 2 defines minimal stub structs with the obvious structural fields (e.g. StageAsset.mBundles, BundleAsset.mAssets). The pipeline and loader specs may extend these or add constraints. The stubs are the contract that "these fields will exist." |
 
+## World-sim review amendment (2026-11-18)
+
+**Each item supersedes any contradicting text in this spec.** Source: @docs/research/worldsim_data_driven/summary.md §0 (D3).
+
+1. **`AssetTypeDescriptor` keeps identity, required fields and references:** type id, name, extension pattern, required fields (`TypeVariableAttributeRequired`) and asset references (`TypeVariableAttributeAssetReference`).
+2. **Value ranges, defaults and kinds for authored data are owned by DiaValueSchema sidecars (D3).** The descriptor points at the sidecar rather than holding ranges in TypeSystem reflection attributes.
+
+| Superseded text | By |
+|---|---|
+| Summary "schema constraints" where it includes value ranges | 2 |
+| Acceptance Criterion 2 ("... via TypeSystem reflection ... value ranges"; required fields and reference-typed fields stand) | 1, 2 |
+| API Design: any range, default or kind carried on the descriptor or its `TypeDefinition` (replaced by a sidecar reference) | 2 |
+
 ## Status
 
 `Approved`
+
+Amended 2026-11-18 (world-sim review decisions).

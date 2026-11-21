@@ -96,7 +96,6 @@
     <ClInclude Include="BlueprintListController.h" />
     <ClInclude Include="BlueprintPropertyController.h" />
     <ClInclude Include="BlueprintMutator.h" />
-    <ClInclude Include="SchemaReader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaBlueprintEditorPlugin.cpp" />
@@ -104,7 +103,6 @@
     <ClCompile Include="BlueprintListController.cpp" />
     <ClCompile Include="BlueprintPropertyController.cpp" />
     <ClCompile Include="BlueprintMutator.cpp" />
-    <ClCompile Include="SchemaReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.EntityTemplateEditor.architecture.module.md" />

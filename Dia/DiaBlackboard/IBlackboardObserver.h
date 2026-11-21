@@ -8,5 +8,6 @@ namespace Dia { namespace Blackboard {
         virtual Dia::Core::StringCRC GetId() const = 0;
         virtual void OnSlotRegistered(Dia::Core::StringCRC key) = 0;
         virtual void OnSlotUnregistered(Dia::Core::StringCRC key) = 0;
+        virtual void OnSlotChanged(Dia::Core::StringCRC /*key*/) {}
     };
 }}

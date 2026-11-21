@@ -1,0 +1,61 @@
+{
+  "description": "Only the bad item of a ref[] is reported, with its index in the path.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.species",
+      "entries": [
+        {
+          "key": "species[].id",
+          "kind": "parameter",
+          "label": "species[].id",
+          "description": "d",
+          "type": "string"
+        },
+        {
+          "key": "species[].diet",
+          "kind": "parameter",
+          "label": "species[].diet",
+          "description": "d",
+          "type": "ref[]",
+          "ref": "cow.species/species[].id"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Species/species.json",
+      "pack": false,
+      "content": {
+        "format": "cow.species",
+        "version": 1,
+        "species": [
+          {
+            "id": "wolf",
+            "diet": [
+              "deer",
+              "deerr"
+            ]
+          },
+          {
+            "id": "deer"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.unresolved-ref",
+      "file": "Global/Species/species.json",
+      "key": "species[].diet",
+      "path": "species[0].diet[1]",
+      "record": "wolf",
+      "messageContains": "deerr",
+      "suggestion": "deer"
+    }
+  ]
+}

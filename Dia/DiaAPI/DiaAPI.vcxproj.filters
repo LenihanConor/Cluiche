@@ -37,6 +37,9 @@
     <ClInclude Include="PythonBindings\PythonBindings.h">
       <Filter>PythonBindings</Filter>
     </ClInclude>
+    <ClInclude Include="CommandRegistry\ValueParam.h">
+      <Filter>CommandRegistry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandRegistry\CommandRegistry.cpp">

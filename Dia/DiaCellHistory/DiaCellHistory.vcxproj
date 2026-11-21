@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4C0FE742-1308-4AF7-B068-FC624891E7A6}</ProjectGuid>
+    <RootNamespace>DiaCellHistory</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaCellHistory.h" />
+    <ClInclude Include="HistoryConfig.h" />
+    <ClInclude Include="Testing\StubGrid.h" />
+    <ClInclude Include="Testing\FakeClock.h" />
+    <ClInclude Include="Testing\BudgetSizing.h" />
+    <ClInclude Include="Testing\FixtureEventSchemas.h" />
+    <ClInclude Include="CellRing.h" />
+    <ClInclude Include="AggregateStore.h" />
+    <ClInclude Include="EventLog.h" />
+    <ClInclude Include="CellHistoryRecorder.h" />
+    <ClInclude Include="CellHistoryCommands.h" />
+    <ClInclude Include="CellHistoryModule.h" />
+    <ClInclude Include="CellHistoryObservation.h" />
+    <ClInclude Include="HistoryViewState.h" />
+    <ClInclude Include="HistoryValueSource.h" />
+    <ClInclude Include="HistoryViewCommands.h" />
+    <ClInclude Include="HistoryViewStatus.h" />
+    <ClInclude Include="TimelineModel.h" />
+    <ClInclude Include="ScrubObservation.h" />
+    <ClInclude Include="TimelineCardState.h" />
+    <ClInclude Include="CellHistoryDomain.h" />
+    <ClInclude Include="ViewHistorySourceAdapter.h" />
+    <ClInclude Include="SideReader.h" />
+    <ClInclude Include="DeltaValueSource.h" />
+    <ClInclude Include="DeltaScale.h" />
+    <ClInclude Include="GroupDeltaTable.h" />
+    <ClInclude Include="DeltaCellInfo.h" />
+    <ClInclude Include="DeltaCardState.h" />
+    <ClInclude Include="HistoryEncoding.h" />
+    <ClInclude Include="ISnapshotStore.h" />
+    <ClInclude Include="SnapshotCellFile.h" />
+    <ClInclude Include="SnapshotNaming.h" />
+    <ClInclude Include="Testing\FakeSnapshotStore.h" />
+    <ClInclude Include="SnapshotManager.h" />
+    <ClInclude Include="SnapshotCommands.h" />
+    <ClInclude Include="SnapshotObservation.h" />
+    <ClInclude Include="SnapshotCellCache.h" />
+    <ClInclude Include="HistoryExporter.h" />
+    <ClInclude Include="Testing\ExportDecoder.h" />
+    <ClInclude Include="ExportObservation.h" />
+    <ClInclude Include="HistoryExportCommands.h" />
+    <ClInclude Include="AtomicFile.h" />
+    <ClInclude Include="HistoryQueries.h" />
+    <ClInclude Include="QueryObservation.h" />
+    <ClInclude Include="HistoryRows.h" />
+    <ClInclude Include="TopicObservation.h" />
+    <ClInclude Include="HistoryTopics.h" />
+    <ClInclude Include="Utf8.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaCellHistory.cpp" />
+    <ClCompile Include="HistoryConfig.cpp" />
+    <ClCompile Include="CellRing.cpp" />
+    <ClCompile Include="AggregateStore.cpp" />
+    <ClCompile Include="EventLog.cpp" />
+    <ClCompile Include="CellHistoryRecorder.cpp" />
+    <ClCompile Include="CellHistoryCommands.cpp" />
+    <ClCompile Include="CellHistoryModule.cpp" />
+    <ClCompile Include="CellHistoryObservation.cpp" />
+    <ClCompile Include="HistoryViewState.cpp" />
+    <ClCompile Include="HistoryValueSource.cpp" />
+    <ClCompile Include="HistoryViewCommands.cpp" />
+    <ClCompile Include="HistoryViewStatus.cpp" />
+    <ClCompile Include="TimelineModel.cpp" />
+    <ClCompile Include="ScrubObservation.cpp" />
+    <ClCompile Include="TimelineCardState.cpp" />
+    <ClCompile Include="CellHistoryDomain.cpp" />
+    <ClCompile Include="ViewHistorySourceAdapter.cpp" />
+    <ClCompile Include="SideReader.cpp" />
+    <ClCompile Include="DeltaValueSource.cpp" />
+    <ClCompile Include="DeltaScale.cpp" />
+    <ClCompile Include="GroupDeltaTable.cpp" />
+    <ClCompile Include="DeltaCellInfo.cpp" />
+    <ClCompile Include="DeltaCardState.cpp" />
+    <ClCompile Include="HistoryEncoding.cpp" />
+    <ClCompile Include="SnapshotCellFile.cpp" />
+    <ClCompile Include="SnapshotNaming.cpp" />
+    <ClCompile Include="SnapshotManager.cpp" />
+    <ClCompile Include="SnapshotCommands.cpp" />
+    <ClCompile Include="SnapshotObservation.cpp" />
+    <ClCompile Include="SnapshotCellCache.cpp" />
+    <ClCompile Include="HistoryExporter.cpp" />
+    <ClCompile Include="ExportObservation.cpp" />
+    <ClCompile Include="HistoryExportCommands.cpp" />
+    <ClCompile Include="AtomicFile.cpp" />
+    <ClCompile Include="HistoryQueries.cpp" />
+    <ClCompile Include="QueryObservation.cpp" />
+    <ClCompile Include="HistoryRows.cpp" />
+    <ClCompile Include="TopicObservation.cpp" />
+    <ClCompile Include="HistoryTopics.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.cellhistory.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaValueSchema\DiaValueSchema.vcxproj">
+      <Project>{21E6E786-B115-550E-A32A-88E43C7D77F9}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCellLayers\DiaCellLayers.vcxproj">
+      <Project>{F0B823EA-731E-5CE5-AC88-4DF3B45C6977}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+</Project>

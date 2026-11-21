@@ -29,6 +29,13 @@
     <ClInclude Include="ObservationBridge.h" />
     <ClInclude Include="IInspectorDataSource.h" />
     <ClInclude Include="InspectorDataSourceBase.h" />
+    <ClInclude Include="SimHostedTypes.h" />
+    <ClInclude Include="ISimRequestSink.h" />
+    <ClInclude Include="SimPendingTable.h" />
+    <ClInclude Include="SimQueryHost.h" />
+    <ClInclude Include="SimHelpInfo.h" />
+    <ClInclude Include="Testing\SimHelpTesting.h" />
+    <ClInclude Include="ISimHostedCatalogue.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
@@ -37,6 +44,9 @@
     <ClCompile Include="CommandDispatcher.cpp" />
     <ClCompile Include="QueryRegistry.cpp" />
     <ClCompile Include="ObservationBridge.cpp" />
+    <ClCompile Include="SimPendingTable.cpp" />
+    <ClCompile Include="SimQueryHost.cpp" />
+    <ClCompile Include="SimHelpInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

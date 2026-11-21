@@ -9,6 +9,10 @@
 #include <thread>
 #include <vector>
 #include <chrono>
+#include <mutex>
+#include <set>
+#include <algorithm>
+#include <atomic>
 
 using namespace Dia::Core;
 
@@ -277,6 +281,8 @@ TEST(ThreadPool, LoadBalancing_DistributesWorkAcrossThreads)
     Atomic<int> nextIndex{0};
 
     auto task = [&]() {
+        // Without a little work a single fast Release worker drains the whole queue before the others wake.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         std::thread::id tid = ThisThread::GetId();
 
         int index;
@@ -500,4 +506,134 @@ TEST(ThreadPool, EmptyTaskQueue_WaitAllReturnsImmediately)
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
     EXPECT_LT(duration.count(), 10);  // Should be nearly instant
+}
+
+// ==============================================================================
+// ThreadPool Thread Hooks Tests
+// ==============================================================================
+
+TEST(ThreadPool, Hooks_OnStartCalledOncePerWorker_BeforeAnyTask_OnWorkerThread)
+{
+    std::mutex m;
+    std::vector<unsigned> startIndices;
+    std::vector<std::thread::id> startThreads;
+    std::atomic<int> tasksRunBeforeAllStarted{0};
+    std::atomic<int> startedCount{0};
+    const unsigned kThreads = 3;
+
+    {
+        ThreadPool::ThreadHooks hooks;
+        hooks.onStart = [&](unsigned idx)
+        {
+            std::lock_guard<std::mutex> lock(m);
+            startIndices.push_back(idx);
+            startThreads.push_back(std::this_thread::get_id());
+            ++startedCount;
+        };
+        ThreadPool pool(kThreads, hooks);
+        // The task running on a worker implies that worker's onStart already ran.
+        std::atomic<int> taskStartedFlagViolations{0};
+        for (int i = 0; i < 20; ++i)
+        {
+            pool.Enqueue([&]() { if (startedCount.load() < 1) ++taskStartedFlagViolations; });
+        }
+        pool.WaitAll();
+        EXPECT_EQ(taskStartedFlagViolations.load(), 0);
+        (void)tasksRunBeforeAllStarted;
+    }
+
+    std::lock_guard<std::mutex> lock(m);
+    ASSERT_EQ(startIndices.size(), kThreads);
+    std::sort(startIndices.begin(), startIndices.end());
+    for (unsigned i = 0; i < kThreads; ++i) EXPECT_EQ(startIndices[i], i);
+    for (auto& id : startThreads) EXPECT_NE(id, std::this_thread::get_id());
+}
+
+TEST(ThreadPool, Hooks_OnStartRunsBeforeThatWorkersFirstTask)
+{
+    std::mutex m;
+    std::set<std::thread::id> started;
+    std::atomic<int> violations{0};
+
+    ThreadPool::ThreadHooks hooks;
+    hooks.onStart = [&](unsigned)
+    {
+        std::lock_guard<std::mutex> lock(m);
+        started.insert(std::this_thread::get_id());
+    };
+    ThreadPool pool(2, hooks);
+    for (int i = 0; i < 50; ++i)
+    {
+        pool.Enqueue([&]()
+        {
+            std::lock_guard<std::mutex> lock(m);
+            if (started.count(std::this_thread::get_id()) == 0) ++violations;
+        });
+    }
+    pool.WaitAll();
+    EXPECT_EQ(violations.load(), 0);
+}
+
+TEST(ThreadPool, Hooks_OnStopCalledOncePerWorker_AfterDrain_OnWorkerThread)
+{
+    std::mutex m;
+    std::vector<unsigned> stopIndices;
+    std::vector<std::thread::id> stopThreads;
+    std::atomic<int> tasksDone{0};
+    std::atomic<int> tasksDoneAtStop{-1};
+    const unsigned kThreads = 2;
+
+    ThreadPool::ThreadHooks hooks;
+    hooks.onStop = [&](unsigned idx)
+    {
+        std::lock_guard<std::mutex> lock(m);
+        stopIndices.push_back(idx);
+        stopThreads.push_back(std::this_thread::get_id());
+        tasksDoneAtStop = tasksDone.load();
+    };
+    {
+        ThreadPool pool(kThreads, hooks);
+        for (int i = 0; i < 30; ++i)
+        {
+            pool.Enqueue([&]() { std::this_thread::sleep_for(std::chrono::milliseconds(1)); ++tasksDone; });
+        }
+        pool.Shutdown();
+        {
+            std::lock_guard<std::mutex> lock(m);
+            EXPECT_EQ(stopIndices.size(), kThreads);
+        }
+    }
+
+    std::lock_guard<std::mutex> lock(m);
+    ASSERT_EQ(stopIndices.size(), kThreads);
+    std::sort(stopIndices.begin(), stopIndices.end());
+    for (unsigned i = 0; i < kThreads; ++i) EXPECT_EQ(stopIndices[i], i);
+    for (auto& id : stopThreads) EXPECT_NE(id, std::this_thread::get_id());
+    EXPECT_EQ(tasksDone.load(), 30);
+    EXPECT_EQ(tasksDoneAtStop.load(), 30);  // last stop observed all tasks drained
+}
+
+TEST(ThreadPool, Hooks_ThrowingHooksAreSwallowed)
+{
+    std::atomic<int> ran{0};
+    ThreadPool::ThreadHooks hooks;
+    hooks.onStart = [](unsigned) { throw 1; };
+    hooks.onStop = [](unsigned) { throw 2; };
+    {
+        ThreadPool pool(2, hooks);
+        pool.Enqueue([&]() { ++ran; });
+        pool.WaitAll();
+    }
+    EXPECT_EQ(ran.load(), 1);
+}
+
+TEST(ThreadPool, Hooks_DefaultConstructorWorksWithoutHooks)
+{
+    std::atomic<int> ran{0};
+    {
+        ThreadPool pool(2);
+        for (int i = 0; i < 10; ++i) pool.Enqueue([&]() { ++ran; });
+        pool.WaitAll();
+    }
+    EXPECT_EQ(ran.load(), 10);
 }

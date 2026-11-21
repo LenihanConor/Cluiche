@@ -5,7 +5,13 @@ namespace Dia
 	namespace Core
 	{
 		ThreadPool::ThreadPool(unsigned int numThreads)
-			: mShutdown(false)
+			: ThreadPool(numThreads, ThreadHooks())
+		{
+		}
+
+		ThreadPool::ThreadPool(unsigned int numThreads, ThreadHooks hooks)
+			: mHooks(std::move(hooks))
+			, mShutdown(false)
 		{
 			if (numThreads == 0)
 			{
@@ -16,7 +22,7 @@ namespace Dia
 			mThreads.reserve(numThreads);
 			for (unsigned int i = 0; i < numThreads; ++i)
 			{
-				mThreads.push_back(std::thread([this]() { WorkerThread(); }));
+				mThreads.push_back(std::thread([this, i]() { WorkerThread(i); }));
 			}
 		}
 
@@ -72,8 +78,13 @@ namespace Dia
 			mThreads.clear();
 		}
 
-		void ThreadPool::WorkerThread()
+		void ThreadPool::WorkerThread(unsigned int workerIndex)
 		{
+			if (mHooks.onStart)
+			{
+				try { mHooks.onStart(workerIndex); } catch (...) {}
+			}
+
 			while (true)
 			{
 				Task task;
@@ -87,6 +98,11 @@ namespace Dia
 
 					if (mShutdown && mTasks.empty())
 					{
+						lock.unlock();
+						if (mHooks.onStop)
+						{
+							try { mHooks.onStop(workerIndex); } catch (...) {}
+						}
 						return;
 					}
 

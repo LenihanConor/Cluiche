@@ -7,8 +7,8 @@
 
 #include "PathPolylineDrawer.h"
 #include "GridPassabilityDrawer.h"
-#include <DiaDebugDraw/Domain/IDebugLayerRegistry.h>
-#include <DiaDebugDraw/Domain/DebugGroupAccents.h>
+#include <DiaVisualDebugger/Domain/IDebugLayerRegistry.h>
+#include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaPathfinding/SquarePathGrid.h>
 #include <DiaPathfinding/PathResult.h>
 #include <memory>

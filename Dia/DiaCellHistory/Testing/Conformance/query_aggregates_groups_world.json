@@ -1,0 +1,273 @@
+{
+  "count" : 40,
+  "from" : 0,
+  "groupSizes" : 
+  {
+    "world" : "DAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAAMAAwADAA="
+  },
+  "rows" : 
+  {
+    "biome" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "forest",
+        "plain",
+        "desert"
+      ]
+    },
+    "rain" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : 
+        {
+          "max" : "AAA1QgAAQUIAADlCAABFQgAAPUIAADVCAABBQgAAOUIAAEVCAAA9QgAANUIAAEFCAAA5QgAARUIAAD1CAAA1QgAAQUIAADlCAABFQgAAPUIAADVCAABBQgAAOUIAAEVCAAA9QgAANUIAAEFCAAA5QgAARUIAAD1CAAA1QgAAQUIAADlCAABFQgAAPUIAADVCAABBQgAAOUIAAEVCAAA9Qg==",
+          "mean" : "VVWbQVVVs0EAAKpBAADCQauquEFVVa9BVVXHQQAAvkEAANZBq6rMQVVVw0FVVdtBAADSQQAA6kGrquBBAAC2QQAAzkFVVaNBVVW7QQAAskGrqqhBq6rAQVVVt0FVVc9BAADGQauqvEGrqtRBVVXLQVVV40EAANpBq6rQQauq6EEAAL5BAADWQVVVq0EAAKJBAAC6QauqsEGrqshBVVW/QQ==",
+          "min" : "AACAPgAAUEAAAKA/AACIQAAAEEAAAIA+AABQQAAAoD8AAIhAAAAQQAAAgD4AAFBAAACgPwAAiEAAABBAAACAPgAAUEAAAKA/AACIQAAAEEAAAIA+AABQQAAAoD8AAIhAAAAQQAAAgD4AAFBAAACgPwAAiEAAABBAAACAPgAAUEAAAKA/AACIQAAAEEAAAIA+AABQQAAAoD8AAIhAAAAQQA=="
+        }
+      },
+      "kind" : "float"
+    },
+    "region" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : "BAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "north",
+        "centre",
+        "south"
+      ]
+    },
+    "temp" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "world" : 
+        {
+          "max" : "4XoFQuF6IULhej1C4XpZQuF6dUJxvYhCcb2WQnG9pEJxvbJCcb3AQnG9yEJxvcRCcb3GQnG9yEJxvcRC4XoVQuF6MULhek1C4XppQnG9gkJxvZBCcb2eQnG9rEJxvbpCcb3IQnG9xEJxvcZCcb3IQnG9xELheglC4XolQuF6QULhel1C4Xp5QnG9ikJxvZhCcb2mQnG9tEJxvcJCcb3EQg==",
+          "mean" : "w/WGQcP1vkHC9fZB4XoXQuF6M0Lhek9C4XprQnG9g0JxvZFCcb2fQhzonEI30HBC4npJQowlIkIYS7JBw/WmQcL13kHhegtC4XonQuF6Q0Lhel9C4np7QnG9i0JxvZlCcb2nQnE9g0KMJV9CN9A3Qm6g3UHD9Y5Bw/XGQcL1/kHhehtC4Xo3QuF6U0Lhem9Ccb2FQnG9k0JxvaFCxhKOQg==",
+          "min" : "pHC9PgrX60CF62VBw/WqQcP14kHheg1C4XopQuF6RULhemFC4Xp9QhSuF0CkcL0+KVyvPxSuF0CkcL0+CteLQIXrNUHD9ZJBw/XKQeF6AULheh1C4Xo5QuF6VULhenFCcb2GQqRwvT4pXK8/FK4XQKRwvT4pXK8/hesFQYXrdUHD9bJBw/XqQeF6EULhei1C4XpJQuF6ZUJxvYBCpHC9Pg=="
+        }
+      },
+      "kind" : "float"
+    }
+  },
+  "samples" : 
+  [
+    {
+      "band" : 1,
+      "label" : "Y1 W1",
+      "tick" : 0
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W2",
+      "tick" : 7
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W3",
+      "tick" : 14
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W4",
+      "tick" : 21
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W5",
+      "tick" : 28
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W6",
+      "tick" : 35
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W7",
+      "tick" : 42
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W8",
+      "tick" : 49
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W9",
+      "tick" : 56
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W10",
+      "tick" : 63
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W11",
+      "tick" : 70
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W12",
+      "tick" : 77
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W13",
+      "tick" : 84
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W14",
+      "tick" : 91
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W15",
+      "tick" : 98
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W16",
+      "tick" : 105
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W17",
+      "tick" : 112
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W18",
+      "tick" : 119
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W19",
+      "tick" : 126
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W20",
+      "tick" : 133
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W21",
+      "tick" : 140
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W22",
+      "tick" : 147
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W23",
+      "tick" : 154
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W24",
+      "tick" : 161
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W25",
+      "tick" : 168
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W26",
+      "tick" : 175
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W27",
+      "tick" : 182
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W28",
+      "tick" : 189
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W29",
+      "tick" : 196
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W30",
+      "tick" : 203
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W31",
+      "tick" : 210
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W32",
+      "tick" : 217
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W33",
+      "tick" : 224
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W34",
+      "tick" : 231
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W35",
+      "tick" : 238
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W36",
+      "tick" : 245
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W37",
+      "tick" : 252
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W38",
+      "tick" : 259
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W39",
+      "tick" : 266
+    },
+    {
+      "band" : 0,
+      "label" : "Y1 W40",
+      "tick" : 273
+    }
+  ],
+  "structure" : "1528ad42e9c03ffc"
+}

@@ -1,0 +1,68 @@
+{
+  "count" : 1,
+  "from" : 0,
+  "groupSizes" : 
+  {
+    "region=centre" : "BAA=",
+    "region=north" : "BAA=",
+    "region=south" : "BAA=",
+    "world" : "DAA="
+  },
+  "layerCount" : 2,
+  "layerOffset" : 2,
+  "layerTotal" : 4,
+  "next" : 
+  {
+    "from" : 1,
+    "layerOffset" : 0,
+    "structure" : "1528ad42e9c03ffc"
+  },
+  "rows" : 
+  {
+    "biome" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : "AQACAAEA",
+        "region=north" : "AgABAAEA",
+        "region=south" : "AQABAAIA",
+        "world" : "BAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "forest",
+        "plain",
+        "desert"
+      ]
+    },
+    "region" : 
+    {
+      "first" : 0,
+      "groups" : 
+      {
+        "region=centre" : "AAAEAAAA",
+        "region=north" : "BAAAAAAA",
+        "region=south" : "AAAAAAQA",
+        "world" : "BAAEAAQA"
+      },
+      "kind" : "category",
+      "values" : 
+      [
+        "north",
+        "centre",
+        "south"
+      ]
+    }
+  },
+  "samples" : 
+  [
+    {
+      "band" : 1,
+      "label" : "Y1 W1",
+      "tick" : 0
+    }
+  ],
+  "structure" : "1528ad42e9c03ffc"
+}

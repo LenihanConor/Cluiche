@@ -11,6 +11,9 @@ Dia is the game engine application that provides all shared engine infrastructur
 
 | System | Description | Spec |
 |--------|-------------|------|
+| DiaCellLayers | Per-cell layer registry + one viewer: exactly one coloured base layer plus overlays, legend/tooltips from DiaValueSchema, multi-cell selection (click/shift/box/lasso/category/query), selection inspector with all-layer stats + pin/compare, editor mirror. Draws via CellField. Approved 2026-10-19 | [diacelllayers.md](systems/diacelllayers/diacelllayers.md) |
+| DiaCellHistory | Tiered cell-grid history (aggregates + events whole run, opt-in 16-bit per-cell rings in a budget), timeline scrub, named snapshots via game ISnapshotStore (restore = load), delta compare, streamed + exported in one format. Approved 2026-10-19 | [diacellhistory.md](systems/diacellhistory/diacellhistory.md) |
+| DiaValueSchema | One description per value (parameters, state fields, entity component fields, metrics, command args): sidecar `.schema.json` + `MetricInfo`/`ValueParam`, `ValueSchemaService`, debug-panel tooltips, named ramps → CellField, `dia validate schema`, export + reference docs. Approved 2026-10-19 (first consumer CoW; 7 features) | [diavalueschema.md](systems/diavalueschema/diavalueschema.md) |
 | DiaAPI | C++ command registration and execution API framework - provides runtime command infrastructure | [diaapi.md](systems/diaapi/diaapi.md) |
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](systems/diacli/diacli.md) |
 | DiaConsole | Native-window web console over DiaCLI — command browsing, typed execution results, presets, project/target context | [diaconsole.md](systems/diaconsole/diaconsole.md) |
@@ -18,11 +21,13 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaApplicationFlow (v1) | Application framework (ProcessingUnit/Phase/Module) — SUPERSEDED | [diaapplication.md](systems/diaapplication/diaapplication.md) |
 | DiaApplicationFlow | Config-driven application framework (PU/Stage/Module with unified streams) | [diaapplicationflow.md](systems/diaapplicationflow/diaapplicationflow.md) |
 | DiaGame | Game project system — owns .diagame/.diastage file formats, serializers, GameFileComposer, GameLoader | [diagame.md](systems/diagame/diagame.md) |
+| Stage Catalogue | Typed stage model in DiaGame shared by the boot menu, CLI, DiaAPI and docs: `.diastage` tags/description/presets/proves, kind vocabulary (showcase/tool/test), persisted last result per stage, `stages.*` commands, launch presets via an `OnStageLaunch` hook, `dia check stage-proves`. Approved 2026-11-18 | [stagecatalogue.md](systems/stagecatalogue/stagecatalogue.md) |
 | DiaApplicationEditor (v1) | Editor plugin for .diaapp manifests — SUPERSEDED | [diaapplicationeditor.md](systems/diaapplicationeditor/diaapplicationeditor.md) |
 | DiaApplicationFlowEditor | Visual .diaapp v2 editor with live runtime inspection (PU graph, presence grid, streams) | [diaapplicationfloweditor.md](systems/diaapplicationfloweditor/diaapplicationfloweditor.md) |
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](systems/diadebugprotocol/diadebugprotocol.md) |
 | DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](systems/diadebugserver/diadebugserver.md) |
 | DiaEditor | Editor framework system (MVC, plugin system, CEF UI, command integration, live WebSocket connection) | [diaeditor.md](systems/diaeditor/diaeditor.md) |
+| DiaViewLaunch | Open one Inspector view of a running game from the CLI, already connected and in state, or get its data as JSON: game discovery record, per-launch DebugServer token, `dia query`, `ViewRequest` + `dia view`, view-state contract, headless `DiaPluginHost` (spike-gated) with editor focus mode as fallback. Approved 2026-11-10 | [diaviewlaunch.md](systems/diaviewlaunch/diaviewlaunch.md) |
 | DiaUICEF | CEF-based UI system implementing IUISystem | [diauicef.md](systems/diauicef/diauicef.md) |
 | DiaUIUltralight | Ultralight-based IUISystem implementation | [diauiultralight.md](systems/diauiultralight/diauiultralight.md) |
 | DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](systems/diawebsocket/diawebsocket.md) |
@@ -62,6 +67,9 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaEntitySpatialVisualDebugger | Runtime debug overlay for `DiaEntitySpatial` — grid cell outlines, per-entity circles colour-coded by layer mask, and last-query shape + hit highlight; three independently-togglable `IVisualDebugger` implementations | [diaentityspatialvisualdebugger.md](systems/diaentityspatialvisualdebugger/diaentityspatialvisualdebugger.md) |
 | DiaSteering | Local movement behaviour system — stateless free-function behaviours (Seek, Flee, Arrive, Wander, Pursue, Evade, Obstacle Avoidance, Separation), `SteeringPipeline` (priority-group composition + weighted blend within group), `SteeringSystem` (agent registry + output cache); desired velocity output only, caller integrates position | [diasteering.md](systems/diasteering/diasteering.md) |
 | DiaSimTime | Scalable simulation time — deterministic game clock, named clock hierarchy (SimTimeDomain), event scheduler (SimTimeScheduler), per-system LOD policy + dormancy (SimTimeRegistry), extended CPU budget (SimTimeBudget), typed PU base classes (SimModule/RenderModule/MainModule), SimTimeContext injection | [diasimtime.md](systems/diasimtime/diasimtime.md) |
+| DiaDeferredStep | Async stateful sim steps on the job pool: capture on SimPU at key N, `Run` against a working copy, apply at key N+k (caller-supplied, deterministic); stall + report when late; worker-capped `IParallelExecutor`; save drains and stores pending results. First consumer CoW world sim (A4/A1/A3). Approved 2026-11-12 | [diadeferredstep.md](systems/diadeferredstep/diadeferredstep.md) |
+| DiaTerrainMap3D | Illustrated **3D** terrain map from cell data (rendering only): chunked heightfield, code-owned style shader library (ink on fields, zone hatching, toon, form lines, season/condition grade, snow, weather, events, rivers), map prop scatter and emitters, map post preset, headless capture. Uses DiaCellFieldBake + DiaBgfx3D. First consumer CoW Strategic Map. Approved 2026-11-20, split amended same day (4 features) | [diaterrainmap3d.md](systems/diaterrainmap3d/diaterrainmap3d.md) |
+| DiaCellFieldBake | Data only, no GPU: bakes per-cell layers into continuous fields (two-ring Gaussian majority classes, margin field, smooth scalars, terrain-class relief, river distance field), deterministic and hashable, parallel and incremental. Shared by DiaTerrainMap3D (3D) and optionally the 2D CellFieldRenderer. Approved 2026-11-20 (3 features) | [diacellfieldbake.md](systems/diacellfieldbake/diacellfieldbake.md) |
 | DiaAIBudget | Frame-budget AI scheduler — `AIBudgetScheduler` (priority-ordered work queue, microsecond budget flush, Critical/Normal/Background tiers), `AIBudgetModule` (IModule wrapper on SimPU), DiaMetrics counters for budget utilisation | [diaaibudget.md](systems/diaaibudget/diaaibudget.md) |
 | DiaCondition | Shared expression evaluator — `ConditionRegistry` (float/bool accessor registration by slot+field StringCRC pairs), `ConditionExpr` (JSON-loadable boolean expression tree), `ConditionGuardAdapter` (wires expressions into DiaStateMachine `CallbackRegistry` with zero FSM changes) | [diacondition.md](systems/diacondition/diacondition.md) |
 | DiaRules | Forward-chaining rule engine — `RuleActionRegistry` (open handler registration by StringCRC), `RuleSet` (all-matching condition→action evaluation), JSON loader, `RuleSetComponent` entity integration | [diarules.md](systems/diarules/diarules.md) |
@@ -83,8 +91,8 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaAnimation2D | Animation playback and blending — damped spring chains, keyframe clip player, pose blend stack, procedural locomotion oscillator (deferred) | [diaanimation2d.md](systems/diaanimation2d/diaanimation2d.md) |
 | DiaVisualDebugger | Visual debug rendering system — `DebugLayerManager`, stack of focused draw classes, `DebugColourPalette`, `DiaVisualDebuggerConsole` (ImGui), editor layer panel, extensions to DiaGraphics (budget, TextPrimitive) | [diavisualdebugger.md](systems/diavisualdebugger/diavisualdebugger.md) |
 | DiaDebugDomain | Visual debug domain architecture — `IDebugDomain` interface, `DiaDebugDomainRegistry` (grouped, replaces flat 64-entry list), `DiaDebugPanel` (Ultralight HTML console, left side), JS command bridge, `DiaXxxVisualDebugger` contract + `dia check`, migration of 14 existing domains, retirement of ImGui console | [diadebugdomain.md](systems/diadebugdomain/diadebugdomain.md) |
-| RenderBackend | Concrete renderer behind `Graphics::ICanvas` — replaces SFML render path with bgfx in two phases (parity, then light 3D); new `DiaBgfx` module + Phase 2 3D module family (Mesh3D/Rig3D/Animation3D/Skinning3D/Scene3D) | [render-backend.md](systems/render-backend/render-backend.md) |
-| DiaBgfx3D | Phase 2 3D rendering layer — `Canvas3D`, `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`, `MaterialRegistry`, `MeshGpuCache`, 3D shaders; separate module so 2D-only games never pull in the DiaScene3D chain | [diabgfx3d.md](systems/diabgfx3d/diabgfx3d.md) |
+| RenderBackend | Concrete renderer behind `Graphics::ICanvas` — the bgfx renderer, built in two phases (parity, then light 3D); new `DiaBgfx` module + Phase 2 3D module family (Mesh3D/Rig3D/Animation3D/Skinning3D/Scene3D) | [render-backend.md](systems/render-backend/render-backend.md) |
+| DiaBgfx3D | Phase 2 3D rendering layer — `Canvas3D`, `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`, `MaterialRegistry`, `MeshGpuCache`, 3D shaders; separate module so 2D-only games never pull in the DiaScene3D chain **Amended 2026-11-20:** planned features render targets + dynamic textures, instanced sprites, particles, post-process stack (for DiaTerrainMap3D). | [diabgfx3d.md](systems/diabgfx3d/diabgfx3d.md) |
 | DiaMesh3D | 3D mesh asset library — `Vertex3D`, `Submesh`, `Mesh3DAsset`, `Mesh3DAssetHandler` (IAssetTypeHandler for cooked `.mesh3d` binaries); pure geometry, no skinning attributes or glTF dependency at runtime | [diamesh3d.md](systems/diamesh3d/diamesh3d.md) |
 | DiaThreading | Task-based parallelism — `JobSystem`, `JobHandle`; extracted from DiaCore to allow DiaObservation dependency; `dia.jobs.*` metrics via JobSystemModule | [diathreading.md](systems/diathreading/diathreading.md) |
 | DiaBugDetection | Static analysis + sanitizer build configs + agentic Claude fix loop — `dia check`, `dia diagnose`, CI gate | [diabugdetection.md](systems/diabugdetection/diabugdetection.md) |
@@ -104,7 +112,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaGraphics3D | 3D rendering type layer — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; separate module so 2D-only consumers never pull in Matrix44 | [diagraphics3d.md](systems/diagraphics3d/diagraphics3d.md) |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |
-| DiaSDL | SDL3-backed window + input backend — implements `IWindow` + `IInputSource` for Windows, Linux, Android, iOS; replaces DiaSFML | [replace-diasfml-with-sdl3.md](systems/diasdl/replace-diasfml-with-sdl3.md) |
+| DiaSDL | SDL3-backed window + input backend — implements `IWindow` + `IInputSource` for Windows, Linux, Android, iOS | [replace-diasfml-with-sdl3.md](systems/diasdl/replace-diasfml-with-sdl3.md) |
 | DiaUI | UI system abstraction | TBD |
 
 ## Application-Specific Architecture
@@ -131,9 +139,9 @@ DiaAPI provides extensible command-line tools for asset pipelines and build auto
 
 Dia is the engine - it provides dependencies for other applications rather than consuming them. External dependencies:
 
-- **SDL3** (External/SDL3) - Window management and input (replaces SFML window/input path; git submodule, built via `dia env setup`)
+- **SDL3** (External/SDL3) - Window management and input (git submodule, built via `dia env setup`)
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
-- **Webix / VisJS** (External/) - Web UI for debugging/visualization
+- **VisJS** (External/) - Visualization for debugging
 - **GoogleTest** (External/googletest) - Unit testing framework
 
 ## Out of Scope

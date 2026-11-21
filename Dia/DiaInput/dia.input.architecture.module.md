@@ -18,7 +18,7 @@ intent: >
   Provide reusable input building blocks with consistent semantics for higher-level systems. Supports multiple input paradigms: event-driven (legacy), type-safe modern events, state queries, action mapping, context stacking, and persistent profiles.
 
 responsibilities:
-  - Abstract platform-specific input APIs (XInput, SFML) behind unified interfaces
+  - Abstract platform-specific input APIs (XInput, SDL) behind unified interfaces
   - Provide union-based legacy events for backward compatibility
   - Provide type-safe modern events integrated with DiaCore::Events system
   - Support input source prioritization (UI before gameplay)

@@ -14,6 +14,7 @@ namespace Dia
 		class GameConnectionManager;
 		class EditorView;
 		class EditorActionRegistry;
+		class GameSwitchController;
 
 		// Drives the Game Connection panel: owns the editor-side UI state
 		// machine (disconnected / connecting / connected), registers the
@@ -52,6 +53,12 @@ namespace Dia
 			               EditorView* editorView = nullptr,
 			               EditorActionRegistry* api = nullptr);
 			void SetEditorContext(IEditorContext* context);
+
+			// Optional. When set, a live diagame_path goes through the game-switch gate.
+			void SetGameSwitchController(GameSwitchController* controller) { mGameSwitch = controller; }
+
+			// Applies the diagame_path reported by a live game (called from the get_app_state response).
+			void ApplyLiveDiagamePath(const char* path);
 			void Shutdown();
 
 			// Pumped by the owning module each frame.
@@ -107,6 +114,7 @@ namespace Dia
 			EditorView*            mEditorView;
 			IEditorContext*        mEditorContext;
 			EditorActionRegistry*  mApi = nullptr;
+			GameSwitchController*  mGameSwitch = nullptr;
 
 			State mState;
 

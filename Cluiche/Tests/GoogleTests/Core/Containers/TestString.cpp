@@ -107,6 +107,38 @@ TEST(String, ConstructionFromDifferentSize_TruncatesOrCopies)
 	EXPECT_STREQ(str4.AsCStr(), "Hello");
 }
 
+TEST(String, ConstructionFromSmallerSize_CopiesContentAndZeroFillsTail)
+{
+	String8 small("Hello");
+	String32 big(small);
+
+	EXPECT_STREQ(big.AsCStr(), "Hello");
+	// Bytes 0..7 mirror the source buffer; everything beyond the source capacity must be zero.
+	for (unsigned int i = small.Size(); i < big.Size(); ++i)
+	{
+		EXPECT_EQ(big.At(i), '\0') << "index " << i;
+	}
+}
+
+TEST(String, ConstructionFromEqualSize_CopiesContent)
+{
+	String8 a("Hello");
+	String<8> b(a);
+
+	EXPECT_STREQ(b.AsCStr(), "Hello");
+	EXPECT_EQ(b.Length(), 5);
+}
+
+TEST(String, ConstructionFromLargerSize_TruncatesWithTerminator)
+{
+	String32 big("0123456789ABCDEF");
+	String8 small(big);
+
+	EXPECT_EQ(small.Length(), 7);
+	EXPECT_STREQ(small.AsCStr(), "0123456");
+	EXPECT_EQ(small.At(7), '\0');
+}
+
 TEST(String, Assignment_OverwritesContent)
 {
 	const char testStr[] = "I like lots of apples";
@@ -139,6 +171,91 @@ TEST(String, AssignFromCString_UpdatesContent)
 
 	EXPECT_EQ(str1.Length(), 5);
 	EXPECT_STREQ(str1.AsCStr(), "World");
+}
+
+TEST(String, AssignFromCString_LongerThanCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str = "0123456789ABCDEF";
+
+	EXPECT_EQ(str.Length(), 7u);
+	EXPECT_STREQ(str.AsCStr(), "0123456");
+}
+
+TEST(String, AssignFromCString_ExactlyCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str = "01234567"; // 8 chars: one too many for size 8
+
+	EXPECT_EQ(str.Length(), 7u);
+	EXPECT_STREQ(str.AsCStr(), "0123456");
+}
+
+TEST(String, ConstructFromCString_PercentIsLiteral_NotFormatted)
+{
+	String64 a("C:\a%s%d\b");
+	EXPECT_STREQ(a.AsCStr(), "C:\a%s%d\b");
+
+	String64 b("%n");
+	EXPECT_STREQ(b.AsCStr(), "%n");
+
+	String<32> c("100%s%s%s");
+	EXPECT_STREQ(c.AsCStr(), "100%s%s%s");
+}
+
+TEST(String, AssignFromCString_PercentIsLiteral_NotFormatted)
+{
+	String64 a;
+	a = "C:\a%s%d\b";
+	EXPECT_STREQ(a.AsCStr(), "C:\a%s%d\b");
+	a = "%n";
+	EXPECT_STREQ(a.AsCStr(), "%n");
+}
+
+TEST(String, ConstructFromCString_WithFormatArgs_StillFormats)
+{
+	String64 s("%s-%d", "ab", 5);
+	EXPECT_STREQ(s.AsCStr(), "ab-5");
+}
+
+TEST(String, ConstructFromCString_Truncates)
+{
+	String8 s("0123456789");
+	EXPECT_STREQ(s.AsCStr(), "0123456");
+}
+
+TEST(String, SetText_PercentIsLiteral_NotFormatted)
+{
+	String64 str;
+	str.SetText("C:/assets/100%s/%d/%n.png");
+
+	EXPECT_STREQ(str.AsCStr(), "C:/assets/100%s/%d/%n.png");
+}
+
+TEST(String, SetText_OverwritesPreviousContentAndZeroFillsTail)
+{
+	String32 str("Hello World");
+	str.SetText("Hi");
+
+	EXPECT_STREQ(str.AsCStr(), "Hi");
+	EXPECT_EQ(str.Length(), 2u);
+	EXPECT_EQ(str[5], '\0');
+}
+
+TEST(String, SetText_NullSource_GivesEmptyString)
+{
+	String32 str("Hello");
+	str.SetText(nullptr);
+
+	EXPECT_EQ(str.Length(), 0u);
+}
+
+TEST(String, SetText_LongerThanCapacity_TruncatesAndTerminates)
+{
+	String8 str;
+	str.SetText("0123456789");
+
+	EXPECT_STREQ(str.AsCStr(), "0123456");
 }
 
 TEST(String, ComparisonOperators_CompareCorrectly)
@@ -177,8 +294,8 @@ TEST(String, ElementAccess_WorksCorrectlyWithBoundsChecking)
 	EXPECT_EQ(str1.Front(), 'H');
 	EXPECT_EQ(str1.Back(), 'o');
 
-	EXPECT_DEATH({ [[maybe_unused]] char c = str1[-1]; }, "");
-	EXPECT_DEATH({ [[maybe_unused]] char c = str1[50]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] char c = str1[-1]; }, "");
+	DIA_EXPECT_DEATH({ [[maybe_unused]] char c = str1[50]; }, "");
 }
 
 TEST(String, Clear_EmptiesString)

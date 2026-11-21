@@ -12,15 +12,15 @@ language: cpp
 parent_module_id: dia.root
 
 summary: >
-  Per-cell visibility system — maintains Unexplored/Revealed/Visible state per VisibilityGroupId on a coarser grid derived from the pathfinding graph; recursive-octant shadowcasting against impassable cells; dirty-flag updates; CanSee/GetCellState/GetVisibleEntities queries; IVisibilityChangeObserver callbacks.
+  Per-cell visibility system — maintains Unexplored/Revealed/Visible state per VisibilityGroupId on a coarser grid derived from the pathfinding graph; topology-specific shadowcasting (recursive octant for square grids, 6-ray Bresenham sweep for hex grids) against impassable cells; dirty-flag updates; CanSee/GetCellState/GetVisibleEntities queries; IVisibilityChangeObserver callbacks. Supports both SquarePathGrid and HexPathGrid (axial hexagon + rectangular offset layouts).
 
 intent: >
   Answers three per-tick questions game and AI code routinely ask: CanSee(entity, group), GetCellState(cell, group), GetVisibleEntities(group). Reuses the DiaPathfinding grid — no new grid abstraction. Shadowcasting O(visible cells) per dirty source; standing-still sources cost zero. Observer pattern for cell and entity visibility changes.
 
 responsibilities:
   - VisibilityGroupId (StringCRC alias) and VisibilityState enum (Unexplored/Revealed/Visible)
-  - GridVisibilitySystem<TGraph> — observer registration, per-group state grid, chunk-grid consolidation at construction
-  - Update pass: dirty-flag shadowcasting sweep (recursive octant), Visible→Revealed decay, visible-entity list rebuild via DiaEntitySpatial
+  - GridVisibilitySystem<TGraph> — observer registration, per-group state grid, chunk-grid consolidation at construction; supports SquarePathGrid and HexPathGrid (both axial hexagon and rectangular offset layouts)
+  - Update pass: dirty-flag shadowcasting sweep (topology-specific: recursive octant for square, 6-ray Bresenham for hex), Visible→Revealed decay, visible-entity list rebuild via DiaEntitySpatial
   - CanSee, GetCellState, GetVisibleEntities queries (O(1))
   - IVisibilityChangeObserver — OnCellStateChanged + OnEntityVisibilityChanged callbacks during Update
   - Test utilities under Testing/ subdirectory

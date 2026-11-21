@@ -1,0 +1,90 @@
+{
+  "description": "A pair that is not exactly 2 refs is reported by pair index.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.biomes",
+      "entries": [
+        {
+          "key": "biomes[].id",
+          "kind": "parameter",
+          "label": "biomes[].id",
+          "description": "d",
+          "type": "string",
+          "unique": true,
+          "required": true
+        },
+        {
+          "key": "biomes[].tags",
+          "kind": "parameter",
+          "label": "biomes[].tags",
+          "description": "d",
+          "type": "enum[]",
+          "values": [
+            {
+              "id": "land"
+            },
+            {
+              "id": "water"
+            }
+          ]
+        },
+        {
+          "key": "forbidden",
+          "kind": "parameter",
+          "label": "forbidden",
+          "description": "d",
+          "type": "ref[2][]",
+          "ref": "cow.biomes/biomes[].id"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "Forest",
+            "tags": []
+          },
+          {
+            "id": "Desert",
+            "tags": []
+          },
+          {
+            "id": "Tundra"
+          }
+        ],
+        "forbidden": [
+          [
+            "Forest",
+            "Desert"
+          ],
+          [
+            "Forest",
+            "Desert",
+            "Tundra"
+          ]
+        ]
+      }
+    }
+  ],
+  "expected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.wrong-type",
+      "file": "Global/World/biomes.json",
+      "key": "forbidden",
+      "path": "forbidden[1]",
+      "record": null,
+      "messageContains": "pair 1",
+      "suggestion": null
+    }
+  ]
+}

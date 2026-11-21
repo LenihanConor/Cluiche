@@ -1,0 +1,29 @@
+{
+    "name": "WithPresets",
+    "manifest": "WithPresets.stage.json",
+    "tags": [
+        "test"
+    ],
+    "description": "Stage with two launch presets.",
+    "presets": [
+        {
+            "name": "alpine42",
+            "description": "Alpine, seed 42",
+            "modules": {
+                "WorldGen": {
+                    "preset": "alpine",
+                    "seed": 42
+                }
+            }
+        },
+        {
+            "name": "bare",
+            "modules": {}
+        }
+    ],
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

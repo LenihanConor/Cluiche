@@ -59,7 +59,8 @@ namespace Dia { namespace Automation {
         void EnableNavigationHold();
         void ReleaseNavigationHold(const Dia::Core::StringCRC& target,
                                    bool* outSuccess = nullptr,
-                                   const char** outError = nullptr);
+                                   const char** outError = nullptr,
+                                   const Dia::Core::StringCRC& preset = Dia::Core::StringCRC());
         bool IsHolding() const { return mHolding; }
 
         // --- CI Safety ---

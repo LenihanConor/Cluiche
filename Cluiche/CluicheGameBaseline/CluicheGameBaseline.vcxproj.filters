@@ -7,6 +7,9 @@
     <Filter Include="Types">
       <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678902}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{e3fc2e7b-917c-4977-bcaa-743299937f7b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Modules\EntityModule.cpp">
@@ -121,6 +124,69 @@
       <Filter>Types</Filter>
     </ClCompile>
     <ClCompile Include="Modules\AttributeVisualDebuggerModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuLogic.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootMenuModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\AppIdentity.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\MessageBusHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\SimQueryHostModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainStateBridgeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainStateRelayModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\LogPushBatcher.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DomainRootDelta.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\PerfPauseCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\PerfWindowCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\PerfTimingPublisher.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\PerfTripPublisher.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\PerfChainCommands.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\StageCatalogue.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueLoader.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\StageResult.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageResultsFile.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueState.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\StageCatalogueQueries.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
   </ItemGroup>
@@ -253,6 +319,90 @@
     </ClInclude>
     <ClInclude Include="Modules\AttributeVisualDebuggerModule.h">
       <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuLogic.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootMenuModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\AppIdentity.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleLineEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DebugConsoleResultEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\MessageBusHostModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\SimQueryHostModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\SimRegistrationMessage.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\DomainStateInterestEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateBridgeModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainStateRelayModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LogPushBatcher.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DomainRootDelta.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfPauseCommands.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfWindowCommands.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfTimingPublisher.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfTripPublisher.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\PerfChainCommands.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageCatalogue.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueLoader.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\StageCatalogueFixture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageResult.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageResultsFile.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageCatalogueSnapshot.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueState.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\StageCatalogueQueries.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\StageLaunchRequest.h">
+      <Filter>Types</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

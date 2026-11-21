@@ -16,7 +16,9 @@ C:\GitHub\Cluiche\
 │   ├── DiaInput/                 # Input handling
 │   ├── DiaApplicationFlow/           # Application framework
 │   ├── DiaUI/                    # UI base
-│   ├── DiaSFML/                  # SFML integration layer
+│   ├── DiaSDL/                   # SDL3 window and input backend
+│   ├── DiaBgfx/                  # bgfx 2D renderer
+│   ├── DiaBgfx3D/                # bgfx 3D renderer
 │   └── ...                       # Other subsystems
 │
 ├── Cluiche/                      # Main solution directory
@@ -30,9 +32,9 @@ C:\GitHub\Cluiche\
 │       └── GoogleTests/          # Google Test suites
 │
 ├── External/                     # Third-party dependencies
-│   ├── SFML/                     # Graphics/window/multimedia
+│   ├── SDL3/                     # Window and input
+│   ├── bgfx/                     # Rendering
 │   ├── jsoncpp-master/           # JSON parsing
-│   ├── Webix/                    # Web UI framework
 │   └── VisJS/                    # Visualization framework
 │
 ├── Tools/                        # Build and analysis tools

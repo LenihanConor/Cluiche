@@ -3,6 +3,7 @@
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
 #include <DiaEntity/Domain.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
 
 #ifdef DIA_DEBUG
 #include <DiaGeometry2DPicking/PickingService2D.h>
@@ -64,5 +65,7 @@ DIA_COMPONENT_REGISTER(PickableCircleComponent, "cluichetest.pickable-circle", f
     nullptr, 0,
     nullptr, 0)
 DIA_COMPONENT_DESCRIBE(CluicheTest::PickableCircleComponent, "Registers a circle shape with the picking service so the entity can be selected in the test stage.")
+
+DIA_ATTR_DESCRIBE(PickableCircleComponent, objectIdx, "Object index", nullptr, "Index of this entity in the test stage's object list.")
 
 } // namespace CluicheTest

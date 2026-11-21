@@ -3,6 +3,9 @@ import { theme, ConnectionStatus, EmptyState } from '@dia/editor-ui';
 import { useBlackboardInspectorStore } from './store';
 import { BoardCard } from './components/BoardCard';
 
+// Fixed id for the priming get_connection_state request so its reply can be recognised.
+const kStateReqId = 'init_connection_state';
+
 export default function App() {
     const connected = useBlackboardInspectorStore((s) => s.connected);
     const boards = useBlackboardInspectorStore((s) => s.boards);
@@ -34,6 +37,10 @@ export default function App() {
 
         const onMessage = (e: MessageEvent) => {
             const env = e.data;
+            if (env && env.__diaResponse === true && env.reqId === kStateReqId) {
+                // get_connection_state is a request handler; its reply carries { connected }.
+                dispatch('blackboard_inspector.connection_state', env.result);
+            }
             if (env && env.__dia === true && typeof env.topic === 'string') {
                 dispatch(env.topic, env.data);
             }
@@ -48,7 +55,7 @@ export default function App() {
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     __diaFromFrame: true,
-                    payload: { type, reqId: null, data: data || {} },
+                    payload: { type, reqId: kStateReqId, data: data || {} },
                 }, '*');
             }
         };

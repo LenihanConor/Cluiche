@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Field Schema Tooltips — F-3 Mockup</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0a0a;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  color: #d4d4d4;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.caption {
+  max-width: 900px;
+  background: #1a2530;
+  border-left: 3px solid #5a9fd4;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: #aaa;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.caption strong {
+  color: #5a9fd4;
+  font-weight: 600;
+}
+
+.panels-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ─────────────────────────────── PANEL CHROME ─── */
+.panel {
+  background: #181818;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #2d2d2d;
+  padding: 7px 12px;
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.panel-body {
+  padding: 12px;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+/* ─────────────────────────────── (A) TUNING SLIDERS ─── */
+.param-group {
+  margin-bottom: 14px;
+}
+
+.group-title {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #222;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.slider-label {
+  width: 110px;
+  font-size: 10px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-icon {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #666;
+  cursor: help;
+  position: relative;
+}
+
+.info-icon:hover {
+  border-color: #5a9fd4;
+  color: #5a9fd4;
+}
+
+.slider-track {
+  flex: 1;
+  height: 20px;
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+
+.slider-fill {
+  height: 100%;
+  background: linear-gradient(to right, #2a3a4a, #5a9fd4);
+  border-radius: 1px;
+}
+
+.slider-default-tick {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: #f5a623;
+  opacity: 0.6;
+}
+
+.slider-value {
+  width: 50px;
+  text-align: right;
+  font-size: 10px;
+  color: #ccc;
+}
+
+.slider-unit {
+  width: 70px;
+  font-size: 9px;
+  color: #555;
+}
+
+/* Tooltip for slider parameter */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  padding: 10px 12px;
+  border-radius: 3px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+  z-index: 100;
+  width: 320px;
+  font-size: 10px;
+  color: #ccc;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.slider-row.show-tooltip .tooltip {
+  opacity: 1;
+}
+
+.tooltip-title {
+  font-size: 11px;
+  color: #5a9fd4;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.tooltip-desc {
+  color: #aaa;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.tooltip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #333;
+  font-size: 9px;
+  color: #777;
+}
+
+.tooltip-meta-item {
+  display: flex;
+  gap: 4px;
+}
+
+.tooltip-meta-label {
+  color: #555;
+}
+
+.tooltip-meta-value {
+  color: #999;
+}
+
+.tooltip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.chip {
+  font-size: 8px;
+  padding: 2px 6px;
+  background: #1a2530;
+  border: 1px solid #2a3a50;
+  color: #5a9fd4;
+  border-radius: 2px;
+}
+
+.tooltip-related {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #333;
+  font-size: 9px;
+  color: #777;
+}
+
+.tooltip-related a {
+  color: #5a9fd4;
+  text-decoration: none;
+  margin-right: 8px;
+}
+
+.tooltip-related a:hover {
+  text-decoration: underline;
+}
+
+.tooltip-source {
+  margin-top: 6px;
+  font-size: 9px;
+  color: #555;
+  font-style: italic;
+}
+
+.override-badge {
+  display: inline-block;
+  font-size: 8px;
+  padding: 2px 5px;
+  background: #2a2510;
+  border: 1px solid #4a4520;
+  color: #f5a623;
+  border-radius: 2px;
+  margin-top: 6px;
+}
+
+/* ─────────────────────────────── (B) CELL INSPECTOR ─── */
+.cell-header {
+  font-size: 11px;
+  color: #5a9fd4;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+}
+
+.field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #1b1b1b;
+  border: 1px solid #252525;
+  border-radius: 2px;
+  position: relative;
+  cursor: help;
+}
+
+.field-row:hover {
+  background: #202020;
+  border-color: #2a2a2a;
+}
+
+.field-name {
+  width: 90px;
+  font-size: 10px;
+  color: #999;
+}
+
+.field-value {
+  width: 50px;
+  text-align: right;
+  font-size: 10px;
+  color: #ccc;
+  font-weight: 600;
+}
+
+.field-unit {
+  width: 60px;
+  font-size: 9px;
+  color: #555;
+}
+
+.field-bar {
+  flex: 1;
+  height: 4px;
+  background: #0f0f0f;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.field-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3a5a3a, #5a9fd4);
+}
+
+/* Tooltip for cell field */
+.field-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  padding: 10px 12px;
+  border-radius: 3px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+  z-index: 100;
+  width: 320px;
+  font-size: 10px;
+  color: #ccc;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.field-row.show-tooltip .field-tooltip {
+  opacity: 1;
+}
+
+.field-tooltip-title {
+  font-size: 11px;
+  color: #5a9fd4;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.field-tooltip-desc {
+  color: #aaa;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.field-tooltip-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #333;
+  font-size: 9px;
+  color: #777;
+}
+
+.field-tooltip-hint {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: #1a1a1a;
+  border-left: 2px solid #5a9fd4;
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.field-tooltip-source {
+  margin-top: 6px;
+  font-size: 9px;
+  color: #555;
+}
+
+/* ─────────────────────────────── (C) SCHEMA JSON ─── */
+.schema-code {
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 10px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #aaa;
+  overflow-x: auto;
+  font-family: 'Consolas', monospace;
+}
+
+.json-key { color: #5a9fd4; }
+.json-string { color: #ce9178; }
+.json-number { color: #b5cea8; }
+.json-bool { color: #569cd6; }
+.json-array { color: #888; }
+
+.schema-section {
+  margin-bottom: 14px;
+}
+
+.schema-label {
+  font-size: 9px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+
+<div class="caption">
+  <strong>One definition → slider tooltips, inspector tooltips, World Data Editor forms, dia validate, generated reference.</strong>
+  Each parameter and per-cell field is defined once in a schema (ecology_parameters.json, weather_parameters.json, field_schema.json). That schema drives tooltips, validation, UI generation, and documentation everywhere.
+</div>
+
+<div class="panels-row">
+
+  <!-- Panel A: Tuning Sliders -->
+  <div class="panel">
+    <div class="panel-header">A1 ECOLOGY PARAMETERS</div>
+    <div class="panel-body">
+
+      <div class="param-group">
+        <div class="group-title">Herbivory</div>
+
+        <div class="slider-row show-tooltip">
+          <div class="slider-label">
+            Grazing rate
+            <span class="info-icon">i</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 40%;"></div>
+            <div class="slider-default-tick" style="left: 50%;"></div>
+          </div>
+          <div class="slider-value">0.80</div>
+          <div class="slider-unit">frac/season</div>
+
+          <div class="tooltip">
+            <div class="tooltip-title">Grazing rate</div>
+            <div class="tooltip-desc">
+              Fraction of vegetation consumed by herbivores per season. Higher values increase herbivore impact on grass and shrub biomass.
+            </div>
+            <div class="tooltip-meta">
+              <div class="tooltip-meta-item">
+                <span class="tooltip-meta-label">Unit:</span>
+                <span class="tooltip-meta-value">fraction/season</span>
+              </div>
+              <div class="tooltip-meta-item">
+                <span class="tooltip-meta-label">Range:</span>
+                <span class="tooltip-meta-value">[0, 2]</span>
+              </div>
+              <div class="tooltip-meta-item">
+                <span class="tooltip-meta-label">Default:</span>
+                <span class="tooltip-meta-value">1.0</span>
+              </div>
+            </div>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #333; font-size: 9px; color: #777;">
+              <div style="margin-bottom: 4px;">Affects:</div>
+              <div class="tooltip-chips">
+                <span class="chip">vegetation</span>
+                <span class="chip">herbivores</span>
+              </div>
+            </div>
+            <div class="tooltip-related">
+              <strong style="color: #666;">Related:</strong>
+              <a href="#">regrowth.forest</a>
+              <a href="#">starvation.threshold</a>
+            </div>
+            <div class="tooltip-source">
+              Defined in: ecology_parameters.json · grazing.rate
+            </div>
+            <div class="override-badge">
+              overridden by pack "lush"
+            </div>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            Starvation threshold
+            <span class="info-icon">i</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 15%;"></div>
+            <div class="slider-default-tick" style="left: 15%;"></div>
+          </div>
+          <div class="slider-value">0.15</div>
+          <div class="slider-unit">fraction</div>
+        </div>
+
+      </div>
+
+      <div class="param-group">
+        <div class="group-title">Vegetation</div>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            Regrowth (forest)
+            <span class="info-icon">i</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 62.5%;"></div>
+            <div class="slider-default-tick" style="left: 50%;"></div>
+          </div>
+          <div class="slider-value">1.25</div>
+          <div class="slider-unit">mult/season</div>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            Seed spread rate*
+            <span class="info-icon">i</span>
+          </div>
+          <div class="slider-track">
+            <div class="slider-fill" style="width: 30%;"></div>
+            <div class="slider-default-tick" style="left: 25%;"></div>
+          </div>
+          <div class="slider-value">0.60</div>
+          <div class="slider-unit">cells/decade</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Panel B: Cell Inspector -->
+  <div class="panel">
+    <div class="panel-header">CELL INSPECTOR</div>
+    <div class="panel-body">
+
+      <div class="cell-header">Selected Hex (q: 12, r: 7) — Grassland</div>
+
+      <div class="field-list">
+
+        <div class="field-row show-tooltip">
+          <div class="field-name">Vegetation</div>
+          <div class="field-value">0.72</div>
+          <div class="field-unit">biomass</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 72%;"></div>
+          </div>
+
+          <div class="field-tooltip">
+            <div class="field-tooltip-title">Vegetation</div>
+            <div class="field-tooltip-desc">
+              Total producer biomass (grass, shrub, tree) in this cell. Normalised to biome carrying capacity.
+            </div>
+            <div class="field-tooltip-meta">
+              <div class="tooltip-meta-item">
+                <span class="tooltip-meta-label">Unit:</span>
+                <span class="tooltip-meta-value">biomass [0, 1]</span>
+              </div>
+              <div class="tooltip-meta-item">
+                <span class="tooltip-meta-label">Range:</span>
+                <span class="tooltip-meta-value">[0, 1]</span>
+              </div>
+            </div>
+            <div class="field-tooltip-hint">
+              Above 0.75: thriving ecosystem. Below 0.25: stressed or collapsed.
+            </div>
+            <div class="field-tooltip-source">
+              source: A1 step 3 (grass/aquatic) + step 3 (shrubs/trees)
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Herbivores</div>
+          <div class="field-value">0.48</div>
+          <div class="field-unit">pop. density</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 48%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Predators</div>
+          <div class="field-value">0.12</div>
+          <div class="field-unit">pop. density</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 12%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Soil fertility</div>
+          <div class="field-value">0.65</div>
+          <div class="field-unit">fraction</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 65%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Snow pack</div>
+          <div class="field-value">0.23</div>
+          <div class="field-unit">depth [0,1]</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 23%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Precipitation</div>
+          <div class="field-value">0.58</div>
+          <div class="field-unit">mm/week</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 58%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Temperature</div>
+          <div class="field-value">0.42</div>
+          <div class="field-unit">norm. [0,1]</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 42%;"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-name">Drought stress*</div>
+          <div class="field-value">0.18</div>
+          <div class="field-unit">stress</div>
+          <div class="field-bar">
+            <div class="field-bar-fill" style="width: 18%; background: linear-gradient(to right, #5a3a3a, #c84a4a);"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Panel C: Schema JSON -->
+  <div class="panel">
+    <div class="panel-header">SCHEMA DEFINITIONS</div>
+    <div class="panel-body">
+
+      <div class="schema-section">
+        <div class="schema-label">Parameter Schema (ecology_parameters.json)</div>
+        <div class="schema-code"><pre>{
+  <span class="json-key">"key"</span>: <span class="json-string">"grazing.rate"</span>,
+  <span class="json-key">"label"</span>: <span class="json-string">"Grazing rate"</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"Fraction of vegetation consumed by herbivores per season. Higher values increase herbivore impact on grass and shrub biomass."</span>,
+  <span class="json-key">"unit"</span>: <span class="json-string">"fraction/season"</span>,
+  <span class="json-key">"min"</span>: <span class="json-number">0</span>,
+  <span class="json-key">"max"</span>: <span class="json-number">2</span>,
+  <span class="json-key">"default"</span>: <span class="json-number">1.0</span>,
+  <span class="json-key">"affects"</span>: <span class="json-array">[</span><span class="json-string">"vegetation"</span>, <span class="json-string">"herbivores"</span><span class="json-array">]</span>,
+  <span class="json-key">"related"</span>: <span class="json-array">[</span><span class="json-string">"regrowth.forest"</span>, <span class="json-string">"starvation.threshold"</span><span class="json-array">]</span>,
+  <span class="json-key">"ui"</span>: {
+    <span class="json-key">"slider_step"</span>: <span class="json-number">0.05</span>,
+    <span class="json-key">"group"</span>: <span class="json-string">"Herbivory"</span>
+  }
+}</pre></div>
+      </div>
+
+      <div class="schema-section">
+        <div class="schema-label">State Field Schema (field_schema.json)</div>
+        <div class="schema-code"><pre>{
+  <span class="json-key">"key"</span>: <span class="json-string">"vegetation"</span>,
+  <span class="json-key">"label"</span>: <span class="json-string">"Vegetation"</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"Total producer biomass (grass, shrub, tree) in this cell. Normalised to biome carrying capacity."</span>,
+  <span class="json-key">"unit"</span>: <span class="json-string">"biomass [0, 1]"</span>,
+  <span class="json-key">"range"</span>: <span class="json-array">[</span><span class="json-number">0</span>, <span class="json-number">1</span><span class="json-array">]</span>,
+  <span class="json-key">"hint"</span>: <span class="json-string">"Above 0.75: thriving ecosystem. Below 0.25: stressed or collapsed."</span>,
+  <span class="json-key">"source"</span>: <span class="json-string">"A1 step 3 (grass/aquatic) + step 3 (shrubs/trees)"</span>,
+  <span class="json-key">"ui"</span>: {
+    <span class="json-key">"ramp"</span>: <span class="json-string">"green_biomass"</span>,
+    <span class="json-key">"layer"</span>: <span class="json-string">"ecology"</span>
+  }
+}</pre></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 20px; padding: 10px 14px; background: #1a1a1a; border-left: 3px solid #666; font-size: 10px; color: #777; max-width: 900px;">
+  <strong style="color: #999;">* Illustrative values</strong> — Parameters or fields marked with * are plausible examples not yet defined in the specs. Real schema will come from A1/A4 implementation.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "name": "NoPresets",
+    "manifest": "NoPresets.stage.json",
+    "description": "Stage without presets.",
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

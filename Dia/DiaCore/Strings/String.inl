@@ -21,7 +21,7 @@ namespace Dia
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> template<unsigned int _size> 
 			String<size>::String (const String<_size>& rhs)
-				: mData(&rhs[0], Size())
+				: mData(&rhs[0], (_size < size ? _size : size))
 			{
 				mData.At(size - 1) = NULL;
 				DIA_ASSERT(IsNullTerminating(), "Is not null terminating");
@@ -123,18 +123,6 @@ namespace Dia
 				DIA_ASSERT(IsNullTerminating(), "Is not null terminating");
 			}
 
-			//-----------------------------------------------------------------------------
-			template <unsigned int size> inline
-			String<size>::String (const char* pRawString, ...)
-				: mData()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> inline
@@ -215,21 +203,33 @@ namespace Dia
 			template <unsigned int size>
 			String<size>& String<size>::operator =(const char* pRawString)
 			{
-				memset(mData, 0, sizeof(char)*size);
-				
-				unsigned int x = strlen(pRawString);
-				if( size <= x )
+				return SetText(pRawString);
+			}
+
+			//-----------------------------------------------------------------------------
+			// Non-formatting assign: zeroes the string, copies at most size-1 characters (always null
+			// terminated), and treats a null source as "". Safe for untrusted text (paths, keys, user input).
+			template <unsigned int size>
+			String<size>& String<size>::SetText(const char* pRawString)
+			{
+				memset(&mData[0], 0, sizeof(char)*size);
+
+				if (pRawString != NULL)
 				{
-					x = size;
+					unsigned int x = static_cast<unsigned int>(strlen(pRawString));
+					if( x > size - 1 )
+					{
+						x = size - 1;
+					}
+
+					memcpy(&mData[0], pRawString, sizeof(char)*x);
 				}
 
-				memcpy(mData, pRawString, sizeof(char)*x);
-				
 				DIA_ASSERT(IsNullTerminating(), "is not null terminating");
 
 				return *this;
 			}
-			
+
 			template <unsigned int size>
 			template<unsigned int _size> String<size>& String<size>::operator =(const String<_size>& rhs)
 			{
@@ -613,6 +613,19 @@ namespace Dia
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> inline
 			String<size>& String<size>::Format(const char* pFormatString, ...)
+			{
+				DIA_ASSERT(pFormatString != NULL, "Invalid Data");
+
+				va_list args;
+				va_start(args, pFormatString);
+				Format(pFormatString, args);
+				va_end(args);
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			String<size>& String<size>::FormatArgs(const char* pFormatString, ...)
 			{
 				DIA_ASSERT(pFormatString != NULL, "Invalid Data");
 

@@ -101,6 +101,16 @@
     <ClInclude Include="Quaternion\Quaternion.h" />
     <ClInclude Include="DiaMathsSerializers.h" />
     <ClInclude Include="Core\SplineBasis.h" />
+    <ClInclude Include="Core\RandomStream.h" />
+    <ClInclude Include="Core\RandomStreamManager.h" />
+    <ClInclude Include="Noise\Noise.h" />
+    <ClInclude Include="Noise\NoiseHash.h" />
+    <ClInclude Include="Noise\ValueNoise.h" />
+    <ClInclude Include="Noise\GradientNoise.h" />
+    <ClInclude Include="Noise\WorleyNoise.h" />
+    <ClInclude Include="Noise\SimplexNoise.h" />
+    <ClInclude Include="Noise\Noise3D.h" />
+    <ClInclude Include="Noise\FractalNoise.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -123,11 +133,21 @@
     <ClCompile Include="Transform\Transform2D.cpp" />
     <ClCompile Include="Transform\Transform3D.cpp" />
     <ClCompile Include="Quaternion\Quaternion.cpp" />
+    <ClCompile Include="Core\RandomStream.cpp" />
+    <ClCompile Include="Core\RandomStreamManager.cpp" />
+    <ClCompile Include="Noise\ValueNoise.cpp" />
+    <ClCompile Include="Noise\GradientNoise.cpp" />
+    <ClCompile Include="Noise\WorleyNoise.cpp" />
+    <ClCompile Include="Noise\SimplexNoise.cpp" />
+    <ClCompile Include="Noise\Noise3D.cpp" />
+    <None Include="Noise\FractalNoise.inl" />
+    <ClCompile Include="Noise\FractalNoise.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
     <None Include="Vector\VectorHalf2D.inl" />
     <None Include="Core\Angle.inl" />
+    <None Include="Core\RandomStream.inl" />
     <None Include="Core\CoreMaths.inl" />
     <None Include="Core\Easing.inl" />
     <None Include="Core\FloatMaths.inl" />

@@ -23,7 +23,7 @@ CluicheTest assets are currently scattered across three locations (`Cluiche/Data
 2. `Assets/CluicheTest/Global/Manifests/` contains `cluiche_main.diaapp`, `cluiche_render.diaapp`, `cluiche_sim.diaapp`
 3. `Assets/CluicheTest/Global/Presentation/ui.frag` exists
 4. `Assets/CluicheTest/Global/Presentation/UI/BootStrap/` contains `bootscreen.html`, `launchMenuData.json`, `launchMenuData.csv`, `testdata.js`
-5. `Assets/CluicheTest/Global/Presentation/UI/Webix/5.2.1/` contains the full Webix 5.2.1 library
+5. `Assets/CluicheTest/Global/Presentation/UI/Webix/5.2.1/` contains the full Webix 5.2.1 library *(historical — removed 2026-10-13)*
 6. `Assets/CluicheTest/Global/Misc/Resources/` contains `cacert.pem` and `icudt67l.dat`
 7. `Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage` exists at the stage root
 8. `Assets/CluicheTest/Stages/DummyStage/Manifests/dummy_stage.diaapp` exists

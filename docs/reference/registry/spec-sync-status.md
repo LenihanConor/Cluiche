@@ -3,7 +3,10 @@
 _Refresh by running `dia check spec-sync`. Commit the result to keep it visible in the site._
 
 Symbols are extracted from each spec's **Public Interfaces** section (class/struct names only).
-A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
+A symbol is ✅ if it appears in a header under the spec's application source dir (or `Dia/`); ⚠️ if absent.
+Limits: this checks class/struct names only. It cannot see prose drift (stale statuses, changed execution models).
+
+## cluicheeditor
 
 | Spec | Spec Status | Sync | Symbols Found | Missing |
 |------|-------------|------|---------------|---------|
@@ -13,12 +16,46 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diaeditorapi | Unknown | — | — | no Public Interfaces |
 | pluginbrowser | Unknown | — | — | no Public Interfaces |
 | rendertestplugin | Unknown | — | — | no Public Interfaces |
+
+## cluichetest
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
 | cluichetest | Unknown | — | — | no Public Interfaces |
 | applicationflow | Unknown | — | — | no Public Interfaces |
 | asset-pipeline | Unknown | — | — | no Public Interfaces |
 | async-asset-loading | Unknown | — | — | no Public Interfaces |
 | cluichetestscenarios | Unknown | — | — | no Public Interfaces |
-| teststages | Unknown | ❌ | — | RigidBody2DTestModule |
+| teststages | Unknown | ✅ | RigidBody2DTestModule | — |
+
+## cow
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
+| cow | Unknown | — | — | no Public Interfaces |
+| a1-ecology | Unknown | ❌ | — | EcologySimulation, IEcologyWeatherInput, ISuccessionResolver, EcologyData, CompiledFlowGraph, EcologyModule |
+| a1-populationtokens | Unknown | — | — | no Public Interfaces |
+| a3-biomesuccession | Unknown | ❌ | — | SuccessionSimulation, SuccessionData, SuccessionModule |
+| a4-weather | Unknown | ❌ | — | WeatherSimulation, WeatherParameters, WeatherRunner, WeatherStage, WeatherModule |
+| a5-hydrology | Unknown | ❌ | — | HydrologySimulation, WaterInput, HydrologyRunner, HydrologyStage, HydrologySnapshot |
+| e1-saveload | Unknown | ✅ | SaveLoadModule | — |
+| f1-harness | Done | — | — | no Public Interfaces |
+| f2-core-runtime | Done | — | — | no Public Interfaces |
+| f3-worldassets | Unknown | — | — | no Public Interfaces |
+| gamespeedcontroller | Done | ✅ | GameSpeedController, GameSpeedControllerModule | — |
+| s25-weatherpatterns | Unknown | ⚠️ | Scenario | S25WeatherChecks, S25RunParams, S25RunReport, S25HeadlessRunner, S25WeatherModule, CheckRegistry |
+| s3-ecology | Unknown | ❌ | — | EcologyMode, S3ClimateInput, S3ClimatologyInput, S3EcologyModule |
+| s35-worldsim | Unknown | — | — | no Public Interfaces |
+| strategicmap | Unknown | — | — | no Public Interfaces |
+| t1-worldsiminspector | Unknown | — | — | no Public Interfaces |
+| t2-worlddataeditor | Unknown | — | — | no Public Interfaces |
+| v1-tilerendering | Unknown | — | — | no Public Interfaces |
+| worldstep | Unknown | ✅ | IWorldStepStage, WorldStepChain, WorldStepConfig, WorldStepApplied, IWorldStepListener, WorldStepModule | — |
+
+## dia
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
 | dia | Unknown | — | — | no Public Interfaces |
 | asset-system-overview | Unknown | — | — | no Public Interfaces |
 | diaaibroadcast | Unknown | ✅ | Callout, CalloutHandle, QueryFilter, CalloutRegistry | — |
@@ -39,7 +76,7 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diaassetruntime | Unknown | — | — | no Public Interfaces |
 | diaassetruntimeinspector | Unknown | ✅ | DiaAssetRuntimeInspector | — |
 | diaassetruntimevisualdebugger | Approved | — | — | no Public Interfaces |
-| diaattribute | Approved | ❌ | — | AttributeDefinition, AttributeSchema, ModifierOperation, AttributeModifier, ModifierTag, AttributeSet, AttributeSetComponent, AttributeChangedEvent, IAttributeObserver, AttributeObserverSubject, AttributeAccessorBridge |
+| diaattribute | Unknown | ✅ | AttributeDefinition, AttributeSchema, ModifierOperation, AttributeModifier, ModifierTag, AttributeSet, AttributeSetComponent, AttributeChangedEvent, IAttributeObserver, AttributeObserverSubject, AttributeAccessorBridge | — |
 | diaautomation | Unknown | ✅ | CheckpointResult, AutomationService, CheckpointEntry, PauseResumeEntry | — |
 | diabehaviourtree | Done | ✅ | NodeResult, ActionRegistry, BehaviourTreeAsset, IBehaviourTreeEventListener, DecoratorContext, IDecoratorNode, DecoratorRegistry, BehaviourTreeComponent, BehaviourTreeSystem, SpyAction | — |
 | diabehaviourtreevisualdebugger | Approved | ✅ | BehaviourTreeComponent, BehaviourTreeVisualDebugger, NodeVisit | — |
@@ -51,13 +88,18 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diabugdetection | Approved | — | — | no Public Interfaces |
 | diacamera2d | Done | ✅ | Camera2D, ViewportTransform, CameraRegistry2D, ICameraBehaviour, CameraBehaviourRegistry | — |
 | diacamera3d | Unknown | — | — | no Public Interfaces |
+| diacellfieldbake | Unknown | ❌ | — | BakeParams, BakeInputs, BakedFields |
+| diacellhistory | Unknown | — | — | no Public Interfaces |
+| diacelllayers | Unknown | — | — | no Public Interfaces |
 | diacli | Unknown | — | — | no Public Interfaces |
 | diacondition | Unknown | ✅ | IConditionContext, ConditionRegistry, ConditionOp, ConditionExpr, MockConditionContext | — |
+| diaconsole | Unknown | — | — | no Public Interfaces |
 | diacore | Unknown | — | — | no Public Interfaces |
 | diadata | Unknown | — | — | no Public Interfaces |
 | diadebugdomain | Done | ✅ | IDebugDomain, DiaDebugDomainRegistry | — |
 | diadebugprotocol | Unknown | ⚠️ | MessageType, HandshakeRequest, HandshakeResponse | MessageHeader, SubscribeMessage, CoreMetricsPayload, DataUpdateMessage, EventMessage, CommandRequestMessage, CommandResponseMessage, ErrorMessage |
 | diadebugserver | Unknown | ⚠️ | CoreMetrics, StateSerializer, Subscription, CommandDispatcher | DebugServerModule, SubscriptionManager |
+| diadeferredstep | Unknown | ✅ | IParallelExecutor, IDeferredStep, StepState, DeferredStepScheduler | — |
 | diaeconomy | Done | ✅ | ResourceDefinition, EconomySchema, EconomyInstance, TransactionResult, EconomySystem, PoolChangedEvent, TransactionClampedEvent, TransferCompletedEvent, EconomyObserverSubject, IEconomyObserver | — |
 | diaeconomyinspector | Unknown | ⚠️ | DiaEconomyInspectorPlugin, EconomyInstancesController, EconomyModifiersController, EconomyEventsController, EconomySchemaController | EconomyInstancesSource, EconomyModifiersSource, EconomyEventsSource, EconomySchemaSource |
 | diaeditor | Unknown | ⚠️ | LayoutMode, IEditorPlugin, IEditorPluginFactory, EditorPluginRegistry, ClassName, EditorModel, EditorViewController, EditorView, EditorManifestLoader, PluginEntry, IEditorCommand, CommandHistory, CommandDispatcher, GameConnectionManager, State, WebUIBridge, DockingLayout | ManifestEditorData, ConnectionInfo, ConnectionResult, WebSocketClient |
@@ -125,6 +167,7 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diastatemachinevisualdebugger | Done | ✅ | StateMachineVisualDebugger, CachedGuardResult | — |
 | diasteering | Done | ⚠️ | SteeringAgent, SteeringPipeline, SteeringSystem | SteeringGroup |
 | diasteeringvisualdebugger | Done | ✅ | SteeringSystem, SteeringVisualDebugger | — |
+| diaterrainmap3d | Unknown | ❌ | — | Channel, TerrainMap |
 | diatest | Unknown | — | — | no Public Interfaces |
 | diatestharness | Unknown | — | — | no Public Interfaces |
 | diathreading | Unknown | — | — | no Public Interfaces |
@@ -133,10 +176,23 @@ A symbol is ✅ if it appears anywhere under `Dia/` headers; ⚠️ if absent.
 | diauiultralight | Unknown | — | — | no Public Interfaces |
 | diautilityai | Done | ✅ | CurveShape, ResponseCurve, ScorerDef, ActionDef, GroupConsiderationContext, UtilitySelection, UtilitySet, UtilitySetComponent, UtilityScoreDrawer | — |
 | diautilityaivisualdebugger | Done | ✅ | UtilityAIDebugDomain | — |
+| diavalueschema | Unknown | — | — | no Public Interfaces |
+| diaviewlaunch | Unknown | — | — | no Public Interfaces |
 | diavisualdebugger | Unknown | — | — | no Public Interfaces |
 | diawebsocket | Unknown | ⚠️ | MessageType, Message, Server, ConnectionState, Client | QueuedMessage |
 | render-backend | Unknown | — | — | no Public Interfaces |
+| stagecatalogue | Unknown | — | — | no Public Interfaces |
+
+## example-app
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
 | example-app | Unknown | — | — | no Public Interfaces |
 | example-system | Unknown | — | — | no Public Interfaces |
+
+## googletests
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
 | googletests | Unknown | — | — | no Public Interfaces |
 | googletestspeed | Unknown | — | — | no Public Interfaces |

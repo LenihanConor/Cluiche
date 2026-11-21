@@ -67,5 +67,4 @@ dependencies:
   forbidden:
     - dia.application
     - dia.assetcatalogue
-    - dia.sfml
 ---

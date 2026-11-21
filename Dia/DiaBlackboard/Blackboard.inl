@@ -37,7 +37,7 @@ namespace Dia { namespace Blackboard {
     T& Blackboard::Register(Dia::Core::StringCRC key)
     {
         DIA_ASSERT(FindSlotIndex(key) == -1, "Blackboard slot already registered");
-        DIA_ASSERT(!mSlots.IsFull(), "Blackboard slot capacity exceeded");
+        DIA_ASSERT(mSlots.Size() < mMaxSlots, "Blackboard slot capacity exceeded");
 
         SlotEntry* entry  = new SlotEntry();
         entry->key        = key;
@@ -73,6 +73,17 @@ namespace Dia { namespace Blackboard {
     }
 
     template<typename T>
+    void Blackboard::Set(Dia::Core::StringCRC key, const T& value)
+    {
+        int index = FindSlotIndex(key);
+        DIA_ASSERT(index != -1, "Blackboard slot not found");
+        SlotEntry* entry = mSlots[static_cast<unsigned int>(index)];
+        DIA_ASSERT(entry->typeTag == Detail::TypeTag<T>(), "Blackboard slot type mismatch");
+        *static_cast<T*>(entry->data) = value;
+        NotifyChanged(key);
+    }
+
+    template<typename T>
     T* Blackboard::TryGet(Dia::Core::StringCRC key)
     {
         int index = FindSlotIndex(key);
@@ -93,6 +104,17 @@ namespace Dia { namespace Blackboard {
         const SlotEntry* entry = mSlots[static_cast<unsigned int>(index)];
         if (entry->typeTag != Detail::TypeTag<T>())
             return nullptr;
+        return static_cast<const T*>(entry->data);
+    }
+
+    template<typename T>
+    const T* Blackboard::Lookup(Dia::Core::StringCRC key) const
+    {
+        const Blackboard* owner = FindOwner(key);
+        if (owner == nullptr)
+            return nullptr;
+        const SlotEntry* entry = owner->mSlots[static_cast<unsigned int>(owner->FindSlotIndex(key))];
+        DIA_ASSERT(entry->typeTag == Detail::TypeTag<T>(), "Blackboard slot type mismatch");
         return static_cast<const T*>(entry->data);
     }
 

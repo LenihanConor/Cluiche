@@ -490,3 +490,14 @@ describe('useBridgeSubscribe — edge cases (iframe)', () => {
         expect(handler).not.toHaveBeenCalled();
     });
 });
+
+import { newFrameReqId } from './useBridge';
+
+describe('newFrameReqId', () => {
+    it('returns unique, non-empty ids', () => {
+        const a = newFrameReqId();
+        const b = newFrameReqId();
+        expect(a).toBeTruthy();
+        expect(a).not.toBe(b);
+    });
+});

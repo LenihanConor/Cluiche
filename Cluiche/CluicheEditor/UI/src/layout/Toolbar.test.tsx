@@ -35,8 +35,10 @@ describe("Toolbar – panel buttons", () => {
 
   it("renders no panel buttons when panels list is empty", () => {
     render(<Toolbar panels={[]} />);
-    // ProjectContextButton + connection button; no panel toggle buttons.
-    expect(screen.queryAllByRole("button")).toHaveLength(2);
+    // Always-present buttons only: Plugin Browser (far left), ProjectContextButton, connection button.
+    // No panel toggle pills.
+    expect(screen.getByTitle("Plugin Browser")).toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toHaveLength(3);
   });
 
   it("shows full panel name on button, not just initial", () => {

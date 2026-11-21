@@ -34,6 +34,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/PickingModule.h"
 #include "Modules/VisualDebuggerModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include <memory>
 #endif
 
@@ -114,6 +115,9 @@ private:
     // Same-PU (SimPU) module refs
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule>          mPickingRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule>   mVisualDebuggerRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule>     mSimQueryHostRef{this};
+    bool                           mShapeCountQuery{ false };
+    bool                           mIntersectionPairsQuery{ false };
     std::unique_ptr<Dia::Geometry2DPicking::HexGridPickable<SpatialElem, kSpatialMax>>     mHexGridPickable;
     std::unique_ptr<Dia::Geometry2DPicking::SpatialGridPickable<SpatialElem, kSpatialMax>> mSpatialGridPickable;
     Dia::Mailbox::SubscriberId     mPickSubscriberId{};

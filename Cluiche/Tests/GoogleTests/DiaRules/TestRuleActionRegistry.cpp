@@ -88,8 +88,9 @@ TEST(DiaRules_ActionRegistry, Register_Duplicate_OverwritesHandler)
     bool firstCalled  = false;
     bool secondCalled = false;
 
+    // Bodies must differ: identical lambdas are folded into one function by Release ICF.
     auto first  = [](void* ctx) { *static_cast<bool*>(ctx) = true; };
-    auto second = [](void* ctx) { *static_cast<bool*>(ctx) = true; };
+    auto second = [](void* ctx) { *static_cast<bool*>(ctx) = false; };
 
     registry.Register(Dia::Core::StringCRC("run"), first);
     registry.Register(Dia::Core::StringCRC("run"), second);
@@ -120,8 +121,8 @@ TEST(DiaRules_ActionRegistry, RegisterTwo_BothFindable)
 {
     Dia::Rules::RuleActionRegistry registry;
 
-    auto handlerA = [](void*) {};
-    auto handlerB = [](void*) {};
+    auto handlerA = [](void* ctx) { *static_cast<int*>(ctx) = 1; };
+    auto handlerB = [](void* ctx) { *static_cast<int*>(ctx) = 2; };
 
     registry.Register(Dia::Core::StringCRC("actionA"), handlerA);
     registry.Register(Dia::Core::StringCRC("actionB"), handlerB);
@@ -136,8 +137,9 @@ TEST(DiaRules_ActionRegistry, RegisterTwo_NoInterference)
 {
     Dia::Rules::RuleActionRegistry registry;
 
-    auto handlerA = [](void*) {};
-    auto handlerB = [](void*) {};
+    // Bodies must differ: identical lambdas are folded into one function by Release ICF.
+    auto handlerA = [](void* ctx) { *static_cast<int*>(ctx) = 1; };
+    auto handlerB = [](void* ctx) { *static_cast<int*>(ctx) = 2; };
 
     registry.Register(Dia::Core::StringCRC("alpha"), handlerA);
     registry.Register(Dia::Core::StringCRC("beta"),  handlerB);

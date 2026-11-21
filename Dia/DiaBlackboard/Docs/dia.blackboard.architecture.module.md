@@ -22,17 +22,25 @@ intent: >
   zero field-collision risk between systems.
 
 responsibilities:
-  - Named typed slot store (Register/Get/TryGet/Has/Unregister)
-  - IBlackboardObserver lifecycle notifications (register/unregister)
+  - Named typed slot store (Register/Get/TryGet/Has/Unregister), local-only reads
+  - Board name (GetName) and constructor slot cap (maxSlots, default 32; exceeding asserts)
+  - Scopes - optional parent chain via SetParent/GetParent (refuses self, cycles and chains over 8 boards)
+  - Chain reads - Lookup<T>, HasInChain, FindOwner (local first, then up the chain, type-checked)
+  - Set<T> writes the local slot only and fires IBlackboardObserver::OnSlotChanged(key) on this board's observers
+  - IBlackboardObserver lifecycle notifications (register/unregister) and defaulted OnSlotChanged
   - BlackboardComponent plain wrapper for entity attachment
-  - GlobalBlackboard singleton for world-state
+  - GlobalBlackboard singleton for world-state (legacy, unused by new code)
   - DIA_LOG_INFO on slot register/unregister
+  - BlackboardInspectorSource reporting name, parent and inherited slots with shadowed flags
   - Test utilities under Testing/ subdirectory
 
 non_responsibilities:
-  - Per-frame mutation notifications (poll-only)
+  - Notifications for writes made through Get/TryGet references (only Set notifies)
+  - Propagating parent slot changes to child board observers
+  - Parent lifetime management (parent must outlive its children)
   - Serialisation of slot contents
-  - Thread safety
+  - Thread safety (SimPU use only)
+  - Removing GlobalBlackboard (kept as debt)
   - Visual debugger widget
 
 dependent_modules: []

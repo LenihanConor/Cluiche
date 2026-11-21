@@ -1,6 +1,8 @@
 {
     "name": "AssetRuntimeTestStage",
     "manifest": "Stages/AssetRuntimeTestStage/misc/ApplicationFlow/asset_runtime_stage.diaapp",
+    "tags": ["test", "assets"],
+    "description": "Asset loading and cache management",
     "config": {
         "path_aliases": {
             "stage_root": "."

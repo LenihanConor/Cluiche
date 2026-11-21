@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <DiaObservation/Trace/TraceFileSink.h>
 #include <DiaObservation/Trace/SpanRecord.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -12,7 +13,7 @@ using namespace Dia::Observation::Trace;
 
 namespace
 {
-    const char* kTraceFilePath = "test_trace_file_sink.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTraceFilePath("test_trace_file_sink.jsonl");
 }
 
 struct TraceFileSinkTest : ::testing::Test

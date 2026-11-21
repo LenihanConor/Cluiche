@@ -34,6 +34,9 @@
     <Filter Include="Quaternion">
       <UniqueIdentifier>{d4e5f6a7-b890-cdef-0123-456789abcdef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Noise">
+      <UniqueIdentifier>{66d0d91b-edf3-4693-bbe0-6cd64ea9af97}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vector\Vector2D.h">
@@ -112,6 +115,36 @@
     <ClInclude Include="Core\SplineBasis.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\RandomStream.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\RandomStreamManager.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\Noise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\NoiseHash.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\ValueNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\GradientNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\WorleyNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\SimplexNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\Noise3D.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
+    <ClInclude Include="Noise\FractalNoise.h">
+      <Filter>Noise</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp">
@@ -174,6 +207,33 @@
     <ClCompile Include="Quaternion\Quaternion.cpp">
       <Filter>Quaternion</Filter>
     </ClCompile>
+    <ClCompile Include="Core\RandomStream.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\RandomStreamManager.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\ValueNoise.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\GradientNoise.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\WorleyNoise.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\SimplexNoise.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <ClCompile Include="Noise\Noise3D.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
+    <None Include="Noise\FractalNoise.inl">
+      <Filter>Noise</Filter>
+    </None>
+    <ClCompile Include="Noise\FractalNoise.cpp">
+      <Filter>Noise</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl">
@@ -183,6 +243,9 @@
       <Filter>Vector\Source</Filter>
     </None>
     <None Include="Core\Angle.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\RandomStream.inl">
       <Filter>Core\Source</Filter>
     </None>
     <None Include="Core\CoreMaths.inl">

@@ -1,0 +1,37 @@
+{
+  "format": "dia.ramps", "version": 1,
+  "ramps": [
+    { "id": "sequential.green", "kind": "continuous", "stops": [
+      { "t": 0.0,   "colour": "#f7fcf5" }, { "t": 0.125, "colour": "#e5f5e0" }, { "t": 0.25,  "colour": "#c7e9c0" },
+      { "t": 0.375, "colour": "#a1d99b" }, { "t": 0.5,   "colour": "#74c476" }, { "t": 0.625, "colour": "#41ab5d" },
+      { "t": 0.75,  "colour": "#238b45" }, { "t": 0.875, "colour": "#006d2c" }, { "t": 1.0,   "colour": "#00441b" } ] },
+    { "id": "sequential.blue", "kind": "continuous", "stops": [
+      { "t": 0.0,   "colour": "#f7fbff" }, { "t": 0.125, "colour": "#deebf7" }, { "t": 0.25,  "colour": "#c6dbef" },
+      { "t": 0.375, "colour": "#9ecae1" }, { "t": 0.5,   "colour": "#6baed6" }, { "t": 0.625, "colour": "#4292c6" },
+      { "t": 0.75,  "colour": "#2171b5" }, { "t": 0.875, "colour": "#08519c" }, { "t": 1.0,   "colour": "#08306b" } ] },
+    { "id": "sequential.heat", "kind": "continuous", "stops": [
+      { "t": 0.0,   "colour": "#ffffcc" }, { "t": 0.125, "colour": "#ffeda0" }, { "t": 0.25,  "colour": "#fed976" },
+      { "t": 0.375, "colour": "#feb24c" }, { "t": 0.5,   "colour": "#fd8d3c" }, { "t": 0.625, "colour": "#fc4e2a" },
+      { "t": 0.75,  "colour": "#e31a1c" }, { "t": 0.875, "colour": "#bd0026" }, { "t": 1.0,   "colour": "#800026" } ] },
+    { "id": "sequential.grey", "kind": "continuous", "stops": [
+      { "t": 0.0,   "colour": "#ffffff" }, { "t": 0.125, "colour": "#f0f0f0" }, { "t": 0.25,  "colour": "#d9d9d9" },
+      { "t": 0.375, "colour": "#bdbdbd" }, { "t": 0.5,   "colour": "#969696" }, { "t": 0.625, "colour": "#737373" },
+      { "t": 0.75,  "colour": "#525252" }, { "t": 0.875, "colour": "#252525" }, { "t": 1.0,   "colour": "#000000" } ] },
+    { "id": "sequential.purple", "kind": "continuous", "stops": [
+      { "t": 0.0,   "colour": "#fcfbfd" }, { "t": 0.125, "colour": "#efedf5" }, { "t": 0.25,  "colour": "#dadaeb" },
+      { "t": 0.375, "colour": "#bcbddc" }, { "t": 0.5,   "colour": "#9e9ac8" }, { "t": 0.625, "colour": "#807dba" },
+      { "t": 0.75,  "colour": "#6a51a3" }, { "t": 0.875, "colour": "#54278f" }, { "t": 1.0,   "colour": "#3f007d" } ] },
+    { "id": "sequential.terrain", "kind": "continuous", "stops": [
+      { "t": 0.0,  "colour": "#3b6fa8" }, { "t": 0.15, "colour": "#8fc1d9" }, { "t": 0.3, "colour": "#6aa56a" },
+      { "t": 0.5,  "colour": "#c9c27a" }, { "t": 0.7,  "colour": "#a07848" }, { "t": 0.85, "colour": "#7a5a40" },
+      { "t": 1.0,  "colour": "#f5f5f5" } ] },
+    { "id": "diverging.blue_red", "kind": "continuous", "stops": [
+      { "t": 0.0, "colour": "#053061" }, { "t": 0.1, "colour": "#2166ac" }, { "t": 0.2, "colour": "#4393c3" },
+      { "t": 0.3, "colour": "#92c5de" }, { "t": 0.4, "colour": "#d1e5f0" }, { "t": 0.5, "colour": "#f7f7f7" },
+      { "t": 0.6, "colour": "#fddbc8" }, { "t": 0.7, "colour": "#f5ad8d" }, { "t": 0.8, "colour": "#d96b59" },
+      { "t": 0.9, "colour": "#ba2f40" }, { "t": 1.0, "colour": "#67001f" } ] },
+    { "id": "categorical.12", "kind": "categorical", "colours": [
+      "#e9ea86", "#c826d4", "#6bc4e9", "#41ebc4", "#7a8d69", "#271e74",
+      "#6f291f", "#263042", "#dc6c26", "#a5eb1e", "#b25792", "#211eeb" ] }
+  ]
+}

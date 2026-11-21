@@ -1,0 +1,1 @@
+{"lines":[{"t":1.500,"level":"DEBUG","channel":"Debug","msg":"debug detail line"},{"t":2.250,"level":"INFO","channel":"Boot","msg":"started \"app\" at C:\\games"},{"t":3.000,"level":"WARN","channel":"Physics","msg":"<b>slow</b> step & more"},{"t":4.125,"level":"ERROR","channel":"Assets","msg":"failed to load <img src=x onerror=1>"}]}

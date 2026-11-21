@@ -290,7 +290,8 @@ Engine modules available:
 - DiaUI / DiaUIAwesomium / DiaUICEF / DiaUIUltralight — UI systems
 - DiaApplicationFlow — ProcessingUnit, Phase, Module lifecycle
 - DiaAPI — command/plugin framework (DiaAPI plugins)
-- DiaSFML — SFML integration layer
+- DiaSDL — SDL3 window and input backend
+- DiaBgfx / DiaBgfx3D — bgfx 2D and 3D renderer
 - DiaLogger — logging channels and sinks
 - DiaRigidBody2D — 2D rigid-body physics
 - DiaSoftBody2D — 2D soft-body physics (PBD)

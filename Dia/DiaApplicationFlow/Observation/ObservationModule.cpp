@@ -1,5 +1,7 @@
 #include "ObservationModule.h"
 
+#include <DiaApplicationFlow/IApplicationControl.h>
+
 #include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/DebugOutputSink.h>
@@ -7,7 +9,10 @@
 #include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Config/ObservationConfigLoader.h>
+#include <DiaObservation/Profile/PerfSummary.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 
+#include <chrono>
 #include <cstring>
 #include <cstdio>
 
@@ -15,6 +20,14 @@
 #include <windows.h>
 
 namespace Dia { namespace ApplicationFlow {
+
+namespace {
+    int64_t NowNs()
+    {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+    }
+}
 
 ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId,
                                      const char* appName,
@@ -45,6 +58,7 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
 {
     Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
+    Dia::Observation::Perf::PerfMarkers::RegisterThread();   // Main PU thread
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
         logger.RegisterSink(mOwnedSinks[i]);
@@ -75,6 +89,12 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
     Dia::Observation::ObservationConfigLoader::Load(obsConfigPath, obsConfig);
 
     ApplyConfigOverrides(obsConfig);
+    mPerfEnabled = obsConfig.perfConfig.perfEnabled;
+    if (mPerfEnabled && obsConfig.perfConfig.perfExitSeconds > 0)
+    {
+        mPerfExitTimer.Arm(obsConfig.perfConfig.perfExitSeconds, NowNs());
+        DIA_LOG_INFO("Application", "ObservationModule: --perf exit armed for %u s", static_cast<unsigned>(obsConfig.perfConfig.perfExitSeconds));
+    }
 
     if (!mSessionManager.Start(config, obsConfig))
     {
@@ -85,6 +105,24 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
         DIA_LOG_INFO("Application", "ObservationModule session: %s", mSessionManager.GetSessionId());
     }
 
+    // Perf Inspector A3c: plain pointer pass of the session's trip reporter to every PU.
+    if (GetApplication() != nullptr)
+        GetApplication()->SetTripReporter(mSessionManager.GetTripReporter());
+
+    // Perf Inspector A4a: apply trip detection config to all PUs
+    if (GetApplication() != nullptr)
+    {
+        // Convert ObservationConfig::PerfConfig to Dia::Observation::Profile::TripConfig
+        Dia::Observation::Profile::TripConfig tripConfig;
+        tripConfig.tripFrames    = obsConfig.perfConfig.tripFrames;
+        tripConfig.tripFactor    = obsConfig.perfConfig.tripFactor;
+        tripConfig.rearmFrames   = obsConfig.perfConfig.rearmFrames;
+        tripConfig.minIntervalMs = static_cast<double>(obsConfig.perfConfig.minIntervalMs);
+        tripConfig.budgetScale   = obsConfig.perfConfig.budgetScale;
+
+        GetApplication()->SetTripConfig(tripConfig);
+    }
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
@@ -92,6 +130,12 @@ void ObservationModule::DoUpdate(float dt)
 {
     mSessionManager.Tick(dt);
     mSessionManager.IncrementFrameCount();
+
+    if (mPerfExitTimer.ShouldExit(NowNs()) && GetApplication() != nullptr)
+    {
+        DIA_LOG_INFO("Application", "ObservationModule: --perf duration elapsed, requesting shutdown");
+        GetApplication()->RequestShutdown();
+    }
 }
 
 Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
@@ -101,11 +145,26 @@ Dia::ApplicationFlow::StopResult ObservationModule::DoStop()
     Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.Stop();
 
+    if (GetApplication() != nullptr)
+        GetApplication()->SetTripReporter(nullptr);
+
+    // Perf Inspector A4b: one-shot perf-summary.json, before the session directory is finalised.
+    // File I/O happens here on the stopping thread, never on a PU tick.
+    if (mPerfEnabled && GetApplication() != nullptr)
+    {
+        Dia::Observation::Profile::PerfSummary summary;
+        GetApplication()->CollectPerfSummary(summary);
+        if (Dia::Observation::Profile::WritePerfSummaryIfEnabled(mPerfEnabled, summary, mSessionManager.GetSessionDirectory()))
+            DIA_LOG_INFO("Application", "ObservationModule wrote perf-summary.json (%u units)", static_cast<unsigned>(summary.units.size()));
+        else
+            DIA_LOG_ERROR("Application", "ObservationModule: failed to write perf-summary.json");
+    }
     mSessionManager.Stop();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
         logger.UnregisterSink(mOwnedSinks[i]);
 
+    Dia::Observation::Perf::PerfMarkers::UnregisterThread();
     logger.UnregisterThreadBuffer();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)

@@ -35,7 +35,7 @@ The **Cluiche platform** supports multiple applications, all built on the **Dia 
                          ↓ depends on
 ┌─────────────────────────────────────────────────────────┐
 │  External Dependencies                                   │
-│  - SFML (Graphics/Audio/Input)                          │
+│  - SDL3 (Window/Input), bgfx (Rendering)                │
 │  - JsonCpp (Configuration)                              │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -79,7 +79,7 @@ The Cluiche architecture is guided by these core principles:
 ### 5. Platform Abstraction
 
 - Dia engine abstracts platform-specific details
-- Backend implementations (DiaSFML for SFML)
+- Backend implementations (DiaSDL for window/input, DiaBgfx for rendering)
 - Portable core (DiaCore, DiaMaths)
 - Windows-primary, designed for cross-platform
 
@@ -129,7 +129,7 @@ Modules provide functionality to phases:
 
 | Module | Thread | Purpose |
 |--------|--------|---------|
-| **MainKernelModule** | Main | Time server, input system, SFML window, canvas |
+| **MainKernelModule** | Main | Time server, input system, SDL window, bgfx canvas |
 | **MainUIModule** | Main | UI system initialization |
 | **LevelFactoryModule** | Main | Level registry and factory |
 | **SimTimeServerModule** | Sim | Simulation clock (independent from Main) |
@@ -220,7 +220,7 @@ Rendering abstraction layer:
 - **FrameData** - Graphics command buffer
 - **DebugFrameData** - Debug visualization (visitor pattern)
 
-**Backend:** DiaSFML implements ICanvas via SFML
+**Backend:** DiaBgfx implements ICanvas via bgfx (`Dia::Bgfx::Canvas`; `Dia::Bgfx3D::Canvas3D` for 3D)
 
 **[→ API Documentation](../api/dia/graphics-api.md)**  
 <!-- TODO: Subsystem Deep Dive - see API docs for now -->
@@ -257,7 +257,7 @@ Input abstraction with multiple device support:
 - **Keyboard/Mouse Events** - Standard input events
 - **IInputSource** - Backend input interface
 
-**Backend:** DiaSFML provides SFML input source
+**Backend:** DiaSDL provides the SDL3 input source (`Dia::SDL::InputSource`)
 
 **[→ API Documentation](../api/dia/input-api.md)**
 
@@ -283,22 +283,26 @@ Platform-agnostic window abstraction:
 - **IWindow** - Window interface
 - Window creation, sizing, event handling
 
-**Backend:** DiaSFML provides SFML window implementation
+**Backend:** DiaSDL provides the SDL3 window implementation (`Dia::SDL::Window`)
 
 **[→ API Documentation](../api/dia/window-api.md)**
 
-##### 8. DiaSFML
+##### 8. DiaSDL
 
-**SFML Backend**
+**SDL3 Backend**
 
-SFML integration layer:
+SDL3 window and input layer:
 
-- **RenderWindow** - SFML render target wrapper
-- **InputSource** - SFML input handler
-- **RenderWindowFactory** - Factory for SFML windows
-- Type conversion utilities (Dia ↔ SFML)
+- **Window** - SDL3 window implementing `IWindow` and `IInputSource`
+- **WindowFactory** - Creates and destroys SDL3 windows (`SDL_Init` / `SDL_Quit`)
+- **InputSource** - SDL event polling and key translation to `Dia::Input::EKey`
 
-**[→ API Documentation](../api/dia/sfml-api.md)**
+##### 8b. DiaBgfx / DiaBgfx3D
+
+**bgfx Rendering Backend**
+
+- **Canvas** (`Dia::Bgfx::Canvas`) - `ICanvas` implementation for sprites, debug primitives, UI overlay and ImGui
+- **Canvas3D** (`Dia::Bgfx3D::Canvas3D`) - extends `Canvas` with 3D mesh passes
 
 ##### 9-13. Additional Subsystems
 
@@ -317,9 +321,9 @@ SFML integration layer:
 
 | Library | Version | Purpose | Usage |
 |---------|---------|---------|-------|
-| **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML backend, primary rendering |
+| **SDL3** | 3.x | Windowing and input | DiaSDL backend |
+| **bgfx** | - | Rendering | DiaBgfx / DiaBgfx3D, the only renderer |
 | **JsonCpp** | master | JSON parsing and serialization | Configuration files, save/load |
-| **Webix** | Multiple | JavaScript UI framework | UI pages, web console |
 | **VisJS** | - | Data visualization | Debugging visualizations |
 
 **[→ External dependencies details](external-dependencies.md)**  
@@ -341,7 +345,7 @@ Main Thread
 
 Render Thread
     ├─ Read SimToRenderFrameStream (graphics commands)
-    ├─ Render to SFML canvas
+    ├─ Render to bgfx canvas
     └─ Display at 60 FPS (TimeThreadLimiter)
 
 Sim Thread

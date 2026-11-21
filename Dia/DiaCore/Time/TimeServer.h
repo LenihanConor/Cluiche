@@ -38,13 +38,20 @@ namespace Dia
 
 			void					SetTimeScale( float scale );
 			void					AdjustTimeScale( float adjScale );
+			void					SetTimeScaleImmediate( float scale );	// Applies at once, bypassing the one-tick queue. For restoring saved state only.
 
 			void					Pause();
 			void					Resume();
 			bool					IsPaused() const;
 
 			void					Step(TimeRelative step);
-			void					AdvanceTo(TimeAbsolute target);
+			void					AdvanceTo(TimeAbsolute target);	// Forward-only: ignored if target <= current time
+
+			// Rewind-capable; for restoring saved state only. Gameplay must use AdvanceTo/Step.
+			// Sets the clock to t (earlier or later). mLastTime is also set to t so GetLastStep()
+			// is zero, and the tick counter is incremented so tick-change observers see an update.
+			// Pause and time-scale state are untouched.
+			void					SetTime(TimeAbsolute t);
 
 		private:
 			TimeAbsolute			mTime;						// What is the current time for the server, this increments in steps

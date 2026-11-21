@@ -40,7 +40,6 @@ vi.mock('./StagesTab', () => ({ StagesTab: () => <div>stages-tab-stub</div> }));
 vi.mock('./PUInspector', () => ({ PUInspector: () => <div>pu-inspector-stub</div> }));
 vi.mock('./StageConfiguration', () => ({ StageConfiguration: () => <div>stage-config-stub</div> }));
 vi.mock('./ValidationBarV2', () => ({ ValidationBarV2: () => <div data-testid="validation-bar">validation-bar-stub</div> }));
-vi.mock('./LiveConnectionButton', () => ({ LiveConnectionButton: () => <div>live-button-stub</div> }));
 vi.mock('./LiveTransitionPanel', () => ({ LiveTransitionPanel: () => <div>transition-panel-stub</div> }));
 
 import { AppV2 } from './AppV2';

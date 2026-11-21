@@ -1,0 +1,87 @@
+{
+  "description": "A defaults file whose values match every default is clean.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.ecology_parameters",
+      "entries": [
+        {
+          "key": "grazing.rate",
+          "kind": "parameter",
+          "label": "grazing.rate",
+          "description": "d",
+          "type": "float",
+          "min": 0,
+          "max": 2,
+          "default": 1
+        },
+        {
+          "key": "grazing.juvenile_rate_scale",
+          "kind": "parameter",
+          "label": "grazing.juvenile_rate_scale",
+          "description": "d",
+          "type": "float"
+        },
+        {
+          "key": "mode",
+          "kind": "parameter",
+          "label": "mode",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "fast"
+            },
+            {
+              "id": "slow"
+            }
+          ],
+          "default": "fast"
+        },
+        {
+          "key": "count",
+          "kind": "parameter",
+          "label": "count",
+          "description": "d",
+          "type": "int",
+          "min": 1
+        },
+        {
+          "key": "enabled",
+          "kind": "parameter",
+          "label": "enabled",
+          "description": "d",
+          "type": "bool",
+          "default": true
+        },
+        {
+          "key": "name",
+          "kind": "parameter",
+          "label": "name",
+          "description": "d",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/Ecology/ecology_parameters.json",
+      "pack": false,
+      "content": {
+        "format": "cow.ecology_parameters",
+        "version": 1,
+        "grazing": {
+          "rate": 1,
+          "juvenile_rate_scale": 0.5
+        },
+        "mode": "fast",
+        "count": 3,
+        "enabled": true,
+        "name": "x"
+      }
+    }
+  ],
+  "expected": []
+}

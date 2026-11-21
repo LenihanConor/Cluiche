@@ -7,7 +7,9 @@ namespace Dia::Pathfinding {
     struct PathResult {
         bool  success   = false;
         float totalCost = 0.0f;
-        Dia::Core::Containers::DynamicArrayC<CellCoord, 256> cells;
+        // FindPath reports failure (success == false) when the route is longer than this.
+        static constexpr unsigned int kMaxCells = 256;
+        Dia::Core::Containers::DynamicArrayC<CellCoord, kMaxCells> cells;
 
         void ToWorldPositions(float cellSize,
                               Dia::Core::Containers::DynamicArrayC<Dia::Maths::Vector2D, 256>& outPositions) const;

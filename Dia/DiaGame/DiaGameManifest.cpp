@@ -22,6 +22,7 @@ namespace Dia
 			, imports(other.imports)
 			, config(other.config)
 			, rawConfig(other.rawConfig)
+			, editorManifests(other.editorManifests)
 		{
 			other.rawConfig = nullptr;
 		}
@@ -35,6 +36,7 @@ namespace Dia
 				version = other.version;
 				imports = other.imports;
 				config = other.config;
+				editorManifests = other.editorManifests;
 				rawConfig = other.rawConfig;
 				other.rawConfig = nullptr;
 			}

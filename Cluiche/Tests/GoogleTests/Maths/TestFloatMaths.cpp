@@ -173,7 +173,7 @@ TEST(FloatMaths, FSquareRoot_Zero_ReturnsZero)
 
 TEST(FloatMaths, FSquareRoot_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(Dia::Maths::SquareRoot(-1.0f), ".*");
+    DIA_EXPECT_DEATH(Dia::Maths::SquareRoot(-1.0f), ".*");
 }
 
 // ==============================================================================
@@ -189,12 +189,12 @@ TEST(FloatMaths, FLog_Two_ReturnsNaturalLog)
 
 TEST(FloatMaths, FLog_Zero_Asserts)
 {
-    EXPECT_DEATH(FLog(0.0f), ".*");
+    DIA_EXPECT_DEATH(FLog(0.0f), ".*");
 }
 
 TEST(FloatMaths, FLog_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(FLog(-1.0f), ".*");
+    DIA_EXPECT_DEATH(FLog(-1.0f), ".*");
 }
 
 // ==============================================================================
@@ -210,12 +210,12 @@ TEST(FloatMaths, FLog10_Two_ReturnsLog10)
 
 TEST(FloatMaths, FLog10_Zero_Asserts)
 {
-    EXPECT_DEATH(FLog10(0.0f), ".*");
+    DIA_EXPECT_DEATH(FLog10(0.0f), ".*");
 }
 
 TEST(FloatMaths, FLog10_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(FLog10(-1.0f), ".*");
+    DIA_EXPECT_DEATH(FLog10(-1.0f), ".*");
 }
 
 // ==============================================================================
@@ -231,22 +231,22 @@ TEST(FloatMaths, FLogBase_ThreeBaseTwo_ReturnsLogBaseTwo)
 
 TEST(FloatMaths, FLogBase_ZeroValue_Asserts)
 {
-    EXPECT_DEATH(FLogBase(0.0f, 2.0f), ".*");
+    DIA_EXPECT_DEATH(FLogBase(0.0f, 2.0f), ".*");
 }
 
 TEST(FloatMaths, FLogBase_NegativeValue_Asserts)
 {
-    EXPECT_DEATH(FLogBase(-1.0f, 2.0f), ".*");
+    DIA_EXPECT_DEATH(FLogBase(-1.0f, 2.0f), ".*");
 }
 
 TEST(FloatMaths, FLogBase_ZeroBase_Asserts)
 {
-    EXPECT_DEATH(FLogBase(2.0f, 0.0f), ".*");
+    DIA_EXPECT_DEATH(FLogBase(2.0f, 0.0f), ".*");
 }
 
 TEST(FloatMaths, FLogBase_NegativeBase_Asserts)
 {
-    EXPECT_DEATH(FLogBase(2.0f, -1.0f), ".*");
+    DIA_EXPECT_DEATH(FLogBase(2.0f, -1.0f), ".*");
 }
 
 // ==============================================================================
@@ -475,7 +475,7 @@ TEST(FloatMaths, FTruncate_ZeroDecimalPlaces_ReturnsInteger)
 
 TEST(FloatMaths, FTruncate_NegativeDecimalPlaces_Asserts)
 {
-    EXPECT_DEATH(FTruncate(1.23456789f, -1), ".*");
+    DIA_EXPECT_DEATH(FTruncate(1.23456789f, -1), ".*");
 }
 
 // ==============================================================================

@@ -4,6 +4,9 @@
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Project/ProjectContext.h>
 
+#include <string>
+#include <vector>
+
 namespace Cluiche
 {
 	namespace Editor
@@ -27,6 +30,12 @@ namespace Cluiche
 
 			Dia::Editor::EditorModel& GetModel() { return mModel; }
 			const Dia::Editor::EditorModel& GetModel() const { return mModel; }
+
+			// Default game-scope discovery roots when editor.cluicheproj has no "game_roots": the deployed
+			// "<exeDir>/assets" plus, when it exists, the source Assets dir of the repo layout
+			// Cluiche/bin/CluicheEditor/<cfg>/x64/ -> "<exeDir>/../../../../Assets". The source root keeps the
+			// `..` segments (NormalizeGamePath resolves them, so game ids match File>Open / --project).
+			static void ComputeDefaultGameRoots(const char* exeDir, std::vector<std::string>& outRoots);
 
 			void SetProjectPath(const char* path);
 			const char* GetProjectPath() const;

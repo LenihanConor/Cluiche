@@ -75,8 +75,20 @@ namespace Dia
 		{
 			if(string!=NULL)
 			{
-				Dia::Core::MemoryCopy(mString, string, sizeof(mString));
-				mString[sizeof(mString) - 1] = '\0';
+				// Copy only up to the source terminator: the source may be a short literal.
+				unsigned int length = 0;
+				while (length < sizeof(mString) - 1 && string[length] != '\0')
+				{
+					++length;
+				}
+				if (length > 0)
+				{
+					Dia::Core::MemoryCopy(mString, string, length);
+				}
+				for (unsigned int i = length; i < sizeof(mString); ++i)
+				{
+					mString[i] = '\0';
+				}
 			}
 			else
 			{

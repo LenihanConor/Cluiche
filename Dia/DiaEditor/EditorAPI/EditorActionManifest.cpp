@@ -1,11 +1,31 @@
 #include <DiaEditor/EditorAPI/EditorActionManifest.h>
 #include <DiaCore/Core/Assert.h>
+#include <cmath>
 #include <cstring>
 
 namespace Dia
 {
 	namespace Editor
 	{
+		Json::Value EditorActionParamToJson(const EditorActionParam& param)
+		{
+			Json::Value pj(Json::objectValue);
+			pj["name"]        = param.name        ? param.name        : "";
+			pj["type"]        = param.type        ? param.type        : "string";
+			pj["required"]    = param.required;
+			pj["description"] = param.description ? param.description : "";
+			if (param.unit != nullptr && param.unit[0] != '\0') pj["unit"] = param.unit;
+			// Range is omitted when either bound is NaN/inf: JSON has no representation for them
+			// (jsoncpp would emit invalid text such as 1e+9999).
+			if (param.hasRange && std::isfinite(param.min) && std::isfinite(param.max))
+			{
+				pj["min"] = param.min;
+				pj["max"] = param.max;
+			}
+			if (param.enumValues != nullptr) pj["values"] = param.enumValues;
+			return pj;
+		}
+
 		void EditorActionManifest::Add(const EditorActionEntry& entry)
 		{
 			DIA_ASSERT(entry.name != Dia::Core::StringCRC(), "EditorActionManifest::Add - entry.name must not be default StringCRC");

@@ -1,0 +1,58 @@
+{
+  "description": "A record lacks the configured label field: schema.values-from-missing-field naming the record.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.test",
+      "entries": [
+        {
+          "key": "biomeIndex",
+          "kind": "field",
+          "label": "Biome",
+          "description": "d",
+          "type": "enum",
+          "valuesFrom": {
+            "format": "cow.biomes",
+            "records": "biomes",
+            "id": "id",
+            "label": "name"
+          },
+          "default": "forest"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/biomes.json",
+      "pack": false,
+      "content": {
+        "format": "cow.biomes",
+        "version": 1,
+        "biomes": [
+          {
+            "id": "forest",
+            "name": "Forest"
+          },
+          {
+            "id": "bog"
+          }
+        ]
+      }
+    }
+  ],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "schema.values-from-missing-field",
+      "file": "schemas[0]",
+      "key": "biomeIndex",
+      "path": "valuesFrom",
+      "record": null,
+      "messageContains": "biomes[1]",
+      "suggestion": null
+    }
+  ]
+}

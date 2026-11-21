@@ -20,6 +20,8 @@ protected:
     unsigned int CollectAndHash(Json::Value& payload) override;
 
 private:
+    Json::Value MakeSlotJson(Dia::Core::StringCRC key, const void* typeTag, const void* data) const;
+
     const Dia::Blackboard::BlackboardRegistry& mRegistry;
 };
 

@@ -34,6 +34,12 @@
     <Filter Include="Capture\ThirdParty">
       <UniqueIdentifier>{bc2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Job">
+      <UniqueIdentifier>{3ed7f237-14af-449d-a255-8e0428bfb82e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Perf">
+      <UniqueIdentifier>{245303f1-562c-4f7d-bfb2-1f5be6c6a124}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log\Logger.cpp">
@@ -119,6 +125,63 @@
     </ClCompile>
     <ClCompile Include="Capture\CaptureManager.cpp">
       <Filter>Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="Job\JobObserver.cpp">
+      <Filter>Job</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\UnitTimingTable.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\TripDetector.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\TripRecord.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\TripReporter.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\PerfSummary.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Perf\PerfMarkers.cpp">
+      <Filter>Perf</Filter>
+    </ClCompile>
+    <ClCompile Include="Perf\LatencyProbe.cpp">
+      <Filter>Perf</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\CoarseRing.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\CoarseChunkBuilder.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\CoarseChunkAssembler.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\PerfWindowPacker.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\PerfTimingStats.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\JobTimingTable.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\JobChunkBuilder.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\JobChunkAssembler.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Trace\SpanChunkSink.cpp">
+      <Filter>Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="Trace\ChainBuilder.cpp">
+      <Filter>Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\ChannelNameAnnounce.cpp">
+      <Filter>Profile</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -276,6 +339,90 @@
     </ClInclude>
     <ClInclude Include="Metric\JobSystemMetricsAdapter.h">
       <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\MetricInfo.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Job\JobInbox.h">
+      <Filter>Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Job\JobObserver.h">
+      <Filter>Job</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\UnitTimingTable.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripDetector.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripReporter.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfSummary.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfExitTimer.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Perf\PerfMarkers.h">
+      <Filter>Perf</Filter>
+    </ClInclude>
+    <ClInclude Include="Perf\LatencyProbe.h">
+      <Filter>Perf</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseRing.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunkBuilder.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\CoarseChunkAssembler.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfWindowPacker.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\PerfTimingStats.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobTimingTable.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunkBuilder.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\JobChunkAssembler.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\TripChunk.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\SpanChunk.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\SpanChunkSink.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\ChainBuilder.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\UniqueTestPath.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\StepSummaryRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ChannelNameAnnounce.h">
+      <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

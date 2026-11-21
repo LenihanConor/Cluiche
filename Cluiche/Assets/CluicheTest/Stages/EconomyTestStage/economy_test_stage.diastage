@@ -1,6 +1,8 @@
 {
     "name": "EconomyTestStage",
     "manifest": "Stages/EconomyTestStage/misc/ApplicationFlow/economy_test_stage.diaapp",
+    "tags": ["test", "economy"],
+    "description": "Trade, resources and value systems",
     "config": {
         "path_aliases": {
             "stage_root": "."

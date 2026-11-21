@@ -1,0 +1,44 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.params",
+  "entries": [
+    {
+      "key": "growth_rate",
+      "kind": "parameter",
+      "label": "Growth rate",
+      "description": "How fast a plant grows.",
+      "hint": "Higher is faster.",
+      "unit": "m/day",
+      "type": "float",
+      "min": 0,
+      "max": 10,
+      "default": 1.5,
+      "affects": ["biomass"],
+      "related": ["decay_rate"],
+      "source": "conf.params.json",
+      "unique": false,
+      "required": true,
+      "ui": { "group": "Growth", "step": 0.1, "decimals": 2, "ramp": "viridis", "layer": "growth", "hidden": false, "format": "%.2f", "colour": "#00ff00", "glyph": "g", "hotkey": "G", "delta_ramp": "diverging" },
+      "history": { "track": true, "group": "growth" }
+    },
+    {
+      "key": "max_age",
+      "kind": "parameter",
+      "label": "Max age",
+      "description": "Lifespan in days.",
+      "type": "int",
+      "min": 1,
+      "max": 1000,
+      "default": 100
+    },
+    {
+      "key": "enabled",
+      "kind": "parameter",
+      "label": "Enabled",
+      "description": "Master switch.",
+      "type": "bool",
+      "default": true
+    }
+  ]
+}

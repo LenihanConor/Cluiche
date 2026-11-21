@@ -13,7 +13,7 @@ namespace Dia
 		/// \brief Visitor interface for processing EntityFrameData
 		///
 		/// Implement this interface to traverse and render entity
-		/// frame data. Backend implementations (SFML, DirectX, etc.)
+		/// frame data. Backend implementations (bgfx, etc.)
 		/// provide concrete visitors.
 		////////////////////////////////////////////////////////////
 		class EntityFrameDataVisitor

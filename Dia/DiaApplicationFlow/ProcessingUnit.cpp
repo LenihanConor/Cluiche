@@ -11,8 +11,18 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Profile/Profiler.h>
+#include <DiaObservation/Profile/TripReporter.h>
+#include <DiaObservation/Profile/CoarseChunk.h>
+#include <DiaObservation/Profile/CoarseChunkBuilder.h>
+#include <DiaObservation/Profile/JobChunk.h>
+#include <DiaObservation/Job/JobObserver.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/Event.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Trace/Tracer.h>
 
 #include <chrono>
 #include <string>
@@ -42,6 +52,21 @@ namespace Dia { namespace ApplicationFlow {
         else if (instanceId == Dia::Core::StringCRC("RenderPU")) mAffinity = PUAffinity::kRender;
         else                                                      mAffinity = PUAffinity::kAny;
 
+        // Profile subject name (one-time; hot path only passes the CRC value).
+        Dia::Observation::Profile::Profiler::RegisterSubjectName(mInstanceId.Value(), mInstanceId.AsChar());
+        
+        // Perf Inspector A1b: initialize chunk builder
+        // Epoch identifies this builder run so Main can tell a restarted stream from a stale chunk.
+        // Low 32 bits of the steady clock at construction, forced nonzero (0 is kNoEpoch).
+        uint32_t chunkEpoch = static_cast<uint32_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+        if (chunkEpoch == Dia::Observation::Profile::CoarseChunk::kNoEpoch)
+            chunkEpoch = 1;
+        mCoarseChunk.Begin(mInstanceId.Value(), mFrequencyHz, chunkEpoch);
+
+        // Perf Inspector task 13: job timing table (storage allocated here, never on the hot path)
+        mJobTable.Init();
+        mJobChunk.Begin(mInstanceId.Value(), chunkEpoch);
+
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
                      mDedicatedThread ? 1 : 0);
@@ -61,6 +86,24 @@ namespace Dia { namespace ApplicationFlow {
         // only ever incremented for kSim PUs.
         mMetricDroppedTicks = Dia::Observation::Metric::MetricRegistry::Instance()
                                   .RegisterCounter(Dia::Core::StringCRC("simtime.accumulator.dropped_ticks"));
+
+        // Perf Inspector A2b: names built once, off the hot path.
+        {
+            std::string name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".catchup_updates";
+            mMetricCatchupUpdates = Dia::Observation::Metric::MetricRegistry::Instance()
+                                        .RegisterCounter(Dia::Core::StringCRC(name.c_str()));
+            mMetricSelfMs = Dia::Observation::Metric::MetricRegistry::Instance()
+                                .RegisterGauge(Dia::Core::StringCRC("perf.self_ms"));
+
+            // Perf Inspector A3c: replaces the per-frame pu.over_budget log line.
+            name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".over_budget_frames";
+            mMetricOverBudgetFrames = Dia::Observation::Metric::MetricRegistry::Instance()
+                                          .RegisterCounter(Dia::Core::StringCRC(name.c_str()));
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -132,6 +175,18 @@ namespace Dia { namespace ApplicationFlow {
 
         entry.module->SetProcessingUnit(this);
 
+        // Per-module EWMA gauge. MetricRegistry has no unregister: registered once here
+        // (same name on stage re-entry returns the existing gauge), zeroed when the module stops.
+        {
+            std::string name = "pu.";
+            name += mInstanceId.AsChar();
+            name += ".module.";
+            name += entry.module->GetInstanceId().AsChar();
+            name += ".ms";
+            entry.metricEwmaMs = Dia::Observation::Metric::MetricRegistry::Instance()
+                                     .RegisterGauge(Dia::Core::StringCRC(name.c_str()));
+        }
+
         ++mModuleCount;
     }
 
@@ -180,16 +235,132 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void ProcessingUnit::RunForwardPass(float deltaTime)
     {
-        // Forward pass: starting/active modules.
+        // Perf Inspector A2b: always on (not gated on profile categories). One steady_clock
+        // read between modules (N+1 reads per pass); results are staged in stack arrays and
+        // recorded after the loop so the table's own cost can be bracketed. No allocation.
+        using Clock = std::chrono::steady_clock;
+        float        ms[kMaxModules];
+        bool         ran[kMaxModules];
+
+        Clock::time_point prev = Clock::now();
+        const Clock::time_point passStart = prev;
+        bool moduleStarting = false;   // any module of this unit in kStarting during the pass (A3: skipped entry)
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
+            ran[i] = false;
             const ModuleState s = mModules[i].module->GetState();
+            if (s == ModuleState::kStarting)
+                moduleStarting = true;
+#ifdef _DEBUG
+            // Paused (perf live control): skip ONLY the kActive update. kStarting still ticks so
+            // start/transition complete; stopping runs in RunReversePass, untouched by pause.
+            if (s == ModuleState::kActive && mPaused[i])
+                continue;
+#endif
             if (s == ModuleState::kStarting || s == ModuleState::kActive)
             {
                 ModuleEntry& entry = mModules[i];
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+                const Clock::time_point now = Clock::now();
+                ms[i]  = std::chrono::duration<float, std::milli>(now - prev).count();
+                ran[i] = true;
+                prev   = now;
             }
         }
+
+        // Table writes (bracketed for perf.self_ms; one extra clock read at the end).
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            if (!ran[i]) continue;
+            mTimingTable.RecordModule(i, mModules[i].module->GetInstanceId().Value(), ms[i]);
+            if (mModules[i].metricEwmaMs)
+                mModules[i].metricEwmaMs->Set(static_cast<double>(mTimingTable.GetEwma(i)));
+        }
+        const float unitTickMs = std::chrono::duration<float, std::milli>(prev - passStart).count();
+        mTimingTable.RecordUnitTick(unitTickMs);
+        mTimingTable.CommitEntry();
+
+        
+        // Perf Inspector A1b: record into chunk builder and send when ready
+        {
+            const double nowMs = std::chrono::duration<double, std::milli>(Clock::now().time_since_epoch()).count();
+            
+            // Record per-module ms
+            for (unsigned int i = 0; i < mModuleCount; ++i)
+            {
+                if (!ran[i]) continue;
+                mCoarseChunk.RecordModule(i, mModules[i].module->GetInstanceId().Value(), ms[i]);
+            }
+            mCoarseChunk.RecordUnitTick(unitTickMs);
+            mCoarseChunk.CommitEntry(nowMs);
+            
+            // Send chunk if ready
+            if (mCoarseSink && mCoarseChunk.ShouldFlush(nowMs))
+            {
+                using namespace Dia::Observation::Profile;
+                static const Dia::Core::StringCRC kFrameworkId("$framework");
+                
+                Event<CoarseChunk> wrapped;
+                wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                wrapped.senderCrc   = kFrameworkId.Value();
+                wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                // Task 3b: cumulative counters. Marker drops are the process-wide PerfMarkers total (no per-unit counter exists).
+                const uint64_t markerDrops = Dia::Observation::Perf::PerfMarkers::TotalDropped();
+                mCoarseChunk.SetCumulativeCounters(mTripDetector.GetTripCount(),
+                                                   markerDrops > 0xFFFFFFFFull ? 0xFFFFFFFFu : static_cast<uint32_t>(markerDrops));
+                wrapped.payload     = mCoarseChunk.Take(nowMs);
+                mCoarseSink->Send(wrapped);
+            }
+        }
+
+        // Perf Inspector A3c: one detector observation per committed entry. The budget is the
+        // per-pass target (on Sim a pass is one fixed step, mFrequencyHz is the step rate).
+        {
+            using namespace Dia::Observation::Profile;
+            const float budgetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
+            const double nowMs = std::chrono::duration<double, std::milli>(Clock::now().time_since_epoch()).count();
+            const TripResult trip = mTripDetector.Observe(unitTickMs, budgetMs, moduleStarting, nowMs);
+
+            const uint32_t overTotal = mTripDetector.GetOverBudgetFrames();
+            if (overTotal != mOverBudgetReported)
+            {
+                if (mMetricOverBudgetFrames)
+                    mMetricOverBudgetFrames->Inc(static_cast<uint64_t>(overTotal - mOverBudgetReported));
+                mOverBudgetReported = overTotal;
+            }
+
+            if (trip.tripped)
+            {
+                DIA_PERF_MARK_VALUE("trip", mInstanceId.Value());
+                TripReporter* reporter = mTripReporter.load(std::memory_order_acquire);
+                if (reporter != nullptr || mTripSink != nullptr)
+                {
+#ifdef _DEBUG
+                    const char* buildConfig = "Debug";
+#else
+                    const char* buildConfig = "Release";
+#endif
+                    BuildTripRecord(mTripRecord, mInstanceId.AsChar(), trip, budgetMs, buildConfig, mTimingTable);
+                    if (reporter != nullptr)
+                        reporter->Report(mTripRecord);
+
+                    // Task 3b: one TripChunk per emitted trip (rate limited, never per frame) to the editor stream.
+                    if (mTripSink != nullptr)
+                    {
+                        static const Dia::Core::StringCRC kFrameworkTripId("$framework");
+                        Event<TripChunk> wrappedTrip;
+                        wrappedTrip.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                        wrappedTrip.senderCrc   = kFrameworkTripId.Value();
+                        wrappedTrip.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                        wrappedTrip.payload.unitCrc = mInstanceId.Value();
+                        wrappedTrip.payload.seq     = mTripDetector.GetTripCount();
+                        wrappedTrip.payload.record  = mTripRecord;
+                        mTripSink->Send(wrappedTrip);
+                    }
+                }
+            }
+        }
+        mSelfMsAccum += std::chrono::duration<float, std::milli>(Clock::now() - prev).count();
     }
 
     //--------------------------------------------------------------------------
@@ -203,18 +374,103 @@ namespace Dia { namespace ApplicationFlow {
             {
                 ModuleEntry& entry = mModules[i];
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+                if (mModules[i].module->GetState() != ModuleState::kStopping)
+                {
+                    if (entry.metricEwmaMs)
+                        entry.metricEwmaMs->Set(0.0);   // module finished stopping: zero, leave registered
+                    // A4b (AA9): bank this module's stats so its row survives a later stage change.
+                    Dia::Observation::Profile::PerfModuleRow row;
+                    BuildModuleRow(static_cast<unsigned int>(i), row);
+                    mPerfAccumulator.Upsert(row);
+                }
             }
         }
     }
 
     //--------------------------------------------------------------------------
+    void ProcessingUnit::BuildModuleRow(unsigned int index, Dia::Observation::Profile::PerfModuleRow& out) const
+    {
+        const Module& m = *mModules[index].module;
+        Dia::Observation::Profile::BuildPerfModuleRow(out, mTimingTable, index, m.GetInstanceId().AsChar(), m.GetInstanceId().Value());
+    }
+
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const
+    {
+        using namespace Dia::Observation::Profile;
+        out.units.emplace_back();
+        PerfUnitSummary& u = out.units.back();
+        strncpy_s(u.unit, sizeof(u.unit), mInstanceId.AsChar(), _TRUNCATE);
+
+        const float scale = mTripDetector.GetConfig().budgetScale;
+        const float baseBudget = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
+        u.budgetMs         = baseBudget * (scale > 0.0f ? scale : 1.0f);
+        u.entryCount       = mTimingTable.GetEntryCount();
+        u.unitP50Ms        = mTimingTable.GetUnitP50();
+        u.unitP95Ms        = mTimingTable.GetUnitP95();
+        u.unitMaxMs        = mTimingTable.GetUnitMax();
+        u.unitEwmaMs       = mTimingTable.GetUnitEwma();
+        u.tripCount        = mTripDetector.GetTripCount();
+        u.suppressedCount  = mTripDetector.GetSuppressedCount();
+        u.overBudgetFrames = mTripDetector.GetOverBudgetFrames();
+
+        // Banked rows first (stopped modules), then the live modules' current stats take precedence.
+        u.modules = mPerfAccumulator;
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            PerfModuleRow row;
+            BuildModuleRow(i, row);
+            u.modules.Upsert(row);
+        }
+
+        if (out.buildConfig[0] == '\0')
+        {
+#ifdef _DEBUG
+            strncpy_s(out.buildConfig, sizeof(out.buildConfig), "Debug", _TRUNCATE);
+#else
+            strncpy_s(out.buildConfig, sizeof(out.buildConfig), "Release", _TRUNCATE);
+#endif
+        }
+    }
+
+    //--------------------------------------------------------------------------
+#ifdef _DEBUG
+    void ProcessingUnit::RefreshPauseTable()
+    {
+        if (!mPauseSource) return;
+        const PerfPauseSet* set = mPauseSource->FetchLatest();
+        if (!set || set->generation == mPauseGeneration) return;
+        const PerfPauseSet snap = *set;   // copy: the slot may be overwritten by the Main writer
+        mPauseGeneration = snap.generation;
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            bool paused = false;
+            const uint32_t crc = mModules[i].module->GetInstanceId().Value();
+            for (uint32_t k = 0; k < snap.moduleCount; ++k)
+                if (snap.moduleCrcs[k] == crc) { paused = true; break; }
+            mPaused[i] = paused;
+        }
+    }
+#endif
+
     void ProcessingUnit::Update(float deltaTime)
     {
-        DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_PROFILE_SCOPE_SUBJECT("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow, mInstanceId.Value());
         DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
         // Task 34 — measure tick duration
-        const auto tickStart = std::chrono::high_resolution_clock::now();
+        const auto tickStart = std::chrono::steady_clock::now();
+        mSelfMsAccum = 0.0f;
+        mLastUpdateStepCount = 1;
+
+        // Jobs submitted from this thread during this Update() report to this PU's inbox. Installed for
+        // the duration of Update() only (two thread_local stores), so no thread ever keeps a pointer to an
+        // inbox that outlives the call; this also covers non-dedicated PUs ticked on the Main thread.
+        Dia::Observation::Job::JobObserver::InstallThreadInbox(&mJobInbox);
+
+#ifdef _DEBUG
+        RefreshPauseTable();   // one FrameStream read per Update(); table rebuilt only on a new generation
+#endif
 
         switch (mAffinity)
         {
@@ -263,6 +519,9 @@ namespace Dia { namespace ApplicationFlow {
                         mSimAccumulatorSec = 0.0f;
                     }
                 }
+                mLastUpdateStepCount = ticksThisFrame;
+                if (ticksThisFrame > 1 && mMetricCatchupUpdates)
+                    mMetricCatchupUpdates->Inc();
                 break;   // forward pass already ran above (0..N times) — do not run it again below
             }
             case PUAffinity::kRender:
@@ -285,25 +544,42 @@ namespace Dia { namespace ApplicationFlow {
         // drained above — shutdown sequencing must not stall just because 0 steps drained.
         RunReversePass(deltaTime);
 
+        // Perf Inspector task 13: drain this PU's job inbox once per Update() (bracketed for perf.self_ms).
+        {
+            using Clock = std::chrono::steady_clock;
+            const Clock::time_point jobStart = Clock::now();
+            mJobTable.Drain(mJobInbox, mTickCount);
+            const double nowMs = std::chrono::duration<double, std::milli>(jobStart.time_since_epoch()).count();
+            if (mJobSink && mJobChunk.ShouldFlush(mJobTable, nowMs))
+            {
+                using namespace Dia::Observation::Profile;
+                static const Dia::Core::StringCRC kFrameworkId("$framework");
+                Event<JobChunk> wrapped;
+                wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+                wrapped.senderCrc   = kFrameworkId.Value();
+                wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+                wrapped.payload     = mJobChunk.Take(mJobTable, nowMs);
+                mJobSink->Send(wrapped);
+            }
+            mSelfMsAccum += std::chrono::duration<float, std::milli>(Clock::now() - jobStart).count();
+        }
+
         if (mPostTickFn)
             mPostTickFn();
 
+        Dia::Observation::Job::JobObserver::ClearThreadInbox();
+
         // Task 34 — record elapsed tick time and update gauge
-        const auto tickEnd = std::chrono::high_resolution_clock::now();
+        const auto tickEnd = std::chrono::steady_clock::now();
         mLastTickMs = std::chrono::duration<float, std::milli>(tickEnd - tickStart).count();
         if (mMetricLastTickMs)
             mMetricLastTickMs->Set(static_cast<double>(mLastTickMs));
 
-        ++mTickCount;
+        if (mMetricSelfMs)
+            mMetricSelfMs->Set(static_cast<double>(mSelfMsAccum));
 
-        // Task 35 — warn when tick exceeds target period (skip tick 1: includes module start costs)
-        // 7% tolerance to avoid noise from minor scheduling jitter (e.g. 17ms on a 60Hz/16.7ms budget)
-        const float targetMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
-        if (targetMs > 0.0f && mLastTickMs > targetMs * 1.07f && mTickCount > 1)
-        {
-            DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f",
-                mInstanceId.AsChar(), mLastTickMs, targetMs);
-        }
+        ++mTickCount;
+        // Over-budget detection moved to RunForwardPass (A3c trip detector + pu.<unit>.over_budget_frames).
     }
 
     //--------------------------------------------------------------------------
@@ -328,6 +604,9 @@ namespace Dia { namespace ApplicationFlow {
     void ProcessingUnit::operator()()
     {
         Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+        Dia::Observation::Perf::PerfMarkers::RegisterThread();
+        Dia::Observation::Profile::Profiler::Instance().RegisterNamedThreadScopeBuffer(mInstanceId.AsChar());
+        Dia::Observation::Trace::Tracer::Instance().RegisterThreadSpanBuffer();
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread starting (%.0fHz)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz));
@@ -366,6 +645,9 @@ namespace Dia { namespace ApplicationFlow {
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread exiting",
                      mInstanceId.AsChar());
 
+        Dia::Observation::Trace::Tracer::Instance().UnregisterThreadSpanBuffer();
+        Dia::Observation::Profile::Profiler::Instance().UnregisterThreadScopeBuffer();
+        Dia::Observation::Perf::PerfMarkers::UnregisterThread();
         Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
     }
 

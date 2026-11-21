@@ -31,16 +31,44 @@ Dia::ApplicationFlow::StartResult SimNavigationHandlerModule::DoStart()
 void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     static constexpr unsigned int kMaxPerFrame = 4;
+    if (!mInitialLaunchDone)
+    {
+        // Wait until every Boot module is Active and its services are committed (IsStageReady): AutomationModule registers
+        // the automation service, and its navigation hold, while Boot starts, and issuing before that would queue a
+        // transition the hold then pins forever.  A game without AutomationModule simply has no service to wait for.
+        if (Dia::ApplicationFlow::IApplicationControl* app = GetApplication())
+        {
+            if (app->IsStageReady())
+                mInitialLaunchDone = IssueInitialLaunch(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr)
+                                     != InitialLaunchResult::kNone;
+        }
+    }
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<RenderToSimNavRequest>, kMaxPerFrame> events;
 
     mBootNavInput.Consume(events);
     for (unsigned int i = 0; i < events.Size(); ++i)
     {
         const Dia::Core::StringCRC& target = events[i].payload.target;
+        const Dia::Core::StringCRC& preset = events[i].payload.preset;
         if (target.Value() != 0)
         {
             DIA_LOG_INFO("Application", "SimNavigationHandlerModule: navigate_to('%s') from BootMenu", target.AsChar());
-            Navigate(target);
+            Navigate(target, preset);
+            return;
+        }
+    }
+
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<StageLaunchRequest>, kMaxPerFrame> launches;
+        mLaunchInput.Consume(launches);
+        for (unsigned int i = 0; i < launches.Size(); ++i)
+        {
+            const StageLaunchRequest& request = launches[i].payload;
+            if (request.stage.Value() == 0) { continue; }
+            Dia::ApplicationFlow::IApplicationControl* app = GetApplication();
+            if (!app) { return; }
+            DIA_LOG_INFO("Application", "SimNavigationHandlerModule: launch '%s' from stages.launch", request.stage.AsChar());
+            HandleLaunchRequest(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr, request);
             return;
         }
     }
@@ -50,10 +78,11 @@ void SimNavigationHandlerModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*
     for (unsigned int i = 0; i < events.Size(); ++i)
     {
         const Dia::Core::StringCRC& target = events[i].payload.target;
+        const Dia::Core::StringCRC& preset = events[i].payload.preset;
         if (target.Value() != 0)
         {
             DIA_LOG_INFO("Application", "SimNavigationHandlerModule: navigate_to('%s') from HUD", target.AsChar());
-            Navigate(target);
+            Navigate(target, preset);
             return;
         }
     }
@@ -64,22 +93,78 @@ Dia::ApplicationFlow::StopResult SimNavigationHandlerModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-void SimNavigationHandlerModule::Navigate(const Dia::Core::StringCRC& target)
+void SimNavigationHandlerModule::RouteNavigation(Dia::ApplicationFlow::IApplicationControl& app,
+                                                 Dia::Automation::AutomationService* automation,
+                                                 const Dia::Core::StringCRC& target,
+                                                 const Dia::Core::StringCRC& preset)
 {
-    if (mAutomationService->IsAvailable() && mAutomationService->Get().IsHolding())
+    if (preset.Value() != 0)
+        DIA_LOG_INFO("Application", "preset launch requested (source=nav) stage='%s' preset='%s'", target.AsChar(), preset.AsChar());
+
+    if (automation && automation->IsHolding())
     {
-        mAutomationService->Get().ReleaseNavigationHold(target);
+        automation->ReleaseNavigationHold(target, nullptr, nullptr, preset);
+    }
+    else if (preset.Value() != 0)
+    {
+        app.TransitionTo(target, preset);
     }
     else
     {
-        TransitionTo(target);
+        app.TransitionTo(target);
     }
+}
+
+void SimNavigationHandlerModule::HandleLaunchRequest(Dia::ApplicationFlow::IApplicationControl& app,
+                                                    Dia::Automation::AutomationService* automation,
+                                                    const StageLaunchRequest& request)
+{
+    if (request.stage.Value() == 0)
+        return;
+    RouteNavigation(app, automation, request.stage, request.preset);
+}
+
+SimNavigationHandlerModule::InitialLaunchResult SimNavigationHandlerModule::IssueInitialLaunch(
+    Dia::ApplicationFlow::IApplicationControl& app, Dia::Automation::AutomationService* automation)
+{
+    if (app.GetCurrentStage() != Dia::Core::StringCRC("Boot"))
+        return InitialLaunchResult::kNone;
+
+    Dia::Core::StringCRC stage, preset;
+    if (!app.TakeInitialLaunch(stage, preset))
+        return InitialLaunchResult::kNone;
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> targets;
+    app.GetStageTransitions(Dia::Core::StringCRC("Boot"), targets);
+    bool known = false;
+    for (unsigned int i = 0; i < targets.Size() && !known; ++i) { known = targets[i] == stage; }
+    if (!known)
+    {
+        DIA_LOG_ERROR("Application", "initial launch: stage '%s' is not reachable from Boot; staying at Boot", stage.AsChar());
+        return InitialLaunchResult::kUnknownStage;
+    }
+
+    // An active navigation hold (AutomationModule holds Boot) is released toward the stage by RouteNavigation:
+    // the command line is an explicit request, so it wins over the hold.
+    DIA_LOG_INFO("Application", "initial launch issued: stage='%s' preset='%s'%s", stage.AsChar(), preset.AsChar(),
+                 (automation && automation->IsHolding()) ? " (releasing navigation hold)" : "");
+    RouteNavigation(app, automation, stage, preset);
+    return InitialLaunchResult::kIssued;
+}
+
+void SimNavigationHandlerModule::Navigate(const Dia::Core::StringCRC& target, const Dia::Core::StringCRC& preset)
+{
+    Dia::ApplicationFlow::IApplicationControl* app = GetApplication();
+    if (!app)
+        return;
+    RouteNavigation(*app, mAutomationService->IsAvailable() ? &mAutomationService->Get() : nullptr, target, preset);
 }
 
 void SimNavigationHandlerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mBootNavInput.Connect(app);
     mHUDNavInput.Connect(app);
+    mLaunchInput.Connect(app);
     mAutomationService->Connect(app);
 }
 

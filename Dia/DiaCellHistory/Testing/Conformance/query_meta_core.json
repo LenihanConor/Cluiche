@@ -1,0 +1,71 @@
+{
+  "bands" : [],
+  "gaps" : 
+  {
+    "aggregates" : [],
+    "cells" : [],
+    "events" : []
+  },
+  "groups" : 
+  [
+    {
+      "id" : "world",
+      "label" : "World"
+    },
+    {
+      "id" : "region=north",
+      "label" : "North",
+      "layer" : "region",
+      "value" : "north"
+    },
+    {
+      "id" : "region=centre",
+      "label" : "Centre",
+      "layer" : "region",
+      "value" : "centre"
+    },
+    {
+      "id" : "region=south",
+      "label" : "South",
+      "layer" : "region",
+      "value" : "south"
+    }
+  ],
+  "header" : 
+  {
+    "aggregateFirst" : 0,
+    "app" : "ConformanceFixture",
+    "cellFirst" : 10,
+    "git_commit" : "fixture0",
+    "sampleCount" : 40,
+    "sampleFirst" : 0,
+    "world" : "fixture-world"
+  },
+  "layers" : 
+  [
+    {
+      "first" : 0,
+      "id" : "temp",
+      "kind" : "float",
+      "schemaKey" : "cells/temp"
+    },
+    {
+      "first" : 0,
+      "id" : "rain",
+      "kind" : "float",
+      "schemaKey" : "cells/rain"
+    }
+  ],
+  "next" : 
+  {
+    "offset" : 2,
+    "part" : "layers"
+  },
+  "part" : "core",
+  "snapshots" : [],
+  "structure" : "1528ad42e9c03ffc",
+  "tracked" : 
+  [
+    "temp"
+  ]
+}

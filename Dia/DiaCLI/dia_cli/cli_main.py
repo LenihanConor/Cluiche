@@ -20,12 +20,27 @@ IGNORED = ['.venv', 'dist', 'node_modules', 'tests']
 CLI_CMD_PREFIX = 'cli_'
 
 
+def _is_venv_dir(path: Path) -> bool:
+    """A directory is a virtualenv if it has ``pyvenv.cfg`` at its root.
+
+    Robust regardless of the venv's folder name -- ``IGNORED``'s exact-name
+    match only catches a venv literally named ``.venv``. A differently-named
+    one (``.venv-x64``, ``venv``, a custom-named build env, ...) walks straight
+    through and pollutes command discovery with whatever real ``cli/``-named
+    directories happen to exist deep inside its bundled site-packages (e.g.
+    ``pip/_internal/cli/``, ``markdown_it/cli/``) -- confirmed by an actual
+    session where a differently-named venv did exactly this.
+    """
+    return (path / "pyvenv.cfg").is_file()
+
+
 def _generate_sys_path():
     """Searches for folders named 'cli' and add those folders' parents as packages."""
     def _find_cli_packages(root_path, package_name: str = 'cli'):
         packages = []
         for root, dirs, _ in os.walk(str(root_path), followlinks=True):
-            dirs[:] = [d for d in dirs if d not in IGNORED]
+            root_path_obj = Path(root)
+            dirs[:] = [d for d in dirs if d not in IGNORED and not _is_venv_dir(root_path_obj / d)]
             if package_name not in dirs:
                 continue
             packages.append(Path(root) / package_name)
@@ -133,8 +148,9 @@ class DiaCLI(click.MultiCommand):
         def _find_cli_modules(root_path):
             modules = []
             for root, dirs, files in os.walk(str(root_path), followlinks=True):
-                dirs[:] = [d for d in dirs if d not in IGNORED]
-                root_path = Path(root)
+                walk_root = Path(root)
+                dirs[:] = [d for d in dirs if d not in IGNORED and not _is_venv_dir(walk_root / d)]
+                root_path = walk_root
                 if 'cli' not in root_path.parts:
                     continue
                 modules += [root_path / f for f in files if f.endswith(".py") and not f.startswith('_')]

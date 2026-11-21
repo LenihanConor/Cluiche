@@ -1,6 +1,8 @@
 {
     "name": "GridVisibilityTestStage",
     "manifest": "Stages/GridVisibilityTestStage/misc/ApplicationFlow/grid_visibility_test_stage.diaapp",
+    "tags": ["test", "grid"],
+    "description": "Grid-based visibility calculations",
     "config": {
         "path_aliases": {
             "stage_root": "."

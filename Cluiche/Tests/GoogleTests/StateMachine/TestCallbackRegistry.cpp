@@ -195,26 +195,26 @@ TEST(CallbackRegistry, DoubleFinalizeAsserts)
 {
     CallbackRegistry reg;
     reg.Finalize();
-    EXPECT_DEATH(reg.Finalize(), "");
+    DIA_EXPECT_DEATH(reg.Finalize(), "");
 }
 
 TEST(CallbackRegistry, RegisterActionAfterFinalizeAsserts)
 {
     CallbackRegistry reg;
     reg.Finalize();
-    EXPECT_DEATH(reg.RegisterAction(Dia::Core::StringCRC("run"), SomeAction), "");
+    DIA_EXPECT_DEATH(reg.RegisterAction(Dia::Core::StringCRC("run"), SomeAction), "");
 }
 
 TEST(CallbackRegistry, RegisterGuardAfterFinalizeAsserts)
 {
     CallbackRegistry reg;
     reg.Finalize();
-    EXPECT_DEATH(reg.RegisterGuard(Dia::Core::StringCRC("check"), SomeGuard), "");
+    DIA_EXPECT_DEATH(reg.RegisterGuard(Dia::Core::StringCRC("check"), SomeGuard), "");
 }
 
 TEST(CallbackRegistry, RegisterUpdateAfterFinalizeAsserts)
 {
     CallbackRegistry reg;
     reg.Finalize();
-    EXPECT_DEATH(reg.RegisterUpdate(Dia::Core::StringCRC("tick"), SomeUpdate), "");
+    DIA_EXPECT_DEATH(reg.RegisterUpdate(Dia::Core::StringCRC("tick"), SomeUpdate), "");
 }

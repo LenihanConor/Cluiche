@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{4d2b8f61-7c3e-4a95-b1d0-9e6a2c5f8b17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\WorldGen">
+      <UniqueIdentifier>{dfb30476-4da9-4ee6-8027-93b8bb3feba3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\WorldStep">
+      <UniqueIdentifier>{8359f7bc-5586-43bb-8b42-903881484974}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\GameSpeed">
+      <UniqueIdentifier>{7c4c3b51-79ac-4cf8-9198-d9ee661d7463}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\F2Harness">
+      <UniqueIdentifier>{8110a623-23ee-46e8-bb80-2ab740ba5f39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\BusTools">
+      <UniqueIdentifier>{508029de-5ffb-4b79-b5ae-34273ab11273}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\Plumbing">
+      <UniqueIdentifier>{4de25a96-2206-4514-863e-78db22d3e60e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\FrontEnd">
+      <UniqueIdentifier>{c4d18c74-a17a-4ee2-b5f3-6bff935a2b60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared">
+      <UniqueIdentifier>{b157cd77-a81d-4d7c-bef8-ccbd67f06c87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldGeneration">
+      <UniqueIdentifier>{a9b3affa-4bc7-4de6-a86a-68efa9c62b15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\World">
+      <UniqueIdentifier>{25fba8c1-a150-4234-99ab-0606111edc45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\World\Testing">
+      <UniqueIdentifier>{b1feb5c0-4cb1-404e-b152-c4988238591c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldStep">
+      <UniqueIdentifier>{942fdb40-a5e4-495c-8c20-d89d5eea4732}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldStep\Testing">
+      <UniqueIdentifier>{eabcc382-a860-411e-81f8-34dac53aa998}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\FrontEnd\FrontEndModule.cpp">
+      <Filter>Modules\FrontEnd</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\RandomStreamModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusTools\BusProbeModule.cpp">
+      <Filter>Modules\BusTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BusTools\BusRecorderModule.cpp">
+      <Filter>Modules\BusTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedControllerModule.cpp">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedDebugDomain.cpp">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\SaveLoadModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerModule.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2Fingerprint.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2StreamIndependence.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2Scenario.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2DragonStub.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2PanelModel.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
+      <Filter>Modules\F2Harness</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Plumbing\SnapshotStoreAdapter.cpp">
+      <Filter>Modules\Plumbing</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainLandmass.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainMountains.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRelief.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainDrainage.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainDepthZones.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainValleys.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainClassify.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldShapePreset.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenerationModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldGen\WorldGenViewHost.cpp">
+      <Filter>Modules\WorldGen</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\Sites.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\RegionRepair.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesCorridor.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesRiver.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\RegionsAndSites.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\ValidationTypes.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\NavigationQuery.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\TerrainTableNavigationProfile.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\ReachabilityValidator.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\SiteGuarantees.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldLayoutGuarantee.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\World\BiomeRegistry.cpp">
+      <Filter>Shared\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp">
+      <Filter>Shared\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp">
+      <Filter>Shared\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
+      <Filter>Modules\WorldStep</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
+      <Filter>Modules\FrontEnd</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\RandomStreamModule.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusTools\BusProbeModule.h">
+      <Filter>Modules\BusTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BusTools\BusRecorderModule.h">
+      <Filter>Modules\BusTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\GameSpeedController.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedControllerModule.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedMessages.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedDebugDomain.h">
+      <Filter>Modules\GameSpeed</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\SaveLoadModule.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerModule.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2Fingerprint.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2StreamIndependence.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2Scenario.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2DragonStub.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2PanelModel.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerDebugDomain.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationMessages.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Plumbing\SnapshotStoreAdapter.h">
+      <Filter>Modules\Plumbing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRules.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainLandmass.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainMountains.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRelief.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainDrainage.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainDepthZones.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainValleys.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainClassify.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldShapePreset.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationModule.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\IWorldGenView.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenPointerFrame.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenViewHost.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldGen\WorldGenMirrorRegistrar.h">
+      <Filter>Modules\WorldGen</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainEnums.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Regions.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\Sites.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\PlaceResult.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\RegionPartition.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\RegionRepair.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesCorridor.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesRiver.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NodesFill.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\RegionsAndSites.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\ValidationTypes.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\NavigationQuery.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\TerrainTableNavigationProfile.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\ReachabilityValidator.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\SiteGuarantees.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldLayoutGuarantee.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationReport.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationRun.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldJson.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\WorldFiles.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h">
+      <Filter>Shared\WorldGeneration</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\F2Harness\F2StageResult.h">
+      <Filter>Modules\F2Harness</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\BiomeRegistry.h">
+      <Filter>Shared\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h">
+      <Filter>Shared\World\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\IWorldStepStage.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepConfig.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h">
+      <Filter>Shared\WorldStep\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepChain.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
+      <Filter>Modules\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\IWorldStepListener.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

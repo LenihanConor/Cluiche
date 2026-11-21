@@ -6,10 +6,25 @@
 #include <DiaCore/SimTime/SimTimeContext.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaCore/SimTime/SimTimeDomainRegistry.h>
+#include <DiaObservation/Profile/PerfSummary.h>
+#include <DiaObservation/Profile/TripChunk.h>
+#include <DiaObservation/Profile/TripDetector.h>
+#include <DiaObservation/Profile/TripRecord.h>
+#include <DiaObservation/Profile/UnitTimingTable.h>
+#include <DiaObservation/Profile/CoarseChunkBuilder.h>
+#include <DiaObservation/Profile/JobChunkBuilder.h>
+#include <DiaObservation/Profile/JobTimingTable.h>
+#include <DiaObservation/Job/JobInbox.h>
 #include <atomic>
 #include <thread>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; class Counter; } } }
+namespace Dia { namespace Observation { namespace Profile { class TripReporter; } } }
+namespace Dia { namespace ApplicationFlow { template<typename T> class EventStreamStore; } }
+namespace Dia { namespace Observation { namespace Profile { struct CoarseChunk; struct JobChunk; } } }
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -78,11 +93,53 @@ namespace Dia { namespace ApplicationFlow {
         // True iff every module owned by this PU is kInactive or kFailed.
         [[nodiscard]] bool AllModulesSettled() const;
 
+        // Perf Inspector A2b — per-forward-pass timing (one entry per RunForwardPass;
+        // on Sim, one per fixed step). Slot = index in this PU's module array.
+        [[nodiscard]] const Dia::Observation::Profile::UnitTimingTable& GetUnitTimingTable() const { return mTimingTable; }
+        // Fixed steps the most recent Update() ran (Sim; 1 for other affinities).
+        [[nodiscard]] unsigned int GetLastUpdateStepCount() const { return mLastUpdateStepCount; }
+
         // Post-tick hook: called by Application once during Start() to register
         // a callback that flushes EventStreamStores owned by this PU.
         // The callback is invoked at the end of every Update() call.
         using PostTickFn = std::function<void()>;
         void SetPostTickFn(PostTickFn fn);
+
+        // Perf Inspector A3c - over-budget trip reporting. The reporter is injected (plain pointer,
+        // not owned; null = counter only, no log/no record). Thread-safe to set while the unit runs.
+        void SetTripReporter(Dia::Observation::Profile::TripReporter* reporter) { mTripReporter.store(reporter, std::memory_order_release); }
+        // Apply trip tuning (task 8 config block). Call before the unit starts ticking.
+        void SetTripConfig(const Dia::Observation::Profile::TripConfig& config) { mTripDetector.SetConfig(config); }
+        [[nodiscard]] const Dia::Observation::Profile::TripDetector& GetTripDetector() const { return mTripDetector; }
+
+        // Perf Inspector A4b (AA9): per-module summary rows that outlive the module. A row is banked when a
+        // module leaves kStopping; capacity kCapacity rows (overflow is dropped and counted).
+        [[nodiscard]] const Dia::Observation::Profile::PerfSummaryAccumulator& GetPerfSummaryAccumulator() const { return mPerfAccumulator; }
+        // Perf Inspector task 1b: framework-owned "$perfcoarse" sink. Each forward pass is added to
+        // a chunk; a chunk is sent at 64 entries or every 100 ms. Null sink = no sends. Set before Start.
+        void SetPerfCoarseSink(EventStreamStore<Dia::Observation::Profile::CoarseChunk>* sink) { mCoarseSink = sink; }
+        // Perf Inspector task 13: framework-owned "$perfjobs" sink for JobChunk (jobs and workers). Null = no sends.
+        void SetPerfJobsSink(EventStreamStore<Dia::Observation::Profile::JobChunk>* sink) { mJobSink = sink; }
+        // Perf Inspector task 3b: framework-owned "$perftrips" sink for TripChunk (one per emitted trip). Null = no sends.
+        void SetPerfTripsSink(EventStreamStore<Dia::Observation::Profile::TripChunk>* sink) { mTripSink = sink; }
+        // Per-PU job timing (drained from this PU's JobInbox once per Update()).
+        [[nodiscard]] const Dia::Observation::Profile::JobTimingTable& GetJobTimingTable() const { return mJobTable; }
+        // Mutable access for modules on this PU's thread (e.g. DeferredStepModule writes step summaries). Not for other threads.
+        [[nodiscard]] Dia::Observation::Profile::JobTimingTable& GetJobTimingTable() { return mJobTable; }
+        // Kill switch (observation.perf.jobs): false = tier 1 counters only. Set before the unit starts ticking.
+        void SetPerJobRecording(bool on) { mJobTable.SetPerJobRecording(on); }
+        // The inbox JobObserver delivers this PU's finished job records to (installed on the ticking thread for the duration of each Update()).
+        [[nodiscard]] Dia::Observation::Job::JobInbox& GetJobInbox() { return mJobInbox; }
+
+        // Appends this unit's summary to `out`: banked rows (stopped modules) merged with the live
+        // modules' current stats. Intended for shutdown; reads the table from the caller's thread.
+        void CollectPerfSummary(Dia::Observation::Profile::PerfSummary& out) const;
+
+#ifdef _DEBUG
+        // Perf live control (task 3, Debug only): the framework-owned "$perfpause" stream. Read
+        // once per Update(); null = no pause support (a bare PU built outside Application).
+        void SetPerfPauseSource(const FrameStreamStore<PerfPauseSet>* source) { mPauseSource = source; }
+#endif
 
     private:
         static constexpr unsigned int kMaxModules = 64;
@@ -92,11 +149,13 @@ namespace Dia { namespace ApplicationFlow {
         // kStarting/kActive modules; RunReversePass ticks kStopping modules.
         void RunForwardPass(float deltaTime);
         void RunReversePass(float deltaTime);
+        void BuildModuleRow(unsigned int index, Dia::Observation::Profile::PerfModuleRow& out) const;
 
         struct ModuleEntry {
             Dia::Core::UniquePtr<Module> module;
             float startTimeoutMs = 0.0f;
             float stopTimeoutMs  = 0.0f;
+            Dia::Observation::Metric::Gauge* metricEwmaMs = nullptr;   // pu.<unit>.module.<id>.ms (registered once in AddModule)
 
             ModuleEntry() = default;
             ModuleEntry(ModuleEntry&&) = default;
@@ -105,6 +164,16 @@ namespace Dia { namespace ApplicationFlow {
             ModuleEntry(const ModuleEntry&) = delete;
             ModuleEntry& operator=(const ModuleEntry&) = delete;
         };
+
+#ifdef _DEBUG
+        // Pause table: mPaused[i] is true when mModules[i] is in the latest pause snapshot. Rebuilt
+        // only when the snapshot generation changes; RunForwardPass reads one bool per module.
+        // Lives here (not in Module) so Module layout never depends on _DEBUG.
+        void RefreshPauseTable();
+        const FrameStreamStore<PerfPauseSet>* mPauseSource = nullptr;
+        uint32_t                              mPauseGeneration = 0;
+        bool                                  mPaused[kMaxModules] = {};
+#endif
 
         Dia::Core::StringCRC mInstanceId;
         PUAffinity           mAffinity;
@@ -122,6 +191,29 @@ namespace Dia { namespace ApplicationFlow {
         float mLastTickMs = 0.0f;
         Dia::Observation::Metric::Gauge* mMetricLastTickMs = nullptr;
         unsigned int mTickCount = 0;
+
+        // Perf Inspector A2b
+        Dia::Observation::Profile::UnitTimingTable mTimingTable;
+        Dia::Observation::Profile::CoarseChunkBuilder mCoarseChunk;   // A1b: chunk builder
+        EventStreamStore<Dia::Observation::Profile::CoarseChunk>* mCoarseSink = nullptr;  // A1b: chunk sink
+        // Perf Inspector task 13: jobs and workers
+        Dia::Observation::Job::JobInbox                 mJobInbox{1024};
+        Dia::Observation::Profile::JobTimingTable       mJobTable;
+        Dia::Observation::Profile::JobChunkBuilder      mJobChunk;
+        EventStreamStore<Dia::Observation::Profile::JobChunk>* mJobSink = nullptr;
+        EventStreamStore<Dia::Observation::Profile::TripChunk>* mTripSink = nullptr;      // task 3b: "$perftrips"
+        Dia::Observation::Profile::PerfSummaryAccumulator mPerfAccumulator;   // A4b: rows of stopped modules
+        unsigned int                      mLastUpdateStepCount = 0;
+        float                             mSelfMsAccum = 0.0f;   // table cost accumulated over this Update()'s passes
+        Dia::Observation::Metric::Gauge*  mMetricSelfMs = nullptr;
+        Dia::Observation::Metric::Counter* mMetricCatchupUpdates = nullptr;
+
+        // Perf Inspector A3c - trip detection (one Observe() per committed table entry).
+        Dia::Observation::Profile::TripDetector          mTripDetector;
+        std::atomic<Dia::Observation::Profile::TripReporter*> mTripReporter{nullptr};
+        Dia::Observation::Profile::TripRecord            mTripRecord;          // member buffer (~4 KB), PU thread only
+        uint32_t                                         mOverBudgetReported = 0;
+        Dia::Observation::Metric::Counter*               mMetricOverBudgetFrames = nullptr;
 
         // --- DiaSimTime (Task 1.4) -------------------------------------------
         // The SimPU owns the world clock directly. Constructed in the ctor

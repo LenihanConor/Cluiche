@@ -17,11 +17,20 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
 #include "Modules/Camera2DModule.h"
+#include "Modules/SimQueryHostModule.h"
 #include "Types/DebugPanelCommandEvent.h"
+#include "Types/DebugConsoleLineEvent.h"
+#include "Types/DebugConsoleResultEvent.h"
 #include "Types/DebugPanelToggleEvent.h"
 #include "Types/DebugPanelSetVisibilityEvent.h"
-#include <DiaDebugDraw/Domain/IDebugDomain.h>
+#include "Types/DomainStateInterestEvent.h"
+#include <DiaVisualDebugger/Console/DomainStateSnapshotPublisher.h>
+#include <DiaVisualDebugger/Domain/IDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
+#ifdef _DEBUG
+#include <DiaApplicationFlow/PerfPause.h>
+#endif
+#include <DiaObservation/Perf/LatencyProbe.h>
 #include <memory>
 #include <mutex>
 
@@ -56,9 +65,32 @@ public:
     const Dia::VisualDebugger::DiaDebugDomainRegistry& GetDomainRegistry() const { return mDomainRegistry; }
 
     // Called from Render PU (panel JS callback) — thread-safe
-    void EnqueueCommand(Dia::Core::StringCRC domainId,
+    // Returns false when the queue is full (command dropped).
+    bool EnqueueCommand(Dia::Core::StringCRC domainId,
                         Dia::Core::StringCRC cmd,
                         const char* argsJson);
+
+    // Sim-hosted "debug.panel_command": validates {domain, cmd, args?} and enqueues it exactly as the panel's
+    // DebugPanelCommand stream does. Returns {success:true,queued:true} or {success:false,error}.
+    Json::Value HandlePanelCommand(const Json::Value& args);
+    static constexpr const char* kPanelCommandName = "debug.panel_command";
+    // True once registered with a SimQueryHostModule (lazy: the host may start after this module).
+    bool PanelCommandRegistered() const { return mPanelCommandRegistered; }
+
+    // Perf latency probes: the owner (Main-side panel code) keeps the matcher and calls OnSnapshot with each
+    // DomainStateSnapshot.simFrame. Optional; null = "_lat" is still stripped but nothing is stamped.
+    // Set before the module starts (not synchronised).
+    // By default the module uses its own probe+matcher (see below); this overrides it.
+    void SetLatencyMatcher(Dia::Observation::Perf::LatencyVisibleMatcher* matcher) { mLatencyMatcher = matcher; }
+
+#ifdef _DEBUG
+    // Sim-hosted "perf.latency {action?}": per-action {count,p50Ms,p95Ms,minMs,maxMs} plus probe counters.
+    // Action key is "<domain>.<cmd>" of a debug.panel_command. Probes run Sim-receive -> applied -> first published
+    // DomainStateSnapshot (the Sim-side "visible" point; the Main read and the websocket hop are NOT included).
+    Json::Value HandleLatencyQuery(const Json::Value& args);
+    static constexpr const char* kLatencyQueryName = "perf.latency";
+    Dia::Observation::Perf::LatencyProbe& GetLatencyProbe() { return mLatencyProbe; }
+#endif
 
     void SetCamera3D(const Dia::Graphics3D::Camera3D& camera);
     void DrawCoord3D(Dia::Graphics3D::FrameData3D& frame);
@@ -69,6 +101,12 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
+    // Drain pending panel commands (enqueued from Render PU / debug.panel_command). Protected so tests can drive it.
+    void DrainPendingCommands();
+    static constexpr int kCommandQueueCapacity = 32;
+    // Probes only start while snapshots are being published, otherwise they could never become visible.
+    virtual bool IsSnapshotArmed() const { return mSnapshotPublisher && mSnapshotPublisher->IsArmed(); }
+
 private:
     struct PendingCommand
     {
@@ -77,13 +115,19 @@ private:
         // args serialized as a JSON string; parsed back on sim thread
         char argsJson[512];
     };
-    static constexpr int kCommandQueueCapacity = 32;
 
-    // Drain pending panel commands (enqueued from Render PU)
-    void DrainPendingCommands();
+#ifdef _DEBUG
+    // Perf live control: copy the latest "$perfpause" set (framework-owned FrameStream, found by name
+    // because it is not manifest-declared) and expose its paused domains to the snapshot publisher.
+    void RefreshDomainPauses();
+    static bool IsDomainPaused(void* ctx, Dia::Core::StringCRC domainId);
+#endif
+    void TryRegisterPanelCommand();
     // Drain DiaDebugPanel commands arriving from the Main PU over the
     // DebugPanelCommand EventStream and funnel them into the command queue.
     void DrainPanelCommandStream();
+    // Drain console lines from the Main PU, execute each, and write a result event.
+    void DrainConsoleLines();
     // Parse and execute a debug console command string (e.g. "debug.layer.enable x").
     void ExecuteConsoleCommand(const char* cmdText);
 
@@ -91,10 +135,30 @@ private:
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimDebug"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
     Dia::VisualDebugger::DiaDebugDomainRegistry mDomainRegistry;
-    Dia::ApplicationFlow::ServiceStreamWriter<Dia::VisualDebugger::DiaDebugDomainRegistry> mDomainRegistryService{this, "DomainRegistry"};
     Dia::ApplicationFlow::EventStreamReader<DebugPanelCommandEvent> mPanelCommands{this, "DebugPanelCommand"};
+    Dia::ApplicationFlow::EventStreamReader<DebugConsoleLineEvent>   mConsoleLines{this, "DebugConsoleLine"};
+    Dia::ApplicationFlow::EventStreamWriter<DebugConsoleResultEvent> mConsoleResults{this, "DebugConsoleResult"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelToggleEvent>  mPanelToggle{this, "DebugPanelToggle"};
     Dia::ApplicationFlow::EventStreamWriter<DebugPanelSetVisibilityEvent> mPanelSetVisibility{this, "DebugPanelSetVisibility"};
+    // Domain state snapshot (Sim producer; Main reads the "DomainStateSnapshot" FrameStream). Interest arrives on "DomainStateInterest".
+    class SnapshotSink : public Dia::VisualDebugger::Console::IDomainStateSink
+    {
+    public:
+        explicit SnapshotSink(Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot>& out) : mOut(out) {}
+        void Write(const Dia::VisualDebugger::Console::DomainStateSnapshot& snapshot) override;
+    private:
+        Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot>& mOut;
+    };
+    Dia::ApplicationFlow::StreamWriter<Dia::VisualDebugger::Console::DomainStateSnapshot> mDomainSnapshotOut{this, "DomainStateSnapshot"};
+    Dia::ApplicationFlow::EventStreamReader<DomainStateInterestEvent> mDomainInterest{this, "DomainStateInterest"};
+    SnapshotSink mSnapshotSink{mDomainSnapshotOut};
+    static constexpr uint64_t kSnapshotTickDivisor = 2;   // publish the panel snapshot every 2nd Sim tick
+    std::unique_ptr<Dia::VisualDebugger::Console::DomainStateSnapshotPublisher> mSnapshotPublisher;
+#ifdef _DEBUG
+    const Dia::ApplicationFlow::FrameStreamStore<Dia::ApplicationFlow::PerfPauseSet>* mPerfPauseStore = nullptr;
+    Dia::ApplicationFlow::PerfPauseSet mPauseSet;   // local copy; the stream slot may be overwritten by Main
+    bool mWarnedNoPauseStream = false;
+#endif
     Dia::Core::Containers::DynamicArrayC<PendingCommand, kCommandQueueCapacity> mCommandQueue;
     std::mutex mCommandQueueMutex;
     Dia::Graphics::FrameData mFrame;
@@ -102,6 +166,23 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
     Dia::ApplicationFlow::ModuleRef<Camera2DModule>    mCameraRef{this};
+    // Optional: apps without a SimQueryHostModule simply do not get debug.panel_command.
+    Dia::ApplicationFlow::ModuleRef<SimQueryHostModule> mSimQueryHost{this};
+    bool mPanelCommandRegistered = false;
+    bool mPanelCommandAttempted = false;
+    Dia::Observation::Perf::LatencyProbe mLatencyProbe;
+    Dia::Observation::Perf::LatencyVisibleMatcher mOwnedLatencyMatcher{mLatencyProbe};
+    Dia::Observation::Perf::LatencyVisibleMatcher* mLatencyMatcher = &mOwnedLatencyMatcher;
+#ifdef _DEBUG
+    // Sim thread only (HandlePanelCommand and HandleLatencyQuery both run there).
+    struct LatencyActionName { uint32_t crc = 0; char name[64] = {}; };
+    static constexpr unsigned kMaxLatencyActions = Dia::Observation::Perf::LatencyProbe::kMaxActions;
+    LatencyActionName mLatencyActions[kMaxLatencyActions];
+    unsigned mLatencyActionCount = 0;
+    Dia::Core::StringCRC RememberLatencyAction(const std::string& name);
+    bool mLatencyQueryRegistered = false;
+#endif
+    uint64_t mCurrentTick = 0;
 
     std::unique_ptr<Dia::Debug::Coord2DDebugDomain>  mCoord2DDomain;
     std::unique_ptr<Dia::Debug::Coord3DDebugDomain>  mCoord3DDomain;

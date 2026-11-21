@@ -54,6 +54,7 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
     mResolved = false;
     mStarted = false;
     mNavigationReleased = false;
+    mResolvedFrames = 0;
     mAwaitingCapture = false;
     mCaptureWasPassed = false;
     mCaptureFrameTarget = 0;
@@ -130,10 +131,18 @@ void TestStageModuleBase::DoUpdate(const Dia::SimTime::SimTimeContext& ctx)
     // Fires after capture is done so the screenshot lands before Boot loads.
     // In manual mode (no --automation flag) we hold here so the developer can
     // inspect the result; they return to Boot via the stage's X button.
+    //
+    // Linger kResolveLingerFrames after resolve before releasing: a stage that
+    // resolves in a couple of frames would otherwise unregister its checkpoints
+    // before an E2E client (one websocket round trip per poll) can read them.
+    constexpr unsigned int kResolveLingerFrames = 45;   // ~1.5 s of sim time
     if (mResolved && !mAwaitingCapture && !mNavigationReleased
-        && TestResultsRegistry::GetInstance().IsAutomationMode())
+        && TestResultsRegistry::GetInstance().IsAutomationMode()
+        && ++mResolvedFrames >= kResolveLingerFrames)
     {
         mNavigationReleased = true;
+        DIA_LOG_INFO("TestStage", "%s: resolved at frame %u, releasing the navigation hold to Boot (automation mode)",
+            GetStageName().AsChar(), mFrameCount);
         auto* svc = GetAutomationService();
         if (svc)
         {

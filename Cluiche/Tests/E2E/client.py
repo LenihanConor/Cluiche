@@ -11,7 +11,9 @@ except ImportError:
 
 
 class AutomationError(Exception):
-    pass
+    def __init__(self, message="", payload=None):
+        super().__init__(message)
+        self.payload = payload if payload is not None else {}
 
 
 class DiaClient:
@@ -37,13 +39,22 @@ class DiaClient:
         self._reader_thread = None
         self._reader_stop = threading.Event()
 
-    def connect(self, timeout=60.0):
-        """Retry connection every 500ms until success or timeout."""
+    def connect(self, timeout=60.0, abort_if=None):
+        """Retry connection every 500ms until success or timeout.
+
+        abort_if — optional callable returning a reason string (or None). When it
+        returns a reason the connect fails immediately with ConnectionError, so a
+        crashed app does not cost the full timeout.
+        """
         if ws_connect is None:
             raise ImportError("websockets package is required: pip install websockets>=12.0")
         deadline = time.time() + timeout
         last_error = None
         while time.time() < deadline:
+            if abort_if is not None:
+                reason = abort_if()
+                if reason:
+                    raise ConnectionError(f"Could not connect to ws://{self.host}:{self.port}: {reason}")
             try:
                 self._ws = ws_connect(f"ws://{self.host}:{self.port}")
                 self._drain_welcome()
@@ -193,7 +204,8 @@ class DiaClient:
             if resp.get("command") != command:
                 continue  # stale response for a different command
             if not resp.get("success"):
-                raise AutomationError(resp.get("message", "unknown error"))
+                raise AutomationError(resp.get("message", "unknown error"),
+                                      payload=resp.get("payload", {}))
             return resp.get("payload", {})
         raise TimeoutError(f"No command response received for '{command}'")
 

@@ -25,11 +25,40 @@ public_api:
     - DiaObservation/Log/DebugOutputSink.h
     - DiaObservation/Log/AssertSinkBridge.h
     - DiaObservation/Log/DiaLog.h
+    - DiaObservation/Job/JobInbox.h
+    - DiaObservation/Profile/UnitTimingTable.h
+    - DiaObservation/Profile/TripDetector.h
+    - DiaObservation/Profile/TripConfig.h
+    - DiaObservation/Profile/TripResult.h
+    - DiaObservation/Profile/TripRecord.h
+    - DiaObservation/Profile/TripReporter.h
+    - DiaObservation/Profile/PerfSummary.h
+    - DiaObservation/Profile/PerfSummaryAccumulator.h
+    - DiaObservation/Profile/PerfExitTimer.h
+    - DiaObservation/Profile/CoarseRing.h
+    - DiaObservation/Profile/CoarseChunk.h
+    - DiaObservation/Profile/CoarseChunkBuilder.h
+    - DiaObservation/Profile/CoarseChunkAssembler.h
+    - DiaObservation/Profile/PerfWindowPacker.h
+    - DiaObservation/Profile/PerfTimingStats.h
+    - DiaObservation/Profile/JobTimingTable.h
+    - DiaObservation/Profile/JobChunk.h
+    - DiaObservation/Profile/JobChunkBuilder.h
+    - DiaObservation/Profile/JobChunkAssembler.h
+    - DiaObservation/Profile/TripChunk.h
+    - DiaObservation/Trace/SpanChunk.h
+    - DiaObservation/Trace/SpanChunkSink.h
+    - DiaObservation/Trace/ChainBuilder.h
+    - DiaObservation/Perf/PerfMarkers.h
+    - DiaObservation/Perf/LatencyProbe.h
+    - DiaObservation/Profile/ScopeRecord.h
     - DiaObservation/Testing/MockSink.h
   namespaces:
     - Dia::Observation::Log
+    - Dia::Observation::Profile
   entry_points:
     - Dia::Observation::Log::Logger::Instance()
+    - Dia::Observation::Profile::Profiler::Instance()
 
 dependencies:
   required:
@@ -42,10 +71,18 @@ subsystems:
     description: >
       Folded from DiaLogger. Async drain thread (1ms tick). Ring-buffer
       per-thread producer. StdOutSink + DebugOutputSink built-in.
+  profile:
+    status: active
+    path: Dia/DiaObservation/Profile/
+    description: >
+      Frame-by-frame per-unit/module timing (UnitTimingTable), trip detection (TripDetector),
+      trip serialization (TripRecord/TripReporter), perf summary (PerfSummary),
+      exit timer (PerfExitTimer). Outputs: trips.jsonl, perf-summary.json. Config: observation.perf block;
+      CLI: --perf[=seconds]. Amendment A5 (2026-11-16) completes core APIs.
   session:
     status: placeholder
     path: Dia/DiaObservation/Session/
-    description: SessionManager, session directory, output file lifecycle. Lands in Feature #2.
+    description: SessionManager, session directory, output file lifecycle. Lands in Feature #2. Static copy-out accessor SessionManager::GetActiveSessionInfo(id, dir) reports the active started session (false if none); safe while a session runs, do not race with Start/Stop.
   trace:
     status: placeholder
     path: Dia/DiaObservation/Trace/
@@ -68,6 +105,16 @@ responsibilities:
     - Dia::Observation::Log::Logger singleton — async drain, ring-buffer per-thread producers
     - Log/ subsystem — moved verbatim from DiaLogger; namespace hard-switched to Dia::Observation::Log
     - DIA_LOG_TRACE/DEBUG/INFO/WARNING/ERROR macros — preserved verbatim
+    - Profile/ subsystem — frame-by-frame per-unit/module timing, trip detection, perf summary (A4 features)
+    - ScopeRecord.subject field (uint32_t) — CRC of owning subject (module/ProcessingUnit); added for profile instrumentation
+    - Profiler::RegisterSubjectName — late binding of subject CRCs to human names; optional (hex fallback when unknown)
+    - TripDetector — configurable over-budget trip detection with rate limiting
+    - TripReporter — writer thread that appends trips.jsonl (PU does not block on I/O)
+    - PerfExitTimer — wall-clock exit gate for --perf=<seconds>
+    - Output files: trips.jsonl (per trip), perf-summary.json (at exit or session close)
+    - dia CLI --perf[=seconds] flag and observation.perf config block (trip_frames, trip_factor, rearm_frames, min_interval_ms, budget_scale)
+    - PerfMarkers — per-thread lock-free ring of 1,024 markers (name CRC, optional u64 value, steady-clock ns), drop-oldest with drop counter; DIA_PERF_MARK and DIA_PERF_MARK_VALUE macros; thread registration (16-thread cap); Drain/snapshot API for the instrumentation bridge
+    - LatencyProbe — lock-free probe table (64 slots, 8 hops per slot, 16 actions, 40-completion ring per action), Begin/Stamp/End for cross-thread action tracking, p50/p95 latency percentiles; LatencyVisibleMatcher and StripLatencyArg for snapshot correlation via simFrame
     - Testing/MockSink.h — test utility (SD-O20)
   does_not_own:
     - Metric primitives (Counter/Gauge/Histogram) — DiaMetrics owns those

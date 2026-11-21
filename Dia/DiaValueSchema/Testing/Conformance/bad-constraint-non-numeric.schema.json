@@ -1,0 +1,1 @@
+{"format":"dia.value_schema","version":1,"for":"conf.test","constraints":[{"a":"lo","op":"<=","b":"name"}],"entries":[{"key":"lo","kind":"parameter","label":"L","description":"D","type":"float"},{"key":"name","kind":"parameter","label":"L","description":"D","type":"string"}]}

@@ -534,7 +534,7 @@ void TestRenderer()
 
 - **Don't test implementation** - Test behavior, not how it's done
 - **Don't test trivial code** - No need to test `GetX() { return mX; }`
-- **Don't test third-party** - Trust SFML, JsonCpp
+- **Don't test third-party** - Trust SDL3, bgfx, JsonCpp
 - **Don't mock everything** - Only mock what you need
 - **Don't duplicate logic** - Test shouldn't reimplement the code
 

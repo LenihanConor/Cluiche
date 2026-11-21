@@ -42,18 +42,6 @@ namespace Dia
 				: String<1024>(rhs, startIndex, numberElements)
 			{}
 
-			//-----------------------------------------------------------------------------
-			inline
-			String1024::String1024 (const char* pRawString, ...)
-				: String<1024>()
-			{
-				DIA_ASSERT(pRawString != NULL, "Invalid Data");
-
-				va_list args;
-				va_start(args, pRawString);
-				Format(pRawString, args);
-				va_end(args);
-			}
 			
 			//-----------------------------------------------------------------------------
 			inline

@@ -1,4 +1,5 @@
 #include "Modules/ObservationModule.h"
+#include "Modules/AppIdentity.h"
 
 #include <DiaObservation/Config/ObservationConfigCli.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -10,8 +11,8 @@ namespace Cluiche { namespace AppFlow {
 ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId)
     : Dia::ApplicationFlow::ObservationModule(
         instanceId,
-        "CluicheTest",
-        "../../../../Assets/CluicheTest/cluichetest.diaobservation")
+        CurrentAppIdentity().name.c_str(),
+        CurrentAppIdentity().observationAssetRelPath.c_str())
 {
 }
 

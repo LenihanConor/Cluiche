@@ -1,0 +1,1 @@
+window.WORLD_NAMES = ["archipelago_seed1", "archipelago_seed2", "archipelago_seed3", "continental_seed1", "continental_seed2", "continental_seed3", "default_seed1", "default_seed2", "default_seed3", "highlands_seed1", "highlands_seed2", "highlands_seed3"];

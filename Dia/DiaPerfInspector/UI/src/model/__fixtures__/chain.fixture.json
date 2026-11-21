@@ -1,0 +1,12 @@
+{
+  "name": "World Generation card state",
+  "stages": [
+    { "id": "1001", "unit": "Sim", "name": "IDebugDomain.GetJSONState", "startMs": 1000.0, "endMs": 1004.2 },
+    { "id": "1002", "unit": "Sim", "name": "DomainStateSnapshotPublisher.Update", "startMs": 1004.2, "endMs": 1006.7 },
+    { "id": "2001", "unit": "Main", "name": "DebugPanelPageModule.PollDomainSnapshot", "startMs": 1018.7, "endMs": 1021.3 },
+    { "id": "2002", "unit": "Main", "name": "DebugPanelPageModule.PushDomainStatesToPanel", "startMs": 1021.3, "endMs": 1023.5 }
+  ],
+  "edges": [
+    { "stream": "DomainStateSnapshot", "fromId": "1002", "toId": "2001", "bytes": 6656, "ratePerSec": 30, "dataAgeMs": 12, "writeCostMs": 0.2 }
+  ]
+}

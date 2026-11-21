@@ -1,0 +1,31 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "conf.fields",
+  "entries": [
+    {
+      "key": "biome",
+      "kind": "field",
+      "label": "Biome",
+      "description": "Biome category per cell.",
+      "type": "enum",
+      "values": [
+        { "id": "forest", "label": "Forest", "description": "Trees.", "colour": "#228833" },
+        { "id": "desert", "label": "Desert", "description": "Sand." },
+        { "id": "tundra", "label": "Tundra", "description": "Ice.", "colour": "#aaccee" },
+        { "id": "marsh", "label": "Marsh" }
+      ],
+      "ui": { "layer": "biome" }
+    },
+    {
+      "key": "elevation",
+      "kind": "field",
+      "label": "Elevation",
+      "description": "Height above sea level.",
+      "unit": "m",
+      "type": "float",
+      "min": -100,
+      "max": 5000
+    }
+  ]
+}

@@ -560,8 +560,8 @@ Cluiche/bin/Debug/x64/GoogleTests.exe
    - 1000+ events per frame
    - Deep context stacks (10+ levels)
 
-3. **Integration Tests with DiaSFML**
-   - Real SFML input source tests
+3. **Integration Tests with DiaSDL**
+   - Real SDL input source tests
    - XInput integration tests
    - Hot-plug detection tests
 

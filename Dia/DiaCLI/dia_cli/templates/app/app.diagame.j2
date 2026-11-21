@@ -1,0 +1,28 @@
+{
+    "config": {
+        "name": "{{ name }}",
+        "build": "dev-0.1",
+        "window": {
+            "title": "{{ name }}",
+            "width_pct": 80,
+            "height_pct": 80
+        },
+        "asset_catalogue": "assets.catalogue.json",
+        "observation": "{{ lower }}.diaobservation",
+        "path_aliases": {
+            "root": "."
+        }
+    },
+    "imports": [
+        {
+            "path": "global/misc/ApplicationFlow/{{ lower }}_main.diaapp",
+            "type": "manifest"
+        },
+        {
+            "path": "Stages/{{ stage }}/{{ stage_snake }}.diastage",
+            "type": "stage"
+        }
+    ],
+    "name": "{{ name }}",
+    "version": "0.1"
+}

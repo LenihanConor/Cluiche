@@ -1,6 +1,7 @@
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
 #include <DiaEntity/Domain.h>
+#include <DiaCore/Reflect/FieldAttributes.h>
 
 DIA_SERIALIZE(CluicheTest::VisualTestRenderComponent, CluicheTest::VisualTestRenderComponent::kVersion)
     DIA_FIELD(radius)
@@ -19,5 +20,8 @@ DIA_COMPONENT_REGISTER(VisualTestRenderComponent, "cluichetest.visual-test-rende
     nullptr, 0,
     nullptr, 0)
 DIA_COMPONENT_DESCRIBE(CluicheTest::VisualTestRenderComponent, "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.")
+
+DIA_ATTR_DESCRIBE(VisualTestRenderComponent, radius, "Radius", "world units", "Radius of the drawn circle.")
+DIA_ATTR_DESCRIBE(VisualTestRenderComponent, colour, "Colour", nullptr, "Fill colour as packed RGBA (0xRRGGBBAA).")
 
 } // namespace CluicheTest

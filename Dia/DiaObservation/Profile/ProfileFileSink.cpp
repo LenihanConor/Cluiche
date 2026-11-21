@@ -1,4 +1,5 @@
 #include "DiaObservation/Profile/ProfileFileSink.h"
+#include "DiaObservation/Profile/Profiler.h"
 
 #include "DiaCore/Json/external/json/json.h"
 
@@ -15,6 +16,7 @@ namespace Dia
 			, mFrameCount(0)
 			, mCurrentFrameSlot(-1)
 			, mLastFrameNumber(UINT32_MAX)
+			, mAnnouncedCount(0)
 			, mFile(nullptr)
 			, mEpochOffsetNs(epochOffsetNs)
 		{
@@ -40,14 +42,95 @@ namespace Dia
 			}
 		}
 
+		void ProfileFileSink::AnnounceThread(uint32_t threadId)
+		{
+			char name[Profiler::kThreadNameLen];
+			if (!Profiler::ResolveThreadName(threadId, name, sizeof(name)))
+				return;
+
+			Announced* entry = nullptr;
+			for (unsigned int i = 0; i < mAnnouncedCount; ++i)
+			{
+				if (mAnnounced[i].id == threadId)
+				{
+					entry = &mAnnounced[i];
+					break;
+				}
+			}
+			if (entry)
+			{
+				if (std::strcmp(entry->name, name) == 0)
+					return;
+			}
+			else
+			{
+				if (mAnnouncedCount >= kMaxAnnounced)
+					return;
+				entry = &mAnnounced[mAnnouncedCount++];
+				entry->id = threadId;
+			}
+			strncpy_s(entry->name, sizeof(entry->name), name, _TRUNCATE);
+
+			char line[160];
+			int len = snprintf(line, sizeof(line),
+				"{\"record_type\":\"thread_name\",\"thread_id\":%u,\"name\":\"%s\"}\n",
+				threadId, name);
+			if (len > 0)
+				fwrite(line, 1, static_cast<size_t>(len), mFile);
+		}
+
+		void ProfileFileSink::OnJobRecord(const ProfileJobRecord& r)
+		{
+			if (!mFile)
+				return;
+
+			AnnounceThread(r.threadId);
+			AnnounceThread(r.submitThread);
+
+			char owner[Profiler::kSubjectNameLen + 16];
+			Profiler::ResolveSubjectName(r.owner, owner, sizeof(owner));
+
+			char line[480];
+			int len = snprintf(line, sizeof(line),
+				"{\"record_type\":\"profile_job\","
+				"\"thread_id\":%u,"
+				"\"submit_thread\":%u,"
+				"\"owner\":\"%s\","
+				"\"tag\":%u,"
+				"\"range\":%u,"
+				"\"range_count\":%u,"
+				"\"submit_unix_nano\":%lld,"
+				"\"start_unix_nano\":%lld,"
+				"\"end_unix_nano\":%lld}\n",
+				r.threadId, r.submitThread, owner, r.tag,
+				static_cast<unsigned int>(r.range), static_cast<unsigned int>(r.rangeCount),
+				static_cast<long long>(static_cast<int64_t>(r.submitNs) + mEpochOffsetNs),
+				static_cast<long long>(static_cast<int64_t>(r.startNs) + mEpochOffsetNs),
+				static_cast<long long>(static_cast<int64_t>(r.endNs) + mEpochOffsetNs));
+			if (len > 0 && len < static_cast<int>(sizeof(line)))
+				fwrite(line, 1, static_cast<size_t>(len), mFile);
+		}
+
 		void ProfileFileSink::OnRecord(const ScopeRecord& record)
 		{
 			// --- Write to .jsonl ---
 			if (mFile)
 			{
+				AnnounceThread(record.threadId);
+
 				int64_t startUnixNano = static_cast<int64_t>(record.startUnixNano) + mEpochOffsetNs;
 
-				char line[512];
+				// Subject text resolved at write time (drain thread), never on the hot path.
+				char subjectField[160];
+				subjectField[0] = '\0';
+				if (record.subject != 0)
+				{
+					char nameBuf[Profiler::kSubjectNameLen + 16];
+					Profiler::ResolveSubjectName(record.subject, nameBuf, sizeof(nameBuf));
+					snprintf(subjectField, sizeof(subjectField), ",\"subject\":\"%s\"", nameBuf);
+				}
+
+				char line[640];
 				int len = snprintf(line, sizeof(line),
 					"{\"frame_number\":%u,"
 					"\"thread_id\":%u,"
@@ -56,7 +139,7 @@ namespace Dia
 					"\"scope_id\":%llu,"
 					"\"parent_scope_id\":%llu,"
 					"\"start_unix_nano\":%lld,"
-					"\"duration_ns\":%llu}\n",
+					"\"duration_ns\":%llu%s}\n",
 					record.frameNumber,
 					record.threadId,
 					static_cast<unsigned int>(record.name.Value()),
@@ -64,7 +147,8 @@ namespace Dia
 					static_cast<unsigned long long>(record.scopeId),
 					static_cast<unsigned long long>(record.parentScopeId),
 					static_cast<long long>(startUnixNano),
-					static_cast<unsigned long long>(record.durationNs));
+					static_cast<unsigned long long>(record.durationNs),
+					subjectField);
 
 				if (len > 0)
 					fwrite(line, 1, static_cast<size_t>(len), mFile);
@@ -147,6 +231,12 @@ namespace Dia
 					scopeObj["duration_ns"]    = Json::Value(static_cast<Json::UInt64>(record.durationNs));
 					scopeObj["frame_number"]   = Json::Value(static_cast<Json::UInt>(record.frameNumber));
 					scopeObj["thread_id"]      = Json::Value(static_cast<Json::UInt>(record.threadId));
+					if (record.subject != 0)
+					{
+						char nameBuf[Profiler::kSubjectNameLen + 16];
+						Profiler::ResolveSubjectName(record.subject, nameBuf, sizeof(nameBuf));
+						scopeObj["subject"] = Json::Value(nameBuf);
+					}
 					scopesArray.append(scopeObj);
 				}
 

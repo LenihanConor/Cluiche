@@ -1,8 +1,8 @@
 {
     "version": 3,
     "streams": [
-        { "id": "SimTime", "kind": "FrameStream" },
-        { "id": "SimTimeSchedulerFire", "kind": "EventStream" }
+        { "id": "SimTime", "kind": "FrameStream", "payload_type": "SimTimeContext" },
+        { "id": "SimTimeSchedulerFire", "kind": "EventStream", "payload_type": "SimTimeSchedulerFire" }
     ],
     "processing_units": [
         { "instance_id": "MainPU", "frequency_hz": 30, "dedicated_thread": false, "modules": [] },

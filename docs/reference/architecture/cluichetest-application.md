@@ -134,7 +134,7 @@ struct StartData {
 
 **Key Responsibilities:**
 - Read graphics commands from `SimToRenderFrameStream`
-- Render to SFML canvas via `MainKernelModule`
+- Render to bgfx canvas via `MainKernelModule`
 - Maintain 60 FPS via `TimeThreadLimiter`
 
 ---
@@ -233,7 +233,7 @@ private:
 
 **Key Actions:**
 - Initialize time server @ 30Hz
-- Create SFML window
+- Create SDL window
 - Create canvas for rendering
 - Initialize input source manager
 - Register all levels
@@ -332,7 +332,7 @@ private:
 
 **Modules:**
 - `RenderKernel` - Frame management
-- `RenderCanvas` - SFML rendering
+- `RenderCanvas` - bgfx rendering
 
 **Lifecycle:**
 ```cpp
@@ -515,14 +515,14 @@ private:
         mTimeServer.SetFrequency(30.0f);
         mTimeServer.Start();
         
-        // Create SFML window
-        mWindow = Dia::SFML::RenderWindowFactory::Create();
+        // Create SDL window (implements IWindow and IInputSource)
+        mWindow = mWindowFactory.Create(windowSettings);
         
-        // Create canvas
-        mCanvas = new Dia::Graphics::Canvas(mWindow);
+        // Create bgfx canvas
+        mCanvas = new Dia::Bgfx::Canvas(canvasSettings);
         
         // Initialize input
-        mInputManager.AddSource(new Dia::SFML::InputSource(mWindow));
+        mInputManager.AddInputSource(static_cast<Dia::SDL::Window*>(mWindow));
     }
 
     void DoUpdate() override {
@@ -813,7 +813,7 @@ level->Start();
 ### Input Flow (Main → Sim)
 
 ```
-1. Main thread: InputSourceManager collects SFML events
+1. Main thread: InputSourceManager collects SDL events
 2. Main thread: Push to InputToSimFrameStream
 3. Sim thread: ConsumeFrame from InputToSimFrameStream
 4. Sim thread: Process input events
@@ -827,7 +827,7 @@ level->Start();
 2. Sim thread: Generate FrameData (graphics commands)
 3. Sim thread: Push to SimToRenderFrameStream
 4. Render thread: PeekFrame from SimToRenderFrameStream
-5. Render thread: Render commands to SFML canvas
+5. Render thread: Render commands to bgfx canvas
 6. Render thread: Display @ 60 FPS
 ```
 

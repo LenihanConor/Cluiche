@@ -1,6 +1,6 @@
 # DiaInput API
 
-**Last Updated:** 2026-04-01
+**Last Updated:** 2026-11-20
 
 Input abstraction API providing platform-agnostic input event handling.
 
@@ -8,467 +8,237 @@ Input abstraction API providing platform-agnostic input event handling.
 
 ## Overview
 
-**DiaInput** provides a platform-agnostic input system for keyboard, mouse, and gamepad events.
+**DiaInput** provides a platform-agnostic input system for keyboard, mouse, joystick and console gamepad events.
 
 **Location:** `Dia/DiaInput/`
 
 **Namespace:** `Dia::Input::`
 
 **Key Concepts:**
-- **InputEvent** - Platform-agnostic input events
-- **InputSourceManager** - Manages multiple input sources
-- **Platform-agnostic** - Backend implementation in DiaSFML
+- **Event** - Tagged-union input event (`Dia/DiaInput/Event.h`)
+- **EventData** - Fixed-capacity buffer of events for one frame
+- **IInputSource** - Interface implemented by backends that poll a device API
+- **InputSourceManager** - Polls all registered sources into one `EventData`
+- **InputState** - Query API (down / pressed / released) built from events
+- **ActionMap** - Binds named actions (`ActionID`, a `StringCRC`) to keys, buttons and axes
+- **Platform-agnostic** - Backend implementation in DiaSDL
 
-**Implementation:** `Dia::SFML::DiaSFMLInputSource` (SFML backend)
+**Implementation:** `Dia::SDL::InputSource` (SDL3 backend; `Dia::SDL::Window` is also the input source)
 
 ---
 
 ## Core Classes
 
-### InputEvent
+### Event
 
-**Header:** `Dia/DiaInput/DiaInputEvent.h`
+**Header:** `Dia/DiaInput/Event.h`
 
-**Purpose:** Platform-agnostic input event structure
+**Purpose:** One input event. `type` selects which union member is valid.
 
 #### Event Types
 
 ```cpp
-enum class InputEventType
+Event::EType:
+    kClosed, kResized, kLostFocus, kGainedFocus, kTextEntered,
+    kKeyPressed, kKeyReleased,
+    kMouseWheelMoved, kMouseButtonPressed, kMouseButtonReleased,
+    kMouseMoved, kMouseEntered, kMouseLeft,
+    kJoystickButtonPressed, kJoystickButtonReleased, kJoystickMoved,
+    kJoystickConnected, kJoystickDisconnected,
+    kConsoleGamepadButtonPressed, kConsoleGamepadButtonReleased,
+    kConsoleGamepadAnalogStickMove, kConsoleGamepadAnalogTriggers,
+    kConsoleGamepadConnected, kConsoleGamepadDisconnected
+```
+
+Key codes live in `EKey` (`Dia/DiaInput/EKey.h`), mouse buttons in `EMouseButton` (`kLeft`, `kRight`, `kMiddle`), joystick axes in `EJoystickAxis`, and console gamepad buttons in `ConsoleGamepad::EButtonID`.
+
+#### Event Structure
+
+```cpp
+class Event
 {
-    KeyPressed,
-    KeyReleased,
-    MouseButtonPressed,
-    MouseButtonReleased,
-    MouseMoved,
-    MouseWheelScrolled,
-    GamepadButtonPressed,
-    GamepadButtonReleased,
-    GamepadAxisMoved,
-    TextEntered
+public:
+    EType type;
+
+    union
+    {
+        SizeEvent            size;             // kResized: width, height
+        KeyEvent             key;              // code, alt, control, shift, system; AsKey()
+        TextEvent            text;             // unicode (UTF-32)
+        MouseMoveEvent       mouseMove;        // x, y
+        MouseButtonEvent     mouseButton;      // button, x, y; AsMouseButton()
+        MouseWheelEvent      mouseWheel;       // int delta, x, y
+        JoystickConnectEvent joystickConnect;  // joystickId
+        JoystickMoveEvent    joystickMove;     // joystickId, axis, float position in [-100 .. 100]
+        JoystickButtonEvent  joystickButton;   // joystickId, button
+        ConsoleGamepadConnectEvent         consoleGamepadConnectEvent;
+        ConsoleGamepadMoveEvent            consoleGamepadMoveEvent;
+        ConsoleGamepadButtonEvent          consoleGamepadButtonEvent;
+        ConsoleGamepadAnalogueTriggerEvent consoleGamepadAnalogueTriggerEvent;
+    };
 };
 ```
 
-#### Key Codes
+Joystick axis positions are normalised to the range -100 to 100 by the backend.
+
+Always check `type` before reading a union member.
+
+#### Usage Example
 
 ```cpp
-enum class KeyCode
+void HandleEvent(const Dia::Input::Event& event)
 {
-    // Letters
-    A, B, C, D, E, F, G, H, I, J, K, L, M,
-    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-    
-    // Numbers
-    Num0, Num1, Num2, Num3, Num4, Num5, Num6, Num7, Num8, Num9,
-    
-    // Function keys
-    F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-    
-    // Arrow keys
-    Left, Right, Up, Down,
-    
-    // Special keys
-    Space, Enter, Escape, Tab, Backspace, Delete,
-    LShift, RShift, LControl, RControl, LAlt, RAlt,
-    
-    // ... more keys
-};
-```
-
-#### Mouse Buttons
-
-```cpp
-enum class MouseButton
-{
-    Left,
-    Right,
-    Middle,
-    XButton1,
-    XButton2
-};
-```
-
-#### InputEvent Structure
-
-```cpp
-struct InputEvent
-{
-    InputEventType type;
-    
-    // Keyboard events
-    struct KeyEvent
-    {
-        KeyCode code;
-        bool alt;
-        bool control;
-        bool shift;
-        bool system;
-    } key;
-    
-    // Mouse button events
-    struct MouseButtonEvent
-    {
-        MouseButton button;
-        int x;
-        int y;
-    } mouseButton;
-    
-    // Mouse move events
-    struct MouseMoveEvent
-    {
-        int x;
-        int y;
-    } mouseMove;
-    
-    // Mouse wheel events
-    struct MouseWheelEvent
-    {
-        float delta;
-        int x;
-        int y;
-    } mouseWheel;
-    
-    // Gamepad events
-    struct GamepadButtonEvent
-    {
-        unsigned int gamepadId;
-        unsigned int button;
-    } gamepadButton;
-    
-    struct GamepadAxisEvent
-    {
-        unsigned int gamepadId;
-        unsigned int axis;
-        float position;
-    } gamepadAxis;
-    
-    // Text events
-    struct TextEvent
-    {
-        unsigned int unicode;
-    } text;
-};
-```
-
----
-
-### Usage Examples
-
-#### Keyboard Input
-
-```cpp
-void ProcessInput(const Dia::Input::InputEvent& event)
-{
-    using namespace Dia::Input;
-    
     switch (event.type)
     {
-        case InputEventType::KeyPressed:
+        case Dia::Input::Event::EType::kKeyPressed:
         {
-            if (event.key.code == KeyCode::Space)
-            {
-                Jump();
-            }
-            else if (event.key.code == KeyCode::Escape)
-            {
-                Pause();
-            }
-            
-            // Modifier keys
-            if (event.key.control && event.key.code == KeyCode::S)
-            {
-                Save();  // Ctrl+S
-            }
+            Dia::Input::EKey key = event.key.AsKey();
+            bool shift = event.key.shift;
             break;
         }
-        
-        case InputEventType::KeyReleased:
+        case Dia::Input::Event::EType::kMouseMoved:
         {
-            if (event.key.code == KeyCode::W)
-            {
-                StopMovingForward();
-            }
+            int x = event.mouseMove.x;
+            int y = event.mouseMove.y;
             break;
         }
+        case Dia::Input::Event::EType::kJoystickMoved:
+        {
+            float position = event.joystickMove.position;   // -100 .. 100
+            break;
+        }
+        default:
+            break;
     }
 }
 ```
 
 ---
 
-#### Mouse Input
+### IInputSource
+
+**Header:** `Dia/DiaInput/IInputSource.h`
 
 ```cpp
-void ProcessMouseInput(const Dia::Input::InputEvent& event)
+class IInputSource
 {
-    using namespace Dia::Input;
-    
-    switch (event.type)
-    {
-        case InputEventType::MouseButtonPressed:
-        {
-            if (event.mouseButton.button == MouseButton::Left)
-            {
-                OnLeftClick(event.mouseButton.x, event.mouseButton.y);
-            }
-            else if (event.mouseButton.button == MouseButton::Right)
-            {
-                OnRightClick(event.mouseButton.x, event.mouseButton.y);
-            }
-            break;
-        }
-        
-        case InputEventType::MouseMoved:
-        {
-            OnMouseMove(event.mouseMove.x, event.mouseMove.y);
-            break;
-        }
-        
-        case InputEventType::MouseWheelScrolled:
-        {
-            OnMouseWheel(event.mouseWheel.delta);
-            break;
-        }
-    }
-}
-```
+public:
+    enum class Priority { Lowest = 0, Low = 25, Normal = 50, High = 75, Highest = 100 };
 
----
+    IInputSource(Priority priority = Priority::Normal);
 
-#### Text Input
+    virtual void StartFrame() {}
+    virtual void Poll(EventData& outStream) = 0;   // append, never clear
+    virtual void EndFrame() {}
 
-```cpp
-void ProcessTextInput(const Dia::Input::InputEvent& event)
-{
-    if (event.type == Dia::Input::InputEventType::TextEntered)
-    {
-        // Convert unicode to char (basic ASCII)
-        if (event.text.unicode < 128)
-        {
-            char character = static_cast<char>(event.text.unicode);
-            textBuffer += character;
-        }
-    }
-}
+    int GetUniqueID() const;
+    Priority GetPriority() const;
+    void SetPriority(Priority priority);
+
+    virtual void ListenForInputSources(Dia::Core::BitArray8 sources) {}
+};
 ```
 
 ---
 
 ### InputSourceManager
 
-**Header:** `Dia/DiaInput/DiaInputInputSourceManager.h`
+**Header:** `Dia/DiaInput/InputSourceManager.h`
 
 **Purpose:** Manages multiple input sources
-
-#### Key Methods
 
 ```cpp
 class InputSourceManager
 {
 public:
-    // Add input source
-    void AddSource(IInputSource* source);
-    void RemoveSource(IInputSource* source);
-    
-    // Poll events
-    bool PollEvent(InputEvent& outEvent);
+    void AddInputSource(IInputSource* inputSource);      // does not take ownership
+    void RemoveInputSource(IInputSource* inputSource);
+
+    void StartFrame();
+    void Update(EventData& outStream);                   // polls all sources, appends events
+    void EndFrame();
 };
 ```
 
 #### Usage Example
 
 ```cpp
-// Create manager
 Dia::Input::InputSourceManager inputManager;
+inputManager.AddInputSource(sdlWindow);   // Dia::SDL::Window* is also an IInputSource
 
-// Add SFML input source
-Dia::SFML::DiaSFMLInputSource* sfmlInput = new Dia::SFML::DiaSFMLInputSource(window);
-inputManager.AddSource(sfmlInput);
+Dia::Input::EventData events;
 
-// Poll events
-Dia::Input::InputEvent event;
-while (inputManager.PollEvent(event))
+inputManager.StartFrame();
+inputManager.Update(events);
+inputManager.EndFrame();
+
+for (unsigned int i = 0; i < events.Size(); ++i)
 {
-    ProcessInput(event);
+    HandleEvent(events[i]);
 }
 ```
 
 ---
 
-## Common Patterns
+### InputState
 
-### Event Polling Loop
+**Header:** `Dia/DiaInput/InputState.h`
+
+Built from events with `ProcessEvents(const EventData&)`; cleared per frame with `ClearFrameState()`.
 
 ```cpp
-void MainThread::Update()
-{
-    Dia::Input::InputEvent event;
-    while (mInputManager->PollEvent(event))
-    {
-        // Forward to Sim thread via FrameStream
-        mInputFrameStream.Write(event);
-        
-        // Process immediately on Main thread
-        ProcessUIInput(event);
-    }
-}
+bool IsKeyDown(EKey key) const;
+bool WasKeyPressed(EKey key) const;
+bool WasKeyReleased(EKey key) const;
+
+bool IsMouseButtonDown(EMouseButton button) const;
+bool WasMouseButtonPressed(EMouseButton button) const;
+bool WasMouseButtonReleased(EMouseButton button) const;
+void GetMousePosition(int& x, int& y) const;
+int  GetMouseWheelDelta() const;
+
+bool IsGamepadConnected(unsigned int index) const;
+bool IsGamepadButtonDown(unsigned int index, ConsoleGamepad::EButtonID button) const;
+
+bool  IsJoystickConnected(unsigned int index) const;
+bool  IsJoystickButtonDown(unsigned int index, unsigned int button) const;
+float GetJoystickAxisValue(unsigned int index, EJoystickAxis axis) const;
 ```
 
 ---
 
-### Input State Tracking
+### ActionMap
+
+**Header:** `Dia/DiaInput/ActionMap.h`
 
 ```cpp
-class InputState
-{
-public:
-    void ProcessEvent(const Dia::Input::InputEvent& event)
-    {
-        using namespace Dia::Input;
-        
-        switch (event.type)
-        {
-            case InputEventType::KeyPressed:
-                mKeys[event.key.code] = true;
-                break;
-                
-            case InputEventType::KeyReleased:
-                mKeys[event.key.code] = false;
-                break;
-                
-            case InputEventType::MouseButtonPressed:
-                mMouseButtons[event.mouseButton.button] = true;
-                break;
-                
-            case InputEventType::MouseButtonReleased:
-                mMouseButtons[event.mouseButton.button] = false;
-                break;
-                
-            case InputEventType::MouseMoved:
-                mMouseX = event.mouseMove.x;
-                mMouseY = event.mouseMove.y;
-                break;
-        }
-    }
-    
-    bool IsKeyDown(Dia::Input::KeyCode key) const
-    {
-        auto it = mKeys.find(key);
-        return it != mKeys.end() && it->second;
-    }
-    
-    bool IsMouseButtonDown(Dia::Input::MouseButton button) const
-    {
-        auto it = mMouseButtons.find(button);
-        return it != mMouseButtons.end() && it->second;
-    }
-    
-    void GetMousePosition(int& x, int& y) const
-    {
-        x = mMouseX;
-        y = mMouseY;
-    }
-    
-private:
-    std::map<Dia::Input::KeyCode, bool> mKeys;
-    std::map<Dia::Input::MouseButton, bool> mMouseButtons;
-    int mMouseX = 0;
-    int mMouseY = 0;
-};
+using ActionID = Core::StringCRC;
+
+void BindKey(ActionID action, EKey key);
+void BindMouseButton(ActionID action, EMouseButton button);
+void BindGamepadButton(ActionID action, unsigned int gamepadIndex, ConsoleGamepad::EButtonID button);
+void BindJoystickButton(ActionID action, unsigned int joystickIndex, unsigned int button);
+void BindJoystickAxis(ActionID action, unsigned int joystickIndex, EJoystickAxis axis);
+void UnbindAction(ActionID action);
+void ClearAllBindings();
+
+void ProcessEvents(const EventData& events);
+bool  IsActionActive(ActionID action) const;
+float GetActionValue(ActionID action) const;
+
+bool SaveProfile(const char* filePath, const char* profileName = "Default") const;
+bool LoadProfile(const char* filePath);
 ```
 
----
-
-### Movement Input
-
 ```cpp
-Dia::Maths::Vector2D GetMovementInput(const InputState& input)
+Dia::Input::ActionMap actionMap;
+actionMap.BindKey(Dia::Input::ActionID("Jump"), Dia::Input::EKey::Space);
+actionMap.BindGamepadButton(Dia::Input::ActionID("Jump"), 0, Dia::Input::ConsoleGamepad::EButtonID::A);
+
+actionMap.ProcessEvents(events);
+if (actionMap.IsActionActive(Dia::Input::ActionID("Jump")))
 {
-    using namespace Dia::Input;
-    
-    Dia::Maths::Vector2D movement(0.0f, 0.0f);
-    
-    // WASD movement
-    if (input.IsKeyDown(KeyCode::W))
-        movement.y -= 1.0f;
-    if (input.IsKeyDown(KeyCode::S))
-        movement.y += 1.0f;
-    if (input.IsKeyDown(KeyCode::A))
-        movement.x -= 1.0f;
-    if (input.IsKeyDown(KeyCode::D))
-        movement.x += 1.0f;
-    
-    // Normalize diagonal movement
-    if (movement.Magnitude() > 0.0f)
-    {
-        movement = movement.Normalize();
-    }
-    
-    return movement;
-}
-```
-
----
-
-### Action Mapping
-
-```cpp
-enum class GameAction
-{
-    Jump,
-    Fire,
-    Reload,
-    Pause
-};
-
-class InputMapper
-{
-public:
-    void MapKey(GameAction action, Dia::Input::KeyCode key)
-    {
-        mKeyMap[key] = action;
-    }
-    
-    bool GetAction(const Dia::Input::InputEvent& event, GameAction& outAction)
-    {
-        if (event.type == Dia::Input::InputEventType::KeyPressed)
-        {
-            auto it = mKeyMap.find(event.key.code);
-            if (it != mKeyMap.end())
-            {
-                outAction = it->second;
-                return true;
-            }
-        }
-        return false;
-    }
-    
-private:
-    std::map<Dia::Input::KeyCode, GameAction> mKeyMap;
-};
-
-// Usage
-InputMapper mapper;
-mapper.MapKey(GameAction::Jump, Dia::Input::KeyCode::Space);
-mapper.MapKey(GameAction::Fire, Dia::Input::KeyCode::LControl);
-mapper.MapKey(GameAction::Pause, Dia::Input::KeyCode::Escape);
-
-// In event loop
-GameAction action;
-if (mapper.GetAction(event, action))
-{
-    switch (action)
-    {
-        case GameAction::Jump:
-            player.Jump();
-            break;
-        case GameAction::Fire:
-            player.Fire();
-            break;
-        case GameAction::Pause:
-            game.Pause();
-            break;
-    }
+    Jump();
 }
 ```
 
@@ -476,228 +246,75 @@ if (mapper.GetAction(event, action))
 
 ## Backend Implementation
 
-### DiaSFML Implementation
+### DiaSDL Implementation
 
-**Class:** `Dia::SFML::DiaSFMLInputSource`
+**Class:** `Dia::SDL::InputSource` (base of `Dia::SDL::Window`)
 
-**Header:** `Dia/DiaSFML/DiaSFMLInputSource.h`
+**Header:** `Dia/DiaSDL/InputSource.h`
 
 ```cpp
-class DiaSFMLInputSource : public Dia::Input::IInputSource
+class InputSource : public Dia::Input::IInputSource
 {
 public:
-    DiaSFMLInputSource(sf::Window* window);
-    
-    bool PollEvent(Dia::Input::InputEvent& outEvent) override;
-    
-private:
-    sf::Window* mWindow;
-    
-    // SFML → DiaInput conversion
-    Dia::Input::KeyCode ConvertKey(sf::Keyboard::Key key);
-    Dia::Input::MouseButton ConvertMouseButton(sf::Mouse::Button button);
+    void SetWindowContext(SDL_Window* window);
+    void ListenForInputSources(Dia::Core::BitArray8 listeningToSource) override;
+    void Poll(Dia::Input::EventData& outStream) override;
+
+    static Dia::Input::EKey SDLKeycodeToEKey(SDL_Keycode key);
+    static bool TranslateSDLEvent(const SDL_Event& sdlEvent, Dia::Input::Event& outEvent);
 };
 ```
 
-**[→ DiaSFML API Details](sfml-api.md)**
+`Poll` drains SDL events and converts them to `Dia::Input::Event`. Source categories for `ListenForInputSources` are `InputSource::ESourceIndex::kSystem`, `kKeyboard`, `kMouse` and `kJoystick`.
+
+**[→ DiaSDL API Details](sdl-api.md)**
 
 ---
 
 ## Dependencies
 
 **Required:**
-- None (self-contained)
+- DiaCore
 
 **Implementation:**
-- `Dia/DiaSFML/` - SFML backend
+- `Dia/DiaSDL/` - SDL3 backend
 
 ---
 
 ## Thread Safety
 
-| Component | Thread Safety |
-|-----------|---------------|
-| `InputEvent` | ✅ Safe (copyable struct) |
-| `InputSourceManager::PollEvent()` | ❌ Call from Main thread only |
-
-**Important:** Input events should be **polled on Main thread** and forwarded to other threads via `FrameStream<InputEvent>`.
+Input sources are polled on the **main thread**, which owns the window. Forward events to the simulation thread through a stream rather than sharing state.
 
 ---
 
 ## Best Practices
 
-### 1. Forward Events to Sim Thread
-
-```cpp
-// Main thread
-Dia::Input::InputEvent event;
-while (inputManager.PollEvent(event))
-{
-    mInputFrameStream.Write(event);  // Forward to Sim
-}
-
-// Sim thread
-Dia::Input::InputEvent event;
-while (mInputFrameStream.Read(event))
-{
-    ProcessGameInput(event);
-}
-```
-
----
-
-### 2. Separate UI and Game Input
-
-```cpp
-void ProcessEvent(const Dia::Input::InputEvent& event)
-{
-    // UI first (on Main thread)
-    if (ProcessUIInput(event))
-    {
-        return;  // UI consumed event
-    }
-    
-    // Forward to game (Sim thread)
-    mInputFrameStream.Write(event);
-}
-```
-
----
-
-### 3. Use State Tracking for Continuous Input
-
-```cpp
-// ✅ Good: Track state for movement
-InputState inputState;
-
-void Update()
-{
-    // Poll events
-    while (PollEvent(event))
-    {
-        inputState.ProcessEvent(event);
-    }
-    
-    // Query state
-    if (inputState.IsKeyDown(KeyCode::W))
-    {
-        MoveForward();  // Continuous movement
-    }
-}
-
-// ❌ Bad: Try to handle movement in events
-void ProcessEvent(const InputEvent& event)
-{
-    if (event.type == KeyPressed && event.key.code == KeyCode::W)
-    {
-        MoveForward();  // Only moves once per key press!
-    }
-}
-```
-
----
-
-### 4. Handle Text Input Separately
-
-```cpp
-// Text input for UI fields
-if (textFieldActive && event.type == InputEventType::TextEntered)
-{
-    HandleTextInput(event.text.unicode);
-}
-
-// Game input
-if (event.type == InputEventType::KeyPressed)
-{
-    HandleGameInput(event.key.code);
-}
-```
+- Poll on the main thread and forward events to the Sim thread.
+- Use `InputState` for continuous input (held keys, axes) and events for discrete actions.
+- Use `ActionMap` so game code binds to action names, not raw keys.
+- Give UI input sources a higher `Priority` so they see events before game input.
 
 ---
 
 ## Gotchas
 
-### Gotcha 1: Event Polling is Destructive
-
-Polling an event **removes it from the queue**. Don't poll twice.
-
----
-
-### Gotcha 2: Key Repeats
-
-Key events may **repeat** if key held down (OS behavior). Track state if you need "key held" logic.
-
----
-
-### Gotcha 3: Mouse Coordinates
-
-Mouse coordinates are **window-relative**, not world-relative. Transform if needed.
-
-```cpp
-// Window coordinates → World coordinates
-Dia::Maths::Vector2D mouseWorld = 
-    cameraTransform.Inverse() * 
-    Dia::Maths::Vector2D(event.mouseButton.x, event.mouseButton.y);
-```
-
----
-
-### Gotcha 4: Focus Loss
-
-Input events **stop when window loses focus**. Handle focus events if needed.
-
----
-
-## Limitations
-
-### Current Limitations
-
-1. **No gamepad mapping** - Raw gamepad IDs and buttons
-2. **No input recording/playback** - For replays
-3. **No gesture support** - Touch gestures
-4. **Limited gamepad support** - Basic buttons/axes only
-
-### Future Improvements
-
-- Gamepad abstraction (generic button mapping)
-- Input recording system
-- Touch/gesture support
-- Rumble/haptic feedback
+- `Poll` appends to the shared `EventData`; never clear it inside a source.
+- `EventData` has a fixed capacity (64 events by default); the manager logs a warning when it fills.
+- Check `Event::type` before reading any union member.
 
 ---
 
 ## Summary
 
-**Core Types:**
-- `InputEvent` - Platform-agnostic input events
-- `InputEventType` - Event type enum
-- `KeyCode` - Keyboard key enum
-- `MouseButton` - Mouse button enum
-
-**Event Types:**
-- Keyboard (pressed/released)
-- Mouse button (pressed/released)
-- Mouse move
-- Mouse wheel
-- Gamepad button/axis
-- Text entry
+**Event categories:**
+- Window (close, resize, focus), keyboard, text, mouse, joystick, console gamepad
 
 **Input Flow:**
-1. Backend captures events (SFML)
-2. Converts to DiaInput format
-3. Main thread polls events
-4. Forwards to Sim thread via FrameStream
-
-**Thread Safety:**
-- ❌ Poll from Main thread only
-- ✅ InputEvent copyable, safe to forward
-
-**Best Practices:**
-- Track state for continuous input
-- Forward events to Sim thread
-- Separate UI and game input
-- Use action mapping for flexibility
+1. Backend (DiaSDL) captures events
+2. Converts to `Dia::Input::Event`
+3. Main thread polls through `InputSourceManager::Update`
+4. Forwards to Sim thread
 
 **[→ API Overview](../api-overview.md)**  
-**[→ DiaSFML API](sfml-api.md)**  
+**[→ DiaSDL API](sdl-api.md)**  
 **[→ DiaApplicationFlow API](application-api.md)**

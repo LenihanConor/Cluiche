@@ -1,3 +1,4 @@
+#include <DiaObservation/Testing/UniqueTestPath.h>
 #include <gtest/gtest.h>
 #include <DiaObservation/Trace/Tracer.h>
 #include <DiaObservation/Trace/ScopedZone.h>
@@ -15,7 +16,7 @@ using namespace Dia::Observation::Trace;
 
 namespace
 {
-    const char* kTestTracePath = "test_trace_output.jsonl";
+    const Dia::Observation::Testing::UniqueTestPath kTestTracePath("test_trace_output.jsonl");
 
     struct CaptureTraceSink : public ITraceSink
     {

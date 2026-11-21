@@ -1,0 +1,12 @@
+{
+    "name": "Stage38",
+    "manifest": "Stage38.stage.json",
+    "tags": [
+        "test"
+    ],
+    "config": {
+        "path_aliases": {
+            "root": "."
+        }
+    }
+}

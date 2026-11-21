@@ -99,6 +99,9 @@
     <ClInclude Include="Hierarchy\ChildBufferComponent.h" />
     <ClInclude Include="Hierarchy\Hierarchy.h" />
     <ClInclude Include="Messages\EntityDestroyedMessage.h" />
+    <ClInclude Include="Testing\TestDescribedComponent.h" />
+    <ClInclude Include="ComponentDescribe.h" />
+    <ClInclude Include="ComponentSchemaJson.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />
@@ -109,6 +112,8 @@
     <ClCompile Include="Hierarchy\ParentComponent.cpp" />
     <ClCompile Include="Hierarchy\ChildBufferComponent.cpp" />
     <ClCompile Include="Hierarchy\Hierarchy.cpp" />
+    <ClCompile Include="ComponentDescribe.cpp" />
+    <ClCompile Include="ComponentSchemaJson.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

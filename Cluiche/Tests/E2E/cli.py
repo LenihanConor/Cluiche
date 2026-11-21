@@ -24,10 +24,15 @@ def load_plan(suite: str) -> dict:
 
 
 def filter_scenarios(scenarios: list, scenario_glob: str = None) -> list:
-    """Filter scenario entries using fnmatch against a glob pattern."""
+    """Filter scenario entries using fnmatch against a glob pattern.
+
+    scenario_glob may hold several comma-separated globs; a scenario matches if
+    any of them does. Plan order is preserved.
+    """
     if not scenario_glob:
         return list(scenarios)
-    return [s for s in scenarios if fnmatch.fnmatch(s, scenario_glob)]
+    globs = [g.strip() for g in scenario_glob.split(",") if g.strip()]
+    return [s for s in scenarios if any(fnmatch.fnmatch(s, g) for g in globs)]
 
 
 def list_scenarios(plan: dict, scenario_glob: str = None) -> int:

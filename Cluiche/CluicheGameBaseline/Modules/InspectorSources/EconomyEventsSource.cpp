@@ -135,7 +135,7 @@ void EconomyEventsSource::SendFullRing()
     payload["full_ring"] = true;
     payload["events"]    = events;
 
-    mServer->NotifySubscribers(GetTopic(), payload);
+    mServer->PublishTopicOrdered(GetTopic(), payload);
 }
 
 void EconomyEventsSource::SendDelta(const Json::Value& ev)
@@ -152,7 +152,7 @@ void EconomyEventsSource::SendDelta(const Json::Value& ev)
     payload["full_ring"] = false;
     payload["events"]    = events;
 
-    mServer->NotifySubscribers(GetTopic(), payload);
+    mServer->PublishTopicOrdered(GetTopic(), payload);
 }
 
 }} // namespace Cluiche::AppFlow

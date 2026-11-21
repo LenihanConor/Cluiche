@@ -11,7 +11,7 @@ void RulesController::Init(Dia::Editor::WebUIBridge* bridge)
 
 void RulesController::OnPayload(const Json::Value& payload)
 {
-    mBridge->NotifyUIDataChanged("ai_inspector.rules", payload);
+    if (mBridge) mBridge->NotifyUIDataChanged("ai_inspector.rules", payload);
 }
 
 } // namespace Dia::AIInspector

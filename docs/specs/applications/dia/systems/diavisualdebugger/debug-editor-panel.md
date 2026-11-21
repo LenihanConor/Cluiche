@@ -309,4 +309,4 @@ Tests cover C++ plugin class and `BroadcastLayerState` serialisation only — no
 
 ## Status
 
-`Approved`
+`Superseded` (2026-11-02): retired. Nothing ever called `DebugLayerManager::BroadcastLayerState`, so the Debug Layers panel never received data; the broadcast, `DebugLayerPanelPlugin`, the panel assets and `debug.layer.list` were deleted. See @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.md.

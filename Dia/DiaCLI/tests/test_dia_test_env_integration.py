@@ -59,7 +59,7 @@ def test_classify_path_error_is_env():
 
 
 def test_classify_sha256_mismatch_is_env():
-    kind, reason = _classify_failure("ERROR: sfml SHA-256 mismatch\n  expected: abc\n  actual: xyz")
+    kind, reason = _classify_failure("ERROR: examplelib SHA-256 mismatch\n  expected: abc\n  actual: xyz")
     assert kind == "env"
 
 

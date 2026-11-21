@@ -25,13 +25,13 @@ def _make_deps_json(tmp_path: Path, extra_deps: list = None) -> Path:
     """Write a minimal deps.json at tmp_path root."""
     deps = [
         {
-            "id": "sfml",
+            "id": "examplelib",
             "version": "2.6.1",
-            "url": "https://example.com/sfml.zip",
+            "url": "https://example.com/examplelib.zip",
             "mirrors": [],
             "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
             "install_type": "zip",
-            "unzip_to": "External/SFML",
+            "unzip_to": "External/ExampleLib",
             "strip_root": True,
         }
     ]
@@ -134,7 +134,7 @@ class TestLoadDeps:
         _make_deps_json(tmp_path)
         deps = load_deps(tmp_path)
         assert len(deps) == 1
-        assert deps[0]["id"] == "sfml"
+        assert deps[0]["id"] == "examplelib"
 
     def test_load_deps_missing_file(self, tmp_path):
         from dia_cli.utils.deps_restore import load_deps, DepsManifestError
@@ -167,34 +167,34 @@ class TestLoadDeps:
 class TestGetSentinelPath:
     def test_sentinel_path(self, tmp_path):
         from dia_cli.utils.deps_restore import get_sentinel_path
-        p = get_sentinel_path(tmp_path, "sfml")
-        assert p == tmp_path / ".diaenv" / "deps" / "sfml.restored"
+        p = get_sentinel_path(tmp_path, "examplelib")
+        assert p == tmp_path / ".diaenv" / "deps" / "examplelib.restored"
 
 
 class TestIsRestored:
     def test_not_restored_no_sentinel(self, tmp_path):
         from dia_cli.utils.deps_restore import is_restored
-        dep = {"id": "sfml", "version": "2.6.1"}
+        dep = {"id": "examplelib", "version": "2.6.1"}
         assert not is_restored(tmp_path, dep)
 
     def test_restored_matching_version(self, tmp_path):
         from dia_cli.utils.deps_restore import is_restored
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
-        dep = {"id": "sfml", "version": "2.6.1"}
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
+        dep = {"id": "examplelib", "version": "2.6.1"}
         assert is_restored(tmp_path, dep)
 
     def test_not_restored_wrong_version(self, tmp_path):
         from dia_cli.utils.deps_restore import is_restored
-        _write_sentinel(tmp_path, "sfml", "2.5.0")
-        dep = {"id": "sfml", "version": "2.6.1"}
+        _write_sentinel(tmp_path, "examplelib", "2.5.0")
+        dep = {"id": "examplelib", "version": "2.6.1"}
         assert not is_restored(tmp_path, dep)
 
     def test_not_restored_corrupt_sentinel(self, tmp_path):
         from dia_cli.utils.deps_restore import is_restored
         sentinel_dir = tmp_path / ".diaenv" / "deps"
         sentinel_dir.mkdir(parents=True)
-        (sentinel_dir / "sfml.restored").write_text("not json")
-        dep = {"id": "sfml", "version": "2.6.1"}
+        (sentinel_dir / "examplelib.restored").write_text("not json")
+        dep = {"id": "examplelib", "version": "2.6.1"}
         assert not is_restored(tmp_path, dep)
 
 
@@ -202,10 +202,10 @@ class TestRestoreDep:
     def test_skip_if_already_restored(self, tmp_path, capsys):
         from dia_cli.utils.deps_restore import restore_dep
         _make_deps_json(tmp_path)
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
         code = restore_dep(dep, tmp_path, force=False)
         assert code == 0
         out = capsys.readouterr().out
@@ -213,10 +213,10 @@ class TestRestoreDep:
 
     def test_force_redownloads(self, tmp_path):
         from dia_cli.utils.deps_restore import restore_dep
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
 
         zip_bytes = _make_zip([("file.txt", b"hello")])
 
@@ -241,9 +241,9 @@ class TestRestoreDep:
 
     def test_download_failure_returns_1(self, tmp_path, capsys):
         from dia_cli.utils.deps_restore import restore_dep
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
         with patch("dia_cli.utils.deps_restore._download_from_sources", return_value=False):
             code = restore_dep(dep, tmp_path)
         assert code == 1
@@ -252,9 +252,9 @@ class TestRestoreDep:
 
     def test_sha256_mismatch_returns_1(self, tmp_path, capsys):
         from dia_cli.utils.deps_restore import restore_dep
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "expectedhash000000000000000000000000000000000000000000000000000000",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
@@ -270,9 +270,9 @@ class TestRestoreDep:
 
     def test_sha256_placeholder_skips_verify(self, tmp_path):
         from dia_cli.utils.deps_restore import restore_dep
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
@@ -287,9 +287,9 @@ class TestRestoreDep:
 
     def test_sentinel_written_on_success(self, tmp_path):
         from dia_cli.utils.deps_restore import restore_dep, get_sentinel_path
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
@@ -302,10 +302,10 @@ class TestRestoreDep:
             code = restore_dep(dep, tmp_path)
 
         assert code == 0
-        sentinel = get_sentinel_path(tmp_path, "sfml")
+        sentinel = get_sentinel_path(tmp_path, "examplelib")
         assert sentinel.exists()
         data = json.loads(sentinel.read_text())
-        assert data["id"] == "sfml"
+        assert data["id"] == "examplelib"
         assert data["version"] == "2.6.1"
         assert "restored_at" in data
 
@@ -314,12 +314,12 @@ class TestRestoreDep:
         # Pre-create a stale .tmp file
         tmp_dir = tmp_path / ".diaenv" / "deps"
         tmp_dir.mkdir(parents=True)
-        stale_tmp = tmp_dir / "sfml.tmp"
+        stale_tmp = tmp_dir / "examplelib.tmp"
         stale_tmp.write_bytes(b"stale")
 
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
@@ -336,10 +336,10 @@ class TestRestoreDep:
 
     def test_quiet_suppresses_progress(self, tmp_path, capsys):
         from dia_cli.utils.deps_restore import restore_dep
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
-        dep = {"id": "sfml", "version": "2.6.1", "url": "https://example.com/sfml.zip",
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
+        dep = {"id": "examplelib", "version": "2.6.1", "url": "https://example.com/examplelib.zip",
                "mirrors": [], "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-               "install_type": "zip", "unzip_to": "External/SFML", "strip_root": False}
+               "install_type": "zip", "unzip_to": "External/ExampleLib", "strip_root": False}
         code = restore_dep(dep, tmp_path, force=False, quiet=True)
         assert code == 0
         out = capsys.readouterr().out
@@ -689,7 +689,7 @@ class TestDepsRestoreCmd:
 
         with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
              patch("dia_cli.utils.deps_restore._install_zip"):
-            code = run(repo_root=tmp_path, dep_id="sfml", force=False, quiet=True)
+            code = run(repo_root=tmp_path, dep_id="examplelib", force=False, quiet=True)
         assert code == 0
 
     def test_run_named_dep_not_found(self, tmp_path, capsys):
@@ -718,13 +718,13 @@ class TestDepsRestoreCmd:
     def test_run_force_flag_passed_through(self, tmp_path):
         from dia_cli.commands.env.deps_restore_cmd import run
         _make_deps_json(tmp_path)
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
         with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
              patch("dia_cli.utils.deps_restore._install_zip"):
-            code = run(repo_root=tmp_path, dep_id="sfml", force=True, quiet=True)
+            code = run(repo_root=tmp_path, dep_id="examplelib", force=True, quiet=True)
         assert code == 0
 
 
@@ -1003,14 +1003,14 @@ class TestDepsVerify:
         _make_deps_json(tmp_path)
         results = check_deps(tmp_path)
         assert len(results) == 1
-        assert results[0].name == "sfml"
+        assert results[0].name == "examplelib"
         assert results[0].status == "fail"
         assert "not restored" in results[0].detail
 
     def test_check_deps_restored_pass(self, tmp_path):
         from dia_cli.utils.deps_verify import check_deps
         _make_deps_json(tmp_path)
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
         results = check_deps(tmp_path)
         assert results[0].status == "pass"
         assert results[0].detail == "2.6.1"
@@ -1018,7 +1018,7 @@ class TestDepsVerify:
     def test_check_deps_version_mismatch_warn(self, tmp_path):
         from dia_cli.utils.deps_verify import check_deps
         _make_deps_json(tmp_path)
-        _write_sentinel(tmp_path, "sfml", "2.5.0")  # Old version
+        _write_sentinel(tmp_path, "examplelib", "2.5.0")  # Old version
         results = check_deps(tmp_path)
         assert results[0].status == "warn"
         assert "2.5.0" in results[0].detail
@@ -1027,7 +1027,7 @@ class TestDepsVerify:
         from dia_cli.utils.deps_verify import check_deps
         _make_deps_json(tmp_path)
         # Create the directory but no sentinel
-        (tmp_path / "External" / "SFML").mkdir(parents=True)
+        (tmp_path / "External" / "ExampleLib").mkdir(parents=True)
         results = check_deps(tmp_path)
         assert results[0].status == "warn"
         assert "manually placed" in results[0].detail
@@ -1036,7 +1036,7 @@ class TestDepsVerify:
         from dia_cli.utils.deps_verify import check_deps
         _make_deps_json(tmp_path)
         results = check_deps(tmp_path)
-        assert "dia env deps --dep sfml" in results[0].fix
+        assert "dia env deps --dep examplelib" in results[0].fix
 
 
 # ===========================================================================
@@ -1055,7 +1055,7 @@ class TestVerifyOrchestrator:
 
     def _deps_pass_results(self):
         _dv = _get_utils_deps_verify()
-        return [_dv.CheckResult("sfml", "deps", "pass", "2.6.1")]
+        return [_dv.CheckResult("examplelib", "deps", "pass", "2.6.1")]
 
     def _submodules_pass_results(self):
         _sv = _get_utils_submodule_verify()
@@ -1073,7 +1073,8 @@ class TestVerifyOrchestrator:
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
              patch.object(_vo_full, "_check_python_packages", return_value=[]), \
-             patch.object(_vo_full, "_check_cppcheck", return_value=[]):
+             patch.object(_vo_full, "_check_cppcheck", return_value=[]), \
+             patch.object(_vo_full, "_check_pmd", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
                        output_json=True, quiet=False)
@@ -1092,7 +1093,8 @@ class TestVerifyOrchestrator:
              patch.object(_vo_full, "_check_claude", return_value=[]), \
              patch.object(_vo_full, "_check_local_llm", return_value=[]), \
              patch.object(_vo_full, "_check_python_packages", return_value=[]), \
-             patch.object(_vo_full, "_check_cppcheck", return_value=[]):
+             patch.object(_vo_full, "_check_cppcheck", return_value=[]), \
+             patch.object(_vo_full, "_check_pmd", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
                 output_json=True, quiet=False)
@@ -1171,7 +1173,7 @@ class TestVerifyOrchestrator:
         from dia_cli.commands.env.verify_orchestrator import run
 
         _make_deps_json(tmp_path)
-        _write_sentinel(tmp_path, "sfml", "2.6.1")
+        _write_sentinel(tmp_path, "examplelib", "2.6.1")
 
         with patch("dia_cli.utils.toolchain_verify.check_all_toolchain") as mock_tc, \
              patch("dia_cli.utils.deps_verify.check_deps",
@@ -1281,7 +1283,7 @@ class TestSetupOrchestrator:
     def test_run_dep_id_with_toolchain_returns_2(self, tmp_path, capsys):
         from dia_cli.commands.env.setup_orchestrator import run
         code = run(repo_root=tmp_path, toolchain=True, deps_only=False,
-                   dep_id="sfml", submodules=False, claude=False,
+                   dep_id="examplelib", submodules=False, claude=False,
                    force=False, fail_fast=False, quiet=True)
         assert code == 2
 

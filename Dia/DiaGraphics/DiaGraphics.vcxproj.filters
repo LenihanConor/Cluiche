@@ -34,6 +34,15 @@
     <ClCompile Include="Camera\ViewportTransform.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
+    <ClCompile Include="Frame\CellFieldFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="CellField\HexFlatTopOddQBuilder.cpp">
+      <Filter>CellField</Filter>
+    </ClCompile>
+    <ClCompile Include="CellField\CellFieldRegistry.cpp">
+      <Filter>CellField</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera\Camera2D.h">
@@ -125,6 +134,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{B7C8D9E0-F1A2-3456-7890-123456A01234}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CellField">
+      <UniqueIdentifier>{c9ad7084-c245-4977-9afe-6ee5fe42e029}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\MockITexture.h">
@@ -132,6 +144,21 @@
     </ClInclude>
     <ClInclude Include="Testing\MockVisitors.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\CellFieldFrameData.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="CellField\CellGridDesc.h">
+      <Filter>CellField</Filter>
+    </ClInclude>
+    <ClInclude Include="CellField\ICellGridGeometryBuilder.h">
+      <Filter>CellField</Filter>
+    </ClInclude>
+    <ClInclude Include="CellField\HexFlatTopOddQBuilder.h">
+      <Filter>CellField</Filter>
+    </ClInclude>
+    <ClInclude Include="CellField\CellFieldRegistry.h">
+      <Filter>CellField</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -52,7 +52,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -66,7 +66,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -80,6 +80,10 @@
     <ClInclude Include="IAttributeObserver.h" />
     <ClInclude Include="AttributeObserverSubject.h" />
     <ClInclude Include="AttributeAccessorBridge.h" />
+    <ClInclude Include="ParameterFile.h" />
+    <ClInclude Include="ParamBinding.h" />
+    <ClInclude Include="IMapKeySource.h" />
+    <ClInclude Include="Testing\AttributeTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AttributeSchema.cpp" />
@@ -87,6 +91,7 @@
     <ClCompile Include="AttributeSetComponent.cpp" />
     <ClCompile Include="AttributeObserverSubject.cpp" />
     <ClCompile Include="AttributeAccessorBridge.cpp" />
+    <ClCompile Include="ParameterFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.attribute.architecture.module.md" />
@@ -110,6 +115,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaSaveGame\DiaSaveGame.vcxproj">
       <Project>{10CADE58-BBF3-4114-9D8B-5C8F71C56417}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaValueSchema\DiaValueSchema.vcxproj">
+      <Project>{21E6E786-B115-550E-A32A-88E43C7D77F9}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

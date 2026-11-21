@@ -70,8 +70,8 @@ TEST(PipelineTargetParser, HiddenTargetsExcluded)
 		"[targets.googletest]\n"
 		"project = \"Tests.vcxproj\"\n"
 		"\n"
-		"[targets.diasfml]\n"
-		"project = \"DiaSFML.vcxproj\"\n"
+		"[targets.diahiddenlib]\n"
+		"project = \"DiaHiddenLib.vcxproj\"\n"
 		"hidden = true\n"
 		"\n"
 		"[targets.cluicheeditor]\n"
@@ -121,7 +121,7 @@ TEST(PipelineTargetParser, AllHiddenReturnsEmpty)
 {
 	TempToml tmp;
 	tmp.Write(
-		"[targets.diasfml]\n"
+		"[targets.diahiddenlib]\n"
 		"hidden = true\n"
 		"\n"
 		"[targets.diauiultralight]\n"
@@ -145,8 +145,8 @@ TEST(PipelineTargetParser, HiddenOnLastTargetInFile)
 		"[targets.googletest]\n"
 		"project = \"Tests.vcxproj\"\n"
 		"\n"
-		"[targets.diasfml]\n"
-		"project = \"DiaSFML.vcxproj\"\n"
+		"[targets.diahiddenlib]\n"
+		"project = \"DiaHiddenLib.vcxproj\"\n"
 		"hidden = true\n"
 	);
 

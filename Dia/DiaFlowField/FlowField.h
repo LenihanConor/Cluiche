@@ -1,19 +1,17 @@
 #pragma once
 
 #include <DiaFlowField/FlowCell.h>
+#include <DiaFlowField/CFlowFieldGraph.h>
 #include <DiaPathfinding/CellCoord.h>
-#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Containers/Arrays/DynamicArray.h>
 
 namespace Dia
 {
     namespace FlowField
     {
-        // Maximum number of cells a FlowField can hold.
-        // Matches DiaPathfinding's SquarePathGrid upper limit (64x64).
-        static const unsigned int kMaxFlowFieldCells = 4096;
-
         // A baked flow field over a grid.
         // Produced by ComputeFlowField; consumed by steering/agent code.
+        // Storage is heap-allocated, sized to width * height.
         class FlowField
         {
         public:
@@ -27,11 +25,28 @@ namespace Dia
             // Convenience: sample direction from a world position using a uniform
             // square-grid cell size.  Does not need graph access — uses integer
             // division directly (col = worldPos.x / cellSize, row = worldPos.y / cellSize).
+            // NOTE: This overload is square-grid-only and returns incorrect results on hex grids.
+            // Use the graph-aware overload below for any CFlowFieldGraph.
             Dia::Maths::Vector2D SampleWorld(Dia::Maths::Vector2D worldPos, float cellSize) const
             {
                 int col = static_cast<int>(worldPos.X() / cellSize);
                 int row = static_cast<int>(worldPos.Y() / cellSize);
                 return Sample(Dia::Pathfinding::CellCoord{col, row}).direction;
+            }
+
+            // Graph-aware sampling: converts the position with the graph's own WorldToCell,
+            // so it is correct for any CFlowFieldGraph (square, axial hex, rectangular hex).
+            template<CFlowFieldGraph TGraph>
+            const FlowCell& Sample(const TGraph& graph, Dia::Maths::Vector2D worldPos, float cellSize) const
+            {
+                Dia::Pathfinding::CellCoord cell = graph.WorldToCell(worldPos, cellSize);
+                return Sample(cell);
+            }
+
+            template<CFlowFieldGraph TGraph>
+            Dia::Maths::Vector2D SampleWorld(const TGraph& graph, Dia::Maths::Vector2D worldPos, float cellSize) const
+            {
+                return Sample(graph, worldPos, cellSize).direction;
             }
 
             // Conservative completeness check: returns true if every cell in
@@ -50,6 +65,7 @@ namespace Dia
 
             // Construct an empty field of the given dimensions.
             // All cells are default-initialised (direction={0,0}, reachable=false).
+            // Asserts: width >= 1, height >= 1, width * height fits int.
             explicit FlowField(int width, int height);
 
             // Return a mutable reference to the cell at (cell.x, cell.y).
@@ -59,7 +75,7 @@ namespace Dia
         private:
             int mWidth;
             int mHeight;
-            Dia::Core::Containers::DynamicArrayC<FlowCell, kMaxFlowFieldCells> mCells;
+            Dia::Core::Containers::DynamicArray<FlowCell> mCells;
         };
     }
 }

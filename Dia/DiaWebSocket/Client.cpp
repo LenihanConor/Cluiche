@@ -97,18 +97,10 @@ namespace Dia
 				evt.message.type = msgType;
 				evt.message.connectionId = -1;
 
-				if (msgType == MessageType::kText)
-				{
-					evt.dataBuffer.Assign(payload.c_str(), static_cast<unsigned int>(payload.size() + 1));
-					evt.message.length = payload.size();
-				}
-				else
-				{
-					evt.dataBuffer.Assign(payload.data(), static_cast<unsigned int>(payload.size()));
-					evt.message.length = payload.size();
-				}
+				evt.dataBuffer.Assign(payload.data(), payload.size(), msgType == MessageType::kText);
+				evt.message.length = payload.size();
 
-				evt.message.data = &evt.dataBuffer.At(0);
+				evt.message.data = evt.dataBuffer.Data();
 				mIncomingQueue.Add(evt);
 			}
 
@@ -171,7 +163,7 @@ namespace Dia
 					try
 					{
 						mClient->send(mConnection,
-							&msg.dataBuffer.At(0),
+							msg.dataBuffer.Data(),
 							msg.dataLength,
 							opcode);
 					}
@@ -451,7 +443,7 @@ namespace Dia
 				switch (evt.eventType)
 				{
 				case Internal::QueuedEvent::Type::kMessage:
-					evt.message.data = &evt.dataBuffer.At(0);
+					evt.message.data = evt.dataBuffer.Data();
 					if (mImpl->mOnMessage)
 					{
 						mImpl->mOnMessage(evt.message);
@@ -484,39 +476,31 @@ namespace Dia
 			mImpl->mIncomingQueue.RemoveAll();
 		}
 
-		void Client::Send(const void* data, size_t length, MessageType type)
+		bool Client::Send(const void* data, size_t length, MessageType type)
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				DIA_LOG_WARNING("WebSocket", "Client: Send message too large");
-				return;
+				DIA_LOG_WARNING("WebSocket", "Client: Send message too large (%zu > %zu bytes)", length, mImpl->mMaxMessageSize);
+				return false;
 			}
 
 			Internal::OutgoingMessage msg;
 			msg.connectionId = -1;
 			msg.type = type;
 
-			if (type == MessageType::kText)
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length + 1));
-				msg.dataBuffer.At(static_cast<unsigned int>(length)) = '\0';
+				msg.dataBuffer.Assign(data, length, type == MessageType::kText);
 				msg.dataLength = length;
-			}
-			else
-			{
-				msg.dataBuffer.Assign(static_cast<const char*>(data), static_cast<unsigned int>(length));
-				msg.dataLength = length;
-			}
 
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
 				DIA_LOG_WARNING("WebSocket", "Client: Outgoing queue full - dropping message");
-				return;
+				return false;
 			}
 
 			mImpl->mOutgoingQueue.Add(msg);
+			return true;
 		}
 
 		void Client::SendText(const char* text)

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CoW V-1 Look-Dev: Data-Driven Illustrated Map</title>
+<style>
+  :root { --ink: #2A2420; --paper: #F2E8D4; --panel: #FBF6EC; }
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font: 13px/1.35 "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  #stage { position: absolute; left: 0; top: 0; right: 300px; bottom: 0; }
+  #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #split { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--ink); opacity: .6; pointer-events: none; }
+  .tag { position: absolute; top: 8px; padding: 2px 8px; background: var(--panel); border: 2px solid var(--ink); border-radius: 6px; font-weight: 600; pointer-events: none; }
+  #panel { position: absolute; right: 0; top: 0; bottom: 0; width: 300px; overflow-y: auto; background: var(--panel); border-left: 2px solid var(--ink); box-sizing: border-box; padding: 8px 10px 40px; }
+  h1 { font-size: 15px; margin: 2px 0 6px; }
+  details { border-top: 1px solid #d8ccb4; padding: 4px 0; }
+  summary { font-weight: 600; cursor: pointer; margin: 2px 0 4px; }
+  .row { display: grid; grid-template-columns: 1fr 90px 34px; gap: 4px; align-items: center; margin: 3px 0; }
+  .row select { grid-column: 2 / 4; }
+  .row.check { grid-template-columns: 18px 1fr; }
+  .val { font-variant-numeric: tabular-nums; font-size: 11px; text-align: right; }
+  button { font: inherit; border: 2px solid var(--ink); background: #fff; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  #status { position: absolute; left: 8px; bottom: 6px; right: 308px; font-size: 11px; opacity: .75; pointer-events: none; }
+  #refs { position: absolute; left: 8px; bottom: 24px; display: flex; gap: 6px; }
+  #refs img { height: 54px; border: 2px solid var(--ink); border-radius: 4px; cursor: pointer; background: #fff; }
+  #refBig { display: none; position: absolute; left: 8px; top: 8px; max-width: 48%; max-height: 80%; border: 3px solid var(--ink); border-radius: 6px; cursor: pointer; box-shadow: 0 4px 18px rgba(0,0,0,.35); }
+  #atlasPreview { display: none; width: 100%; background: #fff; border: 1px solid #ccc; margin-top: 6px; image-rendering: auto; }
+  .note { font-size: 11px; opacity: .8; margin: 4px 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl"></canvas>
+  <div id="split"></div>
+  <div class="tag" id="tag2d" style="left:8px">2D illustrated field</div>
+  <div class="tag" id="tag3d" style="left:calc(50% + 10px)">3D heightfield</div>
+  <img id="refBig" alt="reference">
+  <div id="refs"></div>
+  <div id="status">Starting...</div>
+</div>
+<div id="panel">
+  <h1>V-1 look-dev</h1>
+  <div class="note">Real S-1 worlds. Drag to pan, wheel to zoom, right-drag (or shift-drag) to tilt/rotate 3D. Thumbnails bottom-left are GDD references.</div>
+  <div style="display:flex; gap:6px; margin:6px 0">
+    <button id="shot">Screenshot</button>
+    <button id="atlasToggle">Prop sheet</button>
+    <span id="propCount" class="note"></span>
+  </div>
+  <img id="atlasPreview" alt="prop atlas">
+  <div id="controls"></div>
+  <div class="note">Zero AI images: ground, water, weather, ink and hatching are code. Props are Claude-written SVG, palette-masked (red = primary, green = secondary, blue = accent, black = ink) and recoloured per biome, season and ecology.</div>
+</div>
+<script src="worlds/index.js"></script>
+<script src="js/glutil.js"></script>
+<script src="js/world.js"></script>
+<script src="js/props.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/alive.js"></script>
+<script src="js/shaders.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Keep the split labels in sync with the view mode.
+  setInterval(() => {
+    const v = window.lookdev && window.lookdev.state.view;
+    document.getElementById("split").style.display = v === "split" ? "block" : "none";
+    document.getElementById("tag2d").style.display = v === "3d" ? "none" : "block";
+    document.getElementById("tag3d").style.display = v === "2d" ? "none" : "block";
+    document.getElementById("tag3d").style.left = v === "3d" ? "8px" : "calc(50% + 10px)";
+  }, 200);
+</script>
+</body>
+</html>

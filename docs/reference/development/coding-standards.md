@@ -453,7 +453,7 @@ namespace Dia
 **Order:**
 1. Corresponding header (if .cpp file)
 2. Project headers (Dia)
-3. External dependencies (SFML, etc.)
+3. External dependencies (SDL3, bgfx, etc.)
 4. Standard library
 
 **Separate groups with blank line**
@@ -465,7 +465,7 @@ namespace Dia
 #include "DiaCore/Containers/Array.h"
 #include "DiaApplicationFlow/Module/Module.h"
 
-#include <SFML/Graphics.hpp>
+#include <bgfx/bgfx.h>
 
 #include <vector>
 #include <string>

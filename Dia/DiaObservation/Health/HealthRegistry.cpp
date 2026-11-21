@@ -1,5 +1,6 @@
 #include "DiaObservation/Health/HealthRegistry.h"
 #include "DiaObservation/Health/IHealthTransitionSink.h"
+#include "DiaObservation/Log/DiaLog.h"
 
 #include <cstring>
 
@@ -15,6 +16,7 @@ namespace Dia
 
 		HealthRegistry::HealthRegistry()
 			: mReporterCount(0)
+				, mDroppedCount(0)
 			, mRetiredCount(0)
 			, mTransitionSinkCount(0)
 		{
@@ -28,20 +30,41 @@ namespace Dia
 			if (reporter == nullptr)
 				return;
 
-			std::lock_guard<std::mutex> lock(mMutex);
-
-			for (unsigned int i = 0; i < mReporterCount; ++i)
+			bool dropped = false;
 			{
-				if (mReporters[i].reporter == reporter)
-					return;
+				std::lock_guard<std::mutex> lock(mMutex);
+
+				for (unsigned int i = 0; i < mReporterCount; ++i)
+				{
+					if (mReporters[i].reporter == reporter)
+						return;
+				}
+
+				if (mReporterCount >= kMaxReporters)
+				{
+					++mDroppedCount;
+					dropped = true;
+				}
+				else
+				{
+					mReporters[mReporterCount].reporter = reporter;
+					mReporters[mReporterCount].lastKnownStatus = HealthStatus::kOK;
+					++mReporterCount;
+				}
 			}
 
-			if (mReporterCount >= kMaxReporters)
-				return;
+			// Logged outside the lock so a log sink can never re-enter the registry under it.
+			if (dropped)
+			{
+				DIA_LOG_WARNING("health", "HealthRegistry full (%u): dropped reporter '%s'",
+					kMaxReporters, reporter->GetReporterName().AsChar());
+			}
+		}
 
-			mReporters[mReporterCount].reporter = reporter;
-			mReporters[mReporterCount].lastKnownStatus = HealthStatus::kOK;
-			++mReporterCount;
+		unsigned int HealthRegistry::GetDroppedCount() const
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			return mDroppedCount;
 		}
 
 		void HealthRegistry::Unregister(IHealthReporter* reporter)
@@ -165,6 +188,7 @@ namespace Dia
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
 			mReporterCount = 0;
+			mDroppedCount = 0;
 			std::memset(mReporters, 0, sizeof(mReporters));
 			mRetiredCount = 0;
 			std::memset(mRetired, 0, sizeof(mRetired));

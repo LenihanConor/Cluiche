@@ -41,7 +41,7 @@ namespace
 TEST(EditorPluginRegistry, RegisterAndQuery)
 {
     EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
-    TestPluginFactory factory;
+    static TestPluginFactory factory;
     const StringCRC typeId("TestPluginRegistryUniqueA");
 
     if (!registry.IsPluginRegistered(typeId))
@@ -53,7 +53,7 @@ TEST(EditorPluginRegistry, RegisterAndQuery)
 TEST(EditorPluginRegistry, CreatePlugin)
 {
     EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
-    TestPluginFactory factory;
+    static TestPluginFactory factory;
     const StringCRC typeId("TestPluginRegistryUniqueB");
 
     if (!registry.IsPluginRegistered(typeId))
@@ -81,7 +81,7 @@ TEST(EditorPluginRegistry, IsRegisteredFalseForUnknown)
 TEST(EditorPluginRegistry, GetFactory_Valid)
 {
     EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
-    TestPluginFactory factory;
+    static TestPluginFactory factory;
     const StringCRC typeId("TestPluginRegistryUniqueC");
 
     if (!registry.IsPluginRegistered(typeId))
@@ -104,7 +104,7 @@ TEST(EditorPluginRegistry, GetFactory_Valid)
 TEST(EditorPluginRegistry, GetPluginInfo_FromFactory)
 {
     EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
-    TestPluginFactory factory;
+    static TestPluginFactory factory;
     const StringCRC typeId("TestPluginRegistryUniqueD");
 
     if (!registry.IsPluginRegistered(typeId))

@@ -232,7 +232,7 @@ Decisions specific to DiaDebugServer. Binding decisions constrain all features w
 | DDS-001 | Generic system, not DiaApplicationFlow-specific | Any Dia app can use it; extensible for future systems (graphics, physics) | Proposed | Yes |
 | DDS-002 | Broadcast core metrics always, specialized data on subscription (Q1 - Option C) | Balance between discoverability and bandwidth | Proposed | Yes |
 | DDS-003 | Broadcast to all connected editors (Q1 - Option A) | Simpler protocol; editors filter what they need | Proposed | Yes |
-| DDS-004 | Always listen in Debug builds, disabled in Release (Q1 - Option C) | Low overhead if no connections; Release builds exclude entirely | Proposed | Yes |
+| DDS-004 | Always listen in Debug and Release builds (Q1 - Option C; amended 2026-11-16, was "disabled in Release") | Low overhead if no connections; the server stays available in Release so Release builds can be inspected and driven by the editor, E2E and `dia query` | Proposed | Yes |
 | DDS-005 | JSON over WebSocket (not binary) (Q2) | Human-readable for debugging; flexible schema; standard tooling support | Proposed | Yes |
 | DDS-006 | Core metrics broadcast every 500ms (Q2) | Enough for monitoring, low bandwidth | Proposed | Yes |
 | DDS-007 | Push phase transitions as immediate events (Q2) | Real-time debugging excitement; no polling needed | Proposed | Yes |
@@ -259,6 +259,12 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Query Registry | Structured remote query dispatch — domain modules register JSON-in/JSON-out handlers; migrates protocol commands | @docs/specs/applications/dia/systems/diadebugserver/query-registry.md | Approved |
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/applications/dia/systems/diadebugserver/server-self-monitoring.md | Approved |
 | Connection Health | Per-topic stats, subscription-gated ObservationBridge, subscribe ACK, tiered drop warnings in editor UI | @docs/specs/applications/dia/systems/diadebugserver/connection-health.md | Approved |
+| Sim-Hosted Queries | Queries and DiaAPI commands answered on SimPU with deferred replies over EventStreams; no cross-PU mutex | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-queries.md | Approved |
+| Sim-Hosted Command Help | Sim-hosted queries and commands carry description, category, owner and ValueParams in the register message; Main-side catalogue feeds --help, the palette and schema validation; description mandatory | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-command-help.md | Approved |
+| Sim-Hosted Announcement Resync | Sequence numbers + digest + resync/replay make Sim to Main name announcements self-healing when the drop-oldest SimQueryReply stream overflows | @docs/specs/applications/dia/systems/diadebugserver/sim-hosted-announcement-resync.md | Approved |
+| Debug Domain State Snapshots | Sim-owned debug domains serialise their panel state on SimPU into a FrameStream snapshot; the Main panel and `debug.domain_state` read only the snapshot (retires the Main-thread `GetJSONState` calls, unlocked registry maps and the UtilityAI atomic) | @docs/specs/applications/dia/systems/diadebugserver/domain-state-snapshots.md | Approved |
+| Sim-Registered Queries | SimPU modules' QueryRegistry handlers move to SimQueryHost; QueryRegistry rejects registration from a non-owner thread | @docs/specs/applications/dia/systems/diadebugserver/sim-registered-queries.md | Approved |
+| Debug Layer Broadcast Removal | Delete the dead, thread-unsafe `DebugLayerManager::BroadcastLayerState` after proving nothing depends on it | @docs/specs/applications/dia/systems/diadebugserver/debug-layer-broadcast-removal.md | Approved |
 
 ## AI Review Questions
 
@@ -267,7 +273,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | 1 | Architecture | Generic or DiaApplicationFlow-specific? | Generic (DDS-001) - any Dia app can use it; extensible for future systems |
 | 2 | Broadcasting | What to broadcast by default? | Core metrics always (DDS-002); specialized data on subscription |
 | 3 | Multi-Connection | Separate streams or broadcast? | Broadcast to all (DDS-003) - simpler, editors filter |
-| 4 | Opt-In | Enabled by default? | Always in Debug (DDS-004), excluded from Release builds |
+| 4 | Opt-In | Enabled by default? | Always on in Debug and Release (DDS-004, amended 2026-11-16) |
 | 5 | Protocol | JSON or binary? | JSON (DDS-005) - human-readable, debuggable, flexible |
 | 6 | Frequency | Core metrics broadcast rate? | Every 500ms (DDS-006) - 2 Hz, low bandwidth |
 | 7 | Events | Push or poll? | Push immediately (DDS-007) - phase transitions as events |
@@ -302,14 +308,9 @@ DiaDebugServer runs on a separate thread (server thread). All communication with
 - Broadcast requests queued → sent from server thread
 - Subscription changes protected by mutex
 
-**Debug vs Release:**
-```cpp
-#ifdef DIA_DEBUG
-    // Include DiaDebugServer module in Debug builds
-    mProcessingUnit->AddModule(new Dia::DebugServer::DebugServerModule(mProcessingUnit, "DebugServer"));
-#endif
-// Release builds exclude DebugServerModule entirely (zero overhead)
-```
+Domain state read by remote queries is reached via sim-hosted queries over EventStreams (see sim-hosted-queries.md), not shared mutexes.
+
+**Debug vs Release (amended 2026-11-16):** the DebugServer is compiled into and hosted in both Debug and Release builds. There is no `DIA_DEBUG` guard on the module or its consumers. Release cost is the idle listener only. Code that is genuinely Debug-only (for example the visual debugger drawers) keeps its own `DIA_DEBUG` guards.
 
 **Performance Impact:**
 - Minimal when no editors connected (server just listens)

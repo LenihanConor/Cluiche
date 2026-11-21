@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Stage Catalogue - Boot Menu Mockup (Feature 4)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;font:13px Consolas,'Courier New',monospace;color:#e0e0e0;padding:16px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
+.win{background:#2d2d3d;border:1px solid #4a4a6a;border-radius:4px;width:600px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.title{background:#3d5a80;padding:4px 8px;font-weight:bold;font-size:12px;color:#fff;border-radius:3px 3px 0 0;display:flex;justify-content:space-between}
+.body{padding:8px}
+.dim{color:#666680;font-size:11px}.hi{color:#7abaff}
+hr{border:0;border-top:1px solid #4a4a6a;margin:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.chip{padding:1px 8px;border:1px solid #4a4a6a;border-radius:10px;font-size:11px;color:#b0b0c0;cursor:pointer;background:#24243a}
+.chip.kind{border-color:#5a7a9a}.chip.on{background:#3d5a80;color:#fff;border-color:#7abaff}
+input[type=text]{width:100%;background:#1f1f30;border:1px solid #4a4a6a;color:#e0e0f0;padding:3px 6px;font:inherit;border-radius:2px}
+.ghead{padding:4px 6px;background:#363650;cursor:pointer;margin-top:6px;border-radius:2px;display:flex;justify-content:space-between;user-select:none}
+.ghead .roll{font-size:11px}.p{color:#4ae04a}.f{color:#ff6a6a}.n{color:#a0a0b8}
+.row{padding:4px 6px 4px 22px;border-bottom:1px solid #2a2a4a;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row:hover{background:#3a3a5a}.row.sel{background:#3d5a80}.row.cur{outline:1px dashed #7abaff;outline-offset:-2px}
+.nm{font-weight:bold;color:#e0e0f0}.ds{color:#8a8aa6;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px}
+.vis{color:#4ae04a;font-size:10px;margin-left:4px}.also{color:#8080a0;font-size:10px;margin-left:6px}
+.sub{padding:3px 6px 3px 44px;font-size:12px;color:#b0b0c0;border-bottom:1px solid #2a2a4a;cursor:pointer}
+.sub:hover{background:#3a3a5a}
+.badge{padding:1px 6px;border-radius:2px;font-size:10px;font-weight:bold;flex:none}
+.ok{background:#1a4a1a;color:#4ae04a;border:1px solid #2a6a2a}.fail{background:#4a1a1a;color:#ff6a6a;border:1px solid #6a2a2a}
+.warn{background:#4a3a1a;color:#f0b84a;border:1px solid #6a5a2a}.pend{background:#33334a;color:#a0a0b8;border:1px solid #4a4a6a}
+.panel{width:340px;background:#24243a;border:1px solid #4a4a6a;border-radius:4px;padding:10px}
+.panel h3{font-size:12px;color:#7abaff;margin:10px 0 4px}.panel h3:first-child{margin-top:0}
+.panel label{display:block;margin:3px 0;font-size:12px;cursor:pointer}
+.panel button,.btn{background:#3d5a80;color:#fff;border:0;padding:3px 8px;font:inherit;border-radius:2px;cursor:pointer;margin:2px 2px 2px 0}
+.tip{position:fixed;background:#111;border:1px solid #7abaff;padding:4px 8px;font-size:11px;display:none;max-width:360px;z-index:9}
+.empty{padding:14px;text-align:center;color:#8080a0}
+.note{margin-top:8px;font-size:11px;color:#8080a0;line-height:1.5}
+</style></head><body>
+<div class="win"><div class="title"><span id="ttl"></span><span>[-]</span></div><div class="body" id="root"></div></div>
+<div class="panel">
+ <h3>Mockup controls (not part of the menu)</h3>
+ <div>Game: <button onclick="setGame('cow')">CoW</button><button onclick="setGame('ct')">CluicheTest</button></div>
+ <h3>States</h3>
+ <label><input type="checkbox" id="fb" onchange="render()"> Fallback (no snapshot within 2 s)</label>
+ <label><input type="checkbox" id="exp" onchange="resetCollapse()"> Open Q1: <code>expanded_groups</code> includes Tests</label>
+ <label><input type="checkbox" id="stg"> Open Q2: arrow keys step by <b>stage</b> (off = by row)</label>
+ <h3>Simulate</h3>
+ <button onclick="runTest()">Run next pending test, return to Boot</button>
+ <button onclick="clearFilters()">Clear filters</button>
+ <h3>Try</h3>
+ <div class="note">Click a row to launch (marks every row of that stage visited). Click a preset sub-row to launch with it. Click a group header to collapse. Click chips (AND) and type in search. Up/Down moves the dashed cursor; Enter launches. Hover a stage for its full description.<br><br>
+ A stage under several groups: <span class="hi">DebugGalleryTestStage</span> and <span class="hi">CellLayersViewerTestStage</span> (CluicheTest). Tags and results are illustrative samples, not the final tagging.</div>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const KINDS=['showcase','tool','test'], GN={showcase:'Showcase',tool:'Tools',test:'Tests',other:'Other'};
+const DATA={
+ cow:{title:'CoW - Boot Menu',stages:[
+  {n:'FrontEnd',t:['showcase'],d:'Front end and title screen stub'},
+  {n:'S1WorldGenerationTestbedStage',t:['tool','worldgen'],d:'Live terrain, biome and region editor with sliders, presets and per-layer views',
+   p:[{n:'alpine42',d:'Alpine-heavy Small world, seed 42'},{n:'archipelago7',d:'Archipelago, Standard, seed 7'}]},
+  {n:'F2CoreRuntime',t:['test'],d:'F-2 core runtime checks',r:['ok','PASS']},
+  {n:'LegacyScratchStage',t:[],d:'Untagged stage: lands in Other'}]},
+ ct:{title:'CluicheTest - Boot Menu',stages:[
+  {n:'DebugGalleryTestStage',t:['showcase','test','debug'],d:'Gallery of every debug drawer; also has a pass/fail check',r:['ok','PASS']},
+  {n:'CellLayersViewerTestStage',t:['tool','test','cells'],d:'Cell layer viewer, selection and history card',r:['fail','FAIL']},
+  {n:'DeferredStepTestStage',t:['test','threading'],d:'Deferred step scheduler, executor and save/load',r:['ok','PASS']},
+  {n:'Geometry2DTestStage',t:['test','geometry'],d:'2D geometry queries and intersections',r:['warn','TIMEOUT']},
+  {n:'PathfindingTestStage',t:['test','ai'],d:'A*, flow field and hex pathfinding'},
+  {n:'RigidBody2DTestStage',t:['test','physics'],d:'Rigid body solver, contacts and sleeping',r:['ok','PASS']},
+  {n:'EconomyTestStage',t:['test','economy'],d:'Economy instances, modifiers and events'},
+  {n:'Scene2DTestStage',t:['showcase','scene'],d:'Scene loading, cameras and layers'},
+  {n:'SpawnerTestStage',t:['test','entity'],d:'Spawner and entity lifecycle',r:['ok','PASS']},
+  {n:'DummyStage',t:[],d:'Empty stage used by E2E'}]}};
+let G='cow',active=new Set(),q='',visited=new Set(),sel=null,collapsed={},cur=0,results={};
+function setGame(g){G=g;active.clear();q='';visited.clear();sel=null;results={};DATA[g].stages.forEach(s=>{if(s.r)results[s.n]=s.r});resetCollapse()}
+function resetCollapse(){collapsed={showcase:false,tool:false,other:false,test:!document.getElementById('exp').checked};cur=0;render()}
+function kinds(s){const k=KINDS.filter(x=>s.t.includes(x));return k.length?k:['other']}
+function tagsAll(){const a=new Set();DATA[G].stages.forEach(s=>s.t.forEach(x=>a.add(x)));const rest=[...a].filter(x=>!KINDS.includes(x)).sort();return[...KINDS.filter(k=>a.has(k)),...rest]}
+function match(s){if(![...active].every(t=>s.t.includes(t)))return false;const l=q.toLowerCase();return !l||s.n.toLowerCase().includes(l)||s.d.toLowerCase().includes(l)}
+function rows(){const out=[];for(const g of ['showcase','tool','test','other']){const items=DATA[G].stages.filter(s=>match(s)&&kinds(s).includes(g));if(items.length)out.push({g,items})}return out}
+function badge(s){if(!s.t.includes('test'))return'';const r=results[s.n];return r?'<span class="badge '+r[0]+'">'+r[1]+'</span>':'<span class="badge pend">PENDING</span>'}
+function flat(){const l=[];rows().forEach(g=>{if(!collapsed[g.g])g.items.forEach(s=>l.push({s:s,g:g.g}))});return l}
+function render(){
+ document.getElementById('ttl').textContent=DATA[G].title;
+ const fb=document.getElementById('fb').checked,all=DATA[G].stages;let h='';
+ if(fb){h+='<div class="dim">Catalogue snapshot unavailable: showing the stage list.</div><hr><div class="ghead"><span>Stages</span><span class="dim">'+all.length+'</span></div>';
+  all.forEach(s=>{h+='<div class="row" onclick="launch(\''+s.n+'\')"><span class="nm">'+s.n+'</span></div>'});}
+ else{
+  h+='<div class="hi">'+all.length+' stages available</div><div class="chips">'+tagsAll().map(t=>'<span class="chip '+(KINDS.includes(t)?'kind':'')+' '+(active.has(t)?'on':'')+'" onclick="chip(\''+t+'\')">'+t+'</span>').join('')+'</div>';
+  h+='<input type="text" placeholder="Search name or description..." value="'+q+'" oninput="q=this.value;cur=0;render2()" id="sq"><hr>';
+  const R=rows(),fl=flat();
+  if(!R.length)h+='<div class="empty">No stages match.<br><span class="dim">Clear a chip or the search text.</span><br><button class="btn" onclick="clearFilters()">Clear filters</button></div>';
+  R.forEach(g=>{let roll='';
+   if(g.g==='test'){const u=g.items;const P=u.filter(s=>results[s.n]&&results[s.n][0]==='ok').length,F=u.filter(s=>results[s.n]&&results[s.n][0]==='fail').length,X=u.length-P-F;
+    roll='<span class="roll">(<span class="p">'+P+' passed</span>, <span class="f">'+F+' failed</span>, <span class="n">'+X+' pending</span>)</span>'}
+   h+='<div class="ghead" onclick="tog(\''+g.g+'\')"><span>'+(collapsed[g.g]?'▶':'▼')+' '+GN[g.g]+' <span class="dim">'+g.items.length+'</span></span>'+roll+'</div>';
+   if(!collapsed[g.g])g.items.forEach(s=>{const i=fl.findIndex(x=>x.s===s&&x.g===g.g);const ks=kinds(s);
+    const also=ks.length>1?'<span class="also">also in '+ks.filter(k=>k!==g.g).map(k=>GN[k]).join(', ')+'</span>':'';
+    h+='<div class="row '+(sel===s.n?'sel':'')+' '+(i===cur?'cur':'')+'" onclick="launch(\''+s.n+'\')" onmousemove="tip(event,\''+s.n+'\')" onmouseleave="tip()"><span style="min-width:0"><span class="nm">'+s.n+'</span>'+(visited.has(s.n)?'<span class="vis">&#10003; visited</span>':'')+also+'<div class="ds">'+s.d+'</div></span>'+badge(s)+'</div>';
+    (s.p||[]).forEach(p=>{h+='<div class="sub" onclick="launch(\''+s.n+'\',\''+p.n+'\')">&#8627; <span class="hi">'+p.n+'</span> <span class="dim">'+p.d+'</span></div>'})})});
+ }
+ document.getElementById('root').innerHTML=h;
+}
+function render2(){const p=document.getElementById('sq').selectionStart;render();const e=document.getElementById('sq');e.focus();e.setSelectionRange(p,p)}
+function chip(t){active.has(t)?active.delete(t):active.add(t);cur=0;render()}
+function tog(g){collapsed[g]=!collapsed[g];cur=0;render()}
+function clearFilters(){active.clear();q='';render()}
+function launch(n,p){visited.add(n);sel=n;render();flash('Launching '+n+(p?'  preset: '+p:'  (no preset)'))}
+function flash(m){const t=document.getElementById('tip');t.style.display='block';t.style.left='20px';t.style.top='auto';t.style.bottom='20px';t.textContent=m;setTimeout(()=>{t.style.display='none'},1800)}
+function tip(ev,n){const t=document.getElementById('tip');if(!ev){t.style.display='none';return}const s=DATA[G].stages.find(x=>x.n===n);t.style.display='block';t.style.bottom='auto';t.style.left=(ev.clientX+14)+'px';t.style.top=(ev.clientY+14)+'px';t.innerHTML='<b>'+n+'</b><br>'+s.d+'<br><span class="dim">tags: '+(s.t.join(', ')||'none')+'</span>'}
+function runTest(){const s=DATA[G].stages.find(x=>x.t.includes('test')&&!results[x.n]);if(!s){flash('No pending test stages');return}results[s.n]=['ok','PASS'];visited.add(s.n);render();flash('Ran '+s.n+': PASS, back at Boot')}
+document.addEventListener('keydown',e=>{if(document.activeElement.id==='sq')return;const fl=flat();if(!fl.length)return;
+ if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const d=e.key==='ArrowDown'?1:-1;let i=cur;
+  if(document.getElementById('stg').checked){const seen=fl[cur].s.n;let guard=0;do{i=(i+d+fl.length)%fl.length;guard++}while(fl[i].s.n===seen&&guard<fl.length)}else i=(i+d+fl.length)%fl.length;cur=i;render()}
+ if(e.key==='Enter')launch(fl[cur].s.n)});
+setGame('cow');
+</script></body></html>

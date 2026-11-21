@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.rig2dvisualdebugger
 name: DiaRig2DVisualDebugger
 owner_team: TBD
-layer: domain/animation/tools
+layer: 4.1-Animation
 status: active
 maturity: dev
 
@@ -29,7 +29,7 @@ responsibilities:
 non_responsibilities:
   - Running forward kinematics — caller provides pre-computed world transforms
   - Skeleton or pose management — DiaRig2D concern
-  - Actual rendering — DiaGraphics/DiaSFML handles that via FrameData visitors
+  - Actual rendering — DiaGraphics/DiaBgfx handles that via FrameData visitors
 
 dependent_modules: []
 

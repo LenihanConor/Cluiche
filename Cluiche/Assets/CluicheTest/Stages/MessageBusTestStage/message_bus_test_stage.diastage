@@ -1,6 +1,8 @@
 {
     "name": "MessageBusTestStage",
     "manifest": "Stages/MessageBusTestStage/misc/ApplicationFlow/message_bus_test_stage.diaapp",
+    "tags": ["test", "messaging"],
+    "description": "Message routing and delivery",
     "config": {
         "path_aliases": {
             "stage_root": "."

@@ -37,7 +37,18 @@ namespace Dia
 		public:
 			using Task = std::function<void()>;
 
+			// Optional per-worker lifecycle hooks. Both run on the worker thread itself
+			// with the worker's index (0..N-1). onStart runs before the worker takes any
+			// task; onStop runs after the shutdown drain, just before the thread exits.
+			// Exceptions thrown by hooks are swallowed.
+			struct ThreadHooks
+			{
+				std::function<void(unsigned int workerIndex)> onStart;
+				std::function<void(unsigned int workerIndex)> onStop;
+			};
+
 			explicit ThreadPool(unsigned int numThreads = 0);
+			ThreadPool(unsigned int numThreads, ThreadHooks hooks);
 			~ThreadPool();
 
 			void Enqueue(Task task);
@@ -51,8 +62,9 @@ namespace Dia
 			void Shutdown();
 
 		private:
-			void WorkerThread();
+			void WorkerThread(unsigned int workerIndex);
 
+			ThreadHooks mHooks;
 			std::vector<std::thread> mThreads;
 			std::queue<Task> mTasks;
 

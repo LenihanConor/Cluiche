@@ -1,6 +1,8 @@
 {
     "name": "EntityTestStage",
     "manifest": "Stages/EntityTestStage/misc/ApplicationFlow/entity_test_stage.diaapp",
+    "tags": ["test", "entity"],
+    "description": "Entity lifecycle and component registry",
     "config": {
         "path_aliases": {
             "stage_root": "."

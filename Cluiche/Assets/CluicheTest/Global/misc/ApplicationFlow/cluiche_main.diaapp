@@ -28,7 +28,12 @@
                 "BehaviourTreeTestStage",
                 "AICalloutTestStage",
                 "GridVisibilityTestStage",
-                "MessageBusTestStage"
+                "MessageBusTestStage",
+                "MessageBusStressTestStage",
+                "JobSystemServiceTestStage",
+                "CellFieldRenderTestStage",
+                "CellLayersViewerTestStage",
+                "DeferredStepTestStage"
             ],
             "auto_advance": false
         },
@@ -200,6 +205,41 @@
                 "Boot"
             ],
             "auto_advance": false
+        },
+        {
+            "name": "MessageBusStressTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "JobSystemServiceTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "CellFieldRenderTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "CellLayersViewerTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "DeferredStepTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
         }
     ],
     "initial_stage": "Boot",
@@ -285,6 +325,12 @@
             "from": "MainPU"
         },
         {
+            "id": "KernelCellFieldRegistry",
+            "kind": "ServiceStream",
+            "payload_type": "CellFieldRegistry",
+            "from": "MainPU"
+        },
+        {
             "id": "AssetLoadStatus",
             "kind": "ServiceStream",
             "payload_type": "AssetLoadStatus",
@@ -303,6 +349,24 @@
             "from": "MainPU"
         },
         {
+            "id": "ValueSchemaService",
+            "kind": "ServiceStream",
+            "payload_type": "ValueSchemaService",
+            "from": "MainPU"
+        },
+        {
+            "id": "CellLayerRegistryService",
+            "kind": "ServiceStream",
+            "payload_type": "CellLayerRegistry",
+            "from": "SimPU"
+        },
+        {
+            "id": "JobSystemService",
+            "kind": "ServiceStream",
+            "payload_type": "JobSystem",
+            "from": "MainPU"
+        },
+        {
             "id": "DebugServerService",
             "kind": "ServiceStream",
             "payload_type": "DebugServerService",
@@ -317,18 +381,45 @@
             "to": "MainPU"
         },
         {
+            "id": "SimQueryRequest",
+            "kind": "EventStream",
+            "payload_type": "SimRequestEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "SimQueryReply",
+            "kind": "EventStream",
+            "payload_type": "SimReplyEvent",
+            "overflow": "drop-oldest",
+            "capacity": 128,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
             "id": "DebugLayerManager",
             "kind": "ServiceStream",
             "payload_type": "DebugLayerManager",
             "from": "SimPU"
         },
         {
-            "id": "DomainRegistry",
-            "kind": "EventStream",
-            "payload_type": "DiaDebugDomainRegistry",
-            "overflow": "drop-oldest",
+            "id": "DomainStateSnapshot",
+            "kind": "FrameStream",
+            "payload_type": "DomainStateSnapshot",
             "from": "SimPU",
-            "to": "MainPU"
+            "to": "MainPU",
+            "multi_writer": false
+        },
+        {
+            "id": "DomainStateInterest",
+            "kind": "EventStream",
+            "payload_type": "DomainStateInterestEvent",
+            "overflow": "drop-oldest",
+            "capacity": 8,
+            "from": "MainPU",
+            "to": "SimPU"
         },
         {
             "id": "DebugPanelCommand",
@@ -337,6 +428,22 @@
             "overflow": "drop-oldest",
             "from": "MainPU",
             "to": "SimPU"
+        },
+        {
+            "id": "DebugConsoleLine",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleLineEvent",
+            "overflow": "drop-oldest",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "DebugConsoleResult",
+            "kind": "EventStream",
+            "payload_type": "DebugConsoleResultEvent",
+            "overflow": "drop-oldest",
+            "from": "SimPU",
+            "to": "MainPU"
         },
         {
             "id": "DebugPanelToggle",
@@ -376,6 +483,32 @@
             "overflow": "drop-oldest",
             "from": "RenderPU",
             "to": "SimPU"
+        },
+        {
+            "id": "StageResult",
+            "kind": "EventStream",
+            "payload_type": "StageResultEvent",
+            "overflow": "drop-oldest",
+            "capacity": 16,
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
+            "id": "StageLaunchRequest",
+            "kind": "EventStream",
+            "payload_type": "StageLaunchRequest",
+            "overflow": "drop-oldest",
+            "capacity": 4,
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "StageCatalogueSnapshot",
+            "kind": "FrameStream",
+            "payload_type": "StageCatalogueSnapshot",
+            "from": "MainPU",
+            "to": "RenderPU",
+            "multi_writer": false
         }
     ],
     "processing_units": [
@@ -413,7 +546,12 @@
                     "dependencies": [
                         "ObservationModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
+                            "role": "provides"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "KernelModule",
@@ -441,6 +579,14 @@
                         {
                             "id": "KernelMeshHandler",
                             "role": "provides"
+                        },
+                        {
+                            "id": "KernelCellFieldRegistry",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelCellFieldRegistry",
+                            "role": "consumes"
                         }
                     ]
                 },
@@ -473,7 +619,11 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -539,6 +689,14 @@
                         {
                             "id": "DebugServerPush",
                             "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "SimQueryReply",
+                            "role": "reads"
                         }
                     ]
                 },
@@ -556,6 +714,35 @@
                         {
                             "id": "AutomationService",
                             "role": "provides"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "ValueSchemaModule",
+                    "type_id": "ValueSchemaModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "DebugServerHostModule"
+                    ],
+                    "config": {
+                        "schema_roots": [
+                            "root"
+                        ],
+                        "ramp_roots": [
+                            "dia_data"
+                        ]
+                    },
+                    "channels": [
+                        {
+                            "id": "ValueSchemaService",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "DebugServerService",
+                            "role": "consumes"
                         }
                     ]
                 },
@@ -585,20 +772,41 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
-                        "UIModule"
+                        "UIModule",
+                        "ValueSchemaModule"
                     ],
                     "channels": [
                         {
-                            "id": "DomainRegistry",
+                            "id": "ValueSchemaService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "DomainStateSnapshot",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DomainStateInterest",
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelCommand",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DebugConsoleLine",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "reads"
                         },
                         {
                             "id": "DebugPanelToggle",
@@ -607,6 +815,34 @@
                         {
                             "id": "DebugPanelSetVisibility",
                             "role": "reads"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "StageCatalogueModule",
+                    "type_id": "StageCatalogueModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
+                    "config": {
+                        "diagame_path": "assets/cluichetest.diagame",
+                        "results_path": "../../../../out/CluicheTest/stage_results.json"
+                    },
+                    "channels": [
+                        {
+                            "id": "StageResult",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "StageCatalogueSnapshot",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "StageLaunchRequest",
+                            "role": "writes"
                         }
                     ]
                 },
@@ -748,7 +984,11 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "Camera2DModule"
@@ -763,12 +1003,24 @@
                             "role": "provides"
                         },
                         {
-                            "id": "DomainRegistry",
+                            "id": "DomainStateSnapshot",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DomainStateInterest",
+                            "role": "reads"
                         },
                         {
                             "id": "DebugPanelCommand",
                             "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleLine",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "DebugConsoleResult",
+                            "role": "writes"
                         },
                         {
                             "id": "DebugPanelToggle",
@@ -776,6 +1028,49 @@
                         },
                         {
                             "id": "DebugPanelSetVisibility",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "SimQueryHostModule",
+                    "type_id": "SimQueryHostModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "SimQueryRequest",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimQueryReply",
+                            "role": "writes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "SimEchoTestModule",
+                    "type_id": "SimEchoTestModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "SimQueryHostModule"
+                    ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "TestResultReporterModule",
+                    "type_id": "TestResultReporterModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "StageResult",
                             "role": "writes"
                         }
                     ]
@@ -809,7 +1104,25 @@
                             "role": "reads"
                         },
                         {
+                            "id": "StageLaunchRequest",
+                            "role": "reads"
+                        },
+                        {
                             "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                },
+                {
+                    "instance_id": "JobSystemServiceTestStageModule",
+                    "type_id": "JobSystemServiceTestStageModule",
+                    "stages": [
+                        "JobSystemServiceTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "JobSystemService",
                             "role": "consumes"
                         }
                     ]
@@ -839,10 +1152,18 @@
                     "dependencies": [
                         "DebugUI"
                     ],
+                    "config": {
+                        "title": "CluicheTest \u2014 Bootstrap",
+                        "project": "Project: CluicheTest v0.1"
+                    },
                     "channels": [
                         {
                             "id": "BootMenuNavRequest",
                             "role": "writes"
+                        },
+                        {
+                            "id": "StageCatalogueSnapshot",
+                            "role": "reads"
                         }
                     ]
                 },
@@ -874,7 +1195,11 @@
                         "BehaviourTreeTestStage",
                         "AICalloutTestStage",
                         "GridVisibilityTestStage",
-                        "MessageBusTestStage"
+                        "MessageBusTestStage",
+                        "MessageBusStressTestStage",
+                        "CellFieldRenderTestStage",
+                        "CellLayersViewerTestStage",
+                        "DeferredStepTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

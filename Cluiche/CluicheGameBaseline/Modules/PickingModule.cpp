@@ -30,6 +30,11 @@ void PickingModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 {
     if (!mInputRef.Get() || !mCameraRef.Get()) return;
 
+    // Camera2DModule stays resolvable after its DoStop (which unregisters the
+    // default camera), e.g. in a stage that does not include it: no active
+    // camera means there is nothing to pick against.
+    if (!mCameraRef->HasActiveCamera()) return;
+
     const Dia::Graphics::ViewportTransform vt = mCameraRef->GetViewportTransform();
     const Dia::Maths::Vector2D screenPos(
         static_cast<float>(mInputRef->GetMouseX()),

@@ -689,7 +689,7 @@ TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Flat)
 	CallbackRegistry reg;  // not finalized
 	StateMachineDefinition def;
 	JsonStateMachineSerializer serializer;
-	EXPECT_DEATH(serializer.Load(def, reg, json), "");
+	DIA_EXPECT_DEATH(serializer.Load(def, reg, json), "");
 }
 
 TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Hsm)
@@ -698,7 +698,7 @@ TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Hsm)
 	CallbackRegistry reg;
 	HierarchicalStateMachineDefinition def;
 	JsonStateMachineSerializer serializer;
-	EXPECT_DEATH(serializer.Load(def, reg, json), "");
+	DIA_EXPECT_DEATH(serializer.Load(def, reg, json), "");
 }
 
 TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Pda)
@@ -707,5 +707,5 @@ TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Pda)
 	CallbackRegistry reg;
 	PushdownAutomatonDefinition def;
 	JsonStateMachineSerializer serializer;
-	EXPECT_DEATH(serializer.Load(def, reg, json), "");
+	DIA_EXPECT_DEATH(serializer.Load(def, reg, json), "");
 }
