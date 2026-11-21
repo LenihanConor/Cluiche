@@ -852,6 +852,8 @@ void WorldStepModule::SerializePending(Dia::SaveGame::SaveContext& ctx) const
         mChain.StageAt(i)->SerializePending(ctx);
         ctx.EndObject();
     }
+    DIA_LOG_INFO(kLog, "WorldStepModule: pending step day %llu saved (%u stage(s), pending week %lld)",
+                 static_cast<unsigned long long>(mStepDay), count, static_cast<long long>(mPendingDay));
 }
 
 namespace {
@@ -1048,6 +1050,12 @@ void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& ctx)
     {
         mRestoreFailed = true;
         UpdateHealth();
+    }
+    else
+    {
+        DIA_LOG_INFO(kLog, "WorldStepModule: pending step day %lld restored (%d stage blob(s), pending week %lld, key %lld)",
+                     static_cast<long long>(stepDay), static_cast<int>(stageCount), static_cast<long long>(pendingDay),
+                     static_cast<long long>(latestDay));
     }
 }
 
