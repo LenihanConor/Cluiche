@@ -8,6 +8,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Architecture/Observer.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaDeferredStep/DeferredStepModule.h>
 #include <DiaDeferredStep/DeferredStepScheduler.h>
@@ -24,6 +25,7 @@
 #include <Shared/WorldStep/WorldStepConfig.h>
 #include "Modules/GameSpeedMessages.h"
 #include "Modules/MessageBusHostModule.h"
+#include "Modules/SaveLoadModule.h"
 #include "Modules/SimQueryHostModule.h"
 
 #include <atomic>
@@ -78,6 +80,14 @@ public:
     // ---- Tick intake. Called from the bus handler (SimPU). Records the key now; the cadence runs in DoUpdate,
     // after DeferredStepModule has ticked, so a step due on this day applies before the next kick is attempted. ----
     void OnSimulationTick(const SimulationTick& tick);
+
+    // ---- Load reset. SaveManager::OnLoadStarted fires before any participant deserializes, so on it the module drops
+    // the old timeline (step in flight, pending week, key, queued ticks); a pending record then restores over the clean state.
+    // Production resolves the manager lazily through ModuleRef<SaveLoadModule>; tests call these directly. ----
+    void ObserveLoads(Dia::SaveGame::SaveManager& manager);
+    void StopObservingLoads();
+    bool IsObservingLoads() const { return mObservedManager != nullptr; }
+    void OnLoadStarted();   // public so it can be driven without a SaveManager
 
     // ---- IStepKeySource: the day of the latest SimulationTick received ----
     Dia::DeferredStep::StepKey GetCurrentKey() const override;
@@ -192,6 +202,17 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mQueryRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBusRef{this};
     Dia::MessageBus::BusSubscriptionHandle mTickSub;
+
+    struct LoadObserver final : Dia::Core::Observer
+    {
+        explicit LoadObserver(WorldStepModule& owner) : mOwner(owner) {}
+        void ObserverNotification(const Dia::Core::ObserverSubject*, int message) override;
+        WorldStepModule& mOwner;
+    };
+    LoadObserver mLoadObserver{ *this };
+    Dia::SaveGame::SaveManager* mObservedManager = nullptr;   // borrowed
+    Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoadRef{this};
+    void TryObserveLoads();
 
     // ---- keys and cadence state ----
     bool     mRunning = false;

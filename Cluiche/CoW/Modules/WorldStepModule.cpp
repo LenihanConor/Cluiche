@@ -284,6 +284,7 @@ Dia::ApplicationFlow::StopResult WorldStepModule::DoStop()
 {
     DIA_TRACE_ZONE("WorldStepModule::DoStop", Dia::Observation::Trace::Category::kNone);
 
+    StopObservingLoads();
     mTickSub = Dia::MessageBus::BusSubscriptionHandle();
 
     // Drains an in-flight step and discards it: no Apply, so no Commit and no history signal.
@@ -325,6 +326,74 @@ Dia::ApplicationFlow::StopResult WorldStepModule::DoStop()
 
     DIA_LOG_INFO(kLog, "WorldStepModule: stopped at day %llu", static_cast<unsigned long long>(stoppedAt));
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Load reset
+// ---------------------------------------------------------------------------------------------
+
+void WorldStepModule::LoadObserver::ObserverNotification(const Dia::Core::ObserverSubject*, int message)
+{
+    if (static_cast<Dia::SaveGame::SaveEvent>(message) == Dia::SaveGame::SaveEvent::LoadStarted)
+        mOwner.OnLoadStarted();
+}
+
+void WorldStepModule::ObserveLoads(Dia::SaveGame::SaveManager& manager)
+{
+    if (mObservedManager == &manager)
+        return;
+    StopObservingLoads();
+    mObservedManager = &manager;
+    manager.OnLoadStarted().AttachToObserver(&mLoadObserver);
+}
+
+void WorldStepModule::StopObservingLoads()
+{
+    if (mObservedManager == nullptr)
+        return;
+    mObservedManager->OnLoadStarted().DetachFromObserver(&mLoadObserver);
+    mObservedManager = nullptr;
+}
+
+void WorldStepModule::TryObserveLoads()
+{
+    if (mObservedManager != nullptr || mUseTestHosts)
+        return;
+    if (SaveLoadModule* saveLoad = mSaveLoadRef.Get())
+        ObserveLoads(saveLoad->GetManager());
+}
+
+// A load replaces the timeline. A save made with no step in flight carries no pending record, so nothing else would clear
+// the old timeline's retried week, step day or chain phase. mLatestDay is deliberately kept: it feeds the scheduler's
+// monotonic Tick key, which has no reset, so lowering it would trip the scheduler's backwards-key assert; the next
+// SimulationTick and a pending record both move it forward. Runs before any participant deserializes, so a pending record
+// restores over this clean state afterwards. Counters and health history are telemetry and are kept.
+void WorldStepModule::OnLoadStarted()
+{
+    if (!mRunning)
+        return;
+    DIA_TRACE_ZONE("WorldStepModule::OnLoadStarted", Dia::Observation::Trace::Category::kNone);
+
+    const bool hadPending = mPendingDay >= 0;
+    const bool hadStep = WorldStepInFlight() || mChain.Phase() != WorldStep::ChainPhase::Idle;
+
+    // Drains and discards the step in flight (no Apply, no history signal), re-registers the channel (which also clears
+    // its kick-key floor, so an earlier timeline can kick again) and abandons the chain.
+    DrainWorldChannel();
+
+    mPendingDay = -1;
+    mStepDay = 0;
+    mQueueCount = 0;
+    mKickApplyKey = 0;
+    mLastKickDay = 0;
+    mHasKicked = false;
+    mRestoreFailed = false;
+    mPendingBad = false;
+    mReadyState = ReadyState::Unknown;
+    UpdateHealth();
+
+    DIA_LOG_INFO(kLog, "WorldStepModule: load started, old timeline dropped (step in flight: %s, pending week: %s)",
+                 hadStep ? "yes" : "no", hadPending ? "yes" : "no");
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -532,6 +601,8 @@ void WorldStepModule::DoUpdate(const Dia::SimTime::SimTimeContext& /*ctx*/)
 
     if (!mRunning)
         return;
+
+    TryObserveLoads();   // the SaveLoadModule may start after this module
 
     // Copy first: the queue belongs to the bus handler, the cadence only reads its own snapshot.
     SimulationTick pending[kTickQueueCapacity];

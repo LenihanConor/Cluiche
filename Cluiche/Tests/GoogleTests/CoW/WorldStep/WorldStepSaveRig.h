@@ -84,6 +84,7 @@ namespace WsTest
             _mkdir("temp");
             _mkdir("temp/worldstep_save_tests");
             manager.Init(saveConfig, registry);
+            module.ObserveLoads(manager);   // production wires this through SaveLoadModule
             if (stateFirst)
             {
                 registry.Register(StringCRC("WsStageState"), &state);
@@ -98,6 +99,7 @@ namespace WsTest
 
         ~SaveRig()
         {
+            module.StopObservingLoads();   // the manager dies before the module
             registry.Unregister(StringCRC("WsStageState"));
             // participant detaches in its destructor, before registry and manager are destroyed
         }

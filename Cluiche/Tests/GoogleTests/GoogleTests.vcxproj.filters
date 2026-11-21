@@ -3321,5 +3321,8 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepSaveEdge.cpp">
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

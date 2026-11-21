@@ -87,6 +87,8 @@ public:
 
     // So the app can inject it into DiaSimTimeModule::SetSaveRegistry.
     Dia::SaveGame::SaveRegistry& GetRegistry() { return mRegistry; }
+    // So a participant-adjacent module can watch OnLoadStarted (WorldStepModule resets its cadence state on a load).
+    Dia::SaveGame::SaveManager& GetManager() { return mManager; }
 
     // Observable results.
     Dia::SaveGame::SaveResult GetLastSaveResult() const { return mLastSaveResult; }
