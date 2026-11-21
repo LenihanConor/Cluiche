@@ -20,8 +20,8 @@
 
 #include <Shared/WorldGeneration/WorldCameraController.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/SharedWorldHexGrid.h>
-#include <Shared/WorldGeneration/WorldHexGrid.h>
+#include <DraoiHexWorld/SharedWorldHexGrid.h>
+#include <DraoiHexWorld/WorldHexGrid.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
 

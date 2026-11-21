@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>

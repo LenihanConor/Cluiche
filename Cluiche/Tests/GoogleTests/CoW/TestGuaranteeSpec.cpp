@@ -2,7 +2,7 @@
 // SiteRegistry data-declared kinds.
 #include <gtest/gtest.h>
 
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>

@@ -3,7 +3,7 @@
 // Spec: docs/specs/features/draoi/generic-strata.md (AC 4).
 #include <gtest/gtest.h>
 
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldJson.h>

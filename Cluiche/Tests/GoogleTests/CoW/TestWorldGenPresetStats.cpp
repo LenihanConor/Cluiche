@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <DiaMaths/Core/RandomStream.h>   // before module headers: windows.h defines min/max macros
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldHexGrid.h>
+#include <DraoiHexWorld/WorldHexGrid.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 

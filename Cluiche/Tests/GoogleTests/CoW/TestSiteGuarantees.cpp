@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/reachability-validator.md (AC1, AC2, AC3, AC4, AC10)
 // The three built-in guarantees over SiteSet kinds, run on hand-authored worlds, and DefaultValidationSet.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/SiteRules.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

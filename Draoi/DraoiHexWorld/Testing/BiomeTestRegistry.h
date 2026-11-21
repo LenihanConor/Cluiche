@@ -2,9 +2,9 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md
 #pragma once
 
-#include <Shared/World/BiomeRegistry.h>
-#include <Shared/World/CellVocabulary.h>
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/CellVocabulary.h>
+#include <DraoiHexWorld/StratumTable.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,7 +16,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace World {

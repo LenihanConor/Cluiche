@@ -16,7 +16,7 @@
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <string>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

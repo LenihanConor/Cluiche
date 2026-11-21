@@ -1,8 +1,8 @@
 // S-1 Regions, Nodes and Site Hook task 1: RegionTable, SiteSet, PlaceResult, DeriveSubSeed.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
-#include <Shared/WorldGeneration/Regions.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Regions.h>
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/PlaceResult.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 
@@ -11,7 +11,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Core::StringCRC;

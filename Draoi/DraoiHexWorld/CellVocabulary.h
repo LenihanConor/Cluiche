@@ -1,5 +1,5 @@
 // Core cell vocabulary: the enums and ids a world cell stores and sims read off it.
-// Split out of WorldGeneration/TerrainEnums.h so BiomeRegistry and the world types have no
+// Split out of the former TerrainEnums.h so BiomeRegistry and the world types have no
 // include dependency on the generator. Namespaces are unchanged (pure move).
 #pragma once
 

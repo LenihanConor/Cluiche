@@ -8,7 +8,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/consumer-amendments.md (Amendment 3)
 #pragma once
 
-#include <Shared/WorldGeneration/WorldHexGrid.h>
+#include <DraoiHexWorld/WorldHexGrid.h>
 
 #include <cstdint>
 #include <optional>

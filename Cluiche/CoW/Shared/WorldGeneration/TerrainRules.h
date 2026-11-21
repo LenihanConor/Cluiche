@@ -13,7 +13,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
 
-#include <Shared/WorldGeneration/TerrainEnums.h>
+#include <DraoiHexWorld/WorldStructure.h>
 
 #include <cstdint>
 

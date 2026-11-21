@@ -7,7 +7,7 @@
 // No include of anything under WorldGeneration/.
 #pragma once
 
-#include <Shared/World/CellVocabulary.h>
+#include <DraoiHexWorld/CellVocabulary.h>
 
 #include <cstdint>
 #include <functional>

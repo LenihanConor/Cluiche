@@ -4,9 +4,9 @@
 // Spec: docs/specs/features/draoi/generic-strata.md (AC 4a).
 #include <gtest/gtest.h>
 
-#include <Shared/World/BiomeRegistry.h>
-#include <Shared/World/StratumTable.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/StratumTable.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>

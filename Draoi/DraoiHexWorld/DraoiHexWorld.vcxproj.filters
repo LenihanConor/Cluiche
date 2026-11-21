@@ -9,10 +9,27 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DraoiHexWorld.h" />
+    <ClInclude Include="CellVocabulary.h" />
+    <ClInclude Include="BiomeRegistry.h" />
+    <ClInclude Include="StratumTable.h" />
+    <ClInclude Include="WorldHexGrid.h" />
+    <ClInclude Include="SharedWorldHexGrid.h" />
+    <ClInclude Include="Regions.h" />
+    <ClInclude Include="Sites.h" />
+    <ClInclude Include="WorldStructure.h" />
+    <ClInclude Include="Testing\BiomeTestRegistry.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\StratumTestIndices.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DraoiHexWorld.cpp" />
+    <ClCompile Include="BiomeRegistry.cpp" />
+    <ClCompile Include="StratumTable.cpp" />
+    <ClCompile Include="WorldHexGrid.cpp" />
+    <ClCompile Include="Sites.cpp" />
+    <ClCompile Include="WorldStructure.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworld.architecture.module.md">

@@ -2,7 +2,7 @@
 // all ocean, extreme sliders), full-pipeline validity at Standard / Large, AC5/AC6 on generated worlds,
 // WriteTerrain / Invalidate behaviour, and WorldGenSession stagesRan coverage of the biome stages.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
@@ -16,7 +16,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

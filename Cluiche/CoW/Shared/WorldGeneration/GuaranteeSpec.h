@@ -6,9 +6,9 @@
 // No include from Modules/. std::string errors (String32.h collides with protobuf in some test TUs).
 #pragma once
 
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/StratumTable.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Sites.h>
 
 #include <cstdint>
 #include <string>

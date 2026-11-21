@@ -3,7 +3,7 @@
 // Visible from both CoW::World and CoW::WorldGeneration so either `using namespace` finds them.
 #pragma once
 
-#include <Shared/World/CellVocabulary.h>
+#include <DraoiHexWorld/CellVocabulary.h>
 
 namespace CoW {
 namespace World {

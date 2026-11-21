@@ -4,14 +4,14 @@
 #pragma once
 
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/ValidationTypes.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
 #include <cstdint>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {

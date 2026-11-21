@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::RandomStream;

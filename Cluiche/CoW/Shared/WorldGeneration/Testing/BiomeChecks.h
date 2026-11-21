@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

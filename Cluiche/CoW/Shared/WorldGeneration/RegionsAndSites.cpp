@@ -1,6 +1,6 @@
 // S-1 Regions, Nodes and Site Hook: RegionsAndSites::Place. See RegionsAndSites.h.
 #include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/NodesRiver.h>

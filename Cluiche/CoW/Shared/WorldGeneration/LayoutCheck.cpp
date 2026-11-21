@@ -4,7 +4,7 @@
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/NodesRiver.h>
 #include <Shared/WorldGeneration/RegionPartition.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Sites.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

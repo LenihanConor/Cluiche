@@ -1,8 +1,8 @@
 // Spec: docs/specs/features/draoi/guarantee-set-injection.md (AC 1: generic rules, no CoW vocabulary)
 // The three generic rules (reach_any, min_spacing, variant_cover) over non-CoW kinds and nouns, on hand-built worlds.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/SiteRules.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>

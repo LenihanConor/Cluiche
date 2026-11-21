@@ -31,12 +31,6 @@
     <Filter Include="Shared\WorldGeneration">
       <UniqueIdentifier>{a9b3affa-4bc7-4de6-a86a-68efa9c62b15}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shared\World">
-      <UniqueIdentifier>{25fba8c1-a150-4234-99ab-0606111edc45}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Shared\World\Testing">
-      <UniqueIdentifier>{b1feb5c0-4cb1-404e-b152-c4988238591c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shared\WorldStep">
       <UniqueIdentifier>{942fdb40-a5e4-495c-8c20-d89d5eea4732}</UniqueIdentifier>
     </Filter>
@@ -142,9 +136,6 @@
     <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp">
       <Filter>Modules\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
@@ -161,9 +152,6 @@
       <Filter>Shared</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\Sites.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp">
@@ -226,14 +214,8 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\World\BiomeRegistry.cpp">
-      <Filter>Shared\World</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
       <Filter>Modules\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\World\StratumTable.cpp">
-      <Filter>Shared\World</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp">
       <Filter>Shared</Filter>
@@ -348,9 +330,6 @@
     <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h">
       <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h">
       <Filter>Shared</Filter>
     </ClInclude>
@@ -376,15 +355,6 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainEnums.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\Regions.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\Sites.h">
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\PlaceResult.h">
@@ -447,29 +417,11 @@
     <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h">
-      <Filter>Shared\WorldGeneration</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\F2Harness\F2StageResult.h">
       <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\World\BiomeRegistry.h">
-      <Filter>Shared\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h">
-      <Filter>Shared\World\Testing</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
       <Filter>Modules\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\World\CellVocabulary.h">
-      <Filter>World</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\World\StratumTable.h">
-      <Filter>Shared\World</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\World\Testing\StratumTestIndices.h">
-      <Filter>Shared\World\Testing</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h">
       <Filter>Shared</Filter>

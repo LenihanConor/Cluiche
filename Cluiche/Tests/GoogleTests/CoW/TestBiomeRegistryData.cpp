@@ -2,8 +2,8 @@
 // Expectations are literals copied from the former legacy code (the deleted Biome enum, BiomeClassify.cpp, terrain_rules.schema.json),
 // not read back from the registry.
 #include <gtest/gtest.h>
-#include <Shared/World/BiomeRegistry.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <filesystem>
@@ -11,7 +11,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::World;
 using CoW::WorldGeneration::StratumIndex;
@@ -281,7 +281,7 @@ TEST(BiomeRegistryData, CellDefaultsBiomeToOceanRow)
 }
 
 // ---- Task 9: BiomeTestRegistry.h ----
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 TEST(BiomeTestRegistry, LookupByIdReturnsLegacyOrdinals)
 {

@@ -1,6 +1,6 @@
 // S-1 Retry Mechanism: the attempt loop. See GenerationRun.h.
 #include <Shared/WorldGeneration/GenerationRun.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationGuard.h>

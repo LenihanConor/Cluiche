@@ -2,7 +2,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (UI Layout, Goals 7-10)
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 

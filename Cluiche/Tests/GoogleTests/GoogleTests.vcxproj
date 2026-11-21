@@ -1190,7 +1190,6 @@
     <ClCompile Include="CluicheGameBaseline\TestVisualDebuggerPanelCommand.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestLogPushBatcher.cpp" />
     <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldHexGrid.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp" />
     <ClCompile Include="CoW\TestWorldHexGrid.cpp" />
     <ClCompile Include="CoW\TestWorldLayerSource.cpp" />
@@ -1203,7 +1202,6 @@
     <ClCompile Include="CoW\TestWorldGenViewHost.cpp" />
     <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenViewHost.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\World\BiomeRegistry.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp" />
     <ClCompile Include="CoW\TestBiomeClimate.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClassify.cpp" />
@@ -1212,7 +1210,6 @@
     <ClCompile Include="CoW\TestBiomeAcceptance.cpp" />
     <ClCompile Include="CoW\TestBiomeEdgeCases.cpp" />
     <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\Sites.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp" />
     <ClCompile Include="CoW\TestSiteRegistry.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRegistry.cpp" />
@@ -1377,7 +1374,6 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepSaveEdge.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp" />
     <ClCompile Include="CoW\TestStratumTable.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\World\StratumTable.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChain.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChainEdge.cpp" />
     <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp" />

@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC1, AC8 export side, Export Implementation)
 // WorldJson export: deterministic readable text, kind-name resolution, refusals.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>

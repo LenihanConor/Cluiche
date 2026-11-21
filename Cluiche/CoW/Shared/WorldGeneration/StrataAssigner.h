@@ -22,7 +22,7 @@
 // Spec: docs/specs/features/draoi/generic-strata.md (task 2, AC 6)
 #pragma once
 
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/StratumTable.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainStrata.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>

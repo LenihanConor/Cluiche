@@ -7,14 +7,14 @@
 #include "../RegionRepair.h"
 #include "../WorldGenSession.h"
 #include "../WorldJson.h"
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <cstring>
 #include <string>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {

@@ -1,8 +1,8 @@
 // S-1 Biome Registry: biome-only data tests without registry coupling.
 // Task 29 (AC 9): appending one climate row to the registry changes classification with no code change.
 #include <gtest/gtest.h>
-#include <Shared/World/BiomeRegistry.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 
 #include <vector>

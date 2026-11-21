@@ -4,7 +4,7 @@
 // the API edges only. Sites are ordered by (kindCrc, cell): CRC order, not name order.
 #pragma once
 
-#include "TerrainEnums.h"
+#include <DraoiHexWorld/CellVocabulary.h>
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>

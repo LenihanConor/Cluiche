@@ -1,6 +1,6 @@
 // S-1 Nodes: built-in river nodes + Hunting/Resource fill (hand-built worlds + generated-world AC8b checks).
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/NodesFill.h>
 #include <Shared/WorldGeneration/NodesRiver.h>
@@ -22,7 +22,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

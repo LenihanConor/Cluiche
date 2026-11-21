@@ -1,7 +1,7 @@
 // S-1 World Generation: JSON export of a WorldStructure. See WorldJson.h.
 #include <Shared/WorldGeneration/WorldJson.h>
 
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 
 #include <algorithm>

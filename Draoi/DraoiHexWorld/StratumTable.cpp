@@ -1,4 +1,4 @@
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/StratumTable.h>
 
 #include <DiaAttribute/ParamBinding.h>
 #include <DiaAttribute/ParameterFile.h>

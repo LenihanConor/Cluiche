@@ -3,7 +3,7 @@
 // AC1's 200-change sequence is SLOW_BiomeGenerator.LiveSliderSequenceEqualsFreshGenerationLong (TestBiomeGenerator.cpp).
 // AC14 (imported worlds) is deferred until export/import exists (system plan task 16).
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 

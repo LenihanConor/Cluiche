@@ -1,6 +1,6 @@
 // S-1 Regions, Nodes and Site Hook: RegionsAndSites::Place (AC1, AC9, placer failure, AC12) and CheckLayout (AC8).
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
@@ -21,7 +21,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

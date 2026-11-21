@@ -1,5 +1,5 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
-#include <Shared/WorldGeneration/WorldHexGrid.h>
+#include <DraoiHexWorld/WorldHexGrid.h>
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaPathfinding/HexTopology.h>

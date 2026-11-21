@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/Testing/BiomeChecks.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
@@ -16,7 +16,7 @@
 #include <string>
 #include <limits>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

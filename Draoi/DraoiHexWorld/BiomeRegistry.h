@@ -7,8 +7,8 @@
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/Strings/String256.h>
-#include <Shared/World/CellVocabulary.h>
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/CellVocabulary.h>
+#include <DraoiHexWorld/StratumTable.h>
 
 #include <cstdint>
 #include <memory>
@@ -16,7 +16,7 @@
 namespace CoW {
 namespace World {
 
-// BiomeIndex / kNoBiome are declared in World/CellVocabulary.h (Cell stores a BiomeIndex; avoids a circular include).
+// BiomeIndex / kNoBiome are declared in CellVocabulary.h (Cell stores a BiomeIndex; avoids a circular include).
 
 using TagId = uint8_t;
 constexpr TagId kNoTag = 0xFF;

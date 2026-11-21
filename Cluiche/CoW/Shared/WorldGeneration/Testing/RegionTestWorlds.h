@@ -3,11 +3,11 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainTypes.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {

@@ -2,7 +2,7 @@
 // Spec: docs/specs/features/draoi/guarantee-set-injection.md
 #pragma once
 
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 

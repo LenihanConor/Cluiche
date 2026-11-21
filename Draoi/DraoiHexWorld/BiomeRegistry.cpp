@@ -1,4 +1,4 @@
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>

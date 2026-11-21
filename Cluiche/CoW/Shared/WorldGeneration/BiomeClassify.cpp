@@ -3,7 +3,7 @@
 #pragma fp_contract(off)
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaPathfinding/HexTopology.h>
 #include <DiaObservation/Log/DiaLog.h>

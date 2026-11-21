@@ -55,14 +55,12 @@
     <ClCompile Include="Modules\WorldGen\WorldGenerationModule.cpp" />
     <ClCompile Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.cpp" />
     <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp" />
-    <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp" />
     <ClCompile Include="Modules\WorldGen\WorldGenViewHost.cpp" />
     <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp" />
     <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp" />
-    <ClCompile Include="Shared\WorldGeneration\Sites.cpp" />
     <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp" />
     <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp" />
@@ -83,9 +81,7 @@
     <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp" />
     <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp" />
-    <ClCompile Include="Shared\World\BiomeRegistry.cpp" />
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp" />
-    <ClCompile Include="Shared\World\StratumTable.cpp" />
     <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteRules.cpp" />
     <ClCompile Include="Shared\WorldGeneration\StrataAssigner.cpp" />
@@ -125,7 +121,6 @@
     <ClInclude Include="Modules\WorldGen\WorldGenerationModule.h" />
     <ClInclude Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.h" />
     <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h" />
-    <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h" />
@@ -135,9 +130,6 @@
     <ClInclude Include="Modules\WorldGen\WorldGenMirrorRegistrar.h" />
     <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h" />
     <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h" />
-    <ClInclude Include="Shared\WorldGeneration\TerrainEnums.h" />
-    <ClInclude Include="Shared\WorldGeneration\Regions.h" />
-    <ClInclude Include="Shared\WorldGeneration\Sites.h" />
     <ClInclude Include="Shared\WorldGeneration\PlaceResult.h" />
     <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h" />
@@ -158,14 +150,8 @@
     <ClInclude Include="Shared\WorldGeneration\WorldJson.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldFiles.h" />
     <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h" />
-    <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h" />
     <ClInclude Include="Modules\F2Harness\F2StageResult.h" />
-    <ClInclude Include="Shared\World\BiomeRegistry.h" />
-    <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h" />
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h" />
-    <ClInclude Include="Shared\World\CellVocabulary.h" />
-    <ClInclude Include="Shared\World\StratumTable.h" />
-    <ClInclude Include="Shared\World\Testing\StratumTestIndices.h" />
     <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h" />
     <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h" />

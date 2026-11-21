@@ -2,7 +2,7 @@
 //       regions-and-sites.md (AC11 JSON parts), worldgenerationpipeline.md (Test 3)
 // WorldJson import: validation, all-or-nothing, byte-identical round trips, hand edits, unknown kinds.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>

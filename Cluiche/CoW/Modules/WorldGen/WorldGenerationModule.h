@@ -5,7 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
-#include <Shared/WorldGeneration/SharedWorldHexGrid.h>
+#include <DraoiHexWorld/SharedWorldHexGrid.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
@@ -19,7 +19,7 @@
 
 namespace CoW {
 
-namespace World { class BiomeRegistry; }   // full definition: Shared/World/BiomeRegistry.h (pulls windows.h; kept out of this header)
+namespace World { class BiomeRegistry; }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
 
 class WorldGenerationHealthReporter : public Dia::Observation::Health::HealthReporterBase
 {

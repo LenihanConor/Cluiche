@@ -9,7 +9,7 @@
 #include <DiaValueSchema/ValueSchemaRegistry.h>
 #include <DiaValueSchema/Testing/SchemaTempDirectory.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <filesystem>
 #include <fstream>
@@ -17,7 +17,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 

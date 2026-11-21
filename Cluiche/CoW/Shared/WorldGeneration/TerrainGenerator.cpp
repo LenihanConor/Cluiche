@@ -4,7 +4,7 @@
 
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaPathfinding/HexTopology.h>

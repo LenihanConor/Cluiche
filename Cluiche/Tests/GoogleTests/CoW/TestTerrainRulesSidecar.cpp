@@ -9,7 +9,7 @@
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <filesystem>

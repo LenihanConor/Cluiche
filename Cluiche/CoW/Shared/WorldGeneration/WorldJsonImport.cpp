@@ -1,6 +1,6 @@
 // S-1 World Generation: JSON import of a WorldStructure. See WorldJson.h.
 #include <Shared/WorldGeneration/WorldJson.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaObservation/Log/DiaLog.h>
 

@@ -2,7 +2,7 @@
 #pragma fp_contract(off)
 
 #include <Shared/WorldGeneration/RegionPartition.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>

@@ -9,7 +9,7 @@
 // Header-only. Aborts with a message if the sidecar cannot be found or loaded (a broken checkout, not a test result).
 #pragma once
 
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>

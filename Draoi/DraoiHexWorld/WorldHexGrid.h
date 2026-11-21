@@ -4,7 +4,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #pragma once
 
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorld/WorldStructure.h>
 
 #include <DiaGraphics/CellField/CellGridDesc.h>
 #include <DiaMaths/Vector/Vector2D.h>

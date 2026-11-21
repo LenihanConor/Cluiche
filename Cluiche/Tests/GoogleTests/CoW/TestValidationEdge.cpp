@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/reachability-validator.md (AC6 and edge cases)
 // Reachability Validator exhaustive pass: degenerate worlds, bad inputs, cost semantics, size and speed.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

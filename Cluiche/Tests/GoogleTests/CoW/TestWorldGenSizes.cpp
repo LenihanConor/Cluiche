@@ -6,7 +6,7 @@
 // Small -> Standard -> Large -> Small switching, and the 12 KB compact debug-domain state.
 // Large is SLOW_ (run with --all). Acceptance misses are reported with numbers, not tuned.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>   // before the module header: windows.h defines min/max macros
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>

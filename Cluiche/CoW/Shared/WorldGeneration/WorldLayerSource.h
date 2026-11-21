@@ -8,7 +8,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #pragma once
 
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <cstdint>

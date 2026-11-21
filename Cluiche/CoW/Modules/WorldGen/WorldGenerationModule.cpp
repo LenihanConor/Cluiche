@@ -1,6 +1,6 @@
 #include "Modules/WorldGen/WorldGenerationModule.h"
 
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>

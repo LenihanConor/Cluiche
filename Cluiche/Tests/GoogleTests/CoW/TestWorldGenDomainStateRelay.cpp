@@ -1,7 +1,7 @@
 // WorldGenDebugDomain attached through DomainStateRelayModule: Main-side adapter shows the card state and forwards commands.
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 

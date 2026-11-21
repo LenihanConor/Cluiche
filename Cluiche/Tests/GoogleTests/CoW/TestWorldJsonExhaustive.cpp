@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC6 speed, AC7 default path, limits)
 // Exhaustive pass for Feature 4: speed, sweeps over the shipped presets, size guards and boundary worlds.
 #include <gtest/gtest.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;

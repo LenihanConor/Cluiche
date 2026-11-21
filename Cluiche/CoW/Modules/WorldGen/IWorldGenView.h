@@ -6,7 +6,7 @@
 #pragma once
 
 #include <DiaCore/Json/external/json/json.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Sites.h>
 
 #include <cstdint>
 #include <functional>

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "PlaceResult.h"
-#include "Sites.h"
+#include <DraoiHexWorld/Sites.h>
 #include "TerrainTypes.h"
 #include "ValidationTypes.h"
 

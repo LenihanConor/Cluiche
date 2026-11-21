@@ -11,8 +11,8 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Region partition)
 #pragma once
 
-#include <Shared/World/StratumTable.h>
-#include <Shared/WorldGeneration/Regions.h>
+#include <DraoiHexWorld/StratumTable.h>
+#include <DraoiHexWorld/Regions.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 

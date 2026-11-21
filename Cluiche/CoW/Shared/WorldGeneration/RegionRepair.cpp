@@ -3,7 +3,7 @@
 
 #include <Shared/WorldGeneration/RegionRepair.h>
 
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

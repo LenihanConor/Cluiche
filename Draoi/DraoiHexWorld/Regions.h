@@ -2,7 +2,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md
 #pragma once
 
-#include "TerrainEnums.h"
+#include <DraoiHexWorld/CellVocabulary.h>
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -11,7 +11,7 @@
 namespace CoW {
 namespace WorldGeneration {
 
-// RegionId / kNoRegion are declared in TerrainEnums.h (Cell needs them; avoids a circular include).
+// RegionId / kNoRegion are declared in CellVocabulary.h (Cell needs them; avoids a circular include).
 
 struct RegionRecord
 {

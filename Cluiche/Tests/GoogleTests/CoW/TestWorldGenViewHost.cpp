@@ -5,7 +5,7 @@
 #ifdef DIA_DEBUG
 
 #include <Modules/WorldGen/WorldGenerationModule.h>   // before windows.h users (RandomStream min/max)
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include "Modules/WorldGen/WorldGenViewHost.h"
 #include "Modules/WorldGen/WorldGenDebugDomain.h"
 

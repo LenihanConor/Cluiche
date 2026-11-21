@@ -1,14 +1,14 @@
 // S-1 Biome Registry system tests: accessors, masks, hash (plan tasks 3 and 4).
 #include <gtest/gtest.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/Logger.h>
 
 #include <string>
 #include <utility>
-#include <Shared/World/Testing/StratumTestIndices.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::World;
 using CoW::WorldGeneration::StratumIndex;

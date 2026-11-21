@@ -5,7 +5,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainTypes.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <algorithm>
 #include <cstdint>

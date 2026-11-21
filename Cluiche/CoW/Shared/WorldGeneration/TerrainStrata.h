@@ -32,7 +32,7 @@
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/StratumTable.h>
 
 #include <cstdint>
 

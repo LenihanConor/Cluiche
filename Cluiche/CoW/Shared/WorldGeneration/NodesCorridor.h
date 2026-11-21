@@ -23,7 +23,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Nodes, Corridors)
 #pragma once
 
-#include <Shared/World/StratumTable.h>
+#include <DraoiHexWorld/StratumTable.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 

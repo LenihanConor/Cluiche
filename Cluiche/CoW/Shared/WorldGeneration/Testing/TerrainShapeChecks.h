@@ -15,7 +15,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {

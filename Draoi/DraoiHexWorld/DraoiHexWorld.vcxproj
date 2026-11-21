@@ -74,10 +74,23 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DraoiHexWorld.h" />
+    <ClInclude Include="CellVocabulary.h" />
+    <ClInclude Include="BiomeRegistry.h" />
+    <ClInclude Include="StratumTable.h" />
+    <ClInclude Include="WorldHexGrid.h" />
+    <ClInclude Include="SharedWorldHexGrid.h" />
+    <ClInclude Include="Regions.h" />
+    <ClInclude Include="Sites.h" />
+    <ClInclude Include="WorldStructure.h" />
+    <ClInclude Include="Testing\BiomeTestRegistry.h" />
+    <ClInclude Include="Testing\StratumTestIndices.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DraoiHexWorld.cpp" />
+    <ClCompile Include="BiomeRegistry.cpp" />
+    <ClCompile Include="StratumTable.cpp" />
+    <ClCompile Include="WorldHexGrid.cpp" />
+    <ClCompile Include="Sites.cpp" />
+    <ClCompile Include="WorldStructure.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworld.architecture.module.md" />
@@ -85,6 +98,26 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAttribute\DiaAttribute.vcxproj">
+      <Project>{A1D14778-3B62-4B8F-9C2E-DA1147710001}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaObservation\DiaObservation.vcxproj">
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPathfinding\DiaPathfinding.vcxproj">
+      <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

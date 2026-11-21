@@ -2736,9 +2736,6 @@
     <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldHexGrid.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -2775,9 +2772,6 @@
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\World\BiomeRegistry.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -2800,9 +2794,6 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\Sites.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp">
@@ -3295,9 +3286,6 @@
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestStratumTable.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\World\StratumTable.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="DiaDeferredStep\TestStepChain.cpp">

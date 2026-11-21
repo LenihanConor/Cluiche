@@ -2,14 +2,14 @@
 // Header-only. Row-major, index = y * width + x.
 #pragma once
 
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cstdint>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {

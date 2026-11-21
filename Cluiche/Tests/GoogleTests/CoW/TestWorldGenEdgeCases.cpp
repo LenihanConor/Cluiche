@@ -24,7 +24,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::WorldGeneration;
 

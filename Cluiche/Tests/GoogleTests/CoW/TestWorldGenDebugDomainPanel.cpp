@@ -3,7 +3,7 @@
 // Every command must change the session exactly as the matching cow.worldgen.* command does (SD-S1-002).
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 

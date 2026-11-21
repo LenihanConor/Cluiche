@@ -1,15 +1,15 @@
 // S-1 Biome Registry: Task 32 edge cases (fallback not row 0, no tags, zones [], 254 rows end to end).
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md (ACs 2, 3, 4, 6)
 #include <gtest/gtest.h>
-#include <Shared/World/BiomeRegistry.h>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/StratumTestIndices.h>
+#include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::World;
 using namespace CoW::World::Testing;

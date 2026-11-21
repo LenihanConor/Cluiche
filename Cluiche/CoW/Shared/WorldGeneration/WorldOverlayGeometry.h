@@ -5,9 +5,9 @@
 #pragma once
 
 #include <Shared/WorldGeneration/GenerationReport.h>
-#include <Shared/WorldGeneration/Sites.h>
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
-#include <Shared/WorldGeneration/WorldHexGrid.h>
+#include <DraoiHexWorld/WorldHexGrid.h>
 
 #include <DiaMaths/Vector/Vector2D.h>
 

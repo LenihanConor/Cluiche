@@ -19,11 +19,11 @@
 //                    itself (row = index of the pair in the forbidden list)
 // A "sidecar validation failure" fault is omitted: no C++ validator exists.
 #include <gtest/gtest.h>
-#include <Shared/World/BiomeRegistry.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 
 #include <cstring>
 #include <string>
-#include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::World;
 using Dia::Core::StringCRC;
