@@ -1,7 +1,7 @@
 # Feature Spec: S-1 Biome Registry
 
 **Parent:** @docs/specs/applications/cow/systems/s1-worldgeneration/worldgenerationpipeline.md (Feature 10)
-**Status:** `Approved` (2026-11-18, user)
+**Status:** `Done` (2026-11-20)
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A2a, A2b, A11, D5–D7)
 **Depends on:** @docs/specs/applications/dia/systems/diaattribute/parameter-files.md (Parameter Files; build it first. The terrain profile and the climate-rule removal edit S-1's parameter sidecar.)
 
@@ -163,7 +163,7 @@ A `map` entry with a `keyRef` must list **every** key that `keyRef` resolves to 
 
 ### Terrain profile
 
-S-1's parameter sidecar (from Parameter Files; today's `terrain_rules.json` successor) gains maps keyed by `TerrainType` id. The key source is the `TerrainType` enum's id list, through `IMapKeySource`.
+S-1's parameter sidecar (from Parameter Files; today's `terrain_rules.json` successor) gains maps keyed by `TerrainType` id. The key source is the sidecar's `terrain_type` enum entry, through `keyEnum` (see Plan-gap resolutions); no `IMapKeySource` is needed. The maps bind into `TerrainRules` arrays via `BindMap`.
 
 | Map | Kind | Default | Notes |
 |---|---|---|---|
@@ -299,4 +299,4 @@ The example rows in Design → Registry file are illustrative only.
 
 ## Status
 
-**Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`, after DiaAttribute Parameter Files. Interview done with the user on 2026-11-18 (decisions: delete the enum; `valuesFrom` palette; terrain profile included; row order is significant; AD-001 sign-off for `valuesFrom` and `data.incomplete-map`).
+**Status:** `Done` (2026-11-20). Built per [biome-registry.plan.md](biome-registry.plan.md) (Tasks 0-35). Approved 2026-11-18. Interview done with the user on 2026-11-18 (decisions: delete the enum; `valuesFrom` palette; terrain profile included; row order is significant; AD-001 sign-off for `valuesFrom` and `data.incomplete-map`).
