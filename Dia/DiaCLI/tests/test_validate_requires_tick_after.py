@@ -146,3 +146,29 @@ def test_diagame_cross_manifest_missing_reference_is_error(tmp_path):
     game = _write_game(tmp_path, _app(("Sim", [_mod("B", requires_tick_after=["Nope"])])))
     errs = _game_errors(game, tmp_path)
     assert any("'Nope'" in e and "REQUIRES_TICK_AFTER_MISSING" in e for e in errs)
+
+
+# ── World Step F2 AC 3: WorldStepModule -> DeferredStepModule -> consumers ──────────────────────────────────────────
+
+def _worldstep_chain(order):
+    """Modules keyed by name, each with the requires_tick_after the CoW plan (F2 task 4) prescribes."""
+    decl = {
+        "WorldStepModule": _mod("WorldStepModule"),
+        "DeferredStepModule": _mod("DeferredStepModule", requires_tick_after=["WorldStepModule"]),
+        "WeatherModule": _mod("WeatherModule", requires_tick_after=["DeferredStepModule"]),
+    }
+    return _app(("Sim", [decl[n] for n in order]))
+
+
+def test_worldstep_chain_correct_order_passes():
+    assert _validate_diaapp(_worldstep_chain(["WorldStepModule", "DeferredStepModule", "WeatherModule"])) == []
+
+
+def test_worldstep_consumer_before_deferredstep_names_both():
+    errs = _errors(_worldstep_chain(["WorldStepModule", "WeatherModule", "DeferredStepModule"]))
+    assert len(errs) == 1 and "'WeatherModule'" in errs[0] and "'DeferredStepModule'" in errs[0]
+
+
+def test_worldstep_deferredstep_before_worldstep_names_both():
+    errs = _errors(_worldstep_chain(["DeferredStepModule", "WorldStepModule", "WeatherModule"]))
+    assert len(errs) == 1 and "'DeferredStepModule'" in errs[0] and "'WorldStepModule'" in errs[0]
