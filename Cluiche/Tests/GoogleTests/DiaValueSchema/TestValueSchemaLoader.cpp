@@ -249,3 +249,46 @@ TEST(DiaValueSchemaLoader, LoadedEntriesRegisterAndFindEndToEnd)
 	EXPECT_STREQ(v->mFullKey.AsCStr(), "cow.ecology_params/grazing.rate");
 	EXPECT_NE(reg.Find(StringCRC("cow.ecology_params/regrowth.forest")), nullptr);
 }
+
+TEST(DiaValueSchemaLoader, EnumValuesFromIsParsedAndLeavesValuesEmpty)
+{
+	const char* text = R"({ "format": "dia.value_schema", "version": 1, "for": "conf.vf", "entries": [
+	  { "key": "biomeIndex", "kind": "field", "label": "Biome", "description": "d", "type": "enum",
+	    "valuesFrom": { "format": "cow.biomes", "records": "biomes", "id": "id", "label": "name", "colour": "colour", "description": "desc" } },
+	  { "key": "plain", "kind": "field", "label": "P", "description": "d", "type": "enum", "values": [ { "id": "a" } ] } ] })";
+	LoadResult r = ValueSchemaLoader::LoadFromText(text, "vf.diavalues");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	ASSERT_EQ(r.mEntries.Size(), 2u);
+	const ValueInfo& v = r.mEntries[0];
+	EXPECT_TRUE(v.mHasValuesFrom);
+	EXPECT_EQ(v.mEnumValues.Size(), 0u);
+	EXPECT_STREQ(v.mValuesFrom.mFormat.AsCStr(), "cow.biomes");
+	EXPECT_STREQ(v.mValuesFrom.mRecords.AsCStr(), "biomes");
+	EXPECT_STREQ(v.mValuesFrom.mId.AsCStr(), "id");
+	EXPECT_STREQ(v.mValuesFrom.mLabel.AsCStr(), "name");
+	EXPECT_STREQ(v.mValuesFrom.mColour.AsCStr(), "colour");
+	EXPECT_STREQ(v.mValuesFrom.mDescription.AsCStr(), "desc");
+	EXPECT_FALSE(r.mEntries[1].mHasValuesFrom);
+	EXPECT_EQ(r.mEntries[1].mEnumValues.Size(), 1u);
+}
+
+TEST(DiaValueSchemaLoader, EnumValuesFromOptionalSubkeysStayEmpty)
+{
+	const char* text = R"({ "format": "dia.value_schema", "version": 1, "for": "conf.vf", "entries": [
+	  { "key": "k", "kind": "field", "label": "L", "description": "d", "type": "enum",
+	    "valuesFrom": { "format": "f", "records": "r", "id": "i" } } ] })";
+	LoadResult r = ValueSchemaLoader::LoadFromText(text, "vf.diavalues");
+	ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+	EXPECT_STREQ(r.mEntries[0].mValuesFrom.mLabel.AsCStr(), "");
+	EXPECT_STREQ(r.mEntries[0].mValuesFrom.mColour.AsCStr(), "");
+}
+
+TEST(DiaValueSchemaLoader, EnumListWithValuesFromIsRejected)
+{
+	const char* text = R"({ "format": "dia.value_schema", "version": 1, "for": "conf.vf", "entries": [
+	  { "key": "k", "kind": "field", "label": "L", "description": "d", "type": "enum[]",
+	    "valuesFrom": { "format": "f", "records": "r", "id": "i" } } ] })";
+	LoadResult r = ValueSchemaLoader::LoadFromText(text, "vf.diavalues");
+	EXPECT_FALSE(r.mOk);
+	EXPECT_NE(std::string(r.mFailure.mReason.AsCStr()).find("valuesFrom"), std::string::npos);
+}

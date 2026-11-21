@@ -112,6 +112,17 @@ namespace Dia::ValueSchema
 		bool								mHasColour = false;
 	};
 
+	// `valuesFrom` on an enum entry: the options come from a record array of another data file (resolved at runtime).
+	struct ValuesFrom
+	{
+		Dia::Core::Containers::String64		mFormat;		// file format that holds the records
+		Dia::Core::Containers::String64		mRecords;		// array key inside that file
+		Dia::Core::Containers::String64		mId;			// record field -> EnumValue::mId
+		Dia::Core::Containers::String64		mLabel;			// optional; empty = unset
+		Dia::Core::Containers::String64		mColour;		// optional
+		Dia::Core::Containers::String64		mDescription;	// optional
+	};
+
 	struct PayloadField
 	{
 		Dia::Core::Containers::String64		mName;
@@ -184,7 +195,9 @@ namespace Dia::ValueSchema
 		double								mDefaultNumber = 0.0;	// float/int/bool (0/1)
 		Dia::Core::Containers::String128	mDefaultString;			// string/enum/ref
 
-		ValueList<EnumValue>							mEnumValues;
+		ValueList<EnumValue>							mEnumValues;	// empty while mHasValuesFrom and not yet resolved
+		bool								mHasValuesFrom = false;	// enum only; exclusive with `values`
+		ValuesFrom							mValuesFrom;
 		ValueList<Dia::Core::Containers::String128>	mAffects;
 		ValueList<Dia::Core::Containers::String128>	mRelated;
 		Dia::Core::Containers::String128	mSource;

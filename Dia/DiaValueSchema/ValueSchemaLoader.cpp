@@ -93,7 +93,7 @@ namespace Dia::ValueSchema
 
 		const char* const kEntryKeys[] = { "key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
 			"values", "affects", "related", "source", "unique", "required", "ref", "ui", "history", "payload", "vocabulary",
-			"keyRef", "valueType", "bands", nullptr };
+			"keyRef", "valueType", "bands", "valuesFrom", nullptr };
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
 			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
 		const char* const kHistoryKeys[] = { "track", "group", "aggregate", nullptr };
@@ -240,6 +240,37 @@ namespace Dia::ValueSchema
 			return true;
 		}
 
+		bool ReadValuesFrom(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& vf)
+		{
+			if (!vf.isObject()) { return Fail(r, ctx, "field 'valuesFrom' must be an object"); }
+			static const char* const kKeys[] = { "format", "records", "id", "label", "colour", "description", nullptr };
+			for (const std::string& n : vf.getMemberNames())
+			{
+				if (!IsKnownKey(kKeys, n.c_str())) { return Fail(r, ctx, (std::string("valuesFrom has unknown key '") + n + "'").c_str()); }
+			}
+			ValuesFrom& d = info.mValuesFrom;
+			const char* req[3] = { "format", "records", "id" };
+			Dia::Core::Containers::String64* reqDst[3] = { &d.mFormat, &d.mRecords, &d.mId };
+			for (int i = 0; i < 3; ++i)
+			{
+				if (!vf.isMember(req[i]) || !vf[req[i]].isString() || vf[req[i]].asString().empty())
+				{
+					return Fail(r, ctx, (std::string("valuesFrom is missing string '") + req[i] + "'").c_str());
+				}
+				if (!AssignString(r, ctx, *reqDst[i], vf[req[i]].asCString(), "valuesFrom")) { return false; }
+			}
+			const char* opt[3] = { "label", "colour", "description" };
+			Dia::Core::Containers::String64* optDst[3] = { &d.mLabel, &d.mColour, &d.mDescription };
+			for (int i = 0; i < 3; ++i)
+			{
+				if (!vf.isMember(opt[i])) { continue; }
+				if (!vf[opt[i]].isString()) { return Fail(r, ctx, (std::string("valuesFrom '") + opt[i] + "' must be a string").c_str()); }
+				if (!AssignString(r, ctx, *optDst[i], vf[opt[i]].asCString(), "valuesFrom")) { return false; }
+			}
+			info.mHasValuesFrom = true;
+			return true;
+		}
+
 		bool ReadTypeSpecific(LoadResult& r, const EntryContext& ctx, ValueInfo& info, const Json::Value& e)
 		{
 			const bool isRef = info.mType == ValueType::Ref || info.mType == ValueType::RefList || info.mType == ValueType::RefPairList;
@@ -267,7 +298,16 @@ namespace Dia::ValueSchema
 				if (e.isMember("valueType")) { return Fail(r, ctx, "field 'valueType' is only valid on map types"); }
 			}
 
-			if ((info.mType == ValueType::Enum || info.mType == ValueType::EnumList) && !e.isMember("values")) { return Fail(r, ctx, "enum and enum[] types require a 'values' array"); }
+			if (e.isMember("valuesFrom"))
+			{
+				if (info.mType != ValueType::Enum) { return Fail(r, ctx, "field 'valuesFrom' is only valid on enum types"); }
+				if (e.isMember("values")) { return Fail(r, ctx, "an enum declares 'values' or 'valuesFrom', not both"); }
+				if (!ReadValuesFrom(r, ctx, info, e["valuesFrom"])) { return false; }
+			}
+			else if ((info.mType == ValueType::Enum || info.mType == ValueType::EnumList) && !e.isMember("values"))
+			{
+				return Fail(r, ctx, "enum and enum[] types require a 'values' array (or 'valuesFrom' on enum)");
+			}
 			return true;
 		}
 
