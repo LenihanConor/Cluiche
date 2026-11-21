@@ -205,6 +205,7 @@ _None remaining._
 | 1 | `open_asset` routes gain `cow.hydro_params` (14 format ids, not 13) | "`open_asset` routes" list; AC 2 ("each of the 13 format ids") |
 | 2 | Parameter files are sidecars (`<sys>_parameters.schema.json`): the schema loader reads `constraints`, `bands`, `valuesFrom` and map `default` objects, and the in-place default writer preserves every other byte | Schema loading text for parameter-file formats |
 | 3 | The Asset tree gains a Hydrology group | Asset tree group list (WorldGen, Weather, Ecology, Succession, Worlds, Scenarios) |
+| 4 | **`valuesFrom` and map completeness.** An `enum` entry may declare `valuesFrom {format, records, id, label, colour, description}` naming a data file and the fields to use as id and display data, filled in record order; a missing file, record path or field is an error naming the entry (AC 10 of the S-1 Biome Registry; Feature 2 of T-2 amends). A `map` entry with `keyRef` or `keyEnum` must list every resolvable key in its schema `default`; missing keys are `data.incomplete-map` (Feature 2 and S-1 AC 11). Sidecar map entries may use `keyEnum` naming a sidecar enum entry. | Schema loading (no mention of `valuesFrom`); "Map completeness" section was not defined in this feature |
 
 ## Status
 
