@@ -154,11 +154,11 @@ This exists for two reasons, both load-bearing:
 
 **The coordinator does not sample. It signals** (revised 2026-11-13, user decision — see Resolved Decision 2).
 
-After every stage has committed, the coordinator raises `OnWorldStepApplied({ applyKey, stepDay, stageCount })` **synchronously inside `Apply`** to registered `IWorldStepListener`s (Feature 3, amended 2026-11-16: a listener interface rather than a direct call, so there is no compile-time dependency on `HistoryDriverModule`). CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) registers as a listener and owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`. It labels the sample by **`stepDay`**, the day the step represents, not by the apply key (Feature 3).
+After every stage has committed, the coordinator raises `OnWorldStepApplied({ applyKey, stepDay, stageCount })` **synchronously inside `Apply`** to registered `IWorldStepListener`s (Feature 3). CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) registers as a listener and owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`. It labels the sample by **`stepDay`**, the day the step represents (the day the world state represents), not by the apply key or the current tick (Feature 3 amended 2026-11-16).
 
 - **One sampler, one timeline.** A4's and A1's own `Sample()` calls are dropped, and the coordinator never acquires one.
-- **The key is correct under deferred execution.** This is the whole reason the trigger moves: `HistoryDriverModule`'s original trigger was a game-clock tick, which under deferred stepping would sample at tick N while the world state it reads is from week N−k — silently mislabelled data. A synchronous signal from `Apply` cannot drift.
-- **Stages with no world step are unaffected.** `HistoryDriverModule` keeps its clock trigger there (S-1's own testbed, T-1 fixtures), so nothing that records history today changes.
+- **The key is correct under deferred execution.** Under deferred stepping a tick-based trigger would sample at tick N while the world state it reads is from week N−k — silently mislabelled data. A synchronous signal from `Apply` using the step day cannot drift.
+- **Stages with no world step are unaffected.** `HistoryDriverModule` auto-detects whether `WorldStepModule` is present (amended 2026-11-16) and uses its clock trigger (the game tick) instead on testbeds that do not run a coordinated world step. S-1's own testbed and T-1 fixtures run via the clock trigger; nothing that records history today changes.
 - If no listener is registered the signal is a no-op — history is a soft dependency.
 
 `history_band`, the `bands` name list and the `uint8_t` band index all stay `HistoryDriverModule`'s concern, not the coordinator's.
@@ -171,7 +171,7 @@ After every stage has committed, the coordinator raises `OnWorldStepApplied({ ap
 - It owns the single `ISaveable` participant holding every channel's pending result and apply key. There is no `"worldstep"` participant.
 - It abandons in-flight steps on `OnLoadStarted`.
 
-So the coordinator's only obligation is to implement `SerializePending` / `DeserializePending` on itself, delegating to each enabled stage in declared order and tagging each blob with the stage id. On load, a pending result restored for a stage that is **not** in the current `order` is discarded with a Warning — a save taken on S-3.5 must load cleanly on S-2.5.
+So the coordinator's only obligation is to implement `SerializePending` / `DeserializePending` on itself, delegating to each enabled stage in declared order and tagging each blob with the stage id. The pending record holds the current step day, any retried week pending, the count of enabled stages, and each stage's serialized data by id. On load, a pending result restored for a stage that is **not** in the current `order` is discarded with a Warning — a save taken on S-3.5 must load cleanly on S-2.5. A missing blob for a configured stage is refused with a `ValidatePending` check (Feature 3 amendment).
 
 Note `DrainAll` deliberately **does not apply** (DiaDeferredStep Feature 1 AC 26): applying at drain time would change the outcome versus the uninterrupted run. That shapes shutdown — see Lifecycle.
 
@@ -206,19 +206,26 @@ namespace CoW::WorldStep {
     // No Dia module dependencies; unit-tested with fake stages.
     class WorldStepChain {                                   // full contract: step-chain.md
     public:
-        bool Configure(const WorldStepConfig& config);
-        bool RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);
+        bool Configure(const WorldStepConfig& config);                   // false if already configured with a step in flight
+        bool RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);  // false: duplicate id, null table slot, kMaxStages hit
         void UnregisterStage(Dia::Core::StringCRC id);      // removal deferred to the step boundary
-        bool AllReady() const;
-        bool MissingStages(StageIdList& out) const;
-        bool UnknownStages(StageIdList& out) const;
-        bool Capture(StepKey key);                          // false if out of sequence
-        bool Run(Dia::DeferredStep::IParallelExecutor& executor);
-        bool Commit();
-        void Abandon();                                     // discard the in-flight step, no Commit
-        ChainPhase Phase() const;
+
+        bool AllReady() const;                               // no missing configured stage, and every enabled stage ready
+        bool MissingStages(StageIdList& out) const;         // configured but unregistered, declared order; true if any
+        bool UnknownStages(StageIdList& out) const;         // registered but not in order; true if any (skipped, to be warned)
+
+        bool Capture(StepKey key);                          // false if not Idle
+        bool Run(Dia::DeferredStep::IParallelExecutor& executor);  // false if not Captured
+        bool Commit();                                       // false if not Ran
+        void Abandon();                                      // discard the in-flight step: no Commit; apply deferred removals
+        bool RestoreRan(StepKey key);                        // load only (Feature 3): Idle -> Ran without calling any stage; false if not Idle or not AllReady
+
+        ChainPhase Phase() const;                            // Idle | Captured | Ran
+        StepKey CapturedKey() const;
         uint32_t EnabledCount() const;
-        IWorldStepStage* StageAt(uint32_t index) const;
+        IWorldStepStage* StageAt(uint32_t index) const;      // declared order, enabled only
+        Dia::Core::StringCRC StageIdAt(uint32_t index) const;  // declared order, enabled only
+        void SetObserver(IChainObserver* observer);          // optional observer for per-stage profiling; null by default
     };
 
     struct WorldStepConfig {
@@ -228,6 +235,18 @@ namespace CoW::WorldStep {
     };
     bool LoadWorldStepConfig(const Json::Value& root, WorldStepConfig& out);
 
+    struct WorldStepApplied {
+        StepKey applyKey;                                  // the day the result became visible
+        StepKey stepDay;                                   // the day the step stands for (what the stages computed)
+        uint32_t stageCount;                               // enabled stages that committed
+    };
+
+    class IWorldStepListener {
+    public:
+        virtual ~IWorldStepListener() = default;
+        virtual void OnWorldStepApplied(const WorldStepApplied& applied) = 0;  // SimPU, synchronous
+    };
+
     // SimModule wiring: the channel, the cadence, sampling, the save hook.
     class WorldStepModule : public Dia::ApplicationFlow::SimModule,
                             public Dia::DeferredStep::IDeferredStep {
@@ -236,6 +255,8 @@ namespace CoW::WorldStep {
 
         void RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);   // A4, A1 call this in DoStart
         void UnregisterStage(Dia::Core::StringCRC id);
+        bool RegisterListener(IWorldStepListener& listener);                   // false if 4 are registered or it is a duplicate
+        void UnregisterListener(IWorldStepListener& listener);
 
         // IDeferredStep
         void Capture() override;
@@ -243,6 +264,7 @@ namespace CoW::WorldStep {
         void Apply() override;
         void SerializePending(Dia::SaveGame::SaveContext&) const override;
         void DeserializePending(Dia::SaveGame::LoadContext&) override;
+        bool ValidatePending(Dia::SaveGame::LoadContext&) const override;       // amended 2026-11-16 (Feature 3)
 
         bool         IsDeferred() const;
         StepKey LastAppliedKey() const;
@@ -256,7 +278,7 @@ namespace CoW::WorldStep {
 |---|---------|-------------|------|--------|
 | 1 | Step Chain | `IWorldStepStage`, `WorldStepChain`, `WorldStepConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | @docs/specs/applications/cow/systems/worldstep/step-chain.md | Approved |
 | 2 | Module & Cadence | `WorldStepModule`: `.diaapp` config, DiaDeferredStep channel registration, `SimulationTick` week gate with `>=`, `k`, kick gating on readiness and in-flight, synchronous mode, the two sim-hosted commands with rollback, metrics, health, logs, trace | @docs/specs/applications/cow/systems/worldstep/module-and-cadence.md | Approved |
-| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, and the single synchronous `HistoryDriverModule::OnWorldStepApplied(key)` signal per applied step (no sampling logic here) | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
+| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, the `IWorldStepListener` interface with a single synchronous `OnWorldStepApplied({applyKey, stepDay, stageCount})` signal per applied step, and the Dia amendments `IDeferredStep::ValidatePending` and lazy participant attach | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
 | 4 | World-Sim Kit *(added 2026-11-18, world-sim review)* | Shared CoW-Shared plumbing for every stage: `WorldStepStageBase` (skeleton + 5 hooks), save codec helpers (DiaSaveGame versioning, sidecar-ranged validate, shared restore), `SimCommandSet` + `ParamCommandHelper` (`cow.<sys>.params`), `WorldCellFields` + DiaCondition `CellSelectorSet` with derived spatial fields, world-sim naming conventions and the S-1 layer-id rename. Adds `ValidatePending` to `IWorldStepStage`; stage ids become `weather`/`hydro`/`ecology` | @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md | Approved 2026-11-18 |
 
 **Build order:** 1 → 2 → 3. Feature 1 needs no Dia code beyond the `IParallelExecutor` declaration and can start as soon as DiaDeferredStep Feature 2 exists.
@@ -285,13 +307,13 @@ namespace CoW::WorldStep {
 - **GameSpeedController** — built. `SimulationTick`, `TimeBand`, `WeekOf`.
 - **DiaSimTime** — built, via DiaDeferredStep's tick ordering.
 - **E1 `SaveLoadModule`** — built, **unchanged**. No amendment: DiaDeferredStep Feature 3 drains on `SaveManager::OnSaveStarted`, which already fires before any `Serialize`.
-- **CoW-Shared `HistoryDriverModule`** (S-3.5 Feature 1, Approved 2026-10-20, not built) — owns `Sample()`, label arithmetic, band mapping, reset on bundle load and the world id. The coordinator signals it and nothing more. Soft: absent, the signal is a no-op. The AC8 trigger amendment (Resolved Decision 2) is written into S-3.5 Feature 1; the driver auto-detects world-step vs clock mode by resolving `WorldStepModule` at init (amended 2026-11-16), so no config key and no double sampling.
+- **CoW-Shared `HistoryDriverModule`** (S-3.5 Feature 1, Approved 2026-10-20, not built) — owns `Sample()`, label arithmetic, band mapping, reset on bundle load and the world id. The coordinator signals it via `IWorldStepListener` (Feature 3). Soft: absent, the signal is a no-op. The AC8 trigger amendment (Resolved Decision 2) is written into S-3.5 Feature 1; the driver auto-detects world-step vs clock mode by resolving `WorldStepModule` at init (amended 2026-11-16), so no config key and no double sampling.
 - **DiaCellHistory** — built; reached only *through* `HistoryDriverModule`. The coordinator holds no recorder reference.
 - **`SimQueryHostModule`** — built. Two commands with `SimHelpInfo`.
 - **S-1** — built, and **not a direct dependency**. The coordinator reads no world data, owns no grid and does **not** subscribe to `WorldGenerationComplete`: each stage initialises itself from S-1 and reports through `IsReady()`, which is the coordinator's only readiness signal. S-1 appears here only because the stages need it.
 - DiaMessageBus via `MessageBusHostModule`; DiaCore (Json, StringCRC, containers, logging).
 
-**Consumed by (stages):** A4 Weather (`weather`), A5 Hydrology (`hydrology`, amended 2026-11-17; registers its own `IWorldStepStage` and publishes `HydrologyUpdated{week}` from its `Commit`), A1 Ecology (`ecology`, with A3 inline). A4 and A1 need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
+**Consumed by (stages):** A4 Weather (`weather`), A5 Hydrology (`hydro`, amended 2026-11-17; registers its own `IWorldStepStage` and publishes `HydrologyUpdated{week}` from its `Commit`), A1 Ecology (`ecology`, with A3 inline). A4 and A1 need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
 
 **Required by:** S-2.5 Weather Patterns, S-2.6 Rivers & Floods (amended 2026-11-17), S-3 Ecology, S-3.5 World Sim.
 
@@ -315,12 +337,12 @@ namespace CoW::WorldStep {
 - A pending result saved with `["weather","ecology"]` loads on a stage configured `["weather"]`: the ecology blob is discarded with a Warning and the load succeeds. (amended 2026-11-17, A5 Hydrology) The same holds for a saved `hydrology` blob loaded where `hydrology` is not in `order`.
 - (amended 2026-11-17, A5 Hydrology) **Three-stage chain:** with fake stages `weather`, `hydrology`, `ecology`, the order is honoured whatever the registration order; `hydrology` sees the working copy `weather` just wrote inside the same `Run`, and `weather` sees `hydrology`'s committed state from the previous step at `Capture`.
 - (amended 2026-11-17, A5 Hydrology) **Determinism oracle over three stages:** the same three stages over 104 weeks in deferred and synchronous mode give bit-identical state (A5's own test: deferred vs synchronous over 104 weeks with A4).
-- Exactly one `OnWorldStepApplied(key)` signal per applied step, raised after every stage has committed and carrying the apply key; with no `HistoryDriverModule` present it is a no-op and nothing else changes.
+- Exactly one `OnWorldStepApplied({applyKey, stepDay, stageCount})` signal per applied step through `IWorldStepListener`, raised synchronously after every stage has committed; with no listener registered it is a no-op and nothing else changes.
 - Both commands register with non-empty descriptions, and a forced partial-registration failure leaves **no** names behind.
 
 **Lifecycle (Feature 2):**
 - A configured stage that has not registered before the first `SimulationTick` sets health Failing and blocks kicks; registering late during startup does not.
-- A stage unregistering while live stops kicks **without** an error, and an in-flight step is drained and committed first.
+- A stage unregistering while live stops kicks **without** an error, and an in-flight step is drained and abandoned first.
 - `DoStop` with a step in flight drains and abandons it (no commit, no history signal) before the channel is unregistered, matching Lifecycle.
 - Stage re-entry (enter, exit, enter) rebuilds the chain from config and kicks again, with no leaked channel registration or stale keys. This is the pattern the CellLayers E2E flakes live in, so it gets an explicit test.
 - Under simulated catch-up (several sim steps drained in one real frame) the apply key never slips, and applies are more frequent rather than larger.
@@ -373,11 +395,11 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 **Amendments owed elsewhere on approval:**
 - **A4 Weather** — register as stage `weather`; drop its own `Sample()` call (its spec currently places it in `Apply()`).
-- **A5 Hydrology** (added 2026-11-17) — registers as stage `hydrology`; publishes `HydrologyUpdated{week}` from `Commit`; owns its own `HydrologyUpdated` message.
+- **A5 Hydrology** (added 2026-11-17) — registers as stage `hydro`; publishes `HydrologyUpdated{week}` from `Commit`; owns its own `HydrologyUpdated` message.
 - **A1 Ecology** — register as stage `ecology`; drop its own `Sample()`; drop the hand-rolled `mSeasonPending` next-frame deferral and its Open Design Question 1, both of which `Capture`/`Commit` make unnecessary; add the Century-tick measurement task.
 - **S-1** — expose the shared `WorldHexGrid` (joins the existing post-close amendment set).
 - **E1 Save/Load** — *no amendment needed* (corrected 2026-11-13; DiaDeferredStep Feature 3 drains on `OnSaveStarted`). A4's spec still says "E1's save path calls `DrainAll`" and needs that line removed.
-- **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with all three stages (`weather`, `hydrology`, `ecology`; amended 2026-11-17, A5 Hydrology) and owns the sim-hosted name-cap raise.
+- **S-3.5 World Sim** — its Feature 1 keeps `HistoryDriverModule` and every duty, with **one amendment**: AC8's trigger becomes "when the world step applies" on stages that run one, and stays the game-clock tick on stages that do not. The reason is in Resolved Decision 2: a tick trigger under deferred stepping samples at tick N while reading week N−k state. S-3.5 also declares the `WorldStepModule` instance with all three stages (`weather`, `hydro`, `ecology`; amended 2026-11-17, A5 Hydrology) and owns the sim-hosted name-cap raise.
 - **S-2.6 Rivers & Floods** (new testbed, A4 + A5; added 2026-11-17; now row 17 of the GDD TestbedRoster, CHANGE-048, aligned to locked GDD 2026-11-17) — declares its own instance with `"order": ["weather", "hydro"]`. Its GDD spec is not yet written and needs its own interview, so nothing here depends on its content beyond the stage list. The order weather → hydrology → ecology is unchanged by the GDD lock.
 - **S-2.5 Weather Patterns** — declares its own `WorldStepModule` instance with `"order": ["weather"]`, and may set `"deferred": false` since weather alone fits in a frame.
 
