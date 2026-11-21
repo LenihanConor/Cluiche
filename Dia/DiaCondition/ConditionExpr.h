@@ -72,6 +72,12 @@ namespace Dia
 				const ConditionRegistry& registry,
 				Dia::Core::Containers::DynamicArrayC<const char*, 32>& outErrors) const;
 
+			// Validate all leaf slot/field pairs through IConditionContext::Has (descends through
+			// and/or/not). Errors name the offending leaf; the strings live as long as this expression.
+			bool Validate(
+				const IConditionContext& context,
+				Dia::Core::Containers::DynamicArrayC<const char*, 32>& outErrors) const;
+
 			bool IsValid() const;
 
 		private:

@@ -38,6 +38,22 @@ namespace Dia { namespace Condition { namespace Testing {
         std::unordered_map<uint64_t, bool>  mBools;
     };
 
+    // Context that knows exactly two slot/field pairs (via Has); for Validate(const IConditionContext&) tests.
+    class TwoPairConditionContext : public IConditionContext {
+    public:
+        TwoPairConditionContext(Dia::Core::StringCRC slotA, Dia::Core::StringCRC fieldA,
+                                Dia::Core::StringCRC slotB, Dia::Core::StringCRC fieldB)
+            : mKeyA(MakeKey(slotA, fieldA)), mKeyB(MakeKey(slotB, fieldB)) {}
+        float GetFloat(Dia::Core::StringCRC, Dia::Core::StringCRC) const override { return 0.0f; }
+        bool  GetBool (Dia::Core::StringCRC, Dia::Core::StringCRC) const override { return false; }
+        bool  Has(Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const override {
+            const uint64_t k = MakeKey(slot, field);
+            return k == mKeyA || k == mKeyB;
+        }
+    private:
+        uint64_t mKeyA, mKeyB;
+    };
+
     inline void AssertExprResult(const ConditionExpr& expr, IConditionContext& ctx, bool expected) {
         EXPECT_EQ(expr.Evaluate(ctx), expected);
     }

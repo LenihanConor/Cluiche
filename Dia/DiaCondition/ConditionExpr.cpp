@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstring>
+#include <string>
 
 namespace Dia
 {
@@ -20,6 +21,7 @@ namespace Dia
 			bool                    isBoolValue = false;
 			float                   floatValue  = 0.0f;
 			bool                    boolValue   = false;
+			std::string             contextError; // precomputed message naming the leaf (slot.field as written)
 
 			// Composite children (AND/OR have N children; NOT has exactly 1)
 			std::vector<Node>       children;
@@ -148,6 +150,7 @@ namespace Dia
 				return false;
 			}
 
+			outNode.contextError = std::string("ConditionExpr: leaf slot/field not found in context: ") + json["slot"].asCString() + "." + json["field"].asCString();
 			outNode.slot  = Dia::Core::StringCRC(json["slot"].asCString());
 			outNode.field = Dia::Core::StringCRC(json["field"].asCString());
 
@@ -276,6 +279,34 @@ namespace Dia
 			return true;
 		}
 
+		static bool ValidateNodeContext(
+			const Node& node,
+			const IConditionContext& context,
+			Dia::Core::Containers::DynamicArrayC<const char*, 32>& outErrors)
+		{
+			if (node.op == ConditionOp::kAnd ||
+			    node.op == ConditionOp::kOr  ||
+			    node.op == ConditionOp::kNot)
+			{
+				bool ok = true;
+				for (const Node& child : node.children)
+				{
+					if (!ValidateNodeContext(child, context, outErrors))
+					{
+						ok = false;
+					}
+				}
+				return ok;
+			}
+
+			if (!context.Has(node.slot, node.field))
+			{
+				outErrors.Add(node.contextError.c_str());
+				return false;
+			}
+			return true;
+		}
+
 		//-------------------------------------------------------------------------------------------
 		// ConditionExpr — public implementation
 		//-------------------------------------------------------------------------------------------
@@ -356,6 +387,18 @@ namespace Dia
 				return false;
 			}
 			return ValidateNode(mImpl->root, registry, outErrors);
+		}
+
+		bool ConditionExpr::Validate(
+			const IConditionContext& context,
+			Dia::Core::Containers::DynamicArrayC<const char*, 32>& outErrors) const
+		{
+			if (!IsValid())
+			{
+				outErrors.Add("ConditionExpr: cannot validate an invalid expression");
+				return false;
+			}
+			return ValidateNodeContext(mImpl->root, context, outErrors);
 		}
 
 	} // namespace Condition
