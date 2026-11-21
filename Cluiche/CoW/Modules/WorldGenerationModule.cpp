@@ -28,6 +28,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
 {
     mSession.SetSiteRegistry(&mSiteRegistry);
     mBiomes = std::make_unique<World::BiomeRegistry>();
+    mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
 }
 
 WorldGenerationModule::~WorldGenerationModule()

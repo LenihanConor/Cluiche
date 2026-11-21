@@ -1,8 +1,8 @@
 // S-1 Biome Classification: Stage 14 (Biomes).
 //
-// 1 pins (water 4, volcanic 3, alpine 2, wetland 1), 2 plateau interior, 3 climate score, 4 zone fix-up
-// (vent cells keep VolcanicAshland), 5 forbidden-neighbour fix-up. All ties: lowest cell index, then lowest
-// Biome enum value. Free functions over raw arrays so tests can use hand-built grids.
+// 1 pins (in the registry's priority order; the shipped file has water 5/4, vent 3, alpine 2, wetland 1), 2 plateau interior, 3 climate score, 4 zone fix-up
+// (vent cells keep the vent biome), 5 forbidden-neighbour fix-up. All ties: lowest cell index, then lowest registry
+// row index. Free functions over raw arrays so tests can use hand-built grids.
 //
 // Vent definition: the terrain classifier already sets TerrainFlag::Volcanic on every non-ocean cell within
 // kVentRadius hex steps of a vent (island vent and chain vents share the `volcanic` layer), and marks the vent
@@ -15,6 +15,9 @@
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <cstdint>
+
+// Forward declarations only: BiomeRegistry.h pulls windows.h, which this widely included header must not.
+namespace CoW { namespace World { class BiomeRegistry; using BiomeIndex = uint8_t; } }
 
 namespace CoW {
 namespace WorldGeneration {
@@ -44,13 +47,14 @@ struct Stage14Inputs
     const uint32_t* waterSource = nullptr;    // WaterSource values
     BarrierForm     barrierForm = BarrierForm::Plateau;
     float           barrier = 0.0f;           // slider 0..1
+    const World::BiomeRegistry* biomes = nullptr;   // required: pins, climate rows, plateau rows, zones, forbidden pairs
 };
 
 struct Stage14Layers
 {
     float*    biomeScore = nullptr;
     uint32_t* biomePin = nullptr;
-    uint32_t* biomeIndex = nullptr;    // Biome enum value
+    uint32_t* biomeIndex = nullptr;    // BiomeRegistry row index
     uint32_t* fixupChanges = nullptr;
 };
 
@@ -62,9 +66,9 @@ struct Stage14Debug
     int passes = 0;            // step 5 passes that changed something
 };
 
-// -((T-T0)/wT)^2 - ((M-M0)/wM)^2 for the five climate biomes (Grassland, Forest, Desert, Tundra, Rainforest).
-// Any other biome returns the lowest float.
-float BiomeClimateScore(const TerrainRules& rules, Biome b, float temperature, float moisture);
+// -((T-T0)/wT)^2 - ((M-M0)/wM)^2 from the registry row's climate envelope.
+// A row without a climate envelope (or an unknown row) returns the lowest float.
+float BiomeClimateScore(const World::BiomeRegistry& biomes, World::BiomeIndex b, float temperature, float moisture);
 
 // River cell with an ocean neighbour.
 bool IsRiverMouth(const Stage14Inputs& in, int cell);

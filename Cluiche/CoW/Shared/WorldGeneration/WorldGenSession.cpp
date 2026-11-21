@@ -3,6 +3,7 @@
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/SiteGuarantees.h>
@@ -25,6 +26,7 @@
 #include <filesystem>
 #include <map>
 #include <memory>
+#include <vector>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -317,16 +319,17 @@ GridDimensions WorldSizeDimensions(WorldSize size)
 }
 
 WorldGenSession::WorldGenSession()
-    : mGen(mRules)
+    : mGen(mRules, nullptr)
     , mDims(WorldSizeDimensions(WorldSize::Small))
 {
     CaptureAccepted();
 }
 
-WorldGenSession::WorldGenSession(const TerrainRules& rules)
+WorldGenSession::WorldGenSession(const TerrainRules& rules, const World::BiomeRegistry* biomes)
     : mRules(rules)
     , mRulesLoaded(true)
-    , mGen(rules)
+    , mBiomes(biomes)
+    , mGen(rules, biomes)
     , mDims(WorldSizeDimensions(WorldSize::Small))
 {
     CaptureAccepted();
@@ -364,7 +367,7 @@ bool WorldGenSession::LoadRules(const char* sidecarText, Dia::Attribute::ParamEr
     mRules = rules;
     mRulesFile = std::move(file);
     mRulesLoaded = true;
-    mGen = TerrainGenerator(mRules);
+    mGen = TerrainGenerator(mRules, mBiomes);
     return true;
 }
 
@@ -725,7 +728,7 @@ bool WorldGenSession::StartRegenerate(Dia::Maths::RandomStream& wldStream)
     mForceFull = false;
     try
     {
-        mCandGen = std::make_unique<TerrainGenerator>(mRules);
+        mCandGen = std::make_unique<TerrainGenerator>(mRules, mBiomes);
         mCandGen->Update(mSeed, mShape, mDims, wldStream);
         mCandTerrain = WorldStructure{};
         mCandGen->WriteTerrain(mCandTerrain);   // terrain and biomes; regions and sites empty
@@ -1750,7 +1753,9 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     // climate score, so they report the pinned biome with a null score and no runner-up.
     Json::Value ranking(Json::objectValue);
     Biome climateWinner = c.biome;
-    if (pin != BiomePin::None || temperature == nullptr || moisture == nullptr)
+    uint32_t climateRowCount = 0;
+    if (mBiomes != nullptr) { mBiomes->ClimateBiomes(climateRowCount); }
+    if (pin != BiomePin::None || temperature == nullptr || moisture == nullptr || climateRowCount == 0)
     {
         Json::Value winner(Json::objectValue);
         winner["id"] = static_cast<int>(c.biome);
@@ -1761,13 +1766,14 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     }
     else
     {
-        const Biome kClimate[] = { Biome::GrasslandSteppe, Biome::TemperateForest, Biome::DesertBasin, Biome::TundraBoreal, Biome::Rainforest };
-        int best = -1;
-        int second = -1;
-        float scores[5];
-        for (int k = 0; k < 5; ++k)
+        uint32_t                                climateCount = 0;
+        const World::BiomeIndex*                climate = mBiomes->ClimateBiomes(climateCount);
+        int                                     best = -1;
+        int                                     second = -1;
+        std::vector<float>                      scores(climateCount, 0.0f);
+        for (int k = 0; k < static_cast<int>(climateCount); ++k)
         {
-            scores[k] = BiomeClimateScore(mRules, kClimate[k], temperature[index], moisture[index]);
+            scores[k] = BiomeClimateScore(*mBiomes, climate[k], temperature[index], moisture[index]);
             if (best < 0 || scores[k] > scores[best])
             {
                 second = best;
@@ -1778,9 +1784,9 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
                 second = k;
             }
         }
-        climateWinner = kClimate[best];
-        ranking["winner"] = ScoredBiomeJson(kClimate[best], scores[best]);
-        ranking["runnerUp"] = ScoredBiomeJson(kClimate[second], scores[second]);
+        climateWinner = static_cast<Biome>(climate[best]);
+        ranking["winner"] = ScoredBiomeJson(climateWinner, scores[best]);
+        ranking["runnerUp"] = second >= 0 ? ScoredBiomeJson(static_cast<Biome>(climate[second]), scores[second]) : Json::Value();
     }
     r["biomeRunnerUp"] = ranking;
 

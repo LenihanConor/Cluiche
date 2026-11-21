@@ -168,8 +168,9 @@ uint32_t FoldSeed(uint64_t seed)
 // ---------------------------------------------------------------------------
 // TerrainGenerator
 // ---------------------------------------------------------------------------
-TerrainGenerator::TerrainGenerator(const TerrainRules& rules)
+TerrainGenerator::TerrainGenerator(const TerrainRules& rules, const World::BiomeRegistry* biomes)
     : mRules(rules)
+    , mBiomes(biomes)
 {
     for (int s = 0; s < static_cast<int>(TerrainStage::Count); ++s)
     {
@@ -486,6 +487,7 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         in.waterSource  = mLayers.GetUInt(mLayers.FindLayer("waterSource"));
         in.barrierForm  = mShape.barrierForm;
         in.barrier      = mShape.barrier;
+        in.biomes       = mBiomes;
         Stage14Layers out;
         out.biomeScore   = mLayers.FloatLayer(mLayers.FindLayer("biomeScore"));
         out.biomePin     = mLayers.UIntLayer(mLayers.FindLayer("biomePin"));

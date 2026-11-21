@@ -77,6 +77,7 @@ namespace
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));
         in.barrierForm  = shape.barrierForm;
         in.barrier      = shape.barrier;
+        in.biomes       = &::CoW::World::Testing::ShippedBiomeRegistry();
         return in;
     }
 
@@ -514,7 +515,7 @@ TEST(BiomeEdge, BiomeIndexLayerEqualsCellBiomeAfterWriteTerrain)
 TEST(BiomeEdge, WriteTerrainBeforeUpdateLeavesBiomeUntouched)
 {
     TerrainRules     rules = TestRules();
-    TerrainGenerator g(rules);
+    TerrainGenerator g(rules, &::CoW::World::Testing::ShippedBiomeRegistry());
     WorldStructure   w;
     w.Resize(GridDimensions{ 4, 3 });
     for (int c = 0; c < w.CellCount(); ++c) { w.Cells()[c].biome = LegacyB("Biome.Rainforest"); }
@@ -619,21 +620,21 @@ TEST(BiomeEdge, BandBlendWeightsAtBoundaries)
     }
 }
 
-TEST(BiomeEdge, ZoneFixupTieGoesToLowestEnumCandidate)
+TEST(BiomeEdge, ZoneFixupTieGoesToLowestRowCandidate)
 {
-    // Pinned Alpine on First Shores re-picks among Grassland / Forest; identical targets tie bit-exactly and the
-    // lower enum value (Grassland) must win.
-    TerrainRules rules = TestRules();
-    rules.kT0_Forest = rules.kT0_Grass;
-    rules.kM0_Forest = rules.kM0_Grass;
-    rules.kWT_Forest = rules.kWT_Grass;
-    rules.kWM_Forest = rules.kWM_Grass;
+    // Pinned Alpine on First Shores re-picks among Grassland / Forest; identical envelopes tie bit-exactly (set on a
+    // fixture registry: classification reads the registry's climate rows, not the kT0_* rules) and the lower row
+    // (Grassland) must win.
+    const CoW::World::BiomeRegistry forestAsGrass = ::CoW::World::Testing::LoadShippedVariant(
+        { { "\"climate\": {\"t0\": 0.5, \"m0\": 0.6, \"wt\": 0.25, \"wm\": 0.2}",
+            "\"climate\": {\"t0\": 0.6, \"m0\": 0.35, \"wt\": 0.25, \"wm\": 0.2}" } });
     BiomeGrid g(5, 5);
+    g.registry = &forestAsGrass;
     const int c = g.Index(2, 2);
     g.SetTerrain(c, TerrainType::Mountain);
     g.SetZone(c, DepthZone::FirstShores);
-    const BiomeResult r = RunBiomes(g, rules);
-    EXPECT_EQ(Idx(r.At(c)), B("Biome.Grassland"));
+    const BiomeResult r = RunBiomes(g, TestRules());
+    EXPECT_EQ(r.biome[c], B(forestAsGrass, "Biome.Grassland"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
 }
 

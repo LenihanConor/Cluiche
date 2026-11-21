@@ -28,7 +28,7 @@ struct Harness
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Harness() : gen(TestRules()) {}
+    Harness() : gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 
     const float* Ridge() const { return gen.GetLayers().GetFloat(gen.GetLayers().FindLayer("ridgeMask")); }
@@ -555,7 +555,7 @@ std::set<int> Ran(const TerrainGenerator& g)
 
 TEST(TerrainMountains, DirtyBitsRerunMountainsAndDownstreamOnly)
 {
-    TerrainGenerator g(TestRules());
+    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     WorldShapeParams s;
     g.Update(5, s, kSmall, rng);
@@ -583,7 +583,7 @@ TEST(TerrainMountains, DirtyBitsRerunMountainsAndDownstreamOnly)
 
 TEST(TerrainMountains, MountainousnessChangeKeepsLandUntouched)
 {
-    TerrainGenerator g(TestRules());
+    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     WorldShapeParams s;
     g.Update(5, s, kSmall, rng);

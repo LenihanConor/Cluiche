@@ -31,7 +31,7 @@ namespace
     {
         TerrainGenerator          gen;
         Dia::Maths::RandomStream  rng{ 1 };
-        Gen() : gen(TestRules()) {}
+        Gen() : gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry()) {}
     };
 
     double Median(std::vector<double> v)

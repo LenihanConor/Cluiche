@@ -53,7 +53,7 @@ struct World
     TerrainGenerator         gen;
     Dia::Maths::RandomStream rng{ 1 };
     WorldStructure           world;
-    World() : gen(rules) {}
+    World() : gen(rules, &::CoW::World::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall)
     {
         gen.Update(seed, s, d, rng);

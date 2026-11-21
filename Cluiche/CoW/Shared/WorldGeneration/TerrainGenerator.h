@@ -188,7 +188,9 @@ uint32_t FoldSeed(uint64_t seed);
 class TerrainGenerator
 {
 public:
-    explicit TerrainGenerator(const TerrainRules& rules);
+    // `biomes` is the registry the Biomes stage classifies with; it is not owned and must outlive the generator.
+    TerrainGenerator(const TerrainRules& rules, const World::BiomeRegistry* biomes);
+    void SetBiomeRegistry(const World::BiomeRegistry* biomes) { mBiomes = biomes; }
 
     // Re-runs only the stages made dirty by changes since the last Update.
     void Update(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims,
@@ -236,6 +238,7 @@ private:
     void RunSeedFields(Dia::Maths::RandomStream& wldStream);
 
     TerrainRules     mRules;
+    const World::BiomeRegistry* mBiomes = nullptr;
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
     Stage1Debug      mStage1;

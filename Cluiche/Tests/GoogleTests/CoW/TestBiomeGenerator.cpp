@@ -96,6 +96,7 @@ namespace
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));
         in.barrierForm  = shape.barrierForm;
         in.barrier      = shape.barrier;
+        in.biomes       = &::CoW::World::Testing::ShippedBiomeRegistry();
         return in;
     }
 

@@ -9,6 +9,7 @@
 // Header-only. Aborts with a message if the sidecar cannot be found or loaded (a broken checkout, not a test result).
 #pragma once
 
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
@@ -107,6 +108,7 @@ struct TestSession : WorldGenSession
 {
     TestSession()
     {
+        SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
         Dia::Attribute::ParamError err;
         if (!LoadRules(TestSidecarText().c_str(), err))
         {

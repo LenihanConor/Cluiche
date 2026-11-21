@@ -46,7 +46,7 @@ public:
     // (there is no compiled fallback; the rules come from the terrain_rules sidecar).
     WorldGenSession();
     // A session with caller-supplied rules (already loaded; tests that vary one rule use this).
-    explicit WorldGenSession(const TerrainRules& rules);
+    WorldGenSession(const TerrainRules& rules, const World::BiomeRegistry* biomes);
     ~WorldGenSession();
     WorldGenSession(WorldGenSession&&) noexcept;
     WorldGenSession& operator=(WorldGenSession&&) noexcept;
@@ -60,6 +60,15 @@ public:
     // point that refuses without rules refuses with this code instead. Empty code clears the block.
     void SetGenerationBlocked(const std::string& code) { mBlockCode = code; }
     bool IsGenerationBlocked() const { return !mBlockCode.empty(); }
+    // The biome registry classification (stage 14) reads. Not owned; it must outlive the session. The module owns the
+    // one instance and sets it in its constructor, before the registry is loaded (the pointer is stable).
+    void SetBiomeRegistry(const World::BiomeRegistry* biomes)
+    {
+        mBiomes = biomes;
+        mGen.SetBiomeRegistry(biomes);
+        if (mCandGen) { mCandGen->SetBiomeRegistry(biomes); }
+    }
+    const World::BiomeRegistry* BiomeRegistryPtr() const { return mBiomes; }
     const TerrainRules& Rules() const { return mRules; }
 
     // Actions: mutate pending state, mark dirty when something changed, return the command's JSON result.
@@ -180,6 +189,7 @@ private:
     std::unique_ptr<Dia::Attribute::ParameterFile> mRulesFile;   // the loaded sidecar (null when rules were supplied directly)
     bool             mRulesLoaded = false;
     std::string      mBlockCode;
+    const World::BiomeRegistry* mBiomes = nullptr;   // declared before mGen so the constructors can pass it
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;

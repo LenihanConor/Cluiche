@@ -3,9 +3,10 @@
 #pragma fp_contract(off)
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/World/BiomeRegistry.h>
 
 #include <DiaPathfinding/HexTopology.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <algorithm>
 #include <limits>
@@ -16,20 +17,14 @@ namespace WorldGeneration {
 
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;
+using World::BiomeIndex;
+using World::BiomeRegistry;
+using World::kNoBiome;
+using World::PinRule;
 
 namespace
 {
     constexpr float kLowest = std::numeric_limits<float>::lowest();
-
-    // Climate biomes in enum order (so strict-greater argmax ties go to the lowest enum value).
-    constexpr Biome kClimateBiomes[] = { Biome::GrasslandSteppe, Biome::TemperateForest, Biome::DesertBasin,
-                                         Biome::TundraBoreal, Biome::Rainforest };
-
-    bool IsClimateBiome(Biome b)
-    {
-        return b == Biome::GrasslandSteppe || b == Biome::TemperateForest || b == Biome::DesertBasin ||
-               b == Biome::TundraBoreal || b == Biome::Rainforest;
-    }
 
     bool IsLandCell(const Stage14Inputs& in, int c)
     {
@@ -37,38 +32,95 @@ namespace
         return ws != static_cast<uint32_t>(WaterSource::Ocean) && ws != static_cast<uint32_t>(WaterSource::Lake);
     }
 
+    // The terrain test behind each pin rule. The test stays in code (it reads terrain layers); which biome a hit
+    // produces, and the rule's priority, come from the registry row.
+    bool PinTestHits(PinRule rule, const Stage14Inputs& in, int c, bool wetlandEligible)
+    {
+        const uint32_t ws = in.waterSource[c];
+        const uint32_t tt = in.terrainType[c];
+        const uint32_t fl = in.terrainFlags[c];
+        switch (rule)
+        {
+        case PinRule::WaterOcean:
+            return ws == static_cast<uint32_t>(WaterSource::Ocean);
+        case PinRule::WaterLake:
+            return ws == static_cast<uint32_t>(WaterSource::Lake);
+        case PinRule::Vent:
+            return (fl & TerrainFlag::Volcanic) != 0 || tt == static_cast<uint32_t>(TerrainType::Volcano) ||
+                   (in.barrierForm == BarrierForm::VolcanicChain && (fl & TerrainFlag::Barrier) != 0);
+        case PinRule::Alpine:
+            return tt == static_cast<uint32_t>(TerrainType::Mountain) || tt == static_cast<uint32_t>(TerrainType::Peak) ||
+                   tt == static_cast<uint32_t>(TerrainType::Cliff) || tt == static_cast<uint32_t>(TerrainType::Pass);
+        case PinRule::Wetland:
+            return wetlandEligible;
+        }
+        return false;
+    }
+
+    // The biomePin layer value a pin rule reports (the layer contract predates the registry).
+    uint32_t PinLayerValue(PinRule rule)
+    {
+        switch (rule)
+        {
+        case PinRule::WaterOcean:
+        case PinRule::WaterLake: return BiomePin::Water;
+        case PinRule::Vent:      return BiomePin::Volcanic;
+        case PinRule::Alpine:    return BiomePin::Alpine;
+        case PinRule::Wetland:   return BiomePin::Wetland;
+        }
+        return BiomePin::None;
+    }
+
     struct Classifier
     {
-        const TerrainRules&  rules;
+        const BiomeRegistry& reg;
         const Stage14Inputs& in;
         Stage14Layers&       out;
         HexTopology          topo;
         int                  n;
         std::vector<uint8_t> wetland;   // wetland-eligible per cell
+        BiomeIndex           ventBiome = kNoBiome;       // the registry rows behind the pin rules the fix-ups name
+        BiomeIndex           alpineBiome = kNoBiome;
+        BiomeIndex           wetlandBiome = kNoBiome;
+        BiomeIndex           oceanBiome = kNoBiome;
+        BiomeIndex           lakeBiome = kNoBiome;
 
-        Classifier(const TerrainRules& r, const Stage14Inputs& i, Stage14Layers& o)
-            : rules(r), in(i), out(o), topo(i.dims.width, i.dims.height), n(i.dims.width * i.dims.height),
+        Classifier(const BiomeRegistry& r, const Stage14Inputs& i, Stage14Layers& o)
+            : reg(r), in(i), out(o), topo(i.dims.width, i.dims.height), n(i.dims.width * i.dims.height),
               wetland(static_cast<size_t>(n), 0)
         {
+            uint32_t          count = 0;
+            const BiomeIndex* pins = reg.PinsByPriority(count);
+            for (uint32_t p = 0; p < count; ++p)
+            {
+                switch (reg.Pin(pins[p]))
+                {
+                case PinRule::WaterOcean: oceanBiome = pins[p]; break;
+                case PinRule::WaterLake:  lakeBiome = pins[p]; break;
+                case PinRule::Vent:       ventBiome = pins[p]; break;
+                case PinRule::Alpine:     alpineBiome = pins[p]; break;
+                case PinRule::Wetland:    wetlandBiome = pins[p]; break;
+                }
+            }
         }
 
-        Biome BiomeAt(int c) const { return static_cast<Biome>(out.biomeIndex[c]); }
+        BiomeIndex BiomeAt(int c) const { return static_cast<BiomeIndex>(out.biomeIndex[c]); }
 
-        float ScoreOf(int c, Biome b) const
+        float ScoreOf(int c, BiomeIndex b) const
         {
-            return b == Biome::WetlandDelta ? 0.0f : BiomeClimateScore(rules, b, in.temperature[c], in.moisture[c]);
+            return BiomeClimateScore(reg, b, in.temperature[c], in.moisture[c]);
         }
 
-        // Best-scoring zone-valid candidate (five climate biomes, WetlandDelta last when eligible).
+        // Best-scoring zone-valid candidate (the climate biomes in row order, the wetland row last when eligible).
         // checkNeighbours: reject candidates that form a forbidden pair with any neighbour's current biome.
-        bool PickBest(int c, bool checkNeighbours, Biome& result) const
+        bool PickBest(int c, bool checkNeighbours, BiomeIndex& result) const
         {
             const DepthZone zone = static_cast<DepthZone>(in.depthZone[c]);
             bool            found = false;
             float           bestScore = kLowest;
-            auto            consider = [&](Biome b, float score)
+            auto            consider = [&](BiomeIndex b, float score)
             {
-                if (!IsBiomeValidInZone(b, zone))
+                if (b == kNoBiome || !reg.IsValidInZone(b, zone))
                 {
                     return;
                 }
@@ -77,7 +129,7 @@ namespace
                     for (uint32_t d = 0; d < 6u; ++d)
                     {
                         const uint32_t nb = topo.NeighbourAt(static_cast<uint32_t>(c), d);
-                        if (nb != kNoCell && AreBiomesForbidden(b, BiomeAt(static_cast<int>(nb))))
+                        if (nb != kNoCell && reg.AreForbidden(b, BiomeAt(static_cast<int>(nb))))
                         {
                             return;
                         }
@@ -90,44 +142,41 @@ namespace
                     result = b;
                 }
             };
-            for (Biome b : kClimateBiomes)
+            uint32_t          climateCount = 0;
+            const BiomeIndex* climate = reg.ClimateBiomes(climateCount);
+            for (uint32_t k = 0; k < climateCount; ++k)
             {
-                consider(b, BiomeClimateScore(rules, b, in.temperature[c], in.moisture[c]));
+                consider(climate[k], BiomeClimateScore(reg, climate[k], in.temperature[c], in.moisture[c]));
             }
             if (wetland[c] != 0)
             {
-                consider(Biome::WetlandDelta, kLowest);   // no climate target: last resort only
+                consider(wetlandBiome, kLowest);   // no climate target: last resort only
             }
             if (!found && checkNeighbours)
             {
-                // Last resort (amended 2026-11-10): Alpine forms no forbidden pair, accepted when zone-valid.
-                consider(Biome::AlpineMountain, kLowest);
+                // Last resort (amended 2026-11-10): the alpine row forms no forbidden pair, accepted when zone-valid.
+                consider(alpineBiome, kLowest);
             }
             return found;
         }
 
-        void Assign(int c, Biome b)
+        void Assign(int c, BiomeIndex b)
         {
             out.biomeIndex[c] = static_cast<uint32_t>(b);
-            out.biomeScore[c] = IsClimateBiome(b) ? ScoreOf(c, b) : 0.0f;
+            out.biomeScore[c] = reg.Climate(b) != nullptr ? ScoreOf(c, b) : 0.0f;
         }
     };
 } // namespace
 
-float BiomeClimateScore(const TerrainRules& rules, Biome b, float temperature, float moisture)
+float BiomeClimateScore(const BiomeRegistry& biomes, BiomeIndex b, float temperature, float moisture)
 {
-    float t0, m0, wt, wm;
-    switch (b)
+    const World::ClimateEnvelope* e = biomes.Climate(b);
+    if (e == nullptr)
     {
-    case Biome::GrasslandSteppe: t0 = rules.kT0_Grass;      m0 = rules.kM0_Grass;      wt = rules.kWT_Grass;      wm = rules.kWM_Grass;      break;
-    case Biome::TemperateForest: t0 = rules.kT0_Forest;     m0 = rules.kM0_Forest;     wt = rules.kWT_Forest;     wm = rules.kWM_Forest;     break;
-    case Biome::DesertBasin:     t0 = rules.kT0_Desert;     m0 = rules.kM0_Desert;     wt = rules.kWT_Desert;     wm = rules.kWM_Desert;     break;
-    case Biome::TundraBoreal:    t0 = rules.kT0_Tundra;     m0 = rules.kM0_Tundra;     wt = rules.kWT_Tundra;     wm = rules.kWM_Tundra;     break;
-    case Biome::Rainforest:      t0 = rules.kT0_Rainforest; m0 = rules.kM0_Rainforest; wt = rules.kWT_Rainforest; wm = rules.kWM_Rainforest; break;
-    default:                     return kLowest;
+        return kLowest;
     }
-    const float dt = (temperature - t0) / wt;
-    const float dm = (moisture - m0) / wm;
+    const float dt = (temperature - e->t0) / e->wt;
+    const float dm = (moisture - e->m0) / e->wm;
     return -(dt * dt) - (dm * dm);
 }
 
@@ -206,15 +255,28 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
     {
         return;
     }
+    if (in.biomes == nullptr || in.biomes->Count() == 0)
+    {
+        DIA_LOG_ERROR("CoW", "ComputeStage14: no biome registry (or an empty one); biomes were not classified");
+        return;
+    }
 
-    Classifier k(rules, in, out);
+    Classifier k(*in.biomes, in, out);
+    const BiomeRegistry& reg = k.reg;
     const int  n = k.n;
     for (int c = 0; c < n; ++c)
     {
         k.wetland[c] = IsWetlandEligible(rules, in, c) ? 1 : 0;
     }
 
-    const bool plateau = in.barrierForm == BarrierForm::Plateau && in.barrier > 0.0f && in.barrierMask != nullptr;
+    // The plateau rule needs both plateau rows; a registry without them classifies plateau cells like any other.
+    const bool plateau = in.barrierForm == BarrierForm::Plateau && in.barrier > 0.0f && in.barrierMask != nullptr &&
+                         reg.Plateau(true) != kNoBiome && reg.Plateau(false) != kNoBiome;
+
+    uint32_t          pinCount = 0;
+    const BiomeIndex* pins = reg.PinsByPriority(pinCount);
+    uint32_t          climateCount = 0;
+    const BiomeIndex* climate = reg.ClimateBiomes(climateCount);
 
     std::vector<uint8_t> interior(static_cast<size_t>(n), 0);
 
@@ -223,40 +285,22 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
     {
         out.fixupChanges[c] = BiomeFixup::None;
         out.biomeScore[c] = 0.0f;
-        const uint32_t ws = in.waterSource[c];
-        const uint32_t tt = in.terrainType[c];
-        const uint32_t fl = in.terrainFlags[c];
 
-        if (ws == static_cast<uint32_t>(WaterSource::Ocean))
+        // Pins in the registry's priority order (highest first); the first hit wins.
+        bool pinned = false;
+        for (uint32_t p = 0; p < pinCount; ++p)
         {
-            out.biomeIndex[c] = static_cast<uint32_t>(Biome::Ocean);
-            out.biomePin[c] = BiomePin::Water;
-            continue;
+            const PinRule rule = reg.Pin(pins[p]);
+            if (PinTestHits(rule, in, c, k.wetland[c] != 0))
+            {
+                out.biomeIndex[c] = static_cast<uint32_t>(pins[p]);
+                out.biomePin[c] = PinLayerValue(rule);
+                pinned = true;
+                break;
+            }
         }
-        if (ws == static_cast<uint32_t>(WaterSource::Lake))
+        if (pinned)
         {
-            out.biomeIndex[c] = static_cast<uint32_t>(Biome::Lake);
-            out.biomePin[c] = BiomePin::Water;
-            continue;
-        }
-        if ((fl & TerrainFlag::Volcanic) != 0 || tt == static_cast<uint32_t>(TerrainType::Volcano) ||
-            (in.barrierForm == BarrierForm::VolcanicChain && (fl & TerrainFlag::Barrier) != 0))
-        {
-            out.biomeIndex[c] = static_cast<uint32_t>(Biome::VolcanicAshland);
-            out.biomePin[c] = BiomePin::Volcanic;
-            continue;
-        }
-        if (tt == static_cast<uint32_t>(TerrainType::Mountain) || tt == static_cast<uint32_t>(TerrainType::Peak) ||
-            tt == static_cast<uint32_t>(TerrainType::Cliff) || tt == static_cast<uint32_t>(TerrainType::Pass))
-        {
-            out.biomeIndex[c] = static_cast<uint32_t>(Biome::AlpineMountain);
-            out.biomePin[c] = BiomePin::Alpine;
-            continue;
-        }
-        if (k.wetland[c] != 0)
-        {
-            out.biomeIndex[c] = static_cast<uint32_t>(Biome::WetlandDelta);
-            out.biomePin[c] = BiomePin::Wetland;
             continue;
         }
 
@@ -267,15 +311,16 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
             continue;
         }
 
-        Biome best = kClimateBiomes[0];
+        // Strict-greater argmax over the climate rows in row order: ties go to the lowest row index.
+        BiomeIndex best = climateCount > 0 ? climate[0] : kNoBiome;
         float bestScore = kLowest;
-        for (Biome b : kClimateBiomes)
+        for (uint32_t i = 0; i < climateCount; ++i)
         {
-            const float s = BiomeClimateScore(rules, b, in.temperature[c], in.moisture[c]);
+            const float s = BiomeClimateScore(reg, climate[i], in.temperature[c], in.moisture[c]);
             if (s > bestScore)
             {
                 bestScore = s;
-                best = b;
+                best = climate[i];
             }
         }
         out.biomeIndex[c] = static_cast<uint32_t>(best);
@@ -314,7 +359,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
                 }
             }
             const float mean = static_cast<float>(sum / static_cast<double>(members.size()));
-            const Biome b = mean >= rules.kPlateauWet ? Biome::Rainforest : Biome::DesertBasin;
+            const BiomeIndex b = reg.Plateau(mean >= rules.kPlateauWet);
             for (int c : members)
             {
                 k.Assign(c, b);
@@ -325,20 +370,20 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
     // Step 4: zone fix-up.
     for (int c = 0; c < n; ++c)
     {
-        const Biome b = k.BiomeAt(c);
-        if (b == Biome::Ocean || b == Biome::Lake)
+        const BiomeIndex b = k.BiomeAt(c);
+        if (b == k.oceanBiome || b == k.lakeBiome)
         {
             continue;
         }
-        if (b == Biome::VolcanicAshland && IsVentCell(in, c))
+        if (b == k.ventBiome && IsVentCell(in, c))
         {
             continue;
         }
-        if (IsBiomeValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
+        if (reg.IsValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
         {
             continue;
         }
-        Biome pick;
+        BiomeIndex pick;
         if (k.PickBest(c, false, pick))
         {
             k.Assign(c, pick);
@@ -362,7 +407,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
                     continue;   // each unordered pair is handled from its lower-index cell
                 }
                 const int nb = static_cast<int>(nbu);
-                if (!AreBiomesForbidden(k.BiomeAt(c), k.BiomeAt(nb)))
+                if (!reg.AreForbidden(k.BiomeAt(c), k.BiomeAt(nb)))
                 {
                     continue;
                 }
@@ -376,7 +421,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
                 {
                     loser = nb;
                 }
-                Biome pick;
+                BiomeIndex pick;
                 if (k.PickBest(loser, true, pick))
                 {
                     k.Assign(loser, pick);
@@ -398,7 +443,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         for (uint32_t d = 0; d < 6u; ++d)
         {
             const uint32_t nb = k.topo.NeighbourAt(static_cast<uint32_t>(c), d);
-            if (nb != kNoCell && static_cast<int>(nb) > c && AreBiomesForbidden(k.BiomeAt(c), k.BiomeAt(static_cast<int>(nb))))
+            if (nb != kNoCell && static_cast<int>(nb) > c && reg.AreForbidden(k.BiomeAt(c), k.BiomeAt(static_cast<int>(nb))))
             {
                 ++dbg.unresolvedPairs;
             }

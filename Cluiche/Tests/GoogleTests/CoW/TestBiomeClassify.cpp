@@ -11,6 +11,9 @@
 
 #include <cmath>
 #include <cstring>
+#include <fstream>
+#include <sstream>
+#include <string>
 #include <limits>
 #include <vector>
 
@@ -81,25 +84,23 @@ namespace
 // ---------------------------------------------------------------------------
 TEST(BiomeClassify, ClimateScoreFormula)
 {
-    const TerrainRules rules = TestRules();
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.Grassland"), 0.60f, 0.35f), 0.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Grassland"), 0.60f, 0.35f), 0.0f, kEps);
     // One wT away in temperature: -1.
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.Grassland"), 0.85f, 0.35f), -1.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Grassland"), 0.85f, 0.35f), -1.0f, kEps);
     // One wM away in moisture: -1. Both: -2.
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.TemperateForest"), 0.50f, 0.80f), -1.0f, kEps);
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.Tundra"), 0.27f, 0.60f), -2.0f, kEps);
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.Desert"), 0.80f, 0.08f), 0.0f, kEps);
-    EXPECT_NEAR(BiomeClimateScore(rules, LegacyB("Biome.Rainforest"), 0.85f, 0.90f), 0.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.TemperateForest"), 0.50f, 0.80f), -1.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Tundra"), 0.27f, 0.60f), -2.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Desert"), 0.80f, 0.08f), 0.0f, kEps);
+    EXPECT_NEAR(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Rainforest"), 0.85f, 0.90f), 0.0f, kEps);
 }
 
 TEST(BiomeClassify, ClimateScoreOfNonClimateBiomeIsLowest)
 {
-    const TerrainRules rules = TestRules();
     const float        lowest = std::numeric_limits<float>::lowest();
-    EXPECT_EQ(BiomeClimateScore(rules, LegacyB("Biome.Ocean"), 0.5f, 0.5f), lowest);
-    EXPECT_EQ(BiomeClimateScore(rules, LegacyB("Biome.Wetland"), 0.5f, 0.5f), lowest);
-    EXPECT_EQ(BiomeClimateScore(rules, LegacyB("Biome.Alpine"), 0.5f, 0.5f), lowest);
-    EXPECT_EQ(BiomeClimateScore(rules, LegacyB("Biome.Volcanic"), 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Ocean"), 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Wetland"), 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Alpine"), 0.5f, 0.5f), lowest);
+    EXPECT_EQ(BiomeClimateScore(ShippedBiomeRegistry(), B("Biome.Volcanic"), 0.5f, 0.5f), lowest);
 }
 
 TEST(BiomeClassify, ClimateTableWinners)
@@ -119,36 +120,34 @@ TEST(BiomeClassify, ClimateTableWinners)
     BiomeGrid g(12, 8);
     for (const Case& k : cases) { g.SetClimate(g.Index(k.x, k.y), k.t, k.m); }
     const BiomeResult r = RunBiomes(g);
-    const TerrainRules rules = TestRules();
     for (const Case& k : cases)
     {
         const int c = g.Index(k.x, k.y);
         EXPECT_EQ(Idx(r.At(c)), k.expect) << "cell " << k.x << "," << k.y;
         EXPECT_EQ(r.pin[c], BiomePin::None);
         EXPECT_EQ(r.fixup[c], BiomeFixup::None);
-        EXPECT_NEAR(r.score[c], BiomeClimateScore(rules, Legacy(k.expect), k.t, k.m), kEps);
+        EXPECT_NEAR(r.score[c], BiomeClimateScore(ShippedBiomeRegistry(), k.expect, k.t, k.m), kEps);
     }
 }
 
-TEST(BiomeClassify, BoundaryTiesGoToLowestEnum)
+TEST(BiomeClassify, BoundaryTiesGoToLowestRow)
 {
-    // Give two biomes identical targets so their scores are bit-equal; the lower enum value must win.
-    TerrainRules rules = TestRules();
-    rules.kT0_Forest = rules.kT0_Grass;
-    rules.kM0_Forest = rules.kM0_Grass;
-    rules.kWT_Forest = rules.kWT_Grass;
-    rules.kWM_Forest = rules.kWM_Grass;
+    // Give two biomes identical envelopes (on a fixture registry: classification no longer reads the kT0_* rules)
+    // so their scores are bit-equal; the lower row index must win.
+    const CoW::World::BiomeRegistry forestAsGrass =
+        LoadShippedVariant({ { "\"climate\": {\"t0\": 0.5, \"m0\": 0.6, \"wt\": 0.25, \"wm\": 0.2}",
+                        "\"climate\": {\"t0\": 0.6, \"m0\": 0.35, \"wt\": 0.25, \"wm\": 0.2}" } });
     BiomeGrid g(3, 3);
-    EXPECT_EQ(Idx(RunBiomes(g, rules).At(g.Index(1, 1))), B("Biome.Grassland"));
+    g.registry = &forestAsGrass;
+    EXPECT_EQ(RunBiomes(g).biome[g.Index(1, 1)], B(forestAsGrass, "Biome.Grassland"));
 
-    // Rainforest set equal to Desert: Desert (5) beats Rainforest (8).
-    TerrainRules rules2 = TestRules();
-    rules2.kT0_Rainforest = rules2.kT0_Desert;
-    rules2.kM0_Rainforest = rules2.kM0_Desert;
-    rules2.kWT_Rainforest = rules2.kWT_Desert;
-    rules2.kWM_Rainforest = rules2.kWM_Desert;
+    // Rainforest set equal to Desert: Desert (row 5) beats Rainforest (row 8).
+    const CoW::World::BiomeRegistry rainAsDesert =
+        LoadShippedVariant({ { "\"climate\": {\"t0\": 0.85, \"m0\": 0.9, \"wt\": 0.2, \"wm\": 0.15}",
+                        "\"climate\": {\"t0\": 0.8, \"m0\": 0.08, \"wt\": 0.25, \"wm\": 0.12}" } });
     BiomeGrid g2(3, 3, 0.8f, 0.08f);
-    EXPECT_EQ(Idx(RunBiomes(g2, rules2).At(g2.Index(1, 1))), B("Biome.Desert"));
+    g2.registry = &rainAsDesert;
+    EXPECT_EQ(RunBiomes(g2).biome[g2.Index(1, 1)], B(rainAsDesert, "Biome.Desert"));
 }
 
 // ---------------------------------------------------------------------------
@@ -863,4 +862,99 @@ TEST(BiomeClassify, EmptyAndSingleCellGridsDoNotCrash)
         g.SetWater(0, WaterSource::Ocean);
         EXPECT_EQ(Idx(RunBiomes(g).At(0)), B("Biome.Ocean"));
     }
+}
+
+// ---------------------------------------------------------------------------
+// Registry-driven classification (biome-registry plan Task 21): pin order, tie order and plateau rows come from the
+// registry, not from code. Fixture registries are the shipped file with a few text edits.
+// ---------------------------------------------------------------------------
+namespace
+{
+
+    // A second climate biome whose envelope equals Grassland's bit for bit.
+    const char* kGrassTwinRow =
+        "{\"id\": \"Biome.GrassTwin\", \"name\": \"Grass Twin\", \"colour\": \"#a6c04b\", \"description\": \"Tie fixture.\", "
+        "\"tags\": [\"land\"], \"generated\": true, \"zones\": [\"FirstShores\", \"WildReaches\"], "
+        "\"climate\": {\"t0\": 0.6, \"m0\": 0.35, \"wt\": 0.25, \"wm\": 0.2}},\n    ";
+}
+
+TEST(BiomeClassify, PinsPlaceInRegistryPriorityOrder)
+{
+    // One cell that is both a vent (Volcanic flag) and a Mountain: the higher-priority pin wins.
+    BiomeGrid g(5, 5);
+    const int c = g.Index(2, 2);
+    g.AddFlag(c, TerrainFlag::Volcanic);
+    g.SetTerrain(c, TerrainType::Mountain);
+
+    const BiomeResult shipped = RunBiomes(g);   // shipped priorities: vent 3 > alpine 2
+    EXPECT_EQ(shipped.biome[c], B("Biome.Volcanic"));
+    EXPECT_EQ(shipped.pin[c], BiomePin::Volcanic);
+
+    const CoW::World::BiomeRegistry swapped =
+        LoadShippedVariant({ { "\"rule\": \"alpine\", \"priority\": 2", "\"rule\": \"alpine\", \"priority\": 3" },
+                      { "\"rule\": \"vent\", \"priority\": 3", "\"rule\": \"vent\", \"priority\": 2" } });
+    g.registry = &swapped;
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.biome[c], B(swapped, "Biome.Alpine"));
+    EXPECT_EQ(r.pin[c], BiomePin::Alpine);
+}
+
+TEST(BiomeClassify, ClimateTiesBreakByLowestRowIndex)
+{
+    // Grassland-perfect cell: Grassland and the twin score bit-equal; the lower row index wins.
+    BiomeGrid g(3, 3);
+    const int c = g.Index(1, 1);
+
+    // Twin appended after Grassland: Grassland (row 2) wins.
+    const CoW::World::BiomeRegistry twinAfter =
+        LoadShippedVariant({ { "{\"id\": \"Biome.Wetland\"", (std::string(kGrassTwinRow) + "{\"id\": \"Biome.Wetland\"").c_str() } });
+    g.registry = &twinAfter;
+    EXPECT_EQ(RunBiomes(g).biome[c], B(twinAfter, "Biome.Grassland"));
+    EXPECT_LT(B(twinAfter, "Biome.Grassland"), B(twinAfter, "Biome.GrassTwin"));
+
+    // Twin inserted before Grassland: the twin (now the lower row) wins.
+    const CoW::World::BiomeRegistry twinBefore =
+        LoadShippedVariant({ { "{\"id\": \"Biome.Grassland\"", (std::string(kGrassTwinRow) + "{\"id\": \"Biome.Grassland\"").c_str() } });
+    g.registry = &twinBefore;
+    EXPECT_LT(B(twinBefore, "Biome.GrassTwin"), B(twinBefore, "Biome.Grassland"));
+    EXPECT_EQ(RunBiomes(g).biome[c], B(twinBefore, "Biome.GrassTwin"));
+}
+
+TEST(BiomeClassify, PlateauCellsUseRegistryPlateauRows)
+{
+    BiomeGrid g(12, 4);
+    g.barrierForm = BarrierForm::Plateau;
+    g.barrier = 0.6f;
+    const int wet = g.Index(1, 1);
+    const int dry = g.Index(4, 1);
+    for (int c : { wet, dry }) { g.barrierMask[c] = 0.6f; }
+    g.moisture[wet] = 0.9f;
+    g.moisture[dry] = 0.3f;
+
+    const BiomeResult shipped = RunBiomes(g);
+    EXPECT_EQ(shipped.biome[wet], B("Biome.Rainforest"));
+    EXPECT_EQ(shipped.biome[dry], B("Biome.Desert"));
+
+    // Swap which row is the wet and which the dry plateau biome.
+    const CoW::World::BiomeRegistry swapped =
+        LoadShippedVariant({ { "\"plateau\": \"dry\"", "\"plateau\": \"TMP\"" },
+                      { "\"plateau\": \"wet\"", "\"plateau\": \"dry\"" },
+                      { "\"plateau\": \"TMP\"", "\"plateau\": \"wet\"" } });
+    g.registry = &swapped;
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.biome[wet], B(swapped, "Biome.Desert"));       // wet plateau row is now Desert
+    EXPECT_EQ(r.biome[dry], B(swapped, "Biome.Rainforest"));   // dry plateau row is now Rainforest
+}
+
+TEST(BiomeClassify, ClassificationHasNoHardCodedBiomeLists)
+{
+    // A climate biome appended to the registry competes with no code change: a cell sitting exactly on its envelope
+    // takes it (the shipped five-biome list would never have placed it).
+    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
+    const CoW::World::BiomeIndex     savanna = B(extra, "Biome.Savanna");
+    const CoW::World::ClimateEnvelope* e = extra.Climate(savanna);
+    ASSERT_NE(e, nullptr);
+    BiomeGrid g(3, 3, e->t0, e->m0);
+    g.registry = &extra;
+    EXPECT_EQ(RunBiomes(g).biome[g.Index(1, 1)], savanna);
 }

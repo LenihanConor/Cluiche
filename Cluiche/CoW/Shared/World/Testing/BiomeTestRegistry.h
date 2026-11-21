@@ -8,9 +8,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <cstring>
 #include <fstream>
+#include <initializer_list>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace CoW {
 namespace World {
@@ -78,6 +81,37 @@ inline const BiomeRegistry& ExtraBiomeRegistry()
     {
         loaded = true;
         Detail::LoadOrAbort(reg, Detail::FindUpwards("Cluiche/Tests/GoogleTests/CoW/Fixtures/biomes_extra.json", false), "biomes_extra.json");
+    }
+    return reg;
+}
+
+// The shipped biomes.json with textual edits applied (each `from` must occur once; the first occurrence is replaced),
+// loaded into a fresh registry. For fixtures that change a priority, an envelope or a row. Aborts on a bad edit or load.
+inline BiomeRegistry LoadShippedVariant(std::initializer_list<std::pair<const char*, const char*>> edits)
+{
+    std::ifstream     in(Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/biomes.json", false), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    std::string text = ss.str();
+    for (const auto& e : edits)
+    {
+        const size_t at = text.find(e.first);
+        if (at == std::string::npos)
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: variant edit target missing: %s\n", e.first);
+            std::fflush(stderr);
+            std::abort();
+        }
+        text.replace(at, std::strlen(e.first), e.second);
+    }
+    BiomeRegistry reg;
+    RegistryError err;
+    if (!reg.LoadFromText(text.c_str(), err))
+    {
+        std::fprintf(stderr, "BiomeTestRegistry: variant failed to load: field=%s id=%s row=%u reason=%s\n", err.field.AsCStr(),
+                     err.id.AsCStr(), err.row, err.reason.AsCStr());
+        std::fflush(stderr);
+        std::abort();
     }
     return reg;
 }

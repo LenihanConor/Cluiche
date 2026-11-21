@@ -2,6 +2,7 @@
 // Header-only. Row-major, index = y * width + x.
 #pragma once
 
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
@@ -67,6 +68,7 @@ struct BiomeGrid
     std::vector<uint32_t> terrainType, depthZone, terrainFlags, waterSource;
     BarrierForm           barrierForm = BarrierForm::Plateau;
     float                 barrier = 0.0f;
+    const ::CoW::World::BiomeRegistry* registry = &::CoW::World::Testing::ShippedBiomeRegistry();   // swap for a fixture
 
     BiomeGrid(int w, int h, float t = 0.6f, float m = 0.35f)
         : dims{w, h},
@@ -117,6 +119,7 @@ struct BiomeGrid
         in.waterSource = waterSource.data();
         in.barrierForm = barrierForm;
         in.barrier = barrier;
+        in.biomes = registry;
         return in;
     }
 };

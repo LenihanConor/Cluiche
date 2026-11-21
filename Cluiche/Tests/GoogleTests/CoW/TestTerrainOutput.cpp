@@ -31,7 +31,7 @@ struct Gen
     TerrainGenerator gen;
     RandomStream rng{ 1 };
     WorldStructure world;
-    Gen() : gen(rules) {}
+    Gen() : gen(rules, &::CoW::World::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall)
     {
         gen.Update(seed, s, d, rng);
@@ -156,7 +156,7 @@ TEST(TerrainOutput, RulesVersionPropagates)
 {
     TerrainRules r = TestRules();
     r.rulesVersion = 77;
-    TerrainGenerator gen(r);
+    TerrainGenerator gen(r, &::CoW::World::Testing::ShippedBiomeRegistry());
     RandomStream rng{ 1 };
     WorldStructure w;
     gen.Update(5, WorldShapeParams{}, kSmall, rng);
@@ -207,7 +207,7 @@ TEST(TerrainOutput, LivePreviewReflectsSliderChange)
 
 TEST(TerrainOutput, NeverUpdatedLeavesWorldUntouched)
 {
-    TerrainGenerator gen(TestRules());
+    TerrainGenerator gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
     WorldStructure w;
     w.Resize({ 3, 3 });
     w.mainLandmass = 9;
