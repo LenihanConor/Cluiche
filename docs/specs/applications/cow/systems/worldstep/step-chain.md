@@ -1,13 +1,15 @@
+> **Moved to Dia:** the step chain (`StepChain`, `IStepStage`, `StepChainConfig`, `IStepChainListener`) now lives in DiaDeferredStep, see `docs/specs/applications/dia/systems/diadeferredstep/step-chain.md`. The names below are the pre-move CoW names; this spec is kept as history.
+
 # Feature Spec: World Step Chain
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 1)
 **Status:** `Done` (2026-11-20)
 **Depends on:** DiaDeferredStep Feature 1 Task 1 (`StepKey`, `IParallelExecutor` headers). `Dia::SaveGame::SaveContext` / `LoadContext` (built) are only forward-declared. No other Dia code.
-**Consumed by:** World Step Feature 2 (`WorldStepModule` wraps the chain), Feature 3 (save delegation uses `StageAt` and the stage-id tags). A4 Feature 3, A5 Feature 3 and A1 Feature 7 implement `IWorldStepStage`. (amended 2026-11-17, A5 Hydrology)
+**Consumed by:** World Step Feature 2 (`WorldStepModule` wraps the chain), Feature 3 (save delegation uses `StageAt` and the stage-id tags). A4 Feature 3, A5 Feature 3 and A1 Feature 7 implement `IStepStage`. (amended 2026-11-17, A5 Hydrology)
 
 ## Summary
 
-The pure-logic core of the world-step coordinator. `IWorldStepStage` is the contract a world-sim layer implements. `WorldStepChain` holds the stage table, resolves it against the declared `order`, gates on readiness, and sequences `Capture`, `Run` and `Commit` over the enabled stages in declared order. It knows nothing about modules, the bus, the scheduler, cadence, saving, or history. It is unit-tested with fake stages.
+The pure-logic core of the world-step coordinator. `IStepStage` is the contract a world-sim layer implements. `StepChain` holds the stage table, resolves it against the declared `order`, gates on readiness, and sequences `Capture`, `Run` and `Commit` over the enabled stages in declared order. It knows nothing about modules, the bus, the scheduler, cadence, saving, or history. It is unit-tested with fake stages.
 
 ## Goals
 
@@ -27,16 +29,16 @@ The pure-logic core of the world-step coordinator. `IWorldStepStage` is the cont
 
 ## Design
 
-### The stage contract (`IWorldStepStage.h`)
+### The stage contract (`IStepStage.h`)
 
 As the system spec, with one correction to its own text:
 
 ```cpp
 namespace CoW::WorldStep {
     using Dia::DeferredStep::StepKey;
-    class IWorldStepStage {
+    class IStepStage {
     public:
-        virtual ~IWorldStepStage() = default;
+        virtual ~IStepStage() = default;
         virtual bool IsReady() const = 0;                              // initialised and spun up; SimPU
         virtual void Capture(StepKey key) = 0;                         // SimPU
         virtual void Run(Dia::DeferredStep::IParallelExecutor&) = 0;   // worker thread(s); working copy only
@@ -50,36 +52,36 @@ namespace CoW::WorldStep {
 
 Threading contract, stated in the header: `IsReady`, `Capture`, `Commit`, `SerializePending` and `DeserializePending` are called on SimPU only. `Run` is called on **one** worker thread, never concurrently with `Capture`/`Commit`, and may call `ParallelFor` on the executor repeatedly. A stage's own readiness flag must not be written during `Run`.
 
-### Config (`WorldStepConfig.h`)
+### Config (`StepChainConfig.h`)
 
 ```cpp
-struct WorldStepConfig {
+struct StepChainConfig {
     StageIdList order;                 // fixed capacity kMaxStages = 8; ids are strings in the file
-    uint32_t    applyAfterDays = 7;
+    uint32_t    applyAfterSteps = 7;
     bool        deferred       = true;
 };
-bool LoadWorldStepConfig(const Json::Value& root, WorldStepConfig& out, ConfigError& err);
+bool LoadStepChainConfig(const Json::Value& root, StepChainConfig& out, ConfigError& err);
 ```
 
 The system spec's `historyBand` field is **removed** (2026-11-16): `history_band` and the band names stay `HistoryDriverModule`'s concern, as Resolved Decision 2 already says. The system spec's interface block is stale on this and is corrected in the same edit that approves this feature.
 
-`LoadWorldStepConfig` is all-or-nothing (the Feature 1 rule used across A4): on any fault it returns false, leaves `out` equal to a default `WorldStepConfig`, and sets `err` to the key and reason. Faults:
+`LoadStepChainConfig` is all-or-nothing (the Feature 1 rule used across A4): on any fault it returns false, leaves `out` equal to a default `StepChainConfig`, and sets `err` to the key and reason. Faults:
 
 - `order` missing, **empty** (decided 2026-11-16), not an array, longer than `kMaxStages`, or containing a non-string, an empty string, or a **duplicate** id.
 - Two distinct ids with the same `StringCRC` (a hash collision, caught at load).
-- `apply_after_days` not an integer, `< 1`, or `> 365`.
+- `apply_after_steps` not an integer, `< 1`, or `> 365`.
 - `deferred` not a bool.
 - An unknown key at the top level (typos are invalid, as for A4's parameter file).
 
 Ids are matched case-sensitively and are not validated against a fixed vocabulary here: `"weather"`, `"hydro"` and `"ecology"` (the world-sim system tokens; amended 2026-11-18, World-Sim Kit, was `"hydrology"`) are conventions of the stages that register them, and a wrong id surfaces as a missing stage.
 
-### The chain (`WorldStepChain`)
+### The chain (`StepChain`)
 
 ```cpp
-class WorldStepChain {
+class StepChain {
 public:
-    bool Configure(const WorldStepConfig& config);                   // false if already configured with a step in flight
-    bool RegisterStage(StringCRC id, IWorldStepStage& stage);        // false: duplicate id, null table slot, kMaxStages hit
+    bool Configure(const StepChainConfig& config);                   // false if already configured with a step in flight
+    bool RegisterStage(StringCRC id, IStepStage& stage);        // false: duplicate id, null table slot, kMaxStages hit
     void UnregisterStage(StringCRC id);
 
     bool AllReady() const;                                           // no missing configured stage, and every enabled stage ready
@@ -95,7 +97,7 @@ public:
     ChainPhase Phase() const;                                        // Idle | Captured | Ran
     StepKey CapturedKey() const;
     uint32_t EnabledCount() const;
-    IWorldStepStage* StageAt(uint32_t index) const;                  // declared order, enabled only
+    IStepStage* StageAt(uint32_t index) const;                  // declared order, enabled only
     StringCRC StageIdAt(uint32_t index) const;
 };
 ```
@@ -109,21 +111,21 @@ public:
 - **`Abandon`** is the teardown path. It moves to `Idle` without calling `Commit` on anyone, then applies pending removals. It does not call any stage method. The system spec's DoStop text (abandon, no commit) is the rule.
 - **Stage failure.** None is modelled. A stage that finds itself broken logs, sets its own health, and returns false from `IsReady()`. The next `AllReady()` is false, so the module stops kicking. The step already running completes. (Rejected: a `Failed` return from `Commit`, or a `bool Run`, because by then earlier stages have committed and there is no rollback story.)
 
-### Test support (`Cluiche/CoW/Shared/WorldStep/Testing/FakeWorldStepStage.h`)
+### Test support (`Dia/DiaDeferredStep/Testing/FakeStepStage.h`)
 
-`FakeWorldStepStage` records every call as `(stageId, phase, key)` into a shared `CallLog` (a `DynamicArrayC`), supports `SetReady`, a **poisoned source** (`Capture` copies `source` to `working`; the test then overwrites `source`, and `Run` must produce from `working`), a configurable number of `ParallelFor` calls in `Run`, and a `CommitOrderProbe` that records the other fake's committed value at its own `Commit` time, to prove "earlier stage is already visible". Tests ship with the library, per the project rule.
+`FakeStepStage` records every call as `(stageId, phase, key)` into a shared `CallLog` (a `DynamicArrayC`), supports `SetReady`, a **poisoned source** (`Capture` copies `source` to `working`; the test then overwrites `source`, and `Run` must produce from `working`), a configurable number of `ParallelFor` calls in `Run`, and a `CommitOrderProbe` that records the other fake's committed value at its own `Commit` time, to prove "earlier stage is already visible". Tests ship with the library, per the project rule.
 
 ## Public API
 
-Files in `Cluiche/CoW/Shared/WorldStep/`: `IWorldStepStage.h`, `WorldStepConfig.h/.cpp`, `WorldStepChain.h/.cpp`, `Testing/FakeWorldStepStage.h`. No SimModule here.
+Files in `Cluiche/CoW/Shared/WorldStep/`: `IStepStage.h`, `StepChainConfig.h/.cpp`, `StepChain.h/.cpp`, `Testing/FakeStepStage.h`. No SimModule here.
 
 ## Acceptance Criteria
 
 ### Config
-1. A valid config (`order: ["weather","ecology"]`, `apply_after_days: 7`, `deferred: true`) loads. Missing `apply_after_days` and `deferred` take defaults 7 and true.
-2. Each of these returns false, leaves `out` default, and names the key: `order` missing; empty; not an array; 9 entries; a non-string entry; an empty-string entry; a duplicate id; `apply_after_days` 0, 366, 7.5, `"7"`; `deferred` as `"true"`; an unknown top-level key.
+1. A valid config (`order: ["weather","ecology"]`, `apply_after_steps: 7`, `deferred: true`) loads. Missing `apply_after_steps` and `deferred` take defaults 7 and true.
+2. Each of these returns false, leaves `out` default, and names the key: `order` missing; empty; not an array; 9 entries; a non-string entry; an empty-string entry; a duplicate id; `apply_after_steps` 0, 366, 7.5, `"7"`; `deferred` as `"true"`; an unknown top-level key.
 3. A forced `StringCRC` collision between two different strings is rejected. (The test injects a collision through the config's hashing seam, not by finding a real one.)
-4. `apply_after_days` 1 and 365 are valid.
+4. `apply_after_steps` 1 and 365 are valid.
 
 ### Registration and resolution
 5. A configured and registered stage is enabled. `EnabledCount` and `StageAt` follow **declared** order whatever order the stages registered in (register ecology first, assert weather is index 0).
@@ -162,7 +164,7 @@ Files in `Cluiche/CoW/Shared/WorldStep/`: `IWorldStepStage.h`, `WorldStepConfig.
 
 ## Files Touched
 
-New: the files above; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepConfig,TestWorldStepChain}.cpp`. Edited: `CoW.vcxproj(.filters)`, `GoogleTests.vcxproj(.filters)` via `dia docs vcxproj-add`. **System spec edit on approval:** drop `historyBand` from the `WorldStepConfig` sketch; replace `WorldStepChain`'s listed interface with this one; fix Test Strategy line "DoStop with a step in flight drains, commits and samples" to "drains and abandons, no commit, no sample" (the Lifecycle section is correct, the test line contradicts it). No Dia files are added or edited.
+New: the files above; `Tests/GoogleTests/CoW/WorldStep/{TestStepChainConfig,TestStepChain}.cpp`. Edited: `CoW.vcxproj(.filters)`, `GoogleTests.vcxproj(.filters)` via `dia docs vcxproj-add`. **System spec edit on approval:** drop `historyBand` from the `StepChainConfig` sketch; replace `StepChain`'s listed interface with this one; fix Test Strategy line "DoStop with a step in flight drains, commits and samples" to "drains and abandons, no commit, no sample" (the Lifecycle section is correct, the test line contradicts it). No Dia files are added or edited.
 
 ## Binding Decisions
 

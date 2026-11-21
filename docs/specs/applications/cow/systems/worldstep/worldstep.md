@@ -60,7 +60,7 @@ SimPU
        Capture()  → each enabled stage captures into its own working copy
        Run(exec)  → stage[0].Run(exec); stage[1].Run(exec);  …  (declared order)
        Apply()    → each stage Commit() in order, each publishes its own message,
-                    then signal HistoryDriverModule::OnWorldStepApplied(key)
+                    then signal HistoryDriverModule::OnStepChainApplied(key)
        pre-save   → DrainAll(), then stages serialize their pending results
        owns: the channel, cadence, k, the stage table, history sampling
 
@@ -76,9 +76,9 @@ namespace CoW::WorldStep {
 
     // A world-sim layer that participates in the deferred world step.
     // Capture and Commit run on SimPU; Run runs on worker threads.
-    class IWorldStepStage {
+    class IStepStage {
     public:
-        virtual ~IWorldStepStage() = default;
+        virtual ~IStepStage() = default;
 
         virtual bool IsReady() const = 0;                       // initialised and spun up
         virtual void Capture(StepKey key) = 0;             // SimPU: latch inputs into the working copy
@@ -109,7 +109,7 @@ Stage order is semantically critical — ecology reads the weather this step pro
     "soft_dependencies": ["SaveLoadModule", "HistoryDriverModule"],
     "config": {
         "order": ["weather", "hydro", "ecology"],
-        "apply_after_days": 7,
+        "apply_after_steps": 7,
         "deferred": true
     }
 }
@@ -135,7 +135,7 @@ Resolution rules, which differ by lifecycle phase — this distinction matters, 
 ### Cadence
 
 - Kick on `SimulationTick` with **`band >= TimeBand::Week`**. The `>=` is mandatory: `ResolveBand` returns only the *largest* band a day completes, so `== Week` would skip the four weeks a year that are also Season/Year boundaries.
-- `kickKey` is the game day; `applyKey` is `day + apply_after_days` (default **7**, one game week).
+- `kickKey` is the game day; `applyKey` is `day + apply_after_steps` (default **7**, one game week).
 - **No kick unless every enabled stage reports `IsReady()`.** Until then the coordinator idles and logs once.
 - **A kick that finds the channel in flight is retried, not skipped (amended 2026-11-16, Feature 2).** One pending week is remembered and kicked on the next free tick with the *missed* day as the stage key and `applyKey = current day + k`; a second miss while one is pending is an Error and a lost week. A late kick is a reported anomaly (Warning, `late_kicks`, Degraded).
 
@@ -154,7 +154,7 @@ This exists for two reasons, both load-bearing:
 
 **The coordinator does not sample. It signals** (revised 2026-11-13, user decision — see Resolved Decision 2).
 
-After every stage has committed, the coordinator raises `OnWorldStepApplied({ applyKey, stepDay, stageCount })` **synchronously inside `Apply`** to registered `IWorldStepListener`s (Feature 3). CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) registers as a listener and owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`. It labels the sample by **`stepDay`**, the day the step represents (the day the world state represents), not by the apply key or the current tick (Feature 3 amended 2026-11-16).
+After every stage has committed, the coordinator raises `OnStepChainApplied({ applyKey, stepKey, stageCount })` **synchronously inside `Apply`** to registered `IStepChainListener`s (Feature 3). CoW-Shared `HistoryDriverModule` (S-3.5 Feature 1) registers as a listener and owns `Sample()` and everything around it: label arithmetic, band mapping, reset on bundle load, and the world id from terrain `Capture()`. It labels the sample by **`stepDay`**, the day the step represents (the day the world state represents), not by the apply key or the current tick (Feature 3 amended 2026-11-16).
 
 - **One sampler, one timeline.** A4's and A1's own `Sample()` calls are dropped, and the coordinator never acquires one.
 - **The key is correct under deferred execution.** Under deferred stepping a tick-based trigger would sample at tick N while the world state it reads is from week N−k — silently mislabelled data. A synchronous signal from `Apply` using the step day cannot drift.
@@ -200,14 +200,14 @@ namespace CoW::WorldStep {
     using Dia::DeferredStep::StepKey;
     inline constexpr const char* kChannelId = "world";
 
-    class IWorldStepStage { /* see The stage contract */ };
+    class IStepStage { /* see The stage contract */ };
 
     // Pure logic: stage table, declared order, readiness gating, phase sequencing.
     // No Dia module dependencies; unit-tested with fake stages.
-    class WorldStepChain {                                   // full contract: step-chain.md
+    class StepChain {                                   // full contract: step-chain.md
     public:
-        bool Configure(const WorldStepConfig& config);                   // false if already configured with a step in flight
-        bool RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);  // false: duplicate id, null table slot, kMaxStages hit
+        bool Configure(const StepChainConfig& config);                   // false if already configured with a step in flight
+        bool RegisterStage(Dia::Core::StringCRC id, IStepStage& stage);  // false: duplicate id, null table slot, kMaxStages hit
         void UnregisterStage(Dia::Core::StringCRC id);      // removal deferred to the step boundary
 
         bool AllReady() const;                               // no missing configured stage, and every enabled stage ready
@@ -223,28 +223,28 @@ namespace CoW::WorldStep {
         ChainPhase Phase() const;                            // Idle | Captured | Ran
         StepKey CapturedKey() const;
         uint32_t EnabledCount() const;
-        IWorldStepStage* StageAt(uint32_t index) const;      // declared order, enabled only
+        IStepStage* StageAt(uint32_t index) const;      // declared order, enabled only
         Dia::Core::StringCRC StageIdAt(uint32_t index) const;  // declared order, enabled only
         void SetObserver(IChainObserver* observer);          // optional observer for per-stage profiling; null by default
     };
 
-    struct WorldStepConfig {
+    struct StepChainConfig {
         StageIdList order;
-        uint32_t    applyAfterDays = 7;
+        uint32_t    applyAfterSteps = 7;
         bool        deferred       = true;
     };
-    bool LoadWorldStepConfig(const Json::Value& root, WorldStepConfig& out);
+    bool LoadStepChainConfig(const Json::Value& root, StepChainConfig& out);
 
-    struct WorldStepApplied {
+    struct StepChainApplied {
         StepKey applyKey;                                  // the day the result became visible
-        StepKey stepDay;                                   // the day the step stands for (what the stages computed)
+        StepKey stepKey;                                   // the day the step stands for (what the stages computed)
         uint32_t stageCount;                               // enabled stages that committed
     };
 
-    class IWorldStepListener {
+    class IStepChainListener {
     public:
-        virtual ~IWorldStepListener() = default;
-        virtual void OnWorldStepApplied(const WorldStepApplied& applied) = 0;  // SimPU, synchronous
+        virtual ~IStepChainListener() = default;
+        virtual void OnStepChainApplied(const StepChainApplied& applied) = 0;  // SimPU, synchronous
     };
 
     // SimModule wiring: the channel, the cadence, sampling, the save hook.
@@ -253,10 +253,10 @@ namespace CoW::WorldStep {
     public:
         static const Dia::Core::StringCRC kTypeId;
 
-        void RegisterStage(Dia::Core::StringCRC id, IWorldStepStage& stage);   // A4, A1 call this in DoStart
+        void RegisterStage(Dia::Core::StringCRC id, IStepStage& stage);   // A4, A1 call this in DoStart
         void UnregisterStage(Dia::Core::StringCRC id);
-        bool RegisterListener(IWorldStepListener& listener);                   // false if 4 are registered or it is a duplicate
-        void UnregisterListener(IWorldStepListener& listener);
+        bool RegisterListener(IStepChainListener& listener);                   // false if 4 are registered or it is a duplicate
+        void UnregisterListener(IStepChainListener& listener);
 
         // IDeferredStep
         void Capture() override;
@@ -276,10 +276,10 @@ namespace CoW::WorldStep {
 
 | # | Feature | Description | Spec | Status |
 |---|---------|-------------|------|--------|
-| 1 | Step Chain | `IWorldStepStage`, `WorldStepChain`, `WorldStepConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | @docs/specs/applications/cow/systems/worldstep/step-chain.md | Approved |
+| 1 | Step Chain | `IStepStage`, `StepChain`, `StepChainConfig` + JSON load, declared-order resolution, skipped and missing stage handling, readiness gating, Capture/Run/Commit sequencing. Pure logic, TDD with fake stages | @docs/specs/applications/cow/systems/worldstep/step-chain.md | Approved |
 | 2 | Module & Cadence | `WorldStepModule`: `.diaapp` config, DiaDeferredStep channel registration, `SimulationTick` week gate with `>=`, `k`, kick gating on readiness and in-flight, synchronous mode, the two sim-hosted commands with rollback, metrics, health, logs, trace | @docs/specs/applications/cow/systems/worldstep/module-and-cadence.md | Approved |
-| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, the `IWorldStepListener` interface with a single synchronous `OnWorldStepApplied({applyKey, stepDay, stageCount})` signal per applied step, and the Dia amendments `IDeferredStep::ValidatePending` and lazy participant attach | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
-| 4 | World-Sim Kit *(added 2026-11-18, world-sim review)* | Shared CoW-Shared plumbing for every stage: `WorldStepStageBase` (skeleton + 5 hooks), save codec helpers (DiaSaveGame versioning, sidecar-ranged validate, shared restore), `SimCommandSet` + `ParamCommandHelper` (`cow.<sys>.params`), `WorldCellFields` + DiaCondition `CellSelectorSet` with derived spatial fields, world-sim naming conventions and the S-1 layer-id rename. Adds `ValidatePending` to `IWorldStepStage`; stage ids become `weather`/`hydro`/`ecology` | @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md | Approved 2026-11-18 |
+| 3 | Save & History Signal | `SerializePending` / `DeserializePending` delegating to stages in declared order, stage-id tagging, discarding a pending result for a stage absent from `order`, the `IStepChainListener` interface with a single synchronous `OnStepChainApplied({applyKey, stepKey, stageCount})` signal per applied step, and the Dia amendments `IDeferredStep::ValidatePending` and lazy participant attach | @docs/specs/applications/cow/systems/worldstep/save-and-history.md | Approved |
+| 4 | World-Sim Kit *(added 2026-11-18, world-sim review)* | Shared CoW-Shared plumbing for every stage: `WorldStepStageBase` (skeleton + 5 hooks), save codec helpers (DiaSaveGame versioning, sidecar-ranged validate, shared restore), `SimCommandSet` + `ParamCommandHelper` (`cow.<sys>.params`), `WorldCellFields` + DiaCondition `CellSelectorSet` with derived spatial fields, world-sim naming conventions and the S-1 layer-id rename. Adds `ValidatePending` to `IStepStage`; stage ids become `weather`/`hydro`/`ecology` | @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md | Approved 2026-11-18 |
 
 **Build order:** 1 → 2 → 3. Feature 1 needs no Dia code beyond the `IParallelExecutor` declaration and can start as soon as DiaDeferredStep Feature 2 exists.
 
@@ -307,13 +307,13 @@ namespace CoW::WorldStep {
 - **GameSpeedController** — built. `SimulationTick`, `TimeBand`, `WeekOf`.
 - **DiaSimTime** — built, via DiaDeferredStep's tick ordering.
 - **E1 `SaveLoadModule`** — built, **unchanged**. No amendment: DiaDeferredStep Feature 3 drains on `SaveManager::OnSaveStarted`, which already fires before any `Serialize`.
-- **CoW-Shared `HistoryDriverModule`** (S-3.5 Feature 1, Approved 2026-10-20, not built) — owns `Sample()`, label arithmetic, band mapping, reset on bundle load and the world id. The coordinator signals it via `IWorldStepListener` (Feature 3). Soft: absent, the signal is a no-op. The AC8 trigger amendment (Resolved Decision 2) is written into S-3.5 Feature 1; the driver auto-detects world-step vs clock mode by resolving `WorldStepModule` at init (amended 2026-11-16), so no config key and no double sampling.
+- **CoW-Shared `HistoryDriverModule`** (S-3.5 Feature 1, Approved 2026-10-20, not built) — owns `Sample()`, label arithmetic, band mapping, reset on bundle load and the world id. The coordinator signals it via `IStepChainListener` (Feature 3). Soft: absent, the signal is a no-op. The AC8 trigger amendment (Resolved Decision 2) is written into S-3.5 Feature 1; the driver auto-detects world-step vs clock mode by resolving `WorldStepModule` at init (amended 2026-11-16), so no config key and no double sampling.
 - **DiaCellHistory** — built; reached only *through* `HistoryDriverModule`. The coordinator holds no recorder reference.
 - **`SimQueryHostModule`** — built. Two commands with `SimHelpInfo`.
 - **S-1** — built, and **not a direct dependency**. The coordinator reads no world data, owns no grid and does **not** subscribe to `WorldGenerationComplete`: each stage initialises itself from S-1 and reports through `IsReady()`, which is the coordinator's only readiness signal. S-1 appears here only because the stages need it.
 - DiaMessageBus via `MessageBusHostModule`; DiaCore (Json, StringCRC, containers, logging).
 
-**Consumed by (stages):** A4 Weather (`weather`), A5 Hydrology (`hydro`, amended 2026-11-17; registers its own `IWorldStepStage` and publishes `HydrologyUpdated{week}` from its `Commit`), A1 Ecology (`ecology`, with A3 inline). A4 and A1 need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
+**Consumed by (stages):** A4 Weather (`weather`), A5 Hydrology (`hydro`, amended 2026-11-17; registers its own `IStepStage` and publishes `HydrologyUpdated{week}` from its `Commit`), A1 Ecology (`ecology`, with A3 inline). A4 and A1 need amending to register as stages rather than stepping themselves, and to drop their own `Sample()` calls.
 
 **Required by:** S-2.5 Weather Patterns, S-2.6 Rivers & Floods (amended 2026-11-17), S-3 Ecology, S-3.5 World Sim.
 
@@ -337,7 +337,7 @@ namespace CoW::WorldStep {
 - A pending result saved with `["weather","ecology"]` loads on a stage configured `["weather"]`: the ecology blob is discarded with a Warning and the load succeeds. (amended 2026-11-17, A5 Hydrology) The same holds for a saved `hydrology` blob loaded where `hydrology` is not in `order`.
 - (amended 2026-11-17, A5 Hydrology) **Three-stage chain:** with fake stages `weather`, `hydrology`, `ecology`, the order is honoured whatever the registration order; `hydrology` sees the working copy `weather` just wrote inside the same `Run`, and `weather` sees `hydrology`'s committed state from the previous step at `Capture`.
 - (amended 2026-11-17, A5 Hydrology) **Determinism oracle over three stages:** the same three stages over 104 weeks in deferred and synchronous mode give bit-identical state (A5's own test: deferred vs synchronous over 104 weeks with A4).
-- Exactly one `OnWorldStepApplied({applyKey, stepDay, stageCount})` signal per applied step through `IWorldStepListener`, raised synchronously after every stage has committed; with no listener registered it is a no-op and nothing else changes.
+- Exactly one `OnStepChainApplied({applyKey, stepKey, stageCount})` signal per applied step through `IStepChainListener`, raised synchronously after every stage has committed; with no listener registered it is a no-op and nothing else changes.
 - Both commands register with non-empty descriptions, and a forced partial-registration failure leaves **no** names behind.
 
 **Lifecycle (Feature 2):**
@@ -379,9 +379,9 @@ namespace CoW::WorldStep {
 
 Found by the plan-writing pass; each item below **supersedes** any contradicting text above. Numbering is stable.
 
-1. **Interfaces.** `RegisterStage` returns `bool` (false on a duplicate id or a full table). The `WorldStepChain` block is the one in `step-chain.md` (adds `UnknownStages`, `StageIdAt`, `CapturedKey`, `RestoreRan`, `SetObserver`); `LoadWorldStepConfig` takes a `ConfigError&`.
+1. **Interfaces.** `RegisterStage` returns `bool` (false on a duplicate id or a full table). The `StepChain` block is the one in `step-chain.md` (adds `UnknownStages`, `StageIdAt`, `CapturedKey`, `RestoreRan`, `SetObserver`); `LoadStepChainConfig` takes a `ConfigError&`.
 2. **Test Strategy lifecycle line.** "A stage unregistering while live ... in-flight step is drained and committed first" is superseded: the step is drained and **abandoned** (no `Commit`, no history signal), matching Lifecycle.
-3. **History signal.** `OnWorldStepApplied({applyKey, stepDay, stageCount})` through `IWorldStepListener` (Feature 3). "Carries the apply key" is superseded.
+3. **History signal.** `OnStepChainApplied({applyKey, stepKey, stageCount})` through `IStepChainListener` (Feature 3). "Carries the apply key" is superseded.
 4. **Build order.** Feature 1 can start once **DiaDeferredStep Feature 1 Task 1** ships the headers (not "Feature 2").
 5. **Participant order and key-source timing** are resolved by Feature 3's amendment 5 and Feature 2's amendment 1.
 

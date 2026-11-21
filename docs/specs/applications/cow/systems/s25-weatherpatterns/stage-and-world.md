@@ -53,7 +53,7 @@ MessageBusHostModule, SimQueryHostModule, GameSpeedControllerModule, RandomStrea
 WorldGenerationModule            (config: preset + seed + size from s25_worlds.json default)
 CellLayersModule, CellHistoryModule, HistoryDriverModule (soft; absent until S-3.5 F1)
 DeferredStepModule
-WorldStepModule                  (config: order ["weather"], apply_after_days 7, deferred false)
+WorldStepModule                  (config: order ["weather"], apply_after_steps 7, deferred false)
 WeatherModule                    (config: parameters file, spinup_weeks 52, history block, wind_overlay)
 S25WeatherModule
 ```

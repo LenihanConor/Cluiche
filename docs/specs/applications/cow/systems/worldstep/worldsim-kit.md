@@ -26,7 +26,7 @@ A4 and A5 spec nearly the same stage skeleton, save codec and debug plumbing, wi
 |---|---|
 | Health | Stages say "Unhealthy"; World Step and DiaObservation say OK/Degraded/Failing |
 | Save participant ids | `"weather"` vs `"cow.hydrology"` |
-| `ValidatePending` | Missing from `IWorldStepStage`, though both stages implement it |
+| `ValidatePending` | Missing from `IStepStage`, though both stages implement it |
 | Setting a parameter | Three command shapes (`cow.weather.params {action}`, `cow.hydro.set_param`, `cow.ecology.tuning.set`), none with a defined reply |
 | Command registration | S-1's rollback calls `UnregisterQuery` on commands |
 | Selectors | A4 and A5 each define a grammar (4 shared clauses, 1 A4-only, 5 A5-only), separate from DiaCondition, which A1 succession uses |
@@ -55,7 +55,7 @@ A4 and A5 spec nearly the same stage skeleton, save codec and debug plumbing, wi
 ```cpp
 namespace CoW::WorldStep {
     template<class TSim, class TEntry, class TLatch>
-    class WorldStepStageBase : public IWorldStepStage {
+    class WorldStepStageBase : public IStepStage {
     protected:
         struct Hooks {
             // init: build TSim for the current world; false + reason -> health Failing (cause code), not ready
@@ -102,7 +102,7 @@ namespace CoW::WorldStep {
 | A5 provider and water-source wiring, its `DoStop` extras | `OnStartExtra` / `OnStopExtra` |
 | Coupled spin-up (A4 runs, A5 hosts `IHydrologySpinUpHost`) | System code on top of `SpinUpSlot`; the base's slot rules still apply |
 
-**Interface amendment.** `IWorldStepStage` gains `virtual bool ValidatePending(Dia::SaveGame::LoadContext&) const = 0;`. Today it's in neither the interface nor its doc, though both stages implement it (`step-chain.md` amended). **Stage ids are the system tokens:** `weather`, `hydro`, `ecology`. The World Step `order` becomes `["weather", "hydro", "ecology"]`.
+**Interface amendment.** `IStepStage` gains `virtual bool ValidatePending(Dia::SaveGame::LoadContext&) const = 0;`. Today it's in neither the interface nor its doc, though both stages implement it (`step-chain.md` amended). **Stage ids are the system tokens:** `weather`, `hydro`, `ecology`. The World Step `order` becomes `["weather", "hydro", "ecology"]`.
 
 **Health.** `Dia::Observation::HealthStatus` (`kOK`/`kDegraded`/`kFailing`). Each system declares cause codes, an enum plus text, reported through one `IHealthReporter` held by the base. "Unhealthy" maps to `kFailing`. **Metrics:** the base registers `cow.<sys>.step_ms` and `cow.<sys>.discarded_steps` as `MetricInfo`.
 
@@ -217,7 +217,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 ## Acceptance Criteria
 
 ### Stage base
-1. **Shared behaviour.** `WorldStepStageBase` implements `IWorldStepStage`, and a fake-stage test suite proves once:
+1. **Shared behaviour.** `WorldStepStageBase` implements `IStepStage`, and a fake-stage test suite proves once:
    - readiness;
    - promotion only in `Capture`;
    - queue drain order, and refusal of the 129th entry (Warning + Degraded);
@@ -228,7 +228,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
    - the stale-result guard (revision and visit generation);
    - the `DoStop` order.
 2. **Hooks.** The five hooks (`InitialiseSim`, `ExtraReady`, `LatchInputs`, `RunStep` with `ApplyEntry`, `PublishCommit`) plus `OnStartExtra` and `OnStopExtra` exist. The spec's difference table maps every A4/A5 difference found in the 2026-11-18 sweep to a hook. A fake stage that sets `ExtraReady=false` or makes `LatchInputs` fail behaves as A5 specs.
-3. **Interface and ids.** `IWorldStepStage::ValidatePending` is added, and `step-chain.md` is amended. Stage ids are `weather`, `hydro`, `ecology`, and the World Step order and docs use them.
+3. **Interface and ids.** `IStepStage::ValidatePending` is added, and `step-chain.md` is amended. Stage ids are `weather`, `hydro`, `ecology`, and the World Step order and docs use them.
 4. **Health and metrics.** Health is `HealthStatus` with per-system cause codes; no spec text says "Unhealthy" after the spec-6 amendments. `cow.<sys>.step_ms` and `cow.<sys>.discarded_steps` are registered by the base.
 
 ### Save codec
@@ -285,7 +285,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 | File | Change |
 |---|---|
 | `Cluiche/CoW/Shared/WorldStep/WorldStepStageBase.h/.cpp`, `MutationQueue.h`, `SpinUpSlot.h`, `WorldSimSaveCodec.h/.cpp`, `Testing/FakeWorldStage.h` | **New** |
-| `Cluiche/CoW/Shared/WorldStep/IWorldStepStage.h` (when World Step F1 is built) | `ValidatePending` |
+| `Dia/DiaDeferredStep/IStepStage.h` (when World Step F1 is built) | `ValidatePending` |
 | `Cluiche/CoW/Shared/Debug/SimCommandSet.h/.cpp`, `ParamCommandHelper.h/.cpp` | **New** |
 | `Cluiche/CoW/Shared/World/WorldCellFields.h/.cpp`, `CellSelector.h/.cpp`, `WorldSimNames.h` | **New** |
 | `Dia/DiaCondition/ConditionExpr.h/.cpp` | `Validate(const IConditionContext&)` overload |
@@ -342,7 +342,7 @@ All three are decided as recommended:
 2. **Field handles.** `WorldCellFields` handles are `(slot, field)` CRCs resolved at use, and the registry is rebuilt on `WorldGenerationComplete`. Measure A1 succession's per-cell cost at its first build, and cache resolved readers per band if needed.
 3. **The `set` reply.** It returns `effectiveDay` (the capture day) and, when the step is deferred, `visibleDay` (capture + k). **AC 8's reply shape includes both.**
 
-Applied on approval: `IWorldStepStage::ValidatePending` was added to `step-chain.md`. `save-and-history.md` now has the module call each stage's `ValidatePending`. The stage id is `hydro` in `step-chain.md` and `worldstep.md`. The `"hydrology"` stage-id mentions in A1, A4, A5 and S-3 are left for the spec-6 amendments.
+Applied on approval: `IStepStage::ValidatePending` was added to `step-chain.md`. `save-and-history.md` now has the module call each stage's `ValidatePending`. The stage id is `hydro` in `step-chain.md` and `worldstep.md`. The `"hydrology"` stage-id mentions in A1, A4, A5 and S-3 are left for the spec-6 amendments.
 
 
 ## Spec-6 resolutions (2026-11-18, user)

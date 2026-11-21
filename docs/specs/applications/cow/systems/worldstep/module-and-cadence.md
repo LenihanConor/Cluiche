@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 2)
 **Status:** `Done` (2026-11-20)
-**Depends on:** World Step Feature 1 (`WorldStepChain`, `IWorldStepStage`, `LoadWorldStepConfig`); DiaDeferredStep Features 1, 2 and 4 (`DeferredStepScheduler`, `IStepKeySource`, `DeferredStepModule::GetScheduler()`, `SerialExecutor`); GameSpeedController's `SimulationTick` message (built); `SimQueryHostModule` with `SimHelpInfo` (built); DiaObservation pillars.
+**Depends on:** World Step Feature 1 (`StepChain`, `IStepStage`, `LoadStepChainConfig`); DiaDeferredStep Features 1, 2 and 4 (`DeferredStepScheduler`, `IStepKeySource`, `DeferredStepModule::GetScheduler()`, `SerialExecutor`); GameSpeedController's `SimulationTick` message (built); `SimQueryHostModule` with `SimHelpInfo` (built); DiaObservation pillars.
 **Consumed by:** A4 Feature 3, A5 Feature 3 and A1 Feature 7 (they call `RegisterStage`; A5 added 2026-11-17, A5 Hydrology), S-2.5, S-2.6, S-3 and S-3.5 stages (each declares an instance), Feature 3 (save delegation and history signal sit on this module).
 
 ## Summary
@@ -31,7 +31,7 @@ Save delegation and the history signal's wiring are Feature 3. This feature prov
 
 ### Placement and manifest
 
-`Cluiche/CoW/Modules/WorldStep/WorldStepModule.h/.cpp`, a `SimModule` on SimPU, **stage-scoped** (never `stages: ["all"]`): each hosting stage declares its own instance with its own `order`. The config is Feature 1's `WorldStepConfig` (`order`, `apply_after_days`, `deferred`).
+`Cluiche/CoW/Modules/WorldStep/WorldStepModule.h/.cpp`, a `SimModule` on SimPU, **stage-scoped** (never `stages: ["all"]`): each hosting stage declares its own instance with its own `order`. The config is Feature 1's `StepChainConfig` (`order`, `apply_after_steps`, `deferred`).
 
 ```
 manifest order (the stage .diaapp):   MessageBusHostModule … GameSpeedController
@@ -45,7 +45,7 @@ Reverse order on stop is what lets stage modules unregister while the scheduler 
 ```cpp
 class WorldStepModule : public SimModule, public IDeferredStep, public IStepKeySource {
 public:
-    bool RegisterStage(StringCRC id, IWorldStepStage& stage);   // stages call this in DoStart
+    bool RegisterStage(StringCRC id, IStepStage& stage);   // stages call this in DoStart
     void UnregisterStage(StringCRC id);                         // and in DoStop
     // …
 };
@@ -86,7 +86,7 @@ result = scheduler.Kick(kChannelId, /*kickKey*/ mLatestDay, /*applyKey*/ mLatest
 - `scheduler.Kick` returning `kAlreadyInFlight` for a due week records `mPendingDay = dayToRepresent`, increments `late_kicks`, logs a Warning, and sets health Degraded. One slot only.
 - On each following tick, step 6 tries `Kick` for `mPendingDay`. kickKey is the *current* day (the scheduler requires monotonic kick keys), applyKey is `current day + k`, `mStepDay = mPendingDay`. On `kLaunched` the slot clears and an Info log records the delay in days.
 - A second due week arriving **while a pending week is still waiting** is an Error, drops the new week (the older keeps its place, so order is preserved), and counts `lost_weeks`. This is the unrecoverable-lag case and should be unreachable at the supported speeds.
-- `apply_after_days` is counted from the **actual kick**, so a retried step has a full `k` of slack.
+- `apply_after_steps` is counted from the **actual kick**, so a retried step has a full `k` of slack.
 - The system spec's "skipped, not queued" rule is replaced by this one.
 
 ### Live mode switch (amended 2026-11-16, S-2.5 Feature 1)
@@ -130,7 +130,7 @@ New in `Cluiche/CoW/Modules/`: `WorldStepModule.h/.cpp`, `WorldStepMessages` is 
 ## Acceptance Criteria
 
 ### Module and manifest
-1. `dia validate manifest` accepts a stage declaring `WorldStepModule` with `order`, `apply_after_days`, `deferred`, and rejects an invalid config with the key named (the Feature 1 faults).
+1. `dia validate manifest` accepts a stage declaring `WorldStepModule` with `order`, `apply_after_steps`, `deferred`, and rejects an invalid config with the key named (the Feature 1 faults).
 2. The module refuses to start on MainPU.
 3. A stage that lists `WorldStepModule` after a module that registers with it fails validation or a startup assertion that names both.
 
@@ -172,7 +172,7 @@ New in `Cluiche/CoW/Modules/`: `WorldStepModule.h/.cpp`, `WorldStepMessages` is 
 
 ## Files Touched
 
-New: `WorldStepModule.h/.cpp`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepModule,TestWorldStepCadence,TestWorldStepLifecycle}.cpp`; stage manifests for the hosting stages gain an instance (done as each testbed is built). Edited: `CoW.vcxproj(.filters)`, `GoogleTests.vcxproj(.filters)`, `dia module registration`. **System spec edits on approval:** replace the "A kick is skipped (not queued)" cadence line with the retry rule; rename `skipped_kicks` to `late_kicks` and add `lost_weeks`; close Open Design Questions 2 and 3; replace the Public Interfaces `WorldStepChain` block with Feature 1's. No Dia files are added or edited.
+New: `WorldStepModule.h/.cpp`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepModule,TestWorldStepCadence,TestWorldStepLifecycle}.cpp`; stage manifests for the hosting stages gain an instance (done as each testbed is built). Edited: `CoW.vcxproj(.filters)`, `GoogleTests.vcxproj(.filters)`, `dia module registration`. **System spec edits on approval:** replace the "A kick is skipped (not queued)" cadence line with the retry rule; rename `skipped_kicks` to `late_kicks` and add `lost_weeks`; close Open Design Questions 2 and 3; replace the Public Interfaces `StepChain` block with Feature 1's. No Dia files are added or edited.
 
 ## Binding Decisions
 
@@ -189,7 +189,7 @@ New: `WorldStepModule.h/.cpp`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepMo
 
 ## Test Plan
 
-GoogleTests with a fake `SimulationTick` source, a real `DeferredStepScheduler` over a **synchronous test launcher** (DiaDeferredStep ships one for tests) and two fake stages from Feature 1's `FakeWorldStepStage`; no real job pool except one integration test using the capped executor. TDD order: manifest/config → key source and the ordering hazard → cadence (52 kicks) → retry → apply timing and stall → synchronous mode and the oracle → missing/retired stages → lifecycle → commands and observability. Catch-up and stall tests drive the key directly. Sanitizer: ASan/UBSan over the lifecycle tests (stage unregistered mid-step, re-entry). No mutation checks. Gap audit and edge pass is the last plan task. **Observation scan** at the verify step per the project rule.
+GoogleTests with a fake `SimulationTick` source, a real `DeferredStepScheduler` over a **synchronous test launcher** (DiaDeferredStep ships one for tests) and two fake stages from Feature 1's `FakeStepStage`; no real job pool except one integration test using the capped executor. TDD order: manifest/config → key source and the ordering hazard → cadence (52 kicks) → retry → apply timing and stall → synchronous mode and the oracle → missing/retired stages → lifecycle → commands and observability. Catch-up and stall tests drive the key directly. Sanitizer: ASan/UBSan over the lifecycle tests (stage unregistered mid-step, re-entry). No mutation checks. Gap audit and edge pass is the last plan task. **Observation scan** at the verify step per the project rule.
 
 ## Open Design Questions
 

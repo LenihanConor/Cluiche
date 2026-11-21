@@ -11,14 +11,14 @@
 Two small, load-bearing seams on the module from Feature 2:
 
 1. **Save.** `WorldStepModule::SerializePending` / `DeserializePending` delegate to each enabled stage in declared order, tag each blob with its stage id, and persist the module's own step bookkeeping, so a save taken mid-step loads and continues identically to the uninterrupted run (DFS-005). The module writes no participant of its own and E1 needs no change.
-2. **History signal.** After every stage has committed, the module raises exactly one synchronous `OnWorldStepApplied` to registered listeners, carrying both the day the step stands for and the day it became visible. The module contains no sampling logic.
+2. **History signal.** After every stage has committed, the module raises exactly one synchronous `OnStepChainApplied` to registered listeners, carrying both the day the step stands for and the day it became visible. The module contains no sampling logic.
 
 ## Goals
 
 1. Save mid-step, load, continue: stage state after N further weeks is bit-identical to a run that never saved (the primary DFS-005 test, covered once for the coordinator's delegation).
 2. A save with a stage that is no longer in `order` loads, with that stage's blob discarded and a Warning.
 3. A save missing a blob for a stage that **is** in `order` is **refused** before any state changes, naming the stage (decided 2026-11-16).
-4. Exactly one `OnWorldStepApplied` per applied step, after every stage has committed, never on abandon, discard, drain or `DoStop`.
+4. Exactly one `OnStepChainApplied` per applied step, after every stage has committed, never on abandon, discard, drain or `DoStop`.
 5. History samples are labelled by the **step day** (the day the step represents), so Year/Decade/Century bands come out right and a retried week cannot mislabel (decided 2026-11-16).
 
 ## Non-Goals
@@ -60,7 +60,7 @@ Two small, load-bearing seams on the module from Feature 2:
 - `stage_count` does not match the number of `stage_N` objects;
 - an id appears twice;
 - **a stage currently in `order` has no blob** (refuse the load; a step restored for only some stages would commit a half-world);
-- **a present stage blob fails that stage's `IWorldStepStage::ValidatePending`** (amended 2026-11-18, World-Sim Kit: the module calls it, read-only, on each in-`order` stage's sub-object, so a corrupt stage body is refused before any Deserialize instead of being found after Validate).
+- **a present stage blob fails that stage's `IStepStage::ValidatePending`** (amended 2026-11-18, World-Sim Kit: the module calls it, read-only, on each in-`order` stage's sub-object, so a corrupt stage body is refused before any Deserialize instead of being found after Validate).
 
 A blob for a stage that is **not** in the current `order` is not a validation failure.
 
@@ -85,20 +85,20 @@ A listener interface in CoW-Shared, so the module has no compile-time dependency
 
 ```cpp
 namespace CoW::WorldStep {
-    struct WorldStepApplied {
+    struct StepChainApplied {
         StepKey applyKey;      // the day the result became visible
-        StepKey stepDay;       // the day the step stands for (what the stages computed)
+        StepKey stepKey;       // the day the step stands for (what the stages computed)
         uint32_t stageCount;   // enabled stages that committed
     };
-    class IWorldStepListener {
+    class IStepChainListener {
     public:
-        virtual ~IWorldStepListener() = default;
-        virtual void OnWorldStepApplied(const WorldStepApplied& applied) = 0;   // SimPU, synchronous
+        virtual ~IStepChainListener() = default;
+        virtual void OnStepChainApplied(const StepChainApplied& applied) = 0;   // SimPU, synchronous
     };
 }
 // on WorldStepModule
-bool RegisterListener(IWorldStepListener& listener);   // false if 4 are registered or it is a duplicate
-void UnregisterListener(IWorldStepListener& listener);
+bool RegisterListener(IStepChainListener& listener);   // false if 4 are registered or it is a duplicate
+void UnregisterListener(IStepChainListener& listener);
 ```
 
 - Raised from `Apply()`, **after** `chain.Commit()` returns, once, to each listener in registration order. In synchronous mode it is raised from the same inline path and `applyKey == stepDay`.
@@ -111,7 +111,7 @@ void UnregisterListener(IWorldStepListener& listener);
 
 ## Public API
 
-New: `Cluiche/CoW/Shared/WorldStep/IWorldStepListener.h`. Edited: `WorldStepModule` (`SerializePending`, `DeserializePending`, `ValidatePending`, `RegisterListener`/`UnregisterListener`), `WorldStepChain` (`RestoreRan`). Dia: `IDeferredStep::ValidatePending` (amendment, see above).
+New: `Dia/DiaDeferredStep/IStepChainListener.h`. Edited: `WorldStepModule` (`SerializePending`, `DeserializePending`, `ValidatePending`, `RegisterListener`/`UnregisterListener`), `StepChain` (`RestoreRan`). Dia: `IDeferredStep::ValidatePending` (amendment, see above).
 
 ## Acceptance Criteria
 
@@ -137,7 +137,7 @@ New: `Cluiche/CoW/Shared/WorldStep/IWorldStepListener.h`. Edited: `WorldStepModu
 13. `chain.RestoreRan(key)` returns false when not `Idle`, when not `AllReady()`, and when a step is already captured; it calls no stage method.
 
 ### History signal
-14. One `OnWorldStepApplied` per applied step: `stepDay` equals the represented day, `applyKey` the day applied, `stageCount` the enabled count.
+14. One `OnStepChainApplied` per applied step: `stepDay` equals the represented day, `applyKey` the day applied, `stageCount` the enabled count.
 15. It is raised only after every stage's `Commit` has returned (a fake listener reads each stage's committed value from inside the signal).
 16. Not raised on: abandon, unregister-mid-step discard, a save drain, `DoStop`, a failed load. Raised once for a restored step after a successful load.
 17. A retried week's signal carries the **missed** `stepDay` and the later `applyKey`.
@@ -148,7 +148,7 @@ New: `Cluiche/CoW/Shared/WorldStep/IWorldStepListener.h`. Edited: `WorldStepModu
 
 ## Files Touched
 
-New: `IWorldStepListener.h`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepSave,TestWorldStepHistorySignal}.cpp`. Edited: `WorldStepModule.h/.cpp`, `WorldStepChain.h/.cpp`. **Edits to other specs on approval:** World Step Feature 1 (`RestoreRan`); World Step Feature 2 (close Open Q2; the signal is the listener interface); the system spec (public interface, History sampling section, the pending-record format, drop `HistoryDriverModule::OnWorldStepApplied(key)` in favour of the listener); S-3.5 `stage-and-run-mode.md` (AC8 and the line at 119: label by `stepDay`, register as a listener); DiaDeferredStep `save-load.md` and `scheduler-core.md` (`ValidatePending`, once signed off). No Dia code is added here; the one Dia change is the amendment above.
+New: `IStepChainListener.h`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepSave,TestWorldStepHistorySignal}.cpp`. Edited: `WorldStepModule.h/.cpp`, `StepChain.h/.cpp`. **Edits to other specs on approval:** World Step Feature 1 (`RestoreRan`); World Step Feature 2 (close Open Q2; the signal is the listener interface); the system spec (public interface, History sampling section, the pending-record format, drop `HistoryDriverModule::OnStepChainApplied(key)` in favour of the listener); S-3.5 `stage-and-run-mode.md` (AC8 and the line at 119: label by `stepDay`, register as a listener); DiaDeferredStep `save-load.md` and `scheduler-core.md` (`ValidatePending`, once signed off). No Dia code is added here; the one Dia change is the amendment above.
 
 ## Binding Decisions
 
@@ -161,7 +161,7 @@ New: `IWorldStepListener.h`; `Tests/GoogleTests/CoW/WorldStep/{TestWorldStepSave
 
 ## Test Plan
 
-GoogleTests with the real `DeferredStepScheduler` over its test launcher, `DeferredStepSaveParticipant` attached to a real `SaveManager`/`SaveRegistry` on a temp slot, and two `FakeWorldStepStage` objects that serialize their working copy as a small checksum. One save/load round trip with real jsoncpp text, not a mock, since the key and `int64` conventions are the risk. TDD order: record format, validate refusals, deserialize and `RestoreRan`, bit-identity round trip, listener. No mutation checks. Gap audit and edge pass is the last plan task. **Sanitizer** over the mid-step unregister plus load path.
+GoogleTests with the real `DeferredStepScheduler` over its test launcher, `DeferredStepSaveParticipant` attached to a real `SaveManager`/`SaveRegistry` on a temp slot, and two `FakeStepStage` objects that serialize their working copy as a small checksum. One save/load round trip with real jsoncpp text, not a mock, since the key and `int64` conventions are the risk. TDD order: record format, validate refusals, deserialize and `RestoreRan`, bit-identity round trip, listener. No mutation checks. Gap audit and edge pass is the last plan task. **Sanitizer** over the mid-step unregister plus load path.
 
 ## Open Design Questions
 
