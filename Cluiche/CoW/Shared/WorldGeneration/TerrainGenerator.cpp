@@ -246,6 +246,11 @@ void TerrainGenerator::Update(uint64_t seed, const WorldShapeParams& shape, Grid
     const bool dimsChanged = !mHasCache || dims.width != mDims.width || dims.height != mDims.height;
 
     uint32_t dirty = 0;
+    if (mStrataDirty && mHasCache)
+    {
+        dirty |= 1u << static_cast<int>(TerrainStage::Strata);   // the stratum table changed (live tweak)
+    }
+    mStrataDirty = false;
     if (!mHasCache || seed != mSeed || dimsChanged)
     {
         dirty = kAllImplemented;
@@ -680,6 +685,9 @@ void TerrainGenerator::RunStrataStage()
     ctx.zoneCostBase = zoneCostBase;
     ctx.zoneCost = zoneCost;
     ctx.debug = &mStage8;
+    std::string metricError;
+    ctx.registry = mAssigners;
+    ctx.error = &metricError;
 
     CoastCostBandsAssigner builtin;
     const char* type = set->assignerType;
@@ -703,8 +711,12 @@ void TerrainGenerator::RunStrataStage()
     if (!ok)
     {
         // Loud fallback: the error is recorded above; the world still gets a valid banding.
+        // The fallback bands on coast_cost whatever the set asked for: the failed metric may be the reason we are here.
         mStage8 = Stage8Debug{};
-        builtin.Assign(ctx, *set, std::span<StratumIndex>(out.data(), out.size()));
+        World::StratumSetSpec fallback = *set;
+        std::strcpy(fallback.metric, World::kMetricCoastCost);
+        metricError.clear();
+        builtin.Assign(ctx, fallback, std::span<StratumIndex>(out.data(), out.size()));
     }
     for (size_t i = 0; i < n; ++i)
     {

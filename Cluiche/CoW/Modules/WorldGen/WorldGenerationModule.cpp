@@ -168,7 +168,7 @@ bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
         }
     }
     World::StratumError err;
-    if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err, mStrataAssigners.TypeCheck()))
+    if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err, mStrataAssigners.TypeCheck(), mStrataAssigners.MetricCheck()))
     {
         mBiomesErrorField = std::string("strata.") + err.field;
         mBiomesErrorReason = err.reason;

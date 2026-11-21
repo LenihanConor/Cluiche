@@ -427,6 +427,17 @@ const StratumTable& BiomeRegistry::Strata() const
     return mData ? mData->zones : kEmpty;
 }
 
+bool BiomeRegistry::SetStrataParams(const std::vector<std::pair<std::string, double>>& changes, StratumError& err, bool* changed)
+{
+    if (!mData)
+    {
+        err = StratumError{ "strata", "no biome registry is loaded" };
+        if (changed != nullptr) { *changed = false; }
+        return false;
+    }
+    return mData->zones.SetParams(changes, err, changed);
+}
+
 uint32_t BiomeRegistry::Count() const { return mData ? mData->rows.Size() : 0; }
 
 BiomeIndex BiomeRegistry::Find(Dia::Core::StringCRC id) const

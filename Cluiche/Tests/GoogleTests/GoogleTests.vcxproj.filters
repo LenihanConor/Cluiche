@@ -3339,5 +3339,8 @@
     <ClCompile Include="CoW\TestStrataExtraSets.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestStrataMetric.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

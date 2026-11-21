@@ -80,6 +80,8 @@ public:
     bool        IsGenerated(BiomeIndex b) const;
     bool        IsValidInStratum(BiomeIndex b, WorldGeneration::StratumIndex zone) const;
     const StratumTable& Strata() const;   // empty (Count 0) until a load succeeds
+    // Live tweak of the loaded stratum table's sidecar parameters (StratumTable::SetParams). False on an empty registry.
+    bool        SetStrataParams(const std::vector<std::pair<std::string, double>>& changes, StratumError& err, bool* changed = nullptr);
     bool        AreForbidden(BiomeIndex a, BiomeIndex b) const;
 
     const ClimateEnvelope* Climate(BiomeIndex b) const;

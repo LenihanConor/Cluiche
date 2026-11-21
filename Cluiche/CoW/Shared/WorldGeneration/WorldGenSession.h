@@ -66,8 +66,15 @@ public:
     void SetBiomeRegistry(const World::BiomeRegistry* biomes)
     {
         mBiomes = biomes;
+        mBiomesMutable = nullptr;
         mGen.SetBiomeRegistry(biomes);
         if (mCandGen) { mCandGen->SetBiomeRegistry(biomes); }
+    }
+    // The same with write access, which lets Set's "strata" object live-tweak the stratum table's sidecar parameters.
+    void SetBiomeRegistry(World::BiomeRegistry* biomes)
+    {
+        SetBiomeRegistry(static_cast<const World::BiomeRegistry*>(biomes));
+        mBiomesMutable = biomes;
     }
     const World::BiomeRegistry* BiomeRegistryPtr() const { return mBiomes; }
     // The strata assigners the generator selects from by the stratum table's assigner type (null = the built-in only).
@@ -204,6 +211,7 @@ private:
     bool             mRulesLoaded = false;
     std::string      mBlockCode;
     const World::BiomeRegistry* mBiomes = nullptr;   // declared before mGen so the constructors can pass it
+    World::BiomeRegistry*       mBiomesMutable = nullptr;   // the same registry when the host gave write access (else null)
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;

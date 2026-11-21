@@ -5,6 +5,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -43,6 +44,35 @@ namespace
         return true;
     }
 
+    const char* AttributeTypeName(StratumAttributeType t)
+    {
+        return t == StratumAttributeType::Float ? "float" : t == StratumAttributeType::Int ? "int" : "bool";
+    }
+
+    // Reads a JSON value as the attribute's type within its range. A bool attribute takes only true/false, a number never a bool.
+    bool ReadAttributeValue(const StratumAttributeDecl& a, const Json::Value& v, float& out)
+    {
+        double d = 0.0;
+        switch (a.type)
+        {
+        case StratumAttributeType::Bool:
+            if (!v.isBool()) { return false; }
+            out = v.asBool() ? 1.0f : 0.0f;
+            return true;
+        case StratumAttributeType::Int:
+            if (v.isBool() || !v.isIntegral()) { return false; }
+            d = static_cast<double>(v.asInt64());
+            break;
+        case StratumAttributeType::Float:
+            if (v.isBool() || !v.isNumeric()) { return false; }
+            d = v.asDouble();
+            break;
+        }
+        if (!(d >= static_cast<double>(a.min) && d <= static_cast<double>(a.max))) { return false; }
+        out = static_cast<float>(d);
+        return true;
+    }
+
     bool ReadInt(const Json::Value& v, int lo, int hi, int& out)
     {
         if (!v.isIntegral() || v.isBool()) { return false; }
@@ -53,7 +83,8 @@ namespace
     }
 }
 
-bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText, StratumError& err, const AssignerTypeCheck& knownAssignerType)
+bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText, StratumError& err, const AssignerTypeCheck& knownAssignerType,
+                                const MetricCheck& knownMetric)
 {
     err = StratumError();
     if (strataText == nullptr) { return Fail(err, "document", "no strata text"); }
@@ -114,12 +145,70 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
         }
         if (assigner.isMember("metric"))
         {
-            // The set of known metrics is checked when metrics arrive (Strata task 4b).
             if (!assigner["metric"].isString() || assigner["metric"].asString().empty() || assigner["metric"].asString().size() > kMaxNameLength)
             {
                 return Fail(err, where + ".assigner", "set '" + id + "': metric must be a non-empty string");
             }
-            std::memcpy(set.metric, assigner["metric"].asCString(), assigner["metric"].asString().size() + 1);
+            const std::string metric = assigner["metric"].asString();
+            const bool builtin = metric == kMetricCoastCost || metric == kMetricElevation || metric == kMetricLatitude;
+            if (!(knownMetric ? knownMetric(metric.c_str()) : builtin))
+            {
+                return Fail(err, where + ".assigner.metric", "set '" + id + "': unknown metric '" + metric + "' (not " + kMetricCoastCost +
+                                                              ", " + kMetricElevation + ", " + kMetricLatitude + " or a registered cell field)");
+            }
+            std::memcpy(set.metric, metric.c_str(), metric.size() + 1);
+        }
+        const bool coastMetric = std::strcmp(set.metric, kMetricCoastCost) == 0;
+
+        if (js.isMember("attribute_schema"))
+        {
+            const Json::Value& schema = js["attribute_schema"];
+            if (!schema.isObject()) { return Fail(err, where + ".attribute_schema", "set '" + id + "': attribute_schema must be an object"); }
+            if (schema.size() > StratumSpec::kMaxAttributes)
+            {
+                return Fail(err, where + ".attribute_schema", "set '" + id + "': more than " + std::to_string(StratumSpec::kMaxAttributes) + " attributes");
+            }
+            for (const std::string& an : schema.getMemberNames())
+            {
+                const std::string awhere = where + ".attribute_schema." + an;
+                const Json::Value& ja = schema[an];
+                StratumAttributeDecl& a = set.attributes[set.attributeCount];
+                if (an.empty() || an.size() > kMaxNameLength || !ja.isObject() || !ja["type"].isString())
+                {
+                    return Fail(err, awhere, "set '" + id + "': attribute '" + an + "' needs a name up to 31 characters and a string type");
+                }
+                std::memcpy(a.name, an.c_str(), an.size() + 1);
+                const std::string type = ja["type"].asString();
+                if (type == "float") { a.type = StratumAttributeType::Float; }
+                else if (type == "int") { a.type = StratumAttributeType::Int; }
+                else if (type == "bool") { a.type = StratumAttributeType::Bool; }
+                else
+                {
+                    return Fail(err, awhere, "set '" + id + "': attribute '" + an + "' has unsupported type '" + type + "' (float, int or bool; DiaAttribute has no strings)");
+                }
+                if (a.type == StratumAttributeType::Bool)
+                {
+                    a.min = 0.0f;
+                    a.max = 1.0f;
+                }
+                else
+                {
+                    if (!ja["min"].isNumeric() || !ja["max"].isNumeric() || ja["min"].isBool() || ja["max"].isBool() ||
+                        ja["min"].asDouble() > ja["max"].asDouble())
+                    {
+                        return Fail(err, awhere, "set '" + id + "': attribute '" + an + "' needs numeric min <= max");
+                    }
+                    a.min = static_cast<float>(ja["min"].asDouble());
+                    a.max = static_cast<float>(ja["max"].asDouble());
+                }
+                if (!ja.isMember("default")) { a.def = std::max(a.min, std::min(0.0f, a.max)); }
+                else if (!ReadAttributeValue(a, ja["default"], a.def))
+                {
+                    return Fail(err, awhere, "set '" + id + "': attribute '" + an + "' default is not a " + type + " within " +
+                                             std::to_string(a.min) + ".." + std::to_string(a.max));
+                }
+                ++set.attributeCount;
+            }
         }
 
         const Json::Value& strata = js["strata"];
@@ -178,9 +267,37 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
                     return Fail(err, zwhere, "stratum '" + name + "' of set '" + id + "': main_landmass_only must be a boolean");
                 }
                 z.mainLandmassOnly = jz["main_landmass_only"].asBool();
+                if (z.mainLandmassOnly && !coastMetric)
+                {
+                    return Fail(err, zwhere, "stratum '" + name + "' of set '" + id + "': main_landmass_only is a coast_cost rule but the set's metric is '" + set.metric + "'");
+                }
+            }
+            for (uint32_t a = 0; a < set.attributeCount; ++a) { z.attributeValue[a] = set.attributes[a].def; }
+            if (jz.isMember("attributes"))
+            {
+                if (!jz["attributes"].isObject()) { return Fail(err, zwhere, "stratum '" + name + "' of set '" + id + "': attributes must be an object"); }
+                for (const std::string& an : jz["attributes"].getMemberNames())
+                {
+                    uint32_t a = 0;
+                    while (a < set.attributeCount && an != set.attributes[a].name) { ++a; }
+                    if (a == set.attributeCount)
+                    {
+                        return Fail(err, zwhere + ".attributes." + an, "stratum '" + name + "' of set '" + id + "': unknown attribute '" + an + "' (the set's attribute_schema does not declare it)");
+                    }
+                    if (!ReadAttributeValue(set.attributes[a], jz["attributes"][an], z.attributeValue[a]))
+                    {
+                        return Fail(err, zwhere + ".attributes." + an, "stratum '" + name + "' of set '" + id + "': attribute '" + an + "' is not a valid " +
+                                                                       AttributeTypeName(set.attributes[a].type) + " within " +
+                                                                       std::to_string(set.attributes[a].min) + ".." + std::to_string(set.attributes[a].max));
+                    }
+                }
             }
             if (jz.isMember("min_coast_depth"))
             {
+                if (!coastMetric)
+                {
+                    return Fail(err, zwhere, "stratum '" + name + "' of set '" + id + "': min_coast_depth is a coast_cost rule but the set's metric is '" + set.metric + "'");
+                }
                 int depth = 0;
                 if (!ReadInt(jz["min_coast_depth"], 0, 1 << 20, depth))
                 {
@@ -200,13 +317,24 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
     }
     if (cand.mDepthIndex < 0) { return Fail(err, "sets", std::string("no set with id '") + kDepthSetId + "' (the generator's set)"); }
 
-    // Sidecar: one share parameter per stratum, keyed "<set id>.<stratum name>.share".
-    Dia::Attribute::ParameterFile file;
+    // Sidecar: the parameter file owning every tunable number (shares, minimum depths, attribute values).
+    auto file = std::make_shared<Dia::Attribute::ParameterFile>();
     Dia::Attribute::ParamError perr;
-    if (!file.Load(sidecarText, "strata.schema.json", nullptr, perr))
+    if (!file->Load(sidecarText, "strata.schema.json", nullptr, perr))
     {
         return Fail(err, "sidecar", perr.reason.AsCStr());
     }
+    if (!ApplySidecar(cand, *file, err)) { return false; }
+    cand.mSidecarText = sidecarText;
+    cand.mSidecar = file;
+
+    *this = cand;
+    DIA_LOG_INFO("CoW", "StratumTable: loaded %u sets, depth set has %u strata", cand.mSetCount, cand.Count());
+    return true;
+}
+
+bool StratumTable::ApplySidecar(StratumTable& cand, const Dia::Attribute::ParameterFile& file, StratumError& err)
+{
     uint32_t expectedParams = 0;
     auto readFloat = [&](const std::string& key, float& value) -> bool
     {
@@ -253,6 +381,28 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
                 set.strata[i].minCoastDepth = static_cast<int32_t>(std::lround(depth));
                 ++expectedParams;
             }
+            for (uint32_t a = 0; a < set.attributeCount; ++a)
+            {
+                const StratumAttributeDecl& decl = set.attributes[a];
+                const std::string attrKey = std::string(set.id) + "." + set.strata[i].name + ".attr." + decl.name;
+                const Dia::Core::StringCRC crc(attrKey.c_str());
+                const Dia::Attribute::AttributeDefinition* def = file.Schema().FindAttribute(crc);
+                const Dia::Attribute::AttributeKind want = decl.type == StratumAttributeType::Float ? Dia::Attribute::AttributeKind::Float
+                                                         : decl.type == StratumAttributeType::Int   ? Dia::Attribute::AttributeKind::Int
+                                                                                                    : Dia::Attribute::AttributeKind::Bool;
+                if (def == nullptr || def->kind != want)
+                {
+                    return Fail(err, "sidecar", "sidecar has no usable " + std::string(AttributeTypeName(decl.type)) + " parameter '" + attrKey + "'");
+                }
+                const float value = file.Values().GetValue(crc);
+                if (!(value >= decl.min && value <= decl.max))
+                {
+                    return Fail(err, "sidecar", "parameter '" + attrKey + "' is " + std::to_string(value) + ", outside the attribute's range " +
+                                                std::to_string(decl.min) + ".." + std::to_string(decl.max));
+                }
+                set.strata[i].attributeValue[a] = value;
+                ++expectedParams;
+            }
         }
         if (std::fabs(sum - 1.0) > kShareSumTolerance)
         {
@@ -265,10 +415,64 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
         return Fail(err, "sidecar", "sidecar declares " + std::to_string(file.Schema().GetAttributeCount()) +
                                     " parameters but the strata file needs exactly " + std::to_string(expectedParams));
     }
-
-    *this = cand;
-    DIA_LOG_INFO("CoW", "StratumTable: loaded %u sets, depth set has %u strata", cand.mSetCount, cand.Count());
     return true;
+}
+
+bool StratumTable::SetParams(const std::vector<std::pair<std::string, double>>& changes, StratumError& err, bool* changed)
+{
+    err = StratumError();
+    if (changed != nullptr) { *changed = false; }
+    if (!mSidecar) { return Fail(err, "sidecar", "no strata table is loaded"); }
+
+    std::vector<std::pair<std::string, double>> overrides = mOverrides;
+    for (const auto& c : changes)
+    {
+        auto it = std::find_if(overrides.begin(), overrides.end(), [&](const auto& o) { return o.first == c.first; });
+        if (it != overrides.end()) { it->second = c.second; }
+        else { overrides.push_back(c); }
+    }
+    auto file = std::make_shared<Dia::Attribute::ParameterFile>();
+    Dia::Attribute::ParamError perr;
+    if (!file->Load(mSidecarText.c_str(), "strata.schema.json", nullptr, perr)) { return Fail(err, "sidecar", perr.reason.AsCStr()); }
+    for (const auto& o : overrides)
+    {
+        if (!std::isfinite(o.second)) { return Fail(err, o.first, "parameter '" + o.first + "': value is not a finite number"); }
+        if (!file->Set(Dia::Core::StringCRC(o.first.c_str()), Json::Value(o.second), perr))
+        {
+            return Fail(err, o.first, std::string("parameter '") + o.first + "': " + perr.reason.AsCStr());
+        }
+    }
+    if (file->Hash() == mSidecar->Hash()) { return true; }   // every value equals the current one
+
+    StratumTable cand = *this;
+    if (!ApplySidecar(cand, *file, err)) { return false; }
+    cand.mOverrides = overrides;
+    cand.mSidecar = file;
+    *this = cand;
+    if (changed != nullptr) { *changed = true; }
+    DIA_LOG_INFO("CoW", "StratumTable: %u sidecar parameter(s) changed live", static_cast<unsigned>(changes.size()));
+    return true;
+}
+
+bool StratumTable::TryAttribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name, float& out) const
+{
+    if (name == nullptr || setIndex >= mSetCount || z == WorldGeneration::kNoStratum || z > mSets[setIndex].count) { return false; }
+    const StratumSetSpec& set = mSets[setIndex];
+    for (uint32_t a = 0; a < set.attributeCount; ++a)
+    {
+        if (std::strcmp(set.attributes[a].name, name) == 0)
+        {
+            out = set.strata[z - 1].attributeValue[a];
+            return true;
+        }
+    }
+    return false;
+}
+
+float StratumTable::Attribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name) const
+{
+    float v = 0.0f;
+    return TryAttribute(setIndex, z, name, v) ? v : 0.0f;
 }
 
 const StratumSetSpec* StratumTable::FindSet(const char* id) const

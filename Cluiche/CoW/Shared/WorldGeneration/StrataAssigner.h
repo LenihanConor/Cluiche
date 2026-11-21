@@ -28,12 +28,26 @@
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <string>
 #include <vector>
 
 namespace CoW {
 namespace WorldGeneration {
+
+struct StrataAssignContext;
+class StrataAssignerRegistry;
+
+// The banding metric of coast_cost_bands (StratumSetSpec::metric): every metric yields one float per cell and the cutting into
+// N strata by cumulative shares is identical (TerrainStrata.h). Ascending: stratum 1 holds the lowest metric values.
+//   coast_cost  the zone cost (today's algorithm); per-stratum main_landmass_only / min_coast_depth apply to it only
+//   elevation   the raw elevation layer (StrataAssignContext::world cell elevation)
+//   latitude    |2*(row+0.5)/height - 1|: 0 on the equator, 1 on the top and bottom rows; deterministic, no sliders involved
+//   <field>     a cell field registered with StrataAssignerRegistry::RegisterField
+// An unknown metric or a field that cannot be supplied is reported through StrataAssignContext::error (the run is rejected).
+// A cell field provider fills one float per cell (ctx.dims order). Return false when the field is not available.
+using StrataFieldProvider = std::function<bool(const StrataAssignContext& ctx, std::span<float> out)>;
 
 struct StrataAssignContext
 {
@@ -50,6 +64,9 @@ struct StrataAssignContext
     const float*          zoneCostBase = nullptr;   // computed, no rivers
     const float*          zoneCost = nullptr;       // computed, rivers as corridors
     Stage8Debug*          debug = nullptr;          // optional: the built-in assigner reports its cuts here
+    const StrataAssignerRegistry* registry = nullptr;   // optional: where named cell-field metrics are looked up
+    std::string*          error = nullptr;          // optional: an assigner that cannot run (unknown metric, missing field) writes why;
+                                                    // RunStrataAssigner then rejects the run with that text
 };
 
 class IStrataAssigner
@@ -86,14 +103,30 @@ public:
     // A check for StratumTable::LoadFromText that accepts exactly the registered type names. Valid while this registry lives.
     World::AssignerTypeCheck TypeCheck() const;
 
+    // Cell fields usable as a banding metric (strata.json assigner.metric names one). False (unchanged): null provider, empty or
+    // over-long name, a built-in metric name (coast_cost, elevation, latitude) or a field already registered.
+    bool RegisterField(const char* name, StrataFieldProvider provider);
+    // nullptr when no field of this name is registered.
+    const StrataFieldProvider* FindField(const char* name) const;
+    // True for the three built-in metrics and every registered field.
+    bool HasMetric(const char* name) const;
+    // A check for StratumTable::LoadFromText that accepts exactly the known metrics. Valid while this registry lives.
+    World::MetricCheck MetricCheck() const;
+
 private:
     struct Entry
     {
         std::string      name;
         IStrataAssigner* assigner;
     };
+    struct Field
+    {
+        std::string         name;
+        StrataFieldProvider provider;
+    };
     CoastCostBandsAssigner mBuiltin;
     std::vector<Entry>     mEntries;
+    std::vector<Field>     mFields;
 };
 
 // Why an assigner's output was rejected.

@@ -197,6 +197,9 @@ public:
     // generator. Null (the default) means only the built-in coast_cost_bands. Takes effect on the next Update that
     // re-runs the Strata stage (Invalidate to force it).
     void SetAssignerRegistry(const StrataAssignerRegistry* assigners) { mAssigners = assigners; }
+    // The stratum table behind the biome registry changed (World::StratumTable::SetParams): the next Update re-runs the Strata
+    // stage and everything downstream of it, from the cached upstream stages.
+    void MarkStrataDirty() { mStrataDirty = true; }
 
     // Re-runs only the stages made dirty by changes since the last Update.
     void Update(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims,
@@ -271,6 +274,7 @@ private:
     float            mLastTotalMs = 0.0f;
 
     bool             mHasCache = false;
+    bool             mStrataDirty = false;
     uint64_t         mSeed = 0;
     WorldShapeParams mShape;
     GridDimensions   mDims;

@@ -443,6 +443,7 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
     Json::Value applied(Json::arrayValue);
     Json::Value clamped(Json::arrayValue);
     Json::Value rejected(Json::arrayValue);
+    std::string r_strataError;
 
     for (const std::string& key : args.getMemberNames())
     {
@@ -466,6 +467,39 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
                 mDirty = true;
             }
             applied.append(key);
+            continue;
+        }
+
+        if (key == "strata")
+        {
+            // Live tweak of the stratum table's sidecar parameters: { "depth.FirstShores.share": 0.3, ... } (shares, minimum depths,
+            // attribute values). All-or-nothing; a value that changes nothing leaves the world as it is.
+            std::vector<std::pair<std::string, double>> changes;
+            bool shapeOk = jv.isObject() && mBiomesMutable != nullptr;
+            if (shapeOk)
+            {
+                for (const std::string& k : jv.getMemberNames())
+                {
+                    const Json::Value& v = jv[k];
+                    if (v.isBool()) { changes.emplace_back(k, v.asBool() ? 1.0 : 0.0); }
+                    else if (v.isNumeric() && std::isfinite(v.asDouble())) { changes.emplace_back(k, v.asDouble()); }
+                    else { shapeOk = false; }
+                }
+            }
+            World::StratumError strataError;
+            bool changedStrata = false;
+            if (!shapeOk || !mBiomesMutable->SetStrataParams(changes, strataError, &changedStrata))
+            {
+                rejected.append(key);
+                r_strataError = strataError.field.empty() ? std::string("strata must be an object of numeric sidecar parameters") : strataError.reason;
+                continue;
+            }
+            applied.append(key);
+            if (changedStrata)
+            {
+                mGen.MarkStrataDirty();
+                mDirty = true;
+            }
             continue;
         }
 
@@ -552,6 +586,7 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
     r["applied"] = applied;
     r["clamped"] = clamped;
     r["rejected"] = rejected;
+    if (!r_strataError.empty()) { r["strataError"] = r_strataError; }
     return r;
 }
 
