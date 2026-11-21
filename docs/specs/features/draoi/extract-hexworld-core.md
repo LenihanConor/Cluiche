@@ -31,6 +31,7 @@ Move the content-free world foundation out of CoW into a new Draoi project `Drao
 | `World/StratumTable.h/.cpp` (was `ZoneTable`; Strata feature) | `StratumTable.h/.cpp` | `strata.json` stays in CoW |
 | `WorldGeneration/WorldHexGrid.h/.cpp` | `WorldHexGrid.h/.cpp` | grid type |
 | `WorldGeneration/SharedWorldHexGrid.h` | `SharedWorldHexGrid.h` | |
+| `WorldGeneration/TerrainTypes.h` (`Cell`, `WorldStructure`, grid dimensions), `Regions.h` (`RegionRecord`, `RegionTable`), `Sites.h` (`Site`, `SiteKindInfo`, `SiteSet`) | world data types, split from the generator parts of `TerrainTypes.h` | **Decided 2026-11-21 (user): `Cell` and `WorldStructure` live in the core.** Data types only: the region partition/repair algorithms, `SiteRegistry`/`ISitePlacer`, `TerrainRules` and the generator stay in terrain |
 | `World/Testing/BiomeTestRegistry.h`, `ZoneTestIndices.h` | `Testing/` | helper rule below |
 | (future) `WorldCellFields`, `CellSelectorSet`, codec data half | `WorldCellFields.h`, `CellSelectorSet.h`, `WorldCodecData.h` | built by the world-sim kit; names indicative |
 
@@ -65,7 +66,7 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 | # | Task | Test | Notes |
 |---|------|------|-------|
 | 1 | Create project, vcxproj/filters, sln folder, module doc; CoW reference | Empty lib builds; `dia check deps` | Needs user sign-off on the new Draoi project |
-| 2 | Move `CellVocabulary`, `StratumTable`, `WorldHexGrid`, `SharedWorldHexGrid`; update includes | Scoped filters for Stratum/Grid/Terrain; goldens | Mechanical |
+| 2 | Move `CellVocabulary`, `StratumTable`, `WorldHexGrid`, `SharedWorldHexGrid`, and the world data types (`Cell`, `WorldStructure`, `RegionTable`, `SiteSet`; split generator-only declarations out of `TerrainTypes.h` first); update includes | Scoped filters for Stratum/Grid/Terrain; goldens | Mechanical |
 | 3 | Move `BiomeRegistry` + `Testing/` helpers; update includes | `TestBiomeRegistry*` | Registry must not include generator (true after prerequisites) |
 | 4 | Move tests that need no CoW data to `Tests/GoogleTests/Draoi/`; split mixed files | Filtered runs | |
 | 5 | Namespace change to `Draoi::HexWorld` | Full suite, goldens | Separate commit |
@@ -76,4 +77,4 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 2. **Resolved 2026-11-21:** layout, namespace and test location (see Binding Decisions).
 3. **Split of mixed test files.** Some biome-registry tests load shipped CoW data; decide per file whether to port them to a Draoi fixture or leave them in GoogleTests.
 
-4. **Where do `Cell` and `WorldStructure` live?** Today they are in the generator's `TerrainTypes.h` (with the region table and site set). Sims read `WorldCellFields`, so they should not need them. If any sim or the codec needs the `Cell` struct itself, `Cell` must move to the core (and `WorldStructure` with it, or be split), otherwise the no-generator-dependency rule breaks. Settle during task 1 by grepping what the kit's Draoi half includes; recommended: `Cell` and the grid-shaped world data go to the core only if a sibling genuinely reads them, otherwise they stay with terrain.
+4. **Resolved 2026-11-21 (user): `Cell` and `WorldStructure` live in the core**, with the region table and site set (data types only). Task 2 first splits `TerrainTypes.h` into world data (core) and generator declarations (terrain). Check during that split that nothing in the data types includes `TerrainRules` or a generator header.
