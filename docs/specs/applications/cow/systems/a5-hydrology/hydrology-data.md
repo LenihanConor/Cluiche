@@ -381,6 +381,18 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 | 9 | Basin and depression searches in `Initialise` (tiny-depression filter, in-basin flood-fill fallback) may use `PriorityFlood` / `ConnectedComponents` | "`HydrologySimulation::Initialise`" helper steps |
 | 10 | Replacement ACs for 3-9: the sidecar loads strictly and its defaults equal the GDD values (a test lists them); constraints and `int` kinds reject bad values naming both keys; each biome map is complete or the load fails; a pack with one bad entry among good ones is lenient and atomic as above; `Hash()` changes when any scalar or any map value changes by one ULP | ACs 3-9; Test Plan item 5 ("Overrides and `SetParam`") |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+Types, parameters and `Initialise` are pure and move to package `DraoiHexWorldHydrology` (may depend on `DraoiHexWorld` and `DraoiHexWorldWeather` only): `HydrologyFields`, `HydrologyTerrain`, `BasinState`, `HydrologyParameters` (struct, parse, `SetParam`), the three file pairs and `Testing/HydrologyTestGrids.h`. The package reads terrain through `DraoiHexWorld` cell types and takes `RandomStream` as a plain argument.
+
+**Stays in CoW.** `Global/Hydrology/hydrology_parameters.json` and its `pipeline.toml` deploy line (content data). Sidecar-owned ranges are passed in by the caller, as in the kit's codec data half.
+
+**Reworded.** The "CoW-Shared" placement and `Cluiche/CoW/Shared/Hydrology/` paths become the package. The `hydro` slot contribution to `WorldCellFields` (type now in `DraoiHexWorld`) is a registration function in the package, called by the CoW adapter on `WorldGenerationComplete`. ACs are unchanged. No new open question.
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day:

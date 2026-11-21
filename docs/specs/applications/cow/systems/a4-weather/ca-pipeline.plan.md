@@ -183,3 +183,5 @@ before escalating" (feedback_confirm_opus).
 10. **Cycle effects on parameters versus fields.** Amendment item 1 says "cycle modifiers are already resolved" in the snapshot; the spec-6 resolutions say cycles are per-cell field forcings and modifiers are only for scalar parameters. This plan follows the resolutions: the passes read `tempOffset`, `evapMultiplier` and `windShift` as per-cell fields, and the snapshot contains modifier-resolved scalars only. Amendment item 1's sentence should be re-worded in the spec.
 11. **Golden hash layout after the world-sim kit.** `weather_layers.golden.json` keys use layer ids `weather.<snake_case>`; the kit's naming test may reject `pipeline/` prefixes. Confirm when Task 23 starts.
 12. **The 14-entry profile, 10 arrays and the 30-row count are unchanged** by the amendment; no stale count needed recounting in this plan other than the baseline array size (13 became the registry's `Count()`).
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

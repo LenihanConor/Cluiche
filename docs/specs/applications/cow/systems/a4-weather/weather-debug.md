@@ -262,3 +262,14 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 **Status:** `Approved` (2026-11-16; T-1 consumer amendment added the same day). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): Features 7–9 now add one command name, one layer, the `cycles` info action and the `cycle` params action, specced in their own files and folded in above. Plan: [weather-debug.plan.md](weather-debug.plan.md) (written 2026-11-16, not started; fold in the T-1 consumer amendment).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+Applies the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md) and the system spec's matching section. **This whole feature stays in CoW** (debug-domain, cell-layer, overlay and command wiring are application code under PD-012); status stays `Approved`.
+
+- **Reads from the Draoi sim:** layers, detail rows, droughts and the overlay read the committed `WeatherFields` of `DraoiHexWorldWeather` through the stage; types and field names are unchanged, only their header path moves. The layer and cell-detail registrations remain in `WeatherModule` / `WeatherStage`.
+- **Commands:** the 8 `cow.weather.*` names stay in CoW (`WorldSimNames`). Command bodies call the sim public API (`AddForcing`, `RegisterCellSet`, `Reseed`, `SetCommittedWeek`, ...) and the CoW adapter queue; they do not move.
+- **Schema, labels, hotkeys:** `weather_schema.json` stays content under `Assets/CoW/Global/Weather/`.
+- **Files Touched:** header paths in includes change; no new Draoi files from this feature. The three helpers Feature 2 exports for the commands are exported from the Draoi package.
+- **Open question:** none new.

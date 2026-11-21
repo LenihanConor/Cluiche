@@ -157,3 +157,5 @@ stats, not screenshots; the panel layout taste check is S-2.5's.
 5. **`params get|list|save_defaults` for per-biome map entries** (`<key>.<mapKey>` rows): whether `list` returns one row per biome or one per map is the kit's choice and is not in the A4 spec. The plan asserts only that `list` equals the sidecar's entries.
 6. **`cow.weather.state` and the biome palette**: the export file's fields are the save record's, which now include `biome_palette`; the amendment does not say whether `state import` remaps through the registry (the plan assumes it does, via the kit codec).
 7. **The T-1 consumer amendment says "plan impact"** (fold in before start); this plan folds it in. It adds a fourth metric (`storm_tracks_dropped`) and ACs 27 to 34, which the spec's own AC numbering lists out of order (27 to 31 after 26, 32 to 34 after the wind section).
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

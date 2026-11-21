@@ -372,3 +372,16 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 **Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+Applies the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md) and the system spec's matching section. Supersedes contradicting text above, including the `CoW/Shared/Weather/` paths in Public API and Files Touched. **This whole feature moves to package `DraoiHexWorldWeather`; the design is unchanged and the status stays `Approved`.**
+
+- **Pure sim in Draoi:** `WeatherPipeline`, `WindDirection`, `WeatherForcing`, `WeatherStepProfile`, and `WeatherSimulation::Step` / `Capture` / `Run` / `Commit` / `AddForcing`. All passes, EC-03 to EC-20, the gather transport and the layer goldens are unchanged. No SimModule, bus, save or debug-domain wiring; no SimPU or step-chain knowledge.
+- **Contract reworded (thread-neutral):** "`Run` touches only the working copy; the caller must not overlap `Run` with `Capture` or `Commit`." Wherever Lifecycle and the purity ACs name the SimPU, a worker or a step chain, read "the caller". State is not passed or returned by value.
+- **A5 inputs** latched at `Capture` become the A4-owned `HydrologyInputs { surfaceWetness, openWater, glacierEligible }` (per-cell arrays, defaults from `DraoiHexWorld`: S-1 static water sources, zero ground evaporation, no glacier; filled by Hydrology's `FillHydrologyInputs` at `Capture`); no per-cell callbacks inside `Run`.
+- **Executor:** takes a parallel-for (`IParallelExecutor` / `SerialExecutor` from DiaThreading), not DiaDeferredStep. The test-local `ReverseRangeExecutor` / `FixedRangeExecutor` come from `DiaThreading/Testing/` if shipped, else live in `DraoiHexWorldWeather/Testing/`.
+- **Files Touched:** sources under `DraoiHexWorldWeather/`; tests keep running in the GoogleTests project (paths tentative until the package folder exists); the golden file location is decided at re-plan.
+- **Stays in CoW:** the preset loader and `cow.weather.*` command wiring that call `AddForcing` (Features 5, 6).
+- **Open question:** none new.

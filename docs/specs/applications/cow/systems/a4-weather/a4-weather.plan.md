@@ -92,3 +92,5 @@ All accepted by the user on 2026-11-16. These supersede the matching "Open items
 | 13 | `ca-pipeline` test terrains are hand-built at S-1's dimensions: Small 66x42, Large 104x64 |
 | 18 | Test file names follow Feature 1's layout; save-field range names are checked in `weather-save` Task 4 |
 | C | Settled by running: E1 load vs `WorldGenerationComplete` order (F4 Task 1), debug-panel stream and hotkey table (F5 spikes), spin-up wall time (first S-2.5 run) |
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

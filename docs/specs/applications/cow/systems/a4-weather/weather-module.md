@@ -270,3 +270,14 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-module.plan.md](weather-module.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+Applies the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md) and the system spec's matching section (@docs/specs/applications/cow/systems/a4-weather/a4-weather.md). Supersedes contradicting text above. Design decisions are unchanged; status stays `Approved`.
+
+- **Stays in CoW (this whole feature):** `WeatherModule` and `WeatherStage : WorldStepStageBase` remain CoW code at `Cluiche/CoW/Modules/`, along with the manifest, `WeatherMessages` / `WeatherUpdated` (bus notification only), snapshot publication, spin-up job, health and metrics. It is the stage adapter of PD-013.
+- **Becomes thin calls into `DraoiHexWorldWeather`:** `InitialiseSim`, `ApplyEntry`, `RunStep` and `RestoreCommitted` call `WeatherSimulation` `Initialise` / `Capture` / `Run` / `Commit` and `WeatherRunner`; `LatchInputs` and `PublishCommit` stay adapter code. `WeatherSimulation` and `WeatherRunner` are no longer owned or specced here; see Features 1 and 2.
+- **Reworded:** "Module state" lists the sim as an owned `DraoiHexWorldWeather` object. `IWaterInputSource` / `IHydrologyInputsProvider` / `IBiomeSeasonalBaseline` seams become **optional input structs of per-cell arrays**, filled once per step at `Capture` by the adapter (kit items 4 and 5): the baseline array, and `HydrologyInputs { surfaceWetness, openWater, glacierEligible }` owned by `DraoiHexWorldWeather` and filled by `FillHydrologyInputs` from `DraoiHexWorldHydrology` (names per the A5 amendment); the adapter also fills A5's `WaterInput` arrays (including the optional `groundWaterInfluence`) from A4's working copy, and the coupled spin-up driver stays here: the Baseline-provider and A5-provider ACs now test that the adapter fills the arrays and that the defaults apply when absent. The "no water source" Failing cause becomes "no water-input array and no default available". `IParallelExecutor` comes from DiaThreading.
+- **Files Touched:** `Shared/Weather/WeatherSimulation.*` and other pure types are no longer touched here (they live in the Draoi package); only the module, stage, messages, manifest and adapter tests are.
+- **Open question:** none new (see the system spec's influence-book placement question).

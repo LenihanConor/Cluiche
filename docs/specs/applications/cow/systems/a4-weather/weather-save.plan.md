@@ -120,3 +120,5 @@ state change.
 6. **Spec text still cites** "version 1" in the record, `HashWeatherParameters`, "biome >= 13", `ground_water`, and a World Step Feature 3 edit; the amendment wins and this plan follows it.
 7. **Open Design Question 2** (a `strict` load option for S-3.5 R2) stays unbuilt, as the spec says.
 - **Review 2026-11-16 (decision 5):** `WeatherStateRecord.h` is created by Feature 3; this feature fills it.
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

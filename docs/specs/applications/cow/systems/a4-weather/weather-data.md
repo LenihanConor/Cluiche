@@ -222,3 +222,8 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 hand-off). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-data.plan.md](weather-data.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+Applies the World-Sim Kit's "Draoi layer amendment" and the system spec's matching section (@docs/specs/applications/cow/systems/a4-weather/a4-weather.md). **This feature moves to package `DraoiHexWorldWeather`** (pure data and parameter types, `Initialise`, seeding, EC-01 assert; TDD tests in `<Package>/Testing/`). Design unchanged; status stays `Approved`. Reworded: `IBiomeSeasonalBaseline` / `TableBiomeSeasonalBaseline` become an A4-owned optional baseline input array with a table-derived default (alongside the A4-owned `HydrologyInputs { surfaceWetness, openWater, glacierEligible }` struct) (the table data and parameter sidecar with ranges and defaults stay in CoW under `Global/`); biomes are `BiomeIndex` from the `DraoiHexWorld` registry rather than the 13-value enum.

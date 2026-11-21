@@ -4,6 +4,8 @@ Rebuilt 2026-11-18 against the world-sim review amendment and the Spec-6 resolut
 
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-module.md
 **Status:** Not Started
+
+Re-plan required (Draoi amendment): file paths and the Shared/ to DraoiHexWorldHydrology split change; see the spec's "Draoi layer amendment (2026-11-21)".
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 3)
 
 **Start conditions.** Needs these plans Done (names only, no task numbers; the foundation and A4 plans are being rebuilt in parallel):

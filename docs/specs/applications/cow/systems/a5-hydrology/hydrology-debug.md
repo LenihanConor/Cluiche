@@ -292,6 +292,14 @@ Scoped `--filter="*Hydrology*"` while iterating. One full `--shards 2` run at th
 | 6 | `HydrologyUpdated` is generated from `cow_worldsim.diagamemessages` | Public API "New messages: none" paragraph |
 | 7 | Data I/O: the `FileWatcher` dev reload shares the `params {action: reload}` path | GDD differences reload row |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+The `hydro` debug domain, history recorder wiring, cell-layer registration, `cow.hydro.*` read queries and `SimHelpInfo` stay in CoW (PD-012: no debug-domain wiring in Draoi). `DraoiHexWorldHydrology` only exposes the read accessors the domain needs (committed arrays, `WaterTotals`, `Passability`, per-basin level and kind) and field descriptions as plain data. Log, metric and health reporters for the stage stay in the adapter; pure profile scopes inside the passes may live in the package. ACs are unchanged. No new open question.
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:

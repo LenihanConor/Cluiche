@@ -296,6 +296,18 @@ Only real remaining differences (aligned to locked GDD 2026-11-17):
 | 2 | **Soil capacity is multiplied by `terrain.soil_depth_mult[TerrainType]`** (S-1 terrain profile, provisional, tuned in S-2.6): `cap = soil_capacity[biome] * soil_depth_mult[terrain]`. `terrain.runoff` is available; A5 does not consume it until a later amendment. Resolves Feature 1 ODQ 2 | Pass 3 `cap`; the soil bound named above; `SoilMoisture` ratios elsewhere in this spec that divide by `soil_capacity[biome]` |
 | 3 | Parameters come from the bound snapshot. `routing.release_floor <= routing.release_ceil` and `freeze.threshold <= freeze.thaw_temp` are sidecar `constraints`, so the pipeline may assume them | Grid tables/"The pipeline" notes that assume C++-validated rows (pass 1 freeze, release `k`) |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+Pure logic as specced; it now lives in package `DraoiHexWorldHydrology` (may depend on `DraoiHexWorld` and `DraoiHexWorldWeather` only), scheduler-agnostic, no `SimModule`, bus, save or debug-domain wiring.
+
+**Moves.** Every file under "Files Touched" (`HydrologyPipeline`, `HydrologyRouting`, `BasinCurve`, `WaterInput.h`, `HydrologySimulation`) goes from `Cluiche/CoW/Shared/Hydrology/` to the package. `HydrologyTestGrids.h` ships in `DraoiHexWorldHydrology/Testing/`. The golden file stays in the GoogleTests golden folder.
+
+**Reworded.** `Step(const WaterInput&, IParallelExecutor&)` uses `IParallelExecutor` from DiaThreading. `WaterSinks` becomes `WaterSinkInputs` (owned by this package, neutral defaults 1.0 and 0.0, filled by the Ecology package's fill function at `Capture`); the "filled from registered providers" text is adapter behaviour (Feature 3). `WaterInput` gains an optional defaulted `groundWaterInfluence` array (null = none). ACs 1 to 27 keep their meaning; AC 26 (sinks additive) tests the array contract, and the additive-provider property is checked in the CoW adapter tests. No new open question.
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day: topological cascade, basins inside the cascade, cell-depth units, local ground water with baseflow, injected water sinks (multiplier + draw), floods judged against each river's running mean, and double totals with a tight check. Aligned to the locked GDD on 2026-11-17: slope-based release (0.3–0.85, hillslope 0.9), in-basin directions, tiny-depression filter, freeze hysteresis and basin ice, springs, flood recharge, firn hand-off check, passability order and the protected-cell cap, frozen low-flow weeks. Approval is a separate step.

@@ -3,6 +3,8 @@
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.md
 **Status:** Not Started
 
+Re-plan required (Draoi amendment): file paths and the Shared/ to DraoiHexWorldHydrology split change; see the spec's "Draoi layer amendment (2026-11-21)".
+
 This is the system-level tracker, rebuilt 2026-11-18 against the world-sim review amendment and the Spec-6 resolutions. Each row is a feature spec with its own plan, and the detailed tasks live there. A feature is Done only when its own plan's final task is Done. Plans are named below, never cited by task number: foundation and A4 plans are being rebuilt in parallel.
 
 A5 sits in the weekly world step between A4 and A1, so the order inside one step is A4 -> A5 -> A1, with A3 inline. The cross-system order lives in the World Step plans and `a4-weather.plan.md`.

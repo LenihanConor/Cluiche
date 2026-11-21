@@ -165,3 +165,5 @@ All code is CoW (application) code under `Cluiche/CoW/Shared/Weather/`. No Dia f
 5. **Baseline numbers are authored here** (spec Open Q2, unchanged): they steer Feature 6's seasonal-storm and snow-line ratios. If those regress, tune this table before touching GDD constants.
 6. **Amendment 5 resolves old Open Q1 and Q3** (ranges in the sidecar; `set` and the cross-field rule through `constraints`), so no open design question remains from the old spec. The amended spec still carries stale mentions of "41 rows", "ParamError" and `ground_water` text in its body and Status; the amendment wins.
 7. **Review 2026-11-16 decision 11** (`weather_parameters.json` at `Assets/CoW/Global/Weather/`) now names a file that no longer exists; the sidecar lives in the same folder.
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

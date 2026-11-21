@@ -566,6 +566,24 @@ Kit: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md.
 | 10 | Data I/O: files catalogued, `PathStore` for paths, `FileWatcher` reload of sidecar and packs in dev builds. Commands register through `SimCommandSet` | "Lifecycle" `DoStart` registration text |
 | 11 | `HydrologyPackParticipant` (F-3 kind `hydro`) delivers packs to the module through `ApplyPack` on the mutation queue | New |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+This feature splits in two.
+
+**Moves to `DraoiHexWorldHydrology` (pure).** `HydrologySimulation`'s `Capture` / `Run` / `Commit` and `SetCommittedWeek`, `HydrologyTerrainBuilder`, `HydrologyRunner`, `HydrologySpinUp` (single-sim), `HydrologySnapshot`, and the `Testing/` fakes. None names SimPU, a processing unit or a step chain.
+
+**Stays in CoW (the adapter).** `HydrologyModule`; `HydrologyStage` (derives the CoW `WorldStepStageBase`: `InitialiseSim`, `ApplyEntry`, `RunStep` and `RestoreCommitted` call the sim methods; `LatchInputs`, `PublishCommit`, `OnStartExtra` and `OnStopExtra` stay adapter code); `HydrologyMessages.h` (the `HydrologyUpdated` notification only, never sim data); `HoldGeneration`; registration with `WorldStepModule`; the sink-provider registry; the coupled spin-up host.
+
+**Interfaces replaced.** `IWaterInputSource` and `WaterSourceView` are dropped: the adapter fills `WaterInput` arrays in bulk at `Capture` from Weather's working copy (forward flow, Weather types read directly). `IsReadyForRevision` and the `SetWaterSource` test seam become adapter code; the fixed driver stays `FixedWaterInput`. `IWaterSinkProvider` and `WaterSinkBuffers` become adapter-side only; the sim takes `WaterSinkInputs` (Feature 2). `IHydrologyInputsProvider` is dropped: the adapter calls the package's `FillHydrologyInputs` into Weather's `HydrologyInputs` at A4's `Capture`, from committed state, so the last-week lag is preserved. `HydrologyCoupling.h` leaves the file list. "A4's working buffers stay valid until A4 Commit" is now an adapter obligation about the arrays handed to `Capture`; A4 Feature 3 is unaffected in substance.
+
+**ACs.** Sim-level ACs (`Capture`/`Run`/`Commit` semantics, determinism, spin-up result) are tested in the package; stage, event, provider, lifecycle and bus ACs stay CoW adapter tests. "Files Touched" paths under `Shared/Hydrology/` move to the package; `Modules/Hydrology*` stay.
+
+**New open design question.** Where the coupled A4+A5 spin-up lives; recommended CoW adapter (see the system spec amendment).
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:

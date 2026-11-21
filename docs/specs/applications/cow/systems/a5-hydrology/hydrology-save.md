@@ -300,6 +300,20 @@ Codec: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md section 2.
 | 7 | **A5-only extras stay:** `basin_count`, `world_hash` (optional, checked only when the world exposes one) and the mixed A4/A5 table | Unchanged |
 | 8 | `BiomeIndex` replaces `uint8_t`/`Biome` for the saved biome array | Record `"biome": [...]` bullet; "New simulation surface" struct (`DynamicArrayC<uint8_t> biome`) |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+Save format and restore behaviour are unchanged.
+
+**Moves to `DraoiHexWorld` (kit codec data half).** `SavedField[]`, the record header, array writing, `Validate` and the biome-palette remap. For A5, `DraoiHexWorldHydrology` exposes only the field list (names and types for `HydrologyFields` and `BasinState`) and the pending-set accessors as plain arrays; it knows nothing of participants.
+
+**Stays in CoW.** The `cow.hydro` participant id, the 7-step restore, the event-order fallback, the pending blob, `ValidatePending` delegation to the coordinator and the `DeferredStepSaveParticipant` wiring. Field ranges are read by CoW from the state sidecar and passed to the codec. DFS-002 holds: `Run` reads only the captured working set.
+
+ACs are unchanged; field round-trip and validation ACs are tested against the codec data half and the package field list, the rest stay adapter tests. No new open question.
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Decisions encoded from the user session the same day:

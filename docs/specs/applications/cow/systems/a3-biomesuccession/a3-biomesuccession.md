@@ -413,6 +413,20 @@ These settle open points raised while amending. Each item supersedes contradicti
 2. **"Not protected"** reads `terrain.is_protected`, a single field covering all protected cells (corridor sites, Pass, RiverCrossesBarrier, Hearth, Nexus, world-throne). There are no separate per-flag fields.
 3. **`succession_rules.json`** loads strictly and fails loudly (R1).
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). A3's resolver runs synchronously inside A1's step 10, so it follows A1 into the Draoi package. See the matching section in @docs/specs/applications/cow/systems/a1-ecology/a1-ecology.md and the World-Sim Kit's "Draoi layer amendment". This supersedes contradicting text above, including the paths in Placement. Nothing was built. **No succession design decision changes.**
+
+**Pure logic in package `DraoiHexWorldEcology`** (depends on `DraoiHexWorld`, Weather and Hydrology only; scheduler-agnostic; no module, bus, save or debug-domain wiring; tests in `<Package>/Testing/`): the `ISuccessionResolver` seam, rule evaluation and counters, recovery multipliers and `acceleration`, one-shot legacy, hashed marker years, `SuccessionFields`, `ApplyBiomeTransition` and the `terrain.is_protected` field. The resolver is called from `EcologySimulation::Run` at step 10 and stays optional: without it, triggers are produced and counted but no biome changes. It is not a separate sim and has no `Capture`/`Commit` of its own.
+
+**Stays in CoW:** `SuccessionModule` (hands its resolver object to the ecology adapter), the save participant (data half via the `DraoiHexWorld` codec), `SuccessionDebugDomain` hosted by S-3 Ecology, the `cow.succession.*` commands, and publishing `BiomeTransitionComplete` on the bus as a notification (A4 applies the new biome the next week). F-3 behaviour is unchanged: no participant, no packs in v1.
+
+**Rule schema and loader are Draoi mechanism; the rule table is CoW content.** The `succession_rules.json` schema, validator and loader (unknown field ids rejected, `INUNDATION`, `to: none`, strict R1 validation) live in the package. The envelope `cow.succession_rules`, the path `Assets/CoW/Global/Succession/succession_rules.json`, the 18 shipped rules, their thresholds and the legacy tables stay in CoW. A game authors its own table.
+
+**Reworded:** "A3 is pure CoW-Shared logic" and the `Cluiche/CoW/Shared/Succession/` path read as the package. "Registers the resolver with EcologyModule via ModuleRef" reads as the CoW module injecting its resolver object into the sim at initialise. Acceptance criteria are unchanged.
+
+**Open design question.** See A1 question 9 (resolver in the Ecology package or its own).
+
 ## Status
 
 **Status:** `Approved` (2026-10-18; T-1 consumer amendment added 2026-11-16). A1 amendments folded into the A1 spec. No plan yet; create `a3-biomesuccession.plan.md` when implementation starts. Interview done the same day: synchronous resolver, recovery as rules, one-shot legacy, natural ignition in A1. **Amended 2026-11-17 (A5 Hydrology; aligned to locked GDD 2026-11-17, CHANGE-048):** new water and ice rules, Lake ↔ land transitions, new source `INUNDATION`, marker-only `to: none` rules, `pre_glacial_biome`, 17 rules; status stays `Approved`; thresholds now set (104 / 52 / 26 / 260 weeks, Decade band). Smaller calls made in drafting: tundra proxy, Forest Edge excluded, hashed marker years, A3's own debug domain, Ocean/Lake no transitions.

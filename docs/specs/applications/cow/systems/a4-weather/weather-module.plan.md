@@ -149,3 +149,5 @@ generation failed, parameter sidecar fault. The text "Unhealthy" does not appear
 8. **A4 reads `ParameterFile` value changes by `Snapshot` per step, but `ParamBinding::Snapshot` is documented for a plain-struct copy "once per step"; whether the `Set` queued mid-step is visible to `LatchInputs` of the same step is not stated.** The plan applies the queue first (arrival order), then snapshots.
 9. **Kit hook signature drift.** `LatchInputs(latch, StepKey key)` takes a `StepKey`, while the module spec derives from `stepDay`; the key-to-day conversion is not stated. Task 0 records it.
 - **Review 2026-11-16:** `WeatherStateRecord` is created by this feature as a plain struct (decision 5); Feature 4 fills it.
+
+> **Re-plan required (Draoi amendment, 2026-11-21):** file paths, package split and test locations changed; see the spec's Draoi layer amendment section. Do not build from this plan as written.

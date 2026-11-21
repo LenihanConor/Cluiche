@@ -2,6 +2,8 @@
 
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/water-pipeline.md
 **Status:** Not Started
+
+Re-plan required (Draoi amendment): file paths and the Shared/ to DraoiHexWorldHydrology split change; see the spec's "Draoi layer amendment (2026-11-21)".
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (row 2)
 
 Rebuilt 2026-11-18 against the world-sim review amendment. The weekly passes, mass-balance and determinism work are unchanged. What changed: the biome lookups read the three per-biome maps through the bound parameter snapshot (`BiomeIndex`-indexed arrays), soil capacity is multiplied by `terrain.soil_depth_mult`, `terrain.runoff` is left unconsumed, and the cascade's tree grouping uses the grid search helpers.

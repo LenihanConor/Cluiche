@@ -731,6 +731,46 @@ These settle open points raised while amending. Each item supersedes contradicti
 3. **Saves** store biomes through the kit's biome palette (World-Sim Kit, spec-6 resolution 1).
 4. **A3 glaciation** is two rules (18 rules in total). Protected cells use `terrain.is_protected`.
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment divides A1 between Draoi and CoW, following the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). It supersedes contradicting text above, including the file paths in Placement. Nothing in A1 was built, so no code moves. **No ecology design decision changes.**
+
+**1. Pure sim in package `DraoiHexWorldEcology`.** May depend on `DraoiHexWorld`, `DraoiHexWorldWeather` and `DraoiHexWorldHydrology` only (one way: HexWorld <- Weather <- Hydrology <- Ecology). It holds:
+- the flow graph (node and edge types, validation, `CompileFlowGraph`, CSR tables, trophic order) and the nutrient cycle (N1);
+- seasonal presence (visitors, fish runs, reservoirs);
+- the cell equations (`StepCell`, steps 1, 3 to 7 and 12), the grid passes (step 2, steps 8 and 11, fire, migration, pressure fields) and event detection;
+- `EcologyFields`, the `EcologyLedger` and the change set;
+- the succession **resolver mechanism** (the `ISuccessionResolver` seam at step 10, rule evaluation, counters, `ApplyBiomeTransition`; see A3's amendment);
+- `EcologySimulation` with a synchronous `Step(...)` and a thread-neutral `Capture` / `Run` / `Commit` (the sim owns its working copy and swaps on `Commit`; the contract never names SimPU or a step chain);
+- test helpers (hand-built grids, stub inputs, golden rosters) in `<Package>/Testing/`.
+
+It is scheduler-agnostic (state in, state out). It has no `SimModule`, bus, save-participant or debug-domain wiring, and never touches the bus. It takes a parallel-for (`IParallelExecutor`, which moves to DiaThreading per the kit amendment), the plain `RandomStream` type, and the `BiomeRegistry` from `DraoiHexWorld` core.
+
+**2. Inputs are optional defaulted arrays filled at `Capture`.** The weather accumulator, the hydrology snapshot (`SoilMoisture`, `RiverFlow`, `Flooded`, `Inundated`, `LowFlowWeeks`, passability) and `WorldCellFields` arrive as whole per-cell arrays, filled by the adapter once per step. The "no-A5" and "stub weather" fallbacks become the defaults of those arrays (A4 rainfall or pinned climate for water, base-rate transport, nothing floods, nothing blocks a run), computed from `DraoiHexWorld`. `IBiomeSeasonalBaseline` is no longer an interface: the seasonal baseline is a plain output array, and the struct that feeds it back into weather is **owned by the Weather package** (kit amendment item 4). Ecology supplies the fill function, since it knows both types. `HydrologySnapshotInput` and `WeatherSnapshotInput` become plain input structs, not module-level types.
+
+**3. Stays in CoW.**
+- `EcologyModule` as the **ecology stage adapter** on `WorldStepStageBase` (HoldGeneration, `WorldGenerationComplete`/`Failed` handling, stage registration, order `["weather", "hydro", "ecology"]`, latch and due-band resolution from the capture key, `PublishCommit`, `SerializePending`/`DeserializePending`).
+- Publishing `CellEcologyChanged`, `EventThresholdCrossed` and `BiomeSuccessionTriggered` on DiaMessageBus (notifications only), declared in `cow_worldsim.diagamemessages`.
+- `EcologySaveParticipant`: the field-array data half (`SavedField[]`, record header, array writing, Validate, palette remap) goes to the `DraoiHexWorld` codec; the restore sequence, the `cow.ecology` participant id and node-palette reload handling stay in CoW.
+- `EcologyDebugDomain`, DiaCellLayers and DiaCellHistory registration, `CellDetailRegistry` rows, the migration-arrow overlay, tuning sliders and all `cow.ecology.*` commands (including `cow.ecology.records`), built on the kit's `SimCommandSet` and `ParamCommandHelper`.
+- The F-3 world-assets pack participant, the `cow_main.diaapp` entry, health and metrics (`cow.ecology.band_ms`), and `WorldSimNames`.
+- **Content data under `Assets/CoW/Global/`**: `species.json`, `biomes.json`, `flow_graph.json` (the shipped graph), `ecology_parameters.json` and `Succession/succession_rules.json` (the 18 rules).
+
+**4. Schemas and loaders are Draoi mechanism; the tables are CoW content.** The schemas, validators and loaders for species, the flow graph, ecology parameters and succession rules are **Draoi mechanism** in `DraoiHexWorldEcology` (pure functions from parsed JSON to typed tables; no file or envelope I/O). The envelopes (`cow.species`, `cow.flow_graph`, `cow.ecology_params`, `cow.succession_rules`), asset paths, F-3 pack handling, `dia validate schema` wiring, R1 fail-loudly health reporting and the shipped tables stay in CoW. A game supplies its own tables. The `biomes.json` biome list stays application content; the registry mechanism is `DraoiHexWorld` core (draoi.md, Biome Registry), and Feature 1 depends on its data-driven pin rules.
+
+**5. Sections and acceptance criteria reworded.**
+- **Placement** and the SimPU tree split into the package (sim) and the adapter (module). Paths move from `Cluiche/CoW/Shared/Ecology/` to the Draoi package.
+- **Weather input, Hydrology input:** read as input arrays at `Capture`, not as module snapshot inputs.
+- **Parallel execution:** `Dia::DeferredStep::IParallelExecutor` reads as the DiaThreading parallel-for.
+- **Save/load:** the data half moves as in item 3. The AC wording on JSON arrays, palettes and bit-exact round trip is unchanged.
+- **Features:** 1 (schemas, validation, compile and loaders in the package; file load and envelopes in CoW), 2 (`IBiomeSeasonalBaseline` becomes the output array), 3, 4, 5, 6, 10 and 11 are package work. 7, 8 and 9 are CoW adapter work. Build order is unchanged.
+- **Test Strategy:** unit tests for Features 1 to 6, 10 and 11 move to the package's tests. Integration tests (Features 7 and 8) and the layer goldens stay in CoW. The capture-isolation and deferred-vs-synchronous tests run against `Capture`/`Run`/`Commit` directly, with an input array poisoned after `Capture`.
+- **Dependencies:** "Requires" gains `DraoiHexWorld`, the Weather and Hydrology packages, and DiaThreading. A4 and A5 become sim packages, not modules.
+
+**New open design questions.**
+8. **Where does the stub weather input live?** `StubWeatherInput` is a test helper today. With defaulted input arrays, the Weather package's default fill may make it redundant, or Ecology's `Testing/` may need its own. Decide at Feature 2.
+9. **Does the succession resolver ship in the Ecology package or on its own?** It runs inside step 10 and reads A1 fields, so this amendment keeps it in `DraoiHexWorldEcology`, with the seam optional so a game can run ecology without succession. Revisit if A3 grows beyond a resolver.
+
 ## Status
 
 **Status:** `Approved` (amended and re-approved 2026-11-18, ecology expansion: flow graph, nutrient cycle, seasonal presence, Layer 2 split out). Previously `Approved` (2026-10-18), **revised and re-approved 2026-11-13 (dependency audit).** The ecology design is unchanged; what moved around it: the shared `Biome` enum (13, not a `StringCRC` set, and the biome palette index is dropped); registration as a World Step stage, which **deleted** `mSeasonPending`, deviation 5 and the former Open Question 1; `IParallelExecutor` moved to Dia; commands became sim-hosted with mandatory help and a 14-name budget; DiaCellLayers, DiaCellHistory, DiaValueSchema and CellField are all **built** (every "not built" status was stale) and CellField never blocked the overlays; S-1 Feature 9 is built so site flags populate at init; the cell inspector and selection are DiaCellLayers' and were deleted here; the time-series panel has no in-game host; `cow.ecology.band_ms` with `MetricInfo` and layer goldens were added; the `ISaveable` signature was corrected and pending-step serialization added. New Open Question 1 is the unmeasured Century tick.

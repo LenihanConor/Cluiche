@@ -326,6 +326,16 @@ Selectors: @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md sectio
 | `distanceToRiver {min, max}` | `derived` `distance {from: river}` with `>=` / `<=` |
 | `upstreamOfCrossing {maxSteps}` | `derived` `upstream {of: crossing, maxSteps}` `== 1` |
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+Presets and the regression suite stay in CoW (content data and commands): `Global/Hydrology/Presets/` files, the `cow.hydro.preset` loader, `cow.hydro_params` pack handling and the F-3 pack participant.
+
+**Moves.** The selector engine is `CellSelectorSet` and `WorldCellFields` in `DraoiHexWorld`. A5's contribution (slot `hydro`, including `hydro.basin_kind`) is a registration function in `DraoiHexWorldHydrology` that CoW calls on `WorldGenerationComplete`. Scenario and regression tests that need only the sim (golden layer hashes via `CellLayerGolden.h`, pattern targets, R-Reach) run against the package; the coupled A4+A5 test is a CoW integration test (still `SLOW_`). `HydrologyTestGrids.h` and scenario helpers ship in `DraoiHexWorldHydrology/Testing/`. ACs are unchanged. No new open question.
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Written from the user's decisions of the same day:

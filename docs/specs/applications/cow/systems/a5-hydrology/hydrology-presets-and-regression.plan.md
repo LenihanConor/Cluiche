@@ -4,6 +4,8 @@ Rebuilt 2026-11-18 against the world-sim review amendment in hydrology-presets-a
 
 **Spec:** @docs/specs/applications/cow/systems/a5-hydrology/hydrology-presets-and-regression.md
 **Status:** Not Started
+
+Re-plan required (Draoi amendment): file paths and the Shared/ to DraoiHexWorldHydrology split change; see the spec's "Draoi layer amendment (2026-11-21)".
 **System plan:** @docs/specs/applications/cow/systems/a5-hydrology/a5-hydrology.plan.md (the Feature 6 row)
 
 **Dependencies.** Foundation plans are being rebuilt in parallel; needs are named, never numbered.

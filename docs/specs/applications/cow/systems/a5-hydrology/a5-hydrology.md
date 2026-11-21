@@ -389,6 +389,25 @@ These settle open points raised while amending. Each item supersedes contradicti
 5. **Packs** have no separate format id: a hydro pack is a sparse `cow.hydro_params` document under `Packs/`, carrying `basedOn` (Parameter Files resolution).
 6. **`terrain.runoff`** is not consumed until a later amendment.
 
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment follows the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md). Design decisions and the status line are unchanged. Nothing was built, so no code moves. It supersedes contradicting text above, including file paths.
+
+**Pure sim, package `DraoiHexWorldHydrology`.** `HydrologySimulation` and everything under `Shared/Hydrology/` that is not wiring: the routing cascade, basin lakes, floods, glaciers, ground water, soil and freeze, `HydrologyTerrainBuilder`, spin-up, `HydrologyParameters` (type and loader), `WaterTotals` and `Passability`. It may depend on `DraoiHexWorld` and `DraoiHexWorldWeather` only (never Ecology, never the terrain generator). It is scheduler-agnostic: a synchronous `Step(...)` plus a thread-neutral `Capture` / `Run` / `Commit` ("`Run` touches only the working copy; the caller must not overlap `Run` with `Capture` or `Commit`"), no `SimModule`, bus, save or debug-domain wiring, and no mention of SimPU or a step chain. `Step` takes `IParallelExecutor` from DiaThreading (kit amendment item 7), not a DiaDeferredStep type. Tests and helpers ship in `DraoiHexWorldHydrology/Testing/` (`HydrologyTestGrids.h`, fake inputs).
+
+**Stays in CoW (the adapter).** `HydrologyModule` and `HydrologyStage` (derived from the CoW `WorldStepStageBase`), `HydrologyUpdated{week}` and the other bus notifications (declared in `cow_worldsim.diagamemessages`, published from `PublishCommit`), the save participant `cow.hydro` and the restore half of the codec, the `hydro` debug domain and history layers, the `cow.hydro.*` commands and `cow.hydro_params` pack handling, the F-3 pack participant, and the content data under `Global/Hydrology/` (`hydrology_parameters.json`, presets). `HydrologyCoupling.h` is deleted as an interface file: the structs below replace it.
+
+**Coupling becomes plain data, one way (kit item 4).** "Placement" and "Coupling with A4" read as follows:
+- **A4 to A5 (forward, this week)** needs no interface. Hydrology includes Weather directly and reads `waterToGround`, `temperature`, `snowPack` and `glacierInput` from Weather types. The CoW adapter fills the `WaterInput` arrays in bulk at `Capture` from A4's working copy; no per-cell call crosses the package edge inside `Run`. `IWaterInputSource` is dropped.
+- **A5 to A4 (feedback, last week)** is `HydrologyInputs { surfaceWetness, openWater, glacierEligible }`, a struct of per-cell arrays **owned by `DraoiHexWorldWeather`**, defaulted from `DraoiHexWorld` (S-1 static water sources, zero ground evaporation, no glacier). `DraoiHexWorldHydrology` supplies `FillHydrologyInputs(const HydrologySimulation&, HydrologyInputs&)`; the adapter calls it at A4's `Capture`, from committed state, so the one-week lag is preserved. `IHydrologyInputsProvider` is dropped.
+- **A1 to A5 (feedback, sinks)** is `WaterSinkInputs { etMultiplier, draw }`, owned by `DraoiHexWorldHydrology`, neutral by default (1.0 and 0.0). `DraoiHexWorldEcology` supplies the fill function. `IWaterSinkProvider` and the 8-provider registry become CoW adapter code that multiplies and sums each provider into the one array before `Capture`.
+- The **ground-water influence** array (A4 Feature 7) is an optional defaulted `groundWaterInfluence` array on `WaterInput`, filled by the adapter.
+- **Spin-up.** `IHydrologySpinUpHost` and the coupled A4+A5 spin-up driver are CoW adapter code on top of `SpinUpSlot`; each sim exposes its own single-sim spin-up as a plain function.
+
+**New open design questions.** (1) The A5-to-A4 `HydrologyInputs` struct is placed in Weather per kit item 4; the A4 amendment must use the same name and fields. (2) The coupled spin-up (A4 + A5 stepped together) fits neither package alone. Recommended: the coupled driver stays in CoW and each package exposes only its own single-sim spin-up; revisit if a second game wants the coupled form (a Hydrology function taking a Weather sim is allowed by the dependency direction).
+
+**Plan.** Re-plan required (see the marker in the plan file).
+
 ## Status
 
 **Status:** Approved (2026-11-17, user, after the locked-GDD alignment). Interview done with the user the same day, including the three follow-up questions (Decisions 9–11). Aligned to the locked GDD A5 on 2026-11-17. Six feature specs exist (all `Draft`). Approval is a separate step.

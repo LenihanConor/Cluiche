@@ -719,3 +719,28 @@ These settle open points raised while amending. Each item supersedes contradicti
 **Plan:** [a4-weather.plan.md](a4-weather.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). The World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md) divides the world-sim between Draoi and CoW; this section applies it to A4. It supersedes contradicting text above, including the file paths in Placement, Public Interfaces and each feature's Files Touched. Nothing in A4 was built, so no code moves. **No design decision changes: status stays `Approved`.** The plans need a re-plan (markers added).
+
+**1. What becomes the pure sim, package `DraoiHexWorldWeather`** (depends on `DraoiHexWorld` core and Dia only; not on the S-1 generator, not on DiaDeferredStep):
+- the data and parameter types (`WeatherFields`, `WeatherTerrain`, `WeatherParameters` and its value structs, `WeatherForcing`, the influence and climate state types);
+- the CA pipeline and its helpers (`WeatherPipeline`, `WindDirection`, step profile);
+- `WeatherSimulation` with a synchronous `Step(...)` and a thread-neutral `Capture` / `Run` / `Commit` (the sim owns its working copy and swaps on `Commit`; `Run` touches only the working copy and the caller must not overlap it with `Capture` or `Commit`);
+- `WeatherRunner` (the synchronous determinism oracle);
+- the data half of the save codec (Feature 4) and the weather contributions to `WorldCellFields` / `CellSelectorSet`;
+- no `SimModule`, bus, save-participant or debug-domain wiring, no SimPU or step-chain knowledge (PD-012, PD-013); tests and test helpers in `DraoiHexWorldWeather/Testing/`. The pipeline takes a parallel-for (`IParallelExecutor`, which moves to DiaThreading), not a scheduler.
+
+**2. What stays in CoW:** `WeatherModule` / `WeatherStage` (the `WorldStepStageBase` adapter: `InitialiseSim`, `LatchInputs`, `ApplyEntry`, `RunStep`, `PublishCommit`, manifest, spin-up job, health, metrics); `WeatherUpdated` / `WeatherSnapshot` (notifications on DiaMessageBus, snapshot via the stream/query path; per-cell data never rides the bus); the save participant `cow.weather` and the restore sequence; `WeatherDebugDomain`, cell layers, wind overlay and detail rows; the `cow.weather.*` sim-hosted commands; presets as scenarios and the loader; content data under `Global/Weather/` (parameter sidecar with ranges and defaults, cycle and influence catalogues, baseline table, presets).
+
+**3. Reworded sections.**
+- *Placement* and the Public Interfaces headers: pure types live in `DraoiHexWorldWeather`, not `CoW/Shared/Weather/`; the module, domain and participant stay in `CoW/Modules/`.
+- *Biome seasonal baseline*: `IBiomeSeasonalBaseline` is replaced by an **optional plain input struct owned by A4** (per-cell seasonal baseline temperature array) with a default computed from the `baseline_table` fallback; A1's package supplies the fill function at `Capture`. The A5-to-A4 feedback is `HydrologyInputs { surfaceWetness, openWater, glacierEligible }`, a plain struct of per-cell arrays **owned by `DraoiHexWorldWeather`** (matching the A5 amendment), defaulted from `DraoiHexWorld` (S-1 static water sources, zero ground evaporation, no glacier). `DraoiHexWorldHydrology` supplies `FillHydrologyInputs(const HydrologySimulation&, HydrologyInputs&)`, which the CoW adapter calls at A4's `Capture` from A5's committed state (one-week lag preserved). `IWaterInputSource` and `IHydrologyInputsProvider` are dropped. The forward direction (A4 to A5) needs no interface: A5 includes Weather and reads `waterToGround`, `temperature`, `snowPack` and `glacierInput` directly; the optional `groundWaterInfluence` array (Feature 7) rides on A5's `WaterInput`, filled by the adapter. The coupled spin-up driver and A5's `IHydrologySpinUpHost` seam stay adapter code in CoW; each package exposes only its own single-sim spin-up.
+- *Biome type*: the sim reads `BiomeIndex` and the `BiomeRegistry` from `DraoiHexWorld` core (draoi.md, Biome Registry), not the 13-value CoW enum; the 13 x 4 `baseline_table` stays keyed by registry names in CoW data.
+- *Deferred execution*: `Capture`/`Run`/`Commit` is the sim's public API; the stage maps them to the DiaDeferredStep jobs.
+- *Features table*: Features 1, 2 (and the pure halves of 7, 8, 9) are Draoi code; 3, 5, 6 are CoW adapter/wiring code; Feature 4 splits (codec data half Draoi, participant and restore CoW).
+- *Dependencies / Test Strategy*: pure-logic tests use helpers from `DraoiHexWorldWeather/Testing/` (they still run in the GoogleTests project); adapter, save-round-trip and debug tests stay in `Tests/GoogleTests/CoW/Weather/`.
+
+**New open design question.** *Influences and climate cycles across the boundary.* Feature 7's influence book and Feature 8's cycle state are sim inputs (Draoi) but their **catalogues and the public influence API** are consumed by CoW systems (dragon abilities) and their saved state rides in `cow.weather`. Proposal: the sim takes an `InfluenceSnapshot` and cycle definitions as plain inputs at `Capture` (already the shape), while the book and its ageing stay in the CoW adapter; confirm at re-plan. (Coupled spin-up placement is settled in item 3 above, following the A5 amendment's recommendation.)

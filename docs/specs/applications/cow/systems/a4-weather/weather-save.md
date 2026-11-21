@@ -211,3 +211,13 @@ Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): `ground_water`
 **Status:** `Approved` (2026-11-16). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d). Plan: [weather-save.plan.md](weather-save.plan.md) (written 2026-11-16, not started).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
+
+
+## Draoi layer amendment (2026-11-21)
+
+Applies the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md), which splits the save codec. Supersedes contradicting text above. The record format (version 1) and all decisions are unchanged; status stays `Approved`.
+
+- **Data half goes to `DraoiHexWorldWeather`:** the pure codec of the "Record" and "`Validate`" sections (float and `uint8_t` biome arrays, `influences` and `climate` blocks, `step_day` and `valid` in the pending record, size-checking `Validate`, biome-palette remap through the `DraoiHexWorld` codec data half, the `{"valid":false}` blob) and the "New simulation surface" on `WeatherSimulation`. Field ranges are passed in by the caller, so the package holds no content. "Codec (pure)" ACs and `TestWeatherStateCodec` move with it; no bus, SimModule or save-service dependency.
+- **Stays in CoW:** `WeatherSaveParticipant` registration as `cow.weather`, the 7-step restore sequence, the event-order fallback, the pending-result rule (DFS-005) and `SerializePending`/`DeserializePending` wiring to the stage, the participant ACs, the round-trip and mid-step save tests, and reading field ranges from the sidecar and layer.
+- **Files Touched:** codec files under `DraoiHexWorldWeather/`; participant and `TestWeatherSaveParticipant` / `TestWeatherPendingSave` stay under CoW.
+- **Open question:** whether the pending-record shape (`step_day`, `valid`) is owned by the weather codec or by a generic record helper in `DraoiHexWorld`. Proposal: the kit record header (already DraoiHexWorld) with the weather payload here; confirm at re-plan.
