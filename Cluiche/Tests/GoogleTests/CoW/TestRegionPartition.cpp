@@ -38,7 +38,7 @@ namespace
     }
 
     // Vertical one-cell-wide strip at x = 0: cell i is at distance |i - j| from cell j.
-    WorldStructure Strip(int len, DepthZone z = FS, Biome b = G)
+    WorldStructure Strip(int len, DepthZone z = FS, CoW::World::BiomeIndex b = G)
     {
         WorldStructure w = MakeBlankWorld(3, len);
         FillLand(w, 0, 0, 1, len, z, b);

@@ -6,6 +6,14 @@
 #include <cstdint>
 
 namespace CoW {
+namespace World {
+
+// Row index into the BiomeRegistry. Cell::biome and RegionRecord::primaryBiome store one.
+using BiomeIndex = uint8_t;
+constexpr BiomeIndex kNoBiome = 0xFF;
+
+} // namespace World
+
 namespace WorldGeneration {
 
 enum class WaterSource : uint8_t { None = 0, Ocean, Lake, River };

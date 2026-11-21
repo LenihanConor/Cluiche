@@ -208,11 +208,18 @@ const char* BiomePinName(uint32_t pin)
     return "Unknown";
 }
 
-Json::Value ScoredBiomeJson(Biome b, float score)
+// Display name of a registry row ("Unknown" for no registry or a row past the table).
+const char* BiomeLabel(const World::BiomeRegistry* biomes, World::BiomeIndex b)
+{
+    const char* name = biomes != nullptr ? biomes->Name(b) : "";
+    return name[0] != '\0' ? name : "Unknown";
+}
+
+Json::Value ScoredBiomeJson(const World::BiomeRegistry* biomes, World::BiomeIndex b, float score)
 {
     Json::Value v(Json::objectValue);
     v["id"] = static_cast<int>(b);
-    v["name"] = BiomeName(b);
+    v["name"] = BiomeLabel(biomes, b);
     v["score"] = ShortestFloat(score);
     return v;
 }
@@ -1608,23 +1615,24 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
     r["totalMs"] = ShortestFloat(mLastMs);
     r["stages"] = stages;
 
-    // Cells per biome (all ten ids, zero before the first generation).
-    int biomeTotals[kBiomeCount] = {};
+    // Cells per biome: one entry per registry row, zero before the first generation.
+    const int biomeRows = mBiomes != nullptr ? static_cast<int>(mBiomes->Count()) : 0;
+    std::vector<int> biomeTotals(static_cast<size_t>(biomeRows), 0);
     for (size_t i = 0; i < count; ++i)
     {
         const int b = static_cast<int>(mWorld.Cells()[i].biome);
-        if (b >= 0 && b < kBiomeCount)
+        if (b >= 0 && b < biomeRows)
         {
-            ++biomeTotals[b];
+            ++biomeTotals[static_cast<size_t>(b)];
         }
     }
     Json::Value biomeCounts(Json::arrayValue);
-    for (int b = 0; b < kBiomeCount; ++b)
+    for (int b = 0; b < biomeRows; ++b)
     {
         Json::Value e(Json::objectValue);
         e["id"] = b;
-        e["name"] = BiomeName(static_cast<Biome>(b));
-        e["count"] = biomeTotals[b];
+        e["name"] = BiomeLabel(mBiomes, static_cast<World::BiomeIndex>(b));
+        e["count"] = biomeTotals[static_cast<size_t>(b)];
         biomeCounts.append(e);
     }
     r["biomeCounts"] = biomeCounts;
@@ -1741,7 +1749,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
 
     Json::Value biome(Json::objectValue);
     biome["id"] = static_cast<int>(c.biome);
-    biome["name"] = BiomeName(c.biome);
+    biome["name"] = BiomeLabel(mBiomes, c.biome);
     r["biome"] = biome;
 
     const uint32_t pin = biomePin != nullptr ? biomePin[index] : BiomePin::None;
@@ -1753,14 +1761,14 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     // Winning and runner-up of the five climate biomes (ties: lowest enum value). Pinned cells never reach the
     // climate score, so they report the pinned biome with a null score and no runner-up.
     Json::Value ranking(Json::objectValue);
-    Biome climateWinner = c.biome;
+    World::BiomeIndex climateWinner = c.biome;
     uint32_t climateRowCount = 0;
     if (mBiomes != nullptr) { mBiomes->ClimateBiomes(climateRowCount); }
     if (pin != BiomePin::None || temperature == nullptr || moisture == nullptr || climateRowCount == 0)
     {
         Json::Value winner(Json::objectValue);
         winner["id"] = static_cast<int>(c.biome);
-        winner["name"] = BiomeName(c.biome);
+        winner["name"] = BiomeLabel(mBiomes, c.biome);
         winner["score"] = Json::Value();
         ranking["winner"] = winner;
         ranking["runnerUp"] = Json::Value();
@@ -1785,9 +1793,9 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
                 second = k;
             }
         }
-        climateWinner = static_cast<Biome>(climate[best]);
-        ranking["winner"] = ScoredBiomeJson(climateWinner, scores[best]);
-        ranking["runnerUp"] = second >= 0 ? ScoredBiomeJson(static_cast<Biome>(climate[second]), scores[second]) : Json::Value();
+        climateWinner = climate[best];
+        ranking["winner"] = ScoredBiomeJson(mBiomes, climateWinner, scores[best]);
+        ranking["runnerUp"] = second >= 0 ? ScoredBiomeJson(mBiomes, climate[second], scores[second]) : Json::Value();
     }
     r["biomeRunnerUp"] = ranking;
 
@@ -1797,7 +1805,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     std::string reason;
     if (fix == BiomeFixup::Zone)
     {
-        reason = std::string("zone: ") + BiomeName(climateWinner) + " is not valid in " + DepthZoneName(c.depthZone);
+        reason = std::string("zone: ") + BiomeLabel(mBiomes, climateWinner) + " is not valid in " + DepthZoneName(c.depthZone);
     }
     else if (fix == BiomeFixup::Forbidden)
     {
@@ -1837,7 +1845,7 @@ Json::Value WorldGenSession::Regions() const
         e["zone"] = DepthZoneName(rec.zone);
         e["landmass"] = static_cast<Json::UInt>(rec.landmass);
         e["isIsland"] = rec.isIsland;
-        e["primaryBiome"] = BiomeName(rec.primaryBiome);
+        e["primaryBiome"] = BiomeLabel(mBiomes, rec.primaryBiome);
         e["purity"] = ShortestFloat(rec.purity);
         e["cellCount"] = static_cast<Json::UInt>(rec.cellCount);
         e["centreCell"] = static_cast<Json::UInt>(rec.centreCell);

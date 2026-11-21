@@ -15,8 +15,7 @@
 namespace CoW {
 namespace World {
 
-using BiomeIndex = uint8_t;
-constexpr BiomeIndex kNoBiome = 0xFF;
+// BiomeIndex / kNoBiome are declared in WorldGeneration/TerrainEnums.h (Cell stores a BiomeIndex; avoids a circular include).
 
 using TagId = uint8_t;
 constexpr TagId kNoTag = 0xFF;

@@ -65,7 +65,7 @@ namespace
             }
             int    distinct = 0;
             int    maxCount = 0;
-            Biome  maxBiome = LegacyB("Biome.Ocean");
+            Biome maxBiome = LegacyEnumB("Biome.Ocean");
             std::string line;
             for (int b = 0; b < kBiomeCount; ++b)
             {

@@ -418,7 +418,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         Cell c;
         std::memset(&c, 0, sizeof(Cell));
         int64_t region = 0, landmass = 0, flags = 0, downstream = 0;
-        if (!im.ReadEnum<Biome>(cj, "biome", path, WorldJsonParseBiome, "biome", c.biome)) { return finish(false); }
+        if (!im.ReadEnum<World::BiomeIndex>(cj, "biome", path, WorldJsonParseBiome, "biome", c.biome)) { return finish(false); }
         if (!im.ReadEnum<TerrainType>(cj, "terrain", path, WorldJsonParseTerrain, "terrain", c.terrain)) { return finish(false); }
         if (!im.ReadInt(cj, "region", path, 0, 255, region)) { return finish(false); }
         if (region > static_cast<int64_t>(regionCount))
@@ -444,7 +444,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
     if (!anyWater) { im.Warn("world: no water cell; weather (A4) cannot run on this world"); }
 
     // Regions: identity from the file, summaries recomputed below.
-    struct FileSummary { int64_t cellCount, centreCell; Biome primary; float purity; std::vector<int64_t> neighbours; };
+    struct FileSummary { int64_t cellCount, centreCell; World::BiomeIndex primary; float purity; std::vector<int64_t> neighbours; };
     std::vector<FileSummary> fileSummaries;
     for (unsigned r = 0; r < regionCount; ++r)
     {
@@ -466,7 +466,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         if (!im.ReadInt(rj, "landmass", path, 0, 255, landmass)) { return finish(false); }
         if (!rj.isMember("is_island")) { im.Fail(path + ".is_island", "required field is missing"); return finish(false); }
         if (!rj["is_island"].isBool()) { im.Fail(path + ".is_island", "must be true or false"); return finish(false); }
-        if (!im.ReadEnum<Biome>(rj, "primary_biome", path, WorldJsonParseBiome, "biome", fs.primary)) { return finish(false); }
+        if (!im.ReadEnum<World::BiomeIndex>(rj, "primary_biome", path, WorldJsonParseBiome, "biome", fs.primary)) { return finish(false); }
         if (!im.ReadUnit(rj, "purity", path, fs.purity)) { return finish(false); }
         if (!im.ReadInt(rj, "cell_count", path, 0, 65535, fs.cellCount)) { return finish(false); }
         if (!im.ReadInt(rj, "centre_cell", path, 0, static_cast<int64_t>(expectedCells) - 1, fs.centreCell)) { return finish(false); }

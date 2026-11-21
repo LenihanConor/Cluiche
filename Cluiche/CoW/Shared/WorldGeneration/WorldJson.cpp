@@ -48,7 +48,7 @@ namespace
         return false;
     }
 
-    bool IsKnownBiome(Biome b) { return static_cast<int>(b) >= 0 && static_cast<int>(b) < kBiomeCount; }
+    bool IsKnownBiome(World::BiomeIndex b) { return static_cast<int>(b) >= 0 && static_cast<int>(b) < kBiomeCount; }
     bool IsKnownTerrain(TerrainType t) { return static_cast<int>(t) >= 0 && static_cast<int>(t) < static_cast<int>(TerrainType::Count); }
     bool IsKnownWater(WaterSource w) { return static_cast<int>(w) >= 0 && static_cast<int>(w) <= static_cast<int>(WaterSource::River); }
     bool IsKnownZone(DepthZone z) { return static_cast<int>(z) >= 0 && static_cast<int>(z) <= static_cast<int>(DepthZone::AncientInteriors); }
@@ -144,14 +144,14 @@ namespace
     }
 }
 
-const char* WorldJsonBiomeName(Biome b)
+const char* WorldJsonBiomeName(World::BiomeIndex b)
 {
     return IsKnownBiome(b) ? GetBiomeNames().names[static_cast<int>(b)].c_str() : "Unknown";
 }
 
-bool WorldJsonParseBiome(const std::string& text, Biome& out)
+bool WorldJsonParseBiome(const std::string& text, World::BiomeIndex& out)
 {
-    return ParseEnum<Biome>(text, kBiomeCount, [](Biome b) { return WorldJsonBiomeName(b); }, out);
+    return ParseEnum<World::BiomeIndex>(text, kBiomeCount, [](World::BiomeIndex b) { return WorldJsonBiomeName(b); }, out);
 }
 
 bool WorldJsonParseTerrain(const std::string& text, TerrainType& out)

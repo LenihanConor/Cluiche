@@ -56,8 +56,8 @@ struct WorldJsonContext
 };
 
 // "Biome.TemperateForest", "Lowland", ... (the names the file uses; parse is the exact inverse).
-const char* WorldJsonBiomeName(Biome b);
-bool        WorldJsonParseBiome(const std::string& text, Biome& out);
+const char* WorldJsonBiomeName(World::BiomeIndex b);
+bool        WorldJsonParseBiome(const std::string& text, World::BiomeIndex& out);
 bool        WorldJsonParseTerrain(const std::string& text, TerrainType& out);
 bool        WorldJsonParseWaterSource(const std::string& text, WaterSource& out);
 bool        WorldJsonParseDepthZone(const std::string& text, DepthZone& out);

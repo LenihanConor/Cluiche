@@ -28,9 +28,9 @@ inline WorldJsonContext TestImportContext()
     return c;
 }
 
-inline Biome BL(const char* id) { return ::CoW::World::Testing::LegacyB(id); }
+inline ::CoW::World::BiomeIndex BL(const char* id) { return ::CoW::World::Testing::LegacyB(id); }
 
-inline Cell MakeCell(Biome biome, TerrainType terrain, DepthZone zone, WaterSource water, float elevation, float latitude,
+inline Cell MakeCell(::CoW::World::BiomeIndex biome, TerrainType terrain, DepthZone zone, WaterSource water, float elevation, float latitude,
                      RegionId region, uint8_t landmass, uint8_t flags = 0, uint8_t downstream = kNoDirection)
 {
     Cell c;

@@ -23,7 +23,7 @@ inline WorldStructure MakeBlankWorld(int w, int h)
 inline int CellIndex(const WorldStructure& world, int x, int y) { return y * world.dimensions.width + x; }
 
 // Sets one land cell (Lowland, no flags).
-inline void SetLand(WorldStructure& world, int x, int y, DepthZone zone, Biome biome, uint8_t landmass = 1)
+inline void SetLand(WorldStructure& world, int x, int y, DepthZone zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
 {
     Cell& c = world.At(x, y);
     c.landmass = landmass;
@@ -35,7 +35,7 @@ inline void SetLand(WorldStructure& world, int x, int y, DepthZone zone, Biome b
 }
 
 // Fills the half-open block [x0,x1) x [y0,y1).
-inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, DepthZone zone, Biome biome, uint8_t landmass = 1)
+inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, DepthZone zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
 {
     for (int y = y0; y < y1; ++y)
     {
@@ -45,7 +45,7 @@ inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, Dept
 
 inline void AddFlag(WorldStructure& world, int x, int y, uint8_t flag) { world.At(x, y).terrainFlags |= flag; }
 
-inline void SetBiome(WorldStructure& world, int x, int y, Biome b) { world.At(x, y).biome = b; }
+inline void SetBiome(WorldStructure& world, int x, int y, ::CoW::World::BiomeIndex b) { world.At(x, y).biome = b; }
 
 inline void SetOcean(WorldStructure& world, int x, int y)
 {
@@ -110,7 +110,7 @@ inline void BuildRegionRecords(WorldStructure& world)
     {
         RegionRecord rec;
         rec.id = static_cast<RegionId>(id);
-        int hist[kBiomeCount] = {};
+        int hist[256] = {};   // BiomeIndex is a uint8_t
         bool first = true;
         int count = 0;
         for (int i = 0; i < world.CellCount(); ++i)
@@ -129,12 +129,12 @@ inline void BuildRegionRecords(WorldStructure& world)
         }
         const int lakeIdx = static_cast<int>(::CoW::World::Testing::B("Biome.Lake"));
         int best = lakeIdx;
-        for (int b = 0; b < kBiomeCount; ++b)
+        for (int b = 0; b < 256; ++b)
         {
             if (b == lakeIdx || hist[b] == 0) { continue; }
             if (best == lakeIdx || hist[b] > hist[best]) { best = b; }
         }
-        rec.primaryBiome = static_cast<Biome>(best);
+        rec.primaryBiome = static_cast<::CoW::World::BiomeIndex>(best);
         rec.cellCount = static_cast<uint16_t>(count);
         rec.isIsland = rec.landmass != world.mainLandmass;
         rec.purity = count ? static_cast<float>(hist[best]) / static_cast<float>(count) : 0.0f;
@@ -143,7 +143,7 @@ inline void BuildRegionRecords(WorldStructure& world)
 }
 
 // All-land world (one region of the given biome per block of blockW x blockH cells, ids row-major) with records built.
-inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, Biome biome)
+inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, ::CoW::World::BiomeIndex biome)
 {
     WorldStructure world = MakeBlankWorld(blocksX * blockW, blocksY * blockH);
     FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, DepthZone::FirstShores, biome);

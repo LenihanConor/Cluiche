@@ -68,43 +68,43 @@ TEST(BiomeTypes, IdsAreThirteenDistinct)
         ids.insert(static_cast<uint32_t>(BiomeId(E(i)).Value()));
     }
     EXPECT_EQ(static_cast<int>(ids.size()), 13);
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Ocean")), Dia::Core::StringCRC("Biome.Ocean"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Ocean")), Dia::Core::StringCRC("Biome.Ocean"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Ocean")), B("Biome.Ocean"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Ocean")), "Biome.Ocean");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Lake")), Dia::Core::StringCRC("Biome.Lake"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Lake")), Dia::Core::StringCRC("Biome.Lake"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Lake")), B("Biome.Lake"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Lake")), "Biome.Lake");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Grassland")), Dia::Core::StringCRC("Biome.Grassland"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Grassland")), Dia::Core::StringCRC("Biome.Grassland"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Grassland")), B("Biome.Grassland"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Grassland")), "Biome.Grassland");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.TemperateForest")), Dia::Core::StringCRC("Biome.TemperateForest"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.TemperateForest")), Dia::Core::StringCRC("Biome.TemperateForest"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.TemperateForest")), B("Biome.TemperateForest"));
     EXPECT_STREQ(Reg().IdText(B("Biome.TemperateForest")), "Biome.TemperateForest");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Wetland")), Dia::Core::StringCRC("Biome.Wetland"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Wetland")), Dia::Core::StringCRC("Biome.Wetland"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Wetland")), B("Biome.Wetland"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Wetland")), "Biome.Wetland");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Desert")), Dia::Core::StringCRC("Biome.Desert"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Desert")), Dia::Core::StringCRC("Biome.Desert"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Desert")), B("Biome.Desert"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Desert")), "Biome.Desert");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Alpine")), Dia::Core::StringCRC("Biome.Alpine"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Alpine")), Dia::Core::StringCRC("Biome.Alpine"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Alpine")), B("Biome.Alpine"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Alpine")), "Biome.Alpine");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Tundra")), Dia::Core::StringCRC("Biome.Tundra"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Tundra")), Dia::Core::StringCRC("Biome.Tundra"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Tundra")), B("Biome.Tundra"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Tundra")), "Biome.Tundra");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Rainforest")), Dia::Core::StringCRC("Biome.Rainforest"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Rainforest")), Dia::Core::StringCRC("Biome.Rainforest"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Rainforest")), B("Biome.Rainforest"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Rainforest")), "Biome.Rainforest");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Volcanic")), Dia::Core::StringCRC("Biome.Volcanic"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Volcanic")), Dia::Core::StringCRC("Biome.Volcanic"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Volcanic")), B("Biome.Volcanic"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Volcanic")), "Biome.Volcanic");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.Scrub")), Dia::Core::StringCRC("Biome.Scrub"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.Scrub")), Dia::Core::StringCRC("Biome.Scrub"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.Scrub")), B("Biome.Scrub"));
     EXPECT_STREQ(Reg().IdText(B("Biome.Scrub")), "Biome.Scrub");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.BurnedAshland")), Dia::Core::StringCRC("Biome.BurnedAshland"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.BurnedAshland")), Dia::Core::StringCRC("Biome.BurnedAshland"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.BurnedAshland")), B("Biome.BurnedAshland"));
     EXPECT_STREQ(Reg().IdText(B("Biome.BurnedAshland")), "Biome.BurnedAshland");
-    EXPECT_EQ(BiomeId(LegacyB("Biome.DesertifiedPlain")), Dia::Core::StringCRC("Biome.DesertifiedPlain"));
+    EXPECT_EQ(BiomeId(LegacyEnumB("Biome.DesertifiedPlain")), Dia::Core::StringCRC("Biome.DesertifiedPlain"));
     EXPECT_EQ(Reg().Find(Dia::Core::StringCRC("Biome.DesertifiedPlain")), B("Biome.DesertifiedPlain"));
     EXPECT_STREQ(Reg().IdText(B("Biome.DesertifiedPlain")), "Biome.DesertifiedPlain");
 }
@@ -152,7 +152,7 @@ TEST(BiomeTypes, FromIdRoundTrips)
 
 TEST(BiomeTypes, FromIdRejectsUnknownAndLeavesOutUnchanged)
 {
-    Biome out = LegacyB("Biome.Rainforest");
+    Biome out = LegacyEnumB("Biome.Rainforest");
     EXPECT_FALSE(BiomeFromId(Dia::Core::StringCRC("Biome.Nonsense"), out));
     EXPECT_EQ(Idx(out), B("Biome.Rainforest"));
     EXPECT_FALSE(BiomeFromId(TerrainTypeId(TerrainType::Mountain), out));
@@ -173,31 +173,31 @@ TEST(BiomeTypes, NamesAreNonEmptyAndExact)
         names.insert(n);
     }
     EXPECT_EQ(static_cast<int>(names.size()), 13);
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Ocean")), "Ocean");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Ocean")), "Ocean");
     EXPECT_STREQ(Reg().Name(B("Biome.Ocean")), "Ocean");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Lake")), "Lake");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Lake")), "Lake");
     EXPECT_STREQ(Reg().Name(B("Biome.Lake")), "Lake");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Grassland")), "Grassland / Steppe");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Grassland")), "Grassland / Steppe");
     EXPECT_STREQ(Reg().Name(B("Biome.Grassland")), "Grassland / Steppe");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.TemperateForest")), "Temperate Forest");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.TemperateForest")), "Temperate Forest");
     EXPECT_STREQ(Reg().Name(B("Biome.TemperateForest")), "Temperate Forest");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Wetland")), "Wetland / Delta");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Wetland")), "Wetland / Delta");
     EXPECT_STREQ(Reg().Name(B("Biome.Wetland")), "Wetland / Delta");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Desert")), "Desert Basin");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Desert")), "Desert Basin");
     EXPECT_STREQ(Reg().Name(B("Biome.Desert")), "Desert Basin");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Alpine")), "Alpine Mountain");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Alpine")), "Alpine Mountain");
     EXPECT_STREQ(Reg().Name(B("Biome.Alpine")), "Alpine Mountain");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Tundra")), "Tundra / Boreal");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Tundra")), "Tundra / Boreal");
     EXPECT_STREQ(Reg().Name(B("Biome.Tundra")), "Tundra / Boreal");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Rainforest")), "Rainforest");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Rainforest")), "Rainforest");
     EXPECT_STREQ(Reg().Name(B("Biome.Rainforest")), "Rainforest");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Volcanic")), "Volcanic Ashland");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Volcanic")), "Volcanic Ashland");
     EXPECT_STREQ(Reg().Name(B("Biome.Volcanic")), "Volcanic Ashland");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.Scrub")), "Scrub");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.Scrub")), "Scrub");
     EXPECT_STREQ(Reg().Name(B("Biome.Scrub")), "Scrub");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.BurnedAshland")), "Burned Ashland");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.BurnedAshland")), "Burned Ashland");
     EXPECT_STREQ(Reg().Name(B("Biome.BurnedAshland")), "Burned Ashland");
-    EXPECT_STREQ(BiomeName(LegacyB("Biome.DesertifiedPlain")), "Desertified Plain");
+    EXPECT_STREQ(BiomeName(LegacyEnumB("Biome.DesertifiedPlain")), "Desertified Plain");
     EXPECT_STREQ(Reg().Name(B("Biome.DesertifiedPlain")), "Desertified Plain");
     EXPECT_STREQ(BiomeName(Biome::Count), "Unknown");
 }
@@ -239,11 +239,11 @@ TEST(BiomeTypes, AlpineOceanLakeNeverForbidden)
 {
     for (int i = 0; i < kBiomeCount; ++i)
     {
-        EXPECT_FALSE(AreBiomesForbidden(LegacyB("Biome.Alpine"), E(i)));
+        EXPECT_FALSE(AreBiomesForbidden(LegacyEnumB("Biome.Alpine"), E(i)));
         EXPECT_FALSE(Reg().AreForbidden(B("Biome.Alpine"), Idx(E(i))));
-        EXPECT_FALSE(AreBiomesForbidden(LegacyB("Biome.Ocean"), E(i)));
+        EXPECT_FALSE(AreBiomesForbidden(LegacyEnumB("Biome.Ocean"), E(i)));
         EXPECT_FALSE(Reg().AreForbidden(B("Biome.Ocean"), Idx(E(i))));
-        EXPECT_FALSE(AreBiomesForbidden(LegacyB("Biome.Lake"), E(i)));
+        EXPECT_FALSE(AreBiomesForbidden(LegacyEnumB("Biome.Lake"), E(i)));
         EXPECT_FALSE(Reg().AreForbidden(B("Biome.Lake"), Idx(E(i))));
     }
 }

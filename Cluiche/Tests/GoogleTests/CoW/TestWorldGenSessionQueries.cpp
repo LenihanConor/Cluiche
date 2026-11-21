@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <type_traits>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::World::Testing;
@@ -907,7 +908,7 @@ TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
         EXPECT_EQ(e["name"].asString(), BiomeName(static_cast<Biome>(b)));
         int expected = 0;
         for (int i = 0; i < s.World().CellCount(); ++i)
-            expected += s.World().Cells()[i].biome == static_cast<Biome>(b) ? 1 : 0;
+            expected += s.World().Cells()[i].biome == b ? 1 : 0;
         EXPECT_EQ(e["count"].asInt(), expected) << b;
         sum += e["count"].asInt();
     }
@@ -934,7 +935,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
     int land = -1, pinnedLand = -1, ocean = -1;
     for (int i = 0; i < s.World().CellCount(); ++i)
     {
-        const Biome b = s.World().Cells()[i].biome;
+        const CoW::World::BiomeIndex b = s.World().Cells()[i].biome;
         if (Idx(b) == B("Biome.Ocean")) { if (ocean < 0) ocean = i; }
         else if (pin[i] != BiomePin::None) { if (pinnedLand < 0 && pin[i] != BiomePin::Water) pinnedLand = i; }
         else if (land < 0) land = i;
@@ -949,7 +950,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
     EXPECT_NEAR(c["moisture"].asDouble(), moist[land], 1e-6);
     EXPECT_TRUE(c.isMember("waterDistance"));
     EXPECT_EQ(c["biome"]["id"].asInt(), static_cast<int>(s.World().Cells()[land].biome));
-    EXPECT_EQ(c["biome"]["name"].asString(), BiomeName(s.World().Cells()[land].biome));
+    EXPECT_EQ(c["biome"]["name"].asString(), ShippedBiomeRegistry().Name(s.World().Cells()[land].biome));
     EXPECT_EQ(c["biomePin"]["name"].asString(), "None");
     ASSERT_TRUE(c["biomeRunnerUp"].isObject()) << c.toStyledString();
     const Json::Value& w = c["biomeRunnerUp"]["winner"];
@@ -993,3 +994,33 @@ TEST(WorldGenSessionQueries, CellFixupReasonMatchesFixupLayer)
             EXPECT_EQ(reason, "forbidden neighbour fix-up");
     }
 }
+
+TEST(WorldGenSessionQueries, BiomeCountsCoverEveryRegistryRowOfAFourteenRowFixture)
+{
+    // AC 6: per-biome stats are sized by the registry's Count(), not a fixed enum count.
+    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
+    ASSERT_EQ(extra.Count(), 14u);
+    TestSession s;
+    s.SetBiomeRegistry(&extra);
+    Generate(s);
+    const Json::Value r = s.Layers(Json::Value(Json::objectValue));
+    ASSERT_TRUE(r["biomeCounts"].isArray()) << r.toStyledString();
+    ASSERT_EQ(r["biomeCounts"].size(), extra.Count());
+    int sum = 0;
+    for (uint32_t b = 0; b < extra.Count(); ++b)
+    {
+        const Json::Value& e = r["biomeCounts"][b];
+        EXPECT_EQ(e["id"].asInt(), static_cast<int>(b));
+        EXPECT_EQ(e["name"].asString(), extra.Name(static_cast<CoW::World::BiomeIndex>(b)));
+        int expected = 0;
+        for (int i = 0; i < s.World().CellCount(); ++i)
+            expected += static_cast<uint32_t>(s.World().Cells()[i].biome) == b ? 1 : 0;
+        EXPECT_EQ(e["count"].asInt(), expected) << b;
+        sum += e["count"].asInt();
+    }
+    EXPECT_EQ(sum, s.World().CellCount());
+}
+
+// AC 5: a cell stores a registry row index, not the legacy enum.
+static_assert(std::is_same_v<decltype(Cell::biome), CoW::World::BiomeIndex>, "Cell::biome must be a BiomeIndex");
+static_assert(std::is_same_v<decltype(RegionRecord::primaryBiome), CoW::World::BiomeIndex>, "RegionRecord::primaryBiome must be a BiomeIndex");

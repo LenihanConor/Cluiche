@@ -56,7 +56,7 @@ struct RegionTargets
 struct RegionSeed
 {
     uint32_t  cell      = 0;                    // island regions: lowest cell index of the landmass
-    Biome     biome     = Biome::Ocean;         // seed biome (drives the growth cost)
+    World::BiomeIndex biome = 0;                // seed biome row (drives the growth cost); 0 = shipped Ocean row
     DepthZone zone      = DepthZone::None;      // island regions: majority zone
     uint8_t   landmass  = 0;
     bool      isIsland  = false;

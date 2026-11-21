@@ -130,7 +130,7 @@ struct BiomeResult
     std::vector<uint32_t> pin, biome, fixup;
     Stage14Debug          debug;
 
-    Biome At(int c) const { return static_cast<Biome>(biome[c]); }
+    ::CoW::World::BiomeIndex At(int c) const { return static_cast<::CoW::World::BiomeIndex>(biome[c]); }
 };
 
 inline BiomeResult RunBiomes(const BiomeGrid& g, const TerrainRules& rules)

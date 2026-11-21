@@ -407,7 +407,7 @@ TEST(NodesRiverFill, TerrainFactorsAndExclusions)
 namespace
 {
     // 3 x 2 regions of 16 x 16 cells: quota 15 each, total 90 (inside 80..150).
-    WorldStructure SixRegions(Biome b = G) { return MakeRegionBlocksWorld(3, 2, 16, 16, b); }
+    WorldStructure SixRegions(CoW::World::BiomeIndex b = G) { return MakeRegionBlocksWorld(3, 2, 16, 16, b); }
 
     FillResult Fill(WorldStructure& w, unsigned seed)
     {
@@ -486,7 +486,7 @@ TEST(NodesRiverFill, SingleRegionIsNodeLimitedByTheQuotaSum)
 
 TEST(NodesRiverFill, KindDrawFollowsFoodShareStatistically)
 {
-    for (const Biome b : { LegacyB("Biome.Grassland"), LegacyB("Biome.Alpine"), LegacyB("Biome.Rainforest") })
+    for (const CoW::World::BiomeIndex b : { LegacyB("Biome.Grassland"), LegacyB("Biome.Alpine"), LegacyB("Biome.Rainforest") })
     {
         int hunting = 0, total = 0;
         for (unsigned seed = 1; seed <= 100; ++seed)
@@ -841,7 +841,7 @@ namespace
             {
                 const RegionRecord& rec = w.regions.regions[r - 1];
                 std::printf("[NodesRiverFill] small region %u seed %llu: cells=%u biome=%s island=%d quota=%u existing=%u placed=%u count=%d\n", r,
-                            static_cast<unsigned long long>(seed), rec.cellCount, BiomeName(rec.primaryBiome), rec.isIsland ? 1 : 0,
+                            static_cast<unsigned long long>(seed), rec.cellCount, ShippedBiomeRegistry().Name(rec.primaryBiome), rec.isIsland ? 1 : 0,
                             fill.quota[r - 1], fill.existing[r - 1], fill.placed[r - 1], cnt[r]);
             }
             st.regionMin = std::min(st.regionMin, cnt[r]);

@@ -22,11 +22,11 @@ inline std::vector<int> FindZoneViolations(const Stage14Inputs& in, const uint32
 {
     std::vector<int> bad;
     const int        n = in.dims.width * in.dims.height;
-    const Biome      volcanic = ::CoW::World::Testing::LegacyB("Biome.Volcanic");
+    const ::CoW::World::BiomeIndex volcanic = ::CoW::World::Testing::LegacyB("Biome.Volcanic");
     for (int c = 0; c < n; ++c)
     {
         const Biome b = static_cast<Biome>(biome[c]);
-        if (b == volcanic && IsVentCell(in, c))
+        if (static_cast<::CoW::World::BiomeIndex>(b) == volcanic && IsVentCell(in, c))
         {
             continue;
         }
@@ -77,10 +77,10 @@ inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage1
     }
     const Dia::Pathfinding::HexTopology topo(in.dims.width, in.dims.height);
     const int                           n = in.dims.width * in.dims.height;
-    const Biome                         wetland = ::CoW::World::Testing::LegacyB("Biome.Wetland");
+    const ::CoW::World::BiomeIndex      wetland = ::CoW::World::Testing::LegacyB("Biome.Wetland");
     for (int c = 0; c < n; ++c)
     {
-        if (static_cast<Biome>(biome[c]) != wetland)
+        if (static_cast<::CoW::World::BiomeIndex>(biome[c]) != wetland)
         {
             continue;
         }
@@ -95,7 +95,7 @@ inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage1
             const uint32_t ws = in.waterSource[nb];
             source = ws == static_cast<uint32_t>(WaterSource::Lake) || ws == static_cast<uint32_t>(WaterSource::River) ||
                      ws == static_cast<uint32_t>(WaterSource::Ocean) ||
-                     static_cast<Biome>(biome[nb]) == wetland;
+                     static_cast<::CoW::World::BiomeIndex>(biome[nb]) == wetland;
         }
         if (!IsWetlandEligible(rules, in, c) || !source)
         {

@@ -46,7 +46,7 @@ namespace
 
     // rows: one string per grid row. '.' ocean, '1'..'9' provisional region id, 'u' land with region 0.
     // zones[i] = zone of region i+1 (its cells take that zone). uZone = zone of 'u' cells.
-    Hand Make(const std::vector<std::string>& rows, const std::vector<DepthZone>& zones, DepthZone uZone = FS, Biome biome = G)
+    Hand Make(const std::vector<std::string>& rows, const std::vector<DepthZone>& zones, DepthZone uZone = FS, CoW::World::BiomeIndex biome = G)
     {
         Hand h;
         const int W = static_cast<int>(rows[0].size());

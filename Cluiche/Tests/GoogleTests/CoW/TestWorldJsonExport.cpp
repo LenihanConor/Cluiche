@@ -353,7 +353,7 @@ TEST(WorldJsonExport, EnumValuesOutOfRangeAreRefused)
     std::string text; JsonIssue error;
     {
         WorldStructure w = MakeTinyWorld();
-        w.Cells()[3].biome = static_cast<Biome>(200);
+        w.Cells()[3].biome = static_cast<CoW::World::BiomeIndex>(200);
         EXPECT_FALSE(ExportWorldText(w, {}, text, error));
         EXPECT_EQ(error.field, "world.cells[3].biome");
     }
@@ -399,10 +399,10 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
 {
     for (int i = 0; i < kBiomeCount; ++i)
     {
-        Biome out = Biome::Count;
-        ASSERT_TRUE(WorldJsonParseBiome(WorldJsonBiomeName(static_cast<Biome>(i)), out));
+        CoW::World::BiomeIndex out = CoW::World::kNoBiome;
+        ASSERT_TRUE(WorldJsonParseBiome(WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(i)), out));
         EXPECT_EQ(static_cast<int>(out), i);
-        EXPECT_STREQ(ShippedBiomeRegistry().IdText(static_cast<CoW::World::BiomeIndex>(i)), WorldJsonBiomeName(static_cast<Biome>(i)));
+        EXPECT_STREQ(ShippedBiomeRegistry().IdText(static_cast<CoW::World::BiomeIndex>(i)), WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(i)));
     }
     for (int i = 0; i < static_cast<int>(TerrainType::Count); ++i)
     {
@@ -418,14 +418,14 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
         EXPECT_EQ(static_cast<int>(w), i);
         EXPECT_EQ(static_cast<int>(z), i);
     }
-    Biome b; TerrainType t; WaterSource w; DepthZone z;
+    CoW::World::BiomeIndex b; TerrainType t; WaterSource w; DepthZone z;
     EXPECT_FALSE(WorldJsonParseBiome("", b));
     EXPECT_FALSE(WorldJsonParseBiome("Biome.Swamp", b));
     EXPECT_FALSE(WorldJsonParseBiome("biome.ocean", b));        // case sensitive
     EXPECT_FALSE(WorldJsonParseTerrain("Unknown", t));
     EXPECT_FALSE(WorldJsonParseWaterSource("Swamp", w));
     EXPECT_FALSE(WorldJsonParseDepthZone("None ", z));
-    EXPECT_STREQ(WorldJsonBiomeName(Biome::Count), "Unknown");
+    EXPECT_STREQ(WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(Biome::Count)), "Unknown");
 }
 
 TEST(WorldJsonExport, GoldenTextForTheTinyWorld)

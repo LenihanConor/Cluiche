@@ -249,7 +249,7 @@ namespace
         auto inComp = [&](uint32_t c) {
             return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].depthZone == comp.zone;
         };
-        auto stepCost = [&](Biome seedBiome, uint32_t c) {
+        auto stepCost = [&](World::BiomeIndex seedBiome, uint32_t c) {
             float cost = 1.0f;
             if (cells[c].biome != seedBiome) { cost += mismatch; }
             if (cells[c].terrainFlags & TerrainFlag::Ridge) { cost += ridge; }

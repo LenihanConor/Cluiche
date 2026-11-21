@@ -19,8 +19,11 @@ namespace
     constexpr uint32_t kMinTotal = 80;
     constexpr uint32_t kMaxTotal = 150;
 
-    // GDD yield table (High 3, Medium 2, Low 1), indexed by Biome: { Food, Materials }.
-    constexpr int kYield[kBiomeCount][2] = {
+    // GDD yield table (High 3, Medium 2, Low 1), indexed by registry row: { Food, Materials }.
+    // The registry has no yield field (design question); the table is keyed by the shipped row order and rows past the
+    // table (appended biomes) yield nothing.
+    constexpr int kYieldRows = 13;
+    constexpr int kYield[kYieldRows][2] = {
         { 0, 0 },   // Ocean
         { 0, 0 },   // Lake
         { 3, 1 },   // GrasslandSteppe
@@ -39,19 +42,19 @@ namespace
     int Clamp(int v) { return std::clamp(v, kMinQuota, kMaxQuota); }
 }
 
-int BiomeFood(Biome b)
+int BiomeFood(World::BiomeIndex b)
 {
     const int i = static_cast<int>(b);
-    return (i >= 0 && i < kBiomeCount) ? kYield[i][0] : 0;
+    return (i >= 0 && i < kYieldRows) ? kYield[i][0] : 0;
 }
 
-int BiomeMaterials(Biome b)
+int BiomeMaterials(World::BiomeIndex b)
 {
     const int i = static_cast<int>(b);
-    return (i >= 0 && i < kBiomeCount) ? kYield[i][1] : 0;
+    return (i >= 0 && i < kYieldRows) ? kYield[i][1] : 0;
 }
 
-float BiomeFoodShare(Biome b)
+float BiomeFoodShare(World::BiomeIndex b)
 {
     const int f = BiomeFood(b), m = BiomeMaterials(b);
     return (f + m) > 0 ? static_cast<float>(f) / static_cast<float>(f + m) : 0.0f;

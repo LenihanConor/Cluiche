@@ -191,7 +191,7 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
         RegionRecord& rec = world.regions.regions[id - 1];
         if (s.count == 0)
         {
-            rec.primaryBiome = static_cast<Biome>(oceanRow);   // interim bridge: Task 23 makes this a BiomeIndex
+            rec.primaryBiome = static_cast<World::BiomeIndex>(oceanRow);
             rec.purity = 0.0f;
             rec.cellCount = 0;
             rec.centreCell = 0;
@@ -206,7 +206,7 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
                 if (best < 0 || hist[b] > hist[best]) { best = b; }
             }
             if (best < 0) { best = static_cast<int>(lakeRow); }   // all-Lake region
-            rec.primaryBiome = static_cast<Biome>(best);   // interim bridge: Task 23 makes this a BiomeIndex
+            rec.primaryBiome = static_cast<World::BiomeIndex>(best);
             rec.purity = static_cast<float>(hist[best]) / static_cast<float>(s.count);
             rec.cellCount = static_cast<uint16_t>(std::min<uint32_t>(s.count, 0xFFFFu));   // saturates
             rec.centreCell = centreCell[id];

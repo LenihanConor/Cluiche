@@ -131,18 +131,20 @@ inline BiomeIndex B(const BiomeRegistry& reg, const char* id)
 
 inline BiomeIndex B(const char* id) { return B(ShippedBiomeRegistry(), id); }
 
-// Interim bridge from the legacy enum (plan Task 27 deletes it).
+// Bridge from the legacy enum (plan Task 27 deletes the enum and these). Cell::biome and RegionRecord::primaryBiome are
+// BiomeIndex now, so the reverse bridge is the identity.
 inline BiomeIndex Idx(CoW::WorldGeneration::Biome b) { return static_cast<BiomeIndex>(b); }
-// Reverse bridge for assigning into production types that still hold the enum (Cell::biome, RegionRecord::primaryBiome).
-// Task 27 deletes these with Idx.
-inline CoW::WorldGeneration::Biome Legacy(BiomeIndex b) { return static_cast<CoW::WorldGeneration::Biome>(b); }
-inline CoW::WorldGeneration::Biome LegacyB(const char* id) { return Legacy(B(id)); }
+inline BiomeIndex Idx(BiomeIndex b) { return b; }
+inline BiomeIndex Legacy(BiomeIndex b) { return b; }
+inline BiomeIndex LegacyB(const char* id) { return B(id); }
+// For the tests that still exercise the legacy Biome enum functions (BiomeTypes.h); deleted with the enum in Task 27.
+inline CoW::WorldGeneration::Biome LegacyEnumB(const char* id) { return static_cast<CoW::WorldGeneration::Biome>(B(id)); }
 // constexpr-friendly named constant that resolves lazily on conversion (avoids loading the registry during static
-// initialisation): `constexpr BiomeConst G{"Biome.Grassland"};` then pass G wherever a legacy Biome is expected.
+// initialisation): `constexpr BiomeConst G{"Biome.Grassland"};` then pass G wherever a BiomeIndex is expected.
 struct BiomeConst
 {
     const char* id;
-    operator CoW::WorldGeneration::Biome() const { return LegacyB(id); }
+    operator BiomeIndex() const { return B(id); }
 };
 
 } // namespace Testing

@@ -21,7 +21,7 @@ struct RegionRecord
     DepthZone  zone         = DepthZone::None;      // majority zone for island regions
     uint8_t    landmass     = 0;
     bool       isIsland     = false;
-    Biome      primaryBiome = Biome::Ocean;
+    World::BiomeIndex primaryBiome = 0;             // registry row; 0 = the shipped Ocean row (default as before)
     float      purity       = 0.0f;                 // [0, 1]
     uint16_t   cellCount    = 0;
     uint32_t   centreCell   = 0;
