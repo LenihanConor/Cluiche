@@ -33,7 +33,7 @@ Nothing is built yet. Extraction order follows the CoW audit of 2026-11-20.
 The step chain (`IWorldStepStage`, `WorldStepChain`, config, listener) is not a Draoi package. It was audited as pure mechanism with no world knowledge, so it moves into Dia's `DiaDeferredStep` under generic names, pending its own feature spec (Dia placement needs sign-off under the escalation rule).
 
 ## Open Design Questions
-1. **World-sim kit split.** `WorldStepStageBase<TSim, TEntry, TLatch>` mixes sim-side machinery (mutation handling, spin-up) with adapter-side machinery (revisions, discard rule, hold-generation). It must be divided between Draoi and the CoW adapter. The A1, A4 and A5 specs need amending to match.
+1. ~~**World-sim kit split.**~~ **Resolved 2026-11-20** in the World-Sim Kit's "Draoi layer amendment" (@docs/specs/applications/cow/systems/worldstep/worldsim-kit.md): stage base, restore sequence, commands and names stay in CoW; `WorldCellFields`, `CellSelectorSet` and the codec data half go to DraoiHexWorld; sims expose `Step` plus a thread-neutral `Capture`/`Run`/`Commit`; packages depend one way (HexWorld <- Weather <- Hydrology <- Ecology) with feedback as optional, defaulted input arrays filled at `Capture`; the bus carries notifications only; `IParallelExecutor` moves to DiaThreading. Still owed: A1, A4 and A5 amendments, and a kit plan revision.
 2. **CluicheGameBaseline overlap.** It is already referenced by CoW and may be a partial version of this layer. Not yet inspected.
 3. **Engine-grade plumbing.** `RandomStreamModule`, `SaveLoadModule` and `SnapshotStoreAdapter` look like engine rather than gameplay; any move to Dia needs sign-off.
 

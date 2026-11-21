@@ -378,6 +378,46 @@ Each item supersedes contradicting text above.
    - A preset's parameter values form their own pack layer, applied last and replaced by the next `ApplyPreset`; user packs are kept (AC 22).
    - `set_region`-style region selection reads the S-1 field `terrain.region` in `WorldCellFields` (AC 23).
 
+## Draoi layer amendment (2026-11-20, user)
+
+The platform gained the Draoi layer (PD-011 to PD-014, @docs/specs/applications/draoi/draoi.md). This amendment divides the kit between Draoi and CoW. It supersedes contradicting text above, including the file paths in Design and Files Touched. Nothing in the kit was built, so no code moves.
+
+**1. Where each kit piece goes.**
+
+| Kit piece | Goes to | Why |
+|---|---|---|
+| `WorldStepStageBase` (revisions, promotion, queue drain, discard rule, spin-up polling, `HoldGeneration`, visit generation, `DoStop` order, health, metrics) | **CoW** (the stage adapter kit) | Scheduling and wiring; it reacts to CoW module events (PD-012, PD-013) |
+| `MutationQueue`, `SpinUpSlot` | **CoW**, beside the base | Generic utilities, but one consumer today (admission test); revisit for Dia when a second game needs them |
+| Save codec, **data half**: `SavedField[]`, record header, array writing, Validate, biome-palette remap | **DraoiHexWorld** | Hex-world state serialization with no CoW content. Field ranges are passed in by the caller (CoW reads them from its layer and state sidecars) |
+| Save codec, **restore half**: the 7-step restore, event-order fallback, pending blob, `cow.<sys>` participant ids | **CoW** | Tied to revisions, jobs and `WorldGenerationComplete` |
+| `SimCommandSet`, `ParamCommandHelper`, `cow.<sys>.records` | **CoW** | DiaAPI command wiring |
+| `WorldCellFields`, `CellSelectorSet` (derived `distance`/`upstream` fields) | **DraoiHexWorld** | Generic per-cell condition context and hex selectors. Each sim package contributes its own committed fields; CoW rebuilds the registry on `WorldGenerationComplete` |
+| `WorldSimNames`, `worldsim-conventions.md` | **CoW** | Every name is `cow.<sys>...` |
+
+The `ConditionExpr::Validate(const IConditionContext&)` and `IConditionContext::Has` Dia changes are unchanged.
+
+**2. The hooks become the sim's public API.** The base's `TSim` is a Draoi sim (`WeatherSimulation`, and so on). Each Draoi sim exposes:
+- a synchronous `Step(...)` for simple callers, and
+- a split `Capture` / `Run` / `Commit` form for off-thread use. The sim owns its working copy and swaps on `Commit`.
+
+The contract is thread-neutral: "`Run` touches only the working copy; the caller must not overlap `Run` with `Capture` or `Commit`". It never names SimPU, a processing unit or a step chain. State is never passed or returned by value. `InitialiseSim`, `ApplyEntry`, `RunStep` and `RestoreCommitted` call these methods; `LatchInputs`, `PublishCommit` and the extras stay adapter code.
+
+**3. Package dependencies follow the data flow, one way.**
+```
+DraoiHexWorld  <-  DraoiHexWorldWeather  <-  DraoiHexWorldHydrology  <-  DraoiHexWorldEcology
+```
+A package includes the packages before it directly and reads their types; there are no injected interfaces between sims. A game can stop the chain at any point (terrain only; terrain plus weather), but cannot skip a middle link.
+
+**4. Feedback flows are optional plain inputs.** Data flowing backwards (hydrology's lakes and soil moisture into weather; ecology's seasonal baseline into weather) is a plain struct of per-cell arrays **owned by the upstream sim**, with a default computed from `DraoiHexWorld` (for weather: S-1's static water sources and the `baseline_table` fallback). The downstream package supplies the fill function, since it knows both types. This replaces `IBiomeSeasonalBaseline`, `IWaterInputSource` and `IHydrologyInputsProvider` as interfaces; the A1, A4 and A5 amendments name the structs.
+
+**5. Data crosses as bulk arrays at `Capture`.** The adapter fills each sim's inputs once per step during `Capture`, as whole arrays. No per-cell virtual call or callback crosses a package boundary inside `Run`.
+
+**6. The bus carries notifications, not sim data.** `WeatherUpdated`, `HydrologyUpdated`, generation complete or failed, and health changes stay on DiaMessageBus, declared in `cow_worldsim.diagamemessages` and published by the CoW adapters (from `PublishCommit`). Draoi sims never touch the bus. Per-cell data never goes through it: it is too large for the bus, and its delivery timing would break deterministic in-step ordering (F-2).
+
+**7. `IParallelExecutor` moves to DiaThreading.** Sims take a parallel-for, not a scheduler, so they depend on DiaThreading instead of DiaDeferredStep. The move is part of the DiaDeferredStep chain feature spec (still to write). Signed off 2026-11-20.
+
+**Follow-on.** A1, A4 and A5 need matching amendments (sim in Draoi, adapter in CoW, the input structs from item 4). The kit plan (`worldsim-kit.plan.md`, Not Started) must be revised before `/implement`: its file paths change, and the `WorldCellFields` task (14), the codec data tasks (15, 16 and the record half of 17) and the `CellSelectorSet` tasks (25 to 28) move to DraoiHexWorld.
+
 ## Status
 
-**Status:** `Approved` (2026-11-18, user). No plan yet; write one at `/implement`, after specs 1, 2 and 4. Interview done with the user on 2026-11-18 (decisions: all four kit pieces including `WorldStepStageBase`; DiaCondition selectors with derived spatial fields over a shared `WorldCellFields` context; `save_defaults` as a dev-only params action; 15 acceptance criteria accepted).
+**Status:** `Approved` (2026-11-18, user). **Draoi layer amendment approved 2026-11-20 (user)**; the plan must be revised to match before building. No plan yet; write one at `/implement`, after specs 1, 2 and 4. Interview done with the user on 2026-11-18 (decisions: all four kit pieces including `WorldStepStageBase`; DiaCondition selectors with derived spatial fields over a shared `WorldCellFields` context; `save_defaults` as a dev-only params action; 15 acceptance criteria accepted).
