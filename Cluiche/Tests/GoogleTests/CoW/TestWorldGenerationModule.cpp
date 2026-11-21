@@ -1,7 +1,7 @@
 // Integration tests for CoW::WorldGenerationModule inside a real Application:
 // MessageBusHostModule + RandomStreamModule + WorldGenerationModule on a 30 Hz SimPU.
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/World/BiomeRegistry.h>
 #include <DiaApplicationFlow/Application.h>
@@ -10,7 +10,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <Modules/MessageBusHostModule.h>
-#include <Modules/RandomStreamModule.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaCore/FilePath/Path.h>

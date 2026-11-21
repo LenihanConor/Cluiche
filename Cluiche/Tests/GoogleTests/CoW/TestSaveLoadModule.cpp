@@ -12,7 +12,7 @@
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Health/IHealthReporter.h>
-#include <Modules/SaveLoadModule.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>

@@ -7,7 +7,7 @@
 #include <windows.h>
 #endif
 
-#include <Modules/F2DragonStub.h>
+#include <Modules/F2Harness/F2DragonStub.h>
 
 using namespace CoW;
 

@@ -10,7 +10,7 @@
 //   3. WorldStepModule::DoUpdate                         (the cadence: resync, readiness, retry, kick)
 #include <gtest/gtest.h>
 
-#include <Modules/WorldStepModule.h>
+#include <Modules/WorldStep/WorldStepModule.h>
 #include <Modules/SimQueryHostModule.h>
 #include <Shared/WorldStep/Testing/FakeWorldStepStage.h>
 

@@ -1,7 +1,7 @@
 // Tests for CoW::CheckStreamIndependence (F-2 check C1).
 #include <gtest/gtest.h>
-#include <Modules/F2StreamIndependence.h>
-#include <Modules/RandomStreamModule.h>
+#include <Modules/F2Harness/F2StreamIndependence.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
 #include <DiaMaths/Core/RandomStream.h>
 #include <memory>
 #include <random>

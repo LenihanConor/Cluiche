@@ -70,7 +70,7 @@ The first gate (total slider-to-visible p95 under 250 ms in Debug) flaked on Lar
 
 ## Follow-ups from the S-1 map view and perf work (2026-11-09; add to docs/BACKLOG.md)
 
-- **CoW Release build fails** (C4996, pre-existing): `fopen` in `Cluiche/CoW/Modules/SaveLoadModule.cpp:346`, `strncpy` in `F2TestRunnerModule.cpp:839` and `:1025`. No Release binary, so generation time in Release (Terrain Generator budget about 20 ms at Small) is unmeasured. Debug: about 64 / 91 / 138 ms at Small / Standard / Large.
+- **CoW Release build fails** (C4996, pre-existing): `fopen` in `Cluiche/CoW/Modules/Plumbing/SaveLoadModule.cpp:346`, `strncpy` in `F2TestRunnerModule.cpp:839` and `:1025`. No Release binary, so generation time in Release (Terrain Generator budget about 20 ms at Small) is unmeasured. Debug: about 64 / 91 / 138 ms at Small / Standard / Large.
 - **`dia validate schema` is stale**: `KNOWN_RAMPS` hardcodes 5 ramps (`Dia/DiaCLI/dia_cli/commands/validate/data_rules.py:20`), rejecting `sequential.terrain`, `sequential.purple`, `sequential.grey`, and warns on ui keys `inset`, `backdrop`, `default_base`, `elevation_layer`. CluicheTest's schema fails the same way.
 - **`landPotential` contains `-inf`** on some cells (seed 12345): check whether intended.
 - **Dia changes wanted from the panel perf fix:** skip unchanged domains or cache per-domain JSON in `PackDomainStates`; the viewer-state adapter re-parses relayed JSON on Sim and calls a Main-owned `StreamReader::FetchLatest` from Sim; rate-limit `pu.over_budget` (covered by the approved profiling amendment).

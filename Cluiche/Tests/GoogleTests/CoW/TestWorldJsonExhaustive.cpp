@@ -2,7 +2,7 @@
 // Exhaustive pass for Feature 4: speed, sweeps over the shipped presets, size guards and boundary worlds.
 #include <gtest/gtest.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>

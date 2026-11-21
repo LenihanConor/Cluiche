@@ -1,4 +1,4 @@
-#include "Modules/SaveLoadModule.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaApplicationFlow/Application.h>

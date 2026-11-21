@@ -2,7 +2,7 @@
 // holding MessageBusHost + DiaSimTime + SaveLoad + GameSpeedController + RandomStream, exercising
 // the full round trip, the no-tick-burst restore rule, the frame-boundary rule and bad-load safety.
 #include <gtest/gtest.h>
-#include <Modules/RandomStreamModule.h>   // before anything that pulls in <windows.h> (min macro)
+#include <Modules/Plumbing/RandomStreamModule.h>   // before anything that pulls in <windows.h> (min macro)
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -10,10 +10,10 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaSimTime/DiaSimTimeModule.h>
-#include <Modules/GameSpeedControllerModule.h>
-#include <Modules/GameSpeedMessages.h>
+#include <Modules/GameSpeed/GameSpeedControllerModule.h>
+#include <Modules/GameSpeed/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
-#include <Modules/SaveLoadModule.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
 #include <filesystem>
 #include <fstream>
 #include <iterator>

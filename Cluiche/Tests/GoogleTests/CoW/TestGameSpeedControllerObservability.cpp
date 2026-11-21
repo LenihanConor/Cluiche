@@ -10,7 +10,7 @@
 #include <DiaCore/SimTime/SimTimeDomain.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Health/HealthRegistry.h>
-#include <Modules/GameSpeedControllerModule.h>
+#include <Modules/GameSpeed/GameSpeedControllerModule.h>
 #include <Modules/MessageBusHostModule.h>
 #include <algorithm>
 #include <memory>
@@ -584,7 +584,7 @@ TEST(SLOW_GameSpeedSoak, DifferentTrafficSameDaySequence)
 // Debug domain (panel card)
 // ---------------------------------------------------------------------------
 #ifdef DIA_DEBUG
-#include <Modules/GameSpeedDebugDomain.h>
+#include <Modules/GameSpeed/GameSpeedDebugDomain.h>
 
 namespace {
 void SendSetScale(GameSpeedDebugDomain& domain, const char* key, double value)

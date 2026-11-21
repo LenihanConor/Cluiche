@@ -1,7 +1,7 @@
 # Feature Spec: DraoiHexWorld Core Prerequisites (data-driven pin rules, generic zones, enum split)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md
-**Status:** `Draft`
+**Status:** `Approved` (2026-11-21)
 **Origin:** Draoi layer audit, 2026-11-21 (Biome Registry and WorldGeneration coupling audit in the parent spec).
 
 ## Summary
@@ -13,7 +13,7 @@ Three changes that must land, in CoW, **before** `BiomeRegistry` and the world t
 
 ## Goals
 - A game can declare a biome set with no volcanic biome (or any other CoW pin) and still load and generate.
-- A game can declare a different number and naming of depth zones.
+- A game can declare its own names for the three depth zones (a different zone count is deferred).
 - `BiomeRegistry`, `BiomeIndex`, the zone table and the cell enums have no include dependency on the generator.
 
 ## Non-goals
@@ -57,11 +57,11 @@ No binding constraints apply beyond the parent spec's PD-011..014 (mechanism in 
 |---|------|------|-------|
 | 1 | Split `TerrainEnums.h` (core header + `BarrierForm` stays); fix includes | Build; goldens unchanged | Pure move |
 | 2 | Pin rule ids: registry stores `StringCRC`, generator rule table with 5 built-ins, `BiomeClassify` resolves via table | Registry load tests (unknown rule fails loud); a biomes file with no `vent` biome loads and generates; goldens unchanged | The "game without volcanoes" proof |
-| 3 | Zone table loader + `DepthZone` as index; replace `kZoneNames[]` | Zone table tests; `WorldJson` round trip; goldens unchanged | Behind Open Question 1 |
-| 4 | Generalise zone-count assumptions (`RegionPartition`, `NodesCorridor`, `TerrainDepthZones`, `TerrainRules` shares) | A 2-zone and a 4-zone fixture world generates and validates; CoW 3-zone goldens unchanged | The wide task |
+| 3 | `zones.json` loader (sidecar-owned shares) + `DepthZone` as index type; replace `kZoneNames[]` and the `DepthZone` enumerator names in code | Zone table tests; `WorldJson` round trip; goldens unchanged | Zone count stays 3 |
+| 4 | Replace named-enumerator uses (`FirstShores`/`WildReaches`/`AncientInteriors`) with index/table lookups in the generator, sites and tests | CoW goldens unchanged; a zones file with renamed zones loads and generates | Wide but mechanical (about 29 files); no count generalisation |
 | 5 | Gap audit and edge tests | Full CoW suite once | Per project rule |
 
-## Open Design Questions
-1. **Where does the zone table live?** A separate `zones.json` (own sidecar and params) or a `zones` block in `biomes.json`. Zones also carry generator shares, which are parameters (sidecar-owned), not biome facts, which argues for a separate file.
-2. **Is a different zone *count* a real requirement, or only different names?** If only names, task 4 shrinks to "3 slots, data-named" and the wide generalisation is skipped. Draoi's admission test says do not generalise speculatively.
-3. **Pin rule registration seam.** Built-ins registered by the terrain package, plus an application hook. Confirm the hook is needed now or only when a second game declares its own pin (admission test).
+## Resolved Design Questions (2026-11-21, all recommendations accepted)
+1. **Zone table lives in a separate `zones.json`** (own sidecar and params). Zones carry generator shares, which are sidecar-owned parameters, not biome facts.
+2. **Names only for now.** The generator keeps three zone slots; zone names and share defaults come from data. A different zone *count* is deferred until a second game needs it (Draoi admission test). Consequence: the "N zones" generalisation in Design section 2 and the 2-zone/4-zone fixture in task 4 are **out of scope**; `DepthZone` is still an index type so the later generalisation stays non-breaking.
+3. **No application hook for pin rules yet.** Only the five built-ins register, in the terrain package. The registry stores the rule as an open id, so adding a hook later is not a breaking change.

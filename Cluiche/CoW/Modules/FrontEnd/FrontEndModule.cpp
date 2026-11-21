@@ -1,4 +1,4 @@
-#include "Modules/FrontEndModule.h"
+#include "Modules/FrontEnd/FrontEndModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>

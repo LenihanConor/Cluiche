@@ -130,7 +130,7 @@ This feature does **not** change the menu. That is Feature 4, which is gated on 
 - **CluicheGameBaseline (Modules/ and Types/):** `StageCatalogue.*`, `StageCatalogueLoader.*`, `StageResult.h`, `StageResultsFile.*`, `StageCatalogueModule.*`, `StageCatalogueSnapshot.h`, vcxproj and filters.
 - **DiaCLI:** `cli/cli_validate.py`, new `cli/stages.py`, `utils/stage_catalogue.py`, `commands/docs/stage_registry_cmd.py`, `cli/docs.py`, tests.
 - **CluicheTest:** new `Modules/TestResultReporterModule.*`, `cluiche_main.diaapp`, every `.diastage`.
-- **CoW:** `Modules/F2TestRunnerModule.cpp`, `cow_main.diaapp`, three `.diastage`.
+- **CoW:** `Modules/F2Harness/F2TestRunnerModule.cpp`, `cow_main.diaapp`, three `.diastage`.
 - **Tests:** `Cluiche/Tests/GoogleTests/DiaGame/` (format, kinds) and `Cluiche/Tests/GoogleTests/CluicheGameBaseline/` (catalogue, loader, results, module) (both new), `Cluiche/Tests/Fixtures/StageCatalogue/`.
 
 ## Binding Decisions

@@ -8,9 +8,9 @@
 #include <Shared/WorldGeneration/SharedWorldHexGrid.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include "Modules/WorldGenerationMessages.h"
+#include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
-#include "Modules/RandomStreamModule.h"
+#include "Modules/Plumbing/RandomStreamModule.h"
 #include "Modules/SimQueryHostModule.h"
 #include <cstdint>
 #include <memory>

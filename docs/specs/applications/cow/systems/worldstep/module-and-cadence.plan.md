@@ -29,7 +29,7 @@ No Dia code is edited by this feature (AD-001: not triggered). The per-stage hoo
 
 ### Files
 ```
-Cluiche/CoW/Modules/WorldStepModule.h/.cpp                  the SimModule
+Cluiche/CoW/Modules/WorldStep/WorldStepModule.h/.cpp                  the SimModule
 Tests/GoogleTests/CoW/WorldStep/TestWorldStepModule.cpp     registration, key source, commands, observability
 Tests/GoogleTests/CoW/WorldStep/TestWorldStepCadence.cpp    cadence, retry, apply timing, stall, catch-up, sync, oracle
 Tests/GoogleTests/CoW/WorldStep/TestWorldStepLifecycle.cpp  missing/retired, mid-step unregister, DoStop, re-entry, SetDeferred

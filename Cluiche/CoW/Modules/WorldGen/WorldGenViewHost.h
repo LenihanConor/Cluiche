@@ -16,7 +16,7 @@
 
 #ifdef DIA_DEBUG
 
-#include "Modules/IWorldGenView.h"
+#include "Modules/WorldGen/IWorldGenView.h"
 
 #include <Shared/WorldGeneration/WorldCameraController.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>

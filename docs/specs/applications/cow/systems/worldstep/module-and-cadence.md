@@ -31,7 +31,7 @@ Save delegation and the history signal's wiring are Feature 3. This feature prov
 
 ### Placement and manifest
 
-`Cluiche/CoW/Modules/WorldStepModule.h/.cpp`, a `SimModule` on SimPU, **stage-scoped** (never `stages: ["all"]`): each hosting stage declares its own instance with its own `order`. The config is Feature 1's `WorldStepConfig` (`order`, `apply_after_days`, `deferred`).
+`Cluiche/CoW/Modules/WorldStep/WorldStepModule.h/.cpp`, a `SimModule` on SimPU, **stage-scoped** (never `stages: ["all"]`): each hosting stage declares its own instance with its own `order`. The config is Feature 1's `WorldStepConfig` (`order`, `apply_after_days`, `deferred`).
 
 ```
 manifest order (the stage .diaapp):   MessageBusHostModule … GameSpeedController

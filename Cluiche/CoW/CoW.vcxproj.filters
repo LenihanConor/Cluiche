@@ -4,6 +4,27 @@
     <Filter Include="Modules">
       <UniqueIdentifier>{4d2b8f61-7c3e-4a95-b1d0-9e6a2c5f8b17}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Modules\WorldGen">
+      <UniqueIdentifier>{dfb30476-4da9-4ee6-8027-93b8bb3feba3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\WorldStep">
+      <UniqueIdentifier>{8359f7bc-5586-43bb-8b42-903881484974}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\GameSpeed">
+      <UniqueIdentifier>{7c4c3b51-79ac-4cf8-9198-d9ee661d7463}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\F2Harness">
+      <UniqueIdentifier>{8110a623-23ee-46e8-bb80-2ab740ba5f39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\BusTools">
+      <UniqueIdentifier>{508029de-5ffb-4b79-b5ae-34273ab11273}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\Plumbing">
+      <UniqueIdentifier>{4de25a96-2206-4514-863e-78db22d3e60e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules\FrontEnd">
+      <UniqueIdentifier>{c4d18c74-a17a-4ee2-b5f3-6bff935a2b60}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Shared">
       <UniqueIdentifier>{b157cd77-a81d-4d7c-bef8-ccbd67f06c87}</UniqueIdentifier>
     </Filter>
@@ -25,50 +46,50 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Modules\FrontEndModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\FrontEnd\FrontEndModule.cpp">
+      <Filter>Modules\FrontEnd</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\RandomStreamModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\Plumbing\RandomStreamModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\BusProbeModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\BusTools\BusProbeModule.cpp">
+      <Filter>Modules\BusTools</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\BusRecorderModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\BusTools\BusRecorderModule.cpp">
+      <Filter>Modules\BusTools</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\GameSpeedControllerModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedControllerModule.cpp">
+      <Filter>Modules\GameSpeed</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\GameSpeedDebugDomain.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\GameSpeed\GameSpeedDebugDomain.cpp">
+      <Filter>Modules\GameSpeed</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SaveLoadModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\Plumbing\SaveLoadModule.cpp">
+      <Filter>Modules\Plumbing</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2TestRunnerModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerModule.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2Fingerprint.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2Fingerprint.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2StreamIndependence.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2StreamIndependence.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2Scenario.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2Scenario.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2DragonStub.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2DragonStub.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2PanelModel.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2PanelModel.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\F2TestRunnerDebugDomain.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
+      <Filter>Modules\F2Harness</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\SnapshotStoreAdapter.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\Plumbing\SnapshotStoreAdapter.cpp">
+      <Filter>Modules\Plumbing</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
       <Filter>Shared</Filter>
@@ -109,14 +130,14 @@
     <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\WorldGenerationModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\WorldGen\WorldGenerationModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\S1WorldGenerationTestbedStageModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.cpp">
+      <Filter>Modules\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\WorldGenDebugDomain.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp">
+      <Filter>Modules\WorldGen</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\WorldHexGrid.cpp">
       <Filter>Shared</Filter>
@@ -130,8 +151,8 @@
     <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\WorldGenViewHost.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\WorldGen\WorldGenViewHost.cpp">
+      <Filter>Modules\WorldGen</Filter>
     </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp">
       <Filter>Shared</Filter>
@@ -214,64 +235,64 @@
     <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp">
       <Filter>Shared\WorldStep</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\WorldStepModule.cpp">
-      <Filter>Modules</Filter>
+    <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
+      <Filter>Modules\WorldStep</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Modules\FrontEndModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
+      <Filter>Modules\FrontEnd</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\RandomStreamModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\Plumbing\RandomStreamModule.h">
+      <Filter>Modules\Plumbing</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\BusProbeModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\BusTools\BusProbeModule.h">
+      <Filter>Modules\BusTools</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\BusRecorderModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\BusTools\BusRecorderModule.h">
+      <Filter>Modules\BusTools</Filter>
     </ClInclude>
     <ClInclude Include="Shared\GameSpeedController.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\GameSpeedControllerModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedControllerModule.h">
+      <Filter>Modules\GameSpeed</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\GameSpeedMessages.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedMessages.h">
+      <Filter>Modules\GameSpeed</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\GameSpeedDebugDomain.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\GameSpeed\GameSpeedDebugDomain.h">
+      <Filter>Modules\GameSpeed</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SaveLoadModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\Plumbing\SaveLoadModule.h">
+      <Filter>Modules\Plumbing</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2TestRunnerModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerModule.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2Fingerprint.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2Fingerprint.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2StreamIndependence.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2StreamIndependence.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2Scenario.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2Scenario.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2DragonStub.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2DragonStub.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2PanelModel.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2PanelModel.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2TestRunnerDebugDomain.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2TestRunnerDebugDomain.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenerationMessages.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationMessages.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\SnapshotStoreAdapter.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\Plumbing\SnapshotStoreAdapter.h">
+      <Filter>Modules\Plumbing</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
       <Filter>Shared</Filter>
@@ -312,14 +333,14 @@
     <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenerationModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenerationModule.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\S1WorldGenerationTestbedStageModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\S1WorldGenerationTestbedStageModule.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenDebugDomain.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldHexGrid.h">
       <Filter>Shared</Filter>
@@ -333,17 +354,17 @@
     <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\IWorldGenView.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\IWorldGenView.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenPointerFrame.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenPointerFrame.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenViewHost.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenViewHost.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldGenMirrorRegistrar.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldGen\WorldGenMirrorRegistrar.h">
+      <Filter>Modules\WorldGen</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h">
       <Filter>Shared</Filter>
@@ -426,8 +447,8 @@
     <ClInclude Include="Shared\WorldGeneration\SharedWorldHexGrid.h">
       <Filter>Shared\WorldGeneration</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\F2StageResult.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\F2Harness\F2StageResult.h">
+      <Filter>Modules\F2Harness</Filter>
     </ClInclude>
     <ClInclude Include="Shared\World\BiomeRegistry.h">
       <Filter>Shared\World</Filter>
@@ -447,8 +468,8 @@
     <ClInclude Include="Shared\WorldStep\WorldStepChain.h">
       <Filter>Shared\WorldStep</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\WorldStepModule.h">
-      <Filter>Modules</Filter>
+    <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
+      <Filter>Modules\WorldStep</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldStep\IWorldStepListener.h">
       <Filter>Shared\WorldStep</Filter>

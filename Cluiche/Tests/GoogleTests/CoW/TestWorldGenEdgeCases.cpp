@@ -2,7 +2,7 @@
 // WorldGenSession (Set, SetSize, Regenerate, Presets, Layers, Cell) and a few module-level scenarios.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
@@ -12,7 +12,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <Modules/MessageBusHostModule.h>
-#include <Modules/RandomStreamModule.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
 
 #include <cmath>
 #include <cstdint>

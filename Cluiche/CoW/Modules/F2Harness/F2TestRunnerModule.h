@@ -1,5 +1,5 @@
 #pragma once
-#include "Modules/RandomStreamModule.h"   // first: RandomStream.h needs std::min/max unmacroed by windows.h
+#include "Modules/Plumbing/RandomStreamModule.h"   // first: RandomStream.h needs std::min/max unmacroed by windows.h
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -11,14 +11,14 @@
 #include "Types/StageResult.h"
 #include "Modules/InputStreamModule.h"
 #include "Modules/MessageBusHostModule.h"
-#include "Modules/GameSpeedControllerModule.h"
-#include "Modules/SaveLoadModule.h"
-#include "Modules/F2Fingerprint.h"
-#include "Modules/F2Scenario.h"
+#include "Modules/GameSpeed/GameSpeedControllerModule.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
+#include "Modules/F2Harness/F2Fingerprint.h"
+#include "Modules/F2Harness/F2Scenario.h"
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
-#include "Modules/F2TestRunnerDebugDomain.h"
+#include "Modules/F2Harness/F2TestRunnerDebugDomain.h"
 #include <memory>
 #endif
 #include <array>

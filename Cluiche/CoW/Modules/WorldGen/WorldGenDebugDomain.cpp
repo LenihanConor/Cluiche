@@ -1,7 +1,7 @@
-#include "Modules/WorldGenDebugDomain.h"
+#include "Modules/WorldGen/WorldGenDebugDomain.h"
 #ifdef DIA_DEBUG
 
-#include "Modules/WorldGenerationModule.h"
+#include "Modules/WorldGen/WorldGenerationModule.h"
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Perf/PerfMarkers.h>

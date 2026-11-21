@@ -1,4 +1,4 @@
-#include "Modules/WorldGenerationModule.h"
+#include "Modules/WorldGen/WorldGenerationModule.h"
 
 #include <Shared/World/BiomeRegistry.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>

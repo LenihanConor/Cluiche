@@ -1,6 +1,6 @@
 // S-1 bus messages must be trivially copyable (the bus recorder asserts it).
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationMessages.h>
+#include <Modules/WorldGen/WorldGenerationMessages.h>
 #include <type_traits>
 
 using namespace CoW;

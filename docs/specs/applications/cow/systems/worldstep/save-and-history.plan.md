@@ -22,7 +22,7 @@ The chain amendment `RestoreRan` is built by Feature 1 task 12; this plan only e
 ### Files
 ```
 Cluiche/CoW/Shared/WorldStep/IWorldStepListener.h        new: WorldStepApplied, IWorldStepListener
-Cluiche/CoW/Modules/WorldStepModule.h/.cpp               edited: Serialize/Deserialize/ValidatePending, listeners, Apply
+Cluiche/CoW/Modules/WorldStep/WorldStepModule.h/.cpp               edited: Serialize/Deserialize/ValidatePending, listeners, Apply
 Cluiche/CoW/Shared/WorldStep/Testing/FakeWorldStepStage.h edited: checksum Serialize/DeserializePending, listener fake
 Tests/GoogleTests/CoW/WorldStep/TestWorldStepSave.cpp
 Tests/GoogleTests/CoW/WorldStep/TestWorldStepHistorySignal.cpp

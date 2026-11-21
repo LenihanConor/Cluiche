@@ -9,7 +9,7 @@
 #include <DiaSaveGame/ISaveable.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <DiaSaveGame/LoadContext.h>
-#include <Modules/SaveLoadModule.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

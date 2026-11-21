@@ -1,5 +1,5 @@
 #include "F2StreamIndependence.h"
-#include "RandomStreamModule.h"
+#include "Modules/Plumbing/RandomStreamModule.h"
 #include <DiaMaths/Core/RandomStream.h>
 #include <vector>
 

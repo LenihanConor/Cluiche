@@ -119,7 +119,7 @@ private:
 ### CoW RandomStreamModule (application-level)
 
 ```cpp
-// CoW/Modules/RandomStreamModule.h
+// CoW/Modules/Plumbing/RandomStreamModule.h
 class RandomStreamModule : public Dia::ApplicationFlow::IModule {
 public:
     void OnInit() override;
@@ -133,7 +133,7 @@ private:
     Dia::Maths::RandomStreamManager mManager;
 };
 
-// CoW/Modules/RandomStreamModule.cpp
+// CoW/Modules/Plumbing/RandomStreamModule.cpp
 void RandomStreamModule::OnInit() {
     // Create 8 independent streams with distinct seeds
     mManager.CreateStream("WLD", 12345);
@@ -252,8 +252,8 @@ No migration is required.
 
 *Not part of this feature's deliverable, but documented for context:*
 
-- `Cluiche/CoW/Modules/RandomStreamModule.h` (new, CoW-side)
-- `Cluiche/CoW/Modules/RandomStreamModule.cpp` (new, CoW-side)
+- `Cluiche/CoW/Modules/Plumbing/RandomStreamModule.h` (new, CoW-side)
+- `Cluiche/CoW/Modules/Plumbing/RandomStreamModule.cpp` (new, CoW-side)
 - `Cluiche/CoW/CoW.vcxproj` — add RandomStreamModule files
 
 ## Tasks

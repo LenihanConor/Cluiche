@@ -1,4 +1,4 @@
-#include "Modules/S1WorldGenerationTestbedStageModule.h"
+#include "Modules/WorldGen/S1WorldGenerationTestbedStageModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>

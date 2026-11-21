@@ -1,6 +1,6 @@
-#include "Modules/F2PanelModel.h"
-#include "Modules/F2TestRunnerModule.h"
-#include "Modules/F2Scenario.h"
+#include "Modules/F2Harness/F2PanelModel.h"
+#include "Modules/F2Harness/F2TestRunnerModule.h"
+#include "Modules/F2Harness/F2Scenario.h"
 
 #include <cstdio>
 

@@ -23,9 +23,9 @@
 #include <Shared/WorldStep/IWorldStepListener.h>
 #include <Shared/WorldStep/WorldStepChain.h>
 #include <Shared/WorldStep/WorldStepConfig.h>
-#include "Modules/GameSpeedMessages.h"
+#include "Modules/GameSpeed/GameSpeedMessages.h"
 #include "Modules/MessageBusHostModule.h"
-#include "Modules/SaveLoadModule.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
 #include "Modules/SimQueryHostModule.h"
 
 #include <atomic>

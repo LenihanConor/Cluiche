@@ -1,8 +1,8 @@
-#include "Modules/F2TestRunnerDebugDomain.h"
+#include "Modules/F2Harness/F2TestRunnerDebugDomain.h"
 #ifdef DIA_DEBUG
 
-#include "Modules/F2TestRunnerModule.h"
-#include "Modules/F2PanelModel.h"
+#include "Modules/F2Harness/F2TestRunnerModule.h"
+#include "Modules/F2Harness/F2PanelModel.h"
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <cmath>

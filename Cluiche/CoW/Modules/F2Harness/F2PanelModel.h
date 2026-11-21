@@ -6,7 +6,7 @@
 // Mockup: docs/mockups/f2-core-runtime-panel-mockup.html
 #pragma once
 
-#include "Modules/F2Fingerprint.h"
+#include "Modules/F2Harness/F2Fingerprint.h"
 #include <Shared/GameSpeedController.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <cstdint>

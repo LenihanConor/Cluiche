@@ -2,7 +2,7 @@
 // ReferenceFuture) with check C4, driven by a fixed-step harness (Application::Update(1/30)) over a
 // real SimPU holding MessageBusHost + DiaSimTime + SaveLoad + GameSpeedController + RandomStream.
 #include <gtest/gtest.h>
-#include <Modules/RandomStreamModule.h>   // before Application headers: RandomStream.h needs std::min/max unmacroed
+#include <Modules/Plumbing/RandomStreamModule.h>   // before Application headers: RandomStream.h needs std::min/max unmacroed
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
@@ -11,15 +11,15 @@
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaStreams/ServiceStreamWriter.h>
-#include <Modules/F2TestRunnerModule.h>
-#include <Modules/F2PanelModel.h>
-#include <Modules/F2TestRunnerDebugDomain.h>
+#include <Modules/F2Harness/F2TestRunnerModule.h>
+#include <Modules/F2Harness/F2PanelModel.h>
+#include <Modules/F2Harness/F2TestRunnerDebugDomain.h>
 #include <DiaVisualDebugger/Domain/DiaDebugDomainRegistry.h>
 #include <DiaVisualDebugger/Console/PanelJson.h>
-#include <Modules/GameSpeedControllerModule.h>
-#include <Modules/GameSpeedMessages.h>
+#include <Modules/GameSpeed/GameSpeedControllerModule.h>
+#include <Modules/GameSpeed/GameSpeedMessages.h>
 #include <Modules/MessageBusHostModule.h>
-#include <Modules/SaveLoadModule.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <filesystem>
 #include <fstream>

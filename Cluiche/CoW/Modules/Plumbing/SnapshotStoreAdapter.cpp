@@ -1,5 +1,5 @@
-#include "Modules/SnapshotStoreAdapter.h"
-#include "Modules/SaveLoadModule.h"
+#include "Modules/Plumbing/SnapshotStoreAdapter.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
 
 #include <DiaSaveGame/SlotManager.h>
 

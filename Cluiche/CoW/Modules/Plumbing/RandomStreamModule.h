@@ -6,7 +6,7 @@
 #include <DiaMaths/Core/RandomStreamManager.h>
 #include <DiaMaths/Core/RandomStream.h>
 #include <DiaSaveGame/ISaveable.h>
-#include "Modules/SaveLoadModule.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
 
 namespace CoW {
 

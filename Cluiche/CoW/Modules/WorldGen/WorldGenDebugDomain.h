@@ -104,7 +104,7 @@
 #pragma once
 #ifdef DIA_DEBUG
 
-#include "Modules/IWorldGenView.h"
+#include "Modules/WorldGen/IWorldGenView.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>

@@ -2,12 +2,12 @@
 // validate / export / import / cancel / selectWorld / discard commands (S-1 worldgen-panel-rest plan task 2).
 // Every command must change the session exactly as the matching cow.worldgen.* command does (SD-S1-002).
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 
-#include <Modules/WorldGenDebugDomain.h>
+#include <Modules/WorldGen/WorldGenDebugDomain.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <DiaCore/Json/external/json/json.h>

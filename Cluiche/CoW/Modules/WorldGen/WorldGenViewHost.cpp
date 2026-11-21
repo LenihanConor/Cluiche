@@ -1,7 +1,7 @@
 #ifdef DIA_DEBUG
 
-#include "Modules/WorldGenViewHost.h"
-#include "Modules/WorldGenPointerFrame.h"
+#include "Modules/WorldGen/WorldGenViewHost.h"
+#include "Modules/WorldGen/WorldGenPointerFrame.h"
 
 #include <Shared/WorldGeneration/SiteGuarantees.h>
 

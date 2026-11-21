@@ -2,7 +2,7 @@
 // Real round trip: Main-side shim with a real DebugServer -> SimQueryRequest EventStream -> SimQueryHostModule (SimPU)
 // -> handler -> SimQueryReply EventStream -> shim. Harness adapted from TestCellLayersIntegrationStreams.cpp.
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 
 #ifdef DIA_DEBUG
 
@@ -22,7 +22,7 @@
 #include <DiaStreams/EventStreamReader.h>
 #include <DiaStreams/EventStreamWriter.h>
 #include <Modules/MessageBusHostModule.h>
-#include <Modules/RandomStreamModule.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
 #include <Modules/SimQueryHostModule.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>

@@ -7,8 +7,8 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaSaveGame/LoadContext.h>
-#include <Modules/RandomStreamModule.h>
-#include <Modules/SaveLoadModule.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
 #include <filesystem>
 #include <fstream>
 #include <string>

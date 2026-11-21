@@ -72,7 +72,7 @@ Each colour mode registers as a DiaCellLayers layer (Approved, not built):
 
 ### Domain and Ownership
 
-`WorldGenDebugDomain` is created by `WorldGenerationModule` under `DIA_DEBUG` and registered with the visual debugger, following CoW's `GameSpeedDebugDomain` (`Cluiche/CoW/Modules/GameSpeedDebugDomain.h`).
+`WorldGenDebugDomain` is created by `WorldGenerationModule` under `DIA_DEBUG` and registered with the visual debugger, following CoW's `GameSpeedDebugDomain` (`Cluiche/CoW/Modules/GameSpeed/GameSpeedDebugDomain.h`).
 
 - It lives on **SimPU** with the module, so drawers read `GetCurrentWorld()` and `GetLastReport()` directly with no cross-thread copy. This replaces the old "renderer on MainPU reads the world via event or shared state", which had no safe answer.
 - `IVisualDebugger::SetEnabled` is atomic, so the MainPU panel can toggle SimPU drawers.

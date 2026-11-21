@@ -291,7 +291,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 | `Dia/DiaCondition/ConditionExpr.h/.cpp` | `Validate(const IConditionContext&)` overload |
 | `Dia/DiaCondition/IConditionContext.h` | Defaulted `virtual bool Has(StringCRC, StringCRC) const` (plan-gap resolution) |
 | `Cluiche/Assets/CoW/Global/<System>/<sys>_state.schema.json` | **New** per system, state-field ranges |
-| `Cluiche/CoW/Modules/WorldGenerationModule.h/.cpp` | `SimCommandSet`, params command, `WorldCellFields` contribution |
+| `Cluiche/CoW/Modules/WorldGen/WorldGenerationModule.h/.cpp` | `SimCommandSet`, params command, `WorldCellFields` contribution |
 | `Cluiche/CoW/Shared/WorldGeneration/WorldLayerSource.h/.cpp` | Ids renamed |
 | `Cluiche/Assets/CoW/Stages/S1WorldGenerationTestbedStage/worldgen.schema.json` | Keys renamed |
 | `Cluiche/Tests/GoogleTests/CoW/Golden/worldgen_layers.golden.json` | Keys renamed, hashes unchanged |

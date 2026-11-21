@@ -1,4 +1,4 @@
-#include "Modules/BusProbeModule.h"
+#include "Modules/BusTools/BusProbeModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>

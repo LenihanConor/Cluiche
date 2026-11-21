@@ -6,7 +6,7 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/SimTime/SimTimeDomain.h>
-#include <Modules/GameSpeedControllerModule.h>
+#include <Modules/GameSpeed/GameSpeedControllerModule.h>
 #include <Modules/MessageBusHostModule.h>
 #include <vector>
 

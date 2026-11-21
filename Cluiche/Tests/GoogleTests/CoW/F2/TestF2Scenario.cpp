@@ -1,6 +1,6 @@
 // Tests for the pure F-2 scenario data: script tables, draw pattern and the clock reference model.
 #include <gtest/gtest.h>
-#include <Modules/F2Scenario.h>
+#include <Modules/F2Harness/F2Scenario.h>
 #include <algorithm>
 #include <set>
 

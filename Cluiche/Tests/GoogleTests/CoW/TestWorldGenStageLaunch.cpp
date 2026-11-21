@@ -1,7 +1,7 @@
 // Launch presets (Stage Catalogue F2) Task 11 / AC 14: WorldGenerationModule::OnStageLaunch applies preset, seed and size
 // from a launch preset's override on top of the manifest config.
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 using Dia::Core::StringCRC;

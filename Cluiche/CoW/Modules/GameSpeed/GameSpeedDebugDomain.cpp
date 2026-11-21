@@ -1,7 +1,7 @@
-#include "Modules/GameSpeedDebugDomain.h"
+#include "Modules/GameSpeed/GameSpeedDebugDomain.h"
 #ifdef DIA_DEBUG
 
-#include "Modules/GameSpeedControllerModule.h"
+#include "Modules/GameSpeed/GameSpeedControllerModule.h"
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
 #include <cmath>
 

@@ -4,10 +4,10 @@
 
 #ifdef DIA_DEBUG
 
-#include <Modules/WorldGenerationModule.h>   // before windows.h users (RandomStream min/max)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // before windows.h users (RandomStream min/max)
 #include <Shared/World/Testing/BiomeTestRegistry.h>
-#include "Modules/WorldGenViewHost.h"
-#include "Modules/WorldGenDebugDomain.h"
+#include "Modules/WorldGen/WorldGenViewHost.h"
+#include "Modules/WorldGen/WorldGenDebugDomain.h"
 
 #include <DiaCellLayers/Testing/CellLayerTestSupport.h>
 #include <DiaCellLayers/Testing/FakeDebugDraw.h>

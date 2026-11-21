@@ -1,12 +1,12 @@
 // CoW::WorldGenDebugDomain: panel state contract + command routing through WorldGenSession.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (UI Layout, Goals 7-10)
 #include <gtest/gtest.h>
-#include <Modules/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
+#include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #ifdef DIA_DEBUG
 
-#include <Modules/WorldGenDebugDomain.h>
+#include <Modules/WorldGen/WorldGenDebugDomain.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>

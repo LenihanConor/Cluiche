@@ -1,8 +1,8 @@
 // Tests for CoW::F2PanelModel: the pure view model behind the F-2 TestRunnerPanel.
 // States mirror the approved mockup (docs/mockups/f2-core-runtime-panel-mockup.html).
 #include <gtest/gtest.h>
-#include <Modules/F2PanelModel.h>
-#include <Modules/F2TestRunnerModule.h>
+#include <Modules/F2Harness/F2PanelModel.h>
+#include <Modules/F2Harness/F2TestRunnerModule.h>
 
 using namespace CoW;
 

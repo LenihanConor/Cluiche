@@ -7,17 +7,17 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <Shared/GameSpeedController.h>
-#include "Modules/GameSpeedMessages.h"
-#include "Modules/WorldGenerationMessages.h"
+#include "Modules/GameSpeed/GameSpeedMessages.h"
+#include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
-#include "Modules/SaveLoadModule.h"
+#include "Modules/Plumbing/SaveLoadModule.h"
 #include <DiaSaveGame/ISaveable.h>
 #include <cstdint>
 #include <memory>
 
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
-#include "Modules/GameSpeedDebugDomain.h"
+#include "Modules/GameSpeed/GameSpeedDebugDomain.h"
 #endif
 
 namespace CoW {

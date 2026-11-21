@@ -1,6 +1,6 @@
-#include "Modules/F2Fingerprint.h"
-#include "Modules/RandomStreamModule.h"
-#include "Modules/GameSpeedControllerModule.h"
+#include "Modules/F2Harness/F2Fingerprint.h"
+#include "Modules/Plumbing/RandomStreamModule.h"
+#include "Modules/GameSpeed/GameSpeedControllerModule.h"
 #include <DiaMaths/Core/RandomStream.h>
 
 namespace CoW {

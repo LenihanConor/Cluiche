@@ -1,4 +1,4 @@
-#include "Modules/GameSpeedControllerModule.h"
+#include "Modules/GameSpeed/GameSpeedControllerModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>

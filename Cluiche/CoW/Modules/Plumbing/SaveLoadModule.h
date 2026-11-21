@@ -13,7 +13,7 @@
 #include <DiaSaveGame/SlotInfo.h>
 #include <DiaSaveGame/SlotManager.h>
 #include <DiaCore/Json/external/json/json.h>
-#include "Modules/SnapshotStoreAdapter.h"
+#include "Modules/Plumbing/SnapshotStoreAdapter.h"
 #include <cstdint>
 
 namespace CoW {

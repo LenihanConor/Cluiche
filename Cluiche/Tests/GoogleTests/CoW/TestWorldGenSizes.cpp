@@ -9,7 +9,7 @@
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>   // before the module header: windows.h defines min/max macros
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
-#include <Modules/WorldGenerationModule.h>
+#include <Modules/WorldGen/WorldGenerationModule.h>
 
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldJson.h>
@@ -20,7 +20,7 @@
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #ifdef DIA_DEBUG
-#include <Modules/WorldGenDebugDomain.h>
+#include <Modules/WorldGen/WorldGenDebugDomain.h>
 #endif
 
 #include <DiaCore/Json/external/json/json.h>

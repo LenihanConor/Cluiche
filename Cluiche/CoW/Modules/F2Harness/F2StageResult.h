@@ -1,5 +1,5 @@
 #pragma once
-#include "Modules/F2TestRunnerModule.h"   // kF2CheckCount
+#include "Modules/F2Harness/F2TestRunnerModule.h"   // kF2CheckCount
 #include "Types/StageResult.h"
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstdint>

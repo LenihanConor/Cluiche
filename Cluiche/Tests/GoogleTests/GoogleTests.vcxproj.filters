@@ -1822,7 +1822,7 @@
     <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepChain.h">
       <Filter>CoW\Shared\WorldStep</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CoW\Modules\WorldStepModule.h">
+    <ClInclude Include="..\..\CoW\Modules\WorldStep\WorldStepModule.h">
       <Filter>CoW</Filter>
     </ClInclude>
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h">
@@ -1970,13 +1970,13 @@
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\GameSpeedControllerModule.cpp">
+    <ClCompile Include="..\..\CoW\Modules\GameSpeed\GameSpeedControllerModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestGameSpeedControllerObservability.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\GameSpeedDebugDomain.cpp">
+    <ClCompile Include="..\..\CoW\Modules\GameSpeed\GameSpeedDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestSaveLoadModule.cpp">
@@ -1997,28 +1997,28 @@
     <ClCompile Include="CoW\F2\TestF2TestRunnerModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerModule.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\F2\TestF2Fingerprint.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2Fingerprint.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2Fingerprint.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\F2\TestF2StreamIndependence.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2StreamIndependence.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2StreamIndependence.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\F2\TestF2Scenario.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2Scenario.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2Scenario.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2DragonStub.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2DragonStub.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\F2\TestF2DragonStub.cpp">
@@ -2027,10 +2027,10 @@
     <ClCompile Include="CoW\F2\TestF2PanelModel.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2PanelModel.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2PanelModel.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\F2TestRunnerDebugDomain.cpp">
+    <ClCompile Include="..\..\CoW\Modules\F2Harness\F2TestRunnerDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="DiaPathfinding\TestHexTopology.cpp">
@@ -2715,10 +2715,10 @@
     <ClCompile Include="CoW\TestWorldGenerationModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\WorldGenerationModule.cpp">
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenerationModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\WorldGenDebugDomain.cpp">
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenDebugDomain.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldGenCommands.cpp">
@@ -2778,7 +2778,7 @@
     <ClCompile Include="CoW\TestWorldGenViewHost.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp">
+    <ClCompile Include="..\..\CoW\Modules\WorldGen\WorldGenViewHost.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
@@ -3297,7 +3297,7 @@
     <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepChain.cpp">
       <Filter>CoW\Shared\WorldStep</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Modules\WorldStepModule.cpp">
+    <ClCompile Include="..\..\CoW\Modules\WorldStep\WorldStepModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepModule.cpp">

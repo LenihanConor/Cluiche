@@ -1,6 +1,6 @@
 // Tests for CoW::BuildF2StageResult: the all-pass vs any-fail decision behind the F2 StageResult event.
 #include <gtest/gtest.h>
-#include <Modules/F2StageResult.h>
+#include <Modules/F2Harness/F2StageResult.h>
 #include <cstring>
 
 using namespace CoW;

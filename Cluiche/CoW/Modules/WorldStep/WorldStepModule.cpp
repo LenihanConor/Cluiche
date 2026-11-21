@@ -1,4 +1,4 @@
-#include "Modules/WorldStepModule.h"
+#include "Modules/WorldStep/WorldStepModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>

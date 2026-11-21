@@ -245,7 +245,7 @@ public:
 | `Dia/DiaAttribute/Docs/dia.attribute.architecture.module.md` | DiaValueSchema dependency; new responsibilities |
 | `Dia/DiaAttribute/Testing/AttributeTestHelpers.h` | Sidecar fixtures |
 | `Cluiche/Tests/GoogleTests/DiaAttribute/*` | Migrated, plus new `TestDiaAttributeParameterFile.cpp`, `TestDiaAttributeParamBinding.cpp` |
-| `Cluiche/CoW/Modules/F2DragonStub.cpp` + its schema asset | Move to a sidecar |
+| `Cluiche/CoW/Modules/F2Harness/F2DragonStub.cpp` + its schema asset | Move to a sidecar |
 | `Cluiche/CoW/Shared/WorldGeneration/TerrainRules.h/.cpp` | Bound struct; X-macro removed |
 | `WorldGenerationModule.cpp`, `WorldGenSession.cpp` | Load the sidecar |
 | `Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json` | **New** |

@@ -1,7 +1,7 @@
 // Tests for CoW::F2Fingerprint: field-by-field capture and compare.
 #include <gtest/gtest.h>
-#include <Modules/F2Fingerprint.h>
-#include <Modules/RandomStreamModule.h>
+#include <Modules/F2Harness/F2Fingerprint.h>
+#include <Modules/Plumbing/RandomStreamModule.h>
 #include <DiaMaths/Core/RandomStream.h>
 #include <memory>
 #include <string>

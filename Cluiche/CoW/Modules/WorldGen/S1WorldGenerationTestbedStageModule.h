@@ -1,5 +1,5 @@
 #pragma once
-#include "Modules/WorldGenerationModule.h"   // first: RandomStream.h must precede windows.h (min/max macros)
+#include "Modules/WorldGen/WorldGenerationModule.h"   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -13,9 +13,9 @@
 #ifdef DIA_DEBUG
 #include "Modules/DomainStateRelayModule.h"
 #include "Modules/VisualDebuggerModule.h"
-#include "Modules/WorldGenDebugDomain.h"
-#include "Modules/WorldGenViewHost.h"
-#include "Modules/WorldGenMirrorRegistrar.h"
+#include "Modules/WorldGen/WorldGenDebugDomain.h"
+#include "Modules/WorldGen/WorldGenViewHost.h"
+#include "Modules/WorldGen/WorldGenMirrorRegistrar.h"
 #include "Modules/Camera2DModule.h"
 #include "Modules/SimQueryHostModule.h"
 #include <DiaCellLayers/CellLayersModule.h>
