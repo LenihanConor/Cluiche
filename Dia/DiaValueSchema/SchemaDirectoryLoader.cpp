@@ -1,5 +1,6 @@
 #include <DiaValueSchema/SchemaDirectoryLoader.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/ValuesFromResolver.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 
@@ -126,6 +127,18 @@ namespace Dia::ValueSchema
 		stats.mFilesFound = FileCount();
 		stats.mRootsMissing = mImpl->mRootsMissing;
 
+		// "X.json" next to each "X.schema.json": the candidate data files for valuesFrom (built on first use).
+		std::vector<std::string> dataCandidates;
+		auto DataCandidates = [this]()
+		{
+			std::vector<std::string> out;
+			for (const std::string& f : mImpl->mFiles)
+			{
+				if (HasSuffix(f, mImpl->mSuffix)) { out.push_back(f.substr(0, f.size() - mImpl->mSuffix.size()) + ".json"); }
+			}
+			return out;
+		};
+
 		std::string text;
 		for (const std::string& file : mImpl->mFiles)
 		{
@@ -138,7 +151,7 @@ namespace Dia::ValueSchema
 				continue;
 			}
 
-			const LoadResult result = ValueSchemaLoader::LoadFromText(text.c_str(), file.c_str());
+			LoadResult result = ValueSchemaLoader::LoadFromText(text.c_str(), file.c_str());
 			if (!result.mOk)
 			{
 				DIA_LOG_ERROR("VSC", "Schema file '%s' skipped (entry '%s'): %s",
@@ -150,7 +163,21 @@ namespace Dia::ValueSchema
 			++stats.mFilesLoaded;
 			for (unsigned int i = 0; i < result.mEntries.Size(); ++i)
 			{
-				if (registry.Register(result.mEntries[i]) == RegisterResult::Ok) { ++stats.mEntriesLoaded; }
+				ValueInfo& entry = result.mEntries[i];
+				if (entry.mHasValuesFrom)
+				{
+					if (dataCandidates.empty()) { dataCandidates = DataCandidates(); }
+					std::string reason;
+					if (!ResolveValuesFrom(entry, dataCandidates, reason))
+					{
+						DIA_LOG_ERROR("VSC", "Entry '%s' (file '%s'): valuesFrom failed: %s", entry.mKey.AsCStr(), file.c_str(), reason.c_str());
+						++stats.mValuesFromFailed;
+						continue;
+					}
+					DIA_LOG_INFO("VSC", "Entry '%s': valuesFrom '%s' resolved %u values", entry.mKey.AsCStr(), entry.mValuesFrom.mFormat.AsCStr(),
+						static_cast<unsigned int>(entry.mEnumValues.Size()));
+				}
+				if (registry.Register(entry) == RegisterResult::Ok) { ++stats.mEntriesLoaded; }
 				else { ++stats.mEntriesRejected; }
 			}
 		}

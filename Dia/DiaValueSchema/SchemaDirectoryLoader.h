@@ -11,6 +11,8 @@
 //  - A missing / non-directory root is a Warning (channel VSC), counted in mRootsMissing; not fatal.
 //  - A bad file (unreadable or rejected by ValueSchemaLoader) is skipped with an Error naming file,
 //    entry and reason; the rest load. Duplicate full keys: first loaded wins (the registry logs both).
+//  - An enum entry with `valuesFrom` is resolved (ValuesFromResolver) before it is registered; on failure it is NOT registered,
+//    an Error naming the entry key is logged and mValuesFromFailed is incremented.
 //  - Does not publish the registry; the caller does.
 
 #include <DiaValueSchema/ValueSchemaRegistry.h>
@@ -25,6 +27,7 @@ namespace Dia::ValueSchema
 		unsigned int mEntriesLoaded = 0;	// entries registered (RegisterResult::Ok)
 		unsigned int mEntriesRejected = 0;	// entries the registry rejected (duplicate / collision)
 		unsigned int mRootsMissing = 0;		// roots that were not an existing directory (or unresolved aliases)
+		unsigned int mValuesFromFailed = 0;	// enum entries whose valuesFrom could not be resolved (entry not registered)
 	};
 
 	class SchemaDirectoryLoader

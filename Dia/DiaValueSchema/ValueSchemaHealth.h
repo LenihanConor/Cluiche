@@ -1,6 +1,8 @@
 #pragma once
 
 // ValueSchemaHealth: IHealthReporter "dia.valueschema" over a SchemaLoadStats (AC 11).
+//  - Failing (reason "valueschema.values_from_failed") when an enum `valuesFrom` could not be resolved (entry not published;
+//    the log names the entry key). Highest priority; counted in errors.
 //  - Degraded (reason "valueschema.files_failed") when any schema file failed to load.
 //  - Also Degraded (reason "valueschema.ramp_files_failed") when a ramp file failed as a whole; a single skipped
 //    ramp inside a good file does not degrade health.

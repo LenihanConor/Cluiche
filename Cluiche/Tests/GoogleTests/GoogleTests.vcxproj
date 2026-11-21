@@ -1367,6 +1367,7 @@
     <ClCompile Include="CoW\TestBiomeDataOnly.cpp" />
     <ClCompile Include="CoW\TestBiomeLiterals.cpp" />
     <ClCompile Include="CoW\TestTerrainProfile.cpp" />
+    <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

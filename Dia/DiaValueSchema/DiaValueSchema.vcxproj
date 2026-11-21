@@ -105,6 +105,7 @@
     <ClInclude Include="DescribeMode.h" />
     <ClInclude Include="DescribeSession.h" />
     <ClInclude Include="ValueSchemaWriter.h" />
+    <ClInclude Include="ValuesFromResolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ValueSchemaVersion.cpp" />
@@ -132,6 +133,7 @@
     <ClCompile Include="ValueSchemaSubset.cpp" />
     <ClCompile Include="DescribeMode.cpp" />
     <ClCompile Include="ValueSchemaWriter.cpp" />
+    <ClCompile Include="ValuesFromResolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.diavalueschema.architecture.module.md" />
