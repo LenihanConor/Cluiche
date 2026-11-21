@@ -125,6 +125,19 @@
         },
         {
             "content_hash": 0,
+            "id": "json.biomes_schema",
+            "references": [],
+            "scope": "global",
+            "source_path": "Global/World/biomes.schema.json",
+            "stage_name": "",
+            "status": "active",
+            "tags": [
+                "World"
+            ],
+            "type": "json"
+        },
+        {
+            "content_hash": 0,
             "id": "json.terrain_rules_schema",
             "references": [],
             "scope": "global",
