@@ -15,7 +15,7 @@ from dia_cli.commands.validate.schema_cmd import Finding
 
 ENTRY_KEYS = ("key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
               "values", "affects", "related", "source", "unique", "required", "ref", "ui", "history",
-              "payload", "vocabulary", "keyRef", "valueType", "bands")
+              "payload", "vocabulary", "keyRef", "valueType", "bands", "valuesFrom")
 UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey",
            "delta_ramp", "default_base", "inset", "backdrop", "elevation_layer", "select_group")
 HISTORY_KEYS = ("track", "group", "aggregate")
@@ -24,6 +24,8 @@ KINDS = ("parameter", "field", "metric", "arg", "command", "event", "component_f
 TYPES = ("float", "int", "bool", "enum", "string", "ref", "ref[]", "map", "enum[]", "ref[2][]")
 REF_TYPES = ("ref", "ref[]", "ref[2][]")
 ENUM_TYPES = ("enum", "enum[]")
+VALUES_FROM_REQUIRED = ("format", "records", "id")
+VALUES_FROM_OPTIONAL = ("label", "colour", "description")
 MAP_VALUE_TYPES = ("float", "int", "bool", "string", "enum")
 NUMERIC_TYPES = ("float", "int")
 # Pack envelope keys: a kind-parameter entry with one of these could never be set by a pack.
@@ -90,6 +92,28 @@ def _check_enum_values(e: dict) -> None:
             _optional_string(v, f)
 
 
+def _check_values_from(e: dict) -> None:
+    """`valuesFrom` on an enum entry: the ids come from a data document (same rules as ValueSchemaLoader.cpp)."""
+    if "valuesFrom" not in e:
+        return
+    vf = e["valuesFrom"]
+    if not isinstance(vf, dict):
+        raise _Stop("schema.wrong-type", "field 'valuesFrom' must be an object")
+    if e["type"] != "enum":
+        raise _Stop("schema.values-from-misuse", "field 'valuesFrom' is only valid on enum types")
+    if "values" in e:
+        raise _Stop("schema.values-from-misuse", "an enum entry takes 'values' or 'valuesFrom', not both")
+    for n in vf:
+        if n not in VALUES_FROM_REQUIRED + VALUES_FROM_OPTIONAL:
+            raise _Stop("schema.unknown-entry-key", f"valuesFrom has unknown key '{n}'")
+    for f in VALUES_FROM_REQUIRED:
+        if not isinstance(vf.get(f), str):
+            raise _Stop("schema.wrong-type", f"valuesFrom is missing string '{f}'")
+    for f in VALUES_FROM_OPTIONAL:
+        if f in vf and not isinstance(vf[f], str):
+            raise _Stop("schema.wrong-type", f"valuesFrom field '{f}' must be a string")
+
+
 def _check_event_list(e: dict, field: str, item_name: str, required: tuple, optional: tuple,
                       check_type: bool) -> None:
     if field not in e:
@@ -126,8 +150,10 @@ def _check_type_specific(e: dict) -> None:
             raise _Stop("schema.map-misuse", "field 'keyRef' is only valid on map types")
         if "valueType" in e:
             raise _Stop("schema.map-misuse", "field 'valueType' is only valid on map types")
-    if t in ENUM_TYPES and "values" not in e:
-        raise _Stop("schema.enum-no-values", f"{t} type requires a 'values' array")
+    _check_values_from(e)
+    if t in ENUM_TYPES and "values" not in e and "valuesFrom" not in e:
+        suffix = " (or 'valuesFrom' on enum)" if t == "enum" else ""
+        raise _Stop("schema.enum-no-values", f"{t} type requires a 'values' array{suffix}")
 
 
 def _check_bands(e: dict) -> None:

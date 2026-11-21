@@ -642,6 +642,7 @@ PRODUCING_CASES = [
     D(E(type="map", keyRef="a/b", valueType="ref")),
     D(E(type="enum")),
     D(E(payload=[])),
+    D(E(type="enum[]", valuesFrom={"format": "a", "records": "b", "id": "id"})),
     D(E(min=NAN)),
     D(E(ui={"zzz": 1})),
     D(E(), E()),

@@ -85,6 +85,57 @@ class DataContext:
         return out
 
 
+def _records_at(doc: object, path: str) -> Optional[list]:
+    """The array at a dotted path below doc, or None."""
+    node = doc
+    for seg in path.split("."):
+        if not isinstance(node, dict) or seg not in node:
+            return None
+        node = node[seg]
+    return node if isinstance(node, list) else None
+
+
+def resolve_values_from(vf: object, context: Optional[DataContext]):
+    """Resolve an enum entry's `valuesFrom` against the data documents of its format.
+
+    Returns (ids, problems). ids is None when the source cannot be read (problems says why, as
+    (rule, message) pairs); record-level problems (missing id/label/colour/description) leave ids usable."""
+    if not isinstance(vf, dict) or not all(isinstance(vf.get(k), str) for k in ("format", "records", "id")):
+        return None, []   # malformed: the schema rules report it
+    fmt = vf["format"]
+    if context is None or not context.has_format(fmt):
+        return None, [("schema.values-from-no-file", f"valuesFrom format '{fmt}' has no data file")]
+    records: List[object] = []
+    found = False
+    for _name, doc, _pack in context.documents_by_format[fmt]:
+        arr = _records_at(doc, vf["records"])
+        if arr is not None:
+            found = True
+            records.extend(arr)
+    if not found:
+        return None, [("schema.values-from-bad-records",
+                       f"valuesFrom records '{vf['records']}' is missing or not an array in format '{fmt}'")]
+    ids: List[str] = []
+    problems: List[Tuple[str, str]] = []
+    fields = [vf["id"]] + [vf[f] for f in ("label", "colour", "description") if isinstance(vf.get(f), str)]
+    for i, rec in enumerate(records):
+        for f in fields:
+            if not isinstance(rec, dict) or f not in rec:
+                problems.append(("schema.values-from-missing-field",
+                                 f"valuesFrom record {vf['records']}[{i}] is missing field '{f}'"))
+        if isinstance(rec, dict) and isinstance(rec.get(vf["id"]), str):
+            ids.append(rec[vf["id"]])
+    return ids, problems
+
+
+def _enum_ids(entry: dict, context: Optional[DataContext]) -> Optional[List[str]]:
+    """Valid ids of an enum entry: its `values`, or the resolved `valuesFrom`; None when unresolvable."""
+    if isinstance(entry.get("valuesFrom"), dict) and "values" not in entry:
+        return resolve_values_from(entry["valuesFrom"], context)[0]
+    vals = entry.get("values", [])
+    return [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]         if isinstance(vals, list) else []
+
+
 CONSTRAINT_OPS = {
     "<": lambda a, b: a < b, "<=": lambda a, b: a <= b, ">": lambda a, b: a > b,
     ">=": lambda a, b: a >= b, "==": lambda a, b: a == b, "!=": lambda a, b: a != b,
@@ -334,6 +385,8 @@ class _Walker:
         id_strs = [x for x in ids if isinstance(x, str)] if ids is not None else None
         vt = entry.get("valueType")
         ventry = {"type": vt, "min": entry.get("min"), "max": entry.get("max"), "values": entry.get("values", [])}
+        if "valuesFrom" in entry:
+            ventry["valuesFrom"] = entry["valuesFrom"]
         for mk, mv in val.items():
             mpath = f"{path}.{mk}"
             if id_strs is not None and mk not in id_strs:
@@ -407,8 +460,9 @@ class _Walker:
                               f"{label} pair {i} = {shown} must be an array of exactly 2 ref strings")
             return ok
         elif t == "enum[]":
-            vals = entry.get("values", [])
-            ids = [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]                 if isinstance(vals, list) else []
+            ids = _enum_ids(entry, self.context)
+            if ids is None:
+                return True   # valuesFrom unresolved: reported at schema level
             ok = True
             for i, m in enumerate(val):
                 if not isinstance(m, str):
@@ -422,8 +476,9 @@ class _Walker:
                               f"{label} member {i} = {_fmt(m)} is not one of {', '.join(ids)}" + format_suggestion(s), s)
             return ok
         elif t == "enum":
-            vals = entry.get("values", [])
-            ids = [v["id"] for v in vals if isinstance(v, dict) and isinstance(v.get("id"), str)]                 if isinstance(vals, list) else []
+            ids = _enum_ids(entry, self.context)
+            if ids is None:
+                return True   # valuesFrom unresolved: reported at schema level
             if val not in ids:
                 s = suggest(val, ids)
                 self._add("data.bad-enum", key, path, record,
@@ -507,6 +562,23 @@ def validate_schema_references(schema_docs: Iterable[dict], file_by_doc: Mapping
                 out.append(Finding("FAIL", "schema.unknown-ramp", file, e["key"],
                                    f"'{e['key']}' ui.ramp '{ramp}' is not a known ramp ({', '.join(sorted(ramps))})",
                                    None, "ui.ramp", None))
+    return out
+
+
+def validate_schema_values_from(schema_docs: Iterable[dict], file_by_doc: Mapping[int, str],
+                                context: Optional[DataContext] = None) -> List[Finding]:
+    """Each `valuesFrom` enum entry must resolve its data file: schema.values-from-no-file,
+    schema.values-from-bad-records, schema.values-from-missing-field."""
+    out: List[Finding] = []
+    for d in schema_docs:
+        if not isinstance(d, dict) or not isinstance(d.get("for"), str):
+            continue
+        file = file_by_doc.get(id(d), "")
+        for e in _entries_of(d):
+            if not isinstance(e, dict) or not isinstance(e.get("key"), str) or e.get("type") != "enum"                     or "valuesFrom" not in e or "values" in e:
+                continue
+            for rule, msg in resolve_values_from(e["valuesFrom"], context)[1]:
+                out.append(Finding("FAIL", rule, file, e["key"], f"'{e['key']}': {msg}", None, "valuesFrom", None))
     return out
 
 

@@ -47,14 +47,7 @@ def test_conformance_files_and_cases_match():
     assert files == set(_expected().keys())
 
 
-# Task 13 removes: the Python validator does not know `valuesFrom` yet (C++ loader does, biome-registry plan task 11).
-VALUES_FROM_PENDING = {n for n in ("good-values-from", "bad-values-from-and-values", "bad-values-from-missing-format",
-                                   "bad-values-from-missing-records", "bad-values-from-missing-id", "bad-values-from-not-object",
-                                   "bad-values-from-on-non-enum", "bad-values-from-unknown-key")}
-VALUES_FROM_PENDING = {n + ".schema.json" for n in VALUES_FROM_PENDING}
-
-
-@pytest.mark.parametrize("name", sorted(n for n in _expected().keys() if n not in VALUES_FROM_PENDING))
+@pytest.mark.parametrize("name", sorted(n for n in _expected().keys()))
 def test_conformance_case(name):
     case = _expected()[name]
     text = (CONF_DIR / name).read_text(encoding="utf-8")
