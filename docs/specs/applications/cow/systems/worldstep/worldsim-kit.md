@@ -1,7 +1,7 @@
 # Feature Spec: World-Sim Kit, CoW Half (stage base, restore, commands, names, wiring)
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 4)
-**Status:** `Draft` (2026-11-21). The original kit spec was `Approved` 2026-11-18 and its Draoi layer amendment 2026-11-20; this document is the reduced CoW-owned half after the split. The split text needs user approval; the decisions below are carried over unchanged.
+**Status:** `Approved` (2026-11-21; split approved by the user, recommended answers to the open questions accepted). The original kit spec was `Approved` 2026-11-18 and its Draoi layer amendment 2026-11-20; this document is the reduced CoW-owned half after the split.
 **Draoi half:** @docs/specs/features/draoi/worldsim-kit-draoi.md (`WorldCellFields`, `CellSelectorSet`, codec data half, the DiaCondition overload)
 **Plan:** @docs/specs/applications/cow/systems/worldstep/worldsim-kit.plan.md
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A3, A4, A7, A8; §0.1 naming)
@@ -288,4 +288,4 @@ Package dependencies follow the data flow one way: `DraoiHexWorld <- DraoiHexWor
 
 ## Status
 
-**Status:** `Draft` (2026-11-21), pending user approval of the split. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-21, Not Started). Build order: step-chain (Done), Parameter Files, biome registry, special-sites injection, DraoiHexWorld core extraction, then the Draoi half, then this half's Draoi-dependent tasks.
+**Status:** `Approved` (2026-11-21), split approved. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-21, Not Started). Build order: step-chain (Done), Parameter Files, biome registry, special-sites injection, DraoiHexWorld core extraction, then the Draoi half, then this half's Draoi-dependent tasks.

@@ -1,7 +1,7 @@
 # Feature Spec: Extract DraoiHexWorld core
 
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 1)
-**Status:** `Draft`
+**Status:** `Approved` (2026-11-21; proceeds on the credible-second-consumer basis; layout and namespace decided, tests in GoogleTests)
 **Origin:** Draoi layer audit, 2026-11-21 (package split and WorldGeneration coupling audit in the parent spec).
 **Prerequisite:** @docs/specs/features/draoi/hexworld-core-prerequisites.md (Done). The world-sim kit's Draoi half (`WorldCellFields`, `CellSelectorSet`, codec data half) is owned by @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; this spec only reserves the destination.
 
