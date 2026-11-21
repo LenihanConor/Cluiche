@@ -9,6 +9,7 @@
 #include <DraoiHexWorld/StratumTable.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <DraoiHexWorld/Sites.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <cstdint>
 #include <string>
@@ -96,7 +97,7 @@ struct GuaranteeSpecError
 // All-or-nothing: on failure 'out' is unchanged and 'err' names the entry. Strata are resolved against 'strata'.
 // Fails on: unknown rule type, unknown stratum, kind id referenced but not declared, duplicate kind or guarantee id,
 // bad param (missing, wrong type, unknown field, sidecar key absent), bad shape.
-bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::StratumTable& strata, GuaranteeSpec& out,
+bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const Draoi::HexWorld::StratumTable& strata, GuaranteeSpec& out,
                        GuaranteeSpecError& err);
 
 // Registers every declared kind of the spec as a data-declared kind (no placer). False (stopping at the failing

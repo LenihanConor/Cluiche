@@ -15,8 +15,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 namespace fs = std::filesystem;
 
@@ -132,7 +133,7 @@ TEST(WorldJsonLimits, AC7_TheDefaultOutDirectoryIsUnderCluicheOutCoW)
 {
     EXPECT_STREQ(CoW::WorldGenerationModule::kDefaultOutWorldsDir, "Cluiche/out/CoW/worlds");
     CoW::WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     EXPECT_EQ(module.GetOutWorldsDirectory(), "Cluiche/out/CoW/worlds");
     EXPECT_EQ(fs::path(WorldFilePath(module.GetOutWorldsDirectory(), DefaultWorldName(12345))).generic_string(),
               "Cluiche/out/CoW/worlds/12345.wld.json");
@@ -212,7 +213,7 @@ TEST(WorldJsonEdge, OneByOneWorldRoundTrips)
     w.Cells()[0] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kStratumFirst, WaterSource::None, 0.4f, 0.3f, 1, 1);
     RegionRecord r; r.id = 1; r.stratum = kStratumFirst; r.landmass = 1;
     w.regions.AddRegion(r);
-    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
+    RecomputeRegionRecords(w, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     Site s; s.kindCrc = SiteKindId(BuiltinNodeKinds::Hunting()); s.cell = 0; s.region = 1;
     w.sites.Add(s);
     WorldStructure imported;
@@ -232,7 +233,7 @@ TEST(WorldJsonEdge, ExactlyThePermittedRegionCountRoundTripsAndOneMoreIsRefused)
         RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.stratum = kStratumWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
-    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
+    RecomputeRegionRecords(w, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     EXPECT_FALSE(w.regions.AddRegion(RegionRecord{})) << "the table itself is full at 64";
     WorldStructure imported;
     const WorldImportResult res = RoundTrip(w, imported);
@@ -260,7 +261,7 @@ TEST(WorldJsonEdge, RegionWithMoreThanSixteenNeighboursRoundTripsStably)
         RegionRecord r; r.id = static_cast<RegionId>(id); r.stratum = kStratumWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
-    const bool overflow = RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
+    const bool overflow = RecomputeRegionRecords(w, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     EXPECT_TRUE(overflow);
     EXPECT_EQ(w.regions.regions[0].neighbours.Size(), static_cast<unsigned>(RegionRecord::kMaxNeighbours));
     WorldStructure imported;

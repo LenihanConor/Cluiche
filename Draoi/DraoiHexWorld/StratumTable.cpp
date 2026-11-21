@@ -11,8 +11,8 @@
 #include <memory>
 #include <string>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
 namespace
 {
@@ -454,9 +454,9 @@ bool StratumTable::SetParams(const std::vector<std::pair<std::string, double>>& 
     return true;
 }
 
-bool StratumTable::TryAttribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name, float& out) const
+bool StratumTable::TryAttribute(uint32_t setIndex, StratumIndex z, const char* name, float& out) const
 {
-    if (name == nullptr || setIndex >= mSetCount || z == WorldGeneration::kNoStratum || z > mSets[setIndex].count) { return false; }
+    if (name == nullptr || setIndex >= mSetCount || z == kNoStratum || z > mSets[setIndex].count) { return false; }
     const StratumSetSpec& set = mSets[setIndex];
     for (uint32_t a = 0; a < set.attributeCount; ++a)
     {
@@ -469,7 +469,7 @@ bool StratumTable::TryAttribute(uint32_t setIndex, WorldGeneration::StratumIndex
     return false;
 }
 
-float StratumTable::Attribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name) const
+float StratumTable::Attribute(uint32_t setIndex, StratumIndex z, const char* name) const
 {
     float v = 0.0f;
     return TryAttribute(setIndex, z, name, v) ? v : 0.0f;
@@ -495,9 +495,9 @@ int StratumTable::SetIndexOf(const char* id) const
     return -1;
 }
 
-const char* StratumTable::NameIn(const StratumSetSpec& set, WorldGeneration::StratumIndex z)
+const char* StratumTable::NameIn(const StratumSetSpec& set, StratumIndex z)
 {
-    if (z == WorldGeneration::kNoStratum) { return "None"; }
+    if (z == kNoStratum) { return "None"; }
     return z <= set.count ? set.strata[z - 1].name : nullptr;
 }
 
@@ -512,9 +512,9 @@ int StratumTable::IndexIn(const StratumSetSpec& set, const char* name)
     return -1;
 }
 
-const char* StratumTable::Name(WorldGeneration::StratumIndex z) const
+const char* StratumTable::Name(StratumIndex z) const
 {
-    if (z == WorldGeneration::kNoStratum) { return "None"; }
+    if (z == kNoStratum) { return "None"; }
     return z <= Count() ? mSets[mDepthIndex].strata[z - 1].name : nullptr;
 }
 
@@ -529,5 +529,5 @@ int StratumTable::IndexOf(const char* name) const
     return -1;
 }
 
-} // namespace World
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

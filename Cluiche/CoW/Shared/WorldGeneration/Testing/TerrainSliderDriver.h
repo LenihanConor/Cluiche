@@ -202,7 +202,7 @@ inline std::vector<std::string> DiffSnapshots(const TerrainSnapshot& a, const Te
 class TerrainRunner
 {
 public:
-    TerrainRunner() : mRules(TestRules()), mGen(mRules, &::CoW::World::Testing::ShippedBiomeRegistry()), mRng(1) {}
+    TerrainRunner() : mRules(TestRules()), mGen(mRules, &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()), mRng(1) {}
 
     TerrainSnapshot Run(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims)
     {

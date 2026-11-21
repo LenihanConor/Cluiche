@@ -19,8 +19,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -77,7 +78,7 @@ namespace
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));
         in.barrierForm  = shape.barrierForm;
         in.barrier      = shape.barrier;
-        in.biomes       = &::CoW::World::Testing::ShippedBiomeRegistry();
+        in.biomes       = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();
         return in;
     }
 
@@ -134,7 +135,7 @@ namespace
 
         for (int c = 0; c < n; ++c)
         {
-            ASSERT_LT(biome[c], ::CoW::World::Testing::ShippedBiomeRegistry().Count()) << label << " cell " << c;
+            ASSERT_LT(biome[c], ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()) << label << " cell " << c;
             ASSERT_EQ(static_cast<uint32_t>(r.World().Cells()[c].biome), biome[c]) << label << " cell " << c;
             ASSERT_EQ(biome[c] == static_cast<uint32_t>(B("Biome.Ocean")), water[c] == static_cast<uint32_t>(WaterSource::Ocean)) << label;
             ASSERT_EQ(biome[c] == static_cast<uint32_t>(B("Biome.Lake")), water[c] == static_cast<uint32_t>(WaterSource::Lake)) << label;
@@ -377,7 +378,7 @@ TEST(BiomeEdge, Stage14AllLandNoWaterAtMoistureZero)
     const BiomeResult r = RunBiomes(g);
     for (size_t c = 0; c < r.biome.size(); ++c)
     {
-        EXPECT_LT(r.biome[c], ::CoW::World::Testing::ShippedBiomeRegistry().Count());
+        EXPECT_LT(r.biome[c], ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count());
         EXPECT_NE(r.At(static_cast<int>(c)), B("Biome.Ocean"));
         EXPECT_NE(r.At(static_cast<int>(c)), B("Biome.Lake"));
         EXPECT_TRUE(std::isfinite(r.score[c]));
@@ -397,7 +398,7 @@ TEST(BiomeEdge, TinyGeneratorGridsDoNotCrashAndStayValid)
         EXPECT_EQ(CountBadLayerValues(r.Gen(), d, firstBad), 0) << d.width << "x" << d.height << " " << firstBad;
         for (int c = 0; c < d.width * d.height; ++c)
         {
-            EXPECT_LT(static_cast<int>(r.World().Cells()[c].biome), static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count()));
+            EXPECT_LT(static_cast<int>(r.World().Cells()[c].biome), static_cast<int>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()));
         }
     }
 }
@@ -515,7 +516,7 @@ TEST(BiomeEdge, BiomeIndexLayerEqualsCellBiomeAfterWriteTerrain)
 TEST(BiomeEdge, WriteTerrainBeforeUpdateLeavesBiomeUntouched)
 {
     TerrainRules     rules = TestRules();
-    TerrainGenerator g(rules, &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(rules, &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     WorldStructure   w;
     w.Resize(GridDimensions{ 4, 3 });
     for (int c = 0; c < w.CellCount(); ++c) { w.Cells()[c].biome = B("Biome.Rainforest"); }
@@ -625,7 +626,7 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestRowCandidate)
     // Pinned Alpine on First Shores re-picks among Grassland / Forest; identical envelopes tie bit-exactly (set on a
     // fixture registry: classification reads the registry's climate rows, not the kT0_* rules) and the lower row
     // (Grassland) must win.
-    const CoW::World::BiomeRegistry forestAsGrass = ::CoW::World::Testing::LoadShippedVariant(
+    const Draoi::HexWorld::BiomeRegistry forestAsGrass = ::Draoi::HexWorld::Testing::LoadShippedVariant(
         { { "\"climate\": {\"t0\": 0.5, \"m0\": 0.6, \"wt\": 0.25, \"wm\": 0.2}",
             "\"climate\": {\"t0\": 0.6, \"m0\": 0.35, \"wt\": 0.25, \"wm\": 0.2}" } });
     BiomeGrid g(5, 5);

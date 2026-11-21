@@ -209,7 +209,7 @@ namespace
 
 	Module* MakeShim(const StringCRC& id) { gShim = new WgMainShim(id); return gShim; }
 	Module* MakeHost(const StringCRC& id) { gHost = new SimQueryHostModule(id); return gHost; }
-	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); gWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); gWg->SetBiomesPath(CoW::World::Testing::ShippedBiomesPath()); return gWg; }
+	Module* MakeWg(const StringCRC& id) { gWg = new CoW::WorldGenerationModule(id); gWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); gWg->SetBiomesPath(Draoi::HexWorld::Testing::ShippedBiomesPath()); return gWg; }
 	Module* MakeBus(const StringCRC& id) { gBus = new Cluiche::AppFlow::MessageBusHostModule(id); return gBus; }
 	Module* MakeSquatter(const StringCRC& id) { return new WgSquatter(id); }
 	Module* MakeRegistrar(const StringCRC& id) { gRegistrar = new WgRegistrar(id); return gRegistrar; }
@@ -712,9 +712,9 @@ TEST(WorldGenCommands, ModuleExposesTheHexGridAndRebuildsItInPlaceOnASizeChange)
 	h.Pump(5);
 	const Dia::Graphics::CellGridDesc* desc = nullptr;
 	{
-		const CoW::WorldGeneration::WorldHexGrid* g = gWg->GetHexGrid();
+		const Draoi::HexWorld::WorldHexGrid* g = gWg->GetHexGrid();
 		ASSERT_NE(g, nullptr);
-		const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+		const Draoi::HexWorld::WorldStructure* w = gWg->GetCurrentWorld();
 		ASSERT_NE(w, nullptr);
 		EXPECT_EQ(g->Dimensions().width, w->dimensions.width);
 		EXPECT_EQ(g->Dimensions().height, w->dimensions.height);
@@ -725,7 +725,7 @@ TEST(WorldGenCommands, ModuleExposesTheHexGridAndRebuildsItInPlaceOnASizeChange)
 	h.Call("cow.worldgen.set_size", a);
 	ASSERT_TRUE(h.PumpUntil([&] { return gWg->GetCurrentWorld() && gWg->GetCurrentWorld()->dimensions.width != 66; }, 400));
 	h.Pump(2);
-	const CoW::WorldGeneration::WorldHexGrid* g = gWg->GetHexGrid();
+	const Draoi::HexWorld::WorldHexGrid* g = gWg->GetHexGrid();
 	ASSERT_NE(g, nullptr);
 	EXPECT_EQ(g->Dimensions().width, gWg->GetCurrentWorld()->dimensions.width);
 	EXPECT_EQ(g->Dimensions().height, gWg->GetCurrentWorld()->dimensions.height);
@@ -754,7 +754,7 @@ TEST(WorldGenCommands, RegionsQueryRoundTripReturnsEveryRecord)
 	const Json::Value r = h.Call("cow.worldgen.regions");   // Call() fails on a reply over 16 KB
 	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
 	EXPECT_TRUE(r["fresh"].asBool());
-	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	const Draoi::HexWorld::WorldStructure* w = gWg->GetCurrentWorld();
 	ASSERT_NE(w, nullptr);
 	ASSERT_EQ(r["regions"].size(), w->regions.regions.Size());
 	ASSERT_GT(r["regions"].size(), 0u);
@@ -777,7 +777,7 @@ TEST(WorldGenCommands, SitesQueryRoundTripPagesAllSitesAndFiltersByKind)
 	h.Pump(3);
 	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
 	h.Pump(3);
-	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	const Draoi::HexWorld::WorldStructure* w = gWg->GetCurrentWorld();
 	ASSERT_NE(w, nullptr);
 	const int total = w->sites.Count();
 	ASSERT_GT(total, 100);
@@ -799,7 +799,7 @@ TEST(WorldGenCommands, SitesQueryRoundTripPagesAllSitesAndFiltersByKind)
 
 	Json::Value f = Obj(); f["kind"] = "CoW.Node.Corridor";
 	const Json::Value fr = h.Call("cow.worldgen.sites", f);
-	EXPECT_EQ(fr["total"].asInt(), w->sites.Count(CoW::WorldGeneration::BuiltinNodeKinds::Corridor()));
+	EXPECT_EQ(fr["total"].asInt(), w->sites.Count(Draoi::HexWorld::BuiltinNodeKinds::Corridor()));
 	for (const Json::Value& s : fr["sites"]) EXPECT_EQ(s["kind"].asString(), "CoW.Node.Corridor");
 
 	Json::Value bad = Obj(); bad["kind"] = "No.Such.Kind";
@@ -875,24 +875,24 @@ TEST(WorldGenCommands, CellQueryReportsRegionZoneAndSitesAndEveryLandCellHasAReg
 	h.Pump(3);
 	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
 	h.Pump(3);
-	const CoW::WorldGeneration::WorldStructure* w = gWg->GetCurrentWorld();
+	const Draoi::HexWorld::WorldStructure* w = gWg->GetCurrentWorld();
 	ASSERT_NE(w, nullptr);
 
 	for (int i = 0; i < w->CellCount(); ++i)
 	{
-		const CoW::WorldGeneration::Cell& c = w->Cells()[i];
-		const bool water = c.terrain == CoW::WorldGeneration::TerrainType::DeepWater ||
-		                   c.terrain == CoW::WorldGeneration::TerrainType::ShallowWater ||
-		                   c.terrain == CoW::WorldGeneration::TerrainType::Lake;
-		if (!water) ASSERT_NE(c.region, CoW::WorldGeneration::kNoRegion) << "land cell " << i;
+		const Draoi::HexWorld::Cell& c = w->Cells()[i];
+		const bool water = c.terrain == Draoi::HexWorld::TerrainType::DeepWater ||
+		                   c.terrain == Draoi::HexWorld::TerrainType::ShallowWater ||
+		                   c.terrain == Draoi::HexWorld::TerrainType::Lake;
+		if (!water) ASSERT_NE(c.region, Draoi::HexWorld::kNoRegion) << "land cell " << i;
 	}
 
-	const CoW::WorldGeneration::Site& site = w->sites.All().front();
+	const Draoi::HexWorld::Site& site = w->sites.All().front();
 	Json::Value a = Obj(); a["index"] = site.cell;
 	const Json::Value r = h.Call("cow.worldgen.cell", a);
 	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
 	EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w->Cells()[site.cell].region));
-	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::StratumName(::CoW::World::Testing::ShippedStratumTable(), w->Cells()[site.cell].stratum));
+	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), w->Cells()[site.cell].stratum));
 	ASSERT_TRUE(r["sites"].isArray());
 	EXPECT_GE(r["sites"].size(), 1u);
 }
@@ -943,10 +943,10 @@ namespace
 		std::string Config() const { return "{\"out_worlds_dir\":\"" + path.generic_string() + "\"}"; }
 	};
 
-	bool SameCellBytes(const CoW::WorldGeneration::WorldStructure& a, const CoW::WorldGeneration::WorldStructure& b)
+	bool SameCellBytes(const Draoi::HexWorld::WorldStructure& a, const Draoi::HexWorld::WorldStructure& b)
 	{
 		return a.CellCount() == b.CellCount() &&
-		       std::memcmp(a.Cells(), b.Cells(), sizeof(CoW::WorldGeneration::Cell) * static_cast<size_t>(a.CellCount())) == 0;
+		       std::memcmp(a.Cells(), b.Cells(), sizeof(Draoi::HexWorld::Cell) * static_cast<size_t>(a.CellCount())) == 0;
 	}
 }
 
@@ -960,7 +960,7 @@ TEST(WorldGenCommands, ExportThenImportRestoresTheWorldAndOpensLocked)
 	Json::Value regen = Obj(); regen["seed"] = 4242;
 	ASSERT_TRUE(h.Call("cow.worldgen.regenerate", regen)["success"].asBool());
 	h.Pump(4);
-	const CoW::WorldGeneration::WorldStructure original = gWg->GetSession().World();
+	const Draoi::HexWorld::WorldStructure original = gWg->GetSession().World();
 	ASSERT_GT(original.regions.regions.Size(), 0u);
 
 	Json::Value ex = Obj(); ex["name"] = "roundtrip";
@@ -1399,7 +1399,7 @@ namespace
 {
 	// Writes `<name>.wld.json` into `dir` by exporting a world a pure session generated (seed, preset-less defaults).
 	// Returns that world so a test can compare the module's world with it.
-	CoW::WorldGeneration::WorldStructure WriteWorldFile(const std::filesystem::path& dir, const char* name, uint64_t seed)
+	Draoi::HexWorld::WorldStructure WriteWorldFile(const std::filesystem::path& dir, const char* name, uint64_t seed)
 	{
 		CoW::WorldGeneration::TestSession s;
 		s.SetWorldDirectories(std::string(), dir.generic_string());
@@ -1430,7 +1430,7 @@ namespace
 TEST(WorldHandoff, WorldFileFormLoadsTheExportedWorldLockedAndUnchanged)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 4711);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "hand", 4711);
 	Harness h(FileConfig(dir, "\"world_file\":\"hand\""));
 	ASSERT_TRUE(h.Start());
 	h.Pump(6);
@@ -1457,7 +1457,7 @@ TEST(WorldHandoff, WorldFileFormLoadsTheExportedWorldLockedAndUnchanged)
 TEST(WorldHandoff, WorldFileIsFoundInTheDeployedWorldsDirectoryToo)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "shipped", 21);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "shipped", 21);
 	WorldsDir emptyOut;
 	Harness h("{\"worlds_dir\":\"" + dir.path.generic_string() + "\",\"out_worlds_dir\":\"" + emptyOut.path.generic_string() + "\",\"world_file\":\"shipped\"}");
 	ASSERT_TRUE(h.Start());
@@ -1469,7 +1469,7 @@ TEST(WorldHandoff, WorldFileIsFoundInTheDeployedWorldsDirectoryToo)
 TEST(WorldHandoff, WorldFileIgnoresSeedAndSizeKeys)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 55);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "hand", 55);
 	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"seed\":999,\"size\":\"Large\""));
 	ASSERT_TRUE(h.Start());
 	h.Pump(6);
@@ -1482,7 +1482,7 @@ TEST(WorldHandoff, WorldFileIgnoresSeedAndSizeKeys)
 TEST(WorldHandoff, WorldFileLoadsEvenWhenAutoGenerateIsOff)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 8);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "hand", 8);
 	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"auto_generate\":false"));
 	ASSERT_TRUE(h.Start());
 	h.Pump(6);
@@ -1539,7 +1539,7 @@ TEST(WorldHandoff, AManualRegenerateAfterAFailedWorldFileWorks)
 TEST(WorldHandoff, WorldFileWinsOverARegenerateOnStartRequest)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 90);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "hand", 90);
 	Harness h(FileConfig(dir, "\"world_file\":\"hand\",\"regenerate_on_start\":true"));
 	ASSERT_TRUE(h.Start());
 	h.Pump(10);
@@ -1560,7 +1560,7 @@ TEST(WorldHandoff, NullAndEmptyValuedKeysFail)
 TEST(WorldHandoff, WorldFileLoadsAfterADependantHasRegisteredItsKinds)
 {
 	WorldsDir dir;
-	const CoW::WorldGeneration::WorldStructure expected = WriteWorldFile(dir.path, "hand", 14);
+	const Draoi::HexWorld::WorldStructure expected = WriteWorldFile(dir.path, "hand", 14);
 	Harness h(FileConfig(dir, "\"world_file\":\"hand\""), true, true);
 	ASSERT_TRUE(h.Start());
 	h.Pump(6);

@@ -14,8 +14,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
@@ -23,8 +24,8 @@ namespace
     constexpr StratumIndex FS = kStratumFirst;
     constexpr StratumIndex WR = kStratumWild;
     constexpr StratumIndex AI = kStratumAncient;
-    constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
-    constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
     TerrainRules Rules() { return TestRules(); }
 
@@ -39,7 +40,7 @@ namespace
     }
 
     // Vertical one-cell-wide strip at x = 0: cell i is at distance |i - j| from cell j.
-    WorldStructure Strip(int len, StratumIndex z = FS, CoW::World::BiomeIndex b = G)
+    WorldStructure Strip(int len, StratumIndex z = FS, Draoi::HexWorld::BiomeIndex b = G)
     {
         WorldStructure w = MakeBlankWorld(3, len);
         FillLand(w, 0, 0, 1, len, z, b);
@@ -49,7 +50,7 @@ namespace
     RegionGrowth GrowWith(const WorldStructure& w, const std::vector<uint32_t>& seeds)
     {
         RegionGrowth g;
-        g.components = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+        g.components = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
         std::vector<std::vector<uint32_t>> s(g.components.size());
         s[0] = seeds;
         GrowRegions(w, Rules(), s, g);
@@ -66,7 +67,7 @@ TEST(RegionPartition, RebalanceAddsToMostUnusedCapacityTiesByZoneOrder)
     uint8_t count[kMaxStrata] = { 2, 4, 2 };
     const uint16_t cap[kMaxStrata] = { 2, 6, 4 };
     StratumIndex lim = kStratumFirst;
-    RebalanceRegionCounts(count, cap, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(count, cap, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
     EXPECT_EQ(lim, kNoStratum);
 }
@@ -76,7 +77,7 @@ TEST(RegionPartition, RebalanceRemovesFromLeastSpareCapacityTiesByZoneOrder)
     uint8_t count[kMaxStrata] = { 6, 6, 6 };
     const uint16_t cap[kMaxStrata] = { 6, 6, 6 };
     StratumIndex lim;
-    RebalanceRegionCounts(count, cap, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(count, cap, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(count[0], 5); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 6);
 }
 
@@ -86,7 +87,7 @@ TEST(RegionPartition, RebalanceAddTieGoesToEarlierZoneWhenOnlyOneAddIsNeeded)
     uint8_t count[kMaxStrata] = { 2, 4, 3 };            // total 9: exactly one add
     const uint16_t cap[kMaxStrata] = { 2, 6, 5 };       // zone 1 and zone 2 both have 2 unused
     StratumIndex lim;
-    RebalanceRegionCounts(count, cap, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(count, cap, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
     EXPECT_EQ(lim, kNoStratum);
 }
@@ -96,7 +97,7 @@ TEST(RegionPartition, RebalanceRemoveNeverTakesAZoneAtItsRangeMinimum)
     uint8_t count[kMaxStrata] = { 4, 7, 6 };            // total 17; zone 0 sits at its minimum with no spare capacity
     const uint16_t cap[kMaxStrata] = { 4, 7, 6 };
     StratumIndex lim;
-    RebalanceRegionCounts(count, cap, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(count, cap, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(count[0], 4); EXPECT_EQ(count[1], 6); EXPECT_EQ(count[2], 6);
 }
 
@@ -111,7 +112,7 @@ TEST(RegionPartition, TargetsReachBothEndsOfEveryZoneRange)
     for (unsigned seed = 1; seed <= 300; ++seed)
     {
         RandomStream rng(seed);
-        const RegionTargets t = ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+        const RegionTargets t = ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
         for (int z = 0; z < 3; ++z) { lo[z] = std::min<int>(lo[z], t.count[z]); hi[z] = std::max<int>(hi[z], t.count[z]); }
     }
     for (int z = 0; z < 3; ++z)
@@ -126,13 +127,13 @@ TEST(RegionPartition, RebalanceTerrainLimitedNamesSmallestCapacityToMinimum)
     uint8_t count[kMaxStrata] = { 3, 2, 2 };
     const uint16_t cap[kMaxStrata] = { 3, 2, 2 };
     StratumIndex lim;
-    RebalanceRegionCounts(count, cap, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(count, cap, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(count[0] + count[1] + count[2], 7);
     EXPECT_EQ(lim, kStratumWild);   // 3/4, 2/4, 2/2
 
     uint8_t c2[kMaxStrata] = { 2, 2, 1 };
     const uint16_t cap2[kMaxStrata] = { 2, 2, 1 };
-    RebalanceRegionCounts(c2, cap2, ::CoW::World::Testing::ShippedStratumTable(), lim);
+    RebalanceRegionCounts(c2, cap2, ::Draoi::HexWorld::Testing::ShippedStratumTable(), lim);
     EXPECT_EQ(lim, kStratumFirst);   // equal ratios: zone order
 }
 
@@ -147,7 +148,7 @@ TEST(RegionPartition, TargetsAreCapacityLimited)
     for (unsigned seed = 1; seed <= 30; ++seed)
     {
         RandomStream rng(seed);
-        const RegionTargets t = ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+        const RegionTargets t = ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
         EXPECT_EQ(t.capacity[0], 2);
         EXPECT_LE(t.count[0], 2);
         for (int z = 0; z < 3; ++z) { EXPECT_LE(t.count[z], t.capacity[z]); EXPECT_LE(t.count[z], ShippedStratumTable().Depth()->strata[z].regionsMax); }
@@ -163,7 +164,7 @@ TEST(RegionPartition, TargetsTerrainLimitedIsReportedNotFailure)
     FillLand(w, 0, 0, 12, 12, FS, G);   // 144 -> 4
     FillLand(w, 12, 0, 18, 12, WR, G);  // 72 -> 2
     RandomStream rng(3);
-    const RegionTargets t = ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+    const RegionTargets t = ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
     EXPECT_EQ(t.total, 6);
     EXPECT_NE(t.limitedBy, kNoStratum);
     EXPECT_EQ(t.capacity[2], 0);
@@ -174,7 +175,7 @@ TEST(RegionPartition, TargetsUseOneDrawPerZoneInOrder)
     WorldStructure w = MakeBlankWorld(40, 40);
     FillLand(w, 0, 0, 40, 40, FS, G);
     RandomStream rng(9);
-    (void)ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+    (void)ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
     RandomStream ref(9);
     for (int i = 0; i < 3; ++i) { (void)ref.RandomInt(); }
     EXPECT_EQ(rng.GetDrawCount(), ref.GetDrawCount());
@@ -185,7 +186,7 @@ TEST(RegionPartition, TargetsDeterministic)
     WorldStructure w = MakeBlankWorld(40, 40);
     FillLand(w, 0, 0, 40, 14, FS, G); FillLand(w, 0, 14, 40, 28, WR, G); FillLand(w, 0, 28, 40, 40, AI, G);
     RandomStream a(5), b(5);
-    const RegionTargets ta = ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), a), tb = ComputeRegionTargets(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), b);
+    const RegionTargets ta = ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), a), tb = ComputeRegionTargets(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), b);
     for (int z = 0; z < 3; ++z) { EXPECT_EQ(ta.count[z], tb.count[z]); }
 }
 
@@ -196,7 +197,7 @@ TEST(RegionPartition, ComponentsSplitAtZoneBoundary)
     WorldStructure w = MakeBlankWorld(12, 6);
     FillLand(w, 0, 0, 6, 6, FS, G);
     FillLand(w, 6, 0, 12, 6, WR, G);
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     ASSERT_EQ(comps.size(), 2u);
     EXPECT_EQ(comps[0].stratum, FS); EXPECT_EQ(comps[1].stratum, WR);
     EXPECT_EQ(comps[0].cells.size(), 36u);
@@ -209,7 +210,7 @@ TEST(RegionPartition, ComponentsSplitDisconnectedPiecesAndFlagTinyOnes)
     WorldStructure w = MakeBlankWorld(20, 8);
     FillLand(w, 0, 0, 7, 7, WR, G);     // 49
     FillLand(w, 9, 0, 11, 2, WR, G);    // 4: tiny, ocean gap between
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     ASSERT_EQ(comps.size(), 2u);
     EXPECT_FALSE(comps[0].tiny);
     EXPECT_TRUE(comps[1].tiny);
@@ -228,7 +229,7 @@ TEST(RegionPartition, ComponentsIgnoreOtherLandmassesAndOcean)
     WorldStructure w = MakeBlankWorld(20, 8);
     FillLand(w, 0, 0, 6, 6, FS, G, 1);
     FillLand(w, 10, 0, 16, 6, FS, G, 2);
-    EXPECT_EQ(FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable()).size(), 1u);
+    EXPECT_EQ(FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable()).size(), 1u);
 }
 
 TEST(RegionPartition, LakesAndRiversAreOrdinaryCells)
@@ -237,7 +238,7 @@ TEST(RegionPartition, LakesAndRiversAreOrdinaryCells)
     FillLand(w, 0, 0, 8, 8, FS, G);
     w.At(3, 3).waterSource = WaterSource::Lake;
     w.At(4, 4).waterSource = WaterSource::River;
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     ASSERT_EQ(comps.size(), 1u);
     EXPECT_EQ(comps[0].cells.size(), 64u);
 }
@@ -250,7 +251,7 @@ TEST(RegionPartition, SharesLargestRemainderAndMinOne)
     FillLand(w, 0, 0, 10, 10, FS, G);   // 100
     FillLand(w, 12, 0, 20, 10, FS, G);  // 80
     FillLand(w, 22, 0, 26, 10, FS, G);  // 40
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     ASSERT_EQ(comps.size(), 3u);
     RegionTargets t; t.count[0] = 5;
     const auto shares = AllocateSeedShares(comps, t);
@@ -264,7 +265,7 @@ TEST(RegionPartition, SharesAreCappedByWhatEachComponentCanHold)
     FillLand(w, 0, 0, 10, 10, FS, G);   // 100 -> at most 2 regions of 36
     FillLand(w, 12, 0, 20, 10, FS, G);  // 80  -> at most 2
     FillLand(w, 22, 0, 26, 10, FS, G);  // 40  -> at most 1
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     RegionTargets t; t.count[0] = 5;
     const auto shares = AllocateSeedShares(comps, t, 36);
     EXPECT_EQ(shares[0], 2); EXPECT_EQ(shares[1], 2); EXPECT_EQ(shares[2], 1);   // surplus from the 40-cell component moves on
@@ -278,7 +279,7 @@ TEST(RegionPartition, SeedsFarthestPointWithLowestIndexTie)
     const WorldStructure w = Strip(21);
     const unsigned seed = SeedWithFirstDraw(21, 10);   // middle: both ends at distance 10
     RandomStream rng(seed);
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 2u);
     EXPECT_EQ(seeds[0], comps[0].cells[10]);
@@ -289,7 +290,7 @@ TEST(RegionPartition, SeedsPickFarthestEnd)
 {
     const WorldStructure w = Strip(20);
     RandomStream rng(SeedWithFirstDraw(20, 4));
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     const auto seeds = PlaceSeeds(w, Rules(), comps[0], 3, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 3u);
     EXPECT_EQ(seeds[1], comps[0].cells[19]);
@@ -301,7 +302,7 @@ TEST(RegionPartition, SeedsBiomeBonusOutweighsShorterDistance)
     WorldStructure w = Strip(20);
     SetBiome(w, 0, 0, F);   // cell 0: distance 9 + bonus 3 beats cell 19: distance 10
     RandomStream rng(SeedWithFirstDraw(20, 9));
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     const auto seeds = PlaceSeeds(w, Rules(), comps[0], 2, rng, ShippedBiomeRegistry());
     ASSERT_EQ(seeds.size(), 2u);
     EXPECT_EQ(seeds[1], comps[0].cells[0]);
@@ -311,7 +312,7 @@ TEST(RegionPartition, SeedsDeterministicAndStreamDependent)
 {
     WorldStructure w = MakeBlankWorld(40, 40);
     FillLand(w, 0, 0, 40, 40, FS, G);
-    const auto comps = FindStratumComponents(w, Rules(), ::CoW::World::Testing::ShippedStratumTable());
+    const auto comps = FindStratumComponents(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable());
     RandomStream a(11), b(11);
     EXPECT_EQ(PlaceSeeds(w, Rules(), comps[0], 4, a, ShippedBiomeRegistry()), PlaceSeeds(w, Rules(), comps[0], 4, b, ShippedBiomeRegistry()));
     std::set<std::vector<uint32_t>> variants;

@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cstring>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 namespace
 {
@@ -133,5 +133,5 @@ const Site* SiteSet::Find(const Dia::Core::StringCRC& kind, uint32_t cell) const
     return (it != mSites.end() && it->kindCrc == k && it->cell == cell) ? &*it : nullptr;
 }
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

@@ -114,7 +114,7 @@ namespace
     };
 }
 
-bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& biomes)
+bool RecomputeRegionRecords(WorldStructure& world, const Draoi::HexWorld::BiomeRegistry& biomes)
 {
     const int n = world.CellCount();
     const unsigned count = world.regions.regions.Size();
@@ -123,8 +123,8 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
     const Cell* cells = world.Cells();
 
     const unsigned biomeCount = biomes.Count();
-    const World::BiomeIndex oceanRow = biomes.Role(World::BiomeRole::Ocean);
-    const World::BiomeIndex lakeRow  = biomes.Role(World::BiomeRole::Lake);
+    const Draoi::HexWorld::BiomeIndex oceanRow = biomes.Role(Draoi::HexWorld::BiomeRole::Ocean);
+    const Draoi::HexWorld::BiomeIndex lakeRow  = biomes.Role(Draoi::HexWorld::BiomeRole::Lake);
     struct Stats
     {
         uint32_t count = 0;
@@ -191,7 +191,7 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
         RegionRecord& rec = world.regions.regions[id - 1];
         if (s.count == 0)
         {
-            rec.primaryBiome = static_cast<World::BiomeIndex>(oceanRow);
+            rec.primaryBiome = static_cast<Draoi::HexWorld::BiomeIndex>(oceanRow);
             rec.purity = 0.0f;
             rec.cellCount = 0;
             rec.centreCell = 0;
@@ -206,7 +206,7 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
                 if (best < 0 || hist[b] > hist[best]) { best = b; }
             }
             if (best < 0) { best = static_cast<int>(lakeRow); }   // all-Lake region
-            rec.primaryBiome = static_cast<World::BiomeIndex>(best);
+            rec.primaryBiome = static_cast<Draoi::HexWorld::BiomeIndex>(best);
             rec.purity = static_cast<float>(hist[best]) / static_cast<float>(s.count);
             rec.cellCount = static_cast<uint16_t>(std::min<uint32_t>(s.count, 0xFFFFu));   // saturates
             rec.centreCell = centreCell[id];
@@ -226,7 +226,7 @@ bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& b
     return neighbourOverflow;
 }
 
-RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const World::BiomeRegistry& biomes)
+RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const Draoi::HexWorld::BiomeRegistry& biomes)
 {
     RegionBuild out;
     const int n = world.CellCount();
@@ -403,7 +403,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     return out;
 }
 
-RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes)
+RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const Draoi::HexWorld::BiomeRegistry& biomes)
 {
     const RegionGrowth g = BuildProvisionalRegions(world, rules, rng, biomes);
     return FinishRegions(world, rules, g, biomes);

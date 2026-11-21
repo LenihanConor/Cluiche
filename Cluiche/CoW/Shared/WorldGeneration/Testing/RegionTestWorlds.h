@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -24,7 +25,7 @@ inline WorldStructure MakeBlankWorld(int w, int h)
 inline int CellIndex(const WorldStructure& world, int x, int y) { return y * world.dimensions.width + x; }
 
 // Sets one land cell (Lowland, no flags).
-inline void SetLand(WorldStructure& world, int x, int y, StratumIndex zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
+inline void SetLand(WorldStructure& world, int x, int y, StratumIndex zone, ::Draoi::HexWorld::BiomeIndex biome, uint8_t landmass = 1)
 {
     Cell& c = world.At(x, y);
     c.landmass = landmass;
@@ -36,7 +37,7 @@ inline void SetLand(WorldStructure& world, int x, int y, StratumIndex zone, ::Co
 }
 
 // Fills the half-open block [x0,x1) x [y0,y1).
-inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, StratumIndex zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
+inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, StratumIndex zone, ::Draoi::HexWorld::BiomeIndex biome, uint8_t landmass = 1)
 {
     for (int y = y0; y < y1; ++y)
     {
@@ -46,7 +47,7 @@ inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, Stra
 
 inline void AddFlag(WorldStructure& world, int x, int y, uint8_t flag) { world.At(x, y).terrainFlags |= flag; }
 
-inline void SetBiome(WorldStructure& world, int x, int y, ::CoW::World::BiomeIndex b) { world.At(x, y).biome = b; }
+inline void SetBiome(WorldStructure& world, int x, int y, ::Draoi::HexWorld::BiomeIndex b) { world.At(x, y).biome = b; }
 
 inline void SetOcean(WorldStructure& world, int x, int y)
 {
@@ -64,7 +65,7 @@ inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
     for (int y = 0; y < h; ++y)
     {
         const StratumIndex z = y < row1 ? kStratumFirst : (y < row2 ? kStratumWild : kStratumAncient);
-        FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::B("Biome.Grassland"));
+        FillLand(world, 0, y, w, y + 1, z, ::Draoi::HexWorld::Testing::B("Biome.Grassland"));
     }
     return world;
 }
@@ -128,14 +129,14 @@ inline void BuildRegionRecords(WorldStructure& world)
                 rec.centreCell = static_cast<uint32_t>(i);
             }
         }
-        const int lakeIdx = static_cast<int>(::CoW::World::Testing::B("Biome.Lake"));
+        const int lakeIdx = static_cast<int>(::Draoi::HexWorld::Testing::B("Biome.Lake"));
         int best = lakeIdx;
         for (int b = 0; b < 256; ++b)
         {
             if (b == lakeIdx || hist[b] == 0) { continue; }
             if (best == lakeIdx || hist[b] > hist[best]) { best = b; }
         }
-        rec.primaryBiome = static_cast<::CoW::World::BiomeIndex>(best);
+        rec.primaryBiome = static_cast<::Draoi::HexWorld::BiomeIndex>(best);
         rec.cellCount = static_cast<uint16_t>(count);
         rec.isIsland = rec.landmass != world.mainLandmass;
         rec.purity = count ? static_cast<float>(hist[best]) / static_cast<float>(count) : 0.0f;
@@ -144,7 +145,7 @@ inline void BuildRegionRecords(WorldStructure& world)
 }
 
 // All-land world (one region of the given biome per block of blockW x blockH cells, ids row-major) with records built.
-inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, ::CoW::World::BiomeIndex biome)
+inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, ::Draoi::HexWorld::BiomeIndex biome)
 {
     WorldStructure world = MakeBlankWorld(blocksX * blockW, blocksY * blockH);
     FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, kStratumFirst, biome);
@@ -173,7 +174,7 @@ inline void SetLake(WorldStructure& world, int x, int y)
     Cell& c = world.At(x, y);
     c.waterSource = WaterSource::Lake;
     c.terrain = TerrainType::Lake;
-    c.biome = ::CoW::World::Testing::B("Biome.Lake");
+    c.biome = ::Draoi::HexWorld::Testing::B("Biome.Lake");
 }
 
 // Sets river cell `from`'s downstream direction so it flows into the adjacent cell `to` (odd-q, directions NE N NW

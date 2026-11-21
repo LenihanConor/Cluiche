@@ -24,8 +24,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 using Dia::Maths::RandomStream;
 
@@ -93,7 +94,7 @@ namespace
     PlaceResult PlaceWorld(WorldStructure& w, const SiteRegistry& reg, uint64_t outer, int attempt, RegionsAndSites::PlaceReport* rep = nullptr)
     {
         RandomStream rng(1);
-        return RegionsAndSites::Place(w, reg, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), AttemptSeed(outer, attempt), attempt, rng, rep);
+        return RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(outer, attempt), attempt, rng, rep);
     }
 
     // Records what it was given; its site cell depends on its stream.
@@ -711,7 +712,7 @@ namespace
         {
             RandomStream rng(1);
             const auto t0 = std::chrono::steady_clock::now();
-            RegionsAndSites::Place(w, reg, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), AttemptSeed(7, 0), 0, rng);
+            RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(7, 0), 0, rng);
             const auto t1 = std::chrono::steady_clock::now();
             ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
         }

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <DraoiHexWorld/BiomeRegistry.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <cstdint>
@@ -68,7 +69,7 @@ class WorldLayerSource
 {
 public:
     // One entry per non-depth set of the table, in table order; empty for a null registry or a depth-only table.
-    static std::vector<ExtraStrataLayerDesc> ExtraStrataLayers(const World::BiomeRegistry* biomes);
+    static std::vector<ExtraStrataLayerDesc> ExtraStrataLayers(const Draoi::HexWorld::BiomeRegistry* biomes);
     // Fills out[0..count) with the set's stratum per cell; zero-fills when no world is generated or the world has no layer for the set.
     static void ReadExtraStrata(const WorldGenSession& session, const char* setId, float* out, uint32_t count);
 
@@ -80,7 +81,7 @@ public:
     // Category count of a layer for the given biome registry: the registry's Count() for the registry-sized biomeIndex layer,
     // desc.categoryCount for every other layer (0 for Float layers). The descriptor table stays static; only this count is
     // resolved per registry.
-    static uint32_t CategoryCount(const WorldLayerDesc& desc, const World::BiomeRegistry& biomes)
+    static uint32_t CategoryCount(const WorldLayerDesc& desc, const Draoi::HexWorld::BiomeRegistry& biomes)
     {
         return desc.kind == WorldLayerKind::Category && desc.categoryCount == kCategoriesFromBiomeRegistry ? biomes.Count() : desc.categoryCount;
     }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 
@@ -27,14 +28,14 @@ namespace SiteKinds
 // Absolute paths of the shipped Global/World/guarantees.json and its sidecar guarantees.schema.json.
 inline std::string ShippedGuaranteesPath()
 {
-    return World::Testing::Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/guarantees.json", false);
+    return Draoi::HexWorld::Testing::Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/guarantees.json", false);
 }
 inline std::string ShippedGuaranteesSidecarPath()
 {
-    return World::Testing::Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/guarantees.schema.json", false);
+    return Draoi::HexWorld::Testing::Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/guarantees.schema.json", false);
 }
 
-inline std::string ShippedGuaranteesSidecarText() { return World::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath()); }
+inline std::string ShippedGuaranteesSidecarText() { return Draoi::HexWorld::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath()); }
 
 // The shipped guarantee spec, loaded once per process against the shipped zones. Aborts if it cannot be loaded.
 inline const GuaranteeSpec& ShippedGuaranteeSpec()
@@ -45,10 +46,10 @@ inline const GuaranteeSpec& ShippedGuaranteeSpec()
     {
         loaded = true;
         GuaranteeSpecError err;
-        const std::string text = World::Testing::Detail::ReadFileText(ShippedGuaranteesPath());
-        const std::string sidecar = World::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath());
+        const std::string text = Draoi::HexWorld::Testing::Detail::ReadFileText(ShippedGuaranteesPath());
+        const std::string sidecar = Draoi::HexWorld::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath());
         if (text.empty() || sidecar.empty() ||
-            !LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), World::Testing::ShippedStratumTable(), spec, err))
+            !LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), Draoi::HexWorld::Testing::ShippedStratumTable(), spec, err))
         {
             std::fprintf(stderr, "GuaranteeSpecTestHelpers: failed to load shipped guarantees: entry=%s reason=%s\n",
                          err.entry.c_str(), err.reason.c_str());

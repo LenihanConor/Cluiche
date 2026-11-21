@@ -119,7 +119,7 @@ const GuaranteeEntry* GuaranteeSpec::FindGuarantee(const std::string& id) const
     return nullptr;
 }
 
-bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::StratumTable& strata, GuaranteeSpec& out,
+bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const Draoi::HexWorld::StratumTable& strata, GuaranteeSpec& out,
                        GuaranteeSpecError& err)
 {
     err = GuaranteeSpecError();

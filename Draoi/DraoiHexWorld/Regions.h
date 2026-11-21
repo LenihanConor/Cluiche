@@ -8,8 +8,8 @@
 
 #include <cstdint>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 // RegionId / kNoRegion are declared in CellVocabulary.h (Cell needs them; avoids a circular include).
 
@@ -21,7 +21,7 @@ struct RegionRecord
     StratumIndex  stratum       = kNoStratum;      // majority stratum for island regions
     uint8_t    landmass     = 0;
     bool       isIsland     = false;
-    World::BiomeIndex primaryBiome = 0;             // registry row; 0 = the shipped Ocean row (default as before)
+    BiomeIndex primaryBiome = 0;             // registry row; 0 = the shipped Ocean row (default as before)
     float      purity       = 0.0f;                 // [0, 1]
     uint16_t   cellCount    = 0;
     uint32_t   centreCell   = 0;
@@ -81,5 +81,5 @@ struct RegionTable
     }
 };
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

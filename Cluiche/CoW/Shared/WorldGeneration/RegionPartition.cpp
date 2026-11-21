@@ -22,7 +22,7 @@ bool IsRegionLand(const Cell& c)
     return c.landmass != 0 && c.waterSource != WaterSource::Ocean;
 }
 
-std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata)
+std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata)
 {
     std::vector<RegionComponent> out;
     const int n = world.CellCount();
@@ -62,12 +62,12 @@ std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, 
     return out;
 }
 
-void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const World::StratumTable& strata,
+void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const Draoi::HexWorld::StratumTable& strata,
                            StratumIndex& limitedBy)
 {
     limitedBy = kNoStratum;
     const int n = static_cast<int>(std::min<uint32_t>(strata.Count(), kMaxStrata));
-    const World::StratumSetSpec* set = strata.Depth();
+    const Draoi::HexWorld::StratumSetSpec* set = strata.Depth();
     if (n == 0 || set == nullptr) { return; }
     auto rangeMin = [&](int z) { return static_cast<int>(set->strata[z].regionsMin); };
     auto rangeMax = [&](int z) { return static_cast<int>(set->strata[z].regionsMax); };
@@ -112,14 +112,14 @@ void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kM
     }
 }
 
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                    const std::vector<RegionComponent>& components, Dia::Maths::RandomStream& rng)
 {
     (void)world;
     RegionTargets t;
     const int minCells = rules.kMinRegionCells;
     const int n = static_cast<int>(std::min<uint32_t>(strata.Count(), kMaxStrata));
-    const World::StratumSetSpec* set = strata.Depth();
+    const Draoi::HexWorld::StratumSetSpec* set = strata.Depth();
     bool hasBig[kMaxStrata] = {};
     for (const RegionComponent& c : components)
     {
@@ -142,7 +142,7 @@ RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRul
     return t;
 }
 
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                    Dia::Maths::RandomStream& rng)
 {
     return ComputeRegionTargets(world, rules, strata, FindStratumComponents(world, rules, strata), rng);
@@ -201,7 +201,7 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
 }
 
 std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules& rules, const RegionComponent& comp,
-                                 int seedCount, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes)
+                                 int seedCount, Dia::Maths::RandomStream& rng, const Draoi::HexWorld::BiomeRegistry& biomes)
 {
     std::vector<uint32_t> seeds;
     if (comp.cells.empty() || seedCount <= 0) { return seeds; }
@@ -260,7 +260,7 @@ namespace
         auto inComp = [&](uint32_t c) {
             return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].stratum == comp.stratum;
         };
-        auto stepCost = [&](World::BiomeIndex seedBiome, uint32_t c) {
+        auto stepCost = [&](Draoi::HexWorld::BiomeIndex seedBiome, uint32_t c) {
             float cost = 1.0f;
             if (cells[c].biome != seedBiome) { cost += mismatch; }
             if (cells[c].terrainFlags & TerrainFlag::Ridge) { cost += ridge; }
@@ -425,7 +425,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
 }
 
 RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
-                                     const World::BiomeRegistry& biomes)
+                                     const Draoi::HexWorld::BiomeRegistry& biomes)
 {
     RegionGrowth out;
     out.components = FindStratumComponents(world, rules, biomes.Strata());

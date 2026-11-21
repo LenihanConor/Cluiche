@@ -122,7 +122,7 @@ namespace
         }
 
         // A biome id string resolved through the registry; unknown ids become the fallback biome (the registry warns).
-        bool ReadBiome(const Json::Value& obj, const char* key, const std::string& path, World::BiomeIndex& out)
+        bool ReadBiome(const Json::Value& obj, const char* key, const std::string& path, Draoi::HexWorld::BiomeIndex& out)
         {
             std::string text;
             if (!ReadString(obj, key, path, text)) { return false; }
@@ -483,13 +483,13 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
             im.WarnUnknownFields(sj, path, { "id", "cells" });
             std::string id;
             if (!im.ReadString(sj, "id", path, id)) { return finish(false); }
-            const World::StratumSetSpec* set = context.biomes->Strata().FindSet(id.c_str());
+            const Draoi::HexWorld::StratumSetSpec* set = context.biomes->Strata().FindSet(id.c_str());
             if (set == nullptr)
             {
                 im.Fail(path + ".id", "unknown stratum set \"" + id + "\" (the stratum table does not declare it)");
                 return finish(false);
             }
-            if (id == World::StratumTable::kDepthSetId)
+            if (id == Draoi::HexWorld::StratumTable::kDepthSetId)
             {
                 im.Fail(path + ".id", "the depth set is stored in the cells' \"stratum\" field, not as an extra set");
                 return finish(false);
@@ -514,7 +514,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
                 const Json::Value& v = (*setCells)[static_cast<Json::ArrayIndex>(i)];
                 const std::string cpath = Index(path + ".cells", i);
                 if (!v.isString()) { im.Fail(cpath, "must be a stratum name"); return finish(false); }
-                const int index = World::StratumTable::IndexIn(*set, v.asString().c_str());
+                const int index = Draoi::HexWorld::StratumTable::IndexIn(*set, v.asString().c_str());
                 if (index < 0)
                 {
                     im.Fail(cpath, "unknown stratum \"" + v.asString() + "\" in set \"" + id + "\"");
@@ -527,7 +527,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
     }
 
     // Regions: identity from the file, summaries recomputed below.
-    struct FileSummary { int64_t cellCount, centreCell; World::BiomeIndex primary; float purity; std::vector<int64_t> neighbours; };
+    struct FileSummary { int64_t cellCount, centreCell; Draoi::HexWorld::BiomeIndex primary; float purity; std::vector<int64_t> neighbours; };
     std::vector<FileSummary> fileSummaries;
     for (unsigned r = 0; r < regionCount; ++r)
     {

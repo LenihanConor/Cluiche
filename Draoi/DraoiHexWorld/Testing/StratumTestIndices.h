@@ -5,22 +5,12 @@
 
 #include <DraoiHexWorld/CellVocabulary.h>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
-constexpr WorldGeneration::StratumIndex kStratumFirst   = 1;   // shipped stratum 1: FirstShores
-constexpr WorldGeneration::StratumIndex kStratumWild    = 2;   // shipped stratum 2: WildReaches
-constexpr WorldGeneration::StratumIndex kStratumAncient = 3;   // shipped stratum 3: AncientInteriors
+constexpr StratumIndex kStratumFirst   = 1;   // shipped stratum 1: FirstShores
+constexpr StratumIndex kStratumWild    = 2;   // shipped stratum 2: WildReaches
+constexpr StratumIndex kStratumAncient = 3;   // shipped stratum 3: AncientInteriors
 
-using WorldGeneration::kNoStratum;
-
-} // namespace World
-
-namespace WorldGeneration {
-
-using World::kStratumFirst;
-using World::kStratumWild;
-using World::kStratumAncient;
-
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

@@ -44,9 +44,9 @@ namespace WorldGeneration {
 
 enum class FillKind : uint8_t { Hunting, Resource };
 
-int   BiomeFood(World::BiomeIndex b);        // 0 for water biomes
-int   BiomeMaterials(World::BiomeIndex b);   // 0 for water biomes
-float BiomeFoodShare(World::BiomeIndex b);   // Food / (Food + Materials); 0 when both are 0
+int   BiomeFood(Draoi::HexWorld::BiomeIndex b);        // 0 for water biomes
+int   BiomeMaterials(Draoi::HexWorld::BiomeIndex b);   // 0 for water biomes
+float BiomeFoodShare(Draoi::HexWorld::BiomeIndex b);   // Food / (Food + Materials); 0 when both are 0
 inline bool DrawIsHunting(float draw, float foodShare) { return draw < foodShare; }
 
 int TerrainFactor(FillKind kind, TerrainType t);

@@ -33,8 +33,9 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -128,7 +129,7 @@ namespace
             const Cell& c = w.Cells()[i];
             ASSERT_TRUE(std::isfinite(c.elevation) && c.elevation >= 0.0f && c.elevation <= 1.0f) << label << " elevation cell " << i << " = " << c.elevation;
             ASSERT_TRUE(std::isfinite(c.latitude) && c.latitude >= 0.0f && c.latitude <= 1.0f) << label << " latitude cell " << i << " = " << c.latitude;
-            ASSERT_LT(static_cast<int>(c.biome), static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count())) << label << " biome cell " << i;
+            ASSERT_LT(static_cast<int>(c.biome), static_cast<int>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count())) << label << " biome cell " << i;
             ASSERT_LE(c.downstream, kNoDirection) << label << " downstream cell " << i;
             ASSERT_TRUE(c.region == kNoRegion || c.region <= w.regions.regions.Size()) << label << " region cell " << i << " = " << int(c.region);
             const bool ocean = c.waterSource == WaterSource::Ocean;
@@ -272,7 +273,7 @@ namespace
     void RunDomainState(const SizeCase& size, const char* preset)
     {
         CoW::WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
-        module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
+        module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         CoW::WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream   rng{ 1 };
         module.GetSession().SetPresetDirectories(FindShippedPresetDir(), "");

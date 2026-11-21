@@ -394,7 +394,7 @@ TEST_F(WorldGenSessionValidateTest, EmptySpecValidatesWithOnlyRegistryGuarantees
     WorldGenSession s;   // default spec is empty
     Dia::Attribute::ParamError perr;
     ASSERT_TRUE(s.LoadRules(TestSidecarText().c_str(), perr));
-    s.SetBiomeRegistry(&CoW::World::Testing::ShippedBiomeRegistry());
+    s.SetBiomeRegistry(&Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     EXPECT_TRUE(s.GetGuaranteeSpec().guarantees.empty());
     Generate(s, 11);
     const Json::Value r = s.Validate(Obj());

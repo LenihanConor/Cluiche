@@ -17,9 +17,9 @@ namespace WorldGeneration {
 
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;
-using World::BiomeIndex;
-using World::BiomeRegistry;
-using World::kNoBiome;
+using Draoi::HexWorld::BiomeIndex;
+using Draoi::HexWorld::BiomeRegistry;
+using Draoi::HexWorld::kNoBiome;
 
 namespace
 {
@@ -189,7 +189,7 @@ bool IsBuiltInPinRule(Dia::Core::StringCRC rule)
 
 float BiomeClimateScore(const BiomeRegistry& biomes, BiomeIndex b, float temperature, float moisture)
 {
-    const World::ClimateEnvelope* e = biomes.Climate(b);
+    const Draoi::HexWorld::ClimateEnvelope* e = biomes.Climate(b);
     if (e == nullptr)
     {
         return kLowest;

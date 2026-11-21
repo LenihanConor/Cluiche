@@ -14,8 +14,8 @@
 #include <string>
 #include <vector>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 // StringCRC -> storable kind id.
 inline uint32_t SiteKindId(const Dia::Core::StringCRC& kind) { return kind.Value(); }
@@ -102,5 +102,5 @@ private:
     std::vector<std::pair<uint32_t, std::string>> mKindNames;
 };
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

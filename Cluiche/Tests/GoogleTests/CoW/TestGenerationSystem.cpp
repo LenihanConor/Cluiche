@@ -85,7 +85,7 @@ namespace
         for (int seed = 1; seed <= seeds; ++seed)
         {
             const WorldStructure terrain = MakeTerrain(static_cast<uint64_t>(seed), shape);
-            GenerationRun run(terrain, registry, rules, ::CoW::World::Testing::ShippedBiomeRegistry(), static_cast<uint64_t>(seed), GenParams{}, rng);
+            GenerationRun run(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), static_cast<uint64_t>(seed), GenParams{}, rng);
             run.Run();
             ++out.total;
             ++out.attemptsHistogram[run.Report().attempts.Size()];
@@ -236,7 +236,7 @@ TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemp
     const TerrainRules rules = TestRules();
     const SiteRegistry empty;
     RandomStream rng(99);
-    RegionsAndSites::Place(expected, empty, rules, ::CoW::World::Testing::ShippedBiomeRegistry(), DeriveSubSeed(21ull, 1ull), 1, rng, nullptr);
+    RegionsAndSites::Place(expected, empty, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(21ull, 1ull), 1, rng, nullptr);
     EXPECT_TRUE(SameCellBytes(g.s.World(), expected));
     EXPECT_TRUE(g.s.World().regions == expected.regions);
     EXPECT_TRUE(SameSites(g.s.World(), expected));

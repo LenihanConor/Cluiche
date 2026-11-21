@@ -17,8 +17,8 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
-using namespace CoW::World;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;

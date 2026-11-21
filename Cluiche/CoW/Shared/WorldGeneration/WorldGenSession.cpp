@@ -209,20 +209,20 @@ const char* BiomePinName(uint32_t pin)
 }
 
 // The registry's zone table (an empty table when there is no registry).
-const World::StratumTable& ZonesOf(const World::BiomeRegistry* biomes)
+const Draoi::HexWorld::StratumTable& ZonesOf(const Draoi::HexWorld::BiomeRegistry* biomes)
 {
-    static const World::StratumTable kNoStrata;
+    static const Draoi::HexWorld::StratumTable kNoStrata;
     return biomes != nullptr ? biomes->Strata() : kNoStrata;
 }
 
 // Display name of a registry row ("Unknown" for no registry or a row past the table).
-const char* BiomeLabel(const World::BiomeRegistry* biomes, World::BiomeIndex b)
+const char* BiomeLabel(const Draoi::HexWorld::BiomeRegistry* biomes, Draoi::HexWorld::BiomeIndex b)
 {
     const char* name = biomes != nullptr ? biomes->Name(b) : "";
     return name[0] != '\0' ? name : "Unknown";
 }
 
-Json::Value ScoredBiomeJson(const World::BiomeRegistry* biomes, World::BiomeIndex b, float score)
+Json::Value ScoredBiomeJson(const Draoi::HexWorld::BiomeRegistry* biomes, Draoi::HexWorld::BiomeIndex b, float score)
 {
     Json::Value v(Json::objectValue);
     v["id"] = static_cast<int>(b);
@@ -339,7 +339,7 @@ WorldGenSession::WorldGenSession()
     CaptureAccepted();
 }
 
-WorldGenSession::WorldGenSession(const TerrainRules& rules, const World::BiomeRegistry* biomes)
+WorldGenSession::WorldGenSession(const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry* biomes)
     : mRules(rules)
     , mRulesLoaded(true)
     , mBiomes(biomes)
@@ -486,7 +486,7 @@ Json::Value WorldGenSession::Set(const Json::Value& args)
                     else { shapeOk = false; }
                 }
             }
-            World::StratumError strataError;
+            Draoi::HexWorld::StratumError strataError;
             bool changedStrata = false;
             if (!shapeOk || !mBiomesMutable->SetStrataParams(changes, strataError, &changedStrata))
             {
@@ -1676,7 +1676,7 @@ Json::Value WorldGenSession::Layers(const Json::Value& args) const
     {
         Json::Value e(Json::objectValue);
         e["id"] = b;
-        e["name"] = BiomeLabel(mBiomes, static_cast<World::BiomeIndex>(b));
+        e["name"] = BiomeLabel(mBiomes, static_cast<Draoi::HexWorld::BiomeIndex>(b));
         e["count"] = biomeTotals[static_cast<size_t>(b)];
         biomeCounts.append(e);
     }
@@ -1724,7 +1724,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
         index = static_cast<int>(y) * width + static_cast<int>(x);
     }
 
-    const WorldGeneration::Cell& c = mWorld.Cells()[index];
+    const Draoi::HexWorld::Cell& c = mWorld.Cells()[index];
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["x"] = index % width;
@@ -1806,7 +1806,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     // Winning and runner-up of the five climate biomes (ties: lowest enum value). Pinned cells never reach the
     // climate score, so they report the pinned biome with a null score and no runner-up.
     Json::Value ranking(Json::objectValue);
-    World::BiomeIndex climateWinner = c.biome;
+    Draoi::HexWorld::BiomeIndex climateWinner = c.biome;
     uint32_t climateRowCount = 0;
     if (mBiomes != nullptr) { mBiomes->ClimateBiomes(climateRowCount); }
     if (pin != BiomePin::None || temperature == nullptr || moisture == nullptr || climateRowCount == 0)
@@ -1821,7 +1821,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     else
     {
         uint32_t                                climateCount = 0;
-        const World::BiomeIndex*                climate = mBiomes->ClimateBiomes(climateCount);
+        const Draoi::HexWorld::BiomeIndex*                climate = mBiomes->ClimateBiomes(climateCount);
         int                                     best = -1;
         int                                     second = -1;
         std::vector<float>                      scores(climateCount, 0.0f);

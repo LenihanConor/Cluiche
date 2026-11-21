@@ -8,7 +8,7 @@
 
 #include <DraoiHexWorld/StratumTable.h>
 
-#include <DraoiHexWorld/WorldStructure.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <cstdint>
 #include <cstring>
@@ -38,7 +38,7 @@ inline const char* WaterSourceName(WaterSource v)
 }
 
 // Stratum name from the table ("None" for 0); "Unknown" for an index the table does not have.
-inline const char* StratumName(const World::StratumTable& strata, StratumIndex v)
+inline const char* StratumName(const Draoi::HexWorld::StratumTable& strata, StratumIndex v)
 {
     const char* name = strata.Name(v);
     return name != nullptr ? name : "Unknown";

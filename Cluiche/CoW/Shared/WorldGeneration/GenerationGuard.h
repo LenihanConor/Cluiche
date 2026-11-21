@@ -58,7 +58,7 @@ private:
 };
 
 // Blocking run under a caller-owned guard (injected clock, cancel flag). Same result contract as GenerationRun.h's.
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                GenerationGuard& guard, WorldStructure* outWorld = nullptr);
 

@@ -27,6 +27,7 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace
 {
@@ -62,10 +63,10 @@ bool SameCells(const WorldStructure& a, const WorldStructure& b)
     }
     for (int i = 0; i < a.CellCount(); ++i)
     {
-        CoW::WorldGeneration::Cell x = a.Cells()[i];
-        CoW::WorldGeneration::Cell y = b.Cells()[i];
-        x.region = y.region = CoW::WorldGeneration::kNoRegion;
-        if (std::memcmp(&x, &y, sizeof(CoW::WorldGeneration::Cell)) != 0)
+        Draoi::HexWorld::Cell x = a.Cells()[i];
+        Draoi::HexWorld::Cell y = b.Cells()[i];
+        x.region = y.region = Draoi::HexWorld::kNoRegion;
+        if (std::memcmp(&x, &y, sizeof(Draoi::HexWorld::Cell)) != 0)
         {
             return false;
         }
@@ -1221,7 +1222,7 @@ CoW::WorldGenerationModule*              g_edgeWg  = nullptr;
 
 Module* CreateEdgeBus(const StringCRC& id) { g_edgeBus = new Cluiche::AppFlow::MessageBusHostModule(id); return g_edgeBus; }
 Module* CreateEdgeRng(const StringCRC& id) { return new CoW::RandomStreamModule(id); }
-Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); g_edgeWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); g_edgeWg->SetBiomesPath(CoW::World::Testing::ShippedBiomesPath()); return g_edgeWg; }
+Module* CreateEdgeWg(const StringCRC& id)  { g_edgeWg = new CoW::WorldGenerationModule(id); g_edgeWg->SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); g_edgeWg->SetBiomesPath(Draoi::HexWorld::Testing::ShippedBiomesPath()); return g_edgeWg; }
 
 constexpr float kEdgeDt = 1.0f / 30.0f;
 

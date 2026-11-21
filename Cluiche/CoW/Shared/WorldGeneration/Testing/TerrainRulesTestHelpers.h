@@ -10,6 +10,7 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
@@ -109,8 +110,8 @@ struct TestSession : WorldGenSession
 {
     TestSession()
     {
-        SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
-        SetGuaranteeSpec(Testing::ShippedGuaranteeSpec());
+        SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
+        SetGuaranteeSpec(CoW::WorldGeneration::Testing::ShippedGuaranteeSpec());
         Dia::Attribute::ParamError err;
         if (!LoadRules(TestSidecarText().c_str(), err))
         {

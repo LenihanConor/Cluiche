@@ -33,6 +33,7 @@
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <DraoiHexWorld/StratumTable.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <cstdint>
 
@@ -41,7 +42,7 @@ namespace WorldGeneration {
 
 struct Stage8Debug
 {
-    static constexpr uint32_t kMaxCuts = World::StratumTable::kMaxStrata;
+    static constexpr uint32_t kMaxCuts = Draoi::HexWorld::StratumTable::kMaxStrata;
     // For three strata t1 is the first end cut and t2 the last cut; with two, t1 is the lowest cost; with one, both are.
     float t1 = 0.0f;
     float t2 = 0.0f;
@@ -71,17 +72,17 @@ void ComputeStrataCosts(const TerrainRules& rules, GridDimensions dims, float ba
 
 // The banding above over the costs already computed. Writes every cell of stratum (ocean and unassigned = 0).
 // A set with no strata leaves every cell 0.
-void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainLandmass, const uint32_t* landmass,
+void BandStrata(const Draoi::HexWorld::StratumSetSpec& set, GridDimensions dims, int mainLandmass, const uint32_t* landmass,
                 const uint32_t* coastDistance, const float* zoneCostBase, const float* zoneCost, StratumIndex* stratum,
                 Stage8Debug& dbg);
 
 // Costs then banding for any stratum set (N strata). Output strata go to out.stratum (StratumIndex values).
-void ComputeStage8(const TerrainRules& rules, const World::StratumSetSpec& set, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const Draoi::HexWorld::StratumSetSpec& set, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg);
 
 // The same for the table's depth set (an empty table assigns nothing).
-void ComputeStage8(const TerrainRules& rules, const World::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg);
 

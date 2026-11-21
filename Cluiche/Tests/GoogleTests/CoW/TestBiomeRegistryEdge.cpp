@@ -11,8 +11,8 @@
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
-using namespace CoW::World;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::Core::StringCRC;
@@ -36,7 +36,7 @@ namespace
         return true;
     }
 
-    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err); }
+    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err); }
 
     BiomeIndex NearestEnvelope(const BiomeRegistry& reg, float t, float m)
     {

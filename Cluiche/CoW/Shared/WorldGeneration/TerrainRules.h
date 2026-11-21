@@ -14,6 +14,7 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include <DraoiHexWorld/WorldStructure.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <cstdint>
 

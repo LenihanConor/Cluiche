@@ -1,6 +1,6 @@
 // Strata assigner seam: how the cells of a stratum set get their stratum.
 //
-// A stratum set (World::StratumSetSpec, from strata.json) names an assigner by type. The registry maps that type
+// A stratum set (Draoi::HexWorld::StratumSetSpec, from strata.json) names an assigner by type. The registry maps that type
 // name to an IStrataAssigner; the terrain generator's Strata stage looks the depth set's assigner up and runs it.
 // `coast_cost_bands` (TerrainStrata.h: coast-cost banding over N strata) is built in and registered by default;
 // a game registers its own with Register. Non-owning: a registered assigner must outlive the registry.
@@ -23,6 +23,7 @@
 #pragma once
 
 #include <DraoiHexWorld/StratumTable.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainStrata.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
@@ -74,20 +75,20 @@ class IStrataAssigner
 public:
     virtual ~IStrataAssigner() = default;
     // Fills out (one entry per cell) for the set. See the contract above.
-    virtual void Assign(const StrataAssignContext& ctx, const World::StratumSetSpec& set, std::span<StratumIndex> out) = 0;
+    virtual void Assign(const StrataAssignContext& ctx, const Draoi::HexWorld::StratumSetSpec& set, std::span<StratumIndex> out) = 0;
 };
 
 // The built-in assigner: coast-cost banding over the set's N strata (TerrainStrata.h).
 class CoastCostBandsAssigner final : public IStrataAssigner
 {
 public:
-    void Assign(const StrataAssignContext& ctx, const World::StratumSetSpec& set, std::span<StratumIndex> out) override;
+    void Assign(const StrataAssignContext& ctx, const Draoi::HexWorld::StratumSetSpec& set, std::span<StratumIndex> out) override;
 };
 
 class StrataAssignerRegistry
 {
 public:
-    static constexpr size_t kMaxTypeNameLength = World::StratumTable::kMaxNameLength;
+    static constexpr size_t kMaxTypeNameLength = Draoi::HexWorld::StratumTable::kMaxNameLength;
 
     StrataAssignerRegistry();
     StrataAssignerRegistry(const StrataAssignerRegistry&) = delete;
@@ -101,7 +102,7 @@ public:
     bool Has(const char* typeName) const { return Find(typeName) != nullptr; }
     int  Count() const { return static_cast<int>(mEntries.size()); }
     // A check for StratumTable::LoadFromText that accepts exactly the registered type names. Valid while this registry lives.
-    World::AssignerTypeCheck TypeCheck() const;
+    Draoi::HexWorld::AssignerTypeCheck TypeCheck() const;
 
     // Cell fields usable as a banding metric (strata.json assigner.metric names one). False (unchanged): null provider, empty or
     // over-long name, a built-in metric name (coast_cost, elevation, latitude) or a field already registered.
@@ -111,7 +112,7 @@ public:
     // True for the three built-in metrics and every registered field.
     bool HasMetric(const char* name) const;
     // A check for StratumTable::LoadFromText that accepts exactly the known metrics. Valid while this registry lives.
-    World::MetricCheck MetricCheck() const;
+    Draoi::HexWorld::MetricCheck MetricCheck() const;
 
 private:
     struct Entry
@@ -141,7 +142,7 @@ struct StrataAssignError
 // Runs the assigner and enforces the contract. out is cleared to 0 first. False on a violation (err filled and an
 // error logged); out then holds the rejected output.
 bool RunStrataAssigner(const char* typeName, IStrataAssigner& assigner, const StrataAssignContext& ctx,
-                       const World::StratumSetSpec& set, std::span<StratumIndex> out, StrataAssignError& err);
+                       const Draoi::HexWorld::StratumSetSpec& set, std::span<StratumIndex> out, StrataAssignError& err);
 
 } // namespace WorldGeneration
 } // namespace CoW

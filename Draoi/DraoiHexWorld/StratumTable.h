@@ -18,8 +18,8 @@
 
 namespace Dia::Attribute { class ParameterFile; }
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
 // Filled in on a failed load: which field and why.
 struct StratumError
@@ -112,8 +112,8 @@ public:
 
     // Attribute of stratum z (1..count) of set setIndex. TryAttribute is false for an unknown set, stratum or attribute;
     // Attribute returns 0 then.
-    bool  TryAttribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name, float& out) const;
-    float Attribute(uint32_t setIndex, WorldGeneration::StratumIndex z, const char* name) const;
+    bool  TryAttribute(uint32_t setIndex, StratumIndex z, const char* name, float& out) const;
+    float Attribute(uint32_t setIndex, StratumIndex z, const char* name) const;
     // The loaded sidecar (the DiaAttribute schema and values behind every sidecar-owned number); null before a load.
     const Dia::Attribute::ParameterFile* Sidecar() const { return mSidecar.get(); }
 
@@ -127,7 +127,7 @@ public:
     // Sets other than "depth": the ones the generator stores as extra cell layers (WorldStructure::extraStrata).
     uint32_t              ExtraSetCount() const { return mSetCount > 0 && mDepthIndex >= 0 ? mSetCount - 1 : mSetCount; }
     // Name of stratum z within any set: "None" for 0, the declared name for 1..set.count, nullptr when out of range.
-    static const char*    NameIn(const StratumSetSpec& set, WorldGeneration::StratumIndex z);
+    static const char*    NameIn(const StratumSetSpec& set, StratumIndex z);
     // Index of a stratum name within a set ("None" -> 0); -1 when the set has no such stratum.
     static int            IndexIn(const StratumSetSpec& set, const char* name);
     // The "depth" set; nullptr on an empty table.
@@ -136,11 +136,11 @@ public:
     // The depth set's strata (what the generator reads).
     uint32_t Count() const { return mDepthIndex >= 0 ? mSets[mDepthIndex].count : 0; }
     // Name of stratum index z: "None" for 0, the declared name for 1..Count(), nullptr when out of range.
-    const char* Name(WorldGeneration::StratumIndex z) const;
+    const char* Name(StratumIndex z) const;
     // Index of a stratum name ("None" -> 0); -1 when the table has no such stratum.
     int         IndexOf(const char* name) const;
     // The innermost stratum (index Count()); kNoStratum for an empty table.
-    WorldGeneration::StratumIndex Last() const { return static_cast<WorldGeneration::StratumIndex>(Count()); }
+    StratumIndex Last() const { return static_cast<StratumIndex>(Count()); }
 
     // Generator shares (sidecar parameters): the share of main-landmass land in the first stratum, and in the last.
     float       FirstShare() const { return mDepthIndex >= 0 ? mSets[mDepthIndex].strata[0].share : 0.0f; }
@@ -158,5 +158,5 @@ private:
     int                   mDepthIndex = -1;   // index of the depth set in mSets
 };
 
-} // namespace World
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

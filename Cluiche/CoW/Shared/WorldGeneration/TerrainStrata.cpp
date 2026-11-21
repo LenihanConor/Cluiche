@@ -92,7 +92,7 @@ void ComputeStrataCosts(const TerrainRules& rules, GridDimensions dims, float ba
     ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, zoneCost);
 }
 
-void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainLandmass, const uint32_t* landmass,
+void BandStrata(const Draoi::HexWorld::StratumSetSpec& set, GridDimensions dims, int mainLandmass, const uint32_t* landmass,
                 const uint32_t* coastDistance, const float* zoneCostBase, const float* zoneCost, StratumIndex* stratum,
                 Stage8Debug& dbg)
 {
@@ -105,7 +105,7 @@ void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainL
         return;
     }
     std::fill(stratum, stratum + n, kNoStratum);
-    const uint32_t count = std::min(set.count, World::StratumTable::kMaxStrata);
+    const uint32_t count = std::min(set.count, Draoi::HexWorld::StratumTable::kMaxStrata);
     if (count == 0 || landmass == nullptr || coastDistance == nullptr || zoneCostBase == nullptr || zoneCost == nullptr)
     {
         return;
@@ -190,7 +190,7 @@ void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainL
 
     auto allowed = [&](uint32_t k, int cell) -> bool
     {
-        const World::StratumSpec& z = set.strata[k - 1];
+        const Draoi::HexWorld::StratumSpec& z = set.strata[k - 1];
         if (z.mainLandmassOnly && landmass[cell] != static_cast<uint32_t>(mainLandmass)) { return false; }
         return coastDistance[cell] >= static_cast<uint32_t>(std::max(z.minCoastDepth, 0));
     };
@@ -218,7 +218,7 @@ void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainL
     }
 }
 
-void ComputeStage8(const TerrainRules& rules, const World::StratumSetSpec& set, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const Draoi::HexWorld::StratumSetSpec& set, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
 {
@@ -237,12 +237,12 @@ void ComputeStage8(const TerrainRules& rules, const World::StratumSetSpec& set, 
     }
 }
 
-void ComputeStage8(const TerrainRules& rules, const World::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
 {
-    static const World::StratumSetSpec kNoSet;
-    const World::StratumSetSpec* depth = strata.Depth();
+    static const Draoi::HexWorld::StratumSetSpec kNoSet;
+    const Draoi::HexWorld::StratumSetSpec* depth = strata.Depth();
     ComputeStage8(rules, depth != nullptr ? *depth : kNoSet, dims, barrier, mainLandmass, landmass, coastDistance, ridgeMask,
                   barrierMask, riverMask, out, dbg);
 }

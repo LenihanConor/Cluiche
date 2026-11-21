@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <cmath>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 using Dia::Maths::Vector2D;
 using Dia::Pathfinding::HexTopology;
@@ -74,5 +74,5 @@ int32_t WorldHexGrid::CellFromPoint(Vector2D point) const
     return static_cast<int32_t>(c.y) * mDims.width + c.x;
 }
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

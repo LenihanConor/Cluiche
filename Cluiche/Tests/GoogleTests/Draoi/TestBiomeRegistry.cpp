@@ -10,8 +10,8 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
-using namespace CoW::World;
-using CoW::WorldGeneration::StratumIndex;
+using namespace Draoi::HexWorld;
+using Draoi::HexWorld::StratumIndex;
 using Dia::Core::StringCRC;
 
 namespace
@@ -45,7 +45,7 @@ namespace
     bool LoadText(BiomeRegistry& r, const std::string& text)
     {
         RegistryError err;
-        return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err);
+        return r.LoadFromText(text.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err);
     }
 
     uint64_t HashOf(const std::string& text)
@@ -150,12 +150,12 @@ TEST(BiomeRegistry, FailedSecondLoadLeavesContents)
     ASSERT_TRUE(LoadText(r, kFixture));
     RegistryError err;
     const uint64_t before = r.Hash();
-    EXPECT_FALSE(r.LoadFromText("{ not json", ::CoW::World::Testing::ShippedStratumTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water\",\"aquatic\"", "\"nonsense\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"FirstShores\"", "\"Nowhere\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err,
+    EXPECT_FALSE(r.LoadFromText("{ not json", ::Draoi::HexWorld::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water\",\"aquatic\"", "\"nonsense\"").c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"FirstShores\"", "\"Nowhere\"").c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err,
                                 [](StringCRC rule) { return rule == StringCRC("water_lake") || rule == StringCRC("wetland"); }));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"colour\":\"#808000\",", "").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"colour\":\"#808000\",", "").c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err));
     EXPECT_EQ(r.Count(), 4u);
     EXPECT_EQ(r.Hash(), before);
     EXPECT_STREQ(r.IdText(2), "Biome.Grassland");
@@ -165,7 +165,7 @@ TEST(BiomeRegistry, FailedFirstLoadStaysEmpty)
 {
     BiomeRegistry r;
     RegistryError err;
-    EXPECT_FALSE(r.LoadFromText("{}", ::CoW::World::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText("{}", ::Draoi::HexWorld::Testing::ShippedStratumTable(), err));
     EXPECT_EQ(r.Count(), 0u);
 }
 

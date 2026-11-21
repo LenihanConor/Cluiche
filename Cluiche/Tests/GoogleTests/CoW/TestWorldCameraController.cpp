@@ -8,6 +8,7 @@
 #include <limits>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::Vector2D;
 
 namespace

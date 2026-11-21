@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -69,7 +70,7 @@ struct BiomeGrid
     std::vector<uint32_t> terrainType, stratum, terrainFlags, waterSource;
     BarrierForm           barrierForm = BarrierForm::Plateau;
     float                 barrier = 0.0f;
-    const ::CoW::World::BiomeRegistry* registry = &::CoW::World::Testing::ShippedBiomeRegistry();   // swap for a fixture
+    const ::Draoi::HexWorld::BiomeRegistry* registry = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();   // swap for a fixture
 
     BiomeGrid(int w, int h, float t = 0.6f, float m = 0.35f)
         : dims{w, h},
@@ -131,7 +132,7 @@ struct BiomeResult
     std::vector<uint32_t> pin, biome, fixup;
     Stage14Debug          debug;
 
-    ::CoW::World::BiomeIndex At(int c) const { return static_cast<::CoW::World::BiomeIndex>(biome[c]); }
+    ::Draoi::HexWorld::BiomeIndex At(int c) const { return static_cast<::Draoi::HexWorld::BiomeIndex>(biome[c]); }
 };
 
 inline BiomeResult RunBiomes(const BiomeGrid& g, const TerrainRules& rules)

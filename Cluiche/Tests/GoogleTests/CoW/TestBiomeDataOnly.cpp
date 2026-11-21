@@ -7,8 +7,8 @@
 
 #include <vector>
 
-using namespace CoW::World;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
 

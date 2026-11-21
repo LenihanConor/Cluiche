@@ -194,7 +194,7 @@ private:
 
     // Last param values (key -> value), refreshed only when the session's shape changes.
     Json::Value                       mValues;
-    WorldGeneration::WorldShapeParams mValuesShape;
+    Draoi::HexWorld::WorldShapeParams mValuesShape;
     bool                              mHaveValues = false;
 
     StaticPart mStatic;

@@ -172,7 +172,7 @@ uint32_t FoldSeed(uint64_t seed)
 // ---------------------------------------------------------------------------
 // TerrainGenerator
 // ---------------------------------------------------------------------------
-TerrainGenerator::TerrainGenerator(const TerrainRules& rules, const World::BiomeRegistry* biomes)
+TerrainGenerator::TerrainGenerator(const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry* biomes)
     : mRules(rules)
     , mBiomes(biomes)
 {
@@ -650,7 +650,7 @@ void TerrainGenerator::RunStrataStage()
     mExtraStrata.clear();
     ComputeStrataCosts(mRules, mDims, mShape.barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, zoneCostBase, zoneCost);
     std::fill(stratum, stratum + n, static_cast<uint32_t>(kNoStratum));
-    const World::StratumSetSpec* set = mBiomes != nullptr ? mBiomes->Strata().Depth() : nullptr;
+    const Draoi::HexWorld::StratumSetSpec* set = mBiomes != nullptr ? mBiomes->Strata().Depth() : nullptr;
     if (set == nullptr || n == 0 || landmass == nullptr || coastDistance == nullptr)
     {
         return;
@@ -691,12 +691,12 @@ void TerrainGenerator::RunStrataStage()
 
     CoastCostBandsAssigner builtin;
     const char* type = set->assignerType;
-    IStrataAssigner* assigner = mAssigners != nullptr ? mAssigners->Find(type) : (std::strcmp(type, World::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
+    IStrataAssigner* assigner = mAssigners != nullptr ? mAssigners->Find(type) : (std::strcmp(type, Draoi::HexWorld::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
     std::vector<StratumIndex> out(n, kNoStratum);
     bool ok = false;
     if (assigner == nullptr)
     {
-        mStrataError = std::string("strata assigner '") + type + "' is not registered; using " + World::kBuiltinAssignerType;
+        mStrataError = std::string("strata assigner '") + type + "' is not registered; using " + Draoi::HexWorld::kBuiltinAssignerType;
         DIA_LOG_ERROR("CoW", "%s", mStrataError.c_str());
     }
     else
@@ -705,7 +705,7 @@ void TerrainGenerator::RunStrataStage()
         ok = RunStrataAssigner(type, *assigner, ctx, *set, std::span<StratumIndex>(out.data(), out.size()), err);
         if (!ok)
         {
-            mStrataError = err.reason + "; using " + World::kBuiltinAssignerType;
+            mStrataError = err.reason + "; using " + Draoi::HexWorld::kBuiltinAssignerType;
         }
     }
     if (!ok)
@@ -713,8 +713,8 @@ void TerrainGenerator::RunStrataStage()
         // Loud fallback: the error is recorded above; the world still gets a valid banding.
         // The fallback bands on coast_cost whatever the set asked for: the failed metric may be the reason we are here.
         mStage8 = Stage8Debug{};
-        World::StratumSetSpec fallback = *set;
-        std::strcpy(fallback.metric, World::kMetricCoastCost);
+        Draoi::HexWorld::StratumSetSpec fallback = *set;
+        std::strcpy(fallback.metric, Draoi::HexWorld::kMetricCoastCost);
         metricError.clear();
         builtin.Assign(ctx, fallback, std::span<StratumIndex>(out.data(), out.size()));
     }
@@ -726,10 +726,10 @@ void TerrainGenerator::RunStrataStage()
     // Extra sets (every set but depth), after depth so depth is untouched by them. An extra set has no fallback: a
     // missing assigner or a contract violation leaves its layer all 0 and is reported in the strata error.
     ctx.debug = nullptr;   // the stage-8 debug belongs to the depth set
-    const World::StratumTable& table = mBiomes->Strata();
+    const Draoi::HexWorld::StratumTable& table = mBiomes->Strata();
     for (uint32_t si = 0; si < table.SetCount(); ++si)
     {
-        const World::StratumSetSpec& extra = table.Set(si);
+        const Draoi::HexWorld::StratumSetSpec& extra = table.Set(si);
         if (&extra == set)
         {
             continue;
@@ -739,7 +739,7 @@ void TerrainGenerator::RunStrataStage()
         layer.cells.assign(n, 0u);
 
         const char* extraType = extra.assignerType;
-        IStrataAssigner* extraAssigner = mAssigners != nullptr ? mAssigners->Find(extraType) : (std::strcmp(extraType, World::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
+        IStrataAssigner* extraAssigner = mAssigners != nullptr ? mAssigners->Find(extraType) : (std::strcmp(extraType, Draoi::HexWorld::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
         std::string problem;
         if (extraAssigner == nullptr)
         {
@@ -804,8 +804,8 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
     const uint32_t* biome     = mLayers.GetUInt(mLayers.FindLayer("biomeIndex"));
 
     // Biome rows the generator may emit; anything else (and an unclassified layer) is written as the registry's ocean row.
-    const World::BiomeRegistry* biomes = mBiomes;
-    const uint32_t              oceanRow = (biomes != nullptr && biomes->Count() > 0) ? static_cast<uint32_t>(biomes->Role(World::BiomeRole::Ocean)) : 0u;
+    const Draoi::HexWorld::BiomeRegistry* biomes = mBiomes;
+    const uint32_t              oceanRow = (biomes != nullptr && biomes->Count() > 0) ? static_cast<uint32_t>(biomes->Role(Draoi::HexWorld::BiomeRole::Ocean)) : 0u;
     Cell* cells = world.Cells();
     for (int i = 0; i < n; ++i)
     {
@@ -816,8 +816,8 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
         c.waterSource  = static_cast<WaterSource>(water[i]);
         c.terrain      = static_cast<TerrainType>(type[i]);
         c.stratum    = static_cast<StratumIndex>(zone[i]);
-        const bool emitted = biomes != nullptr && biome[i] < biomes->Count() && biomes->IsGenerated(static_cast<World::BiomeIndex>(biome[i]));
-        c.biome        = static_cast<World::BiomeIndex>(emitted ? biome[i] : oceanRow);
+        const bool emitted = biomes != nullptr && biome[i] < biomes->Count() && biomes->IsGenerated(static_cast<Draoi::HexWorld::BiomeIndex>(biome[i]));
+        c.biome        = static_cast<Draoi::HexWorld::BiomeIndex>(emitted ? biome[i] : oceanRow);
         c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255
         c.terrainFlags = static_cast<uint8_t>(flags[i]);
         c.downstream   = (c.waterSource == WaterSource::River && flow[i] < 6u) ? static_cast<uint8_t>(flow[i]) : kNoDirection;

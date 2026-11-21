@@ -17,6 +17,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 
 namespace
@@ -162,7 +163,7 @@ TEST(WorldGenPresetStats, EveryGeneratedCellHoldsAGeneratedBiome)
             const WorldStructure& w = s.World();
             for (int i = 0; i < w.CellCount(); ++i)
             {
-                ASSERT_TRUE(::CoW::World::Testing::ShippedBiomeRegistry().IsGenerated(w.Cells()[i].biome))
+                ASSERT_TRUE(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().IsGenerated(w.Cells()[i].biome))
                     << preset << " seed " << seed << " cell " << i << " biome " << static_cast<int>(w.Cells()[i].biome);
             }
         }

@@ -156,6 +156,7 @@
     <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h" />
     <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h" />
+    <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

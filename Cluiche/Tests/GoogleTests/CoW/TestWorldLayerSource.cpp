@@ -66,7 +66,7 @@ TEST(WorldLayerSource, DescriptorIdsAreUniqueAndFindable)
         EXPECT_EQ(WorldLayerSource::Find(d.id), &d);
         EXPECT_EQ(std::string(d.schemaKey), std::string(kWorldLayerSchemaFor) + "/" + d.id);
         EXPECT_NE(d.read, nullptr);
-        if (d.kind == WorldLayerKind::Category) EXPECT_GE(WorldLayerSource::CategoryCount(d, CoW::World::Testing::ShippedBiomeRegistry()), 2u) << d.id;
+        if (d.kind == WorldLayerKind::Category) EXPECT_GE(WorldLayerSource::CategoryCount(d, Draoi::HexWorld::Testing::ShippedBiomeRegistry()), 2u) << d.id;
         else EXPECT_EQ(d.categoryCount, 0u) << d.id;
     }
     EXPECT_EQ(WorldLayerSource::Find("nope"), nullptr);

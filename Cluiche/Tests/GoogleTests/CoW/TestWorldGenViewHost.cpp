@@ -28,6 +28,7 @@
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::CellLayers::Testing::FakeDebugDraw;
 using Dia::CellLayers::Testing::FakeMirrorRegistrar;
@@ -69,7 +70,7 @@ struct Rig
     std::unique_ptr<WorldGenViewHost> host;
 
     Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true, SharedWorldHexGrid* shared = nullptr,
-        const CoW::World::BiomeRegistry* biomes = nullptr, const StrataAssignerRegistry* assigners = nullptr)
+        const Draoi::HexWorld::BiomeRegistry* biomes = nullptr, const StrataAssignerRegistry* assigners = nullptr)
     {
         Dia::CellLayers::Testing::FakePuId() = 1;
         if (biomes != nullptr)
@@ -143,7 +144,7 @@ namespace
 class HalvesAssigner : public IStrataAssigner
 {
 public:
-    void Assign(const StrataAssignContext& ctx, const CoW::World::StratumSetSpec&, std::span<StratumIndex> out) override
+    void Assign(const StrataAssignContext& ctx, const Draoi::HexWorld::StratumSetSpec&, std::span<StratumIndex> out) override
     {
         for (size_t i = 0; i < out.size(); ++i)
             out[i] = ctx.landmass[i] == 0u ? 0 : (static_cast<int>(i) % ctx.dims.width < ctx.dims.width / 2 ? 1 : 2);
@@ -159,15 +160,15 @@ TEST(WorldGenViewHost, ExtraStratumSetsAppearAsLayersAndReadTheirCellLayer)
     HalvesAssigner halves;
     assigners.Register("x_halves", &halves);
     const std::vector<std::string> names = { "FirstShores", "WildReaches", "AncientInteriors" };
-    const std::vector<CoW::World::Testing::TestExtraSet> extras = { { "homeland", false, "x_halves", { "West", "East" } } };
-    CoW::World::StratumTable table;
-    CoW::World::StratumError err;
-    ASSERT_TRUE(table.LoadFromText(CoW::World::Testing::TestStrataText(names, extras).c_str(),
-                                   CoW::World::Testing::TestStrataSidecar(names, { 0.45f, 0.40f, 0.15f }, extras).c_str(), err, assigners.TypeCheck()))
+    const std::vector<Draoi::HexWorld::Testing::TestExtraSet> extras = { { "homeland", false, "x_halves", { "West", "East" } } };
+    Draoi::HexWorld::StratumTable table;
+    Draoi::HexWorld::StratumError err;
+    ASSERT_TRUE(table.LoadFromText(Draoi::HexWorld::Testing::TestStrataText(names, extras).c_str(),
+                                   Draoi::HexWorld::Testing::TestStrataSidecar(names, { 0.45f, 0.40f, 0.15f }, extras).c_str(), err, assigners.TypeCheck()))
         << err.field << " " << err.reason;
-    CoW::World::BiomeRegistry biomes;
-    CoW::World::RegistryError rerr;
-    ASSERT_TRUE(biomes.LoadFromText(CoW::World::Testing::Detail::ReadFileText(CoW::World::Testing::ShippedBiomesPath()).c_str(), table, rerr));
+    Draoi::HexWorld::BiomeRegistry biomes;
+    Draoi::HexWorld::RegistryError rerr;
+    ASSERT_TRUE(biomes.LoadFromText(Draoi::HexWorld::Testing::Detail::ReadFileText(Draoi::HexWorld::Testing::ShippedBiomesPath()).c_str(), table, rerr));
 
     Rig r(nullptr, true, nullptr, &biomes, &assigners);
     ASSERT_TRUE(r.host->Build());
@@ -1094,7 +1095,7 @@ TEST(WorldGenViewHost, RegisteredKindGetsAToggleWithItsColourAndShape)
 {
     Rig r(nullptr, false);
     SiteRegistry registry;
-    Testing::TestPlacer placer("Test.Hearth", {}, 0);
+    CoW::WorldGeneration::Testing::TestPlacer placer("Test.Hearth", {}, 0);
     ASSERT_TRUE(registry.Register(&placer));
     r.session.SetSiteRegistry(&registry);
     r.Tick(12345);
@@ -1325,7 +1326,7 @@ GuaranteeSpec FlagSpec(bool withMarker)
     text += " }";
     GuaranteeSpec spec;
     GuaranteeSpecError err;
-    if (!LoadGuaranteeSpec(text.c_str(), Testing::ShippedGuaranteesSidecarText().c_str(), World::Testing::ShippedStratumTable(), spec, err))
+    if (!LoadGuaranteeSpec(text.c_str(), CoW::WorldGeneration::Testing::ShippedGuaranteesSidecarText().c_str(), Draoi::HexWorld::Testing::ShippedStratumTable(), spec, err))
     {
         ADD_FAILURE() << err.entry << ": " << err.reason;
     }
@@ -1467,7 +1468,7 @@ TEST(WorldGenViewHost, FailedGenerationHidesEvidenceWithTheFailedReason)
 {
     Rig r;
     ASSERT_TRUE(r.host->Build());
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     SiteRegistry registry;
     ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
     r.session.SetSiteRegistry(&registry);
@@ -1488,7 +1489,7 @@ TEST(WorldGenViewHost, EvidenceFromBeforeAFailedRunIsHiddenAndAValidateAfterItIs
 {
     Rig r;
     ASSERT_TRUE(r.host->Build());
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     SiteRegistry registry;
     ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
     r.session.SetSiteRegistry(&registry);
@@ -1645,7 +1646,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
     DragonSites sites;
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
     module.GetSession().SetGuaranteeSpec(ShippedGuaranteeSpec());
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;
@@ -1728,7 +1729,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder12Kb)
 {
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
-    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
+    module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };
     Dia::Graphics::CellFieldRegistry cellField;
@@ -1748,7 +1749,7 @@ TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStays
     ASSERT_TRUE(host.Build());
     domain.SetView(&host);
     domain.OnCommand(Dia::Core::StringCRC("validate"), Json::Value(Json::objectValue));
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     ASSERT_TRUE(module.GetSiteRegistry().RegisterGuarantee(&flaky));
     s.Regenerate(Obj("maxRetryAttempts", 2));
     settle();

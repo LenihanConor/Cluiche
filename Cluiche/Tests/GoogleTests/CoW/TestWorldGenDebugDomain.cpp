@@ -22,6 +22,7 @@
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Core::StringCRC;
 
 namespace
@@ -43,7 +44,7 @@ namespace
     struct Fixture
     {
         WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry()); return true; }();
+        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry()); return true; }();
         WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream rng{ 1 };
 
@@ -621,14 +622,14 @@ namespace
         void FillLegend(Json::Value& out) override { out = legend; }
         void ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn) override
         {
-            for (const CoW::WorldGeneration::SiteKindInfo& k : siteKinds)
+            for (const Draoi::HexWorld::SiteKindInfo& k : siteKinds)
             {
                 const std::string overlay = std::string("sites.") + k.id;
                 fn(SiteKindRow{ overlay.c_str(), &k, true, 3 });
             }
         }
 
-        std::vector<CoW::WorldGeneration::SiteKindInfo> siteKinds;
+        std::vector<Draoi::HexWorld::SiteKindInfo> siteKinds;
         int selectCalls = 0, clearCalls = 0, modeCalls = 0, overlayCalls = 0;
         bool hasSel = false;
         int selX = 0, selY = 0;
@@ -969,9 +970,9 @@ TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
 TEST(WorldGenDebugDomainView, SiteKindsListEachKindWithColourAndShape)
 {
     ViewFixture f;
-    f.view.siteKinds.push_back(CoW::WorldGeneration::BuiltinNodeKindInfo(CoW::WorldGeneration::BuiltinNodeKinds::River()));
+    f.view.siteKinds.push_back(CoW::WorldGeneration::BuiltinNodeKindInfo(Draoi::HexWorld::BuiltinNodeKinds::River()));
     f.view.siteKinds.push_back(CoW::WorldGeneration::MakeSiteKindInfo(Dia::Core::StringCRC("Test.Hearth"), "Hearth Site", 0xFF00FF,
-                                                                       CoW::WorldGeneration::SiteShape::Ring));
+                                                                       Draoi::HexWorld::SiteShape::Ring));
     const Json::Value k = f.State()["view"]["siteKinds"];
     ASSERT_EQ(k.size(), 2u);
     EXPECT_EQ(k[0u]["kind"].asString(), "CoW.Node.River");

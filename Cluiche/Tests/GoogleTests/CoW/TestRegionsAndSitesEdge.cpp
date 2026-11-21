@@ -73,7 +73,7 @@ namespace
         SiteRegistry reg;
         RandomStream rng(1);
         const TerrainRules rules = TestRules();
-        p.result = RegionsAndSites::Place(p.world, reg, rules, ::CoW::World::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t{ 0 }), 0, rng, &p.report);
+        p.result = RegionsAndSites::Place(p.world, reg, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t{ 0 }), 0, rng, &p.report);
         p.layout = CheckLayout(p.world, rules, p.report.limits);
         return p;
     }

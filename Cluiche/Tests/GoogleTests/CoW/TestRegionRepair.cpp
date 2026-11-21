@@ -19,8 +19,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
@@ -28,9 +29,9 @@ namespace
     constexpr StratumIndex FS = kStratumFirst;
     constexpr StratumIndex WR = kStratumWild;
     constexpr StratumIndex AI = kStratumAncient;
-    constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
-    constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
-    constexpr CoW::World::BiomeIndex     L  = 1;   // Biome.Lake (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex     L  = 1;   // Biome.Lake (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
     TerrainRules RulesMin(int minCells)
     {
@@ -47,7 +48,7 @@ namespace
 
     // rows: one string per grid row. '.' ocean, '1'..'9' provisional region id, 'u' land with region 0.
     // zones[i] = zone of region i+1 (its cells take that zone). uZone = zone of 'u' cells.
-    Hand Make(const std::vector<std::string>& rows, const std::vector<StratumIndex>& zones, StratumIndex uZone = FS, CoW::World::BiomeIndex biome = G)
+    Hand Make(const std::vector<std::string>& rows, const std::vector<StratumIndex>& zones, StratumIndex uZone = FS, Draoi::HexWorld::BiomeIndex biome = G)
     {
         Hand h;
         const int W = static_cast<int>(rows[0].size());
@@ -762,9 +763,9 @@ TEST(SLOW_RegionRepair, GeneratedWorldsThreePresetsTwentySeedsCountsAndAbsorbLim
 // ---------------------------------------------------------------------------
 namespace
 {
-    const CoW::World::BiomeRegistry& RolesSwappedRegistry()
+    const Draoi::HexWorld::BiomeRegistry& RolesSwappedRegistry()
     {
-        static const CoW::World::BiomeRegistry reg = LoadShippedVariant({
+        static const Draoi::HexWorld::BiomeRegistry reg = LoadShippedVariant({
             { "\"roles\": [\"ocean\"]", "\"roles\": [\"lakeTmp\"]" },
             { "\"roles\": [\"lake\"]",  "\"roles\": [\"ocean\"]" },
             { "\"roles\": [\"lakeTmp\"]", "\"roles\": [\"lake\"]" } });
@@ -775,14 +776,14 @@ namespace
 TEST(RegionRepair, RegistryRoleFixtureHasOceanAndLakeOffTheirLegacyRows)
 {
     const auto& reg = RolesSwappedRegistry();
-    EXPECT_EQ(reg.Role(CoW::World::BiomeRole::Lake), 0);
-    EXPECT_EQ(reg.Role(CoW::World::BiomeRole::Ocean), 1);
+    EXPECT_EQ(reg.Role(Draoi::HexWorld::BiomeRole::Lake), 0);
+    EXPECT_EQ(reg.Role(Draoi::HexWorld::BiomeRole::Ocean), 1);
 }
 
 TEST(RegionRepair, MajorityIgnoresTheRegistrysLakeRoleRow)
 {
     // 3 cells of row 0 (the lake-role row here) and 1 grassland cell: the lake-role cells never win the majority.
-    Hand h = Make({ "1111" }, { FS }, FS, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    Hand h = Make({ "1111" }, { FS }, FS, RolesSwappedRegistry().Role(Draoi::HexWorld::BiomeRole::Lake));
     SetBiome(h.w, 3, 0, B("Biome.Grassland"));
     const RegionBuild b = FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
     ASSERT_EQ(b.regionCount, 1u);
@@ -793,10 +794,10 @@ TEST(RegionRepair, MajorityIgnoresTheRegistrysLakeRoleRow)
 
 TEST(RegionRepair, AllLakeRoleRegionReportsTheRegistrysLakeRow)
 {
-    Hand h = Make({ "111" }, { FS }, FS, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    Hand h = Make({ "111" }, { FS }, FS, RolesSwappedRegistry().Role(Draoi::HexWorld::BiomeRole::Lake));
     FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
     const RegionRecord& rec = h.w.regions.regions[0];
-    EXPECT_EQ(rec.primaryBiome, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    EXPECT_EQ(rec.primaryBiome, RolesSwappedRegistry().Role(Draoi::HexWorld::BiomeRole::Lake));
     EXPECT_FLOAT_EQ(rec.purity, 1.0f);
 }
 
@@ -807,7 +808,7 @@ TEST(RegionRepair, RegionWithNoCellsReportsTheRegistrysOceanRow)
     rec.id = 1; rec.stratum = FS; rec.landmass = 1;
     w.regions.AddRegion(rec);
     RecomputeRegionRecords(w, RolesSwappedRegistry());
-    EXPECT_EQ(w.regions.regions[0].primaryBiome, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Ocean));
+    EXPECT_EQ(w.regions.regions[0].primaryBiome, RolesSwappedRegistry().Role(Draoi::HexWorld::BiomeRole::Ocean));
     EXPECT_EQ(w.regions.regions[0].cellCount, 0u);
     EXPECT_FLOAT_EQ(w.regions.regions[0].purity, 0.0f);
 }

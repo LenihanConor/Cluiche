@@ -63,7 +63,7 @@ public:
     struct SiteKindRow
     {
         const char*                              overlay = "";   // "sites.<kind id>"
-        const WorldGeneration::SiteKindInfo*     info = nullptr;
+        const Draoi::HexWorld::SiteKindInfo*     info = nullptr;
         bool                                     enabled = true;
         int                                      count = 0;
     };

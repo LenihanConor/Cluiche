@@ -61,7 +61,7 @@ std::string FindShippedBiomes()
 Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
-    g_wg->SetStrataPath(CoW::World::Testing::ShippedStrataPath());   // zones load first; biome overrides below do not move them
+    g_wg->SetStrataPath(Draoi::HexWorld::Testing::ShippedStrataPath());   // zones load first; biome overrides below do not move them
     if (!g_guaranteesTextOverride.empty())
         g_wg->SetGuaranteesText(g_guaranteesTextOverride, CoW::WorldGeneration::Testing::ShippedGuaranteesSidecarText());
     else
@@ -161,10 +161,10 @@ struct Fixture
     void Pump(int frames) { for (int i = 0; i < frames; ++i) app->Update(kDt); }
 };
 
-bool SameCells(const WorldGeneration::WorldStructure& a, const WorldGeneration::WorldStructure& b)
+bool SameCells(const Draoi::HexWorld::WorldStructure& a, const Draoi::HexWorld::WorldStructure& b)
 {
     return a.CellCount() == b.CellCount()
-        && std::memcmp(a.Cells(), b.Cells(), sizeof(WorldGeneration::Cell) * a.CellCount()) == 0;
+        && std::memcmp(a.Cells(), b.Cells(), sizeof(Draoi::HexWorld::Cell) * a.CellCount()) == 0;
 }
 
 } // namespace
@@ -305,7 +305,7 @@ TEST(WorldGenModule, SameSeedIsDeterministic)
     ASSERT_TRUE(a.Boot());
     a.Pump(3);
     // Copy before the second fixture replaces the file-scope pointers.
-    const WorldGeneration::WorldStructure worldA = *a.wg->GetCurrentWorld();
+    const Draoi::HexWorld::WorldStructure worldA = *a.wg->GetCurrentWorld();
 
     Fixture b("{\"seed\":9001}");
     ASSERT_TRUE(b.Boot());
@@ -375,7 +375,7 @@ TEST(WorldGenModuleRetry, EachFailedAttemptPublishesARetryEventAndCompleteCarrie
     RetryTap tap(f);
     f.Pump(3);
     f.msgs.clear();
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 2);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 2);
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
 
     f.wg->GetSession().Regenerate(Json::Value(Json::objectValue));
@@ -406,7 +406,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableGenerationPublishesNoCompleteFailsHealthA
     const uint64_t attemptsBefore = CounterValue("cow.worldgen.attempts");
     const uint64_t unsatBefore = CounterValue("cow.worldgen.unsatisfiable");
 
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 3);   // fails the first three validations
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 3);   // fails the first three validations
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&flaky));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 3;
     f.wg->GetSession().Regenerate(a);
@@ -470,7 +470,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableHealthSurvivesALivePreviewTick)
     Fixture f;
     ASSERT_TRUE(f.Boot());
     f.Pump(3);
-    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 2;
     f.wg->GetSession().Regenerate(a);
@@ -554,7 +554,7 @@ TEST(WorldGenModuleTimeout, ARegenerateRunsOneAttemptPerFrame)
     Fixture f;
     ASSERT_TRUE(f.Boot());
     f.Pump(3);
-    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 4;
     f.wg->GetSession().Regenerate(a);
@@ -640,7 +640,7 @@ TEST(WorldGenModuleTimeout, UnsatisfiableAlsoPublishesFailedWithItsOwnReason)
     ASSERT_TRUE(f.Boot());
     FailedTap tap(f);
     f.Pump(3);
-    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 2;
     f.wg->GetSession().Regenerate(a);
@@ -663,7 +663,7 @@ TEST(WorldGenModuleTimeout, ACancelMidRunPublishesFailedKeepsTheWorldAndLeavesHe
     const uint64_t cancelsBefore = CounterValue("cow.worldgen.cancels");
     ASSERT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
 
-    WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
     Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 10;
     f.wg->GetSession().Regenerate(a);
@@ -870,7 +870,7 @@ TEST(WorldGenModuleGuarantees, DataOnlyKindsAppearInTheSiteKindList)
     f.Pump(3);
     EXPECT_TRUE(f.wg->AreBiomesLoaded());
     bool found = false;
-    for (const WorldGeneration::SiteKindInfo& k : WorldGeneration::ListSiteKinds(f.wg->GetSiteRegistry()))
+    for (const Draoi::HexWorld::SiteKindInfo& k : WorldGeneration::ListSiteKinds(f.wg->GetSiteRegistry()))
         if (std::string(k.id) == "Test.Site.Data") { found = true; EXPECT_STREQ(k.displayName, "Data kind"); }
     EXPECT_TRUE(found);
 }

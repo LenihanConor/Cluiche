@@ -183,16 +183,16 @@ namespace
     }
 } // namespace
 
-std::vector<ExtraStrataLayerDesc> WorldLayerSource::ExtraStrataLayers(const World::BiomeRegistry* biomes)
+std::vector<ExtraStrataLayerDesc> WorldLayerSource::ExtraStrataLayers(const Draoi::HexWorld::BiomeRegistry* biomes)
 {
     std::vector<ExtraStrataLayerDesc> out;
     if (biomes == nullptr)
         return out;
-    const World::StratumTable& table = biomes->Strata();
+    const Draoi::HexWorld::StratumTable& table = biomes->Strata();
     for (uint32_t i = 0; i < table.SetCount(); ++i)
     {
-        const World::StratumSetSpec& set = table.Set(i);
-        if (std::strcmp(set.id, World::StratumTable::kDepthSetId) == 0)
+        const Draoi::HexWorld::StratumSetSpec& set = table.Set(i);
+        if (std::strcmp(set.id, Draoi::HexWorld::StratumTable::kDepthSetId) == 0)
             continue;
         out.push_back({ std::string(kExtraStrataIdPrefix) + set.id, set.id, set.count + 1u });
     }

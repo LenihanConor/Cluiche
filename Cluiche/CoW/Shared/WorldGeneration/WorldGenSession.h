@@ -47,7 +47,7 @@ public:
     // (there is no compiled fallback; the rules come from the terrain_rules sidecar).
     WorldGenSession();
     // A session with caller-supplied rules (already loaded; tests that vary one rule use this).
-    WorldGenSession(const TerrainRules& rules, const World::BiomeRegistry* biomes);
+    WorldGenSession(const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry* biomes);
     ~WorldGenSession();
     WorldGenSession(WorldGenSession&&) noexcept;
     WorldGenSession& operator=(WorldGenSession&&) noexcept;
@@ -63,7 +63,7 @@ public:
     bool IsGenerationBlocked() const { return !mBlockCode.empty(); }
     // The biome registry classification (stage 14) reads. Not owned; it must outlive the session. The module owns the
     // one instance and sets it in its constructor, before the registry is loaded (the pointer is stable).
-    void SetBiomeRegistry(const World::BiomeRegistry* biomes)
+    void SetBiomeRegistry(const Draoi::HexWorld::BiomeRegistry* biomes)
     {
         mBiomes = biomes;
         mBiomesMutable = nullptr;
@@ -71,12 +71,12 @@ public:
         if (mCandGen) { mCandGen->SetBiomeRegistry(biomes); }
     }
     // The same with write access, which lets Set's "strata" object live-tweak the stratum table's sidecar parameters.
-    void SetBiomeRegistry(World::BiomeRegistry* biomes)
+    void SetBiomeRegistry(Draoi::HexWorld::BiomeRegistry* biomes)
     {
-        SetBiomeRegistry(static_cast<const World::BiomeRegistry*>(biomes));
+        SetBiomeRegistry(static_cast<const Draoi::HexWorld::BiomeRegistry*>(biomes));
         mBiomesMutable = biomes;
     }
-    const World::BiomeRegistry* BiomeRegistryPtr() const { return mBiomes; }
+    const Draoi::HexWorld::BiomeRegistry* BiomeRegistryPtr() const { return mBiomes; }
     // The strata assigners the generator selects from by the stratum table's assigner type (null = the built-in only).
     // Not owned; it must outlive the session. Set before the first generation.
     void SetStrataAssignerRegistry(const StrataAssignerRegistry* assigners)
@@ -210,8 +210,8 @@ private:
     std::unique_ptr<Dia::Attribute::ParameterFile> mRulesFile;   // the loaded sidecar (null when rules were supplied directly)
     bool             mRulesLoaded = false;
     std::string      mBlockCode;
-    const World::BiomeRegistry* mBiomes = nullptr;   // declared before mGen so the constructors can pass it
-    World::BiomeRegistry*       mBiomesMutable = nullptr;   // the same registry when the host gave write access (else null)
+    const Draoi::HexWorld::BiomeRegistry* mBiomes = nullptr;   // declared before mGen so the constructors can pass it
+    Draoi::HexWorld::BiomeRegistry*       mBiomesMutable = nullptr;   // the same registry when the host gave write access (else null)
     TerrainGenerator mGen;
     WorldStructure   mWorld;
     uint64_t         mSeed = 1;

@@ -435,5 +435,8 @@
     <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

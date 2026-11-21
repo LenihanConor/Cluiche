@@ -25,15 +25,16 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
 {
     TerrainRules Rules() { return TestRules(); }
 
-    constexpr CoW::World::BiomeIndex G = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr Draoi::HexWorld::BiomeIndex G = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
     // Independent odd-q hex distance (cube coordinates).
     int Dist(const WorldStructure& w, int a, int b)
@@ -344,7 +345,7 @@ TEST(NodesRiverFill, QuotaNodeLimitedWhenClampsBlockTheBounds)
 
 TEST(NodesRiverFill, YieldTableMatchesGdd)
 {
-    struct Row { CoW::World::BiomeIndex b; int food; int mat; };
+    struct Row { Draoi::HexWorld::BiomeIndex b; int food; int mat; };
     const Row rows[] = { { B("Biome.Grassland"), 3, 1 }, { B("Biome.TemperateForest"), 2, 3 }, { B("Biome.Wetland"), 2, 1 },
                          { B("Biome.Desert"), 1, 2 },     { B("Biome.Alpine"), 1, 3 },  { B("Biome.Tundra"), 1, 2 },
                          { B("Biome.Rainforest"), 3, 2 },      { B("Biome.Volcanic"), 1, 3 }, { B("Biome.Ocean"), 0, 0 },
@@ -407,7 +408,7 @@ TEST(NodesRiverFill, TerrainFactorsAndExclusions)
 namespace
 {
     // 3 x 2 regions of 16 x 16 cells: quota 15 each, total 90 (inside 80..150).
-    WorldStructure SixRegions(CoW::World::BiomeIndex b = G) { return MakeRegionBlocksWorld(3, 2, 16, 16, b); }
+    WorldStructure SixRegions(Draoi::HexWorld::BiomeIndex b = G) { return MakeRegionBlocksWorld(3, 2, 16, 16, b); }
 
     FillResult Fill(WorldStructure& w, unsigned seed)
     {
@@ -486,7 +487,7 @@ TEST(NodesRiverFill, SingleRegionIsNodeLimitedByTheQuotaSum)
 
 TEST(NodesRiverFill, KindDrawFollowsFoodShareStatistically)
 {
-    for (const CoW::World::BiomeIndex b : { B("Biome.Grassland"), B("Biome.Alpine"), B("Biome.Rainforest") })
+    for (const Draoi::HexWorld::BiomeIndex b : { B("Biome.Grassland"), B("Biome.Alpine"), B("Biome.Rainforest") })
     {
         int hunting = 0, total = 0;
         for (unsigned seed = 1; seed <= 100; ++seed)
@@ -688,7 +689,7 @@ namespace
         long totalSum = 0;
         long droppedSum = 0; int corridorOnPeakVolcano = 0; int quotaLimitedWorlds = 0; int totalMin = 1 << 30, totalMax = 0, regionMin = 1 << 30, regionMax = 0, regionsSeen = 0;
         int minRegions = 1 << 30, maxRegions = 0;
-        long hunting[::CoW::World::BiomeRegistry::kMaxBiomes] = {}, resource[::CoW::World::BiomeRegistry::kMaxBiomes] = {};
+        long hunting[::Draoi::HexWorld::BiomeRegistry::kMaxBiomes] = {}, resource[::Draoi::HexWorld::BiomeRegistry::kMaxBiomes] = {};
     };
 
     bool IndLand(const Cell& c) { return c.landmass != 0 && c.waterSource != WaterSource::Ocean && c.waterSource != WaterSource::Lake; }
@@ -697,9 +698,9 @@ namespace
     {
         const TerrainRules rules = Rules();
         RandomStream rr(static_cast<unsigned>(seed) ^ 0x5151u);
-        BuildRegions(w, rules, rr, ::CoW::World::Testing::ShippedBiomeRegistry());
+        BuildRegions(w, rules, rr, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rc(static_cast<unsigned>(seed) + 1);
-        PlaceCorridorNodes(w, rules, ::CoW::World::Testing::ShippedStratumTable(), rc);
+        PlaceCorridorNodes(w, rules, ::Draoi::HexWorld::Testing::ShippedStratumTable(), rc);
         const RiverNodeResult river = PlaceRiverNodes(w, rules);
         RandomStream rf(static_cast<unsigned>(seed) + 2);
         const FillResult fill = PlaceFillNodes(w, rules, rf);
@@ -902,10 +903,10 @@ namespace
                     st.worlds ? static_cast<double>(st.totalSum) / st.worlds : 0.0, st.totalMin, st.totalMax,
                     st.regionMin, st.regionMax, st.overQuotaRegions, st.mouthCorridorSpacingPairs, st.droppedSum, st.quotaLimitedWorlds, st.corridorOnPeakVolcano);
         EXPECT_EQ(st.corridorOnPeakVolcano, 0) << label;
-        for (int b = 2; b < static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count()); ++b)
+        for (int b = 2; b < static_cast<int>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()); ++b)
         {
             if (st.hunting[b] + st.resource[b] == 0) { continue; }
-            std::printf("[NodesRiverFill]   %-16s hunting=%ld resource=%ld ratio=%.2f\n", ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(b)),
+            std::printf("[NodesRiverFill]   %-16s hunting=%ld resource=%ld ratio=%.2f\n", ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(static_cast<::Draoi::HexWorld::BiomeIndex>(b)),
                         st.hunting[b], st.resource[b], st.resource[b] ? static_cast<double>(st.hunting[b]) / st.resource[b] : 0.0);
         }
     }

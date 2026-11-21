@@ -49,7 +49,7 @@ struct Gen
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Gen() : gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry()) {}
+    Gen() : gen(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 

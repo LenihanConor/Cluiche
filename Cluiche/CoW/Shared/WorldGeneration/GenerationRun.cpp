@@ -65,7 +65,7 @@ namespace
     }
 }
 
-GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                              uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                              IGenerationObserver* observer)
     : mTerrain(terrain), mRegistry(registry), mRules(rules), mBiomes(biomes), mOuterSeed(outerSeed)
@@ -225,7 +225,7 @@ void GenerationRun::Run()
     while (Step()) {}
 }
 
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld)
 {
@@ -233,7 +233,7 @@ GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry
     return GenerateWorld(terrain, registry, rules, biomes, outerSeed, params, rng, guard, outWorld);
 }
 
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                GenerationGuard& guard, WorldStructure* outWorld)
 {

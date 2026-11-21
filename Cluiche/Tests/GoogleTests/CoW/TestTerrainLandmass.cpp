@@ -30,7 +30,7 @@ struct Harness
 {
     TerrainGenerator gen;
     RandomStream rng{ 1 };
-    Harness() : gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry()) {}
+    Harness() : gen(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall) { gen.Update(seed, s, d, rng); }
 };
 

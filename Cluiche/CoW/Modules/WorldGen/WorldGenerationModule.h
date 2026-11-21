@@ -17,9 +17,10 @@
 #include <memory>
 #include <string>
 
+namespace Draoi { namespace HexWorld { class BiomeRegistry; } }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
+
 namespace CoW {
 
-namespace World { class BiomeRegistry; }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
 
 class WorldGenerationHealthReporter : public Dia::Observation::Health::HealthReporterBase
 {
@@ -46,7 +47,7 @@ public:
     const WorldGeneration::WorldGenSession& GetSession() const { return mSession; }
 
     // nullptr until the first world has been generated.
-    const WorldGeneration::WorldStructure* GetCurrentWorld() const
+    const Draoi::HexWorld::WorldStructure* GetCurrentWorld() const
     {
         return mSession.Revision() > 0 ? &mSession.World() : nullptr;
     }
@@ -56,9 +57,9 @@ public:
     // The one hex grid every cell-layer registrant of the world registers against (S-1 view, A4, A1). Null until the
     // first Update after DoStart. Rebuilt in place when the world dimensions change (stable CellGridDesc address).
     // Debug builds only: every registrant is debug-only, so Release neither builds nor references it.
-    const WorldGeneration::WorldHexGrid* GetHexGrid() const { return mHexGrid.Get(); }
+    const Draoi::HexWorld::WorldHexGrid* GetHexGrid() const { return mHexGrid.Get(); }
     // For a registrant that choreographs layer (un)registration around a size change (see SharedWorldHexGrid).
-    WorldGeneration::SharedWorldHexGrid& HexGridOwner() { return mHexGrid; }
+    Draoi::HexWorld::SharedWorldHexGrid& HexGridOwner() { return mHexGrid; }
 #endif
     // True once a world of at least this revision exists (the hand-off contract for dependants, SD-S1-010).
     bool IsReady(uint32_t revision) const { return GetWorldRevision() >= revision; }
@@ -144,7 +145,7 @@ public:
     static constexpr const char* kGuaranteesSidecarAlias = "json.guarantees_schema";
     void SetGuaranteesText(const std::string& text, const std::string& sidecar) { mGuaranteesText = text; mGuaranteesSidecarText = sidecar; mGuaranteesTextSet = true; }
     void SetGuaranteesPath(const std::string& path) { mGuaranteesPath = path; }
-    const World::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
+    const Draoi::HexWorld::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
     bool AreBiomesLoaded() const { return mBiomesLoaded; }
     // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
     const std::string& GetBiomesErrorField() const { return mBiomesErrorField; }
@@ -184,8 +185,8 @@ private:
     // The config body of OnConfigure (loads the rules first); deferred to DoStart when the rules come from an alias.
     void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
-    bool LoadStrata(World::StratumTable& strata);
-    bool LoadGuarantees(const World::StratumTable& strata);
+    bool LoadStrata(Draoi::HexWorld::StratumTable& strata);
+    bool LoadGuarantees(const Draoi::HexWorld::StratumTable& strata);
     void LoadBiomes();
     void ReportBiomesFailure();
     void ApplyHandoffPreset();
@@ -206,7 +207,7 @@ private:
     WorldGeneration::SiteRegistry mSiteRegistry;
     WorldGeneration::StrataAssignerRegistry mStrataAssigners;
 #ifdef DIA_DEBUG
-    WorldGeneration::SharedWorldHexGrid mHexGrid;
+    Draoi::HexWorld::SharedWorldHexGrid mHexGrid;
 #endif
     int  mGenerationHolds = 0;
     bool mStartDeferral = true;      // skip the first DoUpdate: dependants started in the same pass have registered by then
@@ -221,7 +222,7 @@ private:
     std::string mPendingLaunchOverrides;
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
-    std::unique_ptr<World::BiomeRegistry> mBiomes;
+    std::unique_ptr<Draoi::HexWorld::BiomeRegistry> mBiomes;
     std::string mStrataText;
     std::string mStrataSidecarText;
     bool mStrataTextSet = false;

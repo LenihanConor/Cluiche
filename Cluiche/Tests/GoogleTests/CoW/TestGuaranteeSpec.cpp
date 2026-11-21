@@ -10,14 +10,15 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using CoW::World::Testing::ShippedStratumTable;
+using Draoi::HexWorld::Testing::ShippedStratumTable;
 using Dia::Core::StringCRC;
 
 namespace {
 
-std::string ShippedText() { return CoW::World::Testing::Detail::ReadFileText(ShippedGuaranteesPath()); }
-std::string Sidecar() { return CoW::World::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath()); }
+std::string ShippedText() { return Draoi::HexWorld::Testing::Detail::ReadFileText(ShippedGuaranteesPath()); }
+std::string Sidecar() { return Draoi::HexWorld::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath()); }
 
 std::string Replace(std::string text, const std::string& from, const std::string& to)
 {

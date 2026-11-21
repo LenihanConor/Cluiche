@@ -22,8 +22,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -241,7 +242,7 @@ namespace
 
 TEST_F(WorldJsonBiomeIds, UnknownIdImportsAsTheFallbackWithOneWarningPerDistinctId)
 {
-    const CoW::World::BiomeRegistry fresh = LoadShippedVariant({});   // fresh warned-id set
+    const Draoi::HexWorld::BiomeRegistry fresh = LoadShippedVariant({});   // fresh warned-id set
     WorldJsonContext ctx;
     ctx.biomes = &fresh;
     const std::string text = Edited(MakeTinyWorld(), [](Json::Value& r)
@@ -253,7 +254,7 @@ TEST_F(WorldJsonBiomeIds, UnknownIdImportsAsTheFallbackWithOneWarningPerDistinct
     WorldStructure imported;
     const WorldImportResult r = Import(text, imported, ctx);
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
-    const CoW::World::BiomeIndex fallback = fresh.Role(CoW::World::BiomeRole::Fallback);
+    const Draoi::HexWorld::BiomeIndex fallback = fresh.Role(Draoi::HexWorld::BiomeRole::Fallback);
     EXPECT_EQ(imported.Cells()[3].biome, fallback);
     EXPECT_EQ(imported.Cells()[4].biome, fallback);
     EXPECT_EQ(imported.Cells()[5].biome, fallback);
@@ -299,7 +300,7 @@ TEST_F(WorldJsonBiomeIds, FileWithoutTheHashImportsSilently)
 TEST_F(WorldJsonBiomeIds, WorldExportedUnderAnotherRegistryWarnsOnceAndKeepsKnownIds)
 {
     // Exported under the 14-row registry, imported under the shipped one: hash differs; the 14th id falls back.
-    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
     WorldStructure original = MakeTinyWorld();
     original.Cells()[2].biome = B(extra, "Biome.Savanna");
     RecomputeRegionRecords(original, extra);
@@ -308,7 +309,7 @@ TEST_F(WorldJsonBiomeIds, WorldExportedUnderAnotherRegistryWarnsOnceAndKeepsKnow
     const std::string text = Export(original, exportCtx);
     EXPECT_NE(text.find("Biome.Savanna"), std::string::npos);
 
-    const CoW::World::BiomeRegistry fresh = LoadShippedVariant({});
+    const Draoi::HexWorld::BiomeRegistry fresh = LoadShippedVariant({});
     WorldJsonContext importCtx;
     importCtx.biomes = &fresh;
     WorldStructure imported;
@@ -316,13 +317,13 @@ TEST_F(WorldJsonBiomeIds, WorldExportedUnderAnotherRegistryWarnsOnceAndKeepsKnow
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
     EXPECT_EQ(HashWarnings(), 1u);
     EXPECT_EQ(Unknown(), 1u);
-    EXPECT_EQ(imported.Cells()[2].biome, fresh.Role(CoW::World::BiomeRole::Fallback));
+    EXPECT_EQ(imported.Cells()[2].biome, fresh.Role(Draoi::HexWorld::BiomeRole::Fallback));
     EXPECT_EQ(imported.Cells()[3].biome, original.Cells()[3].biome);
 }
 
 TEST_F(WorldJsonBiomeIds, ThirteenthAndFourteenthRowWorldRoundTripsUnderTheExtraRegistry)
 {
-    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
     ASSERT_EQ(extra.Count(), 14u);
     WorldStructure original = MakeTinyWorld();
     original.Cells()[2].biome = B(extra, "Biome.Savanna");
@@ -353,10 +354,10 @@ TEST_F(WorldJsonBiomeIds, ReorderedPaletteWithKnownIdsImportsEveryCellUnderItsId
     for (int i = static_cast<int>(doc["biomes"].size()) - 1; i >= 0; --i) { reversed.append(doc["biomes"][static_cast<Json::ArrayIndex>(i)]); }
     doc["biomes"] = reversed;
     const std::string reorderedText = Write(doc);
-    CoW::World::BiomeRegistry reordered;
-    CoW::World::RegistryError regErr;
-    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::CoW::World::Testing::ShippedStratumTable(), regErr)) << regErr.reason.AsCStr();
-    const CoW::World::BiomeRegistry& shipped = ShippedBiomeRegistry();
+    Draoi::HexWorld::BiomeRegistry reordered;
+    Draoi::HexWorld::RegistryError regErr;
+    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), regErr)) << regErr.reason.AsCStr();
+    const Draoi::HexWorld::BiomeRegistry& shipped = ShippedBiomeRegistry();
     ASSERT_EQ(reordered.Count(), shipped.Count());
     ASSERT_NE(B(reordered, "Biome.Ocean"), B(shipped, "Biome.Ocean"));
 
@@ -943,8 +944,8 @@ TEST(WorldJsonImport, UnknownZoneNameIsRefusedAndNamesTheField)
 TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
 {
     // A registry loaded against renamed zones writes the new names; the shipped table does not know them.
-    ::CoW::World::StratumTable renamed;
-    ::CoW::World::StratumError zerr;
+    ::Draoi::HexWorld::StratumTable renamed;
+    ::Draoi::HexWorld::StratumError zerr;
     const std::vector<std::string> names = { "Shore", "Wilds", "Core" };
     ASSERT_TRUE(renamed.LoadFromText(TestStrataText(names).c_str(), TestStrataSidecar(names).c_str(), zerr));
     std::string biomes = Detail::ReadFileText(ShippedBiomesPath());
@@ -952,8 +953,8 @@ TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
     {
         for (size_t at = biomes.find(r.first); at != std::string::npos; at = biomes.find(r.first, at)) { biomes.replace(at, std::strlen(r.first), r.second); }
     }
-    CoW::World::BiomeRegistry reg;
-    CoW::World::RegistryError regErr;
+    Draoi::HexWorld::BiomeRegistry reg;
+    Draoi::HexWorld::RegistryError regErr;
     ASSERT_TRUE(reg.LoadFromText(biomes.c_str(), renamed, regErr)) << regErr.reason.AsCStr();
 
     const WorldStructure original = MakeTinyWorld();

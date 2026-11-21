@@ -13,8 +13,8 @@
 #include <type_traits>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
-using namespace CoW::World;
-using CoW::WorldGeneration::StratumIndex;
+using namespace Draoi::HexWorld;
+using Draoi::HexWorld::StratumIndex;
 using Dia::Core::StringCRC;
 
 namespace
@@ -46,7 +46,7 @@ namespace
             std::stringstream ss;
             ss << in.rdbuf();
             RegistryError err;
-            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedStratumTable(), err);
+            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err);
             EXPECT_TRUE(ok) << "path=" << path << " field=" << err.field.AsCStr() << " id=" << err.id.AsCStr()
                             << " row=" << err.row << " reason=" << err.reason.AsCStr();
         }
@@ -239,8 +239,8 @@ TEST(BiomeRegistryData, PlateauAndRoles)
     EXPECT_EQ(r.Role(BiomeRole::Fallback), Grass);
 }
 
-static_assert(std::is_trivially_copyable_v<CoW::WorldGeneration::Cell>, "Cell is memset/memcpy'd; must stay trivially copyable");
-static_assert(sizeof(CoW::WorldGeneration::Cell) <= 24, "Cell grew unexpectedly");
+static_assert(std::is_trivially_copyable_v<Draoi::HexWorld::Cell>, "Cell is memset/memcpy'd; must stay trivially copyable");
+static_assert(sizeof(Draoi::HexWorld::Cell) <= 24, "Cell grew unexpectedly");
 
 // Tripwire: the committed S-1 layer goldens hash biomeIndex values, so the first ten must never renumber.
 TEST(BiomeRegistryData, ShippedRowIndicesArePinned)
@@ -276,7 +276,7 @@ TEST(BiomeRegistryData, AlpineOceanLakeNeverForbidden)
 
 TEST(BiomeRegistryData, CellDefaultsBiomeToOceanRow)
 {
-    CoW::WorldGeneration::Cell c;
+    Draoi::HexWorld::Cell c;
     EXPECT_EQ(c.biome, static_cast<BiomeIndex>(Ocean));
 }
 
@@ -285,7 +285,7 @@ TEST(BiomeRegistryData, CellDefaultsBiomeToOceanRow)
 
 TEST(BiomeTestRegistry, LookupByIdReturnsLegacyOrdinals)
 {
-    using namespace CoW::World::Testing;
+    using namespace Draoi::HexWorld::Testing;
     EXPECT_EQ(B("Biome.Grassland"), 2);
     EXPECT_EQ(B("Biome.Volcanic"), 9);
     EXPECT_EQ(B(ShippedBiomeRegistry(), "Biome.Rainforest"), 8);
@@ -293,13 +293,13 @@ TEST(BiomeTestRegistry, LookupByIdReturnsLegacyOrdinals)
 
 TEST(BiomeTestRegistry, UnknownIdAborts)
 {
-    using namespace CoW::World::Testing;
+    using namespace Draoi::HexWorld::Testing;
     EXPECT_DEATH(B("Biome.DoesNotExist"), "");
 }
 
 TEST(BiomeTestRegistry, ExtraRegistryHasThirteenShippedRowsPlusOneClimateBiome)
 {
-    using namespace CoW::World::Testing;
+    using namespace Draoi::HexWorld::Testing;
     const BiomeRegistry& e = ExtraBiomeRegistry();
     const BiomeRegistry& s = ShippedBiomeRegistry();
     ASSERT_EQ(e.Count(), 14u);

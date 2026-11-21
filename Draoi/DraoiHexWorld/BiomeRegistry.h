@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <memory>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
 // BiomeIndex / kNoBiome are declared in CellVocabulary.h (Cell stores a BiomeIndex; avoids a circular include).
 
@@ -78,7 +78,7 @@ public:
 
     BiomeIndex  Role(BiomeRole role) const;
     bool        IsGenerated(BiomeIndex b) const;
-    bool        IsValidInStratum(BiomeIndex b, WorldGeneration::StratumIndex zone) const;
+    bool        IsValidInStratum(BiomeIndex b, StratumIndex zone) const;
     const StratumTable& Strata() const;   // empty (Count 0) until a load succeeds
     // Live tweak of the loaded stratum table's sidecar parameters (StratumTable::SetParams). False on an empty registry.
     bool        SetStrataParams(const std::vector<std::pair<std::string, double>>& changes, StratumError& err, bool* changed = nullptr);
@@ -99,5 +99,5 @@ private:
     std::unique_ptr<Data> mData;
 };
 
-} // namespace World
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

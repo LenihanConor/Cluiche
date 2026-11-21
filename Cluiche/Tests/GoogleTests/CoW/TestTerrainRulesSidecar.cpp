@@ -322,7 +322,7 @@ TEST(TerrainRulesSession, DefaultConstructedSessionRefusesEveryGenerationEntryPo
 TEST(TerrainRulesSession, LoadRulesFromGoodSidecarBindsRulesAndGenerates)
 {
     CoW::WorldGeneration::WorldGenSession s;
-    s.SetBiomeRegistry(&CoW::World::Testing::ShippedBiomeRegistry());   // generation needs the registry
+    s.SetBiomeRegistry(&Draoi::HexWorld::Testing::ShippedBiomeRegistry());   // generation needs the registry
     ParamError err;
     ASSERT_TRUE(s.LoadRules(CoW::WorldGeneration::TestSidecarText().c_str(), err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
     EXPECT_TRUE(s.RulesLoaded());

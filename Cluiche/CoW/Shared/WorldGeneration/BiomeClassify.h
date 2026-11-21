@@ -18,7 +18,7 @@
 #include <cstdint>
 
 // Forward declarations only: BiomeRegistry.h pulls windows.h, which this widely included header must not.
-namespace CoW { namespace World { class BiomeRegistry; using BiomeIndex = uint8_t; } }
+namespace Draoi { namespace HexWorld { class BiomeRegistry; using BiomeIndex = uint8_t; } }
 
 namespace CoW {
 namespace WorldGeneration {
@@ -48,7 +48,7 @@ struct Stage14Inputs
     const uint32_t* waterSource = nullptr;    // WaterSource values
     BarrierForm     barrierForm = BarrierForm::Plateau;
     float           barrier = 0.0f;           // slider 0..1
-    const World::BiomeRegistry* biomes = nullptr;   // required: pins, climate rows, plateau rows, zones, forbidden pairs
+    const Draoi::HexWorld::BiomeRegistry* biomes = nullptr;   // required: pins, climate rows, plateau rows, zones, forbidden pairs
 };
 
 struct Stage14Layers
@@ -74,7 +74,7 @@ bool IsBuiltInPinRule(Dia::Core::StringCRC rule);
 
 // -((T-T0)/wT)^2 - ((M-M0)/wM)^2 from the registry row's climate envelope.
 // A row without a climate envelope (or an unknown row) returns the lowest float.
-float BiomeClimateScore(const World::BiomeRegistry& biomes, World::BiomeIndex b, float temperature, float moisture);
+float BiomeClimateScore(const Draoi::HexWorld::BiomeRegistry& biomes, Draoi::HexWorld::BiomeIndex b, float temperature, float moisture);
 
 // River cell with an ocean neighbour.
 bool IsRiverMouth(const Stage14Inputs& in, int cell);

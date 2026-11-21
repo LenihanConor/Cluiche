@@ -56,14 +56,14 @@ struct RegionBuild
 // Lake-role biome). Returns true if some region had more than
 // kMaxNeighbours neighbours (lists then keep the lowest 16). This is the exact arithmetic FinishRegions uses, shared
 // so world import (WorldJson) reproduces a generated world's summaries bit for bit.
-bool RecomputeRegionRecords(WorldStructure& world, const World::BiomeRegistry& biomes);
+bool RecomputeRegionRecords(WorldStructure& world, const Draoi::HexWorld::BiomeRegistry& biomes);
 
 // Clears previous region data, repairs `growth`, writes Cell::region for every cell and fills world.regions.
 // No other Cell field is touched.
-RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const World::BiomeRegistry& biomes);
+RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, const RegionGrowth& growth, const Draoi::HexWorld::BiomeRegistry& biomes);
 
 // BuildProvisionalRegions + FinishRegions.
-RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes);
+RegionBuild BuildRegions(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng, const Draoi::HexWorld::BiomeRegistry& biomes);
 
 } // namespace WorldGeneration
 } // namespace CoW

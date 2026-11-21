@@ -42,19 +42,19 @@ namespace
     int Clamp(int v) { return std::clamp(v, kMinQuota, kMaxQuota); }
 }
 
-int BiomeFood(World::BiomeIndex b)
+int BiomeFood(Draoi::HexWorld::BiomeIndex b)
 {
     const int i = static_cast<int>(b);
     return (i >= 0 && i < kYieldRows) ? kYield[i][0] : 0;
 }
 
-int BiomeMaterials(World::BiomeIndex b)
+int BiomeMaterials(Draoi::HexWorld::BiomeIndex b)
 {
     const int i = static_cast<int>(b);
     return (i >= 0 && i < kYieldRows) ? kYield[i][1] : 0;
 }
 
-float BiomeFoodShare(World::BiomeIndex b)
+float BiomeFoodShare(Draoi::HexWorld::BiomeIndex b)
 {
     const int f = BiomeFood(b), m = BiomeMaterials(b);
     return (f + m) > 0 ? static_cast<float>(f) / static_cast<float>(f + m) : 0.0f;

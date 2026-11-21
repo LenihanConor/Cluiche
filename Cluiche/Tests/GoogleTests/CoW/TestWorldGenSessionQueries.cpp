@@ -17,7 +17,8 @@
 #include <type_traits>
 
 using namespace CoW::WorldGeneration;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -117,7 +118,7 @@ void Generate(WorldGenSession& s)
 bool SameCells(const WorldStructure& a, const WorldStructure& b)
 {
     return a.CellCount() == b.CellCount() &&
-           std::memcmp(a.Cells(), b.Cells(), static_cast<size_t>(a.CellCount()) * sizeof(CoW::WorldGeneration::Cell)) == 0;
+           std::memcmp(a.Cells(), b.Cells(), static_cast<size_t>(a.CellCount()) * sizeof(Draoi::HexWorld::Cell)) == 0;
 }
 
 } // namespace
@@ -739,14 +740,14 @@ TEST(WorldGenSessionQueries, CellFieldsMatchWorldCells)
     const int count = s.World().CellCount();
     for (int i = 0; i < count; i += 37)
     {
-        const CoW::WorldGeneration::Cell& c = s.World().Cells()[i];
+        const Draoi::HexWorld::Cell& c = s.World().Cells()[i];
         const Json::Value r = s.Cell(Obj("index", i));
         ASSERT_TRUE(Ok(r)) << r.toStyledString();
         EXPECT_FLOAT_EQ(static_cast<float>(r["elevation"].asDouble()), c.elevation);
         EXPECT_FLOAT_EQ(static_cast<float>(r["latitude"].asDouble()), c.latitude);
         EXPECT_EQ(r["waterSource"].asString(), WaterSourceName(c.waterSource));
         EXPECT_EQ(r["terrain"].asString(), TerrainTypeName(c.terrain));
-        EXPECT_EQ(r["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), c.stratum));
+        EXPECT_EQ(r["stratum"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), c.stratum));
         EXPECT_EQ(r["landmass"].asUInt(), c.landmass);
         EXPECT_EQ(r["flags"].asUInt(), c.terrainFlags);
         if (c.downstream == kNoDirection)
@@ -898,13 +899,13 @@ TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r["biomeCounts"].isArray()) << r.toStyledString();
-    ASSERT_EQ(r["biomeCounts"].size(), static_cast<unsigned>(::CoW::World::Testing::ShippedBiomeRegistry().Count()));
+    ASSERT_EQ(r["biomeCounts"].size(), static_cast<unsigned>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()));
     int sum = 0;
-    for (int b = 0; b < static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count()); ++b)
+    for (int b = 0; b < static_cast<int>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()); ++b)
     {
         const Json::Value& e = r["biomeCounts"][b];
         EXPECT_EQ(e["id"].asInt(), b);
-        EXPECT_EQ(e["name"].asString(), ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(b)));
+        EXPECT_EQ(e["name"].asString(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(static_cast<::Draoi::HexWorld::BiomeIndex>(b)));
         int expected = 0;
         for (int i = 0; i < s.World().CellCount(); ++i)
             expected += s.World().Cells()[i].biome == b ? 1 : 0;
@@ -934,7 +935,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
     int land = -1, pinnedLand = -1, ocean = -1;
     for (int i = 0; i < s.World().CellCount(); ++i)
     {
-        const CoW::World::BiomeIndex b = s.World().Cells()[i].biome;
+        const Draoi::HexWorld::BiomeIndex b = s.World().Cells()[i].biome;
         if (b == B("Biome.Ocean")) { if (ocean < 0) ocean = i; }
         else if (pin[i] != BiomePin::None) { if (pinnedLand < 0 && pin[i] != BiomePin::Water) pinnedLand = i; }
         else if (land < 0) land = i;
@@ -997,7 +998,7 @@ TEST(WorldGenSessionQueries, CellFixupReasonMatchesFixupLayer)
 TEST(WorldGenSessionQueries, BiomeCountsCoverEveryRegistryRowOfAFourteenRowFixture)
 {
     // AC 6: per-biome stats are sized by the registry's Count(), not a fixed enum count.
-    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
     ASSERT_EQ(extra.Count(), 14u);
     TestSession s;
     s.SetBiomeRegistry(&extra);
@@ -1010,7 +1011,7 @@ TEST(WorldGenSessionQueries, BiomeCountsCoverEveryRegistryRowOfAFourteenRowFixtu
     {
         const Json::Value& e = r["biomeCounts"][b];
         EXPECT_EQ(e["id"].asInt(), static_cast<int>(b));
-        EXPECT_EQ(e["name"].asString(), extra.Name(static_cast<CoW::World::BiomeIndex>(b)));
+        EXPECT_EQ(e["name"].asString(), extra.Name(static_cast<Draoi::HexWorld::BiomeIndex>(b)));
         int expected = 0;
         for (int i = 0; i < s.World().CellCount(); ++i)
             expected += static_cast<uint32_t>(s.World().Cells()[i].biome) == b ? 1 : 0;
@@ -1021,5 +1022,5 @@ TEST(WorldGenSessionQueries, BiomeCountsCoverEveryRegistryRowOfAFourteenRowFixtu
 }
 
 // AC 5: a cell stores a registry row index, not the legacy enum.
-static_assert(std::is_same_v<decltype(Cell::biome), CoW::World::BiomeIndex>, "Cell::biome must be a BiomeIndex");
-static_assert(std::is_same_v<decltype(RegionRecord::primaryBiome), CoW::World::BiomeIndex>, "RegionRecord::primaryBiome must be a BiomeIndex");
+static_assert(std::is_same_v<decltype(Cell::biome), Draoi::HexWorld::BiomeIndex>, "Cell::biome must be a BiomeIndex");
+static_assert(std::is_same_v<decltype(RegionRecord::primaryBiome), Draoi::HexWorld::BiomeIndex>, "RegionRecord::primaryBiome must be a BiomeIndex");

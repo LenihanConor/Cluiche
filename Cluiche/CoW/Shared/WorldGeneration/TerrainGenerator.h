@@ -191,13 +191,13 @@ class TerrainGenerator
 {
 public:
     // `biomes` is the registry the Biomes stage classifies with; it is not owned and must outlive the generator.
-    TerrainGenerator(const TerrainRules& rules, const World::BiomeRegistry* biomes);
-    void SetBiomeRegistry(const World::BiomeRegistry* biomes) { mBiomes = biomes; }
+    TerrainGenerator(const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry* biomes);
+    void SetBiomeRegistry(const Draoi::HexWorld::BiomeRegistry* biomes) { mBiomes = biomes; }
     // The strata assigners the Strata stage selects from by the depth set's assigner type. Not owned; it must outlive the
     // generator. Null (the default) means only the built-in coast_cost_bands. Takes effect on the next Update that
     // re-runs the Strata stage (Invalidate to force it).
     void SetAssignerRegistry(const StrataAssignerRegistry* assigners) { mAssigners = assigners; }
-    // The stratum table behind the biome registry changed (World::StratumTable::SetParams): the next Update re-runs the Strata
+    // The stratum table behind the biome registry changed (Draoi::HexWorld::StratumTable::SetParams): the next Update re-runs the Strata
     // stage and everything downstream of it, from the cached upstream stages.
     void MarkStrataDirty() { mStrataDirty = true; }
 
@@ -254,7 +254,7 @@ private:
     void RunStrataStage();
 
     TerrainRules     mRules;
-    const World::BiomeRegistry* mBiomes = nullptr;
+    const Draoi::HexWorld::BiomeRegistry* mBiomes = nullptr;
     const StrataAssignerRegistry* mAssigners = nullptr;
     std::string      mStrataError;
     std::vector<ExtraStratumLayer> mExtraStrata;   // the non-depth sets' assignments from the last Strata stage run

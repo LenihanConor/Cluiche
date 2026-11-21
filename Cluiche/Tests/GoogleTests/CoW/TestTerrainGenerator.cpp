@@ -88,7 +88,7 @@ TEST(TerrainGenerator, SliderDirtiesFirstStageAndDownstreamPerSpecTable)
     for (int p = 0; p < static_cast<int>(ShapeParam::Count); ++p)
     {
         const ShapeParam param = static_cast<ShapeParam>(p);
-        TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+        TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rng(1);
         g.Update(42, WorldShapeParams{}, kDims, rng);
         g.Update(42, Tweak(param), kDims, rng);
@@ -101,7 +101,7 @@ TEST(TerrainGenerator, HardCodedDownstreamExpectations)
 {
     auto run = [](ShapeParam p)
     {
-        TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+        TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rng(1);
         g.Update(42, WorldShapeParams{}, kDims, rng);
         g.Update(42, Tweak(p), kDims, rng);
@@ -137,7 +137,7 @@ TEST(TerrainGenerator, StageReadsMatchSpecTable)
 
 TEST(TerrainGenerator, FirstUpdateRunsEveryImplementedStage)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(7, WorldShapeParams{}, kDims, rng);
     std::set<int> all;
@@ -148,7 +148,7 @@ TEST(TerrainGenerator, FirstUpdateRunsEveryImplementedStage)
 
 TEST(TerrainGenerator, NoChangeRunsNoStage)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(7, WorldShapeParams{}, kDims, rng);
     g.Update(7, WorldShapeParams{}, kDims, rng);
@@ -161,7 +161,7 @@ TEST(TerrainGenerator, SeedDimensionAndInvalidateRunEverything)
     std::set<int> all;
     for (int s = 0; s < kImplementedStageCount; ++s) { all.insert(s); }
 
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(7, WorldShapeParams{}, kDims, rng);
 
@@ -184,7 +184,7 @@ TEST(TerrainGenerator, SeedDimensionAndInvalidateRunEverything)
 
 TEST(TerrainGenerator, Stage12To14NeverRun)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(7, WorldShapeParams{}, kDims, rng);
     for (int s = kImplementedStageCount; s < static_cast<int>(TerrainStage::Count); ++s)
@@ -195,8 +195,8 @@ TEST(TerrainGenerator, Stage12To14NeverRun)
 
 TEST(TerrainGenerator, SeedFieldsDeterministicForSameSeed)
 {
-    TerrainGenerator a(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
-    TerrainGenerator b(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator a(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
+    TerrainGenerator b(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream ra(1), rb(999);   // initial stream state must not matter
     a.Update(1234, WorldShapeParams{}, kDims, ra);
     b.Update(1234, WorldShapeParams{}, kDims, rb);
@@ -205,7 +205,7 @@ TEST(TerrainGenerator, SeedFieldsDeterministicForSameSeed)
 
 TEST(TerrainGenerator, SeedFieldsUnchangedByDownstreamSliderChange)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(55, WorldShapeParams{}, kDims, rng);
     const SeedFields before = g.GetSeedFields();
@@ -218,8 +218,8 @@ TEST(TerrainGenerator, SeedFieldsUnchangedByDownstreamSliderChange)
 
 TEST(TerrainGenerator, DifferentSeedGivesDifferentSeedFields)
 {
-    TerrainGenerator a(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
-    TerrainGenerator b(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator a(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
+    TerrainGenerator b(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream ra(1), rb(1);
     a.Update(1, WorldShapeParams{}, kDims, ra);
     b.Update(2, WorldShapeParams{}, kDims, rb);
@@ -229,7 +229,7 @@ TEST(TerrainGenerator, DifferentSeedGivesDifferentSeedFields)
 
 TEST(TerrainGenerator, DrawCountIndependentOfSliders)
 {
-    TerrainGenerator base(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator base(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rbase(1);
     base.Update(31, WorldShapeParams{}, kDims, rbase);
     const uint64_t expected = rbase.GetDrawCount();
@@ -238,7 +238,7 @@ TEST(TerrainGenerator, DrawCountIndependentOfSliders)
 
     for (int p = 0; p < static_cast<int>(ShapeParam::Count); ++p)
     {
-        TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+        TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rng(1);
         g.Update(31, Tweak(static_cast<ShapeParam>(p)), kDims, rng);
         EXPECT_EQ(rng.GetDrawCount(), expected) << ShapeParamName(static_cast<ShapeParam>(p));
@@ -263,7 +263,7 @@ TEST(TerrainGenerator, RestoreReseedsStreamIdenticallyToFreshStream)
 
 TEST(TerrainGenerator, StreamAfterStage0EqualsFreshStreamWithFoldedSeed)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(3);
     g.Update(2024, WorldShapeParams{}, kDims, rng);
     EXPECT_EQ(g.GetSeedFields().foldedSeed, FoldSeed(2024));
@@ -276,7 +276,7 @@ TEST(TerrainGenerator, CandidateConstraintsHoldAcrossSeeds)
     int exhausted = 0;
     for (uint64_t seed = 1; seed <= 300; ++seed)
     {
-        TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+        TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rng(1);
         g.Update(seed, WorldShapeParams{}, GridDimensions{ 96, 48 }, rng);
         const SeedFields& f = g.GetSeedFields();
@@ -333,7 +333,7 @@ TEST(TerrainGenerator, PeninsulaAnglesAtLeast60DegreesApart)
     const float sixty = 3.14159265f / 3.0f;
     for (uint64_t seed = 1; seed <= 300; ++seed)
     {
-        TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+        TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rng(1);
         g.Update(seed, WorldShapeParams{}, kDims, rng);
         const SeedFields& f = g.GetSeedFields();
@@ -352,7 +352,7 @@ TEST(TerrainGenerator, PeninsulaAnglesAtLeast60DegreesApart)
 
 TEST(TerrainGenerator, MapWidthIsAspectOfGrid)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(1, WorldShapeParams{}, GridDimensions{ 64, 64 }, rng);
     const float maxY = Dia::Pathfinding::HexTopology::CellCenter({ 1, 63 }, 1.0f).y;
@@ -362,7 +362,7 @@ TEST(TerrainGenerator, MapWidthIsAspectOfGrid)
 
 TEST(TerrainGenerator, TinyGridsDoNotCrash)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(1, WorldShapeParams{}, GridDimensions{ 1, 1 }, rng);
     g.Update(1, WorldShapeParams{}, GridDimensions{ 0, 0 }, rng);
@@ -371,7 +371,7 @@ TEST(TerrainGenerator, TinyGridsDoNotCrash)
 
 TEST(TerrainGenerator, LayerRegistryLookups)
 {
-    TerrainGenerator g(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry());
+    TerrainGenerator g(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
     RandomStream rng(1);
     g.Update(1, WorldShapeParams{}, kDims, rng);
     const TerrainLayers& layers = g.GetLayers();

@@ -2,8 +2,8 @@
 
 #include <cmath>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 namespace
 {
@@ -48,5 +48,5 @@ void WorldShapeParams::Clamp()
     orientationDeg = wrapped;
 }
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

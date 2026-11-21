@@ -6,6 +6,7 @@
 
 #include <Shared/WorldGeneration/TerrainTypes.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -240,7 +241,7 @@ inline CheckErrors CheckRecords(const WorldStructure& w)
         if (rec.id != r) { e.push_back(tag + "id " + std::to_string(rec.id)); }
         if (rec.cellCount != cellsOf[r].size()) { e.push_back(tag + "cellCount " + std::to_string(rec.cellCount) + " vs " + std::to_string(cellsOf[r].size())); }
         if (cellsOf[r].empty()) { continue; }
-        const int lakeIdx = static_cast<int>(::CoW::World::Testing::B("Biome.Lake"));
+        const int lakeIdx = static_cast<int>(::Draoi::HexWorld::Testing::B("Biome.Lake"));
         int hist[256] = {};   // BiomeIndex is a uint8_t
         for (int c : cellsOf[r]) { ++hist[static_cast<int>(w.Cells()[c].biome)]; }
         int best = -1;

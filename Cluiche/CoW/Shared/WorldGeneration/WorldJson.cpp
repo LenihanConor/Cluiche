@@ -29,10 +29,10 @@ namespace
         return false;
     }
 
-    bool IsKnownBiome(const World::BiomeRegistry& biomes, World::BiomeIndex b) { return static_cast<uint32_t>(b) < biomes.Count(); }
+    bool IsKnownBiome(const Draoi::HexWorld::BiomeRegistry& biomes, Draoi::HexWorld::BiomeIndex b) { return static_cast<uint32_t>(b) < biomes.Count(); }
     bool IsKnownTerrain(TerrainType t) { return static_cast<int>(t) >= 0 && static_cast<int>(t) < static_cast<int>(TerrainType::Count); }
     bool IsKnownWater(WaterSource w) { return static_cast<int>(w) >= 0 && static_cast<int>(w) <= static_cast<int>(WaterSource::River); }
-    bool IsKnownStratum(const World::StratumTable& strata, StratumIndex z) { return z <= strata.Count(); }
+    bool IsKnownStratum(const Draoi::HexWorld::StratumTable& strata, StratumIndex z) { return z <= strata.Count(); }
 
     // Appends printf-style text of any length.
     void Appendf(std::string& out, const char* format, ...)
@@ -135,7 +135,7 @@ bool WorldJsonParseWaterSource(const std::string& text, WaterSource& out)
     return ParseEnum<WaterSource>(text, 4, [](WaterSource w) { return WaterSourceName(w); }, out);
 }
 
-bool WorldJsonParseStratum(const World::StratumTable& strata, const std::string& text, StratumIndex& out)
+bool WorldJsonParseStratum(const Draoi::HexWorld::StratumTable& strata, const std::string& text, StratumIndex& out)
 {
     const int index = strata.IndexOf(text.c_str());
     if (index < 0) { return false; }
@@ -188,7 +188,7 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
     {
         return Fail(error, "", "no biome registry is loaded");
     }
-    const World::BiomeRegistry& biomes = *context.biomes;
+    const Draoi::HexWorld::BiomeRegistry& biomes = *context.biomes;
     const Cell* cells = world.Cells();
 
     std::string out;
@@ -256,8 +256,8 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
             const ExtraStratumLayer& layer = world.extraStrata[e];
             char field[64];
             std::snprintf(field, sizeof(field), "world.strata_sets[%zu]", e);
-            const World::StratumSetSpec* set = biomes.Strata().FindSet(layer.setId);
-            if (set == nullptr || std::strcmp(layer.setId, World::StratumTable::kDepthSetId) == 0)
+            const Draoi::HexWorld::StratumSetSpec* set = biomes.Strata().FindSet(layer.setId);
+            if (set == nullptr || std::strcmp(layer.setId, Draoi::HexWorld::StratumTable::kDepthSetId) == 0)
             {
                 return Fail(error, std::string(field) + ".id", std::string("stratum set '") + layer.setId + "' is not an extra set of the stratum table");
             }
@@ -274,7 +274,7 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
                 for (int x = 0; x < width; ++x)
                 {
                     const int i = y * width + x;
-                    const char* name = World::StratumTable::NameIn(*set, static_cast<StratumIndex>(layer.cells[static_cast<size_t>(i)]));
+                    const char* name = Draoi::HexWorld::StratumTable::NameIn(*set, static_cast<StratumIndex>(layer.cells[static_cast<size_t>(i)]));
                     if (name == nullptr)
                     {
                         char cellField[96];

@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -44,7 +45,7 @@ inline bool AddSiteAt(WorldStructure& world, const Dia::Core::StringCRC& kind, i
 inline WorldStructure MakeAllLandWorld(int w, int h, StratumIndex zone = kStratumWild)
 {
     WorldStructure world = MakeBlankWorld(w, h);
-    FillLand(world, 0, 0, w, h, zone, ::CoW::World::Testing::B("Biome.Grassland"));
+    FillLand(world, 0, 0, w, h, zone, ::Draoi::HexWorld::Testing::B("Biome.Grassland"));
     return world;
 }
 
@@ -54,8 +55,8 @@ inline WorldStructure MakeAllLandWorld(int w, int h, StratumIndex zone = kStratu
 inline WorldStructure MakeChannelWorld(int w, int h, int x0, int channel)
 {
     WorldStructure world = MakeBlankWorld(w, h);
-    FillLand(world, 0, 0, x0, h, kStratumWild, ::CoW::World::Testing::B("Biome.Grassland"));
-    FillLand(world, x0 + channel, 0, w, h, kStratumWild, ::CoW::World::Testing::B("Biome.Grassland"));
+    FillLand(world, 0, 0, x0, h, kStratumWild, ::Draoi::HexWorld::Testing::B("Biome.Grassland"));
+    FillLand(world, x0 + channel, 0, w, h, kStratumWild, ::Draoi::HexWorld::Testing::B("Biome.Grassland"));
     return world;
 }
 

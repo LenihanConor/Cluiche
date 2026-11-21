@@ -12,8 +12,8 @@
 #include <cstdint>
 #include <vector>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 class WorldHexGrid
 {
@@ -57,5 +57,5 @@ private:
     Dia::Graphics::CellGridDesc mDesc;
 };
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

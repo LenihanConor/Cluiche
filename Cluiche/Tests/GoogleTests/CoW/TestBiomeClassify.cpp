@@ -19,8 +19,9 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -107,7 +108,7 @@ TEST(BiomeClassify, ClimateScoreOfNonClimateBiomeIsLowest)
 TEST(BiomeClassify, ClimateTableWinners)
 {
     // Test cells sit three columns apart so none is adjacent to another; the rest is Grassland-perfect land.
-    struct Case { int x; int y; float t; float m; CoW::World::BiomeIndex expect; };
+    struct Case { int x; int y; float t; float m; Draoi::HexWorld::BiomeIndex expect; };
     const Case cases[] = {
         { 1, 1,  0.85f, 0.90f, B("Biome.Rainforest") },        // warm + wet
         { 4, 1,  0.80f, 0.08f, B("Biome.Desert") },       // warm + dry
@@ -135,7 +136,7 @@ TEST(BiomeClassify, BoundaryTiesGoToLowestRow)
 {
     // Give two biomes identical envelopes (on a fixture registry: classification no longer reads the kT0_* rules)
     // so their scores are bit-equal; the lower row index must win.
-    const CoW::World::BiomeRegistry forestAsGrass =
+    const Draoi::HexWorld::BiomeRegistry forestAsGrass =
         LoadShippedVariant({ { "\"climate\": {\"t0\": 0.5, \"m0\": 0.6, \"wt\": 0.25, \"wm\": 0.2}",
                         "\"climate\": {\"t0\": 0.6, \"m0\": 0.35, \"wt\": 0.25, \"wm\": 0.2}" } });
     BiomeGrid g(3, 3);
@@ -143,7 +144,7 @@ TEST(BiomeClassify, BoundaryTiesGoToLowestRow)
     EXPECT_EQ(RunBiomes(g).biome[g.Index(1, 1)], B(forestAsGrass, "Biome.Grassland"));
 
     // Rainforest set equal to Desert: Desert (row 5) beats Rainforest (row 8).
-    const CoW::World::BiomeRegistry rainAsDesert =
+    const Draoi::HexWorld::BiomeRegistry rainAsDesert =
         LoadShippedVariant({ { "\"climate\": {\"t0\": 0.85, \"m0\": 0.9, \"wt\": 0.2, \"wm\": 0.15}",
                         "\"climate\": {\"t0\": 0.8, \"m0\": 0.08, \"wt\": 0.25, \"wm\": 0.12}" } });
     BiomeGrid g2(3, 3, 0.8f, 0.08f);
@@ -237,28 +238,28 @@ TEST(BiomeClassify, UnknownPinRuleFailsLoadNamingTheRow)
     ASSERT_NE(at, std::string::npos);
     text.replace(at, from.size(), "\"rule\": \"bogus_rule\"");
 
-    CoW::World::BiomeRegistry reg;
-    CoW::World::RegistryError err;
-    ASSERT_TRUE(reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
+    Draoi::HexWorld::BiomeRegistry reg;
+    Draoi::HexWorld::RegistryError err;
+    ASSERT_TRUE(reg.LoadFromText(ss.str().c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
     const uint32_t count = reg.Count();
     const uint64_t hash = reg.Hash();
 
-    EXPECT_FALSE(reg.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
+    EXPECT_FALSE(reg.LoadFromText(text.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
     EXPECT_STREQ(err.field.AsCStr(), "pin");
     EXPECT_STREQ(err.id.AsCStr(), "Biome.Volcanic");
     EXPECT_GT(std::strlen(err.reason.AsCStr()), 0u);
     EXPECT_EQ(reg.Count(), count);   // all-or-nothing: the earlier load is untouched
     EXPECT_EQ(reg.Hash(), hash);
 
-    CoW::World::BiomeRegistry fresh;
-    EXPECT_FALSE(fresh.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
+    Draoi::HexWorld::BiomeRegistry fresh;
+    EXPECT_FALSE(fresh.LoadFromText(text.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err, &IsBuiltInPinRule));
     EXPECT_EQ(fresh.Count(), 0u);
 }
 
 TEST(BiomeClassify, NoVentBiomeLoadsAndGenerates)
 {
     // The shipped rows with the vent biome's pin removed: no biome declares the `vent` rule, so it is unused.
-    const CoW::World::BiomeRegistry noVent = LoadShippedVariant({ { ", \"pin\": {\"rule\": \"vent\", \"priority\": 3}", "" } });
+    const Draoi::HexWorld::BiomeRegistry noVent = LoadShippedVariant({ { ", \"pin\": {\"rule\": \"vent\", \"priority\": 3}", "" } });
     EXPECT_EQ(noVent.Count(), ShippedBiomeRegistry().Count());
 
     BiomeGrid g(12, 4, 0.5f, 0.5f);
@@ -278,7 +279,7 @@ TEST(BiomeClassify, NoVentBiomeLoadsAndGenerates)
     for (int c = 0; c < g.dims.width * g.dims.height; ++c)
     {
         EXPECT_NE(r.pin[c], BiomePin::Volcanic);
-        EXPECT_NE(r.At(c), CoW::World::kNoBiome);
+        EXPECT_NE(r.At(c), Draoi::HexWorld::kNoBiome);
     }
 }
 
@@ -571,7 +572,7 @@ TEST(BiomeClassify, WaterCellsAreExactlyOceanAndLake)
             const bool lake = g.waterSource[c] == static_cast<uint32_t>(WaterSource::Lake);
             EXPECT_EQ(r.At(static_cast<int>(c)) == B("Biome.Ocean"), ocean);
             EXPECT_EQ(r.At(static_cast<int>(c)) == B("Biome.Lake"), lake);
-            EXPECT_LT(r.biome[c], ::CoW::World::Testing::ShippedBiomeRegistry().Count());
+            EXPECT_LT(r.biome[c], ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count());
         }
     }
 }
@@ -961,7 +962,7 @@ TEST(BiomeClassify, PinsPlaceInRegistryPriorityOrder)
     EXPECT_EQ(shipped.biome[c], B("Biome.Volcanic"));
     EXPECT_EQ(shipped.pin[c], BiomePin::Volcanic);
 
-    const CoW::World::BiomeRegistry swapped =
+    const Draoi::HexWorld::BiomeRegistry swapped =
         LoadShippedVariant({ { "\"rule\": \"alpine\", \"priority\": 2", "\"rule\": \"alpine\", \"priority\": 3" },
                       { "\"rule\": \"vent\", \"priority\": 3", "\"rule\": \"vent\", \"priority\": 2" } });
     g.registry = &swapped;
@@ -977,14 +978,14 @@ TEST(BiomeClassify, ClimateTiesBreakByLowestRowIndex)
     const int c = g.Index(1, 1);
 
     // Twin appended after Grassland: Grassland (row 2) wins.
-    const CoW::World::BiomeRegistry twinAfter =
+    const Draoi::HexWorld::BiomeRegistry twinAfter =
         LoadShippedVariant({ { "{\"id\": \"Biome.Wetland\"", (std::string(kGrassTwinRow) + "{\"id\": \"Biome.Wetland\"").c_str() } });
     g.registry = &twinAfter;
     EXPECT_EQ(RunBiomes(g).biome[c], B(twinAfter, "Biome.Grassland"));
     EXPECT_LT(B(twinAfter, "Biome.Grassland"), B(twinAfter, "Biome.GrassTwin"));
 
     // Twin inserted before Grassland: the twin (now the lower row) wins.
-    const CoW::World::BiomeRegistry twinBefore =
+    const Draoi::HexWorld::BiomeRegistry twinBefore =
         LoadShippedVariant({ { "{\"id\": \"Biome.Grassland\"", (std::string(kGrassTwinRow) + "{\"id\": \"Biome.Grassland\"").c_str() } });
     g.registry = &twinBefore;
     EXPECT_LT(B(twinBefore, "Biome.GrassTwin"), B(twinBefore, "Biome.Grassland"));
@@ -1007,7 +1008,7 @@ TEST(BiomeClassify, PlateauCellsUseRegistryPlateauRows)
     EXPECT_EQ(shipped.biome[dry], B("Biome.Desert"));
 
     // Swap which row is the wet and which the dry plateau biome.
-    const CoW::World::BiomeRegistry swapped =
+    const Draoi::HexWorld::BiomeRegistry swapped =
         LoadShippedVariant({ { "\"plateau\": \"dry\"", "\"plateau\": \"TMP\"" },
                       { "\"plateau\": \"wet\"", "\"plateau\": \"dry\"" },
                       { "\"plateau\": \"TMP\"", "\"plateau\": \"wet\"" } });
@@ -1021,9 +1022,9 @@ TEST(BiomeClassify, ClassificationHasNoHardCodedBiomeLists)
 {
     // A climate biome appended to the registry competes with no code change: a cell sitting exactly on its envelope
     // takes it (the shipped five-biome list would never have placed it).
-    const CoW::World::BiomeRegistry& extra = ExtraBiomeRegistry();
-    const CoW::World::BiomeIndex     savanna = B(extra, "Biome.Savanna");
-    const CoW::World::ClimateEnvelope* e = extra.Climate(savanna);
+    const Draoi::HexWorld::BiomeRegistry& extra = ExtraBiomeRegistry();
+    const Draoi::HexWorld::BiomeIndex     savanna = B(extra, "Biome.Savanna");
+    const Draoi::HexWorld::ClimateEnvelope* e = extra.Climate(savanna);
     ASSERT_NE(e, nullptr);
     BiomeGrid g(3, 3, e->t0, e->m0);
     g.registry = &extra;

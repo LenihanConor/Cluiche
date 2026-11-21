@@ -10,8 +10,8 @@
 #include <cstring>
 #include <vector>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 enum class BarrierForm : uint8_t { Plateau, VolcanicChain };
 
@@ -69,7 +69,7 @@ struct Cell
     uint8_t     landmass     = 0;                     // 0 = ocean; 1.. per landmass
     uint8_t     terrainFlags = 0;                     // TerrainFlag bits
     uint8_t     downstream   = kNoDirection;          // river cells: direction 0..5
-    World::BiomeIndex biome  = 0;                     // S-1 biome classification (stage 14); registry row. Default 0 = the shipped Ocean row
+    BiomeIndex biome  = 0;                     // S-1 biome classification (stage 14); registry row. Default 0 = the shipped Ocean row
     RegionId    region       = kNoRegion;             // S-1 regions (0 = ocean / not yet assigned); fills the old tail padding byte
 };
 
@@ -126,5 +126,5 @@ private:
     std::vector<Cell> mCells;
 };
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

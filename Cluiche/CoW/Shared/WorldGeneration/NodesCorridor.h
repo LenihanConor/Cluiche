@@ -24,6 +24,7 @@
 #pragma once
 
 #include <DraoiHexWorld/StratumTable.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -37,12 +38,12 @@ namespace WorldGeneration {
 enum class CorridorSourceKind : uint8_t { Pass = 0, River = 1, Coastal = 2 };
 
 // A set of N strata has N-1 barriers.
-constexpr uint32_t kMaxBarriers = World::StratumTable::kMaxStrata - 1;
+constexpr uint32_t kMaxBarriers = Draoi::HexWorld::StratumTable::kMaxStrata - 1;
 
 // Barriers of the strata table's depth set: Count()-1 when the set is ordered, else 0.
-inline uint32_t BarrierCountOf(const World::StratumTable& strata)
+inline uint32_t BarrierCountOf(const Draoi::HexWorld::StratumTable& strata)
 {
-    const World::StratumSetSpec* depth = strata.Depth();
+    const Draoi::HexWorld::StratumSetSpec* depth = strata.Depth();
     if (depth == nullptr || !depth->ordered || depth->count == 0) { return 0; }
     return depth->count - 1u < kMaxBarriers ? depth->count - 1u : kMaxBarriers;
 }
@@ -65,7 +66,7 @@ struct CorridorResult
 };
 
 // Barriers = those of the strata table's depth set (Count()-1 when ordered, else 0).
-CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                   Dia::Maths::RandomStream& rng);
 
 } // namespace WorldGeneration

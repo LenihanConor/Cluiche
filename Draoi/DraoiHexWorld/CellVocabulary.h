@@ -5,16 +5,14 @@
 
 #include <cstdint>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
 // Row index into the BiomeRegistry. Cell::biome and RegionRecord::primaryBiome store one.
 using BiomeIndex = uint8_t;
 constexpr BiomeIndex kNoBiome = 0xFF;
 
-} // namespace World
 
-namespace WorldGeneration {
 
 // Stratum: a plain index into the StratumTable. 0 = none/ocean, 1..N = stratum k (strata k and k+1 are separated by
 // barrier k). The names live in data (World/StratumTable.h), not in code.
@@ -33,5 +31,5 @@ namespace TerrainFlag
 using RegionId = uint8_t;
 constexpr RegionId kNoRegion = 0;
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

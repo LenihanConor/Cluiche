@@ -47,7 +47,7 @@ struct PlaceReport
 };
 
 // attemptSeed = DeriveSubSeed(outerSeed, attempt); attempt is passed on to placers via PlacementContext.
-PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                   uint64_t attemptSeed,
                   int attempt, Dia::Maths::RandomStream& wldStream, PlaceReport* report = nullptr);
 

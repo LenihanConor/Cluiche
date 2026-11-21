@@ -17,6 +17,7 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::Core::StringCRC;
 
@@ -171,7 +172,7 @@ TEST(WorldGenSessionRegions, RegionsQueryReturnsEveryRecord)
     const Json::Value r = g.s.Regions();
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
     EXPECT_TRUE(r["fresh"].asBool());
-    EXPECT_EQ(r["limitedBy"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), w.regions.limitedBy));
+    EXPECT_EQ(r["limitedBy"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), w.regions.limitedBy));
     EXPECT_EQ(r["absorbedCells"].asUInt(), static_cast<unsigned>(w.regions.absorbedCells));
     ASSERT_TRUE(r.isMember("fragmentCells"));
     EXPECT_EQ(r["fragmentCells"].asUInt(), static_cast<unsigned>(w.regions.fragmentCells));
@@ -182,7 +183,7 @@ TEST(WorldGenSessionRegions, RegionsQueryReturnsEveryRecord)
         const RegionRecord& rec = w.regions.regions[i];
         const Json::Value& j = r["regions"][i];
         EXPECT_EQ(j["id"].asUInt(), static_cast<unsigned>(rec.id));
-        EXPECT_EQ(j["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.stratum));
+        EXPECT_EQ(j["zone"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), rec.stratum));
         EXPECT_EQ(j["landmass"].asUInt(), static_cast<unsigned>(rec.landmass));
         EXPECT_EQ(j["isIsland"].asBool(), rec.isIsland);
         EXPECT_TRUE(j["primaryBiome"].isString());
@@ -302,7 +303,7 @@ TEST(WorldGenSessionRegions, ParamsEffectiveReportsLimits)
     EXPECT_TRUE(eff["corridorLimited"][0u].isBool());
     EXPECT_TRUE(eff["corridorLimited"][1u].isBool());
     EXPECT_TRUE(eff["nodeLimited"].isBool());
-    EXPECT_EQ(eff["regionLimitedBy"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), g.s.World().regions.limitedBy));
+    EXPECT_EQ(eff["regionLimitedBy"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), g.s.World().regions.limitedBy));
 }
 
 TEST(WorldGenSessionRegions, CellQueryReportsRegionZoneAndSites)
@@ -315,7 +316,7 @@ TEST(WorldGenSessionRegions, CellQueryReportsRegionZoneAndSites)
     const Json::Value r = g.s.Cell(a);
     ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
     EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w.Cells()[site.cell].region));
-    EXPECT_EQ(r["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), w.Cells()[site.cell].stratum));
+    EXPECT_EQ(r["zone"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), w.Cells()[site.cell].stratum));
     ASSERT_TRUE(r["sites"].isArray());
     ASSERT_GE(r["sites"].size(), 1u);
     bool found = false;

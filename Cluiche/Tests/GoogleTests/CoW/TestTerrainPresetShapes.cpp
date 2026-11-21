@@ -16,6 +16,7 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 
 namespace {
@@ -54,7 +55,7 @@ struct World
     TerrainGenerator         gen;
     Dia::Maths::RandomStream rng{ 1 };
     WorldStructure           world;
-    World() : gen(rules, &::CoW::World::Testing::ShippedBiomeRegistry()) {}
+    World() : gen(rules, &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()) {}
     void Go(uint64_t seed, const WorldShapeParams& s, GridDimensions d = kSmall)
     {
         gen.Update(seed, s, d, rng);

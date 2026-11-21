@@ -18,8 +18,9 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -95,7 +96,7 @@ namespace
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));
         in.barrierForm  = shape.barrierForm;
         in.barrier      = shape.barrier;
-        in.biomes       = &::CoW::World::Testing::ShippedBiomeRegistry();
+        in.biomes       = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();
         return in;
     }
 
@@ -145,7 +146,7 @@ namespace
         for (int c = 0; c < n; ++c)
         {
             const uint32_t b = biome[c];
-            ASSERT_LT(b, ::CoW::World::Testing::ShippedBiomeRegistry().Count()) << label << " seed " << seed << " cell " << c;
+            ASSERT_LT(b, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count()) << label << " seed " << seed << " cell " << c;
             ASSERT_EQ(static_cast<uint32_t>(r.World().Cells()[c].biome), b);
             const bool oceanWater = water[c] == static_cast<uint32_t>(WaterSource::Ocean);
             const bool lakeWater  = water[c] == static_cast<uint32_t>(WaterSource::Lake);
@@ -170,8 +171,8 @@ namespace
         std::map<std::string, int> byType;
         for (const auto& pr : pairs)
         {
-            std::string a = ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(biome[pr.first]));
-            std::string b = ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(biome[pr.second]));
+            std::string a = ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(static_cast<::Draoi::HexWorld::BiomeIndex>(biome[pr.first]));
+            std::string b = ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(static_cast<::Draoi::HexWorld::BiomeIndex>(biome[pr.second]));
             if (b < a) { std::swap(a, b); }
             ++byType[a + " / " + b];
         }

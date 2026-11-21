@@ -19,6 +19,7 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::Core::StringCRC;
 
@@ -39,7 +40,7 @@ Placed MakePlaced(uint64_t seed)
     p.world = runner.World();
     SiteRegistry registry;
     Dia::Maths::RandomStream rng(1);
-    RegionsAndSites::Place(p.world, registry, TestRules(), ::CoW::World::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
+    RegionsAndSites::Place(p.world, registry, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
     return p;
 }
 

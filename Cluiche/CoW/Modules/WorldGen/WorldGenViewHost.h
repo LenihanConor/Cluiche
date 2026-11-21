@@ -68,7 +68,7 @@ public:
         const Dia::ValueSchema::ValueSchemaService* schema = nullptr;     // "ValueSchemaService" stream; null = no schema data
         // The world's shared hex grid (WorldGenerationModule::HexGridOwner()). The host registers against it and
         // drives its rebuilds. Null = the host keeps a private grid (unit tests).
-        WorldGeneration::SharedWorldHexGrid*        sharedGrid = nullptr;
+        Draoi::HexWorld::SharedWorldHexGrid*        sharedGrid = nullptr;
         Dia::CellLayers::IMirrorQueryRegistrar*     registrar = nullptr;  // sim-hosted cells.* commands; null = not registered
 
         // Application modules (stage module fills these). When a port below is empty and the module is set, the host binds it.
@@ -111,7 +111,7 @@ public:
     // Largest IDebugDraw::DroppedCount() seen at the end of a viewer draw (the DebugDraw budget overflow signal).
     uint32_t DroppedCount() const { return mMaxDropped; }
 
-    const WorldGeneration::WorldHexGrid& Grid() const { return *mGrid; }
+    const Draoi::HexWorld::WorldHexGrid& Grid() const { return *mGrid; }
     Dia::CellLayers::CellLayerViewerDomain* Viewer() { return mDomain.Get(); }
     const WorldGeneration::WorldCameraController& Camera() const { return mCamera; }
     uint32_t RiverSegmentRebuilds() const { return mRiverRebuilds; }
@@ -196,8 +196,8 @@ private:
     WorldGeneration::WorldGenSession& mSession;
     Deps                              mDeps;
 
-    WorldGeneration::SharedWorldHexGrid  mOwnGrid;   // used only when Deps::sharedGrid is null
-    WorldGeneration::SharedWorldHexGrid& mGrid;      // re-emplaced in place: the registry keeps its address
+    Draoi::HexWorld::SharedWorldHexGrid  mOwnGrid;   // used only when Deps::sharedGrid is null
+    Draoi::HexWorld::SharedWorldHexGrid& mGrid;      // re-emplaced in place: the registry keeps its address
     std::vector<LayerBinding>         mBindings;          // one per descriptor, stable addresses
     std::vector<ExtraBinding>         mExtraBindings;     // one per extra stratum set of the table at construction
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader>        mUploader;
@@ -234,7 +234,7 @@ private:
     uint32_t mRegionEdgeRebuilds = 0;
     struct SiteKindMarkers
     {
-        WorldGeneration::SiteKindInfo             info;
+        Draoi::HexWorld::SiteKindInfo             info;
         std::vector<WorldGeneration::LineSegment> lines;
     };
     std::vector<SiteKindMarkers> mSiteMarkers;      // generic: one entry per kind, no per-kind drawer code

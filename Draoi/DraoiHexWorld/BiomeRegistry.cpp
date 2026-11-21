@@ -13,15 +13,14 @@
 #include <string>
 #include <vector>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 
 namespace
 {
     using Dia::Core::Containers::DynamicArrayC;
     using Dia::Core::Containers::String64;
     using Dia::Core::Containers::String256;
-    using WorldGeneration::StratumIndex;
 
     // Tag vocabulary: TagId is the index in this list (at most 64).
     const char* const kTagNames[] = { "land", "water", "aquatic", "wet", "cold", "hot",
@@ -585,5 +584,5 @@ BiomeIndex BiomeRegistry::Plateau(bool wet) const
 
 uint64_t BiomeRegistry::Hash() const { return mData ? mData->hash : 0ull; }
 
-} // namespace World
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

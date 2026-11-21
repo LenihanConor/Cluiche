@@ -21,6 +21,7 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
 using Dia::Maths::RandomStream;
 
@@ -45,7 +46,7 @@ namespace
     CorridorResult Place(WorldStructure& w, unsigned seed)
     {
         RandomStream rng(seed);
-        return PlaceCorridorNodes(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+        return PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
     }
 
     struct Corridor
@@ -488,7 +489,7 @@ namespace
         WorldStructure w = world;
         w.sites.Clear();
         RandomStream rng(streamSeed);
-        const CorridorResult r = PlaceCorridorNodes(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
+        const CorridorResult r = PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
         ++st.worlds;
 
         for (int b = 0; b < 2; ++b)

@@ -69,7 +69,7 @@ namespace
     }
 }
 
-CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                   Dia::Maths::RandomStream& rng)
 {
     CorridorResult out;

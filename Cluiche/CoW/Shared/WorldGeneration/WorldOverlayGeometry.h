@@ -8,6 +8,7 @@
 #include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 #include <DraoiHexWorld/WorldHexGrid.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 #include <DiaMaths/Vector/Vector2D.h>
 

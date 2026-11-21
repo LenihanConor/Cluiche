@@ -30,7 +30,7 @@
 #include <chrono>
 #include <cstdint>
 
-namespace CoW { namespace World { class BiomeRegistry; } }
+namespace Draoi { namespace HexWorld { class BiomeRegistry; } }
 
 namespace CoW {
 namespace WorldGeneration {
@@ -53,7 +53,7 @@ class GenerationRun
 {
 public:
     // 'terrain', 'registry', 'rules' and 'biomes' must outlive the run. params.maxRetryAttempts is clamped (ClampMaxRetryAttempts).
-    GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes, uint64_t outerSeed,
+    GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes, uint64_t outerSeed,
                   const GenParams& params, Dia::Maths::RandomStream& rng, IGenerationObserver* observer = nullptr);
 
     // Runs one attempt (or ends the run on an observer abort). Returns true while the run is not finished.
@@ -82,7 +82,7 @@ private:
     const WorldStructure&     mTerrain;
     const SiteRegistry&       mRegistry;
     const TerrainRules&       mRules;
-    const World::BiomeRegistry& mBiomes;
+    const Draoi::HexWorld::BiomeRegistry& mBiomes;
     uint64_t                  mOuterSeed;
     uint32_t                  mMaxAttempts;
     Dia::Maths::RandomStream& mRng;
@@ -98,7 +98,7 @@ private:
 // Blocking convenience: terrain in, report out. On Success 'outWorld' (if non-null) receives the accepted world.
 // Enforces params.timeoutSeconds on the steady clock (a GenerationGuard); the overload in GenerationGuard.h takes the
 // guard so tests can inject a clock and a cancel.
-GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const World::BiomeRegistry& biomes,
+GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                                uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
                                WorldStructure* outWorld = nullptr);
 

@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <optional>
 
-namespace CoW {
-namespace WorldGeneration {
+namespace Draoi {
+namespace HexWorld {
 
 class SharedWorldHexGrid
 {
@@ -53,5 +53,5 @@ private:
     bool                        mDriven = false;
 };
 
-} // namespace WorldGeneration
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

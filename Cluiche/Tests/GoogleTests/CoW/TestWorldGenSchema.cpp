@@ -20,6 +20,7 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace
 {
@@ -205,10 +206,10 @@ TEST(WorldGenSchema, BiomeLayersAreDescribed)
         EXPECT_NE(WorldLayerSource::Find(k), nullptr) << k;
     }
     // The biomeIndex legend now comes from the registry (valuesFrom); distinct registry colours.
-    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ShippedBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& reg = Draoi::HexWorld::Testing::ShippedBiomeRegistry();
     std::set<uint32_t> colours;
     for (uint32_t i = 0; i < reg.Count(); ++i)
-        colours.insert(reg.Colour(static_cast<CoW::World::BiomeIndex>(i)));
+        colours.insert(reg.Colour(static_cast<Draoi::HexWorld::BiomeIndex>(i)));
     EXPECT_EQ(colours.size(), static_cast<size_t>(reg.Count())) << "biome colours must be distinct";
 }
 
@@ -251,12 +252,12 @@ std::vector<Dia::ValueSchema::EnumValue> ResolvedBiomeLegend(const char* dirName
     return out;
 }
 
-void ExpectLegendMatches(const std::vector<Dia::ValueSchema::EnumValue>& legend, const CoW::World::BiomeRegistry& reg)
+void ExpectLegendMatches(const std::vector<Dia::ValueSchema::EnumValue>& legend, const Draoi::HexWorld::BiomeRegistry& reg)
 {
     ASSERT_EQ(legend.size(), reg.Count());
     for (uint32_t i = 0; i < reg.Count(); ++i)
     {
-        const CoW::World::BiomeIndex b = static_cast<CoW::World::BiomeIndex>(i);
+        const Draoi::HexWorld::BiomeIndex b = static_cast<Draoi::HexWorld::BiomeIndex>(i);
         EXPECT_STREQ(legend[i].mLabel.AsCStr(), reg.Name(b)) << i;
         EXPECT_EQ(static_cast<uint32_t>(std::strtoul(legend[i].mColour.AsCStr() + 1, nullptr, 16)), reg.Colour(b)) << i;
     }
@@ -276,14 +277,14 @@ TEST(WorldGenSchema, BiomeIndexEntryHasNoLiteralValues)
 
 TEST(WorldGenSchema, BiomeLegendListsRegistryNamesAndColoursInIndexOrder)
 {
-    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ShippedBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& reg = Draoi::HexWorld::Testing::ShippedBiomeRegistry();
     ASSERT_EQ(reg.Count(), 13u);
-    ExpectLegendMatches(ResolvedBiomeLegend("WgLegendShipped", CoW::World::Testing::ShippedBiomesPath()), reg);
+    ExpectLegendMatches(ResolvedBiomeLegend("WgLegendShipped", Draoi::HexWorld::Testing::ShippedBiomesPath()), reg);
 }
 
 TEST(WorldGenSchema, BiomeLegendFollowsAFourteenRowRegistry)
 {
-    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ExtraBiomeRegistry();
+    const Draoi::HexWorld::BiomeRegistry& reg = Draoi::HexWorld::Testing::ExtraBiomeRegistry();
     ASSERT_EQ(reg.Count(), 14u);
     const std::string path = FindFromRepoRoot("Cluiche/Tests/GoogleTests/CoW/Fixtures/biomes_extra.json").string();
     ExpectLegendMatches(ResolvedBiomeLegend("WgLegendExtra", path), reg);
@@ -293,9 +294,9 @@ TEST(WorldGenSchema, BiomeIndexCategoryCountComesFromTheRegistry)
 {
     const WorldLayerDesc* d = WorldLayerSource::Find("biomeIndex");
     ASSERT_NE(d, nullptr);
-    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, CoW::World::Testing::ShippedBiomeRegistry()), 13u);
-    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, CoW::World::Testing::ExtraBiomeRegistry()), 14u);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, Draoi::HexWorld::Testing::ShippedBiomeRegistry()), 13u);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, Draoi::HexWorld::Testing::ExtraBiomeRegistry()), 14u);
     const WorldLayerDesc* terrain = WorldLayerSource::Find("terrainType");
     ASSERT_NE(terrain, nullptr);
-    EXPECT_EQ(WorldLayerSource::CategoryCount(*terrain, CoW::World::Testing::ExtraBiomeRegistry()), terrain->categoryCount);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*terrain, Draoi::HexWorld::Testing::ExtraBiomeRegistry()), terrain->categoryCount);
 }

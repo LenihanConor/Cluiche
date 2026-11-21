@@ -13,6 +13,7 @@
 
 #include <DraoiHexWorld/StratumTable.h>
 #include <DraoiHexWorld/Regions.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -21,14 +22,14 @@
 #include <cstdint>
 #include <vector>
 
-namespace CoW { namespace World { class BiomeRegistry; } }
+namespace Draoi { namespace HexWorld { class BiomeRegistry; } }
 
 namespace CoW {
 namespace WorldGeneration {
 
 // Per-stratum arrays are sized kMaxStrata; slot 0..N-1 <-> StratumIndex 1..N of the depth set. The desired-count range
 // of each stratum (regions_min / regions_max) is read from the StratumTable, never from constants here.
-constexpr uint32_t kMaxStrata = World::StratumTable::kMaxStrata;
+constexpr uint32_t kMaxStrata = Draoi::HexWorld::StratumTable::kMaxStrata;
 constexpr int kTotalRegionsMin = 10;
 constexpr int kTotalRegionsMax = 16;
 
@@ -56,7 +57,7 @@ struct RegionTargets
 struct RegionSeed
 {
     uint32_t  cell      = 0;                    // island regions: lowest cell index of the landmass
-    World::BiomeIndex biome = 0;                // seed biome row (drives the growth cost); 0 = shipped Ocean row
+    Draoi::HexWorld::BiomeIndex biome = 0;                // seed biome row (drives the growth cost); 0 = shipped Ocean row
     StratumIndex stratum   = kNoStratum;              // island regions: majority stratum
     uint8_t   landmass  = 0;
     bool      isIsland  = false;
@@ -81,20 +82,20 @@ struct RegionGrowth
 bool IsRegionLand(const Cell& c);
 
 // Connected components of main-landmass land cells per stratum of the depth set, ascending min cell index.
-std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata);
+std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata);
 
 // Spec step 2 rebalance in place. total < 10: add one at a time to the stratum with the most unused capacity
 // (capacity - count) among strata below their range maximum with unused capacity, ties by stratum order.
 // total > 16: remove one at a time from the stratum with the least spare capacity (capacity - count) among strata
 // above their range minimum, ties by stratum order. If the total still cannot reach 10, limitedBy = the stratum with
 // the smallest capacity relative to its range minimum (capacity / min, ties by stratum order); else None.
-void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const World::StratumTable& strata,
+void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const Draoi::HexWorld::StratumTable& strata,
                            StratumIndex& limitedBy);
 
 // Draws n_Z per declared stratum (stratum order), clamps to capacity, rebalances.
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                    const std::vector<RegionComponent>& components, Dia::Maths::RandomStream& rng);
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
                                    Dia::Maths::RandomStream& rng);
 
 // Seeds per non-tiny component: share = max(1, floor(quota)) with quota = n_Z * compCells / (cells of the stratum's
@@ -109,7 +110,7 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
 // Farthest-point sampling inside one component. First seed: cells[rng.RandomInt() % size]; each next seed
 // maximises minHexDistance(seeds) + kSeedBiomeBonus * [biome differs from every seed's biome], ties lowest cell.
 std::vector<uint32_t> PlaceSeeds(const WorldStructure& world, const TerrainRules& rules, const RegionComponent& comp,
-                                 int seedCount, Dia::Maths::RandomStream& rng, const World::BiomeRegistry& biomes);
+                                 int seedCount, Dia::Maths::RandomStream& rng, const Draoi::HexWorld::BiomeRegistry& biomes);
 
 // Multi-source Dijkstra growth for every non-tiny component (seeds[i] belongs out.components[i]; empty = skipped),
 // then one provisional region per island landmass. Needs out.components; fills the rest of `out`.
@@ -118,7 +119,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
 
 // Targets + components + shares + seeds + growth in one call.
 RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
-                                     const World::BiomeRegistry& biomes);
+                                     const Draoi::HexWorld::BiomeRegistry& biomes);
 
 } // namespace WorldGeneration
 } // namespace CoW

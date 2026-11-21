@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Pathfinding::HexTopology;
 
 namespace

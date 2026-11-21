@@ -18,8 +18,8 @@
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
-namespace CoW {
-namespace World {
+namespace Draoi {
+namespace HexWorld {
 namespace Testing {
 
 inline const StratumTable& ShippedStratumTable();
@@ -237,5 +237,5 @@ inline BiomeIndex B(const BiomeRegistry& reg, const char* id)
 inline BiomeIndex B(const char* id) { return B(ShippedBiomeRegistry(), id); }
 
 } // namespace Testing
-} // namespace World
-} // namespace CoW
+} // namespace HexWorld
+} // namespace Draoi

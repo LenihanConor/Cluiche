@@ -31,7 +31,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
 {
     mSession.SetSiteRegistry(&mSiteRegistry);
     mSession.SetStrataAssignerRegistry(&mStrataAssigners);
-    mBiomes = std::make_unique<World::BiomeRegistry>();
+    mBiomes = std::make_unique<Draoi::HexWorld::BiomeRegistry>();
     mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
 }
 
@@ -126,7 +126,7 @@ namespace
     }
 }
 
-bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
+bool WorldGenerationModule::LoadStrata(Draoi::HexWorld::StratumTable& strata)
 {
     std::string strataText;
     std::string sidecarText;
@@ -167,7 +167,7 @@ bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
             return false;
         }
     }
-    World::StratumError err;
+    Draoi::HexWorld::StratumError err;
     if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err, mStrataAssigners.TypeCheck(), mStrataAssigners.MetricCheck()))
     {
         mBiomesErrorField = std::string("strata.") + err.field;
@@ -179,7 +179,7 @@ bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
     return true;
 }
 
-bool WorldGenerationModule::LoadGuarantees(const World::StratumTable& strata)
+bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& strata)
 {
     std::string text;
     std::string sidecar;
@@ -249,7 +249,7 @@ bool WorldGenerationModule::LoadGuarantees(const World::StratumTable& strata)
 
 void WorldGenerationModule::LoadBiomes()
 {
-    World::StratumTable strata;
+    Draoi::HexWorld::StratumTable strata;
     if (!LoadStrata(strata) || !LoadGuarantees(strata))
     {
         return;
@@ -289,7 +289,7 @@ void WorldGenerationModule::LoadBiomes()
         text = ss.str();
     }
 
-    World::RegistryError err;
+    Draoi::HexWorld::RegistryError err;
     if (!mBiomes->LoadFromText(text.c_str(), strata, err, &WorldGeneration::IsBuiltInPinRule))
     {
         mBiomesErrorField = err.field.AsCStr();

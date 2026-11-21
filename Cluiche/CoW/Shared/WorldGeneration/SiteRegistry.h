@@ -5,6 +5,7 @@
 
 #include "PlaceResult.h"
 #include <DraoiHexWorld/Sites.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 #include "TerrainTypes.h"
 #include "ValidationTypes.h"
 

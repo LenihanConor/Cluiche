@@ -13,17 +13,17 @@ namespace WorldGeneration {
 namespace
 {
     // Fills values (one per cell) with the metric; false (ctx.error written) when it is unknown or unavailable.
-    bool ResolveMetric(const StrataAssignContext& ctx, const World::StratumSetSpec& set, std::vector<float>& values)
+    bool ResolveMetric(const StrataAssignContext& ctx, const Draoi::HexWorld::StratumSetSpec& set, std::vector<float>& values)
     {
         const size_t n = values.size();
         const std::string metric = set.metric;
-        if (metric == World::kMetricElevation)
+        if (metric == Draoi::HexWorld::kMetricElevation)
         {
             const Cell* cells = ctx.world.Cells();
             for (size_t i = 0; i < n; ++i) { values[i] = cells[i].elevation; }
             return true;
         }
-        if (metric == World::kMetricLatitude)
+        if (metric == Draoi::HexWorld::kMetricLatitude)
         {
             const int w = std::max(ctx.dims.width, 1);
             const float h = static_cast<float>(std::max(ctx.dims.height, 1));
@@ -38,8 +38,8 @@ namespace
         std::string problem;
         if (provider == nullptr)
         {
-            problem = "stratum set '" + std::string(set.id) + "': unknown banding metric '" + metric + "' (not " + World::kMetricCoastCost + ", " +
-                      World::kMetricElevation + ", " + World::kMetricLatitude + " or a registered cell field)";
+            problem = "stratum set '" + std::string(set.id) + "': unknown banding metric '" + metric + "' (not " + Draoi::HexWorld::kMetricCoastCost + ", " +
+                      Draoi::HexWorld::kMetricElevation + ", " + Draoi::HexWorld::kMetricLatitude + " or a registered cell field)";
         }
         else if (!(*provider)(ctx, std::span<float>(values.data(), values.size())))
         {
@@ -55,10 +55,10 @@ namespace
     }
 }
 
-void CoastCostBandsAssigner::Assign(const StrataAssignContext& ctx, const World::StratumSetSpec& set, std::span<StratumIndex> out)
+void CoastCostBandsAssigner::Assign(const StrataAssignContext& ctx, const Draoi::HexWorld::StratumSetSpec& set, std::span<StratumIndex> out)
 {
     Stage8Debug local;
-    if (std::strcmp(set.metric, World::kMetricCoastCost) != 0)
+    if (std::strcmp(set.metric, Draoi::HexWorld::kMetricCoastCost) != 0)
     {
         std::vector<float> values(out.size(), 0.0f);
         if (!ResolveMetric(ctx, set, values)) { return; }
@@ -77,7 +77,7 @@ void CoastCostBandsAssigner::Assign(const StrataAssignContext& ctx, const World:
 
 StrataAssignerRegistry::StrataAssignerRegistry()
 {
-    mEntries.push_back({ World::kBuiltinAssignerType, &mBuiltin });
+    mEntries.push_back({ Draoi::HexWorld::kBuiltinAssignerType, &mBuiltin });
 }
 
 bool StrataAssignerRegistry::Register(const char* typeName, IStrataAssigner* assigner)
@@ -107,7 +107,7 @@ IStrataAssigner* StrataAssignerRegistry::Find(const char* typeName) const
     return nullptr;
 }
 
-World::AssignerTypeCheck StrataAssignerRegistry::TypeCheck() const
+Draoi::HexWorld::AssignerTypeCheck StrataAssignerRegistry::TypeCheck() const
 {
     return [this](const char* typeName) { return Has(typeName); };
 }
@@ -135,17 +135,17 @@ const StrataFieldProvider* StrataAssignerRegistry::FindField(const char* name) c
 bool StrataAssignerRegistry::HasMetric(const char* name) const
 {
     if (name == nullptr) { return false; }
-    return std::strcmp(name, World::kMetricCoastCost) == 0 || std::strcmp(name, World::kMetricElevation) == 0 ||
-           std::strcmp(name, World::kMetricLatitude) == 0 || FindField(name) != nullptr;
+    return std::strcmp(name, Draoi::HexWorld::kMetricCoastCost) == 0 || std::strcmp(name, Draoi::HexWorld::kMetricElevation) == 0 ||
+           std::strcmp(name, Draoi::HexWorld::kMetricLatitude) == 0 || FindField(name) != nullptr;
 }
 
-World::MetricCheck StrataAssignerRegistry::MetricCheck() const
+Draoi::HexWorld::MetricCheck StrataAssignerRegistry::MetricCheck() const
 {
     return [this](const char* metric) { return HasMetric(metric); };
 }
 
 bool RunStrataAssigner(const char* typeName, IStrataAssigner& assigner, const StrataAssignContext& ctx,
-                       const World::StratumSetSpec& set, std::span<StratumIndex> out, StrataAssignError& err)
+                       const Draoi::HexWorld::StratumSetSpec& set, std::span<StratumIndex> out, StrataAssignError& err)
 {
     err = StrataAssignError{};
     std::fill(out.begin(), out.end(), kNoStratum);
@@ -159,7 +159,7 @@ bool RunStrataAssigner(const char* typeName, IStrataAssigner& assigner, const St
         return false;
     }
 
-    const uint32_t count = std::min(set.count, World::StratumTable::kMaxStrata);
+    const uint32_t count = std::min(set.count, Draoi::HexWorld::StratumTable::kMaxStrata);
     for (size_t i = 0; i < out.size(); ++i)
     {
         const bool land = ctx.landmass != nullptr && ctx.landmass[i] != 0u;

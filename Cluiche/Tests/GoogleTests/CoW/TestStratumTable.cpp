@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-using namespace CoW::World;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace {
 

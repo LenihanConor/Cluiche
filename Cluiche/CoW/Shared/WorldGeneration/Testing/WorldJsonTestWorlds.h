@@ -15,6 +15,7 @@
 #include <string>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
+#include <Shared/WorldGeneration/HexWorldAccess.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -25,13 +26,13 @@ namespace Testing {
 inline WorldJsonContext TestImportContext()
 {
     WorldJsonContext c;
-    c.biomes = &::CoW::World::Testing::ShippedBiomeRegistry();
+    c.biomes = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();
     return c;
 }
 
-inline ::CoW::World::BiomeIndex BL(const char* id) { return ::CoW::World::Testing::B(id); }
+inline ::Draoi::HexWorld::BiomeIndex BL(const char* id) { return ::Draoi::HexWorld::Testing::B(id); }
 
-inline Cell MakeCell(::CoW::World::BiomeIndex biome, TerrainType terrain, StratumIndex zone, WaterSource water, float elevation, float latitude,
+inline Cell MakeCell(::Draoi::HexWorld::BiomeIndex biome, TerrainType terrain, StratumIndex zone, WaterSource water, float elevation, float latitude,
                      RegionId region, uint8_t landmass, uint8_t flags = 0, uint8_t downstream = kNoDirection)
 {
     Cell c;
@@ -103,7 +104,7 @@ inline WorldStructure MakeTinyWorld()
     w.regions.absorbedCells = 2;
     w.regions.fragmentCells = 1;
     w.regions.limitedBy = kStratumWild;
-    RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());   // summaries consistent with the cells: import recomputes them with the same code
+    RecomputeRegionRecords(w, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());   // summaries consistent with the cells: import recomputes them with the same code
 
     auto add = [&](const Dia::Core::StringCRC& kind, uint32_t cell, RegionId region, uint16_t variant, uint16_t flags)
     {

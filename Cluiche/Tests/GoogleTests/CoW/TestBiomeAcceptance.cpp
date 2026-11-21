@@ -16,7 +16,8 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {
@@ -30,7 +31,7 @@ namespace
     {
         TerrainGenerator          gen;
         Dia::Maths::RandomStream  rng{ 1 };
-        Gen() : gen(TestRules(), &::CoW::World::Testing::ShippedBiomeRegistry()) {}
+        Gen() : gen(TestRules(), &::Draoi::HexWorld::Testing::ShippedBiomeRegistry()) {}
     };
 
     double Median(std::vector<double> v)
@@ -52,35 +53,35 @@ namespace
             const uint32_t*      biome = L.GetUInt(L.FindLayer("biomeIndex"));
             ASSERT_NE(biome, nullptr);
 
-            const int rows = static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count());
+            const int rows = static_cast<int>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count());
             std::vector<int> counts(static_cast<size_t>(rows), 0);
             int land                = 0;
             for (int c = 0; c < kSmall.width * kSmall.height; ++c)
             {
                 const uint32_t b = biome[c];
-                ASSERT_LT(b, ::CoW::World::Testing::ShippedBiomeRegistry().Count());
+                ASSERT_LT(b, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count());
                 if (b == static_cast<uint32_t>(B("Biome.Ocean")) || b == static_cast<uint32_t>(B("Biome.Lake"))) { continue; }
                 ++counts[b];
                 ++land;
             }
             int    distinct = 0;
             int    maxCount = 0;
-            ::CoW::World::BiomeIndex maxBiome = B("Biome.Ocean");
+            ::Draoi::HexWorld::BiomeIndex maxBiome = B("Biome.Ocean");
             std::string line;
             for (int b = 0; b < rows; ++b)
             {
                 if (b == static_cast<int>(B("Biome.Ocean")) || b == static_cast<int>(B("Biome.Lake"))) { continue; }
                 if (counts[b] > 0) { ++distinct; }
-                if (counts[b] > maxCount) { maxCount = counts[b]; maxBiome = static_cast<::CoW::World::BiomeIndex>(b); }
+                if (counts[b] > maxCount) { maxCount = counts[b]; maxBiome = static_cast<::Draoi::HexWorld::BiomeIndex>(b); }
                 char buf[64];
-                std::snprintf(buf, sizeof(buf), " %s=%d", ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(b)), counts[b]);
+                std::snprintf(buf, sizeof(buf), " %s=%d", ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(static_cast<::Draoi::HexWorld::BiomeIndex>(b)), counts[b]);
                 line += buf;
             }
             const double maxShare = land > 0 ? static_cast<double>(maxCount) / land : 0.0;
             std::printf("[BiomeAcceptance] AC10 seed %llu: land=%d distinct=%d max=%s %.1f%% |%s\n",
-                        static_cast<unsigned long long>(seed), land, distinct, ::CoW::World::Testing::ShippedBiomeRegistry().Name(maxBiome), maxShare * 100.0, line.c_str());
+                        static_cast<unsigned long long>(seed), land, distinct, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(maxBiome), maxShare * 100.0, line.c_str());
             if (distinct >= 5) { ++seedsWithFive; }
-            EXPECT_LE(maxShare, 0.60) << "seed " << seed << " dominant " << ::CoW::World::Testing::ShippedBiomeRegistry().Name(maxBiome);
+            EXPECT_LE(maxShare, 0.60) << "seed " << seed << " dominant " << ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Name(maxBiome);
         }
         const double frac = static_cast<double>(seedsWithFive) / count;
         std::printf("[BiomeAcceptance] AC10 %d/%d seeds (%.0f%%) have >= 5 distinct land biomes\n", seedsWithFive, count, frac * 100.0);
@@ -153,7 +154,7 @@ TEST(BiomeAcceptance, DISABLED_A4BaselineTableCoversAllTenBiomeIds)
     const char* const kIds[] = { "Biome.Ocean", "Biome.Lake", "Biome.Grassland", "Biome.TemperateForest", "Biome.Wetland",
                                  "Biome.Desert", "Biome.Alpine", "Biome.Tundra", "Biome.Rainforest", "Biome.Volcanic" };
     std::set<uint32_t> ours;
-    for (uint32_t b = 0; b < ::CoW::World::Testing::ShippedBiomeRegistry().Count(); ++b) { ours.insert(static_cast<uint32_t>(::CoW::World::Testing::ShippedBiomeRegistry().Id(static_cast<::CoW::World::BiomeIndex>(b)).Value())); }
+    for (uint32_t b = 0; b < ::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Count(); ++b) { ours.insert(static_cast<uint32_t>(::Draoi::HexWorld::Testing::ShippedBiomeRegistry().Id(static_cast<::Draoi::HexWorld::BiomeIndex>(b)).Value())); }
     for (const char* id : kIds)
     {
         EXPECT_TRUE(ours.count(static_cast<uint32_t>(Dia::Core::StringCRC(id).Value()))) << id;

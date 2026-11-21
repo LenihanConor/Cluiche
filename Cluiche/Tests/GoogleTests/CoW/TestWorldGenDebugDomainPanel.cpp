@@ -20,6 +20,7 @@
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Core::StringCRC;
 
 namespace
@@ -43,7 +44,7 @@ namespace
     struct PanelFixture
     {
         WorldGenerationModule module{ StringCRC("WorldGenerationModule") };
-        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry()); return true; }();
+        bool                  rulesReady = [this] { module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry()); return true; }();
         WorldGenDebugDomain   domain{ module };
         Dia::Maths::RandomStream rng{ 1 };
         fs::path dir;
@@ -177,7 +178,7 @@ TEST(WorldGenDebugDomainPanel, ReportSuccessFillsValidationFromTheSessionReport)
 namespace
 {
     // A failed 2-attempt Regenerate on top of an existing world (the guarantee fails both attempts).
-    void FailTwoAttempts(PanelFixture& f, WorldGeneration::Testing::FailFirstNGuarantee& flaky)
+    void FailTwoAttempts(PanelFixture& f, CoW::WorldGeneration::Testing::FailFirstNGuarantee& flaky)
     {
         ASSERT_TRUE(f.module.GetSiteRegistry().RegisterGuarantee(&flaky));
         Json::Value a(Json::objectValue);
@@ -192,7 +193,7 @@ TEST(WorldGenDebugDomainPanel, FailedReportKeepsThePreviousWorldAndNamesTheOutco
     PanelFixture f("report_fail");
     f.Gen();
     const uint32_t revision = f.S().Revision();
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     FailTwoAttempts(f, flaky);
     ASSERT_NE(f.S().LastReport(), nullptr);
     ASSERT_EQ(f.S().LastReport()->outcome, GenerationOutcome::Unsatisfiable);
@@ -221,7 +222,7 @@ TEST(WorldGenDebugDomainPanel, ProgressShowsAttemptsWhileGeneratingAndCancelKeep
     PanelFixture f("cancel");
     f.Gen();
     const uint32_t revision = f.S().Revision();
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     ASSERT_TRUE(f.module.GetSiteRegistry().RegisterGuarantee(&flaky));
     Json::Value a(Json::objectValue);
     a["maxRetryAttempts"] = 5;
@@ -330,7 +331,7 @@ TEST(WorldGenDebugDomainPanel, ImportedWorldCardIsAnImportNotAGenerationOutcome)
     EXPECT_FALSE(card["previousWorldKept"].asBool());
 
     // A failed Regenerate on the imported world is a generation outcome again, and the import stays in force.
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     ASSERT_TRUE(f.module.GetSiteRegistry().RegisterGuarantee(&flaky));
     Json::Value a(Json::objectValue);
     a["maxRetryAttempts"] = 2;
@@ -604,7 +605,7 @@ TEST(WorldGenDebugDomainPanel, CompactStateAtLargeWithFailedTwoAttemptReportStay
     f.Gen();
     f.Cmd("export", Obj("name", "big"));
     f.Cmd("validate");
-    WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
+    CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
     FailTwoAttempts(f, flaky);
     ASSERT_NE(f.S().LastReport(), nullptr);
     ASSERT_EQ(f.S().LastReport()->attempts.Size(), 2u);

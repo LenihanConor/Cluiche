@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace CoW { namespace World { class BiomeRegistry; } }
+namespace Draoi { namespace HexWorld { class BiomeRegistry; } }
 
 namespace CoW {
 namespace WorldGeneration {
@@ -48,7 +48,7 @@ struct WorldJsonContext
     const SiteRegistry* registry = nullptr;
     // Required by export and import (both fail without it): biome ids, provenance.biome_registry_hash, and the
     // registry the region summaries are recomputed against.
-    const World::BiomeRegistry* biomes = nullptr;
+    const Draoi::HexWorld::BiomeRegistry* biomes = nullptr;
     // Export: written as provenance.preset_id when non-empty, else the world's own provenance.presetId.
     std::string presetId;
     // Import: this build's terrain rules version (TerrainRules::rulesVersion); a file recorded with another one gets a warning. 0 = do not compare.
@@ -60,7 +60,7 @@ struct WorldJsonContext
 bool        WorldJsonParseTerrain(const std::string& text, TerrainType& out);
 bool        WorldJsonParseWaterSource(const std::string& text, WaterSource& out);
 // A zone is written by its name in the registry's zone table ("None" = ocean); a name the table lacks is refused.
-bool        WorldJsonParseStratum(const World::StratumTable& strata, const std::string& text, StratumIndex& out);
+bool        WorldJsonParseStratum(const Draoi::HexWorld::StratumTable& strata, const std::string& text, StratumIndex& out);
 
 // The key a site kind is written under: a built-in node kind, a registered kind, a name remembered by the
 // world's SiteSet (an unknown kind that came from an import), else "crc:xxxxxxxx" (lower-case hex), which

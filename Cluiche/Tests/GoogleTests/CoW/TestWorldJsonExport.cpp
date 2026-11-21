@@ -15,8 +15,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
-using namespace CoW::World::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -125,7 +126,7 @@ TEST(WorldJsonExport, EveryCellFieldIsWritten)
         EXPECT_EQ(static_cast<float>(j["elevation"].asDouble()), c.elevation) << i;
         EXPECT_EQ(static_cast<float>(j["latitude"].asDouble()), c.latitude) << i;
         EXPECT_EQ(j["water_source"].asString(), WaterSourceName(c.waterSource)) << i;
-        EXPECT_EQ(j["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), c.stratum)) << i;
+        EXPECT_EQ(j["stratum"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), c.stratum)) << i;
         EXPECT_EQ(j["landmass"].asUInt(), c.landmass) << i;
         EXPECT_EQ(j["terrain_flags"].asUInt(), c.terrainFlags) << i;
         EXPECT_EQ(j["downstream"].asUInt(), c.downstream) << i;
@@ -191,7 +192,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
     {
         const RegionRecord& rec = w.regions.regions[r];
         EXPECT_EQ(regions[r]["id"].asUInt(), rec.id);
-        EXPECT_EQ(regions[r]["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.stratum));
+        EXPECT_EQ(regions[r]["stratum"].asString(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), rec.stratum));
         EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
         EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
         EXPECT_EQ(regions[r]["primary_biome"].asString(), ShippedBiomeRegistry().IdText(rec.primaryBiome));
@@ -355,7 +356,7 @@ TEST(WorldJsonExport, EnumValuesOutOfRangeAreRefused)
     std::string text; JsonIssue error;
     {
         WorldStructure w = MakeTinyWorld();
-        w.Cells()[3].biome = static_cast<CoW::World::BiomeIndex>(200);
+        w.Cells()[3].biome = static_cast<Draoi::HexWorld::BiomeIndex>(200);
         EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[3].biome");
     }
@@ -409,14 +410,14 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
     {
         WaterSource w = WaterSource::None; StratumIndex z = kNoStratum;
         ASSERT_TRUE(WorldJsonParseWaterSource(WaterSourceName(static_cast<WaterSource>(i)), w));
-        ASSERT_TRUE(WorldJsonParseStratum(::CoW::World::Testing::ShippedStratumTable(), StratumName(::CoW::World::Testing::ShippedStratumTable(), static_cast<StratumIndex>(i)), z));
+        ASSERT_TRUE(WorldJsonParseStratum(::Draoi::HexWorld::Testing::ShippedStratumTable(), StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), static_cast<StratumIndex>(i)), z));
         EXPECT_EQ(static_cast<int>(w), i);
         EXPECT_EQ(static_cast<int>(z), i);
     }
     TerrainType t; WaterSource w; StratumIndex z;
     EXPECT_FALSE(WorldJsonParseTerrain("Unknown", t));
     EXPECT_FALSE(WorldJsonParseWaterSource("Swamp", w));
-    EXPECT_FALSE(WorldJsonParseStratum(::CoW::World::Testing::ShippedStratumTable(), "None ", z));
+    EXPECT_FALSE(WorldJsonParseStratum(::Draoi::HexWorld::Testing::ShippedStratumTable(), "None ", z));
 }
 
 TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
