@@ -183,6 +183,35 @@ namespace
     }
 } // namespace
 
+std::vector<ExtraStrataLayerDesc> WorldLayerSource::ExtraStrataLayers(const World::BiomeRegistry* biomes)
+{
+    std::vector<ExtraStrataLayerDesc> out;
+    if (biomes == nullptr)
+        return out;
+    const World::StratumTable& table = biomes->Strata();
+    for (uint32_t i = 0; i < table.SetCount(); ++i)
+    {
+        const World::StratumSetSpec& set = table.Set(i);
+        if (std::strcmp(set.id, World::StratumTable::kDepthSetId) == 0)
+            continue;
+        out.push_back({ std::string(kExtraStrataIdPrefix) + set.id, set.id, set.count + 1u });
+    }
+    return out;
+}
+
+void WorldLayerSource::ReadExtraStrata(const WorldGenSession& s, const char* setId, float* out, uint32_t count)
+{
+    const uint32_t n = GeneratedCells(s, count);
+    const ExtraStratumLayer* layer = s.World().FindExtraStrata(setId);
+    uint32_t filled = 0;
+    if (layer != nullptr && layer->cells.size() >= n)
+    {
+        for (; filled < n; ++filled)
+            out[filled] = static_cast<float>(layer->cells[filled]);
+    }
+    ZeroTail(out, filled, count);
+}
+
 uint32_t WorldLayerSource::Count()
 {
     return kRowCount;

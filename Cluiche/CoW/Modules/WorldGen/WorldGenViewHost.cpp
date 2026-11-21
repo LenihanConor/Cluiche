@@ -106,6 +106,22 @@ uint64_t WorldGenViewHost::LayerBinding::Version()
     return WorldLayerSource::Version(host->mSession);
 }
 
+void WorldGenViewHost::ExtraBinding::Read(float* out, uint32_t count)
+{
+    const WorldGenSession& s = host->mSession;
+    if (static_cast<uint32_t>(s.World().CellCount()) != count)
+    {
+        for (uint32_t i = 0; i < count; ++i) out[i] = 0.0f;
+        return;
+    }
+    WorldLayerSource::ReadExtraStrata(s, desc.setId.c_str(), out, count);
+}
+
+uint64_t WorldGenViewHost::ExtraBinding::Version()
+{
+    return WorldLayerSource::Version(host->mSession);
+}
+
 WorldGenViewHost::WorldGenViewHost(WorldGenSession& session, const Deps& deps)
     : mSession(session)
     , mDeps(deps)
@@ -120,6 +136,13 @@ WorldGenViewHost::WorldGenViewHost(WorldGenSession& session, const Deps& deps)
     {
         mBindings[i].host = this;
         mBindings[i].desc = &WorldLayerSource::At(i);
+    }
+    const std::vector<ExtraStrataLayerDesc> extras = WorldLayerSource::ExtraStrataLayers(mSession.BiomeRegistryPtr());
+    mExtraBindings.resize(extras.size());
+    for (size_t i = 0; i < extras.size(); ++i)
+    {
+        mExtraBindings[i].host = this;
+        mExtraBindings[i].desc = extras[i];
     }
 }
 
@@ -209,6 +232,24 @@ bool WorldGenViewHost::RegisterLayers()
             return false;
         }
     }
+    for (ExtraBinding& eb : mExtraBindings)
+    {
+        CellLayerDesc d;
+        d.id = StringCRC(eb.desc.id.c_str());
+        d.schemaKey = StringCRC(kExtraStrataSchemaKey);
+        d.group.Append(kExtraStrataGroup);
+        d.kind = CellValueKind::Category;
+        d.grid = &mGrid->Desc();
+        d.read = fastdelegate::MakeDelegate(&eb, &ExtraBinding::Read);
+        d.version = fastdelegate::MakeDelegate(&eb, &ExtraBinding::Version);
+        const CellRegisterResult r = mDeps.registry->Register(d);
+        if (r != CellRegisterResult::Ok)
+        {
+            DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering layer '%s' failed (%d)", eb.desc.id.c_str(), static_cast<int>(r));
+            UnregisterLayers();
+            return false;
+        }
+    }
     mLayersRegistered = true;
     if (mDeps.registry->Details().Register(&mGrid->Desc(), kDetailProviderName,
             fastdelegate::MakeDelegate(this, &WorldGenViewHost::BuildCellDetails)) != Dia::CellLayers::CellDetailRegisterResult::Ok)
@@ -231,6 +272,8 @@ void WorldGenViewHost::UnregisterLayers()
     // Unregister is a no-op for ids that were never registered (partial failure path).
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
         mDeps.registry->Unregister(StringCRC(WorldLayerSource::At(i).id));
+    for (const ExtraBinding& eb : mExtraBindings)
+        mDeps.registry->Unregister(StringCRC(eb.desc.id.c_str()));
     mLayersRegistered = false;
 }
 
@@ -836,7 +879,10 @@ bool WorldGenViewHost::SetColourMode(const char* id)
     if (!mDomain || id == nullptr)
         return false;
     const char* resolved = (std::strcmp(id, kDefaultModeAlias) == 0) ? DefaultBaseId() : id;
-    if (WorldLayerSource::Find(resolved) == nullptr)
+    bool known = WorldLayerSource::Find(resolved) != nullptr;
+    for (const ExtraBinding& eb : mExtraBindings)
+        known = known || eb.desc.id == resolved;
+    if (!known)
         return false;
     return mDomain->SetBase(StringCRC(resolved));
 }
@@ -849,6 +895,9 @@ const char* WorldGenViewHost::GetColourMode()
         for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
             if (StringCRC(WorldLayerSource::At(i).id) == active)
                 return WorldLayerSource::At(i).id;
+        for (const ExtraBinding& eb : mExtraBindings)
+            if (StringCRC(eb.desc.id.c_str()) == active)
+                return eb.desc.id.c_str();
     }
     return DefaultBaseId();
 }
@@ -857,12 +906,16 @@ void WorldGenViewHost::ListColourModes(const std::function<void(const char* id)>
 {
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
         fn(WorldLayerSource::At(i).id);
+    for (const ExtraBinding& eb : mExtraBindings)
+        fn(eb.desc.id.c_str());
 }
 
 void WorldGenViewHost::ListColourGroups(const std::function<void(const char* id, const char* group)>& fn)
 {
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
         fn(WorldLayerSource::At(i).id, WorldLayerSource::At(i).group);
+    for (const ExtraBinding& eb : mExtraBindings)
+        fn(eb.desc.id.c_str(), kExtraStrataGroup);
 }
 
 bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)

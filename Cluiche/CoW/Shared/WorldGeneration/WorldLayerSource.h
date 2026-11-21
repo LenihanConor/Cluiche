@@ -12,6 +12,8 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -47,9 +49,29 @@ struct WorldLayerDesc
 // Schema file "for" value; the layer schema keys are "<for>/<id>".
 inline constexpr const char* kWorldLayerSchemaFor = "cow.worldgen.layers";
 
+// Extra stratum sets (every set of the stratum table except "depth") are dynamic Category layers: one per set, id
+// "strata.<setId>", group "Strata". They share ONE schema entry (kExtraStrataSchemaKey) for their palette: None plus up
+// to StratumTable::kMaxStrata strata, one colour each, so a stratum has the same colour in every set. Count() / At() /
+// Find() stay the static layer table; the extras are listed per stratum table.
+inline constexpr const char* kExtraStrataSchemaKey = "cow.worldgen.layers/strataSet";
+inline constexpr const char* kExtraStrataIdPrefix  = "strata.";
+inline constexpr const char* kExtraStrataGroup     = "Strata";
+
+struct ExtraStrataLayerDesc
+{
+    std::string id;            // "strata.<setId>"
+    std::string setId;
+    uint32_t    categoryCount; // set.count + 1 (None + the strata)
+};
+
 class WorldLayerSource
 {
 public:
+    // One entry per non-depth set of the table, in table order; empty for a null registry or a depth-only table.
+    static std::vector<ExtraStrataLayerDesc> ExtraStrataLayers(const World::BiomeRegistry* biomes);
+    // Fills out[0..count) with the set's stratum per cell; zero-fills when no world is generated or the world has no layer for the set.
+    static void ReadExtraStrata(const WorldGenSession& session, const char* setId, float* out, uint32_t count);
+
     static uint32_t              Count();
     static const WorldLayerDesc& At(uint32_t index);
     // nullptr when the id is unknown.

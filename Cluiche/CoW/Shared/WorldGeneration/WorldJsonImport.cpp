@@ -385,7 +385,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
 
     const Json::Value* w = nullptr;
     if (!im.ReadObject(root, "world", "", w)) { im.issue.field = "world"; return finish(false); }
-    im.WarnUnknownFields(*w, "world", { "topology", "dimensions", "main_landmass", "cells", "regions", "region_table", "sites" });
+    im.WarnUnknownFields(*w, "world", { "topology", "dimensions", "main_landmass", "cells", "strata_sets", "regions", "region_table", "sites" });
 
     std::string topology;
     if (!im.ReadString(*w, "topology", "world", topology)) { return finish(false); }
@@ -469,6 +469,62 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         std::memcpy(&cells[i], &c, sizeof(Cell));
     }
     if (!anyWater) { im.Warn("world: no water cell; weather (A4) cannot run on this world"); }
+
+    // Extra stratum sets (optional key). Each id must be a non-depth set of the current table; each cell a stratum name of it.
+    if (w->isMember("strata_sets"))
+    {
+        const Json::Value* setsJson = nullptr;
+        if (!im.ReadArray(*w, "strata_sets", "world", setsJson)) { return finish(false); }
+        for (Json::ArrayIndex e = 0; e < setsJson->size(); ++e)
+        {
+            const std::string path = Index("world.strata_sets", e);
+            const Json::Value& sj = (*setsJson)[e];
+            if (!sj.isObject()) { im.Fail(path, "must be an object"); return finish(false); }
+            im.WarnUnknownFields(sj, path, { "id", "cells" });
+            std::string id;
+            if (!im.ReadString(sj, "id", path, id)) { return finish(false); }
+            const World::StratumSetSpec* set = context.biomes->Strata().FindSet(id.c_str());
+            if (set == nullptr)
+            {
+                im.Fail(path + ".id", "unknown stratum set \"" + id + "\" (the stratum table does not declare it)");
+                return finish(false);
+            }
+            if (id == World::StratumTable::kDepthSetId)
+            {
+                im.Fail(path + ".id", "the depth set is stored in the cells' \"stratum\" field, not as an extra set");
+                return finish(false);
+            }
+            if (world.FindExtraStrata(id.c_str()) != nullptr)
+            {
+                im.Fail(path + ".id", "stratum set \"" + id + "\" appears twice");
+                return finish(false);
+            }
+            const Json::Value* setCells = nullptr;
+            if (!im.ReadArray(sj, "cells", path, setCells)) { return finish(false); }
+            if (setCells->size() != expectedCells)
+            {
+                im.Fail(path + ".cells", "Cell count mismatch: expected " + std::to_string(expectedCells) + ", got " + std::to_string(setCells->size()));
+                return finish(false);
+            }
+            ExtraStratumLayer layer;
+            std::memcpy(layer.setId, id.c_str(), id.size());   // set ids fit (the table enforces 31 characters)
+            layer.cells.resize(expectedCells);
+            for (size_t i = 0; i < expectedCells; ++i)
+            {
+                const Json::Value& v = (*setCells)[static_cast<Json::ArrayIndex>(i)];
+                const std::string cpath = Index(path + ".cells", i);
+                if (!v.isString()) { im.Fail(cpath, "must be a stratum name"); return finish(false); }
+                const int index = World::StratumTable::IndexIn(*set, v.asString().c_str());
+                if (index < 0)
+                {
+                    im.Fail(cpath, "unknown stratum \"" + v.asString() + "\" in set \"" + id + "\"");
+                    return finish(false);
+                }
+                layer.cells[i] = static_cast<uint8_t>(index);
+            }
+            world.extraStrata.push_back(std::move(layer));
+        }
+    }
 
     // Regions: identity from the file, summaries recomputed below.
     struct FileSummary { int64_t cellCount, centreCell; World::BiomeIndex primary; float purity; std::vector<int64_t> neighbours; };

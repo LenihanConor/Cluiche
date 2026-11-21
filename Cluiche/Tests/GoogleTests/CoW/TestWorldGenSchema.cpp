@@ -90,7 +90,7 @@ TEST(WorldGenSchema, FileLoadsThroughValueSchemaLoader)
     const Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(l.text.c_str(), "worldgen.schema.json");
     ASSERT_TRUE(r.mOk) << r.mFailure.mEntry.AsCStr() << ": " << r.mFailure.mReason.AsCStr();
     EXPECT_STREQ(r.mFor.AsCStr(), kWorldLayerSchemaFor);
-    EXPECT_EQ(r.mEntries.Size(), WorldLayerSource::Count());
+    EXPECT_EQ(r.mEntries.Size(), WorldLayerSource::Count() + 1u /* + the shared strataSet entry of the dynamic extra-stratum layers */);
     EXPECT_EQ(r.mWarnings.Size(), 0u);
 }
 
@@ -98,7 +98,7 @@ TEST(WorldGenSchema, EveryDescriptorHasAMatchingEntry)
 {
     const Loaded& l = Get();
     ASSERT_TRUE(l.ok);
-    EXPECT_EQ(l.root["entries"].size(), WorldLayerSource::Count());
+    EXPECT_EQ(l.root["entries"].size(), WorldLayerSource::Count() + 1u /* + strataSet */);
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
     {
         const WorldLayerDesc& d = WorldLayerSource::At(i);

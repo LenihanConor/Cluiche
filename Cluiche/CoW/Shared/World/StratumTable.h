@@ -72,6 +72,14 @@ public:
     const StratumSetSpec& Set(uint32_t i) const { return mSets[i]; }
     // The set with this id, nullptr when absent.
     const StratumSetSpec* FindSet(const char* id) const;
+    // Index of the set with this id in Set(i); -1 when absent.
+    int                   SetIndexOf(const char* id) const;
+    // Sets other than "depth": the ones the generator stores as extra cell layers (WorldStructure::extraStrata).
+    uint32_t              ExtraSetCount() const { return mSetCount > 0 && mDepthIndex >= 0 ? mSetCount - 1 : mSetCount; }
+    // Name of stratum z within any set: "None" for 0, the declared name for 1..set.count, nullptr when out of range.
+    static const char*    NameIn(const StratumSetSpec& set, WorldGeneration::StratumIndex z);
+    // Index of a stratum name within a set ("None" -> 0); -1 when the set has no such stratum.
+    static int            IndexIn(const StratumSetSpec& set, const char* name);
     // The "depth" set; nullptr on an empty table.
     const StratumSetSpec* Depth() const { return mDepthIndex >= 0 ? &mSets[mDepthIndex] : nullptr; }
 

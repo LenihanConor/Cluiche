@@ -237,6 +237,9 @@ public:
     // Empty when the last Strata stage run used its assigner cleanly; else why it fell back to the built-in banding
     // (unknown assigner type, or an output that broke the assigner contract).
     const std::string&   GetStrataError() const { return mStrataError; }
+    // The non-depth stratum sets' assignments from the last Strata stage run (empty when the table declares only depth).
+    // An extra set whose assigner is missing or breaks the contract is reported in GetStrataError and left all 0.
+    const std::vector<ExtraStratumLayer>& GetExtraStrata() const { return mExtraStrata; }
     // Stage 9 internals (river cell, carve, floor and walk counts).
     const Stage9Debug&   GetStage9Debug() const { return mStage9; }
     // Stage 14 internals (unresolved forbidden pairs, fix-up change counts).
@@ -251,6 +254,7 @@ private:
     const World::BiomeRegistry* mBiomes = nullptr;
     const StrataAssignerRegistry* mAssigners = nullptr;
     std::string      mStrataError;
+    std::vector<ExtraStratumLayer> mExtraStrata;   // the non-depth sets' assignments from the last Strata stage run
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
     Stage1Debug      mStage1;

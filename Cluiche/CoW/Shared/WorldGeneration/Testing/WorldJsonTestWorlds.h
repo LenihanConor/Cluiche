@@ -60,7 +60,7 @@ inline bool SameProvenance(const WorldProvenance& a, const WorldProvenance& b)
 inline bool SameWorld(const WorldStructure& a, const WorldStructure& b)
 {
     return SameCells(a, b) && a.mainLandmass == b.mainLandmass && a.regions == b.regions && a.sites == b.sites &&
-           SameProvenance(a.provenance, b.provenance);
+           SameProvenance(a.provenance, b.provenance) && a.extraStrata == b.extraStrata;
 }
 
 inline WorldStructure MakeTinyWorld()

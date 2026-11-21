@@ -3336,5 +3336,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\StrataAssigner.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestStrataExtraSets.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

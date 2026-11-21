@@ -68,9 +68,14 @@ struct Rig
     bool haveInput = false;
     std::unique_ptr<WorldGenViewHost> host;
 
-    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true, SharedWorldHexGrid* shared = nullptr)
+    Rig(const Dia::ValueSchema::ValueSchemaService* schema = nullptr, bool generate = true, SharedWorldHexGrid* shared = nullptr,
+        const CoW::World::BiomeRegistry* biomes = nullptr, const StrataAssignerRegistry* assigners = nullptr)
     {
         Dia::CellLayers::Testing::FakePuId() = 1;
+        if (biomes != nullptr)
+            session.SetBiomeRegistry(biomes);
+        if (assigners != nullptr)
+            session.SetStrataAssignerRegistry(assigners);
         if (generate)
             Tick(12345);
         WorldGenViewHost::Deps d;
@@ -130,6 +135,77 @@ TEST(WorldGenViewHost, BuildRegistersEveryDescriptorAndFourOverlaysAgainstOneGri
     EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("sites")), nullptr);
     EXPECT_TRUE(r.registrar.Has("cells.select.cell"));
     EXPECT_TRUE(r.registrar.Has("cells.layer.base_by_id"));
+}
+
+namespace
+{
+// Splits the land into two columns bands (an unordered extra set for the viewer test).
+class HalvesAssigner : public IStrataAssigner
+{
+public:
+    void Assign(const StrataAssignContext& ctx, const CoW::World::StratumSetSpec&, std::span<StratumIndex> out) override
+    {
+        for (size_t i = 0; i < out.size(); ++i)
+            out[i] = ctx.landmass[i] == 0u ? 0 : (static_cast<int>(i) % ctx.dims.width < ctx.dims.width / 2 ? 1 : 2);
+    }
+};
+}
+
+// Generic strata task 4 (AC 4): an extra stratum set appears in the viewer's layer list with its name, in its own group,
+// reads the world's per-set layer, and a depth-only table adds nothing.
+TEST(WorldGenViewHost, ExtraStratumSetsAppearAsLayersAndReadTheirCellLayer)
+{
+    StrataAssignerRegistry assigners;
+    HalvesAssigner halves;
+    assigners.Register("x_halves", &halves);
+    const std::vector<std::string> names = { "FirstShores", "WildReaches", "AncientInteriors" };
+    const std::vector<CoW::World::Testing::TestExtraSet> extras = { { "homeland", false, "x_halves", { "West", "East" } } };
+    CoW::World::StratumTable table;
+    CoW::World::StratumError err;
+    ASSERT_TRUE(table.LoadFromText(CoW::World::Testing::TestStrataText(names, extras).c_str(),
+                                   CoW::World::Testing::TestStrataSidecar(names, { 0.45f, 0.40f, 0.15f }, extras).c_str(), err, assigners.TypeCheck()))
+        << err.field << " " << err.reason;
+    CoW::World::BiomeRegistry biomes;
+    CoW::World::RegistryError rerr;
+    ASSERT_TRUE(biomes.LoadFromText(CoW::World::Testing::Detail::ReadFileText(CoW::World::Testing::ShippedBiomesPath()).c_str(), table, rerr));
+
+    Rig r(nullptr, true, nullptr, &biomes, &assigners);
+    ASSERT_TRUE(r.host->Build());
+    EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count() + 1u);
+    const Dia::CellLayers::CellLayerDesc* d = r.registry.Find(Dia::Core::StringCRC("strata.homeland"));
+    ASSERT_NE(d, nullptr);
+    EXPECT_EQ(d->schemaKey, Dia::Core::StringCRC(kExtraStrataSchemaKey));
+    EXPECT_EQ(d->kind, Dia::CellLayers::CellValueKind::Category);
+
+    uint32_t modes = 0;
+    bool listed = false;
+    r.host->ListColourModes([&](const char* id) { ++modes; listed = listed || std::string(id) == "strata.homeland"; });
+    EXPECT_EQ(modes, WorldLayerSource::Count() + 1u);
+    EXPECT_TRUE(listed);
+    std::string group;
+    r.host->ListColourGroups([&](const char* id, const char* g) { if (std::string(id) == "strata.homeland") group = g; });
+    EXPECT_EQ(group, "Strata");
+
+    EXPECT_TRUE(r.host->SetColourMode("strata.homeland"));
+    EXPECT_STREQ(r.host->GetColourMode(), "strata.homeland");
+
+    const WorldStructure& world = r.session.World();
+    ASSERT_EQ(world.extraStrata.size(), 1u);
+    const uint32_t n = static_cast<uint32_t>(world.CellCount());
+    std::vector<float> values(n, -1.0f);
+    d->read(values.data(), n);
+    bool sawWest = false, sawEast = false;
+    for (uint32_t i = 0; i < n; ++i)
+    {
+        ASSERT_EQ(values[i], static_cast<float>(world.extraStrata[0].cells[i])) << i;
+        sawWest = sawWest || values[i] == 1.0f;
+        sawEast = sawEast || values[i] == 2.0f;
+    }
+    EXPECT_TRUE(sawWest && sawEast);
+    FakeDebugDraw draw;
+    r.Frame(draw);   // uploads the extra layer as the base without error
+    r.host->Teardown();
+    EXPECT_EQ(r.registry.LayerCount(), 0u);
 }
 
 TEST(WorldGenViewHost, UploadsExactlyOncePerRevisionAndNeverOnIdleFrames)

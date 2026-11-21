@@ -281,6 +281,33 @@ const StratumSetSpec* StratumTable::FindSet(const char* id) const
     return nullptr;
 }
 
+int StratumTable::SetIndexOf(const char* id) const
+{
+    if (id == nullptr) { return -1; }
+    for (uint32_t i = 0; i < mSetCount; ++i)
+    {
+        if (std::strcmp(mSets[i].id, id) == 0) { return static_cast<int>(i); }
+    }
+    return -1;
+}
+
+const char* StratumTable::NameIn(const StratumSetSpec& set, WorldGeneration::StratumIndex z)
+{
+    if (z == WorldGeneration::kNoStratum) { return "None"; }
+    return z <= set.count ? set.strata[z - 1].name : nullptr;
+}
+
+int StratumTable::IndexIn(const StratumSetSpec& set, const char* name)
+{
+    if (name == nullptr) { return -1; }
+    if (std::strcmp(name, "None") == 0) { return 0; }
+    for (uint32_t i = 0; i < set.count; ++i)
+    {
+        if (std::strcmp(set.strata[i].name, name) == 0) { return static_cast<int>(i) + 1; }
+    }
+    return -1;
+}
+
 const char* StratumTable::Name(WorldGeneration::StratumIndex z) const
 {
     if (z == WorldGeneration::kNoStratum) { return "None"; }

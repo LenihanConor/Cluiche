@@ -13,6 +13,7 @@
 #include "Sites.h"
 
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
 namespace CoW {
@@ -207,6 +208,15 @@ struct Cell
     RegionId    region       = kNoRegion;             // S-1 regions (0 = ocean / not yet assigned); fills the old tail padding byte
 };
 
+// One extra stratum set's assignment (every set of the stratum table except "depth", which lives in Cell::stratum):
+// one byte per cell, 0 = none/ocean, 1..N = the set's stratum.
+struct ExtraStratumLayer
+{
+    char                 setId[32] = {};
+    std::vector<uint8_t> cells;
+    bool operator==(const ExtraStratumLayer&) const = default;
+};
+
 // Cell storage is heap-backed (grid sizes 1x1..128x128 exceed any fixed-capacity
 // DiaCore container); the public API exposes only pointers and counts.
 struct WorldStructure
@@ -216,6 +226,18 @@ struct WorldStructure
     uint8_t         mainLandmass = 0;
     RegionTable     regions;   // empty until RegionsAndSites::Place runs
     SiteSet         sites;     // empty until RegionsAndSites::Place runs
+    // Extra stratum sets, in table order; empty (zero cost) when the table declares only "depth".
+    std::vector<ExtraStratumLayer> extraStrata;
+
+    // The extra layer of the set with this id, nullptr when absent.
+    const ExtraStratumLayer* FindExtraStrata(const char* setId) const
+    {
+        for (const ExtraStratumLayer& l : extraStrata)
+        {
+            if (setId != nullptr && std::strcmp(l.setId, setId) == 0) { return &l; }
+        }
+        return nullptr;
+    }
 
     // Resizes to width*height default cells (existing contents are discarded,
     // including regions and sites).
@@ -224,6 +246,7 @@ struct WorldStructure
         dimensions = dims;
         regions = RegionTable{};
         sites.Clear();
+        extraStrata.clear();
         const int n = (dims.width > 0 && dims.height > 0) ? dims.width * dims.height : 0;
         mCells.assign(static_cast<size_t>(n), Cell{});
     }

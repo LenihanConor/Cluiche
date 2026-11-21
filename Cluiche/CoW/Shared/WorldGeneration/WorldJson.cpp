@@ -247,6 +247,51 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
     }
     out += "    ],\n";
 
+    // Extra stratum sets (additive key: written only when the world has some, so a depth-only world is unchanged).
+    if (!world.extraStrata.empty())
+    {
+        out += "    \"strata_sets\": [\n";
+        for (size_t e = 0; e < world.extraStrata.size(); ++e)
+        {
+            const ExtraStratumLayer& layer = world.extraStrata[e];
+            char field[64];
+            std::snprintf(field, sizeof(field), "world.strata_sets[%zu]", e);
+            const World::StratumSetSpec* set = biomes.Strata().FindSet(layer.setId);
+            if (set == nullptr || std::strcmp(layer.setId, World::StratumTable::kDepthSetId) == 0)
+            {
+                return Fail(error, std::string(field) + ".id", std::string("stratum set '") + layer.setId + "' is not an extra set of the stratum table");
+            }
+            if (layer.cells.size() != static_cast<size_t>(n))
+            {
+                return Fail(error, std::string(field) + ".cells", "cell count does not match the grid");
+            }
+            out += "      { \"id\": ";
+            AppendString(out, layer.setId);
+            out += ", \"cells\": [\n";
+            for (int y = 0; y < height; ++y)
+            {
+                out += "        ";
+                for (int x = 0; x < width; ++x)
+                {
+                    const int i = y * width + x;
+                    const char* name = World::StratumTable::NameIn(*set, static_cast<StratumIndex>(layer.cells[static_cast<size_t>(i)]));
+                    if (name == nullptr)
+                    {
+                        char cellField[96];
+                        std::snprintf(cellField, sizeof(cellField), "%s.cells[%d]", field, i);
+                        return Fail(error, cellField, "stratum value is out of range");
+                    }
+                    AppendString(out, name);
+                    if (x + 1 < width) { out += ", "; }
+                }
+                out += (y + 1 < height) ? ",\n" : "\n";
+            }
+            out += "        ] }";
+            out += (e + 1 < world.extraStrata.size()) ? ",\n" : "\n";
+        }
+        out += "    ],\n";
+    }
+
     const unsigned regionCount = world.regions.regions.Size();
     out += "    \"regions\": [\n";
     for (unsigned r = 0; r < regionCount; ++r)

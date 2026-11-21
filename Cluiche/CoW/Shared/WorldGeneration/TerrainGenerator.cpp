@@ -642,6 +642,7 @@ void TerrainGenerator::RunStrataStage()
 
     mStage8 = Stage8Debug{};
     mStrataError.clear();
+    mExtraStrata.clear();
     ComputeStrataCosts(mRules, mDims, mShape.barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, zoneCostBase, zoneCost);
     std::fill(stratum, stratum + n, static_cast<uint32_t>(kNoStratum));
     const World::StratumSetSpec* set = mBiomes != nullptr ? mBiomes->Strata().Depth() : nullptr;
@@ -709,6 +710,52 @@ void TerrainGenerator::RunStrataStage()
     {
         stratum[i] = static_cast<uint32_t>(out[i]);
     }
+
+    // Extra sets (every set but depth), after depth so depth is untouched by them. An extra set has no fallback: a
+    // missing assigner or a contract violation leaves its layer all 0 and is reported in the strata error.
+    ctx.debug = nullptr;   // the stage-8 debug belongs to the depth set
+    const World::StratumTable& table = mBiomes->Strata();
+    for (uint32_t si = 0; si < table.SetCount(); ++si)
+    {
+        const World::StratumSetSpec& extra = table.Set(si);
+        if (&extra == set)
+        {
+            continue;
+        }
+        ExtraStratumLayer layer;
+        std::memcpy(layer.setId, extra.id, std::strlen(extra.id));   // ids are at most 31 chars; setId is zero-initialised
+        layer.cells.assign(n, 0u);
+
+        const char* extraType = extra.assignerType;
+        IStrataAssigner* extraAssigner = mAssigners != nullptr ? mAssigners->Find(extraType) : (std::strcmp(extraType, World::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
+        std::string problem;
+        if (extraAssigner == nullptr)
+        {
+            problem = std::string("stratum set '") + extra.id + "': assigner '" + extraType + "' is not registered";
+        }
+        else
+        {
+            std::vector<StratumIndex> extraOut(n, kNoStratum);
+            StrataAssignError err;
+            if (RunStrataAssigner(extraType, *extraAssigner, ctx, extra, std::span<StratumIndex>(extraOut.data(), extraOut.size()), err))
+            {
+                for (size_t i = 0; i < n; ++i)
+                {
+                    layer.cells[i] = static_cast<uint8_t>(extraOut[i]);
+                }
+            }
+            else
+            {
+                problem = std::string("stratum set '") + extra.id + "': " + err.reason;
+            }
+        }
+        if (!problem.empty())
+        {
+            DIA_LOG_ERROR("CoW", "%s; the set's layer is left empty", problem.c_str());
+            mStrataError += (mStrataError.empty() ? "" : "; ") + problem;
+        }
+        mExtraStrata.push_back(std::move(layer));
+    }
 }
 
 void TerrainGenerator::WriteTerrain(WorldStructure& world) const
@@ -725,6 +772,8 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
     world.provenance.shape = mShape;
     world.provenance.generatorVersion = kTerrainGeneratorVersion;
     world.provenance.rulesVersion = mRules.rulesVersion;
+
+    world.extraStrata = mExtraStrata;
 
     const int n = world.CellCount();
     if (n == 0)

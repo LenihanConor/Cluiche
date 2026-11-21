@@ -97,7 +97,17 @@ inline const StratumTable& ShippedStratumTable()
 // A three-stratum depth-set strata file naming the strata `names` (the shipped numbers: 4-6, 4-6, 2-4 regions,
 // innermost main-landmass-only with min coast depth 3) and the matching sidecar (shares 0.45 / 0.40 / 0.15).
 // For tests that need a differently named table; a name list of another length is allowed for load-fault tests.
-inline std::string TestStrataText(const std::vector<std::string>& names)
+// An extra (non-depth) stratum set for TestStrataText / TestStrataSidecar: its id, ordered flag, assigner type and strata
+// names (regions 1-2 each, a sidecar share of 1/N each).
+struct TestExtraSet
+{
+    std::string              id;
+    bool                     ordered = false;
+    std::string              assignerType = "coast_cost_bands";
+    std::vector<std::string> names;
+};
+
+inline std::string TestStrataText(const std::vector<std::string>& names, const std::vector<TestExtraSet>& extraSets = {})
 {
     std::string list;
     for (size_t i = 0; i < names.size(); ++i)
@@ -106,11 +116,23 @@ inline std::string TestStrataText(const std::vector<std::string>& names)
         list += std::string(i == 0 ? "" : ",") + "{\"name\":\"" + names[i] + "\",\"regions_min\":" + (inner ? "2" : "4") +
                 ",\"regions_max\":" + (inner ? "4" : "6") + (inner ? ",\"main_landmass_only\":true,\"min_coast_depth\":3" : "") + "}";
     }
+    std::string extra;
+    for (const TestExtraSet& set : extraSets)
+    {
+        std::string strata;
+        for (size_t i = 0; i < set.names.size(); ++i)
+        {
+            strata += std::string(i == 0 ? "" : ",") + "{\"name\":\"" + set.names[i] + "\",\"regions_min\":1,\"regions_max\":2}";
+        }
+        extra += ",{\"id\":\"" + set.id + "\",\"ordered\":" + (set.ordered ? "true" : "false") + ",\"assigner\":{\"type\":\"" +
+                 set.assignerType + "\",\"metric\":\"coast_cost\"},\"strata\":[" + strata + "]}";
+    }
     return "{\"format\":\"cow.strata\",\"version\":1,\"sets\":[{\"id\":\"depth\",\"ordered\":true,"
-           "\"assigner\":{\"type\":\"coast_cost_bands\",\"metric\":\"coast_cost\"},\"strata\":[" + list + "]}]}";
+           "\"assigner\":{\"type\":\"coast_cost_bands\",\"metric\":\"coast_cost\"},\"strata\":[" + list + "]}" + extra + "]}";
 }
 
-inline std::string TestStrataSidecar(const std::vector<std::string>& names, const std::vector<float>& shares = { 0.45f, 0.40f, 0.15f })
+inline std::string TestStrataSidecar(const std::vector<std::string>& names, const std::vector<float>& shares = { 0.45f, 0.40f, 0.15f },
+                                     const std::vector<TestExtraSet>& extraSets = {})
 {
     std::string entries;
     for (size_t i = 0; i < names.size(); ++i)
@@ -125,6 +147,16 @@ inline std::string TestStrataSidecar(const std::vector<std::string>& names, cons
         // The innermost stratum declares min_coast_depth (TestStrataText), so the sidecar carries its live value.
         entries += ",{\"key\":\"depth." + names.back() + ".min_coast_depth\",\"kind\":\"parameter\",\"label\":\"depth\","
                    "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":16.0,\"default\":3.0}";
+    }
+    for (const TestExtraSet& set : extraSets)
+    {
+        for (const std::string& name : set.names)
+        {
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "%g", set.names.empty() ? 0.0 : 1.0 / static_cast<double>(set.names.size()));
+            entries += ",{\"key\":\"" + set.id + "." + name + ".share\",\"kind\":\"parameter\",\"label\":\"share\","
+                       "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":1.0,\"default\":" + buf + "}";
+        }
     }
     return "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"cow.strata\",\"entries\":[" + entries + "]}";
 }

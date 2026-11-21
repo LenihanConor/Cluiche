@@ -154,6 +154,15 @@ private:
         uint64_t Version();
     };
 
+    // One per extra stratum set (WorldLayerSource::ExtraStrataLayers); stable addresses like mBindings.
+    struct ExtraBinding
+    {
+        WorldGenViewHost*                 host = nullptr;
+        WorldGeneration::ExtraStrataLayerDesc desc;
+        void     Read(float* out, uint32_t count);
+        uint64_t Version();
+    };
+
     class DebugLayerImpl : public Dia::Debug::IVisualDebugger
     {
     public:
@@ -190,6 +199,7 @@ private:
     WorldGeneration::SharedWorldHexGrid  mOwnGrid;   // used only when Deps::sharedGrid is null
     WorldGeneration::SharedWorldHexGrid& mGrid;      // re-emplaced in place: the registry keeps its address
     std::vector<LayerBinding>         mBindings;          // one per descriptor, stable addresses
+    std::vector<ExtraBinding>         mExtraBindings;     // one per extra stratum set of the table at construction
     Dia::Core::UniquePtr<Dia::CellLayers::LayerUploader>        mUploader;
     Dia::Core::UniquePtr<Dia::CellLayers::CellLayerViewerDomain> mDomain;
     bool mLayersRegistered   = false;

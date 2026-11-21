@@ -1210,6 +1210,74 @@
         "backdrop": "#101418",
         "select_group": true
       }
+    },
+    {
+      "key": "strataSet",
+      "kind": "field",
+      "label": "Stratum set",
+      "description": "An extra stratum set (strata.json set other than depth): the stratum number of each cell, 0 = none. One shared palette: stratum k has the same colour in every set.",
+      "type": "enum",
+      "values": [
+        {
+          "id": "none",
+          "label": "None",
+          "description": "Ocean, or a cell the set does not assign.",
+          "colour": "#1a1e24"
+        },
+        {
+          "id": "stratum1",
+          "label": "Stratum 1",
+          "description": "The set's stratum number 1 (declaration order in strata.json).",
+          "colour": "#e25a5a"
+        },
+        {
+          "id": "stratum2",
+          "label": "Stratum 2",
+          "description": "The set's stratum number 2 (declaration order in strata.json).",
+          "colour": "#25d057"
+        },
+        {
+          "id": "stratum3",
+          "label": "Stratum 3",
+          "description": "The set's stratum number 3 (declaration order in strata.json).",
+          "colour": "#c086ea"
+        },
+        {
+          "id": "stratum4",
+          "label": "Stratum 4",
+          "description": "The set's stratum number 4 (declaration order in strata.json).",
+          "colour": "#d8ca64"
+        },
+        {
+          "id": "stratum5",
+          "label": "Stratum 5",
+          "description": "The set's stratum number 5 (declaration order in strata.json).",
+          "colour": "#31abc4"
+        },
+        {
+          "id": "stratum6",
+          "label": "Stratum 6",
+          "description": "The set's stratum number 6 (declaration order in strata.json).",
+          "colour": "#e08a3c"
+        },
+        {
+          "id": "stratum7",
+          "label": "Stratum 7",
+          "description": "The set's stratum number 7 (declaration order in strata.json).",
+          "colour": "#7a8cf0"
+        },
+        {
+          "id": "stratum8",
+          "label": "Stratum 8",
+          "description": "The set's stratum number 8 (declaration order in strata.json).",
+          "colour": "#a0d86a"
+        }
+      ],
+      "ui": {
+        "inset": 0.05,
+        "backdrop": "#101418",
+        "select_group": true
+      }
     }
   ]
 }
