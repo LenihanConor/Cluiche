@@ -1,7 +1,8 @@
 # Feature Spec: Extract DraoiHexWorld core
 
+**Plan:** @docs/specs/features/draoi/extract-hexworld-core.plan.md
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 1)
-**Status:** `Approved` (2026-11-21; proceeds on the credible-second-consumer basis; layout and namespace decided, tests in GoogleTests)
+**Status:** `Done` (2026-11-21, plan Done; approved 2026-11-21; proceeds on the credible-second-consumer basis; layout and namespace decided, tests in GoogleTests)
 **Origin:** Draoi layer audit, 2026-11-21 (package split and WorldGeneration coupling audit in the parent spec).
 **Prerequisite:** @docs/specs/features/draoi/hexworld-core-prerequisites.md (Done). **Depends on / ordering:** Strata feature lands first (@docs/specs/features/draoi/generic-strata.md, Approved 2026-11-21, not yet built): the zone model becomes strata, so this spec's file list uses the Strata names. The world-sim kit's Draoi half (`WorldCellFields`, `CellSelectorSet`, codec data half) is owned by @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md; this spec only reserves the destination.
 

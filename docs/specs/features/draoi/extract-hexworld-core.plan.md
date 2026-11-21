@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/draoi/extract-hexworld-core.md
-**Status:** In Progress
+**Status:** Done
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
