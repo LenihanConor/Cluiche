@@ -153,7 +153,7 @@ namespace
             ASSERT_EQ(b == static_cast<uint32_t>(B("Biome.Lake")), lakeWater) << label << " seed " << seed << " cell " << c;
         }
 
-        // Lakes sit in whatever depth zone their cell has, but IsValidInZone(Lake) demands None, so water
+        // Lakes sit in whatever depth zone their cell has, but IsValidInStratum(Lake) demands None, so water
         // cells are exempt here (spec AC3 reads "every cell"; see task report).
         const Stage14Inputs in = InputsOf(g, shape, kSmall);
         std::vector<int>    zoneBad;

@@ -699,7 +699,7 @@ namespace
         RandomStream rr(static_cast<unsigned>(seed) ^ 0x5151u);
         BuildRegions(w, rules, rr, ::CoW::World::Testing::ShippedBiomeRegistry());
         RandomStream rc(static_cast<unsigned>(seed) + 1);
-        PlaceCorridorNodes(w, rules, rc);
+        PlaceCorridorNodes(w, rules, ::CoW::World::Testing::ShippedStratumTable(), rc);
         const RiverNodeResult river = PlaceRiverNodes(w, rules);
         RandomStream rf(static_cast<unsigned>(seed) + 2);
         const FillResult fill = PlaceFillNodes(w, rules, rf);

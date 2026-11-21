@@ -141,7 +141,7 @@ TEST(BiomeRegistryData, ZoneValidityAllZonesAllBiomes)
     {
         for (int z = 0; z < 4; ++z)
         {
-            EXPECT_EQ(r.IsValidInZone(static_cast<BiomeIndex>(i), kZones[z]), kExpect[i].zones[z]) << kExpect[i].id << " zone " << z;
+            EXPECT_EQ(r.IsValidInStratum(static_cast<BiomeIndex>(i), kZones[z]), kExpect[i].zones[z]) << kExpect[i].id << " zone " << z;
         }
     }
 }

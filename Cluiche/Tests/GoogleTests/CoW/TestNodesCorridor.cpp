@@ -45,7 +45,7 @@ namespace
     CorridorResult Place(WorldStructure& w, unsigned seed)
     {
         RandomStream rng(seed);
-        return PlaceCorridorNodes(w, Rules(), rng);
+        return PlaceCorridorNodes(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
     }
 
     struct Corridor
@@ -488,7 +488,7 @@ namespace
         WorldStructure w = world;
         w.sites.Clear();
         RandomStream rng(streamSeed);
-        const CorridorResult r = PlaceCorridorNodes(w, Rules(), rng);
+        const CorridorResult r = PlaceCorridorNodes(w, Rules(), ::CoW::World::Testing::ShippedStratumTable(), rng);
         ++st.worlds;
 
         for (int b = 0; b < 2; ++b)

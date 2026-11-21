@@ -191,7 +191,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
     {
         const RegionRecord& rec = w.regions.regions[r];
         EXPECT_EQ(regions[r]["id"].asUInt(), rec.id);
-        EXPECT_EQ(regions[r]["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.zone));
+        EXPECT_EQ(regions[r]["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.stratum));
         EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
         EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
         EXPECT_EQ(regions[r]["primary_biome"].asString(), ShippedBiomeRegistry().IdText(rec.primaryBiome));
@@ -201,7 +201,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
         ASSERT_EQ(regions[r]["neighbours"].size(), rec.neighbours.Size());
         for (unsigned k = 0; k < rec.neighbours.Size(); ++k) { EXPECT_EQ(regions[r]["neighbours"][k].asUInt(), rec.neighbours[k]); }
     }
-    EXPECT_EQ(regions[0]["zone"].asString(), "FirstShores");
+    EXPECT_EQ(regions[0]["stratum"].asString(), "FirstShores");
     EXPECT_EQ(regions[0]["primary_biome"].asString(), "Biome.Grassland");
     EXPECT_EQ(regions[0]["cell_count"].asUInt(), 4u);
     EXPECT_FALSE(regions[0]["is_island"].asBool());
@@ -473,8 +473,8 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
       { "biome": "Biome.Grassland", "terrain": "Cliff", "region": 0, "elevation": 0.100000001, "latitude": 0.333333343, "water_source": "None", "stratum": "WildReaches", "landmass": 2, "terrain_flags": 0, "downstream": 7 }
     ],
     "regions": [
-      { "id": 1, "zone": "FirstShores", "landmass": 1, "is_island": false, "primary_biome": "Biome.Grassland", "purity": 0.25, "cell_count": 4, "centre_cell": 2, "neighbours": [2] },
-      { "id": 2, "zone": "AncientInteriors", "landmass": 1, "is_island": false, "primary_biome": "Biome.Desert", "purity": 0.200000003, "cell_count": 5, "centre_cell": 10, "neighbours": [1] }
+      { "id": 1, "stratum": "FirstShores", "landmass": 1, "is_island": false, "primary_biome": "Biome.Grassland", "purity": 0.25, "cell_count": 4, "centre_cell": 2, "neighbours": [2] },
+      { "id": 2, "stratum": "AncientInteriors", "landmass": 1, "is_island": false, "primary_biome": "Biome.Desert", "purity": 0.200000003, "cell_count": 5, "centre_cell": 10, "neighbours": [1] }
     ],
     "region_table": { "absorbed_cells": 2, "fragment_cells": 1, "limited_by": "WildReaches" },
     "sites": {

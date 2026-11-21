@@ -28,7 +28,7 @@ namespace
 
     bool OnBoundary(const WorldStructure& world, const HexTopology& topo, uint32_t cell, int barrier)
     {
-        // Barrier k separates zone k from zone k+1.
+        // Barrier k separates stratum k from stratum k+1.
         const StratumIndex a = static_cast<StratumIndex>(barrier);
         const StratumIndex b = static_cast<StratumIndex>(barrier + 1);
         const StratumIndex z = world.Cells()[cell].stratum;
@@ -69,23 +69,25 @@ namespace
     }
 }
 
-CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng)
+CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+                                  Dia::Maths::RandomStream& rng)
 {
     CorridorResult out;
+    const int barriers = static_cast<int>(BarrierCountOf(strata));
     const int n = world.CellCount();
     const uint32_t kind = SiteKindId(BuiltinNodeKinds::Corridor());
     const int spacing   = rules.kCorridorSpacing;
     const int gapReach  = rules.kCoastalGapReach;
 
-    int target[2];
-    for (int b = 0; b < 2; ++b) { target[b] = 2 + rng.RandomInt() % 3; }
-    if (n == 0) { out.corridorLimited[0] = out.corridorLimited[1] = true; return out; }
+    int target[kMaxBarriers] = {};
+    for (int b = 0; b < barriers; ++b) { target[b] = 2 + rng.RandomInt() % 3; }
+    if (n == 0) { for (int b = 0; b < barriers; ++b) { out.corridorLimited[b] = true; } return out; }
 
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const uint32_t nodeSpacing = static_cast<uint32_t>(rules.kNodeSpacing);
     std::vector<uint32_t> earlierBarriers;   // corridor nodes of earlier barriers: kNodeSpacing applies across barriers
 
-    for (int b = 0; b < 2; ++b)
+    for (int b = 0; b < barriers; ++b)
     {
         const int barrier = b + 1;
         std::vector<Candidate> cand;

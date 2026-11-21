@@ -1,9 +1,9 @@
-// S-1 Regions: region partition, first half (targets, zone components, seeds, growth).
+// S-1 Regions: region partition, first half (targets, stratum components, seeds, growth).
 // Repair, records and renumbering are the second half (not here): this result carries provisional ids.
 //
 // RNG draw order (one passed stream, nothing else draws):
-//   1. desired region count n_Z, one draw per zone in zone order: First Shores, Wild Reaches, Ancient Interiors
-//      (always drawn, even when the zone has no land, so the budget is fixed);
+//   1. desired region count n_Z, one draw per DECLARED stratum of the depth set in stratum order (CoW: First Shores,
+//      Wild Reaches, Ancient Interiors); always drawn, even when the stratum has no land, so the budget is fixed;
 //   2. first seed of each component with at least kMinRegionCells cells, components in ascending
 //      min-cell-index order (one draw each; tiny components draw nothing).
 // All ties: lowest cell index, then lowest region id.
@@ -11,6 +11,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Region partition)
 #pragma once
 
+#include <Shared/World/StratumTable.h>
 #include <Shared/WorldGeneration/Regions.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
@@ -25,21 +26,19 @@ namespace CoW { namespace World { class BiomeRegistry; } }
 namespace CoW {
 namespace WorldGeneration {
 
-// Zone slot 0..2 <-> StratumIndex index 1..3 (the generator supports exactly three zones).
-constexpr int kRegionZoneCount = 3;
-// TODO(Strata task 3): read these from StratumTable (strata.json regions_min/regions_max) instead of constants.
-constexpr uint8_t kZoneCountMin[kRegionZoneCount] = { 4, 4, 2 };
-constexpr uint8_t kZoneCountMax[kRegionZoneCount] = { 6, 6, 4 };
+// Per-stratum arrays are sized kMaxStrata; slot 0..N-1 <-> StratumIndex 1..N of the depth set. The desired-count range
+// of each stratum (regions_min / regions_max) is read from the StratumTable, never from constants here.
+constexpr uint32_t kMaxStrata = World::StratumTable::kMaxStrata;
 constexpr int kTotalRegionsMin = 10;
 constexpr int kTotalRegionsMax = 16;
 
-inline int ZoneSlot(StratumIndex z) { return static_cast<int>(z) - 1; }   // None -> -1
-inline StratumIndex ZoneFromSlot(int s) { return static_cast<StratumIndex>(s + 1); }
+inline int StratumSlot(StratumIndex z) { return static_cast<int>(z) - 1; }   // None -> -1
+inline StratumIndex StratumFromSlot(int s) { return static_cast<StratumIndex>(s + 1); }
 
-// A connected set of main-landmass land cells (non-ocean) of one depth zone.
+// A connected set of main-landmass land cells (non-ocean) of one stratum.
 struct RegionComponent
 {
-    StratumIndex             zone     = kNoStratum;
+    StratumIndex             stratum  = kNoStratum;
     uint8_t               landmass = 0;
     std::vector<uint32_t> cells;            // ascending cell index
     bool                  tiny     = false; // fewer than kMinRegionCells cells: gets no seed (second half handles it)
@@ -47,9 +46,9 @@ struct RegionComponent
 
 struct RegionTargets
 {
-    uint8_t   count[kRegionZoneCount]     = {};   // final region count per zone
-    uint16_t  capacity[kRegionZoneCount]  = {};   // floor(cells_Z / kMinRegionCells), 0 without a non-tiny component
-    uint32_t  zoneCells[kRegionZoneCount] = {};
+    uint8_t   count[kMaxStrata]     = {};   // final region count per stratum
+    uint16_t  capacity[kMaxStrata]  = {};   // floor(cells_Z / kMinRegionCells), 0 without a non-tiny component
+    uint32_t  stratumCells[kMaxStrata] = {};
     uint8_t   total                       = 0;
     StratumIndex limitedBy                   = kNoStratum;           // kNoStratum unless terrain-limited
 };
@@ -58,7 +57,7 @@ struct RegionSeed
 {
     uint32_t  cell      = 0;                    // island regions: lowest cell index of the landmass
     World::BiomeIndex biome = 0;                // seed biome row (drives the growth cost); 0 = shipped Ocean row
-    StratumIndex zone      = kNoStratum;              // island regions: majority zone
+    StratumIndex stratum   = kNoStratum;              // island regions: majority stratum
     uint8_t   landmass  = 0;
     bool      isIsland  = false;
     int32_t   component = -1;                   // index into RegionGrowth::components, -1 for islands
@@ -69,8 +68,8 @@ struct RegionGrowth
     RegionTargets                targets;
     std::vector<RegionComponent> components;
     std::vector<uint32_t>        tinyComponents;     // indices into components
-    std::vector<uint32_t>        unzonedCells;       // main-landmass non-ocean cells with kNoStratum
-    std::vector<RegionId>        regionOf;           // per cell; 0 = ocean, tiny/unzoned (second half repairs)
+    std::vector<uint32_t>        unassignedCells;       // main-landmass non-ocean cells with kNoStratum
+    std::vector<RegionId>        regionOf;           // per cell; 0 = ocean, tiny/unassigned (second half repairs)
     std::vector<RegionSeed>      seeds;              // index = provisional region id - 1
     std::vector<uint16_t>        capClaims;          // per region: cells claimed before the leftover phase
     uint32_t                     leftoverCells = 0;  // cells claimed in the leftover phase
@@ -81,26 +80,28 @@ struct RegionGrowth
 // Land = non-ocean cell with a landmass id (lakes and rivers are ordinary land here).
 bool IsRegionLand(const Cell& c);
 
-// Connected components of main-landmass land cells per zone, ascending min cell index.
-std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, const TerrainRules& rules);
+// Connected components of main-landmass land cells per stratum of the depth set, ascending min cell index.
+std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata);
 
-// Spec step 2 rebalance in place. total < 10: add one at a time to the zone with the most unused capacity
-// (capacity - count) among zones below their range maximum with unused capacity, ties by zone order.
-// total > 16: remove one at a time from the zone with the least spare capacity (capacity - count) among zones
-// above their range minimum, ties by zone order. If the total still cannot reach 10, limitedBy = the zone with
-// the smallest capacity relative to its range minimum (capacity / min, ties by zone order); else None.
-void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], StratumIndex& limitedBy);
+// Spec step 2 rebalance in place. total < 10: add one at a time to the stratum with the most unused capacity
+// (capacity - count) among strata below their range maximum with unused capacity, ties by stratum order.
+// total > 16: remove one at a time from the stratum with the least spare capacity (capacity - count) among strata
+// above their range minimum, ties by stratum order. If the total still cannot reach 10, limitedBy = the stratum with
+// the smallest capacity relative to its range minimum (capacity / min, ties by stratum order); else None.
+void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const World::StratumTable& strata,
+                           StratumIndex& limitedBy);
 
-// Draws n_Z per zone (zone order), clamps to capacity, rebalances.
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules,
+// Draws n_Z per declared stratum (stratum order), clamps to capacity, rebalances.
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
                                    const std::vector<RegionComponent>& components, Dia::Maths::RandomStream& rng);
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng);
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+                                   Dia::Maths::RandomStream& rng);
 
-// Seeds per non-tiny component: share = max(1, floor(quota)) with quota = n_Z * compCells / (cells of the zone's
+// Seeds per non-tiny component: share = max(1, floor(quota)) with quota = n_Z * compCells / (cells of the stratum's
 // non-tiny components); the remaining n_Z - sum go to the largest fractional quotas (largest remainder, ties by
-// component order). If the zone has more non-tiny components than n_Z the sum exceeds n_Z (each still gets 1).
+// component order). If the stratum has more non-tiny components than n_Z the sum exceeds n_Z (each still gets 1).
 // With minRegionCells > 0 a component's share is capped at max(1, floor(cells / minRegionCells)) (it cannot hold more
-// regions of that size) and the surplus goes to components with room; if none has room the zone gets fewer regions.
+// regions of that size) and the surplus goes to components with room; if none has room the stratum gets fewer regions.
 // Result is indexed like `components`; tiny components get 0.
 std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets,
                                     int minRegionCells = 0);

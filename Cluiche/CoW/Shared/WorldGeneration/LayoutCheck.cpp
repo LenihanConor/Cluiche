@@ -63,7 +63,7 @@ const char* LayoutCodeName(LayoutCode code)
     case LayoutCode::UncoveredLand:      return "UncoveredLand";
     case LayoutCode::OceanHasRegion:     return "OceanHasRegion";
     case LayoutCode::RegionDisconnected: return "RegionDisconnected";
-    case LayoutCode::RegionTwoZones:     return "RegionTwoZones";
+    case LayoutCode::RegionTwoStrata:     return "RegionTwoStrata";
     case LayoutCode::RegionTooSmall:     return "RegionTooSmall";
     case LayoutCode::RegionCountRange:   return "RegionCountRange";
     case LayoutCode::AbsorbedOverCap:    return "AbsorbedOverCap";
@@ -166,11 +166,11 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
             }
             // zone
             uint32_t foreign = 0;
-            for (uint32_t c : rc) { foreign += cells[c].stratum != rec.zone; }
+            for (uint32_t c : rc) { foreign += cells[c].stratum != rec.stratum; }
             if (foreign * 2 > rc.size())
             {
-                LayoutViolation& v = Add(report, LayoutCode::RegionTwoZones, static_cast<RegionId>(r), foreign);
-                for (uint32_t c : rc) { if (cells[c].stratum != rec.zone) { Evidence(v, c); } }
+                LayoutViolation& v = Add(report, LayoutCode::RegionTwoStrata, static_cast<RegionId>(r), foreign);
+                for (uint32_t c : rc) { if (cells[c].stratum != rec.stratum) { Evidence(v, c); } }
             }
             // size
             if (static_cast<int>(rc.size()) < minCells)
@@ -234,7 +234,7 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
     }
 
     // corridors per barrier
-    for (int barrier = 1; barrier <= 2; ++barrier)
+    for (int barrier = 1; barrier <= static_cast<int>(std::min<uint32_t>(limits.barrierCount, kMaxBarriers)); ++barrier)
     {
         std::set<uint16_t> ordinals;
         std::vector<uint32_t> at;

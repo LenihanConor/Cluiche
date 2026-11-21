@@ -5,7 +5,7 @@
 // and a count):
 //   UncoveredLand / OceanHasRegion      every land cell has a region, no ocean cell has one
 //   RegionDisconnected                  a main-landmass region is in several pieces (cells = those outside the largest)
-//   RegionTwoZones                      more than half of a main-landmass region lies outside its zone (cells = those)
+//   RegionTwoStrata                      more than half of a main-landmass region lies outside its zone (cells = those)
 //   RegionTooSmall                      a main-landmass region has fewer than kMinRegionCells cells (count = cells)
 //   RegionCountRange                    mainland region total outside 10..16 and not terrain-limited (count = total)
 //   AbsorbedOverCap                     RegionTable::absorbedCells > kMaxAbsorbedShare * land cells (count = absorbed)
@@ -20,6 +20,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Layout guarantee)
 #pragma once
 
+#include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -32,13 +33,14 @@ namespace WorldGeneration {
 struct LayoutLimits
 {
     StratumIndex regionLimitedBy = kNoStratum;   // None unless terrain-limited (RegionTable::limitedBy)
-    bool      corridorLimited[2] = {};             // per barrier: fewer than 2 candidates
+    uint8_t   barrierCount = 2;                    // barriers of the depth set (strata - 1); CoW's three strata have two
+    bool      corridorLimited[kMaxBarriers] = {};  // per barrier: fewer than 2 candidates
     bool      nodeLimited = false;                 // quotas could not reach 80..150, or a slot found no cell
 };
 
 enum class LayoutCode : uint8_t
 {
-    UncoveredLand, OceanHasRegion, RegionDisconnected, RegionTwoZones, RegionTooSmall, RegionCountRange,
+    UncoveredLand, OceanHasRegion, RegionDisconnected, RegionTwoStrata, RegionTooSmall, RegionCountRange,
     AbsorbedOverCap, NodeOnWater, NodeSpacing, CorridorCount, RegionNodeCount, TotalNodeCount, FragmentOverCap
 };
 

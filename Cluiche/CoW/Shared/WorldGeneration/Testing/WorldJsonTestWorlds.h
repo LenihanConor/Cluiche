@@ -93,10 +93,10 @@ inline WorldStructure MakeTinyWorld()
     c[11] = MakeCell(BL("Biome.Grassland"), TerrainType::Cliff,        kStratumWild,      WaterSource::None,  0.1f,   1.0f / 3.0f, 0, 2);
 
     RegionRecord r1;
-    r1.id = 1; r1.zone = kStratumFirst; r1.landmass = 1; r1.isIsland = false; r1.primaryBiome = BL("Biome.Grassland");
+    r1.id = 1; r1.stratum = kStratumFirst; r1.landmass = 1; r1.isIsland = false; r1.primaryBiome = BL("Biome.Grassland");
     r1.purity = 1.0f / 4.0f; r1.cellCount = 4; r1.centreCell = 3; r1.neighbours.Add(2);
     RegionRecord r2;
-    r2.id = 2; r2.zone = kStratumAncient; r2.landmass = 1; r2.isIsland = false; r2.primaryBiome = BL("Biome.Alpine");
+    r2.id = 2; r2.stratum = kStratumAncient; r2.landmass = 1; r2.isIsland = false; r2.primaryBiome = BL("Biome.Alpine");
     r2.purity = 1.0f / 5.0f; r2.cellCount = 5; r2.centreCell = 8; r2.neighbours.Add(1);
     w.regions.AddRegion(r1);
     w.regions.AddRegion(r2);

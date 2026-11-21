@@ -22,7 +22,7 @@ bool IsRegionLand(const Cell& c)
     return c.landmass != 0 && c.waterSource != WaterSource::Ocean;
 }
 
-std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, const TerrainRules& rules)
+std::vector<RegionComponent> FindStratumComponents(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata)
 {
     std::vector<RegionComponent> out;
     const int n = world.CellCount();
@@ -34,19 +34,19 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     Dia::Pathfinding::GridSearchScratch scratch;
     std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
 
-    // Components never span zones, so label each zone's eligible cells separately.
-    for (int slot = 0; slot < kRegionZoneCount; ++slot)
+    // Components never span strata, so label each stratum's eligible cells separately.
+    for (int slot = 0; slot < static_cast<int>(strata.Count()); ++slot)
     {
-        const StratumIndex zone = ZoneFromSlot(slot);
+        const StratumIndex stratum = StratumFromSlot(slot);
         const uint32_t count = Dia::Pathfinding::ConnectedComponents(graph,
             [&](uint32_t c) {
-                return cells[c].stratum == zone && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
+                return cells[c].stratum == stratum && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
             }, label.data(), nullptr, scratch);
         const size_t first = out.size();
         out.resize(first + count);
         for (size_t k = first; k < out.size(); ++k)
         {
-            out[k].zone = zone;
+            out[k].stratum = stratum;
             out[k].landmass = world.mainLandmass;
         }
         // Ascending scan: each component's cells arrive sorted.
@@ -57,22 +57,28 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
         }
     }
     for (RegionComponent& comp : out) { comp.tiny = static_cast<int>(comp.cells.size()) < minCells; }
-    // Ascending min cell index across zones, as the single-pass scan produced.
+    // Ascending min cell index across strata, as the single-pass scan produced.
     std::sort(out.begin(), out.end(), [](const RegionComponent& a, const RegionComponent& b) { return a.cells.front() < b.cells.front(); });
     return out;
 }
 
-void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], StratumIndex& limitedBy)
+void RebalanceRegionCounts(uint8_t count[kMaxStrata], const uint16_t capacity[kMaxStrata], const World::StratumTable& strata,
+                           StratumIndex& limitedBy)
 {
     limitedBy = kNoStratum;
-    auto total = [&]() { int t = 0; for (int z = 0; z < kRegionZoneCount; ++z) { t += count[z]; } return t; };
+    const int n = static_cast<int>(std::min<uint32_t>(strata.Count(), kMaxStrata));
+    const World::StratumSetSpec* set = strata.Depth();
+    if (n == 0 || set == nullptr) { return; }
+    auto rangeMin = [&](int z) { return static_cast<int>(set->strata[z].regionsMin); };
+    auto rangeMax = [&](int z) { return static_cast<int>(set->strata[z].regionsMax); };
+    auto total = [&]() { int t = 0; for (int z = 0; z < n; ++z) { t += count[z]; } return t; };
 
     while (total() < kTotalRegionsMin)
     {
         int best = -1, bestUnused = 0;
-        for (int z = 0; z < kRegionZoneCount; ++z)
+        for (int z = 0; z < n; ++z)
         {
-            if (count[z] >= kZoneCountMax[z] || count[z] >= capacity[z]) { continue; }
+            if (count[z] >= rangeMax(z) || count[z] >= capacity[z]) { continue; }
             const int unused = static_cast<int>(capacity[z]) - count[z];
             if (best < 0 || unused > bestUnused) { best = z; bestUnused = unused; }
         }
@@ -82,9 +88,9 @@ void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capac
     while (total() > kTotalRegionsMax)
     {
         int best = -1, bestSpare = 0;
-        for (int z = 0; z < kRegionZoneCount; ++z)
+        for (int z = 0; z < n; ++z)
         {
-            if (count[z] <= kZoneCountMin[z]) { continue; }
+            if (count[z] <= rangeMin(z)) { continue; }
             const int spare = static_cast<int>(capacity[z]) - count[z];
             if (best < 0 || spare < bestSpare) { best = z; bestSpare = spare; }
         }
@@ -93,61 +99,65 @@ void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capac
     }
     if (total() < kTotalRegionsMin)
     {
-        // Smallest capacity / range minimum; cross-multiplied, strict less keeps the earliest zone on ties.
+        // Smallest capacity / range minimum; cross-multiplied, strict less keeps the earliest stratum on ties.
         int worst = 0;
-        for (int z = 1; z < kRegionZoneCount; ++z)
+        for (int z = 1; z < n; ++z)
         {
-            if (static_cast<int>(capacity[z]) * kZoneCountMin[worst] < static_cast<int>(capacity[worst]) * kZoneCountMin[z])
+            if (static_cast<int>(capacity[z]) * rangeMin(worst) < static_cast<int>(capacity[worst]) * rangeMin(z))
             {
                 worst = z;
             }
         }
-        limitedBy = ZoneFromSlot(worst);
+        limitedBy = StratumFromSlot(worst);
     }
 }
 
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules,
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
                                    const std::vector<RegionComponent>& components, Dia::Maths::RandomStream& rng)
 {
     (void)world;
     RegionTargets t;
     const int minCells = rules.kMinRegionCells;
-    bool hasBig[kRegionZoneCount] = {};
+    const int n = static_cast<int>(std::min<uint32_t>(strata.Count(), kMaxStrata));
+    const World::StratumSetSpec* set = strata.Depth();
+    bool hasBig[kMaxStrata] = {};
     for (const RegionComponent& c : components)
     {
-        const int z = ZoneSlot(c.zone);
-        if (z < 0) { continue; }
-        t.zoneCells[z] += static_cast<uint32_t>(c.cells.size());
+        const int z = StratumSlot(c.stratum);
+        if (z < 0 || z >= n) { continue; }
+        t.stratumCells[z] += static_cast<uint32_t>(c.cells.size());
         if (!c.tiny) { hasBig[z] = true; }
     }
-    for (int z = 0; z < kRegionZoneCount; ++z)
+    for (int z = 0; z < n; ++z)
     {
-        t.capacity[z] = hasBig[z] ? static_cast<uint16_t>(t.zoneCells[z] / static_cast<uint32_t>(minCells)) : 0;
-        const uint32_t span = static_cast<uint32_t>(kZoneCountMax[z] - kZoneCountMin[z] + 1);
-        const uint32_t draw = static_cast<uint32_t>(rng.RandomInt());   // always drawn
-        const uint32_t desired = kZoneCountMin[z] + draw % span;
+        t.capacity[z] = hasBig[z] ? static_cast<uint16_t>(t.stratumCells[z] / static_cast<uint32_t>(minCells)) : 0;
+        const uint32_t lo = set->strata[z].regionsMin;
+        const uint32_t span = static_cast<uint32_t>(set->strata[z].regionsMax) - lo + 1u;
+        const uint32_t draw = static_cast<uint32_t>(rng.RandomInt());   // always drawn, one per declared stratum
+        const uint32_t desired = lo + draw % span;
         t.count[z] = static_cast<uint8_t>(std::min<uint32_t>(desired, t.capacity[z]));
     }
-    RebalanceRegionCounts(t.count, t.capacity, t.limitedBy);
-    for (int z = 0; z < kRegionZoneCount; ++z) { t.total = static_cast<uint8_t>(t.total + t.count[z]); }
+    RebalanceRegionCounts(t.count, t.capacity, strata, t.limitedBy);
+    for (int z = 0; z < n; ++z) { t.total = static_cast<uint8_t>(t.total + t.count[z]); }
     return t;
 }
 
-RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng)
+RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules, const World::StratumTable& strata,
+                                   Dia::Maths::RandomStream& rng)
 {
-    return ComputeRegionTargets(world, rules, FindZoneComponents(world, rules), rng);
+    return ComputeRegionTargets(world, rules, strata, FindStratumComponents(world, rules, strata), rng);
 }
 
 std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& components, const RegionTargets& targets, int minRegionCells)
 {
     std::vector<int> shares(components.size(), 0);
-    for (int z = 0; z < kRegionZoneCount; ++z)
+    for (int z = 0; z < static_cast<int>(kMaxStrata); ++z)
     {
         std::vector<size_t> idx;
         uint64_t bigCells = 0;
         for (size_t i = 0; i < components.size(); ++i)
         {
-            if (!components[i].tiny && ZoneSlot(components[i].zone) == z) { idx.push_back(i); bigCells += components[i].cells.size(); }
+            if (!components[i].tiny && StratumSlot(components[i].stratum) == z) { idx.push_back(i); bigCells += components[i].cells.size(); }
         }
         if (idx.empty()) { continue; }
         const int nZ = targets.count[z];
@@ -178,7 +188,7 @@ std::vector<int> AllocateSeedShares(const std::vector<RegionComponent>& componen
                 if (shares[idx[k]] >= room[k]) { continue; }
                 if (best == idx.size() || frac[k] > frac[best]) { best = k; }
             }
-            if (best == idx.size()) { break; }   // every component is full: the zone gets fewer regions than targeted
+            if (best == idx.size()) { break; }   // every component is full: the stratum gets fewer regions than targeted
             ++shares[idx[best]];
             ++sum;
             frac[best] = -1.0;   // each component takes a remainder unit once before any takes a second
@@ -248,7 +258,7 @@ namespace
         const float ridge = rules.kRegionRidgeCost;
 
         auto inComp = [&](uint32_t c) {
-            return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].stratum == comp.zone;
+            return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].stratum == comp.stratum;
         };
         auto stepCost = [&](World::BiomeIndex seedBiome, uint32_t c) {
             float cost = 1.0f;
@@ -348,7 +358,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
     out.leftoverCells = 0;
     out.overflow = false;
     out.tinyComponents.clear();
-    out.unzonedCells.clear();
+    out.unassignedCells.clear();
     std::vector<float> dist(static_cast<size_t>(n), 0.0f);
     Dia::Pathfinding::GridSearchScratch scratch;
     scratch.Reserve(static_cast<uint32_t>(n));
@@ -366,7 +376,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
         for (uint32_t cell : sc)
         {
             RegionSeed s;
-            s.cell = cell; s.biome = cells[cell].biome; s.zone = comp.zone; s.landmass = comp.landmass;
+            s.cell = cell; s.biome = cells[cell].biome; s.stratum = comp.stratum; s.landmass = comp.landmass;
             s.component = static_cast<int32_t>(ci);
             out.seeds.push_back(s);
             out.capClaims.push_back(0);
@@ -380,29 +390,29 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
         if (world.mainLandmass != 0 && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]) &&
             cells[c].stratum == kNoStratum)
         {
-            out.unzonedCells.push_back(static_cast<uint32_t>(c));
+            out.unassignedCells.push_back(static_cast<uint32_t>(c));
         }
     }
 
-    // Every other landmass is exactly one region, zone = majority of its cells (ties: lowest zone).
+    // Every other landmass is exactly one region, stratum = majority of its cells (ties: lowest stratum).
     for (int lm = 1; lm < 256; ++lm)
     {
         if (lm == world.mainLandmass) { continue; }
-        uint32_t zoneCount[kRegionZoneCount] = {};
+        uint32_t stratumCount[kMaxStrata] = {};
         int first = -1;
         for (int c = 0; c < n; ++c)
         {
             if (cells[c].landmass != lm || !IsRegionLand(cells[c])) { continue; }
             if (first < 0) { first = c; }
-            const int z = ZoneSlot(cells[c].stratum);
-            if (z >= 0) { ++zoneCount[z]; }
+            const int z = StratumSlot(cells[c].stratum);
+            if (z >= 0 && z < static_cast<int>(kMaxStrata)) { ++stratumCount[z]; }
         }
         if (first < 0) { continue; }
         if (out.seeds.size() >= RegionTable::kMaxRegions) { out.overflow = true; continue; }
         int bz = 0;
-        for (int z = 1; z < kRegionZoneCount; ++z) { if (zoneCount[z] > zoneCount[bz]) { bz = z; } }
+        for (int z = 1; z < static_cast<int>(kMaxStrata); ++z) { if (stratumCount[z] > stratumCount[bz]) { bz = z; } }
         RegionSeed s;
-        s.cell = static_cast<uint32_t>(first); s.biome = cells[first].biome; s.zone = ZoneFromSlot(bz);
+        s.cell = static_cast<uint32_t>(first); s.biome = cells[first].biome; s.stratum = StratumFromSlot(bz);
         s.landmass = static_cast<uint8_t>(lm); s.isIsland = true;
         out.seeds.push_back(s);
         out.capClaims.push_back(0);
@@ -418,8 +428,8 @@ RegionGrowth BuildProvisionalRegions(const WorldStructure& world, const TerrainR
                                      const World::BiomeRegistry& biomes)
 {
     RegionGrowth out;
-    out.components = FindZoneComponents(world, rules);
-    out.targets = ComputeRegionTargets(world, rules, out.components, rng);
+    out.components = FindStratumComponents(world, rules, biomes.Strata());
+    out.targets = ComputeRegionTargets(world, rules, biomes.Strata(), out.components, rng);
     const std::vector<int> shares = AllocateSeedShares(out.components, out.targets, rules.kMinRegionCells);
     std::vector<std::vector<uint32_t>> seeds(out.components.size());
     for (size_t i = 0; i < out.components.size(); ++i)

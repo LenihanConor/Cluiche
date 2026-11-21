@@ -69,7 +69,7 @@ struct BiomeRegistry::Data
         String256 description;
         uint32_t  colour = 0;
         uint64_t  tagMask = 0;
-        uint8_t   zoneMask = 0;
+        uint16_t  stratumMask = 0;
         bool      generated = false;
         bool      hasClimate = false;
         ClimateEnvelope climate = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -107,7 +107,9 @@ void BiomeRegistry::Data::ComputeHash()
         const Row& r = rows.At(i);
         f.Value(r.id.Value());
         f.Value(r.tagMask);
-        f.Value(r.zoneMask);
+        // One byte as before (hash-stable for up to seven strata); the eighth stratum's bit adds a second byte.
+        f.Value(static_cast<uint8_t>(r.stratumMask & 0xFFu));
+        if ((r.stratumMask >> 8) != 0) { f.Value(static_cast<uint8_t>(r.stratumMask >> 8)); }
         f.Value(r.generated);
         f.Value(r.hasClimate);
         if (r.hasClimate)
@@ -237,7 +239,7 @@ namespace
         {
             const int zone = d.zones.IndexOf(z.c_str());
             if (zone < 0) { return Fail(err, "zones", idc, rowIndex, "unknown zone"); }
-            r.zoneMask |= static_cast<uint8_t>(1u << zone);
+            r.stratumMask |= static_cast<uint16_t>(1u << zone);
         }
 
         if (jr.isMember("roles"))
@@ -516,11 +518,11 @@ bool BiomeRegistry::IsGenerated(BiomeIndex b) const
     return r && r->generated;
 }
 
-bool BiomeRegistry::IsValidInZone(BiomeIndex b, StratumIndex zone) const
+bool BiomeRegistry::IsValidInStratum(BiomeIndex b, StratumIndex zone) const
 {
     const Data::Row* r = mData ? mData->At(b) : nullptr;
     const uint32_t z = static_cast<uint32_t>(zone);
-    return r && z <= mData->zones.Count() && ((r->zoneMask >> z) & 1u) != 0;
+    return r && z <= mData->zones.Count() && ((r->stratumMask >> z) & 1u) != 0;
 }
 
 bool BiomeRegistry::AreForbidden(BiomeIndex a, BiomeIndex b) const

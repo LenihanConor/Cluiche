@@ -28,7 +28,7 @@ namespace
         return out;
     }
 
-    void CellsOfZone(const WorldStructure& world, int zoneIndex, std::vector<uint32_t>& out)
+    void CellsOfStratum(const WorldStructure& world, int zoneIndex, std::vector<uint32_t>& out)
     {
         const Cell* cells = world.Cells();
         for (int i = 0; i < world.CellCount(); ++i)
@@ -52,7 +52,7 @@ GuaranteeResult ReachAnyGuarantee::Check(const ValidationContext& context) const
     result.idCrc = GetId().Value();
 
     std::vector<uint32_t> targets;
-    if (mEntry.toStratumIndex > 0) { CellsOfZone(world, mEntry.toStratumIndex, targets); }
+    if (mEntry.toStratumIndex > 0) { CellsOfStratum(world, mEntry.toStratumIndex, targets); }
     else { for (const Site& s : world.sites.Of(mTo)) { targets.push_back(s.cell); } }
 
     const std::string noun = Capitalised(mEntry.noun);
@@ -215,7 +215,7 @@ GuaranteeResult VariantCoverGuarantee::Check(const ValidationContext& context) c
 
     // Reachability: each site reaches any cell of the target zone.
     std::vector<uint32_t> targets;
-    CellsOfZone(world, mEntry.toStratumIndex, targets);
+    CellsOfStratum(world, mEntry.toStratumIndex, targets);
     Measurement count;
     count.keyCrc = StringCRC(mEntry.targetCountKey.c_str()).Value();
     count.value = static_cast<float>(targets.size());

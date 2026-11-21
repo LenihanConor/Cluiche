@@ -134,7 +134,7 @@ namespace
             float           bestScore = kLowest;
             auto            consider = [&](BiomeIndex b, float score)
             {
-                if (b == kNoBiome || !reg.IsValidInZone(b, zone))
+                if (b == kNoBiome || !reg.IsValidInStratum(b, zone))
                 {
                     return;
                 }
@@ -398,7 +398,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         {
             continue;
         }
-        if (reg.IsValidInZone(b, static_cast<StratumIndex>(in.stratum[c])))
+        if (reg.IsValidInStratum(b, static_cast<StratumIndex>(in.stratum[c])))
         {
             continue;
         }

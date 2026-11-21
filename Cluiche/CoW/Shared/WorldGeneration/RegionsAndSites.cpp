@@ -39,14 +39,14 @@ PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const Ter
 
     // Built-in nodes
     Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Node.Corridor"));
-    rep.corridors = PlaceCorridorNodes(world, rules, wldStream);
+    rep.corridors = PlaceCorridorNodes(world, rules, biomes.Strata(), wldStream);
     PlaceRiverNodes(world, rules);   // no RNG: nothing to reseed
     Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Node.Fill"));
     rep.fill = PlaceFillNodes(world, rules, wldStream);
 
     rep.limits.regionLimitedBy = world.regions.limitedBy;
-    rep.limits.corridorLimited[0] = rep.corridors.corridorLimited[0];
-    rep.limits.corridorLimited[1] = rep.corridors.corridorLimited[1];
+    rep.limits.barrierCount = static_cast<uint8_t>(BarrierCountOf(biomes.Strata()));
+    for (uint32_t b = 0; b < rep.limits.barrierCount; ++b) { rep.limits.corridorLimited[b] = rep.corridors.corridorLimited[b]; }
     rep.limits.nodeLimited = rep.fill.nodeLimited;
 
     // Registered kinds, dependencies first

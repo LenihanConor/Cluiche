@@ -124,7 +124,7 @@ inline void BuildRegionRecords(WorldStructure& world)
             {
                 first = false;
                 rec.landmass = c.landmass;
-                rec.zone = c.stratum;
+                rec.stratum = c.stratum;
                 rec.centreCell = static_cast<uint32_t>(i);
             }
         }

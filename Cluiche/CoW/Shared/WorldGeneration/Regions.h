@@ -18,7 +18,7 @@ struct RegionRecord
     static constexpr unsigned kMaxNeighbours = 16;
 
     RegionId   id           = kNoRegion;
-    StratumIndex  zone         = kNoStratum;      // majority zone for island regions
+    StratumIndex  stratum       = kNoStratum;      // majority stratum for island regions
     uint8_t    landmass     = 0;
     bool       isIsland     = false;
     World::BiomeIndex primaryBiome = 0;             // registry row; 0 = the shipped Ocean row (default as before)

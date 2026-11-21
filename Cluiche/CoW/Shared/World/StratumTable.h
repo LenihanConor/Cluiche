@@ -60,8 +60,6 @@ public:
     static constexpr uint32_t kMaxNameLength = 31;
     // The set id the generator stores in Cell::stratum.
     static constexpr const char* kDepthSetId = "depth";
-    // The generator supports exactly this many strata in the depth set until Strata tasks 2-3 generalise it.
-    static constexpr uint32_t kGeneratorStrata = 3;
 
     // All-or-nothing: on failure *this is unchanged and err names the field. strataText is the strata file,
     // sidecarText the parameter sidecar (per-stratum shares keyed "<set id>.<stratum name>.share"; a stratum that declares

@@ -210,7 +210,7 @@ TEST(WorldJsonEdge, OneByOneWorldRoundTrips)
     WorldStructure w;
     w.Resize(GridDimensions{ 1, 1 });
     w.Cells()[0] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kStratumFirst, WaterSource::None, 0.4f, 0.3f, 1, 1);
-    RegionRecord r; r.id = 1; r.zone = kStratumFirst; r.landmass = 1;
+    RegionRecord r; r.id = 1; r.stratum = kStratumFirst; r.landmass = 1;
     w.regions.AddRegion(r);
     RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
     Site s; s.kindCrc = SiteKindId(BuiltinNodeKinds::Hunting()); s.cell = 0; s.region = 1;
@@ -229,7 +229,7 @@ TEST(WorldJsonEdge, ExactlyThePermittedRegionCountRoundTripsAndOneMoreIsRefused)
     {
         w.Cells()[i] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kStratumWild, WaterSource::None, 0.4f, 0.3f,
                                 static_cast<RegionId>(i + 1), 1);
-        RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.zone = kStratumWild; r.landmass = 1;
+        RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.stratum = kStratumWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
     RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
@@ -257,7 +257,7 @@ TEST(WorldJsonEdge, RegionWithMoreThanSixteenNeighboursRoundTripsStably)
     }
     for (unsigned id = 1; id <= 41; ++id)
     {
-        RegionRecord r; r.id = static_cast<RegionId>(id); r.zone = kStratumWild; r.landmass = 1;
+        RegionRecord r; r.id = static_cast<RegionId>(id); r.stratum = kStratumWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
     const bool overflow = RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());

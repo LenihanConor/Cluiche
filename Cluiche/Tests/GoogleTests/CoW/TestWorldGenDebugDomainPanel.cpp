@@ -554,7 +554,7 @@ TEST(WorldGenDebugDomainPanel, CellAbsorbedFlagFollowsRegionZoneMismatch)
             const Cell& cell = w.Cells()[c];
             if (cell.region == 0) continue;
             const RegionRecord& rec = w.regions.regions[cell.region - 1];
-            const bool expected = !rec.isIsland && cell.stratum != rec.zone;
+            const bool expected = !rec.isIsland && cell.stratum != rec.stratum;
             if (expected && sawAbsorbed) continue;
             if (!expected && sawPlain && !sawAbsorbed) continue;
             Json::Value xy(Json::objectValue);

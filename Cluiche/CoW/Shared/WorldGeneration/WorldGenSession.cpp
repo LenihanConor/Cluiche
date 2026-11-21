@@ -973,8 +973,7 @@ Json::Value WorldGenSession::Params() const
         effective["unresolvedPairs"] = 0;
     }
     Json::Value corridorLimited(Json::arrayValue);
-    corridorLimited.append(mLimits.corridorLimited[0]);
-    corridorLimited.append(mLimits.corridorLimited[1]);
+    for (uint32_t b = 0; b < mLimits.barrierCount && b < kMaxBarriers; ++b) { corridorLimited.append(mLimits.corridorLimited[b]); }
     effective["corridorLimited"] = corridorLimited;
     effective["nodeLimited"] = mLimits.nodeLimited;
     effective["regionLimitedBy"] = StratumName(ZonesOf(mBiomes), mLimits.regionLimitedBy);
@@ -1290,6 +1289,7 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
     mPlaceResult = PlaceResult::Ok();
     mLimits = LayoutLimits{};
     mLimits.regionLimitedBy = mWorld.regions.limitedBy;
+    mLimits.barrierCount = static_cast<uint8_t>(BarrierCountOf(ZonesOf(mBiomes)));
     mRegionsFresh = mWorld.regions.regions.Size() > 0;
     mLayout = mRegionsFresh ? CheckLayout(mWorld, mRules, mLimits) : LayoutReport{};
 
@@ -1711,7 +1711,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
         if (c.region != 0 && c.region <= mWorld.regions.regions.Size())
         {
             const RegionRecord& rec = mWorld.regions.regions[c.region - 1];
-            absorbed = !rec.isIsland && c.stratum != rec.zone;
+            absorbed = !rec.isIsland && c.stratum != rec.stratum;
         }
         r["absorbed"] = absorbed;
     }
@@ -1852,7 +1852,7 @@ Json::Value WorldGenSession::Regions() const
         const RegionRecord& rec = mWorld.regions.regions[i];
         Json::Value e(Json::objectValue);
         e["id"] = static_cast<Json::UInt>(rec.id);
-        e["zone"] = StratumName(ZonesOf(mBiomes), rec.zone);
+        e["zone"] = StratumName(ZonesOf(mBiomes), rec.stratum);
         e["landmass"] = static_cast<Json::UInt>(rec.landmass);
         e["isIsland"] = rec.isIsland;
         e["primaryBiome"] = BiomeLabel(mBiomes, rec.primaryBiome);

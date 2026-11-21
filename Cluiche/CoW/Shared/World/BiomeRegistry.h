@@ -78,7 +78,7 @@ public:
 
     BiomeIndex  Role(BiomeRole role) const;
     bool        IsGenerated(BiomeIndex b) const;
-    bool        IsValidInZone(BiomeIndex b, WorldGeneration::StratumIndex zone) const;
+    bool        IsValidInStratum(BiomeIndex b, WorldGeneration::StratumIndex zone) const;
     const StratumTable& Strata() const;   // empty (Count 0) until a load succeeds
     bool        AreForbidden(BiomeIndex a, BiomeIndex b) const;
 

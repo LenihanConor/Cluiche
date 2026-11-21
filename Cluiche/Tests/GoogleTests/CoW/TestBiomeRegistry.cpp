@@ -124,7 +124,7 @@ TEST(BiomeRegistry, OutOfRangeIndexIsSafe)
         EXPECT_FALSE(r.IsGenerated(bad));
         EXPECT_FALSE(r.HasTag(bad, 0));
         EXPECT_EQ(r.TagMask(bad), 0u);
-        EXPECT_FALSE(r.IsValidInZone(bad, kNoStratum));
+        EXPECT_FALSE(r.IsValidInStratum(bad, kNoStratum));
         EXPECT_FALSE(r.AreForbidden(bad, 0));
         EXPECT_FALSE(r.AreForbidden(0, bad));
         EXPECT_EQ(r.Climate(bad), nullptr);
@@ -207,15 +207,15 @@ TEST(BiomeRegistry, ZoneValidity)
 {
     BiomeRegistry r;
     ASSERT_TRUE(LoadText(r, kFixture));
-    EXPECT_TRUE(r.IsValidInZone(0, kNoStratum));
-    EXPECT_FALSE(r.IsValidInZone(0, kStratumFirst));
-    EXPECT_FALSE(r.IsValidInZone(2, kNoStratum));
-    EXPECT_TRUE(r.IsValidInZone(2, kStratumFirst));
-    EXPECT_TRUE(r.IsValidInZone(2, kStratumWild));
-    EXPECT_FALSE(r.IsValidInZone(2, kStratumAncient));
+    EXPECT_TRUE(r.IsValidInStratum(0, kNoStratum));
+    EXPECT_FALSE(r.IsValidInStratum(0, kStratumFirst));
+    EXPECT_FALSE(r.IsValidInStratum(2, kNoStratum));
+    EXPECT_TRUE(r.IsValidInStratum(2, kStratumFirst));
+    EXPECT_TRUE(r.IsValidInStratum(2, kStratumWild));
+    EXPECT_FALSE(r.IsValidInStratum(2, kStratumAncient));
     for (StratumIndex z : { kNoStratum, kStratumFirst, kStratumWild, kStratumAncient })
     {
-        EXPECT_FALSE(r.IsValidInZone(3, z));   // empty zones
+        EXPECT_FALSE(r.IsValidInStratum(3, z));   // empty zones
     }
 }
 
@@ -347,9 +347,9 @@ TEST(BiomeRegistry, CapacityBoundary254Rows)
     EXPECT_FALSE(r.AreForbidden(252, 0));
     EXPECT_TRUE(r.HasTag(253, 11));
     EXPECT_FALSE(r.HasTag(252, 11));
-    EXPECT_TRUE(r.IsValidInZone(253, kStratumAncient));
-    EXPECT_FALSE(r.IsValidInZone(252, kStratumAncient));
-    EXPECT_TRUE(r.IsValidInZone(253, kStratumFirst));
+    EXPECT_TRUE(r.IsValidInStratum(253, kStratumAncient));
+    EXPECT_FALSE(r.IsValidInStratum(252, kStratumAncient));
+    EXPECT_TRUE(r.IsValidInStratum(253, kStratumFirst));
 }
 
 TEST(BiomeRegistry, MoreThan254RowsFails)

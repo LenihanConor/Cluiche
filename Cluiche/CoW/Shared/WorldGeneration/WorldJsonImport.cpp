@@ -434,7 +434,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
     // Cells.
     bool anyWater = false;
     Cell* cells = world.Cells();
-    const auto parseZone = [&](const std::string& text, StratumIndex& out) { return WorldJsonParseStratum(context.biomes->Strata(), text, out); };
+    const auto parseStratum = [&](const std::string& text, StratumIndex& out) { return WorldJsonParseStratum(context.biomes->Strata(), text, out); };
     for (size_t i = 0; i < expectedCells; ++i)
     {
         const std::string path = Index("world.cells", i);
@@ -456,7 +456,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         if (!im.ReadUnit(cj, "elevation", path, c.elevation)) { return finish(false); }
         if (!im.ReadUnit(cj, "latitude", path, c.latitude)) { return finish(false); }
         if (!im.ReadEnum<WaterSource>(cj, "water_source", path, WorldJsonParseWaterSource, "water source", c.waterSource)) { return finish(false); }
-        if (!im.ReadEnum<StratumIndex>(cj, "stratum", path, parseZone, "stratum", c.stratum)) { return finish(false); }
+        if (!im.ReadEnum<StratumIndex>(cj, "stratum", path, parseStratum, "stratum", c.stratum)) { return finish(false); }
         if (!im.ReadInt(cj, "landmass", path, 0, 255, landmass)) { return finish(false); }
         if (!im.ReadInt(cj, "terrain_flags", path, 0, 63, flags)) { return finish(false); }
         if (!im.ReadInt(cj, "downstream", path, 0, 7, downstream)) { return finish(false); }
@@ -478,7 +478,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         const std::string path = Index("world.regions", r);
         const Json::Value& rj = (*regionsJson)[static_cast<Json::ArrayIndex>(r)];
         if (!rj.isObject()) { im.Fail(path, "must be an object"); return finish(false); }
-        im.WarnUnknownFields(rj, path, { "id", "zone", "landmass", "is_island", "primary_biome", "purity", "cell_count", "centre_cell", "neighbours" });
+        im.WarnUnknownFields(rj, path, { "id", "stratum", "landmass", "is_island", "primary_biome", "purity", "cell_count", "centre_cell", "neighbours" });
 
         RegionRecord rec;
         int64_t id = 0, landmass = 0;
@@ -489,7 +489,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
             im.Fail(path + ".id", "region ids must run 1, 2, 3, ... in order (expected " + std::to_string(r + 1) + ", got " + std::to_string(id) + ")");
             return finish(false);
         }
-        if (!im.ReadEnum<StratumIndex>(rj, "zone", path, parseZone, "depth zone", rec.zone)) { return finish(false); }
+        if (!im.ReadEnum<StratumIndex>(rj, "stratum", path, parseStratum, "stratum", rec.stratum)) { return finish(false); }
         if (!im.ReadInt(rj, "landmass", path, 0, 255, landmass)) { return finish(false); }
         if (!rj.isMember("is_island")) { im.Fail(path + ".is_island", "required field is missing"); return finish(false); }
         if (!rj["is_island"].isBool()) { im.Fail(path + ".is_island", "must be true or false"); return finish(false); }
@@ -528,7 +528,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         int64_t absorbed = 0, fragment = 0;
         if (!im.ReadInt(*t, "absorbed_cells", "world.region_table", 0, 65535, absorbed)) { return finish(false); }
         if (!im.ReadInt(*t, "fragment_cells", "world.region_table", 0, 65535, fragment)) { return finish(false); }
-        if (!im.ReadEnum<StratumIndex>(*t, "limited_by", "world.region_table", parseZone, "depth zone", world.regions.limitedBy)) { return finish(false); }
+        if (!im.ReadEnum<StratumIndex>(*t, "limited_by", "world.region_table", parseStratum, "stratum", world.regions.limitedBy)) { return finish(false); }
         world.regions.absorbedCells = static_cast<uint16_t>(absorbed);
         world.regions.fragmentCells = static_cast<uint16_t>(fragment);
     }

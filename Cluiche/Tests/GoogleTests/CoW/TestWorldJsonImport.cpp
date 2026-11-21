@@ -462,7 +462,7 @@ TEST(WorldJsonImport, EnumNamesMustBeKnown)
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["biome"] = 2; }), "world.cells[0].biome");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][1]["terrain"] = "Marsh"; }), "world.cells[1].terrain");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][2]["stratum"] = "Deep"; }), "world.cells[2].stratum");
-    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["zone"] = "Nowhere"; }), "world.regions[0].zone");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["stratum"] = "Nowhere"; }), "world.regions[0].stratum");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][1]["primary_biome"] = 3; }), "world.regions[1].primary_biome");
 }
 
@@ -519,7 +519,7 @@ TEST(WorldJsonImport, RegionStructureIsValidated)
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["is_island"] = "no"; }), "world.regions[0].is_island");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["centre_cell"] = 12; }), "world.regions[0].centre_cell");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["purity"] = 1.2; }), "world.regions[0].purity");
-    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0].removeMember("zone"); }), "world.regions[0].zone");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0].removeMember("stratum"); }), "world.regions[0].stratum");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["region_table"]["limited_by"] = "Nowhere"; }), "world.region_table.limited_by");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["region_table"]["absorbed_cells"] = 70000; }), "world.region_table.absorbed_cells");
 }

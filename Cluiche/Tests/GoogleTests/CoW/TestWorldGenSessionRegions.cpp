@@ -182,7 +182,7 @@ TEST(WorldGenSessionRegions, RegionsQueryReturnsEveryRecord)
         const RegionRecord& rec = w.regions.regions[i];
         const Json::Value& j = r["regions"][i];
         EXPECT_EQ(j["id"].asUInt(), static_cast<unsigned>(rec.id));
-        EXPECT_EQ(j["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.zone));
+        EXPECT_EQ(j["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.stratum));
         EXPECT_EQ(j["landmass"].asUInt(), static_cast<unsigned>(rec.landmass));
         EXPECT_EQ(j["isIsland"].asBool(), rec.isIsland);
         EXPECT_TRUE(j["primaryBiome"].isString());

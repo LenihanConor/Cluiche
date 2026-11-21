@@ -23,7 +23,7 @@ namespace
 
     struct Info
     {
-        StratumIndex zone     = kNoStratum;
+        StratumIndex stratum  = kNoStratum;
         uint8_t   landmass = 0;
         bool      island   = false;
         bool      alive    = false;
@@ -74,9 +74,9 @@ namespace
         }
 
         // Adjacent live non-island region with the longest border to `piece` (edges between a piece cell and a cell
-        // of that region), preferring `prefZone` regions, ties lowest id. `ownId` and region 0 are excluded.
+        // of that region), preferring `prefStratum` regions, ties lowest id. `ownId` and region 0 are excluded.
         // Only regions on the same landmass as the piece are candidates. 0 = none.
-        RegionId BestNeighbour(const std::vector<uint32_t>& piece, RegionId ownId, StratumIndex prefZone) const
+        RegionId BestNeighbour(const std::vector<uint32_t>& piece, RegionId ownId, StratumIndex prefStratum) const
         {
             uint32_t border[kMaxId + 1] = {};
             for (uint32_t c : piece)
@@ -95,18 +95,18 @@ namespace
             for (unsigned r = 1; r <= idCount; ++r)
             {
                 if (border[r] == 0) { continue; }
-                if (info[r].zone == prefZone && (bestSame == 0 || border[r] > border[bestSame])) { bestSame = static_cast<RegionId>(r); }
+                if (info[r].stratum == prefStratum && (bestSame == 0 || border[r] > border[bestSame])) { bestSame = static_cast<RegionId>(r); }
                 if (bestAny == 0 || border[r] > border[bestAny]) { bestAny = static_cast<RegionId>(r); }
             }
             return bestSame != 0 ? bestSame : bestAny;
         }
 
-        StratumIndex MajorityZone(const std::vector<uint32_t>& piece) const
+        StratumIndex MajorityStratum(const std::vector<uint32_t>& piece) const
         {
-            uint32_t count[4] = {};
+            uint32_t count[kMaxStrata + 1] = {};
             for (uint32_t c : piece) { ++count[static_cast<int>(cells[c].stratum)]; }
             int best = 0;
-            for (int z = 1; z < 4; ++z) { if (count[z] > count[best]) { best = z; } }
+            for (int z = 1; z < static_cast<int>(kMaxStrata) + 1; ++z) { if (count[z] > count[best]) { best = z; } }
             return static_cast<StratumIndex>(best);
         }
 
@@ -243,7 +243,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     for (unsigned i = 0; i < R.idCount; ++i)
     {
         const RegionSeed& s = growth.seeds[i];
-        R.info[i + 1] = { s.zone, s.landmass, s.isIsland, true };
+        R.info[i + 1] = { s.stratum, s.landmass, s.isIsland, true };
     }
     for (int c = 0; c < n; ++c)   // defensive: ids without a seed cannot exist
     {
@@ -266,14 +266,14 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
             for (size_t i : byRegion[r])
             {
                 if (i == keep) { continue; }
-                const RegionId to = R.BestNeighbour(pieces[i], static_cast<RegionId>(r), R.info[r].zone);
+                const RegionId to = R.BestNeighbour(pieces[i], static_cast<RegionId>(r), R.info[r].stratum);
                 R.Assign(pieces[i], to);   // 0 (no neighbour) falls through to the loose-land pass
                 ++out.splitPiecesMoved;
             }
         }
     }
 
-    // 2. Loose land (region 0 on main-landmass land): same-zone connected pieces, repeated until nothing moves.
+    // 2. Loose land (region 0 on main-landmass land): same-stratum connected pieces, repeated until nothing moves.
     {
         auto pieces = R.Pieces([&](int c) -> uint32_t {
             return (R.reg[c] == kNoRegion && R.MainLand(c)) ? 1u + static_cast<uint32_t>(cells[c].stratum) : 0u;
@@ -303,7 +303,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
                 continue;
             }
             const RegionId id = static_cast<RegionId>(++R.idCount);
-            R.info[id] = { R.MajorityZone(piece), world.mainLandmass, false, true };
+            R.info[id] = { R.MajorityStratum(piece), world.mainLandmass, false, true };
             R.Assign(piece, id);
             ++out.orphanRegions;
         }
@@ -325,7 +325,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
             if (pick == 0) { break; }
             std::vector<uint32_t> piece;
             for (int c = 0; c < n; ++c) { if (R.reg[c] == pick) { piece.push_back(static_cast<uint32_t>(c)); } }
-            const RegionId to = R.BestNeighbour(piece, static_cast<RegionId>(pick), R.info[pick].zone);
+            const RegionId to = R.BestNeighbour(piece, static_cast<RegionId>(pick), R.info[pick].stratum);
             if (to == 0) { stuck[pick] = true; continue; }
             R.Assign(piece, to);
             R.info[pick].alive = false;
@@ -346,7 +346,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     }
     for (int c = 0; c < n; ++c) { cells[c].region = newId[R.reg[c]]; }
 
-    // Cells of tiny zone components (AC3 amendment): absorbed whole, counted as fragmentCells instead of absorbed.
+    // Cells of tiny stratum components (AC3 amendment): absorbed whole, counted as fragmentCells instead of absorbed.
     std::vector<uint8_t> inFragment(static_cast<size_t>(n), 0);
     for (uint32_t ci : growth.tinyComponents)
     {
@@ -359,7 +359,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         const RegionId r = cells[c].region;
         if (r == kNoRegion) { continue; }
         const Info& inf = R.info[oldOf[r - 1]];
-        if (!inf.island && cells[c].stratum != inf.zone) { ++(inFragment[c] ? fragment : absorbed); }
+        if (!inf.island && cells[c].stratum != inf.stratum) { ++(inFragment[c] ? fragment : absorbed); }
     }
 
     world.regions.absorbedCells = static_cast<uint16_t>(std::min<uint32_t>(absorbed, 0xFFFFu));
@@ -372,7 +372,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
         const Info& inf = R.info[oldOf[id - 1]];
         RegionRecord rec;
         rec.id = static_cast<RegionId>(id);
-        rec.zone = inf.zone;
+        rec.stratum = inf.stratum;
         rec.landmass = inf.landmass;
         rec.isIsland = inf.island;
         world.regions.AddRegion(rec);
@@ -381,22 +381,23 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
     const unsigned mainland = world.regions.mainlandRegionCount;
 
     // AC4 amendment: repair (undersize merges) leaving the mainland below 10 regions reports terrain-limited, naming
-    // the zone that lost the most regions against its target (ties: zone order).
+    // the stratum that lost the most regions against its target (ties: stratum order).
     if (world.regions.limitedBy == kNoStratum && static_cast<int>(mainland) < kTotalRegionsMin)
     {
-        int finalCount[kRegionZoneCount] = {};
+        const int n = static_cast<int>(std::min<uint32_t>(biomes.Strata().Count(), kMaxStrata));
+        int finalCount[kMaxStrata] = {};
         for (unsigned i = 0; i < world.regions.regions.Size(); ++i)
         {
             const RegionRecord& rec = world.regions.regions[i];
-            const int slot = ZoneSlot(rec.zone);
-            if (!rec.isIsland && slot >= 0 && slot < kRegionZoneCount) { ++finalCount[slot]; }
+            const int slot = StratumSlot(rec.stratum);
+            if (!rec.isIsland && slot >= 0 && slot < n) { ++finalCount[slot]; }
         }
         int worst = 0;
-        for (int z = 1; z < kRegionZoneCount; ++z)
+        for (int z = 1; z < n; ++z)
         {
             if (growth.targets.count[z] - finalCount[z] > growth.targets.count[worst] - finalCount[worst]) { worst = z; }
         }
-        world.regions.limitedBy = ZoneFromSlot(worst);
+        world.regions.limitedBy = StratumFromSlot(worst);
     }
     out.regionCount = static_cast<uint16_t>(count);
     return out;

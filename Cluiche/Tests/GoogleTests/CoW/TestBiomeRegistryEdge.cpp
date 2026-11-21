@@ -111,7 +111,7 @@ TEST(BiomeRegistryEdge, BiomeWithEmptyZonesIsNeverPlacedEvenWithAPerfectClimateE
     const StratumIndex zones[] = { kStratumFirst, kStratumWild, kStratumAncient };
     for (StratumIndex zone : zones)
     {
-        ASSERT_FALSE(r.IsValidInZone(scrub, zone));
+        ASSERT_FALSE(r.IsValidInStratum(scrub, zone));
         BiomeGrid g(31, 31);
         g.registry = &r;
         for (int c = 0; c < g.dims.width * g.dims.height; ++c) { g.SetZone(c, zone); }

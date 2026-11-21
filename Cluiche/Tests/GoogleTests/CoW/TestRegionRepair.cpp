@@ -69,7 +69,7 @@ namespace
         for (StratumIndex z : zones)
         {
             RegionSeed s;
-            s.biome = biome; s.zone = z; s.landmass = 1;
+            s.biome = biome; s.stratum = z; s.landmass = 1;
             h.g.seeds.push_back(s);
         }
         h.g.mainlandRegionCount = static_cast<uint8_t>(zones.size());
@@ -85,7 +85,7 @@ namespace
         comp.tiny = true;
         for (const auto& q : xy) { comp.cells.push_back(static_cast<uint32_t>(q.second * h.w.dimensions.width + q.first)); }
         std::sort(comp.cells.begin(), comp.cells.end());
-        comp.zone = h.w.Cells()[comp.cells[0]].stratum;
+        comp.stratum = h.w.Cells()[comp.cells[0]].stratum;
         h.g.tinyComponents.push_back(static_cast<uint32_t>(h.g.components.size()));
         h.g.components.push_back(comp);
     }
@@ -343,7 +343,7 @@ TEST(RegionRepair, IsolatedPieceBecomesOrphanRegion)
     EXPECT_EQ(b.unassignedLandCells, 0u);
     ASSERT_EQ(h.w.regions.regions.Size(), 2u);
     EXPECT_EQ(At(h, 0, 6), 2); EXPECT_EQ(At(h, 0, 7), 2);
-    EXPECT_EQ(h.w.regions.regions[1].zone, AI);
+    EXPECT_EQ(h.w.regions.regions[1].stratum, AI);
     EXPECT_FALSE(h.w.regions.regions[1].isIsland);
     EXPECT_EQ(h.w.regions.absorbedCells, 0);
     ExpectChecksPass(h.w);
@@ -356,7 +356,7 @@ TEST(RegionRepair, OrphanThatDoesNotFitStaysZeroAndIsReported)
     h.g.regionOf.assign(66, kNoRegion);
     for (int i = 0; i < 64; ++i)
     {
-        RegionSeed s; s.zone = FS; s.landmass = 1; s.biome = G;
+        RegionSeed s; s.stratum = FS; s.landmass = 1; s.biome = G;
         h.g.seeds.push_back(s);
         SetLand(h.w, 0, i, FS, G);
         h.g.regionOf[i] = static_cast<RegionId>(i + 1);
@@ -393,7 +393,7 @@ TEST(RegionRepair, IslandIsOneRegionWithMajorityZoneAndExemptFromRules)
     const RegionRecord& isl = h.w.regions.regions[1];
     EXPECT_TRUE(isl.isIsland);
     EXPECT_EQ(isl.landmass, 2);
-    EXPECT_EQ(isl.zone, WR);
+    EXPECT_EQ(isl.stratum, WR);
     EXPECT_EQ(isl.cellCount, 3);
     EXPECT_EQ(h.w.regions.absorbedCells, 0);
     EXPECT_EQ(h.w.regions.mainlandRegionCount, 1);
@@ -501,7 +501,7 @@ TEST(RegionRepair, NeighbourOverflowKeepsLowestSixteenAndFlags)
     Hand h;
     h.w = MakeBlankWorld(2, H);
     h.g.regionOf.assign(static_cast<size_t>(2) * H, kNoRegion);
-    RegionSeed hub; hub.zone = FS; hub.landmass = 1; hub.biome = G;
+    RegionSeed hub; hub.stratum = FS; hub.landmass = 1; hub.biome = G;
     h.g.seeds.push_back(hub);
     for (int y = 0; y < H; ++y)
     {
@@ -617,12 +617,12 @@ namespace
         if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != kNoStratum)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
         // AC4 per zone: First Shores 4-6, Wild Reaches 4-6, Ancient Interiors 2-4 unless terrain-limited.
-        int zoneCount[kRegionZoneCount] = {};
+        int zoneCount[kMaxStrata] = {};
         for (unsigned i = 0; i < w.regions.regions.Size(); ++i)
         {
             const RegionRecord& r = w.regions.regions[i];
-            const int z = ZoneSlot(r.zone);
-            if (!r.isIsland && z >= 0 && z < kRegionZoneCount) { ++zoneCount[z]; }
+            const int z = StratumSlot(r.stratum);
+            if (!r.isIsland && z >= 0 && z < kMaxStrata) { ++zoneCount[z]; }
         }
         // Decision (user, 2026-11-19): the AC4 amendment stands, total-only. Terrain-limited is reported only when the
         // mainland total drops below 10; a single zone ending under its minimum (archipelago, e.g. seed 514 slot 2)
@@ -631,10 +631,10 @@ namespace
         if (limits && w.regions.limitedBy == kNoStratum)
         {
             bool below = false;
-            for (int z = 0; z < kRegionZoneCount; ++z)
+            for (int z = 0; z < kMaxStrata; ++z)
             {
-                EXPECT_LE(zoneCount[z], kZoneCountMax[z]) << "zone slot " << z;
-                below |= zoneCount[z] < kZoneCountMin[z];
+                EXPECT_LE(zoneCount[z], ShippedStratumTable().Depth()->strata[z].regionsMax) << "zone slot " << z;
+                below |= zoneCount[z] < ShippedStratumTable().Depth()->strata[z].regionsMin;
             }
             st.zoneBelowMinAfterRepair += below ? 1 : 0;
         }
@@ -804,7 +804,7 @@ TEST(RegionRepair, RegionWithNoCellsReportsTheRegistrysOceanRow)
 {
     WorldStructure w = MakeBlankWorld(2, 2);
     RegionRecord rec;
-    rec.id = 1; rec.zone = FS; rec.landmass = 1;
+    rec.id = 1; rec.stratum = FS; rec.landmass = 1;
     w.regions.AddRegion(rec);
     RecomputeRegionRecords(w, RolesSwappedRegistry());
     EXPECT_EQ(w.regions.regions[0].primaryBiome, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Ocean));
@@ -816,7 +816,7 @@ TEST(RegionRepair, ShippedRegistryKeepsOceanAtRowZeroAndLakeAtRowOne)
 {
     WorldStructure w = MakeBlankWorld(2, 2);
     RegionRecord rec;
-    rec.id = 1; rec.zone = FS; rec.landmass = 1;
+    rec.id = 1; rec.stratum = FS; rec.landmass = 1;
     w.regions.AddRegion(rec);
     RecomputeRegionRecords(w, ShippedBiomeRegistry());
     EXPECT_EQ(w.regions.regions[0].primaryBiome, B("Biome.Ocean"));

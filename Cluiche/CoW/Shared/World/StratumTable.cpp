@@ -129,11 +129,6 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
         {
             return Fail(err, where + ".strata", "set '" + id + "': more than " + std::to_string(kMaxStrata) + " strata");
         }
-        if (id == kDepthSetId && strata.size() != kGeneratorStrata)
-        {
-            // TODO(Strata task 2-3): the generator supports N strata; drop this limit then.
-            return Fail(err, where + ".strata", "set 'depth': generator supports 3 strata until Strata task 2-3");
-        }
 
         for (Json::ArrayIndex i = 0; i < strata.size(); ++i)
         {

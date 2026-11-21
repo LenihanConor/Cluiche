@@ -32,7 +32,7 @@ namespace
     bool IsKnownBiome(const World::BiomeRegistry& biomes, World::BiomeIndex b) { return static_cast<uint32_t>(b) < biomes.Count(); }
     bool IsKnownTerrain(TerrainType t) { return static_cast<int>(t) >= 0 && static_cast<int>(t) < static_cast<int>(TerrainType::Count); }
     bool IsKnownWater(WaterSource w) { return static_cast<int>(w) >= 0 && static_cast<int>(w) <= static_cast<int>(WaterSource::River); }
-    bool IsKnownZone(const World::StratumTable& strata, StratumIndex z) { return z <= strata.Count(); }
+    bool IsKnownStratum(const World::StratumTable& strata, StratumIndex z) { return z <= strata.Count(); }
 
     // Appends printf-style text of any length.
     void Appendf(std::string& out, const char* format, ...)
@@ -227,7 +227,7 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
         if (!IsKnownBiome(biomes, c.biome))      { return Fail(error, std::string(field) + ".biome", "biome value is out of range"); }
         if (!IsKnownTerrain(c.terrain))  { return Fail(error, std::string(field) + ".terrain", "terrain value is out of range"); }
         if (!IsKnownWater(c.waterSource)) { return Fail(error, std::string(field) + ".water_source", "water source value is out of range"); }
-        if (!IsKnownZone(biomes.Strata(), c.stratum))   { return Fail(error, std::string(field) + ".stratum", "stratum value is out of range"); }
+        if (!IsKnownStratum(biomes.Strata(), c.stratum))   { return Fail(error, std::string(field) + ".stratum", "stratum value is out of range"); }
 
         out += "      { \"biome\": \"";
         out += biomes.IdText(c.biome);
@@ -256,10 +256,10 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
         std::snprintf(field, sizeof(field), "world.regions[%u]", r);
         if (!std::isfinite(rec.purity))   { return Fail(error, std::string(field) + ".purity", "purity is not finite"); }
         if (!IsKnownBiome(biomes, rec.primaryBiome)) { return Fail(error, std::string(field) + ".primary_biome", "biome value is out of range"); }
-        if (!IsKnownZone(biomes.Strata(), rec.zone))       { return Fail(error, std::string(field) + ".zone", "zone value is out of range"); }
+        if (!IsKnownStratum(biomes.Strata(), rec.stratum))       { return Fail(error, std::string(field) + ".stratum", "stratum value is out of range"); }
 
-        Appendf(out, "      { \"id\": %u, \"zone\": \"%s\", \"landmass\": %u, \"is_island\": %s, \"primary_biome\": \"%s\", \"purity\": ",
-                static_cast<unsigned>(rec.id), StratumName(biomes.Strata(), rec.zone), static_cast<unsigned>(rec.landmass),
+        Appendf(out, "      { \"id\": %u, \"stratum\": \"%s\", \"landmass\": %u, \"is_island\": %s, \"primary_biome\": \"%s\", \"purity\": ",
+                static_cast<unsigned>(rec.id), StratumName(biomes.Strata(), rec.stratum), static_cast<unsigned>(rec.landmass),
                 rec.isIsland ? "true" : "false", biomes.IdText(rec.primaryBiome));
         AppendFloat(out, rec.purity);
         Appendf(out, ", \"cell_count\": %u, \"centre_cell\": %u, \"neighbours\": [", static_cast<unsigned>(rec.cellCount),

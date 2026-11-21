@@ -1,15 +1,23 @@
-// Stratum table: data-driven sets and strata (the generator supports three until Strata tasks 2-3), sidecar-owned
+// Stratum table: data-driven sets and strata, sidecar-owned
 // shares, registry resolution, world JSON round trip with stratum names, and generation under renamed strata.
-// Spec: docs/specs/features/draoi/generic-strata.md (task 1, AC 5).
+// Spec: docs/specs/features/draoi/generic-strata.md (tasks 1 and 3, ACs 1-3, 5).
 #include <gtest/gtest.h>
 
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/World/StratumTable.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/DeriveSubSeed.h>
+#include <Shared/WorldGeneration/NodesCorridor.h>
+#include <Shared/WorldGeneration/RegionPartition.h>
+#include <Shared/WorldGeneration/RegionRepair.h>
+#include <Shared/WorldGeneration/RegionsAndSites.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 
+#include <DiaMaths/Core/RandomStream.h>
+
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -137,7 +145,6 @@ TEST(StratumTable, RejectsBadDataNamingTheFaultAndLeavesNothingLoaded)
         { "duplicate set id", Doc(List({ DepthSet(three), DepthSet(three) })), "duplicate set" },
         { "no strata", Doc(List({ DepthSet("[]") })), "depth" },
         { "more than kMaxStrata", Doc(List({ DepthSet(List({ St("A"), St("B"), St("C"), St("D"), St("E"), St("F"), St("G"), St("H"), St("I") })) })), "depth" },
-        { "depth set not three strata (generator limit)", Doc(List({ DepthSet(List({ St("A"), St("B") })) })), "generator supports 3 strata" },
         { "regions_min > regions_max", Doc(List({ DepthSet(List({ St("A"), St("B"), St("C", ",\"regions_min\":5,\"regions_max\":4") })) })), "C" },
         { "missing regions", Doc(List({ DepthSet(List({ St("A"), St("B"), St("C", "") })) })), "C" },
         { "empty name", Doc(List({ DepthSet(List({ St("A"), St("B"), St("") })) })), "depth" },
@@ -300,4 +307,191 @@ TEST(StratumTable, DeclaredMinCoastDepthNeedsItsSidecarKey)
     side += "]}";
     EXPECT_FALSE(z.LoadFromText(Strata(kThree).c_str(), side.c_str(), err));
     EXPECT_NE((err.field + err.reason).find("depth.C.min_coast_depth"), std::string::npos) << err.field << " " << err.reason;
+}
+
+// ---------------------------------------------------------------- N strata end to end (task 3, AC 2 and 3)
+
+namespace {
+
+std::vector<std::string> StrataNames(int n)
+{
+    std::vector<std::string> names;
+    for (int i = 0; i < n; ++i) { names.push_back("S" + std::to_string(i + 1)); }
+    return names;
+}
+
+std::vector<float> EqualishShares(int n)
+{
+    // Shares that sum to exactly one in float arithmetic for the sizes under test.
+    switch (n)
+    {
+    case 1: return { 1.0f };
+    case 2: return { 0.5f, 0.5f };
+    case 5: return { 0.25f, 0.25f, 0.25f, 0.125f, 0.125f };
+    default: return { 0.25f, 0.25f, 0.25f, 0.25f };
+    }
+}
+
+// The shipped biomes with every non-None "zones" list widened to all of the table's strata.
+std::string BiomesForStrata(const std::vector<std::string>& names)
+{
+    std::string all;
+    for (size_t i = 0; i < names.size(); ++i) { all += std::string(i ? "," : "") + "\"" + names[i] + "\""; }
+    const std::string text = Detail::ReadFileText(ShippedBiomesPath());
+    const std::regex zones("\"zones\":\\s*\\[([^\\]]*)\\]");
+    std::string out;
+    auto last = text.cbegin();
+    for (std::sregex_iterator it(text.begin(), text.end(), zones), end; it != end; ++it)
+    {
+        out.append(last, text.cbegin() + it->position());
+        const std::string body = (*it)[1].str();
+        const bool noneOnly = body.find("None") != std::string::npos && body.find("FirstShores") == std::string::npos;
+        out += noneOnly ? it->str() : "\"zones\": [" + all + "]";
+        last = text.cbegin() + it->position() + it->length();
+    }
+    out.append(last, text.cend());
+    return out;
+}
+
+struct StrataWorld
+{
+    StratumTable   strata;
+    BiomeRegistry  registry;
+    WorldStructure world;
+    TerrainRules   rules = TestRules();
+};
+
+void BuildStrataWorld(int n, uint64_t seed, StrataWorld& out)
+{
+    const std::vector<std::string> names = StrataNames(n);
+    StratumError zerr;
+    ASSERT_TRUE(LoadWith(out.strata, Strata(names), names, EqualishShares(n), zerr)) << zerr.field << " " << zerr.reason;
+    ASSERT_EQ(out.strata.Count(), static_cast<uint32_t>(n));
+    RegistryError err;
+    ASSERT_TRUE(out.registry.LoadFromText(BiomesForStrata(names).c_str(), out.strata, err)) << err.reason.AsCStr();
+    TerrainGenerator gen(out.rules, &out.registry);
+    Dia::Maths::RandomStream rng(1);
+    gen.Update(seed, WorldShapeParams{}, GridDimensions{ 66, 42 }, rng);
+    gen.WriteTerrain(out.world);
+}
+
+}
+
+TEST(StratumTable, NStrataGenerateEveryLandCellInRangeAndOceanNone)
+{
+    for (int n : { 1, 2, 5 })
+    {
+        SCOPED_TRACE("strata " + std::to_string(n));
+        StrataWorld sw;
+        BuildStrataWorld(n, 42, sw);
+        const Cell* cells = sw.world.Cells();
+        uint32_t seen[9] = {};
+        for (int i = 0; i < sw.world.CellCount(); ++i)
+        {
+            const uint32_t s = static_cast<uint32_t>(cells[i].stratum);
+            if (cells[i].landmass == 0) { EXPECT_EQ(s, 0u) << "ocean cell " << i; continue; }
+            ASSERT_GE(s, 1u) << "land cell " << i;
+            ASSERT_LE(s, static_cast<uint32_t>(n)) << "land cell " << i;
+            ++seen[s];
+        }
+        EXPECT_GT(seen[1], 0u);
+        if (n > 1) { EXPECT_GT(seen[n], 0u) << "the innermost stratum holds some land"; }
+    }
+}
+
+TEST(StratumTable, NStrataRegionTargetsRespectEachStratumsRange)
+{
+    for (int n : { 1, 2, 5 })
+    {
+        SCOPED_TRACE("strata " + std::to_string(n));
+        StrataWorld sw;
+        BuildStrataWorld(n, 42, sw);
+        Dia::Maths::RandomStream rng(7);
+        const RegionGrowth g = BuildProvisionalRegions(sw.world, sw.rules, rng, sw.registry);
+        const StratumSetSpec* depth = sw.strata.Depth();
+        ASSERT_NE(depth, nullptr);
+        int total = 0;
+        for (int z = 0; z < n; ++z)
+        {
+            const int lo = depth->strata[z].regionsMin, hi = depth->strata[z].regionsMax;
+            EXPECT_LE(g.targets.count[z], hi) << "stratum " << z;
+            EXPECT_LE(g.targets.count[z], g.targets.capacity[z]) << "stratum " << z;
+            EXPECT_GE(g.targets.count[z], std::min<int>(lo, g.targets.capacity[z])) << "stratum " << z;
+            total += g.targets.count[z];
+        }
+        EXPECT_EQ(g.targets.total, total);
+        for (int z = n; z < static_cast<int>(kMaxStrata); ++z) { EXPECT_EQ(g.targets.count[z], 0) << "undeclared slot " << z; }
+        if (total < kTotalRegionsMin) { EXPECT_NE(g.targets.limitedBy, kNoStratum) << "short of the total range is terrain-limited"; }
+        if (g.targets.limitedBy != kNoStratum) { EXPECT_LE(static_cast<int>(g.targets.limitedBy), n); }
+
+        const RegionBuild rb = FinishRegions(sw.world, sw.rules, g, sw.registry);
+        EXPECT_FALSE(rb.overflow);
+        for (unsigned i = 0; i < sw.world.regions.regions.Size(); ++i)
+        {
+            const RegionRecord& r = sw.world.regions.regions[i];
+            EXPECT_GE(static_cast<int>(r.stratum), 1);
+            EXPECT_LE(static_cast<int>(r.stratum), n);
+        }
+    }
+}
+
+TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
+{
+    for (int n : { 1, 2, 5 })
+    {
+        SCOPED_TRACE("strata " + std::to_string(n));
+        StrataWorld sw;
+        BuildStrataWorld(n, 42, sw);
+        SiteRegistry sites;
+        RegionsAndSites::PlaceReport rep;
+        Dia::Maths::RandomStream rng(1);
+        RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, &rep);
+
+        EXPECT_EQ(rep.limits.barrierCount, n - 1);
+        for (int b = n - 1; b < static_cast<int>(kMaxBarriers); ++b)
+        {
+            EXPECT_EQ(rep.corridors.accepted[b], 0) << "barrier " << b + 1 << " does not exist";
+            EXPECT_EQ(rep.corridors.candidates[b], 0) << "barrier " << b + 1 << " does not exist";
+        }
+        int corridorSites = 0;
+        const uint32_t kind = SiteKindId(BuiltinNodeKinds::Corridor());
+        for (const Site& s : sw.world.sites.All())
+        {
+            if (s.kindCrc != kind) { continue; }
+            ++corridorSites;
+            EXPECT_GE(CorridorBarrier(s.flags), 1);
+            EXPECT_LE(CorridorBarrier(s.flags), n - 1) << "a corridor on a barrier the set does not have";
+        }
+        if (n == 1) { EXPECT_EQ(corridorSites, 0) << "one stratum has no barrier"; }
+        for (int b = 0; b < n - 1; ++b) { EXPECT_EQ(rep.corridors.corridorLimited[b], rep.corridors.accepted[b] < 2) << "barrier " << b + 1; }
+    }
+}
+
+TEST(StratumTable, CorridorFlagsRoundTripEveryBarrier)
+{
+    for (int barrier = 1; barrier <= static_cast<int>(kMaxBarriers); ++barrier)
+    {
+        for (int source = 0; source < 3; ++source)
+        {
+            for (int width = 1; width <= 3; ++width)
+            {
+                const uint16_t f = MakeCorridorFlags(barrier, source, width);
+                EXPECT_EQ(CorridorBarrier(f), barrier);
+                EXPECT_EQ(CorridorSource(f), source);
+                EXPECT_EQ(CorridorWidth(f), width);
+            }
+        }
+    }
+    // Three-strata flags keep their original layout (barrier in bits 0-1 only).
+    EXPECT_EQ(MakeCorridorFlags(2, 1, 2), static_cast<uint16_t>(2 | (1 << 2) | (1 << 4)));
+}
+
+TEST(StratumTable, UnorderedDepthSetHasNoBarriers)
+{
+    StratumTable t;
+    StratumError err;
+    const std::string text = Replace(Strata(kThree), "\"ordered\":true", "\"ordered\":false");
+    ASSERT_TRUE(LoadWith(t, text, kThree, kShares, err)) << err.field << " " << err.reason;
+    EXPECT_EQ(BarrierCountOf(t), 0u);
+    EXPECT_EQ(BarrierCountOf(ShippedStratumTable()), 2u);
 }

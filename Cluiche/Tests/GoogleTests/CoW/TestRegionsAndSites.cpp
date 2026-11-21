@@ -414,7 +414,7 @@ TEST(LayoutCheck, TwoZoneRegion)
     for (int y = 0; y < kBlk; ++y)
         for (int x = 3 * kBlk; x < 4 * kBlk; ++x) { w.At(x, y).stratum = kStratumWild; }   // region 4
     const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
-    const LayoutViolation* v = Find(r, LayoutCode::RegionTwoZones, 4);
+    const LayoutViolation* v = Find(r, LayoutCode::RegionTwoStrata, 4);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_GT(v->count, 0u);
 }
