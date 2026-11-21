@@ -238,6 +238,10 @@ TEST(TerrainRules, ShippedFileMatchesTableAndLoadsClean)
     root["rulesVersion"] = 4;
     for (const Json::Value& entry : sidecar["entries"])
     {
+        if (entry["kind"].asString() != "parameter" || entry["type"].asString() == "map")
+        {
+            continue;   // terrain_type enum + terrain.* maps are pack-only, not flat rules JSON keys
+        }
         root[entry["key"].asString()] = entry["default"];
     }
 

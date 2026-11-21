@@ -13,6 +13,8 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <Shared/WorldGeneration/TerrainEnums.h>
+
 #include <cstdint>
 
 namespace Dia::Attribute { class ParameterFile; class AttributeSchema; struct BindingReport; }
@@ -30,7 +32,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 
 constexpr uint32_t kDefaultRulesVersion = 4;
 
-// Standard layout (ParamBinding requirement): the 79 rule members first, then the two plain fields.
+// Standard layout (ParamBinding requirement): the 79 rule members, the five terrain maps, then the two plain fields.
 struct TerrainRules
 {
     float kCoastElev = 0.0f;
@@ -112,6 +114,15 @@ struct TerrainRules
     int32_t kCoastalGapReach = 0;
     int32_t kRiverNodeSpacing = 0;
     int32_t kCellsPerNode = 0;
+
+    // Terrain profile maps (sidecar map entries keyed by the terrain_type enum, in TerrainType order).
+    // Pack-overridable only; the flat rules JSON does not carry them (LoadFromJson skips "terrain." columns).
+    static constexpr uint32_t kTerrainTypeCount = static_cast<uint32_t>(TerrainType::Count);
+    bool  terrainPassable[kTerrainTypeCount] = {};
+    float terrainCost[kTerrainTypeCount] = {};
+    float terrainSoilDepthMult[kTerrainTypeCount] = {};     // PROVISIONAL (A5 consumes; S-2.6 tunes)
+    float terrainOrographicFactor[kTerrainTypeCount] = {};  // PROVISIONAL
+    float terrainRunoff[kTerrainTypeCount] = {};            // PROVISIONAL
 
     // Plain code constant, not a sidecar entry (user decision 2026-11-20).
     uint32_t rulesVersion = kDefaultRulesVersion;

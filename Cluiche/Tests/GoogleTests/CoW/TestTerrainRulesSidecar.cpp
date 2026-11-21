@@ -159,7 +159,8 @@ TEST(TerrainRulesSidecar, HasNoClimateParameters)
     }
     ParameterFile file;
     ASSERT_TRUE(LoadSidecarForClimateCheck(file));
-    EXPECT_EQ(file.Schema().GetAttributeCount(), 79u);
+    // 79 scalar rules + 5 terrain maps x 12 TerrainType columns (terrain profile, biome-registry Task 30)
+    EXPECT_EQ(file.Schema().GetAttributeCount(), 79u + 60u);
 }
 
 TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)
@@ -171,7 +172,7 @@ TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)
     ParamError    err;
     ASSERT_TRUE(file.Load(text.c_str(), "terrain_rules.schema.json", nullptr, err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
 
-    EXPECT_EQ(file.Schema().GetAttributeCount(), kOldTableCount);
+    EXPECT_EQ(file.Schema().GetAttributeCount(), kOldTableCount + 60u);   // + 5 terrain maps x 12 columns
 
     std::set<std::string> tableKeys;
     for (const TableRow& row : kOldTable)
@@ -188,6 +189,7 @@ TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)
     for (unsigned int i = 0; i < file.Schema().GetAttributeCount(); ++i)
     {
         const std::string k = file.Schema().GetAttributeByIndex(i).fullKey.AsCStr();
+        if (k.rfind("terrain.", 0) == 0) continue;   // map columns are covered by TestTerrainProfile
         EXPECT_EQ(tableKeys.count(k), 1u) << "sidecar has extra key " << k;
     }
 }

@@ -481,7 +481,7 @@
       "type": "float",
       "min": 0.0,
       "max": 1.0,
-      "default": 0.10
+      "default": 0.1
     },
     {
       "key": "kPeakElev",
@@ -491,7 +491,7 @@
       "type": "float",
       "min": 0.0,
       "max": 1.0,
-      "default": 0.80
+      "default": 0.8
     },
     {
       "key": "kMountainElev",
@@ -792,6 +792,175 @@
       "min": 1.0,
       "max": 256.0,
       "default": 10.0
+    },
+    {
+      "key": "terrain_type",
+      "kind": "field",
+      "label": "Terrain type",
+      "description": "The S-1 TerrainType ids, in code enum order (a C++ parity test pins this list to the enum).",
+      "type": "enum",
+      "values": [
+        {
+          "id": "DeepWater"
+        },
+        {
+          "id": "ShallowWater"
+        },
+        {
+          "id": "Lake"
+        },
+        {
+          "id": "River"
+        },
+        {
+          "id": "Lowland"
+        },
+        {
+          "id": "Hills"
+        },
+        {
+          "id": "Highland"
+        },
+        {
+          "id": "Mountain"
+        },
+        {
+          "id": "Peak"
+        },
+        {
+          "id": "Cliff"
+        },
+        {
+          "id": "Pass"
+        },
+        {
+          "id": "Volcano"
+        }
+      ],
+      "default": "DeepWater"
+    },
+    {
+      "key": "terrain.passable",
+      "kind": "parameter",
+      "label": "Terrain passable",
+      "description": "Whether the placeholder navigation profile lets a unit enter this terrain.",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "bool",
+      "default": {
+        "DeepWater": false,
+        "ShallowWater": false,
+        "Lake": false,
+        "River": true,
+        "Lowland": true,
+        "Hills": true,
+        "Highland": true,
+        "Mountain": true,
+        "Peak": false,
+        "Cliff": false,
+        "Pass": true,
+        "Volcano": false
+      }
+    },
+    {
+      "key": "terrain.cost",
+      "kind": "parameter",
+      "label": "Terrain cost",
+      "description": "Placeholder navigation path cost of entering this terrain.",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 1.0,
+      "max": 16.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.5,
+        "Lowland": 1.0,
+        "Hills": 1.5,
+        "Highland": 2.0,
+        "Mountain": 4.0,
+        "Peak": 1.0,
+        "Cliff": 1.0,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.soil_depth_mult",
+      "kind": "parameter",
+      "label": "Soil depth multiplier",
+      "description": "Provisional: soil depth multiplier per terrain type (A5 consumes it; S-2.6 tunes it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 4.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.0,
+        "Lowland": 1.0,
+        "Hills": 0.85,
+        "Highland": 0.7,
+        "Mountain": 0.4,
+        "Peak": 0.2,
+        "Cliff": 0.2,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.orographic_factor",
+      "kind": "parameter",
+      "label": "Orographic factor",
+      "description": "Provisional: per-terrain orographic rainfall factor (A4 and S-1 Stage 13 may consume it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 4.0,
+      "default": {
+        "DeepWater": 1.0,
+        "ShallowWater": 1.0,
+        "Lake": 1.0,
+        "River": 1.0,
+        "Lowland": 1.0,
+        "Hills": 1.0,
+        "Highland": 1.0,
+        "Mountain": 1.0,
+        "Peak": 1.0,
+        "Cliff": 1.0,
+        "Pass": 1.0,
+        "Volcano": 1.0
+      }
+    },
+    {
+      "key": "terrain.runoff",
+      "kind": "parameter",
+      "label": "Terrain runoff",
+      "description": "Provisional: fraction of rainfall that runs off this terrain (A5 consumes it).",
+      "type": "map",
+      "keyEnum": "terrain_type",
+      "valueType": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": {
+        "DeepWater": 0.5,
+        "ShallowWater": 0.5,
+        "Lake": 0.5,
+        "River": 0.5,
+        "Lowland": 0.4,
+        "Hills": 0.5,
+        "Highland": 0.5,
+        "Mountain": 0.5,
+        "Peak": 0.9,
+        "Cliff": 0.9,
+        "Pass": 0.5,
+        "Volcano": 0.5
+      }
     }
   ]
 }

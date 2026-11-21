@@ -140,6 +140,11 @@ void BindAll(Binding& binding)
         else
             binding.Bind(StringCRC(key), m);
     });
+    binding.BindMap(StringCRC("terrain.passable"), &TerrainRules::terrainPassable);
+    binding.BindMap(StringCRC("terrain.cost"), &TerrainRules::terrainCost);
+    binding.BindMap(StringCRC("terrain.soil_depth_mult"), &TerrainRules::terrainSoilDepthMult);
+    binding.BindMap(StringCRC("terrain.orographic_factor"), &TerrainRules::terrainOrographicFactor);
+    binding.BindMap(StringCRC("terrain.runoff"), &TerrainRules::terrainRunoff);
 }
 } // namespace
 
@@ -207,6 +212,10 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     {
         const Dia::Attribute::AttributeDefinition& def = schema.GetAttributeByIndex(i);
         const char* key = def.fullKey.AsCStr();
+        if (std::strncmp(key, "terrain.", 8) == 0)
+        {
+            continue;   // terrain maps are pack-only: not part of the flat rules JSON
+        }
         if (!v.isMember(key))
         {
             AddWarning(warnings, "missing", key);
