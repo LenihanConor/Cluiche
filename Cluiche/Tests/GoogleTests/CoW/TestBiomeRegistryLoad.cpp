@@ -47,6 +47,12 @@ namespace
   "forbidden":[["Biome.Ocean","Biome.Grassland"],["Biome.Scrub","Biome.Lake"]]
 })J";
 
+    // The registry accepts any pin rule id unless the caller supplies a rule table; this stands in for the generator's.
+    bool KnownRule(StringCRC rule)
+    {
+        return rule == StringCRC("water_ocean") || rule == StringCRC("water_lake") || rule == StringCRC("wetland");
+    }
+
     // One mutation of the base: replace the first occurrence of `from` with `to`.
     std::string Mutate(const char* from, const char* to)
     {
@@ -149,7 +155,7 @@ TEST(BiomeRegistryLoad, FaultTable)
         const uint64_t hash = r.Hash();
 
         RegistryError err;
-        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err));
+        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err, &KnownRule));
         EXPECT_STREQ(err.field.AsCStr(), fault.expectedField);
         EXPECT_EQ(err.row, fault.expectedRow);
         if (fault.expectedId != nullptr) { EXPECT_STREQ(err.id.AsCStr(), fault.expectedId); }
@@ -174,7 +180,7 @@ TEST(BiomeRegistryLoad, FaultOnFirstLoadStaysEmpty)
         SCOPED_TRACE(fault.name);
         BiomeRegistry r;
         RegistryError err;
-        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err));
+        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err, &KnownRule));
         EXPECT_EQ(r.Count(), 0u);
         EXPECT_EQ(r.Hash(), 0u);
     }

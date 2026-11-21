@@ -219,11 +219,11 @@ TEST(BiomeRegistryData, PinsByPriorityPreserveLegacyPrecedence)
     EXPECT_EQ(pins[2], Volcanic);
     EXPECT_EQ(pins[3], Alpine);
     EXPECT_EQ(pins[4], Wetland);
-    EXPECT_EQ(r.Pin(Ocean), PinRule::WaterOcean);
-    EXPECT_EQ(r.Pin(Lake), PinRule::WaterLake);
-    EXPECT_EQ(r.Pin(Volcanic), PinRule::Vent);
-    EXPECT_EQ(r.Pin(Alpine), PinRule::Alpine);
-    EXPECT_EQ(r.Pin(Wetland), PinRule::Wetland);
+    EXPECT_EQ(r.Pin(Ocean), Dia::Core::StringCRC("water_ocean"));
+    EXPECT_EQ(r.Pin(Lake), Dia::Core::StringCRC("water_lake"));
+    EXPECT_EQ(r.Pin(Volcanic), Dia::Core::StringCRC("vent"));
+    EXPECT_EQ(r.Pin(Alpine), Dia::Core::StringCRC("alpine"));
+    EXPECT_EQ(r.Pin(Wetland), Dia::Core::StringCRC("wetland"));
 }
 
 TEST(BiomeRegistryData, PlateauAndRoles)

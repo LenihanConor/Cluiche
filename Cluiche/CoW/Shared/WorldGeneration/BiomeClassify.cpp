@@ -20,7 +20,6 @@ using Dia::Pathfinding::kNoCell;
 using World::BiomeIndex;
 using World::BiomeRegistry;
 using World::kNoBiome;
-using World::PinRule;
 
 namespace
 {
@@ -34,42 +33,56 @@ namespace
 
     // The terrain test behind each pin rule. The test stays in code (it reads terrain layers); which biome a hit
     // produces, and the rule's priority, come from the registry row.
-    bool PinTestHits(PinRule rule, const Stage14Inputs& in, int c, bool wetlandEligible)
+    using PinPredicate = bool (*)(const Stage14Inputs& in, int c, bool wetlandEligible);
+
+    bool HitsOcean(const Stage14Inputs& in, int c, bool) { return in.waterSource[c] == static_cast<uint32_t>(WaterSource::Ocean); }
+    bool HitsLake(const Stage14Inputs& in, int c, bool) { return in.waterSource[c] == static_cast<uint32_t>(WaterSource::Lake); }
+    bool HitsVent(const Stage14Inputs& in, int c, bool)
     {
-        const uint32_t ws = in.waterSource[c];
         const uint32_t tt = in.terrainType[c];
         const uint32_t fl = in.terrainFlags[c];
-        switch (rule)
+        return (fl & TerrainFlag::Volcanic) != 0 || tt == static_cast<uint32_t>(TerrainType::Volcano) ||
+               (in.barrierForm == BarrierForm::VolcanicChain && (fl & TerrainFlag::Barrier) != 0);
+    }
+    bool HitsAlpine(const Stage14Inputs& in, int c, bool)
+    {
+        const uint32_t tt = in.terrainType[c];
+        return tt == static_cast<uint32_t>(TerrainType::Mountain) || tt == static_cast<uint32_t>(TerrainType::Peak) ||
+               tt == static_cast<uint32_t>(TerrainType::Cliff) || tt == static_cast<uint32_t>(TerrainType::Pass);
+    }
+    bool HitsWetland(const Stage14Inputs&, int, bool wetlandEligible) { return wetlandEligible; }
+
+    // The generator's rule table: rule id -> { predicate, biomePin layer value (the layer contract predates the
+    // registry) }. The five terrain built-ins; there is no application hook yet.
+    struct PinRuleEntry
+    {
+        Dia::Core::StringCRC id;
+        PinPredicate         test;
+        uint32_t             layerValue;
+    };
+
+    const PinRuleEntry* FindPinRule(Dia::Core::StringCRC rule)
+    {
+        static const PinRuleEntry kTable[] = {
+            { Dia::Core::StringCRC("water_ocean"), &HitsOcean,   BiomePin::Water },
+            { Dia::Core::StringCRC("water_lake"),  &HitsLake,    BiomePin::Water },
+            { Dia::Core::StringCRC("vent"),        &HitsVent,    BiomePin::Volcanic },
+            { Dia::Core::StringCRC("alpine"),      &HitsAlpine,  BiomePin::Alpine },
+            { Dia::Core::StringCRC("wetland"),     &HitsWetland, BiomePin::Wetland },
+        };
+        for (const PinRuleEntry& e : kTable)
         {
-        case PinRule::WaterOcean:
-            return ws == static_cast<uint32_t>(WaterSource::Ocean);
-        case PinRule::WaterLake:
-            return ws == static_cast<uint32_t>(WaterSource::Lake);
-        case PinRule::Vent:
-            return (fl & TerrainFlag::Volcanic) != 0 || tt == static_cast<uint32_t>(TerrainType::Volcano) ||
-                   (in.barrierForm == BarrierForm::VolcanicChain && (fl & TerrainFlag::Barrier) != 0);
-        case PinRule::Alpine:
-            return tt == static_cast<uint32_t>(TerrainType::Mountain) || tt == static_cast<uint32_t>(TerrainType::Peak) ||
-                   tt == static_cast<uint32_t>(TerrainType::Cliff) || tt == static_cast<uint32_t>(TerrainType::Pass);
-        case PinRule::Wetland:
-            return wetlandEligible;
+            if (e.id == rule) { return &e; }
         }
-        return false;
+        return nullptr;
     }
 
-    // The biomePin layer value a pin rule reports (the layer contract predates the registry).
-    uint32_t PinLayerValue(PinRule rule)
+    bool PinTestHits(const PinRuleEntry* rule, const Stage14Inputs& in, int c, bool wetlandEligible)
     {
-        switch (rule)
-        {
-        case PinRule::WaterOcean:
-        case PinRule::WaterLake: return BiomePin::Water;
-        case PinRule::Vent:      return BiomePin::Volcanic;
-        case PinRule::Alpine:    return BiomePin::Alpine;
-        case PinRule::Wetland:   return BiomePin::Wetland;
-        }
-        return BiomePin::None;
+        return rule != nullptr && rule->test(in, c, wetlandEligible);
     }
+
+    uint32_t PinLayerValue(const PinRuleEntry* rule) { return rule != nullptr ? rule->layerValue : BiomePin::None; }
 
     struct Classifier
     {
@@ -91,16 +104,17 @@ namespace
         {
             uint32_t          count = 0;
             const BiomeIndex* pins = reg.PinsByPriority(count);
+            // A rule no biome declares leaves its slot kNoBiome (unused); the last row declaring a rule wins.
+            static const Dia::Core::StringCRC kOcean("water_ocean"), kLake("water_lake"), kVent("vent"),
+                                              kAlpine("alpine"), kWetland("wetland");
             for (uint32_t p = 0; p < count; ++p)
             {
-                switch (reg.Pin(pins[p]))
-                {
-                case PinRule::WaterOcean: oceanBiome = pins[p]; break;
-                case PinRule::WaterLake:  lakeBiome = pins[p]; break;
-                case PinRule::Vent:       ventBiome = pins[p]; break;
-                case PinRule::Alpine:     alpineBiome = pins[p]; break;
-                case PinRule::Wetland:    wetlandBiome = pins[p]; break;
-                }
+                const Dia::Core::StringCRC rule = reg.Pin(pins[p]);
+                if (rule == kOcean)        { oceanBiome = pins[p]; }
+                else if (rule == kLake)    { lakeBiome = pins[p]; }
+                else if (rule == kVent)    { ventBiome = pins[p]; }
+                else if (rule == kAlpine)  { alpineBiome = pins[p]; }
+                else if (rule == kWetland) { wetlandBiome = pins[p]; }
             }
         }
 
@@ -167,6 +181,11 @@ namespace
         }
     };
 } // namespace
+
+bool IsBuiltInPinRule(Dia::Core::StringCRC rule)
+{
+    return FindPinRule(rule) != nullptr;
+}
 
 float BiomeClimateScore(const BiomeRegistry& biomes, BiomeIndex b, float temperature, float moisture)
 {
@@ -290,7 +309,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         bool pinned = false;
         for (uint32_t p = 0; p < pinCount; ++p)
         {
-            const PinRule rule = reg.Pin(pins[p]);
+            const PinRuleEntry* rule = FindPinRule(reg.Pin(pins[p]));
             if (PinTestHits(rule, in, c, k.wetland[c] != 0))
             {
                 out.biomeIndex[c] = static_cast<uint32_t>(pins[p]);

@@ -11,6 +11,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-classification.md
 #pragma once
 
+#include <DiaCore/CRC/StringCRC.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -65,6 +66,11 @@ struct Stage14Debug
     int forbiddenChanges = 0;  // cells changed by step 5
     int passes = 0;            // step 5 passes that changed something
 };
+
+// True when the generator's rule table has a predicate for the pin rule id (the five terrain built-ins:
+// water_ocean, water_lake, vent, alpine, wetland). Pass to BiomeRegistry::Load/LoadFromText so a biomes file naming
+// any other rule fails the load.
+bool IsBuiltInPinRule(Dia::Core::StringCRC rule);
 
 // -((T-T0)/wT)^2 - ((M-M0)/wM)^2 from the registry row's climate envelope.
 // A row without a climate envelope (or an unknown row) returns the lowest float.

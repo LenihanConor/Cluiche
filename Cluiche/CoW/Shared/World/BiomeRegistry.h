@@ -21,7 +21,11 @@ using TagId = uint8_t;
 constexpr TagId kNoTag = 0xFF;
 
 enum class BiomeRole : uint8_t { Ocean, Lake, Fallback };
-enum class PinRule : uint8_t { WaterOcean, WaterLake, Vent, Alpine, Wetland };
+
+// A pin rule is an open id declared in biomes.json ("pin": {"rule": "<name>", ...}); the registry stores it as a
+// StringCRC and does not know what rules exist. The rule table lives with the generator, which supplies this
+// predicate (via the optional load argument) so an undeclared rule id fails the load.
+using PinRuleValidator = bool (*)(Dia::Core::StringCRC rule);
 
 struct ClimateEnvelope { float t0, m0, wt, wm; };
 
@@ -48,9 +52,10 @@ public:
 
     void Swap(BiomeRegistry& other) noexcept;
 
-    // All-or-nothing: on failure *this is unchanged.
-    bool Load(const Dia::Core::FilePath& path, RegistryError& err);
-    bool LoadFromText(const char* json, RegistryError& err);
+    // All-or-nothing: on failure *this is unchanged. A non-null knownPinRule rejects any pin rule id it returns
+    // false for (field "pin", naming the row); null accepts any rule id.
+    bool Load(const Dia::Core::FilePath& path, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
+    bool LoadFromText(const char* json, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
 
     uint32_t    Count() const;
     BiomeIndex  Find(Dia::Core::StringCRC id) const;
@@ -76,7 +81,8 @@ public:
     const ClimateEnvelope* Climate(BiomeIndex b) const;
     const BiomeIndex*      ClimateBiomes(uint32_t& count) const;
     const BiomeIndex*      PinsByPriority(uint32_t& count) const;
-    PinRule                Pin(BiomeIndex b) const;
+    Dia::Core::StringCRC   Pin(BiomeIndex b) const;       // pin rule id; default StringCRC when b has no pin
+    const char*            PinRuleText(BiomeIndex b) const;   // the rule name as written in the file ("" when unpinned)
     BiomeIndex             Plateau(bool wet) const;
 
     uint64_t    Hash() const;

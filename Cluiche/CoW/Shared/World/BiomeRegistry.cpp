@@ -76,7 +76,8 @@ struct BiomeRegistry::Data
         bool      generated = false;
         bool      hasClimate = false;
         ClimateEnvelope climate = { 0.0f, 0.0f, 0.0f, 0.0f };
-        PinRule   pin = PinRule::WaterOcean;
+        Dia::Core::StringCRC pin;
+        String64  pinText;
         int       pinPriority = -1;
         int8_t    plateau = -1;
     };
@@ -115,7 +116,10 @@ void BiomeRegistry::Data::ComputeHash()
         {
             f.Float(r.climate.t0); f.Float(r.climate.m0); f.Float(r.climate.wt); f.Float(r.climate.wm);
         }
-        f.Value(static_cast<uint8_t>(r.pin));
+        // The five original rules hash as their historic enum index so existing registry hashes (world JSON) stay stable.
+        const int legacyRule = IndexOf(kPinNames, r.pinText.AsCStr());
+        f.Value(static_cast<uint8_t>(legacyRule >= 0 ? legacyRule : 0xFF));
+        if (legacyRule < 0 && r.pinPriority >= 0) { f.Value(r.pin.Value()); }
         f.Value(r.pinPriority);
         f.Value(r.plateau);
     }
@@ -181,7 +185,7 @@ namespace
         return true;
     }
 
-    bool ParseRow(const Json::Value& jr, uint32_t rowIndex, BiomeRegistry::Data& d, RegistryError& err)
+    bool ParseRow(const Json::Value& jr, uint32_t rowIndex, BiomeRegistry::Data& d, RegistryError& err, PinRuleValidator knownPinRule)
     {
         using Row = BiomeRegistry::Data::Row;
         if (!jr.isObject()) { return Fail(err, "biomes", "", rowIndex, "row is not an object"); }
@@ -266,14 +270,21 @@ namespace
         if (jr.isMember("pin"))
         {
             const Json::Value& p = jr["pin"];
-            const int rule = (p.isObject() && p["rule"].isString()) ? IndexOf(kPinNames, p["rule"].asString().c_str()) : -1;
-            if (rule < 0) { return Fail(err, "pin", idc, rowIndex, "unknown or missing pin rule"); }
+            if (!p.isObject() || !p["rule"].isString() || p["rule"].asString().empty() ||
+                p["rule"].asString().size() >= String64::Capacity())
+            {
+                return Fail(err, "pin", idc, rowIndex, "missing pin rule");
+            }
+            const std::string rule = p["rule"].asString();
+            const Dia::Core::StringCRC ruleId(rule.c_str());
+            if (knownPinRule != nullptr && !knownPinRule(ruleId)) { return Fail(err, "pin", idc, rowIndex, "unknown pin rule (no predicate registered for it)"); }
             if (!p["priority"].isInt() || p["priority"].asInt() < 0) { return Fail(err, "pin", idc, rowIndex, "pin priority must be an integer >= 0"); }
             for (uint32_t i = 0; i < rowIndex; ++i)
             {
                 if (d.rows.At(i).pinPriority == p["priority"].asInt()) { return Fail(err, "pin.priority", idc, rowIndex, "pin priority already used by another row"); }
             }
-            r.pin = static_cast<PinRule>(rule);
+            r.pin = ruleId;
+            r.pinText.SetText(rule.c_str());
             r.pinPriority = p["priority"].asInt();
         }
 
@@ -292,7 +303,7 @@ namespace
     }
 }
 
-bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
+bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err, PinRuleValidator knownPinRule)
 {
     if (json == nullptr) { return Fail(err, "document", "", 0, "no text"); }
 
@@ -332,7 +343,7 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
     uint32_t row = 0;
     for (const Json::Value& jr : biomes)
     {
-        if (!ParseRow(jr, row, *cand, err)) { return false; }
+        if (!ParseRow(jr, row, *cand, err, knownPinRule)) { return false; }
         ++row;
     }
 
@@ -398,7 +409,7 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err)
     return true;
 }
 
-bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err)
+bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err, PinRuleValidator knownPinRule)
 {
     Dia::Core::FilePath::ResoledFilePath resolved;
     path.Resolve(resolved);
@@ -406,7 +417,7 @@ bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err)
     if (!in.good()) { return Fail(err, "file", resolved.AsCStr(), 0, "cannot read file"); }
     std::stringstream ss;
     ss << in.rdbuf();
-    return LoadFromText(ss.str().c_str(), err);
+    return LoadFromText(ss.str().c_str(), err, knownPinRule);
 }
 
 uint32_t BiomeRegistry::Count() const { return mData ? mData->rows.Size() : 0; }
@@ -531,10 +542,16 @@ const BiomeIndex* BiomeRegistry::PinsByPriority(uint32_t& count) const
     return (mData && count > 0) ? mData->pinList : nullptr;
 }
 
-PinRule BiomeRegistry::Pin(BiomeIndex b) const
+Dia::Core::StringCRC BiomeRegistry::Pin(BiomeIndex b) const
 {
     const Data::Row* r = mData ? mData->At(b) : nullptr;
-    return r ? r->pin : PinRule::WaterOcean;
+    return r ? r->pin : Dia::Core::StringCRC();
+}
+
+const char* BiomeRegistry::PinRuleText(BiomeIndex b) const
+{
+    const Data::Row* r = mData ? mData->At(b) : nullptr;
+    return r ? r->pinText.AsCStr() : "";
 }
 
 BiomeIndex BiomeRegistry::Plateau(bool wet) const

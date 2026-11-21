@@ -1,6 +1,7 @@
 #include "Modules/WorldGen/WorldGenerationModule.h"
 
 #include <Shared/World/BiomeRegistry.h>
+#include <Shared/WorldGeneration/BiomeClassify.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
@@ -141,7 +142,7 @@ void WorldGenerationModule::LoadBiomes()
     }
 
     World::RegistryError err;
-    if (!mBiomes->LoadFromText(text.c_str(), err))
+    if (!mBiomes->LoadFromText(text.c_str(), err, &WorldGeneration::IsBuiltInPinRule))
     {
         mBiomesErrorField = err.field.AsCStr();
         if (mBiomesErrorField.empty())

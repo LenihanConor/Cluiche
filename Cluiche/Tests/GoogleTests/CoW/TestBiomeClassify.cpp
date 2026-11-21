@@ -211,6 +211,76 @@ TEST(BiomeClassify, VolcanicPinRules)
     EXPECT_EQ(rp.At(volcano), B("Biome.Volcanic"));
 }
 
+// ---------------------------------------------------------------------------
+// Open pin rule ids: the generator's rule table validates the ids a biomes file declares.
+// ---------------------------------------------------------------------------
+TEST(BiomeClassify, BuiltInPinRuleTable)
+{
+    using Dia::Core::StringCRC;
+    for (const char* name : { "water_ocean", "water_lake", "vent", "alpine", "wetland" })
+    {
+        EXPECT_TRUE(IsBuiltInPinRule(StringCRC(name))) << name;
+    }
+    EXPECT_FALSE(IsBuiltInPinRule(StringCRC("bogus_rule")));
+    EXPECT_FALSE(IsBuiltInPinRule(StringCRC("")));
+}
+
+TEST(BiomeClassify, UnknownPinRuleFailsLoadNamingTheRow)
+{
+    std::ifstream     in(ShippedBiomesPath(), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    std::string text = ss.str();
+    const std::string from = "\"rule\": \"vent\"";
+    const size_t      at = text.find(from);
+    ASSERT_NE(at, std::string::npos);
+    text.replace(at, from.size(), "\"rule\": \"bogus_rule\"");
+
+    CoW::World::BiomeRegistry reg;
+    CoW::World::RegistryError err;
+    ASSERT_TRUE(reg.LoadFromText(ss.str().c_str(), err, &IsBuiltInPinRule));
+    const uint32_t count = reg.Count();
+    const uint64_t hash = reg.Hash();
+
+    EXPECT_FALSE(reg.LoadFromText(text.c_str(), err, &IsBuiltInPinRule));
+    EXPECT_STREQ(err.field.AsCStr(), "pin");
+    EXPECT_STREQ(err.id.AsCStr(), "Biome.Volcanic");
+    EXPECT_GT(std::strlen(err.reason.AsCStr()), 0u);
+    EXPECT_EQ(reg.Count(), count);   // all-or-nothing: the earlier load is untouched
+    EXPECT_EQ(reg.Hash(), hash);
+
+    CoW::World::BiomeRegistry fresh;
+    EXPECT_FALSE(fresh.LoadFromText(text.c_str(), err, &IsBuiltInPinRule));
+    EXPECT_EQ(fresh.Count(), 0u);
+}
+
+TEST(BiomeClassify, NoVentBiomeLoadsAndGenerates)
+{
+    // The shipped rows with the vent biome's pin removed: no biome declares the `vent` rule, so it is unused.
+    const CoW::World::BiomeRegistry noVent = LoadShippedVariant({ { ", \"pin\": {\"rule\": \"vent\", \"priority\": 3}", "" } });
+    EXPECT_EQ(noVent.Count(), ShippedBiomeRegistry().Count());
+
+    BiomeGrid g(12, 4, 0.5f, 0.5f);
+    g.registry = &noVent;
+    const int volcano = g.Index(4, 1);
+    const int flagged = g.Index(8, 1);
+    g.SetTerrain(volcano, TerrainType::Volcano);
+    g.AddFlag(flagged, TerrainFlag::Volcanic);
+    g.SetWater(g.Index(1, 2), WaterSource::Ocean);
+    g.SetTerrain(g.Index(10, 3), TerrainType::Mountain);
+
+    const BiomeResult r = RunBiomes(g);
+    EXPECT_EQ(r.pin[volcano], BiomePin::None);
+    EXPECT_EQ(r.pin[flagged], BiomePin::None);
+    EXPECT_EQ(r.At(g.Index(1, 2)), B(noVent, "Biome.Ocean"));   // the other rules still pin
+    EXPECT_EQ(r.pin[g.Index(10, 3)], BiomePin::Alpine);
+    for (int c = 0; c < g.dims.width * g.dims.height; ++c)
+    {
+        EXPECT_NE(r.pin[c], BiomePin::Volcanic);
+        EXPECT_NE(r.At(c), CoW::World::kNoBiome);
+    }
+}
+
 TEST(BiomeClassify, AlpinePinRules)
 {
     BiomeGrid g(12, 4);

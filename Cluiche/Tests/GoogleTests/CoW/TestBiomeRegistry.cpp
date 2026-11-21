@@ -151,7 +151,8 @@ TEST(BiomeRegistry, FailedSecondLoadLeavesContents)
     EXPECT_FALSE(r.LoadFromText("{ not json", err));
     EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water\",\"aquatic\"", "\"nonsense\"").c_str(), err));
     EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"FirstShores\"", "\"Nowhere\"").c_str(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), err,
+                                [](StringCRC rule) { return rule == StringCRC("water_lake") || rule == StringCRC("wetland"); }));
     EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"colour\":\"#808000\",", "").c_str(), err));
     EXPECT_EQ(r.Count(), 4u);
     EXPECT_EQ(r.Hash(), before);
@@ -258,9 +259,10 @@ TEST(BiomeRegistry, PinsHighestPriorityFirst)
     EXPECT_EQ(pins[0], 1);   // priority 200
     EXPECT_EQ(pins[1], 2);   // 150
     EXPECT_EQ(pins[2], 0);   // 100
-    EXPECT_EQ(r.Pin(1), PinRule::WaterLake);
-    EXPECT_EQ(r.Pin(2), PinRule::Wetland);
-    EXPECT_EQ(r.Pin(0), PinRule::WaterOcean);
+    EXPECT_EQ(r.Pin(1), StringCRC("water_lake"));
+    EXPECT_EQ(r.Pin(2), StringCRC("wetland"));
+    EXPECT_EQ(r.Pin(0), StringCRC("water_ocean"));
+    EXPECT_STREQ(r.PinRuleText(1), "water_lake");
 }
 
 TEST(BiomeRegistry, HashStableAcrossLoads)
