@@ -90,6 +90,39 @@ TEST(WorldStepLoadReset, TicksQueuedBeforeALoadAreNotReplayedAgainstTheLoadedWor
     EXPECT_EQ(b.module.KickCount(), 1u);
 }
 
+// A load of an EARLIER day over a live world that has advanced: the scheduler's tick-key floor and the module's key
+// both go back, and the loaded timeline's cadence runs from there.
+TEST(WorldStepLoadReset, ALoadOfAnEarlierDayOverAnAdvancedWorldResetsTheKeyAndTheCadence)
+{
+    const std::string slot = UniqueSlot();
+    SlotFile file(slot);
+    {
+        SaveRig a(slot, Config("weather,ecology", 10, false));
+        Drive(a, 1, 10);
+        ASSERT_TRUE(a.Save().Ok());
+        ASSERT_EQ(a.weather.serializeCalls, 0u);
+    }
+    SaveRig b(slot, kCfg);
+    FakeWorldStepListener l;
+    ASSERT_TRUE(b.module.RegisterListener(l));
+    Drive(b, 1, 20);
+    ASSERT_EQ(b.module.GetCurrentKey(), 20u);
+    const uint32_t before = l.received.Size();    // week 7 of the old timeline applied at 17
+
+    ASSERT_TRUE(b.Load().Ok());
+    EXPECT_EQ(b.module.GetCurrentKey(), 0u);      // no pending record: the old timeline's day is gone
+    EXPECT_FALSE(b.module.HasPendingWeek());
+
+    Drive(b, 11, 14);                              // a lower key than the old timeline reached; must not trip the scheduler
+    EXPECT_EQ(b.module.GetCurrentKey(), 14u);
+    EXPECT_EQ(b.module.LastStepDay(), 14u);
+    Drive(b, 15, 24);
+    ASSERT_EQ(l.received.Size(), before + 1u);
+    EXPECT_EQ(l.received[before].stepDay, 14u);
+    EXPECT_EQ(l.received[before].applyKey, 24u);
+    b.module.UnregisterListener(l);
+}
+
 TEST(WorldStepLoadReset, ALoadWithAPendingRecordStillRestoresOverTheReset)
 {
     const std::string slot = UniqueSlot();

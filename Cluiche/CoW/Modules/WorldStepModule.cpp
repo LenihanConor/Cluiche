@@ -364,10 +364,11 @@ void WorldStepModule::TryObserveLoads()
 }
 
 // A load replaces the timeline. A save made with no step in flight carries no pending record, so nothing else would clear
-// the old timeline's retried week, step day or chain phase. mLatestDay is deliberately kept: it feeds the scheduler's
-// monotonic Tick key, which has no reset, so lowering it would trip the scheduler's backwards-key assert; the next
-// SimulationTick and a pending record both move it forward. Runs before any participant deserializes, so a pending record
-// restores over this clean state afterwards. Counters and health history are telemetry and are kept.
+// the old timeline's retried week, step day or chain phase. The key goes back to day 0 too (mLatestDay and the
+// scheduler's Tick key floor), so loading an earlier day over an advanced world neither asserts nor stalls; a pending
+// record sets mLatestDay from its latest_day afterwards, and otherwise the next SimulationTick moves it forward. Runs
+// before any participant deserializes, so a pending record restores over this clean state. Counters and health history
+// are telemetry and are kept.
 void WorldStepModule::OnLoadStarted()
 {
     if (!mRunning)
@@ -380,6 +381,12 @@ void WorldStepModule::OnLoadStarted()
     // Drains and discards the step in flight (no Apply, no history signal), re-registers the channel (which also clears
     // its kick-key floor, so an earlier timeline can kick again) and abandons the chain.
     DrainWorldChannel();
+
+    // The channel was drained above, so no step is mid-apply or due against the old key.
+    if (mScheduler != nullptr)
+        mScheduler->ResetTickKey();
+    mLatestDay = 0;
+    mHasTick = false;
 
     mPendingDay = -1;
     mStepDay = 0;
