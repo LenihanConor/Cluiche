@@ -1,5 +1,6 @@
 // S-1 Regions, Nodes and Site Hook: RegionsAndSites::Place (AC1, AC9, placer failure, AC12) and CheckLayout (AC8).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
@@ -23,6 +24,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Core::StringCRC;
 using Dia::Maths::RandomStream;
 
@@ -325,7 +327,7 @@ namespace
     // 5x2 blocks of 12x12 land (10 regions of 144 cells), 9 Hunting nodes per region on a 4-step grid = 90 nodes.
     WorldStructure ValidWorld()
     {
-        WorldStructure w = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, Biome::GrasslandSteppe);
+        WorldStructure w = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, LegacyB("Biome.Grassland"));
         w.regions.mainlandRegionCount = 10;
         for (int by = 0; by < 2; ++by)
             for (int bx = 0; bx < 5; ++bx)
@@ -431,7 +433,7 @@ TEST(LayoutCheck, RegionUnderMinimumCells)
 
 TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
 {
-    WorldStructure w = MakeRegionBlocksWorld(3, 3, kBlk, kBlk, Biome::GrasslandSteppe);   // 9 regions
+    WorldStructure w = MakeRegionBlocksWorld(3, 3, kBlk, kBlk, LegacyB("Biome.Grassland"));   // 9 regions
     LayoutLimits lim = NoBarriers();
     lim.nodeLimited = true;
     const LayoutReport r = CheckLayout(w, TestRules(), lim);
@@ -441,7 +443,7 @@ TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
     lim.regionLimitedBy = DepthZone::AncientInteriors;
     EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::RegionCountRange), nullptr);
 
-    WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, Biome::GrasslandSteppe);   // 17 regions
+    WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, LegacyB("Biome.Grassland"));   // 17 regions
     lim.regionLimitedBy = DepthZone::None;
     const LayoutReport r2 = CheckLayout(many, TestRules(), lim);
     const LayoutViolation* v2 = Find(r2, LayoutCode::RegionCountRange);
@@ -526,7 +528,7 @@ TEST(LayoutCheck, SameCorridorNodesAreExemptFromSpacingAgainstEachOther)
 {
     // Two corridor nodes of one width-2 corridor, adjacent, on an otherwise empty land block.
     WorldStructure w = MakeBlankWorld(20, 20);
-    FillLand(w, 0, 0, 20, 20, DepthZone::FirstShores, Biome::GrasslandSteppe);
+    FillLand(w, 0, 0, 20, 20, DepthZone::FirstShores, LegacyB("Biome.Grassland"));
     AssignRegion(w, 0, 0, 20, 20, 1);
     BuildRegionRecords(w);
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 10, 10, 0, MakeCorridorFlags(1, 1, 2));
@@ -578,7 +580,7 @@ TEST(LayoutCheck, RegionWithSixteenNodes)
 
 TEST(LayoutCheck, NodeTotalsAndRegionQuotasSkippedWhenNodeLimited)
 {
-    WorldStructure thin = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, Biome::GrasslandSteppe);
+    WorldStructure thin = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, LegacyB("Biome.Grassland"));
     thin.regions.mainlandRegionCount = 10;
     for (int by = 0; by < 2; ++by)
         for (int bx = 0; bx < 5; ++bx)

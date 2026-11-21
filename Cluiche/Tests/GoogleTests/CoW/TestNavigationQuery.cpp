@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/reachability-validator.md (AC5, AC8, Navigation)
 // NavigationQuery: reachability under injected profiles, proof paths, any-profile semantics.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/Testing/TestProfiles.h>
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
@@ -9,6 +10,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -65,7 +67,7 @@ TEST(NavigationQuery, AC5_PassableTerrainIsReachableWithValidProofPath)
 TEST(NavigationQuery, ProofPathRoutesAroundBlockedTerrainWhenAGapExists)
 {
     WorldStructure w = MakeChannelWorld(10, 5, 4, 2);
-    for (int x = 4; x < 6; ++x) { SetLand(w, x, 4, DepthZone::WildReaches, Biome::GrasslandSteppe); }   // land bridge on the last row
+    for (int x = 4; x < 6; ++x) { SetLand(w, x, 4, DepthZone::WildReaches, LegacyB("Biome.Grassland")); }   // land bridge on the last row
     BlockWaterProfile p("P");
     const NavigationQuery q = MakeQuery(w, { &p });
     ProofPath path;
@@ -147,11 +149,11 @@ TEST(NavigationQuery, WindingPathLongerThanDiaPathResultCapacityIsFound)
     // Serpentine corridor: land rows separated by water rows, one gap per wall alternating ends. Path > 256 cells.
     const int w = 40, h = 17;
     WorldStructure world = MakeBlankWorld(w, h);
-    for (int y = 0; y < h; y += 2) { FillLand(world, 0, y, w, y + 1, DepthZone::WildReaches, Biome::GrasslandSteppe); }
+    for (int y = 0; y < h; y += 2) { FillLand(world, 0, y, w, y + 1, DepthZone::WildReaches, LegacyB("Biome.Grassland")); }
     for (int y = 1; y < h; y += 2)
     {
         const int gap = (y / 2) % 2 == 0 ? w - 1 : 0;
-        SetLand(world, gap, y, DepthZone::WildReaches, Biome::GrasslandSteppe);
+        SetLand(world, gap, y, DepthZone::WildReaches, LegacyB("Biome.Grassland"));
     }
     BlockWaterProfile p("P");
     const NavigationQuery q = MakeQuery(world, { &p });

@@ -1,5 +1,6 @@
 // S-1 Regions: region partition second half (repair, records, renumbering, write into the world).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/RegionRepair.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
@@ -18,6 +19,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
@@ -25,9 +27,9 @@ namespace
     constexpr DepthZone FS = DepthZone::FirstShores;
     constexpr DepthZone WR = DepthZone::WildReaches;
     constexpr DepthZone AI = DepthZone::AncientInteriors;
-    constexpr Biome     G  = Biome::GrasslandSteppe;
-    constexpr Biome     F  = Biome::TemperateForest;
-    constexpr Biome     L  = Biome::Lake;
+    constexpr BiomeConst     G  {"Biome.Grassland"};
+    constexpr BiomeConst     F  {"Biome.TemperateForest"};
+    constexpr BiomeConst     L  {"Biome.Lake"};
 
     TerrainRules RulesMin(int minCells)
     {
@@ -415,7 +417,7 @@ TEST(RegionRepair, PrimaryBiomeIgnoresLakeCellsPurityCountsAllCells)
     for (int y = 7; y < 10; ++y) { SetBiome(h.w, 0, y, F); }
     Finish(h);
     const RegionRecord& r = h.w.regions.regions[0];
-    EXPECT_EQ(r.primaryBiome, G);   // 4 lake cells ignored; G 3 vs F 3 ties to the lowest enum
+    EXPECT_EQ(Idx(r.primaryBiome), Idx(G));   // 4 lake cells ignored; G 3 vs F 3 ties to the lowest enum
     EXPECT_FLOAT_EQ(r.purity, 0.3f);
     ExpectChecksPass(h.w);
 }
@@ -426,14 +428,14 @@ TEST(RegionRepair, PrimaryBiomeMajorityAndTieLowestEnum)
     for (int y = 0; y < 6; ++y) { SetBiome(h.w, 0, y, F); }
     for (int y = 6; y < 10; ++y) { SetBiome(h.w, 0, y, G); }
     Finish(h);
-    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, F);
+    EXPECT_EQ(Idx(h.w.regions.regions[0].primaryBiome), Idx(F));
     EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 0.6f);
 
     Hand t = OneRegionStrip(10);
     for (int y = 0; y < 5; ++y) { SetBiome(t.w, 0, y, F); }
     for (int y = 5; y < 10; ++y) { SetBiome(t.w, 0, y, G); }
     Finish(t);
-    EXPECT_EQ(t.w.regions.regions[0].primaryBiome, G);
+    EXPECT_EQ(Idx(t.w.regions.regions[0].primaryBiome), Idx(G));
     EXPECT_FLOAT_EQ(t.w.regions.regions[0].purity, 0.5f);
 }
 
@@ -442,7 +444,7 @@ TEST(RegionRepair, AllLakeRegionReportsLake)
     Hand h = OneRegionStrip(3);
     for (int y = 0; y < 3; ++y) { SetBiome(h.w, 0, y, L); h.w.At(0, y).waterSource = WaterSource::Lake; }
     Finish(h);
-    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, L);
+    EXPECT_EQ(Idx(h.w.regions.regions[0].primaryBiome), Idx(L));
     EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 1.0f);
 }
 

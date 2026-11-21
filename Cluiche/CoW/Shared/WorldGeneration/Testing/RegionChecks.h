@@ -5,6 +5,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainTypes.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -239,15 +240,16 @@ inline CheckErrors CheckRecords(const WorldStructure& w)
         if (rec.id != r) { e.push_back(tag + "id " + std::to_string(rec.id)); }
         if (rec.cellCount != cellsOf[r].size()) { e.push_back(tag + "cellCount " + std::to_string(rec.cellCount) + " vs " + std::to_string(cellsOf[r].size())); }
         if (cellsOf[r].empty()) { continue; }
+        const int lakeIdx = static_cast<int>(::CoW::World::Testing::B("Biome.Lake"));
         int hist[kBiomeCount] = {};
         for (int c : cellsOf[r]) { ++hist[static_cast<int>(w.Cells()[c].biome)]; }
         int best = -1;
         for (int b = 0; b < kBiomeCount; ++b)
         {
-            if (b == static_cast<int>(Biome::Lake) || hist[b] == 0) { continue; }
+            if (b == lakeIdx || hist[b] == 0) { continue; }
             if (best < 0 || hist[b] > hist[best]) { best = b; }
         }
-        if (best < 0) { best = static_cast<int>(Biome::Lake); }
+        if (best < 0) { best = lakeIdx; }
         if (static_cast<int>(rec.primaryBiome) != best) { e.push_back(tag + "primaryBiome " + std::to_string(int(rec.primaryBiome)) + " vs " + std::to_string(best)); }
         const float purity = static_cast<float>(hist[best]) / static_cast<float>(cellsOf[r].size());
         if (rec.purity < purity - 1e-5f || rec.purity > purity + 1e-5f) { e.push_back(tag + "purity " + std::to_string(rec.purity) + " vs " + std::to_string(purity)); }

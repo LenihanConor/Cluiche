@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/reachability-validator.md (AC1, AC2, AC3, AC4, AC10)
 // The three built-in guarantees over SiteSet kinds, run on hand-authored worlds, and DefaultValidationSet.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/SiteGuarantees.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
@@ -15,6 +16,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -57,7 +59,7 @@ GuaranteeResult Check(const IWorldGuarantee& g, const WorldStructure& w, std::in
 WorldStructure MakeValidWorld()
 {
     WorldStructure w = MakeAllLandWorld(30, 20, DepthZone::WildReaches);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     AddSiteAt(w, SiteKinds::Hearth(), 3, 3);
     AddSiteAt(w, SiteKinds::Hearth(), 26, 16);
     AddSiteAt(w, SiteKinds::Nexus(), 5, 10);
@@ -277,7 +279,7 @@ TEST(WorldThroneGuarantee, AC3_SixReachableThronesSatisfy)
 TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
@@ -289,7 +291,7 @@ TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     const uint16_t types[6] = { 0, 0, 1, 2, 3, 4 };
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, types[t]); }
     BlockWaterProfile p("P");
@@ -302,7 +304,7 @@ TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 9 : t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
@@ -313,7 +315,7 @@ TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 6 : t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
@@ -325,7 +327,7 @@ TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesIt)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     for (int y = 0; y < 20; ++y) { SetOcean(w, 25, y); }   // a water column splits off columns 26..29
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 28, 10, 5);
@@ -418,7 +420,7 @@ TEST(DefaultValidationSet, AC4_AnyBrokenGuaranteeFailsTheWhole)
     EXPECT_TRUE(r1.Find(WorldThroneGuarantee().GetId())->satisfied);   // independent
 
     WorldStructure fewer = MakeAllLandWorld(30, 20);
-    FillLand(fewer, 12, 7, 18, 13, DepthZone::AncientInteriors, Biome::GrasslandSteppe);
+    FillLand(fewer, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
     const ValidationResult r2 = ReachabilityValidator::Validate(fewer, set.GetParams());
     EXPECT_FALSE(r2.passed);
     EXPECT_FALSE(r2.Find(WorldThroneGuarantee().GetId())->satisfied);

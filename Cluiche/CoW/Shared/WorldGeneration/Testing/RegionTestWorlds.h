@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainTypes.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -62,7 +63,7 @@ inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
     for (int y = 0; y < h; ++y)
     {
         const DepthZone z = y < row1 ? DepthZone::FirstShores : (y < row2 ? DepthZone::WildReaches : DepthZone::AncientInteriors);
-        FillLand(world, 0, y, w, y + 1, z, Biome::GrasslandSteppe);
+        FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::LegacyB("Biome.Grassland"));
     }
     return world;
 }
@@ -126,11 +127,12 @@ inline void BuildRegionRecords(WorldStructure& world)
                 rec.centreCell = static_cast<uint32_t>(i);
             }
         }
-        int best = static_cast<int>(Biome::Lake);
+        const int lakeIdx = static_cast<int>(::CoW::World::Testing::B("Biome.Lake"));
+        int best = lakeIdx;
         for (int b = 0; b < kBiomeCount; ++b)
         {
-            if (b == static_cast<int>(Biome::Lake) || hist[b] == 0) { continue; }
-            if (best == static_cast<int>(Biome::Lake) || hist[b] > hist[best]) { best = b; }
+            if (b == lakeIdx || hist[b] == 0) { continue; }
+            if (best == lakeIdx || hist[b] > hist[best]) { best = b; }
         }
         rec.primaryBiome = static_cast<Biome>(best);
         rec.cellCount = static_cast<uint16_t>(count);
@@ -170,7 +172,7 @@ inline void SetLake(WorldStructure& world, int x, int y)
     Cell& c = world.At(x, y);
     c.waterSource = WaterSource::Lake;
     c.terrain = TerrainType::Lake;
-    c.biome = Biome::Lake;
+    c.biome = ::CoW::World::Testing::LegacyB("Biome.Lake");
 }
 
 // Sets river cell `from`'s downstream direction so it flows into the adjacent cell `to` (odd-q, directions NE N NW

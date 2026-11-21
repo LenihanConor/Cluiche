@@ -1,5 +1,6 @@
 // S-1 Nodes: built-in river nodes + Hunting/Resource fill (hand-built worlds + generated-world AC8b checks).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/NodesFill.h>
@@ -25,13 +26,14 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
 {
     TerrainRules Rules() { return TestRules(); }
 
-    constexpr Biome G = Biome::GrasslandSteppe;
+    constexpr BiomeConst G {"Biome.Grassland"};
 
     // Independent odd-q hex distance (cube coordinates).
     int Dist(const WorldStructure& w, int a, int b)
@@ -342,17 +344,17 @@ TEST(NodesRiverFill, QuotaNodeLimitedWhenClampsBlockTheBounds)
 
 TEST(NodesRiverFill, YieldTableMatchesGdd)
 {
-    struct Row { Biome b; int food; int mat; };
-    const Row rows[] = { { Biome::GrasslandSteppe, 3, 1 }, { Biome::TemperateForest, 2, 3 }, { Biome::WetlandDelta, 2, 1 },
-                         { Biome::DesertBasin, 1, 2 },     { Biome::AlpineMountain, 1, 3 },  { Biome::TundraBoreal, 1, 2 },
-                         { Biome::Rainforest, 3, 2 },      { Biome::VolcanicAshland, 1, 3 }, { Biome::Ocean, 0, 0 },
-                         { Biome::Lake, 0, 0 } };
+    struct Row { CoW::World::BiomeIndex b; int food; int mat; };
+    const Row rows[] = { { B("Biome.Grassland"), 3, 1 }, { B("Biome.TemperateForest"), 2, 3 }, { B("Biome.Wetland"), 2, 1 },
+                         { B("Biome.Desert"), 1, 2 },     { B("Biome.Alpine"), 1, 3 },  { B("Biome.Tundra"), 1, 2 },
+                         { B("Biome.Rainforest"), 3, 2 },      { B("Biome.Volcanic"), 1, 3 }, { B("Biome.Ocean"), 0, 0 },
+                         { B("Biome.Lake"), 0, 0 } };
     for (const Row& r : rows)
     {
-        EXPECT_EQ(BiomeFood(r.b), r.food) << static_cast<int>(r.b);
-        EXPECT_EQ(BiomeMaterials(r.b), r.mat) << static_cast<int>(r.b);
+        EXPECT_EQ(BiomeFood(Legacy(r.b)), r.food) << static_cast<int>(r.b);
+        EXPECT_EQ(BiomeMaterials(Legacy(r.b)), r.mat) << static_cast<int>(r.b);
         const float share = r.food + r.mat ? static_cast<float>(r.food) / static_cast<float>(r.food + r.mat) : 0.0f;
-        EXPECT_FLOAT_EQ(BiomeFoodShare(r.b), share);
+        EXPECT_FLOAT_EQ(BiomeFoodShare(Legacy(r.b)), share);
     }
 }
 
@@ -387,16 +389,16 @@ TEST(NodesRiverFill, TerrainFactorsAndExclusions)
     EXPECT_GT(TerrainFactor(FillKind::Resource, TerrainType::Lowland), 0);
 
     Cell c;
-    c.landmass = 1; c.biome = Biome::GrasslandSteppe; c.terrain = TerrainType::Lowland;
+    c.landmass = 1; c.biome = LegacyB("Biome.Grassland"); c.terrain = TerrainType::Lowland;
     EXPECT_EQ(CellWeight(FillKind::Hunting, c), 3 * TerrainFactor(FillKind::Hunting, TerrainType::Lowland));
     EXPECT_EQ(CellWeight(FillKind::Resource, c), 1 * TerrainFactor(FillKind::Resource, TerrainType::Lowland));
-    c.biome = Biome::AlpineMountain; c.terrain = TerrainType::Mountain;
+    c.biome = LegacyB("Biome.Alpine"); c.terrain = TerrainType::Mountain;
     EXPECT_EQ(CellWeight(FillKind::Resource, c), 3 * TerrainFactor(FillKind::Resource, TerrainType::Mountain));
     c.waterSource = WaterSource::River; c.terrain = TerrainType::Hills;
     EXPECT_EQ(CellWeight(FillKind::Hunting, c), 0);
     c.waterSource = WaterSource::Lake; c.terrain = TerrainType::Hills;
     EXPECT_EQ(CellWeight(FillKind::Hunting, c), 0);
-    c.waterSource = WaterSource::None; c.biome = Biome::Lake;
+    c.waterSource = WaterSource::None; c.biome = LegacyB("Biome.Lake");
     EXPECT_EQ(CellWeight(FillKind::Hunting, c), 0);
 }
 
@@ -484,7 +486,7 @@ TEST(NodesRiverFill, SingleRegionIsNodeLimitedByTheQuotaSum)
 
 TEST(NodesRiverFill, KindDrawFollowsFoodShareStatistically)
 {
-    for (const Biome b : { Biome::GrasslandSteppe, Biome::AlpineMountain, Biome::Rainforest })
+    for (const Biome b : { LegacyB("Biome.Grassland"), LegacyB("Biome.Alpine"), LegacyB("Biome.Rainforest") })
     {
         int hunting = 0, total = 0;
         for (unsigned seed = 1; seed <= 100; ++seed)
@@ -512,7 +514,7 @@ TEST(NodesRiverFill, NodesRespectTerrainExclusions)
             case 0: c.terrain = TerrainType::Peak; break;
             case 1: c.terrain = TerrainType::Volcano; break;
             case 2: c.terrain = TerrainType::River; c.waterSource = WaterSource::River; break;
-            case 3: c.terrain = TerrainType::Lake; c.waterSource = WaterSource::Lake; c.biome = Biome::Lake; break;
+            case 3: c.terrain = TerrainType::Lake; c.waterSource = WaterSource::Lake; c.biome = LegacyB("Biome.Lake"); break;
             default: c.terrain = TerrainType::Pass; c.terrainFlags |= TerrainFlag::Pass; break;
             }
         }

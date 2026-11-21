@@ -1,5 +1,6 @@
 // S-1 Regions: region partition first half (targets, components, seeds, growth).
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/RegionPartition.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
@@ -13,6 +14,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Maths::RandomStream;
 
 namespace
@@ -20,8 +22,8 @@ namespace
     constexpr DepthZone FS = DepthZone::FirstShores;
     constexpr DepthZone WR = DepthZone::WildReaches;
     constexpr DepthZone AI = DepthZone::AncientInteriors;
-    constexpr Biome     G  = Biome::GrasslandSteppe;
-    constexpr Biome     F  = Biome::TemperateForest;
+    constexpr BiomeConst     G  {"Biome.Grassland"};
+    constexpr BiomeConst     F  {"Biome.TemperateForest"};
 
     TerrainRules Rules() { return TestRules(); }
 
