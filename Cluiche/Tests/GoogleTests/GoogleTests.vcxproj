@@ -154,6 +154,9 @@
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h" />
     <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h" />
     <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepStage.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\Testing\FakeWorldStepStage.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1366,6 +1369,9 @@
     <ClCompile Include="CoW\TestTerrainProfile.cpp" />
     <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp" />
     <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepConfig.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepFake.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

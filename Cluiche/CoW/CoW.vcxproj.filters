@@ -16,6 +16,12 @@
     <Filter Include="Shared\World\Testing">
       <UniqueIdentifier>{b1feb5c0-4cb1-404e-b152-c4988238591c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shared\WorldStep">
+      <UniqueIdentifier>{942fdb40-a5e4-495c-8c20-d89d5eea4732}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shared\WorldStep\Testing">
+      <UniqueIdentifier>{eabcc382-a860-411e-81f8-34dac53aa998}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -201,6 +207,9 @@
     </ClCompile>
     <ClCompile Include="Shared\World\BiomeRegistry.cpp">
       <Filter>Shared\World</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp">
+      <Filter>Shared\WorldStep</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -419,6 +428,15 @@
     </ClInclude>
     <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h">
       <Filter>Shared\World\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\IWorldStepStage.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepConfig.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h">
+      <Filter>Shared\WorldStep\Testing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

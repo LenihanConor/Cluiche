@@ -277,6 +277,15 @@
     <Filter Include="DiaBlackboard">
       <UniqueIdentifier>{465d7a42-e344-4052-aca8-5c63085c2a76}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CoW\Shared\WorldStep">
+      <UniqueIdentifier>{e88c9b31-abfc-44cc-a05d-dd856c66cc27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\Shared\WorldStep\Testing">
+      <UniqueIdentifier>{8279cffd-7b09-410d-b75f-65677fb85746}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CoW\WorldStep">
+      <UniqueIdentifier>{51550e83-c5ca-43a2-a765-63c0061fe9d1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1801,6 +1810,15 @@
     <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h">
       <Filter>DiaPathfinding</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepStage.h">
+      <Filter>CoW\Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.h">
+      <Filter>CoW\Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\Testing\FakeWorldStepStage.h">
+      <Filter>CoW\Shared\WorldStep\Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3248,6 +3266,15 @@
     </ClCompile>
     <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp">
       <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.cpp">
+      <Filter>CoW\Shared\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepConfig.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepFake.cpp">
+      <Filter>CoW\WorldStep</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
