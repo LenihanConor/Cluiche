@@ -24,7 +24,7 @@
 
 namespace WsTest
 {
-    using CoW::WorldStep::Testing::FakeWorldStepListener;
+    using Dia::DeferredStep::Testing::FakeStepChainListener;
 
     inline std::string TempDir() { return "temp/worldstep_save_tests/"; }
 
@@ -50,7 +50,7 @@ namespace WsTest
     class StageStatePart final : public Dia::SaveGame::ISaveable
     {
     public:
-        StageStatePart(FakeWorldStepStage& a, FakeWorldStepStage& b) : mA(a), mB(b) {}
+        StageStatePart(FakeStepStage& a, FakeStepStage& b) : mA(a), mB(b) {}
         void Serialize(Dia::SaveGame::SaveContext& ctx) const override
         {
             ctx.Write(StringCRC("weather"), static_cast<int32_t>(mA.committed));
@@ -66,8 +66,8 @@ namespace WsTest
         uint32_t GetVersion() const override { return 1; }
         uint32_t deserializeCalls = 0;
     private:
-        FakeWorldStepStage& mA;
-        FakeWorldStepStage& mB;
+        FakeStepStage& mA;
+        FakeStepStage& mB;
     };
 
     struct SaveRig : Rig
@@ -131,5 +131,5 @@ namespace WsTest
         int working, result, committed;
         bool operator==(const StageSnapshot& o) const { return working == o.working && result == o.result && committed == o.committed; }
     };
-    inline StageSnapshot Snap(const FakeWorldStepStage& s) { return { s.working, s.result, s.committed }; }
+    inline StageSnapshot Snap(const FakeStepStage& s) { return { s.working, s.result, s.committed }; }
 }

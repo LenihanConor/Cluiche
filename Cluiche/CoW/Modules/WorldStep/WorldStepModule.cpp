@@ -105,8 +105,8 @@ WorldStepModule::~WorldStepModule()
 
 void WorldStepModule::OnConfigure(const char* configJson)
 {
-    mConfig = WorldStep::WorldStepConfig();
-    mConfigError = WorldStep::ConfigError();
+    mConfig = Dia::DeferredStep::StepChainConfig<>();
+    mConfigError = Dia::DeferredStep::ConfigError();
     mConfigOk = false;
 
     if (configJson == nullptr || configJson[0] == '\0')
@@ -125,9 +125,9 @@ void WorldStepModule::OnConfigure(const char* configJson)
         return;
     }
 
-    WorldStep::WorldStepConfig parsed;
-    WorldStep::ConfigError error;
-    if (WorldStep::LoadWorldStepConfig(root, parsed, error))
+    Dia::DeferredStep::StepChainConfig<> parsed;
+    Dia::DeferredStep::ConfigError error;
+    if (Dia::DeferredStep::LoadStepChainConfig(root, parsed, error))
     {
         mConfig = parsed;
         mConfigOk = true;
@@ -276,7 +276,7 @@ Dia::ApplicationFlow::StartResult WorldStepModule::DoStart()
                       i == 0 ? "" : ",", mConfig.order[i].name.AsCStr());
     }
     DIA_LOG_INFO(kLog, "WorldStepModule: configured mode=%s order=[%s] k=%u days",
-                 mConfig.deferred ? "deferred" : "synchronous", order, static_cast<unsigned>(mConfig.applyAfterDays));
+                 mConfig.deferred ? "deferred" : "synchronous", order, static_cast<unsigned>(mConfig.applyAfterSteps));
     return StartResult::kReady;
 }
 
@@ -291,7 +291,7 @@ Dia::ApplicationFlow::StopResult WorldStepModule::DoStop()
     UnregisterChannel();
     mChain.SetObserver(nullptr);
     mChain.Abandon();
-    mChain = WorldStep::WorldStepChain();   // drops every registration; stages re-register on re-entry
+    mChain = Dia::DeferredStep::StepChain<>();   // drops every registration; stages re-register on re-entry
     UnregisterNames();
 
     if (mHealthRegistered)
@@ -376,7 +376,7 @@ void WorldStepModule::OnLoadStarted()
     DIA_TRACE_ZONE("WorldStepModule::OnLoadStarted", Dia::Observation::Trace::Category::kNone);
 
     const bool hadPending = mPendingDay >= 0;
-    const bool hadStep = WorldStepInFlight() || mChain.Phase() != WorldStep::ChainPhase::Idle;
+    const bool hadStep = WorldStepInFlight() || mChain.Phase() != Dia::DeferredStep::ChainPhase::Idle;
 
     // Drains and discards the step in flight (no Apply, no history signal), re-registers the channel (which also clears
     // its kick-key floor, so an earlier timeline can kick again) and abandons the chain.
@@ -444,7 +444,7 @@ bool WorldStepModule::EverRegistered(StringCRC id) const
     return false;
 }
 
-bool WorldStepModule::RegisterStage(StringCRC id, WorldStep::IWorldStepStage& stage)
+bool WorldStepModule::RegisterStage(StringCRC id, Dia::DeferredStep::IStepStage& stage)
 {
     if (!GuardReentry("RegisterStage"))
         return false;
@@ -460,7 +460,7 @@ bool WorldStepModule::RegisterStage(StringCRC id, WorldStep::IWorldStepStage& st
 
     if (!EverRegistered(id) && !mEverRegistered.IsFull())
     {
-        WorldStep::StageId entry;
+        Dia::DeferredStep::StageId entry;
         entry.crc = id;
         entry.name.SetText(id.AsChar());
         mEverRegistered.Add(entry);
@@ -488,7 +488,7 @@ void WorldStepModule::UnregisterStage(StringCRC id)
                             id.AsChar());
             DrainWorldChannel();
         }
-        else if (mChain.Phase() != WorldStep::ChainPhase::Idle)
+        else if (mChain.Phase() != Dia::DeferredStep::ChainPhase::Idle)
         {
             mChain.Abandon();
         }
@@ -513,7 +513,7 @@ void WorldStepModule::WarnUnknownStages()
 {
     if (!mRunning)
         return;   // the chain is not configured yet: every stage would look unknown
-    WorldStep::StageIdList unknown;
+    Dia::DeferredStep::StageIdList<> unknown;
     if (!mChain.UnknownStages(unknown))
         return;
     for (uint32_t i = 0; i < unknown.Size(); ++i)
@@ -576,7 +576,7 @@ bool WorldStepModule::SetDeferred(bool deferred, const char** outReason)
         return true;
     if (mPendingDay >= 0)
         return refuse("a missed week is pending");
-    if (WorldStepInFlight() || (mRunning && mChain.Phase() != WorldStep::ChainPhase::Idle))
+    if (WorldStepInFlight() || (mRunning && mChain.Phase() != Dia::DeferredStep::ChainPhase::Idle))
         return refuse("a step is in flight");
 
     if (mRunning && mScheduler != nullptr)
@@ -650,7 +650,7 @@ void WorldStepModule::ResyncWithScheduler()
     // Only read the chain's phase when the scheduler holds nothing: an idle channel means no worker is in Run.
     if (!mChannelRegistered || mScheduler == nullptr)
         return;
-    if (mScheduler->GetState(kChannelId) == StepState::kIdle && mChain.Phase() != WorldStep::ChainPhase::Idle)
+    if (mScheduler->GetState(kChannelId) == StepState::kIdle && mChain.Phase() != Dia::DeferredStep::ChainPhase::Idle)
     {
         mChain.Abandon();
         mStepAccumNs.store(0);
@@ -660,7 +660,7 @@ void WorldStepModule::ResyncWithScheduler()
 
 void WorldStepModule::EvaluateStages()
 {
-    WorldStep::StageIdList absent;
+    Dia::DeferredStep::StageIdList<> absent;
     mChain.MissingStages(absent);
 
     uint32_t missing = 0;
@@ -726,7 +726,7 @@ WorldStepModule::KickOutcome WorldStepModule::TryKick(uint64_t stepDay, uint64_t
 {
     const uint64_t previousStepDay = mStepDay;   // the step already in flight keeps its day if this kick is refused
     mStepDay = stepDay;   // IDeferredStep::Capture() reads this inside Kick
-    const uint64_t applyKey = kickDay + mConfig.applyAfterDays;
+    const uint64_t applyKey = kickDay + mConfig.applyAfterSteps;
     const KickResult result = mScheduler->Kick(kChannelId, kickDay, applyKey);
     if (result != KickResult::kLaunched)
         mStepDay = previousStepDay;
@@ -908,7 +908,7 @@ void WorldStepModule::Apply()
 void WorldStepModule::SerializePending(Dia::SaveGame::SaveContext& ctx) const
 {
     DIA_TRACE_ZONE("WorldStepModule::SerializePending", Dia::Observation::Trace::Category::kNone);
-    if (mChain.Phase() != WorldStep::ChainPhase::Ran)
+    if (mChain.Phase() != Dia::DeferredStep::ChainPhase::Ran)
     {
         DIA_LOG_ERROR(kLog, "WorldStepModule: SerializePending with no completed step (chain phase %u), nothing written; this save will be refused on load",
                       static_cast<unsigned>(mChain.Phase()));
@@ -939,7 +939,7 @@ namespace {
 // The saved stage table: ids in saved (declared) order.
 struct SavedStages
 {
-    int64_t ids[WorldStep::kMaxStages] = {};
+    int64_t ids[Dia::DeferredStep::kDefaultStageCapacity] = {};
     uint32_t count = 0;
 };
 
@@ -995,7 +995,7 @@ bool WorldStepModule::ValidatePending(Dia::SaveGame::LoadContext& ctx) const
     }
     if (present != static_cast<uint32_t>(stageCount))
         return fail("stage_count", "does not match the number of stage_N objects");
-    if (present > WorldStep::kMaxStages)
+    if (present > Dia::DeferredStep::kDefaultStageCapacity)
         return fail("stage_count", "more stages than the chain can hold");
 
     SavedStages saved;
@@ -1045,7 +1045,7 @@ void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& ctx)
     int64_t stepDay = 0, pendingDay = -1, latestDay = 0;
     if (!ctx.Read(StringCRC("step_day"), stepDay) || !ctx.Read(StringCRC("pending_day"), pendingDay)
         || !ctx.Read(StringCRC("latest_day"), latestDay) || !ctx.Read(StringCRC("stage_count"), stageCount)
-        || stageCount < 0 || static_cast<uint32_t>(stageCount) > WorldStep::kMaxStages)
+        || stageCount < 0 || static_cast<uint32_t>(stageCount) > Dia::DeferredStep::kDefaultStageCapacity)
     {
         DIA_LOG_ERROR(kLog, "WorldStepModule: pending record unreadable after validation, nothing restored");
         mRestoreFailed = true;
@@ -1054,7 +1054,7 @@ void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& ctx)
     }
 
     // The scheduler discarded the old step on LoadStarted; the chain still shows the old step's phase.
-    if (mChain.Phase() != WorldStep::ChainPhase::Idle)
+    if (mChain.Phase() != Dia::DeferredStep::ChainPhase::Idle)
     {
         mChain.Abandon();
         mStepAccumNs.store(0);
@@ -1085,7 +1085,7 @@ void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& ctx)
         std::snprintf(name, sizeof(name), "stage_%d", index);
         if (!ctx.BeginObject(StringCRC(name)))
             continue;
-        WorldStep::IWorldStepStage* stage = mChain.StageAt(i);
+        Dia::DeferredStep::IStepStage* stage = mChain.StageAt(i);
         stage->DeserializePending(ctx);
         ctx.EndObject();
         if (!stage->IsReady())
@@ -1151,7 +1151,7 @@ bool WorldStepModule::GuardReentry(const char* what)
     return false;
 }
 
-bool WorldStepModule::RegisterListener(WorldStep::IWorldStepListener& listener)
+bool WorldStepModule::RegisterListener(Dia::DeferredStep::IStepChainListener& listener)
 {
     if (!GuardReentry("RegisterListener"))
         return false;
@@ -1169,7 +1169,7 @@ bool WorldStepModule::RegisterListener(WorldStep::IWorldStepListener& listener)
     return true;
 }
 
-void WorldStepModule::UnregisterListener(WorldStep::IWorldStepListener& listener)
+void WorldStepModule::UnregisterListener(Dia::DeferredStep::IStepChainListener& listener)
 {
     if (!GuardReentry("UnregisterListener"))
         return;
@@ -1190,13 +1190,13 @@ void WorldStepModule::RaiseApplied(uint64_t applyKey, uint64_t stepDay)
     ++mHistorySeamCalls;   // counted even with no listener, so tests can prove a discarded step never reaches it
     if (mListenerCount == 0)
         return;
-    WorldStep::WorldStepApplied applied;
+    Dia::DeferredStep::StepChainApplied applied;
     applied.applyKey = applyKey;
-    applied.stepDay = stepDay;
+    applied.stepKey = stepDay;
     applied.stageCount = mChain.EnabledCount();
     mRaising = true;
     for (uint32_t i = 0; i < mListenerCount; ++i)
-        mListeners[i]->OnWorldStepApplied(applied);
+        mListeners[i]->OnStepChainApplied(applied);
     mRaising = false;
 }
 
@@ -1213,19 +1213,19 @@ void WorldStepModule::NoteApplied(uint64_t applyKey)
 // Chain observer: per-stage profile scopes and CPU summation
 // ---------------------------------------------------------------------------------------------
 
-void WorldStepModule::OnStageBegin(uint32_t index, WorldStep::StagePhase phase)
+void WorldStepModule::OnStageBegin(uint32_t index, Dia::DeferredStep::StagePhase phase)
 {
     const char* name = "WorldStep.Stage.Commit";
-    if (phase == WorldStep::StagePhase::Capture)
+    if (phase == Dia::DeferredStep::StagePhase::Capture)
         name = "WorldStep.Stage.Capture";
-    else if (phase == WorldStep::StagePhase::Run)
+    else if (phase == Dia::DeferredStep::StagePhase::Run)
         name = "WorldStep.Stage.Run";
     mZone.emplace(StringCRC(name), Dia::Observation::Profile::Category::kNone,
                   static_cast<uint32_t>(mChain.StageIdAt(index).Value()));
     mStageBeginNs = NowNs();
 }
 
-void WorldStepModule::OnStageEnd(uint32_t /*index*/, WorldStep::StagePhase /*phase*/)
+void WorldStepModule::OnStageEnd(uint32_t /*index*/, Dia::DeferredStep::StagePhase /*phase*/)
 {
     const uint64_t elapsed = NowNs() - mStageBeginNs;
     mStepAccumNs.fetch_add(elapsed, std::memory_order_relaxed);
@@ -1370,7 +1370,7 @@ Json::Value WorldStepModule::BuildStatusPayload() const
     Json::Value v(Json::objectValue);
     v["success"] = true;
     v["mode"] = mConfig.deferred ? "deferred" : "sync";
-    v["applyAfterDays"] = static_cast<Json::UInt>(mConfig.applyAfterDays);
+    v["applyAfterDays"] = static_cast<Json::UInt>(mConfig.applyAfterSteps);
     v["running"] = mRunning;
     v["ready"] = mChain.AllReady();
 
@@ -1379,7 +1379,7 @@ Json::Value WorldStepModule::BuildStatusPayload() const
     {
         Json::Value s(Json::objectValue);
         s["id"] = mChain.StageIdAt(i).AsChar();
-        const WorldStep::IWorldStepStage* stage = mChain.StageAt(i);
+        const Dia::DeferredStep::IStepStage* stage = mChain.StageAt(i);
         s["ready"] = stage != nullptr && stage->IsReady();
         stages.append(s);
     }
@@ -1387,7 +1387,7 @@ Json::Value WorldStepModule::BuildStatusPayload() const
 
     Json::Value retired(Json::arrayValue);
     Json::Value missing(Json::arrayValue);
-    WorldStep::StageIdList absent;
+    Dia::DeferredStep::StageIdList<> absent;
     mChain.MissingStages(absent);
     for (uint32_t i = 0; i < absent.Size(); ++i)
     {

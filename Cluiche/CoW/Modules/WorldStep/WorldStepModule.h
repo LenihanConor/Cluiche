@@ -1,5 +1,5 @@
 #pragma once
-// World Step Feature 2: the SimModule that turns the pure WorldStepChain into a running world step.
+// World Step Feature 2: the SimModule that turns the pure StepChain into a running world step.
 // Owns the "world" DiaDeferredStep channel, kicks once per game week, applies at kick day + k, retries a
 // missed week, and runs the same chain inline when configured synchronous.
 // Spec: docs/specs/applications/cow/systems/worldstep/module-and-cadence.md
@@ -20,9 +20,9 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Profile/ScopedZone.h>
-#include <Shared/WorldStep/IWorldStepListener.h>
-#include <Shared/WorldStep/WorldStepChain.h>
-#include <Shared/WorldStep/WorldStepConfig.h>
+#include <DiaDeferredStep/IStepChainListener.h>
+#include <DiaDeferredStep/StepChain.h>
+#include <DiaDeferredStep/StepChainConfigLoader.h>
 #include "Modules/GameSpeed/GameSpeedMessages.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/Plumbing/SaveLoadModule.h"
@@ -47,7 +47,7 @@ class WorldStepModule
     : public Dia::ApplicationFlow::SimModule
     , public Dia::DeferredStep::IDeferredStep
     , public Dia::DeferredStep::IStepKeySource
-    , private WorldStep::IChainObserver
+    , private Dia::DeferredStep::IChainObserver
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -57,7 +57,7 @@ public:
     static constexpr const char* kStatusQueryName  = "cow.worldstep.status";
     static constexpr const char* kStepCommandName  = "cow.worldstep.step";
 
-    // Weeks sit this far apart; the apply key is the kick day plus WorldStepConfig::applyAfterDays.
+    // Weeks sit this far apart; the apply key is the kick day plus StepChainConfig::applyAfterSteps (days: the step key is the game day).
     static constexpr uint32_t kHealthWindow = 16;   // applied steps a stall / late / lost week keeps health Degraded
     static constexpr uint32_t kTickQueueCapacity = 8;
     static constexpr uint32_t kMaxListeners = 4;
@@ -68,13 +68,13 @@ public:
 
     // ---- Stage registration (stages call these in DoStart / DoStop through ModuleRef<WorldStepModule>) ----
     // False on a duplicate id (logged once per id), a full table, or a removal still pending for that id.
-    bool RegisterStage(Dia::Core::StringCRC id, WorldStep::IWorldStepStage& stage);
+    bool RegisterStage(Dia::Core::StringCRC id, Dia::DeferredStep::IStepStage& stage);
     void UnregisterStage(Dia::Core::StringCRC id);
 
     // ---- History signal (Feature 3). Up to kMaxListeners, raised in registration order, SimPU, synchronous.
     // False on a duplicate, a full table, or a call from inside a listener (debug assert). Raw non-owning pointers. ----
-    bool RegisterListener(WorldStep::IWorldStepListener& listener);
-    void UnregisterListener(WorldStep::IWorldStepListener& listener);
+    bool RegisterListener(Dia::DeferredStep::IStepChainListener& listener);
+    void UnregisterListener(Dia::DeferredStep::IStepChainListener& listener);
     uint32_t ListenerCount() const { return mListenerCount; }
 
     // ---- Tick intake. Called from the bus handler (SimPU). Records the key now; the cadence runs in DoUpdate,
@@ -111,9 +111,9 @@ public:
 
     // ---- read access (UI, tests) ----
     const WorldStepHealthReporter& GetHealthReporter() const { return mHealth; }
-    const WorldStep::WorldStepConfig& GetConfig() const { return mConfig; }
-    const WorldStep::ConfigError& GetConfigError() const { return mConfigError; }
-    const WorldStep::WorldStepChain& GetChain() const { return mChain; }
+    const Dia::DeferredStep::StepChainConfig<>& GetConfig() const { return mConfig; }
+    const Dia::DeferredStep::ConfigError& GetConfigError() const { return mConfigError; }
+    const Dia::DeferredStep::StepChain<>& GetChain() const { return mChain; }
     bool IsDeferred() const { return mConfig.deferred; }
     bool IsRunning() const { return mRunning; }
     bool IsChannelRegistered() const { return mChannelRegistered; }
@@ -152,8 +152,8 @@ public:
 
 private:
     // IChainObserver: per-stage profile scope and CPU accumulation (the chain keeps no DiaObservation dependency).
-    void OnStageBegin(uint32_t index, WorldStep::StagePhase phase) override;
-    void OnStageEnd(uint32_t index, WorldStep::StagePhase phase) override;
+    void OnStageBegin(uint32_t index, Dia::DeferredStep::StagePhase phase) override;
+    void OnStageEnd(uint32_t index, Dia::DeferredStep::StagePhase phase) override;
 
     // ---- cadence: one named method per spec step ----
     void RunCadence(const SimulationTick& tick);
@@ -186,12 +186,12 @@ private:
     void ResetRunState();
 
     // ---- configuration ----
-    WorldStep::WorldStepConfig mConfig;
-    WorldStep::ConfigError     mConfigError;
+    Dia::DeferredStep::StepChainConfig<> mConfig;
+    Dia::DeferredStep::ConfigError     mConfigError;
     bool mConfigOk = false;
 
     // ---- collaborators (SimPU only, no locks) ----
-    WorldStep::WorldStepChain mChain;
+    Dia::DeferredStep::StepChain<> mChain;
     Dia::DeferredStep::SerialExecutor mSerial;
     Dia::DeferredStep::DeferredStepScheduler* mScheduler = nullptr;   // borrowed
     Cluiche::AppFlow::SimQueryHostModule* mQueryHost = nullptr;       // borrowed
@@ -231,7 +231,7 @@ private:
     uint32_t mQueueCount = 0;
 
     // ---- stage bookkeeping ----
-    Dia::Core::Containers::DynamicArrayC<WorldStep::StageId, 16> mEverRegistered;
+    Dia::Core::Containers::DynamicArrayC<Dia::DeferredStep::StageId, 16> mEverRegistered;
     uint32_t mMissingCount = 0;
     uint32_t mRetiredCount = 0;
     uint32_t mMissingSignature = 0;
@@ -261,7 +261,7 @@ private:
     double   mLastSlackDays = 0.0;
     uint32_t mHistorySeamCalls = 0;
 
-    WorldStep::IWorldStepListener* mListeners[kMaxListeners] = {};
+    Dia::DeferredStep::IStepChainListener* mListeners[kMaxListeners] = {};
     uint32_t mListenerCount = 0;
     bool     mRaising = false;             // re-entrancy guard while a listener runs
     bool     mRestoreFailed = false;       // a stage could not restore its pending result; Degraded until a step applies

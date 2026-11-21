@@ -1813,26 +1813,11 @@
     <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h">
       <Filter>DiaPathfinding</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepStage.h">
-      <Filter>CoW\Shared\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.h">
-      <Filter>CoW\Shared\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldStep\Testing\FakeWorldStepStage.h">
-      <Filter>CoW\Shared\WorldStep\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepChain.h">
-      <Filter>CoW\Shared\WorldStep</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\CoW\Modules\WorldStep\WorldStepModule.h">
       <Filter>CoW</Filter>
     </ClInclude>
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h">
       <Filter>CoW\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepListener.h">
-      <Filter>CoW\Shared\WorldStep</Filter>
     </ClInclude>
     <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h">
       <Filter>CoW\WorldStep</Filter>
@@ -3285,21 +3270,6 @@
     <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepConfig.cpp">
-      <Filter>CoW\Shared\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\WorldStep\TestWorldStepConfig.cpp">
-      <Filter>CoW\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\WorldStep\TestWorldStepFake.cpp">
-      <Filter>CoW\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\WorldStep\TestWorldStepChain.cpp">
-      <Filter>CoW\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldStepChain.cpp">
-      <Filter>CoW\Shared\WorldStep</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\CoW\Modules\WorldStep\WorldStepModule.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -3310,9 +3280,6 @@
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepLifecycle.cpp">
-      <Filter>CoW\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\WorldStep\TestWorldStepChainEdge.cpp">
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepSave.cpp">

@@ -2,9 +2,9 @@
 #include "WorldStepTestRig.h"
 
 using namespace WsTest;
-using CoW::WorldStep::IWorldStepListener;
-using CoW::WorldStep::WorldStepApplied;
-using CoW::WorldStep::Testing::FakeWorldStepListener;
+using Dia::DeferredStep::IStepChainListener;
+using Dia::DeferredStep::StepChainApplied;
+using Dia::DeferredStep::Testing::FakeStepChainListener;
 using Dia::DeferredStep::StepState;
 using Dia::DeferredStep::Testing::LogCapture;
 using Level = Dia::Observation::Log::LogLevel;
@@ -17,9 +17,9 @@ namespace
     struct ReentryProbe
     {
         CoW::WorldStepModule* module = nullptr;
-        FakeWorldStepListener* other = nullptr;
-        FakeWorldStepStage* stage = nullptr;
-        FakeWorldStepListener* self = nullptr;
+        FakeStepChainListener* other = nullptr;
+        FakeStepStage* stage = nullptr;
+        FakeStepChainListener* self = nullptr;
         int calls = 0;
         bool registerListener = true;
         bool registerStage = true;
@@ -27,7 +27,7 @@ namespace
         bool unregisterListener = false;
         bool unregisterStage = false;
 
-        static void OnSignal(void* user, const WorldStepApplied&)
+        static void OnSignal(void* user, const StepChainApplied&)
         {
             ReentryProbe& p = *static_cast<ReentryProbe*>(user);
             ++p.calls;
@@ -49,7 +49,7 @@ TEST(WorldStepHistorySignal, FourListenersGetTheSignalInRegistrationOrder)
 {
     Rig rig;
     Dia::Core::Containers::DynamicArrayC<int, 16> order;
-    FakeWorldStepListener l[5];
+    FakeStepChainListener l[5];
     for (int i = 0; i < 5; ++i) { l[i].sequence = &order; l[i].tag = i + 1; }
 
     for (int i = 0; i < 4; ++i)
@@ -72,7 +72,7 @@ TEST(WorldStepHistorySignal, FourListenersGetTheSignalInRegistrationOrder)
 TEST(WorldStepHistorySignal, DuplicateRegistrationReturnsFalseAndTheListenerIsRaisedOnce)
 {
     Rig rig;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     EXPECT_TRUE(rig.module.RegisterListener(l));
     EXPECT_FALSE(rig.module.RegisterListener(l));
     EXPECT_EQ(rig.module.ListenerCount(), 1u);
@@ -85,7 +85,7 @@ TEST(WorldStepHistorySignal, UnregisteredListenerGetsNothingAndTheOthersKeepThei
 {
     Rig rig;
     Dia::Core::Containers::DynamicArrayC<int, 16> order;
-    FakeWorldStepListener a, b, c;
+    FakeStepChainListener a, b, c;
     a.sequence = b.sequence = c.sequence = &order;
     a.tag = 1; b.tag = 2; c.tag = 3;
     ASSERT_TRUE(rig.module.RegisterListener(a));
@@ -121,7 +121,7 @@ TEST(WorldStepHistorySignal, NoListenerIsANoOpAndChangesNothingElse)
     EXPECT_EQ(seam, applies);   // the seam is reached once per apply, nobody is called
 
     Rig rig;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.weather.source = 3;
     rig.Steps(1, 49);
@@ -137,18 +137,18 @@ TEST(WorldStepHistorySignal, NoListenerIsANoOpAndChangesNothingElse)
 TEST(WorldStepHistorySignal, EachAppliedStepRaisesOneSignalWithStepDayApplyKeyAndStageCount)
 {
     Rig rig;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 13);
     EXPECT_EQ(l.received.Size(), 0u);   // nothing applies before kick day + k
     rig.Step(14);
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 7u);
+    EXPECT_EQ(l.received[0].stepKey, 7u);
     EXPECT_EQ(l.received[0].applyKey, 14u);
     EXPECT_EQ(l.received[0].stageCount, 2u);
     rig.Steps(15, 21);
     ASSERT_EQ(l.received.Size(), 2u);
-    EXPECT_EQ(l.received[1].stepDay, 14u);
+    EXPECT_EQ(l.received[1].stepKey, 14u);
     EXPECT_EQ(l.received[1].applyKey, 21u);
     EXPECT_EQ(rig.module.ApplyCount(), 2u);
     rig.module.UnregisterListener(l);
@@ -159,7 +159,7 @@ TEST(WorldStepHistorySignal, TheSignalIsRaisedOnlyAfterEveryStageCommitted)
     Rig rig;
     rig.weather.source = 4;
     rig.ecology.source = 5;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     l.Observe(&rig.weather);
     l.Observe(&rig.ecology);
     ASSERT_TRUE(rig.module.RegisterListener(l));
@@ -173,7 +173,7 @@ TEST(WorldStepHistorySignal, TheSignalIsRaisedOnlyAfterEveryStageCommitted)
 TEST(WorldStepHistorySignal, StageCountIsTheEnabledStagesNotTheRegisteredOnes)
 {
     Rig rig(Config("weather", 7, true));   // ecology is registered but not in the order
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 14);
     ASSERT_EQ(l.received.Size(), 1u);
@@ -186,15 +186,15 @@ TEST(WorldStepHistorySignal, StageCountIsTheEnabledStagesNotTheRegisteredOnes)
 TEST(WorldStepHistorySignal, ARetriedWeekCarriesTheMissedStepDayAndTheLaterApplyKey)
 {
     Rig rig(Config("weather,ecology", 10, true));
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 17);   // week 7 applies at 17; week 14 found the channel busy and kicks at 17
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 7u);
+    EXPECT_EQ(l.received[0].stepKey, 7u);
     EXPECT_EQ(l.received[0].applyKey, 17u);
     rig.Steps(18, 27);
     ASSERT_EQ(l.received.Size(), 2u);
-    EXPECT_EQ(l.received[1].stepDay, 14u);   // the day the step stands for, not the retry day
+    EXPECT_EQ(l.received[1].stepKey, 14u);   // the day the step stands for, not the retry day
     EXPECT_EQ(l.received[1].applyKey, 27u);
     rig.module.UnregisterListener(l);
 }
@@ -204,15 +204,15 @@ TEST(WorldStepHistorySignal, ARetriedWeekCarriesTheMissedStepDayAndTheLaterApply
 TEST(WorldStepHistorySignal, SynchronousModeRaisesInlineWithApplyKeyEqualToStepDay)
 {
     Rig rig(Config("weather,ecology", 7, false));
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     l.Observe(&rig.weather);
     rig.weather.source = 2;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 14);
     ASSERT_EQ(l.received.Size(), 2u);
-    EXPECT_EQ(l.received[0].stepDay, 7u);
+    EXPECT_EQ(l.received[0].stepKey, 7u);
     EXPECT_EQ(l.received[0].applyKey, 7u);
-    EXPECT_EQ(l.received[1].stepDay, 14u);
+    EXPECT_EQ(l.received[1].stepKey, 14u);
     EXPECT_EQ(l.received[1].applyKey, 14u);
     EXPECT_EQ(l.received[1].stageCount, 2u);
     EXPECT_EQ(l.observedCommitted[0], 6);
@@ -225,7 +225,7 @@ TEST(WorldStepHistorySignal, NotRaisedWhenAStageUnregistersMidStep)
 {
     Rig rig;
     rig.autoComplete = false;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 7);
     ASSERT_EQ(rig.scheduler.GetState(kWorld), StepState::kRunning);
@@ -240,7 +240,7 @@ TEST(WorldStepHistorySignal, NotRaisedByASaveDrain)
 {
     Rig rig;
     rig.autoComplete = false;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 7);
     rig.scheduler.DrainAll();   // what a save does: waits for the step, applies nothing
@@ -254,7 +254,7 @@ TEST(WorldStepHistorySignal, NotRaisedByADiscardOrByStop)
 {
     Rig rig;
     rig.autoComplete = false;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 7);
     rig.scheduler.DrainAndDiscardAll();   // what a load does first
@@ -273,7 +273,7 @@ TEST(WorldStepHistorySignal, ApplyOfARestoredChannelWithAnIdleChainLogsOnceRaise
 {
     LogCapture logs("WST");
     Rig rig;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 6);
     // A restored channel whose stages could not restore: the scheduler holds a pending result, the chain stayed Idle.
@@ -284,7 +284,7 @@ TEST(WorldStepHistorySignal, ApplyOfARestoredChannelWithAnIdleChainLogsOnceRaise
     EXPECT_EQ(l.received.Size(), 0u);
     EXPECT_EQ(rig.module.ApplyCount(), 0u);
     EXPECT_EQ(rig.module.HistorySeamCalls(), 0u);
-    EXPECT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);
+    EXPECT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);
     EXPECT_EQ(rig.scheduler.GetState(kWorld), StepState::kIdle);
 
     rig.Steps(11, 14);   // week 14 kicks: the channel and the chain are usable
@@ -292,7 +292,7 @@ TEST(WorldStepHistorySignal, ApplyOfARestoredChannelWithAnIdleChainLogsOnceRaise
     rig.Steps(15, 21);
     EXPECT_EQ(rig.module.ApplyCount(), 1u);
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 14u);
+    EXPECT_EQ(l.received[0].stepKey, 14u);
     rig.module.UnregisterListener(l);
 }
 
@@ -302,9 +302,9 @@ TEST(WorldStepHistorySignal, AListenerCallingBackIntoTheModuleIsRefusedAndTripsT
 {
     AssertCapture asserts;
     Rig rig;
-    FakeWorldStepStage extra(StringCRC("hydro"), rig.log);
-    FakeWorldStepListener other;
-    FakeWorldStepListener self;
+    FakeStepStage extra(StringCRC("hydro"), rig.log);
+    FakeStepChainListener other;
+    FakeStepChainListener self;
     ReentryProbe probe;
     probe.module = &rig.module;
     probe.other = &other;

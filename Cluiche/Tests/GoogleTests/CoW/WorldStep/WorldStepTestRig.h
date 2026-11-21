@@ -12,7 +12,7 @@
 
 #include <Modules/WorldStep/WorldStepModule.h>
 #include <Modules/SimQueryHostModule.h>
-#include <Shared/WorldStep/Testing/FakeWorldStepStage.h>
+#include <DiaDeferredStep/Testing/FakeStepStage.h>
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -31,13 +31,13 @@
 namespace WsTest
 {
     using Dia::Core::StringCRC;
-    using CoW::WorldStep::Testing::CallLog;
-    using CoW::WorldStep::Testing::CallPhase;
-    using CoW::WorldStep::Testing::CallRecord;
-    using CoW::WorldStep::Testing::FakeWorldStepStage;
+    using Dia::DeferredStep::Testing::CallLog;
+    using Dia::DeferredStep::Testing::CallPhase;
+    using Dia::DeferredStep::Testing::CallRecord;
+    using Dia::DeferredStep::Testing::FakeStepStage;
     using Dia::DeferredStep::StepKey;
 
-    constexpr const char* kDefaultConfig = "{\"order\":[\"weather\",\"ecology\"],\"apply_after_days\":7,\"deferred\":true}";
+    constexpr const char* kDefaultConfig = "{\"order\":[\"weather\",\"ecology\"],\"apply_after_steps\":7,\"deferred\":true}";
 
     inline std::string Config(const char* orderCsv, unsigned k, bool deferred)
     {
@@ -62,7 +62,7 @@ namespace WsTest
         }
         char buf[64];
         std::snprintf(buf, sizeof(buf), "%u", k);
-        return "{\"order\":[" + order + "],\"apply_after_days\":" + buf + ",\"deferred\":" + (deferred ? "true" : "false") + "}";
+        return "{\"order\":[" + order + "],\"apply_after_steps\":" + buf + ",\"deferred\":" + (deferred ? "true" : "false") + "}";
     }
 
     // Counts asserts instead of breaking into the debugger (Debug only), so paths that assert on purpose can be tested.
@@ -169,8 +169,8 @@ namespace WsTest
     struct Rig : Harness
     {
         CallLog log;
-        FakeWorldStepStage weather{ StringCRC("weather"), log };
-        FakeWorldStepStage ecology{ StringCRC("ecology"), log };
+        FakeStepStage weather{ StringCRC("weather"), log };
+        FakeStepStage ecology{ StringCRC("ecology"), log };
         std::vector<CallRecord> history;
         std::vector<uint64_t> kickDays;     // days on which the module launched a step
         std::vector<uint64_t> commitDays;   // days on which the weather stage committed
@@ -255,7 +255,7 @@ namespace WsTest
     // A real-shaped stage: Capture copies the committed state (plus a sum of an upstream stage's committed state),
     // Run calls ParallelFor several times over independent cells, Commit publishes. No hidden inputs, so a deferred
     // and a synchronous run of the same stages must be bit-identical after the same number of applied steps.
-    class OracleStage final : public CoW::WorldStep::IWorldStepStage
+    class OracleStage final : public Dia::DeferredStep::IStepStage
     {
     public:
         OracleStage(uint32_t cells, uint32_t passes, uint32_t salt, const OracleStage* upstream = nullptr)

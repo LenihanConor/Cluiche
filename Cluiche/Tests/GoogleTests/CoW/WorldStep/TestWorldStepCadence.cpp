@@ -172,7 +172,7 @@ TEST(WorldStepCadence, DueWeekWhileChannelInFlightIsRetriedWithMissedDayAndNewAp
     EXPECT_EQ(rig.module.LastKickDay(), 17u);
     Dia::DeferredStep::StepKey applyKey = 0;
     ASSERT_TRUE(rig.scheduler.GetApplyKey(kWorld, applyKey));
-    EXPECT_EQ(applyKey, 27u);   // apply_after_days is counted from the actual kick
+    EXPECT_EQ(applyKey, 27u);   // apply_after_steps is counted from the actual kick
     EXPECT_EQ(logs.Infos("3 day(s) late"), 1u);
 
     const std::vector<StepKey> expected = { 7, 14 };   // every stage receives the missed day, not the retry day

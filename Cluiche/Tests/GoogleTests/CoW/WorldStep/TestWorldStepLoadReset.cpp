@@ -4,7 +4,7 @@
 #include "WorldStepSaveRig.h"
 
 using namespace WsTest;
-using CoW::WorldStep::ChainPhase;
+using Dia::DeferredStep::ChainPhase;
 using Dia::DeferredStep::StepState;
 using Dia::DeferredStep::Testing::LogCapture;
 
@@ -31,7 +31,7 @@ TEST(WorldStepLoadReset, ALoadFromAQuietSaveDropsTheRetriedWeekAndTheStepInFligh
     SaveQuietWorld(slot);
 
     SaveRig b(slot, kCfg);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     Drive(b, 1, 14);
     ASSERT_TRUE(b.module.HasPendingWeek());
@@ -57,7 +57,7 @@ TEST(WorldStepLoadReset, NormalCadenceResumesOnTheLoadedTimeline)
     SaveQuietWorld(slot);
 
     SaveRig b(slot, kCfg);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     Drive(b, 1, 14);
     ASSERT_TRUE(b.Load().Ok());
@@ -70,7 +70,7 @@ TEST(WorldStepLoadReset, NormalCadenceResumesOnTheLoadedTimeline)
 
     Drive(b, 25, 31);
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 21u);
+    EXPECT_EQ(l.received[0].stepKey, 21u);
     EXPECT_EQ(l.received[0].applyKey, 31u);
     b.module.UnregisterListener(l);
 }
@@ -103,7 +103,7 @@ TEST(WorldStepLoadReset, ALoadOfAnEarlierDayOverAnAdvancedWorldResetsTheKeyAndTh
         ASSERT_EQ(a.weather.serializeCalls, 0u);
     }
     SaveRig b(slot, kCfg);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     Drive(b, 1, 20);
     ASSERT_EQ(b.module.GetCurrentKey(), 20u);
@@ -118,7 +118,7 @@ TEST(WorldStepLoadReset, ALoadOfAnEarlierDayOverAnAdvancedWorldResetsTheKeyAndTh
     EXPECT_EQ(b.module.LastStepDay(), 14u);
     Drive(b, 15, 24);
     ASSERT_EQ(l.received.Size(), before + 1u);
-    EXPECT_EQ(l.received[before].stepDay, 14u);
+    EXPECT_EQ(l.received[before].stepKey, 14u);
     EXPECT_EQ(l.received[before].applyKey, 24u);
     b.module.UnregisterListener(l);
 }

@@ -3,8 +3,8 @@
 #include "WorldStepSaveRig.h"
 
 using namespace WsTest;
-using CoW::WorldStep::ChainPhase;
-using CoW::WorldStep::WorldStepApplied;
+using Dia::DeferredStep::ChainPhase;
+using Dia::DeferredStep::StepChainApplied;
 using Dia::DeferredStep::StepState;
 using Dia::DeferredStep::Testing::LogCapture;
 using Dia::Observation::Health::HealthStatus;
@@ -37,7 +37,7 @@ namespace
         StageSnapshot ecology{};
         std::vector<uint64_t> commitDays;
         std::vector<StepKey> captureKeys;
-        std::vector<WorldStepApplied> signals;
+        std::vector<StepChainApplied> signals;
     };
 
     // Uninterrupted reference run.
@@ -45,7 +45,7 @@ namespace
     {
         RunResult out;
         SaveRig rig(UniqueSlot("ref"), config);
-        FakeWorldStepListener l;
+        FakeStepChainListener l;
         rig.module.RegisterListener(l);
         Drive(rig, 1, last);
         out.weather = Snap(rig.weather);
@@ -287,7 +287,7 @@ TEST(WorldStepSaveLoad, MidStepSaveLoadContinuesBitIdenticallyAndAppliesAtItsOri
     }
 
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     ASSERT_TRUE(b.Load().Ok());
     EXPECT_EQ(b.module.GetChain().Phase(), ChainPhase::Ran);          // AC 7
@@ -308,14 +308,14 @@ TEST(WorldStepSaveLoad, MidStepSaveLoadContinuesBitIdenticallyAndAppliesAtItsOri
     EXPECT_TRUE(Snap(b.ecology) == ref.ecology);
 
     // AC 16 (restored half) and 14: the restored step raised exactly one signal, labelled with its own day.
-    std::vector<WorldStepApplied> refSignals;
-    for (const WorldStepApplied& s : ref.signals) if (s.applyKey > 17) refSignals.push_back(s);
+    std::vector<StepChainApplied> refSignals;
+    for (const StepChainApplied& s : ref.signals) if (s.applyKey > 17) refSignals.push_back(s);
     ASSERT_EQ(l.received.Size(), refSignals.size());
-    EXPECT_EQ(l.received[0].stepDay, 14u);
+    EXPECT_EQ(l.received[0].stepKey, 14u);
     EXPECT_EQ(l.received[0].applyKey, 21u);
     for (unsigned i = 0; i < l.received.Size(); ++i)
     {
-        EXPECT_EQ(l.received[i].stepDay, refSignals[i].stepDay);
+        EXPECT_EQ(l.received[i].stepKey, refSignals[i].stepKey);
         EXPECT_EQ(l.received[i].applyKey, refSignals[i].applyKey);
     }
     b.module.UnregisterListener(l);
@@ -336,7 +336,7 @@ TEST(WorldStepSaveLoad, ARetriedWeekPendingAtSaveKicksOnTheFirstFreeTickWithItsO
     }
 
     SaveRig b(slot, config);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     ASSERT_TRUE(b.Load().Ok());
     EXPECT_EQ(b.module.PendingWeekDay(), 14);   // AC 5: restored, not yet kicked (the restored step still holds the channel)
@@ -357,9 +357,9 @@ TEST(WorldStepSaveLoad, ARetriedWeekPendingAtSaveKicksOnTheFirstFreeTickWithItsO
     EXPECT_TRUE(Snap(b.ecology) == ref.ecology);
 
     ASSERT_GE(l.received.Size(), 2u);
-    EXPECT_EQ(l.received[0].stepDay, 7u);
+    EXPECT_EQ(l.received[0].stepKey, 7u);
     EXPECT_EQ(l.received[0].applyKey, 17u);
-    EXPECT_EQ(l.received[1].stepDay, 14u);       // the retried week keeps its missed day across the save
+    EXPECT_EQ(l.received[1].stepKey, 14u);       // the retried week keeps its missed day across the save
     EXPECT_EQ(l.received[1].applyKey, 27u);
     b.module.UnregisterListener(l);
 }
@@ -404,7 +404,7 @@ TEST(WorldStepSaveLoad, AMissingBlobForAnEnabledStageRefusesTheLoadAndChangesNot
     }
 
     SaveRig b(slot);   // ecology is in order here
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     b.weather.committed = 77;
     b.ecology.committed = 88;
@@ -482,7 +482,7 @@ TEST(WorldStepSaveLoad, AStageThatCannotRestoreAfterValidateLogsAnErrorDegradesH
     }
 
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     b.weather.failDeserialize = true;   // validates, then cannot restore: goes not-ready through its own health
     LogCapture logs("WST");

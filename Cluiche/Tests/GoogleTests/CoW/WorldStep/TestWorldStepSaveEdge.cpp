@@ -4,7 +4,7 @@
 #include "WorldStepSaveRig.h"
 
 using namespace WsTest;
-using CoW::WorldStep::ChainPhase;
+using Dia::DeferredStep::ChainPhase;
 using Dia::DeferredStep::StepState;
 using Dia::DeferredStep::Testing::LogCapture;
 using Dia::SaveGame::LoadContext;
@@ -51,7 +51,7 @@ TEST(WorldStepSaveEdge, ASaveWithNoStepInFlightWritesNothingForTheChannelAndLoad
         EXPECT_EQ(a.ecology.serializeCalls, 0u);
     }
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     LogCapture logs("WST");
     ASSERT_TRUE(b.Load().Ok());
@@ -87,7 +87,7 @@ TEST(WorldStepSaveEdge, LoadingTwiceInARowAppliesTheRestoredStepOnce)
     SaveWorldAt(slot, 17);
 
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     ASSERT_TRUE(b.Load().Ok());
     ASSERT_TRUE(b.Load().Ok());
@@ -96,7 +96,7 @@ TEST(WorldStepSaveEdge, LoadingTwiceInARowAppliesTheRestoredStepOnce)
     Drive(b, 18, 21);
     EXPECT_EQ(b.module.ApplyCount(), 1u);
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 14u);
+    EXPECT_EQ(l.received[0].stepKey, 14u);
     EXPECT_EQ(b.weather.committed, 42);
     b.module.UnregisterListener(l);
 }
@@ -108,7 +108,7 @@ TEST(WorldStepSaveEdge, LoadingOverALiveStepDiscardsItAndRestoresTheSavedOne)
     SaveWorldAt(slot, 17);
 
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     Drive(b, 1, 10);   // week 7 of a different timeline is in flight
     ASSERT_NE(b.scheduler.GetState(kWorld), StepState::kIdle);
@@ -121,7 +121,7 @@ TEST(WorldStepSaveEdge, LoadingOverALiveStepDiscardsItAndRestoresTheSavedOne)
     Drive(b, 18, 21);
     EXPECT_EQ(b.module.ApplyCount(), 1u);
     ASSERT_EQ(l.received.Size(), 1u);
-    EXPECT_EQ(l.received[0].stepDay, 14u);
+    EXPECT_EQ(l.received[0].stepKey, 14u);
     EXPECT_EQ(l.received[0].applyKey, 21u);
     b.module.UnregisterListener(l);
 }
@@ -133,7 +133,7 @@ TEST(WorldStepSaveEdge, AStageNotReadyAtLoadMakesTheRestoredStepAnIgnoredNoOp)
     SaveWorldAt(slot, 17);
 
     SaveRig b(slot);
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(b.module.RegisterListener(l));
     b.ecology.SetReady(false);
     LogCapture logs("WST");
@@ -264,7 +264,7 @@ TEST(WorldStepSaveEdge, CapacityAndRangeFaultsInTheRecordAreRefused)
 TEST(WorldStepSaveEdge, AListenerThatUnregistersAfterTheRaiseGetsNoMoreSignals)
 {
     Rig rig;
-    FakeWorldStepListener l;
+    FakeStepChainListener l;
     ASSERT_TRUE(rig.module.RegisterListener(l));
     rig.Steps(1, 14);
     ASSERT_EQ(l.received.Size(), 1u);

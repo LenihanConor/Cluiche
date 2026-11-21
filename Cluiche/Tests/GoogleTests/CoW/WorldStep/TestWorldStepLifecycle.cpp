@@ -94,7 +94,7 @@ TEST(WorldStepLifecycle, StageUnregisteredMidStepDrainsAndDiscardsTheStepWithNoC
     rig.autoComplete = false;
     rig.Steps(1, 7);   // week 7 is captured and in flight, not run
     ASSERT_EQ(rig.scheduler.GetState(kWorld), StepState::kRunning);
-    ASSERT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Captured);
+    ASSERT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Captured);
     const uint32_t channelsBefore = rig.scheduler.GetChannelCount();
 
     rig.module.UnregisterStage(StringCRC("ecology"));
@@ -103,7 +103,7 @@ TEST(WorldStepLifecycle, StageUnregisteredMidStepDrainsAndDiscardsTheStepWithNoC
     EXPECT_EQ(logs.Warnings("mid-step"), 1u);
     EXPECT_EQ(logs.Count(Level::kError), 0u);
     EXPECT_EQ(rig.scheduler.GetState(kWorld), StepState::kIdle);                       // drained
-    EXPECT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);        // abandoned
+    EXPECT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);        // abandoned
     EXPECT_EQ(rig.Count(CallPhase::Commit), 0u);                                       // never committed
     EXPECT_EQ(rig.module.HistorySeamCalls(), 0u);                                      // no history signal
     EXPECT_EQ(rig.module.ApplyCount(), 0u);
@@ -130,7 +130,7 @@ TEST(WorldStepLifecycle, MidStepUnregisterOfEveryStageLeavesAnIdleUsableModule)
     rig.UnregisterBoth();
     EXPECT_EQ(rig.module.GetChain().RegisteredCount(), 0u);
     EXPECT_EQ(rig.scheduler.GetState(kWorld), StepState::kIdle);
-    EXPECT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);
+    EXPECT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);
     EXPECT_EQ(rig.Count(CallPhase::Commit), 0u);
     rig.Steps(8, 30);   // retired stages, no kicks, no crash
     EXPECT_EQ(rig.module.KickCount(), 1u);
@@ -147,10 +147,10 @@ TEST(WorldStepLifecycle, SchedulerAbandonedStepResetsTheChainOnTheNextTick)
     ASSERT_EQ(rig.module.KickCount(), 1u);
     rig.scheduler.DrainAndDiscardAll();   // what a load does: the channel goes idle, the module is not told
     ASSERT_EQ(rig.scheduler.GetState(kWorld), StepState::kIdle);
-    ASSERT_NE(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);
+    ASSERT_NE(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);
 
     rig.Step(8);
-    EXPECT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);
+    EXPECT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);
     EXPECT_EQ(logs.Infos("abandoned"), 1u);
     EXPECT_EQ(rig.Count(CallPhase::Commit), 0u);
 
@@ -189,7 +189,7 @@ TEST(WorldStepLifecycle, ReEntryRebuildsFromConfigWithNoLeakedChannelPendingWeek
     EXPECT_EQ(rig.module.MissingStageCount(), 0u);
     EXPECT_EQ(rig.scheduler.GetChannelCount(), 1u);                       // exactly one registration, not two
     EXPECT_TRUE(rig.module.NamesRegistered());
-    EXPECT_EQ(rig.module.GetConfig().applyAfterDays, 10u);                // rebuilt from config
+    EXPECT_EQ(rig.module.GetConfig().applyAfterSteps, 10u);                // rebuilt from config
     EXPECT_EQ(rig.module.GetChain().EnabledCount(), 0u);                  // stages must register again
 
     rig.RegisterBoth();
@@ -245,7 +245,7 @@ TEST(WorldStepLifecycle, DoStopWithAStepInFlightAbandonsItWithNoCommitAndNoSeamC
     EXPECT_EQ(rig.Count(CallPhase::Commit), 0u);
     EXPECT_EQ(rig.scheduler.GetStats().applies, 0u);
     EXPECT_EQ(rig.scheduler.GetChannelCount(), 0u);
-    EXPECT_EQ(rig.module.GetChain().Phase(), CoW::WorldStep::ChainPhase::Idle);
+    EXPECT_EQ(rig.module.GetChain().Phase(), Dia::DeferredStep::ChainPhase::Idle);
     EXPECT_EQ(rig.module.GetChain().RegisteredCount(), 0u);   // the chain was rebuilt empty
 }
 
@@ -342,8 +342,8 @@ TEST(WorldStepLifecycle, TheModuleCanRunWithStagesRegisteredBeforeStart)
 {
     Harness h(kDefaultConfig, false);
     CallLog log;
-    FakeWorldStepStage weather(StringCRC("weather"), log);
-    FakeWorldStepStage ecology(StringCRC("ecology"), log);
+    FakeStepStage weather(StringCRC("weather"), log);
+    FakeStepStage ecology(StringCRC("ecology"), log);
     ASSERT_TRUE(h.module.RegisterStage(StringCRC("weather"), weather));
     ASSERT_TRUE(h.module.RegisterStage(StringCRC("ecology"), ecology));
     ASSERT_TRUE(h.Start());

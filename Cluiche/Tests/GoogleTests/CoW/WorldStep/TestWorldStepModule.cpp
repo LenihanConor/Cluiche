@@ -47,7 +47,7 @@ TEST(WorldStepModule, ValidConfigStartsAndIsReadBack)
 {
     Harness h(Config("weather,ecology", 9, false));
     ASSERT_TRUE(h.started);
-    EXPECT_EQ(h.module.GetConfig().applyAfterDays, 9u);
+    EXPECT_EQ(h.module.GetConfig().applyAfterSteps, 9u);
     EXPECT_FALSE(h.module.GetConfig().deferred);
     EXPECT_EQ(h.module.GetConfig().order.Size(), 2u);
     EXPECT_TRUE(h.module.IsRunning());
@@ -57,7 +57,7 @@ TEST(WorldStepModule, MissingApplyAfterDaysAndDeferredTakeTheirDefaults)
 {
     Harness h("{\"order\":[\"weather\"]}");
     ASSERT_TRUE(h.started);
-    EXPECT_EQ(h.module.GetConfig().applyAfterDays, 7u);
+    EXPECT_EQ(h.module.GetConfig().applyAfterSteps, 7u);
     EXPECT_TRUE(h.module.GetConfig().deferred);
 }
 
@@ -71,9 +71,9 @@ TEST(WorldStepModule, InvalidConfigRefusesToStartAndNamesTheKey)
         { "{\"order\":[]}",                                                "order" },
         { "{\"order\":\"weather\"}",                                       "order" },
         { "{\"order\":[\"a\",\"a\"]}",                                     "order" },
-        { "{\"order\":[\"a\"],\"apply_after_days\":0}",                    "apply_after_days" },
-        { "{\"order\":[\"a\"],\"apply_after_days\":366}",                  "apply_after_days" },
-        { "{\"order\":[\"a\"],\"apply_after_days\":7.5}",                  "apply_after_days" },
+        { "{\"order\":[\"a\"],\"apply_after_steps\":0}",                    "apply_after_steps" },
+        { "{\"order\":[\"a\"],\"apply_after_steps\":366}",                  "apply_after_steps" },
+        { "{\"order\":[\"a\"],\"apply_after_steps\":7.5}",                  "apply_after_steps" },
         { "{\"order\":[\"a\"],\"deferred\":\"true\"}",                     "deferred" },
         { "{\"order\":[\"a\"],\"bogus\":1}",                               "bogus" },
     };
@@ -666,7 +666,7 @@ namespace
 {
     // Burns a known amount of wall time inside every stage method and records its own measurement. The module's
     // per-stage observer wraps each call from outside, so its sum must cover (and barely exceed) these inner sums.
-    class TimedStage final : public CoW::WorldStep::IWorldStepStage
+    class TimedStage final : public Dia::DeferredStep::IStepStage
     {
     public:
         TimedStage(int captureMs, int runMs, int commitMs) : mCaptureMs(captureMs), mRunMs(runMs), mCommitMs(commitMs) {}

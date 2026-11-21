@@ -232,12 +232,6 @@
     <ClCompile Include="Shared\World\BiomeRegistry.cpp">
       <Filter>Shared\World</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp">
-      <Filter>Shared\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp">
-      <Filter>Shared\WorldStep</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
       <Filter>Modules\WorldStep</Filter>
     </ClCompile>
@@ -462,23 +456,8 @@
     <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h">
       <Filter>Shared\World\Testing</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldStep\IWorldStepStage.h">
-      <Filter>Shared\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldStep\WorldStepConfig.h">
-      <Filter>Shared\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h">
-      <Filter>Shared\WorldStep\Testing</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldStep\WorldStepChain.h">
-      <Filter>Shared\WorldStep</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
       <Filter>Modules\WorldStep</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldStep\IWorldStepListener.h">
-      <Filter>Shared\WorldStep</Filter>
     </ClInclude>
     <ClInclude Include="Shared\World\CellVocabulary.h">
       <Filter>World</Filter>
