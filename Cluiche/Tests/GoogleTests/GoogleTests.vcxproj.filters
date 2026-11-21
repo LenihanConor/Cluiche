@@ -1831,6 +1831,9 @@
     <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepListener.h">
       <Filter>CoW\Shared\WorldStep</Filter>
     </ClInclude>
+    <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h">
+      <Filter>CoW\WorldStep</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">

@@ -161,6 +161,7 @@
     <ClInclude Include="..\..\CoW\Modules\WorldStepModule.h" />
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepListener.h" />
+    <ClInclude Include="CoW\WorldStep\WorldStepSaveRig.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>

@@ -90,6 +90,7 @@ public:
     void Run(Dia::DeferredStep::IParallelExecutor& executor) override;
     void Apply() override;
     uint32_t GetPendingVersion() const override { return static_cast<uint32_t>(kWorldVersion); }
+    bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override;      // read-only, refuses the whole load
     void SerializePending(Dia::SaveGame::SaveContext& ctx) const override;
     void DeserializePending(Dia::SaveGame::LoadContext& ctx) override;
 

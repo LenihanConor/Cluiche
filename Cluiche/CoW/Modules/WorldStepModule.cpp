@@ -823,15 +823,234 @@ void WorldStepModule::Apply()
     RaiseApplied(applyKey, mStepDay);
 }
 
-void WorldStepModule::SerializePending(Dia::SaveGame::SaveContext& /*ctx*/) const
+// ---------------------------------------------------------------------------------------------
+// Pending record (save/load of a step in flight)
+// ---------------------------------------------------------------------------------------------
+
+void WorldStepModule::SerializePending(Dia::SaveGame::SaveContext& ctx) const
 {
-    // TODO(World Step Feature 3): per-stage pending blobs.
+    DIA_TRACE_ZONE("WorldStepModule::SerializePending", Dia::Observation::Trace::Category::kNone);
+    if (mChain.Phase() != WorldStep::ChainPhase::Ran)
+    {
+        DIA_LOG_ERROR(kLog, "WorldStepModule: SerializePending with no completed step (chain phase %u), nothing written; this save will be refused on load",
+                      static_cast<unsigned>(mChain.Phase()));
+        return;
+    }
+
+    const uint32_t count = mChain.EnabledCount();
+    ctx.Write(StringCRC("world_version"), kWorldVersion);
+    ctx.Write(StringCRC("step_day"), static_cast<int64_t>(mStepDay));
+    ctx.Write(StringCRC("pending_day"), mPendingDay);
+    ctx.Write(StringCRC("latest_day"), static_cast<int64_t>(mLatestDay));
+    ctx.Write(StringCRC("stage_count"), static_cast<int32_t>(count));
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        char name[16];
+        std::snprintf(name, sizeof(name), "stage_%u", i);
+        ctx.BeginObject(StringCRC(name));
+        ctx.Write(StringCRC("id"), static_cast<int64_t>(mChain.StageIdAt(i).Value()));
+        mChain.StageAt(i)->SerializePending(ctx);
+        ctx.EndObject();
+    }
 }
 
-void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& /*ctx*/)
+namespace {
+
+// The saved stage table: ids in saved (declared) order.
+struct SavedStages
 {
-    // TODO(World Step Feature 3): per-stage pending blobs.
+    int64_t ids[WorldStep::kMaxStages] = {};
+    uint32_t count = 0;
+};
+
+int FindSaved(const SavedStages& saved, uint32_t value)
+{
+    for (uint32_t i = 0; i < saved.count; ++i)
+    {
+        if (saved.ids[i] == static_cast<int64_t>(value))
+            return static_cast<int>(i);
+    }
+    return -1;
 }
+
+} // namespace
+
+bool WorldStepModule::ValidatePending(Dia::SaveGame::LoadContext& ctx) const
+{
+    DIA_TRACE_ZONE("WorldStepModule::ValidatePending", Dia::Observation::Trace::Category::kNone);
+    auto fail = [](const char* key, const char* reason, const char* stage = nullptr)
+    {
+        if (stage != nullptr)
+            DIA_LOG_ERROR(kLog, "WorldStepModule: pending record refused, key '%s' (stage '%s'): %s", key, stage, reason);
+        else
+            DIA_LOG_ERROR(kLog, "WorldStepModule: pending record refused, key '%s': %s", key, reason);
+        return false;
+    };
+
+    int32_t version = 0;
+    if (!ctx.Read(StringCRC("world_version"), version))
+        return fail("world_version", "missing or not an integer");
+    if (version < 1 || version > kWorldVersion)
+        return fail("world_version", "unsupported version");
+
+    int64_t stepDay = 0, pendingDay = 0, latestDay = 0;
+    if (!ctx.Read(StringCRC("step_day"), stepDay) || stepDay < 0)
+        return fail("step_day", "missing, not an integer or negative");
+    if (!ctx.Read(StringCRC("pending_day"), pendingDay) || pendingDay < -1)
+        return fail("pending_day", "missing, not an integer or below -1");
+    if (!ctx.Read(StringCRC("latest_day"), latestDay) || latestDay < 0)
+        return fail("latest_day", "missing, not an integer or negative");
+
+    int32_t stageCount = 0;
+    if (!ctx.Read(StringCRC("stage_count"), stageCount) || stageCount < 0)
+        return fail("stage_count", "missing, not an integer or negative");
+
+    // Count the stage_N objects actually present.
+    const Json::Value& node = ctx.CurrentNode();
+    uint32_t present = 0;
+    for (const std::string& member : node.getMemberNames())
+    {
+        if (member.compare(0, 6, "stage_") == 0 && node[member].isObject())
+            ++present;
+    }
+    if (present != static_cast<uint32_t>(stageCount))
+        return fail("stage_count", "does not match the number of stage_N objects");
+    if (present > WorldStep::kMaxStages)
+        return fail("stage_count", "more stages than the chain can hold");
+
+    SavedStages saved;
+    for (uint32_t i = 0; i < present; ++i)
+    {
+        char name[16];
+        std::snprintf(name, sizeof(name), "stage_%u", i);
+        if (!ctx.BeginObject(StringCRC(name)))
+            return fail(name, "missing (stage objects must be numbered from 0)");
+        int64_t id = 0;
+        const bool idOk = ctx.Read(StringCRC("id"), id);
+        ctx.EndObject();
+        if (!idOk)
+            return fail(name, "no integer 'id'");
+        for (uint32_t j = 0; j < saved.count; ++j)
+        {
+            if (saved.ids[j] == id)
+                return fail(name, "duplicate stage id");
+        }
+        saved.ids[saved.count++] = id;
+    }
+
+    // Every enabled stage (registered and in order) needs its blob, and the blob must pass the stage's own pre-check.
+    for (uint32_t i = 0; i < mChain.EnabledCount(); ++i)
+    {
+        const StringCRC id = mChain.StageIdAt(i);
+        const int index = FindSaved(saved, id.Value());
+        if (index < 0)
+            return fail("stage_N", "no blob for a stage that is in the configured order", id.AsChar());
+        char name[16];
+        std::snprintf(name, sizeof(name), "stage_%d", index);
+        if (!ctx.BeginObject(StringCRC(name)))
+            return fail(name, "missing", id.AsChar());
+        const bool stageOk = mChain.StageAt(i)->ValidatePending(ctx);
+        ctx.EndObject();
+        if (!stageOk)
+            return fail(name, "the stage rejected its pending data", id.AsChar());
+    }
+    return true;
+}
+
+void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& ctx)
+{
+    DIA_TRACE_ZONE("WorldStepModule::DeserializePending", Dia::Observation::Trace::Category::kNone);
+
+    int32_t stageCount = 0;
+    int64_t stepDay = 0, pendingDay = -1, latestDay = 0;
+    if (!ctx.Read(StringCRC("step_day"), stepDay) || !ctx.Read(StringCRC("pending_day"), pendingDay)
+        || !ctx.Read(StringCRC("latest_day"), latestDay) || !ctx.Read(StringCRC("stage_count"), stageCount)
+        || stageCount < 0 || static_cast<uint32_t>(stageCount) > WorldStep::kMaxStages)
+    {
+        DIA_LOG_ERROR(kLog, "WorldStepModule: pending record unreadable after validation, nothing restored");
+        mRestoreFailed = true;
+        UpdateHealth();
+        return;
+    }
+
+    // The scheduler discarded the old step on LoadStarted; the chain still shows the old step's phase.
+    if (mChain.Phase() != WorldStep::ChainPhase::Idle)
+    {
+        mChain.Abandon();
+        mStepAccumNs.store(0);
+    }
+
+    SavedStages saved;
+    for (int32_t i = 0; i < stageCount; ++i)
+    {
+        char name[16];
+        std::snprintf(name, sizeof(name), "stage_%d", i);
+        int64_t id = 0;
+        if (ctx.BeginObject(StringCRC(name)))
+        {
+            ctx.Read(StringCRC("id"), id);
+            ctx.EndObject();
+        }
+        saved.ids[saved.count++] = id;
+    }
+
+    // Per-stage delegation in declared order.
+    bool stageFailed = false;
+    for (uint32_t i = 0; i < mChain.EnabledCount(); ++i)
+    {
+        const int index = FindSaved(saved, mChain.StageIdAt(i).Value());
+        if (index < 0)
+            continue;
+        char name[16];
+        std::snprintf(name, sizeof(name), "stage_%d", index);
+        if (!ctx.BeginObject(StringCRC(name)))
+            continue;
+        WorldStep::IWorldStepStage* stage = mChain.StageAt(i);
+        stage->DeserializePending(ctx);
+        ctx.EndObject();
+        if (!stage->IsReady())
+        {
+            stageFailed = true;
+            DIA_LOG_ERROR(kLog, "WorldStepModule: stage '%s' could not restore its pending result", mChain.StageIdAt(i).AsChar());
+        }
+    }
+
+    // Blobs for stages that are not enabled here (not in order, or configured but not registered): skipped, one Warning each.
+    for (uint32_t k = 0; k < saved.count; ++k)
+    {
+        bool enabled = false;
+        for (uint32_t i = 0; i < mChain.EnabledCount(); ++i)
+            enabled = enabled || static_cast<int64_t>(mChain.StageIdAt(i).Value()) == saved.ids[k];
+        if (enabled)
+            continue;
+        const char* known = "unknown";
+        for (uint32_t i = 0; i < mConfig.order.Size(); ++i)
+        {
+            if (static_cast<int64_t>(mConfig.order[i].crc.Value()) == saved.ids[k])
+                known = mConfig.order[i].name.AsCStr();
+        }
+        DIA_LOG_WARNING(kLog, "WorldStepModule: pending blob for stage id %lld (%s) skipped, that stage is not enabled in this world",
+                        static_cast<long long>(saved.ids[k]), known);
+    }
+
+    mStepDay = static_cast<uint64_t>(stepDay);
+    mPendingDay = pendingDay;
+    mLatestDay = static_cast<uint64_t>(latestDay);
+    mHasTick = true;   // keep the restored key until a later tick overtakes it
+
+    if (!mChain.RestoreRan(static_cast<StepKey>(stepDay)))
+    {
+        DIA_LOG_ERROR(kLog, "WorldStepModule: the chain could not restore step day %lld (a stage is missing or not ready); the pending step will be ignored at its apply key",
+                      static_cast<long long>(stepDay));
+        stageFailed = true;
+    }
+    if (stageFailed)
+    {
+        mRestoreFailed = true;
+        UpdateHealth();
+    }
+}
+
 
 // ---------------------------------------------------------------------------------------------
 // History signal
