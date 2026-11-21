@@ -1,7 +1,7 @@
 # Feature Spec: DraoiHexWorld Core Prerequisites (data-driven pin rules, generic zones, enum split)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md
-**Status:** `Approved` (2026-11-21)
+**Status:** `Done` (2026-11-21)
 **Plan:** @docs/specs/features/draoi/hexworld-core-prerequisites.plan.md
 **Origin:** Draoi layer audit, 2026-11-21 (Biome Registry and WorldGeneration coupling audit in the parent spec).
 
