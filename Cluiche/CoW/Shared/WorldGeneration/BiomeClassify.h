@@ -42,7 +42,7 @@ struct Stage14Inputs
     const float*    moisture = nullptr;
     const float*    elevation = nullptr;
     const uint32_t* terrainType = nullptr;    // TerrainType values
-    const uint32_t* depthZone = nullptr;      // DepthZone values
+    const uint32_t* stratum = nullptr;      // StratumIndex values
     const uint32_t* terrainFlags = nullptr;   // TerrainFlag bits
     const float*    barrierMask = nullptr;    // optional
     const uint32_t* waterSource = nullptr;    // WaterSource values

@@ -29,15 +29,15 @@ namespace
     bool OnBoundary(const WorldStructure& world, const HexTopology& topo, uint32_t cell, int barrier)
     {
         // Barrier k separates zone k from zone k+1.
-        const DepthZone a = static_cast<DepthZone>(barrier);
-        const DepthZone b = static_cast<DepthZone>(barrier + 1);
-        const DepthZone z = world.Cells()[cell].depthZone;
+        const StratumIndex a = static_cast<StratumIndex>(barrier);
+        const StratumIndex b = static_cast<StratumIndex>(barrier + 1);
+        const StratumIndex z = world.Cells()[cell].stratum;
         if (z != a && z != b) { return false; }
-        const DepthZone other = (z == a) ? b : a;
+        const StratumIndex other = (z == a) ? b : a;
         for (uint32_t d = 0; d < 6; ++d)
         {
             const uint32_t nb = topo.NeighbourAt(cell, d);
-            if (nb != kNoCell && world.Cells()[nb].depthZone == other) { return true; }
+            if (nb != kNoCell && world.Cells()[nb].stratum == other) { return true; }
         }
         return false;
     }

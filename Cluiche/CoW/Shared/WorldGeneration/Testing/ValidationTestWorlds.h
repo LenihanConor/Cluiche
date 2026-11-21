@@ -11,7 +11,7 @@
 #include <DiaPathfinding/HexTopology.h>
 
 #include <cstdint>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -41,7 +41,7 @@ inline bool AddSiteAt(WorldStructure& world, const Dia::Core::StringCRC& kind, i
 }
 
 // All-land w x h world (one zone), no water.
-inline WorldStructure MakeAllLandWorld(int w, int h, DepthZone zone = kZoneWild)
+inline WorldStructure MakeAllLandWorld(int w, int h, StratumIndex zone = kStratumWild)
 {
     WorldStructure world = MakeBlankWorld(w, h);
     FillLand(world, 0, 0, w, h, zone, ::CoW::World::Testing::B("Biome.Grassland"));
@@ -54,8 +54,8 @@ inline WorldStructure MakeAllLandWorld(int w, int h, DepthZone zone = kZoneWild)
 inline WorldStructure MakeChannelWorld(int w, int h, int x0, int channel)
 {
     WorldStructure world = MakeBlankWorld(w, h);
-    FillLand(world, 0, 0, x0, h, kZoneWild, ::CoW::World::Testing::B("Biome.Grassland"));
-    FillLand(world, x0 + channel, 0, w, h, kZoneWild, ::CoW::World::Testing::B("Biome.Grassland"));
+    FillLand(world, 0, 0, x0, h, kStratumWild, ::CoW::World::Testing::B("Biome.Grassland"));
+    FillLand(world, x0 + channel, 0, w, h, kStratumWild, ::CoW::World::Testing::B("Biome.Grassland"));
     return world;
 }
 

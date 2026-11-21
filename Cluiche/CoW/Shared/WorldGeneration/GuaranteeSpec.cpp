@@ -119,7 +119,7 @@ const GuaranteeEntry* GuaranteeSpec::FindGuarantee(const std::string& id) const
     return nullptr;
 }
 
-bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::ZoneTable& zones, GuaranteeSpec& out,
+bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::StratumTable& strata, GuaranteeSpec& out,
                        GuaranteeSpecError& err)
 {
     err = GuaranteeSpecError();
@@ -232,9 +232,9 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
         };
         auto resolveZone = [&]() -> bool
         {
-            const int index = zones.IndexOf(e.toZone.c_str());
-            if (index < 1) { Fail(err, name, "unknown zone '" + e.toZone + "'"); return false; }
-            e.toZoneIndex = index;
+            const int index = strata.IndexOf(e.toStratum.c_str());
+            if (index < 1) { Fail(err, name, "unknown stratum '" + e.toStratum + "'"); return false; }
+            e.toStratumIndex = index;
             return true;
         };
         auto badField = [&](const std::string& field) { return Fail(err, name, "missing or bad field '" + field + "'"); };
@@ -242,7 +242,7 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
         if (typeText == "reach_any")
         {
             e.type = GuaranteeRuleType::ReachAny;
-            if (!OnlyKeys(g, { "id", "label", "type", "from", "to", "to_zone", "noun", "to_noun", "to_noun_plural" }, bad))
+            if (!OnlyKeys(g, { "id", "label", "type", "from", "to", "to_stratum", "noun", "to_noun", "to_noun_plural" }, bad))
             {
                 return Fail(err, name, "unknown field '" + bad + "'");
             }
@@ -251,8 +251,8 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
                 return badField(bad);
             }
             const bool hasTo = !g["to"].isNull();
-            const bool hasZone = !g["to_zone"].isNull();
-            if (hasTo == hasZone) { return Fail(err, name, "exactly one of 'to' and 'to_zone' is required"); }
+            const bool hasZone = !g["to_stratum"].isNull();
+            if (hasTo == hasZone) { return Fail(err, name, "exactly one of 'to' and 'to_stratum' is required"); }
             if (!needKind(e.from, "from")) { return false; }
             if (hasTo)
             {
@@ -261,7 +261,7 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
             }
             else
             {
-                if (!NonEmptyString(g, "to_zone", e.toZone)) { return badField("to_zone"); }
+                if (!NonEmptyString(g, "to_stratum", e.toStratum)) { return badField("to_stratum"); }
                 if (!resolveZone()) { return false; }
             }
         }
@@ -289,12 +289,12 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
         else if (typeText == "variant_cover")
         {
             e.type = GuaranteeRuleType::VariantCover;
-            if (!OnlyKeys(g, { "id", "label", "type", "kind", "variant_count", "to_zone", "noun", "noun_plural", "variant_noun",
+            if (!OnlyKeys(g, { "id", "label", "type", "kind", "variant_count", "to_stratum", "noun", "noun_plural", "variant_noun",
                                "target_noun", "count_key", "target_count_key" }, bad))
             {
                 return Fail(err, name, "unknown field '" + bad + "'");
             }
-            if (!ReadStrings(g, { { "kind", &e.kind }, { "to_zone", &e.toZone }, { "noun", &e.noun }, { "noun_plural", &e.nounPlural },
+            if (!ReadStrings(g, { { "kind", &e.kind }, { "to_stratum", &e.toStratum }, { "noun", &e.noun }, { "noun_plural", &e.nounPlural },
                                   { "variant_noun", &e.variantNoun }, { "target_noun", &e.targetNoun }, { "count_key", &e.countKey },
                                   { "target_count_key", &e.targetCountKey } }, bad))
             {

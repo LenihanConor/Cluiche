@@ -11,7 +11,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Core::StringCRC;
@@ -58,7 +58,7 @@ TEST(RegionTypes, ResizeClearsRegionsAndSites)
     w.regions.regions.Add(MakeRegion(1, {}));
     w.regions.absorbedCells = 3;
     w.regions.mainlandRegionCount = 1;
-    w.regions.limitedBy = kZoneWild;
+    w.regions.limitedBy = kStratumWild;
     w.sites.Add(MakeSite(BuiltinNodeKinds::Corridor(), 2));
     w.Cells()[0].region = 1;
 
@@ -66,7 +66,7 @@ TEST(RegionTypes, ResizeClearsRegionsAndSites)
     EXPECT_EQ(w.regions.regions.Size(), 0u);
     EXPECT_EQ(w.regions.absorbedCells, 0);
     EXPECT_EQ(w.regions.mainlandRegionCount, 0);
-    EXPECT_EQ(w.regions.limitedBy, kNoZone);
+    EXPECT_EQ(w.regions.limitedBy, kNoStratum);
     EXPECT_EQ(w.sites.Count(), 0);
     EXPECT_EQ(w.Cells()[0].region, kNoRegion);
 }
@@ -125,7 +125,7 @@ TEST(RegionTypes, TableEqualityIsMemberWise)
     b.regions[0].neighbours.RemoveAll();
     b.regions[0].neighbours.Add(2);
     EXPECT_TRUE(a == b);
-    b.limitedBy = kZoneFirst;
+    b.limitedBy = kStratumFirst;
     EXPECT_FALSE(a == b);
 }
 

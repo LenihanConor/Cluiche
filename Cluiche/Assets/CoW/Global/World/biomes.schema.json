@@ -118,7 +118,7 @@
       "key": "biomes[].zones",
       "kind": "parameter",
       "label": "Zones",
-      "description": "List of DepthZone ids where the biome is valid; empty means no zone admits it.",
+      "description": "List of StratumIndex ids where the biome is valid; empty means no zone admits it.",
       "type": "enum[]",
       "values": [
         {

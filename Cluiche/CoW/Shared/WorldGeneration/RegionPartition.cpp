@@ -37,10 +37,10 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     // Components never span zones, so label each zone's eligible cells separately.
     for (int slot = 0; slot < kRegionZoneCount; ++slot)
     {
-        const DepthZone zone = ZoneFromSlot(slot);
+        const StratumIndex zone = ZoneFromSlot(slot);
         const uint32_t count = Dia::Pathfinding::ConnectedComponents(graph,
             [&](uint32_t c) {
-                return cells[c].depthZone == zone && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
+                return cells[c].stratum == zone && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
             }, label.data(), nullptr, scratch);
         const size_t first = out.size();
         out.resize(first + count);
@@ -62,9 +62,9 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     return out;
 }
 
-void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], DepthZone& limitedBy)
+void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], StratumIndex& limitedBy)
 {
-    limitedBy = kNoZone;
+    limitedBy = kNoStratum;
     auto total = [&]() { int t = 0; for (int z = 0; z < kRegionZoneCount; ++z) { t += count[z]; } return t; };
 
     while (total() < kTotalRegionsMin)
@@ -248,7 +248,7 @@ namespace
         const float ridge = rules.kRegionRidgeCost;
 
         auto inComp = [&](uint32_t c) {
-            return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].depthZone == comp.zone;
+            return cells[c].landmass == comp.landmass && IsRegionLand(cells[c]) && cells[c].stratum == comp.zone;
         };
         auto stepCost = [&](World::BiomeIndex seedBiome, uint32_t c) {
             float cost = 1.0f;
@@ -378,7 +378,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
     for (int c = 0; c < n; ++c)
     {
         if (world.mainLandmass != 0 && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]) &&
-            cells[c].depthZone == kNoZone)
+            cells[c].stratum == kNoStratum)
         {
             out.unzonedCells.push_back(static_cast<uint32_t>(c));
         }
@@ -394,7 +394,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
         {
             if (cells[c].landmass != lm || !IsRegionLand(cells[c])) { continue; }
             if (first < 0) { first = c; }
-            const int z = ZoneSlot(cells[c].depthZone);
+            const int z = ZoneSlot(cells[c].stratum);
             if (z >= 0) { ++zoneCount[z]; }
         }
         if (first < 0) { continue; }

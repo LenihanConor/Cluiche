@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::RandomStream;
@@ -64,11 +64,11 @@ void CheckContract(Gen& g, uint64_t seed)
             ASSERT_GE(c.latitude, 0.0f);  ASSERT_LE(c.latitude, 1.0f);
             ASSERT_LE(static_cast<uint8_t>(c.waterSource), static_cast<uint8_t>(WaterSource::River));
             ASSERT_LT(static_cast<uint8_t>(c.terrain), static_cast<uint8_t>(TerrainType::Count));
-            ASSERT_LE(static_cast<uint8_t>(c.depthZone), static_cast<uint8_t>(kZoneAncient));
+            ASSERT_LE(static_cast<uint8_t>(c.stratum), static_cast<uint8_t>(kStratumAncient));
             anyWater = anyWater || c.waterSource != WaterSource::None;
             mainSeen = mainSeen || c.landmass == w.mainLandmass;
             const bool ocean = c.landmass == 0;
-            ASSERT_EQ(c.depthZone == kNoZone, ocean);
+            ASSERT_EQ(c.stratum == kNoStratum, ocean);
             if (ocean) { ASSERT_EQ(c.elevation, 0.0f); }
             else { ASSERT_GE(c.elevation, coast); }
             if (lakeMask[i] != 0)
@@ -117,7 +117,7 @@ void CheckFields(const Gen& g)
         ASSERT_EQ(c.latitude, F(g.gen, "latitude")[i]);
         ASSERT_EQ(static_cast<uint32_t>(c.waterSource), U(g.gen, "waterSource")[i]);
         ASSERT_EQ(static_cast<uint32_t>(c.terrain), U(g.gen, "terrainType")[i]);
-        ASSERT_EQ(static_cast<uint32_t>(c.depthZone), U(g.gen, "depthZone")[i]);
+        ASSERT_EQ(static_cast<uint32_t>(c.stratum), U(g.gen, "stratum")[i]);
         ASSERT_EQ(static_cast<uint32_t>(c.landmass), std::min<uint32_t>(U(g.gen, "landmass")[i], 255u));
         ASSERT_EQ(static_cast<uint32_t>(c.terrainFlags), U(g.gen, "terrainFlags")[i]);
         ASSERT_EQ(c.downstream, c.waterSource == WaterSource::River ? static_cast<uint8_t>(flow[i]) : kNoDirection);

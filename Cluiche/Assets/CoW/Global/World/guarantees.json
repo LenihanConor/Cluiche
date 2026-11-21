@@ -35,7 +35,7 @@
       "type": "variant_cover",
       "kind": "CoW.Site.WorldThrone",
       "variant_count": 6,
-      "to_zone": "AncientInteriors",
+      "to_stratum": "AncientInteriors",
       "noun": "world-throne",
       "noun_plural": "world-thrones",
       "variant_noun": "Apotheosis type",

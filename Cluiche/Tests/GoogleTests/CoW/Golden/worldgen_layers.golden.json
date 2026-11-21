@@ -66,7 +66,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x331A5D6922924113",
@@ -384,7 +384,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x28C39F4B7673696A",
@@ -702,7 +702,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x3F2AB50356E00643",
@@ -1020,7 +1020,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0xEF4043491BE810AA",
@@ -1338,7 +1338,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x82374DD943951D83",
@@ -1656,7 +1656,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x89DB2D9620696413",
@@ -1974,7 +1974,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0xEF4043491BE810AA",
@@ -2292,7 +2292,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x82374DD943951D83",
@@ -2610,7 +2610,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x89DB2D9620696413",
@@ -2928,7 +2928,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x90DE3C2D1039A183",
@@ -3246,7 +3246,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0x60DDB1CB4E9757DA",
@@ -3564,7 +3564,7 @@
         "min" : 1,
         "nanCount" : 0
       },
-      "depthZone" : 
+      "stratum" : 
       {
         "count" : 2772,
         "hash" : "0xE51CA686295606FA",

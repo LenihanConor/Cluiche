@@ -1,8 +1,8 @@
-// S-1 Terrain Generator: Stage 8 (DepthZones). See TerrainDepthZones.h.
+// S-1 Terrain Generator: Stage 8 (Strata). See TerrainStrata.h.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md
 #pragma fp_contract(off)
 
-#include <Shared/WorldGeneration/TerrainDepthZones.h>
+#include <Shared/WorldGeneration/TerrainStrata.h>
 
 #include <DiaPathfinding/GridSearch.h>
 #include <DiaPathfinding/HexNeighbours.h>
@@ -84,7 +84,7 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
     }
 }
 
-void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const World::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
 {
@@ -92,11 +92,11 @@ void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, Gri
     const int w = std::max(dims.width, 0);
     const int h = std::max(dims.height, 0);
     const int n = w * h;
-    if (n == 0 || out.zoneCostBase == nullptr || out.zoneCost == nullptr || out.depthZone == nullptr)
+    if (n == 0 || out.zoneCostBase == nullptr || out.zoneCost == nullptr || out.stratum == nullptr)
     {
         return;
     }
-    std::fill(out.depthZone, out.depthZone + n, static_cast<uint32_t>(kNoZone));
+    std::fill(out.stratum, out.stratum + n, static_cast<uint32_t>(kNoStratum));
     ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, nullptr, out.zoneCostBase);
     ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, out.zoneCost);
     if (landmass == nullptr || coastDistance == nullptr)
@@ -123,10 +123,10 @@ void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, Gri
     }
     else
     {
-        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(zones.FirstShare()) * m)) - 1);
+        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(strata.FirstShare()) * m)) - 1);
         dbg.t1 = sorted[static_cast<size_t>(std::min(idx1, m - 1))];
         dbg.t2 = dbg.t1;
-        const int k = static_cast<int>(std::ceil(static_cast<double>(zones.LastShare()) * m));
+        const int k = static_cast<int>(std::ceil(static_cast<double>(strata.LastShare()) * m));
         if (k > 0)
         {
             const float t2 = sorted[static_cast<size_t>(std::max(0, m - k))];
@@ -147,6 +147,7 @@ void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, Gri
         }
     }
 
+    // TODO(Strata task 2): read min_coast_depth from the StratumTable (strata.json) instead of TerrainRules::kAncientMinDepth.
     const uint32_t minDepth = static_cast<uint32_t>(std::max(rules.kAncientMinDepth, 0));
     for (int i = 0; i < n; ++i)
     {
@@ -155,17 +156,17 @@ void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, Gri
             continue;
         }
         const float cost = out.zoneCost[i];
-        DepthZone z = 2;   // the middle zone
+        StratumIndex z = 2;   // the middle stratum
         if (cost <= dbg.t1)
         {
-            z = 1;   // the first zone
+            z = 1;   // the first stratum
         }
         else if (dbg.hasAncient && landmass[i] == static_cast<uint32_t>(mainLandmass) && cost >= dbg.t2 &&
                  coastDistance[i] >= minDepth)
         {
-            z = zones.Last();   // the innermost zone
+            z = strata.Last();   // the innermost stratum
         }
-        out.depthZone[i] = static_cast<uint32_t>(z);
+        out.stratum[i] = static_cast<uint32_t>(z);
     }
 }
 

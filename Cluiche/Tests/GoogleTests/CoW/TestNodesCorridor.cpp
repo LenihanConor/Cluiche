@@ -18,7 +18,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -451,15 +451,15 @@ namespace
 
     bool IndOnBoundary(const WorldStructure& w, int idx, int barrier)
     {
-        const DepthZone a = barrier == 1 ? kZoneFirst : kZoneWild;
-        const DepthZone b = barrier == 1 ? kZoneWild : kZoneAncient;
-        const DepthZone z = w.Cells()[idx].depthZone;
+        const StratumIndex a = barrier == 1 ? kStratumFirst : kStratumWild;
+        const StratumIndex b = barrier == 1 ? kStratumWild : kStratumAncient;
+        const StratumIndex z = w.Cells()[idx].stratum;
         if (z != a && z != b) { return false; }
-        const DepthZone other = z == a ? b : a;
+        const StratumIndex other = z == a ? b : a;
         for (int d = 0; d < 6; ++d)
         {
             const int nb = ChkNeighbour(w, idx, d);
-            if (nb >= 0 && w.Cells()[nb].depthZone == other) { return true; }
+            if (nb >= 0 && w.Cells()[nb].stratum == other) { return true; }
         }
         return false;
     }

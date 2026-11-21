@@ -892,7 +892,7 @@ TEST(WorldGenCommands, CellQueryReportsRegionZoneAndSitesAndEveryLandCellHasAReg
 	const Json::Value r = h.Call("cow.worldgen.cell", a);
 	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
 	EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w->Cells()[site.cell].region));
-	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), w->Cells()[site.cell].depthZone));
+	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::StratumName(::CoW::World::Testing::ShippedStratumTable(), w->Cells()[site.cell].stratum));
 	ASSERT_TRUE(r["sites"].isArray());
 	EXPECT_GE(r["sites"].size(), 1u);
 }
@@ -1083,12 +1083,12 @@ TEST(WorldGenCommands, ExportAndImportErrorsAreStructuredAndChangeNothing)
 
 	// A corrupt file: structured error naming the problem, session untouched.
 	std::filesystem::create_directories(dir.path);
-	{ std::ofstream f(dir.path / "broken.wld.json"); f << "{ \"format\": \"cow.world\", \"version\": 2 }"; }
+	{ std::ofstream f(dir.path / "broken.wld.json"); f << "{ \"format\": \"cow.world\", \"version\": 3 }"; }
 	Json::Value broken = Obj(); broken["name"] = "broken";
 	const Json::Value r = h.Call("cow.worldgen.import", broken);
 	EXPECT_TRUE(Failed(r));
 	EXPECT_EQ(r["field"].asString(), "version");
-	EXPECT_NE(r["error"].asString().find("Unsupported cow.world version: 2"), std::string::npos);
+	EXPECT_NE(r["error"].asString().find("Unsupported cow.world version: 3"), std::string::npos);
 	EXPECT_EQ(h.Rev(), rev);
 	EXPECT_FALSE(h.Call("cow.worldgen.status")["locked"].asBool());
 }

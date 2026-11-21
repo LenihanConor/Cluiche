@@ -9,7 +9,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -66,7 +66,7 @@ struct BiomeGrid
 {
     GridDimensions        dims;
     std::vector<float>    temperature, moisture, elevation, barrierMask;
-    std::vector<uint32_t> terrainType, depthZone, terrainFlags, waterSource;
+    std::vector<uint32_t> terrainType, stratum, terrainFlags, waterSource;
     BarrierForm           barrierForm = BarrierForm::Plateau;
     float                 barrier = 0.0f;
     const ::CoW::World::BiomeRegistry* registry = &::CoW::World::Testing::ShippedBiomeRegistry();   // swap for a fixture
@@ -78,7 +78,7 @@ struct BiomeGrid
           elevation(static_cast<size_t>(w) * h, 0.3f),
           barrierMask(static_cast<size_t>(w) * h, 0.0f),
           terrainType(static_cast<size_t>(w) * h, static_cast<uint32_t>(TerrainType::Lowland)),
-          depthZone(static_cast<size_t>(w) * h, static_cast<uint32_t>(kZoneWild)),
+          stratum(static_cast<size_t>(w) * h, static_cast<uint32_t>(kStratumWild)),
           terrainFlags(static_cast<size_t>(w) * h, 0u),
           waterSource(static_cast<size_t>(w) * h, 0u)
     {
@@ -87,7 +87,7 @@ struct BiomeGrid
     int Index(int x, int y) const { return y * dims.width + x; }
 
     void SetClimate(int c, float t, float m) { temperature[c] = t; moisture[c] = m; }
-    void SetZone(int c, DepthZone z) { depthZone[c] = static_cast<uint32_t>(z); }
+    void SetZone(int c, StratumIndex z) { stratum[c] = static_cast<uint32_t>(z); }
     void SetTerrain(int c, TerrainType t) { terrainType[c] = static_cast<uint32_t>(t); }
     void AddFlag(int c, uint8_t f) { terrainFlags[c] |= f; }
     void SetWater(int c, WaterSource s)
@@ -96,12 +96,12 @@ struct BiomeGrid
         if (s == WaterSource::Ocean)
         {
             elevation[c] = 0.0f;
-            depthZone[c] = static_cast<uint32_t>(kNoZone);
+            stratum[c] = static_cast<uint32_t>(kNoStratum);
             terrainType[c] = static_cast<uint32_t>(TerrainType::DeepWater);
         }
         else if (s == WaterSource::Lake)
         {
-            depthZone[c] = static_cast<uint32_t>(kNoZone);
+            stratum[c] = static_cast<uint32_t>(kNoStratum);
             terrainType[c] = static_cast<uint32_t>(TerrainType::Lake);
         }
     }
@@ -114,7 +114,7 @@ struct BiomeGrid
         in.moisture = moisture.data();
         in.elevation = elevation.data();
         in.terrainType = terrainType.data();
-        in.depthZone = depthZone.data();
+        in.stratum = stratum.data();
         in.terrainFlags = terrainFlags.data();
         in.barrierMask = barrierMask.data();
         in.waterSource = waterSource.data();

@@ -6,7 +6,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 
-#include <Shared/World/ZoneTable.h>
+#include <Shared/World/StratumTable.h>
 
 #include "TerrainEnums.h"
 #include "Regions.h"
@@ -39,10 +39,10 @@ inline const char* WaterSourceName(WaterSource v)
     return "Unknown";
 }
 
-// Zone name from the table ("None" for 0); "Unknown" for an index the table does not have.
-inline const char* DepthZoneName(const World::ZoneTable& zones, DepthZone v)
+// Stratum name from the table ("None" for 0); "Unknown" for an index the table does not have.
+inline const char* StratumName(const World::StratumTable& strata, StratumIndex v)
 {
-    const char* name = zones.Name(v);
+    const char* name = strata.Name(v);
     return name != nullptr ? name : "Unknown";
 }
 
@@ -116,7 +116,7 @@ enum class ShapeParam : uint8_t { LandFraction, Continents, Islands, ContinentIs
                                   TemperatureOffset, MoistureOffset, Count };
 
 enum class TerrainStage : uint8_t { SeedFields, Landmass, Mountains, Barrier, Elevation, Drainage,
-                                    Rivers, Lakes, DepthZones, Valleys, Classify, Latitude,
+                                    Rivers, Lakes, Strata, Valleys, Classify, Latitude,
                                     Temperature, Moisture, Biomes, Count };
 
 inline const char* ShapeParamName(ShapeParam v)
@@ -160,7 +160,7 @@ inline const char* TerrainStageName(TerrainStage v)
     case TerrainStage::Drainage:    return "Drainage";
     case TerrainStage::Rivers:      return "Rivers";
     case TerrainStage::Lakes:       return "Lakes";
-    case TerrainStage::DepthZones:  return "DepthZones";
+    case TerrainStage::Strata:  return "Strata";
     case TerrainStage::Valleys:     return "Valleys";
     case TerrainStage::Classify:    return "Classify";
     case TerrainStage::Latitude:    return "Latitude";
@@ -199,7 +199,7 @@ struct Cell
     float       latitude     = 0.0f;                  // [0,1]; 0 = equator, 1 = pole
     WaterSource waterSource  = WaterSource::None;
     TerrainType terrain      = TerrainType::DeepWater;
-    DepthZone   depthZone    = kNoZone;               // kNoZone for ocean
+    StratumIndex   stratum    = kNoStratum;               // kNoStratum for ocean
     uint8_t     landmass     = 0;                     // 0 = ocean; 1.. per landmass
     uint8_t     terrainFlags = 0;                     // TerrainFlag bits
     uint8_t     downstream   = kNoDirection;          // river cells: direction 0..5

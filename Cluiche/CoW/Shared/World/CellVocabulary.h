@@ -16,10 +16,10 @@ constexpr BiomeIndex kNoBiome = 0xFF;
 
 namespace WorldGeneration {
 
-// Depth zone: a plain index into the ZoneTable. 0 = none/ocean, 1..N = zone k (zone k and k+1 are separated by
-// barrier k). The names live in data (World/ZoneTable.h), not in code.
-using DepthZone = uint8_t;
-constexpr DepthZone kNoZone = 0;
+// Stratum: a plain index into the StratumTable. 0 = none/ocean, 1..N = stratum k (strata k and k+1 are separated by
+// barrier k). The names live in data (World/StratumTable.h), not in code.
+using StratumIndex = uint8_t;
+constexpr StratumIndex kNoStratum = 0;
 
 enum class WaterSource : uint8_t { None = 0, Ocean, Lake, River };
 enum class TerrainType : uint8_t { DeepWater, ShallowWater, Lake, River, Lowland, Hills, Highland,

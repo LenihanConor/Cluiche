@@ -7,7 +7,7 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -24,11 +24,11 @@ inline WorldStructure MakeBlankWorld(int w, int h)
 inline int CellIndex(const WorldStructure& world, int x, int y) { return y * world.dimensions.width + x; }
 
 // Sets one land cell (Lowland, no flags).
-inline void SetLand(WorldStructure& world, int x, int y, DepthZone zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
+inline void SetLand(WorldStructure& world, int x, int y, StratumIndex zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
 {
     Cell& c = world.At(x, y);
     c.landmass = landmass;
-    c.depthZone = zone;
+    c.stratum = zone;
     c.biome = biome;
     c.waterSource = WaterSource::None;
     c.terrain = TerrainType::Lowland;
@@ -36,7 +36,7 @@ inline void SetLand(WorldStructure& world, int x, int y, DepthZone zone, ::CoW::
 }
 
 // Fills the half-open block [x0,x1) x [y0,y1).
-inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, DepthZone zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
+inline void FillLand(WorldStructure& world, int x0, int y0, int x1, int y1, StratumIndex zone, ::CoW::World::BiomeIndex biome, uint8_t landmass = 1)
 {
     for (int y = y0; y < y1; ++y)
     {
@@ -63,7 +63,7 @@ inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
     WorldStructure world = MakeBlankWorld(w, h);
     for (int y = 0; y < h; ++y)
     {
-        const DepthZone z = y < row1 ? kZoneFirst : (y < row2 ? kZoneWild : kZoneAncient);
+        const StratumIndex z = y < row1 ? kStratumFirst : (y < row2 ? kStratumWild : kStratumAncient);
         FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::B("Biome.Grassland"));
     }
     return world;
@@ -124,7 +124,7 @@ inline void BuildRegionRecords(WorldStructure& world)
             {
                 first = false;
                 rec.landmass = c.landmass;
-                rec.zone = c.depthZone;
+                rec.zone = c.stratum;
                 rec.centreCell = static_cast<uint32_t>(i);
             }
         }
@@ -147,7 +147,7 @@ inline void BuildRegionRecords(WorldStructure& world)
 inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, ::CoW::World::BiomeIndex biome)
 {
     WorldStructure world = MakeBlankWorld(blocksX * blockW, blocksY * blockH);
-    FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, kZoneFirst, biome);
+    FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, kStratumFirst, biome);
     for (int by = 0; by < blocksY; ++by)
     {
         for (int bx = 0; bx < blocksX; ++bx)

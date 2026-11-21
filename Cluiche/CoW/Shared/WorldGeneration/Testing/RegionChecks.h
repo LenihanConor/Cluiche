@@ -154,7 +154,7 @@ inline uint32_t CountAbsorbedCells(const WorldStructure& w)
         const Cell& cell = w.Cells()[c];
         if (cell.region == 0 || cell.region > w.regions.regions.Size()) { continue; }
         const RegionRecord& rec = w.regions.regions[cell.region - 1];
-        if (!rec.isIsland && cell.depthZone != rec.zone) { ++n; }
+        if (!rec.isIsland && cell.stratum != rec.zone) { ++n; }
     }
     return n;
 }

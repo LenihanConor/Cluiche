@@ -166,11 +166,11 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
             }
             // zone
             uint32_t foreign = 0;
-            for (uint32_t c : rc) { foreign += cells[c].depthZone != rec.zone; }
+            for (uint32_t c : rc) { foreign += cells[c].stratum != rec.zone; }
             if (foreign * 2 > rc.size())
             {
                 LayoutViolation& v = Add(report, LayoutCode::RegionTwoZones, static_cast<RegionId>(r), foreign);
-                for (uint32_t c : rc) { if (cells[c].depthZone != rec.zone) { Evidence(v, c); } }
+                for (uint32_t c : rc) { if (cells[c].stratum != rec.zone) { Evidence(v, c); } }
             }
             // size
             if (static_cast<int>(rc.size()) < minCells)
@@ -179,7 +179,7 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
                 for (uint32_t c : rc) { Evidence(v, c); }
             }
         }
-        if (limits.regionLimitedBy == kNoZone && (mainland < kTotalRegionsMin || mainland > kTotalRegionsMax))
+        if (limits.regionLimitedBy == kNoStratum && (mainland < kTotalRegionsMin || mainland > kTotalRegionsMax))
         {
             Add(report, LayoutCode::RegionCountRange, kNoRegion, static_cast<uint32_t>(mainland));
         }

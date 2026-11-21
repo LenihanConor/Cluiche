@@ -138,7 +138,7 @@ TEST(RegionsAndSitesEdge, LandFractionTwentyIsTerrainLimitedNeverFailed)
             ASSERT_TRUE(p.result.IsOk()) << p.result.reason;
             ExpectValidPartition(p);
             const int mainland = p.world.regions.mainlandRegionCount;
-            EXPECT_TRUE((mainland >= 10 && mainland <= 16) || p.world.regions.limitedBy != kNoZone)
+            EXPECT_TRUE((mainland >= 10 && mainland <= 16) || p.world.regions.limitedBy != kNoStratum)
                 << "mainland " << mainland;
             EXPECT_FALSE(HasViolation(p.layout, LayoutCode::RegionCountRange)) << Violations(p.layout);
         }
@@ -217,7 +217,7 @@ TEST(RegionsAndSitesEdge, TinyGridsPlaceWithoutFailing)
         ExpectValidPartition(p);
         if (p.world.regions.mainlandRegionCount < 10 && p.world.mainLandmass != 0)
         {
-            EXPECT_NE(p.world.regions.limitedBy, kNoZone) << "mainland " << int(p.world.regions.mainlandRegionCount);
+            EXPECT_NE(p.world.regions.limitedBy, kNoStratum) << "mainland " << int(p.world.regions.mainlandRegionCount);
         }
         EXPECT_FALSE(HasViolation(p.layout, LayoutCode::RegionCountRange)) << Violations(p.layout);
     }

@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -79,8 +79,8 @@ GuaranteeResult Check(const IWorldGuarantee& g, const WorldStructure& w, std::in
 // 2 hearths, 2 nexuses, 3 dynasty starts far apart, 6 thrones (types 0..5) inside the block.
 WorldStructure MakeValidWorld()
 {
-    WorldStructure w = MakeAllLandWorld(30, 20, kZoneWild);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    WorldStructure w = MakeAllLandWorld(30, 20, kStratumWild);
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     AddSiteAt(w, SiteKinds::Hearth(), 3, 3);
     AddSiteAt(w, SiteKinds::Hearth(), 26, 16);
     AddSiteAt(w, SiteKinds::Nexus(), 5, 10);
@@ -300,7 +300,7 @@ TEST(WorldThroneGuarantee, AC3_SixReachableThronesSatisfy)
 TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(ThroneRule(), w, { &p });
@@ -312,7 +312,7 @@ TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     const uint16_t types[6] = { 0, 0, 1, 2, 3, 4 };
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, types[t]); }
     BlockWaterProfile p("P");
@@ -325,7 +325,7 @@ TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 9 : t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(ThroneRule(), w, { &p });
@@ -336,7 +336,7 @@ TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 6 : t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(ThroneRule(), w, { &p });
@@ -348,7 +348,7 @@ TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesIt)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     for (int y = 0; y < 20; ++y) { SetOcean(w, 25, y); }   // a water column splits off columns 26..29
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 28, 10, 5);
@@ -363,7 +363,7 @@ TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesI
 
 TEST(WorldThroneGuarantee, AC3_NoAncientInteriorsCellsIsATerrainCause)
 {
-    WorldStructure w = MakeAllLandWorld(30, 20, kZoneWild);
+    WorldStructure w = MakeAllLandWorld(30, 20, kStratumWild);
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 3 + t, 3, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
     const GuaranteeResult r = Check(ThroneRule(), w, { &p });
@@ -384,7 +384,7 @@ TEST(WorldThroneGuarantee, AC10_EvidenceProofPathsAndPerTypeCounts)
     for (const ProofPath& path : r.proofPaths)
     {
         EXPECT_TRUE(IsValidWalk(w, path));
-        EXPECT_EQ(w.Cells()[path.to].depthZone, kZoneAncient);
+        EXPECT_EQ(w.Cells()[path.to].stratum, kStratumAncient);
         EXPECT_EQ(path.profileCrc, StringCRC("P").Value());
     }
     for (int t = 0; t < 6; ++t)
@@ -441,7 +441,7 @@ TEST(DefaultValidationSet, AC4_AnyBrokenGuaranteeFailsTheWhole)
     EXPECT_TRUE(r1.Find(ThroneRule().GetId())->satisfied);   // independent
 
     WorldStructure fewer = MakeAllLandWorld(30, 20);
-    FillLand(fewer, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(fewer, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     const ValidationResult r2 = ReachabilityValidator::Validate(fewer, set.GetParams());
     EXPECT_FALSE(r2.passed);
     EXPECT_FALSE(r2.Find(ThroneRule().GetId())->satisfied);

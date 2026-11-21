@@ -129,7 +129,7 @@ namespace
         // checkNeighbours: reject candidates that form a forbidden pair with any neighbour's current biome.
         bool PickBest(int c, bool checkNeighbours, BiomeIndex& result) const
         {
-            const DepthZone zone = static_cast<DepthZone>(in.depthZone[c]);
+            const StratumIndex zone = static_cast<StratumIndex>(in.stratum[c]);
             bool            found = false;
             float           bestScore = kLowest;
             auto            consider = [&](BiomeIndex b, float score)
@@ -269,7 +269,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         return;
     }
     if (in.temperature == nullptr || in.moisture == nullptr || in.elevation == nullptr || in.terrainType == nullptr ||
-        in.depthZone == nullptr || in.terrainFlags == nullptr || in.waterSource == nullptr || out.biomeScore == nullptr ||
+        in.stratum == nullptr || in.terrainFlags == nullptr || in.waterSource == nullptr || out.biomeScore == nullptr ||
         out.biomePin == nullptr || out.biomeIndex == nullptr || out.fixupChanges == nullptr)
     {
         return;
@@ -398,7 +398,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
         {
             continue;
         }
-        if (reg.IsValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
+        if (reg.IsValidInZone(b, static_cast<StratumIndex>(in.stratum[c])))
         {
             continue;
         }

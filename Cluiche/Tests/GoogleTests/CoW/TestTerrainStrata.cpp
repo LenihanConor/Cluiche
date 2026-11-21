@@ -1,4 +1,4 @@
-// S-1 Terrain Generator task 10: Stage 8 DepthZones (zoneCostBase, zoneCost, depthZone).
+// S-1 Terrain Generator task 10: Stage 8 Strata (zoneCostBase, zoneCost, stratum).
 // Hand-built grids check costs, thresholds and zones exactly through ComputeStage8; generator runs
 // check AC13 (zone ordering) and AC13b (river monotonicity) on real terrain. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
@@ -14,7 +14,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::RandomStream;
@@ -47,10 +47,10 @@ std::set<int> Ran(const TerrainGenerator& g)
     return r;
 }
 
-constexpr uint32_t kNone = static_cast<uint32_t>(kNoZone);
-constexpr uint32_t kFirst = static_cast<uint32_t>(kZoneFirst);
-constexpr uint32_t kWild = static_cast<uint32_t>(kZoneWild);
-constexpr uint32_t kAncient = static_cast<uint32_t>(kZoneAncient);
+constexpr uint32_t kNone = static_cast<uint32_t>(kNoStratum);
+constexpr uint32_t kFirst = static_cast<uint32_t>(kStratumFirst);
+constexpr uint32_t kWild = static_cast<uint32_t>(kStratumWild);
+constexpr uint32_t kAncient = static_cast<uint32_t>(kStratumAncient);
 
 // ---------------------------------------------------------------------------
 // Hand-built grid: ocean everywhere except the blocks the test paints.
@@ -101,8 +101,8 @@ struct DGrid
         Stage8Layers out;
         out.zoneCostBase = base.data();
         out.zoneCost = cost.data();
-        out.depthZone = zone.data();
-        ComputeStage8(rules, ::CoW::World::Testing::ShippedZoneTable(), dims, barrierSlider, mainId, land.data(), coast.data(), ridge.data(), barrier.data(),
+        out.stratum = zone.data();
+        ComputeStage8(rules, ::CoW::World::Testing::ShippedStratumTable(), dims, barrierSlider, mainId, land.data(), coast.data(), ridge.data(), barrier.data(),
                       river.data(), out, dbg);
     }
 };
@@ -144,7 +144,7 @@ int CheckZones(const TerrainGenerator& g, const std::string& tag, ZoneStats* sta
     auto fail = [&](const std::string& m) { ++fails; ADD_FAILURE() << tag << ": " << m; };
     const uint32_t* lm = U(g, "landmass");
     const uint32_t* coast = U(g, "coastDistance");
-    const uint32_t* zone = U(g, "depthZone");
+    const uint32_t* zone = U(g, "stratum");
     const float* base = F(g, "zoneCostBase");
     const float* cost = F(g, "zoneCost");
     const Stage8Debug& d = g.GetStage8Debug();
@@ -251,7 +251,7 @@ int CheckRiverSweep(uint64_t seed)
         fails += CheckZones(r.gen, tag);
         const std::vector<float> cost(F(r.gen, "zoneCost"), F(r.gen, "zoneCost") + kN);
         const std::vector<float> base(F(r.gen, "zoneCostBase"), F(r.gen, "zoneCostBase") + kN);
-        const std::vector<uint32_t> zone(U(r.gen, "depthZone"), U(r.gen, "depthZone") + kN);
+        const std::vector<uint32_t> zone(U(r.gen, "stratum"), U(r.gen, "stratum") + kN);
         const Stage8Debug& d = r.gen.GetStage8Debug();
         if (step == 0)
         {
@@ -289,7 +289,7 @@ int CheckRiverSweep(uint64_t seed)
 // ---------------------------------------------------------------------------
 // Hand-built grids
 // ---------------------------------------------------------------------------
-TEST(TerrainDepthZones, StripCostsThresholdsAndDepthDemotion)
+TEST(TerrainStrata, StripCostsThresholdsAndDepthDemotion)
 {
     DGrid g = Strip3();
     g.Run();
@@ -320,7 +320,7 @@ TEST(TerrainDepthZones, StripCostsThresholdsAndDepthDemotion)
     EXPECT_EQ(ancient, 0);
 }
 
-TEST(TerrainDepthZones, NoDistinctCostAboveT1MeansNoAncient)
+TEST(TerrainStrata, NoDistinctCostAboveT1MeansNoAncient)
 {
     DGrid g(10, 3);
     g.Block(1, 1, 8, 1, 1u);   // one row: every land cell is coast, cost 1
@@ -338,7 +338,7 @@ TEST(TerrainDepthZones, NoDistinctCostAboveT1MeansNoAncient)
     EXPECT_FLOAT_EQ(g.dbg.t2, g.dbg.t1);
 }
 
-TEST(TerrainDepthZones, RidgeAndBarrierAccumulateAndRiverIsCorridor)
+TEST(TerrainStrata, RidgeAndBarrierAccumulateAndRiverIsCorridor)
 {
     DGrid g = Strip3();
     const int c = g.I(4, 2);   // a middle cell: its neighbours in rows 1 and 3 are coast (cost 1)
@@ -361,7 +361,7 @@ TEST(TerrainDepthZones, RidgeAndBarrierAccumulateAndRiverIsCorridor)
     EXPECT_FLOAT_EQ(g.base[c], 4.0f);
 }
 
-TEST(TerrainDepthZones, MatchesBellmanFordOracleOnRandomFields)
+TEST(TerrainStrata, MatchesBellmanFordOracleOnRandomFields)
 {
     DGrid g(24, 16);
     g.Block(1, 1, 22, 14, 1u);
@@ -404,7 +404,7 @@ TEST(TerrainDepthZones, MatchesBellmanFordOracleOnRandomFields)
     for (int i = 0; i < g.n; ++i) { EXPECT_LE(g.cost[i], g.base[i]); }
 }
 
-TEST(TerrainDepthZones, OtherLandmassesGetNoAncientAndUseMainThresholds)
+TEST(TerrainStrata, OtherLandmassesGetNoAncientAndUseMainThresholds)
 {
     DGrid g(30, 12);
     g.Block(1, 1, 8, 3, 1u);     // main: the 3-row strip, t1 = 1, t2 = 2
@@ -425,7 +425,7 @@ TEST(TerrainDepthZones, OtherLandmassesGetNoAncientAndUseMainThresholds)
     EXPECT_GT(deepWild, 0);
 }
 
-TEST(TerrainDepthZones, FlatContinentThresholdsAndAncientDepth)
+TEST(TerrainStrata, FlatContinentThresholdsAndAncientDepth)
 {
     DGrid g(24, 18);
     g.Block(2, 2, 21, 15, 1u);
@@ -455,7 +455,7 @@ TEST(TerrainDepthZones, FlatContinentThresholdsAndAncientDepth)
     EXPECT_GT(ancient, 0);
 }
 
-TEST(TerrainDepthZones, TiesAtT1AllShareTheZone)
+TEST(TerrainStrata, TiesAtT1AllShareTheZone)
 {
     DGrid g(24, 18);
     g.Block(2, 2, 21, 15, 1u);
@@ -468,7 +468,7 @@ TEST(TerrainDepthZones, TiesAtT1AllShareTheZone)
     }
 }
 
-TEST(TerrainDepthZones, RiverLowersZoneCostAndZonesOnlyMoveInland)
+TEST(TerrainStrata, RiverLowersZoneCostAndZonesOnlyMoveInland)
 {
     DGrid g(24, 18);
     g.Block(2, 2, 21, 15, 1u);
@@ -494,7 +494,7 @@ TEST(TerrainDepthZones, RiverLowersZoneCostAndZonesOnlyMoveInland)
     EXPECT_GT(lowered, 0);
 }
 
-TEST(TerrainDepthZones, HandBuiltRunsAreByteIdentical)
+TEST(TerrainStrata, HandBuiltRunsAreByteIdentical)
 {
     DGrid a = Strip3();
     DGrid b = Strip3();
@@ -510,22 +510,22 @@ TEST(TerrainDepthZones, HandBuiltRunsAreByteIdentical)
 // ---------------------------------------------------------------------------
 // Generator integration
 // ---------------------------------------------------------------------------
-TEST(TerrainDepthZones, LayersAreRegisteredAndReadable)
+TEST(TerrainStrata, LayersAreRegisteredAndReadable)
 {
     Gen r;
     r.Go(3, WorldShapeParams{});
     const TerrainLayers& l = r.gen.GetLayers();
     ASSERT_GE(l.FindLayer("zoneCostBase"), 0);
     ASSERT_GE(l.FindLayer("zoneCost"), 0);
-    ASSERT_GE(l.FindLayer("depthZone"), 0);
-    EXPECT_EQ(TerrainLayers::GetLayerInfo(l.FindLayer("zoneCostBase")).stage, TerrainStage::DepthZones);
+    ASSERT_GE(l.FindLayer("stratum"), 0);
+    EXPECT_EQ(TerrainLayers::GetLayerInfo(l.FindLayer("zoneCostBase")).stage, TerrainStage::Strata);
     EXPECT_NE(F(r.gen, "zoneCostBase"), nullptr);
     EXPECT_NE(F(r.gen, "zoneCost"), nullptr);
-    EXPECT_NE(U(r.gen, "depthZone"), nullptr);
-    EXPECT_EQ(F(r.gen, "depthZone"), nullptr);   // UInt layer
+    EXPECT_NE(U(r.gen, "stratum"), nullptr);
+    EXPECT_EQ(F(r.gen, "stratum"), nullptr);   // UInt layer
 }
 
-TEST(TerrainDepthZones, Ac13ZoneOrderingOnRealTerrain)
+TEST(TerrainStrata, Ac13ZoneOrderingOnRealTerrain)
 {
     for (uint64_t seed = 1; seed <= 3; ++seed)
     {
@@ -533,7 +533,7 @@ TEST(TerrainDepthZones, Ac13ZoneOrderingOnRealTerrain)
         r.Go(seed, WorldShapeParams{});
         EXPECT_EQ(0, CheckZones(r.gen, "seed " + std::to_string(seed)));
         const uint32_t* lake = U(r.gen, "lakeMask");
-        const uint32_t* zone = U(r.gen, "depthZone");
+        const uint32_t* zone = U(r.gen, "stratum");
         const uint32_t* lm = U(r.gen, "landmass");
         for (int i = 0; i < kN; ++i)
         {
@@ -542,22 +542,22 @@ TEST(TerrainDepthZones, Ac13ZoneOrderingOnRealTerrain)
     }
 }
 
-TEST(TerrainDepthZones, Ac13bRiverMonotonicityOnRealTerrain)
+TEST(TerrainStrata, Ac13bRiverMonotonicityOnRealTerrain)
 {
     for (uint64_t seed = 1; seed <= 3; ++seed) { EXPECT_EQ(0, CheckRiverSweep(seed)); }
 }
 
-TEST(TerrainDepthZones, GeneratorRunsAreByteIdentical)
+TEST(TerrainStrata, GeneratorRunsAreByteIdentical)
 {
     Gen a, b;
     a.Go(11, WorldShapeParams{});
     b.Go(11, WorldShapeParams{});
     EXPECT_EQ(0, std::memcmp(F(a.gen, "zoneCostBase"), F(b.gen, "zoneCostBase"), kN * sizeof(float)));
     EXPECT_EQ(0, std::memcmp(F(a.gen, "zoneCost"), F(b.gen, "zoneCost"), kN * sizeof(float)));
-    EXPECT_EQ(0, std::memcmp(U(a.gen, "depthZone"), U(b.gen, "depthZone"), kN * sizeof(uint32_t)));
+    EXPECT_EQ(0, std::memcmp(U(a.gen, "stratum"), U(b.gen, "stratum"), kN * sizeof(uint32_t)));
 }
 
-TEST(TerrainDepthZones, DirtyBits)
+TEST(TerrainStrata, DirtyBits)
 {
     Gen r;
     WorldShapeParams s;
@@ -594,7 +594,7 @@ TEST(TerrainDepthZones, DirtyBits)
 // ---------------------------------------------------------------------------
 // Sweeps
 // ---------------------------------------------------------------------------
-TEST(SLOW_TerrainDepthZones, ZoneInvariantsAndAncientRateOver20Seeds)
+TEST(SLOW_TerrainStrata, ZoneInvariantsAndAncientRateOver20Seeds)
 {
     int hasAncient = 0, expectButNone = 0, expected = 0;
     for (uint64_t seed = 1; seed <= 20; ++seed)
@@ -607,12 +607,12 @@ TEST(SLOW_TerrainDepthZones, ZoneInvariantsAndAncientRateOver20Seeds)
         expected += st.expectAncient ? 1 : 0;
         expectButNone += (st.expectAncient && st.ancient == 0) ? 1 : 0;
     }
-    std::printf("[TerrainDepthZones] hasAncient %d / 20; Ancient-expected %d / 20; expected but zero Ancient cells %d\n",
+    std::printf("[TerrainStrata] hasAncient %d / 20; Ancient-expected %d / 20; expected but zero Ancient cells %d\n",
                 hasAncient, expected, expectButNone);
     SUCCEED();
 }
 
-TEST(SLOW_TerrainDepthZones, RiverSweepMonotonicityOver20Seeds)
+TEST(SLOW_TerrainStrata, RiverSweepMonotonicityOver20Seeds)
 {
     for (uint64_t seed = 1; seed <= 20; ++seed) { EXPECT_EQ(0, CheckRiverSweep(seed)); }
 }
@@ -620,7 +620,7 @@ TEST(SLOW_TerrainDepthZones, RiverSweepMonotonicityOver20Seeds)
 // ---------------------------------------------------------------------------
 // Timing (informational, Release only)
 // ---------------------------------------------------------------------------
-TEST(TerrainPerf, StageEightDepthZonesReport)
+TEST(TerrainPerf, StageEightStrataReport)
 {
 #ifdef NDEBUG
     constexpr int kRuns = 50;
@@ -630,10 +630,10 @@ TEST(TerrainPerf, StageEightDepthZonesReport)
     for (int run = 0; run < kRuns; ++run)
     {
         r.Go(3000 + static_cast<uint64_t>(run), s);
-        t8.push_back(r.gen.GetTimings()[static_cast<int>(TerrainStage::DepthZones)].milliseconds);
+        t8.push_back(r.gen.GetTimings()[static_cast<int>(TerrainStage::Strata)].milliseconds);
     }
     std::sort(t8.begin(), t8.end());
-    std::printf("[TerrainPerf] stage 8 DepthZones median %.3f ms, max %.3f ms (66x42, %d runs)\n",
+    std::printf("[TerrainPerf] stage 8 Strata median %.3f ms, max %.3f ms (66x42, %d runs)\n",
                 t8[t8.size() / 2], t8.back(), kRuns);
     SUCCEED();
 #else

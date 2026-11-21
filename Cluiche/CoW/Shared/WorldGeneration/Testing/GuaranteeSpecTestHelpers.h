@@ -48,7 +48,7 @@ inline const GuaranteeSpec& ShippedGuaranteeSpec()
         const std::string text = World::Testing::Detail::ReadFileText(ShippedGuaranteesPath());
         const std::string sidecar = World::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath());
         if (text.empty() || sidecar.empty() ||
-            !LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), World::Testing::ShippedZoneTable(), spec, err))
+            !LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), World::Testing::ShippedStratumTable(), spec, err))
         {
             std::fprintf(stderr, "GuaranteeSpecTestHelpers: failed to load shipped guarantees: entry=%s reason=%s\n",
                          err.entry.c_str(), err.reason.c_str());

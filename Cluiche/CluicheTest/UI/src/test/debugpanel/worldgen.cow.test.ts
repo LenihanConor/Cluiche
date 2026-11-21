@@ -64,7 +64,7 @@ function fixture(over: Record<string, any> = {}): any {
 function cellState(): any {
   return {
     success: true, x: 23, y: 17, index: 1121, elevation: 0.5, latitude: 0.4, waterSource: "none", terrain: "Plain",
-    depthZone: "None", landmass: 1, flags: 0, downstream: null,
+    stratum: "None", landmass: 1, flags: 0, downstream: null,
     layers: { landPotential: 0.55, coastDistance: 3 },
     neighbours: [{ dir: 0, x: 24, y: 17 }, "edge", { dir: 2, x: 22, y: 17 }, "edge", { dir: 4, x: 23, y: 18 }, "edge"],
     selected: { x: 23, y: 17 },

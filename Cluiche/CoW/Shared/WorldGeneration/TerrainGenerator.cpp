@@ -206,7 +206,7 @@ void TerrainGenerator::ImportLayers(const WorldStructure& world)
     float*    barrier   = floatLayer("barrierMask");
     uint32_t* water     = uintLayer("waterSource");
     uint32_t* type      = uintLayer("terrainType");
-    uint32_t* zone      = uintLayer("depthZone");
+    uint32_t* zone      = uintLayer("stratum");
     uint32_t* landmass  = uintLayer("landmass");
     uint32_t* flags     = uintLayer("terrainFlags");
     uint32_t* flow      = uintLayer("flowDirection");
@@ -225,7 +225,7 @@ void TerrainGenerator::ImportLayers(const WorldStructure& world)
         barrier[i]   = (c.terrainFlags & TerrainFlag::Barrier) != 0 ? 1.0f : 0.0f;
         water[i]     = static_cast<uint32_t>(c.waterSource);
         type[i]      = static_cast<uint32_t>(c.terrain);
-        zone[i]      = static_cast<uint32_t>(c.depthZone);
+        zone[i]      = static_cast<uint32_t>(c.stratum);
         landmass[i]  = c.landmass;
         flags[i]     = c.terrainFlags;
         flow[i]      = c.downstream < 6 ? c.downstream : 6u;   // 6 = no direction in the layer
@@ -402,13 +402,13 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
                                          ocean.data(), mLayers.UIntLayer(mLayers.FindLayer("lakeMask")), mStage7);
         break;
     }
-    case TerrainStage::DepthZones:
+    case TerrainStage::Strata:
     {
         Stage8Layers out;
         out.zoneCostBase = mLayers.FloatLayer(mLayers.FindLayer("zoneCostBase"));
         out.zoneCost     = mLayers.FloatLayer(mLayers.FindLayer("zoneCost"));
-        out.depthZone    = mLayers.UIntLayer(mLayers.FindLayer("depthZone"));
-        ComputeStage8(mRules, mBiomes != nullptr ? mBiomes->Zones() : World::ZoneTable(), mDims, mShape.barrier, mEffective.mainLandmass,
+        out.stratum    = mLayers.UIntLayer(mLayers.FindLayer("stratum"));
+        ComputeStage8(mRules, mBiomes != nullptr ? mBiomes->Strata() : World::StratumTable(), mDims, mShape.barrier, mEffective.mainLandmass,
                       mLayers.GetUInt(mLayers.FindLayer("landmass")),
                       mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
                       mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),
@@ -483,7 +483,7 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         in.moisture     = mLayers.GetFloat(mLayers.FindLayer("moisture"));
         in.elevation    = mLayers.GetFloat(mLayers.FindLayer("elevation"));
         in.terrainType  = mLayers.GetUInt(mLayers.FindLayer("terrainType"));
-        in.depthZone    = mLayers.GetUInt(mLayers.FindLayer("depthZone"));
+        in.stratum    = mLayers.GetUInt(mLayers.FindLayer("stratum"));
         in.terrainFlags = mLayers.GetUInt(mLayers.FindLayer("terrainFlags"));
         in.barrierMask  = mLayers.GetFloat(mLayers.FindLayer("barrierMask"));
         in.waterSource  = mLayers.GetUInt(mLayers.FindLayer("waterSource"));
@@ -660,7 +660,7 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
     const float*    latitude  = mLayers.GetFloat(mLayers.FindLayer("latitude"));
     const uint32_t* water     = mLayers.GetUInt(mLayers.FindLayer("waterSource"));
     const uint32_t* type      = mLayers.GetUInt(mLayers.FindLayer("terrainType"));
-    const uint32_t* zone      = mLayers.GetUInt(mLayers.FindLayer("depthZone"));
+    const uint32_t* zone      = mLayers.GetUInt(mLayers.FindLayer("stratum"));
     const uint32_t* landmass  = mLayers.GetUInt(mLayers.FindLayer("landmass"));
     const uint32_t* flags     = mLayers.GetUInt(mLayers.FindLayer("terrainFlags"));
     const uint32_t* flow      = mLayers.GetUInt(mLayers.FindLayer("flowDirection"));
@@ -678,7 +678,7 @@ void TerrainGenerator::WriteTerrain(WorldStructure& world) const
         c.latitude     = latitude[i];
         c.waterSource  = static_cast<WaterSource>(water[i]);
         c.terrain      = static_cast<TerrainType>(type[i]);
-        c.depthZone    = static_cast<DepthZone>(zone[i]);
+        c.stratum    = static_cast<StratumIndex>(zone[i]);
         const bool emitted = biomes != nullptr && biome[i] < biomes->Count() && biomes->IsGenerated(static_cast<World::BiomeIndex>(biome[i]));
         c.biome        = static_cast<World::BiomeIndex>(emitted ? biome[i] : oceanRow);
         c.landmass     = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));   // ids saturate at 255

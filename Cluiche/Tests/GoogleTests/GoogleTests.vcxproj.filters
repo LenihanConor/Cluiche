@@ -1804,7 +1804,7 @@
     <ClInclude Include="Editor\GameScopedPluginFixtures.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h">
+    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainStrata.h">
       <Filter>CoW</Filter>
     </ClInclude>
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h">
@@ -2661,10 +2661,10 @@
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRivers.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestTerrainDepthZones.cpp">
+    <ClCompile Include="CoW\TestTerrainStrata.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.cpp">
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainStrata.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainValleys.cpp">
@@ -3294,10 +3294,10 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp">
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestZoneTable.cpp">
+    <ClCompile Include="CoW\TestStratumTable.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\World\ZoneTable.cpp">
+    <ClCompile Include="..\..\CoW\Shared\World\StratumTable.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="DiaDeferredStep\TestStepChain.cpp">

@@ -124,18 +124,18 @@ public:
     static constexpr const char* kBiomesAlias = "json.biomes";
     void SetBiomesText(const std::string& text) { mBiomesText = text; mBiomesTextSet = true; }
     void SetBiomesPath(const std::string& path) { mBiomesPath = path; }
-    // Depth zone table (zones.json + sidecar zones.schema.json), loaded before the biomes (which resolve zone names
-    // against it). Sources, first match: SetZonesText (tests), SetZonesPath (the sidecar is read from the same
-    // directory), the directory of SetBiomesPath, else the catalogue aliases kZonesAlias / kZonesSidecarAlias.
-    static constexpr const char* kZonesAlias = "json.zones";
-    static constexpr const char* kZonesSidecarAlias = "json.zones_schema";
-    void SetZonesText(const std::string& zones, const std::string& sidecar) { mZonesText = zones; mZonesSidecarText = sidecar; mZonesTextSet = true; }
-    void SetZonesPath(const std::string& path) { mZonesPath = path; }
-    // Guarantee spec (guarantees.json + sidecar guarantees.schema.json), loaded after the zones (entries name zones) and
+    // Stratum table (strata.json + sidecar strata.schema.json), loaded before the biomes (which resolve stratum names
+    // against it). Sources, first match: SetStrataText (tests), SetStrataPath (the sidecar is read from the same
+    // directory), the directory of SetBiomesPath, else the catalogue aliases kStrataAlias / kStrataSidecarAlias.
+    static constexpr const char* kStrataAlias = "json.strata";
+    static constexpr const char* kStrataSidecarAlias = "json.strata_schema";
+    void SetStrataText(const std::string& strata, const std::string& sidecar) { mStrataText = strata; mStrataSidecarText = sidecar; mStrataTextSet = true; }
+    void SetStrataPath(const std::string& path) { mStrataPath = path; }
+    // Guarantee spec (guarantees.json + sidecar guarantees.schema.json), loaded after the strata (entries name strata) and
     // installed into the session. Sources, first match: SetGuaranteesText (tests), SetGuaranteesPath (sidecar from the
     // same directory), guarantees.json beside the biomes path when it exists, the catalogue aliases kGuaranteesAlias /
     // kGuaranteesSidecarAlias when registered. With no source the spec stays empty (only registry guarantees and the
-    // layout validate). A source that cannot be read or parsed fails like the zones: field "guarantees.<entry>".
+    // layout validate). A source that cannot be read or parsed fails like the strata: field "guarantees.<entry>".
     static constexpr const char* kGuaranteesAlias = "json.guarantees";
     static constexpr const char* kGuaranteesSidecarAlias = "json.guarantees_schema";
     void SetGuaranteesText(const std::string& text, const std::string& sidecar) { mGuaranteesText = text; mGuaranteesSidecarText = sidecar; mGuaranteesTextSet = true; }
@@ -180,8 +180,8 @@ private:
     // The config body of OnConfigure (loads the rules first); deferred to DoStart when the rules come from an alias.
     void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
-    bool LoadZones(World::ZoneTable& zones);
-    bool LoadGuarantees(const World::ZoneTable& zones);
+    bool LoadStrata(World::StratumTable& strata);
+    bool LoadGuarantees(const World::StratumTable& strata);
     void LoadBiomes();
     void ReportBiomesFailure();
     void ApplyHandoffPreset();
@@ -217,10 +217,10 @@ private:
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
     std::unique_ptr<World::BiomeRegistry> mBiomes;
-    std::string mZonesText;
-    std::string mZonesSidecarText;
-    bool mZonesTextSet = false;
-    std::string mZonesPath;
+    std::string mStrataText;
+    std::string mStrataSidecarText;
+    bool mStrataTextSet = false;
+    std::string mStrataPath;
     std::string mGuaranteesText;
     std::string mGuaranteesSidecarText;
     bool mGuaranteesTextSet = false;

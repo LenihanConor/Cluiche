@@ -8,7 +8,7 @@
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/Strings/String256.h>
 #include <Shared/World/CellVocabulary.h>
-#include <Shared/World/ZoneTable.h>
+#include <Shared/World/StratumTable.h>
 
 #include <cstdint>
 #include <memory>
@@ -56,9 +56,9 @@ public:
     // All-or-nothing: on failure *this is unchanged. A non-null knownPinRule rejects any pin rule id it returns
     // false for (field "pin", naming the row); null accepts any rule id.
     // `zones` is the game's depth zone table: a biome's "zones" names resolve against it (an unknown name fails the
-    // load, field "zones"), and the registry keeps a copy, readable through Zones().
-    bool Load(const Dia::Core::FilePath& path, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
-    bool LoadFromText(const char* json, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
+    // load, field "zones"), and the registry keeps a copy, readable through Strata().
+    bool Load(const Dia::Core::FilePath& path, const StratumTable& zones, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
+    bool LoadFromText(const char* json, const StratumTable& zones, RegistryError& err, PinRuleValidator knownPinRule = nullptr);
 
     uint32_t    Count() const;
     BiomeIndex  Find(Dia::Core::StringCRC id) const;
@@ -78,8 +78,8 @@ public:
 
     BiomeIndex  Role(BiomeRole role) const;
     bool        IsGenerated(BiomeIndex b) const;
-    bool        IsValidInZone(BiomeIndex b, WorldGeneration::DepthZone zone) const;
-    const ZoneTable& Zones() const;   // empty (Count 0) until a load succeeds
+    bool        IsValidInZone(BiomeIndex b, WorldGeneration::StratumIndex zone) const;
+    const StratumTable& Strata() const;   // empty (Count 0) until a load succeeds
     bool        AreForbidden(BiomeIndex a, BiomeIndex b) const;
 
     const ClimateEnvelope* Climate(BiomeIndex b) const;

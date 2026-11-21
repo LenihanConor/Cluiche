@@ -96,7 +96,7 @@ namespace
     bool SameCell(const Cell& x, const Cell& y, bool withRegion)
     {
         return x.elevation == y.elevation && x.latitude == y.latitude && x.waterSource == y.waterSource && x.terrain == y.terrain &&
-               x.depthZone == y.depthZone && x.landmass == y.landmass && x.terrainFlags == y.terrainFlags && x.downstream == y.downstream &&
+               x.stratum == y.stratum && x.landmass == y.landmass && x.terrainFlags == y.terrainFlags && x.downstream == y.downstream &&
                x.biome == y.biome && (!withRegion || x.region == y.region);
     }
 

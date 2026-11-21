@@ -4,7 +4,7 @@
 
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/World/CellVocabulary.h>
-#include <Shared/World/ZoneTable.h>
+#include <Shared/World/StratumTable.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -15,13 +15,14 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <vector>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 namespace CoW {
 namespace World {
 namespace Testing {
 
-inline const ZoneTable& ShippedZoneTable();
+inline const StratumTable& ShippedStratumTable();
 
 namespace Detail
 {
@@ -58,7 +59,7 @@ namespace Detail
         std::stringstream ss;
         ss << in.rdbuf();
         RegistryError err;
-        if (path.empty() || !in.good() || !reg.LoadFromText(ss.str().c_str(), ShippedZoneTable(), err))
+        if (path.empty() || !in.good() || !reg.LoadFromText(ss.str().c_str(), ShippedStratumTable(), err))
         {
             std::fprintf(stderr, "BiomeTestRegistry: failed to load %s (path='%s') field=%s id=%s row=%u reason=%s\n", what,
                          path.c_str(), err.field.AsCStr(), err.id.AsCStr(), err.row, err.reason.AsCStr());
@@ -68,29 +69,58 @@ namespace Detail
     }
 }
 
-// Absolute paths of the shipped Global/World/zones.json and its sidecar zones.schema.json.
-inline std::string ShippedZonesPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/zones.json", false); }
-inline std::string ShippedZoneSidecarPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/zones.schema.json", false); }
+// Absolute paths of the shipped Global/World/strata.json and its sidecar strata.schema.json.
+inline std::string ShippedStrataPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/strata.json", false); }
+inline std::string ShippedStratumSidecarPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/strata.schema.json", false); }
 
-// The shipped zone table (FirstShores, WildReaches, AncientInteriors), loaded once per process. Aborts if it cannot be loaded.
-inline const ZoneTable& ShippedZoneTable()
+// The shipped stratum table (FirstShores, WildReaches, AncientInteriors), loaded once per process. Aborts if it cannot be loaded.
+inline const StratumTable& ShippedStratumTable()
 {
-    static ZoneTable zones;
+    static StratumTable strata;
     static bool loaded = false;
     if (!loaded)
     {
         loaded = true;
-        ZoneError err;
-        const std::string zonesText = Detail::ReadFileText(ShippedZonesPath());
-        const std::string sidecarText = Detail::ReadFileText(ShippedZoneSidecarPath());
-        if (zonesText.empty() || sidecarText.empty() || !zones.LoadFromText(zonesText.c_str(), sidecarText.c_str(), err))
+        StratumError err;
+        const std::string strataText = Detail::ReadFileText(ShippedStrataPath());
+        const std::string sidecarText = Detail::ReadFileText(ShippedStratumSidecarPath());
+        if (strataText.empty() || sidecarText.empty() || !strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err))
         {
-            std::fprintf(stderr, "BiomeTestRegistry: failed to load shipped zones: field=%s reason=%s\n", err.field.c_str(), err.reason.c_str());
+            std::fprintf(stderr, "BiomeTestRegistry: failed to load shipped strata: field=%s reason=%s\n", err.field.c_str(), err.reason.c_str());
             std::fflush(stderr);
             std::abort();
         }
     }
-    return zones;
+    return strata;
+}
+
+// A three-stratum depth-set strata file naming the strata `names` (the shipped numbers: 4-6, 4-6, 2-4 regions,
+// innermost main-landmass-only with min coast depth 3) and the matching sidecar (shares 0.45 / 0.40 / 0.15).
+// For tests that need a differently named table; a name list of another length is allowed for load-fault tests.
+inline std::string TestStrataText(const std::vector<std::string>& names)
+{
+    std::string list;
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+        const bool inner = (i + 1 == names.size());
+        list += std::string(i == 0 ? "" : ",") + "{\"name\":\"" + names[i] + "\",\"regions_min\":" + (inner ? "2" : "4") +
+                ",\"regions_max\":" + (inner ? "4" : "6") + (inner ? ",\"main_landmass_only\":true,\"min_coast_depth\":3" : "") + "}";
+    }
+    return "{\"format\":\"cow.strata\",\"version\":1,\"sets\":[{\"id\":\"depth\",\"ordered\":true,"
+           "\"assigner\":{\"type\":\"coast_cost_bands\",\"metric\":\"coast_cost\"},\"strata\":[" + list + "]}]}";
+}
+
+inline std::string TestStrataSidecar(const std::vector<std::string>& names, const std::vector<float>& shares = { 0.45f, 0.40f, 0.15f })
+{
+    std::string entries;
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "%g", static_cast<double>(i < shares.size() ? shares[i] : 0.0f));
+        entries += std::string(i == 0 ? "" : ",") + "{\"key\":\"depth." + names[i] + ".share\",\"kind\":\"parameter\",\"label\":\"share\","
+                   "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":1.0,\"default\":" + buf + "}";
+    }
+    return "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"cow.strata\",\"entries\":[" + entries + "]}";
 }
 
 // Absolute path of the shipped Global/World/biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
@@ -143,7 +173,7 @@ inline BiomeRegistry LoadShippedVariant(std::initializer_list<std::pair<const ch
     }
     BiomeRegistry reg;
     RegistryError err;
-    if (!reg.LoadFromText(text.c_str(), ShippedZoneTable(), err))
+    if (!reg.LoadFromText(text.c_str(), ShippedStratumTable(), err))
     {
         std::fprintf(stderr, "BiomeTestRegistry: variant failed to load: field=%s id=%s row=%u reason=%s\n", err.field.AsCStr(),
                      err.id.AsCStr(), err.row, err.reason.AsCStr());

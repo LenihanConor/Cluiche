@@ -40,7 +40,7 @@ namespace
             const Cell& x = a.Cells()[i];
             const Cell& y = b.Cells()[i];
             if (x.elevation != y.elevation || x.latitude != y.latitude || x.waterSource != y.waterSource || x.terrain != y.terrain ||
-                x.depthZone != y.depthZone || x.landmass != y.landmass || x.terrainFlags != y.terrainFlags ||
+                x.stratum != y.stratum || x.landmass != y.landmass || x.terrainFlags != y.terrainFlags ||
                 x.downstream != y.downstream || x.biome != y.biome)
             {
                 return false;

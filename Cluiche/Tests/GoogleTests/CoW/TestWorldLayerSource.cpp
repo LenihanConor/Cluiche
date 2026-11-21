@@ -44,7 +44,7 @@ float Expected(const WorldGenSession& s, const std::string& id, uint32_t i)
     if (id == "relief") return L.GetFloat(L.FindLayer("elevation"))[i];
     if (id == "terrainType") return static_cast<float>(c.terrain);
     if (id == "waterSource") return static_cast<float>(c.waterSource);
-    if (id == "depthZone")   return static_cast<float>(c.depthZone);
+    if (id == "stratum")   return static_cast<float>(c.stratum);
     if (id == "landmass")    return static_cast<float>(c.landmass);
     if (id == "regions")     return c.region == 0 ? 0.0f : static_cast<float>(1 + (c.region - 1) % 63);
     const int idx = L.FindLayer(id.c_str());

@@ -19,7 +19,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -127,7 +127,7 @@ TEST(ValidationEdge, SitesOutsideTheMapAreViolationsNotCrashes)
     EXPECT_FALSE(ds.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(ds, "outside the map"));
     EXPECT_TRUE(ds.violatingPairs.IsEmpty());
-    FillLand(w, 2, 2, 5, 5, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 2, 2, 5, 5, kStratumAncient, B("Biome.Grassland"));
     const GuaranteeResult wt = Check(ThroneRule(), w, { &p });
     EXPECT_FALSE(wt.satisfied);
     EXPECT_EQ(wt.violatingCells.Size(), 1u);
@@ -147,7 +147,7 @@ TEST(ValidationEdge, AllWaterWorldHasNothingReachable)
 TEST(ValidationEdge, SevenThronesFailTheExactCount)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kStratumAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 17, 8, 3);
     BlockWaterProfile p("P");
@@ -160,8 +160,8 @@ TEST(ValidationEdge, SevenThronesFailTheExactCount)
 TEST(ValidationEdge, AncientInteriorsInSeveralPatchesAnyOneSuffices)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 2, 2, 4, 4, kZoneAncient, B("Biome.Grassland"));       // patch A
-    FillLand(w, 26, 16, 28, 18, kZoneAncient, B("Biome.Grassland"));   // patch B
+    FillLand(w, 2, 2, 4, 4, kStratumAncient, B("Biome.Grassland"));       // patch A
+    FillLand(w, 26, 16, 28, 18, kStratumAncient, B("Biome.Grassland"));   // patch B
     for (int y = 0; y < 20; ++y) { SetOcean(w, 15, y); }                                 // splits the map; thrones sit on the right
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 20 + t, 5, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
@@ -232,7 +232,7 @@ WorldStructure MakeAc6World(uint64_t seed)
         const Cell& c = w.Cells()[i];
         if (c.landmass != w.mainLandmass || c.waterSource != WaterSource::None) { continue; }
         land.push_back(static_cast<uint32_t>(i));
-        if (c.depthZone == kZoneAncient) { interiors.push_back(static_cast<uint32_t>(i)); }
+        if (c.stratum == kStratumAncient) { interiors.push_back(static_cast<uint32_t>(i)); }
     }
     auto pick = [](const std::vector<uint32_t>& v, size_t k, size_t n) { return v[(v.size() * (2 * k + 1)) / (2 * n)]; };
     auto add = [&](const StringCRC& kind, uint32_t cell, uint16_t variant) {

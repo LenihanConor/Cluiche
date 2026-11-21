@@ -30,7 +30,7 @@ inline std::vector<int> FindZoneViolations(const Stage14Inputs& in, const uint32
         {
             continue;
         }
-        if (!reg.IsValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
+        if (!reg.IsValidInZone(b, static_cast<StratumIndex>(in.stratum[c])))
         {
             bad.push_back(c);
         }

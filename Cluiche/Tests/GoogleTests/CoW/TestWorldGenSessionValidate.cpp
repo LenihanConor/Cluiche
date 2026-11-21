@@ -431,7 +431,7 @@ TEST_F(WorldGenSessionValidateTest, CustomSpecEntriesAppearByTheirIdAndAVariantC
     camps.minimumKey = "minimumSpacing"; camps.distanceKey = "pairDistance";
     GuaranteeEntry totems;
     totems.id = "Test.Guarantee.Totems"; totems.type = GuaranteeRuleType::VariantCover;
-    totems.kind = "Test.Site.Totem"; totems.variantCount = 2; totems.toZoneIndex = 1;
+    totems.kind = "Test.Site.Totem"; totems.variantCount = 2; totems.toStratumIndex = 1;
     totems.noun = "totem"; totems.nounPlural = "totems"; totems.variantNoun = "kind"; totems.targetNoun = "Shores";
     totems.countKey = "totemsOfType"; totems.targetCountKey = "shoreCells";
     spec.guarantees = { camps, totems };

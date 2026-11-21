@@ -16,7 +16,7 @@
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <string>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -141,7 +141,7 @@ TEST(WorldLayoutGuarantee, TerrainLimitedWorldsAnnotateRegionCountViolationsAsTe
     Placed p = MakePlaced(1);
     p.world.regions.absorbedCells = 60000;   // forces AbsorbedOverCap
     LayoutLimits limited = p.report.limits;
-    limited.regionLimitedBy = kZoneWild;
+    limited.regionLimitedBy = kStratumWild;
     WorldLayoutGuarantee g(TestRules(), limited);
     class NoNav : public INavigationQuery
     {

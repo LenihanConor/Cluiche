@@ -21,7 +21,7 @@ namespace
     using Dia::Core::Containers::DynamicArrayC;
     using Dia::Core::Containers::String64;
     using Dia::Core::Containers::String256;
-    using WorldGeneration::DepthZone;
+    using WorldGeneration::StratumIndex;
 
     // Tag vocabulary: TagId is the index in this list (at most 64).
     const char* const kTagNames[] = { "land", "water", "aquatic", "wet", "cold", "hot",
@@ -80,7 +80,7 @@ struct BiomeRegistry::Data
     };
 
     DynamicArrayC<Row, kMaxBiomes> rows;
-    ZoneTable  zones;
+    StratumTable  zones;
     uint8_t    forbidden[kMaxBiomes][kMatrixBytes] = {};
     BiomeIndex climateList[kMaxBiomes] = {};
     uint32_t   climateCount = 0;
@@ -301,7 +301,7 @@ namespace
     }
 }
 
-bool BiomeRegistry::LoadFromText(const char* json, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
+bool BiomeRegistry::LoadFromText(const char* json, const StratumTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
 {
     if (json == nullptr) { return Fail(err, "document", "", 0, "no text"); }
 
@@ -408,7 +408,7 @@ bool BiomeRegistry::LoadFromText(const char* json, const ZoneTable& zones, Regis
     return true;
 }
 
-bool BiomeRegistry::Load(const Dia::Core::FilePath& path, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
+bool BiomeRegistry::Load(const Dia::Core::FilePath& path, const StratumTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
 {
     Dia::Core::FilePath::ResoledFilePath resolved;
     path.Resolve(resolved);
@@ -419,9 +419,9 @@ bool BiomeRegistry::Load(const Dia::Core::FilePath& path, const ZoneTable& zones
     return LoadFromText(ss.str().c_str(), zones, err, knownPinRule);
 }
 
-const ZoneTable& BiomeRegistry::Zones() const
+const StratumTable& BiomeRegistry::Strata() const
 {
-    static const ZoneTable kEmpty;
+    static const StratumTable kEmpty;
     return mData ? mData->zones : kEmpty;
 }
 
@@ -516,7 +516,7 @@ bool BiomeRegistry::IsGenerated(BiomeIndex b) const
     return r && r->generated;
 }
 
-bool BiomeRegistry::IsValidInZone(BiomeIndex b, DepthZone zone) const
+bool BiomeRegistry::IsValidInZone(BiomeIndex b, StratumIndex zone) const
 {
     const Data::Row* r = mData ? mData->At(b) : nullptr;
     const uint32_t z = static_cast<uint32_t>(zone);

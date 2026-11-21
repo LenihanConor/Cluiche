@@ -370,7 +370,7 @@
       }
     },
     {
-      "key": "depthZone",
+      "key": "stratum",
       "kind": "field",
       "label": "Depth zone",
       "description": "Distance-from-shore zone (None for ocean).",

@@ -1249,7 +1249,7 @@ GuaranteeSpec FlagSpec(bool withMarker)
     text += " }";
     GuaranteeSpec spec;
     GuaranteeSpecError err;
-    if (!LoadGuaranteeSpec(text.c_str(), Testing::ShippedGuaranteesSidecarText().c_str(), World::Testing::ShippedZoneTable(), spec, err))
+    if (!LoadGuaranteeSpec(text.c_str(), Testing::ShippedGuaranteesSidecarText().c_str(), World::Testing::ShippedStratumTable(), spec, err))
     {
         ADD_FAILURE() << err.entry << ": " << err.reason;
     }

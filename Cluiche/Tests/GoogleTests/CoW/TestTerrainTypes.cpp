@@ -184,7 +184,7 @@ static void ExpectUniqueNonEmptyNames(int count, F nameOf)
 TEST(TerrainTypes, EnumNamesAreUniqueAndNonEmpty)
 {
     ExpectUniqueNonEmptyNames<WaterSource>(4, [](WaterSource e) { return WaterSourceName(e); });
-    ExpectUniqueNonEmptyNames<DepthZone>(4, [](DepthZone e) { return DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), e); });
+    ExpectUniqueNonEmptyNames<StratumIndex>(4, [](StratumIndex e) { return StratumName(::CoW::World::Testing::ShippedStratumTable(), e); });
     ExpectUniqueNonEmptyNames<TerrainType>(static_cast<int>(TerrainType::Count), [](TerrainType e) { return TerrainTypeName(e); });
     ExpectUniqueNonEmptyNames<BarrierForm>(2, [](BarrierForm e) { return BarrierFormName(e); });
     ExpectUniqueNonEmptyNames<ShapeParam>(static_cast<int>(ShapeParam::Count), [](ShapeParam e) { return ShapeParamName(e); });

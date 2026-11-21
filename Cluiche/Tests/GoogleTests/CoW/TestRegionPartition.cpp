@@ -11,7 +11,7 @@
 
 #include <algorithm>
 #include <set>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -20,9 +20,9 @@ using Dia::Maths::RandomStream;
 
 namespace
 {
-    constexpr DepthZone FS = kZoneFirst;
-    constexpr DepthZone WR = kZoneWild;
-    constexpr DepthZone AI = kZoneAncient;
+    constexpr StratumIndex FS = kStratumFirst;
+    constexpr StratumIndex WR = kStratumWild;
+    constexpr StratumIndex AI = kStratumAncient;
     constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
@@ -39,7 +39,7 @@ namespace
     }
 
     // Vertical one-cell-wide strip at x = 0: cell i is at distance |i - j| from cell j.
-    WorldStructure Strip(int len, DepthZone z = FS, CoW::World::BiomeIndex b = G)
+    WorldStructure Strip(int len, StratumIndex z = FS, CoW::World::BiomeIndex b = G)
     {
         WorldStructure w = MakeBlankWorld(3, len);
         FillLand(w, 0, 0, 1, len, z, b);
@@ -65,17 +65,17 @@ TEST(RegionPartition, RebalanceAddsToMostUnusedCapacityTiesByZoneOrder)
 {
     uint8_t count[3] = { 2, 4, 2 };
     const uint16_t cap[3] = { 2, 6, 4 };
-    DepthZone lim = kZoneFirst;
+    StratumIndex lim = kStratumFirst;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
-    EXPECT_EQ(lim, kNoZone);
+    EXPECT_EQ(lim, kNoStratum);
 }
 
 TEST(RegionPartition, RebalanceRemovesFromLeastSpareCapacityTiesByZoneOrder)
 {
     uint8_t count[3] = { 6, 6, 6 };
     const uint16_t cap[3] = { 6, 6, 6 };
-    DepthZone lim;
+    StratumIndex lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 5); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 6);
 }
@@ -85,17 +85,17 @@ TEST(RegionPartition, RebalanceAddTieGoesToEarlierZoneWhenOnlyOneAddIsNeeded)
 {
     uint8_t count[3] = { 2, 4, 3 };            // total 9: exactly one add
     const uint16_t cap[3] = { 2, 6, 5 };       // zone 1 and zone 2 both have 2 unused
-    DepthZone lim;
+    StratumIndex lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
-    EXPECT_EQ(lim, kNoZone);
+    EXPECT_EQ(lim, kNoStratum);
 }
 
 TEST(RegionPartition, RebalanceRemoveNeverTakesAZoneAtItsRangeMinimum)
 {
     uint8_t count[3] = { 4, 7, 6 };            // total 17; zone 0 sits at its minimum with no spare capacity
     const uint16_t cap[3] = { 4, 7, 6 };
-    DepthZone lim;
+    StratumIndex lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 4); EXPECT_EQ(count[1], 6); EXPECT_EQ(count[2], 6);
 }
@@ -125,15 +125,15 @@ TEST(RegionPartition, RebalanceTerrainLimitedNamesSmallestCapacityToMinimum)
 {
     uint8_t count[3] = { 3, 2, 2 };
     const uint16_t cap[3] = { 3, 2, 2 };
-    DepthZone lim;
+    StratumIndex lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0] + count[1] + count[2], 7);
-    EXPECT_EQ(lim, kZoneWild);   // 3/4, 2/4, 2/2
+    EXPECT_EQ(lim, kStratumWild);   // 3/4, 2/4, 2/2
 
     uint8_t c2[3] = { 2, 2, 1 };
     const uint16_t cap2[3] = { 2, 2, 1 };
     RebalanceRegionCounts(c2, cap2, lim);
-    EXPECT_EQ(lim, kZoneFirst);   // equal ratios: zone order
+    EXPECT_EQ(lim, kStratumFirst);   // equal ratios: zone order
 }
 
 TEST(RegionPartition, TargetsAreCapacityLimited)
@@ -153,7 +153,7 @@ TEST(RegionPartition, TargetsAreCapacityLimited)
         for (int z = 0; z < 3; ++z) { EXPECT_LE(t.count[z], t.capacity[z]); EXPECT_LE(t.count[z], kZoneCountMax[z]); }
         EXPECT_GE(t.total, 10) << "seed " << seed;   // capacity 12 allows it, rebalance must reach 10
         EXPECT_LE(t.total, 16);
-        EXPECT_EQ(t.limitedBy, kNoZone);
+        EXPECT_EQ(t.limitedBy, kNoStratum);
     }
 }
 
@@ -165,7 +165,7 @@ TEST(RegionPartition, TargetsTerrainLimitedIsReportedNotFailure)
     RandomStream rng(3);
     const RegionTargets t = ComputeRegionTargets(w, Rules(), rng);
     EXPECT_EQ(t.total, 6);
-    EXPECT_NE(t.limitedBy, kNoZone);
+    EXPECT_NE(t.limitedBy, kNoStratum);
     EXPECT_EQ(t.capacity[2], 0);
 }
 
@@ -337,7 +337,7 @@ TEST(RegionPartition, GrowthStaysInsideZoneAndClaimsEverything)
             if (cell.landmass == 0) { EXPECT_EQ(g.regionOf[c], kNoRegion); continue; }
             if (c % 30 >= 22) { EXPECT_EQ(g.regionOf[c], kNoRegion); continue; }   // tiny piece
             ASSERT_NE(g.regionOf[c], kNoRegion) << "cell " << c << " seed " << seed;
-            EXPECT_EQ(g.seeds[g.regionOf[c] - 1].zone, cell.depthZone);
+            EXPECT_EQ(g.seeds[g.regionOf[c] - 1].zone, cell.stratum);
             EXPECT_EQ(g.seeds[g.regionOf[c] - 1].landmass, cell.landmass);
         }
     }
@@ -455,7 +455,7 @@ TEST(RegionPartition, SmokeGeneratedSmallWorld)
     RandomStream rng(7);
     const RegionGrowth g = BuildProvisionalRegions(w, TestRules(), rng, ShippedBiomeRegistry());
     EXPECT_FALSE(g.overflow);
-    EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != kNoZone)
+    EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != kNoStratum)
         << "total " << int(g.targets.total);
     std::set<uint32_t> tiny;
     for (uint32_t ci : g.tinyComponents) { tiny.insert(ci); }

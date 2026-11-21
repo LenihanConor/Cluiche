@@ -22,7 +22,7 @@ namespace CoW {
 namespace WorldGeneration {
 
 constexpr const char* kWorldJsonFormat   = "cow.world";
-constexpr uint32_t    kWorldJsonVersion  = 1;
+constexpr uint32_t    kWorldJsonVersion  = 2;
 constexpr const char* kWorldJsonTopology = "hex_flat_odd_q";
 constexpr const char* kWorldFileExtension = ".wld.json";
 
@@ -60,7 +60,7 @@ struct WorldJsonContext
 bool        WorldJsonParseTerrain(const std::string& text, TerrainType& out);
 bool        WorldJsonParseWaterSource(const std::string& text, WaterSource& out);
 // A zone is written by its name in the registry's zone table ("None" = ocean); a name the table lacks is refused.
-bool        WorldJsonParseDepthZone(const World::ZoneTable& zones, const std::string& text, DepthZone& out);
+bool        WorldJsonParseStratum(const World::StratumTable& strata, const std::string& text, StratumIndex& out);
 
 // The key a site kind is written under: a built-in node kind, a registered kind, a name remembered by the
 // world's SiteSet (an unknown kind that came from an import), else "crc:xxxxxxxx" (lower-case hex), which

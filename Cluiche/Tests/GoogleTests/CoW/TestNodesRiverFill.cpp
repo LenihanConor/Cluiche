@@ -22,7 +22,7 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -67,7 +67,7 @@ namespace
     WorldStructure RiverWorld(int h = 40, uint8_t landmass = 1)
     {
         WorldStructure w = MakeBlankWorld(12, h);
-        FillLand(w, 0, 0, 12, h - 1, kZoneFirst, G, landmass);
+        FillLand(w, 0, 0, 12, h - 1, kStratumFirst, G, landmass);
         for (int x = 0; x < 12; ++x) { SetOcean(w, x, h - 1); }
         return w;
     }

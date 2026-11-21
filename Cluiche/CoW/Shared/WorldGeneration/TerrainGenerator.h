@@ -13,7 +13,7 @@
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/TerrainClassify.h>
-#include <Shared/WorldGeneration/TerrainDepthZones.h>
+#include <Shared/WorldGeneration/TerrainStrata.h>
 #include <Shared/WorldGeneration/TerrainDrainage.h>
 #include <Shared/WorldGeneration/TerrainLandmass.h>
 #include <Shared/WorldGeneration/TerrainMountains.h>
@@ -66,9 +66,9 @@ struct StageTiming
     X("flowAccumulation", LayerType::Float, TerrainStage::Drainage) \
     X("riverMask",       LayerType::UInt,  TerrainStage::Rivers) \
     X("lakeMask",        LayerType::UInt,  TerrainStage::Lakes) \
-    X("zoneCostBase",    LayerType::Float, TerrainStage::DepthZones) \
-    X("zoneCost",        LayerType::Float, TerrainStage::DepthZones) \
-    X("depthZone",     LayerType::UInt,  TerrainStage::DepthZones) \
+    X("zoneCostBase",    LayerType::Float, TerrainStage::Strata) \
+    X("zoneCost",        LayerType::Float, TerrainStage::Strata) \
+    X("stratum",     LayerType::UInt,  TerrainStage::Strata) \
     X("valleyCarve",   LayerType::Float, TerrainStage::Valleys) \
     X("elevation",     LayerType::Float, TerrainStage::Valleys) \
     X("slope",         LayerType::Float, TerrainStage::Classify) \
@@ -96,7 +96,7 @@ inline constexpr uint32_t kStageReads[static_cast<int>(TerrainStage::Count)] =
     StageBit(TerrainStage::Elevation),                                                  // 5 Drainage {4}
     StageBit(TerrainStage::Elevation) | StageBit(TerrainStage::Drainage),               // 6 Rivers {4,5}
     StageBit(TerrainStage::Drainage),                                                   // 7 Lakes {5}
-    (1u << 1) | (1u << 2) | (1u << 3) | (1u << 6),                                      // 8 DepthZones {1,2,3,6}
+    (1u << 1) | (1u << 2) | (1u << 3) | (1u << 6),                                      // 8 Strata {1,2,3,6}
     (1u << 4) | (1u << 5) | (1u << 6) | (1u << 7),                                      // 9 Valleys {4,5,6,7}
     (1u << 1) | (1u << 2) | (1u << 3) | (1u << 6) | (1u << 7) | (1u << 8) | (1u << 9),  // 10 Classify
     0,                                                                                  // 11 Latitude (grid only)
@@ -198,7 +198,7 @@ public:
     void Invalidate();
 
     // Makes the layer buffers describe an imported world as far as its cells allow: elevation, latitude, waterSource,
-    // terrainType, depthZone, landmass, terrainFlags, flowDirection (river cells), biomeIndex, riverMask, passMask,
+    // terrainType, stratum, landmass, terrainFlags, flowDirection (river cells), biomeIndex, riverMask, passMask,
     // ridgeMask, barrierMask and volcanic are read back from the cells; every other layer is zero (it cannot be
     // reconstructed). The stage cache is invalidated, so the next Update regenerates everything from its inputs.
     void ImportLayers(const WorldStructure& world);

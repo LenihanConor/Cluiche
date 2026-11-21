@@ -125,60 +125,60 @@ namespace
     }
 }
 
-bool WorldGenerationModule::LoadZones(World::ZoneTable& zones)
+bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
 {
-    std::string zonesText;
+    std::string strataText;
     std::string sidecarText;
-    if (mZonesTextSet)
+    if (mStrataTextSet)
     {
-        zonesText = mZonesText;
-        sidecarText = mZonesSidecarText;
+        strataText = mStrataText;
+        sidecarText = mStrataSidecarText;
     }
     else
     {
-        std::string zonesPath = mZonesPath;
+        std::string strataPath = mStrataPath;
         std::string sidecarPath;
-        if (zonesPath.empty() && !mBiomesPath.empty())
+        if (strataPath.empty() && !mBiomesPath.empty())
         {
-            zonesPath = (std::filesystem::path(mBiomesPath).parent_path() / "zones.json").string();
+            strataPath = (std::filesystem::path(mBiomesPath).parent_path() / "strata.json").string();
         }
-        if (!zonesPath.empty())
+        if (!strataPath.empty())
         {
-            sidecarPath = (std::filesystem::path(zonesPath).parent_path() / "zones.schema.json").string();
+            sidecarPath = (std::filesystem::path(strataPath).parent_path() / "strata.schema.json").string();
         }
         else
         {
-            zonesPath = ResolveAlias(kZonesAlias);
-            sidecarPath = ResolveAlias(kZonesSidecarAlias);
-            if (zonesPath.empty() || sidecarPath.empty())
+            strataPath = ResolveAlias(kStrataAlias);
+            sidecarPath = ResolveAlias(kStrataSidecarAlias);
+            if (strataPath.empty() || sidecarPath.empty())
             {
-                mBiomesErrorField = "zones";
-                mBiomesErrorReason = std::string("alias '") + (zonesPath.empty() ? kZonesAlias : kZonesSidecarAlias) + "' is not registered";
-                DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones %s; generation is refused", mBiomesErrorReason.c_str());
+                mBiomesErrorField = "strata";
+                mBiomesErrorReason = std::string("alias '") + (strataPath.empty() ? kStrataAlias : kStrataSidecarAlias) + "' is not registered";
+                DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
                 return false;
             }
         }
-        if (!ReadWholeFile(zonesPath, zonesText) || !ReadWholeFile(sidecarPath, sidecarText))
+        if (!ReadWholeFile(strataPath, strataText) || !ReadWholeFile(sidecarPath, sidecarText))
         {
-            mBiomesErrorField = "zones";
-            mBiomesErrorReason = "cannot read " + zonesPath + " or " + sidecarPath;
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones %s; generation is refused", mBiomesErrorReason.c_str());
+            mBiomesErrorField = "strata";
+            mBiomesErrorReason = "cannot read " + strataPath + " or " + sidecarPath;
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
             return false;
         }
     }
-    World::ZoneError err;
-    if (!zones.LoadFromText(zonesText.c_str(), sidecarText.c_str(), err))
+    World::StratumError err;
+    if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err))
     {
-        mBiomesErrorField = std::string("zones.") + err.field;
+        mBiomesErrorField = std::string("strata.") + err.field;
         mBiomesErrorReason = err.reason;
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones failed at field '%s': %s; generation is refused",
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata failed at field '%s': %s; generation is refused",
                       err.field.c_str(), mBiomesErrorReason.c_str());
         return false;
     }
     return true;
 }
 
-bool WorldGenerationModule::LoadGuarantees(const World::ZoneTable& zones)
+bool WorldGenerationModule::LoadGuarantees(const World::StratumTable& strata)
 {
     std::string text;
     std::string sidecar;
@@ -226,7 +226,7 @@ bool WorldGenerationModule::LoadGuarantees(const World::ZoneTable& zones)
     }
     WorldGeneration::GuaranteeSpec spec;
     WorldGeneration::GuaranteeSpecError err;
-    if (!WorldGeneration::LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), zones, spec, err))
+    if (!WorldGeneration::LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), strata, spec, err))
     {
         mBiomesErrorField = std::string("guarantees.") + err.entry;
         mBiomesErrorReason = err.reason;
@@ -248,8 +248,8 @@ bool WorldGenerationModule::LoadGuarantees(const World::ZoneTable& zones)
 
 void WorldGenerationModule::LoadBiomes()
 {
-    World::ZoneTable zones;
-    if (!LoadZones(zones) || !LoadGuarantees(zones))
+    World::StratumTable strata;
+    if (!LoadStrata(strata) || !LoadGuarantees(strata))
     {
         return;
     }
@@ -289,7 +289,7 @@ void WorldGenerationModule::LoadBiomes()
     }
 
     World::RegistryError err;
-    if (!mBiomes->LoadFromText(text.c_str(), zones, err, &WorldGeneration::IsBuiltInPinRule))
+    if (!mBiomes->LoadFromText(text.c_str(), strata, err, &WorldGeneration::IsBuiltInPinRule))
     {
         mBiomesErrorField = err.field.AsCStr();
         if (mBiomesErrorField.empty())

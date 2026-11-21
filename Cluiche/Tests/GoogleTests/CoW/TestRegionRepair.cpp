@@ -16,7 +16,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -25,9 +25,9 @@ using Dia::Maths::RandomStream;
 
 namespace
 {
-    constexpr DepthZone FS = kZoneFirst;
-    constexpr DepthZone WR = kZoneWild;
-    constexpr DepthZone AI = kZoneAncient;
+    constexpr StratumIndex FS = kStratumFirst;
+    constexpr StratumIndex WR = kStratumWild;
+    constexpr StratumIndex AI = kStratumAncient;
     constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     L  = 1;   // Biome.Lake (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
@@ -47,7 +47,7 @@ namespace
 
     // rows: one string per grid row. '.' ocean, '1'..'9' provisional region id, 'u' land with region 0.
     // zones[i] = zone of region i+1 (its cells take that zone). uZone = zone of 'u' cells.
-    Hand Make(const std::vector<std::string>& rows, const std::vector<DepthZone>& zones, DepthZone uZone = FS, CoW::World::BiomeIndex biome = G)
+    Hand Make(const std::vector<std::string>& rows, const std::vector<StratumIndex>& zones, StratumIndex uZone = FS, CoW::World::BiomeIndex biome = G)
     {
         Hand h;
         const int W = static_cast<int>(rows[0].size());
@@ -66,7 +66,7 @@ namespace
                 h.g.regionOf[static_cast<size_t>(y) * W + x] = static_cast<RegionId>(id);
             }
         }
-        for (DepthZone z : zones)
+        for (StratumIndex z : zones)
         {
             RegionSeed s;
             s.biome = biome; s.zone = z; s.landmass = 1;
@@ -85,7 +85,7 @@ namespace
         comp.tiny = true;
         for (const auto& q : xy) { comp.cells.push_back(static_cast<uint32_t>(q.second * h.w.dimensions.width + q.first)); }
         std::sort(comp.cells.begin(), comp.cells.end());
-        comp.zone = h.w.Cells()[comp.cells[0]].depthZone;
+        comp.zone = h.w.Cells()[comp.cells[0]].stratum;
         h.g.tinyComponents.push_back(static_cast<uint32_t>(h.g.components.size()));
         h.g.components.push_back(comp);
     }
@@ -208,7 +208,7 @@ TEST(RegionRepair, TinyComponentIsAbsorbedAndCounted)
 
 TEST(RegionRepair, UnzonedCellIsAbsorbedAndCounted)
 {
-    Hand h = Make({ "1", "1", "1", "u" }, { FS }, kNoZone);
+    Hand h = Make({ "1", "1", "1", "u" }, { FS }, kNoStratum);
     Finish(h);
     EXPECT_EQ(At(h, 0, 3), 1);
     EXPECT_EQ(h.w.regions.absorbedCells, 1);
@@ -231,7 +231,7 @@ TEST(RegionRepair, TinyFragmentAbsorbedCountsAsFragmentNotAbsorbed)
 TEST(RegionRepair, FragmentAndUnzonedCountedSeparately)
 {
     Hand h = Make({ "1", "1", "1", "1", "1", "u", "u", "u" }, { FS }, AI);
-    h.w.At(0, 7).depthZone = kNoZone;   // unzoned, not part of the tiny fragment
+    h.w.At(0, 7).stratum = kNoStratum;   // unzoned, not part of the tiny fragment
     MarkTiny(h, { { 0, 5 }, { 0, 6 } });
     Finish(h);
     EXPECT_EQ(h.w.regions.fragmentCells, 2);
@@ -303,7 +303,7 @@ TEST(RegionRepair, ExactlyTenMainlandRegionsIsNotTerrainLimited)
     Hand h = Make({ "123456789:" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS, FS });
     Finish(h);
     EXPECT_EQ(h.w.regions.mainlandRegionCount, 10);
-    EXPECT_EQ(h.w.regions.limitedBy, kNoZone);
+    EXPECT_EQ(h.w.regions.limitedBy, kNoStratum);
 }
 
 TEST(RegionRepair, NineMainlandRegionsIsTerrainLimited)
@@ -311,7 +311,7 @@ TEST(RegionRepair, NineMainlandRegionsIsTerrainLimited)
     Hand h = Make({ "123456789" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS });
     Finish(h);
     EXPECT_EQ(h.w.regions.mainlandRegionCount, 9);
-    EXPECT_NE(h.w.regions.limitedBy, kNoZone);
+    EXPECT_NE(h.w.regions.limitedBy, kNoStratum);
 }
 
 TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
@@ -326,7 +326,7 @@ TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
 TEST(RegionRepair, LoosePieceBehindAnotherPieceIsAbsorbedInLaterRound)
 {
     Hand h = Make({ "1", "u", "u" }, { FS }, AI);
-    h.w.At(0, 2).depthZone = kNoZone;   // second piece is unzoned, touches only the first piece
+    h.w.At(0, 2).stratum = kNoStratum;   // second piece is unzoned, touches only the first piece
     const RegionBuild b = Finish(h);
     EXPECT_EQ(b.looseLandPiecesAbsorbed, 2);
     EXPECT_EQ(b.orphanRegions, 0);
@@ -384,7 +384,7 @@ TEST(RegionRepair, IslandIsOneRegionWithMajorityZoneAndExemptFromRules)
 {
     Hand h = Make({ "1", "1", "1", "1", "1", ".", "2", "2", "2" }, { FS, WR });
     for (int y = 6; y < 9; ++y) { h.w.At(0, y).landmass = 2; }
-    h.w.At(0, 6).depthZone = FS;   // 1 FirstShores vs 2 WildReaches cells
+    h.w.At(0, 6).stratum = FS;   // 1 FirstShores vs 2 WildReaches cells
     h.g.seeds[1].isIsland = true;
     h.g.seeds[1].landmass = 2;
     const RegionBuild b = Finish(h, 4);   // island has 3 < 4 cells and a mixed zone: still untouched
@@ -608,13 +608,13 @@ namespace
         for (unsigned i = 0; i < w.regions.regions.Size(); ++i) { const RegionRecord& r = w.regions.regions[i]; if (!r.isIsland) { ++mainland; mainLand += r.cellCount; } }
         EXPECT_EQ(w.regions.mainlandRegionCount, mainland);
         // AC4 (amended): growth's limitedBy is kept; repair dropping the mainland below 10 also reports terrain-limited.
-        if (g.targets.limitedBy != kNoZone) { EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy); }
-        else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, kNoZone); }
-        else { EXPECT_EQ(w.regions.limitedBy, kNoZone); }
+        if (g.targets.limitedBy != kNoStratum) { EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy); }
+        else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, kNoStratum); }
+        else { EXPECT_EQ(w.regions.limitedBy, kNoStratum); }
         // AC3 (amended): tiny-fragment cells have their own bound.
         if (limits) { EXPECT_LE(static_cast<float>(w.regions.fragmentCells), rules.kMaxFragmentShare * static_cast<float>(ChkLandCount(w)))
             << "fragmentCells " << w.regions.fragmentCells; }
-        if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != kNoZone)
+        if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != kNoStratum)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
         // AC4 per zone: First Shores 4-6, Wild Reaches 4-6, Ancient Interiors 2-4 unless terrain-limited.
         int zoneCount[kRegionZoneCount] = {};
@@ -628,7 +628,7 @@ namespace
         // mainland total drops below 10; a single zone ending under its minimum (archipelago, e.g. seed 514 slot 2)
         // while the total stays >= 10 is accepted. Zone upper bounds are asserted; zone shortfalls are counted and
         // printed (zoneBelowMinAfterRepair), never failed.
-        if (limits && w.regions.limitedBy == kNoZone)
+        if (limits && w.regions.limitedBy == kNoStratum)
         {
             bool below = false;
             for (int z = 0; z < kRegionZoneCount; ++z)
@@ -658,7 +658,7 @@ namespace
         st.mainMax = std::max(st.mainMax, mainland);
         st.orphanRegions += b.orphanRegions; st.neighbourOverflows += b.neighbourOverflow;
         st.splitMoved += b.splitPiecesMoved; st.merged += b.undersizedMerged;
-        st.limited += w.regions.limitedBy != kNoZone;
+        st.limited += w.regions.limitedBy != kNoStratum;
         st.belowTen += mainland < 10;
         st.maxAbsorbedShare = std::max(st.maxAbsorbedShare, land > 0 ? w.regions.absorbedCells / land : 0.0f);
         st.maxFragmentShare = std::max(st.maxFragmentShare, land > 0 ? w.regions.fragmentCells / land : 0.0f);
@@ -720,7 +720,7 @@ TEST(RegionRepair, GeneratedWorldOtherCellFieldsUntouchedAndRebuildIsIdentical)
         const Cell& a = before[i];
         const Cell& c = w.Cells()[i];
         ASSERT_TRUE(a.elevation == c.elevation && a.latitude == c.latitude && a.waterSource == c.waterSource &&
-                    a.terrain == c.terrain && a.depthZone == c.depthZone && a.landmass == c.landmass &&
+                    a.terrain == c.terrain && a.stratum == c.stratum && a.landmass == c.landmass &&
                     a.terrainFlags == c.terrainFlags && a.downstream == c.downstream && a.biome == c.biome)
             << "cell " << i;
     }

@@ -16,7 +16,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -71,7 +71,7 @@ namespace
         in.moisture     = L.GetFloat(L.FindLayer("moisture"));
         in.elevation    = L.GetFloat(L.FindLayer("elevation"));
         in.terrainType  = L.GetUInt(L.FindLayer("terrainType"));
-        in.depthZone    = L.GetUInt(L.FindLayer("depthZone"));
+        in.stratum    = L.GetUInt(L.FindLayer("stratum"));
         in.terrainFlags = L.GetUInt(L.FindLayer("terrainFlags"));
         in.barrierMask  = L.GetFloat(L.FindLayer("barrierMask"));
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));
@@ -632,7 +632,7 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestRowCandidate)
     g.registry = &forestAsGrass;
     const int c = g.Index(2, 2);
     g.SetTerrain(c, TerrainType::Mountain);
-    g.SetZone(c, kZoneFirst);
+    g.SetZone(c, kStratumFirst);
     const BiomeResult r = RunBiomes(g, TestRules());
     EXPECT_EQ(r.biome[c], B(forestAsGrass, "Biome.Grassland"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);

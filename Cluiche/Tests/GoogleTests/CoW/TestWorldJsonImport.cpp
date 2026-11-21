@@ -266,7 +266,7 @@ TEST_F(WorldJsonBiomeIds, ExportWritesTheRegistryHashAsHex)
     const Json::Value root = Parse(Export(MakeTinyWorld()));
     ASSERT_TRUE(root["provenance"].isMember("biome_registry_hash"));
     EXPECT_EQ(root["provenance"]["biome_registry_hash"].asString(), HexOf(ShippedBiomeRegistry().Hash()));
-    EXPECT_EQ(root["version"].asUInt(), 1u);   // additive: the format version is not bumped
+    EXPECT_EQ(root["version"].asUInt(), kWorldJsonVersion);   // 2: depth_zone became stratum
 }
 
 TEST_F(WorldJsonBiomeIds, DifferentHashLogsExactlyOneWarningAndStillImports)
@@ -355,7 +355,7 @@ TEST_F(WorldJsonBiomeIds, ReorderedPaletteWithKnownIdsImportsEveryCellUnderItsId
     const std::string reorderedText = Write(doc);
     CoW::World::BiomeRegistry reordered;
     CoW::World::RegistryError regErr;
-    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::CoW::World::Testing::ShippedZoneTable(), regErr)) << regErr.reason.AsCStr();
+    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::CoW::World::Testing::ShippedStratumTable(), regErr)) << regErr.reason.AsCStr();
     const CoW::World::BiomeRegistry& shipped = ShippedBiomeRegistry();
     ASSERT_EQ(reordered.Count(), shipped.Count());
     ASSERT_NE(B(reordered, "Biome.Ocean"), B(shipped, "Biome.Ocean"));
@@ -410,7 +410,8 @@ TEST(WorldJsonImport, AC3b_CellCountNotMatchingTheDimensionsIsRejected)
 
 TEST(WorldJsonImport, AC3d_AC5_UnsupportedVersionIsRejectedWithTheSpecMessage)
 {
-    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 2; }), "version", "Unsupported cow.world version: 2");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 3; }), "version", "Unsupported cow.world version: 3");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 1; }), "version", "Unsupported cow.world version: 1");   // hard cutover: v1 (depth_zone) files are refused
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = 0; }), "version", "Unsupported cow.world version: 0");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = -1; }), "version", "Unsupported cow.world version: -1");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["version"] = "1"; }), "version");
@@ -460,7 +461,7 @@ TEST(WorldJsonImport, EnumNamesMustBeKnown)
     // A biome id is not an enum name: an unknown id falls back (see WorldJsonBiomeIds), a non-string is still rejected.
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][0]["biome"] = 2; }), "world.cells[0].biome");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][1]["terrain"] = "Marsh"; }), "world.cells[1].terrain");
-    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][2]["depth_zone"] = "Deep"; }), "world.cells[2].depth_zone");
+    ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["cells"][2]["stratum"] = "Deep"; }), "world.cells[2].stratum");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][0]["zone"] = "Nowhere"; }), "world.regions[0].zone");
     ExpectRejected(Edited(MakeTinyWorld(), [](Json::Value& r) { r["world"]["regions"][1]["primary_biome"] = 3; }), "world.regions[1].primary_biome");
 }
@@ -482,7 +483,7 @@ TEST(WorldJsonImport, IntegerFieldsAreRangeAndTypeChecked)
 
 TEST(WorldJsonImport, EveryRequiredCellFieldIsRequired)
 {
-    for (const char* field : { "biome", "terrain", "region", "elevation", "latitude", "water_source", "depth_zone", "landmass", "terrain_flags", "downstream" })
+    for (const char* field : { "biome", "terrain", "region", "elevation", "latitude", "water_source", "stratum", "landmass", "terrain_flags", "downstream" })
     {
         ExpectRejected(Edited(MakeTinyWorld(), [&](Json::Value& r) { r["world"]["cells"][7].removeMember(field); }),
                        std::string("world.cells[7].") + field, "missing");
@@ -578,7 +579,7 @@ TEST(WorldJsonImport, DuplicateKeysCommentsNaNAndTrailingTextAreRejected)
     WorldStructure out;
     // Duplicate "version" key.
     std::string dup = good;
-    dup.replace(dup.find("\"version\": 1,"), 13, "\"version\": 1, \"version\": 1,");
+    dup.replace(dup.find("\"version\": 2,"), 13, "\"version\": 2, \"version\": 2,");
     EXPECT_FALSE(Import(dup, out).ok);
     // NaN where a number belongs (not valid JSON).
     std::string nan = good;
@@ -924,7 +925,7 @@ TEST(WorldJsonImport, ZoneNamesRoundTripThroughTheRegistryTable)
     bool sawZoneName = false;
     for (const char* name : { "FirstShores", "WildReaches", "AncientInteriors" })
     {
-        sawZoneName = sawZoneName || text.find(std::string("\"depth_zone\": \"") + name + "\"") != std::string::npos;
+        sawZoneName = sawZoneName || text.find(std::string("\"stratum\": \"") + name + "\"") != std::string::npos;
     }
     EXPECT_TRUE(sawZoneName);
     WorldStructure imported;
@@ -935,17 +936,17 @@ TEST(WorldJsonImport, ZoneNamesRoundTripThroughTheRegistryTable)
 TEST(WorldJsonImport, UnknownZoneNameIsRefusedAndNamesTheField)
 {
     const WorldStructure original = MakeTinyWorld();
-    const std::string text = Edited(original, [](Json::Value& root) { root["world"]["cells"][0]["depth_zone"] = "Nowhere"; });
-    ExpectRejected(text, "world.cells[0].depth_zone", "unknown depth zone");
+    const std::string text = Edited(original, [](Json::Value& root) { root["world"]["cells"][0]["stratum"] = "Nowhere"; });
+    ExpectRejected(text, "world.cells[0].stratum", "unknown stratum");
 }
 
 TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
 {
     // A registry loaded against renamed zones writes the new names; the shipped table does not know them.
-    ::CoW::World::ZoneTable renamed;
-    ::CoW::World::ZoneError zerr;
-    const std::string zones = "{\"format\":\"cow.zones\",\"version\":1,\"zones\":[{\"name\":\"Shore\"},{\"name\":\"Wilds\"},{\"name\":\"Core\"}]}";
-    ASSERT_TRUE(renamed.LoadFromText(zones.c_str(), Detail::ReadFileText(ShippedZoneSidecarPath()).c_str(), zerr));
+    ::CoW::World::StratumTable renamed;
+    ::CoW::World::StratumError zerr;
+    const std::vector<std::string> names = { "Shore", "Wilds", "Core" };
+    ASSERT_TRUE(renamed.LoadFromText(TestStrataText(names).c_str(), TestStrataSidecar(names).c_str(), zerr));
     std::string biomes = Detail::ReadFileText(ShippedBiomesPath());
     for (const auto& r : { std::pair<const char*, const char*>{ "\"FirstShores\"", "\"Shore\"" }, { "\"WildReaches\"", "\"Wilds\"" }, { "\"AncientInteriors\"", "\"Core\"" } })
     {
@@ -959,8 +960,8 @@ TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
     WorldJsonContext ctx;
     ctx.biomes = &reg;
     const std::string text = Export(original, ctx);
-    EXPECT_TRUE(text.find("\"depth_zone\": \"Shore\"") != std::string::npos || text.find("\"depth_zone\": \"Wilds\"") != std::string::npos ||
-                text.find("\"depth_zone\": \"Core\"") != std::string::npos);
+    EXPECT_TRUE(text.find("\"stratum\": \"Shore\"") != std::string::npos || text.find("\"stratum\": \"Wilds\"") != std::string::npos ||
+                text.find("\"stratum\": \"Core\"") != std::string::npos);
     WorldStructure back;
     EXPECT_TRUE(Import(text, back, ctx).ok);        // round trips under its own table
     WorldStructure refused;

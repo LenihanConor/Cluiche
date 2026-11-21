@@ -47,7 +47,7 @@
     <ClCompile Include="Shared\WorldGeneration\TerrainRelief.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainDrainage.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp" />
-    <ClCompile Include="Shared\WorldGeneration\TerrainDepthZones.cpp" />
+    <ClCompile Include="Shared\WorldGeneration\TerrainStrata.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainValleys.cpp" />
     <ClCompile Include="Shared\WorldGeneration\TerrainClassify.cpp" />
     <ClCompile Include="Shared\WorldGeneration\WorldShapePreset.cpp" />
@@ -85,7 +85,7 @@
     <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp" />
     <ClCompile Include="Shared\World\BiomeRegistry.cpp" />
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp" />
-    <ClCompile Include="Shared\World\ZoneTable.cpp" />
+    <ClCompile Include="Shared\World\StratumTable.cpp" />
     <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp" />
     <ClCompile Include="Shared\WorldGeneration\SiteRules.cpp" />
   </ItemGroup>
@@ -116,7 +116,7 @@
     <ClInclude Include="Shared\WorldGeneration\TerrainRelief.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainDrainage.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h" />
-    <ClInclude Include="Shared\WorldGeneration\TerrainDepthZones.h" />
+    <ClInclude Include="Shared\WorldGeneration\TerrainStrata.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainValleys.h" />
     <ClInclude Include="Shared\WorldGeneration\TerrainClassify.h" />
     <ClInclude Include="Shared\WorldGeneration\WorldShapePreset.h" />
@@ -163,8 +163,8 @@
     <ClInclude Include="Shared\World\Testing\BiomeTestRegistry.h" />
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h" />
     <ClInclude Include="Shared\World\CellVocabulary.h" />
-    <ClInclude Include="Shared\World\ZoneTable.h" />
-    <ClInclude Include="Shared\World\Testing\ZoneTestIndices.h" />
+    <ClInclude Include="Shared\World\StratumTable.h" />
+    <ClInclude Include="Shared\World\Testing\StratumTestIndices.h" />
     <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h" />
     <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h" />

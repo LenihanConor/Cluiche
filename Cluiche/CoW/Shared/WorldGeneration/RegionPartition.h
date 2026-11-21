@@ -25,20 +25,21 @@ namespace CoW { namespace World { class BiomeRegistry; } }
 namespace CoW {
 namespace WorldGeneration {
 
-// Zone slot 0..2 <-> DepthZone index 1..3 (the generator supports exactly three zones).
+// Zone slot 0..2 <-> StratumIndex index 1..3 (the generator supports exactly three zones).
 constexpr int kRegionZoneCount = 3;
+// TODO(Strata task 3): read these from StratumTable (strata.json regions_min/regions_max) instead of constants.
 constexpr uint8_t kZoneCountMin[kRegionZoneCount] = { 4, 4, 2 };
 constexpr uint8_t kZoneCountMax[kRegionZoneCount] = { 6, 6, 4 };
 constexpr int kTotalRegionsMin = 10;
 constexpr int kTotalRegionsMax = 16;
 
-inline int ZoneSlot(DepthZone z) { return static_cast<int>(z) - 1; }   // None -> -1
-inline DepthZone ZoneFromSlot(int s) { return static_cast<DepthZone>(s + 1); }
+inline int ZoneSlot(StratumIndex z) { return static_cast<int>(z) - 1; }   // None -> -1
+inline StratumIndex ZoneFromSlot(int s) { return static_cast<StratumIndex>(s + 1); }
 
 // A connected set of main-landmass land cells (non-ocean) of one depth zone.
 struct RegionComponent
 {
-    DepthZone             zone     = kNoZone;
+    StratumIndex             zone     = kNoStratum;
     uint8_t               landmass = 0;
     std::vector<uint32_t> cells;            // ascending cell index
     bool                  tiny     = false; // fewer than kMinRegionCells cells: gets no seed (second half handles it)
@@ -50,14 +51,14 @@ struct RegionTargets
     uint16_t  capacity[kRegionZoneCount]  = {};   // floor(cells_Z / kMinRegionCells), 0 without a non-tiny component
     uint32_t  zoneCells[kRegionZoneCount] = {};
     uint8_t   total                       = 0;
-    DepthZone limitedBy                   = kNoZone;           // kNoZone unless terrain-limited
+    StratumIndex limitedBy                   = kNoStratum;           // kNoStratum unless terrain-limited
 };
 
 struct RegionSeed
 {
     uint32_t  cell      = 0;                    // island regions: lowest cell index of the landmass
     World::BiomeIndex biome = 0;                // seed biome row (drives the growth cost); 0 = shipped Ocean row
-    DepthZone zone      = kNoZone;              // island regions: majority zone
+    StratumIndex zone      = kNoStratum;              // island regions: majority zone
     uint8_t   landmass  = 0;
     bool      isIsland  = false;
     int32_t   component = -1;                   // index into RegionGrowth::components, -1 for islands
@@ -68,7 +69,7 @@ struct RegionGrowth
     RegionTargets                targets;
     std::vector<RegionComponent> components;
     std::vector<uint32_t>        tinyComponents;     // indices into components
-    std::vector<uint32_t>        unzonedCells;       // main-landmass non-ocean cells with kNoZone
+    std::vector<uint32_t>        unzonedCells;       // main-landmass non-ocean cells with kNoStratum
     std::vector<RegionId>        regionOf;           // per cell; 0 = ocean, tiny/unzoned (second half repairs)
     std::vector<RegionSeed>      seeds;              // index = provisional region id - 1
     std::vector<uint16_t>        capClaims;          // per region: cells claimed before the leftover phase
@@ -88,7 +89,7 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
 // total > 16: remove one at a time from the zone with the least spare capacity (capacity - count) among zones
 // above their range minimum, ties by zone order. If the total still cannot reach 10, limitedBy = the zone with
 // the smallest capacity relative to its range minimum (capacity / min, ties by zone order); else None.
-void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], DepthZone& limitedBy);
+void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], StratumIndex& limitedBy);
 
 // Draws n_Z per zone (zone order), clamps to capacity, rebalances.
 RegionTargets ComputeRegionTargets(const WorldStructure& world, const TerrainRules& rules,

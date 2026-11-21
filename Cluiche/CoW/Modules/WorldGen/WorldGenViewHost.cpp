@@ -769,7 +769,7 @@ void WorldGenViewHost::BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::Cel
     out.RowValue(StringCRC("cow.worldgen.layers/elevation"), c["elevation"].asFloat());
     out.RowValue(StringCRC("cow.worldgen.layers/latitude"), c["latitude"].asFloat());
     out.Row("Water source", c["waterSource"].asCString());
-    out.Row("Depth zone", c["depthZone"].asCString());
+    out.Row("Stratum", c["stratum"].asCString());
     snprintf(text, sizeof(text), "%u", c["landmass"].asUInt());
     out.Row("Landmass", text);
     if (c["downstream"].isNull())

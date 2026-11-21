@@ -31,7 +31,7 @@ namespace WorldGeneration {
 
 struct LayoutLimits
 {
-    DepthZone regionLimitedBy = kNoZone;   // None unless terrain-limited (RegionTable::limitedBy)
+    StratumIndex regionLimitedBy = kNoStratum;   // None unless terrain-limited (RegionTable::limitedBy)
     bool      corridorLimited[2] = {};             // per barrier: fewer than 2 candidates
     bool      nodeLimited = false;                 // quotas could not reach 80..150, or a slot found no cell
 };

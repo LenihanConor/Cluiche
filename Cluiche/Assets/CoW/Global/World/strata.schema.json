@@ -1,23 +1,33 @@
 {
   "format": "dia.value_schema",
   "version": 1,
-  "for": "cow.zones",
+  "for": "cow.strata",
   "entries": [
     {
-      "key": "kFirstZoneShare",
+      "key": "depth.FirstShores.share",
       "kind": "parameter",
-      "label": "kFirstZoneShare",
-      "description": "Share of main-landmass land assigned to the first (outermost) zone.",
+      "label": "depth.FirstShores.share",
+      "description": "Share of main-landmass land assigned to the first (outermost) depth stratum. The shares of a set must complete 1.",
       "type": "float",
       "min": 0.0,
       "max": 1.0,
       "default": 0.45
     },
     {
-      "key": "kLastZoneShare",
+      "key": "depth.WildReaches.share",
       "kind": "parameter",
-      "label": "kLastZoneShare",
-      "description": "Share of main-landmass land assigned to the last (innermost) zone.",
+      "label": "depth.WildReaches.share",
+      "description": "Share of main-landmass land assigned to the middle depth stratum. The shares of a set must complete 1.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.40
+    },
+    {
+      "key": "depth.AncientInteriors.share",
+      "kind": "parameter",
+      "label": "depth.AncientInteriors.share",
+      "description": "Share of main-landmass land assigned to the last (innermost) depth stratum. The shares of a set must complete 1.",
       "type": "float",
       "min": 0.0,
       "max": 1.0,

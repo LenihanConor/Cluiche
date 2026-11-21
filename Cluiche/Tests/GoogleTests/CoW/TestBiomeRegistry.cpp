@@ -7,11 +7,11 @@
 
 #include <string>
 #include <utility>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::World;
-using CoW::WorldGeneration::DepthZone;
+using CoW::WorldGeneration::StratumIndex;
 using Dia::Core::StringCRC;
 
 namespace
@@ -45,7 +45,7 @@ namespace
     bool LoadText(BiomeRegistry& r, const std::string& text)
     {
         RegistryError err;
-        return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err);
+        return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err);
     }
 
     uint64_t HashOf(const std::string& text)
@@ -124,7 +124,7 @@ TEST(BiomeRegistry, OutOfRangeIndexIsSafe)
         EXPECT_FALSE(r.IsGenerated(bad));
         EXPECT_FALSE(r.HasTag(bad, 0));
         EXPECT_EQ(r.TagMask(bad), 0u);
-        EXPECT_FALSE(r.IsValidInZone(bad, kNoZone));
+        EXPECT_FALSE(r.IsValidInZone(bad, kNoStratum));
         EXPECT_FALSE(r.AreForbidden(bad, 0));
         EXPECT_FALSE(r.AreForbidden(0, bad));
         EXPECT_EQ(r.Climate(bad), nullptr);
@@ -150,12 +150,12 @@ TEST(BiomeRegistry, FailedSecondLoadLeavesContents)
     ASSERT_TRUE(LoadText(r, kFixture));
     RegistryError err;
     const uint64_t before = r.Hash();
-    EXPECT_FALSE(r.LoadFromText("{ not json", ::CoW::World::Testing::ShippedZoneTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water\",\"aquatic\"", "\"nonsense\"").c_str(), ::CoW::World::Testing::ShippedZoneTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"FirstShores\"", "\"Nowhere\"").c_str(), ::CoW::World::Testing::ShippedZoneTable(), err));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), ::CoW::World::Testing::ShippedZoneTable(), err,
+    EXPECT_FALSE(r.LoadFromText("{ not json", ::CoW::World::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water\",\"aquatic\"", "\"nonsense\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"FirstShores\"", "\"Nowhere\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"water_ocean\"", "\"bogus_rule\"").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err,
                                 [](StringCRC rule) { return rule == StringCRC("water_lake") || rule == StringCRC("wetland"); }));
-    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"colour\":\"#808000\",", "").c_str(), ::CoW::World::Testing::ShippedZoneTable(), err));
+    EXPECT_FALSE(r.LoadFromText(Replace(kFixture, "\"colour\":\"#808000\",", "").c_str(), ::CoW::World::Testing::ShippedStratumTable(), err));
     EXPECT_EQ(r.Count(), 4u);
     EXPECT_EQ(r.Hash(), before);
     EXPECT_STREQ(r.IdText(2), "Biome.Grassland");
@@ -165,7 +165,7 @@ TEST(BiomeRegistry, FailedFirstLoadStaysEmpty)
 {
     BiomeRegistry r;
     RegistryError err;
-    EXPECT_FALSE(r.LoadFromText("{}", ::CoW::World::Testing::ShippedZoneTable(), err));
+    EXPECT_FALSE(r.LoadFromText("{}", ::CoW::World::Testing::ShippedStratumTable(), err));
     EXPECT_EQ(r.Count(), 0u);
 }
 
@@ -207,13 +207,13 @@ TEST(BiomeRegistry, ZoneValidity)
 {
     BiomeRegistry r;
     ASSERT_TRUE(LoadText(r, kFixture));
-    EXPECT_TRUE(r.IsValidInZone(0, kNoZone));
-    EXPECT_FALSE(r.IsValidInZone(0, kZoneFirst));
-    EXPECT_FALSE(r.IsValidInZone(2, kNoZone));
-    EXPECT_TRUE(r.IsValidInZone(2, kZoneFirst));
-    EXPECT_TRUE(r.IsValidInZone(2, kZoneWild));
-    EXPECT_FALSE(r.IsValidInZone(2, kZoneAncient));
-    for (DepthZone z : { kNoZone, kZoneFirst, kZoneWild, kZoneAncient })
+    EXPECT_TRUE(r.IsValidInZone(0, kNoStratum));
+    EXPECT_FALSE(r.IsValidInZone(0, kStratumFirst));
+    EXPECT_FALSE(r.IsValidInZone(2, kNoStratum));
+    EXPECT_TRUE(r.IsValidInZone(2, kStratumFirst));
+    EXPECT_TRUE(r.IsValidInZone(2, kStratumWild));
+    EXPECT_FALSE(r.IsValidInZone(2, kStratumAncient));
+    for (StratumIndex z : { kNoStratum, kStratumFirst, kStratumWild, kStratumAncient })
     {
         EXPECT_FALSE(r.IsValidInZone(3, z));   // empty zones
     }
@@ -347,9 +347,9 @@ TEST(BiomeRegistry, CapacityBoundary254Rows)
     EXPECT_FALSE(r.AreForbidden(252, 0));
     EXPECT_TRUE(r.HasTag(253, 11));
     EXPECT_FALSE(r.HasTag(252, 11));
-    EXPECT_TRUE(r.IsValidInZone(253, kZoneAncient));
-    EXPECT_FALSE(r.IsValidInZone(252, kZoneAncient));
-    EXPECT_TRUE(r.IsValidInZone(253, kZoneFirst));
+    EXPECT_TRUE(r.IsValidInZone(253, kStratumAncient));
+    EXPECT_FALSE(r.IsValidInZone(252, kStratumAncient));
+    EXPECT_TRUE(r.IsValidInZone(253, kStratumFirst));
 }
 
 TEST(BiomeRegistry, MoreThan254RowsFails)

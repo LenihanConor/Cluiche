@@ -209,10 +209,10 @@ const char* BiomePinName(uint32_t pin)
 }
 
 // The registry's zone table (an empty table when there is no registry).
-const World::ZoneTable& ZonesOf(const World::BiomeRegistry* biomes)
+const World::StratumTable& ZonesOf(const World::BiomeRegistry* biomes)
 {
-    static const World::ZoneTable kNoZones;
-    return biomes != nullptr ? biomes->Zones() : kNoZones;
+    static const World::StratumTable kNoStrata;
+    return biomes != nullptr ? biomes->Strata() : kNoStrata;
 }
 
 // Display name of a registry row ("Unknown" for no registry or a row past the table).
@@ -975,7 +975,7 @@ Json::Value WorldGenSession::Params() const
     corridorLimited.append(mLimits.corridorLimited[1]);
     effective["corridorLimited"] = corridorLimited;
     effective["nodeLimited"] = mLimits.nodeLimited;
-    effective["regionLimitedBy"] = DepthZoneName(ZonesOf(mBiomes), mLimits.regionLimitedBy);
+    effective["regionLimitedBy"] = StratumName(ZonesOf(mBiomes), mLimits.regionLimitedBy);
 
     Json::Value r(Json::objectValue);
     r["seed"] = static_cast<Json::UInt64>(mSeed);
@@ -995,7 +995,7 @@ Json::Value WorldGenSession::UnavailableLayers() const
     // The generator layers ImportLayers rebuilds from the cells; every other generator layer (intermediate fields,
     // climate) is not derivable from a file and stays empty for an imported world.
     static const char* const kDerivable[] = {
-        "elevation", "latitude", "ridgeMask", "barrierMask", "waterSource", "terrainType", "depthZone", "landmass",
+        "elevation", "latitude", "ridgeMask", "barrierMask", "waterSource", "terrainType", "stratum", "landmass",
         "terrainFlags", "flowDirection", "biomeIndex", "riverMask", "passMask", "volcanic" };
 
     Json::Value out(Json::arrayValue);
@@ -1697,10 +1697,10 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     r["latitude"] = ShortestFloat(c.latitude);
     r["waterSource"] = WaterSourceName(c.waterSource);
     r["terrain"] = TerrainTypeName(c.terrain);
-    r["depthZone"] = DepthZoneName(ZonesOf(mBiomes), c.depthZone);
+    r["stratum"] = StratumName(ZonesOf(mBiomes), c.stratum);
     r["landmass"] = static_cast<Json::UInt>(c.landmass);
     r["flags"] = static_cast<Json::UInt>(c.terrainFlags);
-    r["zone"] = DepthZoneName(ZonesOf(mBiomes), c.depthZone);
+    r["zone"] = StratumName(ZonesOf(mBiomes), c.stratum);
     r["region"] = static_cast<Json::UInt>(c.region);
     // Absorbed: the cell sits in a (non-island) region of another depth zone, i.e. an undersize-merge or fragment cell
     // (regions-and-sites.md); false without regions.
@@ -1709,7 +1709,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
         if (c.region != 0 && c.region <= mWorld.regions.regions.Size())
         {
             const RegionRecord& rec = mWorld.regions.regions[c.region - 1];
-            absorbed = !rec.isIsland && c.depthZone != rec.zone;
+            absorbed = !rec.isIsland && c.stratum != rec.zone;
         }
         r["absorbed"] = absorbed;
     }
@@ -1813,7 +1813,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     std::string reason;
     if (fix == BiomeFixup::Zone)
     {
-        reason = std::string("zone: ") + BiomeLabel(mBiomes, climateWinner) + " is not valid in " + DepthZoneName(ZonesOf(mBiomes), c.depthZone);
+        reason = std::string("zone: ") + BiomeLabel(mBiomes, climateWinner) + " is not valid in " + StratumName(ZonesOf(mBiomes), c.stratum);
     }
     else if (fix == BiomeFixup::Forbidden)
     {
@@ -1850,7 +1850,7 @@ Json::Value WorldGenSession::Regions() const
         const RegionRecord& rec = mWorld.regions.regions[i];
         Json::Value e(Json::objectValue);
         e["id"] = static_cast<Json::UInt>(rec.id);
-        e["zone"] = DepthZoneName(ZonesOf(mBiomes), rec.zone);
+        e["zone"] = StratumName(ZonesOf(mBiomes), rec.zone);
         e["landmass"] = static_cast<Json::UInt>(rec.landmass);
         e["isIsland"] = rec.isIsland;
         e["primaryBiome"] = BiomeLabel(mBiomes, rec.primaryBiome);
@@ -1869,7 +1869,7 @@ Json::Value WorldGenSession::Regions() const
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["regions"] = list;
-    r["limitedBy"] = DepthZoneName(ZonesOf(mBiomes), mWorld.regions.limitedBy);
+    r["limitedBy"] = StratumName(ZonesOf(mBiomes), mWorld.regions.limitedBy);
     r["absorbedCells"] = static_cast<Json::UInt>(mWorld.regions.absorbedCells);
     r["fragmentCells"] = static_cast<Json::UInt>(mWorld.regions.fragmentCells);
     r["mainlandRegionCount"] = static_cast<Json::UInt>(mWorld.regions.mainlandRegionCount);

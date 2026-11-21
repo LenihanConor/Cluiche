@@ -1,5 +1,5 @@
 // S-1 World Generation: cell enums shared by TerrainTypes.h, Regions.h and Sites.h.
-// The cell vocabulary (BiomeIndex, DepthZone, TerrainType, ...) lives in World/CellVocabulary.h;
+// The cell vocabulary (BiomeIndex, StratumIndex, TerrainType, ...) lives in World/CellVocabulary.h;
 // this header re-exports it and adds the generator-only options.
 #pragma once
 

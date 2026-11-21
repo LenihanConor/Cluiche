@@ -746,7 +746,7 @@ TEST(WorldGenSessionQueries, CellFieldsMatchWorldCells)
         EXPECT_FLOAT_EQ(static_cast<float>(r["latitude"].asDouble()), c.latitude);
         EXPECT_EQ(r["waterSource"].asString(), WaterSourceName(c.waterSource));
         EXPECT_EQ(r["terrain"].asString(), TerrainTypeName(c.terrain));
-        EXPECT_EQ(r["depthZone"].asString(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), c.depthZone));
+        EXPECT_EQ(r["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), c.stratum));
         EXPECT_EQ(r["landmass"].asUInt(), c.landmass);
         EXPECT_EQ(r["flags"].asUInt(), c.terrainFlags);
         if (c.downstream == kNoDirection)

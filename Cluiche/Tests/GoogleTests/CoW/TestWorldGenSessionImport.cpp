@@ -301,12 +301,12 @@ TEST_F(SessionImportTest, FailedImportsChangeNothing)
     ExportOk(s, "good");
     std::string text = ReadFile("good");
     std::string v2 = text;
-    v2.replace(v2.find("\"version\": 1"), 12, "\"version\": 2");
+    v2.replace(v2.find("\"version\": 2"), 12, "\"version\": 3");
     WriteFile("v2", v2);
     const Json::Value rv2 = ImportName(s, "v2");
-    expectUntouched(rv2, "version 2");
+    expectUntouched(rv2, "version 3");
     EXPECT_EQ(rv2["field"].asString(), "version");
-    EXPECT_NE(rv2["error"].asString().find("Unsupported cow.world version: 2"), std::string::npos);
+    EXPECT_NE(rv2["error"].asString().find("Unsupported cow.world version: 3"), std::string::npos);
 
     std::string cut = text.substr(0, text.size() / 2);
     WriteFile("cut", cut);

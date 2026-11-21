@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::World;
 using namespace CoW::World::Testing;
@@ -36,7 +36,7 @@ namespace
         return true;
     }
 
-    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err); }
+    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedStratumTable(), err); }
 
     BiomeIndex NearestEnvelope(const BiomeRegistry& reg, float t, float m)
     {
@@ -108,8 +108,8 @@ TEST(BiomeRegistryEdge, BiomeWithEmptyZonesIsNeverPlacedEvenWithAPerfectClimateE
     const BiomeIndex scrub = r.Find(StringCRC("Biome.Scrub"));
     ASSERT_NE(r.Climate(scrub), nullptr);
 
-    const DepthZone zones[] = { kZoneFirst, kZoneWild, kZoneAncient };
-    for (DepthZone zone : zones)
+    const StratumIndex zones[] = { kStratumFirst, kStratumWild, kStratumAncient };
+    for (StratumIndex zone : zones)
     {
         ASSERT_FALSE(r.IsValidInZone(scrub, zone));
         BiomeGrid g(31, 31);

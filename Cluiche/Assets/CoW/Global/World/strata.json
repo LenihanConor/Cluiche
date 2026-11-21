@@ -1,15 +1,16 @@
 {
-  "format": "cow.zones",
+  "format": "cow.strata",
   "version": 1,
-  "zones": [
+  "sets": [
     {
-      "name": "FirstShores"
-    },
-    {
-      "name": "WildReaches"
-    },
-    {
-      "name": "AncientInteriors"
+      "id": "depth",
+      "ordered": true,
+      "assigner": { "type": "coast_cost_bands", "metric": "coast_cost" },
+      "strata": [
+        { "name": "FirstShores", "share": 0.45, "regions_min": 4, "regions_max": 6 },
+        { "name": "WildReaches", "share": 0.40, "regions_min": 4, "regions_max": 6 },
+        { "name": "AncientInteriors", "share": 0.15, "regions_min": 2, "regions_max": 4, "main_landmass_only": true, "min_coast_depth": 3 }
+      ]
     }
   ]
 }

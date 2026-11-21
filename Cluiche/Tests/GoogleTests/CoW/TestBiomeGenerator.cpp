@@ -89,7 +89,7 @@ namespace
         in.moisture     = L.GetFloat(L.FindLayer("moisture"));
         in.elevation    = L.GetFloat(L.FindLayer("elevation"));
         in.terrainType  = L.GetUInt(L.FindLayer("terrainType"));
-        in.depthZone    = L.GetUInt(L.FindLayer("depthZone"));
+        in.stratum    = L.GetUInt(L.FindLayer("stratum"));
         in.terrainFlags = L.GetUInt(L.FindLayer("terrainFlags"));
         in.barrierMask  = L.GetFloat(L.FindLayer("barrierMask"));
         in.waterSource  = L.GetUInt(L.FindLayer("waterSource"));

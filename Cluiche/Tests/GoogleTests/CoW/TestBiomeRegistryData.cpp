@@ -11,10 +11,10 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
-#include <Shared/World/Testing/ZoneTestIndices.h>
+#include <Shared/World/Testing/StratumTestIndices.h>
 
 using namespace CoW::World;
-using CoW::WorldGeneration::DepthZone;
+using CoW::WorldGeneration::StratumIndex;
 using Dia::Core::StringCRC;
 
 namespace
@@ -46,7 +46,7 @@ namespace
             std::stringstream ss;
             ss << in.rdbuf();
             RegistryError err;
-            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedZoneTable(), err);
+            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedStratumTable(), err);
             EXPECT_TRUE(ok) << "path=" << path << " field=" << err.field.AsCStr() << " id=" << err.id.AsCStr()
                             << " row=" << err.row << " reason=" << err.reason.AsCStr();
         }
@@ -81,7 +81,7 @@ namespace
         { "Biome.DesertifiedPlain", "Desertified Plain",  0xc98a4b, false, "land,open,hot,succession", { false, false, false, false } },
     };
 
-    const DepthZone kZones[4] = { kNoZone, kZoneFirst, kZoneWild, kZoneAncient };
+    const StratumIndex kZones[4] = { kNoStratum, kStratumFirst, kStratumWild, kStratumAncient };
 
     uint64_t MaskOf(const BiomeRegistry& r, const char* csv)
     {

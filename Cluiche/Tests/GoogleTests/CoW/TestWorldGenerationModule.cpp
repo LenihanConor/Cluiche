@@ -61,7 +61,7 @@ std::string FindShippedBiomes()
 Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
-    g_wg->SetZonesPath(CoW::World::Testing::ShippedZonesPath());   // zones load first; biome overrides below do not move them
+    g_wg->SetStrataPath(CoW::World::Testing::ShippedStrataPath());   // zones load first; biome overrides below do not move them
     if (!g_guaranteesTextOverride.empty())
         g_wg->SetGuaranteesText(g_guaranteesTextOverride, CoW::WorldGeneration::Testing::ShippedGuaranteesSidecarText());
     else

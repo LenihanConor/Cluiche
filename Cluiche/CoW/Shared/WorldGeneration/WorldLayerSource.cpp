@@ -97,9 +97,9 @@ namespace
     {
         ReadCellField(s, out, count, [](const Cell& c) { return static_cast<uint32_t>(c.waterSource); });
     }
-    void ReadDepthZone(const WorldGenSession& s, float* out, uint32_t count)
+    void ReadStratum(const WorldGenSession& s, float* out, uint32_t count)
     {
-        ReadCellField(s, out, count, [](const Cell& c) { return static_cast<uint32_t>(c.depthZone); });
+        ReadCellField(s, out, count, [](const Cell& c) { return static_cast<uint32_t>(c.stratum); });
     }
     void ReadLandmass(const WorldGenSession& s, float* out, uint32_t count)
     {
@@ -139,7 +139,7 @@ namespace
         // Categories
         { "terrainType",      "Terrain",  WorldLayerKind::Category, static_cast<uint32_t>(TerrainType::Count), ReadTerrainType, false },
         { "waterSource",      "Water",    WorldLayerKind::Category, 4,  ReadWaterSource,     false },
-        { "depthZone",        "Zones",    WorldLayerKind::Category, 4,  ReadDepthZone,       false },
+        { "stratum",        "Zones",    WorldLayerKind::Category, 4,  ReadStratum,       false },
         { "flowDirection",    "Water",    WorldLayerKind::Category, 7,  ReadFlowDirection,   false },
         { "riverMask",        "Water",    WorldLayerKind::Category, 2,  ReadRiverMask,       false },
         { "lakeMask",         "Water",    WorldLayerKind::Category, kLakeIdValues, ReadLakeMask, false },

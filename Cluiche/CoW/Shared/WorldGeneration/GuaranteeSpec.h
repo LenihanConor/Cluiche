@@ -6,7 +6,7 @@
 // No include from Modules/. std::string errors (String32.h collides with protobuf in some test TUs).
 #pragma once
 
-#include <Shared/World/ZoneTable.h>
+#include <Shared/World/StratumTable.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Sites.h>
 
@@ -36,10 +36,10 @@ const char* GuaranteeRuleTypeName(GuaranteeRuleType type);
 
 // One guarantee entry. Fields are per type; unused ones stay empty/zero. Nouns and measurement key names are data so
 // the rule classes can reproduce the diagnostics byte for byte.
-//   reach_any:     from, to (kind id) or toZone; noun (the from kind, "Hearth"), toNoun ("Nexus"), toNounPlural ("Nexus Nodes")
+//   reach_any:     from, to (kind id) or toStratum; noun (the from kind, "Hearth"), toNoun ("Nexus"), toNounPlural ("Nexus Nodes")
 //   min_spacing:   kind, minimum (sidecar value), noun ("Dynasty start"), nounPlural ("Dynasty starts"),
 //                  minimumKey ("minimumSpacing"), distanceKey ("pairDistance")
-//   variant_cover: kind, variantCount, toZone, noun ("world-throne"), nounPlural ("world-thrones"),
+//   variant_cover: kind, variantCount, toStratum, noun ("world-throne"), nounPlural ("world-thrones"),
 //                  variantNoun ("Apotheosis type"), targetNoun ("Ancient Interiors"),
 //                  countKey ("thronesOfType"), targetCountKey ("ancientInteriorsCells")
 struct GuaranteeEntry
@@ -51,8 +51,8 @@ struct GuaranteeEntry
     std::string from;
     std::string to;
     std::string kind;
-    std::string toZone;            // zone name, resolved against the ZoneTable at load
-    int         toZoneIndex = 0;   // 1..Count(); 0 when no zone is used
+    std::string toStratum;            // stratum name, resolved against the StratumTable at load
+    int         toStratumIndex = 0;   // 1..Count(); 0 when no stratum is used
     float       minimum = 0.0f;
     uint32_t    variantCount = 0;
     std::string noun;
@@ -93,10 +93,10 @@ struct GuaranteeSpecError
     std::string reason;
 };
 
-// All-or-nothing: on failure 'out' is unchanged and 'err' names the entry. Zones are resolved against 'zones'.
-// Fails on: unknown rule type, unknown zone, kind id referenced but not declared, duplicate kind or guarantee id,
+// All-or-nothing: on failure 'out' is unchanged and 'err' names the entry. Strata are resolved against 'strata'.
+// Fails on: unknown rule type, unknown stratum, kind id referenced but not declared, duplicate kind or guarantee id,
 // bad param (missing, wrong type, unknown field, sidecar key absent), bad shape.
-bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::ZoneTable& zones, GuaranteeSpec& out,
+bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::StratumTable& strata, GuaranteeSpec& out,
                        GuaranteeSpecError& err);
 
 // Registers every declared kind of the spec as a data-declared kind (no placer). False (stopping at the failing

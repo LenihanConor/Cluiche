@@ -57,7 +57,7 @@ TEST(WorldJsonExport, AC1_ProducesValidJsonWithTheSchemaEnvelope)
     const Json::Value root = Parse(text);
     ASSERT_TRUE(root.isObject());
     EXPECT_EQ(root["format"].asString(), "cow.world");
-    EXPECT_EQ(root["version"].asUInt(), 1u);
+    EXPECT_EQ(root["version"].asUInt(), kWorldJsonVersion);
     EXPECT_EQ(root["world"]["topology"].asString(), "hex_flat_odd_q");
     EXPECT_EQ(root["world"]["dimensions"]["width"].asInt(), 4);
     EXPECT_EQ(root["world"]["dimensions"]["height"].asInt(), 3);
@@ -88,7 +88,7 @@ TEST(WorldJsonExport, AC1_IsPrettyPrintedAndUsesReadableNames)
         EXPECT_TRUE(cell["biome"].isString());
         EXPECT_TRUE(cell["terrain"].isString());
         EXPECT_TRUE(cell["water_source"].isString());
-        EXPECT_TRUE(cell["depth_zone"].isString());
+        EXPECT_TRUE(cell["stratum"].isString());
     }
 }
 
@@ -125,7 +125,7 @@ TEST(WorldJsonExport, EveryCellFieldIsWritten)
         EXPECT_EQ(static_cast<float>(j["elevation"].asDouble()), c.elevation) << i;
         EXPECT_EQ(static_cast<float>(j["latitude"].asDouble()), c.latitude) << i;
         EXPECT_EQ(j["water_source"].asString(), WaterSourceName(c.waterSource)) << i;
-        EXPECT_EQ(j["depth_zone"].asString(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), c.depthZone)) << i;
+        EXPECT_EQ(j["stratum"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), c.stratum)) << i;
         EXPECT_EQ(j["landmass"].asUInt(), c.landmass) << i;
         EXPECT_EQ(j["terrain_flags"].asUInt(), c.terrainFlags) << i;
         EXPECT_EQ(j["downstream"].asUInt(), c.downstream) << i;
@@ -191,7 +191,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
     {
         const RegionRecord& rec = w.regions.regions[r];
         EXPECT_EQ(regions[r]["id"].asUInt(), rec.id);
-        EXPECT_EQ(regions[r]["zone"].asString(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), rec.zone));
+        EXPECT_EQ(regions[r]["zone"].asString(), StratumName(::CoW::World::Testing::ShippedStratumTable(), rec.zone));
         EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
         EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
         EXPECT_EQ(regions[r]["primary_biome"].asString(), ShippedBiomeRegistry().IdText(rec.primaryBiome));
@@ -373,9 +373,9 @@ TEST(WorldJsonExport, EnumValuesOutOfRangeAreRefused)
     }
     {
         WorldStructure w = MakeTinyWorld();
-        w.Cells()[0].depthZone = static_cast<DepthZone>(9);
+        w.Cells()[0].stratum = static_cast<StratumIndex>(9);
         EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
-        EXPECT_EQ(error.field, "world.cells[0].depth_zone");
+        EXPECT_EQ(error.field, "world.cells[0].stratum");
     }
 }
 
@@ -407,16 +407,16 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
     }
     for (int i = 0; i < 4; ++i)
     {
-        WaterSource w = WaterSource::None; DepthZone z = kNoZone;
+        WaterSource w = WaterSource::None; StratumIndex z = kNoStratum;
         ASSERT_TRUE(WorldJsonParseWaterSource(WaterSourceName(static_cast<WaterSource>(i)), w));
-        ASSERT_TRUE(WorldJsonParseDepthZone(::CoW::World::Testing::ShippedZoneTable(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), static_cast<DepthZone>(i)), z));
+        ASSERT_TRUE(WorldJsonParseStratum(::CoW::World::Testing::ShippedStratumTable(), StratumName(::CoW::World::Testing::ShippedStratumTable(), static_cast<StratumIndex>(i)), z));
         EXPECT_EQ(static_cast<int>(w), i);
         EXPECT_EQ(static_cast<int>(z), i);
     }
-    TerrainType t; WaterSource w; DepthZone z;
+    TerrainType t; WaterSource w; StratumIndex z;
     EXPECT_FALSE(WorldJsonParseTerrain("Unknown", t));
     EXPECT_FALSE(WorldJsonParseWaterSource("Swamp", w));
-    EXPECT_FALSE(WorldJsonParseDepthZone(::CoW::World::Testing::ShippedZoneTable(), "None ", z));
+    EXPECT_FALSE(WorldJsonParseStratum(::CoW::World::Testing::ShippedStratumTable(), "None ", z));
 }
 
 TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
@@ -424,7 +424,7 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
     const std::string text = Export(MakeTinyWorld());
     static const char kExpected[] = R"JSON({
   "format": "cow.world",
-  "version": 1,
+  "version": 2,
   "provenance": {
     "seed": 1311768467294899695,
     "generator_version": 1,
@@ -459,18 +459,18 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
     "dimensions": { "width": 4, "height": 3 },
     "main_landmass": 1,
     "cells": [
-      { "biome": "Biome.Ocean", "terrain": "DeepWater", "region": 0, "elevation": 0, "latitude": 0.100000001, "water_source": "Ocean", "depth_zone": "None", "landmass": 0, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Ocean", "terrain": "ShallowWater", "region": 0, "elevation": 0, "latitude": 0.200000003, "water_source": "Ocean", "depth_zone": "None", "landmass": 0, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Grassland", "terrain": "Lowland", "region": 1, "elevation": 0.349999994, "latitude": 0.300000012, "water_source": "None", "depth_zone": "FirstShores", "landmass": 1, "terrain_flags": 1, "downstream": 7 },
-      { "biome": "Biome.TemperateForest", "terrain": "Hills", "region": 1, "elevation": 0.5, "latitude": 0.400000006, "water_source": "None", "depth_zone": "FirstShores", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Lake", "terrain": "Lake", "region": 1, "elevation": 0.449999988, "latitude": 0.5, "water_source": "Lake", "depth_zone": "WildReaches", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Wetland", "terrain": "River", "region": 1, "elevation": 0.409999996, "latitude": 0.600000024, "water_source": "River", "depth_zone": "WildReaches", "landmass": 1, "terrain_flags": 0, "downstream": 3 },
-      { "biome": "Biome.Alpine", "terrain": "Mountain", "region": 2, "elevation": 0.899999976, "latitude": 0.699999988, "water_source": "None", "depth_zone": "WildReaches", "landmass": 1, "terrain_flags": 6, "downstream": 7 },
-      { "biome": "Biome.Desert", "terrain": "Highland", "region": 2, "elevation": 0.699999988, "latitude": 0.800000012, "water_source": "None", "depth_zone": "AncientInteriors", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Tundra", "terrain": "Peak", "region": 2, "elevation": 1, "latitude": 0.899999976, "water_source": "None", "depth_zone": "AncientInteriors", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
-      { "biome": "Biome.Rainforest", "terrain": "Pass", "region": 2, "elevation": 0.800000012, "latitude": 1, "water_source": "None", "depth_zone": "AncientInteriors", "landmass": 1, "terrain_flags": 8, "downstream": 7 },
-      { "biome": "Biome.Volcanic", "terrain": "Volcano", "region": 2, "elevation": 0.850000024, "latitude": 0, "water_source": "None", "depth_zone": "AncientInteriors", "landmass": 1, "terrain_flags": 16, "downstream": 7 },
-      { "biome": "Biome.Grassland", "terrain": "Cliff", "region": 0, "elevation": 0.100000001, "latitude": 0.333333343, "water_source": "None", "depth_zone": "WildReaches", "landmass": 2, "terrain_flags": 0, "downstream": 7 }
+      { "biome": "Biome.Ocean", "terrain": "DeepWater", "region": 0, "elevation": 0, "latitude": 0.100000001, "water_source": "Ocean", "stratum": "None", "landmass": 0, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Ocean", "terrain": "ShallowWater", "region": 0, "elevation": 0, "latitude": 0.200000003, "water_source": "Ocean", "stratum": "None", "landmass": 0, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Grassland", "terrain": "Lowland", "region": 1, "elevation": 0.349999994, "latitude": 0.300000012, "water_source": "None", "stratum": "FirstShores", "landmass": 1, "terrain_flags": 1, "downstream": 7 },
+      { "biome": "Biome.TemperateForest", "terrain": "Hills", "region": 1, "elevation": 0.5, "latitude": 0.400000006, "water_source": "None", "stratum": "FirstShores", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Lake", "terrain": "Lake", "region": 1, "elevation": 0.449999988, "latitude": 0.5, "water_source": "Lake", "stratum": "WildReaches", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Wetland", "terrain": "River", "region": 1, "elevation": 0.409999996, "latitude": 0.600000024, "water_source": "River", "stratum": "WildReaches", "landmass": 1, "terrain_flags": 0, "downstream": 3 },
+      { "biome": "Biome.Alpine", "terrain": "Mountain", "region": 2, "elevation": 0.899999976, "latitude": 0.699999988, "water_source": "None", "stratum": "WildReaches", "landmass": 1, "terrain_flags": 6, "downstream": 7 },
+      { "biome": "Biome.Desert", "terrain": "Highland", "region": 2, "elevation": 0.699999988, "latitude": 0.800000012, "water_source": "None", "stratum": "AncientInteriors", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Tundra", "terrain": "Peak", "region": 2, "elevation": 1, "latitude": 0.899999976, "water_source": "None", "stratum": "AncientInteriors", "landmass": 1, "terrain_flags": 0, "downstream": 7 },
+      { "biome": "Biome.Rainforest", "terrain": "Pass", "region": 2, "elevation": 0.800000012, "latitude": 1, "water_source": "None", "stratum": "AncientInteriors", "landmass": 1, "terrain_flags": 8, "downstream": 7 },
+      { "biome": "Biome.Volcanic", "terrain": "Volcano", "region": 2, "elevation": 0.850000024, "latitude": 0, "water_source": "None", "stratum": "AncientInteriors", "landmass": 1, "terrain_flags": 16, "downstream": 7 },
+      { "biome": "Biome.Grassland", "terrain": "Cliff", "region": 0, "elevation": 0.100000001, "latitude": 0.333333343, "water_source": "None", "stratum": "WildReaches", "landmass": 2, "terrain_flags": 0, "downstream": 7 }
     ],
     "regions": [
       { "id": 1, "zone": "FirstShores", "landmass": 1, "is_island": false, "primary_biome": "Biome.Grassland", "purity": 0.25, "cell_count": 4, "centre_cell": 2, "neighbours": [2] },

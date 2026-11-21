@@ -11,7 +11,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
-using CoW::World::Testing::ShippedZoneTable;
+using CoW::World::Testing::ShippedStratumTable;
 using Dia::Core::StringCRC;
 
 namespace {
@@ -33,7 +33,7 @@ bool LoadFaulty(const std::string& text, GuaranteeSpecError& err)
     GuaranteeSpec out = ShippedGuaranteeSpec();
     const size_t kinds = out.siteKinds.size();
     const size_t gs = out.guarantees.size();
-    const bool ok = LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedZoneTable(), out, err);
+    const bool ok = LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedStratumTable(), out, err);
     if (!ok)
     {
         EXPECT_EQ(out.siteKinds.size(), kinds);
@@ -78,8 +78,8 @@ TEST(GuaranteeSpec, ShippedFileLoads)
     EXPECT_EQ(s.guarantees[2].id, "CoW.Guarantee.WorldThrone");
     EXPECT_EQ(s.guarantees[2].type, GuaranteeRuleType::VariantCover);
     EXPECT_EQ(s.guarantees[2].variantCount, 6u);
-    EXPECT_EQ(s.guarantees[2].toZone, "AncientInteriors");
-    EXPECT_EQ(s.guarantees[2].toZoneIndex, static_cast<int>(ShippedZoneTable().Last()));
+    EXPECT_EQ(s.guarantees[2].toStratum, "AncientInteriors");
+    EXPECT_EQ(s.guarantees[2].toStratumIndex, static_cast<int>(ShippedStratumTable().Last()));
     EXPECT_EQ(s.guarantees[2].countKey, "thronesOfType");
     EXPECT_EQ(s.guarantees[2].targetCountKey, "ancientInteriorsCells");
 
@@ -101,7 +101,7 @@ TEST(GuaranteeSpec, EmptyDocumentLoadsEmptySpec)
     GuaranteeSpec out = ShippedGuaranteeSpec();
     GuaranteeSpecError err;
     const std::string text = "{\"format\":\"cow.guarantees\",\"version\":1}";
-    ASSERT_TRUE(LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedZoneTable(), out, err));
+    ASSERT_TRUE(LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedStratumTable(), out, err));
     EXPECT_TRUE(out.siteKinds.empty());
     EXPECT_TRUE(out.guarantees.empty());
     EXPECT_FALSE(out.hasMarkerOverlay);
@@ -164,14 +164,14 @@ TEST(GuaranteeSpec, BadColourFails)
 
 TEST(GuaranteeSpec, BadParamsFail)
 {
-    // Missing noun, wrong type, unknown field, unknown sidecar key, both/neither of to and to_zone.
+    // Missing noun, wrong type, unknown field, unknown sidecar key, both/neither of to and to_stratum.
     ExpectFails(Replace(ShippedText(), "\"noun\": \"Hearth\",", ""), "CoW.Guarantee.HearthNexus");
-    ExpectFails(Replace(ShippedText(), "\"variant_count\": 6,\n      \"to_zone\"", "\"variant_count\": \"six\",\n      \"to_zone\""),
+    ExpectFails(Replace(ShippedText(), "\"variant_count\": 6,\n      \"to_stratum\"", "\"variant_count\": \"six\",\n      \"to_stratum\""),
                 "CoW.Guarantee.WorldThrone");
     ExpectFails(Replace(ShippedText(), "\"label\": \"Dynasty spacing\",", "\"label\": \"Dynasty spacing\", \"bogus\": 1,"),
                 "CoW.Guarantee.DynastySpacing");
     ExpectFails(Replace(ShippedText(), "kDynastySpacingMinimum", "kNotInSidecar"), "CoW.Guarantee.DynastySpacing");
-    ExpectFails(Replace(ShippedText(), "\"to\": \"CoW.Site.Nexus\",", "\"to\": \"CoW.Site.Nexus\", \"to_zone\": \"AncientInteriors\","),
+    ExpectFails(Replace(ShippedText(), "\"to\": \"CoW.Site.Nexus\",", "\"to\": \"CoW.Site.Nexus\", \"to_stratum\": \"AncientInteriors\","),
                 "CoW.Guarantee.HearthNexus");
     ExpectFails(Replace(ShippedText(), "\"to\": \"CoW.Site.Nexus\",", ""), "CoW.Guarantee.HearthNexus");
 }
@@ -179,7 +179,7 @@ TEST(GuaranteeSpec, BadParamsFail)
 TEST(GuaranteeSpec, MalformedDocumentFails)
 {
     ExpectFails("not json", "document");
-    ExpectFails("{\"format\":\"cow.zones\",\"version\":1}", "format");
+    ExpectFails("{\"format\":\"cow.strata\",\"version\":1}", "format");
     ExpectFails("{\"format\":\"cow.guarantees\",\"version\":2}", "version");
 }
 
@@ -187,8 +187,8 @@ TEST(GuaranteeSpec, NullTextsFail)
 {
     GuaranteeSpec out;
     GuaranteeSpecError err;
-    EXPECT_FALSE(LoadGuaranteeSpec(nullptr, Sidecar().c_str(), ShippedZoneTable(), out, err));
-    EXPECT_FALSE(LoadGuaranteeSpec("{}", nullptr, ShippedZoneTable(), out, err));
+    EXPECT_FALSE(LoadGuaranteeSpec(nullptr, Sidecar().c_str(), ShippedStratumTable(), out, err));
+    EXPECT_FALSE(LoadGuaranteeSpec("{}", nullptr, ShippedStratumTable(), out, err));
     EXPECT_EQ(err.entry, "sidecar");
 }
 
@@ -197,7 +197,7 @@ TEST(GuaranteeSpec, SidecarMinimumBelowRangeFailsLoud)
     const std::string bad = Replace(Sidecar(), "\"default\": 10.0", "\"default\": 0.0");
     GuaranteeSpec out;
     GuaranteeSpecError err;
-    EXPECT_FALSE(LoadGuaranteeSpec(ShippedText().c_str(), bad.c_str(), ShippedZoneTable(), out, err));
+    EXPECT_FALSE(LoadGuaranteeSpec(ShippedText().c_str(), bad.c_str(), ShippedStratumTable(), out, err));
     EXPECT_EQ(err.entry, "sidecar");
 }
 
