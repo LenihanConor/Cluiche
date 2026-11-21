@@ -5,6 +5,8 @@
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/SiteRules.h>
+#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
@@ -12,6 +14,7 @@
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <chrono>
 #include <cstdio>
 #include <string>
@@ -25,6 +28,23 @@ using Dia::Core::StringCRC;
 
 namespace
 {
+
+// The three CoW rules built from the shipped guarantee spec (data-driven; the old CoW classes are gone).
+const GuaranteeEntry& ShippedEntry(const char* id)
+{
+    const GuaranteeEntry* e = ShippedGuaranteeSpec().FindGuarantee(id);
+    if (!e) { std::abort(); }
+    return *e;
+}
+ReachAnyGuarantee HearthNexusRule() { return ReachAnyGuarantee(ShippedEntry("CoW.Guarantee.HearthNexus")); }
+MinSpacingGuarantee SpacingRule() { return MinSpacingGuarantee(ShippedEntry("CoW.Guarantee.DynastySpacing")); }
+MinSpacingGuarantee SpacingRule(float minimum)
+{
+    GuaranteeEntry e = ShippedEntry("CoW.Guarantee.DynastySpacing");
+    e.minimum = minimum;
+    return MinSpacingGuarantee(e);
+}
+VariantCoverGuarantee ThroneRule() { return VariantCoverGuarantee(ShippedEntry("CoW.Guarantee.WorldThrone")); }
 
 GuaranteeResult Check(const IWorldGuarantee& g, const WorldStructure& w, std::initializer_list<const INavigationProfile*> profiles)
 {
@@ -72,19 +92,19 @@ double Millis(std::chrono::steady_clock::time_point a, std::chrono::steady_clock
 TEST(ValidationEdge, OneByOneWorldWithNoSitesFollowsTheVacuousRules)
 {
     WorldStructure w = MakeAllLandWorld(1, 1);
-    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
+    SpecValidationSet set(ShippedGuaranteeSpec(), TestRules());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);   // no world-thrones
-    EXPECT_TRUE(r.Find(HearthNexusReachabilityGuarantee().GetId())->satisfied);
-    EXPECT_TRUE(r.Find(DynastySpacingGuarantee().GetId())->satisfied);
-    EXPECT_FALSE(r.Find(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()).GetId())->satisfied);
+    EXPECT_TRUE(r.Find(HearthNexusRule().GetId())->satisfied);
+    EXPECT_TRUE(r.Find(SpacingRule().GetId())->satisfied);
+    EXPECT_FALSE(r.Find(ThroneRule().GetId())->satisfied);
 }
 
 TEST(ValidationEdge, EmptyWorldDoesNotCrashAnyGuarantee)
 {
     WorldStructure w;
     w.Resize({ 0, 0 });
-    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
+    SpecValidationSet set(ShippedGuaranteeSpec(), TestRules());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);
     EXPECT_EQ(r.guarantees.Size(), 3u);
@@ -100,15 +120,15 @@ TEST(ValidationEdge, SitesOutsideTheMapAreViolationsNotCrashes)
     Site t; t.kindCrc = SiteKinds::WorldThrone().Value(); t.cell = 7777; t.variant = 0;
     w.sites.Add(hearth); w.sites.Add(nexus); w.sites.Add(d1); w.sites.Add(d2); w.sites.Add(t);
     BlockWaterProfile p("P");
-    const GuaranteeResult hn = Check(HearthNexusReachabilityGuarantee(), w, { &p });
+    const GuaranteeResult hn = Check(HearthNexusRule(), w, { &p });
     EXPECT_FALSE(hn.satisfied);
     EXPECT_EQ(hn.violatingCells.Size(), 1u);
-    const GuaranteeResult ds = Check(DynastySpacingGuarantee(), w, { &p });
+    const GuaranteeResult ds = Check(SpacingRule(), w, { &p });
     EXPECT_FALSE(ds.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(ds, "outside the map"));
     EXPECT_TRUE(ds.violatingPairs.IsEmpty());
     FillLand(w, 2, 2, 5, 5, kZoneAncient, B("Biome.Grassland"));
-    const GuaranteeResult wt = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
+    const GuaranteeResult wt = Check(ThroneRule(), w, { &p });
     EXPECT_FALSE(wt.satisfied);
     EXPECT_EQ(wt.violatingCells.Size(), 1u);
 }
@@ -119,7 +139,7 @@ TEST(ValidationEdge, AllWaterWorldHasNothingReachable)
     AddSiteAt(w, SiteKinds::Nexus(), 1, 1);
     AddSiteAt(w, SiteKinds::Hearth(), 6, 6);
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(HearthNexusReachabilityGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(HearthNexusRule(), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_EQ(r.violatingCells.Size(), 1u);
 }
@@ -131,7 +151,7 @@ TEST(ValidationEdge, SevenThronesFailTheExactCount)
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 17, 8, 3);
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
+    const GuaranteeResult r = Check(ThroneRule(), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "expected 6 world-thrones, found 7"));
     EXPECT_TRUE(AnyDiagnosticContains(r, "2 world-thrones of Apotheosis type 3"));
@@ -145,7 +165,7 @@ TEST(ValidationEdge, AncientInteriorsInSeveralPatchesAnyOneSuffices)
     for (int y = 0; y < 20; ++y) { SetOcean(w, 15, y); }                                 // splits the map; thrones sit on the right
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 20 + t, 5, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
+    const GuaranteeResult r = Check(ThroneRule(), w, { &p });
     EXPECT_TRUE(r.satisfied);   // patch B is on the thrones' side
     for (const ProofPath& path : r.proofPaths) { EXPECT_GE(path.to, Idx(w, 26, 16)); }
 }
@@ -233,7 +253,7 @@ TEST(ValidatorPerf, AC6_SmallWorldValidatesWellInsideTheBudget)
     {
         const WorldStructure w = MakeAc6World(seed);
         ASSERT_GT(w.sites.Count(SiteKinds::Hearth()), 0);
-        DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
+        SpecValidationSet set(ShippedGuaranteeSpec(), TestRules());
         double best = 1e9;
         ValidationResult last;
         for (int run = 0; run < 5; ++run)
@@ -247,8 +267,8 @@ TEST(ValidatorPerf, AC6_SmallWorldValidatesWellInsideTheBudget)
         EXPECT_LT(best, 1000.0) << "AC6 target: under 1 second for typical worlds";
         EXPECT_EQ(last.guarantees.Size(), 3u);
         // The hearth and throne guarantees must have recorded proof paths (evidence on): all of these sit on the mainland.
-        EXPECT_EQ(last.Find(HearthNexusReachabilityGuarantee().GetId())->proofPaths.Size()
-                      + last.Find(HearthNexusReachabilityGuarantee().GetId())->violatingCells.Size(), 10u);
+        EXPECT_EQ(last.Find(HearthNexusRule().GetId())->proofPaths.Size()
+                      + last.Find(HearthNexusRule().GetId())->violatingCells.Size(), 10u);
     }
 }
 
@@ -260,7 +280,7 @@ TEST(ValidatorPerf, LargeWorldWithManyUnreachableHearthsStaysBounded)
     for (int i = 0; i < 40; ++i) { AddSiteAt(w, SiteKinds::Hearth(), 110 + (i % 10), 3 * (i / 10) + 4); }   // all stranded
     BlockWaterProfile p("P");
     const auto t0 = std::chrono::steady_clock::now();
-    const GuaranteeResult r = Check(HearthNexusReachabilityGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(HearthNexusRule(), w, { &p });
     const double ms = Millis(t0, std::chrono::steady_clock::now());
     std::printf("[ AC6 ] 128x128, 40 stranded hearths: %.2f ms\n", ms);
     EXPECT_FALSE(r.satisfied);

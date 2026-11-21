@@ -6,7 +6,7 @@ namespace WorldGeneration {
 
 using Dia::Core::StringCRC;
 
-StringCRC WorldLayoutGuarantee::GetId() const { return StringCRC("CoW.Guarantee.WorldLayout"); }
+StringCRC WorldLayoutGuarantee::GetId() const { return StringCRC(kName); }
 
 GuaranteeResult WorldLayoutGuarantee::Check(const ValidationContext& context) const
 {

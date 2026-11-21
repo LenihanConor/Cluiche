@@ -3,7 +3,7 @@
 // (Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json). Tests read that file from the source tree once per
 // process (the cache below lives in this Testing helper only, never in production code).
 //   TestRules()          a TerrainRules at the sidecar defaults
-//   TestSession          a WorldGenSession with the sidecar rules already loaded
+//   TestSession          a WorldGenSession with the sidecar rules loaded and the shipped guarantee spec installed
 //   TestSidecarText()    the sidecar text (for LoadRules / LoadFromJson / the module seam)
 //   TestSidecarFile()    the sidecar loaded as a ParameterFile (rule metadata: names, ranges, defaults)
 // Header-only. Aborts with a message if the sidecar cannot be found or loaded (a broken checkout, not a test result).
@@ -11,6 +11,7 @@
 
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
+#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <DiaAttribute/ParameterFile.h>
@@ -109,6 +110,7 @@ struct TestSession : WorldGenSession
     TestSession()
     {
         SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
+        SetGuaranteeSpec(Testing::ShippedGuaranteeSpec());
         Dia::Attribute::ParamError err;
         if (!LoadRules(TestSidecarText().c_str(), err))
         {

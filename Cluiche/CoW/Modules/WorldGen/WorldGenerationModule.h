@@ -131,6 +131,15 @@ public:
     static constexpr const char* kZonesSidecarAlias = "json.zones_schema";
     void SetZonesText(const std::string& zones, const std::string& sidecar) { mZonesText = zones; mZonesSidecarText = sidecar; mZonesTextSet = true; }
     void SetZonesPath(const std::string& path) { mZonesPath = path; }
+    // Guarantee spec (guarantees.json + sidecar guarantees.schema.json), loaded after the zones (entries name zones) and
+    // installed into the session. Sources, first match: SetGuaranteesText (tests), SetGuaranteesPath (sidecar from the
+    // same directory), guarantees.json beside the biomes path when it exists, the catalogue aliases kGuaranteesAlias /
+    // kGuaranteesSidecarAlias when registered. With no source the spec stays empty (only registry guarantees and the
+    // layout validate). A source that cannot be read or parsed fails like the zones: field "guarantees.<entry>".
+    static constexpr const char* kGuaranteesAlias = "json.guarantees";
+    static constexpr const char* kGuaranteesSidecarAlias = "json.guarantees_schema";
+    void SetGuaranteesText(const std::string& text, const std::string& sidecar) { mGuaranteesText = text; mGuaranteesSidecarText = sidecar; mGuaranteesTextSet = true; }
+    void SetGuaranteesPath(const std::string& path) { mGuaranteesPath = path; }
     const World::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
     bool AreBiomesLoaded() const { return mBiomesLoaded; }
     // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
@@ -172,6 +181,7 @@ private:
     void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
     bool LoadZones(World::ZoneTable& zones);
+    bool LoadGuarantees(const World::ZoneTable& zones);
     void LoadBiomes();
     void ReportBiomesFailure();
     void ApplyHandoffPreset();
@@ -211,6 +221,10 @@ private:
     std::string mZonesSidecarText;
     bool mZonesTextSet = false;
     std::string mZonesPath;
+    std::string mGuaranteesText;
+    std::string mGuaranteesSidecarText;
+    bool mGuaranteesTextSet = false;
+    std::string mGuaranteesPath;
     std::string mBiomesText;
     bool mBiomesTextSet = false;
     std::string mBiomesPath;

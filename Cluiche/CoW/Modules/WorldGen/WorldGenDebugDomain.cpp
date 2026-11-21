@@ -601,7 +601,7 @@ Json::Value WorldGenDebugDomain::BuildValidation() const
         const GuaranteeResult& g = validation->guarantees[i];
         Json::Value e(Json::objectValue);
         e["id"] = static_cast<Json::UInt>(g.idCrc);
-        e["name"] = WorldGenSession::GuaranteeLabel(g.idCrc);
+        e["name"] = s.GuaranteeLabel(g.idCrc);
         e["ok"] = g.satisfied;
         Json::Value counts(Json::objectValue);
         counts["proofPaths"] = static_cast<Json::UInt>(g.proofPaths.Size());
@@ -629,7 +629,7 @@ Json::Value WorldGenDebugDomain::BuildValidation() const
         Json::Value failed(Json::arrayValue);
         for (uint32_t f = 0; f < a.failedGuaranteeCount; ++f)
         {
-            failed.append(WorldGenSession::GuaranteeLabel(a.failedGuarantees[f]));
+            failed.append(s.GuaranteeLabel(a.failedGuarantees[f]));
         }
         e["failedGuarantees"] = failed;
         e["ms"] = static_cast<double>(a.elapsedMs);

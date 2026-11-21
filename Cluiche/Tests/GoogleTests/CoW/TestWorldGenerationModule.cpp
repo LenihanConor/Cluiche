@@ -39,6 +39,8 @@ std::string g_rulesTextOverride;   // non-empty: the sidecar text the next modul
 bool        g_noSidecarText = false;      // alias tests: do not inject text, so the module's own load path runs
 std::string g_defaultPathOverride;        // non-empty: the default sidecar path the next module is created with
 std::string g_biomesTextOverride;         // non-empty: the biomes text the next module is created with
+std::string g_guaranteesTextOverride;     // non-empty: the guarantees text the next module is created with (sidecar = the shipped one)
+std::string g_guaranteesPathOverride;     // non-empty: the guarantees path the next module is created with (else the shipped file)
 std::string g_biomesPathOverride;         // non-empty: the biomes path the next module is created with (else the shipped file)
 
 std::string FindShippedBiomes()
@@ -60,6 +62,10 @@ Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
     g_wg->SetZonesPath(CoW::World::Testing::ShippedZonesPath());   // zones load first; biome overrides below do not move them
+    if (!g_guaranteesTextOverride.empty())
+        g_wg->SetGuaranteesText(g_guaranteesTextOverride, CoW::WorldGeneration::Testing::ShippedGuaranteesSidecarText());
+    else
+        g_wg->SetGuaranteesPath(g_guaranteesPathOverride.empty() ? CoW::WorldGeneration::Testing::ShippedGuaranteesPath() : g_guaranteesPathOverride);
     if (!g_biomesTextOverride.empty())
         g_wg->SetBiomesText(g_biomesTextOverride);
     else
@@ -823,6 +829,63 @@ TEST(WorldGenModuleBiomes, MissingFileFailsHealthAndRefusesGeneration)
     EXPECT_EQ(f.wg->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kFailing);
     EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
     EXPECT_EQ(f.wg->GetSession().Regenerate(Json::Value(Json::objectValue))["error"].asString(), "biomes_not_loaded");
+}
+
+// ---- Guarantee spec (guarantees.json) ----
+
+TEST(WorldGenModuleGuarantees, ShippedSpecLoadsIsInstalledAndValidatesWithTheCoWGuarantees)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreBiomesLoaded());
+    EXPECT_EQ(f.wg->GetSession().GetGuaranteeSpec().guarantees.size(), 3u);
+    EXPECT_EQ(HealthOf(f), Dia::Observation::Health::HealthStatus::kOK);
+    const Json::Value r = f.wg->GetSession().Validate(Json::Value(Json::objectValue));
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    EXPECT_EQ(r["guarantees"][0u]["name"].asString(), "CoW.Guarantee.HearthNexus");
+}
+
+TEST(WorldGenModuleGuarantees, TextSourceInstallsAnEmptyOneAsIs)
+{
+    g_guaranteesTextOverride = R"({ "format": "cow.guarantees", "version": 1, "site_kinds": [], "guarantees": [] })";
+    Fixture f;
+    const bool booted = f.Boot();
+    g_guaranteesTextOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreBiomesLoaded());
+    EXPECT_TRUE(f.wg->GetSession().GetGuaranteeSpec().guarantees.empty());
+}
+
+TEST(WorldGenModuleGuarantees, BadSpecFailsHealthWithAGuaranteesFieldAndRefusesGeneration)
+{
+    g_guaranteesTextOverride = R"({ "format": "cow.guarantees", "version": 1, "site_kinds": [],
+        "guarantees": [ { "id": "Bad.One", "label": "x", "type": "no_such_rule" } ] })";
+    Fixture f;
+    const bool booted = f.Boot();
+    g_guaranteesTextOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(5);
+    EXPECT_FALSE(f.wg->AreBiomesLoaded());
+    EXPECT_EQ(f.wg->GetBiomesErrorField().rfind("guarantees.", 0), 0u) << f.wg->GetBiomesErrorField();
+    EXPECT_EQ(f.wg->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kFailing);
+    EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
+    EXPECT_EQ(f.wg->GetSession().Regenerate(Json::Value(Json::objectValue))["error"].asString(), "biomes_not_loaded");
+}
+
+TEST(WorldGenModuleGuarantees, MissingExplicitFileFailsHealthNamingThePath)
+{
+    g_guaranteesPathOverride = "Z:/definitely/not/here/guarantees.json";
+    Fixture f;
+    const bool booted = f.Boot();
+    g_guaranteesPathOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(5);
+    EXPECT_FALSE(f.wg->AreBiomesLoaded());
+    EXPECT_EQ(f.wg->GetBiomesErrorField(), "guarantees");
+    EXPECT_NE(f.wg->GetBiomesErrorReason().find("guarantees.json"), std::string::npos) << f.wg->GetBiomesErrorReason();
+    EXPECT_EQ(f.wg->GetHealthReporter().Report().status, Dia::Observation::Health::HealthStatus::kFailing);
 }
 
 // ---- Terrain sidecar through its catalogue alias (config key rules_sidecar_alias, PathStore read, 2026-11-20) ----

@@ -23,6 +23,8 @@ inline std::string ShippedGuaranteesSidecarPath()
     return World::Testing::Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/guarantees.schema.json", false);
 }
 
+inline std::string ShippedGuaranteesSidecarText() { return World::Testing::Detail::ReadFileText(ShippedGuaranteesSidecarPath()); }
+
 // The shipped guarantee spec, loaded once per process against the shipped zones. Aborts if it cannot be loaded.
 inline const GuaranteeSpec& ShippedGuaranteeSpec()
 {

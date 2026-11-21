@@ -12,7 +12,10 @@
 
 #include <DiaPathfinding/HexTopology.h>
 
+#include <algorithm>
 #include <atomic>
+#include <memory>
+#include <vector>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -372,4 +375,76 @@ TEST_F(WorldGenSessionValidateTest, StatusUnavailableLayersTracksWhatTheWorldHas
     EXPECT_TRUE(Contains(imported["unavailableLayers"], "temperature"));
     EXPECT_FALSE(Contains(imported["unavailableLayers"], "elevation"));
     EXPECT_FALSE(Contains(imported["unavailableLayers"], "regions"));
+}
+
+// ---- injected guarantee spec (generic special sites task 3) ----------------------------------------------------------------
+
+namespace
+{
+std::vector<std::string> NamesOf(const Json::Value& list)
+{
+    std::vector<std::string> names;
+    for (const Json::Value& g : list) { names.push_back(g["name"].asString()); }
+    return names;
+}
+}
+
+TEST_F(WorldGenSessionValidateTest, EmptySpecValidatesWithOnlyRegistryGuaranteesAndLayout)
+{
+    WorldGenSession s;   // default spec is empty
+    Dia::Attribute::ParamError perr;
+    ASSERT_TRUE(s.LoadRules(TestSidecarText().c_str(), perr));
+    s.SetBiomeRegistry(&CoW::World::Testing::ShippedBiomeRegistry());
+    EXPECT_TRUE(s.GetGuaranteeSpec().guarantees.empty());
+    Generate(s, 11);
+    const Json::Value r = s.Validate(Obj());
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    const std::vector<std::string> names = NamesOf(r["guarantees"]);
+    EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.HearthNexus"), nullptr);
+    EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.DynastySpacing"), nullptr);
+    EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.WorldThrone"), nullptr);
+    EXPECT_NE(FindGuarantee(r["guarantees"], "CoW.Guarantee.WorldLayout"), nullptr);
+}
+
+TEST_F(WorldGenSessionValidateTest, ShippedSpecKeepsFileOrderNamesAndSkipsTheThroneRuleWithoutThrones)
+{
+    TestSession s;
+    Generate(s, 11);
+    const Json::Value r = s.Validate(Obj());
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    const std::vector<std::string> names = NamesOf(r["guarantees"]);
+    ASSERT_GE(names.size(), 3u);
+    EXPECT_EQ(names[0], "CoW.Guarantee.HearthNexus");
+    EXPECT_EQ(names[1], "CoW.Guarantee.DynastySpacing");
+    EXPECT_EQ(std::count(names.begin(), names.end(), std::string("CoW.Guarantee.WorldThrone")), 0);   // S-1 places no thrones
+    EXPECT_EQ(names.back(), "CoW.Guarantee.WorldLayout");
+    EXPECT_EQ(s.GuaranteeLabel(Dia::Core::StringCRC("CoW.Guarantee.WorldThrone").Value()), "CoW.Guarantee.WorldThrone");
+    EXPECT_EQ(s.GuaranteeLabel(0xDEADBEEFu), "0xDEADBEEF");
+}
+
+TEST_F(WorldGenSessionValidateTest, CustomSpecEntriesAppearByTheirIdAndAVariantCoverWithoutSitesIsSkipped)
+{
+    GuaranteeSpec spec;
+    GuaranteeEntry camps;
+    camps.id = "Test.Guarantee.Camps"; camps.label = "Camp spacing"; camps.type = GuaranteeRuleType::MinSpacing;
+    camps.kind = "Test.Site.Camp"; camps.minimum = 3.0f; camps.noun = "camp"; camps.nounPlural = "camps";
+    camps.minimumKey = "minimumSpacing"; camps.distanceKey = "pairDistance";
+    GuaranteeEntry totems;
+    totems.id = "Test.Guarantee.Totems"; totems.type = GuaranteeRuleType::VariantCover;
+    totems.kind = "Test.Site.Totem"; totems.variantCount = 2; totems.toZoneIndex = 1;
+    totems.noun = "totem"; totems.nounPlural = "totems"; totems.variantNoun = "kind"; totems.targetNoun = "Shores";
+    totems.countKey = "totemsOfType"; totems.targetCountKey = "shoreCells";
+    spec.guarantees = { camps, totems };
+
+    TestSession s;
+    s.SetGuaranteeSpec(spec);
+    Generate(s, 11);
+    const Json::Value r = s.Validate(Obj());
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    const std::vector<std::string> names = NamesOf(r["guarantees"]);
+    ASSERT_GE(names.size(), 2u);
+    EXPECT_EQ(names[0], "Test.Guarantee.Camps");
+    EXPECT_EQ(FindGuarantee(r["guarantees"], "Test.Guarantee.Totems"), nullptr);
+    EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.HearthNexus"), nullptr);
+    EXPECT_EQ(s.GuaranteeLabel(Dia::Core::StringCRC("Test.Guarantee.Camps").Value()), "Test.Guarantee.Camps");
 }

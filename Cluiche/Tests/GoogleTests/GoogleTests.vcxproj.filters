@@ -289,6 +289,9 @@
     <Filter Include="CoW\Shared\World">
       <UniqueIdentifier>{199452e2-25ca-4a04-81d3-afd02d3f7b73}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaCondition">
+      <UniqueIdentifier>{a474cfa9-d5b7-4e3a-9daf-de3031ad9f78}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -3320,6 +3323,15 @@
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GuaranteeSpec.cpp">
       <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestSiteRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaCondition\TestConditionValidateContext.cpp">
+      <Filter>DiaCondition</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

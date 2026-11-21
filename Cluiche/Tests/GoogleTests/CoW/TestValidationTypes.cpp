@@ -98,7 +98,7 @@ TEST(ValidationResult, EqualityCoversEvidence)
 TEST(MeasurementKeys, AreDistinctAndStable)
 {
     const uint32_t keys[] = { MeasurementKeys::PairDistance().Value(), MeasurementKeys::MinimumSpacing().Value(),
-                              MeasurementKeys::ThronesOfType().Value(), MeasurementKeys::AncientInteriorsCells().Value() };
+                              StringCRC("thronesOfType").Value(), StringCRC("ancientInteriorsCells").Value() };
     for (size_t i = 0; i < 4; ++i) { for (size_t j = i + 1; j < 4; ++j) { EXPECT_NE(keys[i], keys[j]); } }
     EXPECT_EQ(MeasurementKeys::PairDistance(), StringCRC("pairDistance"));
 }

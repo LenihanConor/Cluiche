@@ -5,7 +5,8 @@
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
-#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/SiteRules.h>
+#include <Shared/WorldGeneration/SiteRules.h>
 #include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/WorldJson.h>
@@ -1969,25 +1970,25 @@ namespace
         size_t pairLimit = 16;
     };
 
-    std::string GuaranteeName(uint32_t crc)
+    // The id text of a guarantee: the injected spec's entries, then the built-in layout guarantee, else 0xXXXXXXXX.
+    std::string GuaranteeName(const GuaranteeSpec& spec, uint32_t crc)
     {
-        static const char* const kKnown[] = {
-            "CoW.Guarantee.HearthNexus", "CoW.Guarantee.DynastySpacing", "CoW.Guarantee.WorldThrone", "CoW.Guarantee.WorldLayout" };
-        for (const char* name : kKnown)
+        for (const GuaranteeEntry& e : spec.guarantees)
         {
-            if (Dia::Core::StringCRC(name).Value() == crc) { return name; }
+            if (Dia::Core::StringCRC(e.id.c_str()).Value() == crc) { return e.id; }
         }
+        if (Dia::Core::StringCRC(WorldLayoutGuarantee::kName).Value() == crc) { return WorldLayoutGuarantee::kName; }
         char text[16];
         std::snprintf(text, sizeof(text), "0x%08X", crc);
         return text;
     }
 
     // `selector` is a guarantee id (CRC number) or name text.
-    bool GuaranteeMatches(const Json::Value& selector, uint32_t crc)
+    bool GuaranteeMatches(const GuaranteeSpec& spec, const Json::Value& selector, uint32_t crc)
     {
         if (selector.isUInt()) { return selector.asUInt() == crc; }
         const std::string text = selector.asString();
-        return GuaranteeName(crc) == text || Dia::Core::StringCRC(text.c_str()).Value() == crc;
+        return GuaranteeName(spec, crc) == text || Dia::Core::StringCRC(text.c_str()).Value() == crc;
     }
 
     // One page of `list` (offset, limit), reporting whether more remain.
@@ -2005,11 +2006,11 @@ namespace
 
     // Guarantee row: id, name, ok, evidence counts and diagnostics; with a page also the evidence arrays themselves.
     // The counts are the sizes of the full lists, so they equal the array sizes whenever nothing was truncated.
-    Json::Value GuaranteeJson(const GuaranteeResult& g, const EvidencePage* page, bool& truncated)
+    Json::Value GuaranteeJson(const GuaranteeSpec& spec, const GuaranteeResult& g, const EvidencePage* page, bool& truncated)
     {
         Json::Value e(Json::objectValue);
         e["id"] = static_cast<Json::UInt>(g.idCrc);
-        e["name"] = GuaranteeName(g.idCrc);
+        e["name"] = GuaranteeName(spec, g.idCrc);
         e["ok"] = g.satisfied;
         e["satisfied"] = g.satisfied;
         Json::Value counts(Json::objectValue);
@@ -2074,9 +2075,9 @@ namespace
     }
 }
 
-std::string WorldGenSession::GuaranteeLabel(uint32_t idCrc)
+std::string WorldGenSession::GuaranteeLabel(uint32_t idCrc) const
 {
-    return GuaranteeName(idCrc);
+    return GuaranteeName(mGuaranteeSpec, idCrc);
 }
 
 Json::Value WorldGenSession::Report(const Json::Value& args) const
@@ -2160,11 +2161,11 @@ Json::Value WorldGenSession::Report(const Json::Value& args) const
     for (unsigned i = 0; i < validation.guarantees.Size(); ++i)
     {
         const GuaranteeResult& g = validation.guarantees[i];
-        if (filtered && !GuaranteeMatches(args["guarantee"], g.idCrc))
+        if (filtered && !GuaranteeMatches(mGuaranteeSpec, args["guarantee"], g.idCrc))
         {
             continue;
         }
-        guarantees.append(GuaranteeJson(g, &evidence, truncated));
+        guarantees.append(GuaranteeJson(mGuaranteeSpec, g, &evidence, truncated));
     }
     fin["guarantees"] = guarantees;
     fin["evidenceOffset"] = static_cast<Json::UInt64>(evidence.offset);
@@ -2194,14 +2195,22 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
         return Error("no world generated yet");
     }
 
-    // The set a generation validates with (terrain profile, registry guarantees, layout), plus the built-in site
-    // guarantees. One of each id; WorldThrone only when the world holds throne sites (S-1 places none, so it would
-    // otherwise fail every world); layout only when regions are fresh (live-preview worlds have none).
+    // The set a generation validates with: the injected spec's entries in file order (a variant_cover entry only when
+    // the world holds sites of its kind, so a world without them is not failed by it), the registry's guarantees, and
+    // the layout guarantee when regions are fresh (live-preview worlds have none). One of each id.
     const TerrainTableNavigationProfile profile(mRules);
-    const HearthNexusReachabilityGuarantee hearthNexus;
-    const DynastySpacingGuarantee dynastySpacing;
-    const WorldThroneGuarantee worldThrone(ZonesOf(mBiomes));
     const WorldLayoutGuarantee layout(mRules, mLimits);
+    std::vector<std::unique_ptr<IWorldGuarantee>> specRules;
+    for (const GuaranteeEntry& entry : mGuaranteeSpec.guarantees)
+    {
+        std::unique_ptr<IWorldGuarantee> rule = MakeSiteRule(entry);
+        if (entry.type == GuaranteeRuleType::VariantCover &&
+            !static_cast<const VariantCoverGuarantee&>(*rule).AppliesTo(mWorld))
+        {
+            continue;
+        }
+        specRules.push_back(std::move(rule));
+    }
 
     ValidationParams params;
     params.AddProfile(&profile);
@@ -2218,11 +2227,9 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
             present.push_back(id);
         }
     };
-    add(&hearthNexus);
-    add(&dynastySpacing);
-    if (!mWorld.sites.Of(SiteKinds::WorldThrone()).empty())
+    for (const std::unique_ptr<IWorldGuarantee>& rule : specRules)
     {
-        add(&worldThrone);
+        add(rule.get());
     }
     for (const IWorldGuarantee* g : Registry().Guarantees())
     {
@@ -2242,7 +2249,7 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     bool truncated = false;
     for (unsigned i = 0; i < mEvidence.guarantees.Size(); ++i)
     {
-        guarantees.append(GuaranteeJson(mEvidence.guarantees[i], nullptr, truncated));
+        guarantees.append(GuaranteeJson(mGuaranteeSpec, mEvidence.guarantees[i], nullptr, truncated));
     }
     Json::Value r(Json::objectValue);
     r["success"] = true;

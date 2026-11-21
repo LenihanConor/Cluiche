@@ -16,8 +16,6 @@ namespace MeasurementKeys
 {
     StringCRC PairDistance()          { return StringCRC("pairDistance"); }
     StringCRC MinimumSpacing()        { return StringCRC("minimumSpacing"); }
-    StringCRC ThronesOfType()         { return StringCRC("thronesOfType"); }
-    StringCRC AncientInteriorsCells() { return StringCRC("ancientInteriorsCells"); }
     StringCRC ViolationCount()        { return StringCRC("violationCount"); }
 }
 

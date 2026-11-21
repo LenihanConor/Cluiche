@@ -84,8 +84,6 @@ namespace MeasurementKeys
 {
     Dia::Core::StringCRC PairDistance();           // "pairDistance": hex distance between a dynasty pair
     Dia::Core::StringCRC MinimumSpacing();         // "minimumSpacing"
-    Dia::Core::StringCRC ThronesOfType();          // "thronesOfType": value = count, tag = Apotheosis type
-    Dia::Core::StringCRC AncientInteriorsCells();  // "ancientInteriorsCells": 0 means a terrain cause
     Dia::Core::StringCRC ViolationCount();         // "violationCount": layout checks (tag = LayoutCode)
 }
 

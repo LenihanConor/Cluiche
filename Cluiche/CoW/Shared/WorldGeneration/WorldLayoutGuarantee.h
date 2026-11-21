@@ -20,7 +20,8 @@ class WorldLayoutGuarantee final : public IWorldGuarantee
 public:
     WorldLayoutGuarantee(const TerrainRules& rules, const LayoutLimits& limits) : mRules(rules), mLimits(limits) {}
 
-    Dia::Core::StringCRC GetId() const override;   // "CoW.Guarantee.WorldLayout"
+    static constexpr const char* kName = "CoW.Guarantee.WorldLayout";   // built in, not part of a GuaranteeSpec
+    Dia::Core::StringCRC GetId() const override;
     GuaranteeResult Check(const ValidationContext& context) const override;
 
 private:

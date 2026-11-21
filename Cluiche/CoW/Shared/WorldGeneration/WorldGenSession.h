@@ -9,6 +9,7 @@
 #include <Shared/WorldGeneration/GenerationGuard.h>
 #include <Shared/WorldGeneration/GenerationReport.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
+#include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/RegionsAndSites.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
@@ -101,8 +102,9 @@ public:
     // nothing. Reply: {success, name, path, revision, locked, warnings[]} or {success:false, error, field}.
     Json::Value ImportWorld(const Json::Value& args);
 
-    // Runs the validation set on the CURRENT world (the terrain navigation profile, HearthNexus, DynastySpacing, the
-    // registry's guarantees, WorldLayout when regions are fresh, and WorldThrone when the world holds throne sites)
+    // Runs the validation set on the CURRENT world (the terrain navigation profile, the injected GuaranteeSpec's
+    // entries in file order (a variant_cover entry only when the world holds sites of its kind), the registry's
+    // guarantees, and WorldLayout when regions are fresh)
     // without touching the world or its revision, and keeps the result as the one fresh-evidence slot, keyed to the
     // revision it was computed for. Refuses like the other actions while a Regenerate runs.
     // Reply: {success, ok, revision, guarantees[{id, name, ok, counts{proofPaths,violatingCells,violatingPairs}, diagnostics[]}]}.
@@ -117,6 +119,9 @@ public:
     // Site registry used by the placement pass; nullptr (default) means no registered kinds. Not owned: the owner
     // (WorldGenerationModule) keeps it alive for the session's lifetime.
     void SetSiteRegistry(const SiteRegistry* registry) { mRegistry = registry; }
+    // The data-declared guarantees the final validation runs (default: empty, so only registry guarantees + layout).
+    void SetGuaranteeSpec(const GuaranteeSpec& spec) { mGuaranteeSpec = spec; }
+    const GuaranteeSpec& GetGuaranteeSpec() const { return mGuaranteeSpec; }
     // The registry in use (an empty one when none is set).
     const SiteRegistry& Registry() const { return mRegistry != nullptr ? *mRegistry : mEmptyRegistry; }
 
@@ -162,7 +167,7 @@ public:
     // True after a failed run kept the previous world and no Validate has run since: all evidence is hidden.
     bool                    EvidenceHiddenByFailure() const { return mLastRunKeptPrevious && !mValidatedSinceFailure; }
     // Display name of a guarantee id (the known built-ins by name, else "0x%08X"), as used by Report and Validate.
-    static std::string      GuaranteeLabel(uint32_t idCrc);
+    std::string             GuaranteeLabel(uint32_t idCrc) const;   // the id text of a spec/built-in guarantee, else 0xXXXXXXXX
     uint32_t                MaxRetryAttempts() const { return mGenParams.maxRetryAttempts; }
     // Config-time setter (clamped to 1..64); does not trigger a generation.
     void                    SetMaxRetryAttempts(uint32_t attempts) { mGenParams.maxRetryAttempts = ClampMaxRetryAttempts(attempts); }
@@ -186,6 +191,7 @@ public:
 
 private:
     TerrainRules     mRules;
+    GuaranteeSpec    mGuaranteeSpec;   // empty by default
     std::unique_ptr<Dia::Attribute::ParameterFile> mRulesFile;   // the loaded sidecar (null when rules were supplied directly)
     bool             mRulesLoaded = false;
     std::string      mBlockCode;

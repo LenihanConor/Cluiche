@@ -2,6 +2,7 @@
 
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
+#include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
@@ -177,10 +178,70 @@ bool WorldGenerationModule::LoadZones(World::ZoneTable& zones)
     return true;
 }
 
+bool WorldGenerationModule::LoadGuarantees(const World::ZoneTable& zones)
+{
+    std::string text;
+    std::string sidecar;
+    if (mGuaranteesTextSet)
+    {
+        text = mGuaranteesText;
+        sidecar = mGuaranteesSidecarText;
+    }
+    else
+    {
+        std::string path = mGuaranteesPath;
+        std::string sidecarPath;
+        if (path.empty() && !mBiomesPath.empty())
+        {
+            const std::filesystem::path beside = std::filesystem::path(mBiomesPath).parent_path() / "guarantees.json";
+            if (std::filesystem::exists(beside)) { path = beside.string(); }
+        }
+        if (!path.empty())
+        {
+            sidecarPath = (std::filesystem::path(path).parent_path() / "guarantees.schema.json").string();
+        }
+        else
+        {
+            path = ResolveAlias(kGuaranteesAlias);
+            sidecarPath = ResolveAlias(kGuaranteesSidecarAlias);
+            if (path.empty() && sidecarPath.empty())
+            {
+                return true;   // no source: the spec stays empty
+            }
+            if (path.empty() || sidecarPath.empty())
+            {
+                mBiomesErrorField = "guarantees";
+                mBiomesErrorReason = std::string("alias '") + (path.empty() ? kGuaranteesAlias : kGuaranteesSidecarAlias) + "' is not registered";
+                DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
+                return false;
+            }
+        }
+        if (!ReadWholeFile(path, text) || !ReadWholeFile(sidecarPath, sidecar))
+        {
+            mBiomesErrorField = "guarantees";
+            mBiomesErrorReason = "cannot read " + path + " or " + sidecarPath;
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
+            return false;
+        }
+    }
+    WorldGeneration::GuaranteeSpec spec;
+    WorldGeneration::GuaranteeSpecError err;
+    if (!WorldGeneration::LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), zones, spec, err))
+    {
+        mBiomesErrorField = std::string("guarantees.") + err.entry;
+        mBiomesErrorReason = err.reason;
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees failed at '%s': %s; generation is refused",
+                      err.entry.c_str(), mBiomesErrorReason.c_str());
+        return false;
+    }
+    mSession.SetGuaranteeSpec(spec);
+    return true;
+}
+
 void WorldGenerationModule::LoadBiomes()
 {
     World::ZoneTable zones;
-    if (!LoadZones(zones))
+    if (!LoadZones(zones) || !LoadGuarantees(zones))
     {
         return;
     }
@@ -888,7 +949,7 @@ void WorldGenerationModule::RegisterCommands()
     static const ValueParam kReportParams[] = {
         { "offset", "int", false, "First attempt of the page (default 0)" },
         { "limit", "int", false, "Attempts in the page (default and max 12)" },
-        { "guarantee", "string", false, "Only this guarantee in finalValidation (name such as CoW.Guarantee.HearthNexus, or its numeric id)" },
+        { "guarantee", "string", false, "Only this guarantee in finalValidation (a guarantee id as listed by validate, or its numeric id)" },
         { "evidenceOffset", "int", false, "First evidence item (proof path, violating cell or pair) of each guarantee's page (default 0)" },
         { "evidenceLimit", "int", false, "Evidence items per list in the page (default 2 paths, 32 cells, 16 pairs; max 8, 128, 64)" } };
     static const ValueParam kSitesParams[] = {
