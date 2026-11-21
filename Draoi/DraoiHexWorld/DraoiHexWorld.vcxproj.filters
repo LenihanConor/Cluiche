@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{b64e4101-33cf-4a90-8098-8d92fb79879e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DraoiHexWorld.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DraoiHexWorld.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.draoi.hexworld.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>
