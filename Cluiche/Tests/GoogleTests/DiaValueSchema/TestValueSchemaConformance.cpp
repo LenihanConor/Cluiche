@@ -1,10 +1,13 @@
 #include <gtest/gtest.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/ValuesFromResolver.h>
+#include <DiaValueSchema/Testing/SchemaTempDirectory.h>
 #include <json/json.h>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <set>
+#include <vector>
 #include <string>
 
 // Shared conformance fixtures (Feature 1 task 7). The fixture folder is data checked in under
@@ -379,4 +382,147 @@ TEST(DiaValueSchemaConformance, ReservedKeyIsOnlyReservedForParameterKindAndExac
 			+ R"(","kind":"parameter","label":"L","description":"D","type":"float"}]})";
 		EXPECT_TRUE(ValueSchemaLoader::LoadFromText(text.c_str(), "near-reserved.schema.json").mOk);
 	}
+}
+
+
+// ---- Biome Registry plan task 15: C++ <-> CLI parity over the new data fixtures ------------------------------------
+// The CLI verdict is read from each case's `schemaExpected` rows; C++ must reach the same verdict. A case the CLI accepts
+// and C++ rejects (or the reverse) fails here, so neither side can drift without a fixture change.
+
+namespace
+{
+	bool ParseFile(const fs::path& p, Json::Value& out)
+	{
+		std::string text;
+		if (!ReadFile(p, text)) { return false; }
+		Json::Reader reader;
+		return reader.parse(text, out);
+	}
+
+	std::vector<fs::path> DataCases()
+	{
+		std::vector<fs::path> out;
+		const fs::path dir = FindConformanceDir();
+		for (const fs::directory_entry& de : fs::directory_iterator(dir / "data"))
+		{
+			const std::string name = de.path().filename().string();
+			const std::string suffix = ".case.json";
+			if (name.size() > suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0) { out.push_back(de.path()); }
+		}
+		return out;
+	}
+
+	bool HasValuesFromEntry(const Json::Value& c)
+	{
+		for (Json::ArrayIndex i = 0; i < c["schemas"].size(); ++i)
+			for (Json::ArrayIndex e = 0; e < c["schemas"][i]["entries"].size(); ++e)
+				if (c["schemas"][i]["entries"][e].isMember("valuesFrom")) { return true; }
+		return false;
+	}
+
+	bool CliFlagsValuesFrom(const Json::Value& c)
+	{
+		for (Json::ArrayIndex i = 0; i < c["schemaExpected"].size(); ++i)
+			if (c["schemaExpected"][i]["rule"].asString().rfind("schema.values-from-", 0) == 0) { return true; }
+		return false;
+	}
+}
+
+TEST(DiaValueSchemaConformance, ValuesFromCasesResolveInCppExactlyWhenTheCliResolves)
+{
+	int covered = 0;
+	int cliBad = 0;
+	int cliClean = 0;
+	for (const fs::path& casePath : DataCases())
+	{
+		Json::Value c;
+		ASSERT_TRUE(ParseFile(casePath, c)) << casePath;
+		if (!HasValuesFromEntry(c)) { continue; }
+		const std::string name = casePath.filename().string();
+		SCOPED_TRACE(name);
+		++covered;
+
+		Dia::ValueSchema::Testing::SchemaTempDirectory dir("ConfValuesFrom");
+		std::vector<std::string> candidates;
+		for (Json::ArrayIndex f = 0; f < c["files"].size(); ++f)
+		{
+			Json::FastWriter w;
+			candidates.push_back(dir.Write(("d" + std::to_string(f) + ".json").c_str(), w.write(c["files"][f]["content"])));
+		}
+
+		const bool cliBadVerdict = CliFlagsValuesFrom(c);
+		(cliBadVerdict ? cliBad : cliClean) += 1;
+		for (Json::ArrayIndex i = 0; i < c["schemas"].size(); ++i)
+		{
+			Json::FastWriter w;
+			const std::string schemaText = w.write(c["schemas"][i]);
+			LoadResult r = ValueSchemaLoader::LoadFromText(schemaText.c_str(), name.c_str());
+			ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+			for (unsigned int e = 0; e < r.mEntries.Size(); ++e)
+			{
+				ValueInfo& entry = r.mEntries[e];
+				if (!entry.mHasValuesFrom) { continue; }
+				std::string reason;
+				const bool cppResolved = ResolveValuesFrom(entry, candidates, reason);
+				EXPECT_EQ(cppResolved, !cliBadVerdict) << "C++ " << (cppResolved ? "resolved" : "failed: " + reason) << " but the CLI verdict is " << (cliBadVerdict ? "bad" : "clean");
+				if (cppResolved)
+				{
+					// The ids come out in record order: the same list the CLI checks data values against.
+					const Json::Value& recs = c["files"][0u]["content"][entry.mValuesFrom.mRecords.AsCStr()];
+					ASSERT_EQ(entry.mEnumValues.Size(), recs.size());
+					for (Json::ArrayIndex k = 0; k < recs.size(); ++k)
+					{
+						EXPECT_STREQ(entry.mEnumValues[k].mId.AsCStr(), recs[k][entry.mValuesFrom.mId.AsCStr()].asCString());
+					}
+				}
+			}
+		}
+	}
+	EXPECT_GE(covered, 6) << "the valuesFrom data fixtures went missing";
+	EXPECT_GE(cliBad, 5);
+	EXPECT_GE(cliClean, 1);
+}
+
+// enum[] and ref[2][] (plan tasks 7a/7b): C++ has no data-side validation for these types (the CLI reports
+// data.bad-enum / data.wrong-type / data.unresolved-ref), so the shared verdict is the loader's: every data case
+// declaring them loads and reads each entry back with the declared ValueType.
+TEST(DiaValueSchemaConformance, EveryDataCaseEntryReadsBackWithItsDeclaredType)
+{
+	struct TypeRow { const char* text; ValueType type; };
+	const TypeRow rows[] = {
+		{ "float", ValueType::Float }, { "int", ValueType::Int }, { "bool", ValueType::Bool }, { "enum", ValueType::Enum },
+		{ "string", ValueType::String }, { "ref", ValueType::Ref }, { "ref[]", ValueType::RefList }, { "map", ValueType::Map },
+		{ "enum[]", ValueType::EnumList }, { "ref[2][]", ValueType::RefPairList } };
+	int enumLists = 0;
+	int pairLists = 0;
+	for (const fs::path& casePath : DataCases())
+	{
+		Json::Value c;
+		ASSERT_TRUE(ParseFile(casePath, c)) << casePath;
+		const std::string name = casePath.filename().string();
+		SCOPED_TRACE(name);
+		for (Json::ArrayIndex i = 0; i < c["schemas"].size(); ++i)
+		{
+			Json::FastWriter w;
+			const std::string schemaText = w.write(c["schemas"][i]);
+			const LoadResult r = ValueSchemaLoader::LoadFromText(schemaText.c_str(), name.c_str());
+			ASSERT_TRUE(r.mOk) << r.mFailure.mReason.AsCStr();
+			for (Json::ArrayIndex e = 0; e < c["schemas"][i]["entries"].size(); ++e)
+			{
+				const std::string declared = c["schemas"][i]["entries"][e]["type"].asString();
+				bool known = false;
+				for (const TypeRow& row : rows)
+				{
+					if (declared != row.text) { continue; }
+					known = true;
+					EXPECT_EQ(r.mEntries[e].mType, row.type) << declared;
+					if (row.type == ValueType::EnumList) { ++enumLists; }
+					if (row.type == ValueType::RefPairList) { ++pairLists; }
+				}
+				EXPECT_TRUE(known) << "type '" << declared << "' is not in the parity table: add it with its ValueType";
+			}
+		}
+	}
+	EXPECT_GE(enumLists, 3);
+	EXPECT_GE(pairLists, 4);
 }

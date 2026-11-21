@@ -2091,3 +2091,55 @@ TEST(DiaAttributeParameterFileParity, ConstraintViolatingPacksAreRejectedNamingT
         EXPECT_TRUE(BitEqual(before, BaseValues(pf)));
     }
 }
+
+// Biome Registry plan task 15 (AC 11, both directions): every data case that declares an object map default is run
+// through ParameterFile. The CLI verdict comes from the case's schemaExpected rows (data.incomplete-map and
+// data.unresolved-map-key on a default mean the CLI rejects the schema). C++ must reach the same verdict: Load fails
+// exactly then. A CLI-clean case must load, and its sparse pack (when it has one and no expected findings) must apply.
+// C++ has no data-side validation, so pack findings are only checked in the accepting direction.
+TEST(DiaAttributeParameterFileParity, EveryMapDefaultCaseAgreesWithTheCliVerdictInBothDirections)
+{
+    const fs::path dir = FindConformanceDataDir();
+    ASSERT_FALSE(dir.empty());
+    int rejected = 0, accepted = 0, packsApplied = 0, keyEnumRejected = 0;
+    for (const fs::directory_entry& de : fs::directory_iterator(dir))
+    {
+        const std::string name = de.path().filename().string();
+        if (name.size() < 10 || name.compare(name.size() - 10, 10, ".case.json") != 0) continue;
+        Json::Value c;
+        ASSERT_TRUE(LoadCase(name.c_str(), c)) << name;
+        bool hasObjectMapDefault = false, usesKeyEnum = false;
+        for (Json::ArrayIndex e = 0; e < c["schemas"][0u]["entries"].size(); ++e)
+        {
+            const Json::Value& en = c["schemas"][0u]["entries"][e];
+            if (en["type"].asString() == "map" && en["default"].isObject()) { hasObjectMapDefault = true; usesKeyEnum = usesKeyEnum || en.isMember("keyEnum"); }
+        }
+        if (!hasObjectMapDefault) continue;
+        SCOPED_TRACE(name);
+
+        bool cliRejectsDefault = false;
+        for (Json::ArrayIndex i = 0; i < c["schemaExpected"].size(); ++i)
+        {
+            const std::string rule = c["schemaExpected"][i]["rule"].asString();
+            if (rule == "data.incomplete-map" || rule == "data.unresolved-map-key") cliRejectsDefault = true;
+        }
+        ParameterFile pf; ParamError err;
+        const bool loaded = LoadFile(pf, ToText(c["schemas"][0u]), &err);
+        EXPECT_EQ(loaded, !cliRejectsDefault) << "CLI " << (cliRejectsDefault ? "rejects" : "accepts") << " the default; C++ Load "
+            << (loaded ? "accepted" : "rejected") << " (" << err.key.AsCStr() << ": " << err.reason.AsCStr() << ")";
+        if (cliRejectsDefault) { ++rejected; if (usesKeyEnum) ++keyEnumRejected; continue; }
+        ++accepted;
+
+        const Json::Value* pack = PackOf(c);
+        if (loaded && pack != nullptr && c["expected"].empty())
+        {
+            ParamWarnings w; ParamError perr;
+            EXPECT_TRUE(pf.ApplyPack(*pack, w, perr)) << perr.key.AsCStr() << ": " << perr.reason.AsCStr();
+            ++packsApplied;
+        }
+    }
+    EXPECT_GE(rejected, 3);          // map-default-missing-key, map-default-unresolved-key, map-key-enum-incomplete/unknown
+    EXPECT_GE(keyEnumRejected, 2);
+    EXPECT_GE(accepted, 3);
+    EXPECT_GE(packsApplied, 2);      // map-sparse-pack-ok, map-key-enum-sparse-pack-ok
+}

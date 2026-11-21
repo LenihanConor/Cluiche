@@ -23,7 +23,7 @@ Self-contained scenarios for the data-file rules of `dia validate schema`. Consu
 
 ## Rule ids
 
-Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`, `data.incomplete-map`, `data.constraint-violated`, `data.nested-group-pack`. `data.default-mismatch` applies to `kind: field` entries only. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`.
+Data (per file): `data.no-schema-entry`, `data.wrong-type`, `data.out-of-range`, `data.bad-enum`, `data.default-mismatch`, `data.unresolved-ref`, `data.ref-format-missing` (WARN), `data.duplicate-unique`, `data.missing-required`, `data.unresolved-map-key`, `data.incomplete-map`, `data.constraint-violated`, `data.nested-group-pack`. `data.default-mismatch` applies to `kind: field` entries only. For a `ref[]` item or a map value the `path` extends to the item (`species[0].diet[1]`, `species[0].affinity.Desert`). Schema-level: `schema.unresolved-reference`, `schema.unknown-ramp`, `schema.values-from-no-file`, `schema.values-from-bad-records`, `schema.values-from-missing-field` (a `valuesFrom` enum resolves against the case's `files`; the C++ `ResolveValuesFrom` must fail exactly when the CLI reports one of these, `values-from-*.case.json`).
 
 ## Rules
 

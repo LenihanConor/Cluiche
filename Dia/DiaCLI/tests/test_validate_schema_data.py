@@ -7,7 +7,7 @@ import pytest
 
 from dia_cli.commands.validate.data_rules import (
     KNOWN_RAMPS, DataContext, build_schema_index, validate_data_document, validate_schema_defaults,
-    validate_schema_references)
+    validate_schema_references, validate_schema_values_from)
 from dia_cli.utils.repo_root import find_repo_root
 
 DATA_DIR = find_repo_root(__file__) / "Dia" / "DiaValueSchema" / "Testing" / "Conformance" / "data"
@@ -37,6 +37,7 @@ def test_case(case_file):
     names = {id(s): f"schemas[{i}]" for i, s in enumerate(case["schemas"])}
     actual += validate_schema_references(case["schemas"], names)
     actual += validate_schema_defaults(case["schemas"], names, ctx)
+    actual += validate_schema_values_from(case["schemas"], names, ctx)
     expected = case["expected"] + case.get("schemaExpected", [])
     assert len(actual) == len(expected), [(_norm_actual(a), a.message) for a in actual]
     remaining = list(actual)

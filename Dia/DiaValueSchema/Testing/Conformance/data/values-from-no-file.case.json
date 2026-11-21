@@ -1,0 +1,49 @@
+{
+  "description": "No data file has the valuesFrom format: schema.values-from-no-file (C++ ResolveValuesFrom fails).",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.test",
+      "entries": [
+        {
+          "key": "biomeIndex",
+          "kind": "field",
+          "label": "Biome",
+          "description": "d",
+          "type": "enum",
+          "valuesFrom": {
+            "format": "cow.biomes",
+            "records": "biomes",
+            "id": "id",
+            "label": "name"
+          },
+          "default": "forest"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "Global/World/other.json",
+      "pack": false,
+      "content": {
+        "format": "cow.other",
+        "version": 1
+      }
+    }
+  ],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "schema.values-from-no-file",
+      "file": "schemas[0]",
+      "key": "biomeIndex",
+      "path": "valuesFrom",
+      "record": null,
+      "messageContains": "cow.biomes",
+      "suggestion": null
+    }
+  ]
+}
