@@ -13,6 +13,7 @@
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/TerrainClassify.h>
+#include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/TerrainStrata.h>
 #include <Shared/WorldGeneration/TerrainDrainage.h>
 #include <Shared/WorldGeneration/TerrainLandmass.h>
@@ -26,6 +27,7 @@
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace CoW {
@@ -191,6 +193,10 @@ public:
     // `biomes` is the registry the Biomes stage classifies with; it is not owned and must outlive the generator.
     TerrainGenerator(const TerrainRules& rules, const World::BiomeRegistry* biomes);
     void SetBiomeRegistry(const World::BiomeRegistry* biomes) { mBiomes = biomes; }
+    // The strata assigners the Strata stage selects from by the depth set's assigner type. Not owned; it must outlive the
+    // generator. Null (the default) means only the built-in coast_cost_bands. Takes effect on the next Update that
+    // re-runs the Strata stage (Invalidate to force it).
+    void SetAssignerRegistry(const StrataAssignerRegistry* assigners) { mAssigners = assigners; }
 
     // Re-runs only the stages made dirty by changes since the last Update.
     void Update(uint64_t seed, const WorldShapeParams& shape, GridDimensions dims,
@@ -228,6 +234,9 @@ public:
     const Stage7Debug&   GetStage7Debug() const { return mStage7; }
     // Stage 8 internals (t1, t2, hasAncient).
     const Stage8Debug&   GetStage8Debug() const { return mStage8; }
+    // Empty when the last Strata stage run used its assigner cleanly; else why it fell back to the built-in banding
+    // (unknown assigner type, or an output that broke the assigner contract).
+    const std::string&   GetStrataError() const { return mStrataError; }
     // Stage 9 internals (river cell, carve, floor and walk counts).
     const Stage9Debug&   GetStage9Debug() const { return mStage9; }
     // Stage 14 internals (unresolved forbidden pairs, fix-up change counts).
@@ -236,9 +245,12 @@ public:
 private:
     void RunStage(TerrainStage stage, Dia::Maths::RandomStream& wldStream);
     void RunSeedFields(Dia::Maths::RandomStream& wldStream);
+    void RunStrataStage();
 
     TerrainRules     mRules;
     const World::BiomeRegistry* mBiomes = nullptr;
+    const StrataAssignerRegistry* mAssigners = nullptr;
+    std::string      mStrataError;
     TerrainLayers    mLayers;
     SeedFields       mSeedFields;
     Stage1Debug      mStage1;

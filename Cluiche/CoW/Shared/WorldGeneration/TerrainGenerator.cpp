@@ -6,12 +6,14 @@
 
 #include <Shared/World/BiomeRegistry.h>
 
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaPathfinding/HexTopology.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <span>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -404,16 +406,7 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
     }
     case TerrainStage::Strata:
     {
-        Stage8Layers out;
-        out.zoneCostBase = mLayers.FloatLayer(mLayers.FindLayer("zoneCostBase"));
-        out.zoneCost     = mLayers.FloatLayer(mLayers.FindLayer("zoneCost"));
-        out.stratum    = mLayers.UIntLayer(mLayers.FindLayer("stratum"));
-        ComputeStage8(mRules, mBiomes != nullptr ? mBiomes->Strata() : World::StratumTable(), mDims, mShape.barrier, mEffective.mainLandmass,
-                      mLayers.GetUInt(mLayers.FindLayer("landmass")),
-                      mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
-                      mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),
-                      mLayers.GetFloat(mLayers.FindLayer("barrierMask")),
-                      mLayers.GetUInt(mLayers.FindLayer("riverMask")), out, mStage8);
+        RunStrataStage();
         break;
     }
     case TerrainStage::Valleys:
@@ -633,6 +626,89 @@ void TerrainGenerator::RunSeedFields(Dia::Maths::RandomStream& rng)
 
     f.drawCount = rng.GetDrawCount();
     mSeedFields = f;
+}
+
+void TerrainGenerator::RunStrataStage()
+{
+    const size_t n = (mDims.width > 0 && mDims.height > 0) ? static_cast<size_t>(mDims.width) * mDims.height : 0u;
+    float*    zoneCostBase = mLayers.FloatLayer(mLayers.FindLayer("zoneCostBase"));
+    float*    zoneCost     = mLayers.FloatLayer(mLayers.FindLayer("zoneCost"));
+    uint32_t* stratum      = mLayers.UIntLayer(mLayers.FindLayer("stratum"));
+    const uint32_t* landmass       = mLayers.GetUInt(mLayers.FindLayer("landmass"));
+    const uint32_t* coastDistance  = mLayers.GetUInt(mLayers.FindLayer("coastDistance"));
+    const float*    ridgeMask      = mLayers.GetFloat(mLayers.FindLayer("ridgeMask"));
+    const float*    barrierMask    = mLayers.GetFloat(mLayers.FindLayer("barrierMask"));
+    const uint32_t* riverMask      = mLayers.GetUInt(mLayers.FindLayer("riverMask"));
+
+    mStage8 = Stage8Debug{};
+    mStrataError.clear();
+    ComputeStrataCosts(mRules, mDims, mShape.barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, zoneCostBase, zoneCost);
+    std::fill(stratum, stratum + n, static_cast<uint32_t>(kNoStratum));
+    const World::StratumSetSpec* set = mBiomes != nullptr ? mBiomes->Strata().Depth() : nullptr;
+    if (set == nullptr || n == 0 || landmass == nullptr || coastDistance == nullptr)
+    {
+        return;
+    }
+
+    // The partial world the seam hands to assigners (see StrataAssigner.h).
+    WorldStructure partial;
+    partial.Resize(mDims);
+    partial.mainLandmass = static_cast<uint8_t>(std::clamp(mEffective.mainLandmass, 0, 255));
+    const float* elevationRaw = mLayers.GetFloat(mLayers.FindLayer("elevationRaw"));
+    const uint32_t* lakeMask  = mLayers.GetUInt(mLayers.FindLayer("lakeMask"));
+    Cell* cells = partial.Cells();
+    for (size_t i = 0; i < n; ++i)
+    {
+        cells[i].landmass = static_cast<uint8_t>(std::min<uint32_t>(landmass[i], 255u));
+        cells[i].elevation = elevationRaw != nullptr ? elevationRaw[i] : 0.0f;
+        cells[i].waterSource = (riverMask != nullptr && riverMask[i] != 0u) ? WaterSource::River
+                             : (lakeMask != nullptr && lakeMask[i] != 0u)   ? WaterSource::Lake : WaterSource::None;
+        cells[i].terrainFlags = static_cast<uint8_t>((ridgeMask != nullptr && ridgeMask[i] >= mRules.kRidgeCellMin ? TerrainFlag::Ridge : 0) |
+                                                     (barrierMask != nullptr && barrierMask[i] >= 0.5f ? TerrainFlag::Barrier : 0));
+    }
+
+    StrataAssignContext ctx{ partial, mRules };
+    ctx.dims = mDims;
+    ctx.barrier = mShape.barrier;
+    ctx.mainLandmass = mEffective.mainLandmass;
+    ctx.landmass = landmass;
+    ctx.coastDistance = coastDistance;
+    ctx.ridgeMask = ridgeMask;
+    ctx.barrierMask = barrierMask;
+    ctx.riverMask = riverMask;
+    ctx.zoneCostBase = zoneCostBase;
+    ctx.zoneCost = zoneCost;
+    ctx.debug = &mStage8;
+
+    CoastCostBandsAssigner builtin;
+    const char* type = set->assignerType;
+    IStrataAssigner* assigner = mAssigners != nullptr ? mAssigners->Find(type) : (std::strcmp(type, World::kBuiltinAssignerType) == 0 ? &builtin : nullptr);
+    std::vector<StratumIndex> out(n, kNoStratum);
+    bool ok = false;
+    if (assigner == nullptr)
+    {
+        mStrataError = std::string("strata assigner '") + type + "' is not registered; using " + World::kBuiltinAssignerType;
+        DIA_LOG_ERROR("CoW", "%s", mStrataError.c_str());
+    }
+    else
+    {
+        StrataAssignError err;
+        ok = RunStrataAssigner(type, *assigner, ctx, *set, std::span<StratumIndex>(out.data(), out.size()), err);
+        if (!ok)
+        {
+            mStrataError = err.reason + "; using " + World::kBuiltinAssignerType;
+        }
+    }
+    if (!ok)
+    {
+        // Loud fallback: the error is recorded above; the world still gets a valid banding.
+        mStage8 = Stage8Debug{};
+        builtin.Assign(ctx, *set, std::span<StratumIndex>(out.data(), out.size()));
+    }
+    for (size_t i = 0; i < n; ++i)
+    {
+        stratum[i] = static_cast<uint32_t>(out[i]);
+    }
 }
 
 void TerrainGenerator::WriteTerrain(WorldStructure& world) const

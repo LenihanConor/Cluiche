@@ -1388,6 +1388,8 @@
     <ClCompile Include="CoW\TestSiteRules.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRules.cpp" />
     <ClCompile Include="DiaCondition\TestConditionValidateContext.cpp" />
+    <ClCompile Include="CoW\TestStrataAssigner.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\StrataAssigner.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

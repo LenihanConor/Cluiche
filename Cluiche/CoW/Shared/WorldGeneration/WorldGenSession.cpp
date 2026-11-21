@@ -382,6 +382,7 @@ bool WorldGenSession::LoadRules(const char* sidecarText, Dia::Attribute::ParamEr
     mRulesFile = std::move(file);
     mRulesLoaded = true;
     mGen = TerrainGenerator(mRules, mBiomes);
+    mGen.SetAssignerRegistry(mAssigners);
     return true;
 }
 
@@ -743,6 +744,7 @@ bool WorldGenSession::StartRegenerate(Dia::Maths::RandomStream& wldStream)
     try
     {
         mCandGen = std::make_unique<TerrainGenerator>(mRules, mBiomes);
+        mCandGen->SetAssignerRegistry(mAssigners);
         mCandGen->Update(mSeed, mShape, mDims, wldStream);
         mCandTerrain = WorldStructure{};
         mCandGen->WriteTerrain(mCandTerrain);   // terrain and biomes; regions and sites empty

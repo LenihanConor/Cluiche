@@ -20,6 +20,10 @@ namespace
     {
         float share = 0.0f;
     };
+    struct DepthParam
+    {
+        float depth = 0.0f;
+    };
 
     // Shares of a set must complete 1 within this tolerance (float sums).
     constexpr double kShareSumTolerance = 1e-3;
@@ -49,7 +53,7 @@ namespace
     }
 }
 
-bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText, StratumError& err)
+bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText, StratumError& err, const AssignerTypeCheck& knownAssignerType)
 {
     err = StratumError();
     if (strataText == nullptr) { return Fail(err, "document", "no strata text"); }
@@ -103,11 +107,11 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
             return Fail(err, where + ".assigner", "set '" + id + "': assigner needs a string type");
         }
         const std::string type = assigner["type"].asString();
-        if (type != "coast_cost_bands")
+        const bool known = knownAssignerType ? knownAssignerType(type.c_str()) : type == kBuiltinAssignerType;
+        if (!known || !CopyName(set.assignerType, type))
         {
             return Fail(err, where + ".assigner", "set '" + id + "': unknown assigner type '" + type + "'");
         }
-        set.assigner = StratumAssignerType::CoastCostBands;
         if (assigner.isMember("metric"))
         {
             // The set of known metrics is checked when metrics arrive (Strata task 4b).
@@ -188,6 +192,7 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
                     return Fail(err, zwhere, "stratum '" + name + "' of set '" + id + "': min_coast_depth must be an integer >= 0");
                 }
                 z.minCoastDepth = depth;
+                z.declaresMinCoastDepth = true;
             }
         }
         set.count = strata.size();
@@ -208,6 +213,18 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
         return Fail(err, "sidecar", perr.reason.AsCStr());
     }
     uint32_t expectedParams = 0;
+    auto readFloat = [&](const std::string& key, float& value) -> bool
+    {
+        Dia::Attribute::ParamBinding<DepthParam> binding;
+        binding.Bind(Dia::Core::StringCRC(key.c_str()), &DepthParam::depth);
+        auto report = std::make_unique<Dia::Attribute::BindingReport>();
+        binding.Resolve(file.Schema(), *report);
+        if (report->bindingsWithoutEntry.Size() != 0 || report->kindMismatches.Size() != 0) { return false; }
+        DepthParam p;
+        binding.Snapshot(file.Values(), p);
+        value = p.depth;
+        return true;
+    };
     for (uint32_t s = 0; s < cand.mSetCount; ++s)
     {
         StratumSetSpec& set = cand.mSets[s];
@@ -230,6 +247,17 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
             binding.Snapshot(file.Values(), p);
             set.strata[i].share = p.share;
             sum += static_cast<double>(p.share);
+            if (set.strata[i].declaresMinCoastDepth)
+            {
+                const std::string depthKey = std::string(set.id) + "." + set.strata[i].name + ".min_coast_depth";
+                float depth = 0.0f;
+                if (!readFloat(depthKey, depth))
+                {
+                    return Fail(err, "sidecar", "sidecar has no usable parameter '" + depthKey + "'");
+                }
+                set.strata[i].minCoastDepth = static_cast<int32_t>(std::lround(depth));
+                ++expectedParams;
+            }
         }
         if (std::fabs(sum - 1.0) > kShareSumTolerance)
         {

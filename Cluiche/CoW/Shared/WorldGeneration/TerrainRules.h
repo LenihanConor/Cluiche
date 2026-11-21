@@ -23,7 +23,7 @@ namespace CoW {
 namespace WorldGeneration {
 
 // Number of sidecar parameters / rule members.
-constexpr uint32_t kRuleCount = 77;
+constexpr uint32_t kRuleCount = 76;
 
 // Warnings are short texts such as "missing:kCoastElev", "range:kEdgeFade",
 // "unknown:kFoo", "invalid:kBar" (StringCRC keeps up to 63 readable chars via AsChar()).
@@ -32,7 +32,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 
 constexpr uint32_t kDefaultRulesVersion = 4;
 
-// Standard layout (ParamBinding requirement): the 77 rule members, the five terrain maps, then the two plain fields.
+// Standard layout (ParamBinding requirement): the 76 rule members, the five terrain maps, then the two plain fields.
 struct TerrainRules
 {
     float kCoastElev = 0.0f;
@@ -75,7 +75,6 @@ struct TerrainRules
     float kRidgeCost = 0.0f;
     float kBarrierCost = 0.0f;
     float kRiverCorridor = 0.0f;
-    int32_t kAncientMinDepth = 0;
     float kCarveMax = 0.0f;
     float kCarveFullAcc = 0.0f;
     int32_t kShelfWidth = 0;

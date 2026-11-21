@@ -70,7 +70,6 @@ namespace
         { "kRidgeCost", 4.0f },
         { "kBarrierCost", 4.0f },
         { "kRiverCorridor", 0.25f },
-        { "kAncientMinDepth", 3.0f },
         { "kCarveMax", 0.12f },
         { "kCarveFullAcc", 8.0f },
         { "kShelfWidth", 3.0f },
@@ -131,9 +130,9 @@ namespace
     }
 }
 
-TEST(TerrainRulesSidecar, TableLiteralCountIs77)
+TEST(TerrainRulesSidecar, TableLiteralCountIs76)
 {
-    EXPECT_EQ(kOldTableCount, 77u);
+    EXPECT_EQ(kOldTableCount, 76u);
 }
 
 // Task 24: climate lives in the biome registry; S-1's parameters carry no climate value.
@@ -157,8 +156,8 @@ TEST(TerrainRulesSidecar, HasNoClimateParameters)
     }
     ParameterFile file;
     ASSERT_TRUE(LoadSidecarForClimateCheck(file));
-    // 77 scalar rules + 5 terrain maps x 12 TerrainType columns (terrain profile, biome-registry Task 30)
-    EXPECT_EQ(file.Schema().GetAttributeCount(), 77u + 60u);
+    // 76 scalar rules + 5 terrain maps x 12 TerrainType columns (terrain profile, biome-registry Task 30)
+    EXPECT_EQ(file.Schema().GetAttributeCount(), 76u + 60u);
 }
 
 TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)

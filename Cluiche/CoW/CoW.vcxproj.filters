@@ -241,6 +241,9 @@
     <ClCompile Include="Shared\WorldGeneration\SiteRules.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\WorldGeneration\StrataAssigner.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -475,6 +478,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

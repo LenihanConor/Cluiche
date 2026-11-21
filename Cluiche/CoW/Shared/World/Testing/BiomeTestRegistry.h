@@ -120,6 +120,12 @@ inline std::string TestStrataSidecar(const std::vector<std::string>& names, cons
         entries += std::string(i == 0 ? "" : ",") + "{\"key\":\"depth." + names[i] + ".share\",\"kind\":\"parameter\",\"label\":\"share\","
                    "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":1.0,\"default\":" + buf + "}";
     }
+    if (!names.empty())
+    {
+        // The innermost stratum declares min_coast_depth (TestStrataText), so the sidecar carries its live value.
+        entries += ",{\"key\":\"depth." + names.back() + ".min_coast_depth\",\"kind\":\"parameter\",\"label\":\"depth\","
+                   "\"description\":\"test\",\"type\":\"float\",\"min\":0.0,\"max\":16.0,\"default\":3.0}";
+    }
     return "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"cow.strata\",\"entries\":[" + entries + "]}";
 }
 

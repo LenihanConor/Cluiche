@@ -70,7 +70,6 @@ void ForEachRuleMember(Visitor&& v)
     v("kRidgeCost", &TerrainRules::kRidgeCost);
     v("kBarrierCost", &TerrainRules::kBarrierCost);
     v("kRiverCorridor", &TerrainRules::kRiverCorridor);
-    v("kAncientMinDepth", &TerrainRules::kAncientMinDepth);
     v("kCarveMax", &TerrainRules::kCarveMax);
     v("kCarveFullAcc", &TerrainRules::kCarveFullAcc);
     v("kShelfWidth", &TerrainRules::kShelfWidth);

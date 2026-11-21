@@ -3330,5 +3330,11 @@
     <ClCompile Include="DiaCondition\TestConditionValidateContext.cpp">
       <Filter>DiaCondition</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestStrataAssigner.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\StrataAssigner.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

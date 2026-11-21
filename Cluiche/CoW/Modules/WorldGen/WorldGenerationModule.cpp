@@ -30,6 +30,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
     : SimModule(instanceId)
 {
     mSession.SetSiteRegistry(&mSiteRegistry);
+    mSession.SetStrataAssignerRegistry(&mStrataAssigners);
     mBiomes = std::make_unique<World::BiomeRegistry>();
     mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
 }
@@ -167,7 +168,7 @@ bool WorldGenerationModule::LoadStrata(World::StratumTable& strata)
         }
     }
     World::StratumError err;
-    if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err))
+    if (!strata.LoadFromText(strataText.c_str(), sidecarText.c_str(), err, mStrataAssigners.TypeCheck()))
     {
         mBiomesErrorField = std::string("strata.") + err.field;
         mBiomesErrorReason = err.reason;

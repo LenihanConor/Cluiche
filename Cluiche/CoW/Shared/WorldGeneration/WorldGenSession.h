@@ -70,6 +70,14 @@ public:
         if (mCandGen) { mCandGen->SetBiomeRegistry(biomes); }
     }
     const World::BiomeRegistry* BiomeRegistryPtr() const { return mBiomes; }
+    // The strata assigners the generator selects from by the stratum table's assigner type (null = the built-in only).
+    // Not owned; it must outlive the session. Set before the first generation.
+    void SetStrataAssignerRegistry(const StrataAssignerRegistry* assigners)
+    {
+        mAssigners = assigners;
+        mGen.SetAssignerRegistry(assigners);
+        if (mCandGen) { mCandGen->SetAssignerRegistry(assigners); }
+    }
     const TerrainRules& Rules() const { return mRules; }
 
     // Actions: mutate pending state, mark dirty when something changed, return the command's JSON result.
@@ -214,6 +222,7 @@ private:
     Json::Value      mStagesRan{Json::arrayValue};
 
     // Regions and sites (S-1 placement pass).
+    const StrataAssignerRegistry* mAssigners = nullptr;
     const SiteRegistry*  mRegistry = nullptr;
     SiteRegistry         mEmptyRegistry;          // used when mRegistry is null
     bool                 mRegionsFresh = false;   // the world's regions/sites belong to its current terrain

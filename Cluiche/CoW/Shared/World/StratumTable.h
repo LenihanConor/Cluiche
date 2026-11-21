@@ -10,6 +10,7 @@
 #include <Shared/World/CellVocabulary.h>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 
 namespace CoW {
@@ -22,8 +23,11 @@ struct StratumError
     std::string reason;
 };
 
-// Known assigner types (data selects by name). Further types arrive through the injection seam (Strata task 2).
-enum class StratumAssignerType : uint8_t { CoastCostBands = 0 };
+// The assigner type a set names by default and the one built in. Further types arrive through the injection seam
+// (WorldGeneration/StrataAssigner.h); a load accepts only the types its AssignerTypeCheck knows.
+constexpr const char* kBuiltinAssignerType = "coast_cost_bands";
+// Says whether an assigner type name is known. An empty check accepts only kBuiltinAssignerType.
+using AssignerTypeCheck = std::function<bool(const char* typeName)>;
 
 struct StratumSpec
 {
@@ -32,7 +36,9 @@ struct StratumSpec
     uint8_t  regionsMin = 0;         // strata.json: region count range for this stratum
     uint8_t  regionsMax = 0;
     bool     mainLandmassOnly = false;
-    int32_t  minCoastDepth = 0;      // strata.json: a cell closer to the coast than this falls to the previous stratum
+    int32_t  minCoastDepth = 0;      // a cell closer to the coast than this falls to the previous stratum. strata.json declares it
+                                     // (the authored default); the sidecar key "<set>.<stratum>.min_coast_depth" owns the live value
+    bool     declaresMinCoastDepth = false;   // strata.json declared min_coast_depth, so the sidecar carries the key
 };
 
 struct StratumSetSpec
@@ -40,7 +46,7 @@ struct StratumSetSpec
     static constexpr uint32_t kMaxStrata = 8;
     char                 id[32] = {};
     bool                 ordered = true;
-    StratumAssignerType  assigner = StratumAssignerType::CoastCostBands;
+    char                 assignerType[32] = "coast_cost_bands";   // the assigner the set names (registry key)
     char                 metric[32] = "coast_cost";
     uint32_t             count = 0;
     StratumSpec          strata[kMaxStrata];
@@ -58,8 +64,10 @@ public:
     static constexpr uint32_t kGeneratorStrata = 3;
 
     // All-or-nothing: on failure *this is unchanged and err names the field. strataText is the strata file,
-    // sidecarText the parameter sidecar (per-stratum shares keyed "<set id>.<stratum name>.share"; defaults are the sidecar's).
-    bool LoadFromText(const char* strataText, const char* sidecarText, StratumError& err);
+    // sidecarText the parameter sidecar (per-stratum shares keyed "<set id>.<stratum name>.share"; a stratum that declares
+    // min_coast_depth also needs "<set id>.<stratum name>.min_coast_depth"; defaults are the sidecar's).
+    // knownAssignerType decides which "assigner.type" names load (see AssignerTypeCheck); an unknown one fails the load.
+    bool LoadFromText(const char* strataText, const char* sidecarText, StratumError& err, const AssignerTypeCheck& knownAssignerType = nullptr);
 
     // Sets.
     uint32_t              SetCount() const { return mSetCount; }

@@ -84,90 +84,167 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
     }
 }
 
-void ComputeStage8(const TerrainRules& rules, const World::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
-                   const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
-                   const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
+void ComputeStrataCosts(const TerrainRules& rules, GridDimensions dims, float barrier, const uint32_t* landmass,
+                        const uint32_t* coastDistance, const float* ridgeMask, const float* barrierMask,
+                        const uint32_t* riverMask, float* zoneCostBase, float* zoneCost)
+{
+    ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, nullptr, zoneCostBase);
+    ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, zoneCost);
+}
+
+void BandStrata(const World::StratumSetSpec& set, GridDimensions dims, int mainLandmass, const uint32_t* landmass,
+                const uint32_t* coastDistance, const float* zoneCostBase, const float* zoneCost, StratumIndex* stratum,
+                Stage8Debug& dbg)
 {
     dbg = Stage8Debug{};
     const int w = std::max(dims.width, 0);
     const int h = std::max(dims.height, 0);
     const int n = w * h;
-    if (n == 0 || out.zoneCostBase == nullptr || out.zoneCost == nullptr || out.stratum == nullptr)
+    if (n == 0 || stratum == nullptr)
     {
         return;
     }
-    std::fill(out.stratum, out.stratum + n, static_cast<uint32_t>(kNoStratum));
-    ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, nullptr, out.zoneCostBase);
-    ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, out.zoneCost);
-    if (landmass == nullptr || coastDistance == nullptr)
+    std::fill(stratum, stratum + n, kNoStratum);
+    const uint32_t count = std::min(set.count, World::StratumTable::kMaxStrata);
+    if (count == 0 || landmass == nullptr || coastDistance == nullptr || zoneCostBase == nullptr || zoneCost == nullptr)
     {
         return;
     }
 
-    // Thresholds from the main landmass base costs (rivers never move them).
+    // Cuts from the main landmass base costs (rivers never move them).
     std::vector<float> sorted;
     for (int i = 0; i < n; ++i)
     {
         if (mainLandmass > 0 && landmass[i] == static_cast<uint32_t>(mainLandmass))
         {
-            sorted.push_back(out.zoneCostBase[i]);
+            sorted.push_back(zoneCostBase[i]);
         }
     }
     std::sort(sorted.begin(), sorted.end());
     const int m = static_cast<int>(sorted.size());
     dbg.mainCells = m;
+    const uint32_t endCuts = count >= 2 ? count - 2 : 0;   // end-inclusive cuts: strata 1..N-2
+    dbg.cutCount = count >= 2 ? count - 1 : 0;
+    bool hasLast = false;
     if (m == 0)
     {
+        for (uint32_t i = 0; i < dbg.cutCount; ++i)
+        {
+            dbg.cuts[i] = 1.0f;
+        }
         dbg.t1 = 1.0f;
         dbg.t2 = 1.0f;
     }
     else
     {
-        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(strata.FirstShare()) * m)) - 1);
-        dbg.t1 = sorted[static_cast<size_t>(std::min(idx1, m - 1))];
-        dbg.t2 = dbg.t1;
-        const int k = static_cast<int>(std::ceil(static_cast<double>(strata.LastShare()) * m));
-        if (k > 0)
+        float previous = sorted.front();   // the baseline the next cut must exceed (the lowest cost until a cut exists)
+        bool collapsed = false;
+        double cumulative = 0.0;
+        for (uint32_t k = 1; k <= endCuts; ++k)
         {
-            const float t2 = sorted[static_cast<size_t>(std::max(0, m - k))];
-            if (t2 > dbg.t1)
+            const float share = set.strata[k - 1].share;
+            cumulative += static_cast<double>(share);
+            float cut = previous;
+            if (!collapsed && !(k >= 2 && share <= 0.0f))
             {
-                dbg.hasAncient = true;
-                dbg.t2 = t2;
-            }
-            else
-            {
-                const auto it = std::upper_bound(sorted.begin(), sorted.end(), dbg.t1);
-                if (it != sorted.end())
+                const int idx = std::max(0, static_cast<int>(std::floor(cumulative * m)) - 1);
+                cut = sorted[static_cast<size_t>(std::min(idx, m - 1))];
+                if (k >= 2 && cut <= previous)
                 {
-                    dbg.hasAncient = true;
-                    dbg.t2 = *it;
+                    const auto it = std::upper_bound(sorted.begin(), sorted.end(), previous);
+                    if (it != sorted.end()) { cut = *it; }
+                    else { cut = previous; collapsed = true; }
                 }
             }
+            dbg.cuts[k - 1] = cut;
+            previous = cut;
         }
+        if (count >= 2)
+        {
+            float last = previous;
+            const int take = static_cast<int>(std::ceil(static_cast<double>(set.strata[count - 1].share) * m));
+            if (!collapsed && take > 0)
+            {
+                const float t = sorted[static_cast<size_t>(std::max(0, m - take))];
+                if (t > previous)
+                {
+                    hasLast = true;
+                    last = t;
+                }
+                else
+                {
+                    const auto it = std::upper_bound(sorted.begin(), sorted.end(), previous);
+                    if (it != sorted.end())
+                    {
+                        hasLast = true;
+                        last = *it;
+                    }
+                }
+            }
+            dbg.cuts[count - 2] = last;
+        }
+        dbg.t1 = count >= 3 ? dbg.cuts[0] : sorted.front();
+        dbg.t2 = count >= 2 ? dbg.cuts[count - 2] : dbg.t1;
     }
+    dbg.hasAncient = hasLast;
 
-    // TODO(Strata task 2): read min_coast_depth from the StratumTable (strata.json) instead of TerrainRules::kAncientMinDepth.
-    const uint32_t minDepth = static_cast<uint32_t>(std::max(rules.kAncientMinDepth, 0));
+    auto allowed = [&](uint32_t k, int cell) -> bool
+    {
+        const World::StratumSpec& z = set.strata[k - 1];
+        if (z.mainLandmassOnly && landmass[cell] != static_cast<uint32_t>(mainLandmass)) { return false; }
+        return coastDistance[cell] >= static_cast<uint32_t>(std::max(z.minCoastDepth, 0));
+    };
     for (int i = 0; i < n; ++i)
     {
         if (landmass[i] == 0u)
         {
             continue;
         }
-        const float cost = out.zoneCost[i];
-        StratumIndex z = 2;   // the middle stratum
-        if (cost <= dbg.t1)
+        const float cost = zoneCost[i];
+        uint32_t k = 0;
+        for (uint32_t j = 1; j <= endCuts && k == 0; ++j)
         {
-            z = 1;   // the first stratum
+            if (cost <= dbg.cuts[j - 1]) { k = j; }
         }
-        else if (dbg.hasAncient && landmass[i] == static_cast<uint32_t>(mainLandmass) && cost >= dbg.t2 &&
-                 coastDistance[i] >= minDepth)
+        if (k == 0)
         {
-            z = strata.Last();   // the innermost stratum
+            k = (count >= 2 && hasLast && cost >= dbg.cuts[count - 2]) ? count : (count >= 2 ? count - 1 : 1);
         }
-        out.stratum[i] = static_cast<uint32_t>(z);
+        while (k > 1 && !allowed(k, i))
+        {
+            --k;
+        }
+        stratum[i] = static_cast<StratumIndex>(k);
     }
+}
+
+void ComputeStage8(const TerrainRules& rules, const World::StratumSetSpec& set, GridDimensions dims, float barrier, int mainLandmass,
+                   const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
+                   const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
+{
+    dbg = Stage8Debug{};
+    const int n = std::max(dims.width, 0) * std::max(dims.height, 0);
+    if (n == 0 || out.zoneCostBase == nullptr || out.zoneCost == nullptr || out.stratum == nullptr)
+    {
+        return;
+    }
+    ComputeStrataCosts(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, out.zoneCostBase, out.zoneCost);
+    std::vector<StratumIndex> banded(static_cast<size_t>(n), kNoStratum);
+    BandStrata(set, dims, mainLandmass, landmass, coastDistance, out.zoneCostBase, out.zoneCost, banded.data(), dbg);
+    for (int i = 0; i < n; ++i)
+    {
+        out.stratum[i] = static_cast<uint32_t>(banded[static_cast<size_t>(i)]);
+    }
+}
+
+void ComputeStage8(const TerrainRules& rules, const World::StratumTable& strata, GridDimensions dims, float barrier, int mainLandmass,
+                   const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
+                   const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
+{
+    static const World::StratumSetSpec kNoSet;
+    const World::StratumSetSpec* depth = strata.Depth();
+    ComputeStage8(rules, depth != nullptr ? *depth : kNoSet, dims, barrier, mainLandmass, landmass, coastDistance, ridgeMask,
+                  barrierMask, riverMask, out, dbg);
 }
 
 } // namespace WorldGeneration

@@ -7,6 +7,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <Shared/WorldGeneration/SharedWorldHexGrid.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
+#include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
@@ -73,6 +74,9 @@ public:
     // becomes ready in the same start pass has registered), and for as long as any HoldGeneration() is outstanding.
     // A dependant whose DoStart returns kLoading across frames calls HoldGeneration() in its first DoStart call and
     // ReleaseGeneration() once its registrations are in place.
+    // Strata assigners (strata.json selects one per set by type). A game registers its own before the strata load; the
+    // built-in coast_cost_bands is always present.
+    WorldGeneration::StrataAssignerRegistry& GetStrataAssignerRegistry() { return mStrataAssigners; }
     WorldGeneration::SiteRegistry& GetSiteRegistry() { return mSiteRegistry; }
     const WorldGeneration::SiteRegistry& GetSiteRegistry() const { return mSiteRegistry; }
     void HoldGeneration() { ++mGenerationHolds; }
@@ -200,6 +204,7 @@ private:
 
     WorldGeneration::WorldGenSession mSession;
     WorldGeneration::SiteRegistry mSiteRegistry;
+    WorldGeneration::StrataAssignerRegistry mStrataAssigners;
 #ifdef DIA_DEBUG
     WorldGeneration::SharedWorldHexGrid mHexGrid;
 #endif

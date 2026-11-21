@@ -65,7 +65,7 @@ TEST(StratumTable, ShippedFileLoadsThreeStrataInOrder)
     ASSERT_NE(z.Depth(), nullptr);
     EXPECT_STREQ(z.Depth()->id, "depth");
     EXPECT_TRUE(z.Depth()->ordered);
-    EXPECT_EQ(z.Depth()->assigner, StratumAssignerType::CoastCostBands);
+    EXPECT_STREQ(z.Depth()->assignerType, kBuiltinAssignerType);
     EXPECT_STREQ(z.Depth()->metric, "coast_cost");
     EXPECT_STREQ(z.Name(0), "None");
     EXPECT_STREQ(z.Name(1), "FirstShores");
@@ -193,7 +193,7 @@ TEST(StratumTable, ASecondSetLoadsAndIsFindableByIdWhileDepthStaysTheGeneratorSe
     side.insert(side.rfind(']'), extra);
     StratumTable z;
     StratumError err;
-    ASSERT_TRUE(z.LoadFromText(Doc(List({ DepthSet(List({ St("A"), St("B"), St("C") })), other })).c_str(),
+    ASSERT_TRUE(z.LoadFromText(Doc(List({ DepthSet(List({ St("A"), St("B"), St("C", std::string(kRegions) + ",\"min_coast_depth\":3") })), other })).c_str(),
                                side.c_str(), err)) << err.field << " " << err.reason;
     EXPECT_EQ(z.SetCount(), 2u);
     ASSERT_NE(z.FindSet("homeland"), nullptr);
@@ -270,4 +270,34 @@ TEST(StratumTable, RenamedStrataGiveIdenticalLayoutAndHash)
     bool anyInner = false;
     for (uint32_t v : a) { anyInner = anyInner || v == 3; }
     EXPECT_TRUE(anyInner);
+}
+
+TEST(StratumTable, MinCoastDepthIsOwnedByTheSidecar)
+{
+    StratumTable z;
+    StratumError err;
+    ASSERT_TRUE(LoadWith(z, Strata(kThree), kThree, kShares, err));
+    EXPECT_EQ(z.Depth()->strata[2].minCoastDepth, 3);
+    EXPECT_TRUE(z.Depth()->strata[2].declaresMinCoastDepth);
+    EXPECT_FALSE(z.Depth()->strata[0].declaresMinCoastDepth);
+
+    // A sidecar default of 5 overrides the authored 3.
+    std::string side = TestStrataSidecar(kThree, kShares);
+    const size_t at = side.find("\"default\":3.0");
+    ASSERT_NE(at, std::string::npos);
+    side.replace(at, std::string("\"default\":3.0").size(), "\"default\":5.0");
+    StratumTable five;
+    ASSERT_TRUE(five.LoadFromText(Strata(kThree).c_str(), side.c_str(), err)) << err.field << " " << err.reason;
+    EXPECT_EQ(five.Depth()->strata[2].minCoastDepth, 5);
+}
+
+TEST(StratumTable, DeclaredMinCoastDepthNeedsItsSidecarKey)
+{
+    StratumTable z;
+    StratumError err;
+    std::string side = TestStrataSidecar(kThree, kShares);
+    side.erase(side.rfind(",{\"key\":\"depth.C.min_coast_depth\""));
+    side += "]}";
+    EXPECT_FALSE(z.LoadFromText(Strata(kThree).c_str(), side.c_str(), err));
+    EXPECT_NE((err.field + err.reason).find("depth.C.min_coast_depth"), std::string::npos) << err.field << " " << err.reason;
 }
