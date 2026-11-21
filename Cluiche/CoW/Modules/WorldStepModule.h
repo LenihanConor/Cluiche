@@ -19,6 +19,7 @@
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Profile/ScopedZone.h>
+#include <Shared/WorldStep/IWorldStepListener.h>
 #include <Shared/WorldStep/WorldStepChain.h>
 #include <Shared/WorldStep/WorldStepConfig.h>
 #include "Modules/GameSpeedMessages.h"
@@ -57,6 +58,8 @@ public:
     // Weeks sit this far apart; the apply key is the kick day plus WorldStepConfig::applyAfterDays.
     static constexpr uint32_t kHealthWindow = 16;   // applied steps a stall / late / lost week keeps health Degraded
     static constexpr uint32_t kTickQueueCapacity = 8;
+    static constexpr uint32_t kMaxListeners = 4;
+    static constexpr int32_t  kWorldVersion = 1;    // pending-record "world_version"
 
     explicit WorldStepModule(const Dia::Core::StringCRC& instanceId);
     ~WorldStepModule() override;
@@ -65,6 +68,12 @@ public:
     // False on a duplicate id (logged once per id), a full table, or a removal still pending for that id.
     bool RegisterStage(Dia::Core::StringCRC id, WorldStep::IWorldStepStage& stage);
     void UnregisterStage(Dia::Core::StringCRC id);
+
+    // ---- History signal (Feature 3). Up to kMaxListeners, raised in registration order, SimPU, synchronous.
+    // False on a duplicate, a full table, or a call from inside a listener (debug assert). Raw non-owning pointers. ----
+    bool RegisterListener(WorldStep::IWorldStepListener& listener);
+    void UnregisterListener(WorldStep::IWorldStepListener& listener);
+    uint32_t ListenerCount() const { return mListenerCount; }
 
     // ---- Tick intake. Called from the bus handler (SimPU). Records the key now; the cadence runs in DoUpdate,
     // after DeferredStepModule has ticked, so a step due on this day applies before the next kick is attempted. ----
@@ -80,9 +89,9 @@ public:
     void Capture() override;
     void Run(Dia::DeferredStep::IParallelExecutor& executor) override;
     void Apply() override;
-    uint32_t GetPendingVersion() const override { return 1; }   // world_version; Feature 3 owns the record
-    void SerializePending(Dia::SaveGame::SaveContext& ctx) const override;     // Feature 3
-    void DeserializePending(Dia::SaveGame::LoadContext& ctx) override;         // Feature 3
+    uint32_t GetPendingVersion() const override { return static_cast<uint32_t>(kWorldVersion); }
+    void SerializePending(Dia::SaveGame::SaveContext& ctx) const override;
+    void DeserializePending(Dia::SaveGame::LoadContext& ctx) override;
 
     // ---- sim-hosted names: the handler bodies, public so they can be driven without the debug server ----
     Json::Value BuildStatusPayload() const;
@@ -157,7 +166,8 @@ private:
     void UnregisterNames();
 
     void NoteApplied(uint64_t applyKey);
-    void OnStepApplied();                           // Feature 3: the single history-signal call goes here
+    void RaiseApplied(uint64_t applyKey, uint64_t stepDay);   // the single history-signal call
+    bool GuardReentry(const char* what);            // false (and debug assert) when called from inside a listener
     void PublishTelemetry();
     void UpdateHealth();
     void WarnUnknownStages();
@@ -228,6 +238,11 @@ private:
     double   mLastStallMs = 0.0;
     double   mLastSlackDays = 0.0;
     uint32_t mHistorySeamCalls = 0;
+
+    WorldStep::IWorldStepListener* mListeners[kMaxListeners] = {};
+    uint32_t mListenerCount = 0;
+    bool     mRaising = false;             // re-entrancy guard while a listener runs
+    bool     mRestoreFailed = false;       // a stage could not restore its pending result; Degraded until a step applies
 
     uint32_t mBadBits = 0;                 // 1 bit per applied step, newest in bit 0: stall, late or lost week
     bool     mPendingBad = false;          // a bad event not yet attributed to an applied step

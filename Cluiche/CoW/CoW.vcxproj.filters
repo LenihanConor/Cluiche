@@ -450,5 +450,8 @@
     <ClInclude Include="Modules\WorldStepModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\WorldStep\IWorldStepListener.h">
+      <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

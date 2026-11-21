@@ -167,6 +167,7 @@
     <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h" />
     <ClInclude Include="Shared\WorldStep\WorldStepChain.h" />
     <ClInclude Include="Modules\WorldStepModule.h" />
+    <ClInclude Include="Shared\WorldStep\IWorldStepListener.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

@@ -2,7 +2,11 @@
 // Compiles against IParallelExecutor only.
 #pragma once
 
+#include <Shared/WorldStep/IWorldStepListener.h>
 #include <Shared/WorldStep/IWorldStepStage.h>
+
+#include <DiaSaveGame/LoadContext.h>
+#include <DiaSaveGame/SaveContext.h>
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -73,10 +77,42 @@ namespace CoW::WorldStep::Testing
             committed = result;
         }
 
-        // Feature 3 extends these with a checksum.
-        void SerializePending(Dia::SaveGame::SaveContext&) const override {}
-        void DeserializePending(Dia::SaveGame::LoadContext&) override {}
-        bool ValidatePending(Dia::SaveGame::LoadContext&) const override { return true; }
+        // Feature 3: the pending result is the working copy plus what Run produced, guarded by a checksum.
+        static int32_t ChecksumOf(int32_t w, int32_t r) { return w * 31 + r * 7 + 11; }
+
+        void SerializePending(Dia::SaveGame::SaveContext& ctx) const override
+        {
+            ++serializeCalls;
+            ctx.Write(Dia::Core::StringCRC("working"), static_cast<int32_t>(working));
+            ctx.Write(Dia::Core::StringCRC("result"), static_cast<int32_t>(result));
+            ctx.Write(Dia::Core::StringCRC("checksum"), ChecksumOf(working, result));
+        }
+
+        void DeserializePending(Dia::SaveGame::LoadContext& ctx) override
+        {
+            ++deserializeCalls;
+            committedAtDeserialize = committed;
+            int32_t w = 0, r = 0, c = 0;
+            if (failDeserialize || !ctx.Read(Dia::Core::StringCRC("working"), w) || !ctx.Read(Dia::Core::StringCRC("result"), r)
+                || !ctx.Read(Dia::Core::StringCRC("checksum"), c) || c != ChecksumOf(w, r))
+            {
+                mReady = false;
+                return;
+            }
+            working = w;
+            result = r;
+        }
+
+        // Read-only: never touches working/result/committed.
+        bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override
+        {
+            ++validateCalls;
+            if (failValidate)
+                return false;
+            int32_t w = 0, r = 0, c = 0;
+            return ctx.Read(Dia::Core::StringCRC("working"), w) && ctx.Read(Dia::Core::StringCRC("result"), r)
+                && ctx.Read(Dia::Core::StringCRC("checksum"), c) && c == ChecksumOf(w, r);
+        }
 
         const Dia::DeferredStep::IParallelExecutor* LastExecutor() const { return mLastExecutor; }
         StepKey CapturedKey() const { return mCapturedKey; }
@@ -86,6 +122,14 @@ namespace CoW::WorldStep::Testing
         int  result    = 0;
         int  committed = 0;
         bool resetOnCapture = false;
+
+        // Feature 3 instrumentation and fault switches.
+        bool failValidate = false;
+        bool failDeserialize = false;
+        mutable uint32_t serializeCalls = 0;
+        mutable uint32_t validateCalls = 0;
+        uint32_t deserializeCalls = 0;
+        int  committedAtDeserialize = -1;   // `committed` as seen when DeserializePending ran (participant order check)
 
     private:
         void Record(CallPhase phase, StepKey key)
@@ -104,5 +148,44 @@ namespace CoW::WorldStep::Testing
         uint32_t             mParallelForCalls = 0;
         StepKey              mCapturedKey = 0;
         const Dia::DeferredStep::IParallelExecutor* mLastExecutor = nullptr;
+    };
+
+    // Records every WorldStepApplied; from inside the callback it reads each observed stage's committed value
+    // (AC 15) and can run a hook (the re-entrancy tests call back into the module through it).
+    class FakeWorldStepListener final : public IWorldStepListener
+    {
+    public:
+        using Hook = void (*)(void* user, const WorldStepApplied& applied);
+        static constexpr uint32_t kMaxObserved = 4;
+
+        void OnWorldStepApplied(const WorldStepApplied& applied) override
+        {
+            received.Add(applied);
+            if (sequence != nullptr)
+                sequence->Add(tag);
+            for (uint32_t i = 0; i < observedCount; ++i)
+                observedCommitted[i] = observed[i]->committed;
+            if (hook != nullptr)
+                hook(hookUser, applied);
+        }
+
+        void Observe(const FakeWorldStepStage* stage)
+        {
+            if (observedCount < kMaxObserved)
+            {
+                observed[observedCount] = stage;
+                observedCommitted[observedCount] = -1;
+                ++observedCount;
+            }
+        }
+
+        Dia::Core::Containers::DynamicArrayC<WorldStepApplied, 64> received;
+        Dia::Core::Containers::DynamicArrayC<int, 16>* sequence = nullptr;   // shared order log across listeners
+        int tag = 0;
+        const FakeWorldStepStage* observed[kMaxObserved] = {};
+        int observedCommitted[kMaxObserved] = { -1, -1, -1, -1 };
+        uint32_t observedCount = 0;
+        Hook hook = nullptr;
+        void* hookUser = nullptr;
     };
 }

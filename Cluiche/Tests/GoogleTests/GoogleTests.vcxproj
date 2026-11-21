@@ -160,6 +160,7 @@
     <ClInclude Include="..\..\CoW\Shared\WorldStep\WorldStepChain.h" />
     <ClInclude Include="..\..\CoW\Modules\WorldStepModule.h" />
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h" />
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepListener.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1382,6 +1383,8 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepCadence.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepLifecycle.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepChainEdge.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepSave.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepHistorySignal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

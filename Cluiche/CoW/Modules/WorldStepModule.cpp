@@ -4,6 +4,8 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaDebugServer/SimHelpInfo.h>
+#include <DiaSaveGame/LoadContext.h>
+#include <DiaSaveGame/SaveContext.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
@@ -164,6 +166,8 @@ void WorldStepModule::ResetRunState()
     mLastStallMs = 0.0;
     mLastSlackDays = 0.0;
     mHistorySeamCalls = 0;
+    mRaising = false;
+    mRestoreFailed = false;
     mBadBits = 0;
     mPendingBad = false;
     mStepAccumNs.store(0);
@@ -366,6 +370,8 @@ bool WorldStepModule::EverRegistered(StringCRC id) const
 
 bool WorldStepModule::RegisterStage(StringCRC id, WorldStep::IWorldStepStage& stage)
 {
+    if (!GuardReentry("RegisterStage"))
+        return false;
     if (!mChain.RegisterStage(id, stage))
     {
         if (!LatchTestAndSet(mWarnedDuplicate, mWarnedDuplicateCount, id.Value()))
@@ -394,6 +400,8 @@ bool WorldStepModule::RegisterStage(StringCRC id, WorldStep::IWorldStepStage& st
 
 void WorldStepModule::UnregisterStage(StringCRC id)
 {
+    if (!GuardReentry("UnregisterStage"))
+        return;
     if (mRunning)
     {
         if (WorldStepInFlight())
@@ -486,6 +494,8 @@ bool WorldStepModule::SetDeferred(bool deferred, const char** outReason)
         return false;
     };
 
+    if (!GuardReentry("SetDeferred"))
+        return refuse("called from inside the history signal");
     if (deferred == mConfig.deferred)
         return true;
     if (mPendingDay >= 0)
@@ -636,9 +646,12 @@ bool WorldStepModule::CheckReadiness()
 
 WorldStepModule::KickOutcome WorldStepModule::TryKick(uint64_t stepDay, uint64_t kickDay)
 {
+    const uint64_t previousStepDay = mStepDay;   // the step already in flight keeps its day if this kick is refused
     mStepDay = stepDay;   // IDeferredStep::Capture() reads this inside Kick
     const uint64_t applyKey = kickDay + mConfig.applyAfterDays;
     const KickResult result = mScheduler->Kick(kChannelId, kickDay, applyKey);
+    if (result != KickResult::kLaunched)
+        mStepDay = previousStepDay;
     switch (result)
     {
     case KickResult::kLaunched:
@@ -764,7 +777,7 @@ bool WorldStepModule::RunSynchronousStep(uint64_t day)
     mLastKickDay = day;
     mHasKicked = true;
     NoteApplied(day);
-    OnStepApplied();
+    RaiseApplied(day, day);
     return true;
 }
 
@@ -791,14 +804,23 @@ void WorldStepModule::Run(Dia::DeferredStep::IParallelExecutor& executor)
 void WorldStepModule::Apply()
 {
     DIA_TRACE_ZONE("WorldStepModule::Apply", Dia::Observation::Trace::Category::kNone);
+    // A restored channel does not know its apply key: ask the scheduler (the channel is still complete during Apply).
+    uint64_t applyKey = mKickApplyKey;
+    Dia::DeferredStep::StepKey scheduled = 0;
+    if (mScheduler != nullptr && mScheduler->GetApplyKey(kChannelId, scheduled))
+        applyKey = scheduled;
+    mKickApplyKey = applyKey;
+
     if (!mChain.Commit())
     {
-        DIA_LOG_ERROR(kLog, "WorldStepModule: chain refused Commit at apply key %llu", static_cast<unsigned long long>(mKickApplyKey));
+        // A restored step whose stages could not restore (chain stayed Idle): nothing to commit, so no signal and no metric.
+        DIA_LOG_WARNING(kLog, "WorldStepModule: nothing to commit at apply key %llu (chain not in the Ran phase), step ignored",
+                        static_cast<unsigned long long>(applyKey));
         mChain.Abandon();
         return;
     }
-    NoteApplied(mKickApplyKey);
-    OnStepApplied();
+    NoteApplied(applyKey);
+    RaiseApplied(applyKey, mStepDay);
 }
 
 void WorldStepModule::SerializePending(Dia::SaveGame::SaveContext& /*ctx*/) const
@@ -811,18 +833,75 @@ void WorldStepModule::DeserializePending(Dia::SaveGame::LoadContext& /*ctx*/)
     // TODO(World Step Feature 3): per-stage pending blobs.
 }
 
+// ---------------------------------------------------------------------------------------------
+// History signal
+// ---------------------------------------------------------------------------------------------
+
+bool WorldStepModule::GuardReentry(const char* what)
+{
+    if (!mRaising)
+        return true;
+    DIA_LOG_ERROR(kLog, "WorldStepModule: %s called from inside the history signal, ignored", what);
+    DIA_ASSERT(false, "WorldStepModule: re-entrant call from a world-step listener");
+    return false;
+}
+
+bool WorldStepModule::RegisterListener(WorldStep::IWorldStepListener& listener)
+{
+    if (!GuardReentry("RegisterListener"))
+        return false;
+    for (uint32_t i = 0; i < mListenerCount; ++i)
+    {
+        if (mListeners[i] == &listener)
+            return false;
+    }
+    if (mListenerCount == kMaxListeners)
+    {
+        DIA_LOG_WARNING(kLog, "WorldStepModule: listener rejected, %u already registered", kMaxListeners);
+        return false;
+    }
+    mListeners[mListenerCount++] = &listener;
+    return true;
+}
+
+void WorldStepModule::UnregisterListener(WorldStep::IWorldStepListener& listener)
+{
+    if (!GuardReentry("UnregisterListener"))
+        return;
+    for (uint32_t i = 0; i < mListenerCount; ++i)
+    {
+        if (mListeners[i] == &listener)
+        {
+            for (uint32_t j = i + 1; j < mListenerCount; ++j)
+                mListeners[j - 1] = mListeners[j];
+            mListeners[--mListenerCount] = nullptr;
+            return;
+        }
+    }
+}
+
+void WorldStepModule::RaiseApplied(uint64_t applyKey, uint64_t stepDay)
+{
+    ++mHistorySeamCalls;   // counted even with no listener, so tests can prove a discarded step never reaches it
+    if (mListenerCount == 0)
+        return;
+    WorldStep::WorldStepApplied applied;
+    applied.applyKey = applyKey;
+    applied.stepDay = stepDay;
+    applied.stageCount = mChain.EnabledCount();
+    mRaising = true;
+    for (uint32_t i = 0; i < mListenerCount; ++i)
+        mListeners[i]->OnWorldStepApplied(applied);
+    mRaising = false;
+}
+
 void WorldStepModule::NoteApplied(uint64_t applyKey)
 {
     mLastStepMs = static_cast<double>(mStepAccumNs.load()) / 1.0e6;
     mStepAccumNs.store(0);
     mLastApplyKey = applyKey;
     ++mApplyCount;
-}
-
-void WorldStepModule::OnStepApplied()
-{
-    // Feature 3 puts its single history-signal call here. Counted so tests can prove a discarded step never reaches it.
-    ++mHistorySeamCalls;
+    mRestoreFailed = false;   // a real step landed: the restore problem, if any, is behind us
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -914,6 +993,8 @@ void WorldStepModule::UpdateHealth()
         mHealth.SetFailing(StringCRC("stage_missing"));
     else if (mRetiredCount > 0)
         mHealth.SetDegraded(StringCRC("stage_retired"));
+    else if (mRestoreFailed)
+        mHealth.SetDegraded(StringCRC("restore_failed"));
     else if (mBadBits != 0 || mPendingBad)
         mHealth.SetDegraded(StringCRC(mBadReason));
     else
@@ -1038,6 +1119,8 @@ Json::Value WorldStepModule::RunStepCommand(const Json::Value& args)
             mode = args["mode"].asString();
     }
 
+    if (!GuardReentry("RunStepCommand"))
+        return Refuse("called from inside the history signal");
     if (!mRunning)
         return Refuse("the world step module is not running");
 

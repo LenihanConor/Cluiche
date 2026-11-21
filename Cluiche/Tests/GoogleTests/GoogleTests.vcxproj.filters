@@ -1828,6 +1828,9 @@
     <ClInclude Include="CoW\WorldStep\WorldStepTestRig.h">
       <Filter>CoW\WorldStep</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\WorldStep\IWorldStepListener.h">
+      <Filter>CoW\Shared\WorldStep</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3304,6 +3307,12 @@
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepChainEdge.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepSave.cpp">
+      <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldStep\TestWorldStepHistorySignal.cpp">
       <Filter>CoW\WorldStep</Filter>
     </ClCompile>
   </ItemGroup>
