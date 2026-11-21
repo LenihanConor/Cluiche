@@ -116,7 +116,7 @@ TEST(StratumTable, ShippedFileCarriesTodaysRegionCountsAndInnermostRules)
 
 TEST(StratumTable, SidecarDefaultSharesEqualOldRules)
 {
-    // The values kFirstZoneShare / kLastZoneShare carried before the move, and the remainder in the middle.
+    // The first/last stratum shares the old three-zone rules carried before the move, with the remainder in the middle.
     EXPECT_EQ(ShippedStratumTable().FirstShare(), 0.45f);
     EXPECT_EQ(ShippedStratumTable().LastShare(), 0.15f);
     EXPECT_EQ(ShippedStratumTable().Depth()->strata[1].share, 0.40f);
