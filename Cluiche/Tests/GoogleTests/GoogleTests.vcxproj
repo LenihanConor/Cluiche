@@ -1386,6 +1386,7 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepChainEdge.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepSave.cpp" />
     <ClCompile Include="CoW\WorldStep\TestWorldStepHistorySignal.cpp" />
+    <ClCompile Include="CoW\WorldStep\TestWorldStepSaveEdge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
