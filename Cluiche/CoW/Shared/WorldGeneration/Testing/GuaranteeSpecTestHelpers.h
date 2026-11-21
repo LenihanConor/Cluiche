@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Shared/World/Testing/BiomeTestRegistry.h>
+#include <DiaCore/CRC/StringCRC.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 
 #include <cstdio>
@@ -12,6 +13,16 @@
 namespace CoW {
 namespace WorldGeneration {
 namespace Testing {
+
+// Kind ids of the shipped guarantees.json, for tests that build CoW worlds by hand (production code reads kinds from
+// the GuaranteeSpec).
+namespace SiteKinds
+{
+    inline Dia::Core::StringCRC Hearth()       { return Dia::Core::StringCRC("CoW.Site.Hearth"); }
+    inline Dia::Core::StringCRC Nexus()        { return Dia::Core::StringCRC("CoW.Site.Nexus"); }
+    inline Dia::Core::StringCRC DynastyStart() { return Dia::Core::StringCRC("CoW.Site.DynastyStart"); }
+    inline Dia::Core::StringCRC WorldThrone()  { return Dia::Core::StringCRC("CoW.Site.WorldThrone"); }
+}
 
 // Absolute paths of the shipped Global/World/guarantees.json and its sidecar guarantees.schema.json.
 inline std::string ShippedGuaranteesPath()

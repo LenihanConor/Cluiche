@@ -16,7 +16,7 @@
 #include <DiaValueSchema/ValueSchemaLoader.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cmath>
@@ -28,6 +28,7 @@
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;
+using namespace CoW::WorldGeneration::Testing;
 using Dia::CellLayers::Testing::FakeDebugDraw;
 using Dia::CellLayers::Testing::FakeMirrorRegistrar;
 using Dia::Maths::Vector2D;
@@ -1103,13 +1104,13 @@ void SetWorldDir(Rig& r, const std::filesystem::path& dir)
 
 size_t DynastyLines(Rig& r, const GuaranteeResult* spacing)
 {
-    float spacingParam = kDefaultMinimumDynastySpacing;
+    float spacingParam = 10.0f;
     if (spacing)
         for (const Measurement& m : spacing->measurements)
             if (m.keyCrc == MeasurementKeys::MinimumSpacing().Value()) spacingParam = m.value;
     const float radius = r.host->Grid().CellSize() * WorldGenViewHost::kSiteMarkerScale;
     size_t n = 0;
-    for (const DynastyStartMarker& m : BuildDynastyStarts(r.session.World(), r.host->Grid(), spacingParam, spacing, radius))
+    for (const MarkerRing& m : BuildMarkers(r.session.World(), r.host->Grid(), SiteKinds::DynastyStart().Value(), spacingParam, spacing, radius))
         n += m.marker.size() + m.ring.size();
     return n;
 }
@@ -1230,6 +1231,93 @@ TEST(WorldGenViewHost, DynastyStartsToggleAddsAndRemovesMarkersAndRings)
     RecordingDraw off2;
     r.Frame(off2);
     EXPECT_EQ(off2.lines.size(), 0u);
+}
+
+namespace
+{
+// A non-CoW spec: one kind Test.Site.Flag, one min_spacing guarantee over it and a renamed marker overlay.
+GuaranteeSpec FlagSpec(bool withMarker)
+{
+    std::string text = R"({ "format": "cow.guarantees", "version": 1,
+      "site_kinds": [ { "id": "Test.Site.Flag", "display_name": "Flag", "colour": "#112233", "shape": "Ring" } ],
+      "guarantees": [ { "id": "Test.Guarantee.Spacing", "label": "Flag spacing", "type": "min_spacing",
+        "kind": "Test.Site.Flag", "minimum_param": "kDynastySpacingMinimum", "noun": "Flag", "noun_plural": "Flags",
+        "minimum_key": "minimumSpacing", "distance_key": "pairDistance" } ])";
+    if (withMarker)
+        text += R"(, "marker_overlay": { "overlay_id": "test.markers", "label": "Test markers", "kind": "Test.Site.Flag",
+          "spacing_guarantee": "Test.Guarantee.Spacing", "fallback_ring": 3 })";
+    text += " }";
+    GuaranteeSpec spec;
+    GuaranteeSpecError err;
+    if (!LoadGuaranteeSpec(text.c_str(), Testing::ShippedGuaranteesSidecarText().c_str(), World::Testing::ShippedZoneTable(), spec, err))
+    {
+        ADD_FAILURE() << err.entry << ": " << err.reason;
+    }
+    return spec;
+}
+}
+
+TEST(WorldGenViewHost, MarkerOverlayComesFromTheSpecNotFromCoWConstants)
+{
+    MainlandPlacer flags{ Dia::Core::StringCRC("Test.Site.Flag"), "Flag", 0, 3 };
+    SiteRegistry registry;
+    registry.Register(&flags);
+    Rig r(nullptr, false);
+    r.session.SetGuaranteeSpec(FlagSpec(true));
+    r.session.SetSiteRegistry(&registry);
+    r.Tick(12345);
+    ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());   // runs the spec's guarantees
+    ASSERT_TRUE(r.host->Build());
+    EXPECT_NE(r.registry.FindOverlay(Dia::Core::StringCRC("test.markers")), nullptr);
+    EXPECT_EQ(r.registry.FindOverlay(Dia::Core::StringCRC("dynasty.starts")), nullptr);
+    EXPECT_EQ(r.host->OverlayLabel("test.markers"), "Test markers");
+
+    bool listed = false, available = false;
+    r.host->ListOverlays([&](const char* id, bool, bool avail) {
+        EXPECT_STRNE(id, "dynasty.starts");
+        if (std::strcmp(id, "test.markers") == 0) { listed = true; available = avail; }
+    });
+    EXPECT_TRUE(listed);
+    EXPECT_TRUE(available) << "the spec's kind has sites";
+
+    OnlyOverlay(r, "sites");
+    ASSERT_TRUE(r.host->SetOverlayEnabled("sites", false));
+    const ValidationResult* ev = Fresh(r);
+    const GuaranteeResult* spacing = ev ? ev->Find(Dia::Core::StringCRC("Test.Guarantee.Spacing")) : nullptr;
+    ASSERT_NE(ev, nullptr);
+    ASSERT_NE(spacing, nullptr);
+    float param = 3.0f;
+    for (const Measurement& m : spacing->measurements)
+        if (m.keyCrc == MeasurementKeys::MinimumSpacing().Value()) param = m.value;
+    EXPECT_FLOAT_EQ(param, 10.0f) << "the evidence value wins over fallback_ring";
+    const float radius = r.host->Grid().CellSize() * WorldGenViewHost::kSiteMarkerScale;
+    size_t expected = 0;
+    for (const MarkerRing& m : BuildMarkers(r.session.World(), r.host->Grid(), Dia::Core::StringCRC("Test.Site.Flag").Value(), param, spacing, radius))
+        expected += m.marker.size() + m.ring.size();
+    ASSERT_GT(expected, 0u);
+    ASSERT_TRUE(r.host->SetOverlayEnabled("test.markers", true));
+    RecordingDraw draw;
+    r.Frame(draw);
+    EXPECT_EQ(draw.lines.size(), expected);
+}
+
+TEST(WorldGenViewHost, NoMarkerEntryMeansNoMarkerOverlay)
+{
+    Rig r(nullptr, false);
+    r.session.SetGuaranteeSpec(FlagSpec(false));
+    r.Tick(12345);
+    ASSERT_TRUE(r.host->Build());
+    EXPECT_EQ(r.registry.OverlayCount(), 5u);   // rivers, neighbours, regions.edges, sites, guarantee.evidence
+    EXPECT_EQ(r.registry.FindOverlay(Dia::Core::StringCRC("dynasty.starts")), nullptr);
+    EXPECT_FALSE(r.host->SetOverlayEnabled("dynasty.starts", true));
+    r.host->ListOverlays([&](const char* id, bool, bool) {
+        EXPECT_STRNE(id, "dynasty.starts");
+        EXPECT_STRNE(id, "test.markers");
+    });
+    RecordingDraw draw;
+    r.Frame(draw);   // no crash
+    r.host->Teardown();
+    EXPECT_EQ(r.registry.OverlayCount(), 0u);
 }
 
 TEST(WorldGenViewHost, ExpandGuaranteeChangesThePolylinesDrawn)
@@ -1480,6 +1568,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
 {
     DragonSites sites;
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
+    module.GetSession().SetGuaranteeSpec(ShippedGuaranteeSpec());
     module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::CoW::World::Testing::ShippedBiomeRegistry());
     WorldGenDebugDomain domain{ module };
     Dia::Maths::RandomStream rng{ 7 };

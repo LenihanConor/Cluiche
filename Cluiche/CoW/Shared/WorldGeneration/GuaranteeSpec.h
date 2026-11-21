@@ -100,8 +100,10 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
                        GuaranteeSpecError& err);
 
 // Registers every declared kind of the spec as a data-declared kind (no placer). False (stopping at the failing
-// kind) when a kind id is already a placer kind or already declared.
-bool InstallSiteKinds(const GuaranteeSpec& spec, SiteRegistry& registry);
+// kind) when a kind id is already a placer kind or already declared. With 'skipExisting' such ids are skipped
+// instead (the placer / earlier declaration keeps owning the id); other failures (built-in node kind, empty id)
+// still return false.
+bool InstallSiteKinds(const GuaranteeSpec& spec, SiteRegistry& registry, bool skipExisting = false);
 
 } // namespace WorldGeneration
 } // namespace CoW

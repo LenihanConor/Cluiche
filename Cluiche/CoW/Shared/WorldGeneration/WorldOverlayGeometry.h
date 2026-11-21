@@ -58,7 +58,7 @@ void AppendSiteMarker(std::vector<LineSegment>& out, Dia::Maths::Vector2D centre
 std::vector<LineSegment> BuildSiteMarkers(const WorldStructure& world, const WorldHexGrid& grid, uint32_t kindCrc,
                                           SiteShape shape, float radius);
 
-// ---- Plan worldgen-panel-rest task 3: coloured region edges, tagged site markers, dynasty starts, evidence ----
+// ---- Plan worldgen-panel-rest task 3: coloured region edges, tagged site markers, spaced markers, evidence ----
 
 // A region edge with its categorical colour: colourSlot = RegionPaletteSlot of the cell on the lower-index side (or of
 // the other side when that one has no region), the same slot the Region colour mode paints.
@@ -85,7 +85,7 @@ struct SiteMarker
 std::vector<SiteMarker> BuildSiteMarkers(const WorldStructure& world, const WorldHexGrid& grid,
                                          std::span<const SiteKindInfo> kinds, float radius);
 
-struct DynastyStartMarker
+struct MarkerRing
 {
     uint32_t                 cell = 0;
     Dia::Maths::Vector2D     centre;
@@ -93,11 +93,11 @@ struct DynastyStartMarker
     std::vector<LineSegment> marker;
     std::vector<LineSegment> ring;                // spacing ring, radius = spacing hex steps
 };
-// Start markers (kind CoW.Site.DynastyStart) with spacing rings. 'dynastySpacingEvidence' is the DynastySpacing
-// GuaranteeResult of a FRESH validation or nullptr; only its violatingPairs are read.
-std::vector<DynastyStartMarker> BuildDynastyStarts(const WorldStructure& world, const WorldHexGrid& grid,
-                                                   float spacingParam, const GuaranteeResult* dynastySpacingEvidence,
-                                                   float markerRadius);
+// Markers for every site of kind 'kindCrc' with spacing rings of 'spacingParam' hex steps. 'spacingEvidence' is the
+// GuaranteeResult of the kind's min_spacing guarantee from a FRESH validation or nullptr; only its violatingPairs
+// are read.
+std::vector<MarkerRing> BuildMarkers(const WorldStructure& world, const WorldHexGrid& grid, uint32_t kindCrc,
+                                     float spacingParam, const GuaranteeResult* spacingEvidence, float markerRadius);
 
 struct EvidencePolyline
 {

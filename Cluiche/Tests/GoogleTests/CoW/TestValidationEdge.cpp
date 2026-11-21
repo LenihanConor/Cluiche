@@ -4,7 +4,7 @@
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
-#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/SiteRules.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>

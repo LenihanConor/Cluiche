@@ -139,7 +139,6 @@ public:
     static const char* const kOverlayNeighbours;
     static const char* const kOverlayRegionEdges;   // "regions.edges" (starts off)
     static const char* const kOverlaySites;         // "sites": master toggle for every site kind (starts on)
-    static const char* const kOverlayDynastyStarts; // "dynasty.starts" (starts off)
     static const char* const kOverlayEvidence;      // "guarantee.evidence" (starts off)
     static constexpr size_t  kEvidenceLineBudget = 1500;   // evidence lines per frame (layered-debug-rendering drawer table)
     static const char* const kSiteKindPrefix;       // "sites.": per-kind toggle ids are "sites.<kind id>" (start on)
@@ -178,7 +177,7 @@ private:
     void DrawNeighbours(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawRegionEdges(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawSites(Dia::Core::IDebugDraw& draw, const void* selection);
-    void DrawDynastyStarts(Dia::Core::IDebugDraw& draw, const void* selection);
+    void DrawMarkers(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawEvidence(Dia::Core::IDebugDraw& draw, const void* selection);
     const WorldGeneration::ValidationResult* FreshEvidenceNow() const;
     uint32_t RegionColour(uint32_t slot);   // 0xRRGGBBAA from the "regions" layer's palette (the Region colour mode's)
@@ -233,11 +232,14 @@ private:
     uint32_t mSiteGridGeneration = 0;
     std::vector<WorldGeneration::RegionEdge> mColouredEdges;
     std::vector<uint32_t> mRegionPalette;           // lazily resolved from the schema, else the categorical default
-    std::vector<WorldGeneration::DynastyStartMarker> mStarts;
-    uint32_t mStartsRevision = 0xFFFFFFFFu;
-    uint32_t mStartsEvidenceRevision = 0xFFFFFFFFu;
-    uint32_t mStartsReportRevision = 0xFFFFFFFFu;
-    uint32_t mStartsGridGeneration = 0;
+    // The data-declared marker overlay (session GuaranteeSpec::markerOverlay), copied when the overlays register.
+    bool mHasMarkerOverlay = false;
+    WorldGeneration::MarkerOverlaySpec mMarkerSpec;
+    std::vector<WorldGeneration::MarkerRing> mMarkers;
+    uint32_t mMarkersRevision = 0xFFFFFFFFu;
+    uint32_t mMarkersEvidenceRevision = 0xFFFFFFFFu;
+    uint32_t mMarkersReportRevision = 0xFFFFFFFFu;
+    uint32_t mMarkersGridGeneration = 0;
     WorldGeneration::GuaranteeEvidenceGeometry mEvidence;
     uint32_t mEvidenceRevision = 0xFFFFFFFFu;
     uint32_t mEvidenceEvidenceRevision = 0xFFFFFFFFu;

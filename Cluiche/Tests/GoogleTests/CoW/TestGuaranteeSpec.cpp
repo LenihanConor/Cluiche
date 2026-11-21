@@ -228,6 +228,17 @@ TEST(GuaranteeSpec, InstallRejectsKindOwnedByPlacer)
     EXPECT_FALSE(InstallSiteKinds(ShippedGuaranteeSpec(), registry));
 }
 
+TEST(GuaranteeSpec, InstallSkipsKindsAPlacerOwnsWhenAsked)
+{
+    TestPlacer p("CoW.Site.Nexus");
+    SiteRegistry registry;
+    ASSERT_TRUE(registry.Register(&p));
+    ASSERT_TRUE(InstallSiteKinds(ShippedGuaranteeSpec(), registry, true));
+    EXPECT_EQ(ListSiteKinds(registry).size(), 8u);   // four built-in, the placer's Nexus, three declared
+    EXPECT_TRUE(InstallSiteKinds(ShippedGuaranteeSpec(), registry, true)) << "idempotent";
+    EXPECT_EQ(ListSiteKinds(registry).size(), 8u);
+}
+
 TEST(SiteRegistry, DeclaredKindListedBeforePlacerKindsAndFound)
 {
     SiteRegistry r;

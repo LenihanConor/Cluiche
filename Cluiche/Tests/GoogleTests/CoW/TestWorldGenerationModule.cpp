@@ -858,6 +858,23 @@ TEST(WorldGenModuleGuarantees, TextSourceInstallsAnEmptyOneAsIs)
     EXPECT_TRUE(f.wg->GetSession().GetGuaranteeSpec().guarantees.empty());
 }
 
+TEST(WorldGenModuleGuarantees, DataOnlyKindsAppearInTheSiteKindList)
+{
+    g_guaranteesTextOverride = R"({ "format": "cow.guarantees", "version": 1,
+        "site_kinds": [ { "id": "Test.Site.Data", "display_name": "Data kind", "colour": "#102030", "shape": "Star" } ],
+        "guarantees": [] })";
+    Fixture f;
+    const bool booted = f.Boot();
+    g_guaranteesTextOverride.clear();
+    ASSERT_TRUE(booted);
+    f.Pump(3);
+    EXPECT_TRUE(f.wg->AreBiomesLoaded());
+    bool found = false;
+    for (const WorldGeneration::SiteKindInfo& k : WorldGeneration::ListSiteKinds(f.wg->GetSiteRegistry()))
+        if (std::string(k.id) == "Test.Site.Data") { found = true; EXPECT_STREQ(k.displayName, "Data kind"); }
+    EXPECT_TRUE(found);
+}
+
 TEST(WorldGenModuleGuarantees, BadSpecFailsHealthWithAGuaranteesFieldAndRefusesGeneration)
 {
     g_guaranteesTextOverride = R"({ "format": "cow.guarantees", "version": 1, "site_kinds": [],

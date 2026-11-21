@@ -1239,7 +1239,6 @@
     <ClCompile Include="CoW\TestReachabilityValidator.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\ReachabilityValidator.cpp" />
     <ClCompile Include="CoW\TestSiteGuarantees.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteGuarantees.cpp" />
     <ClCompile Include="CoW\TestWorldLayoutGuarantee.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayoutGuarantee.cpp" />
     <ClCompile Include="CoW\TestValidationEdge.cpp" />

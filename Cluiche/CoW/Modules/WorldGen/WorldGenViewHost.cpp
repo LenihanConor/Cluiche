@@ -3,7 +3,6 @@
 #include "Modules/WorldGen/WorldGenViewHost.h"
 #include "Modules/WorldGen/WorldGenPointerFrame.h"
 
-#include <Shared/WorldGeneration/SiteGuarantees.h>
 
 #include "Modules/Camera2DModule.h"
 #include "Modules/InputStreamModule.h"
@@ -89,7 +88,6 @@ const char* const WorldGenViewHost::kDefaultModeAlias  = "terrain";
 const char* const WorldGenViewHost::kOverlayRegionEdges = "regions.edges";
 const char* const WorldGenViewHost::kOverlaySites       = "sites";
 const char* const WorldGenViewHost::kSiteKindPrefix     = "sites.";
-const char* const WorldGenViewHost::kOverlayDynastyStarts = "dynasty.starts";
 const char* const WorldGenViewHost::kOverlayEvidence      = "guarantee.evidence";
 
 void WorldGenViewHost::LayerBinding::Read(float* out, uint32_t count)
@@ -260,18 +258,24 @@ bool WorldGenViewHost::RegisterOverlays()
     sites.group.Append("Regions");
     sites.label.Append("Sites");
     sites.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawSites);
-    CellOverlayDesc starts;
-    starts.id = StringCRC(kOverlayDynastyStarts);
-    starts.group.Append("Regions");
-    starts.label.Append("Dynasty starts");
-    starts.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawDynastyStarts);
+    const GuaranteeSpec& spec = mSession.GetGuaranteeSpec();
+    mHasMarkerOverlay = spec.hasMarkerOverlay;
+    mMarkerSpec = spec.hasMarkerOverlay ? spec.markerOverlay : MarkerOverlaySpec();
+    CellOverlayDesc markers;
+    if (mHasMarkerOverlay)
+    {
+        markers.id = StringCRC(mMarkerSpec.overlayId.c_str());
+        markers.group.Append("Regions");
+        markers.label.Append(mMarkerSpec.label.c_str());
+        markers.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawMarkers);
+    }
     CellOverlayDesc evidence;
     evidence.id = StringCRC(kOverlayEvidence);
     evidence.group.Append("Validation");
     evidence.label.Append("Guarantee evidence");
     evidence.draw = fastdelegate::MakeDelegate(this, &WorldGenViewHost::DrawEvidence);
     if (mDeps.registry->RegisterOverlay(rivers) != CellRegisterResult::Ok ||
-        mDeps.registry->RegisterOverlay(starts) != CellRegisterResult::Ok ||
+        (mHasMarkerOverlay && mDeps.registry->RegisterOverlay(markers) != CellRegisterResult::Ok) ||
         mDeps.registry->RegisterOverlay(evidence) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(neighbours) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(edges) != CellRegisterResult::Ok ||
@@ -293,7 +297,8 @@ void WorldGenViewHost::UnregisterOverlays()
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayNeighbours));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayRegionEdges));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlaySites));
-    mDeps.registry->UnregisterOverlay(StringCRC(kOverlayDynastyStarts));
+    if (mHasMarkerOverlay)
+        mDeps.registry->UnregisterOverlay(StringCRC(mMarkerSpec.overlayId.c_str()));
     mDeps.registry->UnregisterOverlay(StringCRC(kOverlayEvidence));
     mOverlaysRegistered = false;
 }
@@ -633,30 +638,30 @@ std::string WorldGenViewHost::EvidenceHiddenReason()
     return "Evidence hidden: the world changed since it was validated (run Validate)";
 }
 
-void WorldGenViewHost::DrawDynastyStarts(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
+void WorldGenViewHost::DrawMarkers(Dia::Core::IDebugDraw& draw, const void* /*selection*/)
 {
-    if (mSession.Revision() == 0 || !mSession.RegionsFresh())
+    if (!mHasMarkerOverlay || mSession.Revision() == 0 || !mSession.RegionsFresh())
         return;
-    if (mStartsRevision != mSession.Revision() || mStartsGridGeneration != mGridGeneration ||
-        mStartsEvidenceRevision != mSession.EvidenceRevision() || mStartsReportRevision != mSession.ReportRevision())
+    if (mMarkersRevision != mSession.Revision() || mMarkersGridGeneration != mGridGeneration ||
+        mMarkersEvidenceRevision != mSession.EvidenceRevision() || mMarkersReportRevision != mSession.ReportRevision())
     {
         const ValidationResult* ev = FreshEvidenceNow();
-        const GuaranteeResult* spacing = ev ? ev->Find(StringCRC("CoW.Guarantee.DynastySpacing")) : nullptr;
-        float spacingParam = kDefaultMinimumDynastySpacing;
+        const GuaranteeResult* spacing = ev ? ev->Find(StringCRC(mMarkerSpec.spacingGuarantee.c_str())) : nullptr;
+        float spacingParam = mMarkerSpec.fallbackRing;
         if (spacing != nullptr)
             for (const Measurement& m : spacing->measurements)
                 if (m.keyCrc == MeasurementKeys::MinimumSpacing().Value())
                     spacingParam = m.value;
-        mStarts = BuildDynastyStarts(mSession.World(), *mGrid, spacingParam, spacing, mGrid->CellSize() * kSiteMarkerScale);
-        mStartsRevision = mSession.Revision();
-        mStartsGridGeneration = mGridGeneration;
-        mStartsEvidenceRevision = mSession.EvidenceRevision();
-        mStartsReportRevision = mSession.ReportRevision();
+        mMarkers = BuildMarkers(mSession.World(), *mGrid, StringCRC(mMarkerSpec.kind.c_str()).Value(), spacingParam, spacing, mGrid->CellSize() * kSiteMarkerScale);
+        mMarkersRevision = mSession.Revision();
+        mMarkersGridGeneration = mGridGeneration;
+        mMarkersEvidenceRevision = mSession.EvidenceRevision();
+        mMarkersReportRevision = mSession.ReportRevision();
     }
     const Dia::Core::RGBA ok(255, 205, 60, 255);
     const Dia::Core::RGBA ring(120, 170, 255, 255);
     const Dia::Core::RGBA bad(255, 60, 60, 255);
-    for (const DynastyStartMarker& m : mStarts)
+    for (const MarkerRing& m : mMarkers)
     {
         for (const LineSegment& s : m.marker)
             draw.RequestDraw(s.a, s.b, m.violating ? bad : ok);
@@ -882,7 +887,8 @@ bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)
     }
     if (std::strcmp(id, kOverlayRivers) != 0 && std::strcmp(id, kOverlayNeighbours) != 0 &&
         std::strcmp(id, kOverlayRegionEdges) != 0 && std::strcmp(id, kOverlaySites) != 0 &&
-        std::strcmp(id, kOverlayDynastyStarts) != 0 && std::strcmp(id, kOverlayEvidence) != 0)
+        std::strcmp(id, kOverlayEvidence) != 0 &&
+        !(mHasMarkerOverlay && std::strcmp(id, mMarkerSpec.overlayId.c_str()) == 0))
         return false;
     const StringCRC crc(id);
     if (mDomain->IsOverlayEnabled(crc) != enabled)
@@ -907,8 +913,9 @@ void WorldGenViewHost::ListOverlays(const std::function<void(const char* id, boo
         toggle += k.id;
         fn(toggle.c_str(), SiteKindEnabled(k.kindCrc), fresh);
     }
-    fn(kOverlayDynastyStarts, mDomain->IsOverlayEnabled(StringCRC(kOverlayDynastyStarts)),
-       fresh && mSession.World().sites.Count(SiteKinds::DynastyStart()) > 0);
+    if (mHasMarkerOverlay)
+        fn(mMarkerSpec.overlayId.c_str(), mDomain->IsOverlayEnabled(StringCRC(mMarkerSpec.overlayId.c_str())),
+           fresh && mSession.World().sites.Count(StringCRC(mMarkerSpec.kind.c_str())) > 0);
     fn(kOverlayEvidence, mDomain->IsOverlayEnabled(StringCRC(kOverlayEvidence)), hasWorld && FreshEvidenceNow() != nullptr);
 }
 
@@ -920,7 +927,7 @@ std::string WorldGenViewHost::OverlayLabel(const char* id)
     if (std::strcmp(id, kOverlayNeighbours) == 0)     return "Neighbours 0-5";
     if (std::strcmp(id, kOverlayRegionEdges) == 0)    return "Region edges";
     if (std::strcmp(id, kOverlaySites) == 0)          return "Sites";
-    if (std::strcmp(id, kOverlayDynastyStarts) == 0)  return "Dynasty starts";
+    if (mHasMarkerOverlay && std::strcmp(id, mMarkerSpec.overlayId.c_str()) == 0)  return mMarkerSpec.label;
     if (std::strcmp(id, kOverlayEvidence) == 0)       return "Guarantee evidence";
     const size_t prefix = std::strlen(kSiteKindPrefix);
     if (std::strncmp(id, kSiteKindPrefix, prefix) == 0)

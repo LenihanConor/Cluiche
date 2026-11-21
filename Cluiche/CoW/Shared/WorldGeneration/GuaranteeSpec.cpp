@@ -353,10 +353,12 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const World::Z
     return true;
 }
 
-bool InstallSiteKinds(const GuaranteeSpec& spec, SiteRegistry& registry)
+bool InstallSiteKinds(const GuaranteeSpec& spec, SiteRegistry& registry, bool skipExisting)
 {
     for (const SiteKindDecl& k : spec.siteKinds)
     {
+        if (skipExisting && registry.FindInfo(Dia::Core::StringCRC(k.id.c_str())) != nullptr)
+            continue;   // a placer (or an earlier install) already owns the id
         if (!registry.RegisterDeclaredKind(k.ToInfo()))
         {
             DIA_LOG_ERROR("CoW", "GuaranteeSpec: site kind '%s' is already registered", k.id.c_str());

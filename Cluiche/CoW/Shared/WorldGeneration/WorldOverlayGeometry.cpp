@@ -1,7 +1,6 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
 
-#include <Shared/WorldGeneration/SiteGuarantees.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 
 #include <algorithm>
@@ -214,18 +213,18 @@ std::vector<SiteMarker> BuildSiteMarkers(const WorldStructure& world, const Worl
     return out;
 }
 
-std::vector<DynastyStartMarker> BuildDynastyStarts(const WorldStructure& world, const WorldHexGrid& grid,
-                                                   float spacingParam, const GuaranteeResult* evidence, float markerRadius)
+std::vector<MarkerRing> BuildMarkers(const WorldStructure& world, const WorldHexGrid& grid, uint32_t kindCrc,
+                                     float spacingParam, const GuaranteeResult* evidence, float markerRadius)
 {
-    std::vector<DynastyStartMarker> out;
+    std::vector<MarkerRing> out;
     if (!SameDimensions(world, grid))
         return out;
     const float ringRadius = std::max(spacingParam, 0.0f) * std::sqrt(3.0f) * grid.CellSize();   // one hex step = sqrt(3) * size
-    for (const Site& s : world.sites.Of(SiteKinds::DynastyStart()))
+    for (const Site& s : world.sites.Of(kindCrc))
     {
         if (s.cell >= grid.CellCount())
             continue;
-        DynastyStartMarker m;
+        MarkerRing m;
         m.cell   = s.cell;
         m.centre = grid.CellCenter(s.cell);
         if (evidence)

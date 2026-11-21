@@ -235,6 +235,14 @@ bool WorldGenerationModule::LoadGuarantees(const World::ZoneTable& zones)
         return false;
     }
     mSession.SetGuaranteeSpec(spec);
+    // Data-declared kinds without a placer show in the sites overlay; ids a placer already owns are left alone.
+    if (!WorldGeneration::InstallSiteKinds(spec, mSiteRegistry, true))
+    {
+        mBiomesErrorField = "guarantees.site_kinds";
+        mBiomesErrorReason = "a declared site kind cannot be installed";
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees site kinds could not be installed; generation is refused");
+        return false;
+    }
     return true;
 }
 

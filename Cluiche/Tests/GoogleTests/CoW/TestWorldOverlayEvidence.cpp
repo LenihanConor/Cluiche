@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7, AC3-AC6, AC10)
 // Plan: worldgen-panel-rest.plan.md task 3 (coloured region edges, tagged site markers, dynasty starts, evidence).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/SiteGuarantees.h>
+#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
@@ -10,6 +10,7 @@
 #include <cmath>
 
 using namespace CoW::WorldGeneration;
+using namespace CoW::WorldGeneration::Testing;
 using Dia::Maths::Vector2D;
 
 namespace
@@ -124,7 +125,7 @@ TEST(WorldOverlayEvidence, DynastyRingRedOnlyForTheViolatingPair)
     GuaranteeResult g = Failing(SiteKinds::DynastyStart().Value());
     CellPair p; p.a = 17; p.b = 19; g.violatingPairs.Add(p);
 
-    const std::vector<DynastyStartMarker> m = BuildDynastyStarts(w, grid, 10.0f, &g, 6.0f);
+    const std::vector<MarkerRing> m = BuildMarkers(w, grid, SiteKinds::DynastyStart().Value(), 10.0f, &g, 6.0f);
     ASSERT_EQ(m.size(), 3u);
     EXPECT_TRUE(m[0].violating);
     EXPECT_TRUE(m[1].violating);
@@ -133,7 +134,7 @@ TEST(WorldOverlayEvidence, DynastyRingRedOnlyForTheViolatingPair)
     ASSERT_FALSE(m[2].ring.empty());
     EXPECT_NEAR(Dst(m[2].ring[0].a, m[2].centre), 10.0f * std::sqrt(3.0f) * grid.CellSize(), 1e-2f);
 
-    for (const DynastyStartMarker& x : BuildDynastyStarts(w, grid, 10.0f, nullptr, 6.0f))
+    for (const MarkerRing& x : BuildMarkers(w, grid, SiteKinds::DynastyStart().Value(), 10.0f, nullptr, 6.0f))
         EXPECT_FALSE(x.violating);
 }
 
@@ -243,6 +244,6 @@ TEST(WorldOverlayEvidence, LargeWorldCountsWithinBudgets)
     for (const GuaranteeResult& g : ev->guarantees) if (!g.proofPaths.IsEmpty()) { expand = g.idCrc; break; }
     const GuaranteeEvidenceGeometry g = BuildGuaranteeEvidence(ev, grid, expand);
     EXPECT_LT(g.LineCount(), 1500u);
-    const std::vector<DynastyStartMarker> starts = BuildDynastyStarts(s.World(), grid, kDefaultMinimumDynastySpacing, nullptr, 6.0f);
+    const std::vector<MarkerRing> starts = BuildMarkers(s.World(), grid, SiteKinds::DynastyStart().Value(), 10.0f, nullptr, 6.0f);
     EXPECT_LT(starts.size(), 50u);
 }

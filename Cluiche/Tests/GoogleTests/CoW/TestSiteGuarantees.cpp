@@ -2,7 +2,6 @@
 // The three built-in guarantees over SiteSet kinds, run on hand-authored worlds, and DefaultValidationSet.
 #include <gtest/gtest.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/SiteGuarantees.h>
 #include <Shared/WorldGeneration/SiteRules.h>
 #include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>

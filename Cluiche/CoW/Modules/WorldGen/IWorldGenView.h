@@ -41,7 +41,7 @@ public:
     }
 
     // Overlay ids: "rivers", "selection.neighbours", "regions.edges", "sites" (master for all site kinds) and one
-    // "sites.<kind id>" toggle per site kind (built-in node kinds, then registered kinds), then "dynasty.starts" and
+    // "sites.<kind id>" toggle per site kind (built-in node kinds, then registered kinds), then the spec marker overlay and
     // "guarantee.evidence". False for an unknown id.
     virtual bool SetOverlayEnabled(const char* id, bool enabled) = 0;
     // Calls back once per overlay. available = the overlay has something to draw right now.
