@@ -214,6 +214,9 @@
     <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp">
       <Filter>Shared\WorldStep</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\WorldStepModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h">
@@ -443,6 +446,9 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldStep\WorldStepChain.h">
       <Filter>Shared\WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\WorldStepModule.h">
+      <Filter>Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -87,6 +87,7 @@
     <ClCompile Include="Shared\World\BiomeRegistry.cpp" />
     <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp" />
     <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp" />
+    <ClCompile Include="Modules\WorldStepModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEndModule.h" />
@@ -165,6 +166,7 @@
     <ClInclude Include="Shared\WorldStep\WorldStepConfig.h" />
     <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStepStage.h" />
     <ClInclude Include="Shared\WorldStep\WorldStepChain.h" />
+    <ClInclude Include="Modules\WorldStepModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
