@@ -131,7 +131,7 @@ bool GenerationRun::Step()
         }
         else
         {
-            const TerrainTableNavigationProfile profile;
+            const TerrainTableNavigationProfile profile(mRules);
             const WorldLayoutGuarantee layout(mRules, mPlaceReport.limits);
             ValidationParams vp;
             vp.AddProfile(&profile);

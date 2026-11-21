@@ -60,7 +60,7 @@ public:
 class DefaultValidationSet
 {
 public:
-    explicit DefaultValidationSet(float minimumDynastySpacing = kDefaultMinimumDynastySpacing);
+    explicit DefaultValidationSet(const TerrainRules& rules, float minimumDynastySpacing = kDefaultMinimumDynastySpacing);
     DefaultValidationSet(const DefaultValidationSet&) = delete;
     DefaultValidationSet& operator=(const DefaultValidationSet&) = delete;
 

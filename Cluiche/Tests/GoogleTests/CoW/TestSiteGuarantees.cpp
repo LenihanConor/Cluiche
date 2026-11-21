@@ -7,6 +7,7 @@
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TestProfiles.h>
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
 
@@ -389,7 +390,7 @@ TEST(WorldThroneGuarantee, ThroneStandingOnAnAncientInteriorsCellNeedsNoMovement
 
 TEST(DefaultValidationSet, HoldsOneProfileAndTheThreeBuiltInsInOrder)
 {
-    DefaultValidationSet set(10.0f);
+    DefaultValidationSet set(TestRules(), 10.0f);
     EXPECT_EQ(set.GetParams().profiles.Size(), 1u);
     ASSERT_EQ(set.GetParams().guarantees.Size(), 3u);
     EXPECT_EQ(set.GetParams().guarantees[0]->GetId(), HearthNexusReachabilityGuarantee().GetId());
@@ -401,7 +402,7 @@ TEST(DefaultValidationSet, HoldsOneProfileAndTheThreeBuiltInsInOrder)
 TEST(DefaultValidationSet, AC4_ValidWorldPassesWithThreeGuarantees)
 {
     const WorldStructure w = MakeValidWorld();
-    DefaultValidationSet set(10.0f);
+    DefaultValidationSet set(TestRules(), 10.0f);
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_TRUE(r.passed) << (r.guarantees.Size() > 0 ? "see per-guarantee results" : "");
     EXPECT_EQ(r.guarantees.Size(), 3u);
@@ -410,7 +411,7 @@ TEST(DefaultValidationSet, AC4_ValidWorldPassesWithThreeGuarantees)
 
 TEST(DefaultValidationSet, AC4_AnyBrokenGuaranteeFailsTheWhole)
 {
-    DefaultValidationSet set(10.0f);
+    DefaultValidationSet set(TestRules(), 10.0f);
 
     WorldStructure close = MakeValidWorld();
     AddSiteAt(close, SiteKinds::DynastyStart(), 4, 2);
@@ -429,7 +430,7 @@ TEST(DefaultValidationSet, AC4_AnyBrokenGuaranteeFailsTheWhole)
 
 TEST(DefaultValidationSet, CallersCanAppendToACopyOfTheParams)
 {
-    DefaultValidationSet set(10.0f);
+    DefaultValidationSet set(TestRules(), 10.0f);
     ValidationParams copy = set.GetParams();
     FixedGuarantee extra("Extra", false);
     AllowWaterProfile more("More");
@@ -447,10 +448,10 @@ TEST(DefaultValidationSet, CallersCanAppendToACopyOfTheParams)
 TEST(DefaultValidationSet, AC7_ValidatingTwiceGivesIdenticalEvidence)
 {
     const WorldStructure w = MakeValidWorld();
-    DefaultValidationSet set(10.0f);
+    DefaultValidationSet set(TestRules(), 10.0f);
     const ValidationResult a = ReachabilityValidator::Validate(w, set.GetParams());
     const ValidationResult b = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_EQ(a, b);
-    DefaultValidationSet other(10.0f);
+    DefaultValidationSet other(TestRules(), 10.0f);
     EXPECT_EQ(a, ReachabilityValidator::Validate(w, other.GetParams()));
 }

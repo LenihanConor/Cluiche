@@ -125,19 +125,6 @@
         },
         {
             "content_hash": 0,
-            "id": "json.terrain_navigation",
-            "references": [],
-            "scope": "global",
-            "source_path": "Global/WorldGen/terrain_navigation.json",
-            "stage_name": "",
-            "status": "active",
-            "tags": [
-                "World"
-            ],
-            "type": "json"
-        },
-        {
-            "content_hash": 0,
             "id": "json.terrain_rules_schema",
             "references": [],
             "scope": "global",

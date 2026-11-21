@@ -2190,7 +2190,7 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     // The set a generation validates with (terrain profile, registry guarantees, layout), plus the built-in site
     // guarantees. One of each id; WorldThrone only when the world holds throne sites (S-1 places none, so it would
     // otherwise fail every world); layout only when regions are fresh (live-preview worlds have none).
-    const TerrainTableNavigationProfile profile;
+    const TerrainTableNavigationProfile profile(mRules);
     const HearthNexusReachabilityGuarantee hearthNexus;
     const DynastySpacingGuarantee dynastySpacing;
     const WorldThroneGuarantee worldThrone;

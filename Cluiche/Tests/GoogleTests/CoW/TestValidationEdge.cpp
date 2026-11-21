@@ -71,7 +71,7 @@ double Millis(std::chrono::steady_clock::time_point a, std::chrono::steady_clock
 TEST(ValidationEdge, OneByOneWorldWithNoSitesFollowsTheVacuousRules)
 {
     WorldStructure w = MakeAllLandWorld(1, 1);
-    DefaultValidationSet set;
+    DefaultValidationSet set(TestRules());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);   // no world-thrones
     EXPECT_TRUE(r.Find(HearthNexusReachabilityGuarantee().GetId())->satisfied);
@@ -83,7 +83,7 @@ TEST(ValidationEdge, EmptyWorldDoesNotCrashAnyGuarantee)
 {
     WorldStructure w;
     w.Resize({ 0, 0 });
-    DefaultValidationSet set;
+    DefaultValidationSet set(TestRules());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);
     EXPECT_EQ(r.guarantees.Size(), 3u);
@@ -232,7 +232,7 @@ TEST(ValidatorPerf, AC6_SmallWorldValidatesWellInsideTheBudget)
     {
         const WorldStructure w = MakeAc6World(seed);
         ASSERT_GT(w.sites.Count(SiteKinds::Hearth()), 0);
-        DefaultValidationSet set;
+        DefaultValidationSet set(TestRules());
         double best = 1e9;
         ValidationResult last;
         for (int run = 0; run < 5; ++run)

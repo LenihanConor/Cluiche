@@ -1,5 +1,5 @@
 // S-1 Terrain Profile (biome-registry plan Tasks 30, 30a): terrain_type enum + five terrain.* maps in the sidecar.
-// The (key, default) literals below are copied from terrain_navigation.json and the spec table, NOT from the sidecar.
+// The (key, default) literals below are copied from the former terrain navigation file and the spec table, NOT from the sidecar.
 #include <gtest/gtest.h>
 
 #include <DiaAttribute/ParamBinding.h>
@@ -24,7 +24,7 @@ namespace
     const char* const kMapNames[5] = { "terrain.passable", "terrain.cost", "terrain.soil_depth_mult",
                                        "terrain.orographic_factor", "terrain.runoff" };
 
-    // In TerrainType (enum) order. Copied from terrain_navigation.json (passable/cost) and the spec table.
+    // In TerrainType (enum) order. Copied from the former terrain navigation file (passable/cost) and the spec table.
     //                              Deep   Shal   Lake   River  Lowl   Hills  High   Mount  Peak   Cliff  Pass   Volc
     const bool  kPassable[kN] = { false, false, false, true,  true,  true,  true,  true,  false, false, true,  false };
     const float kCost[kN]     = { 1.0f,  1.0f,  1.0f,  1.5f,  1.0f,  1.5f,  2.0f,  4.0f,  1.0f,  1.0f,  1.0f,  1.0f };
@@ -119,7 +119,7 @@ TEST(TerrainProfile, MapColumnsFollowEnumOrderInTheSchema)
         EXPECT_STREQ(f.Schema().GetAttributeByIndex(base + i).fullKey.AsCStr(), ColumnKey("terrain.cost", i).c_str());
 }
 
-// AC 12 bullet 1: passable and cost defaults equal today's terrain_navigation.json (literals above).
+// AC 12 bullet 1: passable and cost defaults equal today's the former terrain navigation file (literals above).
 TEST(TerrainProfile, PassableAndCostDefaultsEqualTheOldNavigationFile)
 {
     const ParameterFile& f = TestSidecarFile();

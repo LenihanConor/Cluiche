@@ -212,8 +212,9 @@ GuaranteeResult WorldThroneGuarantee::Check(const ValidationContext& context) co
 
 // ---- DefaultValidationSet -------------------------------------------------------------------------------------------
 
-DefaultValidationSet::DefaultValidationSet(float minimumDynastySpacing)
-    : mDynastySpacing(minimumDynastySpacing)
+DefaultValidationSet::DefaultValidationSet(const TerrainRules& rules, float minimumDynastySpacing)
+    : mProfile(rules)
+    , mDynastySpacing(minimumDynastySpacing)
 {
     mParams.AddProfile(&mProfile);
     mParams.AddGuarantee(&mHearthNexus);
