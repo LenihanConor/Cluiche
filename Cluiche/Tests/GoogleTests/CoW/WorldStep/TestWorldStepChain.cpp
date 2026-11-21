@@ -477,6 +477,9 @@ TEST(WorldStepChain, StageUnregisteredAfterCaptureStillRunsCommitsAndIsGoneNextS
     // The removed stage may now be destroyed; the chain must not touch it again.
     ecology.reset();
     log.RemoveAll();
+    // ecology is still in `order`, so it would be a missing stage and Capture would (rightly) refuse;
+    // drop it from the order as the module does when a stage is retired.
+    ASSERT_TRUE(chain.Configure(MakeConfig({"weather"})));
     ASSERT_TRUE(chain.Capture(2));
     ASSERT_TRUE(chain.Run(exec));
     ASSERT_TRUE(chain.Commit());
