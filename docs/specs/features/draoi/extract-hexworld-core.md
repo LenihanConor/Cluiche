@@ -49,14 +49,14 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 - PD-011/PD-012: no include up into CoW, no modules in the package.
 - Parent spec package split (agreed 2026-11-21): core holds grid/world types, `BiomeIndex`/`DepthZone`, `BiomeRegistry`, `WorldCellFields`, `CellSelectorSet`, codec data half; nothing from the generator.
 - **Layout (user, 2026-11-21):** a top-level `Draoi/` folder beside `Dia/`, one project per package, namespaces `Draoi::HexWorld` (etc.).
-- **Tests (user, 2026-11-21):** Draoi tests live in their own `DraoiTests` project and exe, not GoogleTests (GoogleTests is already large). `DraoiTests` links Dia and Draoi only, so the no-CoW rule is enforced by the build. Tests that need CoW data (`biomes.json`, `guarantees.json`, CoW goldens) stay in GoogleTests.
+- **Tests (user, 2026-11-21):** Draoi tests stay in the GoogleTests project for now, under a `Draoi/` subfolder, run with `dia run googletest --filter=...`. Splitting GoogleTests into several test projects is a separate backlog item (a Draoi test project would be one of the splits); this feature does not block on it.
 - Escalation rule: a new Draoi project needs user confirmation of placement before Task 1 starts.
 
 ## Acceptance Criteria
 1. `DraoiHexWorld` compiles with no include path to CoW; `dia check deps` is clean.
 2. Full CoW GoogleTests pass; `worldgen_layers.golden.json` and all JSON goldens are byte-identical.
 3. No moved header remains under `Cluiche/CoW/Shared/World/` or `WorldGeneration/` and no duplicate exists.
-4. Moved tests run from the `DraoiTests` project under `dia run draoitests --filter=...`; CoW-data tests still run under `dia run googletest`.
+4. Moved tests live under `Cluiche/Tests/GoogleTests/Draoi/` and run under `dia run googletest --filter=...`.
 5. `dia docs precommit` and `dia check sln-sync` pass; module doc and registry updated.
 
 ## Tasks
@@ -65,12 +65,11 @@ Today `CoW::World::` (the comment in `CellVocabulary.h` says namespaces are unch
 | 1 | Create project, vcxproj/filters, sln folder, module doc; CoW reference | Empty lib builds; `dia check deps` | Needs user sign-off on the new Draoi project |
 | 2 | Move `CellVocabulary`, `ZoneTable`, `WorldHexGrid`, `SharedWorldHexGrid`; update includes | Scoped filters for Zone/Grid/Terrain; goldens | Mechanical |
 | 3 | Move `BiomeRegistry` + `Testing/` helpers; update includes | `TestBiomeRegistry*` | Registry must not include generator (true after prerequisites) |
-| 4a | `DraoiTests` project and `dia` target `draoitests` (run, launch, build, `--filter`, `--shards`; add to sln, `dia check sln-sync`) | `dia run draoitests` runs an empty then a first moved test | CLI special-cases targets (`launch.py`, `diagnose.py`, `check.py`); needs CLI changes |
-| 4b | Move tests that need no CoW data to `DraoiTests`; split mixed files | Filtered runs in both projects | |
+| 4 | Move tests that need no CoW data to `Tests/GoogleTests/Draoi/`; split mixed files | Filtered runs | |
 | 5 | Namespace change to `Draoi::HexWorld` | Full suite, goldens | Separate commit |
 | 6 | Close-out: gap audit, edge tests, one full sharded suite | Full suite | No mutation checks |
 
 ## Open Design Questions
 1. **Admission.** No second game exists; Weather/Hydrology/Ecology are the credible second consumers. Proceed on that basis, or hold extraction until the first sim package is built so core is shaped by two real clients?
-2. **Resolved 2026-11-21:** layout, namespace and separate test project (see Binding Decisions).
+2. **Resolved 2026-11-21:** layout, namespace and test location (see Binding Decisions).
 3. **Split of mixed test files.** Some biome-registry tests load shipped CoW data; decide per file whether to port them to a Draoi fixture or leave them in GoogleTests.
