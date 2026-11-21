@@ -529,7 +529,7 @@ TEST_F(SessionImportTest, Regions_AC14_ImportedRegionsAndSitesAreKeptAndProvenan
     }
     edited.sites = rebuilt;
     std::string editedText; JsonIssue issue;
-    WorldJsonContext ctx; ctx.registry = &a.Registry();
+    WorldJsonContext ctx = TestImportContext(); ctx.registry = &a.Registry();
     ASSERT_TRUE(ExportWorldText(edited, ctx, editedText, issue));
     WriteFile("edited", editedText);
 
@@ -591,7 +591,7 @@ TEST_F(SessionImportTest, AC4_HandEditedSiteImportsAtItsNewCellThroughTheSession
 
 TEST_F(SessionImportTest, ImportedWorldOfAnotherSizeKeepsTheQueriesWorking)
 {
-    WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c; ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
+    WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c = TestImportContext(); ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
     TestSession s;
     Generate(s, 91);   // a Small world first, so stale buffers of the wrong size could be read
     const Json::Value r = ImportName(s, "tiny");
@@ -630,7 +630,7 @@ TEST_F(SessionImportTest, ImportedWorldOfAnotherSizeKeepsTheQueriesWorking)
 
 TEST_F(SessionImportTest, UnlockingAfterImportingADifferentSizeRegeneratesAtTheFilesSize)
 {
-    WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c; ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
+    WriteFile("tiny", [&] { std::string t; JsonIssue i; WorldJsonContext c = TestImportContext(); ExportWorldText(MakeTinyWorld(), c, t, i); return t; }());
     TestSession s;
     Generate(s, 92);
     ASSERT_TRUE(ImportName(s, "tiny")["success"].asBool());

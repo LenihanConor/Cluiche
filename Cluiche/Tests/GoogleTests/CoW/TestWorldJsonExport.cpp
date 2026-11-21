@@ -34,9 +34,11 @@ Json::Value Parse(const std::string& text)
 
 std::string Export(const WorldStructure& w, const WorldJsonContext& ctx = {})
 {
+    WorldJsonContext c = ctx;
+    if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
     std::string text;
     JsonIssue error;
-    EXPECT_TRUE(ExportWorldText(w, ctx, text, error)) << error.field << ": " << error.message;
+    EXPECT_TRUE(ExportWorldText(w, c, text, error)) << error.field << ": " << error.message;
     return text;
 }
 
@@ -117,7 +119,7 @@ TEST(WorldJsonExport, EveryCellFieldIsWritten)
     {
         const Cell& c = w.Cells()[i];
         const Json::Value& j = cells[i];
-        EXPECT_EQ(j["biome"].asString(), WorldJsonBiomeName(c.biome)) << i;
+        EXPECT_EQ(j["biome"].asString(), ShippedBiomeRegistry().IdText(c.biome)) << i;
         EXPECT_EQ(j["terrain"].asString(), TerrainTypeName(c.terrain)) << i;
         EXPECT_EQ(j["region"].asUInt(), c.region) << i;
         EXPECT_EQ(static_cast<float>(j["elevation"].asDouble()), c.elevation) << i;
@@ -192,7 +194,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
         EXPECT_EQ(regions[r]["zone"].asString(), DepthZoneName(rec.zone));
         EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
         EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
-        EXPECT_EQ(regions[r]["primary_biome"].asString(), WorldJsonBiomeName(rec.primaryBiome));
+        EXPECT_EQ(regions[r]["primary_biome"].asString(), ShippedBiomeRegistry().IdText(rec.primaryBiome));
         EXPECT_EQ(static_cast<float>(regions[r]["purity"].asDouble()), rec.purity);
         EXPECT_EQ(regions[r]["cell_count"].asUInt(), rec.cellCount);
         EXPECT_EQ(regions[r]["centre_cell"].asUInt(), rec.centreCell);
@@ -328,14 +330,14 @@ TEST(WorldJsonExport, NonFiniteFloatsAreRefusedWithTheFieldNamed)
         w.Cells()[5].elevation = bad;
         std::string text = "stale";
         JsonIssue error;
-        EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_TRUE(text.empty());
         EXPECT_EQ(error.field, "world.cells[5].elevation");
         EXPECT_FALSE(error.message.empty());
 
         WorldStructure l = MakeTinyWorld();
         l.Cells()[2].latitude = bad;
-        EXPECT_FALSE(ExportWorldText(l, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(l, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[2].latitude");
     }
     WorldStructure r = MakeTinyWorld();
@@ -344,7 +346,7 @@ TEST(WorldJsonExport, NonFiniteFloatsAreRefusedWithTheFieldNamed)
     rec.purity = std::numeric_limits<float>::quiet_NaN();
     r.regions.AddRegion(rec);
     std::string text; JsonIssue error;
-    EXPECT_FALSE(ExportWorldText(r, {}, text, error));
+    EXPECT_FALSE(ExportWorldText(r, TestImportContext(), text, error));
     EXPECT_EQ(error.field, "world.regions[0].purity");
 }
 
@@ -354,25 +356,25 @@ TEST(WorldJsonExport, EnumValuesOutOfRangeAreRefused)
     {
         WorldStructure w = MakeTinyWorld();
         w.Cells()[3].biome = static_cast<CoW::World::BiomeIndex>(200);
-        EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[3].biome");
     }
     {
         WorldStructure w = MakeTinyWorld();
         w.Cells()[4].terrain = TerrainType::Count;
-        EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[4].terrain");
     }
     {
         WorldStructure w = MakeTinyWorld();
         w.Cells()[1].waterSource = static_cast<WaterSource>(9);
-        EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[1].water_source");
     }
     {
         WorldStructure w = MakeTinyWorld();
         w.Cells()[0].depthZone = static_cast<DepthZone>(9);
-        EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+        EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
         EXPECT_EQ(error.field, "world.cells[0].depth_zone");
     }
 }
@@ -383,7 +385,7 @@ TEST(WorldJsonExport, SiteOutsideTheGridIsRefused)
     Site s; s.kindCrc = StringCRC("Test.Kind").Value(); s.cell = 12;   // 12 cells: index 12 is out
     w.sites.Add(s);
     std::string text; JsonIssue error;
-    EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+    EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
     EXPECT_NE(error.field.find("world.sites"), std::string::npos);
 }
 
@@ -391,19 +393,12 @@ TEST(WorldJsonExport, EmptyWorldIsRefused)
 {
     WorldStructure w;   // 0 x 0
     std::string text; JsonIssue error;
-    EXPECT_FALSE(ExportWorldText(w, {}, text, error));
+    EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, error));
     EXPECT_EQ(error.field, "world.dimensions");
 }
 
 TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
 {
-    for (int i = 0; i < kBiomeCount; ++i)
-    {
-        CoW::World::BiomeIndex out = CoW::World::kNoBiome;
-        ASSERT_TRUE(WorldJsonParseBiome(WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(i)), out));
-        EXPECT_EQ(static_cast<int>(out), i);
-        EXPECT_STREQ(ShippedBiomeRegistry().IdText(static_cast<CoW::World::BiomeIndex>(i)), WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(i)));
-    }
     for (int i = 0; i < static_cast<int>(TerrainType::Count); ++i)
     {
         TerrainType out = TerrainType::Count;
@@ -418,14 +413,10 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
         EXPECT_EQ(static_cast<int>(w), i);
         EXPECT_EQ(static_cast<int>(z), i);
     }
-    CoW::World::BiomeIndex b; TerrainType t; WaterSource w; DepthZone z;
-    EXPECT_FALSE(WorldJsonParseBiome("", b));
-    EXPECT_FALSE(WorldJsonParseBiome("Biome.Swamp", b));
-    EXPECT_FALSE(WorldJsonParseBiome("biome.ocean", b));        // case sensitive
+    TerrainType t; WaterSource w; DepthZone z;
     EXPECT_FALSE(WorldJsonParseTerrain("Unknown", t));
     EXPECT_FALSE(WorldJsonParseWaterSource("Swamp", w));
     EXPECT_FALSE(WorldJsonParseDepthZone("None ", z));
-    EXPECT_STREQ(WorldJsonBiomeName(static_cast<CoW::World::BiomeIndex>(Biome::Count)), "Unknown");
 }
 
 TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
@@ -438,6 +429,7 @@ TEST(WorldJsonExport, GoldenTextForTheTinyWorld)
     "seed": 1311768467294899695,
     "generator_version": 1,
     "rules_version": 4,
+    "biome_registry_hash": "e02a567065553af0",
     "preset_id": "tiny",
     "params": {
       "barrier": 0.6,

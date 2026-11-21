@@ -1180,6 +1180,7 @@ Json::Value WorldGenSession::ExportWorld(const Json::Value& args) const
 
     WorldJsonContext context;
     context.registry = &Registry();
+    context.biomes = mBiomes;
     context.presetId = mPresetId;
     std::string text;
     JsonIssue issue;

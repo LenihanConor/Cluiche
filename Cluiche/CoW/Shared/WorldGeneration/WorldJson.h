@@ -46,8 +46,8 @@ struct WorldJsonContext
     // Export: names for registered site kinds. Import: used to warn about kinds this build does not register.
     // nullptr = only the four built-in node kinds are known.
     const SiteRegistry* registry = nullptr;
-    // Import: the biome registry the region summaries are recomputed against (required; import fails without it).
-    // Task 25 also uses it for biome ids and the registry hash.
+    // Required by export and import (both fail without it): biome ids, provenance.biome_registry_hash, and the
+    // registry the region summaries are recomputed against.
     const World::BiomeRegistry* biomes = nullptr;
     // Export: written as provenance.preset_id when non-empty, else the world's own provenance.presetId.
     std::string presetId;
@@ -55,9 +55,8 @@ struct WorldJsonContext
     uint32_t rulesVersion = 0;
 };
 
-// "Biome.TemperateForest", "Lowland", ... (the names the file uses; parse is the exact inverse).
-const char* WorldJsonBiomeName(World::BiomeIndex b);
-bool        WorldJsonParseBiome(const std::string& text, World::BiomeIndex& out);
+// Biome ids are written with BiomeRegistry::IdText and read with ResolveOrFallback (an unknown id imports as the
+// fallback biome). The other enums use the names below (parse is the exact inverse of the name functions).
 bool        WorldJsonParseTerrain(const std::string& text, TerrainType& out);
 bool        WorldJsonParseWaterSource(const std::string& text, WaterSource& out);
 bool        WorldJsonParseDepthZone(const std::string& text, DepthZone& out);

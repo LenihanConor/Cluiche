@@ -240,7 +240,7 @@ TEST_F(WorldFilesTest, AWorldSurvivesExportWriteReadImportThroughARealFile)
     const WorldStructure original = MakeTinyWorldWithUnknownKind();
     std::string text;
     JsonIssue issue;
-    ASSERT_TRUE(ExportWorldText(original, {}, text, issue));
+    ASSERT_TRUE(ExportWorldText(original, TestImportContext(), text, issue));
     const std::string dir = Dir("worlds");
     ASSERT_TRUE(WriteWorldFile(dir, DefaultWorldName(original.provenance.seed), text, false).Ok());
 

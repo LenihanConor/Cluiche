@@ -66,7 +66,7 @@ WorldImportResult RoundTrip(const WorldStructure& original, WorldStructure& impo
 {
     std::string text;
     JsonIssue issue;
-    EXPECT_TRUE(ExportWorldText(original, {}, text, issue)) << issue.field << ": " << issue.message;
+    EXPECT_TRUE(ExportWorldText(original, TestImportContext(), text, issue)) << issue.field << ": " << issue.message;
     if (textOut) { *textOut = text; }
     return ImportWorldText(text, TestImportContext(), imported);
 }
@@ -88,7 +88,7 @@ TEST(WorldJsonPerf, AC6_SmallWorldExportAndImportTakeWellUnderThreeSeconds)
     std::string text;
     JsonIssue issue;
     const auto t0 = Clock::now();
-    ASSERT_TRUE(ExportWorldText(w, {}, text, issue));
+    ASSERT_TRUE(ExportWorldText(w, TestImportContext(), text, issue));
     const double exportMs = MsSince(t0);
     WorldStructure imported;
     const auto t1 = Clock::now();
@@ -155,7 +155,7 @@ TEST(WorldJsonLimits, ExportRefusesTextLargerThanImportWouldAccept)
     }
     std::string text = "stale";
     JsonIssue issue;
-    EXPECT_FALSE(ExportWorldText(w, {}, text, issue));
+    EXPECT_FALSE(ExportWorldText(w, TestImportContext(), text, issue));
     EXPECT_TRUE(text.empty());
     EXPECT_EQ(issue.field, "world");
     EXPECT_NE(issue.message.find("larger than"), std::string::npos);
@@ -194,7 +194,7 @@ TEST(WorldJsonLimits, KindNamesUpToSixtyThreeCharactersWork_SixtyFourDoNot)
 
     std::string text;
     JsonIssue issue;
-    ASSERT_TRUE(ExportWorldText(w, {}, text, issue));
+    ASSERT_TRUE(ExportWorldText(w, TestImportContext(), text, issue));
     const std::string longName(64, 'k');
     text.replace(text.find(ok), ok.size(), longName);
     EXPECT_FALSE(ImportWorldText(text, TestImportContext(), imported).ok);
@@ -353,7 +353,7 @@ TEST(SLOW_WorldJsonSweep, EveryShippedPresetTwentySeedsRoundTripsByteForByte)
             EXPECT_TRUE(original.regions == imported.regions) << preset << " " << seed;
             EXPECT_TRUE(original.sites == imported.sites) << preset << " " << seed;
             std::string again; JsonIssue issue;
-            ASSERT_TRUE(ExportWorldText(imported, {}, again, issue));
+            ASSERT_TRUE(ExportWorldText(imported, TestImportContext(), again, issue));
             EXPECT_EQ(text, again) << preset << " " << seed;
             ++worlds;
         }
@@ -403,7 +403,7 @@ TEST(SLOW_WorldJsonSweep, LargeWorldsRoundTripWithinTheBudget)
         ASSERT_EQ(original.dimensions.height, 64);
         std::string text; JsonIssue issue;
         const auto t0 = Clock::now();
-        ASSERT_TRUE(ExportWorldText(original, {}, text, issue));
+        ASSERT_TRUE(ExportWorldText(original, TestImportContext(), text, issue));
         const double exportMs = MsSince(t0);
         WorldStructure imported;
         const auto t1 = Clock::now();

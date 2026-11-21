@@ -2,6 +2,8 @@
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/World/BiomeRegistry.h>
 
+#include <DiaObservation/Log/DiaLog.h>
+
 #include <Shared/WorldGeneration/RegionRepair.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 
@@ -116,6 +118,15 @@ namespace
             if (!RequireMember(obj, key, path)) { return false; }
             if (!obj[key].isArray()) { return Fail(path + "." + key, "must be an array"); }
             out = &obj[key];
+            return true;
+        }
+
+        // A biome id string resolved through the registry; unknown ids become the fallback biome (the registry warns).
+        bool ReadBiome(const Json::Value& obj, const char* key, const std::string& path, World::BiomeIndex& out)
+        {
+            std::string text;
+            if (!ReadString(obj, key, path, text)) { return false; }
+            out = context.biomes->ResolveOrFallback(Dia::Core::StringCRC(text.c_str()));
             return true;
         }
 
@@ -235,7 +246,7 @@ namespace
         const Json::Value* p = nullptr;
         if (!im.ReadObject(root, "provenance", "", p)) { im.issue.field = "provenance"; return false; }
         const std::string path = "provenance";
-        im.WarnUnknownFields(*p, path, { "seed", "generator_version", "rules_version", "preset_id", "params" });
+        im.WarnUnknownFields(*p, path, { "seed", "generator_version", "rules_version", "biome_registry_hash", "preset_id", "params" });
 
         int64_t seedSigned = 0;
         if (!p->isMember("seed")) { return im.Fail(path + ".seed", "required field is missing"); }
@@ -283,6 +294,21 @@ namespace
         {
             im.Warn("provenance.rules_version: file " + std::to_string(rules) + ", this build " + std::to_string(im.context.rulesVersion) +
                     "; regenerating may not reproduce the world");
+        }
+        // Additive field (older exports lack it): a different registry is a warning, never a failure.
+        if (p->isMember("biome_registry_hash"))
+        {
+            const Json::Value& h = (*p)["biome_registry_hash"];
+            char mine[17];
+            std::snprintf(mine, sizeof(mine), "%016llx", static_cast<unsigned long long>(im.context.biomes->Hash()));
+            if (!h.isString()) { return im.Fail(path + ".biome_registry_hash", "must be a hex string"); }
+            if (h.asString() != mine)
+            {
+                const std::string text = path + ".biome_registry_hash: file " + h.asString() + ", this build " + mine +
+                                         "; biome ids that are not in this registry import as the fallback biome";
+                DIA_LOG_WARNING("CoW", "World file %s", text.c_str());
+                im.Warn(text);
+            }
         }
         return true;
     }
@@ -418,7 +444,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         Cell c;
         std::memset(&c, 0, sizeof(Cell));
         int64_t region = 0, landmass = 0, flags = 0, downstream = 0;
-        if (!im.ReadEnum<World::BiomeIndex>(cj, "biome", path, WorldJsonParseBiome, "biome", c.biome)) { return finish(false); }
+        if (!im.ReadBiome(cj, "biome", path, c.biome)) { return finish(false); }
         if (!im.ReadEnum<TerrainType>(cj, "terrain", path, WorldJsonParseTerrain, "terrain", c.terrain)) { return finish(false); }
         if (!im.ReadInt(cj, "region", path, 0, 255, region)) { return finish(false); }
         if (region > static_cast<int64_t>(regionCount))
@@ -466,7 +492,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         if (!im.ReadInt(rj, "landmass", path, 0, 255, landmass)) { return finish(false); }
         if (!rj.isMember("is_island")) { im.Fail(path + ".is_island", "required field is missing"); return finish(false); }
         if (!rj["is_island"].isBool()) { im.Fail(path + ".is_island", "must be true or false"); return finish(false); }
-        if (!im.ReadEnum<World::BiomeIndex>(rj, "primary_biome", path, WorldJsonParseBiome, "biome", fs.primary)) { return finish(false); }
+        if (!im.ReadBiome(rj, "primary_biome", path, fs.primary)) { return finish(false); }
         if (!im.ReadUnit(rj, "purity", path, fs.purity)) { return finish(false); }
         if (!im.ReadInt(rj, "cell_count", path, 0, 65535, fs.cellCount)) { return finish(false); }
         if (!im.ReadInt(rj, "centre_cell", path, 0, static_cast<int64_t>(expectedCells) - 1, fs.centreCell)) { return finish(false); }
@@ -520,7 +546,7 @@ static WorldImportResult ImportWorldTextImpl(const std::string& text, const Worl
         }
         if (fs.primary != rec.primaryBiome)
         {
-            im.Warn(path + ".primary_biome: file " + WorldJsonBiomeName(fs.primary) + ", recomputed " + WorldJsonBiomeName(rec.primaryBiome));
+            im.Warn(path + ".primary_biome: file " + context.biomes->IdText(fs.primary) + ", recomputed " + context.biomes->IdText(rec.primaryBiome));
         }
         if (fs.purity != rec.purity)
         {

@@ -1,7 +1,7 @@
 // S-1 World Generation: JSON export of a WorldStructure. See WorldJson.h.
 #include <Shared/WorldGeneration/WorldJson.h>
 
-#include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 
 #include <algorithm>
@@ -15,25 +15,6 @@ namespace WorldGeneration {
 
 namespace
 {
-    // Enum value names the file uses, computed once.
-    struct BiomeNames
-    {
-        std::string names[kBiomeCount];
-        BiomeNames()
-        {
-            for (int i = 0; i < kBiomeCount; ++i)
-            {
-                names[i] = BiomeId(static_cast<Biome>(i)).AsChar();
-            }
-        }
-    };
-
-    const BiomeNames& GetBiomeNames()
-    {
-        static const BiomeNames sNames;
-        return sNames;
-    }
-
     template <typename Enum, typename NameFn>
     bool ParseEnum(const std::string& text, int count, NameFn nameOf, Enum& out)
     {
@@ -48,7 +29,7 @@ namespace
         return false;
     }
 
-    bool IsKnownBiome(World::BiomeIndex b) { return static_cast<int>(b) >= 0 && static_cast<int>(b) < kBiomeCount; }
+    bool IsKnownBiome(const World::BiomeRegistry& biomes, World::BiomeIndex b) { return static_cast<uint32_t>(b) < biomes.Count(); }
     bool IsKnownTerrain(TerrainType t) { return static_cast<int>(t) >= 0 && static_cast<int>(t) < static_cast<int>(TerrainType::Count); }
     bool IsKnownWater(WaterSource w) { return static_cast<int>(w) >= 0 && static_cast<int>(w) <= static_cast<int>(WaterSource::River); }
     bool IsKnownZone(DepthZone z) { return static_cast<int>(z) >= 0 && static_cast<int>(z) <= static_cast<int>(DepthZone::AncientInteriors); }
@@ -144,16 +125,6 @@ namespace
     }
 }
 
-const char* WorldJsonBiomeName(World::BiomeIndex b)
-{
-    return IsKnownBiome(b) ? GetBiomeNames().names[static_cast<int>(b)].c_str() : "Unknown";
-}
-
-bool WorldJsonParseBiome(const std::string& text, World::BiomeIndex& out)
-{
-    return ParseEnum<World::BiomeIndex>(text, kBiomeCount, [](World::BiomeIndex b) { return WorldJsonBiomeName(b); }, out);
-}
-
 bool WorldJsonParseTerrain(const std::string& text, TerrainType& out)
 {
     return ParseEnum<TerrainType>(text, static_cast<int>(TerrainType::Count), [](TerrainType t) { return TerrainTypeName(t); }, out);
@@ -210,6 +181,11 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
     {
         return Fail(error, "world.dimensions", "dimensions do not match the cell count");
     }
+    if (context.biomes == nullptr || context.biomes->Count() == 0)
+    {
+        return Fail(error, "", "no biome registry is loaded");
+    }
+    const World::BiomeRegistry& biomes = *context.biomes;
     const Cell* cells = world.Cells();
 
     std::string out;
@@ -223,6 +199,7 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
     Appendf(out, "    \"seed\": %llu,\n", static_cast<unsigned long long>(world.provenance.seed));
     Appendf(out, "    \"generator_version\": %u,\n", world.provenance.generatorVersion);
     Appendf(out, "    \"rules_version\": %u,\n", world.provenance.rulesVersion);
+    Appendf(out, "    \"biome_registry_hash\": \"%016llx\",\n", static_cast<unsigned long long>(biomes.Hash()));
     out += "    \"preset_id\": ";
     AppendString(out, presetId);
     out += ",\n";
@@ -244,13 +221,13 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
         std::snprintf(field, sizeof(field), "world.cells[%d]", i);
         if (!std::isfinite(c.elevation)) { return Fail(error, std::string(field) + ".elevation", "elevation is not finite"); }
         if (!std::isfinite(c.latitude))  { return Fail(error, std::string(field) + ".latitude", "latitude is not finite"); }
-        if (!IsKnownBiome(c.biome))      { return Fail(error, std::string(field) + ".biome", "biome value is out of range"); }
+        if (!IsKnownBiome(biomes, c.biome))      { return Fail(error, std::string(field) + ".biome", "biome value is out of range"); }
         if (!IsKnownTerrain(c.terrain))  { return Fail(error, std::string(field) + ".terrain", "terrain value is out of range"); }
         if (!IsKnownWater(c.waterSource)) { return Fail(error, std::string(field) + ".water_source", "water source value is out of range"); }
         if (!IsKnownZone(c.depthZone))   { return Fail(error, std::string(field) + ".depth_zone", "depth zone value is out of range"); }
 
         out += "      { \"biome\": \"";
-        out += WorldJsonBiomeName(c.biome);
+        out += biomes.IdText(c.biome);
         out += "\", \"terrain\": \"";
         out += TerrainTypeName(c.terrain);
         Appendf(out, "\", \"region\": %u, \"elevation\": ", static_cast<unsigned>(c.region));
@@ -275,12 +252,12 @@ bool ExportWorldText(const WorldStructure& world, const WorldJsonContext& contex
         char field[64];
         std::snprintf(field, sizeof(field), "world.regions[%u]", r);
         if (!std::isfinite(rec.purity))   { return Fail(error, std::string(field) + ".purity", "purity is not finite"); }
-        if (!IsKnownBiome(rec.primaryBiome)) { return Fail(error, std::string(field) + ".primary_biome", "biome value is out of range"); }
+        if (!IsKnownBiome(biomes, rec.primaryBiome)) { return Fail(error, std::string(field) + ".primary_biome", "biome value is out of range"); }
         if (!IsKnownZone(rec.zone))       { return Fail(error, std::string(field) + ".zone", "zone value is out of range"); }
 
         Appendf(out, "      { \"id\": %u, \"zone\": \"%s\", \"landmass\": %u, \"is_island\": %s, \"primary_biome\": \"%s\", \"purity\": ",
                 static_cast<unsigned>(rec.id), DepthZoneName(rec.zone), static_cast<unsigned>(rec.landmass),
-                rec.isIsland ? "true" : "false", WorldJsonBiomeName(rec.primaryBiome));
+                rec.isIsland ? "true" : "false", biomes.IdText(rec.primaryBiome));
         AppendFloat(out, rec.purity);
         Appendf(out, ", \"cell_count\": %u, \"centre_cell\": %u, \"neighbours\": [", static_cast<unsigned>(rec.cellCount),
                 static_cast<unsigned>(rec.centreCell));
