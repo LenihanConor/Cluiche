@@ -1189,6 +1189,32 @@ TEST_F(DeferredStepSchedulerTest, UnregisterInFlightIncompleteLogsNothing)
 	EXPECT_EQ(log.Total(), 0u);
 }
 
+TEST_F(DeferredStepSchedulerTest, ResetTickKeyAllowsALowerKeyWithoutWarningOrAssert)
+{
+#ifdef DEBUG
+	auto* prev = Dia::Core::g_pAssertFunc;
+	Dia::Core::g_pAssertFunc = CountingAssertHandler;
+	gTickAssertCount = 0;
+#endif
+	Testing::LogCapture log;
+	ASSERT_TRUE(mScheduler.Register(StringCRC("A"), mStep));
+	mScheduler.Tick(10);
+	mScheduler.ResetTickKey();
+	mScheduler.Tick(3);                         // lower than 10: accepted after the reset
+	ASSERT_EQ(mScheduler.Kick(StringCRC("A"), 3, 4), KickResult::kLaunched);
+	mLauncher.CompleteAll();
+	mScheduler.Tick(4);                         // and the scheduler works on the new timeline
+	EXPECT_EQ(mStep.GetApplyCount(), 1u);
+	EXPECT_EQ(log.Warnings("went backwards"), 0u);
+	mScheduler.Tick(2);                         // the floor is back at 4, so going lower again still trips
+	EXPECT_EQ(log.Warnings("went backwards"), 1u);
+#ifdef DEBUG
+	EXPECT_EQ(gTickAssertCount, 1);
+	Dia::Core::g_pAssertFunc = prev;
+#endif
+	mScheduler.Unregister(StringCRC("A"));
+}
+
 // One Warning (and one Debug assert) per regression episode; the latch resets when the key catches back up to the high-water mark.
 TEST_F(DeferredStepSchedulerTest, BackwardsTickWarnsOncePerEpisode)
 {

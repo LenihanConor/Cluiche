@@ -82,6 +82,12 @@ namespace Dia::DeferredStep
 		// discarded too. All channels end kIdle; key floors are kept. Load, and shutdown.
 		void DrainAndDiscardAll();
 
+		// Forgets the Tick key high-water mark so the next Tick may carry a lower key (a load replacing the timeline with
+		// an earlier one). Clears only the Tick floor: channel states, apply keys and per-channel kick floors are untouched.
+		// Call only from SimPU outside Tick/Apply; the caller has already drained the channels, since a step kicked on the
+		// old timeline would be due against keys of the new one.
+		void ResetTickKey();
+
 		// Puts a registered idle channel into kComplete with no launch token, so the next Tick at or past applyKey applies it
 		// without consulting the launcher. The channel's monotonic key floor becomes kickKey. False (Warning) otherwise.
 		bool RestorePending(Dia::Core::StringCRC channelId, StepKey kickKey, StepKey applyKey);

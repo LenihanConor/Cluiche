@@ -194,6 +194,13 @@ namespace Dia::DeferredStep
 		return KickResult::kLaunched;
 	}
 
+	void DeferredStepScheduler::ResetTickKey()
+	{
+		mLastTickKey = 0;
+		mHasTicked = false;
+		mInBackwardsEpisode = false;
+	}
+
 	void DeferredStepScheduler::Tick(StepKey currentKey)
 	{
 		if (mHasTicked && currentKey < mLastTickKey)
