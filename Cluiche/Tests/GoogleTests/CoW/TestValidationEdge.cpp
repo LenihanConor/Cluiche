@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -71,19 +72,19 @@ double Millis(std::chrono::steady_clock::time_point a, std::chrono::steady_clock
 TEST(ValidationEdge, OneByOneWorldWithNoSitesFollowsTheVacuousRules)
 {
     WorldStructure w = MakeAllLandWorld(1, 1);
-    DefaultValidationSet set(TestRules());
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);   // no world-thrones
     EXPECT_TRUE(r.Find(HearthNexusReachabilityGuarantee().GetId())->satisfied);
     EXPECT_TRUE(r.Find(DynastySpacingGuarantee().GetId())->satisfied);
-    EXPECT_FALSE(r.Find(WorldThroneGuarantee().GetId())->satisfied);
+    EXPECT_FALSE(r.Find(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()).GetId())->satisfied);
 }
 
 TEST(ValidationEdge, EmptyWorldDoesNotCrashAnyGuarantee)
 {
     WorldStructure w;
     w.Resize({ 0, 0 });
-    DefaultValidationSet set(TestRules());
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_FALSE(r.passed);
     EXPECT_EQ(r.guarantees.Size(), 3u);
@@ -106,8 +107,8 @@ TEST(ValidationEdge, SitesOutsideTheMapAreViolationsNotCrashes)
     EXPECT_FALSE(ds.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(ds, "outside the map"));
     EXPECT_TRUE(ds.violatingPairs.IsEmpty());
-    FillLand(w, 2, 2, 5, 5, DepthZone::AncientInteriors, B("Biome.Grassland"));
-    const GuaranteeResult wt = Check(WorldThroneGuarantee(), w, { &p });
+    FillLand(w, 2, 2, 5, 5, kZoneAncient, B("Biome.Grassland"));
+    const GuaranteeResult wt = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(wt.satisfied);
     EXPECT_EQ(wt.violatingCells.Size(), 1u);
 }
@@ -126,11 +127,11 @@ TEST(ValidationEdge, AllWaterWorldHasNothingReachable)
 TEST(ValidationEdge, SevenThronesFailTheExactCount)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 17, 8, 3);
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "expected 6 world-thrones, found 7"));
     EXPECT_TRUE(AnyDiagnosticContains(r, "2 world-thrones of Apotheosis type 3"));
@@ -139,12 +140,12 @@ TEST(ValidationEdge, SevenThronesFailTheExactCount)
 TEST(ValidationEdge, AncientInteriorsInSeveralPatchesAnyOneSuffices)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 2, 2, 4, 4, DepthZone::AncientInteriors, B("Biome.Grassland"));       // patch A
-    FillLand(w, 26, 16, 28, 18, DepthZone::AncientInteriors, B("Biome.Grassland"));   // patch B
+    FillLand(w, 2, 2, 4, 4, kZoneAncient, B("Biome.Grassland"));       // patch A
+    FillLand(w, 26, 16, 28, 18, kZoneAncient, B("Biome.Grassland"));   // patch B
     for (int y = 0; y < 20; ++y) { SetOcean(w, 15, y); }                                 // splits the map; thrones sit on the right
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 20 + t, 5, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_TRUE(r.satisfied);   // patch B is on the thrones' side
     for (const ProofPath& path : r.proofPaths) { EXPECT_GE(path.to, Idx(w, 26, 16)); }
 }
@@ -211,7 +212,7 @@ WorldStructure MakeAc6World(uint64_t seed)
         const Cell& c = w.Cells()[i];
         if (c.landmass != w.mainLandmass || c.waterSource != WaterSource::None) { continue; }
         land.push_back(static_cast<uint32_t>(i));
-        if (c.depthZone == DepthZone::AncientInteriors) { interiors.push_back(static_cast<uint32_t>(i)); }
+        if (c.depthZone == kZoneAncient) { interiors.push_back(static_cast<uint32_t>(i)); }
     }
     auto pick = [](const std::vector<uint32_t>& v, size_t k, size_t n) { return v[(v.size() * (2 * k + 1)) / (2 * n)]; };
     auto add = [&](const StringCRC& kind, uint32_t cell, uint16_t variant) {
@@ -232,7 +233,7 @@ TEST(ValidatorPerf, AC6_SmallWorldValidatesWellInsideTheBudget)
     {
         const WorldStructure w = MakeAc6World(seed);
         ASSERT_GT(w.sites.Count(SiteKinds::Hearth()), 0);
-        DefaultValidationSet set(TestRules());
+        DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable());
         double best = 1e9;
         ValidationResult last;
         for (int run = 0; run < 5; ++run)

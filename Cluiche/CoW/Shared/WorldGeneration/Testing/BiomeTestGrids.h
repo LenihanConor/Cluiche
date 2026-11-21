@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -77,7 +78,7 @@ struct BiomeGrid
           elevation(static_cast<size_t>(w) * h, 0.3f),
           barrierMask(static_cast<size_t>(w) * h, 0.0f),
           terrainType(static_cast<size_t>(w) * h, static_cast<uint32_t>(TerrainType::Lowland)),
-          depthZone(static_cast<size_t>(w) * h, static_cast<uint32_t>(DepthZone::WildReaches)),
+          depthZone(static_cast<size_t>(w) * h, static_cast<uint32_t>(kZoneWild)),
           terrainFlags(static_cast<size_t>(w) * h, 0u),
           waterSource(static_cast<size_t>(w) * h, 0u)
     {
@@ -95,12 +96,12 @@ struct BiomeGrid
         if (s == WaterSource::Ocean)
         {
             elevation[c] = 0.0f;
-            depthZone[c] = static_cast<uint32_t>(DepthZone::None);
+            depthZone[c] = static_cast<uint32_t>(kNoZone);
             terrainType[c] = static_cast<uint32_t>(TerrainType::DeepWater);
         }
         else if (s == WaterSource::Lake)
         {
-            depthZone[c] = static_cast<uint32_t>(DepthZone::None);
+            depthZone[c] = static_cast<uint32_t>(kNoZone);
             terrainType[c] = static_cast<uint32_t>(TerrainType::Lake);
         }
     }

@@ -15,6 +15,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -108,11 +109,11 @@ inline void CheckContractAndBorderAndLand(const TerrainGenerator& g, const World
             if (!(c.latitude >= 0.0f && c.latitude <= 1.0f)) { f.Add("AC2 latitude outside [0,1]" + at); }
             if (static_cast<uint8_t>(c.waterSource) > static_cast<uint8_t>(WaterSource::River)) { f.Add("AC2 invalid waterSource" + at); }
             if (static_cast<uint8_t>(c.terrain) >= static_cast<uint8_t>(TerrainType::Count)) { f.Add("AC2 invalid terrain" + at); }
-            if (static_cast<uint8_t>(c.depthZone) > static_cast<uint8_t>(DepthZone::AncientInteriors)) { f.Add("AC2 invalid depthZone" + at); }
+            if (static_cast<uint8_t>(c.depthZone) > static_cast<uint8_t>(kZoneAncient)) { f.Add("AC2 invalid depthZone" + at); }
             anyWater = anyWater || c.waterSource != WaterSource::None;
 
             const bool ocean = c.landmass == 0;
-            if ((c.depthZone == DepthZone::None) != ocean) { f.Add("AC2 depthZone None must be exactly ocean" + at); }
+            if ((c.depthZone == kNoZone) != ocean) { f.Add("AC2 depthZone None must be exactly ocean" + at); }
             if (ocean) { if (c.elevation != 0.0f) { f.Add("AC2 ocean elevation != 0" + at); } }
             else
             {
@@ -208,13 +209,13 @@ inline void CheckDepthZoneRules(const TerrainGenerator& g, const WorldStructure&
         if (c.landmass == 0) { continue; }
         const std::string at = " at cell " + std::to_string(i);
         if (cost[i] > base[i]) { f.Add("AC13 zoneCost above zoneCostBase" + at); }
-        if (coastDist[i] == 1u && c.depthZone != DepthZone::FirstShores) { f.Add("AC13 coast cell not First Shores" + at); }
+        if (coastDist[i] == 1u && c.depthZone != kZoneFirst) { f.Add("AC13 coast cell not First Shores" + at); }
         Range& r = perLandmass[c.landmass];
         switch (c.depthZone)
         {
-        case DepthZone::FirstShores:      r.maxFirst = std::max(r.maxFirst, cost[i]); break;
-        case DepthZone::WildReaches:      r.minWild = std::min(r.minWild, cost[i]); break;
-        case DepthZone::AncientInteriors:
+        case kZoneFirst:      r.maxFirst = std::max(r.maxFirst, cost[i]); break;
+        case kZoneWild:      r.minWild = std::min(r.minWild, cost[i]); break;
+        case kZoneAncient:
             r.minAncient = std::min(r.minAncient, cost[i]);
             if (c.landmass != w.mainLandmass) { f.Add("AC13 Ancient off the main landmass" + at); }
             if (coastDist[i] < 3u) { f.Add("AC13 Ancient within 3 steps of the coast" + at); }

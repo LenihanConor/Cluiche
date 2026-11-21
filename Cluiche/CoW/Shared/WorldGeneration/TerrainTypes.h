@@ -6,6 +6,8 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 
+#include <Shared/World/ZoneTable.h>
+
 #include "TerrainEnums.h"
 #include "Regions.h"
 #include "Sites.h"
@@ -37,16 +39,11 @@ inline const char* WaterSourceName(WaterSource v)
     return "Unknown";
 }
 
-inline const char* DepthZoneName(DepthZone v)
+// Zone name from the table ("None" for 0); "Unknown" for an index the table does not have.
+inline const char* DepthZoneName(const World::ZoneTable& zones, DepthZone v)
 {
-    switch (v)
-    {
-    case DepthZone::None:             return "None";
-    case DepthZone::FirstShores:      return "FirstShores";
-    case DepthZone::WildReaches:      return "WildReaches";
-    case DepthZone::AncientInteriors: return "AncientInteriors";
-    }
-    return "Unknown";
+    const char* name = zones.Name(v);
+    return name != nullptr ? name : "Unknown";
 }
 
 inline const char* TerrainTypeName(TerrainType v)
@@ -202,7 +199,7 @@ struct Cell
     float       latitude     = 0.0f;                  // [0,1]; 0 = equator, 1 = pole
     WaterSource waterSource  = WaterSource::None;
     TerrainType terrain      = TerrainType::DeepWater;
-    DepthZone   depthZone    = DepthZone::None;       // None for ocean
+    DepthZone   depthZone    = kNoZone;               // kNoZone for ocean
     uint8_t     landmass     = 0;                     // 0 = ocean; 1.. per landmass
     uint8_t     terrainFlags = 0;                     // TerrainFlag bits
     uint8_t     downstream   = kNoDirection;          // river cells: direction 0..5

@@ -16,6 +16,7 @@
 #include <string>
 #include <limits>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -65,7 +66,7 @@ namespace
         {
             g.SetClimate(c, rnd(), rnd());
             const float z = rnd();
-            g.SetZone(c, z < 0.33f ? DepthZone::FirstShores : (z < 0.75f ? DepthZone::WildReaches : DepthZone::AncientInteriors));
+            g.SetZone(c, z < 0.33f ? kZoneFirst : (z < 0.75f ? kZoneWild : kZoneAncient));
             g.elevation[c] = rnd() * 0.3f;
             const float k = rnd();
             if (k < 0.08f)       { g.SetWater(c, WaterSource::Ocean); }
@@ -238,11 +239,11 @@ TEST(BiomeClassify, UnknownPinRuleFailsLoadNamingTheRow)
 
     CoW::World::BiomeRegistry reg;
     CoW::World::RegistryError err;
-    ASSERT_TRUE(reg.LoadFromText(ss.str().c_str(), err, &IsBuiltInPinRule));
+    ASSERT_TRUE(reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedZoneTable(), err, &IsBuiltInPinRule));
     const uint32_t count = reg.Count();
     const uint64_t hash = reg.Hash();
 
-    EXPECT_FALSE(reg.LoadFromText(text.c_str(), err, &IsBuiltInPinRule));
+    EXPECT_FALSE(reg.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err, &IsBuiltInPinRule));
     EXPECT_STREQ(err.field.AsCStr(), "pin");
     EXPECT_STREQ(err.id.AsCStr(), "Biome.Volcanic");
     EXPECT_GT(std::strlen(err.reason.AsCStr()), 0u);
@@ -250,7 +251,7 @@ TEST(BiomeClassify, UnknownPinRuleFailsLoadNamingTheRow)
     EXPECT_EQ(reg.Hash(), hash);
 
     CoW::World::BiomeRegistry fresh;
-    EXPECT_FALSE(fresh.LoadFromText(text.c_str(), err, &IsBuiltInPinRule));
+    EXPECT_FALSE(fresh.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err, &IsBuiltInPinRule));
     EXPECT_EQ(fresh.Count(), 0u);
 }
 
@@ -447,7 +448,7 @@ TEST(BiomeClassify, PlateauInteriorMayStillBeFixedUpByZone)
     g.barrier = 0.6f;
     g.barrierMask[c] = 0.8f;
     g.moisture[c] = 0.9f;
-    g.SetZone(c, DepthZone::FirstShores);   // Rainforest is not valid in First Shores
+    g.SetZone(c, kZoneFirst);   // Rainforest is not valid in First Shores
     const BiomeResult r = RunBiomes(g);
     EXPECT_NE(r.At(c), B("Biome.Rainforest"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
@@ -586,7 +587,7 @@ TEST(BiomeClassify, PinnedAlpineOnFirstShoresBecomesGrasslandOrForest)
     for (int c : { grass, forest })
     {
         g.SetTerrain(c, TerrainType::Mountain);
-        g.SetZone(c, DepthZone::FirstShores);
+        g.SetZone(c, kZoneFirst);
     }
     g.SetClimate(grass, 0.6f, 0.35f);
     g.SetClimate(forest, 0.5f, 0.62f);
@@ -607,12 +608,12 @@ TEST(BiomeClassify, ZoneFixupRepicksBestValidClimateBiome)
     const int grassAncient = g.Index(7, 1);     // grass climate, Ancient: Desert (-5.7) is the best valid
     const int desertAncient = g.Index(10, 1);   // desert in Ancient is valid: untouched
     g.SetClimate(desertFirst, 0.8f, 0.08f);
-    g.SetZone(desertFirst, DepthZone::FirstShores);
+    g.SetZone(desertFirst, kZoneFirst);
     g.SetClimate(rainFirst, 0.85f, 0.9f);
-    g.SetZone(rainFirst, DepthZone::FirstShores);
-    g.SetZone(grassAncient, DepthZone::AncientInteriors);
+    g.SetZone(rainFirst, kZoneFirst);
+    g.SetZone(grassAncient, kZoneAncient);
     g.SetClimate(desertAncient, 0.8f, 0.08f);
-    g.SetZone(desertAncient, DepthZone::AncientInteriors);
+    g.SetZone(desertAncient, kZoneAncient);
 
     const BiomeResult r = RunBiomes(g);
     EXPECT_EQ(r.At(desertFirst), B("Biome.Grassland"));
@@ -632,7 +633,7 @@ TEST(BiomeClassify, ZoneFixupRanksWetlandBelowClimateBiomes)
     BiomeGrid g(9, 9);
     const int c = g.Index(2, 2);
     g.SetTerrain(c, TerrainType::Mountain);
-    g.SetZone(c, DepthZone::FirstShores);
+    g.SetZone(c, kZoneFirst);
     g.AddFlag(c, TerrainFlag::Coast);
     g.elevation[c] = 0.05f;
     g.moisture[c] = 0.9f;
@@ -652,7 +653,7 @@ TEST(BiomeClassify, VentIslandKeepsVolcanicInAnyZone)
     g.SetTerrain(vent, TerrainType::Volcano);
     g.AddFlag(chainOnly, TerrainFlag::Barrier);
     g.barrierForm = BarrierForm::VolcanicChain;
-    for (int c : { flagged, vent, chainOnly }) { g.SetZone(c, DepthZone::FirstShores); }
+    for (int c : { flagged, vent, chainOnly }) { g.SetZone(c, kZoneFirst); }
 
     const BiomeResult r = RunBiomes(g);
     EXPECT_EQ(r.At(flagged), B("Biome.Volcanic"));
@@ -781,7 +782,7 @@ TEST(BiomeClassify, StuckCellBecomesAlpineWhenZoneValid)   // amended 2026-11-10
     // AncientInteriors: Grassland and Forest are not zone-valid, so only Alpine is left.
     BiomeGrid g(9, 9);
     int       x, n1, n2;
-    BuildStuckCell(g, x, n1, n2, DepthZone::AncientInteriors);
+    BuildStuckCell(g, x, n1, n2, kZoneAncient);
     ASSERT_FALSE(Adjacent(g, n1, n2));
 
     const BiomeResult r = RunBiomes(g);
@@ -799,7 +800,7 @@ TEST(BiomeClassify, WildReachesStuckLookingCellUsesForestNotAlpine)
     // In WildReaches Forest is zone-valid and forms no forbidden pair with Volcanic or Rainforest.
     BiomeGrid g(9, 9);
     int       x, n1, n2;
-    BuildStuckCell(g, x, n1, n2, DepthZone::WildReaches);
+    BuildStuckCell(g, x, n1, n2, kZoneWild);
     const BiomeResult r = RunBiomes(g);
     EXPECT_EQ(r.At(x), B("Biome.TemperateForest"));
     EXPECT_EQ(r.debug.unresolvedPairs, 0);
@@ -820,10 +821,10 @@ TEST(BiomeClassify, AlpineSafetyNetNeverUsedWhenFreeCandidateExists)
 TEST(BiomeClassify, UnresolvablePairIsKeptAndCountedWhenAlpineNotZoneValid)
 {
     // Alpine is not zone-valid in FirstShores, but no land cell there can be stuck (Grassland forms no forbidden
-    // pair), so use DepthZone::None: no land biome is zone-valid, so the pair stays and is counted.
+    // pair), so use kNoZone: no land biome is zone-valid, so the pair stays and is counted.
     BiomeGrid g(9, 9);
     int       x, n1, n2;
-    BuildStuckCell(g, x, n1, n2, DepthZone::None);
+    BuildStuckCell(g, x, n1, n2, kNoZone);
 
     const BiomeResult r = RunBiomes(g);
     EXPECT_EQ(r.At(x), B("Biome.Rainforest"));
@@ -839,7 +840,7 @@ TEST(BiomeClassify, FirstShoresStuckNeighbourResolvesToGrasslandNotAlpine)
     // Rainforest is not valid in FirstShores: the zone fix-up moves it; Alpine is never chosen there.
     BiomeGrid g(9, 9);
     int       x, n1, n2;
-    BuildStuckCell(g, x, n1, n2, DepthZone::FirstShores);
+    BuildStuckCell(g, x, n1, n2, kZoneFirst);
     const BiomeResult r = RunBiomes(g);
     EXPECT_NE(r.At(x), B("Biome.Alpine"));
     EXPECT_NE(r.At(n2), B("Biome.Alpine"));

@@ -21,6 +21,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -411,7 +412,7 @@ TEST(LayoutCheck, TwoZoneRegion)
 {
     WorldStructure w = ValidWorld();
     for (int y = 0; y < kBlk; ++y)
-        for (int x = 3 * kBlk; x < 4 * kBlk; ++x) { w.At(x, y).depthZone = DepthZone::WildReaches; }   // region 4
+        for (int x = 3 * kBlk; x < 4 * kBlk; ++x) { w.At(x, y).depthZone = kZoneWild; }   // region 4
     const LayoutReport r = CheckLayout(w, TestRules(), NoBarriers());
     const LayoutViolation* v = Find(r, LayoutCode::RegionTwoZones, 4);
     ASSERT_NE(v, nullptr) << Codes(r);
@@ -440,11 +441,11 @@ TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
     const LayoutViolation* v = Find(r, LayoutCode::RegionCountRange);
     ASSERT_NE(v, nullptr) << Codes(r);
     EXPECT_EQ(v->count, 9u);
-    lim.regionLimitedBy = DepthZone::AncientInteriors;
+    lim.regionLimitedBy = kZoneAncient;
     EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::RegionCountRange), nullptr);
 
     WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, B("Biome.Grassland"));   // 17 regions
-    lim.regionLimitedBy = DepthZone::None;
+    lim.regionLimitedBy = kNoZone;
     const LayoutReport r2 = CheckLayout(many, TestRules(), lim);
     const LayoutViolation* v2 = Find(r2, LayoutCode::RegionCountRange);
     ASSERT_NE(v2, nullptr);
@@ -528,7 +529,7 @@ TEST(LayoutCheck, SameCorridorNodesAreExemptFromSpacingAgainstEachOther)
 {
     // Two corridor nodes of one width-2 corridor, adjacent, on an otherwise empty land block.
     WorldStructure w = MakeBlankWorld(20, 20);
-    FillLand(w, 0, 0, 20, 20, DepthZone::FirstShores, B("Biome.Grassland"));
+    FillLand(w, 0, 0, 20, 20, kZoneFirst, B("Biome.Grassland"));
     AssignRegion(w, 0, 0, 20, 20, 1);
     BuildRegionRecords(w);
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 10, 10, 0, MakeCorridorFlags(1, 1, 2));

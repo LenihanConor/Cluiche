@@ -7,6 +7,7 @@
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
 
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -67,7 +68,7 @@ TEST(NavigationQuery, AC5_PassableTerrainIsReachableWithValidProofPath)
 TEST(NavigationQuery, ProofPathRoutesAroundBlockedTerrainWhenAGapExists)
 {
     WorldStructure w = MakeChannelWorld(10, 5, 4, 2);
-    for (int x = 4; x < 6; ++x) { SetLand(w, x, 4, DepthZone::WildReaches, B("Biome.Grassland")); }   // land bridge on the last row
+    for (int x = 4; x < 6; ++x) { SetLand(w, x, 4, kZoneWild, B("Biome.Grassland")); }   // land bridge on the last row
     BlockWaterProfile p("P");
     const NavigationQuery q = MakeQuery(w, { &p });
     ProofPath path;
@@ -149,11 +150,11 @@ TEST(NavigationQuery, WindingPathLongerThanDiaPathResultCapacityIsFound)
     // Serpentine corridor: land rows separated by water rows, one gap per wall alternating ends. Path > 256 cells.
     const int w = 40, h = 17;
     WorldStructure world = MakeBlankWorld(w, h);
-    for (int y = 0; y < h; y += 2) { FillLand(world, 0, y, w, y + 1, DepthZone::WildReaches, B("Biome.Grassland")); }
+    for (int y = 0; y < h; y += 2) { FillLand(world, 0, y, w, y + 1, kZoneWild, B("Biome.Grassland")); }
     for (int y = 1; y < h; y += 2)
     {
         const int gap = (y / 2) % 2 == 0 ? w - 1 : 0;
-        SetLand(world, gap, y, DepthZone::WildReaches, B("Biome.Grassland"));
+        SetLand(world, gap, y, kZoneWild, B("Biome.Grassland"));
     }
     BlockWaterProfile p("P");
     const NavigationQuery q = MakeQuery(world, { &p });

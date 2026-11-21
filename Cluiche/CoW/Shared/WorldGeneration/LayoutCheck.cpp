@@ -179,7 +179,7 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
                 for (uint32_t c : rc) { Evidence(v, c); }
             }
         }
-        if (limits.regionLimitedBy == DepthZone::None && (mainland < kTotalRegionsMin || mainland > kTotalRegionsMax))
+        if (limits.regionLimitedBy == kNoZone && (mainland < kTotalRegionsMin || mainland > kTotalRegionsMax))
         {
             Add(report, LayoutCode::RegionCountRange, kNoRegion, static_cast<uint32_t>(mainland));
         }

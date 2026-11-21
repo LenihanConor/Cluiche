@@ -23,6 +23,7 @@
 
 #include <cstring>
 #include <string>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::World;
 using Dia::Core::StringCRC;
@@ -137,7 +138,7 @@ TEST(BiomeRegistryLoad, BaseFixtureLoads)
 {
     BiomeRegistry r;
     RegistryError err;
-    EXPECT_TRUE(r.LoadFromText(kBase, err)) << err.field.AsCStr() << " row " << err.row << ": " << err.reason.AsCStr();
+    EXPECT_TRUE(r.LoadFromText(kBase, ::CoW::World::Testing::ShippedZoneTable(), err)) << err.field.AsCStr() << " row " << err.row << ": " << err.reason.AsCStr();
     EXPECT_EQ(r.Count(), 4u);
 }
 
@@ -150,12 +151,12 @@ TEST(BiomeRegistryLoad, FaultTable)
 
         BiomeRegistry r;
         RegistryError loadErr;
-        ASSERT_TRUE(r.LoadFromText(kBase, loadErr));
+        ASSERT_TRUE(r.LoadFromText(kBase, ::CoW::World::Testing::ShippedZoneTable(), loadErr));
         const uint32_t count = r.Count();
         const uint64_t hash = r.Hash();
 
         RegistryError err;
-        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err, &KnownRule));
+        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err, &KnownRule));
         EXPECT_STREQ(err.field.AsCStr(), fault.expectedField);
         EXPECT_EQ(err.row, fault.expectedRow);
         if (fault.expectedId != nullptr) { EXPECT_STREQ(err.id.AsCStr(), fault.expectedId); }
@@ -180,7 +181,7 @@ TEST(BiomeRegistryLoad, FaultOnFirstLoadStaysEmpty)
         SCOPED_TRACE(fault.name);
         BiomeRegistry r;
         RegistryError err;
-        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), err, &KnownRule));
+        EXPECT_FALSE(r.LoadFromText(fault.json.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err, &KnownRule));
         EXPECT_EQ(r.Count(), 0u);
         EXPECT_EQ(r.Hash(), 0u);
     }
@@ -190,10 +191,10 @@ TEST(BiomeRegistryLoad, MoreThan254RowsFails)
 {
     BiomeRegistry r;
     RegistryError loadErr;
-    ASSERT_TRUE(r.LoadFromText(kBase, loadErr));
+    ASSERT_TRUE(r.LoadFromText(kBase, ::CoW::World::Testing::ShippedZoneTable(), loadErr));
     const uint64_t hash = r.Hash();
     RegistryError err;
-    EXPECT_FALSE(r.LoadFromText(TooManyRows().c_str(), err));
+    EXPECT_FALSE(r.LoadFromText(TooManyRows().c_str(), ::CoW::World::Testing::ShippedZoneTable(), err));
     EXPECT_STREQ(err.field.AsCStr(), "biomes");
     EXPECT_EQ(r.Count(), 4u);
     EXPECT_EQ(r.Hash(), hash);

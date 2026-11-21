@@ -3,6 +3,7 @@
 // not read back from the registry.
 #include <gtest/gtest.h>
 #include <Shared/World/BiomeRegistry.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <filesystem>
@@ -10,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::World;
 using CoW::WorldGeneration::DepthZone;
@@ -44,7 +46,7 @@ namespace
             std::stringstream ss;
             ss << in.rdbuf();
             RegistryError err;
-            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), err);
+            const bool ok = !path.empty() && in.good() && reg.LoadFromText(ss.str().c_str(), ::CoW::World::Testing::ShippedZoneTable(), err);
             EXPECT_TRUE(ok) << "path=" << path << " field=" << err.field.AsCStr() << " id=" << err.id.AsCStr()
                             << " row=" << err.row << " reason=" << err.reason.AsCStr();
         }
@@ -79,7 +81,7 @@ namespace
         { "Biome.DesertifiedPlain", "Desertified Plain",  0xc98a4b, false, "land,open,hot,succession", { false, false, false, false } },
     };
 
-    const DepthZone kZones[4] = { DepthZone::None, DepthZone::FirstShores, DepthZone::WildReaches, DepthZone::AncientInteriors };
+    const DepthZone kZones[4] = { kNoZone, kZoneFirst, kZoneWild, kZoneAncient };
 
     uint64_t MaskOf(const BiomeRegistry& r, const char* csv)
     {

@@ -16,7 +16,7 @@ GuaranteeResult WorldLayoutGuarantee::Check(const ValidationContext& context) co
     result.idCrc = GetId().Value();
     result.satisfied = report.ok;
 
-    const bool terrainLimited = mLimits.regionLimitedBy != DepthZone::None;
+    const bool terrainLimited = mLimits.regionLimitedBy != kNoZone;
     for (const LayoutViolation& v : report.violations)
     {
         const bool terrainCause = terrainLimited && (v.code == LayoutCode::RegionCountRange || v.code == LayoutCode::AbsorbedOverCap);

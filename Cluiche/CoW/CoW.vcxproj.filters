@@ -241,6 +241,9 @@
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
       <Filter>Modules\WorldStep</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\World\ZoneTable.cpp">
+      <Filter>Shared\World</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -479,6 +482,12 @@
     </ClInclude>
     <ClInclude Include="Shared\World\CellVocabulary.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\ZoneTable.h">
+      <Filter>Shared\World</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\Testing\ZoneTestIndices.h">
+      <Filter>Shared\World\Testing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

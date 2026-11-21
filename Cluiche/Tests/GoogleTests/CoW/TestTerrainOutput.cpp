@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::RandomStream;
@@ -63,11 +64,11 @@ void CheckContract(Gen& g, uint64_t seed)
             ASSERT_GE(c.latitude, 0.0f);  ASSERT_LE(c.latitude, 1.0f);
             ASSERT_LE(static_cast<uint8_t>(c.waterSource), static_cast<uint8_t>(WaterSource::River));
             ASSERT_LT(static_cast<uint8_t>(c.terrain), static_cast<uint8_t>(TerrainType::Count));
-            ASSERT_LE(static_cast<uint8_t>(c.depthZone), static_cast<uint8_t>(DepthZone::AncientInteriors));
+            ASSERT_LE(static_cast<uint8_t>(c.depthZone), static_cast<uint8_t>(kZoneAncient));
             anyWater = anyWater || c.waterSource != WaterSource::None;
             mainSeen = mainSeen || c.landmass == w.mainLandmass;
             const bool ocean = c.landmass == 0;
-            ASSERT_EQ(c.depthZone == DepthZone::None, ocean);
+            ASSERT_EQ(c.depthZone == kNoZone, ocean);
             if (ocean) { ASSERT_EQ(c.elevation, 0.0f); }
             else { ASSERT_GE(c.elevation, coast); }
             if (lakeMask[i] != 0)

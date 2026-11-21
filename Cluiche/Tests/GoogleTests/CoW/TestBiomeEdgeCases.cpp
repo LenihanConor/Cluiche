@@ -16,6 +16,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -631,7 +632,7 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestRowCandidate)
     g.registry = &forestAsGrass;
     const int c = g.Index(2, 2);
     g.SetTerrain(c, TerrainType::Mountain);
-    g.SetZone(c, DepthZone::FirstShores);
+    g.SetZone(c, kZoneFirst);
     const BiomeResult r = RunBiomes(g, TestRules());
     EXPECT_EQ(r.biome[c], B(forestAsGrass, "Biome.Grassland"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);

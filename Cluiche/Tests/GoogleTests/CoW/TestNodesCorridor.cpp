@@ -18,6 +18,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -450,8 +451,8 @@ namespace
 
     bool IndOnBoundary(const WorldStructure& w, int idx, int barrier)
     {
-        const DepthZone a = barrier == 1 ? DepthZone::FirstShores : DepthZone::WildReaches;
-        const DepthZone b = barrier == 1 ? DepthZone::WildReaches : DepthZone::AncientInteriors;
+        const DepthZone a = barrier == 1 ? kZoneFirst : kZoneWild;
+        const DepthZone b = barrier == 1 ? kZoneWild : kZoneAncient;
         const DepthZone z = w.Cells()[idx].depthZone;
         if (z != a && z != b) { return false; }
         const DepthZone other = z == a ? b : a;

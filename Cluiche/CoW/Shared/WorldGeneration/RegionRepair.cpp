@@ -23,7 +23,7 @@ namespace
 
     struct Info
     {
-        DepthZone zone     = DepthZone::None;
+        DepthZone zone     = kNoZone;
         uint8_t   landmass = 0;
         bool      island   = false;
         bool      alive    = false;
@@ -382,7 +382,7 @@ RegionBuild FinishRegions(WorldStructure& world, const TerrainRules& rules, cons
 
     // AC4 amendment: repair (undersize merges) leaving the mainland below 10 regions reports terrain-limited, naming
     // the zone that lost the most regions against its target (ties: zone order).
-    if (world.regions.limitedBy == DepthZone::None && static_cast<int>(mainland) < kTotalRegionsMin)
+    if (world.regions.limitedBy == kNoZone && static_cast<int>(mainland) < kTotalRegionsMin)
     {
         int finalCount[kRegionZoneCount] = {};
         for (unsigned i = 0; i < world.regions.regions.Size(); ++i)

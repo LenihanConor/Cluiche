@@ -59,6 +59,7 @@ std::string FindShippedBiomes()
 Module* CreateWg(const StringCRC& id)
 {
     g_wg = new WorldGenerationModule(id);
+    g_wg->SetZonesPath(CoW::World::Testing::ShippedZonesPath());   // zones load first; biome overrides below do not move them
     if (!g_biomesTextOverride.empty())
         g_wg->SetBiomesText(g_biomesTextOverride);
     else

@@ -408,7 +408,7 @@ void TerrainGenerator::RunStage(TerrainStage stage, Dia::Maths::RandomStream& wl
         out.zoneCostBase = mLayers.FloatLayer(mLayers.FindLayer("zoneCostBase"));
         out.zoneCost     = mLayers.FloatLayer(mLayers.FindLayer("zoneCost"));
         out.depthZone    = mLayers.UIntLayer(mLayers.FindLayer("depthZone"));
-        ComputeStage8(mRules, mDims, mShape.barrier, mEffective.mainLandmass,
+        ComputeStage8(mRules, mBiomes != nullptr ? mBiomes->Zones() : World::ZoneTable(), mDims, mShape.barrier, mEffective.mainLandmass,
                       mLayers.GetUInt(mLayers.FindLayer("landmass")),
                       mLayers.GetUInt(mLayers.FindLayer("coastDistance")),
                       mLayers.GetFloat(mLayers.FindLayer("ridgeMask")),

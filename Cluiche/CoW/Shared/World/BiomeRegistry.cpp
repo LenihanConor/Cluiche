@@ -29,9 +29,6 @@ namespace
     constexpr uint32_t kTagCount = sizeof(kTagNames) / sizeof(kTagNames[0]);
     static_assert(kTagCount <= 64, "TagMask is 64 bits");
 
-    const char* const kZoneNames[] = { "None", "FirstShores", "WildReaches", "AncientInteriors" };
-    constexpr uint32_t kZoneCount = sizeof(kZoneNames) / sizeof(kZoneNames[0]);
-
     const char* const kRoleNames[] = { "ocean", "lake", "fallback" };
     constexpr uint32_t kRoleCount = sizeof(kRoleNames) / sizeof(kRoleNames[0]);
 
@@ -83,6 +80,7 @@ struct BiomeRegistry::Data
     };
 
     DynamicArrayC<Row, kMaxBiomes> rows;
+    ZoneTable  zones;
     uint8_t    forbidden[kMaxBiomes][kMatrixBytes] = {};
     BiomeIndex climateList[kMaxBiomes] = {};
     uint32_t   climateCount = 0;
@@ -118,7 +116,7 @@ void BiomeRegistry::Data::ComputeHash()
         }
         // The five original rules hash as their historic enum index so existing registry hashes (world JSON) stay stable.
         const int legacyRule = IndexOf(kPinNames, r.pinText.AsCStr());
-        f.Value(static_cast<uint8_t>(legacyRule >= 0 ? legacyRule : 0xFF));
+        f.Value(static_cast<uint8_t>(legacyRule >= 0 ? legacyRule : (r.pinPriority < 0 ? 0 : 0xFF))); // unpinned rows hashed as the old default (WaterOcean = 0)
         if (legacyRule < 0 && r.pinPriority >= 0) { f.Value(r.pin.Value()); }
         f.Value(r.pinPriority);
         f.Value(r.plateau);
@@ -237,7 +235,7 @@ namespace
         if (!ReadStrings(jr["zones"], names)) { return Fail(err, "zones", idc, rowIndex, "zones must be an array of strings"); }
         for (const std::string& z : names)
         {
-            const int zone = IndexOf(kZoneNames, z.c_str());
+            const int zone = d.zones.IndexOf(z.c_str());
             if (zone < 0) { return Fail(err, "zones", idc, rowIndex, "unknown zone"); }
             r.zoneMask |= static_cast<uint8_t>(1u << zone);
         }
@@ -303,7 +301,7 @@ namespace
     }
 }
 
-bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err, PinRuleValidator knownPinRule)
+bool BiomeRegistry::LoadFromText(const char* json, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
 {
     if (json == nullptr) { return Fail(err, "document", "", 0, "no text"); }
 
@@ -340,6 +338,7 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err, PinRuleVa
     if (biomes.size() > kMaxBiomes) { return Fail(err, "biomes", "", 0, "more than 254 biomes"); }
 
     std::unique_ptr<Data> cand(new Data());   // heap: about 120 KB
+    cand->zones = zones;
     uint32_t row = 0;
     for (const Json::Value& jr : biomes)
     {
@@ -409,7 +408,7 @@ bool BiomeRegistry::LoadFromText(const char* json, RegistryError& err, PinRuleVa
     return true;
 }
 
-bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err, PinRuleValidator knownPinRule)
+bool BiomeRegistry::Load(const Dia::Core::FilePath& path, const ZoneTable& zones, RegistryError& err, PinRuleValidator knownPinRule)
 {
     Dia::Core::FilePath::ResoledFilePath resolved;
     path.Resolve(resolved);
@@ -417,7 +416,13 @@ bool BiomeRegistry::Load(const Dia::Core::FilePath& path, RegistryError& err, Pi
     if (!in.good()) { return Fail(err, "file", resolved.AsCStr(), 0, "cannot read file"); }
     std::stringstream ss;
     ss << in.rdbuf();
-    return LoadFromText(ss.str().c_str(), err, knownPinRule);
+    return LoadFromText(ss.str().c_str(), zones, err, knownPinRule);
+}
+
+const ZoneTable& BiomeRegistry::Zones() const
+{
+    static const ZoneTable kEmpty;
+    return mData ? mData->zones : kEmpty;
 }
 
 uint32_t BiomeRegistry::Count() const { return mData ? mData->rows.Size() : 0; }
@@ -515,7 +520,7 @@ bool BiomeRegistry::IsValidInZone(BiomeIndex b, DepthZone zone) const
 {
     const Data::Row* r = mData ? mData->At(b) : nullptr;
     const uint32_t z = static_cast<uint32_t>(zone);
-    return r && z < kZoneCount && ((r->zoneMask >> z) & 1u) != 0;
+    return r && z <= mData->zones.Count() && ((r->zoneMask >> z) & 1u) != 0;
 }
 
 bool BiomeRegistry::AreForbidden(BiomeIndex a, BiomeIndex b) const

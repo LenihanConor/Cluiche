@@ -125,7 +125,7 @@ TEST(WorldJsonExport, EveryCellFieldIsWritten)
         EXPECT_EQ(static_cast<float>(j["elevation"].asDouble()), c.elevation) << i;
         EXPECT_EQ(static_cast<float>(j["latitude"].asDouble()), c.latitude) << i;
         EXPECT_EQ(j["water_source"].asString(), WaterSourceName(c.waterSource)) << i;
-        EXPECT_EQ(j["depth_zone"].asString(), DepthZoneName(c.depthZone)) << i;
+        EXPECT_EQ(j["depth_zone"].asString(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), c.depthZone)) << i;
         EXPECT_EQ(j["landmass"].asUInt(), c.landmass) << i;
         EXPECT_EQ(j["terrain_flags"].asUInt(), c.terrainFlags) << i;
         EXPECT_EQ(j["downstream"].asUInt(), c.downstream) << i;
@@ -191,7 +191,7 @@ TEST(WorldJsonExport, RegionsAndRegionTableAreWritten)
     {
         const RegionRecord& rec = w.regions.regions[r];
         EXPECT_EQ(regions[r]["id"].asUInt(), rec.id);
-        EXPECT_EQ(regions[r]["zone"].asString(), DepthZoneName(rec.zone));
+        EXPECT_EQ(regions[r]["zone"].asString(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), rec.zone));
         EXPECT_EQ(regions[r]["landmass"].asUInt(), rec.landmass);
         EXPECT_EQ(regions[r]["is_island"].asBool(), rec.isIsland);
         EXPECT_EQ(regions[r]["primary_biome"].asString(), ShippedBiomeRegistry().IdText(rec.primaryBiome));
@@ -407,16 +407,16 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
     }
     for (int i = 0; i < 4; ++i)
     {
-        WaterSource w = WaterSource::None; DepthZone z = DepthZone::None;
+        WaterSource w = WaterSource::None; DepthZone z = kNoZone;
         ASSERT_TRUE(WorldJsonParseWaterSource(WaterSourceName(static_cast<WaterSource>(i)), w));
-        ASSERT_TRUE(WorldJsonParseDepthZone(DepthZoneName(static_cast<DepthZone>(i)), z));
+        ASSERT_TRUE(WorldJsonParseDepthZone(::CoW::World::Testing::ShippedZoneTable(), DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), static_cast<DepthZone>(i)), z));
         EXPECT_EQ(static_cast<int>(w), i);
         EXPECT_EQ(static_cast<int>(z), i);
     }
     TerrainType t; WaterSource w; DepthZone z;
     EXPECT_FALSE(WorldJsonParseTerrain("Unknown", t));
     EXPECT_FALSE(WorldJsonParseWaterSource("Swamp", w));
-    EXPECT_FALSE(WorldJsonParseDepthZone("None ", z));
+    EXPECT_FALSE(WorldJsonParseDepthZone(::CoW::World::Testing::ShippedZoneTable(), "None ", z));
 }
 
 TEST(WorldJsonExport, GoldenTextForTheTinyWorld)

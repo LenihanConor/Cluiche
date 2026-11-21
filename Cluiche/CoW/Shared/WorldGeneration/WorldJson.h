@@ -59,7 +59,8 @@ struct WorldJsonContext
 // fallback biome). The other enums use the names below (parse is the exact inverse of the name functions).
 bool        WorldJsonParseTerrain(const std::string& text, TerrainType& out);
 bool        WorldJsonParseWaterSource(const std::string& text, WaterSource& out);
-bool        WorldJsonParseDepthZone(const std::string& text, DepthZone& out);
+// A zone is written by its name in the registry's zone table ("None" = ocean); a name the table lacks is refused.
+bool        WorldJsonParseDepthZone(const World::ZoneTable& zones, const std::string& text, DepthZone& out);
 
 // The key a site kind is written under: a built-in node kind, a registered kind, a name remembered by the
 // world's SiteSet (an unknown kind that came from an import), else "crc:xxxxxxxx" (lower-case hex), which

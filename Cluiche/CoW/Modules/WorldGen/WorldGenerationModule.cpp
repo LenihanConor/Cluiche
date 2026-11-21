@@ -10,6 +10,7 @@
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
@@ -104,8 +105,85 @@ void WorldGenerationModule::ReportRulesFailure()
     mHealth.IncrementErrors();
 }
 
+namespace
+{
+    bool ReadWholeFile(const std::string& path, std::string& out)
+    {
+        std::ifstream in(path, std::ios::binary);
+        if (!in.good()) { return false; }
+        std::stringstream ss;
+        ss << in.rdbuf();
+        out = ss.str();
+        return true;
+    }
+
+    std::string ResolveAlias(const char* alias)
+    {
+        const Dia::Core::Path::Alias a(alias);
+        return Dia::Core::PathStore::IsPathAliasRegistered(a) ? std::string(Dia::Core::PathStore::ResolvePathToCString(a)) : std::string();
+    }
+}
+
+bool WorldGenerationModule::LoadZones(World::ZoneTable& zones)
+{
+    std::string zonesText;
+    std::string sidecarText;
+    if (mZonesTextSet)
+    {
+        zonesText = mZonesText;
+        sidecarText = mZonesSidecarText;
+    }
+    else
+    {
+        std::string zonesPath = mZonesPath;
+        std::string sidecarPath;
+        if (zonesPath.empty() && !mBiomesPath.empty())
+        {
+            zonesPath = (std::filesystem::path(mBiomesPath).parent_path() / "zones.json").string();
+        }
+        if (!zonesPath.empty())
+        {
+            sidecarPath = (std::filesystem::path(zonesPath).parent_path() / "zones.schema.json").string();
+        }
+        else
+        {
+            zonesPath = ResolveAlias(kZonesAlias);
+            sidecarPath = ResolveAlias(kZonesSidecarAlias);
+            if (zonesPath.empty() || sidecarPath.empty())
+            {
+                mBiomesErrorField = "zones";
+                mBiomesErrorReason = std::string("alias '") + (zonesPath.empty() ? kZonesAlias : kZonesSidecarAlias) + "' is not registered";
+                DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones %s; generation is refused", mBiomesErrorReason.c_str());
+                return false;
+            }
+        }
+        if (!ReadWholeFile(zonesPath, zonesText) || !ReadWholeFile(sidecarPath, sidecarText))
+        {
+            mBiomesErrorField = "zones";
+            mBiomesErrorReason = "cannot read " + zonesPath + " or " + sidecarPath;
+            DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones %s; generation is refused", mBiomesErrorReason.c_str());
+            return false;
+        }
+    }
+    World::ZoneError err;
+    if (!zones.LoadFromText(zonesText.c_str(), sidecarText.c_str(), err))
+    {
+        mBiomesErrorField = std::string("zones.") + err.field;
+        mBiomesErrorReason = err.reason;
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: zones failed at field '%s': %s; generation is refused",
+                      err.field.c_str(), mBiomesErrorReason.c_str());
+        return false;
+    }
+    return true;
+}
+
 void WorldGenerationModule::LoadBiomes()
 {
+    World::ZoneTable zones;
+    if (!LoadZones(zones))
+    {
+        return;
+    }
     std::string text;
     std::string path;
     if (mBiomesTextSet)
@@ -142,7 +220,7 @@ void WorldGenerationModule::LoadBiomes()
     }
 
     World::RegistryError err;
-    if (!mBiomes->LoadFromText(text.c_str(), err, &WorldGeneration::IsBuiltInPinRule))
+    if (!mBiomes->LoadFromText(text.c_str(), zones, err, &WorldGeneration::IsBuiltInPinRule))
     {
         mBiomesErrorField = err.field.AsCStr();
         if (mBiomesErrorField.empty())

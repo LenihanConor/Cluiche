@@ -892,7 +892,7 @@ TEST(WorldGenCommands, CellQueryReportsRegionZoneAndSitesAndEveryLandCellHasAReg
 	const Json::Value r = h.Call("cow.worldgen.cell", a);
 	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
 	EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w->Cells()[site.cell].region));
-	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::DepthZoneName(w->Cells()[site.cell].depthZone));
+	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), w->Cells()[site.cell].depthZone));
 	ASSERT_TRUE(r["sites"].isArray());
 	EXPECT_GE(r["sites"].size(), 1u);
 }

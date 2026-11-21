@@ -124,6 +124,13 @@ public:
     static constexpr const char* kBiomesAlias = "json.biomes";
     void SetBiomesText(const std::string& text) { mBiomesText = text; mBiomesTextSet = true; }
     void SetBiomesPath(const std::string& path) { mBiomesPath = path; }
+    // Depth zone table (zones.json + sidecar zones.schema.json), loaded before the biomes (which resolve zone names
+    // against it). Sources, first match: SetZonesText (tests), SetZonesPath (the sidecar is read from the same
+    // directory), the directory of SetBiomesPath, else the catalogue aliases kZonesAlias / kZonesSidecarAlias.
+    static constexpr const char* kZonesAlias = "json.zones";
+    static constexpr const char* kZonesSidecarAlias = "json.zones_schema";
+    void SetZonesText(const std::string& zones, const std::string& sidecar) { mZonesText = zones; mZonesSidecarText = sidecar; mZonesTextSet = true; }
+    void SetZonesPath(const std::string& path) { mZonesPath = path; }
     const World::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
     bool AreBiomesLoaded() const { return mBiomesLoaded; }
     // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
@@ -164,6 +171,7 @@ private:
     // The config body of OnConfigure (loads the rules first); deferred to DoStart when the rules come from an alias.
     void ApplyConfig(const char* configJson);
     void ReportRulesFailure();
+    bool LoadZones(World::ZoneTable& zones);
     void LoadBiomes();
     void ReportBiomesFailure();
     void ApplyHandoffPreset();
@@ -199,6 +207,10 @@ private:
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
     std::unique_ptr<World::BiomeRegistry> mBiomes;
+    std::string mZonesText;
+    std::string mZonesSidecarText;
+    bool mZonesTextSet = false;
+    std::string mZonesPath;
     std::string mBiomesText;
     bool mBiomesTextSet = false;
     std::string mBiomesPath;

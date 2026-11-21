@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -167,7 +168,7 @@ TEST(SLOW_WorldJsonLimits, BiggestAllowedGridRoundTrips_TwoHundredFiftySixSquare
     w.Resize(GridDimensions{ 256, 256 });
     for (int i = 0; i < w.CellCount(); ++i)
     {
-        w.Cells()[i] = MakeCell(B("Biome.Ocean"), TerrainType::DeepWater, DepthZone::None, WaterSource::Ocean, 0.0f, 0.5f, 0, 0);
+        w.Cells()[i] = MakeCell(B("Biome.Ocean"), TerrainType::DeepWater, kNoZone, WaterSource::Ocean, 0.0f, 0.5f, 0, 0);
     }
     std::string text;
     WorldStructure imported;
@@ -208,8 +209,8 @@ TEST(WorldJsonEdge, OneByOneWorldRoundTrips)
 {
     WorldStructure w;
     w.Resize(GridDimensions{ 1, 1 });
-    w.Cells()[0] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, DepthZone::FirstShores, WaterSource::None, 0.4f, 0.3f, 1, 1);
-    RegionRecord r; r.id = 1; r.zone = DepthZone::FirstShores; r.landmass = 1;
+    w.Cells()[0] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kZoneFirst, WaterSource::None, 0.4f, 0.3f, 1, 1);
+    RegionRecord r; r.id = 1; r.zone = kZoneFirst; r.landmass = 1;
     w.regions.AddRegion(r);
     RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
     Site s; s.kindCrc = SiteKindId(BuiltinNodeKinds::Hunting()); s.cell = 0; s.region = 1;
@@ -226,9 +227,9 @@ TEST(WorldJsonEdge, ExactlyThePermittedRegionCountRoundTripsAndOneMoreIsRefused)
     w.Resize(GridDimensions{ 64, 1 });
     for (int i = 0; i < 64; ++i)
     {
-        w.Cells()[i] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, DepthZone::WildReaches, WaterSource::None, 0.4f, 0.3f,
+        w.Cells()[i] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kZoneWild, WaterSource::None, 0.4f, 0.3f,
                                 static_cast<RegionId>(i + 1), 1);
-        RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.zone = DepthZone::WildReaches; r.landmass = 1;
+        RegionRecord r; r.id = static_cast<RegionId>(i + 1); r.zone = kZoneWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
     RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
@@ -251,12 +252,12 @@ TEST(WorldJsonEdge, RegionWithMoreThanSixteenNeighboursRoundTripsStably)
         {
             RegionId region = 1;
             if (y != 1) { region = static_cast<RegionId>(2 + (x / 2) + (y == 2 ? 20 : 0)); }
-            w.Cells()[y * 40 + x] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, DepthZone::WildReaches, WaterSource::None, 0.4f, 0.3f, region, 1);
+            w.Cells()[y * 40 + x] = MakeCell(B("Biome.Grassland"), TerrainType::Lowland, kZoneWild, WaterSource::None, 0.4f, 0.3f, region, 1);
         }
     }
     for (unsigned id = 1; id <= 41; ++id)
     {
-        RegionRecord r; r.id = static_cast<RegionId>(id); r.zone = DepthZone::WildReaches; r.landmass = 1;
+        RegionRecord r; r.id = static_cast<RegionId>(id); r.zone = kZoneWild; r.landmass = 1;
         ASSERT_TRUE(w.regions.AddRegion(r));
     }
     const bool overflow = RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());
@@ -286,7 +287,7 @@ TEST(WorldJsonEdge, SitesAtTheFirstAndLastCellAndManyOfThem)
     // 5,000 sites of one kind on a 100 x 100 world.
     WorldStructure big;
     big.Resize(GridDimensions{ 100, 100 });
-    for (int i = 0; i < big.CellCount(); ++i) { big.Cells()[i] = MakeCell(B("Biome.Ocean"), TerrainType::DeepWater, DepthZone::None, WaterSource::Ocean, 0.0f, 0.5f, 0, 0); }
+    for (int i = 0; i < big.CellCount(); ++i) { big.Cells()[i] = MakeCell(B("Biome.Ocean"), TerrainType::DeepWater, kNoZone, WaterSource::Ocean, 0.0f, 0.5f, 0, 0); }
     for (uint32_t cell = 0; cell < 5000; ++cell)
     {
         Site s; s.kindCrc = SiteKindId(BuiltinNodeKinds::Hunting()); s.cell = cell * 2;

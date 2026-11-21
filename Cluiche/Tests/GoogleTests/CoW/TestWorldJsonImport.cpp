@@ -13,6 +13,7 @@
 #include <DiaObservation/Log/Logger.h>
 
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -354,7 +355,7 @@ TEST_F(WorldJsonBiomeIds, ReorderedPaletteWithKnownIdsImportsEveryCellUnderItsId
     const std::string reorderedText = Write(doc);
     CoW::World::BiomeRegistry reordered;
     CoW::World::RegistryError regErr;
-    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), regErr)) << regErr.reason.AsCStr();
+    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), ::CoW::World::Testing::ShippedZoneTable(), regErr)) << regErr.reason.AsCStr();
     const CoW::World::BiomeRegistry& shipped = ShippedBiomeRegistry();
     ASSERT_EQ(reordered.Count(), shipped.Count());
     ASSERT_NE(B(reordered, "Biome.Ocean"), B(shipped, "Biome.Ocean"));
@@ -910,4 +911,58 @@ TEST(WorldJsonImport, ImportReplacesTheDestinationWorldCompletely)
     EXPECT_EQ(out.sites.Count(), 0);
     EXPECT_EQ(out.regions.regions.Size(), 0u);
     EXPECT_EQ(out.sites.KindName(StringCRC("Old.Kind").Value()), nullptr);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Zone names (data-driven depth zones): written by name from the registry's table, resolved against it on import
+// ---------------------------------------------------------------------------------------------------------------------
+
+TEST(WorldJsonImport, ZoneNamesRoundTripThroughTheRegistryTable)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Export(original);
+    bool sawZoneName = false;
+    for (const char* name : { "FirstShores", "WildReaches", "AncientInteriors" })
+    {
+        sawZoneName = sawZoneName || text.find(std::string("\"depth_zone\": \"") + name + "\"") != std::string::npos;
+    }
+    EXPECT_TRUE(sawZoneName);
+    WorldStructure imported;
+    ASSERT_TRUE(Import(text, imported).ok);
+    EXPECT_TRUE(SameCells(original, imported));
+}
+
+TEST(WorldJsonImport, UnknownZoneNameIsRefusedAndNamesTheField)
+{
+    const WorldStructure original = MakeTinyWorld();
+    const std::string text = Edited(original, [](Json::Value& root) { root["world"]["cells"][0]["depth_zone"] = "Nowhere"; });
+    ExpectRejected(text, "world.cells[0].depth_zone", "unknown depth zone");
+}
+
+TEST(WorldJsonImport, WorldSavedUnderRenamedZonesIsRefusedByTheDefaultTable)
+{
+    // A registry loaded against renamed zones writes the new names; the shipped table does not know them.
+    ::CoW::World::ZoneTable renamed;
+    ::CoW::World::ZoneError zerr;
+    const std::string zones = "{\"format\":\"cow.zones\",\"version\":1,\"zones\":[{\"name\":\"Shore\"},{\"name\":\"Wilds\"},{\"name\":\"Core\"}]}";
+    ASSERT_TRUE(renamed.LoadFromText(zones.c_str(), Detail::ReadFileText(ShippedZoneSidecarPath()).c_str(), zerr));
+    std::string biomes = Detail::ReadFileText(ShippedBiomesPath());
+    for (const auto& r : { std::pair<const char*, const char*>{ "\"FirstShores\"", "\"Shore\"" }, { "\"WildReaches\"", "\"Wilds\"" }, { "\"AncientInteriors\"", "\"Core\"" } })
+    {
+        for (size_t at = biomes.find(r.first); at != std::string::npos; at = biomes.find(r.first, at)) { biomes.replace(at, std::strlen(r.first), r.second); }
+    }
+    CoW::World::BiomeRegistry reg;
+    CoW::World::RegistryError regErr;
+    ASSERT_TRUE(reg.LoadFromText(biomes.c_str(), renamed, regErr)) << regErr.reason.AsCStr();
+
+    const WorldStructure original = MakeTinyWorld();
+    WorldJsonContext ctx;
+    ctx.biomes = &reg;
+    const std::string text = Export(original, ctx);
+    EXPECT_TRUE(text.find("\"depth_zone\": \"Shore\"") != std::string::npos || text.find("\"depth_zone\": \"Wilds\"") != std::string::npos ||
+                text.find("\"depth_zone\": \"Core\"") != std::string::npos);
+    WorldStructure back;
+    EXPECT_TRUE(Import(text, back, ctx).ok);        // round trips under its own table
+    WorldStructure refused;
+    EXPECT_FALSE(Import(text, refused).ok);          // the default table lacks the names
 }

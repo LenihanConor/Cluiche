@@ -178,7 +178,7 @@ GuaranteeResult WorldThroneGuarantee::Check(const ValidationContext& context) co
     const Cell* cells = world.Cells();
     for (int i = 0; i < world.CellCount(); ++i)
     {
-        if (cells[i].depthZone == DepthZone::AncientInteriors) { interiors.push_back(static_cast<uint32_t>(i)); }
+        if (cells[i].depthZone == mInnermost) { interiors.push_back(static_cast<uint32_t>(i)); }
     }
     Measurement count;
     count.keyCrc = MeasurementKeys::AncientInteriorsCells().Value();
@@ -212,9 +212,10 @@ GuaranteeResult WorldThroneGuarantee::Check(const ValidationContext& context) co
 
 // ---- DefaultValidationSet -------------------------------------------------------------------------------------------
 
-DefaultValidationSet::DefaultValidationSet(const TerrainRules& rules, float minimumDynastySpacing)
+DefaultValidationSet::DefaultValidationSet(const TerrainRules& rules, const World::ZoneTable& zones, float minimumDynastySpacing)
     : mProfile(rules)
     , mDynastySpacing(minimumDynastySpacing)
+    , mWorldThrone(zones)
 {
     mParams.AddProfile(&mProfile);
     mParams.AddGuarantee(&mHearthNexus);

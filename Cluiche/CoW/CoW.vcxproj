@@ -88,6 +88,7 @@
     <ClCompile Include="Shared\WorldStep\WorldStepConfig.cpp" />
     <ClCompile Include="Shared\WorldStep\WorldStepChain.cpp" />
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp" />
+    <ClCompile Include="Shared\World\ZoneTable.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h" />
@@ -169,6 +170,8 @@
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h" />
     <ClInclude Include="Shared\WorldStep\IWorldStepListener.h" />
     <ClInclude Include="Shared\World\CellVocabulary.h" />
+    <ClInclude Include="Shared\World\ZoneTable.h" />
+    <ClInclude Include="Shared\World\Testing\ZoneTestIndices.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

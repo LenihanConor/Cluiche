@@ -207,6 +207,13 @@ const char* BiomePinName(uint32_t pin)
     return "Unknown";
 }
 
+// The registry's zone table (an empty table when there is no registry).
+const World::ZoneTable& ZonesOf(const World::BiomeRegistry* biomes)
+{
+    static const World::ZoneTable kNoZones;
+    return biomes != nullptr ? biomes->Zones() : kNoZones;
+}
+
 // Display name of a registry row ("Unknown" for no registry or a row past the table).
 const char* BiomeLabel(const World::BiomeRegistry* biomes, World::BiomeIndex b)
 {
@@ -967,7 +974,7 @@ Json::Value WorldGenSession::Params() const
     corridorLimited.append(mLimits.corridorLimited[1]);
     effective["corridorLimited"] = corridorLimited;
     effective["nodeLimited"] = mLimits.nodeLimited;
-    effective["regionLimitedBy"] = DepthZoneName(mLimits.regionLimitedBy);
+    effective["regionLimitedBy"] = DepthZoneName(ZonesOf(mBiomes), mLimits.regionLimitedBy);
 
     Json::Value r(Json::objectValue);
     r["seed"] = static_cast<Json::UInt64>(mSeed);
@@ -1689,10 +1696,10 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     r["latitude"] = ShortestFloat(c.latitude);
     r["waterSource"] = WaterSourceName(c.waterSource);
     r["terrain"] = TerrainTypeName(c.terrain);
-    r["depthZone"] = DepthZoneName(c.depthZone);
+    r["depthZone"] = DepthZoneName(ZonesOf(mBiomes), c.depthZone);
     r["landmass"] = static_cast<Json::UInt>(c.landmass);
     r["flags"] = static_cast<Json::UInt>(c.terrainFlags);
-    r["zone"] = DepthZoneName(c.depthZone);
+    r["zone"] = DepthZoneName(ZonesOf(mBiomes), c.depthZone);
     r["region"] = static_cast<Json::UInt>(c.region);
     // Absorbed: the cell sits in a (non-island) region of another depth zone, i.e. an undersize-merge or fragment cell
     // (regions-and-sites.md); false without regions.
@@ -1805,7 +1812,7 @@ Json::Value WorldGenSession::Cell(const Json::Value& args) const
     std::string reason;
     if (fix == BiomeFixup::Zone)
     {
-        reason = std::string("zone: ") + BiomeLabel(mBiomes, climateWinner) + " is not valid in " + DepthZoneName(c.depthZone);
+        reason = std::string("zone: ") + BiomeLabel(mBiomes, climateWinner) + " is not valid in " + DepthZoneName(ZonesOf(mBiomes), c.depthZone);
     }
     else if (fix == BiomeFixup::Forbidden)
     {
@@ -1842,7 +1849,7 @@ Json::Value WorldGenSession::Regions() const
         const RegionRecord& rec = mWorld.regions.regions[i];
         Json::Value e(Json::objectValue);
         e["id"] = static_cast<Json::UInt>(rec.id);
-        e["zone"] = DepthZoneName(rec.zone);
+        e["zone"] = DepthZoneName(ZonesOf(mBiomes), rec.zone);
         e["landmass"] = static_cast<Json::UInt>(rec.landmass);
         e["isIsland"] = rec.isIsland;
         e["primaryBiome"] = BiomeLabel(mBiomes, rec.primaryBiome);
@@ -1861,7 +1868,7 @@ Json::Value WorldGenSession::Regions() const
     Json::Value r(Json::objectValue);
     r["success"] = true;
     r["regions"] = list;
-    r["limitedBy"] = DepthZoneName(mWorld.regions.limitedBy);
+    r["limitedBy"] = DepthZoneName(ZonesOf(mBiomes), mWorld.regions.limitedBy);
     r["absorbedCells"] = static_cast<Json::UInt>(mWorld.regions.absorbedCells);
     r["fragmentCells"] = static_cast<Json::UInt>(mWorld.regions.fragmentCells);
     r["mainlandRegionCount"] = static_cast<Json::UInt>(mWorld.regions.mainlandRegionCount);
@@ -2193,7 +2200,7 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     const TerrainTableNavigationProfile profile(mRules);
     const HearthNexusReachabilityGuarantee hearthNexus;
     const DynastySpacingGuarantee dynastySpacing;
-    const WorldThroneGuarantee worldThrone;
+    const WorldThroneGuarantee worldThrone(ZonesOf(mBiomes));
     const WorldLayoutGuarantee layout(mRules, mLimits);
 
     ValidationParams params;

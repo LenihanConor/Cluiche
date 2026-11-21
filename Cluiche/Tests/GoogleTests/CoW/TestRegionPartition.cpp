@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <set>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -19,9 +20,9 @@ using Dia::Maths::RandomStream;
 
 namespace
 {
-    constexpr DepthZone FS = DepthZone::FirstShores;
-    constexpr DepthZone WR = DepthZone::WildReaches;
-    constexpr DepthZone AI = DepthZone::AncientInteriors;
+    constexpr DepthZone FS = kZoneFirst;
+    constexpr DepthZone WR = kZoneWild;
+    constexpr DepthZone AI = kZoneAncient;
     constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
@@ -64,10 +65,10 @@ TEST(RegionPartition, RebalanceAddsToMostUnusedCapacityTiesByZoneOrder)
 {
     uint8_t count[3] = { 2, 4, 2 };
     const uint16_t cap[3] = { 2, 6, 4 };
-    DepthZone lim = DepthZone::FirstShores;
+    DepthZone lim = kZoneFirst;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
-    EXPECT_EQ(lim, DepthZone::None);
+    EXPECT_EQ(lim, kNoZone);
 }
 
 TEST(RegionPartition, RebalanceRemovesFromLeastSpareCapacityTiesByZoneOrder)
@@ -87,7 +88,7 @@ TEST(RegionPartition, RebalanceAddTieGoesToEarlierZoneWhenOnlyOneAddIsNeeded)
     DepthZone lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0], 2); EXPECT_EQ(count[1], 5); EXPECT_EQ(count[2], 3);
-    EXPECT_EQ(lim, DepthZone::None);
+    EXPECT_EQ(lim, kNoZone);
 }
 
 TEST(RegionPartition, RebalanceRemoveNeverTakesAZoneAtItsRangeMinimum)
@@ -127,12 +128,12 @@ TEST(RegionPartition, RebalanceTerrainLimitedNamesSmallestCapacityToMinimum)
     DepthZone lim;
     RebalanceRegionCounts(count, cap, lim);
     EXPECT_EQ(count[0] + count[1] + count[2], 7);
-    EXPECT_EQ(lim, DepthZone::WildReaches);   // 3/4, 2/4, 2/2
+    EXPECT_EQ(lim, kZoneWild);   // 3/4, 2/4, 2/2
 
     uint8_t c2[3] = { 2, 2, 1 };
     const uint16_t cap2[3] = { 2, 2, 1 };
     RebalanceRegionCounts(c2, cap2, lim);
-    EXPECT_EQ(lim, DepthZone::FirstShores);   // equal ratios: zone order
+    EXPECT_EQ(lim, kZoneFirst);   // equal ratios: zone order
 }
 
 TEST(RegionPartition, TargetsAreCapacityLimited)
@@ -152,7 +153,7 @@ TEST(RegionPartition, TargetsAreCapacityLimited)
         for (int z = 0; z < 3; ++z) { EXPECT_LE(t.count[z], t.capacity[z]); EXPECT_LE(t.count[z], kZoneCountMax[z]); }
         EXPECT_GE(t.total, 10) << "seed " << seed;   // capacity 12 allows it, rebalance must reach 10
         EXPECT_LE(t.total, 16);
-        EXPECT_EQ(t.limitedBy, DepthZone::None);
+        EXPECT_EQ(t.limitedBy, kNoZone);
     }
 }
 
@@ -164,7 +165,7 @@ TEST(RegionPartition, TargetsTerrainLimitedIsReportedNotFailure)
     RandomStream rng(3);
     const RegionTargets t = ComputeRegionTargets(w, Rules(), rng);
     EXPECT_EQ(t.total, 6);
-    EXPECT_NE(t.limitedBy, DepthZone::None);
+    EXPECT_NE(t.limitedBy, kNoZone);
     EXPECT_EQ(t.capacity[2], 0);
 }
 
@@ -454,7 +455,7 @@ TEST(RegionPartition, SmokeGeneratedSmallWorld)
     RandomStream rng(7);
     const RegionGrowth g = BuildProvisionalRegions(w, TestRules(), rng, ShippedBiomeRegistry());
     EXPECT_FALSE(g.overflow);
-    EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != DepthZone::None)
+    EXPECT_TRUE((g.targets.total >= 10 && g.targets.total <= 16) || g.targets.limitedBy != kNoZone)
         << "total " << int(g.targets.total);
     std::set<uint32_t> tiny;
     for (uint32_t ci : g.tinyComponents) { tiny.insert(ci); }

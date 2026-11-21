@@ -14,6 +14,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using Dia::Maths::RandomStream;
@@ -46,10 +47,10 @@ std::set<int> Ran(const TerrainGenerator& g)
     return r;
 }
 
-constexpr uint32_t kNone = static_cast<uint32_t>(DepthZone::None);
-constexpr uint32_t kFirst = static_cast<uint32_t>(DepthZone::FirstShores);
-constexpr uint32_t kWild = static_cast<uint32_t>(DepthZone::WildReaches);
-constexpr uint32_t kAncient = static_cast<uint32_t>(DepthZone::AncientInteriors);
+constexpr uint32_t kNone = static_cast<uint32_t>(kNoZone);
+constexpr uint32_t kFirst = static_cast<uint32_t>(kZoneFirst);
+constexpr uint32_t kWild = static_cast<uint32_t>(kZoneWild);
+constexpr uint32_t kAncient = static_cast<uint32_t>(kZoneAncient);
 
 // ---------------------------------------------------------------------------
 // Hand-built grid: ocean everywhere except the blocks the test paints.
@@ -101,7 +102,7 @@ struct DGrid
         out.zoneCostBase = base.data();
         out.zoneCost = cost.data();
         out.depthZone = zone.data();
-        ComputeStage8(rules, dims, barrierSlider, mainId, land.data(), coast.data(), ridge.data(), barrier.data(),
+        ComputeStage8(rules, ::CoW::World::Testing::ShippedZoneTable(), dims, barrierSlider, mainId, land.data(), coast.data(), ridge.data(), barrier.data(),
                       river.data(), out, dbg);
     }
 };

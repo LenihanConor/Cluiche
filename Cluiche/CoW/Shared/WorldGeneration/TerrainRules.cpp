@@ -69,8 +69,6 @@ void ForEachRuleMember(Visitor&& v)
     v("kMinRiverLength", &TerrainRules::kMinRiverLength);
     v("kRidgeCost", &TerrainRules::kRidgeCost);
     v("kBarrierCost", &TerrainRules::kBarrierCost);
-    v("kFirstShoresShare", &TerrainRules::kFirstShoresShare);
-    v("kAncientShare", &TerrainRules::kAncientShare);
     v("kRiverCorridor", &TerrainRules::kRiverCorridor);
     v("kAncientMinDepth", &TerrainRules::kAncientMinDepth);
     v("kCarveMax", &TerrainRules::kCarveMax);

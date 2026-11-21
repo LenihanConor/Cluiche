@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -62,7 +63,7 @@ inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
     WorldStructure world = MakeBlankWorld(w, h);
     for (int y = 0; y < h; ++y)
     {
-        const DepthZone z = y < row1 ? DepthZone::FirstShores : (y < row2 ? DepthZone::WildReaches : DepthZone::AncientInteriors);
+        const DepthZone z = y < row1 ? kZoneFirst : (y < row2 ? kZoneWild : kZoneAncient);
         FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::B("Biome.Grassland"));
     }
     return world;
@@ -146,7 +147,7 @@ inline void BuildRegionRecords(WorldStructure& world)
 inline WorldStructure MakeRegionBlocksWorld(int blocksX, int blocksY, int blockW, int blockH, ::CoW::World::BiomeIndex biome)
 {
     WorldStructure world = MakeBlankWorld(blocksX * blockW, blocksY * blockH);
-    FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, DepthZone::FirstShores, biome);
+    FillLand(world, 0, 0, world.dimensions.width, world.dimensions.height, kZoneFirst, biome);
     for (int by = 0; by < blocksY; ++by)
     {
         for (int bx = 0; bx < blocksX; ++bx)

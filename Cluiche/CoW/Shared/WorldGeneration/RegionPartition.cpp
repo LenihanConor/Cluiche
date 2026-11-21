@@ -35,8 +35,9 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
     std::vector<uint32_t> label(static_cast<size_t>(n), Dia::Pathfinding::kUnreached);
 
     // Components never span zones, so label each zone's eligible cells separately.
-    for (const DepthZone zone : { DepthZone::FirstShores, DepthZone::WildReaches, DepthZone::AncientInteriors })
+    for (int slot = 0; slot < kRegionZoneCount; ++slot)
     {
+        const DepthZone zone = ZoneFromSlot(slot);
         const uint32_t count = Dia::Pathfinding::ConnectedComponents(graph,
             [&](uint32_t c) {
                 return cells[c].depthZone == zone && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]);
@@ -63,7 +64,7 @@ std::vector<RegionComponent> FindZoneComponents(const WorldStructure& world, con
 
 void RebalanceRegionCounts(uint8_t count[kRegionZoneCount], const uint16_t capacity[kRegionZoneCount], DepthZone& limitedBy)
 {
-    limitedBy = DepthZone::None;
+    limitedBy = kNoZone;
     auto total = [&]() { int t = 0; for (int z = 0; z < kRegionZoneCount; ++z) { t += count[z]; } return t; };
 
     while (total() < kTotalRegionsMin)
@@ -377,7 +378,7 @@ void GrowRegions(const WorldStructure& world, const TerrainRules& rules, const s
     for (int c = 0; c < n; ++c)
     {
         if (world.mainLandmass != 0 && cells[c].landmass == world.mainLandmass && IsRegionLand(cells[c]) &&
-            cells[c].depthZone == DepthZone::None)
+            cells[c].depthZone == kNoZone)
         {
             out.unzonedCells.push_back(static_cast<uint32_t>(c));
         }

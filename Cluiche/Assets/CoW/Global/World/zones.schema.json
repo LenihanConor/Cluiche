@@ -1,0 +1,27 @@
+{
+  "format": "dia.value_schema",
+  "version": 1,
+  "for": "cow.zones",
+  "entries": [
+    {
+      "key": "kFirstZoneShare",
+      "kind": "parameter",
+      "label": "kFirstZoneShare",
+      "description": "Share of main-landmass land assigned to the first (outermost) zone.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.45
+    },
+    {
+      "key": "kLastZoneShare",
+      "kind": "parameter",
+      "label": "kLastZoneShare",
+      "description": "Share of main-landmass land assigned to the last (innermost) zone.",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.15
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "cow.zones",
+  "version": 1,
+  "zones": [
+    {
+      "name": "FirstShores"
+    },
+    {
+      "name": "WildReaches"
+    },
+    {
+      "name": "AncientInteriors"
+    }
+  ]
+}

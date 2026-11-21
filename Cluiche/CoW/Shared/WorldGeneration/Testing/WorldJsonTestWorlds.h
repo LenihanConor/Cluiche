@@ -14,6 +14,7 @@
 #include <cstring>
 #include <string>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 namespace CoW {
 namespace WorldGeneration {
@@ -78,30 +79,30 @@ inline WorldStructure MakeTinyWorld()
 
     Cell* c = w.Cells();
     //            biome                    terrain                  zone                       water                elev    lat   reg lm
-    c[0]  = MakeCell(BL("Biome.Ocean"),           TerrainType::DeepWater,    DepthZone::None,             WaterSource::Ocean, 0.0f,   0.1f, 0, 0);
-    c[1]  = MakeCell(BL("Biome.Ocean"),           TerrainType::ShallowWater, DepthZone::None,             WaterSource::Ocean, 0.0f,   0.2f, 0, 0);
-    c[2]  = MakeCell(BL("Biome.Grassland"), TerrainType::Lowland,      DepthZone::FirstShores,      WaterSource::None,  0.35f,  0.3f, 1, 1, TerrainFlag::Coast);
-    c[3]  = MakeCell(BL("Biome.TemperateForest"), TerrainType::Hills,        DepthZone::FirstShores,      WaterSource::None,  0.5f,   0.4f, 1, 1);
-    c[4]  = MakeCell(BL("Biome.Lake"),            TerrainType::Lake,         DepthZone::WildReaches,      WaterSource::Lake,  0.45f,  0.5f, 1, 1);
-    c[5]  = MakeCell(BL("Biome.Wetland"),    TerrainType::River,        DepthZone::WildReaches,      WaterSource::River, 0.41f,  0.6f, 1, 1, 0, 3);
-    c[6]  = MakeCell(BL("Biome.Alpine"),  TerrainType::Mountain,     DepthZone::WildReaches,      WaterSource::None,  0.9f,   0.7f, 2, 1, TerrainFlag::Ridge | TerrainFlag::Barrier);
-    c[7]  = MakeCell(BL("Biome.Desert"),     TerrainType::Highland,     DepthZone::AncientInteriors, WaterSource::None,  0.7f,   0.8f, 2, 1);
-    c[8]  = MakeCell(BL("Biome.Tundra"),    TerrainType::Peak,         DepthZone::AncientInteriors, WaterSource::None,  1.0f,   0.9f, 2, 1);
-    c[9]  = MakeCell(BL("Biome.Rainforest"),      TerrainType::Pass,         DepthZone::AncientInteriors, WaterSource::None,  0.8f,   1.0f, 2, 1, TerrainFlag::Pass);
-    c[10] = MakeCell(BL("Biome.Volcanic"), TerrainType::Volcano,      DepthZone::AncientInteriors, WaterSource::None,  0.85f,  0.0f, 2, 1, TerrainFlag::Volcanic);
-    c[11] = MakeCell(BL("Biome.Grassland"), TerrainType::Cliff,        DepthZone::WildReaches,      WaterSource::None,  0.1f,   1.0f / 3.0f, 0, 2);
+    c[0]  = MakeCell(BL("Biome.Ocean"),           TerrainType::DeepWater,    kNoZone,             WaterSource::Ocean, 0.0f,   0.1f, 0, 0);
+    c[1]  = MakeCell(BL("Biome.Ocean"),           TerrainType::ShallowWater, kNoZone,             WaterSource::Ocean, 0.0f,   0.2f, 0, 0);
+    c[2]  = MakeCell(BL("Biome.Grassland"), TerrainType::Lowland,      kZoneFirst,      WaterSource::None,  0.35f,  0.3f, 1, 1, TerrainFlag::Coast);
+    c[3]  = MakeCell(BL("Biome.TemperateForest"), TerrainType::Hills,        kZoneFirst,      WaterSource::None,  0.5f,   0.4f, 1, 1);
+    c[4]  = MakeCell(BL("Biome.Lake"),            TerrainType::Lake,         kZoneWild,      WaterSource::Lake,  0.45f,  0.5f, 1, 1);
+    c[5]  = MakeCell(BL("Biome.Wetland"),    TerrainType::River,        kZoneWild,      WaterSource::River, 0.41f,  0.6f, 1, 1, 0, 3);
+    c[6]  = MakeCell(BL("Biome.Alpine"),  TerrainType::Mountain,     kZoneWild,      WaterSource::None,  0.9f,   0.7f, 2, 1, TerrainFlag::Ridge | TerrainFlag::Barrier);
+    c[7]  = MakeCell(BL("Biome.Desert"),     TerrainType::Highland,     kZoneAncient, WaterSource::None,  0.7f,   0.8f, 2, 1);
+    c[8]  = MakeCell(BL("Biome.Tundra"),    TerrainType::Peak,         kZoneAncient, WaterSource::None,  1.0f,   0.9f, 2, 1);
+    c[9]  = MakeCell(BL("Biome.Rainforest"),      TerrainType::Pass,         kZoneAncient, WaterSource::None,  0.8f,   1.0f, 2, 1, TerrainFlag::Pass);
+    c[10] = MakeCell(BL("Biome.Volcanic"), TerrainType::Volcano,      kZoneAncient, WaterSource::None,  0.85f,  0.0f, 2, 1, TerrainFlag::Volcanic);
+    c[11] = MakeCell(BL("Biome.Grassland"), TerrainType::Cliff,        kZoneWild,      WaterSource::None,  0.1f,   1.0f / 3.0f, 0, 2);
 
     RegionRecord r1;
-    r1.id = 1; r1.zone = DepthZone::FirstShores; r1.landmass = 1; r1.isIsland = false; r1.primaryBiome = BL("Biome.Grassland");
+    r1.id = 1; r1.zone = kZoneFirst; r1.landmass = 1; r1.isIsland = false; r1.primaryBiome = BL("Biome.Grassland");
     r1.purity = 1.0f / 4.0f; r1.cellCount = 4; r1.centreCell = 3; r1.neighbours.Add(2);
     RegionRecord r2;
-    r2.id = 2; r2.zone = DepthZone::AncientInteriors; r2.landmass = 1; r2.isIsland = false; r2.primaryBiome = BL("Biome.Alpine");
+    r2.id = 2; r2.zone = kZoneAncient; r2.landmass = 1; r2.isIsland = false; r2.primaryBiome = BL("Biome.Alpine");
     r2.purity = 1.0f / 5.0f; r2.cellCount = 5; r2.centreCell = 8; r2.neighbours.Add(1);
     w.regions.AddRegion(r1);
     w.regions.AddRegion(r2);
     w.regions.absorbedCells = 2;
     w.regions.fragmentCells = 1;
-    w.regions.limitedBy = DepthZone::WildReaches;
+    w.regions.limitedBy = kZoneWild;
     RecomputeRegionRecords(w, ::CoW::World::Testing::ShippedBiomeRegistry());   // summaries consistent with the cells: import recomputes them with the same code
 
     auto add = [&](const Dia::Core::StringCRC& kind, uint32_t cell, RegionId region, uint16_t variant, uint16_t flags)

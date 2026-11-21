@@ -17,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 
@@ -136,7 +137,7 @@ TEST(WorldGenSchema, EnumCountsEqualCodeEnumSizes)
     auto count = [&](const char* key) { const Json::Value* e = FindEntry(l, key); return e ? (*e)["values"].size() : 0u; };
     EXPECT_EQ(count("terrainType"), static_cast<unsigned>(TerrainType::Count));
     EXPECT_EQ(count("waterSource"), static_cast<unsigned>(WaterSource::River) + 1u);
-    EXPECT_EQ(count("depthZone"), static_cast<unsigned>(DepthZone::AncientInteriors) + 1u);
+    EXPECT_EQ(count("depthZone"), static_cast<unsigned>(kZoneAncient) + 1u);
     EXPECT_EQ(count("flowDirection"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
     EXPECT_EQ(count("biomeIndex"), 0u);   // no literal values: valuesFrom the biome registry
     EXPECT_EQ(count("fixupChanges"), 3u);   // none, zone, neighbour

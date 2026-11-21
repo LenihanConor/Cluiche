@@ -286,6 +286,9 @@
     <Filter Include="CoW\WorldStep">
       <UniqueIdentifier>{51550e83-c5ca-43a2-a765-63c0061fe9d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CoW\Shared\World">
+      <UniqueIdentifier>{199452e2-25ca-4a04-81d3-afd02d3f7b73}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -3323,6 +3326,12 @@
     </ClCompile>
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp">
       <Filter>CoW\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestZoneTable.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\World\ZoneTable.cpp">
+      <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

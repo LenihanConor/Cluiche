@@ -84,7 +84,7 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
     }
 }
 
-void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg)
 {
@@ -96,7 +96,7 @@ void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier
     {
         return;
     }
-    std::fill(out.depthZone, out.depthZone + n, static_cast<uint32_t>(DepthZone::None));
+    std::fill(out.depthZone, out.depthZone + n, static_cast<uint32_t>(kNoZone));
     ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, nullptr, out.zoneCostBase);
     ComputeZoneCost(rules, dims, barrier, landmass, coastDistance, ridgeMask, barrierMask, riverMask, out.zoneCost);
     if (landmass == nullptr || coastDistance == nullptr)
@@ -123,10 +123,10 @@ void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier
     }
     else
     {
-        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(rules.kFirstShoresShare) * m)) - 1);
+        const int idx1 = std::max(0, static_cast<int>(std::floor(static_cast<double>(zones.FirstShare()) * m)) - 1);
         dbg.t1 = sorted[static_cast<size_t>(std::min(idx1, m - 1))];
         dbg.t2 = dbg.t1;
-        const int k = static_cast<int>(std::ceil(static_cast<double>(rules.kAncientShare) * m));
+        const int k = static_cast<int>(std::ceil(static_cast<double>(zones.LastShare()) * m));
         if (k > 0)
         {
             const float t2 = sorted[static_cast<size_t>(std::max(0, m - k))];
@@ -155,15 +155,15 @@ void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier
             continue;
         }
         const float cost = out.zoneCost[i];
-        DepthZone z = DepthZone::WildReaches;
+        DepthZone z = 2;   // the middle zone
         if (cost <= dbg.t1)
         {
-            z = DepthZone::FirstShores;
+            z = 1;   // the first zone
         }
         else if (dbg.hasAncient && landmass[i] == static_cast<uint32_t>(mainLandmass) && cost >= dbg.t2 &&
                  coastDistance[i] >= minDepth)
         {
-            z = DepthZone::AncientInteriors;
+            z = zones.Last();   // the innermost zone
         }
         out.depthZone[i] = static_cast<uint32_t>(z);
     }

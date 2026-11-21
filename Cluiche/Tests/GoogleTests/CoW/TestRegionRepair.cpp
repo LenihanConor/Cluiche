@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -24,9 +25,9 @@ using Dia::Maths::RandomStream;
 
 namespace
 {
-    constexpr DepthZone FS = DepthZone::FirstShores;
-    constexpr DepthZone WR = DepthZone::WildReaches;
-    constexpr DepthZone AI = DepthZone::AncientInteriors;
+    constexpr DepthZone FS = kZoneFirst;
+    constexpr DepthZone WR = kZoneWild;
+    constexpr DepthZone AI = kZoneAncient;
     constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
     constexpr CoW::World::BiomeIndex     L  = 1;   // Biome.Lake (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
@@ -207,7 +208,7 @@ TEST(RegionRepair, TinyComponentIsAbsorbedAndCounted)
 
 TEST(RegionRepair, UnzonedCellIsAbsorbedAndCounted)
 {
-    Hand h = Make({ "1", "1", "1", "u" }, { FS }, DepthZone::None);
+    Hand h = Make({ "1", "1", "1", "u" }, { FS }, kNoZone);
     Finish(h);
     EXPECT_EQ(At(h, 0, 3), 1);
     EXPECT_EQ(h.w.regions.absorbedCells, 1);
@@ -230,7 +231,7 @@ TEST(RegionRepair, TinyFragmentAbsorbedCountsAsFragmentNotAbsorbed)
 TEST(RegionRepair, FragmentAndUnzonedCountedSeparately)
 {
     Hand h = Make({ "1", "1", "1", "1", "1", "u", "u", "u" }, { FS }, AI);
-    h.w.At(0, 7).depthZone = DepthZone::None;   // unzoned, not part of the tiny fragment
+    h.w.At(0, 7).depthZone = kNoZone;   // unzoned, not part of the tiny fragment
     MarkTiny(h, { { 0, 5 }, { 0, 6 } });
     Finish(h);
     EXPECT_EQ(h.w.regions.fragmentCells, 2);
@@ -302,7 +303,7 @@ TEST(RegionRepair, ExactlyTenMainlandRegionsIsNotTerrainLimited)
     Hand h = Make({ "123456789:" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS, FS });
     Finish(h);
     EXPECT_EQ(h.w.regions.mainlandRegionCount, 10);
-    EXPECT_EQ(h.w.regions.limitedBy, DepthZone::None);
+    EXPECT_EQ(h.w.regions.limitedBy, kNoZone);
 }
 
 TEST(RegionRepair, NineMainlandRegionsIsTerrainLimited)
@@ -310,7 +311,7 @@ TEST(RegionRepair, NineMainlandRegionsIsTerrainLimited)
     Hand h = Make({ "123456789" }, { FS, FS, FS, FS, FS, FS, FS, FS, FS });
     Finish(h);
     EXPECT_EQ(h.w.regions.mainlandRegionCount, 9);
-    EXPECT_NE(h.w.regions.limitedBy, DepthZone::None);
+    EXPECT_NE(h.w.regions.limitedBy, kNoZone);
 }
 
 TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
@@ -325,7 +326,7 @@ TEST(RegionRepair, LoosePiecePrefersSameZoneRegion)
 TEST(RegionRepair, LoosePieceBehindAnotherPieceIsAbsorbedInLaterRound)
 {
     Hand h = Make({ "1", "u", "u" }, { FS }, AI);
-    h.w.At(0, 2).depthZone = DepthZone::None;   // second piece is unzoned, touches only the first piece
+    h.w.At(0, 2).depthZone = kNoZone;   // second piece is unzoned, touches only the first piece
     const RegionBuild b = Finish(h);
     EXPECT_EQ(b.looseLandPiecesAbsorbed, 2);
     EXPECT_EQ(b.orphanRegions, 0);
@@ -607,13 +608,13 @@ namespace
         for (unsigned i = 0; i < w.regions.regions.Size(); ++i) { const RegionRecord& r = w.regions.regions[i]; if (!r.isIsland) { ++mainland; mainLand += r.cellCount; } }
         EXPECT_EQ(w.regions.mainlandRegionCount, mainland);
         // AC4 (amended): growth's limitedBy is kept; repair dropping the mainland below 10 also reports terrain-limited.
-        if (g.targets.limitedBy != DepthZone::None) { EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy); }
-        else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, DepthZone::None); }
-        else { EXPECT_EQ(w.regions.limitedBy, DepthZone::None); }
+        if (g.targets.limitedBy != kNoZone) { EXPECT_EQ(w.regions.limitedBy, g.targets.limitedBy); }
+        else if (mainland < 10) { EXPECT_NE(w.regions.limitedBy, kNoZone); }
+        else { EXPECT_EQ(w.regions.limitedBy, kNoZone); }
         // AC3 (amended): tiny-fragment cells have their own bound.
         if (limits) { EXPECT_LE(static_cast<float>(w.regions.fragmentCells), rules.kMaxFragmentShare * static_cast<float>(ChkLandCount(w)))
             << "fragmentCells " << w.regions.fragmentCells; }
-        if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != DepthZone::None)
+        if (limits) { EXPECT_TRUE((mainland >= 10 && mainland <= 16) || w.regions.limitedBy != kNoZone)
             << "mainland regions " << mainland << " targets " << int(g.targets.total); }
         // AC4 per zone: First Shores 4-6, Wild Reaches 4-6, Ancient Interiors 2-4 unless terrain-limited.
         int zoneCount[kRegionZoneCount] = {};
@@ -627,7 +628,7 @@ namespace
         // mainland total drops below 10; a single zone ending under its minimum (archipelago, e.g. seed 514 slot 2)
         // while the total stays >= 10 is accepted. Zone upper bounds are asserted; zone shortfalls are counted and
         // printed (zoneBelowMinAfterRepair), never failed.
-        if (limits && w.regions.limitedBy == DepthZone::None)
+        if (limits && w.regions.limitedBy == kNoZone)
         {
             bool below = false;
             for (int z = 0; z < kRegionZoneCount; ++z)
@@ -657,7 +658,7 @@ namespace
         st.mainMax = std::max(st.mainMax, mainland);
         st.orphanRegions += b.orphanRegions; st.neighbourOverflows += b.neighbourOverflow;
         st.splitMoved += b.splitPiecesMoved; st.merged += b.undersizedMerged;
-        st.limited += w.regions.limitedBy != DepthZone::None;
+        st.limited += w.regions.limitedBy != kNoZone;
         st.belowTen += mainland < 10;
         st.maxAbsorbedShare = std::max(st.maxAbsorbedShare, land > 0 ? w.regions.absorbedCells / land : 0.0f);
         st.maxFragmentShare = std::max(st.maxFragmentShare, land > 0 ? w.regions.fragmentCells / land : 0.0f);

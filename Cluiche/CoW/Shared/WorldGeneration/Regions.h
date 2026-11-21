@@ -18,7 +18,7 @@ struct RegionRecord
     static constexpr unsigned kMaxNeighbours = 16;
 
     RegionId   id           = kNoRegion;
-    DepthZone  zone         = DepthZone::None;      // majority zone for island regions
+    DepthZone  zone         = kNoZone;      // majority zone for island regions
     uint8_t    landmass     = 0;
     bool       isIsland     = false;
     World::BiomeIndex primaryBiome = 0;             // registry row; 0 = the shipped Ocean row (default as before)
@@ -39,7 +39,7 @@ struct RegionTable
     uint16_t  absorbedCells       = 0;                                         // zone-mismatched cells, excluding fragment cells (AC3)
     uint16_t  fragmentCells       = 0;                                         // cells of tiny zone fragments absorbed into another zone's region
     uint8_t   mainlandRegionCount = 0;
-    DepthZone limitedBy           = DepthZone::None;                           // None unless terrain-limited
+    DepthZone limitedBy           = kNoZone;                           // None unless terrain-limited
 
     // False (table unchanged) when full.
     bool AddRegion(const RegionRecord& r)

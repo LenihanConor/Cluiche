@@ -11,6 +11,8 @@
 #include "TerrainTableNavigationProfile.h"
 #include "ValidationTypes.h"
 
+#include <Shared/World/ZoneTable.h>
+
 namespace CoW {
 namespace WorldGeneration {
 
@@ -46,12 +48,16 @@ private:
     float mMinimumSpacing;
 };
 
-// Exactly six world-thrones, one per Apotheosis type, each reaching some Ancient Interiors cell.
+// Exactly six world-thrones, one per Apotheosis type, each reaching some cell of the innermost zone (ZoneTable::Last()).
 class WorldThroneGuarantee final : public IWorldGuarantee
 {
 public:
+    explicit WorldThroneGuarantee(const World::ZoneTable& zones) : mInnermost(zones.Last()) {}
     Dia::Core::StringCRC GetId() const override;   // "CoW.Guarantee.WorldThrone"
     GuaranteeResult Check(const ValidationContext& context) const override;
+
+private:
+    DepthZone mInnermost;
 };
 
 // Owns the placeholder terrain-table profile and the three built-ins and wires them into a ValidationParams.
@@ -60,7 +66,7 @@ public:
 class DefaultValidationSet
 {
 public:
-    explicit DefaultValidationSet(const TerrainRules& rules, float minimumDynastySpacing = kDefaultMinimumDynastySpacing);
+    DefaultValidationSet(const TerrainRules& rules, const World::ZoneTable& zones, float minimumDynastySpacing = kDefaultMinimumDynastySpacing);
     DefaultValidationSet(const DefaultValidationSet&) = delete;
     DefaultValidationSet& operator=(const DefaultValidationSet&) = delete;
 

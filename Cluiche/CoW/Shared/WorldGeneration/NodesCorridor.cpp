@@ -28,8 +28,9 @@ namespace
 
     bool OnBoundary(const WorldStructure& world, const HexTopology& topo, uint32_t cell, int barrier)
     {
-        const DepthZone a = barrier == 1 ? DepthZone::FirstShores : DepthZone::WildReaches;
-        const DepthZone b = barrier == 1 ? DepthZone::WildReaches : DepthZone::AncientInteriors;
+        // Barrier k separates zone k from zone k+1.
+        const DepthZone a = static_cast<DepthZone>(barrier);
+        const DepthZone b = static_cast<DepthZone>(barrier + 1);
         const DepthZone z = world.Cells()[cell].depthZone;
         if (z != a && z != b) { return false; }
         const DepthZone other = (z == a) ? b : a;

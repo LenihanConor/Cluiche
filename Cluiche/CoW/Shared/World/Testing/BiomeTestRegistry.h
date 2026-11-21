@@ -4,6 +4,7 @@
 
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/World/CellVocabulary.h>
+#include <Shared/World/ZoneTable.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -14,10 +15,13 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 namespace CoW {
 namespace World {
 namespace Testing {
+
+inline const ZoneTable& ShippedZoneTable();
 
 namespace Detail
 {
@@ -40,13 +44,21 @@ namespace Detail
         return {};
     }
 
+    inline std::string ReadFileText(const std::string& path)
+    {
+        std::ifstream     in(path, std::ios::binary);
+        std::stringstream ss;
+        ss << in.rdbuf();
+        return ss.str();
+    }
+
     inline void LoadOrAbort(BiomeRegistry& reg, const std::string& path, const char* what)
     {
         std::ifstream in(path, std::ios::binary);
         std::stringstream ss;
         ss << in.rdbuf();
         RegistryError err;
-        if (path.empty() || !in.good() || !reg.LoadFromText(ss.str().c_str(), err))
+        if (path.empty() || !in.good() || !reg.LoadFromText(ss.str().c_str(), ShippedZoneTable(), err))
         {
             std::fprintf(stderr, "BiomeTestRegistry: failed to load %s (path='%s') field=%s id=%s row=%u reason=%s\n", what,
                          path.c_str(), err.field.AsCStr(), err.id.AsCStr(), err.row, err.reason.AsCStr());
@@ -54,6 +66,31 @@ namespace Detail
             std::abort();
         }
     }
+}
+
+// Absolute paths of the shipped Global/World/zones.json and its sidecar zones.schema.json.
+inline std::string ShippedZonesPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/zones.json", false); }
+inline std::string ShippedZoneSidecarPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/zones.schema.json", false); }
+
+// The shipped zone table (FirstShores, WildReaches, AncientInteriors), loaded once per process. Aborts if it cannot be loaded.
+inline const ZoneTable& ShippedZoneTable()
+{
+    static ZoneTable zones;
+    static bool loaded = false;
+    if (!loaded)
+    {
+        loaded = true;
+        ZoneError err;
+        const std::string zonesText = Detail::ReadFileText(ShippedZonesPath());
+        const std::string sidecarText = Detail::ReadFileText(ShippedZoneSidecarPath());
+        if (zonesText.empty() || sidecarText.empty() || !zones.LoadFromText(zonesText.c_str(), sidecarText.c_str(), err))
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: failed to load shipped zones: field=%s reason=%s\n", err.field.c_str(), err.reason.c_str());
+            std::fflush(stderr);
+            std::abort();
+        }
+    }
+    return zones;
 }
 
 // Absolute path of the shipped Global/World/biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
@@ -106,7 +143,7 @@ inline BiomeRegistry LoadShippedVariant(std::initializer_list<std::pair<const ch
     }
     BiomeRegistry reg;
     RegistryError err;
-    if (!reg.LoadFromText(text.c_str(), err))
+    if (!reg.LoadFromText(text.c_str(), ShippedZoneTable(), err))
     {
         std::fprintf(stderr, "BiomeTestRegistry: variant failed to load: field=%s id=%s row=%u reason=%s\n", err.field.AsCStr(),
                      err.id.AsCStr(), err.row, err.reason.AsCStr());

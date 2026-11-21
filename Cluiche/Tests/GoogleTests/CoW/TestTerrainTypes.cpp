@@ -4,6 +4,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 using namespace CoW::WorldGeneration;
 
@@ -183,7 +184,7 @@ static void ExpectUniqueNonEmptyNames(int count, F nameOf)
 TEST(TerrainTypes, EnumNamesAreUniqueAndNonEmpty)
 {
     ExpectUniqueNonEmptyNames<WaterSource>(4, [](WaterSource e) { return WaterSourceName(e); });
-    ExpectUniqueNonEmptyNames<DepthZone>(4, [](DepthZone e) { return DepthZoneName(e); });
+    ExpectUniqueNonEmptyNames<DepthZone>(4, [](DepthZone e) { return DepthZoneName(::CoW::World::Testing::ShippedZoneTable(), e); });
     ExpectUniqueNonEmptyNames<TerrainType>(static_cast<int>(TerrainType::Count), [](TerrainType e) { return TerrainTypeName(e); });
     ExpectUniqueNonEmptyNames<BarrierForm>(2, [](BarrierForm e) { return BarrierFormName(e); });
     ExpectUniqueNonEmptyNames<ShapeParam>(static_cast<int>(ShapeParam::Count), [](ShapeParam e) { return ShapeParamName(e); });

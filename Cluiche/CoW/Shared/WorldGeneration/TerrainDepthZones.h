@@ -9,8 +9,8 @@
 //   zoneCost: same Dijkstra, but entering a river cell costs 1 + kRiverCorridor*(ridge and barrier terms).
 //     Never above zoneCostBase.
 //   Thresholds (main landmass base costs, sorted ascending, n cells):
-//     t1 = value at index max(0, floor(kFirstShoresShare*n) - 1)   ("highest cost in the lowest 45%")
-//     t2 = value at index n - ceil(kAncientShare*n)                 ("lowest cost in the highest 15%")
+//     t1 = value at index max(0, floor(FirstShare*n) - 1)   ("highest cost in the lowest 45%")
+//     t2 = value at index n - ceil(LastShare*n)                 ("lowest cost in the highest 15%")
 //     if t2 <= t1, t2 moves to the next distinct base cost above t1; none -> hasAncient = false
 //     (then t2 is set equal to t1 and is unused). With no main landmass t1 = 1 (coast ring only).
 //   Zones: First Shores where zoneCost <= t1. Ancient Interiors where zoneCost >= t2 and coastDistance >=
@@ -32,7 +32,7 @@ struct Stage8Debug
 {
     float t1 = 0.0f;
     float t2 = 0.0f;
-    bool  hasAncient = false;   // false when no distinct base cost above t1 exists (or kAncientShare == 0)
+    bool  hasAncient = false;   // false when no distinct base cost above t1 exists (or the last zone share is 0)
     int   mainCells = 0;        // land cells of the main landmass
 };
 
@@ -49,7 +49,7 @@ void ComputeZoneCost(const TerrainRules& rules, GridDimensions dims, float barri
                      const uint32_t* coastDistance, const float* ridgeMask, const float* barrierMask,
                      const uint32_t* riverMask, float* out);
 
-void ComputeStage8(const TerrainRules& rules, GridDimensions dims, float barrier, int mainLandmass,
+void ComputeStage8(const TerrainRules& rules, const World::ZoneTable& zones, GridDimensions dims, float barrier, int mainLandmass,
                    const uint32_t* landmass, const uint32_t* coastDistance, const float* ridgeMask,
                    const float* barrierMask, const uint32_t* riverMask, Stage8Layers out, Stage8Debug& dbg);
 

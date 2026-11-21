@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -59,8 +60,8 @@ GuaranteeResult Check(const IWorldGuarantee& g, const WorldStructure& w, std::in
 // 2 hearths, 2 nexuses, 3 dynasty starts far apart, 6 thrones (types 0..5) inside the block.
 WorldStructure MakeValidWorld()
 {
-    WorldStructure w = MakeAllLandWorld(30, 20, DepthZone::WildReaches);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    WorldStructure w = MakeAllLandWorld(30, 20, kZoneWild);
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     AddSiteAt(w, SiteKinds::Hearth(), 3, 3);
     AddSiteAt(w, SiteKinds::Hearth(), 26, 16);
     AddSiteAt(w, SiteKinds::Nexus(), 5, 10);
@@ -272,7 +273,7 @@ TEST(WorldThroneGuarantee, AC3_SixReachableThronesSatisfy)
 {
     const WorldStructure w = MakeValidWorld();
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_TRUE(r.satisfied) << (r.diagnostics.IsEmpty() ? "" : r.diagnostics[0].text);
     EXPECT_TRUE(r.diagnostics.IsEmpty());
 }
@@ -280,10 +281,10 @@ TEST(WorldThroneGuarantee, AC3_SixReachableThronesSatisfy)
 TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "expected 6 world-thrones, found 5"));
     EXPECT_TRUE(AnyDiagnosticContains(r, "type 5"));   // the missing type is named
@@ -292,11 +293,11 @@ TEST(WorldThroneGuarantee, AC3_FewerThanSixThronesFailsWithACountMismatch)
 TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     const uint16_t types[6] = { 0, 0, 1, 2, 3, 4 };
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, types[t]); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "2 world-thrones of Apotheosis type 0"));
     EXPECT_TRUE(AnyDiagnosticContains(r, "no world-throne of Apotheosis type 5"));
@@ -305,10 +306,10 @@ TEST(WorldThroneGuarantee, AC3_SixThronesButADuplicateTypeFails)
 TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 9 : t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "invalid Apotheosis type 9"));
 }
@@ -316,10 +317,10 @@ TEST(WorldThroneGuarantee, InvalidTypeIsReported)
 TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t == 5 ? 6 : t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "invalid Apotheosis type 6"));
     EXPECT_TRUE(AnyDiagnosticContains(r, "no world-throne of Apotheosis type 5"));
@@ -328,12 +329,12 @@ TEST(WorldThroneGuarantee, TypeSixIsTheFirstInvalidType)
 TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesIt)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     for (int y = 0; y < 20; ++y) { SetOcean(w, 25, y); }   // a water column splits off columns 26..29
     for (int t = 0; t < 5; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 28, 10, 5);
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(r, "(28,10)"));
     EXPECT_TRUE(HasViolatingCell(r, Idx(w, 28, 10)));
@@ -343,10 +344,10 @@ TEST(WorldThroneGuarantee, AC3_ThroneCutOffFromTheAncientInteriorsFailsAndNamesI
 
 TEST(WorldThroneGuarantee, AC3_NoAncientInteriorsCellsIsATerrainCause)
 {
-    WorldStructure w = MakeAllLandWorld(30, 20, DepthZone::WildReaches);
+    WorldStructure w = MakeAllLandWorld(30, 20, kZoneWild);
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 3 + t, 3, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     EXPECT_FALSE(r.satisfied);
     const Measurement* m = FindMeasurement(r, MeasurementKeys::AncientInteriorsCells());
     ASSERT_NE(m, nullptr);
@@ -359,12 +360,12 @@ TEST(WorldThroneGuarantee, AC10_EvidenceProofPathsAndPerTypeCounts)
 {
     const WorldStructure w = MakeValidWorld();
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     ASSERT_EQ(r.proofPaths.Size(), 6u);
     for (const ProofPath& path : r.proofPaths)
     {
         EXPECT_TRUE(IsValidWalk(w, path));
-        EXPECT_EQ(w.Cells()[path.to].depthZone, DepthZone::AncientInteriors);
+        EXPECT_EQ(w.Cells()[path.to].depthZone, kZoneAncient);
         EXPECT_EQ(path.profileCrc, StringCRC("P").Value());
     }
     for (int t = 0; t < 6; ++t)
@@ -382,7 +383,7 @@ TEST(WorldThroneGuarantee, ThroneStandingOnAnAncientInteriorsCellNeedsNoMovement
 {
     const WorldStructure w = MakeValidWorld();
     BlockWaterProfile p("P");
-    const GuaranteeResult r = Check(WorldThroneGuarantee(), w, { &p });
+    const GuaranteeResult r = Check(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()), w, { &p });
     for (const ProofPath& path : r.proofPaths) { EXPECT_EQ(path.cells.Size(), 1u); }   // all six thrones sit in the block
 }
 
@@ -390,19 +391,19 @@ TEST(WorldThroneGuarantee, ThroneStandingOnAnAncientInteriorsCellNeedsNoMovement
 
 TEST(DefaultValidationSet, HoldsOneProfileAndTheThreeBuiltInsInOrder)
 {
-    DefaultValidationSet set(TestRules(), 10.0f);
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
     EXPECT_EQ(set.GetParams().profiles.Size(), 1u);
     ASSERT_EQ(set.GetParams().guarantees.Size(), 3u);
     EXPECT_EQ(set.GetParams().guarantees[0]->GetId(), HearthNexusReachabilityGuarantee().GetId());
     EXPECT_EQ(set.GetParams().guarantees[1]->GetId(), DynastySpacingGuarantee().GetId());
-    EXPECT_EQ(set.GetParams().guarantees[2]->GetId(), WorldThroneGuarantee().GetId());
+    EXPECT_EQ(set.GetParams().guarantees[2]->GetId(), WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()).GetId());
     EXPECT_EQ(set.GetParams().profiles[0]->GetId(), StringCRC("CoW.Nav.TerrainTable"));
 }
 
 TEST(DefaultValidationSet, AC4_ValidWorldPassesWithThreeGuarantees)
 {
     const WorldStructure w = MakeValidWorld();
-    DefaultValidationSet set(TestRules(), 10.0f);
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
     const ValidationResult r = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_TRUE(r.passed) << (r.guarantees.Size() > 0 ? "see per-guarantee results" : "");
     EXPECT_EQ(r.guarantees.Size(), 3u);
@@ -411,26 +412,26 @@ TEST(DefaultValidationSet, AC4_ValidWorldPassesWithThreeGuarantees)
 
 TEST(DefaultValidationSet, AC4_AnyBrokenGuaranteeFailsTheWhole)
 {
-    DefaultValidationSet set(TestRules(), 10.0f);
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
 
     WorldStructure close = MakeValidWorld();
     AddSiteAt(close, SiteKinds::DynastyStart(), 4, 2);
     const ValidationResult r1 = ReachabilityValidator::Validate(close, set.GetParams());
     EXPECT_FALSE(r1.passed);
     EXPECT_FALSE(r1.Find(DynastySpacingGuarantee().GetId())->satisfied);
-    EXPECT_TRUE(r1.Find(WorldThroneGuarantee().GetId())->satisfied);   // independent
+    EXPECT_TRUE(r1.Find(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()).GetId())->satisfied);   // independent
 
     WorldStructure fewer = MakeAllLandWorld(30, 20);
-    FillLand(fewer, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
+    FillLand(fewer, 12, 7, 18, 13, kZoneAncient, B("Biome.Grassland"));
     const ValidationResult r2 = ReachabilityValidator::Validate(fewer, set.GetParams());
     EXPECT_FALSE(r2.passed);
-    EXPECT_FALSE(r2.Find(WorldThroneGuarantee().GetId())->satisfied);
+    EXPECT_FALSE(r2.Find(WorldThroneGuarantee(::CoW::World::Testing::ShippedZoneTable()).GetId())->satisfied);
     EXPECT_TRUE(r2.Find(HearthNexusReachabilityGuarantee().GetId())->satisfied);   // no hearths: vacuous
 }
 
 TEST(DefaultValidationSet, CallersCanAppendToACopyOfTheParams)
 {
-    DefaultValidationSet set(TestRules(), 10.0f);
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
     ValidationParams copy = set.GetParams();
     FixedGuarantee extra("Extra", false);
     AllowWaterProfile more("More");
@@ -448,10 +449,10 @@ TEST(DefaultValidationSet, CallersCanAppendToACopyOfTheParams)
 TEST(DefaultValidationSet, AC7_ValidatingTwiceGivesIdenticalEvidence)
 {
     const WorldStructure w = MakeValidWorld();
-    DefaultValidationSet set(TestRules(), 10.0f);
+    DefaultValidationSet set(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
     const ValidationResult a = ReachabilityValidator::Validate(w, set.GetParams());
     const ValidationResult b = ReachabilityValidator::Validate(w, set.GetParams());
     EXPECT_EQ(a, b);
-    DefaultValidationSet other(TestRules(), 10.0f);
+    DefaultValidationSet other(TestRules(), ::CoW::World::Testing::ShippedZoneTable(), 10.0f);
     EXPECT_EQ(a, ReachabilityValidator::Validate(w, other.GetParams()));
 }

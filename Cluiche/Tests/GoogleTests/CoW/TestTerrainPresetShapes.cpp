@@ -13,6 +13,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
@@ -111,7 +112,7 @@ TEST(TerrainShapeChecks, DetectsBrokenContractBorderAndLand)
     {   // land cell on the border
         auto w = fresh();
         Cell& c = w->world.At(0, 5);
-        c.landmass = 1; c.elevation = 0.5f; c.depthZone = DepthZone::FirstShores;
+        c.landmass = 1; c.elevation = 0.5f; c.depthZone = kZoneFirst;
         EXPECT_FALSE(CheckWorldShape(w->gen, w->world, w->rules).Empty());
     }
     {   // elevation out of range
@@ -121,7 +122,7 @@ TEST(TerrainShapeChecks, DetectsBrokenContractBorderAndLand)
     }
     {   // ocean with a depth zone
         auto w = fresh();
-        w->world.At(1, 1).depthZone = DepthZone::WildReaches;
+        w->world.At(1, 1).depthZone = kZoneWild;
         EXPECT_FALSE(CheckWorldShape(w->gen, w->world, w->rules).Empty());
     }
     {   // land fraction off target
@@ -178,9 +179,9 @@ TEST(TerrainShapeChecks, DetectsBrokenRiversAndZones)
             for (int i = 0; i < a.world.CellCount(); ++i)
             {
                 Cell& c = a.world.Cells()[i];
-                if (c.landmass != 0 && c.depthZone == DepthZone::FirstShores)
+                if (c.landmass != 0 && c.depthZone == kZoneFirst)
                 {
-                    c.depthZone = DepthZone::AncientInteriors;   // a coast / shallow cell cannot be Ancient
+                    c.depthZone = kZoneAncient;   // a coast / shallow cell cannot be Ancient
                     break;
                 }
             }

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <Shared/World/Testing/ZoneTestIndices.h>
 
 using namespace CoW::World;
 using namespace CoW::World::Testing;
@@ -35,7 +36,7 @@ namespace
         return true;
     }
 
-    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), err); }
+    bool Load(BiomeRegistry& r, const std::string& text, RegistryError& err) { return r.LoadFromText(text.c_str(), ::CoW::World::Testing::ShippedZoneTable(), err); }
 
     BiomeIndex NearestEnvelope(const BiomeRegistry& reg, float t, float m)
     {
@@ -107,7 +108,7 @@ TEST(BiomeRegistryEdge, BiomeWithEmptyZonesIsNeverPlacedEvenWithAPerfectClimateE
     const BiomeIndex scrub = r.Find(StringCRC("Biome.Scrub"));
     ASSERT_NE(r.Climate(scrub), nullptr);
 
-    const DepthZone zones[] = { DepthZone::FirstShores, DepthZone::WildReaches, DepthZone::AncientInteriors };
+    const DepthZone zones[] = { kZoneFirst, kZoneWild, kZoneAncient };
     for (DepthZone zone : zones)
     {
         ASSERT_FALSE(r.IsValidInZone(scrub, zone));
