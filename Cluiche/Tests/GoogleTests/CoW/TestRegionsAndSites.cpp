@@ -327,7 +327,7 @@ namespace
     // 5x2 blocks of 12x12 land (10 regions of 144 cells), 9 Hunting nodes per region on a 4-step grid = 90 nodes.
     WorldStructure ValidWorld()
     {
-        WorldStructure w = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, LegacyB("Biome.Grassland"));
+        WorldStructure w = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, B("Biome.Grassland"));
         w.regions.mainlandRegionCount = 10;
         for (int by = 0; by < 2; ++by)
             for (int bx = 0; bx < 5; ++bx)
@@ -433,7 +433,7 @@ TEST(LayoutCheck, RegionUnderMinimumCells)
 
 TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
 {
-    WorldStructure w = MakeRegionBlocksWorld(3, 3, kBlk, kBlk, LegacyB("Biome.Grassland"));   // 9 regions
+    WorldStructure w = MakeRegionBlocksWorld(3, 3, kBlk, kBlk, B("Biome.Grassland"));   // 9 regions
     LayoutLimits lim = NoBarriers();
     lim.nodeLimited = true;
     const LayoutReport r = CheckLayout(w, TestRules(), lim);
@@ -443,7 +443,7 @@ TEST(LayoutCheck, RegionCountOutOfRangeUnlessTerrainLimited)
     lim.regionLimitedBy = DepthZone::AncientInteriors;
     EXPECT_EQ(Find(CheckLayout(w, TestRules(), lim), LayoutCode::RegionCountRange), nullptr);
 
-    WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, LegacyB("Biome.Grassland"));   // 17 regions
+    WorldStructure many = MakeRegionBlocksWorld(17, 1, kBlk, kBlk, B("Biome.Grassland"));   // 17 regions
     lim.regionLimitedBy = DepthZone::None;
     const LayoutReport r2 = CheckLayout(many, TestRules(), lim);
     const LayoutViolation* v2 = Find(r2, LayoutCode::RegionCountRange);
@@ -528,7 +528,7 @@ TEST(LayoutCheck, SameCorridorNodesAreExemptFromSpacingAgainstEachOther)
 {
     // Two corridor nodes of one width-2 corridor, adjacent, on an otherwise empty land block.
     WorldStructure w = MakeBlankWorld(20, 20);
-    FillLand(w, 0, 0, 20, 20, DepthZone::FirstShores, LegacyB("Biome.Grassland"));
+    FillLand(w, 0, 0, 20, 20, DepthZone::FirstShores, B("Biome.Grassland"));
     AssignRegion(w, 0, 0, 20, 20, 1);
     BuildRegionRecords(w);
     AddNode(w, SiteKindId(BuiltinNodeKinds::Corridor()), 10, 10, 0, MakeCorridorFlags(1, 1, 2));
@@ -580,7 +580,7 @@ TEST(LayoutCheck, RegionWithSixteenNodes)
 
 TEST(LayoutCheck, NodeTotalsAndRegionQuotasSkippedWhenNodeLimited)
 {
-    WorldStructure thin = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, LegacyB("Biome.Grassland"));
+    WorldStructure thin = MakeRegionBlocksWorld(5, 2, kBlk, kBlk, B("Biome.Grassland"));
     thin.regions.mainlandRegionCount = 10;
     for (int by = 0; by < 2; ++by)
         for (int bx = 0; bx < 5; ++bx)

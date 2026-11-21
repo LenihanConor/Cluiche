@@ -106,7 +106,7 @@ TEST(ValidationEdge, SitesOutsideTheMapAreViolationsNotCrashes)
     EXPECT_FALSE(ds.satisfied);
     EXPECT_TRUE(AnyDiagnosticContains(ds, "outside the map"));
     EXPECT_TRUE(ds.violatingPairs.IsEmpty());
-    FillLand(w, 2, 2, 5, 5, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
+    FillLand(w, 2, 2, 5, 5, DepthZone::AncientInteriors, B("Biome.Grassland"));
     const GuaranteeResult wt = Check(WorldThroneGuarantee(), w, { &p });
     EXPECT_FALSE(wt.satisfied);
     EXPECT_EQ(wt.violatingCells.Size(), 1u);
@@ -126,7 +126,7 @@ TEST(ValidationEdge, AllWaterWorldHasNothingReachable)
 TEST(ValidationEdge, SevenThronesFailTheExactCount)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));
+    FillLand(w, 12, 7, 18, 13, DepthZone::AncientInteriors, B("Biome.Grassland"));
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 12 + t, 7 + t, static_cast<uint16_t>(t)); }
     AddSiteAt(w, SiteKinds::WorldThrone(), 17, 8, 3);
     BlockWaterProfile p("P");
@@ -139,8 +139,8 @@ TEST(ValidationEdge, SevenThronesFailTheExactCount)
 TEST(ValidationEdge, AncientInteriorsInSeveralPatchesAnyOneSuffices)
 {
     WorldStructure w = MakeAllLandWorld(30, 20);
-    FillLand(w, 2, 2, 4, 4, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));       // patch A
-    FillLand(w, 26, 16, 28, 18, DepthZone::AncientInteriors, LegacyB("Biome.Grassland"));   // patch B
+    FillLand(w, 2, 2, 4, 4, DepthZone::AncientInteriors, B("Biome.Grassland"));       // patch A
+    FillLand(w, 26, 16, 28, 18, DepthZone::AncientInteriors, B("Biome.Grassland"));   // patch B
     for (int y = 0; y < 20; ++y) { SetOcean(w, 15, y); }                                 // splits the map; thrones sit on the right
     for (int t = 0; t < 6; ++t) { AddSiteAt(w, SiteKinds::WorldThrone(), 20 + t, 5, static_cast<uint16_t>(t)); }
     BlockWaterProfile p("P");

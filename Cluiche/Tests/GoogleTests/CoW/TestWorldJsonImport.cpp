@@ -171,9 +171,9 @@ TEST(WorldJsonImport, ImportedFloatsKeepEveryBit)
 TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
 {
     WorldStructure original = MakeTinyWorld();
-    original.Cells()[2].biome  = LegacyB("Biome.Scrub");
-    original.Cells()[3].biome  = LegacyB("Biome.BurnedAshland");
-    original.Cells()[7].biome  = LegacyB("Biome.DesertifiedPlain");
+    original.Cells()[2].biome  = B("Biome.Scrub");
+    original.Cells()[3].biome  = B("Biome.BurnedAshland");
+    original.Cells()[7].biome  = B("Biome.DesertifiedPlain");
     RecomputeRegionRecords(original, ShippedBiomeRegistry());
     const std::string text = Export(original);
     EXPECT_NE(text.find("Biome.Scrub"), std::string::npos);
@@ -182,9 +182,9 @@ TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
     WorldStructure imported;
     const WorldImportResult r = Import(text, imported);
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
-    EXPECT_EQ(Idx(imported.Cells()[2].biome), B("Biome.Scrub"));
-    EXPECT_EQ(Idx(imported.Cells()[3].biome), B("Biome.BurnedAshland"));
-    EXPECT_EQ(Idx(imported.Cells()[7].biome), B("Biome.DesertifiedPlain"));
+    EXPECT_EQ(imported.Cells()[2].biome, B("Biome.Scrub"));
+    EXPECT_EQ(imported.Cells()[3].biome, B("Biome.BurnedAshland"));
+    EXPECT_EQ(imported.Cells()[7].biome, B("Biome.DesertifiedPlain"));
     EXPECT_TRUE(SameCells(original, imported));
 }
 
@@ -613,7 +613,7 @@ TEST(WorldJsonImport, HandEditedCellsAreKeptNotRecomputedOrReclassified)
     });
     WorldStructure imported;
     ASSERT_TRUE(Import(text, imported).ok);
-    EXPECT_EQ(Idx(imported.Cells()[3].biome), B("Biome.Desert"));
+    EXPECT_EQ(imported.Cells()[3].biome, B("Biome.Desert"));
     EXPECT_EQ(imported.Cells()[3].elevation, 0.05f);
 }
 

@@ -2,7 +2,6 @@
 // AC1 (live == fresh), AC2 (biome validity), AC3 (zone rule), AC4 (no forbidden pairs), AC9 (slider isolation).
 #include <gtest/gtest.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/BiomeChecks.h>
@@ -146,7 +145,7 @@ namespace
         for (int c = 0; c < n; ++c)
         {
             const uint32_t b = biome[c];
-            ASSERT_LT(b, static_cast<uint32_t>(kBiomeCount)) << label << " seed " << seed << " cell " << c;
+            ASSERT_LT(b, ::CoW::World::Testing::ShippedBiomeRegistry().Count()) << label << " seed " << seed << " cell " << c;
             ASSERT_EQ(static_cast<uint32_t>(r.World().Cells()[c].biome), b);
             const bool oceanWater = water[c] == static_cast<uint32_t>(WaterSource::Ocean);
             const bool lakeWater  = water[c] == static_cast<uint32_t>(WaterSource::Lake);
@@ -154,7 +153,7 @@ namespace
             ASSERT_EQ(b == static_cast<uint32_t>(B("Biome.Lake")), lakeWater) << label << " seed " << seed << " cell " << c;
         }
 
-        // Lakes sit in whatever depth zone their cell has, but IsBiomeValidInZone(Lake) demands None, so water
+        // Lakes sit in whatever depth zone their cell has, but IsValidInZone(Lake) demands None, so water
         // cells are exempt here (spec AC3 reads "every cell"; see task report).
         const Stage14Inputs in = InputsOf(g, shape, kSmall);
         std::vector<int>    zoneBad;
@@ -171,8 +170,8 @@ namespace
         std::map<std::string, int> byType;
         for (const auto& pr : pairs)
         {
-            std::string a = BiomeName(static_cast<Biome>(biome[pr.first]));
-            std::string b = BiomeName(static_cast<Biome>(biome[pr.second]));
+            std::string a = ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(biome[pr.first]));
+            std::string b = ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(biome[pr.second]));
             if (b < a) { std::swap(a, b); }
             ++byType[a + " / " + b];
         }

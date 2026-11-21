@@ -4,7 +4,6 @@
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -899,13 +898,13 @@ TEST(WorldGenSessionQueries, BiomeCountsSumToCellCountAndMatchCells)
     Generate(s);
     const Json::Value r = s.Layers(Json::Value(Json::objectValue));
     ASSERT_TRUE(r["biomeCounts"].isArray()) << r.toStyledString();
-    ASSERT_EQ(r["biomeCounts"].size(), static_cast<unsigned>(kBiomeCount));
+    ASSERT_EQ(r["biomeCounts"].size(), static_cast<unsigned>(::CoW::World::Testing::ShippedBiomeRegistry().Count()));
     int sum = 0;
-    for (int b = 0; b < kBiomeCount; ++b)
+    for (int b = 0; b < static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count()); ++b)
     {
         const Json::Value& e = r["biomeCounts"][b];
         EXPECT_EQ(e["id"].asInt(), b);
-        EXPECT_EQ(e["name"].asString(), BiomeName(static_cast<Biome>(b)));
+        EXPECT_EQ(e["name"].asString(), ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(b)));
         int expected = 0;
         for (int i = 0; i < s.World().CellCount(); ++i)
             expected += s.World().Cells()[i].biome == b ? 1 : 0;
@@ -936,7 +935,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
     for (int i = 0; i < s.World().CellCount(); ++i)
     {
         const CoW::World::BiomeIndex b = s.World().Cells()[i].biome;
-        if (Idx(b) == B("Biome.Ocean")) { if (ocean < 0) ocean = i; }
+        if (b == B("Biome.Ocean")) { if (ocean < 0) ocean = i; }
         else if (pin[i] != BiomePin::None) { if (pinnedLand < 0 && pin[i] != BiomePin::Water) pinnedLand = i; }
         else if (land < 0) land = i;
     }

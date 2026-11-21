@@ -151,7 +151,6 @@
     <ClInclude Include="DiaGraphics\HexTopologyToCellGridDesc.h" />
     <ClInclude Include="Editor\GameScopedPluginFixtures.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h" />
-    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h" />
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h" />
     <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h" />
     <ClInclude Include="DiaPathfinding\GridSearchAllocCounter.h" />
@@ -1201,9 +1200,7 @@
     <ClCompile Include="CoW\TestWorldGenViewHost.cpp" />
     <ClCompile Include="..\..\CoW\Modules\WorldGenViewHost.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp" />
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp" />
     <ClCompile Include="..\..\CoW\Shared\World\BiomeRegistry.cpp" />
-    <ClCompile Include="CoW\TestBiomeTypes.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp" />
     <ClCompile Include="CoW\TestBiomeClimate.cpp" />
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClassify.cpp" />

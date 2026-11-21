@@ -1,7 +1,6 @@
 // S-1 Biome Registry: no biome id literals in production code (AC 5).
 // Biome identity lives in Assets/CoW/Global/World/biomes.json; production code under Cluiche/CoW must not name a
 // biome as a "Biome.X" string literal. Assets/ (data) and Testing/ (shipped test helpers) are exempt.
-// DISABLED_ until the production switch (plan Tasks 21 to 27) has removed every offender; Task 27 enables it.
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -41,7 +40,7 @@ namespace
     }
 }
 
-TEST(BiomeLiterals, DISABLED_NoBiomeIdLiteralsInProductionCode)
+TEST(BiomeLiterals, NoBiomeIdLiteralsInProductionCode)
 {
     const std::filesystem::path root = FindCoWRoot();
     ASSERT_FALSE(root.empty()) << "could not locate Cluiche/CoW";

@@ -128,11 +128,11 @@ namespace
             const Cell& c = w.Cells()[i];
             ASSERT_TRUE(std::isfinite(c.elevation) && c.elevation >= 0.0f && c.elevation <= 1.0f) << label << " elevation cell " << i << " = " << c.elevation;
             ASSERT_TRUE(std::isfinite(c.latitude) && c.latitude >= 0.0f && c.latitude <= 1.0f) << label << " latitude cell " << i << " = " << c.latitude;
-            ASSERT_LT(static_cast<int>(c.biome), kBiomeCount) << label << " biome cell " << i;
+            ASSERT_LT(static_cast<int>(c.biome), static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count())) << label << " biome cell " << i;
             ASSERT_LE(c.downstream, kNoDirection) << label << " downstream cell " << i;
             ASSERT_TRUE(c.region == kNoRegion || c.region <= w.regions.regions.Size()) << label << " region cell " << i << " = " << int(c.region);
             const bool ocean = c.waterSource == WaterSource::Ocean;
-            ASSERT_EQ(ocean, c.landmass == 0 || Idx(c.biome) == B("Biome.Ocean")) << label << " ocean/landmass/biome mismatch at cell " << i;
+            ASSERT_EQ(ocean, c.landmass == 0 || c.biome == B("Biome.Ocean")) << label << " ocean/landmass/biome mismatch at cell " << i;
         }
     }
 

@@ -63,7 +63,7 @@ inline WorldStructure MakeZonedBarrierWorld(int w, int h, int row1, int row2)
     for (int y = 0; y < h; ++y)
     {
         const DepthZone z = y < row1 ? DepthZone::FirstShores : (y < row2 ? DepthZone::WildReaches : DepthZone::AncientInteriors);
-        FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::LegacyB("Biome.Grassland"));
+        FillLand(world, 0, y, w, y + 1, z, ::CoW::World::Testing::B("Biome.Grassland"));
     }
     return world;
 }
@@ -172,7 +172,7 @@ inline void SetLake(WorldStructure& world, int x, int y)
     Cell& c = world.At(x, y);
     c.waterSource = WaterSource::Lake;
     c.terrain = TerrainType::Lake;
-    c.biome = ::CoW::World::Testing::LegacyB("Biome.Lake");
+    c.biome = ::CoW::World::Testing::B("Biome.Lake");
 }
 
 // Sets river cell `from`'s downstream direction so it flows into the adjacent cell `to` (odd-q, directions NE N NW

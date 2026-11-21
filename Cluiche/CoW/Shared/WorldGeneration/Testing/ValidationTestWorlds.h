@@ -43,7 +43,7 @@ inline bool AddSiteAt(WorldStructure& world, const Dia::Core::StringCRC& kind, i
 inline WorldStructure MakeAllLandWorld(int w, int h, DepthZone zone = DepthZone::WildReaches)
 {
     WorldStructure world = MakeBlankWorld(w, h);
-    FillLand(world, 0, 0, w, h, zone, ::CoW::World::Testing::LegacyB("Biome.Grassland"));
+    FillLand(world, 0, 0, w, h, zone, ::CoW::World::Testing::B("Biome.Grassland"));
     return world;
 }
 
@@ -53,8 +53,8 @@ inline WorldStructure MakeAllLandWorld(int w, int h, DepthZone zone = DepthZone:
 inline WorldStructure MakeChannelWorld(int w, int h, int x0, int channel)
 {
     WorldStructure world = MakeBlankWorld(w, h);
-    FillLand(world, 0, 0, x0, h, DepthZone::WildReaches, ::CoW::World::Testing::LegacyB("Biome.Grassland"));
-    FillLand(world, x0 + channel, 0, w, h, DepthZone::WildReaches, ::CoW::World::Testing::LegacyB("Biome.Grassland"));
+    FillLand(world, 0, 0, x0, h, DepthZone::WildReaches, ::CoW::World::Testing::B("Biome.Grassland"));
+    FillLand(world, x0 + channel, 0, w, h, DepthZone::WildReaches, ::CoW::World::Testing::B("Biome.Grassland"));
     return world;
 }
 

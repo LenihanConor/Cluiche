@@ -2,7 +2,6 @@
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>

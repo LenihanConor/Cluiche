@@ -1,14 +1,15 @@
 // S-1 Biome Registry: the shipped Global/World/biomes.json (plan tasks 7 and 8).
-// Expectations are literals copied from the legacy code (BiomeTypes.cpp, BiomeClassify.cpp, terrain_rules.schema.json),
+// Expectations are literals copied from the former legacy code (the deleted Biome enum, BiomeClassify.cpp, terrain_rules.schema.json),
 // not read back from the registry.
 #include <gtest/gtest.h>
 #include <Shared/World/BiomeRegistry.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
+#include <Shared/WorldGeneration/TerrainTypes.h>
 
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 using namespace CoW::World;
 using CoW::WorldGeneration::DepthZone;
@@ -236,50 +237,54 @@ TEST(BiomeRegistryData, PlateauAndRoles)
     EXPECT_EQ(r.Role(BiomeRole::Fallback), Grass);
 }
 
-TEST(BiomeRegistryData, MatchesLegacyFunctionsForAllBiomes)
+static_assert(std::is_trivially_copyable_v<CoW::WorldGeneration::Cell>, "Cell is memset/memcpy'd; must stay trivially copyable");
+static_assert(sizeof(CoW::WorldGeneration::Cell) <= 24, "Cell grew unexpectedly");
+
+// Tripwire: the committed S-1 layer goldens hash biomeIndex values, so the first ten must never renumber.
+TEST(BiomeRegistryData, ShippedRowIndicesArePinned)
 {
-    using namespace CoW::WorldGeneration;
     const BiomeRegistry& r = Shipped();
-    ASSERT_EQ(r.Count(), static_cast<uint32_t>(kBiomeCount));
-    for (int i = 0; i < kBiomeCount; ++i)
+    ASSERT_EQ(r.Count(), 13u);
+    for (int i = 0; i < kRows; ++i)
     {
-        const Biome b = static_cast<Biome>(i);
-        const BiomeIndex bi = static_cast<BiomeIndex>(i);
-        EXPECT_EQ(r.Id(bi), BiomeId(b)) << i;
-        EXPECT_STREQ(r.Name(bi), BiomeName(b)) << i;
-        EXPECT_EQ(r.IsGenerated(bi), IsGeneratedBiome(b)) << i;
-        for (int z = 0; z < 4; ++z)
-        {
-            EXPECT_EQ(r.IsValidInZone(bi, kZones[z]), IsBiomeValidInZone(b, kZones[z])) << i << " zone " << z;
-        }
-        for (int j = 0; j < kBiomeCount; ++j)
-        {
-            EXPECT_EQ(r.AreForbidden(bi, static_cast<BiomeIndex>(j)), AreBiomesForbidden(b, static_cast<Biome>(j))) << i << "," << j;
-        }
+        EXPECT_EQ(r.Find(StringCRC(kExpect[i].id)), static_cast<BiomeIndex>(i)) << kExpect[i].id;
     }
+    uint32_t generated = 0;
+    for (BiomeIndex i = 0; i < r.Count(); ++i) { generated += r.IsGenerated(i) ? 1u : 0u; }
+    EXPECT_EQ(generated, 10u);
+}
+
+TEST(BiomeRegistryData, FindRejectsUnknownIds)
+{
+    const BiomeRegistry& r = Shipped();
+    EXPECT_EQ(r.Find(StringCRC("Biome.Nonsense")), kNoBiome);
+    EXPECT_EQ(r.Find(StringCRC("Terrain.Mountain")), kNoBiome);
+}
+
+TEST(BiomeRegistryData, AlpineOceanLakeNeverForbidden)
+{
+    const BiomeRegistry& r = Shipped();
+    for (BiomeIndex i = 0; i < r.Count(); ++i)
+    {
+        EXPECT_FALSE(r.AreForbidden(Alpine, i));
+        EXPECT_FALSE(r.AreForbidden(Ocean, i));
+        EXPECT_FALSE(r.AreForbidden(Lake, i));
+    }
+}
+
+TEST(BiomeRegistryData, CellDefaultsBiomeToOceanRow)
+{
+    CoW::WorldGeneration::Cell c;
+    EXPECT_EQ(c.biome, static_cast<BiomeIndex>(Ocean));
 }
 
 // ---- Task 9: BiomeTestRegistry.h ----
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 
-TEST(BiomeTestRegistry, RowOrderMatchesLegacyEnum)
-{
-    using namespace CoW::World::Testing;
-    using namespace CoW::WorldGeneration;
-    const BiomeRegistry& r = ShippedBiomeRegistry();
-    ASSERT_EQ(r.Count(), static_cast<uint32_t>(kBiomeCount));
-    for (int i = 0; i < kBiomeCount; ++i)
-    {
-        const Biome b = static_cast<Biome>(i);
-        EXPECT_EQ(Idx(b), r.Find(BiomeId(b))) << i;
-    }
-}
-
 TEST(BiomeTestRegistry, LookupByIdReturnsLegacyOrdinals)
 {
     using namespace CoW::World::Testing;
     EXPECT_EQ(B("Biome.Grassland"), 2);
-    EXPECT_EQ(B("Biome.Grassland"), Idx(CoW::WorldGeneration::Biome::GrasslandSteppe));
     EXPECT_EQ(B("Biome.Volcanic"), 9);
     EXPECT_EQ(B(ShippedBiomeRegistry(), "Biome.Rainforest"), 8);
 }

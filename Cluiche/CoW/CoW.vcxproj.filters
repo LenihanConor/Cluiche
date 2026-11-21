@@ -127,9 +127,6 @@
     <ClCompile Include="Modules\WorldGenViewHost.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\BiomeTypes.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
@@ -332,9 +329,6 @@
     </ClInclude>
     <ClInclude Include="Modules\WorldGenMirrorRegistrar.h">
       <Filter>Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\BiomeTypes.h">
-      <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h">
       <Filter>Shared</Filter>

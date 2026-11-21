@@ -4,7 +4,6 @@
 // AC14 (imported worlds) is deferred until export/import exists (system plan task 16).
 #include <gtest/gtest.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
@@ -53,34 +52,35 @@ namespace
             const uint32_t*      biome = L.GetUInt(L.FindLayer("biomeIndex"));
             ASSERT_NE(biome, nullptr);
 
-            int counts[kBiomeCount] = {};
+            const int rows = static_cast<int>(::CoW::World::Testing::ShippedBiomeRegistry().Count());
+            std::vector<int> counts(static_cast<size_t>(rows), 0);
             int land                = 0;
             for (int c = 0; c < kSmall.width * kSmall.height; ++c)
             {
                 const uint32_t b = biome[c];
-                ASSERT_LT(b, static_cast<uint32_t>(kBiomeCount));
+                ASSERT_LT(b, ::CoW::World::Testing::ShippedBiomeRegistry().Count());
                 if (b == static_cast<uint32_t>(B("Biome.Ocean")) || b == static_cast<uint32_t>(B("Biome.Lake"))) { continue; }
                 ++counts[b];
                 ++land;
             }
             int    distinct = 0;
             int    maxCount = 0;
-            Biome maxBiome = LegacyEnumB("Biome.Ocean");
+            ::CoW::World::BiomeIndex maxBiome = B("Biome.Ocean");
             std::string line;
-            for (int b = 0; b < kBiomeCount; ++b)
+            for (int b = 0; b < rows; ++b)
             {
                 if (b == static_cast<int>(B("Biome.Ocean")) || b == static_cast<int>(B("Biome.Lake"))) { continue; }
                 if (counts[b] > 0) { ++distinct; }
-                if (counts[b] > maxCount) { maxCount = counts[b]; maxBiome = static_cast<Biome>(b); }
+                if (counts[b] > maxCount) { maxCount = counts[b]; maxBiome = static_cast<::CoW::World::BiomeIndex>(b); }
                 char buf[64];
-                std::snprintf(buf, sizeof(buf), " %s=%d", BiomeName(static_cast<Biome>(b)), counts[b]);
+                std::snprintf(buf, sizeof(buf), " %s=%d", ::CoW::World::Testing::ShippedBiomeRegistry().Name(static_cast<::CoW::World::BiomeIndex>(b)), counts[b]);
                 line += buf;
             }
             const double maxShare = land > 0 ? static_cast<double>(maxCount) / land : 0.0;
             std::printf("[BiomeAcceptance] AC10 seed %llu: land=%d distinct=%d max=%s %.1f%% |%s\n",
-                        static_cast<unsigned long long>(seed), land, distinct, BiomeName(maxBiome), maxShare * 100.0, line.c_str());
+                        static_cast<unsigned long long>(seed), land, distinct, ::CoW::World::Testing::ShippedBiomeRegistry().Name(maxBiome), maxShare * 100.0, line.c_str());
             if (distinct >= 5) { ++seedsWithFive; }
-            EXPECT_LE(maxShare, 0.60) << "seed " << seed << " dominant " << BiomeName(maxBiome);
+            EXPECT_LE(maxShare, 0.60) << "seed " << seed << " dominant " << ::CoW::World::Testing::ShippedBiomeRegistry().Name(maxBiome);
         }
         const double frac = static_cast<double>(seedsWithFive) / count;
         std::printf("[BiomeAcceptance] AC10 %d/%d seeds (%.0f%%) have >= 5 distinct land biomes\n", seedsWithFive, count, frac * 100.0);
@@ -153,7 +153,7 @@ TEST(BiomeAcceptance, DISABLED_A4BaselineTableCoversAllTenBiomeIds)
     const char* const kIds[] = { "Biome.Ocean", "Biome.Lake", "Biome.Grassland", "Biome.TemperateForest", "Biome.Wetland",
                                  "Biome.Desert", "Biome.Alpine", "Biome.Tundra", "Biome.Rainforest", "Biome.Volcanic" };
     std::set<uint32_t> ours;
-    for (int b = 0; b < kBiomeCount; ++b) { ours.insert(static_cast<uint32_t>(BiomeId(static_cast<Biome>(b)).Value())); }
+    for (uint32_t b = 0; b < ::CoW::World::Testing::ShippedBiomeRegistry().Count(); ++b) { ours.insert(static_cast<uint32_t>(::CoW::World::Testing::ShippedBiomeRegistry().Id(static_cast<::CoW::World::BiomeIndex>(b)).Value())); }
     for (const char* id : kIds)
     {
         EXPECT_TRUE(ours.count(static_cast<uint32_t>(Dia::Core::StringCRC(id).Value()))) << id;

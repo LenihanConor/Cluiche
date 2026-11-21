@@ -22,8 +22,8 @@ namespace
     constexpr DepthZone FS = DepthZone::FirstShores;
     constexpr DepthZone WR = DepthZone::WildReaches;
     constexpr DepthZone AI = DepthZone::AncientInteriors;
-    constexpr BiomeConst     G  {"Biome.Grassland"};
-    constexpr BiomeConst     F  {"Biome.TemperateForest"};
+    constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
     TerrainRules Rules() { return TestRules(); }
 

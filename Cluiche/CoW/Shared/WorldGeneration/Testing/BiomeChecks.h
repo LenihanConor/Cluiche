@@ -3,7 +3,6 @@
 #pragma once
 
 #include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 #include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -18,19 +17,20 @@ namespace Testing {
 
 // Cells whose biome is not valid in their depth zone. Volcanic cells at a vent (Volcanic flag or terrain Volcano)
 // are exempt (AC3 vent island).
-inline std::vector<int> FindZoneViolations(const Stage14Inputs& in, const uint32_t* biome)
+inline std::vector<int> FindZoneViolations(const Stage14Inputs& in, const uint32_t* biome,
+                                         const ::CoW::World::BiomeRegistry& reg = ::CoW::World::Testing::ShippedBiomeRegistry())
 {
     std::vector<int> bad;
     const int        n = in.dims.width * in.dims.height;
-    const ::CoW::World::BiomeIndex volcanic = ::CoW::World::Testing::LegacyB("Biome.Volcanic");
+    const ::CoW::World::BiomeIndex volcanic = ::CoW::World::Testing::B(reg, "Biome.Volcanic");
     for (int c = 0; c < n; ++c)
     {
-        const Biome b = static_cast<Biome>(biome[c]);
-        if (static_cast<::CoW::World::BiomeIndex>(b) == volcanic && IsVentCell(in, c))
+        const ::CoW::World::BiomeIndex b = static_cast<::CoW::World::BiomeIndex>(biome[c]);
+        if (b == volcanic && IsVentCell(in, c))
         {
             continue;
         }
-        if (!IsBiomeValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
+        if (!reg.IsValidInZone(b, static_cast<DepthZone>(in.depthZone[c])))
         {
             bad.push_back(c);
         }
@@ -39,7 +39,8 @@ inline std::vector<int> FindZoneViolations(const Stage14Inputs& in, const uint32
 }
 
 // Each forbidden neighbouring pair once, as (lower index, higher index).
-inline std::vector<std::pair<int, int>> FindForbiddenPairs(GridDimensions dims, const uint32_t* biome)
+inline std::vector<std::pair<int, int>> FindForbiddenPairs(GridDimensions dims, const uint32_t* biome,
+                                                          const ::CoW::World::BiomeRegistry& reg = ::CoW::World::Testing::ShippedBiomeRegistry())
 {
     std::vector<std::pair<int, int>> pairs;
     if (dims.width <= 0 || dims.height <= 0)
@@ -57,7 +58,7 @@ inline std::vector<std::pair<int, int>> FindForbiddenPairs(GridDimensions dims, 
             {
                 continue;
             }
-            if (AreBiomesForbidden(static_cast<Biome>(biome[c]), static_cast<Biome>(biome[nb])))
+            if (reg.AreForbidden(static_cast<::CoW::World::BiomeIndex>(biome[c]), static_cast<::CoW::World::BiomeIndex>(biome[nb])))
             {
                 pairs.emplace_back(c, static_cast<int>(nb));
             }
@@ -68,7 +69,8 @@ inline std::vector<std::pair<int, int>> FindForbiddenPairs(GridDimensions dims, 
 
 // WetlandDelta cells that break AC5: not eligible, or not next to a moisture source (coast, lake, river cell,
 // or another WetlandDelta).
-inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage14Inputs& in, const uint32_t* biome)
+inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage14Inputs& in, const uint32_t* biome,
+                                        const ::CoW::World::BiomeRegistry& reg = ::CoW::World::Testing::ShippedBiomeRegistry())
 {
     std::vector<int> bad;
     if (in.dims.width <= 0 || in.dims.height <= 0)
@@ -77,7 +79,7 @@ inline std::vector<int> CheckWetlandRule(const TerrainRules& rules, const Stage1
     }
     const Dia::Pathfinding::HexTopology topo(in.dims.width, in.dims.height);
     const int                           n = in.dims.width * in.dims.height;
-    const ::CoW::World::BiomeIndex      wetland = ::CoW::World::Testing::LegacyB("Biome.Wetland");
+    const ::CoW::World::BiomeIndex      wetland = ::CoW::World::Testing::B(reg, "Biome.Wetland");
     for (int c = 0; c < n; ++c)
     {
         if (static_cast<::CoW::World::BiomeIndex>(biome[c]) != wetland)

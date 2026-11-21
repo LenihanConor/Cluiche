@@ -2,7 +2,6 @@
 // The shipped worldgen.schema.json must describe every WorldLayerSource layer.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
-#include <Shared/WorldGeneration/BiomeTypes.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>

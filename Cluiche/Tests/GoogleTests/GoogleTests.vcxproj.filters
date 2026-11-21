@@ -1792,9 +1792,6 @@
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainDepthZones.h">
       <Filter>CoW</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.h">
-      <Filter>CoW</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h">
       <Filter>CoW</Filter>
     </ClInclude>
@@ -2754,13 +2751,7 @@
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\World\BiomeRegistry.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\TestBiomeTypes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp">

@@ -27,9 +27,9 @@ namespace
     constexpr DepthZone FS = DepthZone::FirstShores;
     constexpr DepthZone WR = DepthZone::WildReaches;
     constexpr DepthZone AI = DepthZone::AncientInteriors;
-    constexpr BiomeConst     G  {"Biome.Grassland"};
-    constexpr BiomeConst     F  {"Biome.TemperateForest"};
-    constexpr BiomeConst     L  {"Biome.Lake"};
+    constexpr CoW::World::BiomeIndex     G  = 2;   // Biome.Grassland (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr CoW::World::BiomeIndex     F  = 3;   // Biome.TemperateForest (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
+    constexpr CoW::World::BiomeIndex     L  = 1;   // Biome.Lake (shipped row, pinned by BiomeRegistryData.ShippedRowIndicesArePinned)
 
     TerrainRules RulesMin(int minCells)
     {
@@ -417,7 +417,7 @@ TEST(RegionRepair, PrimaryBiomeIgnoresLakeCellsPurityCountsAllCells)
     for (int y = 7; y < 10; ++y) { SetBiome(h.w, 0, y, F); }
     Finish(h);
     const RegionRecord& r = h.w.regions.regions[0];
-    EXPECT_EQ(Idx(r.primaryBiome), Idx(G));   // 4 lake cells ignored; G 3 vs F 3 ties to the lowest enum
+    EXPECT_EQ(r.primaryBiome, G);   // 4 lake cells ignored; G 3 vs F 3 ties to the lowest enum
     EXPECT_FLOAT_EQ(r.purity, 0.3f);
     ExpectChecksPass(h.w);
 }
@@ -428,14 +428,14 @@ TEST(RegionRepair, PrimaryBiomeMajorityAndTieLowestEnum)
     for (int y = 0; y < 6; ++y) { SetBiome(h.w, 0, y, F); }
     for (int y = 6; y < 10; ++y) { SetBiome(h.w, 0, y, G); }
     Finish(h);
-    EXPECT_EQ(Idx(h.w.regions.regions[0].primaryBiome), Idx(F));
+    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, F);
     EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 0.6f);
 
     Hand t = OneRegionStrip(10);
     for (int y = 0; y < 5; ++y) { SetBiome(t.w, 0, y, F); }
     for (int y = 5; y < 10; ++y) { SetBiome(t.w, 0, y, G); }
     Finish(t);
-    EXPECT_EQ(Idx(t.w.regions.regions[0].primaryBiome), Idx(G));
+    EXPECT_EQ(t.w.regions.regions[0].primaryBiome, G);
     EXPECT_FLOAT_EQ(t.w.regions.regions[0].purity, 0.5f);
 }
 
@@ -444,7 +444,7 @@ TEST(RegionRepair, AllLakeRegionReportsLake)
     Hand h = OneRegionStrip(3);
     for (int y = 0; y < 3; ++y) { SetBiome(h.w, 0, y, L); h.w.At(0, y).waterSource = WaterSource::Lake; }
     Finish(h);
-    EXPECT_EQ(Idx(h.w.regions.regions[0].primaryBiome), Idx(L));
+    EXPECT_EQ(h.w.regions.regions[0].primaryBiome, L);
     EXPECT_FLOAT_EQ(h.w.regions.regions[0].purity, 1.0f);
 }
 
@@ -781,21 +781,21 @@ TEST(RegionRepair, RegistryRoleFixtureHasOceanAndLakeOffTheirLegacyRows)
 TEST(RegionRepair, MajorityIgnoresTheRegistrysLakeRoleRow)
 {
     // 3 cells of row 0 (the lake-role row here) and 1 grassland cell: the lake-role cells never win the majority.
-    Hand h = Make({ "1111" }, { FS }, FS, Legacy(RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake)));
-    SetBiome(h.w, 3, 0, LegacyB("Biome.Grassland"));
+    Hand h = Make({ "1111" }, { FS }, FS, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    SetBiome(h.w, 3, 0, B("Biome.Grassland"));
     const RegionBuild b = FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
     ASSERT_EQ(b.regionCount, 1u);
     const RegionRecord& rec = h.w.regions.regions[0];
-    EXPECT_EQ(Idx(rec.primaryBiome), B("Biome.Grassland"));
+    EXPECT_EQ(rec.primaryBiome, B("Biome.Grassland"));
     EXPECT_FLOAT_EQ(rec.purity, 0.25f);
 }
 
 TEST(RegionRepair, AllLakeRoleRegionReportsTheRegistrysLakeRow)
 {
-    Hand h = Make({ "111" }, { FS }, FS, Legacy(RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake)));
+    Hand h = Make({ "111" }, { FS }, FS, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
     FinishRegions(h.w, RulesMin(1), h.g, RolesSwappedRegistry());
     const RegionRecord& rec = h.w.regions.regions[0];
-    EXPECT_EQ(Idx(rec.primaryBiome), RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
+    EXPECT_EQ(rec.primaryBiome, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Lake));
     EXPECT_FLOAT_EQ(rec.purity, 1.0f);
 }
 
@@ -806,7 +806,7 @@ TEST(RegionRepair, RegionWithNoCellsReportsTheRegistrysOceanRow)
     rec.id = 1; rec.zone = FS; rec.landmass = 1;
     w.regions.AddRegion(rec);
     RecomputeRegionRecords(w, RolesSwappedRegistry());
-    EXPECT_EQ(Idx(w.regions.regions[0].primaryBiome), RolesSwappedRegistry().Role(CoW::World::BiomeRole::Ocean));
+    EXPECT_EQ(w.regions.regions[0].primaryBiome, RolesSwappedRegistry().Role(CoW::World::BiomeRole::Ocean));
     EXPECT_EQ(w.regions.regions[0].cellCount, 0u);
     EXPECT_FLOAT_EQ(w.regions.regions[0].purity, 0.0f);
 }
@@ -818,5 +818,5 @@ TEST(RegionRepair, ShippedRegistryKeepsOceanAtRowZeroAndLakeAtRowOne)
     rec.id = 1; rec.zone = FS; rec.landmass = 1;
     w.regions.AddRegion(rec);
     RecomputeRegionRecords(w, ShippedBiomeRegistry());
-    EXPECT_EQ(Idx(w.regions.regions[0].primaryBiome), B("Biome.Ocean"));
+    EXPECT_EQ(w.regions.regions[0].primaryBiome, B("Biome.Ocean"));
 }

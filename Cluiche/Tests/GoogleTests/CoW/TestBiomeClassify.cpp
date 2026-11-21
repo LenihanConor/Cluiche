@@ -123,7 +123,7 @@ TEST(BiomeClassify, ClimateTableWinners)
     for (const Case& k : cases)
     {
         const int c = g.Index(k.x, k.y);
-        EXPECT_EQ(Idx(r.At(c)), k.expect) << "cell " << k.x << "," << k.y;
+        EXPECT_EQ(r.At(c), k.expect) << "cell " << k.x << "," << k.y;
         EXPECT_EQ(r.pin[c], BiomePin::None);
         EXPECT_EQ(r.fixup[c], BiomeFixup::None);
         EXPECT_NEAR(r.score[c], BiomeClimateScore(ShippedBiomeRegistry(), k.expect, k.t, k.m), kEps);
@@ -161,9 +161,9 @@ TEST(BiomeClassify, WaterCellsArePinnedOceanAndLake)
     g.SetWater(ocean, WaterSource::Ocean);
     g.SetWater(lake, WaterSource::Lake);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(ocean)), B("Biome.Ocean"));
+    EXPECT_EQ(r.At(ocean), B("Biome.Ocean"));
     EXPECT_EQ(r.pin[ocean], BiomePin::Water);
-    EXPECT_EQ(Idx(r.At(lake)), B("Biome.Lake"));
+    EXPECT_EQ(r.At(lake), B("Biome.Lake"));
     EXPECT_EQ(r.pin[lake], BiomePin::Water);
     EXPECT_EQ(r.fixup[ocean], BiomeFixup::None);
     EXPECT_EQ(r.fixup[lake], BiomeFixup::None);
@@ -177,7 +177,7 @@ TEST(BiomeClassify, WaterBeatsEveryOtherRule)
     g.AddFlag(c, TerrainFlag::Volcanic);
     g.SetTerrain(c, TerrainType::Volcano);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(c)), B("Biome.Ocean"));
+    EXPECT_EQ(r.At(c), B("Biome.Ocean"));
     EXPECT_EQ(r.pin[c], BiomePin::Water);
 }
 
@@ -196,19 +196,19 @@ TEST(BiomeClassify, VolcanicPinRules)
     BiomeGrid chainGrid = g;
     chainGrid.barrierForm = BarrierForm::VolcanicChain;
     const BiomeResult rc = RunBiomes(chainGrid);
-    EXPECT_EQ(Idx(rc.At(flag)), B("Biome.Volcanic"));
+    EXPECT_EQ(rc.At(flag), B("Biome.Volcanic"));
     EXPECT_EQ(rc.pin[flag], BiomePin::Volcanic);
-    EXPECT_EQ(Idx(rc.At(volcano)), B("Biome.Volcanic"));
-    EXPECT_EQ(Idx(rc.At(chain)), B("Biome.Volcanic"));
+    EXPECT_EQ(rc.At(volcano), B("Biome.Volcanic"));
+    EXPECT_EQ(rc.At(chain), B("Biome.Volcanic"));
     EXPECT_EQ(rc.pin[chain], BiomePin::Volcanic);
-    EXPECT_EQ(Idx(rc.At(plateauBarrier)), B("Biome.Volcanic"));   // chain form: any Barrier-flag cell
+    EXPECT_EQ(rc.At(plateauBarrier), B("Biome.Volcanic"));   // chain form: any Barrier-flag cell
 
     // Plateau form: the Barrier flag alone is not volcanic.
     const BiomeResult rp = RunBiomes(g);
-    EXPECT_EQ(Idx(rp.At(chain)), B("Biome.Grassland"));
+    EXPECT_EQ(rp.At(chain), B("Biome.Grassland"));
     EXPECT_EQ(rp.pin[chain], BiomePin::None);
-    EXPECT_EQ(Idx(rp.At(flag)), B("Biome.Volcanic"));
-    EXPECT_EQ(Idx(rp.At(volcano)), B("Biome.Volcanic"));
+    EXPECT_EQ(rp.At(flag), B("Biome.Volcanic"));
+    EXPECT_EQ(rp.At(volcano), B("Biome.Volcanic"));
 }
 
 TEST(BiomeClassify, AlpinePinRules)
@@ -226,11 +226,11 @@ TEST(BiomeClassify, AlpinePinRules)
     const BiomeResult r = RunBiomes(g);
     for (int i = 0; i < 4; ++i)
     {
-        EXPECT_EQ(Idx(r.At(cells[i])), B("Biome.Alpine")) << TerrainTypeName(types[i]);
+        EXPECT_EQ(r.At(cells[i]), B("Biome.Alpine")) << TerrainTypeName(types[i]);
         EXPECT_EQ(r.pin[cells[i]], BiomePin::Alpine);
         EXPECT_EQ(r.fixup[cells[i]], BiomeFixup::None);
     }
-    EXPECT_NE(Idx(r.At(hills)), B("Biome.Alpine"));
+    EXPECT_NE(r.At(hills), B("Biome.Alpine"));
 }
 
 TEST(BiomeClassify, RulePrecedenceVolcanicAlpineWetland)
@@ -259,13 +259,13 @@ TEST(BiomeClassify, RulePrecedenceVolcanicAlpineWetland)
     g.elevation[d] = 0.05f;
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(a)), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(a), B("Biome.Volcanic"));
     EXPECT_EQ(r.pin[a], BiomePin::Volcanic);
-    EXPECT_EQ(Idx(r.At(b)), B("Biome.Alpine"));
+    EXPECT_EQ(r.At(b), B("Biome.Alpine"));
     EXPECT_EQ(r.pin[b], BiomePin::Alpine);
-    EXPECT_EQ(Idx(r.At(c)), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(c), B("Biome.Volcanic"));
     EXPECT_EQ(r.pin[c], BiomePin::Volcanic);
-    EXPECT_EQ(Idx(r.At(d)), B("Biome.Wetland"));
+    EXPECT_EQ(r.At(d), B("Biome.Wetland"));
     EXPECT_EQ(r.pin[d], BiomePin::Wetland);
 }
 
@@ -288,10 +288,10 @@ TEST(BiomeClassify, PlateauInteriorChoosesRainforestOrDesertByMoisture)
     g.moisture[wetBoundary] = 0.5f;   // moisture >= kPlateauWet (0.5): Rainforest
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(wet)), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(dry)), B("Biome.Desert"));
-    EXPECT_EQ(Idx(r.At(wetBoundary)), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(edge)), B("Biome.Grassland"));   // mask below kPlateauInner: ordinary climate
+    EXPECT_EQ(r.At(wet), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(dry), B("Biome.Desert"));
+    EXPECT_EQ(r.At(wetBoundary), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(edge), B("Biome.Grassland"));   // mask below kPlateauInner: ordinary climate
     EXPECT_EQ(r.pin[wet], BiomePin::None);           // not pinned
     EXPECT_EQ(r.pin[dry], BiomePin::None);
     EXPECT_EQ(r.fixup[wet], BiomeFixup::None);
@@ -303,16 +303,16 @@ TEST(BiomeClassify, PlateauInteriorOffWhenBarrierZeroOrChainForm)
     const int c = g.Index(2, 2);
     g.barrierMask[c] = 0.9f;   // climate is Grassland-perfect (M 0.35); plateau rule would give Desert
     g.barrier = 0.0f;
-    EXPECT_EQ(Idx(RunBiomes(g).At(c)), B("Biome.Grassland"));
+    EXPECT_EQ(RunBiomes(g).At(c), B("Biome.Grassland"));
 
     g.barrier = 0.6f;
     g.barrierForm = BarrierForm::VolcanicChain;
-    EXPECT_EQ(Idx(RunBiomes(g).At(c)), B("Biome.Grassland"));
+    EXPECT_EQ(RunBiomes(g).At(c), B("Biome.Grassland"));
 
     g.barrierForm = BarrierForm::Plateau;
-    EXPECT_EQ(Idx(RunBiomes(g).At(c)), B("Biome.Desert"));   // M 0.35 < kPlateauWet
+    EXPECT_EQ(RunBiomes(g).At(c), B("Biome.Desert"));   // M 0.35 < kPlateauWet
     g.moisture[c] = 0.9f;
-    EXPECT_EQ(Idx(RunBiomes(g).At(c)), B("Biome.Rainforest"));
+    EXPECT_EQ(RunBiomes(g).At(c), B("Biome.Rainforest"));
 }
 
 namespace
@@ -335,12 +335,12 @@ TEST(BiomeClassify, PlateauComponentTakesOneClimateByMeanMoisture)   // amended 
     BiomeGrid wetG(12, 4);
     MakePlateauRow(wetG, 1, 3, 5, { 0.9f, 0.2f, 0.8f });   // mean 0.633
     const BiomeResult wet = RunBiomes(wetG);
-    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(Idx(wet.At(wetG.Index(x, 1))), B("Biome.Rainforest")) << x; }
+    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(wet.At(wetG.Index(x, 1)), B("Biome.Rainforest")) << x; }
 
     BiomeGrid dryG(12, 4);
     MakePlateauRow(dryG, 1, 3, 5, { 0.1f, 0.9f, 0.3f });   // mean 0.433
     const BiomeResult dry = RunBiomes(dryG);
-    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(Idx(dry.At(dryG.Index(x, 1))), B("Biome.Desert")) << x; }
+    for (int x = 3; x <= 5; ++x) { EXPECT_EQ(dry.At(dryG.Index(x, 1)), B("Biome.Desert")) << x; }
     EXPECT_EQ(dry.debug.unresolvedPairs, 0);
 }
 
@@ -350,10 +350,10 @@ TEST(BiomeClassify, SeparatePlateausChooseIndependently)
     MakePlateauRow(g, 1, 2, 3, { 0.9f, 0.9f });
     MakePlateauRow(g, 5, 2, 3, { 0.1f, 0.1f });
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(g.Index(2, 1))), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(g.Index(3, 1))), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(g.Index(2, 5))), B("Biome.Desert"));
-    EXPECT_EQ(Idx(r.At(g.Index(3, 5))), B("Biome.Desert"));
+    EXPECT_EQ(r.At(g.Index(2, 1)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(g.Index(3, 1)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(g.Index(2, 5)), B("Biome.Desert"));
+    EXPECT_EQ(r.At(g.Index(3, 5)), B("Biome.Desert"));
 }
 
 TEST(BiomeClassify, PinnedCellSplitsPlateauComponents)
@@ -363,11 +363,11 @@ TEST(BiomeClassify, PinnedCellSplitsPlateauComponents)
     MakePlateauRow(g, 1, 2, 6, { 0.9f, 0.9f, 0.5f, 0.05f, 0.05f });
     g.SetTerrain(g.Index(4, 1), TerrainType::Mountain);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(g.Index(4, 1))), B("Biome.Alpine"));
-    EXPECT_EQ(Idx(r.At(g.Index(2, 1))), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(g.Index(3, 1))), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(g.Index(5, 1))), B("Biome.Desert"));
-    EXPECT_EQ(Idx(r.At(g.Index(6, 1))), B("Biome.Desert"));
+    EXPECT_EQ(r.At(g.Index(4, 1)), B("Biome.Alpine"));
+    EXPECT_EQ(r.At(g.Index(2, 1)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(g.Index(3, 1)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(g.Index(5, 1)), B("Biome.Desert"));
+    EXPECT_EQ(r.At(g.Index(6, 1)), B("Biome.Desert"));
 }
 
 TEST(BiomeClassify, PlateauInteriorMayStillBeFixedUpByZone)
@@ -379,7 +379,7 @@ TEST(BiomeClassify, PlateauInteriorMayStillBeFixedUpByZone)
     g.moisture[c] = 0.9f;
     g.SetZone(c, DepthZone::FirstShores);   // Rainforest is not valid in First Shores
     const BiomeResult r = RunBiomes(g);
-    EXPECT_NE(Idx(r.At(c)), B("Biome.Rainforest"));
+    EXPECT_NE(r.At(c), B("Biome.Rainforest"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
 }
 
@@ -431,10 +431,10 @@ TEST(BiomeClassify, WetlandEligibleAtRiverMouthAndOneStepFromIt)
     EXPECT_FALSE(IsWetlandEligible(rules, in, m.ocean));
 
     const BiomeResult r = RunBiomes(m.g);
-    EXPECT_EQ(Idx(r.At(m.mouth)), B("Biome.Wetland"));
+    EXPECT_EQ(r.At(m.mouth), B("Biome.Wetland"));
     EXPECT_EQ(r.pin[m.mouth], BiomePin::Wetland);
-    EXPECT_EQ(Idx(r.At(m.step)), B("Biome.Wetland"));
-    EXPECT_NE(Idx(r.At(m.far)), B("Biome.Wetland"));
+    EXPECT_EQ(r.At(m.step), B("Biome.Wetland"));
+    EXPECT_NE(r.At(m.far), B("Biome.Wetland"));
     EXPECT_TRUE(CheckWetlandRule(rules, in, r.biome.data()).empty());
 }
 
@@ -446,7 +446,7 @@ TEST(BiomeClassify, WetlandElevationCap)
     EXPECT_TRUE(IsWetlandEligible(rules, m.g.Inputs(), m.step));
     m.g.elevation[m.step] = 0.13f;
     EXPECT_FALSE(IsWetlandEligible(rules, m.g.Inputs(), m.step));
-    EXPECT_NE(Idx(RunBiomes(m.g).At(m.step)), B("Biome.Wetland"));
+    EXPECT_NE(RunBiomes(m.g).At(m.step), B("Biome.Wetland"));
 }
 
 TEST(BiomeClassify, WetlandNextToLake)
@@ -498,9 +498,9 @@ TEST(BiomeClassify, WaterCellsAreExactlyOceanAndLake)
         {
             const bool ocean = g.waterSource[c] == static_cast<uint32_t>(WaterSource::Ocean);
             const bool lake = g.waterSource[c] == static_cast<uint32_t>(WaterSource::Lake);
-            EXPECT_EQ(Idx(r.At(static_cast<int>(c))) == B("Biome.Ocean"), ocean);
-            EXPECT_EQ(Idx(r.At(static_cast<int>(c))) == B("Biome.Lake"), lake);
-            EXPECT_LT(r.biome[c], static_cast<uint32_t>(kBiomeCount));
+            EXPECT_EQ(r.At(static_cast<int>(c)) == B("Biome.Ocean"), ocean);
+            EXPECT_EQ(r.At(static_cast<int>(c)) == B("Biome.Lake"), lake);
+            EXPECT_LT(r.biome[c], ::CoW::World::Testing::ShippedBiomeRegistry().Count());
         }
     }
 }
@@ -521,8 +521,8 @@ TEST(BiomeClassify, PinnedAlpineOnFirstShoresBecomesGrasslandOrForest)
     g.SetClimate(grass, 0.6f, 0.35f);
     g.SetClimate(forest, 0.5f, 0.62f);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(grass)), B("Biome.Grassland"));
-    EXPECT_EQ(Idx(r.At(forest)), B("Biome.TemperateForest"));
+    EXPECT_EQ(r.At(grass), B("Biome.Grassland"));
+    EXPECT_EQ(r.At(forest), B("Biome.TemperateForest"));
     EXPECT_EQ(r.fixup[grass], BiomeFixup::Zone);
     EXPECT_EQ(r.fixup[forest], BiomeFixup::Zone);
     EXPECT_EQ(r.pin[grass], BiomePin::Alpine);   // the pin that fired is still reported
@@ -545,13 +545,13 @@ TEST(BiomeClassify, ZoneFixupRepicksBestValidClimateBiome)
     g.SetZone(desertAncient, DepthZone::AncientInteriors);
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(desertFirst)), B("Biome.Grassland"));
+    EXPECT_EQ(r.At(desertFirst), B("Biome.Grassland"));
     EXPECT_EQ(r.fixup[desertFirst], BiomeFixup::Zone);
-    EXPECT_EQ(Idx(r.At(rainFirst)), B("Biome.TemperateForest"));
+    EXPECT_EQ(r.At(rainFirst), B("Biome.TemperateForest"));
     EXPECT_EQ(r.fixup[rainFirst], BiomeFixup::Zone);
-    EXPECT_EQ(Idx(r.At(grassAncient)), B("Biome.Desert"));
+    EXPECT_EQ(r.At(grassAncient), B("Biome.Desert"));
     EXPECT_EQ(r.fixup[grassAncient], BiomeFixup::Zone);
-    EXPECT_EQ(Idx(r.At(desertAncient)), B("Biome.Desert"));
+    EXPECT_EQ(r.At(desertAncient), B("Biome.Desert"));
     EXPECT_EQ(r.fixup[desertAncient], BiomeFixup::None);
 }
 
@@ -568,7 +568,7 @@ TEST(BiomeClassify, ZoneFixupRanksWetlandBelowClimateBiomes)
     g.moisture[c] = 0.9f;
     g.temperature[c] = 0.6f;
     const BiomeResult r = RunBiomes(g);
-    EXPECT_TRUE(Idx(r.At(c)) == B("Biome.Grassland") || Idx(r.At(c)) == B("Biome.TemperateForest"));
+    EXPECT_TRUE(r.At(c) == B("Biome.Grassland") || r.At(c) == B("Biome.TemperateForest"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
 }
 
@@ -585,11 +585,11 @@ TEST(BiomeClassify, VentIslandKeepsVolcanicInAnyZone)
     for (int c : { flagged, vent, chainOnly }) { g.SetZone(c, DepthZone::FirstShores); }
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(flagged)), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(flagged), B("Biome.Volcanic"));
     EXPECT_EQ(r.fixup[flagged], BiomeFixup::None);
-    EXPECT_EQ(Idx(r.At(vent)), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(vent), B("Biome.Volcanic"));
     EXPECT_EQ(r.fixup[vent], BiomeFixup::None);
-    EXPECT_NE(Idx(r.At(chainOnly)), B("Biome.Volcanic"));
+    EXPECT_NE(r.At(chainOnly), B("Biome.Volcanic"));
     EXPECT_EQ(r.fixup[chainOnly], BiomeFixup::Zone);
 
     EXPECT_TRUE(FindZoneViolations(g.Inputs(), r.biome.data()).empty());
@@ -601,7 +601,7 @@ TEST(BiomeClassify, WaterCellsAreSkippedByZoneFixup)
     const int c = g.Index(2, 2);
     g.SetWater(c, WaterSource::Lake);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(c)), B("Biome.Lake"));
+    EXPECT_EQ(r.At(c), B("Biome.Lake"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::None);
 }
 
@@ -632,8 +632,8 @@ TEST(BiomeClassify, ForbiddenPairLowerScoreCellMovesToCandidateWithNoForbiddenNe
         const BiomeResult r = RunBiomes(g);
         // The Rainforest cell has the lower score, so it re-picks regardless of cell index.
         // Forest would score better than Grassland but forms a forbidden pair with the Desert neighbour.
-        EXPECT_EQ(Idx(r.At(desert)), B("Biome.Desert"));
-        EXPECT_EQ(Idx(r.At(rain)), B("Biome.Grassland"));
+        EXPECT_EQ(r.At(desert), B("Biome.Desert"));
+        EXPECT_EQ(r.At(rain), B("Biome.Grassland"));
         EXPECT_EQ(r.fixup[rain], BiomeFixup::Forbidden);
         EXPECT_EQ(r.fixup[desert], BiomeFixup::None);
         EXPECT_EQ(r.debug.unresolvedPairs, 0);
@@ -651,8 +651,8 @@ TEST(BiomeClassify, ForbiddenPairEqualPinEqualScoreLowerIndexMoves)
     g.SetClimate(lo, 0.85f, 0.9f);   // Rainforest, score 0
     g.SetClimate(hi, 0.8f, 0.08f);   // Desert, score 0
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(hi)), B("Biome.Desert"));
-    EXPECT_NE(Idx(r.At(lo)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(hi), B("Biome.Desert"));
+    EXPECT_NE(r.At(lo), B("Biome.Rainforest"));
     EXPECT_EQ(r.fixup[lo], BiomeFixup::Forbidden);
     EXPECT_EQ(r.fixup[hi], BiomeFixup::None);
 }
@@ -669,8 +669,8 @@ TEST(BiomeClassify, ForbiddenPairLowerPinCellMoves)
         g.elevation[w] = 0.05f;
         g.moisture[w] = 0.9f;
         const BiomeResult r = RunBiomes(g);
-        EXPECT_EQ(Idx(r.At(v)), B("Biome.Volcanic"));
-        EXPECT_NE(Idx(r.At(w)), B("Biome.Wetland"));
+        EXPECT_EQ(r.At(v), B("Biome.Volcanic"));
+        EXPECT_NE(r.At(w), B("Biome.Wetland"));
         EXPECT_EQ(r.pin[w], BiomePin::Wetland);
         EXPECT_EQ(r.fixup[w], BiomeFixup::Forbidden);
         EXPECT_EQ(r.fixup[v], BiomeFixup::None);
@@ -683,8 +683,8 @@ TEST(BiomeClassify, ForbiddenPairLowerPinCellMoves)
         g.AddFlag(v, TerrainFlag::Volcanic);
         g.SetClimate(t, 0.12f, 0.3f);
         const BiomeResult r = RunBiomes(g);
-        EXPECT_EQ(Idx(r.At(v)), B("Biome.Volcanic"));
-        EXPECT_NE(Idx(r.At(t)), B("Biome.Tundra"));
+        EXPECT_EQ(r.At(v), B("Biome.Volcanic"));
+        EXPECT_NE(r.At(t), B("Biome.Tundra"));
         EXPECT_EQ(r.fixup[t], BiomeFixup::Forbidden);
     }
 }
@@ -715,11 +715,11 @@ TEST(BiomeClassify, StuckCellBecomesAlpineWhenZoneValid)   // amended 2026-11-10
     ASSERT_FALSE(Adjacent(g, n1, n2));
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(x)), B("Biome.Alpine"));
+    EXPECT_EQ(r.At(x), B("Biome.Alpine"));
     EXPECT_EQ(r.pin[x], BiomePin::None);
     EXPECT_EQ(r.fixup[x], BiomeFixup::Forbidden);
-    EXPECT_EQ(Idx(r.At(n1)), B("Biome.Volcanic"));
-    EXPECT_EQ(Idx(r.At(n2)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(n1), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(n2), B("Biome.Rainforest"));
     EXPECT_EQ(r.debug.unresolvedPairs, 0);
     EXPECT_TRUE(FindForbiddenPairs(g.dims, r.biome.data()).empty());
 }
@@ -731,7 +731,7 @@ TEST(BiomeClassify, WildReachesStuckLookingCellUsesForestNotAlpine)
     int       x, n1, n2;
     BuildStuckCell(g, x, n1, n2, DepthZone::WildReaches);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(x)), B("Biome.TemperateForest"));
+    EXPECT_EQ(r.At(x), B("Biome.TemperateForest"));
     EXPECT_EQ(r.debug.unresolvedPairs, 0);
 }
 
@@ -743,8 +743,8 @@ TEST(BiomeClassify, AlpineSafetyNetNeverUsedWhenFreeCandidateExists)
     const int b = Nb(g, a, 0);
     BuildRainforestDesertPair(g, a, b);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_NE(Idx(r.At(a)), B("Biome.Alpine"));
-    EXPECT_NE(Idx(r.At(b)), B("Biome.Alpine"));
+    EXPECT_NE(r.At(a), B("Biome.Alpine"));
+    EXPECT_NE(r.At(b), B("Biome.Alpine"));
 }
 
 TEST(BiomeClassify, UnresolvablePairIsKeptAndCountedWhenAlpineNotZoneValid)
@@ -756,9 +756,9 @@ TEST(BiomeClassify, UnresolvablePairIsKeptAndCountedWhenAlpineNotZoneValid)
     BuildStuckCell(g, x, n1, n2, DepthZone::None);
 
     const BiomeResult r = RunBiomes(g);
-    EXPECT_EQ(Idx(r.At(x)), B("Biome.Rainforest"));
-    EXPECT_EQ(Idx(r.At(n1)), B("Biome.Volcanic"));
-    EXPECT_EQ(Idx(r.At(n2)), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(x), B("Biome.Rainforest"));
+    EXPECT_EQ(r.At(n1), B("Biome.Volcanic"));
+    EXPECT_EQ(r.At(n2), B("Biome.Rainforest"));
     EXPECT_EQ(r.fixup[x], BiomeFixup::None);
     EXPECT_EQ(r.debug.unresolvedPairs, 1);
     EXPECT_EQ(FindForbiddenPairs(g.dims, r.biome.data()).size(), 1u);
@@ -771,8 +771,8 @@ TEST(BiomeClassify, FirstShoresStuckNeighbourResolvesToGrasslandNotAlpine)
     int       x, n1, n2;
     BuildStuckCell(g, x, n1, n2, DepthZone::FirstShores);
     const BiomeResult r = RunBiomes(g);
-    EXPECT_NE(Idx(r.At(x)), B("Biome.Alpine"));
-    EXPECT_NE(Idx(r.At(n2)), B("Biome.Alpine"));
+    EXPECT_NE(r.At(x), B("Biome.Alpine"));
+    EXPECT_NE(r.At(n2), B("Biome.Alpine"));
     EXPECT_EQ(r.debug.unresolvedPairs, 0);
 }
 
@@ -853,14 +853,14 @@ TEST(BiomeClassify, EmptyAndSingleCellGridsDoNotCrash)
         BiomeGrid g(1, 1);
         const BiomeResult r = RunBiomes(g);
         ASSERT_EQ(r.biome.size(), 1u);
-        EXPECT_EQ(Idx(r.At(0)), B("Biome.Grassland"));
+        EXPECT_EQ(r.At(0), B("Biome.Grassland"));
         EXPECT_EQ(r.pin[0], BiomePin::None);
         EXPECT_EQ(r.debug.unresolvedPairs, 0);
     }
     {
         BiomeGrid g(1, 1);
         g.SetWater(0, WaterSource::Ocean);
-        EXPECT_EQ(Idx(RunBiomes(g).At(0)), B("Biome.Ocean"));
+        EXPECT_EQ(RunBiomes(g).At(0), B("Biome.Ocean"));
     }
 }
 
