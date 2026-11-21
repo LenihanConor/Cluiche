@@ -52,10 +52,10 @@ Package split (agreed 2026-11-21): `DraoiHexWorld` core (grid and world types, `
 - **Placement of the remaining files:** `WorldHexGrid`/`SharedWorldHexGrid` -> core. `WorldJson`, `WorldJsonImport`, `WorldFiles`, `WorldShapePreset`, `WorldLayerSource` -> terrain package (they depend on `SiteRegistry`, `TerrainRules`, `WorldGenSession`). `WorldCameraController` (pure `DiaMaths`, one consumer) and `WorldOverlayGeometry` (depends on `SiteGuarantees`) stay in CoW as view code; the camera controller fails the two-consumer admission test today.
 
 ## Extraction specs
-Draft feature specs for extraction order step (e):
+Feature specs for extraction order step (e) (order: Strata -> core -> terrain -> GameSpeed):
 - @docs/specs/features/draoi/extract-hexworld-core.md
-- @docs/specs/features/draoi/extract-hexworld-terrain.md
-- @docs/specs/features/draoi/extract-draoigamespeed.md
+- @docs/specs/features/draoi/extract-hexworld-terrain.md (Approved 2026-11-21)
+- @docs/specs/features/draoi/extract-draoigamespeed.md (Approved 2026-11-21)
 
 ## Status
 Draft. No packages exist.
