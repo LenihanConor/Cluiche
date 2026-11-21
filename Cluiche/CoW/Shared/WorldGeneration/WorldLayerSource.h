@@ -8,6 +8,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #pragma once
 
+#include <Shared/World/BiomeRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <cstdint>
@@ -28,13 +29,17 @@ constexpr uint32_t RegionPaletteSlot(RegionId id)
 // Fills out[0..count) from the session; zero-fills when no world has been generated yet.
 using WorldLayerReadFn = void (*)(const WorldGenSession& session, float* out, uint32_t count);
 
+// WorldLayerDesc::categoryCount value for a layer whose category count is the biome registry's row count (biomeIndex).
+// Resolve it with WorldLayerSource::CategoryCount.
+constexpr uint32_t kCategoriesFromBiomeRegistry = 0;
+
 struct WorldLayerDesc
 {
     const char*      id;              // layer id and schema entry key, e.g. "terrainType"
     const char*      schemaKey;       // full schema key: "<kWorldLayerSchemaFor>/<id>"
     const char*      group;           // viewer picker group
     WorldLayerKind   kind;
-    uint32_t         categoryCount;   // enum value count for Category layers, 0 for Float
+    uint32_t         categoryCount;   // enum value count for Category layers, 0 for Float (or kCategoriesFromBiomeRegistry)
     WorldLayerReadFn read;
     bool             defaultBase;     // the viewer's default base layer
 };
@@ -49,6 +54,14 @@ public:
     static const WorldLayerDesc& At(uint32_t index);
     // nullptr when the id is unknown.
     static const WorldLayerDesc* Find(const char* id);
+
+    // Category count of a layer for the given biome registry: the registry's Count() for the registry-sized biomeIndex layer,
+    // desc.categoryCount for every other layer (0 for Float layers). The descriptor table stays static; only this count is
+    // resolved per registry.
+    static uint32_t CategoryCount(const WorldLayerDesc& desc, const World::BiomeRegistry& biomes)
+    {
+        return desc.kind == WorldLayerKind::Category && desc.categoryCount == kCategoriesFromBiomeRegistry ? biomes.Count() : desc.categoryCount;
+    }
 
     // The version stamp of the data the readers return: changes only when a generation changed the world.
     static uint32_t Version(const WorldGenSession& session) { return session.Revision(); }

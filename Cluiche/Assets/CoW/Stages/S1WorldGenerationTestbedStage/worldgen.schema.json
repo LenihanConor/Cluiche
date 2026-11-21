@@ -767,86 +767,14 @@
       "label": "Biome",
       "description": "Final biome per cell.",
       "type": "enum",
-      "values": [
-        {
-          "id": "ocean",
-          "label": "Ocean",
-          "description": "Open sea.",
-          "colour": "#1f4f8f"
-        },
-        {
-          "id": "lake",
-          "label": "Lake",
-          "description": "Inland lake.",
-          "colour": "#4aa3df"
-        },
-        {
-          "id": "grasslandSteppe",
-          "label": "Grassland / Steppe",
-          "description": "Dry open plains.",
-          "colour": "#a6c04a"
-        },
-        {
-          "id": "temperateForest",
-          "label": "Temperate Forest",
-          "description": "Mild wooded land.",
-          "colour": "#2f7d3a"
-        },
-        {
-          "id": "wetlandDelta",
-          "label": "Wetland / Delta",
-          "description": "River mouths and marsh.",
-          "colour": "#4fb39a"
-        },
-        {
-          "id": "desertBasin",
-          "label": "Desert Basin",
-          "description": "Hot, dry basin.",
-          "colour": "#d9b45a"
-        },
-        {
-          "id": "alpineMountain",
-          "label": "Alpine Mountain",
-          "description": "High mountain.",
-          "colour": "#c4c9d1"
-        },
-        {
-          "id": "tundraBoreal",
-          "label": "Tundra / Boreal",
-          "description": "Cold land.",
-          "colour": "#8aa39a"
-        },
-        {
-          "id": "rainforest",
-          "label": "Rainforest",
-          "description": "Hot, wet forest.",
-          "colour": "#0f5a2a"
-        },
-        {
-          "id": "volcanicAshland",
-          "label": "Volcanic Ashland",
-          "description": "Land around a vent.",
-          "colour": "#6b3a36"
-        },
-        {
-          "id": "scrub",
-          "label": "Scrub",
-          "description": "Succession: low shrubland after disturbance. Not generated.",
-          "colour": "#8f8a3c"
-        },
-        {
-          "id": "burnedAshland",
-          "label": "Burned Ashland",
-          "description": "Succession: fire-scorched ground. Not generated.",
-          "colour": "#2b2523"
-        },
-        {
-          "id": "desertifiedPlain",
-          "label": "Desertified Plain",
-          "description": "Succession: grassland lost to desert. Not generated.",
-          "colour": "#c98a4b"
-        }
-      ],
+      "valuesFrom": {
+        "format": "cow.biomes",
+        "records": "biomes",
+        "id": "id",
+        "label": "name",
+        "colour": "colour",
+        "description": "description"
+      },
       "ui": {
         "inset": 0.05,
         "backdrop": "#101418",

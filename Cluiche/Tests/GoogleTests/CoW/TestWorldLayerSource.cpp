@@ -66,7 +66,7 @@ TEST(WorldLayerSource, DescriptorIdsAreUniqueAndFindable)
         EXPECT_EQ(WorldLayerSource::Find(d.id), &d);
         EXPECT_EQ(std::string(d.schemaKey), std::string(kWorldLayerSchemaFor) + "/" + d.id);
         EXPECT_NE(d.read, nullptr);
-        if (d.kind == WorldLayerKind::Category) EXPECT_GE(d.categoryCount, 2u) << d.id;
+        if (d.kind == WorldLayerKind::Category) EXPECT_GE(WorldLayerSource::CategoryCount(d, CoW::World::Testing::ShippedBiomeRegistry()), 2u) << d.id;
         else EXPECT_EQ(d.categoryCount, 0u) << d.id;
     }
     EXPECT_EQ(WorldLayerSource::Find("nope"), nullptr);
@@ -106,7 +106,7 @@ TEST(WorldLayerSource, CategoryValuesStayInsideCategoryCount)
         const WorldLayerDesc& d = WorldLayerSource::At(li);
         if (d.kind != WorldLayerKind::Category) continue;
         for (float v : Read(d, s, n))
-            ASSERT_TRUE(v >= 0.0f && v < static_cast<float>(d.categoryCount)) << d.id << " value " << v;
+            ASSERT_TRUE(v >= 0.0f && v < static_cast<float>(WorldLayerSource::CategoryCount(d, *s.BiomeRegistryPtr()))) << d.id << " value " << v;
     }
 }
 

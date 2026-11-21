@@ -6,12 +6,18 @@
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/SchemaDirectoryLoader.h>
+#include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DiaValueSchema/Testing/SchemaTempDirectory.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 
 #include <filesystem>
 #include <fstream>
 #include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 using namespace CoW::WorldGeneration;
 
@@ -109,6 +115,13 @@ TEST(WorldGenSchema, EveryDescriptorHasAMatchingEntry)
         else
         {
             EXPECT_EQ((*e)["type"].asString(), "enum") << d.id;
+            if (std::string(d.id) == "biomeIndex")
+            {
+                // Registry-sized: filled from biomes.json by valuesFrom (Biome Registry task 26), no literal values.
+                EXPECT_FALSE(e->isMember("values")) << d.id;
+                EXPECT_TRUE(e->isMember("valuesFrom")) << d.id;
+                continue;
+            }
             ASSERT_TRUE((*e)["values"].isArray()) << d.id;
             EXPECT_EQ((*e)["values"].size(), d.categoryCount) << d.id;
             for (const Json::Value& v : (*e)["values"])
@@ -126,7 +139,7 @@ TEST(WorldGenSchema, EnumCountsEqualCodeEnumSizes)
     EXPECT_EQ(count("waterSource"), static_cast<unsigned>(WaterSource::River) + 1u);
     EXPECT_EQ(count("depthZone"), static_cast<unsigned>(DepthZone::AncientInteriors) + 1u);
     EXPECT_EQ(count("flowDirection"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
-    EXPECT_EQ(count("biomeIndex"), static_cast<unsigned>(kBiomeCount));
+    EXPECT_EQ(count("biomeIndex"), 0u);   // no literal values: valuesFrom the biome registry
     EXPECT_EQ(count("fixupChanges"), 3u);   // none, zone, neighbour
     EXPECT_EQ(count("regions"), kRegionPaletteSlots);   // none + 63 cycling region slots
 }
@@ -191,12 +204,12 @@ TEST(WorldGenSchema, BiomeLayersAreDescribed)
         EXPECT_NE(FindEntry(l, k), nullptr) << k;
         EXPECT_NE(WorldLayerSource::Find(k), nullptr) << k;
     }
-    const Json::Value* biome = FindEntry(l, "biomeIndex");
-    ASSERT_NE(biome, nullptr);
-    std::set<std::string> colours;
-    for (const Json::Value& v : (*biome)["values"])
-        colours.insert(v["colour"].asString());
-    EXPECT_EQ(colours.size(), static_cast<size_t>(kBiomeCount)) << "biome colours must be distinct";
+    // The biomeIndex legend now comes from the registry (valuesFrom); distinct registry colours.
+    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ShippedBiomeRegistry();
+    std::set<uint32_t> colours;
+    for (uint32_t i = 0; i < reg.Count(); ++i)
+        colours.insert(reg.Colour(static_cast<CoW::World::BiomeIndex>(i)));
+    EXPECT_EQ(colours.size(), static_cast<size_t>(reg.Count())) << "biome colours must be distinct";
 }
 
 TEST(WorldGenSchema, RegionLayerHas64DistinctColoursAndNoneIsDark)
@@ -213,4 +226,76 @@ TEST(WorldGenSchema, RegionLayerHas64DistinctColoursAndNoneIsDark)
     EXPECT_EQ((*e)["values"][0u]["id"].asString(), "none");
     const unsigned none = std::stoul((*e)["values"][0u]["colour"].asString().substr(1), nullptr, 16);
     EXPECT_LT(((none >> 16) & 0xFF) + ((none >> 8) & 0xFF) + (none & 0xFF), 3u * 0x50u) << "region 0 / ocean is dark, unlike any region";
+}
+
+namespace
+{
+// Loads the shipped worldgen.schema.json + biomes.schema.json beside a biomes.json copy through the directory loader (which resolves
+// valuesFrom), and returns the resolved biomeIndex entry values.
+std::vector<Dia::ValueSchema::EnumValue> ResolvedBiomeLegend(const char* dirName, const std::string& biomesJsonPath)
+{
+    Dia::ValueSchema::Testing::SchemaTempDirectory dir(dirName);
+    dir.Write("worldgen.schema.json", ReadFile(FindFromRepoRoot("Cluiche/Assets/CoW/Stages/S1WorldGenerationTestbedStage/worldgen.schema.json")));
+    dir.Write("World/biomes.schema.json", ReadFile(FindFromRepoRoot("Cluiche/Assets/CoW/Global/World/biomes.schema.json")));
+    dir.Write("World/biomes.json", ReadFile(biomesJsonPath));
+    Dia::ValueSchema::SchemaDirectoryLoader loader;
+    loader.AddRoot(dir.Path().c_str());
+    Dia::ValueSchema::ValueSchemaRegistry reg;
+    const Dia::ValueSchema::SchemaLoadStats stats = loader.LoadInto(reg);
+    std::vector<Dia::ValueSchema::EnumValue> out;
+    EXPECT_EQ(stats.mValuesFromFailed, 0u);
+    const Dia::ValueSchema::ValueInfo* info = reg.Find(Dia::Core::StringCRC((std::string(kWorldLayerSchemaFor) + "/biomeIndex").c_str()));
+    if (info == nullptr) { ADD_FAILURE() << "biomeIndex not registered"; return out; }
+    for (unsigned i = 0; i < info->mEnumValues.Size(); ++i)
+        out.push_back(info->mEnumValues[i]);
+    return out;
+}
+
+void ExpectLegendMatches(const std::vector<Dia::ValueSchema::EnumValue>& legend, const CoW::World::BiomeRegistry& reg)
+{
+    ASSERT_EQ(legend.size(), reg.Count());
+    for (uint32_t i = 0; i < reg.Count(); ++i)
+    {
+        const CoW::World::BiomeIndex b = static_cast<CoW::World::BiomeIndex>(i);
+        EXPECT_STREQ(legend[i].mLabel.AsCStr(), reg.Name(b)) << i;
+        EXPECT_EQ(static_cast<uint32_t>(std::strtoul(legend[i].mColour.AsCStr() + 1, nullptr, 16)), reg.Colour(b)) << i;
+    }
+}
+}
+
+TEST(WorldGenSchema, BiomeIndexEntryHasNoLiteralValues)
+{
+    const Loaded& l = Get();
+    ASSERT_TRUE(l.ok);
+    const Json::Value* e = FindEntry(l, "biomeIndex");
+    ASSERT_NE(e, nullptr);
+    EXPECT_FALSE(e->isMember("values"));
+    ASSERT_TRUE(e->isMember("valuesFrom"));
+    EXPECT_EQ((*e)["valuesFrom"]["format"].asString(), "cow.biomes");
+}
+
+TEST(WorldGenSchema, BiomeLegendListsRegistryNamesAndColoursInIndexOrder)
+{
+    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ShippedBiomeRegistry();
+    ASSERT_EQ(reg.Count(), 13u);
+    ExpectLegendMatches(ResolvedBiomeLegend("WgLegendShipped", CoW::World::Testing::ShippedBiomesPath()), reg);
+}
+
+TEST(WorldGenSchema, BiomeLegendFollowsAFourteenRowRegistry)
+{
+    const CoW::World::BiomeRegistry& reg = CoW::World::Testing::ExtraBiomeRegistry();
+    ASSERT_EQ(reg.Count(), 14u);
+    const std::string path = FindFromRepoRoot("Cluiche/Tests/GoogleTests/CoW/Fixtures/biomes_extra.json").string();
+    ExpectLegendMatches(ResolvedBiomeLegend("WgLegendExtra", path), reg);
+}
+
+TEST(WorldGenSchema, BiomeIndexCategoryCountComesFromTheRegistry)
+{
+    const WorldLayerDesc* d = WorldLayerSource::Find("biomeIndex");
+    ASSERT_NE(d, nullptr);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, CoW::World::Testing::ShippedBiomeRegistry()), 13u);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*d, CoW::World::Testing::ExtraBiomeRegistry()), 14u);
+    const WorldLayerDesc* terrain = WorldLayerSource::Find("terrainType");
+    ASSERT_NE(terrain, nullptr);
+    EXPECT_EQ(WorldLayerSource::CategoryCount(*terrain, CoW::World::Testing::ExtraBiomeRegistry()), terrain->categoryCount);
 }

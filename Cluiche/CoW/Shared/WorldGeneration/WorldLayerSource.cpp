@@ -153,7 +153,7 @@ namespace
         { "rainOut",          "Climate",  WorldLayerKind::Float,    0, ReadRainOut,          false },
         { "biomeScore",       "Biomes",   WorldLayerKind::Float,    0, ReadBiomeScore,       false },
         { "biomePin",         "Biomes",   WorldLayerKind::Category, 5, ReadBiomePin,         false },
-        { "biomeIndex",       "Biomes",   WorldLayerKind::Category, static_cast<uint32_t>(Biome::Count), ReadBiomeIndex, false },
+        { "biomeIndex",       "Biomes",   WorldLayerKind::Category, kCategoriesFromBiomeRegistry, ReadBiomeIndex, false },
         { "fixupChanges",     "Biomes",   WorldLayerKind::Category, 3, ReadFixupChanges,     false },
         // Regions (placement pass; empty until a Regenerate)
         { "regions",          "Regions",  WorldLayerKind::Category, kRegionPaletteSlots, ReadRegions, false },
