@@ -1,7 +1,7 @@
 # Feature Spec: World Step Module & Cadence
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 2)
-**Status:** Approved (2026-11-16)
+**Status:** `Done` (2026-11-20)
 **Depends on:** World Step Feature 1 (`WorldStepChain`, `IWorldStepStage`, `LoadWorldStepConfig`); DiaDeferredStep Features 1, 2 and 4 (`DeferredStepScheduler`, `IStepKeySource`, `DeferredStepModule::GetScheduler()`, `SerialExecutor`); GameSpeedController's `SimulationTick` message (built); `SimQueryHostModule` with `SimHelpInfo` (built); DiaObservation pillars.
 **Consumed by:** A4 Feature 3, A5 Feature 3 and A1 Feature 7 (they call `RegisterStage`; A5 added 2026-11-17, A5 Hydrology), S-2.5, S-2.6, S-3 and S-3.5 stages (each declares an instance), Feature 3 (save delegation and history signal sit on this module).
 
@@ -213,4 +213,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 Hydrology): three stage ids in `order`; the k/slack estimate must be re-measured with A5 in (A5's step cost is report-only). The estimate text lives in the system spec's Cadence section. Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).
+**Status:** `Done` (2026-11-20). Approved 2026-11-16. Amended 2026-11-17 (A5 Hydrology): three stage ids in `order`; the k/slack estimate must be re-measured with A5 in (A5's step cost is report-only). The estimate text lives in the system spec's Cadence section. Plan: [module-and-cadence.plan.md](module-and-cadence.plan.md) (written 2026-11-16, not started).

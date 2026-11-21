@@ -1,7 +1,7 @@
 # Feature Spec: World Step Save & History Signal
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 3)
-**Status:** Approved (2026-11-16)
+**Status:** `Done` (2026-11-20)
 **Depends on:** World Step Features 1 and 2; DiaDeferredStep Feature 3 (`DeferredStepSaveParticipant`, `RestorePending`, drain on `OnSaveStarted`, discard on `OnLoadStarted`); A4 Feature 4, A5 Feature 4 and A1 Feature 8 for the stages' own `SerializePending` (A5 added 2026-11-17, A5 Hydrology).
 **Dia amendment (AD-001, signed off 2026-11-16):** `IDeferredStep::ValidatePending(LoadContext&) const` (see Design, Validate).
 **Consumed by:** S-3.5 Feature 1 (`HistoryDriverModule` is the first listener), A4 Feature 4, A1 Feature 8.
@@ -184,4 +184,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Amended 2026-11-17 (A5 Hydrology): a third stage blob (`hydrology`); the rules are unchanged. Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).
+**Status:** `Done` (2026-11-20; Approved 2026-11-16; the `ValidatePending` Dia amendment signed off, AD-001). Amended 2026-11-17 (A5 Hydrology): a third stage blob (`hydrology`); the rules are unchanged. Plan: [save-and-history.plan.md](save-and-history.plan.md) (written 2026-11-16, not started).

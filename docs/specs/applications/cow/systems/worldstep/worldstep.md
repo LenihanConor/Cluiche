@@ -387,7 +387,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-13). Interview completed 2026-11-13: module topology, the coordinator's home, band cadence, shared-grid ownership, history sampling and synchronous mode all decided by the user. Arose from the A4 Weather dependency audit (2026-11-13), which found that DiaDeferredStep leaves the `world` channel unowned.
+**Status:** `In Progress` (Features 1-3 Done 2026-11-20; Feature 4, the World-Sim Kit, is backlog row #3 and not built; Approved 2026-11-13). Interview completed 2026-11-13: module topology, the coordinator's home, band cadence, shared-grid ownership, history sampling and synchronous mode all decided by the user. Arose from the A4 Weather dependency audit (2026-11-13), which found that DiaDeferredStep leaves the `world` channel unowned.
 
 **Amended 2026-11-17 (A5 Hydrology).** A third stage `hydrology` between `weather` and `ecology`; composition examples, the slack note and the determinism oracle cover three stages. Status stays `Approved`. A5 itself is `Draft` (GDD A5 is locked, 2026-11-17; the Cluiche spec is unbuilt), so until it is built `["weather", "ecology"]` remains valid config. Aligned to locked GDD 2026-11-17 (CHANGE-048): no change to the order or the stage count.
 

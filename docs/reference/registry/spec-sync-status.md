@@ -46,9 +46,11 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | s25-weatherpatterns | Unknown | ⚠️ | Scenario | S25WeatherChecks, S25RunParams, S25RunReport, S25HeadlessRunner, S25WeatherModule, CheckRegistry |
 | s3-ecology | Unknown | ❌ | — | EcologyMode, S3ClimateInput, S3ClimatologyInput, S3EcologyModule |
 | s35-worldsim | Unknown | — | — | no Public Interfaces |
+| strategicmap | Unknown | — | — | no Public Interfaces |
 | t1-worldsiminspector | Unknown | — | — | no Public Interfaces |
 | t2-worlddataeditor | Unknown | — | — | no Public Interfaces |
-| worldstep | Unknown | ❌ | — | IWorldStepStage, WorldStepChain, WorldStepConfig, WorldStepModule |
+| v1-tilerendering | Unknown | — | — | no Public Interfaces |
+| worldstep | Unknown | ✅ | IWorldStepStage, WorldStepChain, WorldStepConfig, WorldStepApplied, IWorldStepListener, WorldStepModule | — |
 
 ## dia
 
@@ -86,6 +88,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diabugdetection | Approved | — | — | no Public Interfaces |
 | diacamera2d | Done | ✅ | Camera2D, ViewportTransform, CameraRegistry2D, ICameraBehaviour, CameraBehaviourRegistry | — |
 | diacamera3d | Unknown | — | — | no Public Interfaces |
+| diacellfieldbake | Unknown | ❌ | — | BakeParams, BakeInputs, BakedFields |
 | diacellhistory | Unknown | — | — | no Public Interfaces |
 | diacelllayers | Unknown | — | — | no Public Interfaces |
 | diacli | Unknown | — | — | no Public Interfaces |
@@ -164,6 +167,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diastatemachinevisualdebugger | Done | ✅ | StateMachineVisualDebugger, CachedGuardResult | — |
 | diasteering | Done | ⚠️ | SteeringAgent, SteeringPipeline, SteeringSystem | SteeringGroup |
 | diasteeringvisualdebugger | Done | ✅ | SteeringSystem, SteeringVisualDebugger | — |
+| diaterrainmap3d | Unknown | ❌ | — | Channel, TerrainMap |
 | diatest | Unknown | — | — | no Public Interfaces |
 | diatestharness | Unknown | — | — | no Public Interfaces |
 | diathreading | Unknown | — | — | no Public Interfaces |

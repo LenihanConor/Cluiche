@@ -1,7 +1,7 @@
 # Feature Spec: World Step Chain
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 1)
-**Status:** Approved (2026-11-16)
+**Status:** `Done` (2026-11-20)
 **Depends on:** DiaDeferredStep Feature 1 Task 1 (`StepKey`, `IParallelExecutor` headers). `Dia::SaveGame::SaveContext` / `LoadContext` (built) are only forward-declared. No other Dia code.
 **Consumed by:** World Step Feature 2 (`WorldStepModule` wraps the chain), Feature 3 (save delegation uses `StageAt` and the stage-id tags). A4 Feature 3, A5 Feature 3 and A1 Feature 7 implement `IWorldStepStage`. (amended 2026-11-17, A5 Hydrology)
 
@@ -196,4 +196,4 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (A5 Hydrology): the stage id list gains `hydrology`; no change to the chain's logic or `kMaxStages`. Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).
+**Status:** `Done` (2026-11-20). Approved 2026-11-16. Amended 2026-11-17 (A5 Hydrology): the stage id list gains `hydrology`; no change to the chain's logic or `kMaxStages`. Plan: [step-chain.plan.md](step-chain.plan.md) (written 2026-11-16, not started).
