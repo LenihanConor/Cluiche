@@ -1,7 +1,7 @@
 # Feature Spec: Strata (data-defined gameplay areas; depth is one set, the count is not 3)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md
-**Status:** `Draft` (2026-11-21; interview with the user the same day: name, data-defined sets, injectable assigner, maximum data flexibility for tweaking)
+**Status:** `Approved` (2026-11-21; interview with the user the same day: name, data-defined sets, injectable assigner, maximum data flexibility for tweaking; approved with "do it now". Open Questions 2-3 resolved: tasks 4 and 4b ship here, one world JSON version bump)
 **Origin:** The user's objection that "the 3 zones seem very CoW oriented", then: "other games could use this construct for other things... this is my stratum and this is yours... a gameplay area". Reopens Resolved Question 2 of @docs/specs/features/draoi/hexworld-core-prerequisites.md (names only, count deferred); that spec noted the generalisation stays non-breaking because `DepthZone` is already an index.
 **Depends on:** hexworld-core-prerequisites (Done). Best done **before** the terrain extraction, so Draoi never ships a 3-zone generator.
 
