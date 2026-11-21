@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2F7H8I9J-K0L1-661F-B43B-99H44I8E88G0}</ProjectGuid>
+    <ProjectGuid>{F0B823EA-731E-5CE5-AC88-4DF3B45C6977}</ProjectGuid>
     <RootNamespace>DiaCellLayers</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

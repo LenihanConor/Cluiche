@@ -197,6 +197,6 @@ Each item supersedes contradicting text above.
 
 ## Status
 
-**Status:** `Approved`
+**Status:** `Done`
 
 Approved 2026-11-18 (user; design accepted in one step, with the settle hook chosen so RegionPartition migrates too). Plan: @docs/specs/applications/dia/systems/diapathfinding/grid-search-helpers.plan.md. Built 2026-11-19: additive `DijkstraOptions::pushAll` and a (cost, cell, seedId) heap key were needed for RegionPartition; continuation is `ResumeParked` + `ContinueDijkstra`. AC 8 amended after measurement.
