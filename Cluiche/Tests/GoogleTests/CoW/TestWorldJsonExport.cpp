@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC1, AC8 export side, Export Implementation)
 // WorldJson export: deterministic readable text, kind-name resolution, refusals.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
@@ -15,6 +16,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -400,6 +402,7 @@ TEST(WorldJsonExport, NameParsersAreTheExactInverseOfTheWriter)
         Biome out = Biome::Count;
         ASSERT_TRUE(WorldJsonParseBiome(WorldJsonBiomeName(static_cast<Biome>(i)), out));
         EXPECT_EQ(static_cast<int>(out), i);
+        EXPECT_STREQ(ShippedBiomeRegistry().IdText(static_cast<CoW::World::BiomeIndex>(i)), WorldJsonBiomeName(static_cast<Biome>(i)));
     }
     for (int i = 0; i < static_cast<int>(TerrainType::Count); ++i)
     {

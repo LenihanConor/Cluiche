@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 // WorldGenSession preset.load/save, presets, layers and cell queries.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
@@ -16,6 +17,7 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace CoW::World::Testing;
 
 namespace
 {
@@ -933,7 +935,7 @@ TEST(WorldGenSessionQueries, CellReportsBiomeFieldsOnLandPinnedAndOceanCells)
     for (int i = 0; i < s.World().CellCount(); ++i)
     {
         const Biome b = s.World().Cells()[i].biome;
-        if (b == Biome::Ocean) { if (ocean < 0) ocean = i; }
+        if (Idx(b) == B("Biome.Ocean")) { if (ocean < 0) ocean = i; }
         else if (pin[i] != BiomePin::None) { if (pinnedLand < 0 && pin[i] != BiomePin::Water) pinnedLand = i; }
         else if (land < 0) land = i;
     }

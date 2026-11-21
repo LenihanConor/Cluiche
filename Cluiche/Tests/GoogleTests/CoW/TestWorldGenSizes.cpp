@@ -6,6 +6,7 @@
 // Small -> Standard -> Large -> Small switching, and the 12 KB compact debug-domain state.
 // Large is SLOW_ (run with --all). Acceptance misses are reported with numbers, not tuned.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>   // before the module header: windows.h defines min/max macros
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
 #include <Modules/WorldGenerationModule.h>
@@ -33,6 +34,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 
 namespace
 {
@@ -130,7 +132,7 @@ namespace
             ASSERT_LE(c.downstream, kNoDirection) << label << " downstream cell " << i;
             ASSERT_TRUE(c.region == kNoRegion || c.region <= w.regions.regions.Size()) << label << " region cell " << i << " = " << int(c.region);
             const bool ocean = c.waterSource == WaterSource::Ocean;
-            ASSERT_EQ(ocean, c.landmass == 0 || c.biome == Biome::Ocean) << label << " ocean/landmass/biome mismatch at cell " << i;
+            ASSERT_EQ(ocean, c.landmass == 0 || Idx(c.biome) == B("Biome.Ocean")) << label << " ocean/landmass/biome mismatch at cell " << i;
         }
     }
 

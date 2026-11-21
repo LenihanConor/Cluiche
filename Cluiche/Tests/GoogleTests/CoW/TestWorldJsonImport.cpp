@@ -2,6 +2,7 @@
 //       regions-and-sites.md (AC11 JSON parts), worldgenerationpipeline.md (Test 3)
 // WorldJson import: validation, all-or-nothing, byte-identical round trips, hand edits, unknown kinds.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
@@ -16,6 +17,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 using Dia::Core::StringCRC;
 
 namespace
@@ -162,9 +164,9 @@ TEST(WorldJsonImport, ImportedFloatsKeepEveryBit)
 TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
 {
     WorldStructure original = MakeTinyWorld();
-    original.Cells()[2].biome  = Biome::Scrub;
-    original.Cells()[3].biome  = Biome::BurnedAshland;
-    original.Cells()[7].biome  = Biome::DesertifiedPlain;
+    original.Cells()[2].biome  = LegacyB("Biome.Scrub");
+    original.Cells()[3].biome  = LegacyB("Biome.BurnedAshland");
+    original.Cells()[7].biome  = LegacyB("Biome.DesertifiedPlain");
     RecomputeRegionRecords(original);
     const std::string text = Export(original);
     EXPECT_NE(text.find("Biome.Scrub"), std::string::npos);
@@ -173,9 +175,9 @@ TEST(WorldJsonImport, SuccessionBiomesRoundTrip)
     WorldStructure imported;
     const WorldImportResult r = Import(text, imported);
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
-    EXPECT_EQ(imported.Cells()[2].biome, Biome::Scrub);
-    EXPECT_EQ(imported.Cells()[3].biome, Biome::BurnedAshland);
-    EXPECT_EQ(imported.Cells()[7].biome, Biome::DesertifiedPlain);
+    EXPECT_EQ(Idx(imported.Cells()[2].biome), B("Biome.Scrub"));
+    EXPECT_EQ(Idx(imported.Cells()[3].biome), B("Biome.BurnedAshland"));
+    EXPECT_EQ(Idx(imported.Cells()[7].biome), B("Biome.DesertifiedPlain"));
     EXPECT_TRUE(SameCells(original, imported));
 }
 
@@ -450,7 +452,7 @@ TEST(WorldJsonImport, HandEditedCellsAreKeptNotRecomputedOrReclassified)
     });
     WorldStructure imported;
     ASSERT_TRUE(Import(text, imported).ok);
-    EXPECT_EQ(imported.Cells()[3].biome, Biome::DesertBasin);
+    EXPECT_EQ(Idx(imported.Cells()[3].biome), B("Biome.Desert"));
     EXPECT_EQ(imported.Cells()[3].elevation, 0.05f);
 }
 
