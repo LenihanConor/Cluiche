@@ -2,6 +2,7 @@
 // all ocean, extreme sliders), full-pipeline validity at Standard / Large, AC5/AC6 on generated worlds,
 // WriteTerrain / Invalidate behaviour, and WorldGenSession stagesRan coverage of the biome stages.
 #include <gtest/gtest.h>
+#include <Shared/World/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/BiomeTypes.h>
@@ -19,6 +20,7 @@
 
 using namespace CoW::WorldGeneration;
 using namespace CoW::WorldGeneration::Testing;
+using namespace CoW::World::Testing;
 
 namespace
 {
@@ -133,8 +135,8 @@ namespace
         {
             ASSERT_LT(biome[c], static_cast<uint32_t>(kBiomeCount)) << label << " cell " << c;
             ASSERT_EQ(static_cast<uint32_t>(r.World().Cells()[c].biome), biome[c]) << label << " cell " << c;
-            ASSERT_EQ(biome[c] == static_cast<uint32_t>(Biome::Ocean), water[c] == static_cast<uint32_t>(WaterSource::Ocean)) << label;
-            ASSERT_EQ(biome[c] == static_cast<uint32_t>(Biome::Lake), water[c] == static_cast<uint32_t>(WaterSource::Lake)) << label;
+            ASSERT_EQ(biome[c] == static_cast<uint32_t>(B("Biome.Ocean")), water[c] == static_cast<uint32_t>(WaterSource::Ocean)) << label;
+            ASSERT_EQ(biome[c] == static_cast<uint32_t>(B("Biome.Lake")), water[c] == static_cast<uint32_t>(WaterSource::Lake)) << label;
         }
 
         const Stage14Inputs in = InputsOf(g, shape, dims);
@@ -178,12 +180,12 @@ namespace
                                        type[c] == static_cast<uint32_t>(TerrainType::Cliff) || type[c] == static_cast<uint32_t>(TerrainType::Pass);
             if (volcanicRule)
             {
-                EXPECT_EQ(biome[c], static_cast<uint32_t>(Biome::VolcanicAshland)) << label << " cell " << c;
+                EXPECT_EQ(biome[c], static_cast<uint32_t>(B("Biome.Volcanic"))) << label << " cell " << c;
                 EXPECT_EQ(pin[c], BiomePin::Volcanic) << label;
             }
             else if (alpineTerrain)
             {
-                EXPECT_EQ(biome[c], static_cast<uint32_t>(Biome::AlpineMountain)) << label << " cell " << c;
+                EXPECT_EQ(biome[c], static_cast<uint32_t>(B("Biome.Alpine"))) << label << " cell " << c;
                 EXPECT_EQ(pin[c], BiomePin::Alpine) << label;
             }
         }
@@ -207,7 +209,7 @@ namespace
                     stack.pop_back();
                     if (fix[c] == 0)
                     {
-                        EXPECT_TRUE(biome[c] == static_cast<uint32_t>(Biome::Rainforest) || biome[c] == static_cast<uint32_t>(Biome::DesertBasin))
+                        EXPECT_TRUE(biome[c] == static_cast<uint32_t>(B("Biome.Rainforest")) || biome[c] == static_cast<uint32_t>(B("Biome.Desert")))
                             << label << " interior cell " << c << " is " << biome[c];
                         if (first == 0xFFFFFFFFu) { first = biome[c]; }
                         EXPECT_EQ(biome[c], first) << label << " plateau component " << comps << " mixed at " << c;
@@ -329,7 +331,7 @@ TEST(BiomeEdge, Stage14TwoByTwoGrids)
     {
         BiomeGrid         g(2, 2);   // all grassland-perfect land
         const BiomeResult r = RunBiomes(g);
-        for (int c = 0; c < 4; ++c) { EXPECT_EQ(r.At(c), Biome::GrasslandSteppe); }
+        for (int c = 0; c < 4; ++c) { EXPECT_EQ(Idx(r.At(c)), B("Biome.Grassland")); }
         EXPECT_EQ(r.debug.unresolvedPairs, 0);
     }
     {
@@ -348,8 +350,8 @@ TEST(BiomeEdge, Stage14TwoByTwoGrids)
         g.SetWater(0, WaterSource::Ocean);
         g.SetWater(1, WaterSource::Lake);
         const BiomeResult r = RunBiomes(g);
-        EXPECT_EQ(r.At(0), Biome::Ocean);
-        EXPECT_EQ(r.At(1), Biome::Lake);
+        EXPECT_EQ(Idx(r.At(0)), B("Biome.Ocean"));
+        EXPECT_EQ(Idx(r.At(1)), B("Biome.Lake"));
         EXPECT_EQ(r.pin[0], BiomePin::Water);
     }
 }
@@ -361,7 +363,7 @@ TEST(BiomeEdge, Stage14AllOceanGrid)
     const BiomeResult r = RunBiomes(g);
     for (int c = 0; c < 48; ++c)
     {
-        EXPECT_EQ(r.At(c), Biome::Ocean);
+        EXPECT_EQ(Idx(r.At(c)), B("Biome.Ocean"));
         EXPECT_EQ(r.fixup[c], BiomeFixup::None);
     }
     EXPECT_EQ(r.debug.unresolvedPairs, 0);
@@ -375,8 +377,8 @@ TEST(BiomeEdge, Stage14AllLandNoWaterAtMoistureZero)
     for (size_t c = 0; c < r.biome.size(); ++c)
     {
         EXPECT_LT(r.biome[c], static_cast<uint32_t>(kBiomeCount));
-        EXPECT_NE(r.At(static_cast<int>(c)), Biome::Ocean);
-        EXPECT_NE(r.At(static_cast<int>(c)), Biome::Lake);
+        EXPECT_NE(Idx(r.At(static_cast<int>(c))), B("Biome.Ocean"));
+        EXPECT_NE(Idx(r.At(static_cast<int>(c))), B("Biome.Lake"));
         EXPECT_TRUE(std::isfinite(r.score[c]));
     }
 }
@@ -464,7 +466,7 @@ TEST(BiomeEdge, WetlandRuleAndSpecialRulesHoldOnGeneratedWorlds)
             const uint32_t*         biome = g.GetLayers().GetUInt(g.GetLayers().FindLayer("biomeIndex"));
             const Stage14Inputs     in = InputsOf(g, p, dims);
             EXPECT_TRUE(CheckWetlandRule(TestRules(), in, biome).empty()) << "seed " << seed;
-            for (int c = 0; c < dims.width * dims.height; ++c) { wetlandCells += biome[c] == static_cast<uint32_t>(Biome::WetlandDelta) ? 1 : 0; }
+            for (int c = 0; c < dims.width * dims.height; ++c) { wetlandCells += biome[c] == static_cast<uint32_t>(B("Biome.Wetland")) ? 1 : 0; }
             CheckSpecialRules("special", g, p, dims);
         }
     }
@@ -485,7 +487,7 @@ TEST(BiomeEdge, WetlandCellsAreLowAndMoistOrNextToWater)
         const float*         elev = L.GetFloat(L.FindLayer("elevation"));
         for (int c = 0; c < dims.width * dims.height; ++c)
         {
-            if (biome[c] == static_cast<uint32_t>(Biome::WetlandDelta))
+            if (biome[c] == static_cast<uint32_t>(B("Biome.Wetland")))
             {
                 EXPECT_LE(elev[c], rules.kWetlandMaxElev) << seed << " cell " << c;
             }
@@ -515,10 +517,10 @@ TEST(BiomeEdge, WriteTerrainBeforeUpdateLeavesBiomeUntouched)
     TerrainGenerator g(rules);
     WorldStructure   w;
     w.Resize(GridDimensions{ 4, 3 });
-    for (int c = 0; c < w.CellCount(); ++c) { w.Cells()[c].biome = Biome::Rainforest; }
+    for (int c = 0; c < w.CellCount(); ++c) { w.Cells()[c].biome = LegacyB("Biome.Rainforest"); }
     g.WriteTerrain(w);
     ASSERT_EQ(w.CellCount(), 12);
-    for (int c = 0; c < w.CellCount(); ++c) { EXPECT_EQ(w.Cells()[c].biome, Biome::Rainforest); }
+    for (int c = 0; c < w.CellCount(); ++c) { EXPECT_EQ(Idx(w.Cells()[c].biome), B("Biome.Rainforest")); }
 
     // Same after an Update then Invalidate.
     Dia::Maths::RandomStream rng(1);
@@ -526,9 +528,9 @@ TEST(BiomeEdge, WriteTerrainBeforeUpdateLeavesBiomeUntouched)
     g.Invalidate();
     WorldStructure w2;
     w2.Resize(GridDimensions{ 4, 3 });
-    for (int c = 0; c < w2.CellCount(); ++c) { w2.Cells()[c].biome = Biome::DesertBasin; }
+    for (int c = 0; c < w2.CellCount(); ++c) { w2.Cells()[c].biome = LegacyB("Biome.Desert"); }
     g.WriteTerrain(w2);
-    for (int c = 0; c < w2.CellCount(); ++c) { EXPECT_EQ(w2.Cells()[c].biome, Biome::DesertBasin); }
+    for (int c = 0; c < w2.CellCount(); ++c) { EXPECT_EQ(Idx(w2.Cells()[c].biome), B("Biome.Desert")); }
 }
 
 TEST(BiomeEdge, InvalidateThenUpdateTwiceIsByteIdentical)
@@ -631,7 +633,7 @@ TEST(BiomeEdge, ZoneFixupTieGoesToLowestEnumCandidate)
     g.SetTerrain(c, TerrainType::Mountain);
     g.SetZone(c, DepthZone::FirstShores);
     const BiomeResult r = RunBiomes(g, rules);
-    EXPECT_EQ(r.At(c), Biome::GrasslandSteppe);
+    EXPECT_EQ(Idx(r.At(c)), B("Biome.Grassland"));
     EXPECT_EQ(r.fixup[c], BiomeFixup::Zone);
 }
 
