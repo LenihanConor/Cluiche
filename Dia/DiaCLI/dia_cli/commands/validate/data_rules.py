@@ -381,8 +381,16 @@ class _Walker:
                         seen[v] = i
 
     def check_map(self, key: str, path: str, record: Optional[str], val: dict, entry: dict) -> None:
-        ids = self._ref_values(key, path, record, entry.get("keyRef"))
-        id_strs = [x for x in ids if isinstance(x, str)] if ids is not None else None
+        key_enum = entry.get("keyEnum")
+        if isinstance(key_enum, str):
+            # keyEnum map: the keys are the values of an enum entry of the same schema (no data file needed).
+            target = self.entries.get(key_enum)
+            id_strs = _enum_ids(target, self.context) if isinstance(target, dict) else None
+            source = f"enum '{key_enum}'"
+        else:
+            ids = self._ref_values(key, path, record, entry.get("keyRef"))
+            id_strs = [x for x in ids if isinstance(x, str)] if ids is not None else None
+            source = entry.get("keyRef")
         vt = entry.get("valueType")
         ventry = {"type": vt, "min": entry.get("min"), "max": entry.get("max"), "values": entry.get("values", [])}
         if "valuesFrom" in entry:
@@ -392,7 +400,7 @@ class _Walker:
             if id_strs is not None and mk not in id_strs:
                 s = suggest(mk, id_strs)
                 self._add("data.unresolved-map-key", key, mpath, record,
-                          f"'{key}' key '{mk}' matches no id in {entry.get('keyRef')}" + format_suggestion(s), s)
+                          f"'{key}' key '{mk}' matches no id in {source}" + format_suggestion(s), s)
                 continue
             self.check_value(key, mpath, record, mv, ventry, f"'{key}' entry '{mk}'")
 
@@ -596,24 +604,31 @@ def validate_schema_defaults(schema_docs: Iterable[dict], file_by_doc: Mapping[i
         file = file_by_doc.get(id(d), "")
         for e in _entries_of(d):
             if not isinstance(e, dict) or e.get("type") != "map" or not isinstance(e.get("default"), dict) \
-                    or not isinstance(e.get("key"), str) or context is None:
+                    or not isinstance(e.get("key"), str):
                 continue
-            values = context.values_at(e.get("keyRef"))
-            if values is None:
+            if isinstance(e.get("keyEnum"), str):
+                # keyEnum map: keys are the values of an enum entry of this same schema document.
+                target = next((x for x in _entries_of(d) if isinstance(x, dict) and x.get("key") == e["keyEnum"]), None)
+                ids = _enum_ids(target, context) if isinstance(target, dict) else None
+                source = f"enum '{e['keyEnum']}'"
+            else:
+                values = context.values_at(e.get("keyRef")) if context is not None else None
+                ids = [x for x in values if isinstance(x, str)] if values is not None else None
+                source = e.get("keyRef")
+            if ids is None:
                 continue
-            ids = [x for x in values if isinstance(x, str)]
             for mk in e["default"]:
                 if mk in ids:
                     continue
                 s = suggest(mk, ids)
                 out.append(Finding("FAIL", "data.unresolved-map-key", file, e["key"],
-                                   f"'{e['key']}' default key '{mk}' matches no id in {e.get('keyRef')}"
+                                   f"'{e['key']}' default key '{mk}' matches no id in {source}"
                                    + format_suggestion(s), s, f"default.{mk}", None))
             # Completeness (C++ ParameterFile::Load fails on the same default): one finding per entry naming every omitted key.
             missing = [mid for mid in dict.fromkeys(ids) if mid not in e["default"]]
             if missing:
                 out.append(Finding("FAIL", "data.incomplete-map", file, e["key"],
-                                   f"'{e['key']}' default omits keys {', '.join(missing)} present in {e.get('keyRef')}",
+                                   f"'{e['key']}' default omits keys {', '.join(missing)} present in {source}",
                                    None, "default", None))
         values = _default_values(_entries_of(d))
         cs = d.get("constraints")

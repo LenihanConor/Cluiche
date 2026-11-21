@@ -206,7 +206,8 @@ namespace Dia::ValueSchema
 		Dia::Core::Containers::String128	mRef;
 
 		// map type
-		Dia::Core::Containers::String128	mMapKeyRef;
+		Dia::Core::Containers::String128	mMapKeyRef;					// exactly one of mMapKeyRef / mMapKeyEnum is set on a map
+		Dia::Core::Containers::String128	mMapKeyEnum;				// schema key of an enum entry in the same file: its values are the map keys
 		ValueType							mMapValueType = ValueType::Float;
 		bool								mHasMapDefault = false;			// `default` was an object
 		ValueList<MapDefault>				mMapDefaults;					// object order

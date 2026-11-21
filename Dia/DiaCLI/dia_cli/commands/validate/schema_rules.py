@@ -15,7 +15,7 @@ from dia_cli.commands.validate.schema_cmd import Finding
 
 ENTRY_KEYS = ("key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
               "values", "affects", "related", "source", "unique", "required", "ref", "ui", "history",
-              "payload", "vocabulary", "keyRef", "valueType", "bands", "valuesFrom")
+              "payload", "vocabulary", "keyRef", "keyEnum", "valueType", "bands", "valuesFrom")
 UI_KEYS = ("group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey",
            "delta_ramp", "default_base", "inset", "backdrop", "elevation_layer", "select_group")
 HISTORY_KEYS = ("track", "group", "aggregate")
@@ -141,13 +141,20 @@ def _check_type_specific(e: dict) -> None:
     elif "ref" in e:
         raise _Stop("schema.ref-misuse", "field 'ref' is only valid on ref, ref[] and ref[2][] types")
     if t == "map":
-        _check_ref_format("keyRef", _require_string(e, "keyRef"))
+        if "keyRef" in e and "keyEnum" in e:
+            raise _Stop("schema.map-misuse", "fields 'keyRef' and 'keyEnum' are mutually exclusive on a map")
+        if "keyEnum" in e:
+            _require_string(e, "keyEnum")   # names an enum entry of this file; resolved after all entries are read
+        else:
+            _check_ref_format("keyRef", _require_string(e, "keyRef"))
         vt = _require_string(e, "valueType")
         if vt not in MAP_VALUE_TYPES:
             raise _Stop("schema.map-misuse", "field 'valueType' must be one of float, int, bool, string, enum")
     else:
         if "keyRef" in e:
             raise _Stop("schema.map-misuse", "field 'keyRef' is only valid on map types")
+        if "keyEnum" in e:
+            raise _Stop("schema.map-misuse", "field 'keyEnum' is only valid on map types")
         if "valueType" in e:
             raise _Stop("schema.map-misuse", "field 'valueType' is only valid on map types")
     _check_values_from(e)
@@ -335,12 +342,22 @@ def validate_schema_document(doc: object, file: str) -> List[Finding]:
     findings: List[Finding] = []
     warned: set = set()
     seen: set = set()
+    types_by_key = {e["key"]: e.get("type") for e in doc["entries"] if isinstance(e, dict) and isinstance(e.get("key"), str)}
     for e in doc["entries"]:
         try:
             key = _check_entry(e, file, warned, findings)
         except _Stop as s:
             findings.append(fail(s.rule, s.message, getattr(s, "key", "")))
             continue
+        # keyEnum must name an enum entry of this file (same wording as ValueSchemaLoader.cpp).
+        if e.get("type") == "map" and isinstance(e.get("keyEnum"), str):
+            target = e["keyEnum"]
+            if target not in types_by_key:
+                findings.append(fail("schema.map-misuse", f"keyEnum '{target}' names no entry in this file", key))
+                continue
+            if types_by_key[target] != "enum":
+                findings.append(fail("schema.map-misuse", f"keyEnum '{target}' is not an enum entry", key))
+                continue
         full = f"{doc['for']}/{key}"
         if full in seen:
             findings.append(fail("schema.duplicate-key", f"duplicate key '{full}' in this file", key))

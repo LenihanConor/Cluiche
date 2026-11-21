@@ -32,6 +32,7 @@ Keep `reasonContains` short and stable (usually the offending key name) so wordi
 - Empty or blank `description` (`schema.empty-description`).
 - Duplicate full key in one file (`schema.duplicate-key`; the registry resolves it first-wins).
 - `keyRef` (and `ref`) not shaped `<format>/<record path>` (`schema.ref-malformed`); the loader accepts any `keyRef` string and the key source is resolved later by `FromValueSchema`.
+- `keyEnum` (a map keyed by an enum entry of the same file, instead of `keyRef`): both checks (`fields 'keyRef' and 'keyEnum' are mutually exclusive`, `keyEnum '<target>' names no entry in this file`, `keyEnum '<target>' is not an enum entry`) use the same wording in the loader and the CLI (`schema.map-misuse`); fixtures `good-map-key-enum`, `bad-map-keyref-and-keyenum`, `bad-map-keyenum-target-missing`, `bad-map-keyenum-target-not-enum`, `bad-keyenum-on-non-map`.
 - Every bad entry is reported, where the loader stops at the first.
 
 Data-side findings (`data.*`, including `data.constraint-violated` and `data.unresolved-map-key`) are implemented by the CLI only until `FromValueSchema` exists; the C++ side checks that the schemas of every `data/*.case.json` load and read back the declared structure.

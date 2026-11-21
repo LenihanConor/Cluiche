@@ -93,7 +93,7 @@ namespace Dia::ValueSchema
 
 		const char* const kEntryKeys[] = { "key", "kind", "label", "description", "hint", "unit", "type", "min", "max", "default",
 			"values", "affects", "related", "source", "unique", "required", "ref", "ui", "history", "payload", "vocabulary",
-			"keyRef", "valueType", "bands", "valuesFrom", nullptr };
+			"keyRef", "keyEnum", "valueType", "bands", "valuesFrom", nullptr };
 		const char* const kUiKeys[] = { "group", "step", "decimals", "ramp", "layer", "hidden", "format", "colour", "glyph", "hotkey", "delta_ramp",
 			"default_base", "inset", "backdrop", "elevation_layer", "select_group", nullptr };
 		const char* const kHistoryKeys[] = { "track", "group", "aggregate", nullptr };
@@ -282,7 +282,16 @@ namespace Dia::ValueSchema
 
 			if (info.mType == ValueType::Map)
 			{
-				if (!AssignRequired(r, ctx, info.mMapKeyRef, e, "keyRef")) { return false; }
+				// A map is keyed by a data file (keyRef) or by an enum entry of this sidecar (keyEnum): exactly one.
+				if (e.isMember("keyRef") && e.isMember("keyEnum")) { return Fail(r, ctx, "fields 'keyRef' and 'keyEnum' are mutually exclusive on a map"); }
+				if (e.isMember("keyEnum"))
+				{
+					if (!AssignRequired(r, ctx, info.mMapKeyEnum, e, "keyEnum")) { return false; }
+				}
+				else
+				{
+					if (!AssignRequired(r, ctx, info.mMapKeyRef, e, "keyRef")) { return false; }
+				}
 				const char* vt = nullptr;
 				if (!RequireString(r, ctx, e, "valueType", vt)) { return false; }
 				ValueType t;
@@ -295,6 +304,7 @@ namespace Dia::ValueSchema
 			else
 			{
 				if (e.isMember("keyRef")) { return Fail(r, ctx, "field 'keyRef' is only valid on map types"); }
+				if (e.isMember("keyEnum")) { return Fail(r, ctx, "field 'keyEnum' is only valid on map types"); }
 				if (e.isMember("valueType")) { return Fail(r, ctx, "field 'valueType' is only valid on map types"); }
 			}
 
@@ -466,6 +476,27 @@ namespace Dia::ValueSchema
 					if (!numeric) { return Fail(r, ctx, (std::string("constraint key '") + operand + "' is not numeric").c_str()); }
 				}
 				r.mConstraints.Add(con);
+			}
+			return true;
+		}
+
+		// Every keyEnum must name an enum entry of this file (entries may appear in any order, so this runs after all are read).
+		bool CheckKeyEnumTargets(LoadResult& r, const char* fileName)
+		{
+			for (unsigned int i = 0; i < r.mEntries.Size(); ++i)
+			{
+				const ValueInfo& m = r.mEntries[i];
+				if (m.mType != ValueType::Map || m.mMapKeyEnum.AsCStr()[0] == '\0') { continue; }
+				const std::string target = m.mMapKeyEnum.AsCStr();
+				const ValueInfo* found = nullptr;
+				for (unsigned int j = 0; j < r.mEntries.Size() && found == nullptr; ++j)
+				{
+					if (target == r.mEntries[j].mKey.AsCStr()) { found = &r.mEntries[j]; }
+				}
+				const std::string entry = m.mKey.AsCStr();
+				EntryContext ctx{ fileName, entry.c_str() };
+				if (found == nullptr) { return Fail(r, ctx, ("keyEnum '" + target + "' names no entry in this file").c_str()); }
+				if (found->mType != ValueType::Enum) { return Fail(r, ctx, ("keyEnum '" + target + "' is not an enum entry").c_str()); }
 			}
 			return true;
 		}
@@ -665,6 +696,7 @@ namespace Dia::ValueSchema
 			if (!ReadEntry(r, fileName, entries[i], info, warned)) { return r; }
 			r.mEntries.Add(info);
 		}
+		if (!CheckKeyEnumTargets(r, fileName)) { return r; }
 		if (root.isMember("constraints"))
 		{
 			if (!ReadConstraints(r, fileName, root["constraints"])) { return r; }

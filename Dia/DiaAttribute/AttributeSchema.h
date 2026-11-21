@@ -8,6 +8,7 @@
 #include <DiaCore/Strings/String256.h>
 #include <DiaAttribute/IMapKeySource.h>
 #include <cstdint>
+#include <vector>
 
 // Forward declarations so dependents of this header do not need DiaValueSchema / json include paths.
 namespace Dia::ValueSchema {
@@ -46,6 +47,25 @@ namespace Dia::Attribute {
         Dia::ValueSchema::ConstraintOp    op{};
         uint32_t                          b  = 0;
     };
+
+    // -----------------------------------------------------------------------
+    // EnumMapKeys: the keys of a `keyEnum` map, i.e. the values of an enum entry of the sidecar in value order.
+    // Owns the id array; the name pointers borrow from the LoadResult, which must outlive this object.
+    // -----------------------------------------------------------------------
+    class EnumMapKeys
+    {
+    public:
+        void Assign(const Dia::ValueSchema::ValueInfo& enumEntry);
+        MapKeys Keys() const;
+    private:
+        std::vector<Dia::Core::StringCRC> mIds;
+        std::vector<const char*>          mNames;
+    };
+
+    // Resolves the keys of one map entry: from the enum entry named by `keyEnum` (no key source needed), else
+    // from mapKeys by `keyRef`. `storage` must outlive `out`. On failure err names the map entry.
+    [[nodiscard]] bool ResolveMapKeys(const Dia::ValueSchema::LoadResult& sidecar, const Dia::ValueSchema::ValueInfo& map,
+                                      const IMapKeySource* mapKeys, EnumMapKeys& storage, MapKeys& out, SchemaError& err);
 
     // -----------------------------------------------------------------------
     // AttributeDefinition

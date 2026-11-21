@@ -1,0 +1,53 @@
+{
+  "description": "A map keyed by a sidecar enum (keyEnum) whose default lists every enum value is clean; no data file is needed for the keys.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "terrain_type",
+          "kind": "field",
+          "label": "Terrain",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "Water"
+            },
+            {
+              "id": "Grass"
+            },
+            {
+              "id": "Sand"
+            },
+            {
+              "id": "Rock"
+            }
+          ],
+          "default": "Water"
+        },
+        {
+          "key": "terrain.cost",
+          "kind": "parameter",
+          "label": "cost",
+          "description": "d",
+          "type": "map",
+          "keyEnum": "terrain_type",
+          "valueType": "float",
+          "min": 0,
+          "max": 10,
+          "default": {
+            "Water": 9,
+            "Grass": 1,
+            "Sand": 2,
+            "Rock": 5
+          }
+        }
+      ]
+    }
+  ],
+  "files": [],
+  "expected": []
+}

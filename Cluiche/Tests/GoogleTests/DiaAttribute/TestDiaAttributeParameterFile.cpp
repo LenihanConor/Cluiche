@@ -1985,6 +1985,61 @@ TEST(DiaAttributeParameterFileParity, SparsePackOverCompleteMapIsCliCleanAndAppl
     EXPECT_FLOAT_EQ(Base(pf, "affinity.TemperateForest"), 0.9f);   // untouched keys keep the default
 }
 
+// Biome Registry task 14a: a map keyed by a sidecar enum (keyEnum). Columns come out in enum value order and need no
+// IMapKeySource (a null source loads), the sparse pack stays valid, and the C++ load agrees with the CLI on bad defaults.
+TEST(DiaAttributeParameterFileKeyEnum, CompleteDefaultExpandsToOneColumnPerEnumValueInValueOrder)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-key-enum-ok.case.json", c));
+    EXPECT_TRUE(c["expected"].empty());
+    ParameterFile pf; ParamError err;
+    ASSERT_TRUE(pf.Load(ToText(c["schemas"][0u]).c_str(), "test.schema.json", nullptr, err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
+    const char* order[] = { "terrain.cost.Water", "terrain.cost.Grass", "terrain.cost.Sand", "terrain.cost.Rock" };
+    const float want[] = { 9.0f, 1.0f, 2.0f, 5.0f };
+    ASSERT_EQ(pf.Values().GetAttributeCount(), 4u);
+    for (unsigned int i = 0; i < 4; ++i)
+    {
+        EXPECT_STREQ(pf.Schema().GetAttributeByIndex(i).fullKey.AsCStr(), order[i]);
+        EXPECT_FLOAT_EQ(Base(pf, order[i]), want[i]);
+    }
+}
+
+TEST(DiaAttributeParameterFileKeyEnum, SparsePackOverTheMapAppliesAndLeavesOtherKeysAtDefault)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-key-enum-sparse-pack-ok.case.json", c));
+    EXPECT_TRUE(c["expected"].empty());
+    ParameterFile pf; ASSERT_TRUE(LoadFile(pf, ToText(c["schemas"][0u])));
+    const Json::Value* pack = PackOf(c);
+    ASSERT_NE(pack, nullptr);
+    ParamWarnings w; ParamError err;
+    EXPECT_TRUE(pf.ApplyPack(*pack, w, err)) << err.reason.AsCStr();
+    EXPECT_FLOAT_EQ(Base(pf, "terrain.cost.Sand"), 3.0f);
+    EXPECT_FLOAT_EQ(Base(pf, "terrain.cost.Rock"), 5.0f);
+}
+
+TEST(DiaAttributeParameterFileKeyEnum, IncompleteDefaultFailsLoadNamingTheFirstMissingEnumValue)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-key-enum-incomplete-default.case.json", c));
+    ASSERT_EQ(c["schemaExpected"].size(), 1u);
+    EXPECT_EQ(c["schemaExpected"][0u]["rule"].asString(), "data.incomplete-map");
+    ParameterFile pf; ParamError err;
+    EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
+    EXPECT_STREQ(err.key.AsCStr(), "terrain.cost.Water");   // first enum value the default lacks (value order)
+    EXPECT_NE(std::string(err.reason.AsCStr()).find("missing"), std::string::npos) << err.reason.AsCStr();
+}
+
+TEST(DiaAttributeParameterFileKeyEnum, DefaultKeyThatIsNoEnumValueFailsLoadNamingTheColumn)
+{
+    Json::Value c;
+    ASSERT_TRUE(LoadCase("map-key-enum-unknown-key.case.json", c));
+    EXPECT_EQ(c["schemaExpected"][0u]["rule"].asString(), "data.unresolved-map-key");
+    ParameterFile pf; ParamError err;
+    EXPECT_FALSE(LoadFile(pf, ToText(c["schemas"][0u]), &err));
+    EXPECT_STREQ(err.key.AsCStr(), "terrain.cost.Sandd");
+}
+
 TEST(DiaAttributeParameterFileParity, CompleteMapDefaultCasesAreCliCleanAndLoadInCpp)
 {
     const char* cases[] = { "map-default-ok.case.json", "constraint-violated-pack-map-operand.case.json" };

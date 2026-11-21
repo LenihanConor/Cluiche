@@ -119,6 +119,7 @@ namespace Dia::ValueSchema
 		if (info.mType == ValueType::Map)
 		{
 			SetIfNotEmpty(e, "keyRef", info.mMapKeyRef.AsCStr());
+			SetIfNotEmpty(e, "keyEnum", info.mMapKeyEnum.AsCStr());
 			e["valueType"] = TypeName(info.mMapValueType);
 		}
 		if (info.mUi.isObject() && !info.mUi.empty()) { e["ui"] = info.mUi; }

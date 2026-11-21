@@ -252,6 +252,49 @@ namespace Dia::Attribute {
         return true;
     }
 
+    void EnumMapKeys::Assign(const ValueInfo& enumEntry)
+    {
+        mIds.clear();
+        mNames.clear();
+        for (unsigned int i = 0; i < enumEntry.mEnumValues.Size(); ++i)
+        {
+            mNames.push_back(enumEntry.mEnumValues[i].mId.AsCStr());
+            mIds.push_back(Dia::Core::StringCRC(enumEntry.mEnumValues[i].mId.AsCStr()));
+        }
+    }
+
+    MapKeys EnumMapKeys::Keys() const
+    {
+        MapKeys k;
+        k.ids   = mIds.empty() ? nullptr : mIds.data();
+        k.names = mNames.empty() ? nullptr : mNames.data();
+        k.count = static_cast<uint32_t>(mIds.size());
+        return k;
+    }
+
+    bool ResolveMapKeys(const Dia::ValueSchema::LoadResult& sidecar, const ValueInfo& e, const IMapKeySource* mapKeys,
+                        EnumMapKeys& storage, MapKeys& out, SchemaError& err)
+    {
+        if (e.mMapKeyEnum.AsCStr()[0] != 0)
+        {
+            const ValueInfo* target = nullptr;
+            for (unsigned int i = 0; i < sidecar.mEntries.Size() && target == nullptr; ++i)
+                if (strcmp(sidecar.mEntries[i].mKey.AsCStr(), e.mMapKeyEnum.AsCStr()) == 0) target = &sidecar.mEntries[i];
+            if (target == nullptr || target->mType != ValueType::Enum)
+                return Fail(err, e.mKey.AsCStr(), "keyEnum '%s' is not an enum entry of this sidecar", e.mMapKeyEnum.AsCStr());
+            if (target->mHasValuesFrom && target->mEnumValues.Size() == 0)
+                return Fail(err, e.mKey.AsCStr(), "keyEnum '%s' uses valuesFrom, which is not resolved here", e.mMapKeyEnum.AsCStr());
+            storage.Assign(*target);
+            out = storage.Keys();
+            return true;
+        }
+        if (mapKeys == nullptr)
+            return Fail(err, e.mKey.AsCStr(), "map entry needs a key source but none was supplied");
+        if (!mapKeys->GetKeys(e.mMapKeyRef.AsCStr(), out))
+            return Fail(err, e.mKey.AsCStr(), "key source does not know keyRef '%s'", e.mMapKeyRef.AsCStr());
+        return true;
+    }
+
     bool AttributeSchema::FromValueSchema(const Dia::ValueSchema::LoadResult& sidecar, const IMapKeySource* mapKeys,
                                           AttributeSchema& out, SchemaError& err)
     {
@@ -272,11 +315,9 @@ namespace Dia::Attribute {
             unsigned int columns = 1;
             if (e.mType == ValueType::Map)
             {
-                if (mapKeys == nullptr)
-                    return Fail(err, e.mKey.AsCStr(), "map entry needs a key source but none was supplied");
+                EnumMapKeys storage;
                 MapKeys keys;
-                if (!mapKeys->GetKeys(e.mMapKeyRef.AsCStr(), keys))
-                    return Fail(err, e.mKey.AsCStr(), "key source does not know keyRef '%s'", e.mMapKeyRef.AsCStr());
+                if (!ResolveMapKeys(sidecar, e, mapKeys, storage, keys, err)) return false;
                 columns = keys.count;
             }
             defCount += columns;
@@ -307,8 +348,9 @@ namespace Dia::Attribute {
                 continue;
             }
 
+            EnumMapKeys storage;
             MapKeys keys;
-            mapKeys->GetKeys(e.mMapKeyRef.AsCStr(), keys);   // validated in pass 1
+            if (!ResolveMapKeys(sidecar, e, mapKeys, storage, keys, err)) return false;   // validated in pass 1
             if (keys.count > 0 && keys.names == nullptr)
                 return Fail(err, e.mKey.AsCStr(), "key source returned no key names");
             if (!e.mHasMapDefault && !e.mHasDefault)

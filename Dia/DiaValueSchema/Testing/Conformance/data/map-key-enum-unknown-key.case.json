@@ -1,0 +1,66 @@
+{
+  "description": "A keyEnum map default naming a key that is no value of the enum is data.unresolved-map-key (the same code keyRef maps use), with a suggestion.",
+  "schemas": [
+    {
+      "format": "dia.value_schema",
+      "version": 1,
+      "for": "cow.params",
+      "entries": [
+        {
+          "key": "terrain_type",
+          "kind": "field",
+          "label": "Terrain",
+          "description": "d",
+          "type": "enum",
+          "values": [
+            {
+              "id": "Water"
+            },
+            {
+              "id": "Grass"
+            },
+            {
+              "id": "Sand"
+            },
+            {
+              "id": "Rock"
+            }
+          ],
+          "default": "Water"
+        },
+        {
+          "key": "terrain.cost",
+          "kind": "parameter",
+          "label": "cost",
+          "description": "d",
+          "type": "map",
+          "keyEnum": "terrain_type",
+          "valueType": "float",
+          "min": 0,
+          "max": 10,
+          "default": {
+            "Water": 9,
+            "Grass": 1,
+            "Sand": 2,
+            "Rock": 5,
+            "Sandd": 3
+          }
+        }
+      ]
+    }
+  ],
+  "files": [],
+  "expected": [],
+  "schemaExpected": [
+    {
+      "severity": "FAIL",
+      "rule": "data.unresolved-map-key",
+      "file": "schemas[0]",
+      "key": "terrain.cost",
+      "path": "default.Sandd",
+      "record": null,
+      "messageContains": "Sandd",
+      "suggestion": "Sand"
+    }
+  ]
+}

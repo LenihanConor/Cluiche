@@ -145,6 +145,16 @@ namespace Dia::Attribute
                 h.Str(e.mHasDefault ? e.mDefaultString.AsCStr() : "");
                 h.Byte(isMap ? static_cast<uint8_t>(e.mMapValueType) : 0);
                 h.Str(isMap ? e.mMapKeyRef.AsCStr() : "");
+                if (isMap && e.mMapKeyEnum.AsCStr()[0] != 0)   // only keyEnum maps: keeps keyRef-only hashes stable
+                {
+                    h.Str(e.mMapKeyEnum.AsCStr());
+                    for (unsigned int t = 0; t < r.mEntries.Size(); ++t)   // the enum's ids are this map's columns
+                    {
+                        if (strcmp(r.mEntries[t].mKey.AsCStr(), e.mMapKeyEnum.AsCStr()) != 0) continue;
+                        for (unsigned int v = 0; v < r.mEntries[t].mEnumValues.Size(); ++v) h.Str(r.mEntries[t].mEnumValues[v].mId.AsCStr());
+                        break;
+                    }
+                }
                 const bool hasMapDefault = isMap && e.mHasMapDefault;
                 h.Byte(hasMapDefault ? 1 : 0);
                 const uint32_t mdCount = hasMapDefault ? e.mMapDefaults.Size() : 0;
@@ -266,8 +276,9 @@ namespace Dia::Attribute
         {
             const ValueInfo& e = r.mEntries[i];
             if (e.mKind != ValueKind::Parameter || e.mType != ValueType::Map) continue;
+            EnumMapKeys storage;
             MapKeys keys;
-            mapKeys->GetKeys(e.mMapKeyRef.AsCStr(), keys);   // validated by FromValueSchema
+            if (!ResolveMapKeys(r, e, mapKeys, storage, keys, se)) return false;   // validated by FromValueSchema
             MapInfo info;
             SetText(info.key, e.mKey.AsCStr());
             info.count = keys.count;
