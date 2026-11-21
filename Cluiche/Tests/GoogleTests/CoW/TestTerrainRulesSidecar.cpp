@@ -96,26 +96,6 @@ namespace
         { "kWetlandMoist", 0.7f },
         { "kPlateauWet", 0.5f },
         { "kMaxFixupPasses", 8.0f },
-        { "kT0_Grass", 0.60f },
-        { "kM0_Grass", 0.35f },
-        { "kWT_Grass", 0.25f },
-        { "kWM_Grass", 0.20f },
-        { "kT0_Forest", 0.50f },
-        { "kM0_Forest", 0.60f },
-        { "kWT_Forest", 0.25f },
-        { "kWM_Forest", 0.20f },
-        { "kT0_Desert", 0.80f },
-        { "kM0_Desert", 0.08f },
-        { "kWT_Desert", 0.25f },
-        { "kWM_Desert", 0.12f },
-        { "kT0_Tundra", 0.12f },
-        { "kM0_Tundra", 0.30f },
-        { "kWT_Tundra", 0.15f },
-        { "kWM_Tundra", 0.30f },
-        { "kT0_Rainforest", 0.85f },
-        { "kM0_Rainforest", 0.90f },
-        { "kWT_Rainforest", 0.20f },
-        { "kWM_Rainforest", 0.15f },
         { "kMinRegionCells", 36.0f },
         { "kSeedBiomeBonus", 3.0f },
         { "kBiomeMismatch", 0.8f },
@@ -153,9 +133,33 @@ namespace
     }
 }
 
-TEST(TerrainRulesSidecar, TableLiteralCountIs99)
+TEST(TerrainRulesSidecar, TableLiteralCountIs79)
 {
-    EXPECT_EQ(kOldTableCount, 99u);
+    EXPECT_EQ(kOldTableCount, 79u);
+}
+
+// Task 24: climate lives in the biome registry; S-1's parameters carry no climate value.
+namespace
+{
+    bool LoadSidecarForClimateCheck(ParameterFile& file)
+    {
+        const std::string text = ReadSidecar();
+        ParamError err;
+        return !text.empty() && file.Load(text.c_str(), "terrain_rules.schema.json", nullptr, err);
+    }
+}
+
+TEST(TerrainRulesSidecar, HasNoClimateParameters)
+{
+    const std::string text = ReadSidecar();
+    ASSERT_FALSE(text.empty()) << "sidecar not found";
+    for (const char* prefix : { "kT0_", "kM0_", "kWT_", "kWM_" })
+    {
+        EXPECT_EQ(text.find(prefix), std::string::npos) << prefix;
+    }
+    ParameterFile file;
+    ASSERT_TRUE(LoadSidecarForClimateCheck(file));
+    EXPECT_EQ(file.Schema().GetAttributeCount(), 79u);
 }
 
 TEST(TerrainRulesSidecar, DefaultsEqualOldTableAndKeySetMatches)

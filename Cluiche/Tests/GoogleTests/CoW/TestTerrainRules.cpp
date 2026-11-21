@@ -283,36 +283,6 @@ TEST(TerrainRules, NewBiomeRulesDefaultsMatch)
     EXPECT_FLOAT_EQ(r.kWetlandMoist, 0.7f);
     EXPECT_FLOAT_EQ(r.kPlateauWet, 0.5f);
     EXPECT_EQ(r.kMaxFixupPasses, 8);
-
-    // Grass
-    EXPECT_FLOAT_EQ(r.kT0_Grass, 0.60f);
-    EXPECT_FLOAT_EQ(r.kM0_Grass, 0.35f);
-    EXPECT_FLOAT_EQ(r.kWT_Grass, 0.25f);
-    EXPECT_FLOAT_EQ(r.kWM_Grass, 0.20f);
-
-    // Forest
-    EXPECT_FLOAT_EQ(r.kT0_Forest, 0.50f);
-    EXPECT_FLOAT_EQ(r.kM0_Forest, 0.60f);
-    EXPECT_FLOAT_EQ(r.kWT_Forest, 0.25f);
-    EXPECT_FLOAT_EQ(r.kWM_Forest, 0.20f);
-
-    // Desert
-    EXPECT_FLOAT_EQ(r.kT0_Desert, 0.80f);
-    EXPECT_FLOAT_EQ(r.kM0_Desert, 0.08f);
-    EXPECT_FLOAT_EQ(r.kWT_Desert, 0.25f);
-    EXPECT_FLOAT_EQ(r.kWM_Desert, 0.12f);
-
-    // Tundra
-    EXPECT_FLOAT_EQ(r.kT0_Tundra, 0.12f);
-    EXPECT_FLOAT_EQ(r.kM0_Tundra, 0.30f);
-    EXPECT_FLOAT_EQ(r.kWT_Tundra, 0.15f);
-    EXPECT_FLOAT_EQ(r.kWM_Tundra, 0.30f);
-
-    // Rainforest
-    EXPECT_FLOAT_EQ(r.kT0_Rainforest, 0.85f);
-    EXPECT_FLOAT_EQ(r.kM0_Rainforest, 0.90f);
-    EXPECT_FLOAT_EQ(r.kWT_Rainforest, 0.20f);
-    EXPECT_FLOAT_EQ(r.kWM_Rainforest, 0.15f);
 }
 
 TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
@@ -329,8 +299,6 @@ TEST(TerrainRules, NewBiomeRulesRoundTripThroughJson)
     // Check new biome rules round-trip
     EXPECT_FLOAT_EQ(b.kLatCool, a.kLatCool);
     EXPECT_FLOAT_EQ(b.kLapse, a.kLapse);
-    EXPECT_FLOAT_EQ(b.kT0_Grass, a.kT0_Grass);
-    EXPECT_FLOAT_EQ(b.kM0_Rainforest, a.kM0_Rainforest);
 }
 
 TEST(TerrainRules, RegionRulesDefaults)

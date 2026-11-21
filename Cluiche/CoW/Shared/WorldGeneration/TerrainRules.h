@@ -21,7 +21,7 @@ namespace CoW {
 namespace WorldGeneration {
 
 // Number of sidecar parameters / rule members.
-constexpr uint32_t kRuleCount = 99;
+constexpr uint32_t kRuleCount = 79;
 
 // Warnings are short texts such as "missing:kCoastElev", "range:kEdgeFade",
 // "unknown:kFoo", "invalid:kBar" (StringCRC keeps up to 63 readable chars via AsChar()).
@@ -30,7 +30,7 @@ using RuleWarnings = Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 
 
 constexpr uint32_t kDefaultRulesVersion = 4;
 
-// Standard layout (ParamBinding requirement): the 99 rule members first, then the two plain fields.
+// Standard layout (ParamBinding requirement): the 79 rule members first, then the two plain fields.
 struct TerrainRules
 {
     float kCoastElev = 0.0f;
@@ -99,26 +99,6 @@ struct TerrainRules
     float kWetlandMoist = 0.0f;
     float kPlateauWet = 0.0f;
     int32_t kMaxFixupPasses = 0;
-    float kT0_Grass = 0.0f;
-    float kM0_Grass = 0.0f;
-    float kWT_Grass = 0.0f;
-    float kWM_Grass = 0.0f;
-    float kT0_Forest = 0.0f;
-    float kM0_Forest = 0.0f;
-    float kWT_Forest = 0.0f;
-    float kWM_Forest = 0.0f;
-    float kT0_Desert = 0.0f;
-    float kM0_Desert = 0.0f;
-    float kWT_Desert = 0.0f;
-    float kWM_Desert = 0.0f;
-    float kT0_Tundra = 0.0f;
-    float kM0_Tundra = 0.0f;
-    float kWT_Tundra = 0.0f;
-    float kWM_Tundra = 0.0f;
-    float kT0_Rainforest = 0.0f;
-    float kM0_Rainforest = 0.0f;
-    float kWT_Rainforest = 0.0f;
-    float kWM_Rainforest = 0.0f;
     int32_t kMinRegionCells = 0;
     float kSeedBiomeBonus = 0.0f;
     float kBiomeMismatch = 0.0f;
