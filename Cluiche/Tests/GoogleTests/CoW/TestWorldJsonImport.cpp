@@ -13,6 +13,8 @@
 #include <DiaObservation/Log/Logger.h>
 
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include <vector>
 #include <functional>
 #include <memory>
@@ -337,6 +339,39 @@ TEST_F(WorldJsonBiomeIds, ThirteenthAndFourteenthRowWorldRoundTripsUnderTheExtra
     EXPECT_EQ(Export(imported, ctx), text);
     EXPECT_EQ(HashWarnings(), 0u);
     EXPECT_EQ(Unknown(), 0u);
+}
+
+TEST_F(WorldJsonBiomeIds, ReorderedPaletteWithKnownIdsImportsEveryCellUnderItsId)
+{
+    // Same 13 ids, rows reversed: every index differs, no id is unknown, so ids (not indices) must carry identity.
+    std::ifstream     in(ShippedBiomesPath(), std::ios::binary);
+    std::stringstream ss;
+    ss << in.rdbuf();
+    Json::Value doc = Parse(ss.str());
+    Json::Value reversed(Json::arrayValue);
+    for (int i = static_cast<int>(doc["biomes"].size()) - 1; i >= 0; --i) { reversed.append(doc["biomes"][static_cast<Json::ArrayIndex>(i)]); }
+    doc["biomes"] = reversed;
+    const std::string reorderedText = Write(doc);
+    CoW::World::BiomeRegistry reordered;
+    CoW::World::RegistryError regErr;
+    ASSERT_TRUE(reordered.LoadFromText(reorderedText.c_str(), regErr)) << regErr.reason.AsCStr();
+    const CoW::World::BiomeRegistry& shipped = ShippedBiomeRegistry();
+    ASSERT_EQ(reordered.Count(), shipped.Count());
+    ASSERT_NE(B(reordered, "Biome.Ocean"), B(shipped, "Biome.Ocean"));
+
+    const WorldStructure original = MakeTinyWorld();
+    const std::string    text = Export(original);
+
+    WorldJsonContext ctx;
+    ctx.biomes = &reordered;
+    WorldStructure imported;
+    const WorldImportResult r = Import(text, imported, ctx);
+    ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
+    EXPECT_EQ(Unknown(), 0u);
+    for (int c = 0; c < 12; ++c)   // MakeTinyWorld is 4x3
+    {
+        EXPECT_STREQ(reordered.IdText(imported.Cells()[c].biome), shipped.IdText(original.Cells()[c].biome)) << "cell " << c;
+    }
 }
 
 TEST(WorldJsonImport, ExportWithoutABiomeRegistryIsRefused)

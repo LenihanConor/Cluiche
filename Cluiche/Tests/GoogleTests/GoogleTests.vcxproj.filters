@@ -3246,5 +3246,8 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaValuesFrom.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\TestBiomeRegistryEdge.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
