@@ -3333,5 +3333,20 @@
     <ClCompile Include="..\..\CoW\Shared\World\ZoneTable.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChain.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainEdge.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepFake.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaDeferredStep\TestStepChainCapacity.cpp">
+      <Filter>DiaDeferredStep</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

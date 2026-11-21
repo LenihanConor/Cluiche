@@ -1390,6 +1390,11 @@
     <ClCompile Include="CoW\WorldStep\TestWorldStepLoadReset.cpp" />
     <ClCompile Include="CoW\TestZoneTable.cpp" />
     <ClCompile Include="..\..\CoW\Shared\World\ZoneTable.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepChain.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepChainEdge.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepChainConfig.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepFake.cpp" />
+    <ClCompile Include="DiaDeferredStep\TestStepChainCapacity.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

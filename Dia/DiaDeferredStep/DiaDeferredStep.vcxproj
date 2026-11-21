@@ -102,6 +102,12 @@
     <ClInclude Include="DeferredStepHealth.h" />
     <ClInclude Include="StepSummary.h" />
     <ClInclude Include="IStepSummarySink.h" />
+    <ClInclude Include="IStepStage.h" />
+    <ClInclude Include="IStepChainListener.h" />
+    <ClInclude Include="StepChainConfig.h" />
+    <ClInclude Include="StepChainConfigLoader.h" />
+    <ClInclude Include="StepChain.h" />
+    <ClInclude Include="Testing\FakeStepStage.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SerialExecutor.cpp" />
