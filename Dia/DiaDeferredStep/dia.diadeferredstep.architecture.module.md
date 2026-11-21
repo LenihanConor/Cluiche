@@ -18,7 +18,12 @@ dependencies:
     - dia.streams
   forbidden: []
 public_api:
-  headers: []
+  headers:
+    - DiaDeferredStep/IStepStage.h
+    - DiaDeferredStep/IStepChainListener.h
+    - DiaDeferredStep/StepChainConfig.h
+    - DiaDeferredStep/StepChainConfigLoader.h
+    - DiaDeferredStep/StepChain.h
   namespaces:
     - Dia::DeferredStep::
   entry_points: []
@@ -36,6 +41,7 @@ Namespace: `Dia::DeferredStep`. Runs on SimPU (deferred step channel subscribers
 - DeferredStepScheduler: one step per channel, Kick/Tick/DrainAll
 - IParallelExecutor + SerialExecutor abstractions
 - DeferredStepModule: SimModule that hosts the scheduler on SimPU
+- StepChain: ordered stages (Capture, Run, Commit) inside one deferred step; capacity is a template parameter (default 8)
 
 ## Non-Responsibilities
 
