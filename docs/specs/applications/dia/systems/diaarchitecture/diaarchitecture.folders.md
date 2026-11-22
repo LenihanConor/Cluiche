@@ -96,4 +96,6 @@ Not a top-level `Dia/<Name>/<Name>.vcxproj` library module (executables, editors
 | CoW | _Executables |
 | CoWEditor | _Executables |
 | DiaUICEF_TestSubprocess | 3.0-Visual |
+| DraoiHexWorld | Draoi |
+| DraoiHexWorldTerrain | <none> |
 | GoogleTests | _Executables |
