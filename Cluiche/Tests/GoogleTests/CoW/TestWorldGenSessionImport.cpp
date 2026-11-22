@@ -2,11 +2,12 @@
 //       biome-classification.md (AC14), regions-and-sites.md (AC11 session side, AC14), worldgenerationpipeline.md (Test 3)
 // WorldGenSession export/import: files, the locked-import contract, regeneration from provenance.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <atomic>
 #include <cstring>
@@ -664,7 +665,7 @@ TEST_F(SessionImportTest, WorldWithoutRegionsImportsAsNotFresh)
 TEST_F(SessionImportTest, AC11_RegisteredKindRoundTripsThroughTheSessionAndAnUnknownKindIsKept)
 {
     TestPlacer placer("Test.Session", {}, 5);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&placer));
 
     TestSession a;

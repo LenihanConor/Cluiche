@@ -8,8 +8,9 @@
 
 #include <Modules/WorldGen/WorldGenDebugDomain.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldJson.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <climits>
 #include <cmath>
@@ -970,7 +971,7 @@ TEST(WorldGenDebugDomainView, NoViewLayersListTerrainLayers)
 TEST(WorldGenDebugDomainView, SiteKindsListEachKindWithColourAndShape)
 {
     ViewFixture f;
-    f.view.siteKinds.push_back(CoW::WorldGeneration::BuiltinNodeKindInfo(Draoi::HexWorld::BuiltinNodeKinds::River()));
+    f.view.siteKinds.push_back(BuiltinNodeKindInfo(CoWNodeKindIds(), BuiltinNodeKinds::River()));
     f.view.siteKinds.push_back(CoW::WorldGeneration::MakeSiteKindInfo(Dia::Core::StringCRC("Test.Hearth"), "Hearth Site", 0xFF00FF,
                                                                        Draoi::HexWorld::SiteShape::Ring));
     const Json::Value k = f.State()["view"]["siteKinds"];

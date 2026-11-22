@@ -1,12 +1,13 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/retry-mechanism.md (AC7, Telemetry, SD-S1-008)
 // WorldGenSession and the retry loop: Regenerate retries, live preview never does, the report and its queries.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -80,7 +81,7 @@ TEST(WorldGenSessionRetry, RegenerateSuccessLeavesAReportMatchingTheWorld)
 TEST(WorldGenSessionRetry, RetryableFailuresRetryAndTheAcceptedAttemptIsTheOneKept)
 {
     AttemptGatedPlacer placer("Test.Gated", 2);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.Register(&placer));
     Gen g(&reg);
     ASSERT_TRUE(g.Regenerate());
@@ -96,7 +97,7 @@ TEST(WorldGenSessionRetry, RetryableFailuresRetryAndTheAcceptedAttemptIsTheOneKe
 TEST(WorldGenSessionRetry, UnsatisfiableGenerationClearsRegionsAndFailsTheState)
 {
     FixedGuarantee never("Test.Never", false);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&never));
     Gen g(&reg);
     Json::Value a = Obj(); a["maxRetryAttempts"] = 3;
@@ -180,7 +181,7 @@ TEST(WorldGenSessionRetry, MaxRetryAttemptsIsStickyAcrossRegenerates)
 TEST(WorldGenSessionRetry, SameSeedGivesIdenticalWorldAndReportAcrossSessions)
 {
     AttemptGatedPlacer p1("Test.Gated", 2), p2("Test.Gated", 2);
-    SiteRegistry r1, r2;
+    CoWSiteRegistry r1, r2;
     ASSERT_TRUE(r1.Register(&p1));
     ASSERT_TRUE(r2.Register(&p2));
     Gen a(&r1), b(&r2);
@@ -195,7 +196,7 @@ TEST(WorldGenSessionRetry, SameSeedGivesIdenticalWorldAndReportAcrossSessions)
 TEST(WorldGenSessionRetry, StatusCarriesAOneLineGenerationSummary)
 {
     AttemptGatedPlacer placer("Test.Gated", 1);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.Register(&placer));
     Gen g(&reg);
     ASSERT_TRUE(g.Regenerate());
@@ -211,7 +212,7 @@ TEST(WorldGenSessionRetry, StatusCarriesAOneLineGenerationSummary)
 TEST(WorldGenSessionRetry, ReportQueryListsEveryAttempt)
 {
     FailFirstNGuarantee flaky("Test.Flaky", 2);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&flaky));
     Gen g(&reg);
     ASSERT_TRUE(g.Regenerate());
@@ -242,7 +243,7 @@ TEST(WorldGenSessionRetry, ReportQueryListsEveryAttempt)
 TEST(WorldGenSessionRetry, ReportQueryPagesAndStaysUnderTheReplyCap)
 {
     FixedGuarantee never("Test.Never", false);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&never));
     Gen g(&reg);
     Json::Value a = Obj(); a["maxRetryAttempts"] = static_cast<Json::UInt>(kMaxRetryAttemptsLimit);
@@ -300,7 +301,7 @@ TEST(WorldGenSessionRetry, AcceptedAttemptKeepsThePreviousBehaviourWhenAttemptZe
 TEST(WorldGenSessionRetry, UnsatisfiableReportIsNotStaleAndALaterRegenerateRecovers)
 {
     FailFirstNGuarantee flaky("Test.Flaky", 3);   // fails the first three validations, passes afterwards
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&flaky));
     Gen g(&reg);
     Json::Value a = Obj(); a["maxRetryAttempts"] = 3;

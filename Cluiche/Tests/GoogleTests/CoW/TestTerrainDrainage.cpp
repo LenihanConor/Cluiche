@@ -4,7 +4,7 @@
 // reports the stage 5 time at Small.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

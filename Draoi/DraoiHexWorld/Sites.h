@@ -52,17 +52,24 @@ struct SiteKindInfo
 SiteKindInfo MakeSiteKindInfo(const Dia::Core::StringCRC& kind, const char* displayName, uint32_t debugColour,
                               SiteShape shape, const char* variantLabel = "");
 
-namespace BuiltinNodeKinds
+// The ids of the four built-in node kinds the generator places (corridor, river, hunting, resource). The ids are saved
+// in world files, so the host injects its own (the defaults are neutral); the same ids always give the same worlds.
+struct NodeKindIds
 {
-    Dia::Core::StringCRC Corridor();   // "CoW.Node.Corridor"
-    Dia::Core::StringCRC River();      // "CoW.Node.River"
-    Dia::Core::StringCRC Hunting();    // "CoW.Node.Hunting"
-    Dia::Core::StringCRC Resource();   // "CoW.Node.Resource"
-}
+    Dia::Core::StringCRC corridor = Dia::Core::StringCRC("HexWorld.Node.Corridor");
+    Dia::Core::StringCRC river    = Dia::Core::StringCRC("HexWorld.Node.River");
+    Dia::Core::StringCRC hunting  = Dia::Core::StringCRC("HexWorld.Node.Hunting");
+    Dia::Core::StringCRC resource = Dia::Core::StringCRC("HexWorld.Node.Resource");
+
+    bool IsBuiltin(uint32_t kindCrc) const
+    {
+        return kindCrc == corridor.Value() || kindCrc == river.Value() || kindCrc == hunting.Value() || kindCrc == resource.Value();
+    }
+};
 
 // Display info for the four built-in kinds; for any other kind returns an info with the
 // right kindCrc/id and an empty displayName.
-SiteKindInfo BuiltinNodeKindInfo(const Dia::Core::StringCRC& kind);
+SiteKindInfo BuiltinNodeKindInfo(const NodeKindIds& ids, const Dia::Core::StringCRC& kind);
 
 // Sites at one cell (a cell can hold several kinds).
 using SitesAtCell = Dia::Core::Containers::DynamicArrayC<Site, 8>;

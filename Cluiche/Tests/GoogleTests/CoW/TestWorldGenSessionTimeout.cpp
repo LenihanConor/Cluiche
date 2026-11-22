@@ -3,12 +3,13 @@
 // WorldGenSession: a Regenerate steps one attempt per Tick, Cancel, timeout, error, and the previous world surviving
 // every failed generation.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -98,7 +99,7 @@ namespace
     {
         TestSession s;
         Dia::Maths::RandomStream rng{ 1 };
-        SiteRegistry registry;
+        CoWSiteRegistry registry;
         SwitchGuarantee sw;
         FakeClock clock;
 
@@ -311,7 +312,7 @@ TEST(WorldGenSessionTimeout, WithNoPreviousWorldAFailedFirstRegenerateAdoptsTheC
 {
     TestSession s;
     Dia::Maths::RandomStream rng{ 1 };
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     SwitchGuarantee sw;
     sw.pass = false;
     registry.RegisterGuarantee(&sw);

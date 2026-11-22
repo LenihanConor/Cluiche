@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/NavigationQuery.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
 
 #include <filesystem>
@@ -61,7 +61,7 @@ TEST(TerrainTableNavigationProfile, IdAndCostProviderFollowTheTable)
     SetTerrain(w, 1, 0, TerrainType::Mountain);
     SetTerrain(w, 2, 0, TerrainType::Lake);
     TerrainTableNavigationProfile profile(TestRules());
-    EXPECT_EQ(profile.GetId(), StringCRC("CoW.Nav.TerrainTable"));
+    EXPECT_EQ(profile.GetId(), StringCRC("HexWorld.Nav.TerrainTable"));
     const auto costs = profile.CreateCostProvider(w);
     ASSERT_NE(costs, nullptr);
     EXPECT_FLOAT_EQ(costs->GetCost({ 0, 0 }, { 0, 1 }), 1.0f);                                   // Lowland

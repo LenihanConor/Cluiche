@@ -37,7 +37,7 @@ TerrainNavigationTable TerrainNavigationTable::FromRules(const TerrainRules& rul
     return t;
 }
 
-StringCRC TerrainTableNavigationProfile::GetId() const { return StringCRC("CoW.Nav.TerrainTable"); }
+StringCRC TerrainTableNavigationProfile::GetId() const { return StringCRC("HexWorld.Nav.TerrainTable"); }
 
 std::unique_ptr<IPathCostProvider> TerrainTableNavigationProfile::CreateCostProvider(const WorldStructure& world) const
 {

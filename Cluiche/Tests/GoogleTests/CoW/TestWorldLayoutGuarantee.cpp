@@ -3,6 +3,7 @@
 // stores IWorldGuarantee.
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/RegionsAndSites.h>
@@ -12,7 +13,7 @@
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -39,7 +40,7 @@ Placed MakePlaced(uint64_t seed)
     TerrainRunner runner;
     runner.Run(seed, WorldShapeParams{}, GridDimensions{ 66, 42 });
     p.world = runner.World();
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     Dia::Maths::RandomStream rng(1);
     RegionsAndSites::Place(p.world, registry, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, CoWStepSeedNames(), &p.report);
     return p;
@@ -47,7 +48,7 @@ Placed MakePlaced(uint64_t seed)
 
 GuaranteeResult RunLayout(const Placed& p)
 {
-    WorldLayoutGuarantee g(TestRules(), p.report.limits);
+    WorldLayoutGuarantee g(TestRules(), p.report.limits, CoWNodeKindIds());
     class NoNav : public INavigationQuery
     {
     public:
@@ -77,8 +78,8 @@ uint32_t FirstLandCell(const WorldStructure& w)
 
 TEST(WorldLayoutGuarantee, IdIsStable)
 {
-    WorldLayoutGuarantee g(TestRules(), LayoutLimits{});
-    EXPECT_EQ(g.GetId(), StringCRC("CoW.Guarantee.WorldLayout"));
+    WorldLayoutGuarantee g(TestRules(), LayoutLimits{}, CoWNodeKindIds());
+    EXPECT_EQ(g.GetId(), StringCRC("HexWorld.Guarantee.WorldLayout"));
 }
 
 TEST(WorldLayoutGuarantee, GeneratedWorldsSatisfyItWithNoEvidenceOfViolations)
@@ -86,13 +87,13 @@ TEST(WorldLayoutGuarantee, GeneratedWorldsSatisfyItWithNoEvidenceOfViolations)
     for (uint64_t seed : { 1ull, 2ull, 3ull })
     {
         const Placed p = MakePlaced(seed);
-        ASSERT_TRUE(CheckLayout(p.world, TestRules(), p.report.limits).ok) << "seed " << seed;   // precondition
+        ASSERT_TRUE(CheckLayout(p.world, TestRules(), CoWNodeKindIds(), p.report.limits).ok) << "seed " << seed;   // precondition
         const GuaranteeResult r = RunLayout(p);
         EXPECT_TRUE(r.satisfied) << "seed " << seed;
         EXPECT_TRUE(r.diagnostics.IsEmpty());
         EXPECT_TRUE(r.violatingCells.IsEmpty());
         EXPECT_TRUE(r.measurements.IsEmpty());
-        EXPECT_EQ(r.idCrc, StringCRC("CoW.Guarantee.WorldLayout").Value());
+        EXPECT_EQ(r.idCrc, StringCRC("HexWorld.Guarantee.WorldLayout").Value());
     }
 }
 
@@ -129,7 +130,7 @@ TEST(WorldLayoutGuarantee, EveryCheckViolationBecomesOneDiagnosticAndMatchesTheR
     {
         if (p.world.Cells()[i].landmass == 0) { p.world.Cells()[i].region = 1; break; }
     }
-    const LayoutReport report = CheckLayout(p.world, TestRules(), p.report.limits);
+    const LayoutReport report = CheckLayout(p.world, TestRules(), CoWNodeKindIds(), p.report.limits);
     ASSERT_FALSE(report.ok);
     const GuaranteeResult r = RunLayout(p);
     EXPECT_FALSE(r.satisfied);
@@ -144,7 +145,7 @@ TEST(WorldLayoutGuarantee, TerrainLimitedWorldsAnnotateRegionCountViolationsAsTe
     p.world.regions.absorbedCells = 60000;   // forces AbsorbedOverCap
     LayoutLimits limited = p.report.limits;
     limited.regionLimitedBy = kStratumWild;
-    WorldLayoutGuarantee g(TestRules(), limited);
+    WorldLayoutGuarantee g(TestRules(), limited, CoWNodeKindIds());
     class NoNav : public INavigationQuery
     {
     public:
@@ -172,7 +173,7 @@ TEST(WorldLayoutGuarantee, DeterministicAcrossCalls)
 TEST(WorldLayoutGuarantee, RunsAsAGuaranteeOfTheValidator)
 {
     Placed p = MakePlaced(1);
-    WorldLayoutGuarantee layout(TestRules(), p.report.limits);
+    WorldLayoutGuarantee layout(TestRules(), p.report.limits, CoWNodeKindIds());
     FixedGuarantee other("Other", true);
     ValidationParams params;
     params.AddGuarantee(&layout);
@@ -189,9 +190,9 @@ TEST(WorldLayoutGuarantee, RunsAsAGuaranteeOfTheValidator)
 
 TEST(SiteRegistryGuarantees, StoresWorldGuaranteesAndRejectsDuplicateIds)
 {
-    SiteRegistry registry;
-    WorldLayoutGuarantee layout(TestRules(), LayoutLimits{});
-    WorldLayoutGuarantee layoutAgain(TestRules(), LayoutLimits{});
+    CoWSiteRegistry registry;
+    WorldLayoutGuarantee layout(TestRules(), LayoutLimits{}, CoWNodeKindIds());
+    WorldLayoutGuarantee layoutAgain(TestRules(), LayoutLimits{}, CoWNodeKindIds());
     FixedGuarantee other("Other", true);
     EXPECT_TRUE(registry.RegisterGuarantee(&layout));
     EXPECT_FALSE(registry.RegisterGuarantee(&layout));        // same pointer

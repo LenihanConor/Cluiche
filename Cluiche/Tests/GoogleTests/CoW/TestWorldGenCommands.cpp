@@ -1,6 +1,7 @@
 // cow.worldgen.* terrain-slice commands, hosted by CoW::WorldGenerationModule on the SimPU.
 // Real round trip: Main-side shim with a real DebugServer -> SimQueryRequest EventStream -> SimQueryHostModule (SimPU)
 // -> handler -> SimQueryReply EventStream -> shim. Harness adapted from TestCellLayersIntegrationStreams.cpp.
+#include <Shared/CoWNodeKinds.h>
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 
@@ -26,7 +27,7 @@
 #include <Modules/SimQueryHostModule.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Types/SimRegistrationMessage.h>
 
 #include <cstring>
@@ -799,7 +800,7 @@ TEST(WorldGenCommands, SitesQueryRoundTripPagesAllSitesAndFiltersByKind)
 
 	Json::Value f = Obj(); f["kind"] = "CoW.Node.Corridor";
 	const Json::Value fr = h.Call("cow.worldgen.sites", f);
-	EXPECT_EQ(fr["total"].asInt(), w->sites.Count(Draoi::HexWorld::BuiltinNodeKinds::Corridor()));
+	EXPECT_EQ(fr["total"].asInt(), w->sites.Count(CoW::WorldGeneration::BuiltinNodeKinds::Corridor()));
 	for (const Json::Value& s : fr["sites"]) EXPECT_EQ(s["kind"].asString(), "CoW.Node.Corridor");
 
 	Json::Value bad = Obj(); bad["kind"] = "No.Such.Kind";

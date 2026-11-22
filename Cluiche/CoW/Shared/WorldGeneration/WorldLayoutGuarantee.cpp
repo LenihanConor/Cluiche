@@ -10,7 +10,7 @@ StringCRC WorldLayoutGuarantee::GetId() const { return StringCRC(kName); }
 
 GuaranteeResult WorldLayoutGuarantee::Check(const ValidationContext& context) const
 {
-    const LayoutReport report = CheckLayout(context.world, mRules, mLimits);
+    const LayoutReport report = CheckLayout(context.world, mRules, mNodeKinds, mLimits);
 
     GuaranteeResult result;
     result.idCrc = GetId().Value();

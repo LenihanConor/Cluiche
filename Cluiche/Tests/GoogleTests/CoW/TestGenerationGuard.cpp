@@ -3,11 +3,12 @@
 // Cancelled. Time is a fake clock advanced by the test doubles, so nothing sleeps.
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/GenerationGuard.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -82,7 +83,7 @@ namespace
     {
         TerrainRules rules = TestRules();
         RandomStream rng{ 1 };
-        SiteRegistry registry;
+        CoWSiteRegistry registry;
         WorldStructure terrain;
         FakeClock clock;
         Fixture()

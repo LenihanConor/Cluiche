@@ -37,14 +37,6 @@ SiteKindInfo MakeSiteKindInfo(const Dia::Core::StringCRC& kind, const char* disp
     return i;
 }
 
-namespace BuiltinNodeKinds
-{
-    Dia::Core::StringCRC Corridor() { return Dia::Core::StringCRC("CoW.Node.Corridor"); }
-    Dia::Core::StringCRC River()    { return Dia::Core::StringCRC("CoW.Node.River"); }
-    Dia::Core::StringCRC Hunting()  { return Dia::Core::StringCRC("CoW.Node.Hunting"); }
-    Dia::Core::StringCRC Resource() { return Dia::Core::StringCRC("CoW.Node.Resource"); }
-}
-
 const char* SiteShapeName(SiteShape shape)
 {
     switch (shape)
@@ -59,12 +51,12 @@ const char* SiteShapeName(SiteShape shape)
     return "Dot";
 }
 
-SiteKindInfo BuiltinNodeKindInfo(const Dia::Core::StringCRC& kind)
+SiteKindInfo BuiltinNodeKindInfo(const NodeKindIds& ids, const Dia::Core::StringCRC& kind)
 {
-    if (kind == BuiltinNodeKinds::Corridor()) { return MakeSiteKindInfo(kind, "Corridor Node",    0xE8A33D, SiteShape::Diamond,  "Corridor"); }
-    if (kind == BuiltinNodeKinds::River())    { return MakeSiteKindInfo(kind, "River Node",       0x3D9BE8, SiteShape::Triangle, "");        }
-    if (kind == BuiltinNodeKinds::Hunting())  { return MakeSiteKindInfo(kind, "Hunting Ground",   0xB5483A, SiteShape::Square,   "");        }
-    if (kind == BuiltinNodeKinds::Resource()) { return MakeSiteKindInfo(kind, "Resource Deposit", 0x9B59D0, SiteShape::Star,     "");        }
+    if (kind == ids.corridor) { return MakeSiteKindInfo(kind, "Corridor Node",    0xE8A33D, SiteShape::Diamond,  "Corridor"); }
+    if (kind == ids.river)    { return MakeSiteKindInfo(kind, "River Node",       0x3D9BE8, SiteShape::Triangle, "");        }
+    if (kind == ids.hunting)  { return MakeSiteKindInfo(kind, "Hunting Ground",   0xB5483A, SiteShape::Square,   "");        }
+    if (kind == ids.resource) { return MakeSiteKindInfo(kind, "Resource Deposit", 0x9B59D0, SiteShape::Star,     "");        }
     return MakeSiteKindInfo(kind, "", 0xFFFFFF, SiteShape::Dot);
 }
 

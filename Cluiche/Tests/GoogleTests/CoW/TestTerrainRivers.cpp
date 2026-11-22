@@ -3,7 +3,7 @@
 // check AC10 (rivers) and AC11 (lakes) on real terrain. Wide sweeps live in SLOW_ suites.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

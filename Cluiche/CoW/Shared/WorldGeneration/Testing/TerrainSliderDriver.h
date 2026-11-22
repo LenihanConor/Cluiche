@@ -4,7 +4,7 @@
 #pragma once
 
 #include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cstddef>
 #include <cstdint>

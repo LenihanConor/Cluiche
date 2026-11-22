@@ -132,7 +132,7 @@ bool GenerationRun::Step()
         else
         {
             const TerrainTableNavigationProfile profile(mRules);
-            const WorldLayoutGuarantee layout(mRules, mPlaceReport.limits);
+            const WorldLayoutGuarantee layout(mRules, mPlaceReport.limits, mRegistry.NodeKinds());
             ValidationParams vp;
             vp.AddProfile(&profile);
             bool registryHasLayout = false;

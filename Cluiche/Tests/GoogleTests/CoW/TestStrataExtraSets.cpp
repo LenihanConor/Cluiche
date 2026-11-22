@@ -8,7 +8,7 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
 
 #include <DiaCore/Json/external/json/json.h>

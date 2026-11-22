@@ -4,6 +4,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (AC2, AC4, AC7, AC13)
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/RegionsAndSites.h>
@@ -12,7 +13,7 @@
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -71,11 +72,11 @@ namespace
         runner.Run(seed, shape, dims);
         Placed p;
         p.world = runner.World();
-        SiteRegistry reg;
+        CoWSiteRegistry reg;
         RandomStream rng(1);
         const TerrainRules rules = TestRules();
         p.result = RegionsAndSites::Place(p.world, reg, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t{ 0 }), 0, rng, CoWStepSeedNames(), &p.report);
-        p.layout = CheckLayout(p.world, rules, p.report.limits);
+        p.layout = CheckLayout(p.world, rules, CoWNodeKindIds(), p.report.limits);
         return p;
     }
 

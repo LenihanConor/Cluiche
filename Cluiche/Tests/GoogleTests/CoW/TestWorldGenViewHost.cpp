@@ -14,10 +14,11 @@
 #include <DiaCellLayers/Testing/FakeMirrorRegistrar.h>
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cmath>
 #include <filesystem>
@@ -1094,7 +1095,7 @@ TEST(WorldGenViewHost, SitesOverlayDrawsEveryEnabledKindGenericallyAndPerKindTog
 TEST(WorldGenViewHost, RegisteredKindGetsAToggleWithItsColourAndShape)
 {
     Rig r(nullptr, false);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     CoW::WorldGeneration::Testing::TestPlacer placer("Test.Hearth", {}, 0);
     ASSERT_TRUE(registry.Register(&placer));
     r.session.SetSiteRegistry(&registry);
@@ -1238,7 +1239,7 @@ struct DragonSites
     MainlandPlacer hearth{ SiteKinds::Hearth(), "Hearth", 0, 2 };
     MainlandPlacer nexus{ SiteKinds::Nexus(), "Nexus", 2, 2 };
     MainlandPlacer start{ SiteKinds::DynastyStart(), "Dynasty start", 4, 3 };
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     DragonSites() { registry.Register(&hearth); registry.Register(&nexus); registry.Register(&start); }
     // For a session-owned rig: registry must outlive the rig (declare DragonSites first), generation uses it from here on.
     void Install(Rig& r) { r.session.SetSiteRegistry(&registry); r.Tick(12345); }
@@ -1337,7 +1338,7 @@ GuaranteeSpec FlagSpec(bool withMarker)
 TEST(WorldGenViewHost, MarkerOverlayComesFromTheSpecNotFromCoWConstants)
 {
     MainlandPlacer flags{ Dia::Core::StringCRC("Test.Site.Flag"), "Flag", 0, 3 };
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     registry.Register(&flags);
     Rig r(nullptr, false);
     r.session.SetGuaranteeSpec(FlagSpec(true));
@@ -1469,7 +1470,7 @@ TEST(WorldGenViewHost, FailedGenerationHidesEvidenceWithTheFailedReason)
     Rig r;
     ASSERT_TRUE(r.host->Build());
     CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
     r.session.SetSiteRegistry(&registry);
     ASSERT_TRUE(r.session.Regenerate(Obj("maxRetryAttempts", 2))["success"].asBool());
@@ -1490,7 +1491,7 @@ TEST(WorldGenViewHost, EvidenceFromBeforeAFailedRunIsHiddenAndAValidateAfterItIs
     Rig r;
     ASSERT_TRUE(r.host->Build());
     CoW::WorldGeneration::Testing::FailFirstNGuarantee flaky("Test.Flaky", 100);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.RegisterGuarantee(&flaky));
     r.session.SetSiteRegistry(&registry);
     ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());
@@ -1538,7 +1539,7 @@ TEST(WorldGenViewHost, LongProofPathsNeverStarveTheViolationMarksAndTruncationIs
     Rig r;
     ASSERT_TRUE(r.host->Build());
     ManyPathsFailingGuarantee many;
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.RegisterGuarantee(&many));
     r.session.SetSiteRegistry(&registry);
     ASSERT_TRUE(r.session.Validate(Json::Value(Json::objectValue))["success"].asBool());

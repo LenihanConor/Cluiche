@@ -3,10 +3,11 @@
 // WorldJson import: validation, all-or-nothing, byte-identical round trips, hand edits, unknown kinds.
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/ISink.h>
@@ -34,6 +35,7 @@ std::string Export(const WorldStructure& w, const WorldJsonContext& ctx = {})
 {
     WorldJsonContext c = ctx;
     if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    if (c.registry == nullptr) { c.registry = &CoWTestSiteRegistry(); }
     std::string text;
     JsonIssue error;
     EXPECT_TRUE(ExportWorldText(w, c, text, error)) << error.field << ": " << error.message;
@@ -69,6 +71,7 @@ WorldImportResult Import(const std::string& text, WorldStructure& out, const Wor
 {
     WorldJsonContext c = ctx;
     if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    if (c.registry == nullptr) { c.registry = &CoWTestSiteRegistry(); }
     return ImportWorldText(text, c, out);
 }
 
@@ -829,7 +832,7 @@ TEST(WorldJsonImport, VersionMismatchesWarn)
 TEST(WorldJsonImport, AC11_RegisteredTestKindRoundTripsExactlyAndNeedsNoWarning)
 {
     TestPlacer placer("Test.Kind", {}, 7);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&placer));
     WorldJsonContext ctx;
     ctx.registry = &registry;

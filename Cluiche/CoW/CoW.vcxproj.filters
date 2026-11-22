@@ -441,5 +441,11 @@
     <ClInclude Include="Shared\CoWStepSeedNames.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\CoWNodeKinds.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

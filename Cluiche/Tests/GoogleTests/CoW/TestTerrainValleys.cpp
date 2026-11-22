@@ -3,7 +3,7 @@
 // runs check AC12 (valleyDepth monotonicity, locality, downhill rivers) on real terrain. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

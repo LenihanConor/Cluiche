@@ -147,7 +147,8 @@ QuotaResult ComputeNodeQuotas(std::span<const uint16_t> cellCounts, int cellsPer
     return out;
 }
 
-FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng)
+FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
+                           const Draoi::HexWorld::NodeKindIds& nodeKinds)
 {
     FillResult out;
     const int n = world.CellCount();
@@ -167,8 +168,8 @@ FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia:
     const HexTopology topo(world.dimensions.width, world.dimensions.height);
     const Cell* cells = world.Cells();
     const int spacing = rules.kNodeSpacing;
-    const uint32_t kinds[4] = { SiteKindId(BuiltinNodeKinds::Corridor()), SiteKindId(BuiltinNodeKinds::River()),
-                                SiteKindId(BuiltinNodeKinds::Hunting()),  SiteKindId(BuiltinNodeKinds::Resource()) };
+    const uint32_t kinds[4] = { SiteKindId(nodeKinds.corridor), SiteKindId(nodeKinds.river),
+                                SiteKindId(nodeKinds.hunting),  SiteKindId(nodeKinds.resource) };
 
     // blocked[c] = a built-in node lies within fewer than kNodeSpacing steps of c (itself included).
     std::vector<uint8_t> blocked(static_cast<size_t>(n), 0);
@@ -229,7 +230,7 @@ FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia:
                 pick -= w;
             }
             Site s;
-            s.kindCrc = SiteKindId(kind == FillKind::Hunting ? BuiltinNodeKinds::Hunting() : BuiltinNodeKinds::Resource());
+            s.kindCrc = SiteKindId(kind == FillKind::Hunting ? nodeKinds.hunting : nodeKinds.resource);
             s.cell    = chosen;
             s.region  = cells[chosen].region;
             if (world.sites.Add(s))

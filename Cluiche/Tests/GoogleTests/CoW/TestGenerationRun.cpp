@@ -2,13 +2,14 @@
 // GenerationRun: the retry loop as a steppable object, driven with test placers and test guarantees.
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -68,7 +69,7 @@ namespace
     {
         TerrainRules rules = TestRules();
         RandomStream rng{ 1 };
-        SiteRegistry registry;
+        CoWSiteRegistry registry;
         WorldStructure terrain;
         explicit Fixture(uint64_t terrainSeed = 1) : terrain(MakeTerrain(terrainSeed)) {}
         GenerationRun Make(uint64_t seed, uint32_t maxAttempts, IGenerationObserver* obs = nullptr)
@@ -156,7 +157,7 @@ TEST(GenerationRun, AC7_RetryablePlacerFailuresRetryAndReportEveryAttempt)
     EXPECT_EQ(placer.placeCalls, 3);
     // The accepted attempt's evidence is the final validation.
     EXPECT_TRUE(rep.finalValidation.passed);
-    const GuaranteeResult* layout = rep.finalValidation.Find(StringCRC("CoW.Guarantee.WorldLayout"));
+    const GuaranteeResult* layout = rep.finalValidation.Find(StringCRC("HexWorld.Guarantee.WorldLayout"));
     ASSERT_NE(layout, nullptr);
     EXPECT_TRUE(layout->satisfied);
 }
@@ -210,7 +211,7 @@ TEST(GenerationRun, InjectionOrderOfFailedGuaranteesIsRegistrationOrderThenLayou
     EXPECT_EQ(r.failedGuarantees[0], StringCRC("Test.A").Value());
     EXPECT_EQ(r.failedGuarantees[1], StringCRC("Test.B").Value());
     ASSERT_EQ(run.Report().finalValidation.guarantees.Size(), 3u);   // A, B, then the layout guarantee last
-    EXPECT_EQ(run.Report().finalValidation.guarantees[2].idCrc, StringCRC("CoW.Guarantee.WorldLayout").Value());
+    EXPECT_EQ(run.Report().finalValidation.guarantees[2].idCrc, StringCRC("HexWorld.Guarantee.WorldLayout").Value());
 }
 
 TEST(GenerationRun, TerrainCausePlacerEndsGenerationAtAttemptZeroWithoutRetry)
@@ -351,7 +352,7 @@ TEST(GenerationRun, AcceptingGuaranteeInRegistryWithTheLayoutIdSuppressesTheBuil
     Fixture f;
     // An app that registered its own layout guarantee (same id) must not get a second one.
     const LayoutLimits limits;
-    WorldLayoutGuarantee own(f.rules, limits);
+    WorldLayoutGuarantee own(f.rules, limits, CoWNodeKindIds());
     ASSERT_TRUE(f.registry.RegisterGuarantee(&own));
     GenerationRun run = f.Make(1, 1);
     run.Run();
@@ -406,7 +407,7 @@ TEST(GenerationRun, GenerateWorldReturnsTheReportAndTheAcceptedWorld)
     EXPECT_TRUE(SameTerrainAndBiomes(out, f.terrain));
 
     FixedGuarantee never("Test.Never", false);
-    SiteRegistry failing;
+    CoWSiteRegistry failing;
     ASSERT_TRUE(failing.RegisterGuarantee(&never));
     WorldStructure untouched;
     GenParams q; q.maxRetryAttempts = 2;
@@ -496,7 +497,7 @@ TEST(GenerationRun, AnIndependentExtraPlacerNeverChangesTheAttemptSequenceOrTheR
 TEST(GenerationRun, TinyAndDegenerateGridsFinishWithAConsistentReport)
 {
     const TerrainRules rules = TestRules();
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     RandomStream rng(1);
     for (GridDimensions dims : { GridDimensions{ 1, 1 }, GridDimensions{ 3, 3 }, GridDimensions{ 8, 6 }, GridDimensions{ 20, 14 } })
     {

@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

@@ -1,7 +1,7 @@
 // S-1 Terrain Generator task 2: table-driven TerrainRules.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DiaAttribute/ParameterFile.h>
 
 #include <filesystem>

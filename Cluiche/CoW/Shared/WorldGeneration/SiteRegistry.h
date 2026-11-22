@@ -65,10 +65,16 @@ public:
 
     int Count() const { return static_cast<int>(mPlacers.size()); }
 
+    // The ids of the built-in node kinds this registry's world uses (neutral defaults; the host sets its own once, before any
+    // world is generated, saved or loaded). They are saved ids, so changing them changes every world file.
+    void SetNodeKinds(const Draoi::HexWorld::NodeKindIds& ids) { mNodeKinds = ids; }
+    const Draoi::HexWorld::NodeKindIds& NodeKinds() const { return mNodeKinds; }
+
 private:
     int  IndexOf(uint32_t kindCrc) const;
     bool HasCycle() const;
 
+    Draoi::HexWorld::NodeKindIds      mNodeKinds;
     std::vector<ISitePlacer*>         mPlacers;      // registration order
     std::vector<SiteKindInfo>         mDeclared;     // data-declared kinds without a placer, declaration order
     std::vector<IWorldGuarantee*>     mGuarantees;
@@ -77,7 +83,7 @@ private:
 };
 
 // Every kind the world can hold, for listings and the Sites overlay: the four built-in node kinds (Corridor, River,
-// Hunting, Resource, with BuiltinNodeKindInfo display info), then the data-declared kinds (declaration order, declared first), then
+// Hunting, Resource per registry.NodeKinds(), with BuiltinNodeKindInfo display info), then the data-declared kinds (declaration order, declared first), then
 // the placer-registered kinds in Order().
 std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry);
 

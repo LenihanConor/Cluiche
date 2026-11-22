@@ -1,5 +1,5 @@
 // S-1 Nodes: built-in corridor nodes (GDD Part 11). Plain S-1 code, adds Site records of kind
-// BuiltinNodeKinds::Corridor() to world.sites; never clears other sites.
+// nodeKinds.corridor to world.sites; never clears other sites.
 //
 // Barrier k separates stratum k from stratum k+1 of the ORDERED depth set (e.g. with three strata: 1 = shallowest / middle,
 // 2 = middle / deepest); a set of N strata has N-1 barriers, none for N = 1 or an unordered set.
@@ -24,6 +24,7 @@
 #pragma once
 
 #include <DraoiHexWorld/StratumTable.h>
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
@@ -67,7 +68,7 @@ struct CorridorResult
 
 // Barriers = those of the strata table's depth set (Count()-1 when ordered, else 0).
 CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
-                                  Dia::Maths::RandomStream& rng);
+                                  Dia::Maths::RandomStream& rng, const Draoi::HexWorld::NodeKindIds& nodeKinds);
 
 } // namespace WorldGeneration
 } // namespace CoW

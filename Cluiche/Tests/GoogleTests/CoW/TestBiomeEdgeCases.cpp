@@ -10,7 +10,7 @@
 #include <Shared/WorldGeneration/Testing/BiomeChecks.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cmath>
 #include <cstring>

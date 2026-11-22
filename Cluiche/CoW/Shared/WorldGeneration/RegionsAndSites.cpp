@@ -39,10 +39,10 @@ PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const Ter
 
     // Built-in nodes
     Reseed(wldStream, attemptSeed, names.nodeCorridor);
-    rep.corridors = PlaceCorridorNodes(world, rules, biomes.Strata(), wldStream);
-    PlaceRiverNodes(world, rules);   // no RNG: nothing to reseed
+    rep.corridors = PlaceCorridorNodes(world, rules, biomes.Strata(), wldStream, registry.NodeKinds());
+    PlaceRiverNodes(world, rules, registry.NodeKinds());   // no RNG: nothing to reseed
     Reseed(wldStream, attemptSeed, names.nodeFill);
-    rep.fill = PlaceFillNodes(world, rules, wldStream);
+    rep.fill = PlaceFillNodes(world, rules, wldStream, registry.NodeKinds());
 
     rep.limits.regionLimitedBy = world.regions.limitedBy;
     rep.limits.barrierCount = static_cast<uint8_t>(BarrierCountOf(biomes.Strata()));

@@ -1,7 +1,7 @@
 // S-1 Terrain Generator task 6: Stage 2 Mountains (ridgeMask, passMask, passes).
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 

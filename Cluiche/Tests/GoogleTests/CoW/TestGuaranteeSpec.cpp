@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
@@ -204,7 +205,7 @@ TEST(GuaranteeSpec, SidecarMinimumBelowRangeFailsLoud)
 
 TEST(GuaranteeSpec, InstallSiteKindsListsDataOnlyKinds)
 {
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(InstallSiteKinds(ShippedGuaranteeSpec(), registry));
     EXPECT_EQ(registry.Count(), 0);
 
@@ -224,7 +225,7 @@ TEST(GuaranteeSpec, InstallSiteKindsListsDataOnlyKinds)
 TEST(GuaranteeSpec, InstallRejectsKindOwnedByPlacer)
 {
     TestPlacer p("CoW.Site.Nexus");
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&p));
     EXPECT_FALSE(InstallSiteKinds(ShippedGuaranteeSpec(), registry));
 }
@@ -232,7 +233,7 @@ TEST(GuaranteeSpec, InstallRejectsKindOwnedByPlacer)
 TEST(GuaranteeSpec, InstallSkipsKindsAPlacerOwnsWhenAsked)
 {
     TestPlacer p("CoW.Site.Nexus");
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&p));
     ASSERT_TRUE(InstallSiteKinds(ShippedGuaranteeSpec(), registry, true));
     EXPECT_EQ(ListSiteKinds(registry).size(), 8u);   // four built-in, the placer's Nexus, three declared
@@ -242,7 +243,7 @@ TEST(GuaranteeSpec, InstallSkipsKindsAPlacerOwnsWhenAsked)
 
 TEST(SiteRegistry, DeclaredKindListedBeforePlacerKindsAndFound)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     TestPlacer a("Test.A");
     ASSERT_TRUE(r.Register(&a));
     ASSERT_TRUE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.Site.Camp"), "Camp", 0x112233, SiteShape::Ring, "Tier")));
@@ -260,20 +261,20 @@ TEST(SiteRegistry, DeclaredKindListedBeforePlacerKindsAndFound)
 
 TEST(SiteRegistry, DeclaredKindRejections)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     TestPlacer a("Test.A");
     ASSERT_TRUE(r.Register(&a));
     EXPECT_FALSE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.A"), "A", 1, SiteShape::Dot)));          // placer-owned
     ASSERT_TRUE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.D"), "D", 1, SiteShape::Dot)));
     EXPECT_FALSE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.D"), "D2", 2, SiteShape::Dot)));         // duplicate
     EXPECT_FALSE(r.RegisterDeclaredKind(SiteKindInfo{}));                                                         // empty id
-    EXPECT_FALSE(r.RegisterDeclaredKind(BuiltinNodeKindInfo(BuiltinNodeKinds::River())));                        // built-in
+    EXPECT_FALSE(r.RegisterDeclaredKind(BuiltinNodeKindInfo(CoWNodeKindIds(), BuiltinNodeKinds::River())));                        // built-in
     EXPECT_STREQ(r.FindInfo(StringCRC("Test.D"))->displayName, "D");
 }
 
 TEST(SiteRegistry, PlacerAttachesToDeclaredKind)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     ASSERT_TRUE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.A"), "Declared A", 0x010203, SiteShape::Star)));
     TestPlacer a("Test.A");
     ASSERT_TRUE(r.Register(&a));

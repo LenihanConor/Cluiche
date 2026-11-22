@@ -1,5 +1,5 @@
 // S-1 Nodes: built-in river nodes (GDD Part 11). Plain S-1 code, adds Site records of kind
-// BuiltinNodeKinds::River() to world.sites; never clears other sites. No RNG: fully deterministic.
+// nodeKinds.river to world.sites; never clears other sites. No RNG: fully deterministic.
 //
 // A river tree = the river cells (WaterSource::River, on land) that drain through Cell::downstream into one mouth
 // cell. The mouth is the river cell whose downstream neighbour is ocean or Lake. River cells count as land for
@@ -23,6 +23,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Nodes 2)
 #pragma once
 
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -43,7 +44,7 @@ struct RiverNodeResult
     uint16_t skippedUnclaimable = 0;   // upstream step cells skipped as not claimable
 };
 
-RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules);
+RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::NodeKindIds& nodeKinds);
 
 } // namespace WorldGeneration
 } // namespace CoW

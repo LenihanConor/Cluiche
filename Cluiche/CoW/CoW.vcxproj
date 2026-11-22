@@ -158,6 +158,8 @@
     <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h" />
     <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h" />
     <ClInclude Include="Shared\CoWStepSeedNames.h" />
+    <ClInclude Include="Shared\CoWNodeKinds.h" />
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

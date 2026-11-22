@@ -1,5 +1,6 @@
 // S-1 Regions, Nodes and Site Hook: SiteRegistry (AC9).
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
@@ -22,41 +23,41 @@ namespace
 
 TEST(SiteRegistry, EmptyOrderIsEmpty)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_TRUE(r.Order().empty());
 }
 
 TEST(SiteRegistry, OrderABCInRegistrationOrder)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     EXPECT_TRUE(r.Register(&t.a)); EXPECT_TRUE(r.Register(&t.b)); EXPECT_TRUE(r.Register(&t.c));
     EXPECT_EQ(Names(r), "ABC");
 }
 
 TEST(SiteRegistry, DependencyPlacedBeforeDependantWhenRegisteredLater)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.b); r.Register(&t.a); r.Register(&t.c);
     EXPECT_EQ(Names(r), "ABC");
 }
 
 TEST(SiteRegistry, BCAOrdersDependencyForward)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.b); r.Register(&t.c); r.Register(&t.a);
     EXPECT_EQ(Names(r), "ABC");
 }
 
 TEST(SiteRegistry, CBAKeepsCFirst)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.c); r.Register(&t.b); r.Register(&t.a);
     EXPECT_EQ(Names(r), "CAB");
 }
 
 TEST(SiteRegistry, ACBKeepsRegistrationOrderOfRest)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.a); r.Register(&t.c); r.Register(&t.b);
     EXPECT_EQ(Names(r), "ACB");
 }
@@ -65,7 +66,7 @@ TEST(SiteRegistry, CycleRejectedAndRegistryUnchanged)
 {
     TestPlacer a("Test.A", { "Test.B" });
     TestPlacer b("Test.B", { "Test.A" });
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_TRUE(r.Register(&a));            // B not registered yet: allowed
     EXPECT_FALSE(r.Register(&b));           // closes the cycle
     EXPECT_EQ(r.Count(), 1);
@@ -76,7 +77,7 @@ TEST(SiteRegistry, CycleRejectedAndRegistryUnchanged)
 TEST(SiteRegistry, LongerCycleRejected)
 {
     TestPlacer a("Test.A", { "Test.B" }), b("Test.B", { "Test.C" }), c("Test.C", { "Test.A" });
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_TRUE(r.Register(&a)); EXPECT_TRUE(r.Register(&b));
     EXPECT_FALSE(r.Register(&c));
     EXPECT_EQ(r.Count(), 2);
@@ -85,7 +86,7 @@ TEST(SiteRegistry, LongerCycleRejected)
 TEST(SiteRegistry, SelfDependencyRejected)
 {
     TestPlacer a("Test.A", { "Test.A" });
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_FALSE(r.Register(&a));
     EXPECT_EQ(r.Count(), 0);
 }
@@ -93,7 +94,7 @@ TEST(SiteRegistry, SelfDependencyRejected)
 TEST(SiteRegistry, DuplicateKindRejected)
 {
     TestPlacer a1("Test.A"), a2("Test.A");
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_TRUE(r.Register(&a1));
     EXPECT_FALSE(r.Register(&a2));
     EXPECT_FALSE(r.Register(&a1));
@@ -102,14 +103,14 @@ TEST(SiteRegistry, DuplicateKindRejected)
 
 TEST(SiteRegistry, NullRegisterRejected)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_FALSE(r.Register(nullptr));
     EXPECT_FALSE(r.RegisterGuarantee(nullptr));
 }
 
 TEST(SiteRegistry, OrderCacheInvalidatedByRegisterAndUnregister)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.a);
     EXPECT_EQ(Names(r), "A");
     r.Register(&t.b);
@@ -125,7 +126,7 @@ TEST(SiteRegistry, OrderCacheInvalidatedByRegisterAndUnregister)
 TEST(SiteRegistry, RejectedRegisterKeepsOrder)
 {
     TestPlacerSet t; TestPlacer dup("Test.A");
-    SiteRegistry r;
+    CoWSiteRegistry r;
     r.Register(&t.a); r.Register(&t.b);
     EXPECT_EQ(Names(r), "AB");
     EXPECT_FALSE(r.Register(&dup));
@@ -134,7 +135,7 @@ TEST(SiteRegistry, RejectedRegisterKeepsOrder)
 
 TEST(SiteRegistry, UnregisterPresentAndAbsent)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.a);
     EXPECT_FALSE(r.Unregister(StringCRC("Test.Nope")));
     EXPECT_TRUE(r.Unregister(StringCRC("Test.A")));
@@ -144,7 +145,7 @@ TEST(SiteRegistry, UnregisterPresentAndAbsent)
 
 TEST(SiteRegistry, UnmetDependencyIsSkippedSilently)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.b);                 // depends on A, which is not registered
     r.Register(&t.c);
     EXPECT_EQ(Names(r), "BC");
@@ -154,7 +155,7 @@ TEST(SiteRegistry, UnmetDependencyIsSkippedSilently)
 
 TEST(SiteRegistry, UnregisteringDependencyLeavesDependantOrdered)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.a); r.Register(&t.b);
     r.Unregister(StringCRC("Test.A"));
     EXPECT_EQ(Names(r), "B");
@@ -162,7 +163,7 @@ TEST(SiteRegistry, UnregisteringDependencyLeavesDependantOrdered)
 
 TEST(SiteRegistry, FindInfo)
 {
-    TestPlacerSet t; SiteRegistry r;
+    TestPlacerSet t; CoWSiteRegistry r;
     r.Register(&t.a);
     const SiteKindInfo* info = r.FindInfo(StringCRC("Test.A"));
     ASSERT_NE(info, nullptr);
@@ -174,7 +175,7 @@ TEST(SiteRegistry, FindInfo)
 
 TEST(SiteRegistry, FindInfoDoesNotResolveBuiltInNodeKinds)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_EQ(r.FindInfo(BuiltinNodeKinds::Corridor()), nullptr);
     EXPECT_EQ(r.FindInfo(BuiltinNodeKinds::River()), nullptr);
     EXPECT_EQ(r.FindInfo(BuiltinNodeKinds::Hunting()), nullptr);
@@ -184,7 +185,7 @@ TEST(SiteRegistry, FindInfoDoesNotResolveBuiltInNodeKinds)
 TEST(SiteRegistry, RegisterGuarantee)
 {
     TestGuarantee g1("one"), g1dup("one"), g2("two");
-    SiteRegistry r;
+    CoWSiteRegistry r;
     EXPECT_TRUE(r.Guarantees().empty());
     EXPECT_TRUE(r.RegisterGuarantee(&g1));
     EXPECT_FALSE(r.RegisterGuarantee(&g1));      // same pointer
@@ -214,7 +215,7 @@ TEST(SiteRegistry, TestPlacerPlacesOrFails)
 
 TEST(SiteRegistry, ListSiteKindsIsTheFourBuiltinsThenRegisteredInOrder)
 {
-    SiteRegistry r;
+    CoWSiteRegistry r;
     std::vector<SiteKindInfo> k = ListSiteKinds(r);
     ASSERT_EQ(k.size(), 4u);
     EXPECT_EQ(k[0].kindCrc, SiteKindId(BuiltinNodeKinds::Corridor()));

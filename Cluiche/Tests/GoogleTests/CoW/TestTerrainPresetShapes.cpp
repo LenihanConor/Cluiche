@@ -4,7 +4,7 @@
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <chrono>

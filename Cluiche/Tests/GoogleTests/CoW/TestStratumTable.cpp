@@ -7,7 +7,8 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorld/StratumTable.h>
 #include <Shared/CoWStepSeedNames.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/CoWNodeKinds.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/RegionPartition.h>
@@ -444,7 +445,7 @@ TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
         SCOPED_TRACE("strata " + std::to_string(n));
         StrataWorld sw;
         BuildStrataWorld(n, 42, sw);
-        SiteRegistry sites;
+        CoWSiteRegistry sites;
         RegionsAndSites::PlaceReport rep;
         Dia::Maths::RandomStream rng(1);
         RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, CoWStepSeedNames(), &rep);

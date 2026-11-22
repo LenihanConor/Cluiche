@@ -26,7 +26,7 @@ namespace
     };
 }
 
-RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules)
+RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::NodeKindIds& nodeKinds)
 {
     RiverNodeResult out;
     const int n = world.CellCount();
@@ -97,8 +97,8 @@ RiverNodeResult PlaceRiverNodes(WorldStructure& world, const TerrainRules& rules
         }
     }
 
-    const uint32_t kRiver    = SiteKindId(BuiltinNodeKinds::River());
-    const uint32_t kCorridor = SiteKindId(BuiltinNodeKinds::Corridor());
+    const uint32_t kRiver    = SiteKindId(nodeKinds.river);
+    const uint32_t kCorridor = SiteKindId(nodeKinds.corridor);
     auto makeSite = [&](uint32_t cell, size_t ordinal, bool mouth) {
         Site s;
         s.kindCrc = kRiver;

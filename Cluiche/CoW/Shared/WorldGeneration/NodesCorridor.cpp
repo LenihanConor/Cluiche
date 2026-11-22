@@ -70,12 +70,12 @@ namespace
 }
 
 CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::StratumTable& strata,
-                                  Dia::Maths::RandomStream& rng)
+                                  Dia::Maths::RandomStream& rng, const Draoi::HexWorld::NodeKindIds& nodeKinds)
 {
     CorridorResult out;
     const int barriers = static_cast<int>(BarrierCountOf(strata));
     const int n = world.CellCount();
-    const uint32_t kind = SiteKindId(BuiltinNodeKinds::Corridor());
+    const uint32_t kind = SiteKindId(nodeKinds.corridor);
     const int spacing   = rules.kCorridorSpacing;
     const int gapReach  = rules.kCoastalGapReach;
 
@@ -121,7 +121,7 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
             {
                 if (HexTopology::Distance(cc, topo.ToCoord(other)) < nodeSpacing) { tooClose = true; break; }
             }
-            if (tooClose || world.sites.Find(BuiltinNodeKinds::Corridor(), c.cell)) { continue; }
+            if (tooClose || world.sites.Find(nodeKinds.corridor, c.cell)) { continue; }
 
             std::vector<uint32_t> cells{ c.cell };
             if (c.source != static_cast<int>(CorridorSourceKind::Pass))
@@ -132,7 +132,7 @@ CorridorResult PlaceCorridorNodes(WorldStructure& world, const TerrainRules& rul
                     const uint32_t nb = topo.NeighbourAt(c.cell, d);
                     if (nb == kNoCell) { continue; }
                     if (SourceOf(world, topo, nb, barrier, gapReach) != c.source) { continue; }
-                    if (world.sites.Find(BuiltinNodeKinds::Corridor(), nb)) { continue; }
+                    if (world.sites.Find(nodeKinds.corridor, nb)) { continue; }
                     bool nearEarlier = false;
                     for (uint32_t other : earlierBarriers)
                     {

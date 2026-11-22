@@ -14,7 +14,7 @@
 #include <Modules/WorldGen/WorldGenDebugDomain.h>
 
 #include <memory>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 using namespace Dia::ApplicationFlow;
 using Cluiche::AppFlow::DomainStateBridgeModule;

@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/BiomeClimate.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
 #include <cmath>

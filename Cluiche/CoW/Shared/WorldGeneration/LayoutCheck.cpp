@@ -77,7 +77,8 @@ const char* LayoutCodeName(LayoutCode code)
     return "Unknown";
 }
 
-LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules, const LayoutLimits& limits)
+LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::NodeKindIds& nodeKinds,
+                         const LayoutLimits& limits)
 {
     LayoutReport report;
     const int n = world.CellCount();
@@ -187,8 +188,8 @@ LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules,
 
     // 5. built-in nodes
     std::vector<Node> nodes;
-    const uint32_t kinds[4] = { SiteKindId(BuiltinNodeKinds::Corridor()), SiteKindId(BuiltinNodeKinds::River()),
-                                SiteKindId(BuiltinNodeKinds::Hunting()),  SiteKindId(BuiltinNodeKinds::Resource()) };
+    const uint32_t kinds[4] = { SiteKindId(nodeKinds.corridor), SiteKindId(nodeKinds.river),
+                                SiteKindId(nodeKinds.hunting),  SiteKindId(nodeKinds.resource) };
     for (const Site& s : world.sites.All())
     {
         if (std::find(kinds, kinds + 4, s.kindCrc) == kinds + 4) { continue; }

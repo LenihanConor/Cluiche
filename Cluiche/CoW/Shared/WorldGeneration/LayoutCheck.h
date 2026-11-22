@@ -20,6 +20,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Layout guarantee)
 #pragma once
 
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
@@ -63,7 +64,8 @@ struct LayoutReport
     std::vector<LayoutViolation> violations;
 };
 
-LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules, const LayoutLimits& limits = {});
+LayoutReport CheckLayout(const WorldStructure& world, const TerrainRules& rules, const Draoi::HexWorld::NodeKindIds& nodeKinds,
+                         const LayoutLimits& limits = {});
 
 } // namespace WorldGeneration
 } // namespace CoW

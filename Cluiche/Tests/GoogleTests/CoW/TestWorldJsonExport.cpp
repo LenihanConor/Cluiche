@@ -2,6 +2,7 @@
 // WorldJson export: deterministic readable text, kind-name resolution, refusals.
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldJson.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
@@ -37,6 +38,7 @@ std::string Export(const WorldStructure& w, const WorldJsonContext& ctx = {})
 {
     WorldJsonContext c = ctx;
     if (c.biomes == nullptr) { c.biomes = &ShippedBiomeRegistry(); }
+    if (c.registry == nullptr) { c.registry = &CoWTestSiteRegistry(); }
     std::string text;
     JsonIssue error;
     EXPECT_TRUE(ExportWorldText(w, c, text, error)) << error.field << ": " << error.message;
@@ -249,10 +251,10 @@ TEST(WorldJsonExport, KindKeyResolutionOrderIsBuiltinRegistryRememberedThenCrcFa
 {
     SiteSet sites;
     TestPlacer placer("Test.Registered");
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&placer));
 
-    EXPECT_EQ(WorldJsonSiteKindKey(StringCRC("CoW.Node.River").Value(), nullptr, sites), "CoW.Node.River");
+    EXPECT_EQ(WorldJsonSiteKindKey(StringCRC("CoW.Node.River").Value(), &registry, sites), "CoW.Node.River");
     EXPECT_EQ(WorldJsonSiteKindKey(StringCRC("Test.Registered").Value(), &registry, sites), "Test.Registered");
     // Not registered and not remembered: the crc fallback.
     char expected[16];

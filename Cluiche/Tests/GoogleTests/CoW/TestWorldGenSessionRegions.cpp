@@ -2,11 +2,12 @@
 // WorldGenSession regions and sites: computed on Regenerate only, cleared by live preview, regions/sites queries,
 // extended cell / params / status queries.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/SiteRegistry.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -349,7 +350,7 @@ TEST(WorldGenSessionRegions, CellQueryReportsRegionZoneAndSites)
 
 TEST(WorldGenSessionRegions, RegisteredPlacerSitesAppearWithItsKindInfo)
 {
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     TestPlacer placer("Test.Site", {}, 5);
     ASSERT_TRUE(reg.Register(&placer));
     Gen g(&reg);
@@ -386,7 +387,7 @@ TEST(WorldGenSessionRegions, RegisteredPlacerSitesAppearWithItsKindInfo)
 
     // Failing placer: Regenerate retries (Feature 3) until the bound, then the generation is unsatisfiable: no regions,
     // no layout, and the failing placer is named in the report.
-    SiteRegistry bad;
+    CoWSiteRegistry bad;
     TestPlacer failing("Test.Fail", {}, 0, PlaceResult::Code::Retryable);
     ASSERT_TRUE(bad.Register(&failing));
     Gen h(&bad);
@@ -401,7 +402,7 @@ TEST(WorldGenSessionRegions, RegisteredPlacerSitesAppearWithItsKindInfo)
 
 TEST(WorldGenSessionRegions, NullRegistryAndEmptyRegistryAgree)
 {
-    SiteRegistry empty;
+    CoWSiteRegistry empty;
     Gen a;
     Gen b(&empty);
     EXPECT_TRUE(a.s.World().sites == b.s.World().sites);

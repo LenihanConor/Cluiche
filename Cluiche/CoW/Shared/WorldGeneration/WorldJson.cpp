@@ -145,8 +145,8 @@ bool WorldJsonParseStratum(const Draoi::HexWorld::StratumTable& strata, const st
 
 std::string WorldJsonSiteKindKey(uint32_t kindCrc, const SiteRegistry* registry, const SiteSet& sites)
 {
-    for (const Dia::Core::StringCRC& builtin : { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(),
-                                                 BuiltinNodeKinds::Hunting(), BuiltinNodeKinds::Resource() })
+    const NodeKindIds ids = registry != nullptr ? registry->NodeKinds() : NodeKindIds{};   // no registry: neutral ids
+    for (const Dia::Core::StringCRC& builtin : { ids.corridor, ids.river, ids.hunting, ids.resource })
     {
         if (SameBuiltin(kindCrc, builtin))
         {

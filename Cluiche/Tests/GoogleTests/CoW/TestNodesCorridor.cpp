@@ -1,12 +1,13 @@
 // S-1 Nodes: built-in corridor node placer (hand-built barriers + generated-world AC8a sweep).
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -46,7 +47,7 @@ namespace
     CorridorResult Place(WorldStructure& w, unsigned seed)
     {
         RandomStream rng(seed);
-        return PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
+        return PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng, CoWNodeKindIds());
     }
 
     struct Corridor
@@ -489,7 +490,7 @@ namespace
         WorldStructure w = world;
         w.sites.Clear();
         RandomStream rng(streamSeed);
-        const CorridorResult r = PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng);
+        const CorridorResult r = PlaceCorridorNodes(w, Rules(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), rng, CoWNodeKindIds());
         ++st.worlds;
 
         for (int b = 0; b < 2; ++b)

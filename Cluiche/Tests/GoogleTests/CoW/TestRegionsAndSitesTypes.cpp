@@ -1,5 +1,6 @@
 // S-1 Regions, Nodes and Site Hook task 1: RegionTable, SiteSet, PlaceResult, DeriveSubSeed.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 #include <DraoiHexWorld/Regions.h>
 #include <DraoiHexWorld/Sites.h>
@@ -235,7 +236,7 @@ TEST(SiteKinds, BuiltinIdsAndInfo)
     std::set<uint32_t> crcs, colours;
     for (int i = 0; i < 4; ++i)
     {
-        const SiteKindInfo info = BuiltinNodeKindInfo(kinds[i]);
+        const SiteKindInfo info = BuiltinNodeKindInfo(CoWNodeKindIds(), kinds[i]);
         EXPECT_EQ(info.kindCrc, SiteKindId(kinds[i]));
         EXPECT_STREQ(info.id, kinds[i].AsChar());
         EXPECT_STREQ(info.displayName, names[i]);
@@ -249,7 +250,7 @@ TEST(SiteKinds, BuiltinIdsAndInfo)
 
 TEST(SiteKinds, UnknownKindInfoIsEmptyAndFlagged)
 {
-    const SiteKindInfo info = BuiltinNodeKindInfo(StringCRC("Dragon.Hearth"));
+    const SiteKindInfo info = BuiltinNodeKindInfo(CoWNodeKindIds(), StringCRC("Dragon.Hearth"));
     EXPECT_EQ(info.kindCrc, SiteKindId(StringCRC("Dragon.Hearth")));
     EXPECT_EQ(info.displayName[0], '\0');
 }

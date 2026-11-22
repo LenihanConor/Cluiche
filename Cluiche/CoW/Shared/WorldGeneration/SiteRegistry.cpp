@@ -72,9 +72,7 @@ bool SiteRegistry::RegisterDeclaredKind(const SiteKindInfo& info)
     if (IndexOf(info.kindCrc) >= 0) return false;
     for (const SiteKindInfo& d : mDeclared)
         if (d.kindCrc == info.kindCrc) return false;
-    for (const Dia::Core::StringCRC& b : { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(),
-                                           BuiltinNodeKinds::Resource() })
-        if (b.Value() == info.kindCrc) return false;
+    if (mNodeKinds.IsBuiltin(info.kindCrc)) return false;
     mDeclared.push_back(info);
     return true;
 }
@@ -140,10 +138,10 @@ const SiteKindInfo* SiteRegistry::FindInfo(Dia::Core::StringCRC kind) const
 std::vector<SiteKindInfo> ListSiteKinds(const SiteRegistry& registry)
 {
     std::vector<SiteKindInfo> out;
-    for (const Dia::Core::StringCRC& k : { BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(),
-                                           BuiltinNodeKinds::Resource() })
+    const NodeKindIds& ids = registry.NodeKinds();
+    for (const Dia::Core::StringCRC& k : { ids.corridor, ids.river, ids.hunting, ids.resource })
     {
-        out.push_back(BuiltinNodeKindInfo(k));
+        out.push_back(BuiltinNodeKindInfo(ids, k));
     }
     for (const SiteKindInfo& d : registry.Declared())
     {

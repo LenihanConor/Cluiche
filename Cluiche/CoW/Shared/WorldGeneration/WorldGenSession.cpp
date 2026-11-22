@@ -235,17 +235,15 @@ Json::Value ScoredBiomeJson(const Draoi::HexWorld::BiomeRegistry* biomes, Draoi:
 // the kind table stay well under the 16 KB sim reply.
 constexpr int64_t kSitesMaxLimit = 80;
 
-const Dia::Core::StringCRC kBuiltinKinds[] = {
-    BuiltinNodeKinds::Corridor(), BuiltinNodeKinds::River(), BuiltinNodeKinds::Hunting(), BuiltinNodeKinds::Resource() };
-
 // Info for a stored kind id: built-in node kinds, then registered placers; false when unknown.
 bool FindKindInfo(const SiteRegistry& registry, uint32_t kindCrc, SiteKindInfo& out)
 {
-    for (const Dia::Core::StringCRC& k : kBuiltinKinds)
+    const NodeKindIds& ids = registry.NodeKinds();
+    for (const Dia::Core::StringCRC& k : { ids.corridor, ids.river, ids.hunting, ids.resource })
     {
         if (SiteKindId(k) == kindCrc)
         {
-            out = BuiltinNodeKindInfo(k);
+            out = BuiltinNodeKindInfo(ids, k);
             return true;
         }
     }
@@ -838,7 +836,7 @@ bool WorldGenSession::CommitRun()
     mLimits = mRun->AcceptedLimits();
     mPlaceResult = mRun->LastPlaceReport().result;
     mGen = std::move(*mCandGen);
-    mLayout = CheckLayout(mWorld, mRules, mLimits);
+    mLayout = CheckLayout(mWorld, mRules, Registry().NodeKinds(), mLimits);
     mRegionsFresh = true;
     ReleaseRun();
 
@@ -1326,7 +1324,7 @@ Json::Value WorldGenSession::ImportWorld(const Json::Value& args)
     mLimits.regionLimitedBy = mWorld.regions.limitedBy;
     mLimits.barrierCount = static_cast<uint8_t>(BarrierCountOf(ZonesOf(mBiomes)));
     mRegionsFresh = mWorld.regions.regions.Size() > 0;
-    mLayout = mRegionsFresh ? CheckLayout(mWorld, mRules, mLimits) : LayoutReport{};
+    mLayout = mRegionsFresh ? CheckLayout(mWorld, mRules, Registry().NodeKinds(), mLimits) : LayoutReport{};
 
     mState = WorldGenState::Complete;
     ++mRevision;
@@ -2236,7 +2234,7 @@ Json::Value WorldGenSession::Validate(const Json::Value& args)
     // the world holds sites of its kind, so a world without them is not failed by it), the registry's guarantees, and
     // the layout guarantee when regions are fresh (live-preview worlds have none). One of each id.
     const TerrainTableNavigationProfile profile(mRules);
-    const WorldLayoutGuarantee layout(mRules, mLimits);
+    const WorldLayoutGuarantee layout(mRules, mLimits, Registry().NodeKinds());
     std::vector<std::unique_ptr<IWorldGuarantee>> specRules;
     for (const GuaranteeEntry& entry : mGuaranteeSpec.guarantees)
     {

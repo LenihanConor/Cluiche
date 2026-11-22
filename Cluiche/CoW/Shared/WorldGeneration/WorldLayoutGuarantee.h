@@ -18,15 +18,17 @@ namespace WorldGeneration {
 class WorldLayoutGuarantee final : public IWorldGuarantee
 {
 public:
-    WorldLayoutGuarantee(const TerrainRules& rules, const LayoutLimits& limits) : mRules(rules), mLimits(limits) {}
+    WorldLayoutGuarantee(const TerrainRules& rules, const LayoutLimits& limits, const Draoi::HexWorld::NodeKindIds& nodeKinds)
+        : mRules(rules), mLimits(limits), mNodeKinds(nodeKinds) {}
 
-    static constexpr const char* kName = "CoW.Guarantee.WorldLayout";   // built in, not part of a GuaranteeSpec
+    static constexpr const char* kName = "HexWorld.Guarantee.WorldLayout";   // built in, not part of a GuaranteeSpec
     Dia::Core::StringCRC GetId() const override;
     GuaranteeResult Check(const ValidationContext& context) const override;
 
 private:
     TerrainRules mRules;
     LayoutLimits mLimits;
+    Draoi::HexWorld::NodeKindIds mNodeKinds;
 };
 
 } // namespace WorldGeneration

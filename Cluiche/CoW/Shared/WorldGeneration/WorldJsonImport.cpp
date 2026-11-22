@@ -159,16 +159,10 @@ namespace
         return true;
     }
 
-    bool IsBuiltinKind(uint32_t crc)
-    {
-        return crc == SiteKindId(BuiltinNodeKinds::Corridor()) || crc == SiteKindId(BuiltinNodeKinds::River()) ||
-               crc == SiteKindId(BuiltinNodeKinds::Hunting()) || crc == SiteKindId(BuiltinNodeKinds::Resource());
-    }
-
     bool IsRegisteredKind(const SiteRegistry* registry, uint32_t crc)
     {
-        if (IsBuiltinKind(crc)) { return true; }
-        if (registry == nullptr) { return false; }
+        if (registry == nullptr) { return NodeKindIds{}.IsBuiltin(crc); }   // no registry: neutral ids
+        if (registry->NodeKinds().IsBuiltin(crc)) { return true; }
         for (const SiteKindInfo& info : ListSiteKinds(*registry))
         {
             if (info.kindCrc == crc) { return true; }

@@ -1,22 +1,9 @@
-// S-1 test helper: the terrain rules and a ready-to-use session for tests.
-// Production has no compiled default rules; the rules come from the terrain_rules sidecar
-// (Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json). Tests read that file from the source tree once per
-// process (the cache below lives in this Testing helper only, never in production code).
-//   TestRules()          a TerrainRules at the sidecar defaults
-//   TestSession          a WorldGenSession with the sidecar rules loaded and the shipped guarantee spec installed
-//   TestSidecarText()    the sidecar text (for LoadRules / LoadFromJson / the module seam)
-//   TestSidecarFile()    the sidecar loaded as a ParameterFile (rule metadata: names, ranges, defaults)
-// Header-only. Aborts with a message if the sidecar cannot be found or loaded (a broken checkout, not a test result).
+// Neutral test helper: locates a data file by walking up from the calling header and the working directory, and aborts
+// with a message when it cannot (a broken checkout, not a test result). Nothing here names a game, so a game-neutral
+// package can ship it. The shipped CoW sidecar, TestRules() and TestSession live in
+// CoWTesting/CoWTerrainRulesTestHelpers.h (they name CoW assets, CoW seed names and CoW guarantees).
+// Header-only.
 #pragma once
-
-#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/CoWStepSeedNames.h>
-#include <Shared/WorldGeneration/HexWorldAccess.h>
-#include <Shared/WorldGeneration/TerrainRules.h>
-#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-
-#include <DiaAttribute/ParameterFile.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -37,17 +24,18 @@ namespace TerrainRulesTestDetail
         std::abort();
     }
 
-    inline std::string ReadSidecarFromSourceTree()
+    // The text of 'relativePath' found by walking up from 'anchorFile' (pass __FILE__) and then from the working directory;
+    // empty when not found.
+    inline std::string ReadFileFromSourceTree(const char* relativePath, const char* anchorFile)
     {
-        constexpr const char* kRelative = "Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json";
         std::error_code ec;
-        const std::filesystem::path starts[] = { std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path(),
+        const std::filesystem::path starts[] = { std::filesystem::absolute(std::filesystem::path(anchorFile), ec).parent_path(),
                                                  std::filesystem::current_path(ec) };
         for (std::filesystem::path dir : starts)
         {
             while (!dir.empty())
             {
-                const std::filesystem::path candidate = dir / kRelative;
+                const std::filesystem::path candidate = dir / relativePath;
                 if (std::filesystem::exists(candidate, ec))
                 {
                     std::ifstream     in(candidate, std::ios::binary);
@@ -65,62 +53,6 @@ namespace TerrainRulesTestDetail
         return {};
     }
 }
-
-inline const std::string& TestSidecarText()
-{
-    static const std::string text = [] {
-        std::string t = TerrainRulesTestDetail::ReadSidecarFromSourceTree();
-        if (t.empty())
-        {
-            TerrainRulesTestDetail::Fail("terrain_rules.schema.json not found above ", __FILE__);
-        }
-        return t;
-    }();
-    return text;
-}
-
-inline const Dia::Attribute::ParameterFile& TestSidecarFile()
-{
-    static Dia::Attribute::ParameterFile* file = [] {
-        auto* f = new Dia::Attribute::ParameterFile();   // intentionally leaked: lives for the process
-        Dia::Attribute::ParamError err;
-        if (!f->Load(TestSidecarText().c_str(), "terrain_rules.schema.json", nullptr, err))
-        {
-            TerrainRulesTestDetail::Fail("sidecar failed to load at key ", err.key.AsCStr());
-        }
-        return f;
-    }();
-    return *file;
-}
-
-inline TerrainRules TestRules()
-{
-    static const TerrainRules rules = [] {
-        TerrainRules r;
-        if (!TerrainRules::FromParameterFile(TestSidecarFile(), r))
-        {
-            TerrainRulesTestDetail::Fail("sidecar does not match TerrainRules", "");
-        }
-        return r;
-    }();
-    return rules;
-}
-
-// A WorldGenSession whose constructor loads the sidecar rules (and aborts if that fails).
-struct TestSession : WorldGenSession
-{
-    TestSession()
-    {
-        SetStepSeedNames(CoWStepSeedNames());
-        SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
-        SetGuaranteeSpec(CoW::WorldGeneration::Testing::ShippedGuaranteeSpec());
-        Dia::Attribute::ParamError err;
-        if (!LoadRules(TestSidecarText().c_str(), err))
-        {
-            TerrainRulesTestDetail::Fail("LoadRules failed at key ", err.key.AsCStr());
-        }
-    }
-};
 
 } // namespace WorldGeneration
 } // namespace CoW

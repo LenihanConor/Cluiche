@@ -16,7 +16,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 using namespace CoW;
 using namespace CoW::WorldGeneration;

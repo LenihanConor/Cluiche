@@ -3,12 +3,13 @@
 // WorldGenSession command/query gaps for the panel: validate, fuller report evidence, worlds listing, status
 // unavailableLayers, import line/column errors.
 #include <gtest/gtest.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
 
@@ -128,7 +129,7 @@ TEST_F(WorldGenSessionValidateTest, ValidateOnAPassingWorldIsOkAndKeepsTheRevisi
 TEST_F(WorldGenSessionValidateTest, ValidateOnAViolatingWorldFailsWithoutChangingTheWorld)
 {
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);   // a Hearth and no Nexus: HearthNexus cannot hold
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     TestSession s;
     Generate(s, 12, &registry);
@@ -150,7 +151,7 @@ TEST_F(WorldGenSessionValidateTest, ValidateOnAViolatingWorldFailsWithoutChangin
 TEST_F(WorldGenSessionValidateTest, AC13_ValidateAfterImportOfAHandEditedWorldFindsTheViolation)
 {
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     {
         TestSession a;
@@ -180,7 +181,7 @@ TEST_F(WorldGenSessionValidateTest, ValidateBeforeAnyWorldIsAnErrorAndRefusedDur
     EXPECT_FALSE(none.Validate(Obj())["success"].asBool());
 
     AttemptGatedPlacer gated("Test.Gated", 3);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&gated));
     TestSession s;
     Generate(s, 14);
@@ -203,7 +204,7 @@ TEST_F(WorldGenSessionValidateTest, ReportEvidenceCountsEqualTheArraySizesAndNam
     ASSERT_TRUE(FindLowlandPair(15, hearthCell, nexusCell));
     TestPlacer hearth("CoW.Site.Hearth", {}, hearthCell);
     TestPlacer nexus("CoW.Site.Nexus", {}, nexusCell);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     ASSERT_TRUE(registry.Register(&nexus));
     TestSession s;
@@ -235,7 +236,7 @@ TEST_F(WorldGenSessionValidateTest, ReportEvidenceCountsEqualTheArraySizesAndNam
 TEST_F(WorldGenSessionValidateTest, ReportWithoutValidateStillCarriesTheGenerationEvidenceAndPagesLargeLists)
 {
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     TestSession s;
     Generate(s, 16, &registry);
@@ -249,16 +250,16 @@ TEST_F(WorldGenSessionValidateTest, ReportWithoutValidateStillCarriesTheGenerati
     }
 
     // Filtering to one guarantee returns just that one.
-    Json::Value a = Obj(); a["guarantee"] = "CoW.Guarantee.WorldLayout";
+    Json::Value a = Obj(); a["guarantee"] = "HexWorld.Guarantee.WorldLayout";
     const Json::Value one = s.Report(a);
     ASSERT_EQ(one["finalValidation"]["guarantees"].size(), 1u);
-    EXPECT_EQ(one["finalValidation"]["guarantees"][0u]["name"].asString(), "CoW.Guarantee.WorldLayout");
+    EXPECT_EQ(one["finalValidation"]["guarantees"][0u]["name"].asString(), "HexWorld.Guarantee.WorldLayout");
 }
 
 TEST_F(WorldGenSessionValidateTest, ValidateEvidenceGoesStaleWhenTheRevisionMoves)
 {
     TestPlacer hearth("CoW.Site.Hearth", {}, 5);
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     ASSERT_TRUE(registry.Register(&hearth));
     TestSession s;
     Generate(s, 17, &registry);
@@ -403,7 +404,7 @@ TEST_F(WorldGenSessionValidateTest, EmptySpecValidatesWithOnlyRegistryGuarantees
     EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.HearthNexus"), nullptr);
     EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.DynastySpacing"), nullptr);
     EXPECT_EQ(FindGuarantee(r["guarantees"], "CoW.Guarantee.WorldThrone"), nullptr);
-    EXPECT_NE(FindGuarantee(r["guarantees"], "CoW.Guarantee.WorldLayout"), nullptr);
+    EXPECT_NE(FindGuarantee(r["guarantees"], "HexWorld.Guarantee.WorldLayout"), nullptr);
 }
 
 TEST_F(WorldGenSessionValidateTest, ShippedSpecKeepsFileOrderNamesAndSkipsTheThroneRuleWithoutThrones)
@@ -417,7 +418,7 @@ TEST_F(WorldGenSessionValidateTest, ShippedSpecKeepsFileOrderNamesAndSkipsTheThr
     EXPECT_EQ(names[0], "CoW.Guarantee.HearthNexus");
     EXPECT_EQ(names[1], "CoW.Guarantee.DynastySpacing");
     EXPECT_EQ(std::count(names.begin(), names.end(), std::string("CoW.Guarantee.WorldThrone")), 0);   // S-1 places no thrones
-    EXPECT_EQ(names.back(), "CoW.Guarantee.WorldLayout");
+    EXPECT_EQ(names.back(), "HexWorld.Guarantee.WorldLayout");
     EXPECT_EQ(s.GuaranteeLabel(Dia::Core::StringCRC("CoW.Guarantee.WorldThrone").Value()), "CoW.Guarantee.WorldThrone");
     EXPECT_EQ(s.GuaranteeLabel(0xDEADBEEFu), "0xDEADBEEF");
 }

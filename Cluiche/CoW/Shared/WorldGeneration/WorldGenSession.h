@@ -142,6 +142,8 @@ public:
     void SetGuaranteeSpec(const GuaranteeSpec& spec) { mGuaranteeSpec = spec; }
     const GuaranteeSpec& GetGuaranteeSpec() const { return mGuaranteeSpec; }
     // The registry in use (an empty one when none is set).
+    // The built-in node kind ids used when no registry is set (a set registry carries its own, SiteRegistry::SetNodeKinds).
+    void SetNodeKinds(const NodeKindIds& ids) { mEmptyRegistry.SetNodeKinds(ids); }
     const SiteRegistry& Registry() const { return mRegistry != nullptr ? *mRegistry : mEmptyRegistry; }
 
     // Runs at most one generation step if dirty or if a Regenerate is in progress. Returns true when the world changed

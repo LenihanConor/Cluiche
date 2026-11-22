@@ -8,7 +8,7 @@
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TestProfiles.h>
 #include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
 
@@ -417,7 +417,7 @@ TEST(DefaultValidationSet, HoldsOneProfileAndTheThreeBuiltInsInOrder)
     EXPECT_EQ(set.GetParams().guarantees[0]->GetId(), HearthNexusRule().GetId());
     EXPECT_EQ(set.GetParams().guarantees[1]->GetId(), SpacingRule().GetId());
     EXPECT_EQ(set.GetParams().guarantees[2]->GetId(), ThroneRule().GetId());
-    EXPECT_EQ(set.GetParams().profiles[0]->GetId(), StringCRC("CoW.Nav.TerrainTable"));
+    EXPECT_EQ(set.GetParams().profiles[0]->GetId(), StringCRC("HexWorld.Nav.TerrainTable"));
 }
 
 TEST(DefaultValidationSet, AC4_ValidWorldPassesWithThreeGuarantees)

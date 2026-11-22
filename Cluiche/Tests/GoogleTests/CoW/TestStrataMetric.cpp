@@ -10,7 +10,7 @@
 #include <Shared/WorldGeneration/StrataAssigner.h>
 #include <Shared/WorldGeneration/TerrainGenerator.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaMaths/Core/RandomStream.h>

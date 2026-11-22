@@ -1,6 +1,7 @@
 // S-1 Nodes: built-in river nodes + Hunting/Resource fill (hand-built worlds + generated-world AC8b checks).
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
 #include <Shared/WorldGeneration/NodesFill.h>
 #include <Shared/WorldGeneration/NodesRiver.h>
@@ -10,7 +11,7 @@
 #include <Shared/WorldGeneration/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -113,7 +114,7 @@ TEST(NodesRiverFill, RiverMouthToOceanGetsNodeAndEverySevenUpstream)
     WorldStructure w = RiverWorld();
     Column(w, 5, 0, 38);
     Finish(w);
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(r.trees, 1);
     EXPECT_EQ(r.mouthNodes, 1);
     EXPECT_EQ(r.upstreamNodes, 5);
@@ -135,7 +136,7 @@ TEST(NodesRiverFill, RiverMouthToLakeGetsNode)
     SetLake(w, 5, 12);                 // lake cell inside the land block
     Column(w, 5, 0, 11);               // (5,11) flows into the lake
     Finish(w);
-    PlaceRiverNodes(w, Rules());
+    PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 4, 11 }));
     EXPECT_TRUE(RiverIsMouth(w.sites.Find(BuiltinNodeKinds::River(), static_cast<uint32_t>(CellIndex(w, 5, 11)))->flags));
 }
@@ -145,7 +146,7 @@ TEST(NodesRiverFill, ShortRiverGetsMouthOnly)
     WorldStructure w = RiverWorld(20);
     Column(w, 5, 14, 18);
     Finish(w);
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(r.mouthNodes, 1);
     EXPECT_EQ(r.upstreamNodes, 0);
     EXPECT_EQ(w.sites.Count(BuiltinNodeKinds::River()), 1);
@@ -156,13 +157,13 @@ TEST(NodesRiverFill, RiverThatNeverReachesWaterGetsNothing)
     WorldStructure w = RiverWorld(30);
     Column(w, 5, 0, 12);               // (5,12) flows into (5,13): plain land
     Finish(w);
-    EXPECT_EQ(PlaceRiverNodes(w, Rules()).trees, 0);
+    EXPECT_EQ(PlaceRiverNodes(w, Rules(), CoWNodeKindIds()).trees, 0);
     // A river whose last cell has no direction.
     WorldStructure w2 = RiverWorld(30);
     Column(w2, 5, 0, 12);
     w2.At(5, 12).downstream = kNoDirection;
     Finish(w2);
-    PlaceRiverNodes(w2, Rules());
+    PlaceRiverNodes(w2, Rules(), CoWNodeKindIds());
     EXPECT_EQ(w.sites.Count(), 0);
     EXPECT_EQ(w2.sites.Count(), 0);
 }
@@ -181,13 +182,13 @@ TEST(NodesRiverFill, LongestPathBeatsLowerIndexTipAndTieGoesToLowestIndex)
     };
     {   // A tip (5,0): depth 20; B tip (4,1): depth 10 + 1 + 9 = 20 -> tie, lowest cell index = A (cell 5).
         WorldStructure w = build(0);
-        PlaceRiverNodes(w, Rules());
+        PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
         EXPECT_EQ(RiverRows(w, 4).size(), 0u);
         EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 6, 13, 20 }));
     }
     {   // A tip (5,2): depth 18 < 20 -> B is the longest path: steps 7 = (5,13), 14 = (5,6)? no: trunk is 11 cells.
         WorldStructure w = build(2);
-        PlaceRiverNodes(w, Rules());
+        PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
         // mouth (5,20) step 0; step 7 = (5,13); step 11 = (5,9)? the path leaves via (5,10)->(4,10): steps 10 (5,10),
         // 11 (4,10), 12 (4,9), 13 (4,8), 14 (4,7).
         EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 13, 20 }));
@@ -200,7 +201,7 @@ TEST(NodesRiverFill, IslandRiverGetsMouthOnly)
     WorldStructure w = RiverWorld(40, 2);   // landmass 2, mainLandmass stays 1
     Column(w, 5, 0, 38);
     Finish(w);
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(r.trees, 1);
     EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 38 }));
 }
@@ -211,7 +212,7 @@ TEST(NodesRiverFill, TreesOrdinalByMouthCellIndexAndNoCrossTreeSpacingLoss)
     Column(w, 9, 0, 38);
     Column(w, 5, 0, 38);
     Finish(w);
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(r.trees, 2);
     EXPECT_EQ(w.sites.Find(BuiltinNodeKinds::River(), static_cast<uint32_t>(CellIndex(w, 5, 38)))->variant, 0);
     EXPECT_EQ(w.sites.Find(BuiltinNodeKinds::River(), static_cast<uint32_t>(CellIndex(w, 9, 38)))->variant, 1);
@@ -226,7 +227,7 @@ TEST(NodesRiverFill, MouthsAreNeverDroppedBySpacing)
     Column(w, 6, 30, 38);               // mouth next door (distance 1)
     Finish(w);
     AddCorridor(w, 7, 37);              // corridor node right beside the mouths
-    PlaceRiverNodes(w, Rules());
+    PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_TRUE(HasRiverAt(w, 5, 38));
     EXPECT_TRUE(HasRiverAt(w, 6, 38));
 }
@@ -239,7 +240,7 @@ TEST(NodesRiverFill, UpstreamNodeNearCorridorIsDroppedUnlessOnBarrierCrossing)
     Finish(w);
     AddCorridor(w, 5, 31);              // the corridor on the same cell
     AddCorridor(w, 6, 24);              // adjacent to the step-14 cell (5,24)
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 3, 10, 17, 31, 38 }));
     EXPECT_EQ(r.skippedSpacing, 1);
     const uint32_t cell = static_cast<uint32_t>(CellIndex(w, 5, 31));
@@ -256,7 +257,7 @@ TEST(NodesRiverFill, UnclaimableUpstreamCellsAreSkipped)
     AssignRegion(w, 0, 0, 12, 21, kNoRegion);   // rows 0..20 not claimable
     for (int y = 0; y <= 20; ++y) { for (int x = 0; x < 12; ++x) { w.At(x, y).region = kNoRegion; } }
     BuildRegionRecords(w);
-    const RiverNodeResult r = PlaceRiverNodes(w, Rules());
+    const RiverNodeResult r = PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_EQ(RiverRows(w, 5), (std::vector<int>{ 24, 31, 38 }));
     EXPECT_EQ(r.skippedUnclaimable, 3);
 }
@@ -271,10 +272,10 @@ TEST(NodesRiverFill, RiverPlacementKeepsOtherSitesAndIsIdempotent)
     other.kindCrc = Dia::Core::StringCRC("Dragon.Hearth").Value();
     other.cell = 3;
     w.sites.Add(other);
-    PlaceRiverNodes(w, Rules());
+    PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     const SiteSet once = w.sites;
     EXPECT_EQ(w.sites.Count(), 8);
-    PlaceRiverNodes(w, Rules());
+    PlaceRiverNodes(w, Rules(), CoWNodeKindIds());
     EXPECT_TRUE(once == w.sites);
 }
 
@@ -413,7 +414,7 @@ namespace
     FillResult Fill(WorldStructure& w, unsigned seed)
     {
         RandomStream rng(seed);
-        return PlaceFillNodes(w, Rules(), rng);
+        return PlaceFillNodes(w, Rules(), rng, CoWNodeKindIds());
     }
 
     int CountBuiltin(const WorldStructure& w, int region)
@@ -700,10 +701,10 @@ namespace
         RandomStream rr(static_cast<unsigned>(seed) ^ 0x5151u);
         BuildRegions(w, rules, rr, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         RandomStream rc(static_cast<unsigned>(seed) + 1);
-        PlaceCorridorNodes(w, rules, ::Draoi::HexWorld::Testing::ShippedStratumTable(), rc);
-        const RiverNodeResult river = PlaceRiverNodes(w, rules);
+        PlaceCorridorNodes(w, rules, ::Draoi::HexWorld::Testing::ShippedStratumTable(), rc, CoWNodeKindIds());
+        const RiverNodeResult river = PlaceRiverNodes(w, rules, CoWNodeKindIds());
         RandomStream rf(static_cast<unsigned>(seed) + 2);
-        const FillResult fill = PlaceFillNodes(w, rules, rf);
+        const FillResult fill = PlaceFillNodes(w, rules, rf, CoWNodeKindIds());
         ++st.worlds;
 
         const uint32_t kCor = SiteKindId(BuiltinNodeKinds::Corridor()), kRiv = SiteKindId(BuiltinNodeKinds::River()),

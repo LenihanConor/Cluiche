@@ -1,5 +1,5 @@
 // S-1 Nodes: Hunting and Resource fill (GDD Part 11). Plain S-1 code, adds Site records of kinds
-// BuiltinNodeKinds::Hunting() / Resource() to world.sites; never clears other sites.
+// nodeKinds.hunting / .resource to world.sites; never clears other sites.
 //
 // Quotas: quota(region) = clamp(round(cellCount / kCellsPerNode), 6, 15) (round = floor(x + 0.5)). When the sum is
 // above 150 or below 80 the quotas are scaled by target/sum (target = the nearest bound, 150 or 80), rounded and
@@ -30,6 +30,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/regions-and-sites.md (Nodes 3)
 #pragma once
 
+#include <DraoiHexWorld/Sites.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
@@ -75,7 +76,8 @@ struct FillResult
     std::vector<uint16_t> placed;                // fill nodes added per region
 };
 
-FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng);
+FillResult PlaceFillNodes(WorldStructure& world, const TerrainRules& rules, Dia::Maths::RandomStream& rng,
+                           const Draoi::HexWorld::NodeKindIds& nodeKinds);
 
 } // namespace WorldGeneration
 } // namespace CoW

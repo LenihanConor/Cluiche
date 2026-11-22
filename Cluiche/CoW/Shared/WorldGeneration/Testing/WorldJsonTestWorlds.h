@@ -4,6 +4,8 @@
 // GenerateWorld(): a world generated through WorldGenSession (Regenerate => regions and sites present).
 #pragma once
 
+#include <Shared/CoWNodeKinds.h>
+
 #include "../RegionRepair.h"
 #include "../WorldGenSession.h"
 #include "../WorldJson.h"
@@ -13,7 +15,7 @@
 
 #include <cstring>
 #include <string>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 #include <Shared/WorldGeneration/HexWorldAccess.h>
 
@@ -22,10 +24,18 @@ namespace WorldGeneration {
 namespace Testing {
 
 // Legacy-enum value of a registry biome id (Cell::biome is still the enum; Task 27 removes the bridge).
+// A site registry with no placers that carries CoW's node kind ids (a JSON context without a registry knows only the neutral ids).
+inline const SiteRegistry& CoWTestSiteRegistry()
+{
+    static const CoWSiteRegistry registry;
+    return registry;
+}
+
 // An import context that carries the shipped biome registry (import requires one).
 inline WorldJsonContext TestImportContext()
 {
     WorldJsonContext c;
+    c.registry = &CoWTestSiteRegistry();
     c.biomes = &::Draoi::HexWorld::Testing::ShippedBiomeRegistry();
     return c;
 }

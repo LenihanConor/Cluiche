@@ -3,7 +3,8 @@
 // The 100-seed sweeps are SLOW_ (run with --all); thresholds are tuning-gated: a miss is reported with numbers, not tuned.
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <Shared/CoWNodeKinds.h>
+#include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
@@ -80,7 +81,7 @@ namespace
     {
         const WorldShapeParams shape = LoadParams(preset);
         const TerrainRules rules = TestRules();
-        const SiteRegistry registry;
+        const CoWSiteRegistry registry;
         RandomStream rng(1);
         Sweep out;
         for (int seed = 1; seed <= seeds; ++seed)
@@ -95,8 +96,8 @@ namespace
                 ++out.success;
                 if (run.Report().attempts.Size() == 1) { ++out.firstAttempt; }
                 // Test 1b: re-check independently of the run's own validation.
-                const LayoutReport layout = CheckLayout(run.AcceptedWorld(), rules, run.AcceptedLimits());
-                const GuaranteeResult* g = run.Report().finalValidation.Find(StringCRC("CoW.Guarantee.WorldLayout"));
+                const LayoutReport layout = CheckLayout(run.AcceptedWorld(), rules, CoWNodeKindIds(), run.AcceptedLimits());
+                const GuaranteeResult* g = run.Report().finalValidation.Find(StringCRC("HexWorld.Guarantee.WorldLayout"));
                 if (!layout.ok || !run.Report().finalValidation.passed || g == nullptr || !g->satisfied) { ++out.guaranteeViolations; }
             }
             else
@@ -172,7 +173,7 @@ TEST(GenerationSystem, Test2a_TenSeedsRegenerateByteForByteIncludingRetriedOnes)
 {
     // A registered guarantee that depends on the placed world forces retries on some seeds (odd region counts).
     EvenRegionCountGuarantee even;
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&even));
 
     int retriedSeeds = 0;
@@ -197,7 +198,7 @@ TEST(GenerationSystem, Test2a_RetrySequenceDoesNotDependOnPriorSessionHistory)
 {
     // The same outer seed gives the same report whether or not other generations ran before it on the same stream.
     EvenRegionCountGuarantee even;
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&even));
     Gen fresh(&reg);
     ASSERT_TRUE(fresh.Regenerate(7));
@@ -219,7 +220,7 @@ TEST(GenerationSystem, Test2a_RetrySequenceDoesNotDependOnPriorSessionHistory)
 TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemptSucceeds)
 {
     FailFirstNGuarantee failOnce("Test.FailOnAttemptZero", 1);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&failOnce));
     Gen g(&reg);
     ASSERT_TRUE(g.Regenerate(21));
@@ -235,7 +236,7 @@ TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemp
     // The kept world is exactly what Place produces on the same terrain with the attempt-1 sub-seed.
     WorldStructure expected = MakeTerrain(21, g.s.Shape());
     const TerrainRules rules = TestRules();
-    const SiteRegistry empty;
+    const CoWSiteRegistry empty;
     RandomStream rng(99);
     RegionsAndSites::Place(expected, empty, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(21ull, 1ull), 1, rng, CoWStepSeedNames(), nullptr);
     EXPECT_TRUE(SameCellBytes(g.s.World(), expected));
@@ -246,7 +247,7 @@ TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemp
 TEST(GenerationSystem, Test5a_EngineeredNeverSatisfiedSeedFallsThroughWithoutReturningAViolatingWorld)
 {
     FixedGuarantee never("Test.Never", false);
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&never));
     Gen g(&reg);
     ASSERT_TRUE(g.Regenerate(21, 5));
@@ -269,7 +270,7 @@ TEST(GenerationSystem, Test5a_EngineeredNeverSatisfiedSeedFallsThroughWithoutRet
 TEST(GenerationSystem, AC1_AtLeastThreeRetrySeedsGiveTheSameCountAndWorldEveryRun)
 {
     EvenRegionCountGuarantee even;
-    SiteRegistry reg;
+    CoWSiteRegistry reg;
     ASSERT_TRUE(reg.RegisterGuarantee(&even));
     int retried = 0;
     for (uint64_t seed = 1; seed <= 40 && retried < 3; ++seed)
@@ -336,7 +337,7 @@ struct SysGen
 {
     TestSession s;
     RandomStream rng{ 1 };
-    SiteRegistry registry;
+    CoWSiteRegistry registry;
     SysSwitchGuarantee sw;
     SysClock clock;
     SysGen()
