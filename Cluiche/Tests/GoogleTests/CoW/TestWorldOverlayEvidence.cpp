@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7, AC3-AC6, AC10)
 // Plan: worldgen-panel-rest.plan.md task 3 (coloured region edges, tagged site markers, dynasty starts, evidence).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 #include <Shared/WorldGeneration/WorldLayerSource.h>
 #include <Shared/WorldGeneration/WorldOverlayGeometry.h>

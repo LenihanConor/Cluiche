@@ -121,7 +121,7 @@ inline WorldStructure MakeTinyWorld()
 }
 
 // Same as MakeTinyWorld plus a site of a kind nobody registers (its name is remembered so it exports by name).
-inline WorldStructure MakeTinyWorldWithUnknownKind(const char* kindName = "Dragon.Hearth")
+inline WorldStructure MakeTinyWorldWithUnknownKind(const char* kindName = "Test.UnknownKind")
 {
     WorldStructure w = MakeTinyWorld();
     Site s; s.kindCrc = Dia::Core::StringCRC(kindName).Value(); s.cell = 8; s.region = 2; s.variant = 4; s.flags = 1;

@@ -2,6 +2,7 @@
 // retry-mechanism.md (AC1, AC3). System-level checks of the retry loop through the real session and over many seeds.
 // The 100-seed sweeps are SLOW_ (run with --all); thresholds are tuning-gated: a miss is reported with numbers, not tuned.
 #include <gtest/gtest.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
@@ -85,7 +86,7 @@ namespace
         for (int seed = 1; seed <= seeds; ++seed)
         {
             const WorldStructure terrain = MakeTerrain(static_cast<uint64_t>(seed), shape);
-            GenerationRun run(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), static_cast<uint64_t>(seed), GenParams{}, rng);
+            GenerationRun run(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), static_cast<uint64_t>(seed), GenParams{}, rng, CoWStepSeedNames());
             run.Run();
             ++out.total;
             ++out.attemptsHistogram[run.Report().attempts.Size()];
@@ -236,7 +237,7 @@ TEST(GenerationSystem, Test5a_FirstAttemptViolatesAGuaranteeThenTheSubSeedAttemp
     const TerrainRules rules = TestRules();
     const SiteRegistry empty;
     RandomStream rng(99);
-    RegionsAndSites::Place(expected, empty, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(21ull, 1ull), 1, rng, nullptr);
+    RegionsAndSites::Place(expected, empty, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(21ull, 1ull), 1, rng, CoWStepSeedNames(), nullptr);
     EXPECT_TRUE(SameCellBytes(g.s.World(), expected));
     EXPECT_TRUE(g.s.World().regions == expected.regions);
     EXPECT_TRUE(SameSites(g.s.World(), expected));
@@ -364,7 +365,7 @@ struct SysGen
 
 TEST(GenerationSystem, Test4_ForcedPastTheHardTimeoutAutoCancelsWithAMessageIdentifyingTimeout)
 {
-    Dia::CellLayers::Testing::LogCapture log("CoW");
+    Dia::CellLayers::Testing::LogCapture log("HexWorld");
     SysGen g;
     const WorldStructure before = g.s.World();
     const uint32_t revision = g.s.Revision();
@@ -393,7 +394,7 @@ TEST(GenerationSystem, Test4_ForcedPastTheHardTimeoutAutoCancelsWithAMessageIden
 
 TEST(GenerationSystem, Test5_AGenerationErrorRoutesThroughDiscardAndReturnWithAMessageIdentifyingFailure)
 {
-    Dia::CellLayers::Testing::LogCapture log("CoW");
+    Dia::CellLayers::Testing::LogCapture log("HexWorld");
     SysGen g;
     const WorldStructure before = g.s.World();
     const uint32_t revision = g.s.Revision();

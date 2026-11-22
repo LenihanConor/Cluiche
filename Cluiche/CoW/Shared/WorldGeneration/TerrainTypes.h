@@ -1,5 +1,5 @@
 // S-1 Terrain Generator: shared terrain vocabulary, shape parameters and the
-// terrain part of WorldStructure. Pure CoW-Shared code, no Dia module dependencies
+// terrain part of WorldStructure. Pure library code, no Dia module dependencies
 // beyond StringCRC.
 // Spec: docs/specs/applications/cow (S-1 World Generation, Terrain Generator)
 #pragma once

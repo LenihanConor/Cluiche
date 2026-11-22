@@ -16,7 +16,7 @@
 #include <DiaValueSchema/ValueSchemaLoader.h>
 #include <Shared/WorldGeneration/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 
 #include <cmath>

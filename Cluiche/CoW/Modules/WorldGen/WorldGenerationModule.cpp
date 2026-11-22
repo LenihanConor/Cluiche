@@ -1,6 +1,7 @@
 #include "Modules/WorldGen/WorldGenerationModule.h"
 
 #include <DraoiHexWorld/BiomeRegistry.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/BiomeClassify.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -31,6 +32,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
 {
     mSession.SetSiteRegistry(&mSiteRegistry);
     mSession.SetStrataAssignerRegistry(&mStrataAssigners);
+    mSession.SetStepSeedNames(WorldGeneration::CoWStepSeedNames());   // CoW's RNG step ids: keeps CoW worlds byte-identical
     mBiomes = std::make_unique<Draoi::HexWorld::BiomeRegistry>();
     mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
 }

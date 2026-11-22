@@ -793,14 +793,14 @@ bool WorldGenSession::StartRegenerate(Dia::Maths::RandomStream& wldStream)
         char message[kFailureMessageSize];
         std::snprintf(message, sizeof(message), "FAILURE: World generation error: %s", e.what());
         report.SetFailureMessage(message);
-        DIA_LOG_ERROR("CoW", "%s (terrain, seed %llu)", message, static_cast<unsigned long long>(mSeed));
+        DIA_LOG_ERROR("HexWorld", "%s (terrain, seed %llu)", message, static_cast<unsigned long long>(mSeed));
         mCandGen.reset();
         mCandTerrain = WorldStructure{};
         return FailRegenerate(report);
     }
 
     mGuard = std::make_unique<GenerationGuard>(ClampTimeoutSeconds(mGenParams.timeoutSeconds), mClock);
-    mRun = std::make_unique<GenerationRun>(mCandTerrain, Registry(), mRules, *mBiomes, mSeed, mGenParams, wldStream, mGuard.get());
+    mRun = std::make_unique<GenerationRun>(mCandTerrain, Registry(), mRules, *mBiomes, mSeed, mGenParams, wldStream, mStepNames, mGuard.get());
     mState = WorldGenState::Generating;
     return AdvanceRun();
 }
@@ -931,7 +931,7 @@ Json::Value WorldGenSession::Cancel(const Json::Value& args)
         report.outcome = GenerationOutcome::Cancelled;
         report.maxAttempts = ClampMaxRetryAttempts(mGenParams.maxRetryAttempts);
         report.SetFailureMessage("CANCEL: World generation cancelled by user");
-        DIA_LOG_INFO("CoW", "%s (before it started, seed %llu)", report.failureMessage, static_cast<unsigned long long>(mSeed));
+        DIA_LOG_INFO("HexWorld", "%s (before it started, seed %llu)", report.failureMessage, static_cast<unsigned long long>(mSeed));
         if (mHasGenerated)
         {
             FailRegenerate(report);

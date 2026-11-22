@@ -2,7 +2,7 @@
 //
 // A run is given the FIXED terrain world (terrain + biomes written, regions and sites empty, SD-S1-008), the site
 // registry, the rules, the outer seed and GenParams. Step() runs exactly one attempt:
-//   copy the terrain -> RegionsAndSites::Place(copy, ..., DeriveSubSeed(outer, attempt), attempt, rng) -> validate.
+//   copy the terrain -> RegionsAndSites::Place(copy, ..., DeriveSubSeed(outer, attempt), attempt, rng, names) -> validate.
 // Terrain and biomes are never touched, so every attempt re-rolls only Regions and Sites.
 //
 // Validation: SiteRegistry::Guarantees() in registration order, then (last) a WorldLayoutGuarantee built from this
@@ -54,7 +54,7 @@ class GenerationRun
 public:
     // 'terrain', 'registry', 'rules' and 'biomes' must outlive the run. params.maxRetryAttempts is clamped (ClampMaxRetryAttempts).
     GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes, uint64_t outerSeed,
-                  const GenParams& params, Dia::Maths::RandomStream& rng, IGenerationObserver* observer = nullptr);
+                  const GenParams& params, Dia::Maths::RandomStream& rng, const StepSeedNames& names, IGenerationObserver* observer = nullptr);
 
     // Runs one attempt (or ends the run on an observer abort). Returns true while the run is not finished.
     bool Step();
@@ -86,6 +86,7 @@ private:
     uint64_t                  mOuterSeed;
     uint32_t                  mMaxAttempts;
     Dia::Maths::RandomStream& mRng;
+    StepSeedNames             mNames;
     IGenerationObserver*      mObserver;
 
     WorldStructure                mWorld;   // the last attempt's world; the accepted one after Success
@@ -99,7 +100,7 @@ private:
 // Enforces params.timeoutSeconds on the steady clock (a GenerationGuard); the overload in GenerationGuard.h takes the
 // guard so tests can inject a clock and a cancel.
 GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
-                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
+                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng, const StepSeedNames& names,
                                WorldStructure* outWorld = nullptr);
 
 } // namespace WorldGeneration

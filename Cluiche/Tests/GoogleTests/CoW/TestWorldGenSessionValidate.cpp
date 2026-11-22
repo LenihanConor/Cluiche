@@ -4,7 +4,7 @@
 // unavailableLayers, import line/column errors.
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>

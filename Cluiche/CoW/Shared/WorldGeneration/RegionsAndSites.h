@@ -6,9 +6,9 @@
 // SiteRegistry::Order(). Registered kinds therefore never change regions or built-in nodes.
 //
 // Determinism: the caller passes the attempt seed (= DeriveSubSeed(outer, attempt)). Each step reseeds the stream with
-// FoldSeed(DeriveSubSeed(attemptSeed, stepId)) and draw count 0 (Restore). Step ids: "CoW.Regions",
-// "CoW.Node.Corridor", "CoW.Node.River" (reseeded for symmetry; river nodes draw nothing), "CoW.Node.Fill", then each
-// registered kind id. A step output depends only on the outer seed, the attempt, its own code and what it reads.
+// FoldSeed(DeriveSubSeed(attemptSeed, stepId)) and draw count 0 (Restore). Step ids: StepSeedNames::regions,
+// StepSeedNames::nodeCorridor, (river nodes draw nothing and are not reseeded), StepSeedNames::nodeFill, then each
+// registered kind id. The host injects the names; changing them changes every generated world. A step output depends only on the outer seed, the attempt, its own code and what it reads.
 //
 // Failure: a placer returning Retryable / TerrainCause ends the pass; Place returns that result (reason prefixed with
 // the kind id), the failing placer is recorded in the report, later placers do not run and the failed placer's
@@ -26,6 +26,7 @@
 #include <Shared/WorldGeneration/TerrainRules.h>
 #include <Shared/WorldGeneration/TerrainTypes.h>
 
+#include <DiaCore/CRC/StringCRC.h>
 #include <DiaMaths/Core/RandomStream.h>
 
 #include <cstdint>
@@ -33,6 +34,15 @@
 
 namespace CoW {
 namespace WorldGeneration {
+// The step ids the placement pass reseeds its stream with. Injected by the host (the defaults are neutral); the same
+// names always give the same worlds.
+struct StepSeedNames
+{
+    Dia::Core::StringCRC regions      = Dia::Core::StringCRC("HexWorld.Regions");
+    Dia::Core::StringCRC nodeCorridor = Dia::Core::StringCRC("HexWorld.Node.Corridor");
+    Dia::Core::StringCRC nodeFill     = Dia::Core::StringCRC("HexWorld.Node.Fill");
+};
+
 namespace RegionsAndSites {
 
 struct PlaceReport
@@ -46,10 +56,11 @@ struct PlaceReport
     PlaceResult           result;
 };
 
-// attemptSeed = DeriveSubSeed(outerSeed, attempt); attempt is passed on to placers via PlacementContext.
+// attemptSeed = DeriveSubSeed(outerSeed, attempt); attempt is passed on to placers via PlacementContext. 'names' has no
+// default on purpose: a caller that forgets it would silently change every world.
 PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                   uint64_t attemptSeed,
-                  int attempt, Dia::Maths::RandomStream& wldStream, PlaceReport* report = nullptr);
+                  int attempt, Dia::Maths::RandomStream& wldStream, const StepSeedNames& names, PlaceReport* report = nullptr);
 
 } // namespace RegionsAndSites
 } // namespace WorldGeneration

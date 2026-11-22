@@ -2,6 +2,7 @@
 // regions-and-sites.md (Layout guarantee). WorldLayoutGuarantee wraps CheckLayout as an IWorldGuarantee; SiteRegistry
 // stores IWorldGuarantee.
 #include <gtest/gtest.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/RegionsAndSites.h>
@@ -40,7 +41,7 @@ Placed MakePlaced(uint64_t seed)
     p.world = runner.World();
     SiteRegistry registry;
     Dia::Maths::RandomStream rng(1);
-    RegionsAndSites::Place(p.world, registry, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, &p.report);
+    RegionsAndSites::Place(p.world, registry, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), DeriveSubSeed(seed, uint64_t(0)), 0, rng, CoWStepSeedNames(), &p.report);
     return p;
 }
 

@@ -6,6 +6,7 @@
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DraoiHexWorld/StratumTable.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
@@ -446,7 +447,7 @@ TEST(StratumTable, NStrataPlaceCorridorsOnTheNMinusOneBarriers)
         SiteRegistry sites;
         RegionsAndSites::PlaceReport rep;
         Dia::Maths::RandomStream rng(1);
-        RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, &rep);
+        RegionsAndSites::Place(sw.world, sites, sw.rules, sw.registry, DeriveSubSeed(42, 0), 0, rng, CoWStepSeedNames(), &rep);
 
         EXPECT_EQ(rep.limits.barrierCount, n - 1);
         for (int b = n - 1; b < static_cast<int>(kMaxBarriers); ++b)

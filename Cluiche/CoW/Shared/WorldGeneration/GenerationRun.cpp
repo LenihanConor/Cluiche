@@ -66,10 +66,10 @@ namespace
 }
 
 GenerationRun::GenerationRun(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
-                             uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
+                             uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng, const StepSeedNames& names,
                              IGenerationObserver* observer)
     : mTerrain(terrain), mRegistry(registry), mRules(rules), mBiomes(biomes), mOuterSeed(outerSeed)
-    , mMaxAttempts(ClampMaxRetryAttempts(params.maxRetryAttempts)), mRng(rng), mObserver(observer)
+    , mMaxAttempts(ClampMaxRetryAttempts(params.maxRetryAttempts)), mRng(rng), mNames(names), mObserver(observer)
 {
     mReport.outerSeed = outerSeed;
     mReport.maxAttempts = mMaxAttempts;
@@ -99,11 +99,11 @@ bool GenerationRun::Step()
         const char* message = (given != nullptr && given[0] != '\0') ? given : fallback;
         if (abortReason == GenerationOutcome::Cancelled)
         {
-            DIA_LOG_INFO("CoW", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
+            DIA_LOG_INFO("HexWorld", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
         }
         else
         {
-            DIA_LOG_ERROR("CoW", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
+            DIA_LOG_ERROR("HexWorld", "%s (before attempt %u, seed %llu)", message, mNextAttempt + 1, static_cast<unsigned long long>(mOuterSeed));
         }
         Finish(abortReason, message);
         return false;
@@ -121,7 +121,7 @@ bool GenerationRun::Step()
     try
     {
         mWorld = mTerrain;   // terrain and biomes are identical on every attempt
-        const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, mBiomes, rec.subSeed, static_cast<int>(attempt), mRng, &mPlaceReport);
+        const PlaceResult placed = RegionsAndSites::Place(mWorld, mRegistry, mRules, mBiomes, rec.subSeed, static_cast<int>(attempt), mRng, mNames, &mPlaceReport);
 
         if (!placed.IsOk())
         {
@@ -171,12 +171,12 @@ bool GenerationRun::Step()
 
     if (passed)
     {
-        DIA_LOG_INFO("CoW", "World generation succeeded on attempt %u of %u (seed %llu)", attempt + 1, mMaxAttempts,
+        DIA_LOG_INFO("HexWorld", "World generation succeeded on attempt %u of %u (seed %llu)", attempt + 1, mMaxAttempts,
                      static_cast<unsigned long long>(mOuterSeed));
     }
     else
     {
-        DIA_LOG_WARNING("CoW", "Attempt %u of %u failed (seed %llu, %u guarantee(s)): %s", attempt + 1, mMaxAttempts,
+        DIA_LOG_WARNING("HexWorld", "Attempt %u of %u failed (seed %llu, %u guarantee(s)): %s", attempt + 1, mMaxAttempts,
                         static_cast<unsigned long long>(mOuterSeed), rec.failedGuaranteeCount, Headline(rec));
     }
     if (mObserver != nullptr) { mObserver->OnAttemptFinished(rec, mMaxAttempts); }
@@ -191,7 +191,7 @@ bool GenerationRun::Step()
     {
         char message[kFailureMessageSize];
         std::snprintf(message, sizeof(message), "FAILURE: World generation unsatisfiable: terrain cause at attempt %u", attempt + 1);
-        DIA_LOG_ERROR("CoW", "%s (seed %llu): %s", message, static_cast<unsigned long long>(mOuterSeed), Headline(rec));
+        DIA_LOG_ERROR("HexWorld", "%s (seed %llu): %s", message, static_cast<unsigned long long>(mOuterSeed), Headline(rec));
         Finish(GenerationOutcome::Unsatisfiable, message);
         return false;
     }
@@ -199,7 +199,7 @@ bool GenerationRun::Step()
     {
         char message[kFailureMessageSize];
         std::snprintf(message, sizeof(message), "FAILURE: World generation failed after %u attempts (unsatisfiable seed or parameters)", mNextAttempt);
-        DIA_LOG_ERROR("CoW", "%s (seed %llu)", message, static_cast<unsigned long long>(mOuterSeed));
+        DIA_LOG_ERROR("HexWorld", "%s (seed %llu)", message, static_cast<unsigned long long>(mOuterSeed));
         Finish(GenerationOutcome::Unsatisfiable, message);
         return false;
     }
@@ -215,7 +215,7 @@ void GenerationRun::FinishWithError(AttemptRecord& rec, std::chrono::steady_cloc
     mReport.attempts.Add(rec);
     char message[kFailureMessageSize];
     std::snprintf(message, sizeof(message), "FAILURE: World generation error: %s", what);
-    DIA_LOG_ERROR("CoW", "%s (attempt %u, seed %llu)", message, rec.attempt + 1, static_cast<unsigned long long>(mOuterSeed));
+    DIA_LOG_ERROR("HexWorld", "%s (attempt %u, seed %llu)", message, rec.attempt + 1, static_cast<unsigned long long>(mOuterSeed));
     if (mObserver != nullptr) { mObserver->OnAttemptFinished(rec, mMaxAttempts); }
     Finish(GenerationOutcome::Error, message);
 }
@@ -226,18 +226,18 @@ void GenerationRun::Run()
 }
 
 GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
-                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
+                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng, const StepSeedNames& names,
                                WorldStructure* outWorld)
 {
     GenerationGuard guard(ClampTimeoutSeconds(params.timeoutSeconds));
-    return GenerateWorld(terrain, registry, rules, biomes, outerSeed, params, rng, guard, outWorld);
+    return GenerateWorld(terrain, registry, rules, biomes, outerSeed, params, rng, names, guard, outWorld);
 }
 
 GenerationReport GenerateWorld(const WorldStructure& terrain, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
-                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng,
+                               uint64_t outerSeed, const GenParams& params, Dia::Maths::RandomStream& rng, const StepSeedNames& names,
                                GenerationGuard& guard, WorldStructure* outWorld)
 {
-    GenerationRun run(terrain, registry, rules, biomes, outerSeed, params, rng, &guard);
+    GenerationRun run(terrain, registry, rules, biomes, outerSeed, params, rng, names, &guard);
     run.Run();
     if (outWorld != nullptr && run.HasAcceptedWorld()) { *outWorld = run.AcceptedWorld(); }
     return run.Report();

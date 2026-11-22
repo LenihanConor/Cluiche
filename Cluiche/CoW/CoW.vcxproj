@@ -153,10 +153,11 @@
     <ClInclude Include="Modules\F2Harness\F2StageResult.h" />
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h" />
     <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h" />
-    <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h" />
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\GuaranteeSpecTestHelpers.h" />
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h" />
     <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h" />
     <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h" />
+    <ClInclude Include="Shared\CoWStepSeedNames.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

@@ -1,6 +1,6 @@
 // S-1 Terrain Generator: rule constants shared by all generator stages.
 // Pure logic, no Dia module dependencies beyond StringCRC/DynamicArrayC/jsoncpp/DiaAttribute.
-// Names, ranges and defaults live in the sidecar Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json
+// Names, ranges and defaults live in the sidecar terrain_rules.schema.json (the host supplies the file)
 // (a Dia parameter file). TerrainRules is a plain struct of members, one per sidecar parameter and named as its
 // key, filled by ParamBinding<TerrainRules>::Snapshot from a ParameterFile. Integer-valued rules are int32_t
 // members (rounded half away from zero at Snapshot); everything else is float. Read them directly: rules.kFoo.

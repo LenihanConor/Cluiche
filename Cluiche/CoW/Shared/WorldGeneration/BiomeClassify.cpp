@@ -276,7 +276,7 @@ void ComputeStage14(const TerrainRules& rules, const Stage14Inputs& in, Stage14L
     }
     if (in.biomes == nullptr || in.biomes->Count() == 0)
     {
-        DIA_LOG_ERROR("CoW", "ComputeStage14: no biome registry (or an empty one); biomes were not classified");
+        DIA_LOG_ERROR("HexWorld", "ComputeStage14: no biome registry (or an empty one); biomes were not classified");
         return;
     }
 

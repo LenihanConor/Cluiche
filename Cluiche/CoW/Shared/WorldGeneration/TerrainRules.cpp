@@ -160,7 +160,7 @@ bool TerrainRules::FromParameterFile(const ParameterFile& file, TerrainRules& ou
     auto report = std::make_unique<BindingReport>();   // large: keep it off the stack
     if (!binding.Resolve(file.Schema(), *report))
     {
-        DIA_LOG_ERROR("CoW", "TerrainRules: sidecar does not match the bound members (%u unbound, %u without entry)",
+        DIA_LOG_ERROR("HexWorld", "TerrainRules: sidecar does not match the bound members (%u unbound, %u without entry)",
                       report->unboundParameters.Size(), report->bindingsWithoutEntry.Size());
         return false;
     }
@@ -178,7 +178,7 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     if (sidecarText == nullptr || !file.Load(sidecarText, "terrain_rules.schema.json", nullptr, err) || !FromParameterFile(file, base))
     {
         // No compiled fallback: without a loadable sidecar there are no defaults to start from.
-        DIA_LOG_ERROR("CoW", "TerrainRules::LoadFromJson: sidecar not usable (key '%s')", err.key.AsCStr());
+        DIA_LOG_ERROR("HexWorld", "TerrainRules::LoadFromJson: sidecar not usable (key '%s')", err.key.AsCStr());
         *this = TerrainRules();
         degraded = true;
         AddWarning(warnings, "invalid", "sidecar");
@@ -187,7 +187,7 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     *this = base;
     if (!v.isObject())
     {
-        DIA_LOG_WARNING("CoW", "TerrainRules::LoadFromJson: rules root is not a JSON object; keeping sidecar defaults");
+        DIA_LOG_WARNING("HexWorld", "TerrainRules::LoadFromJson: rules root is not a JSON object; keeping sidecar defaults");
         degraded = true;
         AddWarning(warnings, "invalid", "root");
         return false;
@@ -251,7 +251,7 @@ bool TerrainRules::LoadFromJson(const Json::Value& v, RuleWarnings& warnings, co
     ParamWarnings packWarnings;
     if (!file.ApplyPack(pack, packWarnings, err))
     {
-        DIA_LOG_WARNING("CoW", "TerrainRules::LoadFromJson: rules pack rejected (key '%s': %s); keeping sidecar defaults",
+        DIA_LOG_WARNING("HexWorld", "TerrainRules::LoadFromJson: rules pack rejected (key '%s': %s); keeping sidecar defaults",
                         err.key.AsCStr(), err.reason.AsCStr());
         degraded = true;
         AddWarning(warnings, "invalid", "pack");

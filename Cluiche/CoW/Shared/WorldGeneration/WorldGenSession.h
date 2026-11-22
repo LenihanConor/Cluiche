@@ -59,6 +59,10 @@ public:
     bool RulesLoaded() const { return mRulesLoaded; }
     // The host blocks generation for a reason outside the session (the biome registry failed to load): every entry
     // point that refuses without rules refuses with this code instead. Empty code clears the block.
+    // The step ids Regenerate reseeds its stream with (RegionsAndSites.h). Neutral by default; the host sets its own once,
+    // before the first Regenerate. A different name set generates different worlds.
+    void SetStepSeedNames(const StepSeedNames& names) { mStepNames = names; }
+    const StepSeedNames& GetStepSeedNames() const { return mStepNames; }
     void SetGenerationBlocked(const std::string& code) { mBlockCode = code; }
     bool IsGenerationBlocked() const { return !mBlockCode.empty(); }
     // The biome registry classification (stage 14) reads. Not owned; it must outlive the session. The module owns the
@@ -256,6 +260,7 @@ private:
 
     // Retry (Feature 3).
     GenParams            mGenParams;
+    StepSeedNames        mStepNames;
     GenerationReport     mReport;
     bool                 mHasReport = false;
     uint32_t             mReportRevision = 0;

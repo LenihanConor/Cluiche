@@ -2,6 +2,7 @@
 // GenerationGuard (timeout and cancel checks) and the failure modes of a GenerationRun: Timeout, Unsatisfiable, Error,
 // Cancelled. Time is a fake clock advanced by the test doubles, so nothing sleeps.
 #include <gtest/gtest.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/GenerationGuard.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
@@ -228,7 +229,7 @@ TEST(GenerationTimeout, AC1_AnAttemptThatOverrunsTheBudgetEndsTheRunAtTheNextBou
     SlowFailGuarantee slow(f.clock, 6.0);              // one attempt "takes" 6 s against a 5 s budget
     ASSERT_TRUE(f.registry.RegisterGuarantee(&slow));
     GenerationGuard guard(5.0f, &f.clock);
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Timeout);
     EXPECT_TRUE(StartsWith(run.Report().failureMessage, "TIMEOUT"));
@@ -242,7 +243,7 @@ TEST(GenerationTimeout, AC2_TimeoutWinsOverTheRetryBound)
     SlowFailGuarantee slow(f.clock, 1.0);              // 1 s per failing attempt, budget 5 s, bound 64
     ASSERT_TRUE(f.registry.RegisterGuarantee(&slow));
     GenerationGuard guard(5.0f, &f.clock);
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(64, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(64, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Timeout);
     EXPECT_EQ(run.Report().attempts.Size(), 6u);       // boundaries at elapsed 0..5 pass, 6 > 5 stops: not all 64
@@ -255,7 +256,7 @@ TEST(GenerationTimeout, AC3_ExhaustionIsUnsatisfiableAfterExactlyTheBoundWithAFa
     FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.registry.RegisterGuarantee(&never));
     GenerationGuard guard(5.0f, &f.clock);
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(5, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(5, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Unsatisfiable);
     EXPECT_EQ(run.Report().attempts.Size(), 5u);
@@ -269,7 +270,7 @@ TEST(GenerationTimeout, AC4_AnExceptionEndsTheRunAsErrorWithItsMessage)
     ThrowingGuarantee boom(true);
     ASSERT_TRUE(f.registry.RegisterGuarantee(&boom));
     GenerationGuard guard(5.0f, &f.clock);
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Error);
     EXPECT_STREQ(run.Report().failureMessage, "FAILURE: World generation error: Test error");
@@ -284,7 +285,7 @@ TEST(GenerationTimeout, AC4_ANonStandardExceptionIsCaughtToo)
     Fixture f;
     ThrowingGuarantee boom(false);
     ASSERT_TRUE(f.registry.RegisterGuarantee(&boom));
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames());
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Error);
     EXPECT_STREQ(run.Report().failureMessage, "FAILURE: World generation error: unknown exception");
@@ -299,7 +300,7 @@ TEST(GenerationTimeout, AC5_CancelMidRunEndsItAtTheNextBoundary)
     CancelAfter canceller(guardPtr, 1);                 // cancel once the first attempt has finished
     GenerationGuard guard(5.0f, &f.clock, &canceller);
     guardPtr = &guard;
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Cancelled);
     EXPECT_STREQ(run.Report().failureMessage, "CANCEL: World generation cancelled by user");
@@ -312,7 +313,7 @@ TEST(GenerationTimeout, AC5_CancelBeforeTheFirstAttemptRunsNothing)
     Fixture f;
     GenerationGuard guard(5.0f, &f.clock);
     guard.RequestCancel();
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     EXPECT_EQ(run.Outcome(), GenerationOutcome::Cancelled);
     EXPECT_EQ(run.Report().attempts.Size(), 0u);
@@ -322,7 +323,7 @@ TEST(GenerationTimeout, CancelAfterTheRunSucceededChangesNothing)
 {
     Fixture f;
     GenerationGuard guard(5.0f, &f.clock);
-    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+    GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
     run.Run();
     ASSERT_EQ(run.Outcome(), GenerationOutcome::Success);
     guard.RequestCancel();
@@ -338,44 +339,44 @@ TEST(GenerationTimeout, AC6_EachFailureModeHasItsOwnPrefixLogLevelAndOutcome)
     std::set<int> outcomes;
 
     {   // Timeout
-        Dia::CellLayers::Testing::LogCapture log("CoW");
+        Dia::CellLayers::Testing::LogCapture log("HexWorld");
         Fixture f;
         SlowFailGuarantee slow(f.clock, 6.0);
         ASSERT_TRUE(f.registry.RegisterGuarantee(&slow));
         GenerationGuard guard(5.0f, &f.clock);
-        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
         run.Run();
         EXPECT_EQ(log.Errors("TIMEOUT: World generation exceeded 5.0 seconds"), 1u);
         EXPECT_EQ(log.Errors("FAILURE"), 0u);
         messages.insert(run.Report().failureMessage); outcomes.insert(static_cast<int>(run.Outcome()));
     }
     {   // Unsatisfiable
-        Dia::CellLayers::Testing::LogCapture log("CoW");
+        Dia::CellLayers::Testing::LogCapture log("HexWorld");
         Fixture f;
         FixedGuarantee never("Test.Never", false);
         ASSERT_TRUE(f.registry.RegisterGuarantee(&never));
-        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng);
+        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng, CoWStepSeedNames());
         run.Run();
         EXPECT_EQ(log.Errors("FAILURE: World generation failed after 3 attempts"), 1u);
         EXPECT_EQ(log.Errors("TIMEOUT"), 0u);
         messages.insert(run.Report().failureMessage); outcomes.insert(static_cast<int>(run.Outcome()));
     }
     {   // Error
-        Dia::CellLayers::Testing::LogCapture log("CoW");
+        Dia::CellLayers::Testing::LogCapture log("HexWorld");
         Fixture f;
         ThrowingGuarantee boom(true);
         ASSERT_TRUE(f.registry.RegisterGuarantee(&boom));
-        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng);
+        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng, CoWStepSeedNames());
         run.Run();
         EXPECT_EQ(log.Errors("FAILURE: World generation error: Test error"), 1u);
         messages.insert(run.Report().failureMessage); outcomes.insert(static_cast<int>(run.Outcome()));
     }
     {   // Cancel: info, not an error
-        Dia::CellLayers::Testing::LogCapture log("CoW");
+        Dia::CellLayers::Testing::LogCapture log("HexWorld");
         Fixture f;
         GenerationGuard guard(5.0f, &f.clock);
         guard.RequestCancel();
-        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng, &guard);
+        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(3, 5.0f), f.rng, CoWStepSeedNames(), &guard);
         run.Run();
         EXPECT_EQ(log.Count(Level::kInfo, "CANCEL: World generation cancelled by user"), 1u);
         EXPECT_EQ(log.Errors(), 0u);
@@ -399,7 +400,7 @@ TEST(GenerationTimeout, AC7_NoFailureModeReturnsAWorld)
         if (mode == 2) { ASSERT_TRUE(f.registry.RegisterGuarantee(&boom)); }
         if (mode == 3) { guard.RequestCancel(); }
         WorldStructure out;
-        const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(2, 5.0f), f.rng, guard, &out);
+        const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(2, 5.0f), f.rng, CoWStepSeedNames(), guard, &out);
         EXPECT_NE(rep.outcome, GenerationOutcome::Success) << "mode " << mode;
         EXPECT_EQ(out.CellCount(), 0) << "mode " << mode;     // the caller's world was never written
         EXPECT_EQ(rep.worldRevision, 0u) << "mode " << mode;
@@ -412,14 +413,14 @@ TEST(GenerationTimeout, AC8_TheSameSeedSucceedsFastAndTimesOutSlow)
     // Informational: timeout is wall-clock based, so the same seed can pass or fail depending on speed.
     Fixture fast;
     GenerationGuard fastGuard(5.0f, &fast.clock);
-    EXPECT_EQ(GenerateWorld(fast.terrain, fast.registry, fast.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, fast.Params(10, 5.0f), fast.rng, fastGuard).outcome,
+    EXPECT_EQ(GenerateWorld(fast.terrain, fast.registry, fast.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, fast.Params(10, 5.0f), fast.rng, CoWStepSeedNames(), fastGuard).outcome,
               GenerationOutcome::Success);
 
     Fixture slow;
     SlowFailGuarantee drag(slow.clock, 6.0);
     ASSERT_TRUE(slow.registry.RegisterGuarantee(&drag));
     GenerationGuard slowGuard(5.0f, &slow.clock);
-    EXPECT_EQ(GenerateWorld(slow.terrain, slow.registry, slow.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, slow.Params(10, 5.0f), slow.rng, slowGuard).outcome,
+    EXPECT_EQ(GenerateWorld(slow.terrain, slow.registry, slow.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, slow.Params(10, 5.0f), slow.rng, CoWStepSeedNames(), slowGuard).outcome,
               GenerationOutcome::Timeout);
 }
 
@@ -432,8 +433,8 @@ TEST(GenerationTimeout, AGuardedRunWithinBudgetIsIdenticalToAnUnguardedOne)
     ASSERT_TRUE(a.registry.RegisterGuarantee(&flakyA));
     ASSERT_TRUE(b.registry.RegisterGuarantee(&flakyB));
     GenerationGuard guard(5.0f, &b.clock);
-    GenerationRun unguarded(a.terrain, a.registry, a.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 7, a.Params(10, 5.0f), a.rng);
-    GenerationRun guarded(b.terrain, b.registry, b.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 7, b.Params(10, 5.0f), b.rng, &guard);
+    GenerationRun unguarded(a.terrain, a.registry, a.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 7, a.Params(10, 5.0f), a.rng, CoWStepSeedNames());
+    GenerationRun guarded(b.terrain, b.registry, b.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 7, b.Params(10, 5.0f), b.rng, CoWStepSeedNames(), &guard);
     unguarded.Run();
     guarded.Run();
     ASSERT_EQ(unguarded.Outcome(), GenerationOutcome::Success);
@@ -448,7 +449,7 @@ TEST(GenerationTimeout, FailureMessagesAreDeterministicAndPartOfTheReportCompari
         SlowFailGuarantee slow(f.clock, step);
         EXPECT_TRUE(f.registry.RegisterGuarantee(&slow));
         GenerationGuard guard(5.0f, &f.clock);
-        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, &guard);
+        GenerationRun run(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(10, 5.0f), f.rng, CoWStepSeedNames(), &guard);
         run.Run();
         return run.Report();
     };
@@ -467,7 +468,7 @@ TEST(GenerationTimeout, TheBlockingGenerateWorldEnforcesParamsTimeoutOnTheSteady
     ASSERT_TRUE(f.registry.RegisterGuarantee(&never));
     // A zero budget is exceeded as soon as any real time has passed since the guard was built, so by the second
     // boundary at the latest (the first attempt's Place and validation take far longer than the clock resolution).
-    const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(64, 0.0f), f.rng);
+    const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, f.Params(64, 0.0f), f.rng, CoWStepSeedNames());
     EXPECT_EQ(rep.outcome, GenerationOutcome::Timeout);
     EXPECT_LE(rep.attempts.Size(), 1u);
     EXPECT_TRUE(StartsWith(rep.failureMessage, "TIMEOUT"));

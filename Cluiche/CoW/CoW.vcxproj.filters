@@ -426,7 +426,7 @@
     <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h">
       <Filter>Shared</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\Testing\GuaranteeSpecTestHelpers.h">
+    <ClInclude Include="Shared\WorldGeneration\CoWTesting\GuaranteeSpecTestHelpers.h">
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\SiteRules.h">
@@ -436,6 +436,9 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\CoWStepSeedNames.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

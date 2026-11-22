@@ -20,7 +20,7 @@ ValidationResult ReachabilityValidator::Validate(const WorldStructure& world, co
         std::snprintf(d.text, sizeof(d.text), "no navigation profile was supplied: every reachability query fails");
         result.diagnostics.Add(d);
         allSatisfied = false;
-        DIA_LOG_ERROR("CoW", "ReachabilityValidator: no navigation profile was supplied");
+        DIA_LOG_ERROR("HexWorld", "ReachabilityValidator: no navigation profile was supplied");
     }
 
     const NavigationQuery query(world, params);

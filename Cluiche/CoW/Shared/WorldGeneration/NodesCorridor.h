@@ -1,13 +1,13 @@
 // S-1 Nodes: built-in corridor nodes (GDD Part 11). Plain S-1 code, adds Site records of kind
 // BuiltinNodeKinds::Corridor() to world.sites; never clears other sites.
 //
-// Barrier k separates stratum k from stratum k+1 of the ORDERED depth set (CoW: 1 = First Shores / Wild Reaches,
-// 2 = Wild Reaches / Ancient Interiors); a set of N strata has N-1 barriers, none for N = 1 or an unordered set.
+// Barrier k separates stratum k from stratum k+1 of the ORDERED depth set (e.g. with three strata: 1 = shallowest / middle,
+// 2 = middle / deepest); a set of N strata has N-1 barriers, none for N = 1 or an unordered set.
 // Candidates are land (non-ocean, non-Lake) cells of either stratum with a hex neighbour in the other; each takes
 // one source, highest priority first: Pass flag, RiverCrossesBarrier flag, coastal gap (no Ridge/Barrier flag within
 // 2 steps and a Coast-flag cell within kCoastalGapReach).
 //
-// RNG draw order (the caller passes a stream ALREADY reseeded for step "CoW.Node.Corridor"; this does not reseed):
+// RNG draw order (the caller passes a stream ALREADY reseeded for the corridor step (StepSeedNames::nodeCorridor); this does not reseed):
 //   1. n_1 = 2 + RandomInt() % 3, then n_2 ... n_(N-1) likewise (always drawn);
 //   2. Fisher-Yates shuffle of barrier 1 candidates (cell-index order; i from n-1 down to 1, j = RandomInt() % (i+1)),
 //      then barrier 2, ... (empty / single-element lists draw nothing).

@@ -1,5 +1,5 @@
 // S-1 World Generation map view: descriptor table and readers that feed the DiaCellLayers viewer.
-// Pure CoW-Shared code: each reader copies one generated layer from a WorldGenSession into a caller-supplied
+// Pure library code: each reader copies one generated layer from a WorldGenSession into a caller-supplied
 // float buffer of width*height (uint layers widened to float, Cell fields strided out of WorldStructure).
 // Landmass ids (0..255) exceed the 64-colour category palette, so landmass is a Float layer with a ramp.
 // Region ids (0..RegionTable::kMaxRegions = 64) need 65 values, one more than the palette: the "regions" layer writes

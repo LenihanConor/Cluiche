@@ -33,7 +33,7 @@ namespace WorldGeneration {
 struct LayoutLimits
 {
     StratumIndex regionLimitedBy = kNoStratum;   // None unless terrain-limited (RegionTable::limitedBy)
-    uint8_t   barrierCount = 2;                    // barriers of the depth set (strata - 1); CoW's three strata have two
+    uint8_t   barrierCount = 2;                    // barriers of the depth set (strata - 1); a three-stratum set has two
     bool      corridorLimited[kMaxBarriers] = {};  // per barrier: fewer than 2 candidates
     bool      nodeLimited = false;                 // quotas could not reach 80..150, or a slot found no cell
 };

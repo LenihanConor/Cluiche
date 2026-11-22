@@ -37,12 +37,12 @@ const char* GuaranteeRuleTypeName(GuaranteeRuleType type);
 
 // One guarantee entry. Fields are per type; unused ones stay empty/zero. Nouns and measurement key names are data so
 // the rule classes can reproduce the diagnostics byte for byte.
-//   reach_any:     from, to (kind id) or toStratum; noun (the from kind, "Hearth"), toNoun ("Nexus"), toNounPlural ("Nexus Nodes")
-//   min_spacing:   kind, minimum (sidecar value), noun ("Dynasty start"), nounPlural ("Dynasty starts"),
+//   reach_any:     from, to (kind id) or toStratum; noun (the from kind, e.g. "Camp"), toNoun ("Outpost"), toNounPlural ("Outposts")
+//   min_spacing:   kind, minimum (sidecar value), noun ("start"), nounPlural ("starts"),
 //                  minimumKey ("minimumSpacing"), distanceKey ("pairDistance")
-//   variant_cover: kind, variantCount, toStratum, noun ("world-throne"), nounPlural ("world-thrones"),
-//                  variantNoun ("Apotheosis type"), targetNoun ("Ancient Interiors"),
-//                  countKey ("thronesOfType"), targetCountKey ("ancientInteriorsCells")
+//   variant_cover: kind, variantCount, toStratum, noun ("landmark"), nounPlural ("landmarks"),
+//                  variantNoun ("variant"), targetNoun ("deep cells"),
+//                  countKey ("itemsOfVariant"), targetCountKey ("deepCells")
 struct GuaranteeEntry
 {
     std::string       id;
@@ -90,7 +90,7 @@ struct GuaranteeSpec
 
 struct GuaranteeSpecError
 {
-    std::string entry;    // the entry that failed: "guarantees[CoW.Guarantee.X]", "site_kinds[i]", "document", ...
+    std::string entry;    // the entry that failed: "guarantees[Some.Guarantee.Id]", "site_kinds[i]", "document", ...
     std::string reason;
 };
 

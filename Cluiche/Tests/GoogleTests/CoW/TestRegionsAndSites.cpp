@@ -1,6 +1,7 @@
 // S-1 Regions, Nodes and Site Hook: RegionsAndSites::Place (AC1, AC9, placer failure, AC12) and CheckLayout (AC8).
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/LayoutCheck.h>
 #include <Shared/WorldGeneration/NodesCorridor.h>
@@ -94,7 +95,7 @@ namespace
     PlaceResult PlaceWorld(WorldStructure& w, const SiteRegistry& reg, uint64_t outer, int attempt, RegionsAndSites::PlaceReport* rep = nullptr)
     {
         RandomStream rng(1);
-        return RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(outer, attempt), attempt, rng, rep);
+        return RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(outer, attempt), attempt, rng, CoWStepSeedNames(), rep);
     }
 
     // Records what it was given; its site cell depends on its stream.
@@ -712,7 +713,7 @@ namespace
         {
             RandomStream rng(1);
             const auto t0 = std::chrono::steady_clock::now();
-            RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(7, 0), 0, rng);
+            RegionsAndSites::Place(w, reg, TestRules(), ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), AttemptSeed(7, 0), 0, rng, CoWStepSeedNames());
             const auto t1 = std::chrono::steady_clock::now();
             ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
         }

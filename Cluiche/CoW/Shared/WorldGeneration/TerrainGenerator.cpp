@@ -697,7 +697,7 @@ void TerrainGenerator::RunStrataStage()
     if (assigner == nullptr)
     {
         mStrataError = std::string("strata assigner '") + type + "' is not registered; using " + Draoi::HexWorld::kBuiltinAssignerType;
-        DIA_LOG_ERROR("CoW", "%s", mStrataError.c_str());
+        DIA_LOG_ERROR("HexWorld", "%s", mStrataError.c_str());
     }
     else
     {
@@ -763,7 +763,7 @@ void TerrainGenerator::RunStrataStage()
         }
         if (!problem.empty())
         {
-            DIA_LOG_ERROR("CoW", "%s; the set's layer is left empty", problem.c_str());
+            DIA_LOG_ERROR("HexWorld", "%s; the set's layer is left empty", problem.c_str());
             mStrataError += (mStrataError.empty() ? "" : "; ") + problem;
         }
         mExtraStrata.push_back(std::move(layer));

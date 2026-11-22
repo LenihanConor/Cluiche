@@ -23,7 +23,7 @@ namespace
 
 PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const TerrainRules& rules, const Draoi::HexWorld::BiomeRegistry& biomes,
                   uint64_t attemptSeed,
-                  int attempt, Dia::Maths::RandomStream& wldStream, PlaceReport* report)
+                  int attempt, Dia::Maths::RandomStream& wldStream, const StepSeedNames& names, PlaceReport* report)
 {
     PlaceReport local;
     PlaceReport& rep = report ? *report : local;
@@ -34,14 +34,14 @@ PlaceResult Place(WorldStructure& world, const SiteRegistry& registry, const Ter
     for (int i = 0; i < world.CellCount(); ++i) { world.Cells()[i].region = kNoRegion; }
 
     // Regions
-    Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Regions"));
+    Reseed(wldStream, attemptSeed, names.regions);
     rep.regionBuild = BuildRegions(world, rules, wldStream, biomes);
 
     // Built-in nodes
-    Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Node.Corridor"));
+    Reseed(wldStream, attemptSeed, names.nodeCorridor);
     rep.corridors = PlaceCorridorNodes(world, rules, biomes.Strata(), wldStream);
     PlaceRiverNodes(world, rules);   // no RNG: nothing to reseed
-    Reseed(wldStream, attemptSeed, Dia::Core::StringCRC("CoW.Node.Fill"));
+    Reseed(wldStream, attemptSeed, names.nodeFill);
     rep.fill = PlaceFillNodes(world, rules, wldStream);
 
     rep.limits.regionLimitedBy = world.regions.limitedBy;

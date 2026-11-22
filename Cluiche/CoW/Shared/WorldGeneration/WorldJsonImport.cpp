@@ -306,7 +306,7 @@ namespace
             {
                 const std::string text = path + ".biome_registry_hash: file " + h.asString() + ", this build " + mine +
                                          "; biome ids that are not in this registry import as the fallback biome";
-                DIA_LOG_WARNING("CoW", "World file %s", text.c_str());
+                DIA_LOG_WARNING("HexWorld", "World file %s", text.c_str());
                 im.Warn(text);
             }
         }

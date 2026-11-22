@@ -1,6 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/retry-mechanism.md (AC1, AC2, AC4, AC5, AC6, AC7, SD-S1-008)
 // GenerationRun: the retry loop as a steppable object, driven with test placers and test guarantees.
 #include <gtest/gtest.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/DeriveSubSeed.h>
 #include <Shared/WorldGeneration/GenerationRun.h>
 #include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
@@ -73,7 +74,7 @@ namespace
         GenerationRun Make(uint64_t seed, uint32_t maxAttempts, IGenerationObserver* obs = nullptr)
         {
             GenParams p; p.maxRetryAttempts = maxAttempts;
-            return GenerationRun(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), seed, p, rng, obs);
+            return GenerationRun(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), seed, p, rng, CoWStepSeedNames(), obs);
         }
     };
 
@@ -399,7 +400,7 @@ TEST(GenerationRun, GenerateWorldReturnsTheReportAndTheAcceptedWorld)
     Fixture f;
     WorldStructure out;
     GenParams p;
-    const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, p, f.rng, &out);
+    const GenerationReport rep = GenerateWorld(f.terrain, f.registry, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, p, f.rng, CoWStepSeedNames(), &out);
     EXPECT_EQ(rep.outcome, GenerationOutcome::Success);
     EXPECT_GT(out.regions.regions.Size(), 0u);
     EXPECT_TRUE(SameTerrainAndBiomes(out, f.terrain));
@@ -409,14 +410,14 @@ TEST(GenerationRun, GenerateWorldReturnsTheReportAndTheAcceptedWorld)
     ASSERT_TRUE(failing.RegisterGuarantee(&never));
     WorldStructure untouched;
     GenParams q; q.maxRetryAttempts = 2;
-    const GenerationReport bad = GenerateWorld(f.terrain, failing, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, q, f.rng, &untouched);
+    const GenerationReport bad = GenerateWorld(f.terrain, failing, f.rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 1, q, f.rng, CoWStepSeedNames(), &untouched);
     EXPECT_EQ(bad.outcome, GenerationOutcome::Unsatisfiable);
     EXPECT_EQ(untouched.CellCount(), 0);   // no accepted world was written
 }
 
 TEST(GenerationRun, AC4_LogsAttemptCountAndDiagnosticsPerAttempt)
 {
-    Dia::CellLayers::Testing::LogCapture log("CoW");
+    Dia::CellLayers::Testing::LogCapture log("HexWorld");
     Fixture f;
     FailFirstNGuarantee flaky("Test.Flaky", 2);
     ASSERT_TRUE(f.registry.RegisterGuarantee(&flaky));
@@ -431,7 +432,7 @@ TEST(GenerationRun, AC4_LogsAttemptCountAndDiagnosticsPerAttempt)
 
 TEST(GenerationRun, AC4_ExhaustionLogsAnErrorWithTheAttemptCount)
 {
-    Dia::CellLayers::Testing::LogCapture log("CoW");
+    Dia::CellLayers::Testing::LogCapture log("HexWorld");
     Fixture f;
     FixedGuarantee never("Test.Never", false);
     ASSERT_TRUE(f.registry.RegisterGuarantee(&never));
@@ -503,7 +504,7 @@ TEST(GenerationRun, TinyAndDegenerateGridsFinishWithAConsistentReport)
         runner.Run(5, WorldShapeParams{}, dims);
         const WorldStructure terrain = runner.World();
         GenParams p; p.maxRetryAttempts = 4;
-        GenerationRun run(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 5, p, rng);
+        GenerationRun run(terrain, registry, rules, ::Draoi::HexWorld::Testing::ShippedBiomeRegistry(), 5, p, rng, CoWStepSeedNames());
         run.Run();
         SCOPED_TRACE(dims.width * 1000 + dims.height);
         EXPECT_TRUE(run.IsFinished());

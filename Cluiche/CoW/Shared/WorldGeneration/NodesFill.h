@@ -8,9 +8,9 @@
 // A sum still outside the range then is "node-limited" (never a failure).
 //
 // Fill count of a region = quota - the built-in nodes (any of the four built-in kinds) already in it.
-// Only the four built-in kinds count for quotas and spacing; other registered kinds (dragon layer) are ignored.
+// Only the four built-in kinds count for quotas and spacing; other registered kinds (game-specific layers) are ignored.
 //
-// RNG draw order (the caller passes a stream ALREADY reseeded for step "CoW.Node.Fill"; this does not reseed):
+// RNG draw order (the caller passes a stream ALREADY reseeded for the fill step (StepSeedNames::nodeFill); this does not reseed):
 // regions in ascending id, slots in order; per slot:
 //   1. kind: RandomUnit() < BiomeFoodShare(region primary biome) ? Hunting : Resource  (always drawn);
 //   2. cell: RandomInt() % totalWeight over eligible cells in ascending index (NOT drawn if no cell is eligible,

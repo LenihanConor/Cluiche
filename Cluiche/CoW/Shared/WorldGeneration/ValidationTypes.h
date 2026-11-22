@@ -75,7 +75,7 @@ struct Measurement
     uint32_t keyCrc = 0;                     // MeasurementKeys::*().Value()
     uint32_t a = kNoCellIndex;               // cells the value refers to, kNoCellIndex if none
     uint32_t b = kNoCellIndex;
-    int32_t  tag = -1;                       // extra discriminator (e.g. Apotheosis type for thronesOfType), -1 if none
+    int32_t  tag = -1;                       // extra discriminator (e.g. a variant index), -1 if none
     float    value = 0.0f;
     bool operator==(const Measurement&) const = default;
 };

@@ -2,8 +2,8 @@
 // Repair, records and renumbering are the second half (not here): this result carries provisional ids.
 //
 // RNG draw order (one passed stream, nothing else draws):
-//   1. desired region count n_Z, one draw per DECLARED stratum of the depth set in stratum order (CoW: First Shores,
-//      Wild Reaches, Ancient Interiors); always drawn, even when the stratum has no land, so the budget is fixed;
+//   1. desired region count n_Z, one draw per DECLARED stratum of the depth set in stratum order (e.g. shallowest, middle,
+//      deepest); always drawn, even when the stratum has no land, so the budget is fixed;
 //   2. first seed of each component with at least kMinRegionCells cells, components in ascending
 //      min-cell-index order (one draw each; tiny components draw nothing).
 // All ties: lowest cell index, then lowest region id.

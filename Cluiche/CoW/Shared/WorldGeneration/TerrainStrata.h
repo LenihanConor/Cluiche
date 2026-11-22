@@ -22,8 +22,8 @@
 //     else stratum N-1. Then each stratum's rules apply, falling to the previous stratum on failure and stopping at
 //     stratum 1 (which has no rule): a main_landmass_only stratum is unavailable off the main landmass, and a stratum
 //     with min_coast_depth d needs coastDistance >= d. Ocean: both costs 0, stratum None.
-//   For the three shipped strata this is First Shores where zoneCost <= t1, Ancient Interiors where zoneCost >= t2
-//     on the main landmass at coast distance >= its min_coast_depth, Wild Reaches elsewhere (t1 = end cut 1, t2 = the
+//   For a three-stratum set this is the shallowest stratum where zoneCost <= t1, the deepest where zoneCost >= t2
+//     on the main landmass at coast distance >= its min_coast_depth, the middle one elsewhere (t1 = end cut 1, t2 = the
 //     last cut). The depth value comes from the stratum table, not from TerrainRules.
 // Free functions over arrays so tests can use hand-built grids.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/terrain-generator.md

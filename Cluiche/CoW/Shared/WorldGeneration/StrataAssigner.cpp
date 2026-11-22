@@ -48,7 +48,7 @@ namespace
         if (!problem.empty())
         {
             if (ctx.error != nullptr) { *ctx.error = problem; }
-            DIA_LOG_ERROR("CoW", "%s", problem.c_str());
+            DIA_LOG_ERROR("HexWorld", "%s", problem.c_str());
             return false;
         }
         return true;
@@ -155,7 +155,7 @@ bool RunStrataAssigner(const char* typeName, IStrataAssigner& assigner, const St
     {
         err.assigner = typeName != nullptr ? typeName : "";
         err.reason = "strata assigner '" + err.assigner + "' could not run: " + *ctx.error;
-        DIA_LOG_ERROR("CoW", "%s", err.reason.c_str());
+        DIA_LOG_ERROR("HexWorld", "%s", err.reason.c_str());
         return false;
     }
 
@@ -184,7 +184,7 @@ bool RunStrataAssigner(const char* typeName, IStrataAssigner& assigner, const St
             err.value = v;
             err.reason = "strata assigner '" + err.assigner + "' broke its contract at cell " + std::to_string(i) + ": " + problem +
                          " (value " + std::to_string(v) + ", set has " + std::to_string(count) + " strata)";
-            DIA_LOG_ERROR("CoW", "%s", err.reason.c_str());
+            DIA_LOG_ERROR("HexWorld", "%s", err.reason.c_str());
             return false;
         }
     }

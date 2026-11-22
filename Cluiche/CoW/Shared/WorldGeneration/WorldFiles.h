@@ -3,7 +3,7 @@
 // ([A-Za-z0-9_-]{1,64}, no separators, dots or device names), the extension is added here, and the directory comes
 // from configuration, so a command argument can never reach outside the worlds directories.
 //
-// Writable worlds live in the out worlds directory (PD-009: Cluiche/out/CoW/worlds); an optional read-only
+// Writable worlds live in the out worlds directory (the host chooses the directory); an optional read-only
 // deployed directory is searched second on read.
 //
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC7, Default file paths)

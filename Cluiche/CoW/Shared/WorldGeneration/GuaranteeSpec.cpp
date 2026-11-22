@@ -18,7 +18,7 @@ namespace
     {
         err.entry = entry;
         err.reason = reason;
-        DIA_LOG_ERROR("CoW", "GuaranteeSpec: load failed at '%s': %s", entry.c_str(), reason.c_str());
+        DIA_LOG_ERROR("HexWorld", "GuaranteeSpec: load failed at '%s': %s", entry.c_str(), reason.c_str());
         return false;
     }
 
@@ -348,7 +348,7 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const Draoi::H
     }
 
     out = std::move(cand);
-    DIA_LOG_INFO("CoW", "GuaranteeSpec: loaded %u site kinds, %u guarantees", static_cast<unsigned>(out.siteKinds.size()),
+    DIA_LOG_INFO("HexWorld", "GuaranteeSpec: loaded %u site kinds, %u guarantees", static_cast<unsigned>(out.siteKinds.size()),
                  static_cast<unsigned>(out.guarantees.size()));
     return true;
 }
@@ -361,7 +361,7 @@ bool InstallSiteKinds(const GuaranteeSpec& spec, SiteRegistry& registry, bool sk
             continue;   // a placer (or an earlier install) already owns the id
         if (!registry.RegisterDeclaredKind(k.ToInfo()))
         {
-            DIA_LOG_ERROR("CoW", "GuaranteeSpec: site kind '%s' is already registered", k.id.c_str());
+            DIA_LOG_ERROR("HexWorld", "GuaranteeSpec: site kind '%s' is already registered", k.id.c_str());
             return false;
         }
     }

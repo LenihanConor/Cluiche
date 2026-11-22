@@ -4,7 +4,7 @@
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/GuaranteeSpec.h>
-#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/TestPlacers.h>
 
 #include <string>

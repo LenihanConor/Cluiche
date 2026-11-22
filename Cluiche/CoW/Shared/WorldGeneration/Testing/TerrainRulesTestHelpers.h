@@ -10,9 +10,10 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <Shared/CoWStepSeedNames.h>
 #include <Shared/WorldGeneration/HexWorldAccess.h>
 #include <Shared/WorldGeneration/TerrainRules.h>
-#include <Shared/WorldGeneration/Testing/GuaranteeSpecTestHelpers.h>
+#include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/WorldGenSession.h>
 
 #include <DiaAttribute/ParameterFile.h>
@@ -110,6 +111,7 @@ struct TestSession : WorldGenSession
 {
     TestSession()
     {
+        SetStepSeedNames(CoWStepSeedNames());
         SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
         SetGuaranteeSpec(CoW::WorldGeneration::Testing::ShippedGuaranteeSpec());
         Dia::Attribute::ParamError err;
