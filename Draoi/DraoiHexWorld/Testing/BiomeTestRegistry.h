@@ -1,5 +1,6 @@
 // Test utilities for the biome registry. Ships with the library (no gtest dependency): failures print and abort.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md
+// The shipped data files are supplied by the host application via SetTestAssetPaths (repo-relative paths).
 #pragma once
 
 #include <DraoiHexWorld/BiomeRegistry.h>
@@ -24,8 +25,35 @@ namespace Testing {
 
 inline const StratumTable& ShippedStratumTable();
 
+// Repo-relative paths of the shipped data the helpers load. The host application's tests set these once (before any test runs).
+struct TestAssetPaths
+{
+    std::string strata;         // strata.json
+    std::string strataSidecar;  // strata.schema.json
+    std::string biomes;         // biomes.json
+    std::string biomesExtra;    // fixture: shipped rows plus one appended climate biome
+};
+
+inline TestAssetPaths& AssetPaths() { static TestAssetPaths paths; return paths; }
+inline void SetTestAssetPaths(const TestAssetPaths& paths) { AssetPaths() = paths; }
+
 namespace Detail
 {
+    inline std::string FindUpwards(const char* relative, bool wantDirectory);
+
+    // Resolves a repo-relative asset path set through SetTestAssetPaths. Aborts if none was set or the file is missing.
+    inline std::string ResolveAsset(const std::string& relative)
+    {
+        std::string found = relative.empty() ? std::string() : FindUpwards(relative.c_str(), false);
+        if (found.empty())
+        {
+            std::fprintf(stderr, "BiomeTestRegistry: asset path not set or not found ('%s'); call SetTestAssetPaths\n", relative.c_str());
+            std::fflush(stderr);
+            std::abort();
+        }
+        return found;
+    }
+
     // Walks up from this header's directory until `<dir>/<relative>` is a regular file or directory.
     inline std::string FindUpwards(const char* relative, bool wantDirectory)
     {
@@ -69,9 +97,9 @@ namespace Detail
     }
 }
 
-// Absolute paths of the shipped Global/World/strata.json and its sidecar strata.schema.json.
-inline std::string ShippedStrataPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/strata.json", false); }
-inline std::string ShippedStratumSidecarPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/strata.schema.json", false); }
+// Absolute paths of the shipped strata.json and its sidecar strata.schema.json.
+inline std::string ShippedStrataPath() { return Detail::ResolveAsset(AssetPaths().strata); }
+inline std::string ShippedStratumSidecarPath() { return Detail::ResolveAsset(AssetPaths().strataSidecar); }
 
 // The shipped stratum table (FirstShores, WildReaches, AncientInteriors), loaded once per process. Aborts if it cannot be loaded.
 inline const StratumTable& ShippedStratumTable()
@@ -161,10 +189,10 @@ inline std::string TestStrataSidecar(const std::vector<std::string>& names, cons
     return "{\"format\":\"dia.value_schema\",\"version\":1,\"for\":\"cow.strata\",\"entries\":[" + entries + "]}";
 }
 
-// Absolute path of the shipped Global/World/biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
-inline std::string ShippedBiomesPath() { return Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/biomes.json", false); }
+// Absolute path of the shipped biomes.json (for WorldGenerationModule::SetBiomesPath in module tests).
+inline std::string ShippedBiomesPath() { return Detail::ResolveAsset(AssetPaths().biomes); }
 
-// The shipped Global/World/biomes.json, loaded once per process. Aborts if it cannot be loaded.
+// The shipped biomes.json, loaded once per process. Aborts if it cannot be loaded.
 inline const BiomeRegistry& ShippedBiomeRegistry()
 {
     static BiomeRegistry reg;
@@ -172,7 +200,7 @@ inline const BiomeRegistry& ShippedBiomeRegistry()
     if (!loaded)
     {
         loaded = true;
-        Detail::LoadOrAbort(reg, Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/biomes.json", false), "shipped biomes.json");
+        Detail::LoadOrAbort(reg, Detail::ResolveAsset(AssetPaths().biomes), "shipped biomes.json");
     }
     return reg;
 }
@@ -185,7 +213,7 @@ inline const BiomeRegistry& ExtraBiomeRegistry()
     if (!loaded)
     {
         loaded = true;
-        Detail::LoadOrAbort(reg, Detail::FindUpwards("Cluiche/Tests/GoogleTests/CoW/Fixtures/biomes_extra.json", false), "biomes_extra.json");
+        Detail::LoadOrAbort(reg, Detail::ResolveAsset(AssetPaths().biomesExtra), "biomes_extra.json");
     }
     return reg;
 }
@@ -194,7 +222,7 @@ inline const BiomeRegistry& ExtraBiomeRegistry()
 // loaded into a fresh registry. For fixtures that change a priority, an envelope or a row. Aborts on a bad edit or load.
 inline BiomeRegistry LoadShippedVariant(std::initializer_list<std::pair<const char*, const char*>> edits)
 {
-    std::ifstream     in(Detail::FindUpwards("Cluiche/Assets/CoW/Global/World/biomes.json", false), std::ios::binary);
+    std::ifstream     in(Detail::ResolveAsset(AssetPaths().biomes), std::ios::binary);
     std::stringstream ss;
     ss << in.rdbuf();
     std::string text = ss.str();

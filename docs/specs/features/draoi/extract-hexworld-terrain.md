@@ -1,7 +1,7 @@
 # Feature Spec: Extract DraoiHexWorldTerrain (S-1 generator)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 2)
-**Status:** `Approved` (2026-11-21; decisions recorded from the user)
+**Status:** `Done` (2026-11-22)
 **Origin:** Draoi layer audit, 2026-11-21 (WorldGeneration coupling audit and placement list).
 **Prerequisites:** @docs/specs/features/draoi/guarantee-set-injection.md must have landed (confirm in task 1).
 **Depends on / ordering:** Strata -> core -> terrain -> GameSpeed. The Strata feature (@docs/specs/features/draoi/generic-strata.md, Approved 2026-11-21, not yet built) lands first (`TerrainDepthZones` becomes `TerrainStrata` with the `IStrataAssigner` seam, stays in this package); then @docs/specs/features/draoi/extract-hexworld-core.md must be Done; this spec is third; @docs/specs/features/draoi/extract-draoigamespeed.md is last.

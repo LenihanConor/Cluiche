@@ -3207,5 +3207,8 @@
     <ClCompile Include="CoW\TestStrataMetric.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\CoWTestAssetPaths.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

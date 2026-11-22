@@ -36,4 +36,4 @@ non_responsibilities:
 ---
 # DraoiHexWorld
 
-Draoi core package for the hex world foundation. Static library, depends on Dia only. The CoW world foundation moved in under @docs/specs/features/draoi/extract-hexworld-core.md (Tasks 2-3).
+Draoi core package for the hex world foundation. Static library, depends on Dia only. The hex world foundation was extracted from the first game under @docs/specs/features/draoi/extract-hexworld-core.md (Tasks 2-3).
