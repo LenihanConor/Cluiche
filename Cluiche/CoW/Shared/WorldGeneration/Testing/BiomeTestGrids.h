@@ -3,18 +3,21 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorldTerrain/BiomeClassify.h>
+#include <DraoiHexWorldTerrain/TerrainTypes.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cstdint>
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
-#include <Shared/WorldGeneration/HexWorldAccess.h>
+#include <DraoiHexWorld/WorldStructure.h>
 
 namespace CoW {
 namespace WorldGeneration {
 namespace Testing {
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
+
 
 struct ClimateGrid
 {

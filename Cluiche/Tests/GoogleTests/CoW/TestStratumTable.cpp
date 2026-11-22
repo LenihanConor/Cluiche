@@ -9,13 +9,13 @@
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/NodesCorridor.h>
-#include <Shared/WorldGeneration/RegionPartition.h>
-#include <Shared/WorldGeneration/RegionRepair.h>
-#include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldJson.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/NodesCorridor.h>
+#include <DraoiHexWorldTerrain/RegionPartition.h>
+#include <DraoiHexWorldTerrain/RegionRepair.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 

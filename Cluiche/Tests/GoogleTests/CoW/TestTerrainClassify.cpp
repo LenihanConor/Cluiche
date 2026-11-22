@@ -2,7 +2,7 @@
 // Stage 11 Latitude. Hand-built grids check every rule row and threshold tie exactly through ComputeStage10;
 // generator runs check invariants on real terrain, dirty propagation and AC16. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -16,6 +16,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::CellCoord;
 using Dia::Pathfinding::HexTopology;

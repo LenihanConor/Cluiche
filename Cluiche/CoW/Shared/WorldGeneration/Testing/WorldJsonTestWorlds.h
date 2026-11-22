@@ -6,9 +6,9 @@
 
 #include <Shared/CoWNodeKinds.h>
 
-#include "../RegionRepair.h"
-#include "../WorldGenSession.h"
-#include "../WorldJson.h"
+#include <DraoiHexWorldTerrain/RegionRepair.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 
 #include <DiaMaths/Core/RandomStream.h>
@@ -17,11 +17,14 @@
 #include <string>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
-#include <Shared/WorldGeneration/HexWorldAccess.h>
+#include <DraoiHexWorld/WorldStructure.h>
 
 namespace CoW {
 namespace WorldGeneration {
 namespace Testing {
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
+
 
 // Legacy-enum value of a registry biome id (Cell::biome is still the enum; Task 27 removes the bridge).
 // A site registry with no placers that carries CoW's node kind ids (a JSON context without a registry knows only the neutral ids).

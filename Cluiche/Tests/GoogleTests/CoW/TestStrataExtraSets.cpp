@@ -4,10 +4,10 @@
 #include <gtest/gtest.h>
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/StrataAssigner.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldJson.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/StrataAssigner.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
 

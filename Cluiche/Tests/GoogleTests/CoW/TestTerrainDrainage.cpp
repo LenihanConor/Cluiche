@@ -3,7 +3,7 @@
 // ComputeStage5; generator runs check the invariants on real terrain. TerrainPerf (Release only)
 // reports the stage 5 time at Small.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -17,6 +17,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::CellCoord;
 using Dia::Pathfinding::HexTopology;

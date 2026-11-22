@@ -4,11 +4,11 @@
 // every failed generation.
 #include <gtest/gtest.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -21,7 +21,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 namespace fs = std::filesystem;
 

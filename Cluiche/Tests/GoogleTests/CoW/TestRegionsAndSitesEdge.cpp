@@ -5,13 +5,13 @@
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/LayoutCheck.h>
-#include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/RegionChecks.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/LayoutCheck.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/RegionChecks.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -25,7 +25,9 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 
 namespace

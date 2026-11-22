@@ -11,13 +11,13 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/Testing/TerrainRulesTestHelpers.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainRulesTestHelpers.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/CoWStepSeedNames.h>
-#include <Shared/WorldGeneration/HexWorldAccess.h>
-#include <Shared/WorldGeneration/TerrainRules.h>
+#include <DraoiHexWorld/WorldStructure.h>
+#include <DraoiHexWorldTerrain/TerrainRules.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 
 #include <DiaAttribute/ParameterFile.h>
 
@@ -30,22 +30,24 @@
 
 namespace CoW {
 namespace WorldGeneration {
+using namespace Draoi::HexWorld;
 
-namespace TerrainRulesTestDetail
+
+namespace CoWTerrainRulesTestDetail
 {
     inline std::string ReadSidecarFromSourceTree()
     {
-        return ReadFileFromSourceTree("Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json", __FILE__);
+        return ::Draoi::HexWorld::TerrainRulesTestDetail::ReadFileFromSourceTree("Cluiche/Assets/CoW/Global/WorldGen/Rules/terrain_rules.schema.json", __FILE__);
     }
 }
 
 inline const std::string& TestSidecarText()
 {
     static const std::string text = [] {
-        std::string t = TerrainRulesTestDetail::ReadSidecarFromSourceTree();
+        std::string t = CoWTerrainRulesTestDetail::ReadSidecarFromSourceTree();
         if (t.empty())
         {
-            TerrainRulesTestDetail::Fail("terrain_rules.schema.json not found above ", __FILE__);
+            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("terrain_rules.schema.json not found above ", __FILE__);
         }
         return t;
     }();
@@ -59,7 +61,7 @@ inline const Dia::Attribute::ParameterFile& TestSidecarFile()
         Dia::Attribute::ParamError err;
         if (!f->Load(TestSidecarText().c_str(), "terrain_rules.schema.json", nullptr, err))
         {
-            TerrainRulesTestDetail::Fail("sidecar failed to load at key ", err.key.AsCStr());
+            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("sidecar failed to load at key ", err.key.AsCStr());
         }
         return f;
     }();
@@ -72,7 +74,7 @@ inline TerrainRules TestRules()
         TerrainRules r;
         if (!TerrainRules::FromParameterFile(TestSidecarFile(), r))
         {
-            TerrainRulesTestDetail::Fail("sidecar does not match TerrainRules", "");
+            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("sidecar does not match TerrainRules", "");
         }
         return r;
     }();
@@ -91,7 +93,7 @@ struct TestSession : WorldGenSession
         Dia::Attribute::ParamError err;
         if (!LoadRules(TestSidecarText().c_str(), err))
         {
-            TerrainRulesTestDetail::Fail("LoadRules failed at key ", err.key.AsCStr());
+            ::Draoi::HexWorld::TerrainRulesTestDetail::Fail("LoadRules failed at key ", err.key.AsCStr());
         }
     }
 };

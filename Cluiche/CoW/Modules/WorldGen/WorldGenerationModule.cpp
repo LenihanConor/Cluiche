@@ -3,8 +3,8 @@
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/CoWStepSeedNames.h>
-#include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/GuaranteeSpec.h>
+#include <DraoiHexWorldTerrain/BiomeClassify.h>
+#include <DraoiHexWorldTerrain/GuaranteeSpec.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaDebugServer/SimHelpInfo.h>
@@ -229,9 +229,9 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
             return false;
         }
     }
-    WorldGeneration::GuaranteeSpec spec;
-    WorldGeneration::GuaranteeSpecError err;
-    if (!WorldGeneration::LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), strata, spec, err))
+    Draoi::HexWorld::GuaranteeSpec spec;
+    Draoi::HexWorld::GuaranteeSpecError err;
+    if (!Draoi::HexWorld::LoadGuaranteeSpec(text.c_str(), sidecar.c_str(), strata, spec, err))
     {
         mBiomesErrorField = std::string("guarantees.") + err.entry;
         mBiomesErrorReason = err.reason;
@@ -241,7 +241,7 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
     }
     mSession.SetGuaranteeSpec(spec);
     // Data-declared kinds without a placer show in the sites overlay; ids a placer already owns are left alone.
-    if (!WorldGeneration::InstallSiteKinds(spec, mSiteRegistry, true))
+    if (!Draoi::HexWorld::InstallSiteKinds(spec, mSiteRegistry, true))
     {
         mBiomesErrorField = "guarantees.site_kinds";
         mBiomesErrorReason = "a declared site kind cannot be installed";
@@ -294,7 +294,7 @@ void WorldGenerationModule::LoadBiomes()
     }
 
     Draoi::HexWorld::RegistryError err;
-    if (!mBiomes->LoadFromText(text.c_str(), strata, err, &WorldGeneration::IsBuiltInPinRule))
+    if (!mBiomes->LoadFromText(text.c_str(), strata, err, &Draoi::HexWorld::IsBuiltInPinRule))
     {
         mBiomesErrorField = err.field.AsCStr();
         if (mBiomesErrorField.empty())
@@ -667,7 +667,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
                      mSession.Revision(), unresolvedPairs);
     }
 
-    if (mSession.State() == WorldGeneration::WorldGenState::Failed)
+    if (mSession.State() == Draoi::HexWorld::WorldGenState::Failed)
         return;   // unsatisfiable: no accepted world, so no WorldGenerationComplete
 
     WorldGenerationComplete msg;
@@ -698,7 +698,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 
 void WorldGenerationModule::OnRetryRunFinished()
 {
-    const WorldGeneration::GenerationReport* report = mSession.LastReport();
+    const Draoi::HexWorld::GenerationReport* report = mSession.LastReport();
     if (!report)
         return;
 
@@ -706,7 +706,7 @@ void WorldGenerationModule::OnRetryRunFinished()
     Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
     for (unsigned i = 0; i < report->attempts.Size(); ++i)
     {
-        const WorldGeneration::AttemptRecord& a = report->attempts[i];
+        const Draoi::HexWorld::AttemptRecord& a = report->attempts[i];
         if (a.passed)
             continue;
         WorldGenerationRetry retry;
@@ -717,7 +717,7 @@ void WorldGenerationModule::OnRetryRunFinished()
             mPublishDroppedCounter->Inc();   // progress events are best effort; the report keeps the full detail
     }
 
-    using WorldGeneration::GenerationOutcome;
+    using Draoi::HexWorld::GenerationOutcome;
     if (report->outcome == GenerationOutcome::Success)
     {
         mGenerationUnsatisfiable = false;
@@ -766,7 +766,7 @@ void WorldGenerationModule::OnRetryRunFinished()
     }
     mHealth.SetFailing(Dia::Core::StringCRC(healthReason));
     DIA_LOG_ERROR("CoW", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s) (%s); see cow.worldgen.report",
-                  static_cast<unsigned long long>(report->outerSeed), WorldGeneration::GenerationOutcomeName(report->outcome),
+                  static_cast<unsigned long long>(report->outerSeed), Draoi::HexWorld::GenerationOutcomeName(report->outcome),
                   static_cast<unsigned>(report->attempts.Size()), report->failureMessage);
 }
 
@@ -970,7 +970,7 @@ void WorldGenerationModule::RegisterCommands()
         { "offset", "int", false, "First site of the page (default 0)" },
         { "limit", "int", false, "Sites in the page (default and max 80)" } };
 
-    WorldGeneration::WorldGenSession* s = &mSession;
+    Draoi::HexWorld::WorldGenSession* s = &mSession;
     registerOne(true, "cow.worldgen.set", "Set world shape parameters and/or the seed; regenerates on the next sim tick",
                 kSetParams, 1, [s](const Json::Value& a) { return s->Set(a); });
     registerOne(true, "cow.worldgen.set_size", "Set the world size (Small, Standard, Large); regenerates on the next sim tick",

@@ -3,11 +3,11 @@
 // WriteTerrain / Invalidate behaviour, and WorldGenSession stagesRan coverage of the biome stages.
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/BiomeClimate.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/Testing/BiomeChecks.h>
+#include <DraoiHexWorldTerrain/BiomeClassify.h>
+#include <DraoiHexWorldTerrain/BiomeClimate.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeChecks.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>

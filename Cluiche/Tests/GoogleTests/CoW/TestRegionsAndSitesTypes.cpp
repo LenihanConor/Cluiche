@@ -1,11 +1,11 @@
 // S-1 Regions, Nodes and Site Hook task 1: RegionTable, SiteSet, PlaceResult, DeriveSubSeed.
 #include <gtest/gtest.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorldTerrain/TerrainTypes.h>
 #include <DraoiHexWorld/Regions.h>
 #include <DraoiHexWorld/Sites.h>
-#include <Shared/WorldGeneration/PlaceResult.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/PlaceResult.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
 
 #include <cstdio>
 #include <cstring>
@@ -15,6 +15,7 @@
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Core::StringCRC;
 
 static_assert(std::is_trivially_copyable_v<Site>, "Site must be trivially copyable");

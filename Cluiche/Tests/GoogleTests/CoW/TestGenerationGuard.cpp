@@ -4,10 +4,10 @@
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/GenerationGuard.h>
-#include <Shared/WorldGeneration/GenerationRun.h>
+#include <DraoiHexWorldTerrain/GenerationGuard.h>
+#include <DraoiHexWorldTerrain/GenerationRun.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
@@ -21,7 +21,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 using Level = Dia::CellLayers::Testing::LogCapture::Level;
 

@@ -6,9 +6,9 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DraoiHexWorld/SharedWorldHexGrid.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/StrataAssigner.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/StrataAssigner.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/Plumbing/RandomStreamModule.h"
@@ -43,8 +43,8 @@ public:
     ~WorldGenerationModule() override;
 
     // SimPU thread only. Mutating calls must be followed by NotifyAction().
-    WorldGeneration::WorldGenSession& GetSession() { return mSession; }
-    const WorldGeneration::WorldGenSession& GetSession() const { return mSession; }
+    Draoi::HexWorld::WorldGenSession& GetSession() { return mSession; }
+    const Draoi::HexWorld::WorldGenSession& GetSession() const { return mSession; }
 
     // nullptr until the first world has been generated.
     const Draoi::HexWorld::WorldStructure* GetCurrentWorld() const
@@ -77,9 +77,9 @@ public:
     // ReleaseGeneration() once its registrations are in place.
     // Strata assigners (strata.json selects one per set by type). A game registers its own before the strata load; the
     // built-in coast_cost_bands is always present.
-    WorldGeneration::StrataAssignerRegistry& GetStrataAssignerRegistry() { return mStrataAssigners; }
-    WorldGeneration::SiteRegistry& GetSiteRegistry() { return mSiteRegistry; }
-    const WorldGeneration::SiteRegistry& GetSiteRegistry() const { return mSiteRegistry; }
+    Draoi::HexWorld::StrataAssignerRegistry& GetStrataAssignerRegistry() { return mStrataAssigners; }
+    Draoi::HexWorld::SiteRegistry& GetSiteRegistry() { return mSiteRegistry; }
+    const Draoi::HexWorld::SiteRegistry& GetSiteRegistry() const { return mSiteRegistry; }
     void HoldGeneration() { ++mGenerationHolds; }
     void ReleaseGeneration() { if (mGenerationHolds > 0) --mGenerationHolds; }
 
@@ -93,7 +93,7 @@ public:
     Json::Value ImportWorldFile(const Json::Value& args);
 
     // Report of the last finished Regenerate (retry attempts, outcome, evidence); nullptr before the first. SimPU only.
-    const WorldGeneration::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
+    const Draoi::HexWorld::GenerationReport* GetLastReport() const { return mSession.LastReport(); }
     uint32_t GetReportRevision() const { return mSession.ReportRevision(); }
 
     // Terrain rules sidecar (a Dia parameter file, catalogue alias json.terrain_rules_schema). Where it comes from:
@@ -203,9 +203,9 @@ private:
     // Logs the outcome of an export or import command reply (Info on success with each warning, Warning on failure).
     void LogWorldFileReply(const char* action, const Json::Value& reply) const;
 
-    WorldGeneration::WorldGenSession mSession;
-    WorldGeneration::SiteRegistry mSiteRegistry;
-    WorldGeneration::StrataAssignerRegistry mStrataAssigners;
+    Draoi::HexWorld::WorldGenSession mSession;
+    Draoi::HexWorld::SiteRegistry mSiteRegistry;
+    Draoi::HexWorld::StrataAssignerRegistry mStrataAssigners;
 #ifdef DIA_DEBUG
     Draoi::HexWorld::SharedWorldHexGrid mHexGrid;
 #endif

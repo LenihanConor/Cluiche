@@ -8,15 +8,15 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>   // before the module header: windows.h defines min/max macros
-#include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainShapeChecks.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>
 
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldJson.h>
-#include <Shared/WorldGeneration/Testing/BiomeChecks.h>
-#include <Shared/WorldGeneration/Testing/RegionChecks.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
-#include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeChecks.h>
+#include <DraoiHexWorldTerrain/Testing/RegionChecks.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainShapeChecks.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #ifdef DIA_DEBUG

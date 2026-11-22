@@ -2,7 +2,7 @@
 #ifdef DIA_DEBUG
 
 #include "Modules/WorldGen/WorldGenerationModule.h"
-#include <Shared/WorldGeneration/WorldFiles.h>
+#include <DraoiHexWorldTerrain/WorldFiles.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
@@ -16,7 +16,7 @@
 namespace CoW {
 
 namespace {
-    using namespace WorldGeneration;
+    using namespace Draoi::HexWorld;
 
     const Dia::Core::StringCRC kCmdSetScale("setScale");
     const Dia::Core::StringCRC kCmdRegenerate("regenerate");
@@ -430,7 +430,7 @@ void WorldGenDebugDomain::GetJSONState(Json::Value& out)
             e["overlay"] = k.overlay;
             e["kind"] = k.info->id;
             e["colour"] = colour;
-            e["shape"] = WorldGeneration::SiteShapeName(k.info->debugShape);
+            e["shape"] = Draoi::HexWorld::SiteShapeName(k.info->debugShape);
             e["enabled"] = k.enabled;
             e["count"] = k.count;
             siteKinds.append(e);

@@ -30,6 +30,7 @@ using Dia::CellLayers::CellValueKind;
 using Dia::Core::StringCRC;
 using Dia::Maths::Vector2D;
 using namespace WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace
 {
@@ -759,7 +760,7 @@ void WorldGenViewHost::DrawSites(Dia::Core::IDebugDraw& draw, const void* /*sele
     if (mSession.Revision() == 0)
         return;
     // The kind list can change between generations (registry edits), so it is part of the cache key.
-    const std::vector<SiteKindInfo> kinds = WorldGeneration::ListSiteKinds(mSession.Registry());
+    const std::vector<SiteKindInfo> kinds = Draoi::HexWorld::ListSiteKinds(mSession.Registry());
     bool same = mSiteRevision == mSession.Revision() && mSiteGridGeneration == mGridGeneration && kinds.size() == mSiteMarkers.size();
     for (size_t i = 0; same && i < kinds.size(); ++i)
     {
@@ -925,7 +926,7 @@ bool WorldGenViewHost::SetOverlayEnabled(const char* id, bool enabled)
     const size_t prefix = std::strlen(kSiteKindPrefix);
     if (std::strncmp(id, kSiteKindPrefix, prefix) == 0)
     {
-        for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+        for (const SiteKindInfo& k : Draoi::HexWorld::ListSiteKinds(mSession.Registry()))
         {
             if (std::strcmp(k.id, id + prefix) != 0)
                 continue;
@@ -960,7 +961,7 @@ void WorldGenViewHost::ListOverlays(const std::function<void(const char* id, boo
     fn(kOverlayRegionEdges, mDomain->IsOverlayEnabled(StringCRC(kOverlayRegionEdges)), fresh);
     fn(kOverlaySites, mDomain->IsOverlayEnabled(StringCRC(kOverlaySites)), fresh);
     std::string toggle;
-    for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+    for (const SiteKindInfo& k : Draoi::HexWorld::ListSiteKinds(mSession.Registry()))
     {
         toggle = kSiteKindPrefix;
         toggle += k.id;
@@ -984,7 +985,7 @@ std::string WorldGenViewHost::OverlayLabel(const char* id)
     if (std::strcmp(id, kOverlayEvidence) == 0)       return "Guarantee evidence";
     const size_t prefix = std::strlen(kSiteKindPrefix);
     if (std::strncmp(id, kSiteKindPrefix, prefix) == 0)
-        for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+        for (const SiteKindInfo& k : Draoi::HexWorld::ListSiteKinds(mSession.Registry()))
             if (std::strcmp(k.id, id + prefix) == 0)
                 return std::string("Sites ") + k.displayName;
     return id;
@@ -993,7 +994,7 @@ std::string WorldGenViewHost::OverlayLabel(const char* id)
 void WorldGenViewHost::ListSiteKinds(const std::function<void(const SiteKindRow&)>& fn)
 {
     std::string toggle;
-    for (const SiteKindInfo& k : WorldGeneration::ListSiteKinds(mSession.Registry()))
+    for (const SiteKindInfo& k : Draoi::HexWorld::ListSiteKinds(mSession.Registry()))
     {
         toggle = kSiteKindPrefix;
         toggle += k.id;

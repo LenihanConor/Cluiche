@@ -1,9 +1,9 @@
 // S-1 Regions: region partition first half (targets, components, seeds, growth).
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/RegionPartition.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
+#include <DraoiHexWorldTerrain/RegionPartition.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 

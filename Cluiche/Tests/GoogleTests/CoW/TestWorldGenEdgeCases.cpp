@@ -3,7 +3,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (Command set: terrain slice)
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaApplicationFlow/Application.h>
@@ -1349,7 +1349,7 @@ TEST(WorldGenEdgeModule, BusMessageCountEqualsRevisionBumpsOverMixedCommands)
     EdgeFixture f;
     ASSERT_TRUE(f.Boot());
     f.Pump(3);
-    CoW::WorldGeneration::WorldGenSession& s = f.wg->GetSession();
+    Draoi::HexWorld::WorldGenSession& s = f.wg->GetSession();
     ASSERT_EQ(f.wg->GetWorldRevision(), 1u);
 
     auto step = [&]() { f.wg->NotifyAction(); f.Pump(3); };
@@ -1381,7 +1381,7 @@ TEST(WorldGenEdgeModule, AutoGenerateFalseWithSeveralActionsBeforeFirstTickIsOne
     ASSERT_TRUE(f.Boot());
     f.Pump(3);
     EXPECT_EQ(f.wg->GetWorldRevision(), 0u);
-    CoW::WorldGeneration::WorldGenSession& s = f.wg->GetSession();
+    Draoi::HexWorld::WorldGenSession& s = f.wg->GetSession();
     s.Set(Obj("rivers", 0.2));
     s.Set(Obj("seed", 3));
     s.SetSize(Obj("size", "Standard"));

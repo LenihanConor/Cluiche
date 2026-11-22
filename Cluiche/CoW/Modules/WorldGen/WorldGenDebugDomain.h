@@ -108,7 +108,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Colour/RGBA.h>
 #include <DiaVisualDebugger/Domain/IDebugDomain.h>
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorldTerrain/TerrainTypes.h>
 
 #include <chrono>
 #include <string>

@@ -4,14 +4,14 @@
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/ReachabilityValidator.h>
-#include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/ReachabilityValidator.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldLayoutGuarantee.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -23,6 +23,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 namespace

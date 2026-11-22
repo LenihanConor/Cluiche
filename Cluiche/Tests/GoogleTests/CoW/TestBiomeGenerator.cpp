@@ -2,9 +2,9 @@
 // AC1 (live == fresh), AC2 (biome validity), AC3 (zone rule), AC4 (no forbidden pairs), AC9 (slider isolation).
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/BiomeChecks.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeChecks.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 
 #include <algorithm>

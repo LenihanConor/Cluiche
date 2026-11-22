@@ -1,6 +1,6 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
@@ -12,6 +12,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace
 {

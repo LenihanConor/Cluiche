@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7, AC7)
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/WorldOverlayGeometry.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldOverlayGeometry.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -10,6 +10,7 @@
 #include <iostream>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Pathfinding::HexTopology;
 
 namespace

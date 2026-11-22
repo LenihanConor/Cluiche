@@ -1,5 +1,5 @@
 // S-1 World Generation map view: hex grid geometry for the DiaCellLayers viewer.
-// Pure CoW-Shared code: owns the centre, neighbour and bounds storage that a CellGridDesc borrows.
+// Pure hex world code: owns the centre, neighbour and bounds storage that a CellGridDesc borrows.
 // Convention: flat-top odd-q, cell index = row * width + col; neighbour d equals HexTopology::NeighbourAt(cell, d).
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 #pragma once

@@ -33,7 +33,7 @@ namespace
     {
         err.field = field;
         err.reason = reason;
-        DIA_LOG_ERROR("CoW", "StratumTable: load failed at '%s': %s", field.c_str(), reason.c_str());
+        DIA_LOG_ERROR("HexWorld", "StratumTable: load failed at '%s': %s", field.c_str(), reason.c_str());
         return false;
     }
 
@@ -329,7 +329,7 @@ bool StratumTable::LoadFromText(const char* strataText, const char* sidecarText,
     cand.mSidecar = file;
 
     *this = cand;
-    DIA_LOG_INFO("CoW", "StratumTable: loaded %u sets, depth set has %u strata", cand.mSetCount, cand.Count());
+    DIA_LOG_INFO("HexWorld", "StratumTable: loaded %u sets, depth set has %u strata", cand.mSetCount, cand.Count());
     return true;
 }
 
@@ -450,7 +450,7 @@ bool StratumTable::SetParams(const std::vector<std::pair<std::string, double>>& 
     cand.mSidecar = file;
     *this = cand;
     if (changed != nullptr) { *changed = true; }
-    DIA_LOG_INFO("CoW", "StratumTable: %u sidecar parameter(s) changed live", static_cast<unsigned>(changes.size()));
+    DIA_LOG_INFO("HexWorld", "StratumTable: %u sidecar parameter(s) changed live", static_cast<unsigned>(changes.size()));
     return true;
 }
 

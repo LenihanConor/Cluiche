@@ -4,11 +4,11 @@
 // unavailableLayers, import line/column errors.
 #include <gtest/gtest.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/WorldFiles.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/WorldFiles.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -22,7 +22,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 namespace fs = std::filesystem;
 
 namespace

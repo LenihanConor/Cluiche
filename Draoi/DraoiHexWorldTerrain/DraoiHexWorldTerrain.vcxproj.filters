@@ -4,12 +4,123 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD02}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{c3b1f0a2-5d44-4e6a-9a77-1c2f6e0b9d31}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DraoiHexWorldTerrain.h" />
+    <ClInclude Include="BiomeClassify.h" />
+    <ClInclude Include="BiomeClimate.h" />
+    <ClInclude Include="DeriveSubSeed.h" />
+    <ClInclude Include="GenerationGuard.h" />
+    <ClInclude Include="GenerationReport.h" />
+    <ClInclude Include="GenerationRun.h" />
+    <ClInclude Include="GuaranteeSpec.h" />
+    <ClInclude Include="LayoutCheck.h" />
+    <ClInclude Include="NavigationQuery.h" />
+    <ClInclude Include="NodesCorridor.h" />
+    <ClInclude Include="NodesFill.h" />
+    <ClInclude Include="NodesRiver.h" />
+    <ClInclude Include="PlaceResult.h" />
+    <ClInclude Include="ReachabilityValidator.h" />
+    <ClInclude Include="RegionPartition.h" />
+    <ClInclude Include="RegionRepair.h" />
+    <ClInclude Include="RegionsAndSites.h" />
+    <ClInclude Include="SiteRegistry.h" />
+    <ClInclude Include="SiteRules.h" />
+    <ClInclude Include="StrataAssigner.h" />
+    <ClInclude Include="TerrainClassify.h" />
+    <ClInclude Include="TerrainDrainage.h" />
+    <ClInclude Include="TerrainGenerator.h" />
+    <ClInclude Include="TerrainLandmass.h" />
+    <ClInclude Include="TerrainMountains.h" />
+    <ClInclude Include="TerrainRelief.h" />
+    <ClInclude Include="TerrainRivers.h" />
+    <ClInclude Include="TerrainRules.h" />
+    <ClInclude Include="TerrainStrata.h" />
+    <ClInclude Include="TerrainTableNavigationProfile.h" />
+    <ClInclude Include="TerrainTypes.h" />
+    <ClInclude Include="TerrainValleys.h" />
+    <ClInclude Include="ValidationTypes.h" />
+    <ClInclude Include="WorldFiles.h" />
+    <ClInclude Include="WorldGenSession.h" />
+    <ClInclude Include="WorldJson.h" />
+    <ClInclude Include="WorldLayerSource.h" />
+    <ClInclude Include="WorldLayoutGuarantee.h" />
+    <ClInclude Include="WorldOverlayGeometry.h" />
+    <ClInclude Include="WorldShapePreset.h" />
+    <ClInclude Include="Testing\BiomeChecks.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\RegionChecks.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\RegionTestWorlds.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\SessionDrive.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TerrainRulesTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TerrainShapeChecks.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TestGuarantees.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TestPlacers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TestProfiles.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ValidationTestWorlds.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DraoiHexWorldTerrain.cpp" />
+    <ClCompile Include="BiomeClassify.cpp" />
+    <ClCompile Include="BiomeClimate.cpp" />
+    <ClCompile Include="DeriveSubSeed.cpp" />
+    <ClCompile Include="GenerationGuard.cpp" />
+    <ClCompile Include="GenerationReport.cpp" />
+    <ClCompile Include="GenerationRun.cpp" />
+    <ClCompile Include="GuaranteeSpec.cpp" />
+    <ClCompile Include="LayoutCheck.cpp" />
+    <ClCompile Include="NavigationQuery.cpp" />
+    <ClCompile Include="NodesCorridor.cpp" />
+    <ClCompile Include="NodesFill.cpp" />
+    <ClCompile Include="NodesRiver.cpp" />
+    <ClCompile Include="ReachabilityValidator.cpp" />
+    <ClCompile Include="RegionPartition.cpp" />
+    <ClCompile Include="RegionRepair.cpp" />
+    <ClCompile Include="RegionsAndSites.cpp" />
+    <ClCompile Include="SiteRegistry.cpp" />
+    <ClCompile Include="SiteRules.cpp" />
+    <ClCompile Include="StrataAssigner.cpp" />
+    <ClCompile Include="TerrainClassify.cpp" />
+    <ClCompile Include="TerrainDrainage.cpp" />
+    <ClCompile Include="TerrainGenerator.cpp" />
+    <ClCompile Include="TerrainLandmass.cpp" />
+    <ClCompile Include="TerrainMountains.cpp" />
+    <ClCompile Include="TerrainRelief.cpp" />
+    <ClCompile Include="TerrainRivers.cpp" />
+    <ClCompile Include="TerrainRules.cpp" />
+    <ClCompile Include="TerrainStrata.cpp" />
+    <ClCompile Include="TerrainTableNavigationProfile.cpp" />
+    <ClCompile Include="TerrainTypes.cpp" />
+    <ClCompile Include="TerrainValleys.cpp" />
+    <ClCompile Include="ValidationTypes.cpp" />
+    <ClCompile Include="WorldFiles.cpp" />
+    <ClCompile Include="WorldGenSession.cpp" />
+    <ClCompile Include="WorldJson.cpp" />
+    <ClCompile Include="WorldJsonImport.cpp" />
+    <ClCompile Include="WorldLayerSource.cpp" />
+    <ClCompile Include="WorldLayoutGuarantee.cpp" />
+    <ClCompile Include="WorldOverlayGeometry.cpp" />
+    <ClCompile Include="WorldShapePreset.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldterrain.architecture.module.md">

@@ -3,9 +3,9 @@
 #pragma once
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/HexWorldAccess.h>
+#include <DraoiHexWorld/WorldStructure.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <Shared/WorldGeneration/GuaranteeSpec.h>
+#include <DraoiHexWorldTerrain/GuaranteeSpec.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -14,6 +14,9 @@
 namespace CoW {
 namespace WorldGeneration {
 namespace Testing {
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
+
 
 // Kind ids of the shipped guarantees.json, for tests that build CoW worlds by hand (production code reads kinds from
 // the GuaranteeSpec).

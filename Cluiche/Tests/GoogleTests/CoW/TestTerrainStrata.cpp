@@ -2,7 +2,7 @@
 // Hand-built grids check costs, thresholds and zones exactly through ComputeStage8; generator runs
 // check AC13 (zone ordering) and AC13b (river monotonicity) on real terrain. Wide sweeps are SLOW_.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>

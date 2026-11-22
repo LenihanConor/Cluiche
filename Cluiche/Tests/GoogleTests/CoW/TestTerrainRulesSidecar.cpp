@@ -6,8 +6,8 @@
 
 #include <DiaAttribute/ParamBinding.h>
 #include <DiaAttribute/ParameterFile.h>
-#include <Shared/WorldGeneration/TerrainRules.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/TerrainRules.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <DiaMaths/Core/RandomStream.h>
@@ -211,7 +211,7 @@ TEST(TerrainRulesSidecar, BindingCoversSidecarExactly)
     ASSERT_TRUE(LoadSidecar(file));
 
     auto report = std::make_unique<Dia::Attribute::BindingReport>();
-    EXPECT_TRUE(CoW::WorldGeneration::TerrainRules::ResolveBindings(file.Schema(), *report));
+    EXPECT_TRUE(Draoi::HexWorld::TerrainRules::ResolveBindings(file.Schema(), *report));
     EXPECT_EQ(report->unboundParameters.Size(), 0u);
     EXPECT_EQ(report->bindingsWithoutEntry.Size(), 0u);
     EXPECT_EQ(report->countMismatches.Size(), 0u);
@@ -224,16 +224,16 @@ TEST(TerrainRulesSidecar, FromParameterFileEqualsOldTableDefaults)
     ParameterFile file;
     ASSERT_TRUE(LoadSidecar(file));
 
-    CoW::WorldGeneration::TerrainRules rules;
-    ASSERT_TRUE(CoW::WorldGeneration::TerrainRules::FromParameterFile(file, rules));
+    Draoi::HexWorld::TerrainRules rules;
+    ASSERT_TRUE(Draoi::HexWorld::TerrainRules::FromParameterFile(file, rules));
     EXPECT_EQ(rules.rulesVersion, 4u);
     EXPECT_FALSE(rules.degraded);
-    ASSERT_EQ(CoW::WorldGeneration::kRuleCount, kOldTableCount);
+    ASSERT_EQ(Draoi::HexWorld::kRuleCount, kOldTableCount);
     // Int members hold the rounded default (half away from zero).
     EXPECT_EQ(rules.kMinRegionCells, 36);
     EXPECT_EQ(rules.kNodeSpacing, 3);
     EXPECT_EQ(rules.kMaxFixupPasses, 8);
-    for (uint32_t i = 0; i < CoW::WorldGeneration::kRuleCount; ++i)
+    for (uint32_t i = 0; i < Draoi::HexWorld::kRuleCount; ++i)
     {
         EXPECT_EQ(rules.ValueAt(i), kOldTable[i].def) << kOldTable[i].key;
     }
@@ -242,7 +242,7 @@ TEST(TerrainRulesSidecar, FromParameterFileEqualsOldTableDefaults)
 // Integer rounding: half away from zero, identical to the old GetInt for every default and for probe values.
 TEST(TerrainRulesSidecar, IntConversionMatchesOldGetInt)
 {
-    using CoW::WorldGeneration::TerrainRules;
+    using Draoi::HexWorld::TerrainRules;
     for (const TableRow& row : kOldTable)
     {
         EXPECT_EQ(TerrainRules::RoundToInt(row.def), OldGetInt(row.def)) << row.key;
@@ -295,7 +295,7 @@ TEST(TerrainRulesSession, BrokenSidecarTextTestFixtureReallyBreaksTheLoad)
 
 TEST(TerrainRulesSession, DefaultConstructedSessionRefusesEveryGenerationEntryPoint)
 {
-    CoW::WorldGeneration::WorldGenSession s;
+    Draoi::HexWorld::WorldGenSession s;
     EXPECT_FALSE(s.RulesLoaded());
 
     Json::Value seed(Json::objectValue);
@@ -321,7 +321,7 @@ TEST(TerrainRulesSession, DefaultConstructedSessionRefusesEveryGenerationEntryPo
 
 TEST(TerrainRulesSession, LoadRulesFromGoodSidecarBindsRulesAndGenerates)
 {
-    CoW::WorldGeneration::WorldGenSession s;
+    Draoi::HexWorld::WorldGenSession s;
     s.SetBiomeRegistry(&Draoi::HexWorld::Testing::ShippedBiomeRegistry());   // generation needs the registry
     ParamError err;
     ASSERT_TRUE(s.LoadRules(CoW::WorldGeneration::TestSidecarText().c_str(), err)) << err.key.AsCStr() << ": " << err.reason.AsCStr();
@@ -335,7 +335,7 @@ TEST(TerrainRulesSession, LoadRulesFromGoodSidecarBindsRulesAndGenerates)
 
 TEST(TerrainRulesSession, FailedLoadRulesOnAFreshSessionNamesTheKeyAndLeavesItUnloaded)
 {
-    CoW::WorldGeneration::WorldGenSession s;
+    Draoi::HexWorld::WorldGenSession s;
     const std::string broken = BrokenSidecarText();
     ParamError err;
     EXPECT_FALSE(s.LoadRules(broken.c_str(), err));

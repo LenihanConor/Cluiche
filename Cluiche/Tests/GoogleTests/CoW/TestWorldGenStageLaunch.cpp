@@ -22,7 +22,7 @@ TEST(WorldGenStageLaunch, SeedAndSizeApplied)
     Probe m;
     m.OnStageLaunch("{\"seed\": 42, \"size\": \"Small\"}");
     EXPECT_EQ(m.GetSession().Seed(), 42u);
-    const auto smallDims = CoW::WorldGeneration::WorldSizeDimensions(CoW::WorldGeneration::WorldSize::Small);
+    const auto smallDims = Draoi::HexWorld::WorldSizeDimensions(Draoi::HexWorld::WorldSize::Small);
     EXPECT_EQ(m.GetSession().Dimensions().width, smallDims.width);
     EXPECT_EQ(m.GetSession().Dimensions().height, smallDims.height);
     EXPECT_TRUE(m.GetHandoffError().empty());
@@ -34,7 +34,7 @@ TEST(WorldGenStageLaunch, OverridesManifestConfig)
     m.OnConfigure("{\"seed\": 7, \"size\": \"Large\"}");
     m.OnStageLaunch("{\"seed\": 99}");
     EXPECT_EQ(m.GetSession().Seed(), 99u);
-    const auto largeDims = CoW::WorldGeneration::WorldSizeDimensions(CoW::WorldGeneration::WorldSize::Large);
+    const auto largeDims = Draoi::HexWorld::WorldSizeDimensions(Draoi::HexWorld::WorldSize::Large);
     EXPECT_EQ(m.GetSession().Dimensions().width, largeDims.width) << "keys the override omits keep the manifest value (shallow merge)";
 }
 

@@ -1,6 +1,6 @@
 // S-1 Terrain Generator task 2: table-driven TerrainRules.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainRules.h>
+#include <DraoiHexWorldTerrain/TerrainRules.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <DiaAttribute/ParameterFile.h>
 
@@ -10,6 +10,7 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace {
 

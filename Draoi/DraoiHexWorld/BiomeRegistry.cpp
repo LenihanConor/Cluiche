@@ -141,7 +141,7 @@ namespace
         err.id.SetText(id);
         err.row = row;
         err.reason.SetText(reason);
-        DIA_LOG_ERROR("CoW", "BiomeRegistry: load failed at row %u (%s, id '%s'): %s", row, field, id, reason);
+        DIA_LOG_ERROR("HexWorld", "BiomeRegistry: load failed at row %u (%s, id '%s'): %s", row, field, id, reason);
         return false;
     }
 
@@ -404,7 +404,7 @@ bool BiomeRegistry::LoadFromText(const char* json, const StratumTable& zones, Re
     }
     cand->ComputeHash();
 
-    DIA_LOG_INFO("CoW", "BiomeRegistry: loaded %u biomes, hash %016llx", count, static_cast<unsigned long long>(cand->hash));
+    DIA_LOG_INFO("HexWorld", "BiomeRegistry: loaded %u biomes, hash %016llx", count, static_cast<unsigned long long>(cand->hash));
     mData = std::move(cand);
     return true;
 }
@@ -510,7 +510,7 @@ BiomeIndex BiomeRegistry::ResolveOrFallback(Dia::Core::StringCRC id) const
     if (!warned && !mData->warnedIds.IsFull())
     {
         mData->warnedIds.Add(id);
-        DIA_LOG_WARNING("CoW", "BiomeRegistry unknown id '%s' (crc 0x%08X), using fallback biome",
+        DIA_LOG_WARNING("HexWorld", "BiomeRegistry unknown id '%s' (crc 0x%08X), using fallback biome",
                         id.AsChar(), static_cast<unsigned int>(id.Value()));
     }
     return mData->roles[static_cast<uint32_t>(BiomeRole::Fallback)];

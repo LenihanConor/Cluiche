@@ -2,15 +2,15 @@
 // The three built-in guarantees over SiteSet kinds, run on hand-authored worlds, and DefaultValidationSet.
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/SiteRules.h>
+#include <DraoiHexWorldTerrain/SiteRules.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/NavigationQuery.h>
-#include <Shared/WorldGeneration/ReachabilityValidator.h>
-#include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/NavigationQuery.h>
+#include <DraoiHexWorldTerrain/ReachabilityValidator.h>
+#include <DraoiHexWorldTerrain/TerrainTableNavigationProfile.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
-#include <Shared/WorldGeneration/Testing/TestProfiles.h>
-#include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
+#include <DraoiHexWorldTerrain/Testing/TestProfiles.h>
+#include <DraoiHexWorldTerrain/Testing/ValidationTestWorlds.h>
 
 #include <algorithm>
 #include <cstdlib>

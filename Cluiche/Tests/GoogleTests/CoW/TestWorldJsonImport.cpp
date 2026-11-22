@@ -4,8 +4,8 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/WorldJson.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/WorldJson.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 

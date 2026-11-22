@@ -3,15 +3,15 @@
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/LayoutCheck.h>
-#include <Shared/WorldGeneration/NodesCorridor.h>
-#include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/LayoutCheck.h>
+#include <DraoiHexWorldTerrain/NodesCorridor.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaMaths/Core/RandomStream.h>

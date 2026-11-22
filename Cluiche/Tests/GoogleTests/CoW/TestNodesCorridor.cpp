@@ -1,11 +1,11 @@
 // S-1 Nodes: built-in corridor node placer (hand-built barriers + generated-world AC8a sweep).
 #include <gtest/gtest.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/NodesCorridor.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/RegionChecks.h>
-#include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
+#include <DraoiHexWorldTerrain/NodesCorridor.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/RegionChecks.h>
+#include <DraoiHexWorldTerrain/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -24,6 +24,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::RandomStream;
 
 namespace

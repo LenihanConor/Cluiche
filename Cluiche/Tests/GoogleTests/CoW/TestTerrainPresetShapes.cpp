@@ -1,9 +1,9 @@
 // S-1 Terrain Generator task 16: AC18 (presets produce worlds), the shared shape checks themselves, and AC17
 // performance (Release only). The 3 presets x 50 seeds sweep is SLOW_; a cheap subset runs by default.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/TerrainShapeChecks.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/TerrainShapeChecks.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
@@ -18,6 +18,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace {
 

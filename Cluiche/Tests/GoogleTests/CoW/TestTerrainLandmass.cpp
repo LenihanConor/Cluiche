@@ -1,6 +1,6 @@
 // S-1 Terrain Generator task 4: Stage 1 Landmass part A (potential M, land/island budgets, reference mainland).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -12,6 +12,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 
 namespace {

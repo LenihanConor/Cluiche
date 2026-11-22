@@ -3,7 +3,7 @@
 // Header-only; uses a local PRNG so scripts never depend on the Dia RandomStream.
 #pragma once
 
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cstddef>
@@ -14,6 +14,9 @@
 namespace CoW {
 namespace WorldGeneration {
 namespace Testing {
+using namespace Draoi::HexWorld;
+using namespace Draoi::HexWorld::Testing;
+
 
 // The 18 terrain sliders, in ShapeParam order (LandFraction .. LatitudeSouth).
 constexpr int kTerrainSliderCount = static_cast<int>(ShapeParam::LatitudeSouth) + 1;

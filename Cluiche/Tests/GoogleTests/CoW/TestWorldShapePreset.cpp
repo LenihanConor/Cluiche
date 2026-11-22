@@ -1,13 +1,13 @@
 // S-1 Terrain Generator task 15: preset files and WorldShapePreset I/O (AC19).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
 
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <string>
 
-using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace {
 

@@ -2,10 +2,12 @@
 // changes every generated CoW world and invalidates the worldgen goldens.
 #pragma once
 
-#include <Shared/WorldGeneration/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
 
 namespace CoW {
 namespace WorldGeneration {
+using namespace Draoi::HexWorld;
+
 
 inline StepSeedNames CoWStepSeedNames()
 {

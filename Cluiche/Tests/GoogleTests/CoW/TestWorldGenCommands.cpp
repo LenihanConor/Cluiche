@@ -25,8 +25,8 @@
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/Plumbing/RandomStreamModule.h>
 #include <Modules/SimQueryHostModule.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 #include <Types/SimRegistrationMessage.h>
 
@@ -505,7 +505,7 @@ TEST(WorldGenCommands, BiomeLayersTimingsCountsAndCellRoundTrip)
 	EXPECT_EQ(sum, 66 * 42);
 
 	// "moisture" values equal the generator's layer at every page window.
-	const CoW::WorldGeneration::TerrainLayers& layers = gWg->GetSession().Generator().GetLayers();
+	const Draoi::HexWorld::TerrainLayers& layers = gWg->GetSession().Generator().GetLayers();
 	const float* ref = layers.GetFloat(layers.FindLayer("moisture"));
 	ASSERT_NE(ref, nullptr);
 	size_t offset = 0;
@@ -893,7 +893,7 @@ TEST(WorldGenCommands, CellQueryReportsRegionZoneAndSitesAndEveryLandCellHasAReg
 	const Json::Value r = h.Call("cow.worldgen.cell", a);
 	ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
 	EXPECT_EQ(r["region"].asUInt(), static_cast<unsigned>(w->Cells()[site.cell].region));
-	EXPECT_EQ(r["zone"].asString(), CoW::WorldGeneration::StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), w->Cells()[site.cell].stratum));
+	EXPECT_EQ(r["zone"].asString(), Draoi::HexWorld::StratumName(::Draoi::HexWorld::Testing::ShippedStratumTable(), w->Cells()[site.cell].stratum));
 	ASSERT_TRUE(r["sites"].isArray());
 	EXPECT_GE(r["sites"].size(), 1u);
 }
@@ -1252,7 +1252,7 @@ namespace
 	bool HandoffFailing() { return gWg->GetHealthReporter().Report().status == HealthStatus::kFailing; }
 
 	// The world a pure session builds for the preset form: preset, seed and size, then one Regenerate.
-	CoW::WorldGeneration::WorldGenSession PresetWorld(const std::string& presets, const char* id, uint64_t seed, const char* size = nullptr)
+	Draoi::HexWorld::WorldGenSession PresetWorld(const std::string& presets, const char* id, uint64_t seed, const char* size = nullptr)
 	{
 		CoW::WorldGeneration::TestSession s;
 		s.SetPresetDirectories(presets, std::string());
@@ -1294,7 +1294,7 @@ TEST(WorldHandoff, PresetFormGeneratesTheDeterministicWorldWithSeedAndSize)
 	EXPECT_EQ(gWg->GetSession().PresetId(), "archipelago");
 	EXPECT_GT(gWg->GetCurrentWorld()->regions.regions.Size(), 0u) << "the preset form places regions and sites (a Regenerate)";
 
-	const CoW::WorldGeneration::WorldGenSession expected = PresetWorld(presets, "archipelago", 31);
+	const Draoi::HexWorld::WorldGenSession expected = PresetWorld(presets, "archipelago", 31);
 	ASSERT_GT(expected.Revision(), 0u);
 	EXPECT_TRUE(SameCellBytes(*gWg->GetCurrentWorld(), expected.World()));
 	EXPECT_TRUE(gWg->GetCurrentWorld()->regions == expected.World().regions);
@@ -1309,7 +1309,7 @@ TEST(WorldHandoff, PresetFormHonoursTheSizeKey)
 	ASSERT_TRUE(h.Start());
 	h.Pump(8);
 	ASSERT_NE(gWg->GetCurrentWorld(), nullptr);
-	const CoW::WorldGeneration::WorldGenSession expected = PresetWorld(presets, "continental", 5, "Standard");
+	const Draoi::HexWorld::WorldGenSession expected = PresetWorld(presets, "continental", 5, "Standard");
 	EXPECT_EQ(gWg->GetCurrentWorld()->dimensions.width, expected.World().dimensions.width);
 	EXPECT_EQ(gWg->GetCurrentWorld()->dimensions.height, expected.World().dimensions.height);
 	EXPECT_NE(gWg->GetCurrentWorld()->dimensions.width, 66) << "Standard is larger than Small";

@@ -2,7 +2,7 @@
 // the layers field by field, the AC2 / AC3 / AC10 / AC21 data contracts, determinism and the live-preview path.
 // Wide sweeps are SLOW_; TerrainPerf reports the Release time of WriteTerrain at Small.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>

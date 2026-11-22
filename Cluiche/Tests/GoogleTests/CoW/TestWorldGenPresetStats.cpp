@@ -2,9 +2,9 @@
 // Prints a table; asserts only intent-level orderings between presets (see docs/BACKLOG.md 'World-sim cell-data verification').
 #include <gtest/gtest.h>
 #include <DiaMaths/Core/RandomStream.h>   // before module headers: windows.h defines min/max macros
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <DraoiHexWorld/WorldHexGrid.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -19,6 +19,7 @@
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace
 {

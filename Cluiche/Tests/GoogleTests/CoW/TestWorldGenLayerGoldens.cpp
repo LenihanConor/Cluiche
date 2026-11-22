@@ -6,9 +6,9 @@
 #include <gtest/gtest.h>
 #include <DiaMaths/Core/RandomStream.h>   // before module headers: windows.h defines min/max macros
 #include <DiaCellLayers/Testing/CellLayerGolden.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -18,7 +18,9 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 namespace Golden = Dia::CellLayers::Testing;
 
 namespace

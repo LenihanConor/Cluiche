@@ -8,8 +8,8 @@
 #ifdef DIA_DEBUG
 
 #include <Modules/WorldGen/WorldGenDebugDomain.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/WorldFiles.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/WorldFiles.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <filesystem>

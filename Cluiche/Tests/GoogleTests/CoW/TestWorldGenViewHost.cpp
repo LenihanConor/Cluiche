@@ -15,8 +15,8 @@
 #include <DiaCellLayers/Testing/LayerUploaderTestSupport.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -31,6 +31,7 @@ using namespace CoW;
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::CellLayers::Testing::FakeDebugDraw;
 using Dia::CellLayers::Testing::FakeMirrorRegistrar;
 using Dia::Maths::Vector2D;

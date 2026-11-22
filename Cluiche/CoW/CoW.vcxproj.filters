@@ -88,45 +88,6 @@
     <ClCompile Include="Modules\Plumbing\SnapshotStoreAdapter.cpp">
       <Filter>Modules\Plumbing</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainTypes.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainRules.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainGenerator.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainLandmass.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainMountains.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainRelief.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainDrainage.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainRivers.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainStrata.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainValleys.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainClassify.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldShapePreset.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldGenSession.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\WorldGen\WorldGenerationModule.cpp">
       <Filter>Modules\WorldGen</Filter>
     </ClCompile>
@@ -136,95 +97,14 @@
     <ClCompile Include="Modules\WorldGen\WorldGenDebugDomain.cpp">
       <Filter>Modules\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldLayerSource.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldOverlayGeometry.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Shared\WorldGeneration\WorldCameraController.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
     <ClCompile Include="Modules\WorldGen\WorldGenViewHost.cpp">
       <Filter>Modules\WorldGen</Filter>
     </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\BiomeClimate.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\BiomeClassify.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\DeriveSubSeed.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\SiteRegistry.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\RegionPartition.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\RegionRepair.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\NodesCorridor.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\NodesRiver.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\NodesFill.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\RegionsAndSites.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\LayoutCheck.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\ValidationTypes.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\NavigationQuery.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\TerrainTableNavigationProfile.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\ReachabilityValidator.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldLayoutGuarantee.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\GenerationReport.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\GenerationRun.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldJson.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldJsonImport.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\WorldFiles.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\GenerationGuard.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
       <Filter>Modules\WorldStep</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\GuaranteeSpec.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\SiteRules.cpp">
-      <Filter>Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="Shared\WorldGeneration\StrataAssigner.cpp">
-      <Filter>Shared</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -282,45 +162,6 @@
     <ClInclude Include="Modules\Plumbing\SnapshotStoreAdapter.h">
       <Filter>Modules\Plumbing</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainTypes.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainRules.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainGenerator.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainLandmass.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainMountains.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainRelief.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainDrainage.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainRivers.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainStrata.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainValleys.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainClassify.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldShapePreset.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldGenSession.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\WorldGen\WorldGenerationModule.h">
       <Filter>Modules\WorldGen</Filter>
     </ClInclude>
@@ -329,12 +170,6 @@
     </ClInclude>
     <ClInclude Include="Modules\WorldGen\WorldGenDebugDomain.h">
       <Filter>Modules\WorldGen</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldLayerSource.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldOverlayGeometry.h">
-      <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\WorldCameraController.h">
       <Filter>Shared</Filter>
@@ -351,91 +186,13 @@
     <ClInclude Include="Modules\WorldGen\WorldGenMirrorRegistrar.h">
       <Filter>Modules\WorldGen</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\BiomeClimate.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\BiomeClassify.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\PlaceResult.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\DeriveSubSeed.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\SiteRegistry.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\RegionPartition.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\RegionRepair.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\NodesCorridor.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\NodesRiver.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\NodesFill.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\RegionsAndSites.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\LayoutCheck.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\ValidationTypes.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\NavigationQuery.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\TerrainTableNavigationProfile.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\ReachabilityValidator.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldLayoutGuarantee.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\GenerationReport.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\GenerationRun.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldJson.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\WorldFiles.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\GenerationGuard.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\F2Harness\F2StageResult.h">
       <Filter>Modules\F2Harness</Filter>
     </ClInclude>
     <ClInclude Include="Modules\WorldStep\WorldStepModule.h">
       <Filter>Modules\WorldStep</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\GuaranteeSpec.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\CoWTesting\GuaranteeSpecTestHelpers.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\SiteRules.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\StrataAssigner.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="Shared\WorldGeneration\HexWorldAccess.h">
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\CoWStepSeedNames.h">

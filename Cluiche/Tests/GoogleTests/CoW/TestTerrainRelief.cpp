@@ -1,7 +1,7 @@
 // S-1 Terrain Generator task 7: Stage 3 Barrier (barrierMask, chain vents) and Stage 4 Elevation
 // (elevationRaw, oceanDepth), plus the stages 0-4 timing checkpoint (TerrainPerf, Release only).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -16,6 +16,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::CellCoord;
 using Dia::Pathfinding::HexTopology;

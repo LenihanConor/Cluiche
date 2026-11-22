@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
-#include <Shared/WorldGeneration/WorldFiles.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldFiles.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 

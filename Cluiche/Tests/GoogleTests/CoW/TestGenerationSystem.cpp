@@ -5,16 +5,16 @@
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/GenerationRun.h>
-#include <Shared/WorldGeneration/LayoutCheck.h>
-#include <Shared/WorldGeneration/RegionsAndSites.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/GenerationRun.h>
+#include <DraoiHexWorldTerrain/LayoutCheck.h>
+#include <DraoiHexWorldTerrain/RegionsAndSites.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/SessionDrive.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/SessionDrive.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 
 #include <DiaMaths/Core/RandomStream.h>
 
@@ -25,7 +25,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 using Dia::Maths::RandomStream;
 
@@ -293,7 +295,7 @@ TEST(GenerationSystem, AC1_AtLeastThreeRetrySeedsGiveTheSameCountAndWorldEveryRu
 // ---- Test 4 (timeout path), Test 5 (failure path) and Test 5a re-checked with the previous world kept ------------------------
 
 #include <DiaCellLayers/Testing/LogCapture.h>
-#include <Shared/WorldGeneration/GenerationGuard.h>
+#include <DraoiHexWorldTerrain/GenerationGuard.h>
 #include <cstring>
 #include <stdexcept>
 

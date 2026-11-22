@@ -19,11 +19,11 @@
 #include "Modules/WorldGen/IWorldGenView.h"
 
 #include <Shared/WorldGeneration/WorldCameraController.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include <DraoiHexWorld/SharedWorldHexGrid.h>
 #include <DraoiHexWorld/WorldHexGrid.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
-#include <Shared/WorldGeneration/WorldOverlayGeometry.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/WorldOverlayGeometry.h>
 
 #include <DiaCellLayers/CellDetailRegistry.h>
 #include <DiaCellLayers/CellLayerRegistry.h>
@@ -82,7 +82,7 @@ public:
         std::function<bool(InputSnapshot&)>          readInput;                        // false = no input this frame
     };
 
-    WorldGenViewHost(WorldGeneration::WorldGenSession& session, const Deps& deps);
+    WorldGenViewHost(Draoi::HexWorld::WorldGenSession& session, const Deps& deps);
     ~WorldGenViewHost() override;
     WorldGenViewHost(const WorldGenViewHost&)            = delete;
     WorldGenViewHost& operator=(const WorldGenViewHost&) = delete;
@@ -149,7 +149,7 @@ private:
     struct LayerBinding
     {
         WorldGenViewHost*                         host = nullptr;
-        const WorldGeneration::WorldLayerDesc*    desc = nullptr;
+        const Draoi::HexWorld::WorldLayerDesc*    desc = nullptr;
         void     Read(float* out, uint32_t count);
         uint64_t Version();
     };
@@ -158,7 +158,7 @@ private:
     struct ExtraBinding
     {
         WorldGenViewHost*                 host = nullptr;
-        WorldGeneration::ExtraStrataLayerDesc desc;
+        Draoi::HexWorld::ExtraStrataLayerDesc desc;
         void     Read(float* out, uint32_t count);
         uint64_t Version();
     };
@@ -188,12 +188,12 @@ private:
     void DrawSites(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawMarkers(Dia::Core::IDebugDraw& draw, const void* selection);
     void DrawEvidence(Dia::Core::IDebugDraw& draw, const void* selection);
-    const WorldGeneration::ValidationResult* FreshEvidenceNow() const;
+    const Draoi::HexWorld::ValidationResult* FreshEvidenceNow() const;
     uint32_t RegionColour(uint32_t slot);   // 0xRRGGBBAA from the "regions" layer's palette (the Region colour mode's)
     bool SiteKindEnabled(uint32_t kindCrc) const;
     void BuildCellDetails(uint32_t cellIndex, Dia::CellLayers::CellDetailBuilder& out);
 
-    WorldGeneration::WorldGenSession& mSession;
+    Draoi::HexWorld::WorldGenSession& mSession;
     Deps                              mDeps;
 
     Draoi::HexWorld::SharedWorldHexGrid  mOwnGrid;   // used only when Deps::sharedGrid is null
@@ -225,7 +225,7 @@ private:
     uint32_t mMaxDropped = 0;
 
     // Caches (rebuilt only when their key changes).
-    std::vector<WorldGeneration::LineSegment> mRiverSegments;
+    std::vector<Draoi::HexWorld::LineSegment> mRiverSegments;
     uint32_t mRiverRevision = 0xFFFFFFFFu;
     uint32_t mRiverGridGeneration = 0;
     uint32_t mRiverRebuilds = 0;
@@ -235,22 +235,22 @@ private:
     struct SiteKindMarkers
     {
         Draoi::HexWorld::SiteKindInfo             info;
-        std::vector<WorldGeneration::LineSegment> lines;
+        std::vector<Draoi::HexWorld::LineSegment> lines;
     };
     std::vector<SiteKindMarkers> mSiteMarkers;      // generic: one entry per kind, no per-kind drawer code
     uint32_t mSiteRevision = 0xFFFFFFFFu;
     uint32_t mSiteGridGeneration = 0;
-    std::vector<WorldGeneration::RegionEdge> mColouredEdges;
+    std::vector<Draoi::HexWorld::RegionEdge> mColouredEdges;
     std::vector<uint32_t> mRegionPalette;           // lazily resolved from the schema, else the categorical default
     // The data-declared marker overlay (session GuaranteeSpec::markerOverlay), copied when the overlays register.
     bool mHasMarkerOverlay = false;
-    WorldGeneration::MarkerOverlaySpec mMarkerSpec;
-    std::vector<WorldGeneration::MarkerRing> mMarkers;
+    Draoi::HexWorld::MarkerOverlaySpec mMarkerSpec;
+    std::vector<Draoi::HexWorld::MarkerRing> mMarkers;
     uint32_t mMarkersRevision = 0xFFFFFFFFu;
     uint32_t mMarkersEvidenceRevision = 0xFFFFFFFFu;
     uint32_t mMarkersReportRevision = 0xFFFFFFFFu;
     uint32_t mMarkersGridGeneration = 0;
-    WorldGeneration::GuaranteeEvidenceGeometry mEvidence;
+    Draoi::HexWorld::GuaranteeEvidenceGeometry mEvidence;
     uint32_t mEvidenceRevision = 0xFFFFFFFFu;
     uint32_t mEvidenceEvidenceRevision = 0xFFFFFFFFu;
     uint32_t mEvidenceReportRevision = 0xFFFFFFFFu;
@@ -258,7 +258,7 @@ private:
     uint32_t mEvidenceGridGeneration = 0;
     uint32_t mExpandedGuarantee = 0;                // survives regenerate, import and size change (AC11)
     std::vector<uint32_t> mSiteKindsOff;            // kind CRCs whose "sites.<id>" toggle is off
-    WorldGeneration::NeighbourOutline mOutline;
+    Draoi::HexWorld::NeighbourOutline mOutline;
     int      mOutlineCell = -1;
     uint32_t mOutlineGridGeneration = 0;
     uint32_t mGridGeneration = 1;               // bumps whenever the grid is re-emplaced

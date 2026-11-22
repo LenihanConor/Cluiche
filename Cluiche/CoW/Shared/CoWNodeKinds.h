@@ -2,12 +2,14 @@
 // ids: they appear in world files and goldens, so changing them breaks every saved CoW world.
 #pragma once
 
-#include <Shared/WorldGeneration/HexWorldAccess.h>
+#include <DraoiHexWorld/WorldStructure.h>
 #include <DraoiHexWorld/Sites.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
 
 namespace CoW {
 namespace WorldGeneration {
+using namespace Draoi::HexWorld;
+
 
 inline NodeKindIds CoWNodeKindIds()
 {

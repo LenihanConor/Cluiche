@@ -5,8 +5,8 @@
 #include <DiaAttribute/ParamBinding.h>
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <Shared/WorldGeneration/TerrainRules.h>
-#include <Shared/WorldGeneration/TerrainTypes.h>
+#include <DraoiHexWorldTerrain/TerrainRules.h>
+#include <DraoiHexWorldTerrain/TerrainTypes.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <memory>
@@ -16,6 +16,7 @@ using Dia::Attribute::ParameterFile;
 using Dia::Attribute::ParamError;
 using Dia::Core::StringCRC;
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 
 namespace
 {

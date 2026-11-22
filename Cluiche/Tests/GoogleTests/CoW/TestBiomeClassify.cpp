@@ -1,8 +1,8 @@
 // S-1 Biome Classification task 4: Stage 14 (pins, plateau, climate score, zone and forbidden fix-ups).
 // Hand-built grids only (no generator). AC2, AC3, AC4, AC5, AC6, AC7 parts.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/BiomeClassify.h>
-#include <Shared/WorldGeneration/Testing/BiomeChecks.h>
+#include <DraoiHexWorldTerrain/BiomeClassify.h>
+#include <DraoiHexWorldTerrain/Testing/BiomeChecks.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/WorldGeneration/Testing/BiomeTestGrids.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>

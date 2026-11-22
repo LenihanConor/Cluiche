@@ -1807,12 +1807,6 @@
     <ClInclude Include="Editor\GameScopedPluginFixtures.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\TerrainStrata.h">
-      <Filter>CoW</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.h">
-      <Filter>CoW</Filter>
-    </ClInclude>
     <ClInclude Include="DiaDeferredStep\DeferredStepModuleHarness.h">
       <Filter>DiaDeferredStep</Filter>
     </ClInclude>
@@ -2616,70 +2610,34 @@
     <ClCompile Include="CoW\TestSnapshotStoreAdapter.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\TestTerrainTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainRules.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRules.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainGenerator.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainGenerator.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainLandmass.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainLandmass.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainMountains.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainMountains.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainRelief.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRelief.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainDrainage.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainDrainage.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainRivers.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainRivers.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainStrata.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainStrata.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainValleys.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainValleys.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainClassify.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainClassify.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainOutput.cpp">
@@ -2688,16 +2646,10 @@
     <ClCompile Include="CoW\TestTerrainDeterminism.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldShapePreset.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestWorldShapePreset.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestTerrainPresetShapes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldGenSession.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldGenSession.cpp">
@@ -2739,9 +2691,6 @@
     <ClCompile Include="CluicheGameBaseline\TestDomainRootDelta.cpp">
       <Filter>CluicheGameBaseline</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayerSource.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="Draoi\TestWorldHexGrid.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -2755,9 +2704,6 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldCameraController.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldOverlayGeometry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldCameraController.cpp">
@@ -2775,13 +2721,7 @@
     <ClCompile Include="WebSocket\TestWebSocketOrigin.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClimate.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestBiomeClimate.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\BiomeClassify.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestBiomeClassify.cpp">
@@ -2799,22 +2739,10 @@
     <ClCompile Include="CoW\TestRegionsAndSitesTypes.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\DeriveSubSeed.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestSiteRegistry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRegistry.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestRegionPartition.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionPartition.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionRepair.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestRegionRepair.cpp">
@@ -2823,25 +2751,10 @@
     <ClCompile Include="CoW\TestNodesCorridor.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesCorridor.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestNodesRiverFill.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesRiver.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NodesFill.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestRegionsAndSites.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\RegionsAndSites.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\LayoutCheck.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldGenSessionRegions.cpp">
@@ -2850,28 +2763,7 @@
     <ClCompile Include="CoW\TestRegionsAndSitesEdge.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestValidationTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\ValidationTypes.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\TestNavigationQuery.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\NavigationQuery.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestTerrainNavigation.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\TerrainTableNavigationProfile.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\TestReachabilityValidator.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\ReachabilityValidator.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestSiteGuarantees.cpp">
@@ -2880,22 +2772,10 @@
     <ClCompile Include="CoW\TestWorldLayoutGuarantee.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldLayoutGuarantee.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestValidationEdge.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestGenerationReport.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationReport.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestGenerationRun.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationRun.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldGenSessionRetry.cpp">
@@ -2904,19 +2784,10 @@
     <ClCompile Include="CoW\TestGenerationSystem.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldJson.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestWorldJsonExport.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldJsonImport.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="CoW\TestWorldJsonImport.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\WorldFiles.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldFiles.cpp">
@@ -2926,9 +2797,6 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestWorldJsonExhaustive.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GenerationGuard.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestGenerationGuard.cpp">
@@ -3240,6 +3108,24 @@
     <ClCompile Include="DiaValueSchema\TestValueSchemaWriter.cpp">
       <Filter>DiaValueSchema</Filter>
     </ClCompile>
+    <ClCompile Include="Draoi\TestGenerationReport.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestNavigationQuery.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestReachabilityValidator.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestSiteRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestTerrainTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestValidationTypes.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
     <ClCompile Include="Draoi\TestBiomeRegistry.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
@@ -3309,22 +3195,10 @@
     <ClCompile Include="CoW\TestGuaranteeSpec.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\GuaranteeSpec.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="CoW\TestSiteRules.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\SiteRules.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
     <ClCompile Include="DiaCondition\TestConditionValidateContext.cpp">
       <Filter>DiaCondition</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestStrataAssigner.cpp">
-      <Filter>CoW</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\CoW\Shared\WorldGeneration\StrataAssigner.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestStrataExtraSets.cpp">

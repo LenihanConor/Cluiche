@@ -1,11 +1,11 @@
 // S-1 Regions: region partition second half (repair, records, renumbering, write into the world).
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/RegionRepair.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
-#include <Shared/WorldGeneration/WorldShapePreset.h>
-#include <Shared/WorldGeneration/Testing/RegionChecks.h>
-#include <Shared/WorldGeneration/Testing/RegionTestWorlds.h>
+#include <DraoiHexWorldTerrain/RegionRepair.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/WorldShapePreset.h>
+#include <DraoiHexWorldTerrain/Testing/RegionChecks.h>
+#include <DraoiHexWorldTerrain/Testing/RegionTestWorlds.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 

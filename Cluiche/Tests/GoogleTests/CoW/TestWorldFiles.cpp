@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC7, default file paths)
 // WorldFiles: name validation, atomic writes, out/deployed lookup, size caps, round trip through a real file.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/WorldFiles.h>
+#include <DraoiHexWorldTerrain/WorldFiles.h>
 #include <Shared/WorldGeneration/Testing/WorldJsonTestWorlds.h>
 
 #include <atomic>
@@ -11,7 +11,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 namespace fs = std::filesystem;
 
 namespace

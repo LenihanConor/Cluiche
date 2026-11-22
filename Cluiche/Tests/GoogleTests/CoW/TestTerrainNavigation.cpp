@@ -1,10 +1,10 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/reachability-validator.md (Placeholder Profile)
 // TerrainNavigationTable and TerrainTableNavigationProfile: the S-1 default navigation profile.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainTableNavigationProfile.h>
-#include <Shared/WorldGeneration/NavigationQuery.h>
+#include <DraoiHexWorldTerrain/TerrainTableNavigationProfile.h>
+#include <DraoiHexWorldTerrain/NavigationQuery.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
-#include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
+#include <DraoiHexWorldTerrain/Testing/ValidationTestWorlds.h>
 
 #include <filesystem>
 #include <fstream>
@@ -12,7 +12,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 using Dia::Pathfinding::IPathCostProvider;
 using CoW::WorldGeneration::TestRules;

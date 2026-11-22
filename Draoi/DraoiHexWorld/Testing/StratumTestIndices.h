@@ -1,6 +1,6 @@
-// Test-only names for the shipped CoW stratum indices (FirstShores, WildReaches, AncientInteriors).
+// Test-only names for the shipped stratum indices (FirstShores, WildReaches, AncientInteriors).
 // Production code addresses strata by index/table position; tests keep readable intent with these constants.
-// Visible from both CoW::World and CoW::WorldGeneration so either `using namespace` finds them.
+// Visible from Draoi::HexWorld so one `using namespace` finds them.
 #pragma once
 
 #include <DraoiHexWorld/CellVocabulary.h>

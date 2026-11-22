@@ -4,15 +4,16 @@
 
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/GuaranteeSpec.h>
+#include <DraoiHexWorldTerrain/GuaranteeSpec.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 
 #include <string>
 
 using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Draoi::HexWorld::Testing::ShippedStratumTable;
 using Dia::Core::StringCRC;
 

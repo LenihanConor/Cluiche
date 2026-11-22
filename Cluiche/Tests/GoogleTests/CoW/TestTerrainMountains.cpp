@@ -1,6 +1,6 @@
 // S-1 Terrain Generator task 6: Stage 2 Mountains (ridgeMask, passMask, passes).
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -14,6 +14,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;

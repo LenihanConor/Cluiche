@@ -1,14 +1,16 @@
 // S-1 Regions, Nodes and Site Hook: SiteRegistry (AC9).
 #include <gtest/gtest.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/SiteRegistry.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 
 #include <set>
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 
 namespace

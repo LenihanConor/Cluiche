@@ -3,12 +3,12 @@
 #include <gtest/gtest.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <Shared/CoWNodeKinds.h>
-#include <Shared/WorldGeneration/DeriveSubSeed.h>
-#include <Shared/WorldGeneration/GenerationRun.h>
-#include <Shared/WorldGeneration/WorldLayoutGuarantee.h>
+#include <DraoiHexWorldTerrain/DeriveSubSeed.h>
+#include <DraoiHexWorldTerrain/GenerationRun.h>
+#include <DraoiHexWorldTerrain/WorldLayoutGuarantee.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TestPlacers.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaCellLayers/Testing/LogCapture.h>
@@ -19,7 +19,9 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Core::StringCRC;
 using Dia::Maths::RandomStream;
 

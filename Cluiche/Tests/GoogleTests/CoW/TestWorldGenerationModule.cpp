@@ -11,7 +11,7 @@
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <Modules/MessageBusHostModule.h>
 #include <Modules/Plumbing/RandomStreamModule.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
@@ -489,7 +489,7 @@ TEST(WorldGenModuleRetry, UnsatisfiableHealthSurvivesALivePreviewTick)
 
 // ---- Timeout and failure handling (Feature 5): Failed event, cancel, timeout, error, health ------------------------------
 
-#include <Shared/WorldGeneration/GenerationGuard.h>
+#include <DraoiHexWorldTerrain/GenerationGuard.h>
 #include <stdexcept>
 
 namespace {

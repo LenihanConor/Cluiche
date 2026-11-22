@@ -1,7 +1,7 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
 // The shipped worldgen.schema.json must describe every WorldLayerSource layer.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaValueSchema/ValueSchemaLoader.h>
@@ -19,7 +19,6 @@
 #include <vector>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
-using namespace CoW::WorldGeneration;
 using namespace Draoi::HexWorld;
 
 namespace

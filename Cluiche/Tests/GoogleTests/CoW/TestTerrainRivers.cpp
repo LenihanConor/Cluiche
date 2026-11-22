@@ -2,7 +2,7 @@
 // Hand-built grids check the keep rules exactly through ComputeStage6/ComputeStage7; generator runs
 // check AC10 (rivers) and AC11 (lakes) on real terrain. Wide sweeps live in SLOW_ suites.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <DiaPathfinding/HexTopology.h>
@@ -17,6 +17,7 @@
 #include <vector>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using Dia::Maths::RandomStream;
 using Dia::Pathfinding::HexTopology;
 using Dia::Pathfinding::kNoCell;

@@ -6,7 +6,7 @@
 // set every constant in kGolden to 0, run `dia run googletest --filter="TerrainDeterminism.Golden*"` and copy the
 // "actual" values from the failure messages.
 #include <gtest/gtest.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
 
 #include <cstdio>
@@ -15,7 +15,9 @@
 #include <string>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 
 namespace {
 

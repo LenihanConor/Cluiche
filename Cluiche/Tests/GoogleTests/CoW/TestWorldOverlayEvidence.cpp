@@ -2,15 +2,17 @@
 // Plan: worldgen-panel-rest.plan.md task 3 (coloured region edges, tagged site markers, dynasty starts, evidence).
 #include <gtest/gtest.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/WorldGenSession.h>
-#include <Shared/WorldGeneration/WorldLayerSource.h>
-#include <Shared/WorldGeneration/WorldOverlayGeometry.h>
+#include <DraoiHexWorldTerrain/WorldGenSession.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
+#include <DraoiHexWorldTerrain/WorldOverlayGeometry.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <cmath>
 
 using namespace CoW::WorldGeneration;
+using namespace Draoi::HexWorld;
 using namespace CoW::WorldGeneration::Testing;
+using namespace Draoi::HexWorld::Testing;
 using Dia::Maths::Vector2D;
 
 namespace

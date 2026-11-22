@@ -20,7 +20,14 @@ dependencies:
   forbidden: []
 public_api:
   headers:
-    - DraoiHexWorldTerrain/DraoiHexWorldTerrain.h
+    - DraoiHexWorldTerrain/TerrainGenerator.h
+    - DraoiHexWorldTerrain/BiomeClassify.h
+    - DraoiHexWorldTerrain/RegionsAndSites.h
+    - DraoiHexWorldTerrain/SiteRegistry.h
+    - DraoiHexWorldTerrain/GuaranteeSpec.h
+    - DraoiHexWorldTerrain/WorldGenSession.h
+    - DraoiHexWorldTerrain/WorldJson.h
+    - DraoiHexWorldTerrain/WorldOverlayGeometry.h
   namespaces:
     - Draoi::HexWorld::
   entry_points: []
@@ -33,4 +40,4 @@ non_responsibilities:
 ---
 # DraoiHexWorldTerrain
 
-Draoi package for the hex world terrain generator. Static library, depends on Dia and DraoiHexWorld. Currently empty; source moves in from CoW/Shared/WorldGeneration under @docs/specs/features/draoi/extract-hexworld-terrain.md.
+Draoi package for the hex world terrain generator. Static library, depends on Dia and DraoiHexWorld. Source moved in from CoW/Shared/WorldGeneration under @docs/specs/features/draoi/extract-hexworld-terrain.md.

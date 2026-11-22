@@ -2,16 +2,16 @@
 // Reachability Validator exhaustive pass: degenerate worlds, bad inputs, cost semantics, size and speed.
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
-#include <Shared/WorldGeneration/NavigationQuery.h>
-#include <Shared/WorldGeneration/ReachabilityValidator.h>
+#include <DraoiHexWorldTerrain/NavigationQuery.h>
+#include <DraoiHexWorldTerrain/ReachabilityValidator.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/SiteRules.h>
+#include <DraoiHexWorldTerrain/SiteRules.h>
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
-#include <Shared/WorldGeneration/TerrainGenerator.h>
+#include <DraoiHexWorldTerrain/TerrainGenerator.h>
 #include <Shared/WorldGeneration/Testing/TerrainSliderDriver.h>
-#include <Shared/WorldGeneration/Testing/TestGuarantees.h>
-#include <Shared/WorldGeneration/Testing/TestProfiles.h>
-#include <Shared/WorldGeneration/Testing/ValidationTestWorlds.h>
+#include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
+#include <DraoiHexWorldTerrain/Testing/TestProfiles.h>
+#include <DraoiHexWorldTerrain/Testing/ValidationTestWorlds.h>
 
 #include <algorithm>
 #include <cstdlib>
