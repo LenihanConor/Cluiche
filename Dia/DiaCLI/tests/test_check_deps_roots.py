@@ -61,7 +61,7 @@ def test_declared_parent_covers_submodule(tmp_path):
 def test_root_docs_skipped_and_child_sources_not_charged_to_parent(tmp_path):
     (tmp_path / "Draoi").mkdir()
     (tmp_path / "Draoi" / "dia.draoi.root.architecture.module.md").write_text(
-        "---\nmodule_id: draoi.root\npath: Draoi\n---\n", encoding="utf-8")
+        "---\nmodule_id: other.root\npath: Draoi\n---\n", encoding="utf-8")
     _module(tmp_path, "Dia", "DiaCore", "dia.core")
     _module(tmp_path, "Dia", "DiaP", "dia.p")
     child = tmp_path / "Dia" / "DiaP" / "Child"
@@ -70,7 +70,7 @@ def test_root_docs_skipped_and_child_sources_not_charged_to_parent(tmp_path):
         "---\nmodule_id: dia.p.child\npath: Dia/DiaP/Child\n---\n", encoding="utf-8")
     (child / "B.cpp").write_text("#include <DiaCore/X.h>\n", encoding="utf-8")
     modules, missing, _ = _collect_dependency_issues(tmp_path)
-    assert "draoi.root" not in [m["module_id"] for m in modules]
+    assert "other.root" not in [m["module_id"] for m in modules]
     assert [m[0] for m in missing] == ["dia.p.child"]
 
 
@@ -90,3 +90,55 @@ def test_baseline_accept_then_clean(tmp_path, monkeypatch):
     # A new issue beyond the baseline fails again.
     _module(tmp_path, "Dia", "DiaB", "dia.b", source="#include <DiaCore/X.h>\n")
     assert runner.invoke(cli, ["check", "deps"]).exit_code == 1
+
+
+def _fake_repo(tmp_path, monkeypatch):
+    (tmp_path / "Cluiche").mkdir(exist_ok=True)
+    (tmp_path / "Cluiche" / "Cluiche.sln").write_text("", encoding="utf-8")
+    monkeypatch.setattr("dia_cli.cli.check.find_repo_root", lambda _f: tmp_path)
+
+
+def test_fix_fails_clearly_for_dependencies_required_modules(tmp_path, monkeypatch):
+    _fake_repo(tmp_path, monkeypatch)
+    _module(tmp_path, "Dia", "DiaCore", "dia.core")
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x",
+            deps_block="dependencies:\n  required: []\n", source="#include <DiaCore/X.h>\n")
+    doc = tmp_path / "Draoi" / "DraoiX" / "dia.x.architecture.module.md"
+    before = doc.read_text()
+    result = CliRunner().invoke(cli, ["check", "deps", "--fix"])
+    assert result.exit_code == 1
+    assert "CANNOT FIX draoi.x" in result.output and "dia.core" in result.output
+    assert doc.read_text() == before
+
+
+def test_fix_still_edits_dependent_modules(tmp_path, monkeypatch):
+    _fake_repo(tmp_path, monkeypatch)
+    _module(tmp_path, "Dia", "DiaCore", "dia.core")
+    _module(tmp_path, "Dia", "DiaA", "dia.a", deps_block="dependent_modules: []\n", source="#include <DiaCore/X.h>\n")
+    CliRunner().invoke(cli, ["check", "deps", "--fix"])
+    assert "- dia.core" in (tmp_path / "Dia" / "DiaA" / "dia.a.architecture.module.md").read_text()
+
+
+def _draoi_root(tmp_path, listed):
+    (tmp_path / "Draoi").mkdir(exist_ok=True)
+    items = "".join(f"  - {m}\n" for m in listed)
+    (tmp_path / "Draoi" / "dia.draoi.root.architecture.module.md").write_text(
+        f"---\nmodule_id: draoi.root\npath: Draoi\ndependent_modules:\n{items}---\n", encoding="utf-8")
+
+
+def test_draoi_root_must_list_every_package(tmp_path):
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x", deps_block="parent_module_id: draoi.root\n")
+    _module(tmp_path, "Draoi", "DraoiY", "draoi.y", deps_block="parent_module_id: draoi.root\n")
+    _draoi_root(tmp_path, ["draoi.x", "draoi.gone"])
+    _, missing, stale = _collect_dependency_issues(tmp_path)
+    assert ("draoi.root", "draoi.y", "") in missing
+    assert ("draoi.root", "draoi.gone") in stale
+    assert not [m for m in missing if m[1] == "draoi.x"]
+
+
+def test_draoi_root_in_sync_is_clean(tmp_path):
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x", deps_block="parent_module_id: draoi.root\n")
+    _draoi_root(tmp_path, ["draoi.x"])
+    _, missing, stale = _collect_dependency_issues(tmp_path)
+    assert [m for m in missing if m[0] == "draoi.root"] == []
+    assert [s for s in stale if s[0] == "draoi.root"] == []

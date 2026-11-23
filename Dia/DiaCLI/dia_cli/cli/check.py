@@ -58,6 +58,9 @@ def _parse_frontmatter(text: str) -> dict:
         elif line.startswith("path:"):
             result["path"] = line.split(":", 1)[1].strip().strip('"').strip("'")
             in_deps = in_dependencies = dep_list_active = False
+        elif line.startswith("parent_module_id:"):
+            result["parent_module_id"] = line.split(":", 1)[1].strip().strip('"').strip("'")
+            in_deps = in_dependencies = dep_list_active = False
         elif line.startswith("dependent_modules:"):
             rest = line.split(":", 1)[1].strip()
             if rest == "[]":
@@ -475,6 +478,10 @@ def sanitizer(ctx, config: str, filter_pattern: str | None) -> None:
     _run_sanitizer(config, ctx, filter_pattern)
 
 
+# Root grouping docs whose dependent_modules must list every direct child module.
+_STRICT_ROOTS = frozenset({"draoi.root"})
+
+
 def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
     """Compare declared module dependencies with actual #includes under every library root.
 
@@ -492,6 +499,7 @@ def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
         return None, [], []
 
     # Root grouping modules (path "Dia" / "Draoi") own no code of their own.
+    root_docs = [m for m in modules if not strip_root(m["path"])]
     modules = [m for m in modules if strip_root(m["path"])]
     if on_start:
         on_start(len(modules))
@@ -532,6 +540,17 @@ def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
         for declared in sorted(declared_deps):
             if not any(u == declared or u.startswith(declared + ".") for u in used_modules):
                 stale.append((module_id, declared))
+
+    # Strict roots list every direct child (a new Draoi package must be added to draoi.root).
+    # dia.root is not strict: its hand-written list predates the check.
+    for root_doc in root_docs:
+        if root_doc["module_id"] not in _STRICT_ROOTS:
+            continue
+        declared = set(root_doc.get("dependent_modules", []))
+        children = {m["module_id"] for m in modules if m.get("parent_module_id") == root_doc["module_id"]}
+        missing.extend((root_doc["module_id"], c, "") for c in sorted(children - declared))
+        stale.extend((root_doc["module_id"], d) for d in sorted(declared - children))
+    modules = modules + [m for m in root_docs if m["module_id"] in _STRICT_ROOTS]
 
     return modules, missing, stale
 
@@ -600,6 +619,7 @@ def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
     if fix and missing:
         click.echo("\nApplying fixes...")
         fixes_by_module: Dict[str, List[str]] = {}
+        unfixable = 0
         for mod_id, dep_id, _ in missing:
             fixes_by_module.setdefault(mod_id, []).append(dep_id)
 
@@ -607,6 +627,15 @@ def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
             if mod["module_id"] in fixes_by_module:
                 mf = mod["_file"]
                 text = mf.read_text(encoding="utf-8")
+                if "dependent_modules:" not in text:
+                    click.echo(
+                        f"  CANNOT FIX {mod['module_id']}: declares dependencies under "
+                        f"'dependencies:' (required/optional), which --fix does not edit. "
+                        f"Add by hand: {', '.join(fixes_by_module[mod['module_id']])}",
+                        err=True,
+                    )
+                    unfixable += 1
+                    continue
                 for dep_to_add in fixes_by_module[mod["module_id"]]:
                     if "dependent_modules: []" in text:
                         text = text.replace(
@@ -631,6 +660,8 @@ def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
                         text = "".join(result)
                 mf.write_text(text, encoding="utf-8")
                 click.echo(f"  Fixed {mod['module_id']}")
+        if unfixable:
+            click.echo(f"{unfixable} module(s) could not be fixed automatically (see above).", err=True)
 
     ctx.exit(1 if (missing or stale) else 0)
 

@@ -7,6 +7,7 @@ from typing import List
 
 import click
 
+from dia_cli.utils.library_roots import LIBRARY_ROOTS
 from dia_cli.utils.repo_root import find_repo_root
 
 from .app_templates import (
@@ -37,15 +38,16 @@ def _validate(repo_root: Path, name: str, stage: str) -> None:
 
 
 def check_stage_type_clash(repo_root: Path, stage: str, hint: str = "--stage") -> None:
-    """Reject a stage whose ``<stage>Module`` type already exists in the baseline or Dia."""
+    """Reject a stage whose ``<stage>Module`` type already exists in the baseline, Dia or Draoi."""
     type_name = f"{stage}Module"
     clashes: List[Path] = []
     baseline_modules = repo_root / "Cluiche" / "CluicheGameBaseline" / "Modules"
     if baseline_modules.is_dir():
         clashes += list(baseline_modules.glob(f"{type_name}.h"))
-    dia_dir = repo_root / "Dia"
-    if dia_dir.is_dir():
-        clashes += list(dia_dir.rglob(f"{type_name}.h"))
+    for lib_root in LIBRARY_ROOTS:
+        lib_dir = repo_root / lib_root
+        if lib_dir.is_dir():
+            clashes += list(lib_dir.rglob(f"{type_name}.h"))
     if clashes:
         raise click.ClickException(
             f"Stage module type '{type_name}' clashes with existing {clashes[0].relative_to(repo_root).as_posix()}. "

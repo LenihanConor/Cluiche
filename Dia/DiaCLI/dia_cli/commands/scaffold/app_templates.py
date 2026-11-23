@@ -151,16 +151,17 @@ def baseline_references(repo_root: Path) -> List[Dict]:
     baseline_dir = vcxproj.parent
     included = set()
     for src in list(baseline_dir.rglob("*.cpp")) + list(baseline_dir.rglob("*.h")):
-        included.update(re.findall(r"#\s*include\s*<(Dia\w+)/", src.read_text(encoding="utf-8", errors="ignore")))
+        included.update(re.findall(r"#\s*include\s*<((?:Dia|Draoi)\w+)/", src.read_text(encoding="utf-8", errors="ignore")))
     for lib in sorted(included - known):
-        lib_proj = Path(repo_root) / "Dia" / lib / f"{lib}.vcxproj"
+        lib_root = "Draoi" if lib.startswith("Draoi") else "Dia"
+        lib_proj = Path(repo_root) / lib_root / lib / f"{lib}.vcxproj"
         if not lib_proj.exists():
             continue
         lib_guid = ET.parse(lib_proj).getroot().find(f".//{_MSBUILD_NS}ProjectGuid")
         if lib_guid is None or not (lib_guid.text or "").strip():
             continue
         refs.append({
-            "include": f"..\\..\\Dia\\{lib}\\{lib}.vcxproj",
+            "include": f"..\\..\\{lib_root}\\{lib}\\{lib}.vcxproj",
             "project": lib_guid.text.strip(),
             "extra": [],
             "link_lib": lib,
