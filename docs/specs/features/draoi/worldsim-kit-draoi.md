@@ -1,7 +1,7 @@
 # Feature Spec: World-Sim Kit, Draoi Half (cell fields, selectors, save codec data half)
 
 **Parent:** @docs/specs/applications/draoi/draoi.md
-**Status:** `Approved` (2026-11-21; split approved by the user, recommended answers to the open questions accepted). **Revised 2026-11-23** after the core, terrain and GameSpeed extractions landed: real paths, resolved ODQs, and the `terrain.*` field contribution moved into this half (see "Revision 2026-11-23").
+**Status:** `Done` (2026-11-23; was Approved 2026-11-21; split approved by the user, recommended answers to the open questions accepted). **Revised 2026-11-23** after the core, terrain and GameSpeed extractions landed: real paths, resolved ODQs, and the `terrain.*` field contribution moved into this half (see "Revision 2026-11-23").
 **Sibling:** @docs/specs/applications/cow/systems/worldstep/worldsim-kit.md (the CoW half: stage base, restore sequence, commands, names, wiring)
 **Plan:** @docs/specs/features/draoi/worldsim-kit-draoi.plan.md
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A3, A4, A8)
