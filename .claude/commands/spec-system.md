@@ -9,6 +9,7 @@ Ask the user:
 
 Then:
 - Create docs/specs/systems/<app-name>/<system-name>.md using the system spec template
+- Apps are `dia`, `draoi`, or an application (cow, cluichetest, ...). A system that is a reusable gameplay library belongs under `docs/specs/applications/draoi/` (`dia docs spec-scaffold system <name> --app draoi`); decide the layer (Dia / Draoi / application) during the interview using the CLAUDE.md layer boundary rule
 - Register the system in the parent application spec's systems table
 - Read parent Platform and App specs and populate the Inherited Binding Decisions table
   with every Binding=Yes decision that applies to this system

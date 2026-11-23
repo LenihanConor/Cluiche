@@ -49,15 +49,16 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia run <target>` | Build + run in one step (tests, game, editor). Default choice. |
 | `dia launch <target>` | Run only — skip build (use when already built). |
 | `dia pipeline --target <target>` | Full pipeline: compile-code → build-assets → deploy. Required for editor targets that need UI built and copied. |
-| `dia scaffold module <Parent> <Name>` | Create a new Dia engine module (header, cpp, module.md, vcxproj entries). |
+| `dia scaffold module <Parent> <Name>` | Create a new Dia or Draoi module (header, cpp, module.md, vcxproj entries); a `Draoi*` parent selects the Draoi root. |
 | `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
 | `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
-| `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
+| `dia check deps` | Cross-check module dependency declarations vs actual #includes (Dia and Draoi). Known issues live in docs/reference/registry/deps-baseline.json; `--accept-baseline` re-records. |
+| `dia check arch` | Layer audit: forbidden deps, layer order, and the boundary rule that Dia may never depend on Draoi. |
 | `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
 | `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
 | `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |
 | `dia perf convert <session-dir\|profile.jsonl>` | Convert profile.jsonl (+ trips.jsonl) to Chrome-trace JSON for Perfetto; `--out`, `--from/--to` seconds. |
-| `dia check spec-sync` | Check spec Public Interface symbols against Dia headers; write spec-sync-status.md. |
+| `dia check spec-sync` | Check spec Public Interface symbols against Dia/Draoi/application headers; write spec-sync-status.md. |
 | `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
 | `dia docs plan <path> <#> --status <S>` | Update a plan task row (status, notes, model). Validates transitions. |

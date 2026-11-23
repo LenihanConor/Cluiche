@@ -19,7 +19,12 @@ C:\GitHub\Cluiche\
 │   ├── DiaSDL/                   # SDL3 window and input backend
 │   ├── DiaBgfx/                  # bgfx 2D renderer
 │   ├── DiaBgfx3D/                # bgfx 3D renderer
-│   └── ...                       # Other subsystems
+│   └── ...                       # Other subsystems   (Dia never depends on Draoi)
+│
+├── Draoi/                        # Draoi gameplay libraries (between Dia and applications)
+│   ├── DraoiHexWorld/            # Hex world foundation (cells, grid, strata, biomes)
+│   ├── DraoiHexWorldTerrain/     # Terrain generator
+│   └── DraoiGameSpeed/           # Game speed / calendar
 │
 ├── Cluiche/                      # Main solution directory
 │   ├── Cluiche.sln               # Visual Studio solution

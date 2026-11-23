@@ -26,7 +26,7 @@ Examples:
 
 - **The GDD owns design** (AD-003). Read it; never edit it and never invent design intent.
 - **One stage per testbed** (AD-005). Modes and presets (for example isolated and live) become panels inside the one stage, never extra stages.
-- **Dia or baseline changes are proposed, not made** (AD-001). Unknown engine needs go to `docs/specs/applications/cow/dia-needs.md` (AD-002), not into the stage.
+- **Dia, Draoi or baseline changes are proposed, not made** (AD-001; CLAUDE.md escalation rule). Reusable gameplay needs belong in Draoi, reusable engine needs in Dia. Unknown engine needs go to `docs/specs/applications/cow/dia-needs.md` (AD-002), not into the stage.
 - Never create stage files by hand; if the scaffold fails, report the error.
 
 ## Instructions for Claude
