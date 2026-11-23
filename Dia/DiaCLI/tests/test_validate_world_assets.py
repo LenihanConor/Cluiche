@@ -1,4 +1,4 @@
-"""The shipped CoW guarantees.json must validate against its sidecar (regression for 55 no-schema-entry errors)."""
+"""Shipped CoW world data files (guarantees, strata) must validate against their sidecars."""
 from __future__ import annotations
 
 import json
@@ -25,3 +25,17 @@ def test_guarantees_typo_is_still_caught():
     doc["site_kinds"][0]["protectd"] = True
     findings = validate_data_document(doc, "guarantees.json", index, is_pack=False)
     assert [(f.rule, f.key) for f in findings] == [("data.no-schema-entry", "site_kinds[].protectd")]
+
+
+def test_strata_json_validates_against_sidecar():
+    index = build_schema_index([_load("strata.schema.json")])
+    findings = validate_data_document(_load("strata.json"), "strata.json", index, is_pack=False)
+    assert findings == []
+
+
+def test_strata_typo_is_still_caught():
+    index = build_schema_index([_load("strata.schema.json")])
+    doc = _load("strata.json")
+    doc["sets"][0]["strata"][0]["shar"] = 0.1
+    findings = validate_data_document(doc, "strata.json", index, is_pack=False)
+    assert [(f.rule, f.key) for f in findings] == [("data.no-schema-entry", "sets[].strata[].shar")]
