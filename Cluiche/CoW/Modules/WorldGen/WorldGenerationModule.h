@@ -15,6 +15,7 @@
 #include "Modules/MessageBusHostModule.h"
 #include "Modules/Plumbing/RandomStreamModule.h"
 #include "Modules/SimQueryHostModule.h"
+#include "Shared/Debug/SimCommandSet.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -163,6 +164,10 @@ public:
     // True once the cow.worldgen.* terrain-slice commands are registered with the SimQueryHostModule
     // (false when no SimQueryHostModule is wired, or before DoStart / after DoStop).
     bool CommandsRegistered() const { return mCommandsRegistered; }
+    // Registers the 18 commands/queries on 'host' all-or-nothing through SimCommandSet (a failure rolls back by kind).
+    // 'host' must outlive the registration (UnregisterCommands or destruction removes the names). SimPU thread only.
+    bool RegisterCommandsOn(Debug::ISimCommandHost& host);
+    void UnregisterCommands();
 
     // Default writable worlds directory (PD-009: generated output lives under Cluiche/out/<AppName>/).
     static constexpr const char* kDefaultOutWorldsDir = "Cluiche/out/CoW/worlds";
@@ -199,7 +204,6 @@ private:
     // Clear + re-register the Draoi biome and terrain field contributions (the S-1 half of the cell-field registry).
     void RebuildCellFields();
     void RegisterCommands();
-    void UnregisterCommands();
     // World hand-off failure: Error log, Failing health, automatic generation suppressed (mHandoffError holds the reason).
     void ReportHandoffFailure();
     // World hand-off, world_file form: imports the named file once (all-or-nothing, opens locked) and announces it.
@@ -269,6 +273,8 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::SimQueryHostModule> mSimQueryHost{this};
 
     bool mCommandsRegistered = false;
+    std::unique_ptr<Debug::ISimCommandHost> mHostAdapter;   // declared before the set: outlives its destructor's unregister
+    Debug::SimCommandSet mCommandSet;
 
     WorldGenerationHealthReporter mHealth;
     bool mHealthRegistered = false;

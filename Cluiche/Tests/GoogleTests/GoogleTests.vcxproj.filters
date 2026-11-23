@@ -3273,5 +3273,8 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldCellFieldsWiring.cpp">
       <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldGenCommandSet.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -870,17 +870,49 @@ void WorldGenerationModule::OnWorldImported()
     }
 }
 
+namespace
+{
+    // Registration surface over the SimQueryHostModule, so every name is also announced to the Main-side DebugServer.
+    class ModuleHostAdapter : public Debug::ISimCommandHost
+    {
+    public:
+        explicit ModuleHostAdapter(Cluiche::AppFlow::SimQueryHostModule& host) : mHost(host) {}
+        bool RegisterQuery(const Dia::Core::StringCRC& name, const Dia::DebugServer::SimHelpInfo& help, Handler handler) override
+        {
+            return mHost.RegisterQuery(name.AsChar(), help, handler);
+        }
+        bool RegisterCommand(const Dia::Core::StringCRC& name, const Dia::DebugServer::SimHelpInfo& help, Handler handler) override
+        {
+            return mHost.RegisterCommand(name.AsChar(), help, handler);
+        }
+        bool Unregister(const Dia::Core::StringCRC& name, Debug::EntryKind) override
+        {
+            mHost.UnregisterQuery(name.AsChar());
+            return true;
+        }
+    private:
+        Cluiche::AppFlow::SimQueryHostModule& mHost;
+    };
+}
+
 void WorldGenerationModule::RegisterCommands()
 {
-    using Dia::API::ValueParam;
-    using Dia::DebugServer::SimHelpInfo;
-    using Cluiche::AppFlow::SimQueryHostModule;
-
-    SimQueryHostModule* host = mSimQueryHost.Get();    if (!host)
+    Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHost.Get();
+    if (!host)
     {
         DIA_LOG_WARNING("CoW", "WorldGenerationModule: no SimQueryHostModule - cow.worldgen.* commands not registered");
         return;
     }
+    mHostAdapter.reset(new ModuleHostAdapter(*host));
+    RegisterCommandsOn(*mHostAdapter);
+}
+
+bool WorldGenerationModule::RegisterCommandsOn(Debug::ISimCommandHost& host)
+{
+    using Dia::API::ValueParam;
+    using Dia::DebugServer::SimHelpInfo;
+    using Debug::EntryKind;
+    using Debug::SimCommandEntry;
 
     static const ValueParam kSetParams[] = {
         { "params", "object", false, "Any WorldShapeParams key (landFraction, continents, rivers, ...), plus seed and unlock (true is required on a locked imported world; it drops the imported edits)" } };
@@ -922,50 +954,38 @@ void WorldGenerationModule::RegisterCommands()
         return v;
     };
 
-    bool ok = true;
-    // Names this call actually registered, so a partial failure rolls back only our own (never a duplicate's owner's).
-    const char* registeredNames[kCommandCount] = {};
-    unsigned registeredCount = 0;
+    SimCommandEntry entries[kCommandCount];
+    unsigned entryCount = 0;
     auto registerOne = [&](bool isAction, const char* name, const char* desc, const ValueParam* params, unsigned count,
                            std::function<Json::Value(const Json::Value&)> fn)
     {
-        SimHelpInfo help;
-        help.description = desc;
-        help.category = "worldgen";
-        help.owner = "WorldGenerationModule";
-        help.params = params;
-        help.paramCount = count;
-        help.noArgs = (count == 0);
-        bool r = false;
+        SimCommandEntry& e = entries[entryCount++];
+        e.name = name;
+        e.kind = isAction ? EntryKind::kCommand : EntryKind::kQuery;
+        e.help.description = desc;
+        e.help.category = "worldgen";
+        e.help.owner = "WorldGenerationModule";
+        e.help.params = params;
+        e.help.paramCount = count;
+        e.help.noArgs = (count == 0);
         if (isAction)
         {
-            r = host->RegisterCommand(name, help,
-                [this, asObject, fn](const Json::Value& args) -> Json::Value
-                {
-                    Json::Value result = asObject(fn(args));
-                    NotifyAction();
-                    return result;
-                });
+            e.handler = [this, asObject, fn](const Json::Value& args) -> Json::Value
+            {
+                Json::Value result = asObject(fn(args));
+                NotifyAction();
+                return result;
+            };
         }
         else
         {
-            r = host->RegisterQuery(name, help,
-                [asObject, fn](const Json::Value& args) -> Json::Value
-                {
-                    Json::Value result = asObject(fn(args));
-                    if (!result.isMember("success")) result["success"] = true;
-                    return result;
-                });
+            e.handler = [asObject, fn](const Json::Value& args) -> Json::Value
+            {
+                Json::Value result = asObject(fn(args));
+                if (!result.isMember("success")) result["success"] = true;
+                return result;
+            };
         }
-        if (r)
-        {
-            if (registeredCount < kCommandCount) registeredNames[registeredCount++] = name;
-        }
-        else
-        {
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: %s registration rejected by SimQueryHost", name);
-        }
-        ok = ok && r;
     };
 
     static const ValueParam kExportParams[] = {
@@ -1043,25 +1063,15 @@ void WorldGenerationModule::RegisterCommands()
     registerOne(false, "cow.worldgen.report", "The last generation report: outcome, per-attempt sub-seed, failed guarantees and diagnostics (paged)", kReportParams, 5,
                 [s](const Json::Value& a) { return s->Report(a); });
 
-    if (!ok)
-    {
-        // All or nothing: a failed registration must not leave the others in the always-on SimQueryHost, because
-        // UnregisterCommands is skipped when mCommandsRegistered is false and the names would leak for good.
-        for (unsigned i = 0; i < registeredCount; ++i)
-            host->UnregisterQuery(registeredNames[i]);
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: rolled back %u cow.worldgen.* registrations after a failure", registeredCount);
-    }
-    mCommandsRegistered = ok;
+    mCommandsRegistered = mCommandSet.RegisterAll(host, entries, entryCount, "WorldGenerationModule");
+    if (!mCommandsRegistered)
+        DIA_LOG_ERROR("CoW", "WorldGenerationModule: cow.worldgen.* registration failed and was rolled back");
+    return mCommandsRegistered;
 }
 
 void WorldGenerationModule::UnregisterCommands()
 {
-    if (!mCommandsRegistered) return;
-    if (Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHost.Get())
-    {
-        for (const char* name : kCommandNames)
-            host->UnregisterQuery(name);
-    }
+    mCommandSet.UnregisterAll();
     mCommandsRegistered = false;
 }
 
