@@ -37,7 +37,7 @@ Move every application-flow module class (`SimModule`, `RenderModule`, `MainModu
 | Escalation rule | `CLAUDE.md` | No new Dia headers are added. Files only leave Dia. |
 | **MP-001 (new):** keep `kTypeId` strings and `DIA_DESCRIBE` text unchanged | this spec | `.diaapp` manifests, the describe-mode export and command help key on them. A moved module must stay manifest-compatible with no manifest edits. |
 | **MP-002 (new):** destination rule | decided with the user 2026-11-23 | Shared by 2+ apps or used by Baseline -> `CluicheGameBaseline`. Used by exactly one app -> that app. |
-| **MP-003 (new):** move everything, including the framework's own modules | decided with the user 2026-11-23 | `ObservationModule` and `MetricsCollectorModule` move too (see Open Design Question 1). |
+| **MP-003 (new):** move everything, including the framework's own modules | decided with the user 2026-11-23; **under review** | `ObservationModule` moves unless the user accepts the exception in Open Design Question 1; `MetricsCollectorModule` is deleted, not moved. |
 | **MP-004 (new):** tests split by what they test | decided with the user 2026-11-23 | Library tests (Bus, Impl) stay with the Dia package. Tests that drive `DoStart`/`DoUpdate`/`DoStop` move beside the module in a Baseline test folder. |
 
 ## Features
@@ -50,23 +50,23 @@ Move every application-flow module class (`SimModule`, `RenderModule`, `MainModu
 
 ### Where each module goes (MP-002)
 
-Consumers were counted from `#include` of the module header outside its own package (2026-11-23).
+Consumers were counted from `#include` of the module header outside its own package **and from `type_id` entries in the `.diaapp` manifests** (2026-11-23). The include count alone missed modules that self-register with `DIA_MODULE(...)` in their own `.cpp` and are loaded purely by manifest.
 
 | Module (package, layer today) | App consumers | GoogleTests | Destination |
 |---|---|---|---|
 | `MessageBusModule` (DiaMessageBus, services) | Baseline host + CluicheTest subclass | 3 | **Baseline.** Fold into the existing `MessageBusHostModule`. Clears the arch violation. |
-| `DiaSimTimeModule` (DiaSimTime, gameplay) | CluicheTest, CoW | 4 | **Baseline** (shared) |
-| `DiaMainTime`, `DiaRenderTime` (DiaSimTime) | none | 1 each | **Baseline**, with SimTime |
-| `CellLayersModule` (DiaCellLayers, visual) | CluicheTest, CoW | 3 | **Baseline** (shared) |
-| `DeferredStepModule` (DiaDeferredStep, application) | CluicheTest, CoW | 3 | **Baseline** (shared). Sequence with the `DiaParallelExecutor` backlog row. |
+| `DiaSimTimeModule` (DiaSimTime, gameplay) | manifests: `cow_main`, `arena_test_stage`; includes: CluicheTest, CoW | 4 | **Baseline** (shared) |
+| `DiaMainTime`, `DiaRenderTime` (DiaSimTime) | no manifest, no app code; named in the SimTime spec and in `ProcessingUnit` comments as the planned render-time pusher | 1 each | **Baseline**, with SimTime (kept: planned framework pieces, not dead) |
+| `CellLayersModule` (DiaCellLayers, visual) | manifests: `cell_layers_viewer_test_stage`, `s1world_generation_testbed_stage` (CluicheTest and CoW) | 3 | **Baseline** (shared) |
+| `DeferredStepModule` (DiaDeferredStep, application) | manifests: `cow_main`, `deferred_step_test_stage` (CoW and CluicheTest) | 3 | **Baseline** (shared). Sequence with the `DiaParallelExecutor` backlog row. |
 | `AIBudgetModule` (DiaAIBudget, gameplay) | Baseline | 2 | **Baseline** |
-| `ValueSchemaModule` (DiaValueSchema, assets) | none | 7 | **Baseline** (no app uses it; confirm it is not dead, Open Design Question 2) |
-| `SensorModule` (DiaSensor, gameplay) | none | 1 | **Baseline** (same check) |
-| `CellHistoryModule` (DiaCellHistory, visual) | CluicheTest only | 1 | **CluicheTest** |
+| `ValueSchemaModule` (DiaValueSchema, assets) | **live:** manifests `cluiche_main`, `cow_main`; self-registers in Dia | 7 | **Baseline** |
+| `SensorModule` (DiaSensor, gameplay) | none: no manifest, no app code, only its own package test (the whole DiaSensor package has no app consumer) | 1 | **Baseline** for now (Open Design Question 2) |
+| `CellHistoryModule` (DiaCellHistory, visual) | manifest: `cell_layers_viewer_test_stage` (CluicheTest) | 1 | **CluicheTest** |
 | `EntitySpawnerModule` (DiaEntitySpawner, gameplay) | CluicheTest only (already subclasses it) | 2 | **CluicheTest** |
 | `TriggerScriptModule` (DiaTriggerScript, gameplay) | CluicheTest only | 1 | **CluicheTest** |
 | `ObservationModule` (DiaApplicationFlow) | Baseline subclass, CluicheEditor subclass | 0 | **Baseline** (Open Design Question 1: CluicheEditor) |
-| `MetricsCollectorModule` (DiaApplicationFlow/Metrics) | none found | 0 | **Baseline**, after confirming how it is registered |
+| `MetricsCollectorModule` (DiaApplicationFlow/Metrics) | **none: dead.** No `DIA_MODULE`, no manifest, no include. Only the editor's `known_types.json` dropdown lists it. | 0 | **Delete** (Open Design Question 3, answered) |
 
 ### The move, per module
 
@@ -82,9 +82,9 @@ A forbidden-pattern check, in `dia docs precommit` (it already runs forbidden pa
 
 ## Open Design Questions
 
-1. **`ObservationModule` and `CluicheEditor`.** Today `CluicheEditor` subclasses `ObservationModule` from `DiaApplicationFlow` without referencing Baseline. Moving the class to Baseline needs either a new Baseline project reference from the editor, or a second copy owned by the editor. Choose before plan task 12.
-2. **Are `ValueSchemaModule`, `SensorModule`, `DiaMainTime` and `DiaRenderTime` live?** No application includes them, only tests. If a `.diaapp` manifest lists them by type id they are live and move to Baseline; if nothing does, they are candidates for deletion rather than a move. Check manifests in plan task 0.
-3. **Does `MetricsCollectorModule` self-register?** No app includes its header, so something in the framework instantiates it. If it is wired inside `DiaApplicationFlow`, moving it needs a registration hook, which would be a new Dia header. That would trigger the escalation rule, so stop and ask at plan task 12.
+1. **`ObservationModule` and `CluicheEditor`.** `ObservationModule` is a 182-line reusable base (log sinks, observation session, per-frame `SessionManager::Tick`). Both `CluicheGameBaseline` and `CluicheEditor` subclass it in about 30 lines each, supplying only the app name and config asset path. The editor does not link Baseline, so moving the base into Baseline forces either a Baseline reference from the editor (pulls in boot menu and game modules) or a second copy. **Recommendation: leave the base in `DiaApplicationFlow` as a documented exception.** It is a generic mechanism, the apps already supply the wiring in their subclasses, and it sits with the other framework classes. This reverses MP-003 for this one class. Open: user to confirm.
+2. **`SensorModule` and the DiaSensor package.** Nothing outside the package uses it, not even a manifest. Moving the module to Baseline would add unused code there. Options: move it anyway (cheap, keeps a built and tested feature), or leave the package as is and revisit whether DiaSensor is wanted at all. Open: user to decide.
+3. ~~`MetricsCollectorModule` registration~~ **Answered 2026-11-23: dead.** It is a `MainModule` skeleton that collected FPS, frame time and memory. It was never registered or loaded, and the observability research (`observ_telemetry/ideate.md`) proposed subsuming it with the metrics registry, which then shipped. Delete it with its `.vcxproj` entries and the `known_types.json` entry in the editor assets (two copies: source and built).
 
 ## Status
 
