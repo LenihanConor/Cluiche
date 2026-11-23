@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/HexWorldSaveCodec.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
+#include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/Logger.h>
 
 #include <DiaCore/Json/external/json/json.h>
 
@@ -300,4 +304,238 @@ TEST(HexWorldSaveCodec, ValidatePendingRunsSameChecks)
     v["elev"][0] = Json::Value(99.0);
     EXPECT_FALSE(ValidatePending(v, kFields, kFieldCount, MakeCaps(), err));
     EXPECT_STREQ("elev", err.field.AsCStr());
+}
+
+// ---- Biome palette (D6, AC 21) ----
+
+namespace
+{
+    // Rows copied from the BiomeRegistry fixture. Registry order is the order passed to BuildRegistryText.
+    const char* const kRowOcean =
+        R"({"id":"Biome.Ocean","name":"Ocean","colour":"#1f4f8f","description":"Open sea","tags":["water","aquatic"],)"
+        R"("generated":true,"zones":["None"],"roles":["ocean"],"pin":{"rule":"water_ocean","priority":100}})";
+    const char* const kRowLake =
+        R"({"id":"Biome.Lake","name":"Lake","colour":"#3a7fd0","description":"Inland water","tags":["water","aquatic"],)"
+        R"("generated":true,"zones":["None"],"roles":["lake"],"pin":{"rule":"water_lake","priority":200}})";
+    const char* const kRowGrass =
+        R"({"id":"Biome.Grassland","name":"Grassland","colour":"#9acd32","description":"Open plains","tags":["land","open","fuel"],)"
+        R"("generated":true,"zones":["FirstShores","WildReaches"],"roles":["fallback"],)"
+        R"("climate":{"t0":0.5,"m0":0.25,"wt":0.125,"wm":0.75},"pin":{"rule":"wetland","priority":150},"plateau":"dry"})";
+    const char* const kRowScrub =
+        R"({"id":"Biome.Scrub","name":"Scrub","colour":"#808000","description":"Succession scrub","tags":["land","succession"],)"
+        R"("generated":false,"zones":[],)"
+        R"("climate":{"t0":0.75,"m0":0.5,"wt":0.25,"wm":0.375},"plateau":"wet"})";
+    const char* const kRowTundra =
+        R"({"id":"Biome.Tundra","name":"Tundra","colour":"#aabbcc","description":"Cold plains","tags":["land"],)"
+        R"("generated":false,"zones":[]})";
+
+    std::string BuildRegistryText(std::initializer_list<const char*> rows)
+    {
+        std::string t = R"({"format":"cow.biomes","version":1,"biomes":[)";
+        bool first = true;
+        for (const char* r : rows) { if (!first) t += ","; t += r; first = false; }
+        t += R"(],"forbidden":[]})";
+        return t;
+    }
+
+    void LoadRegistry(BiomeRegistry& r, const std::string& text)
+    {
+        RegistryError err;
+        ASSERT_TRUE(r.LoadFromText(text.c_str(), ::Draoi::HexWorld::Testing::ShippedStratumTable(), err)) << err.reason.AsCStr();
+    }
+
+    // Counts the unknown-id warnings (BiomeRegistry) and the palette-hash Info (codec) by message marker.
+    class PaletteSink : public Dia::Observation::Log::ISink
+    {
+    public:
+        void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override
+        {
+            const std::string m(e.message);
+            if (m.find("BiomeRegistry unknown id") != std::string::npos) { ++warnings; }
+            if (m.find("biome palette hash differs") != std::string::npos) { ++infos; }
+        }
+        const char* GetName() const override { return "HexWorldPaletteSink"; }
+        unsigned int warnings = 0;
+        unsigned int infos = 0;
+    };
+
+    class HexWorldSaveCodecPalette : public ::testing::Test
+    {
+    protected:
+        void SetUp() override
+        {
+            // A = Ocean, Lake, Grassland, Scrub (indices 0..3). B = A + Tundra. C = Scrub, Ocean, Grassland, Lake.
+            // D = A without Scrub.
+            LoadRegistry(a, BuildRegistryText({ kRowOcean, kRowLake, kRowGrass, kRowScrub }));
+            LoadRegistry(b, BuildRegistryText({ kRowOcean, kRowLake, kRowGrass, kRowScrub, kRowTundra }));
+            LoadRegistry(c, BuildRegistryText({ kRowScrub, kRowOcean, kRowGrass, kRowLake }));
+            LoadRegistry(d, BuildRegistryText({ kRowOcean, kRowLake, kRowGrass }));
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.RegisterThreadBuffer();
+            l.RegisterSink(&sink);
+        }
+        void TearDown() override
+        {
+            auto& l = Dia::Observation::Log::Logger::Instance();
+            l.FlushSync();
+            l.UnregisterSink(&sink);
+            l.UnregisterThreadBuffer();
+        }
+        void Flush() { Dia::Observation::Log::Logger::Instance().FlushSync(); }
+
+        // Under A: cells Scrub, Ocean, Scrub, Lake, Grassland = indices 3,0,3,1,2.
+        Json::Value WrittenUnderA()
+        {
+            const BiomeIndex cells[5] = { 3, 0, 3, 1, 2 };
+            Json::Value root;
+            WriteBiomeCells(root, a, cells, 5);
+            Json::Value back;
+            EXPECT_TRUE(Parse(Serialize(root).c_str(), back));
+            return back;
+        }
+
+        BiomeRegistry a, b, c, d;
+        PaletteSink sink;
+    };
+}
+
+TEST_F(HexWorldSaveCodecPalette, PaletteWrittenOnceInRegistryOrder)
+{
+    const BiomeIndex cells[5] = { 3, 0, 3, 1, 2 };
+    Json::Value root;
+    WriteBiomeCells(root, a, cells, 5);
+    const std::string text = Serialize(root);
+    // One palette key in the text: first find == last find.
+    EXPECT_NE(std::string::npos, text.find("\"biome_palette\":"));
+    EXPECT_EQ(text.find("\"biome_palette\":"), text.rfind("\"biome_palette\":"));
+    ASSERT_EQ(4u, root["biome_palette"].size());
+    EXPECT_EQ("Biome.Ocean", root["biome_palette"][0].asString());
+    EXPECT_EQ("Biome.Lake", root["biome_palette"][1].asString());
+    EXPECT_EQ("Biome.Grassland", root["biome_palette"][2].asString());
+    EXPECT_EQ("Biome.Scrub", root["biome_palette"][3].asString());
+    ASSERT_EQ(5u, root["biome"].size());
+    const unsigned expected[5] = { 3, 0, 3, 1, 2 };
+    for (uint32_t i = 0; i < 5; ++i) { EXPECT_EQ(expected[i], root["biome"][i].asUInt()); }
+}
+
+TEST_F(HexWorldSaveCodecPalette, HashStoredEqualsRegistryHash)
+{
+    Json::Value root = WrittenUnderA();
+    EXPECT_NE(0ull, a.Hash());
+    EXPECT_EQ(a.Hash(), StoredBiomeHash(root));
+}
+
+TEST_F(HexWorldSaveCodecPalette, RoundTripUnderSameRegistry)
+{
+    Json::Value root = WrittenUnderA();
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, a, out, 5, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    const BiomeIndex expected[5] = { 3, 0, 3, 1, 2 };
+    for (int i = 0; i < 5; ++i) { EXPECT_EQ(expected[i], out[i]); }
+    Flush();
+    EXPECT_EQ(0u, sink.infos);
+    EXPECT_EQ(0u, sink.warnings);
+}
+
+TEST_F(HexWorldSaveCodecPalette, LoadUnderAppendedRegistrySameIds)
+{
+    // B appends Tundra at index 4; existing indices unchanged: 3,0,3,1,2 still Scrub,Ocean,Scrub,Lake,Grassland.
+    Json::Value root = WrittenUnderA();
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, b, out, 5, err));
+    const char* ids[5] = { "Biome.Scrub", "Biome.Ocean", "Biome.Scrub", "Biome.Lake", "Biome.Grassland" };
+    for (int i = 0; i < 5; ++i) { EXPECT_STREQ(ids[i], b.IdText(out[i])); }
+}
+
+TEST_F(HexWorldSaveCodecPalette, LoadUnderReorderedRegistrySameIds)
+{
+    // C order: 0 Scrub, 1 Ocean, 2 Grassland, 3 Lake. Cells Scrub,Ocean,Scrub,Lake,Grassland -> 0,1,0,3,2.
+    Json::Value root = WrittenUnderA();
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, c, out, 5, err));
+    const BiomeIndex expected[5] = { 0, 1, 0, 3, 2 };
+    for (int i = 0; i < 5; ++i) { EXPECT_EQ(expected[i], out[i]); }
+    const char* ids[5] = { "Biome.Scrub", "Biome.Ocean", "Biome.Scrub", "Biome.Lake", "Biome.Grassland" };
+    for (int i = 0; i < 5; ++i) { EXPECT_STREQ(ids[i], c.IdText(out[i])); }
+}
+
+TEST_F(HexWorldSaveCodecPalette, UnknownIdsLoadFallbackOneWarningPerId)
+{
+    // D lacks Scrub (used by 2 cells); Lake is renamed in the record to an unknown id (used by 1 cell).
+    Json::Value root = WrittenUnderA();
+    root["biome_palette"][1] = "Biome.Gone";
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, d, out, 5, err));
+    // D: 0 Ocean, 1 Lake, 2 Grassland(Fallback). Cells: Scrub->2, Ocean->0, Scrub->2, Gone->2, Grassland->2.
+    const BiomeIndex expected[5] = { 2, 0, 2, 2, 2 };
+    for (int i = 0; i < 5; ++i) { EXPECT_EQ(expected[i], out[i]); }
+    EXPECT_EQ(d.Role(BiomeRole::Fallback), out[0]);
+    Flush();
+    EXPECT_EQ(2u, sink.warnings);   // Scrub once, Gone once
+}
+
+TEST_F(HexWorldSaveCodecPalette, SingleUnknownIdManyCellsOneWarning)
+{
+    const BiomeIndex cells[6] = { 3, 3, 3, 3, 3, 3 };
+    Json::Value root;
+    WriteBiomeCells(root, a, cells, 6);
+    BiomeIndex out[6] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, d, out, 6, err));
+    for (int i = 0; i < 6; ++i) { EXPECT_EQ(2, out[i]); }
+    Flush();
+    EXPECT_EQ(1u, sink.warnings);
+}
+
+TEST_F(HexWorldSaveCodecPalette, HashMismatchCleanRemapLogsExactlyOneInfo)
+{
+    Json::Value root = WrittenUnderA();
+    ASSERT_NE(a.Hash(), b.Hash());
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, b, out, 5, err));
+    Flush();
+    EXPECT_EQ(1u, sink.infos);
+    EXPECT_EQ(0u, sink.warnings);
+}
+
+TEST_F(HexWorldSaveCodecPalette, MalformedPaletteRejectedNamingField)
+{
+    SaveError err;
+    BiomeIndex out[5] = {};
+
+    Json::Value r = WrittenUnderA();
+    r.removeMember("biome_palette");
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome_palette", err.field.AsCStr());
+
+    r = WrittenUnderA();
+    r["biome_palette"] = 7;   // not an array
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome_palette", err.field.AsCStr());
+
+    r = WrittenUnderA();
+    r["biome_palette"][2] = 5;   // entry not a string
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome_palette", err.field.AsCStr());
+
+    r = WrittenUnderA();
+    r["biome"][1] = 4;   // palette has 4 entries: index 4 is out of range
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+
+    r = WrittenUnderA();
+    r["biome"][1] = 1.5;   // not an integer
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+
+    r = WrittenUnderA();   // 5 cells stored, caller expects 6
+    BiomeIndex out6[6] = {};
+    EXPECT_FALSE(ReadBiomeCells(r, a, out6, 6, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    EXPECT_GT(std::strlen(err.reason.AsCStr()), 0u);
 }

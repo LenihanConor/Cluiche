@@ -3,6 +3,7 @@
 #pragma once
 
 #include <DiaCore/Json/external/json/json.h>
+#include <DraoiHexWorld/BiomeRegistry.h>
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String256.h>
 
@@ -64,6 +65,15 @@ std::string Serialize(const Json::Value& root);
 bool Validate(const Json::Value& root, const SavedField* fields, uint32_t fieldCount, const Caps& caps, SaveError& err);
 // Same checks over a pending-step blob (the pending format itself belongs to the game).
 bool ValidatePending(const Json::Value& blob, const SavedField* fields, uint32_t fieldCount, const Caps& caps, SaveError& err);
+
+// Biome palette. Writes biome_palette (id text in registry order, once), biome_palette_hash (reg.Hash()) and
+// `biome` (per-cell index into the palette = the cell's BiomeIndex under reg). Not part of Validate.
+void WriteBiomeCells(Json::Value& root, const BiomeRegistry& reg, const BiomeIndex* cells, uint32_t count);
+// Validates the palette and cell indices, then remaps each palette id once through reg.ResolveOrFallback and
+// writes `count` entries to outCells. Logs one Info when the stored hash differs from reg.Hash() and every id resolved.
+bool ReadBiomeCells(const Json::Value& root, const BiomeRegistry& reg, BiomeIndex* outCells, uint32_t count, SaveError& err);
+// The biome_palette_hash stored in a record (0 when absent).
+uint64_t StoredBiomeHash(const Json::Value& root);
 
 } // namespace HexWorld
 } // namespace Draoi

@@ -1,5 +1,7 @@
 #include <DraoiHexWorld/HexWorldSaveCodec.h>
 
+#include <DiaObservation/Log/DiaLog.h>
+
 #include <cmath>
 #include <cstdio>
 
@@ -146,6 +148,76 @@ bool Validate(const Json::Value& root, const SavedField* fields, uint32_t fieldC
 bool ValidatePending(const Json::Value& blob, const SavedField* fields, uint32_t fieldCount, const Caps& caps, SaveError& err)
 {
     return Validate(blob, fields, fieldCount, caps, err);
+}
+
+void WriteBiomeCells(Json::Value& root, const BiomeRegistry& reg, const BiomeIndex* cells, uint32_t count)
+{
+    Json::Value palette(Json::arrayValue);
+    for (uint32_t i = 0; i < reg.Count(); ++i)
+        palette.append(reg.IdText(static_cast<BiomeIndex>(i)));
+    root["biome_palette"]      = palette;
+    root["biome_palette_hash"] = Json::UInt64(reg.Hash());
+
+    Json::Value arr(Json::arrayValue);
+    for (uint32_t i = 0; i < count; ++i)
+        arr.append(Json::UInt(cells[i]));
+    root["biome"] = arr;
+}
+
+uint64_t StoredBiomeHash(const Json::Value& root)
+{
+    if (!root.isObject() || !root.isMember("biome_palette_hash") || !root["biome_palette_hash"].isUInt64())
+        return 0;
+    return root["biome_palette_hash"].asUInt64();
+}
+
+bool ReadBiomeCells(const Json::Value& root, const BiomeRegistry& reg, BiomeIndex* outCells, uint32_t count, SaveError& err)
+{
+    if (!root.isObject() || !root.isMember("biome_palette"))
+        return Fail(err, "biome_palette", "required array missing");
+    const Json::Value& palette = root["biome_palette"];
+    if (!palette.isArray())
+        return Fail(err, "biome_palette", "must be an array");
+    if (palette.size() > BiomeRegistry::kMaxBiomes)
+        return Fail(err, "biome_palette", "palette has too many entries");
+    for (uint32_t i = 0; i < palette.size(); ++i)
+        if (!palette[i].isString())
+            return Fail(err, "biome_palette", "entry %.0f is not a string", i);
+
+    if (!root.isMember("biome"))
+        return Fail(err, "biome", "required array missing");
+    const Json::Value& cells = root["biome"];
+    if (!cells.isArray())
+        return Fail(err, "biome", "must be an array");
+    if (cells.size() != count)
+        return Fail(err, "biome", "array length %.0f does not match expected %.0f", static_cast<double>(cells.size()), static_cast<double>(count));
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        const Json::Value& v = cells[i];
+        if (!v.isUInt())
+            return Fail(err, "biome", "element %.0f is not a non-negative integer", i);
+        if (v.asUInt() >= palette.size())
+            return Fail(err, "biome", "element %.0f is outside the palette", i);
+    }
+
+    // Remap each palette id once; ResolveOrFallback warns once per distinct unknown id.
+    BiomeIndex remap[BiomeRegistry::kMaxBiomes] = {};
+    bool allResolved = true;
+    for (uint32_t i = 0; i < palette.size(); ++i)
+    {
+        const Dia::Core::StringCRC id(palette[i].asCString());
+        if (reg.Find(id) == kNoBiome)
+            allResolved = false;
+        remap[i] = reg.ResolveOrFallback(id);
+    }
+    for (uint32_t i = 0; i < count; ++i)
+        outCells[i] = remap[cells[i].asUInt()];
+
+    const uint64_t stored = StoredBiomeHash(root);
+    if (allResolved && stored != reg.Hash())
+        DIA_LOG_INFO("HexWorld", "HexWorldSaveCodec: biome palette hash differs (stored %016llx, current %016llx); ids remapped cleanly",
+                     static_cast<unsigned long long>(stored), static_cast<unsigned long long>(reg.Hash()));
+    return true;
 }
 
 } // namespace HexWorld
