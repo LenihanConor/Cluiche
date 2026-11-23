@@ -8,6 +8,7 @@
 #include <Shared/CoWNodeKinds.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <DraoiHexWorld/WorldCellFields.h>
+#include <DraoiHexWorld/CellSelector.h>
 #include <DraoiHexWorldTerrain/Testing/TestGuarantees.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
@@ -18,6 +19,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <map>
 #include <set>
 #include <string>
 
@@ -185,4 +187,54 @@ TEST(WorldCellFieldsWiring, FieldsReResolveAfterRegenerate)
     f.Pump(3);
     ASSERT_EQ(f.wg->GetWorldRevision(), 2u);
     ExpectFieldsMatchWorld(*f.wg);
+}
+
+// AC 23: terrain.region returns each cell's committed region id; a selector over it resolves to the hand-computed cells.
+TEST(WorldCellFieldsWiring, TerrainRegionFieldAndSelectorMatchCommittedRegions)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    WorldCellFields& fields = f.wg->GetCellFields();
+    const WorldStructure& w = f.wg->GetSession().World();
+    const uint32_t n = static_cast<uint32_t>(w.CellCount());
+    ASSERT_GT(n, 0u);
+    ASSERT_TRUE(fields.Has(StringCRC("terrain"), StringCRC("region")));
+
+    std::map<uint32_t, uint32_t> counts;
+    for (uint32_t c = 0; c < n; ++c)
+    {
+        fields.SetCell(c);
+        ASSERT_EQ(fields.GetFloat(StringCRC("terrain"), StringCRC("region")), static_cast<float>(w.Cells()[c].region)) << c;
+        ++counts[w.Cells()[c].region];
+    }
+    // NOTE: the region partition is not yet wired into the generation pipeline, so every committed Cell::region is
+    // currently 0 (none). The test is written against whatever is committed and becomes non-trivial once it is wired.
+
+    uint32_t target = 0, best = 0;
+    for (const auto& kv : counts) if (kv.second > best) { best = kv.second; target = kv.first; }
+    // Second selector: an id that no cell carries must resolve to an empty list.
+    uint32_t absent = 1;
+    while (counts.count(absent)) ++absent;
+
+    Json::Value block;
+    Json::Reader reader;
+    const std::string text = "{\"selectors\":{\"in_region\":{\"op\":\"==\",\"slot\":\"terrain\",\"field\":\"region\",\"value\":"
+                             + std::to_string(target)
+                             + "},\"absent\":{\"op\":\"==\",\"slot\":\"terrain\",\"field\":\"region\",\"value\":" + std::to_string(absent) + "}}}";
+    ASSERT_TRUE(reader.parse(text, block));
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(block, fields, err)) << err.item.AsCStr() << ": " << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(fields, n, err)) << err.reason.AsCStr();
+    const int sel = set.FindSelector(StringCRC("in_region"));
+    ASSERT_GE(sel, 0);
+
+    std::vector<uint32_t> expected;
+    for (uint32_t c = 0; c < n; ++c) if (w.Cells()[c].region == target) expected.push_back(c);
+    ASSERT_EQ(set.ResolvedCount(static_cast<uint32_t>(sel)), static_cast<uint32_t>(expected.size()));
+    for (size_t i = 0; i < expected.size(); ++i)
+        ASSERT_EQ(set.ResolvedCells(static_cast<uint32_t>(sel))[i], expected[i]) << i;
+    const int none = set.FindSelector(StringCRC("absent"));
+    ASSERT_GE(none, 0);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(none)), 0u);
 }
