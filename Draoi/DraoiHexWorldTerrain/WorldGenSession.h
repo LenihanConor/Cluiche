@@ -56,6 +56,11 @@ public:
     // returns false with `err` naming the key and leaves the session (rules, loaded flag, world) unchanged. A
     // configuration-time call: refused (err.key "state") while a Regenerate runs or once a world exists.
     bool LoadRules(const char* sidecarText, Dia::Attribute::ParamError& err);
+    // Re-snapshots the rules from `file` (a loaded terrain_rules parameter file the host has mutated), rebuilds the
+    // generator and marks the session dirty so the next generate uses them. Unlike LoadRules it is allowed after a
+    // world exists. Returns false and changes nothing while a generation runs, if `file` is not loaded, or if the
+    // snapshot fails.
+    bool ReloadRules(const Dia::Attribute::ParameterFile& file);
     bool RulesLoaded() const { return mRulesLoaded; }
     // The host blocks generation for a reason outside the session (the biome registry failed to load): every entry
     // point that refuses without rules refuses with this code instead. Empty code clears the block.

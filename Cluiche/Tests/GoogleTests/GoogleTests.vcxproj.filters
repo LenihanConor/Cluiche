@@ -3282,5 +3282,8 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldSimNamesRegistrations.cpp">
       <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
+    <ClCompile Include="CoW/TestWorldGenReloadRules.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

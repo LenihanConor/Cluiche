@@ -150,6 +150,8 @@ void WorldGenerationModule::ApplyPendingParams()
         if (!mParamHelper->ApplyMutation(m))
             DIA_LOG_WARNING("WGEN", "WorldGenerationModule: queued params change for '%s' was refused", m.key);
     }
+    if (!mSession.ReloadRules(*mParamFile))
+        DIA_LOG_WARNING("WGEN", "WorldGenerationModule: params changed but the session could not reload its rules");
     DIA_LOG_INFO("WGEN", "WorldGenerationModule: applied %u queued params change(s) for revision %u",
                  static_cast<unsigned>(mPendingParams->size()), mSession.Revision() + 1);
     mPendingParams->clear();

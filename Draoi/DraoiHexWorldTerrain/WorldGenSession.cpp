@@ -384,6 +384,25 @@ bool WorldGenSession::LoadRules(const char* sidecarText, Dia::Attribute::ParamEr
     return true;
 }
 
+bool WorldGenSession::ReloadRules(const Dia::Attribute::ParameterFile& file)
+{
+    if (mRun != nullptr || !file.IsLoaded())
+    {
+        return false;
+    }
+    TerrainRules rules;
+    if (!TerrainRules::FromParameterFile(file, rules))
+    {
+        return false;
+    }
+    mRules = rules;
+    mRulesLoaded = true;
+    mGen = TerrainGenerator(mRules, mBiomes);
+    mGen.SetAssignerRegistry(mAssigners);
+    mDirty = true;
+    return true;
+}
+
 bool WorldGenSession::RulesRefusal(Json::Value& refusal) const
 {
     if (!mBlockCode.empty())

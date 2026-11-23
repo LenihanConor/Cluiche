@@ -509,14 +509,28 @@ TEST(WorldGenCommands, ParamsSetIsQueuedAndAppliedAtTheNextRegenerate)
 	h.Pump(3);
 	const uint32_t rev = h.Rev();
 
-	Json::Value la(Json::objectValue); la["action"] = "list";
-	const Json::Value list = h.Call("cow.worldgen.params", la);
-	ASSERT_GT(list["params"].size(), 0u);
-	const Json::Value& first = list["params"][0u];
-	const std::string key = first["key"].asString();
+	// FNV-1a over every cell's elevation bits, terrain and landmass: verify by cell data, not by screenshot.
+	auto cellHash = []()
+	{
+		const Draoi::HexWorld::WorldStructure& w = gWg->GetSession().World();
+		uint64_t hash = 1469598103934665603ull;
+		for (int i = 0; i < w.CellCount(); ++i)
+		{
+			uint32_t bits = 0;
+			std::memcpy(&bits, &w.Cells()[i].elevation, sizeof(bits));
+			for (uint64_t v : { static_cast<uint64_t>(bits), static_cast<uint64_t>(w.Cells()[i].terrain), static_cast<uint64_t>(w.Cells()[i].landmass) })
+			{
+				hash ^= v;
+				hash *= 1099511628211ull;
+			}
+		}
+		return hash;
+	};
+	const uint64_t before = cellHash();
 
+	const std::string key = "kCoastElev";   // default 0.02, range 0.005 to 0.1
 	Json::Value sa(Json::objectValue);
-	sa["action"] = "set"; sa["key"] = key; sa["value"] = first["default"];
+	sa["action"] = "set"; sa["key"] = key; sa["value"] = 0.1;
 	const Json::Value sr = h.Call("cow.worldgen.params", sa);
 	ASSERT_TRUE(sr["success"].asBool()) << sr.toStyledString();
 	EXPECT_TRUE(sr["queued"].asBool());
@@ -525,11 +539,15 @@ TEST(WorldGenCommands, ParamsSetIsQueuedAndAppliedAtTheNextRegenerate)
 	Json::Value ga(Json::objectValue); ga["action"] = "get"; ga["key"] = key;
 	h.Pump(2);
 	EXPECT_EQ(h.Call("cow.worldgen.params", ga)["source"].asString(), "default") << "not applied before a generate";
+	EXPECT_EQ(cellHash(), before);
 
 	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
 	h.Pump(3);
 	EXPECT_EQ(h.Rev(), rev + 1);
-	EXPECT_EQ(h.Call("cow.worldgen.params", ga)["source"].asString(), "set");
+	const Json::Value got = h.Call("cow.worldgen.params", ga);
+	EXPECT_EQ(got["source"].asString(), "set");
+	EXPECT_NEAR(got["value"].asDouble(), 0.1, 1e-6);
+	EXPECT_NE(cellHash(), before) << "the regenerated world must come from the changed rule";
 }
 
 TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)

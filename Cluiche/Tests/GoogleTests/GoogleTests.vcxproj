@@ -1370,6 +1370,7 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldGenCommandSet.cpp" />
     <ClCompile Include="CoW/WorldSimKit/TestWorldGenLogChannel.cpp" />
     <ClCompile Include="CoW\WorldSimKit\TestWorldSimNamesRegistrations.cpp" />
+    <ClCompile Include="CoW/TestWorldGenReloadRules.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
