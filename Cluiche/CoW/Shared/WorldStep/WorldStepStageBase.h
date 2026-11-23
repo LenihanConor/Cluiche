@@ -17,6 +17,7 @@
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <Shared/World/WorldSimNames.h>
+#include <Shared/WorldStep/HoldGenerationToken.h>
 #include <Shared/WorldStep/MutationQueue.h>
 #include <Shared/WorldStep/SpinUpSlot.h>
 #include <Shared/WorldStep/WorldSimSaveCodec.h>
@@ -113,6 +114,7 @@ public:
     {
         if (mStarted) { return; }
         mStarted = true;
+        mHold.Take();   // generation stays held until the owner reports its subscription (NotifySubscribed) or Stop
         ++mVisitGeneration;
         Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
         RegisterMetrics();
@@ -121,6 +123,13 @@ public:
         const bool restoredHere = mRestoredValid && mWorld.revision == mRestoredRevision;
         if (mWorld.present && !restoredHere) { BeginSpinUp(mWorld); }
     }
+
+    // The generation-hold seam. Set before Start; null -> no hold is taken.
+    void SetGenerationHold(IGenerationHold* host) { mHold.SetHost(host); }
+    // The owner calls this once its WorldGenerationComplete/Failed subscription is in place: releases the hold taken in
+    // Start. Idempotent; Stop releases it too if the owner never did.
+    void NotifySubscribed() { mHold.Release(); }
+    bool GenerationHeld() const { return mHold.IsHeld(); }
 
     // Polls the spin-up slot. SimPU only.
     void Update()
@@ -574,8 +583,7 @@ private:
         DropSims();
         mRestoredValid = false;
         mQueue.Clear();
-        // TODO(kit task 10): release the world-generation hold here once HoldGenerationToken exists
-        // (spec order: ... destroy sims, clear queue, release hold, OnStopExtra).
+        mHold.Release();   // spec order: ... destroy sims, clear queue, release hold, OnStopExtra
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
         if (callHooks) { mHooks.OnStopExtra(); }
     }
@@ -619,6 +627,7 @@ private:
     TLatch mLatch;
     MutationQueue<TEntry, kQueueCapacity> mQueue;
     SpinUpSlot<TSim> mSpinUp;
+    HoldGenerationToken mHold;
     std::thread mJob;
     std::atomic<uint32_t> mResultGeneration{0};
     std::atomic<uint32_t> mJobCause{0};

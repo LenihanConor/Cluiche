@@ -76,7 +76,11 @@ public:
 class WorldStepStageBaseTest : public ::testing::Test
 {
 protected:
-    WorldStepStageBaseTest() : stage(hooks, &hooks.log) {}
+    WorldStepStageBaseTest() : stage(hooks, &hooks.log)
+    {
+        hold.log = &hooks.log;
+        stage.SetGenerationHold(&hold);
+    }
     void SetUp() override
     {
         auto& l = Dia::Observation::Log::Logger::Instance();
@@ -111,6 +115,7 @@ protected:
     CountingSink& Sink() { Dia::Observation::Log::Logger::Instance().FlushSync(); return sink; }
 
     FakeHooks hooks;
+    FakeGenerationHold hold;
     FakeStage stage;
     CountingSink sink;
     Dia::DeferredStep::SerialExecutor exec;
@@ -375,15 +380,37 @@ TEST_F(WorldStepStageBaseTest, StopRunsInTheSpecOrder)
     hooks.log.Clear();
     stage.Stop();
     FakeSim::sDestroyLog = nullptr;
-    // unregister stage, (job cancelled and joined), destroy both sims, clear queue, (hold release: blocked), OnStopExtra
-    ASSERT_EQ(4u, hooks.log.Count());
+    // unregister stage, (job cancelled and joined), destroy both sims, clear queue, release hold, OnStopExtra
+    ASSERT_EQ(5u, hooks.log.Count());
     EXPECT_STREQ("UnregisterStage", hooks.log.At(0));
     EXPECT_STREQ("~FakeSim", hooks.log.At(1));
     EXPECT_STREQ("~FakeSim", hooks.log.At(2));
-    EXPECT_STREQ("OnStopExtra", hooks.log.At(3));
+    EXPECT_STREQ("ReleaseHold", hooks.log.At(3));
+    EXPECT_STREQ("OnStopExtra", hooks.log.At(4));
     EXPECT_EQ(0u, stage.QueueCount());
     EXPECT_FALSE(stage.HasActive());
     EXPECT_FALSE(stage.HasPending());
+}
+
+TEST_F(WorldStepStageBaseTest, StartTakesTheHoldAndNotifySubscribedReleasesItOnce)
+{
+    EXPECT_EQ(1u, hold.holds);
+    EXPECT_TRUE(stage.GenerationHeld());
+    stage.NotifySubscribed();
+    stage.NotifySubscribed();
+    EXPECT_EQ(1u, hold.releases);
+    EXPECT_FALSE(stage.GenerationHeld());
+    stage.Stop();
+    EXPECT_EQ(1u, hold.releases);                      // Stop does not release a second time
+}
+
+TEST_F(WorldStepStageBaseTest, StopBeforeSubscribedStillReleasesOnce)
+{
+    stage.Stop();
+    EXPECT_EQ(1u, hold.holds);
+    EXPECT_EQ(1u, hold.releases);
+    stage.Stop();
+    EXPECT_EQ(1u, hold.releases);
 }
 
 TEST_F(WorldStepStageBaseTest, SecondStopIsANoOp)
@@ -496,6 +523,61 @@ TEST_F(WorldStepStageBaseTest, TwoStepsGiveTheHandComputedStateAndAnEntryEnqueue
     EXPECT_EQ(252, hooks.publishedValue);
     EXPECT_EQ(20u, hooks.publishedDay);
     EXPECT_EQ(2u, hooks.publishCount);
+}
+
+// ----- kit task 10: HoldGenerationToken --------------------------------------------------------------
+
+TEST(HoldGenerationTokenTest, TakeThenDoubleReleaseReleasesOnce)
+{
+    FakeGenerationHold hold;
+    HoldGenerationToken token(&hold);
+    token.Take();
+    token.Take();
+    EXPECT_EQ(1u, hold.holds);
+    EXPECT_TRUE(token.IsHeld());
+    token.Release();
+    token.Release();
+    EXPECT_EQ(1u, hold.releases);
+    EXPECT_FALSE(token.IsHeld());
+}
+
+TEST(HoldGenerationTokenTest, DestructorReleasesIfHeldAndNotIfReleased)
+{
+    FakeGenerationHold hold;
+    { HoldGenerationToken token(&hold); token.Take(); }
+    EXPECT_EQ(1u, hold.releases);
+    { HoldGenerationToken token(&hold); token.Take(); token.Release(); }
+    EXPECT_EQ(2u, hold.holds);
+    EXPECT_EQ(2u, hold.releases);
+}
+
+TEST(HoldGenerationTokenTest, NeverTakenNeverReleases)
+{
+    FakeGenerationHold hold;
+    { HoldGenerationToken token(&hold); token.Release(); }
+    EXPECT_EQ(0u, hold.releases);
+    HoldGenerationToken noHost;
+    noHost.Take();
+    EXPECT_FALSE(noHost.IsHeld());
+}
+
+TEST(HoldGenerationTokenTest, MoveTransfersOwnershipSoReleaseHappensOnce)
+{
+    FakeGenerationHold hold;
+    {
+        HoldGenerationToken a(&hold);
+        a.Take();
+        HoldGenerationToken b(static_cast<HoldGenerationToken&&>(a));
+        EXPECT_FALSE(a.IsHeld());
+        EXPECT_TRUE(b.IsHeld());
+        a.Release();
+        EXPECT_EQ(0u, hold.releases);
+        HoldGenerationToken c;
+        c = static_cast<HoldGenerationToken&&>(b);
+        EXPECT_TRUE(c.IsHeld());
+    }
+    EXPECT_EQ(1u, hold.holds);
+    EXPECT_EQ(1u, hold.releases);
 }
 
 }  // namespace Testing

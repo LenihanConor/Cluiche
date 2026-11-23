@@ -258,5 +258,8 @@
     <ClInclude Include="Shared\World\WorldSimNames.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

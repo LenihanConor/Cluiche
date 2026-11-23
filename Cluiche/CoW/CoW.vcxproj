@@ -94,6 +94,7 @@
     <ClInclude Include="Shared\Debug\SimCommandSet.h" />
     <ClInclude Include="Shared\Debug\ParamCommandHelper.h" />
     <ClInclude Include="Shared\World\WorldSimNames.h" />
+    <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

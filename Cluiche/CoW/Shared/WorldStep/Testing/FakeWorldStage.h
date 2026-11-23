@@ -33,6 +33,16 @@ private:
     uint32_t mCount = 0;
 };
 
+// Counting IGenerationHold. Optionally logs "ReleaseHold" into a CallLog (Stop-order test).
+struct FakeGenerationHold : public IGenerationHold
+{
+    void Hold() override { ++holds; }
+    void Release() override { ++releases; if (log != nullptr) { log->Add("ReleaseHold"); } }
+    uint32_t holds = 0;
+    uint32_t releases = 0;
+    CallLog* log = nullptr;
+};
+
 // Plain structs for the later WorldStepStageBase fixture.
 struct FakeSim
 {
