@@ -3261,5 +3261,8 @@
     <ClCompile Include="..\..\CoW\Shared\Debug\SimCommandSet.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Debug\ParamCommandHelper.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
