@@ -1,7 +1,7 @@
 # Feature Spec: World-Sim Kit, CoW Half (stage base, restore, commands, names, wiring)
 
 **Parent:** @docs/specs/applications/cow/systems/worldstep/worldstep.md (Feature 4)
-**Status:** `Approved` (2026-11-21; split approved by the user, recommended answers to the open questions accepted). The original kit spec was `Approved` 2026-11-18 and its Draoi layer amendment 2026-11-20; this document is the reduced CoW-owned half after the split.
+**Status:** `Done` (2026-11-23; was Approved 2026-11-21, split approved by the user, recommended answers to the open questions accepted). The original kit spec was `Approved` 2026-11-18 and its Draoi layer amendment 2026-11-20; this document is the reduced CoW-owned half after the split.
 **Draoi half:** @docs/specs/features/draoi/worldsim-kit-draoi.md (`WorldCellFields`, `CellSelectorSet`, codec data half, the DiaCondition overload)
 **Plan:** @docs/specs/applications/cow/systems/worldstep/worldsim-kit.plan.md
 **Research:** @docs/research/worldsim_data_driven/summary.md (§0: A3, A4, A7, A8; §0.1 naming)
@@ -291,4 +291,4 @@ Package dependencies follow the data flow one way: `DraoiHexWorld <- DraoiHexWor
 
 ## Status
 
-**Status:** `Approved` (2026-11-21), split approved. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-23, Not Started). Build order: all prerequisites are Done (step-chain, Parameter Files, biome registry, special sites, Strata, core, terrain and GameSpeed extractions); the Draoi half's D4, D4b, D5 and D6 come first, then this half's Draoi-dependent tasks. **Revision 2026-11-23:** terrain field readers moved to the Draoi half (D4b), the rename and log-channel notes updated for the extracted terrain package.
+**Status:** `Done` (2026-11-23; Approved 2026-11-21), split approved. Plan complete, see `worldsim-kit.plan.md`. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-23, Not Started). Build order: all prerequisites are Done (step-chain, Parameter Files, biome registry, special sites, Strata, core, terrain and GameSpeed extractions); the Draoi half's D4, D4b, D5 and D6 come first, then this half's Draoi-dependent tasks. **Revision 2026-11-23:** terrain field readers moved to the Draoi half (D4b), the rename and log-channel notes updated for the extracted terrain package.
