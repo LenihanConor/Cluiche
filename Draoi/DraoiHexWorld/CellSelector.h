@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <memory>
 
+namespace Dia { namespace Pathfinding { class HexTopology; } }
+
 namespace Draoi {
 namespace HexWorld {
 
@@ -82,6 +84,34 @@ public:
     // need it.
     bool Resolve(WorldCellFields& fields, uint32_t cellCount, SelectorError& err);
 
+    // Resolve with derived fields (D9). cellCount = topology.CellCount(). Order: selectors that do not read derived
+    // fields are evaluated first; then each derived field in DerivedOrder(): its source selector is evaluated if it has
+    // not been yet (its own derived inputs were computed earlier), the field is computed with the DiaPathfinding
+    // MultiSourceSteps helper and published; finally the remaining selectors are evaluated. Selectors read slot
+    // "derived" through a context wrapper over `fields`; every other slot delegates to `fields`. On failure no results
+    // are kept (all counts 0, DerivedValues null).
+    //
+    // Derived value encoding (float per cell, DerivedValues(i)[cell]):
+    //   distance {from}: hex-step count over all cells (every cell passable, HexNeighbours), 0 on a `from` cell,
+    //                    +infinity when no `from` cell is reachable (empty source selector).
+    //   upstream {of, maxSteps}: 1.0 when following flow from the cell (cell -> outflow neighbour -> ...) reaches a cell
+    //                    of the `of` selector within maxSteps steps INCLUSIVE, else 0.0. Cells of the `of` selector
+    //                    are step 0 and therefore always 1.
+    //
+    // Flow encoding (terrain.flow_direction, read as a float and rounded to nearest): a hex direction index 0..5 in
+    // HexTopology order (0=NE 1=N 2=NW 3=SW 4=S 5=SE) naming the neighbour the cell drains into. Anything else
+    // (the terrain layer's 6 = "no outflow", negative, > 5.5) means no outflow; an outflow off the grid is dropped.
+    // Matches TerrainDrainage / TerrainRivers (flowDirection is uint32, >= 6 = sink or grid edge). The upstream search
+    // runs MultiSourceSteps from the `of` cells over the reversed flow graph (AdjacencyGraph, edge outflow -> cell).
+    // A set with an upstream field requires terrain.flow_direction to be registered (err.kind "resolve" otherwise).
+    bool Resolve(WorldCellFields& fields, const Dia::Pathfinding::HexTopology& topology, SelectorError& err);
+
+    // Computed derived array for derivedIndex (cellCount floats) after a successful topology Resolve; nullptr otherwise.
+    const float* DerivedValues(uint32_t derivedIndex) const
+    {
+        return mDerivedPool ? mDerivedPool.get() + static_cast<size_t>(derivedIndex) * mDerivedCells : nullptr;
+    }
+
     uint32_t        ResolvedCount(uint32_t selector) const { return mResolved[selector].count; }
     // Never null once Resolve has succeeded (count may be 0); valid for ResolvedCount(selector) entries.
     const uint32_t* ResolvedCells(uint32_t selector) const { return mPool.get() + mResolved[selector].offset; }
@@ -109,13 +139,16 @@ private:
     };
 
     void ClearResolved();
+    bool ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Pathfinding::HexTopology* topology, SelectorError& err);
 
     Selector     mSelectors[kMaxSelectors + 1];
     DerivedField mDerived[kMaxDerived];
     uint32_t     mOrder[kMaxDerived] = {};
     Resolved     mResolved[kMaxSelectors + 1];
     std::unique_ptr<uint32_t[]> mPool;   // SelectorCount() * cellCount entries; list s starts at s * cellCount
-    uint32_t     mCount = 1;          // `all` is always present
+    std::unique_ptr<float[]> mDerivedPool;   // DerivedCount() * cellCount entries (null until a topology Resolve)
+    uint32_t     mDerivedCells = 0;
+    uint32_t     mCount = 1;         // `all` is always present
     uint32_t     mDerivedCount = 0;
 };
 

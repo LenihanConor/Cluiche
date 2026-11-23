@@ -2,11 +2,13 @@
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DraoiHexWorld/CellSelector.h>
+#include <DiaPathfinding/HexTopology.h>
 #include <DraoiHexWorld/WorldCellFields.h>
 
 #include <chrono>
 #include <cstring>
 #include <initializer_list>
+#include <limits>
 #include <string>
 
 namespace
@@ -474,4 +476,246 @@ TEST(CellSelector, ResolvePerfBallparkDebug)
     const int s1 = set.FindSelector(StringCRC("s1"));
     ASSERT_GE(s1, 0);
     EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(s1)), 201u);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Derived fields (D9). Resolve(fields, topology, err).
+//
+// Distance world: 6 x 4 flat-top odd-q hex grid, index = row * 6 + col. Rivers (seeds) at cells 0 (col 0,row 0) and
+// 23 (col 5,row 3). Hex-step distance to the NEAREST river cell, computed by hand through cube coordinates
+// (q = col, r = row - floor(col / 2), dist = (|dq| + |dr| + |dq + dr|) / 2), min over the two seeds:
+//   row 0 (idx  0.. 5): 0 1 2 3 4 3
+//   row 1 (idx  6..11): 1 2 2 3 3 2
+//   row 2 (idx 12..17): 2 3 3 2 2 1
+//   row 3 (idx 18..23): 3 4 3 2 1 0
+// Cells 4 and 19 are 4 from both seeds; cell 5 is 3 from seed 23 but 5 from seed 0, so the min over seeds matters.
+// ---------------------------------------------------------------------------------------------------------------------
+namespace
+{
+    using Dia::Pathfinding::HexTopology;
+
+    constexpr uint32_t kDistCells = 24;
+    const float kDistExpected[kDistCells] = {
+        0, 1, 2, 3, 4, 3,
+        1, 2, 2, 3, 3, 2,
+        2, 3, 3, 2, 2, 1,
+        3, 4, 3, 2, 1, 0 };
+
+    struct DistWorld
+    {
+        float elevation[kDistCells];
+        bool  river[kDistCells] = {};
+        float flow[kDistCells];
+        WorldCellFields fields;
+
+        explicit DistWorld(std::initializer_list<uint32_t> rivers = { 0u, 23u })
+        {
+            for (uint32_t i = 0; i < kDistCells; ++i) { elevation[i] = static_cast<float>(i); flow[i] = 6.0f; }
+            for (uint32_t i : rivers) river[i] = true;
+            FieldReader fe{}; fe.getFloat = &ArrFloat; fe.ctx = elevation;
+            FieldReader fr{}; fr.getBool = &ArrBool; fr.ctx = river;
+            FieldReader ff{}; ff.getFloat = &ArrFloat; ff.ctx = flow;
+            fields.Register(StringCRC("terrain"), StringCRC("elevation"), fe);
+            fields.Register(StringCRC("terrain"), StringCRC("is_river"), fr);
+            fields.Register(StringCRC("terrain"), StringCRC("flow_direction"), ff);
+            fields.Register(StringCRC("biome"), StringCRC("tag.cold"), B());
+        }
+    };
+
+    const float kInf = std::numeric_limits<float>::infinity();
+
+    const char* kDistBlock = R"({
+      "derived": {
+        "a_near":     { "distance": { "from": "near" } },
+        "dist_river": { "distance": { "from": "river" } } },
+      "selectors": {
+        "river": { "op": "==", "slot": "terrain", "field": "is_river", "value": true },
+        "near":  { "op": "<=", "slot": "derived", "field": "dist_river", "value": 1 },
+        "wet_low": { "op": "and", "conditions": [
+            { "op": "<",  "slot": "terrain", "field": "elevation", "value": 18 },
+            { "op": "<=", "slot": "derived", "field": "dist_river", "value": 1 } ] },
+        "far":   { "op": ">=", "slot": "derived", "field": "a_near", "value": 2 } } })";
+
+    bool DerivedEquals(const CellSelectorSet& set, const char* name, const float* expected, uint32_t n)
+    {
+        const int d = set.FindDerived(StringCRC(name));
+        if (d < 0) return false;
+        const float* v = set.DerivedValues(static_cast<uint32_t>(d));
+        if (v == nullptr) return false;
+        for (uint32_t i = 0; i < n; ++i)
+            if (!(v[i] == expected[i])) return false;   // inf == inf is true
+        return true;
+    }
+}
+
+TEST(CellSelector, DerivedDistanceMatchesHandComputedSteps)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err)) << err.item.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_TRUE(DerivedEquals(set, "dist_river", kDistExpected, kDistCells));
+    EXPECT_TRUE(ListEquals(set, "river", { 0, 23 }));
+}
+
+TEST(CellSelector, DerivedLeqOnDerivedFieldAndWithBaseField)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    // dist <= 1: {0, 1, 6, 17, 22, 23}; elevation (= index) < 18 keeps {0, 1, 6, 17}.
+    EXPECT_TRUE(ListEquals(set, "near", { 0, 1, 6, 17, 22, 23 }));
+    EXPECT_TRUE(ListEquals(set, "wet_low", { 0, 1, 6, 17 }));
+}
+
+TEST(CellSelector, DerivedDependingOnAnotherResolvesInOrder)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    // a_near (index 0 by name) depends on dist_river; it must still resolve correctly.
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    // Every cell with dist_river = k >= 1 lies k - 1 from the set {dist <= 1}; so a_near = max(0, dist_river - 1).
+    float expected[kDistCells];
+    for (uint32_t i = 0; i < kDistCells; ++i) expected[i] = kDistExpected[i] > 1.0f ? kDistExpected[i] - 1.0f : 0.0f;
+    EXPECT_TRUE(DerivedEquals(set, "a_near", expected, kDistCells));
+    // far: a_near >= 2 <=> dist_river >= 3.
+    EXPECT_TRUE(ListEquals(set, "far", { 3, 4, 5, 9, 10, 13, 14, 18, 19, 20 }));
+}
+
+TEST(CellSelector, DerivedEmptySourceGivesInfinityAndZero)
+{
+    DistWorld w({});   // no river cells
+    const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({
+      "derived": { "d": { "distance": { "from": "river" } }, "u": { "upstream": { "of": "river", "maxSteps": 3 } } },
+      "selectors": { "river": { "op": "==", "slot": "terrain", "field": "is_river", "value": true },
+                     "near": { "op": "<=", "slot": "derived", "field": "d", "value": 100 } } })"), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    float inf[kDistCells], zero[kDistCells] = {};
+    for (float& f : inf) f = kInf;
+    EXPECT_TRUE(DerivedEquals(set, "d", inf, kDistCells));
+    EXPECT_TRUE(DerivedEquals(set, "u", zero, kDistCells));
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("near")))), 0u);   // inf <= 100 is false
+}
+
+TEST(CellSelector, DerivedResolveIsByteIdenticalAcrossResolves)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    float snapA[kDistCells], snapD[kDistCells];
+    const uint32_t dA = static_cast<uint32_t>(set.FindDerived(StringCRC("a_near")));
+    const uint32_t dD = static_cast<uint32_t>(set.FindDerived(StringCRC("dist_river")));
+    std::memcpy(snapA, set.DerivedValues(dA), sizeof(snapA));
+    std::memcpy(snapD, set.DerivedValues(dD), sizeof(snapD));
+    uint32_t lists[8][kDistCells] = {}; uint32_t counts[8] = {};
+    ASSERT_LE(set.SelectorCount(), 8u);
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s)
+    {
+        counts[s] = set.ResolvedCount(s);
+        std::memcpy(lists[s], set.ResolvedCells(s), counts[s] * sizeof(uint32_t));
+    }
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    EXPECT_EQ(std::memcmp(snapA, set.DerivedValues(dA), sizeof(snapA)), 0);
+    EXPECT_EQ(std::memcmp(snapD, set.DerivedValues(dD), sizeof(snapD)), 0);
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s)
+    {
+        ASSERT_EQ(counts[s], set.ResolvedCount(s));
+        EXPECT_EQ(std::memcmp(lists[s], set.ResolvedCells(s), counts[s] * sizeof(uint32_t)), 0) << set.SelectorName(s);
+    }
+}
+
+TEST(CellSelector, DerivedOldResolveOverloadStillRefuses)
+{
+    DistWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    EXPECT_FALSE(set.Resolve(w.fields, kDistCells, err));
+    EXPECT_TRUE(err.kind == "resolve");
+}
+
+TEST(CellSelector, DerivedSelectorsWithoutDerivedLeavesResolveWithTopology)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    EXPECT_TRUE(ListEquals(set, "low", { 0, 1, 2, 3, 4 }));
+    EXPECT_TRUE(ListEquals(set, "river", { 0, 23 }));
+    EXPECT_EQ(set.ResolvedCount(0), kDistCells);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Upstream: 3 x 3 flow tree, index = row * 3 + col, flow_direction = hex direction index 0..5 (0=NE 1=N 2=NW 3=SW 4=S
+// 5=SE), 6 = no outflow. Cell 0 is the sink. Flow (cell -> outflow neighbour, direction):
+//   1->0 (2)  2->1 (3)  3->0 (1)  4->3 (2)  5->4 (3)  6->3 (1)  7->6 (2)  8->7 (3)
+// Steps along flow to cell 0: 0:0 1:1 2:2 3:1 4:2 5:3 6:2 7:3 8:4. Steps along flow to cell 3: 3:0 4:1 6:1 5:2 7:2 8:3
+// (cells 0, 1, 2 never reach 3).
+// ---------------------------------------------------------------------------------------------------------------------
+namespace
+{
+    struct TreeWorld
+    {
+        float flow[9] = { 6, 2, 3, 1, 2, 3, 1, 2, 3 };
+        bool  match[9] = {};
+        WorldCellFields fields;
+
+        explicit TreeWorld(uint32_t matchCell)
+        {
+            match[matchCell] = true;
+            FieldReader fr{}; fr.getBool = &ArrBool; fr.ctx = match;
+            FieldReader ff{}; ff.getFloat = &ArrFloat; ff.ctx = flow;
+            fields.Register(StringCRC("terrain"), StringCRC("is_river"), fr);
+            fields.Register(StringCRC("terrain"), StringCRC("flow_direction"), ff);
+        }
+    };
+
+    bool UpstreamEquals(uint32_t matchCell, int maxSteps, std::initializer_list<uint32_t> inside)
+    {
+        TreeWorld w(matchCell);
+        const HexTopology topo(3, 3);
+        CellSelectorSet set; SelectorError err;
+        const std::string block = std::string(R"({"derived":{"up":{"upstream":{"of":"m","maxSteps":)") + std::to_string(maxSteps) +
+            R"(}}},"selectors":{"m":{"op":"==","slot":"terrain","field":"is_river","value":true},)"
+            R"("in":{"op":">=","slot":"derived","field":"up","value":1}}})";
+        if (!set.Load(Parse(block), w.fields, err)) return false;
+        if (!set.Resolve(w.fields, topo, err)) return false;
+        float expected[9] = {};
+        for (uint32_t c : inside) expected[c] = 1.0f;
+        if (!DerivedEquals(set, "up", expected, 9)) return false;
+        return ListEquals(set, "in", inside);
+    }
+}
+
+TEST(CellSelector, DerivedUpstreamWithinMaxStepsAlongFlow)
+{
+    EXPECT_TRUE(UpstreamEquals(0, 1, { 0, 1, 3 }));
+    EXPECT_TRUE(UpstreamEquals(0, 2, { 0, 1, 2, 3, 4, 6 }));
+    EXPECT_TRUE(UpstreamEquals(0, 3, { 0, 1, 2, 3, 4, 5, 6, 7 }));   // 8 is exactly 4 away: excluded at 3
+    EXPECT_TRUE(UpstreamEquals(0, 4, { 0, 1, 2, 3, 4, 5, 6, 7, 8 })); // exactly at maxSteps: included
+    EXPECT_TRUE(UpstreamEquals(0, 6, { 0, 1, 2, 3, 4, 5, 6, 7, 8 }));
+}
+
+TEST(CellSelector, DerivedUpstreamFollowsFlowDirectionNotAdjacency)
+{
+    // Match cell 3: cell 0 is adjacent to 3 but flows nowhere, 1 and 2 drain to 0; none of 0, 1, 2 are upstream of 3.
+    EXPECT_TRUE(UpstreamEquals(3, 1, { 3, 4, 6 }));
+    EXPECT_TRUE(UpstreamEquals(3, 2, { 3, 4, 5, 6, 7 }));
+    EXPECT_TRUE(UpstreamEquals(3, 6, { 3, 4, 5, 6, 7, 8 }));
+}
+
+TEST(CellSelector, DerivedUpstreamMatchingCellsAreStepZero)
+{
+    TreeWorld w(8);   // leaf: nothing flows into 8
+    const HexTopology topo(3, 3);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({"derived":{"up":{"upstream":{"of":"m","maxSteps":6}}},
+      "selectors":{"m":{"op":"==","slot":"terrain","field":"is_river","value":true}}})"), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    const float expected[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+    EXPECT_TRUE(DerivedEquals(set, "up", expected, 9));
 }

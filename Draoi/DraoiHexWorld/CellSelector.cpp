@@ -1,9 +1,13 @@
 #include <DraoiHexWorld/CellSelector.h>
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaPathfinding/AdjacencyGraph.h>
+#include <DiaPathfinding/GridSearch.h>
+#include <DiaPathfinding/HexNeighbours.h>
 #include <DraoiHexWorld/WorldCellFields.h>
 
 #include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -16,6 +20,53 @@ using Dia::Core::Containers::String64;
 namespace {
 
 const StringCRC kDerivedSlot("derived");
+const StringCRC kTerrainSlot("terrain");
+const StringCRC kFlowDirectionField("flow_direction");
+
+// Evaluation context for Resolve: slot "derived" answers from the computed arrays (an array not yet published reads 0),
+// every other slot delegates to the base fields. SetCell moves both cursors.
+class DerivedContext : public Dia::Condition::IConditionContext
+{
+public:
+    DerivedContext(WorldCellFields& base, const StringCRC* ids, const float* const* values, uint32_t count)
+        : mBase(base), mIds(ids), mValues(values), mCount(count) {}
+
+    void SetCell(uint32_t cell) { mCell = cell; mBase.SetCell(cell); }
+
+    float GetFloat(StringCRC slot, StringCRC field) const override
+    {
+        if (slot != kDerivedSlot) return mBase.GetFloat(slot, field);
+        const float* v = Find(field);
+        return v ? v[mCell] : 0.0f;
+    }
+    bool GetBool(StringCRC slot, StringCRC field) const override
+    {
+        if (slot != kDerivedSlot) return mBase.GetBool(slot, field);
+        const float* v = Find(field);
+        return v ? v[mCell] != 0.0f : false;
+    }
+    bool Has(StringCRC slot, StringCRC field) const override
+    {
+        if (slot != kDerivedSlot) return mBase.Has(slot, field);
+        for (uint32_t i = 0; i < mCount; ++i)
+            if (mIds[i] == field) return true;
+        return false;
+    }
+
+private:
+    const float* Find(StringCRC field) const
+    {
+        for (uint32_t i = 0; i < mCount; ++i)
+            if (mIds[i] == field) return mValues[i];
+        return nullptr;
+    }
+
+    WorldCellFields&    mBase;
+    const StringCRC*    mIds;
+    const float* const* mValues;
+    uint32_t            mCount;
+    uint32_t            mCell = 0;
+};
 
 // Wraps the base fields and additionally answers Has for slot "derived" names declared in the block.
 class ValidationContext : public Dia::Condition::IConditionContext
@@ -247,21 +298,49 @@ void CellSelectorSet::ClearResolved()
 {
     for (Resolved& r : mResolved) r = Resolved{};
     mPool.reset();
+    mDerivedPool.reset();
+    mDerivedCells = 0;
 }
 
 bool CellSelectorSet::Resolve(WorldCellFields& fields, uint32_t cellCount, SelectorError& err)
 {
+    return ResolveImpl(fields, cellCount, nullptr, err);
+}
+
+bool CellSelectorSet::Resolve(WorldCellFields& fields, const Dia::Pathfinding::HexTopology& topology, SelectorError& err)
+{
+    return ResolveImpl(fields, topology.CellCount(), &topology, err);
+}
+
+bool CellSelectorSet::ResolveImpl(WorldCellFields& fields, uint32_t cellCount, const Dia::Pathfinding::HexTopology* topology, SelectorError& err)
+{
+    using namespace Dia::Pathfinding;
     ClearResolved();
-    for (uint32_t s = 1; s < mCount; ++s)
-        if (mSelectors[s].usesDerived)
-            return Fail(err, "resolve", mSelectors[s].name.AsCStr(), "selector reads derived fields; derived values are not computed by this Resolve overload");
+    if (topology == nullptr)
+    {
+        for (uint32_t s = 1; s < mCount; ++s)
+            if (mSelectors[s].usesDerived)
+                return Fail(err, "resolve", mSelectors[s].name.AsCStr(), "selector reads derived fields; derived values are not computed by this Resolve overload");
+    }
 
     // Value-initialised so unused tail bytes are deterministic (byte-identical pools). Never null, so count-0 lists are safe.
     mPool.reset(new uint32_t[static_cast<size_t>(mCount) * cellCount + 1]());
+    if (topology != nullptr)
+    {
+        mDerivedPool.reset(new float[static_cast<size_t>(mDerivedCount) * cellCount + 1]());
+        mDerivedCells = cellCount;
+    }
+
+    const float* derivedArrays[kMaxDerived] = {};
+    StringCRC derivedIds[kMaxDerived];
+    for (uint32_t i = 0; i < mDerivedCount; ++i) derivedIds[i] = mDerived[i].id;
+    DerivedContext ctx(fields, derivedIds, derivedArrays, mDerivedCount);
 
     const uint32_t savedCell = fields.GetCell();
-    for (uint32_t s = 0; s < mCount; ++s)
+    bool done[kMaxSelectors + 1] = {};
+    auto evaluate = [&](uint32_t s)
     {
+        if (done[s]) return;
         uint32_t* out = mPool.get() + static_cast<size_t>(s) * cellCount;
         uint32_t n = 0;
         if (s == 0)
@@ -273,15 +352,82 @@ bool CellSelectorSet::Resolve(WorldCellFields& fields, uint32_t cellCount, Selec
             const Dia::Condition::ConditionExpr& expr = mSelectors[s].expr;
             for (uint32_t i = 0; i < cellCount; ++i)
             {
-                fields.SetCell(i);
-                if (expr.Evaluate(fields)) out[n++] = i;
+                ctx.SetCell(i);
+                if (expr.Evaluate(ctx)) out[n++] = i;
             }
         }
         mResolved[s].offset = static_cast<uint32_t>(static_cast<size_t>(s) * cellCount);
         mResolved[s].count = n;
+        done[s] = true;
+    };
+
+    bool ok = true;
+    for (uint32_t s = 0; s < mCount; ++s)
+        if (!mSelectors[s].usesDerived) evaluate(s);
+
+    if (topology != nullptr && mDerivedCount > 0)
+    {
+        const HexNeighbours neighbours(*topology);
+        GridSearchScratch scratch;
+        std::unique_ptr<StepSeed[]> seeds(new StepSeed[static_cast<size_t>(cellCount) + 1]);
+        std::unique_ptr<uint32_t[]> steps(new uint32_t[static_cast<size_t>(cellCount) + 1]);
+        AdjacencyGraph reversedFlow;   // built on first upstream field
+        bool flowBuilt = false;
+
+        for (uint32_t pos = 0; pos < mDerivedCount && ok; ++pos)
+        {
+            const uint32_t di = mOrder[pos];
+            const DerivedField& d = mDerived[di];
+            evaluate(d.sourceSelector);   // its derived inputs precede di in DerivedOrder, so they are published
+
+            const uint32_t sourceCount = mResolved[d.sourceSelector].count;
+            const uint32_t* sourceCells = mPool.get() + mResolved[d.sourceSelector].offset;
+            for (uint32_t k = 0; k < sourceCount; ++k) seeds[k] = StepSeed{ sourceCells[k], 0u, 0u };
+            float* out = mDerivedPool.get() + static_cast<size_t>(di) * cellCount;
+
+            if (d.kind == DerivedKind::Distance)
+            {
+                MultiSourceSteps(neighbours, seeds.get(), sourceCount, [](uint32_t) { return true; },
+                                 cellCount, steps.get(), nullptr, scratch);
+                for (uint32_t c = 0; c < cellCount; ++c)
+                    out[c] = steps[c] == kUnreached ? std::numeric_limits<float>::infinity() : static_cast<float>(steps[c]);
+            }
+            else
+            {
+                if (!flowBuilt)
+                {
+                    if (!fields.Has(kTerrainSlot, kFlowDirectionField))
+                    {
+                        ok = Fail(err, "resolve", d.name.AsCStr(), "upstream needs terrain.flow_direction, which is not registered");
+                        break;
+                    }
+                    std::unique_ptr<AdjacencyEdge[]> edges(new AdjacencyEdge[static_cast<size_t>(cellCount) + 1]);
+                    uint32_t edgeCount = 0;
+                    for (uint32_t c = 0; c < cellCount; ++c)
+                    {
+                        fields.SetCell(c);
+                        const float f = fields.GetFloat(kTerrainSlot, kFlowDirectionField);
+                        if (!(f >= 0.0f && f < 5.5f)) continue;   // no outflow (also rejects NaN)
+                        const uint32_t to = topology->NeighbourAt(c, static_cast<uint32_t>(f + 0.5f));
+                        if (to != kNoCell) edges[edgeCount++] = AdjacencyEdge{ to, c };   // reversed: outflow -> cell
+                    }
+                    reversedFlow.Build(cellCount, edges.get(), edgeCount);
+                    flowBuilt = true;
+                }
+                MultiSourceSteps(reversedFlow, seeds.get(), sourceCount, [](uint32_t) { return true; },
+                                 static_cast<uint32_t>(d.maxSteps), steps.get(), nullptr, scratch);
+                for (uint32_t c = 0; c < cellCount; ++c) out[c] = steps[c] == kUnreached ? 0.0f : 1.0f;
+            }
+            derivedArrays[di] = out;
+        }
     }
+
+    if (ok)
+        for (uint32_t s = 0; s < mCount; ++s) evaluate(s);
+
     fields.SetCell(savedCell);
-    return true;
+    if (!ok) ClearResolved();
+    return ok;
 }
 
 } // namespace HexWorld
