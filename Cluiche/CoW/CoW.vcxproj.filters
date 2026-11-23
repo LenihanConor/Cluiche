@@ -261,5 +261,8 @@
     <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h">
       <Filter>WorldStep</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\Debug\Testing\FakeSimCommandHost.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
