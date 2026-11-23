@@ -393,6 +393,99 @@ TEST_F(ParamCommandHelperTest, ReloadFailureOrQueueFullQueuesNothing)
     EXPECT_EQ(1u, queue.size());
 }
 
+namespace {
+
+// Wires a reload callback that feeds the layer's ordered packs to ParameterFile::Reload (what the owner does).
+void WirePresetReload(ParamCommandHelper& helper, Dia::Attribute::ParameterFile& file, const PresetPackLayer& layer, const std::string& sidecar)
+{
+    helper.SetReloadFn([&file, &layer, sidecar](bool apply, ParamReloadResult& res)
+    {
+        layer.Compose(res);
+        if (!apply) { return true; }
+        std::vector<const Json::Value*> ptrs;
+        for (const Json::Value& b : res.packBodies) { ptrs.push_back(&b); }
+        Dia::Attribute::ParamWarnings warn;
+        Dia::Attribute::ParamError err;
+        return file.Reload(sidecar.c_str(), ptrs.data(), static_cast<uint32_t>(ptrs.size()), warn, err);
+    });
+}
+
+}  // namespace
+
+TEST_F(ParamCommandHelperTest, PresetLayerIsAppliedLastAndReplacedByTheNextPreset)
+{
+    Wire();
+    const std::string sidecar = MakeSidecarText({
+        SidecarFloat("rain.base", 0, 10, 5), SidecarInt("rain.days", 0, 10, 3), SidecarBool("wind.on", false),
+        SidecarEnum("wind.mode", { "Slow", "Fast", "Turbo" }, "Slow"), SidecarFloat("zone", 0, 1, 0.5) }, nullptr, "test.params");
+    PresetPackLayer layer(World::kWeather);
+    ASSERT_TRUE(layer.AddUserPack("user", Pack("\"rain.base\":6,\"zone\":0.25")));
+    WirePresetReload(helper, file, layer, sidecar);
+
+    ASSERT_TRUE(layer.ApplyPreset("stormy", Pack("\"rain.base\":9,\"rain.days\":7")));
+    ASSERT_TRUE(Call("reload")["success"].asBool());
+    Capture();
+    EXPECT_DOUBLE_EQ(9.0, Base("rain.base"));
+    EXPECT_DOUBLE_EQ(7.0, Base("rain.days"));
+    EXPECT_EQ("pack:stormy", Call("get", "key", "rain.base")["source"].asString());
+    EXPECT_EQ("pack:stormy", Call("get", "key", "rain.days")["source"].asString());
+    EXPECT_EQ("pack:user", Call("get", "key", "zone")["source"].asString());
+
+    // B replaces A: A-only keys fall back (rain.days to default), A/user overlap falls back to the user value.
+    ASSERT_TRUE(layer.ApplyPreset("calm", Pack("\"wind.on\":true")));
+    ASSERT_TRUE(Call("reload")["success"].asBool());
+    Capture();
+    EXPECT_DOUBLE_EQ(3.0, Base("rain.days"));
+    EXPECT_EQ("default", Call("get", "key", "rain.days")["source"].asString());
+    EXPECT_DOUBLE_EQ(6.0, Base("rain.base"));
+    EXPECT_EQ("pack:user", Call("get", "key", "rain.base")["source"].asString());
+    EXPECT_EQ(1.0, Base("wind.on"));
+    EXPECT_EQ("pack:calm", Call("get", "key", "wind.on")["source"].asString());
+    EXPECT_DOUBLE_EQ(0.25, Base("zone"));
+    EXPECT_EQ("pack:user", Call("get", "key", "zone")["source"].asString());
+
+    // ClearPreset removes the slot entirely.
+    layer.ClearPreset();
+    ASSERT_TRUE(Call("reload")["success"].asBool());
+    Capture();
+    EXPECT_EQ(0.0, Base("wind.on"));
+    EXPECT_EQ("default", Call("get", "key", "wind.on")["source"].asString());
+}
+
+TEST_F(ParamCommandHelperTest, PresetLayerComposeKeepsUserPacksOrderedBeforeThePreset)
+{
+    PresetPackLayer layer(World::kWeather);
+    ASSERT_TRUE(layer.AddUserPack("u1", Pack("\"zone\":0.1")));
+    ASSERT_TRUE(layer.ApplyPreset("a", Pack("\"zone\":0.2")));
+    ASSERT_TRUE(layer.AddUserPack("u2", Pack("\"zone\":0.3")));   // added after the preset: still before it
+    ASSERT_TRUE(layer.ApplyPreset("b", Pack("\"zone\":0.4")));
+    EXPECT_TRUE(layer.HasPreset());
+    EXPECT_STREQ("b", layer.PresetId());
+    ParamReloadResult r;
+    layer.Compose(r);
+    ASSERT_EQ(3u, r.packIds.size());
+    ASSERT_EQ(3u, r.packBodies.size());
+    EXPECT_EQ("u1", r.packIds[0]);
+    EXPECT_EQ("u2", r.packIds[1]);
+    EXPECT_EQ("b", r.packIds[2]);
+    layer.ClearPreset();
+    EXPECT_FALSE(layer.HasPreset());
+    ParamReloadResult r2;
+    layer.Compose(r2);
+    EXPECT_EQ(2u, r2.packIds.size());
+}
+
+TEST_F(ParamCommandHelperTest, PresetLayerRefusesBadIdsAndBodies)
+{
+    PresetPackLayer layer(World::kWeather);
+    EXPECT_FALSE(layer.ApplyPreset("", Pack("\"zone\":0.2")));
+    EXPECT_FALSE(layer.ApplyPreset(nullptr, Pack("\"zone\":0.2")));
+    EXPECT_FALSE(layer.ApplyPreset("a", Json::Value(3)));
+    EXPECT_FALSE(layer.HasPreset());
+    PresetPackLayer unknown("nosuchsystem");
+    EXPECT_FALSE(unknown.ApplyPreset("a", Pack("\"zone\":0.2")));
+}
+
 TEST_F(ParamCommandHelperTest, EntryRegistersAsACommandWithHelpOnTheRealHost)
 {
     Dia::DebugServer::SimQueryHost real;

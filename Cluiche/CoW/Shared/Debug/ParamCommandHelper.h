@@ -48,6 +48,35 @@ struct ParamDayInfo
     uint32_t deferLag = 0;
 };
 
+// Ordered user packs plus one optional preset pack slot, always placed last. ApplyPreset replaces the slot (never
+// accumulates), ClearPreset empties it. Compose yields the ordered list a ReloadFn feeds to ParameterFile::Reload
+// (and ParamCommandHelper::ApplyMutation then records as value sources: the preset id shows as pack:<presetId>).
+// The preset id is the one World::PresetPath(sys, id) accepts (known system token, non-empty id).
+class PresetPackLayer
+{
+public:
+    explicit PresetPackLayer(const char* sysToken);
+
+    // Appends a user pack (kept in call order, always before the preset). false for a null/empty id or non-object body.
+    bool AddUserPack(const char* packId, const Json::Value& body);
+    // Replaces the preset slot. false (slot unchanged) for an unknown system, empty id or non-object body.
+    bool ApplyPreset(const char* presetId, const Json::Value& body);
+    void ClearPreset();
+    bool HasPreset() const { return mHasPreset; }
+    const char* PresetId() const { return mPresetId.c_str(); }
+
+    // Fills packIds/packBodies: user packs in order, then the preset if any. Leaves error/warnings untouched.
+    void Compose(ParamReloadResult& out) const;
+
+private:
+    bool mSysKnown = false;
+    std::vector<std::string> mUserIds;
+    std::vector<Json::Value> mUserBodies;
+    bool mHasPreset = false;
+    std::string mPresetId;
+    Json::Value mPresetBody;
+};
+
 class ParamCommandHelper
 {
 public:

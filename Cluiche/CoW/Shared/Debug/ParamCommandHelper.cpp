@@ -13,6 +13,46 @@ namespace Debug {
 
 using Dia::Attribute::AttributeKind;
 
+PresetPackLayer::PresetPackLayer(const char* sysToken)
+    : mSysKnown(sysToken != nullptr && World::IsKnownToken(sysToken))
+{
+}
+
+bool PresetPackLayer::AddUserPack(const char* packId, const Json::Value& body)
+{
+    if (packId == nullptr || *packId == '\0' || !body.isObject()) { return false; }
+    mUserIds.push_back(packId);
+    mUserBodies.push_back(body);
+    return true;
+}
+
+bool PresetPackLayer::ApplyPreset(const char* presetId, const Json::Value& body)
+{
+    if (!mSysKnown || presetId == nullptr || *presetId == '\0' || !body.isObject()) { return false; }
+    mPresetId = presetId;
+    mPresetBody = body;
+    mHasPreset = true;
+    return true;
+}
+
+void PresetPackLayer::ClearPreset()
+{
+    mHasPreset = false;
+    mPresetId.clear();
+    mPresetBody = Json::Value();
+}
+
+void PresetPackLayer::Compose(ParamReloadResult& out) const
+{
+    out.packIds = mUserIds;
+    out.packBodies = mUserBodies;
+    if (mHasPreset)
+    {
+        out.packIds.push_back(mPresetId);
+        out.packBodies.push_back(mPresetBody);
+    }
+}
+
 ParamCommandHelper::ParamCommandHelper(const char* sysToken, Dia::Attribute::ParameterFile& file)
     : mName(World::CommandName(sysToken, "params"))
     , mFile(file)
