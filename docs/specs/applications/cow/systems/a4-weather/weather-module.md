@@ -2,7 +2,7 @@
 
 **Parent:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.md (Feature 3)
 **Status:** Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9): optional A5 provider latched at `Capture`, coupled spin-up job, World Step order. Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d): `IWaterInputSource`, `IHydrologySpinUpHost` calls, `IsReadyForRevision`, working buffers allocated once per promotion, header placement of `IHydrologyInputsProvider`, influence book, climate cycles (frozen-phase spin-up), three-buffer `Commit`.
-**Depends on:** A4 Features 1, 2 and 6 (`WeatherSimulation`, `WeatherRunner`, parameters, `ApplyPreset`); World Step Features 1 and 2 (`IWorldStepStage`, `WorldStepModule::RegisterStage`); DiaDeferredStep Features 1, 2 and 4 (`IParallelExecutor`, the capped executor, `DeferredStepModule`); S-1 (built): `WorldGenerationModule::GetCurrentWorld`, `IsReady(revision)`, `HoldGeneration()`/`ReleaseGeneration()`, `WorldGenerationComplete`/`WorldGenerationFailed`.
+**Depends on:** A4 Features 1, 2 and 6 (`WeatherSimulation`, `WeatherRunner`, parameters, `ApplyPreset`); World Step Features 1 and 2 (`Dia::DeferredStep::IStepStage`, `WorldStepModule::RegisterStage`); DiaDeferredStep Features 1, 2 and 4 (`IParallelExecutor`, the capped executor, `DeferredStepModule`); S-1 (built): `WorldGenerationModule::GetCurrentWorld`, `IsReady(revision)`, `HoldGeneration()`/`ReleaseGeneration()`, `WorldGenerationComplete`/`WorldGenerationFailed`.
 **Consumed by:** A4 Features 4 and 5, A1 (`WeatherUpdated`, `IBiomeSeasonalBaseline` provider seam, `WeatherSnapshot`), V-1, S-2.5.
 
 **Amended 2026-11-18 (world-sim review, user decisions):** see "World-sim review amendment" below.
@@ -65,7 +65,7 @@ IHydrologySpinUpHost*     mHydroHost;        // non-owning; null = A4 spins up a
 
 **Working buffers are allocated once per promotion** (amended 2026-11-17, row 6d; A5 `hydrology-module.md`). A promoted `WeatherSimulation` sizes its working `WeatherFields` and `WeatherHandoff` (`glacierInput`, `influenceWater`) in `Initialise` and never reallocates them between `Capture` and `Commit`, so the pointers `GetWorkingOutput` returns stay valid for A5's whole step. Feature 9's three-buffer rotation swaps which buffer is which only inside `Commit`, never between `Capture` and `Commit`.
 
-### The stage (`WeatherStage : IWorldStepStage`)
+### The stage (`WeatherStage : Dia::DeferredStep::IStepStage`)
 
 | Method | Behaviour |
 |---|---|
@@ -155,7 +155,7 @@ Health (`IHealthReporter`): Degraded on fallback parameters, fallback baseline, 
 
 ## Public API
 
-New: `WeatherModule.h/.cpp`, `WeatherStage.h/.cpp` (the `IWorldStepStage`, constructed by the module), `WeatherMessages.h`, `HydrologyInputsProvider.h` (`IHydrologyInputsProvider`; amended 2026-11-17, row 6d), `SpinUpJob.h/.cpp` (pure: the cancellable run over a sim and a revision source, unit-tested without the module).
+New: `WeatherModule.h/.cpp`, `WeatherStage.h/.cpp` (the `Dia::DeferredStep::IStepStage`, constructed by the module), `WeatherMessages.h`, `HydrologyInputsProvider.h` (`IHydrologyInputsProvider`; amended 2026-11-17, row 6d), `SpinUpJob.h/.cpp` (pure: the cancellable run over a sim and a revision source, unit-tested without the module).
 
 `WeatherModule` also exposes (amended 2026-11-17, row 6d): `SetHydrologyProvider(IHydrologyInputsProvider*, IHydrologySpinUpHost*)`; the `IWaterInputSource` methods above; Feature 7's `AddInfluence`/`RemoveInfluence`/`ListInfluences`/`GetInfluenceRevision`/`GetInfluencePreviewSource`; Feature 9's `GetSmoothed()`; Feature 8's cycle accessors (`GetClimate()`). Edited: `WeatherSimulation` (`SetCommittedWeek`), `cow_*.diaapp` stage manifests, `CoW.vcxproj(.filters)`. Deleted: `JobSystemPlaceholderConsumerModule.*` and its entries.
 
@@ -215,7 +215,7 @@ New: `WeatherModule.h/.cpp`, `WeatherStage.h/.cpp` (the `IWorldStepStage`, const
 
 ## Files Touched
 
-As Public API above; tests `Tests/GoogleTests/CoW/Weather/{TestWeatherModule,TestWeatherStage,TestSpinUpJob}.cpp`; `Assets/CoW/Stages/*/misc/ApplicationFlow/*.diaapp` for the hosting stages (S-2.5 owns its own instance when built). **Spec edits on approval:** a short amendment to A4 Feature 2 (`SetCommittedWeek`); the system spec's Deferred-execution table and Initial state (spin-up async, week from stepDay, stage-scoped manifest, `WeatherStep` is an `IWorldStepStage` not an `IDeferredStep`), the Public Interfaces block, and the "Spin-up runs synchronously" sentence. No Dia files are added or edited.
+As Public API above; tests `Tests/GoogleTests/CoW/Weather/{TestWeatherModule,TestWeatherStage,TestSpinUpJob}.cpp`; `Assets/CoW/Stages/*/misc/ApplicationFlow/*.diaapp` for the hosting stages (S-2.5 owns its own instance when built). **Spec edits on approval:** a short amendment to A4 Feature 2 (`SetCommittedWeek`); the system spec's Deferred-execution table and Initial state (spin-up async, week from stepDay, stage-scoped manifest, `WeatherStep` is a `Dia::DeferredStep::IStepStage` not an `IDeferredStep`), the Public Interfaces block, and the "Spin-up runs synchronously" sentence. No Dia files are added or edited.
 
 ## Binding Decisions
 
@@ -258,7 +258,7 @@ Found by the plan-writing pass; each item below **supersedes** any contradicting
 
 User decisions from the world-sim review. Each item **supersedes** any contradicting text in this spec. Sources: [summary](../../../../../research/worldsim_data_driven/summary.md) §0, §0.1; [parameter-files](../../../dia/systems/diaattribute/parameter-files.md); [biome-registry](../s1-worldgeneration/biome-registry.md); [worldsim-kit](../worldstep/worldsim-kit.md); [grid-search-helpers](../../../dia/systems/diapathfinding/grid-search-helpers.md); [blackboard-scopes](../../../dia/systems/diablackboard/blackboard-scopes.md).
 
-1. **Stage (system items 4, 6).** Supersedes The stage (`WeatherStage : IWorldStepStage`) table, Module state and Stage exit and re-entry where they hand-roll active/pending, revisions, queue, spin-up slot, hold and discard. `WeatherStage` derives `WorldStepStageBase`; A4 implements `InitialiseSim`, `LatchInputs`, `ApplyEntry` (the 9 kinds of Open Q1 item 1), `RunStep`, `PublishCommit`. Stage id `weather`; order `["weather", "hydro", "ecology"]`; `ValidatePending` is on the interface.
+1. **Stage (system items 4, 6).** Supersedes The stage (`WeatherStage : Dia::DeferredStep::IStepStage`) table, Module state and Stage exit and re-entry where they hand-roll active/pending, revisions, queue, spin-up slot, hold and discard. `WeatherStage` derives `WorldStepStageBase`; A4 implements `InitialiseSim`, `LatchInputs`, `ApplyEntry` (the 9 kinds of Open Q1 item 1), `RunStep`, `PublishCommit`. Stage id `weather`; order `["weather", "hydro", "ecology"]`; `ValidatePending` is on the interface.
 2. **Parameters (item 1).** Supersedes the Parameters section, the manifest `parameters` path, and the Parameters and queue ACs about fallback. `DoStart` loads the sidecar through `ParameterFile`; failure sets health Failing and the stage is never ready (no `DefaultWeatherParameters` fallback). `QueueParameterSet` / `ParamOverrides` entries call `ParameterFile::Set` / `ApplyPack` when drained. `FileWatcher` (dev builds) queues `Reload` (item 11).
 3. **Health and metrics (item 5).** Supersedes the Observability section: Degraded causes stay (fallback baseline, discarded step, queue full); the Unhealthy causes become Failing (no water source, generation failed, parameter sidecar fault). Metrics come from the base.
 4. **Messages (item 10).** Supersedes the Messages section: `WeatherUpdated` is declared in `cow_worldsim.diagamemessages` and generated.

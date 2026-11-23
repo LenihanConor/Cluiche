@@ -376,7 +376,7 @@ namespace CoW::Hydrology {
     bool BuildHydrologyTerrain(const HydrologyTerrainSource&, HydrologyTerrain& out,
                                Dia::Core::Containers::String256& err);       // pure
 
-    class HydrologyStage final : public CoW::WorldStep::IWorldStepStage { /* table above */ };
+    class HydrologyStage final : public Dia::DeferredStep::IStepStage { /* table above */ };
     struct HydrologyUpdated { uint64_t week; };
 }
 ```

@@ -247,7 +247,7 @@ namespace CoW::Hydrology {
     };
 
     class HydrologyRunner;                          // synchronous oracle: init + spin-up + N weeks
-    class HydrologyStage final : public CoW::WorldStep::IWorldStepStage;   // Feature 3
+    class HydrologyStage final : public Dia::DeferredStep::IStepStage;   // Feature 3
     class HydrologySnapshot;                        // const view, committed state only
 }
 ```

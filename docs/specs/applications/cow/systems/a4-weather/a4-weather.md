@@ -489,7 +489,7 @@ namespace CoW::Weather {
     };
 
     // The deferred-step contract. Registered as a stage with WorldStepModule, which owns the channel.
-    class WeatherStage final : public CoW::WorldStep::IWorldStepStage {   // Feature 3; was IDeferredStep
+    class WeatherStage final : public Dia::DeferredStep::IStepStage {   // Feature 3; was IDeferredStep
     public:
         bool IsReady() const override;
         void Capture(StepKey stepDay) override;                         // SimPU
