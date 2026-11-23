@@ -84,6 +84,13 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 
 ---
 
+## Draoi
+
+### Draoi
+`DraoiGameSpeed` `DraoiHexWorld` `DraoiHexWorldTerrain`
+
+---
+
 ## Non-Dia projects (not managed by `sln-sync`)
 
 Not a top-level `Dia/<Name>/<Name>.vcxproj` library module (executables, editors, nested sub-projects) — kept in whatever folder they're currently nested under:
@@ -96,7 +103,4 @@ Not a top-level `Dia/<Name>/<Name>.vcxproj` library module (executables, editors
 | CoW | _Executables |
 | CoWEditor | _Executables |
 | DiaUICEF_TestSubprocess | 3.0-Visual |
-| DraoiGameSpeed | Draoi |
-| DraoiHexWorld | Draoi |
-| DraoiHexWorldTerrain | <none> |
 | GoogleTests | _Executables |

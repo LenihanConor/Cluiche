@@ -60,7 +60,7 @@ def test_declared_parent_covers_submodule(tmp_path):
 
 def test_root_docs_skipped_and_child_sources_not_charged_to_parent(tmp_path):
     (tmp_path / "Draoi").mkdir()
-    (tmp_path / "Draoi" / "draoi.root.architecture.module.md").write_text(
+    (tmp_path / "Draoi" / "dia.draoi.root.architecture.module.md").write_text(
         "---\nmodule_id: draoi.root\npath: Draoi\n---\n", encoding="utf-8")
     _module(tmp_path, "Dia", "DiaCore", "dia.core")
     _module(tmp_path, "Dia", "DiaP", "dia.p")
