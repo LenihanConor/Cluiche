@@ -33,6 +33,7 @@ A per-world registry of per-cell fields, keyed `slot.field` (`StringCRC` pairs, 
 
 - **Reads:** each field is a typed reader over a cell index, reading committed state only. Handles are `(slot, field)` CRC pairs resolved at use, not raw pointers (resolved ODQ 2, 2026-11-18).
 - **Condition context:** implements `Dia::Condition::IConditionContext` with a **cell cursor** (`SetCell(i)`) and overrides `Has(slot, field)`. A1 succession uses the same context.
+- **Field sources (as built 2026-11-23):** readers are plain function pointers, so `RegisterBiomeFields(registry, BiomeFieldSource&)` and `RegisterTerrainFields(registry, TerrainFieldSource&)` take a caller-owned, non-copyable source object (biome: registry + `WorldStructure`; terrain: `WorldGenSession`) that must outlive the registration until `Clear` and must not move. Protected site kinds come from the guarantee data (`"protected": true` on a site kind, user-approved 2026-11-23) through `TerrainFieldSource`. A bool field supplies both readers, and `GetFloat`/`GetBool` fall back to each other when one is missing, so `"value": 1` and `"value": true` agree.
 - **Registration and rebuild:** `Register(slot, field, reader)`, `Clear()`. Each package contributes its own fields through a plain function that takes the registry (core, `RegisterBiomeFields(registry, const BiomeRegistry&)`: `biome.index`, `biome.tag.<tag>`; terrain package, `RegisterTerrainFields(registry, <generator world>)` in `DraoiHexWorldTerrain`: `terrain.*`, `terrain.is_protected`, `terrain.region`; Weather/Hydrology/Ecology: `weather.*`, `hydro.*`, `ecology.*`). **Who calls `Clear` and rebuilds, and when, is the application's** (CoW does it on `WorldGenerationComplete`); the library has no event knowledge.
 - **Threading contract** (thread-neutral): reads touch committed state only. The registry takes an optional "reads are forbidden now" flag pointer; when set and read, it asserts in Debug. It never names `Run` or SimPU.
 - **Field vocabulary** (decided in the kit, spec-6 resolutions): `terrain.is_protected` covers corridor sites, `Pass`, `RiverCrossesBarrier`, Hearth, Nexus and world-throne cells and replaces `terrain.is_crossing`; `hydro.basin_kind` takes `none`, `lake` or `dry` (`any` is `!= none`); angular fields are `[0, 2π]` inclusive, normalised into `[0, 2π)` in code. After the generic special sites feature (@docs/specs/features/draoi/guarantee-set-injection.md), "Hearth/Nexus/throne" in `is_protected` are **site kinds named in data** (`guarantees.json`), not C++ identifiers; `is_protected` is built from the data-declared protected kinds plus the two `TerrainFlag` bits.
@@ -53,13 +54,13 @@ Loads one JSON block shared by presets, scenarios and T-2:
 },
 "selectors": {
   "river":   { "op": "==", "slot": "terrain", "field": "is_river", "value": 1 },
-  "wet_low": { "and": [ { "op": "<",  "slot": "terrain", "field": "elevation", "value": 0.2 },
+  "wet_low": { "op": "and", "conditions": [ { "op": "<",  "slot": "terrain", "field": "elevation", "value": 0.2 },
                         { "op": "<=", "slot": "derived", "field": "dist_river", "value": 3 },
-                        { "not": { "op": "==", "slot": "biome", "field": "tag.cold", "value": 1 } } ] }
+                        { "op": "not", "condition": { "op": "==", "slot": "biome", "field": "tag.cold", "value": 1 } } ] }
 }
 ```
 
-- Selectors are `ConditionExpr` JSON. `all` is predefined. Caps: 32 selectors, 16 derived fields.
+- Selectors are `ConditionExpr` JSON (`{"op":"and"|"or","conditions":[...]}`, `{"op":"not","condition":{...}}`; corrected 2026-11-23, the earlier shorthand was never parsed). `all` is predefined. Caps: 32 selectors, 16 derived fields.
 - **Derived fields**, computed once at resolve time in dependency order with the DiaPathfinding helpers, under `slot: "derived"`: `distance {from}` (multi-source hex-step distance, unreachable = +infinity) and `upstream {of, maxSteps}` (1 within `maxSteps` along `terrain.flow_direction` toward a matching cell, else 0).
 - **Validation at load** (fails, naming the item): unknown slot or field (through `Validate(IConditionContext&)`); unknown selector referenced by a derived field; a cycle between derived fields and selectors; `maxSteps` < 1; a selector or derived-field count over its cap.
 - **Resolve:** each selector gives a sorted cell-index list, deterministic (same world, byte-identical lists). "Empty where used" is the consumer's check.
