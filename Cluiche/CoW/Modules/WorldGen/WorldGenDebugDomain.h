@@ -7,7 +7,7 @@
 // Every command goes through the SAME WorldGenSession methods the cow.worldgen.* commands call (SD-S1-002),
 // then WorldGenerationModule::NotifyAction().
 //
-// Commands (args JSON; unknown commands and bad args are ignored with a DIA_LOG_WARNING on channel "CoW"):
+// Commands (args JSON; unknown commands and bad args are ignored with a DIA_LOG_WARNING on channel "WGEN"):
 //   setScale     {key, value}                         -> session.Set({key: value}) (any shape param key, or "seed")
 //   regenerate   {seed?}                              -> session.Regenerate
 //   setSeed      {seed}                               -> session.Set({seed})

@@ -697,7 +697,7 @@ TEST(WorldGenCommands, StageReEntryRegistersCleanlyWithNoDuplicateRejections)
 	for (int visit = 0; visit < 3; ++visit)
 	{
 		Harness h;
-		Dia::CellLayers::Testing::LogCapture log("CoW");
+		Dia::CellLayers::Testing::LogCapture log("WGEN");
 		ASSERT_TRUE(h.Start()) << "visit " << visit;
 		h.Pump(3);
 		EXPECT_TRUE(gWg->CommandsRegistered()) << "visit " << visit;

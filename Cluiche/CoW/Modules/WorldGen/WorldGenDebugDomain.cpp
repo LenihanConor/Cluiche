@@ -153,7 +153,7 @@ namespace {
     {
         if (result.isObject() && result.isMember("success") && result["success"].isBool() && !result["success"].asBool())
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: %s failed: %s", what,
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: %s failed: %s", what,
                 result.isMember("error") && result["error"].isString() ? result["error"].asCString() : "unknown error");
         }
     }
@@ -731,7 +731,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setScale needs {key, value}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: setScale needs {key, value}");
         }
     }
     else if (cmd == kCmdRegenerate)
@@ -753,7 +753,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setSeed needs {seed}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: setSeed needs {seed}");
         }
     }
     else if (cmd == kCmdSetSize)
@@ -783,7 +783,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
             {
                 if (!mView->SelectCell(args["x"].asInt(), args["y"].asInt()))
                 {
-                    DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectCell (%d, %d) is outside the viewer grid", args["x"].asInt(), args["y"].asInt());
+                    DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: selectCell (%d, %d) is outside the viewer grid", args["x"].asInt(), args["y"].asInt());
                 }
             }
             else
@@ -795,7 +795,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectCell needs integer {x, y}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: selectCell needs integer {x, y}");
         }
     }
     else if (cmd == kCmdClearCell)
@@ -816,7 +816,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
             // "terrain" is the panel's name for the viewer's default base layer; the viewer accepts the alias.
             if (!(hasObj && args["mode"].isString() && mView->SetColourMode(args["mode"].asCString())))
             {
-                DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setColourMode needs a known {mode}");
+                DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: setColourMode needs a known {mode}");
             }
         }
         else if (hasObj && args["mode"].isString() && IsKnownMode(session, args["mode"].asString()))
@@ -825,7 +825,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: setColourMode needs a known {mode}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: setColourMode needs a known {mode}");
         }
     }
     else if (cmd == kCmdToggle)
@@ -857,7 +857,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         if (!found)
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: toggle needs an available {drawer}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: toggle needs an available {drawer}");
         }
     }
     else if (cmd == kCmdExpandGuarantee)
@@ -883,7 +883,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: export needs {name?, overwrite?}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: export needs {name?, overwrite?}");
         }
     }
     else if (cmd == kCmdImport)
@@ -902,7 +902,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: import needs a {name} string");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: import needs a {name} string");
         }
     }
     else if (cmd == kCmdCancel)
@@ -930,7 +930,7 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
         }
         if (!found)
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: selectWorld needs the {name} of a listed world");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: selectWorld needs the {name} of a listed world");
         }
     }
     else if (cmd == kCmdDiscard)
@@ -957,17 +957,17 @@ void WorldGenDebugDomain::OnCommand(Dia::Core::StringCRC cmd, const Json::Value&
             }
             else
             {
-                DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: discard cannot replay that command");
+                DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: discard cannot replay that command");
             }
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: discard needs no args or {cmd, args}");
+            DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: discard needs no args or {cmd, args}");
         }
     }
     else
     {
-        DIA_LOG_WARNING("CoW", "WorldGenDebugDomain: unknown command ignored");
+        DIA_LOG_WARNING("WGEN", "WorldGenDebugDomain: unknown command ignored");
     }
 
     if (acted)

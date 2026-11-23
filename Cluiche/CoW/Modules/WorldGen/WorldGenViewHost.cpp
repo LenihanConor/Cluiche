@@ -228,7 +228,7 @@ bool WorldGenViewHost::RegisterLayers()
         const CellRegisterResult r = mDeps.registry->Register(d);
         if (r != CellRegisterResult::Ok)
         {
-            DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering layer '%s' failed (%d)", wd.id, static_cast<int>(r));
+            DIA_LOG_ERROR("WGEN", "WorldGenViewHost: registering layer '%s' failed (%d)", wd.id, static_cast<int>(r));
             UnregisterLayers();
             return false;
         }
@@ -246,7 +246,7 @@ bool WorldGenViewHost::RegisterLayers()
         const CellRegisterResult r = mDeps.registry->Register(d);
         if (r != CellRegisterResult::Ok)
         {
-            DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering layer '%s' failed (%d)", eb.desc.id.c_str(), static_cast<int>(r));
+            DIA_LOG_ERROR("WGEN", "WorldGenViewHost: registering layer '%s' failed (%d)", eb.desc.id.c_str(), static_cast<int>(r));
             UnregisterLayers();
             return false;
         }
@@ -255,7 +255,7 @@ bool WorldGenViewHost::RegisterLayers()
     if (mDeps.registry->Details().Register(&mGrid->Desc(), kDetailProviderName,
             fastdelegate::MakeDelegate(this, &WorldGenViewHost::BuildCellDetails)) != Dia::CellLayers::CellDetailRegisterResult::Ok)
     {
-        DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering the cell detail provider failed");
+        DIA_LOG_ERROR("WGEN", "WorldGenViewHost: registering the cell detail provider failed");
         UnregisterLayers();
         return false;
     }
@@ -325,7 +325,7 @@ bool WorldGenViewHost::RegisterOverlays()
         mDeps.registry->RegisterOverlay(edges) != CellRegisterResult::Ok ||
         mDeps.registry->RegisterOverlay(sites) != CellRegisterResult::Ok)
     {
-        DIA_LOG_ERROR("CoW", "WorldGenViewHost: registering overlays failed");
+        DIA_LOG_ERROR("WGEN", "WorldGenViewHost: registering overlays failed");
         UnregisterOverlays();
         return false;
     }
@@ -353,7 +353,7 @@ bool WorldGenViewHost::Build()
         return true;
     if (mDeps.registry == nullptr || mDeps.cellField == nullptr)
     {
-        DIA_LOG_ERROR("CoW", "WorldGenViewHost: CellLayerRegistry or CellFieldRegistry unavailable");
+        DIA_LOG_ERROR("WGEN", "WorldGenViewHost: CellLayerRegistry or CellFieldRegistry unavailable");
         return false;
     }
     if (!RegisterLayers() || !RegisterOverlays())
@@ -373,18 +373,18 @@ bool WorldGenViewHost::Build()
     {
         mCommandsRegistered = mDomain->RegisterCommands(*mDeps.registrar);
         if (!mCommandsRegistered)
-            DIA_LOG_ERROR("CoW", "WorldGenViewHost: sim-hosted viewer command registration failed");
+            DIA_LOG_ERROR("WGEN", "WorldGenViewHost: sim-hosted viewer command registration failed");
     }
     else
     {
-        DIA_LOG_WARNING("CoW", "WorldGenViewHost: no command registrar - cells.* commands not served");
+        DIA_LOG_WARNING("WGEN", "WorldGenViewHost: no command registrar - cells.* commands not served");
     }
 
     mNeedFit = true;
     mUploadedRevision = 0;
     mSeenUploads = 0;
     mUploadFrames = 0;
-    DIA_LOG_INFO("CoW", "WorldGenViewHost: viewer hosted (%u layers, %u overlays, %u grids)",
+    DIA_LOG_INFO("WGEN", "WorldGenViewHost: viewer hosted (%u layers, %u overlays, %u grids)",
         mDeps.registry->LayerCount(), mDeps.registry->OverlayCount(), mDeps.registry->GridCount());
     return true;
 }
@@ -440,14 +440,14 @@ void WorldGenViewHost::OnSizeChanged()
     {
         if (!RegisterLayers())
         {
-            DIA_LOG_ERROR("CoW", "WorldGenViewHost: re-registering layers after a size change failed");
+            DIA_LOG_ERROR("WGEN", "WorldGenViewHost: re-registering layers after a size change failed");
             return;
         }
         if (base != StringCRC::kZero)
             mDomain->SetBase(base);
         if (hadSelection && selX < target.width && selY < target.height)
             SelectCell(selX, selY);
-        DIA_LOG_INFO("CoW", "WorldGenViewHost: grid rebuilt for %dx%d%s", target.width, target.height,
+        DIA_LOG_INFO("WGEN", "WorldGenViewHost: grid rebuilt for %dx%d%s", target.width, target.height,
             hadSelection ? (HasSelection() ? " (selection kept)" : " (selection cleared)") : "");
     }
 }
@@ -533,7 +533,7 @@ void WorldGenViewHost::Update(const Dia::SimTime::SimTimeContext& ctx)
         if (!mFirstPointerLogged)
         {
             mFirstPointerLogged = true;
-            DIA_LOG_DEBUG("CoW", "WorldGenViewHost: first pointer frame submitted to the viewer");
+            DIA_LOG_DEBUG("WGEN", "WorldGenViewHost: first pointer frame submitted to the viewer");
         }
     }
 }

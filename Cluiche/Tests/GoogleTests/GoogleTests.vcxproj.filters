@@ -3276,5 +3276,8 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldGenCommandSet.cpp">
       <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
+    <ClCompile Include="CoW/WorldSimKit/TestWorldGenLogChannel.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

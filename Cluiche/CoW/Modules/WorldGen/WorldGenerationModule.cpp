@@ -74,7 +74,7 @@ void WorldGenerationModule::LoadRulesSidecar()
             {
                 mRulesErrorKey = mRulesSidecarAlias;
                 mRulesErrorReason = "alias '" + mRulesSidecarAlias + "' is not registered";
-                DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar %s; generation is refused", mRulesErrorReason.c_str());
+                DIA_LOG_ERROR("WGEN", "WorldGenerationModule: terrain rules sidecar %s; generation is refused", mRulesErrorReason.c_str());
                 return;
             }
             path = Dia::Core::PathStore::ResolvePathToCString(alias);
@@ -85,7 +85,7 @@ void WorldGenerationModule::LoadRulesSidecar()
             // The health reason is capped at 64 characters, so it names the alias; the path is in the log and the reason.
             mRulesErrorKey = mRulesAliasGiven ? mRulesSidecarAlias : std::string("sidecar");
             mRulesErrorReason = "cannot read " + path + (mRulesAliasGiven ? " (alias '" + mRulesSidecarAlias + "')" : std::string());
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar %s", mRulesErrorReason.c_str());
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: terrain rules sidecar %s", mRulesErrorReason.c_str());
             return;
         }
         std::stringstream ss;
@@ -100,7 +100,7 @@ void WorldGenerationModule::LoadRulesSidecar()
         if (mRulesErrorKey.empty())
             mRulesErrorKey = "sidecar";
         mRulesErrorReason = err.reason.AsCStr();
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: terrain rules sidecar failed at key '%s': %s; generation is refused",
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: terrain rules sidecar failed at key '%s': %s; generation is refused",
                       mRulesErrorKey.c_str(), mRulesErrorReason.c_str());
     }
 }
@@ -161,7 +161,7 @@ bool WorldGenerationModule::LoadStrata(Draoi::HexWorld::StratumTable& strata)
             {
                 mBiomesErrorField = "strata";
                 mBiomesErrorReason = std::string("alias '") + (strataPath.empty() ? kStrataAlias : kStrataSidecarAlias) + "' is not registered";
-                DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
+                DIA_LOG_ERROR("WGEN", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
                 return false;
             }
         }
@@ -169,7 +169,7 @@ bool WorldGenerationModule::LoadStrata(Draoi::HexWorld::StratumTable& strata)
         {
             mBiomesErrorField = "strata";
             mBiomesErrorReason = "cannot read " + strataPath + " or " + sidecarPath;
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: strata %s; generation is refused", mBiomesErrorReason.c_str());
             return false;
         }
     }
@@ -178,7 +178,7 @@ bool WorldGenerationModule::LoadStrata(Draoi::HexWorld::StratumTable& strata)
     {
         mBiomesErrorField = std::string("strata.") + err.field;
         mBiomesErrorReason = err.reason;
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: strata failed at field '%s': %s; generation is refused",
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: strata failed at field '%s': %s; generation is refused",
                       err.field.c_str(), mBiomesErrorReason.c_str());
         return false;
     }
@@ -219,7 +219,7 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
             {
                 mBiomesErrorField = "guarantees";
                 mBiomesErrorReason = std::string("alias '") + (path.empty() ? kGuaranteesAlias : kGuaranteesSidecarAlias) + "' is not registered";
-                DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
+                DIA_LOG_ERROR("WGEN", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
                 return false;
             }
         }
@@ -227,7 +227,7 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
         {
             mBiomesErrorField = "guarantees";
             mBiomesErrorReason = "cannot read " + path + " or " + sidecarPath;
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: guarantees %s; generation is refused", mBiomesErrorReason.c_str());
             return false;
         }
     }
@@ -237,7 +237,7 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
     {
         mBiomesErrorField = std::string("guarantees.") + err.entry;
         mBiomesErrorReason = err.reason;
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees failed at '%s': %s; generation is refused",
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: guarantees failed at '%s': %s; generation is refused",
                       err.entry.c_str(), mBiomesErrorReason.c_str());
         return false;
     }
@@ -247,7 +247,7 @@ bool WorldGenerationModule::LoadGuarantees(const Draoi::HexWorld::StratumTable& 
     {
         mBiomesErrorField = "guarantees.site_kinds";
         mBiomesErrorReason = "a declared site kind cannot be installed";
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: guarantees site kinds could not be installed; generation is refused");
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: guarantees site kinds could not be installed; generation is refused");
         return false;
     }
     return true;
@@ -277,7 +277,7 @@ void WorldGenerationModule::LoadBiomes()
             {
                 mBiomesErrorField = kBiomesAlias;
                 mBiomesErrorReason = std::string("alias '") + kBiomesAlias + "' is not registered";
-                DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
+                DIA_LOG_ERROR("WGEN", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
                 return;
             }
             path = Dia::Core::PathStore::ResolvePathToCString(alias);
@@ -287,7 +287,7 @@ void WorldGenerationModule::LoadBiomes()
         {
             mBiomesErrorField = "file";
             mBiomesErrorReason = "cannot read " + path;
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: biomes %s; generation is refused", mBiomesErrorReason.c_str());
             return;
         }
         std::stringstream ss;
@@ -302,7 +302,7 @@ void WorldGenerationModule::LoadBiomes()
         if (mBiomesErrorField.empty())
             mBiomesErrorField = "file";
         mBiomesErrorReason = err.reason.AsCStr();
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: biomes failed at field '%s', id '%s', row %u: %s; generation is refused",
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: biomes failed at field '%s', id '%s', row %u: %s; generation is refused",
                       mBiomesErrorField.c_str(), err.id.AsCStr(), static_cast<unsigned>(err.row), mBiomesErrorReason.c_str());
         return;
     }
@@ -335,7 +335,7 @@ void WorldGenerationModule::OnConfigure(const char* configJson)
                 mRulesAliasGiven = true;
             }
             else
-                DIA_LOG_WARNING("CoW", "WorldGenerationModule: rules_sidecar_alias must be a non-empty string, ignored");
+                DIA_LOG_WARNING("WGEN", "WorldGenerationModule: rules_sidecar_alias must be a non-empty string, ignored");
         }
     }
     if (mRulesAliasGiven && !mRulesSidecarTextSet)
@@ -356,7 +356,7 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
         Json::Reader reader;
         if (!reader.parse(configJson, root) || !root.isObject())
         {
-            DIA_LOG_WARNING("CoW", "WorldGenerationModule: config is not a JSON object, using defaults");
+            DIA_LOG_WARNING("WGEN", "WorldGenerationModule: config is not a JSON object, using defaults");
         }
         else
         {
@@ -365,35 +365,35 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
                 if (root["presets_dir"].isString())
                     mPresetsDir = root["presets_dir"].asString();
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: presets_dir must be a string, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: presets_dir must be a string, ignored");
             }
             if (root.isMember("out_presets_dir"))
             {
                 if (root["out_presets_dir"].isString())
                     mOutPresetsDir = root["out_presets_dir"].asString();
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: out_presets_dir must be a string, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: out_presets_dir must be a string, ignored");
             }
             if (root.isMember("worlds_dir"))
             {
                 if (root["worlds_dir"].isString())
                     mWorldsDir = root["worlds_dir"].asString();
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: worlds_dir must be a string, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: worlds_dir must be a string, ignored");
             }
             if (root.isMember("out_worlds_dir"))
             {
                 if (root["out_worlds_dir"].isString())
                     mOutWorldsDir = root["out_worlds_dir"].asString();
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: out_worlds_dir must be a string, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: out_worlds_dir must be a string, ignored");
             }
             if (root.isMember("auto_generate"))
             {
                 if (root["auto_generate"].isBool())
                     mAutoGenerate = root["auto_generate"].asBool();
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: auto_generate must be a bool, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: auto_generate must be a bool, ignored");
             }
             if (root.isMember("regenerate_on_start"))
             {
@@ -405,7 +405,7 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
                         mSession.Regenerate(Json::Value(Json::objectValue));
                 }
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: regenerate_on_start must be a bool, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: regenerate_on_start must be a bool, ignored");
             }
             if (root.isMember("max_retry_attempts"))
             {
@@ -413,7 +413,7 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
                 if (v.isNumeric() && v.isIntegral() && v.asDouble() >= 0.0 && v.asDouble() <= 4.0e9)
                     mSession.SetMaxRetryAttempts(static_cast<uint32_t>(v.asDouble()));
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: max_retry_attempts must be a non-negative integer, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: max_retry_attempts must be a non-negative integer, ignored");
             }
             if (root.isMember("timeout_seconds"))
             {
@@ -421,7 +421,7 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
                 if (v.isNumeric() && v.asDouble() >= 0.0)
                     mSession.SetTimeoutSeconds(static_cast<float>(v.asDouble() < 1.0e9 ? v.asDouble() : 1.0e9));
                 else
-                    DIA_LOG_WARNING("CoW", "WorldGenerationModule: timeout_seconds must be a non-negative number, ignored");
+                    DIA_LOG_WARNING("WGEN", "WorldGenerationModule: timeout_seconds must be a non-negative number, ignored");
             }
             ApplySeedAndSize(root);
 
@@ -453,7 +453,7 @@ void WorldGenerationModule::ApplyConfig(const char* configJson)
                 {
                     mHandoffWorldFile = root["world_file"].asString();
                     if (root.isMember("seed") || root.isMember("size"))
-                        DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed and size are ignored with world_file (the file carries its own)");
+                        DIA_LOG_WARNING("WGEN", "WorldGenerationModule: seed and size are ignored with world_file (the file carries its own)");
                 }
                 else
                     handoffFail("\"world_file\" must be a non-empty world name string");
@@ -474,7 +474,7 @@ void WorldGenerationModule::ApplySeedAndSize(const Json::Value& root)
         args["size"] = root["size"];
         const Json::Value result = mSession.SetSize(args);
         if (result.isMember("error"))
-            DIA_LOG_WARNING("CoW", "WorldGenerationModule: invalid size in config, keeping default");
+            DIA_LOG_WARNING("WGEN", "WorldGenerationModule: invalid size in config, keeping default");
     }
     if (root.isMember("seed"))
     {
@@ -486,7 +486,7 @@ void WorldGenerationModule::ApplySeedAndSize(const Json::Value& root)
         }
         else
         {
-            DIA_LOG_WARNING("CoW", "WorldGenerationModule: seed must be an unsigned integer, ignored");
+            DIA_LOG_WARNING("WGEN", "WorldGenerationModule: seed must be an unsigned integer, ignored");
         }
     }
 }
@@ -521,10 +521,10 @@ void WorldGenerationModule::OnStageLaunch(const char* overridesJson)
     Json::Reader reader;
     if (!reader.parse(overridesJson, root) || !root.isObject())
     {
-        DIA_LOG_WARNING("CoW", "WorldGenerationModule: launch preset override is not a JSON object, ignored");
+        DIA_LOG_WARNING("WGEN", "WorldGenerationModule: launch preset override is not a JSON object, ignored");
         return;
     }
-    DIA_LOG_INFO("CoW", "WorldGenerationModule: applying launch preset override (%u bytes)", static_cast<unsigned>(std::strlen(overridesJson)));
+    DIA_LOG_INFO("WGEN", "WorldGenerationModule: applying launch preset override (%u bytes)", static_cast<unsigned>(std::strlen(overridesJson)));
     ApplySeedAndSize(root);
     if (root.isMember("preset"))
     {
@@ -536,7 +536,7 @@ void WorldGenerationModule::OnStageLaunch(const char* overridesJson)
         else
         {
             mHandoffError = "launch preset override: \"preset\" must be a non-empty preset id string";
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: %s", mHandoffError.c_str());
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: %s", mHandoffError.c_str());
         }
     }
 }
@@ -604,7 +604,7 @@ Dia::ApplicationFlow::StartResult WorldGenerationModule::DoStart()
     if (!mHandoffError.empty())
         ReportHandoffFailure();
 
-    DIA_LOG_INFO("CoW", "WorldGenerationModule: started (auto_generate=%d, presets %s, out %s)",
+    DIA_LOG_INFO("WGEN", "WorldGenerationModule: started (auto_generate=%d, presets %s, out %s)",
                  mAutoGenerate ? 1 : 0, mPresetsDir.c_str(), mOutPresetsDir.c_str());
     return StartResult::kReady;
 }
@@ -665,7 +665,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     const int unresolvedPairs = mSession.Generator().GetEffective().unresolvedPairs;
     if (unresolvedPairs > 0)
     {
-        DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u left %d forbidden biome neighbour pair(s) unresolved",
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: revision %u left %d forbidden biome neighbour pair(s) unresolved",
                      mSession.Revision(), unresolvedPairs);
     }
 
@@ -685,7 +685,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         mPublishFailed = false;
         if (!mGenerationUnsatisfiable)
             mHealth.SetOK();
-        DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u generated (seed %llu)",
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: revision %u generated (seed %llu)",
                      msg.worldRevision, static_cast<unsigned long long>(msg.seed));
     }
     else
@@ -693,7 +693,7 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         mPublishDroppedCounter->Inc();
         mHealth.IncrementErrors();
         if (!mPublishFailed)
-            DIA_LOG_ERROR("CoW", "WorldGenerationModule: WorldGenerationComplete for revision %u could not be published",
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: WorldGenerationComplete for revision %u could not be published",
                           msg.worldRevision);
         mPublishFailed = true;
         mHealth.SetFailing(Dia::Core::StringCRC("publish_failed"));
@@ -746,7 +746,7 @@ void WorldGenerationModule::OnRetryRunFinished()
     if (report->outcome == GenerationOutcome::Cancelled)
     {
         mCancelsCounter->Inc();   // a user action: not a failure, health unchanged
-        DIA_LOG_INFO("CoW", "WorldGenerationModule: generation for seed %llu cancelled after %u attempt(s); the previous world is kept",
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: generation for seed %llu cancelled after %u attempt(s); the previous world is kept",
                      static_cast<unsigned long long>(report->outerSeed), static_cast<unsigned>(report->attempts.Size()));
         return;
     }
@@ -769,7 +769,7 @@ void WorldGenerationModule::OnRetryRunFinished()
         mUnsatisfiableCounter->Inc();
     }
     mHealth.SetFailing(Dia::Core::StringCRC(healthReason));
-    DIA_LOG_ERROR("CoW", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s) (%s); see cow.worldgen.report",
+    DIA_LOG_ERROR("WGEN", "WorldGenerationModule: generation for seed %llu ended %s after %u attempt(s) (%s); see cow.worldgen.report",
                   static_cast<unsigned long long>(report->outerSeed), Draoi::HexWorld::GenerationOutcomeName(report->outcome),
                   static_cast<unsigned>(report->attempts.Size()), report->failureMessage);
 }
@@ -780,21 +780,21 @@ void WorldGenerationModule::LogWorldFileReply(const char* action, const Json::Va
         return;
     if (!reply.isMember("success") || !reply["success"].asBool())
     {
-        DIA_LOG_WARNING("CoW", "WorldGenerationModule: world %s failed: %s", action, reply["error"].asCString());
+        DIA_LOG_WARNING("WGEN", "WorldGenerationModule: world %s failed: %s", action, reply["error"].asCString());
         return;
     }
-    DIA_LOG_INFO("CoW", "WorldGenerationModule: world %s ok: %s (%llu bytes)", action, reply["path"].asCString(),
+    DIA_LOG_INFO("WGEN", "WorldGenerationModule: world %s ok: %s (%llu bytes)", action, reply["path"].asCString(),
                  static_cast<unsigned long long>(reply["bytes"].asUInt64()));
     const Json::Value& warnings = reply["warnings"];
     for (Json::ArrayIndex i = 0; warnings.isArray() && i < warnings.size() && i < 20; ++i)
-        DIA_LOG_INFO("CoW", "WorldGenerationModule: world %s: %s", action, warnings[i].asCString());
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: world %s: %s", action, warnings[i].asCString());
 }
 
 void WorldGenerationModule::ReportHandoffFailure()
 {
     // The hand-off named a world that cannot be loaded: say so loudly, stay started, and do not substitute a
     // different world (no automatic generation until an explicit action).
-    DIA_LOG_ERROR("CoW", "WorldGenerationModule: world hand-off failed: %s", mHandoffError.c_str());
+    DIA_LOG_ERROR("WGEN", "WorldGenerationModule: world hand-off failed: %s", mHandoffError.c_str());
     mHandoffFailed = true;
     mHealth.SetFailing(Dia::Core::StringCRC("world_handoff_failed"));
     mHealth.IncrementErrors();
@@ -859,14 +859,14 @@ void WorldGenerationModule::OnWorldImported()
     Cluiche::AppFlow::MessageBusHostModule* host = mBus.Get();
     if (host && host->GetBus().Broadcast(msg))
     {
-        DIA_LOG_INFO("CoW", "WorldGenerationModule: revision %u imported (seed %llu), world is locked",
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: revision %u imported (seed %llu), world is locked",
                      msg.worldRevision, static_cast<unsigned long long>(msg.seed));
     }
     else
     {
         if (mPublishDroppedCounter)
             mPublishDroppedCounter->Inc();
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: WorldGenerationComplete for imported revision %u could not be published", msg.worldRevision);
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: WorldGenerationComplete for imported revision %u could not be published", msg.worldRevision);
     }
 }
 
@@ -900,7 +900,7 @@ void WorldGenerationModule::RegisterCommands()
     Cluiche::AppFlow::SimQueryHostModule* host = mSimQueryHost.Get();
     if (!host)
     {
-        DIA_LOG_WARNING("CoW", "WorldGenerationModule: no SimQueryHostModule - cow.worldgen.* commands not registered");
+        DIA_LOG_WARNING("WGEN", "WorldGenerationModule: no SimQueryHostModule - cow.worldgen.* commands not registered");
         return;
     }
     mHostAdapter.reset(new ModuleHostAdapter(*host));
@@ -1065,7 +1065,7 @@ bool WorldGenerationModule::RegisterCommandsOn(Debug::ISimCommandHost& host)
 
     mCommandsRegistered = mCommandSet.RegisterAll(host, entries, entryCount, "WorldGenerationModule");
     if (!mCommandsRegistered)
-        DIA_LOG_ERROR("CoW", "WorldGenerationModule: cow.worldgen.* registration failed and was rolled back");
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: cow.worldgen.* registration failed and was rolled back");
     return mCommandsRegistered;
 }
 
@@ -1089,7 +1089,7 @@ Dia::ApplicationFlow::StopResult WorldGenerationModule::DoStop()
     mGenerationsCounter = mPublishDroppedCounter = mAttemptsCounter = mUnsatisfiableCounter = nullptr;
     mTimeoutsCounter = mErrorsCounter = mCancelsCounter = nullptr;
     mLastMsGauge = mRevisionGauge = nullptr;
-    DIA_LOG_INFO("CoW", "WorldGenerationModule: stopped at revision %u", mSession.Revision());
+    DIA_LOG_INFO("WGEN", "WorldGenerationModule: stopped at revision %u", mSession.Revision());
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

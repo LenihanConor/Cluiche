@@ -24,7 +24,7 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
 
     if (!mWaitLogged)
     {
-        DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: waiting for stage assets");
+        DIA_LOG_INFO("WGEN", "S1WorldGenerationTestbedStageModule: waiting for stage assets");
         mWaitLogged = true;
     }
 
@@ -37,7 +37,7 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
 
     if (status.state == LoadState::kFailed)
     {
-        DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: stage asset load failed");
+        DIA_LOG_ERROR("WGEN", "S1WorldGenerationTestbedStageModule: stage asset load failed");
         return StartResult::kFailed;
     }
     if (status.state != LoadState::kComplete)
@@ -51,14 +51,14 @@ Dia::ApplicationFlow::StartResult S1WorldGenerationTestbedStageModule::DoStart()
             return StartResult::kLoading;
         if (!mPanelWarned)
         {
-            DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: state relay / visual debugger unavailable - World Generation card not shown");
+            DIA_LOG_WARNING("WGEN", "S1WorldGenerationTestbedStageModule: state relay / visual debugger unavailable - World Generation card not shown");
             mPanelWarned = true;
         }
     }
 #endif
 
     mExitRequested = false;
-    DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: started (S1WorldGenerationTestbedStage stage running, %u assets) - press Escape to return to Boot",
+    DIA_LOG_INFO("WGEN", "S1WorldGenerationTestbedStageModule: started (S1WorldGenerationTestbedStage stage running, %u assets) - press Escape to return to Boot",
                  status.loaded);
     return StartResult::kReady;
 }
@@ -79,7 +79,7 @@ void S1WorldGenerationTestbedStageModule::DoUpdate(const Dia::SimTime::SimTimeCo
     {
         if (input->WasKeyPressed(Dia::Input::EKey::Escape))
         {
-            DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: Escape pressed - returning to Boot");
+            DIA_LOG_INFO("WGEN", "S1WorldGenerationTestbedStageModule: Escape pressed - returning to Boot");
             mExitRequested = true;
             NavigateTo(Dia::Core::StringCRC("Boot"));
         }
@@ -88,7 +88,7 @@ void S1WorldGenerationTestbedStageModule::DoUpdate(const Dia::SimTime::SimTimeCo
 
 Dia::ApplicationFlow::StopResult S1WorldGenerationTestbedStageModule::DoStop()
 {
-    DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: stopped");
+    DIA_LOG_INFO("WGEN", "S1WorldGenerationTestbedStageModule: stopped");
     mWaitLogged = false;
 #ifdef DIA_DEBUG
     TeardownPanel();
@@ -115,7 +115,7 @@ bool S1WorldGenerationTestbedStageModule::TryBuildPanel(bool finalAttempt)
     Dia::VisualDebugger::IDebugDomain* adapter = relay->Attach(*domain);
     if (adapter == nullptr)
     {
-        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: DomainStateRelay has no free slot - World Generation card not shown");
+        DIA_LOG_WARNING("WGEN", "S1WorldGenerationTestbedStageModule: DomainStateRelay has no free slot - World Generation card not shown");
         mPanelWarned = true;
         return false;
     }
@@ -128,14 +128,14 @@ bool S1WorldGenerationTestbedStageModule::TryBuildPanel(bool finalAttempt)
     }
     else if (!mViewWarned)
     {
-        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: map view unavailable (CellLayerRegistry / CellFieldRegistry / Camera2D) - card works without the viewer");
+        DIA_LOG_WARNING("WGEN", "S1WorldGenerationTestbedStageModule: map view unavailable (CellLayerRegistry / CellFieldRegistry / Camera2D) - card works without the viewer");
         mViewWarned = true;
     }
 
     RegisterViewQuery();
     vd->RegisterDomain(*adapter);
     mPanelRegistered = true;
-    DIA_LOG_INFO("CoW", "S1WorldGenerationTestbedStageModule: World Generation card registered with the visual debugger");
+    DIA_LOG_INFO("WGEN", "S1WorldGenerationTestbedStageModule: World Generation card registered with the visual debugger");
     return true;
 }
 
@@ -155,7 +155,7 @@ bool S1WorldGenerationTestbedStageModule::TryBuildView(Cluiche::AppFlow::VisualD
     deps.input  = mInput.Get();
     deps.sharedGrid = &wg->HexGridOwner();   // one grid for every registrant of this world
     if (deps.schema == nullptr)
-        DIA_LOG_WARNING("CoW", "S1WorldGenerationTestbedStageModule: no ValueSchemaService - map layers show without schema data");
+        DIA_LOG_WARNING("WGEN", "S1WorldGenerationTestbedStageModule: no ValueSchemaService - map layers show without schema data");
 
     mViewHost = std::make_unique<WorldGenViewHost>(wg->GetSession(), deps);
     if (!mViewHost->Build())
@@ -210,7 +210,7 @@ void S1WorldGenerationTestbedStageModule::RegisterViewQuery()
         return r;
     });
     if (!mViewQueryRegistered)
-        DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: cow.worldgen.view registration rejected by SimQueryHost");
+        DIA_LOG_ERROR("WGEN", "S1WorldGenerationTestbedStageModule: cow.worldgen.view registration rejected by SimQueryHost");
 
     // Acceptance screenshots: queue a DiaObservation frame capture; the PNG lands in <out>/captures/run/<tag>.png.
     Dia::DebugServer::SimHelpInfo capHelp;
@@ -237,7 +237,7 @@ void S1WorldGenerationTestbedStageModule::RegisterViewQuery()
         r["status"] = static_cast<int>(status);
         return r;
     }))
-        DIA_LOG_ERROR("CoW", "S1WorldGenerationTestbedStageModule: cow.worldgen.capture registration rejected by SimQueryHost");
+        DIA_LOG_ERROR("WGEN", "S1WorldGenerationTestbedStageModule: cow.worldgen.capture registration rejected by SimQueryHost");
 }
 
 void S1WorldGenerationTestbedStageModule::UnregisterViewQuery()
