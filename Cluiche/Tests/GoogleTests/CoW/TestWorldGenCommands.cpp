@@ -398,7 +398,7 @@ TEST(WorldGenCommands, QueriesRoundTripWithExpectedShapes)
 	ASSERT_TRUE(h.Start());
 	h.Pump(3);
 
-	const Json::Value params = h.Call("cow.worldgen.params");
+	const Json::Value params = h.Call("cow.worldgen.status");   // shape sliders now live on status (kit task 32a)
 	EXPECT_TRUE(params["success"].asBool());
 	EXPECT_EQ(params["params"].size(), 20u);
 
@@ -454,7 +454,82 @@ TEST(WorldGenCommands, SetChangesTheWorldAndParamsReflectIt)
 	EXPECT_TRUE(r["success"].asBool()) << r.toStyledString();
 	h.Pump(3);
 	EXPECT_EQ(h.Rev(), before + 1);
-	EXPECT_NEAR(h.Call("cow.worldgen.params")["params"]["rivers"].asDouble(), 0.9, 1e-6);
+	EXPECT_NEAR(h.Call("cow.worldgen.status")["params"]["rivers"].asDouble(), 0.9, 1e-6);
+}
+
+TEST(WorldGenCommands, StatusCarriesTheShapeFieldsTheOldParamsQueryReturned)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const Json::Value st = h.Call("cow.worldgen.status");
+	EXPECT_EQ(st["params"].size(), 20u);
+	EXPECT_TRUE(st["ranges"].isMember("rivers"));
+	EXPECT_TRUE(st["effective"].isMember("unresolvedPairs"));
+	EXPECT_TRUE(st["preset"].isString());
+	EXPECT_TRUE(st["modified"].isBool());
+	EXPECT_TRUE(st.isMember("maxRetryAttempts"));
+	// The existing status fields are kept.
+	EXPECT_EQ(st["state"].asString(), "Complete");
+	EXPECT_TRUE(st["dimensions"].isObject());
+}
+
+TEST(WorldGenCommands, ParamsIsTheParameterFileCommandWithGetAndList)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	Json::Value la(Json::objectValue); la["action"] = "list";
+	const Json::Value list = h.Call("cow.worldgen.params", la);
+	ASSERT_TRUE(list["success"].asBool()) << list.toStyledString();
+	ASSERT_TRUE(list["params"].isArray());
+	ASSERT_GT(list["params"].size(), 0u);
+	const Json::Value& first = list["params"][0u];
+	EXPECT_TRUE(first.isMember("key"));
+	EXPECT_TRUE(first.isMember("value"));
+	EXPECT_TRUE(first.isMember("default"));
+	EXPECT_EQ(first["source"].asString(), "default");
+	EXPECT_FALSE(list.isMember("ranges")) << "the old params reply shape is gone";
+
+	Json::Value ga(Json::objectValue); ga["action"] = "get"; ga["key"] = first["key"].asString();
+	const Json::Value got = h.Call("cow.worldgen.params", ga);
+	EXPECT_TRUE(got["success"].asBool()) << got.toStyledString();
+	EXPECT_EQ(got["key"].asString(), first["key"].asString());
+
+	Json::Value bad(Json::objectValue); bad["action"] = "get"; bad["key"] = "no.such.key";
+	const Json::Value err = h.Call("cow.worldgen.params", bad);
+	EXPECT_FALSE(err["success"].asBool());
+}
+
+TEST(WorldGenCommands, ParamsSetIsQueuedAndAppliedAtTheNextRegenerate)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const uint32_t rev = h.Rev();
+
+	Json::Value la(Json::objectValue); la["action"] = "list";
+	const Json::Value list = h.Call("cow.worldgen.params", la);
+	ASSERT_GT(list["params"].size(), 0u);
+	const Json::Value& first = list["params"][0u];
+	const std::string key = first["key"].asString();
+
+	Json::Value sa(Json::objectValue);
+	sa["action"] = "set"; sa["key"] = key; sa["value"] = first["default"];
+	const Json::Value sr = h.Call("cow.worldgen.params", sa);
+	ASSERT_TRUE(sr["success"].asBool()) << sr.toStyledString();
+	EXPECT_TRUE(sr["queued"].asBool());
+	EXPECT_EQ(sr["effectiveDay"].asUInt(), rev + 1) << "effectiveDay is the next world revision";
+
+	Json::Value ga(Json::objectValue); ga["action"] = "get"; ga["key"] = key;
+	h.Pump(2);
+	EXPECT_EQ(h.Call("cow.worldgen.params", ga)["source"].asString(), "default") << "not applied before a generate";
+
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	EXPECT_EQ(h.Rev(), rev + 1);
+	EXPECT_EQ(h.Call("cow.worldgen.params", ga)["source"].asString(), "set");
 }
 
 TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)
@@ -470,7 +545,7 @@ TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)
 	EXPECT_EQ(r["clamped"].size(), 0u);
 	h.Pump(3);
 	EXPECT_EQ(h.Rev(), before + 1);
-	const Json::Value p = h.Call("cow.worldgen.params");
+	const Json::Value p = h.Call("cow.worldgen.status");
 	EXPECT_NEAR(p["params"]["moistureOffset"].asDouble(), 0.2, 1e-6);
 	EXPECT_NEAR(p["ranges"]["moistureOffset"]["max"].asDouble(), 0.3, 1e-6);
 	EXPECT_TRUE(p["ranges"].isMember("temperatureOffset"));
@@ -481,7 +556,7 @@ TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)
 	ASSERT_EQ(rb["clamped"].size(), 1u) << rb.toStyledString();
 	EXPECT_EQ(rb["clamped"][0].asString(), "moistureOffset");
 	h.Pump(3);
-	EXPECT_NEAR(h.Call("cow.worldgen.params")["params"]["moistureOffset"].asDouble(), 0.3, 1e-6);
+	EXPECT_NEAR(h.Call("cow.worldgen.status")["params"]["moistureOffset"].asDouble(), 0.3, 1e-6);
 }
 
 TEST(WorldGenCommands, BiomeLayersTimingsCountsAndCellRoundTrip)
@@ -594,7 +669,7 @@ TEST(WorldGenCommands, PresetLoadAndSaveRoundTrip)
 	EXPECT_TRUE(lr["success"].asBool()) << lr.toStyledString();
 	h.Pump(3);
 	EXPECT_EQ(h.Rev(), before + 1);
-	EXPECT_EQ(h.Call("cow.worldgen.params")["preset"].asString(), "archipelago");
+	EXPECT_EQ(h.Call("cow.worldgen.status")["preset"].asString(), "archipelago");
 
 	Json::Value save(Json::objectValue);
 	save["id"] = "wg_cmd_test"; save["displayName"] = "WG Cmd Test"; save["description"] = "temp";
@@ -849,7 +924,7 @@ TEST(WorldGenCommands, ParamsEffectiveAndStatusReportRegionLimitsAndFreshness)
 	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
 	h.Pump(3);
 
-	const Json::Value eff = h.Call("cow.worldgen.params")["effective"];
+	const Json::Value eff = h.Call("cow.worldgen.status")["effective"];
 	ASSERT_TRUE(eff["corridorLimited"].isArray());
 	EXPECT_EQ(eff["corridorLimited"].size(), 2u);
 	EXPECT_TRUE(eff["nodeLimited"].isBool());
@@ -993,7 +1068,7 @@ TEST(WorldGenCommands, ExportThenImportRestoresTheWorldAndOpensLocked)
 	EXPECT_EQ(status["seed"].asUInt64(), 4242u);
 	h.Pump(4);
 	EXPECT_EQ(h.Call("cow.worldgen.status")["revision"].asUInt(), status["revision"].asUInt()) << "an imported world is not regenerated away";
-	EXPECT_TRUE(h.Call("cow.worldgen.params")["locked"].asBool());
+	EXPECT_TRUE(h.Call("cow.worldgen.status")["locked"].asBool());
 }
 
 TEST(WorldGenCommands, LockedImportRefusesActionsUntilUnlockedThroughTheCommands)

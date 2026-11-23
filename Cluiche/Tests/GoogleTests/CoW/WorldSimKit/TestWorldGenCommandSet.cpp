@@ -31,7 +31,7 @@ const Expected kExpected[] = {
     { "cow.worldgen.import", EntryKind::kCommand },
     { "cow.worldgen.validate", EntryKind::kCommand },
     { "cow.worldgen.worlds", EntryKind::kQuery },
-    { "cow.worldgen.params", EntryKind::kQuery },
+    { "cow.worldgen.params", EntryKind::kCommand },
     { "cow.worldgen.status", EntryKind::kQuery },
     { "cow.worldgen.presets", EntryKind::kQuery },
     { "cow.worldgen.layers", EntryKind::kQuery },

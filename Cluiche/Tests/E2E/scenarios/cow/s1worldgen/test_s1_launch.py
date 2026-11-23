@@ -33,7 +33,7 @@ def test_s1_stage_launches_and_world_generation_completes(dia_client):
     assert status["state"] == "Complete", status
     assert status["revision"] >= 1, status
 
-    params = c.send_command("cow.worldgen.params")
+    params = c.send_command("cow.worldgen.status")   # shape sliders live on status (kit task 32a)
     assert "error" not in params, params
 
     c.abort_stage()

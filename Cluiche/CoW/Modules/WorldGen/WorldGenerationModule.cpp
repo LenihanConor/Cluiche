@@ -3,6 +3,7 @@
 #include <DraoiHexWorld/BiomeFieldContribution.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/CoWNodeKinds.h>
+#include <Shared/Debug/ParamCommandHelper.h>
 #include <Shared/CoWStepSeedNames.h>
 #include <DraoiHexWorldTerrain/BiomeClassify.h>
 #include <DraoiHexWorldTerrain/GuaranteeSpec.h>
@@ -32,6 +33,7 @@ const Dia::Core::StringCRC WorldGenerationModule::kTypeId("WorldGenerationModule
 WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanceId)
     : SimModule(instanceId)
 {
+    CreateParamHelper();
     mSession.SetSiteRegistry(&mSiteRegistry);
     mSession.SetStrataAssignerRegistry(&mStrataAssigners);
     mSiteRegistry.SetNodeKinds(WorldGeneration::CoWNodeKindIds());   // CoW's saved built-in node kind ids
@@ -94,7 +96,11 @@ void WorldGenerationModule::LoadRulesSidecar()
     }
 
     Dia::Attribute::ParamError err;
-    if (!mSession.LoadRules(text.c_str(), err))
+    if (mSession.LoadRules(text.c_str(), err))
+    {
+        BuildParamHelper(text);
+    }
+    else
     {
         mRulesErrorKey = err.key.AsCStr();
         if (mRulesErrorKey.empty())
@@ -103,6 +109,50 @@ void WorldGenerationModule::LoadRulesSidecar()
         DIA_LOG_ERROR("WGEN", "WorldGenerationModule: terrain rules sidecar failed at key '%s': %s; generation is refused",
                       mRulesErrorKey.c_str(), mRulesErrorReason.c_str());
     }
+}
+
+void WorldGenerationModule::BuildParamHelper(const std::string& sidecarText)
+{
+    // The helper and the (still empty) file exist from construction so the command registers before the rules load.
+    mParamSidecarText = sidecarText;
+    Dia::Attribute::ParamError err;
+    if (!mParamFile->Load(sidecarText.c_str(), "terrain_rules.schema.json", nullptr, err))
+        DIA_LOG_ERROR("WGEN", "WorldGenerationModule: params file failed at key '%s': %s", err.key.AsCStr(), err.reason.AsCStr());
+}
+
+void WorldGenerationModule::CreateParamHelper()
+{
+    mParamFile.reset(new Dia::Attribute::ParameterFile());
+    mPendingParams.reset(new std::vector<Debug::ParamMutation>());
+    mParamHelper.reset(new Debug::ParamCommandHelper(World::kWorldgen, *mParamFile));
+    mParamHelper->SetMutationEnqueue([this](const Debug::ParamMutation& m)
+    {
+        if (mPendingParams->size() >= kMaxPendingParams)
+            return false;
+        mPendingParams->push_back(m);
+        return true;
+    });
+    mParamHelper->SetDayProvider([this]()
+    {
+        Debug::ParamDayInfo d;
+        d.effectiveDay = mSession.Revision() + 1;   // the revision the next generate produces
+        d.deferLag = 0;
+        return d;
+    });
+}
+
+void WorldGenerationModule::ApplyPendingParams()
+{
+    if (mPendingParams->empty())
+        return;
+    for (const Debug::ParamMutation& m : *mPendingParams)
+    {
+        if (!mParamHelper->ApplyMutation(m))
+            DIA_LOG_WARNING("WGEN", "WorldGenerationModule: queued params change for '%s' was refused", m.key);
+    }
+    DIA_LOG_INFO("WGEN", "WorldGenerationModule: applied %u queued params change(s) for revision %u",
+                 static_cast<unsigned>(mPendingParams->size()), mSession.Revision() + 1);
+    mPendingParams->clear();
 }
 
 void WorldGenerationModule::ReportRulesFailure()
@@ -640,6 +690,8 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
         return;
     }
 
+    if (mSession.IsDirty() && !mSession.IsGenerating())
+        ApplyPendingParams();
     const bool worldChanged = mSession.Tick(*stream);
 #ifdef DIA_DEBUG
     // Keep the shared grid in step with the world's dimensions unless a registrant drives rebuilds itself. Also builds
@@ -1040,10 +1092,25 @@ bool WorldGenerationModule::RegisterCommandsOn(Debug::ISimCommandHost& host)
 
     registerOne(false, "cow.worldgen.worlds", "List the saved worlds: the out and deployed worlds directories merged (out wins on a name clash)", nullptr, 0,
                 [s](const Json::Value&) { return s->Worlds(); });
-    registerOne(false, "cow.worldgen.params", "Current world shape parameters, seed and size", nullptr, 0,
-                [s](const Json::Value&) { return s->Params(); });
-    registerOne(false, "cow.worldgen.status", "Generation state, revision, seed, dimensions and last generation time", nullptr, 0,
-                [s](const Json::Value&) { return s->Status(); });
+    {
+        SimCommandEntry& e = entries[entryCount++];
+        e = mParamHelper->BuildEntry();
+        e.help.category = "worldgen";
+        e.help.owner = "WorldGenerationModule";
+    }
+    registerOne(false, "cow.worldgen.status", "Generation state, revision, seed, size and dimensions, plus the world shape parameters (params, ranges, effective, preset)", nullptr, 0,
+                [s](const Json::Value&)
+                {
+                    // Status first (its fields win), then the shape fields the old params query carried.
+                    Json::Value r = s->Status();
+                    const Json::Value p = s->Params();
+                    for (const std::string& k : p.getMemberNames())
+                    {
+                        if (!r.isMember(k))
+                            r[k] = p[k];
+                    }
+                    return r;
+                });
     registerOne(false, "cow.worldgen.presets", "List the available shape presets", nullptr, 0,
                 [s](const Json::Value&)
                 {

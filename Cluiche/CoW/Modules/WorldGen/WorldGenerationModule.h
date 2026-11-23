@@ -19,7 +19,10 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
+namespace Dia { namespace Attribute { class ParameterFile; } }
+namespace CoW { namespace Debug { class ParamCommandHelper; struct ParamMutation; } }
 namespace Draoi { namespace HexWorld { class BiomeRegistry; class BiomeFieldSource; } }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
 
 namespace CoW {
@@ -275,6 +278,19 @@ private:
     bool mCommandsRegistered = false;
     std::unique_ptr<Debug::ISimCommandHost> mHostAdapter;   // declared before the set: outlives its destructor's unregister
     Debug::SimCommandSet mCommandSet;
+
+    // cow.worldgen.params (worldsim-kit task 32): ParamCommandHelper over a module-owned ParameterFile loaded from the
+    // same rules sidecar text the session loaded. S-1 has no Capture, so a `set` waits in mPendingParams and is applied
+    // to the file (helper.ApplyMutation) at the start of the next generation step. effectiveDay reports the next world
+    // revision (Revision() + 1). The session keeps its own copy of the rules; see ApplyPendingParams.
+    static const size_t kMaxPendingParams = 64;
+    void CreateParamHelper();
+    void BuildParamHelper(const std::string& sidecarText);
+    void ApplyPendingParams();
+    std::unique_ptr<Dia::Attribute::ParameterFile> mParamFile;
+    std::unique_ptr<Debug::ParamCommandHelper> mParamHelper;
+    std::unique_ptr<std::vector<Debug::ParamMutation>> mPendingParams;
+    std::string mParamSidecarText;
 
     WorldGenerationHealthReporter mHealth;
     bool mHealthRegistered = false;
