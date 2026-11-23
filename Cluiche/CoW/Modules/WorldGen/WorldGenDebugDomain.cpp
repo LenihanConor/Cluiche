@@ -3,6 +3,7 @@
 
 #include "Modules/WorldGen/WorldGenerationModule.h"
 #include <DraoiHexWorldTerrain/WorldFiles.h>
+#include <DraoiHexWorldTerrain/WorldLayerSource.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Perf/PerfMarkers.h>
 #include <DiaVisualDebugger/Domain/DebugGroupAccents.h>
@@ -102,7 +103,7 @@ namespace {
     }
 
     const char* const kDefaultMode = "terrain";
-    const char* const kViewDefaultId = "relief";   // the viewer's default base layer, shown to the panel as "terrain"
+    const char* const kViewDefaultId = "worldgen.relief";   // the viewer's default base layer, shown to the panel as "terrain"
 
     int StageIndex(const std::string& name)
     {
@@ -114,6 +115,19 @@ namespace {
             }
         }
         return 0;
+    }
+
+    // "worldgen.terrain_type" -> "Terrain type" (view layer ids; other ids, e.g. "strata.x", keep their prefix)
+    std::string LabelFromLayerId(const std::string& id)
+    {
+        const std::string prefix = Draoi::HexWorld::kWorldLayerIdPrefix;
+        std::string field = id.compare(0, prefix.size(), prefix) == 0 ? id.substr(prefix.size()) : id;
+        for (char& c : field)
+        {
+            if (c == '_') { c = ' '; }
+        }
+        if (!field.empty()) { field[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(field[0]))); }
+        return field;
     }
 
     // "landFraction" -> "Land fraction"
@@ -261,7 +275,7 @@ void WorldGenDebugDomain::RebuildStatic()
             next.modes.append(id);
             Json::Value e(Json::objectValue);
             e["id"] = id;
-            e["label"] = LabelFromKey(id);
+            e["label"] = LabelFromLayerId(id);
             e["group"] = group;
             others.append(e);
         });

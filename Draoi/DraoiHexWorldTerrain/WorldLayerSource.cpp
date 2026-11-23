@@ -113,7 +113,7 @@ namespace
 
     constexpr uint32_t kLakeIdValues = 13;   // none + lake ids 1..12 (shape.lakes max 12)
 
-    // schemaKey is built at first use (see Table()); the table stores the id and group only.
+    // id ("worldgen.<field>") and schemaKey ("<for>/<field>") are built at first use (see Table()); rows store the snake_case field.
     struct Row { const char* id; const char* group; WorldLayerKind kind; uint32_t categories; WorldLayerReadFn read; bool defaultBase; };
 
     const Row kRows[] =
@@ -122,39 +122,39 @@ namespace
         { "relief",           "Terrain",  WorldLayerKind::Float,    0, ReadElevation,        true  },
         { "elevation",        "Terrain",  WorldLayerKind::Float,    0, ReadElevation,        false },
         { "latitude",         "Terrain",  WorldLayerKind::Float,    0, ReadLatitude,         false },
-        { "coastDistance",    "Landmass", WorldLayerKind::Float,    0, ReadCoastDistance,    false },
-        { "landPotential",    "Landmass", WorldLayerKind::Float,    0, ReadLandPotential,    false },
-        { "islandPotential",  "Landmass", WorldLayerKind::Float,    0, ReadIslandPotential,  false },
+        { "coast_distance",    "Landmass", WorldLayerKind::Float,    0, ReadCoastDistance,    false },
+        { "land_potential",    "Landmass", WorldLayerKind::Float,    0, ReadLandPotential,    false },
+        { "island_potential",  "Landmass", WorldLayerKind::Float,    0, ReadIslandPotential,  false },
         { "landmass",         "Landmass", WorldLayerKind::Float,    0, ReadLandmass,         false },
-        { "ridgeMask",        "Mountains", WorldLayerKind::Float,   0, ReadRidgeMask,        false },
-        { "barrierMask",      "Mountains", WorldLayerKind::Float,   0, ReadBarrierMask,      false },
-        { "elevationRaw",     "Terrain",  WorldLayerKind::Float,    0, ReadElevationRaw,     false },
-        { "filledElevation",  "Water",    WorldLayerKind::Float,    0, ReadFilledElevation,  false },
-        { "basinDepth",       "Water",    WorldLayerKind::Float,    0, ReadBasinDepth,       false },
-        { "flowAccumulation", "Water",    WorldLayerKind::Float,    0, ReadFlowAccumulation, false },
-        { "valleyCarve",      "Water",    WorldLayerKind::Float,    0, ReadValleyCarve,      false },
+        { "ridge_mask",        "Mountains", WorldLayerKind::Float,   0, ReadRidgeMask,        false },
+        { "barrier_mask",      "Mountains", WorldLayerKind::Float,   0, ReadBarrierMask,      false },
+        { "elevation_raw",     "Terrain",  WorldLayerKind::Float,    0, ReadElevationRaw,     false },
+        { "filled_elevation",  "Water",    WorldLayerKind::Float,    0, ReadFilledElevation,  false },
+        { "basin_depth",       "Water",    WorldLayerKind::Float,    0, ReadBasinDepth,       false },
+        { "flow_accumulation", "Water",    WorldLayerKind::Float,    0, ReadFlowAccumulation, false },
+        { "valley_carve",      "Water",    WorldLayerKind::Float,    0, ReadValleyCarve,      false },
         { "slope",            "Terrain",  WorldLayerKind::Float,    0, ReadSlope,            false },
-        { "oceanDepth",       "Water",    WorldLayerKind::Float,    0, ReadOceanDepth,       false },
-        { "zoneCost",         "Zones",    WorldLayerKind::Float,    0, ReadZoneCost,         false },
+        { "ocean_depth",       "Water",    WorldLayerKind::Float,    0, ReadOceanDepth,       false },
+        { "zone_cost",         "Zones",    WorldLayerKind::Float,    0, ReadZoneCost,         false },
         // Categories
-        { "terrainType",      "Terrain",  WorldLayerKind::Category, static_cast<uint32_t>(TerrainType::Count), ReadTerrainType, false },
-        { "waterSource",      "Water",    WorldLayerKind::Category, 4,  ReadWaterSource,     false },
+        { "terrain_type",      "Terrain",  WorldLayerKind::Category, static_cast<uint32_t>(TerrainType::Count), ReadTerrainType, false },
+        { "water_source",      "Water",    WorldLayerKind::Category, 4,  ReadWaterSource,     false },
         { "stratum",        "Zones",    WorldLayerKind::Category, 4,  ReadStratum,       false },
-        { "flowDirection",    "Water",    WorldLayerKind::Category, 7,  ReadFlowDirection,   false },
-        { "riverMask",        "Water",    WorldLayerKind::Category, 2,  ReadRiverMask,       false },
-        { "lakeMask",         "Water",    WorldLayerKind::Category, kLakeIdValues, ReadLakeMask, false },
-        { "passMask",         "Mountains", WorldLayerKind::Category, 2, ReadPassMask,        false },
+        { "flow_direction",    "Water",    WorldLayerKind::Category, 7,  ReadFlowDirection,   false },
+        { "river_mask",        "Water",    WorldLayerKind::Category, 2,  ReadRiverMask,       false },
+        { "lake_mask",         "Water",    WorldLayerKind::Category, kLakeIdValues, ReadLakeMask, false },
+        { "pass_mask",         "Mountains", WorldLayerKind::Category, 2, ReadPassMask,        false },
         { "volcanic",         "Mountains", WorldLayerKind::Category, 2, ReadVolcanic,        false },
         // Climate and biomes (stages 12-14)
         { "temperature",      "Climate",  WorldLayerKind::Float,    0, ReadTemperature,      false },
         { "moisture",         "Climate",  WorldLayerKind::Float,    0, ReadMoisture,         false },
-        { "waterDistance",    "Climate",  WorldLayerKind::Float,    0, ReadWaterDistance,    false },
-        { "airMoisture",      "Climate",  WorldLayerKind::Float,    0, ReadAirMoisture,      false },
-        { "rainOut",          "Climate",  WorldLayerKind::Float,    0, ReadRainOut,          false },
-        { "biomeScore",       "Biomes",   WorldLayerKind::Float,    0, ReadBiomeScore,       false },
-        { "biomePin",         "Biomes",   WorldLayerKind::Category, 5, ReadBiomePin,         false },
-        { "biomeIndex",       "Biomes",   WorldLayerKind::Category, kCategoriesFromBiomeRegistry, ReadBiomeIndex, false },
-        { "fixupChanges",     "Biomes",   WorldLayerKind::Category, 3, ReadFixupChanges,     false },
+        { "water_distance",    "Climate",  WorldLayerKind::Float,    0, ReadWaterDistance,    false },
+        { "air_moisture",      "Climate",  WorldLayerKind::Float,    0, ReadAirMoisture,      false },
+        { "rain_out",          "Climate",  WorldLayerKind::Float,    0, ReadRainOut,          false },
+        { "biome_score",       "Biomes",   WorldLayerKind::Float,    0, ReadBiomeScore,       false },
+        { "biome_pin",         "Biomes",   WorldLayerKind::Category, 5, ReadBiomePin,         false },
+        { "biome_index",       "Biomes",   WorldLayerKind::Category, kCategoriesFromBiomeRegistry, ReadBiomeIndex, false },
+        { "fixup_changes",     "Biomes",   WorldLayerKind::Category, 3, ReadFixupChanges,     false },
         // Regions (placement pass; empty until a Regenerate)
         { "regions",          "Regions",  WorldLayerKind::Category, kRegionPaletteSlots, ReadRegions, false },
     };
@@ -165,13 +165,15 @@ namespace
     {
         WorldLayerDesc descs[kRowCount];
         char           keys[kRowCount][64];
+        char           ids[kRowCount][64];
         Table()
         {
             for (uint32_t i = 0; i < kRowCount; ++i)
             {
                 const Row& r = kRows[i];
+                std::snprintf(ids[i], sizeof(ids[i]), "%s%s", kWorldLayerIdPrefix, r.id);
                 std::snprintf(keys[i], sizeof(keys[i]), "%s/%s", kWorldLayerSchemaFor, r.id);
-                descs[i] = { r.id, keys[i], r.group, r.kind, r.categories, r.read, r.defaultBase };
+                descs[i] = { ids[i], keys[i], r.group, r.kind, r.categories, r.read, r.defaultBase };
             }
         }
     };

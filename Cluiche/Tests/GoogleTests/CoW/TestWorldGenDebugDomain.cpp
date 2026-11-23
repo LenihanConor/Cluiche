@@ -596,15 +596,15 @@ namespace
             ++modeCalls;
             lastMode = id;
             std::string s = id;
-            if (s == "terrain") s = "relief";
-            for (const char* m : { "relief", "elevation", "water" }) { if (s == m) { mode = s; return true; } }
+            if (s == "terrain") s = "worldgen.relief";
+            for (const char* m : { "worldgen.relief", "worldgen.elevation", "worldgen.water" }) { if (s == m) { mode = s; return true; } }
             return false;
         }
         const char* GetColourMode() override { return mode.c_str(); }
-        void ListColourModes(const std::function<void(const char*)>& fn) override { for (const char* m : { "relief", "elevation", "water" }) fn(m); }
+        void ListColourModes(const std::function<void(const char*)>& fn) override { for (const char* m : { "worldgen.relief", "worldgen.elevation", "worldgen.water" }) fn(m); }
         void ListColourGroups(const std::function<void(const char*, const char*)>& fn) override
         {
-            fn("relief", "Terrain"); fn("elevation", "Terrain"); fn("water", "Water");
+            fn("worldgen.relief", "Terrain"); fn("worldgen.elevation", "Terrain"); fn("worldgen.water", "Water");
         }
         bool SetOverlayEnabled(const char* id, bool enabled) override
         {
@@ -634,7 +634,7 @@ namespace
         int selectCalls = 0, clearCalls = 0, modeCalls = 0, overlayCalls = 0;
         bool hasSel = false;
         int selX = 0, selY = 0;
-        std::string mode = "relief", lastMode, lastOverlay;
+        std::string mode = "worldgen.relief", lastMode, lastOverlay;
         bool rivers = true, neighbours = true, lastOverlayEnabled = false;
         Json::Value legend{ Json::nullValue };
     };
@@ -657,9 +657,9 @@ TEST(WorldGenDebugDomainView, CommandsForwardToTheView)
     EXPECT_EQ(f.view.selX, 3);
     EXPECT_EQ(f.view.selY, 4);
 
-    f.Cmd("setColourMode", Obj("mode", "elevation"));
+    f.Cmd("setColourMode", Obj("mode", "worldgen.elevation"));
     EXPECT_EQ(f.view.modeCalls, 1);
-    EXPECT_EQ(f.view.mode, "elevation");
+    EXPECT_EQ(f.view.mode, "worldgen.elevation");
 
     f.Cmd("toggle", Obj("drawer", "rivers"));
     EXPECT_EQ(f.view.lastOverlay, "rivers");
@@ -677,11 +677,11 @@ TEST(WorldGenDebugDomainView, ColourModeReportsReliefAsTerrainAndAcceptsTerrain)
 {
     ViewFixture f;
     EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
-    f.Cmd("setColourMode", Obj("mode", "elevation"));
-    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "elevation");
+    f.Cmd("setColourMode", Obj("mode", "worldgen.elevation"));
+    EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "worldgen.elevation");
     f.Cmd("setColourMode", Obj("mode", "terrain"));
     EXPECT_EQ(f.view.lastMode, "terrain");
-    EXPECT_EQ(f.view.mode, "relief");
+    EXPECT_EQ(f.view.mode, "worldgen.relief");
     EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
 }
 
@@ -689,7 +689,7 @@ TEST(WorldGenDebugDomainView, UnknownModeIsIgnored)
 {
     ViewFixture f;
     f.Cmd("setColourMode", Obj("mode", "notALayer"));
-    EXPECT_EQ(f.view.mode, "relief");
+    EXPECT_EQ(f.view.mode, "worldgen.relief");
     f.Cmd("setColourMode", Json::Value());
     f.Cmd("setColourMode", Obj("mode", 5));
     EXPECT_EQ(f.State()["view"]["colourMode"].asString(), "terrain");
@@ -707,8 +707,8 @@ TEST(WorldGenDebugDomainView, ViewModesDrawersAndLegendShape)
 
     ASSERT_EQ(st["view"]["modes"].size(), 3u);
     EXPECT_EQ(st["view"]["modes"][0u].asString(), "terrain");
-    EXPECT_EQ(st["view"]["modes"][1u].asString(), "elevation");
-    EXPECT_EQ(st["view"]["modes"][2u].asString(), "water");
+    EXPECT_EQ(st["view"]["modes"][1u].asString(), "worldgen.elevation");
+    EXPECT_EQ(st["view"]["modes"][2u].asString(), "worldgen.water");
 
     const Json::Value& d = st["view"]["drawers"];
     ASSERT_EQ(d.size(), 4u);
@@ -932,9 +932,9 @@ TEST(WorldGenDebugDomainView, FullFrameCarriesGroupedLayers)
     EXPECT_EQ(layers[0u]["id"].asString(), "terrain");
     EXPECT_EQ(layers[0u]["label"].asString(), "Relief");
     EXPECT_EQ(layers[0u]["group"].asString(), "Terrain");
-    EXPECT_EQ(layers[1u]["id"].asString(), "elevation");
+    EXPECT_EQ(layers[1u]["id"].asString(), "worldgen.elevation");
     EXPECT_EQ(layers[1u]["label"].asString(), "Elevation");
-    EXPECT_EQ(layers[2u]["id"].asString(), "water");
+    EXPECT_EQ(layers[2u]["id"].asString(), "worldgen.water");
     EXPECT_EQ(layers[2u]["label"].asString(), "Water");
     EXPECT_EQ(layers[2u]["group"].asString(), "Water");
 }

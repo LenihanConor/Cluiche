@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
 #include <cstring>
 #include <exception>
 #include <filesystem>
@@ -1043,6 +1044,26 @@ Json::Value WorldGenSession::Params() const
     return r;
 }
 
+namespace
+{
+    // "worldgen.flow_accumulation" -> "flowAccumulation" (TerrainLayers' generator layer naming).
+    std::string GeneratorLayerName(const char* layerId)
+    {
+        const std::string prefix = kWorldLayerIdPrefix;
+        std::string field = layerId;
+        if (field.compare(0, prefix.size(), prefix) == 0) { field.erase(0, prefix.size()); }
+        std::string out;
+        bool upperNext = false;
+        for (const char c : field)
+        {
+            if (c == '_') { upperNext = true; continue; }
+            out += upperNext ? static_cast<char>(std::toupper(static_cast<unsigned char>(c))) : c;
+            upperNext = false;
+        }
+        return out;
+    }
+}
+
 Json::Value WorldGenSession::UnavailableLayers() const
 {
     // The generator layers ImportLayers rebuilds from the cells; every other generator layer (intermediate fields,
@@ -1056,21 +1077,23 @@ Json::Value WorldGenSession::UnavailableLayers() const
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
     {
         const char* id = WorldLayerSource::At(i).id;
+        // The generator layer name is the id without the "worldgen." prefix, camelCase (TerrainLayers' own naming).
+        const std::string genName = GeneratorLayerName(id);
         bool unavailable = !mHasGenerated;
-        if (!unavailable && std::strcmp(id, "regions") == 0)
+        if (!unavailable && std::strcmp(id, "worldgen.regions") == 0)
         {
             unavailable = !mRegionsFresh;
         }
-        else if (!unavailable && std::strcmp(id, "relief") != 0)
+        else if (!unavailable && std::strcmp(id, "worldgen.relief") != 0)
         {
-            const int index = layers.FindLayer(id);
+            const int index = layers.FindLayer(genName.c_str());
             if (index >= 0)
             {
                 unavailable = layers.GetFloat(index) == nullptr && layers.GetUInt(index) == nullptr;
                 if (!unavailable && mImported)
                 {
                     bool derivable = false;
-                    for (const char* d : kDerivable) { derivable = derivable || std::strcmp(d, id) == 0; }
+                    for (const char* d : kDerivable) { derivable = derivable || std::strcmp(d, genName.c_str()) == 0; }
                     unavailable = !derivable;
                 }
             }

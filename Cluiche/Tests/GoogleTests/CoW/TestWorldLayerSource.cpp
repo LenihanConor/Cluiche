@@ -2,6 +2,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <gtest/gtest.h>
 #include <DraoiHexWorldTerrain/WorldLayerSource.h>
+#include <cctype>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
 #include <algorithm>
@@ -38,8 +39,24 @@ std::vector<float> Read(const WorldLayerDesc& d, const WorldGenSession& s, uint3
 }
 
 // Expected value of layer 'id' at cell i, computed independently of the readers.
-float Expected(const WorldGenSession& s, const std::string& id, uint32_t i)
+// "worldgen.flow_accumulation" -> "flowAccumulation" (the generator layer name).
+std::string GeneratorName(const std::string& layerId)
 {
+    std::string field = layerId.substr(std::string(kWorldLayerIdPrefix).size());
+    std::string out;
+    bool up = false;
+    for (char c : field)
+    {
+        if (c == '_') { up = true; continue; }
+        out += up ? static_cast<char>(std::toupper(static_cast<unsigned char>(c))) : c;
+        up = false;
+    }
+    return out;
+}
+
+float Expected(const WorldGenSession& s, const std::string& layerId, uint32_t i)
+{
+    const std::string id = GeneratorName(layerId);
     const TerrainLayers& L = s.Generator().GetLayers();
     const Cell& c = s.World().Cells()[i];
     if (id == "relief") return L.GetFloat(L.FindLayer("elevation"))[i];
@@ -65,7 +82,7 @@ TEST(WorldLayerSource, DescriptorIdsAreUniqueAndFindable)
         EXPECT_TRUE(ids.insert(d.id).second) << d.id;
         EXPECT_TRUE(keys.insert(d.schemaKey).second) << d.schemaKey;
         EXPECT_EQ(WorldLayerSource::Find(d.id), &d);
-        EXPECT_EQ(std::string(d.schemaKey), std::string(kWorldLayerSchemaFor) + "/" + d.id);
+        EXPECT_EQ(std::string(d.schemaKey), std::string(kWorldLayerSchemaFor) + "/" + (d.id + std::string(kWorldLayerIdPrefix).size()));
         EXPECT_NE(d.read, nullptr);
         if (d.kind == WorldLayerKind::Category) EXPECT_GE(WorldLayerSource::CategoryCount(d, Draoi::HexWorld::Testing::ShippedBiomeRegistry()), 2u) << d.id;
         else EXPECT_EQ(d.categoryCount, 0u) << d.id;
@@ -78,7 +95,7 @@ TEST(WorldLayerSource, ExactlyOneDefaultBaseIsRelief)
 {
     int n = 0;
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
-        if (WorldLayerSource::At(i).defaultBase) { ++n; EXPECT_STREQ(WorldLayerSource::At(i).id, "relief"); }
+        if (WorldLayerSource::At(i).defaultBase) { ++n; EXPECT_STREQ(WorldLayerSource::At(i).id, "worldgen.relief"); }
     EXPECT_EQ(n, 1);
 }
 
@@ -146,7 +163,7 @@ TEST(WorldLayerSource, BufferLargerThanWorldIsZeroPadded)
     TestSession s;
     Generate(s, 5);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
-    const WorldLayerDesc* d = WorldLayerSource::Find("elevation");
+    const WorldLayerDesc* d = WorldLayerSource::Find("worldgen.elevation");
     ASSERT_NE(d, nullptr);
     const std::vector<float> out = Read(*d, s, n + 10);
     for (uint32_t i = n; i < n + 10; ++i)
@@ -174,7 +191,7 @@ TEST(WorldLayerSource, LargeReadAllLayersTiming)
 
 TEST(WorldLayerSource, RegionLayerIsCategoricalWithA64SlotPalette)
 {
-    const WorldLayerDesc* d = WorldLayerSource::Find("regions");
+    const WorldLayerDesc* d = WorldLayerSource::Find("worldgen.regions");
     ASSERT_NE(d, nullptr);
     EXPECT_EQ(d->kind, WorldLayerKind::Category);
     EXPECT_EQ(d->categoryCount, kRegionPaletteSlots);
@@ -197,7 +214,7 @@ TEST(WorldLayerSource, RegionLayerReadsFreshRegionsAndIsZeroAfterLivePreview)
     TestSession s;
     Generate(s, 4321);
     ASSERT_TRUE(s.RegionsFresh());
-    const WorldLayerDesc* d = WorldLayerSource::Find("regions");
+    const WorldLayerDesc* d = WorldLayerSource::Find("worldgen.regions");
     ASSERT_NE(d, nullptr);
     const uint32_t n = static_cast<uint32_t>(s.World().CellCount());
     std::set<float> seen;

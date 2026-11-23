@@ -26,10 +26,10 @@ public:
     // First selected cell (row-major order); false when nothing is selected.
     virtual bool GetSelection(int& x, int& y) = 0;
 
-    // Active base layer id. "terrain" is accepted as an alias of the default base layer ("relief").
+    // Active base layer id. "terrain" is accepted as an alias of the default base layer ("worldgen.relief").
     // False (and no change) for an unknown id.
     virtual bool SetColourMode(const char* id) = 0;
-    // Active base layer id as registered ("relief", "elevation", ...). Never null.
+    // Active base layer id as registered ("worldgen.relief", "worldgen.elevation", ...). Never null.
     virtual const char* GetColourMode() = 0;
     // Calls back once per colour mode (every registered base layer id), in registration order.
     virtual void ListColourModes(const std::function<void(const char* id)>& fn) = 0;

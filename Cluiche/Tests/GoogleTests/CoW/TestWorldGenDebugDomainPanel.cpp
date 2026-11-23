@@ -641,7 +641,7 @@ TEST(WorldGenDebugDomainPanel, ViewReportsUnavailableLayersBeforeAWorldAndAfterA
     ASSERT_TRUE(f.S().IsImported());
     const Json::Value imported = f.State()["view"]["unavailableLayers"];
     bool hasTemperature = false, hasElevation = false;
-    for (const Json::Value& v : imported) { hasTemperature |= v.asString() == "temperature"; hasElevation |= v.asString() == "elevation"; }
+    for (const Json::Value& v : imported) { hasTemperature |= v.asString() == "worldgen.temperature"; hasElevation |= v.asString() == "worldgen.elevation"; }
     EXPECT_TRUE(hasTemperature);    // intermediate climate field: not derivable from a file
     EXPECT_FALSE(hasElevation);     // rebuilt from the cells
 }

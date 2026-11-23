@@ -352,13 +352,13 @@ TEST_F(WorldGenSessionValidateTest, StatusUnavailableLayersTracksWhatTheWorldHas
     // Nothing generated yet: every layer is unavailable.
     const Json::Value before = s.Status();
     ASSERT_TRUE(before["unavailableLayers"].isArray());
-    EXPECT_TRUE(Contains(before["unavailableLayers"], "elevation"));
+    EXPECT_TRUE(Contains(before["unavailableLayers"], "worldgen.elevation"));
 
     // Live preview: terrain exists, regions do not.
     ASSERT_TRUE(s.Tick(mRng));
     const Json::Value preview = s.Status();
-    EXPECT_TRUE(Contains(preview["unavailableLayers"], "regions"));
-    EXPECT_FALSE(Contains(preview["unavailableLayers"], "elevation"));
+    EXPECT_TRUE(Contains(preview["unavailableLayers"], "worldgen.regions"));
+    EXPECT_FALSE(Contains(preview["unavailableLayers"], "worldgen.elevation"));
 
     // Regenerate: everything has data.
     Generate(s, 21);
@@ -374,10 +374,10 @@ TEST_F(WorldGenSessionValidateTest, StatusUnavailableLayersTracksWhatTheWorldHas
     Json::Value i = Obj(); i["name"] = "imp";
     ASSERT_TRUE(b.ImportWorld(i)["success"].asBool());
     const Json::Value imported = b.Status();
-    EXPECT_TRUE(Contains(imported["unavailableLayers"], "coastDistance"));
-    EXPECT_TRUE(Contains(imported["unavailableLayers"], "temperature"));
-    EXPECT_FALSE(Contains(imported["unavailableLayers"], "elevation"));
-    EXPECT_FALSE(Contains(imported["unavailableLayers"], "regions"));
+    EXPECT_TRUE(Contains(imported["unavailableLayers"], "worldgen.coast_distance"));
+    EXPECT_TRUE(Contains(imported["unavailableLayers"], "worldgen.temperature"));
+    EXPECT_FALSE(Contains(imported["unavailableLayers"], "worldgen.elevation"));
+    EXPECT_FALSE(Contains(imported["unavailableLayers"], "worldgen.regions"));
 }
 
 // ---- injected guarantee spec (generic special sites task 3) ----------------------------------------------------------------

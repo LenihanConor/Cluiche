@@ -38,8 +38,8 @@ constexpr uint32_t kCategoriesFromBiomeRegistry = 0;
 
 struct WorldLayerDesc
 {
-    const char*      id;              // layer id and schema entry key, e.g. "terrainType"
-    const char*      schemaKey;       // full schema key: "<kWorldLayerSchemaFor>/<id>"
+    const char*      id;              // layer id, "worldgen.<snake_case field>", e.g. "worldgen.terrain_type"
+    const char*      schemaKey;       // full schema key: "<kWorldLayerSchemaFor>/<snake_case field>"
     const char*      group;           // viewer picker group
     WorldLayerKind   kind;
     uint32_t         categoryCount;   // enum value count for Category layers, 0 for Float (or kCategoriesFromBiomeRegistry)
@@ -47,7 +47,10 @@ struct WorldLayerDesc
     bool             defaultBase;     // the viewer's default base layer
 };
 
-// Schema file "for" value; the layer schema keys are "<for>/<id>".
+// Layer ids are "<kWorldLayerIdPrefix><field>"; field is snake_case.
+inline constexpr const char* kWorldLayerIdPrefix = "worldgen.";
+
+// Schema file "for" value; the layer schema keys are "<for>/<field>".
 inline constexpr const char* kWorldLayerSchemaFor = "cow.worldgen.layers";
 
 // Extra stratum sets (every set of the stratum table except "depth") are dynamic Category layers: one per set, id

@@ -286,24 +286,24 @@ TEST(WorldGenViewHost, SetColourModeSwitchesActiveBaseAndRejectsUnknownIds)
     ASSERT_TRUE(r.host->Build());
     FakeDebugDraw draw;
     r.Frame(draw);
-    EXPECT_STREQ(r.host->GetColourMode(), "relief");
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.relief");
 
-    EXPECT_TRUE(r.host->SetColourMode("elevation"));
+    EXPECT_TRUE(r.host->SetColourMode("worldgen.elevation"));
     r.Frame(draw);
-    EXPECT_STREQ(r.host->GetColourMode(), "elevation");
-    EXPECT_EQ(r.host->Viewer()->ActiveBase(), Dia::Core::StringCRC("elevation"));
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.elevation");
+    EXPECT_EQ(r.host->Viewer()->ActiveBase(), Dia::Core::StringCRC("worldgen.elevation"));
 
     EXPECT_FALSE(r.host->SetColourMode("nonsense"));
     EXPECT_FALSE(r.host->SetColourMode(nullptr));
     EXPECT_FALSE(r.host->SetColourMode(""));
-    EXPECT_STREQ(r.host->GetColourMode(), "elevation");
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.elevation");
 
     EXPECT_TRUE(r.host->SetColourMode("terrain"));   // alias of the default base
-    EXPECT_STREQ(r.host->GetColourMode(), "relief");
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.relief");
 
-    EXPECT_TRUE(r.host->SetColourMode("terrainType"));
+    EXPECT_TRUE(r.host->SetColourMode("worldgen.terrain_type"));
     r.Frame(draw);
-    EXPECT_STREQ(r.host->GetColourMode(), "terrainType");
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.terrain_type");
 
     uint32_t modes = 0;
     r.host->ListColourModes([&](const char*) { ++modes; });
@@ -348,7 +348,7 @@ TEST(WorldGenViewHost, SizeChangeKeepsInRangeSelectionOrClearsAndLeavesNoDanglin
     ASSERT_TRUE(r.host->Build());
     FakeDebugDraw draw;
     r.Frame(draw);
-    ASSERT_TRUE(r.host->SetColourMode("terrainType"));
+    ASSERT_TRUE(r.host->SetColourMode("worldgen.terrain_type"));
     r.Frame(draw);
     const uint32_t smallCells = r.host->Grid().CellCount();
 
@@ -382,7 +382,7 @@ TEST(WorldGenViewHost, SizeChangeKeepsInRangeSelectionOrClearsAndLeavesNoDanglin
     ASSERT_TRUE(r.host->GetSelection(x, y));
     EXPECT_EQ(x, 10);
     EXPECT_EQ(y, 11);
-    EXPECT_STREQ(r.host->GetColourMode(), "terrainType") << "colour mode survives a rebuild";
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.terrain_type") << "colour mode survives a rebuild";
     EXPECT_EQ(r.host->ReadFailures(), 0u);
     EXPECT_EQ(r.host->LayerVersion(), r.session.Revision()) << "new grid uploaded";
 
@@ -596,7 +596,7 @@ TEST(WorldGenViewHost, BuildFailsCleanlyWithoutRegistry)
     EXPECT_FALSE(host.Build());
     EXPECT_FALSE(host.IsBuilt());
     EXPECT_FALSE(host.SelectCell(0, 0));
-    EXPECT_STREQ(host.GetColourMode(), "relief");
+    EXPECT_STREQ(host.GetColourMode(), "worldgen.relief");
 }
 
 TEST(WorldGenViewHost, FirstUpdateFitsTheCameraAndHomeRefits)
@@ -728,7 +728,7 @@ TEST(WorldGenViewHost, LegendComesFromTheRegisteredSchemaOfTheActiveBase)
     ASSERT_TRUE(r.host->Build());
     FakeDebugDraw draw;
     r.Frame(draw);
-    EXPECT_STREQ(r.host->GetColourMode(), "relief") << "schema default_base wins";
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.relief") << "schema default_base wins";
 
     Json::Value legend;
     r.host->FillLegend(legend);
@@ -740,7 +740,7 @@ TEST(WorldGenViewHost, LegendComesFromTheRegisteredSchemaOfTheActiveBase)
     EXPECT_EQ(legend["stops"][0u]["colour"].asString().size(), 7u);
     EXPECT_EQ(legend["stops"][0u]["colour"].asString()[0], '#');
 
-    ASSERT_TRUE(r.host->SetColourMode("terrainType"));
+    ASSERT_TRUE(r.host->SetColourMode("worldgen.terrain_type"));
     r.Frame(draw);
     r.host->FillLegend(legend);
     ASSERT_TRUE(legend.isArray()) << "category layer: [{label,colour}]";
@@ -752,7 +752,7 @@ TEST(WorldGenViewHost, LegendComesFromTheRegisteredSchemaOfTheActiveBase)
     }
 
     // Both relief and its elevation companion are uploaded; the frame counter still moves once per revision.
-    ASSERT_TRUE(r.host->SetColourMode("relief"));
+    ASSERT_TRUE(r.host->SetColourMode("worldgen.relief"));
     r.Frame(draw);
     const uint32_t uploads = r.host->UploadCount();
     for (int i = 0; i < 50; ++i)
@@ -1728,7 +1728,7 @@ TEST(WorldGenViewHost, DomainViewJsonListsTheNewDrawersWithLabelsAvailabilityAnd
     domain.SetView(nullptr);
 }
 
-TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder12Kb)
+TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStaysUnder13Kb)
 {
     WorldGenerationModule module{ Dia::Core::StringCRC("WorldGenerationModule") };
     module.SetRulesSidecarText(CoW::WorldGeneration::TestSidecarText()); module.LoadRulesSidecar(); module.GetSession().SetBiomeRegistry(&::Draoi::HexWorld::Testing::ShippedBiomeRegistry());
@@ -1770,7 +1770,7 @@ TEST(WorldGenViewHost, CompactDomainStateAtLargeWithRealViewAndFailedReportStays
     std::cout << "[ measured ] compact WorldGen state at Large with real view, failed report: " << bytes << " bytes\n";
     for (const std::string& k : st.getMemberNames()) std::cout << "  [section] " << k << ": " << Json::writeString(b, st[k]).size() << "\n";
     for (const std::string& k : st["view"].getMemberNames()) std::cout << "  [view] " << k << ": " << Json::writeString(b, st["view"][k]).size() << "\n";
-    EXPECT_LT(bytes, 12u * 1024u);
+    EXPECT_LT(bytes, 13u * 1024u);
     domain.SetView(nullptr);
 }
 

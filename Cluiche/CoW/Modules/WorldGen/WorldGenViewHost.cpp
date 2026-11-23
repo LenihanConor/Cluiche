@@ -633,7 +633,7 @@ uint32_t WorldGenViewHost::RegionColour(uint32_t slot)
         bool resolved = false;
         if (mDeps.schema != nullptr)
         {
-            const WorldLayerDesc* wd = WorldLayerSource::Find("regions");
+            const WorldLayerDesc* wd = WorldLayerSource::Find("worldgen.regions");
             const Dia::ValueSchema::ValueInfo* info = wd ? mDeps.schema->Find(StringCRC(wd->schemaKey)) : nullptr;
             if (info != nullptr)
             {

@@ -259,7 +259,7 @@ def test_viewer_selection_colour_mode_and_size_round_trip(dia_client, request):
             break
         time.sleep(0.02)
     assert full is not None, "no full frame within 20 s"
-    assert full["view"]["modes"][0] == "terrain" and "elevation" in full["view"]["modes"], full["view"]["modes"]
+    assert full["view"]["modes"][0] == "terrain" and "worldgen.elevation" in full["view"]["modes"], full["view"]["modes"]
 
     # Sim-hosted viewer command (DiaCellLayers) -> the card's cell block shows the same cell.
     r = c.send_command("cells.select.cell", {"q": 6, "r": 7})
@@ -268,8 +268,8 @@ def test_viewer_selection_colour_mode_and_size_round_trip(dia_client, request):
     assert st["cell"]["x"] == 6 and st["cell"]["y"] == 7
 
     # Colour mode round trip through the panel command.
-    _panel_cmd(c, "setColourMode", {"mode": "elevation"})
-    _wait_panel(c, lambda s: s["view"]["colourMode"] == "elevation", "colourMode elevation")
+    _panel_cmd(c, "setColourMode", {"mode": "worldgen.elevation"})
+    _wait_panel(c, lambda s: s["view"]["colourMode"] == "worldgen.elevation", "colourMode elevation")
     _panel_cmd(c, "setColourMode", {"mode": "terrain"})
     _wait_panel(c, lambda s: s["view"]["colourMode"] == "terrain", "colourMode terrain")
 

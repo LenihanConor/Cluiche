@@ -48,7 +48,7 @@ function fixture(over: Record<string, any> = {}): any {
     ],
     view: {
       colourMode: "terrain",
-      modes: ["terrain", "elevation", "latitude"],
+      modes: ["terrain", "worldgen.elevation", "worldgen.latitude"],
       drawers: [
         { name: "Tiles", enabled: true, available: true },
         { name: "Grid lines", enabled: false, available: true },
@@ -157,7 +157,7 @@ describe("rendering", () => {
 
   it("view section: colour modes and drawer checkboxes (unavailable disabled)", () => {
     const m = q<HTMLSelectElement>("[data-role=wg-mode]");
-    expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "elevation", "latitude"]);
+    expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "worldgen.elevation", "worldgen.latitude"]);
     const boxes = qa("[data-role=wg-drawers] input[type=checkbox]") as HTMLInputElement[];
     expect(boxes.map((b) => b.checked)).toEqual([true, false, true, false]);
     expect(boxes.map((b) => b.disabled)).toEqual([true, false, true, true]);   // Tiles and Selection are fixed
@@ -434,9 +434,9 @@ describe("commands", () => {
 
   it("colour mode sends setColourMode", () => {
     const m = q<HTMLSelectElement>("[data-role=wg-mode]");
-    m.value = "elevation";
+    m.value = "worldgen.elevation";
     fire(m, "change");
-    expect(last()).toEqual({ id: ID, cmd: "setColourMode", args: { mode: "elevation" } });
+    expect(last()).toEqual({ id: ID, cmd: "setColourMode", args: { mode: "worldgen.elevation" } });
   });
 
   it("drawer checkbox sends toggle", () => {
@@ -614,12 +614,12 @@ function viewFixture(over: Record<string, any> = {}): any {
   const f = fixture({ full: true, staticVersion: 1 });
   f.view = {
     colourMode: "terrain",
-    modes: ["terrain", "elevation", "terrainType"],
+    modes: ["terrain", "worldgen.elevation", "worldgen.terrain_type"],
     layers: [
       { id: "terrain", label: "Relief", group: "Terrain" },
-      { id: "elevation", label: "Elevation", group: "Terrain" },
-      { id: "waterSource", label: "Water source", group: "Water" },
-      { id: "terrainType", label: "Terrain type", group: "Classification" },
+      { id: "worldgen.elevation", label: "Elevation", group: "Terrain" },
+      { id: "worldgen.water_source", label: "Water source", group: "Water" },
+      { id: "worldgen.terrain_type", label: "Terrain type", group: "Classification" },
     ],
     drawers: [
       { name: "Tiles", enabled: true, available: true },
@@ -642,7 +642,7 @@ describe("view section", () => {
     const groups = Array.from(m.querySelectorAll("optgroup")).map((g) => (g as HTMLOptGroupElement).label);
     expect(groups).toEqual(["Terrain", "Water", "Classification"]);
     const opts = Array.from(m.options);
-    expect(opts.map((o) => o.value)).toEqual(["terrain", "elevation", "waterSource", "terrainType"]);
+    expect(opts.map((o) => o.value)).toEqual(["terrain", "worldgen.elevation", "worldgen.water_source", "worldgen.terrain_type"]);
     expect(opts.map((o) => o.textContent)).toEqual(["Relief", "Elevation", "Water source", "Terrain type"]);
     expect(m.value).toBe("terrain");
   });
@@ -650,15 +650,15 @@ describe("view section", () => {
   it("picking a layer sends setColourMode with the layer id", () => {
     push(viewFixture());
     const m = q<HTMLSelectElement>("[data-role=wg-mode]");
-    m.value = "waterSource";
+    m.value = "worldgen.water_source";
     fire(m, "change");
-    expect(commands().pop()).toEqual({ id: ID, cmd: "setColourMode", args: { mode: "waterSource" } });
+    expect(commands().pop()).toEqual({ id: ID, cmd: "setColourMode", args: { mode: "worldgen.water_source" } });
   });
 
   it("the picker follows colourMode from the state", () => {
     push(viewFixture());
-    push(viewFixture({ colourMode: "terrainType" }));
-    expect(q<HTMLSelectElement>("[data-role=wg-mode]").value).toBe("terrainType");
+    push(viewFixture({ colourMode: "worldgen.terrain_type" }));
+    expect(q<HTMLSelectElement>("[data-role=wg-mode]").value).toBe("worldgen.terrain_type");
   });
 
   it("a category legend renders a swatch grid with colour and label", () => {
@@ -733,13 +733,13 @@ describe("view section", () => {
   it("a lean frame keeps the last static layer list while the legend follows every frame", () => {
     const f = viewFixture({ legend: catLegend });
     push(f);
-    const l = lean({ view: { colourMode: "terrainType", drawers: f.view.drawers, legend: floatLegend }, staticVersion: 1 });
+    const l = lean({ view: { colourMode: "worldgen.terrain_type", drawers: f.view.drawers, legend: floatLegend }, staticVersion: 1 });
     push(l);
     const m = q<HTMLSelectElement>("[data-role=wg-mode]");
-    expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "elevation", "waterSource", "terrainType"]);
-    expect(m.value).toBe("terrainType");
+    expect(Array.from(m.options).map((o) => o.value)).toEqual(["terrain", "worldgen.elevation", "worldgen.water_source", "worldgen.terrain_type"]);
+    expect(m.value).toBe("worldgen.terrain_type");
     expect(q("[data-role=wg-legend-bar]")).not.toBeNull();
-    push(lean({ view: { colourMode: "terrainType", drawers: f.view.drawers, legend: null }, staticVersion: 1 }));
+    push(lean({ view: { colourMode: "worldgen.terrain_type", drawers: f.view.drawers, legend: null }, staticVersion: 1 }));
     expect(q("[data-role=wg-legend]").style.display).toBe("none");
     expect(Array.from(q<HTMLSelectElement>("[data-role=wg-mode]").options).length).toBe(4);
   });

@@ -1692,7 +1692,7 @@ function wgModified(v, def) {
 }
 
 // ── view helpers ──
-// "selection.neighbours" -> "Selection neighbours"; "terrainType" -> "Terrain type"; already-spaced names pass through.
+// "selection.neighbours" -> "Selection neighbours"; "worldgen.terrain_type" -> "Terrain type"; already-spaced names pass through.
 function wgHumanise(id) {
   var t = String(id).replace(/[._]+/g, ' ').replace(/([a-z0-9])([A-Z])/g, function (m, a, b) { return a + ' ' + b.toLowerCase(); });
   t = t.replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
@@ -1704,7 +1704,7 @@ function wgDrawerLabel(name) {
 }
 // Drawers that are always on: shown checked and disabled.
 function wgDrawerFixed(name) { return name === 'Tiles' || name === 'Selection'; }
-function wgModeLabel(id) { return id === 'terrain' ? 'Relief' : wgHumanise(id); }
+function wgModeLabel(id) { return id === 'terrain' ? 'Relief' : wgHumanise(String(id).replace(/^worldgen\./, '')); }
 function wgColourOk(c) { return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c); }
 
 // Layer picker entries [{id,label,group}]: view.layers, else built from view.modes (single group).

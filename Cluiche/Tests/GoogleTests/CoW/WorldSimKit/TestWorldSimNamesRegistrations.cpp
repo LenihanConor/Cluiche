@@ -79,7 +79,7 @@ TEST(WorldSimNamesRegistrationsTest, S1LayerSchemaFamilyMatchesBuilder)
 
 // DISABLED until Task 34 renames the 35 layer ids (today camelCase, no "worldgen." prefix) and their schema keys.
 // Task 34 removes the DISABLED_ prefix.
-TEST(WorldSimNamesRegistrationsTest, DISABLED_S1LayerIdsMatchPattern)
+TEST(WorldSimNamesRegistrationsTest, S1LayerIdsMatchPattern)
 {
     const uint32_t count = Draoi::HexWorld::WorldLayerSource::Count();
     ASSERT_EQ(35u, count);

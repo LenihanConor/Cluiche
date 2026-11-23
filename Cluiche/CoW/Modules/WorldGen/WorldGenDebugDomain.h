@@ -15,7 +15,7 @@
 //   presetLoad   {id}                                 -> session.PresetLoad
 //   presetSave   {id, displayName, description?, overwrite?} -> session.PresetSave (result kept as "lastSave")
 //   selectCell   {x, y} / clearCell                   -> view->SelectCell / ClearSelection (domain-held selection when no view)
-//   setColourMode {mode}                              -> view->SetColourMode ("terrain" = the viewer's "relief"); ignored+warned if unknown
+//   setColourMode {mode}                              -> view->SetColourMode ("terrain" = the viewer's "worldgen.relief"); ignored+warned if unknown
 //   toggle       {drawer}                             -> view->SetOverlayEnabled ("rivers", "selection.neighbours"); unavailable ones ignored
 //                (no view: flips a local drawer, "Tiles", "Grid lines", ...)
 //   validate     {}                                   -> session.Validate (cow.worldgen.validate); a refusal shows as "validateError"
@@ -29,7 +29,7 @@
 //                world is unlocked and regenerates from its recorded recipe (session.Set({unlock:true})). Not locked: no-op.
 //                "Keep" needs no command: the panel restores the slider. Every shape command also accepts "unlock":true itself.
 //
-// State JSON contract (consumed by debug-panel.html; compact size must stay under 12 KB at Large).
+// State JSON contract (consumed by debug-panel.html; compact size must stay under 13 KB at Large; raised from 12 KB by the worldgen. layer id prefix).
 // The state is split into a STATIC part (control definitions, preset list, size dimensions, view modes, stage names) and a
 // DYNAMIC part (everything else). A frame is either
 //   FULL  ("full": true)  : dynamic + static fields, i.e. the complete shape documented below; or
@@ -52,11 +52,11 @@
 //   timings  : [{stage, name, ms, ran}]               (per-stage ms of the last generation, ran = re-run last Update)
 //   view     : {colourMode, modes[names], layers[{id,label,group}], drawers:[{name, enabled, available}], unavailableLayers[ids], legend?}
 //              layers = [{id, label, group}] (STATIC, same order as modes, back-compat): the picker entries. "terrain" is
-//              labelled "Relief"; label = humanised id ("terrainType" -> "Terrain type"); group = the WorldLayerSource group
+//              labelled "Relief"; label = humanised id ("worldgen.terrain_type" -> "Terrain type"); group = the WorldLayerSource group
 //              (view: "Terrain", ...; no view: "Terrain" for the Relief entry, "Layers" for the rest).
 //              No view (fallback): modes = "terrain" followed by every terrain layer name; drawers = Tiles, Grid lines, Selection
 //              (available) then Region edges, Sites, Evidence (available=false); no legend key.
-//              With a view (IWorldGenView, the S-1 stage): colourMode = view->GetColourMode() with "relief" reported as "terrain";
+//              With a view (IWorldGenView, the S-1 stage): colourMode = view->GetColourMode() with "worldgen.relief" reported as "terrain";
 //              modes = "terrain" then every other registered base layer id (STATIC part: only changes when the registered layers
 //              change, bumping staticVersion); drawers = Tiles (always on), one entry per viewer overlay ("rivers",
 //              "selection.neighbours"; available = has something to draw), Selection (always on); legend (DYNAMIC part, it follows

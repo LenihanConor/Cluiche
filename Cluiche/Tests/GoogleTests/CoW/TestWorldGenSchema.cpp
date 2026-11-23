@@ -75,6 +75,9 @@ const Loaded& Get()
     return l;
 }
 
+// "worldgen.terrain_type" -> "terrain_type" (the schema entry key)
+std::string Field(const char* layerId) { return std::string(layerId).substr(std::string(kWorldLayerIdPrefix).size()); }
+
 const Json::Value* FindEntry(const Loaded& l, const std::string& key)
 {
     for (const Json::Value& e : l.root["entries"])
@@ -102,7 +105,7 @@ TEST(WorldGenSchema, EveryDescriptorHasAMatchingEntry)
     for (uint32_t i = 0; i < WorldLayerSource::Count(); ++i)
     {
         const WorldLayerDesc& d = WorldLayerSource::At(i);
-        const Json::Value* e = FindEntry(l, d.id);
+        const Json::Value* e = FindEntry(l, Field(d.id));
         ASSERT_NE(e, nullptr) << d.id;
         EXPECT_TRUE((*e)["label"].isString() && !(*e)["label"].asString().empty()) << d.id;
         EXPECT_TRUE((*e)["description"].isString() && !(*e)["description"].asString().empty()) << d.id;
@@ -115,7 +118,7 @@ TEST(WorldGenSchema, EveryDescriptorHasAMatchingEntry)
         else
         {
             EXPECT_EQ((*e)["type"].asString(), "enum") << d.id;
-            if (std::string(d.id) == "biomeIndex")
+            if (std::string(d.id) == "worldgen.biome_index")
             {
                 // Registry-sized: filled from biomes.json by valuesFrom (Biome Registry task 26), no literal values.
                 EXPECT_FALSE(e->isMember("values")) << d.id;
@@ -135,12 +138,12 @@ TEST(WorldGenSchema, EnumCountsEqualCodeEnumSizes)
     const Loaded& l = Get();
     ASSERT_TRUE(l.ok);
     auto count = [&](const char* key) { const Json::Value* e = FindEntry(l, key); return e ? (*e)["values"].size() : 0u; };
-    EXPECT_EQ(count("terrainType"), static_cast<unsigned>(TerrainType::Count));
-    EXPECT_EQ(count("waterSource"), static_cast<unsigned>(WaterSource::River) + 1u);
+    EXPECT_EQ(count("terrain_type"), static_cast<unsigned>(TerrainType::Count));
+    EXPECT_EQ(count("water_source"), static_cast<unsigned>(WaterSource::River) + 1u);
     EXPECT_EQ(count("stratum"), static_cast<unsigned>(kStratumAncient) + 1u);
-    EXPECT_EQ(count("flowDirection"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
-    EXPECT_EQ(count("biomeIndex"), 0u);   // no literal values: valuesFrom the biome registry
-    EXPECT_EQ(count("fixupChanges"), 3u);   // none, zone, neighbour
+    EXPECT_EQ(count("flow_direction"), 7u);   // 6 hex directions + sink (kFlowSink = 6)
+    EXPECT_EQ(count("biome_index"), 0u);   // no literal values: valuesFrom the biome registry
+    EXPECT_EQ(count("fixup_changes"), 3u);   // none, zone, neighbour
     EXPECT_EQ(count("regions"), kRegionPaletteSlots);   // none + 63 cycling region slots
 }
 
@@ -176,7 +179,7 @@ TEST(WorldGenSchema, ExactlyOneDefaultBaseAndItIsRelief)
     EXPECT_EQ(n, 1);
     const Json::Value* relief = FindEntry(l, "relief");
     ASSERT_NE(relief, nullptr);
-    EXPECT_EQ((*relief)["ui"]["elevation_layer"].asString(), "elevation");
+    EXPECT_EQ((*relief)["ui"]["elevation_layer"].asString(), "worldgen.elevation");
     EXPECT_EQ((*relief)["ui"]["ramp"].asString(), "sequential.terrain");
     ASSERT_NE(FindEntry(l, "elevation"), nullptr);
 }
@@ -199,10 +202,10 @@ TEST(WorldGenSchema, BiomeLayersAreDescribed)
 {
     const Loaded& l = Get();
     ASSERT_TRUE(l.ok);
-    for (const char* k : { "temperature", "moisture", "waterDistance", "airMoisture", "rainOut", "biomeScore", "biomePin", "biomeIndex", "fixupChanges" })
+    for (const char* k : { "temperature", "moisture", "water_distance", "air_moisture", "rain_out", "biome_score", "biome_pin", "biome_index", "fixup_changes" })
     {
         EXPECT_NE(FindEntry(l, k), nullptr) << k;
-        EXPECT_NE(WorldLayerSource::Find(k), nullptr) << k;
+        EXPECT_NE(WorldLayerSource::Find((std::string(kWorldLayerIdPrefix) + k).c_str()), nullptr) << k;
     }
     // The biomeIndex legend now comes from the registry (valuesFrom); distinct registry colours.
     const Draoi::HexWorld::BiomeRegistry& reg = Draoi::HexWorld::Testing::ShippedBiomeRegistry();
@@ -244,7 +247,7 @@ std::vector<Dia::ValueSchema::EnumValue> ResolvedBiomeLegend(const char* dirName
     const Dia::ValueSchema::SchemaLoadStats stats = loader.LoadInto(reg);
     std::vector<Dia::ValueSchema::EnumValue> out;
     EXPECT_EQ(stats.mValuesFromFailed, 0u);
-    const Dia::ValueSchema::ValueInfo* info = reg.Find(Dia::Core::StringCRC((std::string(kWorldLayerSchemaFor) + "/biomeIndex").c_str()));
+    const Dia::ValueSchema::ValueInfo* info = reg.Find(Dia::Core::StringCRC((std::string(kWorldLayerSchemaFor) + "/biome_index").c_str()));
     if (info == nullptr) { ADD_FAILURE() << "biomeIndex not registered"; return out; }
     for (unsigned i = 0; i < info->mEnumValues.Size(); ++i)
         out.push_back(info->mEnumValues[i]);
@@ -267,7 +270,7 @@ TEST(WorldGenSchema, BiomeIndexEntryHasNoLiteralValues)
 {
     const Loaded& l = Get();
     ASSERT_TRUE(l.ok);
-    const Json::Value* e = FindEntry(l, "biomeIndex");
+    const Json::Value* e = FindEntry(l, "biome_index");
     ASSERT_NE(e, nullptr);
     EXPECT_FALSE(e->isMember("values"));
     ASSERT_TRUE(e->isMember("valuesFrom"));
@@ -291,11 +294,11 @@ TEST(WorldGenSchema, BiomeLegendFollowsAFourteenRowRegistry)
 
 TEST(WorldGenSchema, BiomeIndexCategoryCountComesFromTheRegistry)
 {
-    const WorldLayerDesc* d = WorldLayerSource::Find("biomeIndex");
+    const WorldLayerDesc* d = WorldLayerSource::Find("worldgen.biome_index");
     ASSERT_NE(d, nullptr);
     EXPECT_EQ(WorldLayerSource::CategoryCount(*d, Draoi::HexWorld::Testing::ShippedBiomeRegistry()), 13u);
     EXPECT_EQ(WorldLayerSource::CategoryCount(*d, Draoi::HexWorld::Testing::ExtraBiomeRegistry()), 14u);
-    const WorldLayerDesc* terrain = WorldLayerSource::Find("terrainType");
+    const WorldLayerDesc* terrain = WorldLayerSource::Find("worldgen.terrain_type");
     ASSERT_NE(terrain, nullptr);
     EXPECT_EQ(WorldLayerSource::CategoryCount(*terrain, Draoi::HexWorld::Testing::ExtraBiomeRegistry()), terrain->categoryCount);
 }
