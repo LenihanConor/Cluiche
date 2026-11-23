@@ -9,7 +9,7 @@
 - @docs/specs/applications/dia/systems/diadeferredstep/step-chain.md (Done): Dia `StepChain`, `IStepStage`, `StepChainConfig`, `IStepChainListener`. CoW's own chain types no longer exist; `WorldStepModule` stays in CoW and uses the Dia types.
 - @docs/specs/applications/dia/systems/diaattribute/parameter-files.md (`ParameterFile`, `Hash`, the in-place default writer)
 - @docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md (biome tags)
-- The Draoi half, and the DraoiHexWorld core extraction it waits on.
+- The Draoi half (@docs/specs/features/draoi/worldsim-kit-draoi.md). The DraoiHexWorld core, terrain and GameSpeed extractions are Done (2026-11-21 to 2026-11-23), so nothing gates it.
 
 ## Summary
 
@@ -158,7 +158,7 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 
 ### 4. CoW wiring of the Draoi cell fields and selectors
 
-- S-1 contributes `terrain.*`, `biome.index`, `biome.tag.<tag>`, `terrain.is_protected` and `terrain.region` through the Draoi registration functions. **Until the terrain package is extracted, the readers live in CoW** (they need the generator's world type).
+- S-1 contributes `terrain.*`, `biome.index`, `biome.tag.<tag>`, `terrain.is_protected` and `terrain.region` by calling the Draoi registration functions (`RegisterBiomeFields`, `RegisterTerrainFields`, Draoi half AC 10a); the readers themselves live in Draoi, not CoW. CoW's part is the call and the `Clear` and rebuild on `WorldGenerationComplete`.
 - The `WorldCellFields` registry is cleared and rebuilt on `WorldGenerationComplete`. A4, A5 and A1 contribute `weather.*`, `hydro.*`, `ecology.*` when present.
 - The forbid-reads flag is set by the base while `Run` is active, so a read during `Run` asserts in Debug.
 - `CellSelectorSet` is used by stages and presets as the Draoi half defines it; this half only supplies the loaded JSON block and the cell-field context.
@@ -173,7 +173,9 @@ Errors name the key, queue nothing, and use the SimQueryHost error shape. System
 
 `WorldSimNames.h` builds every name from the token: `LayerId(sys, field)` → `"<sys>.<field>"`, `LayerSchemaKey`, `ParamSchemaKey`, `CommandName(sys, verb)`, `SaveId`, `StateFormat`, `ParamsFormat`, `PresetFormat`, `PresetPath`, `StageId`, `MetricName`. Kit code uses only these. Field names are `snake_case`.
 
-**S-1 rename.** The 35 layer ids in `WorldLayerSource.cpp:122-159` become `worldgen.<snake_case>` (`flowAccumulation` → `worldgen.flow_accumulation`), with schema keys `cow.worldgen.layers/<snake_case>`. The golden file `worldgen_layers.golden.json` has its keys renamed with **identical hashes**, by a scripted rename. `TestWorldLayerSource`, `TestWorldGenSchema`, `TestWorldGenLayerGoldens` and the S-1 stage sidecar are updated. No file under `Cluiche/Tests/Contracts/` uses these ids (checked 2026-11-18). S-1 logs move from channel `"CoW"` to `WGEN`.
+**S-1 rename.** The 35 layer ids in `Draoi/DraoiHexWorldTerrain/WorldLayerSource.cpp` (moved there by the terrain extraction; the old `Cluiche/CoW/Shared/WorldGeneration/` copy is gone) become `worldgen.<snake_case>` (`flowAccumulation` → `worldgen.flow_accumulation`), with schema keys `cow.worldgen.layers/<snake_case>`. The golden file `worldgen_layers.golden.json` has its keys renamed with **identical hashes**, by a scripted rename. `TestWorldLayerSource`, `TestWorldGenSchema`, `TestWorldGenLayerGoldens` and the S-1 stage sidecar are updated. No file under `Cluiche/Tests/Contracts/` uses these ids (checked 2026-11-18). S-1 logs in the CoW module and shared files move from channel `"CoW"` to `WGEN` (82 sites in `Cluiche/CoW/Modules/WorldGen` and `Shared`); the Draoi generator already logs `"HexWorld"` and is not renamed.
+
+**Placement of the rename (raised 2026-11-23, needs a user ruling before Tasks 33-34).** The layer ids and the schema constant `kWorldLayerSchemaFor = "cow.worldgen.layers"` now live in `DraoiHexWorldTerrain`, which must carry no CoW strings. **Recommended:** rename the ids in Draoi to the neutral `worldgen.<snake_case>` (no `cow.` in the id), and have CoW inject the schema prefix `cow.worldgen.layers/` the way it injects seed names and node kinds; the golden file and the CoW tests change as before.
 
 **Coupling with the generic special sites feature.** `terrain.is_protected` and the site-kind names are data-declared (`guarantees.json`, @docs/specs/features/draoi/guarantee-set-injection.md); the S-1 rename task does not touch site kind names or `CoW.Guarantee.*` ids.
 
@@ -201,13 +203,13 @@ Numbers are those of the original kit spec, kept stable. ACs 5, 11, 12, 13, 16, 
 22. **Preset pack layer.** A preset's values form their own pack layer, applied last; the next `ApplyPreset` replaces it; user packs are kept.
 
 ### Cell-field wiring
-10b. **S-1 contribution.** S-1 registers `terrain.*`, `biome.index` and `biome.tag.<tag>` (one per registry tag), `terrain.is_protected` and `terrain.region` (AC 23); each field reads committed state by cell index; the registry is rebuilt on `WorldGenerationComplete`; reading during `Run` asserts in Debug.
+10b. **S-1 contribution.** S-1 calls the Draoi contributions (`terrain.*`, `biome.index`, `biome.tag.<tag>` per registry tag, `terrain.is_protected`, `terrain.region`; AC 23, Draoi AC 10a); each field reads committed state by cell index; the registry is rebuilt on `WorldGenerationComplete`; reading during `Run` asserts in Debug.
 23. **Region selection.** `set_region`-style selection reads `terrain.region`.
 
 ### Naming
 14. **Conventions.** `worldsim-conventions.md` exists. `WorldSimNames.h` builds every name, and a test asserts that every layer id, command name, schema key, save id and stage id registered by S-1 (and later by each kit user) matches its pattern.
 15. **S-1 rename.** S-1's 35 layer ids are `worldgen.<snake_case>` and schema keys `cow.worldgen.layers/<snake_case>`. `worldgen_layers.golden.json` keys are renamed and **every hash is unchanged** (the golden test passes without `DIA_UPDATE_GOLDEN`). The S-1 stage sidecar and tests are updated, and T-1/T-2 spec mentions of S-1 layer ids are aligned.
-18. **S-1 log channel.** S-1 logs use channel `WGEN`, not `"CoW"`.
+18. **S-1 log channel.** S-1 logs in the CoW module and shared files use channel `WGEN`, not `"CoW"`. The Draoi generator keeps `"HexWorld"` (already built).
 
 ## Files Touched
 
@@ -215,10 +217,10 @@ Numbers are those of the original kit spec, kept stable. ACs 5, 11, 12, 13, 16, 
 |---|---|
 | `Cluiche/CoW/Shared/WorldStep/WorldStepStageBase.h/.cpp`, `MutationQueue.h`, `SpinUpSlot.h`, `WorldSimSaveCodec.h/.cpp`, `Testing/FakeWorldStage.h` | **New** |
 | `Cluiche/CoW/Shared/Debug/SimCommandSet.h/.cpp`, `ParamCommandHelper.h/.cpp` | **New** |
-| `Cluiche/CoW/Shared/World/WorldSimNames.h`, S-1 cell-field contribution (until terrain extraction) | **New** |
+| `Cluiche/CoW/Shared/World/WorldSimNames.h` | **New** |
 | `Cluiche/Assets/CoW/Global/<System>/<sys>_state.schema.json` | **New** per system, state-field ranges |
 | `Cluiche/CoW/Modules/WorldGen/WorldGenerationModule.h/.cpp` | `SimCommandSet`, params command, cell-field contribution |
-| `Cluiche/CoW/Shared/WorldGeneration/WorldLayerSource.h/.cpp` | Ids renamed |
+| `Draoi/DraoiHexWorldTerrain/WorldLayerSource.h/.cpp` | Ids renamed; schema prefix injected (see Placement of the rename) |
 | `Cluiche/Assets/CoW/Stages/S1WorldGenerationTestbedStage/worldgen.schema.json` | Keys renamed |
 | `Cluiche/Tests/GoogleTests/CoW/Golden/worldgen_layers.golden.json` | Keys renamed, hashes unchanged |
 | `Cluiche/Tests/GoogleTests/CoW/*` (layer, schema, golden tests) plus new kit tests | Updated / new |
@@ -246,7 +248,8 @@ TDD per `.claude/skills/tdd.md`, in this order: (1) `MutationQueue` and `SpinUpS
 ## Open Design Questions
 
 1. **Template base versus composition** (resolved 2026-11-18: keep the template; A1's `TLatch` carries its due bands; split only if A1 can't fit). Still open after the split: does the base compile against a Draoi sim exposing `Step`/`Capture`/`Run`/`Commit` with the sim owning its working copy, given the base currently owns `mActive`/`mPending` sim pointers? **Recommended:** the base keeps owning the sim instances, and the sim's `Commit` swaps its internal working copy; confirm in the first Weather amendment.
-2. **Where the S-1 cell-field readers live before terrain extraction.** They need the generator's world type, which is not yet in core. **Recommended:** CoW, calling the Draoi registration API, moving to the terrain package at its extraction.
+2. **Where the S-1 cell-field readers live. (Resolved 2026-11-23: in `DraoiHexWorldTerrain`, Draoi half task D4b; CoW only calls them.)**
+3. **Placement of the layer-id rename.** See "Placement of the rename" under the S-1 rename; needs a user ruling before Tasks 33-34.
 3. **`MutationQueue` and `SpinUpSlot` placement.** CoW beside the base today (one consumer). **Recommended:** keep in CoW; promote to Dia only when a second game appears (admission test).
 
 ## Resolved Design Questions (2026-11-18, user)
@@ -288,4 +291,4 @@ Package dependencies follow the data flow one way: `DraoiHexWorld <- DraoiHexWor
 
 ## Status
 
-**Status:** `Approved` (2026-11-21), split approved. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-21, Not Started). Build order: step-chain (Done), Parameter Files, biome registry, special-sites injection, DraoiHexWorld core extraction, then the Draoi half, then this half's Draoi-dependent tasks.
+**Status:** `Approved` (2026-11-21), split approved. Carried-over decisions are unchanged from the 2026-11-18 interview and the 2026-11-20 Draoi amendment. Plan: `worldsim-kit.plan.md` (revised 2026-11-23, Not Started). Build order: all prerequisites are Done (step-chain, Parameter Files, biome registry, special sites, Strata, core, terrain and GameSpeed extractions); the Draoi half's D4, D4b, D5 and D6 come first, then this half's Draoi-dependent tasks. **Revision 2026-11-23:** terrain field readers moved to the Draoi half (D4b), the rename and log-channel notes updated for the extracted terrain package.
