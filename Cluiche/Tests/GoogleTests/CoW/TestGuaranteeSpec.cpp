@@ -8,6 +8,7 @@
 #include <Shared/WorldGeneration/CoWTesting/GuaranteeSpecTestHelpers.h>
 #include <DraoiHexWorldTerrain/Testing/TestPlacers.h>
 
+#include <set>
 #include <string>
 
 using namespace CoW::WorldGeneration;
@@ -285,4 +286,37 @@ TEST(SiteRegistry, PlacerAttachesToDeclaredKind)
     EXPECT_STREQ(info->displayName, "Test.A");   // the placer's Info() replaces the declaration
     EXPECT_EQ(ListSiteKinds(r).size(), 5u);       // listed once
     EXPECT_FALSE(r.RegisterDeclaredKind(MakeSiteKindInfo(StringCRC("Test.A"), "again", 1, SiteShape::Dot)));
+}
+
+TEST(GuaranteeSpec, ProtectedFlagTrueLoads)
+{
+    GuaranteeSpec out;
+    GuaranteeSpecError err;
+    const std::string text = Replace(ShippedText(), "\"id\": \"CoW.Site.DynastyStart\",", "\"id\": \"CoW.Site.DynastyStart\", \"protected\": true,");
+    ASSERT_TRUE(LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedStratumTable(), out, err)) << err.entry << ": " << err.reason;
+    ASSERT_NE(out.FindKind("CoW.Site.DynastyStart"), nullptr);
+    EXPECT_TRUE(out.FindKind("CoW.Site.DynastyStart")->isProtected);
+}
+
+TEST(GuaranteeSpec, ProtectedFlagAbsentDefaultsFalse)
+{
+    GuaranteeSpec out;
+    GuaranteeSpecError err;
+    const std::string text = "{\"format\":\"cow.guarantees\",\"version\":1,\"site_kinds\":[{\"id\":\"K.A\",\"display_name\":\"A\",\"colour\":\"#112233\",\"shape\":\"Dot\"}]}";
+    ASSERT_TRUE(LoadGuaranteeSpec(text.c_str(), Sidecar().c_str(), ShippedStratumTable(), out, err));
+    ASSERT_EQ(out.siteKinds.size(), 1u);
+    EXPECT_FALSE(out.siteKinds[0].isProtected);
+}
+
+TEST(GuaranteeSpec, ProtectedFlagWrongTypeFailsNamingKind)
+{
+    ExpectFails(Replace(ShippedText(), "\"id\": \"CoW.Site.DynastyStart\",", "\"id\": \"CoW.Site.DynastyStart\", \"protected\": \"yes\","), "site_kinds[CoW.Site.DynastyStart]");
+}
+
+TEST(GuaranteeSpec, ShippedProtectedKindsAreHearthNexusWorldThrone)
+{
+    std::set<std::string> prot;
+    for (const SiteKindDecl& k : ShippedGuaranteeSpec().siteKinds) { if (k.isProtected) { prot.insert(k.id); } }
+    const std::set<std::string> expected = { "CoW.Site.Hearth", "CoW.Site.Nexus", "CoW.Site.WorldThrone" };
+    EXPECT_EQ(prot, expected);
 }

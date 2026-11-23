@@ -26,6 +26,7 @@ struct SiteKindDecl
     SiteShape   shape = SiteShape::Dot;
     std::string variantLabel;
     uint32_t    variantCount = 0;    // 0 = the kind has no variants
+    bool        isProtected = false; // "protected": true; sites of the kind are protected terrain (see TerrainFieldSource)
 
     SiteKindInfo ToInfo() const;
 };

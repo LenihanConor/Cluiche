@@ -2,10 +2,10 @@
   "format": "cow.guarantees",
   "version": 1,
   "site_kinds": [
-    { "id": "CoW.Site.Hearth",       "display_name": "Hearth",       "colour": "#E8602C", "shape": "Triangle" },
-    { "id": "CoW.Site.Nexus",        "display_name": "Nexus Node",   "colour": "#5B8DEF", "shape": "Diamond" },
+    { "id": "CoW.Site.Hearth", "protected": true,       "display_name": "Hearth",       "colour": "#E8602C", "shape": "Triangle" },
+    { "id": "CoW.Site.Nexus", "protected": true,        "display_name": "Nexus Node",   "colour": "#5B8DEF", "shape": "Diamond" },
     { "id": "CoW.Site.DynastyStart", "display_name": "Dynasty Start", "colour": "#F2C94C", "shape": "Ring" },
-    { "id": "CoW.Site.WorldThrone",  "display_name": "World Throne", "colour": "#B07CD8", "shape": "Star", "variant_label": "Apotheosis", "variant_count": 6 }
+    { "id": "CoW.Site.WorldThrone", "protected": true,  "display_name": "World Throne", "colour": "#B07CD8", "shape": "Star", "variant_label": "Apotheosis", "variant_count": 6 }
   ],
   "guarantees": [
     {

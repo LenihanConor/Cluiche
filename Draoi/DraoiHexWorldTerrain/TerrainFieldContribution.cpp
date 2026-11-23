@@ -1,6 +1,8 @@
 #include <DraoiHexWorldTerrain/TerrainFieldContribution.h>
 
 #include <DraoiHexWorld/CellVocabulary.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <DraoiHexWorldTerrain/GuaranteeSpec.h>
 #include <DraoiHexWorldTerrain/WorldGenSession.h>
 
 #include <cctype>
@@ -14,6 +16,15 @@ bool TerrainFieldSource::AddProtectedKind(uint32_t kindCrc)
     if (IsProtectedKind(kindCrc)) { return true; }
     if (mProtectedCount >= kMaxProtectedKinds) { return false; }
     mProtected[mProtectedCount++] = kindCrc;
+    return true;
+}
+
+bool TerrainFieldSource::AddProtectedKindsFrom(const GuaranteeSpec& spec)
+{
+    for (const SiteKindDecl& k : spec.siteKinds)
+    {
+        if (k.isProtected && !AddProtectedKind(Dia::Core::StringCRC(k.id.c_str()).Value())) { return false; }
+    }
     return true;
 }
 

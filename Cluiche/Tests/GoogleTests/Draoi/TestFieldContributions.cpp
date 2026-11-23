@@ -102,14 +102,13 @@ namespace
         }
     };
 
-    // Protected site kinds read from the shipped guarantee data (reach_any endpoints and variant_cover kinds), never by C++ name.
+    // Protected site kinds are the ones the shipped guarantee data flags ("protected": true), never named in C++.
     std::vector<uint32_t> DataProtectedKinds()
     {
         std::vector<uint32_t> kinds;
-        for (const GuaranteeEntry& e : CoW::WorldGeneration::Testing::ShippedGuaranteeSpec().guarantees)
+        for (const SiteKindDecl& k : CoW::WorldGeneration::Testing::ShippedGuaranteeSpec().siteKinds)
         {
-            if (e.type == GuaranteeRuleType::ReachAny) { kinds.push_back(StringCRC(e.from.c_str()).Value()); kinds.push_back(StringCRC(e.to.c_str()).Value()); }
-            else if (e.type == GuaranteeRuleType::VariantCover) { kinds.push_back(StringCRC(e.kind.c_str()).Value()); }
+            if (k.isProtected) { kinds.push_back(StringCRC(k.id.c_str()).Value()); }
         }
         return kinds;
     }
@@ -134,7 +133,9 @@ namespace
 
     void ConfigureSource(TerrainFieldSource& src)
     {
-        for (uint32_t k : DataProtectedKinds()) { EXPECT_TRUE(src.AddProtectedKind(k)); }
+        EXPECT_TRUE(src.AddProtectedKindsFrom(CoW::WorldGeneration::Testing::ShippedGuaranteeSpec()));
+        for (uint32_t k : DataProtectedKinds()) { EXPECT_TRUE(src.IsProtectedKind(k)); }
+        EXPECT_FALSE(src.IsProtectedKind(StringCRC("CoW.Site.DynastyStart").Value()));
     }
 
     void ExpectTerrainMatchesWorld(const WorldCellFields& fields, const WorldGenSession& s)

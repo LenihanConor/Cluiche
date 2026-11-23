@@ -174,7 +174,7 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const Draoi::H
         if (!NonEmptyString(k, "id", decl.id)) { return Fail(err, where, "id must be a non-empty string"); }
         const std::string name = "site_kinds[" + decl.id + "]";
         std::string bad;
-        if (!OnlyKeys(k, { "id", "display_name", "colour", "shape", "variant_label", "variant_count" }, bad))
+        if (!OnlyKeys(k, { "id", "display_name", "colour", "shape", "variant_label", "variant_count", "protected" }, bad))
         {
             return Fail(err, name, "unknown field '" + bad + "'");
         }
@@ -200,6 +200,11 @@ bool LoadGuaranteeSpec(const char* text, const char* sidecarText, const Draoi::H
         {
             if (!k["variant_count"].isUInt() || k["variant_count"].asUInt() > 64) { return Fail(err, name, "variant_count must be a whole number 0..64"); }
             decl.variantCount = k["variant_count"].asUInt();
+        }
+        if (!k["protected"].isNull())
+        {
+            if (!k["protected"].isBool()) { return Fail(err, name, "protected must be a boolean"); }
+            decl.isProtected = k["protected"].asBool();
         }
         cand.siteKinds.push_back(decl);
     }

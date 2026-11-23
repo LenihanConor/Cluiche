@@ -21,6 +21,7 @@ namespace Draoi {
 namespace HexWorld {
 
 class WorldGenSession;
+struct GuaranteeSpec;
 
 class TerrainFieldSource
 {
@@ -34,6 +35,9 @@ public:
 
     // Adds a data-declared protected site kind (SiteKindId of its id). False when full; duplicates are ignored (true).
     bool AddProtectedKind(uint32_t kindCrc);
+
+    // Adds every site kind of the spec flagged "protected": true. False when full (kinds added so far stay).
+    bool AddProtectedKindsFrom(const GuaranteeSpec& spec);
 
     struct LayerBinding
     {
