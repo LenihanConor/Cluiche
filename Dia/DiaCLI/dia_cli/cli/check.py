@@ -709,8 +709,10 @@ def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
               help="Limit scan to a specific module subtree (e.g. dia.core).")
 @click.option("--summary", "summary_only", is_flag=True, default=False,
               help="Print totals only, no per-file detail.")
+@click.option("--html", "html_path", default=None, type=click.Path(dir_okay=False, path_type=Path),
+              metavar="PATH", help="Also write the Module Tower, a visual HTML report, to PATH.")
 @click.pass_context
-def arch(ctx, module_filter: str | None, summary_only: bool) -> None:
+def arch(ctx, module_filter: str | None, summary_only: bool, html_path: Path | None) -> None:
     """Check architecture layer rules and forbidden dependencies."""
     from dia_cli.commands.check.arch_checker import run_arch_check, format_violations
 
@@ -721,6 +723,10 @@ def arch(ctx, module_filter: str | None, summary_only: bool) -> None:
     output = format_violations(violations, warnings, summary_only=summary_only)
     if output:
         click.echo(output)
+    if html_path is not None:
+        from dia_cli.commands.check.arch_tower import write_tower_html
+
+        click.echo(f"[dia check] Module Tower written to {write_tower_html(repo_root, violations, html_path)}")
     ctx.exit(exit_code)
 
 

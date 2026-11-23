@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Module Tower</title>
+<style>
+:root{--bg:#10141c;--panel:#171d29;--line:#2a3345;--fg:#e6ebf5;--dim:#7f8aa3;--ok:#3ecf8e;--bad:#ff5d6c;--warn:#ffb454;--l3:#22304a;--l2:#2b2a47;--l1:#25363a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,Segoe UI,sans-serif;display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0}.sub{color:var(--dim);font-size:12px}
+.score{margin-left:auto;display:flex;gap:14px;align-items:center}
+.pill{padding:4px 12px;border-radius:99px;font-weight:700;background:#2a1b20;color:var(--bad);border:1px solid var(--bad)}
+.pill.zero{background:#12281f;color:var(--ok);border-color:var(--ok)}
+.delta{font-size:12px;color:var(--dim)}button{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+main{flex:1;display:flex;min-height:0}
+#towerWrap{flex:1;position:relative;overflow:auto;padding:14px}
+#tower{position:relative;display:flex;flex-direction:column;gap:8px;min-width:760px}
+.floor{display:flex;gap:6px;align-items:stretch}
+.flabel{width:118px;flex:none;font-size:11px;color:var(--dim);padding-top:8px}
+.flabel b{display:block;color:var(--fg);font-size:12px}
+.lane{flex:1;min-height:74px;border:1px dashed var(--line);border-radius:8px;padding:6px 6px 22px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;position:relative}
+.lane.l3{background:var(--l3)}.lane.l2{background:var(--l2)}.lane.l1{background:var(--l1)}
+.lane.hot{outline:2px solid var(--ok)}
+.lname{position:absolute;right:8px;bottom:4px;font-size:10px;color:var(--dim);pointer-events:none}
+.others{position:absolute;left:8px;bottom:4px;font-size:10px;color:var(--dim);pointer-events:none}
+.box{padding:5px 9px;border-radius:7px;background:#0d1118;border:1.5px solid #4a5670;cursor:grab;user-select:none;font-size:12px;z-index:2;white-space:nowrap;height:fit-content}
+.box.bad{border-color:var(--bad);box-shadow:0 0 10px #ff5d6c55}.box.moved{border-style:dashed;border-color:var(--warn)}.box.sel{outline:2px solid #fff}
+.box small{color:var(--dim);margin-left:4px}
+svg#pipes{position:absolute;left:0;top:0;pointer-events:none;z-index:1;overflow:visible}
+aside{width:380px;flex:none;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:12px}
+aside h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:6px 0 8px}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#131a26;cursor:pointer}
+.card.sel{border-color:#fff}.card.bad{border-left:4px solid var(--bad)}.card.new{border-left:4px solid var(--warn)}.card.fixed{border-left:4px solid var(--ok);opacity:.8}
+.card p{margin:2px 0 6px}.mono{font-family:Consolas,monospace;font-size:12px;color:var(--dim)}
+.chip{display:inline-block;margin:2px 4px 0 0;padding:2px 8px;border-radius:99px;background:#222c40;font-size:11px;color:#b9c6e6}
+.hint{color:var(--dim);font-size:12px;margin:0 0 10px}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--dim);padding:0 0 8px 124px}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+</style></head><body>
+<header><div><h1>Module Tower <span class="sub">- generated /*GENERATED*/ by <code>dia check arch --html</code></span></h1>
+<div class="sub">Dependencies may only point <b>down</b> the tower. Red pipes break that rule. Drag a module to another floor to try a fix.</div></div>
+<div class="score"><span class="delta" id="delta"></span><span class="pill" id="count"></span><button id="reset">Reset</button></div></header>
+<main><div id="towerWrap"><div class="legend"><span><i style="border-color:#ff5d6c"></i>leak (breaks the rule)</span><span><i style="border-color:#3ecf8e;opacity:.6"></i>fine</span><span><i style="border-color:#ffb454;border-top-style:dashed"></i>newly broken by your move</span></div>
+<div id="tower"></div><svg id="pipes"></svg></div>
+<aside><h2>Leak report</h2><p class="hint">Click a card to light up its pipe. Cards explain each leak in plain words.</p><div id="cards"></div><div id="detail"></div></aside></main>
+<script>
+const DATA=/*DATA*/;
+const LANES=[
+ {fl:'Floor 5|Draoi',cls:'l3',lanes:[['draoi','draoi']]},
+ {fl:'Floor 3|Domains',cls:'l3',lanes:[['domain/visual/core','visual'],['domain/gameplay/core','gameplay'],['domain/physics/core','physics'],['domain/animation/core','animation']]},
+ {fl:'Floor 2|Assets',cls:'l2',lanes:[['assets/core','assets core'],['assets/tools','assets tools']]},
+ {fl:'Floor 1c|Application / Platform',cls:'l1',lanes:[['foundation/application','application'],['foundation/platform','platform']]},
+ {fl:'Floor 1b|Services / Maths',cls:'l1',lanes:[['foundation/services','services'],['foundation/maths','maths']]},
+ {fl:'Floor 1a|Core',cls:'l1',lanes:[['foundation/core','core']]}];
+function parse(l){
+ if(l==='draoi')return[5,0,'draoi',''];
+ if(l.startsWith('foundation/')){const g=l.slice(11);const mp={core:[1,0],maths:[1,1],services:[1,1],platform:[1,2],application:[1,2]};return mp[g]?[mp[g][0],mp[g][1],g,'']:null}
+ if(l.startsWith('assets/')){const t=l.slice(7);return t==='core'?[2,0,'assets','core']:t==='tools'?[2,1,'assets','tools']:null}
+ if(l.startsWith('domain/')){const p=l.slice(7).split('/');if(p.length===2)return[3,p[1]==='core'?0:1,p[0],p[1]]}
+ return null}
+function rule(fl,tl){const a=parse(fl),b=parse(tl);if(!a||!b)return null;
+ if(b[0]>a[0])return 'up';
+ if(b[0]===a[0]){
+  if(a[0]===1){if(b[1]>a[1])return 'up';if(b[1]===a[1]&&a[2]!==b[2])return 'side'}
+  if(a[0]===2&&b[1]>a[1])return 'up';
+  if(a[0]===3){if(b[1]>a[1])return 'up';if(a[2]!==b[2])return 'side'}}
+ return null}
+const floorOf=l=>{const p=parse(l);return p[0]===1?'1'+'abc'[p[1]===2?2:p[1]]:String(p[0])};
+const short=id=>id.replace(/^dia\./,'');
+let layer={...DATA.layers};const orig={...DATA.layers};
+const bad=()=>DATA.edges.filter(e=>rule(layer[e.f],layer[e.t])).map(e=>({...e,kind:rule(layer[e.f],layer[e.t])}));
+const key=e=>e.f+'>'+e.t;const origBad=new Set(DATA.violations.map(v=>v.f+'>'+v.t));
+const baseBad=bad();let sel=null,moved=new Set();
+function laneOf(l){const q=parse(l);if(!q)return null;
+ for(const fl of LANES)for(const [ls] of fl.lanes){const p=parse(ls);
+  if(q[0]===1&&ls===l)return ls;
+  if(q[0]===5&&ls==='draoi')return ls;
+  if(q[0]===2&&p[0]===2&&p[3]===q[3])return ls;
+  if(q[0]===3&&p[0]===3&&p[2]===q[2])return ls}
+ return null}
+function render(){const cur=bad();const curKeys=new Set(cur.map(key));
+ const shown=new Set([...DATA.violations.flatMap(v=>[v.f,v.t]),...cur.flatMap(e=>[e.f,e.t]),...moved]);
+ const t=document.getElementById('tower');t.innerHTML='';
+ for(const fl of LANES){const row=document.createElement('div');row.className='floor';const [fa,fb]=fl.fl.split('|');
+  row.innerHTML='<div class="flabel"><b>'+fa+'</b>'+fb+'</div>';
+  for(const [ls,nm] of fl.lanes){const ln=document.createElement('div');ln.className='lane '+fl.cls;ln.dataset.layer=ls;
+   const here=Object.keys(layer).filter(m=>laneOf(layer[m])===ls);const boxes=here.filter(m=>shown.has(m));
+   for(const m of boxes){const b=document.createElement('div');
+    b.className='box'+(cur.some(e=>e.f===m)?' bad':'')+(moved.has(m)?' moved':'')+(sel&&(sel.f===m||sel.t===m)?' sel':'');b.dataset.id=m;
+    b.innerHTML=short(m)+(parse(layer[m])[3]==='tools'?'<small>tools</small>':'');b.onmousedown=ev=>drag(ev,m);ln.appendChild(b)}
+   const oth=here.length-boxes.length;if(oth>0)ln.insertAdjacentHTML('beforeend','<span class="others">+'+oth+' other modules, no leaks</span>');
+   ln.insertAdjacentHTML('beforeend','<span class="lname">'+nm+'</span>');row.appendChild(ln)}
+  t.appendChild(row)}
+ requestAnimationFrame(()=>pipes(cur,shown));cards(cur,curKeys);
+ const oc=(DATA.other||[]).length,n=cur.length+oc,n0=baseBad.length+oc;const c=document.getElementById('count');
+ c.textContent=n+' leak'+(n===1?'':'s');c.className='pill'+(n?'':' zero');
+ document.getElementById('delta').textContent=moved.size?('was '+n0+' - now '+n+' ('+(n<n0?'-':'+')+Math.abs(n-n0)+')'):''}
+function pipes(cur,shown){const svg=document.getElementById('pipes'),w=document.getElementById('towerWrap'),r0=w.getBoundingClientRect();
+ svg.setAttribute('width',w.scrollWidth);svg.setAttribute('height',w.scrollHeight);let h='';
+ const pos=id=>{const e=document.querySelector('.box[data-id="'+id+'"]');if(!e)return null;const r=e.getBoundingClientRect();
+  return{x:r.left-r0.left+w.scrollLeft+r.width/2,y:r.top-r0.top+w.scrollTop+r.height/2,top:r.top-r0.top+w.scrollTop,bot:r.bottom-r0.top+w.scrollTop}};
+ const draw=(e,color,wd,dash,op)=>{const a=pos(e.f),b=pos(e.t);if(!a||!b)return;const up=b.y<a.y-4;
+  const y1=up?a.top:a.bot,y2=up?b.bot:b.top,m=(y1+y2)/2;
+  h+='<path d="M'+a.x+','+y1+' C'+a.x+','+m+' '+b.x+','+m+' '+b.x+','+y2+'" fill="none" stroke="'+color+'" stroke-width="'+wd+'"'+(dash?' stroke-dasharray="6 4"':'')+' opacity="'+op+'"/><circle cx="'+b.x+'" cy="'+y2+'" r="4" fill="'+color+'" opacity="'+op+'"/>'};
+ const curK=new Set(cur.map(key));
+ DATA.edges.filter(e=>shown.has(e.f)&&shown.has(e.t)&&!curK.has(key(e))).forEach(e=>draw(e,'#3ecf8e',1.5,false,.35));
+ cur.forEach(e=>draw(e,origBad.has(key(e))?'#ff5d6c':'#ffb454',(sel&&key(sel)===key(e))?6:3.5,!origBad.has(key(e)),1));
+ svg.innerHTML=h}
+function say(e){const a=floorOf(layer[e.f]),b=floorOf(layer[e.t]);
+ const pl=e.n+' place'+(e.n>1?'s':'');
+ return e.kind==='up'?'<b>'+short(e.f)+'</b> (floor '+a+') reaches <b>up</b> to <b>'+short(e.t)+'</b> (floor '+b+') in '+pl+'.'
+  :'<b>'+short(e.f)+'</b> and <b>'+short(e.t)+"</b> sit on the same floor but in different wings, which isn't allowed ("+pl+').'}
+function chips(e){return e.kind==='up'?['Move '+short(e.f)+' up','Move '+short(e.t)+' down','Put an interface below both']:['Move the shared header to a common module','Merge the wings']}
+function cards(cur,curK){const c=document.getElementById('cards');c.innerHTML='';const baseK=new Set(baseBad.map(key));
+ cur.forEach(e=>{const d=document.createElement('div');const isNew=!baseK.has(key(e));
+  d.className='card '+(isNew?'new':'bad')+(sel&&key(sel)===key(e)?' sel':'');
+  d.innerHTML=(isNew?'<div class="mono">NEW - caused by your move</div>':'')+'<p>'+say(e)+'</p>'+chips(e).map(x=>'<span class="chip">'+x+'</span>').join('');
+  d.onclick=()=>{sel=e;render();detail(e)};c.appendChild(d)});
+ baseBad.filter(e=>!curK.has(key(e))).forEach(e=>{const d=document.createElement('div');d.className='card fixed';
+  d.innerHTML='<div class="mono">FIXED by your move</div><p>'+short(e.f)+' to '+short(e.t)+'</p>';c.appendChild(d)});
+ (DATA.other||[]).forEach(o=>{const d=document.createElement('div');d.className='card bad';d.innerHTML='<div class="mono">'+o.kind+'</div><p><b>'+short(o.f)+'</b> to <b>'+short(o.t)+'</b>: '+o.rule+'</p><div class="mono">'+o.file+':'+o.line+'</div>';c.appendChild(d)});
+ if(!cur.length&&!moved.size&&!(DATA.other||[]).length)c.innerHTML='<p class="hint">No leaks.</p>'}
+function detail(e){const d=document.getElementById('detail');const vs=DATA.violations.filter(v=>v.f===e.f&&v.t===e.t);
+ const rows=vs.length?vs:[{file:e.file,line:'',inc:e.inc}];
+ d.innerHTML='<h2>The actual includes</h2>'+rows.map(v=>'<div class="card"><div class="mono">'+v.file+(v.line?':'+v.line:'')+'</div><div class="mono">#include &lt;'+v.inc+'&gt;</div></div>').join('')}
+function drag(ev,m){ev.preventDefault();const g=document.createElement('div');g.className='box';g.textContent=short(m);
+ g.style.cssText='position:fixed;pointer-events:none;z-index:9;opacity:.85;left:'+ev.clientX+'px;top:'+ev.clientY+'px';document.body.appendChild(g);
+ const mv=e=>{g.style.left=(e.clientX+8)+'px';g.style.top=(e.clientY+8)+'px';
+  document.querySelectorAll('.lane').forEach(l=>l.classList.remove('hot'));
+  const el=document.elementFromPoint(e.clientX,e.clientY);const l=el&&el.closest('.lane');if(l)l.classList.add('hot')};
+ const up=e=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);g.remove();
+  const el=document.elementFromPoint(e.clientX,e.clientY);const l=el&&el.closest('.lane');
+  if(l&&laneOf(layer[m])!==l.dataset.layer){layer[m]=l.dataset.layer;
+   moved=new Set(Object.keys(layer).filter(k=>layer[k]!==orig[k]));document.getElementById('detail').innerHTML=''}
+  sel=null;render()};
+ document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+document.getElementById('reset').onclick=()=>{layer={...orig};moved=new Set();sel=null;document.getElementById('detail').innerHTML='';render()};
+window.onresize=render;render();
+</script></body></html>
