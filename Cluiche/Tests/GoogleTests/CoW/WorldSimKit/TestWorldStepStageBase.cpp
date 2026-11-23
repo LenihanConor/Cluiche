@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/LogEntry.h>
@@ -87,6 +88,22 @@ protected:
         l.FlushSync();
         l.UnregisterSink(&sink);
         l.UnregisterThreadBuffer();
+    }
+    uint64_t Discarded()
+    {
+        return Dia::Observation::Metric::MetricRegistry::Instance()
+            .RegisterCounter(Dia::Core::StringCRC(World::MetricName("succession", "discarded_steps").c_str()))->Value();
+    }
+    double StepMs()
+    {
+        return Dia::Observation::Metric::MetricRegistry::Instance()
+            .RegisterGauge(Dia::Core::StringCRC(World::MetricName("succession", "step_ms").c_str()))->Value();
+    }
+    void FullStep(uint64_t key)
+    {
+        stage.Capture(key);
+        stage.Run(exec);
+        stage.Commit();
     }
     CountingSink& Sink() { Dia::Observation::Log::Logger::Instance().FlushSync(); return sink; }
 
@@ -198,6 +215,147 @@ TEST_F(WorldStepStageBaseTest, ValidatePendingPassesThroughTheCodecSeam)
     Json::Value root(Json::objectValue);
     Dia::SaveGame::LoadContext ctx(root);
     EXPECT_TRUE(stage.ValidatePending(ctx));
+}
+
+TEST_F(WorldStepStageBaseTest, NormalStepPublishesOnceWithTheStepDay)
+{
+    stage.SpinUpNow(1);
+    const uint64_t before = Discarded();
+    FullStep(42);
+    EXPECT_EQ(1u, hooks.publishCount);
+    EXPECT_EQ(42u, hooks.publishedDay);
+    EXPECT_EQ(before, Discarded());
+    EXPECT_EQ(0u, Sink().discardLogs);
+}
+
+TEST_F(WorldStepStageBaseTest, DiscardsWhenTheRevisionChangesDuringTheStep)
+{
+    stage.SpinUpNow(1);
+    const uint64_t before = Discarded();
+    stage.Capture(5);
+    stage.Run(exec);
+    WorldView w; w.revision = 2; w.present = true;
+    stage.OnWorldGenerationComplete(w);
+    stage.Commit();
+    EXPECT_EQ(0u, hooks.publishCount);
+    EXPECT_EQ(before + 1, Discarded());
+    EXPECT_EQ(1u, Sink().discardLogs);
+}
+
+TEST_F(WorldStepStageBaseTest, DiscardsAnInvalidStepAndRunIsANoOp)
+{
+    stage.SpinUpNow(1);
+    hooks.latchOk = false;
+    const uint64_t before = Discarded();
+    hooks.log.Clear();
+    FullStep(5);
+    for (uint32_t i = 0; i < hooks.log.Count(); ++i) { EXPECT_STRNE("RunStep", hooks.log.At(i)); }
+    EXPECT_EQ(0u, hooks.publishCount);
+    EXPECT_EQ(before + 1, Discarded());
+    EXPECT_EQ(1u, Sink().discardLogs);
+}
+
+TEST_F(WorldStepStageBaseTest, DiscardedStepsCounterReadsThreeAfterThreeDiscards)
+{
+    stage.SpinUpNow(1);
+    hooks.latchOk = false;
+    const uint64_t before = Discarded();
+    FullStep(1);
+    FullStep(2);
+    FullStep(3);
+    EXPECT_EQ(before + 3, Discarded());
+    EXPECT_EQ(0u, hooks.publishCount);
+}
+
+TEST_F(WorldStepStageBaseTest, StepMsIsRecordedOnANormalStep)
+{
+    stage.SpinUpNow(1);
+    hooks.runSleepMs = 4;
+    FullStep(1);
+    EXPECT_GE(StepMs(), 3.0);
+}
+
+TEST_F(WorldStepStageBaseTest, FailedInitialiseSimReportsFailingWithTheCause)
+{
+    hooks.initFails = true;
+    stage.SpinUpNow(1);
+    const Dia::Observation::Health::Health h = stage.GetHealth();
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kFailing, h.status);
+    EXPECT_TRUE(h.reason == Dia::Core::StringCRC("fake_init_failed"));
+    EXPECT_EQ(1u, stage.GetCauseCode());
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_EQ(1u, Sink().errors);
+}
+
+// ----- kit task 10, partial (no hold): spin-up, failure and stale-result behaviours ---------------
+
+TEST_F(WorldStepStageBaseTest, NewRevisionCancelsTheRunningSpinUpAndTheOldCompletionIsDiscarded)
+{
+    const int live = FakeSim::sLive;
+    WorldView w1; w1.revision = 1; w1.present = true;
+    WorldView w2; w2.revision = 2; w2.present = true;
+    stage.OnWorldGenerationComplete(w1);
+    stage.OnWorldGenerationComplete(w2);
+    stage.RunJobNow(1, stage.VisitGeneration(), w1);   // late, superseded
+    stage.Update();
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_EQ(live, FakeSim::sLive);                   // the discarded sim was deleted
+    stage.RunJobNow(2, stage.VisitGeneration(), w2);
+    stage.Update();
+    EXPECT_TRUE(stage.HasPending());
+    EXPECT_TRUE(stage.IsReady());
+}
+
+TEST_F(WorldStepStageBaseTest, ResultFromAnOlderVisitGenerationIsDiscarded)
+{
+    const int live = FakeSim::sLive;
+    WorldView w; w.revision = 1; w.present = true;
+    stage.OnWorldGenerationComplete(w);
+    stage.RunJobNow(1, stage.VisitGeneration() - 1, w);
+    stage.Update();
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_EQ(live, FakeSim::sLive);
+}
+
+TEST_F(WorldStepStageBaseTest, WorldGenerationFailedDropsBothSimsAndFails)
+{
+    stage.SpinUpNow(1);
+    stage.Capture(1);
+    stage.Commit();                                    // active held
+    stage.SpinUpNow(1);                                // and a pending one
+    ASSERT_TRUE(stage.HasActive());
+    ASSERT_TRUE(stage.HasPending());
+    stage.OnWorldGenerationFailed();
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kFailing, stage.GetHealth().status);
+}
+
+TEST_F(WorldStepStageBaseTest, WorldGenerationFailedCancelsTheRunningJob)
+{
+    const int live = FakeSim::sLive;
+    WorldView w; w.revision = 1; w.present = true;
+    stage.OnWorldGenerationComplete(w);
+    stage.OnWorldGenerationFailed();
+    stage.RunJobNow(1, stage.VisitGeneration(), w);    // cancelled: the job's sim is deleted
+    stage.Update();
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_EQ(live, FakeSim::sLive);
+}
+
+TEST_F(WorldStepStageBaseTest, WorldGenerationFailedMidStepDefersTheDropAndDiscardsTheStep)
+{
+    stage.SpinUpNow(1);
+    stage.Capture(5);
+    stage.Run(exec);
+    stage.OnWorldGenerationFailed();
+    EXPECT_TRUE(stage.HasActive());                    // the worker may still read it
+    stage.Commit();
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_EQ(0u, hooks.publishCount);
 }
 
 }  // namespace Testing

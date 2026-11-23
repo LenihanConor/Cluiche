@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <atomic>
+#include <chrono>
 #include <thread>
 
 #include <DiaCore/CRC/StringCRC.h>
@@ -90,6 +91,7 @@ public:
         mStarted = true;
         ++mVisitGeneration;
         Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
+        RegisterMetrics();
         mHooks.OnStartExtra();
         DIA_LOG_INFO(mLogChannel, "%s: started (visit %u)", mLogChannel, static_cast<unsigned>(mVisitGeneration));
         if (mWorld.present) { BeginSpinUp(mWorld); }
@@ -123,6 +125,21 @@ public:
     }
 
     // ----- world events ----------------------------------------------------------------------------
+
+    // The world failed: not ready, own job cancelled, the last world is not kept.
+    void OnWorldGenerationFailed()
+    {
+        mSpinUp.Cancel();
+        TSim* result = nullptr;
+        uint32_t resultRevision = 0;
+        if (mSpinUp.TryTake(result, resultRevision)) { delete result; }
+        mWorld.present = false;
+        mCause = 0;
+        mHealth.SetFailing(Dia::Core::StringCRC("world_generation_failed"));
+        DIA_LOG_ERROR(mLogChannel, "%s: world generation failed, dropping the held world", mLogChannel);
+        if (mInFlight) { mDropAfterStep = true; }   // the worker may be reading the active sim
+        else { DropSims(); }
+    }
 
     void OnWorldGenerationComplete(const WorldView& world)
     {
@@ -178,6 +195,8 @@ public:
         }
         mCaptureRevision = mTargetRevision;
         mStepValid = (mActive != nullptr && mActiveRevision == mTargetRevision);
+        mInFlight = true;
+        mDropAfterStep = false;
         mCapturedDay = static_cast<uint32_t>(key);
 
         TEntry entry;
@@ -196,10 +215,33 @@ public:
     void Run(Dia::DeferredStep::IParallelExecutor& executor) override
     {
         if (!mStepValid) { return; }
+        const std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         mHooks.RunStep(*mActive, mLatch, executor);
+        mLastStepMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - begin).count();
     }
 
-    void Commit() override {}
+    void Commit() override
+    {
+        mInFlight = false;
+        const bool discard = mCaptureRevision != mTargetRevision || !mStepValid || mDropAfterStep;
+        if (discard)
+        {
+            DIA_LOG_INFO(mLogChannel, "%s: step discarded (%s)", mLogChannel,
+                         mCaptureRevision != mTargetRevision ? "world revision changed"
+                         : (mDropAfterStep ? "world dropped" : "step invalid"));
+            if (mDiscardedCounter != nullptr) { mDiscardedCounter->Inc(); }
+        }
+        else
+        {
+            if (mStepMsGauge != nullptr) { mStepMsGauge->Set(mLastStepMs); }
+            mHooks.PublishCommit(*mActive, mCapturedDay);
+        }
+        if (mDropAfterStep)
+        {
+            DropSims();
+            mDropAfterStep = false;
+        }
+    }
 
     void SerializePending(Dia::SaveGame::SaveContext&) const override {}
     void DeserializePending(Dia::SaveGame::LoadContext&) override {}
@@ -257,6 +299,24 @@ protected:
 private:
     const char* CauseText(CauseCode cause) const { return mCauseText != nullptr ? mCauseText(cause) : "unknown"; }
 
+    void DropSims()
+    {
+        delete mActive;  mActive = nullptr;
+        delete mPending; mPending = nullptr;
+    }
+
+    void RegisterMetrics()
+    {
+        using Dia::Observation::Metric::MetricInfo;
+        static const MetricInfo kStepMsInfo{ "World sim step CPU", "CPU time of the last committed step", "ms" };
+        static const MetricInfo kDiscardedInfo{ "World sim discarded steps",
+                                                "Steps dropped because the world changed or the step was invalid", "count" };
+        auto& metrics = Dia::Observation::Metric::MetricRegistry::Instance();
+        mStepMsGauge = metrics.RegisterGauge(Dia::Core::StringCRC(World::MetricName(mSysToken, "step_ms").c_str()), kStepMsInfo);
+        mDiscardedCounter = metrics.RegisterCounter(
+            Dia::Core::StringCRC(World::MetricName(mSysToken, "discarded_steps").c_str()), kDiscardedInfo);
+    }
+
     void BeginSpinUp(const WorldView& world)
     {
         TSim* stale = nullptr;
@@ -279,8 +339,7 @@ private:
         uint32_t leftoverRevision = 0;
         if (mSpinUp.TryTake(leftover, leftoverRevision)) { delete leftover; }
         mSpinUp.Reset();
-        delete mActive;  mActive = nullptr;
-        delete mPending; mPending = nullptr;
+        DropSims();
         mQueue.Clear();
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
         if (callHooks) { mHooks.OnStopExtra(); }
@@ -300,6 +359,11 @@ private:
     uint32_t mCaptureRevision = 0;
     uint32_t mCapturedDay = 0;
     bool mStepValid = false;
+    bool mInFlight = false;        // between Capture and Commit
+    bool mDropAfterStep = false;   // the world failed mid-step; drop the sims at Commit
+    double mLastStepMs = 0.0;      // written by Run (worker), read by Commit (SimPU) after Run returns
+    Dia::Observation::Metric::Gauge* mStepMsGauge = nullptr;
+    Dia::Observation::Metric::Counter* mDiscardedCounter = nullptr;
     uint32_t mVisitGeneration = 0;
     bool mStarted = false;
     bool mQueueDegraded = false;
