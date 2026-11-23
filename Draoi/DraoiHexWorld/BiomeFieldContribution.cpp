@@ -7,11 +7,6 @@ namespace HexWorld {
 
 namespace
 {
-    // The registry's tag vocabulary (BiomeRegistry.cpp kTagNames). The registry exposes only FindTag, not its list, so the
-    // names are repeated here; a name the registry no longer knows is skipped (FindTag), a new registry tag needs adding here.
-    const char* const kTagNames[] = { "land", "water", "aquatic", "wet", "cold", "hot",
-                                      "forest", "open", "fuel", "mountain", "volcanic", "succession" };
-
     BiomeIndex BiomeAt(const BiomeFieldSource& s, uint32_t cell)
     {
         const WorldStructure& w = s.World();
@@ -44,8 +39,9 @@ void RegisterBiomeFields(WorldCellFields& fields, BiomeFieldSource& source)
     fields.Register(slot, Dia::Core::StringCRC("index"), index);
 
     uint32_t bound = 0;
-    for (const char* tagName : kTagNames)
+    for (uint32_t tagIndex = 0; tagIndex < BiomeRegistry::TagCount(); ++tagIndex)
     {
+        const char* tagName = BiomeRegistry::TagName(static_cast<TagId>(tagIndex));
         const TagId tag = source.Biomes().FindTag(Dia::Core::StringCRC(tagName));
         if (tag == kNoTag || bound >= BiomeFieldSource::kMaxTags) { continue; }
 

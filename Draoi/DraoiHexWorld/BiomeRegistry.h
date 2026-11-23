@@ -70,6 +70,9 @@ public:
     bool        HasTag(BiomeIndex b, TagId tag) const;
     uint64_t    TagMask(BiomeIndex b) const;
     TagId       FindTag(Dia::Core::StringCRC tag) const;
+    // The fixed tag vocabulary (TagId is the index): lets callers enumerate tags instead of repeating the list.
+    static uint32_t    TagCount();
+    static const char* TagName(TagId tag);   // nullptr when tag >= TagCount()
 
     // Known id -> its index. Unknown id -> Role(Fallback), with one DIA_LOG_WARNING per
     // distinct unknown id per registry instance (up to 64 distinct ids are tracked; once

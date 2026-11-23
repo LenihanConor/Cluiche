@@ -5,6 +5,7 @@
 // application owns), so they use the CoW test session helper from the same GoogleTests project. The package under test
 // (and its headers) names no CoW identifier; only this test fixture does.
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include <DiaCondition/ConditionExpr.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -232,6 +233,29 @@ TEST(FieldContributions, BiomeIndexAndTagsMatchHandComputedCells)
     EXPECT_EQ(land, (std::vector<uint32_t>{ 2, 3, 4, 5 }));
     const std::vector<uint32_t> water = EvalSet(fields, R"({"op":"==","slot":"biome","field":"tag.water","value":1})", 8);
     EXPECT_EQ(water, (std::vector<uint32_t>{ 0, 1, 6, 7 }));
+}
+
+TEST(FieldContributions, BiomeTagVocabularyIsEnumerableAndRegisteredInFull)
+{
+    BiomeRegistry reg;
+    RegistryError err;
+    ASSERT_TRUE(reg.LoadFromText(kBiomeFixture, Testing::ShippedStratumTable(), err));
+    ASSERT_EQ(BiomeRegistry::TagCount(), 12u);
+    EXPECT_EQ(BiomeRegistry::TagName(static_cast<TagId>(BiomeRegistry::TagCount())), nullptr);
+    WorldStructure world;
+    world.Resize({ 2, 2 });
+    BiomeFieldSource source(reg, world);
+    WorldCellFields fields;
+    RegisterBiomeFields(fields, source);
+    for (uint32_t i = 0; i < BiomeRegistry::TagCount(); ++i)
+    {
+        const char* name = BiomeRegistry::TagName(static_cast<TagId>(i));
+        ASSERT_NE(name, nullptr);
+        EXPECT_EQ(reg.FindTag(StringCRC(name)), static_cast<TagId>(i)) << name;
+        char field[96];
+        std::snprintf(field, sizeof(field), "tag.%s", name);
+        EXPECT_TRUE(fields.Has(Slot("biome"), StringCRC(field))) << field;
+    }
 }
 
 TEST(FieldContributions, BiomeUnknownTagIsNotRegistered)

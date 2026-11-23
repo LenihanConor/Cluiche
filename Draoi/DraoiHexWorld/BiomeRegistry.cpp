@@ -484,6 +484,10 @@ uint64_t BiomeRegistry::TagMask(BiomeIndex b) const
     return r ? r->tagMask : 0ull;
 }
 
+uint32_t BiomeRegistry::TagCount() { return kTagCount; }
+
+const char* BiomeRegistry::TagName(TagId tag) { return tag < kTagCount ? kTagNames[tag] : nullptr; }
+
 TagId BiomeRegistry::FindTag(Dia::Core::StringCRC tag) const
 {
     for (uint32_t i = 0; i < kTagCount; ++i)
