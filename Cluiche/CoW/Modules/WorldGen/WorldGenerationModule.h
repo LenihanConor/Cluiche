@@ -7,7 +7,9 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DraoiHexWorld/SharedWorldHexGrid.h>
 #include <DraoiHexWorldTerrain/SiteRegistry.h>
+#include <DraoiHexWorld/WorldCellFields.h>
 #include <DraoiHexWorldTerrain/StrataAssigner.h>
+#include <DraoiHexWorldTerrain/TerrainFieldContribution.h>
 #include <DraoiHexWorldTerrain/WorldGenSession.h>
 #include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"
@@ -17,7 +19,7 @@
 #include <memory>
 #include <string>
 
-namespace Draoi { namespace HexWorld { class BiomeRegistry; } }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
+namespace Draoi { namespace HexWorld { class BiomeRegistry; class BiomeFieldSource; } }   // full definition: DraoiHexWorld/BiomeRegistry.h (pulls windows.h; kept out of this header)
 
 namespace CoW {
 
@@ -146,6 +148,10 @@ public:
     void SetGuaranteesText(const std::string& text, const std::string& sidecar) { mGuaranteesText = text; mGuaranteesSidecarText = sidecar; mGuaranteesTextSet = true; }
     void SetGuaranteesPath(const std::string& path) { mGuaranteesPath = path; }
     const Draoi::HexWorld::BiomeRegistry& GetBiomeRegistry() const { return *mBiomes; }
+    // Per-cell fields of the committed world (terrain.*, biome.index, biome.tag.<tag>; spec worldsim-kit section 4, AC 10b).
+    // Cleared and re-registered by the Draoi contributions each time a world is published (WorldGenerationComplete),
+    // so the readers always see the session's committed state. SimPU thread only.
+    Draoi::HexWorld::WorldCellFields& GetCellFields() { return mCellFields; }
     bool AreBiomesLoaded() const { return mBiomesLoaded; }
     // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
     const std::string& GetBiomesErrorField() const { return mBiomesErrorField; }
@@ -190,6 +196,8 @@ private:
     void LoadBiomes();
     void ReportBiomesFailure();
     void ApplyHandoffPreset();
+    // Clear + re-register the Draoi biome and terrain field contributions (the S-1 half of the cell-field registry).
+    void RebuildCellFields();
     void RegisterCommands();
     void UnregisterCommands();
     // World hand-off failure: Error log, Failing health, automatic generation suppressed (mHandoffError holds the reason).
@@ -204,6 +212,8 @@ private:
     void LogWorldFileReply(const char* action, const Json::Value& reply) const;
 
     Draoi::HexWorld::WorldGenSession mSession;
+    Draoi::HexWorld::TerrainFieldSource mTerrainSource{mSession};   // readers point into the session (fixed address)
+    Draoi::HexWorld::WorldCellFields mCellFields;
     Draoi::HexWorld::SiteRegistry mSiteRegistry;
     Draoi::HexWorld::StrataAssignerRegistry mStrataAssigners;
 #ifdef DIA_DEBUG
@@ -223,6 +233,7 @@ private:
     std::string mRulesErrorKey;
     std::string mRulesErrorReason;
     std::unique_ptr<Draoi::HexWorld::BiomeRegistry> mBiomes;
+    std::unique_ptr<Draoi::HexWorld::BiomeFieldSource> mBiomeSource;
     std::string mStrataText;
     std::string mStrataSidecarText;
     bool mStrataTextSet = false;

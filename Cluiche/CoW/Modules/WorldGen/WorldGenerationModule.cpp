@@ -1,5 +1,6 @@
 #include "Modules/WorldGen/WorldGenerationModule.h"
 
+#include <DraoiHexWorld/BiomeFieldContribution.h>
 #include <DraoiHexWorld/BiomeRegistry.h>
 #include <Shared/CoWNodeKinds.h>
 #include <Shared/CoWStepSeedNames.h>
@@ -36,6 +37,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
     mSiteRegistry.SetNodeKinds(WorldGeneration::CoWNodeKindIds());   // CoW's saved built-in node kind ids
     mSession.SetStepSeedNames(WorldGeneration::CoWStepSeedNames());   // CoW's RNG step ids: keeps CoW worlds byte-identical
     mBiomes = std::make_unique<Draoi::HexWorld::BiomeRegistry>();
+    mBiomeSource = std::make_unique<Draoi::HexWorld::BiomeFieldSource>(*mBiomes, mSession.World());
     mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
 }
 
@@ -670,6 +672,8 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     if (mSession.State() == Draoi::HexWorld::WorldGenState::Failed)
         return;   // unsatisfiable: no accepted world, so no WorldGenerationComplete
 
+    RebuildCellFields();
+
     WorldGenerationComplete msg;
     msg.seed = mSession.Seed();
     msg.retryAttempts = (retryRun && mSession.LastReport()->attempts.Size() > 0)
@@ -830,6 +834,15 @@ Json::Value WorldGenerationModule::ImportWorldFile(const Json::Value& args)
     return r;
 }
 
+void WorldGenerationModule::RebuildCellFields()
+{
+    // The protected kinds are data (guarantees.json); AddProtectedKindsFrom ignores duplicates, so a rebuild is idempotent.
+    mTerrainSource.AddProtectedKindsFrom(mSession.GetGuaranteeSpec());
+    mCellFields.Clear();
+    Draoi::HexWorld::RegisterBiomeFields(mCellFields, *mBiomeSource);
+    Draoi::HexWorld::RegisterTerrainFields(mCellFields, mTerrainSource);
+}
+
 void WorldGenerationModule::OnWorldImported()
 {
     // The world changed without a generation: keep the gauges and health honest and tell the dependants.
@@ -837,6 +850,7 @@ void WorldGenerationModule::OnWorldImported()
         mRevisionGauge->Set(static_cast<double>(mSession.Revision()));
     mGenerationUnsatisfiable = false;
     mHealth.SetOK();
+    RebuildCellFields();
 
     WorldGenerationComplete msg;
     msg.seed = mSession.Seed();

@@ -3270,5 +3270,8 @@
     <ClCompile Include="..\..\CoW\Shared\Debug\RecordsCommandHelper.cpp">
       <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldCellFieldsWiring.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
