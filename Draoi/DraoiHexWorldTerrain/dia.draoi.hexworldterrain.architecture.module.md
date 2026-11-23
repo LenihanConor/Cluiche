@@ -22,6 +22,7 @@ public_api:
     - DraoiHexWorldTerrain/TerrainGenerator.h
     - DraoiHexWorldTerrain/BiomeClassify.h
     - DraoiHexWorldTerrain/RegionsAndSites.h
+    - DraoiHexWorldTerrain/TerrainFieldContribution.h
     - DraoiHexWorldTerrain/SiteRegistry.h
     - DraoiHexWorldTerrain/GuaranteeSpec.h
     - DraoiHexWorldTerrain/WorldGenSession.h
