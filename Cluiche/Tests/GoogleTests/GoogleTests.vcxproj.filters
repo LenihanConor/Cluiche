@@ -3255,5 +3255,8 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldSimNames.cpp">
       <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldSimSaveCodec.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
