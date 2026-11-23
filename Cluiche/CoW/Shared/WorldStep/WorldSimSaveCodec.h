@@ -63,5 +63,27 @@ bool ResolveSavedFields(const TSchema& schema, const char* sys, const FieldDecl*
 // or has no params_hash does not match.
 bool ParamsHashMatches(const Json::Value& record, uint64_t currentHash);
 
+// What the codec needs to check a pending blob: the same fields and caps as the committed record.
+struct RecordSpec
+{
+    const Draoi::HexWorld::SavedField* fields = nullptr;
+    uint32_t fieldCount = 0;
+    Draoi::HexWorld::Caps caps;
+    bool hasBiome = false;     // the record carries biome_palette + biome
+};
+
+constexpr uint32_t kPendingVersion = 1;
+
+// {pending_version:1, valid:false}
+void WritePendingInvalid(Json::Value& blob);
+// {pending_version:1, valid:true, step_day, cell_count}; the system adds its own arrays.
+void WritePendingHeader(Json::Value& blob, uint32_t stepDay, uint32_t cellCount);
+
+// Read-only. Runs the Draoi Validate checks over the blob decoded against its committed record (width, height,
+// params_hash, basin_count and world_hash come from the record; the blob never repeats biome_palette).
+// err names the failing field. A {valid:false} blob is accepted without a committed record.
+bool ValidatePendingBlob(const Json::Value& blob, const Json::Value* committed, const RecordSpec& spec,
+                         Draoi::HexWorld::SaveError& err);
+
 }  // namespace WorldStep
 }  // namespace CoW

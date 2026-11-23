@@ -128,6 +128,21 @@ struct FakeHooks : public FakeBase::Hooks
     }
     void OnStartExtra() override { log.Add("OnStartExtra"); }
     void OnStopExtra() override { log.Add("OnStopExtra"); }
+    void WritePendingFields(Json::Value& blob, const FakeSim& sim) override
+    {
+        log.Add("WritePendingFields");
+        const float v[4] = { static_cast<float>(sim.value), static_cast<float>(sim.value),
+                             static_cast<float>(sim.value), static_cast<float>(sim.value) };
+        Draoi::HexWorld::WriteArray(blob, "value", v, 4);
+    }
+    bool RestorePending(FakeSim& sim, const Json::Value& blob, const Json::Value&) override
+    {
+        log.Add("RestorePending");
+        if (pendingRestoreFails) { return false; }
+        sim.value = blob["value"][0u].asInt();
+        pendingRestoredValue = sim.value;
+        return true;
+    }
     bool ExtraCountMatches(const Json::Value&, const WorldView&) const override { return extraCountOk; }
     bool RestoreCommitted(FakeSim& sim, const Json::Value& record) override
     {
@@ -145,6 +160,8 @@ struct FakeHooks : public FakeBase::Hooks
     bool blockInit = false;
     bool extraCountOk = true;
     bool restoreFails = false;
+    bool pendingRestoreFails = false;
+    int pendingRestoredValue = -1;
     int runSleepMs = 0;
     std::function<void()> onRun;
     std::atomic<bool> releaseInit{false};

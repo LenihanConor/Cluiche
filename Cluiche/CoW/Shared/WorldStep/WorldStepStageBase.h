@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <string>
 #include <thread>
 
 #include <DiaCore/CRC/StringCRC.h>
@@ -211,12 +212,15 @@ public:
         mRestoredValid = false;
         mHaveStash = false;
         mStashRecord = Json::Value();
+        mHaveCommitted = false;
+        mCommittedRecord = Json::Value();
 
         // 2. ready:false, or no world: stop
         const bool recordReady = record.isObject() && record["ready"].isBool() && record["ready"].asBool();
         if (!recordReady)
         {
             DIA_LOG_INFO(mLogChannel, "%s: saved record is not ready, nothing restored", mLogChannel);
+            mHaveStashPending = false;
             if (mStarted && mWorld.present) { BeginSpinUp(mWorld); }
             return RestoreResult::kNotReady;
         }
@@ -338,8 +342,48 @@ public:
         }
     }
 
-    void SerializePending(Dia::SaveGame::SaveContext&) const override {}
-    void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+    // Pending blob: {pending_version:1, valid, step_day, cell_count, ...system fields}, or {pending_version:1, valid:false}
+    // when no step result is in flight (none captured, or the step was or will be discarded).
+    void SerializePending(Dia::SaveGame::SaveContext& ctx) const override
+    {
+        Json::Value blob(Json::objectValue);
+        const bool inFlight = mInFlight && mStepValid && !mDropAfterStep && mActive != nullptr
+                           && mCaptureRevision == mTargetRevision;
+        if (inFlight)
+        {
+            WritePendingHeader(blob, mCapturedDay, mWorld.width * mWorld.height);
+            mHooks.WritePendingFields(blob, *mActive);
+        }
+        else
+        {
+            WritePendingInvalid(blob);
+        }
+        Json::Value& root = ctx.Root();
+        const Json::Value::Members names = blob.getMemberNames();
+        for (const std::string& name : names) { root[name] = blob[name]; }
+    }
+
+    // Applies a validated blob to the restored sim. A blob that cannot be restored leaves the stage not ready.
+    void DeserializePending(Dia::SaveGame::LoadContext& ctx) override
+    {
+        const Json::Value& blob = ctx.Root();
+        mHaveStashPending = false;
+        mStashPending = Json::Value();
+        if (!blob.isObject() || !blob["valid"].isBool() || !blob["valid"].asBool()) { return; }   // nothing in flight
+        if (mActive != nullptr)
+        {
+            ApplyPending(blob);
+        }
+        else if (mHaveStash)
+        {
+            mStashPending = blob;      // applied after the stashed record restores
+            mHaveStashPending = true;
+        }
+        else
+        {
+            DIA_LOG_INFO(mLogChannel, "%s: pending blob has no restored sim to apply to, dropped", mLogChannel);
+        }
+    }
     bool ValidatePending(Dia::SaveGame::LoadContext& ctx) const override { return ValidatePendingBlob(ctx); }
 
     // ----- inspection ------------------------------------------------------------------------------
@@ -348,6 +392,16 @@ public:
     bool HasPending() const { return mPending != nullptr; }
     bool SpinUpRunning() const { return mSpinUp.State() == SpinUpSlot<TSim>::kRunning; }
     bool HasStashedRecord() const { return mHaveStash; }
+
+    // The fields and caps ValidatePending checks a pending blob against. Not owned; null -> blobs are not checked.
+    void SetRecordSpec(const RecordSpec* spec) { mSpec = spec; }
+    // The committed record the pending blob decodes against. A system calls this from its own Validate (which runs
+    // before any Deserialize), so ValidatePending can run before Restore.
+    void NoteCommittedRecord(const Json::Value& record)
+    {
+        mCommittedRecord = record;
+        mHaveCommitted = true;
+    }
     uint32_t RestoredRevision() const { return mRestoredRevision; }
     uint32_t QueueCount() const { return mQueue.Count(); }
     uint32_t VisitGeneration() const { return mVisitGeneration; }
@@ -365,8 +419,17 @@ public:
     }
 
 protected:
-    // Codec seam: the real pending-blob check arrives with the save codec.
-    virtual bool ValidatePendingBlob(Dia::SaveGame::LoadContext&) const { return true; }
+    // Codec seam: read-only pending-blob check through the Draoi codec. Without a RecordSpec it accepts.
+    virtual bool ValidatePendingBlob(Dia::SaveGame::LoadContext& ctx) const
+    {
+        if (mSpec == nullptr) { return true; }
+        const Json::Value* committed = mHaveCommitted ? &mCommittedRecord : (mHaveStash ? &mStashRecord : nullptr);
+        Draoi::HexWorld::SaveError err;
+        if (WorldStep::ValidatePendingBlob(ctx.Root(), committed, *mSpec, err)) { return true; }
+        DIA_LOG_WARNING(mLogChannel, "%s: pending blob rejected at field %s: %s", mLogChannel, err.field.AsCStr(),
+                        err.reason.AsCStr());
+        return false;
+    }
 
     // Called first in Stop; the owner unregisters the stage from its chain here.
     virtual void UnregisterStage() {}
@@ -425,6 +488,8 @@ private:
         mActive = sim;
         mActiveRevision = mTargetRevision = mRestoredRevision = mWorld.revision;
         mRestoredValid = true;
+        mCommittedRecord = record;
+        mHaveCommitted = true;
         mCause = 0;
         if (!mParamsDegraded) { mHealth.SetOK(); }
         DIA_LOG_INFO(mLogChannel, "%s: restored revision %u from the saved record", mLogChannel,
@@ -436,12 +501,29 @@ private:
             mParamsDegraded = true;
             mHealth.SetDegraded(Dia::Core::StringCRC("params_changed"));
         }
+        if (mHaveStashPending)
+        {
+            mHaveStashPending = false;
+            Json::Value blob = mStashPending;
+            mStashPending = Json::Value();
+            ApplyPending(blob);
+        }
         return RestoreResult::kApplied;
+    }
+
+    void ApplyPending(const Json::Value& blob)
+    {
+        if (mHooks.RestorePending(*mActive, blob, mCommittedRecord)) { return; }
+        DIA_LOG_WARNING(mLogChannel, "%s: pending blob could not be restored, stage not ready", mLogChannel);
+        DropSims();
+        mRestoredValid = false;
     }
 
     RestoreResult DiscardRestore(const char* why)
     {
         DIA_LOG_WARNING(mLogChannel, "%s: restore discarded: %s", mLogChannel, why);
+        mHaveStashPending = false;
+        mStashPending = Json::Value();
         DropSims();
         mRestoredValid = false;
         mTargetRevision = mWorld.revision;
@@ -527,6 +609,11 @@ private:
     bool mRestoredValid = false;        // the active sim came from a restore at mRestoredRevision
     Json::Value mStashRecord;           // event-order fallback: record waiting for its world
     bool mHaveStash = false;
+    Json::Value mStashPending;          // pending blob that arrived before the sim it applies to
+    bool mHaveStashPending = false;
+    Json::Value mCommittedRecord;       // last restored (or noted) committed record, for pending-blob decoding
+    bool mHaveCommitted = false;
+    const RecordSpec* mSpec = nullptr;
     CauseCode mCause = 0;
     WorldView mWorld;
     TLatch mLatch;

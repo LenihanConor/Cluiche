@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <string>
+#include <vector>
 
 #include <DiaDeferredStep/SerialExecutor.h>
 #include <DiaObservation/Log/ISink.h>
@@ -563,6 +564,316 @@ TEST_F(WorldSimSaveCodecTest, RestoredStageDoesNotRespinWhenStartedAgain)
     stage.Start();   // already started: no-op
     EXPECT_FALSE(stage.SpinUpRunning());
     EXPECT_TRUE(stage.IsReady());
+}
+
+// ---- Task 19: event-order fallback and the pending blob ------------------------------------------------
+
+TEST_F(WorldSimSaveCodecTest, FallbackStashesTheRecordUntilTheWorldArrives)
+{
+    hooks.log.Clear();
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42)));
+    EXPECT_TRUE(stage.HasStashedRecord());
+    EXPECT_FALSE(Called("InitialiseSim"));
+    EXPECT_FALSE(stage.IsReady());
+
+    Announce(MakeWorld(6));
+    EXPECT_FALSE(stage.HasStashedRecord());
+    EXPECT_TRUE(stage.IsReady());
+    EXPECT_FALSE(stage.SpinUpRunning()) << "restored, so no spin-up";
+    EXPECT_EQ(6u, stage.RestoredRevision());
+    stage.Capture(5);
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_EQ(42 * 2 + 5, hooks.publishedValue);
+}
+
+TEST_F(WorldSimSaveCodecTest, FallbackStashAgainstAMismatchingWorldDiscardsAndSpinsUp)
+{
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42, 7, 3, 3)));
+    const unsigned before = Sink().warnings;
+    Announce(MakeWorld(6, 2, 2));
+    EXPECT_EQ(before + 1, Sink().warnings);
+    EXPECT_FALSE(stage.HasStashedRecord());
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_TRUE(stage.SpinUpRunning());
+}
+
+TEST_F(WorldSimSaveCodecTest, FallbackStashIsAppliedOnceOnly)
+{
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42)));
+    Announce(MakeWorld(6));
+    ASSERT_TRUE(stage.IsReady());
+    hooks.log.Clear();
+    Announce(MakeWorld(6));                    // re-announce: step 7
+    Announce(MakeWorld(7));                    // later world: normal spin-up, no second restore
+    EXPECT_FALSE(Called("RestoreCommitted"));
+    EXPECT_TRUE(stage.SpinUpRunning());
+}
+
+TEST_F(WorldSimSaveCodecTest, FallbackStashIsDroppedWhenTheWorldFails)
+{
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42)));
+    stage.OnWorldGenerationFailed();
+    EXPECT_FALSE(stage.HasStashedRecord());
+}
+
+TEST_F(WorldSimSaveCodecTest, NotReadyRecordIsNotStashedWithoutAWorld)
+{
+    Json::Value rec(Json::objectValue);
+    Draoi::HexWorld::WriteNotReady(rec);
+    EXPECT_EQ(Rr::kNotReady, stage.Restore(rec));
+    EXPECT_FALSE(stage.HasStashedRecord());
+}
+
+namespace {
+
+const SavedField kValueField = { "value", SavedKind::F32, SavedScope::PerCell, 0.0, 1000.0 };
+
+RecordSpec MakeSpec(bool biome = false)
+{
+    RecordSpec s;
+    s.fields = &kValueField;
+    s.fieldCount = 1;
+    s.hasBiome = biome;
+    return s;
+}
+
+Json::Value ValidBlob(float v = 89.f)
+{
+    Json::Value blob(Json::objectValue);
+    WritePendingHeader(blob, 5, 4);
+    const float arr[4] = { v, v, v, v };
+    Draoi::HexWorld::WriteArray(blob, "value", arr, 4);
+    return blob;
+}
+
+Json::Value CommittedWithPalette()
+{
+    Json::Value root(Json::objectValue);
+    Draoi::HexWorld::SaveHeader hd;
+    hd.width = 2; hd.height = 2; hd.cellCount = 4; hd.stepDay = 3; hd.paramsHash = 7; hd.worldHash = 9;
+    Draoi::HexWorld::WriteHeader(root, hd);
+    Json::Value palette(Json::arrayValue);
+    palette.append("forest");
+    palette.append("lake");
+    root["biome_palette"] = palette;
+    return root;
+}
+
+}  // namespace
+
+TEST_F(WorldSimSaveCodecTest, PendingInvalidFormIsExactlyVersionAndValidFalse)
+{
+    Json::Value blob(Json::objectValue);
+    WritePendingInvalid(blob);
+    EXPECT_EQ(2u, blob.size());
+    EXPECT_EQ(1u, blob["pending_version"].asUInt());
+    EXPECT_TRUE(blob["valid"].isBool());
+    EXPECT_FALSE(blob["valid"].asBool());
+    SaveError err;
+    EXPECT_TRUE(ValidatePendingBlob(blob, nullptr, MakeSpec(), err)) << "needs no committed record";
+}
+
+TEST_F(WorldSimSaveCodecTest, ValidatePendingBlobRejectsCorruptBlobsNamingTheField)
+{
+    const Json::Value committed = ReadyRecord(42);
+    SaveError err;
+    ASSERT_TRUE(ValidatePendingBlob(ValidBlob(), &committed, MakeSpec(), err)) << "baseline accepted";
+
+    struct Case { const char* name; const char* field; Json::Value blob; };
+    std::vector<Case> cases;
+    { Json::Value b = ValidBlob(); b["value"][1u] = 5000.0;            cases.push_back({ "out of range", "value", b }); }
+    { Json::Value b = ValidBlob(); b["value"].append(1.0);              cases.push_back({ "too long", "value", b }); }
+    { Json::Value b = ValidBlob(); b.removeMember("value");            cases.push_back({ "missing array", "value", b }); }
+    { Json::Value b = ValidBlob(); b["value"][2u] = "x";               cases.push_back({ "not a number", "value", b }); }
+    { Json::Value b = ValidBlob(); b["pending_version"] = 2;           cases.push_back({ "future version", "pending_version", b }); }
+    { Json::Value b = ValidBlob(); b.removeMember("pending_version");  cases.push_back({ "no version", "pending_version", b }); }
+    { Json::Value b = ValidBlob(); b["valid"] = 1;                     cases.push_back({ "valid not bool", "valid", b }); }
+    { Json::Value b = ValidBlob(); b["cell_count"] = 9;                cases.push_back({ "cell_count", "cell_count", b }); }
+    { Json::Value b = ValidBlob(); b.removeMember("step_day");         cases.push_back({ "no step_day", "step_day", b }); }
+    { Json::Value b = ValidBlob(); b["biome_palette"] = Json::Value(Json::arrayValue); cases.push_back({ "repeats palette", "biome_palette", b }); }
+    cases.push_back({ "not an object", "pending_version", Json::Value(3) });
+    for (const Case& c : cases)
+    {
+        SCOPED_TRACE(c.name);
+        SaveError e;
+        EXPECT_FALSE(ValidatePendingBlob(c.blob, &committed, MakeSpec(), e));
+        EXPECT_STREQ(c.field, e.field.AsCStr());
+    }
+}
+
+TEST_F(WorldSimSaveCodecTest, ValidatePendingBlobWithoutACommittedRecordIsRejectedNamingTheField)
+{
+    Json::Value notReady(Json::objectValue);
+    Draoi::HexWorld::WriteNotReady(notReady);
+    SaveError e1, e2, e3;
+    EXPECT_FALSE(ValidatePendingBlob(ValidBlob(), nullptr, MakeSpec(), e1));
+    EXPECT_STREQ("committed_record", e1.field.AsCStr());
+    EXPECT_FALSE(ValidatePendingBlob(ValidBlob(), &notReady, MakeSpec(), e2));
+    EXPECT_STREQ("committed_record", e2.field.AsCStr());
+    // With a biome layer the field that cannot be decoded is the palette.
+    EXPECT_FALSE(ValidatePendingBlob(ValidBlob(), nullptr, MakeSpec(true), e3));
+    EXPECT_STREQ("biome_palette", e3.field.AsCStr());
+}
+
+TEST_F(WorldSimSaveCodecTest, PendingBlobDecodesBiomeAgainstTheCommittedPalette)
+{
+    const Json::Value committed = CommittedWithPalette();
+    Json::Value blob = ValidBlob();
+    Json::Value biome(Json::arrayValue);
+    for (int i = 0; i < 4; ++i) { biome.append(i % 2); }
+    blob["biome"] = biome;
+    SaveError err;
+    EXPECT_TRUE(ValidatePendingBlob(blob, &committed, MakeSpec(true), err)) << err.field.AsCStr();
+    EXPECT_FALSE(blob.isMember("biome_palette")) << "the blob carries no palette of its own";
+
+    Json::Value outside = blob;
+    outside["biome"][3u] = 2;                    // palette has 2 entries
+    EXPECT_FALSE(ValidatePendingBlob(outside, &committed, MakeSpec(true), err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+
+    Json::Value shortBiome = blob;
+    shortBiome["biome"] = Json::Value(Json::arrayValue);
+    EXPECT_FALSE(ValidatePendingBlob(shortBiome, &committed, MakeSpec(true), err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+
+    Json::Value missing = blob;
+    missing.removeMember("biome");
+    EXPECT_FALSE(ValidatePendingBlob(missing, &committed, MakeSpec(true), err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+}
+
+TEST_F(WorldSimSaveCodecTest, StageValidatePendingUsesTheNotedCommittedRecordAndIsReadOnly)
+{
+    const RecordSpec spec = MakeSpec();
+    stage.SetRecordSpec(&spec);
+    const Json::Value blob = ValidBlob();
+    Dia::SaveGame::LoadContext ctx(blob);
+    EXPECT_FALSE(stage.ValidatePending(ctx)) << "no committed record known yet";
+    stage.NoteCommittedRecord(ReadyRecord(42));
+    EXPECT_TRUE(stage.ValidatePending(ctx));
+    EXPECT_FALSE(stage.HasActive()) << "validation never touches live state";
+    EXPECT_FALSE(stage.IsReady());
+
+    Json::Value bad = blob;
+    bad["value"][0u] = -1.0;
+    Dia::SaveGame::LoadContext badCtx(bad);
+    EXPECT_FALSE(stage.ValidatePending(badCtx));
+}
+
+TEST_F(WorldSimSaveCodecTest, PendingBlobRoundTripsAStepInFlight)
+{
+    const RecordSpec spec = MakeSpec();
+    stage.SetRecordSpec(&spec);
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    stage.Capture(5);
+    stage.Run(exec);                             // working value is now 42 * 2 + 5 = 89
+
+    Dia::SaveGame::SaveContext out;
+    stage.SerializePending(out);
+    const Json::Value blob = out.Root();
+    ASSERT_TRUE(blob["valid"].asBool());
+    EXPECT_EQ(1u, blob["pending_version"].asUInt());
+    EXPECT_EQ(5u, blob["step_day"].asUInt());
+    EXPECT_EQ(4u, blob["cell_count"].asUInt());
+    EXPECT_EQ(89, blob["value"][0u].asInt());
+    EXPECT_FALSE(blob.isMember("biome_palette"));
+
+    // A second stage restored from the same committed record takes the blob back.
+    FakeHooks hooks2;
+    FakeStage stage2(hooks2, &hooks2.log);
+    stage2.SetRecordSpec(&spec);
+    stage2.Start();
+    stage2.OnWorldGenerationComplete(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage2.Restore(ReadyRecord(42)));
+    Dia::SaveGame::LoadContext ctx(blob);
+    EXPECT_TRUE(stage2.ValidatePending(ctx));
+    stage2.DeserializePending(ctx);
+    EXPECT_EQ(89, hooks2.pendingRestoredValue);
+    EXPECT_TRUE(stage2.IsReady());
+    stage2.Stop();
+}
+
+TEST_F(WorldSimSaveCodecTest, DiscardedStepWritesTheInvalidFormAndRoundTrips)
+{
+    const RecordSpec spec = MakeSpec();
+    stage.SetRecordSpec(&spec);
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    stage.Capture(5);
+    stage.Run(exec);
+    Announce(MakeWorld(2));                      // the world changed mid-step: Commit discards
+    stage.Commit();
+
+    Dia::SaveGame::SaveContext out;
+    stage.SerializePending(out);
+    const Json::Value blob = out.Root();
+    EXPECT_EQ(2u, blob.size());
+    EXPECT_FALSE(blob["valid"].asBool());
+    EXPECT_EQ(1u, blob["pending_version"].asUInt());
+
+    Dia::SaveGame::LoadContext ctx(blob);
+    stage.NoteCommittedRecord(ReadyRecord(42));
+    EXPECT_TRUE(stage.ValidatePending(ctx));
+    hooks.log.Clear();
+    stage.DeserializePending(ctx);
+    EXPECT_FALSE(Called("RestorePending"));
+}
+
+TEST_F(WorldSimSaveCodecTest, NoStepInFlightWritesTheInvalidForm)
+{
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    Dia::SaveGame::SaveContext out;
+    stage.SerializePending(out);
+    EXPECT_FALSE(out.Root()["valid"].asBool());
+    EXPECT_EQ(2u, out.Root().size());
+}
+
+TEST_F(WorldSimSaveCodecTest, PendingBlobThatCannotBeRestoredLeavesTheStageNotReady)
+{
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    ASSERT_TRUE(stage.IsReady());
+    hooks.pendingRestoreFails = true;
+    const Json::Value blob = ValidBlob();
+    Dia::SaveGame::LoadContext ctx(blob);
+    const unsigned before = Sink().warnings;
+    stage.DeserializePending(ctx);
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_EQ(before + 1, Sink().warnings);
+    // A step on a not-ready stage is tolerated: nothing runs, nothing is published.
+    hooks.publishCount = 0;
+    stage.Capture(6);
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_EQ(0u, hooks.publishCount);
+}
+
+TEST_F(WorldSimSaveCodecTest, PendingBlobBeforeTheWorldIsAppliedAfterTheRestore)
+{
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42)));
+    const Json::Value blob = ValidBlob(77.f);
+    Dia::SaveGame::LoadContext ctx(blob);
+    stage.DeserializePending(ctx);
+    EXPECT_FALSE(Called("RestorePending")) << "no sim yet";
+    Announce(MakeWorld(1));
+    EXPECT_TRUE(Called("RestorePending"));
+    EXPECT_EQ(77, hooks.pendingRestoredValue);
+    EXPECT_TRUE(stage.IsReady());
+}
+
+TEST_F(WorldSimSaveCodecTest, DiscardedRestoreDropsAStashedPendingBlob)
+{
+    ASSERT_EQ(Rr::kStashed, stage.Restore(ReadyRecord(42, 7, 3, 3)));
+    const Json::Value blob = ValidBlob(77.f);
+    Dia::SaveGame::LoadContext ctx(blob);
+    stage.DeserializePending(ctx);
+    Announce(MakeWorld(1));                      // 2x2 world vs 3x3 record: discarded
+    EXPECT_FALSE(Called("RestorePending"));
+    EXPECT_FALSE(stage.IsReady());
 }
 
 }  // namespace Testing
