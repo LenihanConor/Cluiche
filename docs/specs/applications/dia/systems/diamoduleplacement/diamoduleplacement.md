@@ -7,7 +7,7 @@
 
 ## Summary
 
-Move every application-flow module class (`SimModule`, `RenderModule`, `MainModule`, `Module` subclasses) out of the Dia packages and into the application layer, so each Dia package is a plain library again. Wiring (processing-unit affinity, bus, save, debug domains) is where games differ, and PD-012 already says it always stays in the application "as with Dia". Today it does not.
+Move every concrete application-flow module class (`SimModule`, `RenderModule`, `MainModule`, `Module` subclasses) out of the Dia packages and into the application layer, so each Dia package is a plain library again. Wiring (processing-unit affinity, bus, save, debug domains) is where games differ, and PD-012 already says it always stays in the application "as with Dia". Today it does not.
 
 ## Problem
 
@@ -37,7 +37,7 @@ Move every application-flow module class (`SimModule`, `RenderModule`, `MainModu
 | Escalation rule | `CLAUDE.md` | No new Dia headers are added. Files only leave Dia. |
 | **MP-001 (new):** keep `kTypeId` strings and `DIA_DESCRIBE` text unchanged | this spec | `.diaapp` manifests, the describe-mode export and command help key on them. A moved module must stay manifest-compatible with no manifest edits. |
 | **MP-002 (new):** destination rule | decided with the user 2026-11-23 | Shared by 2+ apps or used by Baseline -> `CluicheGameBaseline`. Used by exactly one app -> that app. |
-| **MP-003 (new):** move everything, including the framework's own modules | decided with the user 2026-11-23; **under review** | `ObservationModule` moves unless the user accepts the exception in Open Design Question 1; `MetricsCollectorModule` is deleted, not moved. |
+| **MP-003 (new):** framework base classes stay in `DiaApplicationFlow`; framework modules that are not base classes move or go | decided with the user 2026-11-23 | `ObservationModule` becomes the base `ObservationModuleBase` and stays; `MetricsCollectorModule` is deleted. |
 | **MP-004 (new):** tests split by what they test | decided with the user 2026-11-23 | Library tests (Bus, Impl) stay with the Dia package. Tests that drive `DoStart`/`DoUpdate`/`DoStop` move beside the module in a Baseline test folder. |
 
 ## Features
@@ -61,11 +61,11 @@ Consumers were counted from `#include` of the module header outside its own pack
 | `DeferredStepModule` (DiaDeferredStep, application) | manifests: `cow_main`, `deferred_step_test_stage` (CoW and CluicheTest) | 3 | **Baseline** (shared). Sequence with the `DiaParallelExecutor` backlog row. |
 | `AIBudgetModule` (DiaAIBudget, gameplay) | Baseline | 2 | **Baseline** |
 | `ValueSchemaModule` (DiaValueSchema, assets) | **live:** manifests `cluiche_main`, `cow_main`; self-registers in Dia | 7 | **Baseline** |
-| `SensorModule` (DiaSensor, gameplay) | none: no manifest, no app code, only its own package test (the whole DiaSensor package has no app consumer) | 1 | **Baseline** for now (Open Design Question 2) |
+| `SensorModule` (DiaSensor, gameplay) | none: no manifest, no app code, only its own package test (the whole DiaSensor package has no app consumer) | 1 | **Baseline.** Decided 2026-11-23: keep, because sensing is generic (entity, spatial and blackboard only) and Draoi cannot hold modules. Nothing loads it yet. |
 | `CellHistoryModule` (DiaCellHistory, visual) | manifest: `cell_layers_viewer_test_stage` (CluicheTest) | 1 | **CluicheTest** |
 | `EntitySpawnerModule` (DiaEntitySpawner, gameplay) | CluicheTest only (already subclasses it) | 2 | **CluicheTest** |
 | `TriggerScriptModule` (DiaTriggerScript, gameplay) | CluicheTest only | 1 | **CluicheTest** |
-| `ObservationModule` (DiaApplicationFlow) | Baseline subclass, CluicheEditor subclass | 0 | **Baseline** (Open Design Question 1: CluicheEditor) |
+| `ObservationModule` (DiaApplicationFlow) | manifests `cluiche_main`, `cow_main`, `editor`; Baseline and CluicheEditor each subclass it | 0 | **Rename the base to `ObservationModuleBase` and keep it in `DiaApplicationFlow`** (it is a framework base class, like `SimModule`). The apps' concrete `ObservationModule` classes keep their name and type id. See Open Design Question 1. |
 | `MetricsCollectorModule` (DiaApplicationFlow/Metrics) | **none: dead.** No `DIA_MODULE`, no manifest, no include. Only the editor's `known_types.json` dropdown lists it. | 0 | **Delete** (Open Design Question 3, answered) |
 
 ### The move, per module
@@ -82,9 +82,11 @@ A forbidden-pattern check, in `dia docs precommit` (it already runs forbidden pa
 
 ## Open Design Questions
 
-1. **`ObservationModule` and `CluicheEditor`.** `ObservationModule` is a 182-line reusable base (log sinks, observation session, per-frame `SessionManager::Tick`). Both `CluicheGameBaseline` and `CluicheEditor` subclass it in about 30 lines each, supplying only the app name and config asset path. The editor does not link Baseline, so moving the base into Baseline forces either a Baseline reference from the editor (pulls in boot menu and game modules) or a second copy. **Recommendation: leave the base in `DiaApplicationFlow` as a documented exception.** It is a generic mechanism, the apps already supply the wiring in their subclasses, and it sits with the other framework classes. This reverses MP-003 for this one class. Open: user to confirm.
-2. **`SensorModule` and the DiaSensor package.** Nothing outside the package uses it, not even a manifest. Moving the module to Baseline would add unused code there. Options: move it anyway (cheap, keeps a built and tested feature), or leave the package as is and revisit whether DiaSensor is wanted at all. Open: user to decide.
-3. ~~`MetricsCollectorModule` registration~~ **Answered 2026-11-23: dead.** It is a `MainModule` skeleton that collected FPS, frame time and memory. It was never registered or loaded, and the observability research (`observ_telemetry/ideate.md`) proposed subsuming it with the metrics registry, which then shipped. Delete it with its `.vcxproj` entries and the `known_types.json` entry in the editor assets (two copies: source and built).
+All three were answered 2026-11-23; kept here as the record.
+
+1. ~~`ObservationModule` and `CluicheEditor`~~ **Answered: it is a base class, so rename it.** `Dia::ApplicationFlow::ObservationModule` is a 182-line reusable base (log sinks, observation session, per-frame `SessionManager::Tick`). Baseline and CluicheEditor each subclass it in about 30 lines, and each subclass is itself named `ObservationModule`, which is what made it look like a concrete module. Decision: rename the Dia class to **`ObservationModuleBase`** (files `Observation/ObservationModuleBase.h/.cpp`) and keep it in `DiaApplicationFlow` beside `Module`, `SimModule` and the other framework bases. The apps' concrete classes keep the name `ObservationModule` and the type id `"ObservationModule"` (MP-001), so manifests do not change. The editor needs no Baseline reference. This amends MP-003: the base is not moved.
+2. ~~`SensorModule` and the DiaSensor package~~ **Answered: keep it and move it to Baseline** (see the table).
+3. ~~`MetricsCollectorModule` registration~~ **Answered: dead, delete.** It is a `MainModule` skeleton that collected FPS, frame time and memory. It was never registered or loaded, and the observability research (`observ_telemetry/ideate.md`) proposed subsuming it with the metrics registry, which then shipped. Delete it with its `.vcxproj` entries and the `known_types.json` entry in the editor assets (two copies: source and built).
 
 ## Status
 
