@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from dia_cli.utils.library_roots import root_of
+
 from .arch_module_map import ModuleInfo, build_module_map
 from .arch_include_parser import resolve_includes
 from .arch_layer_rules import check_layer_violation
@@ -17,7 +19,7 @@ class ArchViolation:
     source_file: str    # repo-relative path
     lineno: int
     include_path: str
-    kind: str           # "forbidden" | "layer"
+    kind: str           # "forbidden" | "boundary" | "layer"
 
 
 def run_arch_check(
@@ -98,7 +100,22 @@ def run_arch_check(
                     ))
                     continue  # don't double-report the same include
 
-                # Check 2: layer ordering
+                # Check 2: root boundary. Dia must never depend on Draoi. Keyed on the
+                # folder, not the layer, so Dia modules with an unparsed layer are covered.
+                if (dep_info and root_of(module_info.path) == "Dia"
+                        and root_of(dep_info.path) == "Draoi"):
+                    violations.append(ArchViolation(
+                        from_module=module_id,
+                        to_module=dep_id,
+                        rule="Dia may not depend on Draoi (layer order: Application -> Draoi -> Dia)",
+                        source_file=rel_src,
+                        lineno=lineno,
+                        include_path=raw_path,
+                        kind="boundary",
+                    ))
+                    continue
+
+                # Check 3: layer ordering
                 if module_info.layer and dep_info and dep_info.layer:
                     rule_violation = check_layer_violation(
                         module_info.layer, dep_info.layer

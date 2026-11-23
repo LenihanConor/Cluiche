@@ -27,8 +27,12 @@ def parse_layer(layer: str) -> Optional[tuple]:
       domain/physics/tools     → (3, 1, "physics",     "tools")
       domain/animation/core    → (3, 0, "animation",   "core")
       domain/animation/tools   → (3, 1, "animation",   "tools")
+      draoi                    → (5, 0, "draoi",       "")   # above every Dia layer
     """
     layer = layer.strip()
+
+    if layer == "draoi":
+        return (5, 0, "draoi", "")
 
     if layer.startswith("foundation/"):
         group = layer[len("foundation/"):]

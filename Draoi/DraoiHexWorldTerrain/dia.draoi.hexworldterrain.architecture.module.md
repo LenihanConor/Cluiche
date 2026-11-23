@@ -3,8 +3,8 @@ schema: dia.module.v1
 module_id: draoi.hexworldterrain
 name: DraoiHexWorldTerrain
 path: Draoi/DraoiHexWorldTerrain
-parent_module_id: dia.root
-layer: foundation/application
+parent_module_id: draoi.root
+layer: draoi
 status: active
 maturity: alpha
 version: "1.0"
@@ -13,7 +13,6 @@ dependencies:
     - draoi.hexworld
     - dia.core
     - dia.maths
-    - dia.graphics
     - dia.pathfinding
     - dia.attribute
     - dia.observation

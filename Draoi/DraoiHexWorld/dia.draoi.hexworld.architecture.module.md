@@ -3,8 +3,8 @@ schema: dia.module.v1
 module_id: draoi.hexworld
 name: DraoiHexWorld
 path: Draoi/DraoiHexWorld
-parent_module_id: dia.root
-layer: foundation/application
+parent_module_id: draoi.root
+layer: draoi
 status: active
 maturity: beta
 version: "1.0"

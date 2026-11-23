@@ -12,6 +12,7 @@ from typing import Dict, List, Set, Tuple
 
 import click
 
+from dia_cli.utils.library_roots import iter_module_docs, strip_root
 from dia_cli.utils.repo_root import find_repo_root
 
 
@@ -44,24 +45,40 @@ def _parse_frontmatter(text: str) -> dict:
     fm_lines = lines[1:end]
     result: dict = {"dependent_modules": []}
 
+    # Declared dependencies come from two spellings: the legacy top-level
+    # ``dependent_modules:`` list and ``dependencies: required/optional`` lists.
+    # Both feed ``dependent_modules``; ``forbidden`` is deliberately ignored.
     in_deps = False
+    in_dependencies = False
+    dep_list_active = False
     for line in fm_lines:
         if line.startswith("module_id:"):
             result["module_id"] = line.split(":", 1)[1].strip().strip('"').strip("'")
-            in_deps = False
+            in_deps = in_dependencies = dep_list_active = False
         elif line.startswith("path:"):
             result["path"] = line.split(":", 1)[1].strip().strip('"').strip("'")
-            in_deps = False
+            in_deps = in_dependencies = dep_list_active = False
         elif line.startswith("dependent_modules:"):
             rest = line.split(":", 1)[1].strip()
             if rest == "[]":
                 result["dependent_modules"] = []
             in_deps = True
+            in_dependencies = dep_list_active = False
+        elif line.startswith("dependencies:"):
+            in_dependencies = True
+            in_deps = dep_list_active = False
+        elif in_dependencies and re.match(r"  (required|optional|forbidden):", line):
+            key = re.match(r"  (required|optional|forbidden):", line).group(1)
+            dep_list_active = key in ("required", "optional")
+        elif in_dependencies and dep_list_active and re.match(r"    - ", line):
+            dep = line.strip()[2:].strip().strip('"').strip("'")
+            if dep not in result["dependent_modules"]:
+                result["dependent_modules"].append(dep)
         elif in_deps and line.startswith("  - "):
             dep = line[4:].strip().strip('"').strip("'")
             result["dependent_modules"].append(dep)
-        elif not line.startswith("  ") and not line.startswith("\t"):
-            in_deps = False
+        elif not line.startswith("  ") and not line.startswith("	"):
+            in_deps = in_dependencies = dep_list_active = False
 
     return result
 
@@ -93,10 +110,7 @@ def _build_path_to_module_map(modules: List[dict]) -> Dict[str, str]:
     """Map directory prefixes (e.g. 'DiaCore/Containers/') to module_ids."""
     mapping: Dict[str, str] = {}
     for mod in modules:
-        path = mod.get("path", "")
-        if path.startswith("Dia/"):
-            path = path[4:]  # Strip leading "Dia/" to match include style
-        path = path.rstrip("/")
+        path = strip_root(mod.get("path", ""))  # strip Dia/ or Draoi/ to match include style
         if path:
             mapping[path] = mod["module_id"]
     return mapping
@@ -460,39 +474,30 @@ def sanitizer(ctx, config: str, filter_pattern: str | None) -> None:
     _run_sanitizer(config, ctx, filter_pattern)
 
 
-@cli.command("deps")
-@click.option("--fix", is_flag=True, default=False,
-              help="Auto-add missing deps to module docs.")
-@click.option("--verbose", is_flag=True, default=False,
-              help="Show each module being checked.")
-@click.pass_context
-def deps(ctx, fix: bool, verbose: bool) -> None:
-    """Validate module dependency declarations against actual #includes."""
-    repo_root = find_repo_root(__file__)
+def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
+    """Compare declared module dependencies with actual #includes under every library root.
 
-    # 1. Find all module.md files (exclude worktrees)
-    module_files = [f for f in repo_root.glob("Dia/**/dia.*.architecture.module.md")
-                    if ".claude" not in str(f)]
-    if not module_files:
-        click.echo("No module files found.")
-        return
-
-    # 2. Parse all modules
+    Returns (modules, missing, stale); modules is None when no module docs exist.
+    Root grouping docs (path is just ``Dia`` or ``Draoi``) are skipped, and each
+    module's own scan excludes files owned by child modules.
+    """
     modules: List[dict] = []
-    for mf in module_files:
+    for mf in iter_module_docs(repo_root):
         fm = _parse_frontmatter(mf.read_text(encoding="utf-8", errors="ignore"))
         if fm.get("module_id") and fm.get("path"):
             fm["_file"] = mf
             modules.append(fm)
+    if not modules:
+        return None, [], []
 
-    click.echo(f"Checking {len(modules)} modules...\n")
-
-    # 3. Build path→module map (skip modules with very short paths like "Dia/")
-    modules = [m for m in modules if len(m.get("path", "").rstrip("/").split("/")) >= 3]
+    # Root grouping modules (path "Dia" / "Draoi") own no code of their own.
+    modules = [m for m in modules if strip_root(m["path"])]
+    if on_start:
+        on_start(len(modules))
 
     path_map = _build_path_to_module_map(modules)
+    module_dirs = [repo_root / m["path"] for m in modules]
 
-    # 4. For each module, scan its sources
     missing: List[Tuple[str, str, str]] = []  # (module_id, included_module, include_path)
     stale: List[Tuple[str, str]] = []  # (module_id, declared_dep)
 
@@ -501,32 +506,81 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
         mod_path = repo_root / mod["path"]
         declared_deps = set(mod.get("dependent_modules", []))
 
-        if verbose:
-            click.echo(f"  {module_id} ({mod_path})")
-
+        if on_module:
+            on_module(module_id, mod_path)
         if not mod_path.exists():
             continue
 
+        child_dirs = [d for d in module_dirs if d != mod_path and mod_path in d.parents]
         used_modules: Set[str] = set()
         for ext in ("*.h", "*.cpp"):
             for src in mod_path.rglob(ext):
+                if child_dirs and any(cd in src.parents for cd in child_dirs):
+                    continue
                 for inc in _scan_includes(src):
                     resolved = _resolve_include_to_module(inc, path_map)
                     if resolved and resolved != module_id:
                         if not resolved.startswith(module_id + ".") and not module_id.startswith(resolved + "."):
                             used_modules.add(resolved)
 
-        for used in used_modules:
-            if used not in declared_deps:
+        # A declared module covers its own submodules (declaring dia.core covers dia.core.crc).
+        for used in sorted(used_modules):
+            if not any(used == d or used.startswith(d + ".") for d in declared_deps):
                 missing.append((module_id, used, ""))
 
-        for declared in declared_deps:
-            if declared not in used_modules:
+        for declared in sorted(declared_deps):
+            if not any(u == declared or u.startswith(declared + ".") for u in used_modules):
                 stale.append((module_id, declared))
 
-    # 5. Report
+    return modules, missing, stale
+
+
+@cli.command("deps")
+@click.option("--fix", is_flag=True, default=False,
+              help="Auto-add missing deps to module docs.")
+@click.option("--verbose", is_flag=True, default=False,
+              help="Show each module being checked.")
+@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
+              help="Record current issues in docs/reference/registry/deps-baseline.json; only issues beyond it fail.")
+@click.pass_context
+def deps(ctx, fix: bool, verbose: bool, accept_baseline: bool) -> None:
+    """Validate module dependency declarations against actual #includes."""
+    repo_root = find_repo_root(__file__)
+
+    modules, missing, stale = _collect_dependency_issues(
+        repo_root, on_module=(lambda mid, path: click.echo(f"  {mid} ({path})")) if verbose else None,
+        on_start=lambda n: click.echo(f"Checking {n} modules...\n"),
+    )
+    if modules is None:
+        click.echo("No module files found.")
+        return
+
+    # 5. Report (issues already in the baseline are counted but do not fail the run)
+    baseline_path = repo_root / "docs" / "reference" / "registry" / "deps-baseline.json"
+    current = {f"missing|{m}|{d}" for m, d, _ in missing} | {f"stale|{m}|{d}" for m, d in stale}
+
+    if accept_baseline:
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_text(
+            json.dumps({"issues": sorted(current)}, indent=2) + "\n", encoding="utf-8")
+        click.echo(f"[dia check] Accepted {len(current)} dependency issue(s) as baseline -> {baseline_path}")
+        ctx.exit(0)
+        return
+
+    baseline: Set[str] = set()
+    if baseline_path.exists():
+        try:
+            baseline = set(json.loads(baseline_path.read_text(encoding="utf-8")).get("issues", []))
+        except (json.JSONDecodeError, OSError):
+            baseline = set()
+    missing = [x for x in missing if f"missing|{x[0]}|{x[1]}" not in baseline]
+    stale = [x for x in stale if f"stale|{x[0]}|{x[1]}" not in baseline]
+    baselined = len(current & baseline)
+    fixed = len(baseline - current)
+    note = f" ({baselined} baselined" + (f", {fixed} baseline entries now fixed" if fixed else "") + ")" if baseline else ""
+
     if not missing and not stale:
-        click.echo(f"All {len(modules)} modules OK — dependencies match includes.")
+        click.echo(f"All {len(modules)} modules OK — dependencies match includes{note}.")
         return
 
     if missing:
@@ -539,7 +593,7 @@ def deps(ctx, fix: bool, verbose: bool) -> None:
         for mod_id, dep_id in stale:
             click.echo(f"  {mod_id} → declares {dep_id} but no includes found")
 
-    click.echo(f"\nSummary: {len(missing) + len(stale)} issues ({len(missing)} missing, {len(stale)} stale)")
+    click.echo(f"\nSummary: {len(missing) + len(stale)} issues ({len(missing)} missing, {len(stale)} stale){note}")
 
     # 6. Auto-fix if requested
     if fix and missing:
