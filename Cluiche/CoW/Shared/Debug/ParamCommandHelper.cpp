@@ -7,6 +7,8 @@
 
 #include <DiaAPI/CommandRegistry/ValueParam.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/ValueSchemaWriter.h>
 
 namespace CoW {
 namespace Debug {
@@ -63,7 +65,7 @@ ParamCommandHelper::ParamCommandHelper(const char* sysToken, Dia::Attribute::Par
 SimCommandEntry ParamCommandHelper::BuildEntry()
 {
     static const Dia::API::ValueParam kParams[] = {
-        { "action", "enum", true, "What to do with the parameters", nullptr, false, 0.0f, 0.0f, "get|list|set|reload|save_defaults" },
+        { "action", "string", true, "get | list | set | reload | save_defaults, or a system-specific action the owner handles" },
         { "key", "string", false, "Parameter key (get, set)" },
         { "prefix", "string", false, "Only parameters whose key starts with this (list)" },
         { "value", "string", false, "New value (set): a number, bool or enum id" } };
@@ -99,10 +101,8 @@ Json::Value ParamCommandHelper::Handle(const Json::Value& args)
     if (action == "list") { return List(args); }
     if (action == "set") { return SetAction(args); }
     if (action == "reload") { return ReloadAction(); }
-    if (action == "save_defaults")
-    {
-        return Error("action not implemented yet", action.c_str());
-    }
+    if (action == "save_defaults") { return SaveDefaultsAction(); }
+    if (mSystemAction) { return mSystemAction(action, args); }
     return Error("unknown action", action.c_str());
 }
 
@@ -384,6 +384,107 @@ Json::Value ParamCommandHelper::ReloadAction()
     const ParamDayInfo day = mDayProvider ? mDayProvider() : ParamDayInfo();
     r["effectiveDay"] = day.effectiveDay;
     if (day.deferLag > 0) { r["visibleDay"] = day.effectiveDay + day.deferLag; }
+    return r;
+}
+
+bool ParamCommandHelper::DefaultIsDevBuild()
+{
+#ifdef COW_SHIPPING_BUILD
+    return false;
+#else
+    return true;
+#endif
+}
+
+Json::Value ParamCommandHelper::SaveDefaultsAction()
+{
+    const bool dev = mDevBuild ? mDevBuild() : DefaultIsDevBuild();
+    if (!dev) { return Error("action only available in dev builds", "save_defaults"); }
+    if (!mSidecarRead || !mSidecarWrite || !mFile.IsLoaded()) { return Error("no sidecar wired, cannot save_defaults", nullptr); }
+    std::string text;
+    std::string path;
+    if (!mSidecarRead(text, path)) { return Error("cannot read sidecar", path.c_str()); }
+    const Dia::ValueSchema::LoadResult sidecar = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text.c_str(), path.c_str());
+    if (!sidecar.mOk) { return Error("sidecar does not parse", path.c_str()); }
+
+    // Split each attribute's full key into sidecar entry key + optional map key, and collect the changed ones.
+    const Dia::Attribute::AttributeSchema& schema = mFile.Schema();
+    struct Change { std::string key; std::string entry; std::string mapKey; bool isMap = false; AttributeKind kind; double number; std::string text; };
+    std::vector<Change> changes;
+    for (uint32_t i = 0; i < schema.GetAttributeCount(); ++i)
+    {
+        const Dia::Attribute::AttributeDefinition& def = schema.GetAttributeByIndex(i);
+        const float base = mFile.Values().GetBaseValueByIndex(i);
+        if (base == def.default_value) { continue; }
+        Change c;
+        c.key = def.fullKey.AsCStr();
+        c.kind = def.kind;
+        c.number = static_cast<double>(base);
+        bool found = false;
+        for (unsigned int e = 0; e < sidecar.mEntries.Size() && !found; ++e)
+        {
+            const Dia::ValueSchema::ValueInfo& info = sidecar.mEntries[e];
+            const std::string entryKey = info.mKey.AsCStr();
+            if (info.mType != Dia::ValueSchema::ValueType::Map)
+            {
+                if (entryKey == c.key) { c.entry = entryKey; found = true; }
+            }
+            else if (c.key.size() > entryKey.size() + 1 && c.key.compare(0, entryKey.size(), entryKey) == 0 && c.key[entryKey.size()] == '.')
+            {
+                c.entry = entryKey;
+                c.mapKey = c.key.substr(entryKey.size() + 1);
+                c.isMap = true;
+                found = true;
+            }
+        }
+        if (!found) { return Error("parameter has no sidecar entry", c.key.c_str()); }
+        if (def.kind == AttributeKind::Enum)
+        {
+            const int ordinal = static_cast<int>(base + 0.5f);
+            if (ordinal < 0 || static_cast<uint32_t>(ordinal) >= def.enumIdCount) { return Error("enum value out of range", c.key.c_str()); }
+            c.text = schema.GetEnumId(i, static_cast<unsigned int>(ordinal)).AsCStr();
+        }
+        changes.push_back(c);
+    }
+
+    Json::Value r(Json::objectValue);
+    Json::Value changed(Json::arrayValue);
+    for (const Change& c : changes) { changed.append(c.key); }
+    r["written"] = path;
+    r["changed"] = changed;
+    if (changes.empty()) { r["success"] = true; return r; }
+
+    std::vector<Dia::ValueSchema::DefaultValue> values(changes.size());
+    for (size_t i = 0; i < changes.size(); ++i)
+    {
+        const Change& c = changes[i];
+        Dia::ValueSchema::DefaultValue& v = values[i];
+        v.mKey = c.entry.c_str();
+        v.mMapKey = c.isMap ? c.mapKey.c_str() : nullptr;
+        v.mNumber = c.number;
+        switch (c.kind)
+        {
+        case AttributeKind::Int:  v.mKind = Dia::ValueSchema::DefaultKind::Int; break;
+        case AttributeKind::Bool: v.mKind = Dia::ValueSchema::DefaultKind::Bool; break;
+        case AttributeKind::Enum: v.mKind = Dia::ValueSchema::DefaultKind::String; v.mString = c.text.c_str(); break;
+        default:                  v.mKind = Dia::ValueSchema::DefaultKind::Float32; break;
+        }
+    }
+    Dia::ValueSchema::ValueList<char> out;
+    Dia::ValueSchema::WriteError werr;
+    if (!Dia::ValueSchema::WriteDefaultsInPlace(text.c_str(), values.data(), static_cast<uint32_t>(values.size()), out, werr))
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "cannot rewrite defaults in %s (%s)", path.c_str(), werr.mReason.AsCStr());
+        return Error(buf, werr.mKey.AsCStr());
+    }
+    const std::string newText(&out[0u], out.Size() > 0 ? out.Size() - 1 : 0);
+    if (!mSidecarWrite(newText))
+    {
+        DIA_LOG_WARNING("WorldSim", "%s: save_defaults could not write %s", mName.c_str(), path.c_str());
+        return Error("cannot write sidecar", path.c_str());
+    }
+    r["success"] = true;
     return r;
 }
 

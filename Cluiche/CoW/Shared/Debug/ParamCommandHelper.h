@@ -112,6 +112,22 @@ public:
     void SetDayProvider(DayProvider provider) { mDayProvider = std::move(provider); }
     void SetReloadFn(ReloadFn fn) { mReloadFn = std::move(fn); }
 
+    // save_defaults seams. Read returns the sidecar text and its path (false = unreadable); Write replaces the sidecar
+    // text (false = failed). The helper does no file I/O itself. Without them save_defaults replies with an error.
+    typedef std::function<bool(std::string& text, std::string& path)> SidecarReadFn;
+    typedef std::function<bool(const std::string& text)> SidecarWriteFn;
+    void SetSidecarIO(SidecarReadFn read, SidecarWriteFn write) { mSidecarRead = std::move(read); mSidecarWrite = std::move(write); }
+
+    // Dev-build gate for save_defaults. Dia has no dev/shipping flag, so this is CoW's: a dev build unless the
+    // COW_SHIPPING_BUILD macro is defined. Tests and owners may inject their own answer.
+    typedef std::function<bool()> DevBuildFn;
+    static bool DefaultIsDevBuild();
+    void SetDevBuildFn(DevBuildFn fn) { mDevBuild = std::move(fn); }
+
+    // Any action that is not get/list/set/reload/save_defaults goes here when set (e.g. a system's `cycle`).
+    typedef std::function<Json::Value(const std::string& action, const Json::Value& args)> SystemActionHandler;
+    void SetSystemActionHandler(SystemActionHandler handler) { mSystemAction = std::move(handler); }
+
     // Called by the owner's stage (ApplyEntry, inside Capture) for a drained mutation. kSet: ParameterFile::Set then
     // marks the key `set`. kReload: runs the reload callback, then ClearSources + NotePackApplied per pack.
     // false when the change was refused (logged); the file is unchanged in that case.
@@ -125,6 +141,7 @@ private:
     Json::Value List(const Json::Value& args) const;
     Json::Value SetAction(const Json::Value& args);
     Json::Value ReloadAction();
+    Json::Value SaveDefaultsAction();
     Json::Value Describe(uint32_t index) const;
     int32_t FindIndex(const char* key) const;
     uint8_t SourceOf(uint32_t index) const;
@@ -139,6 +156,10 @@ private:
     MutationEnqueue mEnqueue;
     DayProvider mDayProvider;
     ReloadFn mReloadFn;
+    SidecarReadFn mSidecarRead;
+    SidecarWriteFn mSidecarWrite;
+    DevBuildFn mDevBuild;
+    SystemActionHandler mSystemAction;
 };
 
 }  // namespace Debug

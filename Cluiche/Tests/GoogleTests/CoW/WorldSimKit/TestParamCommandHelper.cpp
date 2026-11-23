@@ -194,9 +194,196 @@ TEST_F(ParamCommandHelperTest, MissingOrUnknownActionIsAnError)
     EXPECT_NE(std::string::npos, r["error"].asString().find("explode"));
 }
 
-TEST_F(ParamCommandHelperTest, SaveDefaultsReportsNotImplementedYet)
+TEST_F(ParamCommandHelperTest, SaveDefaultsWithoutSidecarIoIsAnError)
 {
-    EXPECT_FALSE(Call("save_defaults")["success"].asBool());
+    const Json::Value r = Call("save_defaults");
+    EXPECT_FALSE(r["success"].asBool());
+}
+
+namespace {
+
+// Hand-written sidecar with odd whitespace, comments and a map entry; the bytes outside the defaults must survive.
+const char* kOddSidecar =
+    "// header comment\n"
+    "{  \"format\" : \"dia.value_schema\" ,\n"
+    "\t\"version\":1, \"for\":\"test.params\",\n"
+    "  \"entries\" : [\n"
+    "    { \"key\":\"rain.base\", \"kind\":\"parameter\", \"label\":\"l\", \"description\":\"d\", \"type\":\"float\", \"min\":0, \"max\":10, \"default\"  :  5.0 },  // c1\n"
+    "    { \"key\":\"rain.days\", \"kind\":\"parameter\", \"label\":\"l\", \"description\":\"d\", \"type\":\"int\", \"min\":0, \"max\":10,\n"
+    "       \"default\":3 },\n"
+    "    { \"key\":\"wind.on\", \"kind\":\"parameter\", \"label\":\"l\", \"description\":\"d\", \"type\":\"bool\", \"default\":false },\n"
+    "    { \"key\":\"wind.mode\", \"kind\":\"parameter\", \"label\":\"l\", \"description\":\"d\", \"type\":\"enum\",\n"
+    "      \"values\":[{\"id\":\"Slow\",\"label\":\"Slow\"},{\"id\":\"Fast\",\"label\":\"Fast\"}], \"default\" : \"Slow\" },\n"
+    "    { \"key\":\"yield\", \"kind\":\"parameter\", \"label\":\"l\", \"description\":\"d\", \"type\":\"map\",\n"
+    "      \"keyRef\":\"cow.biomes/biomes[].id\", \"valueType\":\"float\", \"min\":0, \"max\":1,\n"
+    "      \"default\": { \"TemperateForest\": 1.0,   \"Desert\" : 0.5, \"Tundra\":0.25 } }\n"
+    "  ]\n"
+    "}\n";
+
+class ParamCommandHelperSaveDefaultsTest : public ::testing::Test
+{
+protected:
+    ParamCommandHelperSaveDefaultsTest() : helper(World::kWeather, file) {}
+    void SetUp() override
+    {
+        Dia::Attribute::ParamError err;
+        ASSERT_TRUE(file.Load(kOddSidecar, "odd.params.json", &keys, err)) << err.reason.AsCStr();
+        stored = kOddSidecar;
+        helper.SetSidecarIO(
+            [this](std::string& text, std::string& path) { text = stored; path = "odd.params.json"; return true; },
+            [this](const std::string& text) { ++writes; if (failWrite) { return false; } stored = text; return true; });
+    }
+    void SetBase(const char* key, const Json::Value& v)
+    {
+        Dia::Attribute::ParamError err;
+        ASSERT_TRUE(file.Set(Dia::Core::StringCRC(key), v, err)) << key << ": " << err.reason.AsCStr();
+    }
+    Json::Value Save()
+    {
+        Json::Value args(Json::objectValue);
+        args["action"] = "save_defaults";
+        return helper.Handle(args);
+    }
+    static std::vector<std::string> Changed(const Json::Value& r)
+    {
+        std::vector<std::string> out;
+        for (const Json::Value& v : r["changed"]) { out.push_back(v.asString()); }
+        return out;
+    }
+
+    FixtureMapKeySource keys;
+    Dia::Attribute::ParameterFile file;
+    ParamCommandHelper helper;
+    std::string stored;
+    int writes = 0;
+    bool failWrite = false;
+};
+
+std::string Replace(std::string s, const std::string& from, const std::string& to)
+{
+    const size_t at = s.find(from);
+    EXPECT_NE(std::string::npos, at) << from;
+    if (at != std::string::npos) { s.replace(at, from.size(), to); }
+    return s;
+}
+
+}  // namespace
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, OnlyChangedKeysAreListedAndOnlyDefaultBytesChange)
+{
+    SetBase("rain.base", Json::Value(7.5));
+    SetBase("rain.days", Json::Value(4));
+    SetBase("wind.on", Json::Value(true));
+    SetBase("wind.mode", Json::Value("Fast"));
+    SetBase("yield.Desert", Json::Value(0.75));
+    const Json::Value r = Save();
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    EXPECT_EQ("odd.params.json", r["written"].asString());
+    const std::vector<std::string> changed = Changed(r);
+    EXPECT_EQ((std::vector<std::string>{ "rain.base", "rain.days", "wind.on", "wind.mode", "yield.Desert" }), changed);
+
+    std::string expect = kOddSidecar;
+    expect = Replace(expect, "\"default\"  :  5.0 }", "\"default\"  :  7.5 }");
+    expect = Replace(expect, "\"default\":3 }", "\"default\":4 }");
+    expect = Replace(expect, "\"default\":false }", "\"default\":true }");
+    expect = Replace(expect, "\"default\" : \"Slow\" }", "\"default\" : \"Fast\" }");
+    expect = Replace(expect, "\"Desert\" : 0.5,", "\"Desert\" : 0.75,");
+    EXPECT_EQ(expect, stored);
+    EXPECT_EQ(1, writes);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, MapColumnKeyIsListedAsKeyDotMapKey)
+{
+    SetBase("yield.Tundra", Json::Value(0.5));
+    const Json::Value r = Save();
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    EXPECT_EQ((std::vector<std::string>{ "yield.Tundra" }), Changed(r));
+    EXPECT_EQ(Replace(kOddSidecar, "\"Tundra\":0.25", "\"Tundra\":0.5"), stored);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, NothingChangedIsEmptyListAndByteIdentical)
+{
+    const Json::Value r = Save();
+    ASSERT_TRUE(r["success"].asBool()) << r.toStyledString();
+    EXPECT_TRUE(r["changed"].isArray());
+    EXPECT_EQ(0u, r["changed"].size());
+    EXPECT_EQ(std::string(kOddSidecar), stored);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, ShippingBuildRefusesAndWritesNothing)
+{
+    SetBase("rain.base", Json::Value(7.5));
+    helper.SetDevBuildFn([]() { return false; });
+    const Json::Value r = Save();
+    EXPECT_FALSE(r["success"].asBool());
+    EXPECT_NE(std::string::npos, r["error"].asString().find("save_defaults"));
+    EXPECT_EQ(0, writes);
+    EXPECT_EQ(std::string(kOddSidecar), stored);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, DefaultDevFlagMatchesTheBuildMacro)
+{
+#ifdef COW_SHIPPING_BUILD
+    EXPECT_FALSE(ParamCommandHelper::DefaultIsDevBuild());
+#else
+    EXPECT_TRUE(ParamCommandHelper::DefaultIsDevBuild());
+#endif
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, WriteFailureNamesThePathAndChangesNothing)
+{
+    SetBase("rain.base", Json::Value(7.5));
+    failWrite = true;
+    const Json::Value r = Save();
+    EXPECT_FALSE(r["success"].asBool());
+    EXPECT_NE(std::string::npos, r["error"].asString().find("odd.params.json"));
+    EXPECT_EQ(std::string(kOddSidecar), stored);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, ReadFailureIsAnError)
+{
+    helper.SetSidecarIO([](std::string&, std::string&) { return false; }, [](const std::string&) { return true; });
+    EXPECT_FALSE(Save()["success"].asBool());
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, SystemActionReachesTheHandlerAndItsReplyIsReturned)
+{
+    std::string seen;
+    helper.SetSystemActionHandler([&seen](const std::string& action, const Json::Value& args)
+    {
+        seen = action + ":" + args["arg"].asString();
+        Json::Value r(Json::objectValue);
+        r["success"] = true;
+        r["cycled"] = 3;
+        return r;
+    });
+    Json::Value args(Json::objectValue);
+    args["action"] = "cycle";
+    args["arg"] = "x";
+    const Json::Value r = helper.Handle(args);
+    EXPECT_TRUE(r["success"].asBool());
+    EXPECT_EQ(3, r["cycled"].asInt());
+    EXPECT_EQ("cycle:x", seen);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, BuiltInActionsAreNotRoutedToTheHandler)
+{
+    bool called = false;
+    helper.SetSystemActionHandler([&called](const std::string&, const Json::Value&) { called = true; return Json::Value(Json::objectValue); });
+    Json::Value args(Json::objectValue);
+    args["action"] = "list";
+    EXPECT_TRUE(helper.Handle(args)["success"].asBool());
+    EXPECT_FALSE(called);
+}
+
+TEST_F(ParamCommandHelperSaveDefaultsTest, EntryHelpAcceptsSystemActionsOnTheRealHost)
+{
+    helper.SetSystemActionHandler([](const std::string&, const Json::Value&) { Json::Value r(Json::objectValue); r["success"] = true; return r; });
+    const SimCommandEntry entry = helper.BuildEntry();
+    for (uint32_t i = 0; i < entry.help.paramCount; ++i)
+    {
+        if (std::string(entry.help.params[i].name) == "action") { EXPECT_STREQ("string", entry.help.params[i].type); }
+    }
 }
 
 TEST_F(ParamCommandHelperTest, SetWithoutKeyOrValueIsAnError)
