@@ -132,7 +132,7 @@ def run_arch_check(
             if p != module_dir and module_dir in p.parents
         }
 
-        raw_files = list(module_dir.rglob("*.h")) + list(module_dir.rglob("*.cpp"))
+        raw_files = [f for ext in ("*.h", "*.cpp", "*.inl") for f in module_dir.rglob(ext)]
         source_files = (
             [f for f in raw_files if not any(cd in f.parents for cd in child_module_dirs)]
             if child_module_dirs else raw_files

@@ -31,7 +31,7 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
         if not module_dir.is_dir():
             continue
         child_dirs = {d for d in module_dirs if d != module_dir and module_dir in d.parents}
-        files = list(module_dir.rglob("*.h")) + list(module_dir.rglob("*.cpp"))
+        files = [f for ext in ("*.h", "*.cpp", "*.inl") for f in module_dir.rglob(ext)]
         for src in sorted(files):
             if any(cd in src.parents for cd in child_dirs):
                 continue
@@ -61,6 +61,7 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
               for v in layer_violations if v not in drawable]
 
     return {
+        "docs": {mid: module_map[mid].doc_path for mid in layers if module_map[mid].doc_path},
         "layers": {k: v for k, v in layers.items() if k in used or k in {x.from_module for x in drawable}},
         "edges": edge_list,
         "violations": [row(v) for v in drawable],
@@ -71,7 +72,7 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
 def render_tower_html(data: dict) -> str:
     template = _TEMPLATE.read_text(encoding="utf-8")
     # "</" inside inline JSON would end the script tag early.
-    payload = json.dumps(data, separators=(",", ":")).replace("</", "<\/")
+    payload = json.dumps(data, separators=(",", ":")).replace("</", "<" + chr(92) + "/")
     stamp = datetime.date.today().isoformat()
     return template.replace("/*DATA*/", payload).replace("/*GENERATED*/", stamp)
 
