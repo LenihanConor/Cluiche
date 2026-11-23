@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include <DiaSaveGame/LoadContext.h>
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Log/Logger.h>
@@ -174,6 +175,29 @@ TEST_F(WorldStepStageBaseTest, The129thEnqueueIsRefusedWithOneWarningAndDegraded
     EXPECT_EQ(1u, Sink().warnings);
     EXPECT_EQ(128u, stage.QueueCount());
     EXPECT_EQ(Dia::Observation::Health::HealthStatus::kDegraded, stage.GetHealth().status);
+}
+
+TEST_F(WorldStepStageBaseTest, StageIdIsTheSystemToken)
+{
+    EXPECT_STREQ("succession", stage.GetStageId().c_str());
+    EXPECT_STREQ("weather", World::StageId(World::kWeather).c_str());
+    EXPECT_STREQ("hydro", World::StageId(World::kHydro).c_str());
+    EXPECT_STREQ("ecology", World::StageId(World::kEcology).c_str());
+}
+
+TEST(WorldStepOrderTest, ConfiguredStageOrderIsWeatherHydroEcology)
+{
+    ASSERT_EQ(3u, World::kStageOrderCount);
+    EXPECT_STREQ("weather", World::kStageOrder[0]);
+    EXPECT_STREQ("hydro", World::kStageOrder[1]);
+    EXPECT_STREQ("ecology", World::kStageOrder[2]);
+}
+
+TEST_F(WorldStepStageBaseTest, ValidatePendingPassesThroughTheCodecSeam)
+{
+    Json::Value root(Json::objectValue);
+    Dia::SaveGame::LoadContext ctx(root);
+    EXPECT_TRUE(stage.ValidatePending(ctx));
 }
 
 }  // namespace Testing

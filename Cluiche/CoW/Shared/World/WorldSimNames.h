@@ -24,6 +24,10 @@ constexpr const char* kHydro      = "hydro";
 constexpr const char* kEcology    = "ecology";
 constexpr const char* kSuccession = "succession";
 
+// The WorldStepModule StepChainConfig order: stage ids are the system tokens.
+constexpr const char* kStageOrder[] = { kWeather, kHydro, kEcology };
+constexpr size_t kStageOrderCount = sizeof(kStageOrder) / sizeof(kStageOrder[0]);
+
 namespace Detail {
 
 inline bool StrEq(const char* a, const char* b)

@@ -215,6 +215,7 @@ public:
     CauseCode GetCauseCode() const { return mCause; }
     Dia::Observation::Health::Health GetHealth() const { return mHealth.Report(); }
     const char* SystemToken() const { return mSysToken; }
+    World::Name GetStageId() const { return World::StageId(mSysToken); }
 
     void Stop()
     {
