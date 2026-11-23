@@ -4,7 +4,7 @@ module_id: dia.valueschema
 name: DiaValueSchema
 path: Dia/DiaValueSchema
 parent_module_id: dia.root
-layer: foundation/application
+layer: assets/core
 status: active
 maturity: stub
 version: "1.0"

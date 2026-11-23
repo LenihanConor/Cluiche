@@ -19,10 +19,10 @@
 | 4.1-Physics | 2 |
 | 4.1-Services | 1 |
 | 4.1-Visual | 2 |
-| assets | 4 |
+| assets | 5 |
 | domain | 47 |
 | draoi | 4 |
-| foundation | 66 |
+| foundation | 65 |
 | platform | 1 |
 | tools | 15 |
 
@@ -291,7 +291,7 @@
     >
   - **dia.utilityaivisualdebugger** (DiaUtilityAIVisualDebugger) — `Dia/DiaUtilityAIVisualDebugger` [4.1-Gameplay/active]
     >
-  - **dia.valueschema** (DiaValueSchema) — `Dia/DiaValueSchema` [foundation/application/active]
+  - **dia.valueschema** (DiaValueSchema) — `Dia/DiaValueSchema` [assets/core/active]
   - **dia.window** (Window) — `Dia/DiaWindow` [foundation/platform/active]
     >
     - **dia.window.interface** (Interface) — `Dia/DiaWindow/Interface` [foundation/platform/active]
