@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <Shared/GameSpeedController.h>
+#include <Shared/CoWCalendar.h>
 #include <limits>
 
 using namespace CoW;

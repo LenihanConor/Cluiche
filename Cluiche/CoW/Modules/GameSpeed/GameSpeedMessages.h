@@ -1,5 +1,6 @@
 #pragma once
 #include <Shared/GameSpeedController.h>
+#include <Shared/CoWCalendar.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstdint>
 

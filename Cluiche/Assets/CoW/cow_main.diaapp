@@ -774,6 +774,16 @@
                             "normal": 30.0,
                             "fast": 10.0,
                             "fastest": 1.0
+                        },
+                        "calendar": {
+                            "periods": [
+                                { "name": "Week", "multiple": 7 },
+                                { "name": "Season", "multiple": 13 },
+                                { "name": "Year", "multiple": 4 },
+                                { "name": "Decade", "multiple": 10 },
+                                { "name": "Century", "multiple": 10 }
+                            ],
+                            "bands": [ "Day", "Week", "Season", "Year", "Decade", "Century" ]
                         }
                     },
                     "channels": []

@@ -20,6 +20,48 @@ namespace {
 
     // Reads "wall_seconds_per_day": { "slow", "normal", "fast", "fastest" }. Missing keys keep defaults.
     // Returns false if the block is present but malformed.
+    // Reads "calendar": { "periods": [ { "name", "multiple" } ... ], "bands": [ "name" ... ] }.
+    // An absent block keeps the default (CoWCalendar()); a present block replaces it entirely, so an empty
+    // "periods" array configures no calendar. Returns false if the block is malformed or invalid.
+    bool ParseCalendar(const Json::Value& root, Calendar& out)
+    {
+        if (!root.isMember("calendar"))
+            return true;
+        const Json::Value& block = root["calendar"];
+        if (!block.isObject())
+            return false;
+
+        Calendar parsed;
+        if (block.isMember("periods"))
+        {
+            const Json::Value& periods = block["periods"];
+            if (!periods.isArray())
+                return false;
+            for (const Json::Value& p : periods)
+            {
+                if (!p.isObject() || !p["name"].isString() || !p["multiple"].isUInt64())
+                    return false;
+                parsed.periods.push_back({ p["name"].asString(), p["multiple"].asUInt64() });
+            }
+        }
+        if (block.isMember("bands"))
+        {
+            const Json::Value& bands = block["bands"];
+            if (!bands.isArray())
+                return false;
+            for (const Json::Value& b : bands)
+            {
+                if (!b.isString())
+                    return false;
+                parsed.bandNames.push_back(b.asString());
+            }
+        }
+        if (!parsed.IsValid())
+            return false;
+        out = std::move(parsed);
+        return true;
+    }
+
     bool ParseConfig(const Json::Value& root, SpeedPresetConfig& out)
     {
         if (!root.isMember("wall_seconds_per_day"))
@@ -69,16 +111,18 @@ bool GameSpeedControllerModule::RequestSpeed(SpeedTier tier)
 void GameSpeedControllerModule::OnConfigure(const char* configJson)
 {
     mPendingConfig = DefaultSpeedPresetConfig();
+    mPendingCalendar = CoWCalendar();
     mConfigParseFailed = false;
     if (configJson == nullptr || configJson[0] == '\0')
         return;
 
     Json::Value root;
     Json::Reader reader;
-    if (!reader.parse(configJson, root) || !root.isObject() || !ParseConfig(root, mPendingConfig))
+    if (!reader.parse(configJson, root) || !root.isObject() || !ParseConfig(root, mPendingConfig) || !ParseCalendar(root, mPendingCalendar))
     {
         mConfigParseFailed = true;
         mPendingConfig = DefaultSpeedPresetConfig();
+        mPendingCalendar = CoWCalendar();
     }
 }
 
@@ -129,7 +173,7 @@ Dia::ApplicationFlow::StartResult GameSpeedControllerModule::DoStart()
         config = DefaultSpeedPresetConfig();
         mConfigFallbackCounter->Inc();
     }
-    mController = GameSpeedController(config);
+    mController = GameSpeedController(config, mPendingCalendar);
     mDayClock.Reset();
     mPendingAccumulatedUs = 0;
     mAppliedValid = false;
@@ -279,7 +323,7 @@ void GameSpeedControllerModule::PublishTick()
 
     SimulationTick tick;
     tick.day  = day;
-    tick.band = ResolveBand(day);
+    tick.band = static_cast<TimeBand>(mController.GetCalendar().BandOf(day));
 
     if (host && host->GetBus().Broadcast(tick))
     {
@@ -287,7 +331,7 @@ void GameSpeedControllerModule::PublishTick()
         mTickCounter->Inc();
         if (tick.band >= TimeBand::Season)
         {
-            DIA_LOG_INFO("CoW", "GameSpeedController: day %llu (%s)", static_cast<unsigned long long>(day), TimeBandName(tick.band));
+            DIA_LOG_INFO("CoW", "GameSpeedController: day %llu (%s)", static_cast<unsigned long long>(day), mController.GetCalendar().BandName(static_cast<uint8_t>(tick.band)));
         }
     }
     else

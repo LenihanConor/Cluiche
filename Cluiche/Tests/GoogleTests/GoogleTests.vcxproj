@@ -1347,6 +1347,7 @@
     <ClCompile Include="CoW\TestStrataExtraSets.cpp" />
     <ClCompile Include="CoW\TestStrataMetric.cpp" />
     <ClCompile Include="CoW\CoWTestAssetPaths.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedCalendar.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

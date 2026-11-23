@@ -79,6 +79,7 @@
     <ClInclude Include="Shared\CoWStepSeedNames.h" />
     <ClInclude Include="Shared\CoWNodeKinds.h" />
     <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h" />
+    <ClInclude Include="Shared\CoWCalendar.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

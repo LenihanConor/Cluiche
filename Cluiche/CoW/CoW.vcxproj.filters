@@ -204,5 +204,8 @@
     <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h">
       <Filter>Shared</Filter>
     </ClInclude>
+    <ClInclude Include="Shared\CoWCalendar.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

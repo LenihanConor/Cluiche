@@ -4,60 +4,89 @@
 // Spec: docs/specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.md
 #pragma once
 
-#include <cstdint>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace CoW {
 
 // ---------------------------------------------------------------------------
-// Calendar (fixed constants, not tunable)
+// Calendar (data, supplied by the application)
 // ---------------------------------------------------------------------------
-constexpr uint64_t kDaysPerWeek       = 7;
-constexpr uint64_t kWeeksPerSeason    = 13;
-constexpr uint64_t kSeasonsPerYear    = 4;
-constexpr uint64_t kYearsPerDecade    = 10;
-constexpr uint64_t kDecadesPerCentury = 10;
-
-constexpr uint64_t kDaysPerSeason  = kDaysPerWeek * kWeeksPerSeason;      // 91
-constexpr uint64_t kDaysPerYear    = kDaysPerSeason * kSeasonsPerYear;    // 364
-constexpr uint64_t kDaysPerDecade  = kDaysPerYear * kYearsPerDecade;      // 3,640
-constexpr uint64_t kDaysPerCentury = kDaysPerDecade * kDecadesPerCentury; // 36,400
-
-// 1 game-second = 1 day, so a SimTimeScheduler deadline of +7.0s means "in one week".
+// 1 game-second = 1 day, so a SimTimeScheduler deadline of +7.0s means "in one week" (CoW calendar).
 constexpr int64_t kGameMicrosecondsPerDay = 1000000;
 
-// Ordered smallest -> largest so subscribers can gate with `band >= TimeBand::Season`.
-enum class TimeBand : uint8_t { Day, Week, Season, Year, Decade, Century };
-
-// Largest unit whose boundary this day completes. Day 0 is never ticked (the first
-// tick is day 1) but resolves to Century for completeness.
-inline TimeBand ResolveBand(uint64_t day)
+// One rung of the period ladder: a named period whose length is `multiple` times the previous rung
+// (the first rung is a multiple of one day).
+struct CalendarPeriod
 {
-    if (day % kDaysPerCentury == 0) return TimeBand::Century;
-    if (day % kDaysPerDecade  == 0) return TimeBand::Decade;
-    if (day % kDaysPerYear    == 0) return TimeBand::Year;
-    if (day % kDaysPerSeason  == 0) return TimeBand::Season;
-    if (day % kDaysPerWeek    == 0) return TimeBand::Week;
-    return TimeBand::Day;
-}
+    std::string name;
+    uint64_t    multiple = 1;
+};
 
-inline uint64_t WeekOf(uint64_t day)   { return day / kDaysPerWeek; }
-inline uint64_t SeasonOf(uint64_t day) { return day / kDaysPerSeason; }
-inline uint64_t YearOf(uint64_t day)   { return day / kDaysPerYear; }
-
-inline const char* TimeBandName(TimeBand band)
+// An ordered ladder of named periods plus a ladder of named bands over the day. Band 0 is a plain day;
+// band i (i >= 1) is "this day completes a period of rung i-1". No periods = no calendar: every tick is
+// a plain day (band 0). Names and lengths are application data; nothing here is game specific.
+struct Calendar
 {
-    switch (band)
+    std::vector<CalendarPeriod> periods;     // smallest -> largest
+    std::vector<std::string>    bandNames;   // index = band; size 0 or periods.size() + 1
+
+    // Valid when every multiple is >= 1, the cumulative length does not overflow and the band ladder
+    // is empty or has at most periods.size() + 1 names.
+    bool IsValid() const
     {
-    case TimeBand::Day:     return "Day";
-    case TimeBand::Week:    return "Week";
-    case TimeBand::Season:  return "Season";
-    case TimeBand::Year:    return "Year";
-    case TimeBand::Decade:  return "Decade";
-    case TimeBand::Century: return "Century";
+        uint64_t length = 1;
+        for (const CalendarPeriod& p : periods)
+        {
+            if (p.multiple == 0 || length > UINT64_MAX / p.multiple)
+                return false;
+            length *= p.multiple;
+        }
+        return bandNames.size() <= periods.size() + 1;
     }
-    return "Unknown";
-}
+
+    // Length of rung `rung` in days (cumulative product of the multiples up to and including it).
+    // 0 if the rung does not exist.
+    uint64_t PeriodLengthDays(size_t rung) const
+    {
+        if (rung >= periods.size())
+            return 0;
+        uint64_t length = 1;
+        for (size_t i = 0; i <= rung; ++i)
+            length *= periods[i].multiple;
+        return length;
+    }
+
+    // Index of the period of rung `rung` that `day` falls in (day / length). A missing rung has no
+    // period structure, so the day itself is returned.
+    uint64_t PeriodOf(size_t rung, uint64_t day) const
+    {
+        const uint64_t length = PeriodLengthDays(rung);
+        return (length == 0) ? day : day / length;
+    }
+
+    // Band = index of the highest rung whose period length divides `day`, plus one; 0 = plain day.
+    // Day 0 divides every rung, so it resolves to the top band (never ticked, resolved for completeness).
+    uint8_t BandOf(uint64_t day) const
+    {
+        for (size_t i = periods.size(); i > 0; --i)
+        {
+            const uint64_t length = PeriodLengthDays(i - 1);
+            if (length != 0 && day % length == 0)
+                return static_cast<uint8_t>(i);
+        }
+        return 0;
+    }
+
+    const char* BandName(uint8_t band) const
+    {
+        return band < bandNames.size() ? bandNames[band].c_str() : "Unknown";
+    }
+};
 
 // ---------------------------------------------------------------------------
 // Speed presets
@@ -152,8 +181,9 @@ struct GameSpeedState
 class GameSpeedController
 {
 public:
-    explicit GameSpeedController(const SpeedPresetConfig& config)
+    explicit GameSpeedController(const SpeedPresetConfig& config, Calendar calendar = Calendar{})
         : mConfig(config)
+        , mCalendar(std::move(calendar))
     {}
 
     void OnSpeedChangeRequested(SpeedTier tier)
@@ -253,9 +283,11 @@ public:
     bool IsPaused() const { return mState.speedTier == SpeedTier::Paused; }
     const GameSpeedState& GetState() const { return mState; }
     const SpeedPresetConfig& GetConfig() const { return mConfig; }
+    const Calendar& GetCalendar() const { return mCalendar; }
 
 private:
     SpeedPresetConfig mConfig;
+    Calendar          mCalendar;      // application data, not part of the saved state
     GameSpeedState    mState;
 };
 

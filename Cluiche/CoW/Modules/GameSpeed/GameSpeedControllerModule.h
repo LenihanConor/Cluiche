@@ -96,6 +96,7 @@ private:
     bool mSaveParticipantOwned = false;        // our registration succeeded; only then unregister
 
     SpeedPresetConfig   mPendingConfig = DefaultSpeedPresetConfig();
+    Calendar            mPendingCalendar = CoWCalendar();
     bool                mConfigParseFailed = false;
     GameSpeedController mController{ DefaultSpeedPresetConfig() };
     DayClock            mDayClock;
