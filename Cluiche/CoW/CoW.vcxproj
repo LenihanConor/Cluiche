@@ -49,6 +49,7 @@
     <ClCompile Include="Shared\WorldStep\WorldSimSaveCodec.cpp" />
     <ClCompile Include="Shared\Debug\SimCommandSet.cpp" />
     <ClCompile Include="Shared\Debug\ParamCommandHelper.cpp" />
+    <ClCompile Include="Shared\Debug\RecordsCommandHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h" />
@@ -96,6 +97,7 @@
     <ClInclude Include="Shared\World\WorldSimNames.h" />
     <ClInclude Include="Shared\WorldStep\HoldGenerationToken.h" />
     <ClInclude Include="Shared\Debug\Testing\FakeSimCommandHost.h" />
+    <ClInclude Include="Shared\Debug\RecordsCommandHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

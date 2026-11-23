@@ -3264,5 +3264,11 @@
     <ClCompile Include="..\..\CoW\Shared\Debug\ParamCommandHelper.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestRecordsCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Debug\RecordsCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -127,6 +127,9 @@
     <ClCompile Include="Shared\Debug\ParamCommandHelper.cpp">
       <Filter>Debug</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\Debug\RecordsCommandHelper.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -262,6 +265,9 @@
       <Filter>WorldStep</Filter>
     </ClInclude>
     <ClInclude Include="Shared\Debug\Testing\FakeSimCommandHost.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\RecordsCommandHelper.h">
       <Filter>Debug</Filter>
     </ClInclude>
   </ItemGroup>

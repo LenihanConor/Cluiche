@@ -1364,6 +1364,8 @@
     <ClCompile Include="..\..\CoW\Shared\WorldStep\WorldSimSaveCodec.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Debug\SimCommandSet.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Debug\ParamCommandHelper.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestRecordsCommandHelper.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\Debug\RecordsCommandHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
