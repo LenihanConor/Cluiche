@@ -4,7 +4,7 @@
 @docs/specs/applications/dia/systems/diabgfx3d/diabgfx3d.md (Amendment 2026-11-20)
 
 **Gameplay Domains:** rendering
-**Needed by:** DiaTerrainMap3D Map Props and Emitters; Particles (C) reuses the quad pipeline
+**Needed by:** DraoiHexWorldRender3D Map Props and Emitters; Particles (C) reuses the quad pipeline
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`PROP_VS`, `PROP_FS`), `js/props.js` (atlas build, palette masks), `js/app.js` (`setPropAttribs`, instance buffers)
 
@@ -41,7 +41,7 @@ Today `SpriteRenderer` (DiaBgfx, 2D) submits one draw per sprite and `MeshRender
 - Sorting translucent sprites by depth. v1 draws them unsorted with depth test and no depth write; the map's translucent use (clouds, haze puffs) tolerates it.
 - Skeletal animation, or animated atlas frames. Motion is sway plus whatever the game does by moving instances.
 - Lighting, shadows or normal maps on sprites.
-- Culling. The caller supplies only the instances to draw (DiaTerrainMap3D culls by chunk).
+- Culling. The caller supplies only the instances to draw (DraoiHexWorldRender3D culls by chunk).
 
 ## Design
 

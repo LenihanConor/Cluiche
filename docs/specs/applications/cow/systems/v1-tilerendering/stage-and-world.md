@@ -4,7 +4,7 @@
 @docs/specs/applications/cow/systems/v1-tilerendering/v1-tilerendering.md (Feature 1)
 
 **Gameplay Domains:** rendering, debug
-**Depends on:** Strategic Map Features 1, 2 and 4; S-1 (world generation, hand-off SD-S1-010, built); F-1 Harness (Boot menu, built); DiaTerrainMap3D module
+**Depends on:** Strategic Map Features 1, 2 and 4; S-1 (world generation, hand-off SD-S1-010, built); F-1 Harness (Boot menu, built); DraoiHexWorldRender3D (hosted by `StrategicMapModule`)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/index.html`, `js/app.js` (world selection, camera presets, `#key=value` state), `tools/convert_golden.py`
 
@@ -31,7 +31,7 @@ This feature delivers the empty stage: world, modules, mode, time source, camera
    - `correctness`: Standard 80×52, a world with every biome present (curated list).
    - `performance`: Large 104×64, everything on, the capture/perf harness visible.
    - `look-dev` (default): Small 66×42, the full panel (Feature 3).
-4. **Module list** (manifest order): the baseline modules, `WorldGenerationModule`, `GameSpeedController`, `MapSnapshotPublisher`, `StrategicMapModule`, `TerrainMap3DModule`, `V1StageModule` (stand-ins in Feature 2, panel in 3).
+4. **Module list** (manifest order): the baseline modules, `WorldGenerationModule`, `GameSpeedController`, `MapSnapshotPublisher`, `StrategicMapModule` (owns the `HexWorldMap`; there is no separate map module since 2026-11-23), `V1StageModule` (stand-ins in Feature 2, panel in 3).
 5. **Camera presets**: strategic overview, regional, tactical (single cell), and a custom store/recall of 4 user cameras.
 6. **World picker** (curated worlds, plus preset/seed/size and world file) and "regenerate".
 7. **Time source**: the day comes from `GameSpeedController`, with its four presets; V-1 adds a "scrub to day" command for the look-dev mode.

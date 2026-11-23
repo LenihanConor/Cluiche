@@ -4,7 +4,7 @@
 @docs/specs/applications/cow/systems/v1-tilerendering/v1-tilerendering.md (Feature 4)
 
 **Gameplay Domains:** rendering, debug
-**Depends on:** V-1 Features 1–3; DiaTerrainMap3D headless capture; DiaAutomation (checkpoints, reports)
+**Depends on:** V-1 Features 1–3; `cow.map.capture` (Strategic Map Feature 4); DiaAutomation (checkpoints, reports)
 **Design source:** GDD `10_PrototypeStrategy/V1_TileRendering.md` (Tests 1–9, locked)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/tools/shot.sh` (headless capture with `#key=value` state), `lookdev/shots/`

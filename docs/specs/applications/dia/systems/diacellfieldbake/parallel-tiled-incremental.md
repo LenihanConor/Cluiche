@@ -4,42 +4,45 @@
 @docs/specs/applications/dia/systems/diacellfieldbake/diacellfieldbake.md
 
 **Gameplay Domains:** rendering
-**Depends on:** @docs/specs/applications/dia/systems/diacellfieldbake/fields-and-classes.md (Feature 1, `BakeRegion`), @docs/specs/applications/dia/systems/diacellfieldbake/relief-and-rivers.md (Feature 2)
-**Uses:** `IParallelExecutor` (@docs/specs/applications/dia/systems/diadeferredstep/diadeferredstep.md)
+**Depends on:** @docs/specs/applications/dia/systems/diacellfieldbake/fields-and-classes.md (Feature 1, `BakeRegion`)
+**Uses:** `IParallelExecutor` from the new `DiaParallelExecutor` module (namespace `Dia::ParallelExecutor::`; extracted from DiaDeferredStep, see the backlog row "DiaParallelExecutor")
 
 ## Status
-`Draft` (2026-11-20). Drafted from the Feature 1 amendment (tiled bake) and the performance discussion; awaiting user review.
+`Draft` (2026-11-20). **Rewritten 2026-11-22 (review):** whole-world bake at load (the visible-tile LRU cache is cut), progress callback for a load overlay, double-buffered incremental rebake, executor moved to DiaParallelExecutor. Awaiting user review. **Amended 2026-11-23 (layer split, user):** Feature 2 (relief and rivers) moved to Draoi (DraoiHexWorldRelief). This feature gains a generic tile post-pass hook (`ITilePostPass`) so Draoi relief and rivers still run in the parallel and incremental bake; river terms in the resolution policy and the dilation rule become the hook's `ExtraBytesPerTexel()` and `InfluenceRadius()`.
 
 ## Summary
 
-Features 1 and 2 bake any texel rectangle correctly. Feature 3 decides **how a real game uses that**:
+Feature 1 bakes any texel rectangle correctly. Feature 3 decides **how a real game uses that**:
 
-1. **Parallel.** Split the work into tiles and run them on `IParallelExecutor`. A serial executor is the oracle.
-2. **Tiled and cached.** A `TileCache` bakes only the tiles the camera needs, keeps them within a byte budget, and evicts the least recently used.
-3. **Resolution policy.** A default texels-per-unit per map size, derived from a memory budget, so Large fits.
-4. **Incremental.** When a few cells change class (A3 succession), rebake only the tiles they touch.
+1. **Parallel bake of the whole world at load.** Split into tiles, run them on `IParallelExecutor`, write into one world-sized `BakedFields`. A serial executor is the oracle. A progress callback drives the load overlay ("Baking 40 of 90 tiles").
+2. **Resolution policy.** A default texels-per-unit per map size, derived from a memory budget, so Large fits.
+3. **Incremental rebake, double-buffered.** When a few cells change class (A3 succession) or an edit lands, rebake only the tiles they touch into a pending set, then swap them in at a frame boundary. The old data keeps drawing until the swap.
+4. **Tile post-pass hook.** A consumer registers post-passes that run on each tile after the bake, inside the same parallel and incremental paths (DraoiHexWorldRelief uses it for relief and rivers).
 5. **Measured.** Timing and memory metrics, and goldens on S-1 Small, Standard and Large.
 
 ## Problem
 
-- A whole-world bake at Large is about 58 MB and about a second on one thread. Fine once, wasteful if redone on every succession change or held for off-screen land.
-- A succession event changes a few cells. Rebaking everything for that would stall the render side.
+- A whole-world bake at Large is about 58 MB and about a second or more on one thread. It must not block the render thread, and the player or tool needs to see that something is happening.
+- A succession event changes a few cells. Rebaking everything for that would waste seconds. A tile rebake still takes tens of milliseconds, more than a frame, so it cannot run synchronously on the render thread.
+- `IParallelExecutor::ParallelFor` blocks its caller until every range is done. Any bake call that uses it must run on a worker job, never the render thread.
 - Which resolution is right depends on the map size and the memory budget, and nothing picks it today.
 
 ## Goals
 
-1. **Parallel bake over tiles** that is byte-identical to the serial bake at any worker count.
-2. **A tile cache with a byte budget**, so memory is bounded however far the camera roams.
-3. **Visible-tile bake**: given a texel rectangle (the camera footprint), ensure exactly its tiles are present.
-4. **Incremental rebake** of only the tiles touched by changed cells, byte-identical to a full rebake.
+1. **Parallel whole-world bake** that is byte-identical to the serial bake at any worker count.
+2. **Progress reporting** for a load overlay: a callback with tiles done and tiles total, called from the baking threads in any order but with a monotonic done count.
+3. **Incremental rebake** of only the tiles touched by changed cells, byte-identical to a full rebake.
+4. **Double buffering.** The live world is never modified while a rebake runs. A `Commit` swaps the new tiles in and reports the changed texel rectangle for upload.
 5. **A resolution policy** that returns texels per unit for a grid and a budget.
 6. **Goldens and metrics** for S-1 Small, Standard and Large.
+7. **Post-pass hook** with influence radius, extra bytes per texel, and Begin/Commit/Discard callbacks so a post-pass's own arrays are double-buffered with the bake.
 
 ## Non-Goals
 
-- **GPU upload and texture streaming.** DiaTerrainMap3D consumes tiles and decides how to upload them.
-- **Choosing the camera footprint.** The consumer passes the rectangle.
-- **Background priority and scheduling policy.** One executor call at a time, driven by the consumer.
+- **A visible-tile cache with LRU eviction** (cut 2026-11-22). The whole world is baked at load; at Large it is about 58 MB. A cache is only needed for a world much larger than Large, and is a new feature if one ever exists.
+- **GPU upload and texture streaming.** The consumer (DraoiHexWorldRender3D) takes the world and the changed rectangle, and decides how to upload.
+- **Choosing when to bake or showing the overlay.** The consumer (the game's map module, CoW Strategic Map Feature 4) owns the bake state and the overlay.
+- **What a post-pass computes.** Relief and rivers are DraoiHexWorldRelief. This feature only provides the progress callback.
 - **A GPU bake.** The CPU bake stays the exact reference (see parent system).
 
 ## Design
@@ -47,101 +50,123 @@ Features 1 and 2 bake any texel rectangle correctly. Feature 3 decides **how a r
 ### Tiles
 
 - `kDefaultTileSize = 256` texels, configurable. Tile `(tx, ty)` covers `[tx·S, (tx+1)·S) × [ty·S, (ty+1)·S)`, clipped at the texel grid edge (ragged edge tiles).
-- A tile is one `BakedFields` from `BakeRegion`, plus its key and a last-used stamp.
+- A tile is one `BakeRegion` call. Tiles are the unit of parallelism and of incremental rebake.
 
-### Parallel bake
+### Whole-world parallel bake
 
 ```cpp
-// Bakes every tile in `rect` (or all tiles) in parallel; tiles are the unit of parallelism.
-bool BakeTiles(const BakeInputs&, const ITexelOwner&, const BakeParams&, uint32_t tileSize,
-               TexelRect rect, IParallelExecutor&, TileSink& sink);
+using ProgressFn = std::function<void(uint32_t tilesDone, uint32_t tilesTotal)>;   // may be null
+
+// Bakes every tile in parallel and stitches into `out` (one world-sized allocation).
+// BLOCKS until finished (ParallelFor blocks): call from a worker job, not the render thread.
+bool BakeWorld(const BakeInputs&, const ITexelOwner&, const BakeParams&, uint32_t tileSize,
+               ParallelExecutor::IParallelExecutor&, const ProgressFn&, BakedFields& out);
 ```
 
-`TileSink::Accept(tileKey, BakedFields&&)` is called once per tile. The call order is not defined; sinks must be order independent. A `StitchSink` assembles a whole-world `BakedFields` for tests and small worlds.
+`ProgressFn` is called once per finished tile, from whichever thread finished it. `tilesDone` is monotonic and the last call has `tilesDone == tilesTotal`. The caller must make its own state thread safe (an atomic counter feeding the bake state is enough). A `TileSink`/`StitchSink` pair exists for tests that deliver tiles in arbitrary order.
 
-### Tile cache
+### Tile post-pass hook
 
 ```cpp
-class TileCache {
+class ITilePostPass {
 public:
-    TileCache(const BakeInputs&, const ITexelOwner&, const BakeParams&, uint32_t tileSize, size_t byteBudget);
-    // Makes every tile overlapping `rect` resident (baking missing ones in parallel); marks them used.
-    void EnsureResident(TexelRect rect, IParallelExecutor&);
-    const BakedFields* Find(TileKey) const;           // null if not resident
-    uint32_t ResidentCount() const;  size_t ResidentBytes() const;
-    void Invalidate(TexelRect rect);                   // drop tiles overlapping rect
-    void InvalidateAll();
+    virtual ~ITilePostPass() = default;
+    virtual float    InfluenceRadius() const = 0;     // cell units a changed cell reaches through this pass; dilates AffectedRect
+    virtual uint32_t ExtraBytesPerTexel() const = 0;  // the pass's own per-texel arrays, for the resolution policy
+    virtual void     Allocate(uint32_t texW, uint32_t texH) = 0;
+    // Runs after the bake of `region`, on the same worker. Reads and may modify the tile's scalars; writes its own arrays.
+    virtual void     Run(const TexelRect& region, const BakeParams&, BakedFields& tile) = 0;
+    virtual void     RebakeBegin() = 0;               // start writing a pending copy
+    virtual void     Commit(const TexelRect& changed) = 0;
+    virtual void     Discard() = 0;
+    virtual uint64_t Hash() const = 0;                // folded into the world hash
 };
 ```
 
-- **Budget.** After each `EnsureResident`, evict least-recently-used tiles that are *not* in the current `rect` until `ResidentBytes() <= byteBudget`. Tiles in the current rect are never evicted. If the rect alone exceeds the budget, they stay and a warning is logged on channel `CFB`.
-- **Thread rule.** `EnsureResident` runs on the caller's thread (it may use the executor's workers inside). The cache is not thread-safe; one owner (the render module).
+`BakeWorld` and `BakedWorld::Bake` take an optional array of post-passes, run in order per tile. A pass must be tile independent (any tile order gives the same bytes); AC 14 checks that for every registered pass. `WarpedPoint` (Feature 1) is available to passes so they sample at the same warped point as the class decision.
 
 ### Resolution policy
 
 ```cpp
 struct ResolutionPolicy {
     float tMin = 4.0f, tMax = 14.0f;
-    size_t budgetBytes = 64u << 20;     // bytes for a whole-world bake
+    size_t budgetBytes = 80u << 20;     // bytes for a whole-world bake (80 MiB)
 };
-float ChooseTexelsPerUnit(float extentX, float extentY, uint32_t scalarCount, const ResolutionPolicy&);
+float ChooseTexelsPerUnit(float extentX, float extentY, uint32_t scalarCount, uint32_t extraBytesPerTexel, const ResolutionPolicy&);
 ```
 
-`T = clamp(sqrt(budgetBytes / (bytesPerTexel × extentX × extentY)), tMin, tMax)`, where `bytesPerTexel = 2·scalarCount + 4 + 3 + 2` (+4 when rivers are present). Small, Standard and Large therefore get the default 14 until Large's whole-world bake would exceed the budget. A consumer using only visible tiles passes a larger budget.
+`T = clamp(sqrt(budgetBytes / (bytesPerTexel × extentX × extentY)), tMin, tMax)`, where `bytesPerTexel = 2·scalarCount + 4 + 3 + 2 + extraBytesPerTexel` (the sum over registered post-passes; DraoiHexWorldRelief's river field adds 4). At Large (about 3.4 M texels at T = 14), 4 scalars plus a 4-byte post-pass is 21 B per texel, about 71 MB, which fits the default 80 MiB budget. Small, Standard and Large therefore get 14 at the default budget. A consumer with a tighter budget passes it in.
 
-### Incremental rebake
+### Incremental rebake (double-buffered)
 
 ```cpp
-// Cells whose class or scalar inputs changed. Returns the texel rect that may differ.
+class BakedWorld {
+public:
+    bool Bake(const BakeInputs&, const ITexelOwner&, const BakeParams&, uint32_t tileSize,
+              ParallelExecutor::IParallelExecutor&, const ProgressFn&);     // = BakeWorld, owns the result
+    const BakedFields& Fields() const;                                      // the live, drawable world
+
+    // Cells whose class or scalar inputs changed. Rebakes only the tiles overlapping their AffectedRect
+    // into a PENDING set; the live world is untouched. BLOCKS (worker job only).
+    bool RebakeBegin(const BakeInputs& newInputs, const uint16_t* cells, uint32_t count, ParallelExecutor::IParallelExecutor&);
+    bool HasPending() const;
+    // Copies the pending tiles into the live world. Cheap (memcpy of the touched tiles). Returns the texel
+    // rectangle that changed, for the consumer's upload. Render thread, at a frame boundary.
+    TexelRect Commit();
+    void DiscardPending();
+};
+
 TexelRect AffectedRect(const ITexelOwner&, const BakeParams&, const uint16_t* cells, uint32_t count);
-// Rebakes only tiles overlapping the affected rect.
-void RebakeCells(TileCache&, const uint16_t* cells, uint32_t count, IParallelExecutor&);
 ```
 
-Influence of one cell on a texel is limited to: the texel's neighbourhood is the cell plus two rings (≤ 2 × √3 ≈ 3.47 units between centres), the owner is within one cell of the texel's warped point, and the warp moves the point by at most `1.35 × warpAmplitude` (the noise range). `AffectedRect` therefore dilates the changed cells' centres by `2·√3 + 1 + 1.35·warpAmplitude + margin` (default 6 units, conservative). Rivers: a changed river cell also dilates by `MAXD`. The caller must not hold stale `BakedFields` pointers across a rebake.
+Influence of one cell on a texel is limited to: the texel's neighbourhood is the cell plus two rings (≤ 2 × √3 ≈ 3.47 units between centres), the owner is within one cell of the texel's warped point, and the warp moves the point by at most `1.35 × warpAmplitude` (the noise range). `AffectedRect` therefore dilates the changed cells' centres by `2·√3 + 1 + 1.35·warpAmplitude + margin`, computed from the actual `warpAmplitude` (margin default 1 unit), plus the largest `InfluenceRadius()` of the registered post-passes.
+
+**Threading.** One owner (the render module). `RebakeBegin` runs on a worker job and writes only the pending set. `Fields()` may be read by the render thread throughout. `Commit` and `DiscardPending` run on the render thread when no `RebakeBegin` is in flight (the owner tracks that), and forward to every post-pass. A second `RebakeBegin` while one is pending merges into the same pending set.
 
 ## Acceptance Criteria
 
-1. **Parallel equals serial.** `BakeTiles` with the serial executor and with a multi-worker executor (1, 2, 4, 8 workers) stitch to the same bytes and the same `Hash()` for S-1 Small, Standard and Large.
-2. **Tile sizes.** Tile sizes 64, 256, 1000 and one that does not divide the texel grid all stitch to the same bytes. Ragged edge tiles have the clipped size.
-3. **Sink order independence.** Delivering tiles in reverse order to a stitch sink gives the same result.
-4. **Cache residency.** After `EnsureResident(rect)`, exactly the tiles overlapping `rect` are resident, plus any earlier tiles within the budget.
-5. **Budget and LRU.** With a budget of N tiles, after touching tiles in a known order, residency matches LRU. Tiles in the current rect are never evicted. A rect larger than the budget stays resident and logs a warning.
-6. **Cache equals whole bake.** Every resident tile is byte-identical to the same region of a whole bake.
-7. **Invalidate.** `Invalidate(rect)` drops only the overlapping tiles; the next `EnsureResident` rebakes them.
-8. **Resolution policy.** `ChooseTexelsPerUnit` is clamped to [tMin, tMax], decreases as the grid grows, increases with the budget, and the resulting whole-world `ByteSize()` is within the budget unless clamped at `tMin`. Small gets `tMax` at the default budget; Large at 64 MB gets `tMax`.
-9. **Affected rect.** For a single changed cell, `AffectedRect` contains every texel whose baked output differs between the old and new inputs, checked by baking both worlds at several seeds and warp amplitudes on hand grids.
-10. **Incremental equals full.** After changing K random cells (class and scalar), `RebakeCells` leaves the cache byte-identical to a fresh `EnsureResident` over the same rect on the new inputs, for K = 1, 5 and 50.
-11. **Incremental does less.** Changing one cell rebakes at most the tiles that overlap its `AffectedRect`, asserted by a counter, and far fewer than all tiles on Large.
-12. **Metrics.** `cfb.tiles_baked`, `cfb.tiles_evicted`, `cfb.resident_bytes`, `cfb.tile_bake_ms` (last), `cfb.rebake_ms`; a log line per `EnsureResident` that baked anything.
-13. **Goldens.** S-1 Small, Standard and Large presets (continental, highlands, archipelago, default) × seeds 1–3, whole-world hash under the policy resolution, stored in a golden file with an update switch like `CellLayerGolden`.
-14. **Timing (Debug, ballpark).** Whole-world bake time at each size is logged and recorded in the plan notes. No threshold gate (quick-and-dirty perf rule); a problem is queued as a perf task, not silently accepted.
+1. **Parallel equals serial.** `BakeWorld` with the serial executor and with a multi-worker executor (1, 2, 4, 8 workers) gives the same bytes and `Hash()` for S-1 Small, Standard and Large.
+2. **Tile sizes.** Tile sizes 64, 256, 1000 and one that does not divide the texel grid all give the same bytes. Ragged edge tiles have the clipped size.
+3. **Sink order independence.** Delivering tiles to a stitch sink in reverse order gives the same result.
+4. **Progress.** `ProgressFn` is called exactly `tilesTotal` times, `tilesDone` never decreases, the last call has `tilesDone == tilesTotal`, and a null callback is accepted.
+5. **Whole bake match.** `BakedWorld::Fields()` is byte-identical to a single `Bake` of the same inputs.
+6. **Resolution policy.** `ChooseTexelsPerUnit` is clamped to [tMin, tMax], decreases as the grid grows, increases with the budget, and the resulting whole-world `ByteSize()` is within the budget unless clamped at `tMin`. At the default budget, Small, Standard and Large with 4 scalars and 4 extra bytes per texel all get `tMax`.
+7. **Affected rect.** For a single changed cell, `AffectedRect` contains every texel whose baked output differs between the old and new inputs, checked by baking both worlds at several seeds and warp amplitudes (including 0 and 1.5) on hand grids.
+8. **Incremental equals full.** After changing K random cells (class and scalar), `RebakeBegin` + `Commit` leaves `Fields()` byte-identical to a fresh `Bake` on the new inputs, for K = 1, 5 and 50.
+9. **Incremental does less.** Changing one cell rebakes at most the tiles overlapping its `AffectedRect`, asserted by a counter, and far fewer than all tiles on Large.
+10. **Double buffering.** Between `RebakeBegin` and `Commit`, `Fields()` is byte-identical to before. `Commit` returns the changed rectangle, and a texel outside it is unchanged. `DiscardPending` leaves the live world untouched. A second `RebakeBegin` before `Commit` merges.
+11. **Metrics.** `cfb.tiles_baked`, `cfb.resident_bytes`, `cfb.tile_bake_ms` (last), `cfb.rebake_ms`, `cfb.pending_tiles`; a log line per `BakeWorld` and per `RebakeBegin`.
+12. **Goldens.** S-1 Small, Standard and Large presets (continental, highlands, archipelago, default) × seeds 1–3, whole-world hash under the policy resolution, stored in a golden file with an update switch like `CellLayerGolden`.
+14. **Post-pass hook.** A test post-pass (writes a per-texel hash of its warped point into its own array and adds a constant to one scalar) gives byte-identical results serial versus parallel, in any tile order, and after incremental rebake versus full bake. Its `InfluenceRadius()` grows `AffectedRect`. Its array is unchanged between `RebakeBegin` and `Commit`, and `Discard` leaves it untouched. No registered pass leaves the output byte-identical to Feature 1 alone.
+13. **Timing (Debug, ballpark).** Whole-world bake time at each size, single worker and with the capped executor, is logged and recorded in the plan notes. No threshold gate (quick-and-dirty perf rule); a problem is queued as a perf task, not silently accepted.
 
 ## Binding Decisions
 
 | ID | Decision | How this feature complies |
 |---|---|---|
-| CFB-003 | Deterministic at any thread count | AC 1, 2, 3, 6, 10 |
-| DFS-004 | Worker-capped executor | Uses `IParallelExecutor`, so the cap applies |
-| PD-004 / AD-002 | No STL in public APIs | Tile table in `DynamicArrayC`/`HashTable` |
-| PD-002 | PU rule | The cache has one owner thread; it does not read sim state (inputs are plain arrays) |
-| Feedback: quick and dirty perf | Ballpark perf only | AC 14 records, does not gate |
+| CFB-003 | Deterministic at any thread count | AC 1, 2, 3, 5, 8 |
+| CFB-004 | Whole-world bake at load; incremental rebake is double-buffered (2026-11-22) | `BakeWorld`, `BakedWorld`, AC 10 |
+| CFB-006 | No terrain vocabulary in the bake (2026-11-23) | Rivers are gone from this spec; consumers extend through `ITilePostPass` |
+| DFS-004 | Worker-capped executor | The executor passed in decides the cap; the capped implementation lives in DiaDeferredStep |
+| PD-004 / AD-002 | No STL in public APIs | Tile table in `DynamicArrayC`. `ProgressFn` uses `std::function`, matching the existing `RangeFn` in `IParallelExecutor` (pre-existing exception) |
+| PD-002 | PU rule | One owner thread; the bake reads plain arrays, never sim state |
+| Feedback: quick and dirty perf | Ballpark perf only | AC 13 records, does not gate |
 
 ## Open Design Questions
 
-1. **Tile size.** 256 is a guess. Smaller tiles cut over-baking at the camera edge and give finer incremental rebakes, but add per-tile overhead. Measure during implementation and fix the default from the numbers.
-2. **Rebake while drawing.** `RebakeCells` replaces tile contents. The renderer might still be reading the old tile. Either the cache double-buffers (a stale tile stays valid until `Commit`), or rebake runs only between frames. Decide with DiaTerrainMap3D's module spec; the cache API can add a two-phase `RebakeBegin`/`Commit` without breaking callers.
-3. **Is whole-world ever needed?** If DiaTerrainMap3D always uses the visible-tile path, the whole-world `Bake` and the resolution policy become test and tooling utilities.
+1. **Tile size.** 256 is a guess. Smaller tiles make incremental rebakes finer but add per-tile overhead. Measure during implementation and fix the default from the numbers.
+2. **Low-resolution preview for the in-game editor.** While a slider drags, the tool wants a fast coarse bake. That is `BakeWorld` with a smaller `texelsPerUnit`, so no new API here, but the consumer must be able to swap in a world at a different resolution (DraoiHexWorldRender3D Feature 1 recreates its textures; CoW Strategic Map Feature 4 decides when).
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Tile keys, rect clipping, `TileSink`, `StitchSink` | AC 2, 3 | Not Started | sonnet | |
-| 2 | `BakeTiles` over `IParallelExecutor` | AC 1 | Not Started | sonnet | serial oracle |
-| 3 | `TileCache`: residency, LRU, budget, invalidate | AC 4–7 | Not Started | sonnet | |
-| 4 | `ResolutionPolicy` / `ChooseTexelsPerUnit` | AC 8 | Not Started | haiku | |
-| 5 | `AffectedRect` + dilation rule | AC 9 | Not Started | sonnet | the risky part: tested by brute force |
-| 6 | `RebakeCells` | AC 10, 11 | Not Started | sonnet | |
-| 7 | Metrics and logs | AC 12 | Not Started | haiku | |
-| 8 | S-1 goldens (Small, Standard, Large) and timing notes | AC 13, 14 | Not Started | sonnet | |
+| 2 | `BakeWorld` over `IParallelExecutor` with `ProgressFn` | AC 1, 4 | Not Started | sonnet | serial oracle. Needs DiaParallelExecutor |
+| 3 | `ResolutionPolicy` / `ChooseTexelsPerUnit` | AC 6 | Not Started | haiku | |
+| 4 | `AffectedRect` + dilation rule | AC 7 | Not Started | sonnet | the risky part: tested by brute force |
+| 5 | `BakedWorld`: `Bake`, `RebakeBegin`, pending set | AC 5, 8, 9 | Not Started | sonnet | |
+| 6 | `Commit`, `DiscardPending`, changed rect | AC 10 | Not Started | sonnet | |
+| 7 | Metrics and logs | AC 11 | Not Started | haiku | |
+| 8 | S-1 goldens (Small, Standard, Large) and timing notes | AC 12, 13 | Not Started | sonnet | |
+| 9 | `ITilePostPass` hook through `BakeWorld`, `BakedWorld`, `AffectedRect` and the resolution policy | AC 14 | Not Started | sonnet | added 2026-11-23 (layer split) |

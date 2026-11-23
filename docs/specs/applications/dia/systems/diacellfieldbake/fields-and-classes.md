@@ -8,7 +8,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/world.js` (`World.buildFields`, `pointToCell`, `warp`, `cellAtWarped`)
 
 ## Status
-`Approved` (2026-11-20, user). Interview answers: inputs through DiaCellLayers views, hex flat-top odd-q with a generic seam, two generic class partitions, uint16 owner. **Amended before approval (user, 2026-11-20):** tiled bake (`BakeRegion`) and packed output (half-float scalars, 8-bit fractions), so memory at Large stays near 60 MB and a renderer can bake only the visible tiles.
+`Approved` (2026-11-20, user). Interview answers: inputs through DiaCellLayers views, hex flat-top odd-q with a generic seam, two generic class partitions, uint16 owner. **Amended 2026-11-23 (layer split, user; re-confirmed 2026-11-23):** `WarpedPoint` added to the public interface (AC 16) for DraoiHexWorldRelief; relief and rivers now point to Draoi. **Amended before approval (user, 2026-11-20):** tiled bake (`BakeRegion`) and packed output (half-float scalars, 8-bit fractions), so memory at Large stays near 60 MB and a renderer can bake only the visible tiles.
 
 ## Summary
 
@@ -23,12 +23,12 @@ For every texel it produces:
 
 The output is **compact** plain arrays (no GPU, no STL in the API: half-float scalars, 8-bit fractions and classes, about 17 bytes per texel with four scalars) with a `Hash()` for goldens. It can be baked **whole or one tile at a time**, because every texel depends only on its own position. It adds two queries, `OwnerAt` and `SampleAt`, so CPU code (prop placement, particle spawning) agrees with what is drawn.
 
-Relief, lake surface heights and the river distance field are Feature 2. Parallel and incremental bake are Feature 3. Feature 1 delivers the per-region entry point that Feature 3 parallelises and streams.
+Relief, lake surface heights and the river distance field are DraoiHexWorldRelief (moved from Feature 2 on 2026-11-23); they use this feature's scalar layers and `WarpedPoint`. Parallel and incremental bake are Feature 3. Feature 1 delivers the per-region entry point that Feature 3 parallelises and streams.
 
 ## Problem
 
 - A renderer that draws one value per cell shows hex staircases, hard class edges and flat plateaus. The research prototype proved that the fix is data processing, not art: a two-ring weighted majority, a margin field and smoothed scalars.
-- That processing currently exists only as browser JavaScript (`world.js`). The engine needs a deterministic, testable C++ version that DiaTerrainMap3D, and optionally the 2D cellfield renderer, can share.
+- That processing currently exists only as browser JavaScript (`world.js`). The engine needs a deterministic, testable C++ version that the 3D map (DraoiHexWorldRender3D), and optionally the 2D cellfield renderer, can share.
 
 ## Goals
 
@@ -42,12 +42,13 @@ Relief, lake surface heights and the river distance field are Feature 2. Paralle
 
 ## Non-Goals
 
-1. **Relief, lake surface height, ocean depth and rivers.** Feature 2.
+1. **Relief, lake surface height, ocean depth and rivers.** DraoiHexWorldRelief (Draoi).
 2. **Parallel execution, tile scheduling/caching and incremental rebake.** Feature 3, which wraps this feature's `BakeRegion`.
 3. **GPU upload, textures, shaders.**
 4. **Topologies other than hex flat-top odd-q** in v1. The seam (`ITexelOwner`) lets another topology be added without an API change.
 5. **Bit-identical output across compilers or machines.** The bake uses `exp` and `floor`, so goldens are per platform and build (x64 MSVC). Determinism is across thread counts and runs on the same build.
 6. **Meaning of classes or layers.** Callers name them.
+7. **Per-tick layers.** The bake takes only layers that are static between class or terrain changes (class, elevation, river data). Anything that changes per tick or per season (weather, condition, temperature, events) is a per-cell channel in the renderer and is never baked, so it never forces a rebake (CFB-005, amended 2026-11-22).
 
 ## Design
 
@@ -58,7 +59,7 @@ Relief, lake surface heights and the river distance field are Feature 2. Paralle
   - For flat-top odd-q hex: `extentX = (width − 1) × 1.5 + 2`, `extentY = height × √3 + √3/2`.
 - `texelsPerUnit` (T, default 14). `TW = ceil(extentX × T)`, `TH = ceil(extentY × T)`.
 - Texel (i, j) samples the point `((i + 0.5) / T, (j + 0.5) / T)`. A texel's value depends only on (i, j), the inputs and the params, never on which region it was baked in.
-- **Resolution at Large** (104 × 64): T = 14 gives about 2,190 × 1,560 texels (3.4 M) and about 58 MB packed. A coarser T, or baking only visible tiles, cuts that further. Choosing T per size is Feature 3's and DiaTerrainMap3D's decision.
+- **Resolution at Large** (104 × 64): T = 14 gives about 2,190 × 1,560 texels (3.4 M) and about 58 MB packed. A coarser T, or baking only visible tiles, cuts that further. Choosing T per size is Feature 3's and the consumer'serrainMap3D's decision.
 
 ### Per-texel algorithm
 
@@ -125,6 +126,10 @@ namespace Dia::CellFieldBake {
         virtual void     CellCentre(uint16_t cell, float& x, float& y) const = 0;
     };
     class HexFlatTopOddQOwner : public ITexelOwner { /* closed-form cube rounding */ };
+
+    // The warped sample point the bake uses for texel-space point (x, y), cell units. Exposed so extensions
+    // (DraoiHexWorldRelief through ITilePostPass, Feature 3) sample at exactly the point the class decision used.
+    void WarpedPoint(const BakeParams&, float x, float y, float& wx, float& wy);
 
     // A rectangle of texels in the global texel grid. A full bake is {0, 0, TW, TH}.
     struct TexelRect { uint32_t x = 0, y = 0, w = 0, h = 0; };
@@ -198,6 +203,7 @@ namespace Dia::CellFieldBake {
 13. **Topology seam.** A test `ITexelOwner` (a square grid) bakes without any hex code in the path. Only `HexFlatTopOddQOwner` is hex-specific.
 14. **Parity with the prototype.** On the S-1 continental seed 1 Small world, the C++ bake's primary-class and margin fields match the prototype's visually. The user signs off a side-by-side capture. The result then becomes the golden.
 15. **Observability.** A log on channel `CFB`: an Info line per bake with size and milliseconds, an Error for every rejection. A `DIA_PROFILE_SCOPE` around `Bake` and `BakeRegion`. Metrics `cfb.bake_ms` (last bake) and `cfb.bake_bytes` (last output size).
+16. **WarpedPoint.** `WarpedPoint` returns exactly the point step 1 used, checked by re-deriving the owner and class of 1,000 random texels from it.
 
 ## Binding Decisions
 
@@ -208,6 +214,7 @@ namespace Dia::CellFieldBake {
 | AD-001 | Module docs; sign-off | New module `DiaCellFieldBake` documented in a `dia.cellfieldbake.architecture.module.md`; new Dia system already approved 2026-11-20 |
 | AD-003 | `Dia::<Module>::` | `Dia::CellFieldBake::` |
 | CFB-002 | Majority + margin, never nearest-cell borders | Steps 3–7 above; AC 9 tests it |
+| CFB-005 | Only static layers are baked; per-tick data is a channel (2026-11-22) | Non-Goal 7; callers choose `scalarLayers` |
 | CFB-003 | Deterministic, hashable at any thread count | `BakeRegion` reads shared immutable inputs and each texel depends only on its own position; AC 10 tests it |
 | PD-002 | PU boundaries are streams | **Constraint, no conflict.** `CellLayerDesc::read` is owner-PU only (registry wrong-PU rule). `GatherFromRegistry` therefore runs on the layer's PU. The bake itself touches only the arrays, so a render-side module can run it after receiving them by FrameStream snapshot (ODQ 2) |
 
@@ -215,17 +222,17 @@ namespace Dia::CellFieldBake {
 
 1. **Hex seam: closed form or generic?** The prototype uses closed-form cube rounding, so `HexFlatTopOddQOwner` does too. The seam allows a generic nearest-centre owner later. Revisit when a second topology exists.
 2. **Where does the gather run?** The registry's `read` delegates are owner-PU only, which here means the sim side. The bake output is wanted on the render side. Options:
-   - Gather and bake on the sim PU, then publish `BakedFields` as a stream snapshot. It is large (about 2,200 × 1,700 texels × ~30 bytes ≈ 110 MB at Large, so this is the wrong choice).
+   - Gather and bake on the sim PU, then publish `BakedFields` as a stream snapshot. It is large (about 3.4 M texels × 17 bytes ≈ 58 MB at Large, large enough that streaming it as a snapshot is the wrong choice).
    - Gather into plain arrays on the sim PU, stream the small per-cell arrays (about 6,656 cells), and bake on the render side. This is the recommended path, and `BakeInputs` is exactly that shape.
-   - Decide at the DiaTerrainMap3D module feature, which owns the PU wiring.
-3. **Resolution and tile policy at Large.** Moved to Feature 3 and the DiaTerrainMap3D module spec: default T per world size, tile size, visible-tile selection and cache eviction. This feature only guarantees that any texel rectangle can be baked and costs at most 17 bytes per texel.
+   - Decide at the game's map module (CoW Strategic Map Feature 4), which owns the PU wiring. DraoiHexWorldRender3D is a plain library with no PU affinity.
+3. **Resolution and tile policy at Large.** Moved to Feature 3 (default T per world size, tile size; the visible-tile cache was cut 2026-11-22). This feature only guarantees that any texel rectangle can be baked and costs at most 17 bytes per texel.
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Module skeleton: `Dia/DiaCellFieldBake/` project, module doc, vcxproj + filters, `dia check deps` | `dia check deps` clean | Not Started | haiku | `dia scaffold module` |
-| 2 | Value noise and warp (integer-hash, deterministic), unit tests | noise range, repeatability, seed changes output | Not Started | sonnet | |
+| 2 | Value noise and warp (integer-hash, deterministic), `WarpedPoint`, unit tests | noise range, repeatability, seed changes output; AC 16 | Not Started | sonnet | `WarpedPoint` added 2026-11-23 |
 | 3 | `ITexelOwner` + `HexFlatTopOddQOwner` (bounds, closed-form owner, centres) | owner of every cell centre is that cell; outside = `kNoOwner` | Not Started | sonnet | |
 | 4 | Ring table (19-cell neighbourhoods, dedup, edges) | counts: interior 19, corner/edge smaller; no duplicates | Not Started | sonnet | |
 | 5 | Smooth scalars (weights, average) and outside values | AC 3, 4 | Not Started | sonnet | |

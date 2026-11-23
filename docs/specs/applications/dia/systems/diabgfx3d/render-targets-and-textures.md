@@ -4,7 +4,7 @@
 @docs/specs/applications/dia/systems/diabgfx3d/diabgfx3d.md (Amendment 2026-11-20)
 
 **Gameplay Domains:** rendering
-**Needed by:** Post-Process Stack (D), DiaTerrainMap3D (channel textures, headless capture)
+**Needed by:** Post-Process Stack (D), DraoiHexWorldRender3D (channel textures), DiaToonShading golden harness and CoW `cow.map.capture` (readback), Heightfield Mesh (E)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX.ensure`), `lookdev/js/glutil.js` (`glTexture`), per-frame `texSubImage2D` of the weather and event textures in `app.js`
 
@@ -23,7 +23,7 @@ Both are generic: any 3D game needs offscreen targets and per-frame data texture
 ## Problem
 
 - The post-process stack needs the scene's colour and depth as textures. There is no way to render the scene anywhere but the backbuffer.
-- DiaTerrainMap3D uploads per-cell channel textures (condition, weather, events) every frame or step. `BgfxTextureHandle` has no `Update`, and its formats are RGBA8 only.
+- DraoiHexWorldRender3D uploads per-cell channel textures (condition, weather, events) every frame or step. `BgfxTextureHandle` has no `Update`, and its formats are RGBA8 only.
 - The headless capture path (`frame-capture-readback.md`) reads the backbuffer. A render target must be readable the same way so captures work with the post pass on.
 
 ## Goals

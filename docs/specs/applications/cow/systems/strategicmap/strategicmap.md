@@ -8,7 +8,15 @@
 - `06_ScreenFlow/CanvasRenderingSortLayers.md`, Layers 1–2.
 
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
-**Engine:** @docs/specs/applications/dia/systems/diaterrainmap3d/diaterrainmap3d.md (3D rendering), with @docs/specs/applications/dia/systems/diacellfieldbake/diacellfieldbake.md (data) and the DiaBgfx3D sprite, particle and post features
+**Renderer (Draoi):** @docs/specs/applications/draoi/systems/draoihexworldrender3d/draoihexworldrender3d.md (3D hex-world map), with @docs/specs/applications/draoi/systems/draoihexworldrelief/draoihexworldrelief.md (relief and rivers)
+**Engine (Dia):** @docs/specs/applications/dia/systems/diacellfieldbake/diacellfieldbake.md (data), @docs/specs/applications/dia/systems/diatoonshading/diatoonshading.md (techniques), and the DiaBgfx3D render-target, sprite, particle, post and heightfield features
+
+**Amendment 2026-11-23 (layer split, user).** DiaTerrainMap3D no longer exists. Three layers now share the map:
+- **Dia** owns generic techniques: DiaToonShading, the DiaBgfx3D features, DiaCellFieldBake.
+- **Draoi** owns the hex-world vocabulary: DraoiHexWorldRender3D (a plain library, `HexWorldMap`) and DraoiHexWorldRelief.
+- **CoW (this system)** owns the look and all wiring: every number (GDD palette, season tints and names, strata ink and hatch, ecology bands, relief weights), the sim-to-channel adapter, CoW-only effects through the 4 custom slots (for example magic snow), and the module, streams, bake jobs, camera, commands, presets and capture that used to sit in DiaTerrainMap3D Feature 4 (now Feature 4 here).
+
+Where the text below says "DiaTerrainMap3D", read "DraoiHexWorldRender3D (`HexWorldMap`)". `TMAP-*` decision ids are unchanged and now live in the Draoi spec.
 
 **Gameplay Domains:** rendering, camera
 
@@ -21,14 +29,15 @@ The Strategic Map is CoW's main screen: a "living illustrated map" (AestheticSty
 Layer 3+ icons, dragons and overlays sit on top and belong to other systems.
 
 **Ownership split:**
-- **DiaTerrainMap3D draws.** It owns the renderer.
+- **DraoiHexWorldRender3D draws** (a Draoi library over Dia techniques). It owns the renderer, with neutral defaults only.
 - **The Strategic Map owns everything CoW-specific:**
   - the biome visual table, keyed by the Biome Registry;
   - the GDD palette and seasonal tokens;
   - the depth-zone ink and hatch rules;
   - the ecology bands;
   - the prop set and placement rules;
-  - the binding from each CoW simulation system to a DiaTerrainMap3D channel;
+  - the binding from each CoW simulation system to a DraoiHexWorldRender3D standard channel or custom slot;
+  - the render-side module that owns the `HexWorldMap`, runs the bake jobs and the map camera;
   - the strategic camera;
   - the `cow.map.*` commands;
   - the style parameter file.
@@ -83,7 +92,7 @@ The approved prototype (`docs/research/tile_renderin_art_pipeline/lookdev/`, use
 
 ## Channel Binding
 
-| Map channel (DiaTerrainMap3D) | Source | Until the source exists |
+| Map channel (DraoiHexWorldRender3D) | Source | Until the source exists |
 |---|---|---|
 | Elevation, relief class, coast, lakes (surface), rivers (mask, flow), depth zone, latitude, temperature | S-1 world (built) | — |
 | Material class (biome) and visuals | S-1 Biome Registry (`biomes.json`) + this system's visual table | — |
@@ -108,13 +117,14 @@ Every source implements `IMapChannelSource`, so the V-1 stand-ins and the live s
 | 4 | StrategicMapModule and Camera | Render-side module; strategic camera (Orbit + zoom-dependent pitch, bounds); `cow.map.*` commands; style parameter file load/save/reload | [module-and-camera.md](module-and-camera.md) | Draft |
 | 5 | Presentation Presets | Tilt-shift, haze, sky, silhouettes, form lines, contours, boil: tuned defaults and named presets (strategic, cinematic, debug-flat) | [presentation-presets.md](presentation-presets.md) | Draft |
 
-Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature can only start once the DiaTerrainMap3D feature it uses exists.
+Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature can only start once the DraoiHexWorldRender3D feature it uses exists.
 
 ## Decisions
 
 | ID | Decision | Status | Binding |
 |---|---|---|---|
-| SM-001 | The Strategic Map is a CoW system; DiaTerrainMap3D draws, the Strategic Map supplies CoW data and binding (user 2026-11-20) | Accepted | Yes |
+| SM-001 | The Strategic Map is a CoW system; the renderer draws, the Strategic Map supplies CoW data and binding (user 2026-11-20; renderer is DraoiHexWorldRender3D since 2026-11-23) | Accepted | Yes |
+| SM-007 | CoW owns the look and all wiring; Draoi ships neutral defaults; CoW-only states use the custom slots, never a Draoi change (user 2026-11-23, layer split) | Accepted | Yes |
 | SM-002 | Replace the GDD's artist-authored 180-tile atlas (TileRenderingPipeline §1–4) with field-driven rendering; the Visual Bible look rules stand unchanged | Accepted | Yes |
 | SM-003 | Weather is rendered per cell (TileRenderingPipeline §7.2, per-cell emitters), never from a global state | Accepted | Yes |
 | SM-004 | Fire and herds are rendered from A1/A3 state; the Strategic Map does not simulate them | Accepted | Yes |
@@ -128,14 +138,14 @@ Build order: 1 → 2 → 4 (first map on S-1 data), then 3 and 5. Each feature c
 | PD-001 | StringCRC ids | Biome, prop, channel and command ids |
 | PD-002 | PU/Phase/Module | Module on the render side; sim channels arrive by FrameStream |
 | PD-004 | No STL in public APIs | Channel and instance interfaces |
-| AD-001 | Engine changes need sign-off | Any DiaTerrainMap3D or Dia change made from this system needs sign-off |
-| AD-002 | Four-tier classification | Renderer → Dia (TMAP-001); visual data, binding, camera → CoW-Shared (reused by every testbed and the game) |
+| AD-001 | Engine changes need sign-off | Any Dia change made from this system needs sign-off; Draoi changes follow the Draoi admission test |
+| AD-002 | Four-tier classification | Techniques → Dia; hex-world renderer → Draoi (TMAP-009); visual data, binding, module, camera → CoW-Shared (reused by every testbed and the game) |
 | AD-003 | GDD owns design intent | Look rules come from the Visual Bible; this spec owns mechanism. Fold-back text goes to the GDD session |
-| TMAP-002..006 | DiaTerrainMap3D decisions | Heightfield, code-owned style, terrain mountains, per-cell channels, no prop boil |
+| TMAP-002..006, 009..012 | DraoiHexWorldRender3D decisions | Heightfield, code-owned style, terrain mountains, per-cell channels, no prop boil; layer split, hybrid channels, plain library, neutral defaults |
 
 ## Open Design Questions
 
-1. **Hex readability.** The art hides the grid. Should players read cells through a grid overlay on demand, a hover/selection outline, or Layer 3 icons only? This affects whether DiaTerrainMap3D draws a cell outline (TMAP open question 3).
+1. **Hex readability.** The art hides the grid. Should players read cells through a grid overlay on demand, a hover/selection outline, or Layer 3 icons only? This affects whether DraoiHexWorldRender3D draws a cell outline (its system ODQ 1).
 2. **Camera.** Should pitch flatten automatically toward top-down as you zoom out, then tilt at regional zoom? How is occlusion behind ranges handled: lower relief at far zoom, or a see-through outline on the selected cell?
 3. **GDD naming conflicts.** These must be settled before Feature 1:
    - biome set (registry vs the 12 Phase-2 names vs the 8 palette biomes);

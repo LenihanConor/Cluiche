@@ -5,7 +5,7 @@
 
 **Gameplay Domains:** rendering
 **Depends on:** Render Targets and Dynamic Textures (A)
-**Needed by:** DiaTerrainMap3D Module, Presentation and Tooling
+**Needed by:** DraoiHexWorldRender3D Map Assembly; CoW Strategic Map Presentation Presets
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX`, `POST_FS`)
 

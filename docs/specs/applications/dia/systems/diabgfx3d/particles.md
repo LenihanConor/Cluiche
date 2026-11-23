@@ -5,7 +5,7 @@
 
 **Gameplay Domains:** rendering
 **Depends on:** Instanced Sprites (B) for the camera-facing quad path
-**Needed by:** DiaTerrainMap3D Map Props and Emitters (precipitation, smoke)
+**Needed by:** DraoiHexWorldRender3D Map Props and Emitters (precipitation, smoke)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/weather.js` (`Precip`, `spawnSmoke`, `PRECIP_VS`/`PRECIP_FS`)
 

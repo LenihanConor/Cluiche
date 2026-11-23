@@ -6,7 +6,7 @@
 @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (Feature 2)
 
 **Gameplay Domains:** rendering, simulation
-**Depends on:** Strategic Map Feature 1 (visuals), S-1 (world), GameSpeedController (day), DiaTerrainMap3D module spec (snapshot types)
+**Depends on:** Strategic Map Feature 1 (visuals), S-1 (world), GameSpeedController (day), Strategic Map Feature 4 (snapshot types; they moved there from the old DiaTerrainMap3D module spec on 2026-11-23)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`YearClock`), `js/weather.js` (`WeatherSim` output contract), `js/app.js` (`healthOf`, channel textures)
 
@@ -18,7 +18,7 @@
 The Strategic Map is a view of the simulation. This feature defines **how each simulation system's state reaches the renderer**:
 
 - **`IMapChannelSource`**: a small interface each source implements to fill one channel. The renderer cannot tell a V-1 stand-in from the real A1, A3, A4 or A5.
-- **Snapshot publisher** (SimPU): collects the sources each step and publishes `TerrainWorldSnapshot` and `TerrainChannelSnapshot` over FrameStream (the contract in DiaTerrainMap3D's module spec).
+- **Snapshot publisher** (SimPU): collects the sources each step and publishes `TerrainWorldSnapshot` and `TerrainChannelSnapshot` over FrameStream (the contract in Strategic Map Feature 4). Standard channels (Condition, Weather, Snow, Water, Events) and the 4 custom slots follow DraoiHexWorldRender3D's layout (TMAP-010).
 - **Built sources now**: the S-1 world source and the year clock. A1, A3, A4 and A5 sources are written when those systems are built; their slots and the contract are fixed here.
 
 ## Problem
@@ -41,7 +41,7 @@ The Strategic Map is a view of the simulation. This feature defines **how each s
 
 - Implementing A1, A3, A4 or A5 sources (done with those systems; each is a small adapter).
 - The stand-in drivers (V-1 Feature 2).
-- Rendering (DiaTerrainMap3D).
+- Rendering (DraoiHexWorldRender3D).
 - Smoothing A4's two snapshots: the source supplies the smoothed state A4 already computes (CHANGE-048).
 
 ## Design
@@ -129,6 +129,6 @@ namespace CoW::Map {
 | 1 | `IMapChannelSource`, channel layouts, neutral channels | AC 1, 4 | Not Started | sonnet | |
 | 2 | `YearClock` and living-year drivers (pure) | AC 6, 7 | Not Started | sonnet | |
 | 3 | S-1 world source | AC 2 | Not Started | sonnet | |
-| 4 | `MapSnapshotPublisher` module, versioning, hot swap | AC 3, 5, 8 | Not Started | sonnet | needs DiaTerrainMap3D snapshot types |
+| 4 | `MapSnapshotPublisher` module, versioning, hot swap | AC 3, 5, 8 | Not Started | sonnet | needs the snapshot types from Feature 4 |
 | 5 | Cost, observability | AC 9, 10 | Not Started | haiku | |
 | 6 | A1/A3/A4/A5 source adapters | per system | Deferred | sonnet | done with each system; slots fixed here |

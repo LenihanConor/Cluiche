@@ -4,7 +4,7 @@
 @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (Feature 5)
 
 **Gameplay Domains:** rendering
-**Depends on:** Strategic Map Features 1 and 4; DiaTerrainMap3D Style Shader Library and Module features; DiaBgfx3D Post-Process Stack
+**Depends on:** Strategic Map Features 1 and 4; DraoiHexWorldRender3D Hex Terrain Material and Map Assembly; DiaBgfx3D Post-Process Stack
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** presentation controls in `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (state defaults and the "Presentation" and "Style" panel sections); screenshots `lookdev/shots/` (overview, close, storms, collapsed, presentation)
 

@@ -4,7 +4,7 @@
 @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (Feature 3)
 
 **Gameplay Domains:** rendering
-**Depends on:** Strategic Map Feature 1 (prop sets keyed by biome), DiaBgfx3D Instanced Sprites (atlas format), DiaTerrainMap3D Map Props and Emitters (rule format)
+**Depends on:** Strategic Map Feature 1 (prop sets keyed by biome), DiaBgfx3D Instanced Sprites (atlas format), DraoiHexWorldRender3D Map Props and Emitters (rule format)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/props.js` (`PROP_SVG`, `PROP_PAL`, `BIOME_PROPS`, `propColours`), the prop sheet in `lookdev/index.html`
 
@@ -15,7 +15,7 @@
 
 The art and rules for what stands on the map: the **sprite set** (trees, shrubs, grass, reeds, rocks, dead trees, jungle, hills, clouds, herds, birds), its **palette-masked atlas**, and the **per-biome prop rules**. The set is authored without an artist: Claude writes the SVGs, a DiaCLI step rasterises them into the atlas the renderer loads, and Gemini is an optional upgrade for individual sprites.
 
-This feature owns CoW's *content* (what and where). DiaBgfx3D owns how sprites are drawn; DiaTerrainMap3D owns scatter mechanics.
+This feature owns CoW's *content* (what and where). DiaBgfx3D owns how sprites are drawn; DraoiHexWorldRender3D owns scatter mechanics.
 
 ## Problem
 
@@ -27,7 +27,7 @@ This feature owns CoW's *content* (what and where). DiaBgfx3D owns how sprites a
 
 1. **Source assets**: SVG files under `Cluiche/Assets/CoW/Global/Map/props/` for each sprite, following the mask contract (red = primary, green = secondary, blue = accent, black = ink, alpha = coverage), each 100 × 100 with the foot at bottom centre.
 2. **Atlas build**: a DiaCLI asset handler rasterises the SVGs into one atlas PNG (grid layout) plus an `atlas.json` (index → name, cell, rigid flag, default size), with validation of the mask contract.
-3. **Prop rules** per `propSet` in `map_props.json` (`cow.map_props`): rules as in DiaTerrainMap3D (type, per-cell density, size, jitter, slope range, wet-only, dead variant).
+3. **Prop rules** per `propSet` in `map_props.json` (`cow.map_props`): rules as in DraoiHexWorldRender3D (type, per-cell density, size, jitter, slope range, wet-only, dead variant).
 4. **Palettes for props**: by biome and season (from Feature 1), so a forest sprite recolours automatically.
 5. **Fauna and sky sprites**: cloud puffs (translucent), herd beasts, birds, with their layer assignments.
 6. **Replaceable per sprite**: a Gemini-made PNG in the same mask contract can replace any SVG without code changes (the asset forge's job; this feature defines the contract and the override order).

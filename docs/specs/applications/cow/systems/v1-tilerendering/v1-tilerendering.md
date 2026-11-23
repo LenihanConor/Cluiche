@@ -3,7 +3,7 @@
 **Parent:** @docs/specs/applications/cow/cow.md
 **Testbed:** required (this is the testbed)
 **Design source:** `Output Docs/GDD/10_PrototypeStrategy/V1_TileRendering.md` (DesignDocs repo, Locked 2026-10-11, re-locked 2026-10-20 and 2026-11-17)
-**System under test:** @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (the Strategic Map owns the tools; this testbed hosts them), drawn by @docs/specs/applications/dia/systems/diaterrainmap3d/diaterrainmap3d.md
+**System under test:** @docs/specs/applications/cow/systems/strategicmap/strategicmap.md (the Strategic Map owns the tools; this testbed hosts them), drawn by @docs/specs/applications/draoi/systems/draoihexworldrender3d/draoihexworldrender3d.md (Draoi; techniques in DiaToonShading)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md (prototype: `lookdev/`)
 
 **Gameplay Domains:** rendering, debug
@@ -16,7 +16,7 @@ It is also the **look-dev tool**: the in-game version of the browser prototype t
 
 ```
 Simulation layers  S-1 (built) · A4 · A1 · A3 · A5     publish per-cell state
-Map                Strategic Map (CoW) → DiaTerrainMap3D   renders it
+Map                Strategic Map (CoW) → DraoiHexWorldRender3D   renders it
 Testbed            V-1                                    ← this: stage, stand-ins, panel, checks
 ```
 
@@ -107,7 +107,7 @@ These depart from the GDD as written. The fold-back text goes to the GDD session
 | ID | Decision | How it constrains V-1 |
 |---|---|---|
 | PD-010 | `.diastage` metadata | The stage is a `.diastage`; modes are launch parameters, not separate stages |
-| AD-001 | Engine changes need sign-off | Any Dia change raised by V-1 goes through DiaTerrainMap3D's specs |
+| AD-001 | Engine changes need sign-off | Any Dia change raised by V-1 goes through the owning Dia spec (DiaToonShading, DiaBgfx3D, DiaCellFieldBake); Draoi changes through DraoiHexWorldRender3D |
 | AD-003 | GDD owns intent | The test list comes from V1_TileRendering.md; the deviations above are fold-back |
 | AD-005 | One stage per testbed | One stage; Correctness, Performance and Look-dev are panel modes |
 | SM-003..005 | Strategic Map | Per-cell weather; fire and herds are stand-ins only; tooling is DiaAPI commands |

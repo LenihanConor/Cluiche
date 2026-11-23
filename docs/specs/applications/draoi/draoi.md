@@ -19,6 +19,8 @@ Dependencies point down only: Applications → Draoi → Dia. See PD-011 to PD-0
 ## Naming
 Packages are prefixed `Draoi` and named by what they hang off, e.g. `DraoiHexWorld`, `DraoiHexWorldWeather`. Packages that are not tied to hexes carry no infix (`DraoiGameSpeed`).
 
+**Presentation packages carry `Render` plus their dimension** (decided 2026-11-23): `DraoiHexWorldRender3D`, and later perhaps `DraoiHexWorldRender2D`. Dia shows a domain through its folder layout. Draoi is flat, so the name has to say it. Generic techniques never live in Draoi: they go to Dia under a technique name (`DiaToonShading`).
+
 ## Planned Packages
 Nothing is built yet. Extraction order follows the CoW audit of 2026-11-20.
 
@@ -29,6 +31,8 @@ Nothing is built yet. Extraction order follows the CoW audit of 2026-11-20.
 | DraoiHexWorldWeather | A4 Weather spec | Pure sim; stage adapter lives in CoW |
 | DraoiHexWorldHydrology | A5 Hydrology spec | Pure sim; stage adapter lives in CoW |
 | DraoiHexWorldEcology | A1 Ecology spec | Pure sim; stage adapter lives in CoW |
+| DraoiHexWorldRelief | Former DiaCellFieldBake Feature 2 (2026-11-23) | Relief by terrain class, lake/sea elevation, river distance field over the Dia bake's hooks. System spec: @docs/specs/applications/draoi/systems/draoihexworldrelief/draoihexworldrelief.md (Draft) |
+| DraoiHexWorldRender3D | Former Dia system DiaTerrainMap3D (2026-11-23) | Hex-world 3D map: textures, material composed from DiaToonShading, standard channels + 4 custom slots, props, `HexWorldMap` facade; neutral defaults; CoW owns the look and all wiring. System spec: @docs/specs/applications/draoi/systems/draoihexworldrender3d/draoihexworldrender3d.md (Draft) |
 
 The step chain (`IWorldStepStage`, `WorldStepChain`, config, listener) is not a Draoi package. It was audited as pure mechanism with no world knowledge, so it moves into Dia's `DiaDeferredStep` under generic names, pending its own feature spec (Dia placement needs sign-off under the escalation rule).
 
@@ -50,6 +54,14 @@ Package split (agreed 2026-11-21): `DraoiHexWorld` core (grid and world types, `
 - **`DepthZone` becomes generic** (decided): zones are indices with names from data, not the hard-coded `FirstShores`/`WildReaches`/`AncientInteriors`. **Superseded 2026-11-21 by strata** (@docs/specs/features/draoi/generic-strata.md, Approved, 7 tasks, lands before the extraction): `DepthZone` becomes `StratumIndex`, `ZoneTable` becomes `StratumTable` and `strata.json` (both core / CoW content respectively), `TerrainDepthZones` becomes `TerrainStrata` with an injectable `IStrataAssigner` in the terrain package. Count and per-stratum shares are data, not 'names only'.
 - **CoW content is concentrated in `SiteGuarantees` (46 hits) and `WorldGenSession` ~1968-2218** (hard-coded guarantee set). `WorldOverlayGeometry.cpp` and `Modules/WorldGenViewHost.cpp` also include `SiteGuarantees.h`, so Draoi step 2 (inject the guarantee set) must cover all three, not only `WorldGenSession`.
 - **Placement of the remaining files:** `WorldHexGrid`/`SharedWorldHexGrid` -> core. `WorldJson`, `WorldJsonImport`, `WorldFiles`, `WorldShapePreset`, `WorldLayerSource` -> terrain package (they depend on `SiteRegistry`, `TerrainRules`, `WorldGenSession`). `WorldCameraController` (pure `DiaMaths`, one consumer) and `WorldOverlayGeometry` (depends on `SiteGuarantees`) stay in CoW as view code; the camera controller fails the two-consumer admission test today.
+
+## Layer split of the 3D map (2026-11-23, user)
+The 3D map was specced as the Dia system DiaTerrainMap3D. Under the layer rule it splits three ways:
+- **Dia, generic techniques:** DiaToonShading (new), DiaBgfx3D Feature E Heightfield Mesh (new), DiaCellFieldBake (Features 1 and 3, plus the `ITilePostPass` and `WarpedPoint` hooks).
+- **Draoi, hex-world vocabulary:** DraoiHexWorldRender3D and DraoiHexWorldRelief. These are the first Draoi system specs; they live under `docs/specs/applications/draoi/systems/`.
+- **CoW, the look and wiring:** Strategic Map (module, streams, bake jobs, camera, commands, presets, capture, every GDD number, custom-slot content such as magic snow).
+
+Channel model (hybrid, TMAP-010): standard channels mirror Draoi sim outputs; 4 custom overlay slots carry game-only states, bound to DiaToonShading techniques in the game's style file.
 
 ## Extraction specs
 Feature specs for extraction order step (e) (order: Strata -> core -> terrain -> GameSpeed):

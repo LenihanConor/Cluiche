@@ -1,15 +1,15 @@
-# Feature Spec: DiaTerrainMap3D Map Props and Emitters
+# Feature Spec: DraoiHexWorldRender3D Map Props and Emitters
 
 ## Parent System
-@docs/specs/applications/dia/systems/diaterrainmap3d/diaterrainmap3d.md
+@docs/specs/applications/draoi/systems/draoihexworldrender3d/draoihexworldrender3d.md
 
 **Gameplay Domains:** rendering
-**Depends on:** DiaTerrainMap3D Heightfield Terrain; DiaBgfx3D Instanced Sprites (B) and Particles (C); DiaCellFieldBake (`OwnerAt`)
+**Depends on:** Hex Terrain Surface (Feature 1, `HeightAt`); DiaBgfx3D Instanced Sprites (B) and Particles (C); DiaCellFieldBake (`OwnerAt`)
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/props.js` (`placeProps`, `BIOME_PROPS`), `js/app.js` (`buildClouds`), `js/alive.js` (`Fauna.instances`), `js/weather.js` (`Precip`)
 
 ## Status
-`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review.
+`Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Moved 2026-11-23 (layer split):** was DiaTerrainMap3D Feature 3; namespace now `Draoi::HexWorldRender3D`. The condition-to-density curve and the dead-variant threshold become `HexWorldStyle` parameters with the prototype values as defaults, so CoW's ecology bands are data (TMAP-012). Particle snow and rain now read the Weather channel's snow fraction.
 
 ## Summary
 
@@ -38,7 +38,7 @@ Everything that stands on or flies above the terrain: props scattered by class a
 
 ## Non-Goals
 
-- Authoring prop art or palettes (Strategic Map Feature 3).
+- Authoring prop art, palettes or rule tables (CoW Strategic Map Features 1 and 3).
 - Simulating herds, clouds or fire (the game does; this feature draws instances it is handed).
 - Collision, shadows, per-prop lighting.
 - LOD billboards or impostors.
@@ -46,14 +46,14 @@ Everything that stands on or flies above the terrain: props scattered by class a
 ## Design
 
 ```cpp
-namespace Dia::TerrainMap3D {
+namespace Draoi::HexWorldRender3D {
     struct PropRule { uint16_t propType; float perCell;         // expected count per cell at baseline
                       float size; float sizeJitter;             // world units tall
                       float minSlope, maxSlope; bool needsWet; uint16_t deadVariant; };
     struct ClassPropRules { const PropRule* rules; uint32_t count; };   // per class id
 
     struct ScatterInputs {
-        const CellFieldBake::BakedFields* const* tiles;  // or a sampler over the cache
+        const Dia::CellFieldBake::BakedFields* world;     // the whole baked world
         const uint8_t* primaryClass; const uint8_t* secondaryClass;      // per cell
         const float*   condition;                                         // per cell 0..1
         const ClassPropRules* rulesByClass; uint32_t classCount;
@@ -70,9 +70,9 @@ namespace Dia::TerrainMap3D {
 
 - **Per-cell stream.** Each cell seeds its own RNG from `(cellId, seed)`, so rescattering one cell never perturbs another, and the result does not depend on iteration order or thread count.
 - **Count.** For each rule, `n = perCell × densityScale(condition) × slopeFactor`; the integer part plus a Bernoulli on the fraction.
-- **Density scale.** Piecewise: condition < 0.33 → `0.05 + 1.2c`; < 0.66 → `0.45 + 1.67(c − 0.33)`; else `1.0 + 0.9(c − 0.66)`.
+- **Density scale.** A `HexWorldStyle` curve (three segments by condition band); the default is the prototype's piecewise: condition < 0.33 → `0.05 + 1.2c`; < 0.66 → `0.45 + 1.67(c − 0.33)`; else `1.0 + 0.9(c − 0.66)`.
 - **Position.** Uniform in a disc of radius 0.85 around the cell centre, accepted only if `OwnerAt` is that cell (up to 6 tries), the point is land, and slope is within the rule's range. `z` from `HeightAt`.
-- **Dead variants.** Tree rules with `deadVariant` switch to it when `condition < 0.22` with probability 0.6 (deterministic per instance).
+- **Dead variants.** Rules with `deadVariant` switch to it when `condition < deadBelow` (default 0.22) with probability `deadChance` (default 0.6), deterministic per instance.
 - **Colour.** Each instance carries the class palette's three slot colours, with a seasonal override set supplied by the game.
 - **Dynamic layers.** `DynamicSprites` takes `{x, y, type, scale, palette, flags}` and fills `z` from `HeightAt` (lifted by a per-layer altitude for clouds and birds), then submits to the translucent or cutout layer.
 - **Particle mapping.** Per-cell channels → `DensityField` at cell resolution: rain density = `precip × (1 − snowFraction)`, snow density = `precip × snowFraction`, smoke density = burn intensity. The `DensityField` is rewritten when the channel changes.
@@ -92,7 +92,7 @@ namespace Dia::TerrainMap3D {
 11. **Rain or snow by cell.** In a test world with a cold plateau and a warm lowland under one storm, snow falls on the plateau cells and rain on the lowland (particle kinds counted by region).
 12. **No jitter on props.** Prop screen positions are stable frame to frame with the camera still (no boil, no frequency changes); a gust changes amplitude only.
 13. **Budget.** Instance counts at Large with default rules and density 1.0 are logged; the cap of 64k per layer is respected (excess dropped lowest-priority first with a warning, never crashes).
-14. **Observability.** Log channel `TMAP`; scopes `Props.Scatter`, `Props.Rebuild`; metrics `tmap.props`, `tmap.dynamic_sprites`, `tmap.scatter_ms`.
+14. **Observability.** Log channel `HWR3D`; scopes `Props.Scatter`, `Props.Rebuild`; metrics `hwr3d.props`, `hwr3d.dynamic_sprites`, `hwr3d.scatter_ms`.
 
 ## Binding Decisions
 
@@ -101,7 +101,8 @@ namespace Dia::TerrainMap3D {
 | TMAP-004 | Mountains are terrain | No peak sprites in the default rules |
 | TMAP-005 | Per-cell channels | Particle density comes from per-cell channels |
 | TMAP-006 | No prop boil, fixed-frequency sway | AC 12 |
-| CFB-001..003 | DiaCellFieldBake | Placement uses `OwnerAt` and baked tiles only |
+| CFB-001..003 | DiaCellFieldBake | Placement uses `OwnerAt` and the baked world only |
+| TMAP-012 | Neutral defaults; numbers are game data | Density curve and dead-variant numbers are style parameters |
 | PD-001 | StringCRC ids | Prop types are indices into the sprite atlas; class ids are small ints; rule tables keyed by `StringCRC` at the CoW layer |
 | PD-004 | No STL in public APIs | Raw rule arrays |
 

@@ -7,7 +7,7 @@
 
 **Gameplay Domains:** rendering
 **Depends on:** S-1 Biome Registry (@docs/specs/applications/cow/systems/s1-worldgeneration/biome-registry.md; the ids and tags), DiaValueSchema (sidecars, `valuesFrom`, `keyEnum`, `data.incomplete-map`), DiaAttribute Parameter Files
-**Consumed by:** DiaTerrainMap3D (`TerrainMapVisuals`, `TerrainMapStyle`), DiaCellFieldBake (relief weights), Strategic Map Features 2–5
+**Consumed by:** DraoiHexWorldRender3D (`HexWorldVisuals`, `HexWorldStyle`), DraoiHexWorldRelief (relief weights), Strategic Map Features 2–5
 **Design source:** GDD `03_VisualBible/ColourPaletteAndLighting.md` (Parts 1, 2, 3, 7), `AestheticStyleCore.md` Parts 4–5, `ShapeLanguageAndAnimation.md` Part 9
 **Research:** docs/research/tile_renderin_art_pipeline/summary.md
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/app.js` (`BASE_PAL`, `seasonalPalette`, state defaults), `js/shaders.js` (`gradeOne`, zone weights, hatch coverage)
@@ -15,12 +15,25 @@
 ## Status
 `Draft` (2026-11-20). Drafted from the approved prototype; awaiting user review. **Blocked in part on three GDD naming conflicts** (see Open Design Questions 1–3); the file formats and tables below are not.
 
+### Amendment 2026-11-23: layer split (user)
+
+The renderer is now DraoiHexWorldRender3D (Draoi), built on DiaToonShading (Dia). `TerrainMapStyle` and `TerrainMapVisuals` are now `HexWorldStyle` and `HexWorldVisuals`; `ToTerrainMapVisuals` becomes `ToHexWorldVisuals`. Draoi ships neutral defaults only (TMAP-012), so **every GDD number lives here**, and the rendered checks that used to sit in the old Style Shader Library move here as well:
+
+- **AC 13, rendered strata coverage.** With CoW's files loaded, measured hatch ink coverage on a synthetic world is within the GDD bands: First Shores 10–20%, Wild Reaches 30–50%, Ancient Interiors 60–80%.
+- **AC 14, rendered ink weight.** Coast and border ink widths by stratum are in the ratio 1 : 1.2 : 1.5 (±10%).
+- **AC 15, rendered season grade.** For a known grey input, Bloom, Dry and Freeze produce the GDD tints (Screen and Multiply as specified, strengths 8%, 6%, 12%); Hunt leaves it unchanged; half-way between two seasons equals the average of the two.
+- **AC 16, rendered condition bands.** Saturation at health 0.15 / 0.5 / 0.9 falls inside the GDD bands (Collapsed −40–60%, Stressed −15–25%, Thriving up to +15%); a barren cell shows the bare blend.
+- **AC 17, relief weights.** The relief weights (`Mountain` 1.0, `Peak` 1.45, `Volcano` 1.3, `Hills` 0.22, `Highland` 0.18, `Cliff` 0.15, from the prototype) live in `map_visuals.json` and reach DraoiHexWorldRelief unchanged.
+- **Custom slots.** `map_style.json` gains the 4 custom slot bindings (`custom.slot[k] = { technique, colour, threshold, falloff, enabled }`). Which CoW states use them (for example magic snow) is decided with the GDD session; until then all slots are disabled.
+
+Additional task: 8 rendered GDD checks, AC 13–17 (sonnet; needs DraoiHexWorldRender3D Feature 2).
+
 ## Summary
 
 Every CoW-specific visual fact in one set of schema'd data files under `Global/Map/`, so the renderer never names a biome, a season or a colour in code:
 
 1. **`map_visuals.json`** (`cow.map_visuals`): per biome, its palette (primary/secondary/accent), seasonal palette overrides, ground-mark kind, prop set and relief class weights.
-2. **`map_style.json`** (`cow.map_style`): the default `TerrainMapStyle` (ink, hatch, toon, haze, tilt-shift, grade strengths…) and the depth-zone and ecology-band tables.
+2. **`map_style.json`** (`cow.map_style`): the default `HexWorldStyle` (ink, hatch, toon, haze, tilt-shift, grade strengths…) and the depth-zone and ecology-band tables.
 3. **`map_presets/*.json`** (`cow.map_preset`): named style overrides (Feature 5).
 
 All three have DiaValueSchema sidecars with ranges, defaults and descriptions. Completeness against the Biome Registry is checked by the CLI.
@@ -89,7 +102,7 @@ All three have DiaValueSchema sidecars with ranges, defaults and descriptions. C
   "ecologyBands": { "stressedBelow": 0.66, "collapsedBelow": 0.33,
                     "saturation": { "Collapsed": [0.40, 0.60], "Stressed": [0.75, 0.85], "Stable": 1.0, "Thriving": 1.15 },
                     "bareBlendStart": 0.42 },
-  "style": { /* TerrainMapStyle defaults: ink, hatch, toon, form lines, haze, tilt-shift, boil, camera curves */ } }
+  "style": { /* HexWorldStyle defaults: ink, hatch, toon, form lines, haze, tilt-shift, boil, camera curves */ } }
 ```
 
 Numbers are the GDD's (hatch 10–20 / 30–50 / 60–80% midpoints, outline 1× / 1.2× / 1.5×, zone ambient −5% / −10% saturation and −8% lightness, season tints 8% / 6% / 12%, ecology desaturation bands).
@@ -103,10 +116,10 @@ namespace CoW::Map {
     public:
         bool Load(const BiomeRegistry&, const char* path, std::string* err);   // validates completeness; atomic swap
         const BiomeVisual& Get(BiomeIndex) const;
-        void ToTerrainMapVisuals(Dia::TerrainMap3D::TerrainMapVisuals& out, const float seasonWeights[4]) const;   // blends seasons
+        void ToHexWorldVisuals(Draoi::HexWorldRender3D::HexWorldVisuals& out, const float seasonWeights[4]) const;   // blends seasons
         uint64_t Hash() const;
     };
-    struct MapStyleFile { /* zones, seasons, bands, TerrainMapStyle */ bool Load(const char*, std::string*); bool Save(const char*, std::string*) const; uint64_t Hash() const; };
+    struct MapStyleFile { /* zones, seasons, bands, HexWorldStyle */ bool Load(const char*, std::string*); bool Save(const char*, std::string*) const; uint64_t Hash() const; };
 }
 ```
 
@@ -117,10 +130,10 @@ Pure CoW-Shared code (no GPU), unit-testable.
 1. **Complete.** Loading against a registry where a non-water biome lacks a row fails with the biome id named; a row for an unknown id fails with that id; a valid file loads.
 2. **Palette values.** The shipped file's eight GDD biome palettes equal the GDD hex tokens exactly (a test table transcribed from `ColourPaletteAndLighting.md` Part 1), plus the coastal water base `#4AB8C8` and deep `#2A7888`.
 3. **Season overrides.** Grassland Bloom primary is `#A8C858`, Dry `#B07830`, Freeze `#A89040`; Wetland Bloom secondary `#38B4C8`, Dry `#8A7850`, Freeze `#6A8878`; Tundra Bloom `#8AB890`, Freeze `#E4EEF2`; Volcanic Freeze secondary `#8A1A08`, primary `#1A1418`. A biome with no override inherits.
-4. **Season blend.** `ToTerrainMapVisuals` with weights `{0.5, 0.5, 0, 0}` gives the channel-wise mean of the Bloom and Hunt palettes; with `{0,1,0,0}` gives the base palette.
+4. **Season blend.** `ToHexWorldVisuals` with weights `{0.5, 0.5, 0, 0}` gives the channel-wise mean of the Bloom and Hunt palettes; with `{0,1,0,0}` gives the base palette.
 5. **Zone table.** Zone rows hold the GDD numbers (AC table test); a value outside the sidecar range fails validation.
 6. **Ecology bands.** Band thresholds are ordered (`collapsedBelow < stressedBelow`), saturation ranges lie inside the GDD bands, and the lookup `SaturationFor(health)` is continuous and monotonic non-decreasing across the bands.
-7. **Style defaults parity.** `MapStyleFile` defaults, applied through `map3d.style.set`, reproduce the approved prototype (side-by-side capture signed off by the user, shared with DiaTerrainMap3D AC 14).
+7. **Style defaults parity.** `MapStyleFile` defaults, applied through `cow.map.style.set`, reproduce the approved prototype (side-by-side capture signed off by the user, shared with DraoiHexWorldRender3D Hex Terrain Material AC 13).
 8. **Round-trip.** `Save` then `Load` gives an identical `Hash()`; a file with an unknown key is a warning and the key is preserved (hand-edited files survive).
 9. **CLI.** `dia validate schema` passes on the shipped files; `data.incomplete-map` fires when a biome is missing (a negative fixture).
 10. **Hot reload.** Editing the file in a dev build swaps visuals atomically between frames, and a bad edit keeps the old data and logs an error.
