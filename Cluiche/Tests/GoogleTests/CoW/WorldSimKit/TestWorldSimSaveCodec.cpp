@@ -1,6 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <string.h>
 #include <string>
+
+#include <DiaDeferredStep/SerialExecutor.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/Logger.h>
+#include <Shared/WorldStep/Testing/FakeWorldStage.h>
 
 #include <DiaAttribute/ParameterFile.h>
 #include <DiaSaveGame/ISaveable.h>
@@ -80,11 +87,83 @@ bool ValidateWith(const SavedField& f, const Json::Value& record, SaveError& err
     return Draoi::HexWorld::Validate(record, &f, 1, caps, err);
 }
 
+class CountingSink : public Dia::Observation::Log::ISink
+{
+public:
+    void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override
+    {
+        if (strstr(e.message, "FakeWorld") == nullptr) { return; }   // only this stage's channel text
+        if (e.level == Dia::Observation::Log::LogLevel::kWarning) { ++warnings; }
+        if (e.level == Dia::Observation::Log::LogLevel::kInfo) { ++infos; }
+    }
+    const char* GetName() const override { return "WorldSimSaveCodecSink"; }
+    unsigned warnings = 0, infos = 0;
+};
+
 }  // namespace
+
+class WorldSimSaveCodecTest : public ::testing::Test
+{
+protected:
+    WorldSimSaveCodecTest() : stage(hooks, &hooks.log) {}
+    void SetUp() override
+    {
+        auto& l = Dia::Observation::Log::Logger::Instance();
+        l.RegisterThreadBuffer();
+        l.RegisterSink(&sink);
+        stage.Start();
+    }
+    void TearDown() override
+    {
+        stage.Stop();
+        auto& l = Dia::Observation::Log::Logger::Instance();
+        l.FlushSync();
+        l.UnregisterSink(&sink);
+        l.UnregisterThreadBuffer();
+    }
+    CountingSink& Sink() { Dia::Observation::Log::Logger::Instance().FlushSync(); return sink; }
+
+    static WorldView MakeWorld(uint32_t rev, uint32_t w = 2, uint32_t h = 2)
+    {
+        WorldView v;
+        v.revision = rev;
+        v.present = true;
+        v.width = w;
+        v.height = h;
+        return v;
+    }
+    // A ready record: 2x2 cells by default, sim_value is what the fake RestoreCommitted loads.
+    static Json::Value ReadyRecord(int simValue = 42, uint64_t hash = 7, uint32_t w = 2, uint32_t h = 2, uint32_t basins = 0)
+    {
+        Json::Value root(Json::objectValue);
+        Draoi::HexWorld::SaveHeader hd;
+        hd.width = w; hd.height = h; hd.cellCount = w * h; hd.stepDay = 3; hd.paramsHash = hash;
+        hd.basinCount = basins; hd.worldHash = 9;
+        Draoi::HexWorld::WriteHeader(root, hd);
+        root["sim_value"] = simValue;
+        return root;
+    }
+    void Announce(const WorldView& w) { stage.OnWorldGenerationComplete(w); }
+    bool Called(const char* name) const
+    {
+        for (uint32_t i = 0; i < hooks.log.Count(); ++i) { if (strcmp(hooks.log.At(i), name) == 0) { return true; } }
+        return false;
+    }
+    uint32_t IndexOf(const char* name) const
+    {
+        for (uint32_t i = 0; i < hooks.log.Count(); ++i) { if (strcmp(hooks.log.At(i), name) == 0) { return i; } }
+        return 0xFFFFFFFFu;
+    }
+
+    FakeHooks hooks;
+    FakeStage stage;
+    CountingSink sink;
+    Dia::DeferredStep::SerialExecutor exec;
+};
 
 // ---- Task 15b: ranges from sidecars ----------------------------------------------------------------
 
-TEST(WorldSimSaveCodecTest, LayerSidecarMaxDrivesValidateWithNoCodeChange)
+TEST_F(WorldSimSaveCodecTest, LayerSidecarMaxDrivesValidateWithNoCodeChange)
 {
     const FieldDecl decl = { "cloud", SavedKind::F32, SavedScope::PerCell };
     const float ok[4] = { 0.f, 0.5f, 1.f, 1.f };
@@ -114,7 +193,7 @@ TEST(WorldSimSaveCodecTest, LayerSidecarMaxDrivesValidateWithNoCodeChange)
     }
 }
 
-TEST(WorldSimSaveCodecTest, ResolvesThroughTheServiceToo)
+TEST_F(WorldSimSaveCodecTest, ResolvesThroughTheServiceToo)
 {
     Dia::ValueSchema::ValueSchemaRegistry reg;
     ASSERT_TRUE(AddDoc(reg, SchemaText("cow.hydro.layers", "flow", -2.0, 5.0)));
@@ -128,7 +207,7 @@ TEST(WorldSimSaveCodecTest, ResolvesThroughTheServiceToo)
     EXPECT_EQ(5.0, f.max);
 }
 
-TEST(WorldSimSaveCodecTest, StateFieldWithoutLayerEntryReadsTheStateSchema)
+TEST_F(WorldSimSaveCodecTest, StateFieldWithoutLayerEntryReadsTheStateSchema)
 {
     const FieldDecl decl = { "snow_depth", SavedKind::F32, SavedScope::PerCell };
     const float v[4] = { 0.f, 1.f, 4.f, 4.f };
@@ -144,7 +223,7 @@ TEST(WorldSimSaveCodecTest, StateFieldWithoutLayerEntryReadsTheStateSchema)
     EXPECT_FALSE(ValidateWith(f, Record("snow_depth", tooBig), err));
 }
 
-TEST(WorldSimSaveCodecTest, LayerEntryWinsOverStateEntry)
+TEST_F(WorldSimSaveCodecTest, LayerEntryWinsOverStateEntry)
 {
     const FieldDecl decl = { "cloud", SavedKind::F32, SavedScope::PerCell };
     Dia::ValueSchema::ValueSchemaRegistry reg;
@@ -157,7 +236,7 @@ TEST(WorldSimSaveCodecTest, LayerEntryWinsOverStateEntry)
     EXPECT_EQ(1.0, f.max);
 }
 
-TEST(WorldSimSaveCodecTest, FieldWithNoEntryOrNoRangeIsRefusedNamingTheField)
+TEST_F(WorldSimSaveCodecTest, FieldWithNoEntryOrNoRangeIsRefusedNamingTheField)
 {
     const FieldDecl missing = { "ghost", SavedKind::F32, SavedScope::PerCell };
     Dia::ValueSchema::ValueSchemaRegistry reg;
@@ -185,7 +264,7 @@ const char* kParamsSidecar =
 
 }  // namespace
 
-TEST(WorldSimSaveCodecTest, ParamsHashFromParameterFileMatchesAndDetectsAChange)
+TEST_F(WorldSimSaveCodecTest, ParamsHashFromParameterFileMatchesAndDetectsAChange)
 {
     Dia::Attribute::ParameterFile file;
     Dia::Attribute::ParamError perr;
@@ -202,7 +281,7 @@ TEST(WorldSimSaveCodecTest, ParamsHashFromParameterFileMatchesAndDetectsAChange)
     EXPECT_FALSE(ParamsHashMatches(record, file.Hash()));
 }
 
-TEST(WorldSimSaveCodecTest, ParamsHashMatchesRefusesRecordsWithoutAHash)
+TEST_F(WorldSimSaveCodecTest, ParamsHashMatchesRefusesRecordsWithoutAHash)
 {
     Json::Value notReady(Json::objectValue);
     Draoi::HexWorld::WriteNotReady(notReady);
@@ -210,7 +289,7 @@ TEST(WorldSimSaveCodecTest, ParamsHashMatchesRefusesRecordsWithoutAHash)
     EXPECT_FALSE(ParamsHashMatches(Json::Value(Json::nullValue), 0));
 }
 
-TEST(WorldSimSaveCodecTest, SaveIdIsCowDotSystem)
+TEST_F(WorldSimSaveCodecTest, SaveIdIsCowDotSystem)
 {
     EXPECT_STREQ("cow.weather", World::SaveId("weather").c_str());
     EXPECT_STREQ("cow.hydro", World::SaveId("hydro").c_str());
@@ -240,7 +319,7 @@ struct FakeRecordSaveable : Dia::SaveGame::ISaveable
 
 }  // namespace
 
-TEST(WorldSimSaveCodecTest, V1RecordLoadsAsV2ThroughARegisteredMigration)
+TEST_F(WorldSimSaveCodecTest, V1RecordLoadsAsV2ThroughARegisteredMigration)
 {
     _mkdir("temp");
     _mkdir("temp/worldsim_codec_tests");
@@ -273,6 +352,217 @@ TEST(WorldSimSaveCodecTest, V1RecordLoadsAsV2ThroughARegisteredMigration)
     EXPECT_FALSE(v2.sawVersionKey) << "no in-record version field";
     EXPECT_EQ(2u, v2.GetVersion());
     std::remove("temp/worldsim_codec_tests/slot_wsc_v1.sav");
+}
+
+// ---- Task 18: the 7-step restore ---------------------------------------------------------------------
+
+typedef WorldStep::RestoreResult Rr;
+
+// Step 1: cancel the job, drop pending, ignore a stale spin-up completion.
+TEST_F(WorldSimSaveCodecTest, RestoreStep1CancelsTheJobAndDropsPending)
+{
+    const WorldView w = MakeWorld(1);
+    stage.SpinUpNow(1);                       // pending sim present
+    ASSERT_TRUE(stage.HasPending());
+    Announce(MakeWorld(2));                   // a new job is running for revision 2
+    ASSERT_TRUE(stage.SpinUpRunning());
+    EXPECT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_FALSE(stage.SpinUpRunning()) << "the running job was cancelled";
+    (void)w;
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep1LateCompletionOfTheCancelledJobIsIgnored)
+{
+    const WorldView w = MakeWorld(1);
+    Announce(w);
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    // The worker finishes after the restore: the cancelled job must not produce a sim.
+    stage.RunJobNow(1, stage.VisitGeneration(), w);
+    stage.Update();
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_EQ(1, FakeSim::sLive.load()) << "only the restored active sim is alive";
+    stage.Capture(5);
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_EQ(42 * 2 + 5, hooks.publishedValue) << "the restored sim, not a spun-up one, was stepped";
+}
+
+// Step 2: ready:false or no world -> stop.
+TEST_F(WorldSimSaveCodecTest, RestoreStep2NotReadyRecordStops)
+{
+    Announce(MakeWorld(1));
+    Json::Value rec(Json::objectValue);
+    Draoi::HexWorld::WriteNotReady(rec);
+    hooks.log.Clear();
+    EXPECT_EQ(Rr::kNotReady, stage.Restore(rec));
+    EXPECT_FALSE(Called("InitialiseSim"));
+    EXPECT_FALSE(Called("RestoreCommitted"));
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_TRUE(stage.SpinUpRunning()) << "normal spin-up continues for the announced world";
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep2NoWorldStops)
+{
+    hooks.log.Clear();
+    EXPECT_NE(Rr::kApplied, stage.Restore(ReadyRecord()));
+    EXPECT_FALSE(Called("InitialiseSim"));
+    EXPECT_FALSE(Called("RestoreCommitted"));
+    EXPECT_FALSE(stage.IsReady());
+}
+
+// Step 3: dimension or extra-count mismatch -> Warning, discard, spin up.
+struct MismatchCase { const char* name; uint32_t w, h, basins; bool extraOk; };
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep3MismatchWarnsDiscardsAndSpinsUp)
+{
+    static const MismatchCase kCases[] = {
+        { "width",  3, 2, 0, true  },
+        { "height", 2, 3, 0, true  },
+        { "both",   4, 4, 0, true  },
+        { "extra",  2, 2, 5, false },
+    };
+    for (const MismatchCase& c : kCases)
+    {
+        SCOPED_TRACE(c.name);
+        Announce(MakeWorld(1));
+        hooks.log.Clear();
+        hooks.extraCountOk = c.extraOk;
+        const unsigned before = Sink().warnings;
+        EXPECT_EQ(Rr::kDiscarded, stage.Restore(ReadyRecord(42, 7, c.w, c.h, c.basins)));
+        EXPECT_EQ(before + 1, Sink().warnings) << "exactly one Warning";
+        EXPECT_FALSE(Called("RestoreCommitted"));
+        EXPECT_FALSE(stage.IsReady());
+        EXPECT_FALSE(stage.HasActive());
+        EXPECT_TRUE(stage.SpinUpRunning()) << "the discard falls back to a normal spin-up";
+        hooks.extraCountOk = true;
+    }
+}
+
+// Step 4: InitialiseSim, then RestoreCommitted; a failure of either discards.
+TEST_F(WorldSimSaveCodecTest, RestoreStep4InitialisesThenRestoresInOrder)
+{
+    Announce(MakeWorld(1));
+    hooks.log.Clear();
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    ASSERT_NE(0xFFFFFFFFu, IndexOf("InitialiseSim"));
+    ASSERT_NE(0xFFFFFFFFu, IndexOf("RestoreCommitted"));
+    EXPECT_LT(IndexOf("InitialiseSim"), IndexOf("RestoreCommitted"));
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep4InitFailureDiscards)
+{
+    Announce(MakeWorld(1));
+    hooks.log.Clear();
+    hooks.initFails = true;
+    EXPECT_EQ(Rr::kDiscarded, stage.Restore(ReadyRecord(42)));
+    EXPECT_TRUE(Called("InitialiseSim"));
+    EXPECT_FALSE(Called("RestoreCommitted"));
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_EQ(0, FakeSim::sLive.load()) << "the half-built sim was freed";
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep4RestoreCommittedFailureDiscards)
+{
+    Announce(MakeWorld(1));
+    hooks.restoreFails = true;
+    EXPECT_EQ(Rr::kDiscarded, stage.Restore(ReadyRecord(42)));
+    EXPECT_TRUE(Called("RestoreCommitted"));
+    EXPECT_FALSE(stage.IsReady());
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_EQ(0, FakeSim::sLive.load());
+    EXPECT_TRUE(stage.SpinUpRunning());
+}
+
+// Step 5: active = target = current revision, ready at once.
+TEST_F(WorldSimSaveCodecTest, RestoreStep5ActivatesAtTheCurrentRevisionAndIsReadyAtOnce)
+{
+    Announce(MakeWorld(4));
+    EXPECT_FALSE(stage.IsReady());
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    EXPECT_TRUE(stage.IsReady());
+    EXPECT_TRUE(stage.HasActive());
+    EXPECT_FALSE(stage.HasPending());
+    EXPECT_EQ(4u, stage.TargetRevision());
+    EXPECT_EQ(4u, stage.RestoredRevision());
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+    stage.Capture(5);
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_EQ(42 * 2 + 5, hooks.publishedValue);
+}
+
+// Step 6: params_hash mismatch -> one Warning, Degraded until a reload.
+TEST_F(WorldSimSaveCodecTest, RestoreStep6MatchingParamsHashStaysOk)
+{
+    stage.SetCurrentParamsHash(7);
+    Announce(MakeWorld(1));
+    const unsigned before = Sink().warnings;
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42, 7)));
+    EXPECT_EQ(before, Sink().warnings);
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep6HashMismatchWarnsOnceAndDegradesUntilReload)
+{
+    stage.SetCurrentParamsHash(8);
+    Announce(MakeWorld(1));
+    const unsigned before = Sink().warnings;
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42, 7)));
+    EXPECT_EQ(before + 1, Sink().warnings) << "one Warning";
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kDegraded, stage.GetHealth().status);
+    EXPECT_TRUE(stage.IsReady()) << "degraded, still ready";
+
+    // A full-queue cycle must not clear the params degradation.
+    for (uint32_t i = 0; i < FakeBase::kQueueCapacity + 1; ++i) { FakeEntry e; stage.Enqueue(e); }
+    stage.Capture(1);
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kDegraded, stage.GetHealth().status);
+
+    stage.NotifyParamsReloaded();
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+    stage.NotifyParamsReloaded();   // idempotent
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep6WithoutAKnownHashDoesNotCompare)
+{
+    Announce(MakeWorld(1));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42, 12345)));
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+}
+
+// Step 7: a re-announce at the restored revision is ignored.
+TEST_F(WorldSimSaveCodecTest, RestoreStep7ReannounceAtRestoredRevisionIsIgnored)
+{
+    Announce(MakeWorld(3));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    hooks.log.Clear();
+    Announce(MakeWorld(3));
+    EXPECT_FALSE(stage.SpinUpRunning());
+    EXPECT_FALSE(Called("InitialiseSim"));
+    EXPECT_TRUE(stage.IsReady());
+    EXPECT_EQ(1, FakeSim::sLive.load());
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoreStep7NewRevisionAfterRestoreSpinsUpNormally)
+{
+    Announce(MakeWorld(3));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    Announce(MakeWorld(4));
+    EXPECT_TRUE(stage.SpinUpRunning());
+    EXPECT_FALSE(stage.IsReady()) << "revision 4 has no sim yet";
+}
+
+TEST_F(WorldSimSaveCodecTest, RestoredStageDoesNotRespinWhenStartedAgain)
+{
+    Announce(MakeWorld(3));
+    ASSERT_EQ(Rr::kApplied, stage.Restore(ReadyRecord(42)));
+    stage.Start();   // already started: no-op
+    EXPECT_FALSE(stage.SpinUpRunning());
+    EXPECT_TRUE(stage.IsReady());
 }
 
 }  // namespace Testing

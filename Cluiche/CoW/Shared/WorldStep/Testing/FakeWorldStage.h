@@ -128,6 +128,14 @@ struct FakeHooks : public FakeBase::Hooks
     }
     void OnStartExtra() override { log.Add("OnStartExtra"); }
     void OnStopExtra() override { log.Add("OnStopExtra"); }
+    bool ExtraCountMatches(const Json::Value&, const WorldView&) const override { return extraCountOk; }
+    bool RestoreCommitted(FakeSim& sim, const Json::Value& record) override
+    {
+        log.Add("RestoreCommitted");
+        if (restoreFails) { return false; }
+        sim.value = record.get("sim_value", 0).asInt();
+        return true;
+    }
 
     static const uint32_t kMaxApplied = 256;
     CallLog log;
@@ -135,6 +143,8 @@ struct FakeHooks : public FakeBase::Hooks
     bool latchOk = true;
     bool initFails = false;
     bool blockInit = false;
+    bool extraCountOk = true;
+    bool restoreFails = false;
     int runSleepMs = 0;
     std::function<void()> onRun;
     std::atomic<bool> releaseInit{false};

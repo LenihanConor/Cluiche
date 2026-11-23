@@ -7,14 +7,18 @@
 #include <thread>
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaDeferredStep/IStepStage.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaSaveGame/LoadContext.h>
+#include <DiaSaveGame/SaveContext.h>
 #include <Shared/World/WorldSimNames.h>
 #include <Shared/WorldStep/MutationQueue.h>
 #include <Shared/WorldStep/SpinUpSlot.h>
+#include <Shared/WorldStep/WorldSimSaveCodec.h>
 
 namespace CoW {
 namespace WorldStep {
@@ -24,6 +28,17 @@ struct WorldView
 {
     uint32_t revision = 0;
     bool present = false;
+    uint32_t width = 0;     // cell dimensions, compared with a restored record (step 3)
+    uint32_t height = 0;
+};
+
+// What Restore did with a record.
+enum class RestoreResult : uint8_t
+{
+    kApplied,     // active sim restored, ready at once
+    kNotReady,    // the record says ready:false (or is not an object): nothing restored
+    kStashed,     // no world yet: kept for the next WorldGenerationComplete
+    kDiscarded,   // mismatch or a failed hook: nothing restored, a normal spin-up runs instead
 };
 
 // Health reporter held by the base. One per stage.
@@ -67,6 +82,14 @@ public:
         virtual void PublishCommit(const TSim& committed, uint32_t stepDay) = 0;
         virtual void OnStartExtra() {}
         virtual void OnStopExtra() {}
+        // Restore (step 3): the system's own count check (e.g. basin_count) against the announced world.
+        virtual bool ExtraCountMatches(const Json::Value& /*record*/, const WorldView& /*world*/) const { return true; }
+        // Restore (step 4): load the committed record into a freshly initialised sim. false -> discard.
+        virtual bool RestoreCommitted(TSim& /*sim*/, const Json::Value& /*record*/) { return true; }
+        // Pending blob: the system arrays of the in-flight step result (added after the common header).
+        virtual void WritePendingFields(Json::Value& /*blob*/, const TSim& /*sim*/) {}
+        // Pending blob: apply a validated blob to the restored active sim. false -> the stage is not ready.
+        virtual bool RestorePending(TSim& /*sim*/, const Json::Value& /*blob*/, const Json::Value& /*committed*/) { return true; }
     };
 
     WorldStepStageBase(Hooks& hooks, const char* sysToken, const char* logChannel, CauseTextFn causeText)
@@ -94,7 +117,8 @@ public:
         RegisterMetrics();
         mHooks.OnStartExtra();
         DIA_LOG_INFO(mLogChannel, "%s: started (visit %u)", mLogChannel, static_cast<unsigned>(mVisitGeneration));
-        if (mWorld.present) { BeginSpinUp(mWorld); }
+        const bool restoredHere = mRestoredValid && mWorld.revision == mRestoredRevision;
+        if (mWorld.present && !restoredHere) { BeginSpinUp(mWorld); }
     }
 
     // Polls the spin-up slot. SimPU only.
@@ -103,7 +127,9 @@ public:
         TSim* sim = nullptr;
         uint32_t revision = 0;
         if (!mSpinUp.TryTake(sim, revision)) { return; }
-        if (mResultGeneration.load(std::memory_order_acquire) != mVisitGeneration || revision != mTargetRevision)
+        const bool supersededByRestore = mRestoredValid && revision == mRestoredRevision;
+        if (supersededByRestore || mResultGeneration.load(std::memory_order_acquire) != mVisitGeneration
+            || revision != mTargetRevision)
         {
             DIA_LOG_INFO(mLogChannel, "%s: stale spin-up result for revision %u dropped", mLogChannel,
                          static_cast<unsigned>(revision));
@@ -134,6 +160,8 @@ public:
         uint32_t resultRevision = 0;
         if (mSpinUp.TryTake(result, resultRevision)) { delete result; }
         mWorld.present = false;
+        mRestoredValid = false;
+        mHaveStash = false;
         mCause = 0;
         mHealth.SetFailing(Dia::Core::StringCRC("world_generation_failed"));
         DIA_LOG_ERROR(mLogChannel, "%s: world generation failed, dropping the held world", mLogChannel);
@@ -144,11 +172,77 @@ public:
     void OnWorldGenerationComplete(const WorldView& world)
     {
         mWorld = world;
+        if (mRestoredValid && world.present && world.revision == mRestoredRevision)
+        {
+            // Restore step 7: the world we restored against is announced again. Keep the restored sim.
+            DIA_LOG_INFO(mLogChannel, "%s: re-announce of restored revision %u ignored", mLogChannel,
+                         static_cast<unsigned>(world.revision));
+            return;
+        }
+        mRestoredValid = false;
         mTargetRevision = world.revision;
         mCause = 0;
-        mHealth.SetOK();
+        if (!mParamsDegraded) { mHealth.SetOK(); }
         mQueueDegraded = false;
+        if (mHaveStash && world.present)
+        {
+            // Event-order fallback: the record arrived before the world did.
+            Json::Value record = mStashRecord;
+            mHaveStash = false;
+            mStashRecord = Json::Value();
+            ApplyRecord(record);
+            return;
+        }
         if (mStarted) { BeginSpinUp(world); }
+    }
+
+    // ----- restore ---------------------------------------------------------------------------------
+
+    // The shared 7-step restore of a committed record (already passed Validate). SimPU only.
+    RestoreResult Restore(const Json::Value& record)
+    {
+        // 1. cancel the job, drop pending; a late completion of the cancelled job is rejected by the slot
+        mSpinUp.Cancel();
+        TSim* result = nullptr;
+        uint32_t resultRevision = 0;
+        if (mSpinUp.TryTake(result, resultRevision)) { delete result; }
+        delete mPending;
+        mPending = nullptr;
+        mRestoredValid = false;
+        mHaveStash = false;
+        mStashRecord = Json::Value();
+
+        // 2. ready:false, or no world: stop
+        const bool recordReady = record.isObject() && record["ready"].isBool() && record["ready"].asBool();
+        if (!recordReady)
+        {
+            DIA_LOG_INFO(mLogChannel, "%s: saved record is not ready, nothing restored", mLogChannel);
+            if (mStarted && mWorld.present) { BeginSpinUp(mWorld); }
+            return RestoreResult::kNotReady;
+        }
+        if (!mWorld.present)
+        {
+            DIA_LOG_INFO(mLogChannel, "%s: no world yet, record kept for the next world generation", mLogChannel);
+            mStashRecord = record;
+            mHaveStash = true;
+            return RestoreResult::kStashed;
+        }
+        return ApplyRecord(record);
+    }
+
+    // The owner sets the current ParameterFile::Hash() before a restore and after a reload.
+    void SetCurrentParamsHash(uint64_t hash)
+    {
+        mParamsHash = hash;
+        mHaveParamsHash = true;
+    }
+
+    // A reload or a pack changed the values: the restore-time params_hash warning no longer applies.
+    void NotifyParamsReloaded()
+    {
+        if (!mParamsDegraded) { return; }
+        mParamsDegraded = false;
+        if (mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
     }
 
     // ----- mutation queue --------------------------------------------------------------------------
@@ -207,7 +301,8 @@ public:
         if (mQueueDegraded)
         {
             mQueueDegraded = false;
-            if (mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
+            if (!mParamsDegraded
+                && mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
         }
         if (mStepValid && !mHooks.LatchInputs(mLatch, key)) { mStepValid = false; }
     }
@@ -251,6 +346,9 @@ public:
 
     bool HasActive() const { return mActive != nullptr; }
     bool HasPending() const { return mPending != nullptr; }
+    bool SpinUpRunning() const { return mSpinUp.State() == SpinUpSlot<TSim>::kRunning; }
+    bool HasStashedRecord() const { return mHaveStash; }
+    uint32_t RestoredRevision() const { return mRestoredRevision; }
     uint32_t QueueCount() const { return mQueue.Count(); }
     uint32_t VisitGeneration() const { return mVisitGeneration; }
     uint32_t TargetRevision() const { return mTargetRevision; }
@@ -299,6 +397,58 @@ protected:
 private:
     const char* CauseText(CauseCode cause) const { return mCauseText != nullptr ? mCauseText(cause) : "unknown"; }
 
+    // Restore steps 3-6 against the announced world.
+    RestoreResult ApplyRecord(const Json::Value& record)
+    {
+        // 3. dimension or extra-count mismatch
+        const bool dimsMatch = record["width"].isUInt() && record["height"].isUInt()
+            && record["width"].asUInt() == mWorld.width && record["height"].asUInt() == mWorld.height;
+        if (!dimsMatch || !mHooks.ExtraCountMatches(record, mWorld))
+        {
+            return DiscardRestore("saved dimensions or counts do not match the world");
+        }
+        // 4. Init, then the committed record
+        TSim* sim = new TSim();
+        CauseCode cause = 0;
+        if (!mHooks.InitialiseSim(*sim, mWorld, cause))
+        {
+            delete sim;
+            return DiscardRestore("sim initialisation failed");
+        }
+        if (!mHooks.RestoreCommitted(*sim, record))
+        {
+            delete sim;
+            return DiscardRestore("committed record could not be restored");
+        }
+        // 5. active = target = current revision, ready at once
+        delete mActive;
+        mActive = sim;
+        mActiveRevision = mTargetRevision = mRestoredRevision = mWorld.revision;
+        mRestoredValid = true;
+        mCause = 0;
+        if (!mParamsDegraded) { mHealth.SetOK(); }
+        DIA_LOG_INFO(mLogChannel, "%s: restored revision %u from the saved record", mLogChannel,
+                     static_cast<unsigned>(mWorld.revision));
+        // 6. params_hash
+        if (mHaveParamsHash && !ParamsHashMatches(record, mParamsHash))
+        {
+            DIA_LOG_WARNING(mLogChannel, "%s: saved params_hash differs from the current parameters", mLogChannel);
+            mParamsDegraded = true;
+            mHealth.SetDegraded(Dia::Core::StringCRC("params_changed"));
+        }
+        return RestoreResult::kApplied;
+    }
+
+    RestoreResult DiscardRestore(const char* why)
+    {
+        DIA_LOG_WARNING(mLogChannel, "%s: restore discarded: %s", mLogChannel, why);
+        DropSims();
+        mRestoredValid = false;
+        mTargetRevision = mWorld.revision;
+        if (mStarted && mWorld.present) { BeginSpinUp(mWorld); }
+        return RestoreResult::kDiscarded;
+    }
+
     void DropSims()
     {
         delete mActive;  mActive = nullptr;
@@ -340,6 +490,7 @@ private:
         if (mSpinUp.TryTake(leftover, leftoverRevision)) { delete leftover; }
         mSpinUp.Reset();
         DropSims();
+        mRestoredValid = false;
         mQueue.Clear();
         // TODO(kit task 10): release the world-generation hold here once HoldGenerationToken exists
         // (spec order: ... destroy sims, clear queue, release hold, OnStopExtra).
@@ -369,6 +520,13 @@ private:
     uint32_t mVisitGeneration = 0;
     bool mStarted = false;
     bool mQueueDegraded = false;
+    bool mParamsDegraded = false;       // restore found a different params_hash; cleared by NotifyParamsReloaded
+    uint64_t mParamsHash = 0;
+    bool mHaveParamsHash = false;
+    uint32_t mRestoredRevision = 0;
+    bool mRestoredValid = false;        // the active sim came from a restore at mRestoredRevision
+    Json::Value mStashRecord;           // event-order fallback: record waiting for its world
+    bool mHaveStash = false;
     CauseCode mCause = 0;
     WorldView mWorld;
     TLatch mLatch;
