@@ -1369,6 +1369,7 @@
     <ClCompile Include="CoW\WorldSimKit\TestWorldCellFieldsWiring.cpp" />
     <ClCompile Include="CoW\WorldSimKit\TestWorldGenCommandSet.cpp" />
     <ClCompile Include="CoW/WorldSimKit/TestWorldGenLogChannel.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimNamesRegistrations.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
