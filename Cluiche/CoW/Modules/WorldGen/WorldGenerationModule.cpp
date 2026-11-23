@@ -890,6 +890,7 @@ Json::Value WorldGenerationModule::ImportWorldFile(const Json::Value& args)
 
 void WorldGenerationModule::RebuildCellFields()
 {
+    DIA_PROFILE_SCOPE("WorldGen.RebuildCellFields", Dia::Observation::Trace::Category::kNone);
     // The protected kinds are data (guarantees.json); AddProtectedKindsFrom ignores duplicates, so a rebuild is idempotent.
     mTerrainSource.AddProtectedKindsFrom(mSession.GetGuaranteeSpec());
     mCellFields.Clear();

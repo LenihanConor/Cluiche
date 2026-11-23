@@ -64,7 +64,11 @@ Json::Value RecordsCommandHelper::Handle(const Json::Value& args)
 
 bool RecordsCommandHelper::ApplyReload()
 {
-    if (!mReloadFn) { return false; }
+    if (!mReloadFn)
+    {
+        DIA_LOG_ERROR("WorldSim", "%s: record reload requested but no reload function is set", mName.c_str());
+        return false;
+    }
     const RecordReloadResult result = mReloadFn();
     if (result.ok)
     {

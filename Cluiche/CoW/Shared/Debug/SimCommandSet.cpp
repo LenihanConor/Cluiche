@@ -43,7 +43,13 @@ void SimCommandSet::UnregisterAll()
     if (mHost != nullptr)
     {
         // reverse order of registration
-        for (uint32_t i = mCount; i > 0; --i) { mHost->Unregister(mRegistered[i - 1].name, mRegistered[i - 1].kind); }
+        for (uint32_t i = mCount; i > 0; --i)
+        {
+            if (!mHost->Unregister(mRegistered[i - 1].name, mRegistered[i - 1].kind))
+            {
+                DIA_LOG_WARNING("WorldSim", "unregister of '%s' failed", mRegistered[i - 1].name.AsChar());
+            }
+        }
     }
     mCount = 0;
     mHost = nullptr;

@@ -14,6 +14,7 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaSaveGame/SaveContext.h>
 #include <Shared/World/WorldSimNames.h>
@@ -285,6 +286,7 @@ public:
 
     void Capture(Dia::DeferredStep::StepKey key) override
     {
+        DIA_PROFILE_SCOPE("WorldStep.Capture", Dia::Observation::Profile::Category::kNone);
         // Promotion happens here and nowhere else.
         if (mPending != nullptr)
         {
