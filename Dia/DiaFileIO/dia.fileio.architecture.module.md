@@ -32,9 +32,4 @@ non_responsibilities:
 dependencies:
   required:
     - dia.core
-    - dia.core.threading
-    - dia.core.containers.arrays
-    - dia.core.containers.strings
-    - dia.core.crc
-    - dia.core.strings
 ---

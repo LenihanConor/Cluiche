@@ -55,7 +55,7 @@ dependencies:
     - dia.attribute
     - dia.condition
     - dia.entity
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.applicationflow
     - dia.statemachine

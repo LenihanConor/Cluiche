@@ -58,7 +58,6 @@ dependencies:
     - dia.core.crc
     - dia.core.debugdraw
   optional:
-    - dia.visualdebugger
   forbidden: []
 
 vcxproj: none

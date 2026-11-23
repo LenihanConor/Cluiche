@@ -55,8 +55,5 @@ public_api:
 dependencies:
   required:
     - dia.core.core
-    - dia.core.type
-    - dia.maths.core
-    - dia.maths.matrix
   forbidden: []
 ---

@@ -63,9 +63,9 @@ public_api:
 
 dependencies:
   required:
-    - dia.core.core
     - dia.core.crc
     - dia.core.debugdraw
+    - dia.observation
   optional: []
   forbidden:
     - dia.bgfx

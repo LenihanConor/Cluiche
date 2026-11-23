@@ -52,7 +52,6 @@ dependencies:
     - dia.core.containers
     - dia.core.crc
     - dia.core.json
-    - dia.core.core
   forbidden:
     - dia.maths
     - dia.graphics

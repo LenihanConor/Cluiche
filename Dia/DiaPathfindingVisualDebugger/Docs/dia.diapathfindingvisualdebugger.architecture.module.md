@@ -42,7 +42,8 @@ dependencies:
   required:
     - dia.core
     - dia.pathfinding
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
+    - dia.maths.vector
   forbidden:
     - dia.entity
     - dia.applicationflow

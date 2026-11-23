@@ -133,7 +133,12 @@ dependencies:
     - dia.core.strings
     - dia.core.time
     - dia.core.memory
-    - dia.logger
     - dia.serializer
+    - dia.api
+    - dia.core
+    - dia.core.filepath
+    - dia.core.json.external.json
+    - dia.observation
+    - dia.streams
   forbidden: []
 ---

@@ -44,7 +44,7 @@ dependencies:
   required:
     - dia.core
     - dia.rules
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.entity
     - dia.applicationflow

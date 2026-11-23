@@ -38,8 +38,6 @@ non_responsibilities:
 
 dependent_modules:
   - dia.core
-  - dia.logger
-  - dia.bgfx
 
 public_api:
   headers:
@@ -61,9 +59,11 @@ public_api:
 dependencies:
   required:
     - dia.core
-    - dia.logger
-    - dia.bgfx
     - dia.threading
+    - dia.api
+    - dia.asset
+    - dia.messagebus
+    - dia.observation
   forbidden:
     - dia.application
     - dia.assetcatalogue

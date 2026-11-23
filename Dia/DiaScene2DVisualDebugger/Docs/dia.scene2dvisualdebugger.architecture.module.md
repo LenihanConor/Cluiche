@@ -7,14 +7,14 @@ path: Dia/DiaScene2DVisualDebugger
 parent: diavisualdebugger
 description: Visual debug drawers for DiaScene2D — cameras, lights, and layer bands.
 dependent_modules:
-  - diavisualdebugger
-  - diageometry2dvisualdebugger
-  - diascene2d
-  - diacamera2d
-  - dialighting2d
-  - diagraphics
-  - diamaths
-  - diacore
+  - dia.camera2d
+  - dia.core.debugdraw
+  - dia.debug.visualdebugger
+  - dia.geometry2d
+  - dia.geometry2dvisualdebugger
+  - dia.graphics.misc
+  - dia.lighting2d
+  - dia.scene2d
 public_api:
   headers:
     - DiaScene2DVisualDebugger/SceneOverviewDrawer.h

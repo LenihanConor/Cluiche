@@ -15,7 +15,7 @@ summary: >
 dependencies:
   required:
     - dia.core
-    - dia.mailbox
+    - dia.debug.visualdebugger
   forbidden: []
 
 public_api:

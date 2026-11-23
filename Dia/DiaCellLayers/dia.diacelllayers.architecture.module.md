@@ -4,7 +4,7 @@ module_id: dia.celllayers
 name: DiaCellLayers
 path: Dia/DiaCellLayers
 parent_module_id: dia.root
-layer: foundation/application
+layer: domain/visual/core
 status: active
 maturity: stub
 version: "1.0"
@@ -13,13 +13,14 @@ dependencies:
     - dia.core
     - dia.valueschema
     - dia.graphics
-    - dia.visualdebugger
     - dia.pathfinding
     - dia.api
     - dia.observation
-    - dia.applicationflow
     - dia.streams
-    - dia.debugserver
+    - dia.application
+    - dia.debug.visualdebugger
+    - dia.dia.diadebugserver
+    - dia.maths.vector
   forbidden: []
 public_api:
   headers:

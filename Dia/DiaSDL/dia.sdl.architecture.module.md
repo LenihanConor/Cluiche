@@ -11,6 +11,7 @@ dependencies:
     - dia.core
     - dia.window
     - dia.input
+    - dia.observation
   forbidden:
     - dia.bgfx
     - dia.graphics

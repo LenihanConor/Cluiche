@@ -18,6 +18,8 @@ dependencies:
     - dia.core
     - dia.entityspatial
     - dia.entity
+    - dia.debug.visualdebugger
+    - dia.diaentityspatialvisualdebugger
   forbidden: []
 
 public_api:

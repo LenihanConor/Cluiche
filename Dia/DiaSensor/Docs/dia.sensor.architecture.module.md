@@ -16,6 +16,8 @@ dependencies:
     - dia.entityspatial
     - dia.blackboard
     - dia.observation
+    - dia.application
+    - dia.geometry2d
   forbidden: []
 public_api:
   headers:

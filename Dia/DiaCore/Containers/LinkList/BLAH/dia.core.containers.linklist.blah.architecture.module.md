@@ -42,6 +42,5 @@ public_api:
 dependencies:
   required:
     - dia.core.containers.arrays
-    - dia.core.containers.linklist
   forbidden: []
 ---

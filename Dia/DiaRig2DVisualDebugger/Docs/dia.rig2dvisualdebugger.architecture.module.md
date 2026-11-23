@@ -47,6 +47,8 @@ dependencies:
     - dia.graphics
     - dia.maths
     - dia.core
+    - dia.debug.visualdebugger
+    - dia.observation
   forbidden:
     - dia.application
     - dia.window

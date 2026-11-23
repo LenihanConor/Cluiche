@@ -16,6 +16,7 @@ dependencies:
     - dia.entityspatial
     - dia.application
     - dia.observation
+    - dia.messagebus
   forbidden: []
 public_api:
   headers:

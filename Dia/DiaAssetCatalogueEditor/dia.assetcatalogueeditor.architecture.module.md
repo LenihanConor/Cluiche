@@ -40,7 +40,6 @@ dependent_modules:
   - dia.editor
   - dia.assetcatalogue
   - dia.core
-  - dia.logger
 
 public_api:
   headers:
@@ -55,7 +54,7 @@ dependencies:
     - dia.editor
     - dia.assetcatalogue
     - dia.core
-    - dia.logger
+    - dia.observation
   forbidden:
     - dia.application
     - dia.assetpipeline

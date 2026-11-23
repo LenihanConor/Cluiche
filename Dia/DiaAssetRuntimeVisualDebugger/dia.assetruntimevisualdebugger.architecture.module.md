@@ -25,7 +25,7 @@ dependencies:
   required:
     - dia.core
     - dia.assetruntime
-    - dia.debugdraw
     - dia.observation
+    - dia.debug.visualdebugger
   forbidden: []
 ---

@@ -6,9 +6,10 @@ layer: tools/inspector
 path: Dia/DiaEconomyInspector
 dependencies:
   required:
-    - DiaEditor
-    - DiaCore
-    - DiaObservation
+    - dia.core.crc
+    - dia.core.json.external.json
+    - dia.editor
+    - dia.observation
   optional: []
   forbidden:
     - DiaVisualDebugger

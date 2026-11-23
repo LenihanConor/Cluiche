@@ -36,6 +36,5 @@ public_api:
 
 dependencies:
   required:
-    - dia.core.json
   forbidden: []
 ---

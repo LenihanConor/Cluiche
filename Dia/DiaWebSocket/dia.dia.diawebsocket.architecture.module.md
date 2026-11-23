@@ -58,6 +58,7 @@ dependencies:
   required:
     - dia.core.containers.arrays
     - dia.core.core
-    - dia.core.threading
+    - dia.core
+    - dia.observation
   forbidden: []
 ---

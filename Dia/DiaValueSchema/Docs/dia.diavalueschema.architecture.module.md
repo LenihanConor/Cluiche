@@ -11,12 +11,12 @@ version: "1.0"
 dependencies:
   required:
     - dia.core
-    - dia.applicationflow
     - dia.streams
     - dia.observation
     - dia.api
     - dia.entity
     - dia.dia.diadebugserver
+    - dia.application
   forbidden: []
 public_api:
   headers:

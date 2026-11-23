@@ -60,10 +60,13 @@ dependencies:
   required:
     - dia.core.containers.arrays
     - dia.core.core
-    - dia.core.type
     - dia.graphics.misc
     - dia.maths.vector
     - dia.ui
     - dia.core.debugdraw
+    - dia.application
+    - dia.camera2d
+    - dia.geometry2d
+    - dia.observation
   forbidden: []
 ---

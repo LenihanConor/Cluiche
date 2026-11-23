@@ -50,8 +50,10 @@ dependencies:
     - dia.core.containers.arrays
     - dia.core.crc
     - dia.core.core
-    - dia.application (DiaApplicationFlow)
     - dia.api
     - dia.observation
+    - dia.application
+    - dia.core.json.external.json
+    - dia.streams
   forbidden: []
 ---

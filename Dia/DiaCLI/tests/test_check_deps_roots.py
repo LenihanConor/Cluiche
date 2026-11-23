@@ -142,3 +142,39 @@ def test_draoi_root_in_sync_is_clean(tmp_path):
     _, missing, stale = _collect_dependency_issues(tmp_path)
     assert [m for m in missing if m[0] == "draoi.root"] == []
     assert [s for s in stale if s[0] == "draoi.root"] == []
+
+
+_REQ_CORE = "dependencies:\n  required:\n    - dia.core\n"
+
+
+def test_inl_includes_count_as_usage(tmp_path):
+    _module(tmp_path, "Dia", "DiaCore", "dia.core")
+    _module(tmp_path, "Dia", "DiaA", "dia.a", deps_block=_REQ_CORE)
+    (tmp_path / "Dia" / "DiaA" / "B.inl").write_text("#include <DiaCore/X.h>\n", encoding="utf-8")
+    _, missing, stale = _collect_dependency_issues(tmp_path)
+    assert stale == [] and missing == []
+
+
+def test_project_reference_keeps_declared_dependency(tmp_path):
+    _module(tmp_path, "Dia", "DiaCore", "dia.core")
+    _module(tmp_path, "Dia", "DiaA", "dia.a", deps_block=_REQ_CORE)
+    (tmp_path / "Dia" / "DiaA" / "DiaA.vcxproj").write_text(
+        '<Project><ItemGroup><ProjectReference Include="..\\DiaCore\\DiaCore.vcxproj" /></ItemGroup></Project>',
+        encoding="utf-8")
+    _, _, stale = _collect_dependency_issues(tmp_path)
+    assert stale == []
+
+
+def test_unreferenced_unused_dependency_is_still_stale(tmp_path):
+    _module(tmp_path, "Dia", "DiaCore", "dia.core")
+    _module(tmp_path, "Dia", "DiaA", "dia.a", deps_block=_REQ_CORE)
+    _, _, stale = _collect_dependency_issues(tmp_path)
+    assert stale == [("dia.a", "dia.core")]
+
+
+def test_parent_listing_its_child_is_not_stale(tmp_path):
+    _module(tmp_path, "Dia", "DiaA", "dia.a", deps_block="dependencies:\n  required:\n    - dia.a.sub\n    - dia.a.other\n")
+    _module(tmp_path, "Dia/DiaA", "Sub", "dia.a.sub", deps_block="parent_module_id: dia.a\n")
+    _module(tmp_path, "Dia/DiaA", "Other", "dia.a.other", deps_block="parent_module_id: dia.a\n")
+    _, _, stale = _collect_dependency_issues(tmp_path)
+    assert stale == []

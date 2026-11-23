@@ -55,12 +55,13 @@ dependencies:
   required:
     - dia.bgfx
     - dia.graphics.frame
-    - dia.graphics.interface
-    - dia.graphics3d.frame
-    - dia.core.core
     - dia.core.crc
     - dia.maths.vector
     - dia.mesh3d
     - dia.observation
+    - dia.core.containers.arrays
+    - dia.graphics.misc
+    - dia.graphics3d
+    - dia.maths.matrix
   forbidden: []
 ---

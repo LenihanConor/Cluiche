@@ -38,6 +38,9 @@ public_api:
   entry_points: []
 
 dependencies:
-  required: []
+  required:
+    - dia.camera2d
+    - dia.core.crc
+    - dia.maths.vector
   forbidden: []
 ---

@@ -33,7 +33,6 @@ non_responsibilities:
 dependent_modules:
   - dia.ik2d
   - dia.rig2d
-  - dia.visualdebugger
   - dia.graphics
   - dia.maths
   - dia.core
@@ -59,7 +58,8 @@ dependencies:
     - dia.rig2d
     - dia.ik2d
     - dia.graphics
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
+    - dia.observation
   forbidden:
     - dia.application  # debug draw is not lifecycle-aware
 ---

@@ -6,10 +6,9 @@ layer: tools/inspector
 path: Dia/DiaBlackboardInspector
 dependencies:
   required:
-    - DiaEditor
-    - DiaBlackboard
-    - DiaCore
-    - DiaObservation
+    - dia.core.crc
+    - dia.editor
+    - dia.observation
   optional: []
   forbidden: []
 public_api:

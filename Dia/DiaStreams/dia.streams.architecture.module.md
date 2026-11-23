@@ -33,5 +33,6 @@ non_responsibilities:
 dependencies:
   required:
     - dia.core
-    - dia.debugserver
+    - dia.dia.diadebugserver
+    - dia.observation
 ---

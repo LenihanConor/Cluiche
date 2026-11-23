@@ -54,5 +54,7 @@ dependencies:
     - dia.core.strings
     - dia.input
     - dia.maths.vector
+    - dia.application
+    - dia.core.ui
   forbidden: []
 ---

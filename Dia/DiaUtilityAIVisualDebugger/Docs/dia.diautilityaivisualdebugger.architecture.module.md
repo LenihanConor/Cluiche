@@ -43,6 +43,7 @@ dependencies:
   required:
     - dia.core
     - dia.utilityai
+    - dia.debug.visualdebugger
   forbidden:
     - dia.rules
     - dia.condition

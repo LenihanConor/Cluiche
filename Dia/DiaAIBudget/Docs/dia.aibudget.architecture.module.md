@@ -51,8 +51,8 @@ public_api:
 dependencies:
   required:
     - dia.core
-    - dia.applicationflow
     - dia.observation
+    - dia.application
   forbidden:
     - dia.blackboard
     - dia.statemachine

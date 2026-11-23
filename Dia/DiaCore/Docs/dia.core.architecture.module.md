@@ -28,19 +28,16 @@ non_responsibilities:
 
 dependent_modules:
   - dia.core.architecture
-  - dia.core.collectionshit
   - dia.core.containers
   - dia.core.core
   - dia.core.crc
   - dia.core.filepath
   - dia.core.frame
   - dia.core.json
-  - dia.core.linklists
   - dia.core.memory
   - dia.core.strings
   - dia.core.time
   - dia.core.timer
-  - dia.core.type
 
 public_api:
   headers: []
@@ -48,6 +45,7 @@ public_api:
   entry_points: []
 
 dependencies:
-  required: []
+  required:
+    - dia.threading
   forbidden: []
 ---

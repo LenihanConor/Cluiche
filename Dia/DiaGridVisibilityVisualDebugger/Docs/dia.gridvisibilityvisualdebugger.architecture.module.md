@@ -36,7 +36,6 @@ dependent_modules:
   - dia.entityspatial
   - dia.maths
   - dia.core
-  - dia.debugdraw
 
 public_api:
   headers:
@@ -53,6 +52,7 @@ dependencies:
     - dia.entityspatial
     - dia.maths
     - dia.core
-    - dia.debugdraw
+    - dia.entity
+    - dia.pathfinding
   forbidden: []
 ---

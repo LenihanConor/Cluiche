@@ -18,6 +18,7 @@ dependencies:
     - dia.maths
     - dia.pathfinding
     - dia.flowfield
+    - dia.debug.visualdebugger
   forbidden:
     - dia.entity
     - dia.application

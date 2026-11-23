@@ -11,6 +11,7 @@ dependencies:
     - dia.editor
     - dia.python
     - dia.core
+    - dia.observation
 ---
 DiaPythonConsoleEditor — dockable Python REPL plugin for CluicheEditor.
 Exposes python_console.execute and python_console.run_file editor actions.

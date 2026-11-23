@@ -52,10 +52,12 @@ dependencies:
   required:
     - dia.core.core
     - dia.core.memory
-    - dia.core.strings
-    - dia.core.log
     - dia.ui
     - dia.window.interface
+    - dia.asset
+    - dia.core.crc
+    - dia.input
+    - dia.observation
   forbidden:
     - dia.uiawesomium  # separate implementation; must not mix
 ---

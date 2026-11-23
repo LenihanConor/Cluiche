@@ -41,4 +41,11 @@ non_responsibilities:
   - Asset creation or pipeline integration
 
 spec: docs/specs/systems/dia/diasceneeditor.md
+dependent_modules:
+  - dia.assetcatalogue
+  - dia.core.crc
+  - dia.core.json.external.json
+  - dia.editor
+  - dia.entity
+  - dia.observation
 ---

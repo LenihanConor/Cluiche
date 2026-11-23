@@ -85,13 +85,12 @@ public_api:
 
 dependencies:
   required:
-    - dia.mailbox
     - dia.core
-    - dia.application.flow
     - dia.streams
     - dia.observation
+    - dia.application
+    - dia.debug.visualdebugger
   optional:
-    - dia.visual.debugger # MessageBusDebugDomain only; #ifdef DIA_DEBUG, absent from Release
   forbidden:
     - dia.entity.template
     - dia.gameplay.messages

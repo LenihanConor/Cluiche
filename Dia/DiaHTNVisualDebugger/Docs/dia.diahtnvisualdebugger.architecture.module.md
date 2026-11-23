@@ -16,6 +16,7 @@ dependencies:
   required:
     - dia.core
     - dia.htn
+    - dia.debug.visualdebugger
   forbidden: []
 
 public_api:

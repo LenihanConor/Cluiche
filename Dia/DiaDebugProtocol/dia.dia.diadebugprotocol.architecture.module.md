@@ -58,9 +58,8 @@ public_api:
 
 dependencies:
   required:
-    - dia.core.crc
-    - dia.core.json
     - dia.core.time
+    - dia.protobuf
   forbidden:
     - dia.application
     - dia.dia.diawebsocket

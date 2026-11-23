@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.capturetest
 name: CaptureTest
 owner_team: TBD
-layer: foundation/services
+layer: domain/visual/tools
 status: active
 maturity: dev
 
@@ -46,5 +46,6 @@ public_api:
 dependencies:
   required:
     - dia.core
+    - dia.graphics.interface
   forbidden: []
 ---

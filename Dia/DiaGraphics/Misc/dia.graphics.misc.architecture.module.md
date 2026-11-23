@@ -39,7 +39,6 @@ public_api:
 
 dependencies:
   required:
-    - dia.core.type
-    - dia.maths.core
+    - dia.core
   forbidden: []
 ---

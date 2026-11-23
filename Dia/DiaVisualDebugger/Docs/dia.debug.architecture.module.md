@@ -78,8 +78,11 @@ dependencies:
     - dia.core
     - dia.graphics
     - dia.api
+    - dia.dia.diadebugserver
+    - dia.geometry2d
+    - dia.graphics3d
+    - dia.observation
   optional:
-    - dia.debug.server  # DebugServerModule* forward-declared; caller passes nullptr if absent
   forbidden:
     - dia.bgfx          # No rendering allowed in debug layer manager
 ---

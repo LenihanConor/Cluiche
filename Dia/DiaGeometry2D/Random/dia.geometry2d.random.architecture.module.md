@@ -41,8 +41,7 @@ public_api:
 
 dependencies:
   required:
-    - dia.maths.core
     - dia.maths.vector
-    - dia.geometry2d.shapes
+    - dia.maths
   forbidden: []
 ---

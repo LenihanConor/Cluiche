@@ -15,7 +15,7 @@ summary: >
 dependencies:
   required:
     - dia.core
-    - dia.scalarfield
+    - dia.debug.visualdebugger
   forbidden: []
 
 public_api:

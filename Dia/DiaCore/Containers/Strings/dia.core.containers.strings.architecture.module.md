@@ -44,6 +44,5 @@ dependencies:
   required:
     - dia.core.core
     - dia.core.strings
-    - dia.core.type
   forbidden: []
 ---

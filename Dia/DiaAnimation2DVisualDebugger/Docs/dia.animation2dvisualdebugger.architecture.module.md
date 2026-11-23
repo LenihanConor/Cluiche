@@ -34,7 +34,6 @@ dependent_modules:
   - dia.maths
   - dia.rig2d
   - dia.animation2d
-  - dia.diavisualdebugger
 
 public_api:
   headers:
@@ -54,6 +53,7 @@ dependencies:
     - dia.maths
     - dia.rig2d
     - dia.animation2d
-    - dia.diavisualdebugger
+    - dia.debug.visualdebugger
+    - dia.observation
   forbidden: []
 ---

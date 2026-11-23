@@ -64,6 +64,7 @@ dependencies:
   required:
     - dia.core
     - dia.serializer
+    - dia.observation
   optional: []
   forbidden:
     - dia.entity

@@ -43,7 +43,7 @@ dependencies:
   required:
     - dia.core
     - dia.aibudget
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.entity
     - dia.applicationflow

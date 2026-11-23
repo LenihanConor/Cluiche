@@ -31,7 +31,6 @@ dependent_modules:
   - dia.core.crc
   - dia.core.core
   - dia.core.time
-  - dia.core.memory
 
 public_api:
   headers:

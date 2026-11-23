@@ -61,7 +61,8 @@ public_api:
 dependencies:
   required:
     - dia.core
-    - dia.logger
+    - dia.observation
+    - dia.serializer
   forbidden:
     - dia.graphics
     - dia.application

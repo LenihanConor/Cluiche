@@ -27,10 +27,7 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.memory
   - dia.core.core
-  - dia.core.strings
-  - dia.core.crc
 
 public_api:
   headers:

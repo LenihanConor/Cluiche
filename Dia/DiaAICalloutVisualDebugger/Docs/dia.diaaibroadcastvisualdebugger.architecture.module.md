@@ -31,7 +31,6 @@ non_responsibilities:
 
 dependent_modules:
   - dia.aicallout
-  - dia.visualdebugger
 
 public_api:
   headers:
@@ -43,7 +42,7 @@ dependencies:
   required:
     - dia.core
     - dia.aicallout
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
   forbidden:
     - dia.blackboard
     - dia.rules

@@ -53,8 +53,9 @@ dependencies:
     - dia.ui
     - dia.core.core
     - dia.core.memory
-    - dia.core.strings
     - dia.core.containers
+    - dia.core.filepath
+    - dia.observation
   optional:
     - dia.window.interface
   forbidden:

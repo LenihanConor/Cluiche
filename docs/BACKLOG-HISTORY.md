@@ -225,6 +225,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | Draoi must not depend on application code (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: dia check arch path rule (Dia and Draoi may not include application folders under Cluiche/), 4 tests in test_arch_draoi.py; real tree reports none |
 | Dia | `dia docs precommit` schema check flags every key in `guarantees.json` (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: guarantees.schema.json now describes the file structure with kind=field entries (excluded from the parameter set); real file validates clean, typo still caught; test_validate_guarantees_asset.py; GuaranteeSpec/SiteRules/TerrainRules gtests (68) pass |
 | Dia | `strata.json` fails `dia validate schema` (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: strata.schema.json gained kind=field entries for the file structure; validate clean, typo caught, test_validate_world_assets.py; 282 scoped gtests pass |
+| Dia | Module dependency + layer debt (raised 2026-11-23, from the draoi-tooling baseline) | 2026-11-23 | deps: baseline 439 -> 0 (module docs fixed, checker now scans .inl, counts vcxproj ProjectReference, accepts parent-lists-child). arch: 25 -> 9; the 9 remaining are carried on the CI architecture gate row. |
 
 ---
 

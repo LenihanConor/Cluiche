@@ -28,10 +28,19 @@ dependencies:
   required:
     - dia.json
     - dia.observation
-    - dia.debugprotocol
     - dia.game
     - dia.protobuf
     - dia.core.ui  # WebUIBridge depends on IJSBridge only, not the domain-tier dia.ui
+    - dia.api
+    - dia.core.architecture
+    - dia.core.containers.arrays
+    - dia.core.core
+    - dia.core.crc
+    - dia.core.json.external.json
+    - dia.core.strings
+    - dia.dia.diadebugprotocol
+    - dia.dia.diawebsocket
+    - dia.python
   forbidden: []
 
 public_api:

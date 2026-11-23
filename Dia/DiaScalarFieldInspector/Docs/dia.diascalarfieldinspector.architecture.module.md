@@ -57,6 +57,7 @@ dependencies:
     - dia.editor
     - dia.core
     - dia.maths
+    - dia.observation
   optional: []
   forbidden:
     - dia.visualdebugger

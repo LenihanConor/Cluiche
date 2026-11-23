@@ -71,17 +71,16 @@ dependencies:
   required:
     - dia.core.core
     - dia.core.crc
-    - dia.core.filepath
-    - dia.core.memory
     - dia.graphics.frame
     - dia.graphics.interface
-    - dia.graphics.misc
-    - dia.graphics.assets
     - dia.graphics.cellfield
     - dia.maths.vector
     - dia.ui
-    - dia.window.interface
-    - dia.bgfx.bgfx
+    - dia.core.debugdraw
+    - dia.graphics
+    - dia.imgui
+    - dia.observation
+    - dia.window
   forbidden: []
 ---
 

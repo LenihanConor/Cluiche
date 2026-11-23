@@ -59,8 +59,6 @@ dependencies:
   required:
     - dia.core.containers.arrays
     - dia.core.core
-    - dia.core.json.external.json
-    - dia.core.type
   forbidden: []
 ---
 

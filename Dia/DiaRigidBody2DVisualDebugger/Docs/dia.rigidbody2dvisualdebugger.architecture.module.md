@@ -40,7 +40,6 @@ dependent_modules:
   - dia.geometry2d
   - dia.rigidbody2d
   - dia.graphics
-  - dia.visualdebugger
 
 public_api:
   headers:
@@ -59,7 +58,8 @@ dependencies:
     - dia.geometry2d
     - dia.maths
     - dia.core
-    - dia.visualdebugger
+    - dia.debug.visualdebugger
+    - dia.observation
   forbidden:
     - dia.application
     - dia.logger

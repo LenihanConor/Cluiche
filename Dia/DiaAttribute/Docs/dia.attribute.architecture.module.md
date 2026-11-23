@@ -92,7 +92,6 @@ non_responsibilities:
   - UI and rendering
 
 dependent_modules:
-  - dia.value_schema
 
 public_api:
   headers:
@@ -119,11 +118,11 @@ public_api:
 dependencies:
   required:
     - dia.core
-    - dia.value_schema
     - dia.observation
     - dia.entity
     - dia.condition
     - dia.savegame
+    - dia.valueschema
   optional: []
   forbidden:
     - dia.statemachine

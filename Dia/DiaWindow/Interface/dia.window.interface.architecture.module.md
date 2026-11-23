@@ -50,8 +50,6 @@ dependencies:
     - dia.core.containers.bitflag
     - dia.core.core
     - dia.core.strings
-    - dia.graphics.interface
     - dia.maths.vector
-    - dia.window
   forbidden: []
 ---

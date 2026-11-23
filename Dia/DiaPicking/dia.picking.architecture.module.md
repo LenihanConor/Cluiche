@@ -23,6 +23,5 @@ non_responsibilities:
 dependencies:
   required:
     - dia.core
-    - dia.mailbox
   forbidden: []
 ---

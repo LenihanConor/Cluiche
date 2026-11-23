@@ -21,7 +21,6 @@ dependent_modules:
 
 dependencies:
   required:
-    - dia.geometry2d
     - dia.serializer
     - dia.observation
     - dia.core.json.external.json

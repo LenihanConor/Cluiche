@@ -38,10 +38,7 @@ non_responsibilities:
 
 dependent_modules:
   - dia.core.containers.arrays
-  - dia.core.containers.hashtable
   - dia.core.core
-  - dia.core.logging
-  - dia.core.events
   - dia.core.time
   - dia.core.crc
   - dia.messagebus
@@ -95,12 +92,13 @@ public_api:
 dependencies:
   required:
     - dia.core.containers.arrays
-    - dia.core.containers.hashtable
     - dia.core.core
-    - dia.core.logging
-    - dia.core.events
     - dia.core.time
     - dia.core.crc
     - dia.messagebus
+    - dia.core.architecture
+    - dia.core.containers.bitflag
+    - dia.core.containers.hashtables
+    - dia.observation
   forbidden: []
 ---

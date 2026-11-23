@@ -28,6 +28,11 @@ _SANITIZER_OUTPUT_NAMES = {
 # YAML frontmatter parser (no PyYAML dependency)
 # ---------------------------------------------------------------------------
 
+def _dep_item(raw: str) -> str:
+    """A YAML list item's value: drop a trailing ``# comment`` and surrounding quotes."""
+    return raw.split(" #", 1)[0].strip().strip('"').strip("'")
+
+
 def _parse_frontmatter(text: str) -> dict:
     """Extract key fields from dia.module.v1 YAML frontmatter."""
     lines = text.splitlines()
@@ -74,11 +79,11 @@ def _parse_frontmatter(text: str) -> dict:
             key = re.match(r"  (required|optional|forbidden):", line).group(1)
             dep_list_active = key in ("required", "optional")
         elif in_dependencies and dep_list_active and re.match(r"    - ", line):
-            dep = line.strip()[2:].strip().strip('"').strip("'")
+            dep = _dep_item(line.strip()[2:])
             if dep not in result["dependent_modules"]:
                 result["dependent_modules"].append(dep)
         elif in_deps and line.startswith("  - "):
-            dep = line[4:].strip().strip('"').strip("'")
+            dep = _dep_item(line[4:])
             result["dependent_modules"].append(dep)
         elif not line.startswith("  ") and not line.startswith("	"):
             in_deps = in_dependencies = dep_list_active = False
@@ -482,6 +487,28 @@ def sanitizer(ctx, config: str, filter_pattern: str | None) -> None:
 _STRICT_ROOTS = frozenset({"draoi.root"})
 
 
+_PROJECT_REF_RE = re.compile(r'<ProjectReference\s+Include="([^"]+)"')
+
+
+def _project_referenced_dirs(mod_path: Path) -> Set[str]:
+    """Folder names of every project the module's own .vcxproj files reference.
+
+    A ProjectReference is a real build dependency even when no #include shows it
+    (link order, transitive static libs), so it counts as a legitimate declaration.
+    """
+    dirs: Set[str] = set()
+    for proj in mod_path.glob("*.vcxproj"):
+        try:
+            text = proj.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for ref in _PROJECT_REF_RE.findall(text):
+            parent = Path(ref.replace("\\", "/")).parent.name
+            if parent:
+                dirs.add(parent)
+    return dirs
+
+
 def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
     """Compare declared module dependencies with actual #includes under every library root.
 
@@ -505,6 +532,11 @@ def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
         on_start(len(modules))
 
     path_map = _build_path_to_module_map(modules)
+    dep_dir = {m["module_id"]: Path(m["path"]).name for m in modules}
+    child_ids: Dict[str, Set[str]] = {}
+    for m in modules:
+        if m.get("parent_module_id"):
+            child_ids.setdefault(m["parent_module_id"], set()).add(m["module_id"])
     module_dirs = [repo_root / m["path"] for m in modules]
 
     missing: List[Tuple[str, str, str]] = []  # (module_id, included_module, include_path)
@@ -522,7 +554,7 @@ def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
 
         child_dirs = [d for d in module_dirs if d != mod_path and mod_path in d.parents]
         used_modules: Set[str] = set()
-        for ext in ("*.h", "*.cpp"):
+        for ext in ("*.h", "*.cpp", "*.inl"):
             for src in mod_path.rglob(ext):
                 if child_dirs and any(cd in src.parents for cd in child_dirs):
                     continue
@@ -537,9 +569,15 @@ def _collect_dependency_issues(repo_root: Path, on_module=None, on_start=None):
             if not any(used == d or used.startswith(d + ".") for d in declared_deps):
                 missing.append((module_id, used, ""))
 
+        linked_dirs = _project_referenced_dirs(mod_path)
         for declared in sorted(declared_deps):
-            if not any(u == declared or u.startswith(declared + ".") for u in used_modules):
-                stale.append((module_id, declared))
+            if any(u == declared or u.startswith(declared + ".") for u in used_modules):
+                continue
+            if declared in dep_dir and dep_dir[declared] in linked_dirs:
+                continue  # no #include, but the vcxproj references it: a real build dependency
+            if declared.startswith(module_id + ".") or declared in child_ids.get(module_id, ()):
+                continue  # a parent lists its own children (schema: dependent_modules = child modules)
+            stale.append((module_id, declared))
 
     # Strict roots list every direct child (a new Draoi package must be added to draoi.root).
     # dia.root is not strict: its hand-written list predates the check.

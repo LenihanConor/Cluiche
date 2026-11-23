@@ -59,7 +59,6 @@ dependencies:
     - dia.geometry2d
     - dia.entity
     - dia.entityspatial
-    - dia.diavisualdebugger
     - dia.core.containers.arrays
     - dia.maths.vector
     - dia.core.crc

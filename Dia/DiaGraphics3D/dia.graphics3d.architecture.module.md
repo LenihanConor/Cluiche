@@ -63,5 +63,6 @@ dependencies:
     - dia.maths.vector
     - dia.core
     - dia.observation
+    - dia.maths
   forbidden: []
 ---

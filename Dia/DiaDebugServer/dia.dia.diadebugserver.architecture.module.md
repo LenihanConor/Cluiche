@@ -98,11 +98,13 @@ dependencies:
     - dia.core.crc
     - dia.core.json
     - dia.core.containers
-    - dia.core.threading
     - dia.core.time
-    - dia.application
-    - dia.websocket
     - dia.api
     - dia.dia.diadebugprotocol
+    - dia.core
+    - dia.core.core
+    - dia.dia.diawebsocket
+    - dia.observation
+    - dia.protobuf
   forbidden: []
 ---
