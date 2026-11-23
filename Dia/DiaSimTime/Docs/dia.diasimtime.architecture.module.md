@@ -4,7 +4,7 @@ module_id: dia.simtime
 name: DiaSimTime
 path: Dia/DiaSimTime
 parent_module_id: dia.application
-layer: foundation/application
+layer: domain/gameplay/core
 status: active
 maturity: dev
 version: "1.0"

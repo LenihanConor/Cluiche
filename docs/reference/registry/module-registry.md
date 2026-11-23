@@ -20,9 +20,9 @@
 | 4.1-Services | 1 |
 | 4.1-Visual | 2 |
 | assets | 4 |
-| domain | 46 |
+| domain | 47 |
 | draoi | 4 |
-| foundation | 67 |
+| foundation | 66 |
 | platform | 1 |
 | tools | 15 |
 
@@ -75,7 +75,7 @@
     >
   - **dia.application** (Application) — `Dia/DiaApplicationFlow` [foundation/application/active]
     >
-    - **dia.simtime** (DiaSimTime) — `Dia/DiaSimTime` [foundation/application/active]
+    - **dia.simtime** (DiaSimTime) — `Dia/DiaSimTime` [domain/gameplay/core/active]
   - **dia.asset** (DiaAsset) — `Dia/DiaAsset` [assets/core/active]
     >
   - **dia.assetruntimevisualdebugger** (DiaAssetRuntimeVisualDebugger) — `Dia/DiaAssetRuntimeVisualDebugger` [4.1-Assets/active]
