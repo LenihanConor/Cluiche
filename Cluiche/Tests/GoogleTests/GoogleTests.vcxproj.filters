@@ -295,6 +295,9 @@
     <Filter Include="DiaCondition">
       <UniqueIdentifier>{a474cfa9-d5b7-4e3a-9daf-de3031ad9f78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CoW\WorldSimKit">
+      <UniqueIdentifier>{63ac5436-4ca7-4cba-be22-55b2f23eefed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -3230,6 +3233,27 @@
     </ClCompile>
     <ClCompile Include="Draoi\TestFieldContributions.cpp">
       <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestMutationQueue.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestSpinUpSlot.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldStepStageBase.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimSaveCodec.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestSimCommandSet.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestParamCommandHelper.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimNames.cpp">
+      <Filter>CoW\WorldSimKit</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

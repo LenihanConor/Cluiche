@@ -40,6 +40,15 @@
     <Filter Include="World">
       <UniqueIdentifier>{1ebff9e5-950f-4441-8006-5558c64b682e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="WorldStep">
+      <UniqueIdentifier>{69a2dafa-8639-41d0-9d87-3d4db31ce122}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WorldStep\Testing">
+      <UniqueIdentifier>{eace5683-e3fb-4b09-8d0e-e5a954802683}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{b8d73d7c-5eca-4cdb-855f-2778ab974883}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -105,6 +114,18 @@
     </ClCompile>
     <ClCompile Include="Modules\WorldStep\WorldStepModule.cpp">
       <Filter>Modules\WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldStepStageBase.cpp">
+      <Filter>WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\WorldStep\WorldSimSaveCodec.cpp">
+      <Filter>WorldStep</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Debug\SimCommandSet.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Shared\Debug\ParamCommandHelper.cpp">
+      <Filter>Debug</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -212,6 +233,30 @@
     </ClInclude>
     <ClInclude Include="Shared\WorldGeneration\Testing\WorldJsonTestWorlds.h">
       <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldStepStageBase.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\MutationQueue.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\SpinUpSlot.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\WorldSimSaveCodec.h">
+      <Filter>WorldStep</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\WorldStep\Testing\FakeWorldStage.h">
+      <Filter>WorldStep\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\SimCommandSet.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Debug\ParamCommandHelper.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\World\WorldSimNames.h">
+      <Filter>World</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

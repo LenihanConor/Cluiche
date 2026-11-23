@@ -9,6 +9,7 @@
 
 # Build results
 [Dd]ebug/
+!Cluiche/CoW/Shared/Debug/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/

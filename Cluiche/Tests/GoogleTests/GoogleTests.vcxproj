@@ -1354,6 +1354,13 @@
     <ClCompile Include="Draoi\TestSelectorClauses.cpp" />
     <ClCompile Include="Draoi\TestHexWorldSaveCodec.cpp" />
     <ClCompile Include="Draoi\TestFieldContributions.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestMutationQueue.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestSpinUpSlot.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestWorldStepStageBase.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimSaveCodec.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestSimCommandSet.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestParamCommandHelper.cpp" />
+    <ClCompile Include="CoW\WorldSimKit\TestWorldSimNames.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
