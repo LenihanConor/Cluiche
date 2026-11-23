@@ -54,17 +54,18 @@ inline constexpr const char* kWorldLayerIdPrefix = "worldgen.";
 inline constexpr const char* kWorldLayerSchemaFor = "cow.worldgen.layers";
 
 // Extra stratum sets (every set of the stratum table except "depth") are dynamic Category layers: one per set, id
-// "strata.<setId>", group "Strata". They share ONE schema entry (kExtraStrataSchemaKey) for their palette: None plus up
-// to StratumTable::kMaxStrata strata, one colour each, so a stratum has the same colour in every set. Count() / At() /
-// Find() stay the static layer table; the extras are listed per stratum table.
-inline constexpr const char* kExtraStrataSchemaKey = "cow.worldgen.layers/strataSet";
-inline constexpr const char* kExtraStrataIdPrefix  = "strata.";
+// "worldgen.strata.<set_id>" (set id converted to snake_case), group "Strata". They share ONE schema entry
+// (kExtraStrataSchemaKey) for their palette: None plus up to StratumTable::kMaxStrata strata, one colour each, so a
+// stratum has the same colour in every set. Count() / At() / Find() stay the static layer table; the extras are listed
+// per stratum table.
+inline constexpr const char* kExtraStrataSchemaKey = "cow.worldgen.layers/strata_set";
+inline constexpr const char* kExtraStrataIdPrefix  = "worldgen.strata.";
 inline constexpr const char* kExtraStrataGroup     = "Strata";
 
 struct ExtraStrataLayerDesc
 {
-    std::string id;            // "strata.<setId>"
-    std::string setId;
+    std::string id;            // "worldgen.strata.<set_id>"
+    std::string setId;         // the stratum table's raw set id
     uint32_t    categoryCount; // set.count + 1 (None + the strata)
 };
 

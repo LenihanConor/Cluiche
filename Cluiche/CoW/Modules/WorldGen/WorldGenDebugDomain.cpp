@@ -117,7 +117,7 @@ namespace {
         return 0;
     }
 
-    // "worldgen.terrain_type" -> "Terrain type" (view layer ids; other ids, e.g. "strata.x", keep their prefix)
+    // "worldgen.terrain_type" -> "Terrain type" (view layer ids; "worldgen.strata.x" -> "Strata.x")
     std::string LabelFromLayerId(const std::string& id)
     {
         const std::string prefix = Draoi::HexWorld::kWorldLayerIdPrefix;

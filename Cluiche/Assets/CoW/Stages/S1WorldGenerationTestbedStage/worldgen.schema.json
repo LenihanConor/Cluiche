@@ -1212,7 +1212,7 @@
       }
     },
     {
-      "key": "strataSet",
+      "key": "strata_set",
       "kind": "field",
       "label": "Stratum set",
       "description": "An extra stratum set (strata.json set other than depth): the stratum number of each cell, 0 = none. One shared palette: stratum k has the same colour in every set.",

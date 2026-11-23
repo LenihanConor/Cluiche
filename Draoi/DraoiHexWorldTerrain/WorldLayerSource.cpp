@@ -196,7 +196,22 @@ std::vector<ExtraStrataLayerDesc> WorldLayerSource::ExtraStrataLayers(const Drao
         const Draoi::HexWorld::StratumSetSpec& set = table.Set(i);
         if (std::strcmp(set.id, Draoi::HexWorld::StratumTable::kDepthSetId) == 0)
             continue;
-        out.push_back({ std::string(kExtraStrataIdPrefix) + set.id, set.id, set.count + 1u });
+        // snake_case the set id: camelCase humps become "_x", '-' / ' ' / '.' become '_'.
+        std::string snake;
+        for (const char* c = set.id; *c != '\0'; ++c)
+        {
+            if (*c >= 'A' && *c <= 'Z')
+            {
+                if (!snake.empty() && snake.back() != '_')
+                    snake.push_back('_');
+                snake.push_back(static_cast<char>(*c - 'A' + 'a'));
+            }
+            else if (*c == '-' || *c == ' ' || *c == '.')
+                snake.push_back('_');
+            else
+                snake.push_back(*c);
+        }
+        out.push_back({ std::string(kExtraStrataIdPrefix) + snake, set.id, set.count + 1u });
     }
     return out;
 }

@@ -401,10 +401,10 @@ TEST(StrataExtraSets, LayerSourceListsOneCategoryLayerPerExtraSet)
     Rig r({ kHomeland, kTier });
     const std::vector<ExtraStrataLayerDesc> layers = WorldLayerSource::ExtraStrataLayers(&r.biomes);
     ASSERT_EQ(layers.size(), 2u);
-    EXPECT_EQ(layers[0].id, "strata.homeland");
+    EXPECT_EQ(layers[0].id, "worldgen.strata.homeland");
     EXPECT_EQ(layers[0].setId, "homeland");
     EXPECT_EQ(layers[0].categoryCount, 3u);
-    EXPECT_EQ(layers[1].id, "strata.tier");
+    EXPECT_EQ(layers[1].id, "worldgen.strata.tier");
     EXPECT_EQ(layers[1].categoryCount, 4u);
 
     Rig plain({});

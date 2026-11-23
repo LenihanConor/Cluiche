@@ -95,6 +95,14 @@ TEST(WorldSimNamesRegistrationsTest, S1LayerIdsMatchPattern)
     }
 }
 
+TEST(WorldSimNamesRegistrationsTest, S1ExtraStrataIdPrefixAndSchemaKeyMatchPattern)
+{
+    EXPECT_STREQ("worldgen.strata.", Draoi::HexWorld::kExtraStrataIdPrefix);
+    EXPECT_EQ(0u, std::string(Draoi::HexWorld::kExtraStrataIdPrefix).find(std::string(kWorldgen) + "."));
+    EXPECT_STREQ(LayerSchemaKey(kWorldgen, "strata_set").c_str(), Draoi::HexWorld::kExtraStrataSchemaKey);
+    EXPECT_STREQ("cow.worldgen.layers/strata_set", Draoi::HexWorld::kExtraStrataSchemaKey);
+}
+
 }  // namespace Testing
 }  // namespace World
 }  // namespace CoW

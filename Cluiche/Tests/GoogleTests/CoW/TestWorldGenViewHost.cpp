@@ -175,22 +175,22 @@ TEST(WorldGenViewHost, ExtraStratumSetsAppearAsLayersAndReadTheirCellLayer)
     Rig r(nullptr, true, nullptr, &biomes, &assigners);
     ASSERT_TRUE(r.host->Build());
     EXPECT_EQ(r.registry.LayerCount(), WorldLayerSource::Count() + 1u);
-    const Dia::CellLayers::CellLayerDesc* d = r.registry.Find(Dia::Core::StringCRC("strata.homeland"));
+    const Dia::CellLayers::CellLayerDesc* d = r.registry.Find(Dia::Core::StringCRC("worldgen.strata.homeland"));
     ASSERT_NE(d, nullptr);
     EXPECT_EQ(d->schemaKey, Dia::Core::StringCRC(kExtraStrataSchemaKey));
     EXPECT_EQ(d->kind, Dia::CellLayers::CellValueKind::Category);
 
     uint32_t modes = 0;
     bool listed = false;
-    r.host->ListColourModes([&](const char* id) { ++modes; listed = listed || std::string(id) == "strata.homeland"; });
+    r.host->ListColourModes([&](const char* id) { ++modes; listed = listed || std::string(id) == "worldgen.strata.homeland"; });
     EXPECT_EQ(modes, WorldLayerSource::Count() + 1u);
     EXPECT_TRUE(listed);
     std::string group;
-    r.host->ListColourGroups([&](const char* id, const char* g) { if (std::string(id) == "strata.homeland") group = g; });
+    r.host->ListColourGroups([&](const char* id, const char* g) { if (std::string(id) == "worldgen.strata.homeland") group = g; });
     EXPECT_EQ(group, "Strata");
 
-    EXPECT_TRUE(r.host->SetColourMode("strata.homeland"));
-    EXPECT_STREQ(r.host->GetColourMode(), "strata.homeland");
+    EXPECT_TRUE(r.host->SetColourMode("worldgen.strata.homeland"));
+    EXPECT_STREQ(r.host->GetColourMode(), "worldgen.strata.homeland");
 
     const WorldStructure& world = r.session.World();
     ASSERT_EQ(world.extraStrata.size(), 1u);
