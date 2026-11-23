@@ -67,9 +67,12 @@ struct Fixture
     ApplicationManifestV3 manifest;
     std::unique_ptr<Application> app;
     WorldGenerationModule* wg = nullptr;
-    std::string config = "{\"seed\":1}";
+    std::string config;
 
-    Fixture()
+    // regenerate_on_start runs the full generate (RegionsAndSites::Place); without it the world is terrain + biomes only
+    // (Cell::region 0 everywhere) until a Regenerate is requested.
+    explicit Fixture(bool withRegions = false)
+        : config(withRegions ? "{\"seed\":1,\"regenerate_on_start\":true}" : "{\"seed\":1}")
     {
         reg.Register(StringCRC("MessageBusHostModule"), &CreateBus);
         reg.Register(StringCRC("RandomStreamModule"), &CreateRng);
@@ -192,9 +195,10 @@ TEST(WorldCellFieldsWiring, FieldsReResolveAfterRegenerate)
 // AC 23: terrain.region returns each cell's committed region id; a selector over it resolves to the hand-computed cells.
 TEST(WorldCellFieldsWiring, TerrainRegionFieldAndSelectorMatchCommittedRegions)
 {
-    Fixture f;
+    Fixture f(true);
     ASSERT_TRUE(f.Boot());
-    f.Pump(3);
+    f.Pump(30);
+    ASSERT_TRUE(f.wg->GetSession().RegionsFresh());
     WorldCellFields& fields = f.wg->GetCellFields();
     const WorldStructure& w = f.wg->GetSession().World();
     const uint32_t n = static_cast<uint32_t>(w.CellCount());
@@ -208,14 +212,17 @@ TEST(WorldCellFieldsWiring, TerrainRegionFieldAndSelectorMatchCommittedRegions)
         ASSERT_EQ(fields.GetFloat(StringCRC("terrain"), StringCRC("region")), static_cast<float>(w.Cells()[c].region)) << c;
         ++counts[w.Cells()[c].region];
     }
-    // NOTE: the region partition is not yet wired into the generation pipeline, so every committed Cell::region is
-    // currently 0 (none). The test is written against whatever is committed and becomes non-trivial once it is wired.
-
-    uint32_t target = 0, best = 0;
-    for (const auto& kv : counts) if (kv.second > best) { best = kv.second; target = kv.first; }
-    // Second selector: an id that no cell carries must resolve to an empty list.
-    uint32_t absent = 1;
-    while (counts.count(absent)) ++absent;
+    // Discriminating: need several committed regions, and pick one that is not the most common.
+    ASSERT_GE(counts.size(), 2u);
+    uint32_t mostCommon = 0, best = 0;
+    for (const auto& kv : counts) if (kv.second > best) { best = kv.second; mostCommon = kv.first; }
+    uint32_t target = mostCommon;
+    for (const auto& kv : counts) if (kv.first != mostCommon && kv.first != 0) { target = kv.first; break; }
+    ASSERT_NE(target, mostCommon);
+    // Second selector: a different, present region (disjoint from the first).
+    uint32_t absent = target;
+    for (const auto& kv : counts) if (kv.first != target) { absent = kv.first; break; }
+    ASSERT_NE(absent, target);
 
     Json::Value block;
     Json::Reader reader;
@@ -236,5 +243,15 @@ TEST(WorldCellFieldsWiring, TerrainRegionFieldAndSelectorMatchCommittedRegions)
         ASSERT_EQ(set.ResolvedCells(static_cast<uint32_t>(sel))[i], expected[i]) << i;
     const int none = set.FindSelector(StringCRC("absent"));
     ASSERT_GE(none, 0);
-    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(none)), 0u);
+    std::vector<uint32_t> otherExpected;
+    for (uint32_t c = 0; c < n; ++c) if (w.Cells()[c].region == absent) otherExpected.push_back(c);
+    ASSERT_EQ(set.ResolvedCount(static_cast<uint32_t>(none)), static_cast<uint32_t>(otherExpected.size()));
+    ASSERT_GT(otherExpected.size(), 0u);
+    ASSERT_GT(expected.size(), 0u);
+    std::set<uint32_t> mine(expected.begin(), expected.end());
+    for (uint32_t i = 0; i < otherExpected.size(); ++i)
+    {
+        ASSERT_EQ(set.ResolvedCells(static_cast<uint32_t>(none))[i], otherExpected[i]) << i;
+        EXPECT_EQ(mine.count(otherExpected[i]), 0u);   // disjoint
+    }
 }
