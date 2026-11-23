@@ -358,6 +358,20 @@ TEST(CellSelector, ResolveLeafAndOrNotAllNoneEverything)
     EXPECT_NE(set.ResolvedCells(static_cast<uint32_t>(none)), nullptr);   // safe to hold, count 0
 }
 
+TEST(CellSelector, ResolveBoolOnlyFieldWithNumericValueMatchesBoolValue)
+{
+    // is_river is bool-only (getBool); "value": 1 reads via GetFloat, which falls back to the bool.
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({"selectors":{
+        "river_num":  { "op": "==", "slot": "terrain", "field": "is_river", "value": 1 },
+        "river_bool": { "op": "==", "slot": "terrain", "field": "is_river", "value": true } }})"), w.fields, err))
+        << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err)) << err.reason.AsCStr();
+    EXPECT_TRUE(ListEquals(set, "river_num", { 2, 3, 8, 14, 15, 20 }));
+    EXPECT_TRUE(ListEquals(set, "river_bool", { 2, 3, 8, 14, 15, 20 }));
+}
+
 TEST(CellSelector, ResolveListsAreStrictlyIncreasing)
 {
     SmallWorld w;

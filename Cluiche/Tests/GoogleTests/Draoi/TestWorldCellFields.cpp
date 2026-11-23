@@ -119,9 +119,61 @@ TEST(CellFields, UnknownPairReturnsZeroAndFalse)
     f.SetCell(7);
     EXPECT_EQ(f.GetFloat(StringCRC("other"), StringCRC("x")), 0.0f);
     EXPECT_FALSE(f.GetBool(StringCRC("other"), StringCRC("x")));
-    // A float-only field read as bool (and vice versa) is also 0/false.
-    EXPECT_FALSE(f.GetBool(kTerrain, kElevation));
+    // Readers fall back to each other: cell 7 has elevation 7 (non-zero -> true) and is_river false (-> 0).
+    // (Old behaviour: a float-only field read as bool was always false; a bool-only field read as float was always 0.)
+    EXPECT_TRUE(f.GetBool(kTerrain, kElevation));
     EXPECT_EQ(f.GetFloat(kTerrain, kIsRiver), 0.0f);
+}
+
+TEST(CellFields, BoolOnlyFieldReadViaGetFloatGivesOneOrZero)
+{
+    Fixture fx;
+    WorldCellFields f;
+    RegisterFixture(f, fx);
+    for (uint32_t i = 0; i < kCells; ++i)
+    {
+        f.SetCell(i);
+        EXPECT_EQ(f.GetFloat(kTerrain, kIsRiver), (i % 5) == 0 ? 1.0f : 0.0f) << i;
+    }
+}
+
+TEST(CellFields, FloatOnlyFieldReadViaGetBoolIsNonZero)
+{
+    Fixture fx;
+    WorldCellFields f;
+    RegisterFixture(f, fx);
+    for (uint32_t i = 0; i < kCells; ++i)
+    {
+        f.SetCell(i);
+        EXPECT_EQ(f.GetBool(kTerrain, kElevation), i != 0) << i;
+    }
+}
+
+namespace
+{
+    float FixedFloat(const void*, uint32_t) { return 5.0f; }
+    bool  FixedBool (const void*, uint32_t) { return false; }
+    float NaNFloat  (const void*, uint32_t) { return std::numeric_limits<float>::quiet_NaN(); }
+}
+
+TEST(CellFields, PrimaryGetterWinsWhenBothSet)
+{
+    WorldCellFields f;
+    FieldReader r{}; r.getFloat = &FixedFloat; r.getBool = &FixedBool;
+    f.Register(kTerrain, StringCRC("both"), r);
+    f.SetCell(0);
+    EXPECT_EQ(f.GetFloat(kTerrain, StringCRC("both")), 5.0f);   // not 0 from getBool
+    EXPECT_FALSE(f.GetBool(kTerrain, StringCRC("both")));       // not true from getFloat
+}
+
+TEST(CellFields, NaNFloatReadAsBoolIsFalse)
+{
+    // Documented: NaN is treated as false by the float->bool fallback.
+    WorldCellFields f;
+    FieldReader r{}; r.getFloat = &NaNFloat;
+    f.Register(kTerrain, StringCRC("nan"), r);
+    f.SetCell(0);
+    EXPECT_FALSE(f.GetBool(kTerrain, StringCRC("nan")));
 }
 
 TEST(CellFields, ClearRemovesAllAndReRegisterWorks)
@@ -334,4 +386,18 @@ TEST(CellFields, NaNAndInfinityFloatsFollowIeeeComparisons)
     EXPECT_EQ(Select(f, LoadExpr(R"({"op":"and","conditions":[
         {"op":">=","slot":"terrain","field":"elevation","value":0},
         {"op":"<=","slot":"terrain","field":"elevation","value":10}]})"), 5), (V{ 0, 4 }));
+}
+
+TEST(CellFields, NumericValueOnBoolOnlyFieldSelectsSameCellsAsTrue)
+{
+    Fixture fx;
+    WorldCellFields f;
+    RegisterFixture(f, fx);
+    using V = std::vector<uint32_t>;
+    const V asTrue = Select(f, LoadExpr(R"({"op":"==","slot":"terrain","field":"is_river","value":true})"), kCells);
+    const V asOne  = Select(f, LoadExpr(R"({"op":"==","slot":"terrain","field":"is_river","value":1})"), kCells);
+    EXPECT_EQ(asTrue, (V{ 0, 5, 10, 15, 20 }));
+    EXPECT_EQ(asOne, asTrue);
+    const V asZero = Select(f, LoadExpr(R"({"op":"==","slot":"terrain","field":"is_river","value":0})"), kCells);
+    EXPECT_EQ(asZero.size(), kCells - 5u);
 }

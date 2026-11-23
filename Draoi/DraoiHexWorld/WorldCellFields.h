@@ -11,7 +11,9 @@
 namespace Draoi {
 namespace HexWorld {
 
-// Typed reader over a cell index. A field supplies getFloat, getBool, or both; a missing getter reads as 0/false.
+// Typed reader over a cell index. A field supplies getFloat, getBool, or both. A present getter always wins. If only one is set the other read falls back
+// to it: GetFloat of a bool-only field is 1/0; GetBool of a float-only field is (value != 0), with NaN counting as false.
+// With neither getter set, reads give 0/false.
 struct FieldReader
 {
     float (*getFloat)(const void* ctx, uint32_t cell) = nullptr;

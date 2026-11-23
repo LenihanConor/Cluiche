@@ -3,6 +3,8 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 
+#include <cmath>
+
 namespace Draoi {
 namespace HexWorld {
 
@@ -54,14 +56,24 @@ float WorldCellFields::GetFloat(Dia::Core::StringCRC slot, Dia::Core::StringCRC 
 {
     CheckReadsAllowed();
     const Entry* e = Find(slot, field);
-    return (e && e->reader.getFloat) ? e->reader.getFloat(e->reader.ctx, mCell) : 0.0f;
+    if (!e) return 0.0f;
+    if (e->reader.getFloat) return e->reader.getFloat(e->reader.ctx, mCell);
+    if (e->reader.getBool)  return e->reader.getBool(e->reader.ctx, mCell) ? 1.0f : 0.0f;   // bool-only fallback
+    return 0.0f;
 }
 
 bool WorldCellFields::GetBool(Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const
 {
     CheckReadsAllowed();
     const Entry* e = Find(slot, field);
-    return (e && e->reader.getBool) ? e->reader.getBool(e->reader.ctx, mCell) : false;
+    if (!e) return false;
+    if (e->reader.getBool)  return e->reader.getBool(e->reader.ctx, mCell);
+    if (e->reader.getFloat)   // float-only fallback: non-zero is true, NaN is false
+    {
+        const float v = e->reader.getFloat(e->reader.ctx, mCell);
+        return v != 0.0f && !std::isnan(v);
+    }
+    return false;
 }
 
 bool WorldCellFields::Has(Dia::Core::StringCRC slot, Dia::Core::StringCRC field) const
