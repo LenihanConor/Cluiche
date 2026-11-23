@@ -41,6 +41,7 @@ WorldGenerationModule::WorldGenerationModule(const Dia::Core::StringCRC& instanc
     mBiomes = std::make_unique<Draoi::HexWorld::BiomeRegistry>();
     mBiomeSource = std::make_unique<Draoi::HexWorld::BiomeFieldSource>(*mBiomes, mSession.World());
     mSession.SetBiomeRegistry(mBiomes.get());   // classification reads the module-owned registry; Load swaps its data in place
+    mCellFields.SetReadsForbiddenFlag(&mCellFieldReadsForbidden);
 }
 
 WorldGenerationModule::~WorldGenerationModule()
@@ -695,6 +696,8 @@ void WorldGenerationModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
     if (mSession.IsDirty() && !mSession.IsGenerating())
         ApplyPendingParams();
     const bool worldChanged = mSession.Tick(*stream);
+    // A Regenerate still in flight leaves the world half-rebuilt between frames: forbid field reads until it finishes.
+    mCellFieldReadsForbidden = mSession.IsGenerating();
 #ifdef DIA_DEBUG
     // Keep the shared grid in step with the world's dimensions unless a registrant drives rebuilds itself. Also builds
     // the grid on the first frame, so GetHexGrid() is non-null from then on.

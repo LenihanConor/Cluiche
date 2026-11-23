@@ -156,6 +156,9 @@ public:
     // Cleared and re-registered by the Draoi contributions each time a world is published (WorldGenerationComplete),
     // so the readers always see the session's committed state. SimPU thread only.
     Draoi::HexWorld::WorldCellFields& GetCellFields() { return mCellFields; }
+    // True exactly while the session is generating (a Regenerate in flight): the world the fields read is being rebuilt,
+    // so GetCellFields() reads assert in Debug (AC 10b). Refreshed each update right after the session ticks.
+    bool AreCellFieldReadsForbidden() const { return mCellFieldReadsForbidden; }
     bool AreBiomesLoaded() const { return mBiomesLoaded; }
     // The first biome load failure (empty when loaded): RegistryError field, id, row and reason / the read failure.
     const std::string& GetBiomesErrorField() const { return mBiomesErrorField; }
@@ -221,6 +224,8 @@ private:
     Draoi::HexWorld::WorldGenSession mSession;
     Draoi::HexWorld::TerrainFieldSource mTerrainSource{mSession};   // readers point into the session (fixed address)
     Draoi::HexWorld::WorldCellFields mCellFields;
+    // Plain bool (the Draoi flag is a const bool*): generation steps run on this module's thread inside Tick, never on a worker.
+    bool mCellFieldReadsForbidden = false;
     Draoi::HexWorld::SiteRegistry mSiteRegistry;
     Draoi::HexWorld::StrataAssignerRegistry mStrataAssigners;
 #ifdef DIA_DEBUG

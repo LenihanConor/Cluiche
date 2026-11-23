@@ -192,6 +192,35 @@ TEST(WorldCellFieldsWiring, FieldsReResolveAfterRegenerate)
     ExpectFieldsMatchWorld(*f.wg);
 }
 
+// AC 10b: the reads-forbidden flag is true exactly while a Regenerate is in flight. A read while forbidden aborts via
+// DIA_ASSERT in Debug, so the flag state is tested here (the Draoi tests cover the assert itself).
+TEST(WorldCellFieldsWiring, ReadsForbiddenOnlyWhileGenerating)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    f.Pump(3);
+    ASSERT_FALSE(f.wg->GetSession().IsGenerating());
+    EXPECT_FALSE(f.wg->AreCellFieldReadsForbidden());
+    ExpectFieldsMatchWorld(*f.wg);   // reads work when allowed
+
+    CoW::WorldGeneration::Testing::FixedGuarantee never("Test.Never", false);
+    ASSERT_TRUE(f.wg->GetSiteRegistry().RegisterGuarantee(&never));
+    Json::Value a(Json::objectValue); a["maxRetryAttempts"] = 4;
+    f.wg->GetSession().Regenerate(a);
+    f.wg->NotifyAction();
+    f.Pump(1);
+    ASSERT_TRUE(f.wg->GetSession().IsGenerating());
+    EXPECT_TRUE(f.wg->AreCellFieldReadsForbidden());
+    f.Pump(2);
+    ASSERT_TRUE(f.wg->GetSession().IsGenerating());
+    EXPECT_TRUE(f.wg->AreCellFieldReadsForbidden());
+    f.Pump(2);
+    ASSERT_FALSE(f.wg->GetSession().IsGenerating());
+    EXPECT_FALSE(f.wg->AreCellFieldReadsForbidden());
+    f.wg->GetCellFields().SetCell(0);
+    EXPECT_NO_FATAL_FAILURE(f.wg->GetCellFields().GetFloat(StringCRC("terrain"), StringCRC("elevation")));
+}
+
 // AC 23: terrain.region returns each cell's committed region id; a selector over it resolves to the hand-computed cells.
 TEST(WorldCellFieldsWiring, TerrainRegionFieldAndSelectorMatchCommittedRegions)
 {
