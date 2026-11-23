@@ -51,7 +51,6 @@
     <ClInclude Include="Modules\Plumbing\RandomStreamModule.h" />
     <ClInclude Include="Modules\BusTools\BusProbeModule.h" />
     <ClInclude Include="Modules\BusTools\BusRecorderModule.h" />
-    <ClInclude Include="Shared\GameSpeedController.h" />
     <ClInclude Include="Modules\GameSpeed\GameSpeedControllerModule.h" />
     <ClInclude Include="Modules\GameSpeed\GameSpeedMessages.h" />
     <ClInclude Include="Modules\GameSpeed\GameSpeedDebugDomain.h" />

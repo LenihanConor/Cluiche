@@ -120,9 +120,6 @@
     <ClInclude Include="Modules\BusTools\BusRecorderModule.h">
       <Filter>Modules\BusTools</Filter>
     </ClInclude>
-    <ClInclude Include="Shared\GameSpeedController.h">
-      <Filter>Shared</Filter>
-    </ClInclude>
     <ClInclude Include="Modules\GameSpeed\GameSpeedControllerModule.h">
       <Filter>Modules\GameSpeed</Filter>
     </ClInclude>

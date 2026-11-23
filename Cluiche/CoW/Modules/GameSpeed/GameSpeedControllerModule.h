@@ -6,7 +6,7 @@
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
-#include <Shared/GameSpeedController.h>
+#include <Shared/CoWCalendar.h>
 #include "Modules/GameSpeed/GameSpeedMessages.h"
 #include "Modules/WorldGen/WorldGenerationMessages.h"
 #include "Modules/MessageBusHostModule.h"

@@ -4,9 +4,12 @@
 // Spec: docs/specs/features/draoi/extract-draoigamespeed.md (Decisions 1-2)
 #pragma once
 
-#include <Shared/GameSpeedController.h>
+#include <DraoiGameSpeed/GameSpeedController.h>
 
 namespace CoW {
+
+// The controller, Calendar and speed types live in Draoi::GameSpeed; CoW code uses them unqualified.
+using namespace Draoi::GameSpeed;
 
 constexpr uint64_t kDaysPerWeek       = 7;
 constexpr uint64_t kWeeksPerSeason    = 13;

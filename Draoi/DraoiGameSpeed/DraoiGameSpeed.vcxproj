@@ -34,6 +34,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
+    <ClInclude Include="GameSpeedController.h" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="dia.draoi.gamespeed.architecture.module.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

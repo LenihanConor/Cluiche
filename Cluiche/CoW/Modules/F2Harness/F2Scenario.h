@@ -12,7 +12,7 @@
 // Spec: docs/specs/applications/cow/systems/f2-core-runtime/f2-core-runtime.md
 #pragma once
 
-#include <Shared/GameSpeedController.h>
+#include <Shared/CoWCalendar.h>
 #include <cstdint>
 #include <string>
 #include <vector>

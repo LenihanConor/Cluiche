@@ -1952,7 +1952,10 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp">
       <Filter>DiaVisualDebugger\Console</Filter>
     </ClCompile>
-    <ClCompile Include="CoW\TestGameSpeedController.cpp">
+    <ClCompile Include="Draoi\TestGameSpeedController.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\TestGameSpeedCoWCalendar.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp">

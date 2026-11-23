@@ -7,7 +7,7 @@
 #pragma once
 
 #include "Modules/F2Harness/F2Fingerprint.h"
-#include <Shared/GameSpeedController.h>
+#include <Shared/CoWCalendar.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <cstdint>
 #include <string>

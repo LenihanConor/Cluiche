@@ -889,7 +889,8 @@
     <ClCompile Include="DiaVisualDebugger\Console\TestPaletteJson.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPanelController.cpp" />
     <ClCompile Include="DiaVisualDebugger\Console\TestPanelContract.cpp" />
-    <ClCompile Include="CoW\TestGameSpeedController.cpp" />
+    <ClCompile Include="Draoi\TestGameSpeedController.cpp" />
+    <ClCompile Include="CoW\TestGameSpeedCoWCalendar.cpp" />
     <ClCompile Include="CoW\TestGameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\GameSpeed\GameSpeedControllerModule.cpp" />
     <ClCompile Include="..\..\CoW\Modules\Plumbing\SaveLoadModule.cpp" />

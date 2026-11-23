@@ -11,12 +11,12 @@
 #include <utility>
 #include <vector>
 
-namespace CoW {
+namespace Draoi::GameSpeed {
 
 // ---------------------------------------------------------------------------
 // Calendar (data, supplied by the application)
 // ---------------------------------------------------------------------------
-// 1 game-second = 1 day, so a SimTimeScheduler deadline of +7.0s means "in one week" (CoW calendar).
+// 1 game-second = 1 day, so a SimTimeScheduler deadline of +7.0s means "in one week" (a 7-day week in the application calendar).
 constexpr int64_t kGameMicrosecondsPerDay = 1000000;
 
 // One rung of the period ladder: a named period whose length is `multiple` times the previous rung
@@ -362,4 +362,4 @@ private:
     uint32_t mBackwardsCount = 0;
 };
 
-} // namespace CoW
+} // namespace Draoi::GameSpeed

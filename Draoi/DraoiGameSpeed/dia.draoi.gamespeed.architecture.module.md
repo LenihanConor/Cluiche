@@ -12,9 +12,10 @@ dependencies:
   required: []
   forbidden: []
 public_api:
-  headers: []
+  headers:
+    - DraoiGameSpeed/GameSpeedController.h
   namespaces:
-    - Draoi::
+    - Draoi::GameSpeed::
   entry_points: []
 responsibilities:
   - Data-driven calendar (ladder of named periods) and time bands
@@ -26,4 +27,4 @@ non_responsibilities:
 ---
 # DraoiGameSpeed
 
-Header-only Draoi package (Utility project, no library output). Standard library only. `GameSpeedController.h` moves in from CoW/Shared under @docs/specs/features/draoi/extract-draoigamespeed.md.
+Header-only Draoi package (Utility project, no library output). Standard library only. `GameSpeedController.h` extracted from CoW under @docs/specs/features/draoi/extract-draoigamespeed.md.
