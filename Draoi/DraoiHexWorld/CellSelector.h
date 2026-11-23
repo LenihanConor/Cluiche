@@ -1,6 +1,6 @@
 // Named cell selectors (DiaCondition expressions) and derived-field definitions, loaded from one JSON block shared by
-// presets, scenarios and T-2. This header covers load, validation and the data model; Resolve and derived-field
-// computing are separate (later) work.
+// presets, scenarios and T-2. This header covers load, validation, the data model and Resolve over base
+// fields; derived-field computing is separate (later) work.
 #pragma once
 
 #include <DiaCondition/ConditionExpr.h>
@@ -11,6 +11,7 @@
 #include <DiaCore/Strings/String256.h>
 
 #include <cstdint>
+#include <memory>
 
 namespace Draoi {
 namespace HexWorld {
@@ -67,6 +68,25 @@ public:
     const char*                              SelectorName(uint32_t selector) const { return mSelectors[selector].name.AsCStr(); }
     const Dia::Condition::ConditionExpr&     SelectorExpr(uint32_t selector) const { return mSelectors[selector].expr; }
 
+    // Resolve: evaluates every selector over cells 0..cellCount-1 (`all` selects every cell) and stores each result as a
+    // strictly increasing cell-index list in one pooled array owned by the set. Lists are deterministic (same fields,
+    // byte-identical lists). Re-resolving replaces all results; pointers are valid until the next Resolve or Load.
+    // An empty list is valid ("empty where used" is the consumer's check). Memory: SelectorCount() * cellCount uint32_t.
+    //
+    // D9 seam: this overload only knows base fields. A selector whose expression reads slot "derived" cannot be
+    // evaluated correctly without computed derived values, so Resolve returns false (err.kind "resolve", err.item the
+    // selector name) and leaves no results (all counts 0) rather than produce wrong data. D9 adds an overload taking
+    // the grid topology that, before selector evaluation, computes each derived field in DerivedOrder() order (a
+    // derived field's source selector is resolved first, then its values are published to a context wrapper that
+    // answers slot "derived"); selectors are then evaluated through that wrapper. UsesDerived() tells which selectors
+    // need it.
+    bool Resolve(WorldCellFields& fields, uint32_t cellCount, SelectorError& err);
+
+    uint32_t        ResolvedCount(uint32_t selector) const { return mResolved[selector].count; }
+    // Never null once Resolve has succeeded (count may be 0); valid for ResolvedCount(selector) entries.
+    const uint32_t* ResolvedCells(uint32_t selector) const { return mPool.get() + mResolved[selector].offset; }
+    bool            UsesDerived(uint32_t selector) const { return mSelectors[selector].usesDerived; }
+
     uint32_t            DerivedCount() const { return mDerivedCount; }
     int                 FindDerived(Dia::Core::StringCRC id) const;   // -1 when absent
     const DerivedField& Derived(uint32_t index) const { return mDerived[index]; }
@@ -79,11 +99,22 @@ private:
         Dia::Core::StringCRC             id;
         Dia::Core::Containers::String64  name;
         Dia::Condition::ConditionExpr    expr;
+        bool                             usesDerived = false;
     };
+
+    struct Resolved
+    {
+        uint32_t offset = 0;
+        uint32_t count = 0;
+    };
+
+    void ClearResolved();
 
     Selector     mSelectors[kMaxSelectors + 1];
     DerivedField mDerived[kMaxDerived];
     uint32_t     mOrder[kMaxDerived] = {};
+    Resolved     mResolved[kMaxSelectors + 1];
+    std::unique_ptr<uint32_t[]> mPool;   // SelectorCount() * cellCount entries; list s starts at s * cellCount
     uint32_t     mCount = 1;          // `all` is always present
     uint32_t     mDerivedCount = 0;
 };

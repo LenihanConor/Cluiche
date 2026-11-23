@@ -179,6 +179,7 @@ bool CellSelectorSet::Load(const Json::Value& block, const WorldCellFields& base
                 for (uint32_t i = 0; i < tmp.mDerivedCount; ++i)
                     if (tmp.mDerived[i].id == StringCRC(usedNames[u].c_str()))
                         selectorUses[tmp.mCount] |= static_cast<uint16_t>(1u << i);
+            s.usesDerived = used > 0;
             ++tmp.mCount;
         }
     }
@@ -239,6 +240,47 @@ bool CellSelectorSet::Load(const Json::Value& block, const WorldCellFields& base
     }
 
     *this = std::move(tmp);
+    return true;
+}
+
+void CellSelectorSet::ClearResolved()
+{
+    for (Resolved& r : mResolved) r = Resolved{};
+    mPool.reset();
+}
+
+bool CellSelectorSet::Resolve(WorldCellFields& fields, uint32_t cellCount, SelectorError& err)
+{
+    ClearResolved();
+    for (uint32_t s = 1; s < mCount; ++s)
+        if (mSelectors[s].usesDerived)
+            return Fail(err, "resolve", mSelectors[s].name.AsCStr(), "selector reads derived fields; derived values are not computed by this Resolve overload");
+
+    // Value-initialised so unused tail bytes are deterministic (byte-identical pools). Never null, so count-0 lists are safe.
+    mPool.reset(new uint32_t[static_cast<size_t>(mCount) * cellCount + 1]());
+
+    const uint32_t savedCell = fields.GetCell();
+    for (uint32_t s = 0; s < mCount; ++s)
+    {
+        uint32_t* out = mPool.get() + static_cast<size_t>(s) * cellCount;
+        uint32_t n = 0;
+        if (s == 0)
+        {
+            for (uint32_t i = 0; i < cellCount; ++i) out[n++] = i;
+        }
+        else
+        {
+            const Dia::Condition::ConditionExpr& expr = mSelectors[s].expr;
+            for (uint32_t i = 0; i < cellCount; ++i)
+            {
+                fields.SetCell(i);
+                if (expr.Evaluate(fields)) out[n++] = i;
+            }
+        }
+        mResolved[s].offset = static_cast<uint32_t>(static_cast<size_t>(s) * cellCount);
+        mResolved[s].count = n;
+    }
+    fields.SetCell(savedCell);
     return true;
 }
 

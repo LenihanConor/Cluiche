@@ -4,7 +4,9 @@
 #include <DraoiHexWorld/CellSelector.h>
 #include <DraoiHexWorld/WorldCellFields.h>
 
+#include <chrono>
 #include <cstring>
+#include <initializer_list>
 #include <string>
 
 namespace
@@ -270,4 +272,206 @@ TEST(CellSelector, DependencyOrderPutsDependenciesFirst)
     EXPECT_LT(posZ, posA);
     EXPECT_TRUE(set.Derived(static_cast<uint32_t>(a)).DependsOn(static_cast<uint32_t>(z)));
     EXPECT_FALSE(set.Derived(static_cast<uint32_t>(z)).DependsOn(static_cast<uint32_t>(a)));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Resolve (D8). Hand-built 6 x 4 world, 24 cells (index = row * 6 + col).
+// elevation[i] = i; is_river = {2,3,8,14,15,20}; tag.cold = {0,1,2,3,4,5}.
+// ---------------------------------------------------------------------------------------------------------------------
+namespace
+{
+    constexpr uint32_t kResolveCells = 24;
+
+    float ArrFloat(const void* ctx, uint32_t cell) { return static_cast<const float*>(ctx)[cell]; }
+    bool  ArrBool (const void* ctx, uint32_t cell) { return static_cast<const bool*>(ctx)[cell]; }
+
+    struct SmallWorld
+    {
+        float elevation[kResolveCells];
+        bool  river[kResolveCells] = {};
+        bool  cold[kResolveCells] = {};
+        WorldCellFields fields;
+
+        SmallWorld()
+        {
+            for (uint32_t i = 0; i < kResolveCells; ++i) elevation[i] = static_cast<float>(i);
+            for (uint32_t i : { 2u, 3u, 8u, 14u, 15u, 20u }) river[i] = true;
+            for (uint32_t i = 0; i < 6; ++i) cold[i] = true;
+            FieldReader fe{}; fe.getFloat = &ArrFloat; fe.ctx = elevation;
+            FieldReader fr{}; fr.getBool = &ArrBool; fr.ctx = river;
+            FieldReader fc{}; fc.getBool = &ArrBool; fc.ctx = cold;
+            fields.Register(StringCRC("terrain"), StringCRC("elevation"), fe);
+            fields.Register(StringCRC("terrain"), StringCRC("is_river"), fr);
+            fields.Register(StringCRC("terrain"), StringCRC("flow_direction"), F());
+            fields.Register(StringCRC("biome"), StringCRC("tag.cold"), fc);
+        }
+    };
+
+    const char* kResolveBlock = R"({
+      "selectors": {
+        "low":           { "op": "<",  "slot": "terrain", "field": "elevation", "value": 5 },
+        "river":         { "op": "==", "slot": "terrain", "field": "is_river", "value": true },
+        "low_and_river": { "op": "and", "conditions": [
+            { "op": "<",  "slot": "terrain", "field": "elevation", "value": 5 },
+            { "op": "==", "slot": "terrain", "field": "is_river", "value": true } ] },
+        "low_or_river":  { "op": "or", "conditions": [
+            { "op": "<",  "slot": "terrain", "field": "elevation", "value": 5 },
+            { "op": "==", "slot": "terrain", "field": "is_river", "value": true } ] },
+        "not_cold":      { "op": "not", "condition": { "op": "==", "slot": "biome", "field": "tag.cold", "value": true } },
+        "none":          { "op": "<",  "slot": "terrain", "field": "elevation", "value": -1 },
+        "everything":    { "op": ">=", "slot": "terrain", "field": "elevation", "value": 0 }
+      }})";
+
+    bool ListEquals(const CellSelectorSet& set, const char* name, std::initializer_list<uint32_t> expected)
+    {
+        const int s = set.FindSelector(StringCRC(name));
+        if (s < 0) return false;
+        const uint32_t n = set.ResolvedCount(static_cast<uint32_t>(s));
+        if (n != expected.size()) return false;
+        uint32_t k = 0;
+        for (uint32_t e : expected)
+            if (set.ResolvedCells(static_cast<uint32_t>(s))[k++] != e) return false;
+        return true;
+    }
+}
+
+TEST(CellSelector, ResolveLeafAndOrNotAllNoneEverything)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err)) << err.reason.AsCStr();
+
+    EXPECT_TRUE(ListEquals(set, "low", { 0, 1, 2, 3, 4 }));
+    EXPECT_TRUE(ListEquals(set, "river", { 2, 3, 8, 14, 15, 20 }));
+    EXPECT_TRUE(ListEquals(set, "low_and_river", { 2, 3 }));
+    EXPECT_TRUE(ListEquals(set, "low_or_river", { 0, 1, 2, 3, 4, 8, 14, 15, 20 }));
+    EXPECT_TRUE(ListEquals(set, "not_cold", { 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 }));
+    EXPECT_TRUE(ListEquals(set, "everything", { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 }));
+    EXPECT_TRUE(ListEquals(set, "all", { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 }));
+
+    const int none = set.FindSelector(StringCRC("none"));
+    ASSERT_GE(none, 0);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(none)), 0u);
+    EXPECT_NE(set.ResolvedCells(static_cast<uint32_t>(none)), nullptr);   // safe to hold, count 0
+}
+
+TEST(CellSelector, ResolveListsAreStrictlyIncreasing)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err));
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s)
+        for (uint32_t k = 1; k < set.ResolvedCount(s); ++k)
+            EXPECT_LT(set.ResolvedCells(s)[k - 1], set.ResolvedCells(s)[k]) << set.SelectorName(s);
+}
+
+TEST(CellSelector, ResolveIsByteIdenticalAcrossResolvesAndSets)
+{
+    SmallWorld w;
+    CellSelectorSet a, b; SelectorError err;
+    ASSERT_TRUE(a.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(b.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(a.Resolve(w.fields, kResolveCells, err));
+    ASSERT_TRUE(b.Resolve(w.fields, kResolveCells, err));
+    // Snapshot a's first resolve, then resolve again.
+    uint32_t snap[8][kResolveCells] = {};
+    uint32_t snapCount[8] = {};
+    ASSERT_LE(a.SelectorCount(), 8u);
+    for (uint32_t s = 0; s < a.SelectorCount(); ++s)
+    {
+        snapCount[s] = a.ResolvedCount(s);
+        std::memcpy(snap[s], a.ResolvedCells(s), snapCount[s] * sizeof(uint32_t));
+    }
+    ASSERT_TRUE(a.Resolve(w.fields, kResolveCells, err));
+    for (uint32_t s = 0; s < a.SelectorCount(); ++s)
+    {
+        ASSERT_EQ(a.ResolvedCount(s), snapCount[s]);
+        EXPECT_EQ(std::memcmp(a.ResolvedCells(s), snap[s], snapCount[s] * sizeof(uint32_t)), 0) << a.SelectorName(s);
+        ASSERT_EQ(a.ResolvedCount(s), b.ResolvedCount(s));
+        EXPECT_EQ(std::memcmp(a.ResolvedCells(s), b.ResolvedCells(s), a.ResolvedCount(s) * sizeof(uint32_t)), 0) << a.SelectorName(s);
+    }
+}
+
+TEST(CellSelector, ResolveRereadsFieldDataAndReplacesResults)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err));
+    EXPECT_TRUE(ListEquals(set, "river", { 2, 3, 8, 14, 15, 20 }));
+    w.river[3] = false; w.river[21] = true;
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err));
+    EXPECT_TRUE(ListEquals(set, "river", { 2, 8, 14, 15, 20, 21 }));
+    EXPECT_TRUE(ListEquals(set, "low_and_river", { 2 }));
+    // A smaller world replaces results too.
+    ASSERT_TRUE(set.Resolve(w.fields, 10, err));
+    EXPECT_TRUE(ListEquals(set, "river", { 2, 8 }));
+    EXPECT_TRUE(ListEquals(set, "all", { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+}
+
+TEST(CellSelector, ResolveZeroCellsGivesEmptyLists)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, 0, err));
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s)
+        EXPECT_EQ(set.ResolvedCount(s), 0u) << set.SelectorName(s);
+}
+
+TEST(CellSelector, ResolveWithOnlyAllSelector)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse("{}"), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err));
+    EXPECT_EQ(set.ResolvedCount(0), kResolveCells);
+}
+
+// Seam for D9: derived values are not computed by the base-field Resolve, so a selector that reads slot "derived"
+// must fail loudly (kind "resolve", item = selector name) and leave no resolved data.
+TEST(CellSelector, ResolveRefusesSelectorsReadingDerivedFields)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({
+      "derived": { "dist_river": { "distance": { "from": "river" } } },
+      "selectors": {
+        "river": { "op": "==", "slot": "terrain", "field": "is_river", "value": true },
+        "near":  { "op": "<=", "slot": "derived", "field": "dist_river", "value": 2 } } })"), w.fields, err)) << err.reason.AsCStr();
+    EXPECT_FALSE(set.Resolve(w.fields, kResolveCells, err));
+    EXPECT_TRUE(err.kind == "resolve");
+    EXPECT_TRUE(err.item == "near");
+    EXPECT_GT(err.reason.Length(), 0u);
+    const int nearSel = set.FindSelector(StringCRC("near"));
+    ASSERT_GE(nearSel, 0);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(nearSel)), 0u);   // nothing resolved (no stale or wrong data)
+}
+
+TEST(CellSelector, ResolvePerfBallparkDebug)
+{
+    constexpr uint32_t kW = 104, kH = 64, kN = kW * kH;
+    static float elev[kN];
+    for (uint32_t i = 0; i < kN; ++i) elev[i] = static_cast<float>(i % 100);
+    WorldCellFields fields;
+    FieldReader fe{}; fe.getFloat = &ArrFloat; fe.ctx = elev;
+    fields.Register(StringCRC("terrain"), StringCRC("elevation"), fe);
+
+    std::string json = R"({"selectors":{)";
+    for (int i = 0; i < CellSelectorSet::kMaxSelectors; ++i)
+        json += std::string(i ? "," : "") + "\"s" + std::to_string(i) + R"(":{"op":"<","slot":"terrain","field":"elevation","value":)" + std::to_string(i * 3) + "}";
+    json += "}}";
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(json), fields, err)) << err.reason.AsCStr();
+    const auto t0 = std::chrono::steady_clock::now();
+    ASSERT_TRUE(set.Resolve(fields, kN, err));
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
+    EXPECT_LT(ms, 1000) << "resolve took " << ms << " ms";
+    EXPECT_EQ(set.ResolvedCount(0), kN);
+    // s1 is elevation < 3: values 0,1,2 of each 100-cycle. 6656 = 66*100 + 56 -> 66*3 + 3 = 201.
+    const int s1 = set.FindSelector(StringCRC("s1"));
+    ASSERT_GE(s1, 0);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(s1)), 201u);
 }
