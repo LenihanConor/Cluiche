@@ -7,6 +7,7 @@ from typing import List
 
 import click
 
+from dia_cli.utils.library_roots import LIBRARY_ROOTS, root_of
 from dia_cli.utils.repo_root import find_repo_root
 
 
@@ -89,6 +90,20 @@ def _generate_test_file(
     return "\n".join(lines)
 
 
+def _namespace_for(root: str, text: str) -> str:
+    """Fully-qualified namespace for the scaffold: the library root plus up to 2 declared namespaces."""
+    declared = _NAMESPACE_RE.findall(text)
+    if root == "Dia":
+        return "::".join(["Dia"] + [n for n in declared if n != "Dia" and "::" not in n][:2])
+    # Nested ``namespace A::B`` declarations arrive as one token; split so the root is not repeated.
+    parts = [p for n in declared for p in n.split("::") if p and p != root]
+    seen: list = []
+    for p in parts:
+        if p not in seen:
+            seen.append(p)
+    return "::".join([root] + seen[:2])
+
+
 @click.command("test-scaffold")
 @click.argument("header_path", type=click.Path(exists=True))
 @click.option("--class", "class_name", default=None, help="Class to generate tests for (auto-detected if omitted).")
@@ -109,8 +124,14 @@ def test_scaffold(header_path: str, class_name: str, output: str, dry_run: bool)
     path = Path(header_path).resolve()
     text = path.read_text(encoding="utf-8")
 
-    namespaces = _NAMESPACE_RE.findall(text)
-    namespace = "::".join(["Dia"] + [n for n in namespaces if n != "Dia" and "::" not in n][:2])
+    rel_to_repo = path.relative_to(repo_root).as_posix()
+    root = root_of(rel_to_repo)
+    if root is None:
+        raise click.ClickException(
+            f"{path.name} is not under a library root ({', '.join(LIBRARY_ROOTS)}); "
+            "test-scaffold supports Dia and Draoi headers."
+        )
+    namespace = _namespace_for(root, text)
 
     classes = _CLASS_RE.findall(text)
     classes = [c for c in classes if not c.startswith("I") or len(c) <= 2]
@@ -124,7 +145,7 @@ def test_scaffold(header_path: str, class_name: str, output: str, dry_run: bool)
 
     methods = _extract_public_methods(text, target_class)
 
-    rel_header = str(path.relative_to(repo_root / "Dia")).replace("\\", "/")
+    rel_header = path.relative_to(repo_root / root).as_posix()
 
     content = _generate_test_file(rel_header, namespace, target_class, methods)
 
@@ -135,11 +156,14 @@ def test_scaffold(header_path: str, class_name: str, output: str, dry_run: bool)
     if output:
         out_path = Path(output)
     else:
-        module_name = path.parent.name
-        if module_name == path.stem:
-            module_name = path.parent.parent.name
         test_dir = repo_root / "Cluiche" / "Tests" / "GoogleTests"
-        subdir = test_dir / module_name
+        if root == "Draoi":
+            subdir = test_dir / "Draoi"  # Draoi tests live flat under GoogleTests/Draoi/
+        else:
+            module_name = path.parent.name
+            if module_name == path.stem:
+                module_name = path.parent.parent.name
+            subdir = test_dir / module_name
         subdir.mkdir(parents=True, exist_ok=True)
         out_path = subdir / f"Test{target_class}.cpp"
 

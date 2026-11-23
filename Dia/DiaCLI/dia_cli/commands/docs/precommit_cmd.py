@@ -69,12 +69,23 @@ def _check_forbidden_patterns(files: List[Path]) -> List[Tuple[str, str, bool]]:
     return issues
 
 
+_CODE_ROOTS = ("Dia", "Draoi", "Cluiche")
+
+
+def _in_code_root(repo_root: Path, f: Path) -> bool:
+    """True when f lives under a code root (Dia/, Draoi/, Cluiche/) of the repo."""
+    try:
+        return f.relative_to(repo_root).parts[0] in _CODE_ROOTS
+    except (ValueError, IndexError):
+        return False
+
+
 def _check_vcxproj_sync(repo_root: Path, files: List[Path]) -> List[str]:
     missing: List[str] = []
     new_cpp_files = [
         f for f in files
         if f.suffix in (".h", ".hpp", ".cpp")
-        and ("Dia" in str(f) or "Cluiche" in str(f))
+        and _in_code_root(repo_root, f)
         and f.exists()
     ]
 

@@ -182,6 +182,7 @@ def _run_cppcheck(ctx) -> None:
         "--suppress=*:Cluiche/out/*",
         "--max-ctu-depth=4",
         str(repo_root / "Dia"),
+        str(repo_root / "Draoi"),
         str(repo_root / "Cluiche"),
     ]
 
@@ -735,14 +736,22 @@ def sln_sync(ctx, dry_run: bool) -> None:
 _PUBLIC_INTERFACES_RE = re.compile(
     r'^(#{2,4}) Public [Ii]nterfaces?(?:\s*\(.*\))?\s*$', re.MULTILINE)
 # App folder (under docs/specs/applications/) -> source dirs (relative to repo root) its symbols may live in.
+# Layer order is Application -> Draoi -> Dia: an application spec may name Draoi or Dia types,
+# a Draoi spec may name Draoi or Dia types, a Dia spec only Dia types.
 _APP_SOURCE_DIRS = {
     "dia": ["Dia"],
-    "cow": ["Cluiche/CoW", "Dia"],
-    "cluichetest": ["Cluiche/CluicheTest", "Dia"],
-    "cluicheeditor": ["Cluiche/CluicheEditor", "Dia"],
-    "cluichegamebaseline": ["Cluiche/CluicheGameBaseline", "Dia"],
-    "googletests": ["Cluiche/Tests", "Dia"],
+    "draoi": ["Draoi", "Dia"],
+    "cow": ["Cluiche/CoW", "Draoi", "Dia"],
+    "cluichetest": ["Cluiche/CluicheTest", "Draoi", "Dia"],
+    "cluicheeditor": ["Cluiche/CluicheEditor", "Draoi", "Dia"],
+    "cluichegamebaseline": ["Cluiche/CluicheGameBaseline", "Draoi", "Dia"],
+    "googletests": ["Cluiche/Tests", "Draoi", "Dia"],
 }
+_DEFAULT_SOURCE_DIRS = ["Dia", "Draoi", "Cluiche"]
+
+
+def _source_dirs_for(app: str) -> List[str]:
+    return _APP_SOURCE_DIRS.get(app, _DEFAULT_SOURCE_DIRS)
 _SKIP_DIRS = {"out", "bin", "obj", "External", "node_modules"}
 _CPP_BLOCK_RE = re.compile(r'```cpp\s*.*?```', re.DOTALL)
 _CLASS_STRUCT_RE = re.compile(r'\b(?:class|struct)\s+([A-Z][A-Za-z0-9_]+)')
@@ -858,7 +867,7 @@ def spec_sync(ctx, verbose: bool) -> None:
     dir_indexes: Dict[str, Set[str]] = {}
 
     def _index_for(app: str) -> Set[str]:
-        dirs = _APP_SOURCE_DIRS.get(app, ["Dia", "Cluiche"])
+        dirs = _source_dirs_for(app)
         merged: Set[str] = set()
         for d in dirs:
             if d not in dir_indexes:

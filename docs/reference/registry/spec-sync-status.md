@@ -50,7 +50,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | t1-worldsiminspector | Unknown | — | — | no Public Interfaces |
 | t2-worlddataeditor | Unknown | — | — | no Public Interfaces |
 | v1-tilerendering | Unknown | — | — | no Public Interfaces |
-| worldstep | Unknown | ✅ | IWorldStepStage, WorldStepChain, WorldStepConfig, WorldStepApplied, IWorldStepListener, WorldStepModule | — |
+| worldstep | Unknown | ✅ | IStepStage, StepChain, StepChainConfig, StepChainApplied, IStepChainListener, WorldStepModule | — |
 
 ## dia
 
@@ -88,7 +88,7 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diabugdetection | Approved | — | — | no Public Interfaces |
 | diacamera2d | Done | ✅ | Camera2D, ViewportTransform, CameraRegistry2D, ICameraBehaviour, CameraBehaviourRegistry | — |
 | diacamera3d | Unknown | — | — | no Public Interfaces |
-| diacellfieldbake | Unknown | ❌ | — | BakeParams, BakeInputs, BakedFields |
+| diacellfieldbake | Unknown | — | — | no Public Interfaces |
 | diacellhistory | Unknown | — | — | no Public Interfaces |
 | diacelllayers | Unknown | — | — | no Public Interfaces |
 | diacli | Unknown | — | — | no Public Interfaces |
@@ -167,10 +167,10 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diastatemachinevisualdebugger | Done | ✅ | StateMachineVisualDebugger, CachedGuardResult | — |
 | diasteering | Done | ⚠️ | SteeringAgent, SteeringPipeline, SteeringSystem | SteeringGroup |
 | diasteeringvisualdebugger | Done | ✅ | SteeringSystem, SteeringVisualDebugger | — |
-| diaterrainmap3d | Unknown | ❌ | — | Channel, TerrainMap |
 | diatest | Unknown | — | — | no Public Interfaces |
 | diatestharness | Unknown | — | — | no Public Interfaces |
 | diathreading | Unknown | — | — | no Public Interfaces |
+| diatoonshading | Unknown | — | — | no Public Interfaces |
 | diatriggerscript | Done | ✅ | TriggerType, SpatialParams, TemporalParams, StateParams, CountParams, ActionDef, TriggerDef, ActionContext, ITriggerActionHandler, TriggerActionRegistry, TriggerScriptModule, TriggerFiredEvent, MockActionHandler, Call | — |
 | diauicef | Unknown | — | — | no Public Interfaces |
 | diauiultralight | Unknown | — | — | no Public Interfaces |
@@ -182,6 +182,14 @@ Limits: this checks class/struct names only. It cannot see prose drift (stale st
 | diawebsocket | Unknown | ⚠️ | MessageType, Message, Server, ConnectionState, Client | QueuedMessage |
 | render-backend | Unknown | — | — | no Public Interfaces |
 | stagecatalogue | Unknown | — | — | no Public Interfaces |
+
+## draoi
+
+| Spec | Spec Status | Sync | Symbols Found | Missing |
+|------|-------------|------|---------------|---------|
+| draoi | Unknown | — | — | no Public Interfaces |
+| draoihexworldrelief | Unknown | — | — | no Public Interfaces |
+| draoihexworldrender3d | Unknown | ❌ | — | Channel, HexWorldMap |
 
 ## example-app
 
