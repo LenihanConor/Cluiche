@@ -241,6 +241,10 @@
     <ProjectReference Include="..\..\Draoi\DraoiHexWorldTerrain\DraoiHexWorldTerrain.vcxproj">
       <Project>{7E2D4F63-AB58-4E90-C3F1-6D8B2A4E0F95}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Draoi\DraoiGameSpeed\DraoiGameSpeed.vcxproj">
+      <Project>{9A3E5C74-BC69-4FA1-D402-7E9C3B5F1A06}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaDeferredStep\DiaDeferredStep.vcxproj">
       <Project>{7D4C2E91-8B2A-4C5F-B8D3-F9E6C5A4B9D2}</Project>
     </ProjectReference>

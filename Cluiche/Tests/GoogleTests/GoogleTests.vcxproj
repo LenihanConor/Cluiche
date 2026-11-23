@@ -1366,6 +1366,10 @@
       <Project>{7E2D4F63-AB58-4E90-C3F1-6D8B2A4E0F95}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Draoi\DraoiGameSpeed\DraoiGameSpeed.vcxproj">
+      <Project>{9A3E5C74-BC69-4FA1-D402-7E9C3B5F1A06}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaCellHistory\DiaCellHistory.vcxproj">
       <Project>{4C0FE742-1308-4AF7-B068-FC624891E7A6}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
