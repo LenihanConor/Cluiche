@@ -761,6 +761,22 @@ TEST_F(WorldSimSaveCodecTest, StageValidatePendingUsesTheNotedCommittedRecordAnd
     EXPECT_FALSE(stage.ValidatePending(badCtx));
 }
 
+TEST_F(WorldSimSaveCodecTest, StageValidatePendingRejectsWhenTheNotedCommittedRecordIsNotReady)
+{
+    const RecordSpec spec = MakeSpec();
+    stage.SetRecordSpec(&spec);
+    Json::Value notReady(Json::objectValue);
+    Draoi::HexWorld::WriteNotReady(notReady);
+    stage.NoteCommittedRecord(notReady);
+    const Json::Value blob = ValidBlob();
+    Dia::SaveGame::LoadContext ctx(blob);
+    EXPECT_FALSE(stage.ValidatePending(ctx)) << "a ready:false record cannot decode a pending blob";
+    EXPECT_FALSE(stage.HasActive());
+    // A later ready record makes the same blob valid again.
+    stage.NoteCommittedRecord(ReadyRecord(42));
+    EXPECT_TRUE(stage.ValidatePending(ctx));
+}
+
 TEST_F(WorldSimSaveCodecTest, PendingBlobRoundTripsAStepInFlight)
 {
     const RecordSpec spec = MakeSpec();

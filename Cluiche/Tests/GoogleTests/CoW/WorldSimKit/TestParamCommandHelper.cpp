@@ -691,6 +691,65 @@ TEST_F(ParamCommandHelperTest, EntryRegistersAsACommandWithHelpOnTheRealHost)
     EXPECT_TRUE(entry.handler(args)["success"].asBool());
 }
 
+TEST_F(ParamCommandHelperSaveDefaultsTest, SetOnAMapKeyQueuesAppliesAndRangeChecksTheMapValue)
+{
+    std::vector<ParamMutation> q;
+    helper.SetMutationEnqueue([&q](const ParamMutation& m) { q.push_back(m); return true; });
+    helper.SetDayProvider([]() { ParamDayInfo d; d.effectiveDay = 7; d.deferLag = 0; return d; });
+    auto set = [this](const char* key, const Json::Value& v)
+    {
+        Json::Value args(Json::objectValue);
+        args["action"] = "set"; args["key"] = key; args["value"] = v;
+        return helper.Handle(args);
+    };
+    const Json::Value ok = set("yield.Desert", Json::Value(0.75));
+    ASSERT_TRUE(ok["success"].asBool()) << ok.toStyledString();
+    EXPECT_EQ("yield.Desert", ok["key"].asString());
+    ASSERT_EQ(1u, q.size());
+    Json::Value get(Json::objectValue);
+    get["action"] = "get"; get["key"] = "yield.Desert";
+    EXPECT_DOUBLE_EQ(0.5, helper.Handle(get)["value"].asDouble()) << "not visible before Capture";
+    helper.ApplyMutation(q[0]);
+    EXPECT_DOUBLE_EQ(0.75, helper.Handle(get)["value"].asDouble());
+    // Out of range and unknown map key: named, nothing queued.
+    const Json::Value hi = set("yield.Desert", Json::Value(2.0));
+    EXPECT_FALSE(hi["success"].asBool());
+    EXPECT_NE(std::string::npos, hi["error"].asString().find("yield.Desert"));
+    const Json::Value bad = set("yield.Swamp", Json::Value(0.5));
+    EXPECT_FALSE(bad["success"].asBool());
+    EXPECT_NE(std::string::npos, bad["error"].asString().find("yield.Swamp"));
+    EXPECT_EQ(1u, q.size());
+}
+
+TEST_F(ParamCommandHelperTest, TwoStagesOnOneSimCommandSetRegisterTogetherAndRollBackTogether)
+{
+    Dia::Attribute::ParameterFile hydroFile;
+    const std::string text = MakeSidecarText({ SidecarFloat("flow", 0, 1, 0.5) }, nullptr, "test.params");
+    Dia::Attribute::ParamError err;
+    ASSERT_TRUE(hydroFile.Load(text.c_str(), "hydro.params.json", nullptr, err));
+    ParamCommandHelper hydro(World::kHydro, hydroFile);
+    SimCommandEntry entries[2] = { helper.BuildEntry(), hydro.BuildEntry() };
+    EXPECT_STRNE(entries[0].name, entries[1].name);
+
+    FakeSimCommandHost host;
+    SimCommandSet set;
+    host.failOnNth = 2;
+    EXPECT_FALSE(set.RegisterAll(host, entries, 2, "TwoStageTest"));
+    EXPECT_EQ(1u, host.unregCount);
+    EXPECT_EQ(Dia::Core::StringCRC("cow.weather.params"), host.unregNames[0]);
+    EXPECT_EQ(0u, set.Count());
+
+    host.failOnNth = 0;
+    EXPECT_TRUE(set.RegisterAll(host, entries, 2, "TwoStageTest"));
+    EXPECT_EQ(2u, set.Count());
+    EXPECT_EQ(Dia::Core::StringCRC("cow.hydro.params"), host.regNames[host.regCount - 1]);
+    // Each handler talks to its own file.
+    Json::Value args(Json::objectValue);
+    args["action"] = "get"; args["key"] = "flow";
+    EXPECT_TRUE(entries[1].handler(args)["success"].asBool());
+    EXPECT_FALSE(entries[0].handler(args)["success"].asBool());
+}
+
 }  // namespace Testing
 }  // namespace Debug
 }  // namespace CoW
