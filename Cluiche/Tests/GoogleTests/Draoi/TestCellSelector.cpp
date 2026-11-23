@@ -719,3 +719,185 @@ TEST(CellSelector, DerivedUpstreamMatchingCellsAreStepZero)
     const float expected[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 1 };
     EXPECT_TRUE(DerivedEquals(set, "up", expected, 9));
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// D12 edge tests.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// `all` as a derived source: every cell is a source, so distance is 0 everywhere and every cell is upstream of itself.
+TEST(CellSelector, DerivedFromAllGivesZeroDistanceAndFullUpstream)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({
+      "derived": { "d": { "distance": { "from": "all" } }, "u": { "upstream": { "of": "all", "maxSteps": 1 } } },
+      "selectors": {
+        "here":   { "op": "<=", "slot": "derived", "field": "d", "value": 0 },
+        "inside": { "op": ">=", "slot": "derived", "field": "u", "value": 1 } } })"), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err)) << err.item.AsCStr() << ": " << err.reason.AsCStr();
+
+    float zero[kDistCells] = {}, one[kDistCells];
+    for (float& f : one) f = 1.0f;
+    EXPECT_TRUE(DerivedEquals(set, "d", zero, kDistCells));
+    EXPECT_TRUE(DerivedEquals(set, "u", one, kDistCells));
+    std::initializer_list<uint32_t> everyCell = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+    EXPECT_TRUE(ListEquals(set, "all", everyCell));
+    EXPECT_TRUE(ListEquals(set, "here", everyCell));
+    EXPECT_TRUE(ListEquals(set, "inside", everyCell));
+}
+
+// An empty source selector: selectors using the derived fields resolve without failure. distance is +inf (so `>` tests
+// select every cell, `<=` tests none) and upstream is 0 (so `== 0` selects every cell).
+TEST(CellSelector, EmptyDerivedSourceSelectorsResolveWithoutCrash)
+{
+    DistWorld w({});   // no river cells
+    const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({
+      "derived": { "d": { "distance": { "from": "river" } }, "u": { "upstream": { "of": "river", "maxSteps": 3 } } },
+      "selectors": {
+        "river":     { "op": "==", "slot": "terrain", "field": "is_river", "value": true },
+        "far":       { "op": ">",  "slot": "derived", "field": "d", "value": 1000 },
+        "unreached": { "op": "==", "slot": "derived", "field": "u", "value": 0 },
+        "reached":   { "op": ">=", "slot": "derived", "field": "u", "value": 1 } } })"), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err)) << err.item.AsCStr() << ": " << err.reason.AsCStr();
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("river")))), 0u);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("far")))), kDistCells);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("unreached")))), kDistCells);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("reached")))), 0u);
+}
+
+// WorldCellFields::Clear between two resolves: re-registered data replaces the old data.
+TEST(CellSelector, ClearAndReRegisterBetweenResolvesReflectsNewData)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err));
+    EXPECT_TRUE(ListEquals(set, "low", { 0, 1, 2, 3, 4 }));
+
+    static float shifted[kResolveCells];
+    for (uint32_t i = 0; i < kResolveCells; ++i) shifted[i] = static_cast<float>(i) - 10.0f;   // elevation < 5 -> 0..14
+    static bool noRiver[kResolveCells] = {};
+    noRiver[9] = true;
+    w.fields.Clear();
+    FieldReader fe{}; fe.getFloat = &ArrFloat; fe.ctx = shifted;
+    FieldReader fr{}; fr.getBool = &ArrBool; fr.ctx = noRiver;
+    FieldReader fc{}; fc.getBool = &ArrBool; fc.ctx = w.cold;
+    w.fields.Register(StringCRC("terrain"), StringCRC("elevation"), fe);
+    w.fields.Register(StringCRC("terrain"), StringCRC("is_river"), fr);
+    w.fields.Register(StringCRC("terrain"), StringCRC("flow_direction"), F());
+    w.fields.Register(StringCRC("biome"), StringCRC("tag.cold"), fc);
+
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err)) << err.reason.AsCStr();
+    EXPECT_TRUE(ListEquals(set, "low", { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 }));
+    EXPECT_TRUE(ListEquals(set, "river", { 9 }));
+    EXPECT_TRUE(ListEquals(set, "low_and_river", { 9 }));
+    EXPECT_TRUE(ListEquals(set, "everything", { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 }));
+}
+
+// A field removed after Load (Clear without re-register): the base-field Resolve does not re-validate, so it must not
+// crash or read garbage. Missing pairs read 0 / false (WorldCellFields contract), so the result is deterministic.
+TEST(CellSelector, FieldsRemovedAfterLoadResolveAgainstZeroValues)
+{
+    SmallWorld w;
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kResolveBlock), w.fields, err));
+    w.fields.Clear();
+    ASSERT_TRUE(set.Resolve(w.fields, kResolveCells, err)) << err.reason.AsCStr();
+    // elevation reads 0: low (< 5) and everything (>= 0) select every cell; is_river reads false: river selects none.
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("low")))), kResolveCells);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("everything")))), kResolveCells);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("river")))), 0u);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("none")))), 0u);
+    EXPECT_EQ(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("not_cold")))), kResolveCells);
+
+    // Re-registering and resolving again recovers the real answer.
+    SmallWorld fresh;
+    ASSERT_TRUE(set.Resolve(fresh.fields, kResolveCells, err));
+    EXPECT_TRUE(ListEquals(set, "river", { 2, 3, 8, 14, 15, 20 }));
+}
+
+// With topology: an upstream field needs terrain.flow_direction. Removed after Load -> a clean "resolve" failure naming the
+// derived field, with no stale results (not UB, not a half-filled pool).
+TEST(CellSelector, UpstreamResolveAfterFlowFieldRemovedFailsCleanly)
+{
+    TreeWorld w(0);
+    const HexTopology topo(3, 3);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({"derived":{"up":{"upstream":{"of":"m","maxSteps":3}}},
+      "selectors":{"m":{"op":"==","slot":"terrain","field":"is_river","value":true},
+                   "in":{"op":">=","slot":"derived","field":"up","value":1}}})"), w.fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    EXPECT_GT(set.ResolvedCount(static_cast<uint32_t>(set.FindSelector(StringCRC("in")))), 0u);
+
+    w.fields.Clear();
+    FieldReader fr{}; fr.getBool = &ArrBool; fr.ctx = w.match;
+    w.fields.Register(StringCRC("terrain"), StringCRC("is_river"), fr);   // flow_direction deliberately not re-registered
+    EXPECT_FALSE(set.Resolve(w.fields, topo, err));
+    EXPECT_TRUE(err.kind == "resolve");
+    EXPECT_TRUE(err.item == "up");
+    EXPECT_GT(err.reason.Length(), 0u);
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s) EXPECT_EQ(set.ResolvedCount(s), 0u) << set.SelectorName(s);
+    EXPECT_EQ(set.DerivedValues(0), nullptr);
+}
+
+// A successful Load discards earlier results (counts reset, derived values gone).
+TEST(CellSelector, LoadAfterResolveClearsResolvedData)
+{
+    DistWorld w; const HexTopology topo(6, 4);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    EXPECT_GT(set.ResolvedCount(0), 0u);
+    ASSERT_TRUE(set.Load(Parse(kDistBlock), w.fields, err));
+    for (uint32_t s = 0; s < set.SelectorCount(); ++s) EXPECT_EQ(set.ResolvedCount(s), 0u) << set.SelectorName(s);
+    EXPECT_EQ(set.DerivedValues(0), nullptr);
+    ASSERT_TRUE(set.Resolve(w.fields, topo, err));
+    EXPECT_TRUE(ListEquals(set, "river", { 0, 23 }));
+}
+
+// NaN / infinity in float fields: ordered comparisons and == exclude the cell; != includes it (IEEE; documented).
+TEST(CellSelector, NaNAndInfinityInFloatFieldsFollowIeee)
+{
+    constexpr uint32_t n = 6;
+    static float elev[n] = { 1.0f, std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+                             -std::numeric_limits<float>::infinity(), 3.0f, 9.0f };
+    WorldCellFields fields;
+    FieldReader fe{}; fe.getFloat = &ArrFloat; fe.ctx = elev;
+    fields.Register(StringCRC("terrain"), StringCRC("elevation"), fe);
+    CellSelectorSet set; SelectorError err;
+    ASSERT_TRUE(set.Load(Parse(R"({"selectors":{
+      "lt":  { "op": "<",  "slot": "terrain", "field": "elevation", "value": 5 },
+      "ge":  { "op": ">=", "slot": "terrain", "field": "elevation", "value": 5 },
+      "eq":  { "op": "==", "slot": "terrain", "field": "elevation", "value": 3 },
+      "ne":  { "op": "!=", "slot": "terrain", "field": "elevation", "value": 3 },
+      "band": { "op": "and", "conditions": [
+          { "op": ">=", "slot": "terrain", "field": "elevation", "value": 0 },
+          { "op": "<=", "slot": "terrain", "field": "elevation", "value": 10 } ] } }})"), fields, err)) << err.reason.AsCStr();
+    ASSERT_TRUE(set.Resolve(fields, n, err));
+    EXPECT_TRUE(ListEquals(set, "lt", { 0, 3, 4 }));
+    EXPECT_TRUE(ListEquals(set, "ge", { 2, 5 }));
+    EXPECT_TRUE(ListEquals(set, "eq", { 4 }));
+    EXPECT_TRUE(ListEquals(set, "ne", { 0, 1, 2, 3, 5 }));
+    EXPECT_TRUE(ListEquals(set, "band", { 0, 4, 5 }));
+    EXPECT_TRUE(ListEquals(set, "all", { 0, 1, 2, 3, 4, 5 }));
+}
+
+// NaN / out-of-range flow_direction means "no outflow": the cell never drains into anything, nothing crashes.
+TEST(CellSelector, UpstreamTreatsNaNInfNegativeAndTooLargeFlowAsNoOutflow)
+{
+    TreeWorld w(0);   // match cell 0; normal tree: everything drains to 0 eventually
+    const float bad[4] = { std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), -1.0f, 5.6f };
+    const HexTopology topo(3, 3);
+    for (float b : bad)
+    {
+        for (uint32_t c = 1; c < 9; ++c) w.flow[c] = b;   // every non-sink cell has no outflow
+        CellSelectorSet set; SelectorError err;
+        ASSERT_TRUE(set.Load(Parse(R"({"derived":{"up":{"upstream":{"of":"m","maxSteps":6}}},
+          "selectors":{"m":{"op":"==","slot":"terrain","field":"is_river","value":true}}})"), w.fields, err));
+        ASSERT_TRUE(set.Resolve(w.fields, topo, err)) << b;
+        const float expected[9] = { 1, 0, 0, 0, 0, 0, 0, 0, 0 };   // only the source cell itself
+        EXPECT_TRUE(DerivedEquals(set, "up", expected, 9)) << b;
+    }
+}

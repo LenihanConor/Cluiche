@@ -126,6 +126,8 @@ bool Validate(const Json::Value& root, const SavedField* fields, uint32_t fieldC
         return Fail(err, "step_day", "must be an integer");
     if (day.asDouble() < 0.0)
         return Fail(err, "step_day", "must not be negative");
+    if (day.asDouble() > 2147483647.0)
+        return Fail(err, "step_day", "exceeds the int32 range written by WriteHeader");
 
     for (uint32_t f = 0; f < fieldCount; ++f)
     {

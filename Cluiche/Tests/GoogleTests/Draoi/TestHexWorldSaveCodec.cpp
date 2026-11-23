@@ -539,3 +539,331 @@ TEST_F(HexWorldSaveCodecPalette, MalformedPaletteRejectedNamingField)
     EXPECT_STREQ("biome", err.field.AsCStr());
     EXPECT_GT(std::strlen(err.reason.AsCStr()), 0u);
 }
+
+// ---- D12 edge tests ----
+
+namespace
+{
+    // Builds a record like kGood but with a caller-chosen header, so one key can be broken at a time.
+    Json::Value GoodRecord()
+    {
+        Json::Value v;
+        EXPECT_TRUE(Parse(kGood, v));
+        return v;
+    }
+}
+
+TEST(HexWorldSaveCodec, CellCountCapBoundaryAcceptsMaxRejectsOneOver)
+{
+    // 65,536 cells (65536 x 1) accepted; 65,537 (1 x 65537) rejected naming cell_count, with full-length arrays present so
+    // only the cap can be the cause.
+    const SavedField one[] = { { "kind", SavedKind::U8, SavedScope::PerCell, 0.0, 255.0 } };
+    for (uint32_t cells : { kMaxSaveCells, kMaxSaveCells + 1u })
+    {
+        Json::Value v;
+        v["ready"] = true; v["width"] = Json::UInt(cells); v["height"] = 1; v["cell_count"] = Json::UInt(cells); v["step_day"] = 0;
+        v["params_hash"] = Json::UInt64(1); v["basin_count"] = 0; v["world_hash"] = Json::UInt64(2);
+        v["kind"] = Json::Value(Json::arrayValue);
+        for (uint32_t i = 0; i < cells; ++i) v["kind"].append(0.0);
+        SaveError err;
+        const bool ok = Validate(v, one, 1, MakeCaps(), err);
+        if (cells == kMaxSaveCells)
+            EXPECT_TRUE(ok) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+        else
+        {
+            EXPECT_FALSE(ok);
+            EXPECT_STREQ("cell_count", err.field.AsCStr());
+        }
+    }
+}
+
+TEST(HexWorldSaveCodec, HugeWidthHeightProductDoesNotOverflowIntoAcceptance)
+{
+    Json::Value v = GoodRecord();
+    v["width"] = Json::UInt(0xFFFFFFFFu);
+    v["height"] = Json::UInt(0xFFFFFFFFu);   // product needs 64 bits; cell_count is 2
+    SaveError err;
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("cell_count", err.field.AsCStr());
+}
+
+TEST(HexWorldSaveCodec, MalformedRootAndReadyRejectedNamingReady)
+{
+    SaveError err;
+    Json::Value arr(Json::arrayValue);
+    EXPECT_FALSE(Validate(arr, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("ready", err.field.AsCStr());
+    Json::Value nul;
+    EXPECT_FALSE(Validate(nul, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("ready", err.field.AsCStr());
+    Json::Value v = GoodRecord();
+    v["ready"] = 1;   // number, not a boolean
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("ready", err.field.AsCStr());
+    v["ready"] = "true";
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("ready", err.field.AsCStr());
+}
+
+TEST(HexWorldSaveCodec, HeaderIntegerKeysRejectWrongTypesNamingKey)
+{
+    const char* keys[] = { "width", "height", "cell_count", "params_hash", "basin_count", "world_hash" };
+    for (const char* key : keys)
+    {
+        const Json::Value bad[3] = { Json::Value(-1), Json::Value(1.5), Json::Value("7") };
+        for (const Json::Value& b : bad)
+        {
+            Json::Value v = GoodRecord();
+            v[key] = b;
+            SaveError err;
+            EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << key << " " << Serialize(b);
+            EXPECT_STREQ(key, err.field.AsCStr()) << key << " " << Serialize(b);
+        }
+    }
+}
+
+TEST(HexWorldSaveCodec, StepDayBoundaryAndWrongTypes)
+{
+    SaveError err;
+    Json::Value v = GoodRecord();
+    v["step_day"] = 0;
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << err.reason.AsCStr();   // zero is not negative
+    v["step_day"] = Json::Value(Json::UInt64(2147483647u));
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << err.reason.AsCStr();   // INT32_MAX is the largest WriteHeader can write
+    v["step_day"] = Json::Value(Json::UInt64(2147483648u));
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("step_day", err.field.AsCStr());
+    v["step_day"] = 1.5;
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("step_day", err.field.AsCStr());
+    v["step_day"] = "5";
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("step_day", err.field.AsCStr());
+    v["step_day"] = true;
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("step_day", err.field.AsCStr());
+}
+
+TEST(HexWorldSaveCodec, BasinCapBoundary)
+{
+    // maxBasins = 8: exactly 8 accepted (8 per-basin entries), 9 rejected naming basin_count.
+    SaveError err;
+    Json::Value v = GoodRecord();
+    v["basin_count"] = 8;
+    v["idx"] = Json::Value(Json::arrayValue);
+    for (int i = 0; i < 8; ++i) v["idx"].append(i);
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+
+    // Zero basins with an empty per-basin array is valid.
+    v["basin_count"] = 0;
+    v["idx"] = Json::Value(Json::arrayValue);
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+
+    // The cap is the caller's: the same 9-basin record passes under maxBasins = 9.
+    v["basin_count"] = 9;
+    v["idx"] = Json::Value(Json::arrayValue);
+    for (int i = 0; i < 9; ++i) v["idx"].append(i);
+    EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("basin_count", err.field.AsCStr());
+    Caps nine; nine.maxBasins = 9;
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, nine, err));
+}
+
+TEST(HexWorldSaveCodec, NonFiniteRejectedInIntegerKindFields)
+{
+    const double bad[3] = { std::numeric_limits<double>::quiet_NaN(),
+                            std::numeric_limits<double>::infinity(),
+                            -std::numeric_limits<double>::infinity() };
+    for (const char* name : { "kind", "idx", "dir" })
+    {
+        for (double b : bad)
+        {
+            Json::Value v = GoodRecord();
+            v[name][0] = Json::Value(b);
+            SaveError err;
+            EXPECT_FALSE(Validate(v, kFields, kFieldCount, MakeCaps(), err)) << name;
+            EXPECT_STREQ(name, err.field.AsCStr());
+        }
+    }
+}
+
+TEST(HexWorldSaveCodec, IntegerKindExactBoundsAcceptedAndRangeIntersectsKind)
+{
+    SaveError err;
+    Json::Value v = GoodRecord();   // kind [0,255] and idx [..., 65535] already sit on the kind maxima
+    EXPECT_TRUE(Validate(v, kFields, kFieldCount, MakeCaps(), err));
+    // A caller range wider than the kind still rejects values beyond the kind (kind and range both apply).
+    SavedField wide[kFieldCount];
+    for (uint32_t i = 0; i < kFieldCount; ++i) wide[i] = kFields[i];
+    wide[1].max = 1000.0;
+    v["kind"][1] = 256;
+    EXPECT_FALSE(Validate(v, wide, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("kind", err.field.AsCStr());
+    // A caller range narrower than the kind rejects values inside the kind.
+    wide[1].max = 100.0;
+    v["kind"][1] = 101;
+    EXPECT_FALSE(Validate(v, wide, kFieldCount, MakeCaps(), err));
+    EXPECT_STREQ("kind", err.field.AsCStr());
+    v["kind"][1] = 100;
+    EXPECT_TRUE(Validate(v, wide, kFieldCount, MakeCaps(), err));
+}
+
+TEST(HexWorldSaveCodec, ZeroDeclaredFieldsValidatesHeaderOnly)
+{
+    Json::Value v = GoodRecord();
+    SaveError err;
+    EXPECT_TRUE(Validate(v, nullptr, 0, MakeCaps(), err));
+}
+
+// ---- Biome palette edge cases (D12) ----
+
+TEST_F(HexWorldSaveCodecPalette, DuplicatePaletteIdsMapEachEntryIndependentlyToTheSameBiome)
+{
+    // Defined behaviour: the palette is a position -> id table; Read remaps every position through the registry, so two
+    // positions naming the same id both resolve to that id's index (no error, no dedupe, no extra warning).
+    // Write never produces duplicates (registry ids are unique); a hand-edited or merged record may.
+    Json::Value root = WrittenUnderA();
+    root["biome_palette"][1] = "Biome.Ocean";   // palette: Ocean, Ocean, Grassland, Scrub
+    const unsigned stored[5] = { 0, 1, 2, 3, 1 };
+    for (uint32_t i = 0; i < 5; ++i) root["biome"][i] = stored[i];
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, a, out, 5, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    const char* ids[5] = { "Biome.Ocean", "Biome.Ocean", "Biome.Grassland", "Biome.Scrub", "Biome.Ocean" };
+    for (int i = 0; i < 5; ++i) { EXPECT_STREQ(ids[i], a.IdText(out[i])); }
+    EXPECT_EQ(out[0], out[1]);
+    Flush();
+    EXPECT_EQ(0u, sink.warnings);
+}
+
+TEST_F(HexWorldSaveCodecPalette, DuplicateUnknownPaletteIdWarnsOnce)
+{
+    Json::Value root = WrittenUnderA();
+    root["biome_palette"][0] = "Biome.Gone";
+    root["biome_palette"][1] = "Biome.Gone";   // two positions, one distinct unknown id
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, a, out, 5, err));
+    EXPECT_EQ(out[1], a.Role(BiomeRole::Fallback));   // stored 0 (Gone) -> fallback
+    Flush();
+    EXPECT_EQ(1u, sink.warnings);
+}
+
+TEST_F(HexWorldSaveCodecPalette, ZeroCellsWriteAndReadRoundTrip)
+{
+    Json::Value root;
+    WriteBiomeCells(root, a, nullptr, 0);
+    EXPECT_EQ(4u, root["biome_palette"].size());
+    EXPECT_TRUE(root["biome"].isArray());
+    EXPECT_EQ(0u, root["biome"].size());
+    Json::Value back;
+    ASSERT_TRUE(Parse(Serialize(root).c_str(), back));
+    SaveError err;
+    EXPECT_TRUE(ReadBiomeCells(back, a, nullptr, 0, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+    // Cells expected but none stored: rejected naming biome.
+    BiomeIndex out[1] = {};
+    EXPECT_FALSE(ReadBiomeCells(back, a, out, 1, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+}
+
+TEST_F(HexWorldSaveCodecPalette, EmptyPaletteAcceptsOnlyZeroCells)
+{
+    Json::Value root;
+    root["biome_palette"] = Json::Value(Json::arrayValue);
+    root["biome"] = Json::Value(Json::arrayValue);
+    SaveError err;
+    EXPECT_TRUE(ReadBiomeCells(root, a, nullptr, 0, err));
+    root["biome"].append(0);   // index 0 is outside an empty palette
+    BiomeIndex out[1] = {};
+    EXPECT_FALSE(ReadBiomeCells(root, a, out, 1, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+}
+
+TEST_F(HexWorldSaveCodecPalette, PaletteSizeBoundaryAcceptsMaxRejectsOneOver)
+{
+    const uint32_t maxPalette = BiomeRegistry::kMaxBiomes;
+    for (uint32_t size : { maxPalette, maxPalette + 1u })
+    {
+        Json::Value root;
+        root["biome_palette"] = Json::Value(Json::arrayValue);
+        for (uint32_t i = 0; i < size; ++i) root["biome_palette"].append("Biome.Ocean");
+        root["biome"] = Json::Value(Json::arrayValue);
+        root["biome"].append(size - 1);
+        BiomeIndex out[1] = {};
+        SaveError err;
+        const bool ok = ReadBiomeCells(root, a, out, 1, err);
+        if (size == maxPalette)
+        {
+            EXPECT_TRUE(ok) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+            EXPECT_STREQ("Biome.Ocean", a.IdText(out[0]));
+        }
+        else
+        {
+            EXPECT_FALSE(ok);
+            EXPECT_STREQ("biome_palette", err.field.AsCStr());
+        }
+    }
+}
+
+TEST_F(HexWorldSaveCodecPalette, NegativeOrHugeCellIndexRejected)
+{
+    SaveError err;
+    BiomeIndex out[5] = {};
+    Json::Value r = WrittenUnderA();
+    r["biome"][2] = -1;
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    r = WrittenUnderA();
+    r["biome"][2] = Json::UInt64(4294967296ull);   // does not fit uint32
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    r = WrittenUnderA();
+    r["biome"][2] = "1";
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    r = WrittenUnderA();
+    r["biome"] = 5;   // not an array
+    EXPECT_FALSE(ReadBiomeCells(r, a, out, 5, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+    EXPECT_FALSE(ReadBiomeCells(Json::Value(Json::arrayValue), a, out, 5, err));   // root not an object
+    EXPECT_STREQ("biome_palette", err.field.AsCStr());
+}
+
+TEST_F(HexWorldSaveCodecPalette, WritingAnOutOfPaletteIndexIsCaughtOnRead)
+{
+    // Write does not validate cells; an index past the palette (here kNoBiome) is rejected cleanly on Read.
+    const BiomeIndex cells[2] = { 0, kNoBiome };
+    Json::Value root;
+    WriteBiomeCells(root, a, cells, 2);
+    Json::Value back;
+    ASSERT_TRUE(Parse(Serialize(root).c_str(), back));
+    BiomeIndex out[2] = {};
+    SaveError err;
+    EXPECT_FALSE(ReadBiomeCells(back, a, out, 2, err));
+    EXPECT_STREQ("biome", err.field.AsCStr());
+}
+
+TEST_F(HexWorldSaveCodecPalette, MissingStoredHashWithCleanRemapLogsOneInfoAndReportsZero)
+{
+    Json::Value root = WrittenUnderA();
+    root.removeMember("biome_palette_hash");
+    EXPECT_EQ(0ull, StoredBiomeHash(root));
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, a, out, 5, err));
+    Flush();
+    EXPECT_EQ(1u, sink.infos);   // absent hash (0) differs from the registry hash
+    EXPECT_EQ(0u, sink.warnings);
+    EXPECT_EQ(0ull, StoredBiomeHash(Json::Value(Json::arrayValue)));   // non-object root
+}
+
+TEST_F(HexWorldSaveCodecPalette, HashMismatchWithUnknownIdLogsWarningButNoInfo)
+{
+    Json::Value root = WrittenUnderA();
+    BiomeIndex out[5] = {};
+    SaveError err;
+    ASSERT_TRUE(ReadBiomeCells(root, d, out, 5, err));   // D lacks Scrub: not a clean remap
+    Flush();
+    EXPECT_EQ(0u, sink.infos);
+    EXPECT_EQ(1u, sink.warnings);
+}

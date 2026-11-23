@@ -432,3 +432,56 @@ TEST(FieldContributions, TerrainFieldsReadZeroBeforeAnyWorldExists)
     fields.SetCell(999999);
     EXPECT_EQ(fields.GetFloat(Slot("terrain"), StringCRC("region")), 0.0f);
 }
+
+// ---- D12 edge tests ----
+
+TEST(FieldContributions, BiomeReadsOutOfRangeCellAndUnassignedBiomeAsZeroAndFalse)
+{
+    BiomeRegistry reg;
+    RegistryError err;
+    ASSERT_TRUE(reg.LoadFromText(kBiomeFixture, Testing::ShippedStratumTable(), err));
+    WorldStructure world;
+    world.Resize({ 2, 1 });
+    world.Cells()[0].biome = 2;          // Grassland: land
+    world.Cells()[1].biome = kNoBiome;   // unassigned
+    BiomeFieldSource source(reg, world);
+    WorldCellFields fields;
+    RegisterBiomeFields(fields, source);
+
+    // Unassigned cell: index reads 0 (indistinguishable from biome 0 by value, documented), every tag false.
+    fields.SetCell(1);
+    EXPECT_EQ(fields.GetFloat(Slot("biome"), StringCRC("index")), 0.0f);
+    for (const char* tag : kTags)
+    {
+        const StringCRC field((std::string("tag.") + tag).c_str());
+        EXPECT_FALSE(fields.GetBool(Slot("biome"), field)) << tag;
+        EXPECT_EQ(fields.GetFloat(Slot("biome"), field), 0.0f) << tag;
+    }
+    // Cell beyond the world (and uint32 max): no read past the cell array.
+    for (uint32_t c : { 2u, 1000u, 0xFFFFFFFFu })
+    {
+        fields.SetCell(c);
+        EXPECT_EQ(fields.GetFloat(Slot("biome"), StringCRC("index")), 0.0f) << c;
+        EXPECT_FALSE(fields.GetBool(Slot("biome"), StringCRC("tag.land"))) << c;
+    }
+    // A selector over the world selects only the assigned land cell.
+    EXPECT_EQ(EvalSet(fields, R"({"op":"==","slot":"biome","field":"tag.land","value":true})", 2), (std::vector<uint32_t>{ 0 }));
+}
+
+TEST(FieldContributions, BiomeRegisterTwiceIsIdempotentAndEmptyWorldIsSafe)
+{
+    BiomeRegistry reg;
+    RegistryError err;
+    ASSERT_TRUE(reg.LoadFromText(kBiomeFixture, Testing::ShippedStratumTable(), err));
+    WorldStructure world;   // never resized: zero cells
+    BiomeFieldSource source(reg, world);
+    WorldCellFields fields;
+    RegisterBiomeFields(fields, source);
+    RegisterBiomeFields(fields, source);   // last registration wins: no duplicates, no capacity growth, no assert
+    EXPECT_TRUE(fields.Has(Slot("biome"), StringCRC("index")));
+    EXPECT_TRUE(fields.Has(Slot("biome"), StringCRC("tag.land")));
+    fields.SetCell(0);
+    EXPECT_EQ(fields.GetFloat(Slot("biome"), StringCRC("index")), 0.0f);
+    EXPECT_FALSE(fields.GetBool(Slot("biome"), StringCRC("tag.water")));
+    EXPECT_TRUE(EvalSet(fields, R"({"op":"==","slot":"biome","field":"tag.land","value":true})", 0).empty());
+}
