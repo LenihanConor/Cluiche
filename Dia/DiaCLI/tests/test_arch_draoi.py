@@ -48,6 +48,40 @@ def test_draoi_including_dia_is_allowed(tmp_path):
     assert violations == [] and code == 0
 
 
+def _app(repo: Path, name: str) -> None:
+    (repo / "Cluiche" / name).mkdir(parents=True, exist_ok=True)
+
+
+def test_draoi_including_application_is_boundary_violation(tmp_path):
+    _app(tmp_path, "CoW")
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x", "draoi", '#include <CoW/Shared/Foo.h>\n')
+    violations, _, code = run_arch_check(tmp_path)
+    assert code == 1
+    assert [(v.from_module, v.to_module, v.kind, v.lineno) for v in violations] == [
+        ("draoi.x", "application:CoW", "boundary", 1)]
+
+
+def test_cluiche_prefixed_application_include_is_caught(tmp_path):
+    _app(tmp_path, "CluicheTest")
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x", "draoi", '#include "Cluiche/CluicheTest/Foo.h"\n')
+    violations, _, _ = run_arch_check(tmp_path)
+    assert [v.to_module for v in violations] == ["application:CluicheTest"]
+
+
+def test_dia_including_application_is_boundary_violation(tmp_path):
+    _app(tmp_path, "CoW")
+    _module(tmp_path, "Dia", "DiaCore", "dia.core", "foundation/core", '#include <CoW/Foo.h>\n')
+    violations, _, _ = run_arch_check(tmp_path)
+    assert [v.kind for v in violations] == ["boundary"]
+
+
+def test_application_including_draoi_is_allowed_and_no_false_positive(tmp_path):
+    _app(tmp_path, "CoW")
+    _module(tmp_path, "Draoi", "DraoiX", "draoi.x", "draoi", '#include <DraoiX/Bar.h>\n#include <CoWLike/Foo.h>\n')
+    violations, _, code = run_arch_check(tmp_path)
+    assert violations == [] and code == 0
+
+
 def test_draoi_include_resolves_to_draoi_module(tmp_path):
     _module(tmp_path, "Draoi", "DraoiX", "draoi.x", "draoi")
     _module(tmp_path, "Draoi", "DraoiY", "draoi.y", "draoi", '#include <DraoiX/Foo.h>\n')

@@ -1,6 +1,7 @@
 """arch_checker — orchestrate the architecture audit (tasks 13-17)."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +23,62 @@ class ArchViolation:
     kind: str           # "forbidden" | "boundary" | "layer"
 
 
+_NON_APP_DIRS = {"assets", "bin", "out", "external"}
+_INCLUDE_RE = re.compile(r'#\s*include\s+[<"]([^>"]+)[>"]')
+
+
+def application_names(repo_root: Path) -> set[str]:
+    """Top-level folders under Cluiche/ that hold application code (CoW, CluicheTest, ...)."""
+    base = repo_root / "Cluiche"
+    if not base.is_dir():
+        return set()
+    return {
+        p.name for p in base.iterdir()
+        if p.is_dir() and p.name.lower() not in _NON_APP_DIRS
+    }
+
+
+def _application_include(include_path: str, apps: set[str]) -> str | None:
+    """Return the application an include path points into, or None.
+
+    Matches both ``CoW/...`` (Cluiche/ on the include path) and ``Cluiche/CoW/...``.
+    """
+    parts = include_path.replace("\\", "/").lstrip("/").split("/")
+    if len(parts) < 2:
+        return None
+    if parts[0] == "Cluiche" and parts[1] in apps:
+        return parts[1]
+    if parts[0] in apps:
+        return parts[0]
+    return None
+
+
+def _application_violations(
+    module_id: str, rel_src: str, src: Path, apps: set[str],
+) -> list[ArchViolation]:
+    try:
+        lines = src.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    out: list[ArchViolation] = []
+    for lineno, line in enumerate(lines, start=1):
+        m = _INCLUDE_RE.search(line)
+        if not m:
+            continue
+        app = _application_include(m.group(1), apps)
+        if app:
+            out.append(ArchViolation(
+                from_module=module_id,
+                to_module=f"application:{app}",
+                rule="Dia and Draoi may not depend on application code (layer order: Application -> Draoi -> Dia)",
+                source_file=rel_src,
+                lineno=lineno,
+                include_path=m.group(1),
+                kind="boundary",
+            ))
+    return out
+
+
 def run_arch_check(
     repo_root: Path,
     module_filter: str | None = None,
@@ -36,6 +93,7 @@ def run_arch_check(
     module_map, warnings = build_module_map(repo_root)
 
     violations: list[ArchViolation] = []
+    apps = application_names(repo_root)
 
     # Select modules to scan
     if module_filter:
@@ -83,6 +141,11 @@ def run_arch_check(
         for src in sorted(source_files):
             rel_src = src.relative_to(repo_root).as_posix()
             includes = resolve_includes(src, repo_root, module_map, module_info)
+
+            if apps and root_of(module_info.path) in ("Dia", "Draoi"):
+                violations.extend(
+                    _application_violations(module_id, rel_src, src, apps)
+                )
 
             for dep_id, lineno, raw_path in includes:
                 dep_info = module_map.get(dep_id)
