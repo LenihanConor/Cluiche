@@ -1,7 +1,7 @@
 # Feature Spec: Extract DraoiGameSpeed
 
 **Parent:** @docs/specs/applications/draoi/draoi.md (extraction order step (e), part 3)
-**Status:** `Approved` (2026-11-21; decisions recorded from the user)
+**Status:** `Done` (2026-11-23; approved 2026-11-21)
 **Origin:** Draoi layer audit, 2026-11-20/21. Source system: @docs/specs/applications/cow/systems/gamespeedcontroller/gamespeedcontroller.md.
 **Depends on / ordering:** Strata -> core -> terrain -> GameSpeed. Last of the three extractions (after @docs/specs/features/draoi/generic-strata.md, @docs/specs/features/draoi/extract-hexworld-core.md and @docs/specs/features/draoi/extract-hexworld-terrain.md); it is the weakest admission case.
 

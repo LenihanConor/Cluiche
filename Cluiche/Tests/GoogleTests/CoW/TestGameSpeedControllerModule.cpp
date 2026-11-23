@@ -422,3 +422,47 @@ TEST(GameSpeedModule, SpeedChangeMidRunLosesNoDay)
         EXPECT_EQ(f.ticks[i].day, i + 1);
     EXPECT_LE(f.maxTicksInOneFrame, 1);
 }
+
+TEST(GameSpeedModule, DefaultCalendarIsCoWCalendarWhenBlockAbsent)
+{
+    Fixture f;
+    ASSERT_TRUE(f.Boot());
+    const Calendar& cal = f.game->GetController().GetCalendar();
+    ASSERT_EQ(cal.periods.size(), 5u);
+    EXPECT_EQ(cal.BandName(1), std::string("Week"));
+}
+
+TEST(GameSpeedModule, CustomCalendarBlockIsApplied)
+{
+    Fixture f("{\"calendar\":{\"periods\":[{\"name\":\"Cycle\",\"multiple\":3}],\"bands\":[\"Day\",\"Cycle\"]}}");
+    ASSERT_TRUE(f.Boot());
+    const Calendar& cal = f.game->GetController().GetCalendar();
+    ASSERT_EQ(cal.periods.size(), 1u);
+    EXPECT_EQ(cal.periods[0].name, std::string("Cycle"));
+    EXPECT_EQ(cal.BandOf(3), 1u);
+    EXPECT_EQ(cal.BandOf(4), 0u);
+}
+
+TEST(GameSpeedModule, EmptyPeriodsConfiguresNoCalendar)
+{
+    Fixture f("{\"calendar\":{\"periods\":[]}}");
+    ASSERT_TRUE(f.Boot());
+    EXPECT_TRUE(f.game->GetController().GetCalendar().periods.empty());
+}
+
+TEST(GameSpeedModule, MalformedCalendarFallsBackToDefaults)
+{
+    const char* const bad[] = {
+        "{\"calendar\":5}",
+        "{\"calendar\":{\"periods\":3}}",
+        "{\"calendar\":{\"periods\":[{\"name\":\"X\",\"multiple\":0}]}}",     // multiple must be >= 1
+        "{\"calendar\":{\"periods\":[{\"name\":7,\"multiple\":2}]}}",
+        "{\"calendar\":{\"periods\":[{\"name\":\"X\",\"multiple\":2}],\"bands\":[\"a\",\"b\",\"c\"]}}", // too many bands
+    };
+    for (const char* json : bad)
+    {
+        Fixture f(json);
+        ASSERT_TRUE(f.Boot()) << json;
+        EXPECT_EQ(f.game->GetController().GetCalendar().periods.size(), 5u) << json;
+    }
+}

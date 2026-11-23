@@ -3,6 +3,9 @@
 // Spec: docs/specs/features/draoi/extract-draoigamespeed.md (task 1)
 #include <gtest/gtest.h>
 #include <Shared/CoWCalendar.h>
+#include <DiaCore/Json/external/json/json.h>
+#include <fstream>
+#include <functional>
 #include <string>
 
 using namespace CoW;
@@ -127,4 +130,46 @@ TEST(GameSpeedCalendarData, InvalidCalendarRejected)
     tooManyBands.periods = { { "Week", 7 } };
     tooManyBands.bandNames = { "A", "B", "C" };
     EXPECT_FALSE(tooManyBands.IsValid());
+}
+
+// Drift guard: the "calendar" block shipped in cow_main.diaapp must equal CoWCalendar().
+TEST(GameSpeedCalendarData, ShippedDiaappCalendarMatchesCoWCalendar)
+{
+    // Located relative to this source file: <repo>/Cluiche/Tests/GoogleTests/CoW -> <repo>/Cluiche/Assets/CoW.
+    const std::string path = std::string(__FILE__) + "/../../../../Assets/CoW/cow_main.diaapp";
+    std::ifstream in(path, std::ios::binary);
+    ASSERT_TRUE(in.is_open()) << path;
+    const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Json::Value root;
+    Json::Reader reader;
+    ASSERT_TRUE(reader.parse(text, root));
+
+    const Json::Value* block = nullptr;
+    std::function<void(const Json::Value&)> find = [&](const Json::Value& v)
+    {
+        if (block) return;
+        if (v.isObject())
+        {
+            if (v.isMember("instance_id") && v["instance_id"].asString() == "GameSpeedControllerModule" && v["config"].isMember("calendar"))
+                block = &v["config"]["calendar"];
+            for (const std::string& k : v.getMemberNames()) find(v[k]);
+        }
+        else if (v.isArray())
+            for (const Json::Value& e : v) find(e);
+    };
+    find(root);
+    ASSERT_NE(block, nullptr);
+
+    const Calendar expected = CoWCalendar();
+    const Json::Value& periods = (*block)["periods"];
+    ASSERT_EQ(periods.size(), expected.periods.size());
+    for (Json::ArrayIndex i = 0; i < periods.size(); ++i)
+    {
+        EXPECT_EQ(periods[i]["name"].asString(), expected.periods[i].name);
+        EXPECT_EQ(periods[i]["multiple"].asUInt64(), expected.periods[i].multiple);
+    }
+    const Json::Value& bands = (*block)["bands"];
+    ASSERT_EQ(bands.size(), expected.bandNames.size());
+    for (Json::ArrayIndex i = 0; i < bands.size(); ++i)
+        EXPECT_EQ(bands[i].asString(), expected.bandNames[i]);
 }
