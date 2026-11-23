@@ -7,6 +7,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{c3b1f0a2-5d44-4e6a-9a77-1c2f6e0b9d31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TerrainFieldContribution">
+      <UniqueIdentifier>{a3a66bdd-c126-4ddf-8040-f6ac59623c41}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BiomeClassify.h" />
@@ -79,6 +82,9 @@
     <ClInclude Include="Testing\ValidationTestWorlds.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="TerrainFieldContribution.h">
+      <Filter>TerrainFieldContribution</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
@@ -121,6 +127,9 @@
     <ClCompile Include="WorldLayoutGuarantee.cpp" />
     <ClCompile Include="WorldOverlayGeometry.cpp" />
     <ClCompile Include="WorldShapePreset.cpp" />
+    <ClCompile Include="TerrainFieldContribution.cpp">
+      <Filter>TerrainFieldContribution</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldterrain.architecture.module.md">

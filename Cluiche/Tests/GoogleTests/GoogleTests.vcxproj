@@ -1349,6 +1349,11 @@
     <ClCompile Include="CoW\TestStrataMetric.cpp" />
     <ClCompile Include="CoW\CoWTestAssetPaths.cpp" />
     <ClCompile Include="CoW\TestGameSpeedCalendar.cpp" />
+    <ClCompile Include="Draoi\TestWorldCellFields.cpp" />
+    <ClCompile Include="Draoi\TestCellSelector.cpp" />
+    <ClCompile Include="Draoi\TestSelectorClauses.cpp" />
+    <ClCompile Include="Draoi\TestHexWorldSaveCodec.cpp" />
+    <ClCompile Include="Draoi\TestFieldContributions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

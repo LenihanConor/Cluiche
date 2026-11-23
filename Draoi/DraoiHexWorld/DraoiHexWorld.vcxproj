@@ -84,6 +84,10 @@
     <ClInclude Include="WorldStructure.h" />
     <ClInclude Include="Testing\BiomeTestRegistry.h" />
     <ClInclude Include="Testing\StratumTestIndices.h" />
+    <ClInclude Include="WorldCellFields.h" />
+    <ClInclude Include="CellSelector.h" />
+    <ClInclude Include="HexWorldSaveCodec.h" />
+    <ClInclude Include="BiomeFieldContribution.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeRegistry.cpp" />
@@ -91,6 +95,10 @@
     <ClCompile Include="WorldHexGrid.cpp" />
     <ClCompile Include="Sites.cpp" />
     <ClCompile Include="WorldStructure.cpp" />
+    <ClCompile Include="WorldCellFields.cpp" />
+    <ClCompile Include="CellSelector.cpp" />
+    <ClCompile Include="HexWorldSaveCodec.cpp" />
+    <ClCompile Include="BiomeFieldContribution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworld.architecture.module.md" />
@@ -118,6 +126,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaPathfinding\DiaPathfinding.vcxproj">
       <Project>{B5C6D7E8-F9A0-1234-5678-9ABCDEF01234}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCondition\DiaCondition.vcxproj">
+      <Project>{C6D7E8F9-0A1B-2345-6789-ABCDEF012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

@@ -14,6 +14,7 @@ dependencies:
     - dia.maths
     - dia.graphics
     - dia.pathfinding
+    - dia.condition
     - dia.attribute
     - dia.observation
   forbidden: []
@@ -24,6 +25,10 @@ public_api:
     - DraoiHexWorld/WorldHexGrid.h
     - DraoiHexWorld/StratumTable.h
     - DraoiHexWorld/BiomeRegistry.h
+    - DraoiHexWorld/WorldCellFields.h
+    - DraoiHexWorld/CellSelector.h
+    - DraoiHexWorld/HexWorldSaveCodec.h
+    - DraoiHexWorld/BiomeFieldContribution.h
   namespaces:
     - Draoi::HexWorld::
   entry_points: []

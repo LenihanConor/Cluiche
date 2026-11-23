@@ -3216,5 +3216,20 @@
     <ClCompile Include="CoW\TestGameSpeedCalendar.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
+    <ClCompile Include="Draoi\TestWorldCellFields.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestCellSelector.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestSelectorClauses.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestHexWorldSaveCodec.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
+    <ClCompile Include="Draoi\TestFieldContributions.cpp">
+      <Filter>Draoi</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

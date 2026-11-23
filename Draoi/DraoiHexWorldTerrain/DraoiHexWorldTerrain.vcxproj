@@ -124,6 +124,7 @@
     <ClInclude Include="Testing\TestPlacers.h" />
     <ClInclude Include="Testing\TestProfiles.h" />
     <ClInclude Include="Testing\ValidationTestWorlds.h" />
+    <ClInclude Include="TerrainFieldContribution.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiomeClassify.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="WorldLayoutGuarantee.cpp" />
     <ClCompile Include="WorldOverlayGeometry.cpp" />
     <ClCompile Include="WorldShapePreset.cpp" />
+    <ClCompile Include="TerrainFieldContribution.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.draoi.hexworldterrain.architecture.module.md" />
