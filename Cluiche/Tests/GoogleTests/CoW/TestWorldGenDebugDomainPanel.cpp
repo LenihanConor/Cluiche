@@ -1,6 +1,7 @@
 // CoW::WorldGenDebugDomain panel sections: validation, file, progress, per-cell absorbed flag and the
 // validate / export / import / cancel / selectWorld / discard commands (S-1 worldgen-panel-rest plan task 2).
 // Every command must change the session exactly as the matching cow.worldgen.* command does (SD-S1-002).
+#include <DiaObservation/Log/DiaLog.h>
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
@@ -14,7 +15,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
 
@@ -619,7 +619,7 @@ TEST(WorldGenDebugDomainPanel, CompactStateAtLargeWithFailedTwoAttemptReportStay
     ASSERT_TRUE(st["validation"].isObject());
     ASSERT_TRUE(st["cell"].isObject());
     const size_t bytes = Compact(st).size();
-    std::cout << "[ measured ] compact WorldGen state at Large, failed 2-attempt report + cell + file: " << bytes << " bytes\n";
+    DIA_LOG_INFO("Test", "[ measured ] compact WorldGen state at Large, failed 2-attempt report + cell + file: %zu bytes", bytes);
     EXPECT_LT(bytes, 12u * 1024u);
 }
 

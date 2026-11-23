@@ -79,6 +79,9 @@
     <ClInclude Include="Shared\CoWNodeKinds.h" />
     <ClInclude Include="Shared\WorldGeneration\CoWTesting\CoWTerrainRulesTestHelpers.h" />
     <ClInclude Include="Shared\CoWCalendar.h" />
+    <ClInclude Include="Shared\WorldGeneration\Testing\BiomeTestGrids.h" />
+    <ClInclude Include="Shared\WorldGeneration\Testing\TerrainSliderDriver.h" />
+    <ClInclude Include="Shared\WorldGeneration\Testing\WorldJsonTestWorlds.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

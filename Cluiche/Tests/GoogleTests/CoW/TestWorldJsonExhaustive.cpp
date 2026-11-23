@@ -1,5 +1,6 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/json-export-import.md (AC6 speed, AC7 default path, limits)
 // Exhaustive pass for Feature 4: speed, sweeps over the shipped presets, size guards and boundary worlds.
+#include <DiaObservation/Log/DiaLog.h>
 #include <gtest/gtest.h>
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
@@ -10,7 +11,6 @@
 
 #include <chrono>
 #include <filesystem>
-#include <iostream>
 #include <string>
 #include <DraoiHexWorld/Testing/StratumTestIndices.h>
 
@@ -97,8 +97,9 @@ TEST(WorldJsonPerf, AC6_SmallWorldExportAndImportTakeWellUnderThreeSeconds)
     const WorldImportResult r = ImportWorldText(text, TestImportContext(), imported);
     const double importMs = MsSince(t1);
     ASSERT_TRUE(r.ok);
-    std::cout << "[perf] Small " << w.CellCount() << " cells, " << w.sites.Count() << " sites, " << text.size()
-              << " bytes: export " << exportMs << " ms, import " << importMs << " ms (Debug build)\n";
+    DIA_LOG_INFO("Test", "[perf] Small %zu cells, %zu sites, %zu bytes: export %.2f ms, import %.2f ms (Debug build)",
+                 static_cast<size_t>(w.CellCount()), static_cast<size_t>(w.sites.Count()), text.size(),
+                 static_cast<double>(exportMs), static_cast<double>(importMs));
     RecordProperty("export_ms", static_cast<int>(exportMs));
     RecordProperty("import_ms", static_cast<int>(importMs));
     EXPECT_LT(exportMs, 3000.0);
@@ -120,7 +121,7 @@ TEST(WorldJsonPerf, FileRoundTripOfASmallWorldIsFast)
     Json::Value im = Obj(); im["name"] = DefaultWorldName(2);
     ASSERT_TRUE(b.ImportWorld(im)["success"].asBool());
     const double ms = MsSince(t0);
-    std::cout << "[perf] session export + import through a file: " << ms << " ms (Debug build)\n";
+    DIA_LOG_INFO("Test", "[perf] session export + import through a file: %.2f ms (Debug build)", static_cast<double>(ms));
     EXPECT_LT(ms, 3000.0);
     fs::remove_all(dir, ec);
 }
@@ -175,7 +176,7 @@ TEST(SLOW_WorldJsonLimits, BiggestAllowedGridRoundTrips_TwoHundredFiftySixSquare
     WorldStructure imported;
     const auto t0 = Clock::now();
     const WorldImportResult r = RoundTrip(w, imported, &text);
-    std::cout << "[perf] 256x256 ocean world: " << text.size() << " bytes, export + import " << MsSince(t0) << " ms (Debug build)\n";
+    DIA_LOG_INFO("Test", "[perf] 256x256 ocean world: %zu bytes, export + import %.2f ms (Debug build)", text.size(), static_cast<double>(MsSince(t0)));
     ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
     EXPECT_LE(text.size(), kMaxWorldJsonBytes);
     EXPECT_TRUE(SameCells(w, imported));
@@ -412,8 +413,9 @@ TEST(SLOW_WorldJsonSweep, LargeWorldsRoundTripWithinTheBudget)
         const WorldImportResult r = ImportWorldText(text, TestImportContext(), imported);
         const double importMs = MsSince(t1);
         ASSERT_TRUE(r.ok) << r.error.field << ": " << r.error.message;
-        std::cout << "[perf] Large " << original.CellCount() << " cells, " << text.size() << " bytes: export " << exportMs
-                  << " ms, import " << importMs << " ms (Debug build)\n";
+        DIA_LOG_INFO("Test", "[perf] Large %zu cells, %zu bytes: export %.2f ms, import %.2f ms (Debug build)",
+                     static_cast<size_t>(original.CellCount()), text.size(),
+                     static_cast<double>(exportMs), static_cast<double>(importMs));
         EXPECT_TRUE(SameWorld(original, imported));
         EXPECT_LT(exportMs, 3000.0);
         EXPECT_LT(importMs, 3000.0);

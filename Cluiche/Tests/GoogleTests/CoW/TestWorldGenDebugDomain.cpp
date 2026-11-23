@@ -1,5 +1,6 @@
 // CoW::WorldGenDebugDomain: panel state contract + command routing through WorldGenSession.
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/f1-debug-host-integration.md (UI Layout, Goals 7-10)
+#include <DiaObservation/Log/DiaLog.h>
 #include <gtest/gtest.h>
 #include <Modules/WorldGen/WorldGenerationModule.h>   // first: RandomStream.h must precede windows.h (min/max macros)
 #include <DraoiHexWorld/Testing/BiomeTestRegistry.h>
@@ -16,7 +17,6 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <string>
 #include <vector>
@@ -574,7 +574,7 @@ TEST(WorldGenDebugDomain, CompactStateAtLargeWithCellAndLastSaveStaysUnderSlot)
     ASSERT_TRUE(st["cell"].isObject());
     ASSERT_TRUE(st["lastSave"].isObject());
     const size_t bytes = Compact(st).size();
-    std::cout << "[ measured ] compact WorldGen state at Large with cell + lastSave: " << bytes << " bytes\n";
+    DIA_LOG_INFO("Test", "[ measured ] compact WorldGen state at Large with cell + lastSave: %zu bytes", bytes);
     EXPECT_LT(bytes, 12u * 1024u);   // contract; the snapshot slot is 32 KB
     fs::remove_all(dir, ec);
 }
@@ -813,7 +813,7 @@ TEST(WorldGenDebugDomainView, CompactStateAtLargeWithLegendStaysUnderSlot)
     f.Gen();
     f.Cmd("selectCell", Xy(52, 32));
     const size_t bytes = Compact(f.State()).size();
-    std::cout << "[ measured ] compact WorldGen state at Large with view, legend (13 categories) + cell: " << bytes << " bytes\n";
+    DIA_LOG_INFO("Test", "[ measured ] compact WorldGen state at Large with view, legend (13 categories) + cell: %zu bytes", bytes);
     EXPECT_LT(bytes, 12u * 1024u);
 }
 

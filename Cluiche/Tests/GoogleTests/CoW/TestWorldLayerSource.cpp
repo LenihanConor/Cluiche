@@ -1,4 +1,5 @@
 // Spec: docs/specs/applications/cow/systems/s1-worldgeneration/layered-debug-rendering.md (Feature 7)
+#include <DiaObservation/Log/DiaLog.h>
 #include <gtest/gtest.h>
 #include <DraoiHexWorldTerrain/WorldLayerSource.h>
 #include <Shared/WorldGeneration/CoWTesting/CoWTerrainRulesTestHelpers.h>
@@ -6,7 +7,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <iostream>
 #include <set>
 #include <string>
 #include <vector>
@@ -166,7 +166,7 @@ TEST(WorldLayerSource, LargeReadAllLayersTiming)
         WorldLayerSource::At(li).read(s, buf.data(), n);
     const auto t1 = std::chrono::steady_clock::now();
     const double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
-    std::cout << "[ INFO ] WorldLayerSource Large read of all " << WorldLayerSource::Count() << " layers: " << ms << " ms\n";
+    DIA_LOG_INFO("Test", "[ INFO ] WorldLayerSource Large read of all %zu layers: %.2f ms", static_cast<size_t>(WorldLayerSource::Count()), static_cast<double>(ms));
     SUCCEED();
 }
 
