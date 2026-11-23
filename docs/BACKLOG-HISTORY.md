@@ -221,6 +221,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaAttribute Parameter Files (world-sim foundation 1) | 2026-11-20 | Built and closed 2026-11-20; sidecar owns params, ParameterFile/ParamBinding, TerrainRules bound |
 | CoW | S-1 Biome Registry (world-sim foundation 2) | 2026-11-20 | Built and closed 2026-11-20; `biomes.json` owns every biome fact, `Biome` enum deleted, `valuesFrom`/`keyEnum`/`data.incomplete-map`, terrain-profile maps, registry hash in provenance; goldens bit-identical |
 | CoW | **#2** World Step (`WorldStepModule`) | 2026-11-20 | Moved by `dia docs backlog move` |
+| CoW | Clear `dia docs precommit` errors in CoW tests (raised 2026-11-21) | 2026-11-23 | Moved by `dia docs backlog move` |
 
 ---
 
