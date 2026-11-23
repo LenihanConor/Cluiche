@@ -473,6 +473,31 @@ TEST_F(WorldStepStageBaseTest, StartExtraAndStopExtraAreEachCalledOnce)
     EXPECT_EQ(1u, stops);
 }
 
+// ----- kit task 13: ApplyEntry / RunStep / PublishCommit over two steps -------------------------------
+
+TEST_F(WorldStepStageBaseTest, TwoStepsGiveTheHandComputedStateAndAnEntryEnqueuedMidRunWaitsForTheNextCapture)
+{
+    // Fake rules: ApplyEntry adds e.value; RunStep does value = value * 2 + latch(key); sim starts at 0.
+    stage.SpinUpNow(1);
+    FakeEntry first; first.value = 3;
+    stage.Enqueue(first);
+    hooks.onRun = [this]() { FakeEntry mid; mid.value = 100; stage.Enqueue(mid); };
+
+    FullStep(10);                                       // (0 + 3) * 2 + 10 = 16
+    EXPECT_EQ(16, hooks.publishedValue);
+    EXPECT_EQ(10u, hooks.publishedDay);
+    EXPECT_EQ(1u, hooks.appliedCount);                  // the mid-Run entry is not applied yet
+    EXPECT_EQ(1u, stage.QueueCount());
+
+    hooks.onRun = nullptr;
+    FullStep(20);                                       // (16 + 100) * 2 + 20 = 252
+    EXPECT_EQ(2u, hooks.appliedCount);
+    EXPECT_EQ(100, hooks.applied[1]);
+    EXPECT_EQ(252, hooks.publishedValue);
+    EXPECT_EQ(20u, hooks.publishedDay);
+    EXPECT_EQ(2u, hooks.publishCount);
+}
+
 }  // namespace Testing
 }  // namespace WorldStep
 }  // namespace CoW
