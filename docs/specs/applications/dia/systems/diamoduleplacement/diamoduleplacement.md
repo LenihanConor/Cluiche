@@ -19,7 +19,7 @@ Move every concrete application-flow module class (`SimModule`, `RenderModule`, 
 
 1. No class in `Dia/` derives from `SimModule`, `RenderModule`, `MainModule` or `Module`, except the framework base classes in `DiaApplicationFlow`.
 2. Each moved module lands in `CluicheGameBaseline` if two or more applications (or Baseline itself) use it, or in the one application that uses it.
-3. A guard keeps it that way: `dia docs precommit` (or `dia check arch`) fails on a new module subclass under `Dia/`.
+3. A guard keeps it that way: `dia check arch` reports **placement** violations for application wiring in any `Dia/` or `Draoi/` package. **Built 2026-11-23, ahead of the moves**, so the 12 module classes now show as errors until they move. See Guard below.
 4. `dia check arch` and `dia check deps` stay green or improve; package layers are re-reviewed afterwards because several packages can drop their `DiaApplicationFlow` dependency.
 
 ## Non-Goals
@@ -76,9 +76,20 @@ Consumers were counted from `#include` of the module header outside its own pack
 4. Module-lifecycle tests move (MP-004); library tests stay.
 5. `dia check deps` and `dia check arch` run, the package layer is re-reviewed, and the registry is regenerated.
 
-### Guard
+### Guard (built 2026-11-23)
 
-A forbidden-pattern check, in `dia docs precommit` (it already runs forbidden patterns) or as an arch rule: any `class X : public ...Module` under `Dia/` outside `DiaApplicationFlow`'s framework base files fails. The exact home is decided in plan task 13.
+`dia check arch` gains a `placement` violation kind (`arch_placement.py`). In any `Dia/` or `Draoi/` package it flags, once per kind per file:
+
+- a class deriving from `SimModule`, `RenderModule`, `MainModule` or `Module`;
+- a `DIA_MODULE(...)` registration;
+- processing-unit affinity (`PUAffinity`, `kAllowedPUs`);
+- an include of `DiaApplicationFlow/ProcessingUnit.h`.
+
+Comments are ignored. Exempt: the framework package `Dia/DiaApplicationFlow` (it defines these concepts) and `Testing/` helpers. `.inl` files are scanned. The Module Tower shows one card per offending package.
+
+Deliberately not flagged yet, because they are judgment calls: stream writers (`EventStreamWriter`, `ServiceStreamStore`), `Application.h`, `IApplicationControl`, and `DIA_STREAM_TYPE` / `DIA_DESCRIBE` on plain data types.
+
+At the time of writing, 10 packages trip it (SimTime, ValueSchema, DeferredStep, CellLayers, CellHistory, TriggerScript, Sensor, MessageBus, EntitySpawner, AIBudget), with 30 reports in total. The gate was already red from 4 layer violations; it stays red until the moves are done. When `ObservationModule` becomes `ObservationModuleBase` it stays exempt as part of the framework package.
 
 ## Open Design Questions
 

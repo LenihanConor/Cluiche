@@ -53,7 +53,7 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
 | `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
 | `dia check deps` | Cross-check module dependency declarations vs actual #includes (Dia and Draoi). Known issues live in docs/reference/registry/deps-baseline.json; `--accept-baseline` re-records. |
-| `dia check arch` | Layer audit: forbidden deps, layer order, and the boundary rule that Dia may never depend on Draoi. `--html PATH` also writes the Module Tower, a clickable visual report with a drag-to-fix what-if (mockup: docs/mockups/arch-tower-mockup.html). |
+| `dia check arch` | Layer audit: forbidden deps, layer order, and the boundary rule that Dia may never depend on Draoi. Also the placement rule (PD-012): no module classes, `DIA_MODULE`, or processing-unit affinity in a Dia/Draoi package outside `DiaApplicationFlow`. `--html PATH` also writes the Module Tower, a clickable visual report with a drag-to-fix what-if (mockup: docs/mockups/arch-tower-mockup.html). |
 | `dia check cppcheck` | Run cppcheck static analysis; write SARIF to out/check/findings.sarif. |
 | `dia check sanitizer` | Build and run googletest under ASan/UBSan. |
 | `dia check sln-sync` | Sync Cluiche.sln solution folders to module layer assignments. |

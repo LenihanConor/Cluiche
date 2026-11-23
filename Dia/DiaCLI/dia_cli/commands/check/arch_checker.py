@@ -10,6 +10,7 @@ from dia_cli.utils.library_roots import root_of
 from .arch_module_map import ModuleInfo, build_module_map
 from .arch_include_parser import resolve_includes
 from .arch_layer_rules import check_layer_violation
+from .arch_placement import RULE as _PLACEMENT_RULE, find_wiring, is_exempt
 
 
 @dataclass
@@ -20,7 +21,7 @@ class ArchViolation:
     source_file: str    # repo-relative path
     lineno: int
     include_path: str
-    kind: str           # "forbidden" | "boundary" | "layer"
+    kind: str           # "forbidden" | "boundary" | "layer" | "placement"
 
 
 _NON_APP_DIRS = {"assets", "bin", "out", "external"}
@@ -77,6 +78,28 @@ def _application_violations(
                 kind="boundary",
             ))
     return out
+
+
+def _placement_violations(module_id: str, module_path: str, rel_src: str, src: Path) -> list[ArchViolation]:
+    """PD-012: flag application wiring (module classes, affinity, registration) in a library package."""
+    if is_exempt(module_path, src):
+        return []
+    try:
+        text = src.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    return [
+        ArchViolation(
+            from_module=module_id,
+            to_module="application-wiring",
+            rule=_PLACEMENT_RULE,
+            source_file=rel_src,
+            lineno=lineno,
+            include_path=what,
+            kind="placement",
+        )
+        for lineno, what in find_wiring(text)
+    ]
 
 
 def run_arch_check(
@@ -147,6 +170,11 @@ def run_arch_check(
                     _application_violations(module_id, rel_src, src, apps)
                 )
 
+            if root_of(module_info.path) in ("Dia", "Draoi"):
+                violations.extend(
+                    _placement_violations(module_id, module_info.path, rel_src, src)
+                )
+
             for dep_id, lineno, raw_path in includes:
                 dep_info = module_map.get(dep_id)
 
@@ -214,6 +242,12 @@ def format_violations(
 
     if not summary_only:
         for v in violations:
+            if v.kind == "placement":
+                lines.append(f"ARCH VIOLATION: {v.from_module} contains application wiring: {v.include_path}")
+                lines.append(f"  File: {v.source_file}:{v.lineno}")
+                lines.append(f"  Rule: {v.rule}")
+                lines.append("")
+                continue
             lines.append(
                 f"ARCH VIOLATION: {v.from_module} depends on {v.to_module}"
             )

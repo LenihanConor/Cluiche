@@ -54,7 +54,9 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
                 "line": v.lineno, "inc": v.include_path}
 
     layer_violations = [v for v in violations if v.kind == "layer"]
-    other = [{**row(v), "kind": v.kind, "rule": v.rule} for v in violations if v.kind != "layer"]
+    other = [{**row(v), "kind": v.kind, "rule": v.rule}
+             for v in violations if v.kind not in ("layer", "placement")]
+    other += _placement_cards(violations)
     # Violations whose modules lack a placeable layer can only be listed, not drawn.
     drawable = [v for v in layer_violations if v.from_module in layers and v.to_module in layers]
     other += [{**row(v), "kind": v.kind, "rule": v.rule}
@@ -67,6 +69,24 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
         "violations": [row(v) for v in drawable],
         "other": other,
     }
+
+
+def _placement_cards(violations: list[ArchViolation]) -> list[dict]:
+    """One card per package: PD-012 wiring found in a library package, with what and where."""
+    by_package: dict[str, list[ArchViolation]] = {}
+    for v in violations:
+        if v.kind == "placement":
+            by_package.setdefault(v.from_module, []).append(v)
+    cards = []
+    for module_id, found in sorted(by_package.items()):
+        what = sorted({v.include_path for v in found})
+        first = found[0]
+        cards.append({
+            "f": module_id, "t": "application-wiring", "kind": "placement",
+            "rule": f"holds application wiring in {len(found)} place(s) (PD-012): " + "; ".join(what),
+            "file": first.source_file, "line": first.lineno, "inc": first.include_path,
+        })
+    return cards
 
 
 def render_tower_html(data: dict) -> str:
