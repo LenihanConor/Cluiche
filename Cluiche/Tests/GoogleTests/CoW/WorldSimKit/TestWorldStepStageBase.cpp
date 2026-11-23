@@ -2,6 +2,9 @@
 
 #include <string.h>
 
+#include <chrono>
+#include <thread>
+
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaSaveGame/LoadContext.h>
 #include <DiaObservation/Log/ISink.h>
@@ -356,6 +359,118 @@ TEST_F(WorldStepStageBaseTest, WorldGenerationFailedMidStepDefersTheDropAndDisca
     stage.Commit();
     EXPECT_FALSE(stage.HasActive());
     EXPECT_EQ(0u, hooks.publishCount);
+}
+
+// ----- kit task 11: Stop order -----------------------------------------------------------------------
+
+TEST_F(WorldStepStageBaseTest, StopRunsInTheSpecOrder)
+{
+    stage.SpinUpNow(1);
+    stage.Capture(1);
+    stage.Commit();                                    // active
+    stage.SpinUpNow(1);                                // and pending
+    FakeEntry e;
+    stage.Enqueue(e);
+    FakeSim::sDestroyLog = &hooks.log;
+    hooks.log.Clear();
+    stage.Stop();
+    FakeSim::sDestroyLog = nullptr;
+    // unregister stage, (job cancelled and joined), destroy both sims, clear queue, (hold release: blocked), OnStopExtra
+    ASSERT_EQ(4u, hooks.log.Count());
+    EXPECT_STREQ("UnregisterStage", hooks.log.At(0));
+    EXPECT_STREQ("~FakeSim", hooks.log.At(1));
+    EXPECT_STREQ("~FakeSim", hooks.log.At(2));
+    EXPECT_STREQ("OnStopExtra", hooks.log.At(3));
+    EXPECT_EQ(0u, stage.QueueCount());
+    EXPECT_FALSE(stage.HasActive());
+    EXPECT_FALSE(stage.HasPending());
+}
+
+TEST_F(WorldStepStageBaseTest, SecondStopIsANoOp)
+{
+    stage.SpinUpNow(1);
+    stage.Stop();
+    hooks.log.Clear();
+    stage.Stop();
+    EXPECT_EQ(0u, hooks.log.Count());
+}
+
+TEST_F(WorldStepStageBaseTest, StopJoinsAJobInFlightBeforeTheSimIsDestroyed)
+{
+    const int live = FakeSim::sLive;
+    stage.manualJobs = false;                          // real worker thread
+    hooks.blockInit = true;
+    WorldView w; w.revision = 1; w.present = true;
+    stage.OnWorldGenerationComplete(w);
+    for (int i = 0; i < 2000 && !hooks.initEntered; ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    ASSERT_TRUE(hooks.initEntered);
+    EXPECT_FALSE(hooks.initExited);
+    std::thread releaser([this]()
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        hooks.releaseInit = true;
+    });
+    stage.Stop();                                      // must wait for the job
+    releaser.join();
+    EXPECT_TRUE(hooks.initExited);
+    EXPECT_EQ(live, FakeSim::sLive);                   // the job's sim did not leak or outlive Stop
+    EXPECT_FALSE(stage.HasPending());
+}
+
+// ----- kit task 12: hooks, one test per difference-table row -----------------------------------------
+
+TEST_F(WorldStepStageBaseTest, ExtraReadyFalseKeepsTheStageNotReady)
+{
+    stage.SpinUpNow(1);
+    ASSERT_TRUE(stage.IsReady());
+    hooks.extraReady = false;
+    EXPECT_FALSE(stage.IsReady());
+    hooks.extraReady = true;
+    EXPECT_TRUE(stage.IsReady());
+}
+
+TEST_F(WorldStepStageBaseTest, LatchInputsFalseInvalidatesTheStepSoRunAndPublishAreSkipped)
+{
+    stage.SpinUpNow(1);
+    hooks.latchOk = false;
+    hooks.log.Clear();
+    FullStep(9);
+    EXPECT_EQ(0u, hooks.publishCount);
+    for (uint32_t i = 0; i < hooks.log.Count(); ++i)
+    {
+        EXPECT_STRNE("RunStep", hooks.log.At(i));
+        EXPECT_STRNE("PublishCommit", hooks.log.At(i));
+    }
+    EXPECT_EQ(1u, Sink().discardLogs);
+}
+
+TEST_F(WorldStepStageBaseTest, InitialiseSimCauseCodeAndTextComeFromTheSystem)
+{
+    hooks.initFails = true;
+    stage.SpinUpNow(1);
+    EXPECT_EQ(1u, stage.GetCauseCode());
+    EXPECT_TRUE(stage.GetHealth().reason == Dia::Core::StringCRC(FakeCauseText(stage.GetCauseCode())));
+    // A later good world clears the failure.
+    hooks.initFails = false;
+    stage.SpinUpNow(2);
+    EXPECT_EQ(Dia::Observation::Health::HealthStatus::kOK, stage.GetHealth().status);
+    EXPECT_TRUE(stage.IsReady());
+}
+
+TEST_F(WorldStepStageBaseTest, StartExtraAndStopExtraAreEachCalledOnce)
+{
+    unsigned starts = 0;
+    for (uint32_t i = 0; i < hooks.log.Count(); ++i) { starts += strcmp(hooks.log.At(i), "OnStartExtra") == 0 ? 1u : 0u; }
+    EXPECT_EQ(1u, starts);                              // Start ran in SetUp
+    stage.Start();                                      // already started: no second call
+    unsigned startsAfter = 0;
+    for (uint32_t i = 0; i < hooks.log.Count(); ++i) { startsAfter += strcmp(hooks.log.At(i), "OnStartExtra") == 0 ? 1u : 0u; }
+    EXPECT_EQ(1u, startsAfter);
+    stage.Stop();
+    stage.Stop();
+    unsigned stops = 0;
+    for (uint32_t i = 0; i < hooks.log.Count(); ++i) { stops += strcmp(hooks.log.At(i), "OnStopExtra") == 0 ? 1u : 0u; }
+    EXPECT_EQ(1u, stops);
 }
 
 }  // namespace Testing

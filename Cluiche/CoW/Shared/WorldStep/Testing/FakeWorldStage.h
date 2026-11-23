@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <thread>
 
 #include <DiaDeferredStep/IStepStage.h>
@@ -115,7 +116,7 @@ struct FakeHooks : public FakeBase::Hooks
     {
         log.Add("RunStep");
         if (runSleepMs > 0) { std::this_thread::sleep_for(std::chrono::milliseconds(runSleepMs)); }
-        if (onRun != nullptr) { onRun(); }
+        if (onRun) { onRun(); }
         working.value = working.value * 2 + latch.value;
     }
     void PublishCommit(const FakeSim& committed, uint32_t stepDay) override
@@ -135,7 +136,7 @@ struct FakeHooks : public FakeBase::Hooks
     bool initFails = false;
     bool blockInit = false;
     int runSleepMs = 0;
-    void (*onRun)() = nullptr;
+    std::function<void()> onRun;
     std::atomic<bool> releaseInit{false};
     std::atomic<bool> initEntered{false};
     std::atomic<bool> initExited{false};

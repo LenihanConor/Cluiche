@@ -341,6 +341,8 @@ private:
         mSpinUp.Reset();
         DropSims();
         mQueue.Clear();
+        // TODO(kit task 10): release the world-generation hold here once HoldGenerationToken exists
+        // (spec order: ... destroy sims, clear queue, release hold, OnStopExtra).
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
         if (callHooks) { mHooks.OnStopExtra(); }
     }
