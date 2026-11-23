@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include <functional>
+#include <string>
 #include <vector>
 
 #include <DiaAttribute/ParameterFile.h>
@@ -19,9 +21,43 @@ namespace Debug {
 // Value source (default | pack:<id> | set): ParameterFile does not track provenance, so the helper does. The owner
 // reports each pack it applies (NotePackApplied, in application order; a later pack wins a key) and ClearSources()
 // after a reload. A value changed through the command's own `set` is marked set. A key nobody reported is `default`.
+// One queued parameter change, applied by the owner at the next Capture through ParamCommandHelper::ApplyMutation.
+struct ParamMutation
+{
+    enum class Kind : uint8_t { kSet, kReload };
+    static const uint32_t kKeyCapacity = 128;
+
+    Kind kind = Kind::kSet;
+    char key[kKeyCapacity] = {};
+    Json::Value value;      // kSet: the validated, normalised value (number, bool or enum id string)
+};
+
+// What the owner's reload callback reports (preview at queue time, real at apply time).
+struct ParamReloadResult
+{
+    std::string error;                        // non-empty on failure
+    std::vector<std::string> packIds;         // in application order
+    std::vector<Json::Value> packBodies;      // parallel to packIds; used to record value sources on apply
+    std::vector<std::string> warnings;
+};
+
+// The day the next Capture will run and the defer lag k (0 = not deferred).
+struct ParamDayInfo
+{
+    uint32_t effectiveDay = 0;
+    uint32_t deferLag = 0;
+};
+
 class ParamCommandHelper
 {
 public:
+    // Queues a mutation for the owner's next Capture; false when the queue is full.
+    typedef std::function<bool(const ParamMutation&)> MutationEnqueue;
+    // apply=false: validate and preview only (change nothing). apply=true: perform the ParameterFile::Reload.
+    // Returns false (result.error set) on failure.
+    typedef std::function<bool(bool apply, ParamReloadResult& result)> ReloadFn;
+    typedef std::function<ParamDayInfo()> DayProvider;
+
     static const uint32_t kMaxPacks = 16;
     static const uint32_t kPackIdCapacity = 64;
 
@@ -42,12 +78,24 @@ public:
     bool NotePackApplied(const char* packId, const Json::Value& pack);
     void ClearSources();
 
+    // Seams, set by the owner. Without an enqueue seam `set` and `reload` reply with an error.
+    void SetMutationEnqueue(MutationEnqueue enqueue) { mEnqueue = std::move(enqueue); }
+    void SetDayProvider(DayProvider provider) { mDayProvider = std::move(provider); }
+    void SetReloadFn(ReloadFn fn) { mReloadFn = std::move(fn); }
+
+    // Called by the owner's stage (ApplyEntry, inside Capture) for a drained mutation. kSet: ParameterFile::Set then
+    // marks the key `set`. kReload: runs the reload callback, then ClearSources + NotePackApplied per pack.
+    // false when the change was refused (logged); the file is unchanged in that case.
+    bool ApplyMutation(const ParamMutation& mutation);
+
 private:
     static const uint8_t kSourceDefault = 0;
     static const uint8_t kSourceSet = 255;
 
     Json::Value Get(const Json::Value& args) const;
     Json::Value List(const Json::Value& args) const;
+    Json::Value SetAction(const Json::Value& args);
+    Json::Value ReloadAction();
     Json::Value Describe(uint32_t index) const;
     int32_t FindIndex(const char* key) const;
     uint8_t SourceOf(uint32_t index) const;
@@ -59,6 +107,9 @@ private:
     std::vector<uint8_t> mSources;      // per attribute, schema order
     char mPackIds[kMaxPacks][kPackIdCapacity];
     uint32_t mPackCount = 0;
+    MutationEnqueue mEnqueue;
+    DayProvider mDayProvider;
+    ReloadFn mReloadFn;
 };
 
 }  // namespace Debug

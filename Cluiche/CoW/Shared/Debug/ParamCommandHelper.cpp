@@ -1,6 +1,8 @@
 #include <Shared/Debug/ParamCommandHelper.h>
 
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <DiaAPI/CommandRegistry/ValueParam.h>
@@ -55,12 +57,15 @@ Json::Value ParamCommandHelper::Handle(const Json::Value& args)
     const std::string action = args["action"].asString();
     if (action == "get") { return Get(args); }
     if (action == "list") { return List(args); }
-    if (action == "set" || action == "reload" || action == "save_defaults")
+    if (action == "set") { return SetAction(args); }
+    if (action == "reload") { return ReloadAction(); }
+    if (action == "save_defaults")
     {
         return Error("action not implemented yet", action.c_str());
     }
     return Error("unknown action", action.c_str());
 }
+
 
 int32_t ParamCommandHelper::FindIndex(const char* key) const
 {
@@ -204,6 +209,169 @@ Json::Value ParamCommandHelper::List(const Json::Value& args) const
     r["success"] = true;
     r["params"] = params;
     return r;
+}
+
+}  // namespace Debug
+}  // namespace CoW
+
+namespace CoW {
+namespace Debug {
+
+namespace {
+
+bool ParseNumber(const Json::Value& v, double& out)
+{
+    if (v.isNumeric()) { out = v.asDouble(); return isfinite(out) != 0; }
+    if (v.isBool()) { out = v.asBool() ? 1.0 : 0.0; return true; }
+    if (!v.isString()) { return false; }
+    const std::string text = v.asString();
+    if (text.empty()) { return false; }
+    char* end = nullptr;
+    out = strtod(text.c_str(), &end);
+    return end != nullptr && *end == '\0' && isfinite(out) != 0;
+}
+
+}  // namespace
+
+Json::Value ParamCommandHelper::SetAction(const Json::Value& args)
+{
+    if (!args["key"].isString()) { return Error("missing 'key'", nullptr); }
+    const std::string key = args["key"].asString();
+    if (!args.isMember("value")) { return Error("missing 'value'", key.c_str()); }
+    if (!mEnqueue) { return Error("no mutation queue wired, cannot set", key.c_str()); }
+    const int32_t found = mFile.IsLoaded() ? FindIndex(key.c_str()) : -1;
+    if (found < 0) { return Error("unknown parameter key", key.c_str()); }
+    const uint32_t index = static_cast<uint32_t>(found);
+    const Dia::Attribute::AttributeSchema& schema = mFile.Schema();
+    const Dia::Attribute::AttributeDefinition& def = schema.GetAttributeByIndex(index);
+    const Json::Value& raw = args["value"];
+
+    // Validate against the schema without touching the file: kind, range, then constraints on a scratch copy.
+    Json::Value normalised;
+    float stored = 0.0f;
+    double n = 0.0;
+    switch (def.kind)
+    {
+    case AttributeKind::Enum:
+    {
+        if (!raw.isString()) { return Error("value must be an enum id", key.c_str()); }
+        const std::string id = raw.asString();
+        bool ok = false;
+        for (uint32_t i = 0; i < def.enumIdCount; ++i)
+        {
+            if (id == schema.GetEnumId(index, i).AsCStr()) { stored = static_cast<float>(i); ok = true; break; }
+        }
+        if (!ok) { return Error("unknown enum id", key.c_str()); }
+        normalised = Json::Value(id);
+        break;
+    }
+    case AttributeKind::Bool:
+    {
+        bool b = false;
+        if (raw.isString())
+        {
+            const std::string t = raw.asString();
+            if (t == "true" || t == "1") { b = true; }
+            else if (t != "false" && t != "0") { return Error("value must be true or false", key.c_str()); }
+        }
+        else if (!ParseNumber(raw, n) || (n != 0.0 && n != 1.0)) { return Error("value must be true or false", key.c_str()); }
+        else { b = n != 0.0; }
+        stored = b ? 1.0f : 0.0f;
+        normalised = Json::Value(b);
+        break;
+    }
+    default:
+    {
+        if (!ParseNumber(raw, n)) { return Error("value must be a number", key.c_str()); }
+        if (def.kind == AttributeKind::Int && n != floor(n)) { return Error("value must be a whole number", key.c_str()); }
+        if (n < static_cast<double>(def.minimum_value) || n > static_cast<double>(def.maximum_value))
+        {
+            return Error("value out of range", key.c_str());
+        }
+        stored = static_cast<float>(n);
+        normalised = Json::Value(n);
+        break;
+    }
+    }
+
+    const uint32_t count = schema.GetAttributeCount();
+    std::vector<float> candidate(count);
+    for (uint32_t i = 0; i < count; ++i) { candidate[i] = mFile.Values().GetBaseValueByIndex(i); }
+    candidate[index] = stored;
+    Dia::Attribute::SchemaError cerr;
+    if (!schema.CheckConstraints(candidate.data(), count, cerr))
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "value breaks a constraint (%s)", cerr.reason.AsCStr());
+        return Error(buf, key.c_str());
+    }
+
+    ParamMutation m;
+    m.kind = ParamMutation::Kind::kSet;
+    snprintf(m.key, sizeof(m.key), "%s", key.c_str());
+    m.value = normalised;
+    if (!mEnqueue(m)) { return Error("mutation queue full, try again after the next step", key.c_str()); }
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["queued"] = true;
+    r["key"] = key;
+    r["value"] = normalised;
+    const ParamDayInfo day = mDayProvider ? mDayProvider() : ParamDayInfo();
+    r["effectiveDay"] = day.effectiveDay;
+    if (day.deferLag > 0) { r["visibleDay"] = day.effectiveDay + day.deferLag; }
+    return r;
+}
+
+Json::Value ParamCommandHelper::ReloadAction()
+{
+    if (!mEnqueue || !mReloadFn) { return Error("no reload wired, cannot reload", nullptr); }
+    ParamReloadResult preview;
+    if (!mReloadFn(false, preview)) { return Error(preview.error.empty() ? "reload failed" : preview.error.c_str(), nullptr); }
+    ParamMutation m;
+    m.kind = ParamMutation::Kind::kReload;
+    if (!mEnqueue(m)) { return Error("mutation queue full, try again after the next step", nullptr); }
+
+    Json::Value r(Json::objectValue);
+    r["success"] = true;
+    r["queued"] = true;
+    Json::Value packs(Json::arrayValue);
+    for (const std::string& id : preview.packIds) { packs.append(id); }
+    r["packs"] = packs;
+    Json::Value warnings(Json::arrayValue);
+    for (const std::string& w : preview.warnings) { warnings.append(w); }
+    r["warnings"] = warnings;
+    const ParamDayInfo day = mDayProvider ? mDayProvider() : ParamDayInfo();
+    r["effectiveDay"] = day.effectiveDay;
+    if (day.deferLag > 0) { r["visibleDay"] = day.effectiveDay + day.deferLag; }
+    return r;
+}
+
+bool ParamCommandHelper::ApplyMutation(const ParamMutation& mutation)
+{
+    if (mutation.kind == ParamMutation::Kind::kReload)
+    {
+        ParamReloadResult result;
+        if (!mReloadFn || !mReloadFn(true, result))
+        {
+            DIA_LOG_WARNING("WorldSim", "%s: queued reload failed: %s", mName.c_str(), result.error.c_str());
+            return false;
+        }
+        ClearSources();
+        for (size_t i = 0; i < result.packIds.size() && i < result.packBodies.size(); ++i)
+        {
+            NotePackApplied(result.packIds[i].c_str(), result.packBodies[i]);
+        }
+        return true;
+    }
+    Dia::Attribute::ParamError err;
+    if (!mFile.Set(Dia::Core::StringCRC(mutation.key), mutation.value, err))
+    {
+        DIA_LOG_WARNING("WorldSim", "%s: queued set of '%s' refused: %s", mName.c_str(), mutation.key, err.reason.AsCStr());
+        return false;
+    }
+    MarkKey(mutation.key, kSourceSet);
+    return true;
 }
 
 }  // namespace Debug
