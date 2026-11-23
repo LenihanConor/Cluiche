@@ -1,6 +1,7 @@
 #include <DraoiHexWorld/WorldCellFields.h>
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Draoi {
 namespace HexWorld {
@@ -33,7 +34,10 @@ void WorldCellFields::Register(Dia::Core::StringCRC slot, Dia::Core::StringCRC f
     }
     DIA_ASSERT(!mEntries.IsFull(), "WorldCellFields capacity exceeded");
     if (mEntries.IsFull())
+    {
+        DIA_LOG_ERROR("HexWorld", "WorldCellFields: registry full (%u fields); field dropped", kMaxFields);
         return;
+    }
     Entry e;
     e.slot = slot;
     e.field = field;
