@@ -6,8 +6,8 @@
 // fast-math), so one hash set is expected to serve both configurations. If a Release run mismatches, per-configuration
 // golden sets are needed.
 //
-// Re-baseline after an intended change:
-//   $env:DIA_UPDATE_GOLDEN = "1"; dia run googletest --filter="WeatherGolden*" --shards 2; Remove-Item Env:DIA_UPDATE_GOLDEN
+// Re-baseline after an intended change (single process, NO --shards: shards race on the golden file):
+//   $env:DIA_UPDATE_GOLDEN = "1"; dia run googletest --filter="WeatherGolden*"; Remove-Item Env:DIA_UPDATE_GOLDEN
 #include <gtest/gtest.h>
 
 #include <DiaCellLayers/Testing/CellLayerGolden.h>

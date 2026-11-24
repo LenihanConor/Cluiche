@@ -1391,6 +1391,7 @@
     <ClCompile Include="Draoi\TestWeatherPrecipMelt.cpp" />
     <ClCompile Include="Draoi\TestWeatherIntegration.cpp" />
     <ClCompile Include="Draoi\TestWeatherGoldens.cpp" />
+    <ClCompile Include="Draoi\TestWeatherEdges.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">
