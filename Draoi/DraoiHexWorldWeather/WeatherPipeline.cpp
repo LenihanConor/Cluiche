@@ -278,6 +278,62 @@ void RunHeatGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExe
     });
 }
 
+void RouteCondensate(PassContext& context, uint32_t cell, float amount)
+{
+    if (!(amount > 0.0f)) return;
+    WeatherFields& f = *context.fields;
+    f.precipitation[cell] += amount;
+    if (f.temperature[cell] < context.inputs->params.snowThreshold)
+    {
+        const float pack = f.snowPack[cell] + amount;
+        const float over = pack > 1.0f ? pack - 1.0f : 0.0f;
+        f.snowPack[cell] = pack > 1.0f ? 1.0f : pack;
+        const Dia::Core::Containers::DynamicArray<uint8_t>& eligible = context.inputs->hydrology.glacierEligible;
+        if (over > 0.0f && cell < eligible.Size() && eligible[cell] != 0)
+            context.handoff->glacierInput[cell] += over;   // discarded on other cells (soft)
+    }
+    else
+    {
+        f.waterToGround[cell] += amount;
+    }
+}
+
+// Pass 7 Orographic (GDD s9). Reads the upwind neighbour's elevation, which no pass writes.
+void RunOrographicPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)
+{
+    DIA_PROFILE_SCOPE("Weather.Pass7.Orographic", kWeatherCategory);
+    executor.ParallelFor(context.tables->cellCount, kMinRange, [&context](uint32_t begin, uint32_t end)
+    {
+        const CapturedInputs& in = *context.inputs;
+        const WeatherParameters& p = in.params;
+        WeatherFields& f = *context.fields;
+        const GridTables& t = *context.tables;
+        const Dia::Core::Containers::DynamicArray<float>& elevation = context.terrain->elevation;
+        constexpr uint32_t kDirs = Dia::Geometry2D::kHexDirections;
+        for (uint32_t c = begin; c < end; ++c)
+        {
+            if (!(f.windSpeed[c] > 0.0f)) continue;   // EC-05: no lift on a stale direction
+            const uint32_t up = t.neighbours[c * kDirs + (t.dirIndex[c] + 3) % kDirs];
+            if (up == Dia::Geometry2D::kNoCell) continue;
+            if (!(elevation[up] < elevation[c])) continue;
+
+            const float gain = (elevation[c] - elevation[up]) * in.orographicFactor[c];   // factor 1.0f is exact
+            f.temperature[c] -= gain * p.orographicCoolingRate;
+            if (f.temperature[c] < p.condensationTemp)
+            {
+                float amount = f.moisture[c] * gain * p.orographicPrecipRate;
+                if (amount > f.moisture[c]) amount = f.moisture[c];
+                if (amount > 0.0f)
+                {
+                    f.moisture[c] -= amount;
+                    RouteCondensate(context, c, amount);
+                }
+                f.cloudCover[c] = f.moisture[c] < 1.0f ? f.moisture[c] : 1.0f;
+            }
+        }
+    });
+}
+
 void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor, PassId lastPass)
 {
     // Pass 0 (Influence) is skipped until Feature 7.
@@ -299,6 +355,8 @@ void RunPipelineUntil(PassContext& context, Dia::ParallelExecutor::IParallelExec
     RunHeatOutPass(context, executor);
     if (lastPass < PassId::HeatGather) return;
     RunHeatGatherPass(context, executor);
+    if (lastPass < PassId::Orographic) return;
+    RunOrographicPass(context, executor);
 }
 
 void RunPipeline(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor)

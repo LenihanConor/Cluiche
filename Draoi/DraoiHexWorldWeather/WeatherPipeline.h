@@ -64,7 +64,8 @@ struct PassContext
 enum class PassId : uint8_t
 {
     Influence = 0, Solar, Pressure, Wind, Evaporation, MoistureOut, MoistureGather, AnomalyDecay, HeatOut, HeatGather,
-    kLast = HeatGather
+    Orographic,
+    kLast = Orographic
 };
 
 // The ordered pass sequence (0, 1, 2, 3, 4, 5a..6b, 7, 8, 9, finish). Filled in by the pass tasks.
@@ -83,6 +84,14 @@ void RunMoistureGatherPass(PassContext& context, Dia::ParallelExecutor::IParalle
 void RunAnomalyDecayPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);    // pass 5c
 void RunHeatOutPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);         // pass 6a
 void RunHeatGatherPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);      // pass 6b
+
+void RunOrographicPass(PassContext& context, Dia::ParallelExecutor::IParallelExecutor& executor);      // pass 7
+
+// Routes `amount` of condensate that fell on `cell` (passes 7 and 8): adds it to `precipitation`; below snowThreshold
+// it goes to `snowPack` (capped 1.0, CH-04; the excess goes to handoff glacierInput on latched glacierEligible cells
+// and is discarded elsewhere), otherwise to `waterToGround`. Does not touch `moisture`. amount <= 0 does nothing.
+// Reads the cell's own temperature; writes only the cell's own entries.
+void RouteCondensate(PassContext& context, uint32_t cell, float amount);
 
 // Pressure-driven push on `cell`'s wind: (1/6) * sum over the 6 directions d of kDirectionVectors[d] * (p[cell] - p[nb]).
 // A higher-pressure neighbour pushes the wind away from it, a lower one pulls it in. kNoCell neighbours add nothing

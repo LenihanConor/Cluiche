@@ -496,6 +496,133 @@ TEST(WeatherTransportHeat, InflowOrderMatchesReferenceBitForBit)
         EXPECT_EQ(memcmp(&ref[c], &rig.Working().temperature[c], sizeof(float)), 0) << "cell " << c;
 }
 
+// ---- Boundaries across both transports (AC 25, 26, 27, EC-16) ------------------------------------------------------------
+
+namespace
+{
+    constexpr uint32_t kWeeks = 52;
+
+    // One week of both transports with the wind held fixed (passes 5a, 5b, 6a, 6b).
+    void RunWeek(Rig& rig)
+    {
+        RunMoistureOutPass(rig.ctx, rig.serial);
+        RunMoistureGatherPass(rig.ctx, rig.serial);
+        RunHeatOutPass(rig.ctx, rig.serial);
+        RunHeatGatherPass(rig.ctx, rig.serial);
+    }
+
+    void SetUniformField(Rig& rig, float moisture, float temperature)
+    {
+        for (uint32_t c = 0; c < kN; ++c) { rig.Working().moisture[c] = moisture; rig.Working().temperature[c] = temperature; }
+    }
+}
+
+TEST(WeatherTransportBoundary, UniformFieldsHoldFor52WeeksExceptDownwindEdgeCellsWhichOnlyGain)
+{
+    // AC 25 says a uniform field stays uniform with edge_inflow on. Known spec conflict with EC-16: a cell whose downwind
+    // neighbour is off-map keeps its outflow (out = 0) yet still receives its upwind neighbour's outflow, so it
+    // accumulates. Every other cell, including upwind-edge cells (edge term cancels their outflow), must hold.
+    for (uint32_t d = 0; d < 6; ++d)
+    {
+        Rig rig(Terrain());
+        rig.Capture();
+        rig.Uniform(d, 1.0f);
+        SetUniformField(rig, 0.4f, 0.4f);
+        const float mRate = rig.params.moistureTransportRate, hRate = rig.params.heatTransportRate;
+        for (uint32_t w = 0; w < kWeeks; ++w) RunWeek(rig);
+        uint32_t edgeCells = 0;
+        for (uint32_t c = 0; c < kN; ++c)
+        {
+            if (rig.Downwind(c) == kNoCell)
+            {
+                ++edgeCells;
+                EXPECT_GE(rig.Working().moisture[c], 0.4f - 1e-5f) << "d=" << d << " cell " << c;
+                EXPECT_LE(rig.Working().moisture[c], 0.4f + kWeeks * 0.4f * mRate + 1e-4f) << "d=" << d << " cell " << c;
+                EXPECT_GE(rig.Working().temperature[c], 0.4f - 1e-5f) << "d=" << d << " cell " << c;
+                EXPECT_LE(rig.Working().temperature[c], 0.4f + kWeeks * 0.4f * hRate + 1e-4f) << "d=" << d << " cell " << c;
+            }
+            else
+            {
+                EXPECT_NEAR(rig.Working().moisture[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
+                EXPECT_NEAR(rig.Working().temperature[c], 0.4f, 1e-5f) << "d=" << d << " cell " << c;
+            }
+        }
+        EXPECT_GT(edgeCells, 0u);
+    }
+}
+
+TEST(WeatherTransportBoundary, EdgeInflowOffUpwindEdgeCellsLoseMoistureAndHeatEveryWeek)
+{
+    // AC 26: with no edge inflow the upwind-edge cells (upwind off-map, downwind on-map) have nothing coming in.
+    Rig rig(Terrain());
+    rig.params.edgeInflow = false;
+    rig.Capture();
+    rig.Uniform(0, 1.0f);
+    SetUniformField(rig, 0.4f, 0.4f);
+    uint32_t upwindEdge[kN]; uint32_t count = 0;
+    for (uint32_t c = 0; c < kN; ++c)
+    {
+        const uint32_t up = rig.sim.Tables().neighbours[c * 6 + (rig.sim.Tables().dirIndex[c] + 3) % 6];
+        if (up == kNoCell && rig.Downwind(c) != kNoCell) upwindEdge[count++] = c;
+    }
+    ASSERT_GT(count, 0u);
+    const float mKeep = 1.0f - rig.params.moistureTransportRate, hKeep = 1.0f - rig.params.heatTransportRate;
+    float expectM = 0.4f, expectH = 0.4f;
+    for (uint32_t w = 0; w < 5; ++w)
+    {
+        float prevM[kN], prevH[kN];
+        CopyOut(rig.Working().moisture, prevM);
+        CopyOut(rig.Working().temperature, prevH);
+        RunWeek(rig);
+        expectM *= mKeep; expectH *= hKeep;
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const uint32_t c = upwindEdge[i];
+            EXPECT_LT(rig.Working().moisture[c], prevM[c]) << "week " << w << " cell " << c;
+            EXPECT_LT(rig.Working().temperature[c], prevH[c]) << "week " << w << " cell " << c;
+            EXPECT_NEAR(rig.Working().moisture[c], expectM, 1e-5f) << "week " << w << " cell " << c;
+            EXPECT_NEAR(rig.Working().temperature[c], expectH, 1e-5f) << "week " << w << " cell " << c;
+        }
+    }
+}
+
+TEST(WeatherTransportBoundary, CellWithBothNeighboursOffMapGainsAndLosesNothing)
+{
+    // AC 27: a 1-wide column has no NE or SW neighbour, so with wind NE (d = 0) every cell has an off-map downwind and
+    // an off-map upwind. Its own outflow stays in the cell (EC-16) and the edge term returns only that zero.
+    for (int edge = 0; edge < 2; ++edge)
+    {
+        WT::HexTerrainOptions o;
+        Rig rig(WT::MakeHexTerrain(1, 3, o));
+        rig.params.edgeInflow = edge != 0;
+        rig.Capture();
+        WeatherFields& f = rig.Working();
+        const GridTables& t = rig.sim.Tables();
+        for (uint32_t c = 0; c < 3; ++c)
+        {
+            rig.ctx.tables->dirIndex[c] = 0;
+            f.windSpeed[c] = 1.0f;
+            f.moisture[c] = 0.3f + 0.1f * float(c);
+            f.temperature[c] = 0.5f + 0.1f * float(c);
+            f.pressureAnomaly[c] = 0.0f;
+            ASSERT_EQ(t.neighbours[c * 6 + 0], kNoCell);
+            ASSERT_EQ(t.neighbours[c * 6 + 3], kNoCell);
+        }
+        for (uint32_t w = 0; w < kWeeks; ++w)
+        {
+            RunMoistureOutPass(rig.ctx, rig.serial);
+            RunMoistureGatherPass(rig.ctx, rig.serial);
+            RunHeatOutPass(rig.ctx, rig.serial);
+            RunHeatGatherPass(rig.ctx, rig.serial);
+        }
+        for (uint32_t c = 0; c < 3; ++c)
+        {
+            EXPECT_EQ(f.moisture[c], 0.3f + 0.1f * float(c)) << "edge=" << edge << " cell " << c;
+            EXPECT_EQ(f.temperature[c], 0.5f + 0.1f * float(c)) << "edge=" << edge << " cell " << c;
+        }
+    }
+}
+
 // ---- Range independence ---------------------------------------------------------------------------------------------
 
 TEST(WeatherTransportExecutors, ReverseAndFixedRangesGiveIdenticalBytes)
@@ -526,7 +653,7 @@ TEST(WeatherTransportPipeline, RunPipelineUntilStopsAfterEachNewPass)
 {
     Rig rig(Terrain());
     rig.Capture();
-    EXPECT_EQ(PassId::kLast, PassId::HeatGather);
+    EXPECT_EQ(PassId::kLast, PassId::Orographic);
     RunPipelineUntil(rig.ctx, rig.serial, PassId::kLast);
     for (uint32_t c = 0; c < kN; ++c) EXPECT_GE(rig.Working().temperature[c], 0.0f);
 }
