@@ -31,6 +31,7 @@ public:
     Dia::ApplicationFlow::StartResult CallStart() { return DoStart(); }
     Dia::ApplicationFlow::StopResult CallStop() { return DoStop(); }
     void CallConfigure(const char* json) { OnConfigure(json); }
+    void CallUpdate() { Dia::SimTime::SimTimeContext ctx{ Dia::Core::TimeAbsolute::Zero(), Dia::Core::TimeRelative::Zero(), 0, 1.0f, false }; DoUpdate(ctx); }
 };
 }
 
@@ -563,4 +564,71 @@ TEST(WeatherModuleHealth, NoWeatherSourceOrTestUsesTheForbiddenHealthWord)
         }
     }
     EXPECT_GT(scanned, 10u);
+}
+
+// ---- Task 5b: dev-build sidecar watch queues a reload (applied at Capture) ---------------------------------------------
+
+namespace
+{
+void Touch(const std::filesystem::path& path, int hoursAhead)
+{
+    std::filesystem::last_write_time(path, std::filesystem::file_time_type::clock::now() + std::chrono::hours(hoursAhead));
+}
+}
+
+TEST(WeatherModuleDevReload, FileChangeQueuesExactlyOneReloadAppliedAtCaptureAndStopUnwatches)
+{
+    ModuleRig rig;
+    const std::filesystem::path path = WriteTemp("weather_dev_reload_sidecar.json", WeatherParamKit::SidecarText());
+    rig.module.CallConfigure(("{\"sidecar\":\"" + JsonEscape(path.string()) + "\",\"dev_reload\":true}").c_str());
+    ASSERT_TRUE(rig.module.ConfigOk());
+    ASSERT_EQ(StartResult::kReady, rig.module.CallStart());
+    EXPECT_EQ(1u, rig.module.SidecarWatchCount());
+    rig.Announce(1);
+    CoW::Weather::WeatherStage& stage = rig.module.GetStage();
+    ASSERT_TRUE(stage.IsReadyForRevision(1));
+
+    rig.module.CallUpdate();   // no change yet
+    EXPECT_EQ(0u, stage.QueueCount());
+
+    Json::Value doc = WeatherParamKit::ParseJson(WeatherParamKit::SidecarText());
+    doc["entries"][1]["default"] = 0.5;
+    WriteTemp("weather_dev_reload_sidecar.json", WeatherParamKit::DumpJson(doc));
+    Touch(path, 1);
+    const uint64_t hashBefore = stage.ParametersHash();
+    rig.module.CallUpdate();
+    EXPECT_EQ(1u, stage.QueueCount());
+    rig.module.CallUpdate();   // same mtime: no second event
+    EXPECT_EQ(1u, stage.QueueCount());
+    EXPECT_EQ(hashBefore, stage.ParametersHash());   // applied at Capture only
+
+    Dia::ParallelExecutor::SerialExecutor exec;
+    stage.Capture(static_cast<Dia::DeferredStep::StepKey>(0));
+    stage.Run(exec);
+    stage.Commit();
+    EXPECT_NE(hashBefore, stage.ParametersHash());
+    EXPECT_EQ(0u, stage.QueueCount());
+
+    rig.module.CallStop();
+    EXPECT_EQ(0u, rig.module.SidecarWatchCount());
+    Touch(path, 2);
+    rig.module.CallUpdate();
+    EXPECT_EQ(0u, stage.QueueCount());
+    std::filesystem::remove(path);
+}
+
+TEST(WeatherModuleDevReload, DisabledByDefaultInTestHostsAndConfigMustBeABool)
+{
+    ModuleRig rig;
+    const std::filesystem::path path = WriteTemp("weather_dev_reload_sidecar2.json", WeatherParamKit::SidecarText());
+    rig.module.CallConfigure(("{\"sidecar\":\"" + JsonEscape(path.string()) + "\"}").c_str());
+    ASSERT_EQ(StartResult::kReady, rig.module.CallStart());
+    EXPECT_EQ(0u, rig.module.SidecarWatchCount());
+    rig.module.CallStop();
+    std::filesystem::remove(path);
+
+    WeatherProbe bad(StringCRC("WeatherModule"));
+    bad.CallConfigure("{\"dev_reload\":\"yes\"}");
+    EXPECT_FALSE(bad.ConfigOk());
+    EXPECT_EQ("dev_reload", bad.ConfigErrorKey());
 }

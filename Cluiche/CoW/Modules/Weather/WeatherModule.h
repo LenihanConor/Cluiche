@@ -6,6 +6,10 @@
 #include <DiaApplicationFlow/SimModule.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaStreams/ServiceStreamReader.h>
+#include <DiaThreading/JobSystem.h>
+#include <DiaCore/FilePath/FileWatcher.h>
 #include <DiaMessageBus/Bus.h>
 #include <DiaMessageBus/BusSubscriptionHandle.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -45,6 +49,8 @@ public:
     const std::string& ConfigErrorReason() const { return mConfigErrorReason; }
     uint32_t ConfiguredSpinupWeeks() const { return mSpinupWeeks; }
     bool ClimateConfigIgnored() const { return mClimateIgnored; }
+    // Dev-build sidecar watch (queues a Reload when the file changes). 0 when not watching.
+    size_t SidecarWatchCount() const { return mWatcher.GetWatchCount(); }
 
     // Queue API (SimPU, any time). Thin over the stage; see WeatherStage for the contracts.
     bool QueueParameterSet(const char* dottedKey, float value, Weather::ParamError& err) { return mStage.QueueParameterSet(dottedKey, value, err); }
@@ -69,6 +75,7 @@ public:
 
 protected:
     void OnConfigure(const char* configJson) override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override { mJobsReader.Connect(app); }
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
@@ -80,6 +87,7 @@ private:
     void OnWorldComplete(const WorldGenerationComplete& msg);
     void OnWorldFailed();
     void Unsubscribe();
+    void StartSidecarWatch();
     void TryLoadParameters();   // once per start, as soon as the stage has a biome registry
 
     std::unique_ptr<WorldGenAdapter> mAdapter;
@@ -104,6 +112,9 @@ private:
     bool mClimateIgnored = false;
     bool mSidecarGiven = false;
     bool mParamsAttempted = false;
+    bool mDevReload = false;       // watch the sidecar file and queue a Reload on change (dev builds / config dev_reload)
+    bool mDevReloadGiven = false;  // config dev_reload present
+    Dia::Core::FileWatcher mWatcher;
 
     Weather::WeatherStage mStage;
     WorldStepModule* mWorldStep = nullptr;   // borrowed; set while registered
@@ -111,6 +122,7 @@ private:
     TestHosts mTestHosts;
     bool mUseTestHosts = false;
 
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Threading::JobSystem> mJobsReader{this, "JobSystemService"};
     Dia::ApplicationFlow::ModuleRef<WorldStepModule> mWorldStepRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBusRef{this};
     Dia::ApplicationFlow::ModuleRef<WorldGenerationModule> mWorldGenRef{this};

@@ -506,10 +506,10 @@ TEST_F(EdgeTest, CaptureRunCommitAfterStopIsAnInvalidStepAndPublishesNothing)
     EXPECT_FALSE(stage.HasActive());
 }
 
-// FINDING (not fixed, tests only): Stop() drops the sims but leaves mStepValid set from an in-flight Capture, so a Run or a
+// (Fixed in Task 5b) Teardown now clears the step state. Previously Stop() dropped the sims but leaves mStepValid set from an in-flight Capture, so a Run or a
 // Commit that follows Stop dereferences the null active sim. The coordinator unregisters the stage first (DoStop order), so
 // production is protected by ordering, not by the stage. Enable once the base clears mStepValid in Teardown.
-TEST_F(EdgeTest, DISABLED_RunAndCommitAfterStopWithAStepInFlightAreHarmless)
+TEST_F(EdgeTest, RunAndCommitAfterStopWithAStepInFlightAreHarmless)
 {
     ASSERT_TRUE(Load());
     SpinUp(1);

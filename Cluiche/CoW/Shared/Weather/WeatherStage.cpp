@@ -483,6 +483,12 @@ WeatherSnapshot WeatherStage::GetSnapshot() const
     return snap;
 }
 
+void WeatherStage::WaitForPoolJobs()
+{
+    std::unique_lock<std::mutex> lock(mPoolLock);
+    mPoolCv.wait(lock, [this]() { return mPoolActive == 0; });
+}
+
 bool WeatherStage::RunNextJob()
 {
     if (mQueued.empty()) { return false; }
@@ -502,6 +508,28 @@ void WeatherStage::LaunchJob(uint32_t revision, uint32_t generation, const World
     case LaunchMode::kManual:
         mQueued.push_back([this, revision, generation, world]() { RunJob(revision, generation, world); });
         break;
+    case LaunchMode::kJobSystem:
+    {
+        {
+            std::lock_guard<std::mutex> guard(mPoolLock);
+            ++mPoolActive;
+        }
+        std::function<void()> body = [this, revision, generation, world]() {
+            RunJob(revision, generation, world);
+            std::lock_guard<std::mutex> guard(mPoolLock);   // last touch of the stage; the waiter needs this lock
+            --mPoolActive;
+            mPoolCv.notify_all();
+        };
+        if (mSubmitter && mSubmitter(std::move(body))) { break; }
+        {
+            std::lock_guard<std::mutex> guard(mPoolLock);
+            --mPoolActive;
+        }
+        DIA_LOG_WARNING(kLogChannel, "WTH: spin-up job for world %u could not be submitted to the job system (%s); running inline",
+                        static_cast<unsigned>(revision), mSubmitter ? "submit refused" : "no job system available");
+        RunJob(revision, generation, world);
+        break;
+    }
     default:
         WeatherStageBase::LaunchJob(revision, generation, world);
         break;

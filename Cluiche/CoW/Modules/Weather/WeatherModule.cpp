@@ -98,6 +98,7 @@ void WeatherModule::OnConfigure(const char* configJson)
     mConfigPacks.clear();
     mClimateIgnored = false;
     mSidecarGiven = false;
+    mDevReloadGiven = false;
     mSidecarRef = "json.weather_parameters_schema";
     mSpinupWeeks = Weather::kDefaultSpinupWeeks;
 
@@ -134,6 +135,12 @@ void WeatherModule::OnConfigure(const char* configJson)
         }
         mSidecarRef = root["sidecar"].asString();
         mSidecarGiven = true;
+    }
+    if (root.isMember("dev_reload"))
+    {
+        if (!root["dev_reload"].isBool()) { fail("dev_reload", "must be a boolean"); return; }
+        mDevReload = root["dev_reload"].asBool();
+        mDevReloadGiven = true;
     }
     if (root.isMember("packs"))
     {
@@ -235,6 +242,20 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
                      static_cast<unsigned>(mSpinupWeeks));
     }
     mStage.Start();   // takes the generation hold
+    if (!mUseTestHosts)
+    {
+        // Spin-up runs on the JobSystemService pool (tag: the 'world' channel); with no service yet, or a refusing pool,
+        // the stage runs it inline with one Warning.
+        mStage.SetLaunchMode(Weather::WeatherStage::LaunchMode::kJobSystem);
+        mStage.SetJobSubmitter([this](std::function<void()> fn) {
+            if (!mJobsReader.IsConnected() || !mJobsReader.IsAvailable()) { return false; }
+            Dia::Threading::JobTag tag;
+            tag.owner = WorldStepModule::kChannelId.Value();
+            tag.tag = Dia::Core::StringCRC("weather").Value();
+            return mJobsReader.Get().TrySubmit(std::move(fn), tag).IsValid();
+        });
+    }
+    StartSidecarWatch();
     if (!mUseTestHosts && mWorldGen != nullptr && mWorldGen->AreBiomesLoaded())
         mStage.SetRegistry(&mWorldGen->GetBiomeRegistry());
     TryLoadParameters();
@@ -280,8 +301,27 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     return StartResult::kReady;
 }
 
+// Dev builds (not COW_SHIPPING_BUILD, the ParamCommandHelper precedent), or config `dev_reload`: watch the configured
+// sidecar file; a change queues a Reload, which still applies at Capture. Test-host runs watch only when asked.
+void WeatherModule::StartSidecarWatch()
+{
+    bool enable = mDevReloadGiven ? mDevReload : false;
+#ifndef COW_SHIPPING_BUILD
+    if (!mDevReloadGiven && !mUseTestHosts) { enable = true; }
+#endif
+    mWatcher.Stop();
+    if (!enable || !mOwnedSource) { return; }
+    mWatcher.Start();
+    const std::string path = ResolveRef(mSidecarRef);
+    mWatcher.Watch(path.c_str(), [this](const char* changed, Dia::Core::FileWatchEvent) {
+        DIA_LOG_INFO(Weather::kLogChannel, "WTH: sidecar '%s' changed, reload queued", changed);
+        mStage.QueueReload();
+    });
+}
+
 void WeatherModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 {
+    mWatcher.Update();
     mStage.Update();
 }
 
@@ -319,6 +359,7 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     DIA_TRACE_ZONE("WeatherModule::DoStop", Dia::Observation::Trace::Category::kNone);
     if (mRegistered && mWorldStep != nullptr)
         mWorldStep->UnregisterStage(StageId());
+    mWatcher.Stop();
     mRegistered = false;
     mParamsAttempted = false;
     mWorldStep = nullptr;

@@ -4,6 +4,11 @@
 
 #include <string.h>
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+#include <DiaThreading/JobSystem.h>
+
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Log/Logger.h>
@@ -383,4 +388,149 @@ TEST(WeatherSpinUpTerrain, EmptyWorldIsRefused)
     WeatherTerrain t;
     EXPECT_FALSE(CoW::Weather::BuildWeatherTerrain(world, t));
     EXPECT_EQ(0u, t.width);
+}
+
+// ---- Task 5b: JobSystem launcher (pool submit, inline fallback, join on stop) --------------------------------------
+
+namespace
+{
+class WarnSink : public Dia::Observation::Log::ISink
+{
+public:
+    void OnLogEntry(const Dia::Observation::Log::LogEntry& e) override
+    {
+        if (strstr(e.message, "WTH") != nullptr && e.level == Dia::Observation::Log::LogLevel::kWarning) { ++warnings; }
+    }
+    const char* GetName() const override { return "WeatherPoolWarnSink"; }
+    std::atomic<unsigned> warnings{ 0 };
+};
+
+// The production submitter shape over a real JobSystem (tag = the 'world' channel id).
+CoW::Weather::WeatherStage::JobSubmitter PoolSubmitter(Dia::Threading::JobSystem& js)
+{
+    return [&js](std::function<void()> fn) {
+        Dia::Threading::JobTag tag;
+        tag.owner = Dia::Core::StringCRC("world").Value();
+        return js.TrySubmit(std::move(fn), tag).IsValid();
+    };
+}
+
+bool WaitReady(WeatherStage& stage, uint32_t revision)
+{
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    while (std::chrono::steady_clock::now() < deadline)
+    {
+        stage.Update();
+        if (stage.IsReadyForRevision(revision)) { return true; }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return false;
+}
+}
+
+TEST_F(WeatherSpinUpTest, PoolSpinUpIsBitIdenticalToTheSynchronousPath)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    stage.SetJobSubmitter(PoolSubmitter(js));
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kJobSystem);
+    stage.OnWorldComplete(1);
+    ASSERT_TRUE(WaitReady(stage, 1));
+
+    WeatherTerrain terrain;
+    CoW::WorldStep::WorldView view;
+    ASSERT_TRUE(source.GetWorld(view, terrain));
+    WeatherSimulation reference;
+    ReferenceSpinUp(terrain, 6, reference);
+    const CoW::Weather::WeatherSnapshot snap = stage.GetSnapshot();
+    ASSERT_NE(nullptr, snap.fields);
+    EXPECT_TRUE(WT::SameFields(reference.Fields(), *snap.fields));
+    EXPECT_EQ(reference.GetCommittedWeek(), snap.week);
+    stage.Stop();
+    js.Shutdown();
+}
+
+TEST_F(WeatherSpinUpTest, FailedSubmitRunsInlineWithExactlyOneWarning)
+{
+    WarnSink warn;
+    Dia::Observation::Log::Logger::Instance().RegisterSink(&warn);
+    stage.SetJobSubmitter([](std::function<void()>) { return false; });
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kJobSystem);
+    stage.OnWorldComplete(1);
+    stage.Update();   // the job already ran inline, so the result is waiting
+    EXPECT_TRUE(stage.IsReadyForRevision(1));
+    Dia::Observation::Log::Logger::Instance().FlushSync();
+    EXPECT_EQ(1u, warn.warnings.load());
+    EXPECT_EQ(0u, Errors());
+    Dia::Observation::Log::Logger::Instance().UnregisterSink(&warn);
+}
+
+TEST_F(WeatherSpinUpTest, NoSubmitterAvailableRunsInlineWithExactlyOneWarning)
+{
+    WarnSink warn;
+    Dia::Observation::Log::Logger::Instance().RegisterSink(&warn);
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kJobSystem);   // no submitter set
+    stage.OnWorldComplete(1);
+    stage.Update();
+    EXPECT_TRUE(stage.IsReadyForRevision(1));
+    Dia::Observation::Log::Logger::Instance().FlushSync();
+    EXPECT_EQ(1u, warn.warnings.load());
+    Dia::Observation::Log::Logger::Instance().UnregisterSink(&warn);
+}
+
+TEST_F(WeatherSpinUpTest, StopDuringAPoolJobCancelsAndJoinsBeforeReturning)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    stage.SetSpinupWeeks(520);
+    std::atomic<uint32_t> weeksRun{ 0 };
+    stage.SetSpinUpWeekObserver([&](uint32_t) {
+        ++weeksRun;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    });
+    stage.SetJobSubmitter(PoolSubmitter(js));
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kJobSystem);
+    stage.OnWorldComplete(1);
+    for (int i = 0; i < 2000 && weeksRun.load() == 0; ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    ASSERT_GT(weeksRun.load(), 0u);
+
+    stage.Stop();   // cancels, then waits for the pool job
+    const uint32_t atStop = weeksRun.load();
+    EXPECT_EQ(0, js.GetActiveJobCount());   // nothing of the stage is still running on the pool
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    EXPECT_EQ(atStop, weeksRun.load());
+    EXPECT_LT(atStop, 520u);
+    EXPECT_FALSE(stage.IsReady());
+    js.Shutdown();
+}
+
+TEST_F(WeatherSpinUpTest, StaleResultOfASupersededPoolJobIsDiscarded)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    std::atomic<bool> firstEntered{ false };
+    std::atomic<bool> release{ false };
+    std::atomic<bool> first{ true };
+    stage.SetSpinUpWeekObserver([&](uint32_t) {
+        if (first.exchange(false))   // only revision 1's job parks
+        {
+            firstEntered = true;
+            for (int i = 0; i < 5000 && !release.load(); ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+        }
+    });
+    stage.SetJobSubmitter(PoolSubmitter(js));
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kJobSystem);
+    stage.OnWorldComplete(1);
+    for (int i = 0; i < 2000 && !firstEntered.load(); ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    ASSERT_TRUE(firstEntered.load());
+
+    source.width = 5;
+    source.height = 4;
+    stage.OnWorldComplete(2);
+    release = true;
+    ASSERT_TRUE(WaitReady(stage, 2));
+    EXPECT_FALSE(stage.IsReadyForRevision(1));
+    EXPECT_EQ(20u, stage.GetSnapshot().cellCount);
+    stage.Stop();
+    js.Shutdown();
 }

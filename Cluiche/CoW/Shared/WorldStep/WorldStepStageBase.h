@@ -626,6 +626,9 @@ private:
         if (mSpinUp.TryTake(leftover, leftoverRevision)) { delete leftover; }
         mSpinUp.Reset();
         DropSims();
+        mStepValid = false;       // Run/Commit after Stop must not touch the dropped sim
+        mInFlight = false;
+        mDropAfterStep = false;
         mRestoredValid = false;
         if (mFault) { mHealth.SetOK(); }   // a restart begins healthy; the owner reloads and may fault again
         mFault = false;

@@ -16,6 +16,7 @@
 #include <Shared/WorldStep/WorldStepStageBase.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -134,14 +135,24 @@ struct HooksHolder
 class WeatherStage : private Detail::HooksHolder, public WeatherStageBase
 {
 public:
-    // How a spin-up job runs. kThread is the production default (the base's worker thread); kSynchronous runs the job
-    // inside OnWorldComplete; kManual queues it until RunNextJob (tests that control job timing).
-    enum class LaunchMode : uint8_t { kThread, kSynchronous, kManual };
+    // How a spin-up job runs. kThread is the default (the base's worker thread); kSynchronous runs the job inside
+    // OnWorldComplete; kManual queues it until RunNextJob (tests that control job timing); kJobSystem hands the job to the
+    // submitter (production: JobSystemService TrySubmit, tag 'world') and runs it inline with one Warning when the
+    // submitter is missing or refuses (a job is never dropped).
+    enum class LaunchMode : uint8_t { kThread, kSynchronous, kManual, kJobSystem };
+    // Takes ownership of the function; true = accepted (it will run exactly once on another thread), false = refused
+    // (the function must not have run).
+    typedef std::function<bool(std::function<void()>)> JobSubmitter;
 
     WeatherStage();
-    ~WeatherStage() override { hooks.Invalidate(); }   // a running spin-up job sees it between weeks, so the base joins promptly
+    ~WeatherStage() override
+    {
+        hooks.Invalidate();   // a running spin-up job sees it between weeks, so the base joins promptly
+        WaitForPoolJobs();
+    }
 
     void SetLaunchMode(LaunchMode mode) { mMode = mode; }
+    void SetJobSubmitter(JobSubmitter submitter) { mSubmitter = std::move(submitter); }
     size_t QueuedJobCount() const { return mQueued.size(); }
     bool RunNextJob();   // kManual: runs the oldest queued job; false if none
 
@@ -187,13 +198,23 @@ public:
 
 protected:
     // First step of Stop: cancels a running spin-up job (it checks between weeks) before the base joins it.
-    void UnregisterStage() override { hooks.Invalidate(); }
+    void UnregisterStage() override
+    {
+        hooks.Invalidate();
+        WaitForPoolJobs();   // pool jobs are not the base's mJob: Stop must not return while one still touches the stage
+    }
     void LaunchJob(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world) override;
 
 private:
     bool Push(const WeatherEntry& entry, bool usedSlot);   // Enqueue; hands the side-store slot back when refused
 
+    void WaitForPoolJobs();
+
     IWeatherWorldSource* mSource = nullptr;
+    JobSubmitter mSubmitter;
+    std::mutex mPoolLock;
+    std::condition_variable mPoolCv;
+    uint32_t mPoolActive = 0;   // pool jobs submitted and not yet finished (guarded by mPoolLock)
     LaunchMode mMode = LaunchMode::kThread;
     std::vector<std::function<void()>> mQueued;
 };
