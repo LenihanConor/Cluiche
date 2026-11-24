@@ -1,7 +1,7 @@
 # Plan: A4 WeatherModule & Deferred Step (A4 Weather Feature 3)
 
 **Spec:** @docs/specs/applications/cow/systems/a4-weather/weather-module.md
-**Status:** In Progress
+**Status:** Done (buildable scope); deferrals listed below
 **System plan:** @docs/specs/applications/cow/systems/a4-weather/a4-weather.plan.md (row 3)
 
 Re-planned 2026-11-24 against the Draoi layer amendment and the code as it stands. The 25-row plan of 2026-11-18 is replaced.
