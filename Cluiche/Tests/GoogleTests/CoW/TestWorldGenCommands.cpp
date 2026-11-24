@@ -33,6 +33,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -672,6 +673,99 @@ TEST(WorldGenCommands, ParamsSaveDefaultsWritesTheSidecarFileWhenThePathIsTheSou
 	std::filesystem::remove(tmp, ec);
 	EXPECT_NE(written, original);
 	EXPECT_FALSE(written.empty());
+}
+
+namespace
+{
+	std::string ReadAll(const std::filesystem::path& p)
+	{
+		std::ifstream in(p, std::ios::binary);
+		return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+	}
+
+	void WriteAll(const std::filesystem::path& p, const std::string& text)
+	{
+		std::filesystem::create_directories(p.parent_path());
+		std::ofstream out(p, std::ios::binary);
+		out << text;
+	}
+
+	size_t CountDifferingLines(const std::string& a, const std::string& b)
+	{
+		std::istringstream sa(a), sb(b);
+		std::string la, lb;
+		size_t diff = 0;
+		while (true)
+		{
+			const bool ga = static_cast<bool>(std::getline(sa, la));
+			const bool gb = static_cast<bool>(std::getline(sb, lb));
+			if (!ga && !gb) break;
+			if (!ga || !gb || la != lb) ++diff;
+		}
+		return diff;
+	}
+}
+
+TEST(WorldGenCommands, ParamsSaveDefaultsAlsoWritesTheSourceAssetWhenItResolves)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	// tmp/src mirrors the repo: Cluiche/Assets/CoW/<source layout> and Cluiche/bin/<deployed layout> (different layout).
+	std::error_code ec;
+	const std::filesystem::path root = std::filesystem::temp_directory_path(ec) / "cow_wg_params_src_tree_test";
+	std::filesystem::remove_all(root, ec);
+	const std::filesystem::path src = root / "src" / "Cluiche" / "Assets" / "CoW" / "Global" / "WorldGen" / "Rules" / "terrain_rules.schema.json";
+	const std::filesystem::path bin = root / "src" / "Cluiche" / "bin" / "CoW" / "Debug" / "x64" / "assets" / "global" / "misc" / "terrain_rules.schema.json";
+	const std::string original = gWg->GetRulesSidecarText();
+	WriteAll(src, original);
+	WriteAll(bin, original);
+	gWg->ClearRulesSidecarText();
+	gWg->SetRulesSidecarPath(bin.generic_string());
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value sd = ParamsCall(h, "save_defaults");
+	ASSERT_TRUE(sd["success"].asBool()) << sd.toStyledString();
+
+	const std::string srcAfter = ReadAll(src);
+	const std::string binAfter = ReadAll(bin);
+	std::filesystem::remove_all(root, ec);
+	EXPECT_NE(binAfter, original);
+	EXPECT_EQ(srcAfter, binAfter) << "source and deployed copies must match";
+	EXPECT_EQ(CountDifferingLines(original, srcAfter), 1u) << "only the one default line changed";
+}
+
+TEST(WorldGenCommands, ParamsSaveDefaultsWritesOnlyTheLoadedFileWhenNoSourceTreeExists)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	std::error_code ec;
+	const std::filesystem::path root = std::filesystem::temp_directory_path(ec) / "cow_wg_params_no_src_tree_test";
+	std::filesystem::remove_all(root, ec);
+	const std::filesystem::path bin = root / "bin" / "assets" / "global" / "misc" / "terrain_rules.schema.json";
+	const std::filesystem::path stray = root / "elsewhere" / "terrain_rules.schema.json";   // not under Cluiche/Assets/CoW
+	const std::string original = gWg->GetRulesSidecarText();
+	WriteAll(bin, original);
+	WriteAll(stray, original);
+	gWg->ClearRulesSidecarText();
+	gWg->SetRulesSidecarPath(bin.generic_string());
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value sd = ParamsCall(h, "save_defaults");
+	ASSERT_TRUE(sd["success"].asBool()) << sd.toStyledString();
+
+	const std::string binAfter = ReadAll(bin);
+	const std::string strayAfter = ReadAll(stray);
+	std::filesystem::remove_all(root, ec);
+	EXPECT_NE(binAfter, original);
+	EXPECT_EQ(strayAfter, original) << "nothing outside the loaded file is written";
 }
 
 TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)

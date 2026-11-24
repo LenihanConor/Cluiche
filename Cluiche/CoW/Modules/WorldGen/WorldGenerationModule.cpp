@@ -227,12 +227,69 @@ bool WorldGenerationModule::WriteRulesSidecar(const std::string& text)
     std::string current, path, error;
     if (!ReadRulesSidecar(current, path, error))
         return false;
-    std::ofstream out(path, std::ios::binary | std::ios::trunc);
-    if (!out.good())
+    auto writeFile = [&text](const std::string& p)
+    {
+        std::ofstream out(p, std::ios::binary | std::ios::trunc);
+        if (!out.good())
+            return false;
+        out.write(text.data(), static_cast<std::streamsize>(text.size()));
+        out.close();
+        return out.good();
+    };
+    if (!writeFile(path))
         return false;
-    out.write(text.data(), static_cast<std::streamsize>(text.size()));
-    out.close();
-    return out.good();
+
+    // The loaded file may be the deployed copy (a build/deploy overwrites it); also update the editable source asset.
+    const std::string source = FindSourceSidecar(path);
+    if (!source.empty())
+    {
+        if (!writeFile(source))
+        {
+            DIA_LOG_ERROR("WGEN", "WorldGenerationModule: save_defaults wrote %s but could not write the source asset %s",
+                          path.c_str(), source.c_str());
+            return false;
+        }
+        DIA_LOG_INFO("WGEN", "WorldGenerationModule: save_defaults also wrote the source asset %s", source.c_str());
+    }
+    return true;
+}
+
+std::string WorldGenerationModule::FindSourceSidecar(const std::string& loadedPath)
+{
+    // Deployed assets are copied from <repo>/Cluiche/Assets/CoW into a different layout (bin/.../assets/...), so the
+    // relative suffix does not carry over. Walk up from the loaded file to a directory holding Cluiche/Assets/CoW, then
+    // take the one file under it with the same file name. No source tree, no match, or an ambiguous match: no source.
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path loaded = fs::weakly_canonical(fs::path(loadedPath), ec);
+    if (ec || loaded.empty() || !loaded.has_filename())
+        return std::string();
+
+    for (fs::path dir = loaded.parent_path(); !dir.empty(); dir = dir.parent_path())
+    {
+        const fs::path assets = dir / "Cluiche" / "Assets" / "CoW";
+        if (fs::is_directory(assets, ec))
+        {
+            fs::path found;
+            int matches = 0;
+            for (fs::recursive_directory_iterator it(assets, fs::directory_options::skip_permission_denied, ec), end; !ec && it != end; it.increment(ec))
+            {
+                if (it->is_regular_file(ec) && it->path().filename() == loaded.filename())
+                {
+                    found = it->path();
+                    ++matches;
+                }
+            }
+            if (matches != 1)
+                return std::string();
+            if (fs::equivalent(found, loaded, ec))
+                return std::string();   // the loaded file is the source: already written
+            return found.generic_string();
+        }
+        if (dir == dir.parent_path())
+            break;
+    }
+    return std::string();
 }
 
 void WorldGenerationModule::ApplyPendingParams()

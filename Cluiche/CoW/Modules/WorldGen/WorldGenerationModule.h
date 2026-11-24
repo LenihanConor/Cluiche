@@ -299,6 +299,8 @@ private:
     void ApplyPendingParams();
     bool ReadRulesSidecar(std::string& text, std::string& path, std::string& error);
     bool WriteRulesSidecar(const std::string& text);
+    // Source-asset twin of a (possibly deployed) sidecar path, or empty when no source tree / no unique match / same file.
+    static std::string FindSourceSidecar(const std::string& loadedPath);
     std::unique_ptr<Dia::Attribute::ParameterFile> mParamFile;
     std::unique_ptr<Debug::ParamCommandHelper> mParamHelper;
     std::unique_ptr<std::vector<Debug::ParamMutation>> mPendingParams;
