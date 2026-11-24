@@ -11,7 +11,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 ## Foundation
 
 ### 1.0-Core
-`DiaCore` `DiaFileIO` `DiaJson` `DiaProtobuf` `DiaThreading`
+`DiaCore` `DiaFileIO` `DiaJson` `DiaParallelExecutor` `DiaProtobuf` `DiaThreading`
 
 ### 1.1-Maths
 `DiaGeometry2D` `DiaGeometry3D` `DiaMaths`
@@ -87,7 +87,7 @@ Current assignment of every Dia `.vcxproj` to a numbered Visual Studio solution 
 ## Draoi
 
 ### Draoi
-`DraoiGameSpeed` `DraoiHexWorld` `DraoiHexWorldTerrain`
+`DraoiGameSpeed` `DraoiHexWorld` `DraoiHexWorldTerrain` `DraoiHexWorldWeather`
 
 ---
 

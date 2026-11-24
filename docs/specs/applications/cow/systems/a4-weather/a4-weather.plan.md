@@ -54,7 +54,7 @@ Row number = feature number. Recommended build order: **1, 2, 6, 3, 4, 5** (see 
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | **Feature 1 — Weather data & parameters.** @weather-data.plan.md | Its final task | Not Started | — | Pure logic. Root of A4 |
+| 1 | **Feature 1 — Weather data & parameters.** @weather-data.plan.md | Its final task | In Progress | — | Pure logic. Root of A4. Re-planned 2026-11-24 for package `DraoiHexWorldWeather` (11 tasks) |
 | 2 | **Feature 2 — CA pipeline.** @ca-pipeline.plan.md | Its final task | Not Started | — | Holds the design risk (10 GDD steps, determinism, region forcings). Start here after F1 |
 | 3 | **Feature 3 — WeatherModule & deferred step.** @weather-module.plan.md | Its final task | Not Started | — | Deletes `JobSystemPlaceholderConsumerModule`. Needs World Step F1-F2 and DiaDeferredStep F1-F4 |
 | 4 | **Feature 4 — Weather save / load.** @weather-save.plan.md | Its final task | Not Started | — | Its first task is the E1 + S-1 load event-order integration test |

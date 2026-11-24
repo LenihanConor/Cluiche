@@ -31,6 +31,7 @@ dependent_modules:
   - draoi.gamespeed
   - draoi.hexworld
   - draoi.hexworldterrain
+  - draoi.hexworldweather
 ---
 # Draoi
 
