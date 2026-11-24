@@ -86,6 +86,10 @@ public:
     const GridTables&         Tables() const { return mTables; }
     const Dia::Core::Containers::DynamicArray<uint32_t>& Neighbours() const { return mTables.neighbours; }
     const CapturedInputs&     Captured() const { return mCaptured; }
+    // Read-only views of the live (pre-Capture) stores, so tests can prove Run never reallocates them.
+    const Dia::Core::Containers::DynamicArray<WeatherForcing>& LiveForcings() const { return mForcings; }
+    const CellSetStore&       LiveCellSets() const { return mCellSets; }
+    const Dia::Core::Containers::DynamicArray<float>& PendingOrographic() const { return mPendingOrographic; }
 
 private:
     static void SeedFields(Season season, const WeatherTerrain& terrain, const WeatherParameters& params,
