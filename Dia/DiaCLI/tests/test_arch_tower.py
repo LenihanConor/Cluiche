@@ -59,6 +59,26 @@ def test_write_creates_parent_dirs(tmp_path):
     assert out.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
 
 
+def _wiring_repo(tmp_path: Path) -> Path:
+    """dia.svc holds a module class that includes dia.app, pinning it above dia.core."""
+    _module(tmp_path, "Dia", "DiaCore", "dia.core", "foundation/core")
+    _module(tmp_path, "Dia", "DiaApp", "dia.app", "foundation/application")
+    _module(tmp_path, "Dia", "DiaSvc", "dia.svc", "foundation/services")
+    _module(tmp_path, "Dia", "DiaUser", "dia.user", "foundation/core", source="#include <DiaSvc/X.h>\n")
+    svc = tmp_path / "Dia" / "DiaSvc"
+    (svc / "Mod.h").write_text("#include <DiaApp/X.h>\nclass M : public SimModule {};\n", encoding="utf-8")
+    (svc / "Plain.cpp").write_text("#include <DiaCore/X.h>\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_data_carries_wiring_and_per_file_edges(tmp_path):
+    repo = _wiring_repo(tmp_path)
+    data = build_tower_data(repo, run_arch_check(repo)[0])
+    assert [(w["file"], w["tag"]) for w in data["wiring"]["dia.svc"]] == [("Dia/DiaSvc/Mod.h", "M")]
+    edge = next(e for e in data["edges"] if (e["f"], e["t"]) == ("dia.svc", "dia.app"))
+    assert edge["files"] == {"Dia/DiaSvc/Mod.h": 1}
+
+
 # ---------------------------------------------------------------------------
 # Browser interaction test: drives the real page in headless Edge/Chrome.
 # ---------------------------------------------------------------------------
@@ -110,6 +130,31 @@ _DRIVER = r"""
 """
 
 
+_WIRING_DRIVER = r"""
+<script>
+(function(){
+  const out = {};
+  const fire = (t, type, x, y) => t.dispatchEvent(new MouseEvent(type, {bubbles: true, clientX: x, clientY: y}));
+  const box = id => document.querySelector('.box[data-id="' + id + '"]');
+  try {
+    const b = box('dia.svc');
+    out.badges = b.querySelector('.badges').textContent;
+    out.fan = b.querySelector('.fan') ? b.querySelector('.fan').textContent : '';
+    const r = b.getBoundingClientRect(); const x = r.left + 3, y = r.top + r.height / 2;
+    fire(b, 'mousedown', x, y); fire(document, 'mouseup', x, y);
+    out.panel = document.getElementById('modpanel').textContent;
+    const g = document.querySelector('.box.ghost');
+    out.ghostLane = g ? g.closest('.lane').dataset.layer : '';
+    document.getElementById('wOff').click();
+    out.badgesOff = document.querySelectorAll('.badges').length;
+    out.ghostOff = document.querySelectorAll('.box.ghost').length;
+  } catch (e) { out.error = String(e); }
+  document.body.insertAdjacentHTML('beforeend', '<pre id="result">' + JSON.stringify(out) + '</pre>');
+})();
+</script>
+"""
+
+
 def _browser():
     for p in _BROWSERS:
         if Path(p).exists():
@@ -146,3 +191,23 @@ def test_page_interactions_in_a_real_browser(tmp_path):
     assert "- dia.low: `foundation/core` -> `domain/visual/core`" in result["proposal"]
     assert "Leaks: 1 -> 0" in result["proposal"] and "move X.h" in result["proposal"]
     assert "DiaLow" in result["proposal"]  # points at the module doc to edit
+
+
+@pytest.mark.skipif(_browser() is None, reason="needs Edge or Chrome")
+def test_wiring_lens_in_a_real_browser(tmp_path):
+    repo = _wiring_repo(tmp_path)
+    html = render_tower_html(build_tower_data(repo, run_arch_check(repo)[0]))
+    page = tmp_path / "tower.html"
+    page.write_text(html.replace("</body>", _WIRING_DRIVER + "</body>"), encoding="utf-8")
+    dom = subprocess.run(
+        [_browser(), "--headless=new", "--disable-gpu", f"--user-data-dir={tmp_path / 'profile'}",
+         "--window-size=1500,900", "--virtual-time-budget=5000", "--dump-dom", page.as_uri()],
+        capture_output=True, text=True, timeout=60,
+    ).stdout
+    result = json.loads(re.findall(r'<pre id="result">(.*?)</pre>', dom, re.S)[-1].replace("&quot;", '"').replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&"))
+    assert "error" not in result, result
+    assert result["badges"] == "M"
+    assert result["fan"] == "1 below"
+    assert "Wiring (1 file, 1 symbol)" in result["panel"] and "Pinned up by 1 include" in result["panel"]
+    assert result["ghostLane"] == "foundation/core"
+    assert result["badgesOff"] == 0 and result["ghostOff"] == 0

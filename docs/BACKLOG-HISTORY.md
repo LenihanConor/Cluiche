@@ -230,6 +230,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | CI architecture gate is red (raised 2026-11-23) | 2026-11-23 | dia check arch 34 -> 0 (2026-11-23): layer relabels, PD-012 module moves and the hex geometry move. Verified locally (dia check arch/deps, full sharded GoogleTests, builds of CluicheTest, CoW, CluicheEditor). A CI run was not triggered from here. |
 | Dia | DiaModulePlacement: move module classes out of Dia (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: 11 module classes moved to Baseline/CluicheTest, MetricsCollectorModule deleted, ObservationModuleBase renamed, placement rule built, layer re-review and stale docs done; dia check arch 34 -> 0. Release build and E2E for the moved modules dropped by user decision. |
 | Dia | Hex Topology move to DiaGeometry2D (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23 as a single sweep with no aliases: HexTopology and CellCoord now in DiaGeometry2D/Grid (Dia::Geometry2D); goldens unchanged. Release build dropped by user decision. |
+| Dia | Module Tower: Wiring lens, pinned-by, fan-in (raised 2026-11-23) | 2026-11-24 | Moved by `dia docs backlog move` |
 
 ---
 

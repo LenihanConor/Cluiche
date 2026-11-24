@@ -40,9 +40,11 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
                     continue
                 edge = edges.setdefault((module_id, dep_id), {
                     "f": module_id, "t": dep_id, "n": 0,
-                    "file": src.relative_to(repo_root).as_posix(), "inc": raw,
+                    "file": src.relative_to(repo_root).as_posix(), "inc": raw, "files": {},
                 })
                 edge["n"] += 1
+                rel = src.relative_to(repo_root).as_posix()
+                edge["files"][rel] = edge["files"].get(rel, 0) + 1
 
     # Only modules with a recognised layer can be placed on a floor.
     layers = {mid: m.layer for mid, m in module_map.items() if m.layer and parse_layer(m.layer)}
@@ -66,9 +68,30 @@ def build_tower_data(repo_root: Path, violations: list[ArchViolation]) -> dict:
         "docs": {mid: module_map[mid].doc_path for mid in layers if module_map[mid].doc_path},
         "layers": {k: v for k, v in layers.items() if k in used or k in {x.from_module for x in drawable}},
         "edges": edge_list,
+        "wiring": _wiring(violations),
         "violations": [row(v) for v in drawable],
         "other": other,
     }
+
+
+def _wiring_tag(what: str) -> str:
+    """Badge for one PD-012 finding: M module class, PU affinity, A application access."""
+    if what.startswith("class ") or what.startswith("DIA_MODULE"):
+        return "M"
+    if what.startswith("processing-unit"):
+        return "PU"
+    return "A"
+
+
+def _wiring(violations: list[ArchViolation]) -> dict[str, list[dict]]:
+    """Per package: each wiring file, line and symbol, tagged for the wiring lens."""
+    out: dict[str, list[dict]] = {}
+    for v in violations:
+        if v.kind == "placement":
+            out.setdefault(v.from_module, []).append(
+                {"file": v.source_file, "line": v.lineno, "what": v.include_path,
+                 "tag": _wiring_tag(v.include_path)})
+    return out
 
 
 def _placement_cards(violations: list[ArchViolation]) -> list[dict]:
