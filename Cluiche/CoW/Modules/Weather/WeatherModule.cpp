@@ -81,6 +81,9 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
         return StartResult::kLoading;
 
     mStage.Start();   // takes the generation hold
+    if (!mUseTestHosts && mWorldGen != nullptr && mWorldGen->AreBiomesLoaded())
+        mStage.SetRegistry(&mWorldGen->GetBiomeRegistry());
+    TryLoadParameters();
     if (!worldStep->RegisterStage(StageId(), mStage))
     {
         DIA_LOG_ERROR(Weather::kLogChannel, "WeatherModule: WorldStepModule refused stage id '%s'",
@@ -116,6 +119,7 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     {
         // A world already exists (imported before we started): ingest it now.
         if (mWorldGen->AreBiomesLoaded()) { mStage.SetRegistry(&mWorldGen->GetBiomeRegistry()); }
+        TryLoadParameters();
         mStage.OnWorldComplete(mWorldGen->GetWorldRevision());
     }
     DIA_LOG_INFO(Weather::kLogChannel, "WeatherModule: stage '%s' registered", World::StageId(World::kWeather).c_str());
@@ -130,7 +134,18 @@ void WeatherModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 void WeatherModule::OnWorldComplete(const WorldGenerationComplete& msg)
 {
     if (mWorldGen != nullptr && mWorldGen->AreBiomesLoaded()) { mStage.SetRegistry(&mWorldGen->GetBiomeRegistry()); }
+    TryLoadParameters();
     mStage.OnWorldComplete(msg.worldRevision);
+}
+
+// Loads the sidecar once per start. Without a configured source the stage keeps the parameters it was handed (tests).
+// A fault fails the stage (Failing naming the dotted key, never ready); the module itself still starts.
+void WeatherModule::TryLoadParameters()
+{
+    if (mParamsAttempted || mSidecarSource == nullptr || !mStage.HasRegistry()) { return; }
+    mParamsAttempted = true;
+    Weather::ParamError err;
+    mStage.LoadParameters(*mSidecarSource, mPacks, err);
 }
 
 void WeatherModule::OnWorldFailed()
@@ -150,6 +165,7 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     if (mRegistered && mWorldStep != nullptr)
         mWorldStep->UnregisterStage(StageId());
     mRegistered = false;
+    mParamsAttempted = false;
     mWorldStep = nullptr;
     Unsubscribe();
     mStage.SetPublishSeam(nullptr);

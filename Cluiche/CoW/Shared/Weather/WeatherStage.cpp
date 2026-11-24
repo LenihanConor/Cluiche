@@ -5,6 +5,10 @@
 #include <DiaParallelExecutor/SerialExecutor.h>
 #include <Shared/CoWCalendar.h>
 
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+
 namespace CoW {
 namespace Weather {
 
@@ -179,7 +183,75 @@ void WeatherHooks::CaptureSim(WeatherSimulation& working, WeatherLatch& latch)
     working.Capture(latch.params, latch.season, latch.weekOfYear, *registry, baseline, latch.hydro, latch.influences);
 }
 
-void WeatherHooks::ApplyEntry(WeatherSimulation&, WeatherLatch&, const WeatherEntry&) {}
+// Runs inside the base's Capture on SimPU, before LatchInputs: a queued set is visible to this step's snapshot.
+void WeatherHooks::ApplyEntry(WeatherSimulation& working, WeatherLatch&, const WeatherEntry& entry)
+{
+    ParamError err;
+    switch (entry.kind)
+    {
+    case EntryKind::kSetParam:
+        if (store.Set(entry.key, Json::Value(static_cast<double>(entry.value)), err))
+        {
+            if (paramsChanged) { paramsChanged(false); }
+        }
+        else { DIA_LOG_ERROR(kLogChannel, "WTH: queued set of '%s' refused at apply: %s", err.key, err.reason); }
+        break;
+    case EntryKind::kParamOverrides:
+        if (store.ApplyPack(side.Get(entry.slot).pack, err))
+        {
+            if (paramsChanged) { paramsChanged(true); }
+        }
+        else { DIA_LOG_ERROR(kLogChannel, "WTH: queued parameter pack rejected at '%s': %s", err.key, err.reason); }
+        break;
+    case EntryKind::kReload:
+        if (store.Reload(err))
+        {
+            DIA_LOG_INFO(kLogChannel, "WTH: parameter sidecar reloaded");
+            if (paramsChanged) { paramsChanged(true); }
+        }
+        else { DIA_LOG_ERROR(kLogChannel, "WTH: parameter reload failed at '%s': %s; previous values kept", err.key, err.reason); }
+        break;
+    case EntryKind::kForcing:
+        if (!working.AddForcing(entry.forcing)) { DIA_LOG_WARNING(kLogChannel, "WTH: forcing refused by the simulation"); }
+        break;
+    case EntryKind::kRegionForcing:
+    {
+        const std::vector<uint32_t>& cells = side.Get(entry.slot).cells;
+        Dia::Core::Containers::DynamicArray<uint32_t> set;
+        set.Reserve(static_cast<uint32_t>(cells.size()));
+        for (uint32_t c : cells) { set.Add(c); }
+        const Draoi::HexWorld::Weather::CellSetHandle handle = working.RegisterCellSet(set);
+        if (handle == Draoi::HexWorld::Weather::kNoCellSet)
+        {
+            DIA_LOG_WARNING(kLogChannel, "WTH: region forcing refused: cell set rejected (out of range or store full)");
+            break;
+        }
+        Draoi::HexWorld::Weather::WeatherForcing forcing = entry.forcing;
+        forcing.cellSet = handle;
+        if (!working.AddForcing(forcing)) { DIA_LOG_WARNING(kLogChannel, "WTH: region forcing refused by the simulation"); }
+        break;
+    }
+    case EntryKind::kBiomeChange:
+        // WeatherSimulation has no per-cell biome setter (its terrain is read-only after Initialise); needs a Draoi API.
+        DIA_LOG_WARNING(kLogChannel, "WTH: biome change for cell %u drained but not applied (no WeatherSimulation setter yet)",
+                        static_cast<unsigned>(entry.cell));
+        break;
+    case EntryKind::kPreset:
+        // Plan Feature 6 owns WeatherPreset and ApplyPreset; the kind and slot are in place for it.
+        DIA_LOG_WARNING(kLogChannel, "WTH: preset '%s' drained but not applied (preset support is Feature 6)",
+                        side.Get(entry.slot).preset.id);
+        break;
+    case EntryKind::kStateReplace:
+        DIA_LOG_WARNING(kLogChannel, "WTH: state replace drained but not applied (state restore is Feature 4)");
+        break;
+    case EntryKind::kClearWindOverrides:
+        // WeatherSimulation::ClearWindOverrides does not exist yet; needs a Draoi API.
+        DIA_LOG_WARNING(kLogChannel, "WTH: clear-wind-overrides drained but not applied (no WeatherSimulation method yet)");
+        break;
+    default:
+        break;
+    }
+}
 
 void WeatherHooks::RunStep(WeatherSimulation& working, const WeatherLatch&, Dia::ParallelExecutor::IParallelExecutor& executor)
 {
@@ -206,10 +278,155 @@ WeatherStage::WeatherStage()
 {
     hooks.reportDegraded = [this](const char* cause) { ReportDegradedCause(cause); };
     hooks.clearDegraded = [this]() { ClearDegradedCause(); };
+    hooks.paramsChanged = [this](bool reloadOrPack) {
+        SetCurrentParamsHash(hooks.store.Hash());
+        if (reloadOrPack) { NotifyParamsReloaded(); }
+    };
+}
+
+bool WeatherStage::LoadParameters(IWeatherSidecarSource& source, const std::vector<Json::Value>& packs, ParamError& err)
+{
+    if (hooks.registry == nullptr)
+    {
+        err.Set("registry", "no biome registry to load the parameter sidecar against");
+    }
+    else
+    {
+        hooks.store.SetActivePacks(packs);
+        if (hooks.store.Load(source, *hooks.registry, err))
+        {
+            SetCurrentParamsHash(hooks.store.Hash());
+            DIA_LOG_INFO(kLogChannel, "WTH: parameter sidecar loaded");
+            return true;
+        }
+    }
+    FailStage(err.key, static_cast<uint32_t>(::CoW::Weather::CauseCode::kParameterFault));
+    DIA_LOG_ERROR(kLogChannel, "WTH: parameter fault at '%s': %s (%s); stage is Failing, no fallback", err.key, err.reason,
+                  ::CoW::Weather::CauseText(::CoW::Weather::CauseCode::kParameterFault));
+    return false;
+}
+
+bool WeatherStage::Push(const WeatherEntry& entry, bool usedSlot)
+{
+    if (Enqueue(entry)) { return true; }
+    if (usedSlot) { hooks.side.Rollback(); }
+    return false;
+}
+
+bool WeatherStage::QueueParameterSet(const char* dottedKey, float value, ParamError& err)
+{
+    err.Clear();
+    if (dottedKey == nullptr || std::strlen(dottedKey) >= kEntryKeyCapacity)
+    {
+        err.Set(dottedKey != nullptr ? dottedKey : "", "parameter key is missing or too long");
+        return false;
+    }
+    if (!hooks.store.CheckSet(dottedKey, Json::Value(static_cast<double>(value)), err)) { return false; }
+    WeatherEntry entry;
+    entry.kind = EntryKind::kSetParam;
+    std::snprintf(entry.key, sizeof(entry.key), "%s", dottedKey);
+    entry.value = value;
+    if (!Push(entry, false))
+    {
+        err.Set(dottedKey, "mutation queue is full");
+        return false;
+    }
+    return true;
+}
+
+bool WeatherStage::QueueParameterOverrides(const Json::Value& pack, ParamError& err)
+{
+    err.Clear();
+    if (!pack.isObject())
+    {
+        err.Set("pack", "a parameter pack must be a JSON object");
+        return false;
+    }
+    WeatherEntry entry;
+    entry.kind = EntryKind::kParamOverrides;
+    entry.slot = hooks.side.Acquire();
+    hooks.side.Get(entry.slot).pack = pack;
+    if (!Push(entry, true))
+    {
+        err.Set("pack", "mutation queue is full");
+        return false;
+    }
+    return true;
+}
+
+bool WeatherStage::QueueReload()
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kReload;
+    return Push(entry, false);
+}
+
+bool WeatherStage::QueueForcing(const Draoi::HexWorld::Weather::WeatherForcing& forcing)
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kForcing;
+    entry.forcing = forcing;
+    return Push(entry, false);
+}
+
+bool WeatherStage::QueueRegionForcing(const Draoi::HexWorld::Weather::WeatherForcing& forcing,
+                                      const Dia::Core::Containers::DynamicArray<uint32_t>& cells)
+{
+    if (cells.Size() == 0 || cells.Size() > kMaxRegionCells) { return false; }
+    WeatherEntry entry;
+    entry.kind = EntryKind::kRegionForcing;
+    entry.forcing = forcing;
+    entry.slot = hooks.side.Acquire();
+    std::vector<uint32_t>& list = hooks.side.Get(entry.slot).cells;
+    list.clear();
+    for (uint32_t i = 0; i < cells.Size(); ++i) { list.push_back(cells[i]); }
+    std::sort(list.begin(), list.end());
+    list.erase(std::unique(list.begin(), list.end()), list.end());
+    return Push(entry, true);
+}
+
+bool WeatherStage::QueueBiomeChange(uint32_t cell, Draoi::HexWorld::BiomeIndex biome)
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kBiomeChange;
+    entry.cell = cell;
+    entry.biome = biome;
+    return Push(entry, false);
+}
+
+bool WeatherStage::QueuePreset(const WeatherPreset& preset)
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kPreset;
+    entry.slot = hooks.side.Acquire();
+    hooks.side.Get(entry.slot).preset = preset;
+    return Push(entry, true);
+}
+
+bool WeatherStage::QueueStateReplace(const WeatherStateRecord& record)
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kStateReplace;
+    entry.slot = hooks.side.Acquire();
+    hooks.side.Get(entry.slot).record = record;
+    return Push(entry, true);
+}
+
+bool WeatherStage::QueueClearWindOverrides()
+{
+    WeatherEntry entry;
+    entry.kind = EntryKind::kClearWindOverrides;
+    return Push(entry, false);
 }
 
 void WeatherStage::OnWorldComplete(uint32_t revision)
 {
+    if (IsFaulted())
+    {
+        DIA_LOG_ERROR(kLogChannel, "WTH: world %u announced but the stage has a parameter fault, not spinning up",
+                      static_cast<unsigned>(revision));
+        return;
+    }
     if (mSource == nullptr)
     {
         DIA_LOG_ERROR(kLogChannel, "WTH: world %u announced but no world source is set", static_cast<unsigned>(revision));
@@ -225,7 +442,7 @@ void WeatherStage::OnWorldComplete(uint32_t revision)
         return;
     }
     view.revision = revision;
-    input->params = hooks.params;
+    hooks.SnapshotParameters(input->params);
     input->registry = hooks.registry;
     input->spinupWeeks = hooks.spinupWeeks;
     hooks.Publish(revision, input);

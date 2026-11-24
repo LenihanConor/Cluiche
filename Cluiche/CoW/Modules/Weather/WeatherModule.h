@@ -15,6 +15,7 @@
 #include <Shared/Weather/WeatherStage.h>
 
 #include <memory>
+#include <vector>
 
 namespace CoW {
 
@@ -30,6 +31,23 @@ public:
 
     Weather::WeatherStage& GetStage() { return mStage; }
     const Weather::WeatherStage& GetStage() const { return mStage; }
+
+    // Parameters: the sidecar is read through this source (borrowed; null = the stage keeps the parameters it was handed).
+    // Task 5 supplies the production file source from config. Packs are applied after each load and reload.
+    void SetSidecarSource(Weather::IWeatherSidecarSource* source) { mSidecarSource = source; }
+    void SetActivePacks(const std::vector<Json::Value>& packs) { mPacks = packs; }
+    void SetSpinupWeeks(uint32_t weeks) { mStage.SetSpinupWeeks(weeks); }
+
+    // Queue API (SimPU, any time). Thin over the stage; see WeatherStage for the contracts.
+    bool QueueParameterSet(const char* dottedKey, float value, Weather::ParamError& err) { return mStage.QueueParameterSet(dottedKey, value, err); }
+    bool QueueParameterOverrides(const Json::Value& pack, Weather::ParamError& err) { return mStage.QueueParameterOverrides(pack, err); }
+    bool QueueReload() { return mStage.QueueReload(); }
+    bool QueueForcing(const Draoi::HexWorld::Weather::WeatherForcing& f) { return mStage.QueueForcing(f); }
+    bool QueueRegionForcing(const Draoi::HexWorld::Weather::WeatherForcing& f, const Dia::Core::Containers::DynamicArray<uint32_t>& cells) { return mStage.QueueRegionForcing(f, cells); }
+    bool QueueBiomeChange(uint32_t cell, Draoi::HexWorld::BiomeIndex biome) { return mStage.QueueBiomeChange(cell, biome); }
+    bool QueuePreset(const Weather::WeatherPreset& preset) { return mStage.QueuePreset(preset); }
+    bool QueueStateReplace(const Weather::WeatherStateRecord& record) { return mStage.QueueStateReplace(record); }
+    bool QueueClearWindOverrides() { return mStage.QueueClearWindOverrides(); }
 
     // Test seam: injects collaborators so the module runs without a ProcessingUnit (no ModuleRef resolution).
     struct TestHosts
@@ -54,10 +72,15 @@ private:
     void OnWorldComplete(const WorldGenerationComplete& msg);
     void OnWorldFailed();
     void Unsubscribe();
+    void TryLoadParameters();   // once per start, as soon as the stage has a biome registry
 
     std::unique_ptr<WorldGenAdapter> mAdapter;
     Dia::MessageBus::BusSubscriptionHandle mSubscriptions[2];
     WorldGenerationModule* mWorldGen = nullptr;   // borrowed; null in test-hosts mode
+
+    Weather::IWeatherSidecarSource* mSidecarSource = nullptr;   // borrowed
+    std::vector<Json::Value> mPacks;
+    bool mParamsAttempted = false;
 
     Weather::WeatherStage mStage;
     WorldStepModule* mWorldStep = nullptr;   // borrowed; set while registered

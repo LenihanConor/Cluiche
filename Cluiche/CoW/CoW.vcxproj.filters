@@ -139,6 +139,9 @@
     <ClCompile Include="Shared\Weather\WeatherTerrainBuilder.cpp">
       <Filter>Shared</Filter>
     </ClCompile>
+    <ClCompile Include="Shared\Weather\WeatherParameterStore.cpp">
+      <Filter>Shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h">
@@ -298,6 +301,18 @@
       <Filter>Shared</Filter>
     </ClInclude>
     <ClInclude Include="Shared\Weather\BiomeSeasonalBaseline.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherParameterStore.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherStateRecord.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherPreset.h">
+      <Filter>Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared\Weather\WeatherSideStore.h">
       <Filter>Shared</Filter>
     </ClInclude>
   </ItemGroup>

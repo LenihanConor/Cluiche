@@ -53,6 +53,7 @@
     <ClCompile Include="Shared\Weather\WeatherStage.cpp" />
     <ClCompile Include="Modules\Weather\WeatherModule.cpp" />
     <ClCompile Include="Shared\Weather\WeatherTerrainBuilder.cpp" />
+    <ClCompile Include="Shared\Weather\WeatherParameterStore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\FrontEnd\FrontEndModule.h" />
@@ -108,6 +109,10 @@
     <ClInclude Include="Modules\Weather\WeatherModule.h" />
     <ClInclude Include="Shared\Weather\WeatherTerrainBuilder.h" />
     <ClInclude Include="Shared\Weather\BiomeSeasonalBaseline.h" />
+    <ClInclude Include="Shared\Weather\WeatherParameterStore.h" />
+    <ClInclude Include="Shared\Weather\WeatherStateRecord.h" />
+    <ClInclude Include="Shared\Weather\WeatherPreset.h" />
+    <ClInclude Include="Shared\Weather\WeatherSideStore.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">

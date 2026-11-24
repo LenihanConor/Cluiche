@@ -1843,6 +1843,21 @@
     <ClInclude Include="CoW\Weather\WeatherTestWorld.h">
       <Filter>CoW</Filter>
     </ClInclude>
+    <ClInclude Include="CoW\Weather\WeatherParamTestKit.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherParameterStore.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStateRecord.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherPreset.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSideStore.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3388,6 +3403,15 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\Weather\TestWeatherSteps.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherParameters.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="CoW\Weather\TestWeatherQueue.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherParameterStore.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>

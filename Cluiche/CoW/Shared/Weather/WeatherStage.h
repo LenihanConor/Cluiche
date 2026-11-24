@@ -9,6 +9,10 @@
 #include <Shared/Weather/WeatherCause.h>
 #include <Shared/Weather/WeatherEntry.h>
 #include <Shared/Weather/WeatherLatch.h>
+#include <Shared/Weather/WeatherParameterStore.h>
+#include <Shared/Weather/WeatherPreset.h>
+#include <Shared/Weather/WeatherSideStore.h>
+#include <Shared/Weather/WeatherStateRecord.h>
 #include <Shared/WorldStep/WorldStepStageBase.h>
 
 #include <atomic>
@@ -26,6 +30,7 @@ typedef WorldStep::WorldStepStageBase<Draoi::HexWorld::Weather::WeatherSimulatio
 
 constexpr const char* kLogChannel = "WTH";
 constexpr uint32_t kDefaultSpinupWeeks = 52;
+constexpr uint32_t kMaxRegionCells = 65536;   // bound on one region forcing's cell list
 
 // Where the stage reads the world from. The module adapts WorldGenerationModule; tests hand-build terrain.
 // SimPU only. Fills `view` (width, height, present; revision is pre-set by the caller) and `terrain`; false = no world.
@@ -69,8 +74,20 @@ public:
     void CaptureSim(Draoi::HexWorld::Weather::WeatherSimulation& working, WeatherLatch& latch) override;
     void CommitSim(Draoi::HexWorld::Weather::WeatherSimulation& sim, uint32_t stepDay) override;
 
-    // Task 4 swaps this for a ParamBinding snapshot; until then a copy of the current parameters.
-    void SnapshotParameters(Draoi::HexWorld::Weather::WeatherParameters& out) const { out = params; }
+    void OnStopExtra() override { side.Reset(); }
+
+    // The step's parameters: a ParamBinding snapshot of the loaded sidecar. When no sidecar was loaded (tests that hand
+    // the stage a parameter struct through SetParameters) a copy of `params`.
+    void SnapshotParameters(Draoi::HexWorld::Weather::WeatherParameters& out) const
+    {
+        if (store.IsLoaded()) { store.Snapshot(out); } else { out = params; }
+    }
+
+    WeatherParameterStore store;
+    WeatherSideStore side;
+    // Called after a drained entry changed the parameter values: (reloadOrPack). The stage refreshes the params hash and,
+    // for a reload or pack, tells the base the saved-hash warning no longer applies.
+    std::function<void(bool)> paramsChanged;
 
     IBiomeSeasonalBaseline* baselineProvider = nullptr;
     IHydrologyInputsProvider* hydrologyProvider = nullptr;
@@ -130,6 +147,7 @@ public:
     void SetWorldSource(IWeatherWorldSource* source) { mSource = source; }
     void SetParameters(const Draoi::HexWorld::Weather::WeatherParameters& params) { hooks.params = params; }
     void SetRegistry(const Draoi::HexWorld::BiomeRegistry* registry) { hooks.registry = registry; }
+    bool HasRegistry() const { return hooks.registry != nullptr; }
     void SetSpinupWeeks(uint32_t weeks) { hooks.spinupWeeks = weeks; }
     // Providers are borrowed (null = none); read only inside Capture on SimPU.
     void SetBaselineProvider(IBiomeSeasonalBaseline* provider) { hooks.baselineProvider = provider; }
@@ -137,6 +155,26 @@ public:
     // Called after commit with the step's week and season; the module posts WeatherUpdated on the bus.
     void SetPublishSeam(std::function<void(uint64_t, Draoi::HexWorld::Weather::Season)> fn) { hooks.publishWeather = std::move(fn); }
     void SetSpinUpWeekObserver(std::function<void(uint32_t)> observer) { hooks.onSpinUpWeek = std::move(observer); }
+
+    // Loads the parameter sidecar (strict, against the registry's biome ids, active packs applied). Any fault puts the
+    // stage in Failing naming the dotted key (cause parameter_fault), permanently: it never becomes ready, no fallback.
+    // Needs SetRegistry first. SimPU, before the first world is announced.
+    bool LoadParameters(IWeatherSidecarSource& source, const std::vector<Json::Value>& packs, ParamError& err);
+    const WeatherParameterStore& Parameters() const { return hooks.store; }
+    uint64_t ParametersHash() const { return hooks.store.Hash(); }
+
+    // ---- queue API (SimPU, any time; entries apply in arrival order at the next Capture, before the step latches) ----
+    // false = refused: invalid (err names the key; nothing queued) or the 128-entry queue is full (one Warning, Degraded).
+    bool QueueParameterSet(const char* dottedKey, float value, ParamError& err);
+    bool QueueParameterOverrides(const Json::Value& pack, ParamError& err);   // lenient pack, atomic when drained
+    bool QueueReload();
+    bool QueueForcing(const Draoi::HexWorld::Weather::WeatherForcing& forcing);
+    bool QueueRegionForcing(const Draoi::HexWorld::Weather::WeatherForcing& forcing,
+                            const Dia::Core::Containers::DynamicArray<uint32_t>& cells);
+    bool QueueBiomeChange(uint32_t cell, Draoi::HexWorld::BiomeIndex biome);
+    bool QueuePreset(const WeatherPreset& preset);
+    bool QueueStateReplace(const WeatherStateRecord& record);
+    bool QueueClearWindOverrides();
 
     // A world revision was announced: copies the world into a SpinUpInput and starts the spin-up. SimPU only.
     void OnWorldComplete(uint32_t revision);
@@ -149,6 +187,8 @@ protected:
     void LaunchJob(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world) override;
 
 private:
+    bool Push(const WeatherEntry& entry, bool usedSlot);   // Enqueue; hands the side-store slot back when refused
+
     IWeatherWorldSource* mSource = nullptr;
     LaunchMode mMode = LaunchMode::kThread;
     std::vector<std::function<void()>> mQueued;

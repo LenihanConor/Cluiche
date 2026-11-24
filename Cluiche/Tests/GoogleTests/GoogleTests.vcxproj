@@ -160,6 +160,11 @@
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStage.h" />
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.h" />
     <ClInclude Include="CoW\Weather\WeatherTestWorld.h" />
+    <ClInclude Include="CoW\Weather\WeatherParamTestKit.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherParameterStore.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherStateRecord.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherPreset.h" />
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSideStore.h" />
   </ItemGroup>
   <!-- Source Files -->
   <ItemGroup>
@@ -1405,6 +1410,9 @@
     <ClCompile Include="CoW\Weather\TestWeatherSpinUp.cpp" />
     <ClCompile Include="..\..\CoW\Shared\Weather\WeatherTerrainBuilder.cpp" />
     <ClCompile Include="CoW\Weather\TestWeatherSteps.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherParameters.cpp" />
+    <ClCompile Include="CoW\Weather\TestWeatherQueue.cpp" />
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherParameterStore.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaCaptureTest\DiaCaptureTest.vcxproj">

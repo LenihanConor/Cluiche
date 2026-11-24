@@ -198,7 +198,7 @@ public:
         mRestoredValid = false;
         mTargetRevision = world.revision;
         mCause = 0;
-        if (!mParamsDegraded) { mHealth.SetOK(); }
+        if (!mParamsDegraded && !mFault) { mHealth.SetOK(); }
         mQueueDegraded = false;
         if (mHaveStash && world.present)
         {
@@ -264,6 +264,16 @@ public:
         if (mHealth.Report().status == Dia::Observation::Health::HealthStatus::kDegraded) { mHealth.SetOK(); }
     }
 
+    // A system fault that makes the stage Failing and keeps it so: nothing in the base clears it (a new world does not),
+    // and the stage never captures a valid step. `reason` is the health reason (a dotted parameter key, say).
+    void FailStage(const char* reason, CauseCode cause)
+    {
+        mFault = true;
+        mCause = cause;
+        mHealth.SetFailing(Dia::Core::StringCRC(reason));
+    }
+    bool IsFaulted() const { return mFault; }
+
     // ----- mutation queue --------------------------------------------------------------------------
 
     bool Enqueue(const TEntry& entry)
@@ -324,7 +334,7 @@ public:
             mPending = nullptr;
         }
         mCaptureRevision = mTargetRevision;
-        mStepValid = (mActive != nullptr && mActiveRevision == mTargetRevision);
+        mStepValid = !mFault && (mActive != nullptr && mActiveRevision == mTargetRevision);
         mInFlight = true;
         mDropAfterStep = false;
         mCapturedDay = static_cast<uint32_t>(key);
@@ -535,7 +545,7 @@ private:
         mCommittedRecord = record;
         mHaveCommitted = true;
         mCause = 0;
-        if (!mParamsDegraded) { mHealth.SetOK(); }
+        if (!mParamsDegraded && !mFault) { mHealth.SetOK(); }
         DIA_LOG_INFO(mLogChannel, "%s: restored revision %u from the saved record", mLogChannel,
                      static_cast<unsigned>(mWorld.revision));
         // 6. params_hash
@@ -617,6 +627,8 @@ private:
         mSpinUp.Reset();
         DropSims();
         mRestoredValid = false;
+        if (mFault) { mHealth.SetOK(); }   // a restart begins healthy; the owner reloads and may fault again
+        mFault = false;
         mQueue.Clear();
         mHold.Release();   // spec order: ... destroy sims, clear queue, release hold, OnStopExtra
         Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
@@ -645,6 +657,7 @@ private:
     uint32_t mVisitGeneration = 0;
     bool mStarted = false;
     bool mQueueDegraded = false;
+    bool mFault = false;                // FailStage: Failing is permanent for this stage object
     bool mParamsDegraded = false;       // restore found a different params_hash; cleared by NotifyParamsReloaded
     uint64_t mParamsHash = 0;
     bool mHaveParamsHash = false;
