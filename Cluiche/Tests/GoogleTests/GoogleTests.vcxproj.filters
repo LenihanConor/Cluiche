@@ -1858,6 +1858,9 @@
     <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSideStore.h">
       <Filter>CoW</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\CoW\Shared\Weather\WeatherSaveFields.h">
+      <Filter>CoW</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation2D\ClipCompletionBusAdapterTests.cpp">
@@ -3424,6 +3427,9 @@
       <Filter>CoW</Filter>
     </ClCompile>
     <ClCompile Include="CoW\Weather\TestWeatherPendingSave.cpp">
+      <Filter>CoW</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CoW\Shared\Weather\WeatherSaveFields.cpp">
       <Filter>CoW</Filter>
     </ClCompile>
   </ItemGroup>

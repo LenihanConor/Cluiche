@@ -1,9 +1,431 @@
-// A4 weather-save feature: save fields tests (gap pass 7, task 1 scaffold).
+// A4 weather-save feature, Task 4: the ten saved field arrays, their sidecar ranges and the round trip through
+// real JSON text. The shipped sidecar (Global/Weather/weather_layers.schema.json) is the range source.
 #include <gtest/gtest.h>
 
+#include <cfloat>
+#include <cmath>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <random>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <DiaValueSchema/ValueSchemaLoader.h>
+#include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 #include <Shared/Weather/WeatherSaveFields.h>
 
 namespace
 {
-// Tests added by weather-save plan
+using CoW::Weather::kWeatherSaveFieldCount;
+using Draoi::HexWorld::SavedField;
+using Draoi::HexWorld::SaveError;
+using Draoi::HexWorld::Weather::WeatherFields;
+
+const char* kLayersSidecarPath = "Cluiche/Assets/CoW/Global/Weather/weather_layers.schema.json";
+constexpr double kTwoPi = 6.283185307179586;
+
+std::string ReadShippedSidecar()
+{
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::absolute(std::filesystem::path(__FILE__), ec).parent_path();
+    while (!dir.empty())
+    {
+        const std::filesystem::path candidate = dir / kLayersSidecarPath;
+        if (std::filesystem::is_regular_file(candidate, ec))
+        {
+            std::ifstream in(candidate, std::ios::binary);
+            std::stringstream ss;
+            ss << in.rdbuf();
+            return ss.str();
+        }
+        const std::filesystem::path parent = dir.parent_path();
+        if (parent == dir) break;
+        dir = parent;
+    }
+    ADD_FAILURE() << "sidecar not found: " << kLayersSidecarPath;
+    return std::string();
+}
+
+bool Publish(Dia::ValueSchema::ValueSchemaRegistry& reg, const std::string& text)
+{
+    Dia::ValueSchema::LoadResult r = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(text.c_str(), "fixture.json");
+    if (!r.mOk) { return false; }
+    for (unsigned i = 0; i < r.mEntries.Size(); ++i)
+    {
+        if (reg.Register(r.mEntries[i]) != Dia::ValueSchema::RegisterResult::Ok) { return false; }
+    }
+    reg.Publish();
+    return true;
+}
+
+// A dia.value_schema document for `forName` with one float field per name, all with [mn, mx].
+std::string SchemaText(const char* forName, const std::vector<std::string>& names, double mn, double mx)
+{
+    Json::Value doc(Json::objectValue);
+    doc["format"] = "dia.value_schema";
+    doc["version"] = 1;
+    doc["for"] = forName;
+    doc["entries"] = Json::Value(Json::arrayValue);
+    for (const std::string& n : names)
+    {
+        Json::Value e(Json::objectValue);
+        e["key"] = n;
+        e["kind"] = "field";
+        e["label"] = "Label";
+        e["description"] = "Desc";
+        e["type"] = "float";
+        e["min"] = mn;
+        e["max"] = mx;
+        doc["entries"].append(e);
+    }
+    Json::FastWriter w;
+    return w.write(doc);
+}
+
+std::vector<std::string> FieldNames()
+{
+    std::vector<std::string> names;
+    const CoW::WorldStep::FieldDecl* d = CoW::Weather::WeatherSaveFieldDecls();
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i) { names.push_back(d[i].name); }
+    return names;
+}
+
+uint32_t Bits(float f) { uint32_t u; std::memcpy(&u, &f, sizeof(u)); return u; }
+
+// Largest float whose double value is <= v; smallest float whose double value is >= v.
+float FloatAtOrBelow(double v)
+{
+    float f = static_cast<float>(v);
+    if (static_cast<double>(f) > v) { f = std::nextafterf(f, -FLT_MAX); }
+    return f;
+}
+float FloatAtOrAbove(double v)
+{
+    float f = static_cast<float>(v);
+    if (static_cast<double>(f) < v) { f = std::nextafterf(f, FLT_MAX); }
+    return f;
+}
+
+// A ready record header for `n` cells (n x 1).
+Json::Value Header(uint32_t n)
+{
+    Json::Value root(Json::objectValue);
+    Draoi::HexWorld::SaveHeader h;
+    h.width = n; h.height = 1; h.cellCount = n; h.stepDay = 7; h.paramsHash = 11; h.basinCount = 0; h.worldHash = 0;
+    Draoi::HexWorld::WriteHeader(root, h);
+    return root;
+}
+
+// Record -> real JSON text -> parsed Json::Value (the exact path a save file takes).
+Json::Value ThroughText(const Json::Value& root)
+{
+    const std::string text = Draoi::HexWorld::Serialize(root);
+    Json::Value parsed;
+    Json::Reader reader;
+    EXPECT_TRUE(reader.parse(text, parsed));
+    return parsed;
+}
+
+bool Validate(const Json::Value& root, const SavedField (&fields)[kWeatherSaveFieldCount], SaveError& err)
+{
+    Draoi::HexWorld::Caps caps;
+    return Draoi::HexWorld::Validate(root, fields, kWeatherSaveFieldCount, caps, err);
+}
+
+// A record where every array is zeros except array `which`, set to `values`.
+Json::Value RecordWith(uint32_t which, const std::vector<float>& values)
+{
+    const uint32_t n = static_cast<uint32_t>(values.size());
+    WeatherFields f;
+    f.Resize(n);
+    float* ptrs[kWeatherSaveFieldCount];
+    CoW::Weather::WeatherFieldPointers(f, ptrs);
+    for (uint32_t c = 0; c < n; ++c) { ptrs[which][c] = values[c]; }
+    Json::Value root = Header(n);
+    CoW::Weather::WriteWeatherFieldArrays(root, f);
+    return root;
+}
+
+uint32_t IndexOf(const SavedField (&fields)[kWeatherSaveFieldCount], const char* name)
+{
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i) { if (std::string(fields[i].name) == name) { return i; } }
+    return kWeatherSaveFieldCount;
+}
+
+class WeatherSaveFieldsTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        ASSERT_TRUE(Publish(layers, ReadShippedSidecar()));
+        SaveError err;
+        ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(layers, real, err)) << err.field.AsCStr();
+    }
+
+    // Round trip `values` through array `which` of a real record: write, text, parse, Validate, read; each element
+    // must come back bit-identical. `fields` supplies the ranges Validate enforces.
+    void ExpectRoundTrip(const SavedField (&fields)[kWeatherSaveFieldCount], uint32_t which,
+                         const std::vector<float>& values, const char* what)
+    {
+        SCOPED_TRACE(std::string(fields[which].name) + " / " + what);
+        const Json::Value parsed = ThroughText(RecordWith(which, values));
+        SaveError err;
+        ASSERT_TRUE(Validate(parsed, fields, err)) << err.field.AsCStr() << ": " << err.reason.AsCStr();
+        WeatherFields back;
+        ASSERT_TRUE(CoW::Weather::ReadWeatherFieldArrays(parsed, static_cast<uint32_t>(values.size()), back));
+        const float* ptrs[kWeatherSaveFieldCount];
+        CoW::Weather::WeatherFieldPointers(back, ptrs);
+        for (size_t c = 0; c < values.size(); ++c)
+        {
+            // -0.0 is normalised to +0.0 on write; every other value is bit-identical.
+            const float expected = (values[c] == 0.0f) ? 0.0f : values[c];
+            EXPECT_EQ(Bits(expected), Bits(ptrs[which][c])) << "cell " << c << " value " << values[c];
+        }
+    }
+
+    Dia::ValueSchema::ValueSchemaRegistry layers;
+    SavedField real[kWeatherSaveFieldCount];
+};
+} // namespace
+
+TEST_F(WeatherSaveFieldsTest, TableHoldsTheTenSnakeCaseFieldsInSavedOrder)
+{
+    static const char* kExpected[kWeatherSaveFieldCount] = { "moisture", "temperature", "pressure", "wind_direction",
+        "wind_speed", "precipitation", "cloud_cover", "water_to_ground", "snow_pack", "pressure_anomaly" };
+    const CoW::WorldStep::FieldDecl* d = CoW::Weather::WeatherSaveFieldDecls();
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        EXPECT_STREQ(kExpected[i], d[i].name);
+        EXPECT_EQ(Draoi::HexWorld::SavedKind::F32, d[i].kind);
+        EXPECT_EQ(Draoi::HexWorld::SavedScope::PerCell, d[i].scope);
+        EXPECT_STREQ(kExpected[i], real[i].name);
+    }
+}
+
+TEST_F(WeatherSaveFieldsTest, PointerTableFollowsTheDeclOrder)
+{
+    WeatherFields f;
+    f.Resize(2);
+    float* ptrs[kWeatherSaveFieldCount];
+    CoW::Weather::WeatherFieldPointers(f, ptrs);
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i) { ptrs[i][0] = static_cast<float>(i + 1); ptrs[i][1] = -static_cast<float>(i + 1); }
+    EXPECT_EQ(1.0f, f.moisture[0]);
+    EXPECT_EQ(2.0f, f.temperature[0]);
+    EXPECT_EQ(3.0f, f.pressure[0]);
+    EXPECT_EQ(4.0f, f.windDirection[0]);
+    EXPECT_EQ(5.0f, f.windSpeed[0]);
+    EXPECT_EQ(6.0f, f.precipitation[0]);
+    EXPECT_EQ(7.0f, f.cloudCover[0]);
+    EXPECT_EQ(8.0f, f.waterToGround[0]);
+    EXPECT_EQ(9.0f, f.snowPack[0]);
+    EXPECT_EQ(10.0f, f.pressureAnomaly[0]);
+
+    // An empty set has no array to point at.
+    WeatherFields empty;
+    const float* cptrs[kWeatherSaveFieldCount];
+    CoW::Weather::WeatherFieldPointers(empty, cptrs);
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i) { EXPECT_EQ(nullptr, cptrs[i]); }
+}
+
+TEST_F(WeatherSaveFieldsTest, ShippedSidecarRangesMatchTheSimClamps)
+{
+    // From WeatherPipeline Finish: [0,1] except water_to_ground [0,2], pressure_anomaly [-0.5,0.5] and
+    // wind_direction [0, 2pi] (inclusive bound; the sim wraps into [0, 2pi)).
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        const std::string n = real[i].name;
+        double mn = 0.0, mx = 1.0;
+        if (n == "water_to_ground") { mx = 2.0; }
+        else if (n == "pressure_anomaly") { mn = -0.5; mx = 0.5; }
+        else if (n == "wind_direction") { mx = kTwoPi; }
+        EXPECT_EQ(mn, real[i].min) << n;
+        EXPECT_EQ(mx, real[i].max) << n;
+    }
+}
+
+TEST_F(WeatherSaveFieldsTest, ResolvesThroughTheServiceToo)
+{
+    Dia::ValueSchema::ValueSchemaService svc(layers);
+    SavedField viaService[kWeatherSaveFieldCount];
+    SaveError err;
+    ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(svc, viaService, err));
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        EXPECT_EQ(real[i].min, viaService[i].min);
+        EXPECT_EQ(real[i].max, viaService[i].max);
+    }
+}
+
+// AC 1 on the shipped ranges: random finite floats, zero, denormals and each bound.
+TEST_F(WeatherSaveFieldsTest, EveryArrayRoundTripsBitIdenticalThroughRealJsonText)
+{
+    std::mt19937 rng(0xA4C0FFEEu);
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        const double mn = real[i].min, mx = real[i].max;
+        std::vector<float> values;
+        std::uniform_real_distribution<double> dist(mn, mx);
+        for (int k = 0; k < 200; ++k)
+        {
+            float v = static_cast<float>(dist(rng));
+            if (static_cast<double>(v) > mx) { v = FloatAtOrBelow(mx); }
+            if (static_cast<double>(v) < mn) { v = FloatAtOrAbove(mn); }
+            values.push_back(v);
+        }
+        values.push_back(0.0f);
+        values.push_back(FloatAtOrAbove(mn));                       // lower bound
+        values.push_back(FloatAtOrBelow(mx));                       // upper bound
+        values.push_back(1.0e-45f);                                 // smallest positive denormal
+        values.push_back(1.17549421e-38f);                          // largest denormal
+        values.push_back(1.17549435e-38f);                          // FLT_MIN
+        if (mn < 0.0) { values.push_back(-1.0e-45f); values.push_back(-1.17549421e-38f); }
+        ExpectRoundTrip(real, i, values, "random, zero, denormals, bounds");
+    }
+}
+
+TEST_F(WeatherSaveFieldsTest, NegativeZeroIsWrittenAsPositiveZero)
+{
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        const std::vector<float> values = { -0.0f, 0.25f * static_cast<float>(real[i].max), -0.0f };
+        const Json::Value record = RecordWith(i, values);
+        const std::string text = Draoi::HexWorld::Serialize(record);
+        EXPECT_EQ(std::string::npos, text.find("-0")) << real[i].name;
+        ExpectRoundTrip(real, i, values, "-0.0");
+        const Json::Value parsed = ThroughText(record);
+        WeatherFields back;
+        ASSERT_TRUE(CoW::Weather::ReadWeatherFieldArrays(parsed, 3, back));
+        const float* ptrs[kWeatherSaveFieldCount];
+        CoW::Weather::WeatherFieldPointers(back, ptrs);
+        EXPECT_EQ(0u, Bits(ptrs[i][0])) << real[i].name << " reads back as +0.0";
+    }
+}
+
+// float::max()-scale values: no shipped range allows them, so a wide sidecar generated from the same decl table
+// (a field added later is covered) carries the whole finite float range.
+TEST_F(WeatherSaveFieldsTest, FullFloatRangeRoundTripsThroughAWideSidecar)
+{
+    Dia::ValueSchema::ValueSchemaRegistry wide;
+    ASSERT_TRUE(Publish(wide, SchemaText("cow.weather.layers", FieldNames(), -static_cast<double>(FLT_MAX), static_cast<double>(FLT_MAX))));
+    SavedField fields[kWeatherSaveFieldCount];
+    SaveError err;
+    ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(wide, fields, err));
+
+    std::mt19937 rng(7u);
+    std::uniform_int_distribution<uint32_t> bitsDist(0u, 0xFFFFFFFFu);
+    for (uint32_t i = 0; i < kWeatherSaveFieldCount; ++i)
+    {
+        std::vector<float> values = { FLT_MAX, -FLT_MAX, FLT_MIN, -FLT_MIN, 1.0e-45f, -1.0e-45f, 0.0f, 1.0f / 3.0f, 16777217.0f };
+        while (values.size() < 300)
+        {
+            const uint32_t u = bitsDist(rng);
+            float v;
+            std::memcpy(&v, &u, sizeof(v));
+            if (std::isfinite(v)) { values.push_back(v); }
+        }
+        ExpectRoundTrip(fields, i, values, "float::max scale and random bit patterns");
+    }
+}
+
+// AC 21: pressure_anomaly sits exactly on both bounds.
+TEST_F(WeatherSaveFieldsTest, PressureAnomalyAcceptsPlusAndMinusHalfAndRejectsBeyond)
+{
+    const uint32_t idx = IndexOf(real, "pressure_anomaly");
+    ASSERT_NE(kWeatherSaveFieldCount, idx);
+    ExpectRoundTrip(real, idx, { 0.5f, -0.5f, 0.0f, 0.25f, -0.25f }, "at the bounds");
+
+    SaveError err;
+    EXPECT_FALSE(Validate(ThroughText(RecordWith(idx, { std::nextafterf(0.5f, 1.0f) })), real, err));
+    EXPECT_STREQ("pressure_anomaly", err.field.AsCStr());
+    EXPECT_FALSE(Validate(ThroughText(RecordWith(idx, { std::nextafterf(-0.5f, -1.0f) })), real, err));
+    EXPECT_STREQ("pressure_anomaly", err.field.AsCStr());
+}
+
+// The sidecar upper bound of wind_direction is inclusive 2pi. The sim emits values strictly below float(2pi), so
+// the largest float at or below the bound is accepted, and float(2pi) itself (a hair above the double 2pi) is not.
+TEST_F(WeatherSaveFieldsTest, WindDirectionUpperEdgeIsTheInclusiveTwoPiBound)
+{
+    const uint32_t idx = IndexOf(real, "wind_direction");
+    ASSERT_NE(kWeatherSaveFieldCount, idx);
+    EXPECT_EQ(kTwoPi, real[idx].max);
+
+    const float top = FloatAtOrBelow(kTwoPi);
+    const float wrapMax = std::nextafterf(static_cast<float>(kTwoPi), 0.0f);   // largest value the sim's Wrap2Pi returns
+    EXPECT_LE(static_cast<double>(wrapMax), kTwoPi);
+    ExpectRoundTrip(real, idx, { top, wrapMax, 0.0f, 3.14159274f }, "upper edge");
+
+    SaveError err;
+    EXPECT_FALSE(Validate(ThroughText(RecordWith(idx, { std::nextafterf(top, FLT_MAX) })), real, err));
+    EXPECT_STREQ("wind_direction", err.field.AsCStr());
+    EXPECT_FALSE(Validate(ThroughText(RecordWith(idx, { -1.0e-45f })), real, err));
+    EXPECT_STREQ("wind_direction", err.field.AsCStr());
+}
+
+// A field with no layer entry and no state entry is refused, naming that field.
+TEST_F(WeatherSaveFieldsTest, AFieldWithNoSidecarEntryFailsNamingTheField)
+{
+    const std::vector<std::string> all = FieldNames();
+    for (size_t skip = 0; skip < all.size(); ++skip)
+    {
+        SCOPED_TRACE(all[skip]);
+        std::vector<std::string> names;
+        for (size_t i = 0; i < all.size(); ++i) { if (i != skip) { names.push_back(all[i]); } }
+        Dia::ValueSchema::ValueSchemaRegistry reg;
+        ASSERT_TRUE(Publish(reg, SchemaText("cow.weather.layers", names, 0.0, 1.0)));
+        SavedField f[kWeatherSaveFieldCount];
+        SaveError err;
+        EXPECT_FALSE(CoW::Weather::ResolveWeatherSaveFields(reg, f, err));
+        EXPECT_STREQ(all[skip].c_str(), err.field.AsCStr());
+    }
+}
+
+// A field missing from the layers but present in cow.weather_state resolves from the state entry.
+TEST_F(WeatherSaveFieldsTest, AFieldMayTakeItsRangeFromTheStateEntry)
+{
+    const std::vector<std::string> all = FieldNames();
+    std::vector<std::string> names(all.begin(), all.end() - 1);
+    // Both documents go into one registry before it is published.
+    Dia::ValueSchema::ValueSchemaRegistry both;
+    {
+        Dia::ValueSchema::LoadResult a = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(
+            SchemaText("cow.weather.layers", names, 0.0, 1.0).c_str(), "layers.json");
+        Dia::ValueSchema::LoadResult b = Dia::ValueSchema::ValueSchemaLoader::LoadFromText(
+            SchemaText("cow.weather_state", { all.back() }, -0.5, 0.5).c_str(), "state.json");
+        ASSERT_TRUE(a.mOk);
+        ASSERT_TRUE(b.mOk);
+        for (unsigned i = 0; i < a.mEntries.Size(); ++i) { ASSERT_EQ(Dia::ValueSchema::RegisterResult::Ok, both.Register(a.mEntries[i])); }
+        for (unsigned i = 0; i < b.mEntries.Size(); ++i) { ASSERT_EQ(Dia::ValueSchema::RegisterResult::Ok, both.Register(b.mEntries[i])); }
+        both.Publish();
+    }
+    SavedField f[kWeatherSaveFieldCount];
+    SaveError err;
+    ASSERT_TRUE(CoW::Weather::ResolveWeatherSaveFields(both, f, err)) << err.field.AsCStr();
+    EXPECT_EQ(-0.5, f[kWeatherSaveFieldCount - 1].min);
+    EXPECT_EQ(0.5, f[kWeatherSaveFieldCount - 1].max);
+}
+
+TEST_F(WeatherSaveFieldsTest, ShippedSidecarHasExactlyTheTenEntries)
+{
+    Json::Value doc;
+    Json::Reader reader;
+    ASSERT_TRUE(reader.parse(ReadShippedSidecar(), doc));
+    EXPECT_EQ("cow.weather.layers", doc["for"].asString());
+    EXPECT_EQ(kWeatherSaveFieldCount, doc["entries"].size());
+}
+
+TEST_F(WeatherSaveFieldsTest, ReadRejectsAMissingOrShortArray)
+{
+    const Json::Value good = ThroughText(RecordWith(0, { 0.1f, 0.2f }));
+    WeatherFields f;
+    EXPECT_TRUE(CoW::Weather::ReadWeatherFieldArrays(good, 2, f));
+    EXPECT_FALSE(CoW::Weather::ReadWeatherFieldArrays(good, 3, f));
+    Json::Value missing = good;
+    missing.removeMember("snow_pack");
+    EXPECT_FALSE(CoW::Weather::ReadWeatherFieldArrays(missing, 2, f));
+    Json::Value bad = good;
+    bad["moisture"][1u] = "x";
+    EXPECT_FALSE(CoW::Weather::ReadWeatherFieldArrays(bad, 2, f));
 }
