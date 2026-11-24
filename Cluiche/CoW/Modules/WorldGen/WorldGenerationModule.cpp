@@ -133,6 +133,50 @@ void WorldGenerationModule::CreateParamHelper()
         mPendingParams->push_back(m);
         return true;
     });
+    // reload: S-1 applies no packs. Preview loads the current sidecar text into a scratch file (the real one is not
+    // touched); apply re-reads and runs ParameterFile::Reload on the real file. ApplyPendingParams then re-snapshots the
+    // session rules, so a queued reload takes effect at the next generate like a set.
+    mParamHelper->SetReloadFn([this](bool apply, Debug::ParamReloadResult& result)
+    {
+        std::string text, path, error;
+        if (!ReadRulesSidecar(text, path, error))
+        {
+            result.error = error;
+            return false;
+        }
+        Dia::Attribute::ParamError err;
+        Dia::Attribute::ParamWarnings warn;
+        bool ok;
+        if (apply)
+        {
+            ok = mParamFile->Reload(text.c_str(), nullptr, 0, warn, err);
+        }
+        else
+        {
+            Dia::Attribute::ParameterFile scratch;
+            ok = scratch.Reload(text.c_str(), nullptr, 0, warn, err);
+        }
+        if (!ok)
+        {
+            result.error = std::string("sidecar '") + path + "' failed at key '" + err.key.AsCStr() + "': " + err.reason.AsCStr();
+            return false;
+        }
+        for (uint32_t i = 0; i < warn.items.Size(); ++i)
+            result.warnings.push_back(std::string(warn.items[i].key.AsCStr()) + ": " + warn.items[i].reason.AsCStr());
+        if (apply)
+            mParamSidecarText = text;
+        return true;
+    });
+    // save_defaults: reads and writes the one sidecar source this module loaded rules from (dev builds only; the helper
+    // refuses in a shipping build).
+    mParamHelper->SetSidecarIO(
+        [this](std::string& text, std::string& path)
+        {
+            std::string error;
+            return ReadRulesSidecar(text, path, error);
+        },
+        [this](const std::string& text) { return WriteRulesSidecar(text); });
+    // No system-specific actions in S-1: the helper's default reply already names the unknown action.
     mParamHelper->SetDayProvider([this]()
     {
         Debug::ParamDayInfo d;
@@ -140,6 +184,55 @@ void WorldGenerationModule::CreateParamHelper()
         d.deferLag = 0;
         return d;
     });
+}
+
+bool WorldGenerationModule::ReadRulesSidecar(std::string& text, std::string& path, std::string& error)
+{
+    if (mRulesSidecarTextSet)
+    {
+        text = mRulesSidecarText;
+        path = "<injected sidecar text>";
+        return true;
+    }
+    path = mRulesSidecarPath;
+    if (mRulesAliasGiven)
+    {
+        const Dia::Core::Path::Alias alias(mRulesSidecarAlias.c_str());
+        if (!Dia::Core::PathStore::IsPathAliasRegistered(alias))
+        {
+            error = "alias '" + mRulesSidecarAlias + "' is not registered";
+            return false;
+        }
+        path = Dia::Core::PathStore::ResolvePathToCString(alias);
+    }
+    std::ifstream in(path, std::ios::binary);
+    if (!in.good())
+    {
+        error = "cannot read " + path;
+        return false;
+    }
+    std::stringstream ss;
+    ss << in.rdbuf();
+    text = ss.str();
+    return true;
+}
+
+bool WorldGenerationModule::WriteRulesSidecar(const std::string& text)
+{
+    if (mRulesSidecarTextSet)
+    {
+        mRulesSidecarText = text;
+        return true;
+    }
+    std::string current, path, error;
+    if (!ReadRulesSidecar(current, path, error))
+        return false;
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    if (!out.good())
+        return false;
+    out.write(text.data(), static_cast<std::streamsize>(text.size()));
+    out.close();
+    return out.good();
 }
 
 void WorldGenerationModule::ApplyPendingParams()

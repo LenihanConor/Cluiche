@@ -115,6 +115,11 @@ public:
     // session refuses with "rules_not_loaded". There is no compiled fallback.
     static constexpr const char* kDefaultRulesSidecarPath = "assets/global/misc/terrain_rules.schema.json";
     void SetRulesSidecarText(const std::string& text) { mRulesSidecarText = text; mRulesSidecarTextSet = true; }
+    // Drops an injected text so the path (or alias) is the source again. The params reload / save_defaults read and
+    // write that same source: an injected text lives in memory (save_defaults updates it), otherwise the one resolved
+    // file (the module cannot tell a source asset tree copy from a deployed copy, so it edits the file it loaded).
+    void ClearRulesSidecarText() { mRulesSidecarText.clear(); mRulesSidecarTextSet = false; }
+    const std::string& GetRulesSidecarText() const { return mRulesSidecarText; }
     void SetRulesSidecarPath(const std::string& path) { mRulesSidecarPath = path; }
     const std::string& GetRulesSidecarPath() const { return mRulesSidecarPath; }
     // Loads the sidecar into the session now, once (OnConfigure and DoStart call it too; later calls are no-ops).
@@ -292,6 +297,8 @@ private:
     void CreateParamHelper();
     void BuildParamHelper(const std::string& sidecarText);
     void ApplyPendingParams();
+    bool ReadRulesSidecar(std::string& text, std::string& path, std::string& error);
+    bool WriteRulesSidecar(const std::string& text);
     std::unique_ptr<Dia::Attribute::ParameterFile> mParamFile;
     std::unique_ptr<Debug::ParamCommandHelper> mParamHelper;
     std::unique_ptr<std::vector<Debug::ParamMutation>> mPendingParams;

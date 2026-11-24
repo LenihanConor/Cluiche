@@ -550,6 +550,130 @@ TEST(WorldGenCommands, ParamsSetIsQueuedAndAppliedAtTheNextRegenerate)
 	EXPECT_NE(cellHash(), before) << "the regenerated world must come from the changed rule";
 }
 
+namespace
+{
+	Json::Value ParamsCall(Harness& h, const char* action, const char* key = nullptr, double value = 0.0)
+	{
+		Json::Value a(Json::objectValue);
+		a["action"] = action;
+		if (key) a["key"] = key;
+		if (key && std::string(action) == "set") a["value"] = value;
+		return h.Call("cow.worldgen.params", a);
+	}
+}
+
+TEST(WorldGenCommands, ParamsReloadDiscardsSetValuesOnceApplied)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	ASSERT_EQ(ParamsCall(h, "get", "kCoastElev")["source"].asString(), "set");
+
+	const Json::Value rr = ParamsCall(h, "reload");
+	ASSERT_TRUE(rr["success"].asBool()) << rr.toStyledString();
+	EXPECT_TRUE(rr["queued"].asBool());
+	EXPECT_TRUE(rr["packs"].isArray());
+	EXPECT_EQ(rr["packs"].size(), 0u);
+	EXPECT_TRUE(rr["warnings"].isArray());
+	EXPECT_EQ(ParamsCall(h, "get", "kCoastElev")["source"].asString(), "set") << "queued, not applied yet";
+
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value got = ParamsCall(h, "get", "kCoastElev");
+	EXPECT_EQ(got["source"].asString(), "default");
+	EXPECT_NEAR(got["value"].asDouble(), 0.02, 1e-6);
+}
+
+TEST(WorldGenCommands, ParamsReloadWithACorruptSidecarErrorsAndQueuesNothing)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+
+	gWg->SetRulesSidecarText("{ this is not json");
+	const Json::Value rr = ParamsCall(h, "reload");
+	EXPECT_FALSE(rr["success"].asBool()) << rr.toStyledString();
+	EXPECT_FALSE(rr["error"].asString().empty());
+	EXPECT_EQ(rr["error"].asString().find("wired"), std::string::npos);
+
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value got = ParamsCall(h, "get", "kCoastElev");
+	EXPECT_EQ(got["source"].asString(), "set") << "nothing was queued, the real file is untouched";
+	EXPECT_NEAR(got["value"].asDouble(), 0.1, 1e-6);
+}
+
+TEST(WorldGenCommands, ParamsSaveDefaultsWritesOnlyChangedDefaultsToTheSidecar)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+	const std::string original = gWg->GetRulesSidecarText();
+
+	// Nothing changed: success, nothing written.
+	const Json::Value none = ParamsCall(h, "save_defaults");
+	ASSERT_TRUE(none["success"].asBool()) << none.toStyledString();
+	EXPECT_EQ(none["changed"].size(), 0u);
+	EXPECT_EQ(gWg->GetRulesSidecarText(), original);
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+
+	const Json::Value sd = ParamsCall(h, "save_defaults");
+	ASSERT_TRUE(sd["success"].asBool()) << sd.toStyledString();
+	ASSERT_EQ(sd["changed"].size(), 1u);
+	EXPECT_EQ(sd["changed"][0u].asString(), "kCoastElev");
+	EXPECT_NE(gWg->GetRulesSidecarText(), original);
+
+	// The rewritten sidecar now carries 0.1 as the default: a reload makes it so.
+	ASSERT_TRUE(ParamsCall(h, "reload")["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value got = ParamsCall(h, "get", "kCoastElev");
+	EXPECT_EQ(got["source"].asString(), "default");
+	EXPECT_NEAR(got["default"].asDouble(), 0.1, 1e-6);
+}
+
+TEST(WorldGenCommands, ParamsSaveDefaultsWritesTheSidecarFileWhenThePathIsTheSource)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	h.Pump(3);
+
+	std::error_code ec;
+	const std::filesystem::path tmp = std::filesystem::temp_directory_path(ec) / "cow_wg_params_sidecar_test.json";
+	const std::string original = gWg->GetRulesSidecarText();
+	{
+		std::ofstream out(tmp, std::ios::binary);
+		out << original;
+	}
+	gWg->ClearRulesSidecarText();
+	gWg->SetRulesSidecarPath(tmp.generic_string());
+
+	ASSERT_TRUE(ParamsCall(h, "set", "kCoastElev", 0.1)["success"].asBool());
+	ASSERT_TRUE(h.Call("cow.worldgen.regenerate")["success"].asBool());
+	h.Pump(3);
+	const Json::Value sd = ParamsCall(h, "save_defaults");
+	ASSERT_TRUE(sd["success"].asBool()) << sd.toStyledString();
+	EXPECT_EQ(sd["written"].asString(), tmp.generic_string());
+
+	std::ifstream in(tmp, std::ios::binary);
+	const std::string written((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+	in.close();
+	std::filesystem::remove(tmp, ec);
+	EXPECT_NE(written, original);
+	EXPECT_FALSE(written.empty());
+}
+
 TEST(WorldGenCommands, MoistureOffsetSetAppliesAndOutOfRangeIsClamped)
 {
 	Harness h;
