@@ -10,7 +10,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/shaders.js` (`PROP_VS`, `PROP_FS`), `js/props.js` (atlas build, palette masks), `js/app.js` (`setPropAttribs`, instance buffers)
 
 ## Status
-`Approved` (2026-11-24, user, after spec review: palette-table flag, tweakable style with sidecar, no-sRGB atlas). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.**
+`Approved` (2026-11-24, user, after spec review: palette-table flag, tweakable style with sidecar, no-sRGB atlas). Drafted 2026-11-20 from the approved prototype. **AD-001 signed off 2026-11-24 (user).**
 
 ## Summary
 
@@ -116,7 +116,7 @@ namespace Dia::Bgfx3D {
 |---|---|---|
 | TMAP-006 | No boil or frequency-varying sway on props | Fixed `swayFreq`; AC 10 |
 | RB-006 | No backend types in DiaGraphics public surface | Renderer, atlas and instance types live in DiaBgfx3D |
-| AD-001 | Engine API changes need sign-off | **Sign-off required** |
+| AD-001 | Engine API changes need sign-off | Signed off 2026-11-24 |
 | PD-004 | No STL in public APIs | Raw pointers and counts |
 | RB-001 | bgfx abstraction | Instanced draws via bgfx |
 

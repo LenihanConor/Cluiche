@@ -10,7 +10,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/weather.js` (`Precip`, `spawnSmoke`, `PRECIP_VS`/`PRECIP_FS`)
 
 ## Status
-`Approved` (2026-11-24, user, after spec review: area-based spawn rate, `spawnAbsolute`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.**
+`Approved` (2026-11-24, user, after spec review: area-based spawn rate, `spawnAbsolute`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **AD-001 signed off 2026-11-24 (user).**
 
 ## Summary
 
@@ -113,7 +113,7 @@ namespace Dia::Bgfx3D {
 | SM-003 | Weather is per cell | Density fields are per world position, never global |
 | PD-002 | PU/Phase/Module | Render-side only; density arrives from a FrameStream snapshot the game's module owns |
 | PD-004 | No STL in public APIs | Fixed pools; `DynamicArrayC` internally |
-| AD-001 | Engine API changes need sign-off | **Sign-off required** |
+| AD-001 | Engine API changes need sign-off | Signed off 2026-11-24 |
 
 ## Open Design Questions
 

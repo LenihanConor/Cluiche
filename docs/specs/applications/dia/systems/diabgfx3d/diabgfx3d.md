@@ -9,7 +9,7 @@
 
 **Renamed consumer (2026-11-23, layer split):** DiaTerrainMap3D no longer exists. Its rendering moved to DraoiHexWorldRender3D (@docs/specs/applications/draoi/systems/draoihexworldrender3d/draoihexworldrender3d.md), and its shading techniques to DiaToonShading (@docs/specs/applications/dia/systems/diatoonshading/diatoonshading.md). Feature E (Heightfield Mesh) was added here from the old Heightfield Terrain feature, because any game with terrain needs it.
 
-The 3D map needs these capabilities. Any 3D game needs them too, so they belong here as DiaBgfx3D features, not in the map package. All are proven in the research prototype (`docs/research/tile_renderin_art_pipeline/lookdev/`). Each needs AD-001 sign-off at its feature spec, before build. The module doc's "post-processing out of scope" line is revised by the post-process feature.
+The 3D map needs these capabilities. Any 3D game needs them too, so they belong here as DiaBgfx3D features, not in the map package. All are proven in the research prototype (`docs/research/tile_renderin_art_pipeline/lookdev/`). Each needed AD-001 sign-off at its feature spec, before build (A to D signed off 2026-11-24, E 2026-11-23). The module doc's "post-processing out of scope" line is revised by the post-process feature.
 
 Prototype references (`docs/research/tile_renderin_art_pipeline/lookdev/js/`):
 - **A:** `alive.js` `PostFX.ensure` (colour + depth target).

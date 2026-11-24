@@ -64,7 +64,7 @@ Each technique has a C++ parameter struct (for example `Dia::ToonShading::InkPar
 
 Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terrain Material needs all four.
 
-**Test gate (review 2026-11-24).** The shader code has almost no dependencies, but every golden capture (F1 AC 5, F2 AC 7, F3 AC 7, F4 AC 8) needs render-target readback from DiaBgfx3D Feature A, which is Draft and owes its AD-001 sign-off and a depth/RGBA16F spike. Until then the techniques can be written and checked through their CPU references and cook tests, but not goldened. **DiaCLI change owed (AD-001):** the shader cook passes only the bgfx include directories to `shaderc`, so `<toon/...>` includes from another root (Draoi, games) need the cook to add each `source_roots` entry as an include path (see Feature 1 task 1).
+**Test gate (review 2026-11-24).** The shader code has almost no dependencies, but every golden capture (F1 AC 5, F2 AC 7, F3 AC 7, F4 AC 8) needs render-target readback from DiaBgfx3D Feature A, which is Approved (AD-001 signed off 2026-11-24) but not built, and starts with a depth/RGBA16F spike. Until then the techniques can be written and checked through their CPU references and cook tests, but not goldened. **DiaCLI change (AD-001 signed off 2026-11-24):** the shader cook passes only the bgfx include directories to `shaderc`, so `<toon/...>` includes from another root (Draoi, games) need the cook to add each `source_roots` entry as an include path (see Feature 1 task 1).
 
 ## Decisions
 
@@ -85,7 +85,7 @@ Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terr
 | AD-001 | Module docs; engine changes signed off | New module doc; module and `pipeline.toml` shader root **signed off 2026-11-23** |
 | AD-003 | `Dia::<Module>::` | `Dia::ToonShading::` |
 | Platform: DiaAttribute / DiaValueSchema | Parameters are data | Every parameter struct has a sidecar, bound through `ParamBinding` (not a new binder) |
-| AD-001 (DiaCLI) | CLI changes signed off | Cook include paths (see Test gate): **sign-off owed** |
+| AD-001 (DiaCLI) | CLI changes signed off | Cook include paths (see Test gate): **signed off 2026-11-24** |
 
 ## Test Strategy
 
@@ -101,4 +101,4 @@ Build order: 1, then 2, 3 and 4 in any order. The DraoiHexWorldRender3D Hex Terr
 
 ## Status
 
-`Approved` (2026-11-23, user). Created by the layer split. **AD-001 signed off 2026-11-23 (user):** new module `Dia/DiaToonShading` and the shader root `Dia/DiaToonShading/Shaders` in `pipeline.toml`. **Features 1–4 Approved 2026-11-24 (user, after spec review).** Still owed before build: AD-001 sign-off for the DiaCLI cook include-path change and the `Testing/Shaders` root (F1 task 1); golden harness (F1 task 4) is blocked on DiaBgfx3D Feature A.
+`Approved` (2026-11-23, user). Created by the layer split. **AD-001 signed off 2026-11-23 (user):** new module `Dia/DiaToonShading` and the shader root `Dia/DiaToonShading/Shaders` in `pipeline.toml`. **Features 1–4 Approved 2026-11-24 (user, after spec review).** AD-001 for the DiaCLI cook include-path change and the `Testing/Shaders` root signed off 2026-11-24, so F1 tasks 1 to 3 and 5 are ready to build; golden harness (F1 task 4) is blocked on DiaBgfx3D Feature A.

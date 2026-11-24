@@ -10,7 +10,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX`, `POST_FS`)
 
 ## Status
-`Approved` (2026-11-24, user, after spec review: bgfx depth range, `wobbleHz`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build.** Revises the DiaBgfx3D module rule "post-processing: out of scope (RB-001)" (see below).
+`Approved` (2026-11-24, user, after spec review: bgfx depth range, `wobbleHz`, tweakable params with sidecar). Drafted 2026-11-20 from the approved prototype. **AD-001 signed off 2026-11-24 (user).** Revises the DiaBgfx3D module rule "post-processing: out of scope (RB-001)" (see below).
 
 ## Summary
 
@@ -99,10 +99,10 @@ namespace Dia::Bgfx3D {
 
 | ID | Decision | How this feature complies |
 |---|---|---|
-| RB-001 | bgfx abstraction; PBR, IBL, post-processing out of scope | **Revised by amendment (needs sign-off):** a single scene-composite pass (tilt-shift, haze, sky, silhouettes, vignette) is in scope. PBR, IBL, bloom, SSAO and colour grading stay out of scope |
+| RB-001 | bgfx abstraction; PBR, IBL, post-processing out of scope | **Revised by amendment (signed off 2026-11-24):** a single scene-composite pass (tilt-shift, haze, sky, silhouettes, vignette) is in scope. PBR, IBL, bloom, SSAO and colour grading stay out of scope |
 | RB-006 | No backend types in DiaGraphics public surface | Stack and passes live in DiaBgfx3D |
 | TMAP-005 | Per-cell channels, no global state | Not involved; this is presentation only |
-| AD-001 | Engine API changes and module doc revision need sign-off | **Sign-off required**, including the `dia.bgfx3d.architecture.module.md` line edit |
+| AD-001 | Engine API changes and module doc revision need sign-off | Signed off 2026-11-24, including the `dia.bgfx3d.architecture.module.md` line edit |
 | PD-004 | No STL in public APIs | Structs and raw pointers |
 
 ## Open Design Questions

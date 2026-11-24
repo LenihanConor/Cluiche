@@ -9,7 +9,7 @@
 **Prototype:** `docs/research/tile_renderin_art_pipeline/lookdev/js/alive.js` (`PostFX.ensure`), `lookdev/js/glutil.js` (`glTexture`), per-frame `texSubImage2D` of the weather and event textures in `app.js`
 
 ## Status
-`Approved` (2026-11-24, user, after spec review: blocking test readback, headless AC). Drafted 2026-11-20 from the approved prototype. **Needs AD-001 sign-off before build** (DiaBgfx and DiaBgfx3D API additions).
+`Approved` (2026-11-24, user, after spec review: blocking test readback, headless AC). Drafted 2026-11-20 from the approved prototype. **AD-001 signed off 2026-11-24 (user)** (DiaBgfx and DiaBgfx3D API additions).
 
 ## Summary
 
@@ -100,7 +100,7 @@ bool Update(unsigned x, unsigned y, unsigned w, unsigned h, const void* data, si
 |---|---|---|
 | RB-001 | bgfx is the GPU abstraction | All GPU work uses bgfx in DiaBgfx/DiaBgfx3D |
 | RB-006 | No backend types in DiaGraphics' public surface | `RenderTarget` and handles live in DiaBgfx; consumers see indices/opaque classes only |
-| AD-001 | Engine API changes need sign-off | **Sign-off required** before build |
+| AD-001 | Engine API changes need sign-off | Signed off 2026-11-24 |
 | PD-004 | No STL in public APIs | Raw pointers and sizes |
 | PD-005 | x64 / D3D11 default | Verified on D3D11; Vulkan/D3D12 checked, not required |
 
