@@ -231,6 +231,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | DiaModulePlacement: move module classes out of Dia (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: 11 module classes moved to Baseline/CluicheTest, MetricsCollectorModule deleted, ObservationModuleBase renamed, placement rule built, layer re-review and stale docs done; dia check arch 34 -> 0. Release build and E2E for the moved modules dropped by user decision. |
 | Dia | Hex Topology move to DiaGeometry2D (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23 as a single sweep with no aliases: HexTopology and CellCoord now in DiaGeometry2D/Grid (Dia::Geometry2D); goldens unchanged. Release build dropped by user decision. |
 | Dia | Module Tower: Wiring lens, pinned-by, fan-in (raised 2026-11-23) | 2026-11-24 | Done 2026-11-24: wiring lens (`M`/`PU`/`A` badges, files and symbols in the panel), pinned-by ghost box, fan-in on boxes and leak cards; mockup signed off (docs/mockups/arch-tower-wiring-mockup.html); test_arch_tower.py 7 pass incl. headless-browser test. `A` maps to the existing "reaches into a ProcessingUnit" finding; ghost floor ignores users from below. |
+| Dia | DiaParallelExecutor (extract from DiaDeferredStep; raised 2026-11-22) | 2026-11-23 | Done 2026-11-23: module `Dia/DiaParallelExecutor` (`Dia::ParallelExecutor`); DiaDeferredStep, CoW, CluicheTest and GoogleTests updated; scoped tests, CluicheTest pipeline, `dia check deps` and `dia check arch` clean. |
 
 ---
 
