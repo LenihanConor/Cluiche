@@ -38,7 +38,7 @@ It runs on the CPU with no GPU code, so the drawn map and CPU queries agree. It 
 
 | # | Feature | Summary | Spec | Status |
 |---|---|---|---|---|
-| 1 | Relief and Rivers | Relief weights as a bake scalar, ridged relief post-pass, `ComposeElevation`, river network, river distance/width/direction field, tile and rebake safe | [relief-and-rivers.md](relief-and-rivers.md) | Draft |
+| 1 | Relief and Rivers | Relief weights as a bake scalar, ridged relief post-pass, `ComposeElevation`, river network, river distance/width/direction field, tile and rebake safe, every number a live-tweakable parameter | [relief-and-rivers.md](relief-and-rivers.md) | Approved 2026-11-24 |
 
 ## Decisions
 
@@ -46,6 +46,7 @@ It runs on the CPU with no GPU code, so the drawn map and CPU queries agree. It 
 |---|---|---|---|
 | HWR-001 | Relief and rivers are a Draoi package over the Dia bake, not part of it (user 2026-11-23) | Accepted | Yes |
 | HWR-002 | Relief and rivers run only through DiaCellFieldBake's generic hooks (a scalar layer, `WarpedPoint`, `ITilePostPass`); no Draoi code inside the Dia loop | Accepted | Yes |
+| HWR-003 | Every number that shapes relief, rivers or sea is a live-tweakable parameter with a range and a neutral default; a change is a whole-world `RebakeAll`; river pack ranges travel with the data (`RiverDecode`), never hard-coded in a shader (user 2026-11-24) | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
@@ -62,4 +63,4 @@ It runs on the CPU with no GPU code, so the drawn map and CPU queries agree. It 
 
 ## Status
 
-`Approved` (2026-11-23, user). Created by the layer split. Feature 1 Draft.
+`Approved` (2026-11-23, user). Created by the layer split. Feature 1 Approved 2026-11-24 (after spec review).

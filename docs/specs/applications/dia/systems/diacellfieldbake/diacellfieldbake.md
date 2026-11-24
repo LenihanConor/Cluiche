@@ -80,7 +80,7 @@ The features own the signatures: [fields-and-classes.md](fields-and-classes.md) 
 |---|---|---|---|---|
 | 1 | Fields and Classes | Two-ring Gaussian bake, warp, smooth scalar fields, majority primary and secondary class, owner cell, margin field, `OwnerAt`/`SampleAt`, hashes; DiaCellLayers adapter | [fields-and-classes.md](fields-and-classes.md) | Approved 2026-11-20 |
 | 2 | ~~Relief and Rivers~~ | Moved 2026-11-23 to DraoiHexWorldRelief ([relief-and-rivers.md](../../../draoi/systems/draoihexworldrelief/relief-and-rivers.md)) | — | Moved |
-| 3 | Parallel, Tiled and Incremental Bake | Whole-world bake at load over `IParallelExecutor` (serial oracle) with a progress callback, per-size default resolution, double-buffered incremental rebake (`RebakeBegin`/`Commit`), `ITilePostPass` hook, metrics, goldens on S-1 Small/Standard/Large | [parallel-tiled-incremental.md](parallel-tiled-incremental.md) | Draft |
+| 3 | Parallel, Tiled and Incremental Bake | Whole-world bake at load over `IParallelExecutor` (serial oracle) with a progress callback, per-size default resolution, double-buffered incremental rebake (`RebakeBegin`/`Commit`), `ITilePostPass` hook, metrics, goldens on S-1 Small/Standard/Large | [parallel-tiled-incremental.md](parallel-tiled-incremental.md) | Approved 2026-11-24 |
 
 Build order: 1 → 3. DraoiHexWorldRelief builds on both.
 
@@ -113,7 +113,7 @@ Build order: 1 → 3. DraoiHexWorldRelief builds on both.
   - a test post-pass is tile independent and rebake safe.
 - Relief, lake and river tests moved to DraoiHexWorldRelief.
 - **Determinism:** the serial and parallel bakes give identical hashes, and the same hash on every run.
-- **Goldens:** S-1 Small, Standard and Large presets × seeds 1–3, through the existing golden store pattern.
+- **Goldens:** synthetic Small, Standard and Large sized hex grids × seeds 1–3 (a builder in `DiaCellFieldBake/Testing/`; Dia tests do not depend on CoW), through the existing golden store pattern. Goldens on the real S-1 presets live with the CoW consumer (Strategic Map).
 - **Performance (Debug, ballpark):** bake time at each size. The prototype JS took 1.2 s at Small.
 
 ## Open Design Questions
@@ -123,4 +123,4 @@ Build order: 1 → 3. DraoiHexWorldRelief builds on both.
 
 ## Status
 
-`Approved` (2026-11-20, user: split out of DiaTerrainMap3D in the 3-way split). Specced now, built with CoW build order #18. Reviewed 2026-11-22: CFB-004/005 added, public sketch replaced by feature pointers, executor moved to DiaParallelExecutor; Features 2 and 3 revised and awaiting approval. **Amended 2026-11-23 (layer split, user):** Feature 2 moved to Draoi (DraoiHexWorldRelief); CFB-006 added; Feature 3 gains `ITilePostPass`; Feature 1 gains `WarpedPoint`. Feature 3 still awaits approval; the Feature 1 amendment was re-confirmed 2026-11-23.
+`Approved` (2026-11-20, user: split out of DiaTerrainMap3D in the 3-way split). Specced now, built with CoW build order #18. Reviewed 2026-11-22: CFB-004/005 added, public sketch replaced by feature pointers, executor moved to DiaParallelExecutor; Features 2 and 3 revised and awaiting approval. **Amended 2026-11-23 (layer split, user):** Feature 2 moved to Draoi (DraoiHexWorldRelief); CFB-006 added; Feature 3 gains `ITilePostPass`; Feature 1 gains `WarpedPoint`. The Feature 1 amendment was re-confirmed 2026-11-23. **Feature 3 Approved 2026-11-24 (user, after spec review):** tests on synthetic grids not CoW presets, `RebakeAll` added so bake and post-pass parameters can be live-tweaked. AD-001 for the new module `Dia/DiaCellFieldBake` is still owed before build.

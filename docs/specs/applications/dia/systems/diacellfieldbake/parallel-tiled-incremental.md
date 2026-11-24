@@ -8,7 +8,7 @@
 **Uses:** `IParallelExecutor` from the new `DiaParallelExecutor` module (namespace `Dia::ParallelExecutor::`; extracted from DiaDeferredStep, see the backlog row "DiaParallelExecutor")
 
 ## Status
-`Draft` (2026-11-20). **Rewritten 2026-11-22 (review):** whole-world bake at load (the visible-tile LRU cache is cut), progress callback for a load overlay, double-buffered incremental rebake, executor moved to DiaParallelExecutor. Awaiting user review. **Amended 2026-11-23 (layer split, user):** Feature 2 (relief and rivers) moved to Draoi (DraoiHexWorldRelief). This feature gains a generic tile post-pass hook (`ITilePostPass`) so Draoi relief and rivers still run in the parallel and incremental bake; river terms in the resolution policy and the dilation rule become the hook's `ExtraBytesPerTexel()` and `InfluenceRadius()`.
+`Approved` (2026-11-24, user, after spec review: tests on synthetic grids not CoW presets, `RebakeAll` added, AC 6 arithmetic corrected). Drafted 2026-11-20. **Rewritten 2026-11-22 (review):** whole-world bake at load (the visible-tile LRU cache is cut), progress callback for a load overlay, double-buffered incremental rebake, executor moved to DiaParallelExecutor. Awaiting user review. **Amended 2026-11-23 (layer split, user):** Feature 2 (relief and rivers) moved to Draoi (DraoiHexWorldRelief). This feature gains a generic tile post-pass hook (`ITilePostPass`) so Draoi relief and rivers still run in the parallel and incremental bake; river terms in the resolution policy and the dilation rule become the hook's `ExtraBytesPerTexel()` and `InfluenceRadius()`.
 
 ## Summary
 
@@ -34,8 +34,9 @@ Feature 1 bakes any texel rectangle correctly. Feature 3 decides **how a real ga
 3. **Incremental rebake** of only the tiles touched by changed cells, byte-identical to a full rebake.
 4. **Double buffering.** The live world is never modified while a rebake runs. A `Commit` swaps the new tiles in and reports the changed texel rectangle for upload.
 5. **A resolution policy** that returns texels per unit for a grid and a budget.
-6. **Goldens and metrics** for S-1 Small, Standard and Large.
+6. **Goldens and metrics** on synthetic hex grids of Small, Standard and Large size (a builder in `DiaCellFieldBake/Testing/`; no CoW dependency). Goldens on the real S-1 presets live with the CoW consumer.
 7. **Post-pass hook** with influence radius, extra bytes per texel, and Begin/Commit/Discard callbacks so a post-pass's own arrays are double-buffered with the bake.
+8. **Rebake everything.** `RebakeAll` for a change that touches no cell but invalidates every tile (a `BakeParams` field such as warp amplitude, or a post-pass parameter). It is double-buffered like `RebakeBegin`. Bake and post-pass parameters are therefore live-tweakable attributes: the consumer binds them, coalesces edits while a slider drags, and uses a coarser `texelsPerUnit` for the preview (ODQ 2).
 
 ## Non-Goals
 
@@ -83,7 +84,7 @@ public:
 };
 ```
 
-`BakeWorld` and `BakedWorld::Bake` take an optional array of post-passes, run in order per tile. A pass must be tile independent (any tile order gives the same bytes); AC 14 checks that for every registered pass. `WarpedPoint` (Feature 1) is available to passes so they sample at the same warped point as the class decision.
+`BakeWorld` and `BakedWorld::Bake` take an optional array of post-passes, run in order per tile. A pass must be tile independent (any tile order gives the same bytes); AC 13 checks that for every registered pass. `WarpedPoint` (Feature 1) is available to passes so they sample at the same warped point as the class decision.
 
 ### Resolution policy
 
@@ -109,6 +110,9 @@ public:
     // Cells whose class or scalar inputs changed. Rebakes only the tiles overlapping their AffectedRect
     // into a PENDING set; the live world is untouched. BLOCKS (worker job only).
     bool RebakeBegin(const BakeInputs& newInputs, const uint16_t* cells, uint32_t count, ParallelExecutor::IParallelExecutor&);
+    // Every tile, into the pending set: for a changed BakeParams or post-pass parameter (no cell changed). Same
+    // threading, merge and Commit rules as RebakeBegin; runs the progress callback if one was given to Bake.
+    bool RebakeAll(const BakeInputs& inputs, const BakeParams& newParams, ParallelExecutor::IParallelExecutor&);
     bool HasPending() const;
     // Copies the pending tiles into the live world. Cheap (memcpy of the touched tiles). Returns the texel
     // rectangle that changed, for the consumer's upload. Render thread, at a frame boundary.
@@ -125,20 +129,21 @@ Influence of one cell on a texel is limited to: the texel's neighbourhood is the
 
 ## Acceptance Criteria
 
-1. **Parallel equals serial.** `BakeWorld` with the serial executor and with a multi-worker executor (1, 2, 4, 8 workers) gives the same bytes and `Hash()` for S-1 Small, Standard and Large.
+1. **Parallel equals serial.** `BakeWorld` with the serial executor and with a multi-worker executor (1, 2, 4, 8 workers) gives the same bytes and `Hash()` for synthetic Small, Standard and Large sized hex grids (Testing builder).
 2. **Tile sizes.** Tile sizes 64, 256, 1000 and one that does not divide the texel grid all give the same bytes. Ragged edge tiles have the clipped size.
 3. **Sink order independence.** Delivering tiles to a stitch sink in reverse order gives the same result.
 4. **Progress.** `ProgressFn` is called exactly `tilesTotal` times, `tilesDone` never decreases, the last call has `tilesDone == tilesTotal`, and a null callback is accepted.
 5. **Whole bake match.** `BakedWorld::Fields()` is byte-identical to a single `Bake` of the same inputs.
-6. **Resolution policy.** `ChooseTexelsPerUnit` is clamped to [tMin, tMax], decreases as the grid grows, increases with the budget, and the resulting whole-world `ByteSize()` is within the budget unless clamped at `tMin`. At the default budget, Small, Standard and Large with 4 scalars and 4 extra bytes per texel all get `tMax`.
+6. **Resolution policy.** `ChooseTexelsPerUnit` is clamped to [tMin, tMax], decreases as the grid grows, increases with the budget, and the resulting whole-world `ByteSize()` is within the budget unless clamped at `tMin`. At the default budget, Small, Standard and Large with 5 scalars (4 fields plus DraoiHexWorldRelief's weight layer) and 4 extra bytes per texel all get `tMax` (23 bytes per texel, about 74.6 MiB at Large).
 7. **Affected rect.** For a single changed cell, `AffectedRect` contains every texel whose baked output differs between the old and new inputs, checked by baking both worlds at several seeds and warp amplitudes (including 0 and 1.5) on hand grids.
 8. **Incremental equals full.** After changing K random cells (class and scalar), `RebakeBegin` + `Commit` leaves `Fields()` byte-identical to a fresh `Bake` on the new inputs, for K = 1, 5 and 50.
 9. **Incremental does less.** Changing one cell rebakes at most the tiles overlapping its `AffectedRect`, asserted by a counter, and far fewer than all tiles on Large.
 10. **Double buffering.** Between `RebakeBegin` and `Commit`, `Fields()` is byte-identical to before. `Commit` returns the changed rectangle, and a texel outside it is unchanged. `DiscardPending` leaves the live world untouched. A second `RebakeBegin` before `Commit` merges.
 11. **Metrics.** `cfb.tiles_baked`, `cfb.resident_bytes`, `cfb.tile_bake_ms` (last), `cfb.rebake_ms`, `cfb.pending_tiles`; a log line per `BakeWorld` and per `RebakeBegin`.
-12. **Goldens.** S-1 Small, Standard and Large presets (continental, highlands, archipelago, default) × seeds 1–3, whole-world hash under the policy resolution, stored in a golden file with an update switch like `CellLayerGolden`.
-14. **Post-pass hook.** A test post-pass (writes a per-texel hash of its warped point into its own array and adds a constant to one scalar) gives byte-identical results serial versus parallel, in any tile order, and after incremental rebake versus full bake. Its `InfluenceRadius()` grows `AffectedRect`. Its array is unchanged between `RebakeBegin` and `Commit`, and `Discard` leaves it untouched. No registered pass leaves the output byte-identical to Feature 1 alone.
-13. **Timing (Debug, ballpark).** Whole-world bake time at each size, single worker and with the capped executor, is logged and recorded in the plan notes. No threshold gate (quick-and-dirty perf rule); a problem is queued as a perf task, not silently accepted.
+12. **Goldens.** Synthetic Small, Standard and Large sized hex grids × seeds 1–3, whole-world hash under the policy resolution, stored in a golden file with an update switch like `CellLayerGolden`. Goldens on the real S-1 presets (continental, highlands, archipelago, default) belong to the CoW consumer (Strategic Map), not this Dia module.
+13. **Post-pass hook.** A test post-pass (writes a per-texel hash of its warped point into its own array and adds a constant to one scalar) gives byte-identical results serial versus parallel, in any tile order, and after incremental rebake versus full bake. Its `InfluenceRadius()` grows `AffectedRect`. Its array is unchanged between `RebakeBegin` and `Commit`, and `Discard` leaves it untouched. No registered pass leaves the output byte-identical to Feature 1 alone.
+14. **Timing (Debug, ballpark).** Whole-world bake time at each size, single worker and with the capped executor, is logged and recorded in the plan notes. No threshold gate (quick-and-dirty perf rule); a problem is queued as a perf task, not silently accepted.
+15. **Rebake all.** After changing `warpAmplitude` (and separately a test post-pass parameter), `RebakeAll` + `Commit` leaves `Fields()` byte-identical to a fresh `Bake` with the new parameters. Between `RebakeAll` and `Commit`, `Fields()` is unchanged; `DiscardPending` drops it; a `RebakeBegin` issued while it is pending merges into the same pending set.
 
 ## Binding Decisions
 
@@ -168,5 +173,6 @@ Influence of one cell on a texel is limited to: the texel's neighbourhood is the
 | 5 | `BakedWorld`: `Bake`, `RebakeBegin`, pending set | AC 5, 8, 9 | Not Started | sonnet | |
 | 6 | `Commit`, `DiscardPending`, changed rect | AC 10 | Not Started | sonnet | |
 | 7 | Metrics and logs | AC 11 | Not Started | haiku | |
-| 8 | S-1 goldens (Small, Standard, Large) and timing notes | AC 12, 13 | Not Started | sonnet | |
-| 9 | `ITilePostPass` hook through `BakeWorld`, `BakedWorld`, `AffectedRect` and the resolution policy | AC 14 | Not Started | sonnet | added 2026-11-23 (layer split) |
+| 8 | Synthetic-grid builder in `Testing/`, goldens (Small, Standard, Large sized) and timing notes | AC 12, 14 | Not Started | sonnet | real S-1 preset goldens go to the CoW consumer |
+| 9 | `ITilePostPass` hook through `BakeWorld`, `BakedWorld`, `AffectedRect` and the resolution policy | AC 13 | Not Started | sonnet | added 2026-11-23 (layer split) |
+| 10 | `BakedWorld::RebakeAll` | AC 15 | Not Started | sonnet | added 2026-11-24 (review); after tasks 5, 6 |
