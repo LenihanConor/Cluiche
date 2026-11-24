@@ -50,6 +50,13 @@ namespace Dia::DeferredStep
 			// Valid from a successful DoStart until DoStop. Consumers register channels in their own DoStart.
 			DeferredStepScheduler& GetScheduler();
 
+			// The launcher the scheduler runs steps through (SimPU only). Lets a consumer run a one-off step (e.g. a
+			// spin-up) through the same capped executor and CapGate as the scheduled steps. Null before a successful
+			// DoStart and after DoStop. TryAttachJobLauncher can SWAP the launcher while idle (inline -> job), so fetch
+			// it at each launch and never hold the pointer across frames; a token is only valid on the launcher that
+			// issued it. Tokens share the launcher's table (kMaxInFlight = 8) with the scheduler's channels.
+			IStepLauncher* GetLauncher() { return mLauncher.Get(); }
+
 			// Non-owning: the caller keeps the source alive from module start to stop. May be called any time
 			// before the first DoUpdate (a later call is still accepted; the module warns once until it arrives).
 			// DoUpdate reads the source once per sim step and calls scheduler.Tick(source.GetCurrentKey()).

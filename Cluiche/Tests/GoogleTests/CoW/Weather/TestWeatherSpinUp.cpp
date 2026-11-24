@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 #include <DiaThreading/JobSystem.h>
+#include <DiaDeferredStep/CapConfig.h>
+#include <DiaDeferredStep/JobStepLauncher.h>
 
 #include <DiaObservation/Log/ISink.h>
 #include <DiaObservation/Log/LogEntry.h>
@@ -531,6 +533,158 @@ TEST_F(WeatherSpinUpTest, StaleResultOfASupersededPoolJobIsDiscarded)
     ASSERT_TRUE(WaitReady(stage, 2));
     EXPECT_FALSE(stage.IsReadyForRevision(1));
     EXPECT_EQ(20u, stage.GetSnapshot().cellCount);
+    stage.Stop();
+    js.Shutdown();
+}
+
+// ---- Task 9: spin-up through the DeferredStep capped launcher ------------------------------------------------------
+
+namespace
+{
+// A launcher source the test can point at a real launcher, or at nothing.
+class FakeLauncherSource : public CoW::Weather::ILauncherSource
+{
+public:
+    Dia::DeferredStep::IStepLauncher* Get() override { return launcher; }
+    Dia::DeferredStep::IStepLauncher* launcher = nullptr;
+};
+}
+
+TEST_F(WeatherSpinUpTest, CappedLauncherSpinUpIsBitIdenticalAndGoesThroughTheCapGate)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    Dia::DeferredStep::JobStepLauncher launcher(js, Dia::DeferredStep::CapConfig());
+    FakeLauncherSource src;
+    src.launcher = &launcher;
+    stage.SetLauncherSource(&src);
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kCappedLauncher);
+    stage.OnWorldComplete(1);
+    ASSERT_TRUE(WaitReady(stage, 1));
+
+    WeatherTerrain terrain;
+    CoW::WorldStep::WorldView view;
+    ASSERT_TRUE(source.GetWorld(view, terrain));
+    WeatherSimulation reference;
+    ReferenceSpinUp(terrain, 6, reference);
+    const CoW::Weather::WeatherSnapshot snap = stage.GetSnapshot();
+    ASSERT_NE(nullptr, snap.fields);
+    EXPECT_TRUE(WT::SameFields(reference.Fields(), *snap.fields));
+    EXPECT_EQ(reference.GetCommittedWeek(), snap.week);
+    EXPECT_GT(launcher.GetCapGate().GetStats().admitted, 0u);   // it ran on the capped executor's gate
+    EXPECT_EQ(0u, stage.LiveLauncherTokens());                  // reaped by Update
+    stage.Stop();
+    js.Shutdown();
+}
+
+TEST_F(WeatherSpinUpTest, StopDuringACappedSpinUpCancelsAndJoinsBeforeReturning)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    Dia::DeferredStep::JobStepLauncher launcher(js, Dia::DeferredStep::CapConfig());
+    FakeLauncherSource src;
+    src.launcher = &launcher;
+    stage.SetSpinupWeeks(520);
+    std::atomic<uint32_t> weeksRun{ 0 };
+    stage.SetSpinUpWeekObserver([&](uint32_t) {
+        ++weeksRun;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    });
+    stage.SetLauncherSource(&src);
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kCappedLauncher);
+    stage.OnWorldComplete(1);
+    for (int i = 0; i < 2000 && weeksRun.load() == 0; ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    ASSERT_GT(weeksRun.load(), 0u);
+
+    stage.Stop();   // cancels between weeks, then waits and releases the token
+    const uint32_t atStop = weeksRun.load();
+    EXPECT_EQ(0u, stage.LiveLauncherTokens());
+    EXPECT_EQ(0, js.GetActiveJobCount());
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    EXPECT_EQ(atStop, weeksRun.load());
+    EXPECT_LT(atStop, 520u);
+    EXPECT_FALSE(stage.IsReady());
+    js.Shutdown();
+}
+
+TEST_F(WeatherSpinUpTest, NoLauncherAvailableFallsBackWithExactlyOneWarningAndStillCompletes)
+{
+    WarnSink warn;
+    Dia::Observation::Log::Logger::Instance().RegisterSink(&warn);
+    FakeLauncherSource src;   // launcher stays null
+    stage.SetLauncherSource(&src);
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kCappedLauncher);
+    stage.OnWorldComplete(1);   // no submitter either: runs inline
+    stage.Update();
+    EXPECT_TRUE(stage.IsReadyForRevision(1));
+    Dia::Observation::Log::Logger::Instance().FlushSync();
+    EXPECT_EQ(1u, warn.warnings.load());
+    Dia::Observation::Log::Logger::Instance().UnregisterSink(&warn);
+}
+
+TEST_F(WeatherSpinUpTest, NoLauncherButASubmitterUsesThePoolWithExactlyOneWarning)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    WarnSink warn;
+    Dia::Observation::Log::Logger::Instance().RegisterSink(&warn);
+    FakeLauncherSource src;
+    stage.SetLauncherSource(&src);
+    stage.SetJobSubmitter(PoolSubmitter(js));
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kCappedLauncher);
+    stage.OnWorldComplete(1);
+    ASSERT_TRUE(WaitReady(stage, 1));
+    Dia::Observation::Log::Logger::Instance().FlushSync();
+    EXPECT_EQ(1u, warn.warnings.load());
+    Dia::Observation::Log::Logger::Instance().UnregisterSink(&warn);
+    stage.Stop();
+    js.Shutdown();
+}
+
+TEST_F(WeatherSpinUpTest, StaleCappedResultIsDiscardedAndEveryTokenIsReleased)
+{
+    Dia::Threading::JobSystem js;
+    js.Initialize(2);
+    Dia::DeferredStep::JobStepLauncher launcher(js, Dia::DeferredStep::CapConfig());
+    FakeLauncherSource src;
+    src.launcher = &launcher;
+    std::atomic<bool> firstEntered{ false };
+    std::atomic<bool> release{ false };
+    std::atomic<bool> first{ true };
+    stage.SetSpinUpWeekObserver([&](uint32_t) {
+        if (first.exchange(false))   // only revision 1's job parks
+        {
+            firstEntered = true;
+            for (int i = 0; i < 5000 && !release.load(); ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+        }
+    });
+    stage.SetLauncherSource(&src);
+    stage.SetLaunchMode(WeatherStage::LaunchMode::kCappedLauncher);
+    stage.OnWorldComplete(1);
+    for (int i = 0; i < 2000 && !firstEntered.load(); ++i) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    ASSERT_TRUE(firstEntered.load());
+
+    source.width = 5;
+    source.height = 4;
+    stage.OnWorldComplete(2);
+    release = true;
+    ASSERT_TRUE(WaitReady(stage, 2));
+    EXPECT_FALSE(stage.IsReadyForRevision(1));
+    EXPECT_EQ(20u, stage.GetSnapshot().cellCount);
+
+    // Many more regenerations (more than the token table holds): nothing leaks and the launcher still accepts launches.
+    for (uint32_t rev = 3; rev < 3 + 14; ++rev)
+    {
+        stage.OnWorldComplete(rev);
+        ASSERT_TRUE(WaitReady(stage, rev));
+    }
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (stage.LiveLauncherTokens() != 0 && std::chrono::steady_clock::now() < deadline)
+    {
+        stage.Update();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    EXPECT_EQ(0u, stage.LiveLauncherTokens());
     stage.Stop();
     js.Shutdown();
 }

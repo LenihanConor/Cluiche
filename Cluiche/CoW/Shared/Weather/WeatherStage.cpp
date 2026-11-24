@@ -1,6 +1,7 @@
 #include <Shared/Weather/WeatherStage.h>
 
 #include <DraoiHexWorld/BiomeRegistry.h>
+#include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaParallelExecutor/SerialExecutor.h>
@@ -20,6 +21,10 @@ using Draoi::HexWorld::Weather::WeatherSimulation;
 namespace {
 constexpr uint64_t kWeeksPerYear = kWeeksPerSeason * kSeasonsPerYear;
 constexpr size_t kInputHistory = 4;   // the announced revisions a late job may still look up
+
+// The executor the running spin-up job should use (the capped one), set for the duration of SpinUpStep::Run on the
+// worker thread. Null (the default, and the SimPU restore path) = a serial executor.
+thread_local Dia::ParallelExecutor::IParallelExecutor* tSpinUpExecutor = nullptr;
 }
 
 void WeatherHooks::Publish(uint32_t revision, std::shared_ptr<const SpinUpInput> input)
@@ -82,7 +87,8 @@ bool WeatherHooks::InitialiseSim(WeatherSimulation& sim, const WorldStep::WorldV
     DIA_LOG_INFO(kLogChannel, "WTH: spin-up start for world %u, %u weeks", static_cast<unsigned>(world.revision),
                  static_cast<unsigned>(input->spinupWeeks));
     const auto spinUpStart = std::chrono::steady_clock::now();
-    Dia::ParallelExecutor::SerialExecutor executor;
+    Dia::ParallelExecutor::SerialExecutor serialExecutor;
+    Dia::ParallelExecutor::IParallelExecutor& executor = tSpinUpExecutor != nullptr ? *tSpinUpExecutor : serialExecutor;
     const Draoi::HexWorld::Weather::HydrologyInputs noHydro;
     const Draoi::HexWorld::Weather::InfluenceSnapshot noInfluences;
     for (uint32_t week = 0; week < input->spinupWeeks; ++week)
@@ -498,6 +504,165 @@ bool WeatherStage::RunNextJob()
     return true;
 }
 
+// Hands the job to the submitter; runs it inline when the submitter is missing or refuses. One Warning either way when the
+// capped launcher was wanted but missing; otherwise one only for the inline run.
+void WeatherStage::LaunchViaPool(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world, bool launcherMissing)
+{
+    {
+        std::lock_guard<std::mutex> guard(mPoolLock);
+        ++mPoolActive;
+    }
+    std::function<void()> body = [this, revision, generation, world]() {
+        RunJob(revision, generation, world);
+        std::lock_guard<std::mutex> guard(mPoolLock);   // last touch of the stage; the waiter needs this lock
+        --mPoolActive;
+        mPoolCv.notify_all();
+    };
+    if (mSubmitter && mSubmitter(std::move(body)))
+    {
+        if (launcherMissing)
+        {
+            DIA_LOG_WARNING(kLogChannel, "WTH: spin-up job for world %u: step launcher unavailable, using the job system uncapped",
+                            static_cast<unsigned>(revision));
+        }
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> guard(mPoolLock);
+        --mPoolActive;
+    }
+    DIA_LOG_WARNING(kLogChannel, "WTH: spin-up job for world %u could not be submitted to the job system (%s); running inline",
+                    static_cast<unsigned>(revision),
+                    launcherMissing ? "step launcher unavailable" : (mSubmitter ? "submit refused" : "no job system available"));
+    RunJob(revision, generation, world);
+}
+
+// The spin-up as a deferred step: Capture/Apply/pending are no-ops (the world was copied into the SpinUpInput on SimPU
+// when it was announced, and the result travels through the base's SpinUpSlot); Run executes the base's RunJob with the
+// launcher's capped executor in place of the serial one.
+class WeatherStage::SpinUpStep final : public Dia::DeferredStep::IDeferredStep
+{
+public:
+    SpinUpStep(WeatherStage& stage, uint32_t revision, uint32_t generation, const WorldStep::WorldView& world)
+        : mStage(stage), mRevision(revision), mGeneration(generation), mWorld(world) {}
+
+    void Capture() override {}
+    void Apply() override {}
+    uint32_t GetPendingVersion() const override { return 0; }
+    void SerializePending(Dia::SaveGame::SaveContext&) const override {}
+    void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+
+    void Run(Dia::ParallelExecutor::IParallelExecutor& executor) override
+    {
+        Dia::ParallelExecutor::IParallelExecutor* previous = tSpinUpExecutor;
+        tSpinUpExecutor = &executor;
+        mStage.RunJob(mRevision, mGeneration, mWorld);
+        tSpinUpExecutor = previous;
+    }
+
+private:
+    WeatherStage& mStage;
+    uint32_t mRevision;
+    uint32_t mGeneration;
+    WorldStep::WorldView mWorld;
+};
+
+void WeatherStage::FreeLauncherSlot(uint32_t index)
+{
+    delete mLive[index].step;
+    mLive[index] = LiveToken();
+}
+
+uint32_t WeatherStage::LiveLauncherTokens() const
+{
+    uint32_t n = 0;
+    for (const LiveToken& live : mLive) { if (live.step != nullptr) { ++n; } }
+    return n;
+}
+
+void WeatherStage::LaunchViaLauncher(Dia::DeferredStep::IStepLauncher& launcher, uint32_t revision, uint32_t generation,
+                                     const WorldStep::WorldView& world)
+{
+    ReapLauncherTokens();
+    uint32_t slot = kMaxLauncherTokens;
+    for (uint32_t i = 0; i < kMaxLauncherTokens; ++i)
+    {
+        if (mLive[i].step == nullptr) { slot = i; break; }
+    }
+    if (slot == kMaxLauncherTokens)
+    {
+        // All four are still running (stale jobs of superseded worlds): wait for the oldest, which is cancelled anyway.
+        slot = 0;
+        for (uint32_t i = 1; i < kMaxLauncherTokens; ++i)
+        {
+            if (mLive[i].sequence < mLive[slot].sequence) { slot = i; }
+        }
+        if (mLive[slot].launcher == &launcher)
+        {
+            launcher.Wait(mLive[slot].token);
+            launcher.Release(mLive[slot].token);
+        }
+        FreeLauncherSlot(slot);
+    }
+    SpinUpStep* step = new SpinUpStep(*this, revision, generation, world);
+    Dia::DeferredStep::LaunchInfo info;
+    info.channelId = Dia::Core::StringCRC("weather.spinup");
+    info.kickKey = revision;
+    mLive[slot].step = step;
+    mLive[slot].launcher = &launcher;
+    mLive[slot].sequence = ++mLiveSequence;
+    mLive[slot].token = launcher.Launch(*step, info);   // may run the step inline (no job system); never fails
+    ReapLauncherTokens();
+}
+
+// A token is only valid on the launcher that issued it. If the module swapped launchers (inline -> job, only while idle,
+// so every inline step had finished) the old token is simply dropped.
+void WeatherStage::ReapLauncherTokens()
+{
+    if (LiveLauncherTokens() == 0) { return; }   // nothing to touch: the source may already be gone
+    Dia::DeferredStep::IStepLauncher* current = mLauncherSource != nullptr ? mLauncherSource->Get() : nullptr;
+    for (uint32_t i = 0; i < kMaxLauncherTokens; ++i)
+    {
+        LiveToken& live = mLive[i];
+        if (live.step == nullptr) { continue; }
+        if (current != live.launcher)
+        {
+            FreeLauncherSlot(i);
+            continue;
+        }
+        if (current->IsComplete(live.token))
+        {
+            current->Release(live.token);
+            FreeLauncherSlot(i);
+        }
+    }
+}
+
+// Stop / destruction: the jobs were cancelled by Invalidate (they check between weeks); wait until each Run has returned
+// so no worker touches the stage afterwards.
+void WeatherStage::DrainLauncherTokens()
+{
+    if (LiveLauncherTokens() == 0) { return; }   // nothing to touch: the source may already be gone
+    Dia::DeferredStep::IStepLauncher* current = mLauncherSource != nullptr ? mLauncherSource->Get() : nullptr;
+    for (uint32_t i = 0; i < kMaxLauncherTokens; ++i)
+    {
+        LiveToken& live = mLive[i];
+        if (live.step == nullptr) { continue; }
+        if (current != nullptr && current == live.launcher)
+        {
+            current->Wait(live.token);
+            current->Release(live.token);
+        }
+        FreeLauncherSlot(i);
+    }
+}
+
+void WeatherStage::Update()
+{
+    WeatherStageBase::Update();
+    ReapLauncherTokens();
+}
+
 void WeatherStage::LaunchJob(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world)
 {
     switch (mMode)
@@ -509,25 +674,13 @@ void WeatherStage::LaunchJob(uint32_t revision, uint32_t generation, const World
         mQueued.push_back([this, revision, generation, world]() { RunJob(revision, generation, world); });
         break;
     case LaunchMode::kJobSystem:
+        LaunchViaPool(revision, generation, world, false);
+        break;
+    case LaunchMode::kCappedLauncher:
     {
-        {
-            std::lock_guard<std::mutex> guard(mPoolLock);
-            ++mPoolActive;
-        }
-        std::function<void()> body = [this, revision, generation, world]() {
-            RunJob(revision, generation, world);
-            std::lock_guard<std::mutex> guard(mPoolLock);   // last touch of the stage; the waiter needs this lock
-            --mPoolActive;
-            mPoolCv.notify_all();
-        };
-        if (mSubmitter && mSubmitter(std::move(body))) { break; }
-        {
-            std::lock_guard<std::mutex> guard(mPoolLock);
-            --mPoolActive;
-        }
-        DIA_LOG_WARNING(kLogChannel, "WTH: spin-up job for world %u could not be submitted to the job system (%s); running inline",
-                        static_cast<unsigned>(revision), mSubmitter ? "submit refused" : "no job system available");
-        RunJob(revision, generation, world);
+        Dia::DeferredStep::IStepLauncher* launcher = mLauncherSource != nullptr ? mLauncherSource->Get() : nullptr;
+        if (launcher == nullptr) { LaunchViaPool(revision, generation, world, true); }
+        else { LaunchViaLauncher(*launcher, revision, generation, world); }
         break;
     }
     default:

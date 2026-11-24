@@ -7,6 +7,7 @@
 #include <DiaDeferredStep/DeferredStepScheduler.h>
 #include <DiaDeferredStep/IStepKeySource.h>
 #include <DiaDeferredStep/JobStepLauncher.h>
+#include <DiaDeferredStep/IDeferredStep.h>
 #include <DiaDeferredStep/Testing/LogCapture.h>
 #include <DiaDeferredStep/Testing/RecordingStep.h>
 #include <DiaSaveGame/ISaveable.h>
@@ -883,4 +884,65 @@ TEST(DeferredStepModule, NoSwapAttemptWhileTheServiceIsStillMissing)
 	EXPECT_FALSE(g_probe->IsJobLauncher());
 	EXPECT_EQ(logs.Warnings() - before, 0u);   // nothing per frame about the service
 	EXPECT_EQ(logs.Infos("became available"), 0u);
+}
+
+// ---- GetLauncher (A4 weather spin-up through the capped executor) ---------------------------------------------------
+
+namespace
+{
+	// Runs one ParallelFor on whatever executor the launcher hands it and records what it saw.
+	class LauncherProbeStep final : public Dia::DeferredStep::IDeferredStep
+	{
+	public:
+		void Capture() override {}
+		void Apply() override {}
+		uint32_t GetPendingVersion() const override { return 0; }
+		void SerializePending(Dia::SaveGame::SaveContext&) const override {}
+		void DeserializePending(Dia::SaveGame::LoadContext&) override {}
+		void Run(Dia::ParallelExecutor::IParallelExecutor& exec) override
+		{
+			exec.ParallelFor(64, 4, [this](uint32_t b, uint32_t e) { mSum += (e - b); });
+			mRanges = exec.GetLastRangeCount();
+			mRan = true;
+		}
+		std::atomic<uint32_t> mSum{ 0 };
+		uint32_t mRanges = 0;
+		bool mRan = false;
+	};
+}
+
+TEST(DeferredStepModule, GetLauncherIsNullBeforeStartAndAfterStop)
+{
+	DSM_Probe unstarted(StringCRC("unstarted"));
+	EXPECT_EQ(unstarted.GetLauncher(), nullptr);
+
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	EXPECT_NE(g_probe->GetLauncher(), nullptr);
+	g_probe->CallStop();
+	EXPECT_EQ(g_probe->GetLauncher(), nullptr);
+}
+
+TEST(DeferredStepModule, StepLaunchedThroughGetLauncherRunsOnTheCappedExecutorAndCompletes)
+{
+	Harness h;
+	ASSERT_TRUE(h.Start());
+	ASSERT_TRUE(g_probe->IsJobLauncher());
+	Dia::DeferredStep::IStepLauncher* launcher = g_probe->GetLauncher();
+	ASSERT_NE(launcher, nullptr);
+
+	LauncherProbeStep step;
+	const uint64_t admittedBefore = g_probe->Gate().GetStats().admitted;
+	Dia::DeferredStep::LaunchInfo info;
+	info.channelId = StringCRC("DSM_Standalone");
+	const Dia::DeferredStep::LaunchToken token = launcher->Launch(step, info);
+	ASSERT_TRUE(token.IsValid());
+	launcher->Wait(token);
+	EXPECT_TRUE(launcher->IsComplete(token));
+	launcher->Release(token);
+
+	EXPECT_TRUE(step.mRan);
+	EXPECT_GE(step.mRanges, 1u);
+	EXPECT_EQ(step.mSum.load(), 64u);
+	EXPECT_GT(g_probe->Gate().GetStats().admitted, admittedBefore);   // admitted through the shared CapGate
 }

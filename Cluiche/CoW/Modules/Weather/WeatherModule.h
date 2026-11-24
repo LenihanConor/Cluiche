@@ -82,6 +82,7 @@ protected:
 
 private:
     class WorldGenAdapter;   // IWeatherWorldSource + IGenerationHold over WorldGenerationModule
+    class LauncherAdapter;   // ILauncherSource over DeferredStepModule::GetLauncher
 
     Dia::Core::StringCRC StageId() const;
     void OnWorldComplete(const WorldGenerationComplete& msg);
@@ -91,6 +92,7 @@ private:
     void TryLoadParameters();   // once per start, as soon as the stage has a biome registry
 
     std::unique_ptr<WorldGenAdapter> mAdapter;
+    std::unique_ptr<LauncherAdapter> mLauncherAdapter;
     Dia::MessageBus::BusSubscriptionHandle mSubscriptions[2];
     WorldGenerationModule* mWorldGen = nullptr;   // borrowed; null in test-hosts mode
 
@@ -126,6 +128,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<WorldStepModule> mWorldStepRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBusRef{this};
     Dia::ApplicationFlow::ModuleRef<WorldGenerationModule> mWorldGenRef{this};
+    Dia::ApplicationFlow::ModuleRef<Dia::DeferredStep::DeferredStepModule> mDeferredRef{this};   // spin-up capped launcher (WorldStepModule already hard-depends on it)
 };
 
 } // namespace CoW

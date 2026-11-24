@@ -3,6 +3,7 @@
 // Spec: docs/specs/applications/cow/systems/a4-weather/weather-module.md
 #pragma once
 
+#include <DiaDeferredStep/IStepLauncher.h>
 #include <DraoiHexWorldWeather/WeatherSimulation.h>
 #include <Shared/Weather/BiomeSeasonalBaseline.h>
 #include <Shared/Weather/HydrologyInputsProvider.h>
@@ -40,6 +41,16 @@ class IWeatherWorldSource
 public:
     virtual ~IWeatherWorldSource() {}
     virtual bool GetWorld(WorldStep::WorldView& view, Draoi::HexWorld::Weather::WeatherTerrain& terrain) = 0;
+};
+
+// Where the stage gets the shared step launcher for a capped spin-up (kCappedLauncher). The module adapts
+// DeferredStepModule::GetLauncher. SimPU only. The launcher can be swapped while idle, so the stage calls Get() at each
+// launch and each reap and never keeps the pointer across frames (except to detect a swap). Null = no launcher.
+class ILauncherSource
+{
+public:
+    virtual ~ILauncherSource() {}
+    virtual Dia::DeferredStep::IStepLauncher* Get() = 0;
 };
 
 // What the spin-up job reads: an immutable copy taken on SimPU when the world was announced, so the job never touches
@@ -138,8 +149,10 @@ public:
     // How a spin-up job runs. kThread is the default (the base's worker thread); kSynchronous runs the job inside
     // OnWorldComplete; kManual queues it until RunNextJob (tests that control job timing); kJobSystem hands the job to the
     // submitter (production: JobSystemService TrySubmit, tag 'world') and runs it inline with one Warning when the
-    // submitter is missing or refuses (a job is never dropped).
-    enum class LaunchMode : uint8_t { kThread, kSynchronous, kManual, kJobSystem };
+    // submitter is missing or refuses (a job is never dropped). kCappedLauncher runs the job as a deferred step on the
+    // shared launcher (the same strict worker cap as the weekly step); with no launcher it falls back to the kJobSystem
+    // path with one Warning.
+    enum class LaunchMode : uint8_t { kThread, kSynchronous, kManual, kJobSystem, kCappedLauncher };
     // Takes ownership of the function; true = accepted (it will run exactly once on another thread), false = refused
     // (the function must not have run).
     typedef std::function<bool(std::function<void()>)> JobSubmitter;
@@ -149,7 +162,14 @@ public:
     {
         hooks.Invalidate();   // a running spin-up job sees it between weeks, so the base joins promptly
         WaitForPoolJobs();
+        DrainLauncherTokens();
     }
+
+    // Polls the spin-up slot (base) and then releases the launcher tokens of finished capped spin-ups. SimPU only.
+    void Update();
+    // Test seam: capped spin-up launches not yet released.
+    uint32_t LiveLauncherTokens() const;
+    void SetLauncherSource(ILauncherSource* source) { mLauncherSource = source; }
 
     void SetLaunchMode(LaunchMode mode) { mMode = mode; }
     void SetJobSubmitter(JobSubmitter submitter) { mSubmitter = std::move(submitter); }
@@ -202,6 +222,7 @@ protected:
     {
         hooks.Invalidate();
         WaitForPoolJobs();   // pool jobs are not the base's mJob: Stop must not return while one still touches the stage
+        DrainLauncherTokens();   // same for capped-launcher jobs: cancelled between weeks, then waited and released
     }
     void LaunchJob(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world) override;
 
@@ -209,6 +230,25 @@ private:
     bool Push(const WeatherEntry& entry, bool usedSlot);   // Enqueue; hands the side-store slot back when refused
 
     void WaitForPoolJobs();
+    void LaunchViaPool(uint32_t revision, uint32_t generation, const WorldStep::WorldView& world, bool launcherMissing);
+    void LaunchViaLauncher(Dia::DeferredStep::IStepLauncher& launcher, uint32_t revision, uint32_t generation,
+                           const WorldStep::WorldView& world);
+    void ReapLauncherTokens();    // releases finished tokens (and drops those of a swapped-out launcher)
+    void DrainLauncherTokens();   // waits for every live token, then releases it
+    void FreeLauncherSlot(uint32_t index);
+
+    class SpinUpStep;   // IDeferredStep adapter over RunJob (defined in the .cpp)
+    static constexpr uint32_t kMaxLauncherTokens = 4;
+    struct LiveToken
+    {
+        SpinUpStep* step = nullptr;   // owned; null = slot free
+        Dia::DeferredStep::LaunchToken token;
+        Dia::DeferredStep::IStepLauncher* launcher = nullptr;   // the launcher that issued the token
+        uint64_t sequence = 0;
+    };
+    LiveToken mLive[kMaxLauncherTokens];
+    uint64_t mLiveSequence = 0;
+    ILauncherSource* mLauncherSource = nullptr;
 
     IWeatherWorldSource* mSource = nullptr;
     JobSubmitter mSubmitter;

@@ -15,6 +15,21 @@ namespace CoW {
 
 // The production seams over WorldGenerationModule: the world read (copied into a WeatherTerrain, never retained) and
 // the generation hold.
+// The shared step launcher, fetched fresh on every call (the module may swap it while idle).
+class WeatherModule::LauncherAdapter : public Weather::ILauncherSource
+{
+public:
+    explicit LauncherAdapter(Dia::ApplicationFlow::ModuleRef<Dia::DeferredStep::DeferredStepModule>& ref) : mRef(ref) {}
+    Dia::DeferredStep::IStepLauncher* Get() override
+    {
+        Dia::DeferredStep::DeferredStepModule* host = mRef.Get();
+        return host != nullptr ? host->GetLauncher() : nullptr;
+    }
+
+private:
+    Dia::ApplicationFlow::ModuleRef<Dia::DeferredStep::DeferredStepModule>& mRef;
+};
+
 class WeatherModule::WorldGenAdapter : public Weather::IWeatherWorldSource, public WorldStep::IGenerationHold
 {
 public:
@@ -244,9 +259,19 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     mStage.Start();   // takes the generation hold
     if (!mUseTestHosts)
     {
-        // Spin-up runs on the JobSystemService pool (tag: the 'world' channel); with no service yet, or a refusing pool,
-        // the stage runs it inline with one Warning.
-        mStage.SetLaunchMode(Weather::WeatherStage::LaunchMode::kJobSystem);
+        // Spin-up runs through the DeferredStep launcher (the same strict worker cap as the weekly step) when
+        // DeferredStepModule resolves; otherwise on the JobSystemService pool (tag: the 'world' channel); with no pool
+        // either, or a refusing one, the stage runs it inline with one Warning.
+        if (mDeferredRef.Get() != nullptr)
+        {
+            mLauncherAdapter = std::make_unique<LauncherAdapter>(mDeferredRef);
+            mStage.SetLauncherSource(mLauncherAdapter.get());
+            mStage.SetLaunchMode(Weather::WeatherStage::LaunchMode::kCappedLauncher);
+        }
+        else
+        {
+            mStage.SetLaunchMode(Weather::WeatherStage::LaunchMode::kJobSystem);
+        }
         mStage.SetJobSubmitter([this](std::function<void()> fn) {
             if (!mJobsReader.IsConnected() || !mJobsReader.IsAvailable()) { return false; }
             Dia::Threading::JobTag tag;
@@ -365,7 +390,9 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     mWorldStep = nullptr;
     Unsubscribe();
     mStage.SetPublishSeam(nullptr);
-    mStage.Stop();
+    mStage.Stop();   // joins any capped spin-up before the launcher adapter goes
+    mStage.SetLauncherSource(nullptr);
+    mLauncherAdapter.reset();
     mStage.SetWorldSource(nullptr);
     mStage.SetGenerationHold(nullptr);
     mWorldGen = nullptr;
