@@ -1,7 +1,7 @@
 # Feature Spec: Hex Topology
 
 **Parent:** @docs/specs/applications/dia/systems/diageometry2d/diageometry2d.md
-**Status:** `Draft`
+**Status:** `In Progress`
 **Plan:** @docs/specs/applications/dia/systems/diageometry2d/hex-topology.plan.md
 **Origin:** 2026-11-23 architecture cleanup. `dia check arch` reports `dia.celllayers -> dia.pathfinding` (3 includes of `HexTopology.h`): a visual package reaching into a gameplay package for pure geometry.
 **Moves from:** @docs/specs/applications/dia/systems/diapathfinding/hex-rectangular-grid.md (the feature that introduced `HexTopology`)

@@ -227,6 +227,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Dia | `strata.json` fails `dia validate schema` (raised 2026-11-23) | 2026-11-23 | Done 2026-11-23: strata.schema.json gained kind=field entries for the file structure; validate clean, typo caught, test_validate_world_assets.py; 282 scoped gtests pass |
 | Dia | Module dependency + layer debt (raised 2026-11-23, from the draoi-tooling baseline) | 2026-11-23 | deps: baseline 439 -> 0 (module docs fixed, checker now scans .inl, counts vcxproj ProjectReference, accepts parent-lists-child). arch: 25 -> 9; the 9 remaining are carried on the CI architecture gate row. |
 | CoW | **#3** World-Sim Kit, Draoi + CoW halves (ready; world-sim foundation 4) | 2026-11-23 | Draoi half Done 2026-11-23; CoW half Done 2026-11-23 (worldsim-kit.plan.md all rows Done). A4/A5/A1 amendments build on it. |
+| Dia | CI architecture gate is red (raised 2026-11-23) | 2026-11-23 | dia check arch 34 -> 0 (2026-11-23): layer relabels, PD-012 module moves and the hex geometry move. Verified locally (dia check arch/deps, full sharded GoogleTests, builds of CluicheTest, CoW, CluicheEditor). A CI run was not triggered from here. |
 
 ---
 
