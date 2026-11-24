@@ -367,9 +367,9 @@ User decisions from the world-sim review. Each item **supersedes** any contradic
 
 ## Status
 
-**Status:** `Approved` (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d).
+**Status:** `Done` (2026-11-24; built in DraoiHexWorldWeather; AC 9b waits for Feature 7 pass 0, AC 33 moved to Feature 3). Was Approved (2026-11-16). Amended 2026-11-17 (user decisions: A5 hand-off, Features 7–9). Amended 2026-11-17 (aligned to locked GDD, CHANGE-047; row 6d).
 
-**Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (written 2026-11-16, not started).
+**Plan:** [ca-pipeline.plan.md](ca-pipeline.plan.md) (re-planned and built 2026-11-24, Done).
 
 **Amended 2026-11-18 (world-sim review).** Status stays `Approved`. Amended 2026-11-18 (world-sim review decisions; user-approved designs in the specs referenced below).
 
