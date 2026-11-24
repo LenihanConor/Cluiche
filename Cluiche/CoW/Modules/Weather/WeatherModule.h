@@ -18,6 +18,9 @@
 #include <Modules/WorldStep/WorldStepModule.h>
 #include <Shared/Weather/WeatherStage.h>
 #include <Modules/Weather/WeatherSaveParticipant.h>
+#include <Modules/Plumbing/SaveLoadModule.h>
+#include <DiaValueSchema/ValueSchemaRegistry.h>
+#include <DiaValueSchema/ValueSchemaService.h>
 
 #include <memory>
 #include <string>
@@ -37,7 +40,7 @@ public:
 
     Weather::WeatherStage& GetStage() { return mStage; }
     const Weather::WeatherStage& GetStage() const { return mStage; }
-    // The cow.weather save participant (owned here; registration with SaveLoadModule is plan Task 12).
+    // The cow.weather save participant (owned here; registered with SaveLoadModule in DoStart when one resolves).
     Weather::WeatherSaveParticipant& GetSaveParticipant() { return *mSaveParticipant; }
 
     // Parameters: the sidecar is read through this source (borrowed; null = the stage keeps the parameters it was handed).
@@ -73,12 +76,14 @@ public:
         Dia::MessageBus::Bus* bus = nullptr;                    // null: no subscriptions
         Weather::IWeatherWorldSource* worldSource = nullptr;    // hand-built terrain instead of WorldGenerationModule
         WorldStep::IGenerationHold* generationHold = nullptr;
+        SaveLoadModule* saveLoad = nullptr;                     // null: the participant is not registered
+        const Dia::ValueSchema::ValueSchemaRegistry* schema = nullptr;   // null: no save schema is configured from hosts
     };
     void UseTestHosts(const TestHosts& hosts) { mTestHosts = hosts; mUseTestHosts = true; }
 
 protected:
     void OnConfigure(const char* configJson) override;
-    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override { mJobsReader.Connect(app); }
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override { mJobsReader.Connect(app); mSchemaReader.Connect(app); }
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(const Dia::SimTime::SimTimeContext& ctx) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
@@ -92,6 +97,9 @@ private:
     void OnWorldFailed();
     void Unsubscribe();
     void StartSidecarWatch();
+    void RegisterSaveParticipant(SaveLoadModule* saveLoad);
+    void UnregisterSaveParticipant();
+    void TryConfigureSaveSchema();   // once per start, as soon as a schema source is available
     void TryLoadParameters();   // once per start, as soon as the stage has a biome registry
 
     std::unique_ptr<WorldGenAdapter> mAdapter;
@@ -125,13 +133,17 @@ private:
     std::unique_ptr<Weather::WeatherSaveParticipant> mSaveParticipant;   // after mStage: destroyed first
     WorldStepModule* mWorldStep = nullptr;   // borrowed; set while registered
     bool mRegistered = false;
+    SaveLoadModule* mSaveLoad = nullptr;   // borrowed; set while the participant is registered
+    bool mSchemaAttempted = false;
     TestHosts mTestHosts;
     bool mUseTestHosts = false;
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Threading::JobSystem> mJobsReader{this, "JobSystemService"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::ValueSchema::ValueSchemaService> mSchemaReader{this, "ValueSchemaService"};
     Dia::ApplicationFlow::ModuleRef<WorldStepModule> mWorldStepRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::MessageBusHostModule> mBusRef{this};
     Dia::ApplicationFlow::ModuleRef<WorldGenerationModule> mWorldGenRef{this};
+    Dia::ApplicationFlow::ModuleRef<SaveLoadModule> mSaveLoadRef{this};   // soft: absent means nothing is registered
     Dia::ApplicationFlow::ModuleRef<Dia::DeferredStep::DeferredStepModule> mDeferredRef{this};   // spin-up capped launcher (WorldStepModule already hard-depends on it)
 };
 

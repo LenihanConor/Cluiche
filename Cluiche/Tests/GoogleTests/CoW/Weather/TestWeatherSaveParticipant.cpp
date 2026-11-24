@@ -744,3 +744,107 @@ TEST(WeatherSaveParticipant, AFollowingOverridePackOrReloadApplyClearsDegraded)
         EXPECT_NE(StringCRC("params_changed"), b.module.GetStage().GetHealth().reason);
     }
 }
+
+// ---- Task 12 / AC 13: registration with SaveLoadModule ----
+namespace
+{
+class OrderProbe : public Dia::SaveGame::ISaveable
+{
+public:
+    void Serialize(Dia::SaveGame::SaveContext&) const override {}
+    void Deserialize(Dia::SaveGame::LoadContext&) override {}
+    uint32_t GetVersion() const override { return 1; }
+};
+
+struct RegistrationRig
+{
+    RegistrationRig()
+        : harness(WsTest::Config("weather", 7, true))
+        , module(StringCRC("WeatherModule"))
+        , saveLoad(StringCRC("SaveLoadModule"))
+    {
+        hosts.worldStep = &harness.module;
+        hosts.worldSource = &source;
+        hosts.generationHold = &hold;
+    }
+    void Arm() { module.UseTestHosts(hosts); module.GetStage().SetRegistry(&Draoi::HexWorld::Weather::Testing::TestRegistry()); }
+    WsTest::Harness harness;
+    OneWorldSource source;
+    NullHold hold;
+    WeatherProbe module;
+    CoW::SaveLoadModule saveLoad;
+    CoW::WeatherModule::TestHosts hosts;
+};
+}
+
+TEST(WeatherSaveRegistration, WithoutSaveLoadModuleTheModuleRunsAndRegistersNothing)
+{
+    RegistrationRig rig;
+    rig.Arm();
+    ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+    EXPECT_EQ(0u, rig.saveLoad.GetRegistry().GetParticipantCount());
+    rig.module.CallStop();
+}
+
+TEST(WeatherSaveRegistration, RegistersCowWeatherInDoStartAndUnregistersInDoStop)
+{
+    RegistrationRig rig;
+    rig.hosts.saveLoad = &rig.saveLoad;
+    rig.Arm();
+    ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+    EXPECT_EQ(1u, rig.saveLoad.GetRegistry().GetParticipantCount());
+    EXPECT_EQ(&rig.module.GetSaveParticipant(), rig.saveLoad.GetRegistry().GetParticipantAt(0));
+    rig.module.CallStop();
+    EXPECT_EQ(0u, rig.saveLoad.GetRegistry().GetParticipantCount());
+}
+
+TEST(WeatherSaveRegistration, ArrivesBeforeTheDeferredStepParticipant)
+{
+    RegistrationRig rig;
+    rig.hosts.saveLoad = &rig.saveLoad;
+    rig.Arm();
+    OrderProbe deferred;
+    ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+    // DeferredStepModule attaches its participant on its first DoUpdate, after every DoStart.
+    ASSERT_TRUE(rig.saveLoad.RegisterParticipant(StringCRC("deferred_step"), &deferred));
+    ASSERT_EQ(2u, rig.saveLoad.GetRegistry().GetParticipantCount());
+    EXPECT_EQ(&rig.module.GetSaveParticipant(), rig.saveLoad.GetRegistry().GetParticipantAt(0));
+    EXPECT_EQ(&deferred, rig.saveLoad.GetRegistry().GetParticipantAt(1));
+    rig.module.CallStop();
+    rig.saveLoad.UnregisterParticipant(StringCRC("deferred_step"));
+}
+
+TEST(WeatherSaveRegistration, StartStopStartRegistersExactlyOnce)
+{
+    RegistrationRig rig;
+    rig.hosts.saveLoad = &rig.saveLoad;
+    rig.Arm();
+    ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+    rig.module.CallStop();
+    EXPECT_EQ(0u, rig.saveLoad.GetRegistry().GetParticipantCount());
+    ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+    EXPECT_EQ(1u, rig.saveLoad.GetRegistry().GetParticipantCount());
+    rig.module.CallStop();
+    EXPECT_EQ(0u, rig.saveLoad.GetRegistry().GetParticipantCount());
+}
+
+TEST(WeatherSaveRegistration, SchemaFromTheHostConfiguresTheParticipantAndAMissingOneLeavesItUnconfigured)
+{
+    {
+        RegistrationRig rig;
+        rig.Arm();
+        ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+        EXPECT_FALSE(rig.module.GetSaveParticipant().IsConfigured());
+        rig.module.CallStop();
+    }
+    {
+        Dia::ValueSchema::ValueSchemaRegistry layers;
+        ASSERT_TRUE(PublishSidecar(layers, ReadShippedSidecar()));
+        RegistrationRig rig;
+        rig.hosts.schema = &layers;
+        rig.Arm();
+        ASSERT_EQ(Dia::ApplicationFlow::StartResult::kReady, rig.module.CallStart());
+        EXPECT_TRUE(rig.module.GetSaveParticipant().IsConfigured());
+        rig.module.CallStop();
+    }
+}

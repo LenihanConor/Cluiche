@@ -294,6 +294,8 @@ Dia::ApplicationFlow::StartResult WeatherModule::DoStart()
     }
     mWorldStep = worldStep;
     mRegistered = true;
+    RegisterSaveParticipant(mUseTestHosts ? mTestHosts.saveLoad : mSaveLoadRef.Get());
+    TryConfigureSaveSchema();
 
     if (bus != nullptr)
     {
@@ -345,8 +347,60 @@ void WeatherModule::StartSidecarWatch()
     });
 }
 
+// Registers cow.weather with SaveLoadModule (soft: no SaveLoadModule means no registration and the module still runs).
+// Registered after GameSpeed and RandomStreams (their DoStart runs first) and before DeferredStep's participant, which
+// attaches on its first DoUpdate. S-1 has no participant, so there is nothing to order against.
+void WeatherModule::RegisterSaveParticipant(SaveLoadModule* saveLoad)
+{
+    if (saveLoad == nullptr || mSaveLoad != nullptr) { return; }
+    if (saveLoad->RegisterParticipant(Dia::Core::StringCRC(World::SaveId(World::kWeather).c_str()), mSaveParticipant.get()))
+    {
+        mSaveLoad = saveLoad;
+        DIA_LOG_INFO(Weather::kLogChannel, "WTH: save participant '%s' registered", World::SaveId(World::kWeather).c_str());
+    }
+    else
+    {
+        DIA_LOG_ERROR(Weather::kLogChannel, "WTH: save participant '%s' could not be registered", World::SaveId(World::kWeather).c_str());
+    }
+}
+
+void WeatherModule::UnregisterSaveParticipant()
+{
+    if (mSaveLoad != nullptr)
+        mSaveLoad->UnregisterParticipant(Dia::Core::StringCRC(World::SaveId(World::kWeather).c_str()));
+    mSaveLoad = nullptr;
+}
+
+// Hands the sidecar schema (ValueSchemaService stream, or the injected registry) to the save participant. Until it
+// succeeds the participant's Validate accepts only a ready:false record and logs the rejection. One attempt per start
+// once a source exists; a failure is logged once.
+void WeatherModule::TryConfigureSaveSchema()
+{
+    if (mSchemaAttempted || mSaveParticipant->IsConfigured()) { return; }
+    Draoi::HexWorld::SaveError err;
+    bool ok = false;
+    if (mUseTestHosts)
+    {
+        if (mTestHosts.schema == nullptr) { return; }
+        mSchemaAttempted = true;
+        ok = mSaveParticipant->ConfigureSchema(*mTestHosts.schema, err);
+    }
+    else
+    {
+        if (!mSchemaReader.IsConnected() || !mSchemaReader.IsAvailable()) { return; }
+        mSchemaAttempted = true;
+        ok = mSaveParticipant->ConfigureSchema(mSchemaReader.Get(), err);
+    }
+    if (!ok)
+    {
+        DIA_LOG_WARNING(Weather::kLogChannel, "WTH: weather save schema not configured (field '%s'); only a ready:false record will load",
+                        err.field.AsCStr());
+    }
+}
+
 void WeatherModule::DoUpdate(const Dia::SimTime::SimTimeContext&)
 {
+    TryConfigureSaveSchema();
     mWatcher.Update();
     mStage.Update();
 }
@@ -386,8 +440,10 @@ Dia::ApplicationFlow::StopResult WeatherModule::DoStop()
     if (mRegistered && mWorldStep != nullptr)
         mWorldStep->UnregisterStage(StageId());
     mWatcher.Stop();
+    UnregisterSaveParticipant();
     mRegistered = false;
     mParamsAttempted = false;
+    mSchemaAttempted = false;
     mWorldStep = nullptr;
     Unsubscribe();
     mStage.SetPublishSeam(nullptr);
